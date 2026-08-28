@@ -1,10 +1,13 @@
 # Offene Entscheidungen
 
 Status: **teilweise entschieden** — die vier Architektur-Grundentscheidungen
-A1 bis A4 sind entschieden und als ADR festgehalten. Für B1 und B2 sind die
-Architektur- beziehungsweise Prozessentscheidungen getroffen; die externe
-Bestätigung steht jeweils vor Produktivstart aus. Alle übrigen Punkte sind
+A1 bis A4 sind entschieden und als ADR festgehalten. Für B1, B2, B3 und B4 sind
+die Architektur- beziehungsweise Prozessentscheidungen getroffen; die externe
+regulatorische, datenschutzrechtliche beziehungsweise steuerrechtliche
+Validierung steht jeweils vor Produktivstart aus. Alle übrigen Punkte sind
 weiterhin offen.
+
+Die Prinzipienebene ist in `PROJECT_PRINCIPLES.md` Version 0.2 konsolidiert.
 
 Zuletzt aktualisiert: 2026-08-28
 
@@ -16,6 +19,8 @@ Zuletzt aktualisiert: 2026-08-28
 | A4 Berechtigungsmodell | [ADR-004](../adr/ADR-004-authorization-model.md) |
 | B1 Abgrenzung Medical Device Software | [ADR-006](../adr/ADR-006-medical-device-boundary.md) — externe Bestätigung vor Produktivstart offen |
 | B2 Datenschutz-Folgenabschätzung und Datenschutzprozess | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md) — Schwellwertprüfung und DSB-Entscheidung vor Produktivstart offen |
+| B3 Aufbewahrung und Löschung | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md) — Validierung der internen Fristen im DSFA-Prozess vor Produktivstart offen |
+| B4 Abrechnungsmodell | [ADR-009](../adr/ADR-009-private-billing-model.md) — steuerrechtliche Validierung vor Produktivstart offen |
 | KI-Providerabhängigkeit (Teil von A2/C6) | [ADR-005](../adr/ADR-005-provider-independent-ai.md) — der konkrete Provider bleibt offen |
 
 Dieses Dokument sammelt die Punkte, die aus dem Architektur-Review von
@@ -260,7 +265,7 @@ Datenschutzbeauftragten** nach §38 Abs. 1 BDSG, beides vor Produktivstart.
 |---|---|
 | Dringlichkeit | P1 |
 | Bezug | §5, §13 |
-| Status | offen |
+| Status | **architektonisch entschieden – rechtliche Validierung vor Produktivstart offen** — [ADR-008](../adr/ADR-008-data-retention-and-deletion.md) |
 
 **Frage:** Welche Aufbewahrungsfrist gilt je Datenart, und wie wird gelöscht?
 
@@ -274,6 +279,21 @@ gelöschten Daten in Backups.
 
 **Blockiert:** Pflichtfelder im Kern-Schema; nachträglich schwer einzuziehen.
 
+**Entschieden am 2026-08-28** — [ADR-008](../adr/ADR-008-data-retention-and-deletion.md):
+Datenklassen mit dokumentiertem Retention Schedule; Vorrang gesetzlicher
+Aufbewahrung; echte Löschung nach Zweck- und Fristablauf; klinische Unterlagen
+10 Jahre nach Behandlungsabschluss; Rechnungen und Buchungsbelege nach
+steuerlicher Frist; kurze Fristen für Routing, KI-Entwürfe und Terminanfragen;
+Legal-Hold-Mechanismus; Löschungen werden nach einem Restore erneut angewendet;
+Accounts getrennt von aufbewahrungspflichtigen Fachdaten; kein dauerhaftes
+Soft-Delete als Ersatz für Löschung. Konsolidiert in `PROJECT_PRINCIPLES.md`
+§18.
+
+**Weiterhin offen:** die **Validierung der nicht gesetzlich vorgegebenen
+Fristen im Datenschutz-/DSFA-Prozess vor Produktivstart**, die abschließende
+steuerrechtliche Bewertung der Belegarten sowie die Definition des
+„Abschlusses der Behandlung" als fachlicher Vorgang.
+
 ---
 
 ### B4 — Abrechnungsmodell
@@ -282,7 +302,7 @@ gelöschten Daten in Backups.
 |---|---|
 | Dringlichkeit | P1 |
 | Bezug | §1, §4.3 |
-| Status | offen |
+| Status | **architektonisch entschieden – steuerrechtliche Validierung vor Produktivstart offen** — [ADR-009](../adr/ADR-009-private-billing-model.md) |
 
 **Frage:** Selbst abrechnen oder über Abrechnungsdienstleister/Factoring?
 
@@ -303,6 +323,23 @@ stehen mehrere modellbestimmende Teilfragen:
   dürfen alte Rechnungen nicht rückwirkend verändern.
 
 **Blockiert:** Rechnungs-, Leistungs- und Terminschema.
+
+**Entschieden am 2026-08-28** — [ADR-009](../adr/ADR-009-private-billing-model.md):
+Privatabrechnung in der Plattform, kein Factoring in V1; Patient und
+Rechnungsempfänger getrennt; Leistungen unabhängig von Rechnungen und keine
+unbeabsichtigte Mehrfachabrechnung; versionierte Kataloge und Preise;
+steuerliche Eigenschaften je Leistungsversion und nicht durch KI bestimmt;
+definierte Rechnungszustände; Nummernvergabe erst bei Ausstellung, eindeutig
+und ohne Wiederverwendung; ausgestellte Rechnungen unveränderbar mit
+historischem Snapshot und Aufbewahrung des Dokuments; Zahlungen als eigene
+Transaktionen; Fakturierung grundsätzlich erst nach finalisierter
+Dokumentation mit protokolliertem Override; PDF in V1 ohne Blockade späterer
+E-Rechnung. Konsolidiert in `PROJECT_PRINCIPLES.md` §19.
+
+**Weiterhin offen:** die **abschließende steuerrechtliche Bewertung** der
+Leistungsarten und Umsatzsteuerbehandlung vor Produktivstart, der Leistungs-
+und Gebührenkatalog selbst, Mahnwesen und Ausfallhonorar sowie der
+Terminstatus-Automat.
 
 ---
 
@@ -457,8 +494,9 @@ Die Reihenfolge ist ein Vorschlag, keine Entscheidung.
    nicht entfallen, sondern auf **vor Produktivstart** terminiert.
 2. ~~**A1–A4** entscheiden und je als ADR festhalten.~~ **Erledigt am
    2026-08-28** (ADR-001 bis ADR-004; ADR-005 ergänzt die KI-Anbindung).
-3. **B3** (Löschkonzept) und **B4** (Abrechnungsmodell) entscheiden — beide
-   bestimmen Pflichtfelder im Kern-Schema.
+3. ~~**B3** (Löschkonzept) und **B4** (Abrechnungsmodell) entscheiden~~
+   **Erledigt am 2026-08-28** (ADR-008, ADR-009). Die rechtliche und
+   steuerrechtliche Validierung ist auf **vor Produktivstart** terminiert.
 4. **C1–C8** fachlich auflösen und `PROJECT_PRINCIPLES.md` in einem eigenen
    Commit nachziehen (inkl. Normativität aus Abschnitt D).
 5. **E1, E3, E4, E5, E7** festlegen — Betriebsrahmen.

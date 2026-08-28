@@ -45,7 +45,7 @@ Kein ADR nötig für alltägliche Umsetzungsdetails.
 
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.2)
 - `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist
 - `docs/adr/` — was entschieden wurde und warum
 
@@ -64,3 +64,5 @@ Prinzipien, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit nachgezogen.
 | [ADR-005](ADR-005-provider-independent-ai.md) | Providerunabhängige KI-Anbindung | Angenommen |
 | [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | Angenommen |
 | [ADR-007](ADR-007-data-protection-impact-assessment.md) | Datenschutz-Folgenabschätzung und Datenschutzprozess | Angenommen |
+| [ADR-008](ADR-008-data-retention-and-deletion.md) | Aufbewahrung und Löschung personenbezogener Daten | Angenommen |
+| [ADR-009](ADR-009-private-billing-model.md) | Privatabrechnung | Angenommen |

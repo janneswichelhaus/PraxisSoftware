@@ -1,10 +1,58 @@
 # PROJECT_PRINCIPLES.md
 
+## Dokumentinformation
+
+| | |
+|---|---|
+| **Dokumentversion** | **0.2** |
+| **Änderungsdatum** | **2026-08-28** |
+| Vorversion | 0.1 (Baseline, unverändert im Git-Verlauf erhalten) |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-009, siehe `docs/adr/` |
+| Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
+
+### Änderungsvermerk 0.2
+
+- Normative Begriffe eingeführt (§0). Sicherheitskritische Formulierungen wie
+  „langfristig", „perspektivisch", „möglichst" und „soll" wurden durch
+  eindeutige normative Aussagen ersetzt, soweit eine Entscheidung vorliegt.
+- Die angenommenen Architekturentscheidungen ADR-001 bis ADR-009 wurden auf
+  Prinzipienebene konsolidiert. Details, die im jeweiligen ADR vollständig
+  geregelt sind, werden hier nicht wiederholt, sondern verlinkt.
+- Neue Abschnitte: §17 Regulatorische Abgrenzung, §18 Aufbewahrung und
+  Löschung, §19 Abrechnung, §20 Beschäftigtendaten, §21 Governance.
+- Die Nummerierung der Abschnitte §1 bis §16 ist unverändert, damit bestehende
+  Verweise aus den ADRs gültig bleiben.
+- Es wurde keine Anforderung der Baseline entfernt. Offene Punkte sind als
+  offen gekennzeichnet und nicht durch Formulierung geschlossen worden.
+
+
+## 0. Normative Begriffe
+
+Dieses Dokument verwendet folgende Begriffe in fest definierter Bedeutung:
+
+- **MUSS** / **MÜSSEN** — verbindlich. Eine Abweichung ist ein Fehler.
+- **DARF NICHT** / **DÜRFEN NICHT** — verbindliches Verbot.
+- **SOLLTE** — verbindliche Absicht. Eine Abweichung ist zulässig, MUSS aber
+  begründet und dokumentiert werden, in der Regel als ADR.
+- **KANN** — zulässige Möglichkeit ohne Verpflichtung.
+
+Jede MUSS- und DARF-NICHT-Anforderung MUSS test- oder auditierbar sein. Lässt
+sich eine solche Anforderung nicht prüfen, ist entweder die Anforderung oder
+die Umsetzung unvollständig.
+
+Text ohne diese Begriffe ist beschreibend und begründend, nicht normativ.
+
+Bei Konflikten zwischen Anforderungen gilt die Prioritätenordnung aus §16.
+Das Verhältnis dieses Dokuments zu den ADRs regelt §21.
+
+
 ## 1. Zweck des Projekts
 
-Wir entwickeln eine zentrale Softwareplattform für eine privat abrechnende Physiotherapiepraxis mit starkem Fokus auf Hausbesuche und mobile Versorgung.
+Wir entwickeln eine zentrale Softwareplattform für eine privat abrechnende
+Physiotherapiepraxis mit starkem Fokus auf Hausbesuche und mobile Versorgung.
 
-Die Software soll langfristig möglichst alle wesentlichen Arbeitsprozesse der Praxis in einer einzigen Benutzeroberfläche bündeln.
+Die Software soll langfristig möglichst alle wesentlichen Arbeitsprozesse der
+Praxis in einer einzigen Benutzeroberfläche bündeln.
 
 Dazu gehören insbesondere:
 
@@ -26,53 +74,80 @@ Dazu gehören insbesondere:
 - Pannen und Wartung
 - KI-gestützte Assistenz
 
-Das primäre Ziel ist der effiziente und sichere Betrieb der eigenen Physiotherapiepraxis.
+Das primäre Ziel ist der effiziente und sichere Betrieb der eigenen
+Physiotherapiepraxis.
 
-Eine spätere Vermarktung an andere Praxen soll architektonisch nicht ausgeschlossen werden, ist aktuell aber kein Produktziel.
+Eine spätere Vermarktung an andere Praxen soll architektonisch nicht
+ausgeschlossen werden, ist aktuell aber kein Produktziel. Die dafür
+vorgesehene, bewusst minimale Vorbereitung im Datenmodell regelt
+[ADR-003](docs/adr/ADR-003-organization-location-model.md).
 
 
 ## 2. Produktprinzipien
 
 ### 2.1 Eine Plattform
 
-Mitarbeiter und Patienten sollen möglichst nur diese eine Plattform verwenden müssen.
+Mitarbeiter und Patienten SOLLTEN für den Praxisalltag ausschließlich diese
+eine Plattform verwenden müssen.
 
-Externe Dienste wie Datenbankanbieter, Kartenanbieter, E-Mail-Dienste oder KI-Anbieter dürfen im Hintergrund integriert werden.
+Externe Dienste wie Datenbankanbieter, Kartenanbieter, E-Mail-Dienste oder
+KI-Anbieter DÜRFEN im Hintergrund integriert werden. Die dafür geltenden
+Anforderungen regelt §3.5.
 
-Sie sollen jedoch möglichst keine zusätzlichen Benutzeroberflächen für den Praxisalltag erforderlich machen.
+Sie SOLLTEN keine zusätzlichen Benutzeroberflächen für den Praxisalltag
+erforderlich machen.
 
+Davon ausgenommen ist die technische Administration: Nutzerverwaltung,
+Schlüsselverwaltung, Datenbank- und Backup-Administration finden
+notwendigerweise teilweise in den Oberflächen der eingesetzten Anbieter statt.
+Diese Tätigkeiten gehören nicht zum Praxisalltag und sind nach §4.1 und §4.7
+eine getrennte Berechtigungsdomäne.
 
 ### 2.2 Mobile First
 
 Therapeut:innen arbeiten regelmäßig außerhalb der Praxis.
 
-Alle zentralen Funktionen müssen deshalb auf Smartphones vollständig praktikabel sein.
+Alle zentralen Funktionen MÜSSEN auf Smartphones vollständig praktikabel sein.
 
 Die Anwendung wird zunächst als responsive Web-App/PWA entwickelt.
 
-Keine nativen iOS- oder Android-Apps in der ersten Entwicklungsphase.
+In der ersten Entwicklungsphase werden keine nativen iOS- oder Android-Apps
+entwickelt.
 
+Die Anwendung ist **online-first**. Eine vollständige Patientenakte DARF NICHT
+generell offline vorgehalten werden. Eine begrenzte Offline-Fähigkeit ist
+architektonisch vorgesehen, insbesondere für Tagesplan, minimal notwendige
+Hausbesuchsdaten und nicht finalisierte Dokumentationsentwürfe. Offline
+erstellte Dokumentation DARF erst nach erfolgreicher Serversynchronisation
+finalisiert werden. Die Synchronisation DARF klinische Dokumentation NICHT
+über ein einfaches Last-Write-Wins-Modell überschreiben. Einzelheiten:
+[ADR-001](docs/adr/ADR-001-online-first-limited-offline.md).
 
 ### 2.3 Praxisprozesse bestimmen die Software
 
 Technische Möglichkeiten sind kein Selbstzweck.
 
-Vor der Implementierung wesentlicher Features sollen Zweck, Nutzer, Workflow, Daten und Berechtigungen definiert werden.
+Vor der Implementierung wesentlicher Features MÜSSEN Zweck, Nutzer, Workflow,
+Daten und Berechtigungen definiert werden.
 
-Claude darf keine grundlegenden Praxisprozesse eigenständig erfinden oder bestehende Prozesse ohne Auftrag verändern.
+Claude DARF keine grundlegenden Praxisprozesse eigenständig erfinden oder
+bestehende Prozesse ohne Auftrag verändern.
 
 
 ## 3. Datenschutz und Sicherheit
 
-Die Anwendung verarbeitet Gesundheitsdaten und andere besonders sensible personenbezogene Daten.
+Die Anwendung verarbeitet Gesundheitsdaten und andere besonders sensible
+personenbezogene Daten.
 
-Datenschutz und Informationssicherheit sind deshalb grundlegende Architekturprinzipien und keine nachträglichen Features.
+Datenschutz und Informationssicherheit sind grundlegende Architekturprinzipien
+und keine nachträglichen Features.
 
 ### 3.1 Entwicklungsdaten
 
-In Entwicklungs-, Test- und Demonstrationsumgebungen werden ausschließlich synthetische Daten verwendet.
+In Entwicklungs-, Test- und Demonstrationsumgebungen werden ausschließlich
+synthetische Daten verwendet.
 
-Keine echten Patientendaten dürfen in:
+Echte Patientendaten DÜRFEN NICHT in folgende Ziele eingefügt werden:
 
 - Claude Code
 - ChatGPT
@@ -82,28 +157,35 @@ Keine echten Patientendaten dürfen in:
 - Entwicklungslogs
 - Testdaten
 
-eingefügt werden.
-
+Darüber hinaus gilt: **Coding- und KI-Entwicklungswerkzeuge DÜRFEN NIEMALS
+Produktionscredentials oder reale Produktions-Patientendaten erhalten.** Das
+gilt unabhängig vom Werkzeug und unabhängig davon, ob der Zugriff lesend oder
+schreibend wäre.
 
 ### 3.2 Produktionsdaten
 
-Produktionsdaten und Entwicklungsdaten müssen technisch getrennt sein.
+Produktionsdaten und Entwicklungsdaten MÜSSEN technisch getrennt sein.
 
-Produktionszugriffe benötigen individuelle Benutzerkonten.
+Dev, Test und Produktion sind getrennte Umgebungen
+([ADR-002](docs/adr/ADR-002-hosting-data-residency.md)). Ein
+Produktions-Backup DARF NICHT in eine Entwicklungs- oder Testumgebung
+eingespielt werden.
+
+Produktionszugriffe MÜSSEN über individuelle Benutzerkonten erfolgen.
 
 Gemeinsam verwendete Accounts sind nicht erlaubt.
 
-
 ### 3.3 Keine Secrets im Code
 
-Passwörter, API Keys, Datenbankzugangsdaten, Tokens oder sonstige Secrets dürfen niemals hart im Quellcode stehen oder in GitHub committed werden.
+Passwörter, API Keys, Datenbankzugangsdaten, Tokens oder sonstige Secrets
+DÜRFEN NIEMALS hart im Quellcode stehen oder in GitHub committed werden.
 
-Secrets werden ausschließlich über dafür geeignete Environment-/Secret-Management-Systeme verwaltet.
-
+Secrets werden ausschließlich über dafür geeignete
+Environment-/Secret-Management-Systeme verwaltet.
 
 ### 3.4 Keine selbst entwickelte Sicherheitsinfrastruktur
 
-Nicht selbst implementieren:
+Folgendes DARF NICHT selbst implementiert werden:
 
 - Kryptografie
 - Passwort-Hashing
@@ -112,12 +194,66 @@ Nicht selbst implementieren:
 - Datenbank-Engine
 - Backup-Engine
 
-Hierfür etablierte und professionell betriebene Komponenten verwenden.
+Hierfür MÜSSEN etablierte und professionell betriebene Komponenten verwendet
+werden.
+
+### 3.5 Hosting, Datenstandort und Dienstleister
+
+Gesundheitsbezogene Produktionsdaten MÜSSEN grundsätzlich in EU/EWR-
+Infrastruktur gespeichert und verarbeitet werden.
+
+US-amerikanische Mutterunternehmen sind nicht grundsätzlich ausgeschlossen,
+wenn konkrete Verarbeitung, Verträge und Datenflüsse die Anforderungen
+erfüllen.
+
+Für jeden Dienstleister mit Zugang zu Patientendaten MÜSSEN vor Freischaltung
+mindestens geprüft und dokumentiert werden: AVV/DPA, Eignung im Hinblick auf
+§203 StGB, Verschlüsselung, Zugriffskontrolle, Retention und Löschung sowie
+Unterauftragnehmer.
+
+Physiotherapeut:innen sind Berufsgeheimnisträger. Die Einbindung externer
+Dienstleister ist zulässig, setzt aber deren Verpflichtung zur Geheimhaltung
+voraus.
+
+Einzelheiten: [ADR-002](docs/adr/ADR-002-hosting-data-residency.md).
+
+### 3.6 Protokollierung und Logs
+
+Produktionslogs MÜSSEN personenbezogene und klinische Inhalte minimieren
+beziehungsweise redigieren. Medizinische Freitexte DÜRFEN NICHT in
+Produktionslogs geschrieben werden.
+
+Dasselbe gilt für Fehler- und Crash-Reporting einschließlich externer Dienste.
+
+Diese Anforderung ist von der fachlichen Auditierbarkeit nach §4.2 zu
+unterscheiden: Auditlogs sind ein bewusst geführter Nachweis mit definiertem
+Inhalt, Betriebslogs sind es nicht.
+
+### 3.7 Datenschutzprozess
+
+Vor der Verarbeitung realer Patientendaten MUSS der definierte
+Datenschutzprozess abgeschlossen sein. Dazu gehören insbesondere eine
+Datenschutz-Folgenabschätzung, das Verzeichnis der Verarbeitungstätigkeiten,
+dokumentierte technische und organisatorische Maßnahmen, das Lösch- und
+Aufbewahrungskonzept, die Auftragsverarbeiter- und Subprozessorenübersicht,
+Datenschutzinformationen, ein Verfahren für Betroffenenrechte sowie ein
+Data-Breach-Prozess nach Art. 33/34 DSGVO.
+
+Entwicklungsarbeiten DÜRFEN vor Abschluss dieses Prozesses stattfinden,
+solange ausschließlich synthetische Daten verwendet werden und keine
+produktive Verarbeitung personenbezogener Gesundheitsdaten erfolgt.
+
+Einzelheiten und die Wiedervorlagepflichten:
+[ADR-007](docs/adr/ADR-007-data-protection-impact-assessment.md).
 
 
 ## 4. Benutzerrollen
 
-Das System benötigt mindestens folgende Rollen:
+Das System benötigt mindestens folgende Rollen.
+
+Ein Benutzer KANN mehrere Rollen besitzen; die effektive Berechtigung ergibt
+sich aus der Vereinigung der zugewiesenen Rollen
+([ADR-004](docs/adr/ADR-004-authorization-model.md)).
 
 ### 4.1 Praxisinhaber / Geschäftsführung
 
@@ -135,12 +271,15 @@ Umfassender Zugriff auf:
 - Auswertungen
 - Praxiseinstellungen
 
-Besonders kritische technische Administration soll perspektivisch von normalen Alltagsrechten getrennt werden.
-
+**Technische Administration und Alltags-Praxisrolle sind getrennte
+Berechtigungsdomänen.** Ein Alltagskonto — auch das der Praxisinhaberin oder
+des Praxisinhabers — DARF NICHT zu technischer Plattformadministration
+eskalieren können.
 
 ### 4.2 Therapeut
 
-Alle Therapeut:innen der Praxis dürfen grundsätzlich auf alle Patientenakten der Praxis zugreifen.
+Alle Therapeut:innen einer Organisation DÜRFEN grundsätzlich alle
+Patientenakten dieser Organisation einsehen.
 
 Das ist eine bewusste Produktentscheidung.
 
@@ -152,9 +291,14 @@ Damit sollen insbesondere ermöglicht werden:
 - interdisziplinäre Rückfragen
 - kurzfristige Einsatzänderungen
 
-Ein individuelles Benutzerkonto ist trotzdem Pflicht.
+Ein individuelles Benutzerkonto ist Pflicht.
 
-Zugriffe auf Patientendaten sollen auditierbar sein.
+**Zugriffe auf Patientenakten MÜSSEN auditierbar sein.** Da die bewusste
+Offenheit dieser Rolle die naheliegende technische Beschränkung entfernt, ist
+das Auditlog die tragende Kompensationsmaßnahme und damit
+sicherheitskritisch. Umfang, Aufbewahrung, Leseberechtigung und Auswertung des
+Auditlogs sind noch nicht abschließend definiert und in
+`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
 
 Therapeut:innen dürfen insbesondere:
 
@@ -170,7 +314,6 @@ Therapeut:innen dürfen insbesondere:
 - Patientenkommunikation durchführen
 - Übungen freigeben
 
-
 ### 4.3 Praxismanagement / Office
 
 Standardmäßig Zugriff auf organisatorische Informationen:
@@ -185,12 +328,16 @@ Standardmäßig Zugriff auf organisatorische Informationen:
 - Mitarbeiterorganisation
 - Belege, soweit erforderlich
 
-Standardmäßig KEIN Zugriff auf vollständige klinische Dokumentationen.
+**Office hat standardmäßig KEINEN Zugriff auf klinischen Freitext und keinen
+Zugriff auf vollständige klinische Dokumentationen.**
 
+Vorgesehen bleiben ein organisatorischer Behandlungsnachweis (§4.4) und später
+kontrollierte Sonderfreigaben (§4.4).
 
 ### 4.4 Sonderfall Behandlungsnachweis
 
-Für organisatorische Konflikte soll ein eigener datensparsamer Behandlungsnachweis existieren.
+Für organisatorische Konflikte MUSS ein eigener datensparsamer
+Behandlungsnachweis existieren.
 
 Beispiel:
 
@@ -207,16 +354,23 @@ Das Office darf dafür sehen:
 - Zeitpunkt der Dokumentation
 - gegebenenfalls Signatur/Bestätigung der Behandlung
 
-Das Office soll hierfür NICHT automatisch den medizinischen Inhalt der Behandlung sehen.
+Das Office DARF hierfür NICHT automatisch den medizinischen Inhalt der
+Behandlung sehen.
 
-Falls vollständige klinische Dokumentation für einen konkreten Vorgang erforderlich ist, soll später ein fallbezogener, zeitlich begrenzter und protokollierter Zugriff ermöglicht werden.
+Falls vollständige klinische Dokumentation für einen konkreten Vorgang
+erforderlich ist, ist ein fallbezogener, zeitlich begrenzter und
+protokollierter Zugriff vorgesehen.
 
-Dieser Zugriff muss durch eine dazu berechtigte Rolle freigegeben werden.
+Dieser Zugriff MUSS durch eine dazu berechtigte Rolle freigegeben werden.
 
+Ob die Angabe „erbrachte Leistung" als organisatorische oder als klinische
+Information einzustufen ist, ist noch nicht entschieden und in
+`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
 
 ### 4.5 Teamleitung
 
-Teamleitung erhält alle Rechte eines Therapeuten sowie definierte organisatorische Zusatzrechte.
+Teamleitung erhält alle Rechte eines Therapeuten sowie definierte
+organisatorische Zusatzrechte.
 
 Mögliche Zusatzrechte:
 
@@ -228,12 +382,18 @@ Mögliche Zusatzrechte:
 
 Teamleitung ist keine technische Administratorrolle.
 
-
 ### 4.6 Patient
 
-Patienten dürfen ausschließlich ihre eigenen Daten sehen.
+Patienten DÜRFEN ausschließlich ihre eigenen Daten sehen.
 
-Das Patientenportal soll perspektivisch enthalten:
+**Patientenaccount und medizinische Akte sind getrennte Konzepte.** Ein
+Benutzerkonto ist ein Zugangsmittel; die Akte ist ein fachlicher,
+aufbewahrungspflichtiger Datenbestand. Das Löschen oder Sperren eines
+Patientenaccounts DARF die Akte nicht löschen, und das Bestehen einer Akte
+setzt keinen Account voraus (§18,
+[ADR-008](docs/adr/ADR-008-data-retention-and-deletion.md)).
+
+Für das Patientenportal sind vorgesehen:
 
 - eigene Termine
 - Terminanfragen und Änderungswünsche
@@ -247,24 +407,50 @@ Das Patientenportal soll perspektivisch enthalten:
 - freigegebene Dokumente
 - sichere Kommunikation mit der Praxis
 
-Patienten erhalten nicht automatisch Zugriff auf sämtliche internen klinischen oder organisatorischen Notizen.
+Patienten erhalten nicht automatisch Zugriff auf sämtliche internen klinischen
+oder organisatorischen Notizen.
+
+Identitätsprüfung von Patienten sowie Vertretungs- und Angehörigenzugriff sind
+noch nicht entschieden und in `docs/decisions/OPEN_DECISIONS.md` als offener
+Punkt geführt.
+
+### 4.7 Durchsetzung der Berechtigungen
+
+Berechtigungen MÜSSEN über einen zentralen Policy-/Authorization-Layer
+durchgesetzt werden, kombiniert mit Datenbank-RLS als Defense-in-Depth.
+
+Suche, Dateien, Exporte und spätere KI-/RAG-Funktionen MÜSSEN dieselben
+Berechtigungsregeln respektieren.
+
+Antworten der Anwendung MÜSSEN rollenabhängige Projektionen sein. Geschützte
+Inhalte DÜRFEN NICHT ausgeliefert und erst im Client ausgeblendet werden.
+
+Einzelheiten: [ADR-004](docs/adr/ADR-004-authorization-model.md).
 
 
 ## 5. Klinische Dokumentation
 
-Behandlungsdokumentationen müssen nachvollziehbar gespeichert werden.
+Behandlungsdokumentationen MÜSSEN nachvollziehbar gespeichert werden.
 
-Eine finalisierte Dokumentation darf nicht unbemerkt überschrieben werden.
+Eine finalisierte Dokumentation MUSS gegen unbemerktes Überschreiben
+geschützt sein.
 
-Änderungen müssen grundsätzlich nachvollziehbar bleiben.
+Änderungen MÜSSEN nachvollziehbar bleiben.
 
-Zu berücksichtigen sind mindestens:
+Erfasst werden MÜSSEN mindestens:
 
 - Autor
 - Erstellungszeitpunkt
 - Zeitpunkt späterer Änderungen
 - ursprüngliche Version
 - geänderte Version
+
+Die Finalisierung ist ein serverseitiger Vorgang und offline nicht möglich
+(§2.2, [ADR-001](docs/adr/ADR-001-online-first-limited-offline.md)).
+
+Der konkrete technische Mechanismus der Nachvollziehbarkeit — Versionierung
+gegenüber Änderungsprotokoll — ist noch nicht entschieden und in
+`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
 
 
 ## 6. KI
@@ -283,7 +469,7 @@ KI darf insbesondere:
 - mögliche Auffälligkeiten markieren
 - Termin- und Tourenoptionen vorschlagen
 
-KI darf nicht autonom:
+KI DARF NICHT autonom:
 
 - Diagnosen stellen
 - Red Flags ausschließen
@@ -292,14 +478,27 @@ KI darf nicht autonom:
 - Nachrichten mit relevanten Folgen ungeprüft versenden
 - Patientenakten endgültig verändern
 
+KI-Ergebnisse mit klinischer oder externer Wirkung sind Entwürfe bis zur
+menschlichen Freigabe.
+
+Der konkrete KI-Anbieter ist keine Architekturabhängigkeit. Die Anwendung MUSS
+vollständig ohne aktiven externen KI-Anbieter funktionieren.
 
 ### 6.1 AI Privacy Gateway
 
-Produktionsdaten sollen nicht beliebig aus einzelnen Programmteilen direkt an externe KI-Anbieter gesendet werden.
+Produktionsdaten DÜRFEN NICHT aus einzelnen Programmteilen direkt an externe
+KI-Anbieter gesendet werden.
 
-Langfristig soll ein zentraler AI-Service bzw. Privacy Gateway verwendet werden.
+**Ab dem ersten produktiven KI-Feature MÜSSEN alle KI-Aufrufe über einen
+zentralen, providerunabhängigen AI-Service beziehungsweise ein Privacy Gateway
+laufen. Direkte Provideraufrufe aus Fachmodulen sind nicht erlaubt.**
 
-Dieser soll kontrollieren:
+Der Gateway ist ab dem ersten KI-Feature die einzige Schnittstelle nach
+außen — auch in Entwicklung und Test, dort gegen einen Mock Provider. Die
+MUSS-Verbindlichkeit für den Produktivbetrieb gilt spätestens ab dem ersten
+produktiven KI-Feature.
+
+Der Gateway MUSS kontrollieren:
 
 - Benutzerberechtigung
 - Verarbeitungszweck
@@ -310,27 +509,51 @@ Dieser soll kontrollieren:
 - Logging
 - Fehlerbehandlung
 
-Direkte Identifikatoren sollen möglichst nicht an das Sprachmodell übertragen werden, wenn sie für die Aufgabe nicht erforderlich sind.
+Direkte Identifikatoren SOLLTEN nicht an das Sprachmodell übertragen werden,
+wenn sie für die Aufgabe nicht erforderlich sind. Pseudonymisierung allein
+ersetzt bei klinischem Freitext keine vertraglichen Zusagen; die Anforderungen
+an den Anbieter regelt §3.5.
+
+Ein Produktionsprovider DARF erst nach Datenschutz-, Vertrags- und
+Security-Prüfung freigeschaltet werden. Bis zur Providerentscheidung wird ein
+Mock Provider verwendet.
+
+Einzelheiten: [ADR-005](docs/adr/ADR-005-provider-independent-ai.md).
+
+### 6.2 Trennung von KI und deterministischer Berechnung
+
+LLM-Funktionen und deterministische klinische oder administrative Berechnungen
+MÜSSEN architektonisch getrennt bleiben.
+
+Regelbasierte Hinweise (§7.1), Rechnungsbeträge, Steuerinformationen, Fristen
+sowie Termin- und Fahrzeitberechnungen MÜSSEN deterministisch, versionierbar
+und testbar entstehen. Ein Sprachmodell DARF NICHT im Ergebnispfad dieser
+Werte stehen.
 
 
 ## 7. Fragebögen
 
-Fragebögen werden nicht lediglich als PDFs gespeichert, sondern soweit sinnvoll als strukturierte digitale Formulare modelliert.
+Fragebögen werden nicht lediglich als PDFs gespeichert, sondern soweit
+sinnvoll als strukturierte digitale Formulare modelliert.
 
 Jeder Fragebogen benötigt eine Version.
 
-Bereits abgeschlossene Fragebögen bleiben in der beantworteten Version erhalten.
+Bereits abgeschlossene Fragebögen bleiben in der beantworteten Version
+erhalten.
 
-Der initiale Anamnesebogen basiert auf dem von DIGOTOR bereitgestellten Anamnesebogen Version 8 / 07-2026.
+Der initiale Anamnesebogen basiert auf dem von DIGOTOR bereitgestellten
+Anamnesebogen Version 8 / 07-2026.
 
-Spätere Fragebögen und PROMs werden über eine zentrale Instrumentenbibliothek verwaltet.
-
+Spätere Fragebögen und PROMs werden über eine zentrale Instrumentenbibliothek
+verwaltet.
 
 ### 7.1 Red Flags
 
-Keine erfundenen automatischen Diagnosen oder proprietären „Red-Flag-Scores“.
+Es DÜRFEN keine erfundenen automatischen Diagnosen oder proprietären
+„Red-Flag-Scores" erzeugt werden.
 
-Die Anwendung darf anhand transparenter definierter Regeln auffällige Angaben hervorheben.
+Die Anwendung DARF anhand transparenter definierter Regeln auffällige Angaben
+hervorheben.
 
 Beispiel:
 
@@ -340,12 +563,18 @@ Tumoranamnese + aktueller unerklärlicher Gewichtsverlust
 
 Die Entscheidung trifft der Therapeut.
 
+Hervorgehoben werden DÜRFEN Patientenangaben unverändert beziehungsweise
+eindeutig auf ihre Quelle zurückführbar. Eine eigene klinische Bewertung
+dieser Angaben in Form einer Risikoklasse, eines Scores oder einer
+Handlungsempfehlung DARF NICHT erzeugt werden (§17).
+
 
 ## 8. Terminplanung
 
 Bestätigte Termine werden grundsätzlich als fix behandelt.
 
-Eine automatische Optimierung darf bestätigte Patiententermine nicht ungefragt verschieben.
+Eine automatische Optimierung DARF bestätigte Patiententermine NICHT ungefragt
+verschieben.
 
 Patienten können:
 
@@ -353,7 +582,7 @@ Patienten können:
 - mögliche Zeitfenster nennen
 - vom System angebotene Alternativen auswählen
 
-Die Terminplanung soll später berücksichtigen:
+Die Terminplanung berücksichtigt in einer späteren Ausbaustufe:
 
 Harte Constraints:
 
@@ -371,21 +600,31 @@ Weiche Constraints:
 - möglichst gleicher Therapeut
 - gleichmäßige Arbeitsbelastung
 
+Der Zustandsautomat des Termins ist noch nicht definiert und in
+`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
+
 
 ## 9. Routenplanung
 
-Routen und Fahrzeiten sollen über einen professionellen Kartendienst integriert werden.
+Routen und Fahrzeiten MÜSSEN über einen professionellen Kartendienst
+integriert werden.
 
-Keine eigene Routing-Engine entwickeln.
+Es DARF keine eigene Routing-Engine entwickelt werden.
 
-Die Anwendung soll zunächst insbesondere erkennen können:
+In der ersten Ausbaustufe erkennt die Anwendung insbesondere:
 
 - ob zwei Termine zeitlich erreichbar sind
 - benötigte Fahrzeit
 - sinnvolle Reihenfolge von Hausbesuchen
 - Auswirkungen einer Terminänderung
 
-Später kann eine automatische Tourenoptimierung ergänzt werden.
+Später KANN eine automatische Tourenoptimierung ergänzt werden.
+
+Ein Kartendienst ist ein Dienstleister mit Zugang zu Patientendaten im Sinne
+von §3.5, da eine Adresse in Verbindung mit einem Behandlungstermin
+personenbezogen ist.
+
+Routing-Rohdaten unterliegen einer kurzen Speicherfrist (§18).
 
 
 ## 10. Kommunikation
@@ -404,11 +643,22 @@ Slack-artige Teamkommunikation mit:
 - Anhängen
 - Benachrichtigungen
 
+Der interne Teamchat unterliegt einer rollierenden Speicherfrist. Dauerhaft
+relevante Inhalte MÜSSEN in den dafür vorgesehenen Fachprozess übernommen
+werden (§18).
+
 ### Patientenkommunikation
 
-Patientenkommunikation gehört zum jeweiligen Patienten und darf nicht mit internem Teamchat vermischt werden.
+Patientenkommunikation gehört zum jeweiligen Patienten und DARF NICHT mit
+internem Teamchat vermischt werden.
 
-Medizinisch relevante Inhalte sollen der Patientenakte zugeordnet werden können.
+Medizinisch relevante Inhalte MÜSSEN der Patientenakte zugeordnet werden
+können.
+
+Wie klinische Inhalte innerhalb der Patientenkommunikation klassifiziert
+werden und wie sich das zum Office-Zugriff nach §4.3 verhält, ist noch nicht
+entschieden und in `docs/decisions/OPEN_DECISIONS.md` als offener Punkt
+geführt.
 
 
 ## 11. Softwareentwicklung
@@ -426,7 +676,7 @@ Claude Code darf:
 - Design implementieren
 - Dokumentation erstellen
 
-Claude Code soll NICHT ohne expliziten Auftrag:
+Claude Code DARF NICHT ohne expliziten Auftrag:
 
 - wesentliche Architektur wechseln
 - neue externe Anbieter einführen
@@ -435,10 +685,12 @@ Claude Code soll NICHT ohne expliziten Auftrag:
 - vorhandene Features entfernen
 - Produktanforderungen eigenständig ändern
 
+Für Coding- und KI-Entwicklungswerkzeuge gilt zusätzlich die Regel aus §3.1.
+
 
 ## 12. Qualität
 
-Kritische Funktionen benötigen Tests.
+Kritische Funktionen MÜSSEN Tests haben.
 
 Besonders kritisch sind:
 
@@ -450,12 +702,13 @@ Besonders kritisch sind:
 - KI-Datenflüsse
 - Rechnungsdaten
 
-Security oder Datenschutz dürfen nicht zur schnellen Fertigstellung eines Features umgangen werden.
+Security oder Datenschutz DÜRFEN NICHT zur schnellen Fertigstellung eines
+Features umgangen werden.
 
 
 ## 13. Fehlerbehandlung
 
-Ein Fehler darf niemals unbemerkt:
+Ein Fehler DARF NIEMALS unbemerkt:
 
 - Patientendaten einem falschen Patienten zuordnen
 - Daten anderer Patienten offenlegen
@@ -464,14 +717,20 @@ Ein Fehler darf niemals unbemerkt:
 - Rechnungen falsch zuordnen
 - Zugriffsrechte erweitern
 
-Bei unsicherem Zustand soll das System lieber eine Aktion blockieren und einen verständlichen Fehler anzeigen.
+Bei unsicherem Zustand SOLLTE das System eine Aktion blockieren und einen
+verständlichen Fehler anzeigen.
+
+Dieses Blockieren bezieht sich auf schreibende und offenlegende Vorgänge. Für
+den lesenden Zugriff der behandelnden Person am Patienten kann Blockieren
+selbst ein Risiko sein; ein Notfallzugriffskonzept ist noch nicht entschieden
+und in `docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
 
 
 ## 14. Skalierbarkeit
 
 Die erste Version wird für eine einzelne Praxis entwickelt.
 
-Das Datenmodell sollte spätere Erweiterungen jedoch nicht unnötig verhindern:
+Das Datenmodell SOLLTE spätere Erweiterungen nicht unnötig verhindern:
 
 - weitere Mitarbeiter
 - mehrere Standorte
@@ -481,7 +740,14 @@ Das Datenmodell sollte spätere Erweiterungen jedoch nicht unnötig verhindern:
 - Wearables
 - spätere Vermarktung der Software
 
-Diese Funktionen sollen aber nicht ohne konkreten Auftrag vorzeitig implementiert werden.
+Diese Funktionen DÜRFEN NICHT ohne konkreten Auftrag vorzeitig implementiert
+werden.
+
+Konkret umgesetzt wird davon ausschließlich die minimale Vorbereitung nach
+[ADR-003](docs/adr/ADR-003-organization-location-model.md): `organization_id`
+und, wo fachlich sinnvoll, `location_id` ab der ersten Datenbankarchitektur.
+Eine Tenant-Switching-UI, SaaS-Onboarding und SaaS-Abrechnung sind
+ausdrücklich nicht Bestandteil.
 
 
 ## 15. Projektmanagement
@@ -523,3 +789,169 @@ Performance
 Entwicklungsgeschwindigkeit
 >
 zusätzliche Features
+
+
+## 17. Regulatorische Abgrenzung
+
+Die erste Produktversion wird NICHT mit der Zweckbestimmung entwickelt,
+diagnostische oder therapeutische Entscheidungen zu treffen oder entsprechende
+Empfehlungen bereitzustellen.
+
+Die Anwendung DARF Gesundheitsinformationen erfassen, speichern, strukturieren
+und darstellen sowie transparente mathematische Berechnungen validierter
+Instrumente durchführen.
+
+Die Anwendung DARF in V1 keine eigenen klinischen Risikoklassifikationen,
+Differentialdiagnosen, Therapieempfehlungen, Behandlungsauswahl oder
+automatisierten klinischen Entscheidungen erzeugen.
+
+Generative KI wird in V1 für Dokumentation, sprachliche Transformation,
+Zusammenfassung und administrative Assistenz eingesetzt. Sie DARF keine neue
+klinische Interpretation hinzufügen, die als Grundlage einer diagnostischen
+oder therapeutischen Entscheidung bestimmt ist.
+
+Features, die diese Grenze möglicherweise überschreiten, MÜSSEN als
+`MDR_REVIEW_REQUIRED` klassifiziert werden und DÜRFEN vor einer dokumentierten
+regulatorischen Prüfung nicht produktiv aktiviert werden.
+
+Vor Produktivstart MÜSSEN Zweckbestimmung und Abgrenzung gegenüber Medical
+Device Software anhand der dann aktuellen MDR-/MDCG-Regeln extern überprüft
+werden.
+
+Einzelheiten: [ADR-006](docs/adr/ADR-006-medical-device-boundary.md).
+
+
+## 18. Aufbewahrung und Löschung
+
+Personenbezogene Daten MÜSSEN Datenklassen zugeordnet und entsprechend eines
+dokumentierten Retention Schedules verarbeitet werden.
+
+Gesetzliche Aufbewahrungspflichten haben Vorrang vor regulärer Löschung.
+
+Nach Ablauf des jeweiligen Zwecks und aller Aufbewahrungsgründe MUSS eine
+echte Löschung erfolgen. **Ein dauerhaftes Soft-Delete ersetzt die gesetzlich
+beziehungsweise datenschutzrechtlich erforderliche endgültige Löschung
+NICHT.**
+
+Klinische Behandlungsunterlagen werden grundsätzlich zehn Jahre nach Abschluss
+der Behandlung aufbewahrt. Steuerlich relevante Rechnungen und Buchungsbelege
+folgen der jeweils geltenden steuerrechtlichen Aufbewahrungsfrist. Operative
+Daten wie Routinginformationen, kurzfristige KI-Entwürfe und Terminanfragen
+erhalten deutlich kürzere Speicherfristen.
+
+Ein dokumentierter Legal-Hold-Mechanismus MUSS die automatische Löschung
+während laufender rechtlicher oder regulatorischer Vorgänge verhindern.
+
+Backups DÜRFEN gelöschte Daten bis zum Ende des definierten
+Backup-Lebenszyklus enthalten; solche Daten DÜRFEN NICHT regulär zugänglich
+sein. Nach einer Wiederherstellung MÜSSEN seit Backup-Erstellung wirksam
+gewordene Löschungen erneut angewendet werden.
+
+Accounts und Authentifizierungsdaten MÜSSEN getrennt von
+aufbewahrungspflichtigen fachlichen Datensätzen behandelt werden (§4.6).
+
+Der vollständige initiale Retention Schedule steht in
+[ADR-008](docs/adr/ADR-008-data-retention-and-deletion.md). Fristen ohne
+unmittelbare gesetzliche Vorgabe sind interne Initialentscheidungen und MÜSSEN
+vor Produktivstart im Datenschutz-/DSFA-Prozess (§3.7) validiert werden.
+
+
+## 19. Abrechnung
+
+Die erste Produktversion führt die Privatabrechnung innerhalb der Plattform
+durch. Factoring beziehungsweise externe Abrechnungsdienstleister sind nicht
+Bestandteil von V1.
+
+Patient und Rechnungsempfänger MÜSSEN als getrennte Entitäten modelliert
+werden.
+
+Abrechenbare Leistungen existieren unabhängig von Rechnungen und werden aus
+durchgeführten Terminen beziehungsweise anderen abrechenbaren Ereignissen
+erzeugt. Eine Leistung DARF NICHT unbeabsichtigt mehrfach abgerechnet werden.
+
+Leistungskatalog und Preisvereinbarungen MÜSSEN versioniert werden.
+Historische Leistungen und Rechnungen DÜRFEN durch spätere Preisänderungen
+NICHT verändert werden.
+
+Steuerliche Eigenschaften MÜSSEN explizit pro Leistung beziehungsweise
+Leistungsversion gespeichert werden und DÜRFEN NICHT durch KI bestimmt werden
+(§6.2).
+
+Eine Rechnungsnummer wird erst bei Ausstellung vergeben. Die Vergabe MUSS
+eindeutig erfolgen, und eine einmal vergebene Nummer DARF NICHT
+wiederverwendet werden.
+
+**Eine ausgestellte Rechnung ist unveränderbar.** Korrekturen erfolgen durch
+nachvollziehbare Korrektur-/Stornodokumente und gegebenenfalls eine neue
+Rechnung.
+
+Beim Ausstellen MÜSSEN alle rechnungsrelevanten Stammdaten, Leistungsdaten,
+Preise und Steuerinformationen als historischer Snapshot gespeichert werden.
+Das ausgestellte Rechnungsdokument MUSS in seiner damaligen Form aufbewahrt
+werden.
+
+Zahlungen MÜSSEN als eigene Transaktionen modelliert werden und Teilzahlungen
+sowie spätere Rückzahlungen ermöglichen.
+
+Therapeutische Leistungen SOLLTEN erst endgültig fakturiert werden können,
+wenn die zugehörige Dokumentation finalisiert ist. Berechtigte Overrides
+MÜSSEN begründet und protokolliert werden.
+
+V1 unterstützt PDF-Rechnungen für private Rechnungsempfänger. Die Architektur
+DARF spätere strukturierte E-Rechnungen NICHT verhindern.
+
+Einzelheiten einschließlich der Rechnungszustände:
+[ADR-009](docs/adr/ADR-009-private-billing-model.md).
+
+
+## 20. Beschäftigtendaten
+
+Routenplanung (§9) und Arbeitszeiterfassung (§1) erzeugen Daten über
+Beschäftigte. Diese sind personenbezogene Daten und unterliegen zusätzlich den
+Grenzen des Beschäftigtendatenschutzes.
+
+**Eine permanente GPS- oder Live-Ortung von Mitarbeiter:innen findet NICHT
+statt.**
+
+Tourendaten dienen der Einsatz- und Routenplanung sowie der Abrechnung, nicht
+der Verhaltens- oder Leistungskontrolle.
+
+Routing-Rohdaten unterliegen einer kurzen Speicherfrist (§18).
+
+Ob und in welcher Form aggregierte Auswertungen zulässig sind, ist noch nicht
+abschließend entschieden und in `docs/decisions/OPEN_DECISIONS.md` als offener
+Punkt geführt.
+
+
+## 21. Governance dieses Dokuments
+
+Dieses Dokument beschreibt die verbindlichen Produkt-, Sicherheits- und
+Datenschutzprinzipien.
+
+Es steht in folgendem Verhältnis zu den übrigen Dokumenten:
+
+- `PROJECT_PRINCIPLES.md` — die Prinzipien. Verbindlich, versioniert.
+- `docs/adr/` — Architecture Decision Records. Getroffene Entscheidungen mit
+  Kontext, Konsequenzen und offenen Folgefragen.
+- `docs/decisions/OPEN_DECISIONS.md` — was noch nicht entschieden ist.
+
+Widerspricht ein ADR diesem Dokument, ist das ein Fehler und MUSS aufgelöst
+werden. Wird durch einen ADR eine Prinzipienaussage geändert, MUSS dieses
+Dokument in einer neuen Version nachgezogen werden.
+
+Angenommene ADRs zum Stand dieser Version:
+
+| ADR | Gegenstand | Konsolidiert in |
+|---|---|---|
+| ADR-001 | Online-first mit begrenzter Offline-Fähigkeit | §2.2, §5 |
+| ADR-002 | Hosting und Datenstandort | §3.2, §3.5, §3.6 |
+| ADR-003 | `organization_id` und `location_id` | §1, §14 |
+| ADR-004 | Berechtigungsmodell | §4 |
+| ADR-005 | Providerunabhängige KI-Anbindung | §6, §6.1, §6.2 |
+| ADR-006 | Abgrenzung gegenüber Medical Device Software | §7.1, §17 |
+| ADR-007 | Datenschutz-Folgenabschätzung und Datenschutzprozess | §3.7 |
+| ADR-008 | Aufbewahrung und Löschung | §4.6, §10, §18 |
+| ADR-009 | Privatabrechnung | §19 |
+
+Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
+Dokumentversion und ergänztem Änderungsvermerk.
