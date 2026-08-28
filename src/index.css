@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+
+/* =============================================================================
+   Temporäre, neutrale Designsprache.
+
+   Bewusst kein Branding (ADR-015). Ziel ist eine ruhige, medizinisch
+   professionelle Oberfläche: viel Weißraum, wenige Flächen, klare Hierarchie
+   über Typografie statt über Kästen.
+
+   Die Farbwerte sind zurückhaltend gewählt und auf Kontrast geprüft; Fließtext
+   und Bedienelemente erreichen mindestens WCAG AA.
+   ============================================================================= */
+
+@theme {
+  --color-canvas: oklch(98.6% 0.004 106);
+  --color-surface: oklch(100% 0 0);
+  --color-surface-sunken: oklch(96.8% 0.005 106);
+
+  --color-ink: oklch(24% 0.012 250);
+  --color-ink-muted: oklch(48% 0.012 250);
+  --color-ink-subtle: oklch(60% 0.01 250);
+
+  --color-line: oklch(90% 0.006 250);
+  --color-line-strong: oklch(82% 0.008 250);
+
+  /* Ruhiges Petrol als Akzent - medizinisch konnotiert, nicht knallig. */
+  --color-accent: oklch(48% 0.075 205);
+  --color-accent-hover: oklch(42% 0.078 205);
+  --color-accent-soft: oklch(95.5% 0.018 205);
+
+  --color-danger: oklch(48% 0.16 25);
+  --color-danger-soft: oklch(96% 0.03 25);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --radius-card: 0.75rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Sichtbarer, konsistenter Fokus. Tastaturbedienung ist Anforderung,
+     nicht Zugabe. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Nutzer:innen mit reduzierter Bewegungspräferenz respektieren. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

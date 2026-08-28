@@ -10,5 +10,7 @@ export default defineConfig({
   },
   server: { port: 5173, strictPort: true },
   preview: { port: 4173, strictPort: true },
-  build: { sourcemap: true },
+  // Keine Sourcemaps im Auslieferungsstand: Sie wuerden den vollstaendigen
+  // Quelltext der Anwendung mit ausliefern (PROJECT_PRINCIPLES.md 16).
+  build: { sourcemap: false },
 });

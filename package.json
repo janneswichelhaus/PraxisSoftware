@@ -23,7 +23,9 @@
     "db:start": "./scripts/test-db.sh start",
     "db:stop": "./scripts/test-db.sh stop",
     "db:reset": "./scripts/test-db.sh reset",
-    "db:apply": "./scripts/apply-migrations.sh"
+    "db:apply": "./scripts/apply-migrations.sh",
+    "scan:secrets": "./scripts/scan-secrets.sh",
+    "audit": "pnpm audit --audit-level=high"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
@@ -50,6 +52,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^6.1.1",
     "eslint-plugin-react-refresh": "^0.4.23",
+    "eslint-plugin-security": "^4.0.1",
     "globals": "^16.4.0",
     "jsdom": "^27.0.0",
     "pg": "^8.16.3",

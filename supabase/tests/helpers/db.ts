@@ -48,6 +48,8 @@ export async function resetDatabase(): Promise<void> {
     const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort();
     if (files.length === 0) throw new Error('Keine Migrationen gefunden.');
     for (const file of files) {
+      // Pfad stammt aus dem festen Migrationsverzeichnis des Repositories.
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       const sql = await readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
       try {
         await client.query(sql);

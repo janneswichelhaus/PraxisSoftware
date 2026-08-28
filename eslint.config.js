@@ -3,6 +3,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import security from 'eslint-plugin-security';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
@@ -11,6 +12,8 @@ export default tseslint.config(
   },
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
+  // Statische Sicherheitsanalyse fuer JavaScript/TypeScript (ADR-013).
+  security.configs.recommended,
   {
     languageOptions: {
       parserOptions: {
@@ -32,6 +35,12 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
 
+      /* detect-object-injection meldet in TypeScript praktisch jeden Zugriff
+         auf ein Record mit typisiertem Schluessel. Der Compiler schliesst hier
+         bereits aus, dass ein beliebiger String als Index landet; die uebrigen
+         Regeln von eslint-plugin-security bleiben aktiv. */
+      'security/detect-object-injection': 'off',
+
       /* ADR-011: keine patientenbezogenen Daten in Logs. console.log ist der
          haeufigste Weg, wie Nutzdaten unbeabsichtigt in Betriebslogs geraten.
          Erlaubt bleiben console.warn/error fuer technische Fehlermeldungen. */
@@ -41,7 +50,7 @@ export default tseslint.config(
       'no-restricted-syntax': [
         'error',
         {
-          selector: "Literal[value=/service_role/i]",
+          selector: 'Literal[value=/service_role/i]',
           message:
             'service_role darf niemals im Anwendungscode oder Browser-Bundle vorkommen (ADR-015).',
         },

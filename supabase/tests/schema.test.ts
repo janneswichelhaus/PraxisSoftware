@@ -98,7 +98,13 @@ describe('Schema-Invarianten', () => {
     const { rows } = await asPostgres<{ key: string }>(
       'select key from public.roles order by sort_order',
     );
-    expect(rows.map((r) => r.key)).toEqual(['owner', 'therapist', 'team_lead', 'office', 'patient']);
+    expect(rows.map((r) => r.key)).toEqual([
+      'owner',
+      'therapist',
+      'team_lead',
+      'office',
+      'patient',
+    ]);
   });
 
   it('legt keine klinischen Felder in patients ab (PROJECT_PRINCIPLES.md 4.6)', async () => {

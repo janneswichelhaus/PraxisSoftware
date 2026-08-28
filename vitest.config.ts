@@ -30,7 +30,6 @@ export default defineConfig({
           // sonst setzen sie sich gegenseitig die Datenbank zurueck.
           pool: 'forks',
           poolOptions: { forks: { singleFork: true } },
-          fileParallelism: false,
           testTimeout: 60_000,
           hookTimeout: 120_000,
         },

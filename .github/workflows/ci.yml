@@ -1,0 +1,144 @@
+# =============================================================================
+# CI nach ADR-013.
+#
+# Fehlgeschlagene Pflichtpruefungen blockieren den Merge. Der main-Branch wird
+# zusaetzlich ueber Branch Protection geschuetzt; das ist eine
+# Repository-Einstellung und kann nicht aus dem Workflow heraus gesetzt werden
+# (siehe docs/DEVELOPMENT.md, "Manuelle Schritte").
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  quality:
+    name: Lint, Typecheck, Tests, Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Lint (inkl. statischer Sicherheitsanalyse)
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit- und Integrationstests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  database:
+    name: Migrationen und RLS-Policies
+    runs-on: ubuntu-latest
+    # Die Berechtigungstests aus ADR-013 laufen gegen eine echte PostgreSQL-
+    # Instanz. Ein Mock waere hier wertlos: geprueft wird die Policy selbst.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrationen und RLS-Tests
+        run: pnpm test:db
+
+  security:
+    name: Secret Scanning und Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Secret Scanning
+        run: pnpm scan:secrets
+
+      - name: Dependency Audit
+        run: pnpm audit --audit-level=high
+
+  e2e:
+    name: End-to-End
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Browser installieren
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: End-to-End-Tests
+        run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

@@ -4,7 +4,10 @@ import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
 const { users, patients, organizationId } = SEED;
 
 async function sichtbarePatienten(userId: string | null): Promise<string[]> {
-  const { rows } = await asUser<{ id: string }>(userId, 'select id from public.patients order by id');
+  const { rows } = await asUser<{ id: string }>(
+    userId,
+    'select id from public.patients order by id',
+  );
   return rows.map((r) => r.id);
 }
 
@@ -48,9 +51,11 @@ describe('RLS: Patientenkartei', () => {
   });
 
   it('zeigt einem Patienten keine anderen Patienten - auch nicht gezielt abgefragt', async () => {
-    const { rows } = await asUser(users.patientMax, 'select id from public.patients where id = $1', [
-      patients.erika,
-    ]);
+    const { rows } = await asUser(
+      users.patientMax,
+      'select id from public.patients where id = $1',
+      [patients.erika],
+    );
     expect(rows).toEqual([]);
   });
 
@@ -74,7 +79,10 @@ describe('RLS: Personen und Mitarbeiter', () => {
   });
 
   it('zeigt einem Patienten ausschliesslich die eigene Person', async () => {
-    const { rows } = await asUser<{ id: string }>(users.patientMax, 'select id from public.persons');
+    const { rows } = await asUser<{ id: string }>(
+      users.patientMax,
+      'select id from public.persons',
+    );
     expect(rows.map((r) => r.id)).toEqual([SEED.persons.max]);
   });
 
@@ -227,8 +235,8 @@ describe('Audit-Log (ADR-010)', () => {
     await expect(asUser(users.ownerTherapist, 'select * from public.audit_log')).rejects.toThrow(
       /permission denied/i,
     );
-    await expect(
-      asUser(users.ownerTherapist, 'delete from public.audit_log'),
-    ).rejects.toThrow(/permission denied/i);
+    await expect(asUser(users.ownerTherapist, 'delete from public.audit_log')).rejects.toThrow(
+      /permission denied/i,
+    );
   });
 });
