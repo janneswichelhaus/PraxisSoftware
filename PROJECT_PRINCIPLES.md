@@ -4,11 +4,24 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.2** |
+| **Dokumentversion** | **0.2.1** |
 | **Änderungsdatum** | **2026-08-28** |
 | Vorversion | 0.1 (Baseline, unverändert im Git-Verlauf erhalten) |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-009, siehe `docs/adr/` |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-014, siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
+
+### Änderungsvermerk 0.2.1
+
+Korrekturversion. Sie behebt ausschließlich Widersprüche, die durch ADR-010 bis
+ADR-014 entstanden sind, und enthält keine stilistischen Änderungen:
+
+- §4.2 bezeichnete Umfang und Aufbewahrung des Auditlogs als offen; das ist
+  seit ADR-010 falsch.
+- §13 bezeichnete ein Notfallzugriffskonzept als offen; ADR-010 stellt fest,
+  dass ein klinischer Break Glass in V1 nicht erforderlich ist.
+- §14 beschränkte die strukturelle Vorbereitung auf ADR-003; ADR-014 legt eine
+  umfassendere verbindliche Liste fest.
+- §21 führte die zitierten ADRs nicht auf.
 
 ### Änderungsvermerk 0.2
 
@@ -296,9 +309,11 @@ Ein individuelles Benutzerkonto ist Pflicht.
 **Zugriffe auf Patientenakten MÜSSEN auditierbar sein.** Da die bewusste
 Offenheit dieser Rolle die naheliegende technische Beschränkung entfernt, ist
 das Auditlog die tragende Kompensationsmaßnahme und damit
-sicherheitskritisch. Umfang, Aufbewahrung, Leseberechtigung und Auswertung des
-Auditlogs sind noch nicht abschließend definiert und in
-`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
+sicherheitskritisch. Der Katalog auditpflichtiger Ereignisse, die Beschränkung
+auf Metadaten ohne klinische Inhalte, die Unveränderbarkeit über den
+Anwendungspfad, die Aufbewahrungsfrist und der monatliche Audit-/Security-Report
+sind in [ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md) geregelt. Wer
+Auditlogs lesen darf, ist dort als offene Folgefrage geführt.
 
 Therapeut:innen dürfen insbesondere:
 
@@ -721,9 +736,12 @@ Bei unsicherem Zustand SOLLTE das System eine Aktion blockieren und einen
 verständlichen Fehler anzeigen.
 
 Dieses Blockieren bezieht sich auf schreibende und offenlegende Vorgänge. Für
-den lesenden Zugriff der behandelnden Person am Patienten kann Blockieren
-selbst ein Risiko sein; ein Notfallzugriffskonzept ist noch nicht entschieden
-und in `docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
+den lesenden Zugriff der behandelnden Person am Patienten entsteht kein
+Konflikt mit der Patientensicherheit, weil nach §4.2 keine Sperre besteht, die
+im Notfall zu überwinden wäre. Ein klinischer Break-Glass-Mechanismus ist
+deshalb in V1 nicht erforderlich; „Break Glass" bezeichnet ausschließlich
+privilegierten technischen Produktionszugriff
+([ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md)).
 
 
 ## 14. Skalierbarkeit
@@ -743,11 +761,16 @@ Das Datenmodell SOLLTE spätere Erweiterungen nicht unnötig verhindern:
 Diese Funktionen DÜRFEN NICHT ohne konkreten Auftrag vorzeitig implementiert
 werden.
 
-Konkret umgesetzt wird davon ausschließlich die minimale Vorbereitung nach
-[ADR-003](docs/adr/ADR-003-organization-location-model.md): `organization_id`
-und, wo fachlich sinnvoll, `location_id` ab der ersten Datenbankarchitektur.
-Eine Tenant-Switching-UI, SaaS-Onboarding und SaaS-Abrechnung sind
-ausdrücklich nicht Bestandteil.
+Umgesetzt wird davon ausschließlich die strukturelle Vorbereitung, die
+[ADR-014](docs/adr/ADR-014-foundational-data-model.md) abschließend auflistet —
+darunter `organization_id` und, wo fachlich sinnvoll, `location_id` ab der
+ersten Datenbankarchitektur nach
+[ADR-003](docs/adr/ADR-003-organization-location-model.md). ADR-014 führt
+zugleich die verbindliche Negativliste dessen, was NICHT prophylaktisch
+implementiert wird; dazu gehören Tenant-Switching-UI, SaaS-Onboarding,
+SaaS-Abrechnung, Abonnements, Wearables, Vektordatenbank/Embeddings und native
+Apps. „Zukunft nicht verbauen" bedeutet ausdrücklich nicht, zukünftige
+Funktionen vorzeitig zu implementieren.
 
 
 ## 15. Projektmanagement
@@ -952,6 +975,11 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-007 | Datenschutz-Folgenabschätzung und Datenschutzprozess | §3.7 |
 | ADR-008 | Aufbewahrung und Löschung | §4.6, §10, §18 |
 | ADR-009 | Privatabrechnung | §19 |
+| ADR-010 | Audit-Logging und privilegierter Produktionszugriff | §3.1, §4.1, §4.2, §13 |
+| ADR-011 | Logging und Observability | §3.6 |
+| ADR-012 | Backup, Wiederherstellung und Betriebskontinuität | §3.4, §13 |
+| ADR-013 | CI/CD und Release-Governance | §11, §12 |
+| ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
 
 Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
 Dokumentversion und ergänztem Änderungsvermerk.
