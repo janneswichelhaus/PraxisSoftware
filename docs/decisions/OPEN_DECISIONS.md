@@ -1,6 +1,18 @@
 # Offene Entscheidungen
 
-Status: **offen** — keine der hier gelisteten Fragen ist entschieden.
+Status: **teilweise entschieden** — die vier Architektur-Grundentscheidungen
+A1 bis A4 sind entschieden und als ADR festgehalten. Alle übrigen Punkte sind
+weiterhin offen.
+
+Zuletzt aktualisiert: 2026-08-28
+
+| Punkt | Entscheidung |
+|---|---|
+| A1 Offline-Fähigkeit | [ADR-001](../adr/ADR-001-online-first-limited-offline.md) |
+| A2 Hosting und Datenstandort | [ADR-002](../adr/ADR-002-hosting-data-residency.md) |
+| A3 organization_id / location_id | [ADR-003](../adr/ADR-003-organization-location-model.md) |
+| A4 Berechtigungsmodell | [ADR-004](../adr/ADR-004-authorization-model.md) |
+| KI-Providerabhängigkeit (Teil von A2/C6) | [ADR-005](../adr/ADR-005-provider-independent-ai.md) — der konkrete Provider bleibt offen |
 
 Dieses Dokument sammelt die Punkte, die aus dem Architektur-Review von
 `PROJECT_PRINCIPLES.md` (Stand: Baseline-Commit) hervorgegangen sind. Es
@@ -30,7 +42,8 @@ Legende Dringlichkeit:
 ## A. Architektur-Grundentscheidungen
 
 Diese vier legen die Architektur fest und sind später nur mit erheblichem
-Umbau korrigierbar.
+Umbau korrigierbar. **Alle vier sind entschieden**; die jeweils verbliebenen
+Detailfragen stehen in den ADRs unter „Offene Folgefragen".
 
 ### A1 — Offline-Fähigkeit der mobilen Anwendung
 
@@ -38,7 +51,7 @@ Umbau korrigierbar.
 |---|---|
 | Dringlichkeit | P0 |
 | Bezug | §2.2, §13, §16 |
-| Status | offen |
+| Status | **entschieden** — [ADR-001](../adr/ADR-001-online-first-limited-offline.md) |
 
 **Frage:** Online-only, offline-fähig oder Mischform (z. B. Lesen der heutigen
 Tour offline, Schreiben als lokale Queue)?
@@ -52,6 +65,14 @@ Geräteverschlüsselung, Geräte-PIN-/Biometriepflicht, BYOD-Regelung,
 Remote-Wipe-Konzept und eine Konfliktauflösung, die §13 erfüllt (additiver
 Merge statt last-write-wins).
 
+**Entschieden am 2026-08-28** — [ADR-001](../adr/ADR-001-online-first-limited-offline.md):
+online-first, keine generelle Offline-Vollakte, begrenzte Offline-Fähigkeit für
+Tagesplan, minimal notwendige Hausbesuchsdaten und nicht finalisierte Entwürfe;
+Finalisierung erst nach Serversynchronisation; kein Last-Write-Wins.
+
+**Weiterhin offen:** der konkrete technische Offline-Mechanismus sowie die
+Geräte- und BYOD-Anforderungen — siehe „Offene Folgefragen" in ADR-001.
+
 ---
 
 ### A2 — Hosting, Datenstandort und Providerauswahl (inkl. §203 StGB)
@@ -60,7 +81,7 @@ Merge statt last-write-wins).
 |---|---|
 | Dringlichkeit | P0 |
 | Bezug | §2.1, §3, §3.4 |
-| Status | offen |
+| Status | **entschieden** — [ADR-002](../adr/ADR-002-hosting-data-residency.md) |
 
 **Frage:** Welche Anbieter für Hosting, Datenbank, Objektspeicher, Mailversand,
 Kartendienst, KI und Error-Tracking? EU-Verarbeitung verpflichtend?
@@ -77,6 +98,18 @@ faktisch aus.
 Fallhöhe: **Error-Tracking** (Stacktraces enthalten regelmäßig Patientendaten)
 — derzeit im Dokument nicht adressiert.
 
+**Entschieden am 2026-08-28** — [ADR-002](../adr/ADR-002-hosting-data-residency.md):
+EU/EWR als Grundsatz für gesundheitsbezogene Produktionsdaten, US-Mutterunternehmen
+nicht pauschal ausgeschlossen, verbindlicher Prüfkatalog je Dienstleister
+(AVV/DPA, §203-Eignung, Verschlüsselung, Zugriffskontrolle, Retention/Löschung,
+Unterauftragnehmer), getrennte Umgebungen für Dev/Test/Prod, keine unnötigen
+Patientendaten und keine medizinischen Freitexte in Produktionslogs.
+
+**Weiterhin offen:** die **Auswahl der konkreten Anbieter** — ADR-002 legt
+ausdrücklich keinen fest. Für die KI-Anbindung gilt zusätzlich
+[ADR-005](../adr/ADR-005-provider-independent-ai.md): der Provider ist keine
+Architekturabhängigkeit, der konkrete Provider bleibt offen.
+
 ---
 
 ### A3 — Mandantenfähigkeit: jetzt vorbereiten oder bewusst verzichten
@@ -85,7 +118,7 @@ Fallhöhe: **Error-Tracking** (Stacktraces enthalten regelmäßig Patientendaten
 |---|---|
 | Dringlichkeit | P0 |
 | Bezug | §1, §11, §14 |
-| Status | offen |
+| Status | **entschieden** — [ADR-003](../adr/ADR-003-organization-location-model.md) |
 
 **Frage:** Werden `organization_id` / `location_id` und eine
 RLS-fähige Datenbank ab der ersten Migration eingeplant — oder wird bewusst
@@ -98,6 +131,14 @@ vorbauen"). Ohne Entscheidung fällt sie implizit im ersten Schema-Entwurf.
 **Blockiert:** erste Migration; nachträgliches Einziehen betrifft jede Query
 und jede Policy.
 
+**Entschieden am 2026-08-28** — [ADR-003](../adr/ADR-003-organization-location-model.md):
+`organization_id` und, wo fachlich sinnvoll, `location_id` ab der ersten
+Datenbankarchitektur; Version 1 läuft für genau eine Organisation; kein
+Tenant-Switching, kein SaaS-Onboarding, keine SaaS-Abrechnung.
+
+**Weiterhin offen:** welche Entitäten `location_id` führen und wie die
+Einhaltung erzwungen wird — siehe „Offene Folgefragen" in ADR-003.
+
 ---
 
 ### A4 — Ort und Granularität der Autorisierung
@@ -106,7 +147,7 @@ und jede Policy.
 |---|---|
 | Dringlichkeit | P0 |
 | Bezug | §4.2, §4.3, §4.4, §12 |
-| Status | offen |
+| Status | **entschieden** — [ADR-004](../adr/ADR-004-authorization-model.md) |
 
 **Frage:** Ein zentraler Policy-Layer plus Datenbank-RLS als
 Defense-in-Depth, oder Prüfungen im Anwendungscode? Rollen als
@@ -121,6 +162,17 @@ Embedding-Store ist eine Kopie klinischer Daten außerhalb des
 Berechtigungsmodells.
 
 **Blockiert:** API-Design, Testbarkeit der Berechtigungen nach §12.
+
+**Entschieden am 2026-08-28** — [ADR-004](../adr/ADR-004-authorization-model.md):
+Mehrfachrollen je Benutzer; Therapeut:innen sehen grundsätzlich alle Akten der
+Organisation; Office ohne Zugriff auf klinische Freitexte; datensparsamer
+Behandlungsnachweis; zentraler Policy-Layer kombiniert mit Datenbank-RLS;
+Suche, Dateien, Exporte und spätere KI-/RAG-Funktionen unterliegen denselben
+Regeln; Audit-Logging verpflichtend; technische Administratorrolle getrennt.
+
+**Weiterhin offen:** Rechtematrix, Audit-Umfang (C4), Break-Glass (C3) und die
+Abgrenzung des Behandlungsnachweises (C1) — siehe „Offene Folgefragen" in
+ADR-004.
 
 ---
 
@@ -317,11 +369,11 @@ und anschließend eine Präzisierung von `PROJECT_PRINCIPLES.md`.
 | C1 | Office soll „erbrachte Leistung" sehen (§4.4), aber keinen medizinischen Inhalt — Leistungsziffern sind selbst klinische Information und stehen ohnehin auf der Rechnung, die Office nach §4.3 sieht. Entweder Leistungsziffern explizit als organisatorische Daten einstufen, oder getrennte Abrechnungsrepräsentation. | §4.3, §4.4 | P1 |
 | C2 | „Medizinisch relevante Inhalte der Akte zuordnen" (§10) trifft auf „Office sieht organisatorische Patientenkommunikation" (§4.3). Patienten schreiben klinische Inhalte in organisatorische Threads. Offen: wer klassifiziert wann, und was passiert mit bereits erfolgter Office-Einsicht. | §4.3, §10 | P1 |
 | C3 | „Im Zweifel blockieren" (§13) gegen „Patientensicherheit zuerst" (§16). Fail-closed ist für Schreiben und Offenlegen richtig, für Lesen durch die behandelnde Therapeutin am Patienten ein Sicherheitsrisiko. Ein Break-Glass-Konzept (Notfallzugriff mit Begründung, Protokollierung, Nachkontrolle) fehlt vollständig. | §13, §16 | P0 |
-| C4 | „Alle Therapeut:innen sehen alle Akten" (§4.2) macht das Audit-Log zur einzigen verbleibenden Schutzmaßnahme, steht aber als schwaches „soll" da. Zu definieren: was als Zugriff zählt (Liste, Suchtreffer, Detailansicht, Export, KI-Zusammenfassung), Aufbewahrung, Leseberechtigung, Manipulationssicherheit — und wer das Log wann auswertet. In einer inhabergeführten Praxis existiert keine echte Funktionstrennung; die kompensierende Maßnahme ist zu benennen. | §4.2, §16 | P0 |
-| C5 | „Eine Plattform, möglichst keine Fremd-UIs" (§2.1) gegen „keine eigene Sicherheitsinfrastruktur" (§3.4): Nutzerverwaltung, Key-Rotation, DB-Konsole und Restore laufen zwangsläufig in Provider-Oberflächen. §4.1 verschiebt die Trennung von Admin- und Alltagsrechten auf „perspektivisch" — ob der Alltags-Account zu Plattform-Admin eskalieren kann, entscheidet sich jedoch beim Setup. | §2.1, §3.4, §4.1 | P0 |
-| C6 | „Langfristig soll ein AI Privacy Gateway verwendet werden" (§6.1) ist selbstaufhebend: das erste KI-Feature wird sonst daran vorbeigebaut. Zusätzlich offen: Pseudonymisierung schützt Freitext-Dokumentation kaum (der Inhalt identifiziert), der reale Schutz liegt im Vertrag (AVV, §203-Verpflichtung, kein Training auf den Daten, EU-Verarbeitung, kurze Retention). | §6.1 | P1 |
-| C7 | §6 (LLM) und §7.1 (deterministische Regel-Engine) stehen unter einem Thema, sind aber verschiedene Systeme mit verschiedener Testbarkeit und Versionierbarkeit. Sprachliche und architektonische Trennung offen. | §6, §7.1 | P1 |
-| C8 | „Erweiterungen nicht verhindern" (§14) gegen „nicht ohne Auftrag vorbauen" (§11) — beide jederzeit zitierbar. Aufzulösen in eine konkrete Liste: was jetzt bezahlt wird (vgl. A3, ferner UUID-PKs, Audit-Spalten, Soft-Delete, zeitzonenbewusste Zeitstempel, Decimal für Geldbeträge) und was vertagt wird. | §11, §14 | P0 |
+| C4 | „Alle Therapeut:innen sehen alle Akten" (§4.2) macht das Audit-Log zur einzigen verbleibenden Schutzmaßnahme, steht aber als schwaches „soll" da. Zu definieren: was als Zugriff zählt (Liste, Suchtreffer, Detailansicht, Export, KI-Zusammenfassung), Aufbewahrung, Leseberechtigung, Manipulationssicherheit — und wer das Log wann auswertet. In einer inhabergeführten Praxis existiert keine echte Funktionstrennung; die kompensierende Maßnahme ist zu benennen. **Teilweise adressiert durch [ADR-004](../adr/ADR-004-authorization-model.md)** (Audit-Logging ist verpflichtend); Umfang, Aufbewahrung, Leseberechtigung und Auswertung bleiben offen. | §4.2, §16 | P0 |
+| C5 | „Eine Plattform, möglichst keine Fremd-UIs" (§2.1) gegen „keine eigene Sicherheitsinfrastruktur" (§3.4): Nutzerverwaltung, Key-Rotation, DB-Konsole und Restore laufen zwangsläufig in Provider-Oberflächen. §4.1 verschiebt die Trennung von Admin- und Alltagsrechten auf „perspektivisch" — ob der Alltags-Account zu Plattform-Admin eskalieren kann, entscheidet sich jedoch beim Setup. **Teilweise adressiert durch [ADR-004](../adr/ADR-004-authorization-model.md)** (technische Administratorrolle wird getrennt); der Umgang mit Provider-Oberflächen und die betriebliche Besetzung bleiben offen. | §2.1, §3.4, §4.1 | P0 |
+| C6 | „Langfristig soll ein AI Privacy Gateway verwendet werden" (§6.1) ist selbstaufhebend: das erste KI-Feature wird sonst daran vorbeigebaut. Zusätzlich offen: Pseudonymisierung schützt Freitext-Dokumentation kaum (der Inhalt identifiziert), der reale Schutz liegt im Vertrag (AVV, §203-Verpflichtung, kein Training auf den Daten, EU-Verarbeitung, kurze Retention). **Adressiert durch [ADR-005](../adr/ADR-005-provider-independent-ai.md)**, soweit es den Zeitpunkt betrifft: der zentrale Gateway gilt ab dem ersten KI-Feature, direkte Provideraufrufe aus Fachmodulen sind unzulässig. Offen bleiben der Schutzumfang (Pseudonymisierung versus vertragliche Zusagen) und die Providerauswahl. | §6.1 | P1 |
+| C7 | §6 (LLM) und §7.1 (deterministische Regel-Engine) stehen unter einem Thema, sind aber verschiedene Systeme mit verschiedener Testbarkeit und Versionierbarkeit. **Die architektonische Trennung ist durch [ADR-005](../adr/ADR-005-provider-independent-ai.md) entschieden** (LLM-Funktionen und deterministische Berechnungen bleiben getrennt); die sprachliche Trennung in `PROJECT_PRINCIPLES.md` bleibt offen. | §6, §7.1 | P1 |
+| C8 | „Erweiterungen nicht verhindern" (§14) gegen „nicht ohne Auftrag vorbauen" (§11) — beide jederzeit zitierbar. Aufzulösen in eine konkrete Liste: was jetzt bezahlt wird (vgl. A3, ferner UUID-PKs, Audit-Spalten, Soft-Delete, zeitzonenbewusste Zeitstempel, Decimal für Geldbeträge) und was vertagt wird. **Teilweise adressiert durch [ADR-003](../adr/ADR-003-organization-location-model.md)** für `organization_id` / `location_id`; die übrigen Positionen der Liste sind noch nicht entschieden. | §11, §14 | P0 |
 
 ---
 
@@ -336,7 +388,7 @@ und anschließend eine Präzisierung von `PROJECT_PRINCIPLES.md`.
 | „organisatorische Patientenkommunikation" | §4.3 | siehe C2 |
 | „Behandlungsnachweis" | §4.4 | siehe C1 |
 | „Praxisinhaber" vs. technischer Admin | §4.1 | siehe C5 |
-| „technisch getrennt" | §3.2 | Wie viele Umgebungen? Darf ein Prod-Backup je in Dev restauriert werden? Wer darf deployen? |
+| „technisch getrennt" | §3.2 | [ADR-002](../adr/ADR-002-hosting-data-residency.md) legt Dev/Test/Prod als getrennte Umgebungen fest. Offen bleiben: weitere Umgebungen, technische Absicherung gegen Prod-Restores in Dev, Deploy-Berechtigungen. |
 
 **Übergreifend:** Das Dokument mischt bindende Anforderungen und
 Absichtserklärungen. „soll", „möglichst", „perspektivisch" und „langfristig"
@@ -355,7 +407,7 @@ Tests zu jedem MUSS, damit §12 überhaupt prüfbar wird.
 | E2 | **Ausfallkonzept.** Was macht die Praxis, wenn die Anwendung einen Tag steht (exportierter Tagesplan, Papier-Fallback)? Folgt aus §16, fehlt im Dokument. | §16 | P1 |
 | E3 | **Backup.** RPO/RTO, Verschlüsselung, Ablageort, Aufbewahrung — und mindestens ein tatsächlich durchgeführter Restore-Test. §3.4 verbietet nur die Eigenentwicklung, Anforderungen fehlen. | §3.4 | P0 |
 | E4 | **Produktionszugriff.** §3.2 fordert individuelle Accounts; bei einem Entwickler ist Funktionstrennung unmöglich. Offen: kompensierende Regel (kein interaktiver Prod-DB-Zugriff im Normalbetrieb, Änderungen nur über Migrationen, Break-Glass mit Protokollierung). | §3.2 | P0 |
-| E5 | **Produktions-Logs.** §3.1 nennt Entwicklungslogs, aber Prod-Logs enthalten regelmäßig Patientenbezüge. Offen: PII-Redaction, Retention, Zugriffsbeschränkung — sowie die explizite Regel, dass KI-Entwicklungswerkzeuge (auch Claude Code) niemals Prod-Credentials oder Prod-Daten erhalten. | §3.1 | P0 |
+| E5 | **Produktions-Logs.** §3.1 nennt Entwicklungslogs, aber Prod-Logs enthalten regelmäßig Patientenbezüge. Offen: PII-Redaction, Retention, Zugriffsbeschränkung — sowie die explizite Regel, dass KI-Entwicklungswerkzeuge (auch Claude Code) niemals Prod-Credentials oder Prod-Daten erhalten. **Teilweise adressiert durch [ADR-002](../adr/ADR-002-hosting-data-residency.md)** (keine unnötigen Patientendaten und keine medizinischen Freitexte in Produktionslogs); Redaction-Umsetzung, Retention, Zugriffsbeschränkung und die Regel zu KI-Entwicklungswerkzeugen bleiben offen. | §3.1 | P0 |
 | E6 | **Synthetische Testdaten.** §3.1 verbietet Echtdaten, verlangt aber keinen Generator. Ohne Generator entsteht Druck, doch Echtdaten zu verwenden. | §3.1 | P1 |
 | E7 | **CI ab dem ersten Commit** mit definierten Gates: Typecheck, Lint, Tests, Migrationsprüfung, Dependency-Audit, Secret-Scanning (§3.3 ist sonst nur eine Bitte). Dazu Branch Protection auf `main`. | §3.3, §12 | P0 |
 | E8 | **Dateiablage.** Belege, Fotos, Patienten-Uploads: Ablageort, Verschlüsselung, Zugriffsregeln, Virenscan bei Patienten-Uploads, signierte URLs mit kurzer Gültigkeit. §12 nennt Dateizugriffe als kritisch, das Dokument regelt sie nirgends. | §12 | P1 |
@@ -370,7 +422,8 @@ Die Reihenfolge ist ein Vorschlag, keine Entscheidung.
 1. **B2** (DSFA-Pflicht, DSB, Verzeichnis/TOM) und **B1** (MDR-/AI-Act-Abgrenzung)
    klären — die einzigen Punkte, für die externe Beratung vor dem Setup
    empfohlen wird.
-2. **A1–A4** entscheiden und je als ADR festhalten.
+2. ~~**A1–A4** entscheiden und je als ADR festhalten.~~ **Erledigt am
+   2026-08-28** (ADR-001 bis ADR-004; ADR-005 ergänzt die KI-Anbindung).
 3. **B3** (Löschkonzept) und **B4** (Abrechnungsmodell) entscheiden — beide
    bestimmen Pflichtfelder im Kern-Schema.
 4. **C1–C8** fachlich auflösen und `PROJECT_PRINCIPLES.md` in einem eigenen

@@ -31,8 +31,8 @@ Kurz halten. Eine Seite reicht fast immer.
 
 ## Dateibenennung
 
-`NNNN-kurzer-titel.md`, fortlaufend nummeriert, zum Beispiel
-`0001-offline-faehigkeit.md`.
+`ADR-NNN-kurzer-titel.md`, fortlaufend nummeriert, zum Beispiel
+`ADR-001-online-first-limited-offline.md`.
 
 ## Wann ein ADR geschrieben wird
 
@@ -53,4 +53,12 @@ Der übliche Weg: Ein Punkt aus `OPEN_DECISIONS.md` wird entschieden, bekommt
 hier ein ADR und wird dort als erledigt markiert. Betrifft die Entscheidung die
 Prinzipien, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit nachgezogen.
 
-Aktuell liegen hier noch keine ADRs.
+## Bestehende ADRs
+
+| ADR | Titel | Status |
+|---|---|---|
+| [ADR-001](ADR-001-online-first-limited-offline.md) | Online-first mit begrenzter Offline-Fähigkeit | Angenommen |
+| [ADR-002](ADR-002-hosting-data-residency.md) | Hosting und Datenstandort | Angenommen |
+| [ADR-003](ADR-003-organization-location-model.md) | organization_id und location_id im Datenmodell | Angenommen |
+| [ADR-004](ADR-004-authorization-model.md) | Berechtigungsmodell | Angenommen |
+| [ADR-005](ADR-005-provider-independent-ai.md) | Providerunabhängige KI-Anbindung | Angenommen |
