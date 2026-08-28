@@ -71,3 +71,4 @@ Prinzipien, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit nachgezogen.
 | [ADR-012](ADR-012-backup-and-business-continuity.md) | Backup, Wiederherstellung und Betriebskontinuität | Angenommen |
 | [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen |
 | [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen |
+| [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen |
