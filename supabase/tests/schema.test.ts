@@ -54,17 +54,51 @@ describe('Schema-Invarianten', () => {
       'locations',
       'persons',
       'staff_members',
+      'staff_private_details',
       'patients',
+      'patient_contact_details',
       'user_profiles',
       'user_roles',
       'audit_log',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
-      `select table_name from information_schema.columns
-       where table_schema = 'public' and column_name = 'organization_id'`,
+      `select c.table_name
+       from information_schema.columns c
+       join information_schema.tables t
+         on t.table_schema = c.table_schema and t.table_name = c.table_name
+       where c.table_schema = 'public'
+         and c.column_name = 'organization_id'
+         and t.table_type = 'BASE TABLE'`,
     );
     const vorhanden = rows.map((r) => r.table_name).sort();
     expect(vorhanden).toEqual([...fachlich].sort());
+  });
+
+  it('beschraenkt persons auf den Identitaetskern (Datenminimierung)', async () => {
+    const { rows } = await asPostgres<{ column_name: string }>(
+      `select column_name from information_schema.columns
+       where table_schema = 'public' and table_name = 'persons'
+       order by column_name`,
+    );
+    expect(rows.map((r) => r.column_name)).toEqual([
+      'created_at',
+      'created_by',
+      'family_name',
+      'given_name',
+      'id',
+      'organization_id',
+    ]);
+  });
+
+  it('wertet die Patientensicht mit den Rechten der aufrufenden Person aus', async () => {
+    // Ohne security_invoker wuerde die Sicht die Policies der Basistabellen
+    // umgehen und mit den Rechten des Eigentuemers laufen.
+    const { rows } = await asPostgres<{ options: string[] | null }>(
+      `select c.reloptions as options
+       from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'public' and c.relname = 'patient_directory'`,
+    );
+    expect(rows[0]?.options ?? []).toContain('security_invoker=true');
   });
 
   it('gibt der Rolle anon keinerlei Tabellenrechte in public', async () => {

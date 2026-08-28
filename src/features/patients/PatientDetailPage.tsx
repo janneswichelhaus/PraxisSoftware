@@ -31,16 +31,15 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function PatientDetail({ patient }: { patient: Patient }) {
-  const person = patient.persons;
-  const age = ageInYears(person.date_of_birth);
-  const address = [person.street, [person.postal_code, person.city].filter(Boolean).join(' ')]
+  const age = ageInYears(patient.date_of_birth);
+  const address = [patient.street, [patient.postal_code, patient.city].filter(Boolean).join(' ')]
     .filter(Boolean)
     .join(', ');
 
   return (
     <>
       <PageHeader
-        title={fullName(person)}
+        title={fullName(patient)}
         description={patient.status === 'inactive' ? 'Nicht in laufender Versorgung' : undefined}
       />
 
@@ -48,8 +47,8 @@ function PatientDetail({ patient }: { patient: Patient }) {
         <DataRow
           label="Geburtsdatum"
           value={
-            person.date_of_birth
-              ? `${formatDate(person.date_of_birth)}${age !== null ? ` (${age} Jahre)` : ''}`
+            patient.date_of_birth
+              ? `${formatDate(patient.date_of_birth)}${age !== null ? ` (${age} Jahre)` : ''}`
               : '—'
           }
         />
@@ -57,8 +56,8 @@ function PatientDetail({ patient }: { patient: Patient }) {
       </Section>
 
       <Section title="Kontakt">
-        <DataRow label="Telefon" value={person.phone ?? '—'} />
-        <DataRow label="E-Mail" value={person.email ?? '—'} />
+        <DataRow label="Telefon" value={patient.phone ?? '—'} />
+        <DataRow label="E-Mail" value={patient.email ?? '—'} />
       </Section>
 
       <Section title="Versorgung">

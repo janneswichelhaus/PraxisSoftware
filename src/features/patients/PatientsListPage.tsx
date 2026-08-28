@@ -9,7 +9,7 @@ import { ageInYears, fetchPatients, fullName, type Patient } from './api';
 function matches(patient: Patient, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
-  return fullName(patient.persons).toLowerCase().includes(needle);
+  return fullName(patient).toLowerCase().includes(needle);
 }
 
 export function PatientsListPage() {
@@ -54,7 +54,7 @@ export function PatientsListPage() {
       {visible.length > 0 ? (
         <ul className="divide-line border-line divide-y border-y">
           {visible.map((patient) => {
-            const age = ageInYears(patient.persons.date_of_birth);
+            const age = ageInYears(patient.date_of_birth);
             return (
               <li key={patient.id}>
                 <Link
@@ -63,11 +63,11 @@ export function PatientsListPage() {
                 >
                   <span className="min-w-0">
                     <span className="text-ink block truncate text-[0.9375rem] font-medium">
-                      {fullName(patient.persons)}
+                      {fullName(patient)}
                     </span>
                     <span className="text-ink-muted mt-0.5 block text-sm">
                       {age !== null ? `${age} Jahre` : 'Geburtsdatum unbekannt'}
-                      {patient.persons.city ? ` · ${patient.persons.city}` : ''}
+                      {patient.city ? ` · ${patient.city}` : ''}
                     </span>
                   </span>
                   {patient.status === 'inactive' ? (

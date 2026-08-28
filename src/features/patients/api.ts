@@ -4,15 +4,22 @@ import { getSupabase } from '@/lib/supabase';
 /**
  * Datenzugriff auf die Patientenkartei.
  *
+ * Gelesen wird die Sicht `patient_directory`. Sie bündelt Identitätskern und
+ * Kontaktdaten, läuft aber mit `security_invoker` - die RLS der Basistabellen
+ * gilt unverändert. Welche Zeilen und welche Kontaktfelder zurückkommen,
+ * entscheidet also weiterhin die Datenbank, nicht diese Abfrage.
+ *
  * Es werden ausschließlich organisatorische Stammdaten gelesen. Klinische
  * Inhalte existieren in diesem Stand nicht (PROJECT_PRINCIPLES.md 4.6, 5).
- *
- * Welche Zeilen zurückkommen, entscheidet RLS - nicht diese Abfrage.
  */
-const personSchema = z.object({
+const patientSchema = z.object({
   id: z.string(),
+  status: z.enum(['active', 'inactive']),
+  care_started_on: z.string().nullable(),
   given_name: z.string(),
   family_name: z.string(),
+  // Kontaktdaten liegen in patient_contact_details und können für eine Rolle
+  // ohne Freigabe fehlen - deshalb durchgängig nullable.
   date_of_birth: z.string().nullable(),
   email: z.string().nullable(),
   phone: z.string().nullable(),
@@ -21,24 +28,16 @@ const personSchema = z.object({
   city: z.string().nullable(),
 });
 
-const patientSchema = z.object({
-  id: z.string(),
-  status: z.enum(['active', 'inactive']),
-  care_started_on: z.string().nullable(),
-  persons: personSchema,
-});
-
 export type Patient = z.infer<typeof patientSchema>;
-export type PatientPerson = z.infer<typeof personSchema>;
 
 const SELECT =
-  'id, status, care_started_on, persons!inner(id, given_name, family_name, date_of_birth, email, phone, street, postal_code, city)';
+  'id, status, care_started_on, given_name, family_name, date_of_birth, email, phone, street, postal_code, city';
 
 export async function fetchPatients(): Promise<Patient[]> {
   const { data, error } = await getSupabase()
-    .from('patients')
+    .from('patient_directory')
     .select(SELECT)
-    .order('family_name', { referencedTable: 'persons', ascending: true });
+    .order('family_name', { ascending: true });
 
   if (error) throw new Error('Die Patientenliste konnte nicht geladen werden.');
   return z.array(patientSchema).parse(data ?? []);
@@ -46,7 +45,7 @@ export async function fetchPatients(): Promise<Patient[]> {
 
 export async function fetchPatient(patientId: string): Promise<Patient | null> {
   const { data, error } = await getSupabase()
-    .from('patients')
+    .from('patient_directory')
     .select(SELECT)
     .eq('id', patientId)
     .maybeSingle();
@@ -73,8 +72,8 @@ export async function logPatientRecordView(patientId: string): Promise<void> {
   }
 }
 
-export function fullName(person: PatientPerson): string {
-  return `${person.given_name} ${person.family_name}`;
+export function fullName(patient: Pick<Patient, 'given_name' | 'family_name'>): string {
+  return `${patient.given_name} ${patient.family_name}`;
 }
 
 export function formatDate(value: string | null): string {

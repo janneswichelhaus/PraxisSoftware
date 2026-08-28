@@ -23,17 +23,14 @@ function patient(
     id,
     status,
     care_started_on: '2026-02-10',
-    persons: {
-      id: `p-${id}`,
-      given_name: given,
-      family_name: family,
-      date_of_birth: '1957-04-30',
-      email: null,
-      phone: null,
-      street: null,
-      postal_code: null,
-      city: 'Tuebingen',
-    },
+    given_name: given,
+    family_name: family,
+    date_of_birth: '1957-04-30',
+    email: null,
+    phone: null,
+    street: null,
+    postal_code: null,
+    city: 'Tuebingen',
   };
 }
 

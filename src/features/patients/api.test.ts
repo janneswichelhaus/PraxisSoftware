@@ -34,18 +34,6 @@ describe('formatDate', () => {
 
 describe('fullName', () => {
   it('setzt Vor- und Nachname zusammen', () => {
-    expect(
-      fullName({
-        id: 'x',
-        given_name: 'Max',
-        family_name: 'Mustermann',
-        date_of_birth: null,
-        email: null,
-        phone: null,
-        street: null,
-        postal_code: null,
-        city: null,
-      }),
-    ).toBe('Max Mustermann');
+    expect(fullName({ given_name: 'Max', family_name: 'Mustermann' })).toBe('Max Mustermann');
   });
 });
