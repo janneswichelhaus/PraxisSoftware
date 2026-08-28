@@ -1,7 +1,9 @@
 # Offene Entscheidungen
 
 Status: **teilweise entschieden** — die vier Architektur-Grundentscheidungen
-A1 bis A4 sind entschieden und als ADR festgehalten. Alle übrigen Punkte sind
+A1 bis A4 sind entschieden und als ADR festgehalten. Für B1 und B2 sind die
+Architektur- beziehungsweise Prozessentscheidungen getroffen; die externe
+Bestätigung steht jeweils vor Produktivstart aus. Alle übrigen Punkte sind
 weiterhin offen.
 
 Zuletzt aktualisiert: 2026-08-28
@@ -12,6 +14,8 @@ Zuletzt aktualisiert: 2026-08-28
 | A2 Hosting und Datenstandort | [ADR-002](../adr/ADR-002-hosting-data-residency.md) |
 | A3 organization_id / location_id | [ADR-003](../adr/ADR-003-organization-location-model.md) |
 | A4 Berechtigungsmodell | [ADR-004](../adr/ADR-004-authorization-model.md) |
+| B1 Abgrenzung Medical Device Software | [ADR-006](../adr/ADR-006-medical-device-boundary.md) — externe Bestätigung vor Produktivstart offen |
+| B2 Datenschutz-Folgenabschätzung und Datenschutzprozess | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md) — Schwellwertprüfung und DSB-Entscheidung vor Produktivstart offen |
 | KI-Providerabhängigkeit (Teil von A2/C6) | [ADR-005](../adr/ADR-005-provider-independent-ai.md) — der konkrete Provider bleibt offen |
 
 Dieses Dokument sammelt die Punkte, die aus dem Architektur-Review von
@@ -184,7 +188,7 @@ ADR-004.
 |---|---|
 | Dringlichkeit | P0 |
 | Bezug | §6, §7.1 |
-| Status | offen |
+| Status | **Architekturentscheidung getroffen – externe regulatorische Bestätigung vor Produktivstart offen** — [ADR-006](../adr/ADR-006-medical-device-boundary.md) |
 
 **Frage:** Wo verläuft die Grenze zwischen zulässiger Hervorhebung und
 entscheidungsunterstützender Funktion? Gilt „ausdrücklich kein Medizinprodukt"
@@ -199,6 +203,20 @@ UI-Darstellung sind Teil der Abgrenzung.
 Kontext. Eine Nicht-Medizinprodukt-Festlegung ist eine architektonische
 Einschränkung, die bestimmte Features verbietet.
 
+**Entschieden am 2026-08-28** — [ADR-006](../adr/ADR-006-medical-device-boundary.md):
+V1 wird ohne diagnostische oder therapeutische Zweckbestimmung entwickelt;
+erlaubt sind Erfassen, Speichern, Strukturieren, Darstellen sowie transparente
+Berechnungen validierter Instrumente und die quellenbezogene Hervorhebung
+unveränderter Patientenangaben; keine eigenen Risikoklassifikationen,
+Differentialdiagnosen, Therapieempfehlungen oder automatisierten klinischen
+Entscheidungen; generative KI ohne neue klinische Interpretation; Grenzfälle
+werden als `MDR_REVIEW_REQUIRED` klassifiziert und bleiben produktiv
+deaktiviert.
+
+**Weiterhin offen:** die **externe regulatorische Prüfung von Zweckbestimmung
+und Abgrenzung vor Produktivstart** sowie die Einordnung nach EU AI Act, die
+ADR-006 ausdrücklich nicht trifft.
+
 ---
 
 ### B2 — Datenschutz-Folgenabschätzung, Art. 30, TOM, DSB, Meldeprozess
@@ -207,7 +225,7 @@ Einschränkung, die bestimmte Features verbietet.
 |---|---|
 | Dringlichkeit | P0 |
 | Bezug | §3 |
-| Status | offen |
+| Status | **Datenschutzprozess entschieden – formale DSFA-Schwellwertprüfung und DSB-Entscheidung vor Produktivstart offen** — [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md) |
 
 **Frage:** Ist eine DSFA nach Art. 35 DSGVO erforderlich (sehr wahrscheinlich
 ja)? Wird ein Datenschutzbeauftragter benötigt? Wer erstellt Verzeichnis der
@@ -220,6 +238,19 @@ bereits Gebaute anzupassen.
 
 **Blockiert:** sinnvoll: das gesamte Setup. Praktisch der einzige Punkt, für
 den externe Beratung vor dem Setup empfohlen wird.
+
+**Entschieden am 2026-08-28** — [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md):
+DSFA vor Verarbeitung realer Patientendaten, unabhängig vom Ergebnis der
+Schwellwertprüfung; DSFA als lebendes Dokument mit acht definierten
+Wiedervorlage-Ereignissen; sieben Vorbedingungen als Produktivstart-Gate
+(Verzeichnis der Verarbeitungstätigkeiten, TOM, Lösch- und
+Aufbewahrungskonzept, Subprozessorenübersicht, Datenschutzinformationen,
+Betroffenenrechte-Verfahren, Data-Breach-Prozess); Entwicklung mit
+ausschließlich synthetischen Daten darf vorher weiterlaufen.
+
+**Weiterhin offen:** die **formale Schwellwertprüfung nach Art. 35 DSGVO** und
+die daran gekoppelte **Entscheidung über die Benennung eines
+Datenschutzbeauftragten** nach §38 Abs. 1 BDSG, beides vor Produktivstart.
 
 ---
 
@@ -419,9 +450,11 @@ Tests zu jedem MUSS, damit §12 überhaupt prüfbar wird.
 
 Die Reihenfolge ist ein Vorschlag, keine Entscheidung.
 
-1. **B2** (DSFA-Pflicht, DSB, Verzeichnis/TOM) und **B1** (MDR-/AI-Act-Abgrenzung)
-   klären — die einzigen Punkte, für die externe Beratung vor dem Setup
-   empfohlen wird.
+1. ~~**B2** (DSFA-Pflicht, DSB, Verzeichnis/TOM) und **B1** (MDR-/AI-Act-Abgrenzung)
+   klären~~ **Am 2026-08-28 intern entschieden** (ADR-006, ADR-007). Die
+   externe Bestätigung — regulatorische Prüfung der Zweckbestimmung und
+   formale DSFA-Schwellwertprüfung inklusive DSB-Entscheidung — ist damit
+   nicht entfallen, sondern auf **vor Produktivstart** terminiert.
 2. ~~**A1–A4** entscheiden und je als ADR festhalten.~~ **Erledigt am
    2026-08-28** (ADR-001 bis ADR-004; ADR-005 ergänzt die KI-Anbindung).
 3. **B3** (Löschkonzept) und **B4** (Abrechnungsmodell) entscheiden — beide
