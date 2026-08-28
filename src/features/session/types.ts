@@ -24,6 +24,11 @@ export function canReadPatientDirectory(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => directoryRoles.includes(role));
 }
 
+/** Administrative Praxisberechtigung (PROJECT_PRINCIPLES.md 4.1). */
+export function isOwner(roles: readonly RoleKey[]): boolean {
+  return roles.includes('owner');
+}
+
 export function isStaff(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => role !== 'patient');
 }

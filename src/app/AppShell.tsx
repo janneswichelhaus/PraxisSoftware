@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
+import { canReadPatientDirectory, isOwner, type CurrentUser } from '@/features/session/types';
 
 interface NavItem {
   to: string;
@@ -12,6 +12,11 @@ function navItems(user: CurrentUser): NavItem[] {
   const items: NavItem[] = [{ to: '/', label: 'Übersicht' }];
   if (canReadPatientDirectory(user.roles)) {
     items.push({ to: '/patienten', label: 'Patient:innen' });
+  }
+  // Nur die administrative Praxisrolle sieht den Sicherheitsbereich
+  // (ADR-010). Die Route ist zusaetzlich serverseitig abgesichert.
+  if (isOwner(user.roles)) {
+    items.push({ to: '/praxis/sicherheit/audit', label: 'Sicherheit' });
   }
   return items;
 }

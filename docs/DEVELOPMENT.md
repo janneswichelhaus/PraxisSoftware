@@ -86,6 +86,40 @@ Steht ein Chromium bereits im System, kann er ohne Download verwendet werden:
 export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium
 ```
 
+## Go-live-Blocker
+
+Diese Punkte **müssen** vor einem Produktivbetrieb mit realen Daten erledigt
+sein. Sie sind bewusst nicht Teil des aktuellen Stands.
+
+1. **Retention und Löschung nach [ADR-008](adr/ADR-008-data-retention-and-deletion.md)
+   sind dokumentiert, aber nicht implementiert.** Es gibt keinen Löschvorgang,
+   keinen Legal Hold und keine Wiederanwendung wirksamer Löschungen nach einem
+   Restore. Die Datenklassen stehen als `COMMENT` an den Tabellen. ADR-008 muss
+   vor Produktivstart technisch umgesetzt **und getestet** sein.
+2. **Providerprüfung für Supabase nach [ADR-002](adr/ADR-002-hosting-data-residency.md)**
+   — ohne dokumentiertes Ergebnis darf kein Cloudprojekt mit personenbezogenen
+   Daten entstehen ([ADR-015](adr/ADR-015-initial-technical-stack.md)).
+3. **Datenschutzprozess nach [ADR-007](adr/ADR-007-data-protection-impact-assessment.md)**
+   inklusive der sieben dort genannten Vorbedingungen.
+4. **Regulatorische Prüfung der Zweckbestimmung nach
+   [ADR-006](adr/ADR-006-medical-device-boundary.md).**
+
+## Audit
+
+Das Auditlog hat **kein** direktes `SELECT`-Recht. Gelesen wird ausschließlich
+über `list_audit_events` — nur für die Rolle `owner`, strikt auf die eigene
+Organisation begrenzt, mit Pagination und Filtern nach Zeitraum, Benutzer und
+Aktion. Die Spalte `context` wird grundsätzlich nicht herausgegeben. Jeder
+Aufruf wird selbst als `audit_log.read` protokolliert.
+
+Geschrieben wird ausschließlich über `log_patient_record_view`. Beide Funktionen
+laufen als `SECURITY DEFINER` mit leerem `search_path` und prüfen Rolle und
+Organisation selbst, weil sie RLS umgehen.
+
+Der Ereigniskatalog steht doppelt: als Check-Constraint auf `audit_log.action`
+und in `src/features/audit/actions.ts`. Ein Datenbanktest hält beide
+deckungsgleich.
+
 ## Bekannte Einschränkungen
 
 1. **E2E-Abläufe hinter der Anmeldung sind nicht automatisiert.** Sie benötigen
@@ -102,6 +136,13 @@ export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium
    für JavaScript/TypeScript, aber kein vollwertiges SAST. Eine Erweiterung ist
    offen.
 5. **Kein Offline-Modus und kein Service Worker** (ADR-015, ADR-001).
+6. **Abgewiesene Zugriffe werden nicht persistiert.** Die Audit-Schreibfunktion
+   bricht mit einer Ausnahme ab, wodurch die Transaktion und damit auch ein
+   Protokolleintrag zurückgerollt würden. Die Spalte `outcome` existiert und
+   trägt derzeit ausschließlich `success`. Für die Erfassung abgewiesener
+   Versuche wäre eine autonome Transaktion nötig — offen.
+7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
+   Auswertung oder Alarmierung.
 
 ## Manuelle Schritte im Repository
 

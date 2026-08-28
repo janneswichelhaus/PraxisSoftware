@@ -52,3 +52,13 @@ test.describe('Anmeldung', () => {
     expect(ueberbreit).toBe(false);
   });
 });
+
+test.describe('Geschuetzte Sonderbereiche', () => {
+  test('gibt den Auditbereich ohne Anmeldung nicht preis', async ({ page }) => {
+    await page.goto('/praxis/sicherheit/audit');
+
+    await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Audit' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Sicherheit' })).toHaveCount(0);
+  });
+});

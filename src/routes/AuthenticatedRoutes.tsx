@@ -3,7 +3,8 @@ import { AppShell } from '@/app/AppShell';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
-import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
+import { AuditLogPage } from '@/features/audit/AuditLogPage';
+import { canReadPatientDirectory, isOwner, type CurrentUser } from '@/features/session/types';
 
 /**
  * Routen des angemeldeten Bereichs.
@@ -21,6 +22,7 @@ export function AuthenticatedRoutes({
   onSignOut: () => void;
 }) {
   const showDirectory = canReadPatientDirectory(user.roles);
+  const showSecurity = isOwner(user.roles);
 
   return (
     <AppShell user={user} onSignOut={onSignOut}>
@@ -32,6 +34,7 @@ export function AuthenticatedRoutes({
             <Route path="/patienten/:patientId" element={<PatientDetailPage />} />
           </>
         ) : null}
+        {showSecurity ? <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} /> : null}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

@@ -304,6 +304,13 @@ Fristen im Datenschutz-/DSFA-Prozess vor Produktivstart**, die abschließende
 steuerrechtliche Bewertung der Belegarten sowie die Definition des
 „Abschlusses der Behandlung" als fachlicher Vorgang.
 
+**Go-live-Blocker (Stand 2026-08-28):** ADR-008 ist entschieden und
+dokumentiert, aber **technisch nicht umgesetzt**. Es existieren kein
+Löschvorgang, kein Legal-Hold-Mechanismus und keine Wiederanwendung wirksamer
+Löschungen nach einem Restore; die Datenklassen sind bislang nur als
+Tabellenkommentare hinterlegt. Die Umsetzung und ihr Test sind Voraussetzung
+für den Produktivbetrieb, siehe `docs/DEVELOPMENT.md`.
+
 ---
 
 ### B4 — Abrechnungsmodell
