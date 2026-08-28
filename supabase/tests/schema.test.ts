@@ -1,0 +1,114 @@
+import { beforeAll, describe, expect, it } from 'vitest';
+import { asAnon, asPostgres, resetDatabase } from './helpers/db';
+
+/**
+ * Strukturelle Invarianten des Datenmodells.
+ *
+ * Diese Tests halten die Zusagen aus ADR-014 und ADR-004 fest, damit sie nicht
+ * bei der naechsten Migration still verloren gehen.
+ */
+describe('Schema-Invarianten', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('aktiviert RLS auf jeder Tabelle in public (deny-by-default, ADR-004)', async () => {
+    const { rows } = await asPostgres<{ tablename: string; rowsecurity: boolean }>(`
+      select tablename, rowsecurity
+      from pg_tables
+      where schemaname = 'public'
+      order by tablename
+    `);
+    expect(rows.length).toBeGreaterThan(0);
+    const ohneRls = rows.filter((r) => !r.rowsecurity).map((r) => r.tablename);
+    expect(ohneRls).toEqual([]);
+  });
+
+  it('verwendet ausschliesslich uuid-Primaerschluessel (ADR-014)', async () => {
+    const { rows } = await asPostgres<{ table_name: string; data_type: string }>(`
+      select c.table_name, c.data_type
+      from information_schema.table_constraints tc
+      join information_schema.key_column_usage k
+        on k.constraint_name = tc.constraint_name and k.table_schema = tc.table_schema
+      join information_schema.columns c
+        on c.table_schema = k.table_schema and c.table_name = k.table_name
+       and c.column_name = k.column_name
+      where tc.constraint_type = 'PRIMARY KEY' and tc.table_schema = 'public'
+    `);
+    // roles ist ein Referenzkatalog mit sprechendem Schluessel; alles andere uuid.
+    const abweichend = rows.filter((r) => r.data_type !== 'uuid' && r.table_name !== 'roles');
+    expect(abweichend).toEqual([]);
+  });
+
+  it('speichert Zeitpunkte zeitzonenbewusst (ADR-014)', async () => {
+    const { rows } = await asPostgres<{ table_name: string; column_name: string }>(`
+      select table_name, column_name
+      from information_schema.columns
+      where table_schema = 'public' and data_type = 'timestamp without time zone'
+    `);
+    expect(rows).toEqual([]);
+  });
+
+  it('fuehrt organization_id auf allen fachlichen Tabellen (ADR-003)', async () => {
+    const fachlich = [
+      'locations',
+      'persons',
+      'staff_members',
+      'patients',
+      'user_profiles',
+      'user_roles',
+      'audit_log',
+    ];
+    const { rows } = await asPostgres<{ table_name: string }>(
+      `select table_name from information_schema.columns
+       where table_schema = 'public' and column_name = 'organization_id'`,
+    );
+    const vorhanden = rows.map((r) => r.table_name).sort();
+    expect(vorhanden).toEqual([...fachlich].sort());
+  });
+
+  it('gibt der Rolle anon keinerlei Tabellenrechte in public', async () => {
+    const { rows } = await asPostgres<{ table_name: string; privilege_type: string }>(`
+      select table_name, privilege_type
+      from information_schema.role_table_grants
+      where table_schema = 'public' and grantee = 'anon'
+    `);
+    expect(rows).toEqual([]);
+  });
+
+  it('laesst anon keine Patientendaten lesen', async () => {
+    await expect(asAnon('select id from public.patients')).rejects.toThrow(/permission denied/i);
+  });
+
+  it('haelt audit_log ueber den Anwendungspfad unerreichbar (ADR-010)', async () => {
+    const { rows: policies } = await asPostgres<{ policyname: string }>(
+      `select policyname from pg_policies where schemaname = 'public' and tablename = 'audit_log'`,
+    );
+    expect(policies).toEqual([]);
+
+    const { rows: grants } = await asPostgres<{ privilege_type: string }>(`
+      select privilege_type from information_schema.role_table_grants
+      where table_schema = 'public' and table_name = 'audit_log'
+        and grantee in ('anon', 'authenticated')
+    `);
+    expect(grants).toEqual([]);
+  });
+
+  it('enthaelt die fuenf Rollen aus PROJECT_PRINCIPLES.md 4', async () => {
+    const { rows } = await asPostgres<{ key: string }>(
+      'select key from public.roles order by sort_order',
+    );
+    expect(rows.map((r) => r.key)).toEqual(['owner', 'therapist', 'team_lead', 'office', 'patient']);
+  });
+
+  it('legt keine klinischen Felder in patients ab (PROJECT_PRINCIPLES.md 4.6)', async () => {
+    const { rows } = await asPostgres<{ column_name: string }>(
+      `select column_name from information_schema.columns
+       where table_schema = 'public' and table_name = 'patients'`,
+    );
+    const spalten = rows.map((r) => r.column_name);
+    for (const verboten of ['diagnosis', 'anamnesis', 'notes', 'findings', 'clinical_notes']) {
+      expect(spalten).not.toContain(verboten);
+    }
+  });
+});

@@ -1,0 +1,62 @@
+# Supabase-Konfiguration fuer die LOKALE Entwicklung.
+#
+# ADR-015: In diesem Stand existiert bewusst kein Remote-/Produktionsprojekt.
+# Ein spaeteres Cloudprojekt mit personenbezogenen Daten MUSS eine explizit
+# freigegebene EU-Region verwenden (Kandidat: Frankfurt eu-central-1) und
+# setzt die dokumentierte Providerpruefung nach ADR-002 voraus.
+
+project_id = "praxissoftware-local"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 200
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 16
+
+[db.pooler]
+enabled = false
+
+[studio]
+enabled = true
+port = 54323
+
+# Lokaler Mailfaenger. Es werden keine echten Mails versendet.
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:5173"
+additional_redirect_urls = ["http://127.0.0.1:5173"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+# Keine Selbstregistrierung: Accounts werden von der Praxis angelegt
+# (PROJECT_PRINCIPLES.md 4.2 - individuelles Benutzerkonto ist Pflicht,
+# aber nicht selbst vergeben).
+enable_signup = false
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = false
+enable_confirmations = false
+double_confirm_changes = true
+
+# Edge Functions sind NICHT fuer produktive Gesundheitsdaten freigegeben
+# (ADR-015). Lokal deaktiviert, damit nichts unbemerkt entsteht.
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false

@@ -1,0 +1,106 @@
+-- =============================================================================
+-- Synthetische Seed-Daten
+--
+-- PROJECT_PRINCIPLES.md 3.1: In Entwicklung, Test und Demonstration werden
+-- AUSSCHLIESSLICH synthetische Daten verwendet. Keine Zeile in dieser Datei
+-- stammt aus einem realen Patientenfall oder aus bestehenden Praxisdaten.
+--
+-- Alle Namen sind erkennbar erfunden, alle E-Mail-Domains liegen unter der
+-- reservierten TLD .invalid (RFC 2606) und koennen nicht zugestellt werden.
+--
+-- Das Kennwort unten ist ein reines Entwicklungskennwort fuer eine lokale
+-- Wegwerf-Datenbank. Es ist KEIN Secret im Sinne von PROJECT_PRINCIPLES.md 3.3
+-- und darf niemals in einer Umgebung mit realen Daten verwendet werden.
+--
+-- Feste UUIDs, damit der Stand aus Migrationen + Seed reproduzierbar ist.
+-- =============================================================================
+
+-- Idempotenz: Seed kann wiederholt eingespielt werden.
+delete from public.audit_log;
+delete from public.user_roles;
+delete from public.user_profiles;
+delete from public.patients;
+delete from public.staff_members;
+delete from public.persons;
+delete from public.locations;
+delete from public.organizations;
+delete from auth.users where email like '%@praxis.invalid' or email like '%@patient.invalid';
+
+-- -----------------------------------------------------------------------------
+-- Accounts (Supabase Auth)
+-- -----------------------------------------------------------------------------
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password,
+  email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+  created_at, updated_at
+)
+values
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000001', 'authenticated', 'authenticated', 'jannes.test@praxis.invalid',      extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000002', 'authenticated', 'authenticated', 'anna.beispiel@praxis.invalid',    extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000003', 'authenticated', 'authenticated', 'olivia.office@praxis.invalid',    extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000004', 'authenticated', 'authenticated', 'tim.teamleitung@praxis.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000005', 'authenticated', 'authenticated', 'max.mustermann@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000006', 'authenticated', 'authenticated', 'erika.beispiel@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now());
+
+-- -----------------------------------------------------------------------------
+-- Organisation und Standort
+-- -----------------------------------------------------------------------------
+insert into public.organizations (id, name) values
+  ('22222222-2222-4222-8222-000000000001', 'Test Praxis Tuebingen');
+
+insert into public.locations (id, organization_id, name) values
+  ('33333333-3333-4333-8333-000000000001', '22222222-2222-4222-8222-000000000001', 'Hauptstandort Tuebingen');
+
+-- -----------------------------------------------------------------------------
+-- Personen
+-- -----------------------------------------------------------------------------
+insert into public.persons (id, organization_id, given_name, family_name, date_of_birth, email, phone, street, postal_code, city) values
+  ('44444444-4444-4444-8444-000000000001', '22222222-2222-4222-8222-000000000001', 'Jannes', 'Test',       '1990-01-15', 'jannes.test@praxis.invalid',     '+49 7071 0000001', 'Teststrasse 1',       '72070', 'Tuebingen'),
+  ('44444444-4444-4444-8444-000000000002', '22222222-2222-4222-8222-000000000001', 'Anna',   'Beispiel',   '1992-06-02', 'anna.beispiel@praxis.invalid',   '+49 7071 0000002', 'Beispielweg 2',       '72072', 'Tuebingen'),
+  ('44444444-4444-4444-8444-000000000003', '22222222-2222-4222-8222-000000000001', 'Olivia', 'Office',     '1988-11-23', 'olivia.office@praxis.invalid',   '+49 7071 0000003', 'Musterallee 3',       '72074', 'Tuebingen'),
+  ('44444444-4444-4444-8444-000000000004', '22222222-2222-4222-8222-000000000001', 'Tim',    'Teamleitung','1985-03-09', 'tim.teamleitung@praxis.invalid', '+49 7071 0000004', 'Probestrasse 4',      '72076', 'Tuebingen'),
+  ('44444444-4444-4444-8444-000000000005', '22222222-2222-4222-8222-000000000001', 'Max',    'Mustermann', '1957-04-30', 'max.mustermann@patient.invalid', '+49 7071 0000005', 'Beispielstrasse 12',  '72070', 'Tuebingen'),
+  ('44444444-4444-4444-8444-000000000006', '22222222-2222-4222-8222-000000000001', 'Erika',  'Beispiel',   '1963-09-17', 'erika.beispiel@patient.invalid', '+49 7071 0000006', 'Testweg 7',           '72072', 'Tuebingen'),
+  -- Person ohne Account, um zu pruefen, dass die Kartei nicht am Account haengt.
+  ('44444444-4444-4444-8444-000000000007', '22222222-2222-4222-8222-000000000001', 'Petra',  'Platzhalter','1971-12-05', null,                             '+49 7071 0000007', 'Fiktivgasse 9',       '72074', 'Tuebingen');
+
+-- -----------------------------------------------------------------------------
+-- Mitarbeiter
+-- -----------------------------------------------------------------------------
+insert into public.staff_members (id, organization_id, person_id, primary_location_id) values
+  ('55555555-5555-4555-8555-000000000001', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000001', '33333333-3333-4333-8333-000000000001'),
+  ('55555555-5555-4555-8555-000000000002', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000002', '33333333-3333-4333-8333-000000000001'),
+  ('55555555-5555-4555-8555-000000000003', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000003', '33333333-3333-4333-8333-000000000001'),
+  ('55555555-5555-4555-8555-000000000004', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000004', '33333333-3333-4333-8333-000000000001');
+
+-- -----------------------------------------------------------------------------
+-- Patienten (rein synthetisch, keine klinischen Inhalte)
+-- -----------------------------------------------------------------------------
+insert into public.patients (id, organization_id, person_id, status, care_started_on) values
+  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000005', 'active',   '2026-02-10'),
+  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'active',   '2026-05-21'),
+  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000007', 'inactive', '2025-11-03');
+
+-- -----------------------------------------------------------------------------
+-- Accountzuordnung
+-- -----------------------------------------------------------------------------
+insert into public.user_profiles (id, organization_id, person_id, display_name) values
+  ('11111111-1111-4111-8111-000000000001', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000001', 'Jannes Test'),
+  ('11111111-1111-4111-8111-000000000002', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000002', 'Anna Beispiel'),
+  ('11111111-1111-4111-8111-000000000003', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000003', 'Olivia Office'),
+  ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000004', 'Tim Teamleitung'),
+  ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000005', 'Max Mustermann'),
+  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'Erika Beispiel');
+
+-- -----------------------------------------------------------------------------
+-- Rollen. Jannes hat bewusst zwei Rollen (ADR-004: Mehrfachrollen).
+-- -----------------------------------------------------------------------------
+insert into public.user_roles (user_id, organization_id, role_key) values
+  ('11111111-1111-4111-8111-000000000001', '22222222-2222-4222-8222-000000000001', 'owner'),
+  ('11111111-1111-4111-8111-000000000001', '22222222-2222-4222-8222-000000000001', 'therapist'),
+  ('11111111-1111-4111-8111-000000000002', '22222222-2222-4222-8222-000000000001', 'therapist'),
+  ('11111111-1111-4111-8111-000000000003', '22222222-2222-4222-8222-000000000001', 'office'),
+  ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'therapist'),
+  ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'team_lead'),
+  ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', 'patient'),
+  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient');
