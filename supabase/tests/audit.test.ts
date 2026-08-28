@@ -1,0 +1,266 @@
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
+import { AUDIT_ACTIONS } from '@/features/audit/actions';
+
+const { users, patients, organizationId } = SEED;
+
+/** Fuehrt einen Aufruf aus und behaelt die Aenderungen (kein Rollback). */
+async function committedAs(userId: string, sql: string): Promise<void> {
+  await asPostgres(
+    `begin;
+     select set_config('role', 'authenticated', true);
+     select set_config('request.jwt.claims', '{"sub":"${userId}","role":"authenticated"}', true);
+     ${sql};
+     commit;`,
+  );
+}
+
+const LIST = 'select * from public.list_audit_events()';
+
+describe('Audit-Schreibpfad', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  beforeEach(async () => {
+    await asPostgres('delete from public.audit_log');
+  });
+
+  it('laesst beide Auditfunktionen als SECURITY DEFINER mit leerem search_path laufen', async () => {
+    // Ohne festgesetzten search_path koennte ein Aufrufer eigene Objekte
+    // vorschieben und die Funktion mit erhoehten Rechten umlenken.
+    const { rows } = await asPostgres<{
+      proname: string;
+      prosecdef: boolean;
+      proconfig: string[] | null;
+    }>(
+      `select p.proname, p.prosecdef, p.proconfig
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public'
+         and p.proname in ('log_patient_record_view', 'list_audit_events')
+       order by p.proname`,
+    );
+    expect(rows).toHaveLength(2);
+    for (const fn of rows) {
+      expect(fn.prosecdef, fn.proname).toBe(true);
+      expect(fn.proconfig, fn.proname).toContain('search_path=""');
+    }
+  });
+
+  it('ist fuer anon nicht ausfuehrbar', async () => {
+    await expect(
+      asAnon('select public.log_patient_record_view($1)', [patients.max]),
+    ).rejects.toThrow(/permission denied/i);
+  });
+
+  it('verweigert den Aufruf ohne Session', async () => {
+    await expect(
+      asUser(null, 'select public.log_patient_record_view($1)', [patients.max]),
+    ).rejects.toThrow(/not authenticated/i);
+  });
+
+  it('taugt nicht als Orakel: unbekannte und fremde IDs verhalten sich gleich', async () => {
+    const erfunden = '66666666-6666-4666-8666-0000000000aa';
+    const fehlerFremd = await asUser(
+      users.patientMax,
+      'select public.log_patient_record_view($1)',
+      [patients.erika],
+    ).catch((error: Error) => error.message);
+    const fehlerUnbekannt = await asUser(
+      users.patientMax,
+      'select public.log_patient_record_view($1)',
+      [erfunden],
+    ).catch((error: Error) => error.message);
+
+    expect(fehlerFremd).toBe(fehlerUnbekannt);
+    expect(fehlerFremd).toMatch(/patient not accessible/);
+  });
+
+  it('isoliert Organisationen', async () => {
+    await asPostgres(`
+      insert into auth.users (id, email, aud, role)
+        values ('11111111-1111-4111-8111-0000000000fa', 'fremd@praxis.invalid', 'authenticated', 'authenticated');
+      insert into public.organizations (id, name)
+        values ('22222222-2222-4222-8222-0000000000fa', 'Test Praxis Woanders');
+      insert into public.persons (id, organization_id, given_name, family_name)
+        values ('44444444-4444-4444-8444-0000000000fa', '22222222-2222-4222-8222-0000000000fa', 'Frida', 'Fremd');
+      insert into public.user_profiles (id, organization_id, person_id, display_name)
+        values ('11111111-1111-4111-8111-0000000000fa', '22222222-2222-4222-8222-0000000000fa', '44444444-4444-4444-8444-0000000000fa', 'Frida Fremd');
+      insert into public.user_roles (user_id, organization_id, role_key)
+        values ('11111111-1111-4111-8111-0000000000fa', '22222222-2222-4222-8222-0000000000fa', 'owner');
+    `);
+
+    await expect(
+      asUser('11111111-1111-4111-8111-0000000000fa', 'select public.log_patient_record_view($1)', [
+        patients.max,
+      ]),
+    ).rejects.toThrow(/patient not accessible/);
+  });
+});
+
+describe('Audit-Lesepfad', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  beforeEach(async () => {
+    await asPostgres('delete from public.audit_log');
+    await committedAs(users.therapist, `select public.log_patient_record_view('${patients.max}')`);
+    await committedAs(users.office, `select public.log_patient_record_view('${patients.erika}')`);
+  });
+
+  it('gibt owner die Ereignisse der eigenen Organisation mit Klarnamen zurueck', async () => {
+    const { rows } = await asUser<{
+      action: string;
+      actor_display_name: string;
+      subject_id: string;
+      outcome: string;
+      total_count: string;
+    }>(users.ownerTherapist, LIST);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.actor_display_name).sort()).toEqual([
+      'Anna Beispiel',
+      'Olivia Office',
+    ]);
+    expect(rows[0]?.action).toBe('patient_record.viewed');
+    expect(rows[0]?.outcome).toBe('success');
+    expect(rows[0]?.total_count).toBe('2');
+  });
+
+  it('gibt die Spalte context grundsaetzlich nicht heraus', async () => {
+    const { rows } = await asUser<Record<string, unknown>>(users.ownerTherapist, LIST);
+    expect(Object.keys(rows[0] ?? {})).not.toContain('context');
+  });
+
+  it('verweigert therapist, team_lead, office und patient den Zugriff', async () => {
+    for (const user of [users.therapist, users.teamLead, users.office, users.patientMax]) {
+      await expect(asUser(user, LIST)).rejects.toThrow(/audit log access denied/);
+    }
+  });
+
+  it('verweigert den Zugriff ohne Session', async () => {
+    await expect(asUser(null, LIST)).rejects.toThrow(/not authenticated/);
+  });
+
+  it('ist fuer anon nicht ausfuehrbar', async () => {
+    await expect(asAnon(LIST)).rejects.toThrow(/permission denied/i);
+  });
+
+  it('erteilt anon kein EXECUTE-Recht auf den Auditfunktionen', async () => {
+    const { rows } = await asPostgres<{ proname: string }>(`
+      select p.proname
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public'
+        and p.proname in ('list_audit_events', 'log_patient_record_view')
+        and has_function_privilege('anon', p.oid, 'execute')
+    `);
+    expect(rows).toEqual([]);
+  });
+
+  it('gibt weiterhin kein direktes SELECT-Recht auf audit_log', async () => {
+    await expect(asUser(users.ownerTherapist, 'select * from public.audit_log')).rejects.toThrow(
+      /permission denied/i,
+    );
+  });
+
+  it('filtert nach Zeitraum', async () => {
+    const morgen = new Date(Date.now() + 86_400_000).toISOString();
+    const { rows } = await asUser(
+      users.ownerTherapist,
+      'select * from public.list_audit_events($1)',
+      [morgen],
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it('filtert nach Benutzer', async () => {
+    const { rows } = await asUser<{ actor_user_id: string }>(
+      users.ownerTherapist,
+      'select * from public.list_audit_events(null, null, $1)',
+      [users.office],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.actor_user_id).toBe(users.office);
+  });
+
+  it('filtert nach Aktion', async () => {
+    const { rows } = await asUser(
+      users.ownerTherapist,
+      'select * from public.list_audit_events(null, null, null, $1)',
+      ['audit_log.read'],
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it('paginiert und meldet die Gesamtzahl', async () => {
+    const seite1 = await asUser<{ id: string; total_count: string }>(
+      users.ownerTherapist,
+      'select * from public.list_audit_events(null, null, null, null, $1, $2)',
+      [1, 0],
+    );
+    const seite2 = await asUser<{ id: string; total_count: string }>(
+      users.ownerTherapist,
+      'select * from public.list_audit_events(null, null, null, null, $1, $2)',
+      [1, 1],
+    );
+    expect(seite1.rows).toHaveLength(1);
+    expect(seite2.rows).toHaveLength(1);
+    expect(seite1.rows[0]?.id).not.toBe(seite2.rows[0]?.id);
+    expect(seite1.rows[0]?.total_count).toBe('2');
+  });
+
+  it('begrenzt ein ueberhoehtes Limit', async () => {
+    const { rows } = await asUser(
+      users.ownerTherapist,
+      'select * from public.list_audit_events(null, null, null, null, $1)',
+      [100_000],
+    );
+    expect(rows.length).toBeLessThanOrEqual(200);
+  });
+
+  it('protokolliert den Zugriff auf das Auditlog selbst', async () => {
+    await committedAs(users.ownerTherapist, 'select * from public.list_audit_events()');
+    const { rows } = await asPostgres<{
+      action: string;
+      actor_user_id: string;
+      subject_id: string;
+    }>(
+      "select action, actor_user_id, subject_id from public.audit_log where action = 'audit_log.read'",
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.actor_user_id).toBe(users.ownerTherapist);
+    expect(rows[0]?.subject_id).toBe(organizationId);
+  });
+
+  it('zeigt owner keine Ereignisse fremder Organisationen', async () => {
+    await asPostgres(`
+      insert into public.organizations (id, name)
+        values ('22222222-2222-4222-8222-0000000000fb', 'Test Praxis Woanders');
+      insert into public.audit_log (organization_id, actor_user_id, action, subject_type, subject_id)
+        values ('22222222-2222-4222-8222-0000000000fb', '11111111-1111-4111-8111-0000000000fb',
+                'patient_record.viewed', 'patient', '66666666-6666-4666-8666-0000000000fb');
+    `);
+    const { rows } = await asUser<{ total_count: string }>(users.ownerTherapist, LIST);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.total_count).toBe('2');
+  });
+});
+
+describe('Ereigniskatalog', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('haelt Datenbank-Constraint und Oberflaechenkatalog deckungsgleich', async () => {
+    const { rows } = await asPostgres<{ def: string }>(`
+      select pg_get_constraintdef(c.oid) as def
+      from pg_constraint c
+      where c.conrelid = 'public.audit_log'::regclass and c.conname = 'audit_log_action_check'
+    `);
+    const inDatenbank = [...(rows[0]?.def.matchAll(/'([a-z_]+\.[a-z_]+)'/g) ?? [])]
+      .map((match) => match[1])
+      .sort();
+    expect(inDatenbank).toEqual([...AUDIT_ACTIONS].sort());
+  });
+});
