@@ -34,7 +34,7 @@ export function AuthenticatedRoutes({
           <>
             <Route path="/patienten" element={<PatientsListPage />} />
             <Route path="/patienten/neu" element={<NewPatientPage />} />
-            <Route path="/patienten/:patientId" element={<PatientDetailPage />} />
+            <Route path="/patienten/:patientId" element={<PatientDetailPage user={user} />} />
             <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
           </>
         ) : null}

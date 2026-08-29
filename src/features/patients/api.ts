@@ -229,3 +229,23 @@ export async function updatePatient(
   // unbekannte ID sollen auch in der Oberfläche gleich aussehen.
   if (error) throw new Error('Die Stammdaten konnten nicht gespeichert werden.');
 }
+
+/**
+ * Setzt den organisatorischen Versorgungsstatus.
+ *
+ * Rein organisatorisch: 'inactive' bedeutet "nicht in laufender Versorgung"
+ * und ist kein Behandlungsabschluss im Sinne von ADR-008. Die Berechtigung
+ * prüft die Serverfunktion selbst; die ausgeblendete Schaltfläche ist keine
+ * Zugriffskontrolle (ADR-004).
+ */
+export async function setPatientStatus(
+  patientId: string,
+  status: Patient['status'],
+): Promise<void> {
+  const { error } = await getSupabase().rpc('set_patient_status', {
+    p_patient_id: patientId,
+    p_status: status,
+  });
+
+  if (error) throw new Error('Der Versorgungsstatus konnte nicht geändert werden.');
+}

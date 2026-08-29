@@ -1,14 +1,17 @@
-import { useEffect, type ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { canChangePatientStatus, type CurrentUser } from '@/features/session/types';
 import {
   ageInYears,
   fetchPatient,
   formatDate,
   fullName,
   logPatientRecordView,
+  setPatientStatus,
   type Patient,
 } from './api';
 
@@ -30,12 +33,78 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function PatientDetail({ patient }: { patient: Patient }) {
+/**
+ * Wechsel des Versorgungsstatus.
+ *
+ * Bewusst mit Rückfrage: der Wechsel nimmt einen Patienten aus dem laufenden
+ * Betrieb, und ein versehentlicher Klick soll das nicht auslösen
+ * (PROJECT_PRINCIPLES.md 13). Die Rückfrage ist Bedienkomfort - verbindlich
+ * prüft `set_patient_status` die Berechtigung erneut.
+ */
+function StatusAktion({ patient }: { patient: Patient }) {
+  const [rueckfrage, setRueckfrage] = useState(false);
+  const queryClient = useQueryClient();
+  const zielStatus: Patient['status'] = patient.status === 'active' ? 'inactive' : 'active';
+
+  const mutation = useMutation({
+    mutationFn: () => setPatientStatus(patient.id, zielStatus),
+    onSuccess: async () => {
+      setRueckfrage(false);
+      await queryClient.invalidateQueries({ queryKey: ['patients'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
+    },
+  });
+
+  const beschriftung =
+    zielStatus === 'inactive' ? 'Als inaktiv markieren' : 'Wieder als aktiv führen';
+
+  if (!rueckfrage) {
+    return (
+      <Button type="button" variant="secondary" onClick={() => setRueckfrage(true)}>
+        {beschriftung}
+      </Button>
+    );
+  }
+
+  return (
+    <div className="border-line-strong bg-surface-sunken w-full rounded-lg border p-4">
+      <p className="text-ink text-sm">
+        {zielStatus === 'inactive'
+          ? 'Diese Person wird als nicht in laufender Versorgung geführt. Die Akte bleibt vollständig erhalten.'
+          : 'Diese Person wird wieder als in laufender Versorgung geführt.'}
+      </p>
+      {mutation.isError ? (
+        <p className="text-danger mt-2 text-sm">
+          Der Versorgungsstatus konnte nicht geändert werden.
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap gap-3">
+        <Button
+          type="button"
+          disabled={mutation.isPending}
+          onClick={() => {
+            // Doppelklick darf keinen zweiten Schreibvorgang auslösen.
+            if (mutation.isPending) return;
+            mutation.mutate();
+          }}
+        >
+          {mutation.isPending ? 'Wird geändert …' : beschriftung}
+        </Button>
+        <Button type="button" variant="quiet" onClick={() => setRueckfrage(false)}>
+          Abbrechen
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const age = ageInYears(patient.date_of_birth);
   const street = [patient.street, patient.house_number].filter(Boolean).join(' ');
   const address = [street, [patient.postal_code, patient.city].filter(Boolean).join(' ')]
     .filter(Boolean)
     .join(', ');
+  const darfStatusWechseln = canChangePatientStatus(user.roles);
 
   return (
     <>
@@ -74,6 +143,12 @@ function PatientDetail({ patient }: { patient: Patient }) {
         <DataRow label="Status" value={patient.status === 'active' ? 'Aktiv' : 'Inaktiv'} />
       </Section>
 
+      {darfStatusWechseln ? (
+        <div className="mt-5 flex">
+          <StatusAktion patient={patient} />
+        </div>
+      ) : null}
+
       <p className="text-ink-subtle mt-10 text-xs leading-relaxed">
         Zugriffe auf Patientenakten werden protokolliert.
       </p>
@@ -81,7 +156,7 @@ function PatientDetail({ patient }: { patient: Patient }) {
   );
 }
 
-export function PatientDetailPage() {
+export function PatientDetailPage({ user }: { user: CurrentUser }) {
   const { patientId } = useParams<{ patientId: string }>();
 
   const { data, isPending, isError } = useQuery({
@@ -115,7 +190,7 @@ export function PatientDetailPage() {
           description="Dieser Datensatz existiert nicht oder ist für Ihren Zugang nicht freigegeben."
         />
       ) : null}
-      {data ? <PatientDetail patient={data} /> : null}
+      {data ? <PatientDetail patient={data} user={user} /> : null}
     </>
   );
 }
