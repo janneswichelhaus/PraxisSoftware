@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -10,6 +10,22 @@ type StatusFilter = 'all' | 'active' | 'inactive';
 
 const selectClass =
   'min-h-11 rounded-lg border border-line-strong bg-surface px-3 text-base text-ink';
+
+function parseStatusFilter(value: string | null): StatusFilter {
+  return value === 'active' || value === 'inactive' ? value : 'all';
+}
+
+/**
+ * Baut den Query-String für Suche und Statusfilter neu auf, statt die
+ * bestehenden Parameter zu ergänzen: die Seite kennt keine weiteren
+ * Parameter, ein additiver Merge würde nur veraltete Werte mitschleppen.
+ */
+function toSearchParams(query: string, status: StatusFilter): URLSearchParams {
+  const next = new URLSearchParams();
+  if (query.trim()) next.set('q', query);
+  if (status !== 'all') next.set('status', status);
+  return next;
+}
 
 function matches(patient: Patient, query: string): boolean {
   const needle = query.trim().toLowerCase();
@@ -33,8 +49,11 @@ function matchesStatus(patient: Patient, status: StatusFilter): boolean {
 }
 
 export function PatientsListPage() {
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<StatusFilter>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get('q') ?? '');
+  const [status, setStatus] = useState<StatusFilter>(() =>
+    parseStatusFilter(searchParams.get('status')),
+  );
   const { data, isPending, isError } = useQuery({
     queryKey: ['patients'],
     queryFn: fetchPatients,
@@ -45,6 +64,16 @@ export function PatientsListPage() {
     () => (data ?? []).filter((p) => matchesStatus(p, status) && matches(p, query)),
     [data, query, status],
   );
+
+  function updateQuery(value: string) {
+    setQuery(value);
+    setSearchParams(toSearchParams(value, status), { replace: true });
+  }
+
+  function updateStatus(value: StatusFilter) {
+    setStatus(value);
+    setSearchParams(toSearchParams(query, value), { replace: true });
+  }
 
   return (
     <>
@@ -68,7 +97,7 @@ export function PatientsListPage() {
             type="search"
             placeholder="Name, Ort, Telefon, E-Mail"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => updateQuery(event.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -79,7 +108,7 @@ export function PatientsListPage() {
             id="patients-status"
             className={selectClass}
             value={status}
-            onChange={(event) => setStatus(event.target.value as StatusFilter)}
+            onChange={(event) => updateStatus(event.target.value as StatusFilter)}
           >
             <option value="all">Alle</option>
             <option value="active">Aktiv</option>
