@@ -5,19 +5,26 @@ Gesundheitsdaten. Früher Entwicklungsstand, kein Produktivbetrieb.
 
 ## Verbindliche Grundlagen
 
-- `PROJECT_PRINCIPLES.md` (aktuell v0.2.1) und die angenommenen ADRs in
-  `docs/adr/` sind verbindlich.
-- **Bei Konflikten hat der explizite neuere ADR Vorrang.** Widerspricht ein ADR
-  den Prinzipien, ist das ein Fehler und wird gemeldet, nicht stillschweigend
-  aufgelöst.
+Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
+
+1. `PROJECT_PRINCIPLES.md` (aktuell v0.2.1) — übergeordnete Leitplanken
+2. geltende ADRs in `docs/adr/` — konkretisieren die Leitplanken
+3. die konkrete Feature-Spezifikation — verbindlich für ihre Aufgabe
+4. `docs/PRODUCT_VISION.md` — **nicht normativ**
+
+- Die Ränge 1 bis 3 sind verbindlich.
+- **Ein ADR überschreibt `PROJECT_PRINCIPLES.md` nicht** — auch kein neuerer.
+  Soll eine Leitplanke geändert werden, MUSS das Prinzip ausdrücklich
+  aktualisiert und die Änderung nachvollziehbar dokumentiert werden (§21).
+- **Ein neuer ADR kann einen älteren ausdrücklich ersetzen** (Status „abgelöst
+  durch ADR-XXX"). Vorrang gilt nur zwischen ADRs, nie gegenüber Rang 1.
+- Eine Feature-Spezifikation überschreibt weder Prinzipien noch ADRs.
+- **Ein unbeabsichtigter oder nicht auflösbarer Widerspruch ist ein Blocker.**
+  Nicht eigenständig interpretieren: stoppen und zur Entscheidung vorlegen.
 - **Nicht bei jeder Aufgabe alle ADRs laden.** Der Index unten sagt, welcher
   ADR wofür zuständig ist; nur die relevanten vollständig lesen.
 - `docs/decisions/OPEN_DECISIONS.md` listet, was noch offen ist. Offene Punkte
   nicht eigenmächtig entscheiden.
-
-Dokumentenhierarchie: `PROJECT_PRINCIPLES.md` → ADRs → konkrete
-Feature-Spezifikation → `docs/PRODUCT_VISION.md`.
-
 - `docs/PRODUCT_VISION.md` beschreibt das langfristige Zielbild und steht an
   letzter Stelle. **Es ist nicht normativ**: kein Implementierungsauftrag,
   keine Feature-Spezifikation, keine Freigabe. Es begründet **niemals** eine
