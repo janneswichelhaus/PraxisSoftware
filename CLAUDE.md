@@ -15,6 +15,16 @@ Gesundheitsdaten. Früher Entwicklungsstand, kein Produktivbetrieb.
 - `docs/decisions/OPEN_DECISIONS.md` listet, was noch offen ist. Offene Punkte
   nicht eigenmächtig entscheiden.
 
+Dokumentenhierarchie: `PROJECT_PRINCIPLES.md` → ADRs → konkrete
+Feature-Spezifikation → `docs/PRODUCT_VISION.md`.
+
+- `docs/PRODUCT_VISION.md` beschreibt das langfristige Zielbild und steht an
+  letzter Stelle. **Es ist nicht normativ**: kein Implementierungsauftrag,
+  keine Feature-Spezifikation, keine Freigabe. Es begründet **niemals** eine
+  Erweiterung des aktuellen Feature-Scopes und überschreibt weder Prinzipien
+  noch ADRs. Nützlich, um lokale Entscheidungen einzuordnen — nicht, um sie zu
+  begründen.
+
 ## ADR-Index — welcher ADR wofür
 
 | ADR | Lesen, wenn es um … geht                                                  |
