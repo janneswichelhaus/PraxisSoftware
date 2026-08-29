@@ -42,6 +42,14 @@ function PatientDetail({ patient }: { patient: Patient }) {
       <PageHeader
         title={fullName(patient)}
         description={patient.status === 'inactive' ? 'Nicht in laufender Versorgung' : undefined}
+        actions={
+          <Link
+            to={`/patienten/${patient.id}/bearbeiten`}
+            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
+          >
+            Stammdaten bearbeiten
+          </Link>
+        }
       />
 
       <Section title="Person">

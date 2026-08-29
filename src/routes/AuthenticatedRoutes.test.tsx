@@ -22,6 +22,7 @@ vi.mock('@/features/patients/api', async (importOriginal) => ({
 
 const AUDIT = '/praxis/sicherheit/audit';
 const NEU = '/patienten/neu';
+const BEARBEITEN = '/patienten/66666666-6666-4666-8666-000000000001/bearbeiten';
 
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
@@ -58,6 +59,28 @@ describe('AuthenticatedRoutes', () => {
       NEU,
     );
     expect(screen.queryByRole('heading', { name: 'Neue:r Patient:in' })).toBeNull();
+    expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+  });
+
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+    'oeffnet das Bearbeitungsformular fuer %s',
+    async (role) => {
+      // fetchPatient ist gemockt und liefert null - entscheidend ist hier
+      // allein, dass die Route ueberhaupt gemountet wird.
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+        BEARBEITEN,
+      );
+      expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    },
+  );
+
+  it('leitet ein Patientenkonto vom Bearbeitungsformular auf die Uebersicht um', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()} />,
+      BEARBEITEN,
+    );
+    expect(screen.queryByText('Nicht gefunden')).toBeNull();
     expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
   });
 

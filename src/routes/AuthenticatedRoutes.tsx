@@ -3,6 +3,7 @@ import { AppShell } from '@/app/AppShell';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
+import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import { canReadPatientDirectory, isOwner, type CurrentUser } from '@/features/session/types';
@@ -34,6 +35,7 @@ export function AuthenticatedRoutes({
             <Route path="/patienten" element={<PatientsListPage />} />
             <Route path="/patienten/neu" element={<NewPatientPage />} />
             <Route path="/patienten/:patientId" element={<PatientDetailPage />} />
+            <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
           </>
         ) : null}
         {showSecurity ? <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} /> : null}
