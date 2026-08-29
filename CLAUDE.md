@@ -1,0 +1,120 @@
+# CLAUDE.md
+
+Praxisplattform für eine privat abrechnende Physiotherapiepraxis. Verarbeitet
+Gesundheitsdaten. Früher Entwicklungsstand, kein Produktivbetrieb.
+
+## Verbindliche Grundlagen
+
+- `PROJECT_PRINCIPLES.md` (aktuell v0.2.1) und die angenommenen ADRs in
+  `docs/adr/` sind verbindlich.
+- **Bei Konflikten hat der explizite neuere ADR Vorrang.** Widerspricht ein ADR
+  den Prinzipien, ist das ein Fehler und wird gemeldet, nicht stillschweigend
+  aufgelöst.
+- **Nicht bei jeder Aufgabe alle ADRs laden.** Der Index unten sagt, welcher
+  ADR wofür zuständig ist; nur die relevanten vollständig lesen.
+- `docs/decisions/OPEN_DECISIONS.md` listet, was noch offen ist. Offene Punkte
+  nicht eigenmächtig entscheiden.
+
+## ADR-Index — welcher ADR wofür
+
+| ADR | Lesen, wenn es um … geht |
+|---|---|
+| 001 | Offline-Verhalten, Synchronisation, Finalisierung von Dokumentation |
+| 002 | Hosting, Datenstandort, neue Dienstleister, Umgebungstrennung, Logziele |
+| 003 | `organization_id` / `location_id`, Mandantenfähigkeit |
+| 004 | Rollen, Policies, RLS, Projektionen, Suche/Export/RAG-Berechtigungen |
+| 005 | KI-Anbindung, AI Gateway, Trennung LLM/Determinismus |
+| 006 | MDR-Abgrenzung, Red Flags, Zweckbestimmung, `MDR_REVIEW_REQUIRED` |
+| 007 | DSFA, Datenschutzprozess, Go-live-Vorbedingungen |
+| 008 | Aufbewahrung, Löschung, Retention Schedule, Legal Hold, Backups |
+| 009 | Abrechnung, Leistungen, Rechnungszustände, Snapshots, Zahlungen |
+| 010 | Audit-Ereignisse, Audit-Lesepfad, privilegierter Produktionszugriff |
+| 011 | Logging, Observability, Redaction, Log-Retention |
+| 012 | Backup/Restore, RPO/RTO, Degraded-Betrieb, Betriebsdokumentation |
+| 013 | CI-Gates, Branch Protection, Release-Freigabe |
+| 014 | Datenmodell-Fundament: UUIDs, Zeitstempel, Geldwerte, Rollen, Trennung |
+| 015 | Stack, Ordnerstruktur, Abgrenzungen (kein Next.js, kein Service Worker …) |
+
+## Repository
+
+```
+src/app  src/components  src/features  src/lib  src/routes
+supabase/migrations  supabase/tests  supabase/seed.sql
+tests/e2e  scripts  docs/adr  docs/decisions
+```
+
+Feature-Code liegt fachlich unter `src/features/<domäne>/`. Modularer Monolith
+nach ADR-015 — keine Microservices, keine Clean-Architecture-Schichten.
+
+## Befehle
+
+```bash
+pnpm install            # pnpm, nicht npm/yarn
+pnpm dev                # Vite auf :5173
+pnpm lint               # ESLint inkl. eslint-plugin-security
+pnpm typecheck
+pnpm test               # Unit/Komponenten (Vitest + Testing Library)
+pnpm test:db            # Migrationen + RLS gegen echtes PostgreSQL
+pnpm test:e2e           # Playwright
+pnpm scan:secrets
+pnpm build
+```
+
+## Umgebung
+
+- `pnpm db:start` startet eine lokale Wegwerf-Datenbank; danach
+  `export TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:54329/postgres`.
+- Migrations- und RLS-Tests laufen bewusst gegen PostgreSQL mit dem Shim in
+  `supabase/tests/helpers/`, nicht gegen den vollen Supabase-Stack.
+- **In der Cloud-/Remote-Umgebung ist `supabase start` nicht möglich** —
+  Container-Images werden vom Egress-Proxy blockiert (403). Damit gibt es dort
+  kein GoTrue und kein E2E hinter der Anmeldung. Auf einem lokalen Rechner mit
+  Docker funktioniert der Stack; Vorgehen in `docs/DEVELOPMENT.md`.
+- Playwright nutzt den vorinstallierten Browser über
+  `export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`.
+- Details und Go-live-Blocker: `docs/DEVELOPMENT.md`.
+
+## Harte Regeln
+
+Sicherheit und Datenschutz:
+
+- **Keine echten Patientendaten** — nirgends. Nur synthetische Daten.
+- **Keine Produktionscredentials** für Coding- oder KI-Werkzeuge.
+- **Keine Secrets im Repository.** `.env*` außer `.env.example` bleibt ungetrackt.
+- **Autorisierung niemals nur über die UI.** Ausgeblendete Elemente sind keine
+  Zugriffskontrolle. RLS bleibt Defense-in-Depth (ADR-004).
+- **Security-, RLS- und Datenschutztests werden niemals entfernt, deaktiviert
+  oder abgeschwächt, um einen Build grün zu bekommen.** Dasselbe gilt für
+  Secret-Scanning und die übrigen CI-Gates. Wenn ein Gate nur durch
+  Abschwächung erfüllbar wäre: stoppen und berichten.
+- Keine patientenbezogenen Daten in Logs (ADR-011).
+
+Umfang und Abhängigkeiten:
+
+- **Keine neuen Provider, Frameworks oder wesentlichen Dependencies** ohne
+  fachliche Notwendigkeit und Prüfung gegen die ADRs.
+- **Keine ungefragten Refactorings** außerhalb des Auftrags.
+- Keine Zukunftsfeatures prophylaktisch bauen (ADR-014).
+- **Kein Produktionsdeployment durch Coding-Agenten** (ADR-013). Keine
+  Cloud-Ressourcen ohne expliziten Auftrag.
+
+Verifikation:
+
+- **Jede Änderung muss durch Tests oder eine andere objektive Verifikation
+  überprüfbar sein.** Keine Prüfung als erfolgreich melden, die nicht
+  tatsächlich gelaufen ist.
+- Datenbank- oder Berechtigungsänderungen brauchen `pnpm test:db`.
+- **Bei UI-Änderungen die laufende Anwendung visuell prüfen**, soweit technisch
+  möglich (Chromium/Playwright), bei mobilrelevanten Features auch bei ~375 px.
+
+## Arbeitsweise
+
+Für Featurearbeit gibt es den Skill **`/feature-loop <Aufgabe>`**
+(`.claude/skills/feature-loop/SKILL.md`): Spec → Inspect → Plan → Build →
+Verify → Review → Fix → Final Verify → Report → Stopp. Er startet nur auf
+ausdrücklichen Aufruf.
+
+Hintergrund und Begründung: `docs/development/DEVELOPMENT_WORKFLOW.md`.
+
+Kleine Commits mit aussagekräftiger Nachricht. Nach abgeschlossenem Feature
+stoppen, nicht eigenständig das nächste beginnen.
