@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asUser, resetDatabase } from './helpers/db';
+import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
 
 const { users, patients } = SEED;
 
@@ -178,5 +178,96 @@ describe('Patientensicht patient_directory', () => {
     await expect(asAnon('select id from public.patient_directory')).rejects.toThrow(
       /permission denied/i,
     );
+  });
+});
+
+describe('Mandantentrennung der Detaildaten (ADR-003)', () => {
+  const fremdeOrg = '22222222-2222-4222-8222-0000000000d1';
+  const fremdeOwnerId = '11111111-1111-4111-8111-0000000000d1';
+  const fremdePersonOwner = '44444444-4444-4444-8444-0000000000d1';
+  const fremdePersonPatient = '44444444-4444-4444-8444-0000000000d2';
+  const fremderPatient = '66666666-6666-4666-8666-0000000000d1';
+  const fremderStaff = '55555555-5555-4555-8555-0000000000d1';
+
+  beforeAll(async () => {
+    await resetDatabase();
+    // Zweite Organisation mit eigenem owner, eigenem Patienten samt
+    // Kontaktdaten und eigenem Mitarbeiter samt Privatdaten.
+    await asPostgres(`
+      insert into auth.users (id, email, aud, role)
+        values ('${fremdeOwnerId}', 'frida.fremd@praxis.invalid', 'authenticated', 'authenticated');
+      insert into public.organizations (id, name)
+        values ('${fremdeOrg}', 'Test Praxis Woanders');
+      insert into public.persons (id, organization_id, given_name, family_name) values
+        ('${fremdePersonOwner}',   '${fremdeOrg}', 'Frida', 'Fremd'),
+        ('${fremdePersonPatient}', '${fremdeOrg}', 'Peter', 'Fremdpatient');
+      insert into public.patients (id, organization_id, person_id)
+        values ('${fremderPatient}', '${fremdeOrg}', '${fremdePersonPatient}');
+      insert into public.patient_contact_details (patient_id, organization_id, date_of_birth, city)
+        values ('${fremderPatient}', '${fremdeOrg}', '1980-01-01', 'Woanders');
+      insert into public.staff_members (id, organization_id, person_id)
+        values ('${fremderStaff}', '${fremdeOrg}', '${fremdePersonOwner}');
+      insert into public.staff_private_details (staff_member_id, organization_id, date_of_birth, city)
+        values ('${fremderStaff}', '${fremdeOrg}', '1975-05-05', 'Woanders');
+      insert into public.user_profiles (id, organization_id, person_id, display_name)
+        values ('${fremdeOwnerId}', '${fremdeOrg}', '${fremdePersonOwner}', 'Frida Fremd');
+      insert into public.user_roles (user_id, organization_id, role_key)
+        values ('${fremdeOwnerId}', '${fremdeOrg}', 'owner');
+    `);
+  }, 120_000);
+
+  it('zeigt einem fremden owner keine Patientenkontaktdaten dieser Praxis', async () => {
+    const { rows } = await asUser<{ patient_id: string }>(
+      fremdeOwnerId,
+      'select patient_id from public.patient_contact_details',
+    );
+    expect(rows.map((r) => r.patient_id)).toEqual([fremderPatient]);
+  });
+
+  it('zeigt einem fremden owner keine Mitarbeiter-Privatdaten dieser Praxis', async () => {
+    const { rows } = await asUser<{ staff_member_id: string }>(
+      fremdeOwnerId,
+      'select staff_member_id from public.staff_private_details',
+    );
+    expect(rows.map((r) => r.staff_member_id)).toEqual([fremderStaff]);
+  });
+
+  it('zeigt dem owner dieser Praxis keine Daten der fremden Organisation', async () => {
+    const kontakt = await asUser<{ patient_id: string }>(
+      users.ownerTherapist,
+      'select patient_id from public.patient_contact_details',
+    );
+    expect(kontakt.rows.map((r) => r.patient_id)).not.toContain(fremderPatient);
+    expect(kontakt.rows).toHaveLength(3);
+
+    const privat = await asUser<{ staff_member_id: string }>(
+      users.ownerTherapist,
+      'select staff_member_id from public.staff_private_details',
+    );
+    expect(privat.rows.map((r) => r.staff_member_id)).not.toContain(fremderStaff);
+    expect(privat.rows).toHaveLength(4);
+  });
+
+  it('gibt auch bei gezielter Abfrage einer fremden ID nichts heraus', async () => {
+    const kontakt = await asUser(
+      users.ownerTherapist,
+      'select patient_id from public.patient_contact_details where patient_id = $1',
+      [fremderPatient],
+    );
+    const privat = await asUser(
+      users.ownerTherapist,
+      'select staff_member_id from public.staff_private_details where staff_member_id = $1',
+      [fremderStaff],
+    );
+    expect(kontakt.rows).toEqual([]);
+    expect(privat.rows).toEqual([]);
+  });
+
+  it('schliesst die Patientensicht ueber Organisationsgrenzen hinweg aus', async () => {
+    const { rows } = await asUser<{ id: string }>(
+      fremdeOwnerId,
+      'select id from public.patient_directory',
+    );
+    expect(rows.map((r) => r.id)).toEqual([fremderPatient]);
   });
 });

@@ -77,13 +77,13 @@ einzelne Testdatei, `pnpm typecheck`, betroffene Komponententests.
 **Nach abgeschlossener Implementierung** die für den Umfang passenden
 CI-äquivalenten Checks:
 
-| Änderung betrifft … | dann mindestens |
-|---|---|
-| immer | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check` |
-| Migrationen, Policies, RPCs | `pnpm test:db` |
-| Oberfläche | `pnpm test:e2e` und visuelle Prüfung |
-| Abhängigkeiten | `pnpm audit --audit-level=high`, `pnpm scan:secrets` |
-| auslieferbaren Code | `pnpm build` |
+| Änderung betrifft …         | dann mindestens                                                 |
+| --------------------------- | --------------------------------------------------------------- |
+| immer                       | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check` |
+| Migrationen, Policies, RPCs | `pnpm test:db`                                                  |
+| Oberfläche                  | `pnpm test:e2e` und visuelle Prüfung                            |
+| Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`            |
+| auslieferbaren Code         | `pnpm build`                                                    |
 
 Bei UI-Änderungen die **laufende** Anwendung ansehen (Chromium/Playwright),
 nicht nur Tests. Betrifft das Feature mobile Nutzung, zusätzlich bei ~375 px

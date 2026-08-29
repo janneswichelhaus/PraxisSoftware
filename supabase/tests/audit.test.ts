@@ -233,6 +233,44 @@ describe('Audit-Lesepfad', () => {
     expect(rows[0]?.subject_id).toBe(organizationId);
   });
 
+  it('taugt der Benutzerfilter nicht als Existenz-Orakel', async () => {
+    // Ein owner darf ueber den Filter nicht unterscheiden koennen, ob eine
+    // Benutzer-ID in einer fremden Organisation existiert oder gar nicht.
+    const fremderAccount = '11111111-1111-4111-8111-0000000000e1';
+    const fremdeOrg = '22222222-2222-4222-8222-0000000000e1';
+    const fremdePerson = '44444444-4444-4444-8444-0000000000e1';
+    const erfunden = '11111111-1111-4111-8111-0000000000ee';
+
+    await asPostgres(`
+      insert into auth.users (id, email, aud, role)
+        values ('${fremderAccount}', 'orakel.test@praxis.invalid', 'authenticated', 'authenticated');
+      insert into public.organizations (id, name)
+        values ('${fremdeOrg}', 'Test Praxis Orakel');
+      insert into public.persons (id, organization_id, given_name, family_name)
+        values ('${fremdePerson}', '${fremdeOrg}', 'Otto', 'Orakel');
+      insert into public.user_profiles (id, organization_id, person_id, display_name)
+        values ('${fremderAccount}', '${fremdeOrg}', '${fremdePerson}', 'Otto Orakel');
+      insert into public.audit_log (organization_id, actor_user_id, action, subject_type, subject_id)
+        values ('${fremdeOrg}', '${fremderAccount}', 'patient_record.viewed', 'patient',
+                '66666666-6666-4666-8666-0000000000e1');
+    `);
+
+    const existierendFremd = await asUser(
+      users.ownerTherapist,
+      'select * from public.list_audit_events(null, null, $1)',
+      [fremderAccount],
+    );
+    const garNichtVorhanden = await asUser(
+      users.ownerTherapist,
+      'select * from public.list_audit_events(null, null, $1)',
+      [erfunden],
+    );
+
+    // Beides muss ununterscheidbar leer sein - kein Fehler, kein Unterschied.
+    expect(existierendFremd.rows).toEqual([]);
+    expect(garNichtVorhanden.rows).toEqual([]);
+  });
+
   it('zeigt owner keine Ereignisse fremder Organisationen', async () => {
     await asPostgres(`
       insert into public.organizations (id, name)
