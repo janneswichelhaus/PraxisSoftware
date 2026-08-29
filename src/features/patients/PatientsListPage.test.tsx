@@ -18,6 +18,7 @@ function patient(
   given: string,
   family: string,
   status: 'active' | 'inactive',
+  overrides: Partial<Patient> = {},
 ): Patient {
   return {
     id,
@@ -32,6 +33,7 @@ function patient(
     house_number: null,
     postal_code: null,
     city: 'Tuebingen',
+    ...overrides,
   };
 }
 
@@ -88,5 +90,70 @@ describe('PatientsListPage', () => {
 
     expect(await screen.findByText('Noch keine Patient:innen')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('filtert ueber die Suche auch nach Ort, Telefon und E-Mail', async () => {
+    fetchPatients.mockResolvedValue([
+      patient('1', 'Max', 'Mustermann', 'active', { city: 'Koeln' }),
+      patient('2', 'Erika', 'Beispiel', 'active', {
+        city: 'Hamburg',
+        phone: '0221 555123',
+        email: 'erika@example.test',
+      }),
+    ]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<PatientsListPage />);
+    await screen.findByRole('link', { name: /Max Mustermann/ });
+
+    await user.type(screen.getByLabelText('Suche'), '555123');
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
+    });
+    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Suche'));
+    await user.type(screen.getByLabelText('Suche'), 'hamburg');
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
+    });
+    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+  });
+
+  it('filtert nach Status aktiv/inaktiv', async () => {
+    fetchPatients.mockResolvedValue([
+      patient('1', 'Max', 'Mustermann', 'active'),
+      patient('2', 'Erika', 'Beispiel', 'inactive'),
+    ]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<PatientsListPage />);
+    await screen.findByRole('link', { name: /Max Mustermann/ });
+    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Status'), 'active');
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /Erika Beispiel/ })).toBeNull();
+    });
+    expect(screen.getByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Status'), 'inactive');
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
+    });
+    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+  });
+
+  it('zeigt "Keine Treffer" statt der Leerlauf-Meldung, wenn ein Filter alles ausblendet', async () => {
+    fetchPatients.mockResolvedValue([patient('1', 'Max', 'Mustermann', 'active')]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<PatientsListPage />);
+    await screen.findByRole('link', { name: /Max Mustermann/ });
+
+    await user.selectOptions(screen.getByLabelText('Status'), 'inactive');
+
+    expect(await screen.findByText('Keine Treffer')).toBeInTheDocument();
+    expect(screen.queryByText('Noch keine Patient:innen')).toBeNull();
   });
 });

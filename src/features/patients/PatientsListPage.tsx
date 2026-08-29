@@ -6,21 +6,45 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { ageInYears, fetchPatients, fullName, type Patient } from './api';
 
+type StatusFilter = 'all' | 'active' | 'inactive';
+
+const selectClass =
+  'min-h-11 rounded-lg border border-line-strong bg-surface px-3 text-base text-ink';
+
 function matches(patient: Patient, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
-  return fullName(patient).toLowerCase().includes(needle);
+  const haystack = [
+    fullName(patient),
+    patient.city,
+    patient.postal_code,
+    patient.phone,
+    patient.email,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(' ')
+    .toLowerCase();
+  return haystack.includes(needle);
+}
+
+function matchesStatus(patient: Patient, status: StatusFilter): boolean {
+  if (status === 'all') return true;
+  return patient.status === status;
 }
 
 export function PatientsListPage() {
   const [query, setQuery] = useState('');
+  const [status, setStatus] = useState<StatusFilter>('all');
   const { data, isPending, isError } = useQuery({
     queryKey: ['patients'],
     queryFn: fetchPatients,
     retry: false,
   });
 
-  const visible = useMemo(() => (data ?? []).filter((p) => matches(p, query)), [data, query]);
+  const visible = useMemo(
+    () => (data ?? []).filter((p) => matchesStatus(p, status) && matches(p, query)),
+    [data, query, status],
+  );
 
   return (
     <>
@@ -37,14 +61,31 @@ export function PatientsListPage() {
         }
       />
 
-      <div className="mb-5 max-w-sm">
-        <Field
-          label="Suche"
-          type="search"
-          placeholder="Name"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
+      <div className="mb-5 flex flex-wrap items-end gap-4">
+        <div className="max-w-sm flex-1 basis-56">
+          <Field
+            label="Suche"
+            type="search"
+            placeholder="Name, Ort, Telefon, E-Mail"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="patients-status" className="text-ink text-sm font-medium">
+            Status
+          </label>
+          <select
+            id="patients-status"
+            className={selectClass}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as StatusFilter)}
+          >
+            <option value="all">Alle</option>
+            <option value="active">Aktiv</option>
+            <option value="inactive">Inaktiv</option>
+          </select>
+        </div>
       </div>
 
       {isPending ? <LoadingState label="Patientenliste wird geladen …" /> : null}
@@ -57,8 +98,8 @@ export function PatientsListPage() {
 
       {data && visible.length === 0 ? (
         <EmptyState
-          title={query ? 'Keine Treffer' : 'Noch keine Patient:innen'}
-          description={query ? 'Suchbegriff anpassen.' : undefined}
+          title={data.length === 0 ? 'Noch keine Patient:innen' : 'Keine Treffer'}
+          description={data.length === 0 ? undefined : 'Suche oder Filter anpassen.'}
         />
       ) : null}
 
