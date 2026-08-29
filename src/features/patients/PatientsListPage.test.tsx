@@ -29,6 +29,7 @@ function patient(
     email: null,
     phone: null,
     street: null,
+    house_number: null,
     postal_code: null,
     city: 'Tuebingen',
   };

@@ -96,6 +96,36 @@ export async function asUser<T = Record<string, unknown>>(
   }
 }
 
+/**
+ * Wie asUser, aber die Transaktion wird bestaetigt statt zurueckgerollt.
+ *
+ * Noetig fuer Vorgaenge, deren Ergebnis anschliessend geprueft wird - etwa
+ * Anlagen und Auditeintraege. Alle Anweisungen laufen auf derselben
+ * Verbindung, damit set_local und die Anweisung dieselbe Transaktion teilen.
+ */
+export async function asUserCommitted<T = Record<string, unknown>>(
+  userId: string,
+  sql: string,
+  params: unknown[] = [],
+): Promise<QueryResultRows<T>> {
+  const client = await connect();
+  try {
+    await client.query('begin');
+    await client.query("select set_config('role', 'authenticated', true)");
+    await client.query("select set_config('request.jwt.claims', $1, true)", [
+      JSON.stringify({ sub: userId, role: 'authenticated' }),
+    ]);
+    const result = await client.query(sql, params as never[]);
+    await client.query('commit');
+    return { rows: result.rows as T[] };
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    await client.end();
+  }
+}
+
 /** Wie asUser, aber in der Rolle `anon` (nicht angemeldet). */
 export async function asAnon<T = Record<string, unknown>>(
   sql: string,

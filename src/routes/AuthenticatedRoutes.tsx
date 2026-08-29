@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { PatientsListPage } from '@/features/patients/PatientsListPage';
+import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import { canReadPatientDirectory, isOwner, type CurrentUser } from '@/features/session/types';
@@ -31,6 +32,7 @@ export function AuthenticatedRoutes({
         {showDirectory ? (
           <>
             <Route path="/patienten" element={<PatientsListPage />} />
+            <Route path="/patienten/neu" element={<NewPatientPage />} />
             <Route path="/patienten/:patientId" element={<PatientDetailPage />} />
           </>
         ) : null}

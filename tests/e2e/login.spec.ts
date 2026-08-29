@@ -54,6 +54,14 @@ test.describe('Anmeldung', () => {
 });
 
 test.describe('Geschuetzte Sonderbereiche', () => {
+  test('gibt das Anlageformular ohne Anmeldung nicht preis', async ({ page }) => {
+    await page.goto('/patienten/neu');
+
+    await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Neue:r Patient:in' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Patient anlegen' })).toHaveCount(0);
+  });
+
   test('gibt den Auditbereich ohne Anmeldung nicht preis', async ({ page }) => {
     await page.goto('/praxis/sicherheit/audit');
 

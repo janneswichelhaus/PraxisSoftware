@@ -24,7 +24,18 @@ export function PatientsListPage() {
 
   return (
     <>
-      <PageHeader title="Patient:innen" description="Organisatorische Stammdaten der Praxis." />
+      <PageHeader
+        title="Patient:innen"
+        description="Organisatorische Stammdaten der Praxis."
+        actions={
+          <Link
+            to="/patienten/neu"
+            className="bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors"
+          >
+            Patient anlegen
+          </Link>
+        }
+      />
 
       <div className="mb-5 max-w-sm">
         <Field

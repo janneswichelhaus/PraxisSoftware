@@ -24,6 +24,7 @@ const patientSchema = z.object({
   email: z.string().nullable(),
   phone: z.string().nullable(),
   street: z.string().nullable(),
+  house_number: z.string().nullable(),
   postal_code: z.string().nullable(),
   city: z.string().nullable(),
 });
@@ -31,7 +32,7 @@ const patientSchema = z.object({
 export type Patient = z.infer<typeof patientSchema>;
 
 const SELECT =
-  'id, status, care_started_on, given_name, family_name, date_of_birth, email, phone, street, postal_code, city';
+  'id, status, care_started_on, given_name, family_name, date_of_birth, email, phone, street, house_number, postal_code, city';
 
 export async function fetchPatients(): Promise<Patient[]> {
   const { data, error } = await getSupabase()
@@ -91,4 +92,78 @@ export function ageInYears(dateOfBirth: string | null, today = new Date()): numb
   const monthDiff = today.getMonth() - birth.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age -= 1;
   return age >= 0 ? age : null;
+}
+
+/**
+ * Eingabe für die Patientenanlage.
+ *
+ * Die Prüfung hier ist Bedienkomfort. Verbindlich normalisiert und geprüft
+ * wird serverseitig in `create_patient` - die UI ist keine Zusicherung
+ * (ADR-004).
+ */
+const optionalText = z
+  .string()
+  .transform((value) => value.trim())
+  .transform((value) => (value === '' ? null : value));
+
+export const newPatientSchema = z.object({
+  given_name: z
+    .string()
+    .transform((value) => value.trim())
+    .refine((value) => value.length > 0, 'Vorname ist erforderlich.')
+    .refine((value) => value.length <= 100, 'Vorname ist zu lang.'),
+  family_name: z
+    .string()
+    .transform((value) => value.trim())
+    .refine((value) => value.length > 0, 'Nachname ist erforderlich.')
+    .refine((value) => value.length <= 100, 'Nachname ist zu lang.'),
+  date_of_birth: z
+    .string()
+    .refine((value) => value.trim().length > 0, 'Geburtsdatum ist erforderlich.')
+    .refine(
+      (value) => !Number.isNaN(new Date(`${value}T00:00:00`).getTime()),
+      'Kein gültiges Datum.',
+    )
+    .refine(
+      (value) => new Date(`${value}T00:00:00`) <= new Date(),
+      'Das Geburtsdatum darf nicht in der Zukunft liegen.',
+    ),
+  email: optionalText.refine(
+    (value) => value === null || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
+    'Keine gültige E-Mail-Adresse.',
+  ),
+  phone: optionalText,
+  street: optionalText,
+  house_number: optionalText,
+  postal_code: optionalText,
+  city: optionalText,
+});
+
+export type NewPatientInput = z.input<typeof newPatientSchema>;
+export type NewPatientValues = z.output<typeof newPatientSchema>;
+
+/**
+ * Legt einen Patienten an und gibt dessen ID zurück.
+ *
+ * Es werden bewusst weder eine Organisation noch IDs übergeben: die
+ * Serverfunktion leitet die Organisation aus der Sitzung ab und erzeugt die
+ * Schlüssel selbst.
+ */
+export async function createPatient(values: NewPatientValues): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('create_patient', {
+    p_given_name: values.given_name,
+    p_family_name: values.family_name,
+    p_date_of_birth: values.date_of_birth,
+    p_email: values.email,
+    p_phone: values.phone,
+    p_street: values.street,
+    p_house_number: values.house_number,
+    p_postal_code: values.postal_code,
+    p_city: values.city,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Der Patient konnte nicht angelegt werden.');
+  const patientId = z.string().uuid().safeParse(data);
+  if (!patientId.success) throw new Error('Der Patient konnte nicht angelegt werden.');
+  return patientId.data;
 }

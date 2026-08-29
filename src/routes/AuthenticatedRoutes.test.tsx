@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
+import type * as PatientsApiModule from '@/features/patients/api';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -9,7 +10,8 @@ vi.mock('@/features/audit/api', () => ({
   formatTimestamp: () => '—',
   shortReference: () => '—',
 }));
-vi.mock('@/features/patients/api', () => ({
+vi.mock('@/features/patients/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PatientsApiModule>()),
   fetchPatients: () => Promise.resolve([]),
   fetchPatient: () => Promise.resolve(null),
   logPatientRecordView: () => Promise.resolve(),
@@ -19,6 +21,7 @@ vi.mock('@/features/patients/api', () => ({
 }));
 
 const AUDIT = '/praxis/sicherheit/audit';
+const NEU = '/patienten/neu';
 
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
@@ -40,6 +43,23 @@ describe('AuthenticatedRoutes', () => {
       expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
     },
   );
+
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+    'oeffnet das Anlageformular fuer %s',
+    async (role) => {
+      renderWithProviders(<AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />, NEU);
+      expect(await screen.findByRole('heading', { name: 'Neue:r Patient:in' })).toBeInTheDocument();
+    },
+  );
+
+  it('leitet ein Patientenkonto vom Anlageformular auf die Uebersicht um', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()} />,
+      NEU,
+    );
+    expect(screen.queryByRole('heading', { name: 'Neue:r Patient:in' })).toBeNull();
+    expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+  });
 
   it('blendet den Sicherheitsbereich fuer Nicht-owner aus der Navigation aus', () => {
     renderWithProviders(

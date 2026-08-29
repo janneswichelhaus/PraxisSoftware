@@ -32,7 +32,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function PatientDetail({ patient }: { patient: Patient }) {
   const age = ageInYears(patient.date_of_birth);
-  const address = [patient.street, [patient.postal_code, patient.city].filter(Boolean).join(' ')]
+  const street = [patient.street, patient.house_number].filter(Boolean).join(' ');
+  const address = [street, [patient.postal_code, patient.city].filter(Boolean).join(' ')]
     .filter(Boolean)
     .join(', ');
 

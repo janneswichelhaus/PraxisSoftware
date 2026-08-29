@@ -6,13 +6,18 @@
  * andernfalls würde ein neues Ereignis in der Oberfläche fehlen oder ein
  * Filterwert ins Leere laufen.
  */
-export const AUDIT_ACTIONS = ['patient_record.viewed', 'audit_log.read'] as const;
+export const AUDIT_ACTIONS = [
+  'patient_record.viewed',
+  'audit_log.read',
+  'patient.created',
+] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export const auditActionLabels: Record<AuditAction, string> = {
   'patient_record.viewed': 'Patientenakte geöffnet',
   'audit_log.read': 'Auditlog gelesen',
+  'patient.created': 'Patient:in angelegt',
 };
 
 export const auditSubjectLabels: Record<string, string> = {
