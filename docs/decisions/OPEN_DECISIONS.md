@@ -14,7 +14,7 @@ aus B1 bis B4, die vor Produktivstart zu erbringen sind.
 
 Die Prinzipienebene ist in `PROJECT_PRINCIPLES.md` konsolidiert.
 
-Zuletzt aktualisiert: 2026-08-28
+Zuletzt aktualisiert: 2026-08-30
 
 | Punkt | Entscheidung |
 |---|---|
@@ -466,9 +466,9 @@ und anschließend eine Präzisierung von `PROJECT_PRINCIPLES.md`.
 
 | Begriff | Bezug | Was fehlt |
 |---|---|---|
-| „finalisiert" | §5 | Expliziter Abschluss-/Signaturschritt? Frist? Wer darf finalisieren? Kann eine finalisierte Doku je gelöscht werden? |
-| „nachvollziehbar" | §5 | Versionierung mit abrufbarem Originalinhalt (wie §630f BGB verlangt) oder nur Änderungs-Log? Zwei verschiedene Datenmodelle. |
-| „bestätigt" | §8 | Der Terminstatus-Automat fehlt vollständig (angefragt / vorgemerkt / bestätigt / abgesagt / nicht angetroffen / durchgeführt / dokumentiert / abgerechnet). Er treibt Ausfallhonorar, Behandlungsnachweis und Abrechnung. |
+| „finalisiert" | §5 | Expliziter Abschluss-/Signaturschritt? Frist? Wer darf finalisieren? Kann eine finalisierte Doku je gelöscht werden? **Entscheidungsentwurf liegt vor: [ADR-016](../adr/ADR-016-clinical-documentation-traceability.md) — Status vorgeschlagen, noch nicht entschieden.** |
+| „nachvollziehbar" | §5 | Versionierung mit abrufbarem Originalinhalt oder nur Änderungs-Log? Zwei verschiedene Datenmodelle. §630f BGB schreibt keine Technik vor, verlangt aber, dass der ursprüngliche Inhalt und der Änderungszeitpunkt erkennbar bleiben. **Entscheidungsentwurf liegt vor: [ADR-016](../adr/ADR-016-clinical-documentation-traceability.md) — Status vorgeschlagen, noch nicht entschieden.** |
+| „bestätigt" | §8 | Der Terminstatus-Automat fehlt vollständig (angefragt / vorgemerkt / bestätigt / abgesagt / nicht angetroffen / durchgeführt). Er treibt Ausfallhonorar, Behandlungsnachweis und Abrechnung. **Achtung:** Die frühere Fassung dieser Zeile führte „dokumentiert" und „abgerechnet" als weitere Terminstufen. [ADR-016](../adr/ADR-016-clinical-documentation-traceability.md) schlägt vor, Terminablauf, Dokumentationsstand, Abrechnung und Zahlung als **getrennte Zustandsbereiche** zu führen; die beiden Stufen sind hier deshalb gestrichen. Wird ADR-016 abgelehnt, ist das rückgängig zu machen. Offen bleibt der Terminautomat selbst, einschließlich „nicht angetroffen" und der Voraussetzungen für Ausfallhonorare — ein Terminstatus allein darf keine Honorarforderung auslösen. |
 | „auditierbar" | §4.2 | siehe C4 |
 | „organisatorische Patientenkommunikation" | §4.3 | siehe C2 |
 | „Behandlungsnachweis" | §4.4 | siehe C1 |
@@ -496,6 +496,8 @@ Tests zu jedem MUSS, damit §12 überhaupt prüfbar wird.
 | E6 | **Synthetische Testdaten.** §3.1 verbietet Echtdaten, verlangt aber keinen Generator. Ohne Generator entsteht Druck, doch Echtdaten zu verwenden. | §3.1 | P1 |
 | E7 | **CI ab dem ersten Commit** mit definierten Gates: Typecheck, Lint, Tests, Migrationsprüfung, Dependency-Audit, Secret-Scanning (§3.3 ist sonst nur eine Bitte). Dazu Branch Protection auf `main`. **Technisch entschieden am 2026-08-28 — [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md):** CI ab dem ersten Anwendungscode mit neun Pflichtprüfungen, geschützter main-Branch ohne Force Push, Produktionsdeployment nur aus freigegebenem Stand mit menschlicher Freigabe, keine autonomen Agent-Deployments, Review-Checkliste statt künstlichem Zwei-Personen-Review. | §3.3, §12 | P0 · entschieden |
 | E8 | **Dateiablage.** Belege, Fotos, Patienten-Uploads: Ablageort, Verschlüsselung, Zugriffsregeln, Virenscan bei Patienten-Uploads, signierte URLs mit kurzer Gültigkeit. §12 nennt Dateizugriffe als kritisch, das Dokument regelt sie nirgends. | §12 | P1 |
+| E10 | **Wer verwaltet Mitarbeiterdatensätze.** §4.1 nennt „Mitarbeiter" und „Personalprozesse" beim Praxisinhaber, §4.3 nennt für das Office „Mitarbeiterorganisation", §4.5 führt „Mitarbeiterplanung" für die Teamleitung als **mögliches** Zusatzrecht. Für den schreibenden Zugriff liegt damit nur für den Praxisinhaber eine verbindliche Aussage vor. Die Umsetzung (STAFF-001) folgt bis zu einer Entscheidung §13 („im Zweifel blockieren") und beschränkt Anlegen, Ändern und den Statuswechsel auf `owner`; das **Lesen** der Liste bleibt bei allen Praxisrollen. Offen: ob Office und/oder Teamleitung schreiben dürfen. | §4.1, §4.3, §4.5 | P2 |
+| E11 | **Wer gilt als behandelnde Person.** Zuordenbar für Termine ist derzeit, wer aktiv beschäftigt ist **und** einen eigenen aktiven Zugang mit therapeutischer Rolle besitzt (aus CAL-001 abgeleitet, nicht ausdrücklich entschieden). Folge: Eine neu angelegte Therapeutin ohne Zugang kann weder eingeplant werden noch Arbeitszeiten erhalten — obwohl Mitarbeiterdatensatz und Konto nach ADR-014 getrennte Konzepte sind. Offen: ob die therapeutische Tätigkeit am Mitarbeiterdatensatz geführt wird (unabhängig vom Konto) oder ob die Kopplung an den Zugang bewusst bestehen bleibt. | §4.2, ADR-014 | P2 |
 | E9 | **Dokument-Governance.** `PROJECT_PRINCIPLES.md` hat keine Version, kein Datum und keinen Änderungsprozess. Offen: Versionierung des Dokuments und die Beziehung zwischen Prinzipien und Code — vorgesehenes Bindeglied sind ADRs unter `docs/adr/`. | §11 | P1 |
 
 ---

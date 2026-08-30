@@ -315,7 +315,62 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
     „Bearbeiten", und die Detailansicht bietet es unverändert an. Wer nur mit
     der Tastatur arbeitet, nutzt diesen Weg.
 
-**15. Typische Fehler**
+**15. STAFF-001 manuell prüfen** — Mitarbeiterverwaltung
+
+Mitarbeiterdatensätze **lesen** dürfen alle Praxisrollen; **anlegen, ändern und
+den Beschäftigungsstatus wechseln** darf in diesem Stand nur `owner`. Der
+Schnitt folgt §4.1 („Mitarbeiter", „Personalprozesse") und ist bis zu einer
+ausdrücklichen Entscheidung bewusst eng gehalten (offener Punkt E10).
+
+**Anlegen bedeutet ausdrücklich nicht: Benutzerkonto, Einladung oder Rolle.**
+Person, Mitarbeiterdatensatz und Zugang bleiben getrennte Konzepte (ADR-014).
+
+1. Als `jannes.test@praxis.invalid` (owner) anmelden, „Team" in der Navigation
+   öffnen. Die Liste zeigt die vier Mitarbeitenden aus dem Seed.
+2. „Mitarbeiter:in anlegen": Vor- und Nachname sind Pflicht, alles andere ist
+   freiwillig. Anlegen.
+3. Die Detailansicht erscheint. In der Liste steht die neue Person mit dem
+   Vermerk **„nicht für Termine zuordenbar"** — sie hat noch keinen eigenen
+   Zugang mit therapeutischer Rolle.
+4. Gegenprobe: einen Termin anlegen und die Auswahl „Behandelnde Person"
+   öffnen. Die neue Person steht dort **nicht** (offener Punkt E11).
+5. „Stammdaten bearbeiten": Diensttelefon ändern, speichern. Der neue Wert
+   steht in der Detailansicht, auch nach dem Neuladen (F5).
+6. „Als inaktiv führen" klicken — es erscheint eine Rückfrage. Ein einzelner
+   Klick ändert nichts. Bestätigen: „Beschäftigung" steht auf „Inaktiv".
+7. „Wieder als aktiv führen" stellt den Ausgangszustand her.
+8. **Rückfrage bei offenen Terminen:** einen Termin in der Zukunft für „Anna
+   Beispiel" anlegen. Dann „Team → Anna Beispiel → Als inaktiv führen"
+   bestätigen. Der Vorgang wird **abgewiesen**; stattdessen erscheint die
+   Liste der betroffenen Termine mit Datum, Zeit und Patient:in.
+9. „Abbrechen": nichts hat sich geändert, der Termin steht unverändert im
+   Kalender. Es wurde nichts abgesagt und nichts umgebucht.
+10. Denselben Weg erneut gehen und „Trotz offener Termine deaktivieren"
+    klicken. Erst jetzt ist Anna inaktiv — und der Termin steht **weiterhin**
+    auf „Geplant".
+11. Gegenprobe Serverdurchsetzung: einen **neuen** Termin für Anna anlegen. Sie
+    steht nicht mehr in der Auswahl. Einen bestehenden Termin auf sie
+    umzuhängen, wird ebenfalls abgewiesen.
+12. Der bestehende Termin bleibt beherrschbar: er lässt sich absagen oder einer
+    aktiven Person zuordnen.
+13. Anna wieder aktiv setzen.
+14. Gegenprobe Rollen: als `olivia.office@praxis.invalid` (office) „Team"
+    öffnen. Die Liste ist lesbar, „Mitarbeiter:in anlegen" und der
+    Statuswechsel fehlen. Das ist ausdrücklich **kein** Sicherheitsnachweis;
+    verbindlich sind `create_staff_member`, `update_staff_member` und
+    `set_staff_employment_status`, geprüft in `pnpm test:db` und im E2E-Test
+    „Durchsetzung am Server".
+15. Gegenprobe Beschäftigtendatenschutz: als office die Detailansicht von „Anna
+    Beispiel" öffnen — der Abschnitt „Privat" fehlt vollständig. Als owner
+    erscheint er. Die Felder werden für office **gar nicht erst geliefert**,
+    nicht nur ausgeblendet (§20, §4.7).
+16. Als owner „Praxis → Sicherheit → Audit" öffnen: dort stehen
+    `staff_member.created`, `staff_member.updated` und
+    `staff_member.status_changed` — ohne Namen, ohne Kontaktdaten und ohne
+    Privatangaben. Bei einer Änderung werden nur die **Namen** der geänderten
+    Felder festgehalten.
+
+**16. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
