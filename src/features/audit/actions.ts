@@ -25,6 +25,9 @@ export const AUDIT_ACTIONS = [
   'staff_working_hour_exception.created',
   'staff_working_hour_exception.updated',
   'staff_working_hour_exception.removed',
+  'staff_member.created',
+  'staff_member.updated',
+  'staff_member.status_changed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -48,6 +51,9 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'staff_working_hour_exception.created': 'Abweichung angelegt',
   'staff_working_hour_exception.updated': 'Abweichung geändert',
   'staff_working_hour_exception.removed': 'Abweichung aufgehoben',
+  'staff_member.created': 'Mitarbeiter:in angelegt',
+  'staff_member.updated': 'Mitarbeiterstammdaten geändert',
+  'staff_member.status_changed': 'Beschäftigungsstatus geändert',
 };
 
 export const auditSubjectLabels: Record<string, string> = {
@@ -56,6 +62,7 @@ export const auditSubjectLabels: Record<string, string> = {
   appointment: 'Termin',
   staff_working_hours: 'Wochenarbeitszeit',
   staff_working_hour_exception: 'Arbeitszeitabweichung',
+  staff_member: 'Mitarbeiter:in',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {
