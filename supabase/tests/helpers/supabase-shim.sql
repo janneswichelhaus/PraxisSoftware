@@ -37,18 +37,28 @@ $$;
 create schema if not exists auth;
 
 -- Spaltenauswahl entspricht den von seed.sql verwendeten Feldern von GoTrue.
+-- Die Token-Spalten sind NOT NULL mit Default '': seed.sql setzt sie explizit,
+-- weil aktuelle GoTrue-Versionen NULL dort nicht mehr akzeptieren.
 create table if not exists auth.users (
-  instance_id        uuid,
-  id                 uuid primary key,
-  aud                varchar(255),
-  role               varchar(255),
-  email              varchar(255) unique,
-  encrypted_password varchar(255),
-  email_confirmed_at timestamptz,
-  raw_app_meta_data  jsonb,
-  raw_user_meta_data jsonb,
-  created_at         timestamptz default now(),
-  updated_at         timestamptz default now()
+  instance_id                 uuid,
+  id                          uuid primary key,
+  aud                         varchar(255),
+  role                        varchar(255),
+  email                       varchar(255) unique,
+  encrypted_password          varchar(255),
+  email_confirmed_at          timestamptz,
+  raw_app_meta_data           jsonb,
+  raw_user_meta_data          jsonb,
+  created_at                  timestamptz default now(),
+  updated_at                  timestamptz default now(),
+  confirmation_token          varchar(255) not null default '',
+  recovery_token              varchar(255) not null default '',
+  email_change_token_new      varchar(255) not null default '',
+  email_change                varchar(255) not null default '',
+  email_change_token_current  varchar(255) not null default '',
+  phone_change                text not null default '',
+  phone_change_token          varchar(255) not null default '',
+  reauthentication_token      varchar(255) not null default ''
 );
 
 create or replace function auth.jwt()

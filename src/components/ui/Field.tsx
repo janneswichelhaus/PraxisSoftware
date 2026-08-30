@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useId, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 
 interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
   label: string;
@@ -6,17 +6,43 @@ interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
   error?: string | undefined;
 }
 
+function EyeIcon({ crossedOut }: { crossedOut: boolean }) {
+  return (
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" aria-hidden="true">
+      <path
+        d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <circle cx="10" cy="10" r="2.25" stroke="currentColor" strokeWidth="1.5" />
+      {crossedOut ? (
+        <path
+          d="M2.5 2.5 17.5 17.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      ) : null}
+    </svg>
+  );
+}
+
 /**
  * Beschriftetes Eingabefeld.
  *
  * Label, Hinweis und Fehlermeldung sind über id/aria-describedby verbunden -
- * Screenreader lesen den Fehler zusammen mit dem Feld vor.
+ * Screenreader lesen den Fehler zusammen mit dem Feld vor. Ein Passwortfeld
+ * (type="password") erhält zusätzlich einen Sichtbar-Schalter, damit
+ * Tippfehler bei der Eingabe auffallen.
  */
-export function Field({ label, hint, error, className = '', ...props }: FieldProps) {
+export function Field({ label, hint, error, className = '', type, ...props }: FieldProps) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
+  const isPassword = type === 'password';
+  const [visible, setVisible] = useState(false);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -28,17 +54,33 @@ export function Field({ label, hint, error, className = '', ...props }: FieldPro
           {hint}
         </p>
       ) : null}
-      <input
-        id={id}
-        aria-describedby={describedBy}
-        aria-invalid={error ? true : undefined}
-        className={
-          'bg-surface text-ink placeholder:text-ink-subtle min-h-11 rounded-lg border px-3 text-base ' +
-          (error ? 'border-danger' : 'border-line-strong') +
-          className
-        }
-        {...props}
-      />
+      <div className="relative">
+        <input
+          id={id}
+          type={isPassword ? (visible ? 'text' : 'password') : type}
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
+          className={[
+            'bg-surface text-ink placeholder:text-ink-subtle min-h-11 w-full rounded-lg border px-3 text-base',
+            isPassword ? 'pr-11' : '',
+            error ? 'border-danger' : 'border-line-strong',
+            className,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          {...props}
+        />
+        {isPassword ? (
+          <button
+            type="button"
+            onClick={() => setVisible((current) => !current)}
+            aria-label={visible ? 'Kennwort verbergen' : 'Kennwort anzeigen'}
+            className="text-ink-subtle hover:text-ink-muted absolute inset-y-0 right-0 flex w-11 items-center justify-center"
+          >
+            <EyeIcon crossedOut={!visible} />
+          </button>
+        ) : null}
+      </div>
       {error ? (
         <p id={errorId} className="text-danger text-sm">
           {error}

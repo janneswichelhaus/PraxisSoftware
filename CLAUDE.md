@@ -135,3 +135,11 @@ Hintergrund und Begründung: `docs/development/DEVELOPMENT_WORKFLOW.md`.
 
 Kleine Commits mit aussagekräftiger Nachricht. Nach abgeschlossenem Feature
 stoppen, nicht eigenständig das nächste beginnen.
+
+Jannes (Projektinhaber) schaut sich Ergebnisse lokal auf seinem eigenen
+Rechner an, nicht nur über Tests. **Nach jeder abgeschlossenen Änderung kurz
+die Schritte nennen, mit denen er seinen lokalen Stand aktualisiert**,
+mindestens `git pull origin <branch>`; zusätzlich `pnpm install` bei
+geänderten Abhängigkeiten und `pnpm dlx supabase db reset`, wenn sich
+Migrationen oder `supabase/seed.sql` geändert haben. Das gilt auch bei
+kleinen Zwischen-Fixes, nicht nur am Ende eines ganzen Features.
