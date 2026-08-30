@@ -1,10 +1,12 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'quiet';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   children: ReactNode;
+  /** Fuer Fokusfuehrung, etwa bei einer Rueckfrage vor einem Vorgang. */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 const base =

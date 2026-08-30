@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { canChangePatientStatus, canReadPatientDirectory, isStaff, roleKeySchema } from './types';
+import {
+  canChangePatientStatus,
+  canManageAppointments,
+  canReadPatientDirectory,
+  isStaff,
+  roleKeySchema,
+} from './types';
 
 /**
  * Die Rollenlogik im Client steuert ausschliesslich die Darstellung. Sie wird
@@ -45,6 +51,24 @@ describe('canChangePatientStatus', () => {
 
   it('wertet Mehrfachrollen als Vereinigung (ADR-004)', () => {
     expect(canChangePatientStatus(['therapist', 'office'])).toBe(true);
+  });
+});
+
+describe('canManageAppointments', () => {
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+    'laesst %s Termine planen',
+    (role) => {
+      expect(canManageAppointments([role])).toBe(true);
+    },
+  );
+
+  it('laesst ein reines Patientenkonto keine Termine planen', () => {
+    expect(canManageAppointments(['patient'])).toBe(false);
+    expect(canManageAppointments([])).toBe(false);
+  });
+
+  it('wertet Mehrfachrollen als Vereinigung (ADR-004)', () => {
+    expect(canManageAppointments(['patient', 'office'])).toBe(true);
   });
 });
 

@@ -71,8 +71,8 @@ Projektverzeichnis in Git Bash.
 
 ```bash
 git fetch origin
-git checkout claude/patient-data-edit-61uj2q
-git pull --ff-only origin claude/patient-data-edit-61uj2q
+git checkout claude/kernfaehige-terminverwaltung-5y709x
+git pull --ff-only origin claude/kernfaehige-terminverwaltung-5y709x
 ```
 
 **2. Abhängigkeiten installieren**
@@ -158,7 +158,68 @@ Behandlungsabschluss im Sinne von ADR-008.
    `set_patient_status`, geprüft in `pnpm test:db` und im E2E-Test
    „Autorisierung auf RPC-Ebene".
 
-**9. Typische Fehler**
+**9. CAL-001 manuell prüfen** — Termin anlegen
+
+Termine dürfen `owner`, `therapist`, `team_lead` und `office` anlegen. Als
+behandelnde Person zuordenbar sind nur aktive Mitarbeitende mit therapeutischer
+Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
+
+1. Als `olivia.office@praxis.invalid` anmelden, „Max Mustermann" öffnen.
+2. „Termin anlegen" klicken. Der Patient steht als Kontext und ist nicht
+   wechselbar.
+3. Behandelnde Person „Anna Beispiel", Terminart „Praxis", ein Datum in der
+   Zukunft, Beginn 09:00, Ende 10:00. Der Standort ist vorausgewählt, weil es
+   nur einen gibt.
+4. „Termin anlegen" — die Detailansicht zeigt Datum und Zeit in der Zeitzone
+   der Praxis.
+5. Seite neu laden (F5): der Termin steht weiterhin da.
+6. Gegenprobe Überschneidung: einen zweiten Termin für dieselbe Person am
+   gleichen Tag von 09:30 bis 10:30 anlegen. Er wird mit einer verständlichen
+   Meldung abgewiesen.
+7. Gegenprobe angrenzend: derselbe Zeitraum ab 10:00 wird angenommen — das
+   Intervall ist halboffen.
+8. Terminart „Hausbesuch" wählen: die Adresse wird aus den Stammdaten
+   übernommen und ist nicht überschreibbar.
+
+**10. CAL-002 manuell prüfen** — Kalender
+
+1. „Kalender" in der Navigation öffnen. Die Wochenansicht zeigt sieben Tage mit
+   Stundenachse; zeitgleiche Termine verschiedener Personen stehen
+   nebeneinander und sind farblich unterscheidbar.
+2. Zwischen „Tag" und „Woche" wechseln, mit den Pfeilen blättern, „Heute"
+   nutzen. Ansicht, Datum und Filter stehen in der Adresszeile.
+3. Adresszeile kopieren, neues Tab, einfügen: derselbe Stand erscheint.
+4. Die Adresszeile absichtlich verstellen, etwa `?ansicht=monat&datum=2027-02-30`
+   — es erscheint keine Fehlerseite, sondern die Standardansicht.
+5. Nach behandelnder Person und Standort filtern.
+6. Fenster auf ~375 px verschmälern (F12 → Gerätesimulation): die Woche wird zur
+   gestapelten Tagesagenda, ohne horizontales Scrollen.
+7. Einen Termin anklicken — die Detailansicht öffnet sich.
+
+**11. CAL-003 manuell prüfen** — Bearbeiten und Absagen
+
+1. Einen geplanten Termin öffnen, „Bearbeiten" klicken. Das Formular ist
+   vorbefüllt; der Patient ist nicht änderbar.
+2. Beginn und Ende ändern, speichern. Die Detailansicht zeigt die neue Zeit,
+   auch nach dem Neuladen.
+3. Terminart von „Praxis" auf „Hausbesuch" wechseln: die Adresse wird
+   übernommen. Zurück auf „Video": Ort und Adresse verschwinden.
+4. Konfliktprobe: denselben Termin in zwei Browser-Tabs zum Bearbeiten öffnen,
+   im ersten speichern, danach im zweiten. Der zweite Versuch wird mit einer
+   verständlichen Meldung abgewiesen; der Termin behält die erste Änderung.
+5. „Termin absagen" klicken — es erscheint eine Rückfrage, die den betroffenen
+   Termin benennt. Ein einzelner Klick sagt nichts ab.
+6. Bestätigen: der Status steht auf „Abgesagt", Bearbeiten und Absagen sind
+   verschwunden. Der Termin ist nicht gelöscht.
+7. Im Kalender ist er standardmäßig ausgeblendet und über den Statusfilter
+   „Geplante und abgesagte" wieder sichtbar.
+8. Der abgesagte Zeitraum lässt sich neu belegen.
+9. Als `jannes.test@praxis.invalid` (owner) „Praxis → Sicherheit → Audit"
+   öffnen: dort stehen `appointment.created`, `appointment.rescheduled`
+   beziehungsweise `appointment.updated` und `appointment.cancelled` — ohne
+   Stammdaten und ohne konkrete Terminzeiten.
+
+**12. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |

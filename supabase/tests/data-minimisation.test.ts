@@ -196,8 +196,8 @@ describe('Mandantentrennung der Detaildaten (ADR-003)', () => {
     await asPostgres(`
       insert into auth.users (id, email, aud, role)
         values ('${fremdeOwnerId}', 'frida.fremd@praxis.invalid', 'authenticated', 'authenticated');
-      insert into public.organizations (id, name)
-        values ('${fremdeOrg}', 'Test Praxis Woanders');
+      insert into public.organizations (id, name, time_zone)
+        values ('${fremdeOrg}', 'Test Praxis Woanders', 'Europe/Berlin');
       insert into public.persons (id, organization_id, given_name, family_name) values
         ('${fremdePersonOwner}',   '${fremdeOrg}', 'Frida', 'Fremd'),
         ('${fremdePersonPatient}', '${fremdeOrg}', 'Peter', 'Fremdpatient');

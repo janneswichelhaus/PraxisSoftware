@@ -4,7 +4,11 @@ import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { canChangePatientStatus, type CurrentUser } from '@/features/session/types';
+import {
+  canChangePatientStatus,
+  canManageAppointments,
+  type CurrentUser,
+} from '@/features/session/types';
 import {
   ageInYears,
   fetchPatient,
@@ -105,6 +109,7 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
     .filter(Boolean)
     .join(', ');
   const darfStatusWechseln = canChangePatientStatus(user.roles);
+  const darfTerminePlanen = canManageAppointments(user.roles);
 
   return (
     <>
@@ -112,12 +117,22 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
         title={fullName(patient)}
         description={patient.status === 'inactive' ? 'Nicht in laufender Versorgung' : undefined}
         actions={
-          <Link
-            to={`/patienten/${patient.id}/bearbeiten`}
-            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
-          >
-            Stammdaten bearbeiten
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              to={`/patienten/${patient.id}/bearbeiten`}
+              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
+            >
+              Stammdaten bearbeiten
+            </Link>
+            {darfTerminePlanen && patient.status === 'active' ? (
+              <Link
+                to={`/patienten/${patient.id}/termine/neu`}
+                className="bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors"
+              >
+                Termin anlegen
+              </Link>
+            ) : null}
+          </div>
         }
       />
 

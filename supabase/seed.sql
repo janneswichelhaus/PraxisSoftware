@@ -17,6 +17,7 @@
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
 delete from public.audit_log;
+delete from public.appointments;
 delete from public.patient_contact_details;
 delete from public.staff_private_details;
 delete from public.user_roles;
@@ -54,8 +55,10 @@ values
 -- -----------------------------------------------------------------------------
 -- Organisation und Standort
 -- -----------------------------------------------------------------------------
-insert into public.organizations (id, name) values
-  ('22222222-2222-4222-8222-000000000001', 'Test Praxis Tuebingen');
+-- time_zone ist verpflichtend und hat bewusst keinen Datenbank-Default:
+-- jede Organisation legt ihre Zeitzone ausdruecklich fest (CAL-001).
+insert into public.organizations (id, name, time_zone) values
+  ('22222222-2222-4222-8222-000000000001', 'Test Praxis Tuebingen', 'Europe/Berlin');
 
 insert into public.locations (id, organization_id, name) values
   ('33333333-3333-4333-8333-000000000001', '22222222-2222-4222-8222-000000000001', 'Hauptstandort Tuebingen');
@@ -98,10 +101,12 @@ insert into public.patients (id, organization_id, person_id, status, care_starte
   ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'active',   '2026-05-21'),
   ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000007', 'inactive', '2025-11-03');
 
-insert into public.patient_contact_details (patient_id, organization_id, date_of_birth, email, phone, street, postal_code, city) values
-  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '1957-04-30', 'max.mustermann@patient.invalid', '+49 7071 0000005', 'Beispielstrasse 12', '72070', 'Tuebingen'),
-  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '1963-09-17', 'erika.beispiel@patient.invalid', '+49 7071 0000006', 'Testweg 7',          '72072', 'Tuebingen'),
-  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '1971-12-05', null,                             '+49 7071 0000007', 'Fiktivgasse 9',      '72074', 'Tuebingen');
+-- Strasse und Hausnummer getrennt: ein Hausbesuch uebernimmt beide Felder
+-- einzeln in den Adress-Snapshot des Termins (CAL-001).
+insert into public.patient_contact_details (patient_id, organization_id, date_of_birth, email, phone, street, house_number, postal_code, city) values
+  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '1957-04-30', 'max.mustermann@patient.invalid', '+49 7071 0000005', 'Beispielstrasse', '12', '72070', 'Tuebingen'),
+  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '1963-09-17', 'erika.beispiel@patient.invalid', '+49 7071 0000006', 'Testweg',         '7',  '72072', 'Tuebingen'),
+  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '1971-12-05', null,                             '+49 7071 0000007', 'Fiktivgasse',     '9',  '72074', 'Tuebingen');
 
 -- -----------------------------------------------------------------------------
 -- Accountzuordnung
