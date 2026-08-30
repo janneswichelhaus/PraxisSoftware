@@ -30,7 +30,8 @@ function laufTag(versatz = 0): string {
 }
 
 function zeit(minutenAbAcht: number): string {
-  const gesamt = 8 * 60 + ((LAUF % 60) + minutenAbAcht);
+  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
+  const gesamt = 8 * 60 + (LAUF % 12) * 5 + minutenAbAcht;
   const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
   const m = String(gesamt % 60).padStart(2, '0');
   return `${h}:${m}`;

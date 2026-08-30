@@ -34,9 +34,15 @@ function laufTag(versatz = 0): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Uhrzeit innerhalb der Praxiszeiten, je Lauf verschieden. */
+/**
+ * Uhrzeit innerhalb der Praxiszeiten, je Lauf verschieden.
+ *
+ * Seit CAL-005 muss der Beginn auf dem Praxisraster liegen; im Seed sind das
+ * 5 Minuten. Der Versatz je Lauf rastet deshalb ebenfalls auf 5 Minuten ein -
+ * eine krumme Minute wuerde vom Server zu Recht abgewiesen.
+ */
 function laufZeit(offsetMinuten = 0): string {
-  const start = 8 * 60 + (LAUF % 120) + offsetMinuten;
+  const start = 8 * 60 + (LAUF % 24) * 5 + offsetMinuten;
   const h = String(Math.floor(start / 60)).padStart(2, '0');
   const m = String(start % 60).padStart(2, '0');
   return `${h}:${m}`;

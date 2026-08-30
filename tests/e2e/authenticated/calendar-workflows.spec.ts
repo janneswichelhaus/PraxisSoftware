@@ -31,7 +31,8 @@ function laufTag(): string {
 }
 
 function laufZeit(offsetMinuten = 0): string {
-  const start = 9 * 60 + (LAUF % 100) + offsetMinuten;
+  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
+  const start = 9 * 60 + (LAUF % 20) * 5 + offsetMinuten;
   const h = String(Math.floor(start / 60)).padStart(2, '0');
   const m = String(start % 60).padStart(2, '0');
   return `${h}:${m}`;
@@ -69,7 +70,12 @@ test.describe('CAL-002: Kalender', () => {
     const eintrag = page.getByRole('link', { name: /Max Mustermann/ });
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText(`${BEGINN}–${ENDE}`);
-    await expect(eintrag).toContainText('Anna Beispiel');
+    // Seit CAL-006 hat jede behandelnde Person eine eigene Spalte; ihr Name
+    // steht einmal am Spaltenkopf statt in jeder Kachel. Geprueft wird
+    // deshalb, dass der Termin in IHRER Spalte liegt.
+    await expect(page.getByRole('gridcell', { name: 'Anna Beispiel' })).toContainText(
+      'Max Mustermann',
+    );
 
     await eintrag.click();
     await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
@@ -118,8 +124,12 @@ test.describe('CAL-002: Kalender', () => {
       'aria-pressed',
       'true',
     );
-    await expect(page.getByLabel('Status')).toHaveValue('scheduled');
-    await expect(page.getByLabel('Behandelnde Person')).toHaveValue('');
+    // Standardfilter ist seit CAL-004 "active": geplante UND abgeschlossene
+    // Termine belegen den Tag.
+    await expect(page.getByLabel('Status')).toHaveValue('active');
+    // Seit CAL-006 steht in der Woche immer genau eine Person im Gitter; der
+    // unsinnige Wert aus der Adresszeile ist verworfen.
+    await expect(page.getByLabel('Behandelnde Person')).not.toHaveValue('nicht-uuid');
   });
 
   test('blättert vor und zurück', async ({ page }) => {
