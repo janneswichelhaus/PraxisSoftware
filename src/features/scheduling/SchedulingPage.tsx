@@ -44,6 +44,13 @@ function gefuellt(bloecke: Zeitblock[]): Zeitblock[] {
   return bloecke.filter((b) => b.von !== '' && b.bis !== '');
 }
 
+/** Kalendertag ein Jahr später, über UTC gerechnet - keine Ortszeit im Spiel. */
+function einJahrSpaeter(tag: string): string {
+  const d = new Date(`${tag}T00:00:00Z`);
+  d.setUTCFullYear(d.getUTCFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 // -----------------------------------------------------------------------------
 // Praxisraster
 // -----------------------------------------------------------------------------
@@ -301,9 +308,11 @@ function Abweichungen({
   const [gespeichert, setGespeichert] = useState(false);
 
   // Ein knappes Fenster nach vorn: die Pflege betrifft die kommende Planung,
-  // nicht die Vergangenheit.
+  // nicht die Vergangenheit. Gerechnet ueber ein Date statt ueber die
+  // Jahreszahl im Text - der 29. Februar plus ein Jahr waere sonst der
+  // 29. Februar eines Nichtschaltjahres und damit gar kein Datum.
   const von = heute ?? '';
-  const bis = heute ? `${Number(heute.slice(0, 4)) + 1}${heute.slice(4)}` : '';
+  const bis = heute ? einJahrSpaeter(heute) : '';
 
   const ausnahmen = useQuery({
     queryKey: ['working-hour-exceptions', von, bis],

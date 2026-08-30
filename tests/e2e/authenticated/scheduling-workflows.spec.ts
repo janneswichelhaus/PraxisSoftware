@@ -52,8 +52,8 @@ test.describe('CAL-005: Praxisraster', () => {
     await expect(page.getByLabel('Minutenraster')).toHaveCount(0);
   });
 
-  test('weist einen Beginn ausserhalb des Rasters serverseitig ab', async ({ request }) => {
-    // Die Oberflaeche fuehrt das Feld schrittweise; verbindlich ist der Server.
+  test('laesst office das Praxisraster nicht setzen', async ({ request }) => {
+    // Die Oberflaeche blendet die Einstellung aus; verbindlich ist der Server.
     const token = await zugriffstoken(request, KONTEN.office);
     const { url, anonKey } = supabaseKonfiguration();
 
