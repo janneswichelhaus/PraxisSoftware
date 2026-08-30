@@ -32,5 +32,6 @@ export function testUser(roles: RoleKey[], displayName = 'Anna Beispiel'): Curre
     roles,
     organizationName: 'Test Praxis Tuebingen',
     organizationTimeZone: 'Europe/Berlin',
+    appointmentGridMinutes: 5,
   };
 }

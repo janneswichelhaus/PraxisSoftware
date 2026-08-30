@@ -49,8 +49,8 @@ vi.mock('./api', async (importOriginal) => {
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
-    createAppointment: (patientId: string, values: unknown) =>
-      createAppointment(patientId, values) as Promise<string>,
+    createAppointment: (patientId: string, values: unknown, bestaetigt?: boolean) =>
+      createAppointment(patientId, values, bestaetigt) as Promise<string>,
   };
 });
 
@@ -64,6 +64,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 const { NewAppointmentPage } = await import('./NewAppointmentPage');
+const { AusserhalbArbeitszeitError } = await import('./api');
 
 function rendern() {
   return renderWithProviders(
@@ -182,14 +183,20 @@ describe('NewAppointmentPage', () => {
     await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
 
     await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(1));
-    expect(createAppointment).toHaveBeenCalledWith(PATIENT_ID, {
-      staff_member_id: STAFF_ANNA,
-      appointment_type: 'practice',
-      date: '2027-05-12',
-      start_time: '09:00',
-      end_time: '10:00',
-      location_id: ORT_HAUPT,
-    });
+    expect(createAppointment).toHaveBeenCalledWith(
+      PATIENT_ID,
+      {
+        staff_member_id: STAFF_ANNA,
+        appointment_type: 'practice',
+        date: '2027-05-12',
+        start_time: '09:00',
+        end_time: '10:00',
+        location_id: ORT_HAUPT,
+      },
+      // Der erste Versuch geht ausdruecklich OHNE Arbeitszeitbestaetigung
+      // hinaus (CAL-005).
+      false,
+    );
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, { replace: true }),
     );
@@ -329,6 +336,119 @@ describe('NewAppointmentPage', () => {
       await screen.findByText(/hat die behandelnde Person bereits einen Termin/),
     ).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  describe('CAL-005: Raster und Arbeitszeit', () => {
+    it('setzt die Schrittweite des Beginns auf das Praxisraster', async () => {
+      rendern();
+      await formularAbwarten();
+      // Der Wert kommt aus der Sitzung (testUser: 5 Minuten). Verbindlich
+      // prueft der Server.
+      expect(screen.getByLabelText('Beginn *')).toHaveAttribute('step', '300');
+      expect(screen.getByText('Praxisraster: 5 Minuten')).toBeInTheDocument();
+    });
+
+    it('bindet das Ende nicht an das Raster', async () => {
+      rendern();
+      await formularAbwarten();
+      expect(screen.getByLabelText('Ende *')).not.toHaveAttribute('step');
+    });
+
+    it('meldet einen Beginn ausserhalb des Rasters verstaendlich', async () => {
+      createAppointment.mockRejectedValue(
+        new Error(
+          'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
+        ),
+      );
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+      await zeitenSetzen(user);
+      await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+      expect(await screen.findByText(/passt nicht zum Praxisraster/)).toBeInTheDocument();
+    });
+
+    it('sendet den ersten Versuch ohne Bestaetigung', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+      await zeitenSetzen(user);
+      await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+      await waitFor(() =>
+        expect(createAppointment).toHaveBeenCalledWith(
+          PATIENT_ID,
+          expect.objectContaining({ start_time: '09:00' }),
+          false,
+        ),
+      );
+    });
+
+    it('fragt bei einem Termin ausserhalb der Arbeitszeit nach und legt nichts an', async () => {
+      createAppointment.mockRejectedValue(new AusserhalbArbeitszeitError());
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+      await zeitenSetzen(user);
+      await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+      const rueckfrage = await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+      expect(rueckfrage).toHaveTextContent(/noch nicht gespeichert/);
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('legt den Termin nach ausdruecklicher Bestaetigung mit Kennzeichen an', async () => {
+      createAppointment.mockRejectedValueOnce(new AusserhalbArbeitszeitError());
+      createAppointment.mockResolvedValue(TERMIN_ID);
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+      await zeitenSetzen(user);
+      await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+
+      await user.click(screen.getByRole('button', { name: 'Termin trotzdem anlegen' }));
+
+      await waitFor(() =>
+        expect(createAppointment).toHaveBeenLastCalledWith(
+          PATIENT_ID,
+          expect.objectContaining({ start_time: '09:00' }),
+          true,
+        ),
+      );
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, expect.anything()));
+    });
+
+    it('nimmt die Rueckfrage zurueck, sobald die Zeit geaendert wird', async () => {
+      createAppointment.mockRejectedValue(new AusserhalbArbeitszeitError());
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+      await zeitenSetzen(user);
+      await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+
+      // Die Rueckfrage galt genau dem abgewiesenen Zeitraum.
+      await user.clear(screen.getByLabelText('Beginn *'));
+      await user.type(screen.getByLabelText('Beginn *'), '14:00');
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('group', { name: 'Außerhalb der Arbeitszeit' }),
+        ).not.toBeInTheDocument(),
+      );
+    });
   });
 
   it('bricht ohne Schreibvorgang zurueck zur Akte ab', async () => {

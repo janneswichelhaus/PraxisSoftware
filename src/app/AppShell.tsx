@@ -21,6 +21,11 @@ function navItems(user: CurrentUser): NavItem[] {
   if (canReadPatientDirectory(user.roles)) {
     items.push({ to: '/patienten', label: 'Patient:innen' });
   }
+  // Arbeitszeiten sind fuer alle Praxisrollen lesbar; das Aendern prueft die
+  // Seite selbst und - verbindlich - der Server (CAL-005).
+  if (canManageAppointments(user.roles)) {
+    items.push({ to: '/praxis/planung', label: 'Planung' });
+  }
   // Nur die administrative Praxisrolle sieht den Sicherheitsbereich
   // (ADR-010). Die Route ist zusaetzlich serverseitig abgesichert.
   if (isOwner(user.roles)) {

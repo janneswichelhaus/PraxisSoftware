@@ -61,6 +61,8 @@ describe('Schema-Invarianten', () => {
       'user_roles',
       'audit_log',
       'appointments',
+      'staff_working_hours',
+      'staff_working_hour_exceptions',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

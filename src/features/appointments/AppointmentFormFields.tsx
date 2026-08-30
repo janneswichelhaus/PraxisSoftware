@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import {
@@ -27,6 +28,7 @@ export function AppointmentFormFields({
   therapeuten,
   standorte,
   minDatum,
+  rasterMinuten,
   hausbesuch,
 }: {
   werte: Record<AppointmentFormField, string>;
@@ -35,6 +37,8 @@ export function AppointmentFormFields({
   therapeuten: AssignableTherapist[];
   standorte: Location[];
   minDatum?: string | undefined;
+  /** Praxisraster in Minuten. Steuert die Schrittweite des Beginns (CAL-005). */
+  rasterMinuten?: number | undefined;
   /** Darstellung der Adresse bei `home_visit` - je nach Vorgang verschieden. */
   hausbesuch: ReactNode;
 }) {
@@ -78,12 +82,19 @@ export function AppointmentFormFields({
         onChange={(e) => onChange('date', e.target.value)}
       />
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      {/* items-end: der Rasterhinweis steht nur am Beginn - ohne Ausrichtung
+          stuenden die beiden Eingabefelder auf verschiedenen Hoehen. */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-end">
         <Field
           label="Beginn *"
           type="time"
           value={werte.start_time}
           error={fehler.start_time}
+          // step rechnet in Sekunden ab 00:00 - also genau in Minuten seit
+          // Mitternacht, wie das Praxisraster. Nur der Beginn ist gebunden;
+          // verbindlich prueft der Server (CAL-005).
+          step={rasterMinuten ? rasterMinuten * 60 : undefined}
+          hint={rasterMinuten ? `Praxisraster: ${rasterMinuten} Minuten` : undefined}
           onChange={(e) => onChange('start_time', e.target.value)}
         />
         <Field
@@ -159,6 +170,49 @@ export function UebernommeneAdresse({
           Bitte zuerst die Stammdaten ergänzen.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Rückfrage bei einem Termin außerhalb der Arbeitszeit (CAL-005).
+ *
+ * Der Server hat den Vorgang abgewiesen und NICHTS geschrieben. Die Bestätigung
+ * schickt denselben Vorgang vollständig neu; geprüft wird dabei wieder alles -
+ * Überschneidung, Rolle, Organisation, Raster und der erwartete Stand. Bestätigt
+ * wird ausschließlich die Arbeitszeit.
+ *
+ * Bewusst keine Warnung, die sich wegklicken lässt: ohne ausdrückliche
+ * Bestätigung passiert nichts.
+ */
+export function ArbeitszeitRueckfrage({
+  onBestaetigen,
+  laeuft,
+  beschriftung,
+}: {
+  onBestaetigen: () => void;
+  laeuft: boolean;
+  beschriftung: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Außerhalb der Arbeitszeit"
+      className="border-line-strong bg-surface-sunken mb-6 rounded-lg border p-4"
+    >
+      <p className="text-ink text-sm">
+        Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit der behandelnden Person. Der
+        Termin wurde noch nicht gespeichert.
+      </p>
+      <p className="text-ink-subtle mt-2 text-xs leading-relaxed">
+        Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls als
+        außerhalb. Arbeitszeiten werden unter „Planung" gepflegt.
+      </p>
+      <div className="mt-3">
+        <Button type="button" disabled={laeuft} onClick={onBestaetigen}>
+          {laeuft ? 'Wird gespeichert …' : beschriftung}
+        </Button>
+      </div>
     </div>
   );
 }

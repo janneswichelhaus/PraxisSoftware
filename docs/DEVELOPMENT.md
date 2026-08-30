@@ -245,7 +245,45 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
    `appointment.reopened`. Beide bleiben stehen — auch der Abschluss, der
    wieder geöffnet wurde.
 
-**13. Typische Fehler**
+**13. CAL-005 manuell prüfen** — Praxisraster und Arbeitszeiten
+
+1. Als `jannes.test@praxis.invalid` (owner) „Planung" in der Navigation öffnen.
+   Oben steht das Praxisraster mit den Werten 5, 10 und 15 Minuten.
+2. Auf 15 Minuten stellen und speichern. Danach einen Termin anlegen: das Feld
+   „Beginn" springt in 15-Minuten-Schritten, und unter dem Feld steht das
+   aktuelle Raster.
+3. Gegenprobe Server: im Formular über die Tastatur `09:07` eintragen und
+   speichern. Der Vorgang wird mit einem Hinweis auf das Raster abgewiesen —
+   die Schrittweite des Feldes ist Bedienkomfort, verbindlich ist der Server.
+4. Zurück auf „Planung": ein bestehender Termin außerhalb des Rasters bleibt im
+   Kalender sichtbar und lässt sich weiter bearbeiten, solange sein Beginn
+   unverändert bleibt.
+5. Als `olivia.office@praxis.invalid` (office) „Planung" öffnen: das
+   Praxisraster fehlt, der Wochenplan ist pflegbar.
+6. Als `anna.beispiel@praxis.invalid` (therapist) „Planung" öffnen: die Zeiten
+   sind sichtbar, es gibt keine Schaltfläche zum Speichern.
+7. Wieder als office: beim Wochenplan „Montag" wählen, einen zweiten Block
+   `13:00`–`18:00` ergänzen, speichern. Die Liste darüber zeigt beide Blöcke.
+8. Gegenprobe Überschneidung: einen Block `11:00`–`14:00` ergänzen und
+   speichern. Der Vorgang wird abgewiesen.
+9. „Blöcke leeren" und speichern: der Wochentag steht danach auf „—", also
+   ausdrücklich „an diesem Wochentag keine Termine".
+10. Abweichung: unten ein Datum wählen, „An diesem Tag keine Termine" ankreuzen,
+    speichern. Der Tag erscheint in der Liste darüber.
+11. Einen Termin an genau diesem Tag anlegen: es erscheint die Rückfrage
+    „Außerhalb der Arbeitszeit", und es wird noch nichts gespeichert. Erst
+    „Termin trotzdem anlegen" legt ihn an.
+12. Gegenprobe fehlende Angabe: einen Termin an einem Samstag anlegen. Auch
+    hier kommt die Rückfrage — eine fehlende Arbeitszeit gilt nicht als
+    „passt schon".
+13. Gegenprobe Grenzen der Bestätigung: denselben Zeitraum ein zweites Mal
+    bestätigen. Der Überschneidungsschutz greift weiterhin.
+14. Als owner „Praxis → Sicherheit → Audit" öffnen: dort steht
+    `organization.appointment_grid_changed` mit altem und neuem Minutenwert.
+    Ein Minutenraster ist eine organisatorische Einstellung, kein Gesundheits-
+    oder Stammdatenwert.
+
+**14. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -18,6 +18,7 @@ export const AUDIT_ACTIONS = [
   'appointment.cancelled',
   'appointment.completed',
   'appointment.reopened',
+  'organization.appointment_grid_changed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -34,6 +35,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'appointment.cancelled': 'Termin abgesagt',
   'appointment.completed': 'Termin abgeschlossen',
   'appointment.reopened': 'Termin wieder geöffnet',
+  'organization.appointment_grid_changed': 'Praxisraster geändert',
 };
 
 export const auditSubjectLabels: Record<string, string> = {

@@ -12,8 +12,12 @@ import {
 
 const { users, organizationId, patients } = SEED;
 
+// Bewusst MIT Arbeitszeitbestaetigung: diese Datei prueft andere Zusagen und
+// benutzt Zeiten ueber den ganzen Tag sowie Kalendertage, die auch auf ein
+// Wochenende fallen koennen. Die Arbeitszeitpruefung hat eigene Tests in
+// scheduling-rules.test.ts; hier waere sie nur Rauschen (CAL-005).
 const ANLEGEN =
-  'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid) as id';
+  'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
 
 /** Feste IDs aus supabase/seed.sql. */
 const STAFF = {
@@ -485,7 +489,7 @@ describe('create_appointment: Audit', () => {
     const rows = await eintrag();
 
     expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      ['patient_id', 'staff_member_id', 'surface'].sort(),
+      ['patient_id', 'staff_member_id', 'surface', 'outside_working_hours'].sort(),
     );
     expect(rows[0]!.context).toMatchObject({
       surface: 'web',

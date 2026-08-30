@@ -231,9 +231,29 @@ export const leererTermin: Record<AppointmentFormField, string> = {
  * Umrechnung übernimmt die Serverfunktion mit der Zeitzone der Organisation.
  * Eine Organisation wird nicht übergeben; sie stammt aus der Sitzung.
  */
+/**
+ * Der Server hat den Vorgang wegen der Arbeitszeit abgewiesen (CAL-005).
+ *
+ * Ein eigener Typ statt eines Textvergleichs in der Oberfläche: nur so lässt
+ * sich die Rückfrage sicher von einem echten Fehler unterscheiden. Der
+ * Vorgang ist dabei NICHT ausgeführt worden - die Bestätigung schickt ihn
+ * vollständig neu, und der Server prüft dann wieder alles.
+ */
+export class AusserhalbArbeitszeitError extends Error {
+  constructor() {
+    super('Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit.');
+    this.name = 'AusserhalbArbeitszeitError';
+  }
+}
+
+export function istAusserhalbArbeitszeit(fehler: unknown): boolean {
+  return fehler instanceof AusserhalbArbeitszeitError;
+}
+
 export async function createAppointment(
   patientId: string,
   values: AppointmentFormValues,
+  allowOutsideWorkingHours = false,
 ): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_appointment', {
     p_patient_id: patientId,
@@ -243,14 +263,21 @@ export async function createAppointment(
     p_start_time: values.start_time,
     p_end_time: values.end_time,
     p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) {
+    if (error.message?.includes('outside_working_hours')) throw new AusserhalbArbeitszeitError();
     // Keine Details aus der Datenbank nach außen. Die Überschneidung ist der
     // einzige Fall, den die bedienende Person unmittelbar auflösen kann.
     if (error.message?.includes('overlaps')) {
       throw new Error(
         'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
+      );
+    }
+    if (error.message?.includes('not on the appointment grid')) {
+      throw new Error(
+        'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
       );
     }
     throw new Error('Der Termin konnte nicht angelegt werden.');
@@ -368,6 +395,14 @@ export function appointmentToFormValues(
 }
 
 function schreibfehler(error: { message?: string } | null, standard: string): Error {
+  if (error?.message?.includes('outside_working_hours')) {
+    return new AusserhalbArbeitszeitError();
+  }
+  if (error?.message?.includes('not on the appointment grid')) {
+    return new Error(
+      'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
+    );
+  }
   // Zwei Fälle kann die bedienende Person selbst auflösen; alles andere bleibt
   // bewusst unspezifisch, damit keine internen Details nach außen gelangen.
   if (error?.message?.includes('overlaps')) {
@@ -399,6 +434,7 @@ export async function updateAppointment(
   appointmentId: string,
   expectedUpdatedAt: string,
   values: AppointmentFormValues,
+  allowOutsideWorkingHours = false,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('update_appointment', {
     p_appointment_id: appointmentId,
@@ -409,6 +445,7 @@ export async function updateAppointment(
     p_start_time: values.start_time,
     p_end_time: values.end_time,
     p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht geändert werden.');
