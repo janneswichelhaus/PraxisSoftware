@@ -108,6 +108,18 @@ export async function arbeitszeitBestaetigen(
   }
 }
 
+/**
+ * Die Kachel EINES bestimmten Termins im Kalender.
+ *
+ * Bewusst ueber die Zieladresse und nicht ueber den Patientennamen: alle
+ * Ablaeufe nutzen denselben synthetischen Patienten, und ein Kalendertag kann
+ * mehrere seiner Termine tragen - etwa nach einem Wiederholungslauf. Ein
+ * Namensfilter traf dann zwei Kacheln und brach im Strict Mode ab.
+ */
+export function terminKachel(page: Page, appointmentId: string): Locator {
+  return page.locator(`a[href="/termine/${appointmentId}"]`);
+}
+
 /** Wert einer Zeile der Detailansicht, adressiert über ihre Beschriftung. */
 export function detailWert(page: Page, bezeichnung: string): Locator {
   return page.locator('dl > div').filter({ hasText: bezeichnung }).locator('dd');

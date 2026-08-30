@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  terminKachel,
   arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
@@ -132,7 +133,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     // Ohne Zutun, also im Standardfilter - ein abgehakter Termin darf nicht
     // aus dem Tag verschwinden.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    const eintrag = page.getByRole('link', { name: /Max Mustermann/ });
+    const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText('Abgeschlossen');
     await expect(eintrag).toHaveAttribute('href', `/termine/${terminId}`);

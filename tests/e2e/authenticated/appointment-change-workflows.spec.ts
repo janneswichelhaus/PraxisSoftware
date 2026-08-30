@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  terminKachel,
   arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
@@ -212,11 +213,11 @@ test.describe('CAL-003: Absagen', () => {
 
     // Im Kalender standardmäßig ausgeblendet …
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    await expect(page.getByRole('link', { name: /Max Mustermann/ })).toHaveCount(0);
+    await expect(terminKachel(page, terminId)).toHaveCount(0);
 
     // … über den Statusfilter aber nachvollziehbar.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&status=all`);
-    const eintrag = page.getByRole('link', { name: /Max Mustermann/ });
+    const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText('Abgesagt');
     await expect(eintrag).toHaveAttribute('href', `/termine/${terminId}`);

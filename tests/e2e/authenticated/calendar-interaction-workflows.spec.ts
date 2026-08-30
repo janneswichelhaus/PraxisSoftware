@@ -1,5 +1,12 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { arbeitszeitBestaetigen, KONTEN, PATIENTEN, anmelden, detailWert } from './helpers';
+import {
+  terminKachel,
+  arbeitszeitBestaetigen,
+  KONTEN,
+  PATIENTEN,
+  anmelden,
+  detailWert,
+} from './helpers';
 
 /**
  * Neue Kalenderdarstellung und Verschieben per Zeigegerät (CAL-006).
@@ -148,7 +155,7 @@ test.describe('CAL-006: Verschieben', () => {
     const terminId = await terminAnlegen(page, { tag, von, bis });
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    const kachel = page.getByRole('link', { name: /Max Mustermann/ });
+    const kachel = terminKachel(page, terminId);
     await expect(kachel).toBeVisible();
 
     const ziel = page.getByRole('gridcell', { name: 'Tim Teamleitung' });
@@ -193,7 +200,7 @@ test.describe('CAL-006: Verschieben', () => {
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    const kachel = page.getByRole('link', { name: /Max Mustermann/ });
+    const kachel = terminKachel(page, terminId);
     await expect(kachel).toBeVisible();
 
     const ziel = page.getByRole('gridcell', { name: 'Tim Teamleitung' });
@@ -219,7 +226,7 @@ test.describe('CAL-006: Verschieben', () => {
     const terminId = await terminAnlegen(page, { tag, von, bis });
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    const kachel = page.getByRole('link', { name: /Max Mustermann/ });
+    const kachel = terminKachel(page, terminId);
     await expect(kachel).toBeVisible();
 
     // Weit nach unten: die Seed-Arbeitszeit endet um 18:00.

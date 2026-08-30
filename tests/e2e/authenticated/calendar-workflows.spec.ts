@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  terminKachel,
   arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
@@ -67,7 +68,7 @@ test.describe('CAL-002: Kalender', () => {
 
     await page.goto(`/kalender?ansicht=tag&datum=${TAG}`);
 
-    const eintrag = page.getByRole('link', { name: /Max Mustermann/ });
+    const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText(`${BEGINN}–${ENDE}`);
     // Seit CAL-006 hat jede behandelnde Person eine eigene Spalte; ihr Name
@@ -141,7 +142,9 @@ test.describe('CAL-002: Kalender', () => {
 
     await page.getByRole('button', { name: 'Vorheriger Zeitraum' }).click();
     await expect(page).toHaveURL((u) => u.searchParams.get('datum') === TAG);
-    await expect(page.getByRole('link', { name: /Max Mustermann/ })).toBeVisible();
+    // Hier zaehlt nur, dass der Tag nach dem Zurueckblaettern wieder belegt
+    // ist - welcher Termin es genau ist, prueft der Ablauf weiter oben.
+    await expect(page.getByRole('link', { name: /Max Mustermann/ }).first()).toBeVisible();
   });
 
   test('läuft bei 375 px ohne horizontales Scrollen', async ({ page }) => {
