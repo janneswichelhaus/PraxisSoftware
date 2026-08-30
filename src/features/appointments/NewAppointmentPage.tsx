@@ -3,21 +3,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { Field } from '@/components/ui/Field';
-import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
+import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
+import { AppointmentFormFields, UebernommeneAdresse } from './AppointmentFormFields';
 import {
   appointmentFormSchema,
-  appointmentTypeLabels,
   createAppointment,
   fetchAssignableTherapists,
   fetchLocations,
   leererTermin,
   todayInTimeZone,
   type AppointmentFormField,
-  type AppointmentType,
 } from './api';
 
 /**
@@ -117,7 +114,6 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   // Nach der Pruefung oben festhalten: in Closures ginge die Einengung des
   // Typs sonst verloren.
   const patientDaten = patient.data;
-  const art = werte.appointment_type;
   // Begrenzt das Datumsfeld nach unten. Verbindlich prueft der Server den
   // vergangenen Kalendertag ohnehin in der Zeitzone der Organisation.
   const praxisZeitzone = user.organizationTimeZone;
@@ -146,91 +142,27 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-5">
-          <div className="border-line bg-surface-sunken rounded-lg border p-4">
-            <p className="text-ink-muted text-sm">Patient:in</p>
-            <p className="text-ink text-[0.9375rem] font-medium">{fullName(patientDaten)}</p>
-          </div>
-
-          <Select
-            label="Behandelnde Person *"
-            value={werte.staff_member_id}
-            error={fehler.staff_member_id}
-            onChange={(e) => setzen('staff_member_id', e.target.value)}
-          >
-            <option value="">Bitte wählen …</option>
-            {(therapeuten.data ?? []).map((t) => (
-              <option key={t.staff_member_id} value={t.staff_member_id}>
-                {t.display_name}
-              </option>
-            ))}
-          </Select>
-
-          <Select
-            label="Terminart *"
-            value={werte.appointment_type}
-            error={fehler.appointment_type}
-            onChange={(e) => setzen('appointment_type', e.target.value)}
-          >
-            {(Object.keys(appointmentTypeLabels) as AppointmentType[]).map((typ) => (
-              <option key={typ} value={typ}>
-                {appointmentTypeLabels[typ]}
-              </option>
-            ))}
-          </Select>
-
-          <Field
-            label="Datum *"
-            type="date"
-            value={werte.date}
-            error={fehler.date}
-            min={praxisZeitzone ? todayInTimeZone(praxisZeitzone) : undefined}
-            onChange={(e) => setzen('date', e.target.value)}
-          />
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <Field
-              label="Beginn *"
-              type="time"
-              value={werte.start_time}
-              error={fehler.start_time}
-              onChange={(e) => setzen('start_time', e.target.value)}
-            />
-            <Field
-              label="Ende *"
-              type="time"
-              value={werte.end_time}
-              error={fehler.end_time}
-              onChange={(e) => setzen('end_time', e.target.value)}
-            />
-          </div>
-
-          {art === 'practice' ? (
-            <Select
-              label="Standort *"
-              value={werte.location_id}
-              error={fehler.location_id}
-              onChange={(e) => setzen('location_id', e.target.value)}
-            >
-              <option value="">Bitte wählen …</option>
-              {(standorte.data ?? []).map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </Select>
-          ) : null}
-
-          {art === 'home_visit' ? <HausbesuchsAdresse patient={patientDaten} /> : null}
-
-          {art === 'video' ? (
-            <div className="border-line bg-surface-sunken rounded-lg border p-4">
-              <p className="text-ink text-sm">
-                Für Videotermine wird in diesem Stand noch kein Videolink erzeugt.
-              </p>
-            </div>
-          ) : null}
+        <div className="border-line bg-surface-sunken mb-5 rounded-lg border p-4">
+          <p className="text-ink-muted text-sm">Patient:in</p>
+          <p className="text-ink text-[0.9375rem] font-medium">{fullName(patientDaten)}</p>
         </div>
+
+        <AppointmentFormFields
+          werte={werte}
+          fehler={fehler}
+          onChange={setzen}
+          therapeuten={therapeuten.data ?? []}
+          standorte={standorte.data ?? []}
+          minDatum={praxisZeitzone ? todayInTimeZone(praxisZeitzone) : undefined}
+          hausbesuch={
+            <UebernommeneAdresse
+              street={patientDaten.street}
+              houseNumber={patientDaten.house_number}
+              postalCode={patientDaten.postal_code}
+              city={patientDaten.city}
+            />
+          }
+        />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>
@@ -251,33 +183,5 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         zum Termin.
       </p>
     </>
-  );
-}
-
-function HausbesuchsAdresse({ patient }: { patient: Patient }) {
-  const street = [patient.street, patient.house_number].filter(Boolean).join(' ');
-  const city = [patient.postal_code, patient.city].filter(Boolean).join(' ');
-  const vollstaendig = Boolean(
-    patient.street && patient.house_number && patient.postal_code && patient.city,
-  );
-
-  return (
-    <div className="border-line bg-surface-sunken rounded-lg border p-4">
-      <p className="text-ink-muted text-sm">Adresse des Hausbesuchs</p>
-      {vollstaendig ? (
-        <>
-          <p className="text-ink text-[0.9375rem]">{[street, city].filter(Boolean).join(', ')}</p>
-          <p className="text-ink-subtle mt-2 text-xs leading-relaxed">
-            Wird aus den Stammdaten übernommen und am Termin festgehalten. Eine spätere Änderung der
-            Stammdaten verändert diesen Termin nicht.
-          </p>
-        </>
-      ) : (
-        <p className="text-danger text-sm">
-          Für einen Hausbesuch fehlt eine vollständige Adresse (Straße, Hausnummer, PLZ und Ort).
-          Bitte zuerst die Stammdaten ergänzen.
-        </p>
-      )}
-    </div>
   );
 }

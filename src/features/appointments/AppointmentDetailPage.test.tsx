@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders } from '@/test-utils';
+import { renderWithProviders, testUser } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -17,6 +18,7 @@ const praxistermin: AppointmentsApi.Appointment = {
   status: 'scheduled',
   starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T08:00:00.000Z',
+  updated_at: '2027-05-01T10:00:00.000000+00',
   visit_street: null,
   visit_house_number: null,
   visit_postal_code: null,
@@ -30,6 +32,7 @@ const praxistermin: AppointmentsApi.Appointment = {
 };
 
 const fetchAppointment = vi.fn();
+const cancelAppointment = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -37,6 +40,8 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
+    cancelAppointment: (id: string, erwartet: string) =>
+      cancelAppointment(id, erwartet) as Promise<void>,
   };
 });
 
@@ -50,8 +55,11 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 const { AppointmentDetailPage } = await import('./AppointmentDetailPage');
 
-function rendern() {
-  return renderWithProviders(<AppointmentDetailPage />, `/termine/${TERMIN_ID}`);
+function rendern(rollen: Parameters<typeof testUser>[0] = ['office']) {
+  return renderWithProviders(
+    <AppointmentDetailPage user={testUser(rollen)} />,
+    `/termine/${TERMIN_ID}`,
+  );
 }
 
 /** Liest den Wert einer Datenzeile ueber ihre Beschriftung. */
@@ -64,7 +72,9 @@ function zeile(beschriftung: string): string {
 describe('AppointmentDetailPage', () => {
   beforeEach(() => {
     fetchAppointment.mockReset();
+    cancelAppointment.mockReset();
     fetchAppointment.mockResolvedValue(praxistermin);
+    cancelAppointment.mockResolvedValue(undefined);
   });
 
   it('zeigt Patient, behandelnde Person, Art und Status', async () => {
@@ -128,12 +138,137 @@ describe('AppointmentDetailPage', () => {
     expect(zeile('Status')).toBe('Abgesagt');
   });
 
-  it('bietet in diesem Stand weder Bearbeiten noch Absagen an', async () => {
-    rendern();
-    await screen.findByText('Anna Beispiel');
+  describe('Aktionen (CAL-003)', () => {
+    it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+      'bietet %s Bearbeiten und Absagen an',
+      async (rolle) => {
+        rendern([rolle]);
+        await screen.findByText('Anna Beispiel');
 
-    expect(screen.queryByRole('button', { name: /Bearbeiten/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Absagen/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Bearbeiten' })).toHaveAttribute(
+          'href',
+          `/termine/${TERMIN_ID}/bearbeiten`,
+        );
+        expect(screen.getByRole('button', { name: 'Termin absagen' })).toBeInTheDocument();
+      },
+    );
+
+    it('blendet beide Aktionen fuer ein Patientenkonto aus', async () => {
+      rendern(['patient']);
+      await screen.findByText('Anna Beispiel');
+
+      expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
+    });
+
+    it('bietet bei einem abgesagten Termin keine Aktionen mehr an', async () => {
+      fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
+      rendern();
+      await screen.findByText('Dieser Termin ist abgesagt.');
+
+      expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
+    });
+
+    it('sagt nicht auf einen einzelnen Klick hin ab, sondern fragt zurueck', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+
+      expect(cancelAppointment).not.toHaveBeenCalled();
+      expect(await screen.findByRole('button', { name: 'Ja, Termin absagen' })).toBeInTheDocument();
+    });
+
+    it('nennt in der Rueckfrage den betroffenen Termin und vermeidet Loeschsprache', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+
+      const rueckfrage = await screen.findByRole('group', { name: 'Termin absagen' });
+      expect(rueckfrage).toHaveTextContent('Berta Bestand');
+      expect(rueckfrage).toHaveTextContent('12. Mai 2027');
+      expect(rueckfrage).toHaveTextContent('09:00');
+      expect(rueckfrage).toHaveTextContent(/bleibt vollständig erhalten/);
+      expect(rueckfrage.textContent ?? '').not.toMatch(/l\u00f6sch/i);
+    });
+
+    it('setzt den Fokus auf die Bestaetigung', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Ja, Termin absagen' })).toHaveFocus(),
+      );
+    });
+
+    it('gibt den Fokus beim Abbrechen zurueck', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Termin absagen' })).toHaveFocus(),
+      );
+      expect(cancelAppointment).not.toHaveBeenCalled();
+    });
+
+    it('sagt nach Bestaetigung mit dem gelesenen Stand ab', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      await waitFor(() =>
+        expect(cancelAppointment).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
+      );
+    });
+
+    it('loest bei doppeltem Klick nur einen Schreibvorgang aus', async () => {
+      let aufloesen: (() => void) | undefined;
+      cancelAppointment.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            aufloesen = resolve;
+          }),
+      );
+
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+
+      const knopf = screen.getByRole('button', { name: 'Ja, Termin absagen' });
+      await user.click(knopf);
+      await user.click(knopf);
+
+      expect(cancelAppointment).toHaveBeenCalledTimes(1);
+      aufloesen?.();
+    });
+
+    it('zeigt einen Konflikt verstaendlich an, ohne fremde Daten zu nennen', async () => {
+      cancelAppointment.mockRejectedValue(
+        new Error(
+          'Der Termin wurde zwischenzeitlich von einer anderen Person geändert. Bitte die Ansicht neu laden und die Änderung erneut vornehmen.',
+        ),
+      );
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      expect(
+        await screen.findByText(/zwischenzeitlich von einer anderen Person/),
+      ).toBeInTheDocument();
+    });
   });
 
   it('verlinkt zurueck in die Patientenakte', async () => {

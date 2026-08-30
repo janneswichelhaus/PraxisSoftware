@@ -38,6 +38,9 @@ const appointmentSchema = z.object({
   status: appointmentStatusSchema,
   starts_at: z.string(),
   ends_at: z.string(),
+  // Grundlage der Konflikterkennung beim Bearbeiten (CAL-003). Bewusst als
+  // Zeichenkette gefuehrt: ein Date verloere Bruchteile von Sekunden.
+  updated_at: z.string(),
   visit_street: z.string().nullable(),
   visit_house_number: z.string().nullable(),
   visit_postal_code: z.string().nullable(),
@@ -55,7 +58,7 @@ const appointmentSchema = z.object({
 export type Appointment = z.infer<typeof appointmentSchema>;
 
 const SELECT =
-  'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, ' +
+  'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
@@ -325,4 +328,97 @@ export function minutesOfDay(isoTimestamp: string, timeZone: string): number {
 
   const zahl = (typ: string) => Number(teile.find((t) => t.type === typ)?.value ?? '0');
   return zahl('hour') * 60 + zahl('minute');
+}
+
+// -----------------------------------------------------------------------------
+// Bearbeiten und Absagen (CAL-003)
+// -----------------------------------------------------------------------------
+
+/**
+ * Füllt das Formular aus einem gelesenen Termin.
+ *
+ * Datum und Uhrzeiten werden in der Praxiszeitzone gebildet - dieselbe
+ * Auslegung wie beim Speichern, sonst verschöbe sich ein Termin bei jedem
+ * Öffnen des Formulars.
+ */
+export function appointmentToFormValues(
+  appointment: Appointment,
+): Record<AppointmentFormField, string> {
+  const zone = appointment.organization_time_zone;
+  const uhrzeit = (iso: string) =>
+    new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone: zone,
+    }).format(new Date(iso));
+
+  return {
+    staff_member_id: appointment.staff_member_id,
+    appointment_type: appointment.appointment_type,
+    date: todayInTimeZone(zone, new Date(appointment.starts_at)),
+    start_time: uhrzeit(appointment.starts_at),
+    end_time: uhrzeit(appointment.ends_at),
+    location_id: appointment.location_id ?? '',
+  };
+}
+
+function schreibfehler(error: { message?: string } | null, standard: string): Error {
+  // Zwei Fälle kann die bedienende Person selbst auflösen; alles andere bleibt
+  // bewusst unspezifisch, damit keine internen Details nach außen gelangen.
+  if (error?.message?.includes('overlaps')) {
+    return new Error(
+      'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
+    );
+  }
+  if (error?.message?.includes('changed meanwhile')) {
+    return new Error(
+      'Der Termin wurde zwischenzeitlich von einer anderen Person geändert. Bitte die Ansicht neu laden und die Änderung erneut vornehmen.',
+    );
+  }
+  return new Error(standard);
+}
+
+/**
+ * Ändert einen geplanten Termin.
+ *
+ * `expectedUpdatedAt` ist der Stand, auf dem die Bearbeitung beruht. Er wird
+ * unverändert so zurückgegeben, wie er gelesen wurde - insbesondere NICHT über
+ * ein `Date` geführt, das Bruchteile von Sekunden verlieren würde.
+ */
+export async function updateAppointment(
+  appointmentId: string,
+  expectedUpdatedAt: string,
+  values: AppointmentFormValues,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('update_appointment', {
+    p_appointment_id: appointmentId,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_staff_member_id: values.staff_member_id,
+    p_appointment_type: values.appointment_type,
+    p_date: values.date,
+    p_start_time: values.start_time,
+    p_end_time: values.end_time,
+    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Termin konnte nicht geändert werden.');
+}
+
+/**
+ * Sagt einen geplanten Termin ab.
+ *
+ * Absage ist ein Statuswechsel, kein Löschen: der Termin bleibt vollständig
+ * erhalten und nachvollziehbar.
+ */
+export async function cancelAppointment(
+  appointmentId: string,
+  expectedUpdatedAt: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('cancel_appointment', {
+    p_appointment_id: appointmentId,
+    p_expected_updated_at: expectedUpdatedAt,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgesagt werden.');
 }

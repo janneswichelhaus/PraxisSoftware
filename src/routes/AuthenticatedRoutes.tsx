@@ -8,6 +8,7 @@ import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
+import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import {
   canManageAppointments,
@@ -54,7 +55,11 @@ export function AuthenticatedRoutes({
               path="/patienten/:patientId/termine/neu"
               element={<NewAppointmentPage user={user} />}
             />
-            <Route path="/termine/:appointmentId" element={<AppointmentDetailPage />} />
+            <Route path="/termine/:appointmentId" element={<AppointmentDetailPage user={user} />} />
+            <Route
+              path="/termine/:appointmentId/bearbeiten"
+              element={<EditAppointmentPage user={user} />}
+            />
           </>
         ) : null}
         {showSecurity ? <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} /> : null}

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as PatientsApiModule from '@/features/patients/api';
+import type * as AppointmentsApiModule from '@/features/appointments/api';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -10,6 +11,16 @@ vi.mock('@/features/audit/api', () => ({
   formatTimestamp: () => '—',
   shortReference: () => '—',
 }));
+vi.mock('@/features/appointments/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApiModule>();
+  return {
+    ...actual,
+    fetchAppointment: () => Promise.resolve(null),
+    fetchAppointments: () => Promise.resolve([]),
+    fetchAssignableTherapists: () => Promise.resolve([]),
+    fetchLocations: () => Promise.resolve([]),
+  };
+});
 vi.mock('@/features/patients/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApiModule>()),
   fetchPatients: () => Promise.resolve([]),
@@ -25,6 +36,8 @@ const NEU = '/patienten/neu';
 const BEARBEITEN = '/patienten/66666666-6666-4666-8666-000000000001/bearbeiten';
 const TERMIN_NEU = '/patienten/66666666-6666-4666-8666-000000000001/termine/neu';
 const TERMIN_DETAIL = '/termine/77777777-7777-4777-8777-000000000001';
+const TERMIN_BEARBEITEN = '/termine/77777777-7777-4777-8777-000000000001/bearbeiten';
+const KALENDER = '/kalender';
 
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
@@ -127,6 +140,37 @@ describe('AuthenticatedRoutes', () => {
         TERMIN_DETAIL,
       );
       expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+    });
+
+    it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+      'oeffnet %s den Kalender',
+      async (role) => {
+        renderWithProviders(
+          <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+          KALENDER,
+        );
+        expect(await screen.findByRole('heading', { name: 'Kalender' })).toBeInTheDocument();
+      },
+    );
+
+    it.each([[TERMIN_BEARBEITEN], [KALENDER]])(
+      'leitet ein Patientenkonto von %s auf die Uebersicht um',
+      async (pfad) => {
+        renderWithProviders(
+          <AuthenticatedRoutes user={testUser(['patient'])} onSignOut={vi.fn()} />,
+          pfad,
+        );
+        expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      },
+    );
+
+    it('oeffnet die Terminbearbeitung fuer eine berechtigte Rolle', async () => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser(['office'])} onSignOut={vi.fn()} />,
+        TERMIN_BEARBEITEN,
+      );
+      // Der Termin ist im Mock nicht auffindbar - die Route greift trotzdem.
+      expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     });
   });
 });

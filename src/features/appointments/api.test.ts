@@ -18,6 +18,7 @@ const basis: Appointment = {
   status: 'scheduled',
   starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T08:00:00.000Z',
+  updated_at: '2027-05-01T10:00:00.000000+00',
   visit_street: null,
   visit_house_number: null,
   visit_postal_code: null,
