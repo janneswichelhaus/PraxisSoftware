@@ -13,7 +13,10 @@ test.describe('Anmeldung', () => {
 
     await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
     await expect(page.getByLabel('E-Mail-Adresse')).toBeVisible();
-    await expect(page.getByLabel('Kennwort')).toBeVisible();
+    // exact: true grenzt das Feld selbst gegen den Sichtbar-Schalter ab, dessen
+    // Beschriftung ("Kennwort anzeigen") den Feldnamen enthaelt.
+    await expect(page.getByLabel('Kennwort', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Kennwort anzeigen' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Anmelden' })).toBeEnabled();
   });
 
@@ -24,8 +27,19 @@ test.describe('Anmeldung', () => {
     await page.keyboard.type('jannes.test@praxis.invalid');
     await page.keyboard.press('Tab');
     await page.keyboard.type('LokalerTestzugang!2026');
-    await page.keyboard.press('Tab');
 
+    // Der Sichtbar-Schalter liegt in der Tabreihenfolge zwischen Kennwort und
+    // Anmeldeknopf. Er ist bewusst per Tastatur erreichbar: ein interaktives
+    // Element aus der Tabreihenfolge zu nehmen, waere ein Barrierefreiheits-
+    // fehler (WCAG 2.1.1).
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Kennwort anzeigen' })).toBeFocused();
+
+    // Und er laesst sich mit der Tastatur ausloesen.
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Kennwort verbergen' })).toBeFocused();
+
+    await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: /Anmelden/ })).toBeFocused();
   });
 

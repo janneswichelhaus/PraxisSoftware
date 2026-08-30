@@ -17,7 +17,12 @@ max_rows = 200
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 16
+# Aktuelle Supabase-CLI-Versionen bieten fuer den lokalen lauffaehigen
+# Postgres-Container kein Major-Version-Image 16 mehr an (nur noch 15/17);
+# ohne dies bricht `supabase start` mit "Invalid db.major_version: 16" ab.
+# Betrifft ausschliesslich diesen Docker-Stack (Auth/Storage/Studio), nicht
+# die Migrations-/RLS-Tests aus `pnpm test:db` gegen echtes PostgreSQL 16.
+major_version = 17
 
 [db.pooler]
 enabled = false
@@ -49,7 +54,14 @@ enable_signup = false
 enable_anonymous_sign_ins = false
 
 [auth.email]
-enable_signup = false
+# ACHTUNG: In aktuellen Supabase-CLI-Versionen schaltet dieses Feld nicht
+# mehr nur die Selbstregistrierung ab, sondern den gesamten E-Mail/
+# Passwort-Provider (GOTRUE_EXTERNAL_EMAIL_ENABLED) - bei false lehnt
+# GoTrue auch normale Anmeldungen mit 422 "Email logins are disabled" ab.
+# Die Selbstregistrierung bleibt trotzdem gesperrt, das steuert weiterhin
+# das uebergeordnete [auth].enable_signup = false oben
+# (PROJECT_PRINCIPLES.md 4.2 - keine Selbstregistrierung).
+enable_signup = true
 enable_confirmations = false
 double_confirm_changes = true
 
