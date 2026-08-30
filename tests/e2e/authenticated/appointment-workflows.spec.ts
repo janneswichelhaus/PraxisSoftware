@@ -56,8 +56,10 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByRole('link', { name: 'Termin anlegen' }).click();
     await expect(page.getByRole('heading', { name: 'Termin anlegen' })).toBeVisible();
 
-    // Der Patient steht als Kontext und ist nicht wechselbar.
-    await expect(page.getByText('Max Mustermann')).toBeVisible();
+    // Der Patient steht als Kontext und ist nicht wechselbar. exact grenzt das
+    // Kontextfeld gegen die Seitenbeschreibung ab, die den Namen ebenfalls nennt.
+    await expect(page.getByText('Max Mustermann', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Patient:in')).toHaveCount(0);
 
     await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
     await page.getByLabel('Terminart *').selectOption('practice');
