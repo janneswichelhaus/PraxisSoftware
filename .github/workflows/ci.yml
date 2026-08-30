@@ -117,6 +117,13 @@ jobs:
   e2e:
     name: End-to-End
     runs-on: ubuntu-latest
+    # Der Vite-Dev-Server bricht ohne diese Variablen beim Start der Anwendung
+    # ab (src/lib/env.ts). Es sind bewusst Platzhalter ohne jeden Wert: die
+    # E2E-Abdeckung prueft ausschliesslich den nicht angemeldeten Zustand, es
+    # wird keine Supabase-Instanz kontaktiert. Keine Secrets (PROJECT_PRINCIPLES.md 3.3).
+    env:
+      VITE_SUPABASE_URL: http://127.0.0.1:54321
+      VITE_SUPABASE_ANON_KEY: platzhalter-ohne-funktion
     steps:
       - uses: actions/checkout@v5
 

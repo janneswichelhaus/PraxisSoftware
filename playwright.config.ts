@@ -24,7 +24,12 @@ export default defineConfig({
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'pnpm dev',
+    // Die Bindeadresse wird ausdruecklich gesetzt und nicht Vite ueberlassen.
+    // Ohne --host bindet Vite an den Namen 'localhost'; auf Rechnern mit
+    // IPv6 (unter anderem den CI-Runnern) loest der zuerst nach ::1 auf,
+    // waehrend Playwright 127.0.0.1 abfragt - der Start laeuft dann in den
+    // Timeout, obwohl der Server laeuft.
+    command: 'pnpm dev --host 127.0.0.1',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
