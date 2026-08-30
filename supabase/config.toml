@@ -54,12 +54,14 @@ enable_signup = false
 enable_anonymous_sign_ins = false
 
 [auth.email]
-# Aktuelle GoTrue-Versionen verlangen diese explizite Freigabe des
-# E-Mail/Passwort-Providers zusaetzlich zum uebergeordneten [auth]-Block;
-# ohne sie lehnt "supabase start" jede Anmeldung mit 422
-# "Email logins are disabled" ab.
-enabled = true
-enable_signup = false
+# ACHTUNG: In aktuellen Supabase-CLI-Versionen schaltet dieses Feld nicht
+# mehr nur die Selbstregistrierung ab, sondern den gesamten E-Mail/
+# Passwort-Provider (GOTRUE_EXTERNAL_EMAIL_ENABLED) - bei false lehnt
+# GoTrue auch normale Anmeldungen mit 422 "Email logins are disabled" ab.
+# Die Selbstregistrierung bleibt trotzdem gesperrt, das steuert weiterhin
+# das uebergeordnete [auth].enable_signup = false oben
+# (PROJECT_PRINCIPLES.md 4.2 - keine Selbstregistrierung).
+enable_signup = true
 enable_confirmations = false
 double_confirm_changes = true
 
