@@ -246,6 +246,28 @@ describe('set_patient_status: Audit', () => {
   });
 });
 
+describe('set_patient_status: Atomaritaet', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('rollt den Statuswechsel zurueck, wenn der Auditeintrag scheitert', async () => {
+    // Statuswechsel und Protokolleintrag gehoeren zusammen: das Audit ist die
+    // tragende Kompensation fuer die Offenheit der Kartei (ADR-004, ADR-010).
+    // Ein Status, der ohne seinen Eintrag stehenbliebe, waere unbemerkt.
+    await asPostgres(`alter table public.audit_log
+       add constraint test_audit_blockiert check (action <> 'patient.status_changed')`);
+    try {
+      await expect(setzenCommitted(users.office, AKTIV, 'inactive')).rejects.toThrow(
+        /test_audit_blockiert/,
+      );
+      expect(await statusVon(AKTIV)).toBe('active');
+    } finally {
+      await asPostgres('alter table public.audit_log drop constraint test_audit_blockiert');
+    }
+  });
+});
+
 describe('set_patient_status: Wechsel ohne Aenderung', () => {
   beforeAll(async () => {
     await resetDatabase();

@@ -53,12 +53,18 @@ describe('PatientDetailPage', () => {
     logPatientRecordView.mockResolvedValue(undefined);
   });
 
-  it('bietet die Bearbeitung der Stammdaten an', async () => {
-    renderWithProviders(<PatientDetailPage user={testUser(['office'])} />);
+  // Wer die Kartei lesen darf, darf die Stammdaten auch aendern - dieselbe
+  // Rollenmenge wie app.can_update_patient(). Ein Negativfall waere hier
+  // erfunden; verbindlich ist ohnehin die Pruefung in update_patient.
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+    'bietet %s die Bearbeitung der Stammdaten an',
+    async (role) => {
+      renderWithProviders(<PatientDetailPage user={testUser([role])} />);
 
-    const link = await screen.findByRole('link', { name: 'Stammdaten bearbeiten' });
-    expect(link).toHaveAttribute('href', `/patienten/${PATIENT_ID}/bearbeiten`);
-  });
+      const link = await screen.findByRole('link', { name: 'Stammdaten bearbeiten' });
+      expect(link).toHaveAttribute('href', `/patienten/${PATIENT_ID}/bearbeiten`);
+    },
+  );
 
   it.each([['owner'], ['team_lead'], ['office']] as const)(
     'zeigt %s die Statusaktion',

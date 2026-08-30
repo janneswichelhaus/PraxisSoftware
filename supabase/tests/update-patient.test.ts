@@ -433,13 +433,19 @@ describe('update_patient: Audit', () => {
   });
 
   it('haelt genau die tatsaechlich geaenderten Feldnamen fest', async () => {
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'patient.updated'",
-    );
-    expect(rows[0]?.context).toEqual({
-      surface: 'web',
-      changed_fields: ['family_name', 'city'],
-    });
+    const { rows } = await asPostgres<{
+      context: { surface?: string; changed_fields?: string[] };
+    }>("select context from public.audit_log where action = 'patient.updated'");
+    const kontext = rows[0]?.context;
+
+    // Der Auditkontext traegt nichts ausser Oberflaeche und Feldnamen.
+    expect(Object.keys(kontext ?? {}).sort()).toEqual(['changed_fields', 'surface']);
+    expect(kontext?.surface).toBe('web');
+
+    // Genau die geaenderten Felder - nicht mehr, nicht weniger, nicht anders
+    // benannt. Die Reihenfolge im Array hat keine fachliche Bedeutung und
+    // wird deshalb bewusst nicht mitgeprueft.
+    expect([...(kontext?.changed_fields ?? [])].sort()).toEqual(['city', 'family_name']);
   });
 
   it('kopiert keine Stammdatenwerte in den Auditinhalt', async () => {
