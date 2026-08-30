@@ -6,15 +6,21 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
-import { AppointmentFormFields, UebernommeneAdresse } from './AppointmentFormFields';
+import {
+  AppointmentFormFields,
+  ArbeitszeitRueckfrage,
+  UebernommeneAdresse,
+} from './AppointmentFormFields';
 import {
   appointmentFormSchema,
   createAppointment,
   fetchAssignableTherapists,
   fetchLocations,
+  istAusserhalbArbeitszeit,
   leererTermin,
   todayInTimeZone,
   type AppointmentFormField,
+  type AppointmentFormValues,
 } from './api';
 
 /**
@@ -67,8 +73,8 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   }, [standorte.data]);
 
   const mutation = useMutation({
-    mutationFn: (eingabe: Parameters<typeof createAppointment>[1]) =>
-      createAppointment(patientId!, eingabe),
+    mutationFn: (eingabe: { werte: AppointmentFormValues; bestaetigt: boolean }) =>
+      createAppointment(patientId!, eingabe.werte, eingabe.bestaetigt),
     onSuccess: async (appointmentId) => {
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       void navigate(`/termine/${appointmentId}`, { replace: true });
@@ -78,6 +84,17 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   function setzen(feld: AppointmentFormField, wert: string) {
     setWerte((bisher) => ({ ...bisher, [feld]: wert }));
     if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
+    // Eine geänderte Eingabe macht die Rückfrage gegenstandslos: sie bezieht
+    // sich auf genau den Zeitraum, der abgewiesen wurde.
+    if (mutation.isError) mutation.reset();
+  }
+
+  /** Wiederholt den Vorgang mit ausdrücklicher Bestätigung (CAL-005). */
+  function bestaetigen() {
+    if (mutation.isPending) return;
+    const ergebnis = appointmentFormSchema.safeParse(werte);
+    if (!ergebnis.success) return;
+    mutation.mutate({ werte: ergebnis.data, bestaetigt: true });
   }
 
   function absenden(event: FormEvent<HTMLFormElement>) {
@@ -98,7 +115,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
     }
 
     setFehler({});
-    mutation.mutate(ergebnis.data);
+    mutation.mutate({ werte: ergebnis.data, bestaetigt: false });
   }
 
   if (patient.isPending) return <LoadingState label="Patientendaten werden geladen …" />;
@@ -133,7 +150,13 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
-        {mutation.isError ? (
+        {istAusserhalbArbeitszeit(mutation.error) ? (
+          <ArbeitszeitRueckfrage
+            onBestaetigen={bestaetigen}
+            laeuft={mutation.isPending}
+            beschriftung="Termin trotzdem anlegen"
+          />
+        ) : mutation.isError ? (
           <div className="mb-6">
             <ErrorState
               title="Der Termin konnte nicht angelegt werden."
@@ -154,6 +177,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           therapeuten={therapeuten.data ?? []}
           standorte={standorte.data ?? []}
           minDatum={praxisZeitzone ? todayInTimeZone(praxisZeitzone) : undefined}
+          rasterMinuten={user.appointmentGridMinutes ?? undefined}
           hausbesuch={
             <UebernommeneAdresse
               street={patientDaten.street}

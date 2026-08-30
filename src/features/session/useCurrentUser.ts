@@ -37,11 +37,15 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
 
   const organization = await supabase
     .from('organizations')
-    .select('name, time_zone')
+    .select('name, time_zone, appointment_grid_minutes')
     .eq('id', profile.organization_id)
     .maybeSingle();
 
-  const org = organization.data as { name?: string; time_zone?: string } | null;
+  const org = organization.data as {
+    name?: string;
+    time_zone?: string;
+    appointment_grid_minutes?: number;
+  } | null;
 
   return {
     profile,
@@ -50,6 +54,7 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
     // Massgeblich fuer die Auslegung von Kalendertagen und Uhrzeiten
     // (CAL-001). Bewusst aus der Organisation, nicht aus dem Browser.
     organizationTimeZone: org?.time_zone ?? null,
+    appointmentGridMinutes: org?.appointment_grid_minutes ?? null,
   };
 }
 

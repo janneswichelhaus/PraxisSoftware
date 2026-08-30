@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  terminKachel,
+  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
   anmelden,
@@ -30,7 +32,8 @@ function laufTag(): string {
 }
 
 function laufZeit(offsetMinuten = 0): string {
-  const start = 9 * 60 + (LAUF % 100) + offsetMinuten;
+  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
+  const start = 9 * 60 + (LAUF % 20) * 5 + offsetMinuten;
   const h = String(Math.floor(start / 60)).padStart(2, '0');
   const m = String(start % 60).padStart(2, '0');
   return `${h}:${m}`;
@@ -49,6 +52,7 @@ async function terminAnlegen(page: Page): Promise<string> {
   await page.getByLabel('Beginn *').fill(BEGINN);
   await page.getByLabel('Ende *').fill(ENDE);
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
   return page.url().split('/').pop()!;
 }
@@ -64,10 +68,15 @@ test.describe('CAL-002: Kalender', () => {
 
     await page.goto(`/kalender?ansicht=tag&datum=${TAG}`);
 
-    const eintrag = page.getByRole('link', { name: /Max Mustermann/ });
+    const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText(`${BEGINN}–${ENDE}`);
-    await expect(eintrag).toContainText('Anna Beispiel');
+    // Seit CAL-006 hat jede behandelnde Person eine eigene Spalte; ihr Name
+    // steht einmal am Spaltenkopf statt in jeder Kachel. Geprueft wird
+    // deshalb, dass der Termin in IHRER Spalte liegt.
+    await expect(page.getByRole('gridcell', { name: 'Anna Beispiel' })).toContainText(
+      'Max Mustermann',
+    );
 
     await eintrag.click();
     await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
@@ -116,8 +125,12 @@ test.describe('CAL-002: Kalender', () => {
       'aria-pressed',
       'true',
     );
-    await expect(page.getByLabel('Status')).toHaveValue('scheduled');
-    await expect(page.getByLabel('Behandelnde Person')).toHaveValue('');
+    // Standardfilter ist seit CAL-004 "active": geplante UND abgeschlossene
+    // Termine belegen den Tag.
+    await expect(page.getByLabel('Status')).toHaveValue('active');
+    // Seit CAL-006 steht in der Woche immer genau eine Person im Gitter; der
+    // unsinnige Wert aus der Adresszeile ist verworfen.
+    await expect(page.getByLabel('Behandelnde Person')).not.toHaveValue('nicht-uuid');
   });
 
   test('blättert vor und zurück', async ({ page }) => {
@@ -129,7 +142,9 @@ test.describe('CAL-002: Kalender', () => {
 
     await page.getByRole('button', { name: 'Vorheriger Zeitraum' }).click();
     await expect(page).toHaveURL((u) => u.searchParams.get('datum') === TAG);
-    await expect(page.getByRole('link', { name: /Max Mustermann/ })).toBeVisible();
+    // Hier zaehlt nur, dass der Tag nach dem Zurueckblaettern wieder belegt
+    // ist - welcher Termin es genau ist, prueft der Ablauf weiter oben.
+    await expect(page.getByRole('link', { name: /Max Mustermann/ }).first()).toBeVisible();
   });
 
   test('läuft bei 375 px ohne horizontales Scrollen', async ({ page }) => {

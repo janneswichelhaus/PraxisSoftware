@@ -6,13 +6,18 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchPatient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
-import { AppointmentFormFields, UebernommeneAdresse } from './AppointmentFormFields';
+import {
+  AppointmentFormFields,
+  ArbeitszeitRueckfrage,
+  UebernommeneAdresse,
+} from './AppointmentFormFields';
 import {
   appointmentFormSchema,
   appointmentToFormValues,
   fetchAppointment,
   fetchAssignableTherapists,
   fetchLocations,
+  istAusserhalbArbeitszeit,
   leererTermin,
   patientName,
   todayInTimeZone,
@@ -70,8 +75,8 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   }, [termin.data, vorbefuellt]);
 
   const mutation = useMutation({
-    mutationFn: (eingabe: AppointmentFormValues) =>
-      updateAppointment(appointmentId!, termin.data!.updated_at, eingabe),
+    mutationFn: (eingabe: { werte: AppointmentFormValues; bestaetigt: boolean }) =>
+      updateAppointment(appointmentId!, termin.data!.updated_at, eingabe.werte, eingabe.bestaetigt),
     onSuccess: async () => {
       // Detailansicht und Kalender zeigen sonst weiter den alten Stand.
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] });
@@ -83,6 +88,16 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   function setzen(feld: AppointmentFormField, wert: string) {
     setWerte((bisher) => ({ ...bisher, [feld]: wert }));
     if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
+    // Eine geänderte Eingabe macht die Rückfrage gegenstandslos.
+    if (mutation.isError) mutation.reset();
+  }
+
+  /** Wiederholt den Vorgang mit ausdrücklicher Bestätigung (CAL-005). */
+  function bestaetigen() {
+    if (mutation.isPending) return;
+    const ergebnis = appointmentFormSchema.safeParse(werte);
+    if (!ergebnis.success) return;
+    mutation.mutate({ werte: ergebnis.data, bestaetigt: true });
   }
 
   function absenden(event: FormEvent<HTMLFormElement>) {
@@ -101,7 +116,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     }
 
     setFehler({});
-    mutation.mutate(ergebnis.data);
+    mutation.mutate({ werte: ergebnis.data, bestaetigt: false });
   }
 
   if (termin.isPending) return <LoadingState label="Termin wird geladen …" />;
@@ -153,7 +168,13 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
-        {mutation.isError ? (
+        {istAusserhalbArbeitszeit(mutation.error) ? (
+          <ArbeitszeitRueckfrage
+            onBestaetigen={bestaetigen}
+            laeuft={mutation.isPending}
+            beschriftung="Änderung trotzdem speichern"
+          />
+        ) : mutation.isError ? (
           <div className="mb-6">
             <ErrorState
               title="Der Termin konnte nicht geändert werden."
@@ -179,6 +200,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           minDatum={
             user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : undefined
           }
+          rasterMinuten={user.appointmentGridMinutes ?? undefined}
           hausbesuch={
             bleibtHausbesuch ? (
               <UebernommeneAdresse

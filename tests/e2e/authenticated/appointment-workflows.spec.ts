@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import {
+  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
   anmelden,
@@ -33,9 +34,15 @@ function laufTag(versatz = 0): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Uhrzeit innerhalb der Praxiszeiten, je Lauf verschieden. */
+/**
+ * Uhrzeit innerhalb der Praxiszeiten, je Lauf verschieden.
+ *
+ * Seit CAL-005 muss der Beginn auf dem Praxisraster liegen; im Seed sind das
+ * 5 Minuten. Der Versatz je Lauf rastet deshalb ebenfalls auf 5 Minuten ein -
+ * eine krumme Minute wuerde vom Server zu Recht abgewiesen.
+ */
 function laufZeit(offsetMinuten = 0): string {
-  const start = 8 * 60 + (LAUF % 120) + offsetMinuten;
+  const start = 8 * 60 + (LAUF % 24) * 5 + offsetMinuten;
   const h = String(Math.floor(start / 60)).padStart(2, '0');
   const m = String(start % 60).padStart(2, '0');
   return `${h}:${m}`;
@@ -70,6 +77,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
 
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
     // Erfolg: Wechsel in die Detailansicht des neuen Termins.
     await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
@@ -100,6 +108,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByLabel('Beginn *').fill(BEGINN);
     await page.getByLabel('Ende *').fill(ENDE);
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
     const appointmentId = page.url().split('/').pop()!;
@@ -132,6 +141,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByLabel('Beginn *').fill(laufZeit(15));
     await page.getByLabel('Ende *').fill(laufZeit(60));
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
     // Verständliche Meldung, kein Wechsel in eine Detailansicht.
     await expect(page.getByText(/hat die behandelnde Person bereits einen Termin/)).toBeVisible();
@@ -153,6 +163,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     await expect(page.getByText('Adresse des Hausbesuchs')).toBeVisible();
 
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
     await expect(detailWert(page, 'Art')).toContainText('Hausbesuch');

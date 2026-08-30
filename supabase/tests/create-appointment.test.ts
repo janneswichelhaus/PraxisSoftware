@@ -2,6 +2,7 @@ import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   SEED,
+  abgefangen,
   asAnon,
   asPostgres,
   asUser,
@@ -12,8 +13,12 @@ import {
 
 const { users, organizationId, patients } = SEED;
 
+// Bewusst MIT Arbeitszeitbestaetigung: diese Datei prueft andere Zusagen und
+// benutzt Zeiten ueber den ganzen Tag sowie Kalendertage, die auch auf ein
+// Wochenende fallen koennen. Die Arbeitszeitpruefung hat eigene Tests in
+// scheduling-rules.test.ts; hier waere sie nur Rauschen (CAL-005).
 const ANLEGEN =
-  'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid) as id';
+  'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
 
 /** Feste IDs aus supabase/seed.sql. */
 const STAFF = {
@@ -390,7 +395,12 @@ describe('create_appointment: Ueberschneidungen', () => {
     );
     expect(rows[0]?.definition).toMatch(/EXCLUDE USING gist/i);
     expect(rows[0]?.definition).toMatch(/tstzrange\(starts_at, ends_at, '\[\)'/);
-    expect(rows[0]?.definition).toMatch(/WHERE \(+status = 'scheduled'/);
+    // Geplante UND abgeschlossene Termine belegen ihren Zeitraum; nur eine
+    // Absage gibt ihn wieder frei (CAL-004).
+    expect(rows[0]?.definition).toMatch(/WHERE \(+status = ANY/);
+    expect(rows[0]?.definition).toContain("'scheduled'");
+    expect(rows[0]?.definition).toContain("'completed'");
+    expect(rows[0]?.definition).not.toContain("'cancelled'");
   });
 
   it('laesst zwei gleichzeitige ueberschneidende Anlagen nicht beide gelingen', async () => {
@@ -417,14 +427,15 @@ describe('create_appointment: Ueberschneidungen', () => {
 
       // Die zweite Anlage ueberschneidet sich und blockiert, bis die erste
       // Transaktion entschieden ist.
-      const zweite = b.query(
-        ANLEGEN,
-        args({ patient: patients.erika, von: '09:30', bis: '10:30' }),
+      const zweite = abgefangen(
+        b.query(ANLEGEN, args({ patient: patients.erika, von: '09:30', bis: '10:30' })),
       );
 
       await a.query('commit');
 
-      await expect(zweite).rejects.toThrow(/overlap|exclusion/i);
+      const fehler = await zweite;
+      expect(fehler, 'die zweite Anlage darf nicht gelingen').not.toBeNull();
+      expect(fehler?.message).toMatch(/overlap|exclusion/i);
       await b.query('rollback').catch(() => undefined);
 
       const { rows } = await asPostgres<{ anzahl: string }>(
@@ -480,7 +491,7 @@ describe('create_appointment: Audit', () => {
     const rows = await eintrag();
 
     expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      ['patient_id', 'staff_member_id', 'surface'].sort(),
+      ['patient_id', 'staff_member_id', 'surface', 'outside_working_hours'].sort(),
     );
     expect(rows[0]!.context).toMatchObject({
       surface: 'web',

@@ -23,6 +23,7 @@ const praxistermin: AppointmentsApi.Appointment = {
   visit_house_number: null,
   visit_postal_code: null,
   visit_city: null,
+  completed_at: null,
   patient_given_name: 'Berta',
   patient_family_name: 'Bestand',
   staff_given_name: 'Anna',
@@ -33,6 +34,8 @@ const praxistermin: AppointmentsApi.Appointment = {
 
 const fetchAppointment = vi.fn();
 const cancelAppointment = vi.fn();
+const completeAppointment = vi.fn();
+const reopenAppointment = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -42,6 +45,10 @@ vi.mock('./api', async (importOriginal) => {
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
     cancelAppointment: (id: string, erwartet: string) =>
       cancelAppointment(id, erwartet) as Promise<void>,
+    completeAppointment: (id: string, erwartet: string) =>
+      completeAppointment(id, erwartet) as Promise<void>,
+    reopenAppointment: (id: string, erwartet: string) =>
+      reopenAppointment(id, erwartet) as Promise<void>,
   };
 });
 
@@ -73,8 +80,12 @@ describe('AppointmentDetailPage', () => {
   beforeEach(() => {
     fetchAppointment.mockReset();
     cancelAppointment.mockReset();
+    completeAppointment.mockReset();
+    reopenAppointment.mockReset();
     fetchAppointment.mockResolvedValue(praxistermin);
     cancelAppointment.mockResolvedValue(undefined);
+    completeAppointment.mockResolvedValue(undefined);
+    reopenAppointment.mockResolvedValue(undefined);
   });
 
   it('zeigt Patient, behandelnde Person, Art und Status', async () => {
@@ -267,6 +278,113 @@ describe('AppointmentDetailPage', () => {
 
       expect(
         await screen.findByText(/zwischenzeitlich von einer anderen Person/),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('CAL-004: Abschliessen und Wiederoeffnen', () => {
+    /** Derselbe Termin, aber bereits abgeschlossen. */
+    const abgeschlossen: AppointmentsApi.Appointment = {
+      ...praxistermin,
+      status: 'completed',
+      updated_at: '2027-05-12T08:05:00.000000+00',
+      completed_at: '2027-05-12T08:05:00.000Z',
+    };
+
+    it('schliesst einen geplanten Termin auf dem gelesenen Stand ab', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+
+      await waitFor(() =>
+        expect(completeAppointment).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
+      );
+    });
+
+    it('fragt beim Abschliessen nicht nach einer Behandlungsdokumentation', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+
+      await waitFor(() => expect(completeAppointment).toHaveBeenCalled());
+      // Kein Zwischenschritt, keine Rueckfrage nach Inhalten.
+      expect(screen.queryByText(/dokumentation/i)).not.toBeInTheDocument();
+    });
+
+    it('markiert einen abgeschlossenen Termin nicht als unvollstaendig', async () => {
+      fetchAppointment.mockResolvedValue(abgeschlossen);
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      expect(zeile('Status')).toBe('Abgeschlossen');
+      expect(screen.queryByText(/fehlt|unvollständig|ausstehend/i)).not.toBeInTheDocument();
+    });
+
+    it('zeigt den Abschlusszeitpunkt in der Praxiszeitzone', async () => {
+      fetchAppointment.mockResolvedValue(abgeschlossen);
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      // 08:05 UTC entspricht 10:05 Ortszeit in Europe/Berlin (Sommerzeit).
+      expect(zeile('Abgeschlossen am')).toMatch(/12\. Mai 2027, 10:05 Uhr/);
+    });
+
+    it('bietet am abgeschlossenen Termin weder Bearbeiten noch Absagen an', async () => {
+      fetchAppointment.mockResolvedValue(abgeschlossen);
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
+    });
+
+    it('oeffnet einen abgeschlossenen Termin wieder', async () => {
+      fetchAppointment.mockResolvedValue(abgeschlossen);
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin wieder öffnen' }));
+
+      await waitFor(() =>
+        expect(reopenAppointment).toHaveBeenCalledWith(TERMIN_ID, abgeschlossen.updated_at),
+      );
+    });
+
+    it('bietet am abgesagten Termin kein Abschliessen an', async () => {
+      fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Termin wieder öffnen' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('bietet einem Patientenkonto keine Statusaktion an', async () => {
+      rendern(['patient']);
+      await screen.findByText('Anna Beispiel');
+
+      expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
+    });
+
+    it('zeigt die Meldung, wenn der Abschluss abgewiesen wird', async () => {
+      completeAppointment.mockRejectedValue(
+        new Error('Der Termin konnte nicht abgeschlossen werden.'),
+      );
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+
+      expect(
+        await screen.findByText('Der Termin konnte nicht abgeschlossen werden.'),
       ).toBeInTheDocument();
     });
   });

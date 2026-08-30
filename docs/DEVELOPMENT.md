@@ -212,14 +212,110 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
 6. Bestätigen: der Status steht auf „Abgesagt", Bearbeiten und Absagen sind
    verschwunden. Der Termin ist nicht gelöscht.
 7. Im Kalender ist er standardmäßig ausgeblendet und über den Statusfilter
-   „Geplante und abgesagte" wieder sichtbar.
+   „Alle" wieder sichtbar.
 8. Der abgesagte Zeitraum lässt sich neu belegen.
 9. Als `jannes.test@praxis.invalid` (owner) „Praxis → Sicherheit → Audit"
    öffnen: dort stehen `appointment.created`, `appointment.rescheduled`
    beziehungsweise `appointment.updated` und `appointment.cancelled` — ohne
    Stammdaten und ohne konkrete Terminzeiten.
 
-**12. Typische Fehler**
+**12. CAL-004 manuell prüfen** — Abschließen und Wiederöffnen
+
+1. Einen geplanten Termin öffnen. Neben „Termin absagen" steht jetzt
+   „Termin abschließen".
+2. „Termin abschließen" klicken — ohne Rückfrage, ohne Nachfrage nach einer
+   Behandlungsdokumentation. Der Status steht auf „Abgeschlossen", darunter
+   erscheint „Abgeschlossen am" mit Datum und Uhrzeit in der Praxiszeitzone.
+   Nirgends steht, dass etwas fehle.
+3. Bearbeiten, Absagen und Abschließen sind verschwunden; stattdessen steht
+   dort „Termin wieder öffnen".
+4. Neu laden (F5): der Abschluss bleibt.
+5. Im Kalender steht der Termin weiterhin im Tag — ohne den Filter anzufassen —
+   und trägt den Vermerk „Abgeschlossen".
+6. Gegenprobe belegter Zeitraum: einen zweiten Termin für dieselbe Person zur
+   selben Zeit anlegen. Er wird abgewiesen. Anders als eine Absage gibt ein
+   Abschluss den Zeitraum **nicht** frei.
+7. „Termin wieder öffnen" klicken: der Status steht wieder auf „Geplant",
+   „Abgeschlossen am" ist verschwunden, Bearbeiten und Absagen sind zurück.
+   Der Termin lässt sich jetzt wieder verschieben.
+8. Einen abgesagten Termin öffnen: dort gibt es weder „Termin abschließen"
+   noch „Termin wieder öffnen".
+9. Als `jannes.test@praxis.invalid` (owner) „Praxis → Sicherheit → Audit"
+   öffnen: dort stehen zusätzlich `appointment.completed` und
+   `appointment.reopened`. Beide bleiben stehen — auch der Abschluss, der
+   wieder geöffnet wurde.
+
+**13. CAL-005 manuell prüfen** — Praxisraster und Arbeitszeiten
+
+1. Als `jannes.test@praxis.invalid` (owner) „Planung" in der Navigation öffnen.
+   Oben steht das Praxisraster mit den Werten 5, 10 und 15 Minuten.
+2. Auf 15 Minuten stellen und speichern. Danach einen Termin anlegen: das Feld
+   „Beginn" springt in 15-Minuten-Schritten, und unter dem Feld steht das
+   aktuelle Raster.
+3. Gegenprobe Server: im Formular über die Tastatur `09:07` eintragen und
+   speichern. Der Vorgang wird mit einem Hinweis auf das Raster abgewiesen —
+   die Schrittweite des Feldes ist Bedienkomfort, verbindlich ist der Server.
+4. Zurück auf „Planung": ein bestehender Termin außerhalb des Rasters bleibt im
+   Kalender sichtbar und lässt sich weiter bearbeiten, solange sein Beginn
+   unverändert bleibt.
+5. Als `olivia.office@praxis.invalid` (office) „Planung" öffnen: das
+   Praxisraster fehlt, der Wochenplan ist pflegbar.
+6. Als `anna.beispiel@praxis.invalid` (therapist) „Planung" öffnen: die Zeiten
+   sind sichtbar, es gibt keine Schaltfläche zum Speichern.
+7. Wieder als office: beim Wochenplan „Montag" wählen, einen zweiten Block
+   `13:00`–`18:00` ergänzen, speichern. Die Liste darüber zeigt beide Blöcke.
+8. Gegenprobe Überschneidung: einen Block `11:00`–`14:00` ergänzen und
+   speichern. Der Vorgang wird abgewiesen.
+9. „Blöcke leeren" und speichern: der Wochentag steht danach auf „—", also
+   ausdrücklich „an diesem Wochentag keine Termine".
+10. Abweichung: unten ein Datum wählen, „An diesem Tag keine Termine" ankreuzen,
+    speichern. Der Tag erscheint in der Liste darüber.
+11. Einen Termin an genau diesem Tag anlegen: es erscheint die Rückfrage
+    „Außerhalb der Arbeitszeit", und es wird noch nichts gespeichert. Erst
+    „Termin trotzdem anlegen" legt ihn an.
+12. Gegenprobe fehlende Angabe: einen Termin an einem Samstag anlegen. Auch
+    hier kommt die Rückfrage — eine fehlende Arbeitszeit gilt nicht als
+    „passt schon".
+13. Gegenprobe Grenzen der Bestätigung: denselben Zeitraum ein zweites Mal
+    bestätigen. Der Überschneidungsschutz greift weiterhin.
+14. Als owner „Praxis → Sicherheit → Audit" öffnen: dort steht
+    `organization.appointment_grid_changed` mit altem und neuem Minutenwert.
+    Ein Minutenraster ist eine organisatorische Einstellung, kein Gesundheits-
+    oder Stammdatenwert.
+
+**14. CAL-006 manuell prüfen** — Kalenderdarstellung und Verschieben
+
+1. „Kalender" öffnen, auf „Tag" wechseln. Jede behandelnde Person hat eine
+   eigene Spalte; der hellere Hintergrund einer Spalte ist ihre Arbeitszeit.
+2. Fenster verschmälern (F12 → Gerätesimulation, ~375 px): das Gitter selbst
+   scrollt waagerecht, die Seite nicht. Zeitachse links und Spaltenköpfe oben
+   bleiben dabei stehen.
+3. Auf „Woche" wechseln: sieben Tagesspalten für **genau eine** Person. Die
+   Auswahl „Behandelnde Person" wechselt sie; ein „Alle" gibt es dort nicht.
+4. Adresszeile kopieren, neues Tab, einfügen: derselbe Stand erscheint —
+   Ansicht, Datum, Person und Filter stehen darin.
+5. In der Tagesansicht einen geplanten Termin mit der Maus auf eine andere
+   Uhrzeit ziehen. Während des Ziehens zeigt ein gestrichelter Rahmen das Ziel
+   mit der einrastenden Uhrzeit; der Beginn springt im Praxisraster, die Dauer
+   bleibt gleich.
+6. Loslassen: kurz steht „Der Termin wird verschoben …", und erst danach wandert
+   die Kachel. Vorher hat der Server nichts zugesagt.
+7. Denselben Termin in die Spalte einer anderen Person ziehen. Die
+   Detailansicht zeigt danach die neue Person bei unveränderter Zeit.
+8. In der Wochenansicht einen Termin auf einen anderen Tag ziehen.
+9. Gegenprobe Randzeit: einen Termin unter 18:00 ziehen. Es erscheint die
+   Rückfrage „Außerhalb der Arbeitszeit" mit dem Ziel im Klartext, und es wird
+   noch nichts geschrieben. Erst „Trotzdem verschieben" führt es aus.
+10. Gegenprobe Überschneidung: einen Termin auf einen bereits belegten Zeitraum
+    derselben Person ziehen. Es kommt eine Fehlermeldung, keine Rückfrage.
+11. Gegenprobe Status: einen Termin abschließen und dann ziehen — er bewegt
+    sich nicht. Dasselbe bei einem abgesagten Termin.
+12. Escape während des Ziehens bricht ab, ohne etwas zu schreiben.
+13. Ziehen ist nie der einzige Weg: unter dem Kalender steht der Hinweis auf
+    „Bearbeiten", und die Detailansicht bietet es unverändert an. Wer nur mit
+    der Tastatur arbeitet, nutzt diesen Weg.
+
+**15. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -247,6 +343,7 @@ kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank.
 ## Befehle
 
 ```bash
+pnpm format:check    # Prettier - eigenes CI-Gate, nicht Teil von lint
 pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse
 pnpm typecheck       # TypeScript strict
 pnpm test            # Unit-/Komponententests

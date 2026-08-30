@@ -1,31 +1,32 @@
-import { useMemo, type CSSProperties } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import type { CurrentUser } from '@/features/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/scheduling/api';
 import {
-  appointmentStatusLabels,
-  appointmentTypeLabels,
   dayKey,
+  fetchAppointment,
   fetchAppointments,
   fetchAssignableTherapists,
   fetchLocations,
-  formatLocalTime,
+  istAusserhalbArbeitszeit,
   minutesOfDay,
   todayInTimeZone,
-  type CalendarEntry,
+  updateAppointment,
 } from './api';
+import { CalendarGrid, type GitterEintrag, type GitterSpalte } from './CalendarGrid';
 import {
+  arbeitszeitBaender,
   bereichFuer,
   blaettern,
+  fensterMitArbeitszeit,
   leseParameter,
-  position,
+  minuteZuZeit,
   schreibeParameter,
-  kachelBreite,
-  spalten,
   tageImBereich,
   tagesFenster,
   type KalenderAnsicht,
@@ -34,7 +35,15 @@ import {
 } from './calendar';
 
 /**
- * Zentrale Kalenderansicht (CAL-002).
+ * Zentrale Kalenderansicht (CAL-002, CAL-006).
+ *
+ * Zwei Ansichten auf demselben Zeitgitter, die sich nur in der Bedeutung einer
+ * Spalte unterscheiden:
+ *
+ *   * Tag   - alle behandelnden Personen nebeneinander. Das ist die Frage des
+ *             Praxisalltags: wer hat wann was.
+ *   * Woche - genau eine Person über sieben Tage. Die Woche mehrerer Personen
+ *             gleichzeitig wäre in keiner Breite mehr lesbar.
  *
  * Ansicht, Datum und Filter stehen in der Adresszeile: ein Stand lässt sich
  * damit teilen und überlebt das Neuladen. Ungültige Werte fallen still auf den
@@ -79,226 +88,21 @@ function bereichsBeschriftung(ansicht: KalenderAnsicht, von: string, bis: string
   return `${lang(von)} – ${lang(letzter.toISOString().slice(0, 10))}`;
 }
 
-function uhrzeit(eintrag: CalendarEntry, zone: string): string {
-  return `${formatLocalTime(eintrag.starts_at, zone)}–${formatLocalTime(eintrag.ends_at, zone)}`;
-}
-
-function ortsHinweis(eintrag: CalendarEntry): string {
-  if (eintrag.appointment_type === 'practice') return eintrag.location_name ?? '—';
-  if (eintrag.appointment_type === 'video') return 'Video';
-  return 'Hausbesuch';
-}
-
-/** Eine Terminkachel. Im Wochengitter zusätzlich zeitlich eingeordnet. */
-function Terminkachel({
-  eintrag,
-  zone,
-  farbe,
-  stil,
-  gitter,
-}: {
-  eintrag: CalendarEntry;
-  zone: string;
-  farbe: string;
-  stil?: CSSProperties;
-  gitter: boolean;
-}) {
-  const abgesagt = eintrag.status === 'cancelled';
-
-  return (
-    <Link
-      to={`/termine/${eintrag.id}`}
-      title={
-        gitter
-          ? `${appointmentTypeLabels[eintrag.appointment_type]} · ${ortsHinweis(eintrag)}`
-          : undefined
-      }
-      style={{ borderLeftColor: farbe, ...stil }}
-      className={[
-        'border-line bg-surface hover:bg-surface-sunken block overflow-hidden rounded-lg border',
-        'border-l-4 px-2 py-1.5 text-left transition-colors',
-        abgesagt ? 'opacity-60' : '',
-        gitter
-          ? 'mb-1.5 min-h-11 lg:absolute lg:top-[var(--top)] lg:left-[var(--left)] lg:mb-0 lg:h-[var(--h)] lg:min-h-0 lg:w-[var(--w)]'
-          : 'min-h-11',
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <span className="text-ink block truncate text-sm font-medium">
-        {eintrag.patient_given_name} {eintrag.patient_family_name}
-      </span>
-      <span className="text-ink-muted block truncate text-xs">
-        {uhrzeit(eintrag, zone)} · {eintrag.staff_given_name} {eintrag.staff_family_name}
-      </span>
-      {gitter ? (
-        abgesagt ? (
-          <span className="text-ink-subtle block truncate text-xs">
-            {appointmentStatusLabels.cancelled}
-          </span>
-        ) : null
-      ) : (
-        <span className="text-ink-subtle block truncate text-xs">
-          {appointmentTypeLabels[eintrag.appointment_type]} · {ortsHinweis(eintrag)}
-          {abgesagt ? ` · ${appointmentStatusLabels.cancelled}` : ''}
-        </span>
-      )}
-    </Link>
-  );
-}
-
-/** Tagesansicht: rein chronologisch, auf jeder Breite dieselbe Liste. */
-function Tagesliste({
-  eintraege,
-  zone,
-  farbeVon,
-}: {
-  eintraege: CalendarEntry[];
-  zone: string;
-  farbeVon: (staffId: string) => string;
-}) {
-  if (eintraege.length === 0) {
-    return (
-      <p className="text-ink-muted py-8 text-sm">Für diesen Tag sind keine Termine geplant.</p>
-    );
-  }
-
-  return (
-    <ul className="mt-4 flex flex-col gap-2">
-      {eintraege.map((e) => (
-        <li key={e.id}>
-          <Terminkachel
-            eintrag={e}
-            zone={zone}
-            farbe={farbeVon(e.staff_member_id)}
-            gitter={false}
-          />
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/**
- * Wochenansicht.
- *
- * Auf dem Desktop sieben Tagesspalten mit Stundenachse; die Termine sind
- * proportional zur Uhrzeit angeordnet und überlappende Personen stehen
- * nebeneinander. Ab hier abwärts greifen die `lg:`-Regeln nicht mehr: dieselbe
- * Auszeichnung wird zur gestapelten Tagesagenda, ohne zweites Markup und ohne
- * erzwungene Sieben-Spalten-Woche auf schmalen Displays.
- */
-function Wochengitter({
-  tage,
-  proTag,
-  zone,
-  farbeVon,
-  heute,
-}: {
-  tage: string[];
-  proTag: Map<string, CalendarEntry[]>;
-  zone: string;
-  farbeVon: (staffId: string) => string;
-  heute: string;
-}) {
-  const alle = tage.flatMap((t) => proTag.get(t) ?? []);
-  const fenster = tagesFenster(
-    alle.map((e) => ({
-      beginn: minutesOfDay(e.starts_at, zone),
-      ende: minutesOfDay(e.ends_at, zone),
-    })),
-  );
-
-  const stunden: number[] = [];
-  for (let m = fenster.vonMinute; m < fenster.bisMinute; m += 60) stunden.push(m);
-  const hoehe = Math.max(360, ((fenster.bisMinute - fenster.vonMinute) / 60) * 48);
-
-  return (
-    <div className="mt-4 lg:grid lg:grid-cols-[3rem_repeat(7,minmax(0,1fr))] lg:gap-1">
-      {/* Stundenachse - nur im Gitter sinnvoll. */}
-      <div className="hidden lg:block" aria-hidden="true">
-        <div className="h-7" />
-        <div className="relative" style={{ height: `${hoehe}px` }}>
-          {stunden.map((m) => (
-            <div
-              key={m}
-              className="text-ink-subtle absolute right-1 -translate-y-1/2 text-[0.6875rem]"
-              style={{
-                top: `${((m - fenster.vonMinute) / (fenster.bisMinute - fenster.vonMinute)) * 100}%`,
-              }}
-            >
-              {String(Math.floor(m / 60)).padStart(2, '0')}:00
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {tage.map((tag) => {
-        const eintraege = proTag.get(tag) ?? [];
-        const minuten = eintraege.map((e) => ({
-          beginn: minutesOfDay(e.starts_at, zone),
-          ende: minutesOfDay(e.ends_at, zone),
-        }));
-        const verteilung = spalten(minuten);
-
-        return (
-          <section key={tag} className="mt-5 lg:mt-0">
-            <h3
-              className={[
-                'flex h-7 items-center gap-1.5 text-sm font-medium',
-                tag === heute ? 'text-accent' : 'text-ink-muted',
-              ].join(' ')}
-            >
-              <span>{wochentagKurz(tag)}</span>
-              <span className="text-ink-subtle">{tagesZahl(tag)}</span>
-              {tag === heute ? <span className="sr-only">(heute)</span> : null}
-            </h3>
-
-            <div
-              className="border-line relative lg:rounded-lg lg:border"
-              style={{ ['--tag-hoehe' as string]: `${hoehe}px` }}
-            >
-              <div className="lg:h-[var(--tag-hoehe)]">
-                {eintraege.length === 0 ? (
-                  <p className="text-ink-subtle py-2 text-xs lg:hidden">Keine Termine.</p>
-                ) : null}
-                {eintraege.map((e, i) => {
-                  const { top, hoehe: h } = position(minuten[i]!.beginn, minuten[i]!.ende, fenster);
-                  const { spalte, anzahl } = verteilung[i]!;
-                  const { links, breite } = kachelBreite(spalte, anzahl);
-                  return (
-                    <Terminkachel
-                      key={e.id}
-                      eintrag={e}
-                      zone={zone}
-                      farbe={farbeVon(e.staff_member_id)}
-                      gitter
-                      stil={
-                        {
-                          ['--top']: `${top}%`,
-                          ['--h']: `${h}%`,
-                          ['--left']: `${links}%`,
-                          ['--w']: `${breite}%`,
-                          // Die spaetere Kachel legt sich ueber den rechten
-                          // Rand der frueheren, statt sie zu verdecken.
-                          zIndex: spalte + 1,
-                        } as CSSProperties
-                      }
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        );
-      })}
-    </div>
-  );
+/** Was beim Verschieben an den Server geht, samt Beschreibung für die Rückfrage. */
+interface Verschiebung {
+  terminId: string;
+  staffMemberId: string;
+  datum: string;
+  startMinute: number;
+  endeMinute: number;
+  beschreibung: string;
 }
 
 export function CalendarPage({ user }: { user: CurrentUser }) {
   const [suche, setSuche] = useSearchParams();
+  const queryClient = useQueryClient();
   const zone = user.organizationTimeZone;
+  const darfAendern = canManageAppointments(user.roles);
 
   // Ohne Praxiszeitzone wird der Kalender nicht dargestellt (siehe unten).
   // Die Ableitungen brauchen trotzdem einen gueltigen Kalendertag: Hooks
@@ -307,6 +111,16 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const heute = zone ? todayInTimeZone(zone) : '1970-01-01';
   const p = leseParameter(suche, heute);
   const bereich = bereichFuer(p.ansicht, p.datum);
+
+  const [offen, setOffen] = useState<Verschiebung | null>(null);
+
+  const therapeuten = useQuery({
+    queryKey: ['assignable-therapists'],
+    queryFn: fetchAssignableTherapists,
+    retry: false,
+  });
+
+  const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
 
   const termine = useQuery({
     queryKey: ['appointments', bereich.von, bereich.bis, p.person, p.standort, p.status],
@@ -322,13 +136,20 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
-  const therapeuten = useQuery({
-    queryKey: ['assignable-therapists'],
-    queryFn: fetchAssignableTherapists,
+  // Arbeitszeiten als Hintergrund. Der Wochenplan ist klein und ändert sich
+  // selten; die Abweichungen werden auf den sichtbaren Bereich begrenzt.
+  const wochenplan = useQuery({
+    queryKey: ['working-hours'],
+    queryFn: fetchWorkingHours,
     retry: false,
   });
 
-  const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
+  const ausnahmen = useQuery({
+    queryKey: ['working-hour-exceptions', bereich.von, bereich.bis],
+    queryFn: () => fetchWorkingHourExceptions(bereich.von, bereich.bis),
+    enabled: Boolean(zone),
+    retry: false,
+  });
 
   const eintraege = useMemo(() => termine.data ?? [], [termine.data]);
 
@@ -342,17 +163,37 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     };
   }, [therapeuten.data]);
 
-  const proTag = useMemo(() => {
-    const karte = new Map<string, CalendarEntry[]>();
-    if (!zone) return karte;
-    for (const e of eintraege) {
-      const tag = dayKey(e.starts_at, zone);
-      const bisher = karte.get(tag);
-      if (bisher) bisher.push(e);
-      else karte.set(tag, [e]);
-    }
-    return karte;
-  }, [eintraege, zone]);
+  const verschieben = useMutation({
+    mutationFn: async (auftrag: { v: Verschiebung; bestaetigt: boolean }) => {
+      // Der aktuelle Stand wird unmittelbar vor dem Schreiben gelesen: der
+      // Kalender kennt updated_at nicht, und ohne ihn griffe der Schutz gegen
+      // ein verlorenes Update nicht (CAL-003).
+      const termin = await fetchAppointment(auftrag.v.terminId);
+      if (!termin) throw new Error('Der Termin ist nicht mehr verfügbar.');
+
+      await updateAppointment(
+        auftrag.v.terminId,
+        termin.updated_at,
+        {
+          staff_member_id: auftrag.v.staffMemberId,
+          appointment_type: termin.appointment_type,
+          date: auftrag.v.datum,
+          start_time: minuteZuZeit(auftrag.v.startMinute),
+          end_time: minuteZuZeit(auftrag.v.endeMinute),
+          location_id: termin.location_id ?? '',
+        },
+        auftrag.bestaetigt,
+      );
+    },
+    onSuccess: async () => {
+      setOffen(null);
+      // Erst jetzt wandert die Kachel - vorher hat der Server nichts zugesagt.
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
+    onError: (fehler, auftrag) => {
+      setOffen(istAusserhalbArbeitszeit(fehler) ? auftrag.v : null);
+    },
+  });
 
   function setze(teil: Partial<KalenderParameter>) {
     setSuche(schreibeParameter({ ...p, ...teil }), { replace: false });
@@ -368,9 +209,88 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   }
 
   const tage = tageImBereich(bereich);
-  const sichtbarePersonen = (therapeuten.data ?? []).filter((t) =>
-    eintraege.some((e) => e.staff_member_id === t.staff_member_id),
+  const alleTherapeuten = therapeuten.data ?? [];
+  const wochenplanDaten = wochenplan.data ?? [];
+  const ausnahmenDaten = ausnahmen.data ?? [];
+
+  // In der Wochenansicht steht genau eine Person im Gitter. Ohne ausdrückliche
+  // Wahl ist das die erste der Praxis - eine Darstellungsentscheidung.
+  const wochenPerson = p.person ?? alleTherapeuten[0]?.staff_member_id ?? null;
+
+  // In der Tagesansicht steht jede behandelnde Person in einer eigenen Spalte;
+  // ein Personenfilter grenzt sie zusätzlich ein.
+  const tagesPersonen = p.person
+    ? alleTherapeuten.filter((t) => t.staff_member_id === p.person)
+    : alleTherapeuten;
+
+  const spaltenModell: GitterSpalte[] =
+    p.ansicht === 'tag'
+      ? tagesPersonen.map((t) => ({
+          id: t.staff_member_id,
+          titel: t.display_name,
+          baender: arbeitszeitBaender(
+            t.staff_member_id,
+            bereich.von,
+            wochenplanDaten,
+            ausnahmenDaten,
+          ),
+        }))
+      : tage.map((tag) => ({
+          id: tag,
+          titel: wochentagKurz(tag),
+          unterTitel: tagesZahl(tag),
+          hervorgehoben: tag === heute,
+          baender: wochenPerson
+            ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
+            : [],
+        }));
+
+  // Die Wochenansicht zeigt genau eine Person; alles andere blendet sie aus.
+  const sichtbar =
+    p.ansicht === 'woche' ? eintraege.filter((e) => e.staff_member_id === wochenPerson) : eintraege;
+
+  const gitterEintraege: GitterEintrag[] = sichtbar.map((e) => ({
+    eintrag: e,
+    spalteId: p.ansicht === 'tag' ? e.staff_member_id : dayKey(e.starts_at, zone),
+    beginnMinute: minutesOfDay(e.starts_at, zone),
+    endeMinute: minutesOfDay(e.ends_at, zone),
+    farbe: farbeVon(e.staff_member_id),
+    // Nur geplante Termine werden gezogen. Ein abgeschlossener müsste erst
+    // wieder geöffnet werden, ein abgesagter bleibt terminal (CAL-004).
+    ziehbar: e.status === 'scheduled',
+  }));
+
+  const fenster = fensterMitArbeitszeit(
+    tagesFenster(gitterEintraege.map((g) => ({ beginn: g.beginnMinute, ende: g.endeMinute }))),
+    spaltenModell.flatMap((s) => s.baender),
   );
+
+  /** Übersetzt eine Zielspalte zurück in Person und Datum. */
+  function ablegen(ziel: { terminId: string; spalteId: string; startMinute: number }) {
+    const g = gitterEintraege.find((x) => x.eintrag.id === ziel.terminId);
+    if (!g) return;
+
+    const dauer = g.endeMinute - g.beginnMinute;
+    const staffMemberId = p.ansicht === 'tag' ? ziel.spalteId : g.eintrag.staff_member_id;
+    const datum = p.ansicht === 'tag' ? bereich.von : ziel.spalteId;
+    const person = alleTherapeuten.find((t) => t.staff_member_id === staffMemberId);
+    const ende = ziel.startMinute + dauer;
+
+    setOffen(null);
+    verschieben.mutate({
+      v: {
+        terminId: ziel.terminId,
+        staffMemberId,
+        datum,
+        startMinute: ziel.startMinute,
+        endeMinute: ende,
+        beschreibung: `${person?.display_name ?? 'Behandelnde Person'}, ${wochentagKurz(datum)} ${tagesZahl(datum)}, ${minuteZuZeit(ziel.startMinute)}–${minuteZuZeit(ende)}`,
+      },
+      bestaetigt: false,
+    });
+  }
+
+  const laedt = termine.isPending || therapeuten.isPending;
 
   return (
     <>
@@ -420,11 +340,12 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Select
           label="Behandelnde Person"
-          value={p.person ?? ''}
+          value={(p.ansicht === 'woche' ? wochenPerson : p.person) ?? ''}
           onChange={(e) => setze({ person: e.target.value || null })}
         >
-          <option value="">Alle</option>
-          {(therapeuten.data ?? []).map((t) => (
+          {/* In der Woche steht immer genau eine Person im Gitter. */}
+          {p.ansicht === 'tag' ? <option value="">Alle</option> : null}
+          {alleTherapeuten.map((t) => (
             <option key={t.staff_member_id} value={t.staff_member_id}>
               {t.display_name}
             </option>
@@ -449,44 +370,100 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           value={p.status}
           onChange={(e) => setze({ status: e.target.value as StatusFilter })}
         >
+          <option value="active">Geplante und abgeschlossene</option>
           <option value="scheduled">Nur geplante</option>
+          <option value="completed">Nur abgeschlossene</option>
           <option value="cancelled">Nur abgesagte</option>
-          <option value="all">Geplante und abgesagte</option>
+          <option value="all">Alle</option>
         </Select>
       </div>
 
-      {sichtbarePersonen.length > 1 ? (
-        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1" aria-label="Farbzuordnung">
-          {sichtbarePersonen.map((t) => (
-            <li
-              key={t.staff_member_id}
-              className="text-ink-muted flex items-center gap-1.5 text-xs"
-            >
-              <span
-                aria-hidden="true"
-                className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: farbeVon(t.staff_member_id) }}
-              />
-              {t.display_name}
-            </li>
-          ))}
-        </ul>
+      {verschieben.isPending ? (
+        <p className="text-ink-muted mt-4 text-sm" role="status">
+          Der Termin wird verschoben …
+        </p>
       ) : null}
 
-      {termine.isPending ? <LoadingState label="Termine werden geladen …" /> : null}
+      {offen ? (
+        <div
+          role="group"
+          aria-label="Außerhalb der Arbeitszeit"
+          className="border-line-strong bg-surface-sunken mt-4 rounded-lg border p-4"
+        >
+          <p className="text-ink text-sm">
+            {offen.beschreibung} liegt außerhalb der hinterlegten Arbeitszeit. Der Termin wurde noch
+            nicht verschoben.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Button
+              type="button"
+              disabled={verschieben.isPending}
+              onClick={() => verschieben.mutate({ v: offen, bestaetigt: true })}
+            >
+              Trotzdem verschieben
+            </Button>
+            <Button type="button" variant="quiet" onClick={() => setOffen(null)}>
+              Abbrechen
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {verschieben.isError && !offen ? (
+        <div className="mt-4">
+          <ErrorState
+            title="Der Termin konnte nicht verschoben werden."
+            description={verschieben.error.message}
+          />
+        </div>
+      ) : null}
+
+      {laedt ? <LoadingState label="Termine werden geladen …" /> : null}
       {termine.isError ? <ErrorState title="Die Termine konnten nicht geladen werden." /> : null}
 
-      {termine.isSuccess && p.ansicht === 'tag' ? (
-        <Tagesliste eintraege={proTag.get(bereich.von) ?? []} zone={zone} farbeVon={farbeVon} />
+      {termine.isSuccess && !laedt && spaltenModell.length > 0 ? (
+        <CalendarGrid
+          spaltenModell={spaltenModell}
+          eintraege={gitterEintraege}
+          fenster={fenster}
+          raster={user.appointmentGridMinutes}
+          ziehbarErlaubt={darfAendern && !verschieben.isPending}
+          onVerschieben={ablegen}
+          beschriftung={
+            p.ansicht === 'tag'
+              ? 'Tagesansicht nach behandelnder Person'
+              : 'Wochenansicht einer behandelnden Person'
+          }
+        />
       ) : null}
 
-      {termine.isSuccess && p.ansicht === 'woche' ? (
-        <Wochengitter tage={tage} proTag={proTag} zone={zone} farbeVon={farbeVon} heute={heute} />
+      {termine.isSuccess && !laedt && spaltenModell.length === 0 ? (
+        <p className="text-ink-muted mt-4 text-sm">
+          Für diese Praxis ist keine behandelnde Person hinterlegt.
+        </p>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      {termine.isSuccess && !laedt && spaltenModell.length > 0 && gitterEintraege.length === 0 ? (
+        <p className="text-ink-muted mt-3 text-sm">
+          {p.ansicht === 'tag'
+            ? 'Für diesen Tag sind keine Termine geplant.'
+            : 'Für diese Woche sind keine Termine geplant.'}
+        </p>
+      ) : null}
+
+      <p className="text-ink-subtle mt-6 max-w-prose text-xs leading-relaxed">
+        Termine lassen sich mit der Maus oder dem Finger auf eine andere Zeit
+        {p.ansicht === 'tag'
+          ? ' oder eine andere behandelnde Person'
+          : ' oder einen anderen Tag'}{' '}
+        ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Dasselbe geht
+        jederzeit über „Bearbeiten" in der Detailansicht — das Ziehen ist eine Abkürzung, kein
+        eigener Weg.
+      </p>
+
+      <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
         Der Kalender zeigt ausschließlich organisatorische Angaben. Zeiten gelten in der Zeitzone
-        der Praxis ({zone}).
+        der Praxis ({zone}); der hinterlegte Hintergrund einer Spalte ist die Arbeitszeit.
       </p>
     </>
   );

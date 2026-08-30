@@ -23,6 +23,7 @@ const basis: Appointment = {
   visit_house_number: null,
   visit_postal_code: null,
   visit_city: null,
+  completed_at: null,
   patient_given_name: 'Berta',
   patient_family_name: 'Bestand',
   staff_given_name: 'Anna',

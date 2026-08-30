@@ -17,6 +17,13 @@ export interface CurrentUser {
   organizationName: string | null;
   /** IANA-Zeitzone der Praxis. Massgeblich fuer Termine (CAL-001). */
   organizationTimeZone: string | null;
+  /**
+   * Minutenraster fuer den Beginn von Terminen (CAL-005).
+   *
+   * Steuert ausschliesslich die Schrittweite der Eingabefelder. Verbindlich
+   * prueft der Server; `null` heisst nur, dass der Wert noch nicht geladen ist.
+   */
+  appointmentGridMinutes: number | null;
 }
 
 /** Rollen mit Zugriff auf die Patientenkartei (PROJECT_PRINCIPLES.md 4.2/4.3). */
@@ -50,6 +57,13 @@ const appointmentRoles: RoleKey[] = ['owner', 'therapist', 'team_lead', 'office'
 
 export function canManageAppointments(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => appointmentRoles.includes(role));
+}
+
+/** Rollen, die den Dienstplan pflegen duerfen. therapist liest ihn nur (CAL-005). */
+const workingHourRoles: RoleKey[] = ['owner', 'team_lead', 'office'];
+
+export function canManageWorkingHours(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => workingHourRoles.includes(role));
 }
 
 /** Administrative Praxisberechtigung (PROJECT_PRINCIPLES.md 4.1). */

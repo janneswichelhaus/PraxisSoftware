@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+  STUNDEN_HOEHE,
+  arbeitszeitBaender,
+  aufRaster,
   bereichFuer,
+  fensterMitArbeitszeit,
+  isoWochentag,
   kachelBreite,
   blaettern,
   istIsoDatum,
   leseParameter,
+  minuteZuPixel,
+  minuteZuZeit,
+  pixelZuMinute,
   position,
   schreibeParameter,
   spalten,
@@ -12,6 +20,9 @@ import {
   tagePlus,
   tagesFenster,
   wochenBeginn,
+  zeitZuMinute,
+  type Arbeitsausnahme,
+  type Arbeitsblock,
 } from './calendar';
 
 describe('Kalenderarithmetik', () => {
@@ -100,7 +111,9 @@ describe('Query-Parameter', () => {
       datum: HEUTE,
       person: null,
       standort: null,
-      status: 'scheduled',
+      // Standard ist 'active': geplante UND abgeschlossene Termine belegen den
+      // Tag, ein abgehakter Termin darf nicht aus der Ansicht fallen (CAL-004).
+      status: 'active',
     });
   });
 
@@ -123,7 +136,7 @@ describe('Query-Parameter', () => {
       datum: '2027-05-12',
       person: null,
       standort: null,
-      status: 'scheduled',
+      status: 'active',
     });
     expect(suche.toString()).toBe('ansicht=woche&datum=2027-05-12');
   });
@@ -278,5 +291,185 @@ describe('Kachelbreite bei Ueberlappung', () => {
 
   it('gibt auch bei drei Personen mehr als den strikten Anteil', () => {
     expect(kachelBreite(0, 3).breite).toBeGreaterThan(100 / 3);
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Zeitgitter und Arbeitszeit (CAL-006)
+// -----------------------------------------------------------------------------
+
+const ANNA = '55555555-5555-4555-8555-000000000002';
+const TIM = '55555555-5555-4555-8555-000000000004';
+
+function block(staff: string, weekday: number, von: string, bis: string): Arbeitsblock {
+  return { staff_member_id: staff, weekday, starts_at: von, ends_at: bis };
+}
+
+function ausnahme(
+  staff: string,
+  datum: string,
+  kind: 'unavailable' | 'block',
+  von: string | null = null,
+  bis: string | null = null,
+): Arbeitsausnahme {
+  return { staff_member_id: staff, on_date: datum, kind, starts_at: von, ends_at: bis };
+}
+
+describe('Umrechnung Minute und Pixel', () => {
+  it('rechnet den Fensteranfang auf null', () => {
+    expect(minuteZuPixel(7 * 60, 7 * 60)).toBe(0);
+  });
+
+  it('rechnet eine Stunde auf die Stundenhoehe', () => {
+    expect(minuteZuPixel(8 * 60, 7 * 60)).toBe(STUNDEN_HOEHE);
+  });
+
+  it('ist zur Rueckrechnung gegenlaeufig', () => {
+    for (const minute of [420, 455, 600, 1234]) {
+      expect(pixelZuMinute(minuteZuPixel(minute, 420), 420)).toBeCloseTo(minute, 6);
+    }
+  });
+});
+
+describe('aufRaster', () => {
+  it.each([
+    [543, 5, 545],
+    [542, 5, 540],
+    [543, 10, 540],
+    [546, 10, 550],
+    [543, 15, 540],
+    [548, 15, 555],
+  ])('rundet %s auf einem %ser-Raster zu %s', (wert, raster, erwartet) => {
+    expect(aufRaster(wert, raster)).toBe(erwartet);
+  });
+
+  it('rundet ohne gueltiges Raster auf volle Minuten', () => {
+    // Lieber ganze Minuten als stillschweigend ein anderes Raster annehmen.
+    expect(aufRaster(543.4, null)).toBe(543);
+    expect(aufRaster(543.6, 0)).toBe(544);
+  });
+});
+
+describe('Zeitformate', () => {
+  it.each([
+    ['08:00', 480],
+    ['00:00', 0],
+    ['23:59', 1439],
+    ['13:45', 825],
+  ])('liest %s als %s Minuten', (wert, minute) => {
+    expect(zeitZuMinute(wert)).toBe(minute);
+  });
+
+  it.each([
+    [480, '08:00'],
+    [0, '00:00'],
+    [1439, '23:59'],
+    [825, '13:45'],
+  ])('schreibt %s Minuten als %s', (minute, wert) => {
+    expect(minuteZuZeit(minute)).toBe(wert);
+  });
+
+  it('begrenzt auf einen Kalendertag', () => {
+    expect(minuteZuZeit(-30)).toBe('00:00');
+    expect(minuteZuZeit(2000)).toBe('24:00');
+  });
+});
+
+describe('isoWochentag', () => {
+  it.each([
+    ['2027-05-10', 1],
+    ['2027-05-12', 3],
+    ['2027-05-15', 6],
+    ['2027-05-16', 7],
+  ])('bestimmt fuer %s den Wochentag %s', (tag, erwartet) => {
+    expect(isoWochentag(tag)).toBe(erwartet);
+  });
+});
+
+describe('arbeitszeitBaender', () => {
+  const plan: Arbeitsblock[] = [
+    block(ANNA, 3, '13:00', '18:00'),
+    block(ANNA, 3, '08:00', '12:00'),
+    block(ANNA, 1, '09:00', '17:00'),
+    block(TIM, 3, '10:00', '16:00'),
+  ];
+
+  it('liefert den Wochenplan der Person, aufsteigend sortiert', () => {
+    // 2027-05-12 ist ein Mittwoch.
+    expect(arbeitszeitBaender(ANNA, '2027-05-12', plan, [])).toEqual([
+      { vonMinute: 480, bisMinute: 720 },
+      { vonMinute: 780, bisMinute: 1080 },
+    ]);
+  });
+
+  it('vermischt zwei Personen nicht', () => {
+    expect(arbeitszeitBaender(TIM, '2027-05-12', plan, [])).toEqual([
+      { vonMinute: 600, bisMinute: 960 },
+    ]);
+  });
+
+  it('liefert ohne Eintrag am Wochentag keine Baender', () => {
+    // 2027-05-15 ist ein Samstag.
+    expect(arbeitszeitBaender(ANNA, '2027-05-15', plan, [])).toEqual([]);
+  });
+
+  it('ersetzt den Wochenplan durch abweichende Bloecke, statt ihn zu ergaenzen', () => {
+    const baender = arbeitszeitBaender(ANNA, '2027-05-12', plan, [
+      ausnahme(ANNA, '2027-05-12', 'block', '18:00', '20:00'),
+    ]);
+    expect(baender).toEqual([{ vonMinute: 1080, bisMinute: 1200 }]);
+  });
+
+  it('liefert an einem Tag ohne Termine gar keine Baender', () => {
+    expect(
+      arbeitszeitBaender(ANNA, '2027-05-12', plan, [ausnahme(ANNA, '2027-05-12', 'unavailable')]),
+    ).toEqual([]);
+  });
+
+  it('laesst die Abweichung einer anderen Person unberuecksichtigt', () => {
+    const baender = arbeitszeitBaender(ANNA, '2027-05-12', plan, [
+      ausnahme(TIM, '2027-05-12', 'unavailable'),
+    ]);
+    expect(baender).toHaveLength(2);
+  });
+
+  it('laesst die Abweichung eines anderen Tages unberuecksichtigt', () => {
+    const baender = arbeitszeitBaender(ANNA, '2027-05-12', plan, [
+      ausnahme(ANNA, '2027-05-13', 'unavailable'),
+    ]);
+    expect(baender).toHaveLength(2);
+  });
+});
+
+describe('fensterMitArbeitszeit', () => {
+  it('erweitert das Fenster auf eine frueher beginnende Arbeitszeit', () => {
+    expect(
+      fensterMitArbeitszeit({ vonMinute: 420, bisMinute: 1200 }, [
+        { vonMinute: 330, bisMinute: 600 },
+      ]),
+    ).toEqual({ vonMinute: 300, bisMinute: 1200 });
+  });
+
+  it('erweitert das Fenster auf eine spaeter endende Arbeitszeit', () => {
+    expect(
+      fensterMitArbeitszeit({ vonMinute: 420, bisMinute: 1200 }, [
+        { vonMinute: 1140, bisMinute: 1290 },
+      ]),
+    ).toEqual({ vonMinute: 420, bisMinute: 1320 });
+  });
+
+  it('laesst ein bereits ausreichendes Fenster unveraendert', () => {
+    expect(
+      fensterMitArbeitszeit({ vonMinute: 420, bisMinute: 1200 }, [
+        { vonMinute: 480, bisMinute: 1080 },
+      ]),
+    ).toEqual({ vonMinute: 420, bisMinute: 1200 });
+  });
+
+  it('kommt ohne Arbeitszeit aus', () => {
+    expect(fensterMitArbeitszeit({ vonMinute: 420, bisMinute: 1200 }, [])).toEqual({
+      vonMinute: 420,
+      bisMinute: 1200,
+    });
   });
 });

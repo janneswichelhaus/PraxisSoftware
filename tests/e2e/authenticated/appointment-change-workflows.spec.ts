@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  terminKachel,
+  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
   anmelden,
@@ -28,7 +30,8 @@ function laufTag(versatz = 0): string {
 }
 
 function zeit(minutenAbAcht: number): string {
-  const gesamt = 8 * 60 + ((LAUF % 60) + minutenAbAcht);
+  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
+  const gesamt = 8 * 60 + (LAUF % 12) * 5 + minutenAbAcht;
   const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
   const m = String(gesamt % 60).padStart(2, '0');
   return `${h}:${m}`;
@@ -48,6 +51,7 @@ async function terminAnlegen(
   await page.getByLabel('Beginn *').fill(opts.von);
   await page.getByLabel('Ende *').fill(opts.bis);
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
   return page.url().split('/').pop()!;
 }
@@ -73,6 +77,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await page.getByLabel('Beginn *').fill(neuVon);
     await page.getByLabel('Ende *').fill(neuBis);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
@@ -96,6 +101,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     // Die Adresse wird übernommen und nicht erfragt.
     await expect(page.getByText('Adresse des Hausbesuchs')).toBeVisible();
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Tim Teamleitung');
     await expect(detailWert(page, 'Art')).toContainText('Hausbesuch');
@@ -114,6 +120,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await page.getByLabel('Beginn *').fill(zeit(15));
     await page.getByLabel('Ende *').fill(zeit(60));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page.getByText(/hat die behandelnde Person bereits einen Termin/)).toBeVisible();
     await expect(page).toHaveURL(/\/bearbeiten$/);
@@ -169,6 +176,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await page.getByLabel('Beginn *').fill(zeit(240));
     await page.getByLabel('Ende *').fill(zeit(285));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page.getByText(/zwischenzeitlich von einer anderen Person/)).toBeVisible();
 
@@ -205,11 +213,11 @@ test.describe('CAL-003: Absagen', () => {
 
     // Im Kalender standardmäßig ausgeblendet …
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    await expect(page.getByRole('link', { name: /Max Mustermann/ })).toHaveCount(0);
+    await expect(terminKachel(page, terminId)).toHaveCount(0);
 
     // … über den Statusfilter aber nachvollziehbar.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&status=all`);
-    const eintrag = page.getByRole('link', { name: /Max Mustermann/ });
+    const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText('Abgesagt');
     await expect(eintrag).toHaveAttribute('href', `/termine/${terminId}`);

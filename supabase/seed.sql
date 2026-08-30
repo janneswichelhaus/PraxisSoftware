@@ -17,6 +17,8 @@
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
 delete from public.audit_log;
+delete from public.staff_working_hour_exceptions;
+delete from public.staff_working_hours;
 delete from public.appointments;
 delete from public.patient_contact_details;
 delete from public.staff_private_details;
@@ -131,3 +133,32 @@ insert into public.user_roles (user_id, organization_id, role_key) values
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'team_lead'),
   ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', 'patient'),
   ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient');
+
+-- -----------------------------------------------------------------------------
+-- Arbeitszeiten (CAL-005)
+--
+-- Ein alltagsnaher Wochenplan fuer die drei behandelnden Personen: Montag bis
+-- Freitag, vormittags und nachmittags, mit Mittagspause. Olivia Office
+-- behandelt nicht und bekommt deshalb keinen Plan.
+--
+-- Zeiten sind Ortszeiten der Praxis (Europe/Berlin), keine UTC-Zeitstempel.
+-- Datumsbezogene Abweichungen stehen bewusst nicht im Seed: sie brauchen ein
+-- konkretes Datum und waeren nach kurzer Zeit Vergangenheit.
+-- -----------------------------------------------------------------------------
+insert into public.staff_working_hours (organization_id, staff_member_id, weekday, starts_at, ends_at)
+select
+  '22222222-2222-4222-8222-000000000001',
+  mitarbeitende.id,
+  wochentag,
+  block.von,
+  block.bis
+from (values
+  ('55555555-5555-4555-8555-000000000001'::uuid),
+  ('55555555-5555-4555-8555-000000000002'::uuid),
+  ('55555555-5555-4555-8555-000000000004'::uuid)
+) as mitarbeitende (id)
+cross join generate_series(1, 5) as wochentag
+cross join (values
+  (time '08:00', time '12:00'),
+  (time '13:00', time '18:00')
+) as block (von, bis);
