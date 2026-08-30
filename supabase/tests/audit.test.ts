@@ -80,8 +80,8 @@ describe('Audit-Schreibpfad', () => {
     await asPostgres(`
       insert into auth.users (id, email, aud, role)
         values ('11111111-1111-4111-8111-0000000000fa', 'fremd@praxis.invalid', 'authenticated', 'authenticated');
-      insert into public.organizations (id, name)
-        values ('22222222-2222-4222-8222-0000000000fa', 'Test Praxis Woanders');
+      insert into public.organizations (id, name, time_zone)
+        values ('22222222-2222-4222-8222-0000000000fa', 'Test Praxis Woanders', 'Europe/Berlin');
       insert into public.persons (id, organization_id, given_name, family_name)
         values ('44444444-4444-4444-8444-0000000000fa', '22222222-2222-4222-8222-0000000000fa', 'Frida', 'Fremd');
       insert into public.user_profiles (id, organization_id, person_id, display_name)
@@ -244,8 +244,8 @@ describe('Audit-Lesepfad', () => {
     await asPostgres(`
       insert into auth.users (id, email, aud, role)
         values ('${fremderAccount}', 'orakel.test@praxis.invalid', 'authenticated', 'authenticated');
-      insert into public.organizations (id, name)
-        values ('${fremdeOrg}', 'Test Praxis Orakel');
+      insert into public.organizations (id, name, time_zone)
+        values ('${fremdeOrg}', 'Test Praxis Orakel', 'Europe/Berlin');
       insert into public.persons (id, organization_id, given_name, family_name)
         values ('${fremdePerson}', '${fremdeOrg}', 'Otto', 'Orakel');
       insert into public.user_profiles (id, organization_id, person_id, display_name)
@@ -273,8 +273,8 @@ describe('Audit-Lesepfad', () => {
 
   it('zeigt owner keine Ereignisse fremder Organisationen', async () => {
     await asPostgres(`
-      insert into public.organizations (id, name)
-        values ('22222222-2222-4222-8222-0000000000fb', 'Test Praxis Woanders');
+      insert into public.organizations (id, name, time_zone)
+        values ('22222222-2222-4222-8222-0000000000fb', 'Test Praxis Woanders', 'Europe/Berlin');
       insert into public.audit_log (organization_id, actor_user_id, action, subject_type, subject_id)
         values ('22222222-2222-4222-8222-0000000000fb', '11111111-1111-4111-8111-0000000000fb',
                 'patient_record.viewed', 'patient', '66666666-6666-4666-8666-0000000000fb');

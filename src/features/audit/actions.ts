@@ -12,6 +12,7 @@ export const AUDIT_ACTIONS = [
   'patient.created',
   'patient.updated',
   'patient.status_changed',
+  'appointment.created',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -22,11 +23,13 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'patient.created': 'Patient:in angelegt',
   'patient.updated': 'Stammdaten geändert',
   'patient.status_changed': 'Versorgungsstatus geändert',
+  'appointment.created': 'Termin angelegt',
 };
 
 export const auditSubjectLabels: Record<string, string> = {
   patient: 'Patient:in',
   organization: 'Organisation',
+  appointment: 'Termin',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {

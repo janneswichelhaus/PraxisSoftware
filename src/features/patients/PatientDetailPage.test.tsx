@@ -169,4 +169,31 @@ describe('PatientDetailPage', () => {
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     expect(logPatientRecordView).not.toHaveBeenCalled();
   });
+
+  describe('Einstieg in die Terminanlage', () => {
+    it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+      'bietet %s die Aktion "Termin anlegen" an',
+      async (role) => {
+        renderWithProviders(<PatientDetailPage user={testUser([role])} />);
+
+        const link = await screen.findByRole('link', { name: 'Termin anlegen' });
+        expect(link).toHaveAttribute('href', `/patienten/${PATIENT_ID}/termine/neu`);
+      },
+    );
+
+    it('blendet die Aktion fuer ein Patientenkonto aus', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['patient'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.queryByRole('link', { name: 'Termin anlegen' })).not.toBeInTheDocument();
+    });
+
+    it('bietet fuer eine:n inaktive:n Patient:in keinen Termin an', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
+      renderWithProviders(<PatientDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.queryByRole('link', { name: 'Termin anlegen' })).not.toBeInTheDocument();
+    });
+  });
 });

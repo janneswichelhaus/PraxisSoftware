@@ -15,6 +15,8 @@ export interface CurrentUser {
   profile: UserProfile;
   roles: RoleKey[];
   organizationName: string | null;
+  /** IANA-Zeitzone der Praxis. Massgeblich fuer Termine (CAL-001). */
+  organizationTimeZone: string | null;
 }
 
 /** Rollen mit Zugriff auf die Patientenkartei (PROJECT_PRINCIPLES.md 4.2/4.3). */
@@ -35,6 +37,19 @@ const statusRoles: RoleKey[] = ['owner', 'team_lead', 'office'];
 
 export function canChangePatientStatus(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => statusRoles.includes(role));
+}
+
+/**
+ * Rollen, die Termine planen duerfen.
+ *
+ * Terminplanung ist ein organisatorischer Vorgang: alle vier Praxisrollen
+ * duerfen ihn. Steuert ausschliesslich die Darstellung - verbindlich ist
+ * app.can_create_appointment() in der Datenbank.
+ */
+const appointmentRoles: RoleKey[] = ['owner', 'therapist', 'team_lead', 'office'];
+
+export function canManageAppointments(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => appointmentRoles.includes(role));
 }
 
 /** Administrative Praxisberechtigung (PROJECT_PRINCIPLES.md 4.1). */

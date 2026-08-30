@@ -5,8 +5,15 @@ import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
+import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
+import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
-import { canReadPatientDirectory, isOwner, type CurrentUser } from '@/features/session/types';
+import {
+  canManageAppointments,
+  canReadPatientDirectory,
+  isOwner,
+  type CurrentUser,
+} from '@/features/session/types';
 
 /**
  * Routen des angemeldeten Bereichs.
@@ -25,6 +32,7 @@ export function AuthenticatedRoutes({
 }) {
   const showDirectory = canReadPatientDirectory(user.roles);
   const showSecurity = isOwner(user.roles);
+  const showAppointments = canManageAppointments(user.roles);
 
   return (
     <AppShell user={user} onSignOut={onSignOut}>
@@ -36,6 +44,15 @@ export function AuthenticatedRoutes({
             <Route path="/patienten/neu" element={<NewPatientPage />} />
             <Route path="/patienten/:patientId" element={<PatientDetailPage user={user} />} />
             <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
+          </>
+        ) : null}
+        {showAppointments ? (
+          <>
+            <Route
+              path="/patienten/:patientId/termine/neu"
+              element={<NewAppointmentPage user={user} />}
+            />
+            <Route path="/termine/:appointmentId" element={<AppointmentDetailPage />} />
           </>
         ) : null}
         {showSecurity ? <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} /> : null}

@@ -141,3 +141,32 @@ export function direktesUpdateVersuchen(
     data: { status },
   });
 }
+
+/** Versucht, einen Termin direkt in die Tabelle zu schreiben - am Fachvorgang vorbei. */
+export function direktesEinfuegenVersuchen(
+  request: APIRequestContext,
+  token: string,
+  zeile: Record<string, unknown>,
+): Promise<APIResponse> {
+  const { url } = supabaseKonfiguration();
+  return request.post(`${url}/rest/v1/appointments`, {
+    headers: autorisiert(token),
+    data: zeile,
+  });
+}
+
+/** Liest einen Termin über den regulären Lesepfad. */
+export async function terminUeberApi(
+  request: APIRequestContext,
+  token: string,
+  appointmentId: string,
+): Promise<Record<string, unknown> | null> {
+  const { url } = supabaseKonfiguration();
+  const antwort = await request.get(
+    `${url}/rest/v1/appointment_directory?select=id,status,appointment_type,starts_at,ends_at&id=eq.${appointmentId}`,
+    { headers: autorisiert(token) },
+  );
+  expect(antwort.status(), 'Lesen des Termins').toBe(200);
+  const zeilen = (await antwort.json()) as Record<string, unknown>[];
+  return zeilen[0] ?? null;
+}

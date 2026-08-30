@@ -23,6 +23,8 @@ vi.mock('@/features/patients/api', async (importOriginal) => ({
 const AUDIT = '/praxis/sicherheit/audit';
 const NEU = '/patienten/neu';
 const BEARBEITEN = '/patienten/66666666-6666-4666-8666-000000000001/bearbeiten';
+const TERMIN_NEU = '/patienten/66666666-6666-4666-8666-000000000001/termine/neu';
+const TERMIN_DETAIL = '/termine/77777777-7777-4777-8777-000000000001';
 
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
@@ -96,5 +98,35 @@ describe('AuthenticatedRoutes', () => {
       <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
     );
     expect(screen.getAllByRole('link', { name: 'Sicherheit' }).length).toBeGreaterThan(0);
+  });
+
+  describe('Terminrouten', () => {
+    it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+      'oeffnet %s die Terminanlage',
+      async (role) => {
+        renderWithProviders(
+          <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+          TERMIN_NEU,
+        );
+        // fetchPatient liefert im Mock null - die Route greift trotzdem.
+        expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+      },
+    );
+
+    it('leitet ein Patientenkonto von der Terminanlage auf die Uebersicht um', async () => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser(['patient'])} onSignOut={vi.fn()} />,
+        TERMIN_NEU,
+      );
+      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+    });
+
+    it('leitet ein Patientenkonto von der Termindetailansicht auf die Uebersicht um', async () => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser(['patient'])} onSignOut={vi.fn()} />,
+        TERMIN_DETAIL,
+      );
+      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+    });
   });
 });
