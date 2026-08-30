@@ -68,6 +68,7 @@ nach ADR-015 — keine Microservices, keine Clean-Architecture-Schichten.
 ```bash
 pnpm install            # pnpm, nicht npm/yarn
 pnpm dev                # Vite auf :5173
+pnpm format:check       # Prettier - eigenes CI-Gate, nicht Teil von lint
 pnpm lint               # ESLint inkl. eslint-plugin-security
 pnpm typecheck
 pnpm test               # Unit/Komponenten (Vitest + Testing Library)

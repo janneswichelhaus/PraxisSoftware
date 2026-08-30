@@ -343,6 +343,7 @@ kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank.
 ## Befehle
 
 ```bash
+pnpm format:check    # Prettier - eigenes CI-Gate, nicht Teil von lint
 pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse
 pnpm typecheck       # TypeScript strict
 pnpm test            # Unit-/Komponententests
