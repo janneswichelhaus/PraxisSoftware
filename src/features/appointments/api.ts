@@ -253,3 +253,76 @@ export async function createAppointment(
   if (!appointmentId.success) throw new Error('Der Termin konnte nicht angelegt werden.');
   return appointmentId.data;
 }
+
+// -----------------------------------------------------------------------------
+// Kalender (CAL-002)
+// -----------------------------------------------------------------------------
+
+const calendarEntrySchema = z.object({
+  id: z.string(),
+  patient_id: z.string(),
+  staff_member_id: z.string(),
+  location_id: z.string().nullable(),
+  appointment_type: appointmentTypeSchema,
+  status: appointmentStatusSchema,
+  starts_at: z.string(),
+  ends_at: z.string(),
+  patient_given_name: z.string(),
+  patient_family_name: z.string(),
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  location_name: z.string().nullable(),
+});
+
+export type CalendarEntry = z.infer<typeof calendarEntrySchema>;
+
+export interface CalendarQuery {
+  von: string;
+  bis: string;
+  person: string | null;
+  standort: string | null;
+  status: 'scheduled' | 'cancelled' | 'all';
+}
+
+/**
+ * Termine eines begrenzten Zeitfensters.
+ *
+ * Der Zeitbereich wird serverseitig geprüft und begrenzt; eine freie
+ * organisationsübergreifende Abfrage ist nicht möglich. Von und Bis sind
+ * Kalendertage der Praxiszeitzone, keine Zeitstempel.
+ */
+export async function fetchAppointments(query: CalendarQuery): Promise<CalendarEntry[]> {
+  const { data, error } = (await getSupabase().rpc('list_appointments', {
+    p_from: query.von,
+    p_to: query.bis,
+    p_staff_member_id: query.person,
+    p_location_id: query.standort,
+    p_status: query.status,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Termine konnten nicht geladen werden.');
+  return z.array(calendarEntrySchema).parse(data ?? []);
+}
+
+/**
+ * Kalendertag eines Zeitpunkts in einer Zeitzone als `YYYY-MM-DD`.
+ *
+ * Damit landet ein Termin in genau der Tagesspalte, in der er für die Praxis
+ * stattfindet - unabhängig davon, in welcher Zeitzone der Browser läuft.
+ */
+export function dayKey(isoTimestamp: string, timeZone: string): string {
+  return todayInTimeZone(timeZone, new Date(isoTimestamp));
+}
+
+/** Minuten seit Mitternacht in einer Zeitzone - Grundlage der Anordnung. */
+export function minutesOfDay(isoTimestamp: string, timeZone: string): number {
+  const teile = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).formatToParts(new Date(isoTimestamp));
+
+  const zahl = (typ: string) => Number(teile.find((t) => t.type === typ)?.value ?? '0');
+  return zahl('hour') * 60 + zahl('minute');
+}

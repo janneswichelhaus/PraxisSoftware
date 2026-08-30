@@ -5,6 +5,7 @@ import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
+import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
@@ -48,6 +49,7 @@ export function AuthenticatedRoutes({
         ) : null}
         {showAppointments ? (
           <>
+            <Route path="/kalender" element={<CalendarPage user={user} />} />
             <Route
               path="/patienten/:patientId/termine/neu"
               element={<NewAppointmentPage user={user} />}

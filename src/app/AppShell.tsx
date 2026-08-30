@@ -1,7 +1,12 @@
 import type { ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { canReadPatientDirectory, isOwner, type CurrentUser } from '@/features/session/types';
+import {
+  canManageAppointments,
+  canReadPatientDirectory,
+  isOwner,
+  type CurrentUser,
+} from '@/features/session/types';
 
 interface NavItem {
   to: string;
@@ -10,6 +15,9 @@ interface NavItem {
 
 function navItems(user: CurrentUser): NavItem[] {
   const items: NavItem[] = [{ to: '/', label: 'Übersicht' }];
+  if (canManageAppointments(user.roles)) {
+    items.push({ to: '/kalender', label: 'Kalender' });
+  }
   if (canReadPatientDirectory(user.roles)) {
     items.push({ to: '/patienten', label: 'Patient:innen' });
   }
@@ -41,6 +49,11 @@ export function AppShell({
   children: ReactNode;
 }) {
   const items = navItems(user);
+  const { pathname } = useLocation();
+  // Der Kalender stellt sieben Tagesspalten nebeneinander. In der Breite der
+  // uebrigen Seiten waeren sie bei mehreren zeitgleich arbeitenden Personen
+  // nicht mehr lesbar; alle anderen Ansichten bleiben bewusst schmal.
+  const breite = pathname.startsWith('/kalender') ? 'max-w-7xl' : 'max-w-5xl';
 
   return (
     <div className="min-h-dvh">
@@ -52,7 +65,9 @@ export function AppShell({
       </a>
 
       <header className="border-line bg-canvas/90 sticky top-0 z-30 border-b backdrop-blur">
-        <div className="mx-auto flex min-h-14 w-full max-w-5xl items-center justify-between gap-3 px-5">
+        <div
+          className={`mx-auto flex min-h-14 w-full ${breite} items-center justify-between gap-3 px-5`}
+        >
           <div className="min-w-0">
             <p className="text-ink truncate text-[0.9375rem] font-semibold tracking-[-0.01em]">
               {user.organizationName ?? 'Praxisplattform'}
@@ -69,7 +84,7 @@ export function AppShell({
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-5xl gap-8 px-5">
+      <div className={`mx-auto flex w-full ${breite} gap-8 px-5`}>
         <nav aria-label="Hauptnavigation" className="hidden w-48 shrink-0 py-8 sm:block">
           <ul className="flex flex-col gap-1">
             {items.map((item) => (
