@@ -100,7 +100,9 @@ describe('Query-Parameter', () => {
       datum: HEUTE,
       person: null,
       standort: null,
-      status: 'scheduled',
+      // Standard ist 'active': geplante UND abgeschlossene Termine belegen den
+      // Tag, ein abgehakter Termin darf nicht aus der Ansicht fallen (CAL-004).
+      status: 'active',
     });
   });
 
@@ -123,7 +125,7 @@ describe('Query-Parameter', () => {
       datum: '2027-05-12',
       person: null,
       standort: null,
-      status: 'scheduled',
+      status: 'active',
     });
     expect(suche.toString()).toBe('ansicht=woche&datum=2027-05-12');
   });

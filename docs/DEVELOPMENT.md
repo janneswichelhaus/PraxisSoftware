@@ -212,14 +212,40 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
 6. Bestätigen: der Status steht auf „Abgesagt", Bearbeiten und Absagen sind
    verschwunden. Der Termin ist nicht gelöscht.
 7. Im Kalender ist er standardmäßig ausgeblendet und über den Statusfilter
-   „Geplante und abgesagte" wieder sichtbar.
+   „Alle" wieder sichtbar.
 8. Der abgesagte Zeitraum lässt sich neu belegen.
 9. Als `jannes.test@praxis.invalid` (owner) „Praxis → Sicherheit → Audit"
    öffnen: dort stehen `appointment.created`, `appointment.rescheduled`
    beziehungsweise `appointment.updated` und `appointment.cancelled` — ohne
    Stammdaten und ohne konkrete Terminzeiten.
 
-**12. Typische Fehler**
+**12. CAL-004 manuell prüfen** — Abschließen und Wiederöffnen
+
+1. Einen geplanten Termin öffnen. Neben „Termin absagen" steht jetzt
+   „Termin abschließen".
+2. „Termin abschließen" klicken — ohne Rückfrage, ohne Nachfrage nach einer
+   Behandlungsdokumentation. Der Status steht auf „Abgeschlossen", darunter
+   erscheint „Abgeschlossen am" mit Datum und Uhrzeit in der Praxiszeitzone.
+   Nirgends steht, dass etwas fehle.
+3. Bearbeiten, Absagen und Abschließen sind verschwunden; stattdessen steht
+   dort „Termin wieder öffnen".
+4. Neu laden (F5): der Abschluss bleibt.
+5. Im Kalender steht der Termin weiterhin im Tag — ohne den Filter anzufassen —
+   und trägt den Vermerk „Abgeschlossen".
+6. Gegenprobe belegter Zeitraum: einen zweiten Termin für dieselbe Person zur
+   selben Zeit anlegen. Er wird abgewiesen. Anders als eine Absage gibt ein
+   Abschluss den Zeitraum **nicht** frei.
+7. „Termin wieder öffnen" klicken: der Status steht wieder auf „Geplant",
+   „Abgeschlossen am" ist verschwunden, Bearbeiten und Absagen sind zurück.
+   Der Termin lässt sich jetzt wieder verschieben.
+8. Einen abgesagten Termin öffnen: dort gibt es weder „Termin abschließen"
+   noch „Termin wieder öffnen".
+9. Als `jannes.test@praxis.invalid` (owner) „Praxis → Sicherheit → Audit"
+   öffnen: dort stehen zusätzlich `appointment.completed` und
+   `appointment.reopened`. Beide bleiben stehen — auch der Abschluss, der
+   wieder geöffnet wurde.
+
+**13. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |

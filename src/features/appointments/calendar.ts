@@ -14,7 +14,14 @@
 export const KALENDER_ANSICHTEN = ['tag', 'woche'] as const;
 export type KalenderAnsicht = (typeof KALENDER_ANSICHTEN)[number];
 
-export const STATUS_FILTER = ['scheduled', 'cancelled', 'all'] as const;
+/**
+ * Werte des Statusfilters.
+ *
+ * `active` ist der Standard und umfasst geplante UND abgeschlossene Termine.
+ * Beide belegen den Tag tatsächlich; ein Filter, der nur `scheduled` kennt,
+ * ließe jeden abgehakten Termin aus der Ansicht verschwinden (CAL-004).
+ */
+export const STATUS_FILTER = ['active', 'scheduled', 'completed', 'cancelled', 'all'] as const;
 export type StatusFilter = (typeof STATUS_FILTER)[number];
 
 const ISO_DATUM = /^\d{4}-\d{2}-\d{2}$/;
@@ -107,7 +114,7 @@ export function leseParameter(suche: URLSearchParams, heute: string): KalenderPa
     datum: istIsoDatum(datum) ? datum : heute,
     person: person && UUID.test(person) ? person : null,
     standort: standort && UUID.test(standort) ? standort : null,
-    status: STATUS_FILTER.includes(status as StatusFilter) ? (status as StatusFilter) : 'scheduled',
+    status: STATUS_FILTER.includes(status as StatusFilter) ? (status as StatusFilter) : 'active',
   };
 }
 
@@ -124,7 +131,7 @@ export function schreibeParameter(p: KalenderParameter): URLSearchParams {
   suche.set('datum', p.datum);
   if (p.person) suche.set('person', p.person);
   if (p.standort) suche.set('standort', p.standort);
-  if (p.status !== 'scheduled') suche.set('status', p.status);
+  if (p.status !== 'active') suche.set('status', p.status);
   return suche;
 }
 

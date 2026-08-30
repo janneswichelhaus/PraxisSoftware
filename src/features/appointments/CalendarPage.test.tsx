@@ -162,7 +162,7 @@ describe('CalendarPage', () => {
           bis: '2027-05-17',
           person: null,
           standort: null,
-          status: 'scheduled',
+          status: 'active',
         });
       },
     );
@@ -192,10 +192,21 @@ describe('CalendarPage', () => {
       await waitFor(() => expect(letzteAbfrage()).toMatchObject({ standort: ORT }));
     });
 
-    it('zeigt standardmaessig nur geplante Termine', async () => {
+    it('zeigt standardmaessig geplante und abgeschlossene Termine', async () => {
+      // Nicht 'scheduled': ein abgeschlossener Termin hat stattgefunden und
+      // belegt den Tag weiter - er darf nicht aus der Ansicht verschwinden.
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
-      expect(letzteAbfrage()).toMatchObject({ status: 'scheduled' });
+      expect(letzteAbfrage()).toMatchObject({ status: 'active' });
+    });
+
+    it('kann gezielt auf abgeschlossene Termine filtern', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+
+      await user.selectOptions(screen.getByLabelText('Status'), 'completed');
+      await waitFor(() => expect(letzteAbfrage()).toMatchObject({ status: 'completed' }));
     });
 
     it('kann abgesagte Termine einblenden', async () => {
@@ -213,6 +224,18 @@ describe('CalendarPage', () => {
 
       const eintragLink = await screen.findByRole('link', { name: /Max Mustermann/ });
       expect(eintragLink).toHaveTextContent('Abgesagt');
+    });
+
+    it('zeigt einen abgeschlossenen Termin unveraendert im Tag', async () => {
+      // Der Termin hat stattgefunden: er bleibt sichtbar, behaelt seine Zeit
+      // und wird gekennzeichnet - im Standardfilter, ohne Zutun (CAL-004).
+      fetchAppointments.mockResolvedValue([eintrag({ status: 'completed' })]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+      const eintragLink = await screen.findByRole('link', { name: /Max Mustermann/ });
+      expect(eintragLink).toHaveTextContent('Abgeschlossen');
+      expect(eintragLink).toHaveTextContent('09:00–10:00');
+      expect(letzteAbfrage()).toMatchObject({ status: 'active' });
     });
   });
 

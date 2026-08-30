@@ -104,6 +104,9 @@ function Terminkachel({
   gitter: boolean;
 }) {
   const abgesagt = eintrag.status === 'cancelled';
+  // Abgeschlossene Termine bleiben voll sichtbar - sie haben stattgefunden.
+  // Nur die Absage wird zurueckgenommen dargestellt.
+  const vermerk = eintrag.status === 'scheduled' ? null : appointmentStatusLabels[eintrag.status];
 
   return (
     <Link
@@ -132,15 +135,13 @@ function Terminkachel({
         {uhrzeit(eintrag, zone)} · {eintrag.staff_given_name} {eintrag.staff_family_name}
       </span>
       {gitter ? (
-        abgesagt ? (
-          <span className="text-ink-subtle block truncate text-xs">
-            {appointmentStatusLabels.cancelled}
-          </span>
+        vermerk ? (
+          <span className="text-ink-subtle block truncate text-xs">{vermerk}</span>
         ) : null
       ) : (
         <span className="text-ink-subtle block truncate text-xs">
           {appointmentTypeLabels[eintrag.appointment_type]} · {ortsHinweis(eintrag)}
-          {abgesagt ? ` · ${appointmentStatusLabels.cancelled}` : ''}
+          {vermerk ? ` · ${vermerk}` : ''}
         </span>
       )}
     </Link>
@@ -449,9 +450,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           value={p.status}
           onChange={(e) => setze({ status: e.target.value as StatusFilter })}
         >
+          <option value="active">Geplante und abgeschlossene</option>
           <option value="scheduled">Nur geplante</option>
+          <option value="completed">Nur abgeschlossene</option>
           <option value="cancelled">Nur abgesagte</option>
-          <option value="all">Geplante und abgesagte</option>
+          <option value="all">Alle</option>
         </Select>
       </div>
 

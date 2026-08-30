@@ -9,12 +9,14 @@ import {
   appointmentStatusLabels,
   cancelAppointment,
   appointmentTypeLabels,
+  completeAppointment,
   fetchAppointment,
   formatLocalDate,
   formatLocalTime,
   formatLocalTimeRange,
   locationSummary,
   patientName,
+  reopenAppointment,
   staffName,
   type Appointment,
 } from './api';
@@ -130,11 +132,69 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
   );
 }
 
+/**
+ * Abschließen und Wiederöffnen - beide ohne Rückfrage.
+ *
+ * Anders als die Absage ist keiner der beiden Schritte endgültig: ein
+ * versehentlicher Abschluss wird direkt wieder geöffnet und umgekehrt. Eine
+ * Rückfrage wäre hier reine Reibung an einem Schritt, der am Ende jeder
+ * Behandlung ansteht.
+ *
+ * Ausdrücklich ohne Prüfung auf eine Behandlungsdokumentation: der Abschluss
+ * ist eine organisatorische Feststellung, kein Nachweis über Inhalte.
+ */
+function StatusAktion({
+  appointment,
+  aktion,
+  beschriftung,
+  laufend,
+  variant,
+}: {
+  appointment: Appointment;
+  aktion: (id: string, expectedUpdatedAt: string) => Promise<void>;
+  beschriftung: string;
+  laufend: string;
+  variant: 'primary' | 'secondary';
+}) {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: () => aktion(appointment.id, appointment.updated_at),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
+      // Der Kalender führt den Termin sonst weiter im alten Status.
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
+  });
+
+  return (
+    <div>
+      <Button
+        type="button"
+        variant={variant}
+        disabled={mutation.isPending}
+        onClick={() => {
+          if (mutation.isPending) return;
+          mutation.mutate();
+        }}
+      >
+        {mutation.isPending ? laufend : beschriftung}
+      </Button>
+      {mutation.isError ? (
+        <p className="text-danger mt-2 text-sm">{mutation.error.message}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function AppointmentDetail({ appointment, user }: { appointment: Appointment; user: CurrentUser }) {
   const zone = appointment.organization_time_zone;
-  // Abgesagte Termine sind terminal: sie werden weder bearbeitet noch erneut
-  // abgesagt. Verbindlich pruefen das die Serverfunktionen.
-  const darfAendern = canManageAppointments(user.roles) && appointment.status === 'scheduled';
+  const darfVerwalten = canManageAppointments(user.roles);
+  // Abgesagte Termine sind terminal. Abgeschlossene sind es nicht, aber sie
+  // werden erst wieder geoeffnet und dann bearbeitet - nicht ueber den
+  // Abschluss hinweg. Verbindlich pruefen das die Serverfunktionen.
+  const darfAendern = darfVerwalten && appointment.status === 'scheduled';
+  const darfWiederOeffnen = darfVerwalten && appointment.status === 'completed';
 
   return (
     <>
@@ -143,7 +203,9 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
         description={
           appointment.status === 'cancelled'
             ? 'Dieser Termin ist abgesagt.'
-            : appointmentTypeLabels[appointment.appointment_type]
+            : appointment.status === 'completed'
+              ? 'Dieser Termin ist abgeschlossen. Zum Ändern erst wieder öffnen.'
+              : appointmentTypeLabels[appointment.appointment_type]
         }
         actions={
           darfAendern ? (
@@ -183,12 +245,40 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
             label={ortsBeschriftung(appointment.appointment_type)}
             value={locationSummary(appointment)}
           />
+          {appointment.completed_at ? (
+            <DataRow
+              label="Abgeschlossen am"
+              value={`${formatLocalDate(appointment.completed_at, zone)}, ${formatLocalTime(
+                appointment.completed_at,
+                zone,
+              )} Uhr`}
+            />
+          ) : null}
         </dl>
       </section>
 
       {darfAendern ? (
-        <div className="mt-5 flex">
+        <div className="mt-5 flex flex-wrap items-start gap-3">
+          <StatusAktion
+            appointment={appointment}
+            aktion={completeAppointment}
+            beschriftung="Termin abschließen"
+            laufend="Wird abgeschlossen …"
+            variant="primary"
+          />
           <AbsageAktion appointment={appointment} />
+        </div>
+      ) : null}
+
+      {darfWiederOeffnen ? (
+        <div className="mt-5 flex">
+          <StatusAktion
+            appointment={appointment}
+            aktion={reopenAppointment}
+            beschriftung="Termin wieder öffnen"
+            laufend="Wird geöffnet …"
+            variant="secondary"
+          />
         </div>
       ) : null}
 

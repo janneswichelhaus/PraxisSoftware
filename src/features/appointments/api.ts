@@ -15,7 +15,7 @@ import { getSupabase } from '@/lib/supabase';
 export const appointmentTypeSchema = z.enum(['home_visit', 'practice', 'video']);
 export type AppointmentType = z.infer<typeof appointmentTypeSchema>;
 
-export const appointmentStatusSchema = z.enum(['scheduled', 'cancelled']);
+export const appointmentStatusSchema = z.enum(['scheduled', 'completed', 'cancelled']);
 export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
 
 export const appointmentTypeLabels: Record<AppointmentType, string> = {
@@ -26,6 +26,7 @@ export const appointmentTypeLabels: Record<AppointmentType, string> = {
 
 export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
   scheduled: 'Geplant',
+  completed: 'Abgeschlossen',
   cancelled: 'Abgesagt',
 };
 
@@ -45,6 +46,9 @@ const appointmentSchema = z.object({
   visit_house_number: z.string().nullable(),
   visit_postal_code: z.string().nullable(),
   visit_city: z.string().nullable(),
+  // Nur der Zeitpunkt, nicht die abschliessende Person: die Detailansicht
+  // zeigt keine Akteure, die Historie steht im Auditlog (ADR-010).
+  completed_at: z.string().nullable(),
   patient_given_name: z.string(),
   patient_family_name: z.string(),
   staff_given_name: z.string(),
@@ -59,7 +63,7 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 
 const SELECT =
   'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
-  'visit_street, visit_house_number, visit_postal_code, visit_city, ' +
+  'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -284,7 +288,7 @@ export interface CalendarQuery {
   bis: string;
   person: string | null;
   standort: string | null;
-  status: 'scheduled' | 'cancelled' | 'all';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'active' | 'all';
 }
 
 /**
@@ -376,6 +380,11 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
       'Der Termin wurde zwischenzeitlich von einer anderen Person geändert. Bitte die Ansicht neu laden und die Änderung erneut vornehmen.',
     );
   }
+  if (error?.message?.includes('must be reopened first')) {
+    return new Error(
+      'Der Termin ist abgeschlossen. Er muss erst wieder geöffnet werden, bevor er geändert oder abgesagt werden kann.',
+    );
+  }
   return new Error(standard);
 }
 
@@ -421,4 +430,42 @@ export async function cancelAppointment(
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgesagt werden.');
+}
+
+/**
+ * Schließt einen geplanten Termin ab.
+ *
+ * Der Abschluss ist die organisatorische Feststellung, dass die Behandlung
+ * stattgefunden hat - keine Aussage über ihren Inhalt. Eine
+ * Behandlungsdokumentation wird ausdrücklich nicht vorausgesetzt und auch
+ * nicht als fehlend markiert.
+ */
+export async function completeAppointment(
+  appointmentId: string,
+  expectedUpdatedAt: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('complete_appointment', {
+    p_appointment_id: appointmentId,
+    p_expected_updated_at: expectedUpdatedAt,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgeschlossen werden.');
+}
+
+/**
+ * Öffnet einen versehentlich abgeschlossenen Termin wieder.
+ *
+ * Danach ist er ein ganz normaler geplanter Termin. Dass er abgeschlossen war,
+ * bleibt über das Auditlog nachvollziehbar; dort wird nichts entfernt.
+ */
+export async function reopenAppointment(
+  appointmentId: string,
+  expectedUpdatedAt: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('reopen_appointment', {
+    p_appointment_id: appointmentId,
+    p_expected_updated_at: expectedUpdatedAt,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Termin konnte nicht wieder geöffnet werden.');
 }

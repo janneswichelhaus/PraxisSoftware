@@ -390,7 +390,12 @@ describe('create_appointment: Ueberschneidungen', () => {
     );
     expect(rows[0]?.definition).toMatch(/EXCLUDE USING gist/i);
     expect(rows[0]?.definition).toMatch(/tstzrange\(starts_at, ends_at, '\[\)'/);
-    expect(rows[0]?.definition).toMatch(/WHERE \(+status = 'scheduled'/);
+    // Geplante UND abgeschlossene Termine belegen ihren Zeitraum; nur eine
+    // Absage gibt ihn wieder frei (CAL-004).
+    expect(rows[0]?.definition).toMatch(/WHERE \(+status = ANY/);
+    expect(rows[0]?.definition).toContain("'scheduled'");
+    expect(rows[0]?.definition).toContain("'completed'");
+    expect(rows[0]?.definition).not.toContain("'cancelled'");
   });
 
   it('laesst zwei gleichzeitige ueberschneidende Anlagen nicht beide gelingen', async () => {
