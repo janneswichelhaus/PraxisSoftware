@@ -149,3 +149,64 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  e2e-supabase:
+    name: End-to-End hinter der Anmeldung
+    runs-on: ubuntu-latest
+    # Prueft den echten Integrationspfad: Browser -> GoTrue -> PostgREST ->
+    # SECURITY-DEFINER-RPC -> PostgreSQL. Der Job startet dafuer denselben
+    # lokalen Supabase-Stack, den auch die Entwicklung benutzt. Es entsteht
+    # keine Cloudressource und es wird kein Projekt kontaktiert (ADR-015).
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Browser installieren
+        run: pnpm exec playwright install --with-deps chromium
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Supabase starten
+        run: supabase start
+
+      - name: Migrationen und synthetischen Seed anwenden
+        # Ausdruecklich statt implizit: der Stand ist damit nachweislich aus
+        # Migrationen + Seed reproduziert und nicht aus einem Zwischenzustand.
+        run: supabase db reset
+
+      - name: Verbindungswerte der Wegwerf-Instanz uebernehmen
+        # Die Werte gelten nur fuer diesen Lauf. Der anon key ist ein
+        # oeffentlicher Clientwert, wird aber trotzdem maskiert - Schluessel
+        # gehoeren nicht in Logs (ADR-011).
+        run: |
+          eval "$(supabase status -o env)"
+          echo "::add-mask::$ANON_KEY"
+          {
+            echo "E2E_SUPABASE_URL=$API_URL"
+            echo "E2E_SUPABASE_ANON_KEY=$ANON_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: End-to-End-Tests mit echter Anmeldung
+        run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-supabase
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Supabase stoppen
+        if: always()
+        run: supabase stop --no-backup

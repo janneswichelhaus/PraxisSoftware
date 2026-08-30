@@ -95,18 +95,21 @@ export function ageInYears(dateOfBirth: string | null, today = new Date()): numb
 }
 
 /**
- * Eingabe für die Patientenanlage.
+ * Eingabe für die organisatorischen Stammdaten eines Patienten.
+ *
+ * Dieselben Felder und Regeln gelten beim Anlegen und beim Ändern; das Schema
+ * wird deshalb von beiden Formularen genutzt.
  *
  * Die Prüfung hier ist Bedienkomfort. Verbindlich normalisiert und geprüft
- * wird serverseitig in `create_patient` - die UI ist keine Zusicherung
- * (ADR-004).
+ * wird serverseitig in `create_patient` bzw. `update_patient` - die UI ist
+ * keine Zusicherung (ADR-004).
  */
 const optionalText = z
   .string()
   .transform((value) => value.trim())
   .transform((value) => (value === '' ? null : value));
 
-export const newPatientSchema = z.object({
+export const patientMasterDataSchema = z.object({
   given_name: z
     .string()
     .transform((value) => value.trim())
@@ -139,8 +142,37 @@ export const newPatientSchema = z.object({
   city: optionalText,
 });
 
-export type NewPatientInput = z.input<typeof newPatientSchema>;
-export type NewPatientValues = z.output<typeof newPatientSchema>;
+export type PatientMasterDataInput = z.input<typeof patientMasterDataSchema>;
+export type PatientMasterDataValues = z.output<typeof patientMasterDataSchema>;
+export type StammdatenFeld = keyof PatientMasterDataInput;
+
+/** Leeres Formular für die Anlage. */
+export const leereStammdaten: Record<StammdatenFeld, string> = {
+  given_name: '',
+  family_name: '',
+  date_of_birth: '',
+  email: '',
+  phone: '',
+  street: '',
+  house_number: '',
+  postal_code: '',
+  city: '',
+};
+
+/** Füllt das Formular aus einem gelesenen Datensatz; fehlende Werte bleiben leer. */
+export function patientToFormValues(patient: Patient): PatientMasterDataInput {
+  return {
+    given_name: patient.given_name,
+    family_name: patient.family_name,
+    date_of_birth: patient.date_of_birth ?? '',
+    email: patient.email ?? '',
+    phone: patient.phone ?? '',
+    street: patient.street ?? '',
+    house_number: patient.house_number ?? '',
+    postal_code: patient.postal_code ?? '',
+    city: patient.city ?? '',
+  };
+}
 
 /**
  * Legt einen Patienten an und gibt dessen ID zurück.
@@ -149,7 +181,7 @@ export type NewPatientValues = z.output<typeof newPatientSchema>;
  * Serverfunktion leitet die Organisation aus der Sitzung ab und erzeugt die
  * Schlüssel selbst.
  */
-export async function createPatient(values: NewPatientValues): Promise<string> {
+export async function createPatient(values: PatientMasterDataValues): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_patient', {
     p_given_name: values.given_name,
     p_family_name: values.family_name,
@@ -166,4 +198,54 @@ export async function createPatient(values: NewPatientValues): Promise<string> {
   const patientId = z.string().uuid().safeParse(data);
   if (!patientId.success) throw new Error('Der Patient konnte nicht angelegt werden.');
   return patientId.data;
+}
+
+/**
+ * Ändert die Stammdaten eines bestehenden Patienten.
+ *
+ * Übergeben wird ausschließlich die Patienten-ID; die Organisation leitet die
+ * Serverfunktion aus der Sitzung ab und prüft dort selbst, ob der Patient zu
+ * ihr gehört. Ein geleertes Optionalfeld kommt als null an und wird als null
+ * gespeichert.
+ */
+export async function updatePatient(
+  patientId: string,
+  values: PatientMasterDataValues,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('update_patient', {
+    p_patient_id: patientId,
+    p_given_name: values.given_name,
+    p_family_name: values.family_name,
+    p_date_of_birth: values.date_of_birth,
+    p_email: values.email,
+    p_phone: values.phone,
+    p_street: values.street,
+    p_house_number: values.house_number,
+    p_postal_code: values.postal_code,
+    p_city: values.city,
+  });
+
+  // Keine Details aus der Datenbank nach außen: eine fremde und eine
+  // unbekannte ID sollen auch in der Oberfläche gleich aussehen.
+  if (error) throw new Error('Die Stammdaten konnten nicht gespeichert werden.');
+}
+
+/**
+ * Setzt den organisatorischen Versorgungsstatus.
+ *
+ * Rein organisatorisch: 'inactive' bedeutet "nicht in laufender Versorgung"
+ * und ist kein Behandlungsabschluss im Sinne von ADR-008. Die Berechtigung
+ * prüft die Serverfunktion selbst; die ausgeblendete Schaltfläche ist keine
+ * Zugriffskontrolle (ADR-004).
+ */
+export async function setPatientStatus(
+  patientId: string,
+  status: Patient['status'],
+): Promise<void> {
+  const { error } = await getSupabase().rpc('set_patient_status', {
+    p_patient_id: patientId,
+    p_status: status,
+  });
+
+  if (error) throw new Error('Der Versorgungsstatus konnte nicht geändert werden.');
 }
