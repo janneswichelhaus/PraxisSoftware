@@ -74,6 +74,40 @@ export async function anmelden(page: Page, email: string): Promise<void> {
   await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
 }
 
+/**
+ * Bestätigt die Rückfrage „Außerhalb der Arbeitszeit", falls sie erscheint.
+ *
+ * Seit CAL-005 hinterlegt der Seed einen Wochenplan (Montag bis Freitag,
+ * 08:00-12:00 und 13:00-18:00). Die Spezifikationen ausserhalb von CAL-005
+ * pruefen andere Zusagen - Anlegen, Kalender, Bearbeiten, Abschliessen - und
+ * benutzen dafuer Zeiten ueber den ganzen Tag und Kalendertage, die auch auf
+ * ein Wochenende fallen koennen. Ob ein Zeitraum in der Arbeitszeit liegt, ist
+ * dort nicht die Frage; die Rueckfrage selbst hat eigene Tests in
+ * scheduling-workflows.spec.ts.
+ *
+ * Bewusst kein blindes Warten: es wird auf genau eines von beidem gewartet -
+ * den erwarteten Folgezustand oder die Rueckfrage.
+ */
+export async function arbeitszeitBestaetigen(
+  page: Page,
+  knopf: 'Termin trotzdem anlegen' | 'Änderung trotzdem speichern',
+  weiter: RegExp,
+): Promise<void> {
+  const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+
+  // Kurzes Fenster: die Antwort des Servers kommt lokal in Millisekunden.
+  // Tritt weder der Folgezustand noch die Rueckfrage ein, ist der Vorgang aus
+  // einem anderen Grund abgewiesen worden - das prueft der Test danach selbst.
+  await Promise.race([
+    page.waitForURL(weiter, { timeout: 5_000 }),
+    rueckfrage.waitFor({ state: 'visible', timeout: 5_000 }),
+  ]).catch(() => undefined);
+
+  if (await rueckfrage.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: knopf }).click();
+  }
+}
+
 /** Wert einer Zeile der Detailansicht, adressiert über ihre Beschriftung. */
 export function detailWert(page: Page, bezeichnung: string): Locator {
   return page.locator('dl > div').filter({ hasText: bezeichnung }).locator('dd');

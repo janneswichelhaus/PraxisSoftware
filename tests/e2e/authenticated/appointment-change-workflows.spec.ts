@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
   anmelden,
@@ -48,6 +49,7 @@ async function terminAnlegen(
   await page.getByLabel('Beginn *').fill(opts.von);
   await page.getByLabel('Ende *').fill(opts.bis);
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
   return page.url().split('/').pop()!;
 }
@@ -73,6 +75,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await page.getByLabel('Beginn *').fill(neuVon);
     await page.getByLabel('Ende *').fill(neuBis);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
@@ -96,6 +99,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     // Die Adresse wird übernommen und nicht erfragt.
     await expect(page.getByText('Adresse des Hausbesuchs')).toBeVisible();
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Tim Teamleitung');
     await expect(detailWert(page, 'Art')).toContainText('Hausbesuch');
@@ -114,6 +118,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await page.getByLabel('Beginn *').fill(zeit(15));
     await page.getByLabel('Ende *').fill(zeit(60));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page.getByText(/hat die behandelnde Person bereits einen Termin/)).toBeVisible();
     await expect(page).toHaveURL(/\/bearbeiten$/);
@@ -169,6 +174,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await page.getByLabel('Beginn *').fill(zeit(240));
     await page.getByLabel('Ende *').fill(zeit(285));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page.getByText(/zwischenzeitlich von einer anderen Person/)).toBeVisible();
 

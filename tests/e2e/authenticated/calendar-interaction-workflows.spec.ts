@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { KONTEN, PATIENTEN, anmelden, detailWert } from './helpers';
+import { arbeitszeitBestaetigen, KONTEN, PATIENTEN, anmelden, detailWert } from './helpers';
 
 /**
  * Neue Kalenderdarstellung und Verschieben per Zeigegerät (CAL-006).
@@ -39,12 +39,20 @@ async function terminAnlegen(
   await page.getByLabel('Beginn *').fill(opts.von);
   await page.getByLabel('Ende *').fill(opts.bis);
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
   return page.url().split('/').pop()!;
 }
 
-/** Zieht eine Kachel auf die Mitte eines Ziels. */
+/**
+ * Zieht eine Kachel auf die Mitte eines Ziels.
+ *
+ * boundingBox liefert Koordinaten im Sichtfenster und scrollt nicht von
+ * selbst. Liegt die Kachel unterhalb des Falzes, zeigten die Mauskoordinaten
+ * sonst auf eine ganz andere Stelle - genau das machte den Ablauf flatterhaft.
+ */
 async function ziehen(page: Page, kachel: Locator, ziel: { x: number; y: number }) {
+  await kachel.scrollIntoViewIfNeeded();
   const kasten = await kachel.boundingBox();
   if (!kasten) throw new Error('Die Kachel ist nicht sichtbar.');
   await page.mouse.move(kasten.x + kasten.width / 2, kasten.y + 8);
@@ -53,6 +61,19 @@ async function ziehen(page: Page, kachel: Locator, ziel: { x: number; y: number 
   await page.mouse.move(kasten.x + kasten.width / 2 + 12, kasten.y + 20);
   await page.mouse.move(ziel.x, ziel.y);
   await page.mouse.up();
+}
+
+/**
+ * Bestätigt die Rückfrage des Kalenders, falls das Ziel außerhalb der
+ * Arbeitszeit liegt. Die Rückfrage selbst hat eigene Tests weiter unten.
+ */
+async function verschiebenBestaetigen(page: Page) {
+  const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+  await rueckfrage.waitFor({ state: 'visible', timeout: 3_000 }).catch(() => undefined);
+  if (await rueckfrage.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Trotzdem verschieben' }).click();
+  }
+  await expect(page.getByText('Der Termin wird verschoben …')).toHaveCount(0);
 }
 
 test.describe('CAL-006: Darstellung', () => {
@@ -137,6 +158,7 @@ test.describe('CAL-006: Verschieben', () => {
       x: zielKasten!.x + zielKasten!.width / 2,
       y: kachelKasten!.y + 8,
     });
+    await verschiebenBestaetigen(page);
 
     await page.goto(`/termine/${terminId}`);
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Tim Teamleitung');

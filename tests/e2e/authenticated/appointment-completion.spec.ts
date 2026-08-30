@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
   anmelden,
@@ -46,6 +47,7 @@ async function terminAnlegen(
   await page.getByLabel('Beginn *').fill(opts.von);
   await page.getByLabel('Ende *').fill(opts.bis);
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
   return page.url().split('/').pop()!;
 }
@@ -113,6 +115,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await page.getByLabel('Beginn *').fill(von);
     await page.getByLabel('Ende *').fill(bis);
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page.getByText(/hat die behandelnde Person bereits einen Termin/)).toBeVisible();
   });
@@ -156,6 +159,7 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     await page.getByLabel('Beginn *').fill(neuVon);
     await page.getByLabel('Ende *').fill(neuBis);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
   });
 

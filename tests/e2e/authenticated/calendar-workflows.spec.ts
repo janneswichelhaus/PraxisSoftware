@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
   anmelden,
@@ -49,6 +50,7 @@ async function terminAnlegen(page: Page): Promise<string> {
   await page.getByLabel('Beginn *').fill(BEGINN);
   await page.getByLabel('Ende *').fill(ENDE);
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
   return page.url().split('/').pop()!;
 }
