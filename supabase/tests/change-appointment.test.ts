@@ -2,6 +2,7 @@ import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   SEED,
+  abgefangen,
   asAnon,
   asPostgres,
   asUser,
@@ -470,12 +471,14 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
 
       // Beide lesen denselben Stand und schreiben darauf.
       await a.query(AENDERN, aendernArgs(t, { staff: STAFF.tim }));
-      const zweite = b.query(AENDERN, aendernArgs(t, { staff: STAFF.jannes }));
+      const zweite = abgefangen(b.query(AENDERN, aendernArgs(t, { staff: STAFF.jannes })));
 
       await a.query('commit');
 
       // Die zweite Bearbeitung darf die erste nicht stillschweigend ueberschreiben.
-      await expect(zweite).rejects.toThrow(/changed meanwhile|could not serialize/i);
+      const fehler = await zweite;
+      expect(fehler, 'die zweite Bearbeitung darf nicht gelingen').not.toBeNull();
+      expect(fehler?.message).toMatch(/changed meanwhile|could not serialize/i);
       await b.query('rollback').catch(() => undefined);
 
       expect((await zeile(t.id))?.staff_member_id).toBe(STAFF.tim);
@@ -507,13 +510,15 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
 
       // Eine Person sagt ab, die andere bearbeitet - beide auf demselben Stand.
       await a.query(ABSAGEN, [t.id, t.updated_at]);
-      const bearbeitung = b.query(AENDERN, aendernArgs(t, { von: '15:00', bis: '16:00' }));
+      const bearbeitung = abgefangen(
+        b.query(AENDERN, aendernArgs(t, { von: '15:00', bis: '16:00' })),
+      );
 
       await a.query('commit');
 
-      await expect(bearbeitung).rejects.toThrow(
-        /changed meanwhile|cancelled appointment cannot be changed/,
-      );
+      const fehler = await bearbeitung;
+      expect(fehler, 'die Bearbeitung darf die Absage nicht ueberholen').not.toBeNull();
+      expect(fehler?.message).toMatch(/changed meanwhile|cancelled appointment cannot be changed/);
       await b.query('rollback').catch(() => undefined);
 
       // Die Absage bleibt bestehen, die verworfene Bearbeitung wirkt nicht.
@@ -551,11 +556,13 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
       await beginne(b, users.teamLead);
 
       await a.query(ABSAGEN, [t.id, t.updated_at]);
-      const zweite = b.query(ABSAGEN, [t.id, t.updated_at]);
+      const zweite = abgefangen(b.query(ABSAGEN, [t.id, t.updated_at]));
 
       await a.query('commit');
 
-      await expect(zweite).rejects.toThrow(/changed meanwhile|already cancelled/);
+      const fehler = await zweite;
+      expect(fehler, 'die zweite Absage darf nicht gelingen').not.toBeNull();
+      expect(fehler?.message).toMatch(/changed meanwhile|already cancelled/);
       await b.query('rollback').catch(() => undefined);
 
       const { rows } = await asPostgres<{ anzahl: string }>(

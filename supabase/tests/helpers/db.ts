@@ -182,3 +182,22 @@ export const SEED = {
     erika: '44444444-4444-4444-8444-000000000006',
   },
 } as const;
+
+/**
+ * Haengt sofort einen Handler an eine bereits laufende Abfrage.
+ *
+ * In den Nebenlaeufigkeitstests startet die zweite Transaktion, bevor die erste
+ * committet; geprueft wird ihr Ergebnis erst danach. In genau diesem Fenster
+ * meldet Node eine unbehandelte Ablehnung, sobald die Abfrage schneller
+ * scheitert als der Commit zurueckkommt - lokal selten, in CI reproduzierbar.
+ * Vitest bricht daran ab, obwohl kein einziger Test fehlschlaegt.
+ *
+ * Liefert den Fehler, oder null wenn die Abfrage entgegen der Erwartung
+ * gelingt. Die Auswertung bleibt damit vollstaendig beim Test.
+ */
+export function abgefangen(versprechen: Promise<unknown>): Promise<Error | null> {
+  return versprechen.then(
+    () => null,
+    (fehler: Error) => fehler,
+  );
+}

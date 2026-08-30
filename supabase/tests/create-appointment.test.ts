@@ -2,6 +2,7 @@ import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   SEED,
+  abgefangen,
   asAnon,
   asPostgres,
   asUser,
@@ -426,14 +427,15 @@ describe('create_appointment: Ueberschneidungen', () => {
 
       // Die zweite Anlage ueberschneidet sich und blockiert, bis die erste
       // Transaktion entschieden ist.
-      const zweite = b.query(
-        ANLEGEN,
-        args({ patient: patients.erika, von: '09:30', bis: '10:30' }),
+      const zweite = abgefangen(
+        b.query(ANLEGEN, args({ patient: patients.erika, von: '09:30', bis: '10:30' })),
       );
 
       await a.query('commit');
 
-      await expect(zweite).rejects.toThrow(/overlap|exclusion/i);
+      const fehler = await zweite;
+      expect(fehler, 'die zweite Anlage darf nicht gelingen').not.toBeNull();
+      expect(fehler?.message).toMatch(/overlap|exclusion/i);
       await b.query('rollback').catch(() => undefined);
 
       const { rows } = await asPostgres<{ anzahl: string }>(
