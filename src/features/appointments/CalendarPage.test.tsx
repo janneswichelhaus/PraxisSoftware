@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
+import type * as SchedulingApi from '@/features/scheduling/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
@@ -37,6 +38,10 @@ function eintrag(
 const fetchAppointments = vi.fn();
 const fetchAssignableTherapists = vi.fn();
 const fetchLocations = vi.fn();
+const fetchAppointment = vi.fn();
+const updateAppointment = vi.fn();
+const fetchWorkingHours = vi.fn();
+const fetchWorkingHourExceptions = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -47,12 +52,51 @@ vi.mock('./api', async (importOriginal) => {
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
+    fetchAppointment: (id: string) =>
+      fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
+    updateAppointment: (id: string, stand: string, werte: unknown, bestaetigt?: boolean) =>
+      updateAppointment(id, stand, werte, bestaetigt) as Promise<void>,
     // Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
     todayInTimeZone: () => HEUTE,
   };
 });
 
+vi.mock('@/features/scheduling/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof SchedulingApi>();
+  return {
+    ...actual,
+    fetchWorkingHours: () => fetchWorkingHours() as Promise<SchedulingApi.WorkingHour[]>,
+    fetchWorkingHourExceptions: (von: string, bis: string) =>
+      fetchWorkingHourExceptions(von, bis) as Promise<SchedulingApi.WorkingHourException[]>,
+  };
+});
+
+/** Stand, den der Kalender unmittelbar vor dem Verschieben nachliest. */
+const bestand = {
+  id: '77777777-7777-4777-8777-000000000001',
+  patient_id: PATIENT,
+  staff_member_id: STAFF_ANNA,
+  location_id: ORT,
+  appointment_type: 'practice' as const,
+  status: 'scheduled' as const,
+  starts_at: '2027-05-12T07:00:00.000Z',
+  ends_at: '2027-05-12T08:00:00.000Z',
+  updated_at: '2027-05-01T10:00:00.000000+00',
+  visit_street: null,
+  visit_house_number: null,
+  visit_postal_code: null,
+  visit_city: null,
+  completed_at: null,
+  patient_given_name: 'Max',
+  patient_family_name: 'Mustermann',
+  staff_given_name: 'Anna',
+  staff_family_name: 'Beispiel',
+  location_name: 'Hauptstandort Tuebingen',
+  organization_time_zone: 'Europe/Berlin',
+};
+
 const { CalendarPage } = await import('./CalendarPage');
+const { AusserhalbArbeitszeitError } = await import('./api');
 
 function rendern(pfad = '/kalender') {
   return renderWithProviders(<CalendarPage user={testUser(['office'], 'Olivia Office')} />, pfad);
@@ -68,7 +112,15 @@ describe('CalendarPage', () => {
     fetchAppointments.mockReset();
     fetchAssignableTherapists.mockReset();
     fetchLocations.mockReset();
+    fetchAppointment.mockReset();
+    updateAppointment.mockReset();
+    fetchWorkingHours.mockReset();
+    fetchWorkingHourExceptions.mockReset();
 
+    fetchWorkingHours.mockResolvedValue([]);
+    fetchWorkingHourExceptions.mockResolvedValue([]);
+    fetchAppointment.mockResolvedValue(bestand);
+    updateAppointment.mockResolvedValue(undefined);
     fetchAppointments.mockResolvedValue([eintrag()]);
     fetchAssignableTherapists.mockResolvedValue([
       { staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' },
@@ -240,16 +292,45 @@ describe('CalendarPage', () => {
   });
 
   describe('Darstellung', () => {
-    it('zeigt in der Tagesansicht Patient, Zeit, Person, Art und Ort', async () => {
+    it('zeigt in der Tagesansicht Patient, Zeit und Ort in der Kachel', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
 
       const link = await screen.findByRole('link', { name: /Max Mustermann/ });
       expect(link).toHaveTextContent('Max Mustermann');
       // 07:00 UTC ist 09:00 Ortszeit - der Kalender zeigt die Praxiszeit.
       expect(link).toHaveTextContent('09:00–10:00');
-      expect(link).toHaveTextContent('Anna Beispiel');
-      expect(link).toHaveTextContent('Praxis');
       expect(link).toHaveTextContent('Hauptstandort Tuebingen');
+    });
+
+    it('nennt die behandelnde Person im Spaltenkopf statt in jeder Kachel', async () => {
+      // Eine Spalte je Person: der Name gehoert einmal an den Kopf, nicht in
+      // jede einzelne Kachel (CAL-006).
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const gitter = screen.getByRole('grid', { name: 'Tagesansicht nach behandelnder Person' });
+      expect(within(gitter).getByText('Anna Beispiel')).toBeInTheDocument();
+      expect(within(gitter).getByText('Tim Teamleitung')).toBeInTheDocument();
+    });
+
+    it('ordnet einen Termin der Spalte seiner behandelnden Person zu', async () => {
+      fetchAppointments.mockResolvedValue([
+        eintrag(),
+        eintrag({
+          id: '77777777-7777-4777-8777-000000000002',
+          staff_member_id: STAFF_TIM,
+          staff_given_name: 'Tim',
+          staff_family_name: 'Teamleitung',
+          patient_given_name: 'Erika',
+          patient_family_name: 'Beispiel',
+        }),
+      ]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+      const annaSpalte = await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+      const timSpalte = screen.getByRole('gridcell', { name: 'Tim Teamleitung' });
+      expect(within(annaSpalte).getByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
+      expect(within(timSpalte).getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
     });
 
     it('verlinkt jeden Termin auf seine Detailansicht', async () => {
@@ -275,14 +356,15 @@ describe('CalendarPage', () => {
       ]);
       rendern();
 
-      const dreizehnter = (await screen.findByText('13.05.')).closest('section');
-      expect(dreizehnter).not.toBeNull();
-      expect(
-        within(dreizehnter!).getByRole('link', { name: /Max Mustermann/ }),
-      ).toBeInTheDocument();
+      // Die Wochenspalten heissen nach ihrem Wochentag; der 13.05.2027 ist ein
+      // Donnerstag.
+      const donnerstag = await screen.findByRole('gridcell', { name: 'Do' });
+      expect(within(donnerstag).getByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
     });
 
-    it('nennt bei mehreren behandelnden Personen eine Farbzuordnung', async () => {
+    it('zeigt in der Wochenansicht genau eine behandelnde Person', async () => {
+      // Die Woche mehrerer Personen gleichzeitig waere in keiner Breite lesbar;
+      // deshalb steht dort genau eine Person im Gitter (CAL-006).
       fetchAppointments.mockResolvedValue([
         eintrag(),
         eintrag({
@@ -290,15 +372,34 @@ describe('CalendarPage', () => {
           staff_member_id: STAFF_TIM,
           staff_given_name: 'Tim',
           staff_family_name: 'Teamleitung',
+          patient_given_name: 'Erika',
+          patient_family_name: 'Beispiel',
           starts_at: '2027-05-12T07:30:00.000Z',
           ends_at: '2027-05-12T08:30:00.000Z',
         }),
       ]);
-      rendern();
+      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
 
-      const legende = await screen.findByLabelText('Farbzuordnung');
-      expect(within(legende).getByText('Anna Beispiel')).toBeInTheDocument();
-      expect(within(legende).getByText('Tim Teamleitung')).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /Erika Beispiel/ })).not.toBeInTheDocument();
+    });
+
+    it('wechselt die Person der Wochenansicht im Kalender selbst', async () => {
+      const user = userEvent.setup();
+      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
+      await screen.findByRole('option', { name: 'Tim Teamleitung' });
+
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person'), STAFF_TIM);
+      await waitFor(() => expect(letzteAbfrage()).toMatchObject({ person: STAFF_TIM }));
+    });
+
+    it('bietet in der Wochenansicht kein "Alle" an', async () => {
+      rendern('/kalender?ansicht=woche&datum=2027-05-12');
+      await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+
+      const auswahl = await screen.findByLabelText('Behandelnde Person');
+      const werte = Array.from(auswahl.querySelectorAll('option')).map((o) => o.textContent);
+      expect(werte).toEqual(['Anna Beispiel', 'Tim Teamleitung']);
     });
 
     it('meldet einen leeren Tag verstaendlich', async () => {
@@ -335,6 +436,249 @@ describe('CalendarPage', () => {
 
       expect(await screen.findByText('Kalender nicht verfügbar')).toBeInTheDocument();
       expect(fetchAppointments).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('CAL-006: Verschieben per Zeigegerät', () => {
+    /**
+     * jsdom kennt kein Layout: `getBoundingClientRect` liefert überall Nullen.
+     * Die Spalten bekommen deshalb künstliche Kästen, damit die Zuordnung
+     * "welche Spalte liegt unter dem Zeiger" überhaupt eine Aussage hat.
+     */
+    function spaltenVermessen(): void {
+      const zellen = screen.getAllByRole('gridcell');
+      zellen.forEach((zelle, index) => {
+        zelle.getBoundingClientRect = () => ({
+          left: 100 + index * 200,
+          right: 300 + index * 200,
+          top: 0,
+          bottom: 800,
+          width: 200,
+          height: 800,
+          x: 100 + index * 200,
+          y: 0,
+          toJSON: () => ({}),
+        });
+      });
+    }
+
+    /** Zieht eine Kachel um dy Pixel und auf die waagerechte Position x. */
+    function ziehen(kachel: HTMLElement, opts: { dy: number; x?: number; startX?: number }) {
+      const startX = opts.startX ?? 150;
+      const startY = 200;
+      fireEvent.pointerDown(kachel, { clientX: startX, clientY: startY, button: 0 });
+      fireEvent.pointerMove(window, {
+        clientX: opts.x ?? startX,
+        clientY: startY + opts.dy,
+        button: 0,
+      });
+      fireEvent.pointerUp(window, { clientX: opts.x ?? startX, clientY: startY + opts.dy });
+    }
+
+    /** Argumente des jeweils letzten Schreibvorgangs, typisiert. */
+    function letzterSchreibvorgang(): {
+      id: string;
+      stand: string;
+      werte: AppointmentsApi.AppointmentFormValues;
+      bestaetigt: boolean | undefined;
+    } {
+      const aufruf = updateAppointment.mock.calls.at(-1) as
+        | [string, string, AppointmentsApi.AppointmentFormValues, boolean | undefined]
+        | undefined;
+      if (!aufruf) throw new Error('Es wurde nichts geschrieben.');
+      return { id: aufruf[0], stand: aufruf[1], werte: aufruf[2], bestaetigt: aufruf[3] };
+    }
+
+    async function tagesansicht() {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+      return kachel;
+    }
+
+    it('verschiebt einen Termin auf eine andere Uhrzeit', async () => {
+      const kachel = await tagesansicht();
+
+      // STUNDEN_HOEHE ist 56 px; 56 px nach unten sind genau eine Stunde.
+      ziehen(kachel, { dy: 56 });
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      const { werte, bestaetigt } = letzterSchreibvorgang();
+      expect(werte).toMatchObject({
+        staff_member_id: STAFF_ANNA,
+        date: '2027-05-12',
+        start_time: '10:00',
+        // Die Dauer bleibt beim Verschieben unveraendert.
+        end_time: '11:00',
+      });
+      expect(bestaetigt).toBe(false);
+    });
+
+    it('rastet den Beginn auf dem Praxisraster ein', async () => {
+      const kachel = await tagesansicht();
+
+      // 30 px sind rund 32 Minuten; auf einem 5er-Raster wird daraus 09:30.
+      ziehen(kachel, { dy: 30 });
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      const { werte } = letzterSchreibvorgang();
+      expect(werte.start_time).toMatch(/:\d[05]$/);
+      expect(werte).toMatchObject({ start_time: '09:30' });
+    });
+
+    it('verschiebt in der Tagesansicht auf eine andere behandelnde Person', async () => {
+      const kachel = await tagesansicht();
+
+      // Zweite Spalte: x zwischen 300 und 500.
+      ziehen(kachel, { dy: 56, x: 400 });
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      const { werte } = letzterSchreibvorgang();
+      expect(werte).toMatchObject({ staff_member_id: STAFF_TIM, date: '2027-05-12' });
+    });
+
+    it('verschiebt in der Wochenansicht auf einen anderen Tag', async () => {
+      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+
+      // Der Termin liegt am Mittwoch, also in der dritten Spalte (500-700).
+      // Gezogen wird in die erste Spalte: Montag, der 10.05.
+      ziehen(kachel, { dy: 0, startX: 550, x: 150 });
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      const { werte } = letzterSchreibvorgang();
+      expect(werte).toMatchObject({ date: '2027-05-10', staff_member_id: STAFF_ANNA });
+    });
+
+    it('schreibt nichts, wenn sich nichts aendert', async () => {
+      const kachel = await tagesansicht();
+
+      // Ueber die Schwelle bewegt, aber wieder auf denselben Rasterpunkt.
+      ziehen(kachel, { dy: 1 });
+
+      await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+      expect(updateAppointment).not.toHaveBeenCalled();
+    });
+
+    it('schreibt nichts bei einem blossen Klick', async () => {
+      const kachel = await tagesansicht();
+      fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
+      fireEvent.pointerUp(window, { clientX: 150, clientY: 200 });
+
+      expect(updateAppointment).not.toHaveBeenCalled();
+    });
+
+    it('bricht mit Escape ab', async () => {
+      const kachel = await tagesansicht();
+      fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
+      fireEvent.pointerMove(window, { clientX: 150, clientY: 400 });
+      fireEvent.keyDown(window, { key: 'Escape' });
+      fireEvent.pointerUp(window, { clientX: 150, clientY: 400 });
+
+      expect(updateAppointment).not.toHaveBeenCalled();
+    });
+
+    it('liest den aktuellen Stand vor dem Schreiben nach', async () => {
+      // Ohne den erwarteten updated_at-Wert griffe der Schutz gegen ein
+      // verlorenes Update nicht (CAL-003).
+      const kachel = await tagesansicht();
+      ziehen(kachel, { dy: 56 });
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      expect(fetchAppointment).toHaveBeenCalledWith('77777777-7777-4777-8777-000000000001');
+      expect(letzterSchreibvorgang().stand).toBe('2027-05-01T10:00:00.000000+00');
+    });
+
+    it.each([['completed'], ['cancelled']] as const)(
+      'zieht einen %s Termin nicht',
+      async (status) => {
+        fetchAppointments.mockResolvedValue([eintrag({ status })]);
+        const kachel = await tagesansicht();
+
+        ziehen(kachel, { dy: 56 });
+        expect(updateAppointment).not.toHaveBeenCalled();
+      },
+    );
+
+    it('zieht ohne Aenderungsrecht nicht', async () => {
+      renderWithProviders(
+        <CalendarPage user={testUser(['patient'])} />,
+        '/kalender?ansicht=tag&datum=2027-05-12',
+      );
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+
+      ziehen(kachel, { dy: 56 });
+      expect(updateAppointment).not.toHaveBeenCalled();
+    });
+
+    it('fragt bei einer Randzeit nach und verschiebt zunaechst nicht', async () => {
+      updateAppointment.mockRejectedValue(new AusserhalbArbeitszeitError());
+      const kachel = await tagesansicht();
+
+      ziehen(kachel, { dy: 56 });
+
+      const rueckfrage = await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+      expect(rueckfrage).toHaveTextContent(/noch nicht verschoben/);
+      expect(rueckfrage).toHaveTextContent('10:00–11:00');
+    });
+
+    it('verschiebt nach ausdruecklicher Bestaetigung mit Kennzeichen', async () => {
+      updateAppointment.mockRejectedValueOnce(new AusserhalbArbeitszeitError());
+      updateAppointment.mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      const kachel = await tagesansicht();
+
+      ziehen(kachel, { dy: 56 });
+      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+
+      await user.click(screen.getByRole('button', { name: 'Trotzdem verschieben' }));
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(2));
+      const { werte, bestaetigt } = letzterSchreibvorgang();
+      expect(werte).toMatchObject({ start_time: '10:00' });
+      expect(bestaetigt).toBe(true);
+    });
+
+    it('meldet eine Ueberschneidung, ohne nachzufragen', async () => {
+      updateAppointment.mockRejectedValue(
+        new Error('In diesem Zeitraum hat die behandelnde Person bereits einen Termin.'),
+      );
+      const kachel = await tagesansicht();
+
+      ziehen(kachel, { dy: 56 });
+
+      expect(await screen.findByText(/bereits einen Termin/)).toBeInTheDocument();
+      expect(
+        screen.queryByRole('group', { name: 'Außerhalb der Arbeitszeit' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('nennt das Bearbeiten als gleichwertigen Weg', async () => {
+      // Ziehen darf niemals der einzige Weg zum Verschieben sein.
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+      expect(screen.getByText(/über „Bearbeiten" in der Detailansicht/)).toBeInTheDocument();
+    });
+  });
+
+  describe('CAL-006: Arbeitszeit als Hintergrund', () => {
+    it('holt Wochenplan und Abweichungen des sichtbaren Bereichs', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await waitFor(() => expect(fetchWorkingHours).toHaveBeenCalled());
+      expect(fetchWorkingHourExceptions).toHaveBeenCalledWith('2027-05-12', '2027-05-13');
+    });
+
+    it('erweitert das Zeitfenster auf eine frueh beginnende Arbeitszeit', async () => {
+      fetchWorkingHours.mockResolvedValue([
+        { id: 'w1', staff_member_id: STAFF_ANNA, weekday: 3, starts_at: '06:00', ends_at: '12:00' },
+      ]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      // Ohne die Erweiterung begaenne die Achse erst um 07:00.
+      expect(screen.getByText('06:00')).toBeInTheDocument();
     });
   });
 });

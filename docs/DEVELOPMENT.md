@@ -283,7 +283,39 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
     Ein Minutenraster ist eine organisatorische Einstellung, kein Gesundheits-
     oder Stammdatenwert.
 
-**14. Typische Fehler**
+**14. CAL-006 manuell prüfen** — Kalenderdarstellung und Verschieben
+
+1. „Kalender" öffnen, auf „Tag" wechseln. Jede behandelnde Person hat eine
+   eigene Spalte; der hellere Hintergrund einer Spalte ist ihre Arbeitszeit.
+2. Fenster verschmälern (F12 → Gerätesimulation, ~375 px): das Gitter selbst
+   scrollt waagerecht, die Seite nicht. Zeitachse links und Spaltenköpfe oben
+   bleiben dabei stehen.
+3. Auf „Woche" wechseln: sieben Tagesspalten für **genau eine** Person. Die
+   Auswahl „Behandelnde Person" wechselt sie; ein „Alle" gibt es dort nicht.
+4. Adresszeile kopieren, neues Tab, einfügen: derselbe Stand erscheint —
+   Ansicht, Datum, Person und Filter stehen darin.
+5. In der Tagesansicht einen geplanten Termin mit der Maus auf eine andere
+   Uhrzeit ziehen. Während des Ziehens zeigt ein gestrichelter Rahmen das Ziel
+   mit der einrastenden Uhrzeit; der Beginn springt im Praxisraster, die Dauer
+   bleibt gleich.
+6. Loslassen: kurz steht „Der Termin wird verschoben …", und erst danach wandert
+   die Kachel. Vorher hat der Server nichts zugesagt.
+7. Denselben Termin in die Spalte einer anderen Person ziehen. Die
+   Detailansicht zeigt danach die neue Person bei unveränderter Zeit.
+8. In der Wochenansicht einen Termin auf einen anderen Tag ziehen.
+9. Gegenprobe Randzeit: einen Termin unter 18:00 ziehen. Es erscheint die
+   Rückfrage „Außerhalb der Arbeitszeit" mit dem Ziel im Klartext, und es wird
+   noch nichts geschrieben. Erst „Trotzdem verschieben" führt es aus.
+10. Gegenprobe Überschneidung: einen Termin auf einen bereits belegten Zeitraum
+    derselben Person ziehen. Es kommt eine Fehlermeldung, keine Rückfrage.
+11. Gegenprobe Status: einen Termin abschließen und dann ziehen — er bewegt
+    sich nicht. Dasselbe bei einem abgesagten Termin.
+12. Escape während des Ziehens bricht ab, ohne etwas zu schreiben.
+13. Ziehen ist nie der einzige Weg: unter dem Kalender steht der Hinweis auf
+    „Bearbeiten", und die Detailansicht bietet es unverändert an. Wer nur mit
+    der Tastatur arbeitet, nutzt diesen Weg.
+
+**15. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
