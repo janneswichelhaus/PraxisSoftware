@@ -453,7 +453,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
       <p className="text-ink-subtle mt-6 max-w-prose text-xs leading-relaxed">
         Termine lassen sich mit der Maus oder dem Finger auf eine andere Zeit
-        {p.ansicht === 'tag' ? ' oder eine andere behandelnde Person' : ' oder einen anderen Tag'}{' '}
+        {p.ansicht === 'tag'
+          ? ' oder eine andere behandelnde Person'
+          : ' oder einen anderen Tag'}{' '}
         ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Dasselbe geht
         jederzeit über „Bearbeiten" in der Detailansicht — das Ziehen ist eine Abkürzung, kein
         eigener Weg.

@@ -677,7 +677,13 @@ describe('update_appointment: Audit', () => {
     await aendernCommitted(users.office, t, { staff: STAFF.tim });
 
     expect(Object.keys((await ereignisse())[0]!.context).sort()).toEqual(
-      ['changed_fields', 'patient_id', 'staff_member_id', 'surface', 'outside_working_hours'].sort(),
+      [
+        'changed_fields',
+        'patient_id',
+        'staff_member_id',
+        'surface',
+        'outside_working_hours',
+      ].sort(),
     );
   });
 

@@ -76,12 +76,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
 
   const mutation = useMutation({
     mutationFn: (eingabe: { werte: AppointmentFormValues; bestaetigt: boolean }) =>
-      updateAppointment(
-        appointmentId!,
-        termin.data!.updated_at,
-        eingabe.werte,
-        eingabe.bestaetigt,
-      ),
+      updateAppointment(appointmentId!, termin.data!.updated_at, eingabe.werte, eingabe.bestaetigt),
     onSuccess: async () => {
       // Detailansicht und Kalender zeigen sonst weiter den alten Stand.
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] });

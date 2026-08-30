@@ -24,12 +24,8 @@ vi.mock('./api', async (importOriginal) => {
       fetchWorkingHourExceptions(von, bis) as Promise<SchedulingApi.WorkingHourException[]>,
     saveWorkingHours: (staff: string, tag: number, bloecke: unknown) =>
       saveWorkingHours(staff, tag, bloecke) as Promise<void>,
-    saveWorkingHourException: (
-      staff: string,
-      datum: string,
-      abwesend: boolean,
-      bloecke: unknown,
-    ) => saveWorkingHourException(staff, datum, abwesend, bloecke) as Promise<void>,
+    saveWorkingHourException: (staff: string, datum: string, abwesend: boolean, bloecke: unknown) =>
+      saveWorkingHourException(staff, datum, abwesend, bloecke) as Promise<void>,
     saveAppointmentGrid: (minuten: number) => saveAppointmentGrid(minuten) as Promise<void>,
   };
 });

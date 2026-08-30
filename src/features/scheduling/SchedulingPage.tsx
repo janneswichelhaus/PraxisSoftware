@@ -6,11 +6,7 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
-import {
-  canManageWorkingHours,
-  isOwner,
-  type CurrentUser,
-} from '@/features/session/types';
+import { canManageWorkingHours, isOwner, type CurrentUser } from '@/features/session/types';
 import {
   RASTER_WERTE,
   WOCHENTAGE,
@@ -317,8 +313,7 @@ function Abweichungen({
   });
 
   const mutation = useMutation({
-    mutationFn: () =>
-      saveWorkingHourException(staffMemberId, datum, abwesend, gefuellt(bloecke)),
+    mutationFn: () => saveWorkingHourException(staffMemberId, datum, abwesend, gefuellt(bloecke)),
     onSuccess: async () => {
       setGespeichert(true);
       await queryClient.invalidateQueries({ queryKey: ['working-hour-exceptions'] });

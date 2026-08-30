@@ -483,8 +483,7 @@ describe('CalendarPage', () => {
       bestaetigt: boolean | undefined;
     } {
       const aufruf = updateAppointment.mock.calls.at(-1) as
-        | [string, string, AppointmentsApi.AppointmentFormValues, boolean | undefined]
-        | undefined;
+        [string, string, AppointmentsApi.AppointmentFormValues, boolean | undefined] | undefined;
       if (!aufruf) throw new Error('Es wurde nichts geschrieben.');
       return { id: aufruf[0], stand: aufruf[1], werte: aufruf[2], bestaetigt: aufruf[3] };
     }

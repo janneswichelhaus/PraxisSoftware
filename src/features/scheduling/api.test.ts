@@ -17,7 +17,13 @@ function zeit(
   starts_at: string,
   ends_at: string,
 ): WorkingHour {
-  return { id: `${staffMemberId}-${weekday}-${starts_at}`, staff_member_id: staffMemberId, weekday, starts_at, ends_at };
+  return {
+    id: `${staffMemberId}-${weekday}-${starts_at}`,
+    staff_member_id: staffMemberId,
+    weekday,
+    starts_at,
+    ends_at,
+  };
 }
 
 describe('istRasterWert', () => {

@@ -1,12 +1,6 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  STUNDEN_HOEHE,
-  kachelBreite,
-  minuteZuPixel,
-  spalten,
-  type Zeitband,
-} from './calendar';
+import { STUNDEN_HOEHE, kachelBreite, minuteZuPixel, spalten, type Zeitband } from './calendar';
 import { appointmentStatusLabels, appointmentTypeLabels, type CalendarEntry } from './api';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 
@@ -125,7 +119,7 @@ export function CalendarGrid({
         aria-label={beschriftung}
       >
         {/* Kopfzeile: bleibt beim senkrechten Bildlauf stehen. */}
-        <div className="bg-surface sticky top-0 left-0 z-30 h-11 border-b border-line" />
+        <div className="bg-surface border-line sticky top-0 left-0 z-30 h-11 border-b" />
         {spaltenModell.map((s) => (
           <div
             key={s.id}
@@ -150,7 +144,7 @@ export function CalendarGrid({
 
         {/* Zeitachse: bleibt beim waagerechten Bildlauf stehen. */}
         <div
-          className="bg-surface sticky left-0 z-10 border-r border-line"
+          className="bg-surface border-line sticky left-0 z-10 border-r"
           style={{ height: `${hoehe}px` }}
           aria-hidden="true"
         >

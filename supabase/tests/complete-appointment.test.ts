@@ -164,8 +164,9 @@ describe('complete_appointment: Vorgang', () => {
     await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at]);
     const abgesagt = await stand(t.id);
 
-    await expect(asUser(users.office, ABSCHLIESSEN, [abgesagt.id, abgesagt.updated_at])).rejects
-      .toThrow(/cancelled appointment cannot be completed/);
+    await expect(
+      asUser(users.office, ABSCHLIESSEN, [abgesagt.id, abgesagt.updated_at]),
+    ).rejects.toThrow(/cancelled appointment cannot be completed/);
     expect(await zeile(t.id)).toMatchObject({ status: 'cancelled' });
   });
 
@@ -444,9 +445,9 @@ describe('reopen_appointment', () => {
 
   it('verlangt den erwarteten Stand', async () => {
     const t = await abgeschlossen();
-    await expect(
-      asUser(users.office, OEFFNEN, [t.id, '2020-01-01T00:00:00+00']),
-    ).rejects.toThrow(/appointment was changed meanwhile/);
+    await expect(asUser(users.office, OEFFNEN, [t.id, '2020-01-01T00:00:00+00'])).rejects.toThrow(
+      /appointment was changed meanwhile/,
+    );
     expect(await zeile(t.id)).toMatchObject({ status: 'completed' });
   });
 
@@ -480,29 +481,29 @@ describe('CAL-004: Rechte der neuen Funktionen', () => {
     await resetDatabase();
   }, 120_000);
 
-  it.each([
-    ['complete_appointment(uuid, timestamptz)'],
-    ['reopen_appointment(uuid, timestamptz)'],
-  ])('gibt anon kein EXECUTE auf public.%s', async (signatur) => {
-    const { rows } = await asPostgres<{ erlaubt: boolean }>(
-      `select has_function_privilege('anon', 'public.${signatur}', 'EXECUTE') as erlaubt`,
-    );
-    expect(rows[0]?.erlaubt).toBe(false);
-  });
+  it.each([['complete_appointment(uuid, timestamptz)'], ['reopen_appointment(uuid, timestamptz)']])(
+    'gibt anon kein EXECUTE auf public.%s',
+    async (signatur) => {
+      const { rows } = await asPostgres<{ erlaubt: boolean }>(
+        `select has_function_privilege('anon', 'public.${signatur}', 'EXECUTE') as erlaubt`,
+      );
+      expect(rows[0]?.erlaubt).toBe(false);
+    },
+  );
 
-  it.each([
-    ['complete_appointment'],
-    ['reopen_appointment'],
-  ])('laesst public.%s mit leerem search_path laufen', async (name) => {
-    const { rows } = await asPostgres<{ proconfig: string[] | null; prosecdef: boolean }>(
-      `select p.proconfig, p.prosecdef
+  it.each([['complete_appointment'], ['reopen_appointment']])(
+    'laesst public.%s mit leerem search_path laufen',
+    async (name) => {
+      const { rows } = await asPostgres<{ proconfig: string[] | null; prosecdef: boolean }>(
+        `select p.proconfig, p.prosecdef
          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'public' and p.proname = $1`,
-      [name],
-    );
-    expect(rows[0]?.prosecdef).toBe(true);
-    expect(rows[0]?.proconfig).toContain('search_path=""');
-  });
+        [name],
+      );
+      expect(rows[0]?.prosecdef).toBe(true);
+      expect(rows[0]?.proconfig).toContain('search_path=""');
+    },
+  );
 
   it('gibt authenticated auf appointments weiterhin nur SELECT', async () => {
     // Geschrieben wird ausschliesslich ueber die RPCs; der Abschluss aendert
@@ -617,8 +618,9 @@ describe('CAL-004: Mandantentrennung', () => {
   }, 120_000);
 
   it('laesst den Termin einer fremden Praxis nicht abschliessen', async () => {
-    await expect(asUser(users.office, ABSCHLIESSEN, [fremder.id, fremder.updated_at])).rejects
-      .toThrow(/appointment not found/);
+    await expect(
+      asUser(users.office, ABSCHLIESSEN, [fremder.id, fremder.updated_at]),
+    ).rejects.toThrow(/appointment not found/);
     expect(await zeile(fremder.id)).toMatchObject({ status: 'scheduled' });
   });
 
@@ -638,10 +640,9 @@ describe('CAL-004: Mandantentrennung', () => {
       '77777777-7777-4777-8777-00000000eeee',
       aktuell.updated_at,
     ]).catch((e: Error) => e.message);
-    const fremd = await asUser(users.office, ABSCHLIESSEN, [
-      aktuell.id,
-      aktuell.updated_at,
-    ]).catch((e: Error) => e.message);
+    const fremd = await asUser(users.office, ABSCHLIESSEN, [aktuell.id, aktuell.updated_at]).catch(
+      (e: Error) => e.message,
+    );
     expect(unbekannt).toBe(fremd);
   });
 });

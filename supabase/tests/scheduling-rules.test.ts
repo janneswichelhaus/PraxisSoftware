@@ -146,10 +146,9 @@ describe('set_appointment_grid', () => {
 
   beforeEach(async () => {
     await asPostgres('delete from public.audit_log');
-    await asPostgres(
-      `update public.organizations set appointment_grid_minutes = 5 where id = $1`,
-      [organizationId],
-    );
+    await asPostgres(`update public.organizations set appointment_grid_minutes = 5 where id = $1`, [
+      organizationId,
+    ]);
   });
 
   it('startet fuer die bestehende Organisation bei 5 Minuten', async () => {
@@ -269,9 +268,10 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
     // teilbar ist - dort faellt eine UTC-Rechnung gar nicht auf. Asia/Kathmandu
     // liegt 5:45 vor UTC, also 345 Minuten: teilbar durch 15, NICHT durch 10.
     // Auf einem 10er-Raster gehen beide Rechnungen damit auseinander.
-    await asPostgres('update public.organizations set appointment_grid_minutes = 10 where id = $1', [
-      organizationId,
-    ]);
+    await asPostgres(
+      'update public.organizations set appointment_grid_minutes = 10 where id = $1',
+      [organizationId],
+    );
     await asPostgres("update public.organizations set time_zone = 'Asia/Kathmandu' where id = $1", [
       organizationId,
     ]);
@@ -283,16 +283,17 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
 
     // Und die Gegenprobe: 09:05 Ortszeit = 545 Minuten -> nicht auf dem
     // Raster. In UTC waere es 03:20 = 200 Minuten und damit zulaessig.
-    await expect(
-      anlegenVersuch({ von: '09:05', bis: '10:05', bestaetigt: true }),
-    ).rejects.toThrow(/start time is not on the appointment grid/);
+    await expect(anlegenVersuch({ von: '09:05', bis: '10:05', bestaetigt: true })).rejects.toThrow(
+      /start time is not on the appointment grid/,
+    );
 
     await asPostgres("update public.organizations set time_zone = 'Europe/Berlin' where id = $1", [
       organizationId,
     ]);
-    await asPostgres('update public.organizations set appointment_grid_minutes = 15 where id = $1', [
-      organizationId,
-    ]);
+    await asPostgres(
+      'update public.organizations set appointment_grid_minutes = 15 where id = $1',
+      [organizationId],
+    );
   });
 
   it('laesst einen bestehenden Termin ausserhalb des Rasters bestehen', async () => {
@@ -301,9 +302,10 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
       organizationId,
     ]);
     const t = await anlegen({ von: '09:05', bis: '09:50', bestaetigt: true });
-    await asPostgres('update public.organizations set appointment_grid_minutes = 15 where id = $1', [
-      organizationId,
-    ]);
+    await asPostgres(
+      'update public.organizations set appointment_grid_minutes = 15 where id = $1',
+      [organizationId],
+    );
 
     // Sichtbar bleibt er ...
     const { rows } = await asUser<{ id: string }>(
@@ -330,9 +332,9 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
 
   it('verlangt fuer einen GEAENDERTEN Beginn das aktuelle Raster', async () => {
     const t = await anlegen({ von: '09:00', bis: '10:00', bestaetigt: true });
-    await expect(aendernVersuch(t, { von: '09:05', bis: '10:05', bestaetigt: true })).rejects.toThrow(
-      /start time is not on the appointment grid/,
-    );
+    await expect(
+      aendernVersuch(t, { von: '09:05', bis: '10:05', bestaetigt: true }),
+    ).rejects.toThrow(/start time is not on the appointment grid/);
   });
 
   it('laesst sich durch die Arbeitszeitbestaetigung nicht umgehen', async () => {
@@ -372,13 +374,21 @@ describe('set_staff_working_hours', () => {
     ['team_lead', users.teamLead],
     ['office', users.office],
   ])('erlaubt %s die Pflege', async (_rolle, userId) => {
-    await asUserCommitted(userId, WOCHE, [STAFF.anna, 1, JSON.stringify([{ von: '08:00', bis: '12:00' }])]);
+    await asUserCommitted(userId, WOCHE, [
+      STAFF.anna,
+      1,
+      JSON.stringify([{ von: '08:00', bis: '12:00' }]),
+    ]);
     expect(await bloecke(STAFF.anna, 1)).toEqual(['08:00-12:00']);
   });
 
   it('weist therapist ab - Lesen ja, Pflegen nein', async () => {
     await expect(
-      asUser(users.therapist, WOCHE, [STAFF.anna, 1, JSON.stringify([{ von: '08:00', bis: '12:00' }])]),
+      asUser(users.therapist, WOCHE, [
+        STAFF.anna,
+        1,
+        JSON.stringify([{ von: '08:00', bis: '12:00' }]),
+      ]),
     ).rejects.toThrow(/not allowed to manage working hours/);
   });
 
@@ -433,14 +443,18 @@ describe('set_staff_working_hours', () => {
 
   it('weist ein Ende vor dem Beginn ab', async () => {
     await expect(
-      asUser(users.office, WOCHE, [STAFF.anna, 2, JSON.stringify([{ von: '12:00', bis: '08:00' }])]),
+      asUser(users.office, WOCHE, [
+        STAFF.anna,
+        2,
+        JSON.stringify([{ von: '12:00', bis: '08:00' }]),
+      ]),
     ).rejects.toThrow(/working hour block is invalid/);
   });
 
   it.each([[0], [8], [-1]])('weist den Wochentag %s ab', async (tag) => {
-    await expect(asUser(users.office, WOCHE, [STAFF.anna, tag, JSON.stringify([])])).rejects.toThrow(
-      /weekday must be between 1 and 7/,
-    );
+    await expect(
+      asUser(users.office, WOCHE, [STAFF.anna, tag, JSON.stringify([])]),
+    ).rejects.toThrow(/weekday must be between 1 and 7/);
   });
 
   it.each([
@@ -500,7 +514,11 @@ describe('set_staff_working_hours', () => {
     // Olivia ist office und behandelt nicht - fuer sie gibt es keinen
     // Behandlungsplan.
     await expect(
-      asUser(users.office, WOCHE, [STAFF.olivia, 1, JSON.stringify([{ von: '08:00', bis: '12:00' }])]),
+      asUser(users.office, WOCHE, [
+        STAFF.olivia,
+        1,
+        JSON.stringify([{ von: '08:00', bis: '12:00' }]),
+      ]),
     ).rejects.toThrow(/staff member not assignable/);
   });
 });
@@ -588,7 +606,12 @@ describe('set_staff_working_hour_exception', () => {
 
   it('entfernt die Abweichung, wenn weder Abwesenheit noch Bloecke kommen', async () => {
     await asUserCommitted(users.office, AUSNAHME, [STAFF.anna, MITTWOCH, true, JSON.stringify([])]);
-    await asUserCommitted(users.office, AUSNAHME, [STAFF.anna, MITTWOCH, false, JSON.stringify([])]);
+    await asUserCommitted(users.office, AUSNAHME, [
+      STAFF.anna,
+      MITTWOCH,
+      false,
+      JSON.stringify([]),
+    ]);
     expect(await tag(STAFF.anna, MITTWOCH)).toEqual([]);
   });
 
@@ -609,12 +632,7 @@ describe('CAL-005: Lesepfad der Arbeitszeiten', () => {
   }, 120_000);
 
   it('laesst Praxisrollen den Wochenplan lesen', async () => {
-    for (const userId of [
-      users.ownerTherapist,
-      users.therapist,
-      users.teamLead,
-      users.office,
-    ]) {
+    for (const userId of [users.ownerTherapist, users.therapist, users.teamLead, users.office]) {
       const { rows } = await asUser<{ anzahl: string }>(
         userId,
         'select count(*) as anzahl from public.staff_working_hours',

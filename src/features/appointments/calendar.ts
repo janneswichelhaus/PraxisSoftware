@@ -377,4 +377,3 @@ export function fensterMitArbeitszeit(
   }
   return { vonMinute: von, bisMinute: Math.max(bis, von + 60) };
 }
-

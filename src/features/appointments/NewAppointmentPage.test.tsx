@@ -425,7 +425,9 @@ describe('NewAppointmentPage', () => {
           true,
         ),
       );
-      await waitFor(() => expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, expect.anything()));
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, expect.anything()),
+      );
     });
 
     it('nimmt die Rueckfrage zurueck, sobald die Zeit geaendert wird', async () => {

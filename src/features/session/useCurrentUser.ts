@@ -41,9 +41,11 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
     .eq('id', profile.organization_id)
     .maybeSingle();
 
-  const org = organization.data as
-    | { name?: string; time_zone?: string; appointment_grid_minutes?: number }
-    | null;
+  const org = organization.data as {
+    name?: string;
+    time_zone?: string;
+    appointment_grid_minutes?: number;
+  } | null;
 
   return {
     profile,
