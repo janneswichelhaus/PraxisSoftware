@@ -20,7 +20,52 @@ describe('AppShell', () => {
       </AppShell>,
     );
     expect(screen.queryByRole('link', { name: 'Patient:innen' })).toBeNull();
-    expect(screen.getAllByRole('link', { name: 'Übersicht' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Mein Tag' }).length).toBeGreaterThan(0);
+  });
+
+  it('haelt Betrieb und Team von einem Patientenkonto fern', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    expect(screen.queryByRole('link', { name: 'Betrieb' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Team' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Abrechnung' })).toBeNull();
+  });
+
+  it('zeigt das Untermenue des aktiven Arbeitsbereichs', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/betrieb/urlaub',
+    );
+    // Bereichsintern, nicht global: die Unterpunkte gehoeren zu "Betrieb".
+    expect(screen.getByRole('navigation', { name: 'Bereich Betrieb' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Radflotte/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Arbeitszeiten' })).toBeInTheDocument();
+  });
+
+  it('zeigt kein Untermenue eines anderen Bereichs', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/patienten',
+    );
+    expect(screen.queryByRole('navigation', { name: 'Bereich Betrieb' })).toBeNull();
+  });
+
+  it('markiert den Arbeitsbereich, nicht nur seine Einstiegsseite', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/betrieb/erstattungen',
+    );
+    const betrieb = screen.getAllByRole('link', { name: 'Betrieb' });
+    expect(betrieb.some((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
   });
 
   it('enthaelt einen Sprunglink zum Inhalt', () => {

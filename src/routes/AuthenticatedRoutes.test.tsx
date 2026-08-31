@@ -38,6 +38,7 @@ const TERMIN_NEU = '/patienten/66666666-6666-4666-8666-000000000001/termine/neu'
 const TERMIN_DETAIL = '/termine/77777777-7777-4777-8777-000000000001';
 const TERMIN_BEARBEITEN = '/termine/77777777-7777-4777-8777-000000000001/bearbeiten';
 const KALENDER = '/kalender';
+const FLOTTE = '/betrieb/flotte';
 
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
@@ -99,9 +100,12 @@ describe('AuthenticatedRoutes', () => {
     expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
   });
 
+  // Der Sicherheitsbereich sitzt im Untermenue des Arbeitsbereichs "Betrieb";
+  // geprueft wird deshalb auf einer Seite dieses Bereichs.
   it('blendet den Sicherheitsbereich fuer Nicht-owner aus der Navigation aus', () => {
     renderWithProviders(
       <AuthenticatedRoutes user={testUser(['therapist', 'team_lead'])} onSignOut={vi.fn()} />,
+      FLOTTE,
     );
     expect(screen.queryByRole('link', { name: 'Sicherheit' })).toBeNull();
   });
@@ -109,8 +113,24 @@ describe('AuthenticatedRoutes', () => {
   it('zeigt owner den Sicherheitsbereich in der Navigation', () => {
     renderWithProviders(
       <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
+      FLOTTE,
     );
     expect(screen.getAllByRole('link', { name: 'Sicherheit' }).length).toBeGreaterThan(0);
+  });
+
+  it('haelt ein Patientenkonto aus den Betriebsbereichen heraus', async () => {
+    renderWithProviders(<AuthenticatedRoutes user={testUser(['patient'])} onSignOut={vi.fn()} />, FLOTTE);
+    expect(screen.queryByRole('heading', { name: 'Radflotte' })).toBeNull();
+    expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+  });
+
+  it('haelt eine behandelnde Rolle aus der Personalakte heraus', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['therapist'])} onSignOut={vi.fn()} />,
+      '/betrieb/personal',
+    );
+    expect(screen.queryByRole('heading', { name: 'Personal' })).toBeNull();
+    expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
   });
 
   describe('Terminrouten', () => {
