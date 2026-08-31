@@ -68,7 +68,7 @@ export function BreakdownPage() {
 
   const vorgabeRad = suchparameter.get('rad');
   const [ablauf, setAblauf] = useState<Ablaufzustand>(() =>
-    ablaufStarten(vorgabeRad ?? vorschau.raeder[0]?.id ?? null),
+    ablaufStarten(vorgabeRad, vorschau.raeder[0]?.id ?? null),
   );
   const [ergebnis, setErgebnis] = useState<Protokolleintrag | null>(null);
 
@@ -139,7 +139,7 @@ export function BreakdownPage() {
             variant="secondary"
             onClick={() => {
               setErgebnis(null);
-              setAblauf(ablaufStarten(null));
+              setAblauf(ablaufStarten(null, vorschau.raeder[0]?.id ?? null));
             }}
           >
             Weitere Panne melden

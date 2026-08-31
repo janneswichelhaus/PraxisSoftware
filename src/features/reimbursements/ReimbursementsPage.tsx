@@ -27,7 +27,6 @@ import {
   erstattungsstandLabels,
   type Erstattung,
   type Erstattungsart,
-  type Erstattungsposition,
   type Erstattungsstand,
 } from '@/features/preview/types';
 
@@ -172,7 +171,7 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
           </select>
         </div>
         <p className="text-ink-muted pb-3 text-sm">
-          Noch nicht ausgezahlt: <strong className="text-ink">{formatEuro(offenCent)}</strong>
+          Offene Erstattungen: <strong className="text-ink">{formatEuro(offenCent)}</strong>
         </p>
       </div>
 
@@ -387,6 +386,26 @@ function Historie() {
 // Formular
 // -----------------------------------------------------------------------------
 
+/**
+ * Eine Position, solange sie eingetippt wird.
+ *
+ * Der Betrag bleibt als Text im Zustand, bis das Formular abgesendet wird. Ein
+ * bei jedem Tastendruck nach Cent und zurück gerechnetes Feld springt beim
+ * Tippen: „12," wäre schon 12,00 € und das Komma verschwunden.
+ */
+interface Positionsentwurf {
+  id: string;
+  bezeichnung: string;
+  betrag: string;
+}
+
+/** Cent aus einer Eingabe wie „12,50" oder „12.50". Unlesbares zählt als 0. */
+function centAus(eingabe: string): number {
+  const wert = Number(eingabe.replace(',', '.'));
+  if (!Number.isFinite(wert) || wert < 0) return 0;
+  return Math.round(wert * 100);
+}
+
 function Erstattungsformular({
   user,
   onFertig,
@@ -405,14 +424,14 @@ function Erstattungsformular({
   const [zeitraumVon, setZeitraumVon] = useState(zustand.stichtag.slice(0, 7));
   const [zeitraumBis, setZeitraumBis] = useState(zustand.stichtag.slice(0, 7));
   const [arbeitstage, setArbeitstage] = useState('');
-  const [positionen, setPositionen] = useState<Erstattungsposition[]>([]);
+  const [positionen, setPositionen] = useState<Positionsentwurf[]>([]);
   const [belege, setBelege] = useState(0);
   const [notiz, setNotiz] = useState('');
   const [unterschrieben, setUnterschrieben] = useState(false);
 
   const tage = Number(arbeitstage) || 0;
   const stromBetrag = Math.round(tage * KWH_PRO_ARBEITSTAG * zustand.stromsatzCent);
-  const einkaufBetrag = positionen.reduce((summe, position) => summe + position.betragCent, 0);
+  const einkaufBetrag = positionen.reduce((summe, position) => summe + centAus(position.betrag), 0);
   const betrag = art === 'strom' ? stromBetrag : einkaufBetrag;
 
   const ibanKurz = iban.replace(/\s/g, '');
@@ -449,7 +468,14 @@ function Erstattungsformular({
             zeitraumVon: art === 'strom' ? zeitraumVon : '',
             zeitraumBis: art === 'strom' ? zeitraumBis : '',
             arbeitstage: art === 'strom' ? tage : 0,
-            positionen: art === 'einkauf' ? positionen : [],
+            positionen:
+              art === 'einkauf'
+                ? positionen.map((position) => ({
+                    id: position.id,
+                    bezeichnung: position.bezeichnung,
+                    betragCent: centAus(position.betrag),
+                  }))
+                : [],
             belege,
             notiz,
             unterschrift: unterschrieben,
@@ -587,19 +613,17 @@ function Erstattungsformular({
                         <Field
                           label="Betrag in €"
                           inputMode="decimal"
-                          value={(position.betragCent / 100).toFixed(2)}
-                          onChange={(event) => {
-                            const wert = Math.round(
-                              Number(event.target.value.replace(',', '.')) * 100,
-                            );
+                          placeholder="0,00"
+                          value={position.betrag}
+                          onChange={(event) =>
                             setPositionen((aktuell) =>
                               aktuell.map((eintrag) =>
                                 eintrag.id === position.id
-                                  ? { ...eintrag, betragCent: Number.isFinite(wert) ? wert : 0 }
+                                  ? { ...eintrag, betrag: event.target.value }
                                   : eintrag,
                               ),
-                            );
-                          }}
+                            )
+                          }
                         />
                       </div>
                       <Button
@@ -622,7 +646,7 @@ function Erstattungsformular({
                   onClick={() =>
                     setPositionen((aktuell) => [
                       ...aktuell,
-                      { id: vorschauId('position'), bezeichnung: '', betragCent: 0 },
+                      { id: vorschauId('position'), bezeichnung: '', betrag: '' },
                     ])
                   }
                 >

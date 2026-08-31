@@ -74,16 +74,12 @@ export function StaffDirectoryPage({ user }: { user: CurrentUser }) {
                     </div>
                     {person.stufe ? <Badge>{person.stufe}</Badge> : null}
                   </div>
-                  <p className="text-ink-muted mt-3 text-sm">
-                    <a href={`tel:${person.telefon.replace(/\s/g, '')}`} className="text-accent">
-                      {person.telefon}
-                    </a>
-                  </p>
-                  <p className="text-ink-muted text-sm break-all">
-                    <a href={`mailto:${person.email}`} className="text-accent">
-                      {person.email}
-                    </a>
-                  </p>
+                  {/* Bewusst ohne tel:- und mailto:-Verknuepfung: Die Kontakte
+                      sind synthetisch, ein Anruf oder eine Mail daraus waere
+                      eine vorgetaeuschte Funktion. Die Verknuepfung kommt mit
+                      der echten Anbindung. */}
+                  <p className="text-ink-muted mt-3 text-sm">{person.telefon}</p>
+                  <p className="text-ink-muted text-sm break-all">{person.email}</p>
                 </Card>
               ))}
             </CardGrid>

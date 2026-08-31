@@ -66,11 +66,21 @@ export interface Ablaufzustand {
   herkunft: 'zuruecklassen' | 'uebergabe' | null;
 }
 
-export function ablaufStarten(radId: string | null): Ablaufzustand {
+/**
+ * Startzustand des Ablaufs.
+ *
+ * `radId` ist das bereits bekannte Rad - etwa, weil der Ablauf von einer
+ * Radkarte aus geöffnet wurde. Dann entfällt die Auswahl. `vorauswahl` ist
+ * lediglich der Wert, mit dem die Auswahlliste vorbelegt wird; sie überspringt
+ * den Schritt ausdrücklich nicht, sonst würde stillschweigend ein beliebiges
+ * Rad gemeldet.
+ */
+export function ablaufStarten(
+  radId: string | null,
+  vorauswahl: string | null = null,
+): Ablaufzustand {
   return {
-    radId,
-    // Ist das Rad bereits bekannt, entfällt die Auswahl - genau wie in der
-    // Vorlage, wenn der Ablauf von einer Radkarte aus geöffnet wird.
+    radId: radId ?? vorauswahl,
     schritt: radId ? 'weiterfahrt' : 'radwahl',
     verlauf: [],
     freitext: '',

@@ -434,6 +434,22 @@ export function demoUrlaub(heute: string): Urlaubsantrag[] {
       unterschrift: true,
     },
     {
+      // Liegt bewusst im selben Zeitraum wie u1: Wer u1 entscheidet, muss
+      // sehen, dass dann zwei behandelnde Personen gleichzeitig fehlen.
+      id: 'u6',
+      mitarbeiterId: 'm4',
+      von: plusTage(heute, 2),
+      bis: plusTage(heute, 6),
+      tage: 3,
+      grund: '',
+      status: 'genehmigt',
+      eingereichtAm: plusTage(heute, -14),
+      entschiedenVon: 'Nadja Wolf',
+      entschiedenAm: plusTage(heute, -13),
+      ablehnungsgrund: '',
+      unterschrift: true,
+    },
+    {
       id: 'u3',
       mitarbeiterId: 'm6',
       von: plusTage(heute, 9),

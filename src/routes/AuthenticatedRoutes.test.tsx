@@ -119,7 +119,10 @@ describe('AuthenticatedRoutes', () => {
   });
 
   it('haelt ein Patientenkonto aus den Betriebsbereichen heraus', async () => {
-    renderWithProviders(<AuthenticatedRoutes user={testUser(['patient'])} onSignOut={vi.fn()} />, FLOTTE);
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['patient'])} onSignOut={vi.fn()} />,
+      FLOTTE,
+    );
     expect(screen.queryByRole('heading', { name: 'Radflotte' })).toBeNull();
     expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
   });

@@ -19,10 +19,10 @@ import type {
  * Zustand des Vorschaugerüsts.
  *
  * Er lebt ausschließlich im Arbeitsspeicher dieser Sitzung. Es gibt bewusst
- * keine Persistenz - weder Server noch localStorage: Eine gespeicherte
- * Vorschau würde genau den Eindruck erwecken, den dieser Bereich vermeiden
- * soll, nämlich dass hier bereits echte Vorgänge entstehen. Ein Neuladen
- * setzt den Stand deshalb sichtbar zurück.
+ * keine Persistenz - weder auf dem Server noch im Browserspeicher: Eine
+ * gespeicherte Vorschau würde genau den Eindruck erwecken, den dieser Bereich
+ * vermeiden soll, nämlich dass hier bereits echte Vorgänge entstehen. Ein
+ * Neuladen setzt den Stand deshalb sichtbar zurück.
  */
 export interface Vorschauzustand {
   depots: Depot[];
