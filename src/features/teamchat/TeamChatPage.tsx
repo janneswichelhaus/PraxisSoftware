@@ -165,7 +165,10 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       <div className="grid gap-6 md:grid-cols-[14rem_1fr]">
-        <nav aria-label="Kanäle">
+        {/* min-w-0: Ohne das waechst der Rasterbereich auf die Breite der
+            Kanalliste, und die ganze Seite scrollt waagerecht statt nur die
+            Leiste selbst. */}
+        <nav aria-label="Kanäle" className="min-w-0">
           <ul className="flex gap-2 overflow-x-auto md:flex-col md:overflow-visible">
             {zustand.kanaele.map((eintrag) => {
               const ungelesen = zustand.nachrichten.filter(

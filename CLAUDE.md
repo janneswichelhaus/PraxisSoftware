@@ -134,6 +134,12 @@ ausdrücklichen Aufruf.
 
 Hintergrund und Begründung: `docs/development/DEVELOPMENT_WORKFLOW.md`.
 
+Welche Bereiche der Oberfläche echt angebunden sind, welche als gekennzeichnete
+Vorschau laufen und wo eine Entscheidung aussteht, steht in
+`docs/development/ARBEITSBEREICHE.md`. **Vor Arbeit an einem Vorschaubereich
+diese Liste lesen** — sonst entsteht leicht eine zweite Implementierung neben
+einer bereits vorhandenen.
+
 Kleine Commits mit aussagekräftiger Nachricht. Nach abgeschlossenem Feature
 stoppen, nicht eigenständig das nächste beginnen.
 

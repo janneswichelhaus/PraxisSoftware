@@ -62,8 +62,10 @@ test.describe('CAL-002: Kalender', () => {
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page);
 
-    // Über die Navigation in den Kalender, dann gezielt auf den Tag.
-    await page.getByRole('link', { name: 'Kalender' }).first().click();
+    // Über die Navigation in den Kalender, dann gezielt auf den Tag. Der
+    // Arbeitsbereich heisst "Touren & Termine"; seine Einstiegsseite ist der
+    // Kalender.
+    await page.getByRole('link', { name: 'Touren & Termine' }).first().click();
     await expect(page.getByRole('heading', { name: 'Kalender' })).toBeVisible();
 
     await page.goto(`/kalender?ansicht=tag&datum=${TAG}`);

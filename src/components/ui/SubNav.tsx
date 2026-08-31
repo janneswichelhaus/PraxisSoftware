@@ -21,7 +21,10 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
 
   return (
     <nav aria-label={label} className="border-line -mx-5 mb-6 border-b px-5">
-      <ul className="flex gap-1 overflow-x-auto pb-px">
+      {/* Schmal: eine scrollbare Zeile, damit sie nicht die halbe Seite belegt.
+          Breit: umbrechen - ein waagerecht verstecktes Menue findet auf dem
+          Desktop niemand, weil es dort keine Wischgeste gibt. */}
+      <ul className="flex gap-1 overflow-x-auto pb-px sm:flex-wrap sm:overflow-visible">
         {eintraege.map((eintrag) => (
           <li key={eintrag.to} className="shrink-0">
             <NavLink
