@@ -63,6 +63,7 @@ describe('Schema-Invarianten', () => {
       'appointments',
       'staff_working_hours',
       'staff_working_hour_exceptions',
+      'treatment_notes',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
@@ -126,6 +127,23 @@ describe('Schema-Invarianten', () => {
     const { rows: grants } = await asPostgres<{ privilege_type: string }>(`
       select privilege_type from information_schema.role_table_grants
       where table_schema = 'public' and table_name = 'audit_log'
+        and grantee in ('anon', 'authenticated')
+    `);
+    expect(grants).toEqual([]);
+  });
+
+  it('haelt treatment_notes ueber den Anwendungspfad unerreichbar (ADR-010, DOK-001)', async () => {
+    // Gaebe es hier eine Policy oder ein Tabellenrecht, koennte klinischer
+    // Freitext an get_treatment_note und damit am Auditeintrag vorbei gelesen
+    // werden. Der einzige Lesepfad ist die Funktion.
+    const { rows: policies } = await asPostgres<{ policyname: string }>(
+      `select policyname from pg_policies where schemaname = 'public' and tablename = 'treatment_notes'`,
+    );
+    expect(policies).toEqual([]);
+
+    const { rows: grants } = await asPostgres<{ privilege_type: string }>(`
+      select privilege_type from information_schema.role_table_grants
+      where table_schema = 'public' and table_name = 'treatment_notes'
         and grantee in ('anon', 'authenticated')
     `);
     expect(grants).toEqual([]);
