@@ -84,6 +84,7 @@ lesbar.
 | `notiert`            | Von Jannes eingebracht. Festgehalten, nicht bewertet.                         |
 | `vorschlag`          | Von Claude vorgeschlagen. **Noch nicht von Jannes bestätigt.**                |
 | `bestätigt`          | Jannes hat die Richtung bestätigt. Weiterhin **kein Auftrag**.                |
+| `Bedenken`           | Festgehalten, aber mit begründetem Abraten. Zusatz zu `notiert`.              |
 | `entscheidung nötig` | Vor jeder Spezifikation braucht es eine Entscheidung (siehe „Berührt").       |
 | `überführt`          | Als ADR, offene Entscheidung oder Feature-Spec weitergeführt. Verweis dabei.  |
 | `verworfen`          | Bewusst nicht weiterverfolgt. Bleibt mit Begründung stehen.                   |
@@ -115,6 +116,14 @@ wenn es nichts gibt.
 IDs werden **nie wiederverwendet** und **nie umnummeriert**, auch nicht nach
 einem Verwurf. Neue Einträge hängen hinten an.
 
+## Bestätigungen
+
+- **2026-09-01** — Jannes hat alle 58 damals als `vorschlag` geführten Einträge
+  auf `bestätigt` gesetzt. Sie sind damit als Zielrichtung bestätigt und
+  weiterhin **kein Auftrag**: gebaut wird nur, was in
+  `docs/development/ROADMAP.md` an der Reihe ist und im Loop eine eigene
+  Spezifikation bekommt.
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
@@ -129,6 +138,7 @@ einem Verwurf. Neue Einträge hängen hinten an.
 | [06-uebersicht-kalender-sessions.md](ideen/06-uebersicht-kalender-sessions.md) | Übersicht/Dashboard, Kalender, Sessions, Durchführung einer Trainingseinheit             | ORG    |
 | [07-ki-assistenz.md](ideen/07-ki-assistenz.md)                               | KI-Analyse, Assistenzfunktionen, Grenzen nach ADR-005 und ADR-006                           | KI     |
 | [08-querschnitt-plattform.md](ideen/08-querschnitt-plattform.md)             | Themen über alle Bereiche: Zeitstrahl, Sprache, Barrierefreiheit, Export, Testbarkeit       | QSN    |
+| [09-angebote-und-abrechnung.md](ideen/09-angebote-und-abrechnung.md)         | Paketpreise, Vorauszahlung, Rabatte, Anreize, Preisdarstellung im Portal                    | ANG    |
 
 ## Pflege
 

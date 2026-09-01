@@ -14,10 +14,11 @@ aus B1 bis B4, die vor Produktivstart zu erbringen sind.
 
 Die Prinzipienebene ist in `PROJECT_PRINCIPLES.md` konsolidiert.
 
-Am 2026-09-01 sind **B9** (Betreuung nach Therapieende) und **B10**
-(automatisierte Progression) als neue offene Punkte hinzugekommen. Beide sind
-P2 — sie blockieren nichts von dem, was heute gebaut wird, müssen aber vor dem
-jeweils ersten Feature in diesen Bereichen entschieden sein.
+Am 2026-09-01 sind **B9** (Betreuung nach Therapieende), **B10**
+(automatisierte Progression) und **B11** (Paketpreise und Anreize) als neue
+offene Punkte hinzugekommen. Alle drei sind P2 — sie blockieren nichts von dem,
+was heute gebaut wird, müssen aber vor dem jeweils ersten Feature in diesen
+Bereichen entschieden sein.
 
 Zuletzt aktualisiert: 2026-09-01
 
@@ -537,6 +538,52 @@ einen Feature-Loop.
 **Nicht entschieden:** Ausarbeitung als Idee in
 `docs/product/ideen/01-trainingsplaene-und-progression.md`. Diese Datei ist
 nicht normativ und entscheidet nichts davon.
+
+---
+
+### B11 — Paketpreise, Vorauszahlung und Anreize
+
+| | |
+|---|---|
+| Dringlichkeit | P2 — vor dem ersten Paket- oder Rabattfeature |
+| Bezug | §19; ADR-009, B4, B9 |
+| Status | offen |
+
+**Frage:** Wie werden vorausbezahlte Betreuungspakete abgebildet, und welche
+Rabatt- und Anreizformen sind zulässig?
+
+**Warum offen:** Jannes hat am 2026-09-01 Paketpreise für die Weiterbetreuung
+und einen Rabatt für eine Google-Bewertung als Ideen eingebracht.
+[ADR-009](../adr/ADR-009-private-billing-model.md) regelt Einzelleistungen und
+Rechnungen nach erbrachter Leistung. Ein Paket ist eine **Vorauszahlung auf
+noch nicht erbrachte Leistungen** und damit ein Vorgang, den ADR-009 nicht
+kennt:
+
+- **Guthabenführung** gegen erbrachte Leistungen. ADR-009 verlangt, dass keine
+  unbeabsichtigte Mehrfachabrechnung entsteht — beim Paket ist genau das der
+  Fehlerfall.
+- **Steuerzeitpunkt:** Bei Anzahlungen entsteht die Umsatzsteuer mit der
+  Vereinnahmung, nicht mit der Leistung.
+- **Keine gemischten Pakete** aus steuerfreier Heilbehandlung und
+  steuerpflichtigem Training, oder verpflichtende Aufteilung.
+- **Laufzeit, Verfall, Erstattung**, insbesondere beim Rückfall in die
+  Heilbehandlung während eines laufenden Pakets.
+- **GoBD:** Ein Guthabenkonto ist eine steuerlich relevante Aufzeichnung.
+- **Preisversionierung:** laufende Pakete behalten ihren Preis.
+
+**Zum Bewertungsanreiz:** Ein geldwerter Vorteil für eine positive öffentliche
+Bewertung berührt §7 HWG (Werbegaben im Heilbereich), das Lauterkeitsrecht
+(nicht offengelegte und an Positivität geknüpfte Verbraucherbewertungen) und
+die Richtlinien der Bewertungsplattform. Die Einordnung dazu steht in
+`docs/product/ideen/09-angebote-und-abrechnung.md` (IDEA-ANG-002) mit dem
+Ergebnis, davon abzuraten und stattdessen bewertungsunabhängige Rabatte zu
+verwenden. **Das ist eine Empfehlung, keine Entscheidung.** Soll der Anreiz
+trotzdem kommen, ist vorher wettbewerbs- und heilmittelwerberechtliche
+Beratung einzuholen; er wird nicht in einem Feature-Loop entschieden.
+
+**Blockiert:** Paketverkauf, Guthabenverwaltung, Rabattlogik, Preisdarstellung
+im Portal. **Nicht blockiert** ist die reguläre Einzelleistungsabrechnung nach
+ADR-009 — die kann vorher gebaut werden und ist die Voraussetzung dafür.
 
 ---
 

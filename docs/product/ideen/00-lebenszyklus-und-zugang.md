@@ -44,7 +44,7 @@ ja, welche Teile der Akte?
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | bestätigt · entscheidung nötig |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md), [ADR-009](../../adr/ADR-009-private-billing-model.md), [ADR-014](../../adr/ADR-014-foundational-data-model.md), B3, B4, B9 |
 
@@ -86,7 +86,7 @@ neuer Punkt B9 in `docs/decisions/OPEN_DECISIONS.md` aufgenommen.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-004](../../adr/ADR-004-authorization-model.md), [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md), B9 |
 
@@ -117,7 +117,7 @@ inzwischen behandlungsrelevant geworden sind?
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 · angeregt durch „Athletenprofil" |
 | Berührt | [01 TRN](01-trainingsplaene-und-progression.md) |
 
@@ -149,7 +149,7 @@ gilt im Juni nicht mehr.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 · angeregt durch „Client-Onboarding überspringen" |
 | Berührt | [ADR-010](../../adr/ADR-010-audit-and-privileged-access.md) |
 
@@ -173,7 +173,7 @@ Einwilligung, die jemand anders für die Person geklickt hat, ist keine.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md), B3 |
 

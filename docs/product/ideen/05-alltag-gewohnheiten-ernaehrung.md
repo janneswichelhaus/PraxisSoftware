@@ -62,7 +62,7 @@ Serien werden bei Krankheit pausiert, nicht gebrochen.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [02 TRK](02-tracking-und-parameter.md) |
 
@@ -84,7 +84,7 @@ vom Schlafmangel" — das ist eine klinische Aussage
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [02 TRK](02-tracking-und-parameter.md), [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md) |
 
@@ -132,7 +132,7 @@ die entscheidende Unterscheidung.
 
 | | |
 |---|---|
-| Status | vorschlag · Abgrenzung |
+| Status | bestätigt · Abgrenzung |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-ALT-005, `PROJECT_PRINCIPLES.md` §16 |
 
@@ -156,7 +156,7 @@ Spezifikation, nicht in den Nachgang.
 
 | | |
 |---|---|
-| Status | vorschlag · Abgrenzung |
+| Status | bestätigt · Abgrenzung |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-004](../../adr/ADR-004-authorization-model.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
 

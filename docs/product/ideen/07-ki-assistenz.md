@@ -17,7 +17,7 @@ daran etwas.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-005](../../adr/ADR-005-provider-independent-ai.md), C6 |
 
@@ -36,7 +36,7 @@ erinnert nur daran, dass die Reihenfolge nicht verhandelbar ist.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-006](../../adr/ADR-006-medical-device-boundary.md) Punkt 5 |
 
@@ -66,7 +66,7 @@ Quelle steht.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-006](../../adr/ADR-006-medical-device-boundary.md), `PROJECT_PRINCIPLES.md` §12 |
 
@@ -90,7 +90,7 @@ Promptänderung. Ohne solche Prüfung ist die Anforderung eine Absichtserklärun
 
 | | |
 |---|---|
-| Status | vorschlag · Abgrenzung |
+| Status | bestätigt · Abgrenzung |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-006](../../adr/ADR-006-medical-device-boundary.md) Punkt 4 |
 
@@ -113,7 +113,7 @@ ausgeschlossen:
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-010](../../adr/ADR-010-audit-and-privileged-access.md), [ADR-011](../../adr/ADR-011-logging-and-observability.md), B1 (AI Act) |
 
@@ -132,7 +132,7 @@ ist teurer als sie von Anfang an mitzuführen — und sie kostet fast nichts.
 
 | | |
 |---|---|
-| Status | vorschlag · Einordnung |
+| Status | bestätigt · Einordnung |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [referenz-navigation.md](referenz-navigation.md) |
 

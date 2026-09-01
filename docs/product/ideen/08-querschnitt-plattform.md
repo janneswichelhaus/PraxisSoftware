@@ -12,7 +12,7 @@ entscheiden und am Anfang niemand aufschreibt.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-004](../../adr/ADR-004-authorization-model.md), [ADR-010](../../adr/ADR-010-audit-and-privileged-access.md), [04 OUT](04-assessments-outcomes-fortschritt.md) |
 
@@ -37,7 +37,7 @@ Zeilen.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [01 TRN](01-trainingsplaene-und-progression.md), [04 OUT](04-assessments-outcomes-fortschritt.md) |
 
@@ -57,7 +57,7 @@ möglich, ist aber teurer, langsamer und weniger verlässlich als zwei Felder
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md), [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md), [00 LZK](00-lebenszyklus-und-zugang.md) |
 
@@ -80,7 +80,7 @@ Rohdatenbank ausleitet, hebelt jede Feldbeschränkung aus.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-013](../../adr/ADR-013-ci-cd-and-release-governance.md), E6, `PROJECT_PRINCIPLES.md` §12 |
 
@@ -102,7 +102,7 @@ Daten) mit ab.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 · angeregt durch „COACH-KONTROLLE" |
 | Berührt | [ADR-006](../../adr/ADR-006-medical-device-boundary.md), [ADR-009](../../adr/ADR-009-private-billing-model.md), [ADR-010](../../adr/ADR-010-audit-and-privileged-access.md) |
 
@@ -123,7 +123,7 @@ immer.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | `PROJECT_PRINCIPLES.md` §2.2, B5, [ADR-015](../../adr/ADR-015-initial-technical-stack.md) |
 
@@ -145,7 +145,7 @@ Farbunabhängigkeit nicht nur Barrierefreiheit, sondern Patientensicherheit.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [referenz-navigation.md](referenz-navigation.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
 
@@ -165,7 +165,7 @@ Grenze zu halten — und der teuerste, sie unbemerkt zu überschreiten.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-014](../../adr/ADR-014-foundational-data-model.md), `PROJECT_PRINCIPLES.md` §11 |
 

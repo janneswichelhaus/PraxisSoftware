@@ -12,7 +12,7 @@ und die dichteste Häufung von MDR-Grenzfällen.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | B8, `PROJECT_PRINCIPLES.md` §7, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
 
@@ -38,7 +38,7 @@ Verlaufs abbilden, ohne eine einzige Lizenz.
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | bestätigt · entscheidung nötig |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-006](../../adr/ADR-006-medical-device-boundary.md), B1 |
 
@@ -62,7 +62,7 @@ trennt. Solange die Frage offen ist: nicht bauen.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [00 LZK](00-lebenszyklus-und-zugang.md), IDEA-OUT-001 |
 
@@ -86,7 +86,7 @@ haben — Tätigkeit plus Skala plus Verlauf — und nicht ein Freitextfeld
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 
 **Idee.** In regelmäßigen Abständen eine einzige Frage: „Wie geht es dir
@@ -104,7 +104,7 @@ Kurven nicht — nicht mit der Person.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [08 QSN](08-querschnitt-plattform.md) |
 
@@ -175,7 +175,7 @@ Kriterienfreigabe durch die Therapeutin
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [08 QSN](08-querschnitt-plattform.md) |
 

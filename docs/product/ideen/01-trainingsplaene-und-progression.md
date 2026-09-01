@@ -50,7 +50,7 @@ unterscheidet sie sich zwischen Heilbehandlung und Weiterbetreuung?
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-005](../../adr/ADR-005-provider-independent-ai.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md), [ADR-010](../../adr/ADR-010-audit-and-privileged-access.md) |
 
@@ -92,7 +92,7 @@ praktisch kaum durchhaltbar.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [02 TRK](02-tracking-und-parameter.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
 
@@ -130,7 +130,7 @@ gelesen wird? Farbe allein reicht ohnehin nicht — siehe
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-TRN-005 |
 
@@ -170,7 +170,7 @@ Entscheidung und gehört damit in die Planfreigabe, nicht in die Engine.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-TRN-004, [ADR-014](../../adr/ADR-014-foundational-data-model.md) |
 
@@ -204,7 +204,7 @@ Prüfung nach [ADR-002](../../adr/ADR-002-hosting-data-residency.md).
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [02 TRK](02-tracking-und-parameter.md) |
 
@@ -234,7 +234,7 @@ gedämpfter Reaktion gehört dazu.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-TRN-004 |
 
@@ -254,7 +254,7 @@ Antwort — und für das erste Regelwerk der naheliegende Kandidat.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [04 OUT](04-assessments-outcomes-fortschritt.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
 
@@ -280,7 +280,7 @@ etwas anderes als selbst umzuschalten.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [02 TRK](02-tracking-und-parameter.md), [05 ALT](05-alltag-gewohnheiten-ernaehrung.md) |
 
@@ -306,7 +306,7 @@ gebrochene Serie als Drama.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-TRN-009 |
 
@@ -330,7 +330,7 @@ Planparametrierung.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), [ADR-014](../../adr/ADR-014-foundational-data-model.md), `PROJECT_PRINCIPLES.md` §5 |
 
@@ -350,7 +350,7 @@ Zwischenfall ist genau das die entscheidende Frage.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-006](../../adr/ADR-006-medical-device-boundary.md), [ADR-013](../../adr/ADR-013-ci-cd-and-release-governance.md), [08 QSN](08-querschnitt-plattform.md) |
 
@@ -373,7 +373,7 @@ herauszufinden, ob die Regel taugt.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [02 TRK](02-tracking-und-parameter.md) |
 

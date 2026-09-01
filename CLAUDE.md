@@ -138,6 +138,12 @@ Für Featurearbeit gibt es den Skill **`/feature-loop <Aufgabe>`**
 Verify → Review → Fix → Final Verify → Report → Stopp. Er startet nur auf
 ausdrücklichen Aufruf.
 
+`docs/development/ROADMAP.md` sagt, **was als Nächstes** dran ist, welche
+Entscheidung ein Etappenschritt voraussetzt und welche Regeln den
+Credit-Verbrauch begrenzen. Zu Beginn eines Loops lesen und am Ende den
+Eintrag abhaken. Die Roadmap legt die **Reihenfolge** fest, nie den Scope —
+und startet nichts von allein.
+
 Hintergrund und Begründung: `docs/development/DEVELOPMENT_WORKFLOW.md`.
 
 Kleine Commits mit aussagekräftiger Nachricht. Nach abgeschlossenem Feature

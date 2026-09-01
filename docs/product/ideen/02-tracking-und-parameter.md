@@ -14,7 +14,7 @@ warum „alles" die falsche Zielgröße ist.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 · ordnet Jannes' Aufzählung |
 | Berührt | [ADR-014](../../adr/ADR-014-foundational-data-model.md) |
 
@@ -50,7 +50,7 @@ erzeugt entweder unbenutzbare Formulare oder lückenhafte Zeitreihen.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-TRK-001, [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md), [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md) |
 
@@ -135,7 +135,7 @@ Weiterleitung des unveränderten Werts ist etwas anderes.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-TRK-001, [01 TRN](01-trainingsplaene-und-progression.md) |
 
@@ -164,7 +164,7 @@ ableiten („neuropathisches Muster") ist es nicht.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [04 OUT](04-assessments-outcomes-fortschritt.md) |
 
@@ -183,7 +183,7 @@ zwischen Daten und Zahlen.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-002](../../adr/ADR-002-hosting-data-residency.md), [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md) |
 
@@ -207,7 +207,7 @@ die Zulässigkeit.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-001](../../adr/ADR-001-online-first-limited-offline.md) |
 

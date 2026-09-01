@@ -11,7 +11,7 @@ also die Oberfläche, auf der der Betreuungsalltag stattfindet.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-004](../../adr/ADR-004-authorization-model.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
 
@@ -35,7 +35,7 @@ Verlauf: zulässig. Die daraus abgeleitete Aufforderung: nicht.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), [ADR-014](../../adr/ADR-014-foundational-data-model.md), [00 LZK](00-lebenszyklus-und-zugang.md), D („bestätigt") |
 
@@ -63,7 +63,7 @@ eine Nichthandlung.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [02 TRK](02-tracking-und-parameter.md), [ADR-001](../../adr/ADR-001-online-first-limited-offline.md) |
 
@@ -86,7 +86,7 @@ schlechtes Licht, Bildschirmsperre unterwegs, keine Verbindung
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-003](../../adr/ADR-003-organization-location-model.md), IDEA-ORG-002 |
 
@@ -108,7 +108,7 @@ Entscheidung nach ADR-002, kein Detail.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [07 KI](07-ki-assistenz.md), [ADR-004](../../adr/ADR-004-authorization-model.md), [ADR-010](../../adr/ADR-010-audit-and-privileged-access.md) |
 
@@ -132,7 +132,7 @@ den Quellen nicht steht. Das ist laut ADR-006 die schwierigste Stelle
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [01 TRN](01-trainingsplaene-und-progression.md) |
 

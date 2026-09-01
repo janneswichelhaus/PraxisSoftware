@@ -44,7 +44,7 @@ darf das nicht selbst entscheiden.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-006](../../adr/ADR-006-medical-device-boundary.md), `PROJECT_PRINCIPLES.md` §16 |
 
@@ -115,7 +115,7 @@ Ist ein Bewegungsvideo ein biometrisches Datum? Die Frage gehört in die DSFA.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-KOM-003 |
 
@@ -134,7 +134,7 @@ jede Kurve.
 
 | | |
 |---|---|
-| Status | vorschlag · Abgrenzung |
+| Status | bestätigt · Abgrenzung |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-005](../../adr/ADR-005-provider-independent-ai.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
 
@@ -157,7 +157,7 @@ der ersten Zeile Code.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | [ADR-011](../../adr/ADR-011-logging-and-observability.md), [05 ALT](05-alltag-gewohnheiten-ernaehrung.md) |
 
@@ -185,7 +185,7 @@ Mitfahrenden.
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | bestätigt · entscheidung nötig |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | C2, `PROJECT_PRINCIPLES.md` §5, §10 |
 

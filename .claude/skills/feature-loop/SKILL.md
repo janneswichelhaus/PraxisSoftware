@@ -12,6 +12,10 @@ Die inhaltlichen Regeln stehen in `CLAUDE.md`, `PROJECT_PRINCIPLES.md` und den
 ADRs. Dieser Skill wiederholt sie nicht — er beschreibt nur die Reihenfolge und
 die Abbruchbedingungen.
 
+**Zuerst `docs/development/ROADMAP.md` lesen** — Einordnung des Auftrags,
+Voraussetzungen des Schritts, Credit-Regeln. Fehlt eine dort genannte
+Voraussetzung aus Spur B, wird das gemeldet und der Loop nicht begonnen.
+
 ---
 
 ## A. SPEC
@@ -161,6 +165,10 @@ Kompakt berichten:
 6. Bekannte Einschränkungen und Risiken
 7. Commit-Hash(es)
 8. Was der logisch nächste Loop wäre — als Vorschlag
+
+Dann in `docs/development/ROADMAP.md` den Eintrag in der Fortschrittstabelle
+auf `fertig` setzen, mit Datum und Commit. Ein Eintrag ohne durchlaufenen
+Schritt I wird nicht abgehakt.
 
 **Danach stoppen.** Der vorgeschlagene nächste Loop wird nicht begonnen. Ein
 neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.
