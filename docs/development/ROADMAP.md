@@ -79,8 +79,9 @@ gewählt.
 | #   | Loop    | Inhalt                                                                                     | Voraussetzung          |
 | --- | ------- | ------------------------------------------------------------------------------------------ | ---------------------- |
 | 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **frei** (ADR-016)     |
-| 2   | DOK-002 | Finalisierung mit Versionierung nach ADR-016 / §630f BGB                                   | DOK-001                |
+| 2   | DOK-002 | Finalisierung von Hand, Versionierung, Nachtrag als eigener Eintrag (ADR-016 Punkte 4 bis 6) | DOK-001                |
 | 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | DOK-002, C1/C2 berührt |
+| 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7) — **braucht erst eine Entscheidung, siehe unten** | DOK-002                |
 | 4   | LOE-001 | Datenklassen und Aufbewahrungsfristen als echte Struktur, Legal Hold                       | —                      |
 | 5   | LOE-002 | Löschvorgang, Wiederanwendung nach Restore, `pnpm test:db`                                 | LOE-001                |
 | 6   | ABR-001 | Leistungskatalog, versioniert, mit Steuerkennzeichen je Leistungsversion                   | B4 teilweise           |
@@ -91,6 +92,26 @@ gewählt.
 **LOE-001 und LOE-002 sind Go-live-Blocker** (ADR-008, `DEVELOPMENT.md`). Sie
 stehen bewusst mitten in der Etappe und nicht am Ende: ein Löschkonzept
 nachträglich über gewachsene Daten zu legen ist deutlich teurer.
+
+**DOK-004 ist von DOK-002 abgetrennt, weil das Projekt keinen Scheduler hat.**
+Geprüft am 2026-09-01: weder `pg_cron` noch ein anderer Mechanismus für
+zeitgesteuerte Aufgaben existiert. ADR-016 Punkt 7 verlangt eine automatische
+Finalisierung nach Fristablauf — dafür gibt es drei Wege mit sehr
+unterschiedlichem Preis:
+
+1. **Berechnet statt gespeichert.** Ein Entwurf jenseits der Frist gilt beim
+   Lesen als finalisiert. Kein neuer Mechanismus, aber der Zustand ist nicht
+   materialisiert — und die Versionierung braucht einen festgeschriebenen
+   Stand, an dem Version 1 hängt.
+2. **`pg_cron`.** Sauber und materialisiert, aber eine neue Infrastruktur­
+   abhängigkeit. Nach `PROJECT_PRINCIPLES.md` §11 und ADR-015 braucht das eine
+   bewusste Entscheidung, keinen beiläufigen Einbau im Loop.
+3. **Beim nächsten Zugriff nachziehen.** Billig, aber der Zeitpunkt der
+   Finalisierung hängt dann davon ab, wann jemand die Akte öffnet — bei einer
+   §630f-relevanten Frist die schlechteste Eigenschaft.
+
+Die Wahl ist eine Architekturentscheidung und gehört vor DOK-004, nicht hinein.
+DOK-002 und DOK-003 sind davon nicht betroffen.
 
 **Ergebnis der Etappe:** Die Praxis könnte damit arbeiten — Termine
 dokumentieren, Leistungen erfassen, Rechnungen stellen. Das ist der Punkt, ab
