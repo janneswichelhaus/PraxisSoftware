@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as PatientsApiModule from '@/features/patients/api';
 import type * as AppointmentsApiModule from '@/features/appointments/api';
+import type * as DokumentationApiModule from '@/features/documentation/api';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -21,6 +22,10 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     fetchLocations: () => Promise.resolve([]),
   };
 });
+vi.mock('@/features/documentation/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof DokumentationApiModule>()),
+  fetchTreatmentNote: () => Promise.resolve(null),
+}));
 vi.mock('@/features/patients/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApiModule>()),
   fetchPatients: () => Promise.resolve([]),
@@ -38,6 +43,7 @@ const TERMIN_NEU = '/patienten/66666666-6666-4666-8666-000000000001/termine/neu'
 const TERMIN_DETAIL = '/termine/77777777-7777-4777-8777-000000000001';
 const TERMIN_BEARBEITEN = '/termine/77777777-7777-4777-8777-000000000001/bearbeiten';
 const KALENDER = '/kalender';
+const TERMIN_DOKUMENTATION = '/termine/77777777-7777-4777-8777-000000000001/dokumentation';
 
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
@@ -172,5 +178,31 @@ describe('AuthenticatedRoutes', () => {
       // Der Termin ist im Mock nicht auffindbar - die Route greift trotzdem.
       expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     });
+  });
+
+  describe('Dokumentationsroute (DOK-001)', () => {
+    it.each([['therapist'], ['team_lead']] as const)(
+      'oeffnet %s den Entwurf der Behandlungsdokumentation',
+      async (role) => {
+        renderWithProviders(
+          <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+          TERMIN_DOKUMENTATION,
+        );
+        // fetchAppointment liefert im Mock null - entscheidend ist, dass die
+        // Route ueberhaupt gemountet wird.
+        expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+      },
+    );
+
+    it.each([['office'], ['owner'], ['patient']] as const)(
+      'leitet %s von der Dokumentationsroute auf die Uebersicht um',
+      async (role) => {
+        renderWithProviders(
+          <AuthenticatedRoutes user={testUser([role], 'Olivia Office')} onSignOut={vi.fn()} />,
+          TERMIN_DOKUMENTATION,
+        );
+        expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      },
+    );
   });
 });
