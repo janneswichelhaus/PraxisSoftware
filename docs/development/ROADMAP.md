@@ -263,6 +263,22 @@ Auftrag für die wöchentliche Planungssession. Sie **baut nichts.**
 
 Kein Codelesen, keine Analyse, keine Vorschläge über den nächsten Loop hinaus.
 
+### Eingerichtete Routine
+
+Seit 2026-09-01 läuft das als automatische Routine: **montags 07:50 Uhr**
+startet eine frische Session mit genau diesem Auftrag; das Ergebnis kommt per
+Push-Nachricht und E-Mail. Sie **baut nichts** und stoppt nach dem Bericht.
+
+- Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, erste Ausführung 2026-09-07.
+- Die Zeitangabe ist intern UTC (`50 5 * * 1`). **Nach der Zeitumstellung Ende
+  Oktober fällt sie auf 06:50 Uhr** — wer das nicht will, ändert den
+  Cron-Ausdruck dann auf `50 6 * * 1`.
+- Die Routine liest den Branch `claude/physio-platform-features-u7uy15`,
+  solange diese Datei nicht auf `main` liegt. Nach einem Merge nach `main`
+  entfällt der Umweg von allein.
+- Abschalten oder Takt ändern geht über die Routines-Oberfläche auf claude.ai
+  oder durch eine Anweisung in einer Session.
+
 ---
 
 ## Fortschritt
