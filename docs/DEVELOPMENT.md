@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand: 2026-08-30 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-01 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
@@ -71,8 +71,8 @@ Projektverzeichnis in Git Bash.
 
 ```bash
 git fetch origin
-git checkout claude/kernfaehige-terminverwaltung-5y709x
-git pull --ff-only origin claude/kernfaehige-terminverwaltung-5y709x
+git checkout claude/behandlungsdokumentation-termin-ab471v
+git pull --ff-only origin claude/behandlungsdokumentation-termin-ab471v
 ```
 
 **2. Abhängigkeiten installieren**
@@ -315,7 +315,47 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
     „Bearbeiten", und die Detailansicht bietet es unverändert an. Wer nur mit
     der Tastatur arbeitet, nutzt diesen Weg.
 
-**15. Typische Fehler**
+**15. DOK-001 manuell prüfen** — Behandlungsdokumentation als Entwurf
+
+Dokumentieren dürfen die therapeutischen Rollen `therapist` und `team_lead`.
+`owner` liest die Dokumentation (§4.1), schreibt sie aber ohne therapeutische
+Rolle nicht. `office` hat weder Lese- noch Schreibzugriff (§4.3), ein
+Patientenkonto ebenso wenig (§4.6).
+
+1. Als `anna.beispiel@praxis.invalid` (therapist) anmelden und einen Termin für
+   „Max Mustermann" anlegen — oder einen bestehenden öffnen.
+2. Unten in der Detailansicht steht „Behandlungsdokumentation" mit dem Hinweis,
+   dass noch keine hinterlegt ist. „Dokumentation anlegen" klicken.
+3. Einen Text mit mehreren Absätzen eingeben und „Als Entwurf speichern".
+   Die Detailansicht zeigt ihn mit dem Vermerk „Entwurf · noch nicht
+   finalisiert", der verfassenden Person und dem Änderungszeitpunkt.
+4. Neu laden (F5): der Entwurf steht weiterhin da, Absätze bleiben erhalten.
+5. „Dokumentation bearbeiten": das Feld ist vorbefüllt. Ohne Änderung ist
+   „Als Entwurf speichern" nicht anklickbar.
+6. Text ändern, „Abbrechen" klicken — es erscheint eine Rückfrage, und der Text
+   bleibt stehen. „Weiter bearbeiten" führt zurück ins Feld, „Ja, Bearbeitung
+   verwerfen" zurück zum Termin ohne zu speichern.
+7. Konfliktprobe: dieselbe Dokumentation in zwei Browser-Tabs zum Bearbeiten
+   öffnen, im ersten speichern, danach im zweiten. Der zweite Versuch wird
+   abgewiesen — **und der eigene Text bleibt im Feld stehen**, damit nichts
+   verloren geht.
+8. Gegenprobe Absage: einen anderen, abgesagten Termin öffnen. Dort steht
+   „Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation", und es
+   gibt keine Schaltfläche.
+9. Gegenprobe Office: als `olivia.office@praxis.invalid` denselben Termin
+   öffnen. Der Termin ist sichtbar, der Abschnitt „Behandlungsdokumentation"
+   fehlt vollständig. Das ist ausdrücklich **kein** Sicherheitsnachweis;
+   verbindlich sind `get_treatment_note` und `create_treatment_note`, geprüft
+   in `pnpm test:db` und im E2E-Test „Serverseitige Grenzen".
+10. Gegenprobe Praxisleitung: als `jannes.test@praxis.invalid` (owner **und**
+    therapist) ist beides sichtbar. Ein reiner owner-Zugang dürfte nur lesen —
+    im Seed gibt es ihn nicht, geprüft wird der Fall in `pnpm test:db`.
+11. Als owner „Praxis → Sicherheit → Audit" öffnen: dort stehen
+    `treatment_note.created`, `treatment_note.updated` und
+    `treatment_note.viewed` — ohne jeden Behandlungsinhalt. Der Lesevermerk
+    entsteht bei jedem Öffnen einer vorhandenen Dokumentation.
+
+**16. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -385,9 +425,17 @@ Organisation begrenzt, mit Pagination und Filtern nach Zeitraum, Benutzer und
 Aktion. Die Spalte `context` wird grundsätzlich nicht herausgegeben. Jeder
 Aufruf wird selbst als `audit_log.read` protokolliert.
 
-Geschrieben wird ausschließlich über `log_patient_record_view`. Beide Funktionen
-laufen als `SECURITY DEFINER` mit leerem `search_path` und prüfen Rolle und
-Organisation selbst, weil sie RLS umgehen.
+Geschrieben werden Auditeinträge ausschließlich innerhalb der jeweiligen
+Fachfunktion — `log_patient_record_view` für das Öffnen einer Akte, die
+Termin- und Arbeitszeitfunktionen für ihre Vorgänge. Alle laufen als
+`SECURITY DEFINER` mit leerem `search_path` und prüfen Rolle und Organisation
+selbst, weil sie RLS umgehen.
+
+Für die Behandlungsdokumentation gilt zusätzlich: `public.treatment_notes` hat
+**kein** `SELECT`-Recht und keine Policy. Gelesen wird ausschließlich über
+`get_treatment_note`, und diese Funktion schreibt den Eintrag
+`treatment_note.viewed` in derselben Transaktion. Damit gibt es keinen Weg,
+klinischen Freitext ohne Protokolleintrag zu lesen (ADR-010).
 
 Der Ereigniskatalog steht doppelt: als Check-Constraint auf `audit_log.action`
 und in `src/features/audit/actions.ts`. Ein Datenbanktest hält beide
@@ -419,6 +467,19 @@ deckungsgleich.
    Versuche wäre eine autonome Transaktion nötig — offen.
 7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
    Auswertung oder Alarmierung.
+8. **Keine Anhänge zur Behandlungsdokumentation.** Dateiablage ist als Punkt E8
+   in `docs/decisions/OPEN_DECISIONS.md` offen (Ablageort, Zugriffsregeln,
+   signierte URLs, Retention nach ADR-008); ADR-015 führt dieselbe Frage als
+   offene Folgefrage. Vor einer Umsetzung braucht es dafür einen ADR. Das
+   Datenmodell verbaut sie nicht: eine Anhangstabelle kommt additiv hinzu.
+9. **Keine Finalisierung der Behandlungsdokumentation.** Sie existiert nur als
+   Entwurf; der Schutz gegen unbemerktes Überschreiben aus §5 greift erst mit
+   der Finalisierung. Der Mechanismus der Nachvollziehbarkeit — Versionierung
+   gegenüber Änderungsprotokoll — ist in `OPEN_DECISIONS.md` Abschnitt D
+   weiterhin offen und wird von diesem Stand ausdrücklich nicht entschieden.
+10. **Ein Termin mit Dokumentation lässt sich weiterhin absagen.** Ob das
+    fachlich zulässig sein soll, ist offen; der Entwurf bleibt in diesem Fall
+    erhalten und lesbar, es geht nichts verloren.
 
 ## Manuelle Schritte im Repository
 
