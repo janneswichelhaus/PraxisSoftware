@@ -19,9 +19,14 @@
 | 2    | `adr/`                         | Angenommene Architekturentscheidungen. Verbindlich.               |
 | 3    | konkrete Feature-Spezifikation | Legt den Scope einer Aufgabe fest. Verbindlich für diese Aufgabe. |
 | 4    | **dieses Dokument**            | Orientierung. **Nicht normativ.**                                 |
+| 5    | `product/IDEENSPEICHER.md`     | Ideen und Rohmaterial. **Nicht normativ.**                        |
 
 Widerspricht dieses Dokument einem der Ränge 1 bis 3, gilt der höhere Rang —
 ohne Diskussion und ohne Auslegung zugunsten der Vision.
+
+Der Ideenspeicher auf Rang 5 steht noch unter diesem Dokument. Er sammelt, was
+Jannes sich für die Plattform vorstellt, bevor daraus überhaupt ein Zielbild
+geworden ist. Er entscheidet nichts und begründet nichts.
 
 Widerspricht ein ADR den Prinzipien, ist das ein Fehler und wird gemeldet,
 nicht stillschweigend aufgelöst (`PROJECT_PRINCIPLES.md` §21).

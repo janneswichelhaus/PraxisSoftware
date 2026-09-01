@@ -11,6 +11,7 @@ Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 2. geltende ADRs in `docs/adr/` — konkretisieren die Leitplanken
 3. die konkrete Feature-Spezifikation — verbindlich für ihre Aufgabe
 4. `docs/PRODUCT_VISION.md` — **nicht normativ**
+5. `docs/product/` (Ideenspeicher) — **nicht normativ**, schwächste Ebene
 
 - Die Ränge 1 bis 3 sind verbindlich.
 - **Ein ADR überschreibt `PROJECT_PRINCIPLES.md` nicht** — auch kein neuerer.
@@ -26,11 +27,16 @@ Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 - `docs/decisions/OPEN_DECISIONS.md` listet, was noch offen ist. Offene Punkte
   nicht eigenmächtig entscheiden.
 - `docs/PRODUCT_VISION.md` beschreibt das langfristige Zielbild und steht an
-  letzter Stelle. **Es ist nicht normativ**: kein Implementierungsauftrag,
+  vorletzter Stelle. **Es ist nicht normativ**: kein Implementierungsauftrag,
   keine Feature-Spezifikation, keine Freigabe. Es begründet **niemals** eine
   Erweiterung des aktuellen Feature-Scopes und überschreibt weder Prinzipien
   noch ADRs. Nützlich, um lokale Entscheidungen einzuordnen — nicht, um sie zu
   begründen.
+- `docs/product/IDEENSPEICHER.md` sammelt Funktionsideen für später. **Rang 5,
+  die schwächste Ebene.** Regeln dort; die drei wichtigsten: begründet nie eine
+  Implementierung, im SPEC-Schritt nur die **eine** passende Bereichsdatei
+  lesen, und ein Hinweis von dort, der Mehrarbeit oder eine Entscheidung
+  bedeuten würde, wird als offene Frage berichtet statt umgesetzt.
 
 ## ADR-Index — welcher ADR wofür
 
@@ -57,7 +63,7 @@ Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 ```
 src/app  src/components  src/features  src/lib  src/routes
 supabase/migrations  supabase/tests  supabase/seed.sql
-tests/e2e  scripts  docs/adr  docs/decisions
+tests/e2e  scripts  docs/adr  docs/decisions  docs/product
 ```
 
 Feature-Code liegt fachlich unter `src/features/<domäne>/`. Modularer Monolith
@@ -136,6 +142,10 @@ Hintergrund und Begründung: `docs/development/DEVELOPMENT_WORKFLOW.md`.
 
 Kleine Commits mit aussagekräftiger Nachricht. Nach abgeschlossenem Feature
 stoppen, nicht eigenständig das nächste beginnen.
+
+Bringt Jannes im Gespräch eine Funktionsidee ein, die nicht zum aktuellen
+Auftrag gehört, oder entsteht eine im Loop: **in `docs/product/` eintragen,
+nicht bauen.** Das gilt auch für gute Ideen — besonders für die.
 
 Jannes (Projektinhaber) schaut sich Ergebnisse lokal auf seinem eigenen
 Rechner an, nicht nur über Tests. **Nach jeder abgeschlossenen Änderung kurz

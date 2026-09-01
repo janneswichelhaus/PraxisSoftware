@@ -14,7 +14,12 @@ aus B1 bis B4, die vor Produktivstart zu erbringen sind.
 
 Die Prinzipienebene ist in `PROJECT_PRINCIPLES.md` konsolidiert.
 
-Zuletzt aktualisiert: 2026-08-28
+Am 2026-09-01 sind **B9** (Betreuung nach Therapieende) und **B10**
+(automatisierte Progression) als neue offene Punkte hinzugekommen. Beide sind
+P2 — sie blockieren nichts von dem, was heute gebaut wird, müssen aber vor dem
+jeweils ersten Feature in diesen Bereichen entschieden sein.
+
+Zuletzt aktualisiert: 2026-09-01
 
 | Punkt | Entscheidung |
 |---|---|
@@ -441,6 +446,97 @@ für die digitale Nutzung lizenzpflichtig.
 
 **Blockiert:** Schema der Instrumentenbibliothek (Lizenz-/Quellenfeld je
 Instrument).
+
+---
+
+### B9 — Betreuung nach Therapieende: Rechtsrahmen und Datentrennung
+
+| | |
+|---|---|
+| Dringlichkeit | P2 — vor dem ersten Feature außerhalb der Heilbehandlung |
+| Bezug | §1, §18, §19; ADR-008, ADR-009 |
+| Status | offen |
+
+**Frage:** Was gilt, wenn eine Person nach Ablauf des Rezepts freiwillig
+weiterbetreut wird — online oder in der Praxis?
+
+**Warum offen:** Jannes hat am 2026-09-01 als langfristiges Ziel benannt,
+frühere Patient:innen nach abgeschlossenem Rezept weiter zu coachen. Beim
+Übergang ändern sich mehrere Dinge gleichzeitig, und keines davon ist heute
+entschieden:
+
+- **Vertragsart:** Behandlungsvertrag (§630a BGB) gegenüber Dienstvertrag.
+- **Dokumentationspflicht:** §630f BGB gilt für die Heilbehandlung, nicht für
+  Training. Wird trotzdem dokumentiert, und wie?
+- **Aufbewahrung:** ADR-008 knüpft 10 Jahre an den „Abschluss der
+  Behandlung" — ein Begriff, den ADR-008 selbst noch offen führt. Für
+  Trainingsdaten fehlt die Frist ganz.
+- **Umsatzsteuer:** Heilbehandlung nach §4 Nr. 14a UStG regelmäßig befreit,
+  Prävention und Selbstzahler-Training regelmäßig nicht. ADR-009 sieht
+  steuerliche Eigenschaften je Leistungsversion vor; welche Leistungsart
+  hier entsteht, ist offen.
+- **DSGVO-Rechtsgrundlage:** Art. 9 Abs. 2 lit. h gegenüber ausdrücklicher
+  Einwilligung nach lit. a, mit Widerrufsmöglichkeit.
+- **Zweckbindung:** Welche Daten dürfen aus der Behandlungsakte in den
+  Trainingskontext übernommen werden, und was passiert in der Gegenrichtung,
+  wenn im Training klinisch relevante Angaben entstehen?
+- **Berufsrecht:** Reicht die physiotherapeutische Qualifikation für die
+  angedachten Inhalte, insbesondere im Bereich Ernährung?
+
+**Blockiert:** jedes Feature, das über die Heilbehandlung hinausgeht —
+Trainingspläne für ehemalige Patient:innen, Online-Betreuung,
+Leistungsabrechnung dafür. Vermutlich auch das Datenmodell: eine
+Betreuungsepisode mit Typ ist nachträglich teuer einzuziehen.
+
+**Nicht entschieden:** Ausarbeitung als Idee in
+`docs/product/ideen/00-lebenszyklus-und-zugang.md` (IDEA-LZK-002,
+IDEA-LZK-003). Diese Datei ist nicht normativ und entscheidet nichts davon.
+
+---
+
+### B10 — Automatisierte Progression: MDR-Grenze und Verantwortung
+
+| | |
+|---|---|
+| Dringlichkeit | P2 — vor dem ersten Progressionsfeature |
+| Bezug | §6, §7.1, §16, §17; ADR-005, ADR-006 |
+| Status | offen |
+
+**Frage:** Darf die Plattform die Belastung eines Trainingsplans selbsttätig
+anpassen — und wenn ja, unter welchen Bedingungen?
+
+**Warum offen:** Jannes hat am 2026-09-01 als Ziel benannt, dass die Plattform
+die Progression regelt, damit Patient:innen nicht mehr selbst anpassen müssen.
+[ADR-006](../adr/ADR-006-medical-device-boundary.md) Punkt 4 schließt für V1
+Therapieempfehlungen, Behandlungsauswahl und automatisierte klinische
+Entscheidungen aus. Punkt 2 erlaubt transparente mathematische Berechnungen
+validierter Instrumente. Eine Progressionsregel liegt dazwischen, und wo genau,
+hängt an Details:
+
+- Macht es einen Unterschied, ob die Therapeutin das Regelwerk vorher
+  parametrisiert und je Plan freigibt, oder muss jeder einzelne Schritt
+  bestätigt werden?
+- Ist ein Ampelmodell auf Basis der Schmerzreaktion eine eigene
+  Risikoklassifikation im Sinne von Punkt 4, auch wenn die Schwellen von der
+  Therapeutin stammen?
+- Gilt für die Weiterbetreuung nach Therapieende (B9) ein anderer Maßstab als
+  für die laufende Heilbehandlung — oder verschiebt die Erfassung von Schmerz
+  den Zweck wieder in Richtung Therapie?
+- Wie wird ein Regelwerk versioniert, nachvollziehbar und prüfbar gehalten,
+  damit ein Progressionsschritt aus den gespeicherten Eingaben reproduzierbar
+  ist?
+
+**Blockiert:** jede Form automatischer Trainingsanpassung, das Datenmodell für
+Trainingspläne, Übungsbibliothek und Progressionsregeln.
+
+**Vorläufige Einordnung:** bis zur Entscheidung ist ein solches Feature
+`MDR_REVIEW_REQUIRED` nach ADR-006 Punkt 6 und darf produktiv nicht erreichbar
+sein. Die Frage gehört an die externe regulatorische Prüfung aus B1, nicht in
+einen Feature-Loop.
+
+**Nicht entschieden:** Ausarbeitung als Idee in
+`docs/product/ideen/01-trainingsplaene-und-progression.md`. Diese Datei ist
+nicht normativ und entscheidet nichts davon.
 
 ---
 

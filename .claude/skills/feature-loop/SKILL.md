@@ -36,6 +36,23 @@ Konfliktfall. Solche Fragen darf der Agent nicht selbst beantworten
 bestehenden ADRs sinnvoll entschieden werden können — Benennung, Dateiablage,
 Query-Form, Komponentenstruktur. Entscheiden, kurz begründen, weiterarbeiten.
 
+### Ideenspeicher konsultieren
+
+Anschließend **eine** passende Bereichsdatei aus `docs/product/ideen/` lesen —
+der Index in `docs/product/IDEENSPEICHER.md` sagt welche. Nicht alle, und nur
+wenn eine zum Auftrag passt.
+
+Zweck ist ausschließlich: bessere Rückfragen stellen und offensichtliche
+Sackgassen in Benennung und Modellierung vermeiden.
+
+- Rang 5. **Begründet nie Scope.** Kein Eintrag von dort ist ein Auftrag.
+- **Nichts vorbauen** — keine Spalte, kein Feld, kein Statuswert, kein
+  UI-Element „für später" (`PROJECT_PRINCIPLES.md` §11, ADR-014).
+- Würde ein Hinweis von dort Mehrarbeit oder eine fachliche Entscheidung
+  bedeuten: nicht umsetzen, in Schritt I als offene Frage nennen.
+- Ideen, die während des Loops entstehen, dort als `vorschlag` eintragen —
+  nicht bauen.
+
 ## B. INSPECT
 
 Nur die für die Aufgabe relevanten Teile des Repositories ansehen. Kein
