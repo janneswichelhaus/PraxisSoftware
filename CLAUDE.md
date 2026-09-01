@@ -64,7 +64,7 @@ Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 ```
 src/app  src/components  src/features  src/lib  src/routes
 supabase/migrations  supabase/tests  supabase/seed.sql
-tests/e2e  scripts  docs/adr  docs/decisions  docs/product
+tests/e2e  scripts  docs/adr  docs/decisions  docs/product  docs/abnahme
 ```
 
 Feature-Code liegt fachlich unter `src/features/<domäne>/`. Modularer Monolith
@@ -89,6 +89,9 @@ pnpm build
 
 - `pnpm db:start` startet eine lokale Wegwerf-Datenbank; danach
   `export TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:54329/postgres`.
+  **Der Cluster überlebt einen Werkzeugaufruf nicht zuverlässig.** Ein
+  `ECONNREFUSED 127.0.0.1:54329` ist deshalb kein Testfehler: `db:start`,
+  `export` und `test:db` in **einem** Aufruf ausführen.
 - Migrations- und RLS-Tests laufen bewusst gegen PostgreSQL mit dem Shim in
   `supabase/tests/helpers/`, nicht gegen den vollen Supabase-Stack.
 - **In der Cloud-/Remote-Umgebung ist `supabase start` nicht möglich** —

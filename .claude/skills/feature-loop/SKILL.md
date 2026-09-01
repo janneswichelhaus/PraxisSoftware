@@ -106,9 +106,22 @@ CI-äquivalenten Checks:
 | Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`            |
 | auslieferbaren Code         | `pnpm build`                                                    |
 
+Diese Tabelle sagt, **welche Prüfung wann sinnvoll** ist. Welche Prüfungen die
+CI erzwingt, steht abschließend in ADR-013; weicht sie von dieser Tabelle ab,
+gilt ADR-013.
+
+`pnpm test:db` läuft **auch in der Cloudumgebung** — es braucht kein Docker.
+Bei Migrationen, Policies und RPCs ist es das wichtigste Gate und wird nicht
+mit dem Hinweis auf `supabase start` übersprungen.
+
 Bei UI-Änderungen die **laufende** Anwendung ansehen (Chromium/Playwright),
 nicht nur Tests. Betrifft das Feature mobile Nutzung, zusätzlich bei ~375 px
 prüfen.
+
+Hat das Feature einen Oberflächenanteil, kommen die **manuellen Prüfschritte
+für Jannes** nach `docs/abnahme/` — in die Datei der laufenden Etappe, als
+Abschnitt mit der Loop-Kennung. **Nicht** nach `docs/DEVELOPMENT.md`. Regeln
+in `docs/abnahme/README.md`.
 
 **Keine Prüfung als erfolgreich melden, die nicht gelaufen ist.** Was aus
 Umgebungsgründen nicht geht, wird als solches benannt.

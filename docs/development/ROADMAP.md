@@ -233,13 +233,17 @@ niedrig, ohne die Qualität zu senken.
 8. Während der Entwicklung nur die eng betroffenen Checks. Die vollständige
    Runde **einmal** am Ende (Skill-Schritt H).
 9. Keine identischen teuren Läufe ohne Änderung dazwischen.
+10. `pnpm test:db` läuft auch in der Cloudumgebung (kein Docker nötig) und ist
+    bei Migrationen und Policies das wichtigste Gate — nicht überspringen. Der
+    SessionStart-Hook in `.claude/hooks/` installiert die Abhängigkeiten
+    vorab, ein manuelles `pnpm install` entfällt.
 
 **Rhythmus**
 
-10. **Ein bis zwei Loops pro Woche** sind für ein Nebenprojekt realistisch.
+11. **Ein bis zwei Loops pro Woche** sind für ein Nebenprojekt realistisch.
     Drei sind machbar, wenn die Schnitte klein sind. Mehr bedeutet in der
     Regel, dass die Schnitte zu klein oder die Reviews zu flach sind.
-11. Die wöchentliche Planungssession ist **absichtlich klein**: sie liest
+12. Die wöchentliche Planungssession ist **absichtlich klein**: sie liest
     diese Datei und das Git-Log, sonst nichts.
 
 **Faustregel:** Wenn eine Session anfängt, das Projekt zu erkunden statt zu
@@ -308,7 +312,8 @@ Seit 2026-09-01 läuft das als automatische Routine: **montags 07:50 Uhr**
 startet eine frische Session mit genau diesem Auftrag; das Ergebnis kommt per
 Push-Nachricht und E-Mail. Sie **baut nichts** und stoppt nach dem Bericht.
 
-- Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, erste Ausführung 2026-09-07.
+- Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, erste Ausführung 2026-09-07,
+  Modell **Haiku 4.5** (siehe „Modell und Aufwand je Aufgabe").
 - Die Zeitangabe ist intern UTC (`50 5 * * 1`). **Nach der Zeitumstellung Ende
   Oktober fällt sie auf 06:50 Uhr** — wer das nicht will, ändert den
   Cron-Ausdruck dann auf `50 6 * * 1`.
