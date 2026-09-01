@@ -57,6 +57,7 @@ Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 | 013 | CI-Gates, Branch Protection, Release-Freigabe                             |
 | 014 | Datenmodell-Fundament: UUIDs, Zeitstempel, Geldwerte, Rollen, Trennung    |
 | 015 | Stack, Ordnerstruktur, Abgrenzungen (kein Next.js, kein Service Worker …) |
+| 016 | Dokumentation: Entwurf/Finalisierung, Versionierung, wer ändern darf      |
 
 ## Repository
 
@@ -94,6 +95,14 @@ pnpm build
   Container-Images werden vom Egress-Proxy blockiert (403). Damit gibt es dort
   kein GoTrue und kein E2E hinter der Anmeldung. Auf einem lokalen Rechner mit
   Docker funktioniert der Stack; Vorgehen in `docs/DEVELOPMENT.md`.
+- **`pnpm test:db` läuft trotzdem auch in der Cloud** und ist dort das
+  wichtigste Gate. `scripts/test-db.sh` braucht kein Docker, sondern ein
+  lokales PostgreSQL-Binär, das in der Cloudumgebung vorhanden ist (geprüft am
+  2026-09-01: 495 Tests, 45 s). Migrations- und RLS-Arbeit ist hier also
+  vollständig verifizierbar — **nicht wegen `supabase start` überspringen.**
+- **In einer frischen Session fehlt `node_modules`.** Vor dem ersten Check
+  einmal `pnpm install` — sonst schlägt der erste Lauf mit einer irreführenden
+  Meldung über ein fehlendes Prettier-Plugin fehl.
 - Playwright nutzt den vorinstallierten Browser über
   `export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`.
 - Details und Go-live-Blocker: `docs/DEVELOPMENT.md`.

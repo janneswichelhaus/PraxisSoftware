@@ -609,8 +609,8 @@ und anschließend eine Präzisierung von `PROJECT_PRINCIPLES.md`.
 
 | Begriff | Bezug | Was fehlt |
 |---|---|---|
-| „finalisiert" | §5 | Expliziter Abschluss-/Signaturschritt? Frist? Wer darf finalisieren? Kann eine finalisierte Doku je gelöscht werden? |
-| „nachvollziehbar" | §5 | Versionierung mit abrufbarem Originalinhalt (wie §630f BGB verlangt) oder nur Änderungs-Log? Zwei verschiedene Datenmodelle. |
+| „finalisiert" | §5 | **Entschieden am 2026-09-01 — [ADR-016](../adr/ADR-016-clinical-documentation-record.md):** ausdrücklicher Finalisierungsschritt durch eine:n Therapeut:in, nicht auf den Verfasser beschränkt; automatische Finalisierung nach konfigurierbarer Frist, Voreinstellung Ende des Folgetages; Löschbarkeit ausschließlich über ADR-008. |
+| „nachvollziehbar" | §5 | **Entschieden am 2026-09-01 — [ADR-016](../adr/ADR-016-clinical-documentation-record.md):** Versionierung mit vollständig abrufbarem Originalinhalt je Version, mit Zeitpunkt und Urheber (§630f Abs. 1 S. 2 und 3 BGB). Kein reines Änderungs-Log. Ergänzung als eigener verknüpfter Eintrag, Änderung nur für echte Korrekturen. |
 | „bestätigt" | §8 | Der Terminstatus-Automat fehlt vollständig (angefragt / vorgemerkt / bestätigt / abgesagt / nicht angetroffen / durchgeführt / dokumentiert / abgerechnet). Er treibt Ausfallhonorar, Behandlungsnachweis und Abrechnung. |
 | „auditierbar" | §4.2 | siehe C4 |
 | „organisatorische Patientenkommunikation" | §4.3 | siehe C2 |

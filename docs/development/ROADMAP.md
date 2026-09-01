@@ -38,7 +38,7 @@ Entscheidung sie voraussetzt und wann sie spätestens fällig ist.
 
 | Punkt                                   | Was zu entscheiden ist                                                                                                                                                               | Wer                                     | Fällig vor         |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- | ------------------ |
-| **D „finalisiert" / „nachvollziehbar"** | Abschlussschritt für Dokumentation: Wer darf finalisieren, ab wann ist geändert = neue Version, wird der Originalinhalt abrufbar gehalten (§630f) oder nur ein Änderungslog geführt? | Jannes allein, ~30 Minuten              | Etappe 1           |
+| ~~**D „finalisiert" / „nachvollziehbar"**~~ | **Erledigt am 2026-09-01 — [ADR-016](../adr/ADR-016-clinical-documentation-record.md).** Von Jannes delegiert, entschieden. DOK-001 ist damit frei.                                                              | erledigt                                | —                  |
 | **B8**                                  | Lizenzstatus DIGOTOR-Bogen und weiterer Instrumente                                                                                                                                  | Jannes / Lizenzgeber                    | Etappe 3           |
 | **B5**                                  | Patientenidentität, Vertretung, Zugang für Hochbetagte, Verhältnis zu §630g                                                                                                          | Jannes, ggf. Beratung                   | Etappe 4           |
 | **C1, C2**                              | Was Office an Leistungsziffern und Nachrichten sieht                                                                                                                                 | Jannes allein                           | Etappe 2 bzw. 6    |
@@ -78,8 +78,8 @@ gewählt.
 
 | #   | Loop    | Inhalt                                                                                     | Voraussetzung          |
 | --- | ------- | ------------------------------------------------------------------------------------------ | ---------------------- |
-| 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | D-Entscheidung         |
-| 2   | DOK-002 | Finalisierung mit Versionierung nach §5 / §630f BGB                                        | DOK-001                |
+| 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **frei** (ADR-016)     |
+| 2   | DOK-002 | Finalisierung mit Versionierung nach ADR-016 / §630f BGB                                   | DOK-001                |
 | 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | DOK-002, C1/C2 berührt |
 | 4   | LOE-001 | Datenklassen und Aufbewahrungsfristen als echte Struktur, Legal Hold                       | —                      |
 | 5   | LOE-002 | Löschvorgang, Wiederanwendung nach Restore, `pnpm test:db`                                 | LOE-001                |
@@ -246,6 +246,45 @@ niedrig, ohne die Qualität zu senken.
 arbeiten, fehlt ein Eintrag in dieser Roadmap. Dann diesen ergänzen — das ist
 billiger als die Erkundung zu wiederholen.
 
+### Modell und Aufwand je Aufgabe
+
+Modell und Aufwandsstufe werden **zu Sitzungsbeginn** gewählt und danach nicht
+mehr gewechselt: der Prompt-Cache ist modellgebunden, ein Wechsel mitten im
+Loop wirft ihn weg und kostet mehr, als die Umstellung spart.
+
+| Aufgabe                                                    | Modell      | Aufwand      |
+| ---------------------------------------------------------- | ----------- | ------------ |
+| Migration, RLS-Policy, RPC, Berechtigungen                 | Opus 5      | `xhigh`      |
+| Architekturentscheidung, ADR, Sicherheitsreview eines Diffs | Opus 5      | `xhigh`      |
+| Löschung und Retention (LOE-001, LOE-002)                  | Opus 5      | `max`        |
+| Fachlogik ohne bestehendes Muster                          | Opus 5      | `high`       |
+| UI-Seite nach dem Muster vorhandener Seiten                | Sonnet 5    | `medium`     |
+| Tests zu bereits geschriebenem Code ergänzen               | Sonnet 5    | `medium`     |
+| Formulierung, Doku, Roadmap abhaken, Commit-Nachricht      | Sonnet 5    | `low`        |
+| Wöchentliche Planungssession                               | Haiku 4.5   | —            |
+
+Begründung der drei Ausreißer:
+
+- **`max` für Löschung und Retention.** Eine falsch gebaute Löschung ist der
+  einzige Fehler in diesem Projekt, der sich nicht reparieren lässt — die Daten
+  sind dann weg oder unzulässig noch da. Hier zählt Korrektheit mehr als Kosten.
+- **`xhigh` statt `high` für alles Datenbanknahe.** Migrationen und Policies
+  sind schwer rückgängig zu machen und der Ort, an dem `PROJECT_PRINCIPLES.md`
+  §16 (Patientensicherheit vor Funktionsumfang) tatsächlich greift.
+- **Haiku für das Wochenupdate.** Die Session liest zwei Dateien und schreibt
+  zehn Zeilen. Sie auf einem Opus-Modell laufen zu lassen ist reine
+  Verschwendung. Der kleinere Kontext von Haiku (200K statt 1M) reicht dafür
+  mit großem Abstand.
+
+Zwei Hinweise, die Geld kosten, wenn man sie übersieht:
+
+- **Fast Mode (`/fast`) verdoppelt den Preis je Token.** Er ist für Momente
+  gedacht, in denen Wartezeit teurer ist als Rechenzeit — nicht für einen
+  Feature-Loop, der ohnehin im Hintergrund läuft.
+- **Ein niedrigerer Aufwand auf einem neuen Modell schlägt oft einen höheren
+  Aufwand auf einem älteren.** Wer sparen will, senkt zuerst den Aufwand und
+  wechselt erst danach das Modell.
+
 ---
 
 ## Wochenupdate
@@ -286,10 +325,10 @@ Push-Nachricht und E-Mail. Sie **baut nichts** und stoppt nach dem Bericht.
 Abgehakt wird hier, mit Datum und Commit. Ein Loop gilt als fertig, wenn
 Skill-Schritt I durchlaufen ist.
 
-| Loop                | Status | Datum          | Commit |
-| ------------------- | ------ | -------------- | ------ |
-| PAT-001 bis PAT-003 | fertig | vor 2026-09-01 | —      |
-| CAL-001 bis CAL-006 | fertig | vor 2026-09-01 | —      |
-| DOK-001             | offen  | —              | —      |
+| Loop                | Status                      | Datum          | Commit |
+| ------------------- | --------------------------- | -------------- | ------ |
+| PAT-001 bis PAT-003 | fertig                      | vor 2026-09-01 | —      |
+| CAL-001 bis CAL-006 | fertig                      | vor 2026-09-01 | —      |
+| DOK-001             | **bereit** — nicht begonnen | —              | —      |
 
 Zuletzt aktualisiert: 2026-09-01
