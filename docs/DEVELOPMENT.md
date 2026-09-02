@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand: 2026-09-01 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-02 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
@@ -71,8 +71,8 @@ Projektverzeichnis in Git Bash.
 
 ```bash
 git fetch origin
-git checkout claude/behandlungsdokumentation-termin-ab471v
-git pull --ff-only origin claude/behandlungsdokumentation-termin-ab471v
+git checkout claude/finalisierung-hand-versionierung-ldpftj
+git pull --ff-only origin claude/finalisierung-hand-versionierung-ldpftj
 ```
 
 **2. Abhängigkeiten installieren**
@@ -355,7 +355,54 @@ Patientenkonto ebenso wenig (§4.6).
     `treatment_note.viewed` — ohne jeden Behandlungsinhalt. Der Lesevermerk
     entsteht bei jedem Öffnen einer vorhandenen Dokumentation.
 
-**16. Typische Fehler**
+**16. DOK-002 manuell prüfen** — Finalisieren, korrigieren, nachtragen
+
+Voraussetzung: ein Termin mit einem Dokumentationsentwurf aus Schritt 15.
+Finalisieren, korrigieren und nachtragen dürfen dieselben Rollen wie das
+Dokumentieren (`therapist`, `team_lead`). Den Änderungsverlauf darf zusätzlich
+`owner` lesen, ohne selbst schreiben zu dürfen (§4.1 gegenüber §4.2).
+
+1. Als `anna.beispiel@praxis.invalid` den Termin öffnen. Beim Entwurf steht nun
+   neben „Dokumentation bearbeiten" die Schaltfläche „Finalisieren".
+2. „Finalisieren" klicken: es erscheint zuerst eine Rückfrage mit dem Hinweis,
+   dass der Eintrag danach Bestandteil der Akte ist. Ein einzelner Klick
+   finalisiert also nichts.
+3. „Ja, jetzt finalisieren" bestätigen. Der Vermerk wechselt auf „Finalisiert"
+   mit Zeitpunkt und finalisierender Person. „Dokumentation bearbeiten" und
+   „Finalisieren" sind verschwunden; stattdessen stehen dort „Korrigieren",
+   „Änderungsverlauf" und „Nachtrag hinzufügen".
+4. „Änderungsverlauf" öffnen: Version 1 trägt den Entwurfstext mit dem Vermerk
+   „Bei der Finalisierung festgeschriebener Stand".
+5. Zurück zum Termin, „Korrigieren". Ohne Textänderung ist „Korrektur
+   speichern" nicht anklickbar. Text ändern und ohne Begründung speichern: die
+   Seite verlangt eine Begründung, **ohne** den Server zu fragen.
+6. Begründung eintragen und speichern. Der Termin zeigt den korrigierten Text
+   und den Hinweis „2 Versionen". Im Änderungsverlauf stehen jetzt beide
+   Fassungen — **der ursprüngliche Wortlaut ist unverändert vorhanden**, mit
+   Begründung, Zeitpunkt und Urheber der Korrektur (§630f Abs. 1 S. 2 BGB).
+7. „Nachtrag hinzufügen": die Seite zeigt oben den ursprünglichen Eintrag und
+   darunter ein leeres Feld. Text eingeben und speichern. Am Termin steht der
+   Nachtrag als eigener Block mit den Vermerken „Nachtrag" und „Entwurf" — der
+   Ursprungseintrag bleibt unverändert.
+8. Den Nachtrag ebenfalls finalisieren. Er bekommt einen eigenen
+   Änderungsverlauf; ein „Nachtrag hinzufügen" gibt es an ihm nicht.
+9. Konfliktprobe: denselben finalisierten Eintrag in zwei Tabs zur Korrektur
+   öffnen, im ersten speichern, danach im zweiten. Der zweite Versuch wird
+   abgewiesen, und der eigene Text bleibt im Feld stehen.
+10. Gegenprobe Praxisleitung: als `jannes.test@praxis.invalid` ist der
+    Änderungsverlauf lesbar. Ein reiner owner-Zugang dürfte korrigieren und
+    nachtragen nicht — im Seed gibt es ihn nicht, geprüft wird der Fall in
+    `pnpm test:db`.
+11. Gegenprobe Office: als `olivia.office@praxis.invalid` fehlt der Abschnitt
+    unverändert vollständig. Der direkte Aufruf einer Verlaufs-URL landet auf
+    der Übersicht. Das ist ausdrücklich **kein** Sicherheitsnachweis;
+    verbindlich sind die Serverfunktionen, geprüft in `pnpm test:db`.
+12. Als owner „Praxis → Sicherheit → Audit" öffnen: dort stehen zusätzlich
+    `treatment_note.finalized`, `treatment_note.revised`,
+    `treatment_note.addendum_created` und `treatment_note.history_viewed` —
+    ohne Behandlungsinhalt und **ohne die Korrekturbegründung**.
+
+**17. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
 | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -431,11 +478,14 @@ Termin- und Arbeitszeitfunktionen für ihre Vorgänge. Alle laufen als
 `SECURITY DEFINER` mit leerem `search_path` und prüfen Rolle und Organisation
 selbst, weil sie RLS umgehen.
 
-Für die Behandlungsdokumentation gilt zusätzlich: `public.treatment_notes` hat
-**kein** `SELECT`-Recht und keine Policy. Gelesen wird ausschließlich über
-`get_treatment_note`, und diese Funktion schreibt den Eintrag
-`treatment_note.viewed` in derselben Transaktion. Damit gibt es keinen Weg,
-klinischen Freitext ohne Protokolleintrag zu lesen (ADR-010).
+Für die Behandlungsdokumentation gilt zusätzlich: `public.treatment_notes` und
+`public.treatment_note_versions` haben **kein** `SELECT`-Recht und keine Policy.
+Gelesen wird ausschließlich über `get_treatment_note` und
+`get_treatment_note_versions`, und beide Funktionen schreiben ihren Eintrag —
+`treatment_note.viewed` beziehungsweise `treatment_note.history_viewed` — in
+derselben Transaktion. Damit gibt es keinen Weg, klinischen Freitext ohne
+Protokolleintrag zu lesen (ADR-010). Die Begründung einer Korrektur zählt dabei
+wie Inhalt: sie steht in der Versionstabelle, niemals im Auditlog.
 
 Der Ereigniskatalog steht doppelt: als Check-Constraint auf `audit_log.action`
 und in `src/features/audit/actions.ts`. Ein Datenbanktest hält beide
@@ -472,11 +522,11 @@ deckungsgleich.
    signierte URLs, Retention nach ADR-008); ADR-015 führt dieselbe Frage als
    offene Folgefrage. Vor einer Umsetzung braucht es dafür einen ADR. Das
    Datenmodell verbaut sie nicht: eine Anhangstabelle kommt additiv hinzu.
-9. **Keine Finalisierung der Behandlungsdokumentation.** Sie existiert nur als
-   Entwurf; der Schutz gegen unbemerktes Überschreiben aus §5 greift erst mit
-   der Finalisierung. Der Mechanismus der Nachvollziehbarkeit — Versionierung
-   gegenüber Änderungsprotokoll — ist in `OPEN_DECISIONS.md` Abschnitt D
-   weiterhin offen und wird von diesem Stand ausdrücklich nicht entschieden.
+9. **Keine automatische Finalisierung nach Frist.** ADR-016 Punkt 7 sieht sie
+   vor; das Projekt hat keinen Scheduler, und welcher Mechanismus dafür
+   zulässig ist, ist eine eigene Architekturentscheidung (DOK-004). Bis dahin
+   bleibt ein Entwurf unbegrenzt Entwurf — und ist damit kein Nachweis im Sinne
+   von §630f.
 10. **Ein Termin mit Dokumentation lässt sich weiterhin absagen.** Ob das
     fachlich zulässig sein soll, ist offen; der Entwurf bleibt in diesem Fall
     erhalten und lesbar, es geht nichts verloren.
