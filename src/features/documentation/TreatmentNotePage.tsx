@@ -1,21 +1,21 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/TextArea';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ErrorState } from '@/components/ui/Feedback';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
-  fetchAppointment,
   formatLocalDate,
   formatLocalTimeRange,
   patientName,
   type Appointment,
 } from '@/features/appointments/api';
+import { DocumentationShell } from './DocumentationShell';
 import {
   createTreatmentNote,
-  fetchTreatmentNote,
+  findeEintrag,
   inhaltFehler,
   updateTreatmentNote,
   type TreatmentNote,
@@ -28,6 +28,10 @@ import {
  * Vorgang ist: der Entwurf zu diesem Termin. Welche Serverfunktion greift,
  * entscheidet allein, ob es bereits einen gibt.
  *
+ * Ein finalisierter Eintrag nimmt diesen Weg nicht mehr (DOK-002): dort ist
+ * jede Änderung eine Korrektur mit Begründung, und der Server weist den
+ * Entwurfsweg ab.
+ *
  * Der Text wird ausschließlich auf dem Server gehalten. Es gibt bewusst kein
  * automatisches Zwischenspeichern im Browser: ein Entwurf, der nur lokal läge,
  * wäre nicht gespeichert, würde aber so aussehen (ADR-001, ADR-015).
@@ -36,6 +40,8 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const zone = appointment.organization_time_zone;
+
+  const istNachtrag = note?.addendum_to_note_id != null;
 
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
@@ -76,14 +82,14 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
   return (
     <>
       <PageHeader
-        title="Behandlungsdokumentation"
+        title={istNachtrag ? 'Nachtrag bearbeiten' : 'Behandlungsdokumentation'}
         description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
       />
 
       <form onSubmit={absenden} noValidate className="max-w-2xl">
         <TextArea
-          label="Eintrag zur Behandlung"
-          hint="Freitext. Der Eintrag bleibt ein Entwurf; die Finalisierung ist ein eigener, späterer Schritt."
+          label={istNachtrag ? 'Nachtrag' : 'Eintrag zur Behandlung'}
+          hint="Freitext. Der Eintrag bleibt ein Entwurf; die Finalisierung ist ein eigener Schritt am Termin."
           rows={14}
           value={wert}
           error={fehler}
@@ -149,73 +155,59 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
   );
 }
 
+/**
+ * Entwurf schreiben oder bearbeiten.
+ *
+ * Ohne `noteId` in der Route geht es um den Haupteintrag des Termins - der
+ * Regelfall, der auch das Anlegen abdeckt. Mit `noteId` um genau diesen
+ * Entwurf; so bleibt auch ein Nachtrag vor seiner Finalisierung änderbar
+ * (DOK-002). Der Server unterscheidet die beiden Fälle nicht: `update_treatment_note`
+ * ändert jeden Entwurf der eigenen Organisation.
+ */
 export function TreatmentNotePage({ user }: { user: CurrentUser }) {
-  const { appointmentId } = useParams<{ appointmentId: string }>();
-  const darfSchreiben = canWriteTreatmentNote(user.roles);
-
-  // Beide Abfragen haengen an der Schreibberechtigung: wer hier nicht
-  // schreiben darf, hat auf dieser Seite nichts zu suchen - und loest dann
-  // auch keinen protokollierten Lesezugriff aus (ADR-010).
-  const termin = useQuery({
-    queryKey: ['appointment', appointmentId],
-    queryFn: () => fetchAppointment(appointmentId!),
-    enabled: Boolean(appointmentId) && darfSchreiben,
-    retry: false,
-  });
-
-  const doku = useQuery({
-    queryKey: ['treatment-note', appointmentId],
-    queryFn: () => fetchTreatmentNote(appointmentId!),
-    enabled: Boolean(appointmentId) && darfSchreiben,
-    retry: false,
-  });
+  const { appointmentId, noteId } = useParams<{ appointmentId: string; noteId?: string }>();
 
   return (
-    <>
-      <Link
-        to={appointmentId ? `/termine/${appointmentId}` : '/kalender'}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zurück zum Termin
-      </Link>
+    <DocumentationShell
+      appointmentId={appointmentId}
+      darf={canWriteTreatmentNote(user.roles)}
+      verweigert="Behandlungsdokumentation schreiben dürfen ausschließlich therapeutische Rollen."
+    >
+      {({ appointment, dokumentation }) => {
+        const eintrag = noteId ? findeEintrag(dokumentation, noteId) : dokumentation.primary;
 
-      {/* Reine Darstellung. Verbindlich prüfen create_treatment_note und
-          update_treatment_note die Rolle selbst (ADR-004). */}
-      {!darfSchreiben ? (
-        <ErrorState
-          title="Nicht freigegeben"
-          description="Behandlungsdokumentation schreiben dürfen ausschließlich therapeutische Rollen."
-        />
-      ) : null}
+        if (noteId && !eintrag) {
+          return (
+            <ErrorState
+              title="Nicht gefunden"
+              description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
+            />
+          );
+        }
 
-      {darfSchreiben && (termin.isPending || doku.isPending) ? (
-        <LoadingState label="Termin wird geladen …" />
-      ) : null}
+        // Zu einem abgesagten Termin hat keine Behandlung stattgefunden. Gibt es
+        // schon eine Dokumentation, bleibt sie bearbeitbar - sie wurde vor der
+        // Absage angelegt und darf nicht unerreichbar werden.
+        if (appointment.status === 'cancelled' && !eintrag) {
+          return (
+            <ErrorState
+              title="Termin abgesagt"
+              description="Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation."
+            />
+          );
+        }
 
-      {darfSchreiben && (termin.isError || doku.isError) ? (
-        <ErrorState title="Die Behandlungsdokumentation konnte nicht geladen werden." />
-      ) : null}
+        if (eintrag?.status === 'final') {
+          return (
+            <ErrorState
+              title="Bereits finalisiert"
+              description="Dieser Eintrag ist Bestandteil der Akte. Eine Änderung ist nur als Korrektur mit Begründung möglich, eine Ergänzung als Nachtrag."
+            />
+          );
+        }
 
-      {darfSchreiben && termin.data === null ? (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Dieser Termin existiert nicht oder ist für Ihren Zugang nicht freigegeben."
-        />
-      ) : null}
-
-      {darfSchreiben && termin.data && termin.data.status === 'cancelled' && !doku.data ? (
-        <ErrorState
-          title="Termin abgesagt"
-          description="Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation."
-        />
-      ) : null}
-
-      {darfSchreiben &&
-      termin.data &&
-      !(termin.data.status === 'cancelled' && !doku.data) &&
-      doku.data !== undefined ? (
-        <Editor appointment={termin.data} note={doku.data} />
-      ) : null}
-    </>
+        return <Editor appointment={appointment} note={eintrag} />;
+      }}
+    </DocumentationShell>
   );
 }

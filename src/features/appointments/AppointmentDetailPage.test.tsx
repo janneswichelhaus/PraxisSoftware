@@ -56,14 +56,14 @@ vi.mock('./api', async (importOriginal) => {
 // Die Behandlungsdokumentation haengt als eigener Abschnitt an dieser Seite
 // (DOK-001). Ihr Lesepfad wird hier gestubbt; geprueft wird er in den Tests
 // der Dokumentation selbst.
-const fetchTreatmentNote = vi.fn();
+const fetchTreatmentDocumentation = vi.fn();
 
 vi.mock('@/features/documentation/api', async (importOriginal) => {
   const actual = await importOriginal<typeof DokumentationApi>();
   return {
     ...actual,
-    fetchTreatmentNote: (id: string) =>
-      fetchTreatmentNote(id) as Promise<DokumentationApi.TreatmentNote | null>,
+    fetchTreatmentDocumentation: (id: string) =>
+      fetchTreatmentDocumentation(id) as Promise<DokumentationApi.TreatmentDocumentation>,
   };
 });
 
@@ -101,8 +101,8 @@ describe('AppointmentDetailPage', () => {
     cancelAppointment.mockResolvedValue(undefined);
     completeAppointment.mockResolvedValue(undefined);
     reopenAppointment.mockResolvedValue(undefined);
-    fetchTreatmentNote.mockReset();
-    fetchTreatmentNote.mockResolvedValue(null);
+    fetchTreatmentDocumentation.mockReset();
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
   });
 
   it('zeigt Patient, behandelnde Person, Art und Status', async () => {
@@ -445,7 +445,7 @@ describe('AppointmentDetailPage', () => {
       await screen.findByText('Anna Beispiel');
 
       expect(screen.queryByText('Behandlungsdokumentation')).toBeNull();
-      expect(fetchTreatmentNote).not.toHaveBeenCalled();
+      expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
     });
   });
 });

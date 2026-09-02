@@ -39,16 +39,22 @@ const STAND = '2027-05-12T08:30:00.654321+00:00';
 const doku: DokumentationApi.TreatmentNote = {
   id: DOKU_ID,
   appointment_id: TERMIN_ID,
+  addendum_to_note_id: null,
   status: 'draft',
   content: INHALT,
   created_at: '2027-05-12T08:10:00.123456+00:00',
   updated_at: STAND,
+  finalized_at: null,
+  version_count: 0,
   author_name: 'Anna Beispiel',
   last_editor_name: 'Anna Beispiel',
+  finalized_by_name: null,
 };
 
+const LEER: DokumentationApi.TreatmentDocumentation = { primary: null, addenda: [] };
+
 const fetchAppointment = vi.fn();
-const fetchTreatmentNote = vi.fn();
+const fetchTreatmentDocumentation = vi.fn();
 const createTreatmentNote = vi.fn();
 const updateTreatmentNote = vi.fn();
 const navigate = vi.fn();
@@ -66,8 +72,8 @@ vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof DokumentationApi>();
   return {
     ...actual,
-    fetchTreatmentNote: (id: string) =>
-      fetchTreatmentNote(id) as Promise<DokumentationApi.TreatmentNote | null>,
+    fetchTreatmentDocumentation: (id: string) =>
+      fetchTreatmentDocumentation(id) as Promise<DokumentationApi.TreatmentDocumentation>,
     createTreatmentNote: (id: string, inhalt: string) =>
       createTreatmentNote(id, inhalt) as Promise<string>,
     updateTreatmentNote: (id: string, stand: string, inhalt: string) =>
@@ -75,11 +81,14 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
+/** Veraenderbar, damit auch die Bearbeitungsroute eines Nachtrags pruefbar ist. */
+let params: Record<string, string> = { appointmentId: TERMIN_ID };
+
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof RouterModule>();
   return {
     ...actual,
-    useParams: () => ({ appointmentId: TERMIN_ID }),
+    useParams: () => params,
     useNavigate: () => navigate,
   };
 });
@@ -101,13 +110,14 @@ function feld(): HTMLElement {
 describe('TreatmentNotePage', () => {
   beforeEach(() => {
     fetchAppointment.mockReset();
-    fetchTreatmentNote.mockReset();
+    fetchTreatmentDocumentation.mockReset();
     createTreatmentNote.mockReset();
     updateTreatmentNote.mockReset();
     navigate.mockReset();
 
+    params = { appointmentId: TERMIN_ID };
     fetchAppointment.mockResolvedValue(termin);
-    fetchTreatmentNote.mockResolvedValue(null);
+    fetchTreatmentDocumentation.mockResolvedValue(LEER);
     createTreatmentNote.mockResolvedValue(DOKU_ID);
     updateTreatmentNote.mockResolvedValue(undefined);
   });
@@ -128,7 +138,7 @@ describe('TreatmentNotePage', () => {
   });
 
   it('laedt einen vorhandenen Entwurf und speichert ihn mit dem gelesenen Stand', async () => {
-    fetchTreatmentNote.mockResolvedValue(doku);
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
     const user = userEvent.setup();
     rendern();
 
@@ -145,7 +155,7 @@ describe('TreatmentNotePage', () => {
   });
 
   it('laesst ohne Aenderung nicht speichern', async () => {
-    fetchTreatmentNote.mockResolvedValue(doku);
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
     rendern();
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
@@ -167,7 +177,7 @@ describe('TreatmentNotePage', () => {
   });
 
   it('meldet einen Konflikt und laesst den eigenen Text stehen (PROJECT_PRINCIPLES.md 13)', async () => {
-    fetchTreatmentNote.mockResolvedValue(doku);
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
     updateTreatmentNote.mockRejectedValue(new DokumentationVeraendertError());
     const user = userEvent.setup();
     rendern();
@@ -209,7 +219,7 @@ describe('TreatmentNotePage', () => {
 
     expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();
     await waitFor(() => {
-      expect(fetchTreatmentNote).not.toHaveBeenCalled();
+      expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
     });
     expect(fetchAppointment).not.toHaveBeenCalled();
     expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
@@ -235,5 +245,76 @@ describe('TreatmentNotePage', () => {
     rendern();
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+  });
+
+  it('bearbeitet eine vorhandene Dokumentation auch bei abgesagtem Termin weiter', async () => {
+    fetchAppointment.mockResolvedValue({ ...termin, status: 'cancelled' });
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue(INHALT));
+  });
+
+  it('bearbeitet ueber die Bearbeitungsroute den Nachtrag, nicht den Haupteintrag (DOK-002)', async () => {
+    const NACHTRAG_ID = '99999999-9999-4999-8999-000000000002';
+    const NACHTRAG_STAND = '2027-05-12T11:00:00.111111+00:00';
+    const NACHTRAG_TEXT = 'Synthetisch: nachgereicht.';
+
+    params = { appointmentId: TERMIN_ID, noteId: NACHTRAG_ID };
+    fetchTreatmentDocumentation.mockResolvedValue({
+      primary: { ...doku, status: 'final', version_count: 1 },
+      addenda: [
+        {
+          ...doku,
+          id: NACHTRAG_ID,
+          addendum_to_note_id: DOKU_ID,
+          content: NACHTRAG_TEXT,
+          updated_at: NACHTRAG_STAND,
+        },
+      ],
+    });
+
+    const user = userEvent.setup();
+    rendern();
+
+    const nachtragsfeld = await screen.findByLabelText('Nachtrag');
+    expect(nachtragsfeld).toHaveValue(NACHTRAG_TEXT);
+
+    await user.type(nachtragsfeld, ' Ergaenzt.');
+    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+
+    await waitFor(() => {
+      expect(updateTreatmentNote).toHaveBeenCalledWith(
+        NACHTRAG_ID,
+        NACHTRAG_STAND,
+        `${NACHTRAG_TEXT} Ergaenzt.`,
+      );
+    });
+  });
+
+  it('meldet einen Eintrag, der nicht zu diesem Termin gehoert', async () => {
+    params = { appointmentId: TERMIN_ID, noteId: '99999999-9999-4999-8999-000000000009' };
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    rendern();
+
+    expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+  });
+
+  it('verschliesst den Entwurfsweg fuer einen finalisierten Eintrag (DOK-002)', async () => {
+    // Reine Darstellung - verbindlich weist update_treatment_note den Weg ab.
+    fetchTreatmentDocumentation.mockResolvedValue({
+      primary: {
+        ...doku,
+        status: 'final',
+        finalized_at: '2027-05-12T09:00:00.000000+00:00',
+        version_count: 1,
+        finalized_by_name: 'Anna Beispiel',
+      },
+      addenda: [],
+    });
+    rendern();
+
+    expect(await screen.findByText('Bereits finalisiert')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
   });
 });
