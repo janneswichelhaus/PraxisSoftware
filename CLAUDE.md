@@ -7,30 +7,70 @@ Gesundheitsdaten. Früher Entwicklungsstand, kein Produktivbetrieb.
 
 Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 
-1. `PROJECT_PRINCIPLES.md` (aktuell v0.2.1) — übergeordnete Leitplanken
+1. `PROJECT_PRINCIPLES.md` (aktuell v0.3) — übergeordnete Leitplanken
 2. geltende ADRs in `docs/adr/` — konkretisieren die Leitplanken
 3. die konkrete Feature-Spezifikation — verbindlich für ihre Aufgabe
-4. `docs/PRODUCT_VISION.md` — **nicht normativ**
+4. `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen;
+   füllen Lücken der Ränge 1 bis 3, überschreiben sie nie
+5. `docs/PRODUCT_VISION.md` — **nicht normativ**
 
-- Die Ränge 1 bis 3 sind verbindlich.
+- Die Ränge 1 bis 3 sind verbindlich. Rang 4 gilt, bis er bestätigt, geändert
+  oder verworfen wird.
 - **Ein ADR überschreibt `PROJECT_PRINCIPLES.md` nicht** — auch kein neuerer.
   Soll eine Leitplanke geändert werden, MUSS das Prinzip ausdrücklich
   aktualisiert und die Änderung nachvollziehbar dokumentiert werden (§21).
 - **Ein neuer ADR kann einen älteren ausdrücklich ersetzen** (Status „abgelöst
   durch ADR-XXX"). Vorrang gilt nur zwischen ADRs, nie gegenüber Rang 1.
 - Eine Feature-Spezifikation überschreibt weder Prinzipien noch ADRs.
-- **Ein unbeabsichtigter oder nicht auflösbarer Widerspruch ist ein Blocker.**
-  Nicht eigenständig interpretieren: stoppen und zur Entscheidung vorlegen.
+- **Widersprüche nach Rang auflösen, nicht abwarten.** Widersprechen sich zwei
+  Dokumente, gilt das höhere; die Auflösung wird als Annahme registriert und
+  im Bericht gemeldet (§21). Stoppen nur, wenn beide Lesarten dem Rang nach
+  gleichwertig sind **und** die Wahl später teuer zurückzunehmen wäre.
 - **Nicht bei jeder Aufgabe alle ADRs laden.** Der Index unten sagt, welcher
   ADR wofür zuständig ist; nur die relevanten vollständig lesen.
-- `docs/decisions/OPEN_DECISIONS.md` listet, was noch offen ist. Offene Punkte
-  nicht eigenmächtig entscheiden.
+- `docs/decisions/OPEN_DECISIONS.md` listet, was noch offen ist. **Ein
+  offener Punkt blockiert keine Aufgabe**: recherchieren, Annahme treffen,
+  registrieren, weiterarbeiten. Der Punkt bleibt offen, bis Jannes oder die
+  Datenschutzprüfung ihn bestätigt.
 - `docs/PRODUCT_VISION.md` beschreibt das langfristige Zielbild und steht an
   letzter Stelle. **Es ist nicht normativ**: kein Implementierungsauftrag,
   keine Feature-Spezifikation, keine Freigabe. Es begründet **niemals** eine
   Erweiterung des aktuellen Feature-Scopes und überschreibt weder Prinzipien
   noch ADRs. Nützlich, um lokale Entscheidungen einzuordnen — nicht, um sie zu
   begründen.
+
+## Annahmen statt Rückfragen
+
+Jannes ist Physiotherapeut, kein Jurist und kein Datenschutzexperte. Eine
+Rückfrage zu Aufbewahrungsfristen, Rechtsgrundlagen oder Auditumfang blockiert,
+ohne eine bessere Antwort zu liefern. Deshalb gilt `PROJECT_PRINCIPLES.md`
+§15.1:
+
+1. **Recherchieren** — erst die Projektdokumente, dann Primärquellen
+   (Gesetzestext, Leitlinien der Aufsichtsbehörden, Berufsverbände), dann
+   Sekundärquellen. Websuche ist dafür da. Unbelegtes als unsicher benennen.
+2. **Entscheiden** — nach bestem Wissen; im Zweifel die datensparsamere, die
+   restriktivere, die leichter umkehrbare Option (§16).
+3. **Dokumentieren** — jede Annahme als `ANN-NNN` in
+   `docs/decisions/ASSUMPTIONS.md`: Annahme, Begründung mit Quellen,
+   Verankerung, Änderungspfad mit Aufwand, Wiedervorlage.
+4. **Reversibel verankern** — an genau einer Stelle im Code, und die trägt
+   die Kennung im Kommentar. Wäre der Änderungsaufwand `groß`, vor dem Bauen
+   nachfragen.
+5. **Im Bericht nennen** — jede neue Annahme mit einem Satz, damit Jannes
+   widersprechen kann, ohne den Code zu lesen.
+
+Das gilt für Datenschutz, Recht, Praxisprozess-Details und Technik
+gleichermaßen. Die Datenschutzprüfung vor Produktivstart arbeitet das Register
+ab; jeder Eintrag sagt ihr vorab, was eine Änderung kostet.
+
+**Was bleibt ein Stopp** (abschließende Liste, §15.1): Widerspruch zu einer
+MUSS-Anforderung; Aufweichen einer Sicherheitsmaßnahme, eines Tests oder eines
+Gates; alles rund um echte Daten, Produktionscredentials, Secrets, Deployment
+oder neue Anbieter; Entscheidungen, deren Rücknahme einen großen Umbau
+bedeuten würde. Dann die Frage so stellen, dass sie mit Optionen, Empfehlung
+und Konsequenzen ohne Kontextwechsel beantwortbar ist — und alles, was nicht
+davon abhängt, vorher fertigstellen.
 
 ## ADR-Index — welcher ADR wofür
 
@@ -111,7 +151,9 @@ Umfang und Abhängigkeiten:
 
 - **Keine neuen Provider, Frameworks oder wesentlichen Dependencies** ohne
   fachliche Notwendigkeit und Prüfung gegen die ADRs.
-- **Keine ungefragten Refactorings** außerhalb des Auftrags.
+- **Keine ungefragten Refactorings** außerhalb der vom Auftrag berührten
+  Module. Was der Auftrag braucht, gehört dazu; was nur auffällt, wird
+  vorgeschlagen.
 - Keine Zukunftsfeatures prophylaktisch bauen (ADR-014).
 - **Kein Produktionsdeployment durch Coding-Agenten** (ADR-013). Keine
   Cloud-Ressourcen ohne expliziten Auftrag.
@@ -132,10 +174,19 @@ Für Featurearbeit gibt es den Skill **`/feature-loop <Aufgabe>`**
 Verify → Review → Fix → Final Verify → Report → Stopp. Er startet nur auf
 ausdrücklichen Aufruf.
 
+**Ein Loop ist ein Epic**, nicht eine Story: mehrere zusammengehörige
+vertikale Schnitte, Story für Story gebaut und je Story committet, ohne
+Zwischenstopp und ohne Zwischenbericht. Zum Epic gehört alles, was seine
+Akzeptanzkriterien brauchen — Seed, Testkonten, Audit-Ereignisse,
+Abnahmeschritte in `docs/DEVELOPMENT.md`, Registereinträge. Was ein anderes
+Epic wäre, wird am Ende vorgeschlagen, nicht gebaut.
+
 Hintergrund und Begründung: `docs/development/DEVELOPMENT_WORKFLOW.md`.
 
-Kleine Commits mit aussagekräftiger Nachricht. Nach abgeschlossenem Feature
-stoppen, nicht eigenständig das nächste beginnen.
+Kleine Commits mit aussagekräftiger Nachricht, einer je Story. Nach
+abgeschlossenem Epic stoppen und berichten — mit allen neuen Annahmen und
+einem Vorschlag für das nächste Epic. Das nächste Epic nicht eigenständig
+beginnen.
 
 Jannes (Projektinhaber) schaut sich Ergebnisse lokal auf seinem eigenen
 Rechner an, nicht nur über Tests. **Nach jeder abgeschlossenen Änderung kurz
@@ -143,4 +194,4 @@ die Schritte nennen, mit denen er seinen lokalen Stand aktualisiert**,
 mindestens `git pull origin <branch>`; zusätzlich `pnpm install` bei
 geänderten Abhängigkeiten und `pnpm dlx supabase db reset`, wenn sich
 Migrationen oder `supabase/seed.sql` geändert haben. Das gilt auch bei
-kleinen Zwischen-Fixes, nicht nur am Ende eines ganzen Features.
+kleinen Zwischen-Fixes, nicht nur am Ende eines ganzen Epics.
