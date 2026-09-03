@@ -4,11 +4,36 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.2.1** |
-| **Änderungsdatum** | **2026-08-28** |
-| Vorversion | 0.1 (Baseline, unverändert im Git-Verlauf erhalten) |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-014, siehe `docs/adr/` |
+| **Dokumentversion** | **0.3** |
+| **Änderungsdatum** | **2026-09-03** |
+| Vorversion | 0.2.1 (Korrekturversion); 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-015, siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
+| Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
+
+### Änderungsvermerk 0.3
+
+Arbeitsweise bei fehlenden Entscheidungen. Anlass: Der Projektinhaber hat
+festgestellt, dass die Regel „nicht eigenständig entscheiden, stoppen und
+vorlegen" die Entwicklung blockiert, weil er insbesondere datenschutz- und
+rechtsbezogene Detailfragen selbst nicht beantworten kann. Eine
+Datenschutzprüfung steht bevor; das Produkt muss deren Ergebnis aufnehmen
+können, ohne dass die Entwicklung bis dahin wartet.
+
+- Neu §15.1 „Begründete Annahmen": Fehlt eine Entscheidung, wird recherchiert,
+  nach bestem Wissen entschieden, die Annahme im Annahmenregister
+  (`docs/decisions/ASSUMPTIONS.md`) dokumentiert und reversibel verankert.
+  Datenschutz- und rechtsbezogene Annahmen MÜSSEN vor Produktivstart
+  validiert werden. §15.1 nennt abschließend, was keine Annahme sein darf.
+- §2.3 präzisiert: Detailentscheidungen innerhalb einer beauftragten Aufgabe
+  sind keine „grundlegenden Praxisprozesse" und werden nach §15.1 getroffen.
+- §11 nennt Recherche und das Schließen von Lücken durch dokumentierte
+  Annahmen als zulässige Tätigkeiten; die Verbotsliste ist unverändert.
+- §21 nimmt das Annahmenregister in die Dokumentenordnung auf, regelt den
+  Umgang mit einem entdeckten Widerspruch bis zu seiner Auflösung und führt
+  ADR-015 in der Tabelle nach.
+- Keine Anforderung aus §3 (Datenschutz und Sicherheit), §12, §13 oder §16
+  wurde geändert oder abgeschwächt.
 
 ### Änderungsvermerk 0.2.1
 
@@ -145,6 +170,14 @@ Daten und Berechtigungen definiert werden.
 
 Claude DARF keine grundlegenden Praxisprozesse eigenständig erfinden oder
 bestehende Prozesse ohne Auftrag verändern.
+
+Grundlegend ist ein Prozess, der den Praxisalltag über die einzelne Aufgabe
+hinaus prägt: welche Rollen es gibt, wer behandelt, wie abgerechnet wird,
+welche Daten die Praxis überhaupt erhebt. Eine Detailentscheidung innerhalb
+einer beauftragten Aufgabe — welche der bestehenden Rollen eine Aktion
+auslösen darf, welche Frist ein Datensatz erhält, wie ein Konfliktfall
+behandelt wird — ist es nicht. Fehlt sie, wird sie nach §15.1 als begründete
+Annahme getroffen und dokumentiert, nicht abgewartet.
 
 
 ## 3. Datenschutz und Sicherheit
@@ -690,6 +723,10 @@ Claude Code darf:
 - Refactoring vorschlagen
 - Design implementieren
 - Dokumentation erstellen
+- rechtliche, datenschutzrechtliche und fachliche Fragen recherchieren und
+  einen begründeten Vorschlag mit Quellen erarbeiten
+- Lücken der Prinzipien, ADRs und Feature-Spezifikationen durch begründete,
+  dokumentierte Annahmen schließen (§15.1)
 
 Claude Code DARF NICHT ohne expliziten Auftrag:
 
@@ -699,6 +736,10 @@ Claude Code DARF NICHT ohne expliziten Auftrag:
 - Datenbankstrukturen großflächig verändern
 - vorhandene Features entfernen
 - Produktanforderungen eigenständig ändern
+
+Eine Annahme nach §15.1 ändert keine Produktanforderung. Sie füllt eine Lücke,
+die Prinzipien, ADRs und Feature-Spezifikation lassen, und bleibt vorläufig,
+bis sie bestätigt ist.
 
 Für Coding- und KI-Entwicklungswerkzeuge gilt zusätzlich die Regel aus §3.1.
 
@@ -791,6 +832,52 @@ Nach Implementierung:
 4. bekannte Einschränkungen nennen.
 
 Keine unnötigen Refactorings außerhalb des beauftragten Bereichs.
+
+### 15.1 Begründete Annahmen
+
+Fehlt bei einer Aufgabe eine Entscheidung, die weder dieses Dokument noch ein
+ADR noch die Feature-Spezifikation trifft, wird sie nicht abgewartet. Es gilt:
+
+1. **Recherchieren.** Zuerst die bestehenden Dokumente dieses Projekts, dann
+   Primärquellen: Gesetzestext (insbesondere DSGVO, BDSG, BGB, StGB, AO, HGB,
+   UStG), Leitlinien und Kurzpapiere der Aufsichtsbehörden
+   (Datenschutzkonferenz, BfDI, Landesbeauftragte), Veröffentlichungen der
+   Berufsverbände. Sekundärquellen nur ergänzend. Was sich nicht belegen
+   lässt, wird als unsicher benannt, nicht als sicher dargestellt.
+2. **Entscheiden.** Nach bestem Wissen die Option wählen, die bei
+   Unsicherheit die Prioritätenordnung aus §16 wahrt: im Zweifel die
+   datensparsamere, die restriktivere und die leichter umkehrbare.
+3. **Dokumentieren.** Jede Annahme MUSS im Annahmenregister
+   `docs/decisions/ASSUMPTIONS.md` stehen — mit Begründung und Quellen,
+   Verankerung im Code und Änderungspfad. Eine Annahme, die nur im Code oder
+   nur im Kopf existiert, ist ein Fehler.
+4. **Reversibel verankern.** Eine Annahme SOLLTE an genau einer Stelle
+   greifen — Policy-Funktion, Konfigurationswert, Konstante, eine Migration —
+   und diese Stelle trägt die Kennung `ANN-NNN`. So bleibt die spätere
+   Änderung eine begrenzte Änderung.
+5. **Validieren lassen.** Annahmen der Kategorien Datenschutz und Recht
+   MÜSSEN vor Produktivstart im Datenschutzprozess nach §3.7 bestätigt oder
+   geändert werden. Bis dahin sind sie vorläufig — nicht falsch, aber auch
+   nicht entschieden.
+
+Eine Annahme DARF NICHT:
+
+- einer MUSS- oder DARF-NICHT-Anforderung dieses Dokuments oder eines ADRs
+  widersprechen;
+- eine Sicherheits- oder Datenschutzmaßnahme, einen Test oder ein CI-Gate
+  aufweichen (§12);
+- die Regeln aus §3.1 bis §3.3 berühren — echte Patientendaten,
+  Produktionscredentials, Secrets;
+- ein Produktionsdeployment, eine Cloud-Ressource oder einen neuen externen
+  Anbieter einführen (§3.5, §11, ADR-013);
+- eine bestehende Entscheidung ersetzen, deren Rücknahme nach eigener
+  Einschätzung einen großen Umbau bedeuten würde — ein anderes Rollenmodell,
+  ein anderes Grundprinzip der Datenhaltung, eine andere Rechtsgrundlage für
+  die Kernverarbeitung.
+
+Was in diese Liste fällt, ist keine Annahme, sondern eine Änderungsanfrage an
+den Projektinhaber, und die Arbeit an genau diesem Punkt stoppt. Alles andere
+wird angenommen, dokumentiert und im Bericht des Loops ausdrücklich genannt.
 
 
 ## 16. Priorität
@@ -957,9 +1044,15 @@ Es steht in folgendem Verhältnis zu den übrigen Dokumenten:
 - `docs/adr/` — Architecture Decision Records. Getroffene Entscheidungen mit
   Kontext, Konsequenzen und offenen Folgefragen.
 - `docs/decisions/OPEN_DECISIONS.md` — was noch nicht entschieden ist.
+- `docs/decisions/ASSUMPTIONS.md` — begründete, vorläufige Annahmen nach
+  §15.1. Sie stehen unterhalb der ADRs und der Feature-Spezifikationen,
+  schließen deren Lücken und überschreiben nichts. Eine bestätigte Annahme,
+  deren Rücknahme teuer wäre, wird ADR.
 
 Widerspricht ein ADR diesem Dokument, ist das ein Fehler und MUSS aufgelöst
-werden. Wird durch einen ADR eine Prinzipienaussage geändert, MUSS dieses
+werden. Bis zur Auflösung gilt die Aussage dieses Dokuments; wer den
+Widerspruch bemerkt, hält ihn im Annahmenregister fest und meldet ihn im
+Bericht. Wird durch einen ADR eine Prinzipienaussage geändert, MUSS dieses
 Dokument in einer neuen Version nachgezogen werden.
 
 Angenommene ADRs zum Stand dieser Version:
@@ -980,6 +1073,7 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-012 | Backup, Wiederherstellung und Betriebskontinuität | §3.4, §13 |
 | ADR-013 | CI/CD und Release-Governance | §11, §12 |
 | ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
+| ADR-015 | Initialer technischer Stack | §2.1, §2.2, §3.4 |
 
 Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
 Dokumentversion und ergänztem Änderungsvermerk.
