@@ -33,6 +33,9 @@ alter table public.audit_log add constraint audit_log_action_check
 -- Vorgang der Praxisfuehrung und der Verwaltung, kein Behandlungsschritt.
 -- Bewusst eine eigene Funktion, damit sich dieser Schnitt unabhaengig von
 -- can_create_patient/can_update_patient entwickeln kann.
+--
+-- ANN-002 (docs/decisions/ASSUMPTIONS.md): Rollenschnitt und Bedeutung von
+-- 'inactive' sind eine vorlaeufige Annahme; Aenderungspfad dort.
 -- -----------------------------------------------------------------------------
 create or replace function app.can_change_patient_status()
 returns boolean

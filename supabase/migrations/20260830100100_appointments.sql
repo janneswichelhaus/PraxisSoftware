@@ -49,6 +49,8 @@ create table public.appointments (
   -- Adress-Snapshot ausschliesslich fuer Hausbesuche. Bewusst kopiert und
   -- nicht referenziert: eine spaetere Stammdatenaenderung darf nicht
   -- rueckwirkend veraendern, wohin an diesem Tag gefahren wurde.
+  -- ANN-003 (docs/decisions/ASSUMPTIONS.md): Kopie statt Referenz ist eine
+  -- vorlaeufige Annahme; Aenderungspfad dort.
   visit_street       text check (visit_street       is null or length(btrim(visit_street))      between 1 and 200),
   visit_house_number text check (visit_house_number is null or length(btrim(visit_house_number)) between 1 and 20),
   visit_postal_code  text check (visit_postal_code  is null or length(btrim(visit_postal_code)) between 1 and 20),

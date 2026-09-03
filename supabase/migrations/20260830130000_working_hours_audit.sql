@@ -33,6 +33,9 @@
 -- Abweichungen - die Art der Aktion. AUSDRUECKLICH NICHT: Mitarbeitername,
 -- konkrete Beginn- und Endzeiten, Wochentag, Datum, private Daten, Notizen,
 -- Patientenbezug (ADR-010).
+--
+-- ANN-004 (docs/decisions/ASSUMPTIONS.md): Dieser Zuschnitt des Auditkontexts
+-- ist eine vorlaeufige Annahme fuer beide Funktionen dieser Datei.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -244,6 +247,8 @@ begin
       'staff_member_id', p_staff_member_id,
       -- Bei einer Entfernung die aufgehobenen, sonst die jetzt gueltigen
       -- Datensaetze. Keine Zeiten, kein Wochentag (ADR-010).
+      -- ANN-004 (docs/decisions/ASSUMPTIONS.md): Arbeitszeiten sind
+      -- Beschaeftigtendaten und bleiben aus dem Auditkontext heraus.
       'record_ids', to_jsonb(case when v_aktion = 'removed' then v_alt_ids else v_neu_ids end)
     )
   );
@@ -423,6 +428,7 @@ begin
       jsonb_build_object(
         'surface', 'web',
         'staff_member_id', p_staff_member_id,
+        -- Art der Abweichung, kein Datum (ADR-010, ANN-004).
         'kind', v_art,
         'record_ids', to_jsonb(case when v_aktion = 'removed' then v_alt_ids else v_neu_ids end)
       )

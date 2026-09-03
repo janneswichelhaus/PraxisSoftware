@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand: 2026-08-30 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-03 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
@@ -376,6 +376,10 @@ sein. Sie sind bewusst nicht Teil des aktuellen Stands.
    inklusive der sieben dort genannten Vorbedingungen.
 4. **Regulatorische Prüfung der Zweckbestimmung nach
    [ADR-006](adr/ADR-006-medical-device-boundary.md).**
+5. **Alle Annahmen der Kategorien Datenschutz und Recht im
+   [Annahmenregister](decisions/ASSUMPTIONS.md) sind bestätigt oder geändert
+   umgesetzt.** Kein Eintrag dieser Kategorien steht mehr auf `offen`
+   (`PROJECT_PRINCIPLES.md` §15.1).
 
 ## Audit
 
