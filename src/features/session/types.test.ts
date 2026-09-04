@@ -3,6 +3,8 @@ import {
   canChangePatientStatus,
   canManageAppointments,
   canReadPatientDirectory,
+  canReadTreatmentNote,
+  canWriteTreatmentNote,
   isStaff,
   roleKeySchema,
 } from './types';
@@ -83,5 +85,40 @@ describe('roleKeySchema', () => {
   it('lehnt unbekannte Rollen ab, statt sie durchzureichen', () => {
     expect(roleKeySchema.safeParse('admin').success).toBe(false);
     expect(roleKeySchema.safeParse('owner').success).toBe(true);
+  });
+});
+
+describe('Behandlungsdokumentation (DOK-001)', () => {
+  it.each([['owner'], ['therapist'], ['team_lead']] as const)('laesst %s lesen', (role) => {
+    expect(canReadTreatmentNote([role])).toBe(true);
+  });
+
+  it('schliesst office vom klinischen Freitext aus (PROJECT_PRINCIPLES.md 4.3)', () => {
+    // Office sieht denselben Termin, aber nicht denselben Inhalt.
+    expect(canManageAppointments(['office'])).toBe(true);
+    expect(canReadTreatmentNote(['office'])).toBe(false);
+    expect(canWriteTreatmentNote(['office'])).toBe(false);
+  });
+
+  it('schliesst ein Patientenkonto aus (4.6)', () => {
+    expect(canReadTreatmentNote(['patient'])).toBe(false);
+    expect(canWriteTreatmentNote(['patient'])).toBe(false);
+  });
+
+  it.each([['therapist'], ['team_lead']] as const)('laesst %s dokumentieren', (role) => {
+    expect(canWriteTreatmentNote([role])).toBe(true);
+  });
+
+  it('laesst einen reinen owner-Zugang lesen, aber nicht dokumentieren (4.1 gegen 4.2)', () => {
+    expect(canReadTreatmentNote(['owner'])).toBe(true);
+    expect(canWriteTreatmentNote(['owner'])).toBe(false);
+    // Mit therapeutischer Zweitrolle sehr wohl - Mehrfachrollen sind die
+    // Vereinigung (ADR-004).
+    expect(canWriteTreatmentNote(['owner', 'therapist'])).toBe(true);
+  });
+
+  it('behandelt eine leere Rollenliste als kein Recht', () => {
+    expect(canReadTreatmentNote([])).toBe(false);
+    expect(canWriteTreatmentNote([])).toBe(false);
   });
 });

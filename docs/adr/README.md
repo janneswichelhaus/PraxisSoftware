@@ -75,3 +75,4 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen |
 | [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen |
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen |
+| [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen |

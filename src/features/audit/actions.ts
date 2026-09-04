@@ -25,6 +25,13 @@ export const AUDIT_ACTIONS = [
   'staff_working_hour_exception.created',
   'staff_working_hour_exception.updated',
   'staff_working_hour_exception.removed',
+  'treatment_note.created',
+  'treatment_note.updated',
+  'treatment_note.viewed',
+  'treatment_note.finalized',
+  'treatment_note.revised',
+  'treatment_note.addendum_created',
+  'treatment_note.history_viewed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -48,6 +55,13 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'staff_working_hour_exception.created': 'Abweichung angelegt',
   'staff_working_hour_exception.updated': 'Abweichung geändert',
   'staff_working_hour_exception.removed': 'Abweichung aufgehoben',
+  'treatment_note.created': 'Behandlungsdokumentation angelegt',
+  'treatment_note.updated': 'Behandlungsdokumentation geändert',
+  'treatment_note.viewed': 'Behandlungsdokumentation gelesen',
+  'treatment_note.finalized': 'Behandlungsdokumentation finalisiert',
+  'treatment_note.revised': 'Behandlungsdokumentation korrigiert',
+  'treatment_note.addendum_created': 'Nachtrag angelegt',
+  'treatment_note.history_viewed': 'Änderungsverlauf gelesen',
 };
 
 export const auditSubjectLabels: Record<string, string> = {
@@ -56,6 +70,7 @@ export const auditSubjectLabels: Record<string, string> = {
   appointment: 'Termin',
   staff_working_hours: 'Wochenarbeitszeit',
   staff_working_hour_exception: 'Arbeitszeitabweichung',
+  treatment_note: 'Behandlungsdokumentation',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {

@@ -91,6 +91,7 @@ davon abhängt, vorher fertigstellen.
 | 013 | CI-Gates, Branch Protection, Release-Freigabe                             |
 | 014 | Datenmodell-Fundament: UUIDs, Zeitstempel, Geldwerte, Rollen, Trennung    |
 | 015 | Stack, Ordnerstruktur, Abgrenzungen (kein Next.js, kein Service Worker …) |
+| 016 | Dokumentation: Entwurf/Finalisierung, Versionierung, wer ändern darf      |
 
 ## Repository
 
@@ -180,6 +181,12 @@ Zwischenstopp und ohne Zwischenbericht. Zum Epic gehört alles, was seine
 Akzeptanzkriterien brauchen — Seed, Testkonten, Audit-Ereignisse,
 Abnahmeschritte in `docs/DEVELOPMENT.md`, Registereinträge. Was ein anderes
 Epic wäre, wird am Ende vorgeschlagen, nicht gebaut.
+
+**Vor jedem Loop den Gesamtstand prüfen, nicht nur `main`.** Erst
+`git fetch origin --prune` und `git branch -r`, dazu die offenen Pull Requests.
+Ein Branch, der `main` voraus ist, enthält Arbeit, die zählt: nichts neu bauen,
+was dort schon liegt, und das nächste Epic nur auf dem Gesamtstand
+vorschlagen. Unveröffentlichte Arbeit im Bericht nennen.
 
 Hintergrund und Begründung: `docs/development/DEVELOPMENT_WORKFLOW.md`.
 

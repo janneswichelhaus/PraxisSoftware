@@ -6,8 +6,8 @@
 |---|---|
 | **Dokumentversion** | **0.3** |
 | **Änderungsdatum** | **2026-09-03** |
-| Vorversion | 0.2.1 (Korrekturversion); 0.1 Baseline, unverändert im Git-Verlauf erhalten |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-015, siehe `docs/adr/` |
+| Vorversion | 0.2.2 (Korrekturversion); 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-016, siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
 
@@ -31,9 +31,20 @@ können, ohne dass die Entwicklung bis dahin wartet.
   Annahmen als zulässige Tätigkeiten; die Verbotsliste ist unverändert.
 - §21 nimmt das Annahmenregister in die Dokumentenordnung auf, regelt den
   Umgang mit einem entdeckten Widerspruch bis zu seiner Auflösung und führt
-  ADR-015 in der Tabelle nach.
+  ADR-015 und ADR-016 in der Tabelle nach.
 - Keine Anforderung aus §3 (Datenschutz und Sicherheit), §12, §13 oder §16
   wurde geändert oder abgeschwächt.
+
+### Änderungsvermerk 0.2.2
+
+Korrekturversion. Sie behebt ausschließlich eine Aussage, die durch ADR-016
+überholt ist, und ändert keine Anforderung:
+
+- §5 bezeichnete den Mechanismus der Nachvollziehbarkeit — Versionierung
+  gegenüber Änderungsprotokoll — als offen. ADR-016 hat ihn am 2026-09-01
+  entschieden; `docs/decisions/OPEN_DECISIONS.md` Abschnitt D führt ihn
+  seither nicht mehr als offen. Die MUSS-Anforderungen aus §5 bleiben
+  unverändert — ADR-016 erfüllt sie und erweitert sie nicht.
 
 ### Änderungsvermerk 0.2.1
 
@@ -496,9 +507,12 @@ Erfasst werden MÜSSEN mindestens:
 Die Finalisierung ist ein serverseitiger Vorgang und offline nicht möglich
 (§2.2, [ADR-001](docs/adr/ADR-001-online-first-limited-offline.md)).
 
-Der konkrete technische Mechanismus der Nachvollziehbarkeit — Versionierung
-gegenüber Änderungsprotokoll — ist noch nicht entschieden und in
-`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
+Der konkrete technische Mechanismus der Nachvollziehbarkeit ist mit
+[ADR-016](docs/adr/ADR-016-clinical-documentation-record.md) entschieden:
+Versionierung mit vollständig abrufbarem Originalinhalt je Version, nicht ein
+bloßes Änderungsprotokoll. Was ADR-016 darüber hinaus regelt — Zustände,
+Finalisierung, Ergänzung gegenüber Korrektur — konkretisiert diesen Abschnitt
+und ersetzt ihn nicht.
 
 
 ## 6. KI
@@ -1074,6 +1088,7 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-013 | CI/CD und Release-Governance | §11, §12 |
 | ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
 | ADR-015 | Initialer technischer Stack | §2.1, §2.2, §3.4 |
+| ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | §5 |
 
 Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
 Dokumentversion und ergänztem Änderungsvermerk.

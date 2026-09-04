@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as RouterModule from 'react-router-dom';
+import type * as DokumentationApi from '@/features/documentation/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
@@ -52,6 +53,20 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
+// Die Behandlungsdokumentation haengt als eigener Abschnitt an dieser Seite
+// (DOK-001). Ihr Lesepfad wird hier gestubbt; geprueft wird er in den Tests
+// der Dokumentation selbst.
+const fetchTreatmentDocumentation = vi.fn();
+
+vi.mock('@/features/documentation/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof DokumentationApi>();
+  return {
+    ...actual,
+    fetchTreatmentDocumentation: (id: string) =>
+      fetchTreatmentDocumentation(id) as Promise<DokumentationApi.TreatmentDocumentation>,
+  };
+});
+
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof RouterModule>();
   return {
@@ -86,6 +101,8 @@ describe('AppointmentDetailPage', () => {
     cancelAppointment.mockResolvedValue(undefined);
     completeAppointment.mockResolvedValue(undefined);
     reopenAppointment.mockResolvedValue(undefined);
+    fetchTreatmentDocumentation.mockReset();
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
   });
 
   it('zeigt Patient, behandelnde Person, Art und Status', async () => {
@@ -410,5 +427,25 @@ describe('AppointmentDetailPage', () => {
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     expect(screen.queryByText('Anna Beispiel')).not.toBeInTheDocument();
+  });
+
+  describe('Behandlungsdokumentation (DOK-001)', () => {
+    it('bietet therapeutischen Rollen den Weg zur Dokumentation an', async () => {
+      rendern(['therapist']);
+
+      expect(await screen.findByText('Behandlungsdokumentation')).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: 'Dokumentation anlegen' })).toHaveAttribute(
+        'href',
+        `/termine/${TERMIN_ID}/dokumentation`,
+      );
+    });
+
+    it('zeigt office den Abschnitt gar nicht und fragt ihn nicht ab (4.3)', async () => {
+      rendern(['office']);
+      await screen.findByText('Anna Beispiel');
+
+      expect(screen.queryByText('Behandlungsdokumentation')).toBeNull();
+      expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
+    });
   });
 });

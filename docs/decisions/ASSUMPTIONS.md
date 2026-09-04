@@ -111,7 +111,7 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | offen  | Jannes                        |
 | ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | Epic Behandlungsdokumentation |
+| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | DOK-003, spätestens ABR-002   |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und `docs/DEVELOPMENT.md` bereits begründet,
@@ -270,7 +270,7 @@ lesbar; ob sie bereinigt werden müssen, entscheidet die Prüfung.
 | Kategorie | Praxisprozess |
 | Herkunft | CAL-004 |
 | Status | offen, seit 2026-08-30 (rückwirkend erfasst 2026-09-03) |
-| Wiedervorlage | Epic Behandlungsdokumentation |
+| Wiedervorlage | DOK-003 (Dokumentation in der Akte), spätestens ABR-002 (Leistungserfassung am abgeschlossenen Termin) |
 
 **Annahme.** Ein Termin kann abgeschlossen werden, ohne dass eine
 Behandlungsdokumentation existiert. Der Abschluss gibt den Zeitraum nicht frei
@@ -278,18 +278,20 @@ und lässt sich wieder öffnen; beide Ereignisse bleiben im Auditlog. Die
 Kopplung „Fakturierung erst nach finalisierter Dokumentation" (§19) wird an der
 Leistung beziehungsweise Rechnung verankert, nicht am Terminstatus.
 
-**Begründung.** Es gibt noch keine Dokumentation. §19 bindet die Fakturierung
-an die Dokumentation, nicht den Terminstatus; der Terminstatus-Automat ist in
-`OPEN_DECISIONS.md` (Abschnitt D, „bestätigt") offen. Ein Abschluss, der ohne
-Dokumentation blockiert, hätte den Kalender bis zum Dokumentations-Epic
-unbenutzbar gemacht.
+**Begründung.** Bei CAL-004 gab es noch keine Dokumentation. §19 bindet die
+Fakturierung an die Dokumentation, nicht den Terminstatus; der
+Terminstatus-Automat ist in `OPEN_DECISIONS.md` (Abschnitt D, „bestätigt")
+offen. DOK-001 und DOK-002 (ADR-016) haben die Kopplung bewusst nicht
+eingeführt: Ein Entwurf darf unbegrenzt Entwurf bleiben, und ein Termin mit
+Dokumentation lässt sich weiterhin absagen (`docs/DEVELOPMENT.md`, Bekannte
+Einschränkungen 9 und 10).
 
 **Verankerung.** `complete_appointment` und `reopen_appointment` in
 `supabase/migrations/20260830110000_appointment_completion.sql`;
 Abnahmeschritt 12 in `docs/DEVELOPMENT.md`.
 
-**Änderungspfad.** Sobald Dokumentation existiert: entweder eine Prüfung in
-`complete_appointment` ergänzen oder den Abschluss aus der Finalisierung der
-Dokumentation heraus auslösen — Aufwand `klein` bis `mittel`, je nach Variante.
-Die Entscheidung fällt im Epic Behandlungsdokumentation und wird hier
-nachgetragen.
+**Änderungspfad.** Entweder eine Prüfung in `complete_appointment` ergänzen
+oder den Abschluss aus der Finalisierung der Dokumentation heraus auslösen —
+Aufwand `klein` bis `mittel`, je nach Variante. Die Entscheidung fällt bei
+DOK-003, spätestens wenn ABR-002 abgeschlossene Termine zu Leistungen macht,
+und wird hier nachgetragen.
