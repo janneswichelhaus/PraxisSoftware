@@ -11,7 +11,7 @@
 -- Grundsaetze aus ADR-010:
 --   * nur Metadaten, keine klinischen Inhalte
 --   * ueber den normalen Anwendungspfad weder aenderbar noch loeschbar
---   * Aufbewahrung initial 3 Jahre (ADR-008)
+--   * Aufbewahrung initial 3 Jahre (ADR-008; ANN-001 in docs/decisions/ASSUMPTIONS.md)
 -- =============================================================================
 
 create table public.audit_log (
