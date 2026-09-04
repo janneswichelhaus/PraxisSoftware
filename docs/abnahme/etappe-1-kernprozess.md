@@ -132,3 +132,31 @@ Inhalt.
    eigenen Eintrag — er enthält keinen klinischen Inhalt (ANN-006). Das ist
    ausdrücklich **kein** Sicherheitsnachweis; verbindlich ist
    `list_patient_treatment_evidence`, geprüft in `pnpm test:db`.
+
+### Behandlungsdokumentation (owner, therapist, team_lead)
+
+1. Als `anna.beispiel@praxis.invalid` dieselbe Akte öffnen. Statt des
+   Nachweises steht dort der Abschnitt **„Behandlungsdokumentation"** — mit
+   denselben Terminzeilen, aber darunter der vollständige Eintrag: Vermerk
+   („Entwurf" oder „Finalisiert"), Wortlaut, Herkunftszeile („Verfasst von …",
+   „Finalisiert am …") und bei finalisierten Einträgen der Link
+   „Änderungsverlauf". Nachträge stehen als eigener Block mit dem Vermerk
+   „Nachtrag" unter dem Haupteintrag.
+2. In der Akte gibt es **keine** Schaltflächen zum Bearbeiten, Finalisieren,
+   Korrigieren oder Nachtragen — das geschieht am Termin. „Zum Termin" führt
+   dorthin, „Änderungsverlauf" auf die bekannte Verlaufsseite.
+3. Ein Termin ohne Dokumentation steht mit „Keine Dokumentation." in der
+   Liste; ein abgesagter Termin mit dem Status „Abgesagt".
+4. Gegenprobe Praxisleitung: als `jannes.test@praxis.invalid` ist die
+   Dokumentation ebenfalls lesbar. Ein reiner owner-Zugang dürfte sie lesen,
+   ohne zu schreiben — im Seed gibt es ihn nicht, geprüft wird der Fall in
+   `pnpm test:db`.
+5. Als owner „Praxis → Sicherheit → Audit" öffnen: für jeden in der Akte
+   gelesenen Eintrag — auch jeden Nachtrag — steht ein `treatment_note.viewed`,
+   ohne Behandlungsinhalt. Für einen Termin ohne Dokumentation entsteht keiner.
+   Das Öffnen der Akte selbst steht daneben als `patient_record.viewed`.
+6. Gegenprobe Office: als `olivia.office@praxis.invalid` bleibt der Abschnitt
+   „Behandlungsdokumentation" verschwunden; es gibt nur den Nachweis. Das ist
+   ausdrücklich **kein** Sicherheitsnachweis; verbindlich ist
+   `list_patient_treatment_notes`, geprüft in `pnpm test:db` und im E2E-Test
+   „DOK-003: Serverseitige Grenzen".

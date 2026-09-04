@@ -27,6 +27,7 @@ const fetchPatient = vi.fn();
 const setPatientStatus = vi.fn();
 const logPatientRecordView = vi.fn();
 const fetchTreatmentEvidencePage = vi.fn();
+const fetchPatientTreatmentNotesPage = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
@@ -49,6 +50,13 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
       fetchTreatmentEvidencePage(patientId, cursor) as Promise<
         DokumentationApi.TreatmentEvidenceEntry[]
       >,
+    fetchPatientTreatmentNotesPage: (
+      patientId: string,
+      cursor: DokumentationApi.AkteCursor | null,
+    ) =>
+      fetchPatientTreatmentNotesPage(patientId, cursor) as Promise<
+        DokumentationApi.PatientTreatmentNotesEntry[]
+      >,
   };
 });
 
@@ -65,10 +73,12 @@ describe('PatientDetailPage', () => {
     setPatientStatus.mockReset();
     logPatientRecordView.mockReset();
     fetchTreatmentEvidencePage.mockReset();
+    fetchPatientTreatmentNotesPage.mockReset();
     fetchPatient.mockResolvedValue(aktiv);
     setPatientStatus.mockResolvedValue(undefined);
     logPatientRecordView.mockResolvedValue(undefined);
     fetchTreatmentEvidencePage.mockResolvedValue([]);
+    fetchPatientTreatmentNotesPage.mockResolvedValue([]);
   });
 
   // Wer die Kartei lesen darf, darf die Stammdaten auch aendern - dieselbe
@@ -200,12 +210,34 @@ describe('PatientDetailPage', () => {
       );
     });
 
+    it.each([['owner'], ['therapist'], ['team_lead']] as const)(
+      'zeigt %s die Behandlungsdokumentation statt des Nachweises',
+      async (role) => {
+        renderWithProviders(<PatientDetailPage user={testUser([role])} />);
+
+        expect(
+          await screen.findByRole('region', { name: 'Behandlungsdokumentation' }),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByRole('region', { name: 'Behandlungsnachweis' }),
+        ).not.toBeInTheDocument();
+        await waitFor(() =>
+          expect(fetchPatientTreatmentNotesPage).toHaveBeenCalledWith(PATIENT_ID, null),
+        );
+        expect(fetchTreatmentEvidencePage).not.toHaveBeenCalled();
+      },
+    );
+
     it('zeigt einem Patientenkonto keinen Dokumentationsabschnitt', async () => {
       renderWithProviders(<PatientDetailPage user={testUser(['patient'])} />);
       await screen.findByRole('heading', { name: 'Max Mustermann' });
 
       expect(screen.queryByRole('region', { name: 'Behandlungsnachweis' })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('region', { name: 'Behandlungsdokumentation' }),
+      ).not.toBeInTheDocument();
       expect(fetchTreatmentEvidencePage).not.toHaveBeenCalled();
+      expect(fetchPatientTreatmentNotesPage).not.toHaveBeenCalled();
     });
   });
 

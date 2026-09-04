@@ -15,32 +15,12 @@ import {
   treatmentNoteStatusLabels,
   type TreatmentNote,
 } from './api';
-import { zeitpunkt } from './format';
+import { herkunft, zeitpunkt } from './format';
 
 const linkPrimaer =
   'bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors';
 const linkSekundaer =
   'border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors';
-
-/**
- * Die Herkunftszeile eines Eintrags.
- *
- * Für einen Entwurf zählt, wer ihn zuletzt geändert hat; für einen
- * finalisierten Eintrag, wer ihn zum Bestandteil der Akte gemacht hat. Beides
- * in einer Zeile zu zeigen wäre für den Alltag zu viel - die vollständige
- * Urheberschaft je Version steht im Änderungsverlauf.
- */
-function herkunft(note: TreatmentNote, zone: string): string {
-  const verfasst = note.author_name ? `Verfasst von ${note.author_name}. ` : '';
-
-  if (note.status === 'final' && note.finalized_at) {
-    const wer = note.finalized_by_name ? ` von ${note.finalized_by_name}` : '';
-    return `${verfasst}Finalisiert am ${zeitpunkt(note.finalized_at, zone)}${wer}.`;
-  }
-
-  const wer = note.last_editor_name ? ` von ${note.last_editor_name}` : '';
-  return `${verfasst}Zuletzt geändert am ${zeitpunkt(note.updated_at, zone)}${wer}.`;
-}
 
 /**
  * Ein Eintrag - Haupteintrag oder Nachtrag - mit seinen Handlungen.

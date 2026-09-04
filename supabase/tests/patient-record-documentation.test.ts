@@ -38,6 +38,8 @@ const NACHTRAGEN = 'select public.create_treatment_note_addendum($1::uuid, $2) a
 
 const NACHWEIS =
   'select * from public.list_patient_treatment_evidence($1::uuid, $2::integer, $3::timestamptz, $4::uuid)';
+const AKTE =
+  'select * from public.list_patient_treatment_notes($1::uuid, $2::integer, $3::timestamptz, $4::uuid)';
 
 const TEXT = 'Synthetischer Testinhalt: Uebungen angeleitet, Belastung gesteigert.';
 
@@ -161,6 +163,61 @@ async function nachweis(
     cursor?.startsAt.toISOString() ?? null,
     cursor?.id ?? null,
   ]);
+  return rows;
+}
+
+interface AkteEintrag {
+  id: string;
+  appointment_id: string;
+  addendum_to_note_id: string | null;
+  status: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  finalized_at: string | null;
+  version_count: number;
+  author_name: string | null;
+  last_editor_name: string | null;
+  finalized_by_name: string | null;
+}
+
+interface AkteZeile {
+  appointment_id: string;
+  starts_at: Date;
+  ends_at: Date;
+  appointment_type: string;
+  appointment_status: string;
+  staff_given_name: string;
+  staff_family_name: string;
+  organization_time_zone: string;
+  notes: AkteEintrag[];
+}
+
+async function akte(
+  actor: string,
+  patient: string,
+  limit = 20,
+  cursor: { startsAt: Date; id: string } | null = null,
+): Promise<AkteZeile[]> {
+  const { rows } = await asUserCommitted<AkteZeile>(actor, AKTE, [
+    patient,
+    limit,
+    cursor?.startsAt.toISOString() ?? null,
+    cursor?.id ?? null,
+  ]);
+  return rows;
+}
+
+async function auditEintraege(action: string) {
+  const { rows } = await asPostgres<{
+    subject_id: string;
+    actor_user_id: string;
+    outcome: string;
+    context: Record<string, unknown>;
+  }>(
+    'select subject_id, actor_user_id, outcome, context from public.audit_log where action = $1 order by occurred_at',
+    [action],
+  );
   return rows;
 }
 
@@ -317,13 +374,15 @@ describe('DOK-003: Behandlungsnachweis in der Akte', () => {
     }>(
       `select p.proname, p.prosecdef, p.proconfig
        from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-       where (n.nspname = 'public' and p.proname = 'list_patient_treatment_evidence')
+       where (n.nspname = 'public'
+              and p.proname in ('list_patient_treatment_evidence', 'list_patient_treatment_notes'))
           or (n.nspname = 'app' and p.proname in ('patient_record_page', 'can_read_treatment_evidence'))
        order by p.proname`,
     );
     expect(rows.map((r) => r.proname)).toEqual([
       'can_read_treatment_evidence',
       'list_patient_treatment_evidence',
+      'list_patient_treatment_notes',
       'patient_record_page',
     ]);
     for (const fn of rows) {
@@ -340,6 +399,155 @@ describe('DOK-003: Behandlungsnachweis in der Akte', () => {
         [organizationId, patients.erika],
       ),
     ).rejects.toThrow(/permission denied/i);
+  });
+});
+
+// =============================================================================
+// Klinische Sicht
+// =============================================================================
+
+describe('DOK-003: Klinische Sicht der Akte', () => {
+  let finalTermin: Stand;
+  let entwurfTermin: Stand;
+  let leererTermin: Stand;
+  let finalDoku: Stand;
+  let nachtragId: string;
+  let entwurfDoku: Stand;
+
+  const GEHEIM = 'Synthetisch: Geheimer Inhalt fuer die Akte.';
+
+  beforeAll(async () => {
+    await resetDatabase();
+    leererTermin = await vergangenerTermin(30, { patient: patients.erika });
+    entwurfTermin = await vergangenerTermin(20, { patient: patients.erika, staff: STAFF.tim });
+    finalTermin = await vergangenerTermin(10, { patient: patients.erika });
+    entwurfDoku = await entwurf(entwurfTermin.id, 'Synthetisch: Entwurf in der Akte.');
+    finalDoku = await finalisiert(finalTermin.id, GEHEIM);
+    const { rows } = await asUserCommitted<{ id: string }>(users.teamLead, NACHTRAGEN, [
+      finalDoku.id,
+      'Synthetisch: Nachtrag in der Akte.',
+    ]);
+    nachtragId = rows[0]!.id;
+  }, 120_000);
+
+  it('liefert therapist je Termin die Eintraege samt Inhalt - Haupteintrag zuerst', async () => {
+    const zeilen = await akte(users.therapist, patients.erika);
+
+    expect(zeilen.map((z) => z.appointment_id)).toEqual([
+      finalTermin.id,
+      entwurfTermin.id,
+      leererTermin.id,
+    ]);
+    expect(zeilen[0]).toMatchObject({
+      appointment_type: 'video',
+      staff_given_name: 'Anna',
+      organization_time_zone: 'Europe/Berlin',
+    });
+
+    const [haupt, nachtrag] = zeilen[0]!.notes;
+    expect(zeilen[0]!.notes).toHaveLength(2);
+    expect(haupt).toMatchObject({
+      id: finalDoku.id,
+      appointment_id: finalTermin.id,
+      addendum_to_note_id: null,
+      status: 'final',
+      content: GEHEIM,
+      version_count: 1,
+      author_name: 'Anna Beispiel',
+      last_editor_name: 'Anna Beispiel',
+      finalized_by_name: 'Anna Beispiel',
+    });
+    expect(typeof haupt!.created_at).toBe('string');
+    expect(haupt!.finalized_at).not.toBeNull();
+    expect(nachtrag).toMatchObject({
+      id: nachtragId,
+      addendum_to_note_id: finalDoku.id,
+      status: 'draft',
+      content: 'Synthetisch: Nachtrag in der Akte.',
+      version_count: 0,
+      author_name: 'Tim Teamleitung',
+      finalized_at: null,
+      finalized_by_name: null,
+    });
+
+    expect(zeilen[1]!.notes).toHaveLength(1);
+    expect(zeilen[1]!.notes[0]).toMatchObject({ id: entwurfDoku.id, status: 'draft' });
+    expect(zeilen[2]!.notes).toEqual([]);
+  });
+
+  it('protokolliert je gelesenem Eintrag treatment_note.viewed - ohne Inhalt (ADR-010)', async () => {
+    const vorher = (await auditEintraege('treatment_note.viewed')).length;
+
+    await akte(users.teamLead, patients.erika);
+
+    const eintraege = await auditEintraege('treatment_note.viewed');
+    const neue = eintraege.slice(vorher);
+    // Haupteintrag, Nachtrag und der Entwurf des zweiten Termins: drei
+    // Eintraege, keiner fuer den Termin ohne Dokumentation.
+    expect(neue.map((e) => e.subject_id).sort()).toEqual(
+      [finalDoku.id, nachtragId, entwurfDoku.id].sort(),
+    );
+    for (const e of neue) {
+      expect(e).toMatchObject({ actor_user_id: users.teamLead, outcome: 'success' });
+      expect(e.context).toMatchObject({ surface: 'web', patient_id: patients.erika });
+      expect(typeof e.context.appointment_id).toBe('string');
+      expect(JSON.stringify(e.context)).not.toContain('Geheim');
+      expect(JSON.stringify(e.context)).not.toContain('Nachtrag in der Akte');
+    }
+  });
+
+  it('protokolliert nichts, wenn die Seite keine Dokumentation enthaelt', async () => {
+    // Petra hat im Seed keine Termine - die Seite ist leer.
+    const vorher = await auditAnzahl();
+    expect(await akte(users.therapist, patients.petra)).toEqual([]);
+    expect(await auditAnzahl()).toBe(vorher);
+  });
+
+  it.each([
+    ['owner', users.ownerTherapist],
+    ['team_lead', users.teamLead],
+  ])('laesst %s lesen', async (_rolle, actor) => {
+    const zeilen = await akte(actor, patients.erika);
+    expect(zeilen[0]!.notes[0]!.content).toBe(GEHEIM);
+  });
+
+  it('laesst office nicht lesen (4.3) - die Akte oeffnet keinen zweiten Weg', async () => {
+    await expect(akte(users.office, patients.erika)).rejects.toThrow(
+      /not allowed to read treatment documentation/,
+    );
+  });
+
+  it('laesst ein Patientenkonto nicht lesen (4.6)', async () => {
+    await expect(akte(users.patientErika, patients.erika)).rejects.toThrow(
+      /not allowed to read treatment documentation/,
+    );
+  });
+
+  it('laesst einen nicht angemeldeten Zugriff nicht zu', async () => {
+    await expect(asAnon(AKTE, [patients.erika, 20, null, null])).rejects.toThrow(
+      /permission denied|not authenticated/,
+    );
+  });
+
+  it('haelt dieselbe Seitenregel wie der Nachweis', async () => {
+    const nachweisSeite = await nachweis(users.therapist, patients.erika, 2);
+    const akteSeite = await akte(users.therapist, patients.erika, 2);
+    expect(akteSeite.map((z) => z.appointment_id)).toEqual(
+      nachweisSeite.map((z) => z.appointment_id),
+    );
+
+    const letzte = akteSeite[akteSeite.length - 1]!;
+    const cursor = { startsAt: letzte.starts_at, id: letzte.appointment_id };
+    const naechsteNachweis = await nachweis(users.therapist, patients.erika, 2, cursor);
+    const naechsteAkte = await akte(users.therapist, patients.erika, 2, cursor);
+    expect(naechsteAkte.map((z) => z.appointment_id)).toEqual(
+      naechsteNachweis.map((z) => z.appointment_id),
+    );
+    expect(naechsteAkte.map((z) => z.appointment_id)).toEqual([leererTermin.id]);
+  });
+
+  it('weist ein Limit ausserhalb von 1 bis 50 ab', async () => {
+    await expect(akte(users.therapist, patients.erika, 51)).rejects.toThrow(/limit out of range/);
   });
 });
 
@@ -471,5 +679,14 @@ describe('DOK-003: Mandantentrennung', () => {
     const zeilen = await nachweis(fremderTherapeut, fremderPatient);
     expect(zeilen).toHaveLength(1);
     expect(zeilen[0]).toMatchObject({ documentation_status: 'draft' });
+  });
+
+  it('liefert die klinische Sicht eines fremden Patienten nicht', async () => {
+    expect(await akte(users.therapist, fremderPatient)).toEqual([]);
+    expect(await akte(users.ownerTherapist, fremderPatient)).toEqual([]);
+
+    const eigene = await akte(fremderTherapeut, fremderPatient);
+    expect(eigene).toHaveLength(1);
+    expect(eigene[0]!.notes[0]!.content).toBe('Synthetischer Inhalt einer fremden Praxis.');
   });
 });

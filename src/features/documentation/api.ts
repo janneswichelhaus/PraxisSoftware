@@ -424,3 +424,35 @@ export function naechsteAkteSeite(
   const letzte = seite[seite.length - 1]!;
   return { beforeStartsAt: letzte.starts_at, beforeId: letzte.appointment_id };
 }
+
+/**
+ * Klinische Sicht der Akte: je Termin seine Eintraege - Haupteintrag zuerst,
+ * Nachtraege in Entstehungsreihenfolge - mit denselben Feldern wie am Termin.
+ * Ein Termin ohne Dokumentation hat eine leere Liste.
+ */
+const patientTreatmentNotesSchema = recordAppointmentSchema.extend({
+  notes: z.array(treatmentNoteSchema),
+});
+
+export type PatientTreatmentNotesEntry = z.infer<typeof patientTreatmentNotesSchema>;
+
+/**
+ * Eine Seite der klinischen Sicht.
+ *
+ * Jeder Eintrag der Seite wird serverseitig als gelesen protokolliert
+ * (treatment_note.viewed), auch Nachtraege. Deshalb fragt die Oberflaeche
+ * diese Sicht nur fuer Rollen an, die sie lesen duerfen - sonst entstuende
+ * ein Auditeintrag fuer einen Zugriff, der ohnehin abgewiesen wird.
+ */
+export async function fetchPatientTreatmentNotesPage(
+  patientId: string,
+  cursor: AkteCursor | null,
+): Promise<PatientTreatmentNotesEntry[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_treatment_notes', {
+    p_patient_id: patientId,
+    ...seitenArgumente(cursor),
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Behandlungsdokumentation konnte nicht geladen werden.');
+  return z.array(patientTreatmentNotesSchema).parse(data ?? []);
+}
