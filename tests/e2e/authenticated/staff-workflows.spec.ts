@@ -194,7 +194,13 @@ test.describe('STAFF-001: Durchsetzung am Server', () => {
       p_location_id: null,
       p_allow_outside_working_hours: true,
     });
-    expect(versuch.status(), 'inaktive Person darf keinen neuen Termin bekommen').toBe(400);
+    // create_appointment weist die Zuordnung über app.is_assignable_therapist
+    // mit dem Fehlercode P0002 ab (CAL-001); PostgREST übersetzt P0002 in 500,
+    // nur P0001 in 400. Geprüft wird deshalb die Abweisung und ihr Grund, nicht
+    // der Statuscode - derselbe Maßstab wie im Datenbanktest.
+    expect(versuch.ok(), 'inaktive Person darf keinen neuen Termin bekommen').toBe(false);
+    const fehler = (await versuch.json()) as { message?: string };
+    expect(fehler.message).toMatch(/not assignable|not active/);
 
     await annaReaktivieren(request);
   });
