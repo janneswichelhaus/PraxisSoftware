@@ -57,7 +57,7 @@ Monate. Sie sollten laufen, während Spur A an Etappe 1 bis 3 arbeitet.
 
 ---
 
-## Ist-Stand (2026-09-03)
+## Ist-Stand (2026-09-04)
 
 Gebaut: Anmeldung und Sitzung · Rollen und RLS · Audit-Log mit
 eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus
@@ -65,13 +65,15 @@ eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus
 abschließen, Praxisraster, Arbeitszeiten, Verschieben (CAL-001 bis CAL-006) ·
 Behandlungsdokumentation als Entwurf, Finalisierung von Hand, Versionierung,
 Nachtrag (DOK-001, DOK-002, ADR-016; PR #5) · Mitarbeiterverwaltung: Liste,
-Stammdaten, Beschäftigungsstatus, Privatdaten nur für owner (STAFF-001).
+Stammdaten, Beschäftigungsstatus, Privatdaten nur für owner (STAFF-001) ·
+Dokumentation in der Akte, rollenabhängig projiziert: Behandlungsnachweis für
+Office, Einträge mit Inhalt für klinische Rollen (DOK-003).
 
 Regelwerk: `PROJECT_PRINCIPLES.md` 0.3 mit §15.1 „Begründete Annahmen" und
 dem Annahmenregister `docs/decisions/ASSUMPTIONS.md`; ein Loop ist ein Epic
 aus mehreren Stories.
 
-Nicht gebaut: alles Übrige, insbesondere Dokumentation in der Akte (DOK-003),
+Nicht gebaut: alles Übrige, insbesondere automatische Finalisierung (DOK-004),
 Abrechnung, Löschung, Fragebögen, Portal.
 
 ---
@@ -90,7 +92,7 @@ gewählt.
 | --- | ------- | ------------------------------------------------------------------------------------------ | ---------------------- |
 | 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **fertig** (PR #5)     |
 | 2   | DOK-002 | Finalisierung von Hand, Versionierung, Nachtrag als eigener Eintrag (ADR-016 Punkte 4 bis 6) | **fertig** (PR #5)     |
-| 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **frei** — C1/C2 als Annahme nach §15.1 |
+| 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **fertig** — C1 vorläufig als ANN-006 |
 | 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7) — **braucht erst eine Entscheidung, siehe unten** | DOK-002                |
 | 4   | LOE-001 | Datenklassen und Aufbewahrungsfristen als echte Struktur, Legal Hold                       | —                      |
 | 5   | LOE-002 | Löschvorgang, Wiederanwendung nach Restore, `pnpm test:db`                                 | LOE-001                |
@@ -354,9 +356,10 @@ Push-Nachricht und E-Mail. Sie **baut nichts** und stoppt nach dem Bericht.
 - Die Zeitangabe ist intern UTC (`50 5 * * 1`). **Nach der Zeitumstellung Ende
   Oktober fällt sie auf 06:50 Uhr** — wer das nicht will, ändert den
   Cron-Ausdruck dann auf `50 6 * * 1`.
-- Die Routine liest den Branch `claude/physio-platform-features-u7uy15`,
-  solange diese Datei nicht auf `main` liegt. Nach einem Merge nach `main`
-  entfällt der Umweg von allein.
+- Seit dem Merge nach `main` (PR #5, PR #8) **liest die Routine `main`.** Der
+  Branch-Fallback im Prompt (`claude/physio-platform-features-u7uy15`, nur
+  falls diese Datei fehlt) ist damit inaktiv; er kann bei Gelegenheit aus dem
+  Prompt entfernt werden, schadet aber nicht.
 - Abschalten oder Takt ändern geht über die Routines-Oberfläche auf claude.ai
   oder durch eine Anweisung in einer Session.
 
@@ -374,6 +377,6 @@ Skill-Schritt I durchlaufen ist.
 | STAFF-001           | fertig                      | 2026-08-30     | `e70775a`, `ca907e9` |
 | DOK-001             | fertig                      | 2026-09-01     | `7e18906`, Merge PR #5 |
 | DOK-002             | fertig                      | 2026-09-02     | `491a0c0`, Merge PR #5 |
-| DOK-003             | **bereit** — nicht begonnen | —              | —      |
+| DOK-003             | fertig                      | 2026-09-04     | `21d85dd`, `f565124` |
 
-Zuletzt aktualisiert: 2026-09-03
+Zuletzt aktualisiert: 2026-09-04

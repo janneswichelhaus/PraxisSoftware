@@ -272,7 +272,7 @@ lesbar; ob sie bereinigt werden müssen, entscheidet die Prüfung.
 | Kategorie | Praxisprozess |
 | Herkunft | CAL-004 |
 | Status | offen, seit 2026-08-30 (rückwirkend erfasst 2026-09-03) |
-| Wiedervorlage | DOK-003 (Dokumentation in der Akte), spätestens ABR-002 (Leistungserfassung am abgeschlossenen Termin) |
+| Wiedervorlage | ABR-002 (Leistungserfassung am abgeschlossenen Termin); DOK-003 hat die Kopplung geprüft und nicht eingeführt, siehe Nachtrag |
 
 **Annahme.** Ein Termin kann abgeschlossen werden, ohne dass eine
 Behandlungsdokumentation existiert. Der Abschluss gibt den Zeitraum nicht frei
@@ -295,9 +295,17 @@ Abnahmeschritt CAL-004 in
 
 **Änderungspfad.** Entweder eine Prüfung in `complete_appointment` ergänzen
 oder den Abschluss aus der Finalisierung der Dokumentation heraus auslösen —
-Aufwand `klein` bis `mittel`, je nach Variante. Die Entscheidung fällt bei
-DOK-003, spätestens wenn ABR-002 abgeschlossene Termine zu Leistungen macht,
-und wird hier nachgetragen.
+Aufwand `klein` bis `mittel`, je nach Variante. Die Entscheidung fällt
+spätestens, wenn ABR-002 abgeschlossene Termine zu Leistungen macht, und wird
+hier nachgetragen.
+
+**Nachtrag 2026-09-04 (DOK-003).** Die Kopplung wird nicht eingeführt. Seit
+DOK-003 zeigt die Akte jeden begonnenen Termin mit seinem Dokumentationsstand:
+ein abgeschlossener Termin ohne Dokumentation steht dort für Praxisleitung,
+Therapeut:innen und Verwaltung als „Abgeschlossen" mit „Keine Dokumentation."
+— sichtbar, ohne dass der Terminabschluss blockiert. Sichtbarkeit statt
+Sperre ist die leichter umkehrbare Option (§16); ob eine Sperre nötig wird,
+zeigt sich, wenn ABR-002 Leistungen an abgeschlossene Termine bindet.
 
 ### ANN-006 — Umfang und Protokollierung des Behandlungsnachweises in der Akte
 
