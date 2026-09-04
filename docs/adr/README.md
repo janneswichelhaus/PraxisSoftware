@@ -45,13 +45,16 @@ Kein ADR nötig für alltägliche Umsetzungsdetails.
 
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.2)
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.3)
 - `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist
+- `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
 - `docs/adr/` — was entschieden wurde und warum
 
 Der übliche Weg: Ein Punkt aus `OPEN_DECISIONS.md` wird entschieden, bekommt
 hier ein ADR und wird dort als erledigt markiert. Betrifft die Entscheidung die
 Prinzipien, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit nachgezogen.
+Eine bestätigte Annahme aus `ASSUMPTIONS.md`, deren Rücknahme teuer wäre, geht
+denselben Weg und behält dort einen Verweis auf das ADR.
 
 ## Bestehende ADRs
 

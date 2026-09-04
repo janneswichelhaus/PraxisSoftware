@@ -29,7 +29,10 @@ Die Arbeit läuft in zwei Spuren, die sich gegenseitig blockieren können.
 **Spur A — Bauen.** Feature-Loops. Das macht Claude.
 
 **Spur B — Entscheiden.** Offene Punkte aus `OPEN_DECISIONS.md`. Das macht
-Jannes, teils mit externer Beratung. **Ein Loop kann das nicht ersetzen.**
+Jannes, teils mit externer Beratung. **Ein Loop kann das nicht ersetzen.** Er
+kann es aber überbrücken: Seit `PROJECT_PRINCIPLES.md` 0.3 (§15.1) trifft ein
+Loop eine registrierte, reversible Annahme, statt auf die Entscheidung zu
+warten. Die Entscheidung selbst bleibt bei Jannes und der Datenschutzprüfung.
 
 Wenn Spur B stockt, läuft Spur A leer — deshalb steht bei jeder Etappe, welche
 Entscheidung sie voraussetzt und wann sie spätestens fällig ist.
@@ -54,15 +57,21 @@ Monate. Sie sollten laufen, während Spur A an Etappe 1 bis 3 arbeitet.
 
 ---
 
-## Ist-Stand (2026-09-01)
+## Ist-Stand (2026-09-03)
 
 Gebaut: Anmeldung und Sitzung · Rollen und RLS · Audit-Log mit
 eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus
 (PAT-001 bis PAT-003) · Termine anlegen, Kalender, bearbeiten, absagen,
-abschließen, Praxisraster, Arbeitszeiten, Verschieben (CAL-001 bis CAL-006).
+abschließen, Praxisraster, Arbeitszeiten, Verschieben (CAL-001 bis CAL-006) ·
+Behandlungsdokumentation als Entwurf, Finalisierung von Hand, Versionierung,
+Nachtrag (DOK-001, DOK-002, ADR-016; PR #5).
 
-Nicht gebaut: alles Übrige, insbesondere klinische Dokumentation, Abrechnung,
-Löschung, Fragebögen, Portal.
+Regelwerk: `PROJECT_PRINCIPLES.md` 0.3 mit §15.1 „Begründete Annahmen" und
+dem Annahmenregister `docs/decisions/ASSUMPTIONS.md`; ein Loop ist ein Epic
+aus mehreren Stories.
+
+Nicht gebaut: alles Übrige, insbesondere Dokumentation in der Akte (DOK-003),
+Abrechnung, Löschung, Fragebögen, Portal.
 
 ---
 
@@ -78,9 +87,9 @@ gewählt.
 
 | #   | Loop    | Inhalt                                                                                     | Voraussetzung          |
 | --- | ------- | ------------------------------------------------------------------------------------------ | ---------------------- |
-| 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **frei** (ADR-016)     |
-| 2   | DOK-002 | Finalisierung von Hand, Versionierung, Nachtrag als eigener Eintrag (ADR-016 Punkte 4 bis 6) | DOK-001                |
-| 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | DOK-002, C1/C2 berührt |
+| 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **fertig** (PR #5)     |
+| 2   | DOK-002 | Finalisierung von Hand, Versionierung, Nachtrag als eigener Eintrag (ADR-016 Punkte 4 bis 6) | **fertig** (PR #5)     |
+| 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **frei** — C1/C2 als Annahme nach §15.1 |
 | 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7) — **braucht erst eine Entscheidung, siehe unten** | DOK-002                |
 | 4   | LOE-001 | Datenklassen und Aufbewahrungsfristen als echte Struktur, Legal Hold                       | —                      |
 | 5   | LOE-002 | Löschvorgang, Wiederanwendung nach Restore, `pnpm test:db`                                 | LOE-001                |
@@ -112,6 +121,12 @@ unterschiedlichem Preis:
 
 Die Wahl ist eine Architekturentscheidung und gehört vor DOK-004, nicht hinein.
 DOK-002 und DOK-003 sind davon nicht betroffen.
+
+Seit `PROJECT_PRINCIPLES.md` 0.3 (§15.1) kann diese Wahl im Loop DOK-004 als
+registrierte Annahme getroffen werden, sofern sie an einer Stelle reversibel
+verankert ist. `pg_cron` bliebe als neue Infrastrukturabhängigkeit eine
+bewusste Entscheidung mit Prüfung gegen §11 und ADR-015 — kein Stopp, aber
+auch kein beiläufiger Einbau.
 
 **Ergebnis der Etappe:** Die Praxis könnte damit arbeiten — Termine
 dokumentieren, Leistungen erfassen, Rechnungen stellen. Das ist der Punkt, ab
@@ -231,12 +246,12 @@ niedrig, ohne die Qualität zu senken.
 
 **Sitzungszuschnitt**
 
-1. **Ein Loop = eine Session = ein vertikaler Schnitt.** Danach Session
+1. **Ein Loop = eine Session = ein Epic aus mehreren Stories.** Je Story ein
+   Commit und die eng betroffenen Checks, kein Zwischenstopp. Danach Session
    beenden, nicht weiterplaudern. Jeder weitere Turn trägt den gesamten
    bisherigen Kontext mit.
-2. **Migration und Oberfläche trennen**, wenn beides für sich groß ist. Zwei
-   kleine Sessions sind billiger als eine, die am Ende viermal die Testsuite
-   fährt.
+2. **Stories so schneiden, dass jeder Diff am Stück lesbar bleibt.** Die
+   vollständige Testsuite läuft einmal am Ende des Epics, nicht je Story.
 3. **Neues Thema = neue Session.** Rückfragen zum laufenden Loop dagegen in
    derselben.
 
@@ -355,6 +370,8 @@ Skill-Schritt I durchlaufen ist.
 | ------------------- | --------------------------- | -------------- | ------ |
 | PAT-001 bis PAT-003 | fertig                      | vor 2026-09-01 | —      |
 | CAL-001 bis CAL-006 | fertig                      | vor 2026-09-01 | —      |
-| DOK-001             | **bereit** — nicht begonnen | —              | —      |
+| DOK-001             | fertig                      | 2026-09-01     | `7e18906`, Merge PR #5 |
+| DOK-002             | fertig                      | 2026-09-02     | `491a0c0`, Merge PR #5 |
+| DOK-003             | **bereit** — nicht begonnen | —              | —      |
 
-Zuletzt aktualisiert: 2026-09-01
+Zuletzt aktualisiert: 2026-09-03

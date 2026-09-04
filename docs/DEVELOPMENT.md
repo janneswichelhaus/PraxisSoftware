@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand: 2026-08-30 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-03 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
@@ -131,7 +131,8 @@ wieder her.
 Die manuellen Klickwege je Feature stehen in
 [`abnahme/`](abnahme/) — eine Datei je Roadmap-Etappe. Für den heutigen Stand:
 [Patientenverwaltung und Termine](abnahme/etappe-0-patienten-und-termine.md)
-(PAT-002, PAT-003, CAL-001 bis CAL-006).
+(PAT-002, PAT-003, CAL-001 bis CAL-006) und
+[Behandlungsdokumentation](abnahme/etappe-1-kernprozess.md) (DOK-001, DOK-002).
 
 Sie liegen dort statt hier, weil sie mit jedem Loop wachsen und diese Datei
 sonst unlesbar würde.
@@ -208,6 +209,10 @@ blockieren:
    inklusive der sieben dort genannten Vorbedingungen (Punkt B2).
 4. Regulatorische Prüfung der Zweckbestimmung nach
    [ADR-006](adr/ADR-006-medical-device-boundary.md) (Punkt B1).
+5. Alle Annahmen der Kategorien Datenschutz und Recht im
+   [Annahmenregister](decisions/ASSUMPTIONS.md) sind bestätigt oder geändert
+   umgesetzt; kein Eintrag dieser Kategorien steht mehr auf `offen`
+   (`PROJECT_PRINCIPLES.md` §15.1).
 
 ## Audit
 
@@ -217,9 +222,20 @@ Organisation begrenzt, mit Pagination und Filtern nach Zeitraum, Benutzer und
 Aktion. Die Spalte `context` wird grundsätzlich nicht herausgegeben. Jeder
 Aufruf wird selbst als `audit_log.read` protokolliert.
 
-Geschrieben wird ausschließlich über `log_patient_record_view`. Beide Funktionen
-laufen als `SECURITY DEFINER` mit leerem `search_path` und prüfen Rolle und
-Organisation selbst, weil sie RLS umgehen.
+Geschrieben werden Auditeinträge ausschließlich innerhalb der jeweiligen
+Fachfunktion — `log_patient_record_view` für das Öffnen einer Akte, die
+Termin- und Arbeitszeitfunktionen für ihre Vorgänge. Alle laufen als
+`SECURITY DEFINER` mit leerem `search_path` und prüfen Rolle und Organisation
+selbst, weil sie RLS umgehen.
+
+Für die Behandlungsdokumentation gilt zusätzlich: `public.treatment_notes` und
+`public.treatment_note_versions` haben **kein** `SELECT`-Recht und keine Policy.
+Gelesen wird ausschließlich über `get_treatment_note` und
+`get_treatment_note_versions`, und beide Funktionen schreiben ihren Eintrag —
+`treatment_note.viewed` beziehungsweise `treatment_note.history_viewed` — in
+derselben Transaktion. Damit gibt es keinen Weg, klinischen Freitext ohne
+Protokolleintrag zu lesen (ADR-010). Die Begründung einer Korrektur zählt dabei
+wie Inhalt: sie steht in der Versionstabelle, niemals im Auditlog.
 
 Der Ereigniskatalog steht doppelt: als Check-Constraint auf `audit_log.action`
 und in `src/features/audit/actions.ts`. Ein Datenbanktest hält beide
@@ -251,6 +267,19 @@ deckungsgleich.
    Versuche wäre eine autonome Transaktion nötig — offen.
 7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
    Auswertung oder Alarmierung.
+8. **Keine Anhänge zur Behandlungsdokumentation.** Dateiablage ist als Punkt E8
+   in `docs/decisions/OPEN_DECISIONS.md` offen (Ablageort, Zugriffsregeln,
+   signierte URLs, Retention nach ADR-008); ADR-015 führt dieselbe Frage als
+   offene Folgefrage. Vor einer Umsetzung braucht es dafür einen ADR. Das
+   Datenmodell verbaut sie nicht: eine Anhangstabelle kommt additiv hinzu.
+9. **Keine automatische Finalisierung nach Frist.** ADR-016 Punkt 7 sieht sie
+   vor; das Projekt hat keinen Scheduler, und welcher Mechanismus dafür
+   zulässig ist, ist eine eigene Architekturentscheidung (DOK-004). Bis dahin
+   bleibt ein Entwurf unbegrenzt Entwurf — und ist damit kein Nachweis im Sinne
+   von §630f.
+10. **Ein Termin mit Dokumentation lässt sich weiterhin absagen.** Ob das
+    fachlich zulässig sein soll, ist offen; der Entwurf bleibt in diesem Fall
+    erhalten und lesbar, es geht nichts verloren.
 
 ## Manuelle Schritte im Repository
 

@@ -159,6 +159,8 @@ begin
     v_org, v_actor, 'organization.appointment_grid_changed', 'organization', v_org, 'success',
     jsonb_build_object(
       'surface', 'web',
+      -- ANN-004 (docs/decisions/ASSUMPTIONS.md): Alt- und Neuwert im Kontext,
+      -- weil ein Minutenraster keinen Personenbezug hat.
       'previous_minutes', v_alt,
       'minutes', p_minutes
     )

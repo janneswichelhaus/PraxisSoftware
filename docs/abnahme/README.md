@@ -25,9 +25,10 @@ durchführbar — dort greifen `pnpm test:db` und die Komponententests.
 Eine Datei je Etappe aus [`../development/ROADMAP.md`](../development/ROADMAP.md).
 Innerhalb einer Datei eine Überschrift je Loop, benannt nach dessen Kennung.
 
-| Datei                                                                  | Etappe                 | Loops                                 |
-| ---------------------------------------------------------------------- | ---------------------- | ------------------------------------- |
-| [etappe-0-patienten-und-termine.md](etappe-0-patienten-und-termine.md) | vor der Roadmap gebaut | PAT-002, PAT-003, CAL-001 bis CAL-006 |
+| Datei                                                                  | Etappe                                      | Loops                                 |
+| ---------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------- |
+| [etappe-0-patienten-und-termine.md](etappe-0-patienten-und-termine.md) | vor der Roadmap gebaut                      | PAT-002, PAT-003, CAL-001 bis CAL-006 |
+| [etappe-1-kernprozess.md](etappe-1-kernprozess.md)                     | Etappe 1 — Der Kernprozess wird vollständig | DOK-001, DOK-002                      |
 
 ## Für Loops
 

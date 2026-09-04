@@ -15,10 +15,11 @@
 | 1    | `../../PROJECT_PRINCIPLES.md`        | Leitplanken. Verbindlich.                      |
 | 2    | `../adr/`                            | Architekturentscheidungen. Verbindlich.        |
 | 3    | konkrete Feature-Spezifikation       | Scope einer Aufgabe. Verbindlich für sie.      |
-| 4    | `../PRODUCT_VISION.md`               | Zielbild. Nicht normativ.                      |
-| 5    | **dieser Ordner (`docs/product/`)**  | Ideen und Rohmaterial. **Nicht normativ.**     |
+| 4    | `../decisions/ASSUMPTIONS.md`        | Begründete, vorläufige Annahmen (§15.1).       |
+| 5    | `../PRODUCT_VISION.md`               | Zielbild. Nicht normativ.                      |
+| 6    | **dieser Ordner (`docs/product/`)**  | Ideen und Rohmaterial. **Nicht normativ.**     |
 
-Rang 5 ist die **schwächste** Ebene im Projekt. Ein Ideenspeicher-Eintrag
+Rang 6 ist die **schwächste** Ebene im Projekt. Ein Ideenspeicher-Eintrag
 verliert gegen alles darüber — ohne Diskussion und ohne Auslegung zugunsten
 der Idee. Er verliert auch gegen `docs/decisions/OPEN_DECISIONS.md`: was dort
 als offen geführt wird, ist offen, egal wie ausgearbeitet die Idee hier

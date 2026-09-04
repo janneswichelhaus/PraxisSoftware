@@ -11,9 +11,15 @@ import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetail
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import { SchedulingPage } from '@/features/scheduling/SchedulingPage';
+import { TreatmentNotePage } from '@/features/documentation/TreatmentNotePage';
+import { TreatmentNoteRevisionPage } from '@/features/documentation/TreatmentNoteRevisionPage';
+import { TreatmentNoteAddendumPage } from '@/features/documentation/TreatmentNoteAddendumPage';
+import { TreatmentNoteHistoryPage } from '@/features/documentation/TreatmentNoteHistoryPage';
 import {
   canManageAppointments,
   canReadPatientDirectory,
+  canReadTreatmentNote,
+  canWriteTreatmentNote,
   isOwner,
   type CurrentUser,
 } from '@/features/session/types';
@@ -36,6 +42,10 @@ export function AuthenticatedRoutes({
   const showDirectory = canReadPatientDirectory(user.roles);
   const showSecurity = isOwner(user.roles);
   const showAppointments = canManageAppointments(user.roles);
+  const showDocumentation = canWriteTreatmentNote(user.roles);
+  // Der Aenderungsverlauf ist ein Lesepfad: die Praxisleitung sieht ihn, ohne
+  // selbst zu dokumentieren (ADR-016 Punkt 8, PROJECT_PRINCIPLES.md 4.1/4.2).
+  const showHistory = canReadTreatmentNote(user.roles);
 
   return (
     <AppShell user={user} onSignOut={onSignOut}>
@@ -63,6 +73,32 @@ export function AuthenticatedRoutes({
             />
             <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
           </>
+        ) : null}
+        {showDocumentation ? (
+          <>
+            <Route
+              path="/termine/:appointmentId/dokumentation"
+              element={<TreatmentNotePage user={user} />}
+            />
+            <Route
+              path="/termine/:appointmentId/dokumentation/:noteId/bearbeiten"
+              element={<TreatmentNotePage user={user} />}
+            />
+            <Route
+              path="/termine/:appointmentId/dokumentation/:noteId/korrektur"
+              element={<TreatmentNoteRevisionPage user={user} />}
+            />
+            <Route
+              path="/termine/:appointmentId/dokumentation/:noteId/nachtrag"
+              element={<TreatmentNoteAddendumPage user={user} />}
+            />
+          </>
+        ) : null}
+        {showHistory ? (
+          <Route
+            path="/termine/:appointmentId/dokumentation/:noteId/verlauf"
+            element={<TreatmentNoteHistoryPage user={user} />}
+          />
         ) : null}
         {showSecurity ? <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} /> : null}
         <Route path="*" element={<Navigate to="/" replace />} />

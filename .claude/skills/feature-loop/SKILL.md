@@ -1,20 +1,25 @@
 ---
 name: feature-loop
-description: Strukturierter Ablauf für ein Feature in diesem Repository - Spec, gezielte Inspektion, Plan, kleinster vertikaler Schnitt, Verifikation, Selbstreview, begrenzter Fix-Loop, Abschlussbericht. Nur auf ausdrücklichen Aufruf mit /feature-loop <Aufgabe>.
+description: Strukturierter Ablauf für ein Epic in diesem Repository - Spec je Story, gezielte Inspektion, Plan, Story für Story bauen und verifizieren, Selbstreview, Fix-Loop, Abschlussbericht mit Annahmen. Nur auf ausdrücklichen Aufruf mit /feature-loop <Aufgabe>.
 disable-model-invocation: true
 ---
 
 # Feature Loop
 
-Ablauf für **eine** Aufgabe. Am Ende wird gestoppt.
+Ablauf für **einen Auftrag**: in der Regel ein Epic aus mehreren
+zusammengehörigen Stories, mindestens ein vollständiger vertikaler Schnitt. Am
+Ende wird gestoppt.
 
 Die inhaltlichen Regeln stehen in `CLAUDE.md`, `PROJECT_PRINCIPLES.md` und den
-ADRs. Dieser Skill wiederholt sie nicht — er beschreibt nur die Reihenfolge und
-die Abbruchbedingungen.
+ADRs. Dieser Skill wiederholt sie nicht — er beschreibt nur die Reihenfolge,
+den Zuschnitt und die Abbruchbedingungen.
 
 **Zuerst `docs/development/ROADMAP.md` lesen** — Einordnung des Auftrags,
 Voraussetzungen des Schritts, Credit-Regeln. Fehlt eine dort genannte
-Voraussetzung aus Spur B, wird das gemeldet und der Loop nicht begonnen.
+Voraussetzung aus Spur B, gilt `PROJECT_PRINCIPLES.md` §15.1: Ist sie als
+begründete Annahme reversibel überbrückbar, wird sie angenommen und
+registriert; fällt sie in die Hard-Stop-Liste, wird das gemeldet und nur der
+davon abhängige Teil nicht begonnen.
 
 ---
 
@@ -23,22 +28,34 @@ Voraussetzung aus Spur B, wird das gemeldet und der Loop nicht begonnen.
 Aus dem Auftrag ableiten und kurz festhalten:
 
 - **Ziel** — in einem Satz
-- **In Scope** / **Out of Scope**
-- **Testbare Akzeptanzkriterien** — jedes muss durch einen Test oder eine
-  andere objektive Prüfung belegbar sein
+- **Stories** — der Auftrag wird in Stories geschnitten (`<KÜRZEL>-NNN`), jede
+  ein vertikaler Schnitt von Datenbank bis Oberfläche, geordnet nach
+  Abhängigkeit
+- **In Scope** / **Out of Scope** — was das Epic bewusst nicht enthält
+- **Testbare Akzeptanzkriterien je Story** — jedes muss durch einen Test oder
+  eine andere objektive Prüfung belegbar sein
 - **Security- und Datenschutzanforderungen** — betroffene Rollen, Sichtbarkeit,
-  Auditpflicht, Datenminimierung
+  Auditpflicht, Datenminimierung, Datenklasse und Frist neuer Tabellen
 - **Relevante ADRs** — Nummern, nach dem Index in `CLAUDE.md`
 - **UI-Erwartung**, falls die Oberfläche betroffen ist
+- **Annahmen** — jede Festlegung, die Auftrag, Prinzipien und ADRs nicht
+  treffen, wird hier als `ANN-NNN` vorgemerkt (Abschnitt „Annahmen statt
+  Rückfragen" in `CLAUDE.md`)
 
-**Nachfragen**, wenn eine fachliche Entscheidung fehlt: wer darf etwas sehen,
-was ist der Praxisprozess, welche Daten gehören dazu, was passiert im
-Konfliktfall. Solche Fragen darf der Agent nicht selbst beantworten
-(`PROJECT_PRINCIPLES.md` §2.3).
+**Recherchieren statt raten**, wenn eine datenschutz-, rechts- oder
+fachbezogene Festlegung fehlt: erst die Projektdokumente, dann Gesetzestext und
+Behördenleitlinien, dann Sekundärquellen. Das Ergebnis wird als Annahme
+getroffen und begründet — mit Quellen, mit Unsicherheiten, mit Änderungspfad.
 
-**Nicht nachfragen** bei rein technischen Details, die innerhalb der
-bestehenden ADRs sinnvoll entschieden werden können — Benennung, Dateiablage,
-Query-Form, Komponentenstruktur. Entscheiden, kurz begründen, weiterarbeiten.
+**Nachfragen** nur, wenn die Festlegung in die Hard-Stop-Liste fällt
+(`PROJECT_PRINCIPLES.md` §15.1). Dann die Frage so stellen, dass Jannes sie
+ohne Kontextwechsel beantworten kann: Optionen, Empfehlung, Konsequenzen.
+Alles im Epic, was nicht davon abhängt, wird vorher fertiggestellt.
+
+**Nicht nachfragen** bei technischen Details, die innerhalb der bestehenden
+ADRs sinnvoll entschieden werden können — Benennung, Dateiablage, Query-Form,
+Komponentenstruktur. Entscheiden, kurz begründen, weiterarbeiten. Solche
+Details sind keine Annahmen im Sinne des Registers.
 
 ### Ideenspeicher konsultieren
 
@@ -49,7 +66,7 @@ wenn eine zum Auftrag passt.
 Zweck ist ausschließlich: bessere Rückfragen stellen und offensichtliche
 Sackgassen in Benennung und Modellierung vermeiden.
 
-- Rang 5. **Begründet nie Scope.** Kein Eintrag von dort ist ein Auftrag.
+- Rang 6. **Begründet nie Scope.** Kein Eintrag von dort ist ein Auftrag.
 - **Nichts vorbauen** — keine Spalte, kein Feld, kein Statuswert, kein
   UI-Element „für später" (`PROJECT_PRINCIPLES.md` §11, ADR-014).
 - Würde ein Hinweis von dort Mehrarbeit oder eine fachliche Entscheidung
@@ -59,7 +76,7 @@ Sackgassen in Benennung und Modellierung vermeiden.
 
 ## B. INSPECT
 
-Nur die für die Aufgabe relevanten Teile des Repositories ansehen. Kein
+Nur die für das Epic relevanten Teile des Repositories ansehen. Kein
 vollständiges Durchsuchen.
 
 - Erst die vermutete Stelle direkt öffnen, dann gezielt suchen.
@@ -70,8 +87,8 @@ vollständiges Durchsuchen.
 
 ## C. PLAN
 
-Kurzen Implementierungsplan schreiben, wenn die Änderung mindestens eines
-davon berührt:
+Kurzen Implementierungsplan schreiben, wenn das Epic mindestens eines davon
+berührt:
 
 - Datenmodell oder Migrationen
 - Authentifizierung, Rollen oder RLS
@@ -79,24 +96,34 @@ davon berührt:
 - externe Datenflüsse
 - vergleichbare Komplexität
 
-Sonst direkt bauen. Ein Plan für eine lokal begrenzte Änderung ist verlorene
-Zeit.
+Der Plan nennt die Story-Reihenfolge und je Story die Migrationen, Policies,
+RPCs, Komponenten und Tests. Für eine einzelne, lokal begrenzte Story ist ein
+Plan verlorene Zeit — dann direkt bauen.
 
 ## D. BUILD
 
-Den **kleinsten vollständigen vertikalen Schnitt** implementieren, der die
-Akzeptanzkriterien erfüllt.
+**Story für Story**, jede als eigener Commit mit vollständigem vertikalem
+Schnitt: Migration, Policy, RPC, Oberfläche, Tests, Abnahmeschritte in
+`docs/abnahme/`, Registereinträge. Zwischen den Stories wird weder
+gestoppt noch berichtet — der Bericht kommt am Ende des Epics.
 
-Kein Scope Creep, keine prophylaktischen Zukunftsfeatures, keine ungefragten
-Refactorings.
+Zum Epic gehört, was seine Akzeptanzkriterien brauchen, auch wenn es im Auftrag
+nicht wörtlich steht: ein Seed-Datensatz, ein Testkonto, eine Audit-Aktion,
+eine Datenklasse. Nicht zum Epic gehört, was ein anderes Epic wäre: keine
+prophylaktischen Zukunftsfeatures, keine ungefragten Refactorings außerhalb
+der berührten Module. Was auffällt, aber nicht dazugehört, kommt als Vorschlag
+in den Bericht.
+
+Jede Annahme, die beim Bauen fällt, wird sofort ins Register geschrieben und an
+ihrer Stelle im Code mit `ANN-NNN` markiert — nicht am Ende gesammelt.
 
 ## E. VERIFY
 
-**Während der Entwicklung** nur die eng betroffenen Checks laufen lassen —
-einzelne Testdatei, `pnpm typecheck`, betroffene Komponententests.
+**Nach jeder Story** nur die eng betroffenen Checks — einzelne Testdatei,
+`pnpm typecheck`, betroffene Komponententests, bei Migrationen der zugehörige
+Datenbanktest.
 
-**Nach abgeschlossener Implementierung** die für den Umfang passenden
-CI-äquivalenten Checks:
+**Nach dem Epic** die für den Umfang passenden CI-äquivalenten Checks:
 
 | Änderung betrifft …         | dann mindestens                                                 |
 | --------------------------- | --------------------------------------------------------------- |
@@ -128,7 +155,7 @@ Umgebungsgründen nicht geht, wird als solches benannt.
 
 ## F. REVIEW
 
-Eigenen Diff (`git diff`) durchgehen auf:
+Eigenen Diff (`git diff main...HEAD`) durchgehen auf:
 
 - Akzeptanzkriterien vollständig erfüllt
 - ADR-Konformität
@@ -138,28 +165,40 @@ Eigenen Diff (`git diff`) durchgehen auf:
 - unnötiger Scope
 - fehlende Tests, besonders für Negativfälle
 - versehentliche Secrets oder Logging sensibler Daten
+- Annahmen: jede im Register, jede im Code markiert, jede mit Änderungspfad;
+  keine, die in die Hard-Stop-Liste fällt
 
 ## G. FIX LOOP
 
 Konkrete gefundene Fehler selbst beheben und **gezielt** erneut testen — nicht
 die ganze Suite nach jeder Zeile.
 
-**Höchstens drei erfolglose Reparaturversuche für dieselbe Ursache.**
+**Höchstens drei erfolglose Reparaturversuche für dieselbe Ursache.** Danach
+Ursache und Stand für den Bericht festhalten, die betroffene Story als
+unvollständig kennzeichnen und mit den Stories weitermachen, die nicht davon
+abhängen.
 
 Sofort stoppen und berichten, wenn:
 
-- eine neue Architektur- oder Produktentscheidung nötig würde
-- eine Sicherheitsanforderung aufgeweicht werden müsste
-- der Scope wesentlich erweitert werden müsste
-- dieselbe Ursache nach drei Versuchen ungelöst ist
+- eine Sicherheits- oder Datenschutzanforderung aufgeweicht werden müsste
 - eine Testanforderung nur durch Abschwächung des Tests erfüllbar wäre
+- eine Festlegung nötig würde, die in die Hard-Stop-Liste fällt
+  (`PROJECT_PRINCIPLES.md` §15.1): neuer Anbieter, Deployment, großer Umbau,
+  Widerspruch zu einer MUSS-Anforderung
+- ein Widerspruch zwischen Prinzipien und ADR sich nicht nach Rang auflösen
+  lässt (`CLAUDE.md`)
+
+Eine fehlende Fach- oder Datenschutzentscheidung ist **kein** Stoppgrund — sie
+wird als Annahme getroffen. Eine Scope-Erweiterung ist kein Stoppgrund, wenn
+die Akzeptanzkriterien des Epics sie brauchen; sie wird gebaut und im Bericht
+benannt. Wäre sie ein eigenes Epic, wird sie vorgeschlagen, nicht gebaut.
 
 Tests, RLS-Policies, Secret-Scanning und andere Security-Gates werden **niemals**
 abgeschwächt, um grün zu werden. Das ist keine Ermessensfrage.
 
 ## H. FINAL VERIFY
 
-Die für den Featureumfang erforderlichen Checks aus E **einmal** vollständig
+Die für den Umfang des Epics erforderlichen Checks aus E **einmal** vollständig
 laufen lassen.
 
 Identische teure Läufe ohne dazwischenliegende Änderung nicht wiederholen —
@@ -170,18 +209,21 @@ Information.
 
 Kompakt berichten:
 
-1. Was wurde umgesetzt
+1. Was wurde umgesetzt — je Story
 2. Wesentlich geänderte Dateien und Datenbankbereiche
-3. Erfüllte Akzeptanzkriterien
+3. Erfüllte Akzeptanzkriterien; unvollständige Stories mit Ursache
 4. Gelaufene Tests und Checks mit Ergebnis
 5. Durchgeführte UI-Verifikation
-6. Bekannte Einschränkungen und Risiken
-7. Commit-Hash(es)
-8. Was der logisch nächste Loop wäre — als Vorschlag
+6. **Getroffene Annahmen** — `ANN`-Kennungen mit je einem Satz, besonders die,
+   die Jannes oder die Datenschutzprüfung bestätigen müssen
+7. Bekannte Einschränkungen, Risiken und Vorschläge außerhalb des Epics
+8. Commit-Hash(es) und die Schritte, mit denen Jannes seinen lokalen Stand
+   aktualisiert
+9. Was das logisch nächste Epic wäre — als Vorschlag mit Zuschnitt
 
 Dann in `docs/development/ROADMAP.md` den Eintrag in der Fortschrittstabelle
 auf `fertig` setzen, mit Datum und Commit. Ein Eintrag ohne durchlaufenen
 Schritt I wird nicht abgehakt.
 
-**Danach stoppen.** Der vorgeschlagene nächste Loop wird nicht begonnen. Ein
+**Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein
 neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.

@@ -81,6 +81,9 @@ gehört zu den Vorbedingungen des Produktivstarts.
 Initialentscheidungen und müssen vor Produktivstart im
 Datenschutz-/DSFA-Prozess validiert werden.**
 
+Registriert als ANN-001 in `docs/decisions/ASSUMPTIONS.md`; dort stehen
+Verankerung im Code und Änderungspfad.
+
 ## Konsequenzen
 
 - Jede fachliche Entität wird einer Datenklasse zugeordnet. Diese Zuordnung

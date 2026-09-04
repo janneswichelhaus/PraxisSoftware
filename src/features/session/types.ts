@@ -59,6 +59,34 @@ export function canManageAppointments(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => appointmentRoles.includes(role));
 }
 
+/**
+ * Rollen mit Lesezugriff auf klinische Behandlungsdokumentation.
+ *
+ * office ist bewusst nicht dabei (PROJECT_PRINCIPLES.md 4.3), owner schon
+ * (4.1). Steuert ausschliesslich die Darstellung - verbindlich ist
+ * app.can_read_treatment_note() in der Datenbank, und gelesen wird
+ * ausschliesslich ueber get_treatment_note.
+ */
+const clinicalReadRoles: RoleKey[] = ['owner', 'therapist', 'team_lead'];
+
+export function canReadTreatmentNote(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => clinicalReadRoles.includes(role));
+}
+
+/**
+ * Rollen, die dokumentieren duerfen.
+ *
+ * Enger als das Lesen: Dokumentieren ist ein Behandlungsschritt (4.2), kein
+ * Verwaltungsvorgang. Ein reiner owner-Zugang liest die Akte, schreibt aber
+ * keine Behandlungsdokumentation. Verbindlich ist
+ * app.can_write_treatment_note().
+ */
+const clinicalWriteRoles: RoleKey[] = ['therapist', 'team_lead'];
+
+export function canWriteTreatmentNote(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => clinicalWriteRoles.includes(role));
+}
+
 /** Rollen, die den Dienstplan pflegen duerfen. therapist liest ihn nur (CAL-005). */
 const workingHourRoles: RoleKey[] = ['owner', 'team_lead', 'office'];
 
