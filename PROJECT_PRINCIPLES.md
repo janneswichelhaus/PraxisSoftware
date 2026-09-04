@@ -4,11 +4,22 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.2.1** |
-| **Änderungsdatum** | **2026-08-28** |
+| **Dokumentversion** | **0.2.2** |
+| **Änderungsdatum** | **2026-09-02** |
 | Vorversion | 0.1 (Baseline, unverändert im Git-Verlauf erhalten) |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-014, siehe `docs/adr/` |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-016, siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
+
+### Änderungsvermerk 0.2.2
+
+Korrekturversion. Sie behebt ausschließlich eine Aussage, die durch ADR-016
+überholt ist, und ändert keine Anforderung:
+
+- §5 bezeichnete den Mechanismus der Nachvollziehbarkeit — Versionierung
+  gegenüber Änderungsprotokoll — als offen. ADR-016 hat ihn am 2026-09-01
+  entschieden; `docs/decisions/OPEN_DECISIONS.md` Abschnitt D führt ihn
+  seither nicht mehr als offen. Die MUSS-Anforderungen aus §5 bleiben
+  unverändert — ADR-016 erfüllt sie und erweitert sie nicht.
 
 ### Änderungsvermerk 0.2.1
 
@@ -463,9 +474,12 @@ Erfasst werden MÜSSEN mindestens:
 Die Finalisierung ist ein serverseitiger Vorgang und offline nicht möglich
 (§2.2, [ADR-001](docs/adr/ADR-001-online-first-limited-offline.md)).
 
-Der konkrete technische Mechanismus der Nachvollziehbarkeit — Versionierung
-gegenüber Änderungsprotokoll — ist noch nicht entschieden und in
-`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
+Der konkrete technische Mechanismus der Nachvollziehbarkeit ist mit
+[ADR-016](docs/adr/ADR-016-clinical-documentation-record.md) entschieden:
+Versionierung mit vollständig abrufbarem Originalinhalt je Version, nicht ein
+bloßes Änderungsprotokoll. Was ADR-016 darüber hinaus regelt — Zustände,
+Finalisierung, Ergänzung gegenüber Korrektur — konkretisiert diesen Abschnitt
+und ersetzt ihn nicht.
 
 
 ## 6. KI

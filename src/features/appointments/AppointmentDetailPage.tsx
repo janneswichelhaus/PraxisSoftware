@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
 import {
   appointmentStatusLabels,
   cancelAppointment,
@@ -288,8 +289,12 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
         </p>
       ) : null}
 
+      {/* Klinische Inhalte stehen bewusst in einem eigenen Datensatz und werden
+          über einen eigenen, protokollierten Lesepfad geholt (DOK-001). */}
+      <TreatmentNoteSection appointment={appointment} user={user} />
+
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
-        Zeiten gelten in der Zeitzone der Praxis ({zone}). Der Termin enthält ausschließlich
+        Zeiten gelten in der Zeitzone der Praxis ({zone}). Der Termin selbst enthält ausschließlich
         organisatorische Angaben.
       </p>
     </>
