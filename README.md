@@ -35,6 +35,7 @@ supabase/
   seed.sql     synthetische Testdaten
 tests/e2e/     Playwright
 docs/          Prinzipien, ADRs, Entwicklungsdoku
+docs/product/  Ideenspeicher für spätere Funktionen (nicht normativ)
 ```
 
 ## Sicherheitsgrundsätze im Code

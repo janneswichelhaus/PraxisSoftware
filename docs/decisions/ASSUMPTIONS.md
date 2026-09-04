@@ -114,7 +114,7 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | DOK-003, spätestens ABR-002   |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
-Sie waren in Migrationen, ADRs und `docs/DEVELOPMENT.md` bereits begründet,
+Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
 standen aber an keiner Stelle gesammelt. Weitere Altannahmen werden
 nachgetragen, sobald ein Loop sie berührt.
 
@@ -187,8 +187,8 @@ ADR-Bezug — nicht diese Markierung.
 
 **Verankerung.** `app.can_change_patient_status()` und `set_patient_status` in
 `supabase/migrations/20260829110000_patient_status.sql`; Datenbanktest in
-`pnpm test:db`; E2E-Test „Autorisierung auf RPC-Ebene"; Abnahmeschritt 8 in
-`docs/DEVELOPMENT.md`.
+`pnpm test:db`; E2E-Test „Autorisierung auf RPC-Ebene"; Abnahmeschritt PAT-003 in
+`docs/abnahme/etappe-0-patienten-und-termine.md`.
 
 **Änderungspfad.** Rollenschnitt: eine Migration, die
 `app.can_change_patient_status()` ersetzt — Aufwand `klein`.
@@ -221,7 +221,8 @@ Adresse nach ADR-008 drei Jahre, obwohl keine Anfahrt stattgefunden hat.
 **Verankerung.** Spalten `visit_*` und Constraint
 `appointments_address_matches_type` in
 `supabase/migrations/20260830100100_appointments.sql`; einziger Schreiber ist
-`create_appointment`; Abnahmeschritt 9 in `docs/DEVELOPMENT.md`.
+`create_appointment`; Abnahmeschritt CAL-001 in
+`docs/abnahme/etappe-0-patienten-und-termine.md`.
 
 **Änderungspfad.** Verlangt die Prüfung für abgesagte Termine eine kürzere
 Frist oder das Entfernen der Adresse: die `visit_*`-Felder in
@@ -288,7 +289,8 @@ Einschränkungen 9 und 10).
 
 **Verankerung.** `complete_appointment` und `reopen_appointment` in
 `supabase/migrations/20260830110000_appointment_completion.sql`;
-Abnahmeschritt 12 in `docs/DEVELOPMENT.md`.
+Abnahmeschritt CAL-004 in
+`docs/abnahme/etappe-0-patienten-und-termine.md`.
 
 **Änderungspfad.** Entweder eine Prüfung in `complete_appointment` ergänzen
 oder den Abschluss aus der Finalisierung der Dokumentation heraus auslösen —

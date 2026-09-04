@@ -13,6 +13,7 @@ Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 4. `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen;
    füllen Lücken der Ränge 1 bis 3, überschreiben sie nie
 5. `docs/PRODUCT_VISION.md` — **nicht normativ**
+6. `docs/product/` (Ideenspeicher) — **nicht normativ**, schwächste Ebene
 
 - Die Ränge 1 bis 3 sind verbindlich. Rang 4 gilt, bis er bestätigt, geändert
   oder verworfen wird.
@@ -33,11 +34,16 @@ Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
   registrieren, weiterarbeiten. Der Punkt bleibt offen, bis Jannes oder die
   Datenschutzprüfung ihn bestätigt.
 - `docs/PRODUCT_VISION.md` beschreibt das langfristige Zielbild und steht an
-  letzter Stelle. **Es ist nicht normativ**: kein Implementierungsauftrag,
+  vorletzter Stelle. **Es ist nicht normativ**: kein Implementierungsauftrag,
   keine Feature-Spezifikation, keine Freigabe. Es begründet **niemals** eine
   Erweiterung des aktuellen Feature-Scopes und überschreibt weder Prinzipien
   noch ADRs. Nützlich, um lokale Entscheidungen einzuordnen — nicht, um sie zu
   begründen.
+- `docs/product/IDEENSPEICHER.md` sammelt Funktionsideen für später. **Rang 6,
+  die schwächste Ebene.** Regeln dort; die drei wichtigsten: begründet nie eine
+  Implementierung, im SPEC-Schritt nur die **eine** passende Bereichsdatei
+  lesen, und ein Hinweis von dort, der Mehrarbeit oder eine Entscheidung
+  bedeuten würde, wird als offene Frage berichtet statt umgesetzt.
 
 ## Annahmen statt Rückfragen
 
@@ -98,7 +104,7 @@ davon abhängt, vorher fertigstellen.
 ```
 src/app  src/components  src/features  src/lib  src/routes
 supabase/migrations  supabase/tests  supabase/seed.sql
-tests/e2e  scripts  docs/adr  docs/decisions
+tests/e2e  scripts  docs/adr  docs/decisions  docs/product  docs/abnahme
 ```
 
 Feature-Code liegt fachlich unter `src/features/<domäne>/`. Modularer Monolith
@@ -123,12 +129,23 @@ pnpm build
 
 - `pnpm db:start` startet eine lokale Wegwerf-Datenbank; danach
   `export TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:54329/postgres`.
+  **Der Cluster überlebt einen Werkzeugaufruf nicht zuverlässig.** Ein
+  `ECONNREFUSED 127.0.0.1:54329` ist deshalb kein Testfehler: `db:start`,
+  `export` und `test:db` in **einem** Aufruf ausführen.
 - Migrations- und RLS-Tests laufen bewusst gegen PostgreSQL mit dem Shim in
   `supabase/tests/helpers/`, nicht gegen den vollen Supabase-Stack.
 - **In der Cloud-/Remote-Umgebung ist `supabase start` nicht möglich** —
   Container-Images werden vom Egress-Proxy blockiert (403). Damit gibt es dort
   kein GoTrue und kein E2E hinter der Anmeldung. Auf einem lokalen Rechner mit
   Docker funktioniert der Stack; Vorgehen in `docs/DEVELOPMENT.md`.
+- **`pnpm test:db` läuft trotzdem auch in der Cloud** und ist dort das
+  wichtigste Gate. `scripts/test-db.sh` braucht kein Docker, sondern ein
+  lokales PostgreSQL-Binär, das in der Cloudumgebung vorhanden ist (geprüft am
+  2026-09-01: 495 Tests, 45 s). Migrations- und RLS-Arbeit ist hier also
+  vollständig verifizierbar — **nicht wegen `supabase start` überspringen.**
+- **In einer frischen Session fehlt `node_modules`.** Vor dem ersten Check
+  einmal `pnpm install` — sonst schlägt der erste Lauf mit einer irreführenden
+  Meldung über ein fehlendes Prettier-Plugin fehl.
 - Playwright nutzt den vorinstallierten Browser über
   `export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`.
 - Details und Go-live-Blocker: `docs/DEVELOPMENT.md`.
@@ -175,11 +192,17 @@ Für Featurearbeit gibt es den Skill **`/feature-loop <Aufgabe>`**
 Verify → Review → Fix → Final Verify → Report → Stopp. Er startet nur auf
 ausdrücklichen Aufruf.
 
+`docs/development/ROADMAP.md` sagt, **was als Nächstes** dran ist, welche
+Entscheidung ein Etappenschritt voraussetzt und welche Regeln den
+Credit-Verbrauch begrenzen. Zu Beginn eines Loops lesen und am Ende den
+Eintrag abhaken. Die Roadmap legt die **Reihenfolge** fest, nie den Scope —
+und startet nichts von allein.
+
 **Ein Loop ist ein Epic**, nicht eine Story: mehrere zusammengehörige
 vertikale Schnitte, Story für Story gebaut und je Story committet, ohne
 Zwischenstopp und ohne Zwischenbericht. Zum Epic gehört alles, was seine
 Akzeptanzkriterien brauchen — Seed, Testkonten, Audit-Ereignisse,
-Abnahmeschritte in `docs/DEVELOPMENT.md`, Registereinträge. Was ein anderes
+Abnahmeschritte in `docs/abnahme/`, Registereinträge. Was ein anderes
 Epic wäre, wird am Ende vorgeschlagen, nicht gebaut.
 
 **Vor jedem Loop den Gesamtstand prüfen, nicht nur `main`.** Erst
@@ -194,6 +217,10 @@ Kleine Commits mit aussagekräftiger Nachricht, einer je Story. Nach
 abgeschlossenem Epic stoppen und berichten — mit allen neuen Annahmen und
 einem Vorschlag für das nächste Epic. Das nächste Epic nicht eigenständig
 beginnen.
+
+Bringt Jannes im Gespräch eine Funktionsidee ein, die nicht zum aktuellen
+Auftrag gehört, oder entsteht eine im Loop: **in `docs/product/` eintragen,
+nicht bauen.** Das gilt auch für gute Ideen — besonders für die.
 
 Jannes (Projektinhaber) schaut sich Ergebnisse lokal auf seinem eigenen
 Rechner an, nicht nur über Tests. **Nach jeder abgeschlossenen Änderung kurz

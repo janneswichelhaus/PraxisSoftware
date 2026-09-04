@@ -14,6 +14,13 @@ Die inhaltlichen Regeln stehen in `CLAUDE.md`, `PROJECT_PRINCIPLES.md` und den
 ADRs. Dieser Skill wiederholt sie nicht — er beschreibt nur die Reihenfolge,
 den Zuschnitt und die Abbruchbedingungen.
 
+**Zuerst `docs/development/ROADMAP.md` lesen** — Einordnung des Auftrags,
+Voraussetzungen des Schritts, Credit-Regeln. Fehlt eine dort genannte
+Voraussetzung aus Spur B, gilt `PROJECT_PRINCIPLES.md` §15.1: Ist sie als
+begründete Annahme reversibel überbrückbar, wird sie angenommen und
+registriert; fällt sie in die Hard-Stop-Liste, wird das gemeldet und nur der
+davon abhängige Teil nicht begonnen.
+
 ---
 
 ## A. SPEC
@@ -50,6 +57,23 @@ ADRs sinnvoll entschieden werden können — Benennung, Dateiablage, Query-Form,
 Komponentenstruktur. Entscheiden, kurz begründen, weiterarbeiten. Solche
 Details sind keine Annahmen im Sinne des Registers.
 
+### Ideenspeicher konsultieren
+
+Anschließend **eine** passende Bereichsdatei aus `docs/product/ideen/` lesen —
+der Index in `docs/product/IDEENSPEICHER.md` sagt welche. Nicht alle, und nur
+wenn eine zum Auftrag passt.
+
+Zweck ist ausschließlich: bessere Rückfragen stellen und offensichtliche
+Sackgassen in Benennung und Modellierung vermeiden.
+
+- Rang 6. **Begründet nie Scope.** Kein Eintrag von dort ist ein Auftrag.
+- **Nichts vorbauen** — keine Spalte, kein Feld, kein Statuswert, kein
+  UI-Element „für später" (`PROJECT_PRINCIPLES.md` §11, ADR-014).
+- Würde ein Hinweis von dort Mehrarbeit oder eine fachliche Entscheidung
+  bedeuten: nicht umsetzen, in Schritt I als offene Frage nennen.
+- Ideen, die während des Loops entstehen, dort als `vorschlag` eintragen —
+  nicht bauen.
+
 ## B. INSPECT
 
 Nur die für das Epic relevanten Teile des Repositories ansehen. Kein
@@ -80,7 +104,7 @@ Plan verlorene Zeit — dann direkt bauen.
 
 **Story für Story**, jede als eigener Commit mit vollständigem vertikalem
 Schnitt: Migration, Policy, RPC, Oberfläche, Tests, Abnahmeschritte in
-`docs/DEVELOPMENT.md`, Registereinträge. Zwischen den Stories wird weder
+`docs/abnahme/`, Registereinträge. Zwischen den Stories wird weder
 gestoppt noch berichtet — der Bericht kommt am Ende des Epics.
 
 Zum Epic gehört, was seine Akzeptanzkriterien brauchen, auch wenn es im Auftrag
@@ -109,9 +133,22 @@ Datenbanktest.
 | Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`            |
 | auslieferbaren Code         | `pnpm build`                                                    |
 
+Diese Tabelle sagt, **welche Prüfung wann sinnvoll** ist. Welche Prüfungen die
+CI erzwingt, steht abschließend in ADR-013; weicht sie von dieser Tabelle ab,
+gilt ADR-013.
+
+`pnpm test:db` läuft **auch in der Cloudumgebung** — es braucht kein Docker.
+Bei Migrationen, Policies und RPCs ist es das wichtigste Gate und wird nicht
+mit dem Hinweis auf `supabase start` übersprungen.
+
 Bei UI-Änderungen die **laufende** Anwendung ansehen (Chromium/Playwright),
 nicht nur Tests. Betrifft das Feature mobile Nutzung, zusätzlich bei ~375 px
 prüfen.
+
+Hat das Feature einen Oberflächenanteil, kommen die **manuellen Prüfschritte
+für Jannes** nach `docs/abnahme/` — in die Datei der laufenden Etappe, als
+Abschnitt mit der Loop-Kennung. **Nicht** nach `docs/DEVELOPMENT.md`. Regeln
+in `docs/abnahme/README.md`.
 
 **Keine Prüfung als erfolgreich melden, die nicht gelaufen ist.** Was aus
 Umgebungsgründen nicht geht, wird als solches benannt.
@@ -183,6 +220,10 @@ Kompakt berichten:
 8. Commit-Hash(es) und die Schritte, mit denen Jannes seinen lokalen Stand
    aktualisiert
 9. Was das logisch nächste Epic wäre — als Vorschlag mit Zuschnitt
+
+Dann in `docs/development/ROADMAP.md` den Eintrag in der Fortschrittstabelle
+auf `fertig` setzen, mit Datum und Commit. Ein Eintrag ohne durchlaufenen
+Schritt I wird nicht abgehakt.
 
 **Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein
 neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.
