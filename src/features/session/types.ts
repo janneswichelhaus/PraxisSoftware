@@ -94,6 +94,20 @@ export function canManageWorkingHours(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => workingHourRoles.includes(role));
 }
 
+/**
+ * Rollen, die Mitarbeiterdatensaetze verwalten duerfen (STAFF-001).
+ *
+ * Abgeleitet aus PROJECT_PRINCIPLES.md 4.1: "Mitarbeiter" und
+ * "Personalprozesse" stehen dort ausdruecklich beim Praxisinhaber. Fuer Office
+ * (4.3 "Mitarbeiterorganisation") und Teamleitung (4.5, ausdruecklich nur
+ * MOEGLICHE Zusatzrechte) liegt keine Entscheidung vor; fuer schreibende
+ * Vorgaenge gilt bis dahin 13. Steuert ausschliesslich die Darstellung -
+ * verbindlich ist app.can_manage_staff() in der Datenbank.
+ */
+export function canManageStaff(roles: readonly RoleKey[]): boolean {
+  return roles.includes('owner');
+}
+
 /** Administrative Praxisberechtigung (PROJECT_PRINCIPLES.md 4.1). */
 export function isOwner(roles: readonly RoleKey[]): boolean {
   return roles.includes('owner');

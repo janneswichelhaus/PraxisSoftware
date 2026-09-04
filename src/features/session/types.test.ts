@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canChangePatientStatus,
   canManageAppointments,
+  canManageStaff,
   canReadPatientDirectory,
   canReadTreatmentNote,
   canWriteTreatmentNote,
@@ -71,6 +72,24 @@ describe('canManageAppointments', () => {
 
   it('wertet Mehrfachrollen als Vereinigung (ADR-004)', () => {
     expect(canManageAppointments(['patient', 'office'])).toBe(true);
+  });
+});
+
+describe('canManageStaff', () => {
+  it('erlaubt der administrativen Praxisrolle die Mitarbeiterverwaltung', () => {
+    expect(canManageStaff(['owner'])).toBe(true);
+  });
+
+  it.each([['therapist'], ['team_lead'], ['office'], ['patient']] as const)(
+    'schliesst %s aus, solange keine Entscheidung dazu vorliegt',
+    (role) => {
+      expect(canManageStaff([role])).toBe(false);
+    },
+  );
+
+  it('wertet Mehrfachrollen als Vereinigung (ADR-004)', () => {
+    expect(canManageStaff(['office', 'owner'])).toBe(true);
+    expect(canManageStaff([])).toBe(false);
   });
 });
 

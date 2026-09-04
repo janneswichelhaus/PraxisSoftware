@@ -30,10 +30,20 @@ export const TESTKENNWORT = 'LokalerTestzugang!2026';
 
 /** Synthetische Seed-Konten (siehe docs/DEVELOPMENT.md, "Testkonten"). */
 export const KONTEN = {
+  /** owner - einzige Rolle, die Mitarbeiterdatensätze verwalten darf (STAFF-001). */
+  owner: 'jannes.test@praxis.invalid',
   /** office - darf Stammdaten ändern und den Versorgungsstatus wechseln. */
   office: 'olivia.office@praxis.invalid',
   /** therapist - darf die Akte lesen, aber den Status NICHT wechseln. */
   therapist: 'anna.beispiel@praxis.invalid',
+} as const;
+
+/** Feste Mitarbeiter-IDs aus `supabase/seed.sql` - rein synthetisch. */
+export const MITARBEITENDE = {
+  /** Anna Beispiel - therapist, im Seed aktiv und zuordenbar. */
+  anna: '55555555-5555-4555-8555-000000000002',
+  /** Olivia Office - office, im Seed aktiv, aber nicht zuordenbar. */
+  olivia: '55555555-5555-4555-8555-000000000003',
 } as const;
 
 /** Feste Patienten-IDs aus `supabase/seed.sql` - rein synthetisch. */

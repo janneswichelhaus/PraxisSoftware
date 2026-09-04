@@ -1,0 +1,145 @@
+import { useState, type FormEvent } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Button } from '@/components/ui/Button';
+import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { fetchLocations } from '@/features/appointments/api';
+import {
+  fetchStaffMember,
+  staffFullName,
+  staffMasterDataSchema,
+  staffToFormValues,
+  updateStaffMember,
+  type StaffFeld,
+  type StaffMasterDataValues,
+  type StaffMember,
+} from './api';
+import { StaffMasterDataFields } from './StaffMasterDataFields';
+
+/**
+ * Formular für die Änderung der Mitarbeiterstammdaten.
+ *
+ * Vorbefüllt aus dem gelesenen Datensatz. Der Beschäftigungsstatus ist bewusst
+ * kein Eingabefeld: er hat einen eigenen Vorgang mit eigener Rückfrage.
+ *
+ * Für eine Rolle ohne Zugriff auf die Privatangaben kommen diese Felder leer
+ * an. Ein Speichern würde sie damit löschen - deshalb ist das Formular nur für
+ * die Rolle erreichbar, die beides darf; verbindlich prüft der Server.
+ */
+function EditStaffForm({ staff }: { staff: StaffMember }) {
+  const [werte, setWerte] = useState<Record<StaffFeld, string>>(() => staffToFormValues(staff));
+  const [fehler, setFehler] = useState<Partial<Record<StaffFeld, string>>>({});
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
+
+  const zurueck = `/praxis/team/${staff.id}`;
+
+  const mutation = useMutation({
+    mutationFn: (values: StaffMasterDataValues) => updateStaffMember(staff.id, values),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['staff-members'] });
+      await queryClient.invalidateQueries({ queryKey: ['staff-member', staff.id] });
+      void navigate(zurueck, { replace: true });
+    },
+  });
+
+  function setzen(feld: StaffFeld, wert: string) {
+    setWerte((bisher) => ({ ...bisher, [feld]: wert }));
+    if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
+  }
+
+  function absenden(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (mutation.isPending) return;
+
+    const ergebnis = staffMasterDataSchema.safeParse(werte);
+    if (!ergebnis.success) {
+      const gefunden: Partial<Record<StaffFeld, string>> = {};
+      for (const problem of ergebnis.error.issues) {
+        const feld = problem.path[0] as StaffFeld | undefined;
+        if (feld && !gefunden[feld]) gefunden[feld] = problem.message;
+      }
+      setFehler(gefunden);
+      return;
+    }
+
+    setFehler({});
+    mutation.mutate(ergebnis.data);
+  }
+
+  return (
+    <>
+      <Link
+        to={zurueck}
+        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
+      >
+        ← Zurück zum Datensatz
+      </Link>
+
+      <PageHeader
+        title="Stammdaten bearbeiten"
+        description={`${staffFullName(staff)} · Mit * markierte Felder sind erforderlich.`}
+      />
+
+      <form onSubmit={absenden} noValidate className="max-w-xl">
+        {mutation.isError ? (
+          <div className="mb-6">
+            <ErrorState
+              title="Die Stammdaten konnten nicht gespeichert werden."
+              description="Bitte erneut versuchen. Sind Sie noch angemeldet und berechtigt?"
+            />
+          </div>
+        ) : null}
+
+        <StaffMasterDataFields
+          werte={werte}
+          fehler={fehler}
+          standorte={standorte.data ?? []}
+          onChange={setzen}
+        />
+
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Wird gespeichert …' : 'Änderungen speichern'}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
+            Abbrechen
+          </Button>
+        </div>
+      </form>
+
+      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+        Änderungen werden protokolliert - erfasst werden dabei nur die Namen der geänderten Felder,
+        keine Inhalte. Der Beschäftigungsstatus wird hier nicht verändert.
+      </p>
+    </>
+  );
+}
+
+export function EditStaffMemberPage() {
+  const { staffMemberId } = useParams<{ staffMemberId: string }>();
+
+  const { data, isPending, isError } = useQuery({
+    queryKey: ['staff-member', staffMemberId],
+    queryFn: () => fetchStaffMember(staffMemberId!),
+    enabled: Boolean(staffMemberId),
+    retry: false,
+  });
+
+  return (
+    <>
+      {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" /> : null}
+      {isError ? <ErrorState title="Die Mitarbeiterdaten konnten nicht geladen werden." /> : null}
+      {data === null ? (
+        <ErrorState
+          title="Nicht gefunden"
+          description="Dieser Datensatz existiert nicht oder ist für Ihren Zugang nicht freigegeben."
+        />
+      ) : null}
+      {data ? <EditStaffForm staff={data} /> : null}
+    </>
+  );
+}

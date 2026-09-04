@@ -5,31 +5,43 @@ import {
   canManageAppointments,
   canReadPatientDirectory,
   isOwner,
+  isStaff,
   type CurrentUser,
 } from '@/features/session/types';
 
 interface NavItem {
   to: string;
   label: string;
+  /**
+   * Kurzform fuer die Tableiste am unteren Rand. Dort stehen je nach Rolle bis
+   * zu sechs Bereiche nebeneinander; bei 375 px Breite bleiben rund 60 px je
+   * Eintrag. Die seitliche Navigation zeigt weiterhin die volle Bezeichnung.
+   */
+  short?: string;
 }
 
 function navItems(user: CurrentUser): NavItem[] {
-  const items: NavItem[] = [{ to: '/', label: 'Übersicht' }];
+  const items: NavItem[] = [{ to: '/', label: 'Übersicht', short: 'Start' }];
   if (canManageAppointments(user.roles)) {
     items.push({ to: '/kalender', label: 'Kalender' });
   }
   if (canReadPatientDirectory(user.roles)) {
-    items.push({ to: '/patienten', label: 'Patient:innen' });
+    items.push({ to: '/patienten', label: 'Patient:innen', short: 'Kartei' });
   }
   // Arbeitszeiten sind fuer alle Praxisrollen lesbar; das Aendern prueft die
   // Seite selbst und - verbindlich - der Server (CAL-005).
   if (canManageAppointments(user.roles)) {
     items.push({ to: '/praxis/planung', label: 'Planung' });
   }
+  // Die Mitarbeiterliste ist fuer alle Praxisrollen lesbar; Schreibvorgaenge
+  // prueft die jeweilige Seite und - verbindlich - der Server (STAFF-001).
+  if (isStaff(user.roles)) {
+    items.push({ to: '/praxis/team', label: 'Team' });
+  }
   // Nur die administrative Praxisrolle sieht den Sicherheitsbereich
   // (ADR-010). Die Route ist zusaetzlich serverseitig abgesichert.
   if (isOwner(user.roles)) {
-    items.push({ to: '/praxis/sicherheit/audit', label: 'Sicherheit' });
+    items.push({ to: '/praxis/sicherheit/audit', label: 'Sicherheit', short: 'Audit' });
   }
   return items;
 }
@@ -111,15 +123,22 @@ export function AppShell({
         aria-label="Hauptnavigation"
         className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
       >
+        {/*
+          Die Leiste traegt je nach Rolle bis zu sechs Bereiche. Bei 375 px
+          Breite reicht der Platz nur, wenn die Eintraege schrumpfen duerfen:
+          `min-w-0` hebt die Mindestbreite des Flex-Inhalts auf, `truncate`
+          faengt noch schmalere Geraete ab. Ohne beides fiel der letzte Bereich
+          aus dem sichtbaren Bild und war mobil nicht mehr erreichbar (2.2).
+        */}
         <ul className="mx-auto flex max-w-5xl">
           {items.map((item) => (
-            <li key={item.to} className="flex-1">
+            <li key={item.to} className="min-w-0 flex-1">
               <NavLink
                 to={item.to}
                 end={item.to === '/'}
-                className="text-ink-muted aria-[current=page]:text-accent flex min-h-14 items-center justify-center px-2 text-sm transition-colors aria-[current=page]:font-medium"
+                className="text-ink-muted aria-[current=page]:text-accent flex min-h-14 items-center justify-center px-1 text-center text-xs transition-colors aria-[current=page]:font-medium"
               >
-                {item.label}
+                <span className="truncate">{item.short ?? item.label}</span>
               </NavLink>
             </li>
           ))}

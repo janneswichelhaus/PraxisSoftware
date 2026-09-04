@@ -64,7 +64,8 @@ eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus
 (PAT-001 bis PAT-003) · Termine anlegen, Kalender, bearbeiten, absagen,
 abschließen, Praxisraster, Arbeitszeiten, Verschieben (CAL-001 bis CAL-006) ·
 Behandlungsdokumentation als Entwurf, Finalisierung von Hand, Versionierung,
-Nachtrag (DOK-001, DOK-002, ADR-016; PR #5).
+Nachtrag (DOK-001, DOK-002, ADR-016; PR #5) · Mitarbeiterverwaltung: Liste,
+Stammdaten, Beschäftigungsstatus, Privatdaten nur für owner (STAFF-001).
 
 Regelwerk: `PROJECT_PRINCIPLES.md` 0.3 mit §15.1 „Begründete Annahmen" und
 dem Annahmenregister `docs/decisions/ASSUMPTIONS.md`; ein Loop ist ein Epic
@@ -370,6 +371,7 @@ Skill-Schritt I durchlaufen ist.
 | ------------------- | --------------------------- | -------------- | ------ |
 | PAT-001 bis PAT-003 | fertig                      | vor 2026-09-01 | —      |
 | CAL-001 bis CAL-006 | fertig                      | vor 2026-09-01 | —      |
+| STAFF-001           | fertig                      | 2026-08-30     | `e70775a`, `ca907e9` |
 | DOK-001             | fertig                      | 2026-09-01     | `7e18906`, Merge PR #5 |
 | DOK-002             | fertig                      | 2026-09-02     | `491a0c0`, Merge PR #5 |
 | DOK-003             | **bereit** — nicht begonnen | —              | —      |

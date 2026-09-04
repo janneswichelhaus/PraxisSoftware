@@ -131,7 +131,7 @@ wieder her.
 Die manuellen Klickwege je Feature stehen in
 [`abnahme/`](abnahme/) — eine Datei je Roadmap-Etappe. Für den heutigen Stand:
 [Patientenverwaltung und Termine](abnahme/etappe-0-patienten-und-termine.md)
-(PAT-002, PAT-003, CAL-001 bis CAL-006) und
+(PAT-002, PAT-003, CAL-001 bis CAL-006, STAFF-001) und
 [Behandlungsdokumentation](abnahme/etappe-1-kernprozess.md) (DOK-001, DOK-002).
 
 Sie liegen dort statt hier, weil sie mit jedem Loop wachsen und diese Datei
