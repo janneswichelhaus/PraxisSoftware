@@ -1,6 +1,6 @@
 # Abnahme: Behandlungsdokumentation
 
-Manuelle Prüfschritte der Loops DOK-001, DOK-002 und DOK-003 (Etappe 1, „Der
+Manuelle Prüfschritte der Loops DOK-001 bis DOK-004 (Etappe 1, „Der
 Kernprozess wird vollständig").
 
 > Voraussetzung ist der eingerichtete lokale Stack — Schritte 1 bis 6 in
@@ -160,3 +160,66 @@ Inhalt.
    ausdrücklich **kein** Sicherheitsnachweis; verbindlich ist
    `list_patient_treatment_notes`, geprüft in `pnpm test:db` und im E2E-Test
    „DOK-003: Serverseitige Grenzen".
+
+## DOK-004 — Automatische Finalisierung nach Frist
+
+Ein Entwurf wird nach Ablauf der Frist ohne Zutun finalisiert (ADR-016
+Punkt 7). Voreinstellung: Ende des auf die Behandlung folgenden Kalendertages;
+ein später angelegter Eintrag oder Nachtrag bekommt dieselbe Frist ab seiner
+Anlage. Den Lauf stößt `pg_cron` alle 15 Minuten an. Im lokalen Stack ist die
+Erweiterung vorhanden; ob der Job registriert ist, zeigt im SQL-Editor von
+Supabase Studio (`http://127.0.0.1:54323`) die Abfrage
+`select jobname, schedule from cron.job;`.
+
+### Frist einstellen
+
+1. Als `jannes.test@praxis.invalid` (owner) „Planung" öffnen. Unter dem
+   Praxisraster steht **„Automatische Finalisierung"** mit der Auswahl „Frist",
+   vorbelegt mit „Ende des Folgetages".
+2. „Ende des Behandlungstages" wählen und „Frist speichern". Es erscheint
+   „Die Frist ist gespeichert."; nach dem Neuladen steht der Wert weiterhin da.
+3. Als `olivia.office@praxis.invalid` und als `anna.beispiel@praxis.invalid`
+   „Planung" öffnen: der Abschnitt fehlt. Das ist ausdrücklich **kein**
+   Sicherheitsnachweis; verbindlich ist `set_documentation_deadline`, geprüft in
+   `pnpm test:db`.
+4. Als owner unter „Praxis → Sicherheit → Audit" steht
+   `organization.documentation_deadline_changed`.
+
+### Automatische Finalisierung beobachten
+
+Die Frist endet um Mitternacht — für die Abnahme wird ein Entwurf deshalb als
+Testvorbereitung zurückdatiert, statt einen Tag zu warten.
+
+5. Als `anna.beispiel@praxis.invalid` einen Termin für „Max Mustermann"
+   anlegen und einen Entwurf dokumentieren (DOK-001). Die Termin-ID steht in
+   der Adresszeile (`/termine/<id>`).
+6. Im SQL-Editor von Supabase Studio Termin und Entwurf drei Tage
+   zurückdatieren:
+
+   ```sql
+   update public.appointments
+      set starts_at = starts_at - interval '3 days',
+          ends_at   = ends_at   - interval '3 days'
+    where id = '<id>';
+   update public.treatment_notes
+      set created_at = created_at - interval '3 days'
+    where appointment_id = '<id>';
+   ```
+
+7. Entweder bis zu 15 Minuten warten, oder den Lauf im SQL-Editor selbst
+   anstoßen: `select public.finalize_overdue_treatment_notes();` liefert `1`.
+8. Den Termin in der Anwendung neu laden: der Eintrag trägt den Vermerk
+   „Finalisiert" und die Zeile „Automatisch finalisiert am … nach Ablauf der
+   Frist." — **ohne** eine finalisierende Person. „Korrigieren",
+   „Änderungsverlauf" und „Nachtrag hinzufügen" stehen wie nach einer
+   Finalisierung von Hand zur Verfügung; im Änderungsverlauf trägt Version 1
+   den Entwurfstext mit der zuletzt schreibenden Person.
+9. Dieselbe Zeile steht in der Akte („Patienten" → „Max Mustermann"); der
+   Behandlungsnachweis für office zeigt „Dokumentation finalisiert am …".
+10. Als owner „Praxis → Sicherheit → Audit" öffnen: der Eintrag
+    `Behandlungsdokumentation automatisch finalisiert` nennt als Benutzer
+    **„System"**. Der Filter „Benutzer" blendet ihn aus, weil er keinem Konto
+    gehört.
+11. Gegenprobe Frist: einen weiteren Entwurf anlegen und nur den **Termin**
+    zurückdatieren, nicht den Entwurf. Der Lauf liefert `0` — der spät
+    angelegte Entwurf hat seine eigene Frist ab heute.

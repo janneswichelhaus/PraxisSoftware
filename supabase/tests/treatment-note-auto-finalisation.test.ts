@@ -600,3 +600,35 @@ describe('DOK-004: Frist konfigurieren', () => {
     await expect(asAnon(FRIST_SETZEN, [2])).rejects.toThrow(/permission denied|not authenticated/);
   });
 });
+
+// =============================================================================
+// Scheduler
+// =============================================================================
+
+describe('DOK-004: Scheduler-Registrierung (ANN-007)', () => {
+  it('registriert den Job genau dann, wenn pg_cron verfuegbar ist', async () => {
+    const { rows: verfuegbar } = await asPostgres<{ n: string }>(
+      "select count(*)::text as n from pg_available_extensions where name = 'pg_cron'",
+    );
+    const { rows: installiert } = await asPostgres<{ n: string }>(
+      "select count(*)::text as n from pg_extension where extname = 'pg_cron'",
+    );
+
+    if (Number(verfuegbar[0]!.n) === 0) {
+      // Die Wegwerf-Datenbank der Tests: keine Erweiterung, keine
+      // Registrierung, aber eine gueltige Migration.
+      expect(Number(installiert[0]!.n)).toBe(0);
+      return;
+    }
+
+    expect(Number(installiert[0]!.n)).toBe(1);
+    const { rows: jobs } = await asPostgres<{ schedule: string; command: string }>(
+      "select schedule, command from cron.job where jobname = 'finalize-overdue-treatment-notes'",
+    );
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({
+      schedule: '*/15 * * * *',
+      command: 'select public.finalize_overdue_treatment_notes()',
+    });
+  });
+});

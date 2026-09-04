@@ -67,14 +67,16 @@ Behandlungsdokumentation als Entwurf, Finalisierung von Hand, Versionierung,
 Nachtrag (DOK-001, DOK-002, ADR-016; PR #5) · Mitarbeiterverwaltung: Liste,
 Stammdaten, Beschäftigungsstatus, Privatdaten nur für owner (STAFF-001) ·
 Dokumentation in der Akte, rollenabhängig projiziert: Behandlungsnachweis für
-Office, Einträge mit Inhalt für klinische Rollen (DOK-003).
+Office, Einträge mit Inhalt für klinische Rollen (DOK-003) · Automatische
+Finalisierung nach konfigurierbarer Frist über `pg_cron`, Systemakteur im
+Auditlog (DOK-004).
 
 Regelwerk: `PROJECT_PRINCIPLES.md` 0.3 mit §15.1 „Begründete Annahmen" und
 dem Annahmenregister `docs/decisions/ASSUMPTIONS.md`; ein Loop ist ein Epic
 aus mehreren Stories.
 
-Nicht gebaut: alles Übrige, insbesondere automatische Finalisierung (DOK-004),
-Abrechnung, Löschung, Fragebögen, Portal.
+Nicht gebaut: alles Übrige, insbesondere Löschung und Retention (LOE-001,
+LOE-002), Abrechnung, Fragebögen, Portal.
 
 ---
 
@@ -93,7 +95,7 @@ gewählt.
 | 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **fertig** (PR #5)     |
 | 2   | DOK-002 | Finalisierung von Hand, Versionierung, Nachtrag als eigener Eintrag (ADR-016 Punkte 4 bis 6) | **fertig** (PR #5)     |
 | 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **fertig** — C1 vorläufig als ANN-006 |
-| 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7) — **braucht erst eine Entscheidung, siehe unten** | DOK-002                |
+| 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7)                                    | **fertig** — Mechanismus als ANN-007 |
 | 4   | LOE-001 | Datenklassen und Aufbewahrungsfristen als echte Struktur, Legal Hold                       | —                      |
 | 5   | LOE-002 | Löschvorgang, Wiederanwendung nach Restore, `pnpm test:db`                                 | LOE-001                |
 | 6   | ABR-001 | Leistungskatalog, versioniert, mit Steuerkennzeichen je Leistungsversion                   | B4 teilweise           |
@@ -132,8 +134,8 @@ bewusste Entscheidung mit Prüfung gegen §11 und ADR-015 — kein Stopp, aber
 auch kein beiläufiger Einbau.
 
 **Entschieden am 2026-09-05 von Jannes: Weg 2, `pg_cron`.** Damit ist die
-Voraussetzung von DOK-004 erfüllt; der Loop trifft diese Wahl nicht mehr
-selbst, sondern setzt sie um und registriert sie als Annahme.
+Voraussetzung von DOK-004 erfüllt; der Loop trifft diese Wahl nicht selbst,
+sondern setzt sie um.
 
 Begründung: Nur Weg 2 schreibt den finalisierten Zustand tatsächlich fest
 **und** hält den Zeitpunkt ein — bei einer §630f-relevanten Frist zählt
@@ -154,6 +156,14 @@ Zwei Auflagen für den Loop:
 - **Die Registrierung bleibt bedingt.** Ohne die Erweiterung muss die
   Migration gültig bleiben und durchlaufen; die Wegwerf-Datenbank der Tests
   hat kein `pg_cron`.
+
+Umgesetzt in DOK-004: `pg_cron` ruft die Finalisierungsfunktion alle 15 Minuten
+auf — nicht einmal nachts, weil Fristen gegen Mitternacht der Praxiszeitzone
+enden, `pg_cron` aber in UTC plant und die Zeitumstellung den Abstand
+verschiebt. Der Mechanismus ist damit **entschieden, keine Annahme mehr**
+(ANN-007 abgeschlossen). Offen bleiben die beiden fachlichen Festlegungen des
+Loops: der Fristbezug bei später angelegten Einträgen (ANN-008) und der
+Systemakteur im Auditlog (ANN-009).
 
 **Ergebnis der Etappe:** Die Praxis könnte damit arbeiten — Termine
 dokumentieren, Leistungen erfassen, Rechnungen stellen. Das ist der Punkt, ab
@@ -402,5 +412,6 @@ Skill-Schritt I durchlaufen ist.
 | DOK-001             | fertig                      | 2026-09-01     | `7e18906`, Merge PR #5 |
 | DOK-002             | fertig                      | 2026-09-02     | `491a0c0`, Merge PR #5 |
 | DOK-003             | fertig                      | 2026-09-04     | `21d85dd`, `f565124` |
+| DOK-004             | fertig                      | 2026-09-04     | `4862a3c`, `0d144f1` |
 
 Zuletzt aktualisiert: 2026-09-04

@@ -787,3 +787,38 @@ comment on function public.set_documentation_deadline(smallint) is
 
 revoke all on function public.set_documentation_deadline(smallint) from public, anon;
 grant execute on function public.set_documentation_deadline(smallint) to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- Scheduler (ANN-007)
+--
+-- pg_cron ruft den Finalisierer alle 15 Minuten auf - Fristen enden um
+-- Mitternacht, die Verzoegerung liegt damit unter einer Viertelstunde. Die
+-- Registrierung ist bedingt: Die Wegwerf-Datenbank der Tests hat kein pg_cron,
+-- dort wird die Funktion direkt aufgerufen; der lokale und der spaetere
+-- Supabase-Stack bringen die Erweiterung mit. Fehlt sie, bleibt die Migration
+-- gueltig und meldet den fehlenden Scheduler als Hinweis - die Finalisierung
+-- findet dann nicht statt, und docs/DEVELOPMENT.md fuehrt das als Blocker.
+--
+-- cron.schedule mit Namen ist idempotent: ein zweiter Lauf ersetzt den Job,
+-- statt ihn zu verdoppeln. Der Job laeuft als Datenbankeigentuemer - die
+-- einzige Rolle, die die Funktion ausfuehren darf.
+--
+-- Ein anderer Ausloeser (etwa ein externer Cron-Dienst) ruft dieselbe
+-- Funktion; diese Registrierung ist die einzige Stelle, die den Ausloeser
+-- kennt.
+-- -----------------------------------------------------------------------------
+do $$
+begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    execute 'create extension if not exists pg_cron';
+    execute format(
+      'select cron.schedule(%L, %L, %L)',
+      'finalize-overdue-treatment-notes',
+      '*/15 * * * *',
+      'select public.finalize_overdue_treatment_notes()'
+    );
+  else
+    raise notice 'pg_cron ist nicht verfuegbar - die automatische Finalisierung (DOK-004) ist nicht registriert.';
+  end if;
+end
+$$;
