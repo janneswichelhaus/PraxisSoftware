@@ -138,11 +138,21 @@ test.describe('STAFF-001: Deaktivieren und Reaktivieren', () => {
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
 
     // Der Server hat abgewiesen und nichts geschrieben; die Oberfläche zeigt,
-    // was offen ist.
+    // was offen ist - darunter der eben angelegte Termin. Andere
+    // Spezifikationen desselben Laufs hinterlassen ebenfalls Termine für Anna
+    // und Max, deshalb wird die Zeile über ihr Datum gefunden, nicht über den
+    // Namen allein. Das Datum wird wie in der Oberfläche formatiert.
     await expect(
       page.getByText('Für diese Person sind noch Termine in der Zukunft geplant.'),
     ).toBeVisible();
-    await expect(page.getByText(/Max Mustermann/)).toBeVisible();
+    const datum = new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeZone: 'UTC' }).format(
+      new Date(`${laufTag()}T12:00:00Z`),
+    );
+    const zeile = page
+      .getByRole('listitem')
+      .filter({ hasText: datum })
+      .filter({ hasText: 'Max Mustermann · Video' });
+    await expect(zeile.first()).toBeVisible();
 
     // Abbrechen lässt alles unverändert.
     await page.getByRole('button', { name: 'Abbrechen' }).click();
