@@ -179,7 +179,9 @@ test.describe('STAFF-001: Durchsetzung am Server', () => {
       p_status: 'inactive',
       p_acknowledge_future_appointments: true,
     });
-    expect(deaktiviert.status(), 'Vorbereitung: deaktivieren').toBe(200);
+    // Die Funktion liefert nichts zurück (returns void); PostgREST antwortet
+    // darauf mit 204, nicht mit 200.
+    expect(deaktiviert.ok(), 'Vorbereitung: deaktivieren').toBe(true);
 
     const officeToken = await zugriffstoken(request, KONTEN.office);
     const versuch = await rpcAufrufen(request, officeToken, 'create_appointment', {
