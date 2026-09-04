@@ -27,6 +27,12 @@ function label(map: Record<string, string>, key: string): string {
   return map[key] ?? key;
 }
 
+/** Anzeigename des Akteurs. Systemereignisse haben keinen Account (ANN-009). */
+function akteur(event: AuditEvent): string {
+  if (event.actor_kind === 'system') return 'System';
+  return event.actor_display_name ?? 'Unbekannt';
+}
+
 function EventRow({ event }: { event: AuditEvent }) {
   return (
     <li className="py-3 sm:grid sm:grid-cols-[11rem_10rem_1fr_9rem] sm:items-baseline sm:gap-4 sm:py-2.5">
@@ -34,7 +40,7 @@ function EventRow({ event }: { event: AuditEvent }) {
         {formatTimestamp(event.occurred_at)}
       </span>
       <span className="text-ink mt-0.5 block truncate text-[0.9375rem] sm:mt-0">
-        {event.actor_display_name ?? 'Unbekannt'}
+        {akteur(event)}
       </span>
       <span className="text-ink mt-0.5 block text-[0.9375rem] sm:mt-0">
         {label(auditActionLabels, event.action)}

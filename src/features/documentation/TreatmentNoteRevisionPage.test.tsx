@@ -51,6 +51,7 @@ const entwurf: DokumentationApi.TreatmentNote = {
   created_at: '2027-05-12T08:10:00.123456+00:00',
   updated_at: STAND,
   finalized_at: null,
+  finalisation_kind: null,
   version_count: 0,
   author_name: 'Anna Beispiel',
   last_editor_name: 'Anna Beispiel',
@@ -61,6 +62,7 @@ const finalisiert: DokumentationApi.TreatmentNote = {
   ...entwurf,
   status: 'final',
   finalized_at: '2027-05-12T09:00:00.000000+00:00',
+  finalisation_kind: 'manual',
   version_count: 1,
   finalized_by_name: 'Anna Beispiel',
 };

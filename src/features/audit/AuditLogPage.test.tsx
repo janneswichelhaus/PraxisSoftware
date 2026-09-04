@@ -24,6 +24,7 @@ function event(id: string, action: string, actor: string, total: number): AuditE
     id,
     occurred_at: '2026-08-28T09:15:00.000Z',
     actor_user_id: 'u-1',
+    actor_kind: 'user',
     actor_display_name: actor,
     action,
     subject_type: 'patient',
@@ -53,6 +54,29 @@ describe('AuditLogPage', () => {
     expect(screen.getByTitle('66666666-6666-4666-8666-000000000001')).toHaveTextContent(
       '…000000000001',
     );
+  });
+
+  it('zeigt Systemereignisse mit dem Akteur "System" (DOK-004)', async () => {
+    fetchAuditEvents.mockResolvedValue({
+      events: [
+        {
+          ...event('1', 'treatment_note.auto_finalized', '', 1),
+          actor_user_id: null,
+          actor_kind: 'system',
+          actor_display_name: null,
+          subject_type: 'treatment_note',
+        },
+      ],
+      totalCount: 1,
+    });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+
+    const zeile = await screen.findByRole('listitem');
+    expect(zeile).toHaveTextContent('System');
+    expect(zeile).toHaveTextContent('Behandlungsdokumentation automatisch finalisiert');
+    expect(zeile).not.toHaveTextContent('Unbekannt');
   });
 
   it('reicht die Filter an den Server weiter statt clientseitig zu filtern', async () => {

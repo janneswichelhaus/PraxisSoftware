@@ -17,6 +17,12 @@ export function zeitpunkt(wert: string, zone: string): string {
 export function herkunft(note: TreatmentNote, zone: string): string {
   const verfasst = note.author_name ? `Verfasst von ${note.author_name}. ` : '';
 
+  // Die automatische Finalisierung hat keine handelnde Person; das steht so
+  // da, statt eine zu erfinden (DOK-004, ADR-016 Punkt 7).
+  if (note.status === 'final' && note.finalized_at && note.finalisation_kind === 'automatic') {
+    return `${verfasst}Automatisch finalisiert am ${zeitpunkt(note.finalized_at, zone)} nach Ablauf der Frist.`;
+  }
+
   if (note.status === 'final' && note.finalized_at) {
     const wer = note.finalized_by_name ? ` von ${note.finalized_by_name}` : '';
     return `${verfasst}Finalisiert am ${zeitpunkt(note.finalized_at, zone)}${wer}.`;

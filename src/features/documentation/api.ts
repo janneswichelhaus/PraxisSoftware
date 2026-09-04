@@ -37,6 +37,11 @@ export const treatmentNoteSchema = z.object({
   // geführt: ein Date verlöre Bruchteile von Sekunden.
   updated_at: z.string(),
   finalized_at: z.string().nullable(),
+  /**
+   * Wie finalisiert wurde: von Hand (DOK-002) oder automatisch nach
+   * Fristablauf (DOK-004, ADR-016 Punkt 7). Ein Entwurf hat keinen Wert.
+   */
+  finalisation_kind: z.enum(['manual', 'automatic']).nullable(),
   /** Anzahl festgeschriebener Versionen. Ein Entwurf hat null. */
   version_count: z.number(),
   author_name: z.string().nullable(),

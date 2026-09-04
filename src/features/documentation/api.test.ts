@@ -36,6 +36,7 @@ const zeile = {
   created_at: '2027-05-12T08:10:00.123456+00:00',
   updated_at: STAND,
   finalized_at: null,
+  finalisation_kind: null,
   version_count: 0,
   author_name: 'Anna Beispiel',
   last_editor_name: null,
