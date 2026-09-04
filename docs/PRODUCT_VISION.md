@@ -18,10 +18,16 @@
 | 1    | `../PROJECT_PRINCIPLES.md`     | Produkt-, Sicherheits- und Datenschutzprinzipien. Verbindlich.    |
 | 2    | `adr/`                         | Angenommene Architekturentscheidungen. Verbindlich.               |
 | 3    | konkrete Feature-Spezifikation | Legt den Scope einer Aufgabe fest. Verbindlich für diese Aufgabe. |
-| 4    | **dieses Dokument**            | Orientierung. **Nicht normativ.**                                 |
+| 4    | `decisions/ASSUMPTIONS.md`     | Begründete, vorläufige Annahmen. Gelten bis zur Bestätigung.      |
+| 5    | **dieses Dokument**            | Orientierung. **Nicht normativ.**                                 |
+| 6    | `product/IDEENSPEICHER.md`     | Ideen und Rohmaterial. **Nicht normativ.**                        |
 
-Widerspricht dieses Dokument einem der Ränge 1 bis 3, gilt der höhere Rang —
+Widerspricht dieses Dokument einem der Ränge 1 bis 4, gilt der höhere Rang —
 ohne Diskussion und ohne Auslegung zugunsten der Vision.
+
+Der Ideenspeicher auf Rang 6 steht noch unter diesem Dokument. Er sammelt, was
+Jannes sich für die Plattform vorstellt, bevor daraus überhaupt ein Zielbild
+geworden ist. Er entscheidet nichts und begründet nichts.
 
 Widerspricht ein ADR den Prinzipien, ist das ein Fehler und wird gemeldet,
 nicht stillschweigend aufgelöst (`PROJECT_PRINCIPLES.md` §21).

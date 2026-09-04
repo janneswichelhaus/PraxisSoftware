@@ -14,7 +14,13 @@ aus B1 bis B4, die vor Produktivstart zu erbringen sind.
 
 Die Prinzipienebene ist in `PROJECT_PRINCIPLES.md` konsolidiert.
 
-Zuletzt aktualisiert: 2026-08-30
+Am 2026-09-01 sind **B9** (Betreuung nach Therapieende), **B10**
+(automatisierte Progression) und **B11** (Paketpreise und Anreize) als neue
+offene Punkte hinzugekommen. Alle drei sind P2 — sie blockieren nichts von dem,
+was heute gebaut wird, müssen aber vor dem jeweils ersten Feature in diesen
+Bereichen entschieden sein.
+
+Zuletzt aktualisiert: 2026-09-03
 
 | Punkt | Entscheidung |
 |---|---|
@@ -39,6 +45,11 @@ Dieses Dokument sammelt die Punkte, die aus dem Architektur-Review von
 hält nur fest, was offen ist, warum es offen ist und was davon abhängt.
 
 ## Wie dieses Dokument benutzt wird
+
+Ein offener Punkt blockiert keine Aufgabe. Braucht eine Aufgabe eine
+Festlegung, die hier offen ist, wird sie als begründete Annahme in
+`ASSUMPTIONS.md` getroffen (`PROJECT_PRINCIPLES.md` §15.1). Der Punkt bleibt
+hier offen und verweist auf die `ANN`-Kennung, bis er entschieden ist.
 
 1. Ein Punkt wird besprochen und entschieden.
 2. Die Entscheidung wird als ADR unter `docs/adr/` festgehalten
@@ -304,6 +315,10 @@ Fristen im Datenschutz-/DSFA-Prozess vor Produktivstart**, die abschließende
 steuerrechtliche Bewertung der Belegarten sowie die Definition des
 „Abschlusses der Behandlung" als fachlicher Vorgang.
 
+**Vorläufig überbrückt durch** ANN-001 (Fristen gelten wie in ADR-008
+tabelliert) und ANN-002 (`inactive` ist kein Behandlungsabschluss) in
+`ASSUMPTIONS.md`.
+
 **Go-live-Blocker (Stand 2026-08-28):** ADR-008 ist entschieden und
 dokumentiert, aber **technisch nicht umgesetzt**. Es existieren kein
 Löschvorgang, kein Legal-Hold-Mechanismus und keine Wiederanwendung wirksamer
@@ -444,6 +459,143 @@ Instrument).
 
 ---
 
+### B9 — Betreuung nach Therapieende: Rechtsrahmen und Datentrennung
+
+| | |
+|---|---|
+| Dringlichkeit | P2 — vor dem ersten Feature außerhalb der Heilbehandlung |
+| Bezug | §1, §18, §19; ADR-008, ADR-009 |
+| Status | offen |
+
+**Frage:** Was gilt, wenn eine Person nach Ablauf des Rezepts freiwillig
+weiterbetreut wird — online oder in der Praxis?
+
+**Warum offen:** Jannes hat am 2026-09-01 als langfristiges Ziel benannt,
+frühere Patient:innen nach abgeschlossenem Rezept weiter zu coachen. Beim
+Übergang ändern sich mehrere Dinge gleichzeitig, und keines davon ist heute
+entschieden:
+
+- **Vertragsart:** Behandlungsvertrag (§630a BGB) gegenüber Dienstvertrag.
+- **Dokumentationspflicht:** §630f BGB gilt für die Heilbehandlung, nicht für
+  Training. Wird trotzdem dokumentiert, und wie?
+- **Aufbewahrung:** ADR-008 knüpft 10 Jahre an den „Abschluss der
+  Behandlung" — ein Begriff, den ADR-008 selbst noch offen führt. Für
+  Trainingsdaten fehlt die Frist ganz.
+- **Umsatzsteuer:** Heilbehandlung nach §4 Nr. 14a UStG regelmäßig befreit,
+  Prävention und Selbstzahler-Training regelmäßig nicht. ADR-009 sieht
+  steuerliche Eigenschaften je Leistungsversion vor; welche Leistungsart
+  hier entsteht, ist offen.
+- **DSGVO-Rechtsgrundlage:** Art. 9 Abs. 2 lit. h gegenüber ausdrücklicher
+  Einwilligung nach lit. a, mit Widerrufsmöglichkeit.
+- **Zweckbindung:** Welche Daten dürfen aus der Behandlungsakte in den
+  Trainingskontext übernommen werden, und was passiert in der Gegenrichtung,
+  wenn im Training klinisch relevante Angaben entstehen?
+- **Berufsrecht:** Reicht die physiotherapeutische Qualifikation für die
+  angedachten Inhalte, insbesondere im Bereich Ernährung?
+
+**Blockiert:** jedes Feature, das über die Heilbehandlung hinausgeht —
+Trainingspläne für ehemalige Patient:innen, Online-Betreuung,
+Leistungsabrechnung dafür. Vermutlich auch das Datenmodell: eine
+Betreuungsepisode mit Typ ist nachträglich teuer einzuziehen.
+
+**Nicht entschieden:** Ausarbeitung als Idee in
+`docs/product/ideen/00-lebenszyklus-und-zugang.md` (IDEA-LZK-002,
+IDEA-LZK-003). Diese Datei ist nicht normativ und entscheidet nichts davon.
+
+---
+
+### B10 — Automatisierte Progression: MDR-Grenze und Verantwortung
+
+| | |
+|---|---|
+| Dringlichkeit | P2 — vor dem ersten Progressionsfeature |
+| Bezug | §6, §7.1, §16, §17; ADR-005, ADR-006 |
+| Status | offen |
+
+**Frage:** Darf die Plattform die Belastung eines Trainingsplans selbsttätig
+anpassen — und wenn ja, unter welchen Bedingungen?
+
+**Warum offen:** Jannes hat am 2026-09-01 als Ziel benannt, dass die Plattform
+die Progression regelt, damit Patient:innen nicht mehr selbst anpassen müssen.
+[ADR-006](../adr/ADR-006-medical-device-boundary.md) Punkt 4 schließt für V1
+Therapieempfehlungen, Behandlungsauswahl und automatisierte klinische
+Entscheidungen aus. Punkt 2 erlaubt transparente mathematische Berechnungen
+validierter Instrumente. Eine Progressionsregel liegt dazwischen, und wo genau,
+hängt an Details:
+
+- Macht es einen Unterschied, ob die Therapeutin das Regelwerk vorher
+  parametrisiert und je Plan freigibt, oder muss jeder einzelne Schritt
+  bestätigt werden?
+- Ist ein Ampelmodell auf Basis der Schmerzreaktion eine eigene
+  Risikoklassifikation im Sinne von Punkt 4, auch wenn die Schwellen von der
+  Therapeutin stammen?
+- Gilt für die Weiterbetreuung nach Therapieende (B9) ein anderer Maßstab als
+  für die laufende Heilbehandlung — oder verschiebt die Erfassung von Schmerz
+  den Zweck wieder in Richtung Therapie?
+- Wie wird ein Regelwerk versioniert, nachvollziehbar und prüfbar gehalten,
+  damit ein Progressionsschritt aus den gespeicherten Eingaben reproduzierbar
+  ist?
+
+**Blockiert:** jede Form automatischer Trainingsanpassung, das Datenmodell für
+Trainingspläne, Übungsbibliothek und Progressionsregeln.
+
+**Vorläufige Einordnung:** bis zur Entscheidung ist ein solches Feature
+`MDR_REVIEW_REQUIRED` nach ADR-006 Punkt 6 und darf produktiv nicht erreichbar
+sein. Die Frage gehört an die externe regulatorische Prüfung aus B1, nicht in
+einen Feature-Loop.
+
+**Nicht entschieden:** Ausarbeitung als Idee in
+`docs/product/ideen/01-trainingsplaene-und-progression.md`. Diese Datei ist
+nicht normativ und entscheidet nichts davon.
+
+---
+
+### B11 — Paketpreise, Vorauszahlung und Anreize
+
+| | |
+|---|---|
+| Dringlichkeit | P2 — vor dem ersten Paket- oder Rabattfeature |
+| Bezug | §19; ADR-009, B4, B9 |
+| Status | offen |
+
+**Frage:** Wie werden vorausbezahlte Betreuungspakete abgebildet, und welche
+Rabatt- und Anreizformen sind zulässig?
+
+**Warum offen:** Jannes hat am 2026-09-01 Paketpreise für die Weiterbetreuung
+und einen Rabatt für eine Google-Bewertung als Ideen eingebracht.
+[ADR-009](../adr/ADR-009-private-billing-model.md) regelt Einzelleistungen und
+Rechnungen nach erbrachter Leistung. Ein Paket ist eine **Vorauszahlung auf
+noch nicht erbrachte Leistungen** und damit ein Vorgang, den ADR-009 nicht
+kennt:
+
+- **Guthabenführung** gegen erbrachte Leistungen. ADR-009 verlangt, dass keine
+  unbeabsichtigte Mehrfachabrechnung entsteht — beim Paket ist genau das der
+  Fehlerfall.
+- **Steuerzeitpunkt:** Bei Anzahlungen entsteht die Umsatzsteuer mit der
+  Vereinnahmung, nicht mit der Leistung.
+- **Keine gemischten Pakete** aus steuerfreier Heilbehandlung und
+  steuerpflichtigem Training, oder verpflichtende Aufteilung.
+- **Laufzeit, Verfall, Erstattung**, insbesondere beim Rückfall in die
+  Heilbehandlung während eines laufenden Pakets.
+- **GoBD:** Ein Guthabenkonto ist eine steuerlich relevante Aufzeichnung.
+- **Preisversionierung:** laufende Pakete behalten ihren Preis.
+
+**Zum Bewertungsanreiz:** Ein geldwerter Vorteil für eine positive öffentliche
+Bewertung berührt §7 HWG (Werbegaben im Heilbereich), das Lauterkeitsrecht
+(nicht offengelegte und an Positivität geknüpfte Verbraucherbewertungen) und
+die Richtlinien der Bewertungsplattform. Die Einordnung dazu steht in
+`docs/product/ideen/09-angebote-und-abrechnung.md` (IDEA-ANG-002) mit dem
+Ergebnis, davon abzuraten und stattdessen bewertungsunabhängige Rabatte zu
+verwenden. **Das ist eine Empfehlung, keine Entscheidung.** Soll der Anreiz
+trotzdem kommen, ist vorher wettbewerbs- und heilmittelwerberechtliche
+Beratung einzuholen; er wird nicht in einem Feature-Loop entschieden.
+
+**Blockiert:** Paketverkauf, Guthabenverwaltung, Rabattlogik, Preisdarstellung
+im Portal. **Nicht blockiert** ist die reguläre Einzelleistungsabrechnung nach
+ADR-009 — die kann vorher gebaut werden und ist die Voraussetzung dafür.
+
+---
+
 ## C. Widersprüche im Dokument, die aufzulösen sind
 
 Diese Punkte erfordern keine Technologiewahl, sondern eine fachliche Klärung
@@ -466,9 +618,9 @@ und anschließend eine Präzisierung von `PROJECT_PRINCIPLES.md`.
 
 | Begriff | Bezug | Was fehlt |
 |---|---|---|
-| „finalisiert" | §5 | Expliziter Abschluss-/Signaturschritt? Frist? Wer darf finalisieren? Kann eine finalisierte Doku je gelöscht werden? **Entscheidungsentwurf liegt vor: [ADR-016](../adr/ADR-016-clinical-documentation-traceability.md) — Status vorgeschlagen, noch nicht entschieden.** |
-| „nachvollziehbar" | §5 | Versionierung mit abrufbarem Originalinhalt oder nur Änderungs-Log? Zwei verschiedene Datenmodelle. §630f BGB schreibt keine Technik vor, verlangt aber, dass der ursprüngliche Inhalt und der Änderungszeitpunkt erkennbar bleiben. **Entscheidungsentwurf liegt vor: [ADR-016](../adr/ADR-016-clinical-documentation-traceability.md) — Status vorgeschlagen, noch nicht entschieden.** |
-| „bestätigt" | §8 | Der Terminstatus-Automat fehlt vollständig (angefragt / vorgemerkt / bestätigt / abgesagt / nicht angetroffen / durchgeführt). Er treibt Ausfallhonorar, Behandlungsnachweis und Abrechnung. **Achtung:** Die frühere Fassung dieser Zeile führte „dokumentiert" und „abgerechnet" als weitere Terminstufen. [ADR-016](../adr/ADR-016-clinical-documentation-traceability.md) schlägt vor, Terminablauf, Dokumentationsstand, Abrechnung und Zahlung als **getrennte Zustandsbereiche** zu führen; die beiden Stufen sind hier deshalb gestrichen. Wird ADR-016 abgelehnt, ist das rückgängig zu machen. Offen bleibt der Terminautomat selbst, einschließlich „nicht angetroffen" und der Voraussetzungen für Ausfallhonorare — ein Terminstatus allein darf keine Honorarforderung auslösen. |
+| „finalisiert" | §5 | **Entschieden am 2026-09-01 — [ADR-016](../adr/ADR-016-clinical-documentation-record.md):** ausdrücklicher Finalisierungsschritt durch eine:n Therapeut:in, nicht auf den Verfasser beschränkt; automatische Finalisierung nach konfigurierbarer Frist, Voreinstellung Ende des Folgetages; Löschbarkeit ausschließlich über ADR-008. |
+| „nachvollziehbar" | §5 | **Entschieden am 2026-09-01 — [ADR-016](../adr/ADR-016-clinical-documentation-record.md):** Versionierung mit vollständig abrufbarem Originalinhalt je Version, mit Zeitpunkt und Urheber (§630f Abs. 1 S. 2 und 3 BGB). Kein reines Änderungs-Log. Ergänzung als eigener verknüpfter Eintrag, Änderung nur für echte Korrekturen. |
+| „bestätigt" | §8 | Der Terminstatus-Automat fehlt vollständig (angefragt / vorgemerkt / bestätigt / abgesagt / nicht angetroffen / durchgeführt / dokumentiert / abgerechnet). Er treibt Ausfallhonorar, Behandlungsnachweis und Abrechnung. **Vorläufig:** ANN-005 in `ASSUMPTIONS.md` — Abschluss ohne Dokumentationspflicht. |
 | „auditierbar" | §4.2 | siehe C4 |
 | „organisatorische Patientenkommunikation" | §4.3 | siehe C2 |
 | „Behandlungsnachweis" | §4.4 | siehe C1 |

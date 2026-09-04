@@ -132,6 +132,9 @@ grant execute on function app.can_reopen_appointment() to authenticated;
 -- Abschluss ist eine organisatorische Feststellung, dass die Behandlung
 -- stattgefunden hat - keine Aussage ueber ihren Inhalt.
 --
+-- ANN-005 (docs/decisions/ASSUMPTIONS.md): vorlaeufige Annahme, Wiedervorlage
+-- im Epic Behandlungsdokumentation.
+--
 -- Sperre und erwarteter updated_at-Wert wie bei update_appointment: ohne
 -- FOR UPDATE waere die Concurrency-Pruefung unter READ COMMITTED wirkungslos.
 -- -----------------------------------------------------------------------------

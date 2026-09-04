@@ -45,13 +45,16 @@ Kein ADR nötig für alltägliche Umsetzungsdetails.
 
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.2)
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.3)
 - `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist
+- `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
 - `docs/adr/` — was entschieden wurde und warum
 
 Der übliche Weg: Ein Punkt aus `OPEN_DECISIONS.md` wird entschieden, bekommt
 hier ein ADR und wird dort als erledigt markiert. Betrifft die Entscheidung die
 Prinzipien, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit nachgezogen.
+Eine bestätigte Annahme aus `ASSUMPTIONS.md`, deren Rücknahme teuer wäre, geht
+denselben Weg und behält dort einen Verweis auf das ADR.
 
 ## Bestehende ADRs
 
@@ -72,4 +75,4 @@ Prinzipien, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit nachgezogen.
 | [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen |
 | [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen |
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen |
-| [ADR-016](ADR-016-clinical-documentation-traceability.md) | Klinische Dokumentation — Nachvollziehbarkeit und Finalisierung | **Vorgeschlagen** |
+| [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen |
