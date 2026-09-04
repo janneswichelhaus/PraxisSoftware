@@ -8,6 +8,13 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import { canManageWorkingHours, isOwner, type CurrentUser } from '@/features/session/types';
 import {
+  FRIST_VOREINSTELLUNG,
+  FRIST_WERTE,
+  fetchDocumentationDeadline,
+  fristLabel,
+  saveDocumentationDeadline,
+} from '@/features/documentation/api';
+import {
   RASTER_WERTE,
   WOCHENTAGE,
   bloeckeText,
@@ -111,6 +118,99 @@ function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
       <div className="mt-4">
         <Button type="button" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
           {mutation.isPending ? 'Wird gespeichert …' : 'Raster speichern'}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Frist der automatischen Finalisierung (DOK-004)
+// -----------------------------------------------------------------------------
+
+/**
+ * Die Frist steht neben dem Praxisraster, weil beides Grundeinstellungen der
+ * Praxis sind, die nur owner setzt (PROJECT_PRINCIPLES.md 4.1). Verbindlich
+ * prueft `set_documentation_deadline`.
+ */
+function FristEinstellung({ organizationId }: { organizationId: string }) {
+  const queryClient = useQueryClient();
+  const [wert, setWert] = useState<number>(FRIST_VOREINSTELLUNG);
+  const [gespeichert, setGespeichert] = useState(false);
+
+  const frist = useQuery({
+    queryKey: ['documentation-deadline', organizationId],
+    queryFn: () => fetchDocumentationDeadline(organizationId),
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (frist.data !== undefined) setWert(frist.data);
+  }, [frist.data]);
+
+  const mutation = useMutation({
+    mutationFn: () => saveDocumentationDeadline(wert),
+    onSuccess: async () => {
+      setGespeichert(true);
+      await queryClient.invalidateQueries({ queryKey: ['documentation-deadline'] });
+    },
+  });
+
+  // Ein gespeicherter Wert ausserhalb der Stufen bleibt sichtbar und waehlbar.
+  const werte = FRIST_WERTE.includes(wert as (typeof FRIST_WERTE)[number])
+    ? [...FRIST_WERTE]
+    : [...FRIST_WERTE, wert].sort((a, b) => a - b);
+
+  return (
+    <section className="border-line bg-surface mb-8 rounded-lg border p-5">
+      <h2 className="text-ink text-base font-semibold">Automatische Finalisierung</h2>
+      <p className="text-ink-muted mt-1 max-w-prose text-sm">
+        Ein Entwurf der Behandlungsdokumentation wird nach Ablauf dieser Frist automatisch
+        finalisiert und ist ab dann Bestandteil der Akte. Die Frist zählt in Kalendertagen der
+        Praxiszeitzone ab dem Behandlungstag; später angelegte Einträge und Nachträge bekommen sie
+        ab ihrer Anlage.
+      </p>
+
+      {frist.isError ? (
+        <p className="text-danger mt-3 text-sm">
+          Die Dokumentationsfrist konnte nicht geladen werden.
+        </p>
+      ) : null}
+
+      <div className="mt-4 max-w-xs">
+        <Select
+          label="Frist"
+          value={String(wert)}
+          disabled={frist.isPending}
+          onChange={(e) => {
+            setWert(Number(e.target.value));
+            setGespeichert(false);
+          }}
+        >
+          {werte.map((tage) => (
+            <option key={tage} value={tage}>
+              {fristLabel(tage)}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      {mutation.isError ? (
+        <p className="text-danger mt-3 text-sm">{mutation.error.message}</p>
+      ) : null}
+      {gespeichert && !mutation.isPending && !mutation.isError ? (
+        <p className="text-ink-muted mt-3 text-sm" role="status">
+          Die Frist ist gespeichert.
+        </p>
+      ) : null}
+
+      <div className="mt-4">
+        <Button
+          type="button"
+          disabled={mutation.isPending || frist.isPending}
+          onClick={() => mutation.mutate()}
+        >
+          {mutation.isPending ? 'Wird gespeichert …' : 'Frist speichern'}
         </Button>
       </div>
     </section>
@@ -451,10 +551,11 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader
         title="Planung"
-        description="Praxisraster und Arbeitszeiten. Grundlage für die Terminvergabe."
+        description="Praxisraster, Dokumentationsfrist und Arbeitszeiten. Grundlage für Terminvergabe und Akte."
       />
 
       {darfRaster ? <RasterEinstellung aktuell={user.appointmentGridMinutes} /> : null}
+      {darfRaster ? <FristEinstellung organizationId={user.profile.organization_id} /> : null}
 
       {therapeuten.isPending ? <LoadingState label="Personen werden geladen …" /> : null}
       {therapeuten.isError ? (

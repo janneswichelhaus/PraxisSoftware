@@ -39,6 +39,7 @@ const LESEN = 'select * from public.get_treatment_note($1::uuid)';
 const AKTE = 'select * from public.list_patient_treatment_notes($1::uuid, 20, null, null)';
 const NACHWEIS = 'select * from public.list_patient_treatment_evidence($1::uuid, 20, null, null)';
 const UEBERFAELLIGE = 'select public.finalize_overdue_treatment_notes() as n';
+const FRIST_SETZEN = 'select public.set_documentation_deadline($1::smallint) as tage';
 
 const TEXT = 'Synthetischer Testinhalt: Uebungen angeleitet, Belastung gesteigert.';
 
@@ -498,5 +499,104 @@ describe('DOK-004: Systemakteur im Auditlog', () => {
         [organizationId, users.ownerTherapist],
       ),
     ).rejects.toThrow(/audit_log_actor_consistent/);
+  });
+});
+
+// =============================================================================
+// Frist konfigurieren
+// =============================================================================
+
+describe('DOK-004: Frist konfigurieren', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  async function frist(): Promise<number> {
+    const { rows } = await asPostgres<{ tage: number }>(
+      'select documentation_auto_finalize_days as tage from public.organizations where id = $1',
+      [organizationId],
+    );
+    return rows[0]!.tage;
+  }
+
+  it('steht in der Voreinstellung auf dem Ende des Folgetages (ADR-016 Punkt 7)', async () => {
+    expect(await frist()).toBe(1);
+  });
+
+  it('laesst owner die Frist setzen und protokolliert Alt- und Neuwert (ANN-004)', async () => {
+    const { rows } = await asUserCommitted<{ tage: number }>(
+      users.ownerTherapist,
+      FRIST_SETZEN,
+      [3],
+    );
+    expect(rows[0]!.tage).toBe(3);
+    expect(await frist()).toBe(3);
+
+    const eintraege = await auditEintraege('organization.documentation_deadline_changed');
+    expect(eintraege.at(-1)).toMatchObject({
+      subject_type: 'organization',
+      subject_id: organizationId,
+      actor_user_id: users.ownerTherapist,
+      actor_kind: 'user',
+      outcome: 'success',
+    });
+    expect(eintraege.at(-1)?.context).toMatchObject({ surface: 'web', previous_days: 1, days: 3 });
+
+    await asUserCommitted(users.ownerTherapist, FRIST_SETZEN, [1]);
+  });
+
+  it('schreibt bei unveraendertem Wert weder Daten noch Auditeintrag', async () => {
+    const vorher = (await auditEintraege('organization.documentation_deadline_changed')).length;
+    await asUserCommitted(users.ownerTherapist, FRIST_SETZEN, [1]);
+    expect((await auditEintraege('organization.documentation_deadline_changed')).length).toBe(
+      vorher,
+    );
+  });
+
+  it('wirkt unmittelbar auf den Finalisierer', async () => {
+    // Behandlung gestern: mit Frist 1 noch offen, mit Frist 0 ueberfaellig.
+    const t = await terminVorTagen(1);
+    const d = await entwurf(t.id, 1);
+    await lauf();
+    expect(await dokuZeile(d.id)).toMatchObject({ status: 'draft' });
+
+    await asUserCommitted(users.ownerTherapist, FRIST_SETZEN, [0]);
+    try {
+      await lauf();
+      expect(await dokuZeile(d.id)).toMatchObject({
+        status: 'final',
+        finalisation_kind: 'automatic',
+      });
+    } finally {
+      await asUserCommitted(users.ownerTherapist, FRIST_SETZEN, [1]);
+    }
+  });
+
+  it.each([
+    ['therapist', users.therapist],
+    ['team_lead', users.teamLead],
+    ['office', users.office],
+    ['patient', users.patientMax],
+  ])('laesst %s die Frist nicht setzen (4.1)', async (_rolle, actor) => {
+    await expect(asUser(actor, FRIST_SETZEN, [2])).rejects.toThrow(
+      /not allowed to change the documentation deadline/,
+    );
+    expect(await frist()).toBe(1);
+  });
+
+  it('weist Werte ausserhalb von 0 bis 30 ab', async () => {
+    await expect(asUser(users.ownerTherapist, FRIST_SETZEN, [31])).rejects.toThrow(
+      /unsupported documentation deadline/,
+    );
+    await expect(asUser(users.ownerTherapist, FRIST_SETZEN, [-1])).rejects.toThrow(
+      /unsupported documentation deadline/,
+    );
+    await expect(asUser(users.ownerTherapist, FRIST_SETZEN, [null])).rejects.toThrow(
+      /unsupported documentation deadline/,
+    );
+  });
+
+  it('laesst einen nicht angemeldeten Zugriff nicht zu', async () => {
+    await expect(asAnon(FRIST_SETZEN, [2])).rejects.toThrow(/permission denied|not authenticated/);
   });
 });

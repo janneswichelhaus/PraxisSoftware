@@ -686,3 +686,104 @@ $$;
 
 comment on function public.list_patient_treatment_notes(uuid, integer, timestamptz, uuid) is
   'Klinische Sicht der Akte (DOK-003, DOK-004): Termine eines Patienten mit ihren Eintraegen samt Inhalt und Art der Finalisierung, protokolliert je Eintrag treatment_note.viewed (ADR-010, ADR-016 Punkt 8 und 9). Nur owner, therapist und team_lead.';
+
+-- -----------------------------------------------------------------------------
+-- Frist konfigurieren
+--
+-- Die Frist entscheidet, wann ein Entwurf ohne Zutun Bestandteil der Akte
+-- wird - eine Grundeinstellung der Praxis mit rechtlicher Wirkung. Nur owner
+-- darf sie setzen (PROJECT_PRINCIPLES.md 4.1 "Praxiseinstellungen"), wie beim
+-- Praxisraster.
+-- -----------------------------------------------------------------------------
+create or replace function app.can_change_documentation_deadline()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select app.has_any_role('owner')
+$$;
+
+comment on function app.can_change_documentation_deadline() is
+  'Rollen, die die Frist der automatischen Finalisierung setzen duerfen: nur owner (PROJECT_PRINCIPLES.md 4.1, DOK-004).';
+
+grant execute on function app.can_change_documentation_deadline() to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- set_documentation_deadline
+--
+-- Der Auditeintrag traegt alten und neuen Wert: eine Frist in Tagen ist eine
+-- organisatorische Einstellung ohne Personenbezug - dieselbe Abwaegung wie
+-- beim Praxisraster (ANN-004 in docs/decisions/ASSUMPTIONS.md).
+-- -----------------------------------------------------------------------------
+create function public.set_documentation_deadline(p_days smallint)
+returns smallint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor uuid;
+  v_org   uuid;
+  v_alt   smallint;
+begin
+  v_actor := auth.uid();
+  if v_actor is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  if not app.can_change_documentation_deadline() then
+    raise exception 'not allowed to change the documentation deadline' using errcode = '42501';
+  end if;
+
+  v_org := app.current_organization_id();
+  if v_org is null then
+    raise exception 'not allowed to change the documentation deadline' using errcode = '42501';
+  end if;
+
+  if p_days is null or p_days < 0 or p_days > 30 then
+    raise exception 'unsupported documentation deadline' using errcode = '22023';
+  end if;
+
+  select o.documentation_auto_finalize_days into v_alt
+  from public.organizations o
+  where o.id = v_org
+  for update;
+
+  if not found then
+    raise exception 'organization not found' using errcode = 'P0002';
+  end if;
+
+  -- Speichern ohne tatsaechliche Aenderung ist kein Vorgang.
+  if v_alt = p_days then
+    return v_alt;
+  end if;
+
+  update public.organizations
+     set documentation_auto_finalize_days = p_days
+   where id = v_org;
+
+  insert into public.audit_log (
+    organization_id, actor_user_id, action, subject_type, subject_id, outcome, context
+  )
+  values (
+    v_org, v_actor, 'organization.documentation_deadline_changed', 'organization', v_org, 'success',
+    jsonb_build_object(
+      'surface', 'web',
+      -- ANN-004 (docs/decisions/ASSUMPTIONS.md): Alt- und Neuwert im Kontext,
+      -- weil eine Frist in Tagen keinen Personenbezug hat.
+      'previous_days', v_alt,
+      'days', p_days
+    )
+  );
+
+  return p_days;
+end;
+$$;
+
+comment on function public.set_documentation_deadline(smallint) is
+  'Setzt die Frist der automatischen Finalisierung in Kalendertagen (0 bis 30) und protokolliert organization.documentation_deadline_changed (DOK-004, ADR-010). Nur owner.';
+
+revoke all on function public.set_documentation_deadline(smallint) from public, anon;
+grant execute on function public.set_documentation_deadline(smallint) to authenticated;

@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as SchedulingApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as DokumentationApi from '@/features/documentation/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
@@ -14,6 +15,8 @@ const saveWorkingHours = vi.fn();
 const saveWorkingHourException = vi.fn();
 const saveAppointmentGrid = vi.fn();
 const fetchAssignableTherapists = vi.fn();
+const fetchDocumentationDeadline = vi.fn();
+const saveDocumentationDeadline = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof SchedulingApi>();
@@ -41,6 +44,16 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   };
 });
 
+vi.mock('@/features/documentation/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof DokumentationApi>();
+  return {
+    ...actual,
+    fetchDocumentationDeadline: (organizationId: string) =>
+      fetchDocumentationDeadline(organizationId) as Promise<number>,
+    saveDocumentationDeadline: (tage: number) => saveDocumentationDeadline(tage) as Promise<void>,
+  };
+});
+
 const { SchedulingPage } = await import('./SchedulingPage');
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['office']) {
@@ -60,6 +73,10 @@ describe('SchedulingPage', () => {
     saveWorkingHourException.mockReset();
     saveAppointmentGrid.mockReset();
     fetchAssignableTherapists.mockReset();
+    fetchDocumentationDeadline.mockReset();
+    saveDocumentationDeadline.mockReset();
+    fetchDocumentationDeadline.mockResolvedValue(1);
+    saveDocumentationDeadline.mockResolvedValue(undefined);
 
     fetchAssignableTherapists.mockResolvedValue([
       { staff_member_id: ANNA, display_name: 'Anna Beispiel' },
@@ -106,6 +123,75 @@ describe('SchedulingPage', () => {
         rendern([rolle]);
         await wochenplanAbwarten();
         expect(screen.queryByLabelText('Minutenraster')).not.toBeInTheDocument();
+      },
+    );
+  });
+
+  describe('Dokumentationsfrist (DOK-004)', () => {
+    it('zeigt owner die gespeicherte Frist mit den Stufen', async () => {
+      fetchDocumentationDeadline.mockResolvedValue(3);
+      rendern(['owner']);
+
+      const auswahl = await screen.findByLabelText('Frist');
+      await waitFor(() => expect(auswahl).toHaveValue('3'));
+      const werte = Array.from(auswahl.querySelectorAll('option')).map((o) => o.textContent);
+      expect(werte).toEqual([
+        'Ende des Behandlungstages',
+        'Ende des Folgetages',
+        'Ende des 2. Tages nach der Behandlung',
+        'Ende des 3. Tages nach der Behandlung',
+        'Ende des 7. Tages nach der Behandlung',
+        'Ende des 14. Tages nach der Behandlung',
+      ]);
+      expect(fetchDocumentationDeadline).toHaveBeenCalledWith(
+        '22222222-2222-4222-8222-000000000001',
+      );
+    });
+
+    it('zeigt einen gespeicherten Wert ausserhalb der Stufen trotzdem an', async () => {
+      fetchDocumentationDeadline.mockResolvedValue(5);
+      rendern(['owner']);
+
+      const auswahl = await screen.findByLabelText('Frist');
+      await waitFor(() => expect(auswahl).toHaveValue('5'));
+      expect(auswahl).toHaveTextContent('Ende des 5. Tages nach der Behandlung');
+    });
+
+    it('speichert die gewaehlte Frist', async () => {
+      const user = userEvent.setup();
+      rendern(['owner']);
+      const auswahl = await screen.findByLabelText('Frist');
+      await waitFor(() => expect(auswahl).toHaveValue('1'));
+
+      await user.selectOptions(auswahl, '0');
+      await user.click(screen.getByRole('button', { name: 'Frist speichern' }));
+
+      await waitFor(() => expect(saveDocumentationDeadline).toHaveBeenCalledWith(0));
+      expect(await screen.findByRole('status')).toHaveTextContent('Die Frist ist gespeichert.');
+    });
+
+    it('meldet einen Fehler beim Speichern ohne interne Details', async () => {
+      const user = userEvent.setup();
+      saveDocumentationDeadline.mockRejectedValue(
+        new Error('Die Dokumentationsfrist konnte nicht gespeichert werden.'),
+      );
+      rendern(['owner']);
+      await waitFor(() => expect(screen.getByLabelText('Frist')).toHaveValue('1'));
+
+      await user.click(screen.getByRole('button', { name: 'Frist speichern' }));
+
+      expect(
+        await screen.findByText('Die Dokumentationsfrist konnte nicht gespeichert werden.'),
+      ).toBeInTheDocument();
+    });
+
+    it.each([['therapist'], ['team_lead'], ['office']] as const)(
+      'zeigt %s die Frist nicht und fragt sie nicht ab',
+      async (rolle) => {
+        rendern([rolle]);
+        await wochenplanAbwarten();
+        expect(screen.queryByLabelText('Frist')).not.toBeInTheDocument();
+        expect(fetchDocumentationDeadline).not.toHaveBeenCalled();
       },
     );
   });

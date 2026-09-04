@@ -461,3 +461,49 @@ export async function fetchPatientTreatmentNotesPage(
   if (error) throw new Error('Die Behandlungsdokumentation konnte nicht geladen werden.');
   return z.array(patientTreatmentNotesSchema).parse(data ?? []);
 }
+
+// -----------------------------------------------------------------------------
+// Frist der automatischen Finalisierung (DOK-004)
+// -----------------------------------------------------------------------------
+
+/**
+ * Angebotene Fristen in Kalendertagen nach dem Behandlungstag. Die Datenbank
+ * erlaubt 0 bis 30; die Auswahl beschraenkt sich auf sinnvolle Stufen, ein
+ * anderer gespeicherter Wert wird trotzdem angezeigt.
+ */
+export const FRIST_WERTE = [0, 1, 2, 3, 7, 14] as const;
+
+/** Voreinstellung nach ADR-016 Punkt 7: Ende des auf die Behandlung folgenden Kalendertages. */
+export const FRIST_VOREINSTELLUNG = 1;
+
+export function fristLabel(tage: number): string {
+  if (tage === 0) return 'Ende des Behandlungstages';
+  if (tage === 1) return 'Ende des Folgetages';
+  return `Ende des ${tage}. Tages nach der Behandlung`;
+}
+
+const deadlineSchema = z.object({ documentation_auto_finalize_days: z.number().int() });
+
+/** Liest die Frist der eigenen Praxis. RLS gibt nur die eigene Organisation frei. */
+export async function fetchDocumentationDeadline(organizationId: string): Promise<number> {
+  const { data, error } = await getSupabase()
+    .from('organizations')
+    .select('documentation_auto_finalize_days')
+    .eq('id', organizationId)
+    .maybeSingle();
+
+  if (error || !data) throw new Error('Die Dokumentationsfrist konnte nicht geladen werden.');
+  return deadlineSchema.parse(data).documentation_auto_finalize_days;
+}
+
+/**
+ * Setzt die Frist. Nur owner - verbindlich prueft `set_documentation_deadline`;
+ * die ausgeblendete Einstellung ist keine Zugriffskontrolle (ADR-004).
+ */
+export async function saveDocumentationDeadline(tage: number): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_documentation_deadline', {
+    p_days: tage,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw new Error('Die Dokumentationsfrist konnte nicht gespeichert werden.');
+}
