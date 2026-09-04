@@ -9,6 +9,7 @@ import {
   canManageAppointments,
   type CurrentUser,
 } from '@/features/session/types';
+import { PatientRecordDocumentation } from '@/features/documentation/PatientRecordDocumentation';
 import {
   ageInYears,
   fetchPatient,
@@ -163,6 +164,10 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
           <StatusAktion patient={patient} />
         </div>
       ) : null}
+
+      {/* Die Dokumentation kommt ueber eigene, rollenabhaengig projizierte
+          Lesepfade - nie aus den Stammdaten (DOK-003, ADR-004). */}
+      <PatientRecordDocumentation patient={patient} user={user} />
 
       <p className="text-ink-subtle mt-10 text-xs leading-relaxed">
         Zugriffe auf Patientenakten werden protokolliert.

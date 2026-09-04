@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import { appointmentStatusSchema, appointmentTypeSchema } from '@/features/appointments/api';
 
 /**
  * Datenzugriff auf die Behandlungsdokumentation (DOK-001, DOK-002).
@@ -24,7 +25,7 @@ export const treatmentNoteStatusLabels: Record<TreatmentNoteStatus, string> = {
   final: 'Finalisiert',
 };
 
-const treatmentNoteSchema = z.object({
+export const treatmentNoteSchema = z.object({
   id: z.string(),
   appointment_id: z.string(),
   /** Gesetzt, wenn dieser Eintrag ein Nachtrag ist (ADR-016 Punkt 6). */
@@ -325,4 +326,101 @@ export function begruendungFehler(reason: string): string | undefined {
     return `Höchstens ${MAX_BEGRUENDUNG.toLocaleString('de-DE')} Zeichen.`;
   }
   return undefined;
+}
+
+// -----------------------------------------------------------------------------
+// Dokumentation in der Akte (DOK-003)
+//
+// Die Akte liest chronologisch ueber alle Termine eines Patienten - in zwei
+// Sichten mit zwei Rueckgabetypen, weil ADR-004 rollenabhaengige Projektionen
+// verlangt und keine genullten Spalten: den Behandlungsnachweis fuer office
+// (PROJECT_PRINCIPLES.md 4.4) und die klinische Sicht fuer owner, therapist
+// und team_lead. Welche Sicht eine Rolle bekommt, entscheidet der Server;
+// die Oberflaeche waehlt nur, welche sie anfragt.
+// -----------------------------------------------------------------------------
+
+/**
+ * Termine je Seite der Akte.
+ *
+ * Muss unter der Obergrenze der Datenbank (50) bleiben. Klein genug, dass ein
+ * einzelner Aufruf nicht die ganze Akte offenlegt, gross genug fuer einen
+ * Behandlungsverlauf ohne staendiges Nachladen.
+ */
+export const AKTE_SEITENGROESSE = 20;
+
+/** Keyset-Cursor: der letzte Termin der vorigen Seite (starts_at, id). */
+export interface AkteCursor {
+  beforeStartsAt: string;
+  beforeId: string;
+}
+
+const recordAppointmentSchema = z.object({
+  appointment_id: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: appointmentTypeSchema,
+  appointment_status: appointmentStatusSchema,
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  organization_time_zone: z.string(),
+});
+
+/** Ein Termin der Akte - der organisatorische Rahmen beider Sichten. */
+export type RecordAppointment = z.infer<typeof recordAppointmentSchema>;
+
+export const documentationStatusSchema = z.enum(['none', 'draft', 'final']);
+export type DocumentationStatus = z.infer<typeof documentationStatusSchema>;
+
+/**
+ * Behandlungsnachweis (ANN-006): Dokumentationsstand ohne Inhalt. Der
+ * Zeitpunkt ist nur fuer finalisierte Eintraege gesetzt - ein Entwurf ist kein
+ * Nachweis (ADR-016 Punkt 3).
+ */
+const treatmentEvidenceSchema = recordAppointmentSchema.extend({
+  documentation_status: documentationStatusSchema,
+  documented_at: z.string().nullable(),
+});
+
+export type TreatmentEvidenceEntry = z.infer<typeof treatmentEvidenceSchema>;
+
+function seitenArgumente(cursor: AkteCursor | null) {
+  return {
+    p_limit: AKTE_SEITENGROESSE,
+    p_before_starts_at: cursor?.beforeStartsAt ?? null,
+    p_before_id: cursor?.beforeId ?? null,
+  };
+}
+
+/**
+ * Eine Seite des Behandlungsnachweises.
+ *
+ * Kein klinischer Inhalt, deshalb serverseitig auch kein Auditeintrag; das
+ * Oeffnen der Akte selbst wird als patient_record.viewed protokolliert.
+ */
+export async function fetchTreatmentEvidencePage(
+  patientId: string,
+  cursor: AkteCursor | null,
+): Promise<TreatmentEvidenceEntry[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_treatment_evidence', {
+    p_patient_id: patientId,
+    ...seitenArgumente(cursor),
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Der Behandlungsnachweis konnte nicht geladen werden.');
+  return z.array(treatmentEvidenceSchema).parse(data ?? []);
+}
+
+/**
+ * Cursor fuer die naechste Seite - oder null, wenn die Seite nicht voll war.
+ *
+ * Eine volle Seite kann die letzte sein; dann liefert die naechste Anfrage
+ * eine leere Seite, und die Schaltflaeche verschwindet. Das ist billiger als
+ * eine eigene Zaehlabfrage und kostet nur einen leeren Aufruf.
+ */
+export function naechsteAkteSeite(
+  seite: readonly Pick<RecordAppointment, 'starts_at' | 'appointment_id'>[],
+): AkteCursor | null {
+  if (seite.length < AKTE_SEITENGROESSE) return null;
+  const letzte = seite[seite.length - 1]!;
+  return { beforeStartsAt: letzte.starts_at, beforeId: letzte.appointment_id };
 }

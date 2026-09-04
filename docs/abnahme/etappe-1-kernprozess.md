@@ -1,6 +1,6 @@
 # Abnahme: Behandlungsdokumentation
 
-Manuelle Prüfschritte der Loops DOK-001 und DOK-002 (Etappe 1, „Der
+Manuelle Prüfschritte der Loops DOK-001, DOK-002 und DOK-003 (Etappe 1, „Der
 Kernprozess wird vollständig").
 
 > Voraussetzung ist der eingerichtete lokale Stack — Schritte 1 bis 6 in
@@ -95,3 +95,40 @@ Dokumentieren (`therapist`, `team_lead`). Den Änderungsverlauf darf zusätzlich
     `treatment_note.finalized`, `treatment_note.revised`,
     `treatment_note.addendum_created` und `treatment_note.history_viewed` —
     ohne Behandlungsinhalt und **ohne die Korrekturbegründung**.
+
+## DOK-003 — Dokumentation in der Akte, rollenabhängig projiziert
+
+Voraussetzung: mindestens ein Termin von „Max Mustermann" mit finalisierter
+Dokumentation (DOK-002) und einer mit Entwurf (DOK-001). Die Akte zeigt die
+Termine, die bereits begonnen haben, sowie jeden dokumentierten Termin —
+neueste zuerst. **Zukünftige Termine ohne Dokumentation stehen nur im
+Kalender.** Die Verwaltung (`office`) sieht den Behandlungsnachweis nach §4.4,
+die klinischen Rollen (`owner`, `therapist`, `team_lead`) die Dokumentation mit
+Inhalt.
+
+### Behandlungsnachweis (office)
+
+1. Als `olivia.office@praxis.invalid` „Patienten" → „Max Mustermann" öffnen.
+   Unter „Versorgung" steht der Abschnitt **„Behandlungsnachweis"** mit dem
+   Hinweis, dass er keine Behandlungsinhalte enthält.
+2. Je Termin stehen Datum, Zeitraum, Terminart, behandelnde Person und der
+   Terminstatus („Geplant", „Abgeschlossen" oder „Abgesagt") — und darunter
+   genau einer dieser Sätze: „Dokumentation finalisiert am … Uhr.",
+   „Dokumentation als Entwurf vorhanden, noch nicht finalisiert." oder
+   „Keine Dokumentation.". **Nirgends steht Behandlungstext, kein Verfasser,
+   keine Versionszahl.**
+3. „Zum Termin" führt in die Detailansicht des Termins — dort fehlt der
+   Abschnitt „Behandlungsdokumentation" für office weiterhin vollständig.
+4. Gegenprobe Zukunft: als office einen Termin für Max in zwei Wochen anlegen
+   und zurück in die Akte gehen. Der Termin fehlt im Behandlungsnachweis, steht
+   aber im Kalender. Sobald eine Therapeutin ihn dokumentiert, erscheint er.
+5. Gegenprobe Absage: einen vergangenen oder dokumentierten Termin absagen.
+   Er bleibt im Nachweis mit Status „Abgesagt" stehen.
+6. Blättern: hat Max mehr als 20 Termine in der Akte, steht unter der Liste
+   „Ältere Termine anzeigen". Ein Klick hängt die nächsten an; bei der letzten
+   Seite verschwindet die Schaltfläche. Ohne so viele Termine gibt es sie nicht.
+7. Als owner „Praxis → Sicherheit → Audit" öffnen: das Öffnen der Akte steht
+   als `patient_record.viewed`. Für den Nachweis selbst gibt es **keinen**
+   eigenen Eintrag — er enthält keinen klinischen Inhalt (ANN-006). Das ist
+   ausdrücklich **kein** Sicherheitsnachweis; verbindlich ist
+   `list_patient_treatment_evidence`, geprüft in `pnpm test:db`.

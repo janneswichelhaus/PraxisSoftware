@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-03
+Zuletzt aktualisiert: 2026-09-04
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -111,7 +111,8 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | offen  | Jannes                        |
 | ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | DOK-003, spätestens ABR-002   |
+| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | ABR-002                       |
+| ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; C1 bei ABR-002 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -297,3 +298,64 @@ oder den Abschluss aus der Finalisierung der Dokumentation heraus auslösen —
 Aufwand `klein` bis `mittel`, je nach Variante. Die Entscheidung fällt bei
 DOK-003, spätestens wenn ABR-002 abgeschlossene Termine zu Leistungen macht,
 und wird hier nachgetragen.
+
+### ANN-006 — Umfang und Protokollierung des Behandlungsnachweises in der Akte
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | DOK-003 (Dokumentation in der Akte, rollenabhängig projiziert); überbrückt Punkt C1 in `OPEN_DECISIONS.md` |
+| Status | offen, seit 2026-09-04 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; der Leistungsanteil (C1) spätestens bei ABR-002 |
+
+**Annahme.** Der Behandlungsnachweis nach `PROJECT_PRINCIPLES.md` §4.4 ist in
+der Akte eine eigene Serverfunktion (`list_patient_treatment_evidence`) mit
+genau diesem Datenumfang je Termin: Datum, Zeitraum, Terminart, behandelnde
+Person, Terminstatus, Dokumentationsstand (`none`, `draft`, `final`) und der
+Zeitpunkt der Finalisierung. **Nicht enthalten** sind der klinische Inhalt,
+Verfasser- und Finalisierernamen, Versionszahlen, Nachträge,
+Korrekturbegründungen und — solange es keine Leistungserfassung gibt — die
+„erbrachte Leistung". Ein Entwurf wird nur als vorhanden gemeldet, ohne
+Zeitpunkt. Lesen dürfen alle vier Praxisrollen; Patientenkonten nicht. Das
+Lesen des Nachweises erzeugt **keinen eigenen Auditeintrag**: er enthält
+keinen klinischen Inhalt, und das Öffnen der Akte, in der er steht, wird
+bereits als `patient_record.viewed` protokolliert.
+
+**Begründung.** §4.4 zählt die Felder des Nachweises auf und verbietet dem
+Office ausdrücklich den medizinischen Inhalt; ADR-004 macht den Nachweis zu
+einer „eigenen Sicht mit eigenem Datenumfang, kein gefilterter Auszug". Die
+Datenminimierung nach Art. 5 Abs. 1 lit. c DSGVO verlangt, dass für den Zweck
+— den organisatorischen Streitfall („am 14.08. sei niemand erschienen") —
+nur das Nötige geliefert wird: dass ein Termin stattfand, wer eingeplant war
+und ob und wann dokumentiert wurde. Der Zeitpunkt der Finalisierung ist dabei
+der Zeitpunkt, ab dem der Eintrag Bestandteil der Akte ist (ADR-016 Punkt 4);
+ein Entwurf ist kein Nachweis im Sinne von §630f BGB (ADR-016 Punkt 3) und
+bekommt deshalb keinen. Versionen und Nachträge unterliegen nach ADR-016
+Punkt 8 derselben Projektion wie der Inhalt und bleiben dem Office
+verschlossen. „Signatur/Bestätigung der Behandlung" (§4.4) wird durch die
+Finalisierung selbst abgebildet, nicht durch die Nennung der finalisierenden
+Person — die restriktivere Lesart nach §16. Die „erbrachte Leistung" kann
+nicht geliefert werden, weil es sie im System noch nicht gibt; ob
+Leistungsziffern organisatorisch oder klinisch sind, bleibt C1. Für die
+Protokollierung gilt ADR-010: auditpflichtig sind das Öffnen der Akte und der
+Zugriff auf klinische Dokumente; der Nachweis ist kein klinisches Dokument.
+**Unsicher** ist, ob die Datenschutzprüfung das Lesen des Dokumentationsstands
+selbst als protokollpflichtigen Zugriff einstuft.
+
+**Verankerung.** `app.can_read_treatment_evidence()` und die Spaltenliste von
+`list_patient_treatment_evidence` in
+`supabase/migrations/20260904110000_patient_record_documentation.sql` (beide
+tragen die Kennung); `canReadTreatmentEvidence` in
+`src/features/session/types.ts`; Datenbanktest „DOK-003: Behandlungsnachweis
+in der Akte" in `pnpm test:db` (prüft unter anderem, dass der Rückgabetyp
+keine Inhaltsspalte kennt und kein Auditeintrag entsteht); Abnahmeschritt
+DOK-003 in `docs/abnahme/etappe-1-kernprozess.md`.
+
+**Änderungspfad.** Spalte hinzufügen oder entfernen (etwa die finalisierende
+Person): eine Migration, die die Funktion ersetzt, plus das Schema in
+`src/features/documentation/api.ts` — Aufwand `klein`. Eigenes Auditereignis
+für den Nachweis: Ereigniskatalog erweitern und einen Insert in der Funktion
+ergänzen — Aufwand `klein`. Leistungen im Nachweis: fällt mit C1 bei ABR-002
+und braucht dann eine eigene Spalte aus der Leistungserfassung — Aufwand
+`mittel`. Rollenschnitt: `app.can_read_treatment_evidence()` ersetzen —
+Aufwand `klein`.

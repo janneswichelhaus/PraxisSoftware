@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
+import type * as DokumentationApi from '@/features/documentation/api';
 import type * as RouterModule from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -25,6 +26,7 @@ const aktiv: PatientsApi.Patient = {
 const fetchPatient = vi.fn();
 const setPatientStatus = vi.fn();
 const logPatientRecordView = vi.fn();
+const fetchTreatmentEvidencePage = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
@@ -33,6 +35,20 @@ vi.mock('./api', async (importOriginal) => {
     fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
     setPatientStatus: (id: string, status: string) => setPatientStatus(id, status) as Promise<void>,
     logPatientRecordView: (id: string) => logPatientRecordView(id) as Promise<void>,
+  };
+});
+
+// Die Akte holt ihre Dokumentation ueber eigene Lesepfade (DOK-003). Hier
+// zaehlt nur, dass der Abschnitt rollenabhaengig da ist; seine Darstellung hat
+// eigene Tests in features/documentation.
+vi.mock('@/features/documentation/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof DokumentationApi>();
+  return {
+    ...actual,
+    fetchTreatmentEvidencePage: (patientId: string, cursor: DokumentationApi.AkteCursor | null) =>
+      fetchTreatmentEvidencePage(patientId, cursor) as Promise<
+        DokumentationApi.TreatmentEvidenceEntry[]
+      >,
   };
 });
 
@@ -48,9 +64,11 @@ describe('PatientDetailPage', () => {
     fetchPatient.mockReset();
     setPatientStatus.mockReset();
     logPatientRecordView.mockReset();
+    fetchTreatmentEvidencePage.mockReset();
     fetchPatient.mockResolvedValue(aktiv);
     setPatientStatus.mockResolvedValue(undefined);
     logPatientRecordView.mockResolvedValue(undefined);
+    fetchTreatmentEvidencePage.mockResolvedValue([]);
   });
 
   // Wer die Kartei lesen darf, darf die Stammdaten auch aendern - dieselbe
@@ -168,6 +186,27 @@ describe('PatientDetailPage', () => {
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     expect(logPatientRecordView).not.toHaveBeenCalled();
+  });
+
+  describe('Dokumentation in der Akte (DOK-003)', () => {
+    it('zeigt office den Behandlungsnachweis', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['office'])} />);
+
+      expect(
+        await screen.findByRole('region', { name: 'Behandlungsnachweis' }),
+      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(fetchTreatmentEvidencePage).toHaveBeenCalledWith(PATIENT_ID, null),
+      );
+    });
+
+    it('zeigt einem Patientenkonto keinen Dokumentationsabschnitt', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['patient'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.queryByRole('region', { name: 'Behandlungsnachweis' })).not.toBeInTheDocument();
+      expect(fetchTreatmentEvidencePage).not.toHaveBeenCalled();
+    });
   });
 
   describe('Einstieg in die Terminanlage', () => {

@@ -8,22 +8,19 @@ import {
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
-import { formatLocalDate, formatLocalTime, type Appointment } from '@/features/appointments/api';
+import type { Appointment } from '@/features/appointments/api';
 import {
   fetchTreatmentDocumentation,
   finalizeTreatmentNote,
   treatmentNoteStatusLabels,
   type TreatmentNote,
 } from './api';
+import { zeitpunkt } from './format';
 
 const linkPrimaer =
   'bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors';
 const linkSekundaer =
   'border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors';
-
-function zeitpunkt(wert: string, zone: string): string {
-  return `${formatLocalDate(wert, zone)}, ${formatLocalTime(wert, zone)} Uhr`;
-}
 
 /**
  * Die Herkunftszeile eines Eintrags.
