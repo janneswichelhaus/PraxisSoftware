@@ -116,6 +116,10 @@ function Behandlungsnachweis({ patient }: { patient: Patient }) {
     queryFn: ({ pageParam }) => fetchTreatmentEvidencePage(patient.id, pageParam),
     initialPageParam: null as AkteCursor | null,
     getNextPageParam: (letzteSeite) => naechsteAkteSeite(letzteSeite),
+    // Beim Oeffnen der Akte immer der aktuelle Stand: wer gerade am Termin
+    // abgesagt oder finalisiert hat, soll das hier sofort sehen - unabhaengig
+    // davon, welcher Schreibweg die Aenderung ausgeloest hat.
+    staleTime: 0,
     retry: false,
   });
 
@@ -228,6 +232,11 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
     queryFn: ({ pageParam }) => fetchPatientTreatmentNotesPage(patient.id, pageParam),
     initialPageParam: null as AkteCursor | null,
     getNextPageParam: (letzteSeite) => naechsteAkteSeite(letzteSeite),
+    // Wie beim Nachweis: beim Oeffnen immer der aktuelle Stand. Jeder erneute
+    // Serverzugriff ist ein erneutes Lesen und wird als solches protokolliert;
+    // aus dem Zwischenspeicher gezeigte Inhalte erzeugen keinen zweiten
+    // Eintrag, weil der Server sie nicht erneut geliefert hat (ADR-010).
+    staleTime: 0,
     retry: false,
   });
 
