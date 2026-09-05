@@ -24,9 +24,11 @@ import {
  *               Ausstellen vergeben
  *   Zahlungen   eigene Transaktionen, Teilzahlungen möglich
  *
- * Alle vier sind Vorschau. Sichtbar ist vor allem die Abhängigkeit, die den
- * Bau bremst: Ohne finalisierte Dokumentation gibt es keine endgültige
- * Fakturierung, und wie finalisiert wird, ist noch nicht entschieden.
+ * Alle vier sind Vorschau. Sichtbar ist vor allem die Abhängigkeit, die die
+ * echte Anbindung bestimmt: Ohne finalisierte Dokumentation gibt es keine
+ * endgültige Fakturierung. Die Finalisierung selbst ist seit ADR-016 und
+ * DOK-002/DOK-004 entschieden und gebaut; offen ist nur noch die Kopplung an
+ * die Leistungserfassung (ABR-002).
  */
 
 const rechnungTon: Record<Rechnungsstand, Ton> = {
@@ -154,10 +156,11 @@ export function ServicesPage() {
       </ul>
 
       <OffeneEntscheidung titel="Dokumentation vor Fakturierung">
-        Diese Abhängigkeit blockiert nicht den Aufbau der Ansichten, wohl aber ihre echte Funktion:
-        Wie eine Dokumentation finalisiert wird und wer das darf, ist noch nicht entschieden
-        (PROJECT_PRINCIPLES.md 5). Eine Leistung darf außerdem nicht unbeabsichtigt mehrfach
-        abgerechnet werden – dafür braucht es die echte Anbindung.
+        Die Finalisierung der Dokumentation ist entschieden und gebaut (ADR-016, DOK-002 und
+        DOK-004). Offen ist die Kopplung an die Leistungserfassung: welche Leistung als abrechenbar
+        gilt, solange die Dokumentation zum Termin nicht finalisiert ist, und wie ein begründeter
+        Override protokolliert wird (PROJECT_PRINCIPLES.md 19). Eine Leistung darf außerdem nicht
+        unbeabsichtigt mehrfach abgerechnet werden – dafür braucht es die echte Anbindung (ABR-002).
       </OffeneEntscheidung>
     </>
   );

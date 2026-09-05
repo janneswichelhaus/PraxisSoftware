@@ -220,7 +220,7 @@ erst eine Feature-Spezifikation.
 |---|---|
 | Status | notiert |
 | Quelle | Umbau auf Arbeitsbereiche, 2026-09-05 (Vorschau-Personalakte, entfallen) |
-| Berührt | STAFF-001, `PROJECT_PRINCIPLES.md` §20, §4.7, [ADR-008](../../adr/ADR-008-retention-and-deletion.md) |
+| Berührt | STAFF-001, `PROJECT_PRINCIPLES.md` §20, §4.7, [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md) |
 
 **Idee.** Die Mitarbeiterverwaltung um die Angaben ergänzen, die eine
 Personalakte üblicherweise trägt: Eintrittsdatum, Urlaubsanspruch,

@@ -222,7 +222,8 @@ Kompakt berichten:
 9. Was das logisch nächste Epic wäre — als Vorschlag mit Zuschnitt
 
 Dann in `docs/development/ROADMAP.md` den Eintrag in der Fortschrittstabelle
-auf `fertig` setzen, mit Datum und Commit. Ein Eintrag ohne durchlaufenen
+auf `fertig` setzen, mit Datum und Commit, und den Abschnitt „Nächster Loop"
+auf den folgenden Eintrag der Roadmap stellen. Ein Eintrag ohne durchlaufenen
 Schritt I wird nicht abgehakt.
 
 **Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein

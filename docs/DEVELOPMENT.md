@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand: 2026-09-04 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-05 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
@@ -9,12 +9,12 @@ Stand: 2026-09-04 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 ## Voraussetzungen
 
-| Werkzeug          | Version | Zweck                                              |
-| ----------------- | ------- | -------------------------------------------------- |
-| Node.js           | ≥ 22    | Laufzeit                                           |
-| pnpm              | 10.x    | Paketmanager                                       |
-| PostgreSQL-Server | 16      | lokale Testdatenbank für Migrations- und RLS-Tests |
-| Docker            | aktuell | Supabase-Stack: Anmeldung und echte E2E-Tests      |
+| Werkzeug          | Version | Zweck                                                                            |
+| ----------------- | ------- | -------------------------------------------------------------------------------- |
+| Node.js           | ≥ 22    | Laufzeit                                                                         |
+| pnpm              | 10.x    | Paketmanager                                                                     |
+| PostgreSQL-Server | 16      | lokale Testdatenbank für Migrations- und RLS-Tests (Linux oder WSL, siehe unten) |
+| Docker            | aktuell | Supabase-Stack: Anmeldung und echte E2E-Tests                                    |
 
 ## Erste Schritte
 
@@ -45,6 +45,15 @@ Supabase-Instanz eingespielt.
 Der Stand ist jederzeit aus **Migrationen + Seed** reproduzierbar. Es gibt
 keinen manuell gepflegten Zwischenzustand.
 
+`scripts/test-db.sh` sucht den Server ausschließlich unter
+`/usr/lib/postgresql/*/bin` — also auf Linux beziehungsweise in WSL. Unter
+Windows (Git Bash) läuft `pnpm db:start` deshalb nicht; dort bleibt
+`pnpm test:db` dem CI-Job `database` und der Cloud-Entwicklungsumgebung
+überlassen, oder es wird in WSL ausgeführt. **Niemals** `TEST_DATABASE_URL`
+auf die Datenbank des Supabase-Stacks (Port 54322) richten: der Testlauf
+löscht die Schemata `auth` und `extensions` und zerstört damit den lokalen
+Stack.
+
 ## Vollständiger Supabase-Stack
 
 Für Anmeldung (GoTrue), PostgREST und die echten E2E-Tests wird der lokale
@@ -52,10 +61,18 @@ Supabase-Stack benötigt. Er läuft in Docker und enthält ausschließlich
 synthetische Daten.
 
 ```bash
-pnpm dlx supabase start        # benötigt Docker
-pnpm dlx supabase db reset     # Migrationen + Seed erneut anwenden
-pnpm dlx supabase status       # URL und anon key dieser Instanz
+pnpm dlx supabase@2.116.0 start           # benötigt Docker
+pnpm dlx supabase@2.116.0 db reset        # Migrationen + Seed erneut anwenden
+pnpm dlx supabase@2.116.0 status -o env   # API_URL und ANON_KEY dieser Instanz
 ```
+
+Die CLI-Version sollte der in `.github/workflows/ci.yml` festgeschriebenen
+entsprechen (`pnpm dlx supabase@2.116.0 …`), damit lokal und in CI derselbe
+Stack läuft. Lief der Stack zuvor mit einer anderen Postgres-Hauptversion
+(`supabase/config.toml` verlangt `major_version = 17`), zuerst
+`pnpm dlx supabase@2.116.0 stop --no-backup` ausführen — das verwirft die
+lokalen Volumes samt synthetischer Daten; `start` legt den Stack danach neu
+an.
 
 Die Werte aus `supabase status` gehören zu einer **lokalen Wegwerf-Instanz**.
 Sie werden bei jedem Neuaufsetzen neu erzeugt, sind kein Secret im Sinne von
@@ -84,9 +101,9 @@ pnpm install --frozen-lockfile
 **3. Supabase starten** (Docker Desktop muss laufen)
 
 ```bash
-pnpm dlx supabase start
-pnpm dlx supabase db reset     # Migrationen + synthetischer Seed
-pnpm dlx supabase status       # API URL und anon key notieren
+pnpm dlx supabase@2.116.0 start
+pnpm dlx supabase@2.116.0 db reset        # Migrationen + synthetischer Seed
+pnpm dlx supabase@2.116.0 status -o env | grep -E "^(API_URL|ANON_KEY)"
 ```
 
 **4. `.env.local` anlegen**
@@ -95,7 +112,10 @@ pnpm dlx supabase status       # API URL und anon key notieren
 cp .env.example .env.local
 ```
 
-Darin einsetzen — beides aus `supabase status`:
+Darin einsetzen — `API_URL` und `ANON_KEY` aus `supabase status -o env`. Die
+lesbare Ausgabe von `supabase status` zeigt seit CLI 2.116 nur noch die neuen
+Schlüssel `sb_publishable_…` und `sb_secret_…`; der Secret-Schlüssel gehört
+nirgendwohin, auch nicht in `.env.local`.
 
 ```
 VITE_SUPABASE_URL=<API URL>
@@ -140,14 +160,15 @@ sonst unlesbar würde.
 
 **8. Typische Fehler**
 
-| Symptom                                                 | Ursache und Abhilfe                                                                                                                                |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Port 5173 is already in use`                           | Ein `pnpm dev` läuft noch. `netstat -ano \| findstr :5173` in PowerShell, dann `taskkill /PID <pid> /F`. Der Port ist bewusst fest (`strictPort`). |
-| `Konfiguration unvollständig: VITE_SUPABASE_URL fehlt.` | `.env.local` fehlt oder wurde nach dem Start von `pnpm dev` angelegt — Dev-Server neu starten.                                                     |
-| `E2E_SUPABASE_URL und E2E_SUPABASE_ANON_KEY fehlen.`    | Die beiden `export`-Zeilen aus Schritt 6 gelten nur im aktuellen Fenster.                                                                          |
-| Anmeldung schlägt fehl, obwohl das Kennwort stimmt      | Der Stack läuft nicht oder wurde neu aufgesetzt. `pnpm dlx supabase status` prüfen, danach `pnpm dlx supabase db reset`.                           |
-| E2E-Tests finden „Erika Beispiel" nicht                 | Der Seed fehlt. `pnpm dlx supabase db reset`.                                                                                                      |
-| Docker startet nicht                                    | Docker Desktop muss laufen, bevor `supabase start` aufgerufen wird.                                                                                |
+| Symptom                                                 | Ursache und Abhilfe                                                                                                                                                                   |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Port 5173 is already in use`                           | Ein `pnpm dev` läuft noch. `netstat -ano \| findstr :5173` in PowerShell, dann `taskkill /PID <pid> /F`. Der Port ist bewusst fest (`strictPort`).                                    |
+| `Konfiguration unvollständig: VITE_SUPABASE_URL fehlt.` | `.env.local` fehlt oder wurde nach dem Start von `pnpm dev` angelegt — Dev-Server neu starten.                                                                                        |
+| `E2E_SUPABASE_URL und E2E_SUPABASE_ANON_KEY fehlen.`    | Die beiden `export`-Zeilen aus Schritt 6 gelten nur im aktuellen Fenster.                                                                                                             |
+| Anmeldung schlägt fehl, obwohl das Kennwort stimmt      | Der Stack läuft nicht oder wurde neu aufgesetzt. `pnpm dlx supabase status` prüfen, danach `pnpm dlx supabase db reset`.                                                              |
+| E2E-Tests finden „Erika Beispiel" nicht                 | Der Seed fehlt. `pnpm dlx supabase db reset`.                                                                                                                                         |
+| Docker startet nicht                                    | Docker Desktop muss laufen, bevor `supabase start` aufgerufen wird.                                                                                                                   |
+| `WARN: config section [inbucket] is deprecated`         | Warnung, kein Fehler. Die Umbenennung nach `[local_smtp]` in `supabase/config.toml` steht als kleine Wartung in der Roadmap; sie ist lokal mit `supabase stop` und `start` zu prüfen. |
 
 ## Testkonten
 
@@ -182,7 +203,25 @@ Steht ein Chromium bereits im System, kann er ohne Download verwendet werden:
 export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium
 ```
 
+## Wochenroutine
+
+Seit 2026-09-01 läuft montags um 07:50 Uhr (UTC 05:50, Cron `50 5 * * 1`)
+eine automatische Planungssession mit dem Auftrag aus
+[`development/ROADMAP.md`](development/ROADMAP.md), Abschnitt „Wochenupdate".
+Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
+
+- Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, Modell Haiku 4.5, erste
+  Ausführung 2026-09-07. Sie liest `main`.
+- Nach der Zeitumstellung Ende Oktober fällt sie auf 06:50 Uhr; wer 07:50
+  behalten will, ändert den Cron-Ausdruck auf `50 6 * * 1`.
+- Abschalten, Takt oder Prompt ändern: über die Routines-Oberfläche auf
+  claude.ai oder durch eine Anweisung in einer Session.
+
 ## Go-live-Blocker
+
+**Zieltermin für den Produktivbetrieb ist Ende März 2027** (entschieden am
+2026-09-05; Rückwärtsplan und Etappe G „Betriebsreife" in
+[`development/ROADMAP.md`](development/ROADMAP.md)).
 
 **Die maßgebliche Liste offener Punkte ist
 [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md), die anstehende

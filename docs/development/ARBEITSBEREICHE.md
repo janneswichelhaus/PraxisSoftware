@@ -90,12 +90,11 @@ benennen die offene Frage, statt sie zu verstecken.
 
 | Offener Punkt                                             | Wo sichtbar             | Quelle                           |
 | --------------------------------------------------------- | ----------------------- | -------------------------------- |
-| Finalisierung klinischer Dokumentation                    | Abrechnung → Leistungen | `PROJECT_PRINCIPLES.md` §5       |
-| Endgültige Fakturierung erst nach Finalisierung           | Abrechnung → Leistungen | `PROJECT_PRINCIPLES.md` §19      |
+| Endgültige Fakturierung erst nach Finalisierung — die Finalisierung selbst ist entschieden und gebaut (ADR-016, DOK-002/DOK-004); offen ist die Kopplung an die Leistungserfassung (ABR-002) | Abrechnung → Leistungen | `PROJECT_PRINCIPLES.md` §19      |
 | Kartendienst, Datenfluss und Vertragsgrundlage            | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7 |
 | Aggregierte Auswertungen über Beschäftigte                | Zeitkonto               | §20, `OPEN_DECISIONS.md` B6      |
 | Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Team                    | §10, §18                         |
-| Aufbewahrung und Löschung von Beschäftigtendaten          | Personalakte            | ADR-008                          |
+| Aufbewahrung und Löschung von Beschäftigtendaten          | nicht mehr sichtbar — die Vorschau-Personalakte ist entfallen; der Punkt bleibt offen (`IDEA-QSN-010`) | ADR-008                          |
 | Aufbewahrung von Belegen, Bestätigung der Auszahlung      | Erstattungen            | ADR-008, ADR-009                 |
 | Tübinger Werkstatt, Ruhetag, Depot, Transportoptionen     | Pannenassistent, Flotte | Standortvorlage, ungeprüft       |
 | Terminstatusautomat                                       | Kalender                | §8, `OPEN_DECISIONS.md`          |
@@ -114,7 +113,6 @@ nicht, dass ihre gekennzeichneten Ansichten schon stehen.
 | Betriebliche Kontakte, Ansprechpartner, Tiefgaragen-Passwort im Quelltext | Standortvorlage mit Platzhaltern, Zugangscode gar nicht hinterlegt   | Keine Secrets im Repository (§3.3); Kölner Angaben sind für Tübingen nicht geprüft.                                    |
 | Namentliche Zuständigkeit im Pannenablauf                                 | Rolle („Teamleitung")                                                | Ein Ablauf soll einen Personalwechsel überleben.                                                                       |
 | E-Mail-Versand bei Check-Up-Problemen                                     | kein Versand, Hinweis auf den offenen Meldeweg                       | Ein vorgetäuschter Versand ist schlimmer als gar keiner.                                                               |
-| `tel:`- und `mailto:`-Links im Teamverzeichnis                            | Kontaktdaten als Text                                                | Die Kontakte sind synthetisch; ein Anruf daraus wäre eine vorgetäuschte Funktion.                                      |
 | Push-Benachrichtigung über einen externen Dienst                          | nicht übernommen                                                     | Neuer Dienstleister ohne fachliche Notwendigkeit und ohne Prüfung nach §3.5.                                           |
 | Unterschrift ausschließlich als Zeichenfeld                               | zusätzlich Namenseingabe als gleichwertiger Weg                      | Ein reines Zeichenfeld ist mit Tastatur nicht bedienbar.                                                               |
 
@@ -128,18 +126,18 @@ nicht, dass ihre gekennzeichneten Ansichten schon stehen.
 - Keine Änderung an RLS, Audit oder Rollen.
 - Die Go-live-Blocker aus `docs/DEVELOPMENT.md` bestehen unverändert fort.
 
-## 6. Nächste sinnvolle Schritte
+## 6. Reihenfolge
 
-Die Reihenfolge ergibt sich aus dem Gerüst und ist ein Vorschlag, keine
-Festlegung:
+Was als Nächstes gebaut wird, steht ausschließlich in
+[`ROADMAP.md`](ROADMAP.md) — diese Liste führt keine zweite Reihenfolge. Die
+beiden Voraussetzungen aus der früheren Liste an dieser Stelle sind erledigt:
+der Mitarbeiterstamm ist echt angebunden (STAFF-001), die
+Dokumentationsentscheidung ist getroffen und umgesetzt (ADR-016, DOK-001 bis
+DOK-004).
 
-1. **Mitarbeiterstamm anbinden.** Er trägt Verzeichnis, Personalakte, Urlaub,
-   Zeitkonto, Erstattungen und die Stammnutzer der Flotte — der größte Nutzen je
-   Aufwand.
-2. **Radflotte anbinden.** Danach sind Schlüssel, Check-Up und Panne echte
-   Vorgänge, und die Flotte wird als Planungsressource nutzbar.
-3. **Urlaub anbinden**, sobald der Mitarbeiterstamm steht. Erst dann wirkt eine
-   genehmigte Abwesenheit wirklich auf die Planung.
-4. **Dokumentationsentscheidung treffen** (§5). Sie ist die Voraussetzung für
-   Dokumentation und damit für die endgültige Fakturierung.
-5. **Teamkommunikation**, mit Speicherfrist und Anhangskonzept von Beginn an.
+Die Vorschaubereiche aus Abschnitt 2 sind seit dem 2026-09-05 in der Roadmap
+als **Spur A2 „Praxisbetrieb"** eingeordnet — Urlaub, Zeitkonto, Radflotte,
+Erstattungen, Teamkommunikation; Touren erst nach der Entscheidung zum
+Kartendienst (B7). Sie beginnt nach dem Go-live (Stufe 2). Bis dahin gelten
+drei Regeln: keine neue Vorschau, keine Erweiterung einer Vorschau, und jede
+Vorschau wird in ihrem Loop ersetzt, nicht daneben gebaut.

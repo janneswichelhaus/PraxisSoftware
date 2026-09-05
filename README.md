@@ -11,9 +11,15 @@ Testdaten; ein Produktivbetrieb ist ausdrücklich nicht freigegeben.
 | Dokument                                                               | Inhalt                                              |
 | ---------------------------------------------------------------------- | --------------------------------------------------- |
 | [`PROJECT_PRINCIPLES.md`](PROJECT_PRINCIPLES.md)                       | Produkt-, Sicherheits- und Datenschutzprinzipien    |
-| [`docs/adr/`](docs/adr/)                                               | Architecture Decision Records (ADR-001 bis ADR-015) |
+| [`docs/adr/`](docs/adr/)                                               | Architecture Decision Records (ADR-001 bis ADR-016) |
 | [`docs/decisions/OPEN_DECISIONS.md`](docs/decisions/OPEN_DECISIONS.md) | offene Entscheidungen                               |
+| [`docs/decisions/ASSUMPTIONS.md`](docs/decisions/ASSUMPTIONS.md)       | begründete, vorläufige Annahmen                     |
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)                           | Einrichtung, Testkonten, Einschränkungen            |
+
+Reihenfolge der Umsetzung und Ist-Stand:
+[`docs/development/ROADMAP.md`](docs/development/ROADMAP.md). Was in der
+Anwendung echt angebunden ist und was gekennzeichnete Vorschau:
+[`docs/development/ARBEITSBEREICHE.md`](docs/development/ARBEITSBEREICHE.md).
 
 ## Stack
 
@@ -24,18 +30,21 @@ TypeScript · React · Vite · Tailwind CSS · TanStack Query · Zod · Supabase
 
 ```
 src/
-  app/         Anwendungsrahmen, Provider
+  app/         Anwendungsrahmen, Navigation, Provider
   components/  wiederverwendbare UI-Bausteine
-  features/    fachliche Module (auth, session, patients, dashboard)
+  features/    fachliche Module (patients, appointments, documentation, staff, audit, …)
   lib/         Konfiguration, Supabase-Client
   routes/      Routendefinition
 supabase/
   migrations/  Datenbankmigrationen
   tests/       Migrations- und RLS-Tests gegen echtes PostgreSQL
   seed.sql     synthetische Testdaten
-tests/e2e/     Playwright
-docs/          Prinzipien, ADRs, Entwicklungsdoku
-docs/product/  Ideenspeicher für spätere Funktionen (nicht normativ)
+tests/e2e/         Playwright
+docs/adr/          Architecture Decision Records
+docs/decisions/    offene Entscheidungen und Annahmenregister
+docs/development/  Roadmap, Arbeitsbereiche, Entwicklungs-Workflow
+docs/abnahme/      manuelle Prüfschritte je Feature
+docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)
 ```
 
 ## Sicherheitsgrundsätze im Code

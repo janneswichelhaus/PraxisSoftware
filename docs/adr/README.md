@@ -45,7 +45,7 @@ Kein ADR nötig für alltägliche Umsetzungsdetails.
 
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.3)
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.4)
 - `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist
 - `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
 - `docs/adr/` — was entschieden wurde und warum

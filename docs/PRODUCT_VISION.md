@@ -247,9 +247,10 @@ Regeln, die sich daraus ergeben haben:
   Terminliste, kein zweiter Mitarbeiterstamm und keine zweite Patientenakte.
 - **Der Arbeitsgegenstand trägt seine Werkzeuge.** Suche, Filter und Aktionen
   stehen im jeweiligen Bereich, nicht in der globalen Navigation.
-- **Öffentliche und geschützte Sicht sind getrennt.** Teamverzeichnis und
-  Personalakte zeigen dieselbe Person, aber nicht dieselben Angaben
-  (`PROJECT_PRINCIPLES.md` §20).
+- **Öffentliche und geschützte Sicht sind getrennt.** Dieselbe Person, aber
+  nicht dieselben Angaben: Dienstkontakt für alle Praxisrollen, Privatangaben
+  nur für die Praxisleitung — und für andere Rollen gar nicht erst
+  ausgeliefert (`PROJECT_PRINCIPLES.md` §20, STAFF-001).
 - **Ein Verweis erweitert keine Berechtigung.** Ein Link aus einem Gespräch auf
   einen Vorgang gibt keinen zusätzlichen Zugriff (`PROJECT_PRINCIPLES.md` §4.7).
 

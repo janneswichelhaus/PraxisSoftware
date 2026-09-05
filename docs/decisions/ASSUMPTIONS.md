@@ -111,7 +111,7 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | offen  | Jannes                        |
 | ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | ABR-002                       |
+| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | CAL-EPIC-003 (ADR-018)        |
 | ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; Leistungskürzel bei ABR-002 |
 | ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden 2026-09-05 | Providerprüfung nach ADR-002 |
 | ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | offen  | Jannes; Datenschutzprüfung    |
@@ -323,6 +323,15 @@ Therapeut:innen und Verwaltung als „Abgeschlossen" mit „Keine Dokumentation.
 — sichtbar, ohne dass der Terminabschluss blockiert. Sichtbarkeit statt
 Sperre ist die leichter umkehrbare Option (§16); ob eine Sperre nötig wird,
 zeigt sich, wenn ABR-002 Leistungen an abgeschlossene Termine bindet.
+
+**Nachtrag 2026-09-05 (Planungsreview).** Jannes hat den vollständigen
+Terminstatus-Automaten entschieden (angefragt, vorgemerkt, bestätigt,
+abgesagt, nicht angetroffen, durchgeführt, dokumentiert, abgerechnet;
+`OPEN_DECISIONS.md`, Abschnitt D). Die Ausgestaltung — insbesondere ob
+„dokumentiert" aus der Finalisierung abgeleitet wird und was aus
+„abgeschlossen" wird — legt ADR-018 im Loop CAL-EPIC-003 fest. Bis dahin
+bleibt diese Annahme unverändert in Kraft; die Wiedervorlage wechselt von
+ABR-002 auf CAL-EPIC-003.
 
 ### ANN-006 — Umfang und Protokollierung des Behandlungsnachweises in der Akte
 
