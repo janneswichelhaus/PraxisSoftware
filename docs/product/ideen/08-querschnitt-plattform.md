@@ -211,3 +211,35 @@ später") ist verboten, solange das nicht gebraucht wird.
 verfolgen will. Erst danach: eine ausdrückliche Änderung von
 `PROJECT_PRINCIPLES.md` §1 (§21), ggf. ein neuer oder ergänzter ADR-003, dann
 erst eine Feature-Spezifikation.
+
+---
+
+### IDEA-QSN-010 — Beschäftigtenangaben über die Stammdaten hinaus
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Umbau auf Arbeitsbereiche, 2026-09-05 (Vorschau-Personalakte, entfallen) |
+| Berührt | STAFF-001, `PROJECT_PRINCIPLES.md` §20, §4.7, [ADR-008](../../adr/ADR-008-retention-and-deletion.md) |
+
+**Idee.** Die Mitarbeiterverwaltung um die Angaben ergänzen, die eine
+Personalakte üblicherweise trägt: Eintrittsdatum, Urlaubsanspruch,
+Resturlaub, Notfallkontakt und eine interne Notiz.
+
+**Warum.** Der Umbau auf Arbeitsbereiche hatte dafür eine Vorschauseite
+(`/betrieb/personal`), die beim Zusammenführen mit `main` entfallen ist —
+STAFF-001 liefert die Mitarbeiterverwaltung echt, aber ohne diese Felder. Sie
+sind die Voraussetzung für die Vorschaubereiche Urlaub und Zeitkonto: ein
+Urlaubsantrag ohne hinterlegten Anspruch kann nicht gegengerechnet werden.
+
+**Vorsicht.** Das sind besonders geschützte Beschäftigtendaten. §20 und §4.7
+verlangen, dass sie nicht an jede Praxisrolle ausgeliefert werden — STAFF-001
+hält das für die vorhandenen Privatdaten bereits so und würde das Muster
+fortsetzen. Aufbewahrung und Löschung von Beschäftigtendaten sind über
+ADR-008 hinaus nicht geklärt (offener Punkt B9); ein Notfallkontakt ist
+zudem ein Datum einer **dritten** Person, die von der Verarbeitung nichts
+weiß. Beides ist vor einer Umsetzung zu klären, nicht danach.
+
+**Offen.** Ob der Urlaubsanspruch überhaupt in dieser Software geführt werden
+soll oder in der Lohnbuchhaltung bleibt. Davon hängt ab, ob die Felder zur
+Mitarbeiterverwaltung gehören oder erst mit einem Urlaubsmodul entstehen.

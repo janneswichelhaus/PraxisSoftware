@@ -209,7 +209,7 @@ test.describe('STAFF-001: Durchsetzung am Server', () => {
     // Erst die Oberfläche: office sieht die Liste, aber keine Schaltflächen.
     await anmelden(page, KONTEN.office);
     await page.goto('/praxis/team');
-    await expect(page.getByRole('heading', { name: 'Team' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Mitarbeiter:in anlegen' })).toHaveCount(0);
 
     // Und dann an der Oberfläche vorbei: die ausgeblendete Schaltfläche ist

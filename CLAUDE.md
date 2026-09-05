@@ -213,6 +213,12 @@ vorschlagen. Unveröffentlichte Arbeit im Bericht nennen.
 
 Hintergrund und Begründung: `docs/development/DEVELOPMENT_WORKFLOW.md`.
 
+Welche Bereiche der Oberfläche echt angebunden sind, welche als gekennzeichnete
+Vorschau laufen und wo eine Entscheidung aussteht, steht in
+`docs/development/ARBEITSBEREICHE.md`. **Vor Arbeit an einem Vorschaubereich
+diese Liste lesen** — sonst entsteht leicht eine zweite Implementierung neben
+einer bereits vorhandenen.
+
 Kleine Commits mit aussagekräftiger Nachricht, einer je Story. Nach
 abgeschlossenem Epic stoppen und berichten — mit allen neuen Annahmen und
 einem Vorschlag für das nächste Epic. Das nächste Epic nicht eigenständig

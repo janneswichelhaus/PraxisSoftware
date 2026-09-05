@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { render, type RenderResult } from '@testing-library/react';
+import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
 
 export function renderWithProviders(ui: ReactElement, initialPath = '/'): RenderResult {
@@ -18,6 +19,17 @@ export function renderWithProviders(ui: ReactElement, initialPath = '/'): Render
   }
 
   return render(ui, { wrapper: Wrapper });
+}
+
+/**
+ * Wie `renderWithProviders`, zusätzlich mit dem Zustand des Vorschaugerüsts.
+ *
+ * Nur für Seiten der noch nicht angebundenen Bereiche. Der Provider hält
+ * ausschließlich synthetische Daten im Arbeitsspeicher und spricht mit keinem
+ * Server; die Tests brauchen dafür keine Mocks.
+ */
+export function renderMitVorschau(ui: ReactElement, initialPath = '/'): RenderResult {
+  return renderWithProviders(<VorschauProvider>{ui}</VorschauProvider>, initialPath);
 }
 
 /** Synthetischer Benutzer für Komponententests. */

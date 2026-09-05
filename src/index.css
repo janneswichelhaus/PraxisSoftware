@@ -31,6 +31,13 @@
   --color-danger: oklch(48% 0.16 25);
   --color-danger-soft: oklch(96% 0.03 25);
 
+  /* Zustandsfarben fuer Statusabzeichen. Sie tragen nie allein die Bedeutung -
+     der Zustand steht immer zusaetzlich als Text da (WCAG 1.4.1). */
+  --color-positiv: oklch(44% 0.1 150);
+  --color-positiv-soft: oklch(95.5% 0.03 150);
+  --color-warnung: oklch(45% 0.11 70);
+  --color-warnung-soft: oklch(95.5% 0.04 80);
+
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
