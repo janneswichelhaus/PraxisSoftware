@@ -87,6 +87,21 @@ export function canWriteTreatmentNote(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => clinicalWriteRoles.includes(role));
 }
 
+/**
+ * Rollen mit Zugriff auf den Behandlungsnachweis in der Akte (DOK-003).
+ *
+ * Alle vier Praxisrollen: fuer office ist er der einzige Blick auf den
+ * Dokumentationsstand (PROJECT_PRINCIPLES.md 4.4), die klinischen Rollen
+ * bekommen in der Akte die Sicht mit Inhalt. Steuert ausschliesslich die
+ * Darstellung - verbindlich ist app.can_read_treatment_evidence() in der
+ * Datenbank (ANN-006).
+ */
+const evidenceRoles: RoleKey[] = ['owner', 'therapist', 'team_lead', 'office'];
+
+export function canReadTreatmentEvidence(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => evidenceRoles.includes(role));
+}
+
 /** Rollen, die den Dienstplan pflegen duerfen. therapist liest ihn nur (CAL-005). */
 const workingHourRoles: RoleKey[] = ['owner', 'team_lead', 'office'];
 

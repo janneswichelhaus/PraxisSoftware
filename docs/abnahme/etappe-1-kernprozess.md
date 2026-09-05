@@ -1,6 +1,6 @@
 # Abnahme: Behandlungsdokumentation
 
-Manuelle Prüfschritte der Loops DOK-001 und DOK-002 (Etappe 1, „Der
+Manuelle Prüfschritte der Loops DOK-001 bis DOK-004 (Etappe 1, „Der
 Kernprozess wird vollständig").
 
 > Voraussetzung ist der eingerichtete lokale Stack — Schritte 1 bis 6 in
@@ -95,3 +95,131 @@ Dokumentieren (`therapist`, `team_lead`). Den Änderungsverlauf darf zusätzlich
     `treatment_note.finalized`, `treatment_note.revised`,
     `treatment_note.addendum_created` und `treatment_note.history_viewed` —
     ohne Behandlungsinhalt und **ohne die Korrekturbegründung**.
+
+## DOK-003 — Dokumentation in der Akte, rollenabhängig projiziert
+
+Voraussetzung: mindestens ein Termin von „Max Mustermann" mit finalisierter
+Dokumentation (DOK-002) und einer mit Entwurf (DOK-001). Die Akte zeigt die
+Termine, die bereits begonnen haben, sowie jeden dokumentierten Termin —
+neueste zuerst. **Zukünftige Termine ohne Dokumentation stehen nur im
+Kalender.** Die Verwaltung (`office`) sieht den Behandlungsnachweis nach §4.4,
+die klinischen Rollen (`owner`, `therapist`, `team_lead`) die Dokumentation mit
+Inhalt.
+
+### Behandlungsnachweis (office)
+
+1. Als `olivia.office@praxis.invalid` „Patienten" → „Max Mustermann" öffnen.
+   Unter „Versorgung" steht der Abschnitt **„Behandlungsnachweis"** mit dem
+   Hinweis, dass er keine Behandlungsinhalte enthält.
+2. Je Termin stehen Datum, Zeitraum, Terminart, behandelnde Person und der
+   Terminstatus („Geplant", „Abgeschlossen" oder „Abgesagt") — und darunter
+   genau einer dieser Sätze: „Dokumentation finalisiert am … Uhr.",
+   „Dokumentation als Entwurf vorhanden, noch nicht finalisiert." oder
+   „Keine Dokumentation.". **Nirgends steht Behandlungstext, kein Verfasser,
+   keine Versionszahl.**
+3. „Zum Termin" führt in die Detailansicht des Termins — dort fehlt der
+   Abschnitt „Behandlungsdokumentation" für office weiterhin vollständig.
+4. Gegenprobe Zukunft: als office einen Termin für Max in zwei Wochen anlegen
+   und zurück in die Akte gehen. Der Termin fehlt im Behandlungsnachweis, steht
+   aber im Kalender. Sobald eine Therapeutin ihn dokumentiert, erscheint er.
+5. Gegenprobe Absage: einen vergangenen oder dokumentierten Termin absagen.
+   Er bleibt im Nachweis mit Status „Abgesagt" stehen.
+6. Blättern: hat Max mehr als 20 Termine in der Akte, steht unter der Liste
+   „Ältere Termine anzeigen". Ein Klick hängt die nächsten an; bei der letzten
+   Seite verschwindet die Schaltfläche. Ohne so viele Termine gibt es sie nicht.
+7. Als owner „Praxis → Sicherheit → Audit" öffnen: das Öffnen der Akte steht
+   als `patient_record.viewed`. Für den Nachweis selbst gibt es **keinen**
+   eigenen Eintrag — er enthält keinen klinischen Inhalt (ANN-006). Das ist
+   ausdrücklich **kein** Sicherheitsnachweis; verbindlich ist
+   `list_patient_treatment_evidence`, geprüft in `pnpm test:db`.
+
+### Behandlungsdokumentation (owner, therapist, team_lead)
+
+1. Als `anna.beispiel@praxis.invalid` dieselbe Akte öffnen. Statt des
+   Nachweises steht dort der Abschnitt **„Behandlungsdokumentation"** — mit
+   denselben Terminzeilen, aber darunter der vollständige Eintrag: Vermerk
+   („Entwurf" oder „Finalisiert"), Wortlaut, Herkunftszeile („Verfasst von …",
+   „Finalisiert am …") und bei finalisierten Einträgen der Link
+   „Änderungsverlauf". Nachträge stehen als eigener Block mit dem Vermerk
+   „Nachtrag" unter dem Haupteintrag.
+2. In der Akte gibt es **keine** Schaltflächen zum Bearbeiten, Finalisieren,
+   Korrigieren oder Nachtragen — das geschieht am Termin. „Zum Termin" führt
+   dorthin, „Änderungsverlauf" auf die bekannte Verlaufsseite.
+3. Ein Termin ohne Dokumentation steht mit „Keine Dokumentation." in der
+   Liste; ein abgesagter Termin mit dem Status „Abgesagt".
+4. Gegenprobe Praxisleitung: als `jannes.test@praxis.invalid` ist die
+   Dokumentation ebenfalls lesbar. Ein reiner owner-Zugang dürfte sie lesen,
+   ohne zu schreiben — im Seed gibt es ihn nicht, geprüft wird der Fall in
+   `pnpm test:db`.
+5. Als owner „Praxis → Sicherheit → Audit" öffnen: für jeden in der Akte
+   gelesenen Eintrag — auch jeden Nachtrag — steht ein `treatment_note.viewed`,
+   ohne Behandlungsinhalt. Für einen Termin ohne Dokumentation entsteht keiner.
+   Das Öffnen der Akte selbst steht daneben als `patient_record.viewed`.
+6. Gegenprobe Office: als `olivia.office@praxis.invalid` bleibt der Abschnitt
+   „Behandlungsdokumentation" verschwunden; es gibt nur den Nachweis. Das ist
+   ausdrücklich **kein** Sicherheitsnachweis; verbindlich ist
+   `list_patient_treatment_notes`, geprüft in `pnpm test:db` und im E2E-Test
+   „DOK-003: Serverseitige Grenzen".
+
+## DOK-004 — Automatische Finalisierung nach Frist
+
+Ein Entwurf wird nach Ablauf der Frist ohne Zutun finalisiert (ADR-016
+Punkt 7). Voreinstellung: Ende des auf die Behandlung folgenden Kalendertages;
+ein später angelegter Eintrag oder Nachtrag bekommt dieselbe Frist ab seiner
+Anlage. Den Lauf stößt `pg_cron` alle 15 Minuten an. Im lokalen Stack ist die
+Erweiterung vorhanden; ob der Job registriert ist, zeigt im SQL-Editor von
+Supabase Studio (`http://127.0.0.1:54323`) die Abfrage
+`select jobname, schedule from cron.job;`.
+
+### Frist einstellen
+
+1. Als `jannes.test@praxis.invalid` (owner) „Planung" öffnen. Unter dem
+   Praxisraster steht **„Automatische Finalisierung"** mit der Auswahl „Frist",
+   vorbelegt mit „Ende des Folgetages".
+2. „Ende des Behandlungstages" wählen und „Frist speichern". Es erscheint
+   „Die Frist ist gespeichert."; nach dem Neuladen steht der Wert weiterhin da.
+3. Als `olivia.office@praxis.invalid` und als `anna.beispiel@praxis.invalid`
+   „Planung" öffnen: der Abschnitt fehlt. Das ist ausdrücklich **kein**
+   Sicherheitsnachweis; verbindlich ist `set_documentation_deadline`, geprüft in
+   `pnpm test:db`.
+4. Als owner unter „Praxis → Sicherheit → Audit" steht
+   `organization.documentation_deadline_changed`.
+
+### Automatische Finalisierung beobachten
+
+Die Frist endet um Mitternacht — für die Abnahme wird ein Entwurf deshalb als
+Testvorbereitung zurückdatiert, statt einen Tag zu warten.
+
+5. Als `anna.beispiel@praxis.invalid` einen Termin für „Max Mustermann"
+   anlegen und einen Entwurf dokumentieren (DOK-001). Die Termin-ID steht in
+   der Adresszeile (`/termine/<id>`).
+6. Im SQL-Editor von Supabase Studio Termin und Entwurf drei Tage
+   zurückdatieren:
+
+   ```sql
+   update public.appointments
+      set starts_at = starts_at - interval '3 days',
+          ends_at   = ends_at   - interval '3 days'
+    where id = '<id>';
+   update public.treatment_notes
+      set created_at = created_at - interval '3 days'
+    where appointment_id = '<id>';
+   ```
+
+7. Entweder bis zu 15 Minuten warten, oder den Lauf im SQL-Editor selbst
+   anstoßen: `select public.finalize_overdue_treatment_notes();` liefert `1`.
+8. Den Termin in der Anwendung neu laden: der Eintrag trägt den Vermerk
+   „Finalisiert" und die Zeile „Automatisch finalisiert am … nach Ablauf der
+   Frist." — **ohne** eine finalisierende Person. „Korrigieren",
+   „Änderungsverlauf" und „Nachtrag hinzufügen" stehen wie nach einer
+   Finalisierung von Hand zur Verfügung; im Änderungsverlauf trägt Version 1
+   den Entwurfstext mit der zuletzt schreibenden Person.
+9. Dieselbe Zeile steht in der Akte („Patienten" → „Max Mustermann"); der
+   Behandlungsnachweis für office zeigt „Dokumentation finalisiert am …".
+10. Als owner „Praxis → Sicherheit → Audit" öffnen: der Eintrag
+    `Behandlungsdokumentation automatisch finalisiert` nennt als Benutzer
+    **„System"**. Der Filter „Benutzer" blendet ihn aus, weil er keinem Konto
+    gehört.
+11. Gegenprobe Frist: einen weiteren Entwurf anlegen und nur den **Termin**
+    zurückdatieren, nicht den Entwurf. Der Lauf liefert `0` — der spät
+    angelegte Entwurf hat seine eigene Frist ab heute.

@@ -13,6 +13,8 @@ const auditEventSchema = z.object({
   id: z.string(),
   occurred_at: z.string(),
   actor_user_id: z.string().nullable(),
+  /** system: zeitgesteuerter Vorgang ohne Account, etwa die automatische Finalisierung (DOK-004). */
+  actor_kind: z.enum(['user', 'system']),
   actor_display_name: z.string().nullable(),
   action: z.string(),
   subject_type: z.string(),

@@ -57,7 +57,7 @@ Monate. Sie sollten laufen, während Spur A an Etappe 1 bis 3 arbeitet.
 
 ---
 
-## Ist-Stand (2026-09-03)
+## Ist-Stand (2026-09-05)
 
 Gebaut: Anmeldung und Sitzung · Rollen und RLS · Audit-Log mit
 eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus
@@ -65,14 +65,18 @@ eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus
 abschließen, Praxisraster, Arbeitszeiten, Verschieben (CAL-001 bis CAL-006) ·
 Behandlungsdokumentation als Entwurf, Finalisierung von Hand, Versionierung,
 Nachtrag (DOK-001, DOK-002, ADR-016; PR #5) · Mitarbeiterverwaltung: Liste,
-Stammdaten, Beschäftigungsstatus, Privatdaten nur für owner (STAFF-001).
+Stammdaten, Beschäftigungsstatus, Privatdaten nur für owner (STAFF-001) ·
+Dokumentation in der Akte, rollenabhängig projiziert: Behandlungsnachweis für
+Office, Einträge mit Inhalt für klinische Rollen (DOK-003) · Automatische
+Finalisierung nach konfigurierbarer Frist über `pg_cron`, Systemakteur im
+Auditlog (DOK-004).
 
 Regelwerk: `PROJECT_PRINCIPLES.md` 0.3 mit §15.1 „Begründete Annahmen" und
 dem Annahmenregister `docs/decisions/ASSUMPTIONS.md`; ein Loop ist ein Epic
 aus mehreren Stories.
 
-Nicht gebaut: alles Übrige, insbesondere Dokumentation in der Akte (DOK-003),
-Abrechnung, Löschung, Fragebögen, Portal.
+Nicht gebaut: alles Übrige, insbesondere Löschung und Retention (LOE-001,
+LOE-002), Abrechnung, Fragebögen, Portal.
 
 ---
 
@@ -90,8 +94,8 @@ gewählt.
 | --- | ------- | ------------------------------------------------------------------------------------------ | ---------------------- |
 | 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **fertig** (PR #5)     |
 | 2   | DOK-002 | Finalisierung von Hand, Versionierung, Nachtrag als eigener Eintrag (ADR-016 Punkte 4 bis 6) | **fertig** (PR #5)     |
-| 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **frei** — C1/C2 als Annahme nach §15.1 |
-| 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7) — **braucht erst eine Entscheidung, siehe unten** | DOK-002                |
+| 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **fertig** — C1 vorläufig als ANN-006 |
+| 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7)                                    | **fertig** — Mechanismus von Jannes entschieden |
 | 4   | LOE-001 | Datenklassen und Aufbewahrungsfristen als echte Struktur, Legal Hold                       | —                      |
 | 5   | LOE-002 | Löschvorgang, Wiederanwendung nach Restore, `pnpm test:db`                                 | LOE-001                |
 | 6   | ABR-001 | Leistungskatalog, versioniert, mit Steuerkennzeichen je Leistungsversion                   | B4 teilweise           |
@@ -128,6 +132,38 @@ registrierte Annahme getroffen werden, sofern sie an einer Stelle reversibel
 verankert ist. `pg_cron` bliebe als neue Infrastrukturabhängigkeit eine
 bewusste Entscheidung mit Prüfung gegen §11 und ADR-015 — kein Stopp, aber
 auch kein beiläufiger Einbau.
+
+**Entschieden am 2026-09-05 von Jannes: Weg 2, `pg_cron`.** Damit ist die
+Voraussetzung von DOK-004 erfüllt; der Loop trifft diese Wahl nicht selbst,
+sondern setzt sie um.
+
+Begründung: Nur Weg 2 schreibt den finalisierten Zustand tatsächlich fest
+**und** hält den Zeitpunkt ein — bei einer §630f-relevanten Frist zählt
+beides. Weg 1 liefert keinen festgeschriebenen Stand, an dem Version 1 hängen
+kann (ADR-016 Punkte 4 bis 6); Weg 3 macht den Zeitpunkt vom Zufall des
+Aktenaufrufs abhängig. Die Prüfung gegen §11 und ADR-015 fällt zugunsten von
+`pg_cron` aus: es ist eine Erweiterung des ohnehin eingesetzten PostgreSQL,
+kein neuer Anbieter, kein neuer Vertrag und keine Datenübermittlung nach
+außen.
+
+Zwei Auflagen für den Loop:
+
+- **Der Auslöser bleibt von der Fachlogik getrennt.** Fristberechnung,
+  Auswahl der fälligen Entwürfe und Auditeintrag gehören in eine
+  Datenbankfunktion des Projekts; `pg_cron` ruft sie nur auf. ADR-002 hat den
+  Hosting-Anbieter für den Produktivbetrieb noch nicht festgelegt — bietet der
+  spätere Anbieter kein `pg_cron`, wird nur der Auslöser ersetzt.
+- **Die Registrierung bleibt bedingt.** Ohne die Erweiterung muss die
+  Migration gültig bleiben und durchlaufen; die Wegwerf-Datenbank der Tests
+  hat kein `pg_cron`.
+
+Umgesetzt in DOK-004: `pg_cron` ruft die Finalisierungsfunktion alle 15 Minuten
+auf — nicht einmal nachts, weil Fristen gegen Mitternacht der Praxiszeitzone
+enden, `pg_cron` aber in UTC plant und die Zeitumstellung den Abstand
+verschiebt. Der Mechanismus ist damit **entschieden, keine Annahme mehr**
+(ANN-007 abgeschlossen). Offen bleiben die beiden fachlichen Festlegungen des
+Loops: der Fristbezug bei später angelegten Einträgen (ANN-008) und der
+Systemakteur im Auditlog (ANN-009).
 
 **Ergebnis der Etappe:** Die Praxis könnte damit arbeiten — Termine
 dokumentieren, Leistungen erfassen, Rechnungen stellen. Das ist der Punkt, ab
@@ -354,9 +390,10 @@ Push-Nachricht und E-Mail. Sie **baut nichts** und stoppt nach dem Bericht.
 - Die Zeitangabe ist intern UTC (`50 5 * * 1`). **Nach der Zeitumstellung Ende
   Oktober fällt sie auf 06:50 Uhr** — wer das nicht will, ändert den
   Cron-Ausdruck dann auf `50 6 * * 1`.
-- Die Routine liest den Branch `claude/physio-platform-features-u7uy15`,
-  solange diese Datei nicht auf `main` liegt. Nach einem Merge nach `main`
-  entfällt der Umweg von allein.
+- Seit dem Merge nach `main` (PR #5, PR #8) **liest die Routine `main`.** Der
+  Branch-Fallback im Prompt (`claude/physio-platform-features-u7uy15`, nur
+  falls diese Datei fehlt) ist damit inaktiv; er kann bei Gelegenheit aus dem
+  Prompt entfernt werden, schadet aber nicht.
 - Abschalten oder Takt ändern geht über die Routines-Oberfläche auf claude.ai
   oder durch eine Anweisung in einer Session.
 
@@ -374,6 +411,7 @@ Skill-Schritt I durchlaufen ist.
 | STAFF-001           | fertig                      | 2026-08-30     | `e70775a`, `ca907e9` |
 | DOK-001             | fertig                      | 2026-09-01     | `7e18906`, Merge PR #5 |
 | DOK-002             | fertig                      | 2026-09-02     | `491a0c0`, Merge PR #5 |
-| DOK-003             | **bereit** — nicht begonnen | —              | —      |
+| DOK-003             | fertig                      | 2026-09-05     | `21d85dd`, `f565124` |
+| DOK-004             | fertig                      | 2026-09-05     | `e931068`, `960f34f` |
 
-Zuletzt aktualisiert: 2026-09-03
+Zuletzt aktualisiert: 2026-09-05

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import { appointmentStatusSchema, appointmentTypeSchema } from '@/features/appointments/api';
 
 /**
  * Datenzugriff auf die Behandlungsdokumentation (DOK-001, DOK-002).
@@ -24,7 +25,7 @@ export const treatmentNoteStatusLabels: Record<TreatmentNoteStatus, string> = {
   final: 'Finalisiert',
 };
 
-const treatmentNoteSchema = z.object({
+export const treatmentNoteSchema = z.object({
   id: z.string(),
   appointment_id: z.string(),
   /** Gesetzt, wenn dieser Eintrag ein Nachtrag ist (ADR-016 Punkt 6). */
@@ -36,6 +37,11 @@ const treatmentNoteSchema = z.object({
   // geführt: ein Date verlöre Bruchteile von Sekunden.
   updated_at: z.string(),
   finalized_at: z.string().nullable(),
+  /**
+   * Wie finalisiert wurde: von Hand (DOK-002) oder automatisch nach
+   * Fristablauf (DOK-004, ADR-016 Punkt 7). Ein Entwurf hat keinen Wert.
+   */
+  finalisation_kind: z.enum(['manual', 'automatic']).nullable(),
   /** Anzahl festgeschriebener Versionen. Ein Entwurf hat null. */
   version_count: z.number(),
   author_name: z.string().nullable(),
@@ -325,4 +331,179 @@ export function begruendungFehler(reason: string): string | undefined {
     return `Höchstens ${MAX_BEGRUENDUNG.toLocaleString('de-DE')} Zeichen.`;
   }
   return undefined;
+}
+
+// -----------------------------------------------------------------------------
+// Dokumentation in der Akte (DOK-003)
+//
+// Die Akte liest chronologisch ueber alle Termine eines Patienten - in zwei
+// Sichten mit zwei Rueckgabetypen, weil ADR-004 rollenabhaengige Projektionen
+// verlangt und keine genullten Spalten: den Behandlungsnachweis fuer office
+// (PROJECT_PRINCIPLES.md 4.4) und die klinische Sicht fuer owner, therapist
+// und team_lead. Welche Sicht eine Rolle bekommt, entscheidet der Server;
+// die Oberflaeche waehlt nur, welche sie anfragt.
+// -----------------------------------------------------------------------------
+
+/**
+ * Termine je Seite der Akte.
+ *
+ * Muss unter der Obergrenze der Datenbank (50) bleiben. Klein genug, dass ein
+ * einzelner Aufruf nicht die ganze Akte offenlegt, gross genug fuer einen
+ * Behandlungsverlauf ohne staendiges Nachladen.
+ */
+export const AKTE_SEITENGROESSE = 20;
+
+/** Keyset-Cursor: der letzte Termin der vorigen Seite (starts_at, id). */
+export interface AkteCursor {
+  beforeStartsAt: string;
+  beforeId: string;
+}
+
+const recordAppointmentSchema = z.object({
+  appointment_id: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: appointmentTypeSchema,
+  appointment_status: appointmentStatusSchema,
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  organization_time_zone: z.string(),
+});
+
+/** Ein Termin der Akte - der organisatorische Rahmen beider Sichten. */
+export type RecordAppointment = z.infer<typeof recordAppointmentSchema>;
+
+export const documentationStatusSchema = z.enum(['none', 'draft', 'final']);
+export type DocumentationStatus = z.infer<typeof documentationStatusSchema>;
+
+/**
+ * Behandlungsnachweis (ANN-006): Dokumentationsstand ohne Inhalt. Der
+ * Zeitpunkt ist nur fuer finalisierte Eintraege gesetzt - ein Entwurf ist kein
+ * Nachweis (ADR-016 Punkt 3).
+ */
+const treatmentEvidenceSchema = recordAppointmentSchema.extend({
+  documentation_status: documentationStatusSchema,
+  documented_at: z.string().nullable(),
+});
+
+export type TreatmentEvidenceEntry = z.infer<typeof treatmentEvidenceSchema>;
+
+function seitenArgumente(cursor: AkteCursor | null) {
+  return {
+    p_limit: AKTE_SEITENGROESSE,
+    p_before_starts_at: cursor?.beforeStartsAt ?? null,
+    p_before_id: cursor?.beforeId ?? null,
+  };
+}
+
+/**
+ * Eine Seite des Behandlungsnachweises.
+ *
+ * Kein klinischer Inhalt, deshalb serverseitig auch kein Auditeintrag; das
+ * Oeffnen der Akte selbst wird als patient_record.viewed protokolliert.
+ */
+export async function fetchTreatmentEvidencePage(
+  patientId: string,
+  cursor: AkteCursor | null,
+): Promise<TreatmentEvidenceEntry[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_treatment_evidence', {
+    p_patient_id: patientId,
+    ...seitenArgumente(cursor),
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Der Behandlungsnachweis konnte nicht geladen werden.');
+  return z.array(treatmentEvidenceSchema).parse(data ?? []);
+}
+
+/**
+ * Cursor fuer die naechste Seite - oder null, wenn die Seite nicht voll war.
+ *
+ * Eine volle Seite kann die letzte sein; dann liefert die naechste Anfrage
+ * eine leere Seite, und die Schaltflaeche verschwindet. Das ist billiger als
+ * eine eigene Zaehlabfrage und kostet nur einen leeren Aufruf.
+ */
+export function naechsteAkteSeite(
+  seite: readonly Pick<RecordAppointment, 'starts_at' | 'appointment_id'>[],
+): AkteCursor | null {
+  if (seite.length < AKTE_SEITENGROESSE) return null;
+  const letzte = seite[seite.length - 1]!;
+  return { beforeStartsAt: letzte.starts_at, beforeId: letzte.appointment_id };
+}
+
+/**
+ * Klinische Sicht der Akte: je Termin seine Eintraege - Haupteintrag zuerst,
+ * Nachtraege in Entstehungsreihenfolge - mit denselben Feldern wie am Termin.
+ * Ein Termin ohne Dokumentation hat eine leere Liste.
+ */
+const patientTreatmentNotesSchema = recordAppointmentSchema.extend({
+  notes: z.array(treatmentNoteSchema),
+});
+
+export type PatientTreatmentNotesEntry = z.infer<typeof patientTreatmentNotesSchema>;
+
+/**
+ * Eine Seite der klinischen Sicht.
+ *
+ * Jeder Eintrag der Seite wird serverseitig als gelesen protokolliert
+ * (treatment_note.viewed), auch Nachtraege. Deshalb fragt die Oberflaeche
+ * diese Sicht nur fuer Rollen an, die sie lesen duerfen - sonst entstuende
+ * ein Auditeintrag fuer einen Zugriff, der ohnehin abgewiesen wird.
+ */
+export async function fetchPatientTreatmentNotesPage(
+  patientId: string,
+  cursor: AkteCursor | null,
+): Promise<PatientTreatmentNotesEntry[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_treatment_notes', {
+    p_patient_id: patientId,
+    ...seitenArgumente(cursor),
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Behandlungsdokumentation konnte nicht geladen werden.');
+  return z.array(patientTreatmentNotesSchema).parse(data ?? []);
+}
+
+// -----------------------------------------------------------------------------
+// Frist der automatischen Finalisierung (DOK-004)
+// -----------------------------------------------------------------------------
+
+/**
+ * Angebotene Fristen in Kalendertagen nach dem Behandlungstag. Die Datenbank
+ * erlaubt 0 bis 30; die Auswahl beschraenkt sich auf sinnvolle Stufen, ein
+ * anderer gespeicherter Wert wird trotzdem angezeigt.
+ */
+export const FRIST_WERTE = [0, 1, 2, 3, 7, 14] as const;
+
+/** Voreinstellung nach ADR-016 Punkt 7: Ende des auf die Behandlung folgenden Kalendertages. */
+export const FRIST_VOREINSTELLUNG = 1;
+
+export function fristLabel(tage: number): string {
+  if (tage === 0) return 'Ende des Behandlungstages';
+  if (tage === 1) return 'Ende des Folgetages';
+  return `Ende des ${tage}. Tages nach der Behandlung`;
+}
+
+const deadlineSchema = z.object({ documentation_auto_finalize_days: z.number().int() });
+
+/** Liest die Frist der eigenen Praxis. RLS gibt nur die eigene Organisation frei. */
+export async function fetchDocumentationDeadline(organizationId: string): Promise<number> {
+  const { data, error } = await getSupabase()
+    .from('organizations')
+    .select('documentation_auto_finalize_days')
+    .eq('id', organizationId)
+    .maybeSingle();
+
+  if (error || !data) throw new Error('Die Dokumentationsfrist konnte nicht geladen werden.');
+  return deadlineSchema.parse(data).documentation_auto_finalize_days;
+}
+
+/**
+ * Setzt die Frist. Nur owner - verbindlich prueft `set_documentation_deadline`;
+ * die ausgeblendete Einstellung ist keine Zugriffskontrolle (ADR-004).
+ */
+export async function saveDocumentationDeadline(tage: number): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_documentation_deadline', {
+    p_days: tage,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw new Error('Die Dokumentationsfrist konnte nicht gespeichert werden.');
 }

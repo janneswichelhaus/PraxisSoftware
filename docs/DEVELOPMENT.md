@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand: 2026-09-03 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-04 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
@@ -132,7 +132,8 @@ Die manuellen Klickwege je Feature stehen in
 [`abnahme/`](abnahme/) — eine Datei je Roadmap-Etappe. Für den heutigen Stand:
 [Patientenverwaltung und Termine](abnahme/etappe-0-patienten-und-termine.md)
 (PAT-002, PAT-003, CAL-001 bis CAL-006, STAFF-001) und
-[Behandlungsdokumentation](abnahme/etappe-1-kernprozess.md) (DOK-001, DOK-002).
+[Behandlungsdokumentation](abnahme/etappe-1-kernprozess.md) (DOK-001 bis
+DOK-004).
 
 Sie liegen dort statt hier, weil sie mit jedem Loop wachsen und diese Datei
 sonst unlesbar würde.
@@ -237,6 +238,19 @@ derselben Transaktion. Damit gibt es keinen Weg, klinischen Freitext ohne
 Protokolleintrag zu lesen (ADR-010). Die Begründung einer Korrektur zählt dabei
 wie Inhalt: sie steht in der Versionstabelle, niemals im Auditlog.
 
+In der Akte gilt dasselbe Muster (DOK-003): `list_patient_treatment_notes`
+liefert den klinischen Rollen die Einträge aller Termine eines Patienten und
+protokolliert **je Eintrag** `treatment_note.viewed`; die Verwaltung bekommt
+über `list_patient_treatment_evidence` den Behandlungsnachweis ohne klinischen
+Inhalt und ohne eigenen Auditeintrag — das Öffnen der Akte steht als
+`patient_record.viewed` (ANN-006). Beide Sichten blättern über dieselbe
+Seitenregel `app.patient_record_page` mit höchstens 50 Terminen je Aufruf.
+
+Seit DOK-004 kennt das Auditlog einen **Systemakteur**: Ereignisse eines
+zeitgesteuerten Vorgangs — heute die automatische Finalisierung — tragen
+`actor_kind = 'system'` und keinen Account; die Auditansicht zeigt sie als
+„System", der Benutzerfilter blendet sie aus (ANN-009).
+
 Der Ereigniskatalog steht doppelt: als Check-Constraint auf `audit_log.action`
 und in `src/features/audit/actions.ts`. Ein Datenbanktest hält beide
 deckungsgleich.
@@ -272,14 +286,24 @@ deckungsgleich.
    signierte URLs, Retention nach ADR-008); ADR-015 führt dieselbe Frage als
    offene Folgefrage. Vor einer Umsetzung braucht es dafür einen ADR. Das
    Datenmodell verbaut sie nicht: eine Anhangstabelle kommt additiv hinzu.
-9. **Keine automatische Finalisierung nach Frist.** ADR-016 Punkt 7 sieht sie
-   vor; das Projekt hat keinen Scheduler, und welcher Mechanismus dafür
-   zulässig ist, ist eine eigene Architekturentscheidung (DOK-004). Bis dahin
-   bleibt ein Entwurf unbegrenzt Entwurf — und ist damit kein Nachweis im Sinne
-   von §630f.
+9. **Die automatische Finalisierung braucht `pg_cron`.** ADR-016 Punkt 7 ist
+   mit DOK-004 umgesetzt: `finalize_overdue_treatment_notes` schreibt
+   überfällige Entwürfe fest, und die Migration registriert den Aufruf alle
+   15 Minuten über `pg_cron` — aber nur, wo die Erweiterung verfügbar ist
+   (ANN-007). Der lokale Supabase-Stack bringt sie mit; die Wegwerf-Datenbank
+   von `pnpm test:db` nicht, dort wird die Funktion direkt geprüft. Ob der Job
+   läuft, zeigt `select jobname, schedule from cron.job;`. Auf einem Server
+   ohne `pg_cron` bleibt ein Entwurf Entwurf — vor dem Produktivstart ist die
+   Registrierung deshalb zu prüfen.
 10. **Ein Termin mit Dokumentation lässt sich weiterhin absagen.** Ob das
     fachlich zulässig sein soll, ist offen; der Entwurf bleibt in diesem Fall
     erhalten und lesbar, es geht nichts verloren.
+11. **Der Behandlungsnachweis in der Akte enthält keine „erbrachte Leistung".**
+    §4.4 nennt sie, aber es gibt noch keine Leistungserfassung, und ob
+    Leistungsziffern organisatorisch oder klinisch sind, ist Punkt C1 in
+    `docs/decisions/OPEN_DECISIONS.md` (vorläufig ANN-006). Der fallbezogene,
+    zeitlich begrenzte Office-Zugriff auf vollständige Dokumentation (§4.4
+    Absatz 3) ist ebenfalls nicht gebaut.
 
 ## Manuelle Schritte im Repository
 

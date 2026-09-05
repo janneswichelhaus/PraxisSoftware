@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-03
+Zuletzt aktualisiert: 2026-09-04
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -111,7 +111,11 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | offen  | Jannes                        |
 | ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | DOK-003, spätestens ABR-002   |
+| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | ABR-002                       |
+| ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; C1 bei ABR-002 |
+| ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden 2026-09-05 | Providerprüfung nach ADR-002 |
+| ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | offen  | Jannes; Datenschutzprüfung    |
+| ANN-009 | Systemakteur im Auditlog                                       | Datenschutz   | offen  | Datenschutzprüfung            |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -258,7 +262,10 @@ Auswertung, die §20 nicht deckt. Der Lesepfad `list_audit_events` gibt
 `supabase/migrations/20260830120000_scheduling_grid.sql`;
 `set_staff_working_hours` und `set_staff_working_hour_exception` in
 `supabase/migrations/20260830130000_working_hours_audit.sql`;
-`list_audit_events` in `supabase/migrations/20260828110100_audit_read_path.sql`.
+`list_audit_events` in `supabase/migrations/20260828110100_audit_read_path.sql`
+(seit DOK-004 in `20260904120000_treatment_note_auto_finalisation.sql`);
+`set_documentation_deadline` ebendort (Alt- und Neuwert der Frist in Tagen,
+DOK-004).
 
 **Änderungspfad.** Kontextinhalt je Funktion in einer Migration ändern —
 Aufwand `klein`. Bereits geschriebene Zeilen sind über den Anwendungspfad nicht
@@ -271,7 +278,7 @@ lesbar; ob sie bereinigt werden müssen, entscheidet die Prüfung.
 | Kategorie | Praxisprozess |
 | Herkunft | CAL-004 |
 | Status | offen, seit 2026-08-30 (rückwirkend erfasst 2026-09-03) |
-| Wiedervorlage | DOK-003 (Dokumentation in der Akte), spätestens ABR-002 (Leistungserfassung am abgeschlossenen Termin) |
+| Wiedervorlage | ABR-002 (Leistungserfassung am abgeschlossenen Termin); DOK-003 hat die Kopplung geprüft und nicht eingeführt, siehe Nachtrag |
 
 **Annahme.** Ein Termin kann abgeschlossen werden, ohne dass eine
 Behandlungsdokumentation existiert. Der Abschluss gibt den Zeitraum nicht frei
@@ -294,6 +301,224 @@ Abnahmeschritt CAL-004 in
 
 **Änderungspfad.** Entweder eine Prüfung in `complete_appointment` ergänzen
 oder den Abschluss aus der Finalisierung der Dokumentation heraus auslösen —
-Aufwand `klein` bis `mittel`, je nach Variante. Die Entscheidung fällt bei
-DOK-003, spätestens wenn ABR-002 abgeschlossene Termine zu Leistungen macht,
-und wird hier nachgetragen.
+Aufwand `klein` bis `mittel`, je nach Variante. Die Entscheidung fällt
+spätestens, wenn ABR-002 abgeschlossene Termine zu Leistungen macht, und wird
+hier nachgetragen.
+
+**Nachtrag 2026-09-04 (DOK-003).** Die Kopplung wird nicht eingeführt. Seit
+DOK-003 zeigt die Akte jeden begonnenen Termin mit seinem Dokumentationsstand:
+ein abgeschlossener Termin ohne Dokumentation steht dort für Praxisleitung,
+Therapeut:innen und Verwaltung als „Abgeschlossen" mit „Keine Dokumentation."
+— sichtbar, ohne dass der Terminabschluss blockiert. Sichtbarkeit statt
+Sperre ist die leichter umkehrbare Option (§16); ob eine Sperre nötig wird,
+zeigt sich, wenn ABR-002 Leistungen an abgeschlossene Termine bindet.
+
+### ANN-006 — Umfang und Protokollierung des Behandlungsnachweises in der Akte
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | DOK-003 (Dokumentation in der Akte, rollenabhängig projiziert); überbrückt Punkt C1 in `OPEN_DECISIONS.md` |
+| Status | offen, seit 2026-09-04 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; der Leistungsanteil (C1) spätestens bei ABR-002 |
+
+**Annahme.** Der Behandlungsnachweis nach `PROJECT_PRINCIPLES.md` §4.4 ist in
+der Akte eine eigene Serverfunktion (`list_patient_treatment_evidence`) mit
+genau diesem Datenumfang je Termin: Datum, Zeitraum, Terminart, behandelnde
+Person, Terminstatus, Dokumentationsstand (`none`, `draft`, `final`) und der
+Zeitpunkt der Finalisierung. **Nicht enthalten** sind der klinische Inhalt,
+Verfasser- und Finalisierernamen, Versionszahlen, Nachträge,
+Korrekturbegründungen und — solange es keine Leistungserfassung gibt — die
+„erbrachte Leistung". Ein Entwurf wird nur als vorhanden gemeldet, ohne
+Zeitpunkt. Lesen dürfen alle vier Praxisrollen; Patientenkonten nicht. Das
+Lesen des Nachweises erzeugt **keinen eigenen Auditeintrag**: er enthält
+keinen klinischen Inhalt, und das Öffnen der Akte, in der er steht, wird
+bereits als `patient_record.viewed` protokolliert.
+
+**Begründung.** §4.4 zählt die Felder des Nachweises auf und verbietet dem
+Office ausdrücklich den medizinischen Inhalt; ADR-004 macht den Nachweis zu
+einer „eigenen Sicht mit eigenem Datenumfang, kein gefilterter Auszug". Die
+Datenminimierung nach Art. 5 Abs. 1 lit. c DSGVO verlangt, dass für den Zweck
+— den organisatorischen Streitfall („am 14.08. sei niemand erschienen") —
+nur das Nötige geliefert wird: dass ein Termin stattfand, wer eingeplant war
+und ob und wann dokumentiert wurde. Der Zeitpunkt der Finalisierung ist dabei
+der Zeitpunkt, ab dem der Eintrag Bestandteil der Akte ist (ADR-016 Punkt 4);
+ein Entwurf ist kein Nachweis im Sinne von §630f BGB (ADR-016 Punkt 3) und
+bekommt deshalb keinen. Versionen und Nachträge unterliegen nach ADR-016
+Punkt 8 derselben Projektion wie der Inhalt und bleiben dem Office
+verschlossen. „Signatur/Bestätigung der Behandlung" (§4.4) wird durch die
+Finalisierung selbst abgebildet, nicht durch die Nennung der finalisierenden
+Person — die restriktivere Lesart nach §16. Die „erbrachte Leistung" kann
+nicht geliefert werden, weil es sie im System noch nicht gibt; ob
+Leistungsziffern organisatorisch oder klinisch sind, bleibt C1. Für die
+Protokollierung gilt ADR-010: auditpflichtig sind das Öffnen der Akte und der
+Zugriff auf klinische Dokumente; der Nachweis ist kein klinisches Dokument.
+**Unsicher** ist, ob die Datenschutzprüfung das Lesen des Dokumentationsstands
+selbst als protokollpflichtigen Zugriff einstuft.
+
+**Verankerung.** `app.can_read_treatment_evidence()` und die Spaltenliste von
+`list_patient_treatment_evidence` in
+`supabase/migrations/20260904110000_patient_record_documentation.sql` (beide
+tragen die Kennung); `canReadTreatmentEvidence` in
+`src/features/session/types.ts`; Datenbanktest „DOK-003: Behandlungsnachweis
+in der Akte" in `pnpm test:db` (prüft unter anderem, dass der Rückgabetyp
+keine Inhaltsspalte kennt und kein Auditeintrag entsteht); Abnahmeschritt
+DOK-003 in `docs/abnahme/etappe-1-kernprozess.md`.
+
+**Änderungspfad.** Spalte hinzufügen oder entfernen (etwa die finalisierende
+Person): eine Migration, die die Funktion ersetzt, plus das Schema in
+`src/features/documentation/api.ts` — Aufwand `klein`. Eigenes Auditereignis
+für den Nachweis: Ereigniskatalog erweitern und einen Insert in der Funktion
+ergänzen — Aufwand `klein`. Leistungen im Nachweis: fällt mit C1 bei ABR-002
+und braucht dann eine eigene Spalte aus der Leistungserfassung — Aufwand
+`mittel`. Rollenschnitt: `app.can_read_treatment_evidence()` ersetzen —
+Aufwand `klein`.
+
+### ANN-007 — Mechanismus der automatischen Finalisierung: pg_cron
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | DOK-004 (ADR-016 Punkt 7); die Roadmap führte die Wahl als offene Architekturentscheidung |
+| Status | **Mechanismus entschieden am 2026-09-05 durch Jannes** (Weg 2, `pg_cron`, alle 15 Minuten, bedingt registriert). Die Providerfrage bleibt offen. |
+| Wiedervorlage | Providerprüfung nach ADR-002 vor dem Cloudprojekt — sie muss `pg_cron` bestätigen oder den Auslöser ersetzen |
+
+**Annahme.** Die automatische Finalisierung ist eine Datenbankfunktion
+(`finalize_overdue_treatment_notes`), die ein Scheduler in der Datenbank
+aufruft: die Erweiterung `pg_cron`, alle 15 Minuten, registriert durch die
+Migration — aber nur, wenn die Erweiterung auf dem Server verfügbar ist. Die
+Funktion ist für keine Anwendungsrolle ausführbar, idempotent und überspringt
+Einträge, die gerade bearbeitet werden. Es gibt keinen Fallback „beim
+nächsten Zugriff nachziehen" und keine Berechnung zur Laufzeit.
+
+**Begründung.** Von den drei in der Roadmap beschriebenen Wegen
+materialisiert nur ein Scheduler den finalisierten Stand zu einem Zeitpunkt,
+der nicht vom Zufall eines Aktenaufrufs abhängt — bei einer Frist mit
+Wirkung nach §630f BGB die entscheidende Eigenschaft. `pg_cron` ist Teil des
+Supabase-Postgres-Images (lokal wie in der Cloud), braucht keinen weiteren
+Dienst, keine Zugangsdaten außerhalb der Datenbank und keine Netzverbindung;
+damit bleibt es innerhalb des mit ADR-015 gewählten Stacks und führt keinen
+neuen Anbieter ein (§3.5). Es ist dennoch eine neue Infrastrukturabhängigkeit
+im Sinne von §11 und wird deshalb hier registriert statt beiläufig eingebaut.
+Die Wegwerf-Datenbank der Tests hat kein `pg_cron`; die Funktion wird dort
+direkt geprüft, die Registrierung selbst nur dort, wo die Erweiterung
+existiert. **Unsicher:** ob die Providerprüfung nach ADR-002 `pg_cron`
+im Cloudprojekt freigibt und ob 15 Minuten als Verzögerung nach
+Fristende akzeptabel sind.
+
+**Entscheidung vom 2026-09-05.** Jannes hat den Mechanismus nach Vorlage der
+drei Wege ausdrücklich gewählt: Weg 2, `pg_cron`. Die Wahl selbst ist damit
+keine Annahme mehr, sondern eine getroffene Architekturentscheidung
+(`docs/development/ROADMAP.md`, Abschnitt DOK-004); der Eintrag bleibt
+bestehen, weil die **Verankerung und der Änderungspfad** weiter gebraucht
+werden und die Providerfrage nach ADR-002 offen ist. Ausdrücklich mit
+entschieden: der Auslöser bleibt von der Fachlogik getrennt, und die
+Registrierung bleibt bedingt.
+
+**Verankerung.** Der `do`-Block am Ende von
+`supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql` ist
+die einzige Stelle, die den Auslöser kennt (trägt die Kennung); die Funktion
+`finalize_overdue_treatment_notes` ebendort; Datenbanktest „DOK-004:
+Scheduler-Registrierung" in `pnpm test:db`.
+
+**Änderungspfad.** Anderer Auslöser (externer Cron-Dienst, Edge Function,
+Betriebsskript): den `do`-Block durch die neue Registrierung ersetzen und
+dieselbe Funktion aufrufen — Aufwand `klein`. Anderes Intervall: eine
+Migration mit erneutem `cron.schedule` unter demselben Namen — Aufwand
+`klein`. Gänzlich anderer Mechanismus (Berechnung beim Lesen): Umbau der
+Lesepfade und der Versionierung — Aufwand `groß`, deshalb nicht gewählt.
+
+### ANN-008 — Fristbezug der automatischen Finalisierung
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | DOK-004 (ADR-016 Punkt 7) |
+| Status | offen, seit 2026-09-04 |
+| Wiedervorlage | Jannes nach den ersten Wochen Praxisbetrieb (ADR-016 nennt diesen Punkt als den, der am ehesten nachjustiert wird); Datenschutzprüfung für den Zeitpunktbegriff |
+
+**Annahme.** Die Frist ist eine praxisweite Zahl von Kalendertagen
+(`documentation_auto_finalize_days`, 0 bis 30, Voreinstellung 1) und endet um
+Mitternacht der Praxiszeitzone nach dem N-ten Kalendertag **nach dem
+Behandlungstag**. Für einen Eintrag, der erst später angelegt wird — eine
+verspätete Erstdokumentation oder ein Nachtrag —, zählt stattdessen der
+Anlagetag, wenn er später liegt; die Frist läuft also nie ab, bevor sie für
+diesen Eintrag überhaupt begonnen hat. `finalized_at` ist der Zeitpunkt, zu
+dem der Lauf den Eintrag festgeschrieben hat; das rechnerische Fristende
+steht als `due_at` im Auditkontext. Nur `owner` darf die Frist setzen.
+
+**Begründung.** ADR-016 Punkt 7 legt Voreinstellung und Konfigurierbarkeit
+fest, nicht aber den Bezugstag für nachträglich angelegte Einträge. Würde
+die Frist ausschließlich ab Behandlung zählen, wäre ein Nachtrag zu einem
+drei Wochen alten Termin beim nächsten Lauf festgeschrieben — nach wenigen
+Minuten, bevor die Therapeutin ihn zu Ende geschrieben hat. Das wäre genau
+der unfertige Eintrag, den ADR-016 als Preis der Automatik nennt, ohne den
+Nutzen des zeitnahen Nachweises. Der Anlagetag als späterer Bezug wahrt die
+Absicht („zeitnah nach dem Ereignis dokumentieren", §630f Abs. 1 S. 1 BGB:
+„in unmittelbarem zeitlichen Zusammenhang") und bleibt die restriktivere
+Option gegenüber einer Ausnahme vom Automatismus. Der Zeitpunkt der
+Festschreibung statt des Fristendes ist die ehrliche Angabe: Er sagt, wann
+der Stand tatsächlich unveränderlich wurde; das Fristende ist aus Termin und
+Frist jederzeit rekonstruierbar und steht zusätzlich im Auditkontext. Der
+Rollenschnitt folgt §4.1 („Praxiseinstellungen") und dem Muster des
+Praxisrasters. **Unsicher:** ob eine Frist je Organisation genügt oder ob
+Hausbesuche am Freitag eine eigene Regel brauchen (offene Folgefrage in
+ADR-016).
+
+**Verankerung.** `app.documentation_deadline()` und die Spalte
+`organizations.documentation_auto_finalize_days` in
+`supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`
+(beide tragen die Kennung); `set_documentation_deadline` ebendort;
+`FRIST_WERTE` in `src/features/documentation/api.ts`; Datenbanktests „DOK-004:
+Automatische Finalisierung nach Frist" und „DOK-004: Frist konfigurieren" in
+`pnpm test:db`; Abnahmeschritt DOK-004 in
+`docs/abnahme/etappe-1-kernprozess.md`.
+
+**Änderungspfad.** Anderer Bezugstag oder eine Uhrzeit statt Mitternacht:
+`app.documentation_deadline()` in einer Migration ersetzen — Aufwand `klein`.
+Frist je Person oder je Terminart: eigene Spalte und Auswertung in derselben
+Funktion — Aufwand `mittel`. Bereits automatisch finalisierte Einträge bleiben
+finalisiert; sie sind über Korrektur und Nachtrag weiter änderbar.
+
+### ANN-009 — Systemakteur im Auditlog
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | DOK-004; ADR-010 lässt das konkrete Schema der Audit-Einträge offen |
+| Status | offen, seit 2026-09-04 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+
+**Annahme.** Auditereignisse ohne handelnden Account tragen
+`actor_kind = 'system'` und keinen `actor_user_id`; alle übrigen bleiben
+`user` mit Account, und eine Constraint erzwingt genau diese Paarung. Die
+Auditansicht zeigt solche Ereignisse als „System", der Benutzerfilter blendet
+sie aus. Bei der automatischen Finalisierung wird keine finalisierende
+Person eingetragen — weder am Eintrag noch im Audit; Urheberin der
+festgeschriebenen Version 1 ist wie bei der Finalisierung von Hand die
+zuletzt schreibende Person.
+
+**Begründung.** ADR-010 Punkt 3 verlangt die zur Nachvollziehbarkeit
+erforderlichen Metadaten; ein Platzhalter-Account oder die zuletzt
+schreibende Person als vermeintlich finalisierende wäre eine falsche
+Angabe im Nachweis und liefe ADR-016 Punkt 1 („Urheberschaft je Version
+bleibt dauerhaft erhalten") zuwider, weil sie eine Handlung zuschriebe, die
+niemand vorgenommen hat. Ein ausdrücklicher Systemakteur ist die
+datensparsamere und ehrlichere Darstellung (Art. 5 Abs. 1 lit. d DSGVO,
+Richtigkeit). Die Unveränderbarkeit des Logs (ADR-010 Punkt 4) ist nicht
+berührt: es gibt weiterhin kein Update und kein Delete über den
+Anwendungspfad. **Unsicher:** ob die Prüfung eine Kennzeichnung des
+konkreten Auslösers (Jobname, Intervall) im Auditkontext verlangt; heute
+steht dort `surface = scheduler` und das Fristende.
+
+**Verankerung.** Spalte `audit_log.actor_kind` und Constraint
+`audit_log_actor_consistent` in
+`supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`
+(tragen die Kennung); `list_audit_events` ebendort; Anzeige in
+`src/features/audit/AuditLogPage.tsx`; Datenbanktest „DOK-004: Systemakteur
+im Auditlog" in `pnpm test:db`.
+
+**Änderungspfad.** Zusätzliche Kennzeichnung des Auslösers: Kontext des
+Inserts in `finalize_overdue_treatment_notes` erweitern — Aufwand `klein`.
+Eigener Pseudo-Account statt Systemakteur: Spalte zurückbauen und Konto im
+Seed anlegen — Aufwand `mittel`, ausdrücklich nicht empfohlen.

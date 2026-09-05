@@ -49,6 +49,7 @@ const doku: DokumentationApi.TreatmentNote = {
   created_at: '2027-05-12T08:10:00.123456+00:00',
   updated_at: STAND,
   finalized_at: null,
+  finalisation_kind: null,
   version_count: 0,
   author_name: 'Anna Beispiel',
   last_editor_name: 'Tim Teamleitung',
@@ -59,6 +60,7 @@ const finalisiert: DokumentationApi.TreatmentNote = {
   ...doku,
   status: 'final',
   finalized_at: '2027-05-12T09:00:00.000000+00:00',
+  finalisation_kind: 'manual',
   version_count: 1,
   finalized_by_name: 'Tim Teamleitung',
 };
@@ -262,6 +264,27 @@ describe('TreatmentNoteSection: finalisierter Eintrag (DOK-002)', () => {
       screen.getByText(/Finalisiert am Mittwoch, 12\. Mai 2027, 11:00 Uhr von Tim Teamleitung\./),
     ).toBeInTheDocument();
     expect(screen.queryByText(/noch nicht finalisiert/)).toBeNull();
+  });
+
+  it('nennt eine automatische Finalisierung als solche - ohne erfundene Person (DOK-004)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({
+      primary: {
+        ...finalisiert,
+        finalisation_kind: 'automatic',
+        finalized_by_name: null,
+      },
+      addenda: [],
+    });
+    rendern(['therapist']);
+
+    expect(
+      await screen.findByText(
+        /Automatisch finalisiert am Mittwoch, 12\. Mai 2027, 11:00 Uhr nach Ablauf der Frist\./,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Uhr von /)).toBeNull();
+    // Korrektur und Nachtrag stehen wie nach jeder Finalisierung offen.
+    expect(screen.getByRole('link', { name: 'Korrigieren' })).toBeInTheDocument();
   });
 
   it('bietet statt des Entwurfsweges die Korrektur an', async () => {
