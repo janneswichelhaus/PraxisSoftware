@@ -131,6 +131,30 @@ verankert ist. `pg_cron` bliebe als neue Infrastrukturabhängigkeit eine
 bewusste Entscheidung mit Prüfung gegen §11 und ADR-015 — kein Stopp, aber
 auch kein beiläufiger Einbau.
 
+**Entschieden am 2026-09-05 von Jannes: Weg 2, `pg_cron`.** Damit ist die
+Voraussetzung von DOK-004 erfüllt; der Loop trifft diese Wahl nicht mehr
+selbst, sondern setzt sie um und registriert sie als Annahme.
+
+Begründung: Nur Weg 2 schreibt den finalisierten Zustand tatsächlich fest
+**und** hält den Zeitpunkt ein — bei einer §630f-relevanten Frist zählt
+beides. Weg 1 liefert keinen festgeschriebenen Stand, an dem Version 1 hängen
+kann (ADR-016 Punkte 4 bis 6); Weg 3 macht den Zeitpunkt vom Zufall des
+Aktenaufrufs abhängig. Die Prüfung gegen §11 und ADR-015 fällt zugunsten von
+`pg_cron` aus: es ist eine Erweiterung des ohnehin eingesetzten PostgreSQL,
+kein neuer Anbieter, kein neuer Vertrag und keine Datenübermittlung nach
+außen.
+
+Zwei Auflagen für den Loop:
+
+- **Der Auslöser bleibt von der Fachlogik getrennt.** Fristberechnung,
+  Auswahl der fälligen Entwürfe und Auditeintrag gehören in eine
+  Datenbankfunktion des Projekts; `pg_cron` ruft sie nur auf. ADR-002 hat den
+  Hosting-Anbieter für den Produktivbetrieb noch nicht festgelegt — bietet der
+  spätere Anbieter kein `pg_cron`, wird nur der Auslöser ersetzt.
+- **Die Registrierung bleibt bedingt.** Ohne die Erweiterung muss die
+  Migration gültig bleiben und durchlaufen; die Wegwerf-Datenbank der Tests
+  hat kein `pg_cron`.
+
 **Ergebnis der Etappe:** Die Praxis könnte damit arbeiten — Termine
 dokumentieren, Leistungen erfassen, Rechnungen stellen. Das ist der Punkt, ab
 dem die Software Nutzen stiftet statt Aufwand zu erzeugen.
