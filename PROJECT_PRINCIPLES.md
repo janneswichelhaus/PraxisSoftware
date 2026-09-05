@@ -4,12 +4,29 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.3** |
-| **Änderungsdatum** | **2026-09-03** |
+| **Dokumentversion** | **0.4** |
+| **Änderungsdatum** | **2026-09-05** |
 | Vorversion | 0.2.2 (Korrekturversion); 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-016, siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
+
+### Änderungsvermerk 0.4
+
+C1 und C2 entschieden. Anlass: Jannes hat beide in
+`docs/decisions/OPEN_DECISIONS.md` Abschnitt C geführten Widersprüche
+aufgelöst (2026-09-05):
+
+- §4.4 legt fest, dass Leistungskürzel (z. B. „MT", „KG") als organisatorische
+  Information gelten und dem Office wie die übrige Rechnung zugänglich
+  bleiben; der Diagnosetext bleibt klinisch und gesperrt.
+- §10 legt fest, dass Patientenkommunikation über einen gemeinsamen Kanal
+  läuft; erkennt eine Therapeutin nachträglich klinischen Inhalt, ordnet sie
+  ihn der Akte zu. Dass das Office eine solche Nachricht bis zur Zuordnung
+  gelesen haben kann, ist eine akzeptierte, dokumentierte Ausnahme, kein
+  Fehler.
+
+Keine Anforderung aus §3, §12, §13 oder §16 wurde geändert oder abgeschwächt.
 
 ### Änderungsvermerk 0.3
 
@@ -422,9 +439,9 @@ protokollierter Zugriff vorgesehen.
 
 Dieser Zugriff MUSS durch eine dazu berechtigte Rolle freigegeben werden.
 
-Ob die Angabe „erbrachte Leistung" als organisatorische oder als klinische
-Information einzustufen ist, ist noch nicht entschieden und in
-`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
+**Entschieden am 2026-09-05:** Leistungskürzel (z. B. „MT", „KG") gelten als
+organisatorische Information. Das Office darf sie wie die übrige Rechnung
+sehen. Der Diagnosetext bleibt davon unberührt klinisch und gesperrt.
 
 ### 4.5 Teamleitung
 
@@ -717,10 +734,12 @@ internem Teamchat vermischt werden.
 Medizinisch relevante Inhalte MÜSSEN der Patientenakte zugeordnet werden
 können.
 
-Wie klinische Inhalte innerhalb der Patientenkommunikation klassifiziert
-werden und wie sich das zum Office-Zugriff nach §4.3 verhält, ist noch nicht
-entschieden und in `docs/decisions/OPEN_DECISIONS.md` als offener Punkt
-geführt.
+**Entschieden am 2026-09-05:** Patientenkommunikation läuft über einen
+gemeinsamen Kanal. Erkennt eine Therapeutin nachträglich klinischen Inhalt in
+einer Nachricht, ordnet sie ihn der Patientenakte zu. Dass das Office eine
+solche Nachricht bis zu dieser Zuordnung im organisatorischen Kanal nach §4.3
+gelesen haben kann, ist eine akzeptierte, dokumentierte Ausnahme — kein
+Fehler und kein Grund, den Kanal vorab aufzuteilen.
 
 
 ## 11. Softwareentwicklung

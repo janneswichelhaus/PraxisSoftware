@@ -149,7 +149,7 @@ werden nicht gebaut.
 | #   | Loop    | Inhalt                                                                                                                                            | Voraussetzung   |
 | --- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
 | 10  | PAT-004 | Stammdaten ergänzen: Telefon (Geschäftlich), Mobil, Telefax, Einrichtung, Besonderheit, Bemerkung, feste Therapeut-Zuordnung                       | PAT-001, STAFF-001 |
-| 11  | VER-001 | Datenmodell Verordnung: Verordnungsdatum, Diagnose, Arzt (PLZ), Behandlungen als Heilmittel-Positionen (verordnete/genutzte Menge, Doppelbehandlung, Erst-/Folgeverordnung), Pauschale Behandlungen als Flags, Bemerkungen — verknüpft mit dem Patienten | PAT-001          |
+| 11  | VER-001 | Datenmodell Verordnung: Verordnungsdatum, Diagnose, Arzt (PLZ), Behandlungen als Heilmittel-Positionen (verordnete/genutzte Menge, Doppelbehandlung, Erst-/Folgeverordnung), Pauschale Behandlungen als Flags, Bemerkungen, Empfehlung zum Verordnungsende (weitere Verordnung sinnvoll / aktuell keine weitere Therapie nötig / offen) — verknüpft mit dem Patienten | PAT-001          |
 | 12  | VER-002 | Verordnungen-Übersicht je Patient, nach Jahr gruppiert, mit Vorschau                                                                               | VER-001          |
 | 13  | VER-003 | Verordnung anlegen und bearbeiten                                                                                                                  | VER-001          |
 | 14  | VER-004 | Scan-Anhang je Verordnung — zuerst prüfen, ob DOK-001/002 bereits einen wiederverwendbaren Datei-Mechanismus mitbringt                             | VER-001, DOK-002 |
@@ -159,7 +159,11 @@ Gültigkeit, Zuzahlung (GKV-Konzepte — Version 1 bleibt bei Privatabrechnung,
 ADR-009) · Verknüpfung Verordnung ↔ durchgeführte Behandlung zum
 automatischen Verbrauch des Heilmittel-Kontingents (eigene, spätere Story,
 braucht Abstimmung mit Terminplanung/ABR) · Kostenträger-/GKV-Erweiterung der
-Abrechnung generell.
+Abrechnung generell · automatische Klassifizierung/Erinnerung anstelle des
+Versorgungsstatus und der verordnungsfreie Übergang in ein Coaching-Angebot
+(`IDEA-LZK-007`) — durch B9 blockiert und bräuchte zusätzlich eine
+Scheduler-Infrastruktur, die es laut diesem Dokument (siehe DOK-004) noch
+nicht gibt.
 
 ### Etappe 2 — Anamnese und Verlauf
 

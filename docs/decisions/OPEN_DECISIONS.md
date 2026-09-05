@@ -20,7 +20,7 @@ offene Punkte hinzugekommen. Alle drei sind P2 — sie blockieren nichts von dem
 was heute gebaut wird, müssen aber vor dem jeweils ersten Feature in diesen
 Bereichen entschieden sein.
 
-Zuletzt aktualisiert: 2026-09-03
+Zuletzt aktualisiert: 2026-09-05
 
 | Punkt | Entscheidung |
 |---|---|
@@ -603,8 +603,8 @@ und anschließend eine Präzisierung von `PROJECT_PRINCIPLES.md`.
 
 | Nr. | Widerspruch | Bezug | Dringlichkeit |
 |---|---|---|---|
-| C1 | Office soll „erbrachte Leistung" sehen (§4.4), aber keinen medizinischen Inhalt — Leistungsziffern sind selbst klinische Information und stehen ohnehin auf der Rechnung, die Office nach §4.3 sieht. Entweder Leistungsziffern explizit als organisatorische Daten einstufen, oder getrennte Abrechnungsrepräsentation. | §4.3, §4.4 | P1 |
-| C2 | „Medizinisch relevante Inhalte der Akte zuordnen" (§10) trifft auf „Office sieht organisatorische Patientenkommunikation" (§4.3). Patienten schreiben klinische Inhalte in organisatorische Threads. Offen: wer klassifiziert wann, und was passiert mit bereits erfolgter Office-Einsicht. | §4.3, §10 | P1 |
+| C1 | Office soll „erbrachte Leistung" sehen (§4.4), aber keinen medizinischen Inhalt — Leistungsziffern sind selbst klinische Information und stehen ohnehin auf der Rechnung, die Office nach §4.3 sieht. **Entschieden am 2026-09-05 durch Jannes:** Leistungskürzel (z. B. „MT", „KG") gelten als organisatorisch, das Office sieht sie wie bisher auf der Rechnung; nur der Diagnosetext bleibt gesperrt. Konsolidiert in `PROJECT_PRINCIPLES.md` §4.4 (Version 0.4). | §4.3, §4.4 | P1 · entschieden |
+| C2 | „Medizinisch relevante Inhalte der Akte zuordnen" (§10) trifft auf „Office sieht organisatorische Patientenkommunikation" (§4.3). Patienten schreiben klinische Inhalte in organisatorische Threads. **Entschieden am 2026-09-05 durch Jannes:** ein gemeinsamer Kanal, die Therapeutin ordnet klinische Inhalte nachträglich der Akte zu; dass Office eine Nachricht bis dahin gelesen haben kann, ist eine akzeptierte Ausnahme. Konsolidiert in `PROJECT_PRINCIPLES.md` §10 (Version 0.4). | §4.3, §10 | P1 · entschieden |
 | C3 | „Im Zweifel blockieren" (§13) gegen „Patientensicherheit zuerst" (§16). Fail-closed ist für Schreiben und Offenlegen richtig, für Lesen durch die behandelnde Therapeutin am Patienten ein Sicherheitsrisiko. Ein Break-Glass-Konzept (Notfallzugriff mit Begründung, Protokollierung, Nachkontrolle) fehlt vollständig. **Technisch entschieden am 2026-08-28 — [ADR-010](../adr/ADR-010-audit-and-privileged-access.md):** Kein klinischer Break Glass in V1, weil §4.2 keine Sperre errichtet, die zu überwinden wäre; Fail-closed gilt für schreibende und offenlegende Vorgänge. Break Glass bezeichnet nur noch privilegierten technischen Produktionszugriff. | §13, §16 | P0 · entschieden |
 | C4 | „Alle Therapeut:innen sehen alle Akten" (§4.2) macht das Audit-Log zur einzigen verbleibenden Schutzmaßnahme, steht aber als schwaches „soll" da. Zu definieren: was als Zugriff zählt (Liste, Suchtreffer, Detailansicht, Export, KI-Zusammenfassung), Aufbewahrung, Leseberechtigung, Manipulationssicherheit — und wer das Log wann auswertet. In einer inhabergeführten Praxis existiert keine echte Funktionstrennung; die kompensierende Maßnahme ist zu benennen. **Teilweise adressiert durch [ADR-004](../adr/ADR-004-authorization-model.md)** (Audit-Logging ist verpflichtend); Umfang, Aufbewahrung, Leseberechtigung und Auswertung bleiben offen. **Technisch entschieden am 2026-08-28 — [ADR-010](../adr/ADR-010-audit-and-privileged-access.md):** Katalog von zehn auditpflichtigen Ereignissen, nur Metadaten ohne klinische Inhalte, Unveränderbarkeit über den Anwendungspfad, 3 Jahre Aufbewahrung, monatlicher Audit-/Security-Report. | §4.2, §16 | P0 · entschieden |
 | C5 | „Eine Plattform, möglichst keine Fremd-UIs" (§2.1) gegen „keine eigene Sicherheitsinfrastruktur" (§3.4): Nutzerverwaltung, Key-Rotation, DB-Konsole und Restore laufen zwangsläufig in Provider-Oberflächen. §4.1 verschiebt die Trennung von Admin- und Alltagsrechten auf „perspektivisch" — ob der Alltags-Account zu Plattform-Admin eskalieren kann, entscheidet sich jedoch beim Setup. **Teilweise adressiert durch [ADR-004](../adr/ADR-004-authorization-model.md)** (technische Administratorrolle wird getrennt); der Umgang mit Provider-Oberflächen und die betriebliche Besetzung bleiben offen. **Technisch entschieden am 2026-08-28 — [ADR-010](../adr/ADR-010-audit-and-privileged-access.md):** Praxis-Alltagskonten und Infrastruktur-Admin-Konten sind getrennte Berechtigungsdomänen; kein direkter Produktions-Datenbankzugriff im Normalbetrieb; privilegierter Zugriff nur anlassbezogen, mit MFA, begründet, auditiert und befristet. | §2.1, §3.4, §4.1 | P0 · entschieden |
@@ -668,10 +668,11 @@ Die Reihenfolge ist ein Vorschlag, keine Entscheidung.
 3. ~~**B3** (Löschkonzept) und **B4** (Abrechnungsmodell) entscheiden~~
    **Erledigt am 2026-08-28** (ADR-008, ADR-009). Die rechtliche und
    steuerrechtliche Validierung ist auf **vor Produktivstart** terminiert.
-4. **C1, C2, C6 und C7** fachlich auflösen und `PROJECT_PRINCIPLES.md` in
-   einem eigenen Commit nachziehen. C3, C4, C5 und C8 sind am 2026-08-28
-   entschieden (ADR-010, ADR-014); die Normativität aus Abschnitt D ist in
-   Version 0.2 eingeführt.
+4. ~~**C1 und C2** fachlich auflösen und `PROJECT_PRINCIPLES.md` nachziehen~~
+   **Entschieden am 2026-09-05 durch Jannes**, konsolidiert in
+   `PROJECT_PRINCIPLES.md` Version 0.4 (§4.4, §10). **C6 und C7** bleiben
+   offen. C3, C4, C5 und C8 sind am 2026-08-28 entschieden (ADR-010,
+   ADR-014); die Normativität aus Abschnitt D ist in Version 0.2 eingeführt.
 5. ~~**E1, E3, E4, E5, E7** festlegen — Betriebsrahmen.~~ **Erledigt am
    2026-08-28** (ADR-010 bis ADR-013).
 6. Technisches Setup. Aus Sicht der hier geführten Punkte ist es nicht mehr

@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-03
+Zuletzt aktualisiert: 2026-09-05
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -194,6 +194,17 @@ ADR-Bezug — nicht diese Markierung.
 `app.can_change_patient_status()` ersetzt — Aufwand `klein`.
 Behandlungsabschluss: eigenes Feld und eigene Regel, nicht diese Funktion —
 Aufwand `mittel`, weil die klinische Retention daran hängt.
+
+**Rückmeldung von Jannes (2026-09-05).** Ein manuell gepflegtes Aktiv/Inaktiv
+sei im Alltag praxisfern. Gewünscht ist stattdessen eine automatische
+Klassifizierung, gekoppelt an eine Erinnerung für Therapeut:innen gegen
+Rezeptende mit einer Empfehlung zum weiteren Vorgehen — festgehalten als
+`IDEA-LZK-007` in
+`docs/product/ideen/00-lebenszyklus-und-zugang.md`. Das ändert diese Annahme
+noch nicht: Automatisierung und der verordnungsfreie Übergang sind durch B9
+blockiert (Rechtsrahmen offen). Bis zu einer Entscheidung dort bleibt die
+obige Annahme (organisatorische Markierung, kein Behandlungsabschluss,
+Rollenschnitt wie beschrieben) technisch in Kraft — Status bleibt `offen`.
 
 ### ANN-003 — Adress-Snapshot beim Hausbesuchstermin
 
