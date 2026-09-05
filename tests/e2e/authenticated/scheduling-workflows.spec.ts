@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
-import { KONTEN, PATIENTEN, anmelden, supabaseKonfiguration, zugriffstoken } from './helpers';
+import {
+  KONTEN,
+  PATIENTEN,
+  TAGESFENSTER,
+  anmelden,
+  laufTagImFenster,
+  supabaseKonfiguration,
+  zugriffstoken,
+} from './helpers';
 
 /**
  * Praxisraster und Arbeitszeiten im echten Ablauf (CAL-005).
@@ -14,9 +22,10 @@ const LAUF = Date.now();
 
 /** Nächster Kalendertag mit dem gewünschten ISO-Wochentag, weit in der Zukunft. */
 function naechster(isoWochentag: number, versatzWochen = 0): string {
-  const d = new Date();
-  d.setUTCHours(12, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + 400 + (LAUF % 100) + versatzWochen * 7);
+  // Startpunkt aus dem eigenen Tagesfenster dieser Spezifikation (helpers.ts);
+  // die Ausrichtung auf den Wochentag schiebt hoechstens sechs Tage weiter und
+  // bleibt damit in der Reserve des Fensters.
+  const d = laufTagImFenster(TAGESFENSTER.scheduling, LAUF, versatzWochen * 7);
   while (((d.getUTCDay() + 6) % 7) + 1 !== isoWochentag) {
     d.setUTCDate(d.getUTCDate() + 1);
   }

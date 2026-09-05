@@ -1,12 +1,14 @@
 import { expect, test } from '@playwright/test';
 import {
-  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
+  TAGESFENSTER,
   anmelden,
+  arbeitszeitBestaetigen,
   detailWert,
   direktesEinfuegenVersuchen,
   rpcAufrufen,
+  tagImFenster,
   terminUeberApi,
   zugriffstoken,
 } from './helpers';
@@ -27,11 +29,9 @@ test.describe.configure({ mode: 'serial' });
 
 const LAUF = Date.now();
 
-/** Kalendertag weit in der Zukunft, je Lauf verschieden. */
+/** Kalendertag im eigenen Tagesfenster dieser Spezifikation (siehe helpers.ts). */
 function laufTag(versatz = 0): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 60 + (LAUF % 200) + versatz);
-  return d.toISOString().slice(0, 10);
+  return tagImFenster(TAGESFENSTER.appointments, LAUF, versatz);
 }
 
 /**

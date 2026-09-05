@@ -1,11 +1,13 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
-  terminKachel,
-  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
+  TAGESFENSTER,
   anmelden,
+  arbeitszeitBestaetigen,
   detailWert,
+  laufTagImFenster,
+  terminKachel,
 } from './helpers';
 
 /**
@@ -21,9 +23,10 @@ const LAUF = Date.now();
 
 /** Nächster Mittwoch weit in der Zukunft - im Seed ein Arbeitstag. */
 function mittwoch(versatzWochen = 0): string {
-  const d = new Date();
-  d.setUTCHours(12, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() + 800 + (LAUF % 120) + versatzWochen * 7);
+  // Startpunkt aus dem eigenen Tagesfenster dieser Spezifikation (helpers.ts);
+  // die Ausrichtung auf den Mittwoch schiebt hoechstens sechs Tage weiter und
+  // bleibt damit in der Reserve des Fensters.
+  const d = laufTagImFenster(TAGESFENSTER.calendarInteraction, LAUF, versatzWochen * 7);
   while (d.getUTCDay() !== 3) d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().slice(0, 10);
 }

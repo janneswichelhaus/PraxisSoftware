@@ -315,3 +315,10 @@ Diese Einstellungen lassen sich nicht aus dem Code setzen:
   `security`, `e2e`, `e2e-supabase`; Force Push verbieten (ADR-013).
 - GitHub Secret Scanning und Push Protection aktivieren.
 - Dependabot oder eine vergleichbare Aktualisierung der Abhängigkeiten.
+- **Die Supabase-CLI-Version in `.github/workflows/ci.yml` von Hand erhöhen.**
+  Sie steht dort fest statt auf `latest`, weil `latest` die Action bei jedem
+  Lauf die GitHub-API nach dem neuesten Release fragen lässt — ein Aufruf ohne
+  Token, der am 2026-09-05 ins Rate Limit lief und den `main`-Lauf umbrachte,
+  bevor ein einziger Test lief. Eine feste Version macht das Gate zusätzlich
+  reproduzierbar (ADR-013). Die aktuelle Version steht auf
+  <https://www.npmjs.com/package/supabase>.

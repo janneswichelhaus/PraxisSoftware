@@ -1,12 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  terminKachel,
-  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
+  TAGESFENSTER,
   anmelden,
+  arbeitszeitBestaetigen,
   detailWert,
   supabaseKonfiguration,
+  tagImFenster,
+  terminKachel,
   zugriffstoken,
 } from './helpers';
 
@@ -24,11 +26,9 @@ test.describe.configure({ mode: 'serial' });
 
 const LAUF = Date.now();
 
-/** Bewusst ein anderer Tag als in appointment-workflows.spec.ts. */
-function laufTag(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 300 + (LAUF % 200));
-  return d.toISOString().slice(0, 10);
+/** Kalendertag im eigenen Tagesfenster dieser Spezifikation (siehe helpers.ts). */
+function laufTag(versatz = 0): string {
+  return tagImFenster(TAGESFENSTER.calendar, LAUF, versatz);
 }
 
 function laufZeit(offsetMinuten = 0): string {
