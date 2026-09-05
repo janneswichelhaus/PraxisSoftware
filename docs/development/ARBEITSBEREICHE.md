@@ -135,9 +135,9 @@ der Mitarbeiterstamm ist echt angebunden (STAFF-001), die
 Dokumentationsentscheidung ist getroffen und umgesetzt (ADR-016, DOK-001 bis
 DOK-004).
 
-Die Vorschaubereiche aus Abschnitt 2 sind in der Roadmap bislang **nicht**
-eingeordnet. Das Planungsreview vom 2026-09-05
-(`PLANUNGSREVIEW-2026-09-05.md`) schlägt dafür eine eigene Spur „Betrieb" vor
-— Urlaub, Zeitkonto, Radflotte, Erstattungen, Teamkommunikation; Touren erst
-nach der Entscheidung zum Kartendienst (B7). Bis das entschieden ist, wird
-kein weiterer Vorschaubereich angelegt und kein bestehender ausgebaut.
+Die Vorschaubereiche aus Abschnitt 2 sind seit dem 2026-09-05 in der Roadmap
+als **Spur A2 „Praxisbetrieb"** eingeordnet — Urlaub, Zeitkonto, Radflotte,
+Erstattungen, Teamkommunikation; Touren erst nach der Entscheidung zum
+Kartendienst (B7). Sie beginnt nach dem Go-live (Stufe 2). Bis dahin gelten
+drei Regeln: keine neue Vorschau, keine Erweiterung einer Vorschau, und jede
+Vorschau wird in ihrem Loop ersetzt, nicht daneben gebaut.
