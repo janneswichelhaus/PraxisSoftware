@@ -628,12 +628,12 @@ und anschließend eine Präzisierung von `PROJECT_PRINCIPLES.md`.
 | „Praxisinhaber" vs. technischer Admin | §4.1 | siehe C5 |
 | „technisch getrennt" | §3.2 | [ADR-002](../adr/ADR-002-hosting-data-residency.md) legt Dev/Test/Prod als getrennte Umgebungen fest. Offen bleiben: weitere Umgebungen, technische Absicherung gegen Prod-Restores in Dev, Deploy-Berechtigungen. |
 
-**Übergreifend:** Das Dokument mischt bindende Anforderungen und
-Absichtserklärungen. „soll", „möglichst", „perspektivisch" und „langfristig"
-stehen an sicherheitskritischen Stellen (§4.1, §4.2, §6.1) — also dort, wo
-Verbindlichkeit gebraucht wird. Offen: Einführung einer Normativität nach
-RFC-2119-Art (MUSS / SOLLTE / KANN) und Zuordnung einer Kontrolle oder eines
-Tests zu jedem MUSS, damit §12 überhaupt prüfbar wird.
+**Übergreifend:** Das Dokument mischte bindende Anforderungen und
+Absichtserklärungen. **Erledigt mit Version 0.2:** §0 führt MUSS / DARF NICHT /
+SOLLTE / KANN ein, und die sicherheitskritischen Stellen (§4.1, §4.2, §6.1)
+sind normativ gefasst. **Offen bleibt** die Zuordnung einer Kontrolle oder
+eines Tests zu jeder MUSS-Anforderung — §0 verlangt die Prüfbarkeit, eine
+Nachweistabelle (Anforderung → Test, Policy oder Prüfschritt) existiert nicht.
 
 ---
 
@@ -651,7 +651,7 @@ Tests zu jedem MUSS, damit §12 überhaupt prüfbar wird.
 | E8 | **Dateiablage.** Belege, Fotos, Patienten-Uploads: Ablageort, Verschlüsselung, Zugriffsregeln, Virenscan bei Patienten-Uploads, signierte URLs mit kurzer Gültigkeit. §12 nennt Dateizugriffe als kritisch, das Dokument regelt sie nirgends. | §12 | P1 |
 | E10 | **Wer verwaltet Mitarbeiterdatensätze.** §4.1 nennt „Mitarbeiter" und „Personalprozesse" beim Praxisinhaber, §4.3 nennt für das Office „Mitarbeiterorganisation", §4.5 führt „Mitarbeiterplanung" für die Teamleitung als **mögliches** Zusatzrecht. Für den schreibenden Zugriff liegt damit nur für den Praxisinhaber eine verbindliche Aussage vor. Die Umsetzung (STAFF-001) folgt bis zu einer Entscheidung §13 („im Zweifel blockieren") und beschränkt Anlegen, Ändern und den Statuswechsel auf `owner`; das **Lesen** der Liste bleibt bei allen Praxisrollen. Offen: ob Office und/oder Teamleitung schreiben dürfen. | §4.1, §4.3, §4.5 | P2 |
 | E11 | **Wer gilt als behandelnde Person.** Zuordenbar für Termine ist derzeit, wer aktiv beschäftigt ist **und** einen eigenen aktiven Zugang mit therapeutischer Rolle besitzt (aus CAL-001 abgeleitet, nicht ausdrücklich entschieden). Folge: Eine neu angelegte Therapeutin ohne Zugang kann weder eingeplant werden noch Arbeitszeiten erhalten — obwohl Mitarbeiterdatensatz und Konto nach ADR-014 getrennte Konzepte sind. Offen: ob die therapeutische Tätigkeit am Mitarbeiterdatensatz geführt wird (unabhängig vom Konto) oder ob die Kopplung an den Zugang bewusst bestehen bleibt. | §4.2, ADR-014 | P2 |
-| E9 | **Dokument-Governance.** `PROJECT_PRINCIPLES.md` hat keine Version, kein Datum und keinen Änderungsprozess. Offen: Versionierung des Dokuments und die Beziehung zwischen Prinzipien und Code — vorgesehenes Bindeglied sind ADRs unter `docs/adr/`. | §11 | P1 |
+| E9 | **Dokument-Governance.** `PROJECT_PRINCIPLES.md` hatte keine Version, kein Datum und keinen Änderungsprozess. **Erledigt mit Version 0.2 (2026-08-28):** §21 regelt Versionierung, Änderungsvermerke und das Verhältnis zu ADRs, Annahmenregister und offenen Entscheidungen; die Versionen 0.2.1, 0.2.2, 0.3 und 0.4 sind nach diesem Verfahren entstanden. | §11 | P1 · erledigt |
 
 ---
 

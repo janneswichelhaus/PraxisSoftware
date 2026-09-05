@@ -226,11 +226,10 @@ um die konkrete Erinnerungs- und Empfehlungsmechanik.
   tatsächliche Übergang in ein verordnungsfreies Coaching-Angebot** sind
   durch **B9** blockiert (Rechtsrahmen für die Betreuung nach
   Therapieende ist offen, siehe `IDEA-LZK-002`/`IDEA-LZK-003`).
-  Eine proaktive Erinnerung bräuchte außerdem einen Scheduler, den es nach
-  `docs/development/ROADMAP.md` noch nicht gibt — dieselbe offene Frage wie
-  bei DOK-004.
+  Technisch steht einer proaktiven Erinnerung nichts mehr im Weg: der
+  Scheduler existiert seit DOK-004 (`pg_cron`, ANN-007).
 
 **Offen.** Wie die Empfehlung sich zur künftigen Betreuungsepisode
-(IDEA-LZK-002) verhält, und ob eine ohne Scheduler auskommende Variante (z. B.
-ein Hinweis beim Öffnen einer Verordnung mit niedrigem Restkontingent statt
-einer proaktiven Benachrichtigung) für den Anfang reicht.
+(IDEA-LZK-002) verhält, und ob für den Anfang ein Hinweis beim Öffnen einer
+Verordnung mit niedrigem Restkontingent reicht oder eine proaktive Erinnerung
+über den Scheduler gewünscht ist.

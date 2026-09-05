@@ -23,7 +23,6 @@
     "db:start": "./scripts/test-db.sh start",
     "db:stop": "./scripts/test-db.sh stop",
     "db:reset": "./scripts/test-db.sh reset",
-    "db:apply": "./scripts/apply-migrations.sh",
     "scan:secrets": "./scripts/scan-secrets.sh",
     "audit": "pnpm audit --audit-level=high"
   },

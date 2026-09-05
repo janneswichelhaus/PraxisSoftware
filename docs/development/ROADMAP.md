@@ -60,8 +60,8 @@ Monate. Sie sollten laufen, während Spur A an Etappe 1 bis 3 arbeitet.
 ## Ist-Stand (2026-09-05)
 
 Gebaut: Anmeldung und Sitzung · Rollen und RLS · Audit-Log mit
-eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus
-(PAT-001 bis PAT-003) · Termine anlegen, Kalender, bearbeiten, absagen,
+eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus,
+Liste filtern und suchen (PAT-001 bis PAT-004) · Termine anlegen, Kalender, bearbeiten, absagen,
 abschließen, Praxisraster, Arbeitszeiten, Verschieben (CAL-001 bis CAL-006) ·
 Behandlungsdokumentation als Entwurf, Finalisierung von Hand, Versionierung,
 Nachtrag (DOK-001, DOK-002, ADR-016; PR #5) · Mitarbeiterverwaltung: Liste,
@@ -71,9 +71,17 @@ Office, Einträge mit Inhalt für klinische Rollen (DOK-003) · Automatische
 Finalisierung nach konfigurierbarer Frist über `pg_cron`, Systemakteur im
 Auditlog (DOK-004).
 
-Regelwerk: `PROJECT_PRINCIPLES.md` 0.3 mit §15.1 „Begründete Annahmen" und
-dem Annahmenregister `docs/decisions/ASSUMPTIONS.md`; ein Loop ist ein Epic
-aus mehreren Stories.
+Regelwerk: `PROJECT_PRINCIPLES.md` 0.4 (C1 und C2 entschieden) mit §15.1
+„Begründete Annahmen" und dem Annahmenregister
+`docs/decisions/ASSUMPTIONS.md`; ein Loop ist ein Epic aus mehreren Stories.
+
+**Vor dem nächsten Loop:** das Planungsreview vom 2026-09-05
+(`PLANUNGSREVIEW-2026-09-05.md` in diesem Ordner) enthält offene
+Reihenfolge- und Strukturfragen zu dieser Roadmap — unter anderem, ob
+Etappe 1a vor der Abrechnung kommt und wo die Vorschaubereiche eingeordnet
+werden. Sie sind zu entscheiden und einzuarbeiten, bevor der nächste Loop
+startet; der nach der heutigen Tabelle nächste Loop gilt bis dahin nur
+vorläufig.
 
 Nicht gebaut: alles Übrige, insbesondere Löschung und Retention (LOE-001,
 LOE-002), Verordnungen/Rezepte, Abrechnung, Fragebögen, Portal, ein
@@ -184,11 +192,14 @@ werden nicht gebaut.
 
 | #   | Loop    | Inhalt                                                                                                                                            | Voraussetzung   |
 | --- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| 10  | PAT-004 | Stammdaten ergänzen: Telefon (Geschäftlich), Mobil, Telefax, Einrichtung, Besonderheit, Bemerkung, feste Therapeut-Zuordnung                       | PAT-001, STAFF-001 |
+| 10  | PAT-005 | Stammdaten ergänzen: Telefon (Geschäftlich), Mobil, Telefax, Einrichtung, Besonderheit, Bemerkung, feste Therapeut-Zuordnung                       | PAT-001, STAFF-001 |
 | 11  | VER-001 | Datenmodell Verordnung: Verordnungsdatum, Diagnose, Arzt (PLZ), Behandlungen als Heilmittel-Positionen (verordnete/genutzte Menge, Doppelbehandlung, Erst-/Folgeverordnung), Pauschale Behandlungen als Flags, Bemerkungen, Empfehlung zum Verordnungsende (weitere Verordnung sinnvoll / aktuell keine weitere Therapie nötig / offen) — verknüpft mit dem Patienten | PAT-001          |
 | 12  | VER-002 | Verordnungen-Übersicht je Patient, nach Jahr gruppiert, mit Vorschau                                                                               | VER-001          |
 | 13  | VER-003 | Verordnung anlegen und bearbeiten                                                                                                                  | VER-001          |
 | 14  | VER-004 | Scan-Anhang je Verordnung — zuerst prüfen, ob DOK-001/002 bereits einen wiederverwendbaren Datei-Mechanismus mitbringt                             | VER-001, DOK-002 |
+
+Die Kennung PAT-004 ist bereits vergeben (Patientenliste filtern und suchen,
+PR #1, 2026-08-30); die Stammdaten-Ergänzung heißt deshalb PAT-005.
 
 **Bewusst nicht Teil dieser Etappe:** Kostenträger, Versichertennummer,
 Gültigkeit, Zuzahlung (GKV-Konzepte — Version 1 bleibt bei Privatabrechnung,
@@ -197,9 +208,8 @@ automatischen Verbrauch des Heilmittel-Kontingents (eigene, spätere Story,
 braucht Abstimmung mit Terminplanung/ABR) · Kostenträger-/GKV-Erweiterung der
 Abrechnung generell · automatische Klassifizierung/Erinnerung anstelle des
 Versorgungsstatus und der verordnungsfreie Übergang in ein Coaching-Angebot
-(`IDEA-LZK-007`) — durch B9 blockiert und bräuchte zusätzlich eine
-Scheduler-Infrastruktur, die es laut diesem Dokument (siehe DOK-004) noch
-nicht gibt.
+(`IDEA-LZK-007`) — durch B9 blockiert; der dafür nötige Scheduler existiert
+seit DOK-004 (`pg_cron`, ANN-007) und steht dem nicht mehr im Weg.
 
 ### Etappe 2 — Anamnese und Verlauf
 
@@ -440,8 +450,8 @@ Push-Nachricht und E-Mail. Sie **baut nichts** und stoppt nach dem Bericht.
   Cron-Ausdruck dann auf `50 6 * * 1`.
 - Seit dem Merge nach `main` (PR #5, PR #8) **liest die Routine `main`.** Der
   Branch-Fallback im Prompt (`claude/physio-platform-features-u7uy15`, nur
-  falls diese Datei fehlt) ist damit inaktiv; er kann bei Gelegenheit aus dem
-  Prompt entfernt werden, schadet aber nicht.
+  falls diese Datei fehlt) zeigt auf einen inzwischen gelöschten Branch und
+  ist damit wirkungslos; bei der nächsten Änderung des Prompts entfernen.
 - Abschalten oder Takt ändern geht über die Routines-Oberfläche auf claude.ai
   oder durch eine Anweisung in einer Session.
 
@@ -454,7 +464,7 @@ Skill-Schritt I durchlaufen ist.
 
 | Loop                | Status                      | Datum          | Commit |
 | ------------------- | --------------------------- | -------------- | ------ |
-| PAT-001 bis PAT-003 | fertig                      | vor 2026-09-01 | —      |
+| PAT-001 bis PAT-004 | fertig                      | vor 2026-09-01 | PAT-004: Merge PR #1 |
 | CAL-001 bis CAL-006 | fertig                      | vor 2026-09-01 | —      |
 | STAFF-001           | fertig                      | 2026-08-30     | `e70775a`, `ca907e9` |
 | DOK-001             | fertig                      | 2026-09-01     | `7e18906`, Merge PR #5 |

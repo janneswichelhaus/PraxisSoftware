@@ -7,7 +7,7 @@ Gesundheitsdaten. Früher Entwicklungsstand, kein Produktivbetrieb.
 
 Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 
-1. `PROJECT_PRINCIPLES.md` (aktuell v0.3) — übergeordnete Leitplanken
+1. `PROJECT_PRINCIPLES.md` (aktuell v0.4) — übergeordnete Leitplanken
 2. geltende ADRs in `docs/adr/` — konkretisieren die Leitplanken
 3. die konkrete Feature-Spezifikation — verbindlich für ihre Aufgabe
 4. `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen;

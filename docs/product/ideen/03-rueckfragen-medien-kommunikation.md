@@ -34,9 +34,14 @@ Inhalte sehen), und er ist nicht der Akte zuordenbar, obwohl §10 genau das
 verlangt. Ein typisierter Vorgang löst alle drei — und ist für die
 antwortende Person schneller, weil der Kontext dranhängt.
 
-**Offen.** C2 ist ein offener Widerspruch im Prinzipiendokument. Ohne dessen
-Auflösung ist nicht entscheidbar, wer welche Rückfrage sieht. Ein Feature-Loop
-darf das nicht selbst entscheiden.
+**Stand.** C2 ist seit dem 2026-09-05 entschieden (`PROJECT_PRINCIPLES.md`
+§10, Version 0.4): ein gemeinsamer Kanal, klinische Inhalte ordnet die
+Therapeutin nachträglich der Akte zu; dass Office bis dahin mitgelesen haben
+kann, ist eine akzeptierte Ausnahme. Der Typ einer Rückfrage ist damit
+Bedienhilfe und Erledigungslogik, keine Sichtbarkeitsgrenze.
+
+**Offen.** Die Mechanik der Zuordnung (wer, wann, mit welcher
+Herkunftsangabe) — siehe IDEA-KOM-007.
 
 ---
 
@@ -196,6 +201,10 @@ sichtbarer Herkunft und ohne den Inhalt zu verändern.
 Behandlungsentscheidung, die auf einer Chatnachricht beruht, die nicht in der
 Akte steht, ist nicht dokumentiert.
 
-**Offen.** Das ist C2, wörtlich, und es ist ungelöst: Wer klassifiziert, wann,
-und was passiert mit einer bereits erfolgten Einsicht durch Office? Ein Loop
-darf das nicht nebenbei entscheiden.
+**Stand.** C2 ist seit dem 2026-09-05 entschieden (`PROJECT_PRINCIPLES.md`
+§10, Version 0.4): die Therapeutin klassifiziert nachträglich; eine bereits
+erfolgte Einsicht durch Office ist eine akzeptierte, dokumentierte Ausnahme.
+
+**Offen.** Die Mechanik: Zuordnung als Kopie oder als Verweis, Herkunftsangabe
+in der Akte, eigenes Auditereignis. Das entscheidet die Spezifikation des
+Kommunikationsfeatures (Etappe 6), nicht ein Loop nebenbei.

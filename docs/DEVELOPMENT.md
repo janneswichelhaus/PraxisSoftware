@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand: 2026-09-04 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-05 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
@@ -9,12 +9,12 @@ Stand: 2026-09-04 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 ## Voraussetzungen
 
-| Werkzeug          | Version | Zweck                                              |
-| ----------------- | ------- | -------------------------------------------------- |
-| Node.js           | ≥ 22    | Laufzeit                                           |
-| pnpm              | 10.x    | Paketmanager                                       |
-| PostgreSQL-Server | 16      | lokale Testdatenbank für Migrations- und RLS-Tests |
-| Docker            | aktuell | Supabase-Stack: Anmeldung und echte E2E-Tests      |
+| Werkzeug          | Version | Zweck                                                                            |
+| ----------------- | ------- | -------------------------------------------------------------------------------- |
+| Node.js           | ≥ 22    | Laufzeit                                                                         |
+| pnpm              | 10.x    | Paketmanager                                                                     |
+| PostgreSQL-Server | 16      | lokale Testdatenbank für Migrations- und RLS-Tests (Linux oder WSL, siehe unten) |
+| Docker            | aktuell | Supabase-Stack: Anmeldung und echte E2E-Tests                                    |
 
 ## Erste Schritte
 
@@ -45,6 +45,15 @@ Supabase-Instanz eingespielt.
 Der Stand ist jederzeit aus **Migrationen + Seed** reproduzierbar. Es gibt
 keinen manuell gepflegten Zwischenzustand.
 
+`scripts/test-db.sh` sucht den Server ausschließlich unter
+`/usr/lib/postgresql/*/bin` — also auf Linux beziehungsweise in WSL. Unter
+Windows (Git Bash) läuft `pnpm db:start` deshalb nicht; dort bleibt
+`pnpm test:db` dem CI-Job `database` und der Cloud-Entwicklungsumgebung
+überlassen, oder es wird in WSL ausgeführt. **Niemals** `TEST_DATABASE_URL`
+auf die Datenbank des Supabase-Stacks (Port 54322) richten: der Testlauf
+löscht die Schemata `auth` und `extensions` und zerstört damit den lokalen
+Stack.
+
 ## Vollständiger Supabase-Stack
 
 Für Anmeldung (GoTrue), PostgREST und die echten E2E-Tests wird der lokale
@@ -56,6 +65,14 @@ pnpm dlx supabase start        # benötigt Docker
 pnpm dlx supabase db reset     # Migrationen + Seed erneut anwenden
 pnpm dlx supabase status       # URL und anon key dieser Instanz
 ```
+
+Die CLI-Version sollte der in `.github/workflows/ci.yml` festgeschriebenen
+entsprechen (`pnpm dlx supabase@2.116.0 …`), damit lokal und in CI derselbe
+Stack läuft. Lief der Stack zuvor mit einer anderen Postgres-Hauptversion
+(`supabase/config.toml` verlangt `major_version = 17`), zuerst
+`pnpm dlx supabase@2.116.0 stop --no-backup` ausführen — das verwirft die
+lokalen Volumes samt synthetischer Daten; `start` legt den Stack danach neu
+an.
 
 Die Werte aus `supabase status` gehören zu einer **lokalen Wegwerf-Instanz**.
 Sie werden bei jedem Neuaufsetzen neu erzeugt, sind kein Secret im Sinne von
