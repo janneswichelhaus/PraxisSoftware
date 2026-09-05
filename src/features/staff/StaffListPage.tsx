@@ -84,8 +84,11 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
+      {/* „Mitarbeitende" statt „Team": der Arbeitsbereich „Team" ist seit dem
+          Umbau die Teamkommunikation. Zwei Seiten mit derselben Ueberschrift in
+          derselben Anwendung waeren nicht auseinanderzuhalten. */}
       <PageHeader
-        title="Team"
+        title="Mitarbeitende"
         description="Mitarbeitende der Praxis. Ein Zugang zur Anwendung entsteht hier nicht."
         actions={
           canManageStaff(user.roles) ? (

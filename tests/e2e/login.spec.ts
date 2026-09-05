@@ -48,7 +48,7 @@ test.describe('Anmeldung', () => {
 
     // Der geschuetzte Bereich wird gar nicht erst gerendert.
     await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Hauptnavigation' })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Arbeitsbereiche' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Patient:innen' })).toHaveCount(0);
 
     // Und es ist kein einziger Datensatz aus dem Seed sichtbar.

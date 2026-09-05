@@ -51,6 +51,40 @@ Mandantenfunktionen zu bauen. Wie weit die Vorbereitung konkret reicht, regelt
 abschließend [ADR-003](adr/ADR-003-organization-location-model.md) und
 [ADR-014](adr/ADR-014-foundational-data-model.md).
 
+### 1.1 Zielbetrieb
+
+Präzisierung vom 31.08.2026. Sie ersetzt das frühere, weitere Bild einer
+allgemeinen Praxis mit Hausbesuchsoption:
+
+Die Praxis hat **keine Behandlungsräume**. Alle regulären Behandlungen sind
+Hausbesuche, und alle Wege werden **mit dem Fahrrad** zurückgelegt. Start- und
+Endpunkt eines Arbeitstags sind ein Raddepot oder ein persönlicher Startort,
+nicht eine Praxisadresse. Ein Raddepot ist ein betrieblicher Ort, kein
+Behandlungsraum.
+
+Daraus folgt für die Vision:
+
+- **Raumplanung ist kein Zielumfang.** Was in anderen Praxissystemen die
+  Raumbelegung ist, ist hier die Fahrradflotte.
+- **Die Fahrradflotte ist eine Planungsressource.** Ein fehlendes oder
+  gesperrtes Rad ist eine echte betriebliche Einschränkung.
+- **GKV-Abrechnung ist kein Zielumfang.** Abgerechnet wird privat
+  (`PROJECT_PRINCIPLES.md` §19, [ADR-009](adr/ADR-009-private-billing-model.md)).
+- **Personal-, Flotten- und Kommunikationsabläufe gehören zum Produkt**, nicht
+  in eine zweite Anwendung daneben.
+
+Als konkrete Funktions- und Ablaufvorlage für die betrieblichen Abläufe dient
+eine vorhandene Team-App der Praxis (Radflotte, Schlüssel, Check-Up,
+Pannenablauf, Mitarbeiterliste, Urlaub, Überstunden, Erstattungen). Sie ist
+eine Vorlage für Umfang und Ablauf, **keine Vorlage für Datenmodell,
+Berechtigungen oder Sicherheitsmechanismen** — deren Anforderungen stehen
+unverändert in `PROJECT_PRINCIPLES.md` §3 und §4.
+
+Standortabhängige Inhalte dieser Vorlage stammen aus dem Kölner Betrieb und
+sind für Tübingen **nicht geprüft**. Sie werden als austauschbare
+Standortvorlage geführt und dürfen nicht als freigegebene Betriebsanweisung
+erscheinen.
+
 ## 2. Langfristige Funktionsbereiche
 
 Das langfristige Zielbild umfasst:
@@ -189,6 +223,39 @@ Arbeitshypothese, keine Vorentscheidung.
 
 Diktat und Speech-to-Text sind später als **eigener Datenfluss mit
 Gesundheitsdaten** gesondert zu bewerten.
+
+## 6a. Bedienmodell: sechs Arbeitsbereiche
+
+Die Funktionsbereiche aus §2 sagen, _was_ die Plattform können soll. Dieses
+Kapitel sagt, _wo_ eine Person ihre Aufgabe beginnt. Die Aufteilung ist
+umgesetzt und in `src/app/navigation.tsx` abgebildet; sie ist die
+Ausgangsstruktur und keine unveränderliche Festlegung.
+
+| Arbeitsbereich   | Leitfrage                                              |
+| ---------------- | ------------------------------------------------------ |
+| Mein Tag         | Was muss ich als Nächstes tun?                         |
+| Touren & Termine | Wer behandelt wen, wann und mit welchen Wegen?         |
+| Patient:innen    | Was gehört zur Versorgung dieser Person?               |
+| Team             | Mit wem muss ich etwas klären?                         |
+| Betrieb          | Welche Voraussetzungen und Anträge sind zu bearbeiten? |
+| Abrechnung       | Welche Leistungen sind abzurechnen oder zu bezahlen?   |
+
+Regeln, die sich daraus ergeben haben:
+
+- **Ein Vorgang, mehrere Sichten.** „Mein Tag" und „Touren & Termine"
+  betrachten dieselben Besuche wie der Kalender. Es entsteht keine zweite
+  Terminliste, kein zweiter Mitarbeiterstamm und keine zweite Patientenakte.
+- **Der Arbeitsgegenstand trägt seine Werkzeuge.** Suche, Filter und Aktionen
+  stehen im jeweiligen Bereich, nicht in der globalen Navigation.
+- **Öffentliche und geschützte Sicht sind getrennt.** Teamverzeichnis und
+  Personalakte zeigen dieselbe Person, aber nicht dieselben Angaben
+  (`PROJECT_PRINCIPLES.md` §20).
+- **Ein Verweis erweitert keine Berechtigung.** Ein Link aus einem Gespräch auf
+  einen Vorgang gibt keinen zusätzlichen Zugriff (`PROJECT_PRINCIPLES.md` §4.7).
+
+Welche Bereiche bereits angebunden sind und welche als gekennzeichnete Vorschau
+laufen, steht in
+[`development/ARBEITSBEREICHE.md`](development/ARBEITSBEREICHE.md).
 
 ## 7. Produkt- und Architekturprinzipien
 

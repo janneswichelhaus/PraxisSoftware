@@ -50,6 +50,7 @@ const TERMIN_NOTIZ_BEARBEITEN = `${TERMIN_DOKUMENTATION}/${DOKU_ID}/bearbeiten`;
 const TERMIN_KORREKTUR = `${TERMIN_DOKUMENTATION}/${DOKU_ID}/korrektur`;
 const TERMIN_NACHTRAG = `${TERMIN_DOKUMENTATION}/${DOKU_ID}/nachtrag`;
 const TERMIN_VERLAUF = `${TERMIN_DOKUMENTATION}/${DOKU_ID}/verlauf`;
+const FLOTTE = '/betrieb/flotte';
 
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
@@ -111,9 +112,12 @@ describe('AuthenticatedRoutes', () => {
     expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
   });
 
+  // Der Sicherheitsbereich sitzt im Untermenue des Arbeitsbereichs "Betrieb";
+  // geprueft wird deshalb auf einer Seite dieses Bereichs.
   it('blendet den Sicherheitsbereich fuer Nicht-owner aus der Navigation aus', () => {
     renderWithProviders(
       <AuthenticatedRoutes user={testUser(['therapist', 'team_lead'])} onSignOut={vi.fn()} />,
+      FLOTTE,
     );
     expect(screen.queryByRole('link', { name: 'Sicherheit' })).toBeNull();
   });
@@ -121,8 +125,36 @@ describe('AuthenticatedRoutes', () => {
   it('zeigt owner den Sicherheitsbereich in der Navigation', () => {
     renderWithProviders(
       <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
+      FLOTTE,
     );
     expect(screen.getAllByRole('link', { name: 'Sicherheit' }).length).toBeGreaterThan(0);
+  });
+
+  it('haelt ein Patientenkonto aus den Betriebsbereichen heraus', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['patient'])} onSignOut={vi.fn()} />,
+      FLOTTE,
+    );
+    expect(screen.queryByRole('heading', { name: 'Radflotte' })).toBeNull();
+    expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+  });
+
+  it('haelt ein Patientenkonto aus der Mitarbeiterverwaltung heraus', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['patient'])} onSignOut={vi.fn()} />,
+      '/praxis/team',
+    );
+    expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+  });
+
+  it('oeffnet die Mitarbeiterverwaltung fuer eine behandelnde Rolle', async () => {
+    // Die Liste ist fuer alle Praxisrollen lesbar (STAFF-001). Was die Rolle
+    // darin sehen und aendern darf, entscheidet der Server, nicht die Route.
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['therapist'])} onSignOut={vi.fn()} />,
+      '/praxis/team',
+    );
+    expect(await screen.findByRole('heading', { name: 'Mitarbeitende' })).toBeInTheDocument();
   });
 
   describe('Terminrouten', () => {
