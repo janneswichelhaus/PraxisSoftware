@@ -3,10 +3,12 @@ import {
   KONTEN,
   MITARBEITENDE,
   PATIENTEN,
+  TAGESFENSTER,
   anmelden,
   detailWert,
   rpcAufrufen,
   supabaseKonfiguration,
+  tagImFenster,
   zugriffstoken,
 } from './helpers';
 
@@ -30,11 +32,9 @@ function name(suffix: string): string {
   return `Lauf${LAUF % 100000}${suffix}`;
 }
 
-/** Bewusst ein anderer Tagesbereich als in den übrigen Spezifikationen. */
+/** Kalendertag im eigenen Tagesfenster dieser Spezifikation (siehe helpers.ts). */
 function laufTag(versatz = 0): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 700 + (LAUF % 120) + versatz);
-  return d.toISOString().slice(0, 10);
+  return tagImFenster(TAGESFENSTER.staff, LAUF, versatz);
 }
 
 async function anlegenUeberOberflaeche(page: Page, vorname: string): Promise<string> {

@@ -1,11 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  arbeitszeitBestaetigen,
   KONTEN,
   PATIENTEN,
+  TAGESFENSTER,
   anmelden,
+  arbeitszeitBestaetigen,
   rpcAufrufen,
   supabaseKonfiguration,
+  tagImFenster,
   zugriffstoken,
 } from './helpers';
 
@@ -23,11 +25,9 @@ test.describe.configure({ mode: 'serial' });
 
 const LAUF = Date.now();
 
-/** Bewusst ein anderer Tagesbereich als in den uebrigen Spezifikationen. */
+/** Kalendertag im eigenen Tagesfenster dieser Spezifikation (siehe helpers.ts). */
 function laufTag(versatz = 0): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 1150 + (LAUF % 150) + versatz);
-  return d.toISOString().slice(0, 10);
+  return tagImFenster(TAGESFENSTER.treatmentNoteFinalisation, LAUF, versatz);
 }
 
 function zeit(minutenAbAcht: number): string {

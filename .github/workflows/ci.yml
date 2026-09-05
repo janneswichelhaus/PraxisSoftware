@@ -173,9 +173,18 @@ jobs:
       - name: Browser installieren
         run: pnpm exec playwright install --with-deps chromium
 
+      # Feste Version statt `latest`. `latest` laesst die Action bei jedem Lauf
+      # die GitHub-API nach dem neuesten Release fragen - ein Aufruf ohne Token,
+      # der am 2026-09-05 auf `main` ins Rate Limit lief ("Failed to resolve
+      # latest Supabase CLI release: rate limit exceeded"). Der Job starb nach
+      # 37 Sekunden, bevor ein einziger Test lief, und riss den ganzen Lauf mit.
+      #
+      # Eine feste Version macht das Gate ausserdem reproduzierbar (ADR-013):
+      # derselbe Commit wird nicht davon abhaengig, was an dem Tag gerade
+      # veroeffentlicht ist. Sie ist bewusst von Hand zu erhoehen.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.116.0
 
       - name: Supabase starten
         run: supabase start

@@ -28,6 +28,76 @@ import {
  */
 export const TESTKENNWORT = 'LokalerTestzugang!2026';
 
+// -----------------------------------------------------------------------------
+// Tagesfenster
+//
+// Die Spezifikationen legen Termine weit in der Zukunft an, damit sie sich
+// nicht mit dem Seed und nicht mit einem frueheren Lauf ueberschneiden. Jede
+// Datei hatte dafuer bisher ihre eigene Rechnung mit einer von Hand gewaehlten
+// Basiszahl und einem eigenen Modulus.
+//
+// Genau daran ist es schiefgegangen: `staff-workflows` rechnete
+// 700 + (LAUF % 120) und reichte damit bis Tag 824,
+// `calendar-interaction-workflows` begann bei Tag 800. Beide legen Termine fuer
+// dieselbe geseedete Therapeutin an, und beide koennen 10:00 Uhr treffen -
+// faellt der Tag zusammen, weist `create_appointment` den zweiten Termin
+// zu Recht als Ueberschneidung ab, und ein Test scheitert an etwas, das er gar
+// nicht prueft. Am 2026-09-05 ist das in CI passiert.
+//
+// Die Rechnung steht deshalb nur noch hier. Jede Datei bekommt ein eigenes
+// Fenster; die Fenster koennen sich nicht ueberschneiden, weil die Streuung
+// kleiner ist als die Fensterbreite. Die Differenz ist die Reserve fuer
+// Versatztage und die Ausrichtung auf einen Wochentag.
+// -----------------------------------------------------------------------------
+
+/** Erster Tag des ersten Fensters, gezaehlt ab heute. */
+export const FENSTER_BASIS = 60;
+/** Breite eines Fensters in Tagen. */
+export const FENSTER_BREITE = 300;
+/** Streuung innerhalb des Fensters. Kleiner als die Breite - der Rest ist Reserve. */
+export const FENSTER_STREUUNG = 200;
+
+/**
+ * Ein Fenster je Spezifikation. Eine neue Spezifikation bekommt die naechste
+ * freie Zahl - **keine** bereits vergebene, und keine eigene Rechnung.
+ */
+export const TAGESFENSTER = {
+  appointments: 0,
+  calendar: 1,
+  scheduling: 2,
+  appointmentChanges: 3,
+  appointmentCompletion: 4,
+  staff: 5,
+  calendarInteraction: 6,
+  treatmentNotes: 7,
+  treatmentNoteFinalisation: 8,
+  patientRecord: 9,
+} as const;
+
+/**
+ * Ein Tag im Fenster dieser Spezifikation, als `YYYY-MM-DD`.
+ *
+ * `lauf` streut die Tage ueber die Laeufe, damit ein zweiter Lauf gegen
+ * dieselbe Datenbank nicht auf die Termine des ersten trifft. `versatz`
+ * unterscheidet die Tage innerhalb eines Laufs.
+ *
+ * Die Uhrzeit steht auf 12:00 UTC: sonst kippt `toISOString()` je nach
+ * Ortszeit auf den Vor- oder Folgetag.
+ */
+export function laufTagImFenster(fenster: number, lauf: number, versatz = 0): Date {
+  const d = new Date();
+  d.setUTCHours(12, 0, 0, 0);
+  d.setUTCDate(
+    d.getUTCDate() + FENSTER_BASIS + fenster * FENSTER_BREITE + (lauf % FENSTER_STREUUNG) + versatz,
+  );
+  return d;
+}
+
+/** Wie `laufTagImFenster`, aber gleich als Datumszeichenkette. */
+export function tagImFenster(fenster: number, lauf: number, versatz = 0): string {
+  return laufTagImFenster(fenster, lauf, versatz).toISOString().slice(0, 10);
+}
+
 /** Synthetische Seed-Konten (siehe docs/DEVELOPMENT.md, "Testkonten"). */
 export const KONTEN = {
   /** owner - einzige Rolle, die Mitarbeiterdatensätze verwalten darf (STAFF-001). */
