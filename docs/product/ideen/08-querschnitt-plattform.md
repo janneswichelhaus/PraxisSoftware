@@ -179,3 +179,35 @@ Standard zu implementieren, eine Abbildungsschicht zu bauen oder Ressourcen
 nachzubilden. Das wäre genau das prophylaktische Vorbauen, das §11 und ADR-014
 untersagen. Der Nutzen liegt allein darin, später eine Exportschnittstelle
 schreiben zu können, ohne das Modell umzubauen.
+
+---
+
+### IDEA-QSN-009 — Mandantenfähigkeit mit Branding pro Praxis
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-05 |
+| Berührt | `PROJECT_PRINCIPLES.md` §1, [ADR-003](../../adr/ADR-003-organization-location-model.md), [ADR-015](../../adr/ADR-015-initial-technical-stack.md) |
+
+**Idee.** Andere Praxen sollen die Software mit eigenem Logo und eigenen
+Farben nutzen können — Branding pro Organisation, nicht nur ein einheitliches
+Design für die eine Praxis.
+
+**Warum.** Wunsch von Jannes für eine mögliche spätere Vermarktung an andere
+Praxen. Technisch günstig vorbereitet: die Optik läuft bereits über zentrale
+Design-Tokens (`src/index.css`), und `organization_id`/`location_id` sind
+laut ADR-003 schon Teil des Datenmodells — allerdings ausdrücklich ohne
+Tenant-Verwaltung oder Mandantenfähigkeit als Produktfunktion.
+
+**Vorsicht — ausdrücklich.** `PROJECT_PRINCIPLES.md` §1 nennt Mandantenfähigkeit
+aktuell **kein Produktziel**, und ADR-003 schließt Tenant-Switching-UI,
+SaaS-Onboarding und organisationsübergreifende Administration ausdrücklich
+aus. Diese Idee begründet **keine** Erweiterung des aktuellen Scopes (Rang 6,
+siehe oben). Vorbauen (z. B. Branding-Spalten oder ein Theme-Provider „für
+später") ist verboten, solange das nicht gebraucht wird.
+
+**Offen.** Ob und wann Jannes Mandantenfähigkeit tatsächlich als Produktziel
+verfolgen will. Erst danach: eine ausdrückliche Änderung von
+`PROJECT_PRINCIPLES.md` §1 (§21), ggf. ein neuer oder ergänzter ADR-003, dann
+erst eine Feature-Spezifikation.

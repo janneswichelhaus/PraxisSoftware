@@ -190,3 +190,47 @@ Go-live-Blocker offen.
 **Offen.** Was ist der Unterschied zwischen „Betreuung beendet", „Akte
 geschlossen" und „Konto gelöscht"? Behält jemand nach dem Ende Lesezugriff auf
 die eigenen Trainingsdaten?
+
+---
+
+### IDEA-LZK-007 — Empfehlung und Erinnerung am Rezeptende
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-05 |
+| Berührt | B9, `IDEA-LZK-002`, `IDEA-LZK-003` |
+
+**Idee.** Statt eines manuell gepflegten Aktiv/Inaktiv-Status: eine
+automatische Klassifizierung, gekoppelt an eine Erinnerung für
+Therapeut:innen gegen Rezeptende. Die Therapeutin hinterlegt dabei eine
+Empfehlung zum weiteren Vorgehen — Folgeverordnung sinnvoll, aktuell keine
+weitere Therapie nötig, oder noch offen. Langfristig soll das nicht auf
+„Folgeverordnung ja/nein" beschränkt bleiben, sondern auch den Übergang in
+ein Personal-Training-/Coaching-Angebot ohne Verordnung abdecken.
+
+**Warum.** Rückmeldung von Jannes zu ANN-002
+(`docs/decisions/ASSUMPTIONS.md`): ein manuelles Aktiv/Inaktiv sei
+praxisfern. Näher an der Praxisrealität ist eine Einschätzung, die am
+Behandlungsverlauf hängt — genau das, was `IDEA-LZK-002` mit der
+Betreuungsepisode und ihrem Typ bereits konzeptionell vorsieht, hier ergänzt
+um die konkrete Erinnerungs- und Empfehlungsmechanik.
+
+**Vorsicht.** Zwei Teile dieser Idee sind unterschiedlich teuer:
+
+- Die reine **Empfehlung der Therapeutin auf der Verordnung** („weitere
+  Verordnung sinnvoll" / „keine weitere Therapie nötig" / „offen") ist
+  normale Verlaufsdokumentation innerhalb der laufenden Heilbehandlung —
+  keine automatisierte Einschätzung durch die Software, kein B9-Bezug.
+- Die **automatische Klassifizierung, eine proaktive Erinnerung und der
+  tatsächliche Übergang in ein verordnungsfreies Coaching-Angebot** sind
+  durch **B9** blockiert (Rechtsrahmen für die Betreuung nach
+  Therapieende ist offen, siehe `IDEA-LZK-002`/`IDEA-LZK-003`).
+  Eine proaktive Erinnerung bräuchte außerdem einen Scheduler, den es nach
+  `docs/development/ROADMAP.md` noch nicht gibt — dieselbe offene Frage wie
+  bei DOK-004.
+
+**Offen.** Wie die Empfehlung sich zur künftigen Betreuungsepisode
+(IDEA-LZK-002) verhält, und ob eine ohne Scheduler auskommende Variante (z. B.
+ein Hinweis beim Öffnen einer Verordnung mit niedrigem Restkontingent statt
+einer proaktiven Benachrichtigung) für den Anfang reicht.

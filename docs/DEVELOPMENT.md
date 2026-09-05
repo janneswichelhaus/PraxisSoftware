@@ -299,9 +299,11 @@ deckungsgleich.
     fachlich zulässig sein soll, ist offen; der Entwurf bleibt in diesem Fall
     erhalten und lesbar, es geht nichts verloren.
 11. **Der Behandlungsnachweis in der Akte enthält keine „erbrachte Leistung".**
-    §4.4 nennt sie, aber es gibt noch keine Leistungserfassung, und ob
-    Leistungsziffern organisatorisch oder klinisch sind, ist Punkt C1 in
-    `docs/decisions/OPEN_DECISIONS.md` (vorläufig ANN-006). Der fallbezogene,
+    §4.4 nennt sie, aber es gibt noch keine Leistungserfassung. Dass
+    Leistungskürzel organisatorisch sind und dem Office offenstehen, ist seit
+    dem 2026-09-05 mit Punkt C1 entschieden (`PROJECT_PRINCIPLES.md` §4.4,
+    Version 0.4); geliefert werden können sie erst mit ABR-002. Umfang und
+    Protokollierung des Nachweises bleiben als ANN-006 offen. Der fallbezogene,
     zeitlich begrenzte Office-Zugriff auf vollständige Dokumentation (§4.4
     Absatz 3) ist ebenfalls nicht gebaut.
 

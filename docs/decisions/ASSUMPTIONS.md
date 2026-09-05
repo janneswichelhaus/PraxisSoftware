@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-04
+Zuletzt aktualisiert: 2026-09-05
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -112,7 +112,7 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | ABR-002                       |
-| ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; C1 bei ABR-002 |
+| ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; Leistungskürzel bei ABR-002 |
 | ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden 2026-09-05 | Providerprüfung nach ADR-002 |
 | ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | offen  | Jannes; Datenschutzprüfung    |
 | ANN-009 | Systemakteur im Auditlog                                       | Datenschutz   | offen  | Datenschutzprüfung            |
@@ -198,6 +198,17 @@ ADR-Bezug — nicht diese Markierung.
 `app.can_change_patient_status()` ersetzt — Aufwand `klein`.
 Behandlungsabschluss: eigenes Feld und eigene Regel, nicht diese Funktion —
 Aufwand `mittel`, weil die klinische Retention daran hängt.
+
+**Rückmeldung von Jannes (2026-09-05).** Ein manuell gepflegtes Aktiv/Inaktiv
+sei im Alltag praxisfern. Gewünscht ist stattdessen eine automatische
+Klassifizierung, gekoppelt an eine Erinnerung für Therapeut:innen gegen
+Rezeptende mit einer Empfehlung zum weiteren Vorgehen — festgehalten als
+`IDEA-LZK-007` in
+`docs/product/ideen/00-lebenszyklus-und-zugang.md`. Das ändert diese Annahme
+noch nicht: Automatisierung und der verordnungsfreie Übergang sind durch B9
+blockiert (Rechtsrahmen offen). Bis zu einer Entscheidung dort bleibt die
+obige Annahme (organisatorische Markierung, kein Behandlungsabschluss,
+Rollenschnitt wie beschrieben) technisch in Kraft — Status bleibt `offen`.
 
 ### ANN-003 — Adress-Snapshot beim Hausbesuchstermin
 
@@ -318,9 +329,9 @@ zeigt sich, wenn ABR-002 Leistungen an abgeschlossene Termine bindet.
 | | |
 |---|---|
 | Kategorie | Datenschutz |
-| Herkunft | DOK-003 (Dokumentation in der Akte, rollenabhängig projiziert); überbrückt Punkt C1 in `OPEN_DECISIONS.md` |
+| Herkunft | DOK-003 (Dokumentation in der Akte, rollenabhängig projiziert); überbrückte bis zum 2026-09-05 auch Punkt C1 in `OPEN_DECISIONS.md`, der seither entschieden ist |
 | Status | offen, seit 2026-09-04 |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; der Leistungsanteil (C1) spätestens bei ABR-002 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; die Aufnahme der Leistungskürzel in den Nachweis bei ABR-002 |
 
 **Annahme.** Der Behandlungsnachweis nach `PROJECT_PRINCIPLES.md` §4.4 ist in
 der Akte eine eigene Serverfunktion (`list_patient_treatment_evidence`) mit
@@ -349,8 +360,10 @@ Punkt 8 derselben Projektion wie der Inhalt und bleiben dem Office
 verschlossen. „Signatur/Bestätigung der Behandlung" (§4.4) wird durch die
 Finalisierung selbst abgebildet, nicht durch die Nennung der finalisierenden
 Person — die restriktivere Lesart nach §16. Die „erbrachte Leistung" kann
-nicht geliefert werden, weil es sie im System noch nicht gibt; ob
-Leistungsziffern organisatorisch oder klinisch sind, bleibt C1. Für die
+nicht geliefert werden, weil es sie im System noch nicht gibt; dass
+Leistungskürzel organisatorisch sind und dem Office offenstehen, ist seit dem
+2026-09-05 mit C1 entschieden (`PROJECT_PRINCIPLES.md` §4.4, Version 0.4) und
+umzusetzen, sobald die Leistungserfassung existiert. Für die
 Protokollierung gilt ADR-010: auditpflichtig sind das Öffnen der Akte und der
 Zugriff auf klinische Dokumente; der Nachweis ist kein klinisches Dokument.
 **Unsicher** ist, ob die Datenschutzprüfung das Lesen des Dokumentationsstands
@@ -369,9 +382,9 @@ DOK-003 in `docs/abnahme/etappe-1-kernprozess.md`.
 Person): eine Migration, die die Funktion ersetzt, plus das Schema in
 `src/features/documentation/api.ts` — Aufwand `klein`. Eigenes Auditereignis
 für den Nachweis: Ereigniskatalog erweitern und einen Insert in der Funktion
-ergänzen — Aufwand `klein`. Leistungen im Nachweis: fällt mit C1 bei ABR-002
-und braucht dann eine eigene Spalte aus der Leistungserfassung — Aufwand
-`mittel`. Rollenschnitt: `app.can_read_treatment_evidence()` ersetzen —
+ergänzen — Aufwand `klein`. Leistungen im Nachweis: mit C1 entschieden,
+umzusetzen bei ABR-002; braucht dann eine eigene Spalte aus der
+Leistungserfassung — Aufwand `mittel`. Rollenschnitt: `app.can_read_treatment_evidence()` ersetzen —
 Aufwand `klein`.
 
 ### ANN-007 — Mechanismus der automatischen Finalisierung: pg_cron

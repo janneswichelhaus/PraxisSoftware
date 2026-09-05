@@ -44,7 +44,7 @@ Entscheidung sie voraussetzt und wann sie spätestens fällig ist.
 | ~~**D „finalisiert" / „nachvollziehbar"**~~ | **Erledigt am 2026-09-01 — [ADR-016](../adr/ADR-016-clinical-documentation-record.md).** Von Jannes delegiert, entschieden. DOK-001 ist damit frei.                                                              | erledigt                                | —                  |
 | **B8**                                  | Lizenzstatus DIGOTOR-Bogen und weiterer Instrumente                                                                                                                                  | Jannes / Lizenzgeber                    | Etappe 3           |
 | **B5**                                  | Patientenidentität, Vertretung, Zugang für Hochbetagte, Verhältnis zu §630g                                                                                                          | Jannes, ggf. Beratung                   | Etappe 4           |
-| **C1, C2**                              | Was Office an Leistungsziffern und Nachrichten sieht                                                                                                                                 | Jannes allein                           | Etappe 2 bzw. 6    |
+| ~~**C1, C2**~~                          | **Erledigt am 2026-09-05 — `PROJECT_PRINCIPLES.md` 0.4 (§4.4, §10).** Leistungskürzel gelten als organisatorisch; Patientenkommunikation läuft über einen gemeinsamen Kanal.          | erledigt                                | —                  |
 | **E8**                                  | Dateiablage: Ort, Verschlüsselung, Virenscan, signierte Verweise                                                                                                                     | Jannes                                  | Etappe 7           |
 | **B9**                                  | Betreuung nach Therapieende: Vertrag, Steuer, Aufbewahrung, Zweckbindung                                                                                                             | Steuerberatung + Datenschutz            | Etappe 8           |
 | **B11**                                 | Paketpreise, Guthaben, Verfall, Rabatte                                                                                                                                              | Jannes + Steuerberatung                 | Etappe 8           |
@@ -76,7 +76,8 @@ dem Annahmenregister `docs/decisions/ASSUMPTIONS.md`; ein Loop ist ein Epic
 aus mehreren Stories.
 
 Nicht gebaut: alles Übrige, insbesondere Löschung und Retention (LOE-001,
-LOE-002), Abrechnung, Fragebögen, Portal.
+LOE-002), Verordnungen/Rezepte, Abrechnung, Fragebögen, Portal, ein
+einheitliches Feindesign.
 
 ---
 
@@ -94,7 +95,7 @@ gewählt.
 | --- | ------- | ------------------------------------------------------------------------------------------ | ---------------------- |
 | 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **fertig** (PR #5)     |
 | 2   | DOK-002 | Finalisierung von Hand, Versionierung, Nachtrag als eigener Eintrag (ADR-016 Punkte 4 bis 6) | **fertig** (PR #5)     |
-| 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **fertig** — C1 vorläufig als ANN-006 |
+| 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **fertig** — Umfang des Nachweises als ANN-006 |
 | 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7)                                    | **fertig** — Mechanismus von Jannes entschieden |
 | 4   | LOE-001 | Datenklassen und Aufbewahrungsfristen als echte Struktur, Legal Hold                       | —                      |
 | 5   | LOE-002 | Löschvorgang, Wiederanwendung nach Restore, `pnpm test:db`                                 | LOE-001                |
@@ -169,6 +170,37 @@ Systemakteur im Auditlog (ANN-009).
 dokumentieren, Leistungen erfassen, Rechnungen stellen. Das ist der Punkt, ab
 dem die Software Nutzen stiftet statt Aufwand zu erzeugen.
 
+### Etappe 1a — Patientenstammdaten ergänzen und Verordnungen/Rezepte
+
+**Warum hier:** Beim Vergleich mit einer bestehenden Praxissoftware ist
+aufgefallen, dass zwei Dinge in der Patientenakte fehlen, die dort
+selbstverständlich sind: ein paar zusätzliche Stammdatenfelder und die
+Verordnungen (Rezepte) selbst — heute weder als Datenmodell noch als UI
+vorhanden. Beides baut auf den Patientenstammdaten auf und liefert für sich
+allein Nutzen, unabhängig von Abrechnung. Verordnungen sind bewusst als
+klinisches Dokument ohne GKV-Abrechnungslogik geschnitten: Version 1 bleibt
+bei Privatabrechnung (ADR-009), Kostenträger/Versichertennummer/Zuzahlung
+werden nicht gebaut.
+
+| #   | Loop    | Inhalt                                                                                                                                            | Voraussetzung   |
+| --- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| 10  | PAT-004 | Stammdaten ergänzen: Telefon (Geschäftlich), Mobil, Telefax, Einrichtung, Besonderheit, Bemerkung, feste Therapeut-Zuordnung                       | PAT-001, STAFF-001 |
+| 11  | VER-001 | Datenmodell Verordnung: Verordnungsdatum, Diagnose, Arzt (PLZ), Behandlungen als Heilmittel-Positionen (verordnete/genutzte Menge, Doppelbehandlung, Erst-/Folgeverordnung), Pauschale Behandlungen als Flags, Bemerkungen, Empfehlung zum Verordnungsende (weitere Verordnung sinnvoll / aktuell keine weitere Therapie nötig / offen) — verknüpft mit dem Patienten | PAT-001          |
+| 12  | VER-002 | Verordnungen-Übersicht je Patient, nach Jahr gruppiert, mit Vorschau                                                                               | VER-001          |
+| 13  | VER-003 | Verordnung anlegen und bearbeiten                                                                                                                  | VER-001          |
+| 14  | VER-004 | Scan-Anhang je Verordnung — zuerst prüfen, ob DOK-001/002 bereits einen wiederverwendbaren Datei-Mechanismus mitbringt                             | VER-001, DOK-002 |
+
+**Bewusst nicht Teil dieser Etappe:** Kostenträger, Versichertennummer,
+Gültigkeit, Zuzahlung (GKV-Konzepte — Version 1 bleibt bei Privatabrechnung,
+ADR-009) · Verknüpfung Verordnung ↔ durchgeführte Behandlung zum
+automatischen Verbrauch des Heilmittel-Kontingents (eigene, spätere Story,
+braucht Abstimmung mit Terminplanung/ABR) · Kostenträger-/GKV-Erweiterung der
+Abrechnung generell · automatische Klassifizierung/Erinnerung anstelle des
+Versorgungsstatus und der verordnungsfreie Übergang in ein Coaching-Angebot
+(`IDEA-LZK-007`) — durch B9 blockiert und bräuchte zusätzlich eine
+Scheduler-Infrastruktur, die es laut diesem Dokument (siehe DOK-004) noch
+nicht gibt.
+
 ### Etappe 2 — Anamnese und Verlauf
 
 **Warum hier:** Der strukturierte Erstbefund ist der zweitgrößte Zeitfresser
@@ -177,10 +209,10 @@ Spätere.
 
 | #   | Loop    | Inhalt                                                                                                            | Voraussetzung   |
 | --- | ------- | ----------------------------------------------------------------------------------------------------------------- | --------------- |
-| 10  | FRB-001 | Instrumentenbibliothek: Instrument versioniert, mit Lizenzfeld (`IDEA-OUT-001`)                                   | —               |
-| 11  | FRB-002 | Freie Instrumente als erste Füllung: NRS und patientenspezifische Funktionsskala (`IDEA-OUT-003`, `IDEA-OUT-004`) | FRB-001         |
-| 12  | FRB-003 | Strukturierter Anamnesebogen nach §7, in der Praxis ausfüllbar                                                    | FRB-001, **B8** |
-| 13  | FRB-004 | Verlaufsdarstellung mit Ereignismarkierungen, ohne Bewertung (`IDEA-OUT-005`)                                     | FRB-002         |
+| 15  | FRB-001 | Instrumentenbibliothek: Instrument versioniert, mit Lizenzfeld (`IDEA-OUT-001`)                                   | —               |
+| 16  | FRB-002 | Freie Instrumente als erste Füllung: NRS und patientenspezifische Funktionsskala (`IDEA-OUT-003`, `IDEA-OUT-004`) | FRB-001         |
+| 17  | FRB-003 | Strukturierter Anamnesebogen nach §7, in der Praxis ausfüllbar                                                    | FRB-001, **B8** |
+| 18  | FRB-004 | Verlaufsdarstellung mit Ereignismarkierungen, ohne Bewertung (`IDEA-OUT-005`)                                     | FRB-002         |
 
 ### Etappe 3 — Übungspläne innerhalb der Therapie
 
@@ -192,10 +224,10 @@ nötig.
 
 | #   | Loop    | Inhalt                                                                                                                                     | Voraussetzung |
 | --- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
-| 14  | UEB-001 | Übungsbibliothek: Übung und Variante getrennt, Achsen und Nachbarschaften als Struktur, zwei Sprachebenen (`IDEA-TRN-005`, `IDEA-QSN-002`) | —             |
-| 15  | UEB-002 | Plan zusammenstellen, zuweisen, Schnappschuss bei Zuweisung (`IDEA-TRN-011`)                                                               | UEB-001       |
-| 16  | UEB-003 | Plan als PDF für Patient:innen — voller Nutzen ohne Portal                                                                                 | UEB-002       |
-| 17  | UEB-004 | Planlaufzeit und Wiedervorlage (`IDEA-ORG-006`)                                                                                            | UEB-002       |
+| 19  | UEB-001 | Übungsbibliothek: Übung und Variante getrennt, Achsen und Nachbarschaften als Struktur, zwei Sprachebenen (`IDEA-TRN-005`, `IDEA-QSN-002`) | —             |
+| 20  | UEB-002 | Plan zusammenstellen, zuweisen, Schnappschuss bei Zuweisung (`IDEA-TRN-011`)                                                               | UEB-001       |
+| 21  | UEB-003 | Plan als PDF für Patient:innen — voller Nutzen ohne Portal                                                                                 | UEB-002       |
+| 22  | UEB-004 | Planlaufzeit und Wiedervorlage (`IDEA-ORG-006`)                                                                                            | UEB-002       |
 
 ---
 
@@ -273,6 +305,22 @@ und darf produktiv nicht erreichbar sein (ADR-006 Punkt 6).
 Zuerst der zentrale Pfad, dann Features (`IDEA-KI-001`). Danach: Freitext
 strukturieren, Übersetzung in Patientensprache, Antwortentwürfe — jeweils mit
 Quellenbindung (`IDEA-KI-003`) und menschlicher Freigabe.
+
+### Etappe 11 — Design und Politur
+
+Ein einheitliches, geprüftes visuelles Design für die eigene Praxis, aufbauend
+auf den bestehenden zentralen Design-Tokens (`src/index.css`) — die Optik
+lässt sich dort an einer Stelle ändern, ohne jede Komponente einzeln
+anzufassen. Sinnvoll spät, kurz vor Go-live oder einer Vorführung nach außen,
+weil sich bis dahin noch Ansichten ändern.
+
+**Bewusst nicht Teil dieser Etappe:** Mandantenfähigkeit mit Branding pro
+Praxis (eigenes Logo, eigene Farben für fremde Praxen) — das ist ein
+Fernziel, kein aktuelles Produktziel (`PROJECT_PRINCIPLES.md` §1,
+[ADR-003](../adr/ADR-003-organization-location-model.md)), notiert unter
+`IDEA-QSN-009` in [08-querschnitt-plattform.md](../product/ideen/08-querschnitt-plattform.md).
+Eine Umsetzung setzt eine ausdrückliche Änderung von `PROJECT_PRINCIPLES.md`
+§1 voraus (§21).
 
 ---
 
