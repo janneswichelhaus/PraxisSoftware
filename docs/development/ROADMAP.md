@@ -57,7 +57,7 @@ Monate. Sie sollten laufen, während Spur A an Etappe 1 bis 3 arbeitet.
 
 ---
 
-## Ist-Stand (2026-09-04)
+## Ist-Stand (2026-09-05)
 
 Gebaut: Anmeldung und Sitzung · Rollen und RLS · Audit-Log mit
 eingeschränktem Lesepfad · Patienten anlegen, bearbeiten, Versorgungsstatus
@@ -95,7 +95,7 @@ gewählt.
 | 1   | DOK-001 | Behandlungsdokumentation zum Termin anlegen und als Entwurf bearbeiten                     | **fertig** (PR #5)     |
 | 2   | DOK-002 | Finalisierung von Hand, Versionierung, Nachtrag als eigener Eintrag (ADR-016 Punkte 4 bis 6) | **fertig** (PR #5)     |
 | 3   | DOK-003 | Dokumentation in der Akte lesen, rollenabhängig projiziert (Office ohne klinischen Inhalt) | **fertig** — C1 vorläufig als ANN-006 |
-| 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7)                                    | **fertig** — Mechanismus als ANN-007 |
+| 3a  | DOK-004 | Automatische Finalisierung nach Frist (ADR-016 Punkt 7)                                    | **fertig** — Mechanismus von Jannes entschieden |
 | 4   | LOE-001 | Datenklassen und Aufbewahrungsfristen als echte Struktur, Legal Hold                       | —                      |
 | 5   | LOE-002 | Löschvorgang, Wiederanwendung nach Restore, `pnpm test:db`                                 | LOE-001                |
 | 6   | ABR-001 | Leistungskatalog, versioniert, mit Steuerkennzeichen je Leistungsversion                   | B4 teilweise           |
@@ -411,7 +411,7 @@ Skill-Schritt I durchlaufen ist.
 | STAFF-001           | fertig                      | 2026-08-30     | `e70775a`, `ca907e9` |
 | DOK-001             | fertig                      | 2026-09-01     | `7e18906`, Merge PR #5 |
 | DOK-002             | fertig                      | 2026-09-02     | `491a0c0`, Merge PR #5 |
-| DOK-003             | fertig                      | 2026-09-04     | `21d85dd`, `f565124` |
-| DOK-004             | fertig                      | 2026-09-04     | `4862a3c`, `0d144f1` |
+| DOK-003             | fertig                      | 2026-09-05     | `21d85dd`, `f565124` |
+| DOK-004             | fertig                      | 2026-09-05     | `e931068`, `960f34f` |
 
-Zuletzt aktualisiert: 2026-09-04
+Zuletzt aktualisiert: 2026-09-05
