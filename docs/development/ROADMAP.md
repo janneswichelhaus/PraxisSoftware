@@ -29,6 +29,14 @@ Wiederherleiten des Projektstands in jeder Session.
 
 ## Nächster Loop
 
+> **Vor dem nächsten Loop:** Das Review vom 2026-09-06
+> ([`ROADMAP-REVIEW-2026-09-06.md`](ROADMAP-REVIEW-2026-09-06.md)) liegt mit
+> einem vollständigen Entwurf der Version 2.1
+> ([`ROADMAP-ENTWURF-2.1.md`](ROADMAP-ENTWURF-2.1.md)) vor. Jannes beantwortet
+> die Entscheidungen aus Abschnitt 8 des Reviews; danach ersetzt der Entwurf
+> diese Version. Bis dahin gilt 2.0. Der nächste Loop bleibt in beiden
+> Versionen derselbe.
+
 ```
 /feature-loop VER-EPIC-001 Verordnungen: PAT-005, VER-001 bis VER-003
 ```
@@ -357,5 +365,6 @@ Skill-Schritt I durchlaufen ist.
 | DOK-003             | fertig | 2026-09-05     | `21d85dd`, `f565124`       |
 | DOK-004             | fertig | 2026-09-05     | `e931068`, `960f34f`       |
 | Planungsreview und Roadmap 2.0 | fertig | 2026-09-05 | Branch `claude/project-structure-review-5ule84` |
+| Wettbewerbsanalyse, Roadmap-Review, Entwurf 2.1, `OPTIMIERUNG.md` | fertig | 2026-09-06 | Branch `claude/roadmap-optimization-competitor-analysis-r3qxl7` |
 
-Zuletzt aktualisiert: 2026-09-05
+Zuletzt aktualisiert: 2026-09-06

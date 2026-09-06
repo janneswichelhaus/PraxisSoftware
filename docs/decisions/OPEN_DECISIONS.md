@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Zuletzt aktualisiert: 2026-09-05 · Struktur 2.0
+Zuletzt aktualisiert: 2026-09-06 · Struktur 2.0
 
 Dieses Dokument hält fest, **was noch nicht entschieden ist**, warum es offen
 ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
@@ -9,10 +9,11 @@ muss, stehen in `docs/development/ROADMAP.md`, Spur B.
 
 **Stand:** Alle Architektur-Grundentscheidungen sind getroffen (ADR-001 bis
 ADR-016). Offen sind die externen Validierungen vor dem Produktivbetrieb (B1
-bis B4), sieben fachliche Punkte für spätere Etappen (B5 bis B11), die
-Providerfrage der KI (C6), zwei Betriebsfragen (E2, E10) und die Ausgestaltung
-des Terminstatus-Automaten (ADR-018). Alles andere ist entschieden — die
-Historie steht am Ende.
+bis B4), sieben fachliche Punkte für spätere Etappen (B5 bis B11), vier
+Einführungs- und Dienstleisterfragen aus dem Review vom 2026-09-06 (B12 bis
+B15), die Providerfrage der KI (C6), zwei Betriebsfragen (E2, E10) und die
+Ausgestaltung des Terminstatus-Automaten (ADR-018). Alles andere ist
+entschieden — die Historie steht am Ende.
 
 ## Wie dieses Dokument benutzt wird
 
@@ -55,6 +56,10 @@ Feature.
 | B9    | Betreuung nach Therapieende                                  | **offen** (P2)                                                | unten; vor Etappe 8                                                                                           |
 | B10   | Automatisierte Progression: MDR-Grenze                       | **offen** (P2)                                                | unten; vor Etappe 9                                                                                           |
 | B11   | Paketpreise, Vorauszahlung, Anreize                          | **offen** (P2)                                                | unten; vor Etappe 8                                                                                           |
+| B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **offen** (P1 für ABR-EPIC-002a und MIG-001)                  | unten; Review 2026-09-06                                                                                      |
+| B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **offen** (P1 für STAFF-EPIC-002)                             | unten; Review 2026-09-06                                                                                      |
+| B14   | PDF-Erzeugung für Rechnungen und Tagesplan                   | **offen** (P1 für ABR-EPIC-002b, E2)                          | unten; Review 2026-09-06                                                                                      |
+| B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **offen** (P2, Stufe 2)                                       | unten; Review 2026-09-06                                                                                      |
 | C1    | Leistungsziffern und Office                                  | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006                                               |
 | C2    | Klinische Inhalte in organisatorischer Kommunikation         | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §10                                                                               |
 | C3    | Fail-closed gegen Patientensicherheit, Break Glass           | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
@@ -238,6 +243,90 @@ heilmittelwerberechtliche Beratung.
 **Blockiert:** Paketverkauf, Guthaben, Rabattlogik, Preisdarstellung im Portal.
 **Nicht blockiert:** die reguläre Einzelleistungsabrechnung nach ADR-009.
 
+### B12 — Stichtag der Umstellung und Rechnungsnummernkreis
+
+| | |
+|---|---|
+| Dringlichkeit | P1 — vor der ersten ausgestellten Rechnung (ABR-EPIC-002a) und der Bestandsdatenübernahme (MIG-001) |
+| Bezug | §19; ADR-009 (Folgefrage Nummernkreis); GoBD |
+
+**Frage:** Werden die bisherigen Rechnungsnummern fortgeführt oder beginnt zum
+Stichtag ein neuer, dokumentierter Nummernkreis? Welche Vorgänge bleiben im
+bisherigen Werkzeug (Rechnungen vor dem Stichtag, offene Posten als Saldo), und
+wie lange bleibt es für die Restfrist lesbar?
+
+**Warum offen:** Das Review vom 2026-09-06 hat festgestellt, dass die Planung
+keine Bestandsdatenübernahme kannte. Ohne Stichtagsregel gibt es zwei
+Nummernkreise oder eine Lücke — beides ist nach GoBD erklärungsbedürftig.
+Aufgenommen im Review 2026-09-06 (Delivery-Befund 14).
+
+**Blockiert:** MIG-001, die Nummernvergabe in ABR-003. **Nicht blockiert:**
+alles davor; bis zur Entscheidung Annahme „neuer Kreis ab Stichtag".
+
+### B13 — E-Mail-Versand aus der Plattform
+
+| | |
+|---|---|
+| Dringlichkeit | P1 — vor STAFF-EPIC-002 |
+| Bezug | §2.1, §3.5; ADR-002; ADR-012 Punkt 10 |
+
+**Frage:** Über welchen Anbieter versendet die Plattform Transaktions-E-Mails
+(Einladung eines Zugangs, Passwort zurücksetzen, später Rechnungsversand)?
+Braucht das eine Prüfung nach ADR-002 und einen AVV, oder bleibt die Praxis in
+Stufe 1 ohne Versand aus der Plattform (Einladung über die Provider-Oberfläche,
+Rechnungsversand aus dem Praxispostfach)?
+
+**Warum offen:** Ein E-Mail-Dienst ist ein neuer Dienstleister mit Zugang zu
+personenbezogenen Daten (mindestens Adresse und Rolle der Mitarbeitenden). Die
+Roadmap 2.0 nannte ihn nicht. Aufgenommen im Review 2026-09-06 (Delivery-Befund
+10).
+
+**Blockiert:** STAFF-004 (Passwort vergessen als Selbstbedienung) und den
+Rechnungszustand „versendet". **Nicht blockiert:** STAFF-002/003 mit Einladung
+über die Provider-Oberfläche als Übergang.
+
+### B14 — PDF-Erzeugung
+
+| | |
+|---|---|
+| Dringlichkeit | P1 — vor ABR-EPIC-002b und der Tagesplan-Funktion (E2) |
+| Bezug | §19; ADR-009 Punkt 14; ADR-015; `CLAUDE.md` (Abhängigkeiten) |
+
+**Frage:** Wie entsteht das Rechnungsdokument — Browser-Druck aus einer
+Druckansicht, eine PDF-Bibliothek im Browser oder eine serverseitige Funktion?
+Wo läuft die Erzeugung, welche Abhängigkeit kommt dazu, wie wird das Dokument
+unveränderbar abgelegt (ADR-017)?
+
+**Warum offen:** Eine wesentliche Abhängigkeit oder ein neuer Ausführungsort
+ist nach §15.1 ein Stopp, nicht eine Annahme. Aufgenommen im Review 2026-09-06
+(Delivery-Befund 5). Empfehlung im Review: Druckansicht mit `@media print` für
+Tagesplan und Terminzettel sofort (keine Abhängigkeit); für die
+unveränderbare Rechnung die Optionen mit Aufwand im Loop ABR-EPIC-002a
+vorlegen.
+
+**Blockiert:** ABR-003b. **Nicht blockiert:** Tagesplan drucken, Terminzettel.
+
+### B15 — Terminerinnerung und Online-Terminbuchung
+
+| | |
+|---|---|
+| Dringlichkeit | P2 — Stufe 2 |
+| Bezug | §2.1, §3.5, §8, §10; ADR-002; ADR-007 |
+
+**Frage:** Über welchen Kanal erinnert die Praxis an Termine (SMS, E-Mail,
+Messenger, Anruf) und mit welchem Anbieter; welche Einwilligung braucht das
+(PAT-006); soll es eine Online-Terminanfrage geben, und wenn ja, im Portal
+(Etappe 4) oder davor?
+
+**Warum offen:** Die Wettbewerbsanalyse vom 2026-09-06 zeigt Terminerinnerung
+und Online-Buchung als Marktstandard. Beides ist ein neuer Dienstleister mit
+Gesundheitsdaten (dass jemand einen Physiotherapietermin hat) und braucht
+Prüfung nach ADR-002 und eine Einwilligung. Für Stufe 1 bleibt die Anrufliste
+der Weg (`IDEA-PRX-005`).
+
+**Blockiert:** jede Erinnerungs- oder Buchungsfunktion. **Nicht blockiert:**
+Anrufliste, Terminzettel als PDF.
+
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
 
 | | |
@@ -382,3 +471,6 @@ aus der Roadmap nicht abgeschlossen werden kann.
   Zieltermin Q1 2027, Verordnungen vor Abrechnung, Vorschaubereiche bleiben.
   Dieses Dokument auf Struktur 2.0 verschlankt; die Volltexte der
   entschiedenen Punkte stehen in der Git-Historie bis Commit `23d71e5`.
+- **2026-09-06:** B12 bis B15 aus dem Roadmap-Review und der
+  Wettbewerbsanalyse (`docs/development/ROADMAP-REVIEW-2026-09-06.md`):
+  Stichtag und Nummernkreis, E-Mail-Versand, PDF-Erzeugung, Terminerinnerung.
