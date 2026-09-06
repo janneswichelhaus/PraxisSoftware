@@ -41,3 +41,29 @@ Ein Prüfschritt beschreibt, **was zu klicken und was zu erwarten ist** — nich
 was der Code tut. Er ersetzt keinen Test: `PROJECT_PRINCIPLES.md` §12 und
 `CLAUDE.md` verlangen eine objektive Verifikation, und eine Klickanleitung ist
 keine. Sie ist die zusätzliche Prüfung durch einen Menschen.
+
+## Oberflächen-Checkliste je Story
+
+Für jede Story mit Oberflächenanteil, abgehakt in Schritt F des Loops.
+Abweichungen werden im Bericht begründet und in der nächsten Ablaufrunde
+(`docs/development/OPTIMIERUNG.md`) als Befund geführt.
+
+1. Bei 375 px vollständig bedienbar: kein horizontales Scrollen, Tippziele
+   mindestens 44 px, Primäraktion einhändig erreichbar.
+2. Nur Bausteine aus `src/components/ui` und Tokens aus `src/index.css`;
+   fehlt ein Baustein, entsteht er dort — nur für Module, die der Auftrag
+   berührt.
+3. Jedes Feld hat Label und Fehlertext, verbunden über `aria-describedby`;
+   Laden, Leer und Fehler laufen über `Feedback.tsx`.
+4. Farbe ist nie allein Bedeutungsträger; der Zustand steht als Text.
+5. Formulare mit mehr als einem Feld schützen ungespeicherte Eingaben — auch
+   bei Zurück, Neuladen und Sitzungsverlust.
+6. Die Fehlermeldung sagt, was zu tun ist, ohne interne Details; keine
+   Erfolgsmeldung, die nicht stattfand.
+7. Tastatur: alles erreichbar, sinnvolle Reihenfolge, Fokus nach Dialog und
+   Aktion gesetzt.
+8. Kontakt ist Aktion, nicht Text: `tel:`, `mailto:`, Adresse kopierbar.
+9. Wörter ohne Fachjargon-Falle und ohne Coaching-Begriffe (`IDEA-QSN-007`);
+   gleiche Sache, gleiches Wort.
+10. Je Kernpfad ein Test bei 375 px; der Abnahmeschritt enthält einen Schritt
+    am Handy und den Zielwert der Story als Zahl.

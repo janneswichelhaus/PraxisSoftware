@@ -141,3 +141,7 @@ Erstattungen, Teamkommunikation; Touren erst nach der Entscheidung zum
 Kartendienst (B7). Sie beginnt nach dem Go-live (Stufe 2). Bis dahin gelten
 drei Regeln: keine neue Vorschau, keine Erweiterung einer Vorschau, und jede
 Vorschau wird in ihrem Loop ersetzt, nicht daneben gebaut.
+
+Ablaufkarten unter `docs/development/ablaeufe/` **messen** den Stand eines
+Bereichs nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md); die Reihenfolge bleibt
+allein Sache der Roadmap.

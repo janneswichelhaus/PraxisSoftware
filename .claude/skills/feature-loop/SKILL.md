@@ -38,6 +38,9 @@ Aus dem Auftrag ableiten und kurz festhalten:
   Auditpflicht, Datenminimierung, Datenklasse und Frist neuer Tabellen
 - **Relevante ADRs** — Nummern, nach dem Index in `CLAUDE.md`
 - **UI-Erwartung**, falls die Oberfläche betroffen ist
+- **Ablaufkarten-Hinweis** — steht in der Roadmap-Zeile des Epics ein Hinweis
+  „Ablaufkarte … AC aus …", werden die dort genannten Akzeptanzkriterien und
+  die Zielzeile übernommen; die Ablaufkarte selbst wird nicht gelesen
 - **Annahmen** — jede Festlegung, die Auftrag, Prinzipien und ADRs nicht
   treffen, wird hier als `ANN-NNN` vorgemerkt (Abschnitt „Annahmen statt
   Rückfragen" in `CLAUDE.md`)
@@ -162,6 +165,8 @@ Eigenen Diff (`git diff main...HEAD`) durchgehen auf:
 - Berechtigungen: greift RLS, ist die UI-Prüfung nur Darstellung
 - Datenminimierung: wird mehr ausgeliefert als nötig
 - Fehlerbehandlung: verständlich, ohne interne Details preiszugeben
+- bei Oberflächenanteil: Oberflächen-Checkliste aus `docs/abnahme/README.md`
+  abgehakt; Abweichungen im Bericht begründet
 - unnötiger Scope
 - fehlende Tests, besonders für Negativfälle
 - versehentliche Secrets oder Logging sensibler Daten
