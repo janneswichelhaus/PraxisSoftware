@@ -242,7 +242,7 @@ Verordnung mit niedrigem Restkontingent reicht oder eine proaktive Erinnerung
 |---|---|
 | Status | notiert |
 | Quelle | Jannes, 2026-09-06 |
-| Berührt | B9 (erweitert), B4, B5, B11; `PROJECT_PRINCIPLES.md` §1, §14; `IDEA-LZK-002`; Roadmap Stufe 3; Rückfragen E-17, E-19 |
+| Berührt | B9 (erweitert), B4, B5, B11; `PROJECT_PRINCIPLES.md` §1, §14; `IDEA-LZK-002`; Roadmap Stufe 3; E-17, E-19 (entschieden 2026-09-06) |
 
 **Idee.** Die Plattform ist für Patient:innen **und** für die Kund:innen von
 Jannes' Personal Training gedacht. Eine Kundin kann sie nutzen, ohne je in
@@ -269,6 +269,12 @@ bleiben es trotzdem: Verletzungen, Gewicht, Ernährung (Art. 9 DSGVO), mit
 denselben Regeln wie in der Behandlung. Für den Ernährungsteil gilt
 `IDEA-ALT-005` und `IDEA-ALT-006`.
 
-**Offen.** Läuft das Personal Training heute schon, mit Kund:innen in einem
-Werkzeug — gibt es also für diesen Teil Bestandsdaten und einen Wunschtermin?
-Dieselbe Praxis oder eigener Betrieb? Welche Bereiche zuerst (E-19)?
+**Antworten 2026-09-06 (E-17, E-19).** Das Personal Training beginnt
+ebenfalls am 01.07.2027 — keine Bestandsdaten, kein Wunschtermin vor der
+Eröffnung. Die Plattform dafür ist Stufe 3 nach dem ersten Betriebsmonat, in
+der Reihenfolge Portalfundament → Übungspläne → Check-ins → Chat →
+Kund:innen und Pakete → Gewohnheiten, Aktivitäten, Ernährung. Bis dahin werden
+Kund:innen nicht als Patient:innen angelegt.
+
+**Offen.** Dieselbe Praxis oder eigener Betrieb — Frage an die Steuerberatung
+mit B4.

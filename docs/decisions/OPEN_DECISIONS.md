@@ -14,10 +14,11 @@ seit dem 2026-09-06 teilweise entschieden beziehungsweise erweitert), zwei
 Dienstleisterfragen aus dem Review vom 2026-09-06 (B14 teilweise, B15), die
 Providerfrage der KI (C6), zwei Betriebsfragen (E2, E10) und die
 Ausgestaltung des Terminstatus-Automaten (ADR-018). B12 und B13 sind am
-2026-09-06 erledigt beziehungsweise entschieden worden. Die fünf Rückfragen
-E-15 bis E-19 an Jannes stehen in `docs/development/ROADMAP.md`, nicht hier —
-sie sind Planungsfragen, keine offenen Punkte. Alles andere ist entschieden —
-die Historie steht am Ende.
+2026-09-06 erledigt beziehungsweise entschieden worden; B7 ist seit demselben
+Tag bis auf die Fahrzeiten entschieden. Die fünf Rückfragen E-15 bis E-19 hat
+Jannes am 2026-09-06 beantwortet (Historie; Wortlaut in
+`docs/development/ROADMAP.md`, „Antworten E-15 bis E-19"). Alles andere ist
+entschieden — die Historie steht am Ende.
 
 ## Wie dieses Dokument benutzt wird
 
@@ -55,7 +56,7 @@ Feature.
 | B4    | Abrechnungsmodell                                            | entschieden; **steuerliche Validierung offen**, Fragenliste unten (erweitert 2026-09-06) | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13, Nov 2026                          |
 | B5    | Patientenidentität, Vertretung                               | **offen** (P1 für das Portal)                                 | unten; vor Etappe 4                                                                                           |
 | B6    | Beschäftigtendaten: Touren, Leistungskontrolle               | **offen** (P1 für Zeitkonto und Touren)                       | unten; vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit                                                     |
-| B7    | Adressdaten an den Kartendienst                              | **teilweise entschieden 2026-09-06** (Google-Maps-Link); Rest **offen** (P1 für TOUR-EPIC-001a) | unten; ADR-019 (Roadmap G12)                                                                    |
+| B7    | Adressdaten an den Kartendienst                              | **entschieden 2026-09-06** (Google-Maps-Link und Karte über Embed API, genehmigt); Fahrzeiten **offen** (P2 für TOUR-EPIC-001b) | unten; ADR-019 (Roadmap G12)                                                    |
 | B8    | Lizenzen für Fragebögen und PROMs                            | **offen** (P2)                                                | unten; vor FRB-003                                                                                            |
 | B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **offen** (P2), erweitert 2026-09-06                          | unten; vor Etappe 8; Steuerteil mit B4                                                                        |
 | B10   | Automatisierte Progression: MDR-Grenze                       | **offen** (P2)                                                | unten; vor Etappe 9                                                                                           |
@@ -175,7 +176,7 @@ kein Live-Tracking). ANN-004 hält Arbeitszeiten bereits aus dem Auditlog heraus
 
 | | |
 |---|---|
-| Dringlichkeit | P1 für TOUR-EPIC-001a (Karte); der Link ist entschieden |
+| Dringlichkeit | Link und Karte entschieden; Fahrzeiten P2 für TOUR-EPIC-001b |
 | Bezug | §9, §18, §20, §3.5; ADR-002, ADR-007 Punkt 2 |
 
 **Entschieden am 2026-09-06 durch Jannes:** Der Kartendienst ist **Google
@@ -188,17 +189,18 @@ Vertrags- und Datenschutzseite in ADR-019 (Roadmap G12), Nennung in der
 Datenschutzinformation (PAT-006), DSFA-Wiedervorlage nach ADR-007 Punkt 2
 („wesentliche Änderung der Routing-/Standortverarbeitung").
 
-**Noch offen — Datenweg der In-App-Karte** (Rückfrage E-16 in der Roadmap):
-Die Karte der Tagesroute lädt Kartenmaterial und Route von Google, sobald sie
-geöffnet wird; dabei gehen alle Adressen eines Tages in einer Anfrage an den
-Dienst. Zu klären: ob die Genehmigung diesen Weg einschließt, welche
-Schnittstelle (Embed API im eingebetteten Rahmen — Empfehlung — oder
-JavaScript API mit Directions), Schlüsselverwaltung und Referrer-Bindung,
-Vertragsgrundlage der Google Maps Platform nach dem Prüfkatalog aus ADR-002,
-und ob Namen jemals auf der Karte erscheinen dürfen (Empfehlung: nein).
-Grundsatz unabhängig von der Antwort: die Karte lädt nur auf ausdrückliche
-Aktion, nie beim Öffnen einer Seite; kein Standort der Person, kein Verlauf,
-keine Speicherung von Routing-Rohdaten (§18, §20).
+**Entschieden am 2026-09-06 durch Jannes (E-16) — Datenweg der In-App-Karte:**
+Die Karte der Tagesroute läuft über die **Google Maps Embed API** im
+eingebetteten Rahmen — derselbe Anbieter wie der Link. Beim Öffnen gehen alle
+Adressen eines Tages in einer Anfrage an den Dienst; die zuständige
+Datenschutz-Fachkraft hat diesen Weg genehmigt (laut Jannes). Die Genehmigung
+wird schriftlich zu den DSFA-Unterlagen gelegt (Roadmap G14, M0). Festgelegt
+damit: Karte nur auf ausdrückliche Aktion, nie beim Öffnen einer Seite;
+Adressen ohne Namen und ohne Uhrzeit; Schlüssel an die Domain gebunden; kein
+Standort der Person, kein Verlauf, keine Speicherung von Routing-Rohdaten
+(§18, §20). ADR-019 hält Vertragsgrundlage der Google Maps Platform,
+Prüfkatalog aus ADR-002 und Schlüsselverwaltung fest; die Höchstzahl der
+Zwischenziele je Anfrage kommt aus der Anbieterdokumentation.
 
 **Noch offen — Fahrzeiten** (TOUR-EPIC-001b): ob Fahrzeiten je Weg aus dem
 Dienst abgerufen und kurz gespeichert werden dürfen (§18) und wie sie von
@@ -209,9 +211,9 @@ Telefon der Therapeutin. Ein dort angemeldetes privates Google-Konto speichert
 Suchen und Wege. Die Endgeräte-Richtlinie (Roadmap G14, BETRIEB-001) regelt
 Konto und Verlauf; das ist Teil von ADR-019.
 
-**Blockiert:** die In-App-Karte (TOUR-002) und die Fahrzeiten
-(TOUR-EPIC-001b). **Nicht blockiert:** der Navigationslink, die Tourenliste,
-der Fahrpuffer als Praxisregel (CAL-010).
+**Blockiert:** nur noch die Fahrzeiten (TOUR-EPIC-001b). **Nicht blockiert:**
+der Navigationslink, die In-App-Karte (TOUR-002, nach ADR-019), die
+Tourenliste, der Fahrpuffer als Praxisregel (CAL-010).
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 
@@ -250,10 +252,13 @@ Personal Trainings gedacht ist — ohne vorherige Heilbehandlung. Damit ist der
 Übergang nicht mehr der einzige Fall: es gibt einen zweiten Eintrittsweg ohne
 Verordnung, ohne Behandlungsvertrag und ohne Akte. Für ihn gelten dieselben
 Fragen von Anfang an, dazu: ob Personal Training in derselben Praxis oder in
-einem eigenen Betrieb läuft (Rechnungen, Umsatzsteuer, Verträge — Rückfrage
-E-17 in der Roadmap), und ob `PROJECT_PRINCIPLES.md` §1, das nur die
-Physiotherapiepraxis nennt, nach §21 ergänzt wird. Beim Übergang und beim
-Eintritt ohne Behandlung ändern sich mehrere Dinge gleichzeitig:
+einem eigenen Betrieb läuft (Rechnungen, Umsatzsteuer, Verträge — Frage an
+die Steuerberatung mit B4). Entschieden am 2026-09-06 (E-17): Das Personal
+Training beginnt ebenfalls am 01.07.2027, es gibt keine Bestandsdaten; die
+Plattform dafür ist Stufe 3 nach dem ersten Betriebsmonat; bis dahin werden
+Kund:innen nicht als Patient:innen angelegt; `PROJECT_PRINCIPLES.md` §1 wird
+nach §21 ergänzt, wenn Stufe 3 beginnt. Beim Übergang und beim Eintritt ohne
+Behandlung ändern sich mehrere Dinge gleichzeitig:
 
 - **Vertragsart:** Behandlungsvertrag (§630a BGB) gegenüber Dienstvertrag.
 - **Dokumentationspflicht:** §630f BGB gilt für die Heilbehandlung, nicht für
@@ -589,5 +594,13 @@ aus der Roadmap nicht abgeschlossen werden kann.
   **Karte der Tagesroute** gehört zum Lastenrad-Hausbesuchskonzept
   (TOUR-EPIC-001a); eine **Plattform für Patient:innen und
   Personal-Training-Kund:innen** gehört zum Zielbild (B9 erweitert,
-  `IDEA-LZK-008`, Stufe 3). Fünf Rückfragen E-15 bis E-19 stehen in der
-  Roadmap.
+  `IDEA-LZK-008`, Stufe 3).
+- **2026-09-06, Antworten von Jannes auf die Rückfragen E-15 bis E-19:** E-15
+  **die Reihenfolge der Umsetzung ist verbindlich, der Kalender nachrangig**;
+  Themen dürfen früher kommen (Roadmap „Sessions starten") · E-16 In-App-Karte
+  über die **Google Maps Embed API**, die zuständige Datenschutz-Fachkraft
+  hat genehmigt (B7 entschieden bis auf die Fahrzeiten) · E-17 Personal
+  Training beginnt ebenfalls am 01.07.2027, keine Bestandsdaten; Stufe 3 nach
+  M6, §1 der Prinzipien wird dann ergänzt · E-18 der Referenz-Screenshot ist
+  ein fremdes Produkt; Jannes will dessen Funktionsumfang nachbauen · E-19
+  Reihenfolge der Stufe 3 wie vorgeschlagen.

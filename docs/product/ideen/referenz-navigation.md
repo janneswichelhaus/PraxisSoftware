@@ -20,8 +20,15 @@ Trainings (`IDEA-LZK-008`, Roadmap Stufe 3). Damit ist die Navigationsleiste
 mehr als eine Anregung — sie ist die Themenliste für den klientenseitigen
 Teil. Der Abschnitt „Was für uns anders sein muss" gilt unverändert. Der
 Screenshot zeigt Name und E-Mail-Adresse einer Person; er liegt nicht im
-Repository, und die Person wird hier nicht genannt. Ob es ein fremdes Produkt
-oder ein eigener Prototyp ist, ist Rückfrage E-18 in der Roadmap.
+Repository, und die Person wird hier nicht genannt.
+
+**Herkunft (E-18, 2026-09-06):** ein fremdes Produkt. Jannes hat nur diesen
+Screenshot und will den **Funktionsumfang nachbauen**. Das heißt: Vorlage
+für Umfang, Ablauf und Informationsarchitektur — nicht für Datenmodell,
+Berechtigungen oder Rechtsrahmen, und keine Übernahme von Texten, Grafiken,
+Symbolen, Namen oder Code des fremden Produkts (Urheber- und Markenrecht).
+Was übernommen wird, entsteht in unserer Sprache und in unserer Reihenfolge
+(`docs/development/ROADMAP.md`, Stufe 3). Keine Nachrecherche.
 
 ---
 

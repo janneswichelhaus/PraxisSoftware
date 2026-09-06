@@ -571,7 +571,7 @@ ein Datenfluss mit Gesundheitsdaten, der vor der Nutzung bewertet werden muss
 |---|---|
 | Status | bestätigt — Jannes, 2026-09-06: „Diese Entscheidung steht fest" |
 | Quelle | Jannes, 2026-09-06 (Lastenrad-Hausbesuchskonzept) |
-| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019; TOUR-EPIC-001a (Roadmap Etappe T); Rückfrage E-16 |
+| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019; TOUR-EPIC-001a (Roadmap Etappe T); E-16 (entschieden 2026-09-06) |
 
 **Idee.** Eine Karte zeigt die gesamte Route des Tages: alle Wege zwischen
 Startort, Hausbesuchen und Endort in Terminreihenfolge — auf einmal, oder ein
@@ -586,16 +586,18 @@ Fahrzeiten, zeigt aber keine Radroute.
 **Vorsicht.** Beim Öffnen der Karte gehen alle Adressen des Tages in einer
 Anfrage an den Kartenanbieter — deshalb Adressen ohne Namen und ohne Uhrzeit,
 Karte nur auf ausdrückliche Aktion laden, kein Standort der Person, kein
-Verlauf, keine Speicherung von Routing-Rohdaten (§18, §20). Anbieter und
-Datenweg der Karte sind Rückfrage E-16 und Gegenstand von ADR-019 (Empfehlung:
-Google Maps Embed API, derselbe Anbieter wie der genehmigte Link). Der
-persönliche Startort einer Therapeutin ist ein Beschäftigtendatum
-(`IDEA-PRX-017`). Ein privates Google-Konto auf dem Diensttelefon speichert
-Wege — das regelt die Endgeräte-Richtlinie.
+Verlauf, keine Speicherung von Routing-Rohdaten (§18, §20). Der persönliche
+Startort einer Therapeutin ist ein Beschäftigtendatum (`IDEA-PRX-017`). Ein
+privates Google-Konto auf dem Diensttelefon speichert Wege — das regelt die
+Endgeräte-Richtlinie.
 
-**Offen.** Datenweg der Karte (Embed oder JavaScript API); Höchstzahl der
-Zwischenziele je Anfrage; ob Namen jemals auf der Karte erscheinen dürfen
-(Empfehlung: nie).
+**Entschieden 2026-09-06 (E-16):** Datenweg über die Google Maps Embed API,
+derselbe Anbieter wie der genehmigte Link; die zuständige
+Datenschutz-Fachkraft hat genehmigt. Namen erscheinen nie auf der Karte.
+Dokumentation in ADR-019.
+
+**Offen.** Nur noch die Höchstzahl der Zwischenziele je Anfrage
+(Anbieterdokumentation); bei Überschreitung wird der Tag in Abschnitte geteilt.
 
 ---
 

@@ -131,7 +131,10 @@ einem Verwurf. Neue Einträge hängen hinten an.
   `IDEA-PRX-029` Tagesroute auf der Karte und `IDEA-PRX-030` Navigationslink
   zu Google Maps. Neu notiert: `IDEA-LZK-008` Kund:innen des Personal
   Trainings ohne vorherige Heilbehandlung. Die übrigen `PRX`-Einträge bleiben
-  `vorschlag`.
+  `vorschlag`. Mit den Antworten E-15 bis E-19 vom selben Tag: Datenweg der
+  Karte über die Google Maps Embed API entschieden und genehmigt; der
+  Referenz-Screenshot ist ein fremdes Produkt, dessen Funktionsumfang
+  nachgebaut werden soll (Regeln in `referenz-navigation.md`).
 
 ## Index — welche Datei wofür
 

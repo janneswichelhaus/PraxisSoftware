@@ -12,9 +12,11 @@ ihrer eigenen Regel gelöscht und liegen in der Git-Historie (Commit
 `7ab6f71`). Aus derselben Antwort stammen drei neue Vorgaben — **die Praxis
 eröffnet am 01.07.2027 ohne Vorgängersystem**, **Navigation über Google Maps
 ist entschieden**, **eine Plattform für Patient:innen und
-Personal-Training-Kund:innen gehört zum Zielbild** — und fünf Rückfragen
-(Abschnitt „Rückfragen E-15 bis E-19"). Stellen, die von einer Rückfrage
-abhängen, tragen die Markierung `[E-n]`.
+Personal-Training-Kund:innen gehört zum Zielbild**. Die fünf Rückfragen dazu
+(E-15 bis E-19) hat Jannes am selben Tag beantwortet; die Antworten stehen im
+Abschnitt „Antworten E-15 bis E-19" und in der Historie von
+`OPEN_DECISIONS.md`. **Die wichtigste: Die Reihenfolge ist verbindlich, der
+Kalender nachrangig** (E-15) — siehe „Sessions starten".
 
 ## Was dieses Dokument ist und was nicht
 
@@ -59,22 +61,69 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   Fristwunsch verschicken — B4 mit den Steuerfragen aus `OPEN_DECISIONS.md`
   (Umsatzsteuer, Kleinunternehmerregelung, Nummernkreis), B2 mit dem
   Kartendienst (B7) und der Terminerinnerung (B15) — und Stelle, Datum,
-  Zusage in der Spur-B-Tabelle eintragen · Rückfragen E-15 bis E-19
-  beantworten.
+  Zusage in der Spur-B-Tabelle eintragen · die Genehmigung der
+  Datenschutz-Fachkraft für den Kartendienst schriftlich zu den
+  DSFA-Unterlagen legen (G14).
 
 Nach jedem abgeschlossenen Loop wird dieser Abschnitt auf den nächsten Eintrag
 gestellt (Skill-Schritt I).
 
 ---
 
+## Sessions starten
+
+Jannes entschied am 2026-09-06 (E-15): **Die Reihenfolge ist verbindlich, der
+Kalender nachrangig.** Ein Eintrag darf früher beginnen, sobald der vorherige
+fertig und abgenommen ist und seine Voraussetzung aus Spur B vorliegt. Die
+Monate im Rückwärtsplan sind Spätest-Termine, keine Wartezeiten; die
+Meilensteine bleiben die Messlatte für das Wochenupdate.
+
+Vier Regeln, damit jede Session weiß, was sie tun soll, und nichts verloren
+geht:
+
+1. **Vorher:** `git pull --ff-only origin main`, dann diesen Abschnitt und
+   „Nächster Loop" lesen. Mehr Vorbereitung braucht es nicht — die Session
+   liest den Rest selbst.
+2. **Aufruf:** genau einen Aufruf aus der Tabelle unten, unverändert, als
+   erste Nachricht. **Ein Thema je Session.** Ein zweiter Wunsch geht nicht in
+   dieselbe Session — er wird ein eigener Aufruf oder eine Zeile im
+   Ideenspeicher (Aufruf „Idee").
+3. **Nachher:** den Bericht lesen und die Fragen mit je einem Satz
+   beantworten („wie empfohlen" reicht); den Pull Request mergen — Docs sofort,
+   Code nach der Abnahme; die Abnahmeschritte aus `docs/abnahme/` am eigenen
+   Rechner durchgehen und der nächsten Session sagen „Abnahme <Loop> am
+   <Datum> erledigt", damit sie das Datum in der Fortschrittstabelle
+   einträgt.
+4. **Montags** sagt das Wochenupdate, was fällig ist. Es liest `main` —
+   deshalb Regel 3.
+
+Wie Antworten am besten aussehen: mit der Kennung (`E-16: a`, `B4: liegt vor,
+Ergebnis …`), Entscheidungen als „entschieden: …", Ideen als „Idee: …". So
+landet jeder Satz an der richtigen Stelle im Register, im Ideenspeicher oder
+in dieser Roadmap.
+
+| Zweck                           | Aufruf (kopieren, nichts ergänzen)                                                                                                                                                                                                                                                       | Modell (Tabelle unten) |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| Code-Loop                       | der Befehl aus „Nächster Loop", zum Beispiel `/feature-loop VER-EPIC-001 Verordnungen: PAT-005, VER-001 bis VER-003`                                                                                                                                                                     | nach Aufgabe           |
+| Docs-Session ADR                | `Docs-Session ohne Code: ADR-017 Dateiablage schreiben. Vorgaben: docs/development/ROADMAP.md, Etappe G, Zeile G1, und die dort genannten ADRs. Am Ende die Bestätigungsfragen für Jannes als Liste mit Empfehlung.` — für ADR-018 (G2, Zeile D → ADR-018 in Spur B) und ADR-019 (G12) entsprechend | Opus 5 `xhigh`         |
+| Docs-Session Providerprüfung    | `Docs-Session ohne Code: OPS-001 Providerprüfung Supabase nach dem Prüfkatalog aus ADR-002 als Dokument, einschließlich der Auth-Mails (B13). Vorgaben: docs/development/ROADMAP.md, Zeile G3. Keine Cloud-Ressource anlegen.`                                                              | Opus 5 `high`          |
+| Ablaufrunde                     | `Ablaufrunde Touren & Termine nach docs/development/OPTIMIERUNG.md` — Bereich nach Rückwärtsplan                                                                                                                                                                                         | Sonnet 5 `medium`      |
+| Antworten und Abnahmen eintragen | `Docs-Session ohne Code: meine Antworten und Abnahmen in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …`                                                                                                                                    | Sonnet 5 `low`         |
+| Idee                            | `Ideenspeicher: <Idee in zwei Sätzen>. Nur eintragen, nicht bauen.`                                                                                                                                                                                                                      | Sonnet 5 `low`         |
+| Roadmap prüfen                  | `Planungssession ohne Code: Gesamtstand prüfen (git fetch, Branches, Pull Requests), docs/development/ROADMAP.md gegen den Stand nachstellen, nächsten Loop vorschlagen. Nichts bauen.`                                                                                                   | Sonnet 5 `medium`      |
+
+---
+
 ## Ziel: Produktionsreife Ende März 2027, Eröffnung 01.07.2027
 
 Entschieden von Jannes am 2026-09-05 und präzisiert am 2026-09-06: Die Praxis
-**nimmt den Betrieb am 01.07.2027 auf** `[E-15]`. Es gibt kein
-Vorgängersystem, keine Bestandspatient:innen, keine offenen Rechnungen und
-keinen alten Nummernkreis — deshalb keine Bestandsdatenübernahme und keinen
-Parallelbetrieb. Die Software ist **bis zum 31.03.2027 produktionsreif**; die
-drei Monate bis zur Eröffnung sind Puffer und Eröffnungsvorbereitung.
+**nimmt den Betrieb am 01.07.2027 auf**, das Personal Training ebenfalls. Es
+gibt kein Vorgängersystem, keine Bestandspatient:innen, keine offenen
+Rechnungen und keinen alten Nummernkreis — deshalb keine
+Bestandsdatenübernahme und keinen Parallelbetrieb. Die Software ist
+**spätestens zum 31.03.2027 produktionsreif**; die drei Monate bis zur
+Eröffnung sind Puffer und Eröffnungsvorbereitung. Früher ist erlaubt (E-15):
+Was fertig und abgenommen ist, wartet nicht auf seinen Monat.
 
 Drei Zeitpunkte, die auseinandergehalten werden (ADR-007 Punkt 6 erlaubt vor
 dem Gate nur synthetische Daten):
@@ -102,10 +151,10 @@ druckbar · alles aus Etappe G und H.
 2): UI-001 Politur · OPS-005 als Automatisierung · Rückzahlungs-UI ·
 Legal-Hold-Oberfläche · OPS-006 als vollständige Funktion.
 
-**Stufe 2 vor der Eröffnung (April bis Juni 2027)** `[E-15]`: Tagesroute auf
-der Karte mit Navigation (TOUR-EPIC-001a, entschieden 2026-09-06) · Anamnese
-und Fragebögen (Etappe 2), weil zur Eröffnung jede Patientin neu ist · der
-Juni bleibt frei für Probewoche 2 und Befunde.
+**Stufe 2 vor der Eröffnung (spätestens April bis Juni 2027):** Tagesroute
+auf der Karte mit Navigation (TOUR-EPIC-001a, entschieden 2026-09-06) · dann
+Anamnese und Fragebögen (Etappe 2), weil zur Eröffnung jede Patientin neu ist
+· der letzte Monat vor der Eröffnung bleibt frei für Probewoche 2 und Befunde.
 
 **Stufe 2 nach der Eröffnung (ab August 2027):** Übungspläne (Etappe 3) ·
 Warteliste (`IDEA-PRX-003`) · Terminerinnerung und Online-Anfrage (B15) ·
@@ -122,22 +171,24 @@ Kund:innen — Etappen 4 bis 10, siehe eigenen Abschnitt.
 
 Kapazität je Monat in Code-Loops (Annahme: zwei je Woche, siehe „Kapazität und
 Puffer"); „Last" zählt nur Code-Loops. Docs-Sessions und Jannes-Aufgaben stehen
-getrennt, weil sie andere Ressourcen brauchen.
+getrennt, weil sie andere Ressourcen brauchen. Die Monate sind
+Spätest-Termine; die Reihenfolge innerhalb einer Spalte und über die Zeilen
+hinweg ist das Verbindliche (E-15).
 
 | Monat       | Kap. | Code-Loops (Last)                                                                                   | Docs-Sessions                                                                          | Jannes liefert / entscheidet                                                                                                                              | Extern                           | MS     |
 | ----------- | ---- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------ |
-| Sep 2026    | 7    | VER-EPIC-001 · UI-000 (2)                                                                           | ADR-017 · ADR-018 · OPS-001 Providerprüfung                                            | Branch Protection · B1/B2/B4 anfragen · Rückfragen E-15 bis E-19 · ADR-017/018 bestätigen                                                                 | —                                | M0     |
+| Sep 2026    | 7    | VER-EPIC-001 · UI-000 (2)                                                                           | ADR-017 · ADR-018 · OPS-001 Providerprüfung                                            | Branch Protection · B1/B2/B4 anfragen · Genehmigung Kartendienst schriftlich ablegen · ADR-017/018 bestätigen                                             | —                                | M0     |
 | Okt 2026    | 9    | UX-EPIC-001 · STAFF-EPIC-002 · LOE-EPIC-001 · CAL-EPIC-003a Zustände (4)                            | ADR-019 Kartendienst (Link) · Optimierungsrunde Touren & Termine · VVT- und TOM-Entwurf | Test-Cloudprojekt anlegen (nach OPS-001) · E10 · ADR-019 bestätigen · erste Abnahmen · Urlaub eintragen                                                   | —                                | —      |
 | Nov 2026    | 8    | CAL-EPIC-003b Serie · DAT-EPIC-001 · ABR-EPIC-001 · ABR-EPIC-002a Rechnung (4)                      | Optimierungsrunde Patient:innen · Löschkonzept, Breach-Prozess, Subprozessoren        | Leistungskatalog mit Preisen · Praxisstammdaten, Logo, Bank · B4-Termin · steuerliche Grundeinstellungen (G13) · PDF-Weg für die Rechnung (B14)          | B4 Ergebnis                      | —      |
 | Dez 2026    | 6    | ABR-EPIC-002b Dokument/Storno · ABR-EPIC-003 Zahlungen · E2-Funktion Tagesplan · PAT-006 (4)        | Optimierungsrunde Abrechnung · DSFA-Entwurf an die Prüfung (15.12.)                    | Ende-zu-Ende-Abnahme · Feldtag 1                                                                                                                          | B2 Ergebnis                      | M1     |
 | Jan 2027    | 8    | OPS-003 Backup/Restore · OPS-004 Logging (mit OPS-005 minimal) · OPS-006 minimal · OPS-007 Bootstrap · Befunde (5) | Betriebsdokumentation · BETRIEB-001 · Optimierungsrunde Mein Tag                       | Restore-Test mitführen · Notfallzugang verwahren · Endgeräte-Richtlinie                                                                                    | DSFA-Rückfragen                  | —      |
 | Feb 2027    | 8    | Befunde aus Probewoche 1 · UI-001 Politur (3)                                                       | Rückfallplan (Papierprozess aus E2) · Kurzanleitung „erster Tag" · Messrunde vor dem Gate | Probewoche 1 (H1) · Restore-Test 2 · Feldtag 2 · **Feature-Freeze Stufe 1 am 26.02.**                                                                     | B1 Ergebnis · DSFA abgeschlossen | M2     |
 | Mär 2027    | 8    | **Puffer** — nur Befunde und Dokumentation (0 geplant)                                              | Nachweistabelle MUSS → Test/Policy · Providerprüfung Google Maps Platform (Karte)     | Go-live-Gate 19.03. · Produktions-Bootstrap nach OPS-007 am 31.03.                                                                                        | —                                | M3, M4 |
-| Apr 2027    | 8    | TOUR-EPIC-001a Tagesroute · Befunde aus dem Produktivsystem (1) `[E-15]`                            | DSFA-Wiedervorlage Kartendienst                                                        | Google-Maps-Schlüssel anlegen (Jannes, nicht der Agent) · Abnahme auf einer echten Radrunde mit synthetischen Adressen                                    | —                                | —      |
-| Mai 2027    | 8    | FRB-EPIC-001 · FRB-EPIC-002 (2) `[E-15]`                                                            | Optimierungsrunde Touren (vier Wochen nach TOUR-EPIC-001a)                             | B8 Lizenzfrage klären · Probewoche 2 vorbereiten (Seed: eine Eröffnungswoche)                                                                             | B8                               | —      |
+| Apr 2027    | 8    | TOUR-EPIC-001a Tagesroute · Befunde aus dem Produktivsystem (1)                                     | DSFA-Wiedervorlage Kartendienst                                                        | Google-Maps-Schlüssel anlegen (Jannes, nicht der Agent) · Abnahme auf einer echten Radrunde mit synthetischen Adressen                                    | —                                | —      |
+| Mai 2027    | 8    | FRB-EPIC-001 · FRB-EPIC-002 (2)                                                                     | Optimierungsrunde Touren (vier Wochen nach TOUR-EPIC-001a)                             | B8 Lizenzfrage klären · Probewoche 2 vorbereiten (Seed: eine Eröffnungswoche)                                                                             | B8                               | —      |
 | Jun 2027    | 8    | **Puffer** — Befunde aus Probewoche 2 (0 geplant)                                                   | Erster-Tag-Protokoll · Schulung, falls eine zweite Person da ist                        | Probewoche 2 (H5) · Restore-Test 3 · **Change-Freeze ab 17.06.** · erste echte Patient:innen anlegen                                                      | —                                | —      |
 | Jul 2027    | 4    | **Stabilisierung** — Hotfixes und Befunde (0 neue Epics)                                            | —                                                                                      | **Eröffnung 01.07.** · Störfallliste führen · Optimierungsrunde nach vier Wochen Betrieb                                                                   | —                                | M5, M6 |
-| ab Aug 2027 | —    | Stufe 2 nach der Eröffnung (Etappe 3, Warteliste, TOUR-EPIC-001b, Spur A2) · danach Stufe 3 `[E-17]` `[E-19]` |                                                                                        |                                                                                                                                                           |                                  |        |
+| ab Aug 2027 | —    | Stufe 2 nach der Eröffnung (Etappe 3, Warteliste, TOUR-EPIC-001b, Spur A2) · danach Stufe 3 in der Reihenfolge des Abschnitts „Stufe 3" |                                                                                        |                                                                                                                                                           |                                  |        |
 
 Sperrzeit 21.12.2026 bis 04.01.2027; Jannes' Urlaub wird eingetragen, sobald
 er feststeht. Rechnung: rund 22 Code-Loops von September bis Februar bei 46
@@ -153,7 +204,7 @@ gefährdet), rot (Termin nicht haltbar).
 
 | MS  | Termin     | Name                     | Kriterien                                                                                                                                                                                                                                                                                                                                       |
 | --- | ---------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0  | 30.09.2026 | Vorlauf gesichert        | B1, B2, B4 angefragt: Stelle benannt, Termin zugesagt · OPS-001 dokumentiert, Ergebnis positiv · ADR-017 und ADR-018 von Jannes bestätigt · Branch Protection und Secret Scanning aktiv · Rückfragen E-15 bis E-19 beantwortet                                                                                                                   |
+| M0  | 30.09.2026 | Vorlauf gesichert        | B1, B2, B4 angefragt: Stelle benannt, Termin zugesagt · OPS-001 dokumentiert, Ergebnis positiv · ADR-017 und ADR-018 von Jannes bestätigt · Branch Protection und Secret Scanning aktiv · Genehmigung des Kartendienstes schriftlich abgelegt                                                                                                    |
 | M1  | 18.12.2026 | Kernprozess Ende-zu-Ende | Ein synthetischer Fall läuft auf der Test-Umgebung durch: Verordnung → Serie → Termin durchgeführt → Dokumentation finalisiert → Leistung → Rechnung als PDF → Zahlung · von Jannes abgenommen · jede Stufe-1-Datenklasse hat Löschpfad und Test · B4 liegt vor                                                                                  |
 | M2  | 26.02.2027 | Betriebsbereit           | Restore-Test 1 bestanden inklusive Löschungen · Deployment aus Tag mit Freigabe · Redaction-Prüfung grün · Betriebsdokumentation (13 Positionen) · Probewoche 1 durchlaufen, Befunde geschlossen · Kollegin-Test durchlaufen · DSFA-Entwurf bei der Prüfung · **Feature-Freeze Stufe 1**                                                        |
 | M3  | 19.03.2027 | Go-live-Gate             | ADR-007 sieben Vorbedingungen · B1- und B2-Ergebnis liegt vor · kein Register-Eintrag Datenschutz/Recht auf `offen` · Restore-Test 2 bestanden · OPS-007 gegen die Test-Umgebung geprobt · Rückfallplan (Papierprozess) unterschrieben · Messrunde: Zielwerte aus `OPTIMIERUNG.md` erreicht oder als Abweichung dokumentiert, kein täglicher Ablauf mit Score 0 |
@@ -272,15 +323,17 @@ zur Navigation in Google Maps. Die Übermittlung der Adresse an Google Maps für
 die Navigation ist datenschutzrechtlich freigegeben; die Entscheidung steht
 fest. Der Link kommt schon mit UX-EPIC-001 (Stufe 1). Die Karte braucht einen
 zweiten Datenweg — Kartenmaterial und Route werden beim Öffnen von Google
-geladen — und deshalb die Prüfung der Google Maps Platform nach ADR-002 als
-Teil von ADR-019 `[E-16]`.
+geladen. Entschieden am 2026-09-06 (E-16): **Google Maps Embed API**, derselbe
+Anbieter wie der Link; die zuständige Datenschutz-Fachkraft hat den Datenweg
+genehmigt. ADR-019 dokumentiert beides und die Prüfung der Google Maps
+Platform nach ADR-002.
 
 | Loop               | Ergebnis                                                              | Stories                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Voraussetzung                                                                          | Jannes liefert                                                                     |
 | ------------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **TOUR-EPIC-001a** | Die Tagesroute ist als Karte sichtbar und mit einem Tap navigierbar   | **TOUR-001** Startort und Endort je Tag: Depot des Standorts als Vorgabe, persönlicher Startort nur von der Person selbst gepflegt und nur für sie sichtbar (`IDEA-PRX-017`, §20) · **TOUR-002** Tagesroute-Karte in „Mein Tag" und unter Touren: alle Wege des Tages in Terminreihenfolge; Tap auf einen Weg zeigt nur diesen; die Karte lädt erst auf Aktion, nie beim Öffnen der Seite; Adressen ohne Namen, ohne Uhrzeit, Fahrradmodus (`IDEA-PRX-029`) `[E-16]` · **TOUR-003** „In Google Maps öffnen" je Weg und für den ganzen Tag, aus Karte und Liste; Höchstzahl der Zwischenziele je Link beachten, sonst den Tag in Abschnitte teilen · **TOUR-004** Tourenliste druckbar mit Wegen — ersetzt die Vorschau `/touren`, deckt E2 mit ab · keine Speicherung von Routing-Rohdaten, kein Standort der Person, kein Verlauf (§18, §20) | ADR-019 mit Freigabe der Karte, Google-Maps-Schlüssel (Jannes), UI-000, UX-EPIC-001    | Schlüssel anlegen; Abnahme auf einer echten Radrunde mit synthetischen Adressen     |
+| **TOUR-EPIC-001a** | Die Tagesroute ist als Karte sichtbar und mit einem Tap navigierbar   | **TOUR-001** Startort und Endort je Tag: Depot des Standorts als Vorgabe, persönlicher Startort nur von der Person selbst gepflegt und nur für sie sichtbar (`IDEA-PRX-017`, §20) · **TOUR-002** Tagesroute-Karte in „Mein Tag" und unter Touren: alle Wege des Tages in Terminreihenfolge; Tap auf einen Weg zeigt nur diesen; die Karte lädt erst auf Aktion, nie beim Öffnen der Seite; Adressen ohne Namen, ohne Uhrzeit, Fahrradmodus; Embed API im eingebetteten Rahmen, Schlüssel an die Domain gebunden (`IDEA-PRX-029`) · **TOUR-003** „In Google Maps öffnen" je Weg und für den ganzen Tag, aus Karte und Liste; Höchstzahl der Zwischenziele je Link beachten, sonst den Tag in Abschnitte teilen · **TOUR-004** Tourenliste druckbar mit Wegen — ersetzt die Vorschau `/touren`, deckt E2 mit ab · keine Speicherung von Routing-Rohdaten, kein Standort der Person, kein Verlauf (§18, §20) | ADR-019 mit Freigabe der Karte, Google-Maps-Schlüssel (Jannes), UI-000, UX-EPIC-001    | Schlüssel anlegen; Abnahme auf einer echten Radrunde mit synthetischen Adressen     |
 | **TOUR-EPIC-001b** | Fahrzeiten sind bekannt, und zwei Termine sind prüfbar erreichbar (§9) | Fahrzeit je Weg aus dem Kartendienst, kurze Speicherfrist (`IDEA-PRX-032`, §18) · Erreichbarkeit zweier Termine im Kalender — ersetzt oder ergänzt die Regel aus CAL-010 · Auswirkung einer Terminänderung sichtbar · keine Optimierung, keine Auswertung je Person (B6)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | TOUR-EPIC-001a, B7 (Datenweg Fahrzeiten), B6 als Annahme, Betriebserfahrung nach M6    | —                                                                                  |
 
-### Etappe 2 — Anamnese, Verlauf, Bericht (Stufe 2, Mai 2027) `[E-15]`
+### Etappe 2 — Anamnese, Verlauf, Bericht (Stufe 2, nach Etappe T, spätestens Mai 2027)
 
 **Warum hier:** Der strukturierte Erstbefund ist der zweitgrößte Zeitfresser
 nach der Dokumentation und die Datengrundlage für alles Spätere. Zur Eröffnung
@@ -309,13 +362,20 @@ Vorschlag; B10 ist hier noch nicht nötig.
 
 Jannes am 2026-09-06: Die Praxissoftware ist nur ein Teilbereich. Geplant ist
 eine Plattform für Patient:innen **und** für die Kund:innen seines Personal
-Trainings. Referenz ist die Coaching-Software aus
+Trainings, das ebenfalls am 01.07.2027 beginnt. Vorlage ist die fremde
+Coaching-Software aus
 [`../product/ideen/referenz-navigation.md`](../product/ideen/referenz-navigation.md)
 (Übersicht, Kalender, Sessions, Check-ins, Fortschritt, Trainingspläne,
 Übungsanalyse, Aktivitäten, Assessments, Athletenprofil, Gewohnheiten,
-Ernährung, Chat, KI-Analyse). Die Inhalte dazu stehen seit dem 2026-09-01 im
-Ideenspeicher (Bereichsdateien 00 bis 09); neu ist, dass Kund:innen **ohne
-vorherige Heilbehandlung** dazukommen (`IDEA-LZK-008`).
+Ernährung, Chat, KI-Analyse); Jannes will ihren **Funktionsumfang
+nachbauen** (E-18) — Vorlage für Umfang und Ablauf, nicht für Datenmodell,
+Berechtigungen, Rechtsrahmen oder gestaltete Inhalte. Die Inhalte dazu stehen
+seit dem 2026-09-01 im Ideenspeicher (Bereichsdateien 00 bis 09); neu ist,
+dass Kund:innen **ohne vorherige Heilbehandlung** dazukommen
+(`IDEA-LZK-008`). Bis Stufe 3 läuft das Personal Training außerhalb der
+Plattform: Kund:innen werden nicht als Patient:innen angelegt (andere
+Datenklasse, andere Frist, kein Behandlungsvertrag), Rechnungen dafür
+entstehen außerhalb; wie, klärt B4.
 
 Was das für die Planung heißt:
 
@@ -325,18 +385,21 @@ Was das für die Planung heißt:
 - **Vorher zu entscheiden:** B5 (Identität, Vertretung) · B9, erweitert um
   Kund:innen ohne Heilbehandlung (Vertrag, Umsatzsteuer, Aufbewahrung,
   Rechtsgrundlage, Ernährung berufsrechtlich) · B11 (Pakete) ·
-  `PROJECT_PRINCIPLES.md` §1 nennt bisher nur die Physiotherapiepraxis; Personal
-  Training als Zweck ist eine Ergänzung nach §21 `[E-17]` · Push-Nachrichten
+  `PROJECT_PRINCIPLES.md` §1 nennt bisher nur die Physiotherapiepraxis; die
+  Ergänzung um Personal Training nach §21 kommt, wenn Stufe 3 beginnt
+  (entschieden 2026-09-06, E-17) · Push-Nachrichten
   und Offline-Erfassung brauchen einen Service Worker — ADR-015 Punkt 16 wäre
   dann durch einen eigenen ADR zu ersetzen · Übungsanalyse, Assessments mit
   Bewertung und eine „KI-Analyse" sind `MDR_REVIEW_REQUIRED` (ADR-006,
   `IDEA-KI-006`).
-- **Erster Schnitt (Vorschlag)** `[E-19]`: Etappe 4 Portalfundament → Etappe 3
-  Übungspläne mit Ausgabe im Portal → Etappe 5 Tracking und Check-ins →
-  Etappe 6 Kommunikation (Chat als strukturierte Rückfrage) → Etappe 8
-  Kund:innen, Episoden und Pakete → Gewohnheiten, Aktivitäten und Ernährung
-  zuletzt (`IDEA-ALT-005`, `IDEA-ALT-006`; nur nach Klärung in B9) → Etappen 9
-  und 10 nach B10 und C6.
+- **Reihenfolge (entschieden 2026-09-06, E-19):** Etappe 4 Portalfundament →
+  Etappe 3 Übungspläne mit Ausgabe im Portal → Etappe 5 Tracking und
+  Check-ins → Etappe 6 Kommunikation (Chat als strukturierte Rückfrage) →
+  Etappe 8 Kund:innen, Episoden und Pakete → Gewohnheiten, Aktivitäten und
+  Ernährung zuletzt (`IDEA-ALT-005`, `IDEA-ALT-006`; nur nach Klärung in B9)
+  → Etappen 9 und 10 nach B10 und C6. Beginn frühestens nach M6, früher nur,
+  wenn Stufe 1 und Stufe 2 vor der Eröffnung fertig und abgenommen sind
+  (E-15).
 - **Was aus dem Screenshot nicht übernommen wird:** „Athlet" (bei uns
   Patient:in oder Kund:in) · ein Sessions-Zähler, der Termine und
   Trainingseinheiten mischt (`IDEA-ORG-002`) · „KI-Analyse" als
@@ -348,8 +411,8 @@ Was das für die Planung heißt:
 Ab hier wird die Reihenfolge gröber. Was in Etappe 6 steht, wird vor Etappe 5
 noch einmal überprüft — Pläne, die zwölf Monate voraus genau sind, sind
 erfunden. Vor Etappe 4 wird der Fernplan gegen die Wettbewerbsreferenz
-(`docs/product/ideen/referenz-wettbewerb.md`), die Antworten auf E-17 und E-19
-und die Ergebnisse der ersten Betriebsmonate neu geprüft.
+(`docs/product/ideen/referenz-wettbewerb.md`), die Navigationsreferenz und die
+Ergebnisse der ersten Betriebsmonate neu geprüft.
 
 | Etappe | Inhalt                                                                                                                                                                                                                                                                                                                                                                                      | Voraussetzung                            |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
@@ -357,7 +420,7 @@ und die Ergebnisse der ersten Betriebsmonate neu geprüft.
 | 5      | **Tracking und Check-ins:** Einheit protokollieren (`IDEA-TRK-001`) · Check-in mit Takt (`IDEA-TRK-004`) · Bewegungssicherheit (`IDEA-TRK-003`) · Auslassquote (`IDEA-OUT-006`) · Offline-Erfassung (`IDEA-TRK-008`) · Benachrichtigungen mit Regeln (`IDEA-KOM-006`). Erfassen und darstellen, **nicht** auswerten.                                                                     | Etappe 4                                 |
 | 6      | **Kommunikation:** strukturierte Rückfragen (`IDEA-KOM-001`) · Notfallabgrenzung (`IDEA-KOM-002`) · Foto/Video mit eigener Einwilligung, kurzer Frist, Metadatenentfernung (`IDEA-KOM-003`) · Zuordnung zur Akte (`IDEA-KOM-007`)                                                                                                                                                           | ADR-017, C2 (erledigt)                   |
 | 7      | **Zeitstrahl und Sitzungsvorbereitung:** `IDEA-QSN-001`, `IDEA-ORG-005`, `IDEA-ORG-001`                                                                                                                                                                                                                                                                                                     | genug Inhalt aus 2 bis 6                 |
-| 8      | **Kund:innen und Weiterbetreuung:** Betreuungsepisode mit Typ (`IDEA-LZK-002`), Kund:innen ohne vorherige Heilbehandlung (`IDEA-LZK-008`), Zweckbindung (`IDEA-LZK-003`), Klientenprofil (`IDEA-LZK-004`), Pakete und Guthaben (`IDEA-ANG-001`), Rückfall (`IDEA-ANG-003`), Preise (`IDEA-ANG-004`), Offboarding (`IDEA-LZK-006`). Hier wird aus der Praxissoftware eine Betreuungsplattform. | **B9** (erweitert), **B11**, `[E-17]`    |
+| 8      | **Kund:innen und Weiterbetreuung:** Betreuungsepisode mit Typ (`IDEA-LZK-002`), Kund:innen ohne vorherige Heilbehandlung (`IDEA-LZK-008`), Zweckbindung (`IDEA-LZK-003`), Klientenprofil (`IDEA-LZK-004`), Pakete und Guthaben (`IDEA-ANG-001`), Rückfall (`IDEA-ANG-003`), Preise (`IDEA-ANG-004`), Offboarding (`IDEA-LZK-006`). Hier wird aus der Praxissoftware eine Betreuungsplattform. | **B9** (erweitert), **B11**, §1-Ergänzung nach §21 |
 | 9      | **Progression:** versioniertes deterministisches Regelwerk (`IDEA-TRN-002`), Schattenbetrieb (`IDEA-TRN-012`), Regeltests (`IDEA-QSN-004`), mehrdimensional (`IDEA-TRN-004`), doppelte Progression (`IDEA-TRN-007`), Ampel (`IDEA-TRN-003`), Adhärenz (`IDEA-TRN-009`), Wiedereinstieg (`IDEA-TRN-010`). Bis B10 entschieden ist: `MDR_REVIEW_REQUIRED`, produktiv nicht erreichbar.        | **B10** und externe Prüfung aus **B1**   |
 | 10     | **KI-Assistenz:** zuerst der zentrale Pfad (`IDEA-KI-001`), dann Freitext strukturieren, Patientensprache, Antwortentwürfe — mit Quellenbindung (`IDEA-KI-003`) und menschlicher Freigabe                                                                                                                                                                                                   | Etappen 1 bis 3, ADR-005-Gateway, **C6** |
 
@@ -398,7 +461,7 @@ im April 2027 (Etappe T).
 | G9  | **OPS-006 Betroffenenrechte (minimal)**               | Verfahren dokumentiert; Export der Akte als einfache `owner`-Funktion, auditiert; begründete Ablehnung bei Aufbewahrungspflicht als Vorlage. Vollständige Funktion: Komfort.                                                                                                                                                                                                                                                              | Claude                                | Jan 2027                |
 | G10 | **E2 Ausfallkonzept**                                 | Tagesplan mit Adressen und Telefonnummern druck- und exportierbar (**Dezember**, klein) · Praxisprozess für einen Tag ohne Anwendung (ADR-012). Ist zugleich der Rückfallplan der Eröffnung (H4), weil es kein Altsystem gibt.                                                                                                                                                                                                             | Claude (Funktion), Jannes (Prozess)   | Dez 2026 / Jan 2027     |
 | G11 | **OPS-007 Bootstrap Produktion**                      | Runbook: Organisation, Standort, erstes `owner`-Konto, Mitarbeitende, Katalog, Praxisstammdaten ohne Seed anlegen; gegen die Test-Umgebung geprobt (M3), am 31.03.2027 im Produktivprojekt durchlaufen (M4).                                                                                                                                                                                                                              | Claude (Runbook), Jannes (Durchlauf)  | Jan / Mär 2027          |
-| G12 | **ADR-019 Kartendienst**                              | Google Maps als Kartendienst (entschieden 2026-09-06): Teil 1 Navigationslink — Datenfluss (Adresse ohne Namen, auf Tap, vom Endgerät), Vertragsgrundlage, Endgeräte-Regel für Google-Konto und Kartenverlauf, Text für die Datenschutzinformation; Teil 2 In-App-Karte — Prüfkatalog aus ADR-002 für die Google Maps Platform, Datenweg der Karte, Schlüsselverwaltung `[E-16]`. Schließt B7 bis auf die Fahrzeiten. DSFA-Wiedervorlage (ADR-007). | Claude (Docs), Jannes bestätigt       | Okt 2026 / Mär 2027     |
+| G12 | **ADR-019 Kartendienst**                              | Google Maps als Kartendienst (entschieden 2026-09-06): Teil 1 Navigationslink — Datenfluss (Adresse ohne Namen, auf Tap, vom Endgerät), Vertragsgrundlage, Endgeräte-Regel für Google-Konto und Kartenverlauf, Text für die Datenschutzinformation; Teil 2 In-App-Karte — Google Maps Embed API (entschieden und genehmigt 2026-09-06, E-16), Prüfkatalog aus ADR-002 für die Google Maps Platform, Datenweg der Karte, Schlüsselverwaltung. Schließt B7 bis auf die Fahrzeiten. DSFA-Wiedervorlage (ADR-007). | Claude (Docs), Jannes bestätigt       | Okt 2026 / Mär 2027     |
 | G13 | **Steuerliche Grundeinstellungen**                    | Aus B4: Format des neuen Nummernkreises, Umsatzsteuer-Status der Praxis (Kleinunternehmerregelung ja/nein, Steuernummer), steuerliche Einordnung der Katalogpositionen, Belegfristen. Eine Seite, vor ABR-EPIC-002a.                                                                                                                                                                                                                       | Jannes mit Steuerberatung             | Nov 2026                |
 | G14 | **DSFA-Paket**                                        | Schwellwertprüfung und DSB-Entscheidung (B2), Verzeichnis der Verarbeitungstätigkeiten, TOM (mit Endgeräte-Richtlinie), Löschkonzept (aus LOE), Subprozessoren (aus G3 und G12), Datenschutzinformationen (G8), Verfahren für Betroffenenrechte (G9), Data-Breach-Prozess; Nachweistabelle MUSS → Test/Policy/Prüfschritt; Zweckbestimmung (ADR-006). **Entwürfe ab Oktober als Docs-Sessions, Stand 15.12. an die Prüfung.**              | Jannes, externe Prüfung               | Okt 2026 bis Feb 2027   |
 | G15 | **B1 Regulatorische Prüfung**                         | Externe Bestätigung der Zweckbestimmung und MDR-Abgrenzung (ADR-006), Einordnung nach EU AI Act.                                                                                                                                                                                                                                                                                                                                       | Jannes, extern                        | Feb 2027                |
@@ -439,11 +502,10 @@ zugesagt bis" pflegt Jannes; das Wochenupdate liest sie.
 
 | Punkt                        | Was zu entscheiden ist                                                                                                                             | Wer                                 | Fällig vor                   | Termin                              | Stand (Jannes pflegt) |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------- | ----------------------------------- | --------------------- |
-| **E-15 bis E-19**            | Rückfragen vom 2026-09-06: Zeitfenster vor der Eröffnung, In-App-Karte, Personal Training, Screenshot-Herkunft, Reihenfolge Stufe 3 (Abschnitt unten) | Jannes                              | M0                           | Sep 2026                            |                       |
 | **E8 → ADR-017**             | Dateiablage: Ort, Zugriff, signierte Verweise, Retention, Virenprüfung                                                                             | Claude schreibt, Jannes bestätigt   | DAT-EPIC-001, ABR-EPIC-002b  | Sep 2026                            |                       |
 | **D → ADR-018**              | Terminzustände: Übergänge, Auslöser, Migration; „angefragt"/„vorgemerkt" definiert, nicht gebaut                                                   | Claude schreibt, Jannes bestätigt   | CAL-EPIC-003a                | Sep 2026                            |                       |
 | **Providerprüfung Supabase** | Prüfkatalog ADR-002 dokumentiert und bestanden — sonst Alternative; schließt die Auth-Mails ein (B13)                                              | Jannes mit Claude-Dokument          | ADR-017, OPS-001 Anlage      | 30.09.2026                          |                       |
-| **B7 → ADR-019**             | Kartendienst: Link entschieden (Google Maps, 2026-09-06); offen Datenweg der In-App-Karte `[E-16]` und der Fahrzeiten                              | Claude schreibt, Jannes bestätigt   | UX-EPIC-001 (Link), TOUR-EPIC-001a (Karte) | Okt 2026 / Mär 2027      |                       |
+| **B7 → ADR-019**             | Kartendienst: Link und Karte (Embed API) entschieden und genehmigt (2026-09-06); ADR-019 dokumentiert; offen nur die Fahrzeiten (TOUR-EPIC-001b)   | Claude schreibt, Jannes bestätigt   | UX-EPIC-001 (Link), TOUR-EPIC-001a (Karte) | Okt 2026 / Mär 2027      |                       |
 | **E10**                      | Wer darf Mitarbeiterdaten schreiben (bis dahin `owner`)                                                                                            | Jannes                              | STAFF-EPIC-002               | Okt 2026                            |                       |
 | **B4**                       | Steuerliche Validierung: Leistungsarten, Umsatzsteuer (auch Personal Training), Kleinunternehmerregelung, Nummernkreis-Format, Belegfristen        | Steuerberatung                      | ABR-EPIC-001 (als Annahme)   | Nov 2026                            |                       |
 | **B14 PDF-Weg**              | Rechnungs-PDF: Browser-Druck, Bibliothek im Browser oder serverseitige Funktion — Optionen legt ABR-EPIC-002a vor; Druckansichten sind entschieden | Jannes mit Claude-Optionen          | ABR-EPIC-002b                | Nov 2026                            |                       |
@@ -451,7 +513,7 @@ zugesagt bis" pflegt Jannes; das Wochenupdate liest sie.
 | **B1**                       | Zweckbestimmung, MDR-Abgrenzung, EU AI Act                                                                                                         | externe Prüfstelle                  | M3                           | Anfrage Sep, Ergebnis Feb           |                       |
 | **B3**                       | Validierung der internen Fristen (ANN-001), Belegarten                                                                                             | im DSFA-Prozess                     | M3                           | Feb 2027                            |                       |
 | **E2**                       | Ausfallkonzept als Praxisprozess — zugleich Rückfallplan der Eröffnung                                                                             | Jannes mit Claude                   | M3                           | Jan 2027                            |                       |
-| **B8**                       | Lizenzstatus DIGOTOR-Bogen und weiterer Instrumente                                                                                                | Jannes, Lizenzgeber                 | FRB-003                      | Apr 2027 `[E-15]`                   |                       |
+| **B8**                       | Lizenzstatus DIGOTOR-Bogen und weiterer Instrumente                                                                                                | Jannes, Lizenzgeber                 | FRB-003                      | vor FRB-EPIC-002, spätestens Apr 2027 |                     |
 | **B15 Terminerinnerung**     | Kanal (SMS, E-Mail, Messenger), Anbieter, Einwilligung; Online-Anfrage — oder Anrufliste bleibt der Weg                                            | Jannes, Prüfung nach ADR-002        | Stufe 2 nach der Eröffnung   | Anfrage mit B2, Entscheidung bis M6 |                       |
 | **B6**                       | Beschäftigtendaten: aggregierte Auswertungen (§20)                                                                                                 | Jannes, ggf. Beratung               | ZK-001, TOUR-EPIC-001b       | Stufe 2                             |                       |
 | **B5**                       | Patientenidentität, Vertretung, §630g                                                                                                              | Jannes, ggf. Beratung               | Etappe 4                     | Stufe 3                             |                       |
@@ -577,50 +639,29 @@ beschrieben; ihr Prompt wurde am 2026-09-06 auf dieses Format umgestellt
 
 ---
 
-## Rückfragen E-15 bis E-19
+## Antworten E-15 bis E-19
 
-Aus der Antwort vom 2026-09-06. Ein Satz je Frage reicht; „wie empfohlen"
-genügt für alle. Bis zur Antwort gilt die Empfehlung als Annahme der Planung.
+Gestellt und beantwortet am 2026-09-06; die Fragen im Wortlaut stehen in der
+Git-Historie (Commit `ba46307`). Eingearbeitet an den betreffenden Stellen.
 
-1. **E-15 Zeitfenster vor der Eröffnung.** Die Praxis eröffnet am 01.07.2027,
-   die Software ist am 31.03.2027 produktionsreif. Vorschlag für April bis
-   Juni: April TOUR-EPIC-001a Tagesroute (entschieden), Mai FRB-EPIC-001 und
-   FRB-EPIC-002 Anamnese (weil zur Eröffnung jede Patientin neu ist; setzt B8
-   voraus), Juni frei für Probewoche 2 und Change-Freeze. Alternative: die drei
-   Monate ganz als Puffer halten. **Empfehlung: Vorschlag, mit freiem Juni.**
-   Dazu bitte bestätigen: Eröffnung tatsächlich 01.07.2027, Standort Tübingen
-   (wie in `PRODUCT_VISION.md`).
-2. **E-16 In-App-Karte: Anbieter und Datenweg.** Der Link zu Google Maps ist
-   entschieden. Für die Karte der Tagesroute in der Anwendung: Option a Google
-   Maps Embed API — derselbe Anbieter, Karte mit Route im eingebetteten Rahmen,
-   lädt erst auf Tap, Schlüssel an die Domain gebunden, ohne Nutzungsentgelt,
-   ohne neue Code-Abhängigkeit; Option b Google Maps JavaScript API mit
-   Directions — mehr Gestaltung (eigene Marker, Namen), Kosten je Aufruf,
-   deutlich mehr Code; Option c OpenStreetMap mit Leaflet und einem
-   Routing-Dienst — zwei bis drei zusätzliche Anbieter und eine neue
-   Abhängigkeit. **Empfehlung: a.** Rückfrage dazu: Deckt die Genehmigung auch
-   die Übermittlung aller Adressen eines Tages beim Öffnen der Karte ab, nicht
-   nur den Link je Termin — und wer hat genehmigt (für ADR-019 und die DSFA)?
-3. **E-17 Kund:innen des Personal Trainings.** Drei Teilfragen: (a) Läuft das
-   Personal Training heute schon, mit Kund:innen in einem Werkzeug — dann gibt
-   es für diesen Teil doch Bestandsdaten und einen Wunschtermin? (b) Dieselbe
-   Praxis oder ein eigener Betrieb (Umsatzsteuer, Rechnungen, Verträge; geht an
-   B4 und B9)? (c) `PROJECT_PRINCIPLES.md` §1 um Personal Training ergänzen,
-   wenn Stufe 3 beginnt — einverstanden? **Empfehlung: Stufe 3 nach M6; §1
-   erst dann ändern; (a) und (b) jetzt beantworten**, weil sie in die
-   Anfragen B4 und B2 gehören.
-4. **E-18 Herkunft des Screenshots.** Ist der Screenshot vom 2026-09-06 (wie
-   der vom 2026-09-01) ein fremdes Produkt oder ein eigener Prototyp? Er zeigt
-   den Namen und die E-Mail-Adresse einer Person; ich habe das Bild nicht ins
-   Repository übernommen und die Person nicht genannt. Wenn es ein eigener
-   Prototyp ist, kann eine Docs-Session seine Funktionsliste in die Referenz
-   übernehmen. **Empfehlung: kurz benennen; keine Nachrecherche.**
-5. **E-19 Reihenfolge Stufe 3.** Vorschlag: Portalfundament → Übungspläne im
-   Portal → Check-ins und Tracking → Chat als strukturierte Rückfrage →
-   Kund:innen und Pakete → Gewohnheiten, Aktivitäten, Ernährung zuletzt.
-   **Empfehlung: so**, weil jede Stufe die vorige braucht und die
-   Ernährungsfragen (berufsrechtlich, `IDEA-ALT-005`) die längste Klärung
-   haben. Bestätigen oder umsortieren.
+1. **E-15 Zeitfenster vor der Eröffnung:** Die Reihenfolge der Umsetzung
+   ist verbindlich, der Zeitpunkt im Kalender zweitrangig; Jannes hält sich
+   offen, Themen früher abzuarbeiten. Folge: Abschnitt „Sessions starten",
+   Monate als Spätest-Termine, Reihenfolge TOUR-EPIC-001a → Etappe 2 → freier
+   Monat vor der Eröffnung. Eröffnung 01.07.2027 bestätigt.
+2. **E-16 In-App-Karte:** Empfehlung angenommen — Google Maps Embed API. Die
+   zuständige Datenschutz-Fachkraft hat genehmigt. Folge: B7 bis auf die
+   Fahrzeiten entschieden; ADR-019 dokumentiert; die Genehmigung kommt
+   schriftlich zu den DSFA-Unterlagen (M0).
+3. **E-17 Personal Training:** beginnt ebenfalls am 01.07.2027, also keine
+   Bestandsdaten; Empfehlung angenommen — Stufe 3 nach M6, §1 der Prinzipien
+   wird dann ergänzt. Ob dieselbe Praxis oder ein eigener Betrieb, klärt die
+   Steuerberatung mit B4.
+4. **E-18 Screenshot:** ein fremdes Produkt; Jannes hat nur diesen Screenshot
+   und will den Funktionsumfang nachbauen. Folge: Vorlage für Umfang und
+   Ablauf, nicht für Datenmodell, Berechtigungen, Rechtsrahmen oder gestaltete
+   Inhalte; keine Nachrecherche.
+5. **E-19 Reihenfolge Stufe 3:** Empfehlung angenommen.
 
 ---
 
@@ -641,7 +682,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | DOK-004                                                | fertig | 2026-09-05     | `e931068`, `960f34f`                                                |               |
 | Planungsreview und Roadmap 2.0                         | fertig | 2026-09-05     | Merge PR #13                                                        | —             |
 | Wettbewerbsanalyse, Review 2.1, Optimierungsmethode    | fertig | 2026-09-06     | `7ab6f71`, Branch `claude/roadmap-optimization-competitor-analysis-r3qxl7` | —      |
-| Roadmap 2.1 in Kraft, Tagesroute und Plattform geplant | fertig | 2026-09-06     | Branch `claude/competitor-analysis-roadmap-eercd3`                  | —             |
+| Roadmap 2.1 in Kraft, Tagesroute und Plattform geplant | fertig | 2026-09-06     | `ba46307`, `879048c`, Branch `claude/competitor-analysis-roadmap-eercd3` | —        |
 
 ---
 
@@ -650,4 +691,5 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2.1     | 2026-09-06 | In Kraft nach den Antworten E-1 bis E-14. Zwei Zeitpunkte statt einem (Gate, Produktionssystem) und die Eröffnung am 01.07.2027 als dritter · kein Altsystem: MIG-000/001, B12 und Parallelbetrieb gestrichen, Rückfall ist der Papierprozess · Meilensteine M0 bis M6 · Risiken · Kapazität kalibriert, März und Juni als Puffer, abgestufte Abweichungsregel mit festem Eröffnungstermin · Kern und Komfort getrennt · Etappe H als Eröffnung · Etappe T Tagesroute und Navigation über Google Maps (TOUR-EPIC-001a/b, ADR-019) · Etappe 2 vor der Eröffnung · Stufe 3 Plattform für Patient:innen und Kund:innen · OPS-007, BETRIEB-001, STAFF-004, G13 · UI-000 und UX-EPIC-001 · CAL-EPIC-003 und ABR-EPIC-002 geteilt · B13, B14, E-13 entschieden · Definition of Done · Fortschritt mit Abnahme-Spalte · Optimierungsrunden · Wochenupdate mit Ampel · Rückfragen E-15 bis E-19 |
+| 2.1.1   | 2026-09-06 | Antworten E-15 bis E-19 eingearbeitet: Reihenfolge verbindlich, Kalender nachrangig (Monate als Spätest-Termine) · In-App-Karte über Google Maps Embed API, genehmigt · Personal Training ab 01.07.2027, Stufe 3 nach M6 · Referenz-Screenshot ist ein fremdes Produkt, Nachbau des Umfangs · Reihenfolge Stufe 3 bestätigt · neuer Abschnitt „Sessions starten" mit kopierbaren Aufrufen                                                                                                                                                                                                                                                             |
 | 2.0     | 2026-09-05 | Drei Spuren, Zieltermin März 2027, Spur B mit Fälligkeiten                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |

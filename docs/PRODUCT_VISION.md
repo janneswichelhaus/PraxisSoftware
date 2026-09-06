@@ -95,8 +95,9 @@ Präzisierung vom 06.09.2026 (Jannes):
   entschieden und datenschutzrechtlich freigegeben. Eine Karte der gesamten
   Tagesroute — alle Wege auf einmal oder ein einzelner Weg als Vorschau —
   gehört zum Zielbild des Lastenrad-Hausbesuchskonzepts
-  (`product/ideen/10-praxisverwaltung.md`, `IDEA-PRX-029` und `-030`; der
-  Datenweg der Karte ist offen, `decisions/OPEN_DECISIONS.md` B7).
+  (`product/ideen/10-praxisverwaltung.md`, `IDEA-PRX-029` und `-030`; die
+  Karte läuft über die Google Maps Embed API, entschieden und genehmigt am
+  06.09.2026, `decisions/OPEN_DECISIONS.md` B7).
 - **Die Praxissoftware ist nur ein Teilbereich.** Dazu kommt eine Plattform
   für Patient:innen und für die Kund:innen von Jannes' Personal Training
   (§4).
@@ -182,7 +183,10 @@ zugehörigen Fragen zu Identitätsprüfung und Vertretung sind in
 Dieselbe Plattform ist das Zielbild für die **Kund:innen des Personal
 Trainings** — nach Abschluss einer Therapie und auch ohne vorherige
 Heilbehandlung (Präzisierung vom 06.09.2026): Trainingspläne, Check-ins,
-Fortschritt, Assessments, Gewohnheiten, Ernährungsprotokoll, Chat. Für sie
+Fortschritt, Assessments, Gewohnheiten, Ernährungsprotokoll, Chat. Vorlage
+für den Umfang ist der Funktionsumfang einer fremden Coaching-Software
+(`product/ideen/referenz-navigation.md`); das Personal Training beginnt
+ebenfalls am 01.07.2027, die Plattform dafür folgt in Stufe 3. Für sie
 gelten ein anderer Vertrag, eine andere Rechtsgrundlage, Umsatzsteuer und
 Aufbewahrung (`decisions/OPEN_DECISIONS.md` B9); `PROJECT_PRINCIPLES.md` §1
 nennt bisher nur die Physiotherapiepraxis und wäre nach §21 zu ergänzen.
