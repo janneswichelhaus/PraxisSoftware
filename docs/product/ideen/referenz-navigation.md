@@ -2,16 +2,26 @@
 
 > Nicht normativ. Siehe [../IDEENSPEICHER.md](../IDEENSPEICHER.md).
 
-Jannes hat am 2026-09-01 einen Screenshot einer fremden Coaching-Software
-geteilt („Robin"). Die Software ist ein Online-Coaching-Werkzeug für
+Jannes hat am 2026-09-01 einen Screenshot einer Coaching-Software geteilt
+(Klientenansicht). Die Software ist ein Online-Coaching-Werkzeug für
 Personal Training, keine Physiotherapie-Software. Sie ist **Anregung, kein
-Vorbild und kein Zielbild** — insbesondere gilt für sie kein deutscher
-Heilberufsrahmen.
+Vorbild für Datenmodell, Berechtigungen oder Rechtsrahmen** — insbesondere
+gilt für sie kein deutscher Heilberufsrahmen.
 
 Festgehalten wird sie, weil Jannes ausdrücklich gebeten hat, sich die
 Navigationspunkte zu merken, und weil sie eine durchdachte
 Informationsarchitektur für genau den Bereich zeigt, der bei uns langfristig
 dazukommen soll: die klientenzentrierte Betreuung zwischen den Terminen.
+
+**Nachtrag 2026-09-06.** Jannes hat denselben Screenshot erneut geteilt und
+eingeordnet: Die Praxissoftware ist nur ein Teilbereich; geplant ist eine
+Plattform für seine Patient:innen **und** die Kund:innen seines Personal
+Trainings (`IDEA-LZK-008`, Roadmap Stufe 3). Damit ist die Navigationsleiste
+mehr als eine Anregung — sie ist die Themenliste für den klientenseitigen
+Teil. Der Abschnitt „Was für uns anders sein muss" gilt unverändert. Der
+Screenshot zeigt Name und E-Mail-Adresse einer Person; er liegt nicht im
+Repository, und die Person wird hier nicht genannt. Ob es ein fremdes Produkt
+oder ein eigener Prototyp ist, ist Rückfrage E-18 in der Roadmap.
 
 ---
 

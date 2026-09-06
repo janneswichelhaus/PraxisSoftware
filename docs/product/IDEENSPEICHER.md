@@ -124,6 +124,14 @@ einem Verwurf. Neue Einträge hängen hinten an.
   weiterhin **kein Auftrag**: gebaut wird nur, was in
   `docs/development/ROADMAP.md` an der Reihe ist und im Loop eine eigene
   Spezifikation bekommt.
+- **2026-09-06** — Mit den Antworten auf das Roadmap-Review: `IDEA-PRX-003`
+  (Stufe 2), `IDEA-PRX-011`, `IDEA-PRX-012` und `IDEA-PRX-014` bestätigt;
+  `IDEA-PRX-015` verworfen (keine Unterschrift nötig). Zwei eigene Vorgaben
+  von Jannes zum Lastenrad-Hausbesuchskonzept als bestätigt eingetragen:
+  `IDEA-PRX-029` Tagesroute auf der Karte und `IDEA-PRX-030` Navigationslink
+  zu Google Maps. Neu notiert: `IDEA-LZK-008` Kund:innen des Personal
+  Trainings ohne vorherige Heilbehandlung. Die übrigen `PRX`-Einträge bleiben
+  `vorschlag`.
 
 ## Index — welche Datei wofür
 
@@ -152,4 +160,5 @@ einem Verwurf. Neue Einträge hängen hinten an.
   `docs/decisions/`) und wird von Hand gepflegt.
 
 Zuletzt aktualisiert: 2026-09-06 (Wettbewerbsreferenz und Bereichsdatei
-Praxisverwaltung mit `IDEA-PRX-001` bis `IDEA-PRX-028`, alle `vorschlag`)
+Praxisverwaltung mit `IDEA-PRX-001` bis `IDEA-PRX-028`; Entscheidungen vom
+2026-09-06, Tagesroute `IDEA-PRX-029` bis `-033`, `IDEA-LZK-008`)

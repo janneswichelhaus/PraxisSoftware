@@ -22,6 +22,9 @@ uns fehlen — so detailliert wie möglich.
   Schmerzpunkte aus Foren und Bewertungen. Die Rohdaten mit allen URLs liegen
   im Arbeitsverzeichnis der Session; diese Datei führt je Funktion ein bis zwei
   Belege.
+- **Nachrecherche:** Jannes hat am 2026-09-06 entschieden, vorerst keine
+  Nachrecherche mit Bildschirmfotos zu beauftragen (E-14). Einträge, die als
+  „nicht belegt" markiert sind, bleiben so stehen.
 - **Quellenart, ehrlich:** Der Egress-Proxy der Cloud-Umgebung blockiert alle
   Hersteller-, App-Store-, Hilfecenter- und Vergleichsseiten. Gearbeitet wurde
   deshalb ausschließlich mit der Websuche, die je Treffer die URL und eine
@@ -101,7 +104,7 @@ es, viele Wettbewerber nicht).
 | Akte als Gesamtübersicht: Stammdaten, Verordnungen, Termine, Rechnungen, Doku, Dateien, gesendete Nachrichten | thevea ([Patientenverwaltung](https://support.thevea.de/hc/de/articles/30365867196829-Patientenverwaltung-in-thevea-Alles-was-du-wissen-musst)), iPrax (fünf Bereiche) | Akte ohne künftige Termine, ohne Verordnungen; Entwurf UX-EPIC-001, VER-002; `IDEA-QSN-001` Zeitstrahl | Stufe 1 |
 | Dublettenprüfung und Zusammenführen | thevea ([Zusammenführen](https://support.thevea.de/hc/de/articles/19361932692125-Wie-kann-ich-Patienten-zusammenf%C3%BChren)) | fehlt | Idee `IDEA-PRX-018` |
 | Patient:innen löschen oder inaktiv setzen | thevea | Status vorhanden; Löschung geplant LOE-EPIC-001 | Stufe 1 |
-| Import bestehender Stammdaten aus CSV/XLS; Wechselservice | iPrax ([FAQ](https://www.iprax-systems.com/praxissoftware/iprax_faq.html)), thevea, Optica | fehlt; Entwurf MIG-001 | Stufe 1 |
+| Import bestehender Stammdaten aus CSV/XLS; Wechselservice | iPrax ([FAQ](https://www.iprax-systems.com/praxissoftware/iprax_faq.html)), thevea, Optica | entfällt: kein Altsystem, die Praxis eröffnet am 01.07.2027 (Jannes, 2026-09-06) | — |
 | Anmeldeformular zur Selbsteingabe per Link, SMS, QR-Code oder Tablet | appointmed ([Anmeldeformular](https://intercom.help/appointmed/de/articles/10751938-anmeldeformular-datenaktualisierung-fur-patienten)) | fehlt; Etappe 4 Intake | Stufe 2 |
 | Direktkontakt: Tap auf Nummer oder E-Mail öffnet Telefon oder Mail | iPrax | fehlt (`tel:` nirgends); Entwurf UX-EPIC-001 | Stufe 1 |
 | Aufgaben und Wiedervorlagen mit Patientenbezug, Fälligkeit, Zuweisung | appointmed ([Aufgaben](https://intercom.help/appointmed/de/articles/2785534-aufgaben-erstellen-erledigen-zuweisen-und-loschen)), MD | fehlt | Idee `IDEA-PRX-019` |
@@ -243,7 +246,7 @@ es, viele Wettbewerber nicht).
 | Doctolib-Konnektor, externe Buchungsdienste, Buchungs-Widget | THEORG (Drittanbieter), tinana, thevea od bookings | fehlt | Stufe 2, B15 |
 | Videodienst-Integration (Zava, WebPRAX) | thevea, Optica | fehlt | Stufe 2 |
 | Anbindung an Trainings- und Testsoftware (THEDEX, Lanista, medo.check) | THEORG | fehlt; eigene Übungspläne Etappe 3 | Stufe 2, `IDEA-QSN-008` |
-| Patientendaten-Import bei Softwarewechsel | thevea, iPrax, Optica | fehlt; Entwurf MIG-001 | Stufe 1 |
+| Patientendaten-Import bei Softwarewechsel | thevea, iPrax, Optica | entfällt: kein Altsystem, die Praxis eröffnet am 01.07.2027 (Jannes, 2026-09-06) | — |
 | TI, KIM, eGK, Abrechnungszentren | alle GKV-Systeme | n. r. | außerhalb |
 
 ---

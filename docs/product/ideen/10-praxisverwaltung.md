@@ -8,9 +8,13 @@ betrifft. Sie fehlte bisher — der Ideenspeicher kannte fast nur die
 Betreuungsplattform nach Therapieende. Die Einträge stammen aus der
 Wettbewerbsanalyse und dem Produktreview vom 2026-09-06
 ([referenz-wettbewerb.md](referenz-wettbewerb.md),
-`docs/development/ROADMAP-REVIEW-2026-09-06.md`). Alle stehen auf
-`vorschlag`, bis Jannes sie bestätigt; einige sind im Entwurf der Roadmap 2.1
-bereits verortet — das macht sie nicht zu Aufträgen.
+Roadmap-Review vom 2026-09-06, in der Git-Historie unter Commit `7ab6f71`).
+Sie stehen auf `vorschlag`, bis Jannes sie bestätigt; einige sind in der
+Roadmap 2.1 verortet — das macht sie nicht zu Aufträgen. Am 2026-09-06 hat
+Jannes vier davon bestätigt (`IDEA-PRX-003`, `-011`, `-012`, `-014`), einen
+verworfen (`IDEA-PRX-015`) und zwei eigene Vorgaben zum
+Lastenrad-Hausbesuchskonzept eingebracht (`IDEA-PRX-029`, `-030`); drei
+Vorschläge dazu folgen (`IDEA-PRX-031` bis `-033`).
 
 ---
 
@@ -52,7 +56,9 @@ Ziehen, wenn der Abstand unterschritten wird.
 erreichbar sind. MD Therapie plant Fahrzeiten automatisch, THEORG kontrolliert
 Abstände zwischen Terminen. Bis der Kartendienst (B7) entschieden ist, geht
 das deterministisch mit von der Praxis gepflegten Zahlen — und nach B7 bleibt
-die Regel als Untergrenze bestehen.
+die Regel als Untergrenze bestehen. Seit dem 2026-09-06 ist Google Maps als
+Kartendienst entschieden; Fahrzeiten aus dem Dienst kommen mit TOUR-EPIC-001b
+(`IDEA-PRX-032`).
 
 **Vorsicht.** Deterministisch (§6.2), keine Optimierung, keine Verschiebung
 bestätigter Termine (§8).
@@ -63,7 +69,7 @@ bestätigter Termine (§8).
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | bestätigt für Stufe 2 (Jannes, 2026-09-06, E-9) |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei sieben Produkten) |
 | Berührt | §8; CAL-008 (Absage); B15 |
 
@@ -80,9 +86,9 @@ Praxis mit Räumen.
 **Vorsicht.** Nachrücken „automatisch" hieße Benachrichtigung — das ist B15.
 Bis dahin ist die Warteliste eine Liste mit Anrufhinweis.
 
-**Offen.** Stufe 1 oder 2? Im Review als Entscheidung geführt; Empfehlung:
-Stufe 2, erste Story nach dem Go-live, weil die Praxis im April 2027 zuerst
-ihre Bestandsfälle einplant.
+**Entschieden 2026-09-06 (E-9):** Stufe 2, erster Loop nach dem ersten
+Betriebsmonat (M6) — die Praxis eröffnet am 01.07.2027 und weiß erst dann,
+wie groß die Nachfrage ist.
 
 ---
 
@@ -178,7 +184,8 @@ ganze Verordnung mit wenigen Klicks ein.
 groß, wenn Fahrzeiten bekannt sind — vorher schlägt die Suche Termine vor, die
 auf dem Rad nicht erreichbar sind.
 
-**Offen.** Erst nach TOUR-001 oder mit der Regel aus PRX-002 als Näherung?
+**Offen.** Erst nach TOUR-EPIC-001b (Fahrzeiten) oder mit der Regel aus
+PRX-002 und den Gebietstagen aus PRX-031 als Näherung?
 
 ---
 
@@ -225,9 +232,9 @@ Vertretungszugriff auf die Akte ist etwas anderes (B5).
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | bestätigt (Jannes, 2026-09-06, E-9) |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei fünf Produkten) |
-| Berührt | ADR-016, ADR-006, ADR-005 |
+| Berührt | ADR-016, ADR-006, ADR-005; UX-EPIC-001 |
 
 **Idee.** Bausteine je Therapeut:in und je Praxis, per Tap in den Freitext
 eingefügt; keine Variablen aus der Akte in der ersten Stufe; kein
@@ -237,8 +244,7 @@ Sprachmodell.
 Nutzer:innen wollen „digital direkt während der Behandlung dokumentieren".
 Deterministisch, ohne Patientenbezug in den Bausteinen, ADR-006 unberührt.
 
-**Offen.** Stufe 1 als kleine Story in UX-EPIC-001 oder Stufe 2? Im Review
-als Entscheidung geführt.
+**Entschieden 2026-09-06 (E-9):** Stufe 1, als kleine Story in UX-EPIC-001.
 
 ---
 
@@ -246,17 +252,19 @@ als Entscheidung geführt.
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | bestätigt (Jannes, 2026-09-06, E-9) |
 | Quelle | Produktreview und Wettbewerbsanalyse 2026-09-06 |
-| Berührt | ADR-009 (Mahnwesen offen), ABR-EPIC-002b (Entwurf), ABR-005 |
+| Berührt | ADR-009 (Mahnwesen offen), ABR-EPIC-002b, ABR-005 |
 
 **Idee.** Aus einer überfälligen Rechnung eine Zahlungserinnerung als
 Dokument erzeugen (Datum, Betrag, Frist), ohne Stufenlogik, ohne Gebühren,
 ohne Automatik. Mahnstufen kommen mit ABR-005 nach Praxiserfahrung.
 
-**Warum.** Roadmap 2.0 hält Mahnwesen bewusst aus Stufe 1 heraus. Ohne die
-minimale Erinnerung beginnt das Office im April 2027 mit Handarbeit außerhalb
-der Plattform (§2.1). THEORG, thevea, Optica, MD und iPrax haben Mahnwesen.
+**Warum.** Die Roadmap hält Mahnwesen bewusst aus Stufe 1 heraus. Ohne die
+minimale Erinnerung beginnt das Office ab der Eröffnung im Juli 2027 mit
+Handarbeit außerhalb der Plattform (§2.1). THEORG, thevea, Optica, MD und
+iPrax haben Mahnwesen. **Entschieden 2026-09-06 (E-9):** Stufe 1, als
+Dokument in ABR-EPIC-002b, ohne Stufen und Gebühren.
 
 ---
 
@@ -283,9 +291,9 @@ eingereicht; C1 hat die Kürzel für das Office freigegeben.
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | bestätigt (Jannes, 2026-09-06, E-12) |
 | Quelle | Produktreview 2026-09-06; thevea Offline-Kalender, iPrax Offline-first |
-| Berührt | ADR-001 (offene Folgefrage Feldliste), ADR-015 (kein Service Worker), §2.2 |
+| Berührt | ADR-001 (offene Folgefrage Feldliste), ADR-015 (kein Service Worker), §2.2; UX-EPIC-001 |
 
 **Idee.** Die heute geladenen eigenen Termine mit Adresse und Zugangshinweis
 bleiben im Speicher der Seite lesbar, klar markiert „Stand von 07:52"; am
@@ -295,8 +303,9 @@ Tagesende verworfen. Kein Service Worker, keine Akte offline.
 Hausbesuchsdaten" ausdrücklich; E2 liefert nur Papier. thevea speichert den
 Kalender lesend auf dem Gerät, iPrax alles.
 
-**Offen.** Feldliste, Vorhaltedauer, Verschlüsselung — als `ANN` nach
-ADR-001, dann eine Story. Im Review als Entscheidung geführt.
+**Entschieden 2026-09-06 (E-12):** eine Story in UX-EPIC-001. Feldliste,
+Vorhaltedauer und Verschlüsselung werden beim Bau als `ANN` nach ADR-001
+registriert; kein Service Worker, keine Akte offline.
 
 ---
 
@@ -304,9 +313,9 @@ ADR-001, dann eine Story. Im Review als Entscheidung geführt.
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | verworfen (Jannes, 2026-09-06, E-13) |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (iPrax, THEORG Klemmbrett, thevea Signatur) |
-| Berührt | §4.4 („gegebenenfalls Signatur"), ADR-008, ADR-017, PAT-006, B4 |
+| Berührt | §4.4 („gegebenenfalls Signatur"), ADR-008, ADR-017, PAT-006 |
 
 **Idee.** Behandlungsvertrag, Datenschutzinformation, Ausfallhonorar-Regel und
 gegebenenfalls eine Behandlungsbestätigung je Termin auf dem Telefon der
@@ -316,9 +325,12 @@ Therapeutin unterschreiben; Ablage nach ADR-017.
 wird eine Bestätigung der Leistungen gelegentlich verlangt.
 
 **Vorsicht.** Eine Unterschrift ist ein personenbezogenes Datum mit
-Beweisfunktion: Speicherform, Frist, Zugriff nach ADR-008 und ADR-004. Ob eine
-Bestätigung je Termin überhaupt nötig ist, klärt die Steuerberatung (B4) —
-nicht ein Loop.
+Beweisfunktion: Speicherform, Frist, Zugriff nach ADR-008 und ADR-004.
+
+**Verworfen am 2026-09-06 durch Jannes:** Es wird keine Unterschrift und
+keine Behandlungsbestätigung je Termin benötigt. Behandlungsvertrag und
+Datenschutzinformation bleiben in Stufe 1 Papier mit Vermerk in der Akte
+(PAT-006). Der Eintrag bleibt stehen, damit die Frage nicht wiederkommt.
 
 ---
 
@@ -345,14 +357,15 @@ Vorbereitungszeit die Fahrtzeit ist.
 |---|---|
 | Status | vorschlag |
 | Quelle | Produktreview 2026-09-06; `PRODUCT_VISION.md` §1.1 |
-| Berührt | §20, TOUR-001, FLT-EPIC-001 |
+| Berührt | §20, TOUR-EPIC-001a (TOUR-001), FLT-EPIC-001 |
 
 **Idee.** Je Therapeutin und Tag: Start und Ende am Depot oder am
 persönlichen Startort. Grundlage jeder Reihenfolge und jedes Puffers.
 
 **Vorsicht.** Die Wohnadresse einer Mitarbeiterin ist ein Beschäftigtendatum
-(§20): nur `owner` und die Person selbst; bis TOUR-001 genügt eine
-Praxiseinstellung „Standard-Depot".
+(§20): nur die Person selbst pflegt und sieht sie; bis TOUR-EPIC-001a genügt
+eine Praxiseinstellung „Standard-Depot". Als Startort der Tagesroute wird sie
+nur auf Aktion der Person an den Kartendienst gegeben (`IDEA-PRX-029`).
 
 ---
 
@@ -552,4 +565,135 @@ ein Datenfluss mit Gesundheitsdaten, der vor der Nutzung bewertet werden muss
 
 ---
 
-Zuletzt aktualisiert: 2026-09-06
+### IDEA-PRX-029 — Tagesroute auf der Karte
+
+| | |
+|---|---|
+| Status | bestätigt — Jannes, 2026-09-06: „Diese Entscheidung steht fest" |
+| Quelle | Jannes, 2026-09-06 (Lastenrad-Hausbesuchskonzept) |
+| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019; TOUR-EPIC-001a (Roadmap Etappe T); Rückfrage E-16 |
+
+**Idee.** Eine Karte zeigt die gesamte Route des Tages: alle Wege zwischen
+Startort, Hausbesuchen und Endort in Terminreihenfolge — auf einmal, oder ein
+einzelner Weg als Vorschau. In „Mein Tag" und unter Touren; aus jeder Ansicht
+führt ein Link zur Navigation (`IDEA-PRX-030`).
+
+**Warum.** Das Lastenrad-Hausbesuchskonzept lebt von der Route: Reihenfolge,
+Länge und Anschluss der Wege bestimmen den Tag, nicht die Raumbelegung. Kein
+Wettbewerber zeigt das, weil ihre Praxen Räume haben; MD Therapie plant
+Fahrzeiten, zeigt aber keine Radroute.
+
+**Vorsicht.** Beim Öffnen der Karte gehen alle Adressen des Tages in einer
+Anfrage an den Kartenanbieter — deshalb Adressen ohne Namen und ohne Uhrzeit,
+Karte nur auf ausdrückliche Aktion laden, kein Standort der Person, kein
+Verlauf, keine Speicherung von Routing-Rohdaten (§18, §20). Anbieter und
+Datenweg der Karte sind Rückfrage E-16 und Gegenstand von ADR-019 (Empfehlung:
+Google Maps Embed API, derselbe Anbieter wie der genehmigte Link). Der
+persönliche Startort einer Therapeutin ist ein Beschäftigtendatum
+(`IDEA-PRX-017`). Ein privates Google-Konto auf dem Diensttelefon speichert
+Wege — das regelt die Endgeräte-Richtlinie.
+
+**Offen.** Datenweg der Karte (Embed oder JavaScript API); Höchstzahl der
+Zwischenziele je Anfrage; ob Namen jemals auf der Karte erscheinen dürfen
+(Empfehlung: nie).
+
+---
+
+### IDEA-PRX-030 — Navigationslink zu Google Maps, je Weg und für den Tag
+
+| | |
+|---|---|
+| Status | bestätigt — Jannes, 2026-09-06, datenschutzrechtlich genehmigt |
+| Quelle | Jannes, 2026-09-06 |
+| Berührt | B7, ADR-019, UX-EPIC-001, PAT-006; URL-Format und Feldliste als `ANN` |
+
+**Idee.** Aus jeder Adresse in Tagesliste, Termin und Karte führt ein Link,
+der Google Maps mit dem Ziel im Fahrradmodus öffnet; für den ganzen Tag ein
+Link mit allen Zielen in Terminreihenfolge. Nichts wird in der Anwendung
+nachgebaut — die Navigation macht die App, die auf dem Telefon schon ist
+(§2.1, §3.4).
+
+**Warum.** THEORG 2GO und MD Therapie übergeben Adressen an die Karten-App.
+Auf dem Rad ist die Sprachnavigation der einzige praktikable Weg; die
+Tagesliste ohne Adresse und ohne Link war Bruchstelle Nr. 1 im Produktreview.
+
+**Vorsicht.** Der Link trägt die Adresse — nie den Namen, nie die Uhrzeit, nie
+die Verordnung. Der Tages-Link enthält alle Adressen eines Tages; er wird erst
+auf Tap gebaut und nirgends gespeichert. Die Datenschutzinformation nennt
+Google Maps (PAT-006). Die Höchstzahl der Zwischenziele je Link steht in der
+Anbieterdokumentation; wird sie überschritten, wird der Tag in Abschnitte
+geteilt.
+
+---
+
+### IDEA-PRX-031 — Gebietstage für die Terminvergabe
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-06, aus dem Lastenrad-Konzept |
+| Berührt | §6.2, §8, §9; CAL-007, CAL-010; `IDEA-PRX-008`; B6 |
+
+**Idee.** Die Praxis ordnet Gebieten (Stadtteile, Postleitzahlen) feste
+Wochentage oder Tageshälften zu. Beim Anlegen und bei der Serie schlägt der
+Kalender Termine im Gebietstag der Adresse vor und warnt bei Terminen
+außerhalb. Eine Vorbelegung, keine Optimierung.
+
+**Warum.** Auf dem Rad ist die Bündelung nach Gebiet der größte Hebel gegen
+Leerfahrten — und das einzige Mittel, das ohne Kartendienst funktioniert, weil
+es eine Praxisregel ist (§6.2, deterministisch). Eine Stadtteil-Praxis wirbt
+genau damit.
+
+**Vorsicht.** Gebiete sind Praxisregeln, keine Auswertung je Person (B6).
+Termine bleiben frei vergebbar; die Regel warnt, sie verbietet nicht.
+
+---
+
+### IDEA-PRX-032 — Fahrzeit je Weg aus dem Kartendienst
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-06 |
+| Berührt | §9, §18, §20; B6, B7; TOUR-EPIC-001b; `IDEA-PRX-002` |
+
+**Idee.** Zu jedem Weg der Tagesroute die Fahrzeit mit dem Rad aus dem
+Kartendienst; im Kalender die Erreichbarkeit zweier Termine als Warnung,
+ergänzend zur Praxisregel aus `IDEA-PRX-002`; die Auswirkung einer
+Terminänderung sichtbar.
+
+**Warum.** §9 verlangt für die erste Ausbaustufe, dass die Anwendung erkennt,
+ob zwei Termine zeitlich erreichbar sind. Ohne Fahrzeiten schlägt jede
+automatische Terminsuche (`IDEA-PRX-008`) Termine vor, die auf dem Rad nicht
+erreichbar sind.
+
+**Vorsicht.** Fahrzeiten sind Routing-Rohdaten mit kurzer Speicherfrist (§18)
+und dürfen nicht zur Leistungskontrolle werden (§20, B6): Speicherung nur je
+Weg und Tag, keine Summen je Person. Erst nach Betriebserfahrung (nach M6),
+weil erst dann klar ist, wie oft eine Warnung nützt und wie oft sie stört.
+
+---
+
+### IDEA-PRX-033 — Planungskarte der aktiven Adressen
+
+| | |
+|---|---|
+| Status | vorschlag · Bedenken |
+| Quelle | Claude, 2026-09-06 |
+| Berührt | §3.5, §9; ADR-002, ADR-004, ADR-007; B7; `IDEA-PRX-031` |
+
+**Idee.** Für die Planung eine Karte mit den Adressen aller aktiven
+Patient:innen als Punkte ohne Namen — um Gebietstage zu schneiden und neue
+Anfragen einem Gebiet zuzuordnen.
+
+**Bedenken.** Eine Karte aller Adressen ist eine Übermittlung aller aktiven
+Adressen an den Kartenanbieter in einer Anfrage und ein Bild, das mehr sagt
+als jede Liste. Wenn überhaupt, dann als `owner`-Funktion, auditiert, mit
+eigener Prüfung nach ADR-002 und DSFA-Wiedervorlage. Gebietstage aus
+`IDEA-PRX-031` funktionieren auch mit einer Postleitzahl-Liste ohne Karte.
+Bis eine Entscheidung vorliegt: nicht bauen.
+
+---
+
+Zuletzt aktualisiert: 2026-09-06 (Entscheidungen E-9, E-12, E-13; Tagesroute
+`IDEA-PRX-029` bis `-033`)
