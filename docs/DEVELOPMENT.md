@@ -212,6 +212,9 @@ Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
 
 - Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, Modell Haiku 4.5, erste
   Ausführung 2026-09-07. Sie liest `main`.
+- Prompt am 2026-09-06 auf das Format der Roadmap 2.1 umgestellt
+  (Entscheidung E-10): `git log --since='8 days ago'`, Fortschritt mit
+  Abnahme-Spalte, Spur B mit Stand, Ampel je Meilenstein M0 bis M6.
 - Nach der Zeitumstellung Ende Oktober fällt sie auf 06:50 Uhr; wer 07:50
   behalten will, ändert den Cron-Ausdruck auf `50 6 * * 1`.
 - Abschalten, Takt oder Prompt ändern: über die Routines-Oberfläche auf
@@ -219,8 +222,9 @@ Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
 
 ## Go-live-Blocker
 
-**Zieltermin für den Produktivbetrieb ist Ende März 2027** (entschieden am
-2026-09-05; Rückwärtsplan und Etappe G „Betriebsreife" in
+**Die Software ist bis Ende März 2027 produktionsreif; die Praxis eröffnet
+am 01.07.2027 ohne Vorgängersystem** (entschieden am 2026-09-05 und
+2026-09-06; Meilensteine, Rückwärtsplan und Etappen G und H in
 [`development/ROADMAP.md`](development/ROADMAP.md)).
 
 **Die maßgebliche Liste offener Punkte ist

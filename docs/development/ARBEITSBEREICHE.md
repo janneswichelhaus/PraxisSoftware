@@ -1,6 +1,6 @@
 # Arbeitsbereiche: was funktioniert, was Vorschau ist, was offen ist
 
-Stand: 05.09.2026
+Stand: 06.09.2026
 
 Diese Liste ist die Antwort auf eine einzige Frage: **Worauf kann ich mich in
 der laufenden Anwendung verlassen?** Sie ergänzt
@@ -91,7 +91,7 @@ benennen die offene Frage, statt sie zu verstecken.
 | Offener Punkt                                             | Wo sichtbar             | Quelle                           |
 | --------------------------------------------------------- | ----------------------- | -------------------------------- |
 | Endgültige Fakturierung erst nach Finalisierung — die Finalisierung selbst ist entschieden und gebaut (ADR-016, DOK-002/DOK-004); offen ist die Kopplung an die Leistungserfassung (ABR-002) | Abrechnung → Leistungen | `PROJECT_PRINCIPLES.md` §19      |
-| Kartendienst, Datenfluss und Vertragsgrundlage            | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7 |
+| Kartendienst: Google Maps für die Navigation ist entschieden (2026-09-06); offen bleiben der Datenweg der In-App-Karte und der Fahrzeiten | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7, ADR-019 |
 | Aggregierte Auswertungen über Beschäftigte                | Zeitkonto               | §20, `OPEN_DECISIONS.md` B6      |
 | Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Team                    | §10, §18                         |
 | Aufbewahrung und Löschung von Beschäftigtendaten          | nicht mehr sichtbar — die Vorschau-Personalakte ist entfallen; der Punkt bleibt offen (`IDEA-QSN-010`) | ADR-008                          |
@@ -137,8 +137,11 @@ DOK-004).
 
 Die Vorschaubereiche aus Abschnitt 2 sind seit dem 2026-09-05 in der Roadmap
 als **Spur A2 „Praxisbetrieb"** eingeordnet — Urlaub, Zeitkonto, Radflotte,
-Erstattungen, Teamkommunikation; Touren erst nach der Entscheidung zum
-Kartendienst (B7). Sie beginnt nach dem Go-live (Stufe 2). Bis dahin gelten
+Erstattungen, Teamkommunikation. Sie beginnt nach dem ersten Betriebsmonat
+(M6, Stufe 2). Die Vorschau **Touren** ersetzt seit der Entscheidung vom
+2026-09-06 der Loop TOUR-EPIC-001a „Tagesroute und Navigation" (Etappe T,
+April 2027): Karte der Tagesroute, Link zu Google Maps, Tourenliste;
+Fahrzeiten folgen mit TOUR-EPIC-001b nach dem Rest von B7. Bis dahin gelten
 drei Regeln: keine neue Vorschau, keine Erweiterung einer Vorschau, und jede
 Vorschau wird in ihrem Loop ersetzt, nicht daneben gebaut.
 

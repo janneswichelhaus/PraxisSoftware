@@ -9,11 +9,15 @@ muss, stehen in `docs/development/ROADMAP.md`, Spur B.
 
 **Stand:** Alle Architektur-Grundentscheidungen sind getroffen (ADR-001 bis
 ADR-016). Offen sind die externen Validierungen vor dem Produktivbetrieb (B1
-bis B4), sieben fachliche Punkte für spätere Etappen (B5 bis B11), vier
-Einführungs- und Dienstleisterfragen aus dem Review vom 2026-09-06 (B12 bis
-B15), die Providerfrage der KI (C6), zwei Betriebsfragen (E2, E10) und die
-Ausgestaltung des Terminstatus-Automaten (ADR-018). Alles andere ist
-entschieden — die Historie steht am Ende.
+bis B4), sieben fachliche Punkte für spätere Etappen (B5 bis B11; B7 und B9
+seit dem 2026-09-06 teilweise entschieden beziehungsweise erweitert), zwei
+Dienstleisterfragen aus dem Review vom 2026-09-06 (B14 teilweise, B15), die
+Providerfrage der KI (C6), zwei Betriebsfragen (E2, E10) und die
+Ausgestaltung des Terminstatus-Automaten (ADR-018). B12 und B13 sind am
+2026-09-06 erledigt beziehungsweise entschieden worden. Die fünf Rückfragen
+E-15 bis E-19 an Jannes stehen in `docs/development/ROADMAP.md`, nicht hier —
+sie sind Planungsfragen, keine offenen Punkte. Alles andere ist entschieden —
+die Historie steht am Ende.
 
 ## Wie dieses Dokument benutzt wird
 
@@ -48,18 +52,18 @@ Feature.
 | B1    | MDR / EU AI Act                                              | architektonisch entschieden; **externe Prüfung offen**        | [ADR-006](../adr/ADR-006-medical-device-boundary.md); Roadmap G13, Feb 2027                                   |
 | B2    | DSFA, DSB, Verzeichnis, TOM, Meldeprozess                    | Prozess entschieden; **Schwellwertprüfung und DSB offen**     | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md); Roadmap G12                                   |
 | B3    | Aufbewahrung und Löschung                                    | entschieden; **Fristen-Validierung offen**, Umsetzung LOE     | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md), ANN-001, ANN-002; Roadmap LOE-EPIC-001              |
-| B4    | Abrechnungsmodell                                            | entschieden; **steuerliche Validierung offen**                | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap Nov 2026                                          |
+| B4    | Abrechnungsmodell                                            | entschieden; **steuerliche Validierung offen**, Fragenliste unten (erweitert 2026-09-06) | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13, Nov 2026                          |
 | B5    | Patientenidentität, Vertretung                               | **offen** (P1 für das Portal)                                 | unten; vor Etappe 4                                                                                           |
 | B6    | Beschäftigtendaten: Touren, Leistungskontrolle               | **offen** (P1 für Zeitkonto und Touren)                       | unten; vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit                                                     |
-| B7    | Adressdaten an den Kartendienst                              | **offen** (P2)                                                | unten; vor TOUR-001                                                                                           |
+| B7    | Adressdaten an den Kartendienst                              | **teilweise entschieden 2026-09-06** (Google-Maps-Link); Rest **offen** (P1 für TOUR-EPIC-001a) | unten; ADR-019 (Roadmap G12)                                                                    |
 | B8    | Lizenzen für Fragebögen und PROMs                            | **offen** (P2)                                                | unten; vor FRB-003                                                                                            |
-| B9    | Betreuung nach Therapieende                                  | **offen** (P2)                                                | unten; vor Etappe 8                                                                                           |
+| B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **offen** (P2), erweitert 2026-09-06                          | unten; vor Etappe 8; Steuerteil mit B4                                                                        |
 | B10   | Automatisierte Progression: MDR-Grenze                       | **offen** (P2)                                                | unten; vor Etappe 9                                                                                           |
 | B11   | Paketpreise, Vorauszahlung, Anreize                          | **offen** (P2)                                                | unten; vor Etappe 8                                                                                           |
-| B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **offen** (P1 für ABR-EPIC-002a und MIG-001)                  | unten; Review 2026-09-06                                                                                      |
-| B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **offen** (P1 für STAFF-EPIC-002)                             | unten; Review 2026-09-06                                                                                      |
-| B14   | PDF-Erzeugung für Rechnungen und Tagesplan                   | **offen** (P1 für ABR-EPIC-002b, E2)                          | unten; Review 2026-09-06                                                                                      |
-| B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **offen** (P2, Stufe 2)                                       | unten; Review 2026-09-06                                                                                      |
+| B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | unten                                                                                                         |
+| B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **entschieden 2026-09-06** durch Jannes (Option a)            | unten; Roadmap G2, G3                                                                                         |
+| B14   | PDF-Erzeugung für Rechnungen und Tagesplan                   | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen** (P1 für ABR-EPIC-002b) | unten; Roadmap ABR-EPIC-002a, Nov 2026                                                            |
+| B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **offen** (P2, Stufe 2 nach der Eröffnung); Anfrage mit B2    | unten                                                                                                         |
 | C1    | Leistungsziffern und Office                                  | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006                                               |
 | C2    | Klinische Inhalte in organisatorischer Kommunikation         | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §10                                                                               |
 | C3    | Fail-closed gegen Patientensicherheit, Break Glass           | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
@@ -73,7 +77,7 @@ Feature.
 | D     | übrige Begriffe                                              | erledigt                                                      | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 · „Behandlungsnachweis" → C1, ANN-006 · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
 | D     | Normativität und Nachweis                                    | Normativität erledigt (0.2, §0); **Nachweistabelle offen**    | Roadmap G12                                                                                                   |
 | E1    | Betreibbarkeit bei Bus-Faktor 1                              | entschieden 2026-08-28                                        | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7                         |
-| E2    | Ausfallkonzept                                               | **offen** (P1 vor Go-live)                                    | unten; Roadmap G11, Jan 2027                                                                                  |
+| E2    | Ausfallkonzept — zugleich Rückfallplan der Eröffnung         | **offen** (P1 vor Go-live)                                    | unten; Roadmap G10 und H4, Jan 2027                                                                           |
 | E3    | Backup, RPO/RTO, Restore-Test                                | entschieden 2026-08-28                                        | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Roadmap G7                                       |
 | E4    | Produktionszugriff                                           | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
 | E5    | Produktions-Logs                                             | entschieden 2026-08-28                                        | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G8                                            |
@@ -87,6 +91,45 @@ Feature.
 ---
 
 ## Offene Punkte im Einzelnen
+
+### B4 — Steuerliche Validierung: Fragen an die Steuerberatung
+
+| | |
+|---|---|
+| Dringlichkeit | P1 — als Annahme vor ABR-EPIC-001, bestätigt vor der ersten ausgestellten Rechnung (ABR-EPIC-002a) |
+| Bezug | §19; ADR-009 Punkte 5, 6 und 8; GoBD; B9, B11 |
+
+Das Abrechnungsmodell ist entschieden (ADR-009). Offen ist die steuerliche
+Validierung; die Liste wurde am 2026-09-06 um die Punkte erweitert, die aus
+der Eröffnung ohne Vorgängersystem und aus dem Personal Training folgen. Sie
+geht mit der Anfrage B4 im September an die Steuerberatung:
+
+1. **Leistungsarten und Umsatzsteuer:** Welche Katalogpositionen sind nach
+   §4 Nr. 14a UStG befreit (Heilbehandlung auf Verordnung), welche nicht
+   (Prävention, Selbstzahler ohne Verordnung, Personal Training)? Wie werden
+   gemischte Fälle abgerechnet — getrennte Rechnungen oder eine Rechnung mit
+   zwei Steuersätzen?
+2. **Kleinunternehmerregelung (§19 UStG) im Eröffnungsjahr:** Nimmt die
+   Praxis sie für die steuerpflichtigen Umsätze in Anspruch? Das bestimmt den
+   Umsatzsteuer-Status in den Praxisstammdaten (ABR-000) und den Hinweistext
+   auf der Rechnung.
+3. **Nummernkreis:** Die Praxis eröffnet am 01.07.2027 ohne Vorgängersystem;
+   der Nummernkreis beginnt mit der ersten Rechnung. Welches Format (fortlaufend
+   je Jahr, mit Jahrespräfix) und welche Anforderungen an Lückenlosigkeit und
+   Dokumentation gelten?
+4. **Belegfristen und Belegarten** (B3): Rechnungen, Storno- und
+   Korrekturdokumente, Zahlungsbelege, Erstattungsbelege.
+5. **Export für die Steuerberatung:** gewünschtes Format (CSV, DATEV) für
+   Rechnungen und Zahlungen (`IDEA-PRX-026`).
+6. **Personal Training** (B9, B11): Umsatzsteuer, Anzahlungen und Pakete,
+   getrennte oder gemeinsame Rechnungsstellung mit der Praxis.
+
+Nicht mehr Teil der Anfrage: eine Behandlungsbestätigung oder Unterschrift je
+Termin — Jannes hat am 2026-09-06 entschieden, dass keine benötigt wird
+(`IDEA-PRX-015`, verworfen).
+
+**Blockiert:** nichts; bis zur Antwort gelten Annahmen in ABR-EPIC-001 und
+ABR-EPIC-002a (Registereinträge).
 
 ### B5 — Patientenidentität, Identitätsprüfung und Vertretung
 
@@ -132,18 +175,43 @@ kein Live-Tracking). ANN-004 hält Arbeitszeiten bereits aus dem Auditlog heraus
 
 | | |
 |---|---|
-| Dringlichkeit | P2 |
-| Bezug | §9 |
+| Dringlichkeit | P1 für TOUR-EPIC-001a (Karte); der Link ist entschieden |
+| Bezug | §9, §18, §20, §3.5; ADR-002, ADR-007 Punkt 2 |
 
-**Frage:** Werden Klarnamen und Adressen an den Kartendienst gesendet, oder
-nur Koordinaten aus einem lokal gepflegten Geocoding-Cache?
+**Entschieden am 2026-09-06 durch Jannes:** Der Kartendienst ist **Google
+Maps**. Aus der Anwendung führt immer ein Link zur Navigation in Google Maps
+— je Termin und für den ganzen Tag. Die Übermittlung der Adresse für die
+Navigation ist datenschutzrechtlich genehmigt; die Entscheidung steht fest.
+Umsetzung: Link in UX-EPIC-001 (Adresse ohne Namen, ohne Uhrzeit,
+Fahrradmodus; URL-Format und Feldliste als `ANN`), Dokumentation der
+Vertrags- und Datenschutzseite in ADR-019 (Roadmap G12), Nennung in der
+Datenschutzinformation (PAT-006), DSFA-Wiedervorlage nach ADR-007 Punkt 2
+(„wesentliche Änderung der Routing-/Standortverarbeitung").
 
-**Warum offen:** Eine Patientenadresse an einen Kartenanbieter zu senden
-offenbart, dass dort jemand physiotherapeutisch behandelt wird. Das ist eine
-Übermittlung besonderer Kategorien personenbezogener Daten und erfordert AVV,
-§203-Verpflichtung, Prüfung nach ADR-002 und eine DSFA-Wiedervorlage (ADR-007).
+**Noch offen — Datenweg der In-App-Karte** (Rückfrage E-16 in der Roadmap):
+Die Karte der Tagesroute lädt Kartenmaterial und Route von Google, sobald sie
+geöffnet wird; dabei gehen alle Adressen eines Tages in einer Anfrage an den
+Dienst. Zu klären: ob die Genehmigung diesen Weg einschließt, welche
+Schnittstelle (Embed API im eingebetteten Rahmen — Empfehlung — oder
+JavaScript API mit Directions), Schlüsselverwaltung und Referrer-Bindung,
+Vertragsgrundlage der Google Maps Platform nach dem Prüfkatalog aus ADR-002,
+und ob Namen jemals auf der Karte erscheinen dürfen (Empfehlung: nein).
+Grundsatz unabhängig von der Antwort: die Karte lädt nur auf ausdrückliche
+Aktion, nie beim Öffnen einer Seite; kein Standort der Person, kein Verlauf,
+keine Speicherung von Routing-Rohdaten (§18, §20).
 
-**Blockiert:** TOUR-001, jede Routing-Integration.
+**Noch offen — Fahrzeiten** (TOUR-EPIC-001b): ob Fahrzeiten je Weg aus dem
+Dienst abgerufen und kurz gespeichert werden dürfen (§18) und wie sie von
+jeder Auswertung je Person getrennt bleiben (B6).
+
+**Endgerät:** Der Link öffnet die Google-Maps-App oder den Browser auf dem
+Telefon der Therapeutin. Ein dort angemeldetes privates Google-Konto speichert
+Suchen und Wege. Die Endgeräte-Richtlinie (Roadmap G14, BETRIEB-001) regelt
+Konto und Verlauf; das ist Teil von ADR-019.
+
+**Blockiert:** die In-App-Karte (TOUR-002) und die Fahrzeiten
+(TOUR-EPIC-001b). **Nicht blockiert:** der Navigationslink, die Tourenliste,
+der Fahrpuffer als Praxisregel (CAL-010).
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 
@@ -164,19 +232,28 @@ FRB-002 — die Bibliothek trägt ein Lizenzfeld, und die freien Instrumente (NR
 patientenspezifische Funktionsskala, globale Veränderungsfrage) brauchen keine
 Lizenz.
 
-### B9 — Betreuung nach Therapieende: Rechtsrahmen und Datentrennung
+### B9 — Betreuung ohne und nach Heilbehandlung: Rechtsrahmen und Datentrennung
 
 | | |
 |---|---|
-| Dringlichkeit | P2 — vor dem ersten Feature außerhalb der Heilbehandlung |
-| Bezug | §1, §18, §19; ADR-008, ADR-009 |
+| Dringlichkeit | P2 — vor dem ersten Feature außerhalb der Heilbehandlung; Steuerteil mit B4 im September anfragen |
+| Bezug | §1, §14, §18, §19; ADR-008, ADR-009; `IDEA-LZK-002`, `IDEA-LZK-008` |
 
 **Frage:** Was gilt, wenn eine Person nach Ablauf des Rezepts freiwillig
-weiterbetreut wird — online oder in der Praxis?
+weiterbetreut wird — und was gilt für Kund:innen des Personal Trainings, die
+nie in Heilbehandlung waren?
 
 **Warum offen:** Jannes hat am 2026-09-01 als langfristiges Ziel benannt,
-frühere Patient:innen nach abgeschlossenem Rezept weiter zu coachen. Beim
-Übergang ändern sich mehrere Dinge gleichzeitig:
+frühere Patient:innen nach abgeschlossenem Rezept weiter zu coachen, und am
+2026-09-06 ergänzt, dass die Plattform auch für die Kund:innen seines
+Personal Trainings gedacht ist — ohne vorherige Heilbehandlung. Damit ist der
+Übergang nicht mehr der einzige Fall: es gibt einen zweiten Eintrittsweg ohne
+Verordnung, ohne Behandlungsvertrag und ohne Akte. Für ihn gelten dieselben
+Fragen von Anfang an, dazu: ob Personal Training in derselben Praxis oder in
+einem eigenen Betrieb läuft (Rechnungen, Umsatzsteuer, Verträge — Rückfrage
+E-17 in der Roadmap), und ob `PROJECT_PRINCIPLES.md` §1, das nur die
+Physiotherapiepraxis nennt, nach §21 ergänzt wird. Beim Übergang und beim
+Eintritt ohne Behandlung ändern sich mehrere Dinge gleichzeitig:
 
 - **Vertragsart:** Behandlungsvertrag (§630a BGB) gegenüber Dienstvertrag.
 - **Dokumentationspflicht:** §630f BGB gilt für die Heilbehandlung, nicht für
@@ -193,9 +270,11 @@ frühere Patient:innen nach abgeschlossenem Rezept weiter zu coachen. Beim
   bei Ernährung (`IDEA-ALT-005`)?
 
 **Blockiert:** Etappe 8 vollständig und das Datenmodell der Betreuungsepisode
-(`IDEA-LZK-002`, `IDEA-LZK-003`); die automatische Klassifizierung aus
-`IDEA-LZK-007`. **Nicht blockiert:** die Empfehlung der Therapeutin zum
-Verordnungsende als Teil der Verordnung (VER-001).
+(`IDEA-LZK-002`, `IDEA-LZK-003`, `IDEA-LZK-008`); die automatische
+Klassifizierung aus `IDEA-LZK-007`; jede Funktion für Kund:innen ohne
+Heilbehandlung (Stufe 3). **Nicht blockiert:** die Empfehlung der Therapeutin
+zum Verordnungsende als Teil der Verordnung (VER-001); die
+Umsatzsteuer-Felder je Katalogposition, die ADR-009 Punkt 6 ohnehin verlangt.
 
 ### B10 — Automatisierte Progression: MDR-Grenze und Verantwortung
 
@@ -247,21 +326,17 @@ heilmittelwerberechtliche Beratung.
 
 | | |
 |---|---|
-| Dringlichkeit | P1 — vor der ersten ausgestellten Rechnung (ABR-EPIC-002a) und der Bestandsdatenübernahme (MIG-001) |
+| Dringlichkeit | erledigt |
 | Bezug | §19; ADR-009 (Folgefrage Nummernkreis); GoBD |
 
-**Frage:** Werden die bisherigen Rechnungsnummern fortgeführt oder beginnt zum
-Stichtag ein neuer, dokumentierter Nummernkreis? Welche Vorgänge bleiben im
-bisherigen Werkzeug (Rechnungen vor dem Stichtag, offene Posten als Saldo), und
-wie lange bleibt es für die Restfrist lesbar?
-
-**Warum offen:** Das Review vom 2026-09-06 hat festgestellt, dass die Planung
-keine Bestandsdatenübernahme kannte. Ohne Stichtagsregel gibt es zwei
-Nummernkreise oder eine Lücke — beides ist nach GoBD erklärungsbedürftig.
-Aufgenommen im Review 2026-09-06 (Delivery-Befund 14).
-
-**Blockiert:** MIG-001, die Nummernvergabe in ABR-003. **Nicht blockiert:**
-alles davor; bis zur Entscheidung Annahme „neuer Kreis ab Stichtag".
+**Erledigt am 2026-09-06 durch Jannes:** Es gibt kein altes Werkzeug. Die
+Praxis nimmt den Betrieb am 01.07.2027 erstmals auf — ohne
+Bestandspatient:innen, ohne laufende Verordnungen, ohne offene Rechnungen,
+ohne bisherigen Nummernkreis. Damit entfallen Stichtag, Bestandsdatenübernahme
+(MIG-000, MIG-001) und Parallelbetrieb. Der Nummernkreis beginnt mit der
+ersten ausgestellten Rechnung; sein **Format** ist eine Frage an die
+Steuerberatung und steht jetzt unter B4 (Punkt 3), bis dahin Annahme in
+ABR-EPIC-002a.
 
 ### B13 — E-Mail-Versand aus der Plattform
 
@@ -276,14 +351,21 @@ Braucht das eine Prüfung nach ADR-002 und einen AVV, oder bleibt die Praxis in
 Stufe 1 ohne Versand aus der Plattform (Einladung über die Provider-Oberfläche,
 Rechnungsversand aus dem Praxispostfach)?
 
-**Warum offen:** Ein E-Mail-Dienst ist ein neuer Dienstleister mit Zugang zu
-personenbezogenen Daten (mindestens Adresse und Rolle der Mitarbeitenden). Die
-Roadmap 2.0 nannte ihn nicht. Aufgenommen im Review 2026-09-06 (Delivery-Befund
-10).
+**Entschieden am 2026-09-06 durch Jannes (Option a der Entscheidung E-4):**
+In Stufe 1 versendet die Plattform ausschließlich die **Auth-Mails des
+geprüften Providers** — Einladung eines Zugangs, Passwort zurücksetzen. Sie
+sind Teil der Providerprüfung OPS-001 (Roadmap G3); ein zweiter Dienstleister
+kommt nicht hinzu. Rechnungen und alle anderen Nachrichten an Patient:innen
+gehen aus dem Praxispostfach, außerhalb der Plattform; der Rechnungszustand
+„versendet" wird von Hand gesetzt. Ein eigener E-Mail-Dienst mit AVV (Option b)
+bleibt für Stufe 2 möglich und wäre eine neue Prüfung nach ADR-002.
 
-**Blockiert:** STAFF-004 (Passwort vergessen als Selbstbedienung) und den
-Rechnungszustand „versendet". **Nicht blockiert:** STAFF-002/003 mit Einladung
-über die Provider-Oberfläche als Übergang.
+**Warum das reicht:** Ein E-Mail-Dienst wäre ein neuer Dienstleister mit
+Zugang zu personenbezogenen Daten (mindestens Adresse und Rolle der
+Mitarbeitenden). Die Auth-Mails laufen beim Provider, der ohnehin geprüft wird.
+
+**Blockiert:** nichts mehr; STAFF-EPIC-002 mit STAFF-004 läuft im Oktober,
+sobald OPS-001 die Auth-Mails einschließt.
 
 ### B14 — PDF-Erzeugung
 
@@ -297,14 +379,18 @@ Druckansicht, eine PDF-Bibliothek im Browser oder eine serverseitige Funktion?
 Wo läuft die Erzeugung, welche Abhängigkeit kommt dazu, wie wird das Dokument
 unveränderbar abgelegt (ADR-017)?
 
-**Warum offen:** Eine wesentliche Abhängigkeit oder ein neuer Ausführungsort
-ist nach §15.1 ein Stopp, nicht eine Annahme. Aufgenommen im Review 2026-09-06
-(Delivery-Befund 5). Empfehlung im Review: Druckansicht mit `@media print` für
-Tagesplan und Terminzettel sofort (keine Abhängigkeit); für die
-unveränderbare Rechnung die Optionen mit Aufwand im Loop ABR-EPIC-002a
-vorlegen.
+**Teilweise entschieden am 2026-09-06 durch Jannes (E-5):** Druckansichten
+mit `@media print` für Tagesplan, Terminzettel und Tourenliste kommen sofort
+(UI-000 Druck-Basis) — keine Abhängigkeit, kein neuer Ausführungsort. Für die
+unveränderbare Rechnung legt der Loop ABR-EPIC-002a die Optionen mit Aufwand
+vor (Browser-Druck in PDF, Bibliothek im Browser, serverseitige Funktion);
+Jannes entscheidet dann, im November 2026.
 
-**Blockiert:** ABR-003b. **Nicht blockiert:** Tagesplan drucken, Terminzettel.
+**Warum der Rest offen bleibt:** Eine wesentliche Abhängigkeit oder ein neuer
+Ausführungsort ist nach §15.1 ein Stopp, nicht eine Annahme.
+
+**Blockiert:** ABR-003b. **Nicht blockiert:** Tagesplan drucken, Terminzettel,
+Tourenliste.
 
 ### B15 — Terminerinnerung und Online-Terminbuchung
 
@@ -323,6 +409,10 @@ und Online-Buchung als Marktstandard. Beides ist ein neuer Dienstleister mit
 Gesundheitsdaten (dass jemand einen Physiotherapietermin hat) und braucht
 Prüfung nach ADR-002 und eine Einwilligung. Für Stufe 1 bleibt die Anrufliste
 der Weg (`IDEA-PRX-005`).
+
+**Termin (E-9, 2026-09-06):** Stufe 2 nach der Eröffnung. Die Frage geht mit
+der Anfrage B2 im September an die Datenschutzberatung; Entscheidung bis M6
+(31.07.2027), erster Loop danach.
 
 **Blockiert:** jede Erinnerungs- oder Buchungsfunktion. **Nicht blockiert:**
 Anrufliste, Terminzettel als PDF.
@@ -383,7 +473,12 @@ dass Kerninformationen des Arbeitstags auch bei einem mehrstündigen Ausfall
 verfügbar sind, lässt den Inhalt aber offen. Das ist ein Praxisprozess mit
 einer Minimalfunktion der Software (Tagesplan druck- und exportierbar).
 
-**Blockiert:** Go-live-Abnahme (Roadmap G11, G15).
+**Seit dem 2026-09-06 zusätzlich:** Weil es kein Altsystem gibt, ist dieser
+Papierprozess auch der Rückfallplan der Eröffnung (Roadmap H4) — Tagesplan mit
+Adressen und Telefonnummern, Dokumentation auf Papier mit Nachtrag, Rechnung
+von Hand mit fortlaufender Nummer.
+
+**Blockiert:** Go-live-Abnahme (Roadmap G10, G18).
 
 ### E10 — Wer verwaltet Mitarbeiterdatensätze
 
@@ -449,7 +544,8 @@ aus der Roadmap nicht abgeschlossen werden kann.
 | Speicherort und Retention von Dateien                                                                          | ADR-015, ADR-008 | ADR-017 (G1)                                      |
 | Begründung als Pflichtfeld; Frist bei Hausbesuchen am Freitag; Azubi-Rolle                                     | ADR-016          | ANN-008 nach Praxiserfahrung; Rolle in STAFF-EPIC-002 |
 | Wer pflegt die Zweckbestimmung; wo wird `MDR_REVIEW_REQUIRED` geführt; Cutoff-Anzeige als Klassifikation?      | ADR-006          | G12/G13 (Dokument); FRB-002 (Cutoff, bis dahin nicht anzeigen) |
-| Offline: Felder, Unsynchronisiert-Dauer, Konfliktauflösung, Geräteanforderungen, Audit offline                 | ADR-001          | eigener ADR vor dem Offline-Loop (nach TOUR-001)  |
+| Offline: Felder, Unsynchronisiert-Dauer, Konfliktauflösung, Geräteanforderungen, Audit offline                 | ADR-001          | Tagesplan-Cache lesend als `ANN` in UX-EPIC-001 (E-12); vollständiger Offline-ADR vor einem späteren Offline-Loop |
+| Kartendienst: Anbieter, Datenweg, Vertragsgrundlage, Endgerät                                                  | ADR-002, §9, §20 | ADR-019 (Roadmap G12); B7                          |
 | KI: Provider, Zweck → erlaubte Felder, Protokollierung, Nachweis der Freigabe                                  | ADR-005          | C6, Etappe 10                                     |
 | Minimale Struktur für Vertreterzugriffe                                                                        | ADR-014          | B5                                                |
 
@@ -472,5 +568,26 @@ aus der Roadmap nicht abgeschlossen werden kann.
   Dieses Dokument auf Struktur 2.0 verschlankt; die Volltexte der
   entschiedenen Punkte stehen in der Git-Historie bis Commit `23d71e5`.
 - **2026-09-06:** B12 bis B15 aus dem Roadmap-Review und der
-  Wettbewerbsanalyse (`docs/development/ROADMAP-REVIEW-2026-09-06.md`):
+  Wettbewerbsanalyse (Review in der Git-Historie, Commit `7ab6f71`):
   Stichtag und Nummernkreis, E-Mail-Versand, PDF-Erzeugung, Terminerinnerung.
+- **2026-09-06, Antworten von Jannes auf die Entscheidungen E-1 bis E-14 des
+  Reviews:** E-1 Roadmap 2.1 als Rahmen · E-2 UI-000 und UX-EPIC-001 direkt
+  nach VER-EPIC-001 · E-3 Loops geteilt (ADR-018 als Docs-Session, CAL-EPIC-003
+  a/b, ABR-EPIC-002 a/b, ABR-EPIC-003) · E-4 E-Mail nur über die Auth-Mails des
+  Providers (B13 entschieden) · E-5 Druckansichten sofort, Rechnungs-PDF in
+  ABR-EPIC-002a entscheiden (B14 teilweise) · E-6 STAFF-EPIC-002 mit STAFF-004
+  im Oktober · E-7 **kein altes Werkzeug — die Praxis eröffnet am 01.07.2027**;
+  Stabilisierung ist der erste Betriebsmonat, kein Parallelbetrieb (B12
+  erledigt) · E-8 axe als Dev-Abhängigkeit · E-9 Textbausteine und
+  Zahlungserinnerung in Stufe 1, Warteliste und Terminerinnerung in Stufe 2
+  (B15 mit B2 anfragen) · E-10 Wochenupdate-Prompt umgestellt · E-11
+  Optimierungsrunden mit Zusatzkriterium im Gate · E-12 Tagesplan-Cache als
+  Story in UX-EPIC-001 · E-13 **keine Unterschrift und keine
+  Behandlungsbestätigung nötig** (`IDEA-PRX-015` verworfen) · E-14 vorerst keine
+  Nachrecherche. Dazu drei Vorgaben: Navigation über **Google Maps** ist
+  entschieden und datenschutzrechtlich genehmigt (B7 teilweise, ADR-019); eine
+  **Karte der Tagesroute** gehört zum Lastenrad-Hausbesuchskonzept
+  (TOUR-EPIC-001a); eine **Plattform für Patient:innen und
+  Personal-Training-Kund:innen** gehört zum Zielbild (B9 erweitert,
+  `IDEA-LZK-008`, Stufe 3). Fünf Rückfragen E-15 bis E-19 stehen in der
+  Roadmap.

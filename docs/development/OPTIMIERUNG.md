@@ -155,11 +155,11 @@ nur die Logik:
 
 | Anlass | Format | Bereiche |
 | --- | --- | --- |
-| vor dem Loop eines Bereichs | Vollrunde | Touren & Termine vor CAL-EPIC-003 · Patient:innen nach VER-EPIC-001 · Abrechnung vor ABR-EPIC-002 · Mein Tag nach CAL-EPIC-003 (speist E2 und UI-001) |
-| vor dem Go-live | Messrunde mit Schattentag, Ladeprobe und Kollegin-Test | alle gemessenen Bereiche |
-| vier Wochen nach Go-live | Messrunde mit Praxistagebuch und Störfallliste; Vollrunde für die zwei schlechtesten Bereiche | alle |
+| vor dem Loop eines Bereichs | Vollrunde | Touren & Termine vor CAL-EPIC-003a · Patient:innen nach VER-EPIC-001 · Abrechnung vor ABR-EPIC-002a · Mein Tag nach CAL-EPIC-003a (speist E2 und UI-001) |
+| vor dem Go-live-Gate (M3) | Messrunde mit Schattentag, Ladeprobe und Kollegin-Test | alle gemessenen Bereiche |
+| vier Wochen nach der Eröffnung (M6, 31.07.2027) | Messrunde mit Praxistagebuch und Störfallliste; Vollrunde für die zwei schlechtesten Bereiche | alle |
 | jährlich | Messrunde alle, Vollrunde zwei; Abläufe streichen, die niemand mehr hat | alle |
-| ein Vorschaubereich wird echt | Vollrunde vier Wochen nach seinem Loop | Team, Betrieb, Touren — **keine Runde vorher**; eine Vorschau zu messen, misst die Vorlage |
+| ein Vorschaubereich wird echt | Vollrunde vier Wochen nach seinem Loop | Team, Betrieb, Touren (nach TOUR-EPIC-001a, Mai 2027) — **keine Runde vorher**; eine Vorschau zu messen, misst die Vorlage |
 
 Eine Runde ersetzt keinen Loop und verschiebt keinen. Was sie findet, landet in
 geplanten Epics, in „Befunde aus der Abnahme" (Jan 2027) oder in `UI-001`
@@ -241,8 +241,8 @@ Doppelabrechnung und Storno-Nachvollziehbarkeit sind Testfälle (ADR-009).
 
 ## 7. Betriebsphase
 
-Ab dem Go-live misst der Alltag, nicht der Schreibtisch. Drei Formate, von
-Hand, ohne Patientendaten:
+Ab der Eröffnung (M5, 01.07.2027) misst der Alltag, nicht der Schreibtisch.
+Drei Formate, von Hand, ohne Patientendaten:
 
 - **Praxistagebuch — ab sofort.** Eine Zeile je Ärgernis: Datum, Bereich, ein
   Satz. In der Notiz-App auf Jannes' Telefon oder auf einem Zettel, **nicht im
@@ -253,7 +253,7 @@ Hand, ohne Patientendaten:
   je Ereignis („Adresse nachgeschaut", „Büro angerufen", „auf Papier notiert",
   „doppelt eingetippt", „Patient:in fragt, was ich am Handy mache").
 
-Das Auditlog (ADR-010) liefert nach dem Go-live Zählungen für auditierte
+Das Auditlog (ADR-010) liefert nach der Eröffnung Zählungen für auditierte
 Aktionen — als **Praxissumme je Aktionstyp**, gelesen vom `owner`, nie je
 Person. Das ersetzt die Strichliste für diese Vorgänge, nicht die Stoppuhr.
 
@@ -269,7 +269,7 @@ Person. Das ersetzt die Strichliste für diese Vorgänge, nicht die Stoppuhr.
 
 Die Selbstbeobachtung ist eine Verarbeitung von Beschäftigtendaten. Sie wird
 in der ersten Vollrunde als `ANN-NNN` registriert (Datenschutz, Wiedervorlage
-B6) und mit einem Satz in die DSFA-Unterlagen (G12) aufgenommen — **vor** der
+B6) und mit einem Satz in die DSFA-Unterlagen (G14) aufgenommen — **vor** der
 ersten Erhebung durch jemand anderen als Jannes.
 
 ### Prüfungen, die nur im Feld gehen
@@ -280,16 +280,17 @@ ersten Erhebung durch jemand anderen als Jannes.
 - **Ladeprobe im Funkloch** — Mein Tag und eine Akte an drei realen Orten
   (Keller, Treppenhaus, Rad) mit synthetischen Daten: Sekunden bis bedienbar;
   einmal Verbindungsabbruch mitten im Formular.
-- **Schattentag** — zweimal vor Go-live (nach CAL-EPIC-003; in der Messrunde
-  vor Go-live): eine echte Radrunde zu eigenen Adressen mit **synthetischen
-  Patient:innen**, App parallel zum heutigen Weg. An jeder Tür eine Zeile
-  Diktat: Licht, Handschuh, wo ist das Handy, wenn beide Hände am Patienten
-  sind, was gemerkt statt eingetippt. Zählt Datenverluste, Fehltaps, Sekunden
-  je Schritt. Nach Go-live einmal am echten Tag, ohne Patientendaten.
+- **Schattentag** — zweimal vor dem Gate (nach CAL-EPIC-003a; in der
+  Messrunde vor M3) und einmal nach TOUR-EPIC-001a mit der Tagesroute: eine
+  echte Radrunde zu eigenen Adressen mit **synthetischen Patient:innen**, App
+  parallel zum heutigen Weg. An jeder Tür eine Zeile Diktat: Licht, Handschuh,
+  wo ist das Handy, wenn beide Hände am Patienten sind, was gemerkt statt
+  eingetippt. Zählt Datenverluste, Fehltaps, Sekunden je Schritt. Nach der
+  Eröffnung einmal am echten Tag, ohne Patientendaten.
 - **Fehlerpfad-Aufgaben** — zwei je Bereich im Praxistest: „Du hast die
   Dokumentation der falschen Person zugeordnet — mach es rückgängig." Zählt
   für F: Sekunden bis zum korrekten Zustand.
-- **Eine zweite Person vor dem Go-live** — eine Kollegin oder eine Therapeutin
+- **Eine zweite Person vor dem Gate** — eine Kollegin oder eine Therapeutin
   aus einer anderen Praxis füllt einmal, freiwillig, mit Seed-Daten am Handy
   den Praxistest-Bogen; Jannes führt das Erster-Tag-Protokoll, sagt nichts,
   schreibt Stocker auf. Mit synthetischen Daten ist das keine
@@ -414,9 +415,9 @@ und je Runde einer Ablaufkarte.
 | Datei | Ergänzung |
 | --- | --- |
 | `ROADMAP.md`, Rückwärtsplan Spalte A3 | Rundentermine wie ADR-017: „Ablaufrunde TT (Docs)" usw. |
-| `ROADMAP.md`, „Befunde aus der Abnahme" und G14 `UI-001` | Zusatz: speist sich aus den Ablaufrunden nach `OPTIMIERUNG.md` |
+| `ROADMAP.md`, „Befunde aus der Abnahme" und G17 `UI-001` | Zusatz: speist sich aus den Ablaufrunden nach `OPTIMIERUNG.md` — eingetragen mit 2.1 |
 | `ROADMAP.md`, Tabelle „Modell und Aufwand" | zwei Zeilen: Vollrunde Sonnet 5 `medium`, Messrunde Sonnet 5 `low` |
-| `ROADMAP.md`, G15 | nur mit Jannes' Zustimmung: „Messrunde vor Go-live ohne täglichen Ablauf mit Score 0" |
+| `ROADMAP.md`, G18 (Go-live-Gate) | „Messrunde vor dem Gate ohne täglichen Ablauf mit Score 0" — von Jannes am 2026-09-06 zugestimmt (E-11), eingetragen |
 | `CLAUDE.md`, „Arbeitsweise" | ein Absatz: was eine Ablaufrunde ist, dass sie keinen Scope begründet und keine zweite Reihenfolge führt |
 | `.claude/skills/feature-loop/SKILL.md` | Schritt A: Ablaufkarten-Hinweis aus der Roadmap-Zeile übernehmen, Karte nicht lesen · Schritt F: Oberflächen-Checkliste abhaken — zwei Zeilen, keine Inhaltsregeln |
 | `docs/abnahme/README.md` | Abschnitt 9 wortgleich |
@@ -435,22 +436,23 @@ die Rundentermine stehen dort.
 | Kollegin-Test, Erster Tag | 30–45 min, plus die Kollegin | keine — Ergebnis geht in die nächste Runde | — |
 | Schattentag mit Ladeprobe | ein halber Tag | keine | — |
 
-Bis zum Go-live: vier Vollrunden, eine Messrunde, zwei Schattentage, ein
+Bis zum Gate: vier Vollrunden, eine Messrunde, zwei Schattentage, ein
 Kollegin-Test — etwa anderthalb Loops an Credits und rund zehn Stunden Jannes
 über sechs Monate. Der teurere Teil ist Jannes' Zeit; sie liegt dort, wo nur
-er etwas weiß.
+er etwas weiß. Zwischen Gate und Eröffnung kommen eine Vollrunde Touren (nach
+TOUR-EPIC-001a) und ein Schattentag mit der Tagesroute hinzu.
 
 Sieben kleine Ergänzungen verankern die Methode (Abschnitt 10); sie sind mit
-dem Review vom 2026-09-06 eingetragen — bis auf die Roadmap-Zeilen, die mit
-Version 2.1 kommen, und den Go-live-Zusatz in G15, der Jannes' Zustimmung
-braucht.
+dem Review vom 2026-09-06 eingetragen. Die Roadmap-Zeilen und der Zusatz im
+Go-live-Gate (G18) sind seit Roadmap 2.1 (2026-09-06, Entscheidung E-11)
+ebenfalls eingetragen.
 
 ## 12. Grenzen und Abbruchregel
 
 - **Synthetische Messung ist nicht der Betrieb.** Die Stoppuhr am Schreibtisch
   unterschätzt die mobile Reibung. Schattentag und Ladeprobe mildern das; die
-  Messrunde vier Wochen nach Go-live ist die erste echte Messung, und ihre
-  Reihenfolge schlägt die synthetische.
+  Messrunde vier Wochen nach der Eröffnung ist die erste echte Messung, und
+  ihre Reihenfolge schlägt die synthetische.
 - **n = 1.** Jannes ist Beobachter, Nutzer und Auftraggeber; `office` wird
   gespielt, bis eine Bürokraft da ist. Die Methode gewichtet nach Häufigkeit,
   nicht nach Empfinden — erfinden kann sie einen Bedarf nicht.
