@@ -10,6 +10,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { PatientRecordDocumentation } from '@/features/documentation/PatientRecordDocumentation';
+import { PatientPrescriptions } from '@/features/prescriptions/PatientPrescriptions';
 import {
   ageInYears,
   fetchPatient,
@@ -226,8 +227,12 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
         </div>
       ) : null}
 
-      {/* Die Dokumentation kommt ueber eigene, rollenabhaengig projizierte
-          Lesepfade - nie aus den Stammdaten (DOK-003, ADR-004). */}
+      {/* Verordnung und Dokumentation kommen ueber eigene, rollenabhaengig
+          projizierte Lesepfade - nie aus den Stammdaten (VER-002, DOK-003,
+          ADR-004). Die Verordnung steht davor: sie ist der Auftrag, auf dem
+          die Behandlungen beruhen. */}
+      <PatientPrescriptions patient={patient} user={user} />
+
       <PatientRecordDocumentation patient={patient} user={user} />
 
       <p className="text-ink-subtle mt-10 text-xs leading-relaxed">

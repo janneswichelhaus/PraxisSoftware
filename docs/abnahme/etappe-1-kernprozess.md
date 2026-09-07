@@ -258,3 +258,58 @@ und für ein Patientenkonto nicht sichtbar (ANN-010).
 8. **Am Handy** (Browserfenster auf ~375 px): die Akte scrollt nicht seitwärts,
    der Zugangshinweis bricht um, der Anruflink ist mit dem Daumen erreichbar.
    Zielwert: Zugangshinweis ohne Scrollen sichtbar, sobald die Akte offen ist.
+
+---
+
+## VER-001 — Verordner:innen
+
+1. Als `anna.beispiel@praxis.invalid` (therapist) „Patient:innen" öffnen. Der
+   Bereich hat jetzt zwei Unterpunkte: „Patient:innen" und „Verordner:innen".
+2. „Verordner:innen": zwei synthetische Einträge, Dr. med. Petra Probst und
+   Hendrik Hausarzt, mit Praxis, Fachrichtung und Ort.
+3. Suchfeld „testdorf" eintippen — nur die Hausarztpraxis bleibt stehen.
+4. „Verordner:in anlegen": nur den Nachnamen ausfüllen und speichern. Das
+   genügt; der Eintrag steht in der Liste.
+5. **Doppelprobe:** noch einmal anlegen, mit demselben Nachnamen und derselben
+   (leeren) Praxis. Es erscheint „Diese Verordner:in ist bereits erfasst." mit
+   dem Hinweis, den vorhandenen Eintrag zu verwenden — kein technischer Fehler.
+   Dann eine Praxis ergänzen: jetzt lässt sich der Eintrag anlegen.
+6. Eine bestehende Verordner:in öffnen, das Telefax ergänzen, speichern — die
+   Liste zeigt die Änderung.
+7. **Gegenprobe Office** (`olivia.office@praxis.invalid`): Kartei lesen und
+   pflegen ist erlaubt — sie fordert die Folgeverordnungen an.
+8. **Gegenprobe Patientenkonto** (`max.mustermann@patient.invalid`): der
+   Bereich „Patient:innen" fehlt vollständig, `/verordner` von Hand aufgerufen
+   führt zurück auf die Startseite. Verbindlich ist die Policy
+   `prescribers_select_staff_only`, geprüft in `pnpm test:db`.
+
+---
+
+## VER-002 — Verordnungen in der Akte, nach Jahr
+
+1. Als `anna.beispiel@praxis.invalid` (therapist) „Max Mustermann" öffnen.
+   Unter den Stammdaten und **vor** der Behandlungsdokumentation steht der
+   Abschnitt „Verordnungen", gruppiert nach Jahr: 2026 mit zwei Einträgen.
+2. Die Folgeverordnung vom 18.06.2026 zeigt „Krankengymnastik · 7 von 10
+   genutzt · noch 3" und darunter „noch 3 von 10".
+3. Die Erstverordnung vom 05.02.2026 zeigt zwei Positionen, „noch 0 von 20"
+   und die Kennzeichnung **„Kontingent ausgeschöpft"**. Das ist eine
+   Zustandsangabe zur Menge, ausdrücklich keine Empfehlung (ANN-014).
+4. Als therapeutische Rolle stehen zusätzlich „Diagnose", „Therapieziel",
+   „Hinweis der Verordner:in" und „Empfehlung der Therapeut:in zum
+   Verordnungsende" da — letztere mit genau dieser Beschriftung.
+5. „Erika Beispiel" öffnen: die Verordnung von 2025 steht unter der
+   Jahresüberschrift **2025**.
+6. **Gegenprobe Office** (`olivia.office@praxis.invalid`): dieselbe Akte zeigt
+   den Abschnitt „Verordnungen" mit Verordner:in, Art, Datum, Frequenz und
+   Kontingent — **ohne** Diagnose, Therapieziel, Hinweis und Empfehlung. Es
+   gibt auch keine leeren Felder dafür: die Serverfunktion liefert sie nicht.
+   Auch „Verordnung erfassen" fehlt. Das ist **kein** Sicherheitsnachweis;
+   verbindlich sind `list_patient_prescriptions` und
+   `list_patient_prescriptions_clinical`, geprüft in `pnpm test:db`.
+7. **Auditprobe:** als `jannes.test@praxis.invalid` (owner) „Praxis →
+   Sicherheit → Audit" öffnen. Je Verordnung, die eine therapeutische Rolle
+   gelesen hat, steht ein Eintrag „Verordnung gelesen". Nach dem Besuch von
+   Office in Schritt 6 entsteht **kein** solcher Eintrag.
+8. **Am Handy** (~375 px): die Verordnungskarten brechen um, es wird nicht
+   seitwärts gescrollt, und „noch 3 von 10" steht ohne Zoom lesbar da.

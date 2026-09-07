@@ -219,3 +219,113 @@ export async function updatePrescriber(
   // unbekannte ID sollen auch in der Oberfläche gleich aussehen.
   if (error) throw new Error('Die Verordner:in konnte nicht gespeichert werden.');
 }
+
+// -----------------------------------------------------------------------------
+// Verordnungen
+// -----------------------------------------------------------------------------
+
+const itemSchema = z.object({
+  id: z.string(),
+  sort_order: z.number(),
+  remedy: z.string(),
+  prescribed_quantity: z.number(),
+  used_quantity: z.number(),
+  // Wird serverseitig gerechnet und nirgends gespeichert (ANN-012).
+  remaining_quantity: z.number(),
+});
+
+export type PrescriptionItem = z.infer<typeof itemSchema>;
+
+const prescriptionSchema = z.object({
+  id: z.string(),
+  prescriber_id: z.string(),
+  prescriber_name: z.string(),
+  prescriber_practice_name: z.string().nullable(),
+  prescription_kind: z.enum(['first', 'follow_up']),
+  issued_on: z.string(),
+  frequency_note: z.string().nullable(),
+  note: z.string().nullable(),
+  items: z.array(itemSchema),
+  updated_at: z.string(),
+});
+
+/**
+ * Die klinischen Felder kommen aus einer anderen Serverfunktion und sind
+ * deshalb optional — nicht "nullable". Wer die organisatorische Sicht liest,
+ * bekommt sie gar nicht erst (ADR-004, ANN-011).
+ */
+const clinicalPrescriptionSchema = prescriptionSchema.extend({
+  diagnosis: z.string().nullable(),
+  therapy_goal: z.string().nullable(),
+  prescriber_note: z.string().nullable(),
+  follow_up_recommendation: z.string().nullable(),
+});
+
+export type Prescription = z.infer<typeof prescriptionSchema>;
+export type ClinicalPrescription = z.infer<typeof clinicalPrescriptionSchema>;
+
+export async function fetchPatientPrescriptions(patientId: string): Promise<Prescription[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_prescriptions', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Verordnungen konnten nicht geladen werden.');
+  return z.array(prescriptionSchema).parse(data ?? []);
+}
+
+export async function fetchPatientPrescriptionsClinical(
+  patientId: string,
+): Promise<ClinicalPrescription[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_prescriptions_clinical', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Verordnungen konnten nicht geladen werden.');
+  return z.array(clinicalPrescriptionSchema).parse(data ?? []);
+}
+
+export const prescriptionKindLabels: Record<Prescription['prescription_kind'], string> = {
+  first: 'Erstverordnung',
+  follow_up: 'Folgeverordnung',
+};
+
+export function formatDate(value: string | null): string {
+  if (!value) return '—';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date);
+}
+
+/** Jahr der Ausstellung, für die Gruppierung in der Akte (VER-002). */
+export function ausstellungsjahr(prescription: Prescription): string {
+  return prescription.issued_on.slice(0, 4);
+}
+
+/**
+ * Verordnungen nach Jahr, neueste zuerst.
+ *
+ * Die Serverfunktion liefert bereits absteigend sortiert; die Gruppierung
+ * behält diese Reihenfolge bei, statt neu zu sortieren.
+ */
+export function nachJahr<T extends Prescription>(
+  prescriptions: readonly T[],
+): { jahr: string; verordnungen: T[] }[] {
+  const gruppen: { jahr: string; verordnungen: T[] }[] = [];
+  for (const verordnung of prescriptions) {
+    const jahr = ausstellungsjahr(verordnung);
+    const letzte = gruppen.at(-1);
+    if (letzte && letzte.jahr === jahr) letzte.verordnungen.push(verordnung);
+    else gruppen.push({ jahr, verordnungen: [verordnung] });
+  }
+  return gruppen;
+}
+
+/** Summe der noch offenen Behandlungen über alle Positionen. */
+export function restkontingent(prescription: Prescription): number {
+  return prescription.items.reduce((summe, item) => summe + item.remaining_quantity, 0);
+}
+
+/** Summe der verordneten Behandlungen über alle Positionen. */
+export function gesamtkontingent(prescription: Prescription): number {
+  return prescription.items.reduce((summe, item) => summe + item.prescribed_quantity, 0);
+}

@@ -37,6 +37,7 @@ export const AUDIT_ACTIONS = [
   'treatment_note.revised',
   'treatment_note.addendum_created',
   'treatment_note.history_viewed',
+  'prescription.viewed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -72,6 +73,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'treatment_note.revised': 'Behandlungsdokumentation korrigiert',
   'treatment_note.addendum_created': 'Nachtrag angelegt',
   'treatment_note.history_viewed': 'Änderungsverlauf gelesen',
+  'prescription.viewed': 'Verordnung gelesen',
 };
 
 export const auditSubjectLabels: Record<string, string> = {
@@ -82,6 +84,7 @@ export const auditSubjectLabels: Record<string, string> = {
   staff_working_hour_exception: 'Arbeitszeitabweichung',
   staff_member: 'Mitarbeiter:in',
   treatment_note: 'Behandlungsdokumentation',
+  prescription: 'Verordnung',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {
