@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Field } from '@/components/ui/Field';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { SearchField } from '@/components/ui/SearchField';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchPrescribers, prescriberName, type Prescriber } from './api';
 
@@ -43,23 +44,14 @@ export function PrescribersListPage() {
       <PageHeader
         title="Verordner:innen"
         description="Ärzt:innen und Praxen, die Verordnungen ausstellen."
-        actions={
-          <Link
-            to="/verordner/neu"
-            className="bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors"
-          >
-            Verordner:in anlegen
-          </Link>
-        }
+        actions={<ButtonLink to="/verordner/neu">Verordner:in anlegen</ButtonLink>}
       />
 
       <div className="mb-5 max-w-sm">
-        <Field
-          label="Suche"
-          type="search"
+        <SearchField
           placeholder="Name, Praxis, Fachrichtung, Ort"
           value={suche}
-          onChange={(event) => setSuche(event.target.value)}
+          onChange={setSuche}
         />
       </div>
 

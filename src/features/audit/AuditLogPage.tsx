@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
   AUDIT_ACTIONS,
   auditActionLabels,
@@ -200,9 +201,9 @@ export function AuditLogPage() {
           </ul>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-ink-muted text-sm tabular-nums" role="status">
+            <Statusmeldung className="tabular-nums">
               {first}–{last} von {total}
-            </p>
+            </Statusmeldung>
             <div className="flex gap-2">
               <Button
                 variant="secondary"

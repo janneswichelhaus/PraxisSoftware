@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { buttonKlassen } from '@/components/ui/buttonStile';
 import {
   canReadTreatmentNote,
   canWriteTreatmentNote,
@@ -17,10 +18,8 @@ import {
 } from './api';
 import { herkunft, zeitpunkt } from './format';
 
-const linkPrimaer =
-  'bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors';
-const linkSekundaer =
-  'border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors';
+const linkPrimaer = buttonKlassen('primary');
+const linkSekundaer = buttonKlassen('secondary');
 
 /**
  * Ein Eintrag - Haupteintrag oder Nachtrag - mit seinen Handlungen.

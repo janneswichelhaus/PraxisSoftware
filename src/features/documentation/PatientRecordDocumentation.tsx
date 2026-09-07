@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
   canReadTreatmentEvidence,
   canReadTreatmentNote,
@@ -80,9 +81,9 @@ function WeitereSeite({
         {laufend ? 'Wird geladen …' : 'Ältere Termine anzeigen'}
       </Button>
       {fehler ? (
-        <p className="text-danger mt-2 text-sm">
+        <Statusmeldung ton="fehler" className="mt-2">
           Die weiteren Termine konnten nicht geladen werden. Bitte erneut versuchen.
-        </p>
+        </Statusmeldung>
       ) : null}
     </div>
   );

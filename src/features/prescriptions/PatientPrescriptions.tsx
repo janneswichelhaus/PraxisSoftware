@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Section } from '@/components/ui/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canReadPrescriptionClinical,
@@ -48,22 +51,19 @@ function Rahmen({
   user: CurrentUser;
   children: React.ReactNode;
 }) {
-  const darfSchreiben = canWritePrescriptions(user.roles);
   return (
-    <section className="mt-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-ink text-base font-semibold">Verordnungen</h2>
-        {darfSchreiben ? (
-          <Link
-            to={`/patienten/${patient.id}/verordnungen/neu`}
-            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
-          >
+    <Section
+      titel="Verordnungen"
+      aktion={
+        canWritePrescriptions(user.roles) ? (
+          <ButtonLink to={`/patienten/${patient.id}/verordnungen/neu`} variant="secondary">
             Verordnung erfassen
-          </Link>
-        ) : null}
-      </div>
-      <div className="mt-3">{children}</div>
-    </section>
+          </ButtonLink>
+        ) : null
+      }
+    >
+      {children}
+    </Section>
   );
 }
 
@@ -86,15 +86,6 @@ function Kontingent({ prescription }: { prescription: Prescription }) {
       </span>
       {rest === 0 ? <Badge ton="neutral">Kontingent ausgeschöpft</Badge> : null}
     </span>
-  );
-}
-
-function Zeile({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5 py-2 sm:flex-row sm:gap-6">
-      <dt className="text-ink-muted text-sm sm:w-40 sm:shrink-0">{label}</dt>
-      <dd className="text-ink text-[0.9375rem] whitespace-pre-line">{children}</dd>
-    </div>
   );
 }
 
@@ -147,27 +138,27 @@ function Verordnungskarte({
         ))}
       </ul>
 
-      <dl className="border-line mt-2 border-t pt-2">
-        <Zeile label="Kontingent">
+      <DetailList>
+        <DetailRow label="Kontingent">
           <Kontingent prescription={prescription} />
-        </Zeile>
+        </DetailRow>
         {prescription.frequency_note ? (
-          <Zeile label="Frequenz">{prescription.frequency_note}</Zeile>
+          <DetailRow label="Frequenz">{prescription.frequency_note}</DetailRow>
         ) : null}
-        {klinisch?.diagnosis ? <Zeile label="Diagnose">{klinisch.diagnosis}</Zeile> : null}
+        {klinisch?.diagnosis ? <DetailRow label="Diagnose">{klinisch.diagnosis}</DetailRow> : null}
         {klinisch?.therapy_goal ? (
-          <Zeile label="Therapieziel">{klinisch.therapy_goal}</Zeile>
+          <DetailRow label="Therapieziel">{klinisch.therapy_goal}</DetailRow>
         ) : null}
         {klinisch?.prescriber_note ? (
-          <Zeile label="Hinweis der Verordner:in">{klinisch.prescriber_note}</Zeile>
+          <DetailRow label="Hinweis der Verordner:in">{klinisch.prescriber_note}</DetailRow>
         ) : null}
         {klinisch?.follow_up_recommendation ? (
-          <Zeile label="Empfehlung der Therapeut:in zum Verordnungsende">
+          <DetailRow label="Empfehlung der Therapeut:in zum Verordnungsende">
             {klinisch.follow_up_recommendation}
-          </Zeile>
+          </DetailRow>
         ) : null}
-        {prescription.note ? <Zeile label="Bemerkung">{prescription.note}</Zeile> : null}
-      </dl>
+        {prescription.note ? <DetailRow label="Bemerkung">{prescription.note}</DetailRow> : null}
+      </DetailList>
     </li>
   );
 }
@@ -188,9 +179,8 @@ function Jahresliste({
   return (
     <>
       {nachJahr(prescriptions).map(({ jahr, verordnungen }) => (
-        <section key={jahr} className="mt-5 first:mt-0">
-          <h3 className="text-ink-muted text-sm font-semibold tracking-wide uppercase">{jahr}</h3>
-          <ul className="mt-2 flex flex-col gap-3">
+        <Section key={jahr} titel={jahr} ebene={3}>
+          <ul className="flex flex-col gap-3">
             {verordnungen.map((verordnung) => (
               <Verordnungskarte
                 key={verordnung.id}
@@ -201,7 +191,7 @@ function Jahresliste({
               />
             ))}
           </ul>
-        </section>
+        </Section>
       ))}
     </>
   );

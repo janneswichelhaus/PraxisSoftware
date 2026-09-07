@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/scheduling/api';
 import {
@@ -379,9 +380,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       </div>
 
       {verschieben.isPending ? (
-        <p className="text-ink-muted mt-4 text-sm" role="status">
-          Der Termin wird verschoben …
-        </p>
+        <Statusmeldung className="mt-4">Der Termin wird verschoben …</Statusmeldung>
       ) : null}
 
       {offen ? (

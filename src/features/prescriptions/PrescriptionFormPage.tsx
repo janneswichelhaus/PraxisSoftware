@@ -5,6 +5,7 @@ import type { z } from 'zod';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { PrescriptionFormFields, type PositionsFehler } from './PrescriptionFormFields';
 import {
   createPrescription,
@@ -48,7 +49,6 @@ function VerordnungsFormular({
   );
   const [fehler, setFehler] = useState<Partial<Record<PrescriptionFeld, string>>>({});
   const [positionsFehler, setPositionsFehler] = useState<PositionsFehler[]>([]);
-  const [loeschRueckfrage, setLoeschRueckfrage] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -215,45 +215,25 @@ function VerordnungsFormular({
       {/* Löschen ist der Weg für eine Verordnung, die in der falschen Akte
           gelandet ist (Art. 16 DSGVO). Bewusst mit Rückfrage und außerhalb des
           Formulars, damit kein versehentliches Absenden sie auslöst. */}
+      {/* Löschen ist der Weg für eine Verordnung, die in der falschen Akte
+          gelandet ist (Art. 16 DSGVO). Bewusst mit Rückfrage und außerhalb des
+          Formulars, damit kein versehentliches Absenden sie auslöst. */}
       {bestand ? (
-        <div className="border-line mt-10 border-t pt-6">
-          {loeschRueckfrage ? (
-            <div className="border-line-strong bg-surface-sunken max-w-xl rounded-lg border p-4">
-              <p className="text-ink text-sm">
-                Die Verordnung wird endgültig entfernt, samt ihren Positionen. Der Vorgang wird
-                protokolliert. Für eine falsch zugeordnete Verordnung ist das der richtige Weg; für
-                eine abgelaufene nicht — sie gehört in die Akte.
-              </p>
-              {loeschen.isError ? (
-                <p className="text-danger mt-2 text-sm">
-                  Die Verordnung konnte nicht gelöscht werden.
-                </p>
-              ) : null}
-              <div className="mt-3 flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  disabled={loeschen.isPending}
-                  onClick={() => {
-                    if (loeschen.isPending) return;
-                    loeschen.mutate();
-                  }}
-                >
-                  {loeschen.isPending ? 'Wird gelöscht …' : 'Ja, Verordnung löschen'}
-                </Button>
-                {/* Eigener Name statt „Abbrechen": auf dieser Seite gibt es
-                    schon einen Abbrechen-Knopf im Formular, und zwei gleich
-                    benannte Schaltflaechen sind vorgelesen nicht zu
-                    unterscheiden. */}
-                <Button type="button" variant="quiet" onClick={() => setLoeschRueckfrage(false)}>
-                  Nicht löschen
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button type="button" variant="secondary" onClick={() => setLoeschRueckfrage(true)}>
-              Verordnung löschen
-            </Button>
-          )}
+        <div className="border-line mt-10 flex border-t pt-6">
+          <Rueckfrage
+            ausloeser="Verordnung löschen"
+            bezeichnung="Verordnung endgültig löschen"
+            bestaetigen="Ja, Verordnung löschen"
+            bestaetigenLaeuft="Wird gelöscht …"
+            abbrechen="Nicht löschen"
+            fehler={loeschen.isError ? 'Die Verordnung konnte nicht gelöscht werden.' : undefined}
+            laeuft={loeschen.isPending}
+            onBestaetigen={() => loeschen.mutateAsync()}
+          >
+            Die Verordnung wird endgültig entfernt, samt ihren Positionen. Der Vorgang wird
+            protokolliert. Für eine falsch zugeordnete Verordnung ist das der richtige Weg; für eine
+            abgelaufene nicht — sie gehört in die Akte.
+          </Rueckfrage>
         </div>
       ) : null}
 
