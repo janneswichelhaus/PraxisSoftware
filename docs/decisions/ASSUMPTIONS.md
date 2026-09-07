@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-05
+Zuletzt aktualisiert: 2026-09-07
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -116,6 +116,7 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden 2026-09-05 | Providerprüfung nach ADR-002 |
 | ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | offen  | Jannes; Datenschutzprüfung    |
 | ANN-009 | Systemakteur im Auditlog                                       | Datenschutz   | offen  | Datenschutzprüfung            |
+| ANN-010 | Sichtbarkeit und Frist der internen Versorgungsangaben          | Datenschutz   | offen  | Datenschutzprüfung; Jannes    |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -544,3 +545,61 @@ im Auditlog" in `pnpm test:db`.
 Inserts in `finalize_overdue_treatment_notes` erweitern — Aufwand `klein`.
 Eigener Pseudo-Account statt Systemakteur: Spalte zurückbauen und Konto im
 Seed anlegen — Aufwand `mittel`, ausdrücklich nicht empfohlen.
+
+---
+
+### ANN-010 — Sichtbarkeit und Frist der internen Versorgungsangaben
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | PAT-005 (VER-EPIC-001); `IDEA-PRX-001`; `PROJECT_PRINCIPLES.md` §4.3, §4.6 und ADR-008 lassen die Einordnung solcher Felder offen |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen |
+
+**Annahme.** Zugangshinweis Hausbesuch, Besonderheit, Bemerkung und die feste
+Therapeut:in sind **organisatorische Angaben der Praxis**, keine
+Gesundheitsdaten und keine klinische Dokumentation. Sie liegen in einer
+eigenen Tabelle `patient_care_details` und sind **für alle vier Praxisrollen
+einschließlich `office` sichtbar**, ausdrücklich **nicht für das
+Patientenkonto** und nicht für `anon`. Ihre **Datenklasse ist die der
+Patientenakte**: zehn Jahre nach Abschluss der Behandlung (ADR-008). Sie
+dürfen niemals in Logs erscheinen (ADR-011). Die zusätzliche Erreichbarkeit
+(Mobil, geschäftlich, Telefax, Einrichtung) bleibt dagegen bei den
+Kontaktdaten der Person und ist für das Patientenkonto sichtbar.
+
+**Begründung.** Die Trennung folgt §4.3: `office` organisiert Termine und
+ruft an — der Zugangshinweis ist genau dafür da, und ihn dem Office
+vorzuenthalten würde die Rolle arbeitsunfähig machen. Zugleich verlangt §4.3,
+klinischen Freitext fernzuhalten; deshalb steht am Formular ein Hinweis, dass
+Befund und Verlauf in die Behandlungsdokumentation gehören, und die Felder
+liegen nicht in `patients`, wo ein Test klinische Spaltennamen ausschließt.
+Der Ausschluss des Patientenkontos folgt §4.6 und der Datensparsamkeit aus
+§16: es sind Arbeitsnotizen der Praxis („Schlüssel bei der Nachbarin"), deren
+Spiegelung in ein späteres Portal eine eigene fachliche Entscheidung wäre.
+Das Auskunftsrecht nach Art. 15 DSGVO bleibt unberührt und läuft über OPS-006
+(G9), nicht über eine Live-Ansicht. Die Frist folgt der Patientenakte, weil
+die Angaben am Behandlungsverhältnis hängen und ADR-008 eine neue Datenklasse
+ohne Fristzuordnung als Mangel führt; die kürzere Alternative („organisatorische
+Patientenkommunikation", 3 Jahre) wäre nur mit eigener Löschregel haltbar und
+würde die Angaben aus einem noch laufenden Behandlungsfall entfernen.
+**Unsicher:** ob die Prüfung „Besonderheit" für ein Feld hält, in das in der
+Praxis regelmäßig Gesundheitsdaten geraten (etwa „schwerhörig"), und deshalb
+eine engere Rollenmenge oder eine eigene Kennzeichnung verlangt.
+
+**Verankerung.** Tabelle `public.patient_care_details`, Policy
+`patient_care_details_select_directory_only` und die Sicht
+`patient_directory` in
+`supabase/migrations/20260907100000_patient_master_data.sql` (tragen die
+Kennung); Abschnitt „Versorgung" mit Hinweistext in
+`src/features/patients/PatientMasterDataFields.tsx`; Anzeige in
+`src/features/patients/PatientDetailPage.tsx`; Datenbanktests
+„PAT-005: erweiterte Stammdaten und interne Versorgungsangaben" in
+`pnpm test:db`.
+
+**Änderungspfad.** Engere Rollenmenge (etwa ohne `office`): die eine Policy
+ersetzen — Aufwand `klein`. Sichtbarkeit für das Patientenkonto: Policy um
+den Zweig „eigene Person" erweitern — Aufwand `klein`. Kürzere Frist: eigene
+Datenklasse und Löschregel in LOE-001 — Aufwand `mittel`. Verlegung einzelner
+Felder in die klinische Dokumentation: Migration mit Datenumzug und neuem
+Lesepfad — Aufwand `groß`.

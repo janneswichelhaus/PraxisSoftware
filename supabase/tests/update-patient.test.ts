@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { uuidParameter } from './helpers/signature';
 
 const { users, organizationId, patients } = SEED;
 
@@ -350,9 +351,14 @@ describe('update_patient: unbekannte und fremde Patienten', () => {
     `);
     const argumente = rows[0]?.args ?? '';
     expect(argumente).not.toMatch(/organization/i);
-    // Genau ein ID-Parameter: der Zielpatient. Alles andere leitet die
-    // Funktion aus der Sitzung ab.
-    expect(argumente.match(/uuid/gi)).toHaveLength(1);
+    // Zwei ID-Parameter, beide fachlich begruendet: der Zielpatient und die
+    // feste Therapeut:in (PAT-005). Beide werden serverseitig gegen die
+    // Organisation aus der Sitzung geprueft; die Organisation selbst kommt nie
+    // vom Client.
+    expect(uuidParameter(argumente)).toEqual([
+      'p_patient_id',
+      'p_primary_therapist_staff_member_id',
+    ]);
   });
 });
 

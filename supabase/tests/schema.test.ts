@@ -57,6 +57,7 @@ describe('Schema-Invarianten', () => {
       'staff_private_details',
       'patients',
       'patient_contact_details',
+      'patient_care_details',
       'user_profiles',
       'user_roles',
       'audit_log',

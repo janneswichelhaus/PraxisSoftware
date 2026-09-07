@@ -4,11 +4,11 @@ import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
 import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders, testUser } from '@/test-utils';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
-const aktiv: PatientsApi.Patient = {
+const aktiv: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
   status: 'active',
   care_started_on: '2026-01-05',
@@ -21,7 +21,7 @@ const aktiv: PatientsApi.Patient = {
   house_number: '12b',
   postal_code: '50667',
   city: 'Köln',
-};
+});
 
 const fetchPatient = vi.fn();
 const setPatientStatus = vi.fn();
@@ -265,6 +265,49 @@ describe('PatientDetailPage', () => {
       await screen.findByRole('heading', { name: 'Max Mustermann' });
 
       expect(screen.queryByRole('link', { name: 'Termin anlegen' })).not.toBeInTheDocument();
+    });
+  });
+  describe('Hausbesuch und Versorgung (PAT-005)', () => {
+    it('zeigt Zugangshinweis, Besonderheit und feste Therapeut:in', async () => {
+      fetchPatient.mockResolvedValue(
+        testPatient({
+          id: PATIENT_ID,
+          home_visit_access_note: '2. OG links, Klingel "Mustermann".',
+          special_note: 'Hund im Flur.',
+          primary_therapist_name: 'Anna Beispiel',
+          remark: 'Bevorzugt Vormittage.',
+        }),
+      );
+      renderWithProviders(<PatientDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.getByText('2. OG links, Klingel "Mustermann".')).toBeInTheDocument();
+      expect(screen.getByText('Hund im Flur.')).toBeInTheDocument();
+      expect(screen.getByText('Anna Beispiel')).toBeInTheDocument();
+      expect(screen.getByText('Bevorzugt Vormittage.')).toBeInTheDocument();
+    });
+
+    it('laesst den Abschnitt weg, wenn die Sicht nichts liefert', async () => {
+      // Fuer ein Patientenkonto sind die internen Angaben serverseitig leer
+      // (ANN-010). Die Oberflaeche zeigt dann keinen leeren Abschnitt.
+      fetchPatient.mockResolvedValue(testPatient({ id: PATIENT_ID }));
+      renderWithProviders(<PatientDetailPage user={testUser(['patient'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.queryByText('Hausbesuch und Versorgung')).not.toBeInTheDocument();
+    });
+
+    it('bietet die Mobilnummer als Anruf an', async () => {
+      fetchPatient.mockResolvedValue(
+        testPatient({ id: PATIENT_ID, phone_mobile: '+49 160 0000005' }),
+      );
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.getByRole('link', { name: '+49 160 0000005' })).toHaveAttribute(
+        'href',
+        'tel:+491600000005',
+      );
     });
   });
 });

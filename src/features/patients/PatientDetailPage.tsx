@@ -20,12 +20,32 @@ import {
   type Patient,
 } from './api';
 
-function DataRow({ label, value }: { label: string; value: string }) {
+function DataRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5 py-3 sm:flex-row sm:gap-6 sm:py-2.5">
       <dt className="text-ink-muted text-sm sm:w-44 sm:shrink-0">{label}</dt>
-      <dd className="text-ink text-[0.9375rem]">{value}</dd>
+      <dd className="text-ink text-[0.9375rem] whitespace-pre-line">{value}</dd>
     </div>
+  );
+}
+
+/**
+ * Telefonnummer als Aktion, nicht als Text (Oberflächen-Checkliste Punkt 8).
+ *
+ * Im Hausbesuch ist der Anruf der häufigste nächste Schritt; ein `tel:`-Link
+ * spart das Abtippen am Handy.
+ */
+function TelefonZeile({ label, nummer }: { label: string; nummer: string | null }) {
+  if (!nummer) return <DataRow label={label} value="—" />;
+  return (
+    <DataRow
+      label={label}
+      value={
+        <a className="text-accent hover:underline" href={`tel:${nummer.replace(/[^+\d]/g, '')}`}>
+          {nummer}
+        </a>
+      }
+    />
   );
 }
 
@@ -111,6 +131,12 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
     .join(', ');
   const darfStatusWechseln = canChangePatientStatus(user.roles);
   const darfTerminePlanen = canManageAppointments(user.roles);
+  const hatVersorgungsangaben = Boolean(
+    patient.home_visit_access_note ||
+    patient.special_note ||
+    patient.remark ||
+    patient.primary_therapist_name,
+  );
 
   return (
     <>
@@ -146,13 +172,48 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
               : '—'
           }
         />
+        {patient.institution ? <DataRow label="Einrichtung" value={patient.institution} /> : null}
         <DataRow label="Adresse" value={address || '—'} />
       </Section>
 
       <Section title="Kontakt">
-        <DataRow label="Telefon" value={patient.phone ?? '—'} />
-        <DataRow label="E-Mail" value={patient.email ?? '—'} />
+        <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
+        <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
+        {patient.phone_work ? (
+          <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
+        ) : null}
+        {patient.fax ? <DataRow label="Telefax" value={patient.fax} /> : null}
+        <DataRow
+          label="E-Mail"
+          value={
+            patient.email ? (
+              <a className="text-accent hover:underline" href={`mailto:${patient.email}`}>
+                {patient.email}
+              </a>
+            ) : (
+              '—'
+            )
+          }
+        />
       </Section>
+
+      {/* PAT-005: interne Angaben der Praxis. Für ein Patientenkonto liefert die
+          Sicht sie gar nicht erst; der Abschnitt bleibt dann leer und
+          verschwindet (ANN-010, ADR-004). */}
+      {hatVersorgungsangaben ? (
+        <Section title="Hausbesuch und Versorgung">
+          {patient.home_visit_access_note ? (
+            <DataRow label="Zugang" value={patient.home_visit_access_note} />
+          ) : null}
+          {patient.special_note ? (
+            <DataRow label="Besonderheit" value={patient.special_note} />
+          ) : null}
+          {patient.primary_therapist_name ? (
+            <DataRow label="Feste Therapeut:in" value={patient.primary_therapist_name} />
+          ) : null}
+          {patient.remark ? <DataRow label="Bemerkung" value={patient.remark} /> : null}
+        </Section>
+      ) : null}
 
       <Section title="Versorgung">
         <DataRow label="Beginn" value={formatDate(patient.care_started_on)} />

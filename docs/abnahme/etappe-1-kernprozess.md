@@ -223,3 +223,38 @@ Testvorbereitung zurückdatiert, statt einen Tag zu warten.
 11. Gegenprobe Frist: einen weiteren Entwurf anlegen und nur den **Termin**
     zurückdatieren, nicht den Entwurf. Der Lauf liefert `0` — der spät
     angelegte Entwurf hat seine eigene Frist ab heute.
+
+---
+
+## PAT-005 — Erweiterte Stammdaten und Zugangshinweis
+
+Neu sind die Erreichbarkeit (Mobil, geschäftlich, Telefax, Einrichtung) und ein
+Abschnitt „Versorgung" mit Zugangshinweis, Besonderheit, Bemerkung und fester
+Therapeut:in. Die Angaben aus „Versorgung" sind **interne Angaben der Praxis**
+und für ein Patientenkonto nicht sichtbar (ANN-010).
+
+1. Als `anna.beispiel@praxis.invalid` (therapist) „Patienten" → „Max
+   Mustermann" öffnen. Unter „Kontakt" steht die Mobilnummer zuoberst und ist
+   ein **Anruflink**: ein Tipp darauf öffnet am Handy den Wählvorgang.
+2. Darunter steht „Hausbesuch und Versorgung" mit dem Zugangshinweis
+   („2. OG links …"), der Besonderheit („Hund im Flur …"), der festen
+   Therapeut:in „Anna Beispiel" und der Bemerkung.
+3. „Stammdaten bearbeiten": der Abschnitt „Versorgung" trägt den Hinweis, dass
+   Befunde und Behandlungsverlauf in die Dokumentation gehören. Zugangshinweis
+   in mehreren Zeilen ändern und speichern — die Akte zeigt die Zeilenumbrüche.
+4. „Feste Therapeut:in" auf „Keine feste Zuordnung" stellen und speichern: die
+   Zeile verschwindet aus der Akte. Danach wieder zuordnen.
+5. Neuanlage: „Patienten" → „Neue:r Patient:in". Nur Pflichtfelder ausfüllen und
+   anlegen — die Akte zeigt keinen Abschnitt „Hausbesuch und Versorgung", weil
+   nichts erfasst wurde. Kein leerer Abschnitt, keine „null"-Werte.
+6. **Gegenprobe Office** (`olivia.office@praxis.invalid`): dieselbe Akte zeigt
+   Zugangshinweis und Besonderheit ebenfalls — Office organisiert die Termine
+   und ruft an (§4.3). Bearbeiten ist möglich.
+7. **Gegenprobe Patientenkonto** (`max.mustermann@patient.invalid`): die eigene
+   Akte zeigt Mobilnummer und Adresse, aber **keinen** Abschnitt „Hausbesuch
+   und Versorgung". Das ist ausdrücklich **kein** Sicherheitsnachweis;
+   verbindlich ist die Policy `patient_care_details_select_directory_only`,
+   geprüft in `pnpm test:db` („PAT-005: erweiterte Stammdaten …").
+8. **Am Handy** (Browserfenster auf ~375 px): die Akte scrollt nicht seitwärts,
+   der Zugangshinweis bricht um, der Anruflink ist mit dem Daumen erreichbar.
+   Zielwert: Zugangshinweis ohne Scrollen sichtbar, sobald die Akte offen ist.

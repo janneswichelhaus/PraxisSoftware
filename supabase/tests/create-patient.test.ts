@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { uuidParameter } from './helpers/signature';
 
 const { users, organizationId } = SEED;
 
@@ -368,8 +369,11 @@ describe('create_patient: Mandantentrennung', () => {
     `);
     const args = rows[0]?.args ?? '';
     expect(args).not.toMatch(/organization/i);
-    // Auch keine ID-Parameter: die Schluessel erzeugt die Funktion selbst.
-    expect(args).not.toMatch(/uuid/i);
+    // Die Schluessel des neuen Datensatzes erzeugt die Funktion selbst. Der
+    // einzige zulaessige ID-Parameter ist der Verweis auf eine bestehende
+    // Mitarbeiterin (PAT-005) - und der wird serverseitig gegen die eigene
+    // Organisation geprueft, siehe den Test weiter unten.
+    expect(uuidParameter(args)).toEqual(['p_primary_therapist_staff_member_id']);
   });
 
   it('legt einen Patienten immer in der Organisation des Aufrufers an', async () => {
