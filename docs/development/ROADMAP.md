@@ -45,12 +45,16 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop VER-EPIC-001 Verordnungen: PAT-005, VER-001 bis VER-003
+/feature-loop UI-000 Fundament: Tokens, Bausteine, Druck-Basis, 375-px-Helfer
 ```
 
-- **Danach, in dieser Reihenfolge:** `UI-000` Fundament · `UX-EPIC-001`
-  Hausbesuchstag · `STAFF-EPIC-002` Konten.
-- **Ersatz**, falls VER-EPIC-001 blockiert ist: `UI-000`.
+- **Danach, in dieser Reihenfolge:** `UX-EPIC-001` Hausbesuchstag ·
+  `STAFF-EPIC-002` Konten · `LOE-EPIC-001` Löschung und Retention.
+- **Ersatz**, falls UI-000 blockiert ist: `STAFF-EPIC-002`.
+- **Aus VER-EPIC-001 mitzunehmen:** die Annahmen ANN-010 bis ANN-014
+  bestätigen oder ändern. Sie blockieren nichts, aber ANN-011
+  (Rollenschnitt der Verordnung) und ANN-014 (Empfehlung zum
+  Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2.
 - **Parallel als Docs-Sessions** (kein Code): im September `ADR-017
   Dateiablage` · `ADR-018 Terminzustände` · `OPS-001 Providerprüfung`
   (Dokument); im Oktober `ADR-019 Kartendienst`. Jede endet mit einer
@@ -104,7 +108,7 @@ in dieser Roadmap.
 
 | Zweck                           | Aufruf (kopieren, nichts ergänzen)                                                                                                                                                                                                                                                       | Modell (Tabelle unten) |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| Code-Loop                       | der Befehl aus „Nächster Loop", zum Beispiel `/feature-loop VER-EPIC-001 Verordnungen: PAT-005, VER-001 bis VER-003`                                                                                                                                                                     | nach Aufgabe           |
+| Code-Loop                       | der Befehl aus „Nächster Loop", zum Beispiel `/feature-loop UI-000 Fundament: Tokens, Bausteine, Druck-Basis, 375-px-Helfer`                                                                                                                                                                     | nach Aufgabe           |
 | Docs-Session ADR                | `Docs-Session ohne Code: ADR-017 Dateiablage schreiben. Vorgaben: docs/development/ROADMAP.md, Etappe G, Zeile G1, und die dort genannten ADRs. Am Ende die Bestätigungsfragen für Jannes als Liste mit Empfehlung.` — für ADR-018 (G2, Zeile D → ADR-018 in Spur B) und ADR-019 (G12) entsprechend | Opus 5 `xhigh`         |
 | Docs-Session Providerprüfung    | `Docs-Session ohne Code: OPS-001 Providerprüfung Supabase nach dem Prüfkatalog aus ADR-002 als Dokument, einschließlich der Auth-Mails (B13). Vorgaben: docs/development/ROADMAP.md, Zeile G3. Keine Cloud-Ressource anlegen.`                                                              | Opus 5 `high`          |
 | Ablaufrunde                     | `Ablaufrunde Touren & Termine nach docs/development/OPTIMIERUNG.md` — Bereich nach Rückwärtsplan                                                                                                                                                                                         | Sonnet 5 `medium`      |
@@ -683,6 +687,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | Planungsreview und Roadmap 2.0                         | fertig | 2026-09-05     | Merge PR #13                                                        | —             |
 | Wettbewerbsanalyse, Review 2.1, Optimierungsmethode    | fertig | 2026-09-06     | `7ab6f71`, Branch `claude/roadmap-optimization-competitor-analysis-r3qxl7` | —      |
 | Roadmap 2.1 in Kraft, Tagesroute und Plattform geplant | fertig | 2026-09-06     | `ba46307`, `879048c`, Branch `claude/competitor-analysis-roadmap-eercd3` | —        |
+| VER-EPIC-001 (PAT-005, VER-001 bis VER-003)             | fertig | 2026-09-07     | `2c3c1de`, `18e5131`, `a2c42b1`, `159c1bb`                          |               |
 
 ---
 
