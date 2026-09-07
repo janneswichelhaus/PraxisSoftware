@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { SubNav } from '@/components/ui/SubNav';
 import type { CurrentUser } from '@/features/session/types';
 import { aktiverBereich, arbeitsbereiche, mehrSymbol, tableiste } from './navigation';
+import { Verbindungsanzeige } from './Verbindungsanzeige';
 
 /**
  * Rahmen der angemeldeten Anwendung.
@@ -53,6 +54,12 @@ export function AppShell({
       >
         Zum Inhalt springen
       </a>
+
+      {/* Ueber der Kopfleiste, damit der Hinweis nicht in der Seite untergeht
+          und beim Scrollen sichtbar bleibt (UI-000, ANN-015). */}
+      <div className="sticky top-0 z-40">
+        <Verbindungsanzeige />
+      </div>
 
       <header className="border-line bg-canvas/90 sticky top-0 z-30 border-b backdrop-blur">
         <div

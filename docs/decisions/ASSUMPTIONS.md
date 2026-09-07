@@ -121,6 +121,7 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-012 | Genutzte Menge wird bis CAL-007/ABR-002 von Hand gepflegt      | Praxisprozess | offen  | Jannes; CAL-007 und ABR-002   |
 | ANN-013 | Datenklasse und Frist der Verordnerkartei                       | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-014 | „Empfehlung zum Verordnungsende" ist eine Angabe, keine Systemempfehlung | Recht | offen | Datenschutzprüfung; B1 (MDR-Abgrenzung) |
+| ANN-015 | Umfang und Wortlaut der Verbindungsanzeige                      | Technik       | offen  | Jannes; UX-EPIC-001 (Textverlust-Schutz) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -795,3 +796,50 @@ beanstandet: Spalte und Formularfeld zurückbauen — Aufwand `klein`, ohne
 Datenumzug bei leerer Datenbank. Eine automatische Erinnerung oder Bewertung
 wäre **keine** Änderung dieser Annahme, sondern `MDR_REVIEW_REQUIRED` nach
 ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10.
+
+---
+
+### ANN-015 — Umfang und Wortlaut der Verbindungsanzeige
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | UI-000; die Roadmap führt die Verbindungsanzeige in UI-000 und UX-EPIC-001 ausdrücklich als `ANN` |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Jannes nach dem ersten Feldtag; UX-EPIC-001, wenn der Textverlust-Schutz dazukommt |
+
+**Annahme.** Die Verbindungsanzeige stützt sich **allein auf
+`navigator.onLine`** und die Ereignisse `online`/`offline` des Browsers. Es
+gibt **keinen Ping gegen den Server und keinen Abfragetakt**. Sie erscheint
+**nur im Fall „getrennt"** — ein dauerhaftes „verbunden" gibt es nicht. Der
+Text nennt die Folge für die Arbeit („Änderungen lassen sich gerade nicht
+speichern"), nicht den technischen Zustand, und bittet darum, den Text im Feld
+stehen zu lassen.
+
+**Begründung.** Der Anlass ist der Hausbesuch: im Treppenhaus reißt die
+Verbindung ab, und ohne Hinweis merkt man das erst, wenn ein Speichern
+fehlschlägt — im schlimmsten Fall mit einem Dokumentationstext im Feld. Ein
+regelmäßiger Ping wäre die genauere, aber teurere Antwort: eine wiederkehrende
+Verbindung ohne fachlichen Grund, zusätzliche Daten ohne Zweck (§18) und ein
+Signal, aus dem sich ableiten ließe, wann ein Gerät benutzt wird (§20). Der
+Preis der günstigeren Wahl ist bekannt und wird hier festgehalten: **ein Gerät
+hinter einem Anmeldeportal oder mit erreichbarem Netz, aber unerreichbarem
+Server, gilt als verbunden.** Deshalb behauptet der Text nicht, der Server sei
+erreichbar. Ein dauerhaftes „verbunden" wäre Rauschen: es stünde fast immer da
+und würde gerade dann übersehen, wenn es umschlägt. Die Anzeige ist
+ausdrücklich **keine Offline-Fähigkeit** — kein Zwischenspeicher, keine
+Synchronisation, kein Service Worker (ADR-015 Punkt 16); der begrenzte
+Offline-Modus aus ADR-001 bleibt ein eigenes Vorhaben. **Unsicher:** ob der
+Hinweis im Feldtag früh genug kommt, um einen Textverlust wirklich zu
+verhindern — verlässlich wird das erst mit dem Textverlust-Schutz aus
+UX-EPIC-001.
+
+**Verankerung.** `src/app/Verbindungsanzeige.tsx` (trägt die Kennung);
+eingehängt in `src/app/AppShell.tsx`; Tests in
+`src/app/Verbindungsanzeige.test.tsx`.
+
+**Änderungspfad.** Zusätzliche Prüfung gegen den Server: eine Abfrage in
+`useIstVerbunden` ergänzen — Aufwand `klein`, aber **datenschutzrelevant**,
+deshalb nicht ohne Entscheidung. Anderer Wortlaut oder eine dauerhafte Anzeige:
+eine Stelle — Aufwand `klein`. Echte Offline-Fähigkeit: eigenes Epic nach
+ADR-001, ersetzt ADR-015 Punkt 16 — Aufwand `groß`.
