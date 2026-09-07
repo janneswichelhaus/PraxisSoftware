@@ -1,0 +1,130 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import {
+  gamutAbweichung,
+  kontrastverhaeltnis,
+  oklchNachLinearSrgb,
+  relativeHelligkeit,
+  tokensAusCss,
+} from './kontrast';
+
+// Unter jsdom traegt import.meta.url kein file:-Schema; der Pfad kommt
+// deshalb aus dem Projektstamm.
+const css = readFileSync(join(process.cwd(), 'src/index.css'), 'utf8');
+const tokens = tokensAusCss(css);
+
+/** Alle Flächen, auf denen Text und Rahmen in dieser Anwendung liegen. */
+const HINTERGRUENDE = ['canvas', 'surface', 'surface-sunken'] as const;
+
+function schlechtesterKontrast(token: string): number {
+  const farbe = tokens[token];
+  if (!farbe) throw new Error(`Token --color-${token} fehlt in src/index.css.`);
+  return Math.min(
+    ...HINTERGRUENDE.map((hintergrund) => {
+      const flaeche = tokens[hintergrund];
+      if (!flaeche) throw new Error(`Token --color-${hintergrund} fehlt in src/index.css.`);
+      return kontrastverhaeltnis(farbe, flaeche);
+    }),
+  );
+}
+
+describe('Kontrastrechnung', () => {
+  it('rechnet Schwarz auf Weiss als 21:1', () => {
+    const schwarz = { L: 0, C: 0, H: 0 };
+    const weiss = { L: 1, C: 0, H: 0 };
+    expect(kontrastverhaeltnis(schwarz, weiss)).toBeCloseTo(21, 1);
+  });
+
+  it('liefert 1:1 fuer eine Farbe mit sich selbst', () => {
+    const farbe = { L: 0.5, C: 0.05, H: 200 };
+    expect(kontrastverhaeltnis(farbe, farbe)).toBeCloseTo(1, 5);
+  });
+
+  it('ist symmetrisch', () => {
+    const a = { L: 0.24, C: 0.012, H: 250 };
+    const b = { L: 0.986, C: 0.004, H: 106 };
+    expect(kontrastverhaeltnis(a, b)).toBeCloseTo(kontrastverhaeltnis(b, a), 10);
+  });
+
+  it('rechnet Weiss auf volle Helligkeit', () => {
+    expect(relativeHelligkeit(oklchNachLinearSrgb({ L: 1, C: 0, H: 0 }))).toBeCloseTo(1, 3);
+  });
+
+  it('liest die Tokens aus src/index.css', () => {
+    // Findet die Suche nichts, waere jede folgende Zusicherung wertlos.
+    expect(Object.keys(tokens).length).toBeGreaterThanOrEqual(12);
+    expect(tokens.ink).toEqual({ L: 0.24, C: 0.012, H: 250 });
+  });
+});
+
+/**
+ * Die eigentliche Zusicherung von UI-000: die Palette erfüllt WCAG AA.
+ *
+ * Geprüft wird jeweils gegen die **ungünstigste** der drei Flächen, nicht
+ * gegen Weiß — sonst würde eine Farbe bestehen, die auf `surface-sunken`
+ * durchfällt.
+ */
+describe('Farbtokens erfuellen WCAG AA', () => {
+  // Drei Tokens ragen minimal aus sRGB heraus: accent-hover, danger-soft und
+  // warnung, jeweils um weniger als sieben Hundertstel eines Kanals. Sie sind
+  // aelter als dieses Epic und werden hier nicht angefasst. Wichtig ist nur,
+  // dass die Ueberschreitung klein bleibt - dann liefert das harte
+  // Beschneiden in dieser Rechnung praktisch dieselbe Farbe wie das
+  // Gamut-Mapping des Browsers, und die Kontrastwerte oben sind belastbar.
+  it('bleibt mit jedem Token nahe an sRGB', () => {
+    const zuWeit = Object.entries(tokens)
+      .filter(([, farbe]) => gamutAbweichung(farbe) > 0.07)
+      .map(([name]) => name);
+    expect(zuWeit).toEqual([]);
+  });
+
+  it('misst die Abweichung von sRGB ueberhaupt', () => {
+    // Gegenprobe: ein klar zu buntes Gruen muss auffallen, sonst waere der
+    // Test oben immer gruen.
+    expect(gamutAbweichung({ L: 0.6, C: 0.4, H: 150 })).toBeGreaterThan(0.07);
+    expect(gamutAbweichung({ L: 0.5, C: 0, H: 0 })).toBe(0);
+  });
+
+  // 4.5:1 nach WCAG 1.4.3 fuer normalen Text. Alle drei werden auch in
+  // kleinen Schriftgraden verwendet, deshalb gilt nirgends die Ausnahme fuer
+  // grossen Text (3:1).
+  it.each([['ink'], ['ink-muted'], ['ink-subtle']])(
+    'erreicht mit %s mindestens 4.5:1 als Textfarbe',
+    (token) => {
+      expect(schlechtesterKontrast(token)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it.each([['accent'], ['danger']])('erreicht mit %s mindestens 4.5:1 als Textfarbe', (token) => {
+    expect(schlechtesterKontrast(token)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // 3:1 nach WCAG 1.4.11 fuer die Begrenzung von Bedienelementen.
+  // line-strong umrandet Eingabefelder; der Fokusring nutzt accent.
+  it.each([['line-strong'], ['accent']])(
+    'erreicht mit %s mindestens 3:1 als Begrenzung eines Bedienelements',
+    (token) => {
+      expect(schlechtesterKontrast(token)).toBeGreaterThanOrEqual(3);
+    },
+  );
+
+  // Gegenprobe mit Begruendung: --color-line trennt nur (Kartenrahmen,
+  // Listentrenner) und identifiziert kein Bedienelement. WCAG 1.4.11 nimmt
+  // rein dekorative Elemente aus. Der Test haelt diese Absicht fest, damit
+  // line nicht versehentlich an ein Eingabefeld wandert.
+  it('laesst line bewusst hell - es ist ein Trenner, kein Bedienelement', () => {
+    expect(schlechtesterKontrast('line')).toBeLessThan(3);
+  });
+
+  // Statusfarben stehen als Text in Abzeichen auf ihrer eigenen weichen
+  // Flaeche, nicht auf canvas.
+  it.each([
+    ['positiv', 'positiv-soft'],
+    ['warnung', 'warnung-soft'],
+    ['danger', 'danger-soft'],
+    ['accent', 'accent-soft'],
+  ])('erreicht mit %s auf %s mindestens 4.5:1', (vorne, hinten) => {
+    expect(kontrastverhaeltnis(tokens[vorne]!, tokens[hinten]!)).toBeGreaterThanOrEqual(4.5);
+  });
+});
