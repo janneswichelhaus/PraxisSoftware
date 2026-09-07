@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { buttonKlassen, type Variant } from './Button';
+import { buttonKlassen, type Variant } from './buttonStile';
 
 /**
  * Ein Link, der aussieht wie eine Schaltfläche (UI-000).
