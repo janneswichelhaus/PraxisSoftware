@@ -362,3 +362,55 @@ Erfassen dürfen die therapeutischen Rollen `owner`, `therapist` und
     geprüft in `pnpm test:db`.
 13. **Am Handy** (~375 px): Positionen stehen als eigene Blöcke untereinander,
     „Verordnet" und „Genutzt" nebeneinander, alle Tippziele mindestens 44 px.
+
+---
+
+## UI-000 — Fundament: Tokens, Bausteine, Druck, Verbindung
+
+Dieser Loop hat kein eigenes Feature, sondern ändert Aussehen und Verhalten
+überall ein Stück. Die Prüfschritte suchen deshalb nach **Regressionen** —
+etwas, das vorher ging und jetzt nicht mehr.
+
+1. **Kontrast.** Als `anna.beispiel@praxis.invalid` eine beliebige Akte öffnen.
+   Die Rahmen der Eingabefelder sind deutlich dunkler als vorher; der Kleintext
+   („Zugriffe auf Patientenakten werden protokolliert.") ist gut lesbar. Wirkt
+   die Oberfläche dadurch zu schwer, ist das ein Befund — sag Bescheid, die
+   Werte stehen an einer Stelle in `src/index.css`.
+2. **Rückfragen.** In der Akte „Als inaktiv markieren" anklicken: es erscheint
+   der Kasten. Ohne die Maus zu bewegen **Enter** drücken — der Fokus steht
+   schon auf der bestätigenden Schaltfläche. Erneut öffnen und „Abbrechen":
+   der Fokus springt zurück auf „Als inaktiv markieren". Dasselbe unter
+   „Praxis → Mitarbeitende" bei einer Person, am Termin bei „Termin absagen"
+   und in einer Verordnung bei „Verordnung löschen".
+3. **Mitarbeiter mit offenen Terminen.** Eine Person deaktivieren, für die
+   noch Termine geplant sind: der Kasten bleibt offen, listet die Termine und
+   die Schaltfläche heißt jetzt „Trotz offener Termine deaktivieren". Ein
+   zweiter Klick führt sie aus. „Abbrechen" und erneut öffnen: der Hinweis ist
+   weg, die Rückfrage beginnt von vorn.
+4. **Meldungen.** Netzwerk in den Entwicklerwerkzeugen abschalten und in der
+   Akte den Status wechseln: die Fehlermeldung erscheint im Kasten. Sie wird
+   jetzt auch von Vorlesesoftware angesagt (`role="alert"`); mit VoiceOver
+   oder NVDA hörbar, sonst nicht direkt prüfbar.
+5. **Verbindungsanzeige.** Netzwerk abschalten (Entwicklerwerkzeuge →
+   „Offline"): über der Kopfleiste erscheint ein gelber Streifen „Keine
+   Verbindung. Änderungen lassen sich gerade nicht speichern …". Netzwerk
+   wieder anschalten: der Streifen verschwindet. **Achtung** (ANN-015): läuft
+   das Netz, aber der Supabase-Stack nicht, bleibt der Streifen aus — die
+   Anzeige kennt nur das Gerät, nicht den Server.
+6. **Drucken.** Eine Akte öffnen und Strg+P (bzw. Cmd+P). In der Vorschau:
+   keine Navigation, keine Kopfleiste, keine Schaltflächen, weißer Hintergrund,
+   und kein Datensatz, der über den Seitenumbruch zerrissen wird.
+7. **Bildschirmfotos.** In einem zweiten Terminal:
+
+   ```bash
+   pnpm screenshots /patienten /kalender /praxis/team
+   ```
+
+   Die Bilder liegen in `.tmp/screenshots/`. Das Werkzeug meldet waagerechtes
+   Scrollen und Konsolenfehler; „Ohne Befund" ist das erwartete Ergebnis.
+   Hinter der Anmeldung braucht es eine offene Sitzung im Browserprofil —
+   sonst zeigen die Bilder die Anmeldemaske.
+
+8. **Am Handy** (~375 px): Akte, Kalender, Stammdatenformular und
+   Verordnungsformular einmal durchscrollen. Nichts scrollt seitwärts, alle
+   Tippziele bleiben mindestens 44 px.

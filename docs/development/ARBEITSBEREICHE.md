@@ -39,6 +39,7 @@ Beschriftung geändert, nicht das Verhalten.
 | Mitarbeiterverwaltung                   | `/praxis/team…`                                         | Liste für alle Praxisrollen, Schreiben nur `owner`; Privatdaten für `office` gar nicht geliefert (STAFF-001) |
 | Arbeitszeiten und Raster                | `/praxis/planung`                                       | im Menü jetzt unter „Betrieb"                    |
 | Auditansicht                            | `/praxis/sicherheit/audit`                              | nur `owner`; kennt seit DOK-004 einen Systemakteur |
+| Verbindungsanzeige                      | überall (App-Gerüst)                                    | erscheint nur bei getrenntem Gerät; keine Offline-Fähigkeit (UI-000, ANN-015) |
 | Mein Tag – eigene Besuche und Tagesplan | `/`                                                     | liest denselben Kalender, keine zweite Liste     |
 
 ## 2. Vorschau

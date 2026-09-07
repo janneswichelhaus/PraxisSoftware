@@ -45,16 +45,22 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop UI-000 Fundament: Tokens, Bausteine, Druck-Basis, 375-px-Helfer
+/feature-loop UX-EPIC-001 Hausbesuchstag: Tagesliste, Folgetermin, Textbausteine
 ```
 
-- **Danach, in dieser Reihenfolge:** `UX-EPIC-001` Hausbesuchstag ·
-  `STAFF-EPIC-002` Konten · `LOE-EPIC-001` Löschung und Retention.
-- **Ersatz**, falls UI-000 blockiert ist: `STAFF-EPIC-002`.
-- **Aus VER-EPIC-001 mitzunehmen:** die Annahmen ANN-010 bis ANN-014
-  bestätigen oder ändern. Sie blockieren nichts, aber ANN-011
-  (Rollenschnitt der Verordnung) und ANN-014 (Empfehlung zum
-  Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2.
+- **Danach, in dieser Reihenfolge:** `STAFF-EPIC-002` Konten ·
+  `LOE-EPIC-001` Löschung und Retention · `CAL-EPIC-003a` Terminzustände.
+- **Ersatz**, falls UX-EPIC-001 blockiert ist: `STAFF-EPIC-002`.
+- **Achtung Zuschnitt:** die Google-Maps-Story aus UX-EPIC-001 setzt ADR-019
+  voraus. Solange der nicht bestätigt ist, kommt sie **zuletzt** oder gar
+  nicht — der Rest des Epics hängt nicht daran.
+- **Offen aus UI-000:** die Vorschaubereiche nutzen die gemeinsamen
+  Bausteine noch nicht. Sie werden in ihrem eigenen Loop ersetzt, nicht
+  vorher umgestellt (ARBEITSBEREICHE.md).
+- **Zu bestätigen:** ANN-010 bis ANN-015. Sie blockieren nichts, aber
+  ANN-011 (Rollenschnitt der Verordnung) und ANN-014 (Empfehlung zum
+  Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2, und ANN-015
+  (Verbindungsanzeige ohne Server-Ping) gehört auf den ersten Feldtag.
 - **Parallel als Docs-Sessions** (kein Code): im September `ADR-017
   Dateiablage` · `ADR-018 Terminzustände` · `OPS-001 Providerprüfung`
   (Dokument); im Oktober `ADR-019 Kartendienst`. Jede endet mit einer
@@ -108,7 +114,7 @@ in dieser Roadmap.
 
 | Zweck                           | Aufruf (kopieren, nichts ergänzen)                                                                                                                                                                                                                                                       | Modell (Tabelle unten) |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| Code-Loop                       | der Befehl aus „Nächster Loop", zum Beispiel `/feature-loop UI-000 Fundament: Tokens, Bausteine, Druck-Basis, 375-px-Helfer`                                                                                                                                                                     | nach Aufgabe           |
+| Code-Loop                       | der Befehl aus „Nächster Loop", zum Beispiel `/feature-loop UX-EPIC-001 Hausbesuchstag: Tagesliste, Folgetermin, Textbausteine`                                                                                                                                                                     | nach Aufgabe           |
 | Docs-Session ADR                | `Docs-Session ohne Code: ADR-017 Dateiablage schreiben. Vorgaben: docs/development/ROADMAP.md, Etappe G, Zeile G1, und die dort genannten ADRs. Am Ende die Bestätigungsfragen für Jannes als Liste mit Empfehlung.` — für ADR-018 (G2, Zeile D → ADR-018 in Spur B) und ADR-019 (G12) entsprechend | Opus 5 `xhigh`         |
 | Docs-Session Providerprüfung    | `Docs-Session ohne Code: OPS-001 Providerprüfung Supabase nach dem Prüfkatalog aus ADR-002 als Dokument, einschließlich der Auth-Mails (B13). Vorgaben: docs/development/ROADMAP.md, Zeile G3. Keine Cloud-Ressource anlegen.`                                                              | Opus 5 `high`          |
 | Ablaufrunde                     | `Ablaufrunde Touren & Termine nach docs/development/OPTIMIERUNG.md` — Bereich nach Rückwärtsplan                                                                                                                                                                                         | Sonnet 5 `medium`      |
@@ -688,6 +694,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | Wettbewerbsanalyse, Review 2.1, Optimierungsmethode    | fertig | 2026-09-06     | `7ab6f71`, Branch `claude/roadmap-optimization-competitor-analysis-r3qxl7` | —      |
 | Roadmap 2.1 in Kraft, Tagesroute und Plattform geplant | fertig | 2026-09-06     | `ba46307`, `879048c`, Branch `claude/competitor-analysis-roadmap-eercd3` | —        |
 | VER-EPIC-001 (PAT-005, VER-001 bis VER-003)             | fertig | 2026-09-07     | `2c3c1de`, `18e5131`, `a2c42b1`, `159c1bb`                          |               |
+| UI-000 Fundament                                        | fertig | 2026-09-07     | `4a4440f`, `45e8222`, `df8a294`, `11a9977`, `afb5ba5`, `e6b4ab6`    |               |
 
 ---
 
