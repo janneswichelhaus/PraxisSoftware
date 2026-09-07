@@ -9,9 +9,12 @@
  */
 export type Variant = 'primary' | 'secondary' | 'quiet';
 
+// `nicht-drucken`: eine Schaltflaeche ist auf Papier nutzlos und kostet Platz.
+// Hier statt in der Druckregel, weil ButtonLink ein <a> erzeugt - die Regel
+// `button { display: none }` wuerde ihn nicht erfassen (UI-000).
 const basis =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-[0.9375rem] font-medium ' +
-  'transition-colors disabled:cursor-not-allowed disabled:opacity-55';
+  'nicht-drucken inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 ' +
+  'text-[0.9375rem] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-55';
 
 const varianten: Record<Variant, string> = {
   primary: 'bg-accent text-white hover:bg-accent-hover',

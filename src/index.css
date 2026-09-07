@@ -83,3 +83,87 @@
     }
   }
 }
+
+/* =============================================================================
+   Druck-Basis (UI-000, entschieden 2026-09-06)
+
+   Gedruckt wird in dieser Praxis vor allem eines: der Tagesplan mit Adressen
+   und Telefonnummern als Rückfall für einen Tag ohne Anwendung (E2, ADR-012),
+   dazu spaeter Terminzettel und Tourenliste. Was dabei immer gilt, steht hier;
+   was eine einzelne Seite braucht, bleibt bei ihr.
+
+   Drei Regeln:
+
+   1. Bedienung wird nicht gedruckt. Navigation, Kopfleiste und Schaltflaechen
+      sind auf Papier nutzlos und kosten Platz. `.nicht-drucken` ist der
+      Notausgang fuer alles Weitere.
+   2. Papier ist weiss. Flaechen, Schatten und Farbverlaeufe werden zu Grau
+      und kosten Toner, ohne etwas zu tragen. Textfarben bleiben, weil
+      Ueberschriften sonst ihre Hierarchie verlieren.
+   3. Ein Datensatz wird nicht ueber zwei Seiten zerrissen: Karten und
+      Listeneintraege bleiben zusammen, Ueberschriften bleiben bei ihrem Text.
+
+   Bewusst NICHT hier: eine Kopf- oder Fusszeile mit Praxisname, Datum und
+   Seitenzahl. Sie gehoert zur jeweiligen Druckansicht, und der Praxisname
+   kommt erst mit ABR-000 aus den Stammdaten.
+   ============================================================================= */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    /* !important, weil die Flaechenregel weiter unten sonst auch das Papier
+       transparent setzt - das Ergebnis waere dasselbe, die Absicht aber
+       nicht mehr lesbar. */
+    background: #fff !important;
+  }
+
+  body {
+    /* Auf Papier zaehlt Lesbarkeit vor Ruhe: etwas kleiner, damit ein
+       Tagesplan auf eine Seite passt. */
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+
+  /* Bedienelemente und Navigation. `nav` und `header` decken das Geruest ab,
+     `.nicht-drucken` alles, was eine Seite zusaetzlich ausnimmt. */
+  nav,
+  header,
+  button,
+  .nicht-drucken {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Flaechen und Schatten weg, Rahmen bleiben als duenne Linie. */
+  * {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Zusammenhalten, was zusammengehoert. */
+  li,
+  tr,
+  section,
+  article {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  /* Ein Link zeigt auf Papier nichts an - seine Adresse hilft nur bei
+     externen Zielen, und die gibt es hier nicht. Deshalb bleibt der Text
+     stehen, ohne die URL dahinter. */
+  a {
+    text-decoration: none;
+  }
+}

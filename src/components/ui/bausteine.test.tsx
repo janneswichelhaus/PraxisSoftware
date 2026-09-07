@@ -239,3 +239,17 @@ describe('Rueckfrage', () => {
     expect(screen.getByRole('button', { name: 'Wird gelöscht …' })).toBeDisabled();
   });
 });
+
+describe('Druck-Basis', () => {
+  it('nimmt Schaltflaechen und Schaltflaechen-Links vom Druck aus', () => {
+    renderWithProviders(
+      <>
+        <ButtonLink to="/x">Erfassen</ButtonLink>
+        <button type="button">Speichern</button>
+      </>,
+    );
+    // Der Link ist ein <a>; die Regel `button { display: none }` im Druck
+    // greift dort nicht. Deshalb traegt er die Markierung selbst (UI-000).
+    expect(screen.getByRole('link', { name: 'Erfassen' }).className).toContain('nicht-drucken');
+  });
+});
