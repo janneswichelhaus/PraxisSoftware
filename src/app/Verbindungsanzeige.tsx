@@ -22,8 +22,14 @@ import { useEffect, useState } from 'react';
  * Server erreichbar ist — er sagt nur, was das Gerät meldet.
  */
 
-/** Verbindungszustand des Geräts. Ausgelagert, damit Tests ihn setzen können. */
-export function useIstVerbunden(): boolean {
+/**
+ * Verbindungszustand des Geräts.
+ *
+ * Bewusst nicht exportiert: geprüft wird die Anzeige, nicht der Haken. Ein
+ * zweiter Export neben der Komponente würde außerdem das schnelle Neuladen im
+ * Entwicklungsserver aushebeln (`react-refresh`).
+ */
+function useIstVerbunden(): boolean {
   const [verbunden, setVerbunden] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine,
   );
