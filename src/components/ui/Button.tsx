@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 
-type Variant = 'primary' | 'secondary' | 'quiet';
+export type Variant = 'primary' | 'secondary' | 'quiet';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -19,6 +19,16 @@ const variants: Record<Variant, string> = {
   quiet: 'text-ink-muted hover:bg-surface-sunken hover:text-ink',
 };
 
+/**
+ * Die Klassen einer Schaltflaeche, damit ein Link genauso aussehen kann.
+ *
+ * Bewusst exportiert statt kopiert: `ButtonLink` ist optisch dieselbe
+ * Schaltflaeche und soll es auch nach der naechsten Aenderung hier bleiben.
+ */
+export function buttonKlassen(variant: Variant = 'primary', zusatz = ''): string {
+  return `${base} ${variants[variant]} ${zusatz}`.trim();
+}
+
 export function Button({ variant = 'primary', className = '', ...props }: ButtonProps) {
-  return <button className={`${base} ${variants[variant]} ${className}`} {...props} />;
+  return <button className={buttonKlassen(variant, className)} {...props} />;
 }
