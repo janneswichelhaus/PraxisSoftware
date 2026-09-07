@@ -117,6 +117,10 @@ mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
 | ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | offen  | Jannes; Datenschutzprüfung    |
 | ANN-009 | Systemakteur im Auditlog                                       | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-010 | Sichtbarkeit und Frist der internen Versorgungsangaben          | Datenschutz   | offen  | Datenschutzprüfung; Jannes    |
+| ANN-011 | Datenklasse und Rollenschnitt der Verordnung                    | Datenschutz   | offen  | Datenschutzprüfung; C1 bei ABR-002 |
+| ANN-012 | Genutzte Menge wird bis CAL-007/ABR-002 von Hand gepflegt      | Praxisprozess | offen  | Jannes; CAL-007 und ABR-002   |
+| ANN-013 | Datenklasse und Frist der Verordnerkartei                       | Datenschutz   | offen  | Datenschutzprüfung            |
+| ANN-014 | „Empfehlung zum Verordnungsende" ist eine Angabe, keine Systemempfehlung | Recht | offen | Datenschutzprüfung; B1 (MDR-Abgrenzung) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -603,3 +607,191 @@ den Zweig „eigene Person" erweitern — Aufwand `klein`. Kürzere Frist: eigen
 Datenklasse und Löschregel in LOE-001 — Aufwand `mittel`. Verlegung einzelner
 Felder in die klinische Dokumentation: Migration mit Datenumzug und neuem
 Lesepfad — Aufwand `groß`.
+
+---
+
+### ANN-011 — Datenklasse und Rollenschnitt der Verordnung
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | VER-001 bis VER-003; `PROJECT_PRINCIPLES.md` §4.3 nennt „klinischen Freitext", ohne die Verordnung einzuordnen; C1 in `OPEN_DECISIONS.md` ist offen |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess; die Einordnung der Leistungskürzel entscheidet C1 bei ABR-002 |
+
+**Annahme.** Eine Verordnung ist ein **Mischdatensatz** und wird deshalb in
+zwei Projektionen ausgeliefert:
+
+- **organisatorisch** für alle vier Praxisrollen einschließlich `office`:
+  Verordner:in, Art (Erst/Folge), Ausstellungsdatum, Frequenz, organisatorische
+  Bemerkung sowie die Positionen mit **Bezeichnung des Heilmittels** und
+  verordneter, genutzter und verbleibender Menge;
+- **klinisch** nur für `owner`, `therapist`, `team_lead`: Diagnose
+  beziehungsweise Leitsymptomatik, Therapieziel, Hinweise der Verordner:in und
+  die Empfehlung zum Verordnungsende.
+
+**Anlegen, Ändern und Löschen dürfen nur die therapeutischen Rollen**, nicht
+`office`. Die **Datenklasse ist die klinische Patientenakte**: zehn Jahre nach
+Abschluss der Behandlung (ADR-008).
+
+**Begründung.** Die Verordnung trägt mit der Diagnose ein Gesundheitsdatum nach
+Art. 9 DSGVO; §4.3 hält `office` von klinischem Freitext fern. Zugleich ist die
+Verordnung die Grundlage von Terminserie und Rechnung — ohne Kontingent und
+Verordner:in kann `office` weder planen noch eine Folgeverordnung anfordern.
+Die Bezeichnung des Heilmittels wird als organisatorisch geführt, weil sie
+dieselbe Information trägt, die später als Leistungsposition ohnehin auf der
+Rechnung steht, die `office` nach §4.3 sieht; das ist die schwächste Stelle
+dieser Annahme und hängt an C1. Das Schreibrecht ohne `office` folgt §16
+(im Zweifel restriktiver): Wer eine Verordnung erfasst, tippt die Diagnose mit
+ab und sähe sie damit zwangsläufig — ein Schreibrecht wäre ein Leserecht durch
+die Hintertür. Die zehnjährige Frist folgt §630f BGB und ADR-008 Punkt 4: die
+Verordnung ist Teil der Behandlungsunterlagen. Umgesetzt ist die Trennung als
+**zwei Funktionen mit zwei Rückgabetypen**, nicht als eine Funktion mit
+genullten Spalten — wie bei DOK-003 (ADR-004). **Unsicher:** ob die Prüfung die
+Heilmittelbezeichnung für `office` zulässt; ob das Schreibrecht ohne `office`
+im Alltag trägt, sobald eine zweite Person im Büro sitzt.
+
+**Verankerung.** `app.can_read_prescriptions()`,
+`app.can_read_prescription_clinical()` und `app.can_write_prescriptions()` in
+`supabase/migrations/20260907110000_prescriptions.sql` (tragen die Kennung);
+`list_patient_prescriptions` und `list_patient_prescriptions_clinical` in
+`supabase/migrations/20260907120000_prescription_read_paths.sql`; die
+Schreibfunktionen in
+`supabase/migrations/20260907130000_prescription_write.sql`; Rollenweiche in
+`src/features/prescriptions/PatientPrescriptions.tsx`; Datenbanktests
+„VER-002" und „VER-003" in `pnpm test:db`.
+
+**Änderungspfad.** Anderer Rollenschnitt beim Lesen oder Schreiben: die
+betroffene `app.can_*`-Funktion ersetzen — Aufwand `klein`. Heilmittel als
+klinisch einstufen: Spaltenliste der organisatorischen Funktion und die
+Oberfläche anpassen — Aufwand `mittel`, mit fachlicher Folge, weil `office`
+dann nicht mehr planen kann. Andere Frist: eigene Datenklasse und Löschregel in
+LOE-001 — Aufwand `mittel`.
+
+---
+
+### ANN-012 — Genutzte Menge wird bis CAL-007 und ABR-002 von Hand gepflegt
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | VER-001; die Roadmap verortet den automatischen Verbrauch bei CAL-007 und ABR-002 (`IDEA-PRX-009`) |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Jannes; verbindlich entschieden mit CAL-007 und ABR-002 |
+
+**Annahme.** Jede Verordnungsposition führt eine **genutzte Menge**, die die
+Praxis im Verordnungsformular selbst pflegt. Die verbleibende Menge wird daraus
+gerechnet und nirgends gespeichert. Eine Constraint verhindert, dass die
+genutzte Menge die verordnete übersteigt.
+
+**Begründung.** Das Restkontingent ist die einzige Zahl, wegen der man eine
+Verordnung im Alltag überhaupt aufschlägt; ohne sie wäre die Story ohne
+Nutzen. Die automatische Verrechnung setzt die Verknüpfung von Termin und
+Verordnung (CAL-007) und die Leistungserfassung (ABR-002) voraus — beides
+später in der Roadmap. Ein leeres, von nichts gepflegtes Feld wäre ein
+Zukunftsfeature auf Vorrat (ADR-014); ein von Hand gepflegtes ist heute
+brauchbar und wird später zum Startwert der Automatik. Die verbleibende Menge
+wird **nicht** gespeichert, weil ein zweiter Zähler auseinanderlaufen kann
+(§13). **Unsicher:** ob die Praxis die Zahl im Alltag tatsächlich nachführt —
+das zeigt erst die Probewoche 1.
+
+**Verankerung.** Spalte `prescription_items.used_quantity` und Constraint
+`prescription_items_used_within_prescribed` in
+`supabase/migrations/20260907110000_prescriptions.sql` (tragen die Kennung);
+Eingabefeld in `src/features/prescriptions/PrescriptionFormFields.tsx`;
+Berechnung des Rests in `src/features/prescriptions/api.ts`.
+
+**Änderungspfad.** Automatischer Verbrauch: CAL-007 und ABR-002 schreiben das
+Feld fort, das Eingabefeld entfällt oder wird zur Korrekturmöglichkeit —
+Aufwand `mittel`, ohne Datenumzug, weil die Spalte bleibt.
+
+---
+
+### ANN-013 — Datenklasse und Frist der Verordnerkartei
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | VER-001; ADR-008 kennt keine Datenklasse für personenbezogene Daten Dritter ohne Patientenbezug |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess (Verzeichnis der Verarbeitungstätigkeiten) |
+
+**Annahme.** `prescribers` enthält **berufliche Kontaktdaten Dritter** —
+Ärzt:innen und ihre Praxen — und ist **kein Gesundheitsdatum und kein
+Patientendatum**: erst die Verordnung stellt den Bezug zu einer Patientin her.
+Datenklasse: Stammdaten. Aufbewahrt, **solange eine Verordnung darauf
+verweist**; das ist über `on delete restrict` strukturell erzwungen. Sichtbar
+für alle vier Praxisrollen, nicht für Patientenkonten. Erfasst wird nur, was
+zur Identifikation und zur Anforderung einer Folgeverordnung nötig ist — keine
+Arztnummer, keine Betriebsstättennummer.
+
+**Begründung.** Rechtsgrundlage ist Art. 6 Abs. 1 lit. b/f DSGVO
+(Vertragsdurchführung und berechtigtes Interesse an der Zusammenarbeit mit der
+verordnenden Stelle), nicht Art. 9 — die Kartei allein sagt nichts über eine
+Gesundheit aus. Die Kopplung der Frist an die Verordnung folgt ADR-008 Punkt 2
+(gesetzliche Aufbewahrung vor Löschung): Eine Verordnung ohne auflösbaren
+Verordner wäre als Behandlungsunterlage unvollständig. Der Verzicht auf LANR
+und BSNR folgt der Datenminimierung (§3, Art. 5 Abs. 1 lit. c DSGVO) — es sind
+GKV-Merkmale, und die Praxis rechnet privat ab (ADR-009). **Unsicher:** ob die
+Prüfung eine eigene Zeile im Verzeichnis der Verarbeitungstätigkeiten und eine
+Information nach Art. 14 DSGVO gegenüber den erfassten Ärzt:innen verlangt.
+
+**Verankerung.** Tabelle `public.prescribers` mit Tabellenkommentar und Policy
+`prescribers_select_staff_only` in
+`supabase/migrations/20260907110000_prescriptions.sql` (tragen die Kennung);
+Formularfelder in `src/features/prescriptions/PrescriberFormFields.tsx`;
+Datenbanktest „VER-001: Verordner:innen" in `pnpm test:db`.
+
+**Änderungspfad.** Eigene Löschregel oder kürzere Frist: Regel in LOE-001
+ergänzen — Aufwand `klein`, solange keine Verordnung verweist. Information nach
+Art. 14 DSGVO: Textbaustein in G8/G14 — Aufwand `klein`, außerhalb des Codes.
+
+---
+
+### ANN-014 — „Empfehlung zum Verordnungsende" ist eine erfasste Angabe, keine Systemempfehlung
+
+| | |
+|---|---|
+| Kategorie | Recht |
+| Herkunft | VER-001; ADR-006 Punkt 4 verbietet eigene Therapieempfehlungen der Anwendung |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Datenschutzprüfung; B1 (externe MDR-Abgrenzung, ADR-006 Punkt 7) |
+
+**Annahme.** Das Feld „Empfehlung zum Verordnungsende" nimmt **die Empfehlung
+der Therapeut:in** auf, die sie selbst formuliert und selbst verantwortet. Die
+Anwendung **erzeugt, ergänzt und bewertet sie nicht**. Was die Anwendung
+daneben zeigt, ist ausschließlich eine **Rechnung**: „noch 3 von 10". Wenn
+keine Behandlung mehr offen ist, steht dort der neutrale Sachsatz „Kontingent
+ausgeschöpft" — **keine** Handlungsempfehlung, keine Prognose, keine Ampel und
+keine Erinnerung.
+
+**Begründung.** ADR-006 Punkt 2 erlaubt ausdrücklich das Erfassen, Speichern,
+Strukturieren und Darstellen von Gesundheitsinformationen; Punkt 4 verbietet
+eigene Therapieempfehlungen. Eine von einem Menschen geschriebene Empfehlung zu
+speichern und wieder anzuzeigen ist Punkt 2 und nicht Punkt 4 — dieselbe
+Unterscheidung, die ADR-006 in seinen Konsequenzen für §7.1 trifft („Anzeigen"
+gegenüber „Bewerten"). Die Differenz „verordnet minus genutzt" ist eine
+transparente, veröffentlichte Rechenvorschrift ohne klinische Aussage. Die
+Roadmap führt die Prognose eines Wettbewerbers ausdrücklich nicht,
+`IDEA-LZK-007` (automatische Erinnerung mit Empfehlung zum weiteren Vorgehen)
+ist durch B9 blockiert, und `OPEN_DECISIONS.md` nennt ausdrücklich „die
+Empfehlung der Therapeutin zum Verordnungsende" als **nicht** blockiert.
+Regulatorisch relevant ist auch die Beschriftung (ADR-006 Konsequenzen): das
+Feld heißt deshalb in der Oberfläche „Empfehlung der Therapeut:in zum
+Verordnungsende" und nicht „Empfehlung". **Unsicher:** ob die externe Prüfung
+aus B1 den neutralen Sachsatz „Kontingent ausgeschöpft" bereits als Hinweis mit
+Handlungsaufforderung liest.
+
+**Verankerung.** Spalte `prescriptions.follow_up_recommendation` mit
+Spaltenkommentar in
+`supabase/migrations/20260907110000_prescriptions.sql` (trägt die Kennung);
+Beschriftung und Hinweistext in
+`src/features/prescriptions/PrescriptionFormFields.tsx`; Darstellung des
+Restkontingents in `src/features/prescriptions/PatientPrescriptions.tsx`.
+
+**Änderungspfad.** Feld oder Sachsatz anders beschriften: eine Stelle in der
+Oberfläche — Aufwand `klein`. Feld ganz entfernen, falls die Prüfung es
+beanstandet: Spalte und Formularfeld zurückbauen — Aufwand `klein`, ohne
+Datenumzug bei leerer Datenbank. Eine automatische Erinnerung oder Bewertung
+wäre **keine** Änderung dieser Annahme, sondern `MDR_REVIEW_REQUIRED` nach
+ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10.

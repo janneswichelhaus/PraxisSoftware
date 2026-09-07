@@ -7,6 +7,8 @@ import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
+import { PrescribersListPage } from '@/features/prescriptions/PrescribersListPage';
+import { EditPrescriberPage, NewPrescriberPage } from '@/features/prescriptions/PrescriberFormPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
@@ -100,6 +102,11 @@ export function AuthenticatedRoutes({
               <Route path="/patienten/neu" element={<NewPatientPage />} />
               <Route path="/patienten/:patientId" element={<PatientDetailPage user={user} />} />
               <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
+              {/* Die Verordnerkartei haengt am Arbeitsbereich Patient:innen: sie
+                  wird ausschliesslich fuer Verordnungen gebraucht (VER-001). */}
+              <Route path="/verordner" element={<PrescribersListPage />} />
+              <Route path="/verordner/neu" element={<NewPrescriberPage />} />
+              <Route path="/verordner/:prescriberId/bearbeiten" element={<EditPrescriberPage />} />
             </>
           ) : null}
 
