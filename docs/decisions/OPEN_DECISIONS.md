@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Zuletzt aktualisiert: 2026-09-06 · Struktur 2.0
+Zuletzt aktualisiert: 2026-09-07 · Struktur 2.1
 
 Dieses Dokument hält fest, **was noch nicht entschieden ist**, warum es offen
 ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
@@ -15,7 +15,11 @@ Dienstleisterfragen aus dem Review vom 2026-09-06 (B14 teilweise, B15), die
 Providerfrage der KI (C6), zwei Betriebsfragen (E2, E10) und die
 Ausgestaltung des Terminstatus-Automaten (ADR-018). B12 und B13 sind am
 2026-09-06 erledigt beziehungsweise entschieden worden; B7 ist seit demselben
-Tag bis auf die Fahrzeiten entschieden. Die fünf Rückfragen E-15 bis E-19 hat
+Tag bis auf die Fahrzeiten entschieden; von B9 ist seit dem 2026-09-07
+vorläufig entschieden, dass Heilbehandlung und Personal Training über **ein**
+Unternehmen laufen. Seit demselben Tag gilt: **auf keine externe Stelle wird
+gewartet** — Jannes entscheidet vorläufig selbst, Regeln unten unter „Vorläufig
+entschieden". Die fünf Rückfragen E-15 bis E-19 hat
 Jannes am 2026-09-06 beantwortet (Historie; Wortlaut in
 `docs/development/ROADMAP.md`, „Antworten E-15 bis E-19"). Alles andere ist
 entschieden — die Historie steht am Ende.
@@ -35,6 +39,50 @@ hier offen und verweist auf die `ANN`-Kennung, bis er entschieden ist.
    das ADR oder den Vermerk.
 4. Betrifft die Entscheidung `PROJECT_PRINCIPLES.md`, wird das Dokument in
    einem eigenen Commit mit neuer Version nachgezogen (§21).
+
+### Vorläufig entschieden — Jannes entscheidet, extern wird bestätigt
+
+Mehrere Punkte warten in Spur B auf eine externe Stelle: Steuerberatung (B4,
+B11), Datenschutzberatung (B2, B3), regulatorische Prüfung (B1, B10). **Warten
+ist dafür nicht nötig.** Jannes ist der Verantwortliche nach Art. 4 Nr. 7
+DSGVO und derjenige, der die Zweckbestimmung im Sinne der MDR festlegt; die
+externen Stellen prüfen seine Festlegung, sie treffen sie nicht für ihn. Er
+kann jeden dieser Punkte **vorläufig selbst entscheiden**, damit die Arbeit
+weiterläuft und die Anfrage an die externe Stelle eine konkrete Vorlage hat
+statt einer offenen Frage — erfahrungsgemäß auch die schnellere Anfrage.
+
+Dafür gibt es den Status **`vorläufig entschieden (Jannes)`** mit Datum:
+
+- **Für das Bauen zählt er wie `entschieden`.** Ein Loop darf darauf aufsetzen;
+  der Punkt blockiert nichts mehr.
+- **Für die Freigabe zählt er wie `offen`.** Er ersetzt keine externe
+  Bestätigung. Das Go-live-Gate (M3) verlangt ausdrücklich, dass kein
+  Datenschutz- oder Rechtspunkt mehr auf `offen` **oder** auf `vorläufig
+  entschieden` steht.
+- **Der Eintrag nennt den Preis der Rücknahme.** Was zu ändern wäre, wenn die
+  externe Stelle widerspricht, und mit welchem Aufwand — nach demselben Maß wie
+  der Änderungspfad im Annahmenregister (`klein`, `mittel`, `groß`). Wäre er
+  `groß`, ist das das Signal, doch erst die externe Antwort abzuwarten.
+- Wird die Festlegung im Code verankert, gilt weiter §15.1: ein Eintrag im
+  Annahmenregister mit Kennung an genau einer Stelle. Bleibt sie rein
+  organisatorisch, genügt der Vermerk hier.
+
+**Drei Dinge lassen sich so nicht entscheiden**, weil sie keine Entscheidungen
+sind oder weil eine MUSS-Anforderung sie bindet:
+
+1. **B8 (Lizenzen)** ist eine Tatsachenfrage über einen Dritten: ob der
+   DIGOTOR-Bogen digital lizenziert ist, entscheidet der Lizenzgeber, nicht
+   die Praxis. Entscheidbar ist nur der Rückfall — bis zur Klärung ausschließlich
+   lizenzfreie Instrumente (FRB-001, FRB-002).
+2. **Die externe MDR-Prüfung vor Produktivstart** ist eine MUSS-Anforderung in
+   `PROJECT_PRINCIPLES.md` §17 und ADR-006 Punkt 7. Der **Inhalt** der
+   Zweckbestimmung ist Jannes' Festlegung und darf vorläufig getroffen werden;
+   die **Prüfung** selbst entfällt dadurch nicht. Sie zu streichen wäre eine
+   Prinzipienänderung nach §21, keine Annahme.
+3. **Die sieben Vorbedingungen aus ADR-007 Punkt 5** sind Dokumente, die
+   vorliegen müssen — Verzeichnis, TOM, Löschkonzept, Subprozessoren,
+   Datenschutzinformationen, Betroffenenrechte, Breach-Prozess. Ihr Inhalt ist
+   vorläufig entscheidbar, ihr Vorliegen nicht ersetzbar.
 
 Dringlichkeit: **P0** vor dem technischen Setup (alle erledigt) · **P1** vor
 dem ersten fachlichen Datenmodell des Bereichs · **P2** vor dem betreffenden
@@ -58,7 +106,7 @@ Feature.
 | B6    | Beschäftigtendaten: Touren, Leistungskontrolle               | **offen** (P1 für Zeitkonto und Touren)                       | unten; vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit                                                     |
 | B7    | Adressdaten an den Kartendienst                              | **entschieden 2026-09-06** (Google-Maps-Link und Karte über Embed API, genehmigt); Fahrzeiten **offen** (P2 für TOUR-EPIC-001b) | unten; ADR-019 (Roadmap G12)                                                    |
 | B8    | Lizenzen für Fragebögen und PROMs                            | **offen** (P2)                                                | unten; vor FRB-003                                                                                            |
-| B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **offen** (P2), erweitert 2026-09-06                          | unten; vor Etappe 8; Steuerteil mit B4                                                                        |
+| B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **ein Unternehmen: vorläufig entschieden 2026-09-07**; übrige Fragen **offen** (P2) | unten; vor Etappe 8; Steuerteil mit B4                                              |
 | B10   | Automatisierte Progression: MDR-Grenze                       | **offen** (P2)                                                | unten; vor Etappe 9                                                                                           |
 | B11   | Paketpreise, Vorauszahlung, Anreize                          | **offen** (P2)                                                | unten; vor Etappe 8                                                                                           |
 | B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | unten                                                                                                         |
@@ -105,15 +153,22 @@ Validierung; die Liste wurde am 2026-09-06 um die Punkte erweitert, die aus
 der Eröffnung ohne Vorgängersystem und aus dem Personal Training folgen. Sie
 geht mit der Anfrage B4 im September an die Steuerberatung:
 
+**Vorgabe statt Frage (2026-09-07, B9):** Heilbehandlung und Personal Training
+laufen über **ein** Unternehmen. Die Fragen 1 und 2 sind entsprechend als
+Festlegung formuliert und nicht mehr ergebnisoffen.
+
 1. **Leistungsarten und Umsatzsteuer:** Welche Katalogpositionen sind nach
    §4 Nr. 14a UStG befreit (Heilbehandlung auf Verordnung), welche nicht
    (Prävention, Selbstzahler ohne Verordnung, Personal Training)? Wie werden
    gemischte Fälle abgerechnet — getrennte Rechnungen oder eine Rechnung mit
-   zwei Steuersätzen?
+   zwei Steuersätzen? Beides fällt in **einem** Unternehmen an, nicht in zwei.
 2. **Kleinunternehmerregelung (§19 UStG) im Eröffnungsjahr:** Nimmt die
    Praxis sie für die steuerpflichtigen Umsätze in Anspruch? Das bestimmt den
    Umsatzsteuer-Status in den Praxisstammdaten (ABR-000) und den Hinweistext
-   auf der Rechnung.
+   auf der Rechnung. Bitte dabei bestätigen, wie der Gesamtumsatz nach
+   §19 Abs. 3 UStG zu bilden ist, wenn die befreiten Heilbehandlungsumsätze
+   herausfallen und im Wesentlichen das Personal Training gegen die Grenze
+   zählt — und ab wann das die Regelbesteuerung auslöst.
 3. **Nummernkreis:** Die Praxis eröffnet am 01.07.2027 ohne Vorgängersystem;
    der Nummernkreis beginnt mit der ersten Rechnung. Welches Format (fortlaufend
    je Jahr, mit Jahrespräfix) und welche Anforderungen an Lückenlosigkeit und
@@ -251,13 +306,51 @@ frühere Patient:innen nach abgeschlossenem Rezept weiter zu coachen, und am
 Personal Trainings gedacht ist — ohne vorherige Heilbehandlung. Damit ist der
 Übergang nicht mehr der einzige Fall: es gibt einen zweiten Eintrittsweg ohne
 Verordnung, ohne Behandlungsvertrag und ohne Akte. Für ihn gelten dieselben
-Fragen von Anfang an, dazu: ob Personal Training in derselben Praxis oder in
-einem eigenen Betrieb läuft (Rechnungen, Umsatzsteuer, Verträge — Frage an
-die Steuerberatung mit B4). Entschieden am 2026-09-06 (E-17): Das Personal
+Fragen von Anfang an. Entschieden am 2026-09-06 (E-17): Das Personal
 Training beginnt ebenfalls am 01.07.2027, es gibt keine Bestandsdaten; die
 Plattform dafür ist Stufe 3 nach dem ersten Betriebsmonat; bis dahin werden
 Kund:innen nicht als Patient:innen angelegt; `PROJECT_PRINCIPLES.md` §1 wird
-nach §21 ergänzt, wenn Stufe 3 beginnt. Beim Übergang und beim Eintritt ohne
+nach §21 ergänzt, wenn Stufe 3 beginnt.
+
+**Vorläufig entschieden am 2026-09-07 durch Jannes — ein Unternehmen:**
+Patient:innen der Heilbehandlung und Kund:innen des Personal Trainings werden
+**über dasselbe Unternehmen** betreut. Es gibt keinen zweiten Betrieb, keine
+zweite Praxis und in der Plattform keine zweite Organisation — eine
+`organization_id` nach ADR-003 für beides. Damit ist die Teilfrage „derselbe
+Betrieb oder ein eigener?" beantwortet; sie geht als **Festlegung** in die
+Anfrage B4, nicht mehr als Frage.
+
+*Was daran hängt (Recherche zur Vorlage für B4, von der Steuerberatung zu
+bestätigen):* Nach §2 Abs. 1 Satz 2 UStG umfasst das Unternehmen die gesamte
+gewerbliche und berufliche Tätigkeit **einer** Person — als Einzelunternehmer
+wäre Jannes umsatzsteuerlich ohnehin ein Unternehmer, auch mit zwei
+Tätigkeiten; getrennte Unternehmen entstünden erst über eine eigene
+Rechtsform. Die Entscheidung bestätigt damit im Wesentlichen die Rechtslage
+und ist entsprechend risikoarm. Ihr Preis liegt bei §19 UStG: der Gesamtumsatz
+wird für das eine Unternehmen gebildet, wobei die nach §4 Nr. 14 steuerfreien
+Heilbehandlungsumsätze nach §19 Abs. 3 UStG herausfallen. Für die
+Kleinunternehmergrenze zählt also im Kern der Personal-Training-Umsatz — er
+kann die Praxis in die Regelbesteuerung führen. **Unsicher bleibt** die
+Behandlung gemischter Fälle auf einer Rechnung; das ist Frage 1 von B4.
+
+*Was die Entscheidung ausdrücklich **nicht** entscheidet:* Vertragsart,
+Dokumentationspflicht nach §630f BGB, Aufbewahrungsfrist, Rechtsgrundlage nach
+Art. 9 DSGVO und die Zweckbindung bleiben je Betreuungsverhältnis getrennt zu
+beantworten — die Liste unten gilt unverändert. Ein Unternehmen macht die
+**Zweckbindung sogar schärfer**, nicht lockerer: weil es keinen zweiten
+Verantwortlichen und keine zweite Organisation mehr gibt, an denen sich die
+Trennung von Akte und Trainingskontext organisatorisch festmachen ließe, muss
+sie in Stufe 3 **technisch** entstehen — eigene Tabellen, eigene Rollenprüfung,
+eigene Policies (ADR-004). Das ist der Punkt, den die Datenschutzberatung in
+B2 sehen muss.
+
+*Rücknahme:* Solange Stufe 3 nicht gebaut ist, kostet ein Widerspruch der
+Steuerberatung in der Software **nichts** — es gibt keine Verankerung im Code,
+nur diesen Vermerk. Ab Stufe 3 wäre die Trennung in zwei Organisationen ein
+Datenumzug, Aufwand `groß`; das ist der Grund, die Antwort aus B4 **vor**
+Stufe 3 zu haben, nicht danach.
+
+Beim Übergang und beim Eintritt ohne
 Behandlung ändern sich mehrere Dinge gleichzeitig:
 
 - **Vertragsart:** Behandlungsvertrag (§630a BGB) gegenüber Dienstvertrag.
@@ -604,3 +697,12 @@ aus der Roadmap nicht abgeschlossen werden kann.
   M6, §1 der Prinzipien wird dann ergänzt · E-18 der Referenz-Screenshot ist
   ein fremdes Produkt; Jannes will dessen Funktionsumfang nachbauen · E-19
   Reihenfolge der Stufe 3 wie vorgeschlagen.
+- **2026-09-07:** Jannes entscheidet die Punkte, die auf externe Stellen
+  warten, **vorläufig selbst** und nimmt zurück, was die Prüfung nicht trägt.
+  Dafür der Status `vorläufig entschieden (Jannes)` oben — er löst das Bauen,
+  nicht die Freigabe. Erste Anwendung: B9, ein Unternehmen für Heilbehandlung
+  und Personal Training. Damit einher geht eine Verschärfung, kein
+  Zugeständnis: das Annahmenregister trennt jetzt `entschieden (Jannes)` von
+  `bestätigt (Prüfung)`, weil beides bisher unter `bestätigt` fiel und eine
+  Bestätigung durch Jannes den Go-live-Blocker der Kategorien Datenschutz und
+  Recht bereits erfüllt hätte.

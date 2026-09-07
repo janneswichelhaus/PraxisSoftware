@@ -35,13 +35,23 @@ Produktivstart (ADR-007).
 | Status                 | Bedeutung                                                                                    |
 |------------------------|----------------------------------------------------------------------------------------------|
 | `offen`                | getroffen und umgesetzt, noch von niemandem bestätigt                                        |
-| `bestätigt`            | von Jannes oder der Datenschutzprüfung bestätigt — mit Datum und Instanz im Eintrag          |
+| `entschieden (Jannes)` | Jannes hat die Festlegung selbst getroffen oder bestätigt, mit Datum. Für `Praxisprozess` und `Technik` ist der Eintrag damit erledigt; für `Datenschutz` und `Recht` ist es **keine externe Bestätigung** — der Eintrag bleibt im Prüfpaket |
+| `bestätigt (Prüfung)`  | von der Datenschutzprüfung oder der zuständigen externen Stelle bestätigt — mit Datum und Instanz im Eintrag |
 | `geändert`             | die Prüfung hat eine andere Festlegung verlangt; der Eintrag nennt die neue und den Commit    |
 | `verworfen`            | die Annahme wurde aufgegeben; der Eintrag nennt, was stattdessen gilt                        |
 | `in ADR überführt`     | bestätigt und als ADR festgehalten; Verweis auf die ADR-Nummer                                |
 
 Ein Eintrag wird **nie gelöscht**. Auch eine verworfene Annahme bleibt
 nachvollziehbar, damit die Prüfung sieht, was zwischenzeitlich galt.
+
+**Warum `entschieden (Jannes)` und `bestätigt (Prüfung)` getrennt sind.** Beide
+standen bis zum 2026-09-07 zusammen unter `bestätigt`. Damit hätte eine
+Bestätigung durch Jannes den Go-live-Blocker der Kategorien `Datenschutz` und
+`Recht` bereits erfüllt, obwohl §15.1 Punkt 5 dort ausdrücklich den
+Datenschutzprozess nach §3.7 verlangt. Die Trennung schließt diese Lücke. Sie
+ist die Register-Seite des Status `vorläufig entschieden (Jannes)` aus
+`OPEN_DECISIONS.md`: Jannes darf jede offene Festlegung selbst treffen, damit
+die Arbeit weiterläuft — sie zählt fürs Bauen, nicht für die Freigabe.
 
 ## Aufbau eines Eintrags
 
@@ -91,7 +101,10 @@ ist ein Mangel, der im Review des Loops auffallen muss.
 Wenn die Datenschutzprüfung ansteht, ist dieses Register die Arbeitsliste:
 
 1. Alle Einträge der Kategorien `Datenschutz` und `Recht` mit Status `offen`
-   durchgehen. Die Übersichtstabelle unten filtert sie.
+   **oder `entschieden (Jannes)`** durchgehen. Die Übersichtstabelle unten
+   filtert sie. Ein Eintrag, den Jannes selbst entschieden hat, ist für die
+   Prüfung kein erledigter Punkt, sondern eine Vorlage: er sagt, was gelten
+   soll, und der Änderungspfad sagt, was ein Widerspruch kostet.
 2. Je Eintrag: bestätigen oder eine andere Festlegung verlangen. Der
    **Änderungspfad** sagt vorab, was eine Änderung kostet — die Prüfung muss
    den Code dafür nicht lesen.
@@ -100,8 +113,10 @@ Wenn die Datenschutzprüfung ansteht, ist dieses Register die Arbeitsliste:
 4. Geänderte Annahmen werden als eigene Aufgabe umgesetzt; der Eintrag verweist
    danach auf den Commit.
 
-Vor Produktivstart DARF kein Eintrag der Kategorien `Datenschutz` und `Recht`
-mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
+Vor Produktivstart MUSS jeder Eintrag der Kategorien `Datenschutz` und `Recht`
+auf `bestätigt (Prüfung)`, `geändert`, `verworfen` oder `in ADR überführt`
+stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
+(`docs/DEVELOPMENT.md`, Go-live-Blocker; ROADMAP M3).
 
 ## Übersicht
 
