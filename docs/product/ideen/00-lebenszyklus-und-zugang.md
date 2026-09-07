@@ -233,3 +233,48 @@ um die konkrete Erinnerungs- und Empfehlungsmechanik.
 (IDEA-LZK-002) verhält, und ob für den Anfang ein Hinweis beim Öffnen einer
 Verordnung mit niedrigem Restkontingent reicht oder eine proaktive Erinnerung
 über den Scheduler gewünscht ist.
+
+---
+
+### IDEA-LZK-008 — Kund:innen des Personal Trainings ohne vorherige Heilbehandlung
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-06 |
+| Berührt | B9 (erweitert), B4, B5, B11; `PROJECT_PRINCIPLES.md` §1, §14; `IDEA-LZK-002`; Roadmap Stufe 3; E-17, E-19 (entschieden 2026-09-06) |
+
+**Idee.** Die Plattform ist für Patient:innen **und** für die Kund:innen von
+Jannes' Personal Training gedacht. Eine Kundin kann sie nutzen, ohne je in
+Heilbehandlung gewesen zu sein: kein Rezept, kein Behandlungsvertrag, keine
+Akte nach §630f BGB — aber Trainingspläne, Check-ins, Fortschritt,
+Gewohnheiten, Chat. Die Praxissoftware ist damit nur ein Teilbereich der
+Software.
+
+**Warum.** Jannes betreibt Personal Training neben der Physiotherapie; zwei
+Werkzeuge für dieselben Abläufe widersprechen §2.1. Die Coaching-Referenz
+([referenz-navigation.md](referenz-navigation.md)) zeigt, wie ein Werkzeug
+für genau diese Gruppe aussieht.
+
+**Vorsicht.** `IDEA-LZK-002` hat die Betreuungsepisode mit Typ vorgesehen —
+hier entsteht der Fall „Episode `Training` ohne vorherige Episode
+`Heilbehandlung`". Daran hängen von Anfang an: Dienstvertrag statt
+Behandlungsvertrag, Umsatzsteuerpflicht, Einwilligung als Rechtsgrundlage,
+eigene Aufbewahrungsfrist, keine Dokumentationspflicht (B9). Ob Personal
+Training in derselben Praxis oder in einem eigenen Betrieb läuft, entscheidet
+über Rechnungen und Stammdaten (B4). `PROJECT_PRINCIPLES.md` §1 nennt nur die
+Physiotherapiepraxis; §14 nennt Online Coaching als spätere Erweiterung — die
+Ergänzung von §1 nach §21 ist Jannes' Entscheidung (E-17). Gesundheitsdaten
+bleiben es trotzdem: Verletzungen, Gewicht, Ernährung (Art. 9 DSGVO), mit
+denselben Regeln wie in der Behandlung. Für den Ernährungsteil gilt
+`IDEA-ALT-005` und `IDEA-ALT-006`.
+
+**Antworten 2026-09-06 (E-17, E-19).** Das Personal Training beginnt
+ebenfalls am 01.07.2027 — keine Bestandsdaten, kein Wunschtermin vor der
+Eröffnung. Die Plattform dafür ist Stufe 3 nach dem ersten Betriebsmonat, in
+der Reihenfolge Portalfundament → Übungspläne → Check-ins → Chat →
+Kund:innen und Pakete → Gewohnheiten, Aktivitäten, Ernährung. Bis dahin werden
+Kund:innen nicht als Patient:innen angelegt.
+
+**Offen.** Dieselbe Praxis oder eigener Betrieb — Frage an die Steuerberatung
+mit B4.

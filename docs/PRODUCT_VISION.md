@@ -85,6 +85,23 @@ sind für Tübingen **nicht geprüft**. Sie werden als austauschbare
 Standortvorlage geführt und dürfen nicht als freigegebene Betriebsanweisung
 erscheinen.
 
+Präzisierung vom 06.09.2026 (Jannes):
+
+- **Die Praxis nimmt den Betrieb am 01.07.2027 auf.** Es gibt kein
+  Vorgängersystem und keine Bestandsdaten; die Software begleitet die Praxis
+  vom ersten Tag an (`development/ROADMAP.md`, Meilensteine M4 bis M6).
+- **Navigation zu Hausbesuchen läuft über Google Maps.** Aus der Anwendung
+  führt immer ein Link zur Navigation; die Übermittlung der Adresse dafür ist
+  entschieden und datenschutzrechtlich freigegeben. Eine Karte der gesamten
+  Tagesroute — alle Wege auf einmal oder ein einzelner Weg als Vorschau —
+  gehört zum Zielbild des Lastenrad-Hausbesuchskonzepts
+  (`product/ideen/10-praxisverwaltung.md`, `IDEA-PRX-029` und `-030`; die
+  Karte läuft über die Google Maps Embed API, entschieden und genehmigt am
+  06.09.2026, `decisions/OPEN_DECISIONS.md` B7).
+- **Die Praxissoftware ist nur ein Teilbereich.** Dazu kommt eine Plattform
+  für Patient:innen und für die Kund:innen von Jannes' Personal Training
+  (§4).
+
 ## 2. Langfristige Funktionsbereiche
 
 Das langfristige Zielbild umfasst:
@@ -107,8 +124,10 @@ Das langfristige Zielbild umfasst:
 - Arbeitszeit und Überstunden
 - Erstattungen und Belege
 - Fahrradflotte, Wartung und Pannenmanagement
-- später optional digitales Training beziehungsweise Online-Coaching nach
-  Therapieende
+- Plattform für Patient:innen und für Kund:innen des Personal Trainings:
+  Trainingspläne, Check-ins, Fortschritt, Assessments, Gewohnheiten,
+  Ernährungsprotokoll, Chat (Präzisierung vom 06.09.2026; Themenliste in
+  `product/ideen/referenz-navigation.md`)
 
 **Diese Liste ist eine langfristige Orientierung.** Sie trifft keine Aussage
 über Reihenfolge, Priorität oder bereits freigegebenen Scope. Kein Eintrag
@@ -122,6 +141,9 @@ Feature-Spezifikation steht.
 - Team Leads
 - Office beziehungsweise Verwaltung
 - Patient:innen
+- Kund:innen des Personal Trainings — ohne Heilbehandlung, mit eigenem
+  Vertrag, eigener Rechtsgrundlage, Umsatzsteuer und Aufbewahrungsfrist
+  (`decisions/OPEN_DECISIONS.md` B9; Präzisierung vom 06.09.2026)
 - später gegebenenfalls Angehörige oder rechtliche beziehungsweise
   bevollmächtigte Vertreter:innen
 
@@ -132,9 +154,9 @@ kein Zielbild, sondern bereits verbindlich
 Sichtbarkeiten regelt `PROJECT_PRINCIPLES.md` §4 zusammen mit
 [ADR-004](adr/ADR-004-authorization-model.md).
 
-## 4. Patientenportal
+## 4. Plattform für Patient:innen und Kund:innen
 
-Langfristiges Zielbild:
+Langfristiges Zielbild für Patient:innen:
 
 - eigener Login
 - Termine
@@ -158,9 +180,18 @@ können. Daraus ist **aktuell keine Implementierung abzuleiten**; die
 zugehörigen Fragen zu Identitätsprüfung und Vertretung sind in
 `decisions/OPEN_DECISIONS.md` als offen geführt.
 
-Nach Abschluss einer Therapie könnte das Portal langfristig die Grundlage für
-ein optionales digitales Trainings- oder Online-Coaching-Angebot sein. Auch das
-ist **nur eine Produktoption und kein freigegebener Scope**.
+Dieselbe Plattform ist das Zielbild für die **Kund:innen des Personal
+Trainings** — nach Abschluss einer Therapie und auch ohne vorherige
+Heilbehandlung (Präzisierung vom 06.09.2026): Trainingspläne, Check-ins,
+Fortschritt, Assessments, Gewohnheiten, Ernährungsprotokoll, Chat. Vorlage
+für den Umfang ist der Funktionsumfang einer fremden Coaching-Software
+(`product/ideen/referenz-navigation.md`); das Personal Training beginnt
+ebenfalls am 01.07.2027, die Plattform dafür folgt in Stufe 3. Für sie
+gelten ein anderer Vertrag, eine andere Rechtsgrundlage, Umsatzsteuer und
+Aufbewahrung (`decisions/OPEN_DECISIONS.md` B9); `PROJECT_PRINCIPLES.md` §1
+nennt bisher nur die Physiotherapiepraxis und wäre nach §21 zu ergänzen.
+Reihenfolge und Voraussetzungen stehen in `development/ROADMAP.md`, Stufe 3.
+Auch das ist **nur eine Produktoption und kein freigegebener Scope**.
 
 ## 5. Digitaler Intake und Assessments
 

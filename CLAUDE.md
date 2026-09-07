@@ -219,6 +219,16 @@ Vorschau laufen und wo eine Entscheidung aussteht, steht in
 diese Liste lesen** — sonst entsteht leicht eine zweite Implementierung neben
 einer bereits vorhandenen.
 
+Für die Optimierung eines Bereichs gibt es **Ablaufrunden** — Docs-Sessions
+ohne Code nach `docs/development/OPTIMIERUNG.md`. Eine Runde misst Abläufe,
+benennt Bruchstellen und schreibt **Akzeptanzhinweise in bestehende
+Roadmap-Zeilen** oder höchstens ein neues Epic. Sie führt keine zweite
+Reihenfolge und begründet keinen Scope; verbindlich wird ein Hinweis erst im
+SPEC-Schritt des Loops. Ablaufkarten unter `docs/development/ablaeufe/`
+entstehen nur in der Runde ihres Bereichs; ein Loop liest sie nicht. Gemessen
+wird nur durch Jannes selbst, nie an Mitarbeitenden und nie per Telemetrie
+(§20).
+
 Kleine Commits mit aussagekräftiger Nachricht, einer je Story. Nach
 abgeschlossenem Epic stoppen und berichten — mit allen neuen Annahmen und
 einem Vorschlag für das nächste Epic. Das nächste Epic nicht eigenständig

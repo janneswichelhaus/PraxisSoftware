@@ -124,12 +124,25 @@ einem Verwurf. Neue Einträge hängen hinten an.
   weiterhin **kein Auftrag**: gebaut wird nur, was in
   `docs/development/ROADMAP.md` an der Reihe ist und im Loop eine eigene
   Spezifikation bekommt.
+- **2026-09-06** — Mit den Antworten auf das Roadmap-Review: `IDEA-PRX-003`
+  (Stufe 2), `IDEA-PRX-011`, `IDEA-PRX-012` und `IDEA-PRX-014` bestätigt;
+  `IDEA-PRX-015` verworfen (keine Unterschrift nötig). Zwei eigene Vorgaben
+  von Jannes zum Lastenrad-Hausbesuchskonzept als bestätigt eingetragen:
+  `IDEA-PRX-029` Tagesroute auf der Karte und `IDEA-PRX-030` Navigationslink
+  zu Google Maps. Neu notiert: `IDEA-LZK-008` Kund:innen des Personal
+  Trainings ohne vorherige Heilbehandlung. Die übrigen `PRX`-Einträge bleiben
+  `vorschlag`. Mit den Antworten E-15 bis E-19 vom selben Tag: Datenweg der
+  Karte über die Google Maps Embed API entschieden und genehmigt; der
+  Referenz-Screenshot ist ein fremdes Produkt, dessen Funktionsumfang
+  nachgebaut werden soll (Regeln in `referenz-navigation.md`).
 
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------ |
 | [referenz-navigation.md](ideen/referenz-navigation.md)                       | Informationsarchitektur, Navigation, Vergleichssoftware, Screenshot-Referenzen              | —      |
+| [referenz-wettbewerb.md](ideen/referenz-wettbewerb.md)                       | Funktionen von iPrax, THEORG, thevea, appointmed, Optica u. a. mit Quellen; „wie lösen es andere" | —  |
+| [10-praxisverwaltung.md](ideen/10-praxisverwaltung.md)                       | Terminplanung, Warteliste, Akte, Verordnung, Privatabrechnung, Hausbesuch, Kennzahlen       | PRX    |
 | [00-lebenszyklus-und-zugang.md](ideen/00-lebenszyklus-und-zugang.md)         | Patient wird Klient, Betreuung nach Rezeptende, Portalzugang, Onboarding, Rechtsrahmen      | LZK    |
 | [01-trainingsplaene-und-progression.md](ideen/01-trainingsplaene-und-progression.md) | Trainingspläne, Übungsbibliothek, Progressionsregeln, Periodisierung, Autoregulation | TRN    |
 | [02-tracking-und-parameter.md](ideen/02-tracking-und-parameter.md)           | Was gemessen wird: Schmerz, Anstrengung, Bewegungssicherheit, Check-ins, Wearables           | TRK    |
@@ -149,4 +162,6 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-09-05
+Zuletzt aktualisiert: 2026-09-06 (Wettbewerbsreferenz und Bereichsdatei
+Praxisverwaltung mit `IDEA-PRX-001` bis `IDEA-PRX-028`; Entscheidungen vom
+2026-09-06, Tagesroute `IDEA-PRX-029` bis `-033`, `IDEA-LZK-008`)
