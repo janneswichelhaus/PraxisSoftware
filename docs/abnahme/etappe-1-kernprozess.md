@@ -313,3 +313,52 @@ und für ein Patientenkonto nicht sichtbar (ANN-010).
    Office in Schritt 6 entsteht **kein** solcher Eintrag.
 8. **Am Handy** (~375 px): die Verordnungskarten brechen um, es wird nicht
    seitwärts gescrollt, und „noch 3 von 10" steht ohne Zoom lesbar da.
+
+---
+
+## VER-003 — Verordnung erfassen, ändern und löschen
+
+Erfassen dürfen die therapeutischen Rollen `owner`, `therapist` und
+`team_lead` — wer eine Verordnung abtippt, tippt die Diagnose mit (ANN-011).
+`office` liest die organisatorische Sicht und hat keine Schaltfläche.
+
+1. Als `anna.beispiel@praxis.invalid` (therapist) „Erika Beispiel" öffnen und
+   im Abschnitt „Verordnungen" auf „Verordnung erfassen" klicken.
+2. Ohne Eingaben speichern: es erscheinen drei Feldfehler („Verordner:in ist
+   erforderlich.", „Ausstellungsdatum ist erforderlich.", „Heilmittel ist
+   erforderlich.") — kein Schreibvorgang.
+3. Verordner:in „Dr. med. Petra Probst" wählen, Art „Erstverordnung",
+   Ausstellungsdatum **heute**, Frequenz „2x pro Woche".
+4. Position 1: Heilmittel „Krankengymnastik", Verordnet 6, Genutzt 0.
+   „Position hinzufügen" → Position 2: „Manuelle Therapie", Verordnet 6.
+   „Position 2 entfernen" nimmt sie wieder weg; bei nur einer Position gibt es
+   keinen Entfernen-Knopf.
+5. **Mengenprobe:** Genutzt auf 7 setzen (mehr als verordnet). Speichern zeigt
+   „Genutzt kann nicht größer sein als verordnet." — kein Schreibvorgang.
+   Zurück auf 0 setzen.
+6. **Datumsprobe:** Ausstellungsdatum auf ein Datum in der Zukunft setzen.
+   Speichern zeigt „Das Ausstellungsdatum darf nicht in der Zukunft liegen."
+   Zurück auf heute setzen.
+7. Diagnose und „Empfehlung der Therapeut:in zum Verordnungsende" ausfüllen und
+   speichern: die Akte zeigt die neue Verordnung im laufenden Jahr, ganz oben.
+8. **Fehlende Praxis:** noch einmal „Verordnung erfassen", dann im Hinweis
+   unter „Verordner:in" auf „Verordner:in anlegen" klicken. Nach dem Speichern
+   landet man **wieder im Verordnungsformular** — die Eingaben davor sind
+   allerdings verloren; das ist bekannt (siehe Bericht).
+9. **Ändern:** bei einer Verordnung auf „Bearbeiten". „Genutzt" von 0 auf 3
+   setzen und speichern: die Akte zeigt „noch 3 von 6". Erneut öffnen und eine
+   Position hinzufügen — die vorhandene Position behält ihre Zahlen.
+10. **Löschen:** dieselbe Verordnung öffnen, unten „Verordnung löschen". Es
+    erscheint eine Rückfrage mit dem Hinweis, dass der Vorgang endgültig ist
+    und für eine falsch zugeordnete Verordnung gedacht ist. „Nicht löschen"
+    bricht ab, „Ja, Verordnung löschen" entfernt sie; die Akte zeigt sie nicht
+    mehr.
+11. **Auditprobe:** als `jannes.test@praxis.invalid` (owner) „Praxis →
+    Sicherheit → Audit": „Verordnung erfasst", „Verordnung geändert" und
+    „Verordnung gelöscht" stehen dort, jeweils ohne Diagnosetext.
+12. **Gegenprobe Office** (`olivia.office@praxis.invalid`): in der Akte gibt es
+    weder „Verordnung erfassen" noch „Bearbeiten". Das ist **kein**
+    Sicherheitsnachweis; verbindlich ist `app.can_write_prescriptions()`,
+    geprüft in `pnpm test:db`.
+13. **Am Handy** (~375 px): Positionen stehen als eigene Blöcke untereinander,
+    „Verordnet" und „Genutzt" nebeneinander, alle Tippziele mindestens 44 px.

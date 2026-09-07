@@ -9,6 +9,10 @@ import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { PatientDetailPage } from '@/features/patients/PatientDetailPage';
 import { PrescribersListPage } from '@/features/prescriptions/PrescribersListPage';
 import { EditPrescriberPage, NewPrescriberPage } from '@/features/prescriptions/PrescriberFormPage';
+import {
+  EditPrescriptionPage,
+  NewPrescriptionPage,
+} from '@/features/prescriptions/PrescriptionFormPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
@@ -107,6 +111,16 @@ export function AuthenticatedRoutes({
               <Route path="/verordner" element={<PrescribersListPage />} />
               <Route path="/verordner/neu" element={<NewPrescriberPage />} />
               <Route path="/verordner/:prescriberId/bearbeiten" element={<EditPrescriberPage />} />
+              {/* Verordnungen haengen an der Akte, nicht an der Verordnerkartei
+                  (VER-003). Wer sie schreiben darf, prueft der Server. */}
+              <Route
+                path="/patienten/:patientId/verordnungen/neu"
+                element={<NewPrescriptionPage />}
+              />
+              <Route
+                path="/patienten/:patientId/verordnungen/:prescriptionId/bearbeiten"
+                element={<EditPrescriptionPage />}
+              />
             </>
           ) : null}
 

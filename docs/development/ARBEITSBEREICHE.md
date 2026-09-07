@@ -33,6 +33,9 @@ Beschriftung geändert, nicht das Verhalten.
 | Termin absagen / abschließen            | `/termine/:id`                                          |                                                  |
 | Behandlungsdokumentation                | `/termine/:id/dokumentation…`                           | Entwurf, Finalisierung, Korrektur, Nachtrag, Änderungsverlauf (DOK-001/002) |
 | Dokumentation in der Akte               | `/patienten/:id`                                        | rollenabhängig projiziert; Office sieht den Behandlungsnachweis ohne klinischen Inhalt (DOK-003) |
+| Verordner:innen                         | `/verordner`, `…/neu`, `…/bearbeiten`                   | Berufliche Kontaktdaten Dritter, kein Patientenbezug (VER-001, ANN-013) |
+| Verordnungen in der Akte                | `/patienten/:id`                                        | rollenabhängig projiziert; Office sieht Kontingent und Verordner:in ohne Diagnose (VER-002, ANN-011) |
+| Verordnung erfassen / ändern / löschen  | `/patienten/:id/verordnungen/neu`, `…/:id/bearbeiten`   | nur therapeutische Rollen; serverseitig in `create/update/delete_prescription` (VER-003) |
 | Mitarbeiterverwaltung                   | `/praxis/team…`                                         | Liste für alle Praxisrollen, Schreiben nur `owner`; Privatdaten für `office` gar nicht geliefert (STAFF-001) |
 | Arbeitszeiten und Raster                | `/praxis/planung`                                       | im Menü jetzt unter „Betrieb"                    |
 | Auditansicht                            | `/praxis/sicherheit/audit`                              | nur `owner`; kennt seit DOK-004 einen Systemakteur |

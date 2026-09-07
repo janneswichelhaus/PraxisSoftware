@@ -186,10 +186,17 @@ create table public.prescription_items (
   used_quantity       smallint not null default 0 check (used_quantity >= 0),
   created_at          timestamptz not null default now(),
   created_by          uuid,
-  unique (prescription_id, sort_order),
   constraint prescription_items_used_within_prescribed
     check (used_quantity <= prescribed_quantity)
 );
+
+-- Die Reihenfolge ist je Verordnung eindeutig, aber erst am Ende der
+-- Transaktion: beim Umsortieren durchlaeuft update_prescription (VER-003)
+-- zwangslaeufig Zwischenzustaende, in denen zwei Positionen kurzzeitig
+-- dieselbe Nummer tragen. Deferred prueft genau dann, wenn es zaehlt.
+alter table public.prescription_items
+  add constraint prescription_items_prescription_sort_order_key
+  unique (prescription_id, sort_order) deferrable initially deferred;
 
 comment on table public.prescription_items is
   'Positionen einer Verordnung: Heilmittel, verordnete und genutzte Menge (VER-001). Datenklasse wie die Verordnung. Kein Tabellenrecht und keine Policy.';

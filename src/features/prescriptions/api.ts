@@ -329,3 +329,189 @@ export function restkontingent(prescription: Prescription): number {
 export function gesamtkontingent(prescription: Prescription): number {
   return prescription.items.reduce((summe, item) => summe + item.prescribed_quantity, 0);
 }
+
+// -----------------------------------------------------------------------------
+// Verordnung anlegen und ändern (VER-003)
+// -----------------------------------------------------------------------------
+
+const singleClinicalSchema = clinicalPrescriptionSchema.extend({ patient_id: z.string() });
+
+export type PrescriptionDetail = z.infer<typeof singleClinicalSchema>;
+
+/**
+ * Eine Verordnung für das Änderungsformular.
+ *
+ * Die Serverfunktion liefert eine Zeile oder keine; eine fremde und eine
+ * unbekannte ID sehen gleich aus. Der Aufruf ist auditpflichtig — er legt
+ * klinischen Inhalt offen (ADR-010).
+ */
+export async function fetchPrescription(
+  prescriptionId: string,
+): Promise<PrescriptionDetail | null> {
+  const { data, error } = (await getSupabase().rpc('get_prescription', {
+    p_prescription_id: prescriptionId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Verordnung konnte nicht geladen werden.');
+  const zeilen = z.array(singleClinicalSchema).parse(data ?? []);
+  return zeilen[0] ?? null;
+}
+
+/** Eine Position im Formular. Mengen bleiben Text, bis der Server sie prüft. */
+export interface PositionEingabe {
+  id: string | null;
+  remedy: string;
+  prescribed_quantity: string;
+  used_quantity: string;
+}
+
+export const leerePosition: PositionEingabe = {
+  id: null,
+  remedy: '',
+  prescribed_quantity: '',
+  used_quantity: '0',
+};
+
+const ganzeZahl = z
+  .string()
+  .transform((value) => value.trim())
+  .refine((value) => /^\d+$/.test(value), 'Bitte eine ganze Zahl eingeben.')
+  .transform((value) => Number(value));
+
+export const positionSchema = z
+  .object({
+    id: z.string().nullable(),
+    remedy: z
+      .string()
+      .transform((value) => value.trim())
+      .refine((value) => value.length > 0, 'Heilmittel ist erforderlich.')
+      .refine((value) => value.length <= 200, 'Das Heilmittel ist zu lang.'),
+    prescribed_quantity: ganzeZahl.refine(
+      (value) => value >= 1 && value <= 500,
+      'Zwischen 1 und 500.',
+    ),
+    used_quantity: ganzeZahl.refine((value) => value <= 500, 'Zwischen 0 und 500.'),
+  })
+  .refine((position) => position.used_quantity <= position.prescribed_quantity, {
+    message: 'Genutzt kann nicht größer sein als verordnet.',
+    path: ['used_quantity'],
+  });
+
+export const prescriptionFormSchema = z.object({
+  prescriber_id: z
+    .string()
+    .transform((value) => value.trim())
+    .refine((value) => value.length > 0, 'Verordner:in ist erforderlich.'),
+  prescription_kind: z.enum(['first', 'follow_up']),
+  issued_on: z
+    .string()
+    .refine((value) => value.trim().length > 0, 'Ausstellungsdatum ist erforderlich.')
+    .refine(
+      (value) => !Number.isNaN(new Date(`${value}T00:00:00`).getTime()),
+      'Kein gültiges Datum.',
+    )
+    .refine(
+      (value) => new Date(`${value}T00:00:00`) <= new Date(),
+      'Das Ausstellungsdatum darf nicht in der Zukunft liegen.',
+    ),
+  frequency_note: hoechstens(100, 'Die Frequenz ist zu lang.'),
+  note: hoechstens(2000, 'Die Bemerkung ist zu lang.'),
+  diagnosis: hoechstens(2000, 'Die Diagnose ist zu lang.'),
+  therapy_goal: hoechstens(2000, 'Das Therapieziel ist zu lang.'),
+  prescriber_note: hoechstens(2000, 'Der Hinweis ist zu lang.'),
+  follow_up_recommendation: hoechstens(2000, 'Die Empfehlung ist zu lang.'),
+});
+
+export type PrescriptionFormInput = z.input<typeof prescriptionFormSchema>;
+export type PrescriptionFormValues = z.output<typeof prescriptionFormSchema>;
+export type PrescriptionFeld = keyof PrescriptionFormInput;
+
+export const leereVerordnung: Record<PrescriptionFeld, string> = {
+  prescriber_id: '',
+  prescription_kind: 'first',
+  issued_on: '',
+  frequency_note: '',
+  note: '',
+  diagnosis: '',
+  therapy_goal: '',
+  prescriber_note: '',
+  follow_up_recommendation: '',
+};
+
+export function prescriptionToFormValues(
+  prescription: PrescriptionDetail,
+): Record<PrescriptionFeld, string> {
+  return {
+    prescriber_id: prescription.prescriber_id,
+    prescription_kind: prescription.prescription_kind,
+    issued_on: prescription.issued_on,
+    frequency_note: prescription.frequency_note ?? '',
+    note: prescription.note ?? '',
+    diagnosis: prescription.diagnosis ?? '',
+    therapy_goal: prescription.therapy_goal ?? '',
+    prescriber_note: prescription.prescriber_note ?? '',
+    follow_up_recommendation: prescription.follow_up_recommendation ?? '',
+  };
+}
+
+export function itemsToFormValues(prescription: PrescriptionDetail): PositionEingabe[] {
+  return prescription.items.map((item) => ({
+    id: item.id,
+    remedy: item.remedy,
+    prescribed_quantity: String(item.prescribed_quantity),
+    used_quantity: String(item.used_quantity),
+  }));
+}
+
+function rpcVerordnung(values: PrescriptionFormValues, items: z.output<typeof positionSchema>[]) {
+  return {
+    p_prescriber_id: values.prescriber_id,
+    p_prescription_kind: values.prescription_kind,
+    p_issued_on: values.issued_on,
+    p_items: items,
+    p_frequency_note: values.frequency_note,
+    p_note: values.note,
+    p_diagnosis: values.diagnosis,
+    p_therapy_goal: values.therapy_goal,
+    p_prescriber_note: values.prescriber_note,
+    p_follow_up_recommendation: values.follow_up_recommendation,
+  };
+}
+
+export async function createPrescription(
+  patientId: string,
+  values: PrescriptionFormValues,
+  items: z.output<typeof positionSchema>[],
+): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('create_prescription', {
+    p_patient_id: patientId,
+    ...rpcVerordnung(values, items),
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Verordnung konnte nicht gespeichert werden.');
+  const id = z.string().uuid().safeParse(data);
+  if (!id.success) throw new Error('Die Verordnung konnte nicht gespeichert werden.');
+  return id.data;
+}
+
+export async function updatePrescription(
+  prescriptionId: string,
+  values: PrescriptionFormValues,
+  items: z.output<typeof positionSchema>[],
+): Promise<void> {
+  const { error } = await getSupabase().rpc('update_prescription', {
+    p_prescription_id: prescriptionId,
+    ...rpcVerordnung(values, items),
+  });
+
+  // Keine Details aus der Datenbank nach außen: eine fremde und eine
+  // unbekannte ID sollen auch in der Oberfläche gleich aussehen.
+  if (error) throw new Error('Die Verordnung konnte nicht gespeichert werden.');
+}
+
+export async function deletePrescription(prescriptionId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('delete_prescription', {
+    p_prescription_id: prescriptionId,
+  });
+  if (error) throw new Error('Die Verordnung konnte nicht gelöscht werden.');
+}
