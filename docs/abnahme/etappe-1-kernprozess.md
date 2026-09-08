@@ -403,16 +403,23 @@ etwas, das vorher ging und jetzt nicht mehr.
 6. **Drucken.** Eine Akte öffnen und Strg+P (bzw. Cmd+P). In der Vorschau:
    keine Navigation, keine Kopfleiste, keine Schaltflächen, weißer Hintergrund,
    und kein Datensatz, der über den Seitenumbruch zerrissen wird.
-7. **Bildschirmfotos.** In einem zweiten Terminal:
+7. **Bildschirmfotos.** In einem zweiten Terminal, mit laufendem
+   Supabase-Stack (`pnpm db:start` reicht für `pnpm test:db`, für die
+   Anmeldung hier aber der volle Stack aus `docs/DEVELOPMENT.md`):
 
    ```bash
-   pnpm screenshots /patienten /kalender /praxis/team
+   pnpm screenshots --konto=therapist /patienten/66666666-6666-4666-8666-000000000001 /kalender
+   pnpm screenshots --konto=owner /praxis/team
    ```
 
-   Die Bilder liegen in `.tmp/screenshots/`. Das Werkzeug meldet waagerechtes
-   Scrollen und Konsolenfehler; „Ohne Befund" ist das erwartete Ergebnis.
-   Hinter der Anmeldung braucht es eine offene Sitzung im Browserprofil —
-   sonst zeigen die Bilder die Anmeldemaske.
+   Die Bilder liegen in `.tmp/screenshots/`. Das Werkzeug meldet sich mit
+   `--konto` (`owner`, `office` oder `therapist`) selbst über die echte
+   Anmeldemaske am synthetischen Stack an und meldet waagerechtes Scrollen,
+   Konsolenfehler **und** eine fehlgeschlagene Anmeldung; „Ohne Befund" ist
+   das erwartete Ergebnis. Ohne `--konto` zeigt jede Seite hinter der
+   Anmeldung nur die Anmeldemaske — das ist dann kein Befund, sondern das
+   erwartete Ergebnis für einen nicht angemeldeten Aufruf; für Seiten hinter
+   der Anmeldung deshalb immer `--konto` angeben.
 
 8. **Am Handy** (~375 px): Akte, Kalender, Stammdatenformular und
    Verordnungsformular einmal durchscrollen. Nichts scrollt seitwärts, alle
