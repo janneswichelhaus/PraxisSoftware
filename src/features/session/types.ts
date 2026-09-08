@@ -74,6 +74,40 @@ export function canReadTreatmentNote(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Rollen mit Zugriff auf die organisatorische Sicht einer Verordnung.
+ *
+ * Alle vier Praxisrollen: office plant Termine daraus und fordert
+ * Folgeverordnungen an (PROJECT_PRINCIPLES.md 4.3). Steuert ausschliesslich
+ * die Darstellung - verbindlich ist app.can_read_prescriptions() in der
+ * Datenbank, und gelesen wird ausschliesslich ueber
+ * list_patient_prescriptions.
+ */
+export function canReadPrescriptions(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => directoryRoles.includes(role));
+}
+
+/**
+ * Rollen mit Zugriff auf die klinischen Felder einer Verordnung.
+ *
+ * Deckungsgleich mit canReadTreatmentNote: die Verordnung oeffnet keinen
+ * zweiten Weg zu klinischem Freitext (4.3, ANN-011). Verbindlich ist
+ * app.can_read_prescription_clinical().
+ */
+export function canReadPrescriptionClinical(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => clinicalReadRoles.includes(role));
+}
+
+/**
+ * Rollen, die Verordnungen anlegen, aendern und loeschen duerfen.
+ *
+ * Ohne office (ANN-011): wer eine Verordnung erfasst, tippt die Diagnose mit
+ * ab. Verbindlich ist app.can_write_prescriptions().
+ */
+export function canWritePrescriptions(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => clinicalReadRoles.includes(role));
+}
+
+/**
  * Rollen, die dokumentieren duerfen.
  *
  * Enger als das Lesen: Dokumentieren ist ein Behandlungsschritt (4.2), kein

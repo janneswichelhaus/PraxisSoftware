@@ -49,12 +49,36 @@ Abweichungen werden im Bericht begründet und in der nächsten Ablaufrunde
 (`docs/development/OPTIMIERUNG.md`) als Befund geführt.
 
 1. Bei 375 px vollständig bedienbar: kein horizontales Scrollen, Tippziele
-   mindestens 44 px, Primäraktion einhändig erreichbar.
+   mindestens 44 px, Primäraktion einhändig erreichbar. Für das Scrollen und
+   für Konsolenfehler gibt es seit UI-000 ein Werkzeug — es ersetzt den Blick
+   nicht, aber es findet, was man beim Hinsehen übersieht:
+
+   ```bash
+   pnpm dev                                              # in einem zweiten Terminal
+   pnpm screenshots --konto=therapist /patienten /kalender  # Bilder in .tmp/screenshots/
+   pnpm screenshots --breite=1024 --konto=therapist /patienten
+   ```
+
+   `--konto` (`owner`, `office` oder `therapist`) meldet sich über die echte
+   Anmeldemaske am synthetischen Stack an; ohne den Parameter zeigen Seiten
+   hinter der Anmeldung nur die Anmeldemaske. Das Werkzeug meldet eine
+   fehlgeschlagene Anmeldung, eine unerwartete Zielseite, waagerechtes
+   Scrollen und Konsolenfehler.
+
 2. Nur Bausteine aus `src/components/ui` und Tokens aus `src/index.css`;
    fehlt ein Baustein, entsteht er dort — nur für Module, die der Auftrag
-   berührt.
+   berührt. Vorhanden sind: `Button`, `ButtonLink`, `Field`, `Select`,
+   `TextArea`, `SearchField`, `Section`/`Feldgruppe`, `DetailList`/`DetailRow`,
+   `Card`/`CardGrid`/`DataRow`/`DataList`/`Disclosure`, `Badge`, `RoleBadge`,
+   `PageHeader`, `SubNav`, `Rueckfrage`, `Statusmeldung` und die Zustände aus
+   `Feedback.tsx`. Die Kontrastwerte der Tokens hält
+   `src/lib/kontrast.test.ts` auf WCAG AA fest.
 3. Jedes Feld hat Label und Fehlertext, verbunden über `aria-describedby`;
-   Laden, Leer und Fehler laufen über `Feedback.tsx`.
+   Laden, Leer und Fehler laufen über `Feedback.tsx`, kurze Meldungen daneben
+   über `Statusmeldung`. Den maschinell prüfbaren Teil davon deckt seit UI-000
+   `src/barrierefreiheit.test.tsx` mit `axe-core` ab; er läuft in `pnpm test`.
+   Tastaturreihenfolge, Fokusführung und Sprache prüft er **nicht** — dafür
+   sind die Punkte 7 und 9 da.
 4. Farbe ist nie allein Bedeutungsträger; der Zustand steht als Text.
 5. Formulare mit mehr als einem Feld schützen ungespeicherte Eingaben — auch
    bei Zurück, Neuladen und Sitzungsverlust.

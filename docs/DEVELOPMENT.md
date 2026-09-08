@@ -249,14 +249,23 @@ blockieren:
 2. Providerprüfung für Supabase nach [ADR-002](adr/ADR-002-hosting-data-residency.md)
    — ohne dokumentiertes Ergebnis darf kein Cloudprojekt mit personenbezogenen
    Daten entstehen ([ADR-015](adr/ADR-015-initial-technical-stack.md)).
+   Dasselbe gilt für den Kartendienst: das Vertrags-/§203-/DSFA-Gate aus
+   [ADR-019](adr/ADR-019-map-service.md) Punkt 9 (Teil 5 in
+   [`decisions/providerpruefung-kartendienst.md`](decisions/providerpruefung-kartendienst.md))
+   muss passiert sein, bevor MAP-006 echte Adressen an einen Anbieter gibt;
+   die Prototypen MAP-002 bis MAP-005 laufen nur mit synthetischen Daten.
 3. Datenschutzprozess nach [ADR-007](adr/ADR-007-data-protection-impact-assessment.md)
    inklusive der sieben dort genannten Vorbedingungen (Punkt B2).
 4. Regulatorische Prüfung der Zweckbestimmung nach
    [ADR-006](adr/ADR-006-medical-device-boundary.md) (Punkt B1).
 5. Alle Annahmen der Kategorien Datenschutz und Recht im
-   [Annahmenregister](decisions/ASSUMPTIONS.md) sind bestätigt oder geändert
-   umgesetzt; kein Eintrag dieser Kategorien steht mehr auf `offen`
-   (`PROJECT_PRINCIPLES.md` §15.1).
+   [Annahmenregister](decisions/ASSUMPTIONS.md) sind von der Prüfung bestätigt
+   oder geändert umgesetzt; kein Eintrag dieser Kategorien steht mehr auf
+   `offen` **oder `entschieden (Jannes)`** (`PROJECT_PRINCIPLES.md` §15.1
+   Punkt 5 verlangt dort den Datenschutzprozess nach §3.7, nicht die
+   Festlegung des Projektinhabers). Dasselbe gilt für die Punkte in
+   [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md), die auf
+   `vorläufig entschieden (Jannes)` stehen.
 
 ## Audit
 

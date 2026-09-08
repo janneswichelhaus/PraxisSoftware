@@ -20,6 +20,10 @@ delete from public.audit_log;
 delete from public.staff_working_hour_exceptions;
 delete from public.staff_working_hours;
 delete from public.appointments;
+delete from public.prescription_items;
+delete from public.prescriptions;
+delete from public.prescribers;
+delete from public.patient_care_details;
 delete from public.patient_contact_details;
 delete from public.staff_private_details;
 delete from public.user_roles;
@@ -105,10 +109,44 @@ insert into public.patients (id, organization_id, person_id, status, care_starte
 
 -- Strasse und Hausnummer getrennt: ein Hausbesuch uebernimmt beide Felder
 -- einzeln in den Adress-Snapshot des Termins (CAL-001).
-insert into public.patient_contact_details (patient_id, organization_id, date_of_birth, email, phone, street, house_number, postal_code, city) values
-  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '1957-04-30', 'max.mustermann@patient.invalid', '+49 7071 0000005', 'Beispielstrasse', '12', '72070', 'Tuebingen'),
-  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '1963-09-17', 'erika.beispiel@patient.invalid', '+49 7071 0000006', 'Testweg',         '7',  '72072', 'Tuebingen'),
-  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '1971-12-05', null,                             '+49 7071 0000007', 'Fiktivgasse',     '9',  '72074', 'Tuebingen');
+insert into public.patient_contact_details (patient_id, organization_id, date_of_birth, email, phone, street, house_number, postal_code, city, phone_work, phone_mobile, fax, institution) values
+  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '1957-04-30', 'max.mustermann@patient.invalid', '+49 7071 0000005', 'Beispielstrasse', '12', '72070', 'Tuebingen', '+49 7071 0000205', '+49 160 0000005', null,               null),
+  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '1963-09-17', 'erika.beispiel@patient.invalid', '+49 7071 0000006', 'Testweg',         '7',  '72072', 'Tuebingen', null,               '+49 160 0000006', null,               null),
+  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '1971-12-05', null,                             '+49 7071 0000007', 'Fiktivgasse',     '9',  '72074', 'Tuebingen', null,               null,               '+49 7071 0000307', 'Seniorenresidenz Fiktiv');
+
+-- Interne Versorgungsangaben (PAT-005). Sichtbar nur fuer die Rollen der
+-- Patientenkartei, nicht fuer das Patientenkonto (ANN-010). Rein synthetisch
+-- und ausdruecklich ohne klinische Inhalte.
+insert into public.patient_care_details (patient_id, organization_id, primary_therapist_staff_member_id, home_visit_access_note, special_note, remark) values
+  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000002', '2. OG links, Klingel "Mustermann". Aufzug vorhanden. Rad im Hinterhof abstellen.', 'Hund im Flur, wird vor dem Termin weggesperrt.', 'Bevorzugt Termine am Vormittag.'),
+  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', null,                                    'Erdgeschoss, Klingel "Beispiel". Schluessel bei Nachbarin Frau Fiktiv im 1. OG.', null,                                            null),
+  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000004', 'Anmeldung an der Pforte, Zimmer 214.', null, null);
+
+-- -----------------------------------------------------------------------------
+-- Verordner:innen (VER-001)
+-- -----------------------------------------------------------------------------
+-- Rein synthetisch. Berufliche Kontaktdaten Dritter, kein Patientenbezug
+-- (ANN-013).
+insert into public.prescribers (id, organization_id, title, given_name, family_name, practice_name, speciality, street, house_number, postal_code, city, phone, fax, email) values
+  ('77777777-7777-4777-8777-000000000001', '22222222-2222-4222-8222-000000000001', 'Dr. med.', 'Petra',  'Probst',    'Orthopaedische Gemeinschaftspraxis Fiktiv', 'Orthopaedie',      'Aerztegasse', '3', '72070', 'Tuebingen', '+49 7071 0000401', '+49 7071 0000402', 'praxis.probst@aerzte.invalid'),
+  ('77777777-7777-4777-8777-000000000002', '22222222-2222-4222-8222-000000000001', null,       'Hendrik', 'Hausarzt', 'Hausarztpraxis Testdorf',                  'Allgemeinmedizin', 'Dorfstrasse', '18', '72074', 'Tuebingen', '+49 7071 0000403', null,               null);
+
+-- -----------------------------------------------------------------------------
+-- Verordnungen (VER-001, VER-002)
+-- -----------------------------------------------------------------------------
+-- Rein synthetisch. Die Diagnosen sind erfunden und stammen aus keinem realen
+-- Fall (PROJECT_PRINCIPLES.md 3.1). Zwei Jahre, damit die Gruppierung nach Jahr
+-- in der Akte sichtbar wird, und eine ausgeschoepfte Verordnung als Gegenprobe.
+insert into public.prescriptions (id, organization_id, patient_id, prescriber_id, prescription_kind, issued_on, frequency_note, note, diagnosis, therapy_goal, prescriber_note, follow_up_recommendation) values
+  ('88888888-8888-4888-8888-000000000001', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '77777777-7777-4777-8777-000000000001', 'first',     '2026-02-05', '2x pro Woche', null,                          'Synthetisch: Bewegungseinschraenkung der rechten Schulter nach Sturz.', 'Schmerzfreie Beweglichkeit im Alltag.', 'Belastung langsam steigern.', null),
+  ('88888888-8888-4888-8888-000000000002', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '77777777-7777-4777-8777-000000000001', 'follow_up', '2026-06-18', '2x pro Woche', 'Rezept liegt im Ordner.',     'Synthetisch: Fortbestehende Bewegungseinschraenkung rechte Schulter.',  'Rueckkehr zur Gartenarbeit.',          null,                          'Synthetisch: Eine weitere Folgeverordnung waere aus meiner Sicht sinnvoll.'),
+  ('88888888-8888-4888-8888-000000000003', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '77777777-7777-4777-8777-000000000002', 'first',     '2025-11-12', '1x pro Woche', null,                          'Synthetisch: Verspannung der Nackenmuskulatur.',                        null,                                   null,                          null);
+
+insert into public.prescription_items (id, organization_id, prescription_id, sort_order, remedy, prescribed_quantity, used_quantity) values
+  ('99999999-9999-4999-8999-000000000001', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000001', 1, 'Krankengymnastik',        10, 10),
+  ('99999999-9999-4999-8999-000000000002', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000001', 2, 'Waermetherapie',          10, 10),
+  ('99999999-9999-4999-8999-000000000003', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000002', 1, 'Krankengymnastik',        10,  7),
+  ('99999999-9999-4999-8999-000000000004', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000003', 1, 'Manuelle Therapie',        6,  2);
 
 -- -----------------------------------------------------------------------------
 -- Accountzuordnung

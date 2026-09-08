@@ -1,8 +1,10 @@
-import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Section } from '@/components/ui/Section';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentTypeLabels,
@@ -19,24 +21,6 @@ import {
   staffFullName,
   type StaffMember,
 } from './api';
-
-function DataRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 py-3 sm:flex-row sm:gap-6 sm:py-2.5">
-      <dt className="text-ink-muted text-sm sm:w-44 sm:shrink-0">{label}</dt>
-      <dd className="text-ink text-[0.9375rem]">{value}</dd>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="mt-8 first:mt-0">
-      <h2 className="text-ink-muted text-sm font-semibold tracking-wide uppercase">{title}</h2>
-      <dl className="divide-line border-line mt-2 divide-y border-t">{children}</dl>
-    </section>
-  );
-}
 
 /**
  * Liste der Termine, die eine Deaktivierung offen ließe.
@@ -55,10 +39,10 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
   if (isPending) return <LoadingState label="Zukünftige Termine werden geladen …" />;
   if (isError) {
     return (
-      <p className="text-danger mt-2 text-sm">
+      <Statusmeldung ton="fehler" className="mt-2">
         Die zukünftigen Termine konnten nicht geladen werden. Bitte vor der Deaktivierung im
         Kalender prüfen.
-      </p>
+      </Statusmeldung>
     );
   }
   if (data.length === 0) return null;
@@ -94,7 +78,6 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
  * der Vorgang serverseitig nicht durch (STAFF-001).
  */
 function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: string | null }) {
-  const [rueckfrage, setRueckfrage] = useState(false);
   const queryClient = useQueryClient();
   const zielStatus: StaffMember['employment_status'] =
     staff.employment_status === 'active' ? 'inactive' : 'active';
@@ -102,7 +85,6 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
   const mutation = useMutation({
     mutationFn: (bestaetigt: boolean) => setStaffEmploymentStatus(staff.id, zielStatus, bestaetigt),
     onSuccess: async () => {
-      setRueckfrage(false);
       await queryClient.invalidateQueries({ queryKey: ['staff-members'] });
       await queryClient.invalidateQueries({ queryKey: ['staff-member', staff.id] });
       await queryClient.invalidateQueries({ queryKey: ['assignable-therapists'] });
@@ -112,29 +94,30 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
   const beschriftung = zielStatus === 'inactive' ? 'Als inaktiv führen' : 'Wieder als aktiv führen';
   const termineOffen = sindTermineOffen(mutation.error);
 
-  if (!rueckfrage) {
-    return (
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={() => {
-          mutation.reset();
-          setRueckfrage(true);
-        }}
-      >
-        {beschriftung}
-      </Button>
-    );
-  }
-
   return (
-    <div className="border-line-strong bg-surface-sunken w-full rounded-lg border p-4">
-      <p className="text-ink text-sm">
+    <Rueckfrage
+      ausloeser={beschriftung}
+      bezeichnung={`${beschriftung} - Rückfrage`}
+      bestaetigen={termineOffen ? 'Trotz offener Termine deaktivieren' : beschriftung}
+      bestaetigenLaeuft="Wird geändert …"
+      fehler={
+        mutation.isError && !termineOffen
+          ? 'Der Beschäftigungsstatus konnte nicht geändert werden.'
+          : undefined
+      }
+      laeuft={mutation.isPending}
+      onBestaetigen={() => mutation.mutateAsync(termineOffen)}
+      onAbbrechen={() => mutation.reset()}
+    >
+      <p>
         {zielStatus === 'inactive'
           ? 'Diese Person wird nicht mehr für neue Terminzuweisungen angeboten. Bestehende Termine, Arbeitszeiten und alle bisherigen Zuordnungen bleiben vollständig erhalten. Der Zugang zur Anwendung wird dadurch nicht gesperrt.'
           : 'Diese Person wird wieder für Terminzuweisungen angeboten.'}
       </p>
 
+      {/* Der zweite Anlauf ist kein Fehler, sondern eine bewusste Bestaetigung:
+          die Termine bleiben stehen und muessen von der Praxis geregelt werden.
+          Deshalb stehen sie hier, bevor bestaetigt wird. */}
       {termineOffen ? (
         <div role="alert" className="mt-3">
           <p className="text-danger text-sm font-medium">
@@ -147,34 +130,7 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
           {timeZone ? <OffeneTermine staffMemberId={staff.id} timeZone={timeZone} /> : null}
         </div>
       ) : null}
-
-      {mutation.isError && !termineOffen ? (
-        <p className="text-danger mt-2 text-sm">
-          Der Beschäftigungsstatus konnte nicht geändert werden.
-        </p>
-      ) : null}
-
-      <div className="mt-3 flex flex-wrap gap-3">
-        <Button
-          type="button"
-          disabled={mutation.isPending}
-          onClick={() => {
-            // Doppelklick darf keinen zweiten Schreibvorgang auslösen.
-            if (mutation.isPending) return;
-            mutation.mutate(termineOffen);
-          }}
-        >
-          {mutation.isPending
-            ? 'Wird geändert …'
-            : termineOffen
-              ? 'Trotz offener Termine deaktivieren'
-              : beschriftung}
-        </Button>
-        <Button type="button" variant="quiet" onClick={() => setRueckfrage(false)}>
-          Abbrechen
-        </Button>
-      </div>
-    </div>
+    </Rueckfrage>
   );
 }
 
@@ -208,19 +164,23 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
         }
       />
 
-      <Section title="Dienstlich">
-        <DataRow label="Diensttelefon" value={staff.work_phone ?? '—'} />
-        <DataRow label="Dienstliche E-Mail" value={staff.work_email ?? '—'} />
-        <DataRow label="Hauptstandort" value={staff.primary_location_name ?? '—'} />
-        <DataRow label="Beschäftigung" value={aktiv ? 'Aktiv' : 'Inaktiv'} />
+      <Section titel="Dienstlich">
+        <DetailList>
+          <DetailRow label="Diensttelefon">{staff.work_phone ?? '—'}</DetailRow>
+          <DetailRow label="Dienstliche E-Mail">{staff.work_email ?? '—'}</DetailRow>
+          <DetailRow label="Hauptstandort">{staff.primary_location_name ?? '—'}</DetailRow>
+          <DetailRow label="Beschäftigung">{aktiv ? 'Aktiv' : 'Inaktiv'}</DetailRow>
+        </DetailList>
       </Section>
 
       {privatSichtbar ? (
-        <Section title="Privat">
-          <DataRow label="Geburtsdatum" value={formatDate(staff.date_of_birth)} />
-          <DataRow label="Privattelefon" value={staff.private_phone ?? '—'} />
-          <DataRow label="Private E-Mail" value={staff.private_email ?? '—'} />
-          <DataRow label="Adresse" value={adresse || '—'} />
+        <Section titel="Privat">
+          <DetailList>
+            <DetailRow label="Geburtsdatum">{formatDate(staff.date_of_birth)}</DetailRow>
+            <DetailRow label="Privattelefon">{staff.private_phone ?? '—'}</DetailRow>
+            <DetailRow label="Private E-Mail">{staff.private_email ?? '—'}</DetailRow>
+            <DetailRow label="Adresse">{adresse || '—'}</DetailRow>
+          </DetailList>
         </Section>
       ) : null}
 

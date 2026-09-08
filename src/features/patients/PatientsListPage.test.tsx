@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useSearchParams } from 'react-router-dom';
 import type * as PatientsApi from './api';
 import type { Patient } from './api';
-import { renderWithProviders } from '@/test-utils';
+import { renderWithProviders, testPatient } from '@/test-utils';
 
 /** Macht die aktuelle URL innerhalb des MemoryRouter fuer Assertions sichtbar. */
 function SearchParamsProbe() {
@@ -27,21 +27,14 @@ function patient(
   status: 'active' | 'inactive',
   overrides: Partial<Patient> = {},
 ): Patient {
-  return {
+  return testPatient({
     id,
     status,
-    care_started_on: '2026-02-10',
     given_name: given,
     family_name: family,
-    date_of_birth: '1957-04-30',
-    email: null,
-    phone: null,
-    street: null,
-    house_number: null,
-    postal_code: null,
     city: 'Tuebingen',
     ...overrides,
-  };
+  });
 }
 
 describe('PatientsListPage', () => {

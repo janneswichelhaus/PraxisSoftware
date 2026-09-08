@@ -1,8 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Section } from '@/components/ui/Section';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canChangePatientStatus,
@@ -10,6 +13,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { PatientRecordDocumentation } from '@/features/documentation/PatientRecordDocumentation';
+import { PatientPrescriptions } from '@/features/prescriptions/PatientPrescriptions';
 import {
   ageInYears,
   fetchPatient,
@@ -20,21 +24,20 @@ import {
   type Patient,
 } from './api';
 
-function DataRow({ label, value }: { label: string; value: string }) {
+/**
+ * Telefonnummer als Aktion, nicht als Text (Oberflächen-Checkliste Punkt 8).
+ *
+ * Im Hausbesuch ist der Anruf der häufigste nächste Schritt; ein `tel:`-Link
+ * spart das Abtippen am Handy.
+ */
+function TelefonZeile({ label, nummer }: { label: string; nummer: string | null }) {
+  if (!nummer) return <DetailRow label={label}>—</DetailRow>;
   return (
-    <div className="flex flex-col gap-0.5 py-3 sm:flex-row sm:gap-6 sm:py-2.5">
-      <dt className="text-ink-muted text-sm sm:w-44 sm:shrink-0">{label}</dt>
-      <dd className="text-ink text-[0.9375rem]">{value}</dd>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="mt-8 first:mt-0">
-      <h2 className="text-ink-muted text-sm font-semibold tracking-wide uppercase">{title}</h2>
-      <dl className="divide-line border-line mt-2 divide-y border-t">{children}</dl>
-    </section>
+    <DetailRow label={label}>
+      <a className="text-accent hover:underline" href={`tel:${nummer.replace(/[^+\d]/g, '')}`}>
+        {nummer}
+      </a>
+    </DetailRow>
   );
 }
 
@@ -47,14 +50,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
  * prüft `set_patient_status` die Berechtigung erneut.
  */
 function StatusAktion({ patient }: { patient: Patient }) {
-  const [rueckfrage, setRueckfrage] = useState(false);
   const queryClient = useQueryClient();
   const zielStatus: Patient['status'] = patient.status === 'active' ? 'inactive' : 'active';
 
   const mutation = useMutation({
     mutationFn: () => setPatientStatus(patient.id, zielStatus),
     onSuccess: async () => {
-      setRueckfrage(false);
       await queryClient.invalidateQueries({ queryKey: ['patients'] });
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
     },
@@ -63,43 +64,19 @@ function StatusAktion({ patient }: { patient: Patient }) {
   const beschriftung =
     zielStatus === 'inactive' ? 'Als inaktiv markieren' : 'Wieder als aktiv führen';
 
-  if (!rueckfrage) {
-    return (
-      <Button type="button" variant="secondary" onClick={() => setRueckfrage(true)}>
-        {beschriftung}
-      </Button>
-    );
-  }
-
   return (
-    <div className="border-line-strong bg-surface-sunken w-full rounded-lg border p-4">
-      <p className="text-ink text-sm">
-        {zielStatus === 'inactive'
-          ? 'Diese Person wird als nicht in laufender Versorgung geführt. Die Akte bleibt vollständig erhalten.'
-          : 'Diese Person wird wieder als in laufender Versorgung geführt.'}
-      </p>
-      {mutation.isError ? (
-        <p className="text-danger mt-2 text-sm">
-          Der Versorgungsstatus konnte nicht geändert werden.
-        </p>
-      ) : null}
-      <div className="mt-3 flex flex-wrap gap-3">
-        <Button
-          type="button"
-          disabled={mutation.isPending}
-          onClick={() => {
-            // Doppelklick darf keinen zweiten Schreibvorgang auslösen.
-            if (mutation.isPending) return;
-            mutation.mutate();
-          }}
-        >
-          {mutation.isPending ? 'Wird geändert …' : beschriftung}
-        </Button>
-        <Button type="button" variant="quiet" onClick={() => setRueckfrage(false)}>
-          Abbrechen
-        </Button>
-      </div>
-    </div>
+    <Rueckfrage
+      ausloeser={beschriftung}
+      bestaetigen={beschriftung}
+      bestaetigenLaeuft="Wird geändert …"
+      fehler={mutation.isError ? 'Der Versorgungsstatus konnte nicht geändert werden.' : undefined}
+      laeuft={mutation.isPending}
+      onBestaetigen={() => mutation.mutateAsync()}
+    >
+      {zielStatus === 'inactive'
+        ? 'Diese Person wird als nicht in laufender Versorgung geführt. Die Akte bleibt vollständig erhalten.'
+        : 'Diese Person wird wieder als in laufender Versorgung geführt.'}
+    </Rueckfrage>
   );
 }
 
@@ -111,6 +88,12 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
     .join(', ');
   const darfStatusWechseln = canChangePatientStatus(user.roles);
   const darfTerminePlanen = canManageAppointments(user.roles);
+  const hatVersorgungsangaben = Boolean(
+    patient.home_visit_access_note ||
+    patient.special_note ||
+    patient.remark ||
+    patient.primary_therapist_name,
+  );
 
   return (
     <>
@@ -119,44 +102,75 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
         description={patient.status === 'inactive' ? 'Nicht in laufender Versorgung' : undefined}
         actions={
           <div className="flex flex-wrap gap-3">
-            <Link
-              to={`/patienten/${patient.id}/bearbeiten`}
-              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
-            >
+            <ButtonLink to={`/patienten/${patient.id}/bearbeiten`} variant="secondary">
               Stammdaten bearbeiten
-            </Link>
+            </ButtonLink>
             {darfTerminePlanen && patient.status === 'active' ? (
-              <Link
-                to={`/patienten/${patient.id}/termine/neu`}
-                className="bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors"
-              >
-                Termin anlegen
-              </Link>
+              <ButtonLink to={`/patienten/${patient.id}/termine/neu`}>Termin anlegen</ButtonLink>
             ) : null}
           </div>
         }
       />
 
-      <Section title="Person">
-        <DataRow
-          label="Geburtsdatum"
-          value={
-            patient.date_of_birth
+      <Section titel="Person">
+        <DetailList>
+          <DetailRow label="Geburtsdatum">
+            {patient.date_of_birth
               ? `${formatDate(patient.date_of_birth)}${age !== null ? ` (${age} Jahre)` : ''}`
-              : '—'
-          }
-        />
-        <DataRow label="Adresse" value={address || '—'} />
+              : '—'}
+          </DetailRow>
+          {patient.institution ? (
+            <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
+          ) : null}
+          <DetailRow label="Adresse">{address || '—'}</DetailRow>
+        </DetailList>
       </Section>
 
-      <Section title="Kontakt">
-        <DataRow label="Telefon" value={patient.phone ?? '—'} />
-        <DataRow label="E-Mail" value={patient.email ?? '—'} />
+      <Section titel="Kontakt">
+        <DetailList>
+          <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
+          <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
+          {patient.phone_work ? (
+            <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
+          ) : null}
+          {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
+          <DetailRow label="E-Mail">
+            {patient.email ? (
+              <a className="text-accent hover:underline" href={`mailto:${patient.email}`}>
+                {patient.email}
+              </a>
+            ) : (
+              '—'
+            )}
+          </DetailRow>
+        </DetailList>
       </Section>
 
-      <Section title="Versorgung">
-        <DataRow label="Beginn" value={formatDate(patient.care_started_on)} />
-        <DataRow label="Status" value={patient.status === 'active' ? 'Aktiv' : 'Inaktiv'} />
+      {/* PAT-005: interne Angaben der Praxis. Für ein Patientenkonto liefert die
+          Sicht sie gar nicht erst; der Abschnitt bleibt dann leer und
+          verschwindet (ANN-010, ADR-004). */}
+      {hatVersorgungsangaben ? (
+        <Section titel="Hausbesuch und Versorgung">
+          <DetailList>
+            {patient.home_visit_access_note ? (
+              <DetailRow label="Zugang">{patient.home_visit_access_note}</DetailRow>
+            ) : null}
+            {patient.special_note ? (
+              <DetailRow label="Besonderheit">{patient.special_note}</DetailRow>
+            ) : null}
+            {patient.primary_therapist_name ? (
+              <DetailRow label="Feste Therapeut:in">{patient.primary_therapist_name}</DetailRow>
+            ) : null}
+            {patient.remark ? <DetailRow label="Bemerkung">{patient.remark}</DetailRow> : null}
+          </DetailList>
+        </Section>
+      ) : null}
+
+      <Section titel="Versorgung">
+        <DetailList>
+          <DetailRow label="Beginn">{formatDate(patient.care_started_on)}</DetailRow>
+          <DetailRow label="Status">{patient.status === 'active' ? 'Aktiv' : 'Inaktiv'}</DetailRow>
+        </DetailList>
       </Section>
 
       {darfStatusWechseln ? (
@@ -165,8 +179,12 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
         </div>
       ) : null}
 
-      {/* Die Dokumentation kommt ueber eigene, rollenabhaengig projizierte
-          Lesepfade - nie aus den Stammdaten (DOK-003, ADR-004). */}
+      {/* Verordnung und Dokumentation kommen ueber eigene, rollenabhaengig
+          projizierte Lesepfade - nie aus den Stammdaten (VER-002, DOK-003,
+          ADR-004). Die Verordnung steht davor: sie ist der Auftrag, auf dem
+          die Behandlungen beruhen. */}
+      <PatientPrescriptions patient={patient} user={user} />
+
       <PatientRecordDocumentation patient={patient} user={user} />
 
       <p className="text-ink-subtle mt-10 text-xs leading-relaxed">

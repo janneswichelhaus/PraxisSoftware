@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
+import { fetchAssignableTherapists } from '@/features/appointments/api';
 import {
   createPatient,
   leereStammdaten,
@@ -24,6 +25,14 @@ export function NewPatientPage() {
   const [fehler, setFehler] = useState<Partial<Record<StammdatenFeld, string>>>({});
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // Auswahl für die feste Therapeut:in (PAT-005). Schlägt die Abfrage fehl,
+  // bleibt die Auswahl leer - das Formular bleibt bedienbar.
+  const therapeuten = useQuery({
+    queryKey: ['assignable-therapists'],
+    queryFn: fetchAssignableTherapists,
+    retry: false,
+  });
 
   const mutation = useMutation({
     mutationFn: createPatient,
@@ -83,7 +92,12 @@ export function NewPatientPage() {
           </div>
         ) : null}
 
-        <PatientMasterDataFields werte={werte} fehler={fehler} onChange={setzen} />
+        <PatientMasterDataFields
+          werte={werte}
+          fehler={fehler}
+          onChange={setzen}
+          therapeutinnen={therapeuten.data ?? []}
+        />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>

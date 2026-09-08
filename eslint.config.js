@@ -62,6 +62,12 @@ export default tseslint.config(
     ...tseslint.configs.disableTypeChecked,
   },
   {
+    // Werkzeuge unter scripts/ laufen in Node, nicht im Browser
+    // (scripts/screenshots.mjs seit UI-000).
+    files: ['scripts/**/*.{js,mjs,cjs}'],
+    languageOptions: { globals: { ...globals.node } },
+  },
+  {
     files: ['supabase/tests/**/*.ts', 'tests/**/*.ts', 'src/**/*.test.{ts,tsx}'],
     languageOptions: { globals: { ...globals.node } },
     rules: {

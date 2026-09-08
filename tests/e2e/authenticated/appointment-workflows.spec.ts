@@ -64,9 +64,12 @@ test.describe('CAL-001: Termin anlegen', () => {
     await expect(page.getByRole('heading', { name: 'Termin anlegen' })).toBeVisible();
 
     // Der Patient steht als Kontext und ist nicht wechselbar. exact grenzt das
-    // Kontextfeld gegen die Seitenbeschreibung ab, die den Namen ebenfalls nennt.
+    // Kontextfeld gegen die Seitenbeschreibung ab, die den Namen ebenfalls nennt -
+    // und seit VER-001 zusaetzlich gegen die Arbeitsbereich-Unternavigation
+    // "Patient:innen" (nav aria-label, sichtbar sobald die Verordnerkartei einen
+    // zweiten Unterpunkt liefert): ohne exact matcht getByLabel sie als Teilstring.
     await expect(page.getByText('Max Mustermann', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('Patient:in')).toHaveCount(0);
+    await expect(page.getByLabel('Patient:in', { exact: true })).toHaveCount(0);
 
     await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
     await page.getByLabel('Terminart *').selectOption('practice');

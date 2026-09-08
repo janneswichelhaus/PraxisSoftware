@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { SearchField } from '@/components/ui/SearchField';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { Field } from '@/components/ui/Field';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
 import { canManageStaff, type CurrentUser } from '@/features/session/types';
 import { fetchStaffMembers, staffFullName, type StaffMember } from './api';
@@ -92,24 +93,17 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
         description="Mitarbeitende der Praxis. Ein Zugang zur Anwendung entsteht hier nicht."
         actions={
           canManageStaff(user.roles) ? (
-            <Link
-              to="/praxis/team/neu"
-              className="bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors"
-            >
-              Mitarbeiter:in anlegen
-            </Link>
+            <ButtonLink to="/praxis/team/neu">Mitarbeiter:in anlegen</ButtonLink>
           ) : null
         }
       />
 
       <div className="mb-5 flex flex-wrap items-end gap-4">
         <div className="max-w-sm flex-1 basis-56">
-          <Field
-            label="Suche"
-            type="search"
+          <SearchField
             placeholder="Name, dienstliche Erreichbarkeit, Standort"
             value={query}
-            onChange={(event) => updateQuery(event.target.value)}
+            onChange={updateQuery}
           />
         </div>
         <div className="flex flex-col gap-1.5">

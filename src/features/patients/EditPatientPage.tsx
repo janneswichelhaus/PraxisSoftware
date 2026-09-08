@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { fetchAssignableTherapists } from '@/features/appointments/api';
 import {
   fetchPatient,
   fullName,
@@ -31,6 +32,14 @@ function EditPatientForm({ patient }: { patient: Patient }) {
   const [fehler, setFehler] = useState<Partial<Record<StammdatenFeld, string>>>({});
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // Auswahl für die feste Therapeut:in (PAT-005). Schlägt die Abfrage fehl,
+  // bleibt die Auswahl leer - das Formular bleibt bedienbar.
+  const therapeuten = useQuery({
+    queryKey: ['assignable-therapists'],
+    queryFn: fetchAssignableTherapists,
+    retry: false,
+  });
 
   const zurueck = `/patienten/${patient.id}`;
 
@@ -93,7 +102,12 @@ function EditPatientForm({ patient }: { patient: Patient }) {
           </div>
         ) : null}
 
-        <PatientMasterDataFields werte={werte} fehler={fehler} onChange={setzen} />
+        <PatientMasterDataFields
+          werte={werte}
+          fehler={fehler}
+          onChange={setzen}
+          therapeutinnen={therapeuten.data ?? []}
+        />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>

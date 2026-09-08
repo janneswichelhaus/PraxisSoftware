@@ -57,6 +57,7 @@ describe('Schema-Invarianten', () => {
       'staff_private_details',
       'patients',
       'patient_contact_details',
+      'patient_care_details',
       'user_profiles',
       'user_roles',
       'audit_log',
@@ -65,6 +66,9 @@ describe('Schema-Invarianten', () => {
       'staff_working_hour_exceptions',
       'treatment_notes',
       'treatment_note_versions',
+      'prescribers',
+      'prescriptions',
+      'prescription_items',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
@@ -191,4 +195,26 @@ describe('Schema-Invarianten', () => {
       expect(spalten).not.toContain(verboten);
     }
   });
+  it.each(['prescriptions', 'prescription_items'])(
+    'haelt %s ueber den Anwendungspfad unerreichbar (VER-001, ADR-004)',
+    async (tabelle) => {
+      // Beide Tabellen tragen klinische und organisatorische Felder
+      // nebeneinander. Gaebe es hier eine Policy oder ein Tabellenrecht, koennte
+      // office die Diagnose lesen - die rollenabhaengige Projektion aus ADR-004
+      // waere an genau dieser Stelle ausgehebelt.
+      const { rows: policies } = await asPostgres<{ policyname: string }>(
+        `select policyname from pg_policies where schemaname = 'public' and tablename = $1`,
+        [tabelle],
+      );
+      expect(policies).toEqual([]);
+
+      const { rows: grants } = await asPostgres<{ privilege_type: string }>(
+        `select privilege_type from information_schema.role_table_grants
+          where table_schema = 'public' and table_name = $1
+            and grantee in ('anon', 'authenticated')`,
+        [tabelle],
+      );
+      expect(grants).toEqual([]);
+    },
+  );
 });

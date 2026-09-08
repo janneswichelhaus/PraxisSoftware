@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/supabase';
+import { alleEntwuerfeVerwerfen } from '@/features/prescriptions/api';
 import { SessionContext, type SessionState } from './sessionContext';
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -34,6 +35,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       initialising,
       signOut: async () => {
         await getSupabase().auth.signOut();
+        // Verordnungsentwürfe sind an die abmeldende Person gebunden (VER-003,
+        // ANN-019) und sollen keine spätere Anmeldung in diesem Tab betreffen.
+        alleEntwuerfeVerwerfen();
       },
     }),
     [session, initialising],

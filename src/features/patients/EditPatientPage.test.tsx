@@ -3,11 +3,11 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders } from '@/test-utils';
+import { renderWithProviders, testPatient } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
-const bestand: PatientsApi.Patient = {
+const bestand: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
   status: 'active',
   care_started_on: '2026-01-05',
@@ -20,7 +20,7 @@ const bestand: PatientsApi.Patient = {
   house_number: '1',
   postal_code: '50667',
   city: 'Koeln',
-};
+});
 
 const fetchPatient = vi.fn();
 const updatePatient = vi.fn();
@@ -67,7 +67,7 @@ describe('EditPatientPage', () => {
     expect(screen.getByLabelText('Nachname *')).toHaveValue('Bestand');
     expect(screen.getByLabelText('Geburtsdatum *')).toHaveValue('1970-05-06');
     expect(screen.getByLabelText('E-Mail')).toHaveValue('berta.bestand@example.invalid');
-    expect(screen.getByLabelText('Telefon')).toHaveValue('0221 111111');
+    expect(screen.getByLabelText('Telefon (privat)')).toHaveValue('0221 111111');
     expect(screen.getByLabelText('Straße')).toHaveValue('Altstrasse');
     expect(screen.getByLabelText('Hausnummer')).toHaveValue('1');
     expect(screen.getByLabelText('PLZ')).toHaveValue('50667');
@@ -116,7 +116,7 @@ describe('EditPatientPage', () => {
     await formularAbwarten();
 
     await user.clear(screen.getByLabelText('E-Mail'));
-    await user.clear(screen.getByLabelText('Telefon'));
+    await user.clear(screen.getByLabelText('Telefon (privat)'));
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
     await waitFor(() => expect(updatePatient).toHaveBeenCalledTimes(1));

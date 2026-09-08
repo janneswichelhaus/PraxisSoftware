@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { render, type RenderResult } from '@testing-library/react';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
+import type { Patient } from '@/features/patients/api';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
 
 export function renderWithProviders(ui: ReactElement, initialPath = '/'): RenderResult {
@@ -30,6 +31,41 @@ export function renderWithProviders(ui: ReactElement, initialPath = '/'): Render
  */
 export function renderMitVorschau(ui: ReactElement, initialPath = '/'): RenderResult {
   return renderWithProviders(<VorschauProvider>{ui}</VorschauProvider>, initialPath);
+}
+
+/**
+ * Synthetischer Patient für Komponententests.
+ *
+ * Die Kartei ist eine breite Projektion; ohne gemeinsamen Ausgangswert müsste
+ * jeder Test jedes Feld nennen und bei jedem neuen Feld nachziehen. Die
+ * Vorgabe ist bewusst leer, wo ein Feld optional ist - ein Test, der ein Feld
+ * braucht, setzt es ausdrücklich.
+ */
+export function testPatient(overrides: Partial<Patient> = {}): Patient {
+  return {
+    id: '66666666-6666-4666-8666-000000000001',
+    status: 'active',
+    care_started_on: '2026-02-10',
+    given_name: 'Max',
+    family_name: 'Mustermann',
+    date_of_birth: '1957-04-30',
+    email: null,
+    phone: null,
+    phone_work: null,
+    phone_mobile: null,
+    fax: null,
+    institution: null,
+    street: null,
+    house_number: null,
+    postal_code: null,
+    city: null,
+    primary_therapist_staff_member_id: null,
+    primary_therapist_name: null,
+    home_visit_access_note: null,
+    special_note: null,
+    remark: null,
+    ...overrides,
+  };
 }
 
 /** Synthetischer Benutzer für Komponententests. */

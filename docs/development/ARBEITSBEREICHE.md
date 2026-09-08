@@ -33,9 +33,13 @@ Beschriftung geändert, nicht das Verhalten.
 | Termin absagen / abschließen            | `/termine/:id`                                          |                                                  |
 | Behandlungsdokumentation                | `/termine/:id/dokumentation…`                           | Entwurf, Finalisierung, Korrektur, Nachtrag, Änderungsverlauf (DOK-001/002) |
 | Dokumentation in der Akte               | `/patienten/:id`                                        | rollenabhängig projiziert; Office sieht den Behandlungsnachweis ohne klinischen Inhalt (DOK-003) |
+| Verordner:innen                         | `/verordner`, `…/neu`, `…/bearbeiten`                   | Berufliche Kontaktdaten Dritter, kein Patientenbezug (VER-001, ANN-013) |
+| Verordnungen in der Akte                | `/patienten/:id`                                        | rollenabhängig projiziert; Office sieht Kontingent und Verordner:in ohne Diagnose (VER-002, ANN-011) |
+| Verordnung erfassen / ändern / löschen  | `/patienten/:id/verordnungen/neu`, `…/:id/bearbeiten`   | nur therapeutische Rollen; serverseitig in `create/update/delete_prescription` (VER-003) |
 | Mitarbeiterverwaltung                   | `/praxis/team…`                                         | Liste für alle Praxisrollen, Schreiben nur `owner`; Privatdaten für `office` gar nicht geliefert (STAFF-001) |
 | Arbeitszeiten und Raster                | `/praxis/planung`                                       | im Menü jetzt unter „Betrieb"                    |
 | Auditansicht                            | `/praxis/sicherheit/audit`                              | nur `owner`; kennt seit DOK-004 einen Systemakteur |
+| Verbindungsanzeige                      | überall (App-Gerüst)                                    | erscheint nur bei getrenntem Gerät; keine Offline-Fähigkeit (UI-000, ANN-015) |
 | Mein Tag – eigene Besuche und Tagesplan | `/`                                                     | liest denselben Kalender, keine zweite Liste     |
 
 ## 2. Vorschau
@@ -91,7 +95,7 @@ benennen die offene Frage, statt sie zu verstecken.
 | Offener Punkt                                             | Wo sichtbar             | Quelle                           |
 | --------------------------------------------------------- | ----------------------- | -------------------------------- |
 | Endgültige Fakturierung erst nach Finalisierung — die Finalisierung selbst ist entschieden und gebaut (ADR-016, DOK-002/DOK-004); offen ist die Kopplung an die Leistungserfassung (ABR-002) | Abrechnung → Leistungen | `PROJECT_PRINCIPLES.md` §19      |
-| Kartendienst: Google Maps für die Navigation ist entschieden (2026-09-06); offen bleiben der Datenweg der In-App-Karte und der Fahrzeiten | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7, ADR-019 |
+| Kartendienst: Zielarchitektur und Kandidat entschieden (ADR-019 Fassung 2, 2026-09-08: MapLibre, serverseitiger Adapter, PTV Developer zur Erprobung); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7, ADR-019, `MAP-LOOPS.md` |
 | Aggregierte Auswertungen über Beschäftigte                | Zeitkonto               | §20, `OPEN_DECISIONS.md` B6      |
 | Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Team                    | §10, §18                         |
 | Aufbewahrung und Löschung von Beschäftigtendaten          | nicht mehr sichtbar — die Vorschau-Personalakte ist entfallen; der Punkt bleibt offen (`IDEA-QSN-010`) | ADR-008                          |
@@ -138,12 +142,16 @@ DOK-004).
 Die Vorschaubereiche aus Abschnitt 2 sind seit dem 2026-09-05 in der Roadmap
 als **Spur A2 „Praxisbetrieb"** eingeordnet — Urlaub, Zeitkonto, Radflotte,
 Erstattungen, Teamkommunikation. Sie beginnt nach dem ersten Betriebsmonat
-(M6, Stufe 2). Die Vorschau **Touren** ersetzt seit der Entscheidung vom
-2026-09-06 der Loop TOUR-EPIC-001a „Tagesroute und Navigation" (Etappe T,
-April 2027): Karte der Tagesroute, Link zu Google Maps, Tourenliste;
-Fahrzeiten folgen mit TOUR-EPIC-001b nach dem Rest von B7. Bis dahin gelten
-drei Regeln: keine neue Vorschau, keine Erweiterung einer Vorschau, und jede
-Vorschau wird in ihrem Loop ersetzt, nicht daneben gebaut.
+(M6, Stufe 2). Die Vorschau **Touren** ersetzen die Loops MAP-002 bis
+MAP-006 (Etappe T, `MAP-LOOPS.md`, seit MAP-001 am 2026-09-08): Karte der
+Tagesroute, Fahrradroute, Fahrzeiten, Navigations-Handoff, Tourenliste.
+MAP-002 bis MAP-005 sind Prototypen mit synthetischen Daten und laufen als
+**gekennzeichnete Vorschau** unter `/touren/karte`; MAP-006 bindet die echten
+Termine an und ersetzt `/touren`. Bis dahin gelten drei Regeln: keine neue
+Vorschau, keine Erweiterung einer Vorschau, und jede Vorschau wird in ihrem
+Loop ersetzt, nicht daneben gebaut. Die Kartenprototypen sind die eine
+bewusste Ausnahme von der ersten Regel — sie sind in der Roadmap eingeplant
+und tragen ihre Kennzeichnung.
 
 Ablaufkarten unter `docs/development/ablaeufe/` **messen** den Stand eines
 Bereichs nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md); die Reihenfolge bleibt

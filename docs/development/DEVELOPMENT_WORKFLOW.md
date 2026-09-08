@@ -84,13 +84,16 @@ Frage, die niemand beantworten kann.
 
 Vor Produktivstart prüft eine Datenschutzstelle das Produkt (ADR-007). Das
 Register ist dafür die Arbeitsliste: alle Einträge der Kategorien Datenschutz
-und Recht mit Status `offen`, je Eintrag Annahme, Begründung und Änderungspfad.
-Das Ergebnis wird im Eintrag festgehalten; verlangte Änderungen werden als
-eigene Aufgabe umgesetzt.
+und Recht mit Status `offen` **oder `entschieden (Jannes)`**, je Eintrag
+Annahme, Begründung und Änderungspfad. Das Ergebnis wird im Eintrag
+festgehalten; verlangte Änderungen werden als eigene Aufgabe umgesetzt.
 
 Damit die Prüfung das Produkt formen kann statt es nur zu beschreiben, gilt:
-Kein Eintrag dieser Kategorien darf beim Produktivstart mehr `offen` sein
-(`docs/DEVELOPMENT.md`, Go-live-Blocker).
+Kein Eintrag dieser Kategorien darf beim Produktivstart mehr `offen` oder
+`entschieden (Jannes)` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
+**Jannes darf eine offene Festlegung jederzeit selbst treffen** — das löst die
+Arbeit und gibt der Prüfung eine Vorlage statt einer Frage, ersetzt ihr Urteil
+aber nicht (`docs/decisions/OPEN_DECISIONS.md`, „Vorläufig entschieden").
 
 ## Neue Session nach jedem Loop
 
