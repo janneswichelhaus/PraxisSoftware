@@ -51,23 +51,35 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 - **Danach, in dieser Reihenfolge:** `STAFF-EPIC-002` Konten ·
   `LOE-EPIC-001` Löschung und Retention · `CAL-EPIC-003a` Terminzustände.
 - **Ersatz**, falls UX-EPIC-001 blockiert ist: `STAFF-EPIC-002`.
-- **Zuschnitt geklärt (ADR-019, 2026-09-08):** die Google-Maps-Story aus
-  UX-EPIC-001 ist **frei** — der Navigationslink übermittelt nichts aus der
-  Anwendung und ist entschieden. Bedingung: **nur auf Aktion, nie
-  automatisch**; das ist eine Prüfregel im Review, keine Gestaltungsfrage.
-  Blockiert sind allein die **In-App-Karte** und die **Fahrzeiten**
-  (TOUR-EPIC-001a/b, Stufe 2) — Grund und drei Auswege in ADR-019.
+- **Zuschnitt geklärt (ADR-019 Fassung 2, MAP-001, 2026-09-08):** die
+  Navigations-Story aus UX-EPIC-001 ist **nicht blockiert** — der Handoff
+  übermittelt nichts aus der Anwendung; er baut die URL nach ANN-018 (Adresse
+  ohne Namen, Fahrradmodus) und ist nicht automatisch risikofrei (ADR-019
+  Punkt 23, Frage an B2). Bedingung: **nur auf Aktion, nie automatisch** —
+  Prüfregel im Review. Die **In-App-Karte** und die **Fahrzeiten** sind kein
+  Komfort mehr, sondern Produktziel; sie kommen als MAP-002 bis MAP-006
+  (Etappe T, `MAP-LOOPS.md`) mit **PTV Developer** als Kandidat statt Google.
+- **Parallel startbar, sobald der PTV-Schlüssel vorliegt:**
+  `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md`
+  — nur synthetische Daten, unabhängig von UX-EPIC-001. Reihenfolge zu
+  UX-EPIC-001 entscheidet Jannes (E-21); Empfehlung: UX-EPIC-001 zuerst.
 - **Offen aus UI-000:** die Vorschaubereiche nutzen die gemeinsamen
   Bausteine noch nicht. Sie werden in ihrem eigenen Loop ersetzt, nicht
   vorher umgestellt (ARBEITSBEREICHE.md).
-- **Zu bestätigen:** ANN-010 bis ANN-015. Sie blockieren nichts, aber
+- **Zu bestätigen:** ANN-010 bis ANN-018. Sie blockieren nichts, aber
   ANN-011 (Rollenschnitt der Verordnung) und ANN-014 (Empfehlung zum
   Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2, und ANN-015
   (Verbindungsanzeige ohne Server-Ping) gehört auf den ersten Feldtag.
+  ANN-016 bis ANN-018 (Koordinaten bei der Adresse, Edge Function als
+  Adapter, Übergabeziel des Handoffs) gehören in die Anfrage B2.
+- **Zu beantworten (MAP-001):** E-20 ADR-019 Fassung 2 bestätigen — damit
+  entfällt die Google Maps Embed API aus E-16 · E-21 Reihenfolge MAP-002 zu
+  UX-EPIC-001.
 - **Parallel als Docs-Sessions** (kein Code): im September `ADR-017
   Dateiablage` · `ADR-018 Terminzustände` · `OPS-001 Providerprüfung`
-  (Dokument); im Oktober `ADR-019 Kartendienst`. Jede endet mit einer
-  Bestätigung durch Jannes.
+  (Dokument). `ADR-019 Kartendienst` liegt seit dem 2026-09-08 in Fassung 2
+  vor (MAP-001) und wartet auf E-20. Jede endet mit einer Bestätigung durch
+  Jannes.
 - **Jannes-seitig diese Woche** (Meilenstein M0, 30.09.): Branch Protection
   und Secret Scanning in den GitHub-Einstellungen aktivieren (zehn Minuten,
   `docs/DEVELOPMENT.md` „Manuelle Schritte") · Anfragen B1, B2, B4 mit
@@ -76,7 +88,12 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   Kartendienst (B7) und der Terminerinnerung (B15) — und Stelle, Datum,
   Zusage in der Spur-B-Tabelle eintragen · die Genehmigung der
   Datenschutz-Fachkraft für den Kartendienst schriftlich zu den
-  DSFA-Unterlagen legen (G14).
+  DSFA-Unterlagen legen (G14) · **vor MAP-002:** kostenloses
+  PTV-Developer-Abo anlegen (nur Test, ein Schlüssel) und den Schlüssel in
+  `.env.local` ablegen — nie im Repository; **vor MAP-006:** die
+  PTV-Vertragsdokumente von einem ungeproxten Rechner laden (Liste in
+  `docs/decisions/providerpruefung-kartendienst.md`, Teil 1) und mit B2 an
+  die Datenschutzberatung geben.
 
 Nach jedem abgeschlossenen Loop wird dieser Abschnitt auf den nächsten Eintrag
 gestellt (Skill-Schritt I).
@@ -121,6 +138,7 @@ in dieser Roadmap.
 | Docs-Session ADR                | `Docs-Session ohne Code: ADR-017 Dateiablage schreiben. Vorgaben: docs/development/ROADMAP.md, Etappe G, Zeile G1, und die dort genannten ADRs. Am Ende die Bestätigungsfragen für Jannes als Liste mit Empfehlung.` — für ADR-018 (G2, Zeile D → ADR-018 in Spur B) und ADR-019 (G12) entsprechend | Opus 5 `xhigh`         |
 | Docs-Session Providerprüfung    | `Docs-Session ohne Code: OPS-001 Providerprüfung Supabase nach dem Prüfkatalog aus ADR-002 als Dokument, einschließlich der Auth-Mails (B13). Vorgaben: docs/development/ROADMAP.md, Zeile G3. Keine Cloud-Ressource anlegen.`                                                              | Opus 5 `high`          |
 | Ablaufrunde                     | `Ablaufrunde Touren & Termine nach docs/development/OPTIMIERUNG.md` — Bereich nach Rückwärtsplan                                                                                                                                                                                         | Sonnet 5 `medium`      |
+| Kartendienst-Loop               | `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md` — für MAP-003 bis MAP-005 entsprechend; MAP-006 erst nach dem Gate aus ADR-019                                                                                                                       | Opus 5 `high`          |
 | Antworten und Abnahmen eintragen | `Docs-Session ohne Code: meine Antworten und Abnahmen in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …`                                                                                                                                    | Sonnet 5 `low`         |
 | Idee                            | `Ideenspeicher: <Idee in zwei Sätzen>. Nur eintragen, nicht bauen.`                                                                                                                                                                                                                      | Sonnet 5 `low`         |
 | Roadmap prüfen                  | `Planungssession ohne Code: Gesamtstand prüfen (git fetch, Branches, Pull Requests), docs/development/ROADMAP.md gegen den Stand nachstellen, nächsten Loop vorschlagen. Nichts bauen.`                                                                                                   | Sonnet 5 `medium`      |
@@ -153,7 +171,7 @@ dem Gate nur synthetische Daten):
 **Go-live-Umfang (Stufe 1) — Kern:** Patient:innen mit Zugangshinweis ·
 Verordnungen · Termine mit Serien und Zustandsautomat (sechs erreichbare
 Zustände) · Behandlungsdokumentation mit Abschluss in einem Schritt und
-Textbausteinen · Navigation über Google Maps aus der Tagesliste ·
+Textbausteinen · Navigations-Handoff (Google Maps, Apple Maps) aus der Tagesliste ·
 Tagesplan-Cache lesend · Leistungen, Rechnung mit Empfänger, Storno, PDF,
 Zahlungserinnerung · Zahlungen mit Teilzahlung · Mitarbeitende mit Konten,
 Rollen, Passwort-Selbstbedienung · Auditlog · Löschung und Retention ·
@@ -165,13 +183,13 @@ druckbar · alles aus Etappe G und H.
 Legal-Hold-Oberfläche · OPS-006 als vollständige Funktion.
 
 **Stufe 2 vor der Eröffnung (spätestens April bis Juni 2027):** Tagesroute
-auf der Karte mit Navigation (TOUR-EPIC-001a, entschieden 2026-09-06) · dann
+auf der Karte mit Navigation (MAP-002 bis MAP-006, ADR-019 Fassung 2) · dann
 Anamnese und Fragebögen (Etappe 2), weil zur Eröffnung jede Patientin neu ist
 · der letzte Monat vor der Eröffnung bleibt frei für Probewoche 2 und Befunde.
 
 **Stufe 2 nach der Eröffnung (ab August 2027):** Übungspläne (Etappe 3) ·
 Warteliste (`IDEA-PRX-003`) · Terminerinnerung und Online-Anfrage (B15) ·
-Fahrzeiten und Erreichbarkeit (TOUR-EPIC-001b) · der Praxisbetrieb aus Spur
+Fahrzeiten und Erreichbarkeit (MAP-006) · der Praxisbetrieb aus Spur
 A2 · Kennzahlen, Export für die Steuerberatung. Bewusst nicht früher, weil
 jeder Punkt einen neuen Dienstleister, eine Einwilligung oder Betriebserfahrung
 braucht (§3.5, ADR-002). Die Vorschaubereiche bleiben bis dahin
@@ -191,17 +209,17 @@ hinweg ist das Verbindliche (E-15).
 | Monat       | Kap. | Code-Loops (Last)                                                                                   | Docs-Sessions                                                                          | Jannes liefert / entscheidet                                                                                                                              | Extern                           | MS     |
 | ----------- | ---- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------ |
 | Sep 2026    | 7    | VER-EPIC-001 · UI-000 (2)                                                                           | ADR-017 · ADR-018 · OPS-001 Providerprüfung                                            | Branch Protection · B1/B2/B4 anfragen · Genehmigung Kartendienst schriftlich ablegen · ADR-017/018 bestätigen                                             | —                                | M0     |
-| Okt 2026    | 9    | UX-EPIC-001 · STAFF-EPIC-002 · LOE-EPIC-001 · CAL-EPIC-003a Zustände (4)                            | ADR-019 Kartendienst (Link) · Optimierungsrunde Touren & Termine · VVT- und TOM-Entwurf | Test-Cloudprojekt anlegen (nach OPS-001) · E10 · ADR-019 bestätigen · erste Abnahmen · Urlaub eintragen                                                   | —                                | —      |
+| Okt 2026    | 9    | UX-EPIC-001 · STAFF-EPIC-002 · LOE-EPIC-001 · CAL-EPIC-003a Zustände (4)                            | ADR-019 Fassung 2 bestätigen (E-20) · Optimierungsrunde Touren & Termine · VVT- und TOM-Entwurf | Test-Cloudprojekt anlegen (nach OPS-001) · E10 · ADR-019 bestätigen · erste Abnahmen · Urlaub eintragen                                                   | —                                | —      |
 | Nov 2026    | 8    | CAL-EPIC-003b Serie · DAT-EPIC-001 · ABR-EPIC-001 · ABR-EPIC-002a Rechnung (4)                      | Optimierungsrunde Patient:innen · Löschkonzept, Breach-Prozess, Subprozessoren        | Leistungskatalog mit Preisen · Praxisstammdaten, Logo, Bank · B4-Termin · steuerliche Grundeinstellungen (G13) · PDF-Weg für die Rechnung (B14)          | B4 Ergebnis                      | —      |
 | Dez 2026    | 6    | ABR-EPIC-002b Dokument/Storno · ABR-EPIC-003 Zahlungen · E2-Funktion Tagesplan · PAT-006 (4)        | Optimierungsrunde Abrechnung · DSFA-Entwurf an die Prüfung (15.12.)                    | Ende-zu-Ende-Abnahme · Feldtag 1                                                                                                                          | B2 Ergebnis                      | M1     |
 | Jan 2027    | 8    | OPS-003 Backup/Restore · OPS-004 Logging (mit OPS-005 minimal) · OPS-006 minimal · OPS-007 Bootstrap · Befunde (5) | Betriebsdokumentation · BETRIEB-001 · Optimierungsrunde Mein Tag                       | Restore-Test mitführen · Notfallzugang verwahren · Endgeräte-Richtlinie                                                                                    | DSFA-Rückfragen                  | —      |
 | Feb 2027    | 8    | Befunde aus Probewoche 1 · UI-001 Politur (3)                                                       | Rückfallplan (Papierprozess aus E2) · Kurzanleitung „erster Tag" · Messrunde vor dem Gate | Probewoche 1 (H1) · Restore-Test 2 · Feldtag 2 · **Feature-Freeze Stufe 1 am 26.02.**                                                                     | B1 Ergebnis · DSFA abgeschlossen | M2     |
-| Mär 2027    | 8    | **Puffer** — nur Befunde und Dokumentation (0 geplant)                                              | Nachweistabelle MUSS → Test/Policy · Providerprüfung Google Maps Platform (Karte)     | Go-live-Gate 19.03. · Produktions-Bootstrap nach OPS-007 am 31.03.                                                                                        | —                                | M3, M4 |
-| Apr 2027    | 8    | TOUR-EPIC-001a Tagesroute · Befunde aus dem Produktivsystem (1)                                     | DSFA-Wiedervorlage Kartendienst                                                        | Google-Maps-Schlüssel anlegen (Jannes, nicht der Agent) · Abnahme auf einer echten Radrunde mit synthetischen Adressen                                    | —                                | —      |
+| Mär 2027    | 8    | **Puffer** — nur Befunde und Dokumentation (0 geplant)                                              | Nachweistabelle MUSS → Test/Policy · Vertragscheck PTV Developer (Gate aus ADR-019)     | Go-live-Gate 19.03. · Produktions-Bootstrap nach OPS-007 am 31.03.                                                                                        | —                                | M3, M4 |
+| Apr 2027    | 8    | MAP-006 Patient/Tour-Integration · Befunde aus dem Produktivsystem (1)                                     | DSFA-Wiedervorlage Kartendienst                                                        | PTV Paid Plan und Server-Schlüssel (Jannes, nicht der Agent) · Abnahme auf einer echten Radrunde mit synthetischen Adressen                                    | —                                | —      |
 | Mai 2027    | 8    | FRB-EPIC-001 · FRB-EPIC-002 (2)                                                                     | Optimierungsrunde Touren (vier Wochen nach TOUR-EPIC-001a)                             | B8 Lizenzfrage klären · Probewoche 2 vorbereiten (Seed: eine Eröffnungswoche)                                                                             | B8                               | —      |
 | Jun 2027    | 8    | **Puffer** — Befunde aus Probewoche 2 (0 geplant)                                                   | Erster-Tag-Protokoll · Schulung, falls eine zweite Person da ist                        | Probewoche 2 (H5) · Restore-Test 3 · **Change-Freeze ab 17.06.** · erste echte Patient:innen anlegen                                                      | —                                | —      |
 | Jul 2027    | 4    | **Stabilisierung** — Hotfixes und Befunde (0 neue Epics)                                            | —                                                                                      | **Eröffnung 01.07.** · Störfallliste führen · Optimierungsrunde nach vier Wochen Betrieb                                                                   | —                                | M5, M6 |
-| ab Aug 2027 | —    | Stufe 2 nach der Eröffnung (Etappe 3, Warteliste, TOUR-EPIC-001b, Spur A2) · danach Stufe 3 in der Reihenfolge des Abschnitts „Stufe 3" |                                                                                        |                                                                                                                                                           |                                  |        |
+| ab Aug 2027 | —    | Stufe 2 nach der Eröffnung (Etappe 3, Warteliste, Feinjustierung der Erreichbarkeitswarnung aus MAP-006, Spur A2) · danach Stufe 3 in der Reihenfolge des Abschnitts „Stufe 3" |                                                                                        |                                                                                                                                                           |                                  |        |
 
 Sperrzeit 21.12.2026 bis 04.01.2027; Jannes' Urlaub wird eingetragen, sobald
 er feststeht. Rechnung: rund 22 Code-Loops von September bis Februar bei 46
@@ -261,7 +279,7 @@ Polster: zwei Stufe-2-Loops, die als erste entfallen, wenn Stufe 1 rutscht.
 | R1  | Externe Prüfungen B1/B2 liefern später als Februar                              | hoch     | hoch      | M0 ohne zugesagten Termin                  | Anfrage im September mit Fristwunsch; Entwürfe bis 15.12.; zweite Stelle anfragen; April–Juni als Reserve | Jannes        |
 | R2  | Providerprüfung Supabase negativ                                                | niedrig  | sehr hoch | OPS-001 nicht bis 30.09. dokumentiert      | Prüfung vorziehen; erst danach ADR-017 und ABR-Datenmodell finalisieren                            | Claude/Jannes |
 | R3  | Jannes' Zeit reicht nicht für Entscheidungen und Abnahmen                       | hoch     | hoch      | zwei Wochen ohne abgenommenes Epic         | fester Wochentermin; gehostete Test-Umgebung; Entscheidungen als Optionen mit Empfehlung             | Jannes        |
-| R4  | Neue Dienstleister (PDF, Kartendienst) erst spät geprüft                        | mittel   | mittel    | Spur-B-Punkt ohne Termin                   | B14 im November; ADR-019 im Oktober; Karte ohne Freigabe nur als Link und Liste                     | Claude        |
+| R4  | Neue Dienstleister (PDF, Kartendienst) erst spät geprüft                        | mittel   | mittel    | Spur-B-Punkt ohne Termin                   | B14 im November; Kartendienst: Prüfkatalog liegt seit MAP-001 vor, Vertragsdokumente im Oktober laden, Gate mit B2; Prototypen MAP-002 bis MAP-005 hängen nicht am Vertrag | Claude/Jannes |
 | R5  | Feiertage und Urlaub kosten drei Wochen                                         | sicher   | mittel    | —                                          | 21.12.–04.01. gesperrt; Urlaub im Rückwärtsplan                                                     | Jannes        |
 | R6  | Befunde aus der Abnahme kommen als Welle im Januar                              | hoch     | mittel    | Fortschrittstabelle ohne Abnahmedatum      | Abnahme je Epic binnen sieben Tagen; Befunde im Folge-Loop derselben Spur                           | beide         |
 | R7  | Scope wächst aus Ideenspeicher, Wettbewerbsvergleich und Plattform-Zielbild     | mittel   | mittel    | Story ohne Bezug zum Stufe-1-Kern          | Feature-Freeze M2; Ideen nur eintragen; Scope-Bremse aus `OPTIMIERUNG.md`; Stufe 3 erst nach M6    | beide         |
@@ -269,7 +287,8 @@ Polster: zwei Stufe-2-Loops, die als erste entfallen, wenn Stufe 1 rutscht.
 | R9  | `pg_cron` oder andere Annahmen gelten beim Provider nicht                       | niedrig  | mittel    | OPS-001-Katalog                            | in OPS-001 prüfen; Fallback in ANN-007                                                              | Claude        |
 | R10 | Mobile Endgeräte ohne Richtlinie (Verlust, Sperre, MFA, Kartenverlauf)          | mittel   | hoch      | TOM ohne Abschnitt Endgeräte               | Endgeräte-Richtlinie in G14 (mit Google-Konto und Kartenverlauf); Sitzungen beenden in STAFF-EPIC-002 | beide         |
 | R11 | Eröffnung ohne Software, weil M4 um mehr als zwei Monate rutscht                | niedrig  | sehr hoch | M3 im März verfehlt                        | Abweichungsregel 3; Papierprozess aus E2 als Rückfall; Stufe-2-Fenster als Reserve                  | Jannes        |
-| R12 | **Eingetreten 2026-09-08.** Kein AVV für die Google Maps Platform — die In-App-Karte und die Fahrzeiten widersprechen §3.5 | eingetreten | niedrig | ADR-019, „Der ungelöste Punkt"          | Wie vorgesehen: TOUR-EPIC-001a liefert Links und Tourenliste ohne Karte (Weg B). Weg A braucht die schriftliche Genehmigung **und** eine Prinzipienänderung nach §21 | Claude/Jannes |
+| R12 | **Eingetreten 2026-09-08, aufgelöst am selben Tag.** Kein AVV für die Google Maps Platform | eingetreten | niedrig | ADR-019 Fassung 1                        | Weg C statt Weg B: Anbieter mit AVV (PTV Developer als Kandidat, ADR-019 Fassung 2); Rest-Risiko R13 | Claude/Jannes |
+| R13 | PTV Developer scheitert am Vertrags-/§203-Gate (kein §203-Wortlaut gefunden, Retention unbekannt, Zweitnutzungsklausel in US-Terms) | mittel   | mittel    | ein Gate-Punkt aus Teil 5 des Prüfdokuments negativ | Adapter hinter `contract.ts` — Anbieterwechsel ohne UI-Umbau; zweite Wahl MapTiler (Karte) und HERE (Routing) mit eigener Prüfung; Vertragsdokumente früh laden | Claude/Jannes |
 
 ---
 
@@ -331,20 +350,31 @@ Hausbesuch (`IDEA-PRX-015`, verworfen 2026-09-06: nicht nötig).
 
 **Warum hier:** Das Lastenrad-Hausbesuchskonzept lebt von der Route. Jannes
 hat am 2026-09-06 entschieden: eine Karte der gesamten Tagesroute, alle Wege
-eines Tages auf einmal oder ein einzelner Weg als Vorschau, und immer ein Link
-zur Navigation in Google Maps. Die Übermittlung der Adresse an Google Maps für
-die Navigation ist datenschutzrechtlich freigegeben; die Entscheidung steht
-fest. Der Link kommt schon mit UX-EPIC-001 (Stufe 1). Die Karte braucht einen
-zweiten Datenweg — Kartenmaterial und Route werden beim Öffnen von Google
-geladen. Entschieden am 2026-09-06 (E-16): **Google Maps Embed API**, derselbe
-Anbieter wie der Link; die zuständige Datenschutz-Fachkraft hat den Datenweg
-genehmigt. ADR-019 dokumentiert beides und die Prüfung der Google Maps
-Platform nach ADR-002.
+eines Tages auf einmal oder ein einzelner Weg als Vorschau, und immer ein
+Handoff zur Navigation; am 2026-09-08 dazu: **Convenience hat hohe
+Priorität** — In-App-Karte, Fahrradrouting und Fahrzeiten sind Produktziel,
+kein Komfort. Die Google Maps Embed API aus E-16 ist damit überholt: Google
+verarbeitet auf der Maps Platform als eigener Verantwortlicher, ein AVV fehlt
+(§3.5). **ADR-019 Fassung 2** (MAP-001, 2026-09-08) setzt stattdessen auf
+MapLibre im Browser, einen serverseitigen Anbieteradapter und **PTV Developer
+als Kandidat für Prototyp und Bewertung**; Google Maps bleibt möglicher
+Handoff-Zielpunkt. Die Loops MAP-002 bis MAP-006 stehen ausführlich in
+[`MAP-LOOPS.md`](MAP-LOOPS.md); **TOUR-EPIC-001a und -001b sind darin
+aufgegangen** (TOUR-001 bis TOUR-004 in MAP-006). MAP-002 bis MAP-005 laufen
+mit synthetischen Daten und dem kostenlosen PTV-Abo, unabhängig vom
+Vertragsstand; **MAP-006 erst nach dem Vertrags-/§203-/DSFA-Gate.** Ihre
+Einordnung in den Rückwärtsplan legt Jannes mit E-21 fest; Vorschlag:
+MAP-002 und MAP-003 im November/Dezember 2026 neben den Docs-Sessions,
+MAP-004 und MAP-005 im Januar 2027, MAP-006 im April 2027 an der Stelle von
+TOUR-EPIC-001a.
 
 | Loop               | Ergebnis                                                              | Stories                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Voraussetzung                                                                          | Jannes liefert                                                                     |
 | ------------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **TOUR-EPIC-001a** | Die Tagesroute ist als Karte sichtbar und mit einem Tap navigierbar   | **TOUR-001** Startort und Endort je Tag: Depot des Standorts als Vorgabe, persönlicher Startort nur von der Person selbst gepflegt und nur für sie sichtbar (`IDEA-PRX-017`, §20) · **TOUR-002** Tagesroute-Karte in „Mein Tag" und unter Touren: alle Wege des Tages in Terminreihenfolge; Tap auf einen Weg zeigt nur diesen; die Karte lädt erst auf Aktion, nie beim Öffnen der Seite; Adressen ohne Namen, ohne Uhrzeit, Fahrradmodus; Embed API im eingebetteten Rahmen, Schlüssel an die Domain gebunden (`IDEA-PRX-029`) · **TOUR-003** „In Google Maps öffnen" je Weg und für den ganzen Tag, aus Karte und Liste; Höchstzahl der Zwischenziele je Link beachten, sonst den Tag in Abschnitte teilen · **TOUR-004** Tourenliste druckbar mit Wegen — ersetzt die Vorschau `/touren`, deckt E2 mit ab · keine Speicherung von Routing-Rohdaten, kein Standort der Person, kein Verlauf (§18, §20) | **Auflösung des offenen Punkts aus ADR-019** (Weg A, B oder C), Schlüssel (Jannes), UI-000, UX-EPIC-001 | Schlüssel anlegen; Abnahme auf einer echten Radrunde mit synthetischen Adressen     |
-| **TOUR-EPIC-001b** | Fahrzeiten sind bekannt, und zwei Termine sind prüfbar erreichbar (§9) | Fahrzeit je Weg aus dem Kartendienst, kurze Speicherfrist (`IDEA-PRX-032`, §18) · Erreichbarkeit zweier Termine im Kalender — ersetzt oder ergänzt die Regel aus CAL-010 · Auswirkung einer Terminänderung sichtbar · keine Optimierung, keine Auswertung je Person (B6)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | TOUR-EPIC-001a, B7 (Datenweg Fahrzeiten), B6 als Annahme, Betriebserfahrung nach M6    | —                                                                                  |
+| **MAP-002** | Eine In-App-Karte mit nummerierten Teststopps läuft auf Desktop und 375 px | MapLibre-Komponente, PTV Vector Maps OSM, Overlays lokal, Fit-Bounds/Pan/Zoom, Vorschauseite `/touren/karte`; nur synthetische Tübinger Koordinaten | MAP-001; PTV-Free-Schlüssel (Jannes); E-21 | Schlüssel in `.env.local`; Support-Frage zur Domainbindung |
+| **MAP-003** | Eine Fahrradroute zwischen Teststopps liegt als Linie auf der Karte, mit Distanz und Fahrzeit | Edge Function `location-provider` mit PTV- und Mock-Adapter (ANN-017), `OSM_BICYCLE` vs. `OSM_CARGO_BICYCLE`, Fehler-/Timeout-Zustände, keine Speicherung | MAP-002 | Server-Schlüssel als lokales Supabase-Secret |
+| **MAP-004** | Fahrzeiten zwischen mehreren Stopps sagen deterministisch, ob zwei Termine erreichbar wären | `calculateMatrix()`, Domänenfunktion Erreichbarkeit in `scheduling`, Vorschau-Matrix; nichts persistent | MAP-003 | — |
+| **MAP-005** | „Navigation starten" öffnet mit einem Tap die Navigations-App mit Zielkoordinate | `buildNavigationUrl` (ANN-018) für Google Maps, Apple Maps, `geo:`; Wegpunktlimit verifiziert; Gerätebewertung; keine Präferenz vorgebaut | MAP-002; UX-EPIC-001 (Adress-Handoff) | Gerätebewertung Android/iOS nach `docs/abnahme/` |
+| **MAP-006** | Die Tagesroute liegt mit echten Adressen auf der Karte, mit Route, Fahrzeiten und Erreichbarkeit im Kalender | Koordinaten bei der Adresse (ANN-016), Geocoding beim Adress-Upsert, Startort (TOUR-001, §20), Marker lokal ohne Vollnamen, Route und Fahrzeiten (TOUR-002/003), Tourenliste druckbar (TOUR-004), Handoff mit Koordinaten, PAT-006, VVT, DSFA-Wiedervorlage; keine Speicherung von Fahrzeiten, kein Standort, kein Verlauf (§18, §20) | **Gate aus ADR-019 Punkt 9** (DPA, §203, Subprozessoren, Retention, EU-Region, Paid Plan, Edge-Runtime-Prüfung, DSFA) · MAP-003 bis MAP-005 · UX-EPIC-001 | Paid Plan, DPA-Ablage (G14), Abnahme auf einer echten Radrunde mit synthetischen Adressen |
 
 ### Etappe 2 — Anamnese, Verlauf, Bericht (Stufe 2, nach Etappe T, spätestens Mai 2027)
 
@@ -474,7 +504,7 @@ im April 2027 (Etappe T).
 | G9  | **OPS-006 Betroffenenrechte (minimal)**               | Verfahren dokumentiert; Export der Akte als einfache `owner`-Funktion, auditiert; begründete Ablehnung bei Aufbewahrungspflicht als Vorlage. Vollständige Funktion: Komfort.                                                                                                                                                                                                                                                              | Claude                                | Jan 2027                |
 | G10 | **E2 Ausfallkonzept**                                 | Tagesplan mit Adressen und Telefonnummern druck- und exportierbar (**Dezember**, klein) · Praxisprozess für einen Tag ohne Anwendung (ADR-012). Ist zugleich der Rückfallplan der Eröffnung (H4), weil es kein Altsystem gibt.                                                                                                                                                                                                             | Claude (Funktion), Jannes (Prozess)   | Dez 2026 / Jan 2027     |
 | G11 | **OPS-007 Bootstrap Produktion**                      | Runbook: Organisation, Standort, erstes `owner`-Konto, Mitarbeitende, Katalog, Praxisstammdaten ohne Seed anlegen; gegen die Test-Umgebung geprobt (M3), am 31.03.2027 im Produktivprojekt durchlaufen (M4).                                                                                                                                                                                                                              | Claude (Runbook), Jannes (Durchlauf)  | Jan / Mär 2027          |
-| G12 | **ADR-019 Kartendienst** — *geschrieben 2026-09-08, Bestätigung offen* | Google Maps als Kartendienst (entschieden 2026-09-06): Teil 1 Navigationslink — Datenfluss (Adresse ohne Namen, auf Tap, vom Endgerät), Vertragsgrundlage, Endgeräte-Regel für Google-Konto und Kartenverlauf, Text für die Datenschutzinformation; Teil 2 In-App-Karte — Google Maps Embed API (entschieden und genehmigt 2026-09-06, E-16), Prüfkatalog aus ADR-002 für die Google Maps Platform, Datenweg der Karte, Schlüsselverwaltung. Schließt B7 bis auf die Fahrzeiten. DSFA-Wiedervorlage (ADR-007). | Claude (Docs), Jannes bestätigt       | Okt 2026 / Mär 2027     |
+| G12 | **ADR-019 Kartendienst** — *Fassung 2 vom 2026-09-08 (MAP-001), Bestätigung offen (E-20)* | In-App-Karte, Fahrradrouting, Fahrzeiten und Handoff als Produktziel; Zielarchitektur MapLibre + serverseitiger Adapter (`src/lib/location/contract.ts`); PTV Developer als Kandidat für Prototyp und Bewertung, **nicht** produktiv freigegeben; Google Maps nur als Handoff-Ziel; Privacy-Regeln als Prüfregeln; Prüfkatalog nach ADR-002 mit Belegtiefe in `docs/decisions/providerpruefung-kartendienst.md` — alle Vertragspunkte `CONTRACT_CONFIRMATION_REQUIRED`. DSFA-Wiedervorlage je Datenweg (ADR-007). Schließt B7 bis auf das Gate. | Claude (Docs), Jannes bestätigt; Vertragscheck mit B2 | Okt 2026 (E-20) / Mär 2027 (Gate) |
 | G13 | **Steuerliche Grundeinstellungen**                    | Aus B4: Format des neuen Nummernkreises, Umsatzsteuer-Status der Praxis (Kleinunternehmerregelung ja/nein, Steuernummer), steuerliche Einordnung der Katalogpositionen, Belegfristen. Eine Seite, vor ABR-EPIC-002a.                                                                                                                                                                                                                       | Jannes mit Steuerberatung             | Nov 2026                |
 | G14 | **DSFA-Paket**                                        | Schwellwertprüfung und DSB-Entscheidung (B2), Verzeichnis der Verarbeitungstätigkeiten, TOM (mit Endgeräte-Richtlinie), Löschkonzept (aus LOE), Subprozessoren (aus G3 und G12), Datenschutzinformationen (G8), Verfahren für Betroffenenrechte (G9), Data-Breach-Prozess; Nachweistabelle MUSS → Test/Policy/Prüfschritt; Zweckbestimmung (ADR-006). **Entwürfe ab Oktober als Docs-Sessions, Stand 15.12. an die Prüfung.**              | Jannes, externe Prüfung               | Okt 2026 bis Feb 2027   |
 | G15 | **B1 Regulatorische Prüfung**                         | Externe Bestätigung der Zweckbestimmung und MDR-Abgrenzung (ADR-006), Einordnung nach EU AI Act.                                                                                                                                                                                                                                                                                                                                       | Jannes, extern                        | Feb 2027                |
@@ -527,7 +557,7 @@ Punkt 7 — MUSS; der Inhalt der Zweckbestimmung dagegen schon).
 | **E8 → ADR-017**             | Dateiablage: Ort, Zugriff, signierte Verweise, Retention, Virenprüfung                                                                             | Claude schreibt, Jannes bestätigt   | DAT-EPIC-001, ABR-EPIC-002b  | Sep 2026                            |                       |
 | **D → ADR-018**              | Terminzustände: Übergänge, Auslöser, Migration; „angefragt"/„vorgemerkt" definiert, nicht gebaut                                                   | Claude schreibt, Jannes bestätigt   | CAL-EPIC-003a                | Sep 2026                            |                       |
 | **Providerprüfung Supabase** | Prüfkatalog ADR-002 dokumentiert und bestanden — sonst Alternative; schließt die Auth-Mails ein (B13)                                              | Jannes mit Claude-Dokument          | ADR-017, OPS-001 Anlage      | 30.09.2026                          |                       |
-| **B7 → ADR-019**             | **Link frei** (ADR-019 Teil 1). **Karte und Fahrzeiten blockiert:** kein AVV für die Maps Platform, Widerspruch zu §3.5 — Weg A, B oder C wählen | Jannes entscheidet den Weg          | TOUR-EPIC-001a                             | Wegwahl Okt 2026         | ADR-019 geschrieben 2026-09-08 |
+| **B7 → ADR-019**             | **Weg C gewählt (MAP-001, 2026-09-08):** Handoff nicht blockiert (ANN-018, Frage an B2); Karte und Fahrzeiten über PTV Developer als Kandidat; produktive Freigabe am Gate aus ADR-019 Punkt 9 — neun Punkte, alle `CONTRACT_CONFIRMATION_REQUIRED` | Jannes (Vertragsdokumente, PTV-Support), Datenschutzberatung (B2) | MAP-006 | Dokumente Okt 2026; Gate mit B2 bis Feb 2027 | ADR-019 Fassung 2 |
 | **E10**                      | Wer darf Mitarbeiterdaten schreiben (bis dahin `owner`)                                                                                            | Jannes                              | STAFF-EPIC-002               | Okt 2026                            | entschieden 2026-09-08 |
 | **B4**                       | Steuerliche Validierung: Leistungsarten, Umsatzsteuer (Personal Training im **selben** Unternehmen, B9), Kleinunternehmerregelung und Gesamtumsatz nach §19 Abs. 3 UStG, Nummernkreis-Format, Belegfristen | Steuerberatung                      | ABR-EPIC-001 (als Annahme)   | Nov 2026                            | Festlegungen stehen 2026-09-08; Anfrage Sep |
 | **B14 PDF-Weg**              | Rechnungs-PDF: Browser-Druck, Bibliothek im Browser oder serverseitige Funktion — Optionen legt ABR-EPIC-002a vor; Druckansichten sind entschieden | Jannes mit Claude-Optionen          | ABR-EPIC-002b                | Nov 2026                            | bewusst offen; Tendenz serverseitig |
@@ -687,7 +717,10 @@ Git-Historie (Commit `ba46307`). Eingearbeitet an den betreffenden Stellen.
    Google bietet für die Maps Platform keinen AVV an, was §3.5 als MUSS
    verlangt. Die schriftliche Genehmigung wird damit von einer Formalie zur
    Voraussetzung; sie muss ausdrücklich die Übermittlung an einen **eigenen
-   Verantwortlichen** decken.
+   Verantwortlichen** decken. **Nachtrag 2 (2026-09-08, MAP-001):** Jannes
+   hat Convenience hoch priorisiert; die In-App-Karte ist Produktziel. ADR-019
+   Fassung 2 ersetzt die Embed API durch MapLibre mit PTV Developer als
+   Kandidat (Weg C). E-16 ist damit überholt — Bestätigung als **E-20**.
 3. **E-17 Personal Training:** beginnt ebenfalls am 01.07.2027, also keine
    Bestandsdaten; Empfehlung angenommen — Stufe 3 nach M6, §1 der Prinzipien
    wird dann ergänzt. Ob dieselbe Praxis oder ein eigener Betrieb, klärt die
@@ -719,7 +752,8 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | Wettbewerbsanalyse, Review 2.1, Optimierungsmethode    | fertig | 2026-09-06     | `7ab6f71`, Branch `claude/roadmap-optimization-competitor-analysis-r3qxl7` | —      |
 | Roadmap 2.1 in Kraft, Tagesroute und Plattform geplant | fertig | 2026-09-06     | `ba46307`, `879048c`, Branch `claude/competitor-analysis-roadmap-eercd3` | —        |
 | VER-EPIC-001 (PAT-005, VER-001 bis VER-003)             | fertig | 2026-09-07     | `2c3c1de`, `18e5131`, `a2c42b1`, `159c1bb`                          |               |
-| ADR-019 Kartendienst (Docs)                             | geschrieben, Bestätigung offen | 2026-09-08 | siehe Änderungsvermerk 2.4                              | —             |
+| ADR-019 Kartendienst (Docs), Fassung 1                  | ersetzt durch Fassung 2 | 2026-09-08 | `c5c7b21`                                                           | —             |
+| MAP-001 Mapping-Architektur und Providerentscheidung    | fertig | 2026-09-08     | `f52e555`, `5d51d97`, Roadmap-Commit auf Branch `claude/mapping-architecture-provider-ujy45m` | —             |
 | UI-000 Fundament                                        | fertig | 2026-09-07     | `4a4440f`, `45e8222`, `df8a294`, `11a9977`, `afb5ba5`, `e6b4ab6`    |               |
 
 ---
@@ -728,6 +762,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.5     | 2026-09-08 | **MAP-001:** In-App-Karte, Fahrradrouting und Fahrzeiten sind Produktziel (Convenience hoch priorisiert). ADR-019 Fassung 2: MapLibre + serverseitiger Adapter, PTV Developer als Kandidat für Prototyp/Bewertung, Google nur als Handoff-Ziel, Gate vor Echtdaten; Prüfdokument `providerpruefung-kartendienst.md`; Vertrag `src/lib/location/contract.ts`; ANN-016 bis ANN-018; Etappe T mit MAP-002 bis MAP-006 (`MAP-LOOPS.md`), TOUR-EPIC-001a/b aufgegangen; R12 aufgelöst, R13 neu; E-20/E-21 offen |
 | 2.4     | 2026-09-08 | ADR-019 geschrieben. Navigationslink frei — UX-EPIC-001 ohne Vorbehalt. **In-App-Karte und Fahrzeiten blockiert**: Google bietet für die Maps Platform keinen AVV, sondern Controller-Controller-Bedingungen; §3.5 verlangt den AVV als MUSS und §9 ordnet den Kartendienst dort ein. R12 eingetreten, Gegenmaßnahme greift wie vorgesehen (Weg B) |
 | 2.3     | 2026-09-08 | Entscheidungsrunde September ausnahmslos entschieden (Historie in `OPEN_DECISIONS.md`): Spur B trägt in „Stand" überall ein Datum, kein Punkt blockiert mehr das Bauen · H4 geändert — Rechnungen ruhen im Ausfall, statt von Hand aus dem Nummernkreis (E2) · E10 entschieden, §4.3/§4.5 werden mit STAFF-EPIC-002 nach §21 nachgezogen |
 | 2.2     | 2026-09-07 | Spur B wartet nicht mehr: Jannes entscheidet vorläufig selbst (`vorläufig entschieden (Jannes)`), das löst das Bauen, nicht die Freigabe · M3 und G18 entsprechend **verschärft** — eine Festlegung durch Jannes allein erfüllt das Gate nicht · B9: ein Unternehmen für Heilbehandlung und Personal Training, geht als Festlegung in B4 · B4 um den Gesamtumsatz nach §19 Abs. 3 UStG erweitert · B8 als Auskunft statt Entscheidung gekennzeichnet |

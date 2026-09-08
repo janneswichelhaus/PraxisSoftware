@@ -599,6 +599,11 @@ Dokumentation in ADR-019.
 **Offen.** Nur noch die Höchstzahl der Zwischenziele je Anfrage
 (Anbieterdokumentation); bei Überschreitung wird der Tag in Abschnitte geteilt.
 
+**Nachtrag 2026-09-08 (MAP-001):** Die Embed API ist überholt — Google bietet
+für die Maps Platform keinen AVV. ADR-019 Fassung 2 setzt auf MapLibre in der
+Anwendung mit PTV Developer als Kandidat; Umsetzung in MAP-002 bis MAP-006
+(`development/MAP-LOOPS.md`). Die Idee selbst bleibt bestätigt.
+
 ---
 
 ### IDEA-PRX-030 — Navigationslink zu Google Maps, je Weg und für den Tag
@@ -625,6 +630,11 @@ auf Tap gebaut und nirgends gespeichert. Die Datenschutzinformation nennt
 Google Maps (PAT-006). Die Höchstzahl der Zwischenziele je Link steht in der
 Anbieterdokumentation; wird sie überschritten, wird der Tag in Abschnitte
 geteilt.
+
+**Nachtrag 2026-09-08 (MAP-001):** Als Navigations-Handoff in ADR-019
+Fassung 2 (Punkt 20 bis 23) und ANN-018 gefasst — Ziel-Apps Google Maps,
+Apple Maps oder Systemnavigation, nur Ziel und Fahrradmodus, Bewertung der
+Ziel-Apps in MAP-005. Nicht automatisch risikofrei; Frage an B2.
 
 ---
 
