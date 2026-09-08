@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import type * as PrescriptionsApi from './api';
 import type * as RouterModule from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
@@ -34,7 +36,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 const { EditPrescriberPage, NewPrescriberPage } = await import('./PrescriberFormPage');
-const { VerordnerBereitsVorhanden } = await import('./api');
+const { VerordnerBereitsVorhanden, prescriptionDraftKey } = await import('./api');
 
 const bestand: PrescriptionsApi.Prescriber = {
   id: PRESCRIBER_ID,
@@ -137,6 +139,62 @@ describe('NewPrescriberPage', () => {
     const gesendet = JSON.stringify(createPrescriber.mock.calls[0]?.[0]);
     expect(gesendet).not.toMatch(/organization/i);
     expect(gesendet).not.toMatch(/"id"/);
+  });
+
+  /**
+   * Gegenstück zum Regressionstest in PrescriptionFormPage.test.tsx: prüft,
+   * dass diese Seite die neu angelegte Verordner:in in einen bereits
+   * vorhandenen Entwurf des Verordnungsformulars einträgt (VER-003).
+   */
+  it('traegt die neue Verordner:in in einen vorhandenen Entwurf des Verordnungsformulars ein', async () => {
+    createPrescriber.mockResolvedValue('neue-id');
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const rueckpfad = '/patienten/66666666-6666-4666-8666-000000000001/verordnungen/neu';
+    const entwurf = {
+      werte: { prescriber_id: '', frequency_note: '2x pro Woche' },
+      positionen: [{ id: null, remedy: 'Manuelle Therapie', prescribed_quantity: '6' }],
+    };
+    queryClient.setQueryData(prescriptionDraftKey(rueckpfad), entwurf);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[`/verordner/neu?zurueck=${encodeURIComponent(rueckpfad)}`]}>
+          <NewPrescriberPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await user.type(screen.getByLabelText('Nachname *'), 'Neuarzt');
+    await user.click(screen.getByRole('button', { name: 'Verordner:in anlegen' }));
+
+    await waitFor(() =>
+      expect(queryClient.getQueryData(prescriptionDraftKey(rueckpfad))).toMatchObject({
+        ...entwurf,
+        neuerVerordnerId: 'neue-id',
+      }),
+    );
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith(rueckpfad, { replace: true }));
+  });
+
+  it('legt keinen Entwurf an, wenn keiner vorhanden ist (Aufruf direkt aus der Verordnerkartei)', async () => {
+    createPrescriber.mockResolvedValue('neue-id');
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/verordner/neu']}>
+          <NewPrescriberPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await user.type(screen.getByLabelText('Nachname *'), 'Neuarzt');
+    await user.click(screen.getByRole('button', { name: 'Verordner:in anlegen' }));
+
+    await waitFor(() => expect(createPrescriber).toHaveBeenCalledTimes(1));
+    expect(queryClient.getQueryData(prescriptionDraftKey('/verordner'))).toBeUndefined();
   });
 });
 

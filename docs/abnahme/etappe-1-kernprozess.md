@@ -341,10 +341,13 @@ Erfassen dürfen die therapeutischen Rollen `owner`, `therapist` und
    Zurück auf heute setzen.
 7. Diagnose und „Empfehlung der Therapeut:in zum Verordnungsende" ausfüllen und
    speichern: die Akte zeigt die neue Verordnung im laufenden Jahr, ganz oben.
-8. **Fehlende Praxis:** noch einmal „Verordnung erfassen", dann im Hinweis
-   unter „Verordner:in" auf „Verordner:in anlegen" klicken. Nach dem Speichern
-   landet man **wieder im Verordnungsformular** — die Eingaben davor sind
-   allerdings verloren; das ist bekannt (siehe Bericht).
+8. **Fehlende Praxis:** noch einmal „Verordnung erfassen", einige Felder und
+   Positionen ausfüllen (z. B. Frequenz und Heilmittel), dann im Hinweis unter
+   „Verordner:in" auf „Verordner:in anlegen" klicken. Nach dem Speichern landet
+   man **wieder im Verordnungsformular** — die zuvor eingegebenen Felder und
+   Positionen sind **erhalten**, und die neu angelegte Verordner:in ist bereits
+   ausgewählt. Bricht man die Verordner-Anlage stattdessen mit „Abbrechen" ab,
+   bleiben die Eingaben ebenso erhalten.
 9. **Ändern:** bei einer Verordnung auf „Bearbeiten". „Genutzt" von 0 auf 3
    setzen und speichern: die Akte zeigt „noch 3 von 6". Erneut öffnen und eine
    Position hinzufügen — die vorhandene Position behält ihre Zahlen.
