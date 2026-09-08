@@ -24,6 +24,7 @@ const AENDERN = `
 const LOESCHEN = 'select public.delete_prescription($1::uuid)';
 const HOLEN = 'select * from public.get_prescription($1::uuid)';
 const KLINISCH = 'select * from public.list_patient_prescriptions_clinical($1::uuid)';
+const ORGANISATORISCH = 'select * from public.list_patient_prescriptions($1::uuid)';
 
 const PROBST = '77777777-7777-4777-8777-000000000001';
 const HAUSARZT = '77777777-7777-4777-8777-000000000002';
@@ -172,6 +173,30 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
         argumente(JSON.stringify([{ remedy: 'Krankengymnastik', prescribed_quantity: 'viele' }])),
       ),
     ).rejects.toThrow(/quantities must be numbers/i);
+
+    // Eine Kommazahl ist derselbe Eingabefehler wie ein Text und bekommt
+    // dieselbe sprechende Meldung - nicht den rohen Postgres-Cast-Fehler
+    // ("invalid input syntax for type integer"), den ein direkter
+    // Integer-Cast einer Dezimalzahl wirft.
+    await expect(
+      asUser(
+        users.therapist,
+        ANLEGEN,
+        argumente(JSON.stringify([{ remedy: 'Krankengymnastik', prescribed_quantity: 6.5 }])),
+      ),
+    ).rejects.toThrow(/quantities must be whole numbers/i);
+
+    await expect(
+      asUser(
+        users.therapist,
+        ANLEGEN,
+        argumente(
+          JSON.stringify([
+            { remedy: 'Krankengymnastik', prescribed_quantity: 6, used_quantity: 2.5 },
+          ]),
+        ),
+      ),
+    ).rejects.toThrow(/quantities must be whole numbers/i);
   });
 
   it('weist ein Ausstellungsdatum in der Zukunft ab', async () => {
@@ -408,5 +433,140 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     );
     const gefunden = rows.find((r) => r.id === id);
     expect(gefunden?.follow_up_recommendation).toBe('Synthetisch: Empfehlung der Therapeutin.');
+  });
+});
+
+/**
+ * Mandantentrennung (ADR-003): die bisherigen "unbekannt vs. fremd"-Tests
+ * oben verwenden ausschliesslich eine schlicht nicht existierende ID. Das
+ * beweist nicht, dass eine echte fremde Organisation herausgefiltert wird -
+ * nur dass eine ID, die es gar nicht gibt, abgewiesen wird. Dieser Block legt
+ * eine zweite, real existierende Organisation samt eigener Verordner:in,
+ * Patientin und Verordnung an (Muster aus rls.test.ts) und prueft, dass keine
+ * der Schreibfunktionen ueber eine echte fremde ID hinweg schreibt oder liest.
+ */
+describe('VER-003: Mandantentrennung (ADR-003)', () => {
+  const fremdeOrg = '33333333-3333-4333-8333-000000000001';
+  const fremderAccount = '33333333-3333-4333-8333-000000000002';
+  const fremdeTherapeutPerson = '33333333-3333-4333-8333-000000000003';
+  const fremderPrescriber = '33333333-3333-4333-8333-000000000004';
+  const fremdePatientPerson = '33333333-3333-4333-8333-000000000005';
+  const fremderPatient = '33333333-3333-4333-8333-000000000006';
+  const fremdeVerordnung = '33333333-3333-4333-8333-000000000007';
+
+  beforeAll(async () => {
+    await resetDatabase();
+    await asPostgres(`
+      insert into auth.users (id, email, aud, role)
+        values ('${fremderAccount}', 'tessa.therapeutin@praxis-woanders.invalid', 'authenticated', 'authenticated');
+      insert into public.organizations (id, name, time_zone)
+        values ('${fremdeOrg}', 'Test Praxis Woanders', 'Europe/Berlin');
+      insert into public.persons (id, organization_id, given_name, family_name) values
+        ('${fremdeTherapeutPerson}', '${fremdeOrg}', 'Tessa', 'Therapeutin'),
+        ('${fremdePatientPerson}', '${fremdeOrg}', 'Paul', 'Woandershin');
+      insert into public.patients (id, organization_id, person_id)
+        values ('${fremderPatient}', '${fremdeOrg}', '${fremdePatientPerson}');
+      insert into public.user_profiles (id, organization_id, person_id, display_name)
+        values ('${fremderAccount}', '${fremdeOrg}', '${fremdeTherapeutPerson}', 'Tessa Therapeutin');
+      insert into public.user_roles (user_id, organization_id, role_key)
+        values ('${fremderAccount}', '${fremdeOrg}', 'therapist');
+      insert into public.prescribers (id, organization_id, family_name)
+        values ('${fremderPrescriber}', '${fremdeOrg}', 'Fremdarzt');
+      insert into public.prescriptions (
+        id, organization_id, patient_id, prescriber_id, prescription_kind, issued_on, diagnosis
+      ) values (
+        '${fremdeVerordnung}', '${fremdeOrg}', '${fremderPatient}', '${fremderPrescriber}',
+        'first', '2026-01-10', 'Synthetisch: Diagnose der fremden Praxis.'
+      );
+      insert into public.prescription_items (
+        organization_id, prescription_id, sort_order, remedy, prescribed_quantity
+      ) values (
+        '${fremdeOrg}', '${fremdeVerordnung}', 1, 'Krankengymnastik', 6
+      );
+    `);
+  }, 120_000);
+
+  it('weist eine echte Verordner:in einer fremden Organisation ab wie eine unbekannte', async () => {
+    await expect(
+      asUser(users.therapist, ANLEGEN, [
+        patients.max,
+        fremderPrescriber,
+        'first',
+        '2026-03-01',
+        POSITIONEN,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]),
+    ).rejects.toThrow(/prescriber not found/i);
+  });
+
+  it('weist eine echte Patientin einer fremden Organisation ab wie eine unbekannte', async () => {
+    await expect(
+      asUser(users.therapist, ANLEGEN, [
+        fremderPatient,
+        PROBST,
+        'first',
+        '2026-03-01',
+        POSITIONEN,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]),
+    ).rejects.toThrow(/patient not found/i);
+  });
+
+  it('aendert und loescht eine echte Verordnung einer fremden Organisation nicht', async () => {
+    await expect(
+      asUser(users.therapist, AENDERN, [
+        fremdeVerordnung,
+        PROBST,
+        'first',
+        '2026-03-01',
+        POSITIONEN,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]),
+    ).rejects.toThrow(/prescription not found/i);
+
+    await expect(asUser(users.therapist, LOESCHEN, [fremdeVerordnung])).rejects.toThrow(
+      /prescription not found/i,
+    );
+
+    const { rows } = await asPostgres('select id from public.prescriptions where id = $1', [
+      fremdeVerordnung,
+    ]);
+    expect(rows).toHaveLength(1);
+  });
+
+  it('liefert fuer eine echte Verordnung einer fremden Organisation kein Ergebnis statt eines Fehlers', async () => {
+    const { rows } = await asUser(users.therapist, HOLEN, [fremdeVerordnung]);
+    expect(rows).toEqual([]);
+  });
+
+  it('listet eine fremde Patientin ohne Verordnungen der eigenen Praxis', async () => {
+    const { rows } = await asUser(users.office, ORGANISATORISCH, [fremderPatient]);
+    expect(rows).toEqual([]);
+  });
+
+  it('sieht die eigene Verordnung nur innerhalb der fremden Organisation', async () => {
+    const { rows } = await asUserCommitted<{ id: string; diagnosis: string }>(
+      fremderAccount,
+      KLINISCH,
+      [fremderPatient],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe(fremdeVerordnung);
+    expect(rows[0]?.diagnosis).toContain('fremden Praxis');
   });
 });

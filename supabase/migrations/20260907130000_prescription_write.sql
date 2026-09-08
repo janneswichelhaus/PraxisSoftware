@@ -93,13 +93,15 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_eintrag    jsonb;
-  v_position   smallint := 0;
-  v_remedy     text;
-  v_verordnet  integer;
-  v_genutzt    integer;
-  v_id         uuid;
-  v_behalten   uuid[] := array[]::uuid[];
+  v_eintrag       jsonb;
+  v_position      smallint := 0;
+  v_remedy        text;
+  v_verordnet_num numeric;
+  v_genutzt_num   numeric;
+  v_verordnet     integer;
+  v_genutzt       integer;
+  v_id            uuid;
+  v_behalten      uuid[] := array[]::uuid[];
 begin
   if p_items is null or jsonb_typeof(p_items) <> 'array' then
     raise exception 'items must be an array' using errcode = '22023';
@@ -128,8 +130,19 @@ begin
       raise exception 'quantities must be numbers' using errcode = '22023';
     end if;
 
-    v_verordnet := (v_eintrag ->> 'prescribed_quantity')::integer;
-    v_genutzt   := coalesce((v_eintrag ->> 'used_quantity')::integer, 0);
+    -- Ueber numeric statt direkt ueber integer lesen: eine Kommazahl
+    -- ("6.5") soll dieselbe sprechende Meldung wie ein Text ausloesen, statt
+    -- eines rohen "invalid input syntax for type integer"-Fehlers, den der
+    -- direkte Cast einer Dezimalzahl auf integer wirft.
+    v_verordnet_num := (v_eintrag ->> 'prescribed_quantity')::numeric;
+    v_genutzt_num   := coalesce((v_eintrag ->> 'used_quantity')::numeric, 0);
+
+    if v_verordnet_num <> trunc(v_verordnet_num) or v_genutzt_num <> trunc(v_genutzt_num) then
+      raise exception 'quantities must be whole numbers' using errcode = '22023';
+    end if;
+
+    v_verordnet := v_verordnet_num::integer;
+    v_genutzt   := v_genutzt_num::integer;
 
     if v_verordnet < 1 or v_verordnet > 500 then
       raise exception 'prescribed quantity out of range' using errcode = '22023';
