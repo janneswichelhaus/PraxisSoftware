@@ -3,11 +3,11 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DokumentationApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
-import { renderWithProviders, testUser } from '@/test-utils';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
-const patient: PatientsApi.Patient = {
+const patient: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
   status: 'active',
   care_started_on: '2026-01-05',
@@ -20,7 +20,7 @@ const patient: PatientsApi.Patient = {
   house_number: null,
   postal_code: null,
   city: null,
-};
+});
 
 /** Praxistermin am 12.05.2027, 09:00-10:00 Ortszeit Europe/Berlin (CEST, +02:00). */
 function termin(

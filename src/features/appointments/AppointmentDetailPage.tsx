@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Section } from '@/components/ui/Section';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
@@ -22,15 +25,6 @@ import {
   type Appointment,
 } from './api';
 
-function DataRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5 py-3 sm:flex-row sm:gap-6 sm:py-2.5">
-      <dt className="text-ink-muted text-sm sm:w-44 sm:shrink-0">{label}</dt>
-      <dd className="text-ink text-[0.9375rem]">{value}</dd>
-    </div>
-  );
-}
-
 /** Bezeichnung des Ortsfeldes - je nach Terminart eine andere Frage. */
 function ortsBeschriftung(art: Appointment['appointment_type']): string {
   if (art === 'practice') return 'Standort';
@@ -50,86 +44,32 @@ function ortsBeschriftung(art: Appointment['appointment_type']): string {
  * Beschriftung vermeidet deshalb jede Löschsprache.
  */
 function AbsageAktion({ appointment }: { appointment: Appointment }) {
-  const [rueckfrage, setRueckfrage] = useState(false);
-  const [fokusZurueck, setFokusZurueck] = useState(false);
   const queryClient = useQueryClient();
-  const bestaetigen = useRef<HTMLButtonElement>(null);
-  const ausloeser = useRef<HTMLButtonElement>(null);
 
   const mutation = useMutation({
     mutationFn: () => cancelAppointment(appointment.id, appointment.updated_at),
     onSuccess: async () => {
-      setRueckfrage(false);
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
       // Der Kalender zeigt sonst weiter einen geplanten Termin.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
 
-  // Der Fokus folgt der Rückfrage und kehrt danach zur auslösenden Schaltfläche
-  // zurück - sonst landet er bei Tastaturbedienung am Seitenanfang.
-  //
-  // Die Rückkehr braucht einen eigenen Durchlauf: während der Rückfrage ist die
-  // auslösende Schaltfläche nicht im Dokument, ihre Referenz zeigt also auf ein
-  // bereits entferntes Element.
-  useEffect(() => {
-    if (rueckfrage) bestaetigen.current?.focus();
-  }, [rueckfrage]);
-
-  useEffect(() => {
-    if (!rueckfrage && fokusZurueck) {
-      ausloeser.current?.focus();
-      setFokusZurueck(false);
-    }
-  }, [rueckfrage, fokusZurueck]);
-
-  if (!rueckfrage) {
-    return (
-      <Button ref={ausloeser} type="button" variant="secondary" onClick={() => setRueckfrage(true)}>
-        Termin absagen
-      </Button>
-    );
-  }
-
   return (
-    <div
-      role="group"
-      aria-label="Termin absagen"
-      className="border-line-strong bg-surface-sunken w-full rounded-lg border p-4"
+    <Rueckfrage
+      ausloeser="Termin absagen"
+      bezeichnung="Termin absagen"
+      bestaetigen="Ja, Termin absagen"
+      bestaetigenLaeuft="Wird abgesagt …"
+      fehler={mutation.isError ? mutation.error.message : undefined}
+      laeuft={mutation.isPending}
+      onBestaetigen={() => mutation.mutateAsync()}
     >
-      <p className="text-ink text-sm">
-        Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
-        um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
-        {patientName(appointment)} wird als abgesagt geführt. Er bleibt vollständig erhalten und
-        gibt seinen Zeitraum wieder frei.
-      </p>
-      {mutation.isError ? (
-        <p className="text-danger mt-2 text-sm">{mutation.error.message}</p>
-      ) : null}
-      <div className="mt-3 flex flex-wrap gap-3">
-        <Button
-          ref={bestaetigen}
-          type="button"
-          disabled={mutation.isPending}
-          onClick={() => {
-            if (mutation.isPending) return;
-            mutation.mutate();
-          }}
-        >
-          {mutation.isPending ? 'Wird abgesagt …' : 'Ja, Termin absagen'}
-        </Button>
-        <Button
-          type="button"
-          variant="quiet"
-          onClick={() => {
-            setRueckfrage(false);
-            setFokusZurueck(true);
-          }}
-        >
-          Abbrechen
-        </Button>
-      </div>
-    </div>
+      Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
+      {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
+      {patientName(appointment)} wird als abgesagt geführt. Er bleibt vollständig erhalten und gibt
+      seinen Zeitraum wieder frei.
+    </Rueckfrage>
   );
 }
 
@@ -182,7 +122,9 @@ function StatusAktion({
         {mutation.isPending ? laufend : beschriftung}
       </Button>
       {mutation.isError ? (
-        <p className="text-danger mt-2 text-sm">{mutation.error.message}</p>
+        <Statusmeldung ton="fehler" className="mt-2">
+          {mutation.error.message}
+        </Statusmeldung>
       ) : null}
     </div>
   );
@@ -220,43 +162,36 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
         }
       />
 
-      <section>
-        <h2 className="text-ink-muted text-sm font-semibold tracking-wide uppercase">Termin</h2>
-        <dl className="divide-line border-line mt-2 divide-y border-t">
-          <DataRow
-            label="Patient:in"
-            value={
-              <Link
-                to={`/patienten/${appointment.patient_id}`}
-                className="text-accent inline-flex min-h-11 items-center hover:underline"
-              >
-                {patientName(appointment)}
-              </Link>
-            }
-          />
-          <DataRow label="Behandelnde Person" value={staffName(appointment)} />
-          <DataRow label="Art" value={appointmentTypeLabels[appointment.appointment_type]} />
-          <DataRow label="Status" value={appointmentStatusLabels[appointment.status]} />
-          <DataRow label="Datum" value={formatLocalDate(appointment.starts_at, zone)} />
-          <DataRow
-            label="Zeit"
-            value={formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}
-          />
-          <DataRow
-            label={ortsBeschriftung(appointment.appointment_type)}
-            value={locationSummary(appointment)}
-          />
+      <Section titel="Termin">
+        <DetailList>
+          <DetailRow label="Patient:in">
+            <Link
+              to={`/patienten/${appointment.patient_id}`}
+              className="text-accent inline-flex min-h-11 items-center hover:underline"
+            >
+              {patientName(appointment)}
+            </Link>
+          </DetailRow>
+          <DetailRow label="Behandelnde Person">{staffName(appointment)}</DetailRow>
+          <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
+          <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
+          <DetailRow label="Datum">{formatLocalDate(appointment.starts_at, zone)}</DetailRow>
+          <DetailRow label="Zeit">
+            {formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}
+          </DetailRow>
+          <DetailRow label={ortsBeschriftung(appointment.appointment_type)}>
+            {locationSummary(appointment)}
+          </DetailRow>
           {appointment.completed_at ? (
-            <DataRow
-              label="Abgeschlossen am"
-              value={`${formatLocalDate(appointment.completed_at, zone)}, ${formatLocalTime(
+            <DetailRow label="Abgeschlossen am">
+              {`${formatLocalDate(appointment.completed_at, zone)}, ${formatLocalTime(
                 appointment.completed_at,
                 zone,
               )} Uhr`}
-            />
+            </DetailRow>
           ) : null}
-        </dl>
-      </section>
+        </DetailList>
+      </Section>
 
       {darfAendern ? (
         <div className="mt-5 flex flex-wrap items-start gap-3">

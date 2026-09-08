@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-05
+Zuletzt aktualisiert: 2026-09-08
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -35,13 +35,23 @@ Produktivstart (ADR-007).
 | Status                 | Bedeutung                                                                                    |
 |------------------------|----------------------------------------------------------------------------------------------|
 | `offen`                | getroffen und umgesetzt, noch von niemandem bestätigt                                        |
-| `bestätigt`            | von Jannes oder der Datenschutzprüfung bestätigt — mit Datum und Instanz im Eintrag          |
+| `entschieden (Jannes)` | Jannes hat die Festlegung selbst getroffen oder bestätigt, mit Datum. Für `Praxisprozess` und `Technik` ist der Eintrag damit erledigt; für `Datenschutz` und `Recht` ist es **keine externe Bestätigung** — der Eintrag bleibt im Prüfpaket |
+| `bestätigt (Prüfung)`  | von der Datenschutzprüfung oder der zuständigen externen Stelle bestätigt — mit Datum und Instanz im Eintrag |
 | `geändert`             | die Prüfung hat eine andere Festlegung verlangt; der Eintrag nennt die neue und den Commit    |
 | `verworfen`            | die Annahme wurde aufgegeben; der Eintrag nennt, was stattdessen gilt                        |
 | `in ADR überführt`     | bestätigt und als ADR festgehalten; Verweis auf die ADR-Nummer                                |
 
 Ein Eintrag wird **nie gelöscht**. Auch eine verworfene Annahme bleibt
 nachvollziehbar, damit die Prüfung sieht, was zwischenzeitlich galt.
+
+**Warum `entschieden (Jannes)` und `bestätigt (Prüfung)` getrennt sind.** Beide
+standen bis zum 2026-09-07 zusammen unter `bestätigt`. Damit hätte eine
+Bestätigung durch Jannes den Go-live-Blocker der Kategorien `Datenschutz` und
+`Recht` bereits erfüllt, obwohl §15.1 Punkt 5 dort ausdrücklich den
+Datenschutzprozess nach §3.7 verlangt. Die Trennung schließt diese Lücke. Sie
+ist die Register-Seite des Status `vorläufig entschieden (Jannes)` aus
+`OPEN_DECISIONS.md`: Jannes darf jede offene Festlegung selbst treffen, damit
+die Arbeit weiterläuft — sie zählt fürs Bauen, nicht für die Freigabe.
 
 ## Aufbau eines Eintrags
 
@@ -91,7 +101,10 @@ ist ein Mangel, der im Review des Loops auffallen muss.
 Wenn die Datenschutzprüfung ansteht, ist dieses Register die Arbeitsliste:
 
 1. Alle Einträge der Kategorien `Datenschutz` und `Recht` mit Status `offen`
-   durchgehen. Die Übersichtstabelle unten filtert sie.
+   **oder `entschieden (Jannes)`** durchgehen. Die Übersichtstabelle unten
+   filtert sie. Ein Eintrag, den Jannes selbst entschieden hat, ist für die
+   Prüfung kein erledigter Punkt, sondern eine Vorlage: er sagt, was gelten
+   soll, und der Änderungspfad sagt, was ein Widerspruch kostet.
 2. Je Eintrag: bestätigen oder eine andere Festlegung verlangen. Der
    **Änderungspfad** sagt vorab, was eine Änderung kostet — die Prüfung muss
    den Code dafür nicht lesen.
@@ -100,22 +113,31 @@ Wenn die Datenschutzprüfung ansteht, ist dieses Register die Arbeitsliste:
 4. Geänderte Annahmen werden als eigene Aufgabe umgesetzt; der Eintrag verweist
    danach auf den Commit.
 
-Vor Produktivstart DARF kein Eintrag der Kategorien `Datenschutz` und `Recht`
-mehr `offen` sein (`docs/DEVELOPMENT.md`, Go-live-Blocker).
+Vor Produktivstart MUSS jeder Eintrag der Kategorien `Datenschutz` und `Recht`
+auf `bestätigt (Prüfung)`, `geändert`, `verworfen` oder `in ADR überführt`
+stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
+(`docs/DEVELOPMENT.md`, Go-live-Blocker; ROADMAP M3).
 
 ## Übersicht
 
 | Kennung | Thema                                                          | Kategorie     | Status | Wiedervorlage                 |
 |---------|----------------------------------------------------------------|---------------|--------|-------------------------------|
 | ANN-001 | Interne Initialfristen des Retention Schedule                  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | offen  | Jannes                        |
+| ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | entschieden (Jannes) 2026-09-08 | erledigt; Fristanker erneut bei LOE-001 |
 | ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | CAL-EPIC-003 (ADR-018)        |
+| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | entschieden (Jannes) 2026-09-08 | verbindlich mit ADR-018       |
 | ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; Leistungskürzel bei ABR-002 |
 | ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden 2026-09-05 | Providerprüfung nach ADR-002 |
-| ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | offen  | Jannes; Datenschutzprüfung    |
+| ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | entschieden (Jannes) 2026-09-08; **Zahl offen** | Jannes nach den ersten Praxiswochen |
 | ANN-009 | Systemakteur im Auditlog                                       | Datenschutz   | offen  | Datenschutzprüfung            |
+| ANN-010 | Sichtbarkeit und Frist der internen Versorgungsangaben          | Datenschutz   | entschieden (Jannes) 2026-09-08 | **Datenschutzprüfung** — bleibt im Prüfpaket |
+| ANN-011 | Datenklasse und Rollenschnitt der Verordnung                    | Datenschutz   | offen  | Datenschutzprüfung; C1 bei ABR-002 |
+| ANN-012 | Genutzte Menge wird bis CAL-007/ABR-002 von Hand gepflegt      | Praxisprozess | entschieden (Jannes) 2026-09-08 | abgelöst durch CAL-007 und ABR-002 |
+| ANN-013 | Datenklasse und Frist der Verordnerkartei                       | Datenschutz   | offen  | Datenschutzprüfung            |
+| ANN-014 | „Empfehlung zum Verordnungsende" ist eine Angabe, keine Systemempfehlung | Recht | offen | Datenschutzprüfung; B1 (MDR-Abgrenzung) |
+| ANN-015 | Umfang und Wortlaut der Verbindungsanzeige                      | Technik       | entschieden (Jannes) 2026-09-08 | UX-EPIC-001 (Textverlust-Schutz) |
+| ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | entschieden 2026-09-08 | Jannes bei Bedarf, sonst keine |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -175,7 +197,7 @@ Datenänderung bleibt und nicht mehrere Funktionen berührt.
 |---|---|
 | Kategorie | Praxisprozess |
 | Herkunft | PAT-003 |
-| Status | offen, seit 2026-08-29 (rückwirkend erfasst 2026-09-03) |
+| Status | **entschieden (Jannes) 2026-09-08**; getroffen 2026-08-29, rückwirkend erfasst 2026-09-03 |
 | Wiedervorlage | Jannes; der Behandlungsabschluss zusätzlich im Epic Behandlungsdokumentation |
 
 **Annahme.** `inactive` ist eine rein organisatorische Markierung („nicht in
@@ -216,7 +238,7 @@ Rollenschnitt wie beschrieben) technisch in Kraft — Status bleibt `offen`.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | CAL-001 |
-| Status | offen, seit 2026-08-30 (rückwirkend erfasst 2026-09-03) |
+| Status | **entschieden (Jannes) 2026-09-08**; getroffen 2026-08-30, rückwirkend erfasst 2026-09-03 |
 | Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
 
 **Annahme.** Für Hausbesuche wird die Patientenadresse bei Terminanlage in den
@@ -339,7 +361,7 @@ ABR-002 auf CAL-EPIC-003.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | DOK-003 (Dokumentation in der Akte, rollenabhängig projiziert); überbrückte bis zum 2026-09-05 auch Punkt C1 in `OPEN_DECISIONS.md`, der seither entschieden ist |
-| Status | offen, seit 2026-09-04 |
+| Status | **entschieden (Jannes) 2026-09-08** — mit einem Vorbehalt: die **Zahl** (Voreinstellung 1 Tag) wird nach den ersten Praxiswochen festgezurrt, wie ADR-016 es vorsieht. Mechanik und Fristbezug stehen. |
 | Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; die Aufnahme der Leistungskürzel in den Nachweis bei ABR-002 |
 
 **Annahme.** Der Behandlungsnachweis nach `PROJECT_PRINCIPLES.md` §4.4 ist in
@@ -544,3 +566,353 @@ im Auditlog" in `pnpm test:db`.
 Inserts in `finalize_overdue_treatment_notes` erweitern — Aufwand `klein`.
 Eigener Pseudo-Account statt Systemakteur: Spalte zurückbauen und Konto im
 Seed anlegen — Aufwand `mittel`, ausdrücklich nicht empfohlen.
+
+---
+
+### ANN-010 — Sichtbarkeit und Frist der internen Versorgungsangaben
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | PAT-005 (VER-EPIC-001); `IDEA-PRX-001`; `PROJECT_PRINCIPLES.md` §4.3, §4.6 und ADR-008 lassen die Einordnung solcher Felder offen |
+| Status | **entschieden (Jannes) 2026-09-08** für den Praxisnutzen; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket** — die Sichtbarkeit gegenüber `office` und die Frist bestätigt erst die Datenschutzprüfung |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen |
+
+**Annahme.** Zugangshinweis Hausbesuch, Besonderheit, Bemerkung und die feste
+Therapeut:in sind **organisatorische Angaben der Praxis**, keine
+Gesundheitsdaten und keine klinische Dokumentation. Sie liegen in einer
+eigenen Tabelle `patient_care_details` und sind **für alle vier Praxisrollen
+einschließlich `office` sichtbar**, ausdrücklich **nicht für das
+Patientenkonto** und nicht für `anon`. Ihre **Datenklasse ist die der
+Patientenakte**: zehn Jahre nach Abschluss der Behandlung (ADR-008). Sie
+dürfen niemals in Logs erscheinen (ADR-011). Die zusätzliche Erreichbarkeit
+(Mobil, geschäftlich, Telefax, Einrichtung) bleibt dagegen bei den
+Kontaktdaten der Person und ist für das Patientenkonto sichtbar.
+
+**Begründung.** Die Trennung folgt §4.3: `office` organisiert Termine und
+ruft an — der Zugangshinweis ist genau dafür da, und ihn dem Office
+vorzuenthalten würde die Rolle arbeitsunfähig machen. Zugleich verlangt §4.3,
+klinischen Freitext fernzuhalten; deshalb steht am Formular ein Hinweis, dass
+Befund und Verlauf in die Behandlungsdokumentation gehören, und die Felder
+liegen nicht in `patients`, wo ein Test klinische Spaltennamen ausschließt.
+Der Ausschluss des Patientenkontos folgt §4.6 und der Datensparsamkeit aus
+§16: es sind Arbeitsnotizen der Praxis („Schlüssel bei der Nachbarin"), deren
+Spiegelung in ein späteres Portal eine eigene fachliche Entscheidung wäre.
+Das Auskunftsrecht nach Art. 15 DSGVO bleibt unberührt und läuft über OPS-006
+(G9), nicht über eine Live-Ansicht. Die Frist folgt der Patientenakte, weil
+die Angaben am Behandlungsverhältnis hängen und ADR-008 eine neue Datenklasse
+ohne Fristzuordnung als Mangel führt; die kürzere Alternative („organisatorische
+Patientenkommunikation", 3 Jahre) wäre nur mit eigener Löschregel haltbar und
+würde die Angaben aus einem noch laufenden Behandlungsfall entfernen.
+**Unsicher:** ob die Prüfung „Besonderheit" für ein Feld hält, in das in der
+Praxis regelmäßig Gesundheitsdaten geraten (etwa „schwerhörig"), und deshalb
+eine engere Rollenmenge oder eine eigene Kennzeichnung verlangt.
+
+**Verankerung.** Tabelle `public.patient_care_details`, Policy
+`patient_care_details_select_directory_only` und die Sicht
+`patient_directory` in
+`supabase/migrations/20260907100000_patient_master_data.sql` (tragen die
+Kennung); Abschnitt „Versorgung" mit Hinweistext in
+`src/features/patients/PatientMasterDataFields.tsx`; Anzeige in
+`src/features/patients/PatientDetailPage.tsx`; Datenbanktests
+„PAT-005: erweiterte Stammdaten und interne Versorgungsangaben" in
+`pnpm test:db`.
+
+**Änderungspfad.** Engere Rollenmenge (etwa ohne `office`): die eine Policy
+ersetzen — Aufwand `klein`. Sichtbarkeit für das Patientenkonto: Policy um
+den Zweig „eigene Person" erweitern — Aufwand `klein`. Kürzere Frist: eigene
+Datenklasse und Löschregel in LOE-001 — Aufwand `mittel`. Verlegung einzelner
+Felder in die klinische Dokumentation: Migration mit Datenumzug und neuem
+Lesepfad — Aufwand `groß`.
+
+---
+
+### ANN-011 — Datenklasse und Rollenschnitt der Verordnung
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | VER-001 bis VER-003; `PROJECT_PRINCIPLES.md` §4.3 nennt „klinischen Freitext", ohne die Verordnung einzuordnen; C1 in `OPEN_DECISIONS.md` ist offen |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess; die Einordnung der Leistungskürzel entscheidet C1 bei ABR-002 |
+
+**Annahme.** Eine Verordnung ist ein **Mischdatensatz** und wird deshalb in
+zwei Projektionen ausgeliefert:
+
+- **organisatorisch** für alle vier Praxisrollen einschließlich `office`:
+  Verordner:in, Art (Erst/Folge), Ausstellungsdatum, Frequenz, organisatorische
+  Bemerkung sowie die Positionen mit **Bezeichnung des Heilmittels** und
+  verordneter, genutzter und verbleibender Menge;
+- **klinisch** nur für `owner`, `therapist`, `team_lead`: Diagnose
+  beziehungsweise Leitsymptomatik, Therapieziel, Hinweise der Verordner:in und
+  die Empfehlung zum Verordnungsende.
+
+**Anlegen, Ändern und Löschen dürfen nur die therapeutischen Rollen**, nicht
+`office`. Die **Datenklasse ist die klinische Patientenakte**: zehn Jahre nach
+Abschluss der Behandlung (ADR-008).
+
+**Begründung.** Die Verordnung trägt mit der Diagnose ein Gesundheitsdatum nach
+Art. 9 DSGVO; §4.3 hält `office` von klinischem Freitext fern. Zugleich ist die
+Verordnung die Grundlage von Terminserie und Rechnung — ohne Kontingent und
+Verordner:in kann `office` weder planen noch eine Folgeverordnung anfordern.
+Die Bezeichnung des Heilmittels wird als organisatorisch geführt, weil sie
+dieselbe Information trägt, die später als Leistungsposition ohnehin auf der
+Rechnung steht, die `office` nach §4.3 sieht; das ist die schwächste Stelle
+dieser Annahme und hängt an C1. Das Schreibrecht ohne `office` folgt §16
+(im Zweifel restriktiver): Wer eine Verordnung erfasst, tippt die Diagnose mit
+ab und sähe sie damit zwangsläufig — ein Schreibrecht wäre ein Leserecht durch
+die Hintertür. Die zehnjährige Frist folgt §630f BGB und ADR-008 Punkt 4: die
+Verordnung ist Teil der Behandlungsunterlagen. Umgesetzt ist die Trennung als
+**zwei Funktionen mit zwei Rückgabetypen**, nicht als eine Funktion mit
+genullten Spalten — wie bei DOK-003 (ADR-004). **Unsicher:** ob die Prüfung die
+Heilmittelbezeichnung für `office` zulässt; ob das Schreibrecht ohne `office`
+im Alltag trägt, sobald eine zweite Person im Büro sitzt.
+
+**Verankerung.** `app.can_read_prescriptions()`,
+`app.can_read_prescription_clinical()` und `app.can_write_prescriptions()` in
+`supabase/migrations/20260907110000_prescriptions.sql` (tragen die Kennung);
+`list_patient_prescriptions` und `list_patient_prescriptions_clinical` in
+`supabase/migrations/20260907120000_prescription_read_paths.sql`; die
+Schreibfunktionen in
+`supabase/migrations/20260907130000_prescription_write.sql`; Rollenweiche in
+`src/features/prescriptions/PatientPrescriptions.tsx`; Datenbanktests
+„VER-002" und „VER-003" in `pnpm test:db`.
+
+**Änderungspfad.** Anderer Rollenschnitt beim Lesen oder Schreiben: die
+betroffene `app.can_*`-Funktion ersetzen — Aufwand `klein`. Heilmittel als
+klinisch einstufen: Spaltenliste der organisatorischen Funktion und die
+Oberfläche anpassen — Aufwand `mittel`, mit fachlicher Folge, weil `office`
+dann nicht mehr planen kann. Andere Frist: eigene Datenklasse und Löschregel in
+LOE-001 — Aufwand `mittel`.
+
+---
+
+### ANN-012 — Genutzte Menge wird bis CAL-007 und ABR-002 von Hand gepflegt
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | VER-001; die Roadmap verortet den automatischen Verbrauch bei CAL-007 und ABR-002 (`IDEA-PRX-009`) |
+| Status | **entschieden (Jannes) 2026-09-08** — bleibt gültig, bis CAL-007 und ABR-002 die Menge automatisch fortschreiben |
+| Wiedervorlage | Jannes; verbindlich entschieden mit CAL-007 und ABR-002 |
+
+**Annahme.** Jede Verordnungsposition führt eine **genutzte Menge**, die die
+Praxis im Verordnungsformular selbst pflegt. Die verbleibende Menge wird daraus
+gerechnet und nirgends gespeichert. Eine Constraint verhindert, dass die
+genutzte Menge die verordnete übersteigt.
+
+**Begründung.** Das Restkontingent ist die einzige Zahl, wegen der man eine
+Verordnung im Alltag überhaupt aufschlägt; ohne sie wäre die Story ohne
+Nutzen. Die automatische Verrechnung setzt die Verknüpfung von Termin und
+Verordnung (CAL-007) und die Leistungserfassung (ABR-002) voraus — beides
+später in der Roadmap. Ein leeres, von nichts gepflegtes Feld wäre ein
+Zukunftsfeature auf Vorrat (ADR-014); ein von Hand gepflegtes ist heute
+brauchbar und wird später zum Startwert der Automatik. Die verbleibende Menge
+wird **nicht** gespeichert, weil ein zweiter Zähler auseinanderlaufen kann
+(§13). **Unsicher:** ob die Praxis die Zahl im Alltag tatsächlich nachführt —
+das zeigt erst die Probewoche 1.
+
+**Verankerung.** Spalte `prescription_items.used_quantity` und Constraint
+`prescription_items_used_within_prescribed` in
+`supabase/migrations/20260907110000_prescriptions.sql` (tragen die Kennung);
+Eingabefeld in `src/features/prescriptions/PrescriptionFormFields.tsx`;
+Berechnung des Rests in `src/features/prescriptions/api.ts`.
+
+**Änderungspfad.** Automatischer Verbrauch: CAL-007 und ABR-002 schreiben das
+Feld fort, das Eingabefeld entfällt oder wird zur Korrekturmöglichkeit —
+Aufwand `mittel`, ohne Datenumzug, weil die Spalte bleibt.
+
+---
+
+### ANN-013 — Datenklasse und Frist der Verordnerkartei
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | VER-001; ADR-008 kennt keine Datenklasse für personenbezogene Daten Dritter ohne Patientenbezug |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess (Verzeichnis der Verarbeitungstätigkeiten) |
+
+**Annahme.** `prescribers` enthält **berufliche Kontaktdaten Dritter** —
+Ärzt:innen und ihre Praxen — und ist **kein Gesundheitsdatum und kein
+Patientendatum**: erst die Verordnung stellt den Bezug zu einer Patientin her.
+Datenklasse: Stammdaten. Aufbewahrt, **solange eine Verordnung darauf
+verweist**; das ist über `on delete restrict` strukturell erzwungen. Sichtbar
+für alle vier Praxisrollen, nicht für Patientenkonten. Erfasst wird nur, was
+zur Identifikation und zur Anforderung einer Folgeverordnung nötig ist — keine
+Arztnummer, keine Betriebsstättennummer.
+
+**Begründung.** Rechtsgrundlage ist Art. 6 Abs. 1 lit. b/f DSGVO
+(Vertragsdurchführung und berechtigtes Interesse an der Zusammenarbeit mit der
+verordnenden Stelle), nicht Art. 9 — die Kartei allein sagt nichts über eine
+Gesundheit aus. Die Kopplung der Frist an die Verordnung folgt ADR-008 Punkt 2
+(gesetzliche Aufbewahrung vor Löschung): Eine Verordnung ohne auflösbaren
+Verordner wäre als Behandlungsunterlage unvollständig. Der Verzicht auf LANR
+und BSNR folgt der Datenminimierung (§3, Art. 5 Abs. 1 lit. c DSGVO) — es sind
+GKV-Merkmale, und die Praxis rechnet privat ab (ADR-009). **Unsicher:** ob die
+Prüfung eine eigene Zeile im Verzeichnis der Verarbeitungstätigkeiten und eine
+Information nach Art. 14 DSGVO gegenüber den erfassten Ärzt:innen verlangt.
+
+**Verankerung.** Tabelle `public.prescribers` mit Tabellenkommentar und Policy
+`prescribers_select_staff_only` in
+`supabase/migrations/20260907110000_prescriptions.sql` (tragen die Kennung);
+Formularfelder in `src/features/prescriptions/PrescriberFormFields.tsx`;
+Datenbanktest „VER-001: Verordner:innen" in `pnpm test:db`.
+
+**Änderungspfad.** Eigene Löschregel oder kürzere Frist: Regel in LOE-001
+ergänzen — Aufwand `klein`, solange keine Verordnung verweist. Information nach
+Art. 14 DSGVO: Textbaustein in G8/G14 — Aufwand `klein`, außerhalb des Codes.
+
+---
+
+### ANN-014 — „Empfehlung zum Verordnungsende" ist eine erfasste Angabe, keine Systemempfehlung
+
+| | |
+|---|---|
+| Kategorie | Recht |
+| Herkunft | VER-001; ADR-006 Punkt 4 verbietet eigene Therapieempfehlungen der Anwendung |
+| Status | offen, seit 2026-09-07 |
+| Wiedervorlage | Datenschutzprüfung; B1 (externe MDR-Abgrenzung, ADR-006 Punkt 7) |
+
+**Annahme.** Das Feld „Empfehlung zum Verordnungsende" nimmt **die Empfehlung
+der Therapeut:in** auf, die sie selbst formuliert und selbst verantwortet. Die
+Anwendung **erzeugt, ergänzt und bewertet sie nicht**. Was die Anwendung
+daneben zeigt, ist ausschließlich eine **Rechnung**: „noch 3 von 10". Wenn
+keine Behandlung mehr offen ist, steht dort der neutrale Sachsatz „Kontingent
+ausgeschöpft" — **keine** Handlungsempfehlung, keine Prognose, keine Ampel und
+keine Erinnerung.
+
+**Begründung.** ADR-006 Punkt 2 erlaubt ausdrücklich das Erfassen, Speichern,
+Strukturieren und Darstellen von Gesundheitsinformationen; Punkt 4 verbietet
+eigene Therapieempfehlungen. Eine von einem Menschen geschriebene Empfehlung zu
+speichern und wieder anzuzeigen ist Punkt 2 und nicht Punkt 4 — dieselbe
+Unterscheidung, die ADR-006 in seinen Konsequenzen für §7.1 trifft („Anzeigen"
+gegenüber „Bewerten"). Die Differenz „verordnet minus genutzt" ist eine
+transparente, veröffentlichte Rechenvorschrift ohne klinische Aussage. Die
+Roadmap führt die Prognose eines Wettbewerbers ausdrücklich nicht,
+`IDEA-LZK-007` (automatische Erinnerung mit Empfehlung zum weiteren Vorgehen)
+ist durch B9 blockiert, und `OPEN_DECISIONS.md` nennt ausdrücklich „die
+Empfehlung der Therapeutin zum Verordnungsende" als **nicht** blockiert.
+Regulatorisch relevant ist auch die Beschriftung (ADR-006 Konsequenzen): das
+Feld heißt deshalb in der Oberfläche „Empfehlung der Therapeut:in zum
+Verordnungsende" und nicht „Empfehlung". **Unsicher:** ob die externe Prüfung
+aus B1 den neutralen Sachsatz „Kontingent ausgeschöpft" bereits als Hinweis mit
+Handlungsaufforderung liest.
+
+**Verankerung.** Spalte `prescriptions.follow_up_recommendation` mit
+Spaltenkommentar in
+`supabase/migrations/20260907110000_prescriptions.sql` (trägt die Kennung);
+Beschriftung und Hinweistext in
+`src/features/prescriptions/PrescriptionFormFields.tsx`; Darstellung des
+Restkontingents in `src/features/prescriptions/PatientPrescriptions.tsx`.
+
+**Änderungspfad.** Feld oder Sachsatz anders beschriften: eine Stelle in der
+Oberfläche — Aufwand `klein`. Feld ganz entfernen, falls die Prüfung es
+beanstandet: Spalte und Formularfeld zurückbauen — Aufwand `klein`, ohne
+Datenumzug bei leerer Datenbank. Eine automatische Erinnerung oder Bewertung
+wäre **keine** Änderung dieser Annahme, sondern `MDR_REVIEW_REQUIRED` nach
+ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10.
+
+---
+
+### ANN-015 — Umfang und Wortlaut der Verbindungsanzeige
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | UI-000; die Roadmap führt die Verbindungsanzeige in UI-000 und UX-EPIC-001 ausdrücklich als `ANN` |
+| Status | **entschieden (Jannes) 2026-09-08**; der Textverlust-Schutz aus UX-EPIC-001 bleibt die offene Ergänzung |
+| Wiedervorlage | Jannes nach dem ersten Feldtag; UX-EPIC-001, wenn der Textverlust-Schutz dazukommt |
+
+**Annahme.** Die Verbindungsanzeige stützt sich **allein auf
+`navigator.onLine`** und die Ereignisse `online`/`offline` des Browsers. Es
+gibt **keinen Ping gegen den Server und keinen Abfragetakt**. Sie erscheint
+**nur im Fall „getrennt"** — ein dauerhaftes „verbunden" gibt es nicht. Der
+Text nennt die Folge für die Arbeit („Änderungen lassen sich gerade nicht
+speichern"), nicht den technischen Zustand, und bittet darum, den Text im Feld
+stehen zu lassen.
+
+**Begründung.** Der Anlass ist der Hausbesuch: im Treppenhaus reißt die
+Verbindung ab, und ohne Hinweis merkt man das erst, wenn ein Speichern
+fehlschlägt — im schlimmsten Fall mit einem Dokumentationstext im Feld. Ein
+regelmäßiger Ping wäre die genauere, aber teurere Antwort: eine wiederkehrende
+Verbindung ohne fachlichen Grund, zusätzliche Daten ohne Zweck (§18) und ein
+Signal, aus dem sich ableiten ließe, wann ein Gerät benutzt wird (§20). Der
+Preis der günstigeren Wahl ist bekannt und wird hier festgehalten: **ein Gerät
+hinter einem Anmeldeportal oder mit erreichbarem Netz, aber unerreichbarem
+Server, gilt als verbunden.** Deshalb behauptet der Text nicht, der Server sei
+erreichbar. Ein dauerhaftes „verbunden" wäre Rauschen: es stünde fast immer da
+und würde gerade dann übersehen, wenn es umschlägt. Die Anzeige ist
+ausdrücklich **keine Offline-Fähigkeit** — kein Zwischenspeicher, keine
+Synchronisation, kein Service Worker (ADR-015 Punkt 16); der begrenzte
+Offline-Modus aus ADR-001 bleibt ein eigenes Vorhaben. **Unsicher:** ob der
+Hinweis im Feldtag früh genug kommt, um einen Textverlust wirklich zu
+verhindern — verlässlich wird das erst mit dem Textverlust-Schutz aus
+UX-EPIC-001.
+
+**Verankerung.** `src/app/Verbindungsanzeige.tsx` (trägt die Kennung);
+eingehängt in `src/app/AppShell.tsx`; Tests in
+`src/app/Verbindungsanzeige.test.tsx`.
+
+**Änderungspfad.** Zusätzliche Prüfung gegen den Server: eine Abfrage in
+`useIstVerbunden` ergänzen — Aufwand `klein`, aber **datenschutzrelevant**,
+deshalb nicht ohne Entscheidung. Anderer Wortlaut oder eine dauerhafte Anzeige:
+eine Stelle — Aufwand `klein`. Echte Offline-Fähigkeit: eigenes Epic nach
+ADR-001, ersetzt ADR-015 Punkt 16 — Aufwand `groß`.
+
+### ANN-019 — Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | Nachprüfung zu PR #15/#16: der erste Fix für den Eingabenverlust beim Anlegen einer Verordner:in speicherte den Entwurf im TanStack-Query-Cache und verlor ihn dort nach der Standard-`gcTime` von fünf Minuten - ein zweiter, echter Fehler in derselben Story. |
+| Status | **entschieden 2026-09-08** |
+| Wiedervorlage | Jannes, falls die 30-Minuten-Grenze in der Praxis zu knapp oder zu großzügig wirkt; sonst keine |
+
+**Annahme.** Der Formularzustand liegt nicht mehr im TanStack-Query-Cache,
+sondern in einem eigenen, kleinen In-Memory-Speicher (`src/features/prescriptions/api.ts`,
+`entwurfSpeicher`). Ein Entwurf ist an **Vorgang** (Rücksprungpfad, je Patient
+und Verordnung eindeutig) **und Benutzer** (Supabase-Auth-`user.id`) gebunden
+und verfällt nach **30 Minuten** von selbst, unabhängig davon, ob er
+zwischenzeitlich gelesen wurde. Bei Abmeldung werden zusätzlich **sofort alle**
+Entwürfe verworfen, nicht erst nach Ablauf der Frist.
+
+**Begründung.** Die eigentliche Anforderung - ein Entwurf muss die Anlage
+einer fehlenden Verordner:in überleben, auch wenn die Person dafür Adresse und
+Kontaktdaten nachschlägt - ist mit der Standard-`gcTime` (fünf Minuten) eines
+inaktiven, unbeobachteten Query-Cache-Eintrags nicht verlässlich erfüllbar:
+`setQueryData` ohne einen laufenden `useQuery` an derselben Stelle hat ab dem
+Moment des Ablegens keinen Beobachter und gilt sofort als inaktiv. Die
+`gcTime` für genau diesen einen Schlüssel dauerhaft zu erhöhen, wäre technisch
+möglich gewesen (`setQueryDefaults`), hätte aber weiterhin denselben
+Cache-Mechanismus für einen Zweck zweckentfremdet, für den er nicht gebaut ist
+- mit dem nächsten daran hängenden Detail (Rehydrierung, Persister-Plugins,
+`refetchOnMount`) als nächstem Überraschungskandidaten. Ein eigener, expliziter
+Speicher mit genau den drei gebrauchten Operationen (ablegen, ansehen,
+entfernen) ist einfacher zu verstehen und zu prüfen als ein Cache-Sonderfall.
+30 Minuten sind eine Schätzung, keine Messung: großzügig genug für eine
+Verordner-Anlage mit Adress- und Kontaktrecherche, eng genug, dass ein
+tatsächlich abgebrochener Versuch nicht Tage später bei einem unabhängigen
+neuen Versuch auf demselben Pfad unbemerkt wieder auftaucht. Die
+Benutzerbindung verhindert zusätzlich, dass ein Kontowechsel im selben
+Browser-Tab (ohne Neuladen der Seite) den Entwurf einer anderen Person
+übernimmt; das Verwerfen bei Abmeldung ist Verteidigung in der Tiefe dazu, da
+die Verordnung klinische Freitexte enthalten kann (Diagnose, Therapieziel;
+§18, ADR-011). Der Speicher bleibt wie zuvor ausschließlich im
+Arbeitsspeicher der laufenden Seite - kein `localStorage`, kein
+`sessionStorage`, kein Weg über die URL - und betrifft keine andere Abfrage im
+Query-Cache.
+
+**Verankerung.** `src/features/prescriptions/api.ts` (`entwurfSpeicher`,
+`ENTWURF_MAX_ALTER_MS`, trägt die Kennung im Kommentar); verwendet in
+`PrescriptionFormPage.tsx` und `PrescriberFormPage.tsx`; das Verwerfen bei
+Abmeldung in `src/features/auth/SessionProvider.tsx`. Tests in
+`src/features/prescriptions/api.test.ts` (Speicherverhalten, u. a. mit
+`vi.useFakeTimers()`) und `src/features/prescriptions/PrescriptionFormPage.entwurf.test.tsx`
+(echter Seitenwechsel über echte Routen, Zeitfortschritt über fünf Minuten via
+`Date.now()`).
+
+**Änderungspfad.** Andere Frist: eine Zahl in `ENTWURF_MAX_ALTER_MS` - Aufwand
+`klein`. Mehrere gleichzeitige Entwürfe je Person zulassen oder den Speicher
+auf mehrere Tabs ausdehnen: eigener Mechanismus (z. B. `BroadcastChannel`),
+grundsätzlich anderer Ansatz - Aufwand `mittel`.

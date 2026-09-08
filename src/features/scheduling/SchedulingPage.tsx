@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import { canManageWorkingHours, isOwner, type CurrentUser } from '@/features/session/types';
 import {
@@ -107,12 +108,12 @@ function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
       </div>
 
       {mutation.isError ? (
-        <p className="text-danger mt-3 text-sm">{mutation.error.message}</p>
+        <Statusmeldung ton="fehler" className="mt-3">
+          {mutation.error.message}
+        </Statusmeldung>
       ) : null}
       {gespeichert && !mutation.isPending && !mutation.isError ? (
-        <p className="text-ink-muted mt-3 text-sm" role="status">
-          Das Praxisraster ist gespeichert.
-        </p>
+        <Statusmeldung className="mt-3">Das Praxisraster ist gespeichert.</Statusmeldung>
       ) : null}
 
       <div className="mt-4">
@@ -172,9 +173,9 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
       </p>
 
       {frist.isError ? (
-        <p className="text-danger mt-3 text-sm">
+        <Statusmeldung ton="fehler" className="mt-3">
           Die Dokumentationsfrist konnte nicht geladen werden.
-        </p>
+        </Statusmeldung>
       ) : null}
 
       <div className="mt-4 max-w-xs">
@@ -196,12 +197,12 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
       </div>
 
       {mutation.isError ? (
-        <p className="text-danger mt-3 text-sm">{mutation.error.message}</p>
+        <Statusmeldung ton="fehler" className="mt-3">
+          {mutation.error.message}
+        </Statusmeldung>
       ) : null}
       {gespeichert && !mutation.isPending && !mutation.isError ? (
-        <p className="text-ink-muted mt-3 text-sm" role="status">
-          Die Frist ist gespeichert.
-        </p>
+        <Statusmeldung className="mt-3">Die Frist ist gespeichert.</Statusmeldung>
       ) : null}
 
       <div className="mt-4">
@@ -353,12 +354,10 @@ function Wochenplan({
           />
 
           {mutation.isError ? (
-            <p className="text-danger text-sm">{mutation.error.message}</p>
+            <Statusmeldung ton="fehler">{mutation.error.message}</Statusmeldung>
           ) : null}
           {gespeichert && !mutation.isPending && !mutation.isError ? (
-            <p className="text-ink-muted text-sm" role="status">
-              Der {wochentagLabels[tag]} ist gespeichert.
-            </p>
+            <Statusmeldung>Der {wochentagLabels[tag]} ist gespeichert.</Statusmeldung>
           ) : null}
 
           <div className="flex flex-wrap gap-3">
@@ -495,12 +494,10 @@ function Abweichungen({
           ) : null}
 
           {mutation.isError ? (
-            <p className="text-danger text-sm">{mutation.error.message}</p>
+            <Statusmeldung ton="fehler">{mutation.error.message}</Statusmeldung>
           ) : null}
           {gespeichert && !mutation.isPending && !mutation.isError ? (
-            <p className="text-ink-muted text-sm" role="status">
-              Die Abweichung ist gespeichert.
-            </p>
+            <Statusmeldung>Die Abweichung ist gespeichert.</Statusmeldung>
           ) : null}
 
           <div>

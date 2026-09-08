@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders, testUser } from '@/test-utils';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -37,7 +37,7 @@ const termin: AppointmentsApi.Appointment = {
   organization_time_zone: 'Europe/Berlin',
 };
 
-const patient: PatientsApi.Patient = {
+const patient: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
   status: 'active',
   care_started_on: '2026-01-05',
@@ -50,7 +50,7 @@ const patient: PatientsApi.Patient = {
   house_number: '1',
   postal_code: '50667',
   city: 'Koeln',
-};
+});
 
 const fetchAppointment = vi.fn();
 const fetchAssignableTherapists = vi.fn();

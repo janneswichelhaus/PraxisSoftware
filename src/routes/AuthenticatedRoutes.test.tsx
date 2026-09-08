@@ -3,8 +3,22 @@ import { screen } from '@testing-library/react';
 import type * as PatientsApiModule from '@/features/patients/api';
 import type * as AppointmentsApiModule from '@/features/appointments/api';
 import type * as DokumentationApiModule from '@/features/documentation/api';
+import type * as PrescriptionsApiModule from '@/features/prescriptions/api';
+import type * as SessionContextModule from '@/features/auth/sessionContext';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
+
+// Der Entwurfsspeicher des Verordnungsformulars bindet an die Benutzer-ID
+// aus der Sitzung (VER-003, ANN-019); ohne diesen Mock würde useSession()
+// außerhalb eines SessionProvider werfen.
+vi.mock('@/features/auth/sessionContext', async (importOriginal) => ({
+  ...(await importOriginal<typeof SessionContextModule>()),
+  useSession: () => ({
+    session: { user: { id: '11111111-1111-4111-8111-000000000002' } },
+    initialising: false,
+    signOut: vi.fn(),
+  }),
+}));
 
 vi.mock('@/features/audit/api', () => ({
   fetchAuditEvents: () => Promise.resolve({ events: [], totalCount: 0 }),
@@ -27,6 +41,14 @@ vi.mock('@/features/documentation/api', async (importOriginal) => ({
   fetchTreatmentDocumentation: () => Promise.resolve({ primary: null, addenda: [] }),
   fetchTreatmentNoteVersions: () => Promise.resolve([]),
 }));
+vi.mock('@/features/prescriptions/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PrescriptionsApiModule>()),
+  fetchPrescribers: () => Promise.resolve([]),
+  fetchPrescriber: () => Promise.resolve(null),
+  fetchPrescription: () => Promise.resolve(null),
+  fetchPatientPrescriptions: () => Promise.resolve([]),
+  fetchPatientPrescriptionsClinical: () => Promise.resolve([]),
+}));
 vi.mock('@/features/patients/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApiModule>()),
   fetchPatients: () => Promise.resolve([]),
@@ -41,6 +63,12 @@ const AUDIT = '/praxis/sicherheit/audit';
 const NEU = '/patienten/neu';
 const BEARBEITEN = '/patienten/66666666-6666-4666-8666-000000000001/bearbeiten';
 const TERMIN_NEU = '/patienten/66666666-6666-4666-8666-000000000001/termine/neu';
+const VERORDNER = '/verordner';
+const VERORDNER_NEU = '/verordner/neu';
+const VERORDNER_BEARBEITEN = '/verordner/77777777-7777-4777-8777-000000000001/bearbeiten';
+const VERORDNUNG_NEU = '/patienten/66666666-6666-4666-8666-000000000001/verordnungen/neu';
+const VERORDNUNG_BEARBEITEN =
+  '/patienten/66666666-6666-4666-8666-000000000001/verordnungen/88888888-8888-4888-8888-000000000001/bearbeiten';
 const TERMIN_DETAIL = '/termine/77777777-7777-4777-8777-000000000001';
 const TERMIN_BEARBEITEN = '/termine/77777777-7777-4777-8777-000000000001/bearbeiten';
 const KALENDER = '/kalender';
@@ -282,6 +310,52 @@ describe('AuthenticatedRoutes', () => {
       renderWithProviders(
         <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
         TERMIN_VERLAUF,
+      );
+      expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    });
+  });
+  describe('Verordnungen (VER-EPIC-001)', () => {
+    it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+      'oeffnet die Verordnerkartei fuer %s',
+      async (role) => {
+        renderWithProviders(
+          <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+          VERORDNER,
+        );
+        expect(await screen.findByRole('heading', { name: 'Verordner:innen' })).toBeInTheDocument();
+      },
+    );
+
+    it.each([[VERORDNER], [VERORDNER_NEU], [VERORDNER_BEARBEITEN], [VERORDNUNG_NEU]])(
+      'leitet ein Patientenkonto von %s auf die Uebersicht um',
+      async (pfad) => {
+        renderWithProviders(
+          <AuthenticatedRoutes
+            user={testUser(['patient'], 'Max Mustermann')}
+            onSignOut={vi.fn()}
+          />,
+          pfad,
+        );
+        expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      },
+    );
+
+    it('mountet das Formular fuer eine neue Verordnung', async () => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser(['therapist'])} onSignOut={vi.fn()} />,
+        VERORDNUNG_NEU,
+      );
+      expect(
+        await screen.findByRole('heading', { name: 'Verordnung erfassen' }),
+      ).toBeInTheDocument();
+    });
+
+    it('mountet das Aenderungsformular einer Verordnung', async () => {
+      // fetchPrescription ist gemockt und liefert null - entscheidend ist hier
+      // allein, dass die Route ueberhaupt gemountet wird.
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser(['therapist'])} onSignOut={vi.fn()} />,
+        VERORDNUNG_BEARBEITEN,
       );
       expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     });

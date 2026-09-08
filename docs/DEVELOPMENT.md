@@ -254,9 +254,13 @@ blockieren:
 4. Regulatorische Prüfung der Zweckbestimmung nach
    [ADR-006](adr/ADR-006-medical-device-boundary.md) (Punkt B1).
 5. Alle Annahmen der Kategorien Datenschutz und Recht im
-   [Annahmenregister](decisions/ASSUMPTIONS.md) sind bestätigt oder geändert
-   umgesetzt; kein Eintrag dieser Kategorien steht mehr auf `offen`
-   (`PROJECT_PRINCIPLES.md` §15.1).
+   [Annahmenregister](decisions/ASSUMPTIONS.md) sind von der Prüfung bestätigt
+   oder geändert umgesetzt; kein Eintrag dieser Kategorien steht mehr auf
+   `offen` **oder `entschieden (Jannes)`** (`PROJECT_PRINCIPLES.md` §15.1
+   Punkt 5 verlangt dort den Datenschutzprozess nach §3.7, nicht die
+   Festlegung des Projektinhabers). Dasselbe gilt für die Punkte in
+   [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md), die auf
+   `vorläufig entschieden (Jannes)` stehen.
 
 ## Audit
 

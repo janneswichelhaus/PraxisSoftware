@@ -102,16 +102,26 @@ describe('NewPatientPage', () => {
     await user.click(screen.getByRole('button', { name: 'Patient anlegen' }));
 
     await waitFor(() => expect(createPatient).toHaveBeenCalledTimes(1));
+    // Vollstaendig aufgezaehlt: ein neues Stammdatenfeld soll diesen Test
+    // brechen, damit es nicht unbemerkt am Formular vorbeigeht.
     expect(createPatient).toHaveBeenCalledWith({
       given_name: 'Nora',
       family_name: 'Neuzugang',
       date_of_birth: '1980-03-14',
       email: null,
       phone: null,
+      phone_work: null,
+      phone_mobile: null,
+      fax: null,
+      institution: null,
       street: null,
       house_number: null,
       postal_code: null,
       city: 'Tuebingen',
+      primary_therapist_staff_member_id: null,
+      home_visit_access_note: null,
+      special_note: null,
+      remark: null,
     });
   });
 

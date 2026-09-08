@@ -76,3 +76,4 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen |
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen |
 | [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen |
+| [ADR-019](ADR-019-map-service.md) | Kartendienst: Navigationslink, In-App-Karte, Fahrzeiten | **Vorgeschlagen** — Teil 1 und 3 entscheidungsreif, Teil 2 offen |

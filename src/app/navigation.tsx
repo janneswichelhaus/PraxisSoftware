@@ -188,9 +188,12 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       kurz: 'Patienten',
       leitfrage: 'Was gehört zur Versorgung dieser Person?',
       to: '/patienten',
-      pfade: ['/patienten'],
+      pfade: ['/patienten', '/verordner'],
       icon: symbole.patienten,
-      unterpunkte: [],
+      unterpunkte: [
+        { to: '/patienten', label: 'Patient:innen', end: false },
+        { to: '/verordner', label: 'Verordner:innen' },
+      ],
     });
   }
 

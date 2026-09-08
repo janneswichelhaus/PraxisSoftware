@@ -18,10 +18,18 @@
 
   --color-ink: oklch(24% 0.012 250);
   --color-ink-muted: oklch(48% 0.012 250);
-  --color-ink-subtle: oklch(60% 0.01 250);
+  /* UI-000: von 60% auf 54% angehoben. Bei 60% erreichte der Kleintext auf
+     surface-sunken nur 3.6:1 und verfehlte damit WCAG AA (4.5:1). Der Wert
+     ist durch src/lib/kontrast.test.ts festgehalten. */
+  --color-ink-subtle: oklch(54% 0.012 250);
 
   --color-line: oklch(90% 0.006 250);
-  --color-line-strong: oklch(82% 0.008 250);
+  /* UI-000: von 82% auf 63% angehoben. line-strong umrandet Eingabefelder
+     und Rueckfragen; das ist die Begrenzung, an der ein Bedienelement
+     erkannt wird, und WCAG 1.4.11 verlangt dafuer 3:1. Bei 82% waren es
+     1.7:1. --color-line bleibt heller: es trennt nur (Karten, Listen) und
+     traegt keine Bedienbedeutung. */
+  --color-line-strong: oklch(63% 0.012 250);
 
   /* Ruhiges Petrol als Akzent - medizinisch konnotiert, nicht knallig. */
   --color-accent: oklch(48% 0.075 205);
@@ -73,5 +81,89 @@
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+/* =============================================================================
+   Druck-Basis (UI-000, entschieden 2026-09-06)
+
+   Gedruckt wird in dieser Praxis vor allem eines: der Tagesplan mit Adressen
+   und Telefonnummern als Rückfall für einen Tag ohne Anwendung (E2, ADR-012),
+   dazu spaeter Terminzettel und Tourenliste. Was dabei immer gilt, steht hier;
+   was eine einzelne Seite braucht, bleibt bei ihr.
+
+   Drei Regeln:
+
+   1. Bedienung wird nicht gedruckt. Navigation, Kopfleiste und Schaltflaechen
+      sind auf Papier nutzlos und kosten Platz. `.nicht-drucken` ist der
+      Notausgang fuer alles Weitere.
+   2. Papier ist weiss. Flaechen, Schatten und Farbverlaeufe werden zu Grau
+      und kosten Toner, ohne etwas zu tragen. Textfarben bleiben, weil
+      Ueberschriften sonst ihre Hierarchie verlieren.
+   3. Ein Datensatz wird nicht ueber zwei Seiten zerrissen: Karten und
+      Listeneintraege bleiben zusammen, Ueberschriften bleiben bei ihrem Text.
+
+   Bewusst NICHT hier: eine Kopf- oder Fusszeile mit Praxisname, Datum und
+   Seitenzahl. Sie gehoert zur jeweiligen Druckansicht, und der Praxisname
+   kommt erst mit ABR-000 aus den Stammdaten.
+   ============================================================================= */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    /* !important, weil die Flaechenregel weiter unten sonst auch das Papier
+       transparent setzt - das Ergebnis waere dasselbe, die Absicht aber
+       nicht mehr lesbar. */
+    background: #fff !important;
+  }
+
+  body {
+    /* Auf Papier zaehlt Lesbarkeit vor Ruhe: etwas kleiner, damit ein
+       Tagesplan auf eine Seite passt. */
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+
+  /* Bedienelemente und Navigation. `nav` und `header` decken das Geruest ab,
+     `.nicht-drucken` alles, was eine Seite zusaetzlich ausnimmt. */
+  nav,
+  header,
+  button,
+  .nicht-drucken {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Flaechen und Schatten weg, Rahmen bleiben als duenne Linie. */
+  * {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Zusammenhalten, was zusammengehoert. */
+  li,
+  tr,
+  section,
+  article {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  /* Ein Link zeigt auf Papier nichts an - seine Adresse hilft nur bei
+     externen Zielen, und die gibt es hier nicht. Deshalb bleibt der Text
+     stehen, ohne die URL dahinter. */
+  a {
+    text-decoration: none;
   }
 }

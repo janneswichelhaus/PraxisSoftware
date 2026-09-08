@@ -23,16 +23,32 @@ const patientSchema = z.object({
   date_of_birth: z.string().nullable(),
   email: z.string().nullable(),
   phone: z.string().nullable(),
+  phone_work: z.string().nullable(),
+  phone_mobile: z.string().nullable(),
+  fax: z.string().nullable(),
+  institution: z.string().nullable(),
   street: z.string().nullable(),
   house_number: z.string().nullable(),
   postal_code: z.string().nullable(),
   city: z.string().nullable(),
+  // Interne Versorgungsangaben (PAT-005). Für ein Patientenkonto bleiben sie
+  // leer - die Sicht liefert sie dort gar nicht erst (ANN-010, ADR-004).
+  primary_therapist_staff_member_id: z.string().nullable(),
+  primary_therapist_name: z.string().nullable(),
+  home_visit_access_note: z.string().nullable(),
+  special_note: z.string().nullable(),
+  remark: z.string().nullable(),
 });
 
 export type Patient = z.infer<typeof patientSchema>;
 
-const SELECT =
-  'id, status, care_started_on, given_name, family_name, date_of_birth, email, phone, street, house_number, postal_code, city';
+const SELECT = [
+  'id, status, care_started_on, given_name, family_name, date_of_birth',
+  'email, phone, phone_work, phone_mobile, fax, institution',
+  'street, house_number, postal_code, city',
+  'primary_therapist_staff_member_id, primary_therapist_name',
+  'home_visit_access_note, special_note, remark',
+].join(', ');
 
 export async function fetchPatients(): Promise<Patient[]> {
   const { data, error } = await getSupabase()
@@ -109,6 +125,17 @@ const optionalText = z
   .transform((value) => value.trim())
   .transform((value) => (value === '' ? null : value));
 
+/**
+ * Optionales Textfeld mit Längengrenze.
+ *
+ * Die Grenzen spiegeln die Check-Constraints der Datenbank. Sie stehen hier,
+ * damit ein zu langer Text als Feldfehler erscheint statt als abgewiesener
+ * Speichervorgang - verbindlich bleibt die Datenbank (ADR-004).
+ */
+function hoechstens(zeichen: number, meldung: string) {
+  return optionalText.refine((value) => value === null || value.length <= zeichen, meldung);
+}
+
 export const patientMasterDataSchema = z.object({
   given_name: z
     .string()
@@ -136,10 +163,19 @@ export const patientMasterDataSchema = z.object({
     'Keine gültige E-Mail-Adresse.',
   ),
   phone: optionalText,
+  phone_work: optionalText,
+  phone_mobile: optionalText,
+  fax: optionalText,
+  institution: hoechstens(200, 'Die Einrichtung ist zu lang.'),
   street: optionalText,
   house_number: optionalText,
   postal_code: optionalText,
   city: optionalText,
+  // Auswahlfeld: der leere Wert bedeutet "keine feste Therapeut:in".
+  primary_therapist_staff_member_id: optionalText,
+  home_visit_access_note: hoechstens(1000, 'Der Zugangshinweis ist zu lang.'),
+  special_note: hoechstens(1000, 'Die Besonderheit ist zu lang.'),
+  remark: hoechstens(2000, 'Die Bemerkung ist zu lang.'),
 });
 
 export type PatientMasterDataInput = z.input<typeof patientMasterDataSchema>;
@@ -153,10 +189,18 @@ export const leereStammdaten: Record<StammdatenFeld, string> = {
   date_of_birth: '',
   email: '',
   phone: '',
+  phone_work: '',
+  phone_mobile: '',
+  fax: '',
+  institution: '',
   street: '',
   house_number: '',
   postal_code: '',
   city: '',
+  primary_therapist_staff_member_id: '',
+  home_visit_access_note: '',
+  special_note: '',
+  remark: '',
 };
 
 /** Füllt das Formular aus einem gelesenen Datensatz; fehlende Werte bleiben leer. */
@@ -167,10 +211,47 @@ export function patientToFormValues(patient: Patient): PatientMasterDataInput {
     date_of_birth: patient.date_of_birth ?? '',
     email: patient.email ?? '',
     phone: patient.phone ?? '',
+    phone_work: patient.phone_work ?? '',
+    phone_mobile: patient.phone_mobile ?? '',
+    fax: patient.fax ?? '',
+    institution: patient.institution ?? '',
     street: patient.street ?? '',
     house_number: patient.house_number ?? '',
     postal_code: patient.postal_code ?? '',
     city: patient.city ?? '',
+    primary_therapist_staff_member_id: patient.primary_therapist_staff_member_id ?? '',
+    home_visit_access_note: patient.home_visit_access_note ?? '',
+    special_note: patient.special_note ?? '',
+    remark: patient.remark ?? '',
+  };
+}
+
+/**
+ * Übersetzt die Formularwerte in die Parameter der beiden Serverfunktionen.
+ *
+ * Anlegen und Ändern erfassen dieselben Felder; die Abbildung steht deshalb an
+ * einer Stelle. Ein geleertes Optionalfeld kommt als `null` an und wird als
+ * `null` gespeichert.
+ */
+function rpcStammdaten(values: PatientMasterDataValues) {
+  return {
+    p_given_name: values.given_name,
+    p_family_name: values.family_name,
+    p_date_of_birth: values.date_of_birth,
+    p_email: values.email,
+    p_phone: values.phone,
+    p_street: values.street,
+    p_house_number: values.house_number,
+    p_postal_code: values.postal_code,
+    p_city: values.city,
+    p_phone_work: values.phone_work,
+    p_phone_mobile: values.phone_mobile,
+    p_fax: values.fax,
+    p_institution: values.institution,
+    p_primary_therapist_staff_member_id: values.primary_therapist_staff_member_id,
+    p_home_visit_access_note: values.home_visit_access_note,
+    p_special_note: values.special_note,
+    p_remark: values.remark,
   };
 }
 
@@ -183,15 +264,7 @@ export function patientToFormValues(patient: Patient): PatientMasterDataInput {
  */
 export async function createPatient(values: PatientMasterDataValues): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_patient', {
-    p_given_name: values.given_name,
-    p_family_name: values.family_name,
-    p_date_of_birth: values.date_of_birth,
-    p_email: values.email,
-    p_phone: values.phone,
-    p_street: values.street,
-    p_house_number: values.house_number,
-    p_postal_code: values.postal_code,
-    p_city: values.city,
+    ...rpcStammdaten(values),
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Der Patient konnte nicht angelegt werden.');
@@ -214,15 +287,7 @@ export async function updatePatient(
 ): Promise<void> {
   const { error } = await getSupabase().rpc('update_patient', {
     p_patient_id: patientId,
-    p_given_name: values.given_name,
-    p_family_name: values.family_name,
-    p_date_of_birth: values.date_of_birth,
-    p_email: values.email,
-    p_phone: values.phone,
-    p_street: values.street,
-    p_house_number: values.house_number,
-    p_postal_code: values.postal_code,
-    p_city: values.city,
+    ...rpcStammdaten(values),
   });
 
   // Keine Details aus der Datenbank nach außen: eine fremde und eine

@@ -3,12 +3,13 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
+import type * as VerordnungenApi from '@/features/prescriptions/api';
 import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders, testUser } from '@/test-utils';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
-const aktiv: PatientsApi.Patient = {
+const aktiv: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
   status: 'active',
   care_started_on: '2026-01-05',
@@ -21,11 +22,13 @@ const aktiv: PatientsApi.Patient = {
   house_number: '12b',
   postal_code: '50667',
   city: 'Köln',
-};
+});
 
 const fetchPatient = vi.fn();
 const setPatientStatus = vi.fn();
 const logPatientRecordView = vi.fn();
+const fetchPatientPrescriptions = vi.fn();
+const fetchPatientPrescriptionsClinical = vi.fn();
 const fetchTreatmentEvidencePage = vi.fn();
 const fetchPatientTreatmentNotesPage = vi.fn();
 
@@ -36,6 +39,22 @@ vi.mock('./api', async (importOriginal) => {
     fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
     setPatientStatus: (id: string, status: string) => setPatientStatus(id, status) as Promise<void>,
     logPatientRecordView: (id: string) => logPatientRecordView(id) as Promise<void>,
+  };
+});
+
+// Verordnungen kommen ueber eigene, rollenabhaengig projizierte Lesepfade
+// (VER-002). Hier zaehlt nur, dass der Abschnitt da ist; seine Darstellung hat
+// eigene Tests in features/prescriptions.
+vi.mock('@/features/prescriptions/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof VerordnungenApi>();
+  return {
+    ...actual,
+    fetchPatientPrescriptions: (patientId: string) =>
+      fetchPatientPrescriptions(patientId) as Promise<VerordnungenApi.Prescription[]>,
+    fetchPatientPrescriptionsClinical: (patientId: string) =>
+      fetchPatientPrescriptionsClinical(patientId) as Promise<
+        VerordnungenApi.ClinicalPrescription[]
+      >,
   };
 });
 
@@ -79,6 +98,10 @@ describe('PatientDetailPage', () => {
     logPatientRecordView.mockResolvedValue(undefined);
     fetchTreatmentEvidencePage.mockResolvedValue([]);
     fetchPatientTreatmentNotesPage.mockResolvedValue([]);
+    fetchPatientPrescriptions.mockReset();
+    fetchPatientPrescriptionsClinical.mockReset();
+    fetchPatientPrescriptions.mockResolvedValue([]);
+    fetchPatientPrescriptionsClinical.mockResolvedValue([]);
   });
 
   // Wer die Kartei lesen darf, darf die Stammdaten auch aendern - dieselbe
@@ -265,6 +288,75 @@ describe('PatientDetailPage', () => {
       await screen.findByRole('heading', { name: 'Max Mustermann' });
 
       expect(screen.queryByRole('link', { name: 'Termin anlegen' })).not.toBeInTheDocument();
+    });
+  });
+  describe('Hausbesuch und Versorgung (PAT-005)', () => {
+    it('zeigt Zugangshinweis, Besonderheit und feste Therapeut:in', async () => {
+      fetchPatient.mockResolvedValue(
+        testPatient({
+          id: PATIENT_ID,
+          home_visit_access_note: '2. OG links, Klingel "Mustermann".',
+          special_note: 'Hund im Flur.',
+          primary_therapist_name: 'Anna Beispiel',
+          remark: 'Bevorzugt Vormittage.',
+        }),
+      );
+      renderWithProviders(<PatientDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.getByText('2. OG links, Klingel "Mustermann".')).toBeInTheDocument();
+      expect(screen.getByText('Hund im Flur.')).toBeInTheDocument();
+      expect(screen.getByText('Anna Beispiel')).toBeInTheDocument();
+      expect(screen.getByText('Bevorzugt Vormittage.')).toBeInTheDocument();
+    });
+
+    it('laesst den Abschnitt weg, wenn die Sicht nichts liefert', async () => {
+      // Fuer ein Patientenkonto sind die internen Angaben serverseitig leer
+      // (ANN-010). Die Oberflaeche zeigt dann keinen leeren Abschnitt.
+      fetchPatient.mockResolvedValue(testPatient({ id: PATIENT_ID }));
+      renderWithProviders(<PatientDetailPage user={testUser(['patient'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.queryByText('Hausbesuch und Versorgung')).not.toBeInTheDocument();
+    });
+
+    it('bietet die Mobilnummer als Anruf an', async () => {
+      fetchPatient.mockResolvedValue(
+        testPatient({ id: PATIENT_ID, phone_mobile: '+49 160 0000005' }),
+      );
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.getByRole('link', { name: '+49 160 0000005' })).toHaveAttribute(
+        'href',
+        'tel:+491600000005',
+      );
+    });
+  });
+  describe('Verordnungen in der Akte (VER-002)', () => {
+    it('holt fuer eine therapeutische Rolle die klinische Sicht', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+      await screen.findByRole('heading', { name: 'Verordnungen' });
+
+      expect(fetchPatientPrescriptionsClinical).toHaveBeenCalledWith(PATIENT_ID);
+      expect(fetchPatientPrescriptions).not.toHaveBeenCalled();
+    });
+
+    it('holt fuer office die organisatorische Sicht', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Verordnungen' });
+
+      expect(fetchPatientPrescriptions).toHaveBeenCalledWith(PATIENT_ID);
+      expect(fetchPatientPrescriptionsClinical).not.toHaveBeenCalled();
+    });
+
+    it('zeigt einem Patientenkonto keinen Abschnitt Verordnungen', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['patient'])} />);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      expect(screen.queryByRole('heading', { name: 'Verordnungen' })).not.toBeInTheDocument();
+      expect(fetchPatientPrescriptions).not.toHaveBeenCalled();
+      expect(fetchPatientPrescriptionsClinical).not.toHaveBeenCalled();
     });
   });
 });
