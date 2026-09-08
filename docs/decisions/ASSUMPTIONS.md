@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-08
+Zuletzt aktualisiert: 2026-09-08 (MAP-001: ANN-016 bis ANN-018)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -137,6 +137,9 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-013 | Datenklasse und Frist der Verordnerkartei                       | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-014 | „Empfehlung zum Verordnungsende" ist eine Angabe, keine Systemempfehlung | Recht | offen | Datenschutzprüfung; B1 (MDR-Abgrenzung) |
 | ANN-015 | Umfang und Wortlaut der Verbindungsanzeige                      | Technik       | entschieden (Jannes) 2026-09-08 | UX-EPIC-001 (Textverlust-Schutz) |
+| ANN-016 | Koordinate als abgeleitetes Stammdatum der Adresse             | Datenschutz   | offen  | Datenschutzprüfung; MAP-006 (Migration) |
+| ANN-017 | Serverseitiger Kartendienst-Adapter als Supabase Edge Function  | Technik       | offen  | OPS-001 (Edge Runtime, ADR-015 Punkt 20); MAP-003 |
+| ANN-018 | Übergabeziel und URL-Format des Navigations-Handoffs           | Datenschutz   | offen  | Datenschutzprüfung (B2); UX-EPIC-001, MAP-005 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -858,3 +861,139 @@ eingehängt in `src/app/AppShell.tsx`; Tests in
 deshalb nicht ohne Entscheidung. Anderer Wortlaut oder eine dauerhafte Anzeige:
 eine Stelle — Aufwand `klein`. Echte Offline-Fähigkeit: eigenes Epic nach
 ADR-001, ersetzt ADR-015 Punkt 16 — Aufwand `groß`.
+
+### ANN-016 — Koordinate als abgeleitetes Stammdatum der Adresse
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | MAP-001 (ADR-019 Fassung 2, Punkt 14) |
+| Status | **offen**, getroffen 2026-09-08 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Wiedervorlage Kartendienst; MAP-006 verankert sie in der Migration |
+
+**Annahme.** Zu jeder Hausbesuchsadresse wird die geocodierte Koordinate
+(`lat`, `lon`, Genauigkeitsstufe) **gespeichert**, und zwar bei der Adresse
+selbst. Geocoding läuft **nur beim Anlegen oder Ändern der Adresse**, nie beim
+Öffnen einer Karte oder beim Berechnen einer Route. Die Koordinate ist ein
+abgeleitetes Stammdatum: sie teilt Datenklasse und Frist der Adresse, wird mit
+ihr überschrieben und mit ihr gelöscht. Gespeichert werden nur Koordinate und
+Genauigkeitsstufe — **keine Rohantwort des Anbieters**, kein Anzeigetext des
+Treffers. Liegt der Treffer unterhalb der Hausnummerngenauigkeit, bestätigt
+die erfassende Person ihn ausdrücklich, sonst bleibt die Adresse ohne
+Koordinate. Wie die Koordinate zum Termin gelangt (Kopie mit dem
+Adress-Snapshot nach ANN-003 oder Verweis), entscheidet MAP-006; Vorzug hat
+die Kopie, damit die Regel aus ANN-003 unverändert gilt.
+
+**Begründung.** Datenminimierung gegenüber dem Anbieter (Art. 5 Abs. 1 lit. c
+DSGVO): Die Adresse geht **genau einmal** je Änderung zum Kartendienst; jede
+spätere Karte, Route oder Matrix arbeitet mit Koordinaten (ADR-019 Punkt 13).
+Ohne gespeicherte Koordinate müsste jede Routenberechnung alle Adressen des
+Tages erneut übermitteln — mehr Übermittlungen, mehr Adresstext beim Anbieter.
+Die Koordinate ist so personenbezogen wie die Adresse, deshalb dieselbe Klasse
+und Frist (ADR-008). **Unsicher:** ob die Prüfung die Speicherung einer
+Koordinate als zusätzliches Datum anders bewertet als die Adresse; ob bei
+abgesagten Hausbesuchen (ANN-003) die Koordinate im Termin mitgelöscht werden
+soll.
+
+**Verankerung.** Bis MAP-006: `src/lib/location/contract.ts`, Abschnitt
+„Geocoding" (trägt die Kennung), und ADR-019 Punkt 14. Ab MAP-006: die
+Migration, die die Koordinatenspalten anlegt, und der einzige Schreiber
+(Geocoding beim Adress-Upsert).
+
+**Änderungspfad.** Verlangt die Prüfung Geocoding je Aufruf statt Speicherung:
+Spalten entfallen, der Adapter geocodiert vor jeder Route — Aufwand `mittel`,
+mit mehr Übermittlungen als bewusster Folge. Andere Frist oder eigene
+Datenklasse für die Koordinate: Retention Schedule ergänzen, Löschregel je
+Spalte — Aufwand `klein`. Koordinate im Termin-Snapshot statt nur bei der
+Adresse oder umgekehrt: eine Migration — Aufwand `klein`.
+
+### ANN-017 — Serverseitiger Kartendienst-Adapter als Supabase Edge Function
+
+| | |
+|---|---|
+| Kategorie | Technik (datenschutzrelevant) |
+| Herkunft | MAP-001 (ADR-019 Fassung 2, Punkt 15) |
+| Status | **offen**, getroffen 2026-09-08 |
+| Wiedervorlage | OPS-001 Providerprüfung (Edge Runtime nach ADR-015 Punkt 20); MAP-003 baut den Adapter |
+
+**Annahme.** Geocoding, Routing und Matrix laufen in **einer Supabase Edge
+Function** (`location-provider`), die den Server-Schlüssel des Anbieters als
+Supabase-Secret hält und den Vertrag aus `src/lib/location/contract.ts`
+erfüllt. Der Browser ruft nur diese Function auf (mit Anmeldung, nie anonym)
+und spricht für Geocoding, Routing und Matrix **nie direkt** mit dem
+Kartendienst. Einzige Ausnahme sind die Kartenkacheln, die der Browser mit
+einem getrennten Kachelschlüssel direkt lädt. Der Vorbehalt aus ADR-015 Punkt
+20 bleibt: Für produktive Gesundheitsdaten braucht die Edge Runtime eine eigene
+Datenfluss- und Providerprüfung — sie fällt mit dem Provider-Gate aus ADR-019
+Punkt 9 zusammen und wird in OPS-001 mitgeprüft.
+
+**Begründung.** Verglichen wurden drei Wege. **Direkt aus dem Browser:** der
+Schlüssel stünde im Bundle, IP-Adresse und User-Agent der Therapeutin landeten
+beim Anbieter, und es gäbe keine zentrale Stelle für Redaction und
+Fehlerbehandlung (ADR-011). **Aus der Datenbank** (`pg_net`/HTTP-Erweiterung):
+HTTP-Aufrufe aus Postgres mit schlechter Timeout-Kontrolle und dem Secret in
+der Datenbank; Erweiterung beim Provider nicht sicher verfügbar (R9). **Eigener
+kleiner Dienst:** eine zusätzliche Laufzeitkomponente mit eigener
+Wiederherstellungslast bei Bus-Faktor 1 (ADR-012). Die Edge Function ist die
+Komponente des bestehenden Stacks (ADR-015 Punkt 6), hat genau eine Stelle für
+Schlüssel, Redaction und Timeout und lässt sich mit gemocktem `fetch` testen.
+**Unsicher:** die Edge Runtime ist global verteilt — wo ein Aufruf tatsächlich
+ausgeführt wird und ob sich das auf EU-Regionen festlegen lässt, ist Teil der
+Providerprüfung. **Einschränkung der Umgebung:** In der Cloud-Entwicklungs-
+umgebung läuft `supabase start` nicht; die Function ist dort nur mit
+Komponententests (gemocktes `fetch`) prüfbar, gegen den echten Anbieter nur
+lokal bei Jannes und in `e2e-supabase`.
+
+**Verankerung.** `src/lib/location/contract.ts`, Abschnitt „Serverseitiger
+Anbieteradapter" (trägt die Kennung); ab MAP-003 `supabase/functions/
+location-provider/`.
+
+**Änderungspfad.** Andere Laufzeit (eigener Dienst, Datenbankfunktion): Der
+Adapter ist ein Modul hinter dem Vertrag; die Oberfläche und die Fachlogik
+ändern sich nicht — Aufwand `mittel`. Ergibt OPS-001, dass die Edge Runtime
+für Gesundheitsdaten ausscheidet, greift derselbe Pfad **vor** MAP-006.
+
+### ANN-018 — Übergabeziel und URL-Format des Navigations-Handoffs
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | MAP-001 (ADR-019 Fassung 2, Punkt 20 bis 23); ADR-019 Fassung 1 hatte diese `ANN` für UX-EPIC-001 angekündigt |
+| Status | **offen**, getroffen 2026-09-08 |
+| Wiedervorlage | Datenschutzprüfung (B2, Handoff und §203/Art. 9); UX-EPIC-001 baut die URL-Funktion, MAP-005 bewertet die Ziel-Apps |
+
+**Annahme.** Der Handoff übergibt an die Navigations-App **nur das Ziel und
+den Fahrradmodus**: die Koordinate, sobald sie zur Adresse vorliegt (ANN-016,
+ab MAP-006); bis dahin die Postanschrift ohne Namen (Straße, Hausnummer,
+Postleitzahl, Ort). **Nie** Name, Uhrzeit, Termin- oder Patientenkennung,
+Notiz oder Diagnose. Formate: Google Maps
+`https://www.google.com/maps/dir/?api=1&destination=<Ziel>&travelmode=bicycling`
+(Tageslink: `waypoints=` mit `|` getrennt, höchstens neun Zwischenziele, drei
+in mobilen Browsern — in MAP-005 gegen die Dokumentation zu prüfen); Apple
+Maps `https://maps.apple.com/directions?destination=<lat,lon>&mode=cycling`;
+Systemnavigation `geo:<lat>,<lon>`. Die URL entsteht in **einer** Funktion,
+erst beim Tippen, wird nie gespeichert und nie automatisch geöffnet.
+
+**Begründung.** Die Koordinate ist für den Betreiber der Navigations-App so
+identifizierend wie die Adresse (Rückwärts-Geocoding), aber sie enthält keinen
+Freitext und keinen Anhaltspunkt außer dem Punkt; die Anwendung zeigt der
+Therapeutin Adresse und Klingelhinweis lokal. Der Gewinn ist klein, aber er
+kostet nichts. Bis Koordinaten vorliegen, ist die Adresse ohne Namen die
+datensparsamste Form, die eine Navigation überhaupt erlaubt. Die Feldliste
+folgt Art. 5 Abs. 1 lit. c DSGVO und der Regel aus ADR-019 Punkt 12.
+**Unsicher:** ob ein Pin ohne Hausnummer in Google Maps die Therapeutin auf
+dem Rad verwirrt (Hausnummer nicht sichtbar) — MAP-005 prüft das auf echten
+Geräten; ob die Übergabe der Adresse an einen eigenen Verantwortlichen
+Art. 9 oder §203 berührt — Rechtsfrage an B2 (ADR-019 Punkt 23).
+
+**Verankerung.** `src/lib/location/contract.ts`, Typ `NavigationTarget`
+(trägt die Kennung); ab UX-EPIC-001 die eine URL-Funktion des Handoffs (trägt
+die Kennung ebenfalls); Prüfregel „nur auf Aktion" im Review.
+
+**Änderungspfad.** Adresse statt Koordinate oder umgekehrt, anderes Limit,
+andere Ziel-App: eine Funktion — Aufwand `klein`. Verlangt B2 eine
+Einwilligung der Patient:innen vor dem Handoff: Einwilligungsstruktur aus
+PAT-006, Prüfung vor dem Bauen der URL — Aufwand `mittel`. Verlangt B2, den
+Handoff ganz zu unterlassen: die Funktion entfällt, die Tagesliste zeigt die
+Adresse zum Abtippen — Aufwand `klein`, mit dem Verlust des einen Taps als
+Folge.
