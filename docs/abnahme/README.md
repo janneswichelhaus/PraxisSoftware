@@ -54,10 +54,16 @@ Abweichungen werden im Bericht begründet und in der nächsten Ablaufrunde
    nicht, aber es findet, was man beim Hinsehen übersieht:
 
    ```bash
-   pnpm dev                                   # in einem zweiten Terminal
-   pnpm screenshots /patienten /kalender      # Bilder in .tmp/screenshots/
-   pnpm screenshots --breite=1024 /patienten
+   pnpm dev                                              # in einem zweiten Terminal
+   pnpm screenshots --konto=therapist /patienten /kalender  # Bilder in .tmp/screenshots/
+   pnpm screenshots --breite=1024 --konto=therapist /patienten
    ```
+
+   `--konto` (`owner`, `office` oder `therapist`) meldet sich über die echte
+   Anmeldemaske am synthetischen Stack an; ohne den Parameter zeigen Seiten
+   hinter der Anmeldung nur die Anmeldemaske. Das Werkzeug meldet eine
+   fehlgeschlagene Anmeldung, eine unerwartete Zielseite, waagerechtes
+   Scrollen und Konsolenfehler.
 
 2. Nur Bausteine aus `src/components/ui` und Tokens aus `src/index.css`;
    fehlt ein Baustein, entsteht er dort — nur für Module, die der Auftrag

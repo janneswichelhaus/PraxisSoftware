@@ -463,6 +463,38 @@ export function itemsToFormValues(prescription: PrescriptionDetail): PositionEin
   }));
 }
 
+/**
+ * Entwurf einer Verordnung, der einen Abstecher zum Anlegen einer fehlenden
+ * Verordner:in überlebt (VER-003).
+ *
+ * Liegt ausschließlich im TanStack-Query-Cache: derselbe In-Memory-Speicher,
+ * den die Anwendung ohnehin für Server-State nutzt, ohne Persister-Plugin.
+ * Ein Neuladen der Seite oder ein Schließen des Tabs verwirft ihn - genau wie
+ * jeden anderen Abfragezustand. Es gibt bewusst keinen Weg über die URL
+ * (verordnerAnlegenZiel trägt nur den Rücksprungpfad) und keinen über
+ * `localStorage`/`sessionStorage`: die Verordnung kann klinische Freitexte
+ * enthalten (Diagnose, Therapieziel), die nirgendwo länger liegen bleiben
+ * sollen als für diesen einen Abstecher (§18, ADR-011).
+ */
+export interface PrescriptionDraft {
+  werte: Record<PrescriptionFeld, string>;
+  positionen: PositionEingabe[];
+  /** Von der Verordner-Anlage nachgetragen, siehe `prescriptionDraftKey`. */
+  neuerVerordnerId?: string;
+}
+
+/**
+ * Schlüssel des Entwurfs im Query-Cache, gebildet aus dem Rücksprungpfad
+ * (`/patienten/:id/verordnungen/neu` bzw. `.../bearbeiten`). Der Pfad ist je
+ * Patient und Verordnung eindeutig, deshalb reicht er als Schlüssel: ein
+ * Entwurf zu einer anderen Verordnung kann so nie versehentlich übernommen
+ * werden. Beide Formulare (Verordnung und Verordner:in) berechnen denselben
+ * Schlüssel aus demselben Pfad, ohne dass eines das andere kennen müsste.
+ */
+export function prescriptionDraftKey(rueckpfad: string): readonly [string, string] {
+  return ['prescription-draft', rueckpfad] as const;
+}
+
 function rpcVerordnung(values: PrescriptionFormValues, items: z.output<typeof positionSchema>[]) {
   return {
     p_prescriber_id: values.prescriber_id,

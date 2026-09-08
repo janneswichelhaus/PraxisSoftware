@@ -153,6 +153,7 @@ describe('Barrierefreiheit der Kernformulare', () => {
             onPositionEntfernen={() => {}}
             verordnerinnen={[]}
             verordnerAnlegenZiel="/verordner/neu"
+            onVerordnerAnlegenKlick={() => {}}
           />
         </form>
       </main>,

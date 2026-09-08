@@ -36,6 +36,7 @@ export function PrescriptionFormFields({
   onPositionEntfernen,
   verordnerinnen,
   verordnerAnlegenZiel,
+  onVerordnerAnlegenKlick,
 }: {
   werte: Record<PrescriptionFeld, string>;
   fehler: Partial<Record<PrescriptionFeld, string>>;
@@ -47,6 +48,8 @@ export function PrescriptionFormFields({
   onPositionEntfernen: (index: number) => void;
   verordnerinnen: Prescriber[];
   verordnerAnlegenZiel: string;
+  /** Merkt den Formularzustand, bevor die Seite zum Anlegen wechselt (VER-003). */
+  onVerordnerAnlegenKlick: () => void;
 }) {
   return (
     <>
@@ -61,7 +64,11 @@ export function PrescriptionFormFields({
             hint={
               <>
                 Fehlt die Praxis?{' '}
-                <Link to={verordnerAnlegenZiel} className="text-accent hover:underline">
+                <Link
+                  to={verordnerAnlegenZiel}
+                  onClick={onVerordnerAnlegenKlick}
+                  className="text-accent hover:underline"
+                >
                   Verordner:in anlegen
                 </Link>
               </>

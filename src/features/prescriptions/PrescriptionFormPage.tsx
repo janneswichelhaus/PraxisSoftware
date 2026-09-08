@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { z } from 'zod';
@@ -16,11 +16,13 @@ import {
   leerePosition,
   leereVerordnung,
   positionSchema,
+  prescriptionDraftKey,
   prescriptionFormSchema,
   prescriptionToFormValues,
   updatePrescription,
   type PositionEingabe,
   type PrescriptionDetail,
+  type PrescriptionDraft,
   type PrescriptionFeld,
 } from './api';
 
@@ -41,18 +43,44 @@ function VerordnungsFormular({
   patientId: string;
   bestand: PrescriptionDetail | null;
 }) {
-  const [werte, setWerte] = useState<Record<PrescriptionFeld, string>>(() =>
-    bestand ? prescriptionToFormValues(bestand) : leereVerordnung,
-  );
-  const [positionen, setPositionen] = useState<PositionEingabe[]>(() =>
-    bestand ? itemsToFormValues(bestand) : [{ ...leerePosition }],
-  );
-  const [fehler, setFehler] = useState<Partial<Record<PrescriptionFeld, string>>>({});
-  const [positionsFehler, setPositionsFehler] = useState<PositionsFehler[]>([]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const zurueck = `/patienten/${patientId}`;
+  // Derselbe Pfad, den "Verordner:in anlegen" als Rücksprungziel bekommt -
+  // und damit derselbe Schlüssel, unter dem ein Entwurf zu finden wäre.
+  const verordnerRueckpfad = bestand
+    ? `/patienten/${patientId}/verordnungen/${bestand.id}/bearbeiten`
+    : `/patienten/${patientId}/verordnungen/neu`;
+  const entwurfKey = prescriptionDraftKey(verordnerRueckpfad);
+
+  // Ein Entwurf existiert nur direkt nach der Rückkehr vom Anlegen einer
+  // Verordner:in (siehe entwurfSichern unten und PrescriberFormPage). Er wird
+  // genau einmal gelesen und danach aus dem Cache entfernt - ein späterer,
+  // unabhängiger Besuch derselben Seite soll nicht versehentlich alte
+  // Eingaben übernehmen.
+  const [entwurf] = useState<PrescriptionDraft | undefined>(() =>
+    queryClient.getQueryData<PrescriptionDraft>(entwurfKey),
+  );
+  useEffect(() => {
+    // Nur beim Einhängen prüfen: der Entwurf ist ausschließlich für diesen
+    // einen Wiederaufbau gedacht.
+    if (entwurf) queryClient.removeQueries({ queryKey: entwurfKey });
+  }, []);
+
+  const [werte, setWerte] = useState<Record<PrescriptionFeld, string>>(() => {
+    const basis = entwurf?.werte ?? (bestand ? prescriptionToFormValues(bestand) : leereVerordnung);
+    // Die neu angelegte Verordner:in ist danach ausgewählt, ohne dass die
+    // Person sie erneut suchen muss.
+    return entwurf?.neuerVerordnerId
+      ? { ...basis, prescriber_id: entwurf.neuerVerordnerId }
+      : basis;
+  });
+  const [positionen, setPositionen] = useState<PositionEingabe[]>(
+    () => entwurf?.positionen ?? (bestand ? itemsToFormValues(bestand) : [{ ...leerePosition }]),
+  );
+  const [fehler, setFehler] = useState<Partial<Record<PrescriptionFeld, string>>>({});
+  const [positionsFehler, setPositionsFehler] = useState<PositionsFehler[]>([]);
 
   const verordner = useQuery({
     queryKey: ['prescribers'],
@@ -108,6 +136,13 @@ function VerordnungsFormular({
     setPositionsFehler((bisher) =>
       bisher.map((eintrag, i) => (i === index ? { ...eintrag, [feld]: undefined } : eintrag)),
     );
+  }
+
+  // Läuft beim Klick auf "Verordner:in anlegen" - vor dem eigentlichen
+  // Seitenwechsel, den der Link selbst auslöst. Die Verordnung wird dadurch
+  // nicht geschrieben, nur ihr Formularzustand für die Rückkehr gemerkt.
+  function entwurfSichern() {
+    queryClient.setQueryData<PrescriptionDraft>(entwurfKey, { werte, positionen });
   }
 
   function absenden(event: FormEvent<HTMLFormElement>) {
@@ -191,11 +226,8 @@ function VerordnungsFormular({
             setPositionen((bisher) => bisher.filter((_, i) => i !== index))
           }
           verordnerinnen={verordner.data ?? []}
-          verordnerAnlegenZiel={`/verordner/neu?zurueck=${encodeURIComponent(
-            bestand
-              ? `/patienten/${patientId}/verordnungen/${bestand.id}/bearbeiten`
-              : `/patienten/${patientId}/verordnungen/neu`,
-          )}`}
+          verordnerAnlegenZiel={`/verordner/neu?zurueck=${encodeURIComponent(verordnerRueckpfad)}`}
+          onVerordnerAnlegenKlick={entwurfSichern}
         />
 
         <div className="mt-8 flex flex-wrap gap-3">

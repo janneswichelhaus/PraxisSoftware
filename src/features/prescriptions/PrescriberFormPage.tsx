@@ -13,10 +13,12 @@ import {
   prescriberName,
   prescriberSchemaForm,
   prescriberToFormValues,
+  prescriptionDraftKey,
   updatePrescriber,
   type Prescriber,
   type PrescriberFeld,
   type PrescriberValues,
+  type PrescriptionDraft,
 } from './api';
 
 /**
@@ -43,10 +45,18 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
       }
       return createPrescriber(values);
     },
-    onSuccess: async () => {
+    onSuccess: async (id) => {
       await queryClient.invalidateQueries({ queryKey: ['prescribers'] });
       if (bestand) {
         await queryClient.invalidateQueries({ queryKey: ['prescriber', bestand.id] });
+      } else {
+        // Kommt die Anlage aus dem Verordnungsformular (VER-003), liegt dort
+        // ein Entwurf unter genau diesem Rücksprungpfad - die neue
+        // Verordner:in wird darin nachgetragen, sobald er existiert. Ohne
+        // Entwurf (Aufruf direkt aus der Verordnerkartei) ändert sich nichts.
+        queryClient.setQueryData<PrescriptionDraft>(prescriptionDraftKey(zurueck), (bisher) =>
+          bisher ? { ...bisher, neuerVerordnerId: id } : bisher,
+        );
       }
       void navigate(zurueck, { replace: true });
     },

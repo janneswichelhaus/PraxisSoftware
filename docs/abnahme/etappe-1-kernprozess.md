@@ -341,10 +341,13 @@ Erfassen dürfen die therapeutischen Rollen `owner`, `therapist` und
    Zurück auf heute setzen.
 7. Diagnose und „Empfehlung der Therapeut:in zum Verordnungsende" ausfüllen und
    speichern: die Akte zeigt die neue Verordnung im laufenden Jahr, ganz oben.
-8. **Fehlende Praxis:** noch einmal „Verordnung erfassen", dann im Hinweis
-   unter „Verordner:in" auf „Verordner:in anlegen" klicken. Nach dem Speichern
-   landet man **wieder im Verordnungsformular** — die Eingaben davor sind
-   allerdings verloren; das ist bekannt (siehe Bericht).
+8. **Fehlende Praxis:** noch einmal „Verordnung erfassen", einige Felder und
+   Positionen ausfüllen (z. B. Frequenz und Heilmittel), dann im Hinweis unter
+   „Verordner:in" auf „Verordner:in anlegen" klicken. Nach dem Speichern landet
+   man **wieder im Verordnungsformular** — die zuvor eingegebenen Felder und
+   Positionen sind **erhalten**, und die neu angelegte Verordner:in ist bereits
+   ausgewählt. Bricht man die Verordner-Anlage stattdessen mit „Abbrechen" ab,
+   bleiben die Eingaben ebenso erhalten.
 9. **Ändern:** bei einer Verordnung auf „Bearbeiten". „Genutzt" von 0 auf 3
    setzen und speichern: die Akte zeigt „noch 3 von 6". Erneut öffnen und eine
    Position hinzufügen — die vorhandene Position behält ihre Zahlen.
@@ -400,16 +403,23 @@ etwas, das vorher ging und jetzt nicht mehr.
 6. **Drucken.** Eine Akte öffnen und Strg+P (bzw. Cmd+P). In der Vorschau:
    keine Navigation, keine Kopfleiste, keine Schaltflächen, weißer Hintergrund,
    und kein Datensatz, der über den Seitenumbruch zerrissen wird.
-7. **Bildschirmfotos.** In einem zweiten Terminal:
+7. **Bildschirmfotos.** In einem zweiten Terminal, mit laufendem
+   Supabase-Stack (`pnpm db:start` reicht für `pnpm test:db`, für die
+   Anmeldung hier aber der volle Stack aus `docs/DEVELOPMENT.md`):
 
    ```bash
-   pnpm screenshots /patienten /kalender /praxis/team
+   pnpm screenshots --konto=therapist /patienten/66666666-6666-4666-8666-000000000001 /kalender
+   pnpm screenshots --konto=owner /praxis/team
    ```
 
-   Die Bilder liegen in `.tmp/screenshots/`. Das Werkzeug meldet waagerechtes
-   Scrollen und Konsolenfehler; „Ohne Befund" ist das erwartete Ergebnis.
-   Hinter der Anmeldung braucht es eine offene Sitzung im Browserprofil —
-   sonst zeigen die Bilder die Anmeldemaske.
+   Die Bilder liegen in `.tmp/screenshots/`. Das Werkzeug meldet sich mit
+   `--konto` (`owner`, `office` oder `therapist`) selbst über die echte
+   Anmeldemaske am synthetischen Stack an und meldet waagerechtes Scrollen,
+   Konsolenfehler **und** eine fehlgeschlagene Anmeldung; „Ohne Befund" ist
+   das erwartete Ergebnis. Ohne `--konto` zeigt jede Seite hinter der
+   Anmeldung nur die Anmeldemaske — das ist dann kein Befund, sondern das
+   erwartete Ergebnis für einen nicht angemeldeten Aufruf; für Seiten hinter
+   der Anmeldung deshalb immer `--konto` angeben.
 
 8. **Am Handy** (~375 px): Akte, Kalender, Stammdatenformular und
    Verordnungsformular einmal durchscrollen. Nichts scrollt seitwärts, alle
