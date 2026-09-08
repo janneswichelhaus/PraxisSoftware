@@ -162,3 +162,58 @@ describe('VER-001: Verordner:innen', () => {
     expect(rows.map((r) => r.privilege_type)).toEqual(['SELECT']);
   });
 });
+
+/**
+ * Mandantentrennung (ADR-003): FREMDE_ID oben ist eine schlicht nicht
+ * existierende ID. Dieser Block legt eine zweite, real existierende
+ * Organisation mit eigener Verordner:in an (Muster aus rls.test.ts) und
+ * prueft, dass eine echte fremde Verordner:in genauso wenig sichtbar oder
+ * aenderbar ist wie eine unbekannte ID.
+ */
+describe('Mandantentrennung (ADR-003)', () => {
+  const fremdeOrg = '33333333-3333-4333-8333-000000000101';
+  const fremderPrescriber = '33333333-3333-4333-8333-000000000102';
+
+  beforeAll(async () => {
+    await resetDatabase();
+    await asPostgres(`
+      insert into public.organizations (id, name, time_zone)
+        values ('${fremdeOrg}', 'Test Praxis Woanders', 'Europe/Berlin');
+      insert into public.prescribers (id, organization_id, family_name)
+        values ('${fremderPrescriber}', '${fremdeOrg}', 'Fremdarzt');
+    `);
+  }, 120_000);
+
+  it('zeigt die Verordner:in einer fremden Organisation in keiner Rolle', async () => {
+    for (const konto of [users.ownerTherapist, users.therapist, users.teamLead, users.office]) {
+      const { rows } = await asUser<{ family_name: string }>(konto, LESEN);
+      expect(rows.map((r) => r.family_name)).not.toContain('Fremdarzt');
+    }
+  });
+
+  it('unterscheidet eine echte fremde Verordner:in nicht von einer unbekannten', async () => {
+    await expect(
+      asUser(users.office, AENDERN, [
+        fremderPrescriber,
+        'Uebernommen',
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]),
+    ).rejects.toThrow(/prescriber not found/i);
+
+    const { rows } = await asPostgres<{ family_name: string }>(
+      'select family_name from public.prescribers where id = $1',
+      [fremderPrescriber],
+    );
+    expect(rows[0]?.family_name).toBe('Fremdarzt');
+  });
+});

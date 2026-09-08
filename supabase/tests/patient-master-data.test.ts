@@ -250,3 +250,60 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
     expect(rows.map((r) => r.privilege_type)).toEqual(['SELECT']);
   });
 });
+
+/**
+ * Mandantentrennung (ADR-003): FREMDE_ID oben ist eine schlicht nicht
+ * existierende ID. Dieser Block legt eine real existierende Mitarbeiter:in
+ * in einer zweiten Organisation an (Muster aus rls.test.ts) und prueft, dass
+ * `app.assert_staff_member_in_org` eine echte fremde ID genauso abweist wie
+ * eine unbekannte.
+ */
+describe('Mandantentrennung (ADR-003)', () => {
+  const fremdeOrg = '33333333-3333-4333-8333-000000000201';
+  const fremdePerson = '33333333-3333-4333-8333-000000000202';
+  const fremderStaffMember = '33333333-3333-4333-8333-000000000203';
+
+  beforeAll(async () => {
+    await resetDatabase();
+    await asPostgres(`
+      insert into public.organizations (id, name, time_zone)
+        values ('${fremdeOrg}', 'Test Praxis Woanders', 'Europe/Berlin');
+      insert into public.persons (id, organization_id, given_name, family_name)
+        values ('${fremdePerson}', '${fremdeOrg}', 'Tessa', 'Fremdtherapeutin');
+      insert into public.staff_members (id, organization_id, person_id)
+        values ('${fremderStaffMember}', '${fremdeOrg}', '${fremdePerson}');
+    `);
+  }, 120_000);
+
+  it('weist eine echte feste Therapeut:in einer fremden Organisation ab wie eine unbekannte', async () => {
+    await expect(
+      asUser(users.ownerTherapist, AENDERN, [
+        patients.max,
+        'Max',
+        'Mustermann',
+        '1957-04-30',
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        fremderStaffMember,
+        null,
+        null,
+        null,
+      ]),
+    ).rejects.toThrow(/staff member not found/i);
+
+    const { rows } = await asUser<{ primary_therapist_staff_member_id: string | null }>(
+      users.ownerTherapist,
+      KARTEI,
+      [patients.max],
+    );
+    expect(rows[0]?.primary_therapist_staff_member_id).not.toBe(fremderStaffMember);
+  });
+});

@@ -173,4 +173,25 @@ describe('VER-002: Verordnungen in der Akte', () => {
     );
     expect(rows).toEqual([]);
   });
+
+  it('gibt der Rolle authenticated auf prescriptions und prescription_items ueberhaupt kein Recht', async () => {
+    // Deny-by-default ist die tragende Entscheidung dieser Story (VER-001):
+    // erreichbar ausschliesslich ueber die Funktionen oben, nie ueber die
+    // Tabelle direkt. Dieser Test ist der Regressionsschutz dafuer - eine
+    // kuenftige Migration, die versehentlich ein Grant ergaenzt, faellt hier
+    // auf, ohne dass jemand die Migrationsdatei erneut lesen muss.
+    const { rows } = await asPostgres<{ table_name: string; privilege_type: string }>(`
+      select table_name, privilege_type from information_schema.role_table_grants
+      where table_schema = 'public' and table_name in ('prescriptions', 'prescription_items')
+        and grantee in ('anon', 'authenticated')
+    `);
+    expect(rows).toEqual([]);
+
+    await expect(asUser(users.office, 'select * from public.prescriptions')).rejects.toThrow(
+      /permission denied/i,
+    );
+    await expect(asUser(users.office, 'select * from public.prescription_items')).rejects.toThrow(
+      /permission denied/i,
+    );
+  });
 });
