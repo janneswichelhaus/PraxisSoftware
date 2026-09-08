@@ -1,6 +1,6 @@
 # Arbeitsbereiche: was funktioniert, was Vorschau ist, was offen ist
 
-Stand: 06.09.2026
+Stand: 08.09.2026
 
 Diese Liste ist die Antwort auf eine einzige Frage: **Worauf kann ich mich in
 der laufenden Anwendung verlassen?** Sie ergänzt
@@ -29,9 +29,9 @@ Beschriftung geändert, nicht das Verhalten.
 | Patient anlegen / ändern                | `/patienten/neu`, `…/bearbeiten`                        | serverseitige Prüfung in `create/update_patient` |
 | Patientenakte                           | `/patienten/:id`                                        |                                                  |
 | Kalender Tag / Woche                    | `/kalender`                                             | Datum, Ansicht und Filter stehen in der Adresse  |
-| Termin anlegen / ändern                 | `/patienten/:id/termine/neu`, `/termine/:id/bearbeiten` |                                                  |
+| Termin anlegen / ändern                 | `/patienten/:id/termine/neu`, `/termine/:id/bearbeiten` | Beginn und Ende frei; Raster wird serverseitig geprüft (CAL-005). Das 60-Minuten-Terminfenster nach §8.1 ist **entschieden (2026-09-08), aber nicht gebaut** — es kommt als CAL-010a |
 | Termin absagen / abschließen            | `/termine/:id`                                          |                                                  |
-| Behandlungsdokumentation                | `/termine/:id/dokumentation…`                           | Entwurf, Finalisierung, Korrektur, Nachtrag, Änderungsverlauf (DOK-001/002) |
+| Behandlungsdokumentation                | `/termine/:id/dokumentation…`                           | Entwurf, Finalisierung, Korrektur, Nachtrag, Änderungsverlauf (DOK-001/002). Die Sprachdokumentation nach §6.3 ist **entschieden (2026-09-08), aber nicht gebaut** — eigener Auftrag, offen als E13 |
 | Dokumentation in der Akte               | `/patienten/:id`                                        | rollenabhängig projiziert; Office sieht den Behandlungsnachweis ohne klinischen Inhalt (DOK-003) |
 | Verordner:innen                         | `/verordner`, `…/neu`, `…/bearbeiten`                   | Berufliche Kontaktdaten Dritter, kein Patientenbezug (VER-001, ANN-013) |
 | Verordnungen in der Akte                | `/patienten/:id`                                        | rollenabhängig projiziert; Office sieht Kontingent und Verordner:in ohne Diagnose (VER-002, ANN-011) |
@@ -102,6 +102,7 @@ benennen die offene Frage, statt sie zu verstecken.
 | Aufbewahrung von Belegen, Bestätigung der Auszahlung      | Erstattungen            | ADR-008, ADR-009                 |
 | Tübinger Werkstatt, Ruhetag, Depot, Transportoptionen     | Pannenassistent, Flotte | Standortvorlage, ungeprüft       |
 | Terminstatusautomat                                       | Kalender                | §8, `OPEN_DECISIONS.md`          |
+| Fahrpuffer zwischen Hausbesuchen: woher die Fahrzeit kommt, Warnung oder Sperre — die Rechenregel selbst ist entschieden (§8.1: erster Rasterpunkt auf oder nach Ende plus Fahrzeit) | Kalender, Termin anlegen | §8.1, `OPEN_DECISIONS.md` E12    |
 
 Diese Punkte blockieren die davon abhängigen **echten** Aktionen. Sie blockieren
 nicht, dass ihre gekennzeichneten Ansichten schon stehen.

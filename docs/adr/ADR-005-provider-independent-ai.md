@@ -2,11 +2,15 @@
 
 ## Status
 
-Angenommen
+Angenommen — **Fassung 2** (2026-09-08).
+
+Fassung 2 ergänzt Punkt 9 und beantwortet damit eine der offenen Folgefragen
+der Fassung 1. Die Punkte 1 bis 8 sind unverändert; Einzelheiten unten in der
+Änderungshistorie.
 
 ## Datum
 
-2026-08-28
+2026-08-28 (Fassung 1); 2026-09-08 (Fassung 2)
 
 ## Kontext
 
@@ -49,6 +53,12 @@ Patientendaten ist ein Dienstleister im Sinne jener Prüfpflichten.
    Entwürfe bis zur menschlichen Freigabe.**
 8. Ein **Produktionsprovider wird erst nach Datenschutz-, Vertrags- und
    Security-Prüfung freigeschaltet**.
+9. **Die Providerunabhängigkeit gilt auch für Verarbeitungsdienste, die keine
+   Sprachmodelle sind** (Fassung 2) — insbesondere Spracherkennung, Diktat und
+   Transkription. Ein solcher Dienst mit Zugang zu Gesundheitsdaten läuft über
+   dieselbe Gateway-Schnittstelle und dieselbe Freischaltung wie ein
+   LLM-Anbieter; die Punkte 3, 4, 5 und 8 gelten unverändert für ihn. Das
+   beantwortet die entsprechende Folgefrage unten.
 
 ## Konsequenzen
 
@@ -111,5 +121,15 @@ Patientendaten ist ein Dienstleister im Sinne jener Prüfpflichten.
 - Wie wird die menschliche Freigabe nachgewiesen, versioniert und im Audit
   sichtbar (§5, ADR-004)?
 - Wie wird technisch verhindert, dass ein Fachmodul den Gateway umgeht?
-- Gilt die Providerunabhängigkeit auch für Nicht-LLM-Funktionen wie
-  Spracherkennung oder Diktat?
+- **Beantwortet mit Fassung 2, Punkt 9:** Gilt die Providerunabhängigkeit auch
+  für Nicht-LLM-Funktionen wie Spracherkennung oder Diktat? **Ja.** Offen
+  bleibt, welcher Anbieter — das gehört zu C6 und E13.
+- Wo liegt Rohaudio einer Sprachaufnahme, wie lange, und geht es überhaupt
+  durch den Gateway oder nur der daraus entstandene Text (E13, §18)?
+
+## Änderungshistorie
+
+| Fassung | Datum      | Änderung                                                                                                                                                                                                                                              |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1       | 2026-08-28 | Erstfassung, angenommen.                                                                                                                                                                                                                              |
+| 2       | 2026-09-08 | **Punkt 9 ergänzt:** die Providerunabhängigkeit gilt auch für Nicht-LLM-Verarbeitungsdienste wie Spracherkennung, Diktat und Transkription; die zugehörige offene Folgefrage ist damit beantwortet, eine neue zum Rohaudio kommt hinzu. Anlass: Entscheidung von Jannes zur Sprachdokumentation, verbindlich in `PROJECT_PRINCIPLES.md` §6.3 (Version 0.5). Die Punkte 1 bis 8 sind unverändert. |

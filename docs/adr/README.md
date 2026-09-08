@@ -22,7 +22,8 @@ warum etwas so gebaut wurde.
 Kurz halten. Eine Seite reicht fast immer.
 
 - **Titel** — die Entscheidung in einem Satz
-- **Status** — vorgeschlagen / angenommen / abgelöst durch ADR-XXXX
+- **Status** — vorgeschlagen / angenommen / abgelöst durch ADR-XXXX;
+  bei einer späteren begrenzten Ergänzung zusätzlich die **Fassung** mit Datum
 - **Datum**
 - **Kontext** — welches Problem stand an, welche Rahmenbedingungen galten
 - **Entscheidung** — was wir tun
@@ -43,9 +44,25 @@ Patientendaten, Grundsätze der Fehlerbehandlung.
 
 Kein ADR nötig für alltägliche Umsetzungsdetails.
 
+## Wann ein bestehender ADR eine neue Fassung bekommt
+
+Ein **angenommener** ADR wird nicht umgeschrieben. Kommt später eine Festlegung
+hinzu, die seine bisherigen Punkte unberührt lässt — eine Ergänzung, eine
+Präzisierung, die Antwort auf eine seiner eigenen offenen Folgefragen —, dann
+bekommt er eine **neue Fassung**: die Statuszeile nennt sie, die neuen Punkte
+tragen den Hinweis `(Fassung N)`, und eine **Änderungshistorie** am Ende sagt
+in einer Zeile, was sich geändert hat und was unverändert geblieben ist. Die
+vorige Fassung bleibt in der Git-Historie lesbar.
+
+Wird dagegen eine bestehende Aussage **zurückgenommen oder umgekehrt**, ist das
+kein Fassungswechsel, sondern ein neuer ADR mit Status „abgelöst durch
+ADR-XXXX" am alten. Berührt einer der beiden Wege eine Prinzipienaussage, wird
+`PROJECT_PRINCIPLES.md` in einem eigenen Commit mit neuer Version nachgezogen
+(§21).
+
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.4)
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.5)
 - `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist
 - `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
 - `docs/adr/` — was entschieden wurde und warum
@@ -64,8 +81,8 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-002](ADR-002-hosting-data-residency.md) | Hosting und Datenstandort | Angenommen |
 | [ADR-003](ADR-003-organization-location-model.md) | organization_id und location_id im Datenmodell | Angenommen |
 | [ADR-004](ADR-004-authorization-model.md) | Berechtigungsmodell | Angenommen |
-| [ADR-005](ADR-005-provider-independent-ai.md) | Providerunabhängige KI-Anbindung | Angenommen |
-| [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | Angenommen |
+| [ADR-005](ADR-005-provider-independent-ai.md) | Providerunabhängige KI-Anbindung | Angenommen, Fassung 2 (2026-09-08) |
+| [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | Angenommen, Fassung 2 (2026-09-08) |
 | [ADR-007](ADR-007-data-protection-impact-assessment.md) | Datenschutz-Folgenabschätzung und Datenschutzprozess | Angenommen |
 | [ADR-008](ADR-008-data-retention-and-deletion.md) | Aufbewahrung und Löschung personenbezogener Daten | Angenommen |
 | [ADR-009](ADR-009-private-billing-model.md) | Privatabrechnung | Angenommen |
@@ -75,5 +92,5 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen |
 | [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen |
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen |
-| [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen |
+| [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen, Fassung 2 (2026-09-08) |
 | [ADR-019](ADR-019-map-service.md) | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | **Vorgeschlagen, Fassung 2** — PTV Developer als Kandidat für Prototyp und Bewertung; produktive Freigabe am Vertrags-/§203-/DSFA-Gate |

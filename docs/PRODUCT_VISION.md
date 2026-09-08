@@ -255,7 +255,11 @@ durchläuft vorher die dokumentierte Prüfung nach
 Arbeitshypothese, keine Vorentscheidung.
 
 Diktat und Speech-to-Text sind später als **eigener Datenfluss mit
-Gesundheitsdaten** gesondert zu bewerten.
+Gesundheitsdaten** gesondert zu bewerten. Die fachliche **Anforderung** an eine
+Sprachdokumentation ist seit dem 2026-09-08 entschieden und steht in
+`PROJECT_PRINCIPLES.md` §6.3; offen sind Anbieter, Architektur und
+Aufbewahrung des Rohaudios (`docs/decisions/OPEN_DECISIONS.md` E13). Gebaut
+ist davon nichts.
 
 ## 6a. Bedienmodell: sechs Arbeitsbereiche
 

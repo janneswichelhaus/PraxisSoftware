@@ -2,11 +2,15 @@
 
 ## Status
 
-Angenommen
+Angenommen — **Fassung 2** (2026-09-08).
+
+Fassung 2 ergänzt Punkt 8 und präzisiert damit Punkt 5 für den Sonderfall der
+Sprachdokumentation. Die Punkte 1 bis 7 sind unverändert; Einzelheiten unten in
+der Änderungshistorie.
 
 ## Datum
 
-2026-08-28
+2026-08-28 (Fassung 1); 2026-09-08 (Fassung 2)
 
 ## Kontext
 
@@ -58,6 +62,19 @@ um die inhaltliche Grenze.
 7. **Vor Produktivstart** werden Zweckbestimmung und Abgrenzung gegenüber
    Medical Device Software **anhand der dann aktuellen MDR-/MDCG-Regeln extern
    überprüft**.
+8. **Sprachdokumentation fällt unter Punkt 5** (Fassung 2) — Transkription des
+   Gesprochenen und Einordnung in die Dokumentationsvorlage sind sprachliche
+   Transformation und bleiben zulässig, solange nichts hinzukommt und nichts
+   wegfällt. Für diesen Anwendungsfall gilt Punkt 5 **enger** als sonst: das
+   dort ebenfalls erlaubte Zusammenfassen und Verdichten ist hier nicht
+   gedeckt, weil eine Auslassung den Inhalt der Akte verändert. Erhalten
+   bleiben Zahlen, Einheiten, Körperseiten, Verneinungen, geäußerte
+   Unsicherheiten und die Unterscheidung zwischen Patientenaussage und eigener
+   Beobachtung; unverständliche Stellen werden gekennzeichnet statt geraten.
+   Eine ausdrücklich diktierte Einschätzung ist eine Aussage der Therapeut:in
+   und keine hinzugefügte Interpretation. Eine Funktion, die darüber
+   hinausgeht, ist nach Punkt 6 `MDR_REVIEW_REQUIRED`. Der vollständige
+   Anforderungstext steht in `PROJECT_PRINCIPLES.md` §6.3.
 
 ## Konsequenzen
 
@@ -106,7 +123,10 @@ um die inhaltliche Grenze.
   bleibt zu klären.
 - Die Auswahl der prüfenden Stelle und der Zeitpunkt der externen Prüfung.
 - Welche Instrumente in die Bibliothek nach §7 aufgenommen werden.
-- Änderungen an `PROJECT_PRINCIPLES.md`; §6 und §7.1 bleiben unverändert.
+- Änderungen an `PROJECT_PRINCIPLES.md`; §6 und §7.1 bleiben unverändert. Der
+  mit Version 0.5 neu hinzugekommene §6.3 (Sprachdokumentation) berührt beide
+  nicht: er hält eine Produktentscheidung fest und zieht die Grenze aus Punkt 5
+  und Punkt 8 dieses ADR nach, statt sie zu verschieben.
 
 ## Offene Folgefragen
 
@@ -127,3 +147,13 @@ um die inhaltliche Grenze.
   Transparenzpflichten gegenüber Patienten und Beschäftigten?
 - Was geschieht, wenn ein Feature nach Produktivstart die Grenze berührt —
   welcher Prozess greift dann?
+- Woran wird bei einer Sprachdokumentation (Punkt 8) geprüft, dass nichts
+  ergänzt und nichts ausgelassen wurde — und was ist der objektive Testfall
+  dafür, wenn die Quelle gesprochene Sprache ist?
+
+## Änderungshistorie
+
+| Fassung | Datum      | Änderung                                                                                                                                                                                                                                          |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1       | 2026-08-28 | Erstfassung, angenommen.                                                                                                                                                                                                                          |
+| 2       | 2026-09-08 | **Punkt 8 ergänzt:** Sprachdokumentation fällt unter Punkt 5, dort aber enger — kein Verdichten, keine inhaltliche Auslassung, Kennzeichnung unverständlicher Stellen; eine diktierte Einschätzung ist keine hinzugefügte Interpretation. Dazu eine offene Folgefrage zur Prüfbarkeit und eine Klarstellung zu `PROJECT_PRINCIPLES.md` §6.3. Anlass: Entscheidung von Jannes zur Sprachdokumentation (Version 0.5). Die Punkte 1 bis 7 sind unverändert. |

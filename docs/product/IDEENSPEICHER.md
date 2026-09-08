@@ -132,9 +132,19 @@ einem Verwurf. Neue Einträge hängen hinten an.
   zu Google Maps. Neu notiert: `IDEA-LZK-008` Kund:innen des Personal
   Trainings ohne vorherige Heilbehandlung. Die übrigen `PRX`-Einträge bleiben
   `vorschlag`. Mit den Antworten E-15 bis E-19 vom selben Tag: Datenweg der
-  Karte über die Google Maps Embed API entschieden und genehmigt; der
+  Karte über die Google Maps Embed API entschieden und genehmigt — **am
+  2026-09-08 durch MAP-001 überholt**, siehe ADR-019 Fassung 2 (MapLibre,
+  serverseitiger Adapter, PTV Developer als Kandidat); der
   Referenz-Screenshot ist ein fremdes Produkt, dessen Funktionsumfang
   nachgebaut werden soll (Regeln in `referenz-navigation.md`).
+- **2026-09-08** — Zwei eigene Entscheidungen von Jannes verlassen den
+  Ideenspeicher und werden verbindlich: das **Terminfenster**
+  (`IDEA-PRX-002` → `PROJECT_PRINCIPLES.md` §8.1) und die
+  **Sprachdokumentation** (`IDEA-KI-007` → §6.3, dazu ADR-005 Punkt 9,
+  ADR-006 Punkt 8, ADR-016 Punkt 10). Beide Einträge stehen jetzt auf
+  `überführt` und verweisen nur noch; was an ihnen offen geblieben ist, steht
+  als E12 und E13 in `../decisions/OPEN_DECISIONS.md`. **Entschieden heißt
+  weiterhin nicht gebaut** — beide sind noch nicht umgesetzt.
 
 ## Index — welche Datei wofür
 
@@ -162,6 +172,8 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-09-06 (Wettbewerbsreferenz und Bereichsdatei
+Zuletzt aktualisiert: 2026-09-08 (`IDEA-PRX-002` und `IDEA-KI-007` auf
+`überführt`; Google-Maps-Vermerk vom 2026-09-06 als überholt gekennzeichnet).
+Vorherige Aktualisierung: 2026-09-06 (Wettbewerbsreferenz und Bereichsdatei
 Praxisverwaltung mit `IDEA-PRX-001` bis `IDEA-PRX-028`; Entscheidungen vom
 2026-09-06, Tagesroute `IDEA-PRX-029` bis `-033`, `IDEA-LZK-008`)
