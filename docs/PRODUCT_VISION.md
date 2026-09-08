@@ -90,14 +90,16 @@ Präzisierung vom 06.09.2026 (Jannes):
 - **Die Praxis nimmt den Betrieb am 01.07.2027 auf.** Es gibt kein
   Vorgängersystem und keine Bestandsdaten; die Software begleitet die Praxis
   vom ersten Tag an (`development/ROADMAP.md`, Meilensteine M4 bis M6).
-- **Navigation zu Hausbesuchen läuft über Google Maps.** Aus der Anwendung
-  führt immer ein Link zur Navigation; die Übermittlung der Adresse dafür ist
-  entschieden und datenschutzrechtlich freigegeben. Eine Karte der gesamten
-  Tagesroute — alle Wege auf einmal oder ein einzelner Weg als Vorschau —
-  gehört zum Zielbild des Lastenrad-Hausbesuchskonzepts
-  (`product/ideen/10-praxisverwaltung.md`, `IDEA-PRX-029` und `-030`; die
-  Karte läuft über die Google Maps Embed API, entschieden und genehmigt am
-  06.09.2026, `decisions/OPEN_DECISIONS.md` B7).
+- **Die Tour liegt in der Anwendung auf der Karte; die Navigation übernimmt
+  das Gerät.** Therapeut:innen sehen Patient:innen und Tagesroute auf einer
+  interaktiven Karte innerhalb der Praxissoftware, mit Fahrradroute und
+  Fahrzeiten im Kalender; ein Tap auf „Navigation starten" öffnet die
+  Navigations-App des Geräts (Google Maps, Apple Maps). Convenience hat hohe
+  Priorität (Jannes, 2026-09-08); Datenschutz und §203 werden dafür nicht
+  umgangen, sondern der Anbieter danach gewählt — Stand: PTV Developer als
+  Kandidat, produktive Freigabe am Vertragsgate (`adr/ADR-019-map-service.md`
+  Fassung 2; `product/ideen/10-praxisverwaltung.md`, `IDEA-PRX-029` und
+  `-030`; `decisions/OPEN_DECISIONS.md` B7).
 - **Die Praxissoftware ist nur ein Teilbereich.** Dazu kommt eine Plattform
   für Patient:innen und für die Kund:innen von Jannes' Personal Training
   (§4).

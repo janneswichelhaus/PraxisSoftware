@@ -106,7 +106,7 @@ Feature.
 | B4    | Abrechnungsmodell                                            | entschieden; vier Festlegungen **vorläufig entschieden 2026-09-08**; **steuerliche Validierung offen** | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13, Nov 2026                          |
 | B5    | Patientenidentität, Vertretung                               | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | unten; vor Etappe 4                                                                                           |
 | B6    | Beschäftigtendaten: Touren, Leistungskontrolle               | **vorläufig entschieden 2026-09-08: nein**                    | unten; vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit                                                     |
-| B7    | Adressdaten an den Kartendienst                              | Link **entschieden**; Karte und Fahrzeiten **blockiert** — ADR-019 fand einen Widerspruch zu §3.5 (kein AVV für Maps Platform) | unten; ADR-019 (Roadmap G12)                                                    |
+| B7    | Adressdaten an den Kartendienst                              | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); produktive Freigabe am Gate **offen** | unten; ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12)                                |
 | B8    | Lizenzen für Fragebögen und PROMs                            | Auskunft des Lizenzgebers **offen**; Rückfall entschieden 2026-09-08 | unten; vor FRB-003                                                                                            |
 | B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08) | unten; vor Etappe 8; Steuerteil mit B4                                              |
 | B10   | Automatisierte Progression: MDR-Grenze                       | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1      | unten; vor Etappe 9                                                                                           |
@@ -377,7 +377,7 @@ kein Live-Tracking). ANN-004 hält Arbeitszeiten bereits aus dem Auditlog heraus
 
 | | |
 |---|---|
-| Dringlichkeit | Link und Karte entschieden; Fahrzeiten P2 für TOUR-EPIC-001b |
+| Dringlichkeit | Handoff nicht blockiert; Karte und Fahrzeiten (MAP-006) am Vertragsgate aus ADR-019 Fassung 2 — siehe Nachtrag unten |
 | Bezug | §9, §18, §20, §3.5; ADR-002, ADR-007 Punkt 2 |
 
 **Entschieden am 2026-09-06 durch Jannes:** Der Kartendienst ist **Google
@@ -410,9 +410,11 @@ Punkt sauber an B6: ohne gespeicherte Fahrzeit gibt es nichts, woraus sich ein
 Leistungsprofil bauen ließe. Rücknahme `klein`, solange nichts gespeichert
 wird. Die Datenschutzberatung bestätigt oder ändert das mit B2.
 
-**Noch offen — Fahrzeiten** (TOUR-EPIC-001b): ob Fahrzeiten je Weg aus dem
-Dienst abgerufen und kurz gespeichert werden dürfen (§18) und wie sie von
-jeder Auswertung je Person getrennt bleiben (B6).
+**Noch offen — Fahrzeiten** (jetzt MAP-006, ADR-019 Fassung 2, siehe Nachtrag
+unten): ob Fahrzeiten je Weg aus dem Dienst abgerufen und kurz gespeichert
+werden dürfen (§18) und wie sie von jeder Auswertung je Person getrennt
+bleiben (B6). Vorläufig entschieden (unten): abrufen und anzeigen ja,
+speichern nein.
 
 **Endgerät:** Der Link öffnet die Google-Maps-App oder den Browser auf dem
 Telefon der Therapeutin. Ein dort angemeldetes privates Google-Konto speichert
@@ -444,6 +446,35 @@ vorgesehenen Gegenmaßnahme zu Risiko R12.
 **Blockiert:** die In-App-Karte (TOUR-002) und die Fahrzeiten
 (TOUR-EPIC-001b), bis A, B oder C gewählt ist. **Nicht blockiert:** der
 Navigationslink, die Tourenliste, der Fahrpuffer als Praxisregel (CAL-010).
+
+**Nachtrag 2026-09-08 (MAP-001, ADR-019 Fassung 2) — Weg C gewählt.** Jannes
+hat Convenience hoch priorisiert: In-App-Karte, Fahrradrouting und Fahrzeiten
+sind Produktziel. Damit gilt:
+
+- **Anbieter:** Google Maps Platform wird **nicht** Backend (kein AVV, keine
+  belegte EU-Verarbeitung). **PTV Developer** (PTV Logistics GmbH,
+  Karlsruhe) ist Kandidat für Prototyp und Bewertung — nur die OSM-APIs
+  (Vector Maps, Geocoding, Routing, Matrix). **Nicht produktiv freigegeben.**
+- **Gate vor Echtdaten** (`providerpruefung-kartendienst.md`, Teil 5): DPA-Text
+  mit Nennung von PTV Developer und der OSM-APIs · Weisungsbindung ·
+  §203-Verpflichtung (kein Wortlaut gefunden — gesondert anfragen) ·
+  Subprozessoren der OSM-APIs · Retention und Ausschluss der Zweitnutzung ·
+  EU-Region · Paid Plan und Schlüsselbindung · Prüfung der Supabase Edge
+  Runtime (ADR-015 Punkt 20, OPS-001) · DSFA-Wiedervorlage je Datenweg.
+  **Alle neun Punkte `CONTRACT_CONFIRMATION_REQUIRED`** — die PTV-Webseiten
+  waren aus der Entwicklungsumgebung gesperrt.
+- **Handoff:** nicht blockiert, aber nicht automatisch risikofrei (ADR-019
+  Punkt 23; ANN-018). Frage an B2: Art. 9 / §203 bei Übergabe einer Adresse
+  ohne Namen an den Betreiber der Navigations-App vom Gerät der Therapeutin.
+- **Annahmen:** ANN-016 (Koordinate bei der Adresse), ANN-017 (Edge Function
+  als Adapter), ANN-018 (Übergabeziel und URL-Format).
+- **Für Jannes:** E-20 (Fassung 2 bestätigen, E-16 überholt), E-21
+  (Reihenfolge MAP-002 zu UX-EPIC-001), PTV-Free-Abo vor MAP-002,
+  Vertragsdokumente vor MAP-006 laden.
+
+**Blockiert jetzt nur noch:** MAP-006 (echte Adressen), bis das Gate
+passiert ist. **Nicht blockiert:** MAP-002 bis MAP-005 mit synthetischen
+Daten, der Handoff in UX-EPIC-001, die Tourenliste, CAL-010.
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 
@@ -1050,6 +1081,13 @@ aus der Roadmap nicht abgeschlossen werden kann.
   M6, §1 der Prinzipien wird dann ergänzt · E-18 der Referenz-Screenshot ist
   ein fremdes Produkt; Jannes will dessen Funktionsumfang nachbauen · E-19
   Reihenfolge der Stufe 3 wie vorgeschlagen.
+- **2026-09-08, MAP-001 (Mapping-Architektur und Providerentscheidung):**
+  Jannes priorisiert Convenience hoch — In-App-Karte, Fahrradrouting und
+  Fahrzeiten sind Produktziel. ADR-019 Fassung 2 ersetzt Fassung 1 vom selben
+  Tag: Weg C (Anbieter mit AVV) statt Weg B; **PTV Developer** als Kandidat
+  für Prototyp und Bewertung, nicht freigegeben; Google nur als
+  Handoff-Ziel; E-16 überholt. Neu offen: **E-20** (Fassung 2 bestätigen),
+  **E-21** (Reihenfolge MAP-002 zu UX-EPIC-001). B7 führt das Gate.
 - **2026-09-07:** Jannes entscheidet die Punkte, die auf externe Stellen
   warten, **vorläufig selbst** und nimmt zurück, was die Prüfung nicht trägt.
   Dafür der Status `vorläufig entschieden (Jannes)` oben — er löst das Bauen,
