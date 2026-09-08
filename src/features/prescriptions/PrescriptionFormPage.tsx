@@ -6,23 +6,25 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { useSession } from '@/features/auth/sessionContext';
 import { PrescriptionFormFields, type PositionsFehler } from './PrescriptionFormFields';
 import {
   createPrescription,
   deletePrescription,
+  entwurfAblegen,
+  entwurfAnsehen,
+  entwurfEntfernen,
   fetchPrescribers,
   fetchPrescription,
   itemsToFormValues,
   leerePosition,
   leereVerordnung,
   positionSchema,
-  prescriptionDraftKey,
   prescriptionFormSchema,
   prescriptionToFormValues,
   updatePrescription,
   type PositionEingabe,
   type PrescriptionDetail,
-  type PrescriptionDraft,
   type PrescriptionFeld,
 } from './api';
 
@@ -45,6 +47,8 @@ function VerordnungsFormular({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { session } = useSession();
+  const userId = session?.user.id;
 
   const zurueck = `/patienten/${patientId}`;
   // Derselbe Pfad, den "Verordner:in anlegen" als Rücksprungziel bekommt -
@@ -52,20 +56,20 @@ function VerordnungsFormular({
   const verordnerRueckpfad = bestand
     ? `/patienten/${patientId}/verordnungen/${bestand.id}/bearbeiten`
     : `/patienten/${patientId}/verordnungen/neu`;
-  const entwurfKey = prescriptionDraftKey(verordnerRueckpfad);
 
   // Ein Entwurf existiert nur direkt nach der Rückkehr vom Anlegen einer
-  // Verordner:in (siehe entwurfSichern unten und PrescriberFormPage). Er wird
-  // genau einmal gelesen und danach aus dem Cache entfernt - ein späterer,
-  // unabhängiger Besuch derselben Seite soll nicht versehentlich alte
-  // Eingaben übernehmen.
-  const [entwurf] = useState<PrescriptionDraft | undefined>(() =>
-    queryClient.getQueryData<PrescriptionDraft>(entwurfKey),
+  // Verordner:in (siehe entwurfSichern unten und PrescriberFormPage). Lesen
+  // und Entfernen sind bewusst getrennt (api.ts, entwurfAnsehen): ein
+  // Zustands-Initialisierer muss wiederholbar bleiben, React StrictMode ruft
+  // ihn im Entwicklungsmodus zweimal auf.
+  const [entwurf] = useState(() =>
+    userId ? entwurfAnsehen(verordnerRueckpfad, userId) : undefined,
   );
   useEffect(() => {
-    // Nur beim Einhängen prüfen: der Entwurf ist ausschließlich für diesen
-    // einen Wiederaufbau gedacht.
-    if (entwurf) queryClient.removeQueries({ queryKey: entwurfKey });
+    // Nur beim Einhängen: der Entwurf ist ausschließlich für diesen einen
+    // Wiederaufbau gedacht, ein späterer, unabhängiger Besuch derselben Seite
+    // soll nicht versehentlich alte Eingaben übernehmen.
+    if (userId) entwurfEntfernen(verordnerRueckpfad, userId);
   }, []);
 
   const [werte, setWerte] = useState<Record<PrescriptionFeld, string>>(() => {
@@ -142,7 +146,7 @@ function VerordnungsFormular({
   // Seitenwechsel, den der Link selbst auslöst. Die Verordnung wird dadurch
   // nicht geschrieben, nur ihr Formularzustand für die Rückkehr gemerkt.
   function entwurfSichern() {
-    queryClient.setQueryData<PrescriptionDraft>(entwurfKey, { werte, positionen });
+    if (userId) entwurfAblegen(verordnerRueckpfad, userId, { werte, positionen });
   }
 
   function absenden(event: FormEvent<HTMLFormElement>) {

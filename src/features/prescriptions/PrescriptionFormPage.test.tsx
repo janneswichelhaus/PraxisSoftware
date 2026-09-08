@@ -1,16 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
-import type { ReactElement } from 'react';
 import type * as PrescriptionsApi from './api';
 import type * as RouterModule from 'react-router-dom';
+import type * as SessionContextModule from '@/features/auth/sessionContext';
 import { renderWithProviders } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const PRESCRIPTION_ID = '88888888-8888-4888-8888-000000000002';
 const PROBST = '77777777-7777-4777-8777-000000000001';
+const BENUTZER_ID = '11111111-1111-4111-8111-000000000002';
 
 const fetchPrescribers = vi.fn();
 const fetchPrescription = vi.fn();
@@ -43,8 +42,23 @@ vi.mock('react-router-dom', async (importOriginal) => {
   };
 });
 
+// Der Entwurfsspeicher bindet an die Benutzer-ID aus der Sitzung (ANN-019) -
+// ohne diesen Mock würde useSession() außerhalb eines SessionProvider werfen.
+// Der echte Zusammenspiel-Test mit tatsächlicher Anmeldeperson lebt in
+// PrescriptionFormPage.entwurf.test.tsx.
+vi.mock('@/features/auth/sessionContext', async (importOriginal) => {
+  const actual = await importOriginal<typeof SessionContextModule>();
+  return {
+    ...actual,
+    useSession: () => ({
+      session: { user: { id: BENUTZER_ID } },
+      initialising: false,
+      signOut: vi.fn(),
+    }),
+  };
+});
+
 const { EditPrescriptionPage, NewPrescriptionPage } = await import('./PrescriptionFormPage');
-const { prescriptionDraftKey } = await import('./api');
 
 const verordner: PrescriptionsApi.Prescriber = {
   id: PROBST,
@@ -225,82 +239,12 @@ describe('NewPrescriptionPage', () => {
     );
   });
 
-  /**
-   * Regressionstest für den in der Abnahme dokumentierten Befund (VER-003,
-   * Schritt 8): Eingaben gingen beim Abstecher zu "Verordner:in anlegen"
-   * verloren. `renderWithProviders` legt für jeden Aufruf einen eigenen
-   * `QueryClient` an - hier wird bewusst ein eigener, über zwei Einhängungen
-   * hinweg gemeinsam genutzter Client gebraucht, weil genau dieser Cache der
-   * Übergabeweg ist (siehe api.ts, `prescriptionDraftKey`).
-   */
-  it('erhaelt Eingaben und Positionen ueber den Abstecher zum Anlegen einer Verordner:in und waehlt sie danach aus', async () => {
-    const user = userEvent.setup();
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const NEUER_VERORDNER = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001';
-    const rueckpfad = `/patienten/${PATIENT_ID}/verordnungen/neu`;
-
-    function mitClient(ui: ReactElement) {
-      return (
-        <QueryClientProvider client={queryClient}>
-          <MemoryRouter initialEntries={['/']}>{ui}</MemoryRouter>
-        </QueryClientProvider>
-      );
-    }
-
-    const erste = render(mitClient(<NewPrescriptionPage />));
-    await screen.findByRole('option', { name: /Probst/ });
-
-    await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
-    await user.type(screen.getByLabelText('Frequenz'), '2x pro Woche');
-    await user.type(screen.getByLabelText('Heilmittel *'), 'Manuelle Therapie');
-    await user.type(screen.getByLabelText('Verordnet *'), '6');
-    await user.type(
-      screen.getByLabelText('Diagnose oder Leitsymptomatik'),
-      'Synthetisch: Testdiagnose.',
-    );
-
-    // Der Klick merkt den Formularzustand; ohne Route auf "/verordner/neu"
-    // bleibt die Seite in diesem Testaufbau stehen - das reale Verlassen der
-    // Seite wird deshalb ausdrücklich nachgebildet.
-    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
-    erste.unmount();
-
-    expect(createPrescription).not.toHaveBeenCalled();
-
-    // Was PrescriberFormPage nach erfolgreichem Anlegen im selben Cache
-    // hinterlässt (eigenständig geprüft in PrescriberFormPage.test.tsx).
-    queryClient.setQueryData(
-      prescriptionDraftKey(rueckpfad),
-      (bisher: { werte: Record<string, string>; positionen: unknown[] } | undefined) =>
-        bisher ? { ...bisher, neuerVerordnerId: NEUER_VERORDNER } : bisher,
-    );
-    fetchPrescribers.mockResolvedValue([
-      verordner,
-      { ...verordner, id: NEUER_VERORDNER, family_name: 'Neuarzt', practice_name: null },
-    ]);
-
-    // Zweite Einhängung mit demselben Client - das bildet den echten
-    // Seitenwechsel zurück auf dieselbe Route nach.
-    render(mitClient(<NewPrescriptionPage />));
-    await screen.findByRole('option', { name: /Neuarzt/ });
-
-    expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveValue('2026-03-01');
-    expect(screen.getByLabelText('Frequenz')).toHaveValue('2x pro Woche');
-    expect(screen.getByLabelText('Heilmittel *')).toHaveValue('Manuelle Therapie');
-    expect(screen.getByLabelText('Verordnet *')).toHaveValue('6');
-    expect(screen.getByLabelText('Diagnose oder Leitsymptomatik')).toHaveValue(
-      'Synthetisch: Testdiagnose.',
-    );
-    expect(screen.getByLabelText('Verordner:in *')).toHaveValue(NEUER_VERORDNER);
-
-    // Die Verordnung selbst wurde durch all das nicht geschrieben - erst das
-    // ausdrückliche Absenden schreibt.
-    expect(createPrescription).not.toHaveBeenCalled();
-
-    // Der Entwurf ist verbraucht: ein späterer, unabhängiger Besuch derselben
-    // Seite findet keine fremden Reste mehr vor.
-    expect(queryClient.getQueryData(prescriptionDraftKey(rueckpfad))).toBeUndefined();
-  });
+  // Der Regressionstest zum Eingabenerhalt über den Abstecher zur
+  // Verordner-Anlage (VER-003) - einschließlich Zeitfortschritt über fünf
+  // Minuten mit echter Routennavigation - lebt in
+  // PrescriptionFormPage.entwurf.test.tsx: er braucht die echte
+  // react-router-dom-Navigation, die diese Datei oben durch einen Mock
+  // ersetzt.
 });
 
 describe('EditPrescriptionPage', () => {

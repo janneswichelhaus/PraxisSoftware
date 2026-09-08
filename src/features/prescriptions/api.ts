@@ -467,32 +467,110 @@ export function itemsToFormValues(prescription: PrescriptionDetail): PositionEin
  * Entwurf einer Verordnung, der einen Abstecher zum Anlegen einer fehlenden
  * Verordner:in überlebt (VER-003).
  *
- * Liegt ausschließlich im TanStack-Query-Cache: derselbe In-Memory-Speicher,
- * den die Anwendung ohnehin für Server-State nutzt, ohne Persister-Plugin.
- * Ein Neuladen der Seite oder ein Schließen des Tabs verwirft ihn - genau wie
- * jeden anderen Abfragezustand. Es gibt bewusst keinen Weg über die URL
+ * Eigener In-Memory-Speicher, bewusst **nicht** im TanStack-Query-Cache: ein
+ * dort über `setQueryData` abgelegter Wert hat ohne beobachtenden `useQuery`
+ * keinen aktiven Beobachter und gilt deshalb sofort als inaktiv - die normale
+ * Garbage Collection (`gcTime`, Standard fünf Minuten) kann ihn verwerfen,
+ * während die Verordner-Anlage in der Praxis auch mal länger dauert (ANN-019).
+ * Eine einzelne Abfrage global länger vorzuhalten hätte das für jede andere
+ * Abfrage mitgeändert; ein eigener, schlanker Speicher lässt alle anderen
+ * Caches unberührt.
+ *
+ * Ein Neuladen der Seite oder ein Schließen des Tabs verwirft ihn wie jeden
+ * anderen In-Memory-Zustand. Es gibt bewusst keinen Weg über die URL
  * (verordnerAnlegenZiel trägt nur den Rücksprungpfad) und keinen über
  * `localStorage`/`sessionStorage`: die Verordnung kann klinische Freitexte
  * enthalten (Diagnose, Therapieziel), die nirgendwo länger liegen bleiben
  * sollen als für diesen einen Abstecher (§18, ADR-011).
+ *
+ * Gebunden an Vorgang **und** Benutzer (ANN-019): der Schlüssel verbindet den
+ * Rücksprungpfad (je Patient und Verordnung eindeutig) mit der Benutzer-ID,
+ * damit ein Kontowechsel im selben Tab nie den Entwurf einer anderen Person
+ * übernimmt. Zusätzlich verfällt ein Entwurf nach `ENTWURF_MAX_ALTER_MS` von
+ * selbst - ohne das würde ein abgebrochener Versuch (Verordner-Anlage
+ * begonnen, dann über die Hauptnavigation verlassen statt über "Abbrechen")
+ * bei einem viel späteren, unabhängigen neuen Versuch auf demselben Pfad
+ * unbemerkt wieder auftauchen.
  */
 export interface PrescriptionDraft {
   werte: Record<PrescriptionFeld, string>;
   positionen: PositionEingabe[];
-  /** Von der Verordner-Anlage nachgetragen, siehe `prescriptionDraftKey`. */
+  /** Von der Verordner-Anlage nachgetragen, siehe `entwurfVerordnerNachtragen`. */
   neuerVerordnerId?: string;
 }
 
+interface EntwurfEintrag {
+  entwurf: PrescriptionDraft;
+  angelegtAm: number;
+}
+
 /**
- * Schlüssel des Entwurfs im Query-Cache, gebildet aus dem Rücksprungpfad
- * (`/patienten/:id/verordnungen/neu` bzw. `.../bearbeiten`). Der Pfad ist je
- * Patient und Verordnung eindeutig, deshalb reicht er als Schlüssel: ein
- * Entwurf zu einer anderen Verordnung kann so nie versehentlich übernommen
- * werden. Beide Formulare (Verordnung und Verordner:in) berechnen denselben
- * Schlüssel aus demselben Pfad, ohne dass eines das andere kennen müsste.
+ * ANN-019: eine Verordner-Anlage dauert praxisnah deutlich unter 30 Minuten;
+ * danach gilt ein liegen gebliebener Entwurf als abgebrochener statt als noch
+ * laufender Vorgang und wird beim nächsten Zugriff verworfen.
  */
-export function prescriptionDraftKey(rueckpfad: string): readonly [string, string] {
-  return ['prescription-draft', rueckpfad] as const;
+const ENTWURF_MAX_ALTER_MS = 30 * 60 * 1000;
+
+const entwurfSpeicher = new Map<string, EntwurfEintrag>();
+
+function entwurfSchluessel(rueckpfad: string, userId: string): string {
+  return `${userId} ${rueckpfad}`;
+}
+
+/** Legt den Formularzustand vor dem Abstecher zur Verordner-Anlage ab (VER-003). */
+export function entwurfAblegen(
+  rueckpfad: string,
+  userId: string,
+  entwurf: PrescriptionDraft,
+): void {
+  entwurfSpeicher.set(entwurfSchluessel(rueckpfad, userId), { entwurf, angelegtAm: Date.now() });
+}
+
+/**
+ * Liest einen Entwurf, ohne ihn zu entfernen (siehe `entwurfEntfernen`) - zwei
+ * getrennte Schritte, damit ein lesender Aufruf aus einem Zustands-Initialisierer
+ * heraus wiederholbar bleibt (React StrictMode ruft ihn im Entwicklungsmodus
+ * zweimal auf). Ein zu alter oder einer anderen Person gehörender Entwurf
+ * gilt als nicht vorhanden.
+ */
+export function entwurfAnsehen(rueckpfad: string, userId: string): PrescriptionDraft | undefined {
+  const eintrag = entwurfSpeicher.get(entwurfSchluessel(rueckpfad, userId));
+  if (!eintrag) return undefined;
+  if (Date.now() - eintrag.angelegtAm > ENTWURF_MAX_ALTER_MS) return undefined;
+  return eintrag.entwurf;
+}
+
+/**
+ * Entfernt einen Entwurf endgültig - nach dem Wiederaufbau des Formulars,
+ * damit ein späterer, unabhängiger Besuch derselben Seite nichts mehr
+ * vorfindet. Mehrfacher Aufruf ist unschädlich (React StrictMode).
+ */
+export function entwurfEntfernen(rueckpfad: string, userId: string): void {
+  entwurfSpeicher.delete(entwurfSchluessel(rueckpfad, userId));
+}
+
+/**
+ * Trägt die neu angelegte Verordner:in in einen vorhandenen Entwurf nach.
+ * Ohne passenden Entwurf (Aufruf direkt aus der Verordnerkartei oder ein
+ * Entwurf einer anderen Person) passiert nichts.
+ */
+export function entwurfVerordnerNachtragen(
+  rueckpfad: string,
+  userId: string,
+  verordnerId: string,
+): void {
+  const schluessel = entwurfSchluessel(rueckpfad, userId);
+  const eintrag = entwurfSpeicher.get(schluessel);
+  if (!eintrag) return;
+  entwurfSpeicher.set(schluessel, {
+    ...eintrag,
+    entwurf: { ...eintrag.entwurf, neuerVerordnerId: verordnerId },
+  });
+}
+
+/** Verwirft alle Entwürfe aller Benutzer:innen - bei Abmeldung (VER-003). */
+export function alleEntwuerfeVerwerfen(): void {
+  entwurfSpeicher.clear();
 }
 
 function rpcVerordnung(values: PrescriptionFormValues, items: z.output<typeof positionSchema>[]) {

@@ -4,21 +4,21 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { useSession } from '@/features/auth/sessionContext';
 import { PrescriberFormFields } from './PrescriberFormFields';
 import {
   VerordnerBereitsVorhanden,
   createPrescriber,
+  entwurfVerordnerNachtragen,
   fetchPrescriber,
   leereVerordnerdaten,
   prescriberName,
   prescriberSchemaForm,
   prescriberToFormValues,
-  prescriptionDraftKey,
   updatePrescriber,
   type Prescriber,
   type PrescriberFeld,
   type PrescriberValues,
-  type PrescriptionDraft,
 } from './api';
 
 /**
@@ -36,6 +36,8 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
   const [fehler, setFehler] = useState<Partial<Record<PrescriberFeld, string>>>({});
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { session } = useSession();
+  const userId = session?.user.id;
 
   const mutation = useMutation({
     mutationFn: async (values: PrescriberValues) => {
@@ -49,14 +51,12 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
       await queryClient.invalidateQueries({ queryKey: ['prescribers'] });
       if (bestand) {
         await queryClient.invalidateQueries({ queryKey: ['prescriber', bestand.id] });
-      } else {
+      } else if (userId) {
         // Kommt die Anlage aus dem Verordnungsformular (VER-003), liegt dort
         // ein Entwurf unter genau diesem Rücksprungpfad - die neue
         // Verordner:in wird darin nachgetragen, sobald er existiert. Ohne
         // Entwurf (Aufruf direkt aus der Verordnerkartei) ändert sich nichts.
-        queryClient.setQueryData<PrescriptionDraft>(prescriptionDraftKey(zurueck), (bisher) =>
-          bisher ? { ...bisher, neuerVerordnerId: id } : bisher,
-        );
+        entwurfVerordnerNachtragen(zurueck, userId, id);
       }
       void navigate(zurueck, { replace: true });
     },
