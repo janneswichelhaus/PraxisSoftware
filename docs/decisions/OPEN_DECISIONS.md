@@ -106,7 +106,7 @@ Feature.
 | B4    | Abrechnungsmodell                                            | entschieden; vier Festlegungen **vorläufig entschieden 2026-09-08**; **steuerliche Validierung offen** | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13, Nov 2026                          |
 | B5    | Patientenidentität, Vertretung                               | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | unten; vor Etappe 4                                                                                           |
 | B6    | Beschäftigtendaten: Touren, Leistungskontrolle               | **vorläufig entschieden 2026-09-08: nein**                    | unten; vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit                                                     |
-| B7    | Adressdaten an den Kartendienst                              | **entschieden 2026-09-06** (Link und Karte, genehmigt); Fahrzeiten **vorläufig entschieden 2026-09-08**: abrufen, nicht speichern | unten; ADR-019 (Roadmap G12)                                                    |
+| B7    | Adressdaten an den Kartendienst                              | Link **entschieden**; Karte und Fahrzeiten **blockiert** — ADR-019 fand einen Widerspruch zu §3.5 (kein AVV für Maps Platform) | unten; ADR-019 (Roadmap G12)                                                    |
 | B8    | Lizenzen für Fragebögen und PROMs                            | Auskunft des Lizenzgebers **offen**; Rückfall entschieden 2026-09-08 | unten; vor FRB-003                                                                                            |
 | B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08) | unten; vor Etappe 8; Steuerteil mit B4                                              |
 | B10   | Automatisierte Progression: MDR-Grenze                       | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1      | unten; vor Etappe 9                                                                                           |
@@ -419,9 +419,31 @@ Telefon der Therapeutin. Ein dort angemeldetes privates Google-Konto speichert
 Suchen und Wege. Die Endgeräte-Richtlinie (Roadmap G14, BETRIEB-001) regelt
 Konto und Verlauf; das ist Teil von ADR-019.
 
-**Blockiert:** nur noch die Fahrzeiten (TOUR-EPIC-001b). **Nicht blockiert:**
-der Navigationslink, die In-App-Karte (TOUR-002, nach ADR-019), die
-Tourenliste, der Fahrpuffer als Praxisregel (CAL-010).
+**Ergebnis von ADR-019 (2026-09-08) — die drei Wege liegen unterschiedlich:**
+
+- **Navigationslink: entschieden und frei.** Die Anwendung übermittelt nichts;
+  die Verbindung baut das Endgerät der Therapeutin nach ihrem Tippen auf.
+  Bedingung ist die Regel „nur auf Aktion, nie automatisch" — sie trägt diese
+  Einordnung (EuGH C-40/17, *Fashion ID*). Dazu die Endgeräteregel und die
+  Nennung in der Datenschutzinformation. UX-EPIC-001 kann bauen.
+- **In-App-Karte und Fahrzeiten: nicht freigeschaltet.** Der Prüfkatalog nach
+  ADR-002 scheitert an einem Kriterium, das nicht verhandelbar ist: Google
+  bietet für die **Maps Platform keinen Auftragsverarbeitungsvertrag** an,
+  sondern Controller-Controller-Bedingungen — Google verarbeitet als **eigener
+  Verantwortlicher**. Damit fehlen AVV und §203-Verpflichtung, die §3.5 vor
+  Freischaltung als MUSS verlangt, und §9 ordnet den Kartendienst
+  ausdrücklich dort ein. **Das ist ein Widerspruch zu einer
+  MUSS-Anforderung**, den ein ADR nicht auflösen darf (§21).
+
+**Zur Auflösung** stehen drei Wege in ADR-019 („Der ungelöste Punkt"):
+schriftliche Genehmigung plus Prinzipienänderung nach §21 (A), ohne In-App-Karte
+auskommen (B), oder ein Kartendienst mit AVV für Karte und Fahrzeiten (C).
+Empfehlung dort: **B, bis A geklärt ist** — das entspricht der bereits
+vorgesehenen Gegenmaßnahme zu Risiko R12.
+
+**Blockiert:** die In-App-Karte (TOUR-002) und die Fahrzeiten
+(TOUR-EPIC-001b), bis A, B oder C gewählt ist. **Nicht blockiert:** der
+Navigationslink, die Tourenliste, der Fahrpuffer als Praxisregel (CAL-010).
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 
