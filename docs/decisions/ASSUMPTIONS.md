@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-07
+Zuletzt aktualisiert: 2026-09-08
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -123,20 +123,20 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | Kennung | Thema                                                          | Kategorie     | Status | Wiedervorlage                 |
 |---------|----------------------------------------------------------------|---------------|--------|-------------------------------|
 | ANN-001 | Interne Initialfristen des Retention Schedule                  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | offen  | Jannes                        |
+| ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | entschieden (Jannes) 2026-09-08 | erledigt; Fristanker erneut bei LOE-001 |
 | ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | offen  | CAL-EPIC-003 (ADR-018)        |
+| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | entschieden (Jannes) 2026-09-08 | verbindlich mit ADR-018       |
 | ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; Leistungskürzel bei ABR-002 |
 | ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden 2026-09-05 | Providerprüfung nach ADR-002 |
-| ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | offen  | Jannes; Datenschutzprüfung    |
+| ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | entschieden (Jannes) 2026-09-08; **Zahl offen** | Jannes nach den ersten Praxiswochen |
 | ANN-009 | Systemakteur im Auditlog                                       | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-010 | Sichtbarkeit und Frist der internen Versorgungsangaben          | Datenschutz   | offen  | Datenschutzprüfung; Jannes    |
+| ANN-010 | Sichtbarkeit und Frist der internen Versorgungsangaben          | Datenschutz   | entschieden (Jannes) 2026-09-08 | **Datenschutzprüfung** — bleibt im Prüfpaket |
 | ANN-011 | Datenklasse und Rollenschnitt der Verordnung                    | Datenschutz   | offen  | Datenschutzprüfung; C1 bei ABR-002 |
-| ANN-012 | Genutzte Menge wird bis CAL-007/ABR-002 von Hand gepflegt      | Praxisprozess | offen  | Jannes; CAL-007 und ABR-002   |
+| ANN-012 | Genutzte Menge wird bis CAL-007/ABR-002 von Hand gepflegt      | Praxisprozess | entschieden (Jannes) 2026-09-08 | abgelöst durch CAL-007 und ABR-002 |
 | ANN-013 | Datenklasse und Frist der Verordnerkartei                       | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-014 | „Empfehlung zum Verordnungsende" ist eine Angabe, keine Systemempfehlung | Recht | offen | Datenschutzprüfung; B1 (MDR-Abgrenzung) |
-| ANN-015 | Umfang und Wortlaut der Verbindungsanzeige                      | Technik       | offen  | Jannes; UX-EPIC-001 (Textverlust-Schutz) |
+| ANN-015 | Umfang und Wortlaut der Verbindungsanzeige                      | Technik       | entschieden (Jannes) 2026-09-08 | UX-EPIC-001 (Textverlust-Schutz) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -196,7 +196,7 @@ Datenänderung bleibt und nicht mehrere Funktionen berührt.
 |---|---|
 | Kategorie | Praxisprozess |
 | Herkunft | PAT-003 |
-| Status | offen, seit 2026-08-29 (rückwirkend erfasst 2026-09-03) |
+| Status | **entschieden (Jannes) 2026-09-08**; getroffen 2026-08-29, rückwirkend erfasst 2026-09-03 |
 | Wiedervorlage | Jannes; der Behandlungsabschluss zusätzlich im Epic Behandlungsdokumentation |
 
 **Annahme.** `inactive` ist eine rein organisatorische Markierung („nicht in
@@ -237,7 +237,7 @@ Rollenschnitt wie beschrieben) technisch in Kraft — Status bleibt `offen`.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | CAL-001 |
-| Status | offen, seit 2026-08-30 (rückwirkend erfasst 2026-09-03) |
+| Status | **entschieden (Jannes) 2026-09-08**; getroffen 2026-08-30, rückwirkend erfasst 2026-09-03 |
 | Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
 
 **Annahme.** Für Hausbesuche wird die Patientenadresse bei Terminanlage in den
@@ -360,7 +360,7 @@ ABR-002 auf CAL-EPIC-003.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | DOK-003 (Dokumentation in der Akte, rollenabhängig projiziert); überbrückte bis zum 2026-09-05 auch Punkt C1 in `OPEN_DECISIONS.md`, der seither entschieden ist |
-| Status | offen, seit 2026-09-04 |
+| Status | **entschieden (Jannes) 2026-09-08** — mit einem Vorbehalt: die **Zahl** (Voreinstellung 1 Tag) wird nach den ersten Praxiswochen festgezurrt, wie ADR-016 es vorsieht. Mechanik und Fristbezug stehen. |
 | Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; die Aufnahme der Leistungskürzel in den Nachweis bei ABR-002 |
 
 **Annahme.** Der Behandlungsnachweis nach `PROJECT_PRINCIPLES.md` §4.4 ist in
@@ -574,7 +574,7 @@ Seed anlegen — Aufwand `mittel`, ausdrücklich nicht empfohlen.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | PAT-005 (VER-EPIC-001); `IDEA-PRX-001`; `PROJECT_PRINCIPLES.md` §4.3, §4.6 und ADR-008 lassen die Einordnung solcher Felder offen |
-| Status | offen, seit 2026-09-07 |
+| Status | **entschieden (Jannes) 2026-09-08** für den Praxisnutzen; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket** — die Sichtbarkeit gegenüber `office` und die Frist bestätigt erst die Datenschutzprüfung |
 | Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen |
 
 **Annahme.** Zugangshinweis Hausbesuch, Besonderheit, Bemerkung und die feste
@@ -692,7 +692,7 @@ LOE-001 — Aufwand `mittel`.
 |---|---|
 | Kategorie | Praxisprozess |
 | Herkunft | VER-001; die Roadmap verortet den automatischen Verbrauch bei CAL-007 und ABR-002 (`IDEA-PRX-009`) |
-| Status | offen, seit 2026-09-07 |
+| Status | **entschieden (Jannes) 2026-09-08** — bleibt gültig, bis CAL-007 und ABR-002 die Menge automatisch fortschreiben |
 | Wiedervorlage | Jannes; verbindlich entschieden mit CAL-007 und ABR-002 |
 
 **Annahme.** Jede Verordnungsposition führt eine **genutzte Menge**, die die
@@ -820,7 +820,7 @@ ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10.
 |---|---|
 | Kategorie | Technik |
 | Herkunft | UI-000; die Roadmap führt die Verbindungsanzeige in UI-000 und UX-EPIC-001 ausdrücklich als `ANN` |
-| Status | offen, seit 2026-09-07 |
+| Status | **entschieden (Jannes) 2026-09-08**; der Textverlust-Schutz aus UX-EPIC-001 bleibt die offene Ergänzung |
 | Wiedervorlage | Jannes nach dem ersten Feldtag; UX-EPIC-001, wenn der Textverlust-Schutz dazukommt |
 
 **Annahme.** Die Verbindungsanzeige stützt sich **allein auf
