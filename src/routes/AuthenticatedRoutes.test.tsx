@@ -4,8 +4,21 @@ import type * as PatientsApiModule from '@/features/patients/api';
 import type * as AppointmentsApiModule from '@/features/appointments/api';
 import type * as DokumentationApiModule from '@/features/documentation/api';
 import type * as PrescriptionsApiModule from '@/features/prescriptions/api';
+import type * as SessionContextModule from '@/features/auth/sessionContext';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
+
+// Der Entwurfsspeicher des Verordnungsformulars bindet an die Benutzer-ID
+// aus der Sitzung (VER-003, ANN-019); ohne diesen Mock würde useSession()
+// außerhalb eines SessionProvider werfen.
+vi.mock('@/features/auth/sessionContext', async (importOriginal) => ({
+  ...(await importOriginal<typeof SessionContextModule>()),
+  useSession: () => ({
+    session: { user: { id: '11111111-1111-4111-8111-000000000002' } },
+    initialising: false,
+    signOut: vi.fn(),
+  }),
+}));
 
 vi.mock('@/features/audit/api', () => ({
   fetchAuditEvents: () => Promise.resolve({ events: [], totalCount: 0 }),

@@ -140,6 +140,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-016 | Koordinate als abgeleitetes Stammdatum der Adresse             | Datenschutz   | offen  | Datenschutzprüfung; MAP-006 (Migration) |
 | ANN-017 | Serverseitiger Kartendienst-Adapter als Supabase Edge Function  | Technik       | offen  | OPS-001 (Edge Runtime, ADR-015 Punkt 20); MAP-003 |
 | ANN-018 | Übergabeziel und URL-Format des Navigations-Handoffs           | Datenschutz   | offen  | Datenschutzprüfung (B2); UX-EPIC-001, MAP-005 |
+| ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | entschieden 2026-09-08 | Jannes bei Bedarf, sonst keine |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -997,3 +998,60 @@ PAT-006, Prüfung vor dem Bauen der URL — Aufwand `mittel`. Verlangt B2, den
 Handoff ganz zu unterlassen: die Funktion entfällt, die Tagesliste zeigt die
 Adresse zum Abtippen — Aufwand `klein`, mit dem Verlust des einen Taps als
 Folge.
+
+### ANN-019 — Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | Nachprüfung zu PR #15/#16: der erste Fix für den Eingabenverlust beim Anlegen einer Verordner:in speicherte den Entwurf im TanStack-Query-Cache und verlor ihn dort nach der Standard-`gcTime` von fünf Minuten - ein zweiter, echter Fehler in derselben Story. |
+| Status | **entschieden 2026-09-08** |
+| Wiedervorlage | Jannes, falls die 30-Minuten-Grenze in der Praxis zu knapp oder zu großzügig wirkt; sonst keine |
+
+**Annahme.** Der Formularzustand liegt nicht mehr im TanStack-Query-Cache,
+sondern in einem eigenen, kleinen In-Memory-Speicher (`src/features/prescriptions/api.ts`,
+`entwurfSpeicher`). Ein Entwurf ist an **Vorgang** (Rücksprungpfad, je Patient
+und Verordnung eindeutig) **und Benutzer** (Supabase-Auth-`user.id`) gebunden
+und verfällt nach **30 Minuten** von selbst, unabhängig davon, ob er
+zwischenzeitlich gelesen wurde. Bei Abmeldung werden zusätzlich **sofort alle**
+Entwürfe verworfen, nicht erst nach Ablauf der Frist.
+
+**Begründung.** Die eigentliche Anforderung - ein Entwurf muss die Anlage
+einer fehlenden Verordner:in überleben, auch wenn die Person dafür Adresse und
+Kontaktdaten nachschlägt - ist mit der Standard-`gcTime` (fünf Minuten) eines
+inaktiven, unbeobachteten Query-Cache-Eintrags nicht verlässlich erfüllbar:
+`setQueryData` ohne einen laufenden `useQuery` an derselben Stelle hat ab dem
+Moment des Ablegens keinen Beobachter und gilt sofort als inaktiv. Die
+`gcTime` für genau diesen einen Schlüssel dauerhaft zu erhöhen, wäre technisch
+möglich gewesen (`setQueryDefaults`), hätte aber weiterhin denselben
+Cache-Mechanismus für einen Zweck zweckentfremdet, für den er nicht gebaut ist
+- mit dem nächsten daran hängenden Detail (Rehydrierung, Persister-Plugins,
+`refetchOnMount`) als nächstem Überraschungskandidaten. Ein eigener, expliziter
+Speicher mit genau den drei gebrauchten Operationen (ablegen, ansehen,
+entfernen) ist einfacher zu verstehen und zu prüfen als ein Cache-Sonderfall.
+30 Minuten sind eine Schätzung, keine Messung: großzügig genug für eine
+Verordner-Anlage mit Adress- und Kontaktrecherche, eng genug, dass ein
+tatsächlich abgebrochener Versuch nicht Tage später bei einem unabhängigen
+neuen Versuch auf demselben Pfad unbemerkt wieder auftaucht. Die
+Benutzerbindung verhindert zusätzlich, dass ein Kontowechsel im selben
+Browser-Tab (ohne Neuladen der Seite) den Entwurf einer anderen Person
+übernimmt; das Verwerfen bei Abmeldung ist Verteidigung in der Tiefe dazu, da
+die Verordnung klinische Freitexte enthalten kann (Diagnose, Therapieziel;
+§18, ADR-011). Der Speicher bleibt wie zuvor ausschließlich im
+Arbeitsspeicher der laufenden Seite - kein `localStorage`, kein
+`sessionStorage`, kein Weg über die URL - und betrifft keine andere Abfrage im
+Query-Cache.
+
+**Verankerung.** `src/features/prescriptions/api.ts` (`entwurfSpeicher`,
+`ENTWURF_MAX_ALTER_MS`, trägt die Kennung im Kommentar); verwendet in
+`PrescriptionFormPage.tsx` und `PrescriberFormPage.tsx`; das Verwerfen bei
+Abmeldung in `src/features/auth/SessionProvider.tsx`. Tests in
+`src/features/prescriptions/api.test.ts` (Speicherverhalten, u. a. mit
+`vi.useFakeTimers()`) und `src/features/prescriptions/PrescriptionFormPage.entwurf.test.tsx`
+(echter Seitenwechsel über echte Routen, Zeitfortschritt über fünf Minuten via
+`Date.now()`).
+
+**Änderungspfad.** Andere Frist: eine Zahl in `ENTWURF_MAX_ALTER_MS` - Aufwand
+`klein`. Mehrere gleichzeitige Entwürfe je Person zulassen oder den Speicher
+auf mehrere Tabs ausdehnen: eigener Mechanismus (z. B. `BroadcastChannel`),
+grundsätzlich anderer Ansatz - Aufwand `mittel`.
