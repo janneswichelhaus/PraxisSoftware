@@ -377,7 +377,7 @@ kein Live-Tracking). ANN-004 hält Arbeitszeiten bereits aus dem Auditlog heraus
 
 | | |
 |---|---|
-| Dringlichkeit | Link und Karte entschieden; Fahrzeiten P2 für TOUR-EPIC-001b |
+| Dringlichkeit | Handoff nicht blockiert; Karte und Fahrzeiten (MAP-006) am Vertragsgate aus ADR-019 Fassung 2 — siehe Nachtrag unten |
 | Bezug | §9, §18, §20, §3.5; ADR-002, ADR-007 Punkt 2 |
 
 **Entschieden am 2026-09-06 durch Jannes:** Der Kartendienst ist **Google
@@ -410,9 +410,11 @@ Punkt sauber an B6: ohne gespeicherte Fahrzeit gibt es nichts, woraus sich ein
 Leistungsprofil bauen ließe. Rücknahme `klein`, solange nichts gespeichert
 wird. Die Datenschutzberatung bestätigt oder ändert das mit B2.
 
-**Noch offen — Fahrzeiten** (TOUR-EPIC-001b): ob Fahrzeiten je Weg aus dem
-Dienst abgerufen und kurz gespeichert werden dürfen (§18) und wie sie von
-jeder Auswertung je Person getrennt bleiben (B6).
+**Noch offen — Fahrzeiten** (jetzt MAP-006, ADR-019 Fassung 2, siehe Nachtrag
+unten): ob Fahrzeiten je Weg aus dem Dienst abgerufen und kurz gespeichert
+werden dürfen (§18) und wie sie von jeder Auswertung je Person getrennt
+bleiben (B6). Vorläufig entschieden (unten): abrufen und anzeigen ja,
+speichern nein.
 
 **Endgerät:** Der Link öffnet die Google-Maps-App oder den Browser auf dem
 Telefon der Therapeutin. Ein dort angemeldetes privates Google-Konto speichert

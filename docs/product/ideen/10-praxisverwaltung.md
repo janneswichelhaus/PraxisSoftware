@@ -56,9 +56,9 @@ Ziehen, wenn der Abstand unterschritten wird.
 erreichbar sind. MD Therapie plant Fahrzeiten automatisch, THEORG kontrolliert
 Abstände zwischen Terminen. Bis der Kartendienst (B7) entschieden ist, geht
 das deterministisch mit von der Praxis gepflegten Zahlen — und nach B7 bleibt
-die Regel als Untergrenze bestehen. Seit dem 2026-09-06 ist Google Maps als
-Kartendienst entschieden; Fahrzeiten aus dem Dienst kommen mit TOUR-EPIC-001b
-(`IDEA-PRX-032`).
+die Regel als Untergrenze bestehen. Seit dem 2026-09-08 (MAP-001, ADR-019
+Fassung 2) ist PTV Developer Kandidat für den Kartendienst, noch nicht
+freigegeben; Fahrzeiten aus dem Dienst kommen mit MAP-006 (`IDEA-PRX-032`).
 
 **Vorsicht.** Deterministisch (§6.2), keine Optimierung, keine Verschiebung
 bestätigter Termine (§8).
@@ -184,7 +184,7 @@ ganze Verordnung mit wenigen Klicks ein.
 groß, wenn Fahrzeiten bekannt sind — vorher schlägt die Suche Termine vor, die
 auf dem Rad nicht erreichbar sind.
 
-**Offen.** Erst nach TOUR-EPIC-001b (Fahrzeiten) oder mit der Regel aus
+**Offen.** Erst nach MAP-006 (Fahrzeiten) oder mit der Regel aus
 PRX-002 und den Gebietstagen aus PRX-031 als Näherung?
 
 ---
@@ -357,13 +357,13 @@ Vorbereitungszeit die Fahrtzeit ist.
 |---|---|
 | Status | vorschlag |
 | Quelle | Produktreview 2026-09-06; `PRODUCT_VISION.md` §1.1 |
-| Berührt | §20, TOUR-EPIC-001a (TOUR-001), FLT-EPIC-001 |
+| Berührt | §20, MAP-006 (TOUR-001), FLT-EPIC-001 |
 
 **Idee.** Je Therapeutin und Tag: Start und Ende am Depot oder am
 persönlichen Startort. Grundlage jeder Reihenfolge und jedes Puffers.
 
 **Vorsicht.** Die Wohnadresse einer Mitarbeiterin ist ein Beschäftigtendatum
-(§20): nur die Person selbst pflegt und sieht sie; bis TOUR-EPIC-001a genügt
+(§20): nur die Person selbst pflegt und sieht sie; bis MAP-006 genügt
 eine Praxiseinstellung „Standard-Depot". Als Startort der Tagesroute wird sie
 nur auf Aktion der Person an den Kartendienst gegeben (`IDEA-PRX-029`).
 
@@ -571,7 +571,7 @@ ein Datenfluss mit Gesundheitsdaten, der vor der Nutzung bewertet werden muss
 |---|---|
 | Status | bestätigt — Jannes, 2026-09-06: „Diese Entscheidung steht fest" |
 | Quelle | Jannes, 2026-09-06 (Lastenrad-Hausbesuchskonzept) |
-| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019; TOUR-EPIC-001a (Roadmap Etappe T); E-16 (entschieden 2026-09-06) |
+| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019 Fassung 2; MAP-002 bis MAP-006 (Roadmap Etappe T); E-16 überholt, siehe Nachtrag |
 
 **Idee.** Eine Karte zeigt die gesamte Route des Tages: alle Wege zwischen
 Startort, Hausbesuchen und Endort in Terminreihenfolge — auf einmal, oder ein
@@ -667,7 +667,7 @@ Termine bleiben frei vergebbar; die Regel warnt, sie verbietet nicht.
 |---|---|
 | Status | vorschlag |
 | Quelle | Claude, 2026-09-06 |
-| Berührt | §9, §18, §20; B6, B7; TOUR-EPIC-001b; `IDEA-PRX-002` |
+| Berührt | §9, §18, §20; B6, B7; MAP-006; `IDEA-PRX-002` |
 
 **Idee.** Zu jedem Weg der Tagesroute die Fahrzeit mit dem Rad aus dem
 Kartendienst; im Kalender die Erreichbarkeit zweier Termine als Warnung,
