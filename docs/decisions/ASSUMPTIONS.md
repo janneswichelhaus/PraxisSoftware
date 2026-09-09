@@ -1,6 +1,7 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-08 (MAP-001: ANN-016 bis ANN-018)
+Zuletzt aktualisiert: 2026-09-08 (ANN-019 um den bekannten Restpunkt beim
+Verordnungsentwurf ergänzt; zuvor MAP-001: ANN-016 bis ANN-018)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -140,7 +141,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-016 | Koordinate als abgeleitetes Stammdatum der Adresse             | Datenschutz   | offen  | Datenschutzprüfung; MAP-006 (Migration) |
 | ANN-017 | Serverseitiger Kartendienst-Adapter als Supabase Edge Function  | Technik       | offen  | OPS-001 (Edge Runtime, ADR-015 Punkt 20); MAP-003 |
 | ANN-018 | Übergabeziel und URL-Format des Navigations-Handoffs           | Datenschutz   | offen  | Datenschutzprüfung (B2); UX-EPIC-001, MAP-005 |
-| ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | entschieden 2026-09-08 | Jannes bei Bedarf, sonst keine |
+| ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | entschieden 2026-09-08 | UX-EPIC-001 (Restpunkt Textverlust-Schutz) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1006,7 +1007,7 @@ Folge.
 | Kategorie | Technik |
 | Herkunft | Nachprüfung zu PR #15/#16: der erste Fix für den Eingabenverlust beim Anlegen einer Verordner:in speicherte den Entwurf im TanStack-Query-Cache und verlor ihn dort nach der Standard-`gcTime` von fünf Minuten - ein zweiter, echter Fehler in derselben Story. |
 | Status | **entschieden 2026-09-08** |
-| Wiedervorlage | Jannes, falls die 30-Minuten-Grenze in der Praxis zu knapp oder zu großzügig wirkt; sonst keine |
+| Wiedervorlage | UX-EPIC-001 (Textverlust-Schutz) — dort wird der unten genannte Restpunkt behoben; außerdem Jannes, falls die 30-Minuten-Grenze in der Praxis zu knapp oder zu großzügig wirkt |
 
 **Annahme.** Der Formularzustand liegt nicht mehr im TanStack-Query-Cache,
 sondern in einem eigenen, kleinen In-Memory-Speicher (`src/features/prescriptions/api.ts`,
@@ -1055,3 +1056,14 @@ Abmeldung in `src/features/auth/SessionProvider.tsx`. Tests in
 `klein`. Mehrere gleichzeitige Entwürfe je Person zulassen oder den Speicher
 auf mehrere Tabs ausdehnen: eigener Mechanismus (z. B. `BroadcastChannel`),
 grundsätzlich anderer Ansatz - Aufwand `mittel`.
+
+**Bekannter Restpunkt (offen, Folgeaufgabe in UX-EPIC-001).** Die Frist
+begrenzt den Schaden, behebt ihn aber nicht: Wer die Verordner:innen-Anlage
+über die **Hauptnavigation** verlässt statt über „Abbrechen", bricht den
+Abstecher ab - der Entwurf bleibt trotzdem bis zu 30 Minuten liegen und wird
+bei einem unabhängigen neuen Versuch auf demselben Rücksprungpfad wieder
+eingesetzt. Der Kommentar an `entwurfAnsehen` benennt genau diesen Fall als
+Grund für die Frist. Zu bauen ist das Verwerfen beim Verlassen des Abstechers;
+Aufwand `klein`, Test wie in `PrescriptionFormPage.entwurf.test.tsx` mit
+echtem Seitenwechsel. Bis dahin ist das Verhalten dokumentiert und
+zeitlich begrenzt, aber falsch.

@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Zuletzt aktualisiert: 2026-09-08 · Struktur 2.1
+Zuletzt aktualisiert: 2026-09-08 (E12, E13 ergänzt) · Struktur 2.1
 
 Dieses Dokument hält fest, **was noch nicht entschieden ist**, warum es offen
 ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
@@ -25,6 +25,12 @@ Was jetzt noch offen ist, ist von zweierlei Art:
   vertagt, Tendenz vermerkt), die Anbieterwahl der KI (C6, Etappe 10), das
   Verfahren der Patientenidentität (B5, mit dem Portal), die Ausgestaltung des
   Terminstatus-Automaten (ADR-018) und die Anbieterprüfung Supabase (A2).
+
+Am **2026-09-08** sind zwei Produktentscheidungen von Jannes dazugekommen und
+verbindlich geworden — das Terminfenster (`PROJECT_PRINCIPLES.md` §8.1) und die
+Sprachdokumentation (§6.3). Beide werfen Anschlussfragen auf, die Jannes
+ausdrücklich **nicht** mitentschieden hat; sie stehen als **E12** und **E13**
+unten. Keine davon blockiert einen Loop.
 
 Die fünf Rückfragen E-15 bis E-19 hat ## Wie dieses Dokument benutzt wird
 
@@ -138,6 +144,8 @@ Feature.
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
 | E10   | Wer schreibt Mitarbeiterdaten                                | **entschieden 2026-09-08** durch Jannes                       | unten; vor STAFF-EPIC-002; bis dahin `owner`                                                                  |
 | E11   | Wer gilt als behandelnde Person                              | erledigt sich mit STAFF-EPIC-002 (Konten in der Anwendung, entschieden 2026-09-05) | unten                                                                                    |
+| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1); vier Anschlussfragen **offen**    | unten; `PROJECT_PRINCIPLES.md` §8.1; vor CAL-010a/CAL-010b (Roadmap CAL-EPIC-003b)                  |
+| E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
 
 ---
 
@@ -445,7 +453,7 @@ vorgesehenen Gegenmaßnahme zu Risiko R12.
 
 **Blockiert:** die In-App-Karte (TOUR-002) und die Fahrzeiten
 (TOUR-EPIC-001b), bis A, B oder C gewählt ist. **Nicht blockiert:** der
-Navigationslink, die Tourenliste, der Fahrpuffer als Praxisregel (CAL-010).
+Navigationslink, die Tourenliste, der Fahrpuffer als Praxisregel (CAL-010b).
 
 **Nachtrag 2026-09-08 (MAP-001, ADR-019 Fassung 2) — Weg C gewählt.** Jannes
 hat Convenience hoch priorisiert: In-App-Karte, Fahrradrouting und Fahrzeiten
@@ -474,7 +482,7 @@ sind Produktziel. Damit gilt:
 
 **Blockiert jetzt nur noch:** MAP-006 (echte Adressen), bis das Gate
 passiert ist. **Nicht blockiert:** MAP-002 bis MAP-005 mit synthetischen
-Daten, der Handoff in UX-EPIC-001, die Tourenliste, CAL-010.
+Daten, der Handoff in UX-EPIC-001, die Tourenliste, CAL-010b.
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 
@@ -999,6 +1007,92 @@ Kopplung an den Zugang bleibt damit bewusst bestehen — ein Konto ist nach §4.
 ohnehin Pflicht. Sollte sich das im Praxisbetrieb als hinderlich erweisen
 (Vertretung ohne Konto), wird der Punkt wieder geöffnet.
 
+### E12 — Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre
+
+| | |
+|---|---|
+| Dringlichkeit | P2 — vor CAL-010a und CAL-010b |
+| Bezug | §8.1, §9, §6.2; ADR-019; CAL-EPIC-003b |
+
+**Entschieden ist §8.1** (Jannes, 2026-09-08): 60 Minuten je angebotenem
+Termin einschließlich Dokumentation, Beginn frei im 5-Minuten-Raster, Fahrzeit
+zusätzlich zwischen den Terminfenstern, früheste Folgezeit auf dem ersten
+Rasterpunkt auf oder nach Ende plus Fahrzeit (aufrunden, nie abrunden),
+Bestandstermine unverändert, Durchsetzung serverseitig.
+
+**Was daran offen ist** — vier Fragen, die die Entscheidung ausdrücklich
+**nicht** mitbeantwortet:
+
+1. **Gibt es eine begründete Abweichung von den 60 Minuten?** Ein Erstbefund
+   oder eine Doppelbehandlung könnte länger dauern. Ist das zulässig, und wenn
+   ja: als ausdrückliche Bestätigung nach dem Muster von
+   `p_allow_outside_working_hours` (CAL-005) mit Auditvermerk, oder gar nicht?
+   Ohne Antwort baut CAL-010a die Regel **ohne** Ausnahme — §16, im Zweifel
+   restriktiver, und später öffnen ist billig.
+2. **Wird die Länge je Praxis einstellbar?** Heute ist 60 eine feste Zahl im
+   Prinzipiendokument, kein `owner`-Wert wie das Raster. Für eine Praxis
+   reicht das; für ein zweites Unternehmen später nicht.
+3. **Woher kommt die Fahrzeit, bis ein Kartendienst freigegeben ist?** Ein
+   pauschaler Mindestabstand zwischen Hausbesuchen an verschiedenen Adressen,
+   von Hand gepflegte Fahrminuten je Patient:in ab Depot, beides oder keines
+   von beidem. Der ursprüngliche Vorschlag dazu steht als `IDEA-PRX-002` im
+   Ideenspeicher und ist **nicht** mitentschieden.
+4. **Warnung oder Sperre**, wenn der Abstand unterschritten wird? Die
+   Terminlänge ist nach §8.1 durchzusetzen; für den Fahrpuffer sagt die
+   Entscheidung dazu nichts.
+
+**Warum offen:** Punkt 1 und 2 sind Praxisprozess und lassen sich erst nach
+den ersten Wochen im Betrieb sinnvoll beantworten. Punkt 3 hängt an B7 und
+ADR-019: mit MAP-004 kommen echte Fahrzeiten, und ein pauschaler Wert wäre
+dann ein zweiter, schlechterer Mechanismus daneben.
+
+**Blockiert:** nichts. UX-EPIC-001 braucht die Antwort nicht; CAL-010a baut die
+entschiedenen Teile von §8.1, und CAL-010b lässt offen, was ohne Antwort offen
+bleiben muss.
+
+**Rücknahme:** `klein` bis `mittel` — die Regel greift an genau zwei
+Schreibpfaden (`create_appointment`, `update_appointment`) und einer
+Vorbelegung im Formular.
+
+### E13 — Sprachdokumentation: Anbieter, Architektur, Audio, Frist
+
+| | |
+|---|---|
+| Dringlichkeit | P3 — vor einem eigenen Sprachdokumentations-Loop, nicht vorher |
+| Bezug | §6.3, §6.1, §3.5, §18; ADR-005 Punkte 8 und 9, ADR-006 Punkt 8, ADR-016 Punkt 10, ADR-008; C6 |
+
+**Entschieden ist §6.3** (Jannes, 2026-09-08): die Anforderung an ein bewusst
+gestartetes Nachdiktat aus dem Termin — Zuordnung, Inhaltstreue, Kennzeichnung
+unverständlicher Stellen, Prüfung und Korrektur, ausdrückliche Übernahme, und
+das Verbot, einen ungeprüften Vorschlag automatisch zu finalisieren.
+
+**Was daran offen ist:**
+
+1. **Anbieter für Spracherkennung und Transkription.** Läuft über denselben
+   Prüfkatalog wie jeder andere Verarbeitungsdienst (ADR-002, ADR-005 Punkt 8)
+   und gehört zu **C6**, nicht daneben. Kein Startvorteil, weil es „nur"
+   Transkription ist.
+2. **Rohaudio:** Wird es überhaupt gespeichert, wo, wie lange, und geht es
+   durch den Gateway oder nur der daraus entstandene Text? Stimme plus Inhalt
+   ist ein besonders sensibles Gesundheitsdatum (§3.5, §18). ADR-008 kennt
+   dafür heute **keine** Datenklasse — die für KI-Entwürfe deckt den Text ab,
+   nicht die Aufnahme.
+3. **Fristanker.** ADR-016 Punkt 7 hängt die automatische Finalisierung an die
+   Behandlung (ANN-008), nicht an die Entstehung des Entwurfs. Eine Übernahme
+   nach Fristablauf erzeugte damit einen Entwurf, der sofort finalisiert wird —
+   ohne Gelegenheit zur Korrektur. Das ist zu regeln, bevor gebaut wird.
+4. **Architektur und Zustandsführung:** Lebt der ungeprüfte Vorschlag neben dem
+   Dokumentationseintrag oder als eigener Zustand davor? ADR-016 Punkt 10
+   verlangt die Trennung, nicht die Form.
+5. **Bedienung auf dem Gerät**, Zeitpunkt und Einordnung in die Roadmap.
+
+**Warum offen:** Die Anforderung steht, die Umsetzung ist ein eigener Auftrag.
+Jannes hat sie ausdrücklich nicht mitbeauftragt.
+
+**Blockiert:** nichts. Kein Loop der aktuellen Roadmap hängt daran.
+
+**Rücknahme:** entfällt — es ist nichts gebaut.
+
 ---
 
 ## F. Folgefragen aus den ADRs mit Planungsrelevanz
@@ -1025,6 +1119,7 @@ aus der Roadmap nicht abgeschlossen werden kann.
 | Zeitzonen bei wiederkehrenden Terminen und Kalenderjahr-Fristen                                                | ADR-014          | CAL-007, LOE-001                                  |
 | Speicherort und Retention von Dateien                                                                          | ADR-015, ADR-008 | ADR-017 (G1)                                      |
 | Begründung als Pflichtfeld; Frist bei Hausbesuchen am Freitag; Azubi-Rolle                                     | ADR-016          | ANN-008 nach Praxiserfahrung; Rolle in STAFF-EPIC-002 |
+| Fristanker bei später Übernahme eines KI-Vorschlags; Rohaudio; Prüfbarkeit der Inhaltstreue                    | ADR-016 Fassung 2, ADR-005 Fassung 2, ADR-006 Fassung 2 | E13; Anbieter mit C6              |
 | Wer pflegt die Zweckbestimmung; wo wird `MDR_REVIEW_REQUIRED` geführt; Cutoff-Anzeige als Klassifikation?      | ADR-006          | G12/G13 (Dokument); FRB-002 (Cutoff, bis dahin nicht anzeigen) |
 | Offline: Felder, Unsynchronisiert-Dauer, Konfliktauflösung, Geräteanforderungen, Audit offline                 | ADR-001          | Tagesplan-Cache lesend als `ANN` in UX-EPIC-001 (E-12); vollständiger Offline-ADR vor einem späteren Offline-Loop |
 | Kartendienst: Anbieter, Datenweg, Vertragsgrundlage, Endgerät                                                  | ADR-002, §9, §20 | ADR-019 (Roadmap G12); B7                          |
@@ -1123,3 +1218,18 @@ aus der Roadmap nicht abgeschlossen werden kann.
   mit diesem Hinweis entschieden (§15.1 Punkt 4): die Zweckbindung zwischen
   Akte und Trainingskontext (B9 Punkt 5) und „ein Konto gehört einer Person"
   (B5 Rahmensatz 1).
+- **2026-09-08, zwei eigene Produktentscheidungen von Jannes** (nicht aus der
+  Entscheidungsrunde): das **Terminfenster** — 60 Minuten einschließlich
+  Dokumentation, ohne eigenen Dokumentationsblock und ohne feste Aufteilung,
+  Beginn frei im 5-Minuten-Raster, Fahrzeit zusätzlich zwischen den
+  Terminfenstern, früheste Folgezeit auf dem ersten Rasterpunkt auf oder nach
+  Ende plus Fahrzeit, Bestandstermine unverändert — und die
+  **Sprachdokumentation** als bewusst gestartetes Nachdiktat mit inhaltstreuer
+  Transkription und ausdrücklicher menschlicher Übernahme. Verankert in
+  `PROJECT_PRINCIPLES.md` 0.5 §8.1 und §6.3; dazu ADR-005 Fassung 2 (Punkt 9),
+  ADR-006 Fassung 2 (Punkt 8) und ADR-016 Fassung 2 (Punkt 10). **Neu offen:**
+  E12 (Abweichung von der Terminlänge, Herkunft der Fahrzeit, Warnung oder
+  Sperre) und E13 (Anbieter, Rohaudio, Fristanker, Architektur der
+  Sprachdokumentation). Beide Entscheidungen sind **noch nicht umgesetzt** —
+  die Terminlänge ist heute frei, ein Fahrpuffer existiert nicht, und es gibt
+  keine Sprachfunktion.

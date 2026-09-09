@@ -4,12 +4,41 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.4** |
-| **Änderungsdatum** | **2026-09-05** |
-| Vorversion | 0.2.2 (Korrekturversion); 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.5** |
+| **Änderungsdatum** | **2026-09-08** |
+| Vorversion | 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-016, siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
+
+### Änderungsvermerk 0.5
+
+Zwei Produktentscheidungen des Projektinhabers vom 2026-09-08 werden
+verbindlich. Anlass: Jannes hat beide selbst getroffen und zur Aufnahme in die
+verbindlichen Dokumente beauftragt.
+
+- **Neu §8.1 „Terminfenster, Dokumentationszeit und Fahrzeit":** ein
+  angebotener Behandlungstermin dauert 60 Minuten einschließlich
+  Dokumentation, ohne eigenen Dokumentationsblock und ohne feste Aufteilung;
+  der Beginn bleibt frei auf dem Praxisraster (heute 5 Minuten); eine Fahrzeit
+  kommt zwischen den Terminfenstern hinzu, und der früheste Folgetermin liegt
+  auf dem ersten Rasterpunkt auf oder nach Ende plus Fahrzeit (aufrunden, nie
+  abrunden).
+  Es ist eine **Angebotsregel mit serverseitiger Durchsetzung**, keine
+  Voreinstellung der Oberfläche. Bestehende Termine bleiben unverändert.
+- **Neu §6.3 „Sprachdokumentation: Diktat, Transkription und Übernahme":**
+  bewusst gestartetes Nachdiktat aus dem Termin, inhaltstreue Transkription
+  und Strukturierung ohne eigene klinische Ergänzung und ohne inhaltliche
+  Auslassung, Kennzeichnung unverständlicher Stellen, Prüfung und Korrektur
+  vor der Übernahme. Ein KI-Vorschlag ist **kein Dokumentationsentwurf**; die
+  automatische Finalisierung nach ADR-016 Punkt 7 DARF ihn NICHT erfassen.
+- §5 verweist auf §6.3; §8 verweist auf §8.1; §21 führt die geänderten ADRs
+  nach (ADR-005 Fassung 2, ADR-006 Fassung 2, ADR-016 Fassung 2).
+- Beide Abschnitte halten die Anforderung fest und sind **kein
+  Implementierungsauftrag**. Was an ihnen nicht entschieden ist, steht als
+  E12 und E13 in `docs/decisions/OPEN_DECISIONS.md`.
+- Keine Anforderung aus §3, §12, §13 oder §16 wurde geändert oder
+  abgeschwächt. §6, §7.1 und die Liste der Constraints in §8 sind unverändert.
 
 ### Änderungsvermerk 0.4
 
@@ -531,6 +560,11 @@ bloßes Änderungsprotokoll. Was ADR-016 darüber hinaus regelt — Zustände,
 Finalisierung, Ergänzung gegenüber Korrektur — konkretisiert diesen Abschnitt
 und ersetzt ihn nicht.
 
+Entsteht ein Dokumentationstext aus einem Diktat oder einer anderen
+KI-Verarbeitung, gilt zusätzlich §6.3. Ein solcher Vorschlag ist kein Entwurf
+im Sinne dieses Abschnitts, bevor eine Therapeut:in ihn ausdrücklich
+übernommen hat.
+
 
 ## 6. KI
 
@@ -609,6 +643,66 @@ sowie Termin- und Fahrzeitberechnungen MÜSSEN deterministisch, versionierbar
 und testbar entstehen. Ein Sprachmodell DARF NICHT im Ergebnispfad dieser
 Werte stehen.
 
+### 6.3 Sprachdokumentation: Diktat, Transkription und Übernahme
+
+Der Projektinhaber hat am 2026-09-08 entschieden, dass die Anwendung ein
+**bewusst gestartetes Nachdiktat** aus dem zugehörigen Termin heraus
+unterstützen soll — auf Smartphone oder Tablet gesprochen, transkribiert,
+strukturiert und geprüft, bevor daraus Dokumentation wird. Dieser Abschnitt
+hält die Anforderung fest. Er ist **kein Implementierungsauftrag**:
+Anbieterwahl, Architektur, Aufbewahrung des Audios und der Zeitpunkt der
+Umsetzung bleiben einem eigenen Auftrag vorbehalten
+(`docs/decisions/OPEN_DECISIONS.md` E13).
+
+**Start und Zuordnung.** Eine Aufnahme MUSS ausdrücklich gestartet werden. Eine
+fortlaufende, automatische oder unbemerkte Aufnahme DARF es NICHT geben.
+Patient:in und Termin MÜSSEN der Aufnahme eindeutig zugeordnet sein.
+
+**Inhaltstreue.** Transkription und Strukturierung geben wieder, was gesprochen
+wurde. Die KI DARF NICHT
+
+- eigene klinische Schlussfolgerungen, Bewertungen, Empfehlungen oder sonstige
+  Inhalte ergänzen, die nicht gesprochen wurden;
+- gesprochene Inhalte inhaltlich auslassen.
+
+Erhalten bleiben MÜSSEN insbesondere Zahlen, Einheiten, Körperseiten,
+Verneinungen, geäußerte Unsicherheiten sowie die Unterscheidung zwischen einer
+Aussage der Patient:in und einer eigenen Beobachtung. Unverständliche Stellen
+MÜSSEN als solche gekennzeichnet werden; sie DÜRFEN NICHT geraten werden.
+
+Ausdrücklich diktierte Einschätzungen, Bewertungen und Pläne bleiben erhalten.
+Sie sind Aussagen der Therapeut:in und keine Ergänzung der KI; das Verbot oben
+betrifft sie nicht.
+
+**Prüfung und Übernahme.** Transkript und strukturierter Vorschlag MÜSSEN vor
+der Übernahme lesbar, prüfbar und korrigierbar sein. Ein KI-Vorschlag ist
+**kein Dokumentationsentwurf** im Sinne von §5 und
+[ADR-016](docs/adr/ADR-016-clinical-documentation-record.md) Punkt 2. Erst eine
+ausdrückliche Übernahme durch eine:n Therapeut:in macht daraus einen Entwurf;
+ab diesem Schritt gilt der Text als von dieser Person verfasst.
+
+**Die automatische Finalisierung nach ADR-016 Punkt 7 DARF einen nicht
+übernommenen KI-Vorschlag NICHT erfassen.** Ein ungeprüfter Vorschlag DARF
+NICHT Bestandteil der Akte werden, auch nicht durch Fristablauf. Wie sich die
+Frist aus ADR-016 Punkt 7 zu einer späten Übernahme verhält, ist nicht
+entschieden (E13).
+
+**Anbieter.** Ein Dienst für Spracherkennung, Diktat oder Transkription ist ein
+Verarbeitungsdienst mit Zugang zu Gesundheitsdaten im Sinne von §3.5 — auch
+dann, wenn er kein Sprachmodell im engeren Sinne ist. Er läuft über den
+zentralen Gateway nach §6.1 und DARF NICHT als Direktintegration in ein
+Fachmodul entstehen. Freigeschaltet wird er erst nach Datenschutz-, Vertrags-
+und Security-Prüfung ([ADR-005](docs/adr/ADR-005-provider-independent-ai.md)
+Punkte 8 und 9, ADR-002). Rohaudio ist selbst ein Gesundheitsdatum; Ort und
+Frist seiner Speicherung sind nicht entschieden (E13, §18).
+
+**Regulatorische Grenze.** Transkribieren und Einordnen in die
+Dokumentationsvorlage sind sprachliche Transformation im Sinne von
+[ADR-006](docs/adr/ADR-006-medical-device-boundary.md) Punkt 5 und bleiben
+zulässig. Eine Funktion, die darüber hinaus eine klinische Einschätzung
+ergänzt, verlässt diese Grenze und ist nach ADR-006 Punkt 6
+`MDR_REVIEW_REQUIRED`.
+
 
 ## 7. Fragebögen
 
@@ -681,6 +775,66 @@ Weiche Constraints:
 
 Der Zustandsautomat des Termins ist noch nicht definiert und in
 `docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
+
+Länge eines angebotenen Termins, Dokumentationszeit und der Abstand zum
+Folgetermin sind mit §8.1 entschieden.
+
+### 8.1 Terminfenster, Dokumentationszeit und Fahrzeit
+
+Diese Festlegungen hat der Projektinhaber am 2026-09-08 getroffen. Sie gelten
+für Termine, die die Anwendung **anbietet** — für jedes neu angelegte und jedes
+neu gesetzte Zeitfenster.
+
+Ein angebotener Behandlungstermin MUSS ein Zeitfenster von **60 Minuten**
+haben. Die Dokumentation der Behandlung ist darin enthalten.
+
+Ein eigener Dokumentationsblock neben dem Termin DARF NICHT geplant werden. Die
+Anwendung DARF NICHT eine feste Aufteilung zwischen Behandlung und
+Dokumentation innerhalb der 60 Minuten vorgeben oder erzwingen; wie die
+Therapeut:in das Fenster aufteilt, ist ihre Sache.
+
+Der Beginn eines Termins KANN auf jedem Punkt des Praxisrasters liegen. Die
+feste Länge beschränkt ihn NICHT auf volle oder halbe Stunden: bei dem heute
+eingestellten 5-Minuten-Raster bleiben 09:05, 09:10 und 09:15 zulässig. Welche
+Rasterweite gilt, ist eine Einstellung der Praxis und bleibt es (CAL-005).
+
+Ist zwischen zwei aufeinanderfolgenden Terminen eine Fahrzeit zurückzulegen,
+kommt sie **zusätzlich** zum Terminfenster. Der früheste zulässige Beginn des
+Folgetermins MUSS dann der erste Rasterpunkt **auf oder nach** dem Ende des
+vorangehenden Termins zuzüglich der Fahrzeit sein. Auf das Raster wird
+**aufgerundet**; ein Abrunden DARF NICHT stattfinden, weil es die Fahrzeit
+verkürzen würde.
+
+> **Beispiel** bei 5-Minuten-Raster: Termin 09:05–10:05, danach 12 Minuten
+> Fahrzeit. Ende plus Fahrzeit ist 10:17. Der früheste Folgetermin beginnt um
+> **10:20** — nicht um 10:15.
+
+Diese Regeln sind **Angebotsregeln**, keine Voreinstellung der Oberfläche. Die
+Länge des Zeitfensters MUSS serverseitig durchgesetzt und geprüft werden; eine
+Vorbelegung im Formular allein erfüllt sie nicht. Die Rundungsregel MUSS
+serverseitig gelten, sobald eine Fahrzeit vorliegt — woher sie kommt und was
+bei Unterschreitung geschieht, ist noch nicht entschieden (siehe unten). Wie
+jede MUSS-Anforderung MÜSSEN beide test- oder auditierbar sein (§0).
+
+**Bestehende Termine werden nicht rückwirkend verändert.** Ein Termin, der vor
+dieser Festlegung mit einer anderen Länge angelegt wurde, bleibt gültig,
+sichtbar und bearbeitbar. Die Anwendung DARF ihn NICHT selbsttätig verlängern,
+verkürzen oder verschieben, und eine rein organisatorische Änderung an ihm
+(behandelnde Person, Terminart, Ort) DARF NICHT an der Länge scheitern. Geprüft
+wird das Zeitfenster, wenn es neu gesetzt wird. Das ist dieselbe Abgrenzung,
+die für das Raster schon gilt (CAL-005).
+
+Woher eine Fahrzeit stammt, regelt §9 und
+[ADR-019](docs/adr/ADR-019-map-service.md). Sie MUSS in jedem Fall
+deterministisch entstehen; ein Sprachmodell DARF NICHT in ihrem Ergebnispfad
+stehen (§6.2).
+
+Nicht entschieden und deshalb **nicht** Bestandteil dieses Abschnitts sind: ein
+pauschaler Mindestabstand zwischen Hausbesuchen, von Hand gepflegte
+Fahrminuten, die Frage Warnung oder Sperre bei Unterschreitung und die Frage,
+ob eine begründete Abweichung von den 60 Minuten möglich sein soll und wie sie
+protokolliert würde. Sie stehen als E12 in
+`docs/decisions/OPEN_DECISIONS.md`.
 
 
 ## 9. Routenplanung
@@ -1096,8 +1250,8 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-002 | Hosting und Datenstandort | §3.2, §3.5, §3.6 |
 | ADR-003 | `organization_id` und `location_id` | §1, §14 |
 | ADR-004 | Berechtigungsmodell | §4 |
-| ADR-005 | Providerunabhängige KI-Anbindung | §6, §6.1, §6.2 |
-| ADR-006 | Abgrenzung gegenüber Medical Device Software | §7.1, §17 |
+| ADR-005 | Providerunabhängige KI-Anbindung (Fassung 2) | §6, §6.1, §6.2, §6.3 |
+| ADR-006 | Abgrenzung gegenüber Medical Device Software (Fassung 2) | §7.1, §17, §6.3 |
 | ADR-007 | Datenschutz-Folgenabschätzung und Datenschutzprozess | §3.7 |
 | ADR-008 | Aufbewahrung und Löschung | §4.6, §10, §18 |
 | ADR-009 | Privatabrechnung | §19 |
@@ -1107,7 +1261,14 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-013 | CI/CD und Release-Governance | §11, §12 |
 | ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
 | ADR-015 | Initialer technischer Stack | §2.1, §2.2, §3.4 |
-| ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | §5 |
+| ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit (Fassung 2) | §5, §6.3 |
 
 Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
 Dokumentversion und ergänztem Änderungsvermerk.
+
+Zwei Abschnitte dieses Dokuments halten eine Entscheidung fest, für die es
+keinen eigenen ADR gibt: §8.1 (Terminfenster) und §6.3 (Sprachdokumentation).
+Beide lösen kein Architekturproblem, sondern halten eine Produktentscheidung
+des Projektinhabers fest. Was daran technisch zu entscheiden war, steht in
+ADR-005, ADR-006 und ADR-016; was daran offen geblieben ist, in
+`docs/decisions/OPEN_DECISIONS.md` E12 und E13.

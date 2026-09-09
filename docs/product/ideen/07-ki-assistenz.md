@@ -146,3 +146,53 @@ also `MDR_REVIEW_REQUIRED` und vorher nicht aktivierbar.
 Gegenstand der Prüfung, nicht seine Beschriftung. Eine Umbenennung in
 „Zusammenfassung" ändert die Zweckbestimmung nicht — ADR-006 sagt das
 ausdrücklich.
+
+---
+
+### IDEA-KI-007 — Sprachdokumentation: Diktat, Transkription, geprüfter Entwurf
+
+| | |
+|---|---|
+| Status | **überführt** (2026-09-08) — die Anforderung ist entschieden und steht in `PROJECT_PRINCIPLES.md` §6.3; Umsetzung, Anbieterwahl und Einführung bleiben ein eigener Auftrag (`OPEN_DECISIONS.md` E13) |
+| Quelle | Jannes, 2026-09-08 |
+| Berührt | `PROJECT_PRINCIPLES.md` §6.3; [ADR-005](../../adr/ADR-005-provider-independent-ai.md) Punkt 9, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) Punkt 8, [ADR-016](../../adr/ADR-016-clinical-documentation-record.md) Punkt 10, ADR-008 (Datenklasse „nicht angenommene KI-Entwürfe"); `OPEN_DECISIONS.md` E13, C6; `IDEA-KI-002`, `IDEA-KI-003` |
+
+**Wohin die Idee gegangen ist.** Jannes hat die Anforderung am 2026-09-08
+entschieden: ein bewusst gestartetes Nachdiktat aus dem zugehörigen Termin auf
+Smartphone oder Tablet, inhaltstreu transkribiert und strukturiert, geprüft
+und korrigiert, und erst durch eine ausdrückliche Übernahme Teil der
+Dokumentation. **Verbindlich ist `PROJECT_PRINCIPLES.md` §6.3**, dazu ADR-005
+Punkt 9 (auch ein Transkriptionsdienst läuft über den Gateway), ADR-006
+Punkt 8 (Inhaltstreue als MDR-Grenze) und ADR-016 Punkt 10 (ein KI-Vorschlag
+ist kein Entwurf und wird nie automatisch finalisiert). Dieser Eintrag regelt
+nichts; er hält fest, woher die Idee kam und was an ihr noch offen ist.
+
+**Warum sie hierher passte.** Sie deckt sich mit dem schon als zulässig
+eingeordneten Anwendungsfall „Freitext strukturieren" aus `IDEA-KI-002` —
+mitgeschriebene Notizen in die Dokumentationsvorlage überführen, ohne Inhalt
+hinzuzufügen — nur dass die Notiz gesprochen statt geschrieben ist. Die
+Anforderungen an Quellenbindung (`IDEA-KI-003`) und die Verbotsliste
+(`IDEA-KI-004`) gelten unverändert: eine Spracherkennung, die Befunde
+zusammenfasst oder deutet, unterliegt derselben Prüfung wie ein Textmodell.
+
+**Was offen geblieben ist (E13).** Anbieter für Spracherkennung und
+Transkription (geht mit C6); ob und wo Rohaudio gespeichert wird und wie
+lange — ADR-008 kennt dafür heute keine Datenklasse; der Fristanker der
+automatischen Finalisierung bei einer späten Übernahme (ADR-016 Punkt 7,
+ANN-008); die Architektur des ungeprüften Vorschlags; Bedienung und Zeitpunkt.
+
+**Vorsicht.**
+
+- Audio ist selbst ein besonders sensibles Gesundheitsdatum — Stimme plus
+  Inhalt (§3.5, ADR-002).
+- „Ausdrücklich diktierte Einschätzung" und „von der KI ergänzte Einschätzung"
+  müssen technisch unterscheidbar bleiben — sonst verwischt genau die Grenze,
+  die ADR-006 zieht.
+- Die Anbieterwahl läuft über denselben Prüfkatalog wie jeder andere
+  Verarbeitungsdienst (ADR-002, ADR-005 Punkte 8 und 9) — kein Startvorteil,
+  nur weil es „nur" Transkription ist.
+
+---
+
+Zuletzt aktualisiert: 2026-09-08 (`IDEA-KI-007` auf `überführt`; die
+Anforderung steht als §6.3 in den Prinzipien, die offene Umsetzung als E13)

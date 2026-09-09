@@ -14,7 +14,11 @@ Roadmap 2.1 verortet — das macht sie nicht zu Aufträgen. Am 2026-09-06 hat
 Jannes vier davon bestätigt (`IDEA-PRX-003`, `-011`, `-012`, `-014`), einen
 verworfen (`IDEA-PRX-015`) und zwei eigene Vorgaben zum
 Lastenrad-Hausbesuchskonzept eingebracht (`IDEA-PRX-029`, `-030`); drei
-Vorschläge dazu folgen (`IDEA-PRX-031` bis `-033`).
+Vorschläge dazu folgen (`IDEA-PRX-031` bis `-033`). Am 2026-09-08 hat Jannes
+das Terminfenster verbindlich entschieden; die Entscheidung steht in
+`PROJECT_PRINCIPLES.md` §8.1, und `IDEA-PRX-002` ist deshalb auf `überführt`
+gestellt — der dort vorgeschlagene Mechanismus für den Fahrpuffer bleibt
+davon unberührt ein Vorschlag (`OPEN_DECISIONS.md` E12).
 
 ---
 
@@ -43,25 +47,66 @@ nie in Logs landen darf (ADR-011).
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | **überführt** (2026-09-08) — der Kern ist entschieden und steht in `PROJECT_PRINCIPLES.md` §8.1; der hier vorgeschlagene Mechanismus bleibt `vorschlag` |
 | Quelle | Produktreview 2026-09-06 |
-| Berührt | `PROJECT_PRINCIPLES.md` §9, §6.2; B7; CAL-EPIC-003b (Entwurf CAL-010) |
+| Berührt | `PROJECT_PRINCIPLES.md` §8.1, §9, §6.2; `OPEN_DECISIONS.md` E12, B7; CAL-EPIC-003b (CAL-010a, CAL-010b); ADR-019 |
 
-**Idee.** Eine `owner`-Einstellung „Mindestabstand zwischen zwei Hausbesuchen
-an verschiedenen Adressen" in Minuten, dazu optional von Hand gepflegte
-Fahrminuten je Patient:in ab Depot. Der Kalender warnt beim Anlegen und beim
-Ziehen, wenn der Abstand unterschritten wird.
+**Wohin die Idee gegangen ist.** Jannes hat am 2026-09-08 das Terminfenster
+entschieden — 60 Minuten je angebotenem Termin einschließlich Dokumentation,
+Beginn weiter frei im 5-Minuten-Raster, Fahrzeit zusätzlich zwischen den
+Terminfenstern, früheste Folgezeit auf dem ersten Rasterpunkt auf oder nach
+Ende plus Fahrzeit. **Verbindlich ist allein `PROJECT_PRINCIPLES.md` §8.1.**
+Dieser Eintrag regelt nichts und gibt den Wortlaut bewusst nicht wieder; wer
+die Regel braucht, liest §8.1.
+
+**Idee (unverändert, weiterhin nur Vorschlag).** Eine `owner`-Einstellung
+„Mindestabstand zwischen zwei Hausbesuchen an verschiedenen Adressen" in
+Minuten, dazu optional von Hand gepflegte Fahrminuten je Patient:in ab Depot.
+Der Kalender warnt beim Anlegen und beim Ziehen, wenn der Abstand
+unterschritten wird.
+
+**Was daran nicht entschieden ist.** Genau dieser Mechanismus — pauschaler
+Mindestabstand, gepflegte Fahrminuten, Warnung statt Sperre. §8.1 sagt, **wie**
+aus einer Fahrzeit die früheste Folgezeit wird, nicht **woher** die Fahrzeit
+kommt und was bei Unterschreitung passiert. Das steht als **E12** in
+`../../decisions/OPEN_DECISIONS.md` und wird dort entschieden, nicht hier.
 
 **Warum.** §9 verlangt, dass die Anwendung erkennt, ob zwei Termine zeitlich
-erreichbar sind. MD Therapie plant Fahrzeiten automatisch, THEORG kontrolliert
-Abstände zwischen Terminen. Bis der Kartendienst (B7) entschieden ist, geht
-das deterministisch mit von der Praxis gepflegten Zahlen — und nach B7 bleibt
-die Regel als Untergrenze bestehen. Seit dem 2026-09-08 (MAP-001, ADR-019
+erreichbar sind; §8 nennt Behandlungsdauer und Fahrzeit als harte Constraints
+der Terminplanung. MD Therapie plant Fahrzeiten automatisch, THEORG
+kontrolliert Abstände zwischen Terminen. Seit dem 2026-09-08 (MAP-001, ADR-019
 Fassung 2) ist PTV Developer Kandidat für den Kartendienst, noch nicht
 freigegeben; Fahrzeiten aus dem Dienst kommen mit MAP-006 (`IDEA-PRX-032`).
+Bis dahin müsste die Zahl aus der Praxis kommen — genau das ist die offene
+Frage aus E12.
+
+**Umsetzungsstand (2026-09-08): entschieden heißt nicht gebaut.**
+
+- **Raster: gebaut.** `appointment_grid_minutes` erlaubt 5, 10 oder 15
+  Minuten, praxisweiter Standard ist 5; der Beginn wird gegen Mitternacht der
+  Praxiszeitzone geprüft (CAL-005,
+  `supabase/migrations/20260830120000_scheduling_grid.sql`).
+- **60-Minuten-Terminfenster: nicht gebaut.** `create_appointment` und
+  `update_appointment` lassen Beginn und Ende unabhängig frei wählen — „die
+  Dauer bleibt frei" ist dort ausdrücklich so kommentiert, damit ein
+  Bestandstermin auf einem verschärften Raster verschiebbar bleibt
+  (`supabase/migrations/20260830120200_appointment_scheduling_rules.sql`). Das
+  Formular hat zwei leere Zeitfelder ohne Vorbelegung
+  (`AppointmentFormFields.tsx`, `leererTermin` in
+  `src/features/appointments/api.ts`). Geplant als CAL-010a; §8.1 verlangt
+  dafür ausdrücklich auch die serverseitige Prüfung, nicht nur die
+  Vorbelegung.
+- **Fahrpuffer: nicht gebaut.** Weder eine Mindestabstands-Einstellung noch je
+  Patient:in gepflegte Fahrminuten noch eine Warnung im Kalender; zwei
+  Hausbesuche an verschiedenen Adressen lassen sich heute ohne jeden Abstand
+  hintereinander anlegen. Geplant als CAL-010b in CAL-EPIC-003b (Roadmap,
+  Oktober 2026), nach VER-001 und CAL-EPIC-003a.
 
 **Vorsicht.** Deterministisch (§6.2), keine Optimierung, keine Verschiebung
-bestätigter Termine (§8).
+bestätigter Termine (§8). Die Aufrundungsregel ist ein eigenständiges, leicht
+falsch zu implementierendes Detail — naheliegend wäre fälschlich Abrunden —
+und gehört mit dem Beispiel aus §8.1 als Testfall in `pnpm test:db`, sobald
+CAL-010b gebaut wird.
 
 ---
 
@@ -644,7 +689,7 @@ Ziel-Apps in MAP-005. Nicht automatisch risikofrei; Frage an B2.
 |---|---|
 | Status | vorschlag |
 | Quelle | Claude, 2026-09-06, aus dem Lastenrad-Konzept |
-| Berührt | §6.2, §8, §9; CAL-007, CAL-010; `IDEA-PRX-008`; B6 |
+| Berührt | §6.2, §8, §9; CAL-007, CAL-010b; `IDEA-PRX-008`; B6 |
 
 **Idee.** Die Praxis ordnet Gebieten (Stadtteile, Postleitzahlen) feste
 Wochentage oder Tageshälften zu. Beim Anlegen und bei der Serie schlägt der
@@ -707,5 +752,7 @@ Bis eine Entscheidung vorliegt: nicht bauen.
 
 ---
 
-Zuletzt aktualisiert: 2026-09-06 (Entscheidungen E-9, E-12, E-13; Tagesroute
-`IDEA-PRX-029` bis `-033`)
+Zuletzt aktualisiert: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
+Terminfenster steht als §8.1 in den Prinzipien, der Fahrpuffer-Mechanismus als
+E12 in den offenen Entscheidungen). Vorherige Aktualisierung: 2026-09-06
+(Entscheidungen E-9, E-12, E-13; Tagesroute `IDEA-PRX-029` bis `-033`)
