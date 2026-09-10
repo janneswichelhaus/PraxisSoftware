@@ -13,6 +13,7 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
+import { Textverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { bausteinEinfuegen } from './textbausteine';
 import {
@@ -108,6 +109,8 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
             <ErrorState title="Nicht gespeichert" description={speichern.error.message} />
           </div>
         ) : null}
+
+        <Textverlustschutz ungespeichert={geaendert} />
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={speichern.isPending || !geaendert}>

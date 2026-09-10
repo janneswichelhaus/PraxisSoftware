@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useIstVerbunden } from './verbindung';
 
 /**
  * Zeigt an, wenn das Gerät keine Netzverbindung hat (UI-000).
@@ -13,43 +13,15 @@ import { useEffect, useState } from 'react';
  * (ADR-015 Punkt 16). Der begrenzte Offline-Modus aus ADR-001 ist ein eigenes
  * Vorhaben; hier steht nur die Anzeige.
  *
- * ANN-015: Quelle ist allein `navigator.onLine`. Kein Ping gegen den Server,
- * kein Abfragetakt — das wäre eine wiederkehrende Verbindung ohne fachlichen
- * Grund und nach §18/§20 zusätzliche Daten ohne Zweck. Der Preis dafür steht
- * im Register: ein Gerät hinter einem Anmeldeportal gilt als verbunden.
+ * ANN-015: Quelle ist allein `navigator.onLine` — der Haken dafür steht in
+ * `verbindung.ts`, weil ihn seit UX-009 auch der Textverlust-Schutz in den
+ * Dokumentationsformularen braucht. Kein Ping gegen den Server, kein
+ * Abfragetakt; der Preis dafür steht im Register: ein Gerät hinter einem
+ * Anmeldeportal gilt als verbunden.
  *
  * Deshalb ist der Text zurückhaltend formuliert. Er behauptet nicht, dass der
  * Server erreichbar ist — er sagt nur, was das Gerät meldet.
  */
-
-/**
- * Verbindungszustand des Geräts.
- *
- * Bewusst nicht exportiert: geprüft wird die Anzeige, nicht der Haken. Ein
- * zweiter Export neben der Komponente würde außerdem das schnelle Neuladen im
- * Entwicklungsserver aushebeln (`react-refresh`).
- */
-function useIstVerbunden(): boolean {
-  const [verbunden, setVerbunden] = useState(() =>
-    typeof navigator === 'undefined' ? true : navigator.onLine,
-  );
-
-  useEffect(() => {
-    const zeigeVerbunden = () => setVerbunden(true);
-    const zeigeGetrennt = () => setVerbunden(false);
-    window.addEventListener('online', zeigeVerbunden);
-    window.addEventListener('offline', zeigeGetrennt);
-    // Zwischen dem ersten Rendern und dem Anmelden der Ereignisse kann sich
-    // der Zustand geaendert haben.
-    setVerbunden(navigator.onLine);
-    return () => {
-      window.removeEventListener('online', zeigeVerbunden);
-      window.removeEventListener('offline', zeigeGetrennt);
-    };
-  }, []);
-
-  return verbunden;
-}
 
 export function Verbindungsanzeige() {
   const verbunden = useIstVerbunden();

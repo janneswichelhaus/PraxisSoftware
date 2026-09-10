@@ -718,3 +718,48 @@ der Praxis und einen persönlichen von Anna Beispiel an.
 11. **Am Handy** (~375 px): Die Bausteinleiste bricht um, jeder Knopf bleibt
     mindestens 44 px hoch. **Zielwert der Story:** ein wiederkehrender Satz
     kostet einen Tap statt einer halben Minute Tippen.
+
+---
+
+## UX-009 — Textverlust-Schutz und der Restpunkt aus VER-003
+
+**Was geprüft wird:** dass ein geschriebener Text nicht unbemerkt verschwindet
+— und dass ein aufgegebener Verordnungsentwurf nicht wieder auftaucht.
+
+### Textverlust-Schutz
+
+1. **Warnung vor dem Neuladen.** Einen Termin öffnen, „Behandlung
+   abschließen", einen Satz tippen — **nicht** speichern. Jetzt F5 drücken:
+   Der Browser fragt nach, ob die Seite wirklich verlassen werden soll. Den
+   Text speichern und erneut F5: keine Nachfrage mehr.
+2. **Auch beim Zurück.** Denselben Zustand herstellen und den Zurück-Knopf des
+   Browsers drücken: dieselbe Nachfrage.
+3. **Ohne Verbindung.** Netzwerk in den Entwicklerwerkzeugen auf „Offline"
+   stellen, dann einen Satz tippen: Über den Schaltflächen erscheint „Ohne
+   Verbindung lässt sich gerade nicht speichern. Der Text bleibt im Feld
+   stehen …" — zusätzlich zum gelben Streifen über der Kopfleiste. Netzwerk
+   wieder anschalten: Der Hinweis verschwindet, der Text steht noch da.
+4. **Dasselbe in Korrektur und Nachtrag.** Beide Formulare verhalten sich
+   gleich.
+5. **Kein heimlicher Zwischenspeicher.** Nach einem bestätigten Neuladen ist
+   der Text **weg** — das ist Absicht. Ein Entwurf, der nur im Browser läge,
+   wäre nicht gespeichert, würde aber so aussehen (ADR-001, ADR-015 Punkt 16).
+   Die Warnung ist der Schutz, nicht ein lokaler Speicher.
+
+### Restpunkt aus VER-003
+
+6. **Abstecher abbrechen über die Hauptnavigation.** Eine Verordnung erfassen
+   (`/patienten/…/verordnungen/neu`), Heilmittel „Aufgegebener Versuch"
+   eintragen, „Verordner:in anlegen" tippen — und dann **über die
+   Hauptnavigation** weggehen (etwa auf „Mein Tag"), nicht über „Abbrechen".
+7. **Neuer Versuch bleibt leer.** Innerhalb der nächsten Minuten erneut
+   „Verordnung erfassen" für dieselbe Person öffnen: Das Formular ist **leer**.
+   Vorher stand hier „Aufgegebener Versuch" — das war der dokumentierte
+   Restpunkt.
+8. **Der gewollte Weg funktioniert weiter.** Verordnung erfassen, etwas
+   eintragen, „Verordner:in anlegen", dort speichern **oder** abbrechen: Die
+   Eingaben stehen danach unverändert im Formular, und nach dem Speichern ist
+   die neue Verordner:in ausgewählt.
+9. **Sichtbar in der Adresszeile.** Beim Abstecher steht im
+   `zurueck`-Parameter ein `vorgang=…`. Diese Kennung unterscheidet zwei
+   Besuche derselben Seite; sie ist kein Geheimnis und trägt keine Daten.

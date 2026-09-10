@@ -483,14 +483,21 @@ export function itemsToFormValues(prescription: PrescriptionDetail): PositionEin
  * enthalten (Diagnose, Therapieziel), die nirgendwo länger liegen bleiben
  * sollen als für diesen einen Abstecher (§18, ADR-011).
  *
- * Gebunden an Vorgang **und** Benutzer (ANN-019): der Schlüssel verbindet den
- * Rücksprungpfad (je Patient und Verordnung eindeutig) mit der Benutzer-ID,
- * damit ein Kontowechsel im selben Tab nie den Entwurf einer anderen Person
- * übernimmt. Zusätzlich verfällt ein Entwurf nach `ENTWURF_MAX_ALTER_MS` von
- * selbst - ohne das würde ein abgebrochener Versuch (Verordner-Anlage
- * begonnen, dann über die Hauptnavigation verlassen statt über "Abbrechen")
- * bei einem viel späteren, unabhängigen neuen Versuch auf demselben Pfad
- * unbemerkt wieder auftauchen.
+ * Gebunden an Vorgang **und** Benutzer (ANN-019): der Schlüssel verbindet eine
+ * **Vorgangskennung** mit der Benutzer-ID, damit ein Kontowechsel im selben
+ * Tab nie den Entwurf einer anderen Person übernimmt.
+ *
+ * **Seit UX-009 ist die Vorgangskennung eine Zufallskennung je Abstecher, nicht
+ * mehr der Rücksprungpfad.** Das behebt den in ANN-019 dokumentierten
+ * Restpunkt: Wer die Verordner-Anlage über die Hauptnavigation verließ statt
+ * über „Abbrechen", ließ einen Entwurf liegen, der bei einem **unabhängigen
+ * neuen** Versuch auf demselben Pfad wieder auftauchte - der Pfad war für
+ * beide Versuche derselbe Schlüssel. Die Kennung entsteht je Besuch des
+ * Formulars neu und reist im Rücksprungpfad mit; ein neuer Besuch bringt eine
+ * neue Kennung mit und findet deshalb nichts vor. `ENTWURF_MAX_ALTER_MS`
+ * bleibt als zweite Grenze bestehen - jetzt aber, damit ein aufgegebener
+ * Entwurf nicht unbegrenzt im Arbeitsspeicher liegt, und nicht mehr als
+ * einziger Schutz gegen ein Wiederauftauchen.
  */
 export interface PrescriptionDraft {
   werte: Record<PrescriptionFeld, string>;
@@ -513,17 +520,40 @@ const ENTWURF_MAX_ALTER_MS = 30 * 60 * 1000;
 
 const entwurfSpeicher = new Map<string, EntwurfEintrag>();
 
-function entwurfSchluessel(rueckpfad: string, userId: string): string {
-  return `${userId} ${rueckpfad}`;
+function entwurfSchluessel(vorgang: string, userId: string): string {
+  return `${userId} ${vorgang}`;
+}
+
+/**
+ * Eine neue Vorgangskennung.
+ *
+ * `crypto.randomUUID` ist im Browser und in der Testumgebung vorhanden; der
+ * Rückfall deckt ältere Umgebungen ab. Die Kennung ist kein Geheimnis - sie
+ * unterscheidet nur zwei Besuche derselben Seite voneinander und steht sichtbar
+ * in der Adresszeile.
+ */
+export function neueVorgangskennung(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+/**
+ * Liest die Vorgangskennung aus einem Rücksprungpfad.
+ *
+ * Die Verordner-Anlage bekommt den Pfad, nicht die Kennung: So gibt es genau
+ * eine Quelle für beides, und der Rückweg trägt die Kennung von selbst mit.
+ */
+export function vorgangAusPfad(pfad: string): string | null {
+  const frage = pfad.indexOf('?');
+  if (frage < 0) return null;
+  return new URLSearchParams(pfad.slice(frage + 1)).get('vorgang');
 }
 
 /** Legt den Formularzustand vor dem Abstecher zur Verordner-Anlage ab (VER-003). */
-export function entwurfAblegen(
-  rueckpfad: string,
-  userId: string,
-  entwurf: PrescriptionDraft,
-): void {
-  entwurfSpeicher.set(entwurfSchluessel(rueckpfad, userId), { entwurf, angelegtAm: Date.now() });
+export function entwurfAblegen(vorgang: string, userId: string, entwurf: PrescriptionDraft): void {
+  entwurfSpeicher.set(entwurfSchluessel(vorgang, userId), { entwurf, angelegtAm: Date.now() });
 }
 
 /**
@@ -533,8 +563,8 @@ export function entwurfAblegen(
  * zweimal auf). Ein zu alter oder einer anderen Person gehörender Entwurf
  * gilt als nicht vorhanden.
  */
-export function entwurfAnsehen(rueckpfad: string, userId: string): PrescriptionDraft | undefined {
-  const eintrag = entwurfSpeicher.get(entwurfSchluessel(rueckpfad, userId));
+export function entwurfAnsehen(vorgang: string, userId: string): PrescriptionDraft | undefined {
+  const eintrag = entwurfSpeicher.get(entwurfSchluessel(vorgang, userId));
   if (!eintrag) return undefined;
   if (Date.now() - eintrag.angelegtAm > ENTWURF_MAX_ALTER_MS) return undefined;
   return eintrag.entwurf;
@@ -545,8 +575,8 @@ export function entwurfAnsehen(rueckpfad: string, userId: string): PrescriptionD
  * damit ein späterer, unabhängiger Besuch derselben Seite nichts mehr
  * vorfindet. Mehrfacher Aufruf ist unschädlich (React StrictMode).
  */
-export function entwurfEntfernen(rueckpfad: string, userId: string): void {
-  entwurfSpeicher.delete(entwurfSchluessel(rueckpfad, userId));
+export function entwurfEntfernen(vorgang: string, userId: string): void {
+  entwurfSpeicher.delete(entwurfSchluessel(vorgang, userId));
 }
 
 /**
@@ -555,11 +585,11 @@ export function entwurfEntfernen(rueckpfad: string, userId: string): void {
  * Entwurf einer anderen Person) passiert nichts.
  */
 export function entwurfVerordnerNachtragen(
-  rueckpfad: string,
+  vorgang: string,
   userId: string,
   verordnerId: string,
 ): void {
-  const schluessel = entwurfSchluessel(rueckpfad, userId);
+  const schluessel = entwurfSchluessel(vorgang, userId);
   const eintrag = entwurfSpeicher.get(schluessel);
   if (!eintrag) return;
   entwurfSpeicher.set(schluessel, {

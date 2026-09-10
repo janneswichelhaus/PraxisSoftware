@@ -826,8 +826,8 @@ ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10.
 |---|---|
 | Kategorie | Technik |
 | Herkunft | UI-000; die Roadmap führt die Verbindungsanzeige in UI-000 und UX-EPIC-001 ausdrücklich als `ANN` |
-| Status | **entschieden (Jannes) 2026-09-08**; der Textverlust-Schutz aus UX-EPIC-001 bleibt die offene Ergänzung |
-| Wiedervorlage | Jannes nach dem ersten Feldtag; UX-EPIC-001, wenn der Textverlust-Schutz dazukommt |
+| Status | **entschieden (Jannes) 2026-09-08**; der Textverlust-Schutz ist mit UX-009 (2026-09-10) dazugekommen |
+| Wiedervorlage | Jannes nach dem ersten Feldtag |
 
 **Annahme.** Die Verbindungsanzeige stützt sich **allein auf
 `navigator.onLine`** und die Ereignisse `online`/`offline` des Browsers. Es
@@ -855,9 +855,23 @@ Hinweis im Feldtag früh genug kommt, um einen Textverlust wirklich zu
 verhindern — verlässlich wird das erst mit dem Textverlust-Schutz aus
 UX-EPIC-001.
 
-**Verankerung.** `src/app/Verbindungsanzeige.tsx` (trägt die Kennung);
-eingehängt in `src/app/AppShell.tsx`; Tests in
-`src/app/Verbindungsanzeige.test.tsx`.
+**Verankerung.** `src/app/verbindung.ts` (`useIstVerbunden`, trägt die
+Kennung) — seit UX-009 eine eigene Datei, weil zwei Stellen den Zustand
+brauchen; `src/app/Verbindungsanzeige.tsx`, eingehängt in
+`src/app/AppShell.tsx`; seit UX-009 zusätzlich
+`src/features/documentation/Textverlustschutz.tsx`, der den Hinweis dort
+zeigt, wo gerade getippt wird. Tests in `src/app/Verbindungsanzeige.test.tsx`
+und `src/features/documentation/Textverlustschutz.test.tsx`.
+
+**Ergänzung durch UX-009 (2026-09-10).** Der Textverlust-Schutz, der hier als
+offener Punkt vermerkt war, besteht aus **zwei** Dingen und ausdrücklich nur
+diesen: einer Browserwarnung vor dem Verlassen der Seite, solange
+ungespeicherter Text im Feld steht, und dem Hinweis neben den Schaltflächen,
+wenn das Gerät getrennt ist. **Kein lokaler Zwischenspeicher** — ein Entwurf,
+der nur im Browser läge, wäre nicht gespeichert, würde aber so aussehen (ADR-001,
+ADR-015 Punkt 16). Die Unsicherheit aus dem Absatz oben bleibt damit teilweise
+bestehen: Die Warnung greift bei Neuladen, Schließen und Zurück, nicht bei
+einem Absturz oder einem leeren Akku.
 
 **Änderungspfad.** Zusätzliche Prüfung gegen den Server: eine Abfrage in
 `useIstVerbunden` ergänzen — Aufwand `klein`, aber **datenschutzrelevant**,
@@ -1073,16 +1087,31 @@ Abmeldung in `src/features/auth/SessionProvider.tsx`. Tests in
 auf mehrere Tabs ausdehnen: eigener Mechanismus (z. B. `BroadcastChannel`),
 grundsätzlich anderer Ansatz - Aufwand `mittel`.
 
-**Bekannter Restpunkt (offen, Folgeaufgabe in UX-EPIC-001).** Die Frist
-begrenzt den Schaden, behebt ihn aber nicht: Wer die Verordner:innen-Anlage
-über die **Hauptnavigation** verlässt statt über „Abbrechen", bricht den
-Abstecher ab - der Entwurf bleibt trotzdem bis zu 30 Minuten liegen und wird
-bei einem unabhängigen neuen Versuch auf demselben Rücksprungpfad wieder
-eingesetzt. Der Kommentar an `entwurfAnsehen` benennt genau diesen Fall als
-Grund für die Frist. Zu bauen ist das Verwerfen beim Verlassen des Abstechers;
-Aufwand `klein`, Test wie in `PrescriptionFormPage.entwurf.test.tsx` mit
-echtem Seitenwechsel. Bis dahin ist das Verhalten dokumentiert und
-zeitlich begrenzt, aber falsch.
+**Restpunkt behoben mit UX-009 (2026-09-10).** Der Restpunkt lautete: Wer die
+Verordner:innen-Anlage über die **Hauptnavigation** verließ statt über
+„Abbrechen", ließ einen Entwurf liegen, der bei einem unabhängigen neuen
+Versuch auf demselben Rücksprungpfad wieder eingesetzt wurde — der Pfad war
+für beide Versuche derselbe Schlüssel.
+
+Behoben, aber **anders als angekündigt**. Vorgesehen war, den Entwurf beim
+Verlassen des Abstechers zu verwerfen. Ein Aufräumen beim Aushängen der
+Komponente ist mit React StrictMode nicht verlässlich: Der Entwicklungsmodus
+hängt jede Komponente einmal aus und wieder ein, das Aufräumen liefe also
+sofort — und verwürfe den Entwurf, den es schützen soll. Stattdessen ist der
+Schlüssel jetzt eine **Vorgangskennung**: Sie entsteht bei jedem Besuch des
+Verordnungsformulars neu, reist im Rücksprungpfad mit und wird beim
+Wiederaufbau verbraucht. Ein unabhängiger neuer Besuch bringt eine neue
+Kennung mit und findet nichts vor — unabhängig davon, wie der vorige Versuch
+endete. Die 30-Minuten-Frist bleibt, jetzt aber als Grenze dafür, wie lange
+ein aufgegebener Entwurf im Arbeitsspeicher liegt, nicht mehr als einziger
+Schutz gegen ein Wiederauftauchen.
+
+Verankert in `src/features/prescriptions/api.ts` (`neueVorgangskennung`,
+`vorgangAusPfad`, `entwurfSchluessel`), verwendet in `PrescriptionFormPage.tsx`
+und `PrescriberFormPage.tsx`. Zwei Regressionstests in
+`PrescriptionFormPage.entwurf.test.tsx` mit echtem Seitenwechsel: der
+aufgegebene Versuch taucht nicht wieder auf, und zwei Abstecher werden
+auseinandergehalten.
 
 ### ANN-020 — Datenklasse und Frist der Textbausteine
 

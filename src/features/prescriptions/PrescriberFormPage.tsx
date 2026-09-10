@@ -16,6 +16,7 @@ import {
   prescriberSchemaForm,
   prescriberToFormValues,
   updatePrescriber,
+  vorgangAusPfad,
   type Prescriber,
   type PrescriberFeld,
   type PrescriberValues,
@@ -52,11 +53,12 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
       if (bestand) {
         await queryClient.invalidateQueries({ queryKey: ['prescriber', bestand.id] });
       } else if (userId) {
-        // Kommt die Anlage aus dem Verordnungsformular (VER-003), liegt dort
-        // ein Entwurf unter genau diesem Rücksprungpfad - die neue
-        // Verordner:in wird darin nachgetragen, sobald er existiert. Ohne
-        // Entwurf (Aufruf direkt aus der Verordnerkartei) ändert sich nichts.
-        entwurfVerordnerNachtragen(zurueck, userId, id);
+        // Kommt die Anlage aus dem Verordnungsformular (VER-003), trägt der
+        // Rücksprungpfad die Kennung des Abstechers - darunter liegt der
+        // Entwurf, und die neue Verordner:in wird darin nachgetragen. Ohne
+        // Kennung (Aufruf direkt aus der Verordnerkartei) ändert sich nichts.
+        const vorgang = vorgangAusPfad(zurueck);
+        if (vorgang) entwurfVerordnerNachtragen(vorgang, userId, id);
       }
       void navigate(zurueck, { replace: true });
     },
