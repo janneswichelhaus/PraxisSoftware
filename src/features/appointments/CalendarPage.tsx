@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -16,8 +17,11 @@ import {
   fetchLocations,
   istAusserhalbArbeitszeit,
   minutesOfDay,
+  schreibeTerminVorbelegung,
+  STANDARD_DAUER_MINUTEN,
   todayInTimeZone,
   updateAppointment,
+  type TerminVorbelegung,
 } from './api';
 import { CalendarGrid, type GitterEintrag, type GitterSpalte } from './CalendarGrid';
 import {
@@ -101,6 +105,7 @@ interface Verschiebung {
 
 export function CalendarPage({ user }: { user: CurrentUser }) {
   const [suche, setSuche] = useSearchParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const zone = user.organizationTimeZone;
   const darfAendern = canManageAppointments(user.roles);
@@ -291,6 +296,29 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     });
   }
 
+  /**
+   * Tippen auf eine freie Stelle: Zeit und Person stehen damit fest, die
+   * Patient:in noch nicht (UX-005). Die Auswahl passiert auf der naechsten
+   * Seite; hier wird nur uebersetzt, was die Spalte bedeutet.
+   *
+   * Das Ende wird auf 60 Minuten nach dem Beginn vorbelegt
+   * (PROJECT_PRINCIPLES.md 8.1). Das ist die Vorbelegung, nicht die
+   * Durchsetzung - die verlangt 8.1 serverseitig und sie kommt mit CAL-010a.
+   */
+  function freieZeit(ziel: { spalteId: string; startMinute: number }) {
+    const staffMemberId = p.ansicht === 'tag' ? ziel.spalteId : wochenPerson;
+    const datum = p.ansicht === 'tag' ? bereich.von : ziel.spalteId;
+
+    const vorbelegung: TerminVorbelegung = {
+      datum,
+      beginn: minuteZuZeit(ziel.startMinute),
+      ende: minuteZuZeit(ziel.startMinute + STANDARD_DAUER_MINUTEN),
+      art: 'home_visit',
+      ...(staffMemberId ? { person: staffMemberId } : {}),
+    };
+    void navigate(`/termine/neu${schreibeTerminVorbelegung(vorbelegung)}`);
+  }
+
   const laedt = termine.isPending || therapeuten.isPending;
 
   return (
@@ -298,6 +326,23 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title="Kalender"
         description={bereichsBeschriftung(p.ansicht, bereich.von, bereich.bis)}
+        actions={
+          // Der Weg ueber die Tastatur zu dem, was das Tippen auf eine freie
+          // Stelle abkuerzt (UX-005). Ohne Uhrzeit: die waehlt das Formular.
+          darfAendern ? (
+            <ButtonLink
+              to={`/termine/neu${schreibeTerminVorbelegung({
+                datum: p.datum,
+                art: 'home_visit',
+                ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
+                ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
+              })}`}
+              variant="secondary"
+            >
+              Termin anlegen
+            </ButtonLink>
+          ) : null
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -428,6 +473,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           raster={user.appointmentGridMinutes}
           ziehbarErlaubt={darfAendern && !verschieben.isPending}
           onVerschieben={ablegen}
+          onFreieZeit={darfAendern ? freieZeit : undefined}
           beschriftung={
             p.ansicht === 'tag'
               ? 'Tagesansicht nach behandelnder Person'

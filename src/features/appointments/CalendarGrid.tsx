@@ -1,6 +1,14 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { STUNDEN_HOEHE, kachelBreite, minuteZuPixel, spalten, type Zeitband } from './calendar';
+import {
+  STUNDEN_HOEHE,
+  aufRaster,
+  kachelBreite,
+  minuteZuPixel,
+  pixelZuMinute,
+  spalten,
+  type Zeitband,
+} from './calendar';
 import { appointmentStatusLabels, appointmentTypeLabels, type CalendarEntry } from './api';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 
@@ -68,6 +76,7 @@ export function CalendarGrid({
   raster,
   ziehbarErlaubt,
   onVerschieben,
+  onFreieZeit,
   beschriftung,
 }: {
   spaltenModell: GitterSpalte[];
@@ -77,6 +86,14 @@ export function CalendarGrid({
   /** Ohne Änderungsrecht wird gar nicht erst gezogen. */
   ziehbarErlaubt: boolean;
   onVerschieben: (ziel: { terminId: string; spalteId: string; startMinute: number }) => void;
+  /**
+   * Tippen auf eine freie Stelle einer Spalte (UX-005).
+   *
+   * Ohne Angabe passiert nichts - die freie Fläche bleibt dann schlicht
+   * Hintergrund. Der Tap ist eine Abkürzung für Zeigegeräte; der Weg über die
+   * Tastatur ist die Schaltfläche „Termin anlegen" über dem Gitter.
+   */
+  onFreieZeit?: ((ziel: { spalteId: string; startMinute: number }) => void) | undefined;
   beschriftung: string;
 }) {
   const spaltenRefs = useRef(new Map<string, HTMLElement>());
@@ -176,17 +193,36 @@ export function CalendarGrid({
                 if (el) spaltenRefs.current.set(s.id, el);
                 else spaltenRefs.current.delete(s.id);
               }}
-              className="border-line relative border-l"
+              className={`border-line relative border-l ${onFreieZeit ? 'cursor-copy' : ''}`}
               style={{ height: `${hoehe}px` }}
               role="gridcell"
               aria-label={s.titel}
+              // Nur die freie Fläche: eine Kachel liegt darüber und fängt ihren
+              // eigenen Klick ab. Der Hintergrund (Arbeitszeitbänder,
+              // Stundenlinien) ist `pointer-events-none`, damit ein Tipp
+              // darauf hier ankommt und nicht ins Leere geht.
+              onClick={
+                onFreieZeit
+                  ? (event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (ziehen.klickUnterdruecken()) return;
+                      const kasten = event.currentTarget.getBoundingClientRect();
+                      const roh = pixelZuMinute(event.clientY - kasten.top, fenster.vonMinute);
+                      const minute = Math.max(
+                        fenster.vonMinute,
+                        Math.min(fenster.bisMinute, aufRaster(roh, raster)),
+                      );
+                      onFreieZeit({ spalteId: s.id, startMinute: minute });
+                    }
+                  : undefined
+              }
             >
               {/* Arbeitszeit als Hintergrund - Darstellung, keine Prüfung. */}
               {s.baender.map((b, i) => (
                 <div
                   key={i}
                   aria-hidden="true"
-                  className="bg-surface-sunken absolute inset-x-0"
+                  className="bg-surface-sunken pointer-events-none absolute inset-x-0"
                   style={{
                     top: `${minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute)}px`,
                     height: `${minuteZuPixel(Math.min(b.bisMinute, fenster.bisMinute), fenster.vonMinute) - minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute)}px`,
@@ -199,7 +235,7 @@ export function CalendarGrid({
                 <div
                   key={m}
                   aria-hidden="true"
-                  className="border-line absolute inset-x-0 border-t"
+                  className="border-line pointer-events-none absolute inset-x-0 border-t"
                   style={{ top: `${minuteZuPixel(m, fenster.vonMinute)}px` }}
                 />
               ))}

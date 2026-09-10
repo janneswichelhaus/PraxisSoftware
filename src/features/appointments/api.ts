@@ -603,3 +603,15 @@ export async function reopenAppointment(
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht wieder geöffnet werden.');
 }
+
+/**
+ * Vorbelegte Länge eines neu angelegten Terminfensters in Minuten.
+ *
+ * `PROJECT_PRINCIPLES.md` §8.1: Ein angebotener Behandlungstermin MUSS ein
+ * Zeitfenster von 60 Minuten haben, die Dokumentation eingeschlossen. Diese
+ * Konstante ist die **Vorbelegung** im Formular - §8.1 sagt ausdrücklich, dass
+ * eine Vorbelegung allein die Anforderung nicht erfüllt: die serverseitige
+ * Durchsetzung kommt mit CAL-010a. Bis dahin ist die Länge frei änderbar, und
+ * Bestandstermine bleiben unangetastet.
+ */
+export const STANDARD_DAUER_MINUTEN = 60;

@@ -15,6 +15,7 @@ import {
 } from '@/features/prescriptions/PrescriptionFormPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
+import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentStartPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
@@ -127,6 +128,9 @@ export function AuthenticatedRoutes({
           {showAppointments ? (
             <>
               <Route path="/kalender" element={<CalendarPage user={user} />} />
+              {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
+                  nicht - aus dem Kalender heraus (UX-005). */}
+              <Route path="/termine/neu" element={<NewAppointmentStartPage />} />
               <Route
                 path="/patienten/:patientId/termine/neu"
                 element={<NewAppointmentPage user={user} />}

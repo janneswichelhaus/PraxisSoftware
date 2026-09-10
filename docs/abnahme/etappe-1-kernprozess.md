@@ -571,3 +571,36 @@ dass die Suche nicht dazu taugt, sich den Bestand anzusehen.
    **Zielwert der Story:** vom Kalender in eine beliebige Akte in **einem**
    Feld und **einem** Tap (vorher: Bereichswechsel, Liste laden, filtern,
    tippen).
+
+---
+
+## UX-005 — Tap auf freie Zeit im Kalender
+
+**Was geprüft wird:** dass ein Termin dort entsteht, wo man ihn sieht — auf
+der freien Stelle im Kalender.
+
+1. **Tagesansicht.** `/kalender?ansicht=tag` öffnen. Auf eine freie Stelle in
+   der Spalte einer Person tippen. Es öffnet sich „Termin anlegen" mit der
+   Vorbelegung: Datum der Ansicht, die getippte Uhrzeit (auf das Praxisraster
+   gerundet), **60 Minuten** Länge, Terminart Hausbesuch, die Person der
+   Spalte.
+2. **Person wählen.** Auf derselben Seite steht ein Suchfeld „Patient:in
+   suchen". Nach Auswahl geht es in das gewohnte Terminformular — mit
+   derselben Vorbelegung. Speichern: der Termin steht an der getippten Stelle.
+3. **Wochenansicht.** `/kalender?ansicht=woche` öffnen und auf eine freie
+   Stelle tippen: das **Datum** der Spalte wird übernommen, die Person ist die
+   der Wochenansicht.
+4. **Ein bestehender Termin bleibt ein Link.** Auf eine Terminkachel tippen:
+   es öffnet sich wie bisher die Detailansicht, **nicht** die Terminanlage.
+5. **Nach dem Ziehen kein Fehlklick.** Eine Kachel verschieben und loslassen:
+   danach öffnet sich weder die Detailansicht noch die Terminanlage.
+6. **Tastatur.** Über dem Kalender steht die Schaltfläche „Termin anlegen".
+   Sie führt zur selben Seite, mit Datum und Person der Ansicht, aber **ohne**
+   Uhrzeit — die wählt das Formular. Damit ist die Funktion ohne Zeigegerät
+   erreichbar; der Tap ist die Abkürzung, nicht der einzige Weg.
+7. **Die 60 Minuten sind eine Vorbelegung.** Sie lassen sich im Formular
+   ändern, und der Server weist eine andere Länge **noch nicht** ab — die
+   Durchsetzung nach `PROJECT_PRINCIPLES.md` §8.1 kommt mit **CAL-010a**.
+8. **Am Handy** (~375 px): Der Kalender scrollt waagerecht wie bisher; ein
+   Tipp auf freie Fläche funktioniert auch nach dem Scrollen und trifft die
+   richtige Spalte.

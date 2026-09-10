@@ -34,7 +34,20 @@ function alsTreffer(patient: PatientSearchHit): Suchtreffer {
   };
 }
 
-export function Patientensuche() {
+export function Patientensuche({
+  label = 'Patient:in suchen',
+  labelSichtbar = false,
+  onAuswahl,
+}: {
+  label?: string;
+  labelSichtbar?: boolean;
+  /**
+   * Was mit dem Treffer geschieht. Ohne Angabe öffnet sich die Akte - das ist
+   * der Zweck des Feldes in der Kopfleiste. Beim Anlegen eines Termins wählt
+   * dasselbe Feld dagegen die Person für das Formular aus (UX-005).
+   */
+  onAuswahl?: (patientId: string) => void;
+} = {}) {
   const navigate = useNavigate();
   const [eingabe, setEingabe] = useState('');
   const [begriff, setBegriff] = useState('');
@@ -70,7 +83,8 @@ export function Patientensuche() {
 
   return (
     <SearchCombobox
-      label="Patient:in suchen"
+      label={label}
+      labelSichtbar={labelSichtbar}
       placeholder="Name suchen …"
       wert={eingabe}
       onChange={setEingabe}
@@ -79,6 +93,10 @@ export function Patientensuche() {
       onAuswahl={(gewaehlt) => {
         setEingabe('');
         setBegriff('');
+        if (onAuswahl) {
+          onAuswahl(gewaehlt.id);
+          return;
+        }
         void navigate(`/patienten/${gewaehlt.id}`);
       }}
     />

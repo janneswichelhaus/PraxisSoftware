@@ -3,7 +3,17 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as SchedulingApi from '@/features/scheduling/api';
+import type * as RouterModule from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
+
+const navigate = vi.fn();
+
+// Nur useNavigate wird ersetzt: useSearchParams traegt die Kalenderparameter
+// und muss echt bleiben.
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof RouterModule>();
+  return { ...actual, useNavigate: () => navigate };
+});
 
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
 const STAFF_TIM = '55555555-5555-4555-8555-000000000004';
@@ -116,6 +126,7 @@ describe('CalendarPage', () => {
     updateAppointment.mockReset();
     fetchWorkingHours.mockReset();
     fetchWorkingHourExceptions.mockReset();
+    navigate.mockReset();
 
     fetchWorkingHours.mockResolvedValue([]);
     fetchWorkingHourExceptions.mockResolvedValue([]);
@@ -678,6 +689,64 @@ describe('CalendarPage', () => {
 
       // Ohne die Erweiterung begaenne die Achse erst um 07:00.
       expect(screen.getByText('06:00')).toBeInTheDocument();
+    });
+  });
+
+  describe('UX-005: Tap auf freie Zeit', () => {
+    it('fuehrt aus der Tagesansicht mit Person, Tag und Uhrzeit in die Terminanlage', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.pathname).toBe('/termine/neu');
+      expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
+      expect(ziel.searchParams.get('person')).toBe(STAFF_ANNA);
+      expect(ziel.searchParams.get('art')).toBe('home_visit');
+      // Vorbelegtes Zeitfenster von 60 Minuten (PROJECT_PRINCIPLES.md 8.1).
+      expect(ziel.searchParams.get('beginn')).toBe('07:00');
+      expect(ziel.searchParams.get('ende')).toBe('08:00');
+    });
+
+    it('fuehrt aus der Wochenansicht mit dem Tag der Spalte in die Terminanlage', async () => {
+      rendern('/kalender?ansicht=woche&datum=2027-05-12&person=' + STAFF_ANNA);
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      // Spalten sind hier Wochentage; die Beschriftung ist der Kurzname.
+      fireEvent.click(screen.getAllByRole('gridcell')[0]!);
+
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.searchParams.get('datum')).toBe('2027-05-10');
+      expect(ziel.searchParams.get('person')).toBe(STAFF_ANNA);
+    });
+
+    it('loest nichts aus, wenn auf einen bestehenden Termin getippt wird', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(kachel);
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('bietet denselben Weg als Schaltflaeche an - ohne Uhrzeit', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const link = await screen.findByRole('link', { name: 'Termin anlegen' });
+
+      const ziel = new URL(link.getAttribute('href')!, 'http://test');
+      expect(ziel.pathname).toBe('/termine/neu');
+      expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
+      expect(ziel.searchParams.has('beginn')).toBe(false);
+    });
+
+    it('bietet einem Patientenkonto weder Tap noch Schaltflaeche', async () => {
+      renderWithProviders(
+        <CalendarPage user={testUser(['patient'], 'Max Mustermann')} />,
+        '/kalender?ansicht=tag&datum=2027-05-12',
+      );
+      await waitFor(() =>
+        expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull(),
+      );
     });
   });
 });
