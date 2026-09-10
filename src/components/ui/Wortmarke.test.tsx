@@ -23,6 +23,14 @@ describe('Wortmarke', () => {
     expect(bild).toHaveAttribute('width', '105');
   });
 
+  it('laesst sich in einer Flex-Zeile nicht stauchen', () => {
+    // Ohne shrink-0 koennte ein langer Nachbartext die Marke zusammendruecken.
+    render(<Wortmarke className="mr-2" />);
+    const bild = screen.getByRole('img', { name: 'Own Motion' });
+    expect(bild.className).toContain('shrink-0');
+    expect(bild.className).toContain('mr-2');
+  });
+
   it('verweigert eine Hoehe unter der Mindestgroesse', () => {
     // 16 px waere die Groesse, in der die zweizeilige Marke auseinanderfaellt.
     expect(() => render(<Wortmarke hoehe={16} />)).toThrow(/Mindestgröße/);

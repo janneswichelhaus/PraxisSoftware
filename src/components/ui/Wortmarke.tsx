@@ -47,7 +47,13 @@ export function Wortmarke({
       height={hoehe}
       width={Math.round(hoehe * MARKE_SEITENVERHAELTNIS)}
       style={{ height: hoehe, width: 'auto' }}
-      className={className}
+      // `shrink-0` gehört zur Marke, nicht zur aufrufenden Stelle: in einer
+      // Flex-Zeile neben einem langen Text würde die Marke sonst gestaucht,
+      // und Dehnen ist nach `marke/README.md` verboten. Heute hält das
+      // Seitenverhältnis auch ohne die Klasse, weil ein Bild mit eigenen Maßen
+      // nicht unter seine Inhaltsgröße schrumpft — darauf soll sich aber keine
+      // künftige Kopfzeile verlassen müssen.
+      className={`shrink-0 ${className}`.trim()}
     />
   );
 }
