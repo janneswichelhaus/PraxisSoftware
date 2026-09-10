@@ -64,6 +64,26 @@ export async function resetDatabase(): Promise<void> {
   }
 }
 
+/**
+ * Wie resetDatabase, aber ohne die Termine des Seeds.
+ *
+ * Der Seed enthaelt seit UX-001 einen Hausbesuchstag fuer `current_date`,
+ * damit die Tagesliste bei der lokalen Abnahme etwas zu zeigen hat. Tests, die
+ * ihren Terminbestand selbst aufbauen und ueber das Gesamtergebnis einer
+ * Abfrage urteilen, brauchen eine leere Ausgangslage - sonst zaehlen sie die
+ * Seed-Termine mit, und ein eigener Termin am selben Tag scheitert an der
+ * Ueberschneidungssperre.
+ *
+ * Bewusst kein geaenderter Standard von resetDatabase: welche Tests vom Seed
+ * ausgehen und welche nicht, soll an der Aufrufstelle sichtbar sein.
+ */
+export async function resetDatabaseOhneTermine(): Promise<void> {
+  await resetDatabase();
+  await asPostgres('delete from public.treatment_note_versions');
+  await asPostgres('delete from public.treatment_notes');
+  await asPostgres('delete from public.appointments');
+}
+
 export interface QueryResultRows<T> {
   rows: T[];
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { Section } from '@/components/ui/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
@@ -17,14 +18,15 @@ import {
 import {
   canManageAppointments,
   canReadPatientDirectory,
+  canWriteTreatmentNote,
   isStaff,
   type CurrentUser,
 } from '@/features/session/types';
 import { useVorschau } from '@/features/preview/vorschauContext';
 import { vorschauidentitaet, darfEntscheiden } from '@/features/preview/identitaet';
-import { Abschnitt } from '@/features/preview/ui';
 import { formatDatum } from '@/features/preview/format';
-import { fetchOwnStaffMemberId } from './api';
+import { fetchDayPlan, fetchOwnStaffMemberId, istOffen, nachUhrzeit } from './api';
+import { Tageskarte } from './Tagesliste';
 
 /**
  * Mein Tag - der persönliche Einstieg.
@@ -34,9 +36,10 @@ import { fetchOwnStaffMemberId } from './api';
  * aus echten Terminen und - klar getrennt - den Hinweisen aus den noch nicht
  * angebundenen Bereichen.
  *
- * Sie führt keine zweite Terminliste: die Besuche kommen aus demselben
- * Kalender wie im Bereich „Touren & Termine", nur auf die eigene Person und
- * den heutigen Tag eingegrenzt.
+ * Seit UX-001 stehen die eigenen Besuche oben als Tagesliste mit Adresse,
+ * Rufnummer und Zugangshinweis; sie kommen aus einem eigenen, engeren
+ * Lesepfad (`list_day_plan`), nicht aus dem Kalender. Der Tagesplan des Teams
+ * darunter bleibt die Kalenderabfrage - er braucht keine Adressen.
  */
 
 function fruehesteZuerst(a: CalendarEntry, b: CalendarEntry): number {
@@ -44,11 +47,11 @@ function fruehesteZuerst(a: CalendarEntry, b: CalendarEntry): number {
 }
 
 /**
- * Kurze Ortsangabe eines Termins.
+ * Kurze Ortsangabe eines Termins im Tagesplan des Teams.
  *
- * Die Kalenderabfrage liefert bewusst keine Besuchsadresse - für die
- * Tagesübersicht ist sie nicht erforderlich (ADR-004, Datenminimierung). Die
- * vollständige Adresse steht in der Termindetailansicht.
+ * Die Kalenderabfrage liefert bewusst keine Besuchsadresse - für die Übersicht
+ * über den Tag des Teams ist sie nicht erforderlich (ADR-004,
+ * Datenminimierung). Die eigene Tagesliste oben hat sie.
  */
 function ortKurz(termin: CalendarEntry): string {
   if (termin.appointment_type === 'video') return 'Videotermin';
@@ -97,6 +100,91 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
   );
 }
 
+/**
+ * Die eigene Tagesliste: offene Besuche oben, erledigte zusammengefaltet.
+ *
+ * „Offen" heißt: der Besuch steht noch aus, oder er ist abgeschlossen und die
+ * Dokumentation ist noch nicht finalisiert (siehe `istOffen`). Erledigtes
+ * verschwindet nicht - es liegt hinter einem Aufklapper, damit die Liste am
+ * Nachmittag nicht doppelt so lang ist wie am Morgen.
+ */
+function MeineTagesliste({
+  datum,
+  staffMemberId,
+  darfDokumentieren,
+}: {
+  datum: string;
+  staffMemberId: string;
+  darfDokumentieren: boolean;
+}) {
+  const {
+    data: termine,
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: ['day-plan', datum, staffMemberId],
+    queryFn: () => fetchDayPlan(datum, staffMemberId),
+    retry: false,
+  });
+
+  if (isPending) return <LoadingState label="Tagesliste wird geladen …" />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Die Tagesliste konnte nicht geladen werden."
+        description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+      />
+    );
+  }
+
+  const sortiert = [...termine].sort(nachUhrzeit);
+  const offen = sortiert.filter((termin) => istOffen(termin, darfDokumentieren));
+  const erledigt = sortiert.filter((termin) => !istOffen(termin, darfDokumentieren));
+
+  return (
+    <>
+      <Section
+        titel={offen.length > 0 ? `Offen heute (${offen.length})` : 'Offen heute'}
+        hinweis="Ihre Besuche mit Anschrift, Rufnummer und Zugangshinweis."
+      >
+        {offen.length === 0 ? (
+          <EmptyState
+            title="Heute ist nichts mehr offen"
+            description={
+              erledigt.length > 0
+                ? 'Alle Besuche des Tages sind erledigt.'
+                : 'Für heute sind Ihnen keine Termine zugeordnet.'
+            }
+          />
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {offen.map((termin) => (
+              <li key={termin.id}>
+                <Tageskarte termin={termin} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      {erledigt.length > 0 ? (
+        <details className="border-line mt-6 border-t pt-3">
+          <summary className="text-ink-muted hover:text-ink flex min-h-11 cursor-pointer items-center text-sm">
+            Erledigt heute ({erledigt.length})
+          </summary>
+          <ul className="mt-3 flex flex-col gap-3">
+            {erledigt.map((termin) => (
+              <li key={termin.id}>
+                <Tageskarte termin={termin} />
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </>
+  );
+}
+
 export function MyDayPage({ user }: { user: CurrentUser }) {
   const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
   const heute = todayInTimeZone(zeitzone);
@@ -123,9 +211,6 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   });
 
   const alleHeute = [...(termine ?? [])].sort(fruehesteZuerst);
-  const eigeneHeute = eigeneStaffId
-    ? alleHeute.filter((termin) => termin.staff_member_id === eigeneStaffId)
-    : [];
 
   if (!praxisrolle) {
     return (
@@ -134,12 +219,12 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           title={`${greeting()}, ${firstName(user.profile.display_name)}`}
           description={formatDatum(heute)}
         />
-        <Abschnitt titel="Ihr Zugang">
+        <Section titel="Ihr Zugang">
           <p className="text-ink-muted max-w-prose text-[0.9375rem]">
             Sie sehen ausschließlich Ihre eigenen Daten. Weitere Bereiche des Patientenportals
             werden schrittweise ergänzt.
           </p>
-        </Abschnitt>
+        </Section>
       </>
     );
   }
@@ -151,6 +236,14 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         description={formatDatum(heute)}
       />
 
+      {darfTermine && eigeneStaffId ? (
+        <MeineTagesliste
+          datum={heute}
+          staffMemberId={eigeneStaffId}
+          darfDokumentieren={canWriteTreatmentNote(user.roles)}
+        />
+      ) : null}
+
       {darfTermine ? (
         <>
           {isPending ? <LoadingState label="Termine werden geladen …" /> : null}
@@ -161,38 +254,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             />
           ) : null}
 
-          {eigeneStaffId ? (
-            <Abschnitt
-              titel="Meine Besuche heute"
-              beschreibung="Aus dem Kalender der Praxis – keine zweite Terminliste."
-              aktionen={
-                <Link
-                  to={`/kalender?ansicht=tag&datum=${heute}`}
-                  className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center text-[0.9375rem] font-medium"
-                >
-                  Im Kalender öffnen →
-                </Link>
-              }
-            >
-              {termine && eigeneHeute.length === 0 ? (
-                <EmptyState
-                  title="Heute keine eigenen Besuche"
-                  description="Der Tagesplan des Teams steht darunter."
-                />
-              ) : (
-                <ul className="divide-line border-line divide-y border-y">
-                  {eigeneHeute.map((termin) => (
-                    <Terminzeile key={termin.id} termin={termin} zeitzone={zeitzone} />
-                  ))}
-                </ul>
-              )}
-            </Abschnitt>
-          ) : null}
-
-          <Abschnitt
+          <Section
             titel="Tagesplan des Teams"
-            beschreibung="Alle Besuche des heutigen Tages."
-            aktionen={
+            hinweis="Alle Besuche des heutigen Tages."
+            aktion={
               <Link
                 to={`/kalender?ansicht=tag&datum=${heute}`}
                 className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center text-[0.9375rem] font-medium"
@@ -210,7 +275,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
                 ))}
               </ul>
             )}
-          </Abschnitt>
+          </Section>
         </>
       ) : null}
 
@@ -232,9 +297,12 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
 /**
  * Der Teil von „Mein Tag", dessen Hintergrundfunktionen noch fehlen.
  *
- * Bewusst als eigener, sichtbar abgesetzter Block unter den echten Terminen:
- * Wer die Seite morgens öffnet, muss auf einen Blick unterscheiden können,
- * worauf er sich verlassen kann.
+ * Seit UX-001 zusammengefaltet: Der Tag beginnt mit dem, was echt ist. Die
+ * fünf Vorschaukarten standen bisher als erstes im Blickfeld, sobald man die
+ * eigene Tagesliste durchgescrollt hatte - auf dem Telefon war die Hälfte der
+ * Seite Attrappe. Sie bleiben erreichbar, aber sie drängen sich nicht mehr
+ * auf. Der Aufklapper trägt die Kennzeichnung „Vorschau" auch im
+ * zugeklappten Zustand.
  */
 function MeinTagVorschau({ user }: { user: CurrentUser }) {
   const { zustand } = useVorschau();
@@ -263,108 +331,118 @@ function MeinTagVorschau({ user }: { user: CurrentUser }) {
 
   return (
     <section className="border-line mt-10 border-t pt-6">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Badge ton="warnung">Vorschau</Badge>
-        <h2 className="text-ink text-[1.0625rem] font-semibold tracking-[-0.01em]">
-          Betrieb, Wege und Team
-        </h2>
-      </div>
-      <p className="text-ink-muted mb-4 max-w-prose text-sm">
-        Diese Bereiche sind noch nicht angebunden. Angezeigt werden synthetische Daten der
-        Demoperson <strong className="text-ink">{ich.name}</strong>
-        {identitaet.ueberNamen ? '' : ' (zur Rolle passend gewählt)'}. Es entstehen keine echten
-        Vorgänge.
-      </p>
+      <details>
+        {/* Die Überschrift bleibt eine Überschrift: `summary` darf nach dem
+            HTML-Inhaltsmodell ein Überschriftenelement enthalten, und nur so
+            steht der Block weiter in der Gliederung, die Vorlesesoftware
+            ansteuert. */}
+        <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-2">
+          <Badge ton="warnung">Vorschau</Badge>
+          <h2 className="text-ink text-[1.0625rem] font-semibold tracking-[-0.01em]">
+            Betrieb, Wege und Team
+          </h2>
+          <span className="text-ink-muted text-sm">– noch nicht angebunden</span>
+        </summary>
 
-      <div className="grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3">
-        <Card>
-          <p className="text-ink-muted text-sm">Mein Rad heute</p>
-          <p className="text-ink mt-1 text-[0.9375rem] font-medium">
-            {meinRad ? meinRad.name : 'Kein Rad zugeordnet'}
-          </p>
-          {meinRad ? (
-            <p className="text-ink-muted mt-1 text-sm">
-              {meinRad.schluesselInhaber
-                ? `Schlüssel bei ${meinRad.schluesselInhaber}`
-                : 'Schlüssel im Tresor'}
-            </p>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-3">
-            <Link
-              to="/betrieb/flotte"
-              className="text-accent hover:text-accent-hover text-sm font-medium"
-            >
-              Zur Radflotte →
-            </Link>
-            <Link
-              to="/betrieb/flotte/panne"
-              className="text-danger text-sm font-medium hover:underline"
-            >
-              Panne melden
-            </Link>
-          </div>
-        </Card>
+        <p className="text-ink-muted mt-4 mb-4 max-w-prose text-sm">
+          Diese Bereiche sind noch nicht angebunden. Angezeigt werden synthetische Daten der
+          Demoperson <strong className="text-ink">{ich.name}</strong>
+          {identitaet.ueberNamen ? '' : ' (zur Rolle passend gewählt)'}. Es entstehen keine echten
+          Vorgänge.
+        </p>
 
-        <Card>
-          <p className="text-ink-muted text-sm">Meine Wege heute</p>
-          <p className="text-ink mt-1 text-[0.9375rem] font-medium">
-            {meineTour ? `${meineTour.stopps.length} Stopps` : 'Keine Tour hinterlegt'}
-          </p>
-          <p className="text-ink-muted mt-1 text-sm">Wegzeiten sind geschätzt, nicht berechnet.</p>
-          <Link
-            to="/touren"
-            className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
-          >
-            Zur Besuchsfolge →
-          </Link>
-        </Card>
-
-        <Card>
-          <p className="text-ink-muted text-sm">Meine Anträge</p>
-          <p className="text-ink mt-1 text-[0.9375rem] font-medium">
-            {meineOffenen === 0
-              ? 'Nichts offen'
-              : `${meineOffenen} offen${meineOffenen === 1 ? '' : 'e'}`}
-          </p>
-          <p className="text-ink-muted mt-1 text-sm">Urlaub, Zeitkonto und Erstattungen.</p>
-          <Link
-            to="/betrieb/urlaub"
-            className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
-          >
-            Zu meinen Anträgen →
-          </Link>
-        </Card>
-
-        {zuEntscheiden > 0 ? (
+        <div className="grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3">
           <Card>
-            <p className="text-ink-muted text-sm">Zu entscheiden</p>
+            <p className="text-ink-muted text-sm">Mein Rad heute</p>
             <p className="text-ink mt-1 text-[0.9375rem] font-medium">
-              {zuEntscheiden} Vorgang{zuEntscheiden === 1 ? '' : 'e'}
+              {meinRad ? meinRad.name : 'Kein Rad zugeordnet'}
             </p>
-            <p className="text-ink-muted mt-1 text-sm">Urlaubsanträge und Erstattungen.</p>
+            {meinRad ? (
+              <p className="text-ink-muted mt-1 text-sm">
+                {meinRad.schluesselInhaber
+                  ? `Schlüssel bei ${meinRad.schluesselInhaber}`
+                  : 'Schlüssel im Tresor'}
+              </p>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Link
+                to="/betrieb/flotte"
+                className="text-accent hover:text-accent-hover text-sm font-medium"
+              >
+                Zur Radflotte →
+              </Link>
+              <Link
+                to="/betrieb/flotte/panne"
+                className="text-danger text-sm font-medium hover:underline"
+              >
+                Panne melden
+              </Link>
+            </div>
+          </Card>
+
+          <Card>
+            <p className="text-ink-muted text-sm">Meine Wege heute</p>
+            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+              {meineTour ? `${meineTour.stopps.length} Stopps` : 'Keine Tour hinterlegt'}
+            </p>
+            <p className="text-ink-muted mt-1 text-sm">
+              Wegzeiten sind geschätzt, nicht berechnet.
+            </p>
+            <Link
+              to="/touren"
+              className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
+            >
+              Zur Besuchsfolge →
+            </Link>
+          </Card>
+
+          <Card>
+            <p className="text-ink-muted text-sm">Meine Anträge</p>
+            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+              {meineOffenen === 0
+                ? 'Nichts offen'
+                : `${meineOffenen} offen${meineOffenen === 1 ? '' : 'e'}`}
+            </p>
+            <p className="text-ink-muted mt-1 text-sm">Urlaub, Zeitkonto und Erstattungen.</p>
             <Link
               to="/betrieb/urlaub"
               className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
             >
-              Freigaben öffnen →
+              Zu meinen Anträgen →
             </Link>
           </Card>
-        ) : null}
 
-        <Card>
-          <p className="text-ink-muted text-sm">Team</p>
-          <p className="text-ink mt-1 text-[0.9375rem] font-medium">
-            {ungelesen === 0 ? 'Nichts Ungelesenes' : `${ungelesen} ungelesen`}
-          </p>
-          <p className="text-ink-muted mt-1 text-sm">Kanäle und Direktnachrichten.</p>
-          <Link
-            to="/team"
-            className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
-          >
-            Zum Team →
-          </Link>
-        </Card>
-      </div>
+          {zuEntscheiden > 0 ? (
+            <Card>
+              <p className="text-ink-muted text-sm">Zu entscheiden</p>
+              <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+                {zuEntscheiden} Vorgang{zuEntscheiden === 1 ? '' : 'e'}
+              </p>
+              <p className="text-ink-muted mt-1 text-sm">Urlaubsanträge und Erstattungen.</p>
+              <Link
+                to="/betrieb/urlaub"
+                className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
+              >
+                Freigaben öffnen →
+              </Link>
+            </Card>
+          ) : null}
+
+          <Card>
+            <p className="text-ink-muted text-sm">Team</p>
+            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+              {ungelesen === 0 ? 'Nichts Ungelesenes' : `${ungelesen} ungelesen`}
+            </p>
+            <p className="text-ink-muted mt-1 text-sm">Kanäle und Direktnachrichten.</p>
+            <Link
+              to="/team"
+              className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
+            >
+              Zum Team →
+            </Link>
+          </Card>
+        </div>
+      </details>
     </section>
   );
 }

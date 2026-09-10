@@ -424,3 +424,44 @@ etwas, das vorher ging und jetzt nicht mehr.
 8. **Am Handy** (~375 px): Akte, Kalender, Stammdatenformular und
    Verordnungsformular einmal durchscrollen. Nichts scrollt seitwärts, alle
    Tippziele bleiben mindestens 44 px.
+
+---
+
+## UX-001 — Tagesliste des Hausbesuchstags
+
+**Was geprüft wird:** dass „Mein Tag" alles trägt, was an der Wohnungstür
+gebraucht wird, und dass „offen" und „erledigt" auseinandergehen.
+
+**Vorbereitung:** `pnpm dlx supabase db reset` — der Seed legt für **heute**
+einen Hausbesuchstag von **Anna Beispiel** an (drei Hausbesuche und einen
+Praxistermin bei Jannes). Anmelden als `anna.beispiel@praxis.invalid`.
+
+1. **Offen heute.** Startseite (`/`). Ganz oben steht „Offen heute (2)": der
+   ausstehende Hausbesuch um 09:00 und der um 10:30 abgeschlossene, der noch
+   keine Dokumentation hat. Der zweite trägt den Grund als Text:
+   „Dokumentation fehlt".
+2. **Anschrift und Zugang.** Die Karte um 09:00 zeigt „Beispielstrasse 12",
+   „72070 Tuebingen", darunter „Zugang: 2. OG links, Klingel …" und
+   „Besonderheit: Hund im Flur …".
+3. **Anrufen ist ein Tap.** Auf der Karte stehen zwei Schaltflächen „Mobil …"
+   und „Telefon …". Am Handy öffnet ein Tipp darauf die Telefon-App mit der
+   vorgewählten Nummer; am Rechner fragt der Browser, womit `tel:` geöffnet
+   werden soll. Beides ist richtig — die Nummer darf nicht bloß dastehen.
+4. **Erledigtes drängt sich nicht auf.** Unter der Liste steht der Aufklapper
+   „Erledigt heute (1)". Aufklappen: der abgesagte Termin um 14:00 steht darin
+   mit dem Abzeichen „Abgesagt".
+5. **Zweckbindung.** Als `jannes.test@praxis.invalid` anmelden. Sein Tag
+   enthält nur den Praxistermin um 16:00 — **ohne** Anschrift und **ohne**
+   Zugangshinweis. Beides gibt es nur zum Hausbesuch, und zwar schon
+   serverseitig: es wird gar nicht erst geliefert.
+6. **Der Teamplan bleibt schlank.** Weiter unten steht „Tagesplan des Teams"
+   mit allen Terminen des Tages — dort steht weiterhin **keine** Anschrift.
+   Das ist Absicht (ADR-004).
+7. **Die Vorschau ist zugeklappt.** Ganz unten steht „Vorschau · Betrieb, Wege
+   und Team – noch nicht angebunden" als geschlossener Aufklapper. Der echte
+   Teil des Tages steht davor.
+8. **Am Handy** (~375 px): Startseite durchscrollen. Nichts scrollt seitwärts,
+   die Karten sind einspaltig, jede Schaltfläche bleibt mindestens 44 px hoch.
+   **Zielwert der Story:** Anschrift, Klingelname und eine wählbare Rufnummer
+   sind ohne einen einzigen weiteren Tap sichtbar (vorher: drei Taps über
+   Kalender → Termin → Akte).

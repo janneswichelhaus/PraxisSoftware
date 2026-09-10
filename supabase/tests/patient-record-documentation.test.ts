@@ -1,5 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 /**
  * Dokumentation in der Akte, rollenabhaengig projiziert (DOK-003).
@@ -240,7 +247,7 @@ describe('DOK-003: Behandlungsnachweis in der Akte', () => {
   let finalDoku: Stand;
 
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
     // Erika statt Max, damit die Seitenregel-Tests unten ihre eigenen Termine
     // an Max haengen koennen, ohne diese drei mitzuzaehlen.
     leererTermin = await vergangenerTermin(30, { patient: patients.erika });
@@ -417,7 +424,7 @@ describe('DOK-003: Klinische Sicht der Akte', () => {
   const GEHEIM = 'Synthetisch: Geheimer Inhalt fuer die Akte.';
 
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
     leererTermin = await vergangenerTermin(30, { patient: patients.erika });
     entwurfTermin = await vergangenerTermin(20, { patient: patients.erika, staff: STAFF.tim });
     finalTermin = await vergangenerTermin(10, { patient: patients.erika });
@@ -557,7 +564,7 @@ describe('DOK-003: Klinische Sicht der Akte', () => {
 
 describe('DOK-003: Seitenregel der Akte', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('nimmt begonnene, dokumentierte und abgesagte Termine auf - rein zukuenftige nicht', async () => {
@@ -639,7 +646,7 @@ describe('DOK-003: Mandantentrennung', () => {
   const fremderPatient = '66666666-6666-4666-8666-0000000000e1';
 
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
 
     await asPostgres(`
       insert into auth.users (id, email, aud, role)

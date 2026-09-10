@@ -1,5 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 /**
  * Automatische Finalisierung nach Frist (DOK-004, ADR-016 Punkt 7).
@@ -190,7 +197,7 @@ async function fristSetzen(tage: number): Promise<void> {
 
 describe('DOK-004: Automatische Finalisierung nach Frist', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('finalisiert einen ueberfaelligen Entwurf unveraendert als Version 1 ohne handelnde Person', async () => {
@@ -440,7 +447,7 @@ describe('DOK-004: Systemakteur im Auditlog', () => {
   let dokuId: string;
 
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
     const t = await terminVorTagen(3);
     const d = await entwurf(t.id, 3);
     dokuId = d.id;
@@ -508,7 +515,7 @@ describe('DOK-004: Systemakteur im Auditlog', () => {
 
 describe('DOK-004: Frist konfigurieren', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   async function frist(): Promise<number> {

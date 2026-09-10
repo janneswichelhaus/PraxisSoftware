@@ -1,14 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import type * as AppointmentsApiModule from '@/features/appointments/api';
+import type * as TodayApiModule from '@/features/today/api';
 import { renderMitVorschau, testUser } from '@/test-utils';
 import { MyDayPage } from './MyDayPage';
 
 /**
  * „Mein Tag" mischt bewusst zwei Dinge: echte Termine aus dem Kalender und
  * Hinweise aus Bereichen, die noch keine Anbindung haben. Geprüft wird, dass
- * beides unterscheidbar bleibt und dass die eigenen Besuche nicht über den
- * Anzeigenamen, sondern über die Beschäftigtenkennung gefunden werden.
+ * beides unterscheidbar bleibt, dass die eigenen Besuche nicht über den
+ * Anzeigenamen, sondern über die Beschäftigtenkennung gefunden werden, und
+ * seit UX-001, dass die Tagesliste die Angaben trägt, an denen ein Hausbesuch
+ * sonst scheitert.
  */
 
 const EIGENE_STAFF_ID = 'staff-eigene';
@@ -48,9 +51,57 @@ const termine = [
   }),
 ];
 
-vi.mock('@/features/today/api', () => ({
-  fetchOwnStaffMemberId: () => Promise.resolve('staff-eigene'),
-}));
+function tagesEintrag(teil: Partial<TodayApiModule.DayPlanEntry>): TodayApiModule.DayPlanEntry {
+  return {
+    id: 't1',
+    patient_id: 'p1',
+    staff_member_id: EIGENE_STAFF_ID,
+    appointment_type: 'home_visit',
+    status: 'scheduled',
+    starts_at: `${HEUTE}T08:00:00.000Z`,
+    ends_at: `${HEUTE}T08:45:00.000Z`,
+    patient_given_name: 'Erika',
+    patient_family_name: 'Beispiel',
+    location_name: null,
+    visit_street: 'Testweg',
+    visit_house_number: '7',
+    visit_postal_code: '72072',
+    visit_city: 'Tuebingen',
+    patient_phone: '+49 7071 0000006',
+    patient_phone_mobile: '+49 160 0000006',
+    home_visit_access_note: 'Erdgeschoss, Klingel "Beispiel".',
+    special_note: null,
+    documentation_status: 'none',
+    organization_time_zone: 'Europe/Berlin',
+    ...teil,
+  };
+}
+
+const tagesplan: TodayApiModule.DayPlanEntry[] = [
+  tagesEintrag({ id: 't1' }),
+  tagesEintrag({
+    id: 't3',
+    starts_at: `${HEUTE}T12:00:00.000Z`,
+    ends_at: `${HEUTE}T12:45:00.000Z`,
+    status: 'completed',
+    documentation_status: 'final',
+    patient_given_name: 'Petra',
+    patient_family_name: 'Platzhalter',
+    visit_street: 'Fiktivgasse',
+    visit_house_number: '9',
+    visit_postal_code: '72074',
+    home_visit_access_note: null,
+  }),
+];
+
+vi.mock('@/features/today/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof TodayApiModule>();
+  return {
+    ...actual,
+    fetchOwnStaffMemberId: () => Promise.resolve(EIGENE_STAFF_ID),
+    fetchDayPlan: () => Promise.resolve(tagesplan),
+  };
+});
 
 vi.mock('@/features/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApiModule>();
@@ -58,23 +109,44 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
 });
 
 describe('Mein Tag', () => {
-  it('trennt die eigenen Besuche vom Tagesplan des Teams', async () => {
+  it('stellt die offenen eigenen Besuche vor den Tagesplan des Teams', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-    expect(await screen.findByRole('heading', { name: 'Meine Besuche heute' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Offen heute/ })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Tagesplan des Teams' })).toBeInTheDocument();
-
-    // Der fremde Termin steht nur im Teamplan, der eigene in beiden Listen.
-    expect(screen.getAllByText('Erika Beispiel')).toHaveLength(2);
-    expect(screen.getAllByText('Max Mustermann')).toHaveLength(1);
   });
 
-  it('fuehrt keine zweite Terminliste, sondern verweist in den Kalender', async () => {
+  it('zaehlt nur das, was heute noch offen ist', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    expect(await screen.findByRole('link', { name: /Im Kalender öffnen/ })).toHaveAttribute(
-      'href',
-      expect.stringContaining('/kalender?ansicht=tag'),
-    );
+    // Ein offener Besuch, ein abgeschlossener mit finalisierter Dokumentation.
+    expect(await screen.findByRole('heading', { name: 'Offen heute (1)' })).toBeInTheDocument();
+    expect(screen.getByText('Erledigt heute (1)')).toBeInTheDocument();
+  });
+
+  it('traegt Anschrift, Zugangshinweis und Rufnummer als Waehlziel', async () => {
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+    const offen = (await screen.findByRole('heading', { name: /^Offen heute/ })).closest(
+      'section',
+    )!;
+
+    expect(await within(offen).findByText('Testweg 7')).toBeInTheDocument();
+    expect(within(offen).getByText('72072 Tuebingen')).toBeInTheDocument();
+    expect(within(offen).getByText(/Erdgeschoss, Klingel/)).toBeInTheDocument();
+
+    // Kontakt ist Aktion, nicht Text: die Nummer waehlt, statt nur dazustehen.
+    const mobil = within(offen).getByRole('link', { name: /Mobil/ });
+    expect(mobil).toHaveAttribute('href', 'tel:+491600000006');
+  });
+
+  it('zeigt den Tagesplan des Teams weiterhin ohne Anschrift', async () => {
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+    const teamplan = (await screen.findByRole('heading', { name: 'Tagesplan des Teams' })).closest(
+      'section',
+    )!;
+    expect(await within(teamplan).findByText('Max Mustermann')).toBeInTheDocument();
+    expect(within(teamplan).queryByText('Testweg 7')).toBeNull();
   });
 
   it('ist kein Begruessungsbildschirm mit Patientenzaehler', async () => {
@@ -83,11 +155,13 @@ describe('Mein Tag', () => {
     expect(screen.queryByText(/Personen in laufender Versorgung/)).toBeNull();
   });
 
-  it('kennzeichnet den noch nicht angebundenen Teil als Vorschau', async () => {
+  it('kennzeichnet den noch nicht angebundenen Teil als zusammengefaltete Vorschau', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    expect(
-      await screen.findByRole('heading', { name: 'Betrieb, Wege und Team' }),
-    ).toBeInTheDocument();
+
+    const ueberschrift = await screen.findByRole('heading', { name: 'Betrieb, Wege und Team' });
+    expect(ueberschrift).toBeInTheDocument();
+    // Zusammengefaltet: der echte Teil des Tages steht davor, nicht dahinter.
+    expect(ueberschrift.closest('details')).not.toHaveAttribute('open');
     expect(screen.getByText(/Es entstehen keine echten Vorgänge/)).toBeInTheDocument();
   });
 
