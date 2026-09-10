@@ -8,7 +8,11 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import {
+  canManageAppointments,
+  canWriteTreatmentNote,
+  type CurrentUser,
+} from '@/features/session/types';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
 import { NavigationZumTermin } from './NavigationStarten';
 import {
@@ -142,6 +146,7 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
   // Abschluss hinweg. Verbindlich pruefen das die Serverfunktionen.
   const darfAendern = darfVerwalten && appointment.status === 'scheduled';
   const darfWiederOeffnen = darfVerwalten && appointment.status === 'completed';
+  const darfDokumentieren = canWriteTreatmentNote(user.roles);
 
   return (
     <>
@@ -207,12 +212,21 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
 
       {darfAendern ? (
         <div className="mt-5 flex flex-wrap items-start gap-3">
+          {/* Der Regelfall am Ende eines Besuchs: Dokumentation und Abschluss
+              in einem Schritt (UX-007). „Termin abschließen" bleibt daneben -
+              der Abschluss ohne Dokumentation ist ausdrücklich weiter möglich
+              (ANN-005). */}
+          {darfDokumentieren ? (
+            <ButtonLink to={`/termine/${appointment.id}/abschluss`}>
+              Behandlung abschließen
+            </ButtonLink>
+          ) : null}
           <StatusAktion
             appointment={appointment}
             aktion={completeAppointment}
             beschriftung="Termin abschließen"
             laufend="Wird abgeschlossen …"
-            variant="primary"
+            variant={darfDokumentieren ? 'secondary' : 'primary'}
           />
           <AbsageAktion appointment={appointment} />
         </div>

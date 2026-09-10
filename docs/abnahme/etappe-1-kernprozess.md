@@ -634,3 +634,41 @@ anlegen (etwa nächste Woche).
 7. **Am Handy** (~375 px): Die Einträge brechen um, statt seitwärts zu
    scrollen. **Zielwert der Story:** die Frage „wann bin ich das nächste Mal
    dran?" ist in der Akte beantwortet, ohne den Kalender zu öffnen.
+
+---
+
+## UX-007 — Behandlung abschließen in einem Schritt
+
+**Was geprüft wird:** dass der Abschluss eines Besuchs eine Handlung ist statt
+sechs — und dass er ganz oder gar nicht passiert.
+
+1. **Von der Tagesliste aus.** Startseite (`/`) als
+   `anna.beispiel@praxis.invalid`. Auf der Karte eines offenen Besuchs steht
+   „Behandlung abschließen". Ein Tipp öffnet eine Seite mit einem Textfeld.
+2. **Die Folge steht vor dem Knopf.** Über den Schaltflächen steht, was
+   passiert: Termin als durchgeführt, Eintrag als Version 1 festgeschrieben,
+   ab dann Bestandteil der Akte. Das ersetzt die frühere Rückfrage — die kam
+   erst **nach** dem Klick.
+3. **Ein Schritt.** Text eingeben, „Behandlung abschließen" tippen. Danach ist
+   der Termin **abgeschlossen** und die Dokumentation **finalisiert**. Zurück
+   auf der Terminseite steht beides.
+4. **Ganz oder gar nicht.** Das Textfeld leeren und abschließen: es erscheint
+   „Die Behandlungsdokumentation darf nicht leer sein." — und der Termin ist
+   **nicht** abgeschlossen. Kein halber Zustand.
+5. **Der alte Weg bleibt.** Auf der Terminseite steht weiter „Termin
+   abschließen" (ohne Dokumentation, ANN-005) und in der Dokumentation weiter
+   „Finalisieren" mit Rückfrage. Auf der Abschlussseite gibt es zusätzlich
+   „Nur als Entwurf speichern".
+6. **Nachträglich dokumentieren.** Einen Termin ohne Dokumentation
+   abschließen. Er steht auf der Startseite weiter unter „Offen heute" mit dem
+   Grund „Dokumentation fehlt". „Behandlung abschließen" dort öffnet dieselbe
+   Seite; sie sagt, dass der Termin bereits abgeschlossen ist und nur noch
+   dokumentiert wird.
+7. **Office.** Als `olivia.office@praxis.invalid` `/termine/…/abschluss`
+   direkt aufrufen: „Nicht freigegeben". Verbindlich weist die Serverfunktion
+   ab.
+8. **Am Handy** (~375 px): Textfeld, Hinweis und Schaltflächen sind ohne
+   seitliches Scrollen bedienbar, „Behandlung abschließen" ist einhändig
+   erreichbar. **Zielwert der Story:** vom offenen Besuch zur finalisierten
+   Dokumentation in **zwei** Taps plus Text (vorher: sechs Schritte über drei
+   Ansichten).

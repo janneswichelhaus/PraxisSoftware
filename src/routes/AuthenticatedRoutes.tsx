@@ -24,6 +24,7 @@ import { StaffListPage } from '@/features/staff/StaffListPage';
 import { NewStaffMemberPage } from '@/features/staff/NewStaffMemberPage';
 import { EditStaffMemberPage } from '@/features/staff/EditStaffMemberPage';
 import { StaffMemberDetailPage } from '@/features/staff/StaffMemberDetailPage';
+import { CompleteTreatmentPage } from '@/features/documentation/CompleteTreatmentPage';
 import { TreatmentNotePage } from '@/features/documentation/TreatmentNotePage';
 import { TreatmentNoteRevisionPage } from '@/features/documentation/TreatmentNoteRevisionPage';
 import { TreatmentNoteAddendumPage } from '@/features/documentation/TreatmentNoteAddendumPage';
@@ -150,6 +151,11 @@ export function AuthenticatedRoutes({
 
           {showDocumentation ? (
             <>
+              {/* Behandlung abschliessen in einem Schritt (UX-007). */}
+              <Route
+                path="/termine/:appointmentId/abschluss"
+                element={<CompleteTreatmentPage user={user} />}
+              />
               <Route
                 path="/termine/:appointmentId/dokumentation"
                 element={<TreatmentNotePage user={user} />}

@@ -165,7 +165,24 @@ function MeineTagesliste({
           <ul className="flex flex-col gap-3">
             {offen.map((termin) => (
               <li key={termin.id}>
-                <Tageskarte termin={termin} aktionen={<NavigationZumTermin termin={termin} />} />
+                <Tageskarte
+                  termin={termin}
+                  aktionen={
+                    <>
+                      <NavigationZumTermin termin={termin} />
+                      {/* Die eine Handlung, um die es am Ende jedes Besuchs
+                          geht - von der Tagesliste aus ein Tap (UX-007). */}
+                      {darfDokumentieren ? (
+                        <Link
+                          to={`/termine/${termin.id}/abschluss`}
+                          className="nicht-drucken bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-white transition-colors"
+                        >
+                          Behandlung abschließen
+                        </Link>
+                      ) : null}
+                    </>
+                  }
+                />
               </li>
             ))}
           </ul>
