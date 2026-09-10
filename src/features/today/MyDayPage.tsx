@@ -29,7 +29,7 @@ import {
   NavigationFuerDenTag,
   NavigationZumTermin,
 } from '@/features/appointments/NavigationStarten';
-import { fetchDayPlan, fetchOwnStaffMemberId, istOffen, nachUhrzeit } from './api';
+import { fetchDayPlan, istOffen, nachUhrzeit } from './api';
 import { Tageskarte } from './Tagesliste';
 
 /**
@@ -206,13 +206,6 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   const darfTermine = canManageAppointments(user.roles);
   const praxisrolle = isStaff(user.roles);
 
-  const { data: eigeneStaffId } = useQuery({
-    queryKey: ['own-staff-member', user.profile.person_id],
-    queryFn: () => fetchOwnStaffMemberId(user.profile.person_id),
-    enabled: praxisrolle,
-    retry: false,
-  });
-
   const {
     data: termine,
     isPending,
@@ -251,10 +244,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         description={formatDatum(heute)}
       />
 
-      {darfTermine && eigeneStaffId ? (
+      {darfTermine && user.staffMemberId ? (
         <MeineTagesliste
           datum={heute}
-          staffMemberId={eigeneStaffId}
+          staffMemberId={user.staffMemberId}
           darfDokumentieren={canWriteTreatmentNote(user.roles)}
         />
       ) : null}

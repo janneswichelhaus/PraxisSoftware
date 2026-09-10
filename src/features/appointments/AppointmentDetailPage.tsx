@@ -6,6 +6,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
@@ -16,12 +17,14 @@ import {
   appointmentTypeLabels,
   completeAppointment,
   fetchAppointment,
+  folgeterminVorbelegung,
   formatLocalDate,
   formatLocalTime,
   formatLocalTimeRange,
   locationSummary,
   patientName,
   reopenAppointment,
+  schreibeTerminVorbelegung,
   staffName,
   type Appointment,
 } from './api';
@@ -212,6 +215,22 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
             variant="primary"
           />
           <AbsageAktion appointment={appointment} />
+        </div>
+      ) : null}
+
+      {/* Der Folgetermin ist der häufigste Einzelvorgang am Ende eines
+          Besuchs. Er steht auch am abgeschlossenen Termin: dort wird er
+          tatsächlich gebraucht (UX-003, IDEA-PRX-007). */}
+      {darfVerwalten && appointment.status !== 'cancelled' ? (
+        <div className="mt-5 flex">
+          <ButtonLink
+            to={`/patienten/${appointment.patient_id}/termine/neu${schreibeTerminVorbelegung(
+              folgeterminVorbelegung(appointment),
+            )}`}
+            variant="secondary"
+          >
+            Folgetermin anlegen
+          </ButtonLink>
         </div>
       ) : null}
 

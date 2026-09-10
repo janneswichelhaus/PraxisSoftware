@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   appointmentFormSchema,
+  folgeterminVorbelegung,
   formatLocalDate,
   formatLocalTime,
   formatLocalTimeRange,
+  leseTerminVorbelegung,
   locationSummary,
+  schreibeTerminVorbelegung,
   todayInTimeZone,
   type Appointment,
 } from './api';
@@ -138,5 +141,99 @@ describe('appointmentFormSchema', () => {
   it('weist eine unbekannte Terminart zurueck', () => {
     const ergebnis = appointmentFormSchema.safeParse({ ...gueltig, appointment_type: 'surgery' });
     expect(ergebnis.success).toBe(false);
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Vorbelegung des Terminformulars (UX-003)
+// -----------------------------------------------------------------------------
+
+describe('leseTerminVorbelegung', () => {
+  it('liest Datum, Uhrzeiten, Art und Person', () => {
+    const suche = new URLSearchParams({
+      datum: '2027-05-19',
+      beginn: '09:00',
+      ende: '10:00',
+      art: 'home_visit',
+      person: '55555555-5555-4555-8555-000000000002',
+    });
+    expect(leseTerminVorbelegung(suche)).toEqual({
+      datum: '2027-05-19',
+      beginn: '09:00',
+      ende: '10:00',
+      art: 'home_visit',
+      person: '55555555-5555-4555-8555-000000000002',
+    });
+  });
+
+  it('laesst eine verstellte Adresszeile still auf den Standard fallen', () => {
+    const suche = new URLSearchParams({
+      datum: '19.05.2027',
+      beginn: '25:00',
+      ende: 'abends',
+      art: 'hausbesuch',
+      person: 'nicht-uuid',
+    });
+    expect(leseTerminVorbelegung(suche)).toEqual({});
+  });
+
+  it('nimmt einzelne gueltige Werte auch ohne die uebrigen', () => {
+    expect(leseTerminVorbelegung(new URLSearchParams({ datum: '2027-05-19' }))).toEqual({
+      datum: '2027-05-19',
+    });
+  });
+});
+
+describe('schreibeTerminVorbelegung', () => {
+  it('laesst leere Felder weg', () => {
+    expect(schreibeTerminVorbelegung({ datum: '2027-05-19' })).toBe('?datum=2027-05-19');
+  });
+
+  it('ergibt ohne Werte einen leeren Suchteil', () => {
+    expect(schreibeTerminVorbelegung({})).toBe('');
+  });
+
+  it('ist die Umkehrung des Lesens', () => {
+    const vorbelegung = {
+      datum: '2027-05-19',
+      beginn: '09:00',
+      ende: '10:00',
+      art: 'home_visit' as const,
+      person: '55555555-5555-4555-8555-000000000002',
+    };
+    const suche = new URLSearchParams(schreibeTerminVorbelegung(vorbelegung).slice(1));
+    expect(leseTerminVorbelegung(suche)).toEqual(vorbelegung);
+  });
+});
+
+describe('folgeterminVorbelegung', () => {
+  it('uebernimmt Person, Art, Uhrzeit und Dauer und legt eine Woche drauf', () => {
+    expect(folgeterminVorbelegung({ ...basis, appointment_type: 'home_visit' })).toEqual({
+      datum: '2027-05-19',
+      beginn: '09:00',
+      ende: '10:00',
+      art: 'home_visit',
+      person: '55555555-5555-4555-8555-000000000002',
+    });
+  });
+
+  it('rechnet den Kalendertag in der Praxiszeitzone, nicht in UTC', () => {
+    // 22:30 UTC ist in Berlin bereits der 13. Mai; eine Woche spaeter ist
+    // deshalb der 20., nicht der 19.
+    const spaeterTermin: Appointment = {
+      ...basis,
+      starts_at: '2027-05-12T22:30:00.000Z',
+      ends_at: '2027-05-12T23:30:00.000Z',
+    };
+    expect(folgeterminVorbelegung(spaeterTermin).datum).toBe('2027-05-20');
+  });
+
+  it('kommt ueber einen Monatswechsel hinweg', () => {
+    const ende: Appointment = {
+      ...basis,
+      starts_at: '2027-05-28T07:00:00.000Z',
+      ends_at: '2027-05-28T08:00:00.000Z',
+    };
+    expect(folgeterminVorbelegung(ende).datum).toBe('2027-06-04');
   });
 });

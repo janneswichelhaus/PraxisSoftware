@@ -224,6 +224,103 @@ export const leererTermin: Record<AppointmentFormField, string> = {
   location_id: '',
 };
 
+// -----------------------------------------------------------------------------
+// Vorbelegung des Terminformulars (UX-003)
+//
+// Der häufigste Einzelvorgang am Ende eines Besuchs ist der nächste Termin
+// derselben Person. Er soll nicht bei einem leeren Formular anfangen.
+//
+// Die Vorbelegung reist über die Adresszeile, nicht über einen Zustand im
+// Arbeitsspeicher: so überlebt sie ein Neuladen, lässt sich teilen und
+// funktioniert vom Termin genauso wie aus dem Kalender. Ungültige Werte fallen
+// still auf den Standard zurück - eine Fehlermeldung für eine verstellte
+// Adresszeile wäre für die bedienende Person wertlos (wie in `leseParameter`).
+//
+// Verbindlich prüft `create_appointment` ohnehin alles erneut: Raster,
+// Arbeitszeit, Überschneidung, Zuordenbarkeit (ADR-004).
+// -----------------------------------------------------------------------------
+
+export interface TerminVorbelegung {
+  datum?: string;
+  beginn?: string;
+  ende?: string;
+  art?: AppointmentType;
+  person?: string;
+}
+
+const UHRZEIT = /^([01]\d|2[0-3]):[0-5]\d$/;
+const UUID_MUSTER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ISO_TAG = /^\d{4}-\d{2}-\d{2}$/;
+
+export function leseTerminVorbelegung(suche: URLSearchParams): TerminVorbelegung {
+  const datum = suche.get('datum');
+  const beginn = suche.get('beginn');
+  const ende = suche.get('ende');
+  const art = suche.get('art');
+  const person = suche.get('person');
+
+  const vorbelegung: TerminVorbelegung = {};
+  if (datum && ISO_TAG.test(datum)) vorbelegung.datum = datum;
+  if (beginn && UHRZEIT.test(beginn)) vorbelegung.beginn = beginn;
+  if (ende && UHRZEIT.test(ende)) vorbelegung.ende = ende;
+  if (art && appointmentTypeSchema.safeParse(art).success) {
+    vorbelegung.art = art as AppointmentType;
+  }
+  if (person && UUID_MUSTER.test(person)) vorbelegung.person = person;
+  return vorbelegung;
+}
+
+/** Die Vorbelegung als Suchteil einer Adresse - leere Felder bleiben weg. */
+export function schreibeTerminVorbelegung(vorbelegung: TerminVorbelegung): string {
+  const suche = new URLSearchParams();
+  if (vorbelegung.datum) suche.set('datum', vorbelegung.datum);
+  if (vorbelegung.beginn) suche.set('beginn', vorbelegung.beginn);
+  if (vorbelegung.ende) suche.set('ende', vorbelegung.ende);
+  if (vorbelegung.art) suche.set('art', vorbelegung.art);
+  if (vorbelegung.person) suche.set('person', vorbelegung.person);
+  const text = suche.toString();
+  return text ? `?${text}` : '';
+}
+
+/**
+ * Der Folgetermin zu einem Termin: dieselbe Person, dieselbe Art, dieselbe
+ * Uhrzeit, dieselbe Dauer - `tageSpaeter` Tage später.
+ *
+ * Eine Woche ist die übliche Taktung einer Verordnung und bewusst nur eine
+ * Vorbelegung: Datum und Uhrzeit stehen im Formular und sind mit einem Tap
+ * änderbar. Nichts davon ist eine Terminserie - die kommt mit CAL-007 und
+ * rechnet mit dem Kontingent der Verordnung.
+ *
+ * Der Kalendertag wird in der Zeitzone der Praxis gebildet, nicht im Browser:
+ * sonst verschöbe sich ein Abendtermin je nach Gerät um einen Tag.
+ */
+export function folgeterminVorbelegung(
+  appointment: Appointment,
+  tageSpaeter = 7,
+): TerminVorbelegung {
+  const werte = appointmentToFormValues(appointment);
+  return {
+    datum: naechsterTag(werte.date, tageSpaeter),
+    beginn: werte.start_time,
+    ende: werte.end_time,
+    art: appointment.appointment_type,
+    person: appointment.staff_member_id,
+  };
+}
+
+/**
+ * Verschiebt einen Kalendertag um ganze Tage.
+ *
+ * Reine Kalenderarithmetik auf `YYYY-MM-DD` über ein UTC-verankertes `Date`;
+ * daraus wird nie eine Ortszeit abgeleitet (dieselbe Regel wie in
+ * `calendar.ts`, wo `tagePlus` für die Kalenderansichten dasselbe tut).
+ */
+function naechsterTag(iso: string, tage: number): string {
+  const tag = new Date(`${iso}T00:00:00Z`);
+  tag.setUTCDate(tag.getUTCDate() + tage);
+  return tag.toISOString().slice(0, 10);
+}
+
 /**
  * Legt einen Termin an und gibt dessen ID zurück.
  *

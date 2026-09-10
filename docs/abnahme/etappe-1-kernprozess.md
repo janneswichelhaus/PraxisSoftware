@@ -501,3 +501,38 @@ Anschrift ohne Namen übergeben wird, erst beim Tippen.
    Navigation starten) brechen um, statt seitwärts zu scrollen; jede bleibt
    mindestens 44 px hoch. **Zielwert der Story:** vom Öffnen der Anwendung bis
    zur laufenden Radnavigation ein Tap.
+
+---
+
+## UX-003 — Folgetermin und Vorbelegung „Hausbesuch, ich, heute"
+
+**Was geprüft wird:** dass der nächste Termin am Ende eines Besuchs nicht bei
+einem leeren Formular anfängt.
+
+1. **Vorbelegung.** Als `anna.beispiel@praxis.invalid` eine Akte öffnen und
+   „Termin anlegen". Im Formular steht bereits: Terminart **Hausbesuch**,
+   behandelnde Person **Anna Beispiel**, Datum **heute**. Beginn und Ende
+   bleiben leer — eine erfundene Uhrzeit wäre keine Vorbelegung, sondern eine
+   Behauptung.
+2. **Office bekommt keine Person vorbelegt.** Als
+   `olivia.office@praxis.invalid` dasselbe Formular öffnen: „Behandelnde
+   Person" steht auf „Bitte wählen …". Olivia behandelt nicht und ist deshalb
+   nicht zuordenbar.
+3. **Folgetermin.** Einen Hausbesuch unter `/termine/…` öffnen und
+   „Folgetermin anlegen" tippen. Das Formular öffnet sich mit derselben Person,
+   derselben Terminart, derselben Uhrzeit und derselben Dauer — Datum **eine
+   Woche später**. Alles ist änderbar; es entsteht **keine** Terminserie (die
+   kommt mit CAL-007 aus dem Kontingent der Verordnung).
+4. **Auch nach dem Abschluss.** Denselben Termin abschließen und die Seite neu
+   laden: „Folgetermin anlegen" steht weiterhin da — genau dann wird er
+   gebraucht. Bei einem **abgesagten** Termin steht er nicht da.
+5. **Die Adresszeile trägt die Vorbelegung.** Nach dem Tippen auf
+   „Folgetermin anlegen" steht in der Adresszeile
+   `?datum=…&beginn=…&ende=…&art=…&person=…`. Die Seite neu laden: die
+   Vorbelegung ist noch da. Einen Wert von Hand verstellen (etwa
+   `beginn=25:00`) und neu laden: das Feld bleibt schlicht leer, ohne
+   Fehlermeldung.
+6. **Am Handy** (~375 px): Das Formular ist einspaltig, „Folgetermin anlegen"
+   ist einhändig erreichbar. **Zielwert der Story:** vom abgeschlossenen
+   Termin zum angelegten Folgetermin in **zwei** Taps (vorher: acht
+   Interaktionen über drei Seiten).

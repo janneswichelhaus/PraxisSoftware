@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -18,6 +18,7 @@ import {
   fetchLocations,
   istAusserhalbArbeitszeit,
   leererTermin,
+  leseTerminVorbelegung,
   todayInTimeZone,
   type AppointmentFormField,
   type AppointmentFormValues,
@@ -39,7 +40,24 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [werte, setWerte] = useState<Record<AppointmentFormField, string>>(leererTermin);
+  const [suche] = useSearchParams();
+  // Einmalig beim ersten Rendern: die Vorbelegung stammt aus der Adresszeile
+  // und soll spätere Eingaben nicht überschreiben.
+  const [vorbelegung] = useState(() => leseTerminVorbelegung(suche));
+
+  const [werte, setWerte] = useState<Record<AppointmentFormField, string>>(() => ({
+    ...leererTermin,
+    // „Hausbesuch, ich, heute" ist der Regelfall dieser Praxis: sie fährt zu
+    // den Menschen. Die Vorbelegung aus der Adresszeile geht vor - sie kommt
+    // vom Folgetermin oder aus dem Kalender und weiß es genauer.
+    appointment_type: vorbelegung.art ?? 'home_visit',
+    date:
+      vorbelegung.datum ??
+      (user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : ''),
+    start_time: vorbelegung.beginn ?? '',
+    end_time: vorbelegung.ende ?? '',
+    staff_member_id: vorbelegung.person ?? '',
+  }));
   const [fehler, setFehler] = useState<Partial<Record<AppointmentFormField, string>>>({});
 
   const patient = useQuery({
@@ -71,6 +89,29 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       );
     }
   }, [standorte.data]);
+
+  /**
+   * „Ich" als behandelnde Person - sobald feststeht, wer zuordenbar ist.
+   *
+   * Zwei Fälle, und beide brauchen die geladene Liste: Ist noch niemand
+   * gewählt und ist die angemeldete Person selbst zuordenbar, wird sie
+   * vorbelegt (UX-003). Steht in der Adresszeile eine Person, die gar nicht
+   * zuordenbar ist, wird die Auswahl geleert - ein Wert ohne passende Option
+   * sähe wie eine getroffene Wahl aus, wäre aber keine.
+   */
+  useEffect(() => {
+    const zuordenbar = therapeuten.data;
+    if (!zuordenbar) return;
+
+    setWerte((bisher) => {
+      if (bisher.staff_member_id !== '') {
+        const bekannt = zuordenbar.some((t) => t.staff_member_id === bisher.staff_member_id);
+        return bekannt ? bisher : { ...bisher, staff_member_id: '' };
+      }
+      const ich = zuordenbar.find((t) => t.staff_member_id === user.staffMemberId);
+      return ich ? { ...bisher, staff_member_id: ich.staff_member_id } : bisher;
+    });
+  }, [therapeuten.data, user.staffMemberId]);
 
   const mutation = useMutation({
     mutationFn: (eingabe: { werte: AppointmentFormValues; bestaetigt: boolean }) =>

@@ -448,4 +448,71 @@ describe('AppointmentDetailPage', () => {
       expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
     });
   });
+
+  describe('UX-002/UX-003: Anfahrt und Folgetermin', () => {
+    const hausbesuch: AppointmentsApi.Appointment = {
+      ...praxistermin,
+      appointment_type: 'home_visit',
+      location_id: null,
+      location_name: null,
+      visit_street: 'Beispielstrasse',
+      visit_house_number: '12',
+      visit_postal_code: '72070',
+      visit_city: 'Tuebingen',
+    };
+
+    it('bietet am Hausbesuch die Navigation an - erst auf Aktion', async () => {
+      const oeffnen = vi.spyOn(window, 'open').mockReturnValue(null);
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      const { container } = rendern();
+
+      const knopf = await screen.findByRole('button', { name: 'Navigation starten' });
+      expect(container.innerHTML).not.toContain('google.com');
+
+      await userEvent.click(knopf);
+      expect(String(oeffnen.mock.calls[0]![0])).toContain('travelmode=bicycling');
+      oeffnen.mockRestore();
+    });
+
+    it('bietet am Praxistermin keine Navigation an', async () => {
+      rendern();
+      await screen.findByText('Hauptstandort Tuebingen');
+      expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
+    });
+
+    it('fuehrt vom Termin mit einer Woche Versatz in ein vorbelegtes Formular', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      rendern();
+
+      const link = await screen.findByRole('link', { name: 'Folgetermin anlegen' });
+      expect(link).toHaveAttribute(
+        'href',
+        `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09%3A00&ende=10%3A00&art=home_visit&person=55555555-5555-4555-8555-000000000002`,
+      );
+    });
+
+    it('bietet den Folgetermin auch am abgeschlossenen Termin an', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...hausbesuch,
+        status: 'completed',
+        completed_at: '2027-05-12T08:05:00.000Z',
+      });
+      rendern();
+      expect(await screen.findByRole('link', { name: 'Folgetermin anlegen' })).toBeInTheDocument();
+    });
+
+    it('bietet den Folgetermin am abgesagten Termin nicht an', async () => {
+      fetchAppointment.mockResolvedValue({ ...hausbesuch, status: 'cancelled' });
+      rendern();
+      await screen.findByText('Dieser Termin ist abgesagt.');
+      expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).toBeNull();
+    });
+
+    it('bietet einem Patientenkonto keinen Folgetermin an', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      rendern(['patient']);
+      await screen.findByText('Beispielstrasse 12, 72070 Tuebingen');
+      expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).toBeNull();
+    });
+  });
 });

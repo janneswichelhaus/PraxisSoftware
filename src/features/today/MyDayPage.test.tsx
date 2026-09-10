@@ -14,7 +14,8 @@ import { MyDayPage } from './MyDayPage';
  * sonst scheitert.
  */
 
-const EIGENE_STAFF_ID = 'staff-eigene';
+// Dieselbe Kennung, die `testUser` einer Praxisrolle gibt.
+const EIGENE_STAFF_ID = '55555555-5555-4555-8555-000000000002';
 const FREMDE_STAFF_ID = 'staff-fremde';
 const HEUTE = '2026-08-31';
 
@@ -98,7 +99,6 @@ vi.mock('@/features/today/api', async (importOriginal) => {
   const actual = await importOriginal<typeof TodayApiModule>();
   return {
     ...actual,
-    fetchOwnStaffMemberId: () => Promise.resolve(EIGENE_STAFF_ID),
     fetchDayPlan: () => Promise.resolve(tagesplan),
   };
 });
