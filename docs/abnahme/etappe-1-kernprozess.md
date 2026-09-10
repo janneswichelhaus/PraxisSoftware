@@ -465,3 +465,39 @@ Praxistermin bei Jannes). Anmelden als `anna.beispiel@praxis.invalid`.
    **Zielwert der Story:** Anschrift, Klingelname und eine wählbare Rufnummer
    sind ohne einen einzigen weiteren Tap sichtbar (vorher: drei Taps über
    Kalender → Termin → Akte).
+
+---
+
+## UX-002 — Navigation starten (Google Maps, Fahrradmodus)
+
+**Was geprüft wird:** dass die Anfahrt ein Tap ist — und dass dabei nur die
+Anschrift ohne Namen übergeben wird, erst beim Tippen.
+
+**Voraussetzung:** derselbe Seed-Tag wie bei UX-001, angemeldet als
+`anna.beispiel@praxis.invalid`.
+
+1. **Je Besuch.** Startseite (`/`). Auf der Karte des 09:00-Besuchs steht
+   „Navigation starten". Ein Tipp öffnet einen neuen Tab mit Google Maps, Ziel
+   „Beispielstrasse 12, 72070 Tuebingen, DE", Verkehrsmittel Fahrrad.
+2. **Der ganze Tag.** Rechts neben der Überschrift „Offen heute" steht
+   „Ganzer Tag (n Stopps)". Ein Tipp öffnet Google Maps mit allen offenen
+   Hausbesuchen in Terminreihenfolge: der letzte als Ziel, die davor als
+   Zwischenziele.
+3. **Am Termin.** `/termine/…` eines Hausbesuchs öffnen: in der Angabenliste
+   steht unter „Anfahrt" dieselbe Schaltfläche. Bei einem Praxistermin steht
+   dort **nichts** — es gibt kein Ziel.
+4. **Nur auf Aktion (ADR-019 Punkt 20).** Auf der Startseite die
+   Entwicklerwerkzeuge öffnen, Reiter „Netzwerk", Seite neu laden: **vor** dem
+   Tippen geht **keine** Anfrage an `google.com`. Danach im Quelltext (Strg+U
+   bzw. Untersuchen) nach `google.com` suchen: kein Treffer, solange nicht
+   getippt wurde. Genau das ist der Unterschied zwischen einer Schaltfläche
+   und einem Link.
+5. **Was übergeben wird.** In der geöffneten Google-Maps-Adresszeile steht
+   `destination=Beispielstrasse+12,+72070+Tuebingen,+DE` und
+   `travelmode=bicycling` — und sonst nichts. **Kein Name, keine Uhrzeit, kein
+   Zugangshinweis, keine Kennung.** Das ist die Feldliste aus ANN-018; weicht
+   sie ab, ist das ein Befund.
+6. **Am Handy** (~375 px): Die drei Schaltflächen der Karte (Mobil, Telefon,
+   Navigation starten) brechen um, statt seitwärts zu scrollen; jede bleibt
+   mindestens 44 px hoch. **Zielwert der Story:** vom Öffnen der Anwendung bis
+   zur laufenden Radnavigation ein Tap.

@@ -989,8 +989,23 @@ Geräten; ob die Übergabe der Adresse an einen eigenen Verantwortlichen
 Art. 9 oder §203 berührt — Rechtsfrage an B2 (ADR-019 Punkt 23).
 
 **Verankerung.** `src/lib/location/contract.ts`, Typ `NavigationTarget`
-(trägt die Kennung); ab UX-EPIC-001 die eine URL-Funktion des Handoffs (trägt
-die Kennung ebenfalls); Prüfregel „nur auf Aktion" im Review.
+(trägt die Kennung); seit UX-002 `src/lib/location/navigation.ts` — die eine
+Stelle, an der Feldliste, Ländercode, URL-Format und Wegpunktlimit stehen
+(trägt die Kennung ebenfalls), mit Tests in `navigation.test.ts`, darunter
+einer, der prüft, dass die URL **außer** Ziel und Fahrmodus nichts trägt. Die
+Prüfregel „nur auf Aktion" ist in `src/features/appointments/NavigationStarten.tsx`
+umgesetzt — eine Schaltfläche, kein `href`; ein Test prüft, dass vor dem
+Tippen keine URL im Seitenquelltext steht.
+
+**Stand der Umsetzung (UX-002, 2026-09-10).** Gebaut ist **nur Google Maps**,
+wie es die Roadmap-Zeile von UX-EPIC-001 vorgibt. Apple Maps und die
+Systemnavigation (`geo:`) stehen in dieser Annahme und in ADR-019 Punkt 22 als
+Festlegung, sind aber nicht implementiert: sie gehören zu **MAP-005**, das die
+Ziel-Apps auf echten Geräten bewertet. Sie auf Vorrat zu bauen wäre ein
+Zukunftsfeature (§11, ADR-014). Ebenfalls noch offen und dort zu prüfen: das
+Wegpunktlimit (hier neun laut Anbieterdokumentation; ein längerer Tag wird in
+Abschnitte geteilt, nicht abgeschnitten) und die Frage, ob ein Pin ohne
+sichtbare Hausnummer auf dem Rad taugt.
 
 **Änderungspfad.** Adresse statt Koordinate oder umgekehrt, anderes Limit,
 andere Ziel-App: eine Funktion — Aufwand `klein`. Verlangt B2 eine

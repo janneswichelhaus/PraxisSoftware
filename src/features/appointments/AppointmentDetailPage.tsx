@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
+import { NavigationZumTermin } from './NavigationStarten';
 import {
   appointmentStatusLabels,
   cancelAppointment,
@@ -182,6 +183,14 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
           <DetailRow label={ortsBeschriftung(appointment.appointment_type)}>
             {locationSummary(appointment)}
           </DetailRow>
+          {/* Der Handoff steht bei der Anschrift, nicht bei den
+              Statusaktionen: Er gehört zur Anfahrt, nicht zum Vorgang
+              (ADR-019 Punkt 20). */}
+          {appointment.appointment_type === 'home_visit' ? (
+            <DetailRow label="Anfahrt">
+              <NavigationZumTermin termin={appointment} />
+            </DetailRow>
+          ) : null}
           {appointment.completed_at ? (
             <DetailRow label="Abgeschlossen am">
               {`${formatLocalDate(appointment.completed_at, zone)}, ${formatLocalTime(
@@ -231,6 +240,9 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
         Zeiten gelten in der Zeitzone der Praxis ({zone}). Der Termin selbst enthält ausschließlich
         organisatorische Angaben.
+        {appointment.appointment_type === 'home_visit'
+          ? ' „Navigation starten" öffnet Google Maps im Fahrradmodus und übergibt dabei nur die Anschrift ohne Namen – erst beim Tippen.'
+          : ''}
       </p>
     </>
   );

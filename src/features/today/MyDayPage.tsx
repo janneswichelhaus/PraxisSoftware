@@ -25,6 +25,10 @@ import {
 import { useVorschau } from '@/features/preview/vorschauContext';
 import { vorschauidentitaet, darfEntscheiden } from '@/features/preview/identitaet';
 import { formatDatum } from '@/features/preview/format';
+import {
+  NavigationFuerDenTag,
+  NavigationZumTermin,
+} from '@/features/appointments/NavigationStarten';
 import { fetchDayPlan, fetchOwnStaffMemberId, istOffen, nachUhrzeit } from './api';
 import { Tageskarte } from './Tagesliste';
 
@@ -146,6 +150,7 @@ function MeineTagesliste({
       <Section
         titel={offen.length > 0 ? `Offen heute (${offen.length})` : 'Offen heute'}
         hinweis="Ihre Besuche mit Anschrift, Rufnummer und Zugangshinweis."
+        aktion={<NavigationFuerDenTag termine={offen} />}
       >
         {offen.length === 0 ? (
           <EmptyState
@@ -160,12 +165,22 @@ function MeineTagesliste({
           <ul className="flex flex-col gap-3">
             {offen.map((termin) => (
               <li key={termin.id}>
-                <Tageskarte termin={termin} />
+                <Tageskarte termin={termin} aktionen={<NavigationZumTermin termin={termin} />} />
               </li>
             ))}
           </ul>
         )}
       </Section>
+
+      {/* ADR-019 Punkt 23: Die Übergabe ist nicht automatisch risikofrei. Wer
+          sie auslöst, soll wissen, was dabei das Gerät verlässt. */}
+      {offen.some((termin) => termin.appointment_type === 'home_visit') ? (
+        <p className="text-ink-subtle mt-3 max-w-prose text-xs leading-relaxed">
+          „Navigation starten" öffnet Google Maps im Fahrradmodus und übergibt dabei nur die
+          Anschrift ohne Namen – keine Uhrzeit, keinen Zugangshinweis, keine Kennung. Die Übergabe
+          passiert erst beim Tippen.
+        </p>
+      ) : null}
 
       {erledigt.length > 0 ? (
         <details className="border-line mt-6 border-t pt-3">
