@@ -3,6 +3,7 @@ import type { SubNavEintrag } from '@/components/ui/SubNav';
 import {
   canManageAppointments,
   canReadPatientDirectory,
+  canWriteTreatmentNote,
   isOwner,
   isStaff,
   type CurrentUser,
@@ -133,6 +134,12 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): SubNavEintrag[] {
     { to: '/praxis/team', label: 'Mitarbeitende', end: false },
     { to: '/praxis/planung', label: 'Arbeitszeiten' },
   ];
+  // Textbausteine sind ein Werkzeug der Dokumentation, gepflegt wird es aber
+  // wie eine Praxiseinstellung - deshalb hier und nicht bei den Patient:innen
+  // (UX-008). Wer nicht dokumentiert, braucht den Punkt nicht.
+  if (canWriteTreatmentNote(roles)) {
+    eintraege.push({ to: '/praxis/textbausteine', label: 'Textbausteine' });
+  }
   if (isOwner(roles)) {
     eintraege.push({ to: '/praxis/sicherheit/audit', label: 'Sicherheit' });
   }

@@ -672,3 +672,49 @@ sechs — und dass er ganz oder gar nicht passiert.
    erreichbar. **Zielwert der Story:** vom offenen Besuch zur finalisierten
    Dokumentation in **zwei** Taps plus Text (vorher: sechs Schritte über drei
    Ansichten).
+
+---
+
+## UX-008 — Textbausteine in der Dokumentation
+
+**Was geprüft wird:** dass ein vorbereiteter Satz per Tap im Freitext landet —
+und dass ein persönlicher Baustein wirklich persönlich ist.
+
+**Vorbereitung:** `pnpm dlx supabase db reset` — der Seed legt zwei Bausteine
+der Praxis und einen persönlichen von Anna Beispiel an.
+
+1. **Einfügen.** Als `anna.beispiel@praxis.invalid` einen Termin öffnen und
+   „Behandlung abschließen". Über dem Textfeld steht „Textbausteine:" mit drei
+   Knöpfen. Auf „Hausbesuch durchgefuehrt" tippen: der Satz steht im Feld.
+2. **Ergänzen statt ersetzen.** Einen eigenen Satz tippen, dann einen zweiten
+   Baustein antippen: Er hängt sich mit einer Leerzeile **hinten** an. Der
+   eigene Text bleibt.
+3. **Nichts wird ausgefüllt.** Der eingefügte Text enthält **keine**
+   Platzhalter und **keinen** Namen aus der Akte — er ist wörtlich das, was in
+   der Verwaltung steht (E-9, erste Stufe).
+4. **Verwalten.** „Bausteine verwalten →" oder Betrieb → Textbausteine. Die
+   Seite trennt „Bausteine der Praxis" von „Meine Bausteine". Als Anna steht
+   an den Praxis-Bausteinen **keine** Schaltfläche „Bearbeiten", sondern der
+   Hinweis, dass die Praxisleitung sie pflegt.
+5. **Eigenen anlegen.** „Baustein anlegen", Titel und Text eingeben,
+   speichern. Er erscheint unter „Meine Bausteine" mit dem Abzeichen „Nur ich"
+   und ab sofort in der Leiste über dem Freitext.
+6. **Persönlich heißt persönlich.** Als `tim.teamleitung@praxis.invalid`
+   anmelden: Annas Baustein („Manuelle Therapie") steht **weder** in seiner
+   Liste **noch** in seiner Leiste. Die Bausteine der Praxis sieht er.
+7. **Praxisweit nur als Praxisleitung.** Als `jannes.test@praxis.invalid`
+   „Baustein anlegen": dort gibt es zusätzlich das Kästchen „Baustein der
+   Praxis". Als Anna oder Tim gibt es dieses Kästchen nicht.
+8. **Löschen ändert keine Akte.** Einen eigenen Baustein löschen: Die
+   Rückfrage sagt ausdrücklich, dass bereits geschriebene Dokumentation
+   unberührt bleibt. Eine Dokumentation, in die der Baustein eingefügt wurde,
+   nachlesen: der Text steht unverändert darin.
+9. **Office.** Als `olivia.office@praxis.invalid`: Der Punkt „Textbausteine"
+   fehlt im Menü, und `/praxis/textbausteine` direkt aufgerufen meldet „Nicht
+   freigegeben".
+10. **Audit.** Als `jannes.test@praxis.invalid` unter Betrieb → Sicherheit:
+    Es stehen Einträge „Textbaustein angelegt/geändert/gelöscht" mit Titel —
+    **ohne** den Text des Bausteins.
+11. **Am Handy** (~375 px): Die Bausteinleiste bricht um, jeder Knopf bleibt
+    mindestens 44 px hoch. **Zielwert der Story:** ein wiederkehrender Satz
+    kostet einen Tap statt einer halben Minute Tippen.

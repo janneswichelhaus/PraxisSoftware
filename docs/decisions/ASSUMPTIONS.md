@@ -1,7 +1,7 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-08 (ANN-019 um den bekannten Restpunkt beim
-Verordnungsentwurf ergänzt; zuvor MAP-001: ANN-016 bis ANN-018)
+Zuletzt aktualisiert: 2026-09-10 (UX-EPIC-001: ANN-020 Textbausteine neu;
+ANN-018 verankert und um den Umsetzungsstand ergänzt)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -142,6 +142,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-017 | Serverseitiger Kartendienst-Adapter als Supabase Edge Function  | Technik       | offen  | OPS-001 (Edge Runtime, ADR-015 Punkt 20); MAP-003 |
 | ANN-018 | Übergabeziel und URL-Format des Navigations-Handoffs           | Datenschutz   | offen  | Datenschutzprüfung (B2); UX-EPIC-001, MAP-005 |
 | ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | entschieden 2026-09-08 | UX-EPIC-001 (Restpunkt Textverlust-Schutz) |
+| ANN-020 | Datenklasse und Frist der Textbausteine                          | Datenschutz   | offen  | Datenschutzprüfung; LOE-001 (Retention Schedule) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1082,3 +1083,55 @@ Grund für die Frist. Zu bauen ist das Verwerfen beim Verlassen des Abstechers;
 Aufwand `klein`, Test wie in `PrescriptionFormPage.entwurf.test.tsx` mit
 echtem Seitenwechsel. Bis dahin ist das Verhalten dokumentiert und
 zeitlich begrenzt, aber falsch.
+
+### ANN-020 — Datenklasse und Frist der Textbausteine
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | UX-008 (Textbausteine in der Dokumentation, `IDEA-PRX-011`, E-9) |
+| Status | **offen**, getroffen 2026-09-10 |
+| Wiedervorlage | Datenschutzprüfung; LOE-001 nimmt die Klasse in den Retention Schedule auf |
+
+**Annahme.** Ein Textbaustein ist ein **Betriebsdatum der Praxis ohne
+Patientenbezug** und kein Gesundheitsdatum. Die Tabelle
+`public.treatment_text_snippets` trägt deshalb bewusst **keine** `patient_id`
+und **keine** `appointment_id`. Aufbewahrungsfrist: **bis zur Löschung durch
+die Praxis** — es gibt keine gesetzliche Frist, die einen Baustein erfasst,
+und keinen Anlass, ihn selbsttätig verfallen zu lassen. Ein **persönlicher**
+Baustein endet mit dem Mitarbeiterdatensatz seiner Person (`on delete
+cascade`); ein **praxisweiter** überlebt jeden Personalwechsel. Löschen ist
+hier ein echtes Löschen und kein Statuswechsel: Ein Baustein ist eine Vorlage;
+was mit ihm geschrieben wurde, steht unverändert in der Akte und ist davon
+nicht berührt.
+
+**Begründung.** Der Baustein ist Text, den eine therapeutische Person
+**vorher** formuliert, ohne einen Fall vor sich zu haben — eine Formulierung,
+keine Aussage über einen Menschen. Damit fehlt der Personenbezug nach Art. 4
+Nr. 1 DSGVO, und Art. 9 greift nicht. Das Datenmodell hält das nicht nur fest,
+sondern erzwingt es: Ohne Spalte für Patient oder Termin lässt sich ein Bezug
+nicht herstellen, auch nicht versehentlich, auch nicht später durch eine
+Abfrage. **Der Restwert liegt im Freitext selbst:** Jemand kann in einen
+Baustein hineinschreiben, was dort nicht hingehört (»Frau M., 2. OG«). Dagegen
+hilft kein Schema, sondern die Beschriftung im Formular („keine Angaben aus
+einer Akte") und die Länge von 2.000 Zeichen, die einen Baustein als Satz und
+nicht als Befund ausweist. In Logs erscheint der Text nie (ADR-011); der
+Auditeintrag trägt Titel und Geltungsbereich, nicht den Inhalt.
+**Unsicher:** ob die Prüfung den Freitext trotz fehlenden Bezugs der
+Patientenakte zuordnet und damit derselben Frist unterwirft (10 Jahre nach
+Behandlungsabschluss, ADR-008) — dann wäre die Klasse eine andere, die
+Löschung aber weiterhin durch die Praxis ausgelöst.
+
+**Verankerung.** `supabase/migrations/20260910140000_treatment_text_snippets.sql`
+— die Tabelle trägt Datenklasse und Frist als `COMMENT` und die Kennung im
+Kopfkommentar. Tests in `supabase/tests/text-snippets.test.ts` (Abschnitt
+„Datenschutz"): kein `patient_id`/`appointment_id`, Kommentar mit Klasse und
+Frist, Löschung mit dem Mitarbeiterdatensatz.
+
+**Änderungspfad.** Andere Frist oder eigene Datenklasse: Eintrag im Retention
+Schedule (LOE-001) und eine Löschregel je Tabelle — Aufwand `klein`; die
+Tabelle selbst ändert sich nicht. Verlangt die Prüfung, Bausteine wie
+Aktendaten zu behandeln: dieselbe Frist, zusätzlich Aufnahme in das
+Löschjournal (LOE-002) — Aufwand `klein`. Verlangt sie, dass praxisweite
+Bausteine gar nicht persönlich sein dürfen oder umgekehrt: eine Spalte und
+zwei Policies — Aufwand `mittel`.

@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as DokumentationApi from './api';
+import type * as Bausteine from './textbausteine';
 import type * as RouterModule from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -54,6 +55,15 @@ const completeTreatment = vi.fn();
 const createTreatmentNote = vi.fn();
 const updateTreatmentNote = vi.fn();
 const navigate = vi.fn();
+const fetchTextSnippets = vi.fn();
+
+vi.mock('./textbausteine', async (importOriginal) => {
+  const actual = await importOriginal<typeof Bausteine>();
+  return {
+    ...actual,
+    fetchTextSnippets: () => fetchTextSnippets() as Promise<Bausteine.TextSnippet[]>,
+  };
+});
 
 vi.mock('@/features/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -108,6 +118,16 @@ describe('CompleteTreatmentPage', () => {
     createTreatmentNote.mockReset();
     updateTreatmentNote.mockReset();
     navigate.mockReset();
+    fetchTextSnippets.mockReset();
+    fetchTextSnippets.mockResolvedValue([
+      {
+        id: 'b1',
+        title: 'Hausbesuch',
+        body: 'Hausbesuch durchgefuehrt.',
+        shared: true,
+        editable: false,
+      },
+    ]);
 
     fetchAppointment.mockResolvedValue(termin);
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
@@ -225,5 +245,37 @@ describe('CompleteTreatmentPage', () => {
     rendern(['office']);
     expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();
     expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
+  });
+
+  describe('UX-008: Textbausteine', () => {
+    it('fuegt einen Baustein mit einem Tap ein', async () => {
+      const user = userEvent.setup();
+      rendern();
+
+      await user.click(await screen.findByRole('button', { name: 'Hausbesuch' }));
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(
+        'Hausbesuch durchgefuehrt.',
+      );
+    });
+
+    it('haengt an bereits Geschriebenes an, statt es zu ersetzen', async () => {
+      const user = userEvent.setup();
+      rendern();
+
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Eigener Satz.');
+      await user.click(screen.getByRole('button', { name: 'Hausbesuch' }));
+
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(
+        'Eigener Satz.\n\nHausbesuch durchgefuehrt.',
+      );
+    });
+
+    it('blockiert die Dokumentation nicht, wenn die Bausteine nicht laden', async () => {
+      fetchTextSnippets.mockRejectedValue(new Error('kaputt'));
+      rendern();
+
+      expect(await screen.findByLabelText('Eintrag zur Behandlung')).toBeInTheDocument();
+      expect(screen.queryByText('Textbausteine:')).toBeNull();
+    });
   });
 });

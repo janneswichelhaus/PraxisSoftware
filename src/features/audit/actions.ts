@@ -41,6 +41,9 @@ export const AUDIT_ACTIONS = [
   'prescription.created',
   'prescription.updated',
   'prescription.deleted',
+  'text_snippet.created',
+  'text_snippet.updated',
+  'text_snippet.deleted',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -76,6 +79,9 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'treatment_note.revised': 'Behandlungsdokumentation korrigiert',
   'treatment_note.addendum_created': 'Nachtrag angelegt',
   'treatment_note.history_viewed': 'Änderungsverlauf gelesen',
+  'text_snippet.created': 'Textbaustein angelegt',
+  'text_snippet.updated': 'Textbaustein geändert',
+  'text_snippet.deleted': 'Textbaustein gelöscht',
   'prescription.viewed': 'Verordnung gelesen',
   'prescription.created': 'Verordnung erfasst',
   'prescription.updated': 'Verordnung geändert',

@@ -17,6 +17,7 @@
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
 delete from public.audit_log;
+delete from public.treatment_text_snippets;
 delete from public.staff_working_hour_exceptions;
 delete from public.staff_working_hours;
 delete from public.appointments;
@@ -206,6 +207,25 @@ insert into public.appointments (
   ('aaaaaaaa-aaaa-4aaa-8aaa-000000000004', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '55555555-5555-4555-8555-000000000001', '33333333-3333-4333-8333-000000000001',
    'practice', 'scheduled', (current_date + time '16:00') at time zone 'Europe/Berlin', (current_date + time '17:00') at time zone 'Europe/Berlin',
    null, null, null, null, null, null, null, null);
+
+-- -----------------------------------------------------------------------------
+-- Textbausteine (UX-008)
+--
+-- Rein synthetisch und ausdruecklich ohne Patientenbezug: ein Baustein ist
+-- eine Formulierung, kein Befund. Zwei praxisweite (staff_member_id null) und
+-- einer, der nur Anna Beispiel gehoert - damit die beiden Geltungsbereiche in
+-- der Abnahme unterscheidbar sind.
+-- -----------------------------------------------------------------------------
+insert into public.treatment_text_snippets (organization_id, staff_member_id, title, body, created_by, updated_by) values
+  ('22222222-2222-4222-8222-000000000001', null, 'Hausbesuch durchgefuehrt',
+   'Hausbesuch wie vereinbart durchgefuehrt. Patient:in war zur vereinbarten Zeit anwesend.',
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('22222222-2222-4222-8222-000000000001', null, 'Eigenuebungen besprochen',
+   'Eigenuebungsprogramm gemeinsam durchgegangen, Ausfuehrung korrigiert und Wiederholungszahl angepasst.',
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000002', 'Manuelle Therapie',
+   'Manuelle Techniken angewendet, Reaktion im Verlauf der Behandlung beobachtet.',
+   '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002');
 
 -- -----------------------------------------------------------------------------
 -- Arbeitszeiten (CAL-005)

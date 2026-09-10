@@ -13,6 +13,8 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
+import { TextbausteinLeiste } from './TextbausteinLeiste';
+import { bausteinEinfuegen } from './textbausteine';
 import {
   createTreatmentNote,
   findeEintrag,
@@ -87,6 +89,8 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
       />
 
       <form onSubmit={absenden} noValidate className="max-w-2xl">
+        <TextbausteinLeiste onEinfuegen={(text) => setEntwurf(bausteinEinfuegen(wert, text))} />
+
         <TextArea
           label={istNachtrag ? 'Nachtrag' : 'Eintrag zur Behandlung'}
           hint="Freitext. Der Eintrag bleibt ein Entwurf; die Finalisierung ist ein eigener Schritt am Termin."

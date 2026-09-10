@@ -13,6 +13,8 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
+import { TextbausteinLeiste } from './TextbausteinLeiste';
+import { bausteinEinfuegen } from './textbausteine';
 import {
   completeTreatment,
   createTreatmentNote,
@@ -110,6 +112,8 @@ function Abschluss({
           abschliessen.mutate();
         }}
       >
+        <TextbausteinLeiste onEinfuegen={(text) => setEntwurf(bausteinEinfuegen(wert, text))} />
+
         <TextArea
           label="Eintrag zur Behandlung"
           hint="Freitext. Was hier steht, wird mit dem Abschluss Bestandteil der Akte."

@@ -69,6 +69,7 @@ describe('Schema-Invarianten', () => {
       'prescribers',
       'prescriptions',
       'prescription_items',
+      'treatment_text_snippets',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

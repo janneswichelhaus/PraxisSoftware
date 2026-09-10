@@ -25,6 +25,7 @@ import { NewStaffMemberPage } from '@/features/staff/NewStaffMemberPage';
 import { EditStaffMemberPage } from '@/features/staff/EditStaffMemberPage';
 import { StaffMemberDetailPage } from '@/features/staff/StaffMemberDetailPage';
 import { CompleteTreatmentPage } from '@/features/documentation/CompleteTreatmentPage';
+import { TextbausteinePage } from '@/features/documentation/TextbausteinePage';
 import { TreatmentNotePage } from '@/features/documentation/TreatmentNotePage';
 import { TreatmentNoteRevisionPage } from '@/features/documentation/TreatmentNoteRevisionPage';
 import { TreatmentNoteAddendumPage } from '@/features/documentation/TreatmentNoteAddendumPage';
@@ -172,6 +173,9 @@ export function AuthenticatedRoutes({
                 path="/termine/:appointmentId/dokumentation/:noteId/nachtrag"
                 element={<TreatmentNoteAddendumPage user={user} />}
               />
+              {/* Ohne Pflege bliebe die Bausteinleiste dauerhaft leer -
+                  die Seite gehoert zur Story (UX-008). */}
+              <Route path="/praxis/textbausteine" element={<TextbausteinePage user={user} />} />
             </>
           ) : null}
 
