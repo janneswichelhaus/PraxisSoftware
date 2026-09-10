@@ -1,6 +1,6 @@
 # Arbeitsbereiche: was funktioniert, was Vorschau ist, was offen ist
 
-Stand: 08.09.2026
+Stand: 10.09.2026
 
 Diese Liste ist die Antwort auf eine einzige Frage: **Worauf kann ich mich in
 der laufenden Anwendung verlassen?** Sie ergänzt
@@ -40,6 +40,7 @@ Beschriftung geändert, nicht das Verhalten.
 | Arbeitszeiten und Raster                | `/praxis/planung`                                       | im Menü jetzt unter „Betrieb"                    |
 | Auditansicht                            | `/praxis/sicherheit/audit`                              | nur `owner`; kennt seit DOK-004 einen Systemakteur |
 | Verbindungsanzeige                      | überall (App-Gerüst)                                    | erscheint nur bei getrenntem Gerät; keine Offline-Fähigkeit (UI-000, ANN-015) |
+| Marke Own Motion                        | überall (Kopfzeile, Anmeldemaske, Favicon)              | **entschieden und gebaut (2026-09-10)**: Wortmarke in Kopfzeile und Anmeldemaske, Favicon und App-Symbol, Akzent auf `#004429`. Quelle ist `marke/`, Auslieferung über byte-gleiche Kopien in `public/marke/` (`src/marke.test.ts`). Die Kopfzeile zeigt **nicht mehr** den Organisationsnamen (ANN-021). Offen bleiben: Favicon bei 16 px unlesbar, App-Symbole nur als PNG (beides `marke/README.md`, „Befunde"), Logo auf der Rechnung (ABR-000), Schrift und Radien |
 | Mein Tag – eigene Besuche und Tagesplan | `/`                                                     | liest denselben Kalender, keine zweite Liste     |
 
 ## 2. Vorschau

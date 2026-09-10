@@ -1,6 +1,7 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-08 (ANN-019 um den bekannten Restpunkt beim
+Zuletzt aktualisiert: 2026-09-10 (ANN-020 und ANN-021 zur Marke Own Motion;
+zuvor 2026-09-08: ANN-019 um den bekannten Restpunkt beim
 Verordnungsentwurf ergänzt; zuvor MAP-001: ANN-016 bis ANN-018)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
@@ -142,6 +143,8 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-017 | Serverseitiger Kartendienst-Adapter als Supabase Edge Function  | Technik       | offen  | OPS-001 (Edge Runtime, ADR-015 Punkt 20); MAP-003 |
 | ANN-018 | Übergabeziel und URL-Format des Navigations-Handoffs           | Datenschutz   | offen  | Datenschutzprüfung (B2); UX-EPIC-001, MAP-005 |
 | ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | entschieden 2026-09-08 | UX-EPIC-001 (Restpunkt Textverlust-Schutz) |
+| ANN-020 | Tiefgrün der Marke als Hover-Zustand des Akzents                 | Technik       | offen  | Jannes; MARKE-001 (Befund App-Symbole)    |
+| ANN-021 | Die Kopfzeile führt die Marke, nicht den Organisationsnamen      | Praxisprozess | offen  | Jannes; erneut, falls eine zweite Praxis dazukommt (ADR-003) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1067,3 +1070,98 @@ Grund für die Frist. Zu bauen ist das Verwerfen beim Verlassen des Abstechers;
 Aufwand `klein`, Test wie in `PrescriptionFormPage.entwurf.test.tsx` mit
 echtem Seitenwechsel. Bis dahin ist das Verhalten dokumentiert und
 zeitlich begrenzt, aber falsch.
+
+### ANN-020 — Tiefgrün der Marke als Hover-Zustand des Akzents
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | Umstellung der Akzentfarbe auf die Marke Own Motion (2026-09-10). Die Hauptfarbe `#004429` liegt bei 34,1 % Helligkeit; die bisherige Ableitungsregel „Hover ist 6 Punkte dunkler" hätte von dort aus einen fast schwarzen Wert ergeben. |
+| Status | **offen** |
+| Wiedervorlage | Jannes, sobald er die Oberfläche eine Weile bedient hat; außerdem MARKE-001, falls die Marke um abgestufte Farbwerte ergänzt wird |
+
+**Annahme.** `--color-accent-hover` trägt das **Tiefgrün der Marke**
+(`#042c1b` = `oklch(26.1% 0.0544 160)`) — also einen **dunkleren**, nicht
+helleren Wert als den Akzent. `marke/README.md` führt Tiefgrün als Fläche für
+App-Symbol, Aufkleber und Visitenkarten-Vorderseite; die Verwendung als Fläche
+und Textfarbe in der Anwendung geht darüber hinaus und ist deshalb hier
+registriert.
+
+**Begründung.** Die Richtung war die eigentliche Frage, und sie entscheidet
+sich nicht am Knopf, sondern an den Links: `--color-accent-hover` ist in rund
+einem Dutzend Stellen **Textfarbe** (`text-accent hover:text-accent-hover`,
+etwa `MyDayPage.tsx`, `VacationPage.tsx`, `TeamChatPage.tsx`) und nur in
+zweien Knopffläche. Ein hellerer Wert hätte beide Verwendungen geschwächt: den
+weißen Text auf dem Knopf und den Link auf heller Fläche. Der dunklere Wert
+stärkt beide — als Text 13,85:1 statt 10,30:1, weiß darauf 15,19:1 statt
+11,29:1 (jeweils schlechteste der drei Flächen). Der Einwand, von 34,1 % aus
+weiter abzudunkeln werde „sehr dunkel", trifft die Wahrnehmung, nicht die
+Unterscheidbarkeit: der Abstand beträgt 8 Helligkeitspunkte gegenüber 6 in der
+Palette davor, der Zustandswechsel ist also **deutlicher** als zuvor.
+Ausschlaggebend für genau diesen Wert war schließlich, dass er nicht erfunden
+ist: `marke/README.md` schließt mit „Keine weiteren Kombinationen" eigene
+Abstufungen aus, und Tiefgrün ist die einzige dunklere Farbe, die die Marke
+kennt.
+
+`--color-accent-soft` folgt derselben Logik in die andere Richtung: Farbton der
+Marke, Buntheit `0.022` — bewusst **unter** `positiv-soft` (`0.03`), weil beide
+seit der Umstellung im Farbton nur neun Grad auseinanderliegen und als Abzeichen
+nebeneinander stehen. Papier (`#f6f7f4`) schied als Wert aus: mit 97,5 %
+Helligkeit liegt es zu dicht an `canvas` (98,6 %), um eine Fläche zu markieren.
+
+**Verankerung.** `src/index.css`, `--color-accent-hover` und
+`--color-accent-soft` (tragen die Kennung im Kommentar). Geprüft in
+`src/lib/kontrast.test.ts`: Textkontrast beider Akzentwerte, weißer Text
+darauf, Mindestabstand der beiden Zustände (6 Punkte) und die Ordnung
+`accent-soft` unter `positiv-soft`.
+
+**Änderungspfad.** Andere Richtung oder anderer Wert: eine Zeile in
+`src/index.css`, der Test rechnet die Grenzen neu — Aufwand `klein`. Sollte die
+Marke später eine eigene, abgestufte Farbskala bekommen, ersetzt sie diesen
+Wert an derselben Stelle — Aufwand `klein`.
+
+### ANN-021 — Die Kopfzeile führt die Marke, nicht den Organisationsnamen
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | Anwenden der Marke Own Motion (2026-09-10). Die Kopfzeile zeigte `user.organizationName ?? 'Praxisplattform'`; mit der Marke gäbe es zwei Antworten auf dieselbe Frage. |
+| Status | **offen** |
+| Wiedervorlage | Jannes; erneut, sobald eine zweite Praxis dazukäme (ADR-003, „echter Mehrmandantenbetrieb") |
+
+**Annahme.** Die Kopfzeile der angemeldeten Anwendung zeigt die **Wortmarke**.
+Der Organisationsname aus den Stammdaten erscheint dort nicht mehr. Die
+Anmeldemaske zeigt ebenfalls die Marke statt des Worts „Praxisplattform", der
+Seitentitel lautet „Own Motion".
+
+**Begründung.** ADR-003 stellt ausdrücklich fest, dass `organization_id` **keine
+Mandantenfähigkeit schafft** und ein echter Mehrmandantenbetrieb „ein eigenes
+Vorhaben mit eigener Prüfung" bliebe; unter „Bewusst nicht Bestandteil" steht
+„Mandantenfähigkeit als Produktfunktion: kein Tenant-Switching".
+`docs/PRODUCT_VISION.md` benennt die Praxis seit dem 2026-09-10 als Own Motion.
+Es gibt also genau eine Praxis, und der Name aus der Datenbank sagt neben der
+Marke nichts Zusätzliches. Beides nebeneinander wäre zudem im aktuellen Stand
+irreführend: der Seed trägt „Test Praxis Tuebingen", das stünde dann unter der
+Wortmarke. Die Alternative — die Marke zeigen und den Organisationsnamen als
+zugängliche Bezeichnung hinterlegen — wurde verworfen, weil Vorlesesoftware
+dann etwas anderes sagt, als zu sehen ist.
+
+**Bewusst in Kauf genommen.** Der Organisationsname wird damit **nirgends** mehr
+angezeigt. Wer aus der laufenden Anwendung ablesen möchte, ob er auf
+synthetischen Seed-Daten oder auf einem echten Bestand arbeitet, hat dieses
+Signal nicht mehr. Für den aktuellen Stand ist das folgenlos — es gibt keinen
+echten Bestand (§3.1) —, vor dem Produktivstart ist es ein Punkt für die
+Betriebsdokumentation.
+
+**Verankerung.** `src/app/AppShell.tsx` (Kopfzeile, trägt die Kennung im
+Kommentar), `src/features/auth/LoginPage.tsx`, `index.html`. Festgehalten in
+`src/app/AppShell.test.tsx` und `src/features/auth/LoginPage.test.tsx`.
+`src/features/session/types.ts` führt `organizationName` unverändert weiter —
+das Feld wird geladen, nur nicht mehr angezeigt.
+
+**Änderungspfad.** Namen wieder anzeigen: ein Element in `AppShell.tsx`, etwa
+als ruhige Zeile neben der Marke; der Schutzraum der Marke gibt den Abstand vor
+(`schutzraum()` in `src/components/ui/markeRegeln.ts`) — Aufwand `klein`.
+Kämen mehrere Praxen dazu, wäre die Kopfzeile ohnehin neu zu denken; das ist
+dann Teil des eigenen Vorhabens aus ADR-003 — Aufwand `mittel` und nicht durch
+diese Annahme vorweggenommen.
