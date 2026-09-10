@@ -763,3 +763,35 @@ der Praxis und einen persönlichen von Anna Beispiel an.
 9. **Sichtbar in der Adresszeile.** Beim Abstecher steht im
    `zurueck`-Parameter ein `vorgang=…`. Diese Kennung unterscheidet zwei
    Besuche derselben Seite; sie ist kein Geheimnis und trägt keine Daten.
+
+---
+
+## UX-010 — Langer Druck am Finger, Rückgängig nach dem Verschieben
+
+**Was geprüft wird:** dass sich der Kalender am Telefon wieder scrollen lässt
+— und dass eine versehentliche Verschiebung zurückzuholen ist.
+
+1. **Scrollen über einem Termin (der eigentliche Befund).** Am Handy (~375 px
+   oder Gerätesimulation mit Touch) `/kalender?ansicht=tag` öffnen und mit dem
+   Finger **auf einer Terminkachel** nach oben wischen: Der Kalender scrollt.
+   Vorher blieb er stehen und der Termin wanderte mit.
+2. **Verschieben mit dem Finger.** Denselben Termin antippen und den Finger
+   **liegen lassen**. Nach knapp einer halben Sekunde hebt sich die Kachel
+   sichtbar hervor (Rahmen, leicht vergrößert). Erst jetzt ziehen: der Termin
+   folgt dem Finger und lässt sich ablegen.
+3. **Am Rechner unverändert.** Mit der Maus greift der Termin wie bisher
+   sofort — dort gibt es keinen Grund zu warten.
+4. **Rückgängig.** Einen Termin verschieben. Unter der Werkzeugleiste
+   erscheint „Termin verschoben. Vorher: …" mit der alten Person, dem alten
+   Tag und der alten Uhrzeit. „Rückgängig" tippen: Der Termin steht wieder an
+   seinem Platz.
+5. **Ein echter Vorgang, kein Trick.** Als `jannes.test@praxis.invalid` unter
+   Betrieb → Sicherheit nachsehen: Es stehen **zwei** Einträge „Termin
+   verschoben" — das Zurückholen ist selbst eine Änderung und wird als solche
+   protokolliert.
+6. **Der alte Platz kann belegt sein.** Termin A verschieben, dann Termin B
+   auf den frei gewordenen Platz legen, dann bei A „Rückgängig": Es erscheint
+   die verständliche Meldung, dass dort schon ein Termin liegt — und A bleibt,
+   wo es ist.
+7. **Die Leiste bleibt nicht ewig.** Nach dem Blättern auf einen anderen Tag
+   ist sie verschwunden; sie bietet nichts an, was nicht mehr zu sehen ist.

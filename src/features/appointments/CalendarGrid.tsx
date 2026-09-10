@@ -253,6 +253,7 @@ export function CalendarGrid({
                     breite={breite}
                     stapel={spalte + 1}
                     gedimmt={wirdGezogen}
+                    wartet={ziehen.wartetAuf === g.eintrag.id}
                     ziehbar={ziehbarErlaubt && g.ziehbar}
                     onPointerDown={(event) =>
                       ziehen.beginnen(event, {
@@ -297,6 +298,7 @@ function Kachel({
   breite,
   stapel,
   gedimmt,
+  wartet,
   ziehbar,
   onPointerDown,
   onClickCapture,
@@ -307,6 +309,8 @@ function Kachel({
   breite: number;
   stapel: number;
   gedimmt: boolean;
+  /** Der lange Druck läuft gerade - sichtbare Rückmeldung am Finger (UX-010). */
+  wartet: boolean;
   ziehbar: boolean;
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
   onClickCapture: (event: React.MouseEvent) => void;
@@ -341,15 +345,21 @@ function Kachel({
         left: `${links}%`,
         width: `${breite}%`,
         zIndex: stapel,
-        // Ohne none übernimmt der Browser die Geste als Bildlauf, und das
-        // Ziehen käme auf einem Touchgerät gar nicht erst zustande.
-        ...(ziehbar ? { touchAction: 'none' } : {}),
+        // Bewusst NICHT `none` (UX-010): eine Kachel nimmt auf dem Telefon
+        // fast die ganze Spalte ein: mit `none` liesse sich der Kalender
+        // ueber einem Termin gar nicht mehr scrollen. Der Bildlauf bleibt
+        // beim Browser; das Verschieben beginnt erst nach dem langen Druck,
+        // und der schliesst einen begonnenen Bildlauf aus.
+        ...(ziehbar ? { touchAction: 'pan-x pan-y' } : {}),
       }}
       className={[
         'border-line bg-surface hover:bg-surface-sunken absolute block overflow-hidden rounded-lg',
         'border border-l-4 px-1.5 py-1 text-left transition-colors',
         eintrag.status === 'cancelled' ? 'opacity-60' : '',
         gedimmt ? 'opacity-40' : '',
+        // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
+        // wie nichts.
+        wartet ? 'ring-accent scale-[1.02] ring-2' : '',
         ziehbar ? 'cursor-grab' : '',
       ]
         .filter(Boolean)

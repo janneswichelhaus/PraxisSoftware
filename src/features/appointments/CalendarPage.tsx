@@ -94,6 +94,11 @@ function bereichsBeschriftung(ansicht: KalenderAnsicht, von: string, bis: string
 }
 
 /** Was beim Verschieben an den Server geht, samt Beschreibung für die Rückfrage. */
+/** Anzeigename einer behandelnden Person, auch wenn die Liste sie nicht kennt. */
+function alnamePerson(person: { display_name: string } | undefined): string {
+  return person?.display_name ?? 'Behandelnde Person';
+}
+
 interface Verschiebung {
   terminId: string;
   staffMemberId: string;
@@ -119,6 +124,16 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const bereich = bereichFuer(p.ansicht, p.datum);
 
   const [offen, setOffen] = useState<Verschiebung | null>(null);
+  /**
+   * Die Umkehrung der zuletzt ausgefuehrten Verschiebung (UX-010).
+   *
+   * Ein Termin wandert mit einer Geste - und eine Geste ist schnell
+   * versehentlich gemacht. Die Leiste bleibt stehen, bis sie benutzt wird,
+   * bis die naechste Verschiebung sie ersetzt oder bis der gezeigte Ausschnitt
+   * wechselt; ein Zeitablauf waere eine zweite Ungewissheit ("war das jetzt
+   * noch da?").
+   */
+  const [rueckgaengig, setRueckgaengig] = useState<Verschiebung | null>(null);
 
   const therapeuten = useQuery({
     queryKey: ['assignable-therapists'],
@@ -170,7 +185,12 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   }, [therapeuten.data]);
 
   const verschieben = useMutation({
-    mutationFn: async (auftrag: { v: Verschiebung; bestaetigt: boolean }) => {
+    mutationFn: async (auftrag: {
+      v: Verschiebung;
+      bestaetigt: boolean;
+      /** Was die Leiste danach anbietet; ohne Angabe verschwindet sie. */
+      zurueck?: Verschiebung;
+    }) => {
       // Der aktuelle Stand wird unmittelbar vor dem Schreiben gelesen: der
       // Kalender kennt updated_at nicht, und ohne ihn griffe der Schutz gegen
       // ein verlorenes Update nicht (CAL-003).
@@ -191,10 +211,12 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         auftrag.bestaetigt,
       );
     },
-    onSuccess: async () => {
+    onSuccess: async (_ergebnis, auftrag) => {
       setOffen(null);
+      setRueckgaengig(auftrag.zurueck ?? null);
       // Erst jetzt wandert die Kachel - vorher hat der Server nichts zugesagt.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
     },
     onError: (fehler, auftrag) => {
       setOffen(istAusserhalbArbeitszeit(fehler) ? auftrag.v : null);
@@ -202,6 +224,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   });
 
   function setze(teil: Partial<KalenderParameter>) {
+    // Wer den Ausschnitt wechselt, hat die letzte Verschiebung hinter sich
+    // gelassen - eine Leiste, die dabei stehen bliebe, boete das Rueckgaengig
+    // fuer etwas an, das gar nicht mehr zu sehen ist.
+    setRueckgaengig(null);
     setSuche(schreibeParameter({ ...p, ...teil }), { replace: false });
   }
 
@@ -282,6 +308,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     const person = alleTherapeuten.find((t) => t.staff_member_id === staffMemberId);
     const ende = ziel.startMinute + dauer;
 
+    // Die Umkehrung wird VOR dem Schreiben festgehalten: danach ist der alte
+    // Stand aus den geladenen Terminen nicht mehr abzulesen.
+    const altesDatum = p.ansicht === 'tag' ? bereich.von : g.spalteId;
+    const altePerson = alleTherapeuten.find((t) => t.staff_member_id === g.eintrag.staff_member_id);
+
     setOffen(null);
     verschieben.mutate({
       v: {
@@ -293,6 +324,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         beschreibung: `${person?.display_name ?? 'Behandelnde Person'}, ${wochentagKurz(datum)} ${tagesZahl(datum)}, ${minuteZuZeit(ziel.startMinute)}–${minuteZuZeit(ende)}`,
       },
       bestaetigt: false,
+      zurueck: {
+        terminId: ziel.terminId,
+        staffMemberId: g.eintrag.staff_member_id,
+        datum: altesDatum,
+        startMinute: g.beginnMinute,
+        endeMinute: g.endeMinute,
+        beschreibung: `${alnamePerson(altePerson)}, ${wochentagKurz(altesDatum)} ${tagesZahl(altesDatum)}, ${minuteZuZeit(g.beginnMinute)}–${minuteZuZeit(g.endeMinute)}`,
+      },
     });
   }
 
@@ -464,6 +503,35 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
       {laedt ? <LoadingState label="Termine werden geladen …" /> : null}
       {termine.isError ? <ErrorState title="Die Termine konnten nicht geladen werden." /> : null}
+
+      {/* Rückgängig-Leiste (UX-010). Ein Termin wandert mit einer Geste, und
+          eine Geste ist schnell versehentlich gemacht. Das Rückgängig ist
+          selbst ein normaler Schreibvorgang: derselbe Weg, dieselben
+          serverseitigen Prüfungen, ein eigener Auditeintrag. Ist der alte
+          Platz inzwischen belegt, sagt der Server das - und der Termin bleibt,
+          wo er ist. */}
+      {rueckgaengig && !verschieben.isPending ? (
+        <div
+          role="status"
+          className="border-line-strong bg-surface-sunken nicht-drucken mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3"
+        >
+          <p className="text-ink text-sm">
+            Termin verschoben. Vorher: <strong>{rueckgaengig.beschreibung}</strong>
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() =>
+              // `bestaetigt` steht auf true: der alte Platz war bereits in
+              // Gebrauch, eine Arbeitszeit-Rückfrage dafür wäre eine Frage
+              // nach etwas, das die Praxis schon so hatte.
+              verschieben.mutate({ v: rueckgaengig, bestaetigt: true })
+            }
+          >
+            Rückgängig
+          </Button>
+        </div>
+      ) : null}
 
       {termine.isSuccess && !laedt && spaltenModell.length > 0 ? (
         <CalendarGrid
