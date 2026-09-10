@@ -13,6 +13,20 @@ describe('AppShell', () => {
     expect(screen.getAllByRole('link', { name: 'Patient:innen' }).length).toBeGreaterThan(0);
   });
 
+  it('fuehrt die Marke in der Kopfzeile, nicht den Organisationsnamen', () => {
+    // ADR-003: Mandantenfaehigkeit ist keine Produktfunktion - es gibt eine
+    // Praxis, und die heisst Own Motion. Der Name aus den Stammdaten
+    // ("Test Praxis Tuebingen" im Seed) waere daneben eine zweite Antwort auf
+    // dieselbe Frage. Umkehrbar nach ANN-021.
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    expect(screen.getByRole('img', { name: 'Own Motion' })).toBeInTheDocument();
+    expect(screen.queryByText('Test Praxis Tuebingen')).toBeNull();
+  });
+
   it('bietet einem reinen Patientenkonto keine Kartei an', () => {
     renderWithProviders(
       <AppShell user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()}>

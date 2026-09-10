@@ -17,6 +17,12 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: 'Anmelden' })).toBeInTheDocument();
   });
 
+  it('zeigt die Marke statt des Worts Praxisplattform', () => {
+    render(<LoginPage />);
+    expect(screen.getByRole('img', { name: 'Own Motion' })).toBeInTheDocument();
+    expect(screen.queryByText('Praxisplattform')).toBeNull();
+  });
+
   it('nennt bei falschen Zugangsdaten keinen Grund (kein Konto-Orakel)', async () => {
     signInWithPassword.mockResolvedValueOnce({ error: { message: 'Invalid login credentials' } });
     const user = userEvent.setup();
