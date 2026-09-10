@@ -604,3 +604,33 @@ der freien Stelle im Kalender.
 8. **Am Handy** (~375 px): Der Kalender scrollt waagerecht wie bisher; ein
    Tipp auf freie Fläche funktioniert auch nach dem Scrollen und trifft die
    richtige Spalte.
+
+---
+
+## UX-006 — Nächste Termine in der Akte
+
+**Was geprüft wird:** dass die Akte auch nach vorn schaut.
+
+**Vorbereitung:** In der Akte von Max Mustermann einen Termin in der Zukunft
+anlegen (etwa nächste Woche).
+
+1. **Der Blick nach vorn.** `/patienten/…` öffnen. Zwischen „Versorgung" und
+   den Verordnungen steht „Nächste Termine" mit Datum, Uhrzeit, Terminart und
+   behandelnder Person. Ein Tipp darauf öffnet den Termin.
+2. **Nur Künftiges.** Den Termin absagen und die Seite neu laden: er
+   verschwindet aus der Liste (im Kalender bleibt er). Einen vergangenen
+   Termin anlegen: er erscheint dort **nicht** — er steht im
+   Behandlungsverlauf darunter.
+3. **Leer heißt leer.** Bei einer Person ohne künftige Termine steht „Kein
+   weiterer Termin vereinbart." als Satz, nicht als leere Fläche.
+4. **Keine Anschrift.** Der Abschnitt zeigt **keine** Adresse. Die braucht der
+   Blick in die Akte nicht; sie steht in der Tagesliste und am Termin
+   (ADR-004).
+5. **Ein Weg, nicht zwei.** Auf der Seite gibt es genau **eine** Schaltfläche
+   „Termin anlegen" — oben in der Akte, und sie bleibt bei einer inaktiven
+   Person aus.
+6. **Patientenkonto.** Als `max.mustermann@patient.invalid` die eigene Ansicht
+   öffnen: der Abschnitt erscheint nicht.
+7. **Am Handy** (~375 px): Die Einträge brechen um, statt seitwärts zu
+   scrollen. **Zielwert der Story:** die Frage „wann bin ich das nächste Mal
+   dran?" ist in der Akte beantwortet, ohne den Kalender zu öffnen.

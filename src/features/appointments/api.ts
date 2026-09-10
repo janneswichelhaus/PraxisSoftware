@@ -225,6 +225,43 @@ export const leererTermin: Record<AppointmentFormField, string> = {
 };
 
 // -----------------------------------------------------------------------------
+// Künftige Termine in der Akte (UX-006)
+// -----------------------------------------------------------------------------
+
+const upcomingAppointmentSchema = z.object({
+  id: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: appointmentTypeSchema,
+  status: appointmentStatusSchema,
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  organization_time_zone: z.string(),
+});
+
+export type UpcomingAppointment = z.infer<typeof upcomingAppointmentSchema>;
+
+/**
+ * Die nächsten Termine einer Patientin.
+ *
+ * Begrenzt über die Anzahl, nicht über einen Zeitraum: Ein Folgetermin kann
+ * drei Monate entfernt liegen, und ein Zeitfenster, das ihn sicher einschließt,
+ * wäre für die Akte zu weit. Ohne Adresse - die Akte braucht sie nicht.
+ */
+export async function fetchUpcomingAppointments(
+  patientId: string,
+  limit = 5,
+): Promise<UpcomingAppointment[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_upcoming_appointments', {
+    p_patient_id: patientId,
+    p_limit: limit,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die nächsten Termine konnten nicht geladen werden.');
+  return z.array(upcomingAppointmentSchema).parse(data ?? []);
+}
+
+// -----------------------------------------------------------------------------
 // Vorbelegung des Terminformulars (UX-003)
 //
 // Der häufigste Einzelvorgang am Ende eines Besuchs ist der nächste Termin
