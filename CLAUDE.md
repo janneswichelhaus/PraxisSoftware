@@ -105,10 +105,15 @@ davon abhängt, vorher fertigstellen.
 src/app  src/components  src/features  src/lib  src/routes
 supabase/migrations  supabase/tests  supabase/seed.sql
 tests/e2e  scripts  docs/adr  docs/decisions  docs/development  docs/product  docs/abnahme
+marke/logo  marke/app
 ```
 
 Feature-Code liegt fachlich unter `src/features/<domäne>/`. Modularer Monolith
 nach ADR-015 — keine Microservices, keine Clean-Architecture-Schichten.
+
+`marke/` enthält Wortmarke, App-Symbole und die Regeln ihrer Verwendung
+(`marke/README.md`, festgelegt 2026-09-10). Es ist die einzige Quelle dafür;
+die Anwendung selbst ist noch **nicht** umgebrandet.
 
 ## Befehle
 
