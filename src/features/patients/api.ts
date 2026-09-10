@@ -72,6 +72,52 @@ export async function fetchPatient(patientId: string): Promise<Patient | null> {
   return patientSchema.parse(data);
 }
 
+// -----------------------------------------------------------------------------
+// Serverseitige Suche (UX-004)
+//
+// Getrennt von `fetchPatients`: Die Kartei liefert die volle Projektion für
+// eine Liste mit Filtern, die Suche nur Name, Geburtsdatum und Status für eine
+// Trefferliste. Gesucht wird serverseitig - die Alternative wäre, für jedes
+// Suchfeld den gesamten Bestand auszuliefern.
+// -----------------------------------------------------------------------------
+
+/**
+ * Kürzester Suchbegriff, der überhaupt sucht.
+ *
+ * Muss zu `app.patient_search_min_length()` passen. Die Zahl steht hier ein
+ * zweites Mal, damit die Oberfläche den Hinweis „Mindestens drei Zeichen"
+ * geben kann, ohne dafür eine Anfrage zu stellen; verbindlich ist die
+ * Datenbank.
+ */
+export const SUCHE_MINDESTLAENGE = 3;
+
+const patientSearchHitSchema = z.object({
+  id: z.string(),
+  given_name: z.string(),
+  family_name: z.string(),
+  date_of_birth: z.string().nullable(),
+  status: z.enum(['active', 'inactive']),
+});
+
+export type PatientSearchHit = z.infer<typeof patientSearchHitSchema>;
+
+/**
+ * Sucht Patient:innen der eigenen Organisation.
+ *
+ * Ein zu kurzer Begriff liefert eine leere Liste - serverseitig, nicht als
+ * Höflichkeit der Oberfläche. Die Obergrenze der Treffermenge liegt ebenfalls
+ * in der Datenbank.
+ */
+export async function searchPatients(begriff: string, limit = 10): Promise<PatientSearchHit[]> {
+  const { data, error } = (await getSupabase().rpc('search_patients', {
+    p_query: begriff,
+    p_limit: limit,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Suche konnte nicht ausgeführt werden.');
+  return z.array(patientSearchHitSchema).parse(data ?? []);
+}
+
 /**
  * Protokolliert das Öffnen einer Patientenakte (ADR-010).
  *

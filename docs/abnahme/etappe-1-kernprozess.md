@@ -536,3 +536,38 @@ einem leeren Formular anfängt.
    ist einhändig erreichbar. **Zielwert der Story:** vom abgeschlossenen
    Termin zum angelegten Folgetermin in **zwei** Taps (vorher: acht
    Interaktionen über drei Seiten).
+
+---
+
+## UX-004 — Patientensuche von jeder Seite
+
+**Was geprüft wird:** dass von jeder Seite ein Weg in eine Akte führt — und
+dass die Suche nicht dazu taugt, sich den Bestand anzusehen.
+
+1. **Überall erreichbar.** Als `anna.beispiel@praxis.invalid` anmelden. In der
+   Kopfleiste steht ein Feld „Name suchen …". Es ist auf `/`, `/kalender`,
+   `/patienten` und `/termine/…` dasselbe Feld an derselben Stelle.
+2. **Erst ab drei Zeichen.** „mu" tippen: darunter steht „Mindestens 3
+   Zeichen." und es passiert nichts weiter. „mus" tippen: „Max Mustermann"
+   erscheint, mit Geburtsdatum darunter.
+3. **Umlaute sind egal.** Nacheinander „Müller", „Mueller" und „Muller"
+   tippen — sofern eine Person mit Umlaut angelegt ist, findet jede Schreibweise
+   sie. (Im Seed gibt es keine; dafür eine Person anlegen, etwa „Jörg Müller".)
+4. **Tastatur.** Ins Feld tippen, dann Pfeil-runter: der erste Treffer wird
+   hervorgehoben. Eingabetaste: die Akte öffnet sich. Escape schließt die
+   Liste, ohne zu navigieren.
+5. **Kein Bestandsabzug.** „%" oder „___" tippen: „Kein Treffer." Ein
+   Platzhalter ist kein Suchbegriff — gesucht wird nach Zeichen, nicht nach
+   einem Muster. Ein einzelner Buchstabe liefert ebenfalls nichts.
+6. **Nicht in Versorgung ist gekennzeichnet.** Nach „Platzhalter" suchen: der
+   Treffer trägt das Abzeichen „Nicht in Versorgung" — als Text, nicht als
+   Farbe.
+7. **Patientenkonto.** Als `max.mustermann@patient.invalid` anmelden: in der
+   Kopfleiste steht **kein** Suchfeld. Das ist Darstellung; die Serverfunktion
+   weist ein Patientenkonto ohnehin ab.
+8. **Am Handy** (~375 px): Das Suchfeld steht in einer eigenen Zeile unter dem
+   Praxisnamen, ist volle Breite und mindestens 44 px hoch. Die Trefferliste
+   legt sich über den Inhalt und scrollt bei vielen Treffern in sich.
+   **Zielwert der Story:** vom Kalender in eine beliebige Akte in **einem**
+   Feld und **einem** Tap (vorher: Bereichswechsel, Liste laden, filtern,
+   tippen).
