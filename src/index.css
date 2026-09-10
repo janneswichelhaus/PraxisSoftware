@@ -1,11 +1,19 @@
 @import 'tailwindcss';
 
 /* =============================================================================
-   Temporäre, neutrale Designsprache.
+   Designsprache: ruhig, mit der Marke Own Motion als Akzent.
 
-   Bewusst kein Branding (ADR-015). Ziel ist eine ruhige, medizinisch
-   professionelle Oberfläche: viel Weißraum, wenige Flächen, klare Hierarchie
-   über Typografie statt über Kästen.
+   Bis 2026-09-10 bewusst ohne Branding, weil es keins gab. Seitdem liegt die
+   Marke in `marke/` fest; der Akzent trägt ihre Hauptfarbe. Alles andere —
+   Flächen, Schrift, Radien, Statusfarben — bleibt neutral: die Marke ist ein
+   Akzent, kein Anstrich. (ADR-015 entscheidet über Branding ausdrücklich
+   nicht — „Design-System und Branding" steht dort unter „Bewusst nicht
+   Bestandteil dieser Entscheidung". Es steht dieser Änderung also nicht
+   entgegen.)
+
+   Ziel bleibt eine ruhige, medizinisch professionelle Oberfläche: viel
+   Weißraum, wenige Flächen, klare Hierarchie über Typografie statt über
+   Kästen.
 
    Die Farbwerte sind zurückhaltend gewählt und auf Kontrast geprüft; Fließtext
    und Bedienelemente erreichen mindestens WCAG AA.
@@ -31,10 +39,29 @@
      traegt keine Bedienbedeutung. */
   --color-line-strong: oklch(63% 0.012 250);
 
-  /* Ruhiges Petrol als Akzent - medizinisch konnotiert, nicht knallig. */
-  --color-accent: oklch(48% 0.075 205);
-  --color-accent-hover: oklch(42% 0.078 205);
-  --color-accent-soft: oklch(95.5% 0.018 205);
+  /* Akzent = Hauptfarbe der Marke Own Motion, #004429 (marke/README.md).
+     Loest das ruhige Petrol aus UI-000 ab; die Marke ist seit 2026-09-10
+     festgelegt und marke/README.md ist die einzige Quelle des Werts.
+     #004429 entspricht oklch(34.1% 0.0781 159.2) - nachgerechnet mit den
+     Formeln aus src/lib/kontrast.ts, Kontrast 11.30:1 auf Weiss. */
+  --color-accent: oklch(34.1% 0.0781 159);
+  /* Dunkler statt heller, gegen die naheliegende Vermutung bei einer schon
+     dunklen Grundfarbe: accent-hover ist nicht nur Knopfflaeche, sondern in
+     rund einem Dutzend Stellen auch Textfarbe (`text-accent
+     hover:text-accent-hover`). Heller wuerde beides schwaechen - den weissen
+     Text auf dem Knopf und den Link auf heller Flaeche. Dunkler staerkt
+     beides. Der Wert ist keine erfundene Abstufung, sondern das Tiefgruen der
+     Marke (#042c1b): marke/README.md laesst nur die dort genannten Farben zu.
+     Der Abstand zum Akzent ist mit 8 Prozentpunkten Helligkeit groesser als
+     die 6 der bisherigen Palette, die Zustandsanzeige also deutlicher als
+     zuvor. Siehe ANN-020. */
+  --color-accent-hover: oklch(26.1% 0.0544 160);
+  /* Gleiche Helligkeit wie die uebrigen weichen Flaechen, Farbton der Marke.
+     Buntheit bewusst unter positiv-soft (0.03 bei 150): die beiden liegen im
+     Farbton jetzt nur 9 Grad auseinander und muessen als Abzeichen
+     unterscheidbar bleiben. Papier (#f6f7f4) taugt hier nicht - es liegt mit
+     97.5% zu dicht an canvas (98.6%), um eine Flaeche zu markieren. */
+  --color-accent-soft: oklch(95.5% 0.022 159);
 
   --color-danger: oklch(48% 0.16 25);
   --color-danger-soft: oklch(96% 0.03 25);
