@@ -95,6 +95,28 @@ describe('AppShell', () => {
     expect(betrieb.some((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
   });
 
+  it('gibt jeder Seite dieselbe Breite (UI-001)', () => {
+    // Der gemeldete Fehler: beim Wechsel zwischen Kalender und jeder anderen
+    // Seite sprang das ganze Geruest, weil allein der Kalender die breite
+    // Spalte bekam. Verglichen wird der Rahmen um den Inhalt - er traegt die
+    // Breitenklassen.
+    const rahmen = (pfad: string) => {
+      const { unmount } = renderWithProviders(
+        <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
+          <p>Inhalt</p>
+        </AppShell>,
+        pfad,
+      );
+      const klassen = screen.getByRole('main').parentElement?.className ?? '';
+      unmount();
+      return klassen;
+    };
+
+    expect(rahmen('/kalender')).toBe(rahmen('/patienten'));
+    expect(rahmen('/kalender')).toBe(rahmen('/'));
+    expect(rahmen('/kalender')).not.toMatch(/max-w-/);
+  });
+
   it('enthaelt einen Sprunglink zum Inhalt', () => {
     renderWithProviders(
       <AppShell user={testUser(['office'])} onSignOut={vi.fn()}>
