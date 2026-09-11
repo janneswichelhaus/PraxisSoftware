@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 2.9 · Stand 2026-09-11 · **in Kraft**
+Version 3.0 · Stand 2026-09-11 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -45,13 +45,25 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop LOE-EPIC-001 Löschung und Retention
+/feature-loop CAL-EPIC-003a Terminzustände
 ```
 
-- **Danach, in dieser Reihenfolge:** `CAL-EPIC-003a` Terminzustände ·
-  `CAL-EPIC-003b` Serie · `DAT-EPIC-001` Dateiablage.
-- **Ersatz**, falls LOE-EPIC-001 blockiert ist: `CAL-EPIC-003a` (setzt
-  ADR-018 voraus).
+- **Voraussetzung:** ADR-018 muss von Jannes bestätigt sein. Ist er es nicht,
+  gilt `PROJECT_PRINCIPLES.md` §15.1 — der Zustandsautomat ist kein
+  Hard-Stop-Thema, die offenen Punkte werden als Annahme registriert.
+- **Danach, in dieser Reihenfolge:** `CAL-EPIC-003b` Serie ·
+  `DAT-EPIC-001` Dateiablage · `ABR-EPIC-001`.
+- **LOE-EPIC-001 ist am 2026-09-11 fertig** (fünf Stories): Retention Schedule
+  als Daten, Anker „Abschluss der Versorgung", Legal Hold, täglicher Löschlauf
+  mit Löschjournal und Wiederanwendung nach einem Restore, Aufbewahrungs-
+  übersicht für `owner`. Die Abnahmeschritte stehen in
+  `docs/abnahme/etappe-1-kernprozess.md` (LOE-001b, LOE-002b); der Blick auf
+  die laufende Anwendung hinter der Anmeldung war in der Cloudumgebung wieder
+  nicht möglich und liegt bei Jannes. **Neu zu bestätigen: ANN-029 bis
+  ANN-033.** Zwei betriebliche Punkte hängen daran und stehen in
+  `docs/DEVELOPMENT.md`: Der Löschlauf braucht `pg_cron` im Produktivprojekt
+  (OPS-001), und das Restore-Verfahren muss das Löschjournal sichern und
+  wieder einspielen (OPS-003).
 - **UX-EPIC-001 ist am 2026-09-11 fertig und in `main`** (elf Stories, PR #18).
   Die Abnahmeschritte stehen in `docs/abnahme/etappe-1-kernprozess.md`; der
   Blick auf die laufende Anwendung hinter der Anmeldung war in der
@@ -800,6 +812,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | Marke Own Motion als Dateien und Regel (Docs)           | fertig | 2026-09-10     | `eb5c234`                                                           | —             |
 | MARKE-001 Marke in der Anwendung                        | fertig | 2026-09-11     | `577ecd6`, `fb5cee0`, `7486c95`, `7109595`, `8f576b2`, Merge PR #19 |               |
 | STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`, `06b758c`, `0d7bd3c`, `719faed`, `56b2706`, `4afaf97`, `23cfb35`, PR #20 | 2026-09-11    |
+| LOE-EPIC-001 (LOE-001a/b/c, LOE-002a/b)                 | fertig | 2026-09-11     | `042c325`, `169469d`, `310dc3b`, `0a3a2d7`, `c88bc71`, `ae4e85a`    |               |
 
 ---
 
@@ -807,6 +820,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.0     | 2026-09-11 | **LOE-EPIC-001 fertig** (fünf Stories): Retention Schedule und Datenklassen an genau einer Stelle — `retention_classes`/`retention_assignments`, jede der 22 Tabellen zugeordnet, ein Test gegen `pg_tables` (ANN-001 verankert, ANN-029 bis ANN-031 neu) · Anker „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang in der Akte, Rollenschnitt ohne `office` (ANN-032) · Legal Hold als expliziter Zustand mit Beginn, Grund, Person und Ende, nur `owner`, ohne Pflegeoberfläche (ANN-033) · täglicher Löschlauf mit vier Regeln, Löschjournal als Nachweis und idempotente Wiederanwendung nach einem Restore · Aufbewahrungsübersicht für `owner` unter Betrieb → Aufbewahrung. Go-live-Blocker 1 in `docs/DEVELOPMENT.md` ist damit auf zwei betriebliche Punkte geschrumpft (pg_cron im Produktivprojekt, Journal-Sicherung im Restore-Verfahren). **Nächster Loop: CAL-EPIC-003a.** |
 | 2.9     | 2026-09-11 | **STAFF-EPIC-002 fertig** (fünf Stories): Rechteschnitt nach E10 — Stammdaten `owner` und `office`, Beschäftigungsstatus und Zugänge nur `owner`, Privatangaben folgen dem Leserecht (ANN-024); `PROJECT_PRINCIPLES.md` 0.6 zieht §4.3 und §4.5 nach §21 nach · Zugang einladen, annehmen, zurücknehmen: die Berechtigung entsteht in der Datenbank, das Konto beim Anmeldedienst, und ein Konto ohne offene Einladung bleibt zugriffslos (ANN-025, ANN-026) · Rollen ändern und Zugang sperren mit Aussperrschutz für die letzte aktive Inhaberin · Kennwort zurücksetzen über die Auth-Mails des Providers (B13) · Selbstbedienung „Mein Konto": Kennwort (ANN-027), zweiter Faktor als TOTP, alle Sitzungen beenden (R10) · MFA für `owner` eingerichtet und sichtbar, **nicht** erzwungen (ANN-028; Jannes hat am selben Tag entschieden, die Pflicht erst mit einer feststehenden Domain zu planen). **E10 und E11 erledigt. Nächster Loop: LOE-EPIC-001.** |
 | 2.8     | 2026-09-11 | **MARKE-001 — die Anwendung trägt die Marke Own Motion** (auf ausdrücklichen Auftrag, **nicht** aus der Roadmap): Favicon und App-Symbol über byte-gleiche Kopien in `public/marke/` (`src/marke.test.ts` hält die Gleichheit fest, `marke/` bleibt einzige Quelle); `--color-accent` auf die Hauptfarbe `#004429`, Hover auf das Tiefgrün `#042c1b` der Marke (ANN-022) — dunkler statt heller, weil `accent-hover` überwiegend Textfarbe ist; Wortmarke in Kopfzeile und Anmeldemaske, Seitentitel „Own Motion", der Organisationsname entfällt aus der Kopfzeile (ANN-023). Kontrastgate erweitert statt abgeschwächt. Abnahmeschritt MARKE-001 in `docs/abnahme/etappe-1-kernprozess.md`. Offen bleiben die drei Befunde aus `marke/README.md` (Favicon bei 16 px unlesbar, App-Symbole nur als PNG, C2PA-Metadaten) sowie Schrift und Radien. Beim Zusammenführen mit UX-EPIC-001 wurden die beiden Annahmen der Marke von ANN-020/021 auf **ANN-022/023** umnummeriert: Beide Zweige hatten parallel dieselben freien Nummern gegriffen. **Nächster Loop bleibt STAFF-EPIC-002.** |
 | 2.7     | 2026-09-11 | **UX-EPIC-001 fertig** (elf Stories): Tagesliste des Hausbesuchstags mit Anschrift, `tel:`-Link und Zugangshinweis · Navigations-Handoff an Google Maps (ANN-018 verankert, nur auf Aktion) · Folgetermin und Vorbelegung „Hausbesuch, ich, heute" · serverseitige Patientensuche von jeder Seite · Tap auf freie Zeit im Kalender · nächste Termine in der Akte · „Behandlung abschließen" in einem serverseitigen Vorgang · Textbausteine (ANN-020) · Textverlust-Schutz und Behebung des VER-003-Restpunkts aus ANN-019 · langer Druck am Finger und Rückgängig-Leiste · Tagesplan im Funkloch lesbar (ANN-021, beantwortet die offene Folgefrage aus ADR-001). **Nächster Loop: STAFF-EPIC-002.** |
