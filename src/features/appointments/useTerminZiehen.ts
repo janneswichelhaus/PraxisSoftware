@@ -82,6 +82,14 @@ export interface ZiehOptionen {
   /** Oberer Rand des Zeitfensters in Minuten seit Mitternacht. */
   fensterVon: number;
   fensterBis: number;
+  /**
+   * Höhe einer Stunde in Pixeln - die aktuelle Zoomstufe (CAL-011).
+   *
+   * Sie übersetzt die gezogene Strecke in Minuten. Ohne sie zöge ein Termin
+   * bei jeder Zoomstufe gleich weit in Pixeln und damit unterschiedlich weit
+   * in der Zeit.
+   */
+  stundenHoehe: number;
   /** Praxisraster in Minuten; der Beginn rastet darauf ein (CAL-005). */
   raster: number | null;
   /** Liefert die Spaltenkennung an einer Bildschirmposition, sonst null. */
@@ -213,8 +221,8 @@ export function useTerminZiehen(optionen: ZiehOptionen): TerminZiehen {
       // Das Bildlaufverhalten des Browsers würde sonst mitziehen.
       event.preventDefault();
 
-      const { fensterVon, fensterBis, raster, spalteAn } = opt.current;
-      const verschoben = pixelZuMinute(dy, 0);
+      const { fensterVon, fensterBis, raster, spalteAn, stundenHoehe } = opt.current;
+      const verschoben = pixelZuMinute(dy, 0, stundenHoehe);
       const roh = aufRaster(s.startMinute + verschoben, raster);
       // Der Termin bleibt vollständig im dargestellten Fenster.
       const startMinute = Math.max(fensterVon, Math.min(fensterBis - s.dauer, roh));

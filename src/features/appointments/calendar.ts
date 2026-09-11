@@ -96,6 +96,8 @@ export interface KalenderParameter {
   person: string | null;
   standort: string | null;
   status: StatusFilter;
+  /** Höhe einer Stunde in Pixeln (CAL-011). */
+  zoom: Zoomstufe;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -106,6 +108,7 @@ export function leseParameter(suche: URLSearchParams, heute: string): KalenderPa
   const person = suche.get('person');
   const standort = suche.get('standort');
   const status = suche.get('status');
+  const zoom = Number(suche.get('zoom'));
 
   return {
     ansicht: KALENDER_ANSICHTEN.includes(ansicht as KalenderAnsicht)
@@ -115,6 +118,7 @@ export function leseParameter(suche: URLSearchParams, heute: string): KalenderPa
     person: person && UUID.test(person) ? person : null,
     standort: standort && UUID.test(standort) ? standort : null,
     status: STATUS_FILTER.includes(status as StatusFilter) ? (status as StatusFilter) : 'active',
+    zoom: istZoomstufe(zoom) ? zoom : ZOOM_STANDARD,
   };
 }
 
@@ -132,6 +136,9 @@ export function schreibeParameter(p: KalenderParameter): URLSearchParams {
   if (p.person) suche.set('person', p.person);
   if (p.standort) suche.set('standort', p.standort);
   if (p.status !== 'active') suche.set('status', p.status);
+  // Die Zoomstufe reist mit, sobald sie von der Voreinstellung abweicht: sie
+  // ueberlebt damit das Neuladen, ohne jede Adresse zu verlaengern.
+  if (p.zoom !== ZOOM_STANDARD) suche.set('zoom', String(p.zoom));
   return suche;
 }
 
@@ -263,15 +270,90 @@ export function kachelBreite(
 // Richtungen zu einer Multiplikation - und den Tag beim Blättern gleich hoch.
 // -----------------------------------------------------------------------------
 
-/** Höhe einer Stunde im Zeitgitter. Grundlage aller Umrechnungen. */
-export const STUNDEN_HOEHE = 56;
+/**
+ * Zoomstufen des Zeitgitters als Höhe einer Stunde in Pixeln (CAL-011).
+ *
+ * Bis 2026-09-11 gab es genau eine Höhe: 56 px je Stunde. Darin misst eine
+ * Viertelstunde 14 px und das Praxisraster von fünf Minuten 4,7 px — zu wenig,
+ * um es zu zeichnen. Das Gitter zeigte deshalb nur Stundenlinien, während im
+ * Hintergrund auf fünf Minuten genau terminiert wird. Wer einen Termin um zehn
+ * Minuten verschieben wollte, zog gegen ein Raster, das er nicht sah.
+ *
+ * Die Stufen wachsen um je rund die Hälfte. Sie decken beide Fragen ab: den
+ * Überblick über eine ganze Woche (40) und das genaue Legen eines Termins
+ * (208).
+ */
+export const ZOOMSTUFEN = [40, 64, 96, 144, 208] as const;
+export type Zoomstufe = (typeof ZOOMSTUFEN)[number];
 
-export function minuteZuPixel(minute: number, fensterVon: number): number {
-  return ((minute - fensterVon) / 60) * STUNDEN_HOEHE;
+/**
+ * Voreinstellung: die kleinste Stufe, auf der das Fünf-Minuten-Raster noch
+ * sichtbar ist (96 px je Stunde sind 8 px je fünf Minuten).
+ */
+export const ZOOM_STANDARD: Zoomstufe = 96;
+
+export function istZoomstufe(wert: unknown): wert is Zoomstufe {
+  return ZOOMSTUFEN.includes(wert as Zoomstufe);
 }
 
-export function pixelZuMinute(pixel: number, fensterVon: number): number {
-  return fensterVon + (pixel / STUNDEN_HOEHE) * 60;
+/** Eine Stufe hinauf oder hinunter; an den Enden bleibt es stehen. */
+export function zoomSchritt(aktuell: Zoomstufe, richtung: 1 | -1): Zoomstufe {
+  const index = ZOOMSTUFEN.indexOf(aktuell);
+  const ziel = Math.min(
+    ZOOMSTUFEN.length - 1,
+    Math.max(0, (index < 0 ? ZOOMSTUFEN.indexOf(ZOOM_STANDARD) : index) + richtung),
+  );
+  return ZOOMSTUFEN[ziel]!;
+}
+
+/**
+ * Abstand in Pixeln, unter dem eine Rasterlinie keine Hilfe mehr ist.
+ *
+ * Enger gezeichnet verschwimmen die Linien zu einer grauen Fläche: sie
+ * kosten Aufmerksamkeit, ohne eine Zeit ablesbar zu machen.
+ */
+const LINIEN_MINDESTABSTAND = 7;
+
+export interface Gitterlinien {
+  /** Feinste gezeichnete Stufe in Minuten; null, wenn dafür kein Platz ist. */
+  fein: number | null;
+  /** Halbe Stunden als mittlere Betonung zwischen fein und Stunde. */
+  halbeStunde: boolean;
+}
+
+/**
+ * Welche Linien bei dieser Zoomstufe gezeichnet werden.
+ *
+ * Die feinste Stufe ist das **Praxisraster** selbst und nicht eine fest
+ * gewählte Zahl: gezeichnet wird, worauf ein Termin tatsächlich einrastet
+ * (CAL-005). Stellt die Praxis auf zehn oder fünfzehn Minuten um, folgt das
+ * Gitter. Passt das Praxisraster nicht mehr in den Mindestabstand, tritt die
+ * Viertelstunde an seine Stelle; reicht auch die nicht, bleiben Stunden.
+ */
+export function gitterlinien(stundenHoehe: number, praxisRaster: number | null): Gitterlinien {
+  const passt = (schritt: number) => (stundenHoehe * schritt) / 60 >= LINIEN_MINDESTABSTAND;
+  const raster = praxisRaster && praxisRaster > 0 ? praxisRaster : 5;
+  return {
+    fein: passt(raster) ? raster : passt(15) ? 15 : null,
+    halbeStunde: passt(30),
+  };
+}
+
+/** Alle Linien einer Stufe im Fenster, als Minuten seit Mitternacht. */
+export function linienAchse(vonMinute: number, bisMinute: number, schritt: number): number[] {
+  if (schritt <= 0) return [];
+  const linien: number[] = [];
+  for (let m = Math.ceil(vonMinute / schritt) * schritt; m < bisMinute; m += schritt)
+    linien.push(m);
+  return linien;
+}
+
+export function minuteZuPixel(minute: number, fensterVon: number, stundenHoehe: number): number {
+  return ((minute - fensterVon) / 60) * stundenHoehe;
+}
+
+export function pixelZuMinute(pixel: number, fensterVon: number, stundenHoehe: number): number {
+  return fensterVon + (pixel / stundenHoehe) * 60;
 }
 
 /**

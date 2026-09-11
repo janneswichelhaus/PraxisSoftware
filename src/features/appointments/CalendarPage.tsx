@@ -29,11 +29,14 @@ import {
   bereichFuer,
   blaettern,
   fensterMitArbeitszeit,
+  gitterlinien,
   leseParameter,
   minuteZuZeit,
   schreibeParameter,
   tageImBereich,
   tagesFenster,
+  ZOOMSTUFEN,
+  zoomSchritt,
   type KalenderAnsicht,
   type KalenderParameter,
   type StatusFilter,
@@ -93,6 +96,18 @@ function bereichsBeschriftung(ansicht: KalenderAnsicht, von: string, bis: string
   return `${lang(von)} – ${lang(letzter.toISOString().slice(0, 10))}`;
 }
 
+/**
+ * Wie fein das Gitter gerade ist, in Worten (CAL-011).
+ *
+ * Die Zoomstufe selbst ist eine Pixelzahl und sagt niemandem etwas. Was
+ * interessiert, ist die Frage dahinter: sehe ich gerade meine fünf Minuten?
+ */
+function rasterBeschriftung(fein: number | null, halbeStunde: boolean): string {
+  if (fein) return `${fein}-Minuten-Raster`;
+  if (halbeStunde) return 'Halbstundenraster';
+  return 'Stundenraster';
+}
+
 /** Was beim Verschieben an den Server geht, samt Beschreibung für die Rückfrage. */
 /** Anzeigename einer behandelnden Person, auch wenn die Liste sie nicht kennt. */
 function alnamePerson(person: { display_name: string } | undefined): string {
@@ -122,6 +137,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const heute = zone ? todayInTimeZone(zone) : '1970-01-01';
   const p = leseParameter(suche, heute);
   const bereich = bereichFuer(p.ansicht, p.datum);
+  // Welche Linien die gewaehlte Zoomstufe traegt - dieselbe Auskunft fuer die
+  // Beschriftung der Bedienung und fuer das Gitter selbst.
+  const linien = gitterlinien(p.zoom, user.appointmentGridMinutes);
 
   const [offen, setOffen] = useState<Verschiebung | null>(null);
   /**
@@ -420,6 +438,36 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             →
           </Button>
         </div>
+
+        {/* Zoom (CAL-011). Beschriftet wird nicht die Pixelzahl, sondern was
+            sie bewirkt - das Raster, das dabei sichtbar ist. `aria-live` sagt
+            die Änderung an, weil sonst nur ein Bild sich ändert. */}
+        <div className="flex items-center gap-1" role="group" aria-label="Zoom">
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label="Gitter verkleinern"
+            disabled={p.zoom === ZOOMSTUFEN[0]}
+            onClick={() => setze({ zoom: zoomSchritt(p.zoom, -1) })}
+          >
+            −
+          </Button>
+          <span
+            aria-live="polite"
+            className="text-ink-muted min-w-[8.5rem] text-center text-xs tabular-nums"
+          >
+            {rasterBeschriftung(linien.fein, linien.halbeStunde)}
+          </span>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label="Gitter vergrößern"
+            disabled={p.zoom === ZOOMSTUFEN[ZOOMSTUFEN.length - 1]}
+            onClick={() => setze({ zoom: zoomSchritt(p.zoom, 1) })}
+          >
+            +
+          </Button>
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -539,6 +587,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           eintraege={gitterEintraege}
           fenster={fenster}
           raster={user.appointmentGridMinutes}
+          stundenHoehe={p.zoom}
           ziehbarErlaubt={darfAendern && !verschieben.isPending}
           onVerschieben={ablegen}
           onFreieZeit={darfAendern ? freieZeit : undefined}
@@ -571,7 +620,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           : ' oder einen anderen Tag'}{' '}
         ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Dasselbe geht
         jederzeit über „Bearbeiten" in der Detailansicht — das Ziehen ist eine Abkürzung, kein
-        eigener Weg.
+        eigener Weg. Über „+" und „−" wird das Gitter feiner oder gröber; gezeichnet wird dabei
+        genau das Raster, auf dem ein Termin einrastet.
       </p>
 
       <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
