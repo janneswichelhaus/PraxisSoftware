@@ -2,10 +2,9 @@
 
 ## Status
 
-**Vorgeschlagen** — wartet auf die Bestätigung durch den Projektinhaber. Die
-Bestätigungsfragen stehen am Ende. Erst mit der Bestätigung wird
-`PROJECT_PRINCIPLES.md` §8 nachgezogen (§21); bis dahin bleibt dort der Satz
-stehen, dass der Zustandsautomat nicht definiert ist.
+**Angenommen** — vom Projektinhaber am 2026-09-11 bestätigt, alle sieben
+Fragen wie empfohlen. `PROJECT_PRINCIPLES.md` §8 ist mit Version 0.7
+nachgezogen (§21), Punkt D in `OPEN_DECISIONS.md` ist geschlossen.
 
 ## Datum
 
@@ -212,9 +211,12 @@ gültig.
 - Soll die Praxis sehen können, wie oft eine Patientin nicht angetroffen wurde
   — und wäre das eine Auswertung im Sinne von §20?
 
-## Bestätigungsfragen für Jannes
+## Bestätigungsfragen für Jannes — beantwortet am 2026-09-11
 
-Je eine Zeile genügt; „wie empfohlen" reicht.
+**Alle sieben wie empfohlen bestätigt.** Die Fragen bleiben mitsamt ihrer
+Begründung stehen: Wer in zwei Jahren wissen will, warum `documented` kein
+abgeleitetes Merkmal ist oder warum eine Absage keinen Rückweg hat, findet
+hier die Abwägung und nicht nur das Ergebnis.
 
 1. **`documented` und `invoiced` als Werte derselben Statusspalte** (Punkt 3)
    — oder lieber getrennte Merkmale neben dem Status?
