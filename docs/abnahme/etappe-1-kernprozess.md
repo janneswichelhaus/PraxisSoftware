@@ -982,3 +982,69 @@ UX-007 der Abschluss eines einzelnen Termins.
    ```
 
 „Ohne Befund" ist das erwartete Ergebnis.
+
+---
+
+## LOE-002b — Aufbewahrung und Löschung ansehen
+
+Die Übersicht ist die Seite, auf die die Datenschutzprüfung schaut: Was wird
+wie lange aufbewahrt, was ist gerade von der Löschung ausgenommen, was wurde
+gelöscht (ADR-008, ADR-007). Sie ist eine reine Lesesicht — Fristen ändern sich
+über eine Migration, nicht über einen Klick.
+
+1. **Nur für die Inhaberin.** Als `owner` anmelden, „Betrieb" öffnen. Im
+   Untermenü steht neben „Sicherheit" der neue Punkt **„Aufbewahrung"**. Mit
+   `therapist` oder `office` anmelden: Der Punkt fehlt, und der direkte Aufruf
+   von `/praxis/sicherheit/aufbewahrung` landet auf „Mein Tag".
+2. **Aufbewahrungsplan.** Zwölf Karten, je eine Datenklasse. Prüfen:
+   - „Klinische Patientenakte" nennt **10 Jahre**, „ab Abschluss der
+     Versorgung" und als Grundlage **Par. 630f Abs. 3 BGB**.
+   - „Beschäftigtendaten" und „Verordner:innen" nennen **„Keine automatische
+     Löschung"** — das ist kein Fehler, sondern der offene Punkt. Beide tragen
+     ein oranges Kürzel (`ANN-030`, `ANN-013`): eine Frist, die noch niemand
+     bestätigt hat.
+   - Jede Karte lässt sich mit „Betroffene Tabellen (n)" aufklappen. Dort
+     stehen technische Tabellennamen — absichtlich unübersetzt, weil die
+     Zuordnung sonst nicht nachprüfbar wäre.
+3. **Löschsperren.** Erwartung im Normalfall: „Keine laufende Löschsperre".
+   Eine Pflegeoberfläche gibt es bewusst noch nicht (Komfort laut Roadmap). Wer
+   den gefüllten Zustand sehen will, setzt eine Sperre am lokalen Stack von
+   Hand — mit dem `owner`-Konto:
+
+   ```sql
+   select public.place_legal_hold(
+     '66666666-6666-4666-8666-000000000001'::uuid, 'Testsperre, Abnahme');
+   ```
+
+   Danach zeigt der Abschnitt Name, Grund, Beginn und wer sie gesetzt hat.
+   Aufheben mit `select public.release_legal_hold('<id>'::uuid);`.
+
+4. **Löschjournal.** Erwartung: „Es wurde noch nichts gelöscht". Das ist
+   richtig so — im synthetischen Bestand ist keine Versorgung abgeschlossen,
+   und ohne Abschluss läuft keine Frist.
+5. **Der Löschlauf, wenn du ihn sehen willst** (optional, am lokalen Stack):
+   eine Akte auf „vor elf Jahren abgeschlossen" setzen und den Lauf einmal von
+   Hand auslösen. Danach ist die Akte samt Terminen und Dokumentation weg, und
+   das Löschjournal zeigt die Zeilen:
+
+   ```sql
+   update public.patients
+      set care_started_on = current_date - interval '12 years',
+          care_concluded_on = current_date - interval '11 years',
+          care_concluded_at = now(),
+          care_concluded_by = '11111111-1111-4111-8111-000000000001'
+    where id = '66666666-6666-4666-8666-000000000003';
+   select public.apply_retention();
+   ```
+
+   Anschließend `pnpm dlx supabase db reset`, damit der synthetische Bestand
+   wieder vollständig ist.
+
+6. **Am Handy** (~375 px): Die Karten stehen untereinander, die Liste der
+   Löschläufe bricht auf drei Zeilen um, nichts scrollt seitwärts.
+
+   ```bash
+   pnpm screenshots --breite=375 --konto=owner /praxis/sicherheit/aufbewahrung
+   ```
+
+„Ohne Befund" ist das erwartete Ergebnis.

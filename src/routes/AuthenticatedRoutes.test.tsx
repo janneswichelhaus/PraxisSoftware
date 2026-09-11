@@ -4,6 +4,7 @@ import type * as PatientsApiModule from '@/features/patients/api';
 import type * as AppointmentsApiModule from '@/features/appointments/api';
 import type * as DokumentationApiModule from '@/features/documentation/api';
 import type * as PrescriptionsApiModule from '@/features/prescriptions/api';
+import type * as RetentionApiModule from '@/features/retention/api';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
@@ -20,6 +21,12 @@ vi.mock('@/features/auth/sessionContext', async (importOriginal) => ({
   }),
 }));
 
+vi.mock('@/features/retention/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof RetentionApiModule>()),
+  fetchRetentionSchedule: () => Promise.resolve([]),
+  fetchLegalHolds: () => Promise.resolve([]),
+  fetchDeletionRuns: () => Promise.resolve([]),
+}));
 vi.mock('@/features/audit/api', () => ({
   fetchAuditEvents: () => Promise.resolve({ events: [], totalCount: 0 }),
   fetchOrganizationMembers: () => Promise.resolve([]),
@@ -60,6 +67,7 @@ vi.mock('@/features/patients/api', async (importOriginal) => ({
 }));
 
 const AUDIT = '/praxis/sicherheit/audit';
+const AUFBEWAHRUNG = '/praxis/sicherheit/aufbewahrung';
 const NEU = '/patienten/neu';
 const BEARBEITEN = '/patienten/66666666-6666-4666-8666-000000000001/bearbeiten';
 const TERMIN_NEU = '/patienten/66666666-6666-4666-8666-000000000001/termine/neu';
@@ -97,6 +105,28 @@ describe('AuthenticatedRoutes', () => {
         AUDIT,
       );
       expect(screen.queryByRole('heading', { name: 'Audit' })).toBeNull();
+      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+    },
+  );
+
+  it('oeffnet die Aufbewahrungsuebersicht fuer owner', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
+      AUFBEWAHRUNG,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Aufbewahrung und Löschung' }),
+    ).toBeInTheDocument();
+  });
+
+  it.each([['therapist'], ['team_lead'], ['office'], ['patient']] as const)(
+    'leitet %s von der Aufbewahrungsuebersicht auf die Uebersicht um',
+    async (role) => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+        AUFBEWAHRUNG,
+      );
+      expect(screen.queryByRole('heading', { name: 'Aufbewahrung und Löschung' })).toBeNull();
       expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
     },
   );

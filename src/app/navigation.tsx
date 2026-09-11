@@ -142,6 +142,9 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): SubNavEintrag[] {
   }
   if (isOwner(roles)) {
     eintraege.push({ to: '/praxis/sicherheit/audit', label: 'Sicherheit' });
+    // Aufbewahrung und Loeschung gehoeren zur Praxisleitung wie das Auditlog:
+    // beides sind Nachweise, keine Arbeitsvorraete (LOE-002b, ADR-008).
+    eintraege.push({ to: '/praxis/sicherheit/aufbewahrung', label: 'Aufbewahrung' });
   }
   eintraege.push(
     { to: '/betrieb/flotte', label: 'Radflotte', vorschau: true, end: false },
