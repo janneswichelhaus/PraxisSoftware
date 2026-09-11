@@ -172,6 +172,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | offen  | Datenschutzprüfung; Jannes (Aufbewahrung Personalakte) |
 | ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | offen  | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
 | ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | offen  | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
+| ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | offen  | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1798,3 +1799,49 @@ B9 — Aufwand `mittel` bis `groß`, deshalb heute nicht. Den Anker ganz
 verschieben (etwa auf den letzten durchgeführten Termin): eine Migration und
 eine Änderung der Regel im Löschlauf — Aufwand `klein`, solange noch nichts
 gelöscht wurde.
+
+---
+
+### ANN-033 — Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche
+
+| | |
+|---|---|
+| Kategorie | Recht |
+| Herkunft | LOE-001c; ADR-008 Punkt 7 („dokumentierter Legal-Hold-Mechanismus") und die dortige offene Folgefrage „Wer darf einen Legal Hold setzen und aufheben?" |
+| Status | offen, seit 2026-09-11 |
+| Wiedervorlage | Datenschutzprüfung (B2); außerdem sofort, wenn der erste reale Vorgang eintritt — dann zeigt sich, ob der Zuschnitt trägt |
+
+**Annahme.** Eine Löschsperre wirkt **auf genau eine Patientenakte**, wird
+**nur von `owner`** gesetzt und aufgehoben, trägt einen Pflichtgrund als
+Freitext und wird beim Aufheben **nicht gelöscht**, sondern mit Ende und
+verantwortlicher Person fortgeschrieben. Es gibt **keine Pflegeoberfläche**;
+laufende Sperren sind in der Aufbewahrungsübersicht sichtbar.
+
+**Begründung.** ADR-008 verlangt den Mechanismus und lässt Träger und
+Berechtigung offen. Der realistische Anlass in einer Einzelpraxis — Streit um
+eine Behandlung oder ein Honorar, eine Aufsichtsanfrage zu einem Fall — hängt
+an einer Akte; eine Sperre „für alles" wäre heute ein Feature ohne
+Anwendungsfall (ADR-014, Negativliste) und ließe sich als weiterer
+`subject_type` nachziehen, ohne dass sich etwas anderes ändert. Der
+Rollenschnitt folgt §4.1: Ob ein rechtlicher Vorgang läuft, entscheidet die
+Praxisleitung, nicht die behandelnde Person und nicht die Verwaltung. Dass die
+Zeile das Aufheben überlebt, verlangt ADR-008 selbst („Beginn, Grund,
+verantwortliche Person und Ende"). Die fehlende Oberfläche ist eine
+Priorisierung der Roadmap (Komfort in Stufe 1) und keine Lücke im Konzept: Ein
+Hold entsteht selten und nie in Eile.
+**Unsicher:** ob die Datenschutzprüfung eine Sperre auch für Beschäftigten-
+oder Abrechnungsdaten verlangt. Für beide gibt es heute ohnehin keine
+automatische Löschung (ANN-030), die Frage stellt sich also erst mit den
+Rechnungen.
+
+**Verankerung.** `public.legal_holds`, `app.under_legal_hold()` und
+`app.can_manage_legal_hold()` in
+`supabase/migrations/20260911170000_legal_hold.sql` — der Kopfkommentar trägt
+die Kennung. Tests in `supabase/tests/legal-hold.test.ts`, darunter der Fall,
+dass die Sperre den Löschlauf anhält (`supabase/tests/retention-run.test.ts`).
+
+**Änderungspfad.** Weiterer Gegenstand (etwa `staff_member` oder `invoice`):
+`subject_type` um den Wert erweitern und die Prüfung in die betreffende Regel
+des Löschlaufs aufnehmen — Aufwand `klein`. Pflegeoberfläche ergänzen: eine
+Seite mit zwei Aktionen auf den bestehenden Funktionen — Aufwand `klein`,
+bewusst nicht in diesem Epic.
