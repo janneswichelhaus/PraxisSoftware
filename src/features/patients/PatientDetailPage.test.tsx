@@ -390,7 +390,7 @@ describe('PatientDetailPage', () => {
       starts_at: '2027-05-19T07:00:00.000Z',
       ends_at: '2027-05-19T08:00:00.000Z',
       appointment_type: 'home_visit',
-      status: 'scheduled',
+      status: 'confirmed',
       staff_given_name: 'Anna',
       staff_family_name: 'Beispiel',
       organization_time_zone: 'Europe/Berlin',

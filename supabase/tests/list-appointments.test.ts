@@ -38,7 +38,7 @@ function lesen(
     bis,
     filter.person ?? null,
     filter.standort ?? null,
-    filter.status ?? 'scheduled',
+    filter.status ?? 'confirmed',
   ]);
 }
 
@@ -55,7 +55,7 @@ async function termin(opts: {
   staff?: string;
   patient?: string;
   typ?: 'home_visit' | 'practice' | 'video';
-  status?: 'scheduled' | 'cancelled';
+  status?: 'confirmed' | 'cancelled';
   ort?: string | null;
 }): Promise<string> {
   const typ = opts.typ ?? 'video';
@@ -86,7 +86,7 @@ async function termin(opts: {
       opts.staff ?? STAFF.anna,
       ort,
       typ,
-      abgesagt ? 'cancelled' : 'scheduled',
+      abgesagt ? 'cancelled' : 'confirmed',
       opts.tag,
       opts.von,
       opts.bis,
@@ -345,7 +345,7 @@ describe('list_appointments: Berechtigungen und Mandantentrennung', () => {
     const { rows } = await asPostgres<{ id: string }>(
       `insert into public.appointments
          (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at)
-       values ($1, $2, $3, 'video', 'scheduled',
+       values ($1, $2, $3, 'video', 'confirmed',
          ('2027-05-12 09:00'::timestamp at time zone 'Europe/Berlin'),
          ('2027-05-12 10:00'::timestamp at time zone 'Europe/Berlin'))
        returning id`,
@@ -378,7 +378,7 @@ describe('list_appointments: Berechtigungen und Mandantentrennung', () => {
 
   it('weist anon ab', async () => {
     await expect(
-      asAnon(LESEN, ['2027-05-12', '2027-05-13', null, null, 'scheduled']),
+      asAnon(LESEN, ['2027-05-12', '2027-05-13', null, null, 'confirmed']),
     ).rejects.toThrow(/permission denied|not authenticated/i);
   });
 

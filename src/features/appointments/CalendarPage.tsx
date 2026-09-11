@@ -331,9 +331,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     beginnMinute: minutesOfDay(e.starts_at, zone),
     endeMinute: minutesOfDay(e.ends_at, zone),
     farbe: farbeVon(e.staff_member_id),
-    // Nur geplante Termine werden gezogen. Ein abgeschlossener müsste erst
-    // wieder geöffnet werden, ein abgesagter bleibt terminal (CAL-004).
-    ziehbar: e.status === 'scheduled',
+    // Nur bestätigte Termine werden gezogen. Ein abgeschlossener oder als
+    // nicht angetroffen geführter müsste erst wieder geöffnet werden, ein
+    // abgesagter bleibt terminal (CAL-004, ADR-018).
+    ziehbar: e.status === 'confirmed',
   }));
 
   const fenster = fensterMitArbeitszeit(
@@ -529,9 +530,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           value={p.status}
           onChange={(e) => setze({ status: e.target.value as StatusFilter })}
         >
-          <option value="active">Geplante und abgeschlossene</option>
-          <option value="scheduled">Nur geplante</option>
-          <option value="completed">Nur abgeschlossene</option>
+          <option value="active">Alle außer abgesagten</option>
+          <option value="confirmed">Nur bestätigte</option>
+          <option value="done">Nur erledigte</option>
+          <option value="no_show">Nur nicht angetroffene</option>
           <option value="cancelled">Nur abgesagte</option>
           <option value="all">Alle</option>
         </Select>

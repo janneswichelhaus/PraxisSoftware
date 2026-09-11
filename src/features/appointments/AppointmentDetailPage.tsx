@@ -41,6 +41,30 @@ function ortsBeschriftung(art: Appointment['appointment_type']): string {
 }
 
 /**
+ * Der Satz unter der Überschrift: der Zustand, wenn er einer ist, sonst die
+ * Terminart.
+ *
+ * Er sagt bei jedem Zustand ohne Rückweg auch, wo korrigiert wird — im
+ * Kalender gibt es dafür keinen Knopf, und das ist Absicht (ADR-018 Punkt 2).
+ */
+function zustandsHinweis(appointment: Appointment): string {
+  switch (appointment.status) {
+    case 'cancelled':
+      return 'Dieser Termin ist abgesagt. Eine Absage wird nicht zurückgenommen – für einen neuen Termin bitte neu anlegen.';
+    case 'no_show':
+      return 'Hier wurde niemand angetroffen. Zum Ändern erst wieder öffnen.';
+    case 'completed':
+      return 'Dieser Termin ist abgeschlossen. Zum Ändern erst wieder öffnen.';
+    case 'documented':
+      return 'Dieser Termin ist dokumentiert. Korrigiert wird in der Dokumentation, nicht am Termin.';
+    case 'invoiced':
+      return 'Dieser Termin ist abgerechnet.';
+    default:
+      return appointmentTypeLabels[appointment.appointment_type];
+  }
+}
+
+/**
  * Absage mit Rückfrage.
  *
  * Bewusst zweistufig: eine Absage betrifft eine reale Verabredung, und ein
@@ -141,10 +165,12 @@ function StatusAktion({
 function AppointmentDetail({ appointment, user }: { appointment: Appointment; user: CurrentUser }) {
   const zone = appointment.organization_time_zone;
   const darfVerwalten = canManageAppointments(user.roles);
-  // Abgesagte Termine sind terminal. Abgeschlossene sind es nicht, aber sie
-  // werden erst wieder geoeffnet und dann bearbeitet - nicht ueber den
-  // Abschluss hinweg. Verbindlich pruefen das die Serverfunktionen.
-  const darfAendern = darfVerwalten && appointment.status === 'scheduled';
+  // Geaendert wird ausschliesslich aus „bestätigt". Abgesagte, dokumentierte
+  // und abgerechnete Termine sind terminal; abgeschlossene und nicht
+  // angetroffene werden erst wieder geoeffnet und dann bearbeitet - nicht
+  // ueber den Abschluss hinweg. Verbindlich pruefen das die Serverfunktionen
+  // (ADR-018, ADR-004).
+  const darfAendern = darfVerwalten && appointment.status === 'confirmed';
   const darfWiederOeffnen = darfVerwalten && appointment.status === 'completed';
   const darfDokumentieren = canWriteTreatmentNote(user.roles);
 
@@ -152,13 +178,7 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
     <>
       <PageHeader
         title={`Termin – ${patientName(appointment)}`}
-        description={
-          appointment.status === 'cancelled'
-            ? 'Dieser Termin ist abgesagt.'
-            : appointment.status === 'completed'
-              ? 'Dieser Termin ist abgeschlossen. Zum Ändern erst wieder öffnen.'
-              : appointmentTypeLabels[appointment.appointment_type]
-        }
+        description={zustandsHinweis(appointment)}
         actions={
           darfAendern ? (
             <Link

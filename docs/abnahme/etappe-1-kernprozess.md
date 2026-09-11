@@ -112,7 +112,7 @@ Inhalt.
    Unter „Versorgung" steht der Abschnitt **„Behandlungsnachweis"** mit dem
    Hinweis, dass er keine Behandlungsinhalte enthält.
 2. Je Termin stehen Datum, Zeitraum, Terminart, behandelnde Person und der
-   Terminstatus („Geplant", „Abgeschlossen" oder „Abgesagt") — und darunter
+   Terminstatus („Bestätigt", „Abgeschlossen" oder „Abgesagt") — und darunter
    genau einer dieser Sätze: „Dokumentation finalisiert am … Uhr.",
    „Dokumentation als Entwurf vorhanden, noch nicht finalisiert." oder
    „Keine Dokumentation.". **Nirgends steht Behandlungstext, kein Verfasser,

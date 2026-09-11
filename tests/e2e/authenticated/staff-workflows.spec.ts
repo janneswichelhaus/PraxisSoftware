@@ -165,7 +165,7 @@ test.describe('STAFF-001: Deaktivieren und Reaktivieren', () => {
     await expect(detailWert(page, 'Beschäftigung')).toHaveText('Inaktiv');
 
     await page.goto(`/termine/${terminId}`);
-    await expect(detailWert(page, 'Status')).toHaveText('Geplant');
+    await expect(detailWert(page, 'Status')).toHaveText('Bestätigt');
 
     await annaReaktivieren(request);
   });

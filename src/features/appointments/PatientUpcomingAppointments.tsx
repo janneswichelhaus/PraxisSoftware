@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import {
   appointmentStatusLabels,
+  appointmentStatusTon,
   appointmentTypeLabels,
   fetchUpcomingAppointments,
   formatLocalDate,
@@ -80,8 +81,10 @@ export function PatientUpcomingAppointments({
                     {` · ${staffName(termin)}`}
                   </span>
                 </span>
-                {termin.status !== 'scheduled' ? (
-                  <Badge ton="positiv">{appointmentStatusLabels[termin.status]}</Badge>
+                {termin.status !== 'confirmed' ? (
+                  <Badge ton={appointmentStatusTon[termin.status]}>
+                    {appointmentStatusLabels[termin.status]}
+                  </Badge>
                 ) : null}
               </Link>
             </li>

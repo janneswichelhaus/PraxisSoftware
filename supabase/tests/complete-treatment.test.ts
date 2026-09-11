@@ -31,7 +31,7 @@ interface Notiz {
   finalized_at: string | null;
 }
 
-async function termin(status: 'scheduled' | 'completed' | 'cancelled' = 'scheduled') {
+async function termin(status: 'confirmed' | 'completed' | 'cancelled' = 'confirmed') {
   const { rows } = await asPostgres<Termin>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,
@@ -189,7 +189,7 @@ describe('complete_treatment', () => {
 
     // Entscheidend: die Dokumentation ist NICHT stehen geblieben.
     expect(await notizLesen(t.id)).toBeNull();
-    expect((await terminLesen(t.id)).status).toBe('scheduled');
+    expect((await terminLesen(t.id)).status).toBe('confirmed');
   });
 
   it('laesst einen leeren Text nicht durch und schreibt dann gar nichts', async () => {
@@ -199,7 +199,7 @@ describe('complete_treatment', () => {
     ).rejects.toThrow(/documentation must not be empty/);
 
     expect(await notizLesen(t.id)).toBeNull();
-    expect((await terminLesen(t.id)).status).toBe('scheduled');
+    expect((await terminLesen(t.id)).status).toBe('confirmed');
   });
 
   it('weist einen abgesagten Termin ab', async () => {

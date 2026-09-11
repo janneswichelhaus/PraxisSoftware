@@ -121,7 +121,7 @@ describe('complete_appointment: Rollen', () => {
     await expect(asUser(userId, ABSCHLIESSEN, [t.id, t.updated_at])).rejects.toThrow(
       /not allowed to complete appointments/,
     );
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('weist einen anonymen Zugriff ab', async () => {
@@ -185,7 +185,7 @@ describe('complete_appointment: Vorgang', () => {
     await expect(
       asUser(users.office, ABSCHLIESSEN, [t.id, '2020-01-01T00:00:00+00']),
     ).rejects.toThrow(/appointment was changed meanwhile/);
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('protokolliert appointment.completed ohne Terminzeit', async () => {
@@ -263,7 +263,7 @@ describe('CAL-004: abgeschlossene Termine belegen ihren Zeitraum weiter', () => 
     await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at]);
 
     const neuer = await anlegen({ von: '09:00', bis: '10:00' });
-    expect(await zeile(neuer.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(neuer.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('haelt den Schutz als Constraint mit beiden belegenden Status', async () => {
@@ -272,9 +272,7 @@ describe('CAL-004: abgeschlossene Termine belegen ihren Zeitraum weiter', () => 
          from pg_constraint where conname = 'appointments_no_overlap'`,
     );
     expect(rows[0]?.definition).toMatch(/EXCLUDE USING gist/i);
-    expect(rows[0]?.definition).toContain("'scheduled'");
-    expect(rows[0]?.definition).toContain("'completed'");
-    expect(rows[0]?.definition).not.toContain("'cancelled'");
+    expect(rows[0]?.definition).toMatch(/WHERE \(+status <> 'cancelled'/);
   });
 });
 
@@ -371,7 +369,7 @@ describe('CAL-004: abgeschlossene Termine erst wieder oeffnen', () => {
       '16:00',
       null,
     ]);
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 });
 
@@ -396,7 +394,7 @@ describe('reopen_appointment', () => {
   ])('erlaubt %s das Wiederoeffnen', async (_rolle, userId) => {
     const t = await abgeschlossen();
     await asUserCommitted(userId, OEFFNEN, [t.id, t.updated_at]);
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('weist ein Patientenkonto ab', async () => {
@@ -419,7 +417,7 @@ describe('reopen_appointment', () => {
     await asUserCommitted(users.office, OEFFNEN, [t.id, t.updated_at]);
 
     expect(await zeile(t.id)).toMatchObject({
-      status: 'scheduled',
+      status: 'confirmed',
       completed_at: null,
       completed_by: null,
     });
@@ -543,7 +541,7 @@ describe('list_appointments: abgeschlossene Termine', () => {
   }
 
   it('zeigt geplante und abgeschlossene Termine im Standardfilter', async () => {
-    expect(await status('active')).toEqual(['completed', 'scheduled']);
+    expect(await status('active')).toEqual(['completed', 'confirmed']);
   });
 
   it('nutzt active auch dann, wenn kein Filter uebergeben wird', async () => {
@@ -552,7 +550,7 @@ describe('list_appointments: abgeschlossene Termine', () => {
       'select * from public.list_appointments($1::date, $2::date)',
       [TAG, bis],
     );
-    expect(rows.map((r) => r.status).sort()).toEqual(['completed', 'scheduled']);
+    expect(rows.map((r) => r.status).sort()).toEqual(['completed', 'confirmed']);
   });
 
   it('filtert gezielt auf abgeschlossene Termine', async () => {
@@ -560,11 +558,11 @@ describe('list_appointments: abgeschlossene Termine', () => {
   });
 
   it('blendet abgeschlossene Termine bei "nur geplante" aus', async () => {
-    expect(await status('scheduled')).toEqual(['scheduled']);
+    expect(await status('confirmed')).toEqual(['confirmed']);
   });
 
   it('zeigt mit all auch die Absage', async () => {
-    expect(await status('all')).toEqual(['cancelled', 'completed', 'scheduled']);
+    expect(await status('all')).toEqual(['cancelled', 'completed', 'confirmed']);
   });
 
   it('weist einen unbekannten Filter ab', async () => {
@@ -621,7 +619,7 @@ describe('CAL-004: Mandantentrennung', () => {
     await expect(
       asUser(users.office, ABSCHLIESSEN, [fremder.id, fremder.updated_at]),
     ).rejects.toThrow(/appointment not found/);
-    expect(await zeile(fremder.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(fremder.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('laesst den Termin einer fremden Praxis nicht wieder oeffnen', async () => {

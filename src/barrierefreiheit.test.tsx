@@ -91,7 +91,7 @@ const tagesEintrag = {
   patient_id: 'p1',
   staff_member_id: 's1',
   appointment_type: 'home_visit' as const,
-  status: 'scheduled' as const,
+  status: 'confirmed' as const,
   starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T08:00:00.000Z',
   patient_given_name: 'Max',

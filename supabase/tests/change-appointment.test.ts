@@ -819,7 +819,7 @@ describe('cancel_appointment', () => {
     await aendernCommitted(users.office, t, { von: '11:00', bis: '12:00' });
 
     await expect(absagen(users.teamLead, t)).rejects.toThrow(/changed meanwhile/);
-    expect((await zeile(t.id))?.status).toBe('scheduled');
+    expect((await zeile(t.id))?.status).toBe('confirmed');
   });
 
   it('weist ein Patientenkonto ab', async () => {
@@ -911,7 +911,7 @@ describe('CAL-003: Mandantentrennung', () => {
     await aendern(users.office, fremder, { von: '16:00', bis: '17:00' }).catch(() => undefined);
     expect(await zeile(fremder.id)).toMatchObject({
       organization_id: fremdeOrg,
-      status: 'scheduled',
+      status: 'confirmed',
     });
   });
 });

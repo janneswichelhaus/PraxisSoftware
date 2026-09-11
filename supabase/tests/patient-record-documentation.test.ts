@@ -273,7 +273,7 @@ describe('DOK-003: Behandlungsnachweis in der Akte', () => {
     ]);
     expect(zeilen[0]).toMatchObject({
       appointment_type: 'video',
-      appointment_status: 'scheduled',
+      appointment_status: 'confirmed',
       staff_given_name: 'Anna',
       staff_family_name: 'Beispiel',
       organization_time_zone: 'Europe/Berlin',

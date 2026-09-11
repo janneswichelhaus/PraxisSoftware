@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import type { StatusFilter } from './calendar';
 
 /**
  * Datenzugriff auf die Terminverwaltung.
@@ -15,7 +16,22 @@ import { getSupabase } from '@/lib/supabase';
 export const appointmentTypeSchema = z.enum(['home_visit', 'practice', 'video']);
 export type AppointmentType = z.infer<typeof appointmentTypeSchema>;
 
-export const appointmentStatusSchema = z.enum(['scheduled', 'completed', 'cancelled']);
+/**
+ * Zustände des Termins nach ADR-018.
+ *
+ * Sechs Werte, genau die der Datenbank-Constraint. „Angefragt" und
+ * „vorgemerkt" sind im ADR beschrieben, aber nicht gebaut: ohne Portal gibt es
+ * niemanden, der einen Termin anfragt (ADR-014). `invoiced` steht im
+ * Wertebereich und bekommt seinen Schreibpfad mit ABR-003.
+ */
+export const appointmentStatusSchema = z.enum([
+  'confirmed',
+  'cancelled',
+  'no_show',
+  'completed',
+  'documented',
+  'invoiced',
+]);
 export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
 
 export const appointmentTypeLabels: Record<AppointmentType, string> = {
@@ -25,9 +41,28 @@ export const appointmentTypeLabels: Record<AppointmentType, string> = {
 };
 
 export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
-  scheduled: 'Geplant',
-  completed: 'Abgeschlossen',
+  confirmed: 'Bestätigt',
   cancelled: 'Abgesagt',
+  no_show: 'Nicht angetroffen',
+  completed: 'Abgeschlossen',
+  documented: 'Dokumentiert',
+  invoiced: 'Abgerechnet',
+};
+
+/**
+ * Ton des Statusabzeichens.
+ *
+ * An genau einer Stelle, weil ihn drei Ansichten brauchen — Kalender,
+ * Tagesliste und Akte — und ein Zustand überall gleich aussehen muss. Der Ton
+ * ergänzt nur: der Zustand steht immer als Wort daneben (`Badge`, WCAG 1.4.1).
+ */
+export const appointmentStatusTon: Record<AppointmentStatus, 'positiv' | 'warnung' | 'kritisch'> = {
+  confirmed: 'positiv',
+  cancelled: 'kritisch',
+  no_show: 'warnung',
+  completed: 'positiv',
+  documented: 'positiv',
+  invoiced: 'positiv',
 };
 
 const appointmentSchema = z.object({
@@ -449,7 +484,7 @@ export interface CalendarQuery {
   bis: string;
   person: string | null;
   standort: string | null;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'active' | 'all';
+  status: StatusFilter;
 }
 
 /**
@@ -551,7 +586,12 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
   }
   if (error?.message?.includes('must be reopened first')) {
     return new Error(
-      'Der Termin ist abgeschlossen. Er muss erst wieder geöffnet werden, bevor er geändert oder abgesagt werden kann.',
+      'Der Termin ist bereits abgeschlossen oder als „nicht angetroffen" geführt. Er muss erst wieder geöffnet werden, bevor er geändert oder abgesagt werden kann.',
+    );
+  }
+  if (error?.message?.includes('documented appointment cannot be changed')) {
+    return new Error(
+      'Der Termin ist dokumentiert und lässt sich nicht mehr ändern. Eine Korrektur gehört in die Behandlungsdokumentation.',
     );
   }
   return new Error(standard);

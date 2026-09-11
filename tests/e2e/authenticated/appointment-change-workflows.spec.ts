@@ -85,7 +85,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     // Und die Änderung überlebt das Neuladen.
     await page.reload();
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
-    await expect(detailWert(page, 'Status')).toContainText('Geplant');
+    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
   });
 
   test('wechselt die behandelnde Person und die Terminart', async ({ page }) => {
@@ -238,7 +238,7 @@ test.describe('CAL-003: Absagen', () => {
     // Derselbe Zeitraum ist wieder belegbar.
     const neuer = await terminAnlegen(page, { tag, von, bis });
     expect(neuer).toMatch(/^[0-9a-f-]{36}$/);
-    await expect(detailWert(page, 'Status')).toContainText('Geplant');
+    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
   });
 
   test('weist ein Patientenkonto an beiden Schreibpfaden ab', async ({ request }) => {

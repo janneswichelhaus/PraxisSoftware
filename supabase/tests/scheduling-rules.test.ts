@@ -709,7 +709,7 @@ describe('CAL-005: Warnung ausserhalb der Arbeitszeit', () => {
 
   it('legt denselben Termin mit ausdruecklicher Bestaetigung an', async () => {
     const t = await anlegen({ von: '19:00', bis: '20:00', bestaetigt: true });
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('behandelt einen Tag ohne hinterlegte Arbeitszeit als ausserhalb', async () => {

@@ -199,7 +199,7 @@ insert into public.appointments (
   completed_at, completed_by, cancelled_at, cancelled_by
 ) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-000000000001', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '55555555-5555-4555-8555-000000000002', null,
-   'home_visit', 'scheduled', (current_date + time '09:00') at time zone 'Europe/Berlin', (current_date + time '10:00') at time zone 'Europe/Berlin',
+   'home_visit', 'confirmed', (current_date + time '09:00') at time zone 'Europe/Berlin', (current_date + time '10:00') at time zone 'Europe/Berlin',
    'Beispielstrasse', '12', '72070', 'Tuebingen', null, null, null, null),
   ('aaaaaaaa-aaaa-4aaa-8aaa-000000000002', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '55555555-5555-4555-8555-000000000002', null,
    'home_visit', 'completed', (current_date + time '10:30') at time zone 'Europe/Berlin', (current_date + time '11:30') at time zone 'Europe/Berlin',
@@ -211,7 +211,7 @@ insert into public.appointments (
   -- Person zeigt und die Zweckbindung sichtbar wird: hier gibt es weder
   -- Adresse noch Zugangshinweis.
   ('aaaaaaaa-aaaa-4aaa-8aaa-000000000004', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '55555555-5555-4555-8555-000000000001', '33333333-3333-4333-8333-000000000001',
-   'practice', 'scheduled', (current_date + time '16:00') at time zone 'Europe/Berlin', (current_date + time '17:00') at time zone 'Europe/Berlin',
+   'practice', 'confirmed', (current_date + time '16:00') at time zone 'Europe/Berlin', (current_date + time '17:00') at time zone 'Europe/Berlin',
    null, null, null, null, null, null, null, null);
 
 -- -----------------------------------------------------------------------------

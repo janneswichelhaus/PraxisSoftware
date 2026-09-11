@@ -1,0 +1,298 @@
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+
+/**
+ * Zustandsautomat des Termins (CAL-008, ADR-018).
+ *
+ * Diese Datei prueft den Automaten als Ganzes: welche Werte es gibt, welche
+ * Uebergaenge moeglich sind und - vor allem - welche nicht. Die einzelnen
+ * Vorgaenge haben daneben ihre eigenen Dateien (create-appointment,
+ * change-appointment, complete-appointment); hier steht, was erst im
+ * Zusammenspiel sichtbar wird.
+ *
+ * Die Zustaende, die heute noch keinen Schreibpfad haben, werden fuer den Test
+ * direkt als postgres gesetzt. Das ist kein Schlupfloch der Anwendung: die
+ * Rolle `authenticated` hat auf public.appointments ausschliesslich SELECT,
+ * jeder Wechsel laeuft ueber eine SECURITY-DEFINER-Funktion. Der Test stellt
+ * damit einen Zustand her, den die Anwendung spaeter selbst erzeugt, und
+ * prueft, dass die Schreibpfade ihn korrekt abweisen.
+ */
+
+const { users, patients } = SEED;
+
+const ANLEGEN =
+  'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
+const AENDERN =
+  'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true) as id';
+const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz) as id';
+const ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
+const OEFFNEN = 'select public.reopen_appointment($1::uuid, $2::timestamptz) as id';
+
+const ANNA = '55555555-5555-4555-8555-000000000002';
+
+function tagInTagen(tage: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + tage);
+  return d.toISOString().slice(0, 10);
+}
+
+const TAG = tagInTagen(70);
+
+interface Termin {
+  id: string;
+  updated_at: string;
+}
+
+async function stand(id: string): Promise<Termin> {
+  const { rows } = await asPostgres<{ id: string; updated_at: string }>(
+    'select id, to_char(updated_at at time zone \'UTC\', \'YYYY-MM-DD"T"HH24:MI:SS.US"+00"\') as updated_at from public.appointments where id = $1',
+    [id],
+  );
+  return rows[0]!;
+}
+
+async function zustand(id: string): Promise<string> {
+  const { rows } = await asPostgres<{ status: string }>(
+    'select status from public.appointments where id = $1',
+    [id],
+  );
+  return rows[0]!.status;
+}
+
+async function anlegen(von = '09:00', bis = '10:00'): Promise<Termin> {
+  const { rows } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
+    patients.max,
+    ANNA,
+    'video',
+    TAG,
+    von,
+    bis,
+    null,
+  ]);
+  return stand(rows[0]!.id);
+}
+
+/** Setzt einen Zustand, den heute noch kein Schreibpfad erzeugt. */
+async function zustandSetzen(id: string, status: string): Promise<Termin> {
+  await asPostgres(
+    `update public.appointments
+        set status = $2,
+            completed_at = case when $2 in ('completed', 'documented') then coalesce(completed_at, now()) else completed_at end,
+            completed_by = case when $2 = 'completed' then coalesce(completed_by, $3::uuid) else completed_by end,
+            updated_at = now()
+      where id = $1`,
+    [id, status, users.therapist],
+  );
+  return stand(id);
+}
+
+describe('Wertebereich des Terminzustands (ADR-018 Punkt 1)', () => {
+  beforeAll(resetDatabase);
+
+  it('laesst genau die sechs in V1 erreichbaren Werte zu', async () => {
+    const { rows } = await asPostgres<{ definition: string }>(
+      `select pg_get_constraintdef(oid) as definition
+         from pg_constraint where conname = 'appointments_status_check'`,
+    );
+    const definition = rows[0]!.definition;
+    for (const wert of [
+      'confirmed',
+      'cancelled',
+      'no_show',
+      'completed',
+      'documented',
+      'invoiced',
+    ]) {
+      expect(definition).toContain(`'${wert}'`);
+    }
+  });
+
+  it('kennt angefragt und vorgemerkt nicht - ein Wert ohne Schreiber waere Vorbau (ADR-014)', async () => {
+    const { rows } = await asPostgres<{ definition: string }>(
+      `select pg_get_constraintdef(oid) as definition
+         from pg_constraint where conname = 'appointments_status_check'`,
+    );
+    expect(rows[0]!.definition).not.toContain("'requested'");
+    expect(rows[0]!.definition).not.toContain("'tentative'");
+  });
+
+  it('weist einen unbekannten Wert auch direkt an der Tabelle ab', async () => {
+    const termin = await anlegen();
+    await expect(
+      asPostgres('update public.appointments set status = $2 where id = $1', [
+        termin.id,
+        'requested',
+      ]),
+    ).rejects.toThrow(/appointments_status_check/);
+  });
+
+  it('legt einen neuen Termin als bestaetigt an', async () => {
+    const termin = await anlegen('11:00', '12:00');
+    expect(await zustand(termin.id)).toBe('confirmed');
+  });
+
+  it('traegt confirmed als Standard der Spalte', async () => {
+    const { rows } = await asPostgres<{ default_wert: string | null }>(
+      `select column_default as default_wert
+         from information_schema.columns
+        where table_schema = 'public' and table_name = 'appointments' and column_name = 'status'`,
+    );
+    expect(rows[0]!.default_wert).toContain("'confirmed'");
+  });
+});
+
+describe('Uebergaenge ohne Rueckweg (ADR-018 Punkt 2)', () => {
+  beforeEach(resetDatabase);
+
+  it('nimmt eine Absage nicht zurueck - auch nicht ueber das Wiederoeffnen', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at]);
+    const abgesagt = await stand(termin.id);
+
+    await expect(asUser(users.office, OEFFNEN, [abgesagt.id, abgesagt.updated_at])).rejects.toThrow(
+      /cannot be reopened/,
+    );
+    expect(await zustand(termin.id)).toBe('cancelled');
+  });
+
+  it('oeffnet einen dokumentierten Termin nicht wieder - korrigiert wird in der Dokumentation', async () => {
+    const termin = await anlegen();
+    const dokumentiert = await zustandSetzen(termin.id, 'documented');
+
+    await expect(
+      asUser(users.office, OEFFNEN, [dokumentiert.id, dokumentiert.updated_at]),
+    ).rejects.toThrow(/not completed/);
+    expect(await zustand(termin.id)).toBe('documented');
+  });
+
+  it('aendert einen dokumentierten Termin nicht', async () => {
+    const termin = await anlegen();
+    const dokumentiert = await zustandSetzen(termin.id, 'documented');
+
+    await expect(
+      asUser(users.office, AENDERN, [
+        dokumentiert.id,
+        dokumentiert.updated_at,
+        ANNA,
+        'video',
+        TAG,
+        '13:00',
+        '14:00',
+        null,
+      ]),
+    ).rejects.toThrow(/documented appointment cannot be changed/);
+  });
+
+  it('sagt einen dokumentierten Termin nicht ab', async () => {
+    const termin = await anlegen();
+    const dokumentiert = await zustandSetzen(termin.id, 'documented');
+
+    await expect(
+      asUser(users.office, ABSAGEN, [dokumentiert.id, dokumentiert.updated_at]),
+    ).rejects.toThrow(/documented appointment cannot be changed/);
+  });
+
+  it('schliesst einen dokumentierten Termin nicht noch einmal ab', async () => {
+    const termin = await anlegen();
+    const dokumentiert = await zustandSetzen(termin.id, 'documented');
+
+    await expect(
+      asUser(users.office, ABSCHLIESSEN, [dokumentiert.id, dokumentiert.updated_at]),
+    ).rejects.toThrow(/already completed/);
+  });
+
+  it('aendert einen abgerechneten Termin nicht', async () => {
+    const termin = await anlegen();
+    const abgerechnet = await zustandSetzen(termin.id, 'invoiced');
+
+    await expect(
+      asUser(users.office, AENDERN, [
+        abgerechnet.id,
+        abgerechnet.updated_at,
+        ANNA,
+        'video',
+        TAG,
+        '13:00',
+        '14:00',
+        null,
+      ]),
+    ).rejects.toThrow(/documented appointment cannot be changed/);
+  });
+});
+
+describe('Zeitraum: nur die Absage gibt ihn frei', () => {
+  beforeEach(resetDatabase);
+
+  it('haelt den Zeitraum eines dokumentierten Termins belegt', async () => {
+    const termin = await anlegen();
+    await zustandSetzen(termin.id, 'documented');
+
+    await expect(
+      asUser(users.office, ANLEGEN, [patients.erika, ANNA, 'video', TAG, '09:30', '10:30', null]),
+    ).rejects.toThrow(/overlaps/);
+  });
+
+  it('gibt den Zeitraum nach einer Absage frei', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at]);
+
+    const { rows } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
+      patients.erika,
+      ANNA,
+      'video',
+      TAG,
+      '09:00',
+      '10:00',
+      null,
+    ]);
+    expect(rows[0]!.id).toBeTruthy();
+  });
+});
+
+describe('Statusfilter des Kalenderlesepfads', () => {
+  beforeEach(resetDatabase);
+
+  const LESEN =
+    'select id, status from public.list_appointments($1::date, $2::date, null, null, $3)';
+
+  it('zeigt unter "active" alles ausser der Absage', async () => {
+    const bestaetigt = await anlegen('09:00', '10:00');
+    const dokumentiert = await anlegen('11:00', '12:00');
+    await zustandSetzen(dokumentiert.id, 'documented');
+    const abgesagt = await anlegen('13:00', '14:00');
+    await asUserCommitted(users.office, ABSAGEN, [abgesagt.id, abgesagt.updated_at]);
+
+    const { rows } = await asUser<{ id: string }>(users.office, LESEN, [
+      TAG,
+      tagInTagen(71),
+      'active',
+    ]);
+    const ids = rows.map((r) => r.id);
+    expect(ids).toContain(bestaetigt.id);
+    expect(ids).toContain(dokumentiert.id);
+    expect(ids).not.toContain(abgesagt.id);
+  });
+
+  it('fasst unter "done" die drei erledigten Zustaende zusammen', async () => {
+    const bestaetigt = await anlegen('09:00', '10:00');
+    const dokumentiert = await anlegen('11:00', '12:00');
+    await zustandSetzen(dokumentiert.id, 'documented');
+    const abgeschlossen = await anlegen('13:00', '14:00');
+    await zustandSetzen(abgeschlossen.id, 'completed');
+
+    const { rows } = await asUser<{ id: string }>(users.office, LESEN, [
+      TAG,
+      tagInTagen(71),
+      'done',
+    ]);
+    const ids = rows.map((r) => r.id);
+    expect(ids).toEqual(expect.arrayContaining([dokumentiert.id, abgeschlossen.id]));
+    expect(ids).not.toContain(bestaetigt.id);
+  });
+
+  it('weist einen unbekannten Filterwert ab', async () => {
+    await expect(asUser(users.office, LESEN, [TAG, tagInTagen(71), 'requested'])).rejects.toThrow(
+      /unknown status filter/,
+    );
+  });
+});

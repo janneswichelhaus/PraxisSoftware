@@ -88,7 +88,7 @@ test.describe('CAL-001: Termin anlegen', () => {
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Anna Beispiel');
     await expect(detailWert(page, 'Art')).toContainText('Praxis');
-    await expect(detailWert(page, 'Status')).toContainText('Geplant');
+    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
     await expect(detailWert(page, 'Zeit')).toContainText(`${BEGINN}–${ENDE}`);
     await expect(detailWert(page, 'Standort')).toContainText('Hauptstandort');
 
@@ -97,7 +97,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     const url = page.url();
     await page.reload();
     await expect(page).toHaveURL(url);
-    await expect(detailWert(page, 'Status')).toContainText('Geplant');
+    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
     await expect(detailWert(page, 'Zeit')).toContainText(`${BEGINN}–${ENDE}`);
   });
 
@@ -203,7 +203,7 @@ test.describe('CAL-001: Autorisierung am Server, nicht in der Oberfläche', () =
       patient_id: PATIENTEN.max,
       staff_member_id: '55555555-5555-4555-8555-000000000002',
       appointment_type: 'video',
-      status: 'scheduled',
+      status: 'confirmed',
       starts_at: '2027-05-12T07:00:00Z',
       ends_at: '2027-05-12T08:00:00Z',
     });

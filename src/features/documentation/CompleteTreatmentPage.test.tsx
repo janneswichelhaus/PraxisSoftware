@@ -16,7 +16,7 @@ const termin: AppointmentsApi.Appointment = {
   staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: null,
   appointment_type: 'home_visit',
-  status: 'scheduled',
+  status: 'confirmed',
   starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T08:00:00.000Z',
   updated_at: '2027-05-01T10:00:00.000000+00',

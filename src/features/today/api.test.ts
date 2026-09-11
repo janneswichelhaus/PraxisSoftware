@@ -14,7 +14,7 @@ function eintrag(teil: Partial<DayPlanEntry> = {}): DayPlanEntry {
     patient_id: 'p1',
     staff_member_id: 's1',
     appointment_type: 'home_visit',
-    status: 'scheduled',
+    status: 'confirmed',
     starts_at: '2026-09-10T07:00:00.000Z',
     ends_at: '2026-09-10T08:00:00.000Z',
     patient_given_name: 'Erika',
@@ -36,7 +36,7 @@ function eintrag(teil: Partial<DayPlanEntry> = {}): DayPlanEntry {
 
 describe('istOffen', () => {
   it('fuehrt einen noch ausstehenden Besuch als offen', () => {
-    expect(istOffen(eintrag({ status: 'scheduled' }), true)).toBe(true);
+    expect(istOffen(eintrag({ status: 'confirmed' }), true)).toBe(true);
   });
 
   it('fuehrt einen abgesagten Termin nie als offen', () => {
@@ -81,7 +81,7 @@ describe('offenGrund', () => {
   });
 
   it('nennt fuer einen ausstehenden Besuch keinen Grund', () => {
-    expect(offenGrund(eintrag({ status: 'scheduled' }))).toBeNull();
+    expect(offenGrund(eintrag({ status: 'confirmed' }))).toBeNull();
   });
 });
 

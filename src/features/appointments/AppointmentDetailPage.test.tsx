@@ -16,7 +16,7 @@ const praxistermin: AppointmentsApi.Appointment = {
   staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: '33333333-3333-4333-8333-000000000001',
   appointment_type: 'practice',
-  status: 'scheduled',
+  status: 'confirmed',
   starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T08:00:00.000Z',
   updated_at: '2027-05-01T10:00:00.000000+00',
@@ -110,7 +110,7 @@ describe('AppointmentDetailPage', () => {
     expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
     expect(screen.getAllByText('Berta Bestand').length).toBeGreaterThan(0);
     expect(zeile('Art')).toBe('Praxis');
-    expect(zeile('Status')).toBe('Geplant');
+    expect(zeile('Status')).toBe('Bestätigt');
   });
 
   it('zeigt Datum und Zeit in der Praxiszeitzone, nicht in UTC', async () => {
@@ -162,7 +162,7 @@ describe('AppointmentDetailPage', () => {
     fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
     rendern();
 
-    expect(await screen.findByText('Dieser Termin ist abgesagt.')).toBeInTheDocument();
+    expect(await screen.findByText(/Dieser Termin ist abgesagt\./)).toBeInTheDocument();
     expect(zeile('Status')).toBe('Abgesagt');
   });
 
@@ -192,7 +192,7 @@ describe('AppointmentDetailPage', () => {
     it('bietet bei einem abgesagten Termin keine Aktionen mehr an', async () => {
       fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
       rendern();
-      await screen.findByText('Dieser Termin ist abgesagt.');
+      await screen.findByText(/Dieser Termin ist abgesagt\./);
 
       expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
@@ -504,7 +504,7 @@ describe('AppointmentDetailPage', () => {
     it('bietet den Folgetermin am abgesagten Termin nicht an', async () => {
       fetchAppointment.mockResolvedValue({ ...hausbesuch, status: 'cancelled' });
       rendern();
-      await screen.findByText('Dieser Termin ist abgesagt.');
+      await screen.findByText(/Dieser Termin ist abgesagt\./);
       expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).toBeNull();
     });
 

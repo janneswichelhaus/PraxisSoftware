@@ -20,7 +20,7 @@ const termin: AppointmentsApi.Appointment = {
   staff_member_id: STAFF_ANNA,
   location_id: ORT,
   appointment_type: 'practice',
-  status: 'scheduled',
+  status: 'confirmed',
   starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T08:00:00.000Z',
   updated_at: STAND,

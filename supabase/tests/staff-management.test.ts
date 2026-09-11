@@ -666,7 +666,7 @@ describe('set_staff_employment_status', () => {
       'select status, cancelled_at from public.appointments where id = $1',
       [termin],
     );
-    expect(rows[0]).toMatchObject({ status: 'scheduled', cancelled_at: null });
+    expect(rows[0]).toMatchObject({ status: 'confirmed', cancelled_at: null });
     expect(await auditEintraege()).toEqual([]);
   });
 
@@ -684,7 +684,7 @@ describe('set_staff_employment_status', () => {
       termin,
     ]);
     expect(rows[0]).toMatchObject({
-      status: 'scheduled',
+      status: 'confirmed',
       cancelled_at: null,
       staff_member_id: STAFF.anna,
     });
@@ -701,7 +701,7 @@ describe('set_staff_employment_status', () => {
     await asPostgres(
       `insert into public.appointments
          (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at)
-       values ($1, $2, $3, 'video', 'scheduled', now() - interval '2 days', now() - interval '2 days' + interval '1 hour')`,
+       values ($1, $2, $3, 'video', 'confirmed', now() - interval '2 days', now() - interval '2 days' + interval '1 hour')`,
       [organizationId, patients.max, STAFF.anna],
     );
 
@@ -771,7 +771,7 @@ describe('Aktivstatus bei Terminzuweisungen', () => {
       asPostgres(
         `insert into public.appointments
            (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at)
-         values ($1, $2, $3, 'video', 'scheduled', now() + interval '5 days', now() + interval '5 days 1 hour')`,
+         values ($1, $2, $3, 'video', 'confirmed', now() + interval '5 days', now() + interval '5 days 1 hour')`,
         [organizationId, patients.max, STAFF.anna],
       ),
     ).rejects.toThrow(/staff member is not active/);
@@ -781,7 +781,7 @@ describe('Aktivstatus bei Terminzuweisungen', () => {
     const { rows } = await asPostgres<{ id: string }>(
       `insert into public.appointments
          (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at)
-       values ($1, $2, $3, 'video', 'scheduled', now() + interval '6 days', now() + interval '6 days 1 hour')
+       values ($1, $2, $3, 'video', 'confirmed', now() + interval '6 days', now() + interval '6 days 1 hour')
        returning id`,
       [organizationId, patients.max, STAFF.tim],
     );
@@ -799,7 +799,7 @@ describe('Aktivstatus bei Terminzuweisungen', () => {
     await asPostgres(
       `insert into public.appointments
          (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at)
-       values ($1, $2, $3, 'video', 'scheduled', now() + interval '7 days', now() + interval '7 days 1 hour')`,
+       values ($1, $2, $3, 'video', 'confirmed', now() + interval '7 days', now() + interval '7 days 1 hour')`,
       [organizationId, patients.max, STAFF.tim],
     );
     await asPostgres('update public.staff_members set employment_status = $1 where id = $2', [
@@ -832,7 +832,7 @@ describe('Aktivstatus bei Terminzuweisungen', () => {
     await asPostgres(
       `insert into public.appointments
          (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at)
-       values ($1, $2, $3, 'video', 'scheduled', now() + interval '8 days', now() + interval '8 days 1 hour')`,
+       values ($1, $2, $3, 'video', 'confirmed', now() + interval '8 days', now() + interval '8 days 1 hour')`,
       [organizationId, patients.erika, STAFF.tim],
     );
     await asPostgres('update public.staff_members set employment_status = $1 where id = $2', [
@@ -973,7 +973,7 @@ describe('list_staff_future_appointments', () => {
     await asPostgres(
       `insert into public.appointments
          (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at)
-       values ($1, $2, $3, 'video', 'scheduled', now() + interval '90 days', now() + interval '90 days 1 hour')`,
+       values ($1, $2, $3, 'video', 'confirmed', now() + interval '90 days', now() + interval '90 days 1 hour')`,
       [organizationId, patients.max, STAFF.anna],
     );
 
@@ -991,7 +991,7 @@ describe('list_staff_future_appointments', () => {
          (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at,
           cancelled_at, cancelled_by)
        values
-         ($1, $2, $3, 'video', 'scheduled', now() - interval '3 days', now() - interval '3 days' + interval '1 hour', null, null),
+         ($1, $2, $3, 'video', 'confirmed', now() - interval '3 days', now() - interval '3 days' + interval '1 hour', null, null),
          ($1, $2, $3, 'video', 'cancelled', now() + interval '12 days', now() + interval '12 days 1 hour', now(), $4)`,
       [organizationId, patients.max, STAFF.anna, users.office],
     );

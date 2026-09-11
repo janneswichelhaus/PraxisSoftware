@@ -82,18 +82,23 @@ export const TAGESPLAN_VORHALTEDAUER_MS = 8 * 60 * 60 * 1000;
  *
  * Zwei Fälle, und der zweite ist der, den die Praxis am Abend beschäftigt:
  *
- *   1. Der Besuch steht noch aus (`scheduled`).
+ *   1. Der Besuch steht noch aus (`confirmed`).
  *   2. Der Besuch ist abgeschlossen, aber die Dokumentation ist noch nicht
  *      finalisiert - sichtbar nur für Rollen, die auch dokumentieren dürfen.
  *      Für alle anderen wäre es eine Aufgabe, die sie nicht erledigen können.
  *
- * Ein abgesagter Termin ist nie offen. Ist der Dokumentationsstand unbekannt
- * (`null`, weil die Rolle den Behandlungsnachweis nicht lesen darf), zählt
- * allein der Terminstatus - lieber nichts behaupten als etwas Falsches.
+ * Ein abgesagter Termin ist nie offen, und ein nicht angetroffener auch nicht:
+ * die Entscheidung über das Ausfallhonorar ist mit dem Vermerk gefallen
+ * (ADR-018 Punkt 4). Ein dokumentierter Termin ist es ebenfalls nicht - der
+ * Zustand sagt bereits, dass die Dokumentation festgeschrieben ist.
+ *
+ * Ist der Dokumentationsstand unbekannt (`null`, weil die Rolle den
+ * Behandlungsnachweis nicht lesen darf), zählt allein der Terminstatus -
+ * lieber nichts behaupten als etwas Falsches.
  */
 export function istOffen(termin: DayPlanEntry, darfDokumentieren: boolean): boolean {
-  if (termin.status === 'cancelled') return false;
-  if (termin.status === 'scheduled') return true;
+  if (termin.status === 'confirmed') return true;
+  if (termin.status !== 'completed') return false;
   if (!darfDokumentieren) return false;
   return termin.documentation_status !== null && termin.documentation_status !== 'final';
 }
@@ -152,7 +157,29 @@ export function nachUhrzeit(a: DayPlanEntry, b: DayPlanEntry): number {
 }
 
 export const dayPlanStatusLabels: Record<AppointmentStatus, string> = {
-  scheduled: 'Steht aus',
-  completed: 'Abgeschlossen',
+  confirmed: 'Steht aus',
   cancelled: 'Abgesagt',
+  no_show: 'Nicht angetroffen',
+  completed: 'Abgeschlossen',
+  documented: 'Dokumentiert',
+  invoiced: 'Abgerechnet',
+};
+
+/**
+ * Ton des Abzeichens in der Tagesliste.
+ *
+ * „Steht aus" ist keine Bewertung und bleibt deshalb neutral; alles andere
+ * bekommt den Ton, den es auch im Kalender hat. Der Zustand steht immer als
+ * Wort daneben.
+ */
+export const dayPlanStatusTon: Record<
+  AppointmentStatus,
+  'neutral' | 'positiv' | 'warnung' | 'kritisch'
+> = {
+  confirmed: 'neutral',
+  cancelled: 'kritisch',
+  no_show: 'warnung',
+  completed: 'positiv',
+  documented: 'positiv',
+  invoiced: 'positiv',
 };

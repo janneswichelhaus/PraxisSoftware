@@ -42,7 +42,7 @@ function eintrag(
     staff_member_id: STAFF_ANNA,
     location_id: ORT,
     appointment_type: 'practice',
-    status: 'scheduled',
+    status: 'confirmed',
     // 07:00 UTC = 09:00 Ortszeit Europe/Berlin (Sommerzeit).
     starts_at: '2027-05-12T07:00:00.000Z',
     ends_at: '2027-05-12T08:00:00.000Z',
@@ -98,7 +98,7 @@ const bestand = {
   staff_member_id: STAFF_ANNA,
   location_id: ORT,
   appointment_type: 'practice' as const,
-  status: 'scheduled' as const,
+  status: 'confirmed' as const,
   starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T08:00:00.000Z',
   updated_at: '2027-05-01T10:00:00.000000+00',
@@ -265,21 +265,30 @@ describe('CalendarPage', () => {
       await waitFor(() => expect(letzteAbfrage()).toMatchObject({ standort: ORT }));
     });
 
-    it('zeigt standardmaessig geplante und abgeschlossene Termine', async () => {
-      // Nicht 'scheduled': ein abgeschlossener Termin hat stattgefunden und
+    it('zeigt standardmaessig alles ausser abgesagten Terminen', async () => {
+      // Nicht 'confirmed': ein abgeschlossener oder nicht angetroffener Termin
       // belegt den Tag weiter - er darf nicht aus der Ansicht verschwinden.
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
       expect(letzteAbfrage()).toMatchObject({ status: 'active' });
     });
 
-    it('kann gezielt auf abgeschlossene Termine filtern', async () => {
+    it('kann gezielt auf erledigte Termine filtern', async () => {
       const user = userEvent.setup();
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
 
-      await user.selectOptions(screen.getByLabelText('Status'), 'completed');
-      await waitFor(() => expect(letzteAbfrage()).toMatchObject({ status: 'completed' }));
+      await user.selectOptions(screen.getByLabelText('Status'), 'done');
+      await waitFor(() => expect(letzteAbfrage()).toMatchObject({ status: 'done' }));
+    });
+
+    it('kann gezielt auf nicht angetroffene Termine filtern', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+
+      await user.selectOptions(screen.getByLabelText('Status'), 'no_show');
+      await waitFor(() => expect(letzteAbfrage()).toMatchObject({ status: 'no_show' }));
     });
 
     it('kann abgesagte Termine einblenden', async () => {
