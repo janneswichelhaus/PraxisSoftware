@@ -64,8 +64,9 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   ging das nicht (kein GoTrue) — **in CI aber schon**, und das gilt für jeden
   künftigen Loop mit Oberflächenanteil. Beim Menschen bleibt damit nur noch,
   was eine Maschine nicht beurteilt: Aussehen, Sprache und die Bedienung am
-  Telefon. **Neu zu bestätigen: ANN-029 bis
-  ANN-033.** Zwei betriebliche Punkte hängen daran und stehen in
+  Telefon. **ANN-029 bis ANN-033 hat Jannes am
+  2026-09-11 wie empfohlen bestätigt**; vier davon bleiben als `Datenschutz`
+  beziehungsweise `Recht` im Prüfpaket. Zwei betriebliche Punkte hängen daran und stehen in
   `docs/DEVELOPMENT.md`: Der Löschlauf braucht `pg_cron` im Produktivprojekt
   (OPS-001), und das Restore-Verfahren muss das Löschjournal sichern und
   wieder einspielen (OPS-003).

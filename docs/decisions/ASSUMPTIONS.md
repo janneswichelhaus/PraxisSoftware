@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-11. Drei Dinge am selben Tag:
+Zuletzt aktualisiert: 2026-09-11. Vier Dinge am selben Tag:
 
 - **Jannes hat die Annahmen aus UX-EPIC-001 bestätigt:** ANN-018, ANN-020 und
   ANN-021 stehen auf `entschieden (Jannes)`. Alle drei sind `Datenschutz` und
@@ -19,6 +19,16 @@ Zuletzt aktualisiert: 2026-09-11. Drei Dinge am selben Tag:
   feststehenden Domain). Alle drei sind `Datenschutz` und bleiben deshalb im
   Prüfpaket. **Offen bleiben ANN-025 und ANN-026** — beide hängen an OPS-001
   beziehungsweise am Löschkonzept.
+
+- **LOE-EPIC-001 bringt ANN-029 bis ANN-033 neu** — Frist des Auditlogs
+  unabhängig von der Akte, Beschäftigtendaten ohne Frist, Löschjournal ohne
+  eigene Frist, Abschluss der Versorgung als ausdrücklicher Vorgang, Legal Hold
+  nur auf Patientenebene. **Jannes hat alle fünf am 2026-09-11 wie empfohlen
+  bestätigt.** Vier davon sind `Datenschutz` beziehungsweise `Recht` und
+  bleiben deshalb im Prüfpaket: Die Bestätigung des Projektinhabers ersetzt die
+  Datenschutzprüfung nicht (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). Allein
+  ANN-032 ist `Praxisprozess` und damit mit dieser Bestätigung erledigt — bis
+  die ersten Praxiswochen zeigen, ob der Vorgang im Alltag getan wird.
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -168,11 +178,11 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-026 | Datenklasse und Frist der Einladung                              | Datenschutz   | offen  | Datenschutzprüfung; LOE-001a (im Retention Schedule verankert) |
 | ANN-027 | Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
 | ANN-028 | MFA für `owner`: eingerichtet und sichtbar, nicht erzwungen      | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Jannes, sobald eine Domain feststeht; Datenschutzprüfung |
-| ANN-029 | Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte     | Datenschutz   | offen  | Datenschutzprüfung                        |
-| ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | offen  | Datenschutzprüfung; Jannes (Aufbewahrung Personalakte) |
-| ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | offen  | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
-| ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | offen  | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
-| ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | offen  | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
+| ANN-029 | Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
+| ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; erneut, sobald die erste Person ausscheidet |
+| ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
+| ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | entschieden (Jannes) 2026-09-11 | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
+| ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1638,7 +1648,7 @@ Faktor haben, sonst ist es eine Aussperrung.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | LOE-001a; ADR-008 (Retention Schedule), ADR-010 (offene Folgefrage „Wie werden Audit-Einträge behandelt, deren Bezugsdaten früher gelöscht werden?") |
-| Status | offen, seit 2026-09-11 |
+| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
 | Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
 
 **Annahme.** Ein Auditeintrag wird **drei Jahre nach dem Ereignis** gelöscht —
@@ -1682,7 +1692,7 @@ eine Datenänderung in `retention_classes` — Aufwand `klein`.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | LOE-001a; ADR-008 (der initiale Retention Schedule führt keine Klasse für Beschäftigtendaten); `docs/development/ARBEITSBEREICHE.md` (offener Punkt, `IDEA-QSN-010`) |
-| Status | offen, seit 2026-09-11 |
+| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
 | Wiedervorlage | Datenschutzprüfung; Jannes, sobald die erste Person ausscheidet — spätestens vor der ersten Einstellung |
 
 **Annahme.** Mitarbeiterdatensätze, Privatangaben und Arbeitszeiten
@@ -1724,7 +1734,7 @@ werden muss. Reine Friständerung ohne neuen Anker: `klein`.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | LOE-001a/LOE-002a; ADR-008 Punkt 8 (Löschungen nach einem Restore erneut anwenden), ADR-012 (Backup-Lebenszyklus offen) |
-| Status | offen, seit 2026-09-11 |
+| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
 | Wiedervorlage | Datenschutzprüfung; erneut mit OPS-003, sobald der Backup-Lebenszyklus definiert ist (ADR-012, offene Folgefrage) |
 
 **Annahme.** Das Löschjournal (`deletion_journal`) wird **nicht automatisch
@@ -1770,7 +1780,7 @@ Schritt ist die Wiederanwendung unvollständig.
 |---|---|
 | Kategorie | Praxisprozess |
 | Herkunft | LOE-001b; ADR-008 (Anker der klinischen Retention, dort als offene Folgefrage geführt), ANN-002 (`inactive` ist kein Behandlungsabschluss), `IDEA-LZK-006` |
-| Status | offen, seit 2026-09-11 |
+| Status | **entschieden (Jannes) 2026-09-11** |
 | Wiedervorlage | Jannes nach den ersten Praxiswochen (passt der Vorgang in den Alltag?); die Datenschutzprüfung sieht den Fristanker unabhängig davon |
 
 **Annahme.** Der „Abschluss der Behandlung" aus §630f Abs. 3 BGB ist ein
@@ -1822,7 +1832,7 @@ gelöscht wurde.
 |---|---|
 | Kategorie | Recht |
 | Herkunft | LOE-001c; ADR-008 Punkt 7 („dokumentierter Legal-Hold-Mechanismus") und die dortige offene Folgefrage „Wer darf einen Legal Hold setzen und aufheben?" |
-| Status | offen, seit 2026-09-11 |
+| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Recht` im Prüfpaket |
 | Wiedervorlage | Datenschutzprüfung (B2); außerdem sofort, wenn der erste reale Vorgang eintritt — dann zeigt sich, ob der Zuschnitt trägt |
 
 **Annahme.** Eine Löschsperre wirkt **auf genau eine Patientenakte**, wird
