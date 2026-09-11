@@ -52,18 +52,15 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   `CAL-EPIC-003b` Serie · `DAT-EPIC-001` Dateiablage.
 - **Ersatz**, falls LOE-EPIC-001 blockiert ist: `CAL-EPIC-003a` (setzt
   ADR-018 voraus).
-- **UX-EPIC-001 ist am 2026-09-11 fertig** (elf Stories, Branch
-  `claude/trusting-mccarthy-k4c3qb`). Die Abnahmeschritte stehen in
-  `docs/abnahme/etappe-1-kernprozess.md`; der Blick auf die laufende Anwendung
-  hinter der Anmeldung war in der Cloudumgebung nicht möglich und liegt
-  deshalb vollständig bei Jannes. Neu zu bestätigen: **ANN-020**
-  (Textbausteine ohne Patientenbezug) und **ANN-021** (Feldliste und
-  Vorhaltedauer des Tagesplans im Arbeitsspeicher). **ANN-018** ist nur für
-  Google Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
+- **UX-EPIC-001 ist am 2026-09-11 fertig und in `main`** (elf Stories, PR #18).
+  Die Abnahmeschritte stehen in `docs/abnahme/etappe-1-kernprozess.md`; der
+  Blick auf die laufende Anwendung hinter der Anmeldung war in der
+  Cloudumgebung nicht möglich und liegt deshalb vollständig bei Jannes. Die
+  Annahmen daraus sind bestätigt (siehe unten); **ANN-018** ist nur für Google
+  Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
 - **STAFF-EPIC-002 ist am 2026-09-11 fertig** (fünf Stories, Branch
-  `claude/zealous-pascal-xwur59`, der die UX-Arbeit enthält). **Beide Branches
-  sind unveröffentlicht — es gibt noch keinen Pull Request.** Abnahmeschritte
-  in `docs/abnahme/etappe-g-betriebsreife.md`; sie brauchen den vollen
+  `claude/zealous-pascal-xwur59`, **PR #20 offen**). Abnahmeschritte in
+  `docs/abnahme/etappe-g-betriebsreife.md`; sie brauchen den vollen
   Supabase-Stack mit Mailfänger und liegen damit vollständig bei Jannes. Neu
   zu bestätigen: **ANN-022** bis **ANN-025**. **E10 und E11 sind damit
   erledigt**, §4.3 und §4.5 der Prinzipien nach §21 nachgezogen (Version 0.6).
@@ -89,17 +86,22 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 - **Offen aus UI-000:** die Vorschaubereiche nutzen die gemeinsamen
   Bausteine noch nicht. Sie werden in ihrem eigenen Loop ersetzt, nicht
   vorher umgestellt (ARBEITSBEREICHE.md).
-- **Zu bestätigen:** ANN-010 bis ANN-021. Sie blockieren nichts, aber
-  ANN-011 (Rollenschnitt der Verordnung) und ANN-014 (Empfehlung zum
-  Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2, und ANN-015
-  (Verbindungsanzeige ohne Server-Ping, seit UX-009 mit Textverlust-Schutz)
-  gehört auf den ersten Feldtag. ANN-016 bis ANN-018 (Koordinaten bei der
-  Adresse, Edge Function als Adapter, Übergabeziel des Handoffs) gehören in
-  die Anfrage B2; **ANN-020** (Textbausteine als Betriebsdaten ohne
-  Patientenbezug) und **ANN-021** (Feldliste und Vorhaltedauer des Tagesplans
-  im Arbeitsspeicher, zugleich die Antwort auf die offene Folgefrage aus
-  ADR-001) gehören in dasselbe Prüfpaket. **ANN-019 ist erledigt** — der
-  Restpunkt aus VER-003 ist mit UX-009 behoben.
+- **Von Jannes bestätigt am 2026-09-11:** die Annahmen aus UX-EPIC-001 —
+  **ANN-018** (Übergabeziel des Handoffs), **ANN-020** (Textbausteine als
+  Betriebsdaten ohne Patientenbezug) und **ANN-021** (Feldliste und
+  Vorhaltedauer des Tagesplans, zugleich die Antwort auf die offene
+  Folgefrage aus ADR-001). Alle drei sind `Datenschutz` und bleiben deshalb
+  **im Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die
+  Datenschutzprüfung nicht (Lebenszyklus im Register). **ANN-019 ist
+  erledigt** — der Restpunkt aus VER-003 ist mit UX-009 behoben.
+- **Weiter offen:** ANN-001, ANN-004, ANN-005, ANN-008, ANN-009, ANN-011,
+  ANN-013, ANN-014, ANN-016, ANN-017 und die Providerfrage aus ANN-007. Sie
+  blockieren nichts, aber ANN-011 (Rollenschnitt der Verordnung) und ANN-014
+  (Empfehlung zum Verordnungsende, ADR-006) gehören in die Anfragen B1 und
+  B2, ANN-016 und ANN-017 (Koordinaten bei der Adresse, Edge Function als
+  Adapter) in die Anfrage B2, und ANN-015 (Verbindungsanzeige ohne
+  Server-Ping, seit UX-009 mit Textverlust-Schutz) gehört auf den ersten
+  Feldtag.
 - **Zu beantworten (MAP-001):** E-20 ADR-019 Fassung 2 bestätigen — damit
   entfällt die Google Maps Embed API aus E-16. **E-21 (Reihenfolge MAP-002 zu
   UX-EPIC-001) ist gegenstandslos**, seit UX-EPIC-001 fertig ist.
@@ -791,8 +793,8 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | MAP-001 Mapping-Architektur und Providerentscheidung    | fertig | 2026-09-08     | `f52e555`, `5d51d97`, Roadmap-Commit auf Branch `claude/mapping-architecture-provider-ujy45m` | —             |
 | UI-000 Fundament                                        | fertig | 2026-09-07     | `4a4440f`, `45e8222`, `df8a294`, `11a9977`, `afb5ba5`, `e6b4ab6`    |               |
 | Produktentscheidungen Terminfenster und Sprachdokumentation (Docs) | fertig | 2026-09-08 | Branch `claude/praxissoftware-product-decisions-1uk1d8`             | —             |
-| UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, Branch `claude/trusting-mccarthy-k4c3qb` |               |
-| STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`,`06b758c` `0d7bd3c`,`719faed`, Branch `claude/zealous-pascal-xwur59`                      |               |
+| UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, Merge PR #18 |               |
+| STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`, `06b758c`, `0d7bd3c`, `719faed`, `56b2706`, `4afaf97`, PR #20             |               |
 
 ---
 
