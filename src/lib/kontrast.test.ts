@@ -108,10 +108,12 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     },
   );
 
-  // Weisser Text auf der Akzentflaeche - die primaere Schaltflaeche
-  // (`bg-accent text-white`, buttonStile.ts) und ihr Hover-Zustand.
-  it.each([['accent'], ['accent-hover']])('traegt weissen Text auf %s mit 4.5:1', (token) => {
-    expect(kontrastverhaeltnis(tokens[token]!, { L: 1, C: 0, H: 0 })).toBeGreaterThanOrEqual(4.5);
+  // Heller Text auf der Akzentflaeche - die primaere Schaltflaeche
+  // (`bg-accent text-surface`, buttonStile.ts) und ihr Hover-Zustand. Seit
+  // DS-001 ist dieser Text Papier und nicht Weiss (`--action-primary-text`);
+  // geprueft wird deshalb das Paar, das tatsaechlich auf dem Schirm steht.
+  it.each([['accent'], ['accent-hover']])('traegt Papier auf %s mit 4.5:1', (token) => {
+    expect(kontrastverhaeltnis(tokens[token]!, tokens.surface!)).toBeGreaterThanOrEqual(4.5);
   });
 
   // Der Hover-Zustand muss sichtbar sein, sonst zeigt er nichts an. Gemessen

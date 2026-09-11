@@ -31,7 +31,8 @@ export function Checkbox({
           type="checkbox"
           aria-describedby={describedBy}
           aria-invalid={error ? true : undefined}
-          className="border-line-strong text-accent focus-visible:outline-accent size-5 shrink-0 rounded border"
+          // Radius 6 nach DS-001 - ein eigener Wert neben den vier Hauptradien.
+          className="border-line-strong text-accent focus-visible:outline-accent size-5 shrink-0 rounded-[6px] border"
           {...props}
         />
         <span className="text-ink text-sm">{label}</span>

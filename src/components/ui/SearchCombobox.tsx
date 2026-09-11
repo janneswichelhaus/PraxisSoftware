@@ -123,7 +123,7 @@ export function SearchCombobox({
         aria-controls={listeId}
         aria-autocomplete="list"
         aria-activedescendant={aktiv >= 0 && treffer[aktiv] ? `${feldId}-${aktiv}` : undefined}
-        className="border-line-strong bg-surface text-ink placeholder:text-ink-subtle min-h-11 w-full rounded-lg border px-3 text-base"
+        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-subtle rounded-field h-12 w-full border px-4 text-base"
         {...(placeholder === undefined ? {} : { placeholder })}
         value={wert}
         onChange={(event) => {

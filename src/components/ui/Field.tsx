@@ -61,7 +61,9 @@ export function Field({ label, hint, error, className = '', type, ...props }: Fi
           aria-describedby={describedBy}
           aria-invalid={error ? true : undefined}
           className={[
-            'bg-surface text-ink placeholder:text-ink-subtle min-h-11 w-full rounded-lg border px-3 text-base',
+            // DS-001: Felder sind die hellste Flaeche (weiss), 48 px hoch,
+            // Radius 10, Schrift 16 px - unter 16 px zoomt iOS beim Fokus.
+            'bg-surface-field text-ink placeholder:text-ink-subtle rounded-field h-12 w-full border px-4 text-base',
             isPassword ? 'pr-11' : '',
             error ? 'border-danger' : 'border-line-strong',
             className,

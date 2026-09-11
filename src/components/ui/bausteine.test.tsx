@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
 import { Badge } from './Badge';
 import { ButtonLink } from './ButtonLink';
+import { kartenAktionKlassen } from './buttonStile';
 import { DetailList, DetailRow } from './DetailList';
 import { Rueckfrage } from './Rueckfrage';
 import { SearchField } from './SearchField';
@@ -52,11 +53,21 @@ describe('ButtonLink', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('traegt dieselben Klassen wie die Schaltflaeche und ein Tippziel von 44 px', () => {
+  it('traegt dieselben Klassen wie die Schaltflaeche und ein ausreichendes Tippziel', () => {
     renderWithProviders(<ButtonLink to="/a">Primaer</ButtonLink>);
     const link = screen.getByRole('link', { name: 'Primaer' });
-    expect(link.className).toContain('min-h-11');
+    // Seit DS-001 ist die Schaltflaeche 48 px hoch (`--control-height`); die
+    // Untergrenze von 44 px aus der Oberflaechen-Checkliste bleibt damit
+    // erfuellt. Geprueft wird die Hoehe, nicht eine bestimmte Klasse.
+    expect(link.className).toMatch(/\bh-12\b/);
     expect(link.className).toContain('bg-accent');
+  });
+
+  it('haelt die kompakte Variante bei 44 px', () => {
+    // Das Design System nennt 40 px fuer den kompakten Knopf und zugleich
+    // "Ziele >= 44". Fuer einen Knopf ohne umgebende Polsterung widersprechen
+    // sich beide; es gilt die zugaengliche Lesart.
+    expect(kartenAktionKlassen()).toMatch(/\bmin-h-11\b/);
   });
 
   it('kennt die sekundaere Variante', () => {
