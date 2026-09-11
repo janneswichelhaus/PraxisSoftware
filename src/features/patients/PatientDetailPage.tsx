@@ -1,15 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { PatientUpcomingAppointments } from '@/features/appointments/PatientUpcomingAppointments';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canChangePatientStatus,
+  canConcludePatientCare,
   canManageAppointments,
   type CurrentUser,
 } from '@/features/session/types';
@@ -17,10 +19,13 @@ import { PatientRecordDocumentation } from '@/features/documentation/PatientReco
 import { PatientPrescriptions } from '@/features/prescriptions/PatientPrescriptions';
 import {
   ageInYears,
+  concludePatientCare,
   fetchPatient,
   formatDate,
   fullName,
+  jahrPlus,
   logPatientRecordView,
+  reopenPatientCare,
   setPatientStatus,
   type Patient,
 } from './api';
@@ -81,6 +86,96 @@ function StatusAktion({ patient }: { patient: Patient }) {
   );
 }
 
+/**
+ * Heute als `YYYY-MM-DD` in der Zeitzone des Geräts.
+ *
+ * Die verbindliche Prüfung („nicht in der Zukunft") macht der Server in der
+ * Zeitzone der Praxis; hier geht es nur um eine sinnvolle Vorbelegung.
+ */
+function heute(): string {
+  const jetzt = new Date();
+  const monat = `${jetzt.getMonth() + 1}`.padStart(2, '0');
+  const tag = `${jetzt.getDate()}`.padStart(2, '0');
+  return `${jetzt.getFullYear()}-${monat}-${tag}`;
+}
+
+/**
+ * Abschluss der Versorgung festhalten oder zurücknehmen (LOE-001b).
+ *
+ * Der Vorgang startet die zehnjährige Aufbewahrung nach ADR-008 — deshalb die
+ * Rückfrage und deshalb der ausdrückliche Satz darüber, was danach passiert.
+ * Der Tag ist änderbar, weil der letzte Behandlungstag oft vor der
+ * Entscheidung liegt. Verbindlich prüft `conclude_patient_care` Rolle, Datum
+ * und Organisation erneut (ADR-004).
+ */
+function VersorgungAbschliessen({ patient }: { patient: Patient }) {
+  const queryClient = useQueryClient();
+  const [tag, setTag] = useState(heute);
+  const abgeschlossen = patient.care_concluded_on !== null;
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      abgeschlossen ? reopenPatientCare(patient.id) : concludePatientCare(patient.id, tag),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['patients'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
+    },
+  });
+
+  if (abgeschlossen) {
+    return (
+      <Rueckfrage
+        ausloeser="Abschluss zurücknehmen"
+        bestaetigen="Abschluss zurücknehmen"
+        bestaetigenLaeuft="Wird zurückgenommen …"
+        fehler={
+          mutation.isError
+            ? 'Der Abschluss der Versorgung konnte nicht zurückgenommen werden.'
+            : undefined
+        }
+        laeuft={mutation.isPending}
+        onBestaetigen={() => mutation.mutateAsync()}
+      >
+        <p>
+          Die Versorgung gilt wieder als laufend. Die Aufbewahrungsfrist beginnt erst mit einem
+          neuen Abschluss — sie läuft nicht weiter.
+        </p>
+      </Rueckfrage>
+    );
+  }
+
+  return (
+    <Rueckfrage
+      ausloeser="Versorgung abschließen"
+      bestaetigen="Versorgung abschließen"
+      bestaetigenLaeuft="Wird gespeichert …"
+      fehler={
+        mutation.isError
+          ? 'Der Abschluss der Versorgung konnte nicht gespeichert werden. Prüfen Sie das Datum.'
+          : undefined
+      }
+      laeuft={mutation.isPending}
+      onBestaetigen={() => mutation.mutateAsync()}
+      onAbbrechen={() => setTag(heute())}
+    >
+      <p>
+        Die Behandlung dieser Person ist beendet. Ab diesem Tag läuft die gesetzliche Aufbewahrung
+        von zehn Jahren; danach wird die Akte gelöscht. Kommt die Person zurück, lässt sich der
+        Abschluss zurücknehmen.
+      </p>
+      <div className="mt-3 max-w-60">
+        <Field
+          label="Letzter Behandlungstag"
+          type="date"
+          max={heute()}
+          value={tag}
+          onChange={(event) => setTag(event.target.value)}
+        />
+      </div>
+    </Rueckfrage>
+  );
+}
+
 function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const age = ageInYears(patient.date_of_birth);
   const street = [patient.street, patient.house_number].filter(Boolean).join(' ');
@@ -88,6 +183,10 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
     .filter(Boolean)
     .join(', ');
   const darfStatusWechseln = canChangePatientStatus(user.roles);
+  // Denselben Rollenschnitt prueft app.can_conclude_patient_care(): der
+  // Abschluss ist eine fachliche Aussage ueber den Versorgungsverlauf, kein
+  // Verwaltungsvorgang (LOE-001b). Verbindlich ist der Server.
+  const darfAbschliessen = canConcludePatientCare(user.roles);
   const darfTerminePlanen = canManageAppointments(user.roles);
   const hatVersorgungsangaben = Boolean(
     patient.home_visit_access_note ||
@@ -171,12 +270,22 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
         <DetailList>
           <DetailRow label="Beginn">{formatDate(patient.care_started_on)}</DetailRow>
           <DetailRow label="Status">{patient.status === 'active' ? 'Aktiv' : 'Inaktiv'}</DetailRow>
+          {/* Der Abschluss ist der Anker der zehnjaehrigen Aufbewahrung
+              (ADR-008, LOE-001b) und etwas anderes als der Status: „inaktiv"
+              sagt etwas ueber den Kalender, „abgeschlossen" ueber die
+              Behandlung. */}
+          <DetailRow label="Abschluss">
+            {patient.care_concluded_on
+              ? `${formatDate(patient.care_concluded_on)} — Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`
+              : 'Laufende Versorgung'}
+          </DetailRow>
         </DetailList>
       </Section>
 
-      {darfStatusWechseln ? (
-        <div className="mt-5 flex">
-          <StatusAktion patient={patient} />
+      {darfStatusWechseln || darfAbschliessen ? (
+        <div className="mt-5 flex flex-wrap items-start gap-3">
+          {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
+          {darfAbschliessen ? <VersorgungAbschliessen patient={patient} /> : null}
         </div>
       ) : null}
 

@@ -171,6 +171,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-029 | Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte     | Datenschutz   | offen  | Datenschutzprüfung                        |
 | ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | offen  | Datenschutzprüfung; Jannes (Aufbewahrung Personalakte) |
 | ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | offen  | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
+| ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | offen  | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1745,3 +1746,55 @@ des Backups zurück — Löschungen danach wären verloren. Das Restore-Verfahre
 (OPS-003, ADR-012) MUSS deshalb das Journal **vor** der Rückspielung sichern
 und danach einspielen, bevor `reapply_deletion_journal()` läuft. Ohne diesen
 Schritt ist die Wiederanwendung unvollständig.
+
+---
+
+### ANN-032 — „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | LOE-001b; ADR-008 (Anker der klinischen Retention, dort als offene Folgefrage geführt), ANN-002 (`inactive` ist kein Behandlungsabschluss), `IDEA-LZK-006` |
+| Status | offen, seit 2026-09-11 |
+| Wiedervorlage | Jannes nach den ersten Praxiswochen (passt der Vorgang in den Alltag?); die Datenschutzprüfung sieht den Fristanker unabhängig davon |
+
+**Annahme.** Der „Abschluss der Behandlung" aus §630f Abs. 3 BGB ist ein
+**ausdrücklicher Vorgang auf der Akte**: `patients.care_concluded_on`, gesetzt
+von owner, therapist oder team_lead, mit frei wählbarem Tag (nicht in der
+Zukunft, nicht vor dem Beginn der Versorgung) und **zurücknehmbar**. Ohne
+diesen Vorgang läuft keine Aufbewahrungsfrist und wird nichts gelöscht. Eine
+Rücknahme lässt die Frist mit dem nächsten Abschluss **neu** beginnen; sie
+setzt sie nicht fort.
+
+**Begründung.** ADR-008 verlangt den Anker und lässt seine Definition
+ausdrücklich offen; ANN-002 hält fest, dass der organisatorische Status
+`inactive` ihn nicht ersetzt, weil er eine Aussage über den Kalender ist und
+keine über die Behandlung. Gegen einen Automatismus („sechs Monate kein
+Termin") sprechen drei Dinge: Er startet eine zehnjährige Frist ohne
+fachliche Entscheidung; eine Pause in der Versorgung ist kein Abschluss; und
+die automatische Klassifizierung, die Jannes sich wünscht
+(`IDEA-LZK-007`), hängt am offenen Rechtsrahmen B9. Die Rücknehmbarkeit ist
+die datenschutzfreundlichere und zugleich sicherere Seite: Ein Irrtum ist
+korrigierbar, solange die Frist läuft, und eine wiederaufgenommene Behandlung
+verlängert die Aufbewahrung, statt sie zu verkürzen (ADR-008 Punkt 2,
+`PROJECT_PRINCIPLES.md` §16).
+**Unsicher:** ob die Praxis den Vorgang im Alltag zuverlässig ausführt. Wird er
+vergessen, wird **nicht** gelöscht — der Fehler geht damit in Richtung
+Aufbewahrung, nicht in Richtung Datenverlust. Eine Erinnerung wäre der
+nächste Schritt, ist aber ein eigenes Feature.
+
+**Verankerung.** `public.conclude_patient_care` und
+`public.reopen_patient_care` samt `app.can_conclude_patient_care()` in
+`supabase/migrations/20260911160000_care_conclusion.sql` — der Kopfkommentar
+trägt die Kennung. Tests in `supabase/tests/care-conclusion.test.ts`;
+Oberfläche `VersorgungAbschliessen` in
+`src/features/patients/PatientDetailPage.tsx`; Abnahmeschritt LOE-001b in
+`docs/abnahme/etappe-1-kernprozess.md`.
+
+**Änderungspfad.** Rollenschnitt ändern: eine Migration, die
+`app.can_conclude_patient_care()` ersetzt — Aufwand `klein`. Automatische
+Klassifizierung ergänzen: eigenes Feature mit eigener Entscheidung, hängt an
+B9 — Aufwand `mittel` bis `groß`, deshalb heute nicht. Den Anker ganz
+verschieben (etwa auf den letzten durchgeführten Termin): eine Migration und
+eine Änderung der Regel im Löschlauf — Aufwand `klein`, solange noch nichts
+gelöscht wurde.

@@ -939,3 +939,46 @@ Verbindlich für Farben, Schutzraum, Mindestgröße und Verbote ist
    ```
 
    „Ohne Befund" ist das erwartete Ergebnis.
+
+---
+
+## LOE-001b — Abschluss der Versorgung
+
+Der Vorgang, an dem die gesetzliche Aufbewahrung hängt (ADR-008, §630f Abs. 3
+BGB). Er heißt bewusst **nicht** „Behandlung abschließen" — so heißt seit
+UX-007 der Abschluss eines einzelnen Termins.
+
+1. **Laufende Versorgung.** Eine Akte öffnen (`therapist`). Im Abschnitt
+   „Versorgung" steht neben Beginn und Status die Zeile **„Abschluss: Laufende
+   Versorgung"**. Darunter die Schaltfläche „Versorgung abschließen".
+2. **Rückfrage statt Sofortwirkung.** Auf „Versorgung abschließen" tippen. Es
+   passiert noch nichts: Es erscheint ein Kasten mit dem Satz, dass ab diesem
+   Tag zehn Jahre Aufbewahrung laufen und die Akte danach gelöscht wird, dazu
+   das Feld „Letzter Behandlungstag" mit dem heutigen Datum. „Abbrechen"
+   schließt den Kasten, ohne etwas zu speichern.
+3. **Zurückdatieren.** Erneut öffnen, im Feld einen Tag in der Vergangenheit
+   wählen (nach dem Versorgungsbeginn der Akte), bestätigen. Die Zeile lautet
+   jetzt **„Abschluss: <Datum> — Aufbewahrung bis <Jahr+10>"**.
+4. **Zukunft geht nicht.** Erneut versuchen mit einem Datum in der Zukunft:
+   Das Feld lässt es gar nicht erst zu (`max` = heute); wer es über die
+   Tastatur erzwingt, bekommt die Fehlermeldung „… Prüfen Sie das Datum."
+   und **keine** Erfolgsmeldung.
+5. **Zurücknehmen.** Die Schaltfläche heißt jetzt „Abschluss zurücknehmen".
+   Bestätigen — die Zeile steht wieder auf „Laufende Versorgung". Der Satz im
+   Kasten sagt, dass die Frist mit einem neuen Abschluss **neu** beginnt.
+6. **Rollenschnitt.** Mit `office` anmelden, dieselbe Akte öffnen: „Als
+   inaktiv markieren" ist da, „Versorgung abschließen" **nicht**. Umgekehrt
+   sieht `therapist` den Abschluss, aber nicht die Statusaktion. Das ist
+   Absicht: Der Status ist Verwaltung, der Abschluss eine fachliche Aussage.
+7. **Im Auditlog.** Als `owner` unter „Betrieb → Sicherheit" die Einträge
+   ansehen: „Versorgung abgeschlossen" und „Abschluss der Versorgung
+   zurückgenommen" stehen dort mit Zeitpunkt und handelnder Person.
+8. **Am Handy** (~375 px): Akte öffnen, Kasten aufklappen. Das Datumsfeld und
+   beide Schaltflächen bleiben vollständig sichtbar und mindestens 44 px hoch;
+   nichts scrollt seitwärts.
+
+   ```bash
+   pnpm screenshots --breite=375 --konto=therapist /patienten
+   ```
+
+„Ohne Befund" ist das erwartete Ergebnis.

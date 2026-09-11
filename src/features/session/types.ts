@@ -129,6 +129,19 @@ export function canWritePrescriptions(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Rollen, die den Abschluss der Versorgung setzen duerfen (LOE-001b).
+ *
+ * Wie beim Schreiben von Verordnungen: owner, therapist, team_lead - ohne
+ * office. Ob eine Behandlung abgeschlossen ist, ist eine fachliche Aussage
+ * ueber den Versorgungsverlauf und kein Verwaltungsvorgang; sie startet die
+ * zehnjaehrige Aufbewahrung (ADR-008). Verbindlich ist
+ * app.can_conclude_patient_care().
+ */
+export function canConcludePatientCare(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => clinicalReadRoles.includes(role));
+}
+
+/**
  * Rollen, die dokumentieren duerfen.
  *
  * Enger als das Lesen: Dokumentieren ist ein Behandlungsschritt (4.2), kein

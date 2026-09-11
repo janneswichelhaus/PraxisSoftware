@@ -27,6 +27,8 @@ const aktiv: PatientsApi.Patient = testPatient({
 
 const fetchPatient = vi.fn();
 const setPatientStatus = vi.fn();
+const concludePatientCare = vi.fn();
+const reopenPatientCare = vi.fn();
 const logPatientRecordView = vi.fn();
 const fetchPatientPrescriptions = vi.fn();
 const fetchPatientPrescriptionsClinical = vi.fn();
@@ -51,6 +53,9 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
     setPatientStatus: (id: string, status: string) => setPatientStatus(id, status) as Promise<void>,
+    concludePatientCare: (id: string, tag?: string) =>
+      concludePatientCare(id, tag) as Promise<void>,
+    reopenPatientCare: (id: string) => reopenPatientCare(id) as Promise<void>,
     logPatientRecordView: (id: string) => logPatientRecordView(id) as Promise<void>,
   };
 });
@@ -103,6 +108,10 @@ describe('PatientDetailPage', () => {
   beforeEach(() => {
     fetchPatient.mockReset();
     setPatientStatus.mockReset();
+    concludePatientCare.mockReset();
+    reopenPatientCare.mockReset();
+    concludePatientCare.mockResolvedValue(undefined);
+    reopenPatientCare.mockResolvedValue(undefined);
     logPatientRecordView.mockReset();
     fetchTreatmentEvidencePage.mockReset();
     fetchPatientTreatmentNotesPage.mockReset();
@@ -421,6 +430,96 @@ describe('PatientDetailPage', () => {
       await waitFor(() => expect(fetchPatient).toHaveBeenCalled());
       expect(fetchUpcomingAppointments).not.toHaveBeenCalled();
       expect(screen.queryByRole('heading', { name: 'Nächste Termine' })).toBeNull();
+    });
+  });
+  // ---------------------------------------------------------------------------
+  // Abschluss der Versorgung (LOE-001b)
+  //
+  // Der Vorgang startet die zehnjaehrige Aufbewahrung nach ADR-008. Geprueft
+  // wird deshalb dreierlei: der Rollenschnitt (ohne office), dass nichts ohne
+  // Rueckfrage geschrieben wird, und dass der Zustand als Text dasteht - nicht
+  // nur als Abwesenheit einer Schaltflaeche.
+  // ---------------------------------------------------------------------------
+  describe('Abschluss der Versorgung', () => {
+    const abgeschlossen = {
+      ...aktiv,
+      care_concluded_on: '2026-03-12',
+      care_concluded_at: '2026-03-12T10:00:00Z',
+    };
+
+    it.each([['owner'], ['therapist'], ['team_lead']] as const)(
+      'bietet %s den Abschluss an',
+      async (role) => {
+        renderWithProviders(<PatientDetailPage user={testUser([role])} />);
+        expect(
+          await screen.findByRole('button', { name: 'Versorgung abschließen' }),
+        ).toBeInTheDocument();
+      },
+    );
+
+    it('bietet office den Abschluss nicht an', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['office'])} />);
+
+      expect(await screen.findByRole('heading', { name: 'Max Mustermann' })).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Versorgung abschließen' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('nennt die laufende Versorgung als Text', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+      expect(await screen.findByText('Laufende Versorgung')).toBeInTheDocument();
+    });
+
+    it('nennt Abschlusstag und Ende der Aufbewahrung als Text', async () => {
+      fetchPatient.mockResolvedValue(abgeschlossen);
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      expect(await screen.findByText(/12\.03\.2026 — Aufbewahrung bis 2036/)).toBeInTheDocument();
+    });
+
+    it('schreibt erst nach der Rueckfrage und mit dem gewaehlten Tag', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      await user.click(await screen.findByRole('button', { name: 'Versorgung abschließen' }));
+      expect(concludePatientCare).not.toHaveBeenCalled();
+
+      const feld = screen.getByLabelText('Letzter Behandlungstag');
+      await user.clear(feld);
+      await user.type(feld, '2026-09-01');
+
+      const buttons = screen.getAllByRole('button', { name: 'Versorgung abschließen' });
+      await user.click(buttons[buttons.length - 1]!);
+
+      await waitFor(() =>
+        expect(concludePatientCare).toHaveBeenCalledWith(PATIENT_ID, '2026-09-01'),
+      );
+    });
+
+    it('bietet einem abgeschlossenen Fall die Ruecknahme an', async () => {
+      const user = userEvent.setup();
+      fetchPatient.mockResolvedValue(abgeschlossen);
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      await user.click(await screen.findByRole('button', { name: 'Abschluss zurücknehmen' }));
+      const buttons = screen.getAllByRole('button', { name: 'Abschluss zurücknehmen' });
+      await user.click(buttons[buttons.length - 1]!);
+
+      await waitFor(() => expect(reopenPatientCare).toHaveBeenCalledWith(PATIENT_ID));
+      expect(concludePatientCare).not.toHaveBeenCalled();
+    });
+
+    it('meldet einen Fehler, ohne Erfolg vorzutaeuschen', async () => {
+      const user = userEvent.setup();
+      concludePatientCare.mockRejectedValue(new Error('abgelehnt'));
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      await user.click(await screen.findByRole('button', { name: 'Versorgung abschließen' }));
+      const buttons = screen.getAllByRole('button', { name: 'Versorgung abschließen' });
+      await user.click(buttons[buttons.length - 1]!);
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/konnte nicht gespeichert werden/);
     });
   });
 });
