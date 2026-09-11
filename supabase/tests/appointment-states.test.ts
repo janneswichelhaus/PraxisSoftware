@@ -623,6 +623,28 @@ describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', 
     expect(await invarianteGilt()).toBe(true);
   });
 
+  it('haelt den internen Zustandswechsel fuer Anwendungsrollen verschlossen', async () => {
+    // PostgreSQL gibt EXECUTE auf neue Funktionen an PUBLIC, und
+    // `authenticated` hat USAGE auf dem Schema app. Ohne ausdrueckliches
+    // REVOKE koennte jedes angemeldete Konto einen beliebigen Termin auf
+    // documented heben: app.mark_appointment_documented ist SECURITY DEFINER
+    // und prueft keine Rolle - das tut der Aufrufer (ADR-004).
+    const { rows } = await asPostgres<{ erlaubt: boolean }>(
+      `select has_function_privilege('authenticated', p.oid, 'EXECUTE') as erlaubt
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'app' and p.proname = 'mark_appointment_documented'`,
+    );
+    expect(rows[0]?.erlaubt).toBe(false);
+
+    const termin = await anlegen();
+    await expect(
+      asUser(users.ownerTherapist, 'select app.mark_appointment_documented($1::uuid, null)', [
+        termin.id,
+      ]),
+    ).rejects.toThrow(/permission denied/i);
+    expect(await zustand(termin.id)).toBe('confirmed');
+  });
+
   it('laesst einen Termin ohne finalisierte Dokumentation NICHT auf documented stehen', async () => {
     const termin = await anlegen();
     await entwurf(termin.id);
