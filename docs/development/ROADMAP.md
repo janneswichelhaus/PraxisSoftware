@@ -58,10 +58,10 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   Cloudumgebung nicht möglich und liegt deshalb vollständig bei Jannes. Die
   Annahmen daraus sind bestätigt (siehe unten); **ANN-018** ist nur für Google
   Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
-- **STAFF-EPIC-002 ist am 2026-09-11 fertig** (fünf Stories, Branch
-  `claude/zealous-pascal-xwur59`, **PR #20 offen**). Abnahmeschritte in
+- **STAFF-EPIC-002 ist am 2026-09-11 fertig und von Jannes abgenommen**
+  (fünf Stories, PR #20). Die Abnahmeschritte stehen in
   `docs/abnahme/etappe-g-betriebsreife.md`; sie brauchen den vollen
-  Supabase-Stack mit Mailfänger und liegen damit vollständig bei Jannes. Neu
+  Supabase-Stack mit Mailfänger und sind am 2026-09-11 durchlaufen. Neu
   zu bestätigen: **ANN-025** (kein Konto durch die Anwendung, hängt an OPS-001)
   und **ANN-026** (Frist der Einladung, geht in das Löschkonzept von
   LOE-EPIC-001 ein). **ANN-024, ANN-027 und ANN-028 hat Jannes am 2026-09-11
@@ -799,7 +799,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, Merge PR #18 |               |
 | Marke Own Motion als Dateien und Regel (Docs)           | fertig | 2026-09-10     | `eb5c234`                                                           | —             |
 | MARKE-001 Marke in der Anwendung                        | fertig | 2026-09-11     | `577ecd6`, `fb5cee0`, `7486c95`, `7109595`, `8f576b2`, Merge PR #19 |               |
-| STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`, `06b758c`, `0d7bd3c`, `719faed`, `56b2706`, `4afaf97`, PR #20 |               |
+| STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`, `06b758c`, `0d7bd3c`, `719faed`, `56b2706`, `4afaf97`, `23cfb35`, PR #20 | 2026-09-11    |
 
 ---
 
