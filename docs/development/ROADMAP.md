@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 3.2 · Stand 2026-09-11 · **in Kraft**
+Version 3.3 · Stand 2026-09-11 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -82,6 +82,13 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   Cloudumgebung nicht möglich und liegt deshalb vollständig bei Jannes. Die
   Annahmen daraus sind bestätigt (siehe unten); **ANN-018** ist nur für Google
   Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
+- **Sechs Epics sind am 2026-09-11 von Jannes abgenommen:** DOK-001 bis
+  DOK-004, VER-EPIC-001, UI-000, MARKE-001, UX-EPIC-001 und LOE-EPIC-001.
+  Zusammen mit STAFF-EPIC-002 trägt die Fortschrittstabelle damit bei jedem
+  gebauten Epic ein Abnahmedatum — **kein Epic wartet mehr auf Abnahme**.
+  Die Gegenmaßnahme zu R6 (Befundwelle aus späten Abnahmen) greift damit;
+  Befunde aus den Abnahmen gehören als erste Story in den nächsten Loop
+  derselben Spur, nicht in einen eigenen.
 - **STAFF-EPIC-002 ist am 2026-09-11 fertig und von Jannes abgenommen**
   (fünf Stories, PR #20). Die Abnahmeschritte stehen in
   `docs/abnahme/etappe-g-betriebsreife.md`; sie brauchen den vollen
@@ -388,7 +395,7 @@ liefert.
 
 | Loop              | Ergebnis                                                           | Stories                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Voraussetzung                                                     | Jannes liefert                                          |
 | ----------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
-| ~~DOK-EPIC~~      | Behandlungsdokumentation mit Finalisierung                         | DOK-001 bis DOK-004                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | **fertig** (PR #5, PR #9)                                         | Abnahme steht aus                                       |
+| ~~DOK-EPIC~~      | Behandlungsdokumentation mit Finalisierung                         | DOK-001 bis DOK-004                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | **fertig** (PR #5, PR #9)                                         | abgenommen 2026-09-11                                   |
 | **VER-EPIC-001**  | Verordnungen liegen in der Akte, mit Kontingent und Verordner:in   | **PAT-005** Stammdaten: Telefon (Geschäftlich), Mobil, Telefax, Einrichtung, Besonderheit, Bemerkung, feste Therapeut:in, **Zugangshinweis Hausbesuch** (`IDEA-PRX-001`) · **VER-001** Datenmodell Verordnung mit `prescribers`, Positionen mit verordneter/genutzter Menge, Erst-/Folgeverordnung, Empfehlung zum Verordnungsende · **VER-002** je Patient:in, nach Jahr · **VER-003** anlegen und bearbeiten                                                                                                                                                                                                                                                                                                                                                                                                                                       | —                                                                 | —                                                       |
 | **UI-000**        | Das Fundament trägt die nächsten zwanzig Seiten                    | Tokens `ink-subtle` und `line-strong` auf AA heben, Kontrast-Test · Bausteine `ButtonLink`, `Rueckfrage`, `Section`, `DataRow`, `Statusmeldung`, `SearchField` und Ersetzen der Duplikate · Druck-Basis (`@media print`, entschieden 2026-09-06) · Verbindungsanzeige · 375-px-Screenshot-Helfer · axe als Dev-Abhängigkeit für die automatische Barrierefreiheitsprüfung (entschieden 2026-09-06) · Oberflächen-Checkliste in `docs/abnahme/README.md`                                                                                                                                                                                                                                                                                                                                                                                             | —                                                                 | —                                                       |
 | **UX-EPIC-001**   | Ein Hausbesuchstag läuft ohne Umwege durch die Anwendung           | Tagesliste mit Adresse, `tel:`-Link, Zugangshinweis, „Offen heute"; Vorschau-Karten zusammengefaltet · **Navigation über Google Maps** (entschieden 2026-09-06, `IDEA-PRX-030`): Link je Termin mit Adresse ohne Namen im Fahrradmodus, Link „ganzer Tag" mit allen Adressen in Terminreihenfolge; URL-Format und Feldliste als `ANN`, Vertrags- und Datenschutzseite in ADR-019 · Folgetermin am Termin und Tap auf freie Zeit im Kalender, Vorbelegung Hausbesuch/ich/heute (`IDEA-PRX-007`) · nächste Termine in der Akte · „Behandlung abschließen" in einem Schritt · Textverlust-Schutz und Verbindungsanzeige (`ANN`), **darin der bekannte Restpunkt aus VER-003:** wer die Verordner:innen-Anlage über die Hauptnavigation verlässt statt über „Abbrechen", bricht den Abstecher ab — der Entwurf bleibt aber bis zum Ablauf der 30 Minuten aus ANN-019 liegen und taucht bei einem unabhängigen neuen Versuch auf demselben Pfad wieder auf (`src/features/prescriptions/api.ts`, `entwurfAnsehen`; der Kommentar dort benennt genau diesen Fall). Zu bauen: den Entwurf beim Verlassen des Abstechers verwerfen, statt sich auf die Frist zu verlassen; Test mit echtem Seitenwechsel wie in `PrescriptionFormPage.entwurf.test.tsx` · Tagesplan-Cache lesend nach ADR-001, Feldliste als `ANN` (`IDEA-PRX-014`, entschieden 2026-09-06) · Touch-Ziehen erst nach Long-Press, Rückgängig-Leiste · serverseitige Patientensuche von jeder Seite (`IDEA-PRX-020`) · Textbausteine in der Dokumentation (`IDEA-PRX-011`, entschieden 2026-09-06) | VER-EPIC-001, UI-000; Google-Link durch ADR-019 frei (Teil 1)                          | Daumen-Test nach dem Loop                               |
@@ -803,28 +810,67 @@ Abgehakt wird hier, mit Datum und Commit. Ein Loop gilt als **fertig**, wenn
 Skill-Schritt I durchlaufen ist, und als **abgenommen**, wenn Jannes die
 Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 
+### Eine Zahl für den Gesamtstand
+
+```bash
+pnpm fortschritt            # Übersicht je Block
+pnpm fortschritt --posten   # jeder einzelne Posten
+pnpm fortschritt --json     # maschinenlesbar
+```
+
+Die Tabelle unten zählt abgehakte Loops. Sie sagt damit nicht, **wie weit es
+insgesamt** ist — ein Loop wiegt nicht so viel wie eine Probewoche und eine
+Probewoche nicht so viel wie die externe Datenschutzprüfung. Dafür gewichtet
+`docs/development/fortschritt.json` fünf Blöcke gegeneinander und
+`scripts/fortschritt.mjs` rechnet sie zu einem Prozentwert zusammen.
+
+| Block | Inhalt                                              | Gewicht |
+| ----- | --------------------------------------------------- | ------- |
+| A     | Kernprozess — Software Stufe 1 (Etappe 1, bis M1)   | 30      |
+| B     | Software Stufe 2 vor der Eröffnung (Etappe T und 2) | 10      |
+| C     | Betriebsreife (Etappe G, vor M3)                    | 25      |
+| D     | Eröffnung (Etappe H, bis M5)                        | 15      |
+| E     | Entscheidungen und externe Prüfungen (Spur B)       | 20      |
+
+Drei Festlegungen, damit die Zahl nicht schmeichelt:
+
+- **Gerechnet wird gegen M5**, den ersten Behandlungstag mit der Software —
+  nicht gegen „Code fertig". Software ist deshalb 40 Prozent, der Rest 60.
+  Das folgt „Kapazität und Puffer": Der Engpass ist nicht die Baukapazität,
+  sondern Jannes' Zeit für Entscheidungen, Abnahmen und externe Anfragen.
+- **Gebaut ist nicht fertig.** Ein Loop ohne Abnahme zählt `0,85`; die
+  restlichen 15 Prozent holt die Abnahme (Definition of Done).
+- **Vorläufig entschieden ist halb entschieden.** Ein Punkt aus Spur B mit
+  Status `vorläufig entschieden (Jannes)` zählt `0,5` — er löst das Bauen,
+  für M3 zählt er nicht.
+
+Das Ergebnis ist eine **Schätzung mit offengelegtem Modell**, keine Messung.
+Wer die Gewichte für falsch hält, ändert sie in der JSON-Datei; das Skript
+prüft nur, dass die Blockgewichte 100 ergeben. **Gepflegt wird die Datei am
+Ende eines Loops**, zusammen mit der Tabelle unten.
+
 | Loop                                                   | Status | Fertig am      | Commit                                                              | Abgenommen am |
 | ------------------------------------------------------ | ------ | -------------- | ------------------------------------------------------------------- | ------------- |
 | PAT-001 bis PAT-004                                    | fertig | vor 2026-09-01 | PAT-004: Merge PR #1                                                |               |
 | CAL-001 bis CAL-006                                    | fertig | vor 2026-09-01 | —                                                                   |               |
 | STAFF-001                                              | fertig | 2026-08-30     | `e70775a`, `ca907e9`                                                |               |
-| DOK-001                                                | fertig | 2026-09-01     | `7e18906`, Merge PR #5                                              |               |
-| DOK-002                                                | fertig | 2026-09-02     | `491a0c0`, Merge PR #5                                              |               |
-| DOK-003                                                | fertig | 2026-09-05     | `21d85dd`, `f565124`                                                |               |
-| DOK-004                                                | fertig | 2026-09-05     | `e931068`, `960f34f`                                                |               |
+| DOK-001                                                | fertig | 2026-09-01     | `7e18906`, Merge PR #5                                              | 2026-09-11    |
+| DOK-002                                                | fertig | 2026-09-02     | `491a0c0`, Merge PR #5                                              | 2026-09-11    |
+| DOK-003                                                | fertig | 2026-09-05     | `21d85dd`, `f565124`                                                | 2026-09-11    |
+| DOK-004                                                | fertig | 2026-09-05     | `e931068`, `960f34f`                                                | 2026-09-11    |
 | Planungsreview und Roadmap 2.0                         | fertig | 2026-09-05     | Merge PR #13                                                        | —             |
 | Wettbewerbsanalyse, Review 2.1, Optimierungsmethode    | fertig | 2026-09-06     | `7ab6f71`, Branch `claude/roadmap-optimization-competitor-analysis-r3qxl7` | —      |
 | Roadmap 2.1 in Kraft, Tagesroute und Plattform geplant | fertig | 2026-09-06     | `ba46307`, `879048c`, Branch `claude/competitor-analysis-roadmap-eercd3` | —        |
-| VER-EPIC-001 (PAT-005, VER-001 bis VER-003)             | fertig | 2026-09-07     | `2c3c1de`, `18e5131`, `a2c42b1`, `159c1bb`                          |               |
+| VER-EPIC-001 (PAT-005, VER-001 bis VER-003)             | fertig | 2026-09-07     | `2c3c1de`, `18e5131`, `a2c42b1`, `159c1bb`                          | 2026-09-11    |
 | ADR-019 Kartendienst (Docs), Fassung 1                  | ersetzt durch Fassung 2 | 2026-09-08 | `c5c7b21`                                                           | —             |
 | MAP-001 Mapping-Architektur und Providerentscheidung    | fertig | 2026-09-08     | `f52e555`, `5d51d97`, Roadmap-Commit auf Branch `claude/mapping-architecture-provider-ujy45m` | —             |
-| UI-000 Fundament                                        | fertig | 2026-09-07     | `4a4440f`, `45e8222`, `df8a294`, `11a9977`, `afb5ba5`, `e6b4ab6`    |               |
+| UI-000 Fundament                                        | fertig | 2026-09-07     | `4a4440f`, `45e8222`, `df8a294`, `11a9977`, `afb5ba5`, `e6b4ab6`    | 2026-09-11    |
 | Produktentscheidungen Terminfenster und Sprachdokumentation (Docs) | fertig | 2026-09-08 | Branch `claude/praxissoftware-product-decisions-1uk1d8`             | —             |
-| UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, Merge PR #18 |               |
+| UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, Merge PR #18 | 2026-09-11    |
 | Marke Own Motion als Dateien und Regel (Docs)           | fertig | 2026-09-10     | `eb5c234`                                                           | —             |
-| MARKE-001 Marke in der Anwendung                        | fertig | 2026-09-11     | `577ecd6`, `fb5cee0`, `7486c95`, `7109595`, `8f576b2`, Merge PR #19 |               |
+| MARKE-001 Marke in der Anwendung                        | fertig | 2026-09-11     | `577ecd6`, `fb5cee0`, `7486c95`, `7109595`, `8f576b2`, Merge PR #19 | 2026-09-11    |
 | STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`, `06b758c`, `0d7bd3c`, `719faed`, `56b2706`, `4afaf97`, `23cfb35`, PR #20 | 2026-09-11    |
-| LOE-EPIC-001 (LOE-001a/b/c, LOE-002a/b)                 | fertig | 2026-09-11     | `042c325`, `169469d`, `310dc3b`, `0a3a2d7`, `c88bc71`, `ae4e85a`, Merge PR #25 |               |
+| LOE-EPIC-001 (LOE-001a/b/c, LOE-002a/b)                 | fertig | 2026-09-11     | `042c325`, `169469d`, `310dc3b`, `0a3a2d7`, `c88bc71`, `ae4e85a`, Merge PR #25 | 2026-09-11    |
 | ADR-018 Terminzustände (Docs)                            | fertig | 2026-09-11     | angenommen 2026-09-11, alle sieben Fragen wie empfohlen; §8 auf 0.7 nachgezogen | —             |
 
 ---
@@ -833,6 +879,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.3     | 2026-09-11 | **Sechs Epics von Jannes abgenommen** (DOK-001 bis DOK-004, VER-EPIC-001, UI-000, MARKE-001, UX-EPIC-001, LOE-EPIC-001) — die Spalte „Abgenommen am" trägt jetzt überall dort ein Datum. Damit ist der Kernprozess zur Hälfte erledigt: Block A des Fortschrittsmodells steht auf 50 Prozent, der Gesamtstand auf **25,3 Prozent** (vorher 23,5). Neu ist dieses Modell selbst — `docs/development/fortschritt.json`, `scripts/fortschritt.mjs` und `pnpm fortschritt` beantworten „wie weit sind wir insgesamt", was die Fortschrittstabelle absichtlich nicht tut; die Gewichte und die drei Festlegungen dahinter stehen im Abschnitt „Eine Zahl für den Gesamtstand". **Reihenfolge unverändert — CAL-EPIC-003a bleibt der nächste Loop**, seine Voraussetzung ADR-018 ist mit PR #26 in `main`. |
 | 3.2     | 2026-09-11 | **ADR-018 angenommen** — Jannes hat alle sieben Bestätigungsfragen wie empfohlen entschieden. Nachgezogen wie in 3.1 angekündigt: `PROJECT_PRINCIPLES.md` **Version 0.7** ersetzt in §8 den Satz, der den Zustandsautomaten als offenen Punkt führte, durch die acht Werte und den Hinweis, welche zwei davon nur beschrieben sind (§21, eigener Commit, Änderungsvermerk im Dokument) · **Punkt D („bestätigt") in `OPEN_DECISIONS.md` ist erledigt** · **ANN-005 bleibt in Kraft** und wechselt auf `entschieden (Jannes)`: ADR-018 bestätigt sie ausdrücklich und setzt die §19-Kopplung an die Rechnung, nicht an den Abschluss; Wiedervorlage zurück auf ABR-002. Die Umsetzung selbst ist unverändert **CAL-EPIC-003a** — die Entscheidung ist deren Vorbedingung, nicht ihr Ersatz. **Nächster Loop bleibt CAL-EPIC-003a.** |
 | 3.1     | 2026-09-11 | **ADR-018 Terminzustände geschrieben** (Docs-Session, Status vorgeschlagen): ein Statusfeld mit acht Werten, sechs davon in V1 erreichbar — `requested` und `tentative` bleiben beschrieben und ungebaut (Entscheidung vom 2026-09-08) · Übergänge samt Auslöser, `cancelled` und `documented` ohne Rückweg · `documented` und `invoiced` werden vom besitzenden Vorgang in derselben Transaktion gesetzt, nicht abgeleitet, mit getesteter Invariante · Ausfallhonorar als Pflichtkennzeichen am Nichtantreffen, Betrag bleibt bei ABR · Serie ohne eigenen Status · Migration der drei heutigen Werte samt Umbenennung `scheduled` → `confirmed`. Sieben Bestätigungsfragen offen; erst danach werden §8 (§21) und Punkt D geschlossen. Außerdem: der ADR-Index in `CLAUDE.md` führte ADR-018 und ADR-019 nicht, die Aufruftabelle verwies für ADR-018 auf die falsche Zeile — beides berichtigt. **Nächster Loop bleibt CAL-EPIC-003a.** |
 | 3.0     | 2026-09-11 | **LOE-EPIC-001 fertig** (fünf Stories): Retention Schedule und Datenklassen an genau einer Stelle — `retention_classes`/`retention_assignments`, jede der 22 Tabellen zugeordnet, ein Test gegen `pg_tables` (ANN-001 verankert, ANN-029 bis ANN-031 neu) · Anker „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang in der Akte, Rollenschnitt ohne `office` (ANN-032) · Legal Hold als expliziter Zustand mit Beginn, Grund, Person und Ende, nur `owner`, ohne Pflegeoberfläche (ANN-033) · täglicher Löschlauf mit vier Regeln, Löschjournal als Nachweis und idempotente Wiederanwendung nach einem Restore · Aufbewahrungsübersicht für `owner` unter Betrieb → Aufbewahrung. Go-live-Blocker 1 in `docs/DEVELOPMENT.md` ist damit auf zwei betriebliche Punkte geschrumpft (pg_cron im Produktivprojekt, Journal-Sicherung im Restore-Verfahren). **Nächster Loop: CAL-EPIC-003a.** |
