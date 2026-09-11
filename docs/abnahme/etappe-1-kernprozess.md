@@ -427,6 +427,47 @@ etwas, das vorher ging und jetzt nicht mehr.
 
 ---
 
+## Vor dem Start: UX-001 bis UX-011
+
+Die elf Abschnitte gehören zu einem Epic und prüfen sich am besten in einem
+Zug — sie bauen aufeinander auf, und mehrere brauchen denselben frisch
+aufgesetzten Tag. Die allgemeine Einrichtung steht in
+[`../DEVELOPMENT.md`](../DEVELOPMENT.md), „Lokale Abnahme"; hier nur, was für
+diesen Durchgang dazukommt.
+
+**Der Tagesplan liegt auf dem Tag des Zurücksetzens.** Der Seed legt die
+Hausbesuche relativ zu `current_date` an, nicht auf ein festes Datum. Setzt du
+heute zurück und prüfst morgen weiter, liegen dieselben Termine in der
+Vergangenheit und „Mein Tag" ist leer — das ist dann kein Befund. Vor dem
+Durchgang deshalb einmal:
+
+```bash
+pnpm dlx supabase@2.116.0 db reset
+pnpm dev
+```
+
+**Zwei Konten reichen für zehn der elf Abschnitte.**
+
+| Konto                          | Rolle                 | Wofür in diesem Epic                                   |
+| ------------------------------ | --------------------- | ------------------------------------------------------ |
+| `anna.beispiel@praxis.invalid` | `therapist`           | der Hausbesuchstag selbst — die meisten Abschnitte     |
+| `olivia.office@praxis.invalid` | `office`              | die Gegenproben: was eine Rolle ohne Behandlung sieht  |
+| `jannes.test@praxis.invalid`   | `owner` + `therapist` | Textbausteine praxisweit, Rollen- und Auditgegenproben |
+
+Das Kennwort steht in `DEVELOPMENT.md` unter „Testkonten".
+
+**Was sich seit dem Bau geändert hat.** Die Anwendung trägt inzwischen die
+Marke (MARKE-001) und die Kontoverwaltung aus STAFF-EPIC-002. Beides ist hier
+nicht Gegenstand der Prüfung; es erklärt nur, warum Kopfzeile und Anmeldemaske
+anders aussehen als in den Beschreibungen unten.
+
+**Wohin das Ergebnis.** In die Spalte „Abnahme" der Fortschrittstabelle in
+[`../development/ROADMAP.md`](../development/ROADMAP.md). Befunde gehören
+nicht hierher, sondern als eigene Zeile in die Roadmap oder — wenn es eine
+Ablauffrage ist — in die nächste Ablaufrunde.
+
+---
+
 ## UX-001 — Tagesliste des Hausbesuchstags
 
 **Was geprüft wird:** dass „Mein Tag" alles trägt, was an der Wohnungstür
