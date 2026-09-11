@@ -4,6 +4,15 @@ Die Marke der Praxis, als Dateien und als Regel. **Festgelegt von Jannes am
 2026-09-10**, übernommen aus dem Entwurfskanvas „Own Motion · Logo 3b —
 Reinzeichnung, App-Symbole, Anwendungen, Regeln".
 
+Der Kanvas liegt seit dem 2026-09-11 selbst hier:
+[`kanvas/own-motion-logo-3b.html`](kanvas/own-motion-logo-3b.html). Er ist
+eine in sich geschlossene HTML-Datei und lässt sich in jedem Browser öffnen.
+Damit ist die Herkunft oben nicht nur behauptet, sondern nachprüfbar — und was
+unten steht, lässt sich gegen die Vorlage halten, statt gegen eine Erinnerung.
+**Er ist Beleg, nicht Quelle:** Gilt etwas, dann weil es in diesem Dokument
+steht; wo beide auseinandergehen, ist das ein Fehler in diesem Dokument und
+wird hier behoben.
+
 ## Was dieses Verzeichnis ist — und was nicht
 
 - Es ist die **einzige Quelle** für Wortmarke, App-Symbole und die Regeln ihrer
@@ -80,6 +89,23 @@ App-Symbole — `app/`, PNG, Fläche Tiefgrün:
 | `own-motion-favicon-24.png`      | 24 × 24     | Favicon                  |
 | `own-motion-favicon-16.png`      | 16 × 16     | Favicon                  |
 
+## Anwendungen außerhalb der Anwendung
+
+Vier Stellen, für die der Kanvas Maße festlegt. Sie sind hier festgehalten,
+weil sie sonst mit dem Entwurf verloren gingen — **gebaut ist keine davon**,
+und dieser Abschnitt ist kein Auftrag, eine zu bauen.
+
+| Stelle                 | Maße und Fassung                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| Aufkleber am Lastenrad | Tiefgrün, ca. 40 × 17 cm, Eckradius 16. Block **mit** Unterzeile in Papier             |
+| Rechnungskopf          | schwarzweiß, A4-Kopf, Marke **14 mm** hoch — die schwarze Fassung ohne Unterzeile      |
+| Website-Header         | Marke **32 px** hoch, Knopfradius 10                                                   |
+| Visitenkarte           | 85 × 55 mm; Vorderseite Tiefgrün mit der Marke in Papier, Rückseite Papier mit Kontakt |
+
+Der Rechnungskopf gehört fachlich zu **ABR-000** (Praxis-Stammdaten für
+Rechnungen); der Website-Header zu einer Website, die es noch nicht gibt.
+Aufkleber und Visitenkarte sind Druckaufträge und berühren die Software nicht.
+
 ## Wo die Marke in der Anwendung steht
 
 Umgesetzt am 2026-09-10 auf ausdrücklichen Auftrag von Jannes.
@@ -120,6 +146,11 @@ entschieden; sie stehen hier, damit sie nicht verloren gehen.
    SVG + PNG" an; im gelieferten Bündel waren nur die sechs PNG enthalten. Für
    das 1024er Master und den Android-Kreis wäre eine SVG-Fassung sinnvoll,
    bevor jemand aus einem PNG heraus neu zeichnet.
+
+   **Bestätigt am 2026-09-11:** Der Kanvas liegt jetzt unter `kanvas/` und
+   sagt im Abschnitt 4d wörtlich „jeweils SVG + PNG". Der Befund ist damit
+   keine Vermutung mehr, sondern eine belegte Lücke im gelieferten Bündel.
+
 2. **Favicon 24 und 16 tragen die zweizeilige Marke.** Bei 16 px ist sie nicht
    mehr lesbar, und die eigene Mindestgröße-Regel (24 px für den Block) ist
    damit im eigenen Dateisatz unterschritten. Entweder ein eigenes,

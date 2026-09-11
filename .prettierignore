@@ -5,6 +5,12 @@ test-results
 pnpm-lock.yaml
 .tmp
 
+# Der Design-Kanvas ist ein Ausgabeformat des Entwurfswerkzeugs, kein
+# Quelltext: eine einzelne gebundelte Datei, die niemand von Hand liest oder
+# aendert. Umformatieren aendert nichts Inhaltliches und wuerde nur einen
+# halben Megabyte Diff erzeugen.
+marke/kanvas/
+
 # Prinzipien, ADRs und Ideenspeicher werden bewusst von Hand gepflegt.
 # Automatische Umformatierung wuerde Diffs erzeugen, die keine inhaltliche
 # Aenderung sind.
