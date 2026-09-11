@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Zuletzt aktualisiert: 2026-09-08 (E12, E13 ergänzt) · Struktur 2.1
+Zuletzt aktualisiert: 2026-09-11 (Punkt D „bestätigt" erledigt) · Struktur 2.1
 
 Dieses Dokument hält fest, **was noch nicht entschieden ist**, warum es offen
 ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
@@ -24,7 +24,8 @@ Was jetzt noch offen ist, ist von zweierlei Art:
   Entscheidung), der PDF-Weg der Rechnung (B14, bewusst auf ABR-EPIC-002a
   vertagt, Tendenz vermerkt), die Anbieterwahl der KI (C6, Etappe 10), das
   Verfahren der Patientenidentität (B5, mit dem Portal), die Ausgestaltung des
-  Terminstatus-Automaten (ADR-018) und die Anbieterprüfung Supabase (A2).
+  Anbieterprüfung Supabase (A2). Die Ausgestaltung des Terminstatus-Automaten
+  ist seit dem **2026-09-11** entschieden (ADR-018, angenommen).
 
 Am **2026-09-08** sind zwei Produktentscheidungen von Jannes dazugekommen und
 verbindlich geworden — das Terminfenster (`PROJECT_PRINCIPLES.md` §8.1) und die
@@ -130,7 +131,7 @@ Feature.
 | C7    | Sprachliche Trennung LLM / deterministische Regeln in §6, §7.1 | architektonisch entschieden; Wortlaut bei nächster Prinzipienversion | [ADR-005](../adr/ADR-005-provider-independent-ai.md); nicht planungsrelevant                             |
 | C8    | „Nicht verbauen" gegen „nicht vorbauen"                      | entschieden 2026-08-28                                        | [ADR-014](../adr/ADR-014-foundational-data-model.md)                                                          |
 | D     | „finalisiert", „nachvollziehbar"                             | entschieden 2026-09-01                                        | [ADR-016](../adr/ADR-016-clinical-documentation-record.md)                                                    |
-| D     | „bestätigt" — Terminstatus-Automat                           | **Umfang entschieden 2026-09-05; ADR-018 ausstehend**         | unten; Roadmap CAL-EPIC-003, Okt 2026; bis dahin ANN-005                                                      |
+| D     | „bestätigt" — Terminstatus-Automat                           | **erledigt 2026-09-11** — Umfang 2026-09-05, Ausgestaltung mit ADR-018 bestätigt | [ADR-018](../adr/ADR-018-appointment-states.md); unten; `PROJECT_PRINCIPLES.md` 0.7 §8; Umsetzung Roadmap CAL-EPIC-003a |
 | D     | übrige Begriffe                                              | erledigt                                                      | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 · „Behandlungsnachweis" → C1, ANN-006 · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
 | D     | Normativität und Nachweis                                    | Normativität erledigt (0.2, §0); **Nachweistabelle offen**    | Roadmap G12                                                                                                   |
 | E1    | Betreibbarkeit bei Bus-Faktor 1                              | entschieden 2026-08-28                                        | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7                         |
@@ -899,9 +900,22 @@ vorbauen". ADR-018 beschreibt die beiden Zustände, CAL-EPIC-003a implementiert
 sie nicht. Rücknahme `klein`. Die übrigen Punkte der Ausgestaltung bleiben
 offen.
 
-Bis ADR-018 vorliegt, gilt ANN-005 (Abschluss ohne
-Dokumentationspflicht). Danach ist `PROJECT_PRINCIPLES.md` §8 nachzuziehen
-(§21).
+**Erledigt am 2026-09-11.** [ADR-018](../adr/ADR-018-appointment-states.md) ist
+**angenommen** — Jannes hat alle sieben Bestätigungsfragen wie empfohlen
+entschieden. Der ADR beantwortet die offenen Punkte der Ausgestaltung:
+Übergänge und Auslöser, die Migration der drei heutigen Status, `documented`
+und `invoiced` als gesetzte Werte derselben Spalte statt abgeleiteter Merkmale,
+das Ausfallhonorar als Kennzeichen am Nichtantreffen, und die Serie ohne
+eigenen Status.
+
+Nachgezogen: `PROJECT_PRINCIPLES.md` **§8 in Version 0.7** (§21, eigener
+Commit) — der Satz, der den Automaten als offenen Punkt führte, ist durch die
+Aufzählung der acht Werte ersetzt.
+
+**ANN-005 bleibt in Kraft** (Abschluss ohne Dokumentationspflicht): ADR-018
+bestätigt sie ausdrücklich und setzt die Kopplung aus §19 an die Rechnung, nicht
+an den Abschluss. Die Umsetzung des Automaten ist **CAL-EPIC-003a** und noch
+nicht gebaut — bis dahin gelten in der Anwendung die drei heutigen Status.
 
 ### E2 — Ausfallkonzept
 
@@ -1248,3 +1262,13 @@ aus der Roadmap nicht abgeschlossen werden kann.
   Sprachdokumentation). Beide Entscheidungen sind **noch nicht umgesetzt** —
   die Terminlänge ist heute frei, ein Fahrpuffer existiert nicht, und es gibt
   keine Sprachfunktion.
+- **2026-09-11, ADR-018 angenommen:** Jannes entscheidet die sieben
+  Bestätigungsfragen des ADR **ausnahmslos nach Empfehlung** — ein Statusfeld
+  mit acht Werten, `documented` und `invoiced` vom jeweils zuständigen Vorgang
+  in derselben Transaktion gesetzt, das Ausfallhonorar als Kennzeichen am
+  Nichtantreffen, die Serie ohne eigenen Status, `scheduled` → `confirmed` in
+  der Migration. Damit ist **Punkt D („bestätigt") erledigt** und
+  `PROJECT_PRINCIPLES.md` §8 in Version 0.7 nachgezogen (§21). **ANN-005
+  bleibt in Kraft**, von ADR-018 ausdrücklich bestätigt. Gebaut wird der
+  Automat in CAL-EPIC-003a — die Entscheidung ist die Vorbedingung dafür,
+  nicht die Umsetzung.
