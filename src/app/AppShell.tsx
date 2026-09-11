@@ -79,7 +79,18 @@ export function AppShell({
               „Test Praxis Tuebingen" und stünde dann unter der Marke. Siehe
               ANN-023 für den Weg zurück. */}
           <div className="flex min-w-0 items-center gap-3">
-            <Wortmarke hoehe={26} />
+            {/* Die Marke ist zugleich der Weg zurück auf „Mein Tag". Das ist
+                die Erwartung an ein Logo oben links; ohne den Link bliebe nur
+                der Umweg über die Navigation. Der Name der Marke steht im
+                `alt` der Grafik, das Ziel gehört zusätzlich dazu — sonst
+                hieße der Link für eine Vorlesehilfe bloß „Own Motion". */}
+            <Link
+              to="/"
+              aria-label="Own Motion, zur Startseite"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg"
+            >
+              <Wortmarke hoehe={26} />
+            </Link>
             {aktuell ? (
               <p className="text-ink-subtle truncate text-xs sm:hidden">{aktuell.label}</p>
             ) : null}

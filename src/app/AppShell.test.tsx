@@ -27,6 +27,19 @@ describe('AppShell', () => {
     expect(screen.queryByText('Test Praxis Tuebingen')).toBeNull();
   });
 
+  it('fuehrt von der Marke zurueck auf die Startseite', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/betrieb/urlaub',
+    );
+    expect(screen.getByRole('link', { name: 'Own Motion, zur Startseite' })).toHaveAttribute(
+      'href',
+      '/',
+    );
+  });
+
   it('bietet einem reinen Patientenkonto keine Kartei an', () => {
     renderWithProviders(
       <AppShell user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()}>
