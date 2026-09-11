@@ -4,12 +4,39 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.6** |
+| **Dokumentversion** | **0.7** |
 | **Änderungsdatum** | **2026-09-11** |
-| Vorversion | 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-016, siehe `docs/adr/` |
+| Vorversion | 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-016 und ADR-018, siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
+
+### Änderungsvermerk 0.7
+
+**ADR-018** (Zustandsautomat des Termins) ist am 2026-09-11 vom Projektinhaber
+angenommen worden — alle sieben Bestätigungsfragen wie empfohlen. Anlass für
+diese Version: §8 führte den Zustandsautomaten bis dahin ausdrücklich als
+offenen Punkt; §21 verlangt, dass eine so geänderte Prinzipienaussage in einer
+neuen Version nachgezogen wird.
+
+- **§8 geändert:** Der Satz „Der Zustandsautomat des Termins ist noch nicht
+  definiert …" entfällt. An seine Stelle treten die acht Zustände, der Hinweis,
+  dass „angefragt" und „vorgemerkt" beschrieben, aber nicht gebaut sind, und
+  drei verbindliche Aussagen: jeder Wechsel über eine Serverfunktion mit
+  Rollenprüfung und Auditeintrag; „dokumentiert" und „abgerechnet" setzt der
+  Vorgang, dem die Tatsache gehört; Absage und finalisierte Dokumentation ohne
+  Rückweg.
+- **§19 bekommt seinen technischen Anker,** ohne selbst geändert zu werden:
+  „Fakturierung erst nach finalisierter Dokumentation" ist ab jetzt prüfbar als
+  „aus `documented` oder aus `no_show` mit Ausfallhonorar". Der Abschluss eines
+  Termins verlangt weiterhin keine Dokumentation (ANN-005 bleibt in Kraft).
+- **§21 ergänzt:** ADR-018 steht in der Tabelle der angenommenen ADRs.
+- **Unverändert:** §8.1 (Terminfenster), §6 und §6.3, §4 und der Rollenschnitt.
+  ADR-018 legt Zustände und Übergänge fest, keine Rechte.
+
+Nicht gebaut: Die Umsetzung ist CAL-EPIC-003a. Bis dahin kennt die Anwendung
+die drei bisherigen Werte; diese Version entscheidet, sie beschreibt keinen
+erreichten Stand.
 
 ### Änderungsvermerk 0.6
 
@@ -814,8 +841,31 @@ Weiche Constraints:
 - möglichst gleicher Therapeut
 - gleichmäßige Arbeitsbelastung
 
-Der Zustandsautomat des Termins ist noch nicht definiert und in
-`docs/decisions/OPEN_DECISIONS.md` als offener Punkt geführt.
+Der Zustandsautomat des Termins ist mit **ADR-018** entschieden (2026-09-11).
+Ein Termin trägt genau **einen** Zustand aus dieser Liste: angefragt,
+vorgemerkt, bestätigt, abgesagt, nicht angetroffen, durchgeführt, dokumentiert,
+abgerechnet. **Angefragt** und **vorgemerkt** sind beschrieben, aber nicht
+gebaut — ohne Patientenportal gibt es niemanden, der einen Termin anfragt.
+
+Drei Aussagen sind dabei verbindlich:
+
+- **Jeder Zustandswechsel läuft über eine Serverfunktion mit eigener
+  Rollenprüfung und eigenem Auditeintrag.** Es gibt keinen freien
+  Statuswechsel über die Tabelle.
+- **Dokumentiert und abgerechnet setzt der Vorgang, dem die Tatsache gehört** —
+  die Finalisierung der Dokumentation beziehungsweise die Ausstellung der
+  Rechnung, in derselben Transaktion. Damit bekommt §19 seinen technischen
+  Anker: Fakturiert wird aus „dokumentiert" oder aus „nicht angetroffen" mit
+  Ausfallhonorar-Kennzeichen. Ein Termin lässt sich weiterhin **ohne**
+  Dokumentation abschließen; die Sperre sitzt an der Rechnung, nicht am
+  Abschluss.
+- **Eine Absage ist endgültig, eine finalisierte Dokumentation ebenso.** Ein
+  versehentlich abgesagter Termin wird neu angelegt; ein Irrtum in der
+  Dokumentation wird als Korrektur mit Begründung behoben (§6, ADR-016) und
+  ändert den Terminzustand nicht.
+
+Übergänge im Einzelnen, Auslöser, Rollen und die Migration der heutigen Werte:
+ADR-018.
 
 Länge eines angebotenen Termins, Dokumentationszeit und der Abstand zum
 Folgetermin sind mit §8.1 entschieden.
@@ -1303,6 +1353,7 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
 | ADR-015 | Initialer technischer Stack | §2.1, §2.2, §3.4 |
 | ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit (Fassung 2) | §5, §6.3 |
+| ADR-018 | Zustandsautomat des Termins | §8 |
 
 Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
 Dokumentversion und ergänztem Änderungsvermerk.
