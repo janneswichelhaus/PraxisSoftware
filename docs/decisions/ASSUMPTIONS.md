@@ -1,8 +1,8 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-11 (STAFF-EPIC-002: ANN-022 bis ANN-025 neu -
+Zuletzt aktualisiert: 2026-09-11 (STAFF-EPIC-002: ANN-022 bis ANN-026 neu -
 Privatangaben Beschäftigter, Einladungsweg über die Auth-Mails, Frist der
-Einladung, MFA für `owner` ohne Anmeldesperre)
+Einladung, Mindestlänge des Kennworts, MFA für `owner` ohne Anmeldesperre)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -1373,3 +1373,90 @@ Kopfkommentar trägt die Kennung). Tests in
 **Änderungspfad.** Andere Gültigkeit: ein Intervall — Aufwand `klein`. Andere
 Aufbewahrung: eine Zeile im Retention Schedule von LOE-001 — Aufwand `klein`,
 solange LOE-EPIC-001 die Klasse ohnehin aufnimmt.
+
+---
+
+### ANN-025 — Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-004a; ADR-010; `PROJECT_PRINCIPLES.md` §3.4, §16 |
+| Status | **offen**, getroffen 2026-09-11 |
+| Wiedervorlage | Datenschutzprüfung im Rahmen der TOM (G14); OPS-001 (Einstellung beim Provider) |
+
+**Annahme.** Ein Kennwort für die Praxisplattform braucht **mindestens 12
+Zeichen**. Keine erzwungenen Zeichenklassen (Großbuchstabe, Ziffer,
+Sonderzeichen), **kein** turnusmäßiger Wechsel, keine Sperre nach
+Fehlversuchen über das hinaus, was der Anmeldedienst ohnehin tut.
+
+**Begründung.** Das BSI hat die Empfehlung zum regelmäßigen Kennwortwechsel
+2020 aus dem IT-Grundschutz gestrichen, und das NIST rät in SP 800-63B
+ausdrücklich von erzwungener Komplexität und periodischem Wechsel ab: Beides
+führt zu vorhersehbaren Mustern („Sommer2026!") und zu aufgeschriebenen
+Kennwörtern. Länge ist der Faktor, der tatsächlich trägt; 12 Zeichen sind der
+Wert, den beide Quellen als unteres Ende für Konten ohne zweiten Faktor
+nennen. Der Zugang zu Gesundheitsdaten rechtfertigt eher mehr als weniger —
+gegen eine höhere Zahl spricht, dass sie auf dem Telefon am Hausbesuch
+eingetippt werden muss (§16: die leichter umkehrbare Option).
+**Unsicher:** ob die Datenschutzprüfung im Rahmen der TOM eine höhere Zahl
+oder Zeichenklassen verlangt, und ob der Anmeldedienst die Regel serverseitig
+in derselben Höhe durchsetzen lässt — die Prüfung im Formular ist Komfort,
+verbindlich ist die Einstellung beim Provider (OPS-001).
+
+**Verankerung.** `KENNWORT_MINDESTLAENGE` in `src/features/account/api.ts` —
+eine Zahl, die die Kennung im Kommentar trägt; `kennwortProblem` daneben ist
+die einzige Prüfung. Tests in `src/features/account/MeinKontoPage.test.tsx`,
+„verlangt die Mindestlänge".
+
+**Änderungspfad.** Andere Länge: eine Zahl — Aufwand `klein`; zusätzlich die
+Einstellung beim Provider nachziehen. Zeichenklassen oder Wechselzwang: eine
+Regel in `kennwortProblem` und eine Provider-Einstellung — Aufwand `klein`,
+inhaltlich aber gegen die oben genannten Quellen, deshalb nur auf
+ausdrückliches Verlangen der Prüfung.
+
+---
+
+### ANN-026 — MFA für `owner`: eingerichtet und sichtbar, nicht erzwungen
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-004b; ADR-010 Punkt 10 und Punkt 9; ADR-012 (Bus-Faktor 1) |
+| Status | **offen**, getroffen 2026-09-11 |
+| Wiedervorlage | **Jannes vor dem Go-live-Gate (M3)** — sobald er selbst einen zweiten Faktor eingerichtet hat, kann die Durchsetzung eingeschaltet werden; Datenschutzprüfung |
+
+**Annahme.** Der zweite Faktor (TOTP) ist **einrichtbar und sichtbar**, aber
+die Anmeldung wird **nicht** darauf festgelegt: Kein Datenpfad verlangt heute
+`aal2`. Ein `owner`-Zugang ohne zweiten Faktor sieht in „Mein Konto" einen
+Warnhinweis; sperren tut ihn nichts.
+
+**Begründung.** ADR-010 Punkt 10 verlangt MFA für **privilegierten
+Produktionszugriff** — Datenbank, Infrastruktur —, nicht ausdrücklich für die
+Alltags-Praxisrolle `owner`; Punkt 11 hält beide Domänen getrennt. Ein Zwang
+für die Praxisrolle wäre also eine Verschärfung über den ADR hinaus, und sie
+hätte heute eine gefährliche Nebenwirkung: Es gibt genau **einen**
+`owner`-Zugang (Bus-Faktor 1, ADR-012), und er hat keinen zweiten Faktor.
+Würde die Anmeldung ihn verlangen, wäre Jannes im selben Moment ausgesperrt —
+und der Weg zurück wäre ein privilegierter Produktionszugriff, den ADR-010
+Punkt 9 im Normalbetrieb ausschließt. Die Reihenfolge muss deshalb sein: erst
+einrichten, dann erzwingen. Bis dahin ist der Warnhinweis die ehrlichste
+Auskunft.
+**Unsicher:** ob die Datenschutzprüfung MFA für Zugänge mit Vollzugriff auf
+Gesundheitsdaten als TOM verlangt. Falls ja, ist das kein Widerspruch,
+sondern der geplante zweite Schritt.
+
+**Verankerung.** `app.has_strong_authentication()` in
+`supabase/migrations/20260911140000_account_security.sql` — der eine Ausdruck,
+an dem eine Durchsetzung hinge; der Kopfkommentar trägt die Kennung. Dass
+heute **nichts** daran hängt, hält der Test „setzt heute nichts durch" in
+`supabase/tests/staff-accounts.test.ts` fest — eine spätere Durchsetzung ist
+damit zwingend eine bewusste Änderung. Der Hinweis in der Oberfläche:
+`ZweiterFaktor` in `src/features/account/MeinKontoPage.tsx`.
+
+**Änderungspfad.** Durchsetzung einschalten, sobald mindestens zwei
+`owner`-Zugänge einen bestätigten Faktor haben: `app.has_strong_authentication()`
+in die Policies beziehungsweise RPCs der Zugangsverwaltung aufnehmen und den
+genannten Test umdrehen — Aufwand `klein`. Vorher nicht: Aufwand der Rücknahme
+wäre ein privilegierter Produktionszugriff, also `groß` im Sinne der
+Hard-Stop-Liste.

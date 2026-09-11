@@ -769,3 +769,112 @@ describe('request_staff_password_reset', () => {
     ).rejects.toThrow(/account not found/);
   });
 });
+
+// -----------------------------------------------------------------------------
+// Sicherheitsereignisse des eigenen Kontos (STAFF-004)
+// -----------------------------------------------------------------------------
+const MELDEN = 'select public.log_account_security_event($1)';
+
+describe('log_account_security_event', () => {
+  beforeEach(async () => {
+    await resetDatabaseOhneTermine();
+  }, 120_000);
+
+  async function kontoEintraege() {
+    const { rows } = await asPostgres<{
+      action: string;
+      actor_user_id: string;
+      subject_type: string;
+      subject_id: string;
+      context: Record<string, unknown>;
+    }>(
+      `select action, actor_user_id, subject_type, subject_id, context
+         from public.audit_log where action like 'account.%' order by occurred_at, id`,
+    );
+    return rows;
+  }
+
+  it.each([['password_changed'], ['sessions_ended'], ['mfa_enrolled'], ['mfa_removed']])(
+    'haelt %s mit dem eigenen Konto als Akteur und Gegenstand fest',
+    async (ereignis) => {
+      await asUserCommitted(users.therapist, MELDEN, [ereignis]);
+
+      const eintraege = await kontoEintraege();
+      expect(eintraege).toHaveLength(1);
+      expect(eintraege[0]?.action).toBe(`account.${ereignis}`);
+      expect(eintraege[0]?.actor_user_id).toBe(users.therapist);
+      expect(eintraege[0]?.subject_type).toBe('user_account');
+      expect(eintraege[0]?.subject_id).toBe(users.therapist);
+      expect(eintraege[0]?.context).toEqual({ surface: 'web' });
+    },
+  );
+
+  it('nimmt keinen freien Text entgegen', async () => {
+    // Sonst waere die Funktion ein Weg, beliebigen Inhalt ins Auditlog zu
+    // schreiben (ADR-010 Punkt 3).
+    await expect(asUser(users.therapist, MELDEN, ['Patientin M. hat angerufen'])).rejects.toThrow(
+      /unknown account event/,
+    );
+    expect(await kontoEintraege()).toHaveLength(0);
+  });
+
+  it('laesst ein Konto kein Ereignis fuer ein fremdes Konto melden', async () => {
+    // Der Akteur ist immer auth.uid() - es gibt keinen Parameter dafuer.
+    await asUserCommitted(users.office, MELDEN, ['password_changed']);
+    const eintraege = await kontoEintraege();
+    expect(eintraege).toHaveLength(1);
+    expect(eintraege[0]?.actor_user_id).toBe(users.office);
+  });
+
+  it('weist ein Konto ohne Praxisprofil ab', async () => {
+    await kontoAnlegen();
+    await expect(asUser(NEUES_KONTO, MELDEN, ['password_changed'])).rejects.toThrow(
+      /no practice account/,
+    );
+  });
+
+  it('ist fuer anon nicht ausfuehrbar', async () => {
+    await expect(asAnon(MELDEN, ['password_changed'])).rejects.toThrow(/permission denied/i);
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Zweiter Faktor: die lesbare Seite (STAFF-004b)
+// -----------------------------------------------------------------------------
+describe('app.has_strong_authentication', () => {
+  beforeEach(async () => {
+    await resetDatabaseOhneTermine();
+  }, 120_000);
+
+  it('liest den aal-Claim des Anmeldedienstes', async () => {
+    const { rows } = await asPostgres<{ stark: boolean }>(
+      `select set_config('request.jwt.claims', $1, false) is not null
+              and app.has_strong_authentication() as stark`,
+      [JSON.stringify({ sub: users.ownerTherapist, role: 'authenticated', aal: 'aal2' })],
+    );
+    expect(rows[0]?.stark).toBe(true);
+  });
+
+  it('wertet ein Token ohne aal als einfache Anmeldung', async () => {
+    const { rows } = await asUser<{ stark: boolean }>(
+      users.ownerTherapist,
+      'select app.has_strong_authentication() as stark',
+    );
+    expect(rows[0]?.stark).toBe(false);
+  });
+
+  it('setzt heute nichts durch - keine Policy und keine RPC verlangt aal2', async () => {
+    // Das ist Absicht (ANN-026): Ein Zwang vor der ersten Einrichtung wuerde
+    // die einzige Praxisinhaberin aussperren. Der Test haelt den Stand fest,
+    // damit eine spaetere Durchsetzung eine bewusste Aenderung ist.
+    const { rows } = await asPostgres<{ anzahl: string }>(
+      `select count(*) as anzahl from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname in ('app', 'public')
+          and p.prokind = 'f'
+          and p.proname <> 'has_strong_authentication'
+          and pg_get_functiondef(p.oid) like '%has_strong_authentication%'`,
+    );
+    expect(rows[0]?.anzahl).toBe('0');
+  });
+});

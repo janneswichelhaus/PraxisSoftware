@@ -88,3 +88,84 @@ Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
 12. **Am Handy.** Schritt 1 bis 3 bei ~375 px Breite: Die Rollenliste ist ohne
     waagerechtes Scrollen bedienbar, jedes Kontrollkästchen samt Beschriftung
     ist mindestens 44 px hoch antippbar.
+
+## STAFF-002c und STAFF-003 — Rollen, Sperre, Kennwort zurücksetzen
+
+**Was geprüft wird:** dass die Praxisleitung einen bestehenden Zugang steuern
+kann — und dass sie sich dabei nicht selbst aussperrt.
+
+1. **Rollen ändern.** Als `jannes.test@praxis.invalid` → Praxis → Team → „Anna
+   Beispiel" → Abschnitt „Zugang". Die Kästchen zeigen den aktuellen Stand;
+   „Rollen speichern" ist grau, solange nichts geändert ist.
+2. **Teamleitung dazu.** „Teamleitung" ankreuzen, speichern. Im Auditlog steht
+   „Rollen geändert".
+3. **Es wirkt sofort.** In einem privaten Fenster als Anna anmelden: Der
+   Dienstplan unter Praxis → Planung ist jetzt bearbeitbar.
+4. **Verwerfen funktioniert.** Ein Kästchen ändern, „Verwerfen": Der alte Stand
+   steht wieder da, ohne dass etwas gespeichert wurde.
+5. **Keine leere Rolle.** Alle Kästchen abwählen: „Rollen speichern" ist grau,
+   und darunter steht, dass ein Zugang mindestens eine Rolle braucht.
+6. **Der Aussperrschutz.** Auf dem eigenen Datensatz („Jannes Test") das
+   Kästchen „Praxisinhaber" abwählen und speichern: Es erscheint die Erklärung,
+   dass die letzte aktive Praxisinhaberin ihre Rolle behält. Nichts wurde
+   geändert.
+7. **Nicht selbst sperren.** Auf demselben Datensatz „Zugang sperren" →
+   „Sperren": Es erscheint „Der eigene Zugang lässt sich nicht sperren."
+8. **Sperren.** Bei „Anna Beispiel" „Zugang sperren" → „Sperren". Der Abschnitt
+   zeigt „Gesperrt".
+9. **Die Sperre greift wirklich.** Im privaten Fenster die Seite neu laden (Anna
+   ist dort noch angemeldet): Es erscheint „Dieser Zugang ist gesperrt." — keine
+   leere Anwendung, keine Patientenliste.
+10. **Der Beschäftigungsstatus bleibt.** Auf demselben Datensatz steht unter
+    „Dienstlich" weiterhin „Beschäftigung: Aktiv". Sperre und Beschäftigung sind
+    getrennt.
+11. **Entsperren.** „Zugang entsperren" → „Entsperren". Anna kommt nach einem
+    Neuladen wieder hinein. Im Auditlog stehen „Zugang gesperrt" und „Zugang
+    entsperrt" getrennt.
+12. **Kennwort zurücksetzen.** Bei Anna „Kennwort zurücksetzen" → „Mail
+    senden". Im Mailfänger (<http://127.0.0.1:54324>) liegt eine Mail an Anna;
+    im Auditlog steht „Kennwort zurücksetzen angestoßen" — **ohne** die Adresse.
+    Annas bisheriges Kennwort funktioniert weiterhin.
+
+## STAFF-004 — Selbstbedienung: Kennwort, zweiter Faktor, Sitzungen
+
+**Was geprüft wird:** dass jede Person ihr Konto ohne die Praxisleitung
+absichern kann — und dass „alle Sitzungen beenden" wirklich alle meint.
+
+1. **Der Weg dorthin.** Als `anna.beispiel@praxis.invalid` anmelden. Oben rechts
+   steht der eigene Name als Link; er führt auf „Mein Konto". Auf dem Telefon
+   heißt er „Konto".
+2. **Kennwort vergessen, ohne Konto-Orakel.** Abmelden. Auf der Anmeldemaske
+   eine **erfundene** Adresse eintippen und „Kennwort vergessen?" → „Link
+   anfordern": Die Bestätigung lautet „Falls für diese Adresse ein Zugang
+   besteht …" — sie verrät nicht, ob es das Konto gibt. Dieselbe Meldung
+   erscheint für eine echte Adresse.
+3. **Der Link führt zum Ziel.** Für `anna.beispiel@praxis.invalid` anfordern, im
+   Mailfänger den Link öffnen: Die Anwendung öffnet „Mein Konto".
+4. **Zu kurz geht nicht.** Dort ein Kennwort mit 8 Zeichen eingeben: „Das
+   Kennwort braucht mindestens 12 Zeichen."
+5. **Zwei gleiche Eingaben.** Zwei verschiedene Eingaben: „Die beiden Eingaben
+   stimmen nicht überein."
+6. **Ändern.** Ein langes Kennwort zweimal eingeben, „Kennwort ändern": Die
+   Bestätigung sagt zugleich, dass angemeldete Geräte angemeldet bleiben. Im
+   Auditlog steht „Eigenes Kennwort geändert" — ohne Kennwort.
+7. **Zweiter Faktor.** „Zweiten Faktor einrichten": Ein QR-Code erscheint, dazu
+   die Zeichenfolge zum Abtippen. Mit einer Authenticator-App scannen, den
+   sechsstelligen Code eintragen, „Einrichtung abschließen".
+8. **Ein falscher Code wird abgewiesen.** Vorher einmal `000000` eintragen: „Der
+   Code wurde nicht angenommen."
+9. **Er wirkt.** Abmelden und neu anmelden: Nach dem Kennwort fragt die
+   Anmeldung nach dem Einmalkennwort.
+10. **Der Hinweis für die Leitung.** Als `jannes.test@praxis.invalid` → „Mein
+    Konto": Solange dort kein zweiter Faktor eingerichtet ist, steht der gelbe
+    Hinweis, dass dieser Zugang Zugänge, Rollen und das Auditlog verwaltet. Bei
+    `olivia.office@praxis.invalid` steht derselbe Stand **ohne** Warnton.
+11. **Alle Sitzungen beenden.** Als Anna in zwei Fenstern anmelden. In einem
+    „Alle Sitzungen beenden" → „Überall abmelden". Beide Fenster zeigen nach
+    einem Neuladen die Anmeldemaske. Im Auditlog steht „Alle eigenen Sitzungen
+    beendet".
+12. **Kein Weg zu fremden Rechten.** Auf „Mein Konto" gibt es weder eine
+    Rollenwahl noch „Zugang sperren" — auch nicht für `jannes.test`. Das eigene
+    Konto ändert seine Berechtigungen nicht.
+13. **Am Handy.** Schritte 1, 6 und 7 bei ~375 px Breite: Kennwortfelder, der
+    QR-Code und die Rückfragen sind ohne waagerechtes Scrollen bedienbar.

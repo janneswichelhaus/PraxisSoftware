@@ -19,6 +19,7 @@ import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentS
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
+import { MeinKontoPage } from '@/features/account/MeinKontoPage';
 import { SchedulingPage } from '@/features/scheduling/SchedulingPage';
 import { StaffListPage } from '@/features/staff/StaffListPage';
 import { NewStaffMemberPage } from '@/features/staff/NewStaffMemberPage';
@@ -103,6 +104,9 @@ export function AuthenticatedRoutes({
           <Route path="/" element={<MyDayPage user={user} />} />
           <Route path="/bereiche" element={<BereichePage user={user} />} />
           <Route path="/vorschau/protokoll" element={<ProtokollPage />} />
+          {/* Das eigene Konto steht jeder angemeldeten Rolle offen: Kennwort,
+              zweiter Faktor und Sitzungen gehoeren der Person (STAFF-004). */}
+          <Route path="/mein-konto" element={<MeinKontoPage user={user} />} />
 
           {showDirectory ? (
             <>

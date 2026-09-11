@@ -88,9 +88,22 @@ export function AppShell({
             </div>
           ) : null}
           <div className="flex items-center gap-2">
-            <span className="text-ink-muted hidden text-sm sm:inline">
+            {/* Der Name ist zugleich der Weg zum eigenen Konto: Kennwort,
+                zweiter Faktor, Sitzungen (STAFF-004). Auf dem Telefon bleibt
+                der Text weg, der Weg aber erhalten. */}
+            <Link
+              to="/mein-konto"
+              className="text-ink-muted hover:text-ink hidden min-h-11 items-center rounded-lg px-2 text-sm sm:inline-flex"
+            >
               {user.profile.display_name}
-            </span>
+            </Link>
+            <Link
+              to="/mein-konto"
+              aria-label="Mein Konto"
+              className="text-ink-muted hover:text-ink inline-flex min-h-11 items-center rounded-lg px-2 text-sm sm:hidden"
+            >
+              Konto
+            </Link>
             <Button variant="quiet" onClick={onSignOut}>
               Abmelden
             </Button>
