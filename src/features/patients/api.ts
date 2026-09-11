@@ -17,9 +17,9 @@ const patientSchema = z.object({
   status: z.enum(['active', 'inactive']),
   care_started_on: z.string().nullable(),
   // Anker der zehnjährigen Aufbewahrung (ADR-008, LOE-001b). Leer bedeutet:
-  // laufende Versorgung, keine Frist.
+  // laufende Versorgung, keine Frist. Wann der Abschluss festgehalten wurde,
+  // steht im Auditlog und wird hier nicht mitgeliefert.
   care_concluded_on: z.string().nullable(),
-  care_concluded_at: z.string().nullable(),
   given_name: z.string(),
   family_name: z.string(),
   // Kontaktdaten liegen in patient_contact_details und können für eine Rolle
@@ -47,7 +47,7 @@ const patientSchema = z.object({
 export type Patient = z.infer<typeof patientSchema>;
 
 const SELECT = [
-  'id, status, care_started_on, care_concluded_on, care_concluded_at',
+  'id, status, care_started_on, care_concluded_on',
   'given_name, family_name, date_of_birth',
   'email, phone, phone_work, phone_mobile, fax, institution',
   'street, house_number, postal_code, city',

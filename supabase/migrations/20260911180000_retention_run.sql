@@ -305,6 +305,15 @@ $$;
 comment on function app.delete_patient_record(uuid, uuid, timestamptz) is
   'Loescht eine Patientenakte vollstaendig in Fremdschluesselreihenfolge und schreibt je eigenstaendig geloeschter Zeile eine Journalzeile (ADR-008, LOE-002a). Prueft KEINEN Legal Hold - das tut der Aufrufer.';
 
+-- Ausdrueckliches Entziehen, und zwar wichtiger als es aussieht: PostgreSQL
+-- gibt EXECUTE auf neue Funktionen an PUBLIC, und `authenticated` hat USAGE
+-- auf dem Schema app. Ohne diese Zeile koennte jedes angemeldete Konto eine
+-- beliebige Akte loeschen - die Funktion ist SECURITY DEFINER und prueft, ihrem
+-- Zweck entsprechend, weder Rolle noch Legal Hold. Sie gehoert allein dem
+-- Loeschlauf (ADR-004: die Datenbank ist die Grenze, nicht die Oberflaeche).
+revoke all on function app.delete_patient_record(uuid, uuid, timestamptz)
+  from public, anon, authenticated;
+
 -- -----------------------------------------------------------------------------
 -- apply_retention
 --

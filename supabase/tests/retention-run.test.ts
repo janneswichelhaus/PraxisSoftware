@@ -654,6 +654,28 @@ describe('Loeschlauf: Ausfuehrungsrechte und Wiederholbarkeit', () => {
     await expect(asUser(users.ownerTherapist, NACHZIEHEN)).rejects.toThrow(/permission denied/i);
   });
 
+  it('haelt auch die interne Loeschfunktion fuer Anwendungsrollen verschlossen', async () => {
+    // PostgreSQL gibt EXECUTE auf neue Funktionen an PUBLIC, und
+    // `authenticated` hat USAGE auf dem Schema app. Ohne ausdrueckliches
+    // REVOKE koennte jedes angemeldete Konto eine beliebige Akte loeschen:
+    // app.delete_patient_record ist SECURITY DEFINER und prueft weder Rolle
+    // noch Legal Hold - das tut der Lauf.
+    const { rows } = await asPostgres<{ erlaubt: boolean }>(
+      `select has_function_privilege('authenticated', p.oid, 'EXECUTE') as erlaubt
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'app' and p.proname = 'delete_patient_record'`,
+    );
+    expect(rows[0]?.erlaubt).toBe(false);
+
+    await expect(
+      asUser(
+        users.ownerTherapist,
+        `select app.delete_patient_record($1::uuid, extensions.gen_random_uuid(), now())`,
+        [patients.max],
+      ),
+    ).rejects.toThrow(/permission denied/i);
+  });
+
   it('loescht beim zweiten Lauf nichts mehr und schreibt keinen zweiten Auditeintrag', async () => {
     await abgeschlossenVor(patients.max, 11);
     expect(await lauf()).toBeGreaterThan(0);

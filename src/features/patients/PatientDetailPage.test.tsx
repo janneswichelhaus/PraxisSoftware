@@ -441,11 +441,7 @@ describe('PatientDetailPage', () => {
   // nur als Abwesenheit einer Schaltflaeche.
   // ---------------------------------------------------------------------------
   describe('Abschluss der Versorgung', () => {
-    const abgeschlossen = {
-      ...aktiv,
-      care_concluded_on: '2026-03-12',
-      care_concluded_at: '2026-03-12T10:00:00Z',
-    };
+    const abgeschlossen = { ...aktiv, care_concluded_on: '2026-03-12' };
 
     it.each([['owner'], ['therapist'], ['team_lead']] as const)(
       'bietet %s den Abschluss an',

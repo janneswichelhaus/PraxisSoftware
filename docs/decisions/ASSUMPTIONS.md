@@ -212,19 +212,25 @@ die Dreijahresfristen ist die regelmäßige Verjährung nach §195 BGB
 Rechenschaftspflicht nach Art. 5 Abs. 2 DSGVO. Das ist eine Lesart, keine
 belegte Begründung.
 
-**Verankerung.** ADR-008, Abschnitt „Initialer Retention Schedule" (trägt die
-Kennung). Im Code ausschließlich als `COMMENT ON TABLE` in den Migrationen
-(`20260828100000_foundation.sql`, `20260828100200_audit_log.sql`,
-`20260828110000_person_data_minimisation.sql`,
-`20260830100100_appointments.sql`, `20260830120100_working_hours.sql`). Es gibt
-keinen Löschcode und keine zentrale Konfiguration der Fristen
-(`docs/DEVELOPMENT.md`, Go-live-Blocker 1).
+**Verankerung (seit LOE-001a, 2026-09-11).** Die Fristen stehen an **genau
+einer Stelle**: `public.retention_classes` in
+`supabase/migrations/20260911150000_retention_schedule.sql`. Funktionen lesen
+sie ausschließlich über `app.retention_interval()`; keine Zahl steht ein
+zweites Mal im Code. Welche Tabelle zu welcher Klasse gehört, steht in
+`public.retention_assignments`, und `supabase/tests/retention.test.ts` prüft
+die Zuordnung gegen `pg_tables` — eine neue Tabelle ohne Datenklasse macht den
+Lauf rot. ADR-008, Abschnitt „Initialer Retention Schedule", bleibt die
+normative Fassung; die Tabellenkommentare der Migrationen bleiben als
+Erläuterung stehen.
 
-**Änderungspfad.** Solange keine Löschung implementiert ist: Tabelle in ADR-008
-und die Tabellenkommentare anpassen — Aufwand `klein`. Bei der Umsetzung von
-ADR-008 MUSS der Retention Schedule an genau einer Stelle stehen
-(Konfigurationstabelle oder ein Modul), sodass eine Friständerung eine
-Datenänderung bleibt und nicht mehrere Funktionen berührt.
+**Änderungspfad.** Eine Frist ändern: eine Migration mit einem `update` auf
+`public.retention_classes` und die Tabelle in ADR-008 nachziehen — Aufwand
+`klein`, und sie wirkt sofort auf alle Regeln des Löschlaufs. Eine Frist
+**neu** einführen, wo bisher keine galt (etwa für Beschäftigtendaten, ANN-030),
+braucht zusätzlich einen fachlichen Anker im Datenmodell und eine Regel in
+`public.apply_retention()` — Aufwand `mittel`. Bewusst kein Klickweg in der
+Oberfläche: Eine Friständerung soll im Repository nachvollziehbar sein
+(ADR-013).
 
 ### ANN-002 — Versorgungsstatus `inactive` und Rollenschnitt des Wechsels
 
@@ -1513,8 +1519,16 @@ Kopfkommentar trägt die Kennung). Tests in
 `supabase/tests/staff-accounts.test.ts`, „weist eine abgelaufene Einladung ab".
 
 **Änderungspfad.** Andere Gültigkeit: ein Intervall — Aufwand `klein`. Andere
-Aufbewahrung: eine Zeile im Retention Schedule von LOE-001 — Aufwand `klein`,
-solange LOE-EPIC-001 die Klasse ohnehin aufnimmt.
+Aufbewahrung: die Zeile `zugangseinladung` in `public.retention_classes` —
+Aufwand `klein`.
+
+**Nachtrag vom 2026-09-11 (LOE-001a/LOE-002a).** Die Frist ist jetzt gebaut,
+nicht mehr nur beschrieben: Die Datenklasse `zugangseinladung` steht mit zwölf
+Monaten im Retention Schedule, und `public.apply_retention()` löscht
+abgeschlossene Einladungen — angenommen, zurückgenommen oder abgelaufen —
+nach Ablauf dieser Frist. Fälle in `supabase/tests/retention-run.test.ts`.
+Der Eintrag bleibt `offen`: Die Zahl selbst hat die Datenschutzprüfung noch
+nicht bestätigt.
 
 ---
 
