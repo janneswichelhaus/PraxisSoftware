@@ -1,8 +1,9 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-10 (UX-EPIC-001: ANN-020 Textbausteine und
-ANN-021 Tagesplan im Arbeitsspeicher neu; ANN-018 verankert, ANN-015 um den
-Textverlust-Schutz ergänzt, Restpunkt in ANN-019 behoben)
+Zuletzt aktualisiert: 2026-09-11 (Jannes hat die Annahmen aus UX-EPIC-001
+bestätigt: ANN-018, ANN-020 und ANN-021 stehen auf `entschieden (Jannes)`.
+Alle drei sind `Datenschutz` und bleiben deshalb im Prüfpaket — die
+Bestätigung durch den Projektinhaber ersetzt die Datenschutzprüfung nicht.)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -978,8 +979,8 @@ für Gesundheitsdaten ausscheidet, greift derselbe Pfad **vor** MAP-006.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | MAP-001 (ADR-019 Fassung 2, Punkt 20 bis 23); ADR-019 Fassung 1 hatte diese `ANN` für UX-EPIC-001 angekündigt |
-| Status | **offen**, getroffen 2026-09-08 |
-| Wiedervorlage | Datenschutzprüfung (B2, Handoff und §203/Art. 9); UX-EPIC-001 baut die URL-Funktion, MAP-005 bewertet die Ziel-Apps |
+| Status | **entschieden (Jannes) 2026-09-11** — Feldliste und Fahrradmodus bestätigt; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket**: dass die Übergabe an Google in dieser Form zulässig ist, bestätigt erst die Datenschutzprüfung (B2). Getroffen 2026-09-08, mit UX-002 für Google Maps umgesetzt |
+| Wiedervorlage | Datenschutzprüfung (B2, Handoff und §203/Art. 9); MAP-005 bewertet die Ziel-Apps und setzt Apple Maps und `geo:` um |
 
 **Annahme.** Der Handoff übergibt an die Navigations-App **nur das Ziel und
 den Fahrradmodus**: die Koordinate, sobald sie zur Adresse vorliegt (ANN-016,
@@ -1121,7 +1122,7 @@ auseinandergehalten.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | UX-008 (Textbausteine in der Dokumentation, `IDEA-PRX-011`, E-9) |
-| Status | **offen**, getroffen 2026-09-10 |
+| Status | **entschieden (Jannes) 2026-09-11** — Textbaustein ohne Patientenbezug, Löschung durch die Praxis; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket**: ob der Freitext trotz fehlenden Bezugs der Akte zugeordnet wird, entscheidet die Datenschutzprüfung. Getroffen 2026-09-10 |
 | Wiedervorlage | Datenschutzprüfung; LOE-001 nimmt die Klasse in den Retention Schedule auf |
 
 **Annahme.** Ein Textbaustein ist ein **Betriebsdatum der Praxis ohne
@@ -1173,7 +1174,7 @@ zwei Policies — Aufwand `mittel`.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | UX-011 (Tagesplan-Cache lesend, `IDEA-PRX-014`, E-12); ADR-001 („offene Folgefrage: Feldliste") |
-| Status | **offen**, getroffen 2026-09-10 |
+| Status | **entschieden (Jannes) 2026-09-11** — Feldliste und acht Stunden bestätigt; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket**. Die Zahl bleibt zudem unter Vorbehalt des ersten Feldtags: Sie ist geschätzt, nicht gemessen. Getroffen 2026-09-10 |
 | Wiedervorlage | Datenschutzprüfung; Jannes nach dem ersten Feldtag (reicht die Vorhaltedauer, ist sie zu lang?) |
 
 **Annahme.** Die zuletzt erfolgreich geladene Tagesliste bleibt im

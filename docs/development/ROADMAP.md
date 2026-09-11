@@ -74,17 +74,22 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 - **Offen aus UI-000:** die Vorschaubereiche nutzen die gemeinsamen
   Bausteine noch nicht. Sie werden in ihrem eigenen Loop ersetzt, nicht
   vorher umgestellt (ARBEITSBEREICHE.md).
-- **Zu bestätigen:** ANN-010 bis ANN-021. Sie blockieren nichts, aber
-  ANN-011 (Rollenschnitt der Verordnung) und ANN-014 (Empfehlung zum
-  Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2, und ANN-015
-  (Verbindungsanzeige ohne Server-Ping, seit UX-009 mit Textverlust-Schutz)
-  gehört auf den ersten Feldtag. ANN-016 bis ANN-018 (Koordinaten bei der
-  Adresse, Edge Function als Adapter, Übergabeziel des Handoffs) gehören in
-  die Anfrage B2; **ANN-020** (Textbausteine als Betriebsdaten ohne
-  Patientenbezug) und **ANN-021** (Feldliste und Vorhaltedauer des Tagesplans
-  im Arbeitsspeicher, zugleich die Antwort auf die offene Folgefrage aus
-  ADR-001) gehören in dasselbe Prüfpaket. **ANN-019 ist erledigt** — der
-  Restpunkt aus VER-003 ist mit UX-009 behoben.
+- **Von Jannes bestätigt am 2026-09-11:** die Annahmen aus UX-EPIC-001 —
+  **ANN-018** (Übergabeziel des Handoffs), **ANN-020** (Textbausteine als
+  Betriebsdaten ohne Patientenbezug) und **ANN-021** (Feldliste und
+  Vorhaltedauer des Tagesplans, zugleich die Antwort auf die offene
+  Folgefrage aus ADR-001). Alle drei sind `Datenschutz` und bleiben deshalb
+  **im Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die
+  Datenschutzprüfung nicht (Lebenszyklus im Register). **ANN-019 ist
+  erledigt** — der Restpunkt aus VER-003 ist mit UX-009 behoben.
+- **Weiter offen:** ANN-001, ANN-004, ANN-005, ANN-008, ANN-009, ANN-011,
+  ANN-013, ANN-014, ANN-016, ANN-017 und die Providerfrage aus ANN-007. Sie
+  blockieren nichts, aber ANN-011 (Rollenschnitt der Verordnung) und ANN-014
+  (Empfehlung zum Verordnungsende, ADR-006) gehören in die Anfragen B1 und
+  B2, ANN-016 und ANN-017 (Koordinaten bei der Adresse, Edge Function als
+  Adapter) in die Anfrage B2, und ANN-015 (Verbindungsanzeige ohne
+  Server-Ping, seit UX-009 mit Textverlust-Schutz) gehört auf den ersten
+  Feldtag.
 - **Zu beantworten (MAP-001):** E-20 ADR-019 Fassung 2 bestätigen — damit
   entfällt die Google Maps Embed API aus E-16. **E-21 (Reihenfolge MAP-002 zu
   UX-EPIC-001) ist gegenstandslos**, seit UX-EPIC-001 fertig ist.
