@@ -121,8 +121,11 @@ describe('complete_treatment', () => {
     expect(notiz).toMatchObject({ status: 'final', content: 'Synthetischer Behandlungstext' });
     expect(notiz!.finalized_at).not.toBeNull();
 
+    // Seit CAL-008d hebt die Finalisierung den Termin auf documented
+    // (ADR-018 Punkt 3). Der Abschluss ist dabei trotzdem passiert:
+    // completed_at steht, und appointment.completed liegt im Auditlog.
     const nachher = await terminLesen(t.id);
-    expect(nachher.status).toBe('completed');
+    expect(nachher.status).toBe('documented');
     expect(nachher.completed_at).not.toBeNull();
   });
 
@@ -219,7 +222,9 @@ describe('complete_treatment', () => {
     ]);
 
     expect((await notizLesen(t.id))!.status).toBe('final');
-    expect((await terminLesen(t.id)).status).toBe('completed');
+    // Kein zweiter Abschluss - aber die Finalisierung hebt den Zustand
+    // weiter auf documented (CAL-008d).
+    expect((await terminLesen(t.id)).status).toBe('documented');
   });
 
   it('weist eine bereits finalisierte Dokumentation ab', async () => {

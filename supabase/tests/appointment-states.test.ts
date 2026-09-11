@@ -446,3 +446,190 @@ describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
     ).rejects.toThrow(/already recorded as no-show/);
   });
 });
+
+describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', () => {
+  beforeEach(resetDatabase);
+
+  const FINALISIEREN = 'select public.finalize_treatment_note($1::uuid, $2::timestamptz) as id';
+  const NACHTRAG = 'select public.create_treatment_note_addendum($1::uuid, $2) as id';
+  const KORREKTUR = 'select public.revise_treatment_note($1::uuid, $2::timestamptz, $3, $4) as id';
+
+  async function notizStand(noteId: string): Promise<string> {
+    const { rows } = await asPostgres<{ updated_at: string }>(
+      'select to_char(updated_at at time zone \'UTC\', \'YYYY-MM-DD"T"HH24:MI:SS.US"+00"\') as updated_at from public.treatment_notes where id = $1',
+      [noteId],
+    );
+    return rows[0]!.updated_at;
+  }
+
+  /** Schreibt einen Entwurf und gibt dessen Kennung zurueck. */
+  async function entwurf(terminId: string, text = 'Synthetischer Befund.'): Promise<string> {
+    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, DOKUMENTIEREN, [
+      terminId,
+      text,
+    ]);
+    return rows[0]!.id;
+  }
+
+  /**
+   * Die Invariante beider Richtungen ueber ALLE Termine der Datenbank.
+   *
+   * Absichtlich nicht ueber einen einzelnen Termin: Ein Test, der nur den
+   * gerade angefassten Satz prueft, uebersieht genau den Fall, in dem ein
+   * anderer Pfad still etwas gesetzt hat.
+   */
+  async function invarianteGilt(): Promise<boolean> {
+    const { rows } = await asPostgres<{ abweichungen: string }>(
+      `select count(*)::text as abweichungen
+         from public.appointments a
+        where (a.status = 'documented') is distinct from exists (
+                select 1 from public.treatment_notes t
+                 where t.appointment_id = a.id
+                   and t.addendum_to_note_id is null
+                   and t.status = 'final'
+              )`,
+    );
+    return rows[0]!.abweichungen === '0';
+  }
+
+  it('hebt einen abgeschlossenen Termin mit der Finalisierung auf documented', async () => {
+    const termin = await anlegen();
+    const notiz = await entwurf(termin.id);
+    const fertig = await stand(termin.id);
+    await asUserCommitted(users.office, ABSCHLIESSEN, [fertig.id, fertig.updated_at]);
+
+    await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
+
+    expect(await zustand(termin.id)).toBe('documented');
+    expect(await invarianteGilt()).toBe(true);
+  });
+
+  it('hebt auch einen nur bestaetigten Termin auf documented (ANN-036)', async () => {
+    const termin = await anlegen();
+    const notiz = await entwurf(termin.id);
+
+    await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
+
+    expect(await zustand(termin.id)).toBe('documented');
+    expect(await invarianteGilt()).toBe(true);
+  });
+
+  it('setzt dabei completed_at, laesst completed_by aber leer - es hat niemand abgeschlossen', async () => {
+    const termin = await anlegen();
+    const notiz = await entwurf(termin.id);
+    await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
+
+    const { rows } = await asPostgres<{ completed_at: string | null; completed_by: string | null }>(
+      'select completed_at, completed_by from public.appointments where id = $1',
+      [termin.id],
+    );
+    expect(rows[0]?.completed_at).not.toBeNull();
+    expect(rows[0]?.completed_by).toBeNull();
+  });
+
+  it('protokolliert appointment.documented genau einmal', async () => {
+    const termin = await anlegen();
+    const notiz = await entwurf(termin.id);
+    await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
+
+    const { rows } = await asPostgres<{ actor_kind: string }>(
+      `select actor_kind from public.audit_log
+        where action = 'appointment.documented' and subject_id = $1`,
+      [termin.id],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.actor_kind).toBe('user');
+  });
+
+  it('laesst den Zustand bei einer Korrektur unveraendert (ADR-018 Punkt 2)', async () => {
+    const termin = await anlegen();
+    const notiz = await entwurf(termin.id);
+    await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
+
+    await asUserCommitted(users.therapist, KORREKTUR, [
+      notiz,
+      await notizStand(notiz),
+      'Korrigierter Befund.',
+      'Zahlendreher.',
+    ]);
+
+    expect(await zustand(termin.id)).toBe('documented');
+    expect(await invarianteGilt()).toBe(true);
+  });
+
+  it('erzeugt fuer einen finalisierten Nachtrag kein zweites Ereignis', async () => {
+    const termin = await anlegen();
+    const notiz = await entwurf(termin.id);
+    await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
+
+    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, NACHTRAG, [
+      notiz,
+      'Nachtrag zum Befund.',
+    ]);
+    const nachtrag = rows[0]!.id;
+    await asUserCommitted(users.therapist, FINALISIEREN, [nachtrag, await notizStand(nachtrag)]);
+
+    const { rows: ereignisse } = await asPostgres<{ anzahl: string }>(
+      `select count(*)::text as anzahl from public.audit_log
+        where action = 'appointment.documented' and subject_id = $1`,
+      [termin.id],
+    );
+    expect(ereignisse[0]?.anzahl).toBe('1');
+    expect(await zustand(termin.id)).toBe('documented');
+  });
+
+  it('haelt die Invariante auch fuer die automatische Finalisierung', async () => {
+    const termin = await anlegen();
+    await entwurf(termin.id);
+
+    // Der Entwurf wird ueber die Frist hinaus zurueckdatiert; der Termin
+    // ebenfalls, sonst rechnet die Frist vom Behandlungstag in der Zukunft.
+    await asPostgres(
+      `update public.appointments
+          set starts_at = now() - interval '60 days',
+              ends_at   = now() - interval '60 days' + interval '1 hour'
+        where id = $1`,
+      [termin.id],
+    );
+    await asPostgres(
+      `update public.treatment_notes set created_at = now() - interval '60 days'
+        where appointment_id = $1`,
+      [termin.id],
+    );
+
+    await asPostgres('select public.finalize_overdue_treatment_notes()');
+
+    expect(await zustand(termin.id)).toBe('documented');
+    expect(await invarianteGilt()).toBe(true);
+
+    const { rows } = await asPostgres<{ actor_kind: string }>(
+      `select actor_kind from public.audit_log
+        where action = 'appointment.documented' and subject_id = $1`,
+      [termin.id],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.actor_kind).toBe('system');
+  });
+
+  it('haelt die Invariante nach "Behandlung abschliessen" in einem Schritt', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(
+      users.therapist,
+      'select public.complete_treatment($1::uuid, $2, $3::timestamptz, $4::timestamptz) as id',
+      [termin.id, 'In einem Schritt dokumentiert.', termin.updated_at, null],
+    );
+
+    expect(await zustand(termin.id)).toBe('documented');
+    expect(await invarianteGilt()).toBe(true);
+  });
+
+  it('laesst einen Termin ohne finalisierte Dokumentation NICHT auf documented stehen', async () => {
+    const termin = await anlegen();
+    await entwurf(termin.id);
+    const fertig = await stand(termin.id);
+    await asUserCommitted(users.office, ABSCHLIESSEN, [fertig.id, fertig.updated_at]);
+
+    expect(await zustand(termin.id)).toBe('completed');
+    expect(await invarianteGilt()).toBe(true);
+  });
+});

@@ -185,6 +185,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
 | ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | offen | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (B2) |
 | ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | offen | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
+| ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | offen | Jannes — ein Satz genügt; sonst mit ABR-003, wenn `invoiced` dazukommt |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1994,3 +1995,62 @@ Lauf aufteilen — Aufwand `klein`. Kennzeichen nicht mehr als Haltegrund,
 sondern die Rechnung: eine Bedingung in derselben Regel austauschen, sobald
 ABR-003 die Rechnungstabelle bringt — Aufwand `klein`, und genau dafür ist die
 Wiedervorlage gesetzt.
+
+---
+
+### ANN-036 — `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | CAL-008d; ADR-018 Punkt 2 (Übergangstabelle) gegen ADR-018 Punkt 3 (Invariante) |
+| Status | **offen** |
+| Wiedervorlage | Jannes — ein Satz genügt; spätestens mit ABR-003, wenn `invoiced` denselben Weg geht |
+
+**Annahme.** Die Finalisierung einer Behandlungsdokumentation hebt den Termin
+auf `documented` — **auch dann, wenn er noch `confirmed` ist** und niemand ihn
+ausdrücklich abgeschlossen hat. `completed_at` wird dabei gesetzt, falls es
+noch fehlt; `completed_by` bleibt leer.
+
+**Begründung.** ADR-018 sagt zwei Dinge, die sich in diesem Fall nicht beide
+wörtlich halten lassen. Die Übergangstabelle (Punkt 2) nennt nur
+`completed` → `documented`. Die Invariante (Punkt 3) sagt: „`status =
+'documented'` **genau dann**, wenn zu diesem Termin eine finalisierte
+Dokumentation existiert" — und verlangt ausdrücklich beide Richtungen als Test
+in `pnpm test:db`.
+
+Es gibt zwei reale Wege zu einer finalisierten Dokumentation an einem nicht
+abgeschlossenen Termin: die Finalisierung auf der Dokumentationsseite und die
+automatische Finalisierung nach Fristablauf (ADR-016 Punkt 7). Bliebe der
+Termin in beiden Fällen `confirmed`, wäre die Invariante verletzt. Sie ist die
+stärkere Zusage — sie ist als Prüfung formuliert, die Tabelle zählt Auslöser
+auf —, und fachlich ist sie auch die richtigere: Wer eine Behandlung
+dokumentiert und festschreibt, sagt damit, dass sie stattgefunden hat.
+
+`completed_by` bleibt leer, weil tatsächlich niemand abgeschlossen hat; ein
+erfundener Akteur wäre schlimmer als ein leeres Feld. Wer finalisiert hat,
+steht in `treatment_notes.finalized_by` und im Auditlog. Für die automatische
+Finalisierung ist das derselbe Umgang wie bei `finalized_by = null` dort.
+
+Das berührt ADR-018 Punkt 7 („keine automatischen Übergänge durch Zeitablauf")
+**nicht**: Der Zustand folgt einer Dokumentation, die ein Mensch geschrieben
+hat, nicht der Uhr. Punkt 7 nimmt die automatische Finalisierung ausdrücklich
+aus.
+**Unsicher:** ob Jannes den Terminabschluss lieber als eigenen, bewussten
+Klick behielte — dann müsste die Finalisierung an einem `confirmed`-Termin
+stattdessen abgewiesen werden, und die Dokumentationsseite bräuchte einen
+Hinweis „erst abschließen".
+
+**Verankerung.** `app.mark_appointment_documented()` in
+`supabase/migrations/20260912130000_appointment_documented.sql` — der
+Kopfkommentar der Migration und der Funktionsrumpf tragen die Kennung. Tests in
+`supabase/tests/appointment-states.test.ts` („hebt auch einen nur bestätigten
+Termin auf documented", „setzt dabei completed_at, lässt completed_by aber
+leer") samt der Invariantenprüfung über alle Termine.
+
+**Änderungspfad.** Umkehren: die `where`-Bedingung in
+`app.mark_appointment_documented` auf `status = 'completed'` verengen und
+`finalize_treatment_note` einen `confirmed`-Termin abweisen lassen; die
+automatische Finalisierung bräuchte dann eine eigene Antwort auf dieselbe
+Frage — Aufwand `klein` im Code, aber eine neue fachliche Entscheidung für den
+Scheduler-Fall.

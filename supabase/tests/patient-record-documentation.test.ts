@@ -273,7 +273,9 @@ describe('DOK-003: Behandlungsnachweis in der Akte', () => {
     ]);
     expect(zeilen[0]).toMatchObject({
       appointment_type: 'video',
-      appointment_status: 'confirmed',
+      // Der Termin mit finalisierter Dokumentation steht seit CAL-008d auf
+      // documented (ADR-018 Punkt 3).
+      appointment_status: 'documented',
       staff_given_name: 'Anna',
       staff_family_name: 'Beispiel',
       organization_time_zone: 'Europe/Berlin',
