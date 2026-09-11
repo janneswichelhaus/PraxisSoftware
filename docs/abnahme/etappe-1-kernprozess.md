@@ -795,3 +795,33 @@ der Praxis und einen persönlichen von Anna Beispiel an.
    wo es ist.
 7. **Die Leiste bleibt nicht ewig.** Nach dem Blättern auf einen anderen Tag
    ist sie verschwunden; sie bietet nichts an, was nicht mehr zu sehen ist.
+
+---
+
+## UX-011 — Tagesplan bleibt im Funkloch lesbar
+
+**Was geprüft wird:** dass die Anschrift nicht vom Bildschirm verschwindet,
+wenn im Treppenhaus die Verbindung abreißt — und dass daraus kein heimlicher
+Offline-Modus wird.
+
+1. **Erst laden.** Als `anna.beispiel@praxis.invalid` die Startseite öffnen und
+   die Tagesliste abwarten. Anschrift und Zugangshinweis stehen da.
+2. **Funkloch.** Entwicklerwerkzeuge → Netzwerk → „Offline". Dann die Liste zum
+   Nachladen bringen: in einen anderen Bereich und zurück wechseln.
+3. **Es bleibt stehen.** Die Karten stehen unverändert da, darüber die Meldung
+   „Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der
+   Stand von HH:MM Uhr – er kann veraltet sein." Zusätzlich der gelbe Streifen
+   über der Kopfleiste.
+4. **Ehrlich über das Alter.** Netzwerk wieder anschalten und nachladen: die
+   Meldung verschwindet. Bei frischem Stand steht **nichts** über sein Alter
+   da — ein dauerhaftes „Stand von …" wäre Rauschen.
+5. **Kein Offline-Modus.** Immer noch offline: Die Seite **neu laden**. Jetzt
+   ist die Liste weg und es erscheint die Fehlermeldung — nichts liegt auf dem
+   Gerät. Das ist Absicht (ADR-001, ADR-015 Punkt 16, ANN-021): Was hier
+   stehen bleibt, ist der Zwischenspeicher der laufenden Seite, mehr nicht.
+6. **Abmelden räumt auf.** Wieder online, Liste laden, abmelden, mit einem
+   **anderen** Konto anmelden (`tim.teamleitung@praxis.invalid`): Von Annas
+   Tagesliste ist nichts zu sehen — auch nicht kurz beim Aufbau der Seite.
+7. **Geschrieben wird nichts aus dem Speicher.** Offline auf „Behandlung
+   abschließen" tippen und speichern: Es erscheint eine Fehlermeldung, und der
+   Termin bleibt unverändert. Der Zwischenspeicher ist ausschließlich lesend.

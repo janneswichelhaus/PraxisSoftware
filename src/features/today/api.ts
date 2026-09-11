@@ -63,6 +63,21 @@ export async function fetchDayPlan(datum: string, staffMemberId: string): Promis
 }
 
 /**
+ * Wie lange die zuletzt geladene Tagesliste im Arbeitsspeicher der Seite
+ * lesbar bleibt (UX-011, ADR-001, ANN-021).
+ *
+ * Das ist **kein** Offline-Modus: Es wird nichts auf dem Gerät gespeichert,
+ * nichts synchronisiert, es gibt keinen Service Worker (ADR-015 Punkt 16).
+ * Es ist der Zwischenspeicher, den die laufende Seite ohnehin hält - er wird
+ * nur lange genug bemessen, dass ein Funkloch im Treppenhaus die Anschrift
+ * nicht vom Bildschirm nimmt, und nicht länger.
+ *
+ * Ein Neuladen, ein geschlossener Tab und jede Abmeldung verwerfen ihn; mit
+ * dem Kalendertag wechselt der Abfrageschlüssel und damit der Eintrag.
+ */
+export const TAGESPLAN_VORHALTEDAUER_MS = 8 * 60 * 60 * 1000;
+
+/**
  * Verlangt dieser Termin heute noch etwas?
  *
  * Zwei Fälle, und der zweite ist der, den die Praxis am Abend beschäftigt:

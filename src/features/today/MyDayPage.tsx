@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
@@ -29,7 +30,7 @@ import {
   NavigationFuerDenTag,
   NavigationZumTermin,
 } from '@/features/appointments/NavigationStarten';
-import { fetchDayPlan, istOffen, nachUhrzeit } from './api';
+import { fetchDayPlan, istOffen, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
 
 /**
@@ -74,6 +75,15 @@ function firstName(displayName: string): string {
   return displayName.split(' ')[0] ?? displayName;
 }
 
+/** Uhrzeit des zuletzt erfolgreichen Ladens, in der Zeitzone der Praxis. */
+function standVon(zeitpunkt: number, zeitzone: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: zeitzone,
+  }).format(new Date(zeitpunkt));
+}
+
 function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: string }) {
   return (
     <li>
@@ -116,23 +126,33 @@ function MeineTagesliste({
   datum,
   staffMemberId,
   darfDokumentieren,
+  zeitzone,
 }: {
   datum: string;
   staffMemberId: string;
   darfDokumentieren: boolean;
+  zeitzone: string;
 }) {
   const {
     data: termine,
     isPending,
     isError,
+    dataUpdatedAt,
   } = useQuery({
     queryKey: ['day-plan', datum, staffMemberId],
     queryFn: () => fetchDayPlan(datum, staffMemberId),
     retry: false,
+    // Die zuletzt geladene Liste bleibt im Arbeitsspeicher der Seite lesbar,
+    // auch wenn eine spätere Abfrage scheitert (UX-011, ADR-001, ANN-021).
+    gcTime: TAGESPLAN_VORHALTEDAUER_MS,
   });
 
   if (isPending) return <LoadingState label="Tagesliste wird geladen …" />;
-  if (isError) {
+
+  // Nur wenn es NICHTS zu zeigen gibt, tritt der Fehler an die Stelle der
+  // Liste. Gibt es einen älteren Stand, ist er im Hausflur mehr wert als eine
+  // Fehlermeldung - er wird dann als älterer Stand gekennzeichnet.
+  if (isError && !termine) {
     return (
       <ErrorState
         title="Die Tagesliste konnte nicht geladen werden."
@@ -140,6 +160,7 @@ function MeineTagesliste({
       />
     );
   }
+  if (!termine) return null;
 
   const sortiert = [...termine].sort(nachUhrzeit);
   const offen = sortiert.filter((termin) => istOffen(termin, darfDokumentieren));
@@ -147,6 +168,17 @@ function MeineTagesliste({
 
   return (
     <>
+      {/* „Stand von …" erscheint nur, wenn die Liste tatsächlich nicht mehr
+          frisch ist (UX-011). Dauerhaft angezeigt wäre es Rauschen - wie ein
+          dauerhaftes „verbunden" (ANN-015). */}
+      {isError ? (
+        <Statusmeldung ton="fehler" className="mt-4">
+          Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der Stand von{' '}
+          {standVon(dataUpdatedAt, zeitzone)} Uhr – er kann veraltet sein. Geschrieben wird davon
+          nichts.
+        </Statusmeldung>
+      ) : null}
+
       <Section
         titel={offen.length > 0 ? `Offen heute (${offen.length})` : 'Offen heute'}
         hinweis="Ihre Besuche mit Anschrift, Rufnummer und Zugangshinweis."
@@ -266,6 +298,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           datum={heute}
           staffMemberId={user.staffMemberId}
           darfDokumentieren={canWriteTreatmentNote(user.roles)}
+          zeitzone={zeitzone}
         />
       ) : null}
 

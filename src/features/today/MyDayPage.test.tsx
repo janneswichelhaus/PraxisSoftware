@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+import { act, render, screen, within } from '@testing-library/react';
+import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import type * as AppointmentsApiModule from '@/features/appointments/api';
 import type * as TodayApiModule from '@/features/today/api';
 import { renderMitVorschau, testUser } from '@/test-utils';
@@ -95,11 +98,13 @@ const tagesplan: TodayApiModule.DayPlanEntry[] = [
   }),
 ];
 
+const fetchDayPlan = vi.fn();
+
 vi.mock('@/features/today/api', async (importOriginal) => {
   const actual = await importOriginal<typeof TodayApiModule>();
   return {
     ...actual,
-    fetchDayPlan: () => Promise.resolve(tagesplan),
+    fetchDayPlan: () => fetchDayPlan() as Promise<TodayApiModule.DayPlanEntry[]>,
   };
 });
 
@@ -108,7 +113,31 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   return { ...actual, fetchAppointments: () => Promise.resolve(termine) };
 });
 
+/**
+ * Eigener Aufbau mit festgehaltenem QueryClient.
+ *
+ * `renderMitVorschau` legt je Aufruf einen neuen an; fuer den Tagesplan-Cache
+ * (UX-011) wird aber genau der gemeinsame Speicher gebraucht, ueber den ein
+ * zweiter, gescheiterter Abruf laeuft.
+ */
+function rendernMitCache(queryClient: QueryClient) {
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <VorschauProvider>
+          <MyDayPage user={testUser(['therapist'])} />
+        </VorschauProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
 describe('Mein Tag', () => {
+  beforeEach(() => {
+    fetchDayPlan.mockReset();
+    fetchDayPlan.mockResolvedValue(tagesplan);
+  });
+
   it('stellt die offenen eigenen Besuche vor den Tagesplan des Teams', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
@@ -201,5 +230,39 @@ describe('Mein Tag', () => {
     expect(await screen.findByRole('heading', { name: 'Ihr Zugang' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Tagesplan des Teams' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Betrieb, Wege und Team' })).toBeNull();
+  });
+
+  describe('UX-011: Tagesplan bleibt lesbar', () => {
+    it('zeigt den zuletzt geladenen Stand weiter, wenn die Abfrage scheitert', async () => {
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      rendernMitCache(queryClient);
+      expect(await screen.findByText('Testweg 7')).toBeInTheDocument();
+
+      // Das Funkloch im Treppenhaus: der naechste Abruf scheitert.
+      fetchDayPlan.mockRejectedValue(new Error('Funkloch'));
+      await act(async () => {
+        await queryClient.refetchQueries({ queryKey: ['day-plan'] });
+      });
+
+      expect(await screen.findByText(/Angezeigt wird der Stand von/)).toBeInTheDocument();
+      // Entscheidend: die Anschrift steht noch da.
+      expect(screen.getByText('Testweg 7')).toBeInTheDocument();
+      expect(screen.getByText(/Erdgeschoss, Klingel/)).toBeInTheDocument();
+    });
+
+    it('zeigt ohne jeden Stand die Fehlermeldung statt einer leeren Liste', async () => {
+      fetchDayPlan.mockRejectedValue(new Error('Funkloch'));
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByText('Die Tagesliste konnte nicht geladen werden.'),
+      ).toBeInTheDocument();
+    });
+
+    it('behauptet bei frischem Stand nichts ueber sein Alter', async () => {
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      await screen.findByText('Testweg 7');
+      expect(screen.queryByText(/Angezeigt wird der Stand von/)).toBeNull();
+    });
   });
 });

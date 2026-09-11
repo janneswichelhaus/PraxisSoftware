@@ -1,7 +1,8 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-10 (UX-EPIC-001: ANN-020 Textbausteine neu;
-ANN-018 verankert und um den Umsetzungsstand ergänzt)
+Zuletzt aktualisiert: 2026-09-10 (UX-EPIC-001: ANN-020 Textbausteine und
+ANN-021 Tagesplan im Arbeitsspeicher neu; ANN-018 verankert, ANN-015 um den
+Textverlust-Schutz ergänzt, Restpunkt in ANN-019 behoben)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -143,6 +144,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-018 | Übergabeziel und URL-Format des Navigations-Handoffs           | Datenschutz   | offen  | Datenschutzprüfung (B2); UX-EPIC-001, MAP-005 |
 | ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | entschieden 2026-09-08 | UX-EPIC-001 (Restpunkt Textverlust-Schutz) |
 | ANN-020 | Datenklasse und Frist der Textbausteine                          | Datenschutz   | offen  | Datenschutzprüfung; LOE-001 (Retention Schedule) |
+| ANN-021 | Feldliste und Vorhaltedauer des Tagesplans im Arbeitsspeicher    | Datenschutz   | offen  | Datenschutzprüfung; Jannes nach dem ersten Feldtag |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1164,3 +1166,67 @@ Aktendaten zu behandeln: dieselbe Frist, zusätzlich Aufnahme in das
 Löschjournal (LOE-002) — Aufwand `klein`. Verlangt sie, dass praxisweite
 Bausteine gar nicht persönlich sein dürfen oder umgekehrt: eine Spalte und
 zwei Policies — Aufwand `mittel`.
+
+### ANN-021 — Feldliste und Vorhaltedauer des Tagesplans im Arbeitsspeicher
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | UX-011 (Tagesplan-Cache lesend, `IDEA-PRX-014`, E-12); ADR-001 („offene Folgefrage: Feldliste") |
+| Status | **offen**, getroffen 2026-09-10 |
+| Wiedervorlage | Datenschutzprüfung; Jannes nach dem ersten Feldtag (reicht die Vorhaltedauer, ist sie zu lang?) |
+
+**Annahme.** Die zuletzt erfolgreich geladene Tagesliste bleibt im
+**Arbeitsspeicher der laufenden Seite** lesbar, auch wenn eine spätere Abfrage
+scheitert. Sie wird dann als älterer Stand gekennzeichnet („Angezeigt wird der
+Stand von 07:52 Uhr – er kann veraltet sein").
+
+- **Feldliste:** genau das, was `list_day_plan` liefert und nicht mehr —
+  Zeitraum, Terminart, Status, Name der Patient:in, Besuchsadresse,
+  Festnetz- und Mobilnummer, Zugangshinweis, organisatorische Besonderheit,
+  Dokumentationsstand ohne Inhalt. **Keine klinischen Inhalte**, keine
+  Verordnung, keine Akte. Das ist die Antwort auf die offene Folgefrage aus
+  ADR-001, „welche Felder zu den minimal notwendigen Hausbesuchsdaten
+  gehören": es sind die Felder eines Arbeitstags einer Person, und die
+  Feldliste wird nicht hier gepflegt, sondern ist die Rückgabe der
+  Serverfunktion.
+- **Vorhaltedauer:** acht Stunden ab dem Laden — ein Arbeitstag, nicht mehr.
+  Zusätzlich endet sie bei jedem Neuladen, jedem geschlossenen Tab, jeder
+  Abmeldung (der Abfragespeicher wird dabei geleert) und mit dem Wechsel des
+  Kalendertags, weil der Abfrageschlüssel den Tag enthält.
+- **Verschlüsselung:** keine Frage, weil **nichts gespeichert wird** — kein
+  `localStorage`, kein `sessionStorage`, kein IndexedDB, kein Service Worker
+  (ADR-015 Punkt 16). Damit landet nichts auf dem Gerät, das eine
+  Geräteverschlüsselung oder eine Löschfrist bräuchte. Die
+  Endgeräteanforderungen aus ADR-001 entstehen erst mit einem echten
+  Offline-Modus.
+
+**Begründung.** ADR-001 nennt „den Tagesplan" und „die minimal notwendigen
+Hausbesuchsdaten" ausdrücklich als das, was offline verfügbar sein soll — und
+lässt den Mechanismus offen. Der billigste Mechanismus, der dem Zweck genügt,
+ist der Zwischenspeicher, den die laufende Seite ohnehin hält: Er kostet keine
+neue Technik, keine Synchronisation und keine Konfliktauflösung, und er kann
+die Situation aus ADR-001 („dokumentiert geglaubt, aber nirgends gespeichert")
+gar nicht erzeugen, weil er **nur liest**. Geschrieben wird ausschließlich
+online; scheitert ein Schreibvorgang, sagt die Anwendung das (UX-009).
+Ein dauerhafter lokaler Bestand wäre die andere Option: mehr Verfügbarkeit,
+aber Gesundheitsdaten auf einem mobilen Gerät mit allem, was daran hängt
+(Geräteverschlüsselung, Sperrcode, Verlust, BYOD) — das ist ein eigenes
+Vorhaben und nach §16 nicht der Weg, den man nebenbei geht.
+**Unsicher:** ob acht Stunden für einen langen Tag reichen und ob die Prüfung
+den Zugangshinweis im Arbeitsspeicher anders bewertet als auf dem Bildschirm,
+wo er ohnehin steht.
+
+**Verankerung.** `TAGESPLAN_VORHALTEDAUER_MS` in
+`src/features/today/api.ts` (trägt die Kennung) — die eine Zahl; die Feldliste
+ist die Rückgabe von `public.list_day_plan`
+(`supabase/migrations/20260910100000_day_plan.sql`). Das Leeren bei der
+Abmeldung in `src/app/App.tsx` (`abmelden`). Tests in
+`src/features/today/MyDayPage.test.tsx`, Abschnitt „UX-011".
+
+**Änderungspfad.** Andere Vorhaltedauer: eine Zahl — Aufwand `klein`.
+Verlangt die Prüfung, dass gar nichts über einen Fehlversuch hinaus stehen
+bleibt: `gcTime` auf 0 und die Kennzeichnung entfernen — Aufwand `klein`, mit
+dem Verlust der Anschrift im Funkloch als bewusster Folge. Verlangt der
+Betrieb einen echten Offline-Modus: eigenes Epic nach ADR-001, ersetzt
+ADR-015 Punkt 16 und bringt die Endgeräteanforderungen mit — Aufwand `groß`.
