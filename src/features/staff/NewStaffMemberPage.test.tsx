@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders } from '@/test-utils';
+import { renderWithProviders, testUser } from '@/test-utils';
 
 const createStaffMember = vi.fn();
 const fetchLocations = vi.fn();
@@ -47,7 +47,7 @@ describe('NewStaffMemberPage', () => {
 
   it('verlangt Vor- und Nachname', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<NewStaffMemberPage />);
+    renderWithProviders(<NewStaffMemberPage user={testUser(['owner'])} />);
 
     await user.click(screen.getByRole('button', { name: 'Mitarbeiter:in anlegen' }));
 
@@ -58,7 +58,7 @@ describe('NewStaffMemberPage', () => {
 
   it('legt an und leitet auf den neuen Datensatz weiter', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<NewStaffMemberPage />);
+    renderWithProviders(<NewStaffMemberPage user={testUser(['owner'])} />);
 
     await user.type(screen.getByLabelText('Vorname *'), 'Nina');
     await user.type(screen.getByLabelText('Nachname *'), 'Neu');
@@ -84,7 +84,7 @@ describe('NewStaffMemberPage', () => {
 
   it('weist eine unbrauchbare E-Mail-Adresse ab', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<NewStaffMemberPage />);
+    renderWithProviders(<NewStaffMemberPage user={testUser(['owner'])} />);
 
     await user.type(screen.getByLabelText('Vorname *'), 'Nina');
     await user.type(screen.getByLabelText('Nachname *'), 'Neu');
@@ -96,14 +96,14 @@ describe('NewStaffMemberPage', () => {
   });
 
   it('sagt ausdruecklich, dass kein Zugang entsteht', () => {
-    renderWithProviders(<NewStaffMemberPage />);
+    renderWithProviders(<NewStaffMemberPage user={testUser(['owner'])} />);
     expect(screen.getByText(/kein Zugang zur Anwendung/)).toBeInTheDocument();
   });
 
   it('meldet einen fehlgeschlagenen Schreibvorgang, ohne Details preiszugeben', async () => {
     const user = userEvent.setup();
     createStaffMember.mockRejectedValue(new Error('irgendetwas aus der Datenbank'));
-    renderWithProviders(<NewStaffMemberPage />);
+    renderWithProviders(<NewStaffMemberPage user={testUser(['owner'])} />);
 
     await user.type(screen.getByLabelText('Vorname *'), 'Nina');
     await user.type(screen.getByLabelText('Nachname *'), 'Neu');

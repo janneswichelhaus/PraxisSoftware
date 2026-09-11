@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   canChangePatientStatus,
   canManageAppointments,
-  canManageStaff,
+  canManageStaffAccounts,
+  canManageStaffEmployment,
+  canManageStaffMasterData,
+  canManageStaffPrivateDetails,
   canReadPatientDirectory,
   canReadTreatmentNote,
   canWriteTreatmentNote,
@@ -75,22 +78,62 @@ describe('canManageAppointments', () => {
   });
 });
 
-describe('canManageStaff', () => {
-  it('erlaubt der administrativen Praxisrolle die Mitarbeiterverwaltung', () => {
-    expect(canManageStaff(['owner'])).toBe(true);
+// E10 teilt die Mitarbeiterverwaltung in drei Bereiche. Die Tests halten die
+// Dreiteilung fest, damit ein spaeteres Oeffnen eines Bereichs nicht
+// versehentlich die anderen mit oeffnet.
+describe('canManageStaffMasterData', () => {
+  it('erlaubt owner und office die Stammdatenpflege (E10)', () => {
+    expect(canManageStaffMasterData(['owner'])).toBe(true);
+    expect(canManageStaffMasterData(['office'])).toBe(true);
   });
 
-  it.each([['therapist'], ['team_lead'], ['office'], ['patient']] as const)(
-    'schliesst %s aus, solange keine Entscheidung dazu vorliegt',
-    (role) => {
-      expect(canManageStaff([role])).toBe(false);
-    },
-  );
+  it.each([['therapist'], ['team_lead'], ['patient']] as const)('schliesst %s aus', (role) => {
+    expect(canManageStaffMasterData([role])).toBe(false);
+  });
 
   it('wertet Mehrfachrollen als Vereinigung (ADR-004)', () => {
-    expect(canManageStaff(['office', 'owner'])).toBe(true);
-    expect(canManageStaff([])).toBe(false);
+    expect(canManageStaffMasterData(['therapist', 'office'])).toBe(true);
+    expect(canManageStaffMasterData([])).toBe(false);
   });
+});
+
+describe('canManageStaffPrivateDetails', () => {
+  it('bleibt bei owner - deckungsgleich mit dem Leserecht (ANN-024)', () => {
+    expect(canManageStaffPrivateDetails(['owner'])).toBe(true);
+  });
+
+  it.each([['office'], ['therapist'], ['team_lead'], ['patient']] as const)(
+    'schliesst %s aus',
+    (role) => {
+      expect(canManageStaffPrivateDetails([role])).toBe(false);
+    },
+  );
+});
+
+describe('canManageStaffEmployment', () => {
+  it('bleibt bei owner: der Statuswechsel hat arbeitsrechtliche Wirkung (E10)', () => {
+    expect(canManageStaffEmployment(['owner'])).toBe(true);
+  });
+
+  it.each([['office'], ['therapist'], ['team_lead'], ['patient']] as const)(
+    'schliesst %s aus',
+    (role) => {
+      expect(canManageStaffEmployment([role])).toBe(false);
+    },
+  );
+});
+
+describe('canManageStaffAccounts', () => {
+  it('bleibt bei owner: Rollenvergabe ist Berechtigungsvergabe (ADR-004, E10)', () => {
+    expect(canManageStaffAccounts(['owner'])).toBe(true);
+  });
+
+  it.each([['office'], ['therapist'], ['team_lead'], ['patient']] as const)(
+    'schliesst %s aus',
+    (role) => {
+      expect(canManageStaffAccounts([role])).toBe(false);
+    },
+  );
 });
 
 describe('isStaff', () => {

@@ -3,6 +3,39 @@ import { getSupabase } from '@/lib/supabase';
 import { roleKeySchema, userProfileSchema, type CurrentUser, type RoleKey } from './types';
 
 /**
+ * Das angemeldete Konto existiert beim Anmeldedienst, ist aber keiner Praxis
+ * zugeordnet.
+ *
+ * Der Normalfall dahinter ist eine eingeladene Person beim ersten Anmelden: Das
+ * Konto entsteht beim Provider, die Zuordnung erst mit der Annahme der
+ * Einladung (STAFF-002b). Der andere Fall ist ein Konto ohne Einladung - es
+ * bleibt zugriffslos (ANN-025). Die Anwendung kann beide erst unterscheiden,
+ * nachdem sie die Annahme versucht hat.
+ */
+export class KeinProfilError extends Error {
+  constructor() {
+    super('Für diesen Zugang ist kein Praxisprofil hinterlegt.');
+    this.name = 'KeinProfilError';
+  }
+}
+
+/**
+ * Der Zugang besteht, ist aber gesperrt (STAFF-003).
+ *
+ * Ohne eigene Behandlung sähe die Person eine vollständige, aber überall leere
+ * Anwendung: `app.current_organization_id()` liefert für einen gesperrten
+ * Zugang `null`, und jede Policy läuft ins Leere. Eine Anwendung, die
+ * funktionstüchtig aussieht und nichts findet, ist genau der unklare Zustand,
+ * den §13 verbietet.
+ */
+export class ZugangGesperrtError extends Error {
+  constructor() {
+    super('Dieser Zugang ist gesperrt.');
+    this.name = 'ZugangGesperrtError';
+  }
+}
+
+/**
  * Lädt Profil und Rollen des angemeldeten Accounts.
  *
  * Die Rollen steuern ausschließlich die Darstellung. Die verbindliche
@@ -15,7 +48,7 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
   const [profileResult, rolesResult] = await Promise.all([
     supabase
       .from('user_profiles')
-      .select('id, organization_id, person_id, display_name')
+      .select('id, organization_id, person_id, display_name, is_active')
       .eq('id', userId)
       .maybeSingle(),
     supabase.from('user_roles').select('role_key').eq('user_id', userId),
@@ -24,10 +57,11 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
   if (profileResult.error) throw new Error('Profil konnte nicht geladen werden.');
   if (rolesResult.error) throw new Error('Berechtigungen konnten nicht geladen werden.');
   if (!profileResult.data) {
-    throw new Error('Für diesen Zugang ist kein Praxisprofil hinterlegt.');
+    throw new KeinProfilError();
   }
 
   const profile = userProfileSchema.parse(profileResult.data);
+  if (!profile.is_active) throw new ZugangGesperrtError();
 
   const roles: RoleKey[] = [];
   for (const row of rolesResult.data ?? []) {

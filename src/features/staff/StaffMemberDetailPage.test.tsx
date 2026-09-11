@@ -91,7 +91,7 @@ describe('StaffMemberDetailPage', () => {
     expect(screen.getByText('+49 7071 0000002')).toBeInTheDocument();
   });
 
-  it.each([['therapist'], ['team_lead'], ['office']] as const)(
+  it.each([['therapist'], ['team_lead']] as const)(
     'bietet %s weder Bearbeiten noch Statuswechsel an',
     async (role) => {
       renderWithProviders(<StaffMemberDetailPage user={testUser([role])} />);
@@ -100,6 +100,14 @@ describe('StaffMemberDetailPage', () => {
       expect(screen.queryByRole('button', { name: 'Als inaktiv führen' })).not.toBeInTheDocument();
     },
   );
+
+  // E10 teilt die beiden Rechte: das Office pflegt Stammdaten, der
+  // Statuswechsel bleibt bei der Praxisinhaberin.
+  it('bietet office das Bearbeiten an, aber keinen Statuswechsel', async () => {
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+    expect(await screen.findByRole('link', { name: 'Stammdaten bearbeiten' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Als inaktiv führen' })).not.toBeInTheDocument();
+  });
 
   it('bietet owner die Verwaltung an', async () => {
     renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);

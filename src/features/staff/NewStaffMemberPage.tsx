@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { fetchLocations } from '@/features/appointments/api';
+import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/session/types';
 import { createStaffMember, leereStammdaten, staffMasterDataSchema, type StaffFeld } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
 
@@ -15,11 +16,15 @@ import { StaffMasterDataFields } from './StaffMasterDataFields';
  * Berechtigung, Organisationszuordnung und Normalisierung in
  * `create_staff_member` (ADR-004).
  *
- * Hier entsteht ausdrücklich kein Benutzerkonto, keine Einladung und keine
- * Rolle: Person, Mitarbeiterdatensatz und Zugang sind getrennte Konzepte
- * (ADR-014).
+ * Hier entsteht ausdrücklich kein Benutzerkonto und keine Rolle: Person,
+ * Mitarbeiterdatensatz und Zugang sind getrennte Konzepte (ADR-014). Der
+ * Zugang wird anschließend am Datensatz eingeladen (STAFF-002b).
+ *
+ * Die Privatangaben erscheinen nur für Rollen, die sie auch lesen dürfen
+ * (ANN-024).
  */
-export function NewStaffMemberPage() {
+export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
+  const privat = canManageStaffPrivateDetails(user.roles);
   const [werte, setWerte] = useState<Record<StaffFeld, string>>(leereStammdaten);
   const [fehler, setFehler] = useState<Partial<Record<StaffFeld, string>>>({});
   const navigate = useNavigate();
@@ -28,7 +33,8 @@ export function NewStaffMemberPage() {
   const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
 
   const mutation = useMutation({
-    mutationFn: createStaffMember,
+    mutationFn: (values: Parameters<typeof createStaffMember>[0]) =>
+      createStaffMember(values, privat),
     onSuccess: async (staffMemberId) => {
       await queryClient.invalidateQueries({ queryKey: ['staff-members'] });
       void navigate(`/praxis/team/${staffMemberId}`, { replace: true });
@@ -89,6 +95,7 @@ export function NewStaffMemberPage() {
           werte={werte}
           fehler={fehler}
           standorte={standorte.data ?? []}
+          privat={privat}
           onChange={setzen}
         />
 
@@ -103,9 +110,9 @@ export function NewStaffMemberPage() {
       </form>
 
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
-        Es entsteht ein Mitarbeiterdatensatz, aber kein Zugang zur Anwendung: kein Benutzerkonto,
-        keine Einladung, keine Rolle. Für eigene Termine als behandelnde Person ist zusätzlich ein
-        Zugang mit therapeutischer Rolle nötig.
+        Es entsteht ein Mitarbeiterdatensatz, aber noch kein Zugang zur Anwendung. Für eigene
+        Termine als behandelnde Person ist zusätzlich ein Zugang mit therapeutischer Rolle nötig -
+        er wird anschließend auf dem Datensatz eingeladen.
       </p>
     </>
   );

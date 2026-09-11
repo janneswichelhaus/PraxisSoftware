@@ -187,10 +187,17 @@ describe('Mitarbeiterverwaltung: wer darf schreiben', () => {
     expect((await satz(id)).employment_status).toBe('active');
   });
 
+  // E10 (entschieden 2026-09-08): das Office pflegt Stammdaten - woertlich die
+  // "Mitarbeiterorganisation" aus 4.3. Der Statuswechsel und die Privatangaben
+  // bleiben davon unberuehrt und werden weiter unten geprueft.
+  it('erlaubt office das Anlegen (E10)', async () => {
+    const id = await anlegen(users.office);
+    expect((await satz(id)).employment_status).toBe('active');
+  });
+
   it.each([
     ['therapist', users.therapist],
     ['team_lead', users.teamLead],
-    ['office', users.office],
     ['patient', users.patientMax],
   ])('verweigert %s das Anlegen', async (_rolle, userId) => {
     await expect(asUser(userId, ANLEGEN, anlageArgs())).rejects.toThrow(
@@ -201,7 +208,6 @@ describe('Mitarbeiterverwaltung: wer darf schreiben', () => {
   it.each([
     ['therapist', users.therapist],
     ['team_lead', users.teamLead],
-    ['office', users.office],
   ])('verweigert %s das Aendern, obwohl die Liste lesbar ist', async (_rolle, userId) => {
     // Der Rollenschnitt fuer das Schreiben ist enger als der fuers Lesen.
     const { rows } = await asUser(userId, 'select id from public.staff_directory where id = $1', [
@@ -221,6 +227,84 @@ describe('Mitarbeiterverwaltung: wer darf schreiben', () => {
   ])('verweigert %s den Statuswechsel', async (_rolle, userId) => {
     await expect(asUser(userId, STATUS, [STAFF.anna, 'inactive', false])).rejects.toThrow(
       /not allowed to manage staff/,
+    );
+  });
+
+  it('erlaubt office das Aendern der dienstlichen Angaben (E10)', async () => {
+    await asUserCommitted(
+      users.office,
+      AENDERN,
+      aenderArgs(STAFF.anna, {
+        vorname: 'Anna',
+        nachname: 'Beispiel',
+        dienstTelefon: '+49 7071 0000999',
+      }),
+    );
+    expect((await satz(STAFF.anna)).work_phone).toBe('+49 7071 0000999');
+  });
+
+  it('laesst office die Privatangaben unangetastet, statt sie zu leeren (ANN-024)', async () => {
+    // Das Formular des Office enthaelt die Privatfelder gar nicht; es schickt
+    // fuer sie null. Wuerde der Server das als "leeren" lesen, verloere jede
+    // Adressaenderung durch das Office die Privatanschrift.
+    const vorher = await unveraenderteEingabe(STAFF.anna);
+    expect(vorher.privatMail).not.toBeNull();
+
+    await asUserCommitted(
+      users.office,
+      AENDERN,
+      aenderArgs(STAFF.anna, { vorname: 'Anna', nachname: 'Beispiel', dienstTelefon: '+49 1' }),
+    );
+
+    const nachher = await unveraenderteEingabe(STAFF.anna);
+    expect(nachher.privatMail).toBe(vorher.privatMail);
+    expect(nachher.strasse).toBe(vorher.strasse);
+    expect(nachher.geburtstag).toBe(vorher.geburtstag);
+  });
+
+  it('weist office ab, wenn es Privatangaben doch mitschickt (ANN-024)', async () => {
+    await expect(
+      asUser(
+        users.office,
+        AENDERN,
+        aenderArgs(STAFF.anna, {
+          vorname: 'Anna',
+          nachname: 'Beispiel',
+          privatMail: 'neu@beispiel.invalid',
+        }),
+      ),
+    ).rejects.toThrow(/private_details_not_allowed/);
+
+    await expect(
+      asUser(users.office, ANLEGEN, anlageArgs({ strasse: 'Heimlichweg 1' })),
+    ).rejects.toThrow(/private_details_not_allowed/);
+  });
+
+  it('haelt den Lesepfad der Privatangaben fuer office weiterhin geschlossen (20)', async () => {
+    const { rows } = await asUser<{ private_email: string | null; street: string | null }>(
+      users.office,
+      'select private_email, street from public.staff_directory where id = $1',
+      [STAFF.anna],
+    );
+    expect(rows[0]?.private_email).toBeNull();
+    expect(rows[0]?.street).toBeNull();
+  });
+
+  it('verweigert office den Lesepfad der offenen Termine (E10)', async () => {
+    // Er gehoert zum Statuswechsel und damit zu owner - nicht zur
+    // Stammdatenpflege.
+    await expect(
+      asUser(users.office, 'select * from public.list_staff_future_appointments($1::uuid)', [
+        STAFF.anna,
+      ]),
+    ).rejects.toThrow(/not allowed to manage staff/);
+  });
+
+  it('kennt app.can_manage_staff() nicht mehr', async () => {
+    // Der Sammelname aus STAFF-001 ist bewusst weg: er fasste drei Bereiche
+    // zusammen, die E10 verschieden entschieden hat.
+    await expect(asPostgres('select app.can_manage_staff()')).rejects.toThrow(
+      /does not exist|existiert nicht/i,
     );
   });
 
@@ -419,7 +503,7 @@ describe('create_staff_member', () => {
   });
 
   it('schreibt bei einem abgewiesenen Aufruf keinen Auditeintrag', async () => {
-    await expect(asUser(users.office, ANLEGEN, anlageArgs())).rejects.toThrow();
+    await expect(asUser(users.therapist, ANLEGEN, anlageArgs())).rejects.toThrow();
     expect(await auditEintraege()).toEqual([]);
   });
 });

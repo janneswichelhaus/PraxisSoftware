@@ -8,6 +8,15 @@ export const userProfileSchema = z.object({
   organization_id: z.string(),
   person_id: z.string(),
   display_name: z.string(),
+  /**
+   * Ist der Zugang freigeschaltet (STAFF-003)?
+   *
+   * Ein gesperrter Zugang darf seine eigene Profilzeile weiterhin lesen -
+   * sonst koennte die Anwendung "gesperrt" nicht von "nie eingerichtet"
+   * unterscheiden und zeigte eine irrefuehrende Seite (13). Ausgeliefert wird
+   * damit nichts Geschuetztes: jede andere Policy laeuft fuer ihn ins Leere.
+   */
+  is_active: z.boolean(),
 });
 export type UserProfile = z.infer<typeof userProfileSchema>;
 
@@ -156,16 +165,49 @@ export function canManageWorkingHours(roles: readonly RoleKey[]): boolean {
 }
 
 /**
- * Rollen, die Mitarbeiterdatensaetze verwalten duerfen (STAFF-001).
+ * Rollen, die Mitarbeiterstammdaten anlegen und aendern duerfen (E10).
  *
- * Abgeleitet aus PROJECT_PRINCIPLES.md 4.1: "Mitarbeiter" und
- * "Personalprozesse" stehen dort ausdruecklich beim Praxisinhaber. Fuer Office
- * (4.3 "Mitarbeiterorganisation") und Teamleitung (4.5, ausdruecklich nur
- * MOEGLICHE Zusatzrechte) liegt keine Entscheidung vor; fuer schreibende
- * Vorgaenge gilt bis dahin 13. Steuert ausschliesslich die Darstellung -
- * verbindlich ist app.can_manage_staff() in der Datenbank.
+ * owner und office: 4.3 nennt fuer das Office woertlich die
+ * "Mitarbeiterorganisation". Steuert ausschliesslich die Darstellung -
+ * verbindlich ist app.can_manage_staff_master_data() in der Datenbank.
  */
-export function canManageStaff(roles: readonly RoleKey[]): boolean {
+const staffMasterDataRoles: RoleKey[] = ['owner', 'office'];
+
+export function canManageStaffMasterData(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => staffMasterDataRoles.includes(role));
+}
+
+/**
+ * Rollen, die die Privatangaben einer beschaeftigten Person schreiben duerfen.
+ *
+ * Deckungsgleich mit dem Leserecht aus 20: nur owner. Wer sie nicht lesen darf,
+ * bekaeme sie im Formular als leere Felder und wuerde sie beim Speichern
+ * loeschen - ein Schreibrecht ohne Leserecht waere hier nicht restriktiver,
+ * sondern gefaehrlich (ANN-024). Verbindlich ist
+ * app.can_manage_staff_private_details().
+ */
+export function canManageStaffPrivateDetails(roles: readonly RoleKey[]): boolean {
+  return roles.includes('owner');
+}
+
+/**
+ * Rollen, die den Beschaeftigungsstatus wechseln duerfen (E10).
+ *
+ * Nur owner: der Wechsel nimmt eine Person aus dem laufenden Einsatz und hat
+ * arbeitsrechtliche Wirkung. Verbindlich ist
+ * app.can_manage_staff_employment().
+ */
+export function canManageStaffEmployment(roles: readonly RoleKey[]): boolean {
+  return roles.includes('owner');
+}
+
+/**
+ * Rollen, die Zugaenge einladen, Rollen vergeben und Konten sperren duerfen.
+ *
+ * Nur owner: Berechtigungsvergabe ist eine Sicherheitsentscheidung nach
+ * ADR-004 (E10). Verbindlich ist app.can_manage_staff_accounts().
+ */
+export function canManageStaffAccounts(roles: readonly RoleKey[]): boolean {
   return roles.includes('owner');
 }
 

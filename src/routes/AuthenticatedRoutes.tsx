@@ -19,6 +19,7 @@ import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentS
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
+import { MeinKontoPage } from '@/features/account/MeinKontoPage';
 import { SchedulingPage } from '@/features/scheduling/SchedulingPage';
 import { StaffListPage } from '@/features/staff/StaffListPage';
 import { NewStaffMemberPage } from '@/features/staff/NewStaffMemberPage';
@@ -50,7 +51,7 @@ import {
 } from '@/features/billing/BillingPage';
 import {
   canManageAppointments,
-  canManageStaff,
+  canManageStaffMasterData,
   canReadPatientDirectory,
   canReadTreatmentNote,
   canWriteTreatmentNote,
@@ -87,8 +88,9 @@ export function AuthenticatedRoutes({
   const showAppointments = canManageAppointments(user.roles);
   const showOperations = isStaff(user.roles);
   // Die Mitarbeiterliste ist fuer alle Praxisrollen lesbar; Anlegen und
-  // Aendern prueft die Seite selbst und - verbindlich - der Server (STAFF-001).
-  const showStaffWrite = canManageStaff(user.roles);
+  // Aendern prueft die Seite selbst und - verbindlich - der Server (STAFF-001,
+  // seit E10 owner und office).
+  const showStaffWrite = canManageStaffMasterData(user.roles);
   const showDocumentation = canWriteTreatmentNote(user.roles);
   // Der Aenderungsverlauf ist ein Lesepfad: die Praxisleitung sieht ihn, ohne
   // selbst zu dokumentieren (ADR-016 Punkt 8, PROJECT_PRINCIPLES.md 4.1/4.2).
@@ -102,6 +104,9 @@ export function AuthenticatedRoutes({
           <Route path="/" element={<MyDayPage user={user} />} />
           <Route path="/bereiche" element={<BereichePage user={user} />} />
           <Route path="/vorschau/protokoll" element={<ProtokollPage />} />
+          {/* Das eigene Konto steht jeder angemeldeten Rolle offen: Kennwort,
+              zweiter Faktor und Sitzungen gehoeren der Person (STAFF-004). */}
+          <Route path="/mein-konto" element={<MeinKontoPage user={user} />} />
 
           {showDirectory ? (
             <>
@@ -207,10 +212,10 @@ export function AuthenticatedRoutes({
 
           {showStaffWrite ? (
             <>
-              <Route path="/praxis/team/neu" element={<NewStaffMemberPage />} />
+              <Route path="/praxis/team/neu" element={<NewStaffMemberPage user={user} />} />
               <Route
                 path="/praxis/team/:staffMemberId/bearbeiten"
-                element={<EditStaffMemberPage />}
+                element={<EditStaffMemberPage user={user} />}
               />
             </>
           ) : null}

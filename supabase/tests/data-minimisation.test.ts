@@ -139,7 +139,7 @@ describe('Dienstliche Erreichbarkeit', () => {
       users.office,
       'select work_email from public.staff_members order by work_email',
     );
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(5);
     expect(rows[0]?.work_email).toBe('anna.beispiel@praxis.invalid');
   });
 

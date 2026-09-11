@@ -2,8 +2,98 @@ import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { getSupabase } from '@/lib/supabase';
+import { fordereKennwortMailAn } from '@/features/account/api';
+
+/**
+ * Kennwort vergessen (STAFF-004a).
+ *
+ * Die Bestätigung ist immer dieselbe und sagt bewusst nicht, ob es zu dieser
+ * Adresse ein Konto gibt - sonst wäre das Formular ein Verzeichnis der
+ * Mitarbeitenden dieser Praxis. Aus demselben Grund wird ein Fehler des
+ * Anmeldedienstes hier nicht unterschieden: Auch „unbekannte Adresse" wäre
+ * eine Auskunft.
+ */
+function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse: string }) {
+  const [offen, setOffen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [gesendet, setGesendet] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  if (gesendet) {
+    return (
+      <Statusmeldung className="mt-6">
+        Falls für diese Adresse ein Zugang besteht, ist eine Mail zum Zurücksetzen unterwegs. Bitte
+        auch den Spam-Ordner ansehen.
+      </Statusmeldung>
+    );
+  }
+
+  if (!offen) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setEmail(voreingestellteAdresse);
+          setOffen(true);
+        }}
+        className="text-ink-muted hover:text-ink mt-4 inline-flex min-h-11 items-center self-start text-sm underline underline-offset-4"
+      >
+        Kennwort vergessen?
+      </button>
+    );
+  }
+
+  async function absenden(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending) return;
+    setPending(true);
+    try {
+      await fordereKennwortMailAn(email);
+    } catch {
+      // Bewusst ohne eigene Meldung - siehe oben.
+    } finally {
+      setPending(false);
+      setGesendet(true);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={(event) => void absenden(event)}
+      noValidate
+      aria-labelledby="kennwort-vergessen"
+      className="border-line mt-8 flex flex-col gap-3 border-t pt-6"
+    >
+      {/* Ohne eigene Ueberschrift liest sich der Abschnitt wie eine zweite
+          Zeile des Anmeldeformulars - zwei E-Mail-Felder untereinander, ohne
+          dass klar waere, wofuer das zweite da ist. */}
+      <h2 id="kennwort-vergessen" className="text-ink text-base font-semibold">
+        Kennwort vergessen
+      </h2>
+      <Field
+        label="E-Mail-Adresse des Zugangs"
+        hint="Wir schicken einen Link, mit dem ein neues Kennwort gesetzt wird."
+        type="email"
+        name="reset_email"
+        autoComplete="username"
+        required
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+      />
+      <div className="flex flex-wrap gap-3">
+        <Button type="submit" variant="secondary" disabled={pending || email.trim() === ''}>
+          {pending ? 'Wird gesendet …' : 'Link anfordern'}
+        </Button>
+        <Button type="button" variant="quiet" onClick={() => setOffen(false)}>
+          Abbrechen
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 /**
  * Anmeldung über Supabase Auth.
@@ -82,6 +172,8 @@ export function LoginPage() {
           {pending ? 'Anmeldung läuft …' : 'Anmelden'}
         </Button>
       </form>
+
+      <KennwortVergessen voreingestellteAdresse={email} />
 
       <p className="text-ink-subtle mt-8 text-xs leading-relaxed">
         Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte

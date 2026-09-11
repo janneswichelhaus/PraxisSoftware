@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 2.8 · Stand 2026-09-11 · **in Kraft**
+Version 2.9 · Stand 2026-09-11 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -45,20 +45,35 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop STAFF-EPIC-002 Konten: Einladung, Rollen, Passwort-Selbstbedienung
+/feature-loop LOE-EPIC-001 Löschung und Retention
 ```
 
-- **Danach, in dieser Reihenfolge:** `LOE-EPIC-001` Löschung und Retention ·
-  `CAL-EPIC-003a` Terminzustände · `CAL-EPIC-003b` Serie.
-- **Ersatz**, falls STAFF-EPIC-002 blockiert ist: `LOE-EPIC-001`.
-- **UX-EPIC-001 ist am 2026-09-11 fertig** (elf Stories, Branch
-  `claude/trusting-mccarthy-k4c3qb`). Die Abnahmeschritte stehen in
-  `docs/abnahme/etappe-1-kernprozess.md`; der Blick auf die laufende Anwendung
-  hinter der Anmeldung war in der Cloudumgebung nicht möglich und liegt
-  deshalb vollständig bei Jannes. Neu zu bestätigen: **ANN-020**
-  (Textbausteine ohne Patientenbezug) und **ANN-021** (Feldliste und
-  Vorhaltedauer des Tagesplans im Arbeitsspeicher). **ANN-018** ist nur für
-  Google Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
+- **Danach, in dieser Reihenfolge:** `CAL-EPIC-003a` Terminzustände ·
+  `CAL-EPIC-003b` Serie · `DAT-EPIC-001` Dateiablage.
+- **Ersatz**, falls LOE-EPIC-001 blockiert ist: `CAL-EPIC-003a` (setzt
+  ADR-018 voraus).
+- **UX-EPIC-001 ist am 2026-09-11 fertig und in `main`** (elf Stories, PR #18).
+  Die Abnahmeschritte stehen in `docs/abnahme/etappe-1-kernprozess.md`; der
+  Blick auf die laufende Anwendung hinter der Anmeldung war in der
+  Cloudumgebung nicht möglich und liegt deshalb vollständig bei Jannes. Die
+  Annahmen daraus sind bestätigt (siehe unten); **ANN-018** ist nur für Google
+  Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
+- **STAFF-EPIC-002 ist am 2026-09-11 fertig und von Jannes abgenommen**
+  (fünf Stories, PR #20). Die Abnahmeschritte stehen in
+  `docs/abnahme/etappe-g-betriebsreife.md`; sie brauchen den vollen
+  Supabase-Stack mit Mailfänger und sind am 2026-09-11 durchlaufen. Neu
+  zu bestätigen: **ANN-025** (kein Konto durch die Anwendung, hängt an OPS-001)
+  und **ANN-026** (Frist der Einladung, geht in das Löschkonzept von
+  LOE-EPIC-001 ein). **ANN-024, ANN-027 und ANN-028 hat Jannes am 2026-09-11
+  bestätigt**; als `Datenschutz` bleiben sie im Prüfpaket. **E10 und E11 sind
+  erledigt**, §4.3 und §4.5 der Prinzipien nach §21 nachgezogen (Version 0.6).
+- **MFA vertagt (Jannes, 2026-09-11).** Die **Pflicht** zum zweiten Faktor für
+  `owner` wird erst geplant, **wenn eine Domain für die Anwendung feststeht**
+  — also frühestens mit dem Frontend-Hosting (G5/OPS-002). Gebaut und
+  benutzbar ist sie bereits: einrichten, entfernen, Hinweis in „Mein Konto".
+  Erzwungen wird sie nicht, und **kein Datenpfad verlangt heute `aal2`**;
+  ANN-028 hält den Stand und den Weg dorthin fest. Damit ist der Punkt **kein
+  offener Entscheidungsbedarf mehr** — er kommt mit der Domain zurück.
 - **Zuschnitt geklärt (ADR-019 Fassung 2, MAP-001, 2026-09-08), mit UX-002
   umgesetzt:** der Handoff übermittelt nichts aus der Anwendung; er baut die
   URL nach ANN-018 (Adresse ohne Namen, Fahrradmodus) und ist nicht
@@ -310,7 +325,7 @@ Polster: zwei Stufe-2-Loops, die als erste entfallen, wenn Stufe 1 rutscht.
 | R7  | Scope wächst aus Ideenspeicher, Wettbewerbsvergleich und Plattform-Zielbild     | mittel   | mittel    | Story ohne Bezug zum Stufe-1-Kern          | Feature-Freeze M2; Ideen nur eintragen; Scope-Bremse aus `OPTIMIERUNG.md`; Stufe 3 erst nach M6    | beide         |
 | R8  | Parallele Branches erzeugen Merge-Arbeit                                        | mittel   | niedrig   | mehr als ein aktiver Feature-Branch        | Regel „ein Feature-Branch, Docs sofort mergen"                                                      | Claude        |
 | R9  | `pg_cron` oder andere Annahmen gelten beim Provider nicht                       | niedrig  | mittel    | OPS-001-Katalog                            | in OPS-001 prüfen; Fallback in ANN-007                                                              | Claude        |
-| R10 | Mobile Endgeräte ohne Richtlinie (Verlust, Sperre, MFA, Kartenverlauf)          | mittel   | hoch      | TOM ohne Abschnitt Endgeräte               | Endgeräte-Richtlinie in G14 (mit Google-Konto und Kartenverlauf); Sitzungen beenden in STAFF-EPIC-002 | beide         |
+| R10 | Mobile Endgeräte ohne Richtlinie (Verlust, Sperre, MFA, Kartenverlauf)          | mittel   | hoch      | TOM ohne Abschnitt Endgeräte               | Endgeräte-Richtlinie in G14 (mit Google-Konto und Kartenverlauf); „Alle Sitzungen beenden" **gebaut** (STAFF-004); MFA einrichtbar, Pflicht vertagt bis zur Domain (ANN-028) | beide         |
 | R11 | Eröffnung ohne Software, weil M4 um mehr als zwei Monate rutscht                | niedrig  | sehr hoch | M3 im März verfehlt                        | Abweichungsregel 3; Papierprozess aus E2 als Rückfall; Stufe-2-Fenster als Reserve                  | Jannes        |
 | R12 | **Eingetreten 2026-09-08, aufgelöst am selben Tag.** Kein AVV für die Google Maps Platform | eingetreten | niedrig | ADR-019 Fassung 1                        | Weg C statt Weg B: Anbieter mit AVV (PTV Developer als Kandidat, ADR-019 Fassung 2); Rest-Risiko R13 | Claude/Jannes |
 | R13 | PTV Developer scheitert am Vertrags-/§203-Gate (kein §203-Wortlaut gefunden, Retention unbekannt, Zweitnutzungsklausel in US-Terms) | mittel   | mittel    | ein Gate-Punkt aus Teil 5 des Prüfdokuments negativ | Adapter hinter `contract.ts` — Anbieterwechsel ohne UI-Umbau; zweite Wahl MapTiler (Karte) und HERE (Routing) mit eigener Prüfung; Vertragsdokumente früh laden | Claude/Jannes |
@@ -781,9 +796,10 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | MAP-001 Mapping-Architektur und Providerentscheidung    | fertig | 2026-09-08     | `f52e555`, `5d51d97`, Roadmap-Commit auf Branch `claude/mapping-architecture-provider-ujy45m` | —             |
 | UI-000 Fundament                                        | fertig | 2026-09-07     | `4a4440f`, `45e8222`, `df8a294`, `11a9977`, `afb5ba5`, `e6b4ab6`    |               |
 | Produktentscheidungen Terminfenster und Sprachdokumentation (Docs) | fertig | 2026-09-08 | Branch `claude/praxissoftware-product-decisions-1uk1d8`             | —             |
-| UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, PR #18 | |
+| UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, Merge PR #18 |               |
 | Marke Own Motion als Dateien und Regel (Docs)           | fertig | 2026-09-10     | `eb5c234`                                                           | —             |
-| MARKE-001 Marke in der Anwendung                        | fertig | 2026-09-11     | `577ecd6`, `fb5cee0`, `7486c95`, `7109595`, `8f576b2`, zusammengeführt auf Branch `claude/trusting-mccarthy-k4c3qb` |               |
+| MARKE-001 Marke in der Anwendung                        | fertig | 2026-09-11     | `577ecd6`, `fb5cee0`, `7486c95`, `7109595`, `8f576b2`, Merge PR #19 |               |
+| STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`, `06b758c`, `0d7bd3c`, `719faed`, `56b2706`, `4afaf97`, `23cfb35`, PR #20 | 2026-09-11    |
 
 ---
 
@@ -791,6 +807,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.9     | 2026-09-11 | **STAFF-EPIC-002 fertig** (fünf Stories): Rechteschnitt nach E10 — Stammdaten `owner` und `office`, Beschäftigungsstatus und Zugänge nur `owner`, Privatangaben folgen dem Leserecht (ANN-024); `PROJECT_PRINCIPLES.md` 0.6 zieht §4.3 und §4.5 nach §21 nach · Zugang einladen, annehmen, zurücknehmen: die Berechtigung entsteht in der Datenbank, das Konto beim Anmeldedienst, und ein Konto ohne offene Einladung bleibt zugriffslos (ANN-025, ANN-026) · Rollen ändern und Zugang sperren mit Aussperrschutz für die letzte aktive Inhaberin · Kennwort zurücksetzen über die Auth-Mails des Providers (B13) · Selbstbedienung „Mein Konto": Kennwort (ANN-027), zweiter Faktor als TOTP, alle Sitzungen beenden (R10) · MFA für `owner` eingerichtet und sichtbar, **nicht** erzwungen (ANN-028; Jannes hat am selben Tag entschieden, die Pflicht erst mit einer feststehenden Domain zu planen). **E10 und E11 erledigt. Nächster Loop: LOE-EPIC-001.** |
 | 2.8     | 2026-09-11 | **MARKE-001 — die Anwendung trägt die Marke Own Motion** (auf ausdrücklichen Auftrag, **nicht** aus der Roadmap): Favicon und App-Symbol über byte-gleiche Kopien in `public/marke/` (`src/marke.test.ts` hält die Gleichheit fest, `marke/` bleibt einzige Quelle); `--color-accent` auf die Hauptfarbe `#004429`, Hover auf das Tiefgrün `#042c1b` der Marke (ANN-022) — dunkler statt heller, weil `accent-hover` überwiegend Textfarbe ist; Wortmarke in Kopfzeile und Anmeldemaske, Seitentitel „Own Motion", der Organisationsname entfällt aus der Kopfzeile (ANN-023). Kontrastgate erweitert statt abgeschwächt. Abnahmeschritt MARKE-001 in `docs/abnahme/etappe-1-kernprozess.md`. Offen bleiben die drei Befunde aus `marke/README.md` (Favicon bei 16 px unlesbar, App-Symbole nur als PNG, C2PA-Metadaten) sowie Schrift und Radien. Beim Zusammenführen mit UX-EPIC-001 wurden die beiden Annahmen der Marke von ANN-020/021 auf **ANN-022/023** umnummeriert: Beide Zweige hatten parallel dieselben freien Nummern gegriffen. **Nächster Loop bleibt STAFF-EPIC-002.** |
 | 2.7     | 2026-09-11 | **UX-EPIC-001 fertig** (elf Stories): Tagesliste des Hausbesuchstags mit Anschrift, `tel:`-Link und Zugangshinweis · Navigations-Handoff an Google Maps (ANN-018 verankert, nur auf Aktion) · Folgetermin und Vorbelegung „Hausbesuch, ich, heute" · serverseitige Patientensuche von jeder Seite · Tap auf freie Zeit im Kalender · nächste Termine in der Akte · „Behandlung abschließen" in einem serverseitigen Vorgang · Textbausteine (ANN-020) · Textverlust-Schutz und Behebung des VER-003-Restpunkts aus ANN-019 · langer Druck am Finger und Rückgängig-Leiste · Tagesplan im Funkloch lesbar (ANN-021, beantwortet die offene Folgefrage aus ADR-001). **Nächster Loop: STAFF-EPIC-002.** |
 | 2.6     | 2026-09-08 | **Produktentscheidungen Terminfenster und Sprachdokumentation** (Docs, kein Code): `PROJECT_PRINCIPLES.md` 0.5 mit §8.1 (60-Minuten-Terminfenster einschließlich Dokumentation, 5-Minuten-Raster, Fahrzeit zusätzlich, Aufrunden auf den Rasterpunkt, Bestandstermine unverändert, serverseitige Durchsetzung) und §6.3 (Sprachdokumentation mit ausdrücklicher Übernahme); ADR-005/006/016 je Fassung 2; CAL-010 in CAL-EPIC-003b zu CAL-010a/CAL-010b präzisiert; VER-003-Restpunkt als konkrete Folgeaufgabe in UX-EPIC-001; E12 und E13 neu offen. **Reihenfolge unverändert — UX-EPIC-001 bleibt der nächste Loop.** |

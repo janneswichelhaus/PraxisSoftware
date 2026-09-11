@@ -11,7 +11,13 @@ import {
   formatLocalDate,
   formatLocalTimeRange,
 } from '@/features/appointments/api';
-import { canManageStaff, type CurrentUser } from '@/features/session/types';
+import {
+  canManageStaffAccounts,
+  canManageStaffEmployment,
+  canManageStaffMasterData,
+  type CurrentUser,
+} from '@/features/session/types';
+import { StaffAccountSection } from './StaffAccountSection';
 import {
   fetchStaffFutureAppointments,
   fetchStaffMember,
@@ -135,7 +141,11 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
 }
 
 function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser }) {
-  const darfVerwalten = canManageStaff(user.roles);
+  // Zwei getrennte Rechte seit E10: Stammdaten pflegt auch das Office, den
+  // Beschaeftigungsstatus wechselt nur die Praxisinhaberin.
+  const darfStammdaten = canManageStaffMasterData(user.roles);
+  const darfBeschaeftigung = canManageStaffEmployment(user.roles);
+  const darfZugang = canManageStaffAccounts(user.roles);
   const aktiv = staff.employment_status === 'active';
   const adresse = [staff.street, [staff.postal_code, staff.city].filter(Boolean).join(' ')]
     .filter(Boolean)
@@ -153,7 +163,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
         title={staffFullName(staff)}
         description={aktiv ? undefined : 'Nicht mehr im laufenden Einsatz'}
         actions={
-          darfVerwalten ? (
+          darfStammdaten ? (
             <Link
               to={`/praxis/team/${staff.id}/bearbeiten`}
               className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
@@ -184,16 +194,19 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
         </Section>
       ) : null}
 
-      {darfVerwalten ? (
+      {darfZugang ? <StaffAccountSection staff={staff} /> : null}
+
+      {darfBeschaeftigung ? (
         <div className="mt-5 flex">
           <StatusAktion staff={staff} timeZone={user.organizationTimeZone} />
         </div>
       ) : null}
 
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
-        Mitarbeiterdatensatz und Zugang zur Anwendung sind getrennt. Ein Statuswechsel hier sperrt
-        kein Benutzerkonto und vergibt keine Rollen. Mitarbeiterdatensätze werden nicht gelöscht,
-        damit vergangene Termine und Zuordnungen nachvollziehbar bleiben.
+        Mitarbeiterdatensatz und Zugang zur Anwendung sind getrennt. Ein Wechsel des
+        Beschäftigungsstatus sperrt kein Benutzerkonto; dafür gibt es den eigenen Vorgang im
+        Abschnitt „Zugang". Mitarbeiterdatensätze werden nicht gelöscht, damit vergangene Termine
+        und Zuordnungen nachvollziehbar bleiben.
       </p>
     </>
   );

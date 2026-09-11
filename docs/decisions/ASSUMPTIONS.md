@@ -1,12 +1,24 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-11 (Marke Own Motion: ANN-022 und ANN-023 neu —
-beim Zusammenführen aus ANN-020/021 umnummeriert, weil zwei Zweige parallel
-dieselben freien Nummern gegriffen hatten. Zuvor am selben Tag: Jannes hat die
-Annahmen aus UX-EPIC-001 bestätigt — ANN-018, ANN-020 und ANN-021 stehen auf
-`entschieden (Jannes)`. Alle drei sind `Datenschutz` und bleiben deshalb im
-Prüfpaket — die Bestätigung durch den Projektinhaber ersetzt die
-Datenschutzprüfung nicht.)
+Zuletzt aktualisiert: 2026-09-11. Drei Dinge am selben Tag:
+
+- **Jannes hat die Annahmen aus UX-EPIC-001 bestätigt:** ANN-018, ANN-020 und
+  ANN-021 stehen auf `entschieden (Jannes)`. Alle drei sind `Datenschutz` und
+  bleiben deshalb im Prüfpaket — die Bestätigung durch den Projektinhaber
+  ersetzt die Datenschutzprüfung nicht.
+- **Marke Own Motion:** ANN-022 und ANN-023 neu — beim Zusammenführen aus
+  ANN-020/021 umnummeriert, weil zwei Zweige parallel dieselben freien Nummern
+  gegriffen hatten.
+- **STAFF-EPIC-002 bringt ANN-024 bis ANN-028 neu:** Privatangaben
+  Beschäftigter, keine Kontoanlage durch die Anwendung, Frist der Einladung,
+  Mindestlänge des Kennworts, MFA für `owner` ohne Anmeldesperre. **Auch diese
+  fünf sind beim Zusammenführen verschoben worden** (vorher ANN-022 bis
+  ANN-026) — aus demselben Grund. **Drei davon hat Jannes am selben Tag
+  entschieden:** ANN-024 (dienstliche statt privater Anschrift), ANN-027
+  (zwölf Zeichen ohne Zeichenklassen) und ANN-028 (MFA-Pflicht erst mit einer
+  feststehenden Domain). Alle drei sind `Datenschutz` und bleiben deshalb im
+  Prüfpaket. **Offen bleiben ANN-025 und ANN-026** — beide hängen an OPS-001
+  beziehungsweise am Löschkonzept.
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -1236,6 +1248,7 @@ bleibt: `gcTime` auf 0 und die Kennzeichnung entfernen — Aufwand `klein`, mit
 dem Verlust der Anschrift im Funkloch als bewusster Folge. Verlangt der
 Betrieb einen echten Offline-Modus: eigenes Epic nach ADR-001, ersetzt
 ADR-015 Punkt 16 und bringt die Endgeräteanforderungen mit — Aufwand `groß`.
+
 ### ANN-022 — Tiefgrün der Marke als Hover-Zustand des Akzents
 
 | | |
@@ -1330,3 +1343,265 @@ als ruhige Zeile neben der Marke; der Schutzraum der Marke gibt den Abstand vor
 Kämen mehrere Praxen dazu, wäre die Kopfzeile ohnehin neu zu denken; das ist
 dann Teil des eigenen Vorhabens aus ADR-003 — Aufwand `mittel` und nicht durch
 diese Annahme vorweggenommen.
+
+---
+
+### ANN-024 — Privatangaben Beschäftigter: Schreibrecht folgt dem Leserecht
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-002a (Umsetzung von E10); `PROJECT_PRINCIPLES.md` §20, §4.3, §4.7 |
+| Status | **entschieden (Jannes) 2026-09-11** — die Auslegung wie vorgeschlagen bestätigt |
+| Wiedervorlage | Datenschutzprüfung im Rahmen der TOM (G14). Kategorie `Datenschutz`: Die Bestätigung durch den Projektinhaber ersetzt sie nicht, der Eintrag bleibt im Prüfpaket |
+
+**Annahme.** E10 gibt dem Office die **Stammdaten** einer beschäftigten Person
+und nennt dabei „Anschrift" und „Telefon". Das wird als **dienstliche**
+Erreichbarkeit gelesen: Name, dienstliche E-Mail, Diensttelefon,
+Hauptstandort. Die **Privatangaben** in `staff_private_details` (Geburtsdatum,
+private E-Mail, Privattelefon, Privatanschrift) bleiben bei `owner` — nicht
+nur beim Lesen, wie bisher, sondern auch beim Schreiben. Schreibrecht und
+Leserecht sind hier deckungsgleich.
+
+**Begründung.** §20 beschränkt das **Lesen** dieser Angaben seit
+`20260828110000` auf `owner` und die betroffene Person selbst; §4.7 verbietet,
+geschützte Inhalte auszuliefern und erst im Client auszublenden. Ein
+Schreibrecht ohne Leserecht wäre deshalb nicht die restriktivere, sondern die
+**gefährlichere** Variante: Das Formular des Office bekäme die Privatfelder als
+`null` und würde sie beim Speichern löschen — stiller Datenverlust bei jeder
+Adressänderung. Die Alternative, dem Office auch das Leserecht zu geben, wäre
+eine Ausweitung des Zugriffs auf Beschäftigtendaten und damit genau das, was §20
+und §16 nicht wollen. E10 nennt als Zweck ausdrücklich den Betrieb
+(Adressänderung ohne Nadelöhr); die dienstliche Erreichbarkeit deckt diesen
+Zweck, und die Privatanschrift wird für Terminplanung und Vertretung nicht
+gebraucht (Datenminimierung, Art. 5 Abs. 1 lit. c DSGVO).
+**Beantwortet am 2026-09-11 durch Jannes:** „Anschrift" und „Telefon" aus E10
+sind die **dienstlichen** Angaben. Die Privatanschrift bleibt beim `owner`,
+Schreibrecht und Leserecht bleiben deckungsgleich. Damit ist die einzige
+Unsicherheit dieses Eintrags ausgeräumt; offen ist nur noch, ob die
+Datenschutzprüfung die Aufteilung im Rahmen der TOM so bestätigt.
+
+**Verankerung.** `app.can_manage_staff_private_details()` in
+`supabase/migrations/20260911100000_staff_permission_split.sql` — genau ein
+Ausdruck; der Kopfkommentar der Migration trägt die Kennung. In der Oberfläche
+`canManageStaffPrivateDetails` in `src/features/session/types.ts` (steuert nur
+die Darstellung). Tests: `supabase/tests/staff-management.test.ts`, Abschnitt
+„Mitarbeiterverwaltung: wer darf schreiben"; `EditStaffMemberPage.test.tsx`,
+Abschnitt „E10, ANN-024".
+
+**Änderungspfad.** Office soll auch die Privatangaben schreiben **und** lesen:
+`app.can_manage_staff_private_details()` und die Lese-Policy auf
+`staff_private_details` gemeinsam auf `owner, office` erweitern, Hinweistext im
+Formular anpassen — Aufwand `klein`, aber mit Änderung an §20, also erst nach
+ausdrücklicher Entscheidung. Umgekehrt (Office verliert auch die dienstlichen
+Angaben): `app.can_manage_staff_master_data()` auf `owner` zurück — Aufwand
+`klein`.
+
+---
+
+### ANN-025 — Die Anwendung legt keine Authentifizierungskonten an
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-002b; B13 (entschieden 2026-09-06); ADR-002, ADR-015; `PROJECT_PRINCIPLES.md` §3.4, §4.2, §13 |
+| Status | **offen**, getroffen 2026-09-11 |
+| Wiedervorlage | **OPS-001** (Providerprüfung, Auth-Mails) — dort entscheidet sich, ob eine Edge Function mit `service_role` den Versand übernimmt; Datenschutzprüfung |
+
+**Annahme.** Die Praxisplattform erzeugt **kein** Konto beim Anmeldedienst. Sie
+verwaltet ausschließlich die **Berechtigung**: `invite_staff_account` legt die
+Einladung an, `claim_staff_invitation` bindet ein vorhandenes Konto daran. Das
+**Konto** entsteht einmalig je Person auf der Oberfläche des Anmeldedienstes
+(Supabase Studio → Authentication → Invite). Die Anwendung fordert die
+Anmeldemail nur für ein **bestehendes** Konto an
+(`signInWithOtp` mit `shouldCreateUser: false`); gibt es noch keines, sagt sie
+das und lässt die Einladung offen stehen.
+
+**Begründung.** `supabase/config.toml` setzt `[auth].enable_signup = false` —
+keine Selbstregistrierung, verankert in §4.2 („ein individuelles Benutzerkonto
+ist Pflicht, aber nicht selbst vergeben"). Damit lehnt der Anmeldedienst
+`signInWithOtp` mit `shouldCreateUser: true` ab. Die drei denkbaren Auswege
+scheiden aus:
+
+- **Selbstregistrierung einschalten** hieße, eine bewusst gesetzte
+  Sicherheitsmaßnahme aufzuweichen — nach §15.1 ein Hard Stop, kein
+  Ermessensspielraum.
+- **Admin-API des Providers** (`inviteUserByEmail`) verlangt den
+  `service_role`-Schlüssel. Der gehört nicht in den Browser (ADR-002, §13) und
+  bräuchte eine serverseitige Funktion; `[edge_runtime] enabled = false`, und
+  ADR-015 hat Edge Functions für Gesundheitsdaten nicht freigegeben.
+- **Eigener Maildienst** wäre ein zweiter Dienstleister, durch B13
+  ausgeschlossen.
+
+Bleibt der manuelle Handgriff beim Provider. Er kostet je neuem Zugang eine
+Minute und ist die restriktivere Seite (§16): Über diese Anwendung kann
+**niemand** ein Konto erzeugen, auch kein Fremder.
+**Verhältnis zu B13.** B13 sagt, die Plattform versende die Einladung über die
+Auth-Mails des Providers. Das ist heute nur für den Teil einlösbar, der ein
+Konto voraussetzt (Anmeldemail, Kennwort zurücksetzen); die **erste**
+Kontoanlage bleibt außen vor. §4.2 steht im Rang über einer
+Spur-B-Festlegung, deshalb gilt die engere Auslegung — gemeldet nach §21. Die
+Roadmap hatte den Punkt vorgezeichnet: STAFF-004 sollte laufen, „sobald
+OPS-001 die Auth-Mails einschließt", und OPS-001 ist offen.
+**Unsicher:** ob die Praxis den manuellen Schritt auf Dauer akzeptiert. Bei
+einer Handvoll Mitarbeitenden bis zur Eröffnung ist er unauffällig; bei
+Personalwechseln im Betrieb wird er lästig.
+
+**Verankerung.** `sendeZugangsMail` in `src/features/staff/konto-api.ts` —
+`shouldCreateUser: false` ist die eine Zeile, und der Kopfkommentar des Moduls
+trägt die Kennung. Die tragende Eigenschaft dahinter steht in
+`supabase/migrations/20260911110000_staff_account_invitations.sql`
+(`claim_staff_invitation`): Ein Konto ohne passende offene Einladung bleibt
+zugriffslos. Tests: `supabase/tests/staff-accounts.test.ts`, „laesst ein Konto
+ohne passende Einladung vollstaendig zugriffslos";
+`src/features/staff/StaffAccountSection.test.tsx`, Abschnitt „Zustellung der
+Anmeldemail".
+
+**Änderungspfad.** Sobald ADR-015 Edge Functions freigibt und OPS-001 die
+Auth-Mails einschließt: eine Edge Function mit dem `service_role`-Schlüssel als
+Secret, aufgerufen aus `sendeZugangsMail`. **Datenmodell, Rollen, RPCs und der
+Annahmeschritt bleiben unverändert** — es entfällt nur der manuelle Handgriff.
+Aufwand `mittel`. Umgekehrt ist nichts zurückzunehmen: Der heutige Stand ist
+bereits die restriktive Variante.
+
+### ANN-026 — Datenklasse und Frist der Einladung
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-002b; ADR-008 (Retention Schedule), ADR-010 |
+| Status | **offen**, getroffen 2026-09-11 |
+| Wiedervorlage | Datenschutzprüfung; LOE-001 nimmt die Klasse in den Retention Schedule auf |
+
+**Annahme.** Eine Einladung (`public.staff_account_invitations`) ist ein
+**Zugangs- und Authentifizierungsdatum**, kein Gesundheitsdatum und kein
+Beschäftigtendatum im Sinne von §20. Frist: **12 Monate nach Abschluss des
+Vorgangs** (angenommen, zurückgenommen oder abgelaufen) — dieselbe Frist wie
+„Normale Authentifizierungs- und Securitylogs" in ADR-008. Die **Gültigkeit**
+einer offenen Einladung beträgt **14 Tage**; sie läuft ab, statt aufgeräumt zu
+werden: Eine abgelaufene Einladung wird bei der Annahme abgewiesen und in der
+Oberfläche als abgelaufen gezeigt. Kein Hintergrundjob, kein Zustand, der ohne
+Beobachtung kippt (ANN-007 setzt `pg_cron` nicht voraus).
+
+**Begründung.** Der Datensatz enthält eine E-Mail-Adresse, eine Rollenliste und
+Zeitstempel — Kontaktdatum und Berechtigungsentscheidung, kein Inhalt über eine
+Person. Er ist zugleich der **Nachweis**, auf welcher Grundlage ein Zugang
+entstanden ist; ADR-010 Punkt 2 führt „Änderungen von Rollen und
+Berechtigungen" ausdrücklich als auditpflichtig, und ein Nachweis, der früher
+verschwindet als das Auditlog, wäre wertlos. Deshalb wird eine Einladung nie
+gelöscht, sondern abgeschlossen. 14 Tage sind lang genug für Urlaub und
+Krankheit und kurz genug, dass eine vergessene Einladung nicht dauerhaft
+offensteht.
+**Unsicher:** ob die Prüfung 12 Monate für den Nachweis als ausreichend
+ansieht oder die drei Jahre des Auditlogs verlangt — dann wäre die Frist eine
+andere, das Modell aber unverändert.
+
+**Verankerung.** `COMMENT ON TABLE public.staff_account_invitations` und die
+Frist `now() + interval '14 days'` in `invite_staff_account`, beides in
+`supabase/migrations/20260911110000_staff_account_invitations.sql` (der
+Kopfkommentar trägt die Kennung). Tests in
+`supabase/tests/staff-accounts.test.ts`, „weist eine abgelaufene Einladung ab".
+
+**Änderungspfad.** Andere Gültigkeit: ein Intervall — Aufwand `klein`. Andere
+Aufbewahrung: eine Zeile im Retention Schedule von LOE-001 — Aufwand `klein`,
+solange LOE-EPIC-001 die Klasse ohnehin aufnimmt.
+
+---
+
+### ANN-027 — Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-004a; ADR-010; `PROJECT_PRINCIPLES.md` §3.4, §16 |
+| Status | **entschieden (Jannes) 2026-09-11** — die zwölf Zeichen ohne Zeichenklassen wie vorgeschlagen bestätigt |
+| Wiedervorlage | Datenschutzprüfung im Rahmen der TOM (G14); OPS-001 (Einstellung beim Provider). Kategorie `Datenschutz`: Die Bestätigung durch den Projektinhaber ersetzt die Prüfung nicht |
+
+**Annahme.** Ein Kennwort für die Praxisplattform braucht **mindestens 12
+Zeichen**. Keine erzwungenen Zeichenklassen (Großbuchstabe, Ziffer,
+Sonderzeichen), **kein** turnusmäßiger Wechsel, keine Sperre nach
+Fehlversuchen über das hinaus, was der Anmeldedienst ohnehin tut.
+
+**Begründung.** Das BSI hat die Empfehlung zum regelmäßigen Kennwortwechsel
+2020 aus dem IT-Grundschutz gestrichen, und das NIST rät in SP 800-63B
+ausdrücklich von erzwungener Komplexität und periodischem Wechsel ab: Beides
+führt zu vorhersehbaren Mustern („Sommer2026!") und zu aufgeschriebenen
+Kennwörtern. Länge ist der Faktor, der tatsächlich trägt; 12 Zeichen sind der
+Wert, den beide Quellen als unteres Ende für Konten ohne zweiten Faktor
+nennen. Der Zugang zu Gesundheitsdaten rechtfertigt eher mehr als weniger —
+gegen eine höhere Zahl spricht, dass sie auf dem Telefon am Hausbesuch
+eingetippt werden muss (§16: die leichter umkehrbare Option).
+**Unsicher:** ob die Datenschutzprüfung im Rahmen der TOM eine höhere Zahl
+oder Zeichenklassen verlangt, und ob der Anmeldedienst die Regel serverseitig
+in derselben Höhe durchsetzen lässt — die Prüfung im Formular ist Komfort,
+verbindlich ist die Einstellung beim Provider (OPS-001).
+
+**Verankerung.** `KENNWORT_MINDESTLAENGE` in `src/features/account/api.ts` —
+eine Zahl, die die Kennung im Kommentar trägt; `kennwortProblem` daneben ist
+die einzige Prüfung. Tests in `src/features/account/MeinKontoPage.test.tsx`,
+„verlangt die Mindestlänge".
+
+**Änderungspfad.** Andere Länge: eine Zahl — Aufwand `klein`; zusätzlich die
+Einstellung beim Provider nachziehen. Zeichenklassen oder Wechselzwang: eine
+Regel in `kennwortProblem` und eine Provider-Einstellung — Aufwand `klein`,
+inhaltlich aber gegen die oben genannten Quellen, deshalb nur auf
+ausdrückliches Verlangen der Prüfung.
+
+---
+
+### ANN-028 — MFA für `owner`: eingerichtet und sichtbar, nicht erzwungen
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-004b; ADR-010 Punkt 10 und Punkt 9; ADR-012 (Bus-Faktor 1) |
+| Status | **entschieden (Jannes) 2026-09-11** — die Durchsetzung wird bewusst später geplant |
+| Wiedervorlage | **Jannes, sobald eine Domain für die Anwendung feststeht.** Vorher wird die MFA-Pflicht nicht geplant und nicht eingeschaltet (Entscheidung vom 2026-09-11). Die Datenschutzprüfung sieht den Punkt unabhängig davon. |
+
+**Annahme.** Der zweite Faktor (TOTP) ist **einrichtbar und sichtbar**, aber
+die Anmeldung wird **nicht** darauf festgelegt: Kein Datenpfad verlangt heute
+`aal2`. Ein `owner`-Zugang ohne zweiten Faktor sieht in „Mein Konto" einen
+Warnhinweis; sperren tut ihn nichts.
+
+**Begründung.** ADR-010 Punkt 10 verlangt MFA für **privilegierten
+Produktionszugriff** — Datenbank, Infrastruktur —, nicht ausdrücklich für die
+Alltags-Praxisrolle `owner`; Punkt 11 hält beide Domänen getrennt. Ein Zwang
+für die Praxisrolle wäre also eine Verschärfung über den ADR hinaus, und sie
+hätte heute eine gefährliche Nebenwirkung: Es gibt genau **einen**
+`owner`-Zugang (Bus-Faktor 1, ADR-012), und er hat keinen zweiten Faktor.
+Würde die Anmeldung ihn verlangen, wäre Jannes im selben Moment ausgesperrt —
+und der Weg zurück wäre ein privilegierter Produktionszugriff, den ADR-010
+Punkt 9 im Normalbetrieb ausschließt. Die Reihenfolge muss deshalb sein: erst
+einrichten, dann erzwingen. Bis dahin ist der Warnhinweis die ehrlichste
+Auskunft.
+**Unsicher:** ob die Datenschutzprüfung MFA für Zugänge mit Vollzugriff auf
+Gesundheitsdaten als TOM verlangt. Falls ja, ist das kein Widerspruch,
+sondern der geplante zweite Schritt.
+
+**Verankerung.** `app.has_strong_authentication()` in
+`supabase/migrations/20260911140000_account_security.sql` — der eine Ausdruck,
+an dem eine Durchsetzung hinge; der Kopfkommentar trägt die Kennung. Dass
+heute **nichts** daran hängt, hält der Test „setzt heute nichts durch" in
+`supabase/tests/staff-accounts.test.ts` fest — eine spätere Durchsetzung ist
+damit zwingend eine bewusste Änderung. Der Hinweis in der Oberfläche:
+`ZweiterFaktor` in `src/features/account/MeinKontoPage.tsx`.
+
+**Änderungspfad.** Durchsetzung einschalten, sobald mindestens zwei
+`owner`-Zugänge einen bestätigten Faktor haben: `app.has_strong_authentication()`
+in die Policies beziehungsweise RPCs der Zugangsverwaltung aufnehmen und den
+genannten Test umdrehen — Aufwand `klein`. Vorher nicht: Aufwand der Rücknahme
+wäre ein privilegierter Produktionszugriff, also `groß` im Sinne der
+Hard-Stop-Liste.
+
+**Ergänzung vom 2026-09-11 (Jannes).** Die Durchsetzung wird **erst geplant,
+wenn eine Domain für die Anwendung feststeht**. Damit bleibt die Annahme in
+ihrem heutigen Zustand bestehen — einrichtbar und sichtbar, nicht erzwungen —
+und wird nicht vor M3 wieder aufgerufen. Das ist sachlich schlüssig: Der
+zweite Faktor hängt an der Anmeldung, und die steht erst mit dem
+Frontend-Hosting fest (Roadmap G5, OPS-002); ein TOTP-Eintrag in der
+Authenticator-App trägt zudem die Kennung der Anmelde-URL, die sich bei einem
+Domainwechsel ändert. Bis dahin gilt: Der Hinweis in „Mein Konto" bleibt
+stehen, die Einrichtung ist freiwillig möglich, und **kein Datenpfad verlangt
+`aal2`.** Wird die Pflicht später eingeschaltet, ist die Reihenfolge
+unverändert: erst müssen mindestens zwei `owner`-Zugänge einen bestätigten
+Faktor haben, sonst ist es eine Aussperrung.

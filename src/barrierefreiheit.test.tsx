@@ -5,6 +5,8 @@ import type * as PatientsApi from '@/features/patients/api';
 import type * as PrescriptionsApi from '@/features/prescriptions/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as Bausteine from '@/features/documentation/textbausteine';
+import type * as KontoApi from '@/features/staff/konto-api';
+import type * as AccountApi from '@/features/account/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from './barrierefreiheit';
 
@@ -51,6 +53,23 @@ vi.mock('@/features/documentation/textbausteine', async (importOriginal) => ({
         editable: false,
       },
     ]),
+}));
+
+vi.mock('@/features/staff/konto-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof KontoApi>()),
+  fetchStaffAccount: () =>
+    Promise.resolve({
+      staff_member_id: 's1',
+      user_id: null,
+      account_active: null,
+      role_keys: null,
+    }),
+  fetchStaffInvitations: () => Promise.resolve([]),
+}));
+
+vi.mock('@/features/account/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof AccountApi>()),
+  ladeMfaFaktoren: () => Promise.resolve([]),
 }));
 
 const { PatientMasterDataFields } = await import('@/features/patients/PatientMasterDataFields');
@@ -283,6 +302,50 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
       </main>,
     );
     await screen.findByText('Textbausteine:');
+    await pruefeBarrierefreiheit(container);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zugaenge und eigenes Konto (STAFF-EPIC-002)
+//
+// Beide Seiten bestehen fast nur aus Formularen mit Kontrollkaestchen - genau
+// das, was axe zuverlaessig prueft. Die Kontrollkaestchen sind dazu der einzige
+// neue Baustein dieses Epics.
+// ---------------------------------------------------------------------------
+const { StaffAccountSection } = await import('@/features/staff/StaffAccountSection');
+const { MeinKontoPage } = await import('@/features/account/MeinKontoPage');
+
+describe('Barrierefreiheit der Zugangsverwaltung (STAFF-EPIC-002)', () => {
+  it('haelt das Einladungsformular mit Rollenwahl sauber', async () => {
+    const { container } = renderWithProviders(
+      <StaffAccountSection
+        staff={{
+          id: 's1',
+          person_id: 'p1',
+          given_name: 'Nina',
+          family_name: 'Neu',
+          employment_status: 'active',
+          work_email: 'nina.neu@praxis.invalid',
+          work_phone: null,
+          primary_location_id: null,
+          primary_location_name: null,
+          date_of_birth: null,
+          private_email: null,
+          private_phone: null,
+          street: null,
+          postal_code: null,
+          city: null,
+        }}
+      />,
+    );
+    await screen.findByRole('button', { name: 'Zugang einladen' });
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('haelt das eigene Konto mit Kennwortfeldern und Rueckfragen sauber', async () => {
+    const { container } = renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
+    await screen.findByRole('button', { name: 'Zweiten Faktor einrichten' });
     await pruefeBarrierefreiheit(container);
   });
 });
