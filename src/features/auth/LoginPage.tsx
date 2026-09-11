@@ -63,8 +63,15 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
     <form
       onSubmit={(event) => void absenden(event)}
       noValidate
-      className="mt-6 flex flex-col gap-3"
+      aria-labelledby="kennwort-vergessen"
+      className="border-line mt-8 flex flex-col gap-3 border-t pt-6"
     >
+      {/* Ohne eigene Ueberschrift liest sich der Abschnitt wie eine zweite
+          Zeile des Anmeldeformulars - zwei E-Mail-Felder untereinander, ohne
+          dass klar waere, wofuer das zweite da ist. */}
+      <h2 id="kennwort-vergessen" className="text-ink text-base font-semibold">
+        Kennwort vergessen
+      </h2>
       <Field
         label="E-Mail-Adresse des Zugangs"
         hint="Wir schicken einen Link, mit dem ein neues Kennwort gesetzt wird."

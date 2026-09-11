@@ -75,7 +75,9 @@ describe('RLS: Personen und Mitarbeiter', () => {
       users.therapist,
       'select count(*)::text as n from public.persons',
     );
-    expect(rows[0]?.n).toBe('7');
+    // Vier Mitarbeitende mit Zugang, Nina Neu ohne Zugang (STAFF-002b), zwei
+    // Patient:innen mit Konto und Petra Platzhalter ohne.
+    expect(rows[0]?.n).toBe('8');
   });
 
   it('zeigt einem Patienten ausschliesslich die eigene Person', async () => {
@@ -93,7 +95,8 @@ describe('RLS: Personen und Mitarbeiter', () => {
 
   it('zeigt Praxisrollen die Mitarbeiterdatensaetze der Organisation', async () => {
     const { rows } = await asUser(users.office, 'select id from public.staff_members');
-    expect(rows).toHaveLength(4);
+    // Vier mit Zugang plus Nina Neu ohne Zugang (STAFF-002b).
+    expect(rows).toHaveLength(5);
   });
 });
 

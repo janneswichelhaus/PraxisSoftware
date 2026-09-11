@@ -142,8 +142,8 @@ Feature.
 | E7    | CI-Gates, Branch Protection                                  | entschieden 2026-08-28                                        | [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md); Freigabeprozess Roadmap G5                         |
 | E8    | Dateiablage                                                  | **in Arbeit: ADR-017**, beauftragt 2026-09-05                 | Roadmap G1, Sep 2026                                                                                          |
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
-| E10   | Wer schreibt Mitarbeiterdaten                                | **entschieden 2026-09-08** durch Jannes                       | unten; vor STAFF-EPIC-002; bis dahin `owner`                                                                  |
-| E11   | Wer gilt als behandelnde Person                              | erledigt sich mit STAFF-EPIC-002 (Konten in der Anwendung, entschieden 2026-09-05) | unten                                                                                    |
+| E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-022)          |
+| E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | unten                                                                                    |
 | E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1); vier Anschlussfragen **offen**    | unten; `PROJECT_PRINCIPLES.md` §8.1; vor CAL-010a/CAL-010b (Roadmap CAL-EPIC-003b)                  |
 | E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
 
@@ -979,9 +979,17 @@ Zweifel blockieren"): Schreiben nur `owner`, Lesen für alle Praxisrollen.
   im Zweifel restriktiver, und später öffnen ist billig.
 
 Kein Datenschutz- oder Rechtspunkt, sondern Praxisprozess — damit **entschieden**,
-nicht `vorläufig entschieden`. Umsetzung in STAFF-EPIC-002; bis dahin bleibt es
-bei `owner`-only. **§4.3 und §4.5 der Prinzipien werden mit STAFF-EPIC-002 nach
-§21 nachgezogen**, wenn die Aufteilung im Code steht und getestet ist.
+nicht `vorläufig entschieden`.
+
+**Erledigt am 2026-09-11 (STAFF-002a).** Die Dreiteilung steht als
+`app.can_manage_staff_master_data()`, `app.can_manage_staff_employment()` und
+`app.can_manage_staff_accounts()` im Code; die Sammelfunktion
+`app.can_manage_staff()` ist entfallen. §4.3 und §4.5 der Prinzipien sind nach
+§21 nachgezogen (Version 0.6). **Eine Abgrenzung war zu treffen:** „Anschrift"
+und „Telefon" sind als **dienstliche** Angaben umgesetzt; die Privatangaben
+nach §20 bleiben bei `owner`, weil ein Schreibrecht ohne Leserecht die
+gespeicherten Werte beim Speichern gelöscht hätte (ANN-022, von Jannes zu
+bestätigen).
 
 **Rücknahme:** `klein` — je Bereich eine Policy-Funktion.
 
@@ -1006,6 +1014,13 @@ anlegt, lädt in derselben Oberfläche den Zugang ein und vergibt die Rolle. Die
 Kopplung an den Zugang bleibt damit bewusst bestehen — ein Konto ist nach §4.2
 ohnehin Pflicht. Sollte sich das im Praxisbetrieb als hinderlich erweisen
 (Vertretung ohne Konto), wird der Punkt wieder geöffnet.
+
+**Erledigt am 2026-09-11 (STAFF-002b).** Der Zugang wird am
+Mitarbeiterdatensatz eingeladen (`invite_staff_account`), die Rollen entstehen
+bei der Annahme (`claim_staff_invitation`). Eine neu angelegte Therapeutin ist
+unmittelbar nach der Annahme für Termine zuordenbar — dafür gibt es einen Test
+(`supabase/tests/staff-accounts.test.ts`, „macht die Person damit fuer Termine
+zuordenbar"). Die Kopplung an den Zugang bleibt wie beschrieben bestehen.
 
 ### E12 — Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 2.7 · Stand 2026-09-11 · **in Kraft**
+Version 2.8 · Stand 2026-09-11 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -45,12 +45,13 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop STAFF-EPIC-002 Konten: Einladung, Rollen, Passwort-Selbstbedienung
+/feature-loop LOE-EPIC-001 Löschung und Retention
 ```
 
-- **Danach, in dieser Reihenfolge:** `LOE-EPIC-001` Löschung und Retention ·
-  `CAL-EPIC-003a` Terminzustände · `CAL-EPIC-003b` Serie.
-- **Ersatz**, falls STAFF-EPIC-002 blockiert ist: `LOE-EPIC-001`.
+- **Danach, in dieser Reihenfolge:** `CAL-EPIC-003a` Terminzustände ·
+  `CAL-EPIC-003b` Serie · `DAT-EPIC-001` Dateiablage.
+- **Ersatz**, falls LOE-EPIC-001 blockiert ist: `CAL-EPIC-003a` (setzt
+  ADR-018 voraus).
 - **UX-EPIC-001 ist am 2026-09-11 fertig** (elf Stories, Branch
   `claude/trusting-mccarthy-k4c3qb`). Die Abnahmeschritte stehen in
   `docs/abnahme/etappe-1-kernprozess.md`; der Blick auf die laufende Anwendung
@@ -59,6 +60,17 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   (Textbausteine ohne Patientenbezug) und **ANN-021** (Feldliste und
   Vorhaltedauer des Tagesplans im Arbeitsspeicher). **ANN-018** ist nur für
   Google Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
+- **STAFF-EPIC-002 ist am 2026-09-11 fertig** (fünf Stories, Branch
+  `claude/zealous-pascal-xwur59`, der die UX-Arbeit enthält). **Beide Branches
+  sind unveröffentlicht — es gibt noch keinen Pull Request.** Abnahmeschritte
+  in `docs/abnahme/etappe-g-betriebsreife.md`; sie brauchen den vollen
+  Supabase-Stack mit Mailfänger und liegen damit vollständig bei Jannes. Neu
+  zu bestätigen: **ANN-022** bis **ANN-026**. **E10 und E11 sind damit
+  erledigt**, §4.3 und §4.5 der Prinzipien nach §21 nachgezogen (Version 0.6).
+  **Eine Entscheidung steht an:** ANN-026 — die MFA-Pflicht für `owner` lässt
+  sich einschalten, sobald Jannes selbst einen zweiten Faktor eingerichtet
+  hat; vorher wäre sie eine Aussperrung (Reihenfolge: erst einrichten, dann
+  erzwingen, spätestens vor M3).
 - **Zuschnitt geklärt (ADR-019 Fassung 2, MAP-001, 2026-09-08), mit UX-002
   umgesetzt:** der Handoff übermittelt nichts aus der Anwendung; er baut die
   URL nach ANN-018 (Adresse ohne Namen, Fahrradmodus) und ist nicht
@@ -777,6 +789,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | UI-000 Fundament                                        | fertig | 2026-09-07     | `4a4440f`, `45e8222`, `df8a294`, `11a9977`, `afb5ba5`, `e6b4ab6`    |               |
 | Produktentscheidungen Terminfenster und Sprachdokumentation (Docs) | fertig | 2026-09-08 | Branch `claude/praxissoftware-product-decisions-1uk1d8`             | —             |
 | UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, Branch `claude/trusting-mccarthy-k4c3qb` |               |
+| STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`,`06b758c` `0d7bd3c`,`719faed`, Branch `claude/zealous-pascal-xwur59`                      |               |
 
 ---
 
@@ -784,6 +797,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.8     | 2026-09-11 | **STAFF-EPIC-002 fertig** (fünf Stories): Rechteschnitt nach E10 — Stammdaten `owner` und `office`, Beschäftigungsstatus und Zugänge nur `owner`, Privatangaben folgen dem Leserecht (ANN-022); `PROJECT_PRINCIPLES.md` 0.6 zieht §4.3 und §4.5 nach §21 nach · Zugang einladen, annehmen, zurücknehmen: die Berechtigung entsteht in der Datenbank, das Konto beim Anmeldedienst, und ein Konto ohne offene Einladung bleibt zugriffslos (ANN-023, ANN-024) · Rollen ändern und Zugang sperren mit Aussperrschutz für die letzte aktive Inhaberin · Kennwort zurücksetzen über die Auth-Mails des Providers (B13) · Selbstbedienung „Mein Konto": Kennwort (ANN-025), zweiter Faktor als TOTP, alle Sitzungen beenden (R10) · MFA für `owner` eingerichtet und sichtbar, **nicht** erzwungen (ANN-026). **E10 und E11 erledigt. Nächster Loop: LOE-EPIC-001.** |
 | 2.7     | 2026-09-11 | **UX-EPIC-001 fertig** (elf Stories): Tagesliste des Hausbesuchstags mit Anschrift, `tel:`-Link und Zugangshinweis · Navigations-Handoff an Google Maps (ANN-018 verankert, nur auf Aktion) · Folgetermin und Vorbelegung „Hausbesuch, ich, heute" · serverseitige Patientensuche von jeder Seite · Tap auf freie Zeit im Kalender · nächste Termine in der Akte · „Behandlung abschließen" in einem serverseitigen Vorgang · Textbausteine (ANN-020) · Textverlust-Schutz und Behebung des VER-003-Restpunkts aus ANN-019 · langer Druck am Finger und Rückgängig-Leiste · Tagesplan im Funkloch lesbar (ANN-021, beantwortet die offene Folgefrage aus ADR-001). **Nächster Loop: STAFF-EPIC-002.** |
 | 2.6     | 2026-09-08 | **Produktentscheidungen Terminfenster und Sprachdokumentation** (Docs, kein Code): `PROJECT_PRINCIPLES.md` 0.5 mit §8.1 (60-Minuten-Terminfenster einschließlich Dokumentation, 5-Minuten-Raster, Fahrzeit zusätzlich, Aufrunden auf den Rasterpunkt, Bestandstermine unverändert, serverseitige Durchsetzung) und §6.3 (Sprachdokumentation mit ausdrücklicher Übernahme); ADR-005/006/016 je Fassung 2; CAL-010 in CAL-EPIC-003b zu CAL-010a/CAL-010b präzisiert; VER-003-Restpunkt als konkrete Folgeaufgabe in UX-EPIC-001; E12 und E13 neu offen. **Reihenfolge unverändert — UX-EPIC-001 bleibt der nächste Loop.** |
 | 2.5     | 2026-09-08 | **MAP-001:** In-App-Karte, Fahrradrouting und Fahrzeiten sind Produktziel (Convenience hoch priorisiert). ADR-019 Fassung 2: MapLibre + serverseitiger Adapter, PTV Developer als Kandidat für Prototyp/Bewertung, Google nur als Handoff-Ziel, Gate vor Echtdaten; Prüfdokument `providerpruefung-kartendienst.md`; Vertrag `src/lib/location/contract.ts`; ANN-016 bis ANN-018; Etappe T mit MAP-002 bis MAP-006 (`MAP-LOOPS.md`), TOUR-EPIC-001a/b aufgegangen; R12 aufgelöst, R13 neu; E-20/E-21 offen |

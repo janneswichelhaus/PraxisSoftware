@@ -67,6 +67,57 @@ test.describe('Anmeldung', () => {
   });
 });
 
+/**
+ * Kennwort vergessen (STAFF-004a).
+ *
+ * Der einzige Teil des Epics, der ohne Anmeldung erreichbar ist - und damit
+ * der einzige, der hier automatisiert laeuft. Die Vorgaenge hinter der
+ * Anmeldung brauchen einen laufenden Anmeldedienst (docs/DEVELOPMENT.md).
+ */
+test.describe('Kennwort vergessen', () => {
+  test('ist per Tastatur erreichbar und uebernimmt die getippte Adresse', async ({ page }) => {
+    await page.goto('/');
+
+    await page.getByLabel('E-Mail-Adresse', { exact: true }).fill('anna.beispiel@praxis.invalid');
+    await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Kennwort vergessen' })).toBeVisible();
+    await expect(page.getByLabel('E-Mail-Adresse des Zugangs')).toHaveValue(
+      'anna.beispiel@praxis.invalid',
+    );
+  });
+
+  test('bestaetigt fuer jede Adresse gleich (kein Konto-Orakel)', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
+    await page.getByLabel('E-Mail-Adresse des Zugangs').fill('gibt.es.nicht@praxis.invalid');
+    await page.getByRole('button', { name: 'Link anfordern' }).click();
+
+    // Ohne laufenden Anmeldedienst scheitert der Aufruf - und genau deshalb
+    // ist dieser Test aussagekraeftig: Die Bestaetigung darf auch dann nichts
+    // anderes sagen.
+    await expect(page.getByText(/Falls für diese Adresse ein Zugang besteht/)).toBeVisible();
+    await expect(page.getByText(/unbekannt|nicht gefunden|existiert/i)).toHaveCount(0);
+  });
+
+  test('laeuft bei 375 px ohne horizontales Scrollen', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 780 });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
+    await expect(page.getByRole('heading', { name: 'Kennwort vergessen' })).toBeVisible();
+
+    const ueberbreit = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    );
+    expect(ueberbreit).toBe(false);
+
+    const hoehe = await page
+      .getByRole('button', { name: 'Link anfordern' })
+      .evaluate((el) => el.getBoundingClientRect().height);
+    expect(hoehe).toBeGreaterThanOrEqual(44);
+  });
+});
+
 test.describe('Geschuetzte Sonderbereiche', () => {
   test('gibt das Anlageformular ohne Anmeldung nicht preis', async ({ page }) => {
     await page.goto('/patienten/neu');
