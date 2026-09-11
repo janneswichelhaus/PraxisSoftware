@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { SubNav } from '@/components/ui/SubNav';
-import type { CurrentUser } from '@/features/session/types';
+import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
+import { Patientensuche } from '@/features/patients/Patientensuche';
 import { aktiverBereich, arbeitsbereiche, mehrSymbol, tableiste } from './navigation';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
 
@@ -46,6 +47,10 @@ export function AppShell({
   // nicht mehr lesbar; alle anderen Ansichten bleiben bewusst schmal.
   const breite = pathname.startsWith('/kalender') ? 'max-w-7xl' : 'max-w-5xl';
 
+  // Die ausgeblendete Suche ist keine Zugriffskontrolle: `search_patients`
+  // prueft die Rolle selbst und liefert einem Patientenkonto nichts (ADR-004).
+  const darfSuchen = canReadPatientDirectory(user.roles);
+
   return (
     <div className="min-h-dvh">
       <a
@@ -73,6 +78,15 @@ export function AppShell({
               <p className="text-ink-subtle truncate text-xs sm:hidden">{aktuell.label}</p>
             ) : null}
           </div>
+          {/* Ab sm hat die Kopfleiste Platz für das Suchfeld in derselben
+              Zeile; darunter bekommt es eine eigene (siehe unten). */}
+          {darfSuchen ? (
+            <div className="hidden min-w-0 flex-1 justify-center sm:flex">
+              <div className="w-full max-w-sm">
+                <Patientensuche />
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-center gap-2">
             <span className="text-ink-muted hidden text-sm sm:inline">
               {user.profile.display_name}
@@ -82,6 +96,15 @@ export function AppShell({
             </Button>
           </div>
         </div>
+
+        {/* Auf dem Telefon eine eigene Zeile: das Suchfeld ist der einzige Weg
+            von Kalender und „Mein Tag" in eine Akte, und dafür muss es ohne
+            Aufklappen erreichbar sein (UX-004). */}
+        {darfSuchen ? (
+          <div className={`mx-auto w-full ${breite} px-5 pb-2 sm:hidden`}>
+            <Patientensuche />
+          </div>
+        ) : null}
       </header>
 
       <div className={`mx-auto flex w-full ${breite} gap-8 px-5`}>

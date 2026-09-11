@@ -13,6 +13,7 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
+import { Textverlustschutz } from './Textverlustschutz';
 import { createTreatmentNoteAddendum, findeEintrag, inhaltFehler, type TreatmentNote } from './api';
 
 /**
@@ -85,6 +86,8 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
             <ErrorState title="Nicht gespeichert" description={speichern.error.message} />
           </div>
         ) : null}
+
+        <Textverlustschutz ungespeichert={inhalt.trim().length > 0} />
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={speichern.isPending || inhalt.trim().length === 0}>

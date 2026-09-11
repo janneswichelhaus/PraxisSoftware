@@ -1,6 +1,6 @@
 # Arbeitsbereiche: was funktioniert, was Vorschau ist, was offen ist
 
-Stand: 08.09.2026
+Stand: 11.09.2026
 
 Diese Liste ist die Antwort auf eine einzige Frage: **Worauf kann ich mich in
 der laufenden Anwendung verlassen?** Sie ergänzt
@@ -30,7 +30,12 @@ Beschriftung geändert, nicht das Verhalten.
 | Patientenakte                           | `/patienten/:id`                                        |                                                  |
 | Kalender Tag / Woche                    | `/kalender`                                             | Datum, Ansicht und Filter stehen in der Adresse  |
 | Termin anlegen / ändern                 | `/patienten/:id/termine/neu`, `/termine/:id/bearbeiten` | Beginn und Ende frei; Raster wird serverseitig geprüft (CAL-005). Das 60-Minuten-Terminfenster nach §8.1 ist **entschieden (2026-09-08), aber nicht gebaut** — es kommt als CAL-010a |
-| Termin absagen / abschließen            | `/termine/:id`                                          |                                                  |
+| Termin absagen / abschließen            | `/termine/:id`                                          | „Behandlung abschließen" fasst Dokumentation, Finalisierung und Abschluss in **einem** serverseitigen Vorgang zusammen (UX-007); „Termin abschließen" ohne Dokumentation bleibt daneben (ANN-005) |
+| Folgetermin, Vorbelegung „Hausbesuch, ich, heute" | `/termine/:id`, `/patienten/:id/termine/neu`   | Vorbelegung reist über die Adresszeile; keine Terminserie (die kommt mit CAL-007) |
+| Termin anlegen aus dem Kalender          | Tap auf freie Zeit in `/kalender`, `/termine/neu`       | Zeit und Person aus der Spalte, Patient:in über die Suche. 60-Minuten-Fenster ist **Vorbelegung**, die Durchsetzung nach §8.1 kommt mit CAL-010a (UX-005) |
+| Navigation starten (Google Maps, Fahrrad) | Tagesliste `/`, `/termine/:id`                         | Übergibt nur die Anschrift ohne Namen, erst beim Tippen (ADR-019 Punkt 20, ANN-018). Apple Maps und `geo:` kommen mit MAP-005 |
+| Patientensuche von jeder Seite          | Kopfleiste, überall                                     | serverseitig ab drei Zeichen, umlautunempfindlich, höchstens 25 Treffer (UX-004) |
+| Textbausteine                           | `/praxis/textbausteine`, Dokumentationsformulare        | persönlich oder praxisweit; kein Patientenbezug, keine Platzhalter, kein Sprachmodell (UX-008, ANN-020) |
 | Behandlungsdokumentation                | `/termine/:id/dokumentation…`                           | Entwurf, Finalisierung, Korrektur, Nachtrag, Änderungsverlauf (DOK-001/002). Die Sprachdokumentation nach §6.3 ist **entschieden (2026-09-08), aber nicht gebaut** — eigener Auftrag, offen als E13 |
 | Dokumentation in der Akte               | `/patienten/:id`                                        | rollenabhängig projiziert; Office sieht den Behandlungsnachweis ohne klinischen Inhalt (DOK-003) |
 | Verordner:innen                         | `/verordner`, `…/neu`, `…/bearbeiten`                   | Berufliche Kontaktdaten Dritter, kein Patientenbezug (VER-001, ANN-013) |
@@ -39,8 +44,9 @@ Beschriftung geändert, nicht das Verhalten.
 | Mitarbeiterverwaltung                   | `/praxis/team…`                                         | Liste für alle Praxisrollen, Schreiben nur `owner`; Privatdaten für `office` gar nicht geliefert (STAFF-001) |
 | Arbeitszeiten und Raster                | `/praxis/planung`                                       | im Menü jetzt unter „Betrieb"                    |
 | Auditansicht                            | `/praxis/sicherheit/audit`                              | nur `owner`; kennt seit DOK-004 einen Systemakteur |
-| Verbindungsanzeige                      | überall (App-Gerüst)                                    | erscheint nur bei getrenntem Gerät; keine Offline-Fähigkeit (UI-000, ANN-015) |
-| Mein Tag – eigene Besuche und Tagesplan | `/`                                                     | liest denselben Kalender, keine zweite Liste     |
+| Verbindungsanzeige und Textverlust-Schutz | überall (App-Gerüst), Dokumentationsformulare          | erscheint nur bei getrenntem Gerät; in den Dokumentationsformularen zusätzlich eine Browserwarnung vor dem Verlassen mit ungespeichertem Text und der Hinweis neben den Schaltflächen. **Kein lokaler Zwischenspeicher** (UI-000, UX-009, ANN-015) |
+| Mein Tag – Tagesliste des Hausbesuchstags | `/`                                                   | „Offen heute" mit Anschrift, `tel:`-Link und Zugangshinweis aus dem eigenen Lesepfad `list_day_plan`; der Tagesplan des Teams liest weiter den Kalender und bekommt **keine** Adressen (UX-001). Die zuletzt geladene Liste bleibt bei einem Funkloch lesbar und als älterer Stand gekennzeichnet — kein Offline-Modus (UX-011, ANN-021) |
+| Nächste Termine in der Akte             | `/patienten/:id`                                        | über die Anzahl begrenzt statt über einen Zeitraum, ohne Anschrift (UX-006) |
 
 ## 2. Vorschau
 

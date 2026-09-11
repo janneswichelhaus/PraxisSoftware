@@ -6,21 +6,29 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import {
+  canManageAppointments,
+  canWriteTreatmentNote,
+  type CurrentUser,
+} from '@/features/session/types';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
+import { NavigationZumTermin } from './NavigationStarten';
 import {
   appointmentStatusLabels,
   cancelAppointment,
   appointmentTypeLabels,
   completeAppointment,
   fetchAppointment,
+  folgeterminVorbelegung,
   formatLocalDate,
   formatLocalTime,
   formatLocalTimeRange,
   locationSummary,
   patientName,
   reopenAppointment,
+  schreibeTerminVorbelegung,
   staffName,
   type Appointment,
 } from './api';
@@ -138,6 +146,7 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
   // Abschluss hinweg. Verbindlich pruefen das die Serverfunktionen.
   const darfAendern = darfVerwalten && appointment.status === 'scheduled';
   const darfWiederOeffnen = darfVerwalten && appointment.status === 'completed';
+  const darfDokumentieren = canWriteTreatmentNote(user.roles);
 
   return (
     <>
@@ -182,6 +191,14 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
           <DetailRow label={ortsBeschriftung(appointment.appointment_type)}>
             {locationSummary(appointment)}
           </DetailRow>
+          {/* Der Handoff steht bei der Anschrift, nicht bei den
+              Statusaktionen: Er gehört zur Anfahrt, nicht zum Vorgang
+              (ADR-019 Punkt 20). */}
+          {appointment.appointment_type === 'home_visit' ? (
+            <DetailRow label="Anfahrt">
+              <NavigationZumTermin termin={appointment} />
+            </DetailRow>
+          ) : null}
           {appointment.completed_at ? (
             <DetailRow label="Abgeschlossen am">
               {`${formatLocalDate(appointment.completed_at, zone)}, ${formatLocalTime(
@@ -195,14 +212,39 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
 
       {darfAendern ? (
         <div className="mt-5 flex flex-wrap items-start gap-3">
+          {/* Der Regelfall am Ende eines Besuchs: Dokumentation und Abschluss
+              in einem Schritt (UX-007). „Termin abschließen" bleibt daneben -
+              der Abschluss ohne Dokumentation ist ausdrücklich weiter möglich
+              (ANN-005). */}
+          {darfDokumentieren ? (
+            <ButtonLink to={`/termine/${appointment.id}/abschluss`}>
+              Behandlung abschließen
+            </ButtonLink>
+          ) : null}
           <StatusAktion
             appointment={appointment}
             aktion={completeAppointment}
             beschriftung="Termin abschließen"
             laufend="Wird abgeschlossen …"
-            variant="primary"
+            variant={darfDokumentieren ? 'secondary' : 'primary'}
           />
           <AbsageAktion appointment={appointment} />
+        </div>
+      ) : null}
+
+      {/* Der Folgetermin ist der häufigste Einzelvorgang am Ende eines
+          Besuchs. Er steht auch am abgeschlossenen Termin: dort wird er
+          tatsächlich gebraucht (UX-003, IDEA-PRX-007). */}
+      {darfVerwalten && appointment.status !== 'cancelled' ? (
+        <div className="mt-5 flex">
+          <ButtonLink
+            to={`/patienten/${appointment.patient_id}/termine/neu${schreibeTerminVorbelegung(
+              folgeterminVorbelegung(appointment),
+            )}`}
+            variant="secondary"
+          >
+            Folgetermin anlegen
+          </ButtonLink>
         </div>
       ) : null}
 
@@ -231,6 +273,9 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
         Zeiten gelten in der Zeitzone der Praxis ({zone}). Der Termin selbst enthält ausschließlich
         organisatorische Angaben.
+        {appointment.appointment_type === 'home_visit'
+          ? ' „Navigation starten" öffnet Google Maps im Fahrradmodus und übergibt dabei nur die Anschrift ohne Namen – erst beim Tippen.'
+          : ''}
       </p>
     </>
   );

@@ -424,3 +424,404 @@ etwas, das vorher ging und jetzt nicht mehr.
 8. **Am Handy** (~375 px): Akte, Kalender, Stammdatenformular und
    Verordnungsformular einmal durchscrollen. Nichts scrollt seitwärts, alle
    Tippziele bleiben mindestens 44 px.
+
+---
+
+## UX-001 — Tagesliste des Hausbesuchstags
+
+**Was geprüft wird:** dass „Mein Tag" alles trägt, was an der Wohnungstür
+gebraucht wird, und dass „offen" und „erledigt" auseinandergehen.
+
+**Vorbereitung:** `pnpm dlx supabase db reset` — der Seed legt für **heute**
+einen Hausbesuchstag von **Anna Beispiel** an (drei Hausbesuche und einen
+Praxistermin bei Jannes). Anmelden als `anna.beispiel@praxis.invalid`.
+
+1. **Offen heute.** Startseite (`/`). Ganz oben steht „Offen heute (2)": der
+   ausstehende Hausbesuch um 09:00 und der um 10:30 abgeschlossene, der noch
+   keine Dokumentation hat. Der zweite trägt den Grund als Text:
+   „Dokumentation fehlt".
+2. **Anschrift und Zugang.** Die Karte um 09:00 zeigt „Beispielstrasse 12",
+   „72070 Tuebingen", darunter „Zugang: 2. OG links, Klingel …" und
+   „Besonderheit: Hund im Flur …".
+3. **Anrufen ist ein Tap.** Auf der Karte stehen zwei Schaltflächen „Mobil …"
+   und „Telefon …". Am Handy öffnet ein Tipp darauf die Telefon-App mit der
+   vorgewählten Nummer; am Rechner fragt der Browser, womit `tel:` geöffnet
+   werden soll. Beides ist richtig — die Nummer darf nicht bloß dastehen.
+4. **Erledigtes drängt sich nicht auf.** Unter der Liste steht der Aufklapper
+   „Erledigt heute (1)". Aufklappen: der abgesagte Termin um 14:00 steht darin
+   mit dem Abzeichen „Abgesagt".
+5. **Zweckbindung.** Als `jannes.test@praxis.invalid` anmelden. Sein Tag
+   enthält nur den Praxistermin um 16:00 — **ohne** Anschrift und **ohne**
+   Zugangshinweis. Beides gibt es nur zum Hausbesuch, und zwar schon
+   serverseitig: es wird gar nicht erst geliefert.
+6. **Der Teamplan bleibt schlank.** Weiter unten steht „Tagesplan des Teams"
+   mit allen Terminen des Tages — dort steht weiterhin **keine** Anschrift.
+   Das ist Absicht (ADR-004).
+7. **Die Vorschau ist zugeklappt.** Ganz unten steht „Vorschau · Betrieb, Wege
+   und Team – noch nicht angebunden" als geschlossener Aufklapper. Der echte
+   Teil des Tages steht davor.
+8. **Am Handy** (~375 px): Startseite durchscrollen. Nichts scrollt seitwärts,
+   die Karten sind einspaltig, jede Schaltfläche bleibt mindestens 44 px hoch.
+   **Zielwert der Story:** Anschrift, Klingelname und eine wählbare Rufnummer
+   sind ohne einen einzigen weiteren Tap sichtbar (vorher: drei Taps über
+   Kalender → Termin → Akte).
+
+---
+
+## UX-002 — Navigation starten (Google Maps, Fahrradmodus)
+
+**Was geprüft wird:** dass die Anfahrt ein Tap ist — und dass dabei nur die
+Anschrift ohne Namen übergeben wird, erst beim Tippen.
+
+**Voraussetzung:** derselbe Seed-Tag wie bei UX-001, angemeldet als
+`anna.beispiel@praxis.invalid`.
+
+1. **Je Besuch.** Startseite (`/`). Auf der Karte des 09:00-Besuchs steht
+   „Navigation starten". Ein Tipp öffnet einen neuen Tab mit Google Maps, Ziel
+   „Beispielstrasse 12, 72070 Tuebingen, DE", Verkehrsmittel Fahrrad.
+2. **Der ganze Tag.** Rechts neben der Überschrift „Offen heute" steht
+   „Ganzer Tag (n Stopps)". Ein Tipp öffnet Google Maps mit allen offenen
+   Hausbesuchen in Terminreihenfolge: der letzte als Ziel, die davor als
+   Zwischenziele.
+3. **Am Termin.** `/termine/…` eines Hausbesuchs öffnen: in der Angabenliste
+   steht unter „Anfahrt" dieselbe Schaltfläche. Bei einem Praxistermin steht
+   dort **nichts** — es gibt kein Ziel.
+4. **Nur auf Aktion (ADR-019 Punkt 20).** Auf der Startseite die
+   Entwicklerwerkzeuge öffnen, Reiter „Netzwerk", Seite neu laden: **vor** dem
+   Tippen geht **keine** Anfrage an `google.com`. Danach im Quelltext (Strg+U
+   bzw. Untersuchen) nach `google.com` suchen: kein Treffer, solange nicht
+   getippt wurde. Genau das ist der Unterschied zwischen einer Schaltfläche
+   und einem Link.
+5. **Was übergeben wird.** In der geöffneten Google-Maps-Adresszeile steht
+   `destination=Beispielstrasse+12,+72070+Tuebingen,+DE` und
+   `travelmode=bicycling` — und sonst nichts. **Kein Name, keine Uhrzeit, kein
+   Zugangshinweis, keine Kennung.** Das ist die Feldliste aus ANN-018; weicht
+   sie ab, ist das ein Befund.
+6. **Am Handy** (~375 px): Die drei Schaltflächen der Karte (Mobil, Telefon,
+   Navigation starten) brechen um, statt seitwärts zu scrollen; jede bleibt
+   mindestens 44 px hoch. **Zielwert der Story:** vom Öffnen der Anwendung bis
+   zur laufenden Radnavigation ein Tap.
+
+---
+
+## UX-003 — Folgetermin und Vorbelegung „Hausbesuch, ich, heute"
+
+**Was geprüft wird:** dass der nächste Termin am Ende eines Besuchs nicht bei
+einem leeren Formular anfängt.
+
+1. **Vorbelegung.** Als `anna.beispiel@praxis.invalid` eine Akte öffnen und
+   „Termin anlegen". Im Formular steht bereits: Terminart **Hausbesuch**,
+   behandelnde Person **Anna Beispiel**, Datum **heute**. Beginn und Ende
+   bleiben leer — eine erfundene Uhrzeit wäre keine Vorbelegung, sondern eine
+   Behauptung.
+2. **Office bekommt keine Person vorbelegt.** Als
+   `olivia.office@praxis.invalid` dasselbe Formular öffnen: „Behandelnde
+   Person" steht auf „Bitte wählen …". Olivia behandelt nicht und ist deshalb
+   nicht zuordenbar.
+3. **Folgetermin.** Einen Hausbesuch unter `/termine/…` öffnen und
+   „Folgetermin anlegen" tippen. Das Formular öffnet sich mit derselben Person,
+   derselben Terminart, derselben Uhrzeit und derselben Dauer — Datum **eine
+   Woche später**. Alles ist änderbar; es entsteht **keine** Terminserie (die
+   kommt mit CAL-007 aus dem Kontingent der Verordnung).
+4. **Auch nach dem Abschluss.** Denselben Termin abschließen und die Seite neu
+   laden: „Folgetermin anlegen" steht weiterhin da — genau dann wird er
+   gebraucht. Bei einem **abgesagten** Termin steht er nicht da.
+5. **Die Adresszeile trägt die Vorbelegung.** Nach dem Tippen auf
+   „Folgetermin anlegen" steht in der Adresszeile
+   `?datum=…&beginn=…&ende=…&art=…&person=…`. Die Seite neu laden: die
+   Vorbelegung ist noch da. Einen Wert von Hand verstellen (etwa
+   `beginn=25:00`) und neu laden: das Feld bleibt schlicht leer, ohne
+   Fehlermeldung.
+6. **Am Handy** (~375 px): Das Formular ist einspaltig, „Folgetermin anlegen"
+   ist einhändig erreichbar. **Zielwert der Story:** vom abgeschlossenen
+   Termin zum angelegten Folgetermin in **zwei** Taps (vorher: acht
+   Interaktionen über drei Seiten).
+
+---
+
+## UX-004 — Patientensuche von jeder Seite
+
+**Was geprüft wird:** dass von jeder Seite ein Weg in eine Akte führt — und
+dass die Suche nicht dazu taugt, sich den Bestand anzusehen.
+
+1. **Überall erreichbar.** Als `anna.beispiel@praxis.invalid` anmelden. In der
+   Kopfleiste steht ein Feld „Name suchen …". Es ist auf `/`, `/kalender`,
+   `/patienten` und `/termine/…` dasselbe Feld an derselben Stelle.
+2. **Erst ab drei Zeichen.** „mu" tippen: darunter steht „Mindestens 3
+   Zeichen." und es passiert nichts weiter. „mus" tippen: „Max Mustermann"
+   erscheint, mit Geburtsdatum darunter.
+3. **Umlaute sind egal.** Nacheinander „Müller", „Mueller" und „Muller"
+   tippen — sofern eine Person mit Umlaut angelegt ist, findet jede Schreibweise
+   sie. (Im Seed gibt es keine; dafür eine Person anlegen, etwa „Jörg Müller".)
+4. **Tastatur.** Ins Feld tippen, dann Pfeil-runter: der erste Treffer wird
+   hervorgehoben. Eingabetaste: die Akte öffnet sich. Escape schließt die
+   Liste, ohne zu navigieren.
+5. **Kein Bestandsabzug.** „%" oder „___" tippen: „Kein Treffer." Ein
+   Platzhalter ist kein Suchbegriff — gesucht wird nach Zeichen, nicht nach
+   einem Muster. Ein einzelner Buchstabe liefert ebenfalls nichts.
+6. **Nicht in Versorgung ist gekennzeichnet.** Nach „Platzhalter" suchen: der
+   Treffer trägt das Abzeichen „Nicht in Versorgung" — als Text, nicht als
+   Farbe.
+7. **Patientenkonto.** Als `max.mustermann@patient.invalid` anmelden: in der
+   Kopfleiste steht **kein** Suchfeld. Das ist Darstellung; die Serverfunktion
+   weist ein Patientenkonto ohnehin ab.
+8. **Am Handy** (~375 px): Das Suchfeld steht in einer eigenen Zeile unter dem
+   Praxisnamen, ist volle Breite und mindestens 44 px hoch. Die Trefferliste
+   legt sich über den Inhalt und scrollt bei vielen Treffern in sich.
+   **Zielwert der Story:** vom Kalender in eine beliebige Akte in **einem**
+   Feld und **einem** Tap (vorher: Bereichswechsel, Liste laden, filtern,
+   tippen).
+
+---
+
+## UX-005 — Tap auf freie Zeit im Kalender
+
+**Was geprüft wird:** dass ein Termin dort entsteht, wo man ihn sieht — auf
+der freien Stelle im Kalender.
+
+1. **Tagesansicht.** `/kalender?ansicht=tag` öffnen. Auf eine freie Stelle in
+   der Spalte einer Person tippen. Es öffnet sich „Termin anlegen" mit der
+   Vorbelegung: Datum der Ansicht, die getippte Uhrzeit (auf das Praxisraster
+   gerundet), **60 Minuten** Länge, Terminart Hausbesuch, die Person der
+   Spalte.
+2. **Person wählen.** Auf derselben Seite steht ein Suchfeld „Patient:in
+   suchen". Nach Auswahl geht es in das gewohnte Terminformular — mit
+   derselben Vorbelegung. Speichern: der Termin steht an der getippten Stelle.
+3. **Wochenansicht.** `/kalender?ansicht=woche` öffnen und auf eine freie
+   Stelle tippen: das **Datum** der Spalte wird übernommen, die Person ist die
+   der Wochenansicht.
+4. **Ein bestehender Termin bleibt ein Link.** Auf eine Terminkachel tippen:
+   es öffnet sich wie bisher die Detailansicht, **nicht** die Terminanlage.
+5. **Nach dem Ziehen kein Fehlklick.** Eine Kachel verschieben und loslassen:
+   danach öffnet sich weder die Detailansicht noch die Terminanlage.
+6. **Tastatur.** Über dem Kalender steht die Schaltfläche „Termin anlegen".
+   Sie führt zur selben Seite, mit Datum und Person der Ansicht, aber **ohne**
+   Uhrzeit — die wählt das Formular. Damit ist die Funktion ohne Zeigegerät
+   erreichbar; der Tap ist die Abkürzung, nicht der einzige Weg.
+7. **Die 60 Minuten sind eine Vorbelegung.** Sie lassen sich im Formular
+   ändern, und der Server weist eine andere Länge **noch nicht** ab — die
+   Durchsetzung nach `PROJECT_PRINCIPLES.md` §8.1 kommt mit **CAL-010a**.
+8. **Am Handy** (~375 px): Der Kalender scrollt waagerecht wie bisher; ein
+   Tipp auf freie Fläche funktioniert auch nach dem Scrollen und trifft die
+   richtige Spalte.
+
+---
+
+## UX-006 — Nächste Termine in der Akte
+
+**Was geprüft wird:** dass die Akte auch nach vorn schaut.
+
+**Vorbereitung:** In der Akte von Max Mustermann einen Termin in der Zukunft
+anlegen (etwa nächste Woche).
+
+1. **Der Blick nach vorn.** `/patienten/…` öffnen. Zwischen „Versorgung" und
+   den Verordnungen steht „Nächste Termine" mit Datum, Uhrzeit, Terminart und
+   behandelnder Person. Ein Tipp darauf öffnet den Termin.
+2. **Nur Künftiges.** Den Termin absagen und die Seite neu laden: er
+   verschwindet aus der Liste (im Kalender bleibt er). Einen vergangenen
+   Termin anlegen: er erscheint dort **nicht** — er steht im
+   Behandlungsverlauf darunter.
+3. **Leer heißt leer.** Bei einer Person ohne künftige Termine steht „Kein
+   weiterer Termin vereinbart." als Satz, nicht als leere Fläche.
+4. **Keine Anschrift.** Der Abschnitt zeigt **keine** Adresse. Die braucht der
+   Blick in die Akte nicht; sie steht in der Tagesliste und am Termin
+   (ADR-004).
+5. **Ein Weg, nicht zwei.** Auf der Seite gibt es genau **eine** Schaltfläche
+   „Termin anlegen" — oben in der Akte, und sie bleibt bei einer inaktiven
+   Person aus.
+6. **Patientenkonto.** Als `max.mustermann@patient.invalid` die eigene Ansicht
+   öffnen: der Abschnitt erscheint nicht.
+7. **Am Handy** (~375 px): Die Einträge brechen um, statt seitwärts zu
+   scrollen. **Zielwert der Story:** die Frage „wann bin ich das nächste Mal
+   dran?" ist in der Akte beantwortet, ohne den Kalender zu öffnen.
+
+---
+
+## UX-007 — Behandlung abschließen in einem Schritt
+
+**Was geprüft wird:** dass der Abschluss eines Besuchs eine Handlung ist statt
+sechs — und dass er ganz oder gar nicht passiert.
+
+1. **Von der Tagesliste aus.** Startseite (`/`) als
+   `anna.beispiel@praxis.invalid`. Auf der Karte eines offenen Besuchs steht
+   „Behandlung abschließen". Ein Tipp öffnet eine Seite mit einem Textfeld.
+2. **Die Folge steht vor dem Knopf.** Über den Schaltflächen steht, was
+   passiert: Termin als durchgeführt, Eintrag als Version 1 festgeschrieben,
+   ab dann Bestandteil der Akte. Das ersetzt die frühere Rückfrage — die kam
+   erst **nach** dem Klick.
+3. **Ein Schritt.** Text eingeben, „Behandlung abschließen" tippen. Danach ist
+   der Termin **abgeschlossen** und die Dokumentation **finalisiert**. Zurück
+   auf der Terminseite steht beides.
+4. **Ganz oder gar nicht.** Das Textfeld leeren und abschließen: es erscheint
+   „Die Behandlungsdokumentation darf nicht leer sein." — und der Termin ist
+   **nicht** abgeschlossen. Kein halber Zustand.
+5. **Der alte Weg bleibt.** Auf der Terminseite steht weiter „Termin
+   abschließen" (ohne Dokumentation, ANN-005) und in der Dokumentation weiter
+   „Finalisieren" mit Rückfrage. Auf der Abschlussseite gibt es zusätzlich
+   „Nur als Entwurf speichern".
+6. **Nachträglich dokumentieren.** Einen Termin ohne Dokumentation
+   abschließen. Er steht auf der Startseite weiter unter „Offen heute" mit dem
+   Grund „Dokumentation fehlt". „Behandlung abschließen" dort öffnet dieselbe
+   Seite; sie sagt, dass der Termin bereits abgeschlossen ist und nur noch
+   dokumentiert wird.
+7. **Office.** Als `olivia.office@praxis.invalid` `/termine/…/abschluss`
+   direkt aufrufen: „Nicht freigegeben". Verbindlich weist die Serverfunktion
+   ab.
+8. **Am Handy** (~375 px): Textfeld, Hinweis und Schaltflächen sind ohne
+   seitliches Scrollen bedienbar, „Behandlung abschließen" ist einhändig
+   erreichbar. **Zielwert der Story:** vom offenen Besuch zur finalisierten
+   Dokumentation in **zwei** Taps plus Text (vorher: sechs Schritte über drei
+   Ansichten).
+
+---
+
+## UX-008 — Textbausteine in der Dokumentation
+
+**Was geprüft wird:** dass ein vorbereiteter Satz per Tap im Freitext landet —
+und dass ein persönlicher Baustein wirklich persönlich ist.
+
+**Vorbereitung:** `pnpm dlx supabase db reset` — der Seed legt zwei Bausteine
+der Praxis und einen persönlichen von Anna Beispiel an.
+
+1. **Einfügen.** Als `anna.beispiel@praxis.invalid` einen Termin öffnen und
+   „Behandlung abschließen". Über dem Textfeld steht „Textbausteine:" mit drei
+   Knöpfen. Auf „Hausbesuch durchgefuehrt" tippen: der Satz steht im Feld.
+2. **Ergänzen statt ersetzen.** Einen eigenen Satz tippen, dann einen zweiten
+   Baustein antippen: Er hängt sich mit einer Leerzeile **hinten** an. Der
+   eigene Text bleibt.
+3. **Nichts wird ausgefüllt.** Der eingefügte Text enthält **keine**
+   Platzhalter und **keinen** Namen aus der Akte — er ist wörtlich das, was in
+   der Verwaltung steht (E-9, erste Stufe).
+4. **Verwalten.** „Bausteine verwalten →" oder Betrieb → Textbausteine. Die
+   Seite trennt „Bausteine der Praxis" von „Meine Bausteine". Als Anna steht
+   an den Praxis-Bausteinen **keine** Schaltfläche „Bearbeiten", sondern der
+   Hinweis, dass die Praxisleitung sie pflegt.
+5. **Eigenen anlegen.** „Baustein anlegen", Titel und Text eingeben,
+   speichern. Er erscheint unter „Meine Bausteine" mit dem Abzeichen „Nur ich"
+   und ab sofort in der Leiste über dem Freitext.
+6. **Persönlich heißt persönlich.** Als `tim.teamleitung@praxis.invalid`
+   anmelden: Annas Baustein („Manuelle Therapie") steht **weder** in seiner
+   Liste **noch** in seiner Leiste. Die Bausteine der Praxis sieht er.
+7. **Praxisweit nur als Praxisleitung.** Als `jannes.test@praxis.invalid`
+   „Baustein anlegen": dort gibt es zusätzlich das Kästchen „Baustein der
+   Praxis". Als Anna oder Tim gibt es dieses Kästchen nicht.
+8. **Löschen ändert keine Akte.** Einen eigenen Baustein löschen: Die
+   Rückfrage sagt ausdrücklich, dass bereits geschriebene Dokumentation
+   unberührt bleibt. Eine Dokumentation, in die der Baustein eingefügt wurde,
+   nachlesen: der Text steht unverändert darin.
+9. **Office.** Als `olivia.office@praxis.invalid`: Der Punkt „Textbausteine"
+   fehlt im Menü, und `/praxis/textbausteine` direkt aufgerufen meldet „Nicht
+   freigegeben".
+10. **Audit.** Als `jannes.test@praxis.invalid` unter Betrieb → Sicherheit:
+    Es stehen Einträge „Textbaustein angelegt/geändert/gelöscht" mit Titel —
+    **ohne** den Text des Bausteins.
+11. **Am Handy** (~375 px): Die Bausteinleiste bricht um, jeder Knopf bleibt
+    mindestens 44 px hoch. **Zielwert der Story:** ein wiederkehrender Satz
+    kostet einen Tap statt einer halben Minute Tippen.
+
+---
+
+## UX-009 — Textverlust-Schutz und der Restpunkt aus VER-003
+
+**Was geprüft wird:** dass ein geschriebener Text nicht unbemerkt verschwindet
+— und dass ein aufgegebener Verordnungsentwurf nicht wieder auftaucht.
+
+### Textverlust-Schutz
+
+1. **Warnung vor dem Neuladen.** Einen Termin öffnen, „Behandlung
+   abschließen", einen Satz tippen — **nicht** speichern. Jetzt F5 drücken:
+   Der Browser fragt nach, ob die Seite wirklich verlassen werden soll. Den
+   Text speichern und erneut F5: keine Nachfrage mehr.
+2. **Auch beim Zurück.** Denselben Zustand herstellen und den Zurück-Knopf des
+   Browsers drücken: dieselbe Nachfrage.
+3. **Ohne Verbindung.** Netzwerk in den Entwicklerwerkzeugen auf „Offline"
+   stellen, dann einen Satz tippen: Über den Schaltflächen erscheint „Ohne
+   Verbindung lässt sich gerade nicht speichern. Der Text bleibt im Feld
+   stehen …" — zusätzlich zum gelben Streifen über der Kopfleiste. Netzwerk
+   wieder anschalten: Der Hinweis verschwindet, der Text steht noch da.
+4. **Dasselbe in Korrektur und Nachtrag.** Beide Formulare verhalten sich
+   gleich.
+5. **Kein heimlicher Zwischenspeicher.** Nach einem bestätigten Neuladen ist
+   der Text **weg** — das ist Absicht. Ein Entwurf, der nur im Browser läge,
+   wäre nicht gespeichert, würde aber so aussehen (ADR-001, ADR-015 Punkt 16).
+   Die Warnung ist der Schutz, nicht ein lokaler Speicher.
+
+### Restpunkt aus VER-003
+
+6. **Abstecher abbrechen über die Hauptnavigation.** Eine Verordnung erfassen
+   (`/patienten/…/verordnungen/neu`), Heilmittel „Aufgegebener Versuch"
+   eintragen, „Verordner:in anlegen" tippen — und dann **über die
+   Hauptnavigation** weggehen (etwa auf „Mein Tag"), nicht über „Abbrechen".
+7. **Neuer Versuch bleibt leer.** Innerhalb der nächsten Minuten erneut
+   „Verordnung erfassen" für dieselbe Person öffnen: Das Formular ist **leer**.
+   Vorher stand hier „Aufgegebener Versuch" — das war der dokumentierte
+   Restpunkt.
+8. **Der gewollte Weg funktioniert weiter.** Verordnung erfassen, etwas
+   eintragen, „Verordner:in anlegen", dort speichern **oder** abbrechen: Die
+   Eingaben stehen danach unverändert im Formular, und nach dem Speichern ist
+   die neue Verordner:in ausgewählt.
+9. **Sichtbar in der Adresszeile.** Beim Abstecher steht im
+   `zurueck`-Parameter ein `vorgang=…`. Diese Kennung unterscheidet zwei
+   Besuche derselben Seite; sie ist kein Geheimnis und trägt keine Daten.
+
+---
+
+## UX-010 — Langer Druck am Finger, Rückgängig nach dem Verschieben
+
+**Was geprüft wird:** dass sich der Kalender am Telefon wieder scrollen lässt
+— und dass eine versehentliche Verschiebung zurückzuholen ist.
+
+1. **Scrollen über einem Termin (der eigentliche Befund).** Am Handy (~375 px
+   oder Gerätesimulation mit Touch) `/kalender?ansicht=tag` öffnen und mit dem
+   Finger **auf einer Terminkachel** nach oben wischen: Der Kalender scrollt.
+   Vorher blieb er stehen und der Termin wanderte mit.
+2. **Verschieben mit dem Finger.** Denselben Termin antippen und den Finger
+   **liegen lassen**. Nach knapp einer halben Sekunde hebt sich die Kachel
+   sichtbar hervor (Rahmen, leicht vergrößert). Erst jetzt ziehen: der Termin
+   folgt dem Finger und lässt sich ablegen.
+3. **Am Rechner unverändert.** Mit der Maus greift der Termin wie bisher
+   sofort — dort gibt es keinen Grund zu warten.
+4. **Rückgängig.** Einen Termin verschieben. Unter der Werkzeugleiste
+   erscheint „Termin verschoben. Vorher: …" mit der alten Person, dem alten
+   Tag und der alten Uhrzeit. „Rückgängig" tippen: Der Termin steht wieder an
+   seinem Platz.
+5. **Ein echter Vorgang, kein Trick.** Als `jannes.test@praxis.invalid` unter
+   Betrieb → Sicherheit nachsehen: Es stehen **zwei** Einträge „Termin
+   verschoben" — das Zurückholen ist selbst eine Änderung und wird als solche
+   protokolliert.
+6. **Der alte Platz kann belegt sein.** Termin A verschieben, dann Termin B
+   auf den frei gewordenen Platz legen, dann bei A „Rückgängig": Es erscheint
+   die verständliche Meldung, dass dort schon ein Termin liegt — und A bleibt,
+   wo es ist.
+7. **Die Leiste bleibt nicht ewig.** Nach dem Blättern auf einen anderen Tag
+   ist sie verschwunden; sie bietet nichts an, was nicht mehr zu sehen ist.
+
+---
+
+## UX-011 — Tagesplan bleibt im Funkloch lesbar
+
+**Was geprüft wird:** dass die Anschrift nicht vom Bildschirm verschwindet,
+wenn im Treppenhaus die Verbindung abreißt — und dass daraus kein heimlicher
+Offline-Modus wird.
+
+1. **Erst laden.** Als `anna.beispiel@praxis.invalid` die Startseite öffnen und
+   die Tagesliste abwarten. Anschrift und Zugangshinweis stehen da.
+2. **Funkloch.** Entwicklerwerkzeuge → Netzwerk → „Offline". Dann die Liste zum
+   Nachladen bringen: in einen anderen Bereich und zurück wechseln.
+3. **Es bleibt stehen.** Die Karten stehen unverändert da, darüber die Meldung
+   „Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der
+   Stand von HH:MM Uhr – er kann veraltet sein." Zusätzlich der gelbe Streifen
+   über der Kopfleiste.
+4. **Ehrlich über das Alter.** Netzwerk wieder anschalten und nachladen: die
+   Meldung verschwindet. Bei frischem Stand steht **nichts** über sein Alter
+   da — ein dauerhaftes „Stand von …" wäre Rauschen.
+5. **Kein Offline-Modus.** Immer noch offline: Die Seite **neu laden**. Jetzt
+   ist die Liste weg und es erscheint die Fehlermeldung — nichts liegt auf dem
+   Gerät. Das ist Absicht (ADR-001, ADR-015 Punkt 16, ANN-021): Was hier
+   stehen bleibt, ist der Zwischenspeicher der laufenden Seite, mehr nicht.
+6. **Abmelden räumt auf.** Wieder online, Liste laden, abmelden, mit einem
+   **anderen** Konto anmelden (`tim.teamleitung@praxis.invalid`): Von Annas
+   Tagesliste ist nichts zu sehen — auch nicht kurz beim Aufbau der Seite.
+7. **Geschrieben wird nichts aus dem Speicher.** Offline auf „Behandlung
+   abschließen" tippen und speichern: Es erscheint eine Fehlermeldung, und der
+   Termin bleibt unverändert. Der Zwischenspeicher ist ausschließlich lesend.

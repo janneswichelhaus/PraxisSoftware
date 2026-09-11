@@ -68,6 +68,22 @@ export function testPatient(overrides: Partial<Patient> = {}): Patient {
   };
 }
 
+/**
+ * Beschäftigtenkennungen des Seeds, nach Anzeigename.
+ *
+ * Damit trägt ein Testbenutzer dieselbe Kennung wie sein Gegenstück in
+ * `supabase/seed.sql`. Das ist kein Beiwerk: die Vorbelegung „ich" im
+ * Terminformular hängt daran, und Olivia Office ist bewusst **nicht**
+ * zuordenbar - ein Test, der sie mit Annas Kennung ausstattet, würde eine
+ * Vorbelegung prüfen, die es in Wirklichkeit nicht gäbe.
+ */
+const STAFF_IDS: Record<string, string> = {
+  'Jannes Test': '55555555-5555-4555-8555-000000000001',
+  'Anna Beispiel': '55555555-5555-4555-8555-000000000002',
+  'Olivia Office': '55555555-5555-4555-8555-000000000003',
+  'Tim Teamleitung': '55555555-5555-4555-8555-000000000004',
+};
+
 /** Synthetischer Benutzer für Komponententests. */
 export function testUser(roles: RoleKey[], displayName = 'Anna Beispiel'): CurrentUser {
   return {
@@ -81,5 +97,9 @@ export function testUser(roles: RoleKey[], displayName = 'Anna Beispiel'): Curre
     organizationName: 'Test Praxis Tuebingen',
     organizationTimeZone: 'Europe/Berlin',
     appointmentGridMinutes: 5,
+    // Wie in der Anwendung: ein Patientenkonto hat keinen Mitarbeiterdatensatz.
+    staffMemberId: roles.some((rolle) => rolle !== 'patient')
+      ? (STAFF_IDS[displayName] ?? null)
+      : null,
   };
 }

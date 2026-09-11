@@ -35,11 +35,16 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
     if (parsed.success) roles.push(parsed.data);
   }
 
-  const organization = await supabase
-    .from('organizations')
-    .select('name, time_zone, appointment_grid_minutes')
-    .eq('id', profile.organization_id)
-    .maybeSingle();
+  const [organization, staffMember] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select('name, time_zone, appointment_grid_minutes')
+      .eq('id', profile.organization_id)
+      .maybeSingle(),
+    // Die eigene Beschaeftigtenkennung. Ein Patientenkonto hat keine; das ist
+    // kein Fehler, sondern der Normalfall - deshalb maybeSingle.
+    supabase.from('staff_members').select('id').eq('person_id', profile.person_id).maybeSingle(),
+  ]);
 
   const org = organization.data as {
     name?: string;
@@ -55,6 +60,7 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
     // (CAL-001). Bewusst aus der Organisation, nicht aus dem Browser.
     organizationTimeZone: org?.time_zone ?? null,
     appointmentGridMinutes: org?.appointment_grid_minutes ?? null,
+    staffMemberId: (staffMember.data as { id?: string } | null)?.id ?? null,
   };
 }
 

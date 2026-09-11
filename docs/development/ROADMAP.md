@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 2.5 · Stand 2026-09-08 · **in Kraft**
+Version 2.7 · Stand 2026-09-11 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -45,36 +45,54 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop UX-EPIC-001 Hausbesuchstag: Tagesliste, Folgetermin, Textbausteine
+/feature-loop STAFF-EPIC-002 Konten: Einladung, Rollen, Passwort-Selbstbedienung
 ```
 
-- **Danach, in dieser Reihenfolge:** `STAFF-EPIC-002` Konten ·
-  `LOE-EPIC-001` Löschung und Retention · `CAL-EPIC-003a` Terminzustände.
-- **Ersatz**, falls UX-EPIC-001 blockiert ist: `STAFF-EPIC-002`.
-- **Zuschnitt geklärt (ADR-019 Fassung 2, MAP-001, 2026-09-08):** die
-  Navigations-Story aus UX-EPIC-001 ist **nicht blockiert** — der Handoff
-  übermittelt nichts aus der Anwendung; er baut die URL nach ANN-018 (Adresse
-  ohne Namen, Fahrradmodus) und ist nicht automatisch risikofrei (ADR-019
-  Punkt 23, Frage an B2). Bedingung: **nur auf Aktion, nie automatisch** —
+- **Danach, in dieser Reihenfolge:** `LOE-EPIC-001` Löschung und Retention ·
+  `CAL-EPIC-003a` Terminzustände · `CAL-EPIC-003b` Serie.
+- **Ersatz**, falls STAFF-EPIC-002 blockiert ist: `LOE-EPIC-001`.
+- **UX-EPIC-001 ist am 2026-09-11 fertig** (elf Stories, Branch
+  `claude/trusting-mccarthy-k4c3qb`). Die Abnahmeschritte stehen in
+  `docs/abnahme/etappe-1-kernprozess.md`; der Blick auf die laufende Anwendung
+  hinter der Anmeldung war in der Cloudumgebung nicht möglich und liegt
+  deshalb vollständig bei Jannes. Neu zu bestätigen: **ANN-020**
+  (Textbausteine ohne Patientenbezug) und **ANN-021** (Feldliste und
+  Vorhaltedauer des Tagesplans im Arbeitsspeicher). **ANN-018** ist nur für
+  Google Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
+- **Zuschnitt geklärt (ADR-019 Fassung 2, MAP-001, 2026-09-08), mit UX-002
+  umgesetzt:** der Handoff übermittelt nichts aus der Anwendung; er baut die
+  URL nach ANN-018 (Adresse ohne Namen, Fahrradmodus) und ist nicht
+  automatisch risikofrei (ADR-019 Punkt 23, Frage an B2). Bedingung: **nur
+  auf Aktion, nie automatisch** — deshalb eine Schaltfläche ohne `href`,
   Prüfregel im Review. Die **In-App-Karte** und die **Fahrzeiten** sind kein
   Komfort mehr, sondern Produktziel; sie kommen als MAP-002 bis MAP-006
   (Etappe T, `MAP-LOOPS.md`) mit **PTV Developer** als Kandidat statt Google.
 - **Parallel startbar, sobald der PTV-Schlüssel vorliegt:**
   `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md`
-  — nur synthetische Daten, unabhängig von UX-EPIC-001. Reihenfolge zu
-  UX-EPIC-001 entscheidet Jannes (E-21); Empfehlung: UX-EPIC-001 zuerst.
+  — nur synthetische Daten. Die Reihenfolgefrage E-21 hat sich erledigt:
+  UX-EPIC-001 ist gebaut.
 - **Offen aus UI-000:** die Vorschaubereiche nutzen die gemeinsamen
   Bausteine noch nicht. Sie werden in ihrem eigenen Loop ersetzt, nicht
   vorher umgestellt (ARBEITSBEREICHE.md).
-- **Zu bestätigen:** ANN-010 bis ANN-018. Sie blockieren nichts, aber
-  ANN-011 (Rollenschnitt der Verordnung) und ANN-014 (Empfehlung zum
-  Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2, und ANN-015
-  (Verbindungsanzeige ohne Server-Ping) gehört auf den ersten Feldtag.
-  ANN-016 bis ANN-018 (Koordinaten bei der Adresse, Edge Function als
-  Adapter, Übergabeziel des Handoffs) gehören in die Anfrage B2.
+- **Von Jannes bestätigt am 2026-09-11:** die Annahmen aus UX-EPIC-001 —
+  **ANN-018** (Übergabeziel des Handoffs), **ANN-020** (Textbausteine als
+  Betriebsdaten ohne Patientenbezug) und **ANN-021** (Feldliste und
+  Vorhaltedauer des Tagesplans, zugleich die Antwort auf die offene
+  Folgefrage aus ADR-001). Alle drei sind `Datenschutz` und bleiben deshalb
+  **im Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die
+  Datenschutzprüfung nicht (Lebenszyklus im Register). **ANN-019 ist
+  erledigt** — der Restpunkt aus VER-003 ist mit UX-009 behoben.
+- **Weiter offen:** ANN-001, ANN-004, ANN-005, ANN-008, ANN-009, ANN-011,
+  ANN-013, ANN-014, ANN-016, ANN-017 und die Providerfrage aus ANN-007. Sie
+  blockieren nichts, aber ANN-011 (Rollenschnitt der Verordnung) und ANN-014
+  (Empfehlung zum Verordnungsende, ADR-006) gehören in die Anfragen B1 und
+  B2, ANN-016 und ANN-017 (Koordinaten bei der Adresse, Edge Function als
+  Adapter) in die Anfrage B2, und ANN-015 (Verbindungsanzeige ohne
+  Server-Ping, seit UX-009 mit Textverlust-Schutz) gehört auf den ersten
+  Feldtag.
 - **Zu beantworten (MAP-001):** E-20 ADR-019 Fassung 2 bestätigen — damit
-  entfällt die Google Maps Embed API aus E-16 · E-21 Reihenfolge MAP-002 zu
-  UX-EPIC-001.
+  entfällt die Google Maps Embed API aus E-16. **E-21 (Reihenfolge MAP-002 zu
+  UX-EPIC-001) ist gegenstandslos**, seit UX-EPIC-001 fertig ist.
 - **Entschieden am 2026-09-08, noch nicht gebaut:** Terminfenster
   (`PROJECT_PRINCIPLES.md` §8.1) und Sprachdokumentation (§6.3). Die
   Terminlänge ist heute frei, ein Fahrpuffer existiert nicht, eine
@@ -763,6 +781,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 | MAP-001 Mapping-Architektur und Providerentscheidung    | fertig | 2026-09-08     | `f52e555`, `5d51d97`, Roadmap-Commit auf Branch `claude/mapping-architecture-provider-ujy45m` | —             |
 | UI-000 Fundament                                        | fertig | 2026-09-07     | `4a4440f`, `45e8222`, `df8a294`, `11a9977`, `afb5ba5`, `e6b4ab6`    |               |
 | Produktentscheidungen Terminfenster und Sprachdokumentation (Docs) | fertig | 2026-09-08 | Branch `claude/praxissoftware-product-decisions-1uk1d8`             | —             |
+| UX-EPIC-001 (UX-001 bis UX-011)                         | fertig | 2026-09-11     | `ee19a16`, `2b927f5`, `ef82a19`, `18ec31b`, `b3f1440`, `6fad6bc`, `c42e1f5`, `4e2ee46`, `9dbe56a`, `1b5b065`, `9ab6ad7`, Branch `claude/trusting-mccarthy-k4c3qb` |               |
 
 ---
 
@@ -770,6 +789,7 @@ Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2.7     | 2026-09-11 | **UX-EPIC-001 fertig** (elf Stories): Tagesliste des Hausbesuchstags mit Anschrift, `tel:`-Link und Zugangshinweis · Navigations-Handoff an Google Maps (ANN-018 verankert, nur auf Aktion) · Folgetermin und Vorbelegung „Hausbesuch, ich, heute" · serverseitige Patientensuche von jeder Seite · Tap auf freie Zeit im Kalender · nächste Termine in der Akte · „Behandlung abschließen" in einem serverseitigen Vorgang · Textbausteine (ANN-020) · Textverlust-Schutz und Behebung des VER-003-Restpunkts aus ANN-019 · langer Druck am Finger und Rückgängig-Leiste · Tagesplan im Funkloch lesbar (ANN-021, beantwortet die offene Folgefrage aus ADR-001). **Nächster Loop: STAFF-EPIC-002.** |
 | 2.6     | 2026-09-08 | **Produktentscheidungen Terminfenster und Sprachdokumentation** (Docs, kein Code): `PROJECT_PRINCIPLES.md` 0.5 mit §8.1 (60-Minuten-Terminfenster einschließlich Dokumentation, 5-Minuten-Raster, Fahrzeit zusätzlich, Aufrunden auf den Rasterpunkt, Bestandstermine unverändert, serverseitige Durchsetzung) und §6.3 (Sprachdokumentation mit ausdrücklicher Übernahme); ADR-005/006/016 je Fassung 2; CAL-010 in CAL-EPIC-003b zu CAL-010a/CAL-010b präzisiert; VER-003-Restpunkt als konkrete Folgeaufgabe in UX-EPIC-001; E12 und E13 neu offen. **Reihenfolge unverändert — UX-EPIC-001 bleibt der nächste Loop.** |
 | 2.5     | 2026-09-08 | **MAP-001:** In-App-Karte, Fahrradrouting und Fahrzeiten sind Produktziel (Convenience hoch priorisiert). ADR-019 Fassung 2: MapLibre + serverseitiger Adapter, PTV Developer als Kandidat für Prototyp/Bewertung, Google nur als Handoff-Ziel, Gate vor Echtdaten; Prüfdokument `providerpruefung-kartendienst.md`; Vertrag `src/lib/location/contract.ts`; ANN-016 bis ANN-018; Etappe T mit MAP-002 bis MAP-006 (`MAP-LOOPS.md`), TOUR-EPIC-001a/b aufgegangen; R12 aufgelöst, R13 neu; E-20/E-21 offen |
 | 2.4     | 2026-09-08 | ADR-019 geschrieben. Navigationslink frei — UX-EPIC-001 ohne Vorbehalt. **In-App-Karte und Fahrzeiten blockiert**: Google bietet für die Maps Platform keinen AVV, sondern Controller-Controller-Bedingungen; §3.5 verlangt den AVV als MUSS und §9 ordnet den Kartendienst dort ein. R12 eingetreten, Gegenmaßnahme greift wie vorgesehen (Weg B) |

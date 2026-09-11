@@ -24,6 +24,18 @@ export interface CurrentUser {
    * prueft der Server; `null` heisst nur, dass der Wert noch nicht geladen ist.
    */
   appointmentGridMinutes: number | null;
+  /**
+   * Die eigene Beschaeftigtenkennung - `null` fuer ein Patientenkonto.
+   *
+   * Sie beantwortet die Frage "ich": welche Besuche des Tages sind meine, und
+   * wer ist beim Anlegen eines Termins vorbelegt (UX-001, UX-003). Ein Abgleich
+   * ueber den Anzeigenamen waere dafuer untauglich - im Team koennen zwei
+   * Personen sehr aehnlich heissen.
+   *
+   * Sie steuert ausschliesslich die Darstellung und Vorbelegung. Verbindlich
+   * prueft der Server, wer einem Termin zugeordnet werden darf (ADR-004).
+   */
+  staffMemberId: string | null;
 }
 
 /** Rollen mit Zugriff auf die Patientenkartei (PROJECT_PRINCIPLES.md 4.2/4.3). */

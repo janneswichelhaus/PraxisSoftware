@@ -1,9 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as SchedulingApi from '@/features/scheduling/api';
+import type * as RouterModule from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
+
+const navigate = vi.fn();
+
+// Nur useNavigate wird ersetzt: useSearchParams traegt die Kalenderparameter
+// und muss echt bleiben.
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof RouterModule>();
+  return { ...actual, useNavigate: () => navigate };
+});
 
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
 const STAFF_TIM = '55555555-5555-4555-8555-000000000004';
@@ -116,6 +126,7 @@ describe('CalendarPage', () => {
     updateAppointment.mockReset();
     fetchWorkingHours.mockReset();
     fetchWorkingHourExceptions.mockReset();
+    navigate.mockReset();
 
     fetchWorkingHours.mockResolvedValue([]);
     fetchWorkingHourExceptions.mockResolvedValue([]);
@@ -678,6 +689,204 @@ describe('CalendarPage', () => {
 
       // Ohne die Erweiterung begaenne die Achse erst um 07:00.
       expect(screen.getByText('06:00')).toBeInTheDocument();
+    });
+  });
+
+  describe('UX-005: Tap auf freie Zeit', () => {
+    it('fuehrt aus der Tagesansicht mit Person, Tag und Uhrzeit in die Terminanlage', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.pathname).toBe('/termine/neu');
+      expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
+      expect(ziel.searchParams.get('person')).toBe(STAFF_ANNA);
+      expect(ziel.searchParams.get('art')).toBe('home_visit');
+      // Vorbelegtes Zeitfenster von 60 Minuten (PROJECT_PRINCIPLES.md 8.1).
+      expect(ziel.searchParams.get('beginn')).toBe('07:00');
+      expect(ziel.searchParams.get('ende')).toBe('08:00');
+    });
+
+    it('fuehrt aus der Wochenansicht mit dem Tag der Spalte in die Terminanlage', async () => {
+      rendern('/kalender?ansicht=woche&datum=2027-05-12&person=' + STAFF_ANNA);
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      // Spalten sind hier Wochentage; die Beschriftung ist der Kurzname.
+      fireEvent.click(screen.getAllByRole('gridcell')[0]!);
+
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.searchParams.get('datum')).toBe('2027-05-10');
+      expect(ziel.searchParams.get('person')).toBe(STAFF_ANNA);
+    });
+
+    it('loest nichts aus, wenn auf einen bestehenden Termin getippt wird', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(kachel);
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('bietet denselben Weg als Schaltflaeche an - ohne Uhrzeit', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const link = await screen.findByRole('link', { name: 'Termin anlegen' });
+
+      const ziel = new URL(link.getAttribute('href')!, 'http://test');
+      expect(ziel.pathname).toBe('/termine/neu');
+      expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
+      expect(ziel.searchParams.has('beginn')).toBe(false);
+    });
+
+    it('bietet einem Patientenkonto weder Tap noch Schaltflaeche', async () => {
+      renderWithProviders(
+        <CalendarPage user={testUser(['patient'], 'Max Mustermann')} />,
+        '/kalender?ansicht=tag&datum=2027-05-12',
+      );
+      await waitFor(() =>
+        expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull(),
+      );
+    });
+  });
+
+  describe('UX-010: Langer Druck am Finger und Rueckgaengig', () => {
+    /** Wie in CAL-006: jsdom kennt kein Layout. */
+    function spaltenVermessen(): void {
+      const zellen = screen.getAllByRole('gridcell');
+      zellen.forEach((zelle, index) => {
+        zelle.getBoundingClientRect = () => ({
+          left: 100 + index * 200,
+          right: 300 + index * 200,
+          top: 0,
+          bottom: 800,
+          width: 200,
+          height: 800,
+          x: 100 + index * 200,
+          y: 0,
+          toJSON: () => ({}),
+        });
+      });
+    }
+
+    it('verschiebt am Finger NICHT ohne langen Druck - das ist Scrollen', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        rendern('/kalender?ansicht=tag&datum=2027-05-12');
+        const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+        spaltenVermessen();
+
+        fireEvent.pointerDown(kachel, {
+          clientX: 150,
+          clientY: 200,
+          button: 0,
+          pointerType: 'touch',
+        });
+        // Sofortige Bewegung: der Finger scrollt.
+        fireEvent.pointerMove(window, { clientX: 150, clientY: 260, button: 0 });
+        fireEvent.pointerUp(window, { clientX: 150, clientY: 260 });
+
+        expect(updateAppointment).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('verschiebt am Finger nach dem langen Druck', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        rendern('/kalender?ansicht=tag&datum=2027-05-12');
+        const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+        spaltenVermessen();
+
+        fireEvent.pointerDown(kachel, {
+          clientX: 150,
+          clientY: 200,
+          button: 0,
+          pointerType: 'touch',
+        });
+        // Finger bleibt liegen: der lange Druck laeuft ab.
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(500);
+        });
+        fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
+        fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
+
+        await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('verschiebt am Zeigegeraet weiterhin sofort - dort gibt es nichts zu warten', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+
+      fireEvent.pointerDown(kachel, {
+        clientX: 150,
+        clientY: 200,
+        button: 0,
+        pointerType: 'mouse',
+      });
+      fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
+      fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+    });
+
+    it('bietet nach dem Verschieben den alten Platz zum Zurueckholen an', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+
+      fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
+      fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
+      fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+
+      // Die Leiste nennt den alten Platz - 09:00-10:00 Ortszeit.
+      const leiste = await screen.findByText(/Termin verschoben\. Vorher:/);
+      expect(leiste).toHaveTextContent(/09:00–10:00/);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Rückgängig' }));
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(2));
+      const zurueck = updateAppointment.mock.calls.at(-1) as [
+        string,
+        string,
+        AppointmentsApi.AppointmentFormValues,
+        boolean | undefined,
+      ];
+      expect(zurueck[2]).toMatchObject({
+        date: '2027-05-12',
+        start_time: '09:00',
+        end_time: '10:00',
+      });
+      // Der alte Platz war bereits in Gebrauch - keine zweite Arbeitszeitfrage.
+      expect(zurueck[3]).toBe(true);
+    });
+
+    it('laesst die Leiste verschwinden, wenn der Ausschnitt wechselt', async () => {
+      const user = userEvent.setup();
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+
+      fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
+      fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
+      fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
+      await screen.findByText(/Termin verschoben\. Vorher:/);
+
+      await user.click(screen.getByRole('button', { name: 'Nächster Zeitraum' }));
+      await waitFor(() => expect(screen.queryByText(/Termin verschoben\. Vorher:/)).toBeNull());
+    });
+
+    it('zeigt ohne Verschiebung keine Leiste', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+      expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
     });
   });
 });

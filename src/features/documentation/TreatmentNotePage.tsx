@@ -13,6 +13,9 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
+import { Textverlustschutz } from './Textverlustschutz';
+import { TextbausteinLeiste } from './TextbausteinLeiste';
+import { bausteinEinfuegen } from './textbausteine';
 import {
   createTreatmentNote,
   findeEintrag,
@@ -87,6 +90,8 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
       />
 
       <form onSubmit={absenden} noValidate className="max-w-2xl">
+        <TextbausteinLeiste onEinfuegen={(text) => setEntwurf(bausteinEinfuegen(wert, text))} />
+
         <TextArea
           label={istNachtrag ? 'Nachtrag' : 'Eintrag zur Behandlung'}
           hint="Freitext. Der Eintrag bleibt ein Entwurf; die Finalisierung ist ein eigener Schritt am Termin."
@@ -104,6 +109,8 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
             <ErrorState title="Nicht gespeichert" description={speichern.error.message} />
           </div>
         ) : null}
+
+        <Textverlustschutz ungespeichert={geaendert} />
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={speichern.isPending || !geaendert}>

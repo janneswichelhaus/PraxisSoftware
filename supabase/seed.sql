@@ -17,6 +17,7 @@
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
 delete from public.audit_log;
+delete from public.treatment_text_snippets;
 delete from public.staff_working_hour_exceptions;
 delete from public.staff_working_hours;
 delete from public.appointments;
@@ -171,6 +172,60 @@ insert into public.user_roles (user_id, organization_id, role_key) values
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'team_lead'),
   ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', 'patient'),
   ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient');
+
+-- -----------------------------------------------------------------------------
+-- Ein Hausbesuchstag fuer heute (UX-001)
+--
+-- Rein synthetisch. Bewusst relativ zu current_date statt mit festem Datum:
+-- ein fester Tag waere nach kurzer Zeit Vergangenheit, und die Tagesliste
+-- haette bei jeder Abnahme nichts zu zeigen.
+--
+-- Der Tag gehoert Anna Beispiel (therapist) - dem Konto, mit dem die Abnahme
+-- die Tagesliste ansieht. Drei Zustaende, damit "offen" und "erledigt"
+-- unterscheidbar sind: ein ausstehender Hausbesuch, ein abgeschlossener ohne
+-- Dokumentation und ein abgesagter. Der Adress-Snapshot ist die Kopie der
+-- Stammdatenadresse zum Zeitpunkt der Anlage (ANN-003).
+-- -----------------------------------------------------------------------------
+insert into public.appointments (
+  id, organization_id, patient_id, staff_member_id, location_id,
+  appointment_type, status, starts_at, ends_at,
+  visit_street, visit_house_number, visit_postal_code, visit_city,
+  completed_at, completed_by, cancelled_at, cancelled_by
+) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000001', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '55555555-5555-4555-8555-000000000002', null,
+   'home_visit', 'scheduled', (current_date + time '09:00') at time zone 'Europe/Berlin', (current_date + time '10:00') at time zone 'Europe/Berlin',
+   'Beispielstrasse', '12', '72070', 'Tuebingen', null, null, null, null),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000002', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '55555555-5555-4555-8555-000000000002', null,
+   'home_visit', 'completed', (current_date + time '10:30') at time zone 'Europe/Berlin', (current_date + time '11:30') at time zone 'Europe/Berlin',
+   'Testweg', '7', '72072', 'Tuebingen', (current_date + time '11:30') at time zone 'Europe/Berlin', '11111111-1111-4111-8111-000000000002', null, null),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000003', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000003', '55555555-5555-4555-8555-000000000002', null,
+   'home_visit', 'cancelled', (current_date + time '14:00') at time zone 'Europe/Berlin', (current_date + time '15:00') at time zone 'Europe/Berlin',
+   'Fiktivgasse', '9', '72074', 'Tuebingen', null, null, (current_date + time '08:00') at time zone 'Europe/Berlin', '11111111-1111-4111-8111-000000000003'),
+  -- Ein Praxistermin bei Jannes, damit der Tagesplan des Teams mehr als eine
+  -- Person zeigt und die Zweckbindung sichtbar wird: hier gibt es weder
+  -- Adresse noch Zugangshinweis.
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000004', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '55555555-5555-4555-8555-000000000001', '33333333-3333-4333-8333-000000000001',
+   'practice', 'scheduled', (current_date + time '16:00') at time zone 'Europe/Berlin', (current_date + time '17:00') at time zone 'Europe/Berlin',
+   null, null, null, null, null, null, null, null);
+
+-- -----------------------------------------------------------------------------
+-- Textbausteine (UX-008)
+--
+-- Rein synthetisch und ausdruecklich ohne Patientenbezug: ein Baustein ist
+-- eine Formulierung, kein Befund. Zwei praxisweite (staff_member_id null) und
+-- einer, der nur Anna Beispiel gehoert - damit die beiden Geltungsbereiche in
+-- der Abnahme unterscheidbar sind.
+-- -----------------------------------------------------------------------------
+insert into public.treatment_text_snippets (organization_id, staff_member_id, title, body, created_by, updated_by) values
+  ('22222222-2222-4222-8222-000000000001', null, 'Hausbesuch durchgefuehrt',
+   'Hausbesuch wie vereinbart durchgefuehrt. Patient:in war zur vereinbarten Zeit anwesend.',
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('22222222-2222-4222-8222-000000000001', null, 'Eigenuebungen besprochen',
+   'Eigenuebungsprogramm gemeinsam durchgegangen, Ausfuehrung korrigiert und Wiederholungszahl angepasst.',
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000002', 'Manuelle Therapie',
+   'Manuelle Techniken angewendet, Reaktion im Verlauf der Behandlung beobachtet.',
+   '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002');
 
 -- -----------------------------------------------------------------------------
 -- Arbeitszeiten (CAL-005)

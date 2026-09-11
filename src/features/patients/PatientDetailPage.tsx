@@ -6,6 +6,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
+import { PatientUpcomingAppointments } from '@/features/appointments/PatientUpcomingAppointments';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canChangePatientStatus,
@@ -178,6 +179,11 @@ function PatientDetail({ patient, user }: { patient: Patient; user: CurrentUser 
           <StatusAktion patient={patient} />
         </div>
       ) : null}
+
+      {/* Kuenftige Termine stehen vor Verordnung und Dokumentation: Sie sind
+          die organisatorische Auskunft, die am haeufigsten gebraucht wird -
+          und die einzige, die nach vorn schaut (UX-006). */}
+      <PatientUpcomingAppointments patientId={patient.id} user={user} />
 
       {/* Verordnung und Dokumentation kommen ueber eigene, rollenabhaengig
           projizierte Lesepfade - nie aus den Stammdaten (VER-002, DOK-003,

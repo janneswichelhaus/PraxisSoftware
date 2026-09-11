@@ -1,6 +1,14 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { STUNDEN_HOEHE, kachelBreite, minuteZuPixel, spalten, type Zeitband } from './calendar';
+import {
+  STUNDEN_HOEHE,
+  aufRaster,
+  kachelBreite,
+  minuteZuPixel,
+  pixelZuMinute,
+  spalten,
+  type Zeitband,
+} from './calendar';
 import { appointmentStatusLabels, appointmentTypeLabels, type CalendarEntry } from './api';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 
@@ -68,6 +76,7 @@ export function CalendarGrid({
   raster,
   ziehbarErlaubt,
   onVerschieben,
+  onFreieZeit,
   beschriftung,
 }: {
   spaltenModell: GitterSpalte[];
@@ -77,6 +86,14 @@ export function CalendarGrid({
   /** Ohne Änderungsrecht wird gar nicht erst gezogen. */
   ziehbarErlaubt: boolean;
   onVerschieben: (ziel: { terminId: string; spalteId: string; startMinute: number }) => void;
+  /**
+   * Tippen auf eine freie Stelle einer Spalte (UX-005).
+   *
+   * Ohne Angabe passiert nichts - die freie Fläche bleibt dann schlicht
+   * Hintergrund. Der Tap ist eine Abkürzung für Zeigegeräte; der Weg über die
+   * Tastatur ist die Schaltfläche „Termin anlegen" über dem Gitter.
+   */
+  onFreieZeit?: ((ziel: { spalteId: string; startMinute: number }) => void) | undefined;
   beschriftung: string;
 }) {
   const spaltenRefs = useRef(new Map<string, HTMLElement>());
@@ -176,17 +193,36 @@ export function CalendarGrid({
                 if (el) spaltenRefs.current.set(s.id, el);
                 else spaltenRefs.current.delete(s.id);
               }}
-              className="border-line relative border-l"
+              className={`border-line relative border-l ${onFreieZeit ? 'cursor-copy' : ''}`}
               style={{ height: `${hoehe}px` }}
               role="gridcell"
               aria-label={s.titel}
+              // Nur die freie Fläche: eine Kachel liegt darüber und fängt ihren
+              // eigenen Klick ab. Der Hintergrund (Arbeitszeitbänder,
+              // Stundenlinien) ist `pointer-events-none`, damit ein Tipp
+              // darauf hier ankommt und nicht ins Leere geht.
+              onClick={
+                onFreieZeit
+                  ? (event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (ziehen.klickUnterdruecken()) return;
+                      const kasten = event.currentTarget.getBoundingClientRect();
+                      const roh = pixelZuMinute(event.clientY - kasten.top, fenster.vonMinute);
+                      const minute = Math.max(
+                        fenster.vonMinute,
+                        Math.min(fenster.bisMinute, aufRaster(roh, raster)),
+                      );
+                      onFreieZeit({ spalteId: s.id, startMinute: minute });
+                    }
+                  : undefined
+              }
             >
               {/* Arbeitszeit als Hintergrund - Darstellung, keine Prüfung. */}
               {s.baender.map((b, i) => (
                 <div
                   key={i}
                   aria-hidden="true"
-                  className="bg-surface-sunken absolute inset-x-0"
+                  className="bg-surface-sunken pointer-events-none absolute inset-x-0"
                   style={{
                     top: `${minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute)}px`,
                     height: `${minuteZuPixel(Math.min(b.bisMinute, fenster.bisMinute), fenster.vonMinute) - minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute)}px`,
@@ -199,7 +235,7 @@ export function CalendarGrid({
                 <div
                   key={m}
                   aria-hidden="true"
-                  className="border-line absolute inset-x-0 border-t"
+                  className="border-line pointer-events-none absolute inset-x-0 border-t"
                   style={{ top: `${minuteZuPixel(m, fenster.vonMinute)}px` }}
                 />
               ))}
@@ -217,6 +253,7 @@ export function CalendarGrid({
                     breite={breite}
                     stapel={spalte + 1}
                     gedimmt={wirdGezogen}
+                    wartet={ziehen.wartetAuf === g.eintrag.id}
                     ziehbar={ziehbarErlaubt && g.ziehbar}
                     onPointerDown={(event) =>
                       ziehen.beginnen(event, {
@@ -261,6 +298,7 @@ function Kachel({
   breite,
   stapel,
   gedimmt,
+  wartet,
   ziehbar,
   onPointerDown,
   onClickCapture,
@@ -271,6 +309,8 @@ function Kachel({
   breite: number;
   stapel: number;
   gedimmt: boolean;
+  /** Der lange Druck läuft gerade - sichtbare Rückmeldung am Finger (UX-010). */
+  wartet: boolean;
   ziehbar: boolean;
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
   onClickCapture: (event: React.MouseEvent) => void;
@@ -305,15 +345,21 @@ function Kachel({
         left: `${links}%`,
         width: `${breite}%`,
         zIndex: stapel,
-        // Ohne none übernimmt der Browser die Geste als Bildlauf, und das
-        // Ziehen käme auf einem Touchgerät gar nicht erst zustande.
-        ...(ziehbar ? { touchAction: 'none' } : {}),
+        // Bewusst NICHT `none` (UX-010): eine Kachel nimmt auf dem Telefon
+        // fast die ganze Spalte ein: mit `none` liesse sich der Kalender
+        // ueber einem Termin gar nicht mehr scrollen. Der Bildlauf bleibt
+        // beim Browser; das Verschieben beginnt erst nach dem langen Druck,
+        // und der schliesst einen begonnenen Bildlauf aus.
+        ...(ziehbar ? { touchAction: 'pan-x pan-y' } : {}),
       }}
       className={[
         'border-line bg-surface hover:bg-surface-sunken absolute block overflow-hidden rounded-lg',
         'border border-l-4 px-1.5 py-1 text-left transition-colors',
         eintrag.status === 'cancelled' ? 'opacity-60' : '',
         gedimmt ? 'opacity-40' : '',
+        // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
+        // wie nichts.
+        wartet ? 'ring-accent scale-[1.02] ring-2' : '',
         ziehbar ? 'cursor-grab' : '',
       ]
         .filter(Boolean)

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
 import type * as VerordnungenApi from '@/features/prescriptions/api';
+import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModule from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
@@ -31,6 +32,18 @@ const fetchPatientPrescriptions = vi.fn();
 const fetchPatientPrescriptionsClinical = vi.fn();
 const fetchTreatmentEvidencePage = vi.fn();
 const fetchPatientTreatmentNotesPage = vi.fn();
+const fetchUpcomingAppointments = vi.fn();
+
+// Kuenftige Termine kommen ueber einen eigenen Lesepfad (UX-006); hier zaehlt
+// nur, dass der Abschnitt rollenabhaengig da ist.
+vi.mock('@/features/appointments/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    fetchUpcomingAppointments: (patientId: string, limit?: number) =>
+      fetchUpcomingAppointments(patientId, limit) as Promise<AppointmentsApi.UpcomingAppointment[]>,
+  };
+});
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
@@ -102,6 +115,8 @@ describe('PatientDetailPage', () => {
     fetchPatientPrescriptionsClinical.mockReset();
     fetchPatientPrescriptions.mockResolvedValue([]);
     fetchPatientPrescriptionsClinical.mockResolvedValue([]);
+    fetchUpcomingAppointments.mockReset();
+    fetchUpcomingAppointments.mockResolvedValue([]);
   });
 
   // Wer die Kartei lesen darf, darf die Stammdaten auch aendern - dieselbe
@@ -357,6 +372,55 @@ describe('PatientDetailPage', () => {
       expect(screen.queryByRole('heading', { name: 'Verordnungen' })).not.toBeInTheDocument();
       expect(fetchPatientPrescriptions).not.toHaveBeenCalled();
       expect(fetchPatientPrescriptionsClinical).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('UX-006: Naechste Termine', () => {
+    const naechster: AppointmentsApi.UpcomingAppointment = {
+      id: '77777777-7777-4777-8777-000000000001',
+      starts_at: '2027-05-19T07:00:00.000Z',
+      ends_at: '2027-05-19T08:00:00.000Z',
+      appointment_type: 'home_visit',
+      status: 'scheduled',
+      staff_given_name: 'Anna',
+      staff_family_name: 'Beispiel',
+      organization_time_zone: 'Europe/Berlin',
+    };
+
+    it('zeigt den naechsten Termin mit Datum, Zeit und behandelnder Person', async () => {
+      fetchUpcomingAppointments.mockResolvedValue([naechster]);
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      expect(await screen.findByRole('heading', { name: 'Nächste Termine' })).toBeInTheDocument();
+      expect(await screen.findByText(/19\. Mai 2027/)).toBeInTheDocument();
+      expect(screen.getByText(/09:00–10:00 Uhr · Hausbesuch · Anna Beispiel/)).toBeInTheDocument();
+    });
+
+    it('fuehrt vom Eintrag zum Termin', async () => {
+      fetchUpcomingAppointments.mockResolvedValue([naechster]);
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      const link = await screen.findByRole('link', { name: /19\. Mai 2027/ });
+      expect(link).toHaveAttribute('href', `/termine/${naechster.id}`);
+    });
+
+    it('sagt es als Text, wenn nichts vereinbart ist', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+      expect(await screen.findByText('Kein weiterer Termin vereinbart.')).toBeInTheDocument();
+    });
+
+    it('fuehrt keinen zweiten Weg "Termin anlegen" neben dem der Akte', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Nächste Termine' });
+
+      expect(screen.getAllByRole('link', { name: 'Termin anlegen' })).toHaveLength(1);
+    });
+
+    it('fragt fuer ein Patientenkonto gar nicht erst', async () => {
+      renderWithProviders(<PatientDetailPage user={testUser(['patient'], 'Max Mustermann')} />);
+      await waitFor(() => expect(fetchPatient).toHaveBeenCalled());
+      expect(fetchUpcomingAppointments).not.toHaveBeenCalled();
+      expect(screen.queryByRole('heading', { name: 'Nächste Termine' })).toBeNull();
     });
   });
 });

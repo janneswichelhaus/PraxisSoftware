@@ -295,4 +295,57 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
 
     expect(screen.getByLabelText('Heilmittel *')).toHaveValue('');
   });
+
+  it('taucht bei einem unabhaengigen neuen Versuch nicht wieder auf (UX-009, Restpunkt aus ANN-019)', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient();
+
+    const { unmount } = render(testApp(queryClient, `/patienten/${PATIENT_ID}/verordnungen/neu`));
+    await screen.findByRole('option', { name: /Probst/ });
+
+    await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
+    await user.type(screen.getByLabelText('Heilmittel *'), 'Aufgegebener Versuch');
+    await user.type(screen.getByLabelText('Verordnet *'), '6');
+
+    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+
+    // Die Verordner-Anlage wird ueber die Hauptnavigation verlassen: weder
+    // "Abbrechen" noch Speichern - genau der Fall aus dem Restpunkt. Der
+    // Entwurf liegt danach noch im Speicher.
+    unmount();
+
+    // Ein unabhaengiger neuer Versuch auf demselben Pfad, innerhalb der
+    // 30-Minuten-Frist: Frueher wurde hier der aufgegebene Entwurf
+    // eingesetzt, weil der Pfad der Schluessel war.
+    jetzt += 2 * 60 * 1000;
+    render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
+    await screen.findByRole('option', { name: /Probst/ });
+
+    expect(screen.getByLabelText('Heilmittel *')).toHaveValue('');
+    expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveValue('');
+  });
+
+  it('haelt zwei Abstecher auseinander - der zweite bringt nicht den ersten Entwurf zurueck', async () => {
+    const user = userEvent.setup();
+
+    const erster = render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
+    await screen.findByRole('option', { name: /Probst/ });
+    await user.type(screen.getByLabelText('Heilmittel *'), 'Erster Versuch');
+    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    erster.unmount();
+
+    // Zweiter Anlauf, diesmal bis zum Ende: der zurueckkehrende Entwurf ist
+    // der des ZWEITEN Abstechers.
+    render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
+    await screen.findByRole('option', { name: /Probst/ });
+    await user.type(screen.getByLabelText('Heilmittel *'), 'Zweiter Versuch');
+    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+    await screen.findByRole('heading', { name: 'Verordnung erfassen' });
+    expect(screen.getByLabelText('Heilmittel *')).toHaveValue('Zweiter Versuch');
+  });
 });

@@ -233,10 +233,18 @@ describe('NewPrescriptionPage', () => {
     renderWithProviders(<NewPrescriptionPage />);
     await screen.findByRole('option', { name: /Probst/ });
 
-    expect(screen.getByRole('link', { name: 'Verordner:in anlegen' })).toHaveAttribute(
-      'href',
-      `/verordner/neu?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/verordnungen/neu`)}`,
+    const ziel = new URL(
+      screen.getByRole('link', { name: 'Verordner:in anlegen' }).getAttribute('href')!,
+      'http://test',
     );
+    expect(ziel.pathname).toBe('/verordner/neu');
+
+    // Der Ruecksprungpfad traegt seit UX-009 eine Vorgangskennung: Sie
+    // unterscheidet diesen Abstecher von einem spaeteren, unabhaengigen
+    // Besuch derselben Seite (Restpunkt aus ANN-019).
+    const rueckweg = new URL(ziel.searchParams.get('zurueck')!, 'http://test');
+    expect(rueckweg.pathname).toBe(`/patienten/${PATIENT_ID}/verordnungen/neu`);
+    expect(rueckweg.searchParams.get('vorgang')).toMatch(/.+/);
   });
 
   // Der Regressionstest zum Eingabenerhalt über den Abstecher zur

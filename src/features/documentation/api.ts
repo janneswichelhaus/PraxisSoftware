@@ -258,6 +258,43 @@ export async function finalizeTreatmentNote(
 }
 
 /**
+ * Schließt eine Behandlung in einem Schritt ab (UX-007).
+ *
+ * Entwurf schreiben, finalisieren und den Termin abschließen passieren
+ * serverseitig in **einer** Transaktion. Drei einzelne Aufrufe könnten
+ * dazwischen scheitern und einen halben Zustand hinterlassen - eine
+ * finalisierte Dokumentation an einem Termin, der noch als geplant geführt
+ * wird (PROJECT_PRINCIPLES.md 13).
+ *
+ * `expectedNoteUpdatedAt` ist der Stand des Entwurfs, auf dem die Eingabe
+ * beruht, oder `null`, wenn es beim Öffnen keinen gab. Beides wird
+ * serverseitig geprüft: ein zwischenzeitlich entstandener oder geänderter
+ * Entwurf führt zum Konflikt statt zum stillen Überschreiben.
+ */
+export async function completeTreatment(
+  appointmentId: string,
+  content: string,
+  expectedAppointmentUpdatedAt: string,
+  expectedNoteUpdatedAt: string | null,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('complete_treatment', {
+    p_appointment_id: appointmentId,
+    p_content: content,
+    p_expected_appointment_updated_at: expectedAppointmentUpdatedAt,
+    p_expected_note_updated_at: expectedNoteUpdatedAt,
+  })) as { error: { message?: string } | null };
+
+  if (error) {
+    if (error.message?.includes('appointment was changed meanwhile')) {
+      throw new Error(
+        'Der Termin wurde zwischenzeitlich geändert. Bitte den eigenen Text sichern, die Ansicht neu laden und den Abschluss erneut vornehmen.',
+      );
+    }
+    throw schreibfehler(error, 'Die Behandlung konnte nicht abgeschlossen werden.');
+  }
+}
+
+/**
  * Korrigiert einen finalisierten Eintrag als neue Version (ADR-016 Punkt 5, 6).
  *
  * Der bisherige Inhalt bleibt vollständig abrufbar; die Begründung ist

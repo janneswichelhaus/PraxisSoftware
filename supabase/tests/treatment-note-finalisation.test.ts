@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
 
 /**
  * Finalisierung, Versionierung und Nachtrag (DOK-002, ADR-016 Punkte 4 bis 6).
@@ -153,7 +153,7 @@ async function finalisiert(
 
 describe('DOK-002: Finalisierung von Hand', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('setzt den Eintrag auf final und haelt fest, wer wann finalisiert hat', async () => {
@@ -266,7 +266,7 @@ describe('DOK-002: Finalisierung von Hand', () => {
 
 describe('DOK-002: Korrektur eines finalisierten Eintrags', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('verschliesst den Entwurfsweg fuer finalisierte Eintraege (PROJECT_PRINCIPLES.md 5)', async () => {
@@ -383,7 +383,7 @@ describe('DOK-002: Korrektur eines finalisierten Eintrags', () => {
 
 describe('DOK-002: Nachtrag als eigener Eintrag', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('legt den Nachtrag als eigenen Entwurf am selben Termin an', async () => {
@@ -487,7 +487,7 @@ describe('DOK-002: Nachtrag als eigener Eintrag', () => {
 
 describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('liefert Haupteintrag und Nachtraege in dieser Reihenfolge', async () => {

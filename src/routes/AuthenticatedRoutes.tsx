@@ -15,6 +15,7 @@ import {
 } from '@/features/prescriptions/PrescriptionFormPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
+import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentStartPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
@@ -23,6 +24,8 @@ import { StaffListPage } from '@/features/staff/StaffListPage';
 import { NewStaffMemberPage } from '@/features/staff/NewStaffMemberPage';
 import { EditStaffMemberPage } from '@/features/staff/EditStaffMemberPage';
 import { StaffMemberDetailPage } from '@/features/staff/StaffMemberDetailPage';
+import { CompleteTreatmentPage } from '@/features/documentation/CompleteTreatmentPage';
+import { TextbausteinePage } from '@/features/documentation/TextbausteinePage';
 import { TreatmentNotePage } from '@/features/documentation/TreatmentNotePage';
 import { TreatmentNoteRevisionPage } from '@/features/documentation/TreatmentNoteRevisionPage';
 import { TreatmentNoteAddendumPage } from '@/features/documentation/TreatmentNoteAddendumPage';
@@ -127,6 +130,9 @@ export function AuthenticatedRoutes({
           {showAppointments ? (
             <>
               <Route path="/kalender" element={<CalendarPage user={user} />} />
+              {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
+                  nicht - aus dem Kalender heraus (UX-005). */}
+              <Route path="/termine/neu" element={<NewAppointmentStartPage />} />
               <Route
                 path="/patienten/:patientId/termine/neu"
                 element={<NewAppointmentPage user={user} />}
@@ -146,6 +152,11 @@ export function AuthenticatedRoutes({
 
           {showDocumentation ? (
             <>
+              {/* Behandlung abschliessen in einem Schritt (UX-007). */}
+              <Route
+                path="/termine/:appointmentId/abschluss"
+                element={<CompleteTreatmentPage user={user} />}
+              />
               <Route
                 path="/termine/:appointmentId/dokumentation"
                 element={<TreatmentNotePage user={user} />}
@@ -162,6 +173,9 @@ export function AuthenticatedRoutes({
                 path="/termine/:appointmentId/dokumentation/:noteId/nachtrag"
                 element={<TreatmentNoteAddendumPage user={user} />}
               />
+              {/* Ohne Pflege bliebe die Bausteinleiste dauerhaft leer -
+                  die Seite gehoert zur Story (UX-008). */}
+              <Route path="/praxis/textbausteine" element={<TextbausteinePage user={user} />} />
             </>
           ) : null}
 

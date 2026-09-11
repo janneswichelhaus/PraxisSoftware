@@ -77,8 +77,14 @@ async function formularAbwarten() {
   return screen.findByRole('button', { name: 'Termin anlegen' });
 }
 
-/** Fuellt Datum, Beginn und Ende mit einem gueltigen zukuenftigen Termin. */
+/**
+ * Fuellt Datum, Beginn und Ende mit einem gueltigen zukuenftigen Termin.
+ *
+ * Das Datum wird zuerst geleert: seit UX-003 steht dort der heutige Tag als
+ * Vorbelegung, und Tippen wuerde ihn nicht ersetzen, sondern ergaenzen.
+ */
 async function zeitenSetzen(user: ReturnType<typeof userEvent.setup>) {
+  await user.clear(screen.getByLabelText('Datum *'));
   await user.type(screen.getByLabelText('Datum *'), '2027-05-12');
   await user.type(screen.getByLabelText('Beginn *'), '09:00');
   await user.type(screen.getByLabelText('Ende *'), '10:00');
@@ -139,8 +145,10 @@ describe('NewAppointmentPage', () => {
     rendern();
     await user.click(await formularAbwarten());
 
+    // Olivia Office ist keine zuordenbare behandelnde Person; die Vorbelegung
+    // "ich" greift fuer sie nicht (UX-003).
     expect(await screen.findByText('Behandelnde Person ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Datum ist erforderlich.')).toBeInTheDocument();
+    expect(screen.getByText('Beginn ist erforderlich.')).toBeInTheDocument();
     expect(createAppointment).not.toHaveBeenCalled();
   });
 
@@ -150,6 +158,7 @@ describe('NewAppointmentPage', () => {
     await formularAbwarten();
 
     await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.clear(screen.getByLabelText('Datum *'));
     await user.type(screen.getByLabelText('Datum *'), '2027-05-12');
     await user.type(screen.getByLabelText('Beginn *'), '10:00');
     await user.type(screen.getByLabelText('Ende *'), '09:00');
@@ -469,5 +478,88 @@ describe('NewAppointmentPage', () => {
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Termin anlegen' })).not.toBeInTheDocument();
+  });
+
+  describe('UX-003: Vorbelegung', () => {
+    it('belegt Hausbesuch und den heutigen Tag vor', async () => {
+      rendern();
+      await formularAbwarten();
+
+      expect(screen.getByLabelText('Terminart *')).toHaveValue('home_visit');
+      const heute = new Intl.DateTimeFormat('en-CA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Europe/Berlin',
+      }).format(new Date());
+      expect(screen.getByLabelText('Datum *')).toHaveValue(heute);
+    });
+
+    it('belegt die angemeldete Person vor, wenn sie zuordenbar ist', async () => {
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['therapist'], 'Anna Beispiel')} />,
+        `/patienten/${PATIENT_ID}/termine/neu`,
+      );
+      await formularAbwarten();
+
+      await waitFor(() =>
+        expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_ANNA),
+      );
+    });
+
+    it('belegt niemanden vor, wenn die angemeldete Person nicht zuordenbar ist', async () => {
+      rendern(); // Olivia Office
+      await formularAbwarten();
+      expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue('');
+    });
+
+    it('uebernimmt Datum, Uhrzeiten, Art und Person aus der Adresszeile', async () => {
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+        `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09:00&ende=10:00&art=practice&person=${STAFF_TIM}`,
+      );
+      await formularAbwarten();
+
+      expect(screen.getByLabelText('Datum *')).toHaveValue('2027-05-19');
+      expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
+      expect(screen.getByLabelText('Ende *')).toHaveValue('10:00');
+      expect(screen.getByLabelText('Terminart *')).toHaveValue('practice');
+      await waitFor(() =>
+        expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_TIM),
+      );
+    });
+
+    it('leert eine Person aus der Adresszeile, die gar nicht zuordenbar ist', async () => {
+      const fremd = '55555555-5555-4555-8555-000000000009';
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+        `/patienten/${PATIENT_ID}/termine/neu?person=${fremd}`,
+      );
+      await formularAbwarten();
+
+      await waitFor(() => expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(''));
+    });
+
+    it('legt den vorbelegten Termin unveraendert an', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['therapist'], 'Anna Beispiel')} />,
+        `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09:00&ende=10:00&art=home_visit&person=${STAFF_ANNA}`,
+      );
+      await user.click(await formularAbwarten());
+
+      await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(1));
+      expect(createAppointment).toHaveBeenCalledWith(
+        PATIENT_ID,
+        expect.objectContaining({
+          staff_member_id: STAFF_ANNA,
+          appointment_type: 'home_visit',
+          date: '2027-05-19',
+          start_time: '09:00',
+          end_time: '10:00',
+        }),
+        false,
+      );
+    });
   });
 });

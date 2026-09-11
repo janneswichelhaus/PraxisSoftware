@@ -200,9 +200,19 @@ export function terminKachel(page: Page, appointmentId: string): Locator {
   return page.locator(`a[href="/termine/${appointmentId}"]`);
 }
 
-/** Wert einer Zeile der Detailansicht, adressiert über ihre Beschriftung. */
+/**
+ * Wert einer Zeile der Detailansicht, adressiert über ihre Beschriftung.
+ *
+ * Verglichen wird die Beschriftung **genau** und nur gegen das `dt`. `hasText`
+ * sucht sonst einen Teilstring ohne Rücksicht auf Groß- und Kleinschreibung
+ * über die ganze Zeile: „Art" fand damit auch die Zeile „Anfahrt" mit der
+ * Schaltfläche „Navigation st*art*en" (UX-002) und brach im Strict Mode ab.
+ * Der Fehler lag immer in dieser Zeile hier - er brauchte nur eine zweite
+ * passende Zeile, um sichtbar zu werden.
+ */
 export function detailWert(page: Page, bezeichnung: string): Locator {
-  return page.locator('dl > div').filter({ hasText: bezeichnung }).locator('dd');
+  const beschriftung = page.locator('dt').and(page.getByText(bezeichnung, { exact: true }));
+  return page.locator('dl > div').filter({ has: beschriftung }).locator('dd');
 }
 
 /** Holt ein echtes Zugriffstoken bei GoTrue - Grundlage der RPC-Nachweise. */
