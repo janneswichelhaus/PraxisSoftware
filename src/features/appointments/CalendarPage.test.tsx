@@ -460,6 +460,67 @@ describe('CalendarPage', () => {
     });
   });
 
+  describe('CAL-012: Wechsel der Ansicht ueber den Spaltenkopf', () => {
+    it('fuehrt vom Namen in der Tagesansicht auf den Wochenplan der Person', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const kopf = screen.getByRole('link', { name: 'Wochenplan von Anna Beispiel' });
+      const ziel = new URLSearchParams(kopf.getAttribute('href')!.split('?')[1]);
+      expect(ziel.get('ansicht')).toBe('woche');
+      expect(ziel.get('person')).toBe(STAFF_ANNA);
+      // Der Tag bleibt stehen: die Woche, in der man gerade war.
+      expect(ziel.get('datum')).toBe('2027-05-12');
+    });
+
+    it('fuehrt vom Datum in der Wochenansicht auf den Tag aller Personen', async () => {
+      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      // Sieben Koepfe, einer je Wochentag - gesucht ist der Mittwoch.
+      const kopf = screen
+        .getAllByRole('link', { name: /Tagesansicht aller behandelnden Personen/ })
+        .find((k) => k.getAttribute('href')?.includes('datum=2027-05-12'));
+      expect(kopf).toBeDefined();
+
+      const ziel = new URLSearchParams(kopf!.getAttribute('href')!.split('?')[1]);
+      expect(ziel.get('ansicht')).toBe('tag');
+      // Ohne Person - der Tag gehoert allen.
+      expect(ziel.get('person')).toBeNull();
+    });
+
+    it('nimmt die Zoomstufe in die andere Ansicht mit', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=208');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const kopf = screen.getByRole('link', { name: 'Wochenplan von Anna Beispiel' });
+      expect(kopf.getAttribute('href')).toContain('zoom=208');
+    });
+
+    it('fuehrt jeden Wochentag auf seinen eigenen Tag', async () => {
+      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const koepfe = screen.getAllByRole('link', {
+        name: /Tagesansicht aller behandelnden Personen/,
+      });
+      expect(koepfe).toHaveLength(7);
+      const tage = koepfe.map((k) =>
+        new URLSearchParams(k.getAttribute('href')!.split('?')[1]).get('datum'),
+      );
+      // Montag bis Sonntag der Woche, in der der 12.05.2027 liegt.
+      expect(tage).toEqual([
+        '2027-05-10',
+        '2027-05-11',
+        '2027-05-12',
+        '2027-05-13',
+        '2027-05-14',
+        '2027-05-15',
+        '2027-05-16',
+      ]);
+    });
+  });
+
   describe('CAL-011: Zoomstufen und sichtbares Praxisraster', () => {
     it('zeigt in der Voreinstellung das Fuenf-Minuten-Raster an', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
