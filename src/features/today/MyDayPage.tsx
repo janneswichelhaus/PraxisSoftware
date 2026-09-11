@@ -203,7 +203,22 @@ function MeineTagesliste({
                   termin={termin}
                   aktionen={
                     <>
-                      <NavigationZumTermin termin={termin} />
+                      {/* Schreiben, ohne abzuschliessen (IDEA-PRX-040). Der
+                          Abschluss schreibt die Dokumentation als Version 1
+                          fest; wer waehrend des Besuchs mitschreibt oder den
+                          Entwurf spaeter weiterfuehrt, braucht den Weg ohne
+                          diese Folge. Kurz beschriftet, weil die Karte fuenf
+                          Ziele nebeneinander traegt - der zugaengliche Name
+                          sagt, was gemeint ist. */}
+                      {darfDokumentieren ? (
+                        <Link
+                          to={`/termine/${termin.id}/dokumentation`}
+                          aria-label="Dokumentation schreiben"
+                          className={kartenAktionKlassen()}
+                        >
+                          Doku
+                        </Link>
+                      ) : null}
                       {/* Die eine Handlung, um die es am Ende jedes Besuchs
                           geht - von der Tagesliste aus ein Tap (UX-007). */}
                       {darfDokumentieren ? (
@@ -214,6 +229,7 @@ function MeineTagesliste({
                           Behandlung abschließen
                         </Link>
                       ) : null}
+                      <NavigationZumTermin termin={termin} />
                     </>
                   }
                 />

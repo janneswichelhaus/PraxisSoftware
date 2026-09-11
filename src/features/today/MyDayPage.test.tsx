@@ -167,6 +167,41 @@ describe('Mein Tag', () => {
     expect(screen.queryByText('Die Termine konnten nicht geladen werden.')).toBeNull();
   });
 
+  it('bietet Doku als eigenen Weg neben dem Abschluss an (IDEA-PRX-040)', async () => {
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    const offen = (await screen.findByRole('heading', { name: /^Offen heute/ })).closest(
+      'section',
+    )!;
+
+    // Schreiben ohne Abschluss: der Abschluss schreibt als Version 1 fest.
+    const doku = within(offen).getByRole('link', { name: 'Dokumentation schreiben' });
+    expect(doku).toHaveAttribute('href', '/termine/t1/dokumentation');
+    expect(doku.textContent).toBe('Doku');
+
+    expect(within(offen).getByRole('link', { name: 'Behandlung abschließen' })).toHaveAttribute(
+      'href',
+      '/termine/t1/abschluss',
+    );
+  });
+
+  it('setzt die Rufnummern hinter die Handlungen, ohne sie wegzunehmen', async () => {
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    const offen = (await screen.findByRole('heading', { name: /^Offen heute/ })).closest(
+      'section',
+    )!;
+
+    const ziele = within(offen)
+      .getAllByRole('link')
+      .map((l) => l.getAttribute('href') ?? '');
+    const doku = ziele.findIndex((z) => z.endsWith('/dokumentation'));
+    const nummer = ziele.findIndex((z) => z.startsWith('tel:'));
+
+    expect(doku).toBeGreaterThanOrEqual(0);
+    // Sie sind weiterhin da - im Hausflur die einzige Rettung eines
+    // gescheiterten Besuchs -, stehen aber nicht mehr vorn.
+    expect(nummer).toBeGreaterThan(doku);
+  });
+
   it('stellt die offenen eigenen Besuche vor den Tagesplan des Teams', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 

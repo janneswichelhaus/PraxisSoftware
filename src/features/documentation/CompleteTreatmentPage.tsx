@@ -102,6 +102,7 @@ function Abschluss({
       <PageHeader
         title="Behandlung abschließen"
         description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
+        kompakt
       />
 
       <form

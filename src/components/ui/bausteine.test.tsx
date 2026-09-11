@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
 import { Badge } from './Badge';
 import { ButtonLink } from './ButtonLink';
+import { PageHeader } from './PageHeader';
 import { kartenAktionKlassen } from './buttonStile';
 import { DetailList, DetailRow } from './DetailList';
 import { Rueckfrage } from './Rueckfrage';
@@ -41,6 +42,31 @@ describe('Badge', () => {
     // Rauschen.
     renderWithProviders(<Badge ton="positiv">Abgeschlossen</Badge>);
     expect(screen.getByText('✓')).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
+describe('PageHeader', () => {
+  it('haelt den kompakten Kopf flach, ohne die Identitaet wegzunehmen', () => {
+    // IDEA-PRX-038: auf den Dokumentationsseiten muss das Textfeld ohne
+    // Scrollen erreichbar sein. Gespart wird Hoehe - nicht die Zeile, die
+    // sagt, in wessen Akte gerade geschrieben wird.
+    renderWithProviders(
+      <PageHeader
+        title="Behandlung abschließen"
+        description="Max Mustermann · 12.05.2027, 09:00–10:00"
+        kompakt
+      />,
+    );
+
+    const titel = screen.getByRole('heading', { name: 'Behandlung abschließen' });
+    expect(titel.className).toContain('text-h4');
+    expect(titel.className).not.toContain('text-h2');
+    expect(screen.getByText('Max Mustermann · 12.05.2027, 09:00–10:00')).toBeInTheDocument();
+  });
+
+  it('bleibt ohne kompakt beim vollen Seitentitel', () => {
+    renderWithProviders(<PageHeader title="Patient:innen" />);
+    expect(screen.getByRole('heading', { name: 'Patient:innen' }).className).toContain('text-h2');
   });
 });
 

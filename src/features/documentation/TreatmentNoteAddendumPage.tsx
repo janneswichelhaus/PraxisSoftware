@@ -57,6 +57,7 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
       <PageHeader
         title="Nachtrag zur Behandlungsdokumentation"
         description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
+        kompakt
       />
 
       <div className="border-line-strong bg-surface-sunken rounded-card mb-6 max-w-2xl border p-4">

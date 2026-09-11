@@ -954,6 +954,16 @@ Richtungen:
   abnimmt — nicht, wenn sie nur aufteilt.
 - Mehr Routen heißen mehr Routen-Wächter und mehr RLS-Fläche (ADR-004).
 
+**Gemessen am 2026-09-11, nach dem ersten kleinen Schritt.** Der Seitentitel
+der Dokumentationsseiten ist jetzt kompakt (`PageHeader kompakt`). Auf
+375 × 667 beginnt das Textfeld damit bei **359 statt 413 Punkten**, sichtbar
+sind **308 statt 254**. Das sind 54 Punkte und ein Fünftel mehr Feld — und es
+**löst den Befund nicht**: das Feld startet weiter über der Hälfte des
+Schirms. Die verbleibende Höhe steckt in der Kopfzeile (56), im Untermenü
+„Kalender · Touren" — das beim Schreiben nichts beiträgt — und in der
+Polsterung des Inhalts. Der nächstgrößere Hebel ist damit benannt und
+gemessen, nicht vermutet.
+
 **Wie es weitergehen sollte.** Nicht als freier Umbau, sondern als
 Ablaufrunde nach `../../development/OPTIMIERUNG.md`. Die misst den echten
 Ablauf („Besuch dokumentieren und abschließen") gegen die sechs Bedingungen

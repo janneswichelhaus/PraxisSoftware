@@ -87,6 +87,7 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
       <PageHeader
         title={istNachtrag ? 'Nachtrag bearbeiten' : 'Behandlungsdokumentation'}
         description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
+        kompakt
       />
 
       <form onSubmit={absenden} noValidate className="max-w-2xl">
