@@ -235,12 +235,23 @@ Repositories** betrifft — damit nicht zwei Listen nebeneinander veralten.
 
 **Technisch offen im Code:**
 
-1. **Retention und Löschung nach [ADR-008](adr/ADR-008-data-retention-and-deletion.md)
-   sind dokumentiert, aber nicht implementiert.** Es gibt keinen Löschvorgang,
-   keinen Legal Hold und keine Wiederanwendung wirksamer Löschungen nach einem
-   Restore. Die Datenklassen stehen als `COMMENT` an den Tabellen. ADR-008 muss
-   vor Produktivstart technisch umgesetzt **und getestet** sein. In der Roadmap
-   sind das die Loops LOE-001 und LOE-002.
+1. **Das Löschverfahren nach [ADR-008](adr/ADR-008-data-retention-and-deletion.md)
+   steht, zwei betriebliche Teile fehlen noch.** Gebaut und getestet sind seit
+   LOE-EPIC-001: der Retention Schedule als Daten
+   (`public.retention_classes`/`retention_assignments`), der Anker „Abschluss
+   der Versorgung", der Legal Hold, der tägliche Löschlauf
+   (`public.apply_retention()`), das Löschjournal und die Wiederanwendung
+   (`public.reapply_deletion_journal()`). Offen bleibt:
+   - **Der Scheduler braucht `pg_cron`.** Die Migration registriert den Lauf
+     nur, wenn die Erweiterung vorhanden ist; fehlt sie, wird **nicht**
+     gelöscht. In der Wegwerf-Datenbank der Tests ist das so gewollt (die Tests
+     rufen die Funktion direkt auf); im Produktivprojekt muss die Registrierung
+     nachweislich stehen (OPS-001, ANN-007).
+   - **Das Restore-Verfahren muss das Journal sichern.** Es liegt in derselben
+     Datenbank und wird von einem Restore mit zurückgesetzt. OPS-003 muss es
+     vor der Rückspielung exportieren, danach einspielen und erst dann
+     `reapply_deletion_journal()` aufrufen (ADR-008 Punkt 8, ADR-012, ANN-031).
+     Keine Funktion kann das lösen.
 
 **Ausserhalb des Codes zu erbringen** — Einzelheiten und Stand jeweils in
 `OPEN_DECISIONS.md`, hier nur als Erinnerung, dass sie den Produktivstart
