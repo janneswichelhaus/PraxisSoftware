@@ -894,7 +894,174 @@ Versand? Das ist eine Frage an ADR-009, nicht an die Oberfläche.
 
 ---
 
-Zuletzt aktualisiert: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt seit der Bestätigung, dass die Namen erfunden sind, unter `../kanvas/own-motion-praxis.html`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
+### IDEA-PRX-038 — Dokumentieren ohne Scrollen: was wirklich im Weg steht
+
+| | |
+|---|---|
+| Status | notiert — Eingabe für die Ablaufrunde „Mein Tag" (Jan 2027) |
+| Quelle | Jannes, 2026-09-11 |
+| Berührt | §8.1; ADR-016; UX-007, UX-009, DOK-001/002; `ANN-015`, `ANN-019`; ABR-002 |
+
+**Idee.** Die Textfelder der Dokumentation sollen ohne Scrollen sichtbar sein;
+womöglich helfen Unterseiten, damit das Auge nicht an Unwichtigem hängen
+bleibt.
+
+**Befund aus dem Code (2026-09-11), bevor irgendetwas gebaut wird.** Die
+beiden Dokumentationsseiten sind **nicht** schlecht sortiert.
+`CompleteTreatmentPage` und `TreatmentNotePage` stellen das Textfeld an die
+zweite Stelle, direkt hinter die Textbausteinleiste. Wer hier „Feld nach oben"
+baut, baut etwas, das schon so ist. Das Scrollen kommt aus zwei anderen
+Richtungen:
+
+1. **Das Gerüst über dem Feld.** Auf einem 375 × 667-Telefon stehen vor dem
+   Feld: Kopfzeile (56), Untermenü, Seitentitel mit Beschreibung,
+   Textbausteinleiste. Das sind grob 250 von 667 Punkten, bevor die erste
+   Zeile kommt. Seit DS-001 ist der Seitentitel 32 px statt 22 — der Befund
+   hat sich also gerade **verschärft**, nicht entspannt.
+2. **Der Weg dorthin.** Aus der Akte heraus liegt die Dokumentation hinter
+   Person, Kontakt, Hausbesuch und Versorgung. Der kurze Weg ist der über
+   „Mein Tag" → „Behandlung abschließen"; wer ihn nicht kennt, scrollt.
+
+**Potenziale.**
+
+- Ein eigener Schreibmodus: Feld, Textbausteine, eine Aktion. Kein Untermenü,
+  keine Seitenbeschreibung, Titel einzeilig. Das ist der größte Hebel und
+  ändert an der Fachlogik nichts.
+- Fokus auf das Feld beim Öffnen — spart den ersten Tipp.
+- Unterseiten je Schritt (Doku → Heilmittel → Abschluss), wenn der Abschluss
+  ohnehin mehr entscheidet als heute (siehe `IDEA-PRX-039`).
+
+**Risiken — und eines davon ist ein Stopp.**
+
+- **Die Patientenidentität darf nicht verschwinden.** Der Seitentitel trägt
+  heute Name, Datum und Uhrzeit. Wer ihn wegkürzt, um Platz zu gewinnen,
+  nimmt die einzige Kontrolle gegen die Falschzuordnung heraus — und
+  „Datenverlust/Falschzuordnung" ist genau die Befundklasse, an der M6
+  hängt. Platz sparen ja, Identität nein.
+- **Unterseiten vervielfachen die Stellen, an denen Text verloren geht.**
+  Es gibt bewusst keinen lokalen Zwischenspeicher (`ANN-015`); der Entwurf
+  liegt serverseitig. Der bekannte Restpunkt aus VER-003 — Entwurf bleibt beim
+  Verlassen über die Hauptnavigation liegen statt verworfen zu werden — ist
+  genau dieser Fehlerklasse. Jede zusätzliche Seite ist eine zusätzliche
+  Gelegenheit dafür.
+- **ADR-016 Punkt 4 und 5 verbieten, die Folge zu verstecken.** Der Text
+  „Mit dem Abschluss geschieht zweierlei …" steht heute absichtlich **vor**
+  der Schaltfläche, nicht in einer Rückfrage danach. Auf eine andere
+  Unterseite geschoben wäre das eine Aufweichung, kein Feinschliff.
+- **§8.1 gibt 60 Minuten einschließlich Dokumentation.** Ein Assistent mit
+  vier Schritten kostet Tipps und schafft vier Stellen zum Steckenbleiben.
+  Mehr Seiten sind nur dann besser, wenn jede Seite eine Entscheidung
+  abnimmt — nicht, wenn sie nur aufteilt.
+- Mehr Routen heißen mehr Routen-Wächter und mehr RLS-Fläche (ADR-004).
+
+**Gemessen am 2026-09-11, nach dem ersten kleinen Schritt.** Der Seitentitel
+der Dokumentationsseiten ist jetzt kompakt (`PageHeader kompakt`). Auf
+375 × 667 beginnt das Textfeld damit bei **359 statt 413 Punkten**, sichtbar
+sind **308 statt 254**. Das sind 54 Punkte und ein Fünftel mehr Feld — und es
+**löst den Befund nicht**: das Feld startet weiter über der Hälfte des
+Schirms. Die verbleibende Höhe steckt in der Kopfzeile (56), im Untermenü
+„Kalender · Touren" — das beim Schreiben nichts beiträgt — und in der
+Polsterung des Inhalts. Der nächstgrößere Hebel ist damit benannt und
+gemessen, nicht vermutet.
+
+**Wie es weitergehen sollte.** Nicht als freier Umbau, sondern als
+Ablaufrunde nach `../../development/OPTIMIERUNG.md`. Die misst den echten
+Ablauf („Besuch dokumentieren und abschließen") gegen die sechs Bedingungen
+und schreibt Akzeptanzhinweise in bestehende Roadmap-Zeilen. Die Runde
+braucht als Eingabe Jannes' eigene Beobachtung an einem echten Tag (§20:
+gemessen wird nur durch ihn selbst) — ohne die bleibt jede Umsortierung
+geraten.
+
+---
+
+### IDEA-PRX-039 — Termin abhaken: Heilmittel, Kontingent und die Freigabe zur Abrechnung
+
+| | |
+|---|---|
+| Status | notiert — überschneidet sich absichtlich mit ABR-002 |
+| Quelle | Jannes, 2026-09-11 |
+| Berührt | ADR-009, ADR-016; ABR-001, **ABR-002**; VER-002, VER-003; `ANN-006`, C1 |
+
+**Idee.** „Termin abhaken" statt „erledigen", womöglich als Kästchen. Beim
+Abhaken wird entschieden, **welche Heilmittel des Rezepts tatsächlich
+geleistet wurden**. Ist das Kontingent der Verordnung erreicht, wird hier
+entschieden, ob die Verordnung in die Abrechnung geht — nach ausdrücklicher
+Bestätigung der behandelnden Person.
+
+**Warum das kein reiner Oberflächenwunsch ist.** Die Heilmittelauswahl ist
+genau die Eingabe, die `ABR-002` („Leistungserfassung am durchgeführten
+Termin, vorbelegt aus der Verordnung") ohnehin braucht. Der Wunsch beschreibt
+also nicht eine zweite Lösung, sondern die Bedienoberfläche einer bereits
+eingeplanten Funktion. Das sollte **eine** Sache werden, nicht zwei.
+
+**Potenziale.**
+
+- Eine Geste statt mehrerer Wege: abhaken, Heilmittel bestätigen, fertig.
+- Die Vorbelegung aus der Verordnung macht den Normalfall zu einem Tipp und
+  die Abweichung zur bewussten Handlung.
+- Das Kontingent wird dort sichtbar, wo es zählt — am Termin, nicht in der
+  Akte (verwandt mit `IDEA-PRX-037`).
+
+**Risiken.**
+
+- **Ein Kästchen ist die falsche Zusage für einen irreversiblen Schritt.**
+  Eine Verordnung in die Abrechnung zu geben ist ein rechnungsrelevanter
+  Vorgang; ein Rechnungsnummernkreis lässt sich nach §14 UStG nicht
+  nachträglich heilen (Roadmap H4 sagt das ausdrücklich). Abhaken darf leicht
+  sein — die Freigabe zur Abrechnung braucht eine eigene, benannte
+  Bestätigung. Genau das schreibt Jannes selbst schon.
+- **ADR-016 bleibt vorgeschaltet.** ABR-002 koppelt die Leistung an die
+  finalisierte Dokumentation, mit protokolliertem Override (`ANN-006`, C1).
+  Ein schnelles Häkchen darf diese Kopplung nicht umgehen.
+- **Rollenschnitt.** Welche Heilmittel geleistet wurden, ist eine
+  therapeutische Aussage mit Abrechnungsfolge. Wer sie setzen darf und wer
+  sie nur liest, gehört vor dem Bauen geklärt (ADR-004).
+- „Abhaken" darf nicht so aussehen, als ließe es sich durch erneutes
+  Antippen zurücknehmen, wenn dahinter ein Schreibvorgang mit Auditeintrag
+  steht.
+
+**Empfehlung.** Nicht vorziehen, sondern `ABR-002` damit anreichern: die
+Heilmittelauswahl ist dessen Oberfläche, die Kontingentfreigabe dessen
+Grenzfall. `ABR-EPIC-001` steht für **November 2026**.
+
+---
+
+### IDEA-PRX-040 — Aktionen der Tageskarte neu ordnen
+
+| | |
+|---|---|
+| Status | notiert — Eingabe für die Ablaufrunde „Mein Tag" |
+| Quelle | Jannes, 2026-09-11 (mit Screenshot) |
+| Berührt | UX-001, UX-007; ADR-019; MAP-005, MAP-006; `IDEA-PRX-039` |
+
+**Idee.** Die Reihenfolge der Aktionen auf der Tageskarte stimmt nicht: die
+Telefonnummern stehen vorn, obwohl sie selten gebraucht werden. Gewünscht
+sind stattdessen ein eigenes Feld **„Doku"**, ein Abhaken statt „Behandlung
+abschließen" (siehe `IDEA-PRX-039`), und „Navigation starten" braucht es hier
+womöglich gar nicht mehr, sobald die Karte in der Anwendung steht.
+
+**Potenziale.**
+
+- „Doku" als eigene Aktion macht den häufigsten Weg zum kürzesten und zahlt
+  direkt auf `IDEA-PRX-038` ein.
+- Weniger Schaltflächen nebeneinander heißt größere Ziele auf dem Telefon.
+
+**Risiken.**
+
+- **Die Rufnummer ist die Rettung des gescheiterten Besuchs.** Wenn niemand
+  öffnet, ist sie die einzige Handlung, die den Termin noch rettet — und
+  genau dann steht man im Hausflur, mit Handschuhen. Nach hinten ja,
+  weggeklappt nein. Ihre heutige Stelle stammt aus UX-001, nicht aus
+  Zufall.
+- **„Navigation starten" darf erst weichen, wenn die Karte wirklich da ist.**
+  Der Handoff ist heute der einzige Weg zur Route. Die Karte kommt mit
+  MAP-005/MAP-006 und hängt an ADR-019 — und dessen produktive Freigabe
+  steht am Vertrags-, §203- und DSFA-Gate. Die Aktion vorher zu entfernen
+  hieße, einen funktionierenden Weg gegen einen geplanten zu tauschen.
+
+---
+
+Zuletzt aktualisiert: 2026-09-11 (`IDEA-PRX-038` bis `-040` aus dem Gespräch über Dokumentationsablauf, Tageskarte und Kalenderwechsel). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt seit der Bestätigung, dass die Namen erfunden sind, unter `../kanvas/own-motion-praxis.html`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
 Terminfenster steht als §8.1 in den Prinzipien, der Fahrpuffer-Mechanismus als
 E12 in den offenen Entscheidungen). Vorherige Aktualisierung: 2026-09-06
 (Entscheidungen E-9, E-12, E-13; Tagesroute `IDEA-PRX-029` bis `-033`)

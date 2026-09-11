@@ -30,7 +30,7 @@ import {
 import { herkunft, zeitpunkt } from './format';
 
 const abzeichen =
-  'border-line-strong bg-surface-sunken text-ink-muted rounded-full border px-2.5 py-0.5 text-xs font-medium';
+  'border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium';
 const linkLeise = 'text-accent inline-flex min-h-11 items-center text-sm hover:underline';
 
 /**

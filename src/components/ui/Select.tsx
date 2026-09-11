@@ -36,7 +36,7 @@ export function Select({ label, hint, error, className = '', children, ...props 
         aria-describedby={describedBy}
         aria-invalid={error ? true : undefined}
         className={[
-          'bg-surface text-ink min-h-11 w-full rounded-lg border px-3 text-base',
+          'bg-surface-field text-ink rounded-field h-12 w-full border px-4 text-base',
           error ? 'border-danger' : 'border-line-strong',
           className,
         ]

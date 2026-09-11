@@ -54,17 +54,37 @@ async function terminAnlegen(
   return page.url().split('/').pop()!;
 }
 
+interface Kasten {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 /**
- * Zieht eine Kachel auf die Mitte eines Ziels.
+ * Scrollt eine Kachel ins Sichtfenster und misst sie dort.
  *
- * boundingBox liefert Koordinaten im Sichtfenster und scrollt nicht von
- * selbst. Liegt die Kachel unterhalb des Falzes, zeigten die Mauskoordinaten
- * sonst auf eine ganz andere Stelle - genau das machte den Ablauf flatterhaft.
+ * MUSS vor dem Berechnen jeder Zielkoordinate laufen. `boundingBox` misst im
+ * Sichtfenster und scrollt nicht von selbst; wird danach noch gescrollt,
+ * zeigen die Zahlen auf eine andere Stelle. Das Ziehen rechnet mit dem WEG des
+ * Zeigers (`useTerminZiehen`: `dy = clientY - zeigerY`), nicht mit absoluten
+ * Gitterkoordinaten - ein vorher gemessener Kasten verschiebt den Termin also
+ * um genau die Bildlaufstrecke. Bei 96 px je Stunde sind das schnell Stunden.
  */
-async function ziehen(page: Page, kachel: Locator, ziel: { x: number; y: number }) {
+async function sichtbarerKasten(kachel: Locator): Promise<Kasten> {
   await kachel.scrollIntoViewIfNeeded();
   const kasten = await kachel.boundingBox();
   if (!kasten) throw new Error('Die Kachel ist nicht sichtbar.');
+  return kasten;
+}
+
+/**
+ * Zieht eine bereits sichtbare Kachel auf einen Punkt.
+ *
+ * Nimmt den Kasten bewusst als Wert entgegen statt selbst zu scrollen: so
+ * stammen Griff und Ziel garantiert aus demselben Bildlaufstand.
+ */
+async function ziehen(page: Page, kasten: Kasten, ziel: { x: number; y: number }) {
   await page.mouse.move(kasten.x + kasten.width / 2, kasten.y + 8);
   await page.mouse.down();
   // Zwei Schritte: der erste überschreitet die Schwelle, der zweite zielt.
@@ -126,9 +146,15 @@ test.describe('CAL-006: Darstellung', () => {
     // Der Kopf ist klebend gesetzt; die Auszeichnung ist Teil der Zusage.
     // Bewusst innerhalb des Gitters gesucht: derselbe Name steht auch in der
     // Personenauswahl darueber.
+    //
+    // Angefasst wird der Link, den CAL-012 in den Kopf gesetzt hat: er traegt
+    // einen eindeutigen Namen, und sein Elternelement ist genau die Kopfzelle.
+    // Vorher wurde ueber die Beschriftung gesucht - seit zwischen Beschriftung
+    // und Zelle der Link liegt, traf `..` den Link statt der Zelle. Die
+    // Klebrigkeit selbst hat sich nie geaendert.
     const kopf = page
       .getByRole('grid', { name: 'Tagesansicht nach behandelnder Person' })
-      .getByText('Anna Beispiel', { exact: true });
+      .getByRole('link', { name: 'Wochenplan von Anna Beispiel' });
     await expect(kopf.locator('xpath=..')).toHaveCSS('position', 'sticky');
   });
 
@@ -161,12 +187,14 @@ test.describe('CAL-006: Verschieben', () => {
     const kachel = terminKachel(page, terminId);
     await expect(kachel).toBeVisible();
 
+    // Erst scrollen, dann messen - sonst zieht die Bildlaufstrecke den Termin
+    // senkrecht mit (siehe `sichtbarerKasten`).
+    const kachelKasten = await sichtbarerKasten(kachel);
     const ziel = page.getByRole('gridcell', { name: 'Tim Teamleitung' });
     const zielKasten = await ziel.boundingBox();
-    const kachelKasten = await kachel.boundingBox();
-    await ziehen(page, kachel, {
+    await ziehen(page, kachelKasten, {
       x: zielKasten!.x + zielKasten!.width / 2,
-      y: kachelKasten!.y + 8,
+      y: kachelKasten.y + 8,
     });
     await verschiebenBestaetigen(page);
 
@@ -206,12 +234,12 @@ test.describe('CAL-006: Verschieben', () => {
     const kachel = terminKachel(page, terminId);
     await expect(kachel).toBeVisible();
 
+    const kachelKasten = await sichtbarerKasten(kachel);
     const ziel = page.getByRole('gridcell', { name: 'Tim Teamleitung' });
     const zielKasten = await ziel.boundingBox();
-    const kachelKasten = await kachel.boundingBox();
-    await ziehen(page, kachel, {
+    await ziehen(page, kachelKasten, {
       x: zielKasten!.x + zielKasten!.width / 2,
-      y: kachelKasten!.y + 8,
+      y: kachelKasten.y + 8,
     });
 
     // Der Termin bleibt unveraendert bei seiner Person.
@@ -233,11 +261,11 @@ test.describe('CAL-006: Verschieben', () => {
     await expect(kachel).toBeVisible();
 
     // Weit nach unten: die Seed-Arbeitszeit endet um 18:00.
+    const kachelKasten = await sichtbarerKasten(kachel);
     const gitter = page.getByRole('grid').first();
     const gitterKasten = await gitter.boundingBox();
-    const kachelKasten = await kachel.boundingBox();
-    await ziehen(page, kachel, {
-      x: kachelKasten!.x + kachelKasten!.width / 2,
+    await ziehen(page, kachelKasten, {
+      x: kachelKasten.x + kachelKasten.width / 2,
       y: gitterKasten!.y + gitterKasten!.height - 4,
     });
 

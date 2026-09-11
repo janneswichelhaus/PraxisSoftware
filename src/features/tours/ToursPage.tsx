@@ -145,7 +145,7 @@ function Wegzeile({ stopp }: { stopp: Tourstopp }) {
 
   return (
     <p
-      className={`mb-2 inline-flex items-center gap-2 rounded-lg px-3 py-1 text-sm ${
+      className={`rounded-pill mb-2 inline-flex items-center gap-2 px-3 py-1 text-sm ${
         geprueft ? 'bg-surface-sunken text-ink-muted' : 'bg-warnung-soft text-warnung'
       }`}
     >

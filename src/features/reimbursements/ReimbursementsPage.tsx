@@ -158,7 +158,7 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
           </label>
           <select
             id="erstattung-filter"
-            className="border-line-strong bg-surface text-ink min-h-11 rounded-lg border px-3 text-base"
+            className="border-line-strong bg-surface text-ink rounded-field min-h-11 border px-3 text-base"
             value={filter}
             onChange={(event) => setFilter(event.target.value as 'alle' | Erstattungsstand)}
           >
@@ -279,7 +279,7 @@ function Erstattungskarte({
       ) : null}
 
       {erstattung.notiz ? (
-        <p className="text-ink-muted bg-surface-sunken mt-2 rounded-lg px-3 py-2 text-sm">
+        <p className="text-ink-muted bg-surface-sunken rounded-card mt-2 px-3 py-2 text-sm">
           {erstattung.notiz}
         </p>
       ) : null}
@@ -511,7 +511,7 @@ function Erstattungsformular({
             ).map((option) => (
               <label
                 key={option.wert}
-                className={`inline-flex min-h-11 cursor-pointer items-center rounded-lg border px-4 text-[0.9375rem] ${
+                className={`rounded-button inline-flex min-h-11 cursor-pointer items-center border px-4 text-[0.9375rem] ${
                   art === option.wert
                     ? 'border-accent bg-accent-soft text-accent font-medium'
                     : 'border-line-strong bg-surface text-ink-muted'

@@ -1,82 +1,156 @@
 @import 'tailwindcss';
 
 /* =============================================================================
-   Designsprache: ruhig, mit der Marke Own Motion als Akzent.
+   Designsprache: Own Motion Design System (DS-001, 2026-09-11)
 
-   Bis 2026-09-10 bewusst ohne Branding, weil es keins gab. Seitdem liegt die
-   Marke in `marke/` fest; der Akzent trägt ihre Hauptfarbe. Alles andere —
-   Flächen, Schrift, Radien, Statusfarben — bleibt neutral: die Marke ist ein
-   Akzent, kein Anstrich. (ADR-015 entscheidet über Branding ausdrücklich
-   nicht — „Design-System und Branding" steht dort unter „Bewusst nicht
-   Bestandteil dieser Entscheidung". Es steht dieser Änderung also nicht
-   entgegen.)
+   Bis 2026-09-10 gab es kein Branding, dann die Marke in `marke/` und einen
+   Akzent in ihrer Hauptfarbe. Seit dem Handoff aus Claude Design gilt das
+   vollständige System: Palette „Flasche & Salbei", Hanken Grotesk, Radien,
+   Linienpflichten, keine Schatten.
 
-   Ziel bleibt eine ruhige, medizinisch professionelle Oberfläche: viel
-   Weißraum, wenige Flächen, klare Hierarchie über Typografie statt über
-   Kästen.
+   Aufgabenteilung, wie sie der Handoff selbst festlegt: **das Repository
+   bleibt Quelle für Struktur, Routen, Abläufe, Funktion und
+   Komponentenverhalten; das Design System ist Quelle für alles Visuelle.**
+   Hier stehen deshalb nur Werte, keine neuen Bedienkonzepte.
 
-   Die Farbwerte sind zurückhaltend gewählt und auf Kontrast geprüft; Fließtext
-   und Bedienelemente erreichen mindestens WCAG AA.
+   Jede Farbe trägt ihren Hex-Wert aus `tokens/colors.css` des Handoffs im
+   Kommentar. Gerechnet wird in Oklch, weil `src/lib/kontrast.ts` darin misst;
+   die Umrechnung ist verlustfrei — jeder Wert unten ergibt zurückgerechnet
+   exakt wieder seinen Hex-Wert.
+
+   (ADR-015 entscheidet über Branding ausdrücklich nicht — „Design-System und
+   Branding" steht dort unter „Bewusst nicht Bestandteil dieser Entscheidung".
+   Es steht dieser Änderung also nicht entgegen.)
    ============================================================================= */
 
+/* Hanken Grotesk, SIL Open Font License (public/schrift/OFL.txt).
+
+   Selbst ausgeliefert, nicht über ein CDN: ein Schriftdienst wäre ein
+   weiterer Empfänger von IP-Adressen und damit ein neuer Dienstleister nach
+   §3.5 — für eine Schriftart nicht zu rechtfertigen. Die variable Fassung
+   deckt 100 bis 900 ab und ersetzt alle statischen Schnitte; die kursive
+   Fassung fehlt bewusst, weil das System keine Kursive im UI vorsieht. */
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/schrift/HankenGrotesk-Variable.ttf') format('truetype');
+}
+
 @theme {
-  --color-canvas: oklch(98.6% 0.004 106);
-  --color-surface: oklch(100% 0 0);
-  --color-surface-sunken: oklch(96.8% 0.005 106);
+  /* --- Flächen -------------------------------------------------------------
+     Der Inhalt liegt auf „Fläche", Karten und Kopfzeile auf „Papier". Ebenen
+     entstehen damit aus der Fläche selbst statt aus Schatten. */
 
-  --color-ink: oklch(24% 0.012 250);
-  --color-ink-muted: oklch(48% 0.012 250);
-  /* UI-000: von 60% auf 54% angehoben. Bei 60% erreichte der Kleintext auf
-     surface-sunken nur 3.6:1 und verfehlte damit WCAG AA (4.5:1). Der Wert
-     ist durch src/lib/kontrast.test.ts festgehalten. */
-  --color-ink-subtle: oklch(54% 0.012 250);
+  /* Fläche #eceee8 — Grund der Seite. */
+  --color-canvas: oklch(94.6% 0.0082 121.6);
+  /* Papier #f6f7f4 — Karten, Kopfzeile. Liegt ÜBER canvas, nicht darunter. */
+  --color-surface: oklch(97.5% 0.0041 121.6);
+  /* Fläche #eceee8 — vertiefte Stelle auf einer Karte (Hover, Arbeitszeit im
+     Kalender). Gleicher Wert wie canvas, andere Rolle: dort der Seitengrund,
+     hier die Vertiefung auf Papier. */
+  --color-surface-sunken: oklch(94.6% 0.0082 121.6);
+  /* Weiß — nur Eingabefelder. Das System verlangt sie heller als ihre
+     Umgebung, damit das Feld als Feld erkennbar ist. */
+  --color-surface-field: oklch(100% 0 0);
+  /* Tiefgrün #042c1b — inverse Flächen: Seitenleiste, Aufkleber, Toast. */
+  --color-surface-inverse: oklch(26.1% 0.0544 160.4);
 
-  --color-line: oklch(90% 0.006 250);
-  /* UI-000: von 82% auf 63% angehoben. line-strong umrandet Eingabefelder
-     und Rueckfragen; das ist die Begrenzung, an der ein Bedienelement
-     erkannt wird, und WCAG 1.4.11 verlangt dafuer 3:1. Bei 82% waren es
-     1.7:1. --color-line bleibt heller: es trennt nur (Karten, Listen) und
-     traegt keine Bedienbedeutung. */
-  --color-line-strong: oklch(63% 0.012 250);
+  /* --- Text ----------------------------------------------------------------
+     Das System kennt zwei Textstufen, nicht drei. `ink-subtle` trägt deshalb
+     denselben Wert wie `ink-muted`; die Unterscheidung läuft über Schriftgrad
+     und Gewicht. Das Token bleibt vorerst stehen, damit diese Story keine
+     drei Dutzend Dateien anfasst — es verschwindet mit den Komponenten. */
 
-  /* Akzent = Hauptfarbe der Marke Own Motion, #004429 (marke/README.md).
-     Loest das ruhige Petrol aus UI-000 ab; die Marke ist seit 2026-09-10
-     festgelegt und marke/README.md ist die einzige Quelle des Werts.
-     #004429 entspricht oklch(34.1% 0.0781 159.2) - nachgerechnet mit den
-     Formeln aus src/lib/kontrast.ts, Kontrast 11.30:1 auf Weiss. */
-  --color-accent: oklch(34.1% 0.0781 159);
-  /* Dunkler statt heller, gegen die naheliegende Vermutung bei einer schon
-     dunklen Grundfarbe: accent-hover ist nicht nur Knopfflaeche, sondern in
-     rund einem Dutzend Stellen auch Textfarbe (`text-accent
-     hover:text-accent-hover`). Heller wuerde beides schwaechen - den weissen
-     Text auf dem Knopf und den Link auf heller Flaeche. Dunkler staerkt
-     beides. Der Wert ist keine erfundene Abstufung, sondern das Tiefgruen der
-     Marke (#042c1b): marke/README.md laesst nur die dort genannten Farben zu.
-     Der Abstand zum Akzent ist mit 8 Prozentpunkten Helligkeit groesser als
-     die 6 der bisherigen Palette, die Zustandsanzeige also deutlicher als
-     zuvor. Siehe ANN-022. */
-  --color-accent-hover: oklch(26.1% 0.0544 160);
-  /* Gleiche Helligkeit wie die uebrigen weichen Flaechen, Farbton der Marke.
-     Buntheit bewusst unter positiv-soft (0.03 bei 150): die beiden liegen im
-     Farbton jetzt nur 9 Grad auseinander und muessen als Abzeichen
-     unterscheidbar bleiben. Papier (#f6f7f4) taugt hier nicht - es liegt mit
-     97.5% zu dicht an canvas (98.6%), um eine Flaeche zu markieren. */
-  --color-accent-soft: oklch(95.5% 0.022 159);
+  /* Tinte #111e17 */
+  --color-ink: oklch(22% 0.0229 160.2);
+  /* Leise #545d58 */
+  --color-ink-muted: oklch(46.9% 0.0138 161.6);
+  --color-ink-subtle: oklch(46.9% 0.0138 161.6);
 
-  --color-danger: oklch(48% 0.16 25);
-  --color-danger-soft: oklch(96% 0.03 25);
+  /* --- Linien mit Pflichten ------------------------------------------------
+     Zwei Linien, klar getrennt: `line` trennt nur (Kartenrahmen, Tabellen-
+     zeilen, Trenner) und darf hell bleiben. `line-strong` umrandet
+     Bedienbares (Felder, Sekundärknöpfe, Chips) und hält ≥ 3:1 auf Papier,
+     Fläche und Weiß — WCAG 1.4.11. */
 
-  /* Zustandsfarben fuer Statusabzeichen. Sie tragen nie allein die Bedeutung -
-     der Zustand steht immer zusaetzlich als Text da (WCAG 1.4.1). */
-  --color-positiv: oklch(44% 0.1 150);
-  --color-positiv-soft: oklch(95.5% 0.03 150);
-  --color-warnung: oklch(45% 0.11 70);
-  --color-warnung-soft: oklch(95.5% 0.04 80);
+  /* Linie #d7d8d2 */
+  --color-line: oklch(88% 0.0082 114.2);
+  /* #6f7873 — 4.24:1 auf Papier, 3.90:1 auf Fläche, 4.56:1 auf Weiß. */
+  --color-line-strong: oklch(56.4% 0.0132 161.8);
+
+  /* --- Marke und Aktionen --------------------------------------------------- */
+
+  /* Hauptfarbe #004429 — Marke, Titel, primäre Aktionen. */
+  --color-accent: oklch(34.1% 0.0781 159.2);
+  /* Tiefgrün #042c1b — Hover der primären Aktion und Textfarbe bei
+     `text-accent hover:text-accent-hover`. Dunkler statt heller: das stärkt
+     sowohl den hellen Text auf dem Knopf als auch den Link auf heller
+     Fläche (ANN-022). */
+  --color-accent-hover: oklch(26.1% 0.0544 160.4);
+  /* Salbei hell #e1f0e4 — Akzentkarten und Hover sekundärer Knöpfe. */
+  --color-accent-soft: oklch(94.1% 0.0225 151.6);
+  /* Salbei #87a98d — ausschließlich als Linie oder Zahl auf Tiefgrün, nie
+     als Text auf hellem Grund. 5.86:1 auf surface-inverse. */
+  --color-salbei: oklch(70.1% 0.0551 150);
+
+  /* --- Status --------------------------------------------------------------
+     Farbe trägt nie allein: jeder Zustand steht zusätzlich als Text und
+     Zeichen da (WCAG 1.4.1). „Positiv" und „Akzent" sind in dieser Palette
+     bewusst dieselbe Farbe — was sie unterscheidet, ist das Zeichen im
+     Abzeichen, nicht der Farbton. */
+
+  /* #7a2418 auf #f4e3e0 — 8.08:1 */
+  --color-danger: oklch(39.4% 0.1217 31);
+  --color-danger-soft: oklch(92.9% 0.0191 29.5);
+  /* Hauptfarbe auf Salbei hell — 9.57:1 */
+  --color-positiv: oklch(34.1% 0.0781 159.2);
+  --color-positiv-soft: oklch(94.1% 0.0225 151.6);
+  /* #5a4300 auf #f3ead6 — 7.84:1 */
+  --color-warnung: oklch(39.7% 0.0812 86.3);
+  --color-warnung-soft: oklch(93.9% 0.0282 86.6);
+
+  /* --- Schrift und Maße ----------------------------------------------------- */
 
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
 
-  --radius-card: 0.75rem;
+  /* Schriftrollen des Systems. Tailwinds eigene Stufen treffen sie nicht:
+     `text-3xl` sind 30 px, gebraucht werden 32. Deshalb eigene Namen — sie
+     heißen nach ihrer Rolle, nicht nach ihrer Größe, damit eine Seite nicht
+     zwischen „groß" und „Seitentitel" wählen muss.
+
+     Display/H1/H2 stehen in 800 mit −0.03em, H3 und H4 in 700, Beschriftungen
+     in 600 mit 0.14em in Versalien. */
+  --text-h2: 32px;
+  --text-h2--line-height: 1.05;
+  --text-h3: 24px;
+  --text-h3--line-height: 1.25;
+  --text-h4: 20px;
+  --text-h4--line-height: 1.25;
+  --tracking-display: -0.03em;
+  --tracking-label: 0.14em;
+
+  /* Radien des Systems: Knöpfe und Felder 10, Karten 14, Bilder 16,
+     Etiketten 999. */
+  --radius-button: 10px;
+  --radius-field: 10px;
+  --radius-card: 14px;
+  --radius-image: 16px;
+  --radius-pill: 999px;
+
+  /* Bedienhöhen. Das Mindestziel bleibt 44 px (WCAG 2.5.8). */
+  --spacing-bedienhoehe: 48px;
+  --spacing-bedienhoehe-kompakt: 40px;
+
+  /* Breite des Seiteninhalts (`max-w-inhalt`). Der Handoff nennt an zwei
+     Stellen zwei Werte — `--content-max: 1200px` in den Tokens, 1024 px im
+     Shell-Prototyp. 1200 gilt: 1024 wäre schmaler als das bisherige
+     Kalendergitter und würde bei mehreren zeitgleich arbeitenden Personen
+     wehtun. */
+  --container-inhalt: 1200px;
 }
 
 @layer base {
@@ -88,7 +162,8 @@
     background-color: var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    line-height: 1.55;
+    /* --leading-normal des Systems. */
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
 

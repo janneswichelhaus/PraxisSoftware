@@ -10,7 +10,7 @@ import { ageInYears, fetchPatients, fullName, type Patient } from './api';
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 const selectClass =
-  'min-h-11 rounded-lg border border-line-strong bg-surface px-3 text-base text-ink';
+  'min-h-11 rounded-field border border-line-strong bg-surface px-3 text-base text-ink';
 
 function parseStatusFilter(value: string | null): StatusFilter {
   return value === 'active' || value === 'inactive' ? value : 'all';
@@ -144,7 +144,7 @@ export function PatientsListPage() {
                     </span>
                   </span>
                   {patient.status === 'inactive' ? (
-                    <span className="bg-surface-sunken text-ink-muted shrink-0 rounded-full px-2.5 py-0.5 text-xs">
+                    <span className="bg-surface-sunken text-ink-muted rounded-pill shrink-0 px-2.5 py-0.5 text-xs">
                       inaktiv
                     </span>
                   ) : null}

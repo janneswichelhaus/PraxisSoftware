@@ -68,6 +68,14 @@ export interface GitterSpalte {
   hervorgehoben?: boolean;
   /** Arbeitszeit dieser Spalte als Hintergrund. */
   baender: Zeitband[];
+  /**
+   * Wohin ein Tippen auf den Spaltenkopf führt (CAL-012).
+   *
+   * Das Gitter kennt weiterhin weder Personen noch Daten — was der Wechsel
+   * bedeutet, entscheidet die aufrufende Seite und übergibt ihn fertig.
+   * Ohne Ziel bleibt der Kopf eine Beschriftung.
+   */
+  ziel?: { to: string; beschriftung: string };
 }
 
 export interface GitterEintrag {
@@ -161,7 +169,7 @@ export function CalendarGrid({
 
   return (
     <div
-      className="border-line mt-4 overflow-x-auto rounded-lg border"
+      className="border-line rounded-card mt-4 overflow-x-auto border"
       // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
       // auf einer Kachel wird nicht vom Browser übernommen.
       style={{ touchAction: 'pan-x pan-y' }}
@@ -176,27 +184,49 @@ export function CalendarGrid({
       >
         {/* Kopfzeile: bleibt beim senkrechten Bildlauf stehen. */}
         <div className="bg-surface border-line sticky top-0 left-0 z-30 h-11 border-b" />
-        {spaltenModell.map((s) => (
-          <div
-            key={s.id}
-            className={[
-              'bg-surface border-line sticky top-0 z-20 flex h-11 flex-col justify-center',
-              'border-b border-l px-2',
-            ].join(' ')}
-          >
-            <span
+        {spaltenModell.map((s) => {
+          const beschriftung = (
+            <>
+              <span
+                className={[
+                  'truncate text-sm font-medium',
+                  s.hervorgehoben ? 'text-accent' : 'text-ink',
+                ].join(' ')}
+              >
+                {s.titel}
+              </span>
+              {s.unterTitel ? (
+                <span className="text-ink-subtle truncate text-xs">{s.unterTitel}</span>
+              ) : null}
+            </>
+          );
+
+          return (
+            <div
+              key={s.id}
               className={[
-                'truncate text-sm font-medium',
-                s.hervorgehoben ? 'text-accent' : 'text-ink',
+                'bg-surface border-line sticky top-0 z-20 flex h-11 flex-col justify-center',
+                'border-b border-l',
+                // Traegt der Kopf einen Wechsel, polstert der Link selbst -
+                // sonst waere nur der Text anklickbar und nicht die Spalte.
+                s.ziel ? '' : 'px-2',
               ].join(' ')}
             >
-              {s.titel}
-            </span>
-            {s.unterTitel ? (
-              <span className="text-ink-subtle truncate text-xs">{s.unterTitel}</span>
-            ) : null}
-          </div>
-        ))}
+              {s.ziel ? (
+                <Link
+                  to={s.ziel.to}
+                  aria-label={s.ziel.beschriftung}
+                  title={s.ziel.beschriftung}
+                  className="hover:bg-surface-sunken flex h-full min-w-0 flex-col justify-center px-2 transition-colors"
+                >
+                  {beschriftung}
+                </Link>
+              ) : (
+                beschriftung
+              )}
+            </div>
+          );
+        })}
 
         {/* Zeitachse: bleibt beim waagerechten Bildlauf stehen. */}
         <div
@@ -350,7 +380,7 @@ export function CalendarGrid({
               {/* Vorschau: zeigt nur, wohin es ginge. Geschrieben ist noch nichts. */}
               {ziehen.vorschau && ziehen.vorschau.spalteId === s.id ? (
                 <div
-                  className="border-accent bg-accent-soft/70 text-accent pointer-events-none absolute inset-x-1 z-40 rounded-lg border-2 border-dashed px-2 py-1 text-xs font-medium"
+                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 border-2 border-dashed px-2 py-1 text-xs font-medium"
                   style={{
                     top: `${minuteZuPixel(ziehen.vorschau.startMinute, fenster.vonMinute, stundenHoehe)}px`,
                     height: `${(ziehen.vorschau.dauer / 60) * stundenHoehe}px`,
@@ -435,7 +465,7 @@ function Kachel({
         ...(ziehbar ? { touchAction: 'pan-x pan-y' } : {}),
       }}
       className={[
-        'border-line bg-surface hover:bg-surface-sunken absolute block overflow-hidden rounded-lg',
+        'border-line bg-surface hover:bg-surface-sunken rounded-button absolute block overflow-hidden',
         'border border-l-4 px-1.5 py-1 text-left transition-colors',
         eintrag.status === 'cancelled' ? 'opacity-60' : '',
         gedimmt ? 'opacity-40' : '',

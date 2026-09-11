@@ -123,7 +123,7 @@ export function SearchCombobox({
         aria-controls={listeId}
         aria-autocomplete="list"
         aria-activedescendant={aktiv >= 0 && treffer[aktiv] ? `${feldId}-${aktiv}` : undefined}
-        className="border-line-strong bg-surface text-ink placeholder:text-ink-subtle min-h-11 w-full rounded-lg border px-3 text-base"
+        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-subtle rounded-field h-12 w-full border px-4 text-base"
         {...(placeholder === undefined ? {} : { placeholder })}
         value={wert}
         onChange={(event) => {
@@ -134,8 +134,10 @@ export function SearchCombobox({
         onKeyDown={tastatur}
       />
 
+      {/* Ohne Schlagschatten (DS-001): dass die Liste über der Seite liegt,
+          tragen der kräftige Rahmen und die hellere Fläche. */}
       {zeigeListe ? (
-        <div className="border-line-strong bg-surface absolute inset-x-0 top-full z-50 mt-1 overflow-hidden rounded-lg border shadow-lg">
+        <div className="border-line-strong bg-surface rounded-card absolute inset-x-0 top-full z-50 mt-1 overflow-hidden border">
           {treffer.length === 0 ? (
             // `role="status"` sagt den Zustand an, ohne den Fokus zu holen.
             // Ein zweiter, unsichtbarer Bereich mit demselben Text würde ihn

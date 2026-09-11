@@ -196,7 +196,7 @@ function OffeneEinladung({
       ) : null}
 
       {!abgelaufen ? (
-        <div className="border-line bg-surface-sunken mt-4 rounded-lg border p-3">
+        <div className="border-line bg-surface-sunken rounded-card mt-4 border p-3">
           <p className="text-ink text-sm font-medium">Nächster Schritt</p>
           <p className="text-ink-muted mt-1 text-sm leading-relaxed">
             Die Berechtigung steht. Damit sich die Person anmelden kann, braucht sie einmalig ein

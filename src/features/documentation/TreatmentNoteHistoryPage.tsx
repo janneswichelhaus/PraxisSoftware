@@ -58,11 +58,11 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
           {versionen.data.map((version) => (
             <li
               key={version.version_no}
-              className="border-line bg-surface rounded-lg border p-4"
+              className="border-line bg-surface rounded-card border p-4"
               aria-label={`Version ${version.version_no}`}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-full border px-2.5 py-0.5 text-xs font-medium">
+                <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium">
                   Version {version.version_no}
                 </span>
                 <span className="text-ink-subtle text-xs">

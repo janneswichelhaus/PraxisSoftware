@@ -82,7 +82,7 @@ function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
   });
 
   return (
-    <section className="border-line bg-surface mb-8 rounded-lg border p-5">
+    <section className="border-line bg-surface rounded-card mb-8 border p-5">
       <h2 className="text-ink text-base font-semibold">Praxisraster</h2>
       <p className="text-ink-muted mt-1 max-w-prose text-sm">
         Auf welchen Minutenschritten ein Termin beginnen darf. Gilt für die gesamte Praxis. Die
@@ -163,7 +163,7 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
     : [...FRIST_WERTE, wert].sort((a, b) => a - b);
 
   return (
-    <section className="border-line bg-surface mb-8 rounded-lg border p-5">
+    <section className="border-line bg-surface rounded-card mb-8 border p-5">
       <h2 className="text-ink text-base font-semibold">Automatische Finalisierung</h2>
       <p className="text-ink-muted mt-1 max-w-prose text-sm">
         Ein Entwurf der Behandlungsdokumentation wird nach Ablauf dieser Frist automatisch
@@ -312,7 +312,7 @@ function Wochenplan({
   if (zeiten.isError) return <ErrorState title="Die Arbeitszeiten konnten nicht geladen werden." />;
 
   return (
-    <section className="border-line bg-surface mb-8 rounded-lg border p-5">
+    <section className="border-line bg-surface rounded-card mb-8 border p-5">
       <h2 className="text-ink text-base font-semibold">Wochenplan</h2>
       <p className="text-ink-muted mt-1 max-w-prose text-sm">
         Der Normalfall dieser Person. Zeiten gelten in der Zeitzone der Praxis.
@@ -431,7 +431,7 @@ function Abweichungen({
   const eigene = (ausnahmen.data ?? []).filter((a) => a.staff_member_id === staffMemberId);
 
   return (
-    <section className="border-line bg-surface rounded-lg border p-5">
+    <section className="border-line bg-surface rounded-card border p-5">
       <h2 className="text-ink text-base font-semibold">Abweichungen an einzelnen Tagen</h2>
       <p className="text-ink-muted mt-1 max-w-prose text-sm">
         Eine Abweichung ersetzt den Wochenplan für dieses Datum vollständig - entweder als ganzer

@@ -2,12 +2,73 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
+import { Badge } from './Badge';
 import { ButtonLink } from './ButtonLink';
+import { PageHeader } from './PageHeader';
+import { kartenAktionKlassen } from './buttonStile';
 import { DetailList, DetailRow } from './DetailList';
 import { Rueckfrage } from './Rueckfrage';
 import { SearchField } from './SearchField';
 import { Feldgruppe, Section } from './Section';
 import { Statusmeldung } from './Statusmeldung';
+
+describe('Badge', () => {
+  /**
+   * Seit DS-001 sind `akzent` und `positiv` dieselbe Farbe (Hauptfarbe auf
+   * Salbei hell). Vorher hielt sie ein Kontrasttest ueber ihre Buntheit
+   * auseinander; jetzt traegt das Zeichen die Unterscheidung. Faellt es weg,
+   * sind zwei Abzeichen nebeneinander nicht mehr zu trennen.
+   */
+  it('setzt positiv mit einem Zeichen von akzent ab', () => {
+    const { unmount } = renderWithProviders(<Badge ton="positiv">Abgeschlossen</Badge>);
+    expect(screen.getByText('Abgeschlossen').parentElement?.textContent).toBe('✓Abgeschlossen');
+    unmount();
+
+    renderWithProviders(<Badge ton="akzent">Vorschau</Badge>);
+    expect(screen.getByText('Vorschau').parentElement?.textContent).toBe('Vorschau');
+  });
+
+  it('kennzeichnet Warnung und Kritisch mit eigenen Zeichen', () => {
+    const { unmount } = renderWithProviders(<Badge ton="warnung">Offen</Badge>);
+    expect(screen.getByText('Offen').parentElement?.textContent).toBe('!Offen');
+    unmount();
+
+    renderWithProviders(<Badge ton="kritisch">Abgesagt</Badge>);
+    expect(screen.getByText('Abgesagt').parentElement?.textContent).toBe('×Abgesagt');
+  });
+
+  it('haelt das Zeichen aus dem Vorlesetext heraus', () => {
+    // Der Zustand steht als Wort daneben; "Haekchen Abgeschlossen" waere nur
+    // Rauschen.
+    renderWithProviders(<Badge ton="positiv">Abgeschlossen</Badge>);
+    expect(screen.getByText('✓')).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
+describe('PageHeader', () => {
+  it('haelt den kompakten Kopf flach, ohne die Identitaet wegzunehmen', () => {
+    // IDEA-PRX-038: auf den Dokumentationsseiten muss das Textfeld ohne
+    // Scrollen erreichbar sein. Gespart wird Hoehe - nicht die Zeile, die
+    // sagt, in wessen Akte gerade geschrieben wird.
+    renderWithProviders(
+      <PageHeader
+        title="Behandlung abschließen"
+        description="Max Mustermann · 12.05.2027, 09:00–10:00"
+        kompakt
+      />,
+    );
+
+    const titel = screen.getByRole('heading', { name: 'Behandlung abschließen' });
+    expect(titel.className).toContain('text-h4');
+    expect(titel.className).not.toContain('text-h2');
+    expect(screen.getByText('Max Mustermann · 12.05.2027, 09:00–10:00')).toBeInTheDocument();
+  });
+
+  it('bleibt ohne kompakt beim vollen Seitentitel', () => {
+    renderWithProviders(<PageHeader title="Patient:innen" />);
+    expect(screen.getByRole('heading', { name: 'Patient:innen' }).className).toContain('text-h2');
+  });
+});
 
 describe('ButtonLink', () => {
   it('ist ein Link und keine Schaltflaeche', () => {
@@ -18,11 +79,21 @@ describe('ButtonLink', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('traegt dieselben Klassen wie die Schaltflaeche und ein Tippziel von 44 px', () => {
+  it('traegt dieselben Klassen wie die Schaltflaeche und ein ausreichendes Tippziel', () => {
     renderWithProviders(<ButtonLink to="/a">Primaer</ButtonLink>);
     const link = screen.getByRole('link', { name: 'Primaer' });
-    expect(link.className).toContain('min-h-11');
+    // Seit DS-001 ist die Schaltflaeche 48 px hoch (`--control-height`); die
+    // Untergrenze von 44 px aus der Oberflaechen-Checkliste bleibt damit
+    // erfuellt. Geprueft wird die Hoehe, nicht eine bestimmte Klasse.
+    expect(link.className).toMatch(/\bh-12\b/);
     expect(link.className).toContain('bg-accent');
+  });
+
+  it('haelt die kompakte Variante bei 44 px', () => {
+    // Das Design System nennt 40 px fuer den kompakten Knopf und zugleich
+    // "Ziele >= 44". Fuer einen Knopf ohne umgebende Polsterung widersprechen
+    // sich beide; es gilt die zugaengliche Lesart.
+    expect(kartenAktionKlassen()).toMatch(/\bmin-h-11\b/);
   });
 
   it('kennt die sekundaere Variante', () => {

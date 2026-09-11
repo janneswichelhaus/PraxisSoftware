@@ -103,7 +103,7 @@ function Verordnungskarte({
   const darfSchreiben = canWritePrescriptions(user.roles);
 
   return (
-    <li className="border-line bg-surface rounded-lg border p-4">
+    <li className="border-line bg-surface rounded-card border p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-ink text-[0.9375rem] font-medium">

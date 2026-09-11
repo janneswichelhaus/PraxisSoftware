@@ -124,7 +124,7 @@ export function PrescriptionFormFields({
           {positionen.map((position, index) => (
             <fieldset
               key={position.id ?? `neu-${index}`}
-              className="border-line rounded-lg border p-4"
+              className="border-line rounded-card border p-4"
             >
               <legend className="text-ink-muted px-1 text-sm">Position {index + 1}</legend>
               <div className="flex flex-col gap-4">

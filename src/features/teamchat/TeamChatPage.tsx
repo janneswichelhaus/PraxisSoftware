@@ -181,7 +181,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
                     type="button"
                     onClick={() => setKanalId(eintrag.id)}
                     aria-current={aktiv ? 'true' : undefined}
-                    className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 text-left text-[0.9375rem] transition-colors ${
+                    className={`rounded-button flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left text-[0.9375rem] transition-colors ${
                       aktiv
                         ? 'bg-accent-soft text-accent font-medium'
                         : 'text-ink-muted hover:bg-surface-sunken'
@@ -310,7 +310,7 @@ function Nachrichtenblock({
         </p>
       ) : null}
       {nachricht.bezug ? (
-        <p className="text-ink-muted bg-surface-sunken mt-2 inline-block rounded-lg px-3 py-1.5 text-sm">
+        <p className="text-ink-muted bg-surface-sunken rounded-card mt-2 inline-block px-3 py-1.5 text-sm">
           Bezug: {bezugLabels[nachricht.bezug.art] ?? nachricht.bezug.art} · {nachricht.bezug.label}
           <span className="text-ink-subtle block text-xs">
             Der Verweis erweitert keine Berechtigung.

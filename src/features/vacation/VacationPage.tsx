@@ -239,7 +239,7 @@ function Antragskarte({
       ) : null}
 
       {zeitgleich.length > 0 ? (
-        <p className="text-warnung bg-warnung-soft mt-2 rounded-lg px-3 py-2 text-sm">
+        <p className="text-warnung bg-warnung-soft rounded-card mt-2 px-3 py-2 text-sm">
           Zeitgleich abwesend:{' '}
           {zeitgleich.map((eintrag) => mitarbeiterName(zustand, eintrag.mitarbeiterId)).join(', ')}
         </p>
@@ -492,7 +492,7 @@ function Antragsformular({
         ) : null}
 
         {kollisionen.length > 0 ? (
-          <p className="text-warnung bg-warnung-soft rounded-lg px-3 py-2 text-sm">
+          <p className="text-warnung bg-warnung-soft rounded-card px-3 py-2 text-sm">
             Überschneidung mit einem bestehenden Antrag:{' '}
             {kollisionen
               .map((antrag) => `${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)}`)
@@ -614,7 +614,7 @@ function Entscheidungsformular({
         ) : null}
 
         {zeitgleich.length > 0 ? (
-          <p className="text-warnung bg-warnung-soft rounded-lg px-3 py-2 text-sm">
+          <p className="text-warnung bg-warnung-soft rounded-card px-3 py-2 text-sm">
             Zeitgleich bereits abwesend:{' '}
             {zeitgleich
               .map((eintrag) => mitarbeiterName(zustand, eintrag.mitarbeiterId))
@@ -623,7 +623,7 @@ function Entscheidungsformular({
         ) : null}
 
         {art === 'genehmigen' ? (
-          <p className="text-ink-muted rounded-lg border border-dashed px-3 py-2 text-sm">
+          <p className="text-ink-muted rounded-card border border-dashed px-3 py-2 text-sm">
             Termine im Zeitraum müssen anschließend bewusst bearbeitet werden. Sie werden nicht
             automatisch abgesagt.{' '}
             <Link

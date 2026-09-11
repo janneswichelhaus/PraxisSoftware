@@ -32,7 +32,9 @@ export function Section({
   return (
     <section className="mt-8 first:mt-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Ueberschrift className="text-ink-muted text-sm font-semibold tracking-wide uppercase">
+        {/* Abschnittstitel als `--type-label`: 12 px in 600, Versalien mit
+            0.14em Laufweite (DS-001). */}
+        <Ueberschrift className="text-ink-muted tracking-label text-xs font-semibold uppercase">
           {titel}
         </Ueberschrift>
         {aktion}

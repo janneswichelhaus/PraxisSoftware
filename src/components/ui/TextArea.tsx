@@ -35,7 +35,7 @@ export function TextArea({ label, hint, error, className = '', ...props }: TextA
         aria-describedby={describedBy}
         aria-invalid={error ? true : undefined}
         className={[
-          'bg-surface text-ink placeholder:text-ink-subtle w-full rounded-lg border px-3 py-2.5 text-base leading-relaxed',
+          'bg-surface-field text-ink placeholder:text-ink-subtle rounded-field w-full border px-4 py-3 text-base leading-relaxed',
           error ? 'border-danger' : 'border-line-strong',
           className,
         ]

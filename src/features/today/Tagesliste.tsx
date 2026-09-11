@@ -94,14 +94,19 @@ export function Tageskarte({
       ) : null}
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {/* Kontakt ist Aktion, nicht Text (Oberflächen-Checkliste Punkt 8). */}
+        {aktionen}
+        {/* Kontakt ist Aktion, nicht Text (Oberflächen-Checkliste Punkt 8).
+            Seit `IDEA-PRX-040` stehen die Nummern hinter den Handlungen: sie
+            sind wichtig, aber selten — gebraucht werden sie, wenn niemand
+            öffnet. Weggeklappt werden sie deshalb nicht, nur nach hinten
+            gesetzt; im Hausflur mit Handschuhen ist die Nummer die einzige
+            Handlung, die den Besuch noch rettet. */}
         {nummern.map((nummer) => (
           <a key={nummer.label} href={nummer.href} className={kartenAktionKlassen()}>
             <span className="text-ink-muted">{nummer.label}</span>
             <span className="tabular-nums">{nummer.anzeige}</span>
           </a>
         ))}
-        {aktionen}
         <Link
           to={`/termine/${termin.id}`}
           className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center px-1 text-sm font-medium"

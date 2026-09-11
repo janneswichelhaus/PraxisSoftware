@@ -273,6 +273,30 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     ? alleTherapeuten.filter((t) => t.staff_member_id === p.person)
     : alleTherapeuten;
 
+  /**
+   * Der Spaltenkopf wechselt die Ansicht (CAL-012).
+   *
+   * Beide Ansichten zeigen denselben Kalender aus zwei Richtungen: die
+   * Tagesansicht fragt „wer hat wann was", die Wochenansicht „wie sieht die
+   * Woche dieser Person aus". Ein Kopf trägt genau die Antwort, die die
+   * andere Richtung als Eingabe braucht — ein Name die Person, ein Datum den
+   * Tag. Der Wechsel läuft deshalb über den Kopf und nicht über einen
+   * zusätzlichen Umweg durch die Filterzeile.
+   *
+   * Alles Übrige der Adresse bleibt stehen, auch die Zoomstufe.
+   */
+  const zumWochenplan = (staffMemberId: string, name: string) => ({
+    to: `/kalender?${schreibeParameter({ ...p, ansicht: 'woche', person: staffMemberId })}`,
+    beschriftung: `Wochenplan von ${name}`,
+  });
+
+  const zumTag = (tag: string) => ({
+    // Ohne Person: der Tag gehoert allen: genau die Frage, die die
+    // Tagesansicht beantwortet.
+    to: `/kalender?${schreibeParameter({ ...p, ansicht: 'tag', datum: tag, person: null })}`,
+    beschriftung: `Tagesansicht aller behandelnden Personen am ${wochentagKurz(tag)} ${tagesZahl(tag)}`,
+  });
+
   const spaltenModell: GitterSpalte[] =
     p.ansicht === 'tag'
       ? tagesPersonen.map((t) => ({
@@ -284,6 +308,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             wochenplanDaten,
             ausnahmenDaten,
           ),
+          ziel: zumWochenplan(t.staff_member_id, t.display_name),
         }))
       : tage.map((tag) => ({
           id: tag,
@@ -293,6 +318,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           baender: wochenPerson
             ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
             : [],
+          ziel: zumTag(tag),
         }));
 
   // Die Wochenansicht zeigt genau eine Person; alles andere blendet sie aus.
@@ -519,7 +545,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         <div
           role="group"
           aria-label="Außerhalb der Arbeitszeit"
-          className="border-line-strong bg-surface-sunken mt-4 rounded-lg border p-4"
+          className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
         >
           <p className="text-ink text-sm">
             {offen.beschreibung} liegt außerhalb der hinterlegten Arbeitszeit. Der Termin wurde noch
@@ -561,7 +587,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {rueckgaengig && !verschieben.isPending ? (
         <div
           role="status"
-          className="border-line-strong bg-surface-sunken nicht-drucken mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3"
+          className="border-line-strong bg-surface-sunken nicht-drucken rounded-card mt-4 flex flex-wrap items-center justify-between gap-3 border px-4 py-3"
         >
           <p className="text-ink text-sm">
             Termin verschoben. Vorher: <strong>{rueckgaengig.beschreibung}</strong>

@@ -107,7 +107,9 @@ export function Rueckfrage({
     <div
       role="group"
       aria-label={bezeichnung ?? ausloeser}
-      className="border-line-strong bg-surface-sunken w-full rounded-lg border p-4"
+      // Radius 14 und 24 innen: die Rueckfrage ist eine Karte, keine
+      // Schaltflaeche (DS-001).
+      className="border-line-strong bg-surface-sunken rounded-card w-full border p-6"
     >
       <div className="text-ink text-sm">{children}</div>
       {fehler ? (

@@ -56,11 +56,11 @@ function Eintrag({
     <div className="border-line mt-2 border-t pt-4">
       <div className="flex flex-wrap items-center gap-2">
         {istNachtrag ? (
-          <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-full border px-2.5 py-0.5 text-xs font-medium">
+          <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium">
             Nachtrag
           </span>
         ) : null}
-        <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-full border px-2.5 py-0.5 text-xs font-medium">
+        <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium">
           {treatmentNoteStatusLabels[note.status]}
         </span>
         {note.status === 'draft' ? (
@@ -122,7 +122,7 @@ function Eintrag({
         <div
           role="group"
           aria-label="Dokumentation finalisieren"
-          className="border-line-strong bg-surface-sunken mt-4 rounded-lg border p-4"
+          className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
         >
           <p className="text-ink text-sm leading-relaxed">
             Nach der Finalisierung ist der Eintrag Bestandteil der Patientenakte. Der jetzige

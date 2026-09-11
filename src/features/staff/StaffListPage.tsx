@@ -12,7 +12,7 @@ import { fetchStaffMembers, staffFullName, type StaffMember } from './api';
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 const selectClass =
-  'min-h-11 rounded-lg border border-line-strong bg-surface px-3 text-base text-ink';
+  'min-h-11 rounded-field border border-line-strong bg-surface px-3 text-base text-ink';
 
 function parseStatusFilter(value: string | null): StatusFilter {
   return value === 'active' || value === 'inactive' ? value : 'all';
@@ -160,12 +160,12 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1">
                     {!aktiv ? (
-                      <span className="bg-surface-sunken text-ink-muted rounded-full px-2.5 py-0.5 text-xs">
+                      <span className="bg-surface-sunken text-ink-muted rounded-pill px-2.5 py-0.5 text-xs">
                         inaktiv
                       </span>
                     ) : null}
                     {aktiv && !kannBehandeln && !zuordenbar.isPending ? (
-                      <span className="bg-surface-sunken text-ink-muted rounded-full px-2.5 py-0.5 text-xs">
+                      <span className="bg-surface-sunken text-ink-muted rounded-pill px-2.5 py-0.5 text-xs">
                         nicht für Termine zuordenbar
                       </span>
                     ) : null}
