@@ -129,11 +129,12 @@
   --spacing-bedienhoehe: 48px;
   --spacing-bedienhoehe-kompakt: 40px;
 
-  /* Breite des Seiteninhalts. Der Handoff nennt an zwei Stellen zwei Werte —
-     `--content-max: 1200px` in den Tokens, 1024 px im Shell-Prototyp. 1200
-     gilt: 1024 wäre schmaler als das bisherige Kalendergitter und würde bei
-     mehreren zeitgleich arbeitenden Personen wehtun. */
-  --spacing-inhalt-max: 1200px;
+  /* Breite des Seiteninhalts (`max-w-inhalt`). Der Handoff nennt an zwei
+     Stellen zwei Werte — `--content-max: 1200px` in den Tokens, 1024 px im
+     Shell-Prototyp. 1200 gilt: 1024 wäre schmaler als das bisherige
+     Kalendergitter und würde bei mehreren zeitgleich arbeitenden Personen
+     wehtun. */
+  --container-inhalt: 1200px;
 }
 
 @layer base {

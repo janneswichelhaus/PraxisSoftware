@@ -23,7 +23,15 @@ describe('AppShell', () => {
         <p>Inhalt</p>
       </AppShell>,
     );
-    expect(screen.getByRole('img', { name: 'Own Motion' })).toBeInTheDocument();
+    // Seit DS-001 liegen zwei Fassungen im DOM: die farbige in der Kopfzeile
+    // fuers Telefon, die Papier-Fassung in der tiefgruenen Seitenleiste. Je
+    // nach Breite blendet CSS eine aus; jsdom kennt kein CSS und sieht beide.
+    const marken = screen.getAllByRole('img', { name: 'Own Motion' });
+    expect(marken.length).toBe(2);
+    expect(marken.map((m) => m.getAttribute('src'))).toEqual([
+      '/marke/own-motion-block-papier.svg',
+      '/marke/own-motion-block-farbig.svg',
+    ]);
     expect(screen.queryByText('Test Praxis Tuebingen')).toBeNull();
   });
 
@@ -34,10 +42,9 @@ describe('AppShell', () => {
       </AppShell>,
       '/betrieb/urlaub',
     );
-    expect(screen.getByRole('link', { name: 'Own Motion, zur Startseite' })).toHaveAttribute(
-      'href',
-      '/',
-    );
+    const wege = screen.getAllByRole('link', { name: 'Own Motion, zur Startseite' });
+    expect(wege.length).toBeGreaterThan(0);
+    for (const weg of wege) expect(weg).toHaveAttribute('href', '/');
   });
 
   it('bietet einem reinen Patientenkonto keine Kartei an', () => {
@@ -107,14 +114,17 @@ describe('AppShell', () => {
         </AppShell>,
         pfad,
       );
-      const klassen = screen.getByRole('main').parentElement?.className ?? '';
+      const klassen = screen.getByRole('main').className;
       unmount();
       return klassen;
     };
 
     expect(rahmen('/kalender')).toBe(rahmen('/patienten'));
     expect(rahmen('/kalender')).toBe(rahmen('/'));
-    expect(rahmen('/kalender')).not.toMatch(/max-w-/);
+    // Seit DS-001 gibt es eine Kappung (1200 px), aber dieselbe auf jeder
+    // Seite - der Sprung entstand nicht durch die Kappung, sondern dadurch,
+    // dass sie je Route eine andere war.
+    expect(rahmen('/kalender')).toContain('max-w-inhalt');
   });
 
   it('enthaelt einen Sprunglink zum Inhalt', () => {

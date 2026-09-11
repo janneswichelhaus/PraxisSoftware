@@ -21,12 +21,29 @@ import { MARKE_MINDESTHOEHE, MARKE_SEITENVERHAELTNIS } from './markeRegeln';
  *
  * Maße und Regeln stehen in `markeRegeln.ts`.
  */
+/**
+ * Fassungen der Marke nach `marke/README.md`, Abschnitt „Dateien".
+ *
+ * `farbig` steht auf Papier oder heller Fläche, `papier` auf Tiefgrün oder
+ * der Hauptfarbe. Umgefärbt wird nie — deshalb zwei Dateien statt einer mit
+ * `currentColor`.
+ */
+export type Markenfassung = 'farbig' | 'papier';
+
+const DATEI: Record<Markenfassung, string> = {
+  farbig: '/marke/own-motion-block-farbig.svg',
+  papier: '/marke/own-motion-block-papier.svg',
+};
+
 export function Wortmarke({
   hoehe = MARKE_MINDESTHOEHE,
+  fassung = 'farbig',
   className = '',
 }: {
   /** Höhe in Pixeln, mindestens 24. Die Breite folgt dem Seitenverhältnis. */
   hoehe?: number;
+  /** Welche Fassung — bestimmt durch den Grund, auf dem die Marke steht. */
+  fassung?: Markenfassung;
   className?: string;
 }) {
   if (hoehe < MARKE_MINDESTHOEHE) {
@@ -39,7 +56,7 @@ export function Wortmarke({
 
   return (
     <img
-      src="/marke/own-motion-block-farbig.svg"
+      src={DATEI[fassung]}
       alt="Own Motion"
       // Beide Maße stehen am Element, damit der Platz schon vor dem Laden der
       // Datei stimmt und die Kopfzeile nicht springt. `width: auto` im Stil
