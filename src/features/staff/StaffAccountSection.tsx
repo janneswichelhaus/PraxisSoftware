@@ -14,12 +14,18 @@ import { roleLabel } from '@/components/ui/roleLabels';
 import type { RoleKey } from '@/features/session/types';
 import {
   EinladungsError,
+  ZugangsError,
   fetchStaffAccount,
   fetchStaffInvitations,
   istAbgelaufen,
   ladeZugangEin,
   sendeZugangsMail,
+  setzeRollen,
+  setzeZugangAktiv,
+  stosseKennwortZuruecksetzenAn,
   widerrufeEinladung,
+  type SperrProblem,
+  type StaffAccount,
   type StaffInvitation,
 } from './konto-api';
 import type { StaffMember } from './api';
@@ -231,6 +237,162 @@ function OffeneEinladung({
   );
 }
 
+const sperrTexte: Record<SperrProblem, string> = {
+  last_owner_required:
+    'Die letzte aktive Praxisinhaberin behält ihre Rolle und ihren Zugang. Sonst könnte niemand mehr Zugänge, Rollen und das Auditlog verwalten.',
+  cannot_lock_own_account: 'Der eigene Zugang lässt sich nicht sperren.',
+  unbekannt: 'Der Vorgang konnte nicht ausgeführt werden.',
+};
+
+function sperrText(fehler: unknown): string | undefined {
+  if (fehler instanceof ZugangsError) return sperrTexte[fehler.problem];
+  return fehler ? sperrTexte.unbekannt : undefined;
+}
+
+/**
+ * Ein bestehender Zugang: Rollen, Sperre, Kennwort (STAFF-002c, STAFF-003).
+ *
+ * Die drei Vorgänge stehen bewusst nebeneinander statt in einem Formular. Sie
+ * sind verschieden endgültig: Eine Rolle zu ändern wirkt sofort auf die
+ * Sichtbarkeit von Akten, eine Sperre nimmt den Zugang ganz, und das
+ * Zurücksetzen des Kennworts ändert an den Berechtigungen gar nichts. Ein
+ * gemeinsames „Speichern" würde diesen Unterschied einebnen.
+ */
+function BestehenderZugang({ staff, konto }: { staff: StaffMember; konto: StaffAccount }) {
+  const queryClient = useQueryClient();
+  const aktiv = konto.account_active !== false;
+  const [rollen, setRollen] = useState<RoleKey[]>(konto.role_keys ?? []);
+
+  async function neuLaden() {
+    await queryClient.invalidateQueries({ queryKey: ['staff-account', staff.id] });
+    await queryClient.invalidateQueries({ queryKey: ['assignable-therapists'] });
+  }
+
+  const rollenSpeichern = useMutation({
+    mutationFn: () => setzeRollen(staff.id, rollen),
+    onSuccess: neuLaden,
+  });
+  const sperren = useMutation({
+    mutationFn: (zielAktiv: boolean) => setzeZugangAktiv(staff.id, zielAktiv),
+    onSuccess: neuLaden,
+  });
+  const kennwort = useMutation({
+    mutationFn: () => stosseKennwortZuruecksetzenAn(staff.id),
+  });
+
+  const gespeichert = konto.role_keys ?? [];
+  const geaendert =
+    rollen.length !== gespeichert.length || rollen.some((r) => !gespeichert.includes(r));
+
+  return (
+    <div className="max-w-md">
+      <DetailList>
+        <DetailRow label="Stand">{aktiv ? 'Eingerichtet' : 'Gesperrt'}</DetailRow>
+      </DetailList>
+
+      {!aktiv ? (
+        <Statusmeldung ton="warnung" className="mt-3">
+          Dieser Zugang ist gesperrt. Die Person kann sich anmelden, sieht aber keine Daten der
+          Praxis.
+        </Statusmeldung>
+      ) : null}
+
+      <fieldset className="mt-6">
+        <legend className="text-ink mb-1 text-sm font-medium">Rollen</legend>
+        <div className="flex flex-col">
+          {WAEHLBARE_ROLLEN.map((rolle) => (
+            <Checkbox
+              key={rolle}
+              label={roleLabel(rolle)}
+              hint={rollenHinweis[rolle]}
+              checked={rollen.includes(rolle)}
+              onChange={(event) =>
+                setRollen((bisher) =>
+                  event.target.checked
+                    ? [...bisher, rolle]
+                    : bisher.filter((eintrag) => eintrag !== rolle),
+                )
+              }
+            />
+          ))}
+        </div>
+      </fieldset>
+
+      {rollenSpeichern.isError ? (
+        <Statusmeldung ton="fehler" className="mt-3">
+          {sperrText(rollenSpeichern.error)}
+        </Statusmeldung>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button
+          type="button"
+          disabled={!geaendert || rollen.length === 0 || rollenSpeichern.isPending}
+          onClick={() => rollenSpeichern.mutate()}
+        >
+          {rollenSpeichern.isPending ? 'Wird gespeichert …' : 'Rollen speichern'}
+        </Button>
+        {geaendert ? (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setRollen(gespeichert);
+              rollenSpeichern.reset();
+            }}
+          >
+            Verwerfen
+          </Button>
+        ) : null}
+      </div>
+      {rollen.length === 0 ? (
+        <Statusmeldung className="mt-2">
+          Ein Zugang braucht mindestens eine Rolle. Ohne Rolle wird er gesperrt, nicht entrechtet.
+        </Statusmeldung>
+      ) : null}
+
+      <div className="border-line mt-8 flex flex-wrap items-center gap-3 border-t pt-6">
+        <Rueckfrage
+          ausloeser={aktiv ? 'Zugang sperren' : 'Zugang entsperren'}
+          bestaetigen={aktiv ? 'Sperren' : 'Entsperren'}
+          bestaetigenLaeuft="Wird geändert …"
+          fehler={sperren.isError ? sperrText(sperren.error) : undefined}
+          laeuft={sperren.isPending}
+          onBestaetigen={() => sperren.mutateAsync(!aktiv)}
+          onAbbrechen={() => sperren.reset()}
+        >
+          <p>
+            {aktiv
+              ? 'Die Person kann sich weiterhin anmelden, sieht aber keine Daten der Praxis mehr. Der Mitarbeiterdatensatz, bestehende Termine und die Dokumentation bleiben unverändert.'
+              : 'Die Person erhält ihren bisherigen Zugang mit den oben gezeigten Rollen zurück.'}
+          </p>
+        </Rueckfrage>
+
+        <Rueckfrage
+          ausloeser="Kennwort zurücksetzen"
+          bestaetigen="Mail senden"
+          bestaetigenLaeuft="Wird gesendet …"
+          fehler={kennwort.isError ? 'Das Zurücksetzen konnte nicht angestoßen werden.' : undefined}
+          laeuft={kennwort.isPending}
+          onBestaetigen={() => kennwort.mutateAsync()}
+          onAbbrechen={() => kennwort.reset()}
+        >
+          <p>
+            Der Anmeldedienst schickt eine Mail an die hinterlegte Adresse. Das bisherige Kennwort
+            bleibt gültig, bis ein neues gesetzt wird — der Zugang wird dadurch nicht gesperrt.
+          </p>
+        </Rueckfrage>
+      </div>
+
+      {kennwort.isSuccess ? (
+        <Statusmeldung className="mt-3">
+          Die Mail zum Zurücksetzen wurde an die hinterlegte Adresse geschickt.
+        </Statusmeldung>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * Der Zugangsteil des Mitarbeiterdatensatzes (STAFF-002b).
  *
@@ -274,19 +436,8 @@ export function StaffAccountSection({ staff }: { staff: StaffMember }) {
       titel="Zugang"
       hinweis="Zugang zur Anwendung. Der Mitarbeiterdatensatz bleibt davon unberührt."
     >
-      {hatZugang ? (
-        <DetailList>
-          <DetailRow label="Stand">
-            {konto.data?.account_active === false ? 'Gesperrt' : 'Eingerichtet'}
-          </DetailRow>
-          <DetailRow label="Rollen">
-            <span className="flex flex-wrap gap-1.5">
-              {(konto.data?.role_keys ?? []).map((rolle) => (
-                <RoleBadge key={rolle} role={rolle} />
-              ))}
-            </span>
-          </DetailRow>
-        </DetailList>
+      {hatZugang && konto.data ? (
+        <BestehenderZugang staff={staff} konto={konto.data} />
       ) : offen ? (
         <OffeneEinladung einladung={offen} staffMemberId={staff.id} />
       ) : staff.employment_status === 'inactive' ? (

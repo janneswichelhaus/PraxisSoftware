@@ -169,3 +169,76 @@ export async function nimmZugangAn(): Promise<void> {
   if (error?.message?.includes('no_open_invitation')) throw new KeineEinladungError();
   if (error) throw new Error('Der Zugang konnte nicht eingerichtet werden.');
 }
+
+// -----------------------------------------------------------------------------
+// Rollen und Sperre eines bestehenden Zugangs (STAFF-002c, STAFF-003)
+// -----------------------------------------------------------------------------
+
+/**
+ * Der Server hat den Vorgang abgewiesen, um ein Aussperren zu verhindern.
+ *
+ * Beides ist keine Panne, sondern eine Regel aus ADR-012: Die Praxis hat
+ * Bus-Faktor 1, und ein Fehlgriff darf nicht dazu führen, dass niemand mehr
+ * Rollen vergeben oder das Auditlog lesen kann.
+ */
+export type SperrProblem = 'last_owner_required' | 'cannot_lock_own_account' | 'unbekannt';
+
+export class ZugangsError extends Error {
+  readonly problem: SperrProblem;
+
+  constructor(problem: SperrProblem) {
+    super(problem);
+    this.name = 'ZugangsError';
+    this.problem = problem;
+  }
+}
+
+function sperrProblem(meldung: string): SperrProblem {
+  if (meldung.includes('last_owner_required')) return 'last_owner_required';
+  if (meldung.includes('cannot_lock_own_account')) return 'cannot_lock_own_account';
+  return 'unbekannt';
+}
+
+export async function setzeRollen(
+  staffMemberId: string,
+  rollen: readonly RoleKey[],
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_staff_account_roles', {
+    p_staff_member_id: staffMemberId,
+    p_role_keys: rollen,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw new ZugangsError(sperrProblem(error.message ?? ''));
+}
+
+export async function setzeZugangAktiv(staffMemberId: string, aktiv: boolean): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_staff_account_active', {
+    p_staff_member_id: staffMemberId,
+    p_active: aktiv,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw new ZugangsError(sperrProblem(error.message ?? ''));
+}
+
+/**
+ * Stößt das Zurücksetzen des Kennworts an.
+ *
+ * Zwei Schritte, weil zwei Systeme beteiligt sind: Die Datenbank hält den
+ * Vorgang fest und nennt die Anmeldeadresse; die Mail verschickt der
+ * Anmeldedienst (B13). Diese Anwendung sieht das Kennwort nie - weder das
+ * alte noch das neue.
+ */
+export async function stosseKennwortZuruecksetzenAn(staffMemberId: string): Promise<void> {
+  const { data, error } = (await getSupabase().rpc('request_staff_password_reset', {
+    p_staff_member_id: staffMemberId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Das Zurücksetzen konnte nicht angestoßen werden.');
+  const email = z.string().safeParse(data);
+  if (!email.success) throw new Error('Das Zurücksetzen konnte nicht angestoßen werden.');
+
+  const { error: mailError } = await getSupabase().auth.resetPasswordForEmail(email.data, {
+    redirectTo: `${window.location.origin}/kennwort-neu`,
+  });
+  if (mailError) throw new Error('Die Mail zum Zurücksetzen konnte nicht zugestellt werden.');
+}

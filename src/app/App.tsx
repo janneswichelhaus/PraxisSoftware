@@ -3,7 +3,11 @@ import { BrowserRouter } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
 import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
-import { KeinProfilError, useCurrentUser } from '@/features/session/useCurrentUser';
+import {
+  KeinProfilError,
+  ZugangGesperrtError,
+  useCurrentUser,
+} from '@/features/session/useCurrentUser';
 import { ZugangEinrichtenPage } from '@/features/staff/ZugangEinrichtenPage';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
@@ -55,6 +59,25 @@ function AuthenticatedApp() {
         }}
         onAbmelden={() => void abmelden()}
       />
+    );
+  }
+
+  /**
+   * Gesperrt (STAFF-003). Ohne diesen Zweig sähe die Person eine vollständige,
+   * aber überall leere Anwendung - genau der unklare Zustand aus §13. Der Text
+   * sagt, was los ist und an wen sie sich wendet, mehr nicht.
+   */
+  if (error instanceof ZugangGesperrtError) {
+    return (
+      <main className="mx-auto max-w-sm px-5 py-16">
+        <ErrorState
+          title="Dieser Zugang ist gesperrt."
+          description="Bitte wenden Sie sich an die Praxisleitung. Ihre bisherige Arbeit bleibt unverändert erhalten."
+        />
+        <Button variant="secondary" className="mt-4 w-full" onClick={() => void abmelden()}>
+          Abmelden
+        </Button>
+      </main>
     );
   }
 

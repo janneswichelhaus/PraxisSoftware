@@ -8,6 +8,15 @@ export const userProfileSchema = z.object({
   organization_id: z.string(),
   person_id: z.string(),
   display_name: z.string(),
+  /**
+   * Ist der Zugang freigeschaltet (STAFF-003)?
+   *
+   * Ein gesperrter Zugang darf seine eigene Profilzeile weiterhin lesen -
+   * sonst koennte die Anwendung "gesperrt" nicht von "nie eingerichtet"
+   * unterscheiden und zeigte eine irrefuehrende Seite (13). Ausgeliefert wird
+   * damit nichts Geschuetztes: jede andere Policy laeuft fuer ihn ins Leere.
+   */
+  is_active: z.boolean(),
 });
 export type UserProfile = z.infer<typeof userProfileSchema>;
 

@@ -28,6 +28,9 @@ const fetchStaffInvitations = vi.fn();
 const ladeZugangEin = vi.fn();
 const widerrufeEinladung = vi.fn();
 const sendeZugangsMail = vi.fn();
+const setzeRollen = vi.fn();
+const setzeZugangAktiv = vi.fn();
+const stosseKennwortZuruecksetzenAn = vi.fn();
 
 vi.mock('./konto-api', async (importOriginal) => {
   const actual = await importOriginal<typeof KontoApi>();
@@ -40,11 +43,16 @@ vi.mock('./konto-api', async (importOriginal) => {
       ladeZugangEin(id, mail, rollen) as Promise<void>,
     widerrufeEinladung: (id: string) => widerrufeEinladung(id) as Promise<void>,
     sendeZugangsMail: (mail: string) => sendeZugangsMail(mail) as Promise<void>,
+    setzeRollen: (id: string, rollen: readonly string[]) =>
+      setzeRollen(id, rollen) as Promise<void>,
+    setzeZugangAktiv: (id: string, aktiv: boolean) => setzeZugangAktiv(id, aktiv) as Promise<void>,
+    stosseKennwortZuruecksetzenAn: (id: string) =>
+      stosseKennwortZuruecksetzenAn(id) as Promise<void>,
   };
 });
 
 const { StaffAccountSection } = await import('./StaffAccountSection');
-const { EinladungsError } = await import('./konto-api');
+const { EinladungsError, ZugangsError } = await import('./konto-api');
 
 const offeneEinladung: KontoApi.StaffInvitation = {
   id: '99999999-9999-4999-8999-0000000000e1',
@@ -54,6 +62,13 @@ const offeneEinladung: KontoApi.StaffInvitation = {
   status: 'pending',
   expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString(),
   created_at: new Date().toISOString(),
+};
+
+const mitZugang: KontoApi.StaffAccount = {
+  staff_member_id: anna.id,
+  user_id: '11111111-1111-4111-8111-000000000002',
+  account_active: true,
+  role_keys: ['therapist'],
 };
 
 const ohneZugang: KontoApi.StaffAccount = {
@@ -71,9 +86,15 @@ describe('StaffAccountSection', () => {
       ladeZugangEin,
       widerrufeEinladung,
       sendeZugangsMail,
+      setzeRollen,
+      setzeZugangAktiv,
+      stosseKennwortZuruecksetzenAn,
     ]) {
       mock.mockReset();
     }
+    setzeRollen.mockResolvedValue(undefined);
+    setzeZugangAktiv.mockResolvedValue(undefined);
+    stosseKennwortZuruecksetzenAn.mockResolvedValue(undefined);
     fetchStaffAccount.mockResolvedValue(ohneZugang);
     fetchStaffInvitations.mockResolvedValue([]);
     ladeZugangEin.mockResolvedValue(undefined);
@@ -182,17 +203,13 @@ describe('StaffAccountSection', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('zeigt bei bestehendem Zugang die Rollen statt eines Formulars', async () => {
-    fetchStaffAccount.mockResolvedValue({
-      staff_member_id: anna.id,
-      user_id: '11111111-1111-4111-8111-000000000002',
-      account_active: true,
-      role_keys: ['therapist', 'team_lead'],
-    });
+  it('zeigt bei bestehendem Zugang die Verwaltung statt eines Einladungsformulars', async () => {
+    fetchStaffAccount.mockResolvedValue(mitZugang);
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
     expect(await screen.findByText('Eingerichtet')).toBeInTheDocument();
-    expect(screen.getByText('Therapeut:in')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Therapeut:in' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Praxismanagement' })).not.toBeChecked();
     expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
   });
 
@@ -211,6 +228,125 @@ describe('StaffAccountSection', () => {
 
     expect(
       await screen.findByText('Der Zugangsstand konnte nicht geladen werden.'),
+    ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bestehender Zugang: Rollen, Sperre, Kennwort (STAFF-002c, STAFF-003)
+// ---------------------------------------------------------------------------
+describe('StaffAccountSection - bestehender Zugang', () => {
+  beforeEach(() => {
+    for (const mock of [
+      fetchStaffAccount,
+      fetchStaffInvitations,
+      setzeRollen,
+      setzeZugangAktiv,
+      stosseKennwortZuruecksetzenAn,
+    ]) {
+      mock.mockReset();
+    }
+    fetchStaffAccount.mockResolvedValue(mitZugang);
+    fetchStaffInvitations.mockResolvedValue([]);
+    setzeRollen.mockResolvedValue(undefined);
+    setzeZugangAktiv.mockResolvedValue(undefined);
+    stosseKennwortZuruecksetzenAn.mockResolvedValue(undefined);
+  });
+
+  it('speichert Rollen erst nach einer Änderung', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    // Unverändert: nichts zu speichern.
+    expect(await screen.findByRole('button', { name: 'Rollen speichern' })).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Teamleitung' }));
+    await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
+
+    await waitFor(() => expect(setzeRollen).toHaveBeenCalledTimes(1));
+    expect(setzeRollen).toHaveBeenCalledWith(anna.id, ['therapist', 'team_lead']);
+  });
+
+  it('lässt eine Änderung verwerfen', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
+    await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+
+    expect(screen.getByRole('checkbox', { name: 'Teamleitung' })).not.toBeChecked();
+    expect(setzeRollen).not.toHaveBeenCalled();
+  });
+
+  it('speichert keine leere Rollenliste', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Therapeut:in' }));
+
+    expect(screen.getByRole('button', { name: 'Rollen speichern' })).toBeDisabled();
+    expect(screen.getByText(/Ein Zugang braucht mindestens eine Rolle/)).toBeInTheDocument();
+  });
+
+  it('erklärt den Aussperrschutz, statt nur zu scheitern', async () => {
+    const user = userEvent.setup();
+    setzeRollen.mockRejectedValue(new ZugangsError('last_owner_required'));
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Praxisinhaber' }));
+    await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
+
+    expect(
+      await screen.findByText(/Die letzte aktive Praxisinhaberin behält ihre Rolle/),
+    ).toBeInTheDocument();
+  });
+
+  it('sperrt erst nach der Rückfrage', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Zugang sperren' }));
+    expect(setzeZugangAktiv).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Sperren' }));
+    await waitFor(() => expect(setzeZugangAktiv).toHaveBeenCalledWith(anna.id, false));
+  });
+
+  it('bietet bei gesperrtem Zugang das Entsperren an und sagt, was gilt', async () => {
+    fetchStaffAccount.mockResolvedValue({ ...mitZugang, account_active: false });
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    expect(await screen.findByText('Gesperrt')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Die Person kann sich anmelden, sieht aber keine Daten der Praxis/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Zugang entsperren' })).toBeInTheDocument();
+  });
+
+  it('nennt beim eigenen Zugang den Grund der Ablehnung', async () => {
+    const user = userEvent.setup();
+    setzeZugangAktiv.mockRejectedValue(new ZugangsError('cannot_lock_own_account'));
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Zugang sperren' }));
+    await user.click(screen.getByRole('button', { name: 'Sperren' }));
+
+    expect(
+      await screen.findByText('Der eigene Zugang lässt sich nicht sperren.'),
+    ).toBeInTheDocument();
+  });
+
+  it('stößt das Zurücksetzen des Kennworts erst nach der Rückfrage an', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Kennwort zurücksetzen' }));
+    expect(stosseKennwortZuruecksetzenAn).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Mail senden' }));
+    await waitFor(() => expect(stosseKennwortZuruecksetzenAn).toHaveBeenCalledWith(anna.id));
+    expect(
+      await screen.findByText(/Die Mail zum Zurücksetzen wurde an die hinterlegte Adresse/),
     ).toBeInTheDocument();
   });
 });

@@ -19,6 +19,7 @@ import {
 const { users, organizationId } = SEED;
 
 const STAFF = {
+  jannes: '55555555-5555-4555-8555-000000000001',
   anna: '55555555-5555-4555-8555-000000000002',
   olivia: '55555555-5555-4555-8555-000000000003',
 } as const;
@@ -26,6 +27,7 @@ const STAFF = {
 const EINLADEN = 'select public.invite_staff_account($1::uuid, $2, $3::text[]) as id';
 const WIDERRUFEN = 'select public.revoke_staff_invitation($1::uuid)';
 const ANNEHMEN = 'select public.claim_staff_invitation() as id';
+const SPERREN = 'select public.set_staff_account_active($1::uuid, $2)';
 
 /** Ein Konto, das der Provider angelegt hat - ohne jede Zuordnung zur Praxis. */
 const NEUES_KONTO = '11111111-1111-4111-8111-0000000000aa';
@@ -518,5 +520,252 @@ describe('Lesepfade der Zugangsverwaltung', () => {
     expect(rows.find((r) => r.staff_member_id === STAFF.anna)?.user_id).toBe(users.therapist);
     expect(rows.find((r) => r.staff_member_id === STAFF.olivia)?.user_id).toBeNull();
     expect(rows.find((r) => r.staff_member_id === STAFF.olivia)?.role_keys).toBeNull();
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Rollen aendern (STAFF-002c)
+// -----------------------------------------------------------------------------
+const ROLLEN = 'select public.set_staff_account_roles($1::uuid, $2::text[])';
+
+async function rollen(userId: string): Promise<string[]> {
+  const { rows } = await asPostgres<{ role_key: string }>(
+    'select role_key from public.user_roles where user_id = $1 order by role_key',
+    [userId],
+  );
+  return rows.map((r) => r.role_key);
+}
+
+describe('set_staff_account_roles', () => {
+  beforeEach(async () => {
+    await resetDatabaseOhneTermine();
+  }, 120_000);
+
+  it('setzt die Rollen auf genau die uebergebene Liste', async () => {
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.anna, ['office', 'team_lead']]);
+    expect(await rollen(users.therapist)).toEqual(['office', 'team_lead']);
+  });
+
+  it('protokolliert hinzugekommene und weggefallene Rollen, nicht die ganze Liste', async () => {
+    // Anna hat 'therapist'. Danach 'therapist' und 'office'.
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.anna, ['therapist', 'office']]);
+
+    const eintraege = await auditEintraege('staff_account.roles_changed');
+    expect(eintraege).toHaveLength(1);
+    expect(eintraege[0]?.subject_id).toBe(STAFF.anna);
+    expect(eintraege[0]?.context).toEqual({
+      surface: 'web',
+      added: ['office'],
+      removed: [],
+    });
+  });
+
+  it('schreibt bei wertgleichem Aufruf weder Rollen noch Auditeintrag', async () => {
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.anna, ['therapist']]);
+    expect(await rollen(users.therapist)).toEqual(['therapist']);
+    expect(await auditEintraege('staff_account.roles_changed')).toHaveLength(0);
+  });
+
+  it('haelt die letzte aktive Praxisinhaberin in ihrer Rolle (ADR-012)', async () => {
+    // Jannes ist owner und therapist und der einzige owner der Praxis.
+    await expect(
+      asUser(users.ownerTherapist, ROLLEN, [STAFF.jannes, ['therapist']]),
+    ).rejects.toThrow(/last_owner_required/);
+    expect(await rollen(users.ownerTherapist)).toEqual(['owner', 'therapist']);
+  });
+
+  it('laesst die Abberufung zu, sobald es eine zweite aktive Inhaberin gibt', async () => {
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.anna, ['therapist', 'owner']]);
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.jannes, ['therapist']]);
+    expect(await rollen(users.ownerTherapist)).toEqual(['therapist']);
+  });
+
+  it('zaehlt eine gesperrte zweite Inhaberin nicht mit', async () => {
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.anna, ['owner']]);
+    await asUserCommitted(users.ownerTherapist, SPERREN, [STAFF.anna, false]);
+    await expect(
+      asUser(users.ownerTherapist, ROLLEN, [STAFF.jannes, ['therapist']]),
+    ).rejects.toThrow(/last_owner_required/);
+  });
+
+  it.each([
+    ['office', users.office],
+    ['therapist', users.therapist],
+    ['team_lead', users.teamLead],
+  ])('verweigert %s den Rollenwechsel (E10, ADR-004)', async (_rolle, userId) => {
+    await expect(asUser(userId, ROLLEN, [STAFF.anna, ['office']])).rejects.toThrow(
+      /not allowed to manage accounts/,
+    );
+  });
+
+  it.each([
+    ['leer', []],
+    ['unbekannt', ['chef']],
+    ['patient', ['patient']],
+  ])('weist eine Rollenliste ab, die %s ist', async (_fall, liste) => {
+    await expect(asUser(users.ownerTherapist, ROLLEN, [STAFF.anna, liste])).rejects.toThrow(
+      /at least one role is required|unknown role/,
+    );
+  });
+
+  it('weist einen Datensatz ohne Zugang ab', async () => {
+    const staffId = await mitarbeiterAnlegen();
+    await expect(asUser(users.ownerTherapist, ROLLEN, [staffId, ['office']])).rejects.toThrow(
+      /account not found/,
+    );
+  });
+
+  it('ist fuer anon nicht ausfuehrbar', async () => {
+    await expect(asAnon(ROLLEN, [STAFF.anna, ['office']])).rejects.toThrow(/permission denied/i);
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Sperren (STAFF-003)
+// -----------------------------------------------------------------------------
+describe('set_staff_account_active', () => {
+  beforeEach(async () => {
+    await resetDatabaseOhneTermine();
+  }, 120_000);
+
+  async function istAktiv(userId: string): Promise<boolean> {
+    const { rows } = await asPostgres<{ is_active: boolean }>(
+      'select is_active from public.user_profiles where id = $1',
+      [userId],
+    );
+    return rows[0]!.is_active;
+  }
+
+  it('sperrt den Zugang und nimmt damit jeden Datenzugriff', async () => {
+    await asUserCommitted(users.ownerTherapist, SPERREN, [STAFF.anna, false]);
+    expect(await istAktiv(users.therapist)).toBe(false);
+
+    const { rows: org } = await asUser<{ id: string | null }>(
+      users.therapist,
+      'select app.current_organization_id() as id',
+    );
+    expect(org[0]?.id).toBeNull();
+    const { rows: patienten } = await asUser(users.therapist, 'select id from public.patients');
+    expect(patienten).toHaveLength(0);
+  });
+
+  it('laesst das gesperrte Konto sein eigenes Profil weiter lesen', async () => {
+    // Sonst koennte die Anwendung "gesperrt" nicht von "nie eingerichtet"
+    // unterscheiden und wuerde eine irrefuehrende Seite zeigen (13).
+    await asUserCommitted(users.ownerTherapist, SPERREN, [STAFF.anna, false]);
+    const { rows } = await asUser<{ is_active: boolean }>(
+      users.therapist,
+      'select is_active from public.user_profiles where id = $1',
+      [users.therapist],
+    );
+    expect(rows[0]?.is_active).toBe(false);
+  });
+
+  it('laesst den Beschaeftigungsstatus unberuehrt', async () => {
+    await asUserCommitted(users.ownerTherapist, SPERREN, [STAFF.anna, false]);
+    const { rows } = await asPostgres<{ employment_status: string }>(
+      'select employment_status from public.staff_members where id = $1',
+      [STAFF.anna],
+    );
+    expect(rows[0]?.employment_status).toBe('active');
+  });
+
+  it('entsperrt wieder und protokolliert beides getrennt', async () => {
+    await asUserCommitted(users.ownerTherapist, SPERREN, [STAFF.anna, false]);
+    await asUserCommitted(users.ownerTherapist, SPERREN, [STAFF.anna, true]);
+    expect(await istAktiv(users.therapist)).toBe(true);
+
+    expect(await auditEintraege('staff_account.locked')).toHaveLength(1);
+    expect(await auditEintraege('staff_account.unlocked')).toHaveLength(1);
+  });
+
+  it('schreibt bei wertgleichem Aufruf keinen Auditeintrag', async () => {
+    await asUserCommitted(users.ownerTherapist, SPERREN, [STAFF.anna, true]);
+    expect(await auditEintraege()).toEqual([]);
+  });
+
+  it('laesst niemanden sich selbst aussperren (ADR-012)', async () => {
+    await expect(asUser(users.ownerTherapist, SPERREN, [STAFF.jannes, false])).rejects.toThrow(
+      /cannot_lock_own_account/,
+    );
+  });
+
+  it('haelt die letzte aktive Praxisinhaberin entsperrt - auch als sie selbst', async () => {
+    // Anna wird zweite Inhaberin, Jannes legt seine Rolle ab. Anna ist damit
+    // die letzte; der Versuch scheitert an der Selbstsperre, die hier zuerst
+    // greift. Dass die Regel "letzte Inhaberin" ueber die Selbstsperre hinaus
+    // nicht erreichbar ist, steht als Anmerkung in der Migration - sie bleibt
+    // als zweite Linie stehen, falls das Sperren spaeter geoeffnet wird.
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.anna, ['owner']]);
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.jannes, ['therapist']]);
+    await expect(asUser(users.therapist, SPERREN, [STAFF.anna, false])).rejects.toThrow(
+      /cannot_lock_own_account/,
+    );
+  });
+
+  it('laesst eine Inhaberin sperren, solange eine zweite aktiv bleibt', async () => {
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [STAFF.anna, ['owner']]);
+    await asUserCommitted(users.ownerTherapist, SPERREN, [STAFF.anna, false]);
+    expect(await istAktiv(users.therapist)).toBe(false);
+  });
+
+  it.each([
+    ['office', users.office],
+    ['therapist', users.therapist],
+    ['team_lead', users.teamLead],
+  ])('verweigert %s das Sperren', async (_rolle, userId) => {
+    await expect(asUser(userId, SPERREN, [STAFF.olivia, false])).rejects.toThrow(
+      /not allowed to manage accounts/,
+    );
+  });
+
+  it('weist einen Datensatz ohne Zugang ab', async () => {
+    const staffId = await mitarbeiterAnlegen();
+    await expect(asUser(users.ownerTherapist, SPERREN, [staffId, false])).rejects.toThrow(
+      /account not found/,
+    );
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Kennwort zuruecksetzen anstossen (STAFF-003)
+// -----------------------------------------------------------------------------
+describe('request_staff_password_reset', () => {
+  beforeEach(async () => {
+    await resetDatabaseOhneTermine();
+  }, 120_000);
+
+  it('liefert die Anmeldeadresse und protokolliert den Anstoss', async () => {
+    const { rows } = await asUserCommitted<{ email: string }>(
+      users.ownerTherapist,
+      'select public.request_staff_password_reset($1::uuid) as email',
+      [STAFF.anna],
+    );
+    expect(rows[0]?.email).toBe('anna.beispiel@praxis.invalid');
+
+    const eintraege = await auditEintraege('staff_account.password_reset_requested');
+    expect(eintraege).toHaveLength(1);
+    expect(eintraege[0]?.subject_id).toBe(STAFF.anna);
+    // Kein Kennwort, kein Token, keine Adresse im Nachweis (ADR-010).
+    expect(JSON.stringify(eintraege[0])).not.toContain('anna.beispiel@');
+  });
+
+  it.each([
+    ['office', users.office],
+    ['therapist', users.therapist],
+    ['team_lead', users.teamLead],
+  ])('verweigert %s den Anstoss', async (_rolle, userId) => {
+    await expect(
+      asUser(userId, 'select public.request_staff_password_reset($1::uuid)', [STAFF.anna]),
+    ).rejects.toThrow(/not allowed to manage accounts/);
+  });
+
+  it('weist einen Datensatz ohne Zugang ab', async () => {
+    const staffId = await mitarbeiterAnlegen();
+    await expect(
+      asUser(users.ownerTherapist, 'select public.request_staff_password_reset($1::uuid)', [
+        staffId,
+      ]),
+    ).rejects.toThrow(/account not found/);
   });
 });

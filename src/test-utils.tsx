@@ -92,6 +92,7 @@ export function testUser(roles: RoleKey[], displayName = 'Anna Beispiel'): Curre
       organization_id: '22222222-2222-4222-8222-000000000001',
       person_id: '44444444-4444-4444-8444-000000000002',
       display_name: displayName,
+      is_active: true,
     },
     roles,
     organizationName: 'Test Praxis Tuebingen',

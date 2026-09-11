@@ -20,6 +20,22 @@ export class KeinProfilError extends Error {
 }
 
 /**
+ * Der Zugang besteht, ist aber gesperrt (STAFF-003).
+ *
+ * Ohne eigene Behandlung sähe die Person eine vollständige, aber überall leere
+ * Anwendung: `app.current_organization_id()` liefert für einen gesperrten
+ * Zugang `null`, und jede Policy läuft ins Leere. Eine Anwendung, die
+ * funktionstüchtig aussieht und nichts findet, ist genau der unklare Zustand,
+ * den §13 verbietet.
+ */
+export class ZugangGesperrtError extends Error {
+  constructor() {
+    super('Dieser Zugang ist gesperrt.');
+    this.name = 'ZugangGesperrtError';
+  }
+}
+
+/**
  * Lädt Profil und Rollen des angemeldeten Accounts.
  *
  * Die Rollen steuern ausschließlich die Darstellung. Die verbindliche
@@ -32,7 +48,7 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
   const [profileResult, rolesResult] = await Promise.all([
     supabase
       .from('user_profiles')
-      .select('id, organization_id, person_id, display_name')
+      .select('id, organization_id, person_id, display_name, is_active')
       .eq('id', userId)
       .maybeSingle(),
     supabase.from('user_roles').select('role_key').eq('user_id', userId),
@@ -45,6 +61,7 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
   }
 
   const profile = userProfileSchema.parse(profileResult.data);
+  if (!profile.is_active) throw new ZugangGesperrtError();
 
   const roles: RoleKey[] = [];
   for (const row of rolesResult.data ?? []) {
