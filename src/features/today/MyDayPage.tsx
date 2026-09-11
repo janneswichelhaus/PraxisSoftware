@@ -31,6 +31,7 @@ import {
   NavigationFuerDenTag,
   NavigationZumTermin,
 } from '@/features/appointments/NavigationStarten';
+import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, istOffen, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
 
@@ -256,14 +257,32 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   const darfTermine = canManageAppointments(user.roles);
   const praxisrolle = isStaff(user.roles);
 
+  /**
+   * Der Tagesplan des Teams fragt genau einen Kalendertag ab.
+   *
+   * Der Bereich ist halboffen - `bis` ist der erste Tag NACH dem Bereich,
+   * dieselbe Auslegung wie in `bereichFuer` und wie in `list_appointments`
+   * selbst. Bis hierher stand hier zweimal derselbe Tag; die Funktion weist
+   * das mit `to must be after from` zurueck, und die Seite zeigte dauerhaft
+   * "Die Termine konnten nicht geladen werden". Der Abschnitt hat damit nie
+   * funktioniert - es war kein abgelaufener Anmeldezustand.
+   */
+  const morgen = tagePlus(heute, 1);
+
   const {
     data: termine,
     isPending,
     isError,
   } = useQuery({
-    queryKey: ['appointments', heute, heute, null, null, 'active'],
+    queryKey: ['appointments', heute, morgen, null, null, 'active'],
     queryFn: () =>
-      fetchAppointments({ von: heute, bis: heute, person: null, standort: null, status: 'active' }),
+      fetchAppointments({
+        von: heute,
+        bis: morgen,
+        person: null,
+        standort: null,
+        status: 'active',
+      }),
     enabled: darfTermine,
     retry: false,
   });
