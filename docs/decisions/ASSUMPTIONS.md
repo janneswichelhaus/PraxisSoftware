@@ -2,7 +2,9 @@
 
 Zuletzt aktualisiert: 2026-09-11 (STAFF-EPIC-002: ANN-022 bis ANN-026 neu -
 Privatangaben Beschäftigter, Einladungsweg über die Auth-Mails, Frist der
-Einladung, Mindestlänge des Kennworts, MFA für `owner` ohne Anmeldesperre)
+Einladung, Mindestlänge des Kennworts, MFA für `owner` ohne Anmeldesperre —
+ANN-026 am selben Tag von Jannes entschieden: Planung der MFA-Pflicht erst,
+wenn eine Domain feststeht)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -1423,8 +1425,8 @@ ausdrückliches Verlangen der Prüfung.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | STAFF-004b; ADR-010 Punkt 10 und Punkt 9; ADR-012 (Bus-Faktor 1) |
-| Status | **offen**, getroffen 2026-09-11 |
-| Wiedervorlage | **Jannes vor dem Go-live-Gate (M3)** — sobald er selbst einen zweiten Faktor eingerichtet hat, kann die Durchsetzung eingeschaltet werden; Datenschutzprüfung |
+| Status | **entschieden (Jannes) 2026-09-11** — die Durchsetzung wird bewusst später geplant |
+| Wiedervorlage | **Jannes, sobald eine Domain für die Anwendung feststeht.** Vorher wird die MFA-Pflicht nicht geplant und nicht eingeschaltet (Entscheidung vom 2026-09-11). Die Datenschutzprüfung sieht den Punkt unabhängig davon. |
 
 **Annahme.** Der zweite Faktor (TOTP) ist **einrichtbar und sichtbar**, aber
 die Anmeldung wird **nicht** darauf festgelegt: Kein Datenpfad verlangt heute
@@ -1460,3 +1462,16 @@ in die Policies beziehungsweise RPCs der Zugangsverwaltung aufnehmen und den
 genannten Test umdrehen — Aufwand `klein`. Vorher nicht: Aufwand der Rücknahme
 wäre ein privilegierter Produktionszugriff, also `groß` im Sinne der
 Hard-Stop-Liste.
+
+**Ergänzung vom 2026-09-11 (Jannes).** Die Durchsetzung wird **erst geplant,
+wenn eine Domain für die Anwendung feststeht**. Damit bleibt die Annahme in
+ihrem heutigen Zustand bestehen — einrichtbar und sichtbar, nicht erzwungen —
+und wird nicht vor M3 wieder aufgerufen. Das ist sachlich schlüssig: Der
+zweite Faktor hängt an der Anmeldung, und die steht erst mit dem
+Frontend-Hosting fest (Roadmap G5, OPS-002); ein TOTP-Eintrag in der
+Authenticator-App trägt zudem die Kennung der Anmelde-URL, die sich bei einem
+Domainwechsel ändert. Bis dahin gilt: Der Hinweis in „Mein Konto" bleibt
+stehen, die Einrichtung ist freiwillig möglich, und **kein Datenpfad verlangt
+`aal2`.** Wird die Pflicht später eingeschaltet, ist die Reihenfolge
+unverändert: erst müssen mindestens zwei `owner`-Zugänge einen bestätigten
+Faktor haben, sonst ist es eine Aussperrung.
