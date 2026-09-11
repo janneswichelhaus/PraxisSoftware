@@ -54,7 +54,8 @@ describe('Kontrastrechnung', () => {
   it('liest die Tokens aus src/index.css', () => {
     // Findet die Suche nichts, waere jede folgende Zusicherung wertlos.
     expect(Object.keys(tokens).length).toBeGreaterThanOrEqual(12);
-    expect(tokens.ink).toEqual({ L: 0.24, C: 0.012, H: 250 });
+    // Tinte #111e17 aus tokens/colors.css des Design Systems (DS-001).
+    expect(tokens.ink).toEqual({ L: 0.22, C: 0.0229, H: 160.2 });
   });
 });
 
@@ -123,13 +124,21 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     expect(abstand).toBeGreaterThanOrEqual(0.06);
   });
 
-  // Akzent und Positiv liegen im Farbton nur wenige Grad auseinander, seit der
-  // Akzent gruen ist. Als Abzeichenflaechen stehen sie nebeneinander
-  // (Badge.tsx: `akzent` und `positiv`) und muessen unterscheidbar bleiben.
-  // Die Bedeutung haengt nie an der Farbe allein (WCAG 1.4.1, Zeile unten),
-  // aber verwechselbare Flaechen sind trotzdem schlechte Gestaltung.
-  it('haelt accent-soft ruhiger als positiv-soft', () => {
-    expect(tokens['accent-soft']!.C).toBeLessThan(tokens['positiv-soft']!.C);
+  // Bis DS-001 hielt hier eine Zusicherung accent-soft und positiv-soft ueber
+  // ihre Buntheit auseinander. In der Palette "Flasche & Salbei" sind beide
+  // dieselbe Farbe - Hauptfarbe auf Salbei hell -, und das ist Absicht: das
+  // Design System unterscheidet Status ueber ein Zeichen, nicht ueber einen
+  // Farbton. Die Zusicherung ist deshalb nicht entfallen, sondern umgezogen:
+  // `Badge` traegt fuer positiv/warnung/kritisch ein ✓ ! × neben dem Text,
+  // geprueft in src/components/ui/bausteine.test.tsx.
+  //
+  // Was hier bleibt, ist die Bedingung, unter der das ueberhaupt zulaessig
+  // ist: die beiden Toene muessen als Flaeche denselben Text tragen koennen.
+  it('haelt accent und positiv auf ihrer gemeinsamen Flaeche lesbar', () => {
+    expect(kontrastverhaeltnis(tokens.accent!, tokens['accent-soft']!)).toBeGreaterThanOrEqual(4.5);
+    expect(kontrastverhaeltnis(tokens.positiv!, tokens['positiv-soft']!)).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
 
   // 3:1 nach WCAG 1.4.11 fuer die Begrenzung von Bedienelementen.

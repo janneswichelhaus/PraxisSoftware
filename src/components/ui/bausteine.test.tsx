@@ -2,12 +2,46 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
+import { Badge } from './Badge';
 import { ButtonLink } from './ButtonLink';
 import { DetailList, DetailRow } from './DetailList';
 import { Rueckfrage } from './Rueckfrage';
 import { SearchField } from './SearchField';
 import { Feldgruppe, Section } from './Section';
 import { Statusmeldung } from './Statusmeldung';
+
+describe('Badge', () => {
+  /**
+   * Seit DS-001 sind `akzent` und `positiv` dieselbe Farbe (Hauptfarbe auf
+   * Salbei hell). Vorher hielt sie ein Kontrasttest ueber ihre Buntheit
+   * auseinander; jetzt traegt das Zeichen die Unterscheidung. Faellt es weg,
+   * sind zwei Abzeichen nebeneinander nicht mehr zu trennen.
+   */
+  it('setzt positiv mit einem Zeichen von akzent ab', () => {
+    const { unmount } = renderWithProviders(<Badge ton="positiv">Abgeschlossen</Badge>);
+    expect(screen.getByText('Abgeschlossen').parentElement?.textContent).toBe('✓Abgeschlossen');
+    unmount();
+
+    renderWithProviders(<Badge ton="akzent">Vorschau</Badge>);
+    expect(screen.getByText('Vorschau').parentElement?.textContent).toBe('Vorschau');
+  });
+
+  it('kennzeichnet Warnung und Kritisch mit eigenen Zeichen', () => {
+    const { unmount } = renderWithProviders(<Badge ton="warnung">Offen</Badge>);
+    expect(screen.getByText('Offen').parentElement?.textContent).toBe('!Offen');
+    unmount();
+
+    renderWithProviders(<Badge ton="kritisch">Abgesagt</Badge>);
+    expect(screen.getByText('Abgesagt').parentElement?.textContent).toBe('×Abgesagt');
+  });
+
+  it('haelt das Zeichen aus dem Vorlesetext heraus', () => {
+    // Der Zustand steht als Wort daneben; "Haekchen Abgeschlossen" waere nur
+    // Rauschen.
+    renderWithProviders(<Badge ton="positiv">Abgeschlossen</Badge>);
+    expect(screen.getByText('✓')).toHaveAttribute('aria-hidden', 'true');
+  });
+});
 
 describe('ButtonLink', () => {
   it('ist ein Link und keine Schaltflaeche', () => {

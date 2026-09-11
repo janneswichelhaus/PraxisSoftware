@@ -134,8 +134,10 @@ export function SearchCombobox({
         onKeyDown={tastatur}
       />
 
+      {/* Ohne Schlagschatten (DS-001): dass die Liste über der Seite liegt,
+          tragen der kräftige Rahmen und die hellere Fläche. */}
       {zeigeListe ? (
-        <div className="border-line-strong bg-surface absolute inset-x-0 top-full z-50 mt-1 overflow-hidden rounded-lg border shadow-lg">
+        <div className="border-line-strong bg-surface absolute inset-x-0 top-full z-50 mt-1 overflow-hidden rounded-lg border">
           {treffer.length === 0 ? (
             // `role="status"` sagt den Zustand an, ohne den Fokus zu holen.
             // Ein zweiter, unsichtbarer Bereich mit demselben Text würde ihn

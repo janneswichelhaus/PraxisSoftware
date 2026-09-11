@@ -11,6 +11,24 @@ const toene: Record<Ton, string> = {
 };
 
 /**
+ * Zeichen der drei Statustöne (DS-001).
+ *
+ * In der Palette „Flasche & Salbei" sind `akzent` und `positiv` **dieselbe
+ * Farbe** — Hauptfarbe auf Salbei hell. Vorher hielt ein Test die beiden
+ * Flächen über ihre Buntheit auseinander; das geht jetzt nicht mehr, und es
+ * soll auch nicht: das Design System unterscheidet Status über ein Zeichen,
+ * nicht über einen Farbton („Status-Pillen tragen ein Zeichen (✓ ! ×) plus
+ * Text, weil Farbe nie allein trägt").
+ *
+ * `neutral` und `akzent` sind kein Status und tragen deshalb keins.
+ */
+const zeichen: Partial<Record<Ton, string>> = {
+  positiv: '✓',
+  warnung: '!',
+  kritisch: '×',
+};
+
+/**
  * Kurzes Statuszeichen.
  *
  * Der Zustand steht immer als Text im Abzeichen, der Ton ergänzt ihn nur.
@@ -19,8 +37,11 @@ const toene: Record<Ton, string> = {
 export function Badge({ ton = 'neutral', children }: { ton?: Ton; children: ReactNode }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${toene[ton]}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${toene[ton]}`}
     >
+      {/* Das Zeichen ist für Vorlesesoftware ausgeblendet: der Zustand steht
+          daneben als Wort, und „Häkchen Abgeschlossen" wäre nur Rauschen. */}
+      {zeichen[ton] ? <span aria-hidden="true">{zeichen[ton]}</span> : null}
       {children}
     </span>
   );

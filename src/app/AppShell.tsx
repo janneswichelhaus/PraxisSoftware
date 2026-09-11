@@ -62,7 +62,7 @@ export function AppShell({
     <div className="min-h-dvh">
       <a
         href="#inhalt"
-        className="focus:bg-surface sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:px-4 focus:py-2 focus:shadow"
+        className="focus:bg-surface focus:border-line-strong sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:border focus:px-4 focus:py-2"
       >
         Zum Inhalt springen
       </a>
