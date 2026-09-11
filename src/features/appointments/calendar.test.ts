@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
-  STUNDEN_HOEHE,
+  ZOOMSTUFEN,
+  ZOOM_STANDARD,
   arbeitszeitBaender,
   aufRaster,
   bereichFuer,
   fensterMitArbeitszeit,
+  gitterlinien,
   isoWochentag,
   kachelBreite,
   blaettern,
   istIsoDatum,
   leseParameter,
+  linienAchse,
   minuteZuPixel,
   minuteZuZeit,
   pixelZuMinute,
@@ -21,6 +24,7 @@ import {
   tagesFenster,
   wochenBeginn,
   zeitZuMinute,
+  zoomSchritt,
   type Arbeitsausnahme,
   type Arbeitsblock,
 } from './calendar';
@@ -102,6 +106,7 @@ describe('Query-Parameter', () => {
       person: '55555555-5555-4555-8555-000000000002',
       standort: '33333333-3333-4333-8333-000000000001',
       status: 'all',
+      zoom: ZOOM_STANDARD,
     });
   });
 
@@ -114,6 +119,7 @@ describe('Query-Parameter', () => {
       // Standard ist 'active': geplante UND abgeschlossene Termine belegen den
       // Tag, ein abgehakter Termin darf nicht aus der Ansicht fallen (CAL-004).
       status: 'active',
+      zoom: ZOOM_STANDARD,
     });
   });
 
@@ -137,6 +143,7 @@ describe('Query-Parameter', () => {
       person: null,
       standort: null,
       status: 'active',
+      zoom: ZOOM_STANDARD,
     });
     expect(suche.toString()).toBe('ansicht=woche&datum=2027-05-12');
   });
@@ -148,6 +155,7 @@ describe('Query-Parameter', () => {
       person: '55555555-5555-4555-8555-000000000002',
       standort: null,
       status: 'all',
+      zoom: ZOOM_STANDARD,
     });
     expect(suche.get('person')).toBe('55555555-5555-4555-8555-000000000002');
     expect(suche.get('status')).toBe('all');
@@ -161,6 +169,7 @@ describe('Query-Parameter', () => {
       person: '55555555-5555-4555-8555-000000000002',
       standort: '33333333-3333-4333-8333-000000000001',
       status: 'all' as const,
+      zoom: 144 as const,
     };
     expect(leseParameter(schreibeParameter(original), HEUTE)).toEqual(original);
   });
@@ -317,17 +326,74 @@ function ausnahme(
 
 describe('Umrechnung Minute und Pixel', () => {
   it('rechnet den Fensteranfang auf null', () => {
-    expect(minuteZuPixel(7 * 60, 7 * 60)).toBe(0);
+    expect(minuteZuPixel(7 * 60, 7 * 60, ZOOM_STANDARD)).toBe(0);
   });
 
   it('rechnet eine Stunde auf die Stundenhoehe', () => {
-    expect(minuteZuPixel(8 * 60, 7 * 60)).toBe(STUNDEN_HOEHE);
+    expect(minuteZuPixel(8 * 60, 7 * 60, ZOOM_STANDARD)).toBe(ZOOM_STANDARD);
   });
 
-  it('ist zur Rueckrechnung gegenlaeufig', () => {
-    for (const minute of [420, 455, 600, 1234]) {
-      expect(pixelZuMinute(minuteZuPixel(minute, 420), 420)).toBeCloseTo(minute, 6);
+  it('ist zur Rueckrechnung gegenlaeufig, auf jeder Zoomstufe', () => {
+    for (const stufe of ZOOMSTUFEN) {
+      for (const minute of [420, 455, 600, 1234]) {
+        expect(pixelZuMinute(minuteZuPixel(minute, 420, stufe), 420, stufe)).toBeCloseTo(minute, 6);
+      }
     }
+  });
+});
+
+describe('Zoomstufen des Zeitgitters (CAL-011)', () => {
+  it('zeigt in der Voreinstellung das Praxisraster von fuenf Minuten', () => {
+    // Der gemeldete Anlass: terminiert wird auf fuenf Minuten genau, zu sehen
+    // waren nur Stundenbloecke.
+    expect(gitterlinien(ZOOM_STANDARD, 5).fein).toBe(5);
+  });
+
+  it('zeichnet das Praxisraster, nicht eine feste Zahl', () => {
+    // Stellt die Praxis auf zehn oder fuenfzehn Minuten um, folgt das Gitter:
+    // gezeichnet wird, worauf ein Termin einrastet (CAL-005).
+    expect(gitterlinien(ZOOM_STANDARD, 10).fein).toBe(10);
+    expect(gitterlinien(ZOOM_STANDARD, 15).fein).toBe(15);
+  });
+
+  it('laesst die feinen Linien weg, wo sie nur noch eine graue Flaeche waeren', () => {
+    // 40 px je Stunde sind 3,3 px je fuenf Minuten - zu eng. Die
+    // Viertelstunde traegt mit 10 px noch, ebenso die halbe Stunde.
+    const klein = gitterlinien(40, 5);
+    expect(klein.fein).toBe(15);
+    expect(klein.halbeStunde).toBe(true);
+
+    // 64 px je Stunde: die fuenf Minuten messen 5,3 px und fallen weiterhin
+    // weg, die Viertelstunde misst 16 px.
+    expect(gitterlinien(64, 5).fein).toBe(15);
+
+    // Erst unterhalb jeder brauchbaren Stufe bleiben nur Stunden uebrig: bei
+    // 20 px je Stunde traegt die halbe Stunde noch (10 px), bei 12 px nicht
+    // mehr (6 px).
+    expect(gitterlinien(20, 5)).toEqual({ fein: null, halbeStunde: true });
+    expect(gitterlinien(12, 5)).toEqual({ fein: null, halbeStunde: false });
+  });
+
+  it('faellt ohne hinterlegtes Praxisraster auf fuenf Minuten zurueck', () => {
+    expect(gitterlinien(ZOOM_STANDARD, null).fein).toBe(5);
+    expect(gitterlinien(ZOOM_STANDARD, 0).fein).toBe(5);
+  });
+
+  it('bleibt beim Schritt an den Enden stehen', () => {
+    const kleinste = ZOOMSTUFEN[0];
+    const groesste = ZOOMSTUFEN[ZOOMSTUFEN.length - 1]!;
+    expect(zoomSchritt(kleinste, -1)).toBe(kleinste);
+    expect(zoomSchritt(groesste, 1)).toBe(groesste);
+    expect(zoomSchritt(ZOOM_STANDARD, 1)).toBeGreaterThan(ZOOM_STANDARD);
+    expect(zoomSchritt(ZOOM_STANDARD, -1)).toBeLessThan(ZOOM_STANDARD);
+  });
+
+  it('liefert die Linien einer Stufe innerhalb des Fensters', () => {
+    expect(linienAchse(7 * 60, 8 * 60, 15)).toEqual([420, 435, 450, 465]);
+    // Der obere Rand gehoert dazu, der untere nicht - sonst zeichnete die
+    // letzte Linie auf den Rahmen des Gitters.
+    expect(linienAchse(430, 460, 15)).toEqual([435, 450]);
+    expect(linienAchse(7 * 60, 8 * 60, 0)).toEqual([]);
   });
 });
 

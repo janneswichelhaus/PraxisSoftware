@@ -18,6 +18,17 @@ import { Verbindungsanzeige } from './Verbindungsanzeige';
  *
  * Mobil: Kopfzeile plus Tableiste am unteren Rand, damit die Hauptbereiche mit
  * dem Daumen erreichbar sind. Ab sm: seitliche Navigation.
+ *
+ * **Eine Breite für alle Seiten (UI-001).** Bis 2026-09-11 bekam allein der
+ * Kalender die breite Spalte, alles andere eine schmalere. Beim Wechsel
+ * zwischen zwei Seiten sprang damit das ganze Gerüst — Kopfzeile, Navigation
+ * und Inhalt zugleich. Das Gerüst nutzt jetzt überall die volle Fensterbreite;
+ * gespart wird der Platz nirgends mehr.
+ *
+ * Die Lesbarkeit hängt damit nicht mehr an der Seitenbreite, sondern an der
+ * Zeilenlänge: Fließtext begrenzt sich selbst auf ein lesbares Maß
+ * (`max-w-prose`), Listen und Gitter dürfen die Breite nutzen. Das ist die
+ * Aufteilung, die eine gemeinsame Breite überhaupt erst zulässt.
  */
 
 const seitenLink =
@@ -43,11 +54,6 @@ export function AppShell({
   const aktuell = aktiverBereich(bereiche, pathname);
   const { sichtbar, weitere } = tableiste(bereiche);
 
-  // Der Kalender stellt sieben Tagesspalten nebeneinander. In der Breite der
-  // uebrigen Seiten waeren sie bei mehreren zeitgleich arbeitenden Personen
-  // nicht mehr lesbar; alle anderen Ansichten bleiben bewusst schmal.
-  const breite = pathname.startsWith('/kalender') ? 'max-w-7xl' : 'max-w-5xl';
-
   // Die ausgeblendete Suche ist keine Zugriffskontrolle: `search_patients`
   // prueft die Rolle selbst und liefert einem Patientenkonto nichts (ADR-004).
   const darfSuchen = canReadPatientDirectory(user.roles);
@@ -68,9 +74,7 @@ export function AppShell({
       </div>
 
       <header className="border-line bg-canvas/90 sticky top-0 z-30 border-b backdrop-blur">
-        <div
-          className={`mx-auto flex min-h-14 w-full ${breite} items-center justify-between gap-3 px-5`}
-        >
+        <div className="flex min-h-14 w-full items-center justify-between gap-3 px-5">
           {/* Die Wortmarke steht hier statt des Organisationsnamens. Nach
               ADR-003 ist Mandantenfähigkeit ausdrücklich keine
               Produktfunktion — es gibt genau eine Praxis, und die heißt Own
@@ -79,7 +83,18 @@ export function AppShell({
               „Test Praxis Tuebingen" und stünde dann unter der Marke. Siehe
               ANN-023 für den Weg zurück. */}
           <div className="flex min-w-0 items-center gap-3">
-            <Wortmarke hoehe={26} />
+            {/* Die Marke ist zugleich der Weg zurück auf „Mein Tag". Das ist
+                die Erwartung an ein Logo oben links; ohne den Link bliebe nur
+                der Umweg über die Navigation. Der Name der Marke steht im
+                `alt` der Grafik, das Ziel gehört zusätzlich dazu — sonst
+                hieße der Link für eine Vorlesehilfe bloß „Own Motion". */}
+            <Link
+              to="/"
+              aria-label="Own Motion, zur Startseite"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg"
+            >
+              <Wortmarke hoehe={26} />
+            </Link>
             {aktuell ? (
               <p className="text-ink-subtle truncate text-xs sm:hidden">{aktuell.label}</p>
             ) : null}
@@ -120,13 +135,13 @@ export function AppShell({
             von Kalender und „Mein Tag" in eine Akte, und dafür muss es ohne
             Aufklappen erreichbar sein (UX-004). */}
         {darfSuchen ? (
-          <div className={`mx-auto w-full ${breite} px-5 pb-2 sm:hidden`}>
+          <div className="w-full px-5 pb-2 sm:hidden">
             <Patientensuche />
           </div>
         ) : null}
       </header>
 
-      <div className={`mx-auto flex w-full ${breite} gap-8 px-5`}>
+      <div className="flex w-full gap-8 px-5">
         <nav aria-label="Arbeitsbereiche" className="hidden w-52 shrink-0 py-8 sm:block">
           <ul className="sticky top-20 flex flex-col gap-1">
             {bereiche.map((bereich) => (
@@ -158,7 +173,7 @@ export function AppShell({
         aria-label="Arbeitsbereiche"
         className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
       >
-        <ul className="mx-auto flex max-w-5xl">
+        <ul className="flex">
           {sichtbar.map((bereich) => (
             <li key={bereich.id} className="flex-1">
               <Link

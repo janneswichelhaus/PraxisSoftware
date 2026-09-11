@@ -1,9 +1,10 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  STUNDEN_HOEHE,
   aufRaster,
+  gitterlinien,
   kachelBreite,
+  linienAchse,
   minuteZuPixel,
   pixelZuMinute,
   spalten,
@@ -28,10 +29,36 @@ import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
  * Waagerechtes Scrollen ist ausdrücklich erwünscht: bei sechs zeitgleich
  * arbeitenden Personen ist eine gequetschte Spalte unbrauchbar, eine schmale
  * scrollbare dagegen lesbar. Zeitachse und Spaltenköpfe bleiben dabei stehen.
+ *
+ * **Die Linien tragen drei Stärken (CAL-011).** Die Stunde bleibt die
+ * Orientierung und ist am kräftigsten; die halbe Stunde teilt sie; das
+ * Praxisraster steht als feinste Stufe darunter, sobald die Zoomstufe dafür
+ * Platz lässt. Ohne diese Abstufung wäre ein durchgehendes Fünf-Minuten-Gitter
+ * bloß eine graue Fläche — man sähe jede Linie und keine Uhrzeit.
  */
 
 /** Unter dieser Breite wird eine Spalte unlesbar. Dann lieber scrollen. */
 const SPALTEN_MINDESTBREITE = '9rem';
+
+/**
+ * Stärke der drei Linienarten.
+ *
+ * Die erste Fassung nahm für alle drei `--color-line` und unterschied nur die
+ * Deckkraft. In der Sichtprüfung war die Stunde daraufhin von der
+ * Fünf-Minuten-Linie nicht zu unterscheiden: `--color-line` liegt bei 90 %
+ * Helligkeit, und zwischen 30 % und 100 % einer fast weißen Linie auf fast
+ * weißem Grund liegt kaum ein sichtbarer Unterschied. Das Ergebnis war die
+ * gestreifte Fläche, die das Gitter gerade nicht sein soll.
+ *
+ * Die Stunde nimmt deshalb `--color-line-strong` (63 % Helligkeit), gedämpft
+ * auf 60 %. Sie ist damit die Linie, an der man die Uhrzeit abliest; die
+ * halbe Stunde teilt sie, das Praxisraster bleibt ein Hauch.
+ */
+const LINIE = {
+  stunde: 'border-line-strong/60',
+  halb: 'border-line-strong/30',
+  fein: 'border-line/45',
+} as const;
 
 export interface GitterSpalte {
   id: string;
@@ -53,12 +80,6 @@ export interface GitterEintrag {
   ziehbar: boolean;
 }
 
-function stundenAchse(vonMinute: number, bisMinute: number): number[] {
-  const stunden: number[] = [];
-  for (let m = Math.ceil(vonMinute / 60) * 60; m < bisMinute; m += 60) stunden.push(m);
-  return stunden;
-}
-
 /** Kurze Einordnung: wo der Termin stattfindet. */
 function ortsHinweis(eintrag: CalendarEntry): string {
   if (eintrag.appointment_type === 'practice') return eintrag.location_name ?? 'Praxis';
@@ -74,6 +95,7 @@ export function CalendarGrid({
   eintraege,
   fenster,
   raster,
+  stundenHoehe,
   ziehbarErlaubt,
   onVerschieben,
   onFreieZeit,
@@ -83,6 +105,8 @@ export function CalendarGrid({
   eintraege: GitterEintrag[];
   fenster: { vonMinute: number; bisMinute: number };
   raster: number | null;
+  /** Höhe einer Stunde in Pixeln - die gewählte Zoomstufe (CAL-011). */
+  stundenHoehe: number;
   /** Ohne Änderungsrecht wird gar nicht erst gezogen. */
   ziehbarErlaubt: boolean;
   onVerschieben: (ziel: { terminId: string; spalteId: string; startMinute: number }) => void;
@@ -97,12 +121,27 @@ export function CalendarGrid({
   beschriftung: string;
 }) {
   const spaltenRefs = useRef(new Map<string, HTMLElement>());
-  const hoehe = ((fenster.bisMinute - fenster.vonMinute) / 60) * STUNDEN_HOEHE;
+  const hoehe = ((fenster.bisMinute - fenster.vonMinute) / 60) * stundenHoehe;
+
+  const linien = gitterlinien(stundenHoehe, raster);
+  const stunden = linienAchse(fenster.vonMinute, fenster.bisMinute, 60);
+  // Halbe und feine Linien lassen die Stundenlinie aus: zwei Linien
+  // uebereinander ergaeben einen dickeren, dunkleren Strich an genau der
+  // Stelle, an der die Abstufung ihn nicht haben will.
+  const halbe = linien.halbeStunde
+    ? linienAchse(fenster.vonMinute, fenster.bisMinute, 30).filter((m) => m % 60 !== 0)
+    : [];
+  const feine = linien.fein
+    ? linienAchse(fenster.vonMinute, fenster.bisMinute, linien.fein).filter(
+        (m) => m % 60 !== 0 && (!linien.halbeStunde || m % 30 !== 0),
+      )
+    : [];
 
   const ziehen = useTerminZiehen({
     fensterVon: fenster.vonMinute,
     fensterBis: fenster.bisMinute,
     raster,
+    stundenHoehe,
     // Die Spalte unter dem Zeiger wird aus den tatsächlichen Kästen gelesen -
     // damit stimmt sie auch bei waagerechtem Bildlauf.
     spalteAn: (clientX) => {
@@ -165,17 +204,32 @@ export function CalendarGrid({
           style={{ height: `${hoehe}px` }}
           aria-hidden="true"
         >
-          {stundenAchse(fenster.vonMinute, fenster.bisMinute).map((m) => (
+          {stunden.map((m) => (
             // Die Beschriftung steht unter ihrer Linie, nicht auf ihr: zentriert
             // waere die oberste Stunde am Rand des Gitters halb abgeschnitten.
             <div
               key={m}
               className="text-ink-subtle absolute right-1 pt-0.5 text-[0.6875rem]"
-              style={{ top: `${minuteZuPixel(m, fenster.vonMinute)}px` }}
+              style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
             >
               {hhmm(m)}
             </div>
           ))}
+          {/* Ab dieser Zoomstufe liegen die halben Stunden 72 px auseinander -
+              genug fuer eine zweite Beschriftung, ohne dass sie sich beruehren.
+              Eine feine Linie ohne Uhrzeit in der Naehe laesst sich sonst nur
+              abzaehlen. */}
+          {stundenHoehe >= 144
+            ? halbe.map((m) => (
+                <div
+                  key={m}
+                  className="text-ink-subtle/70 absolute right-1 pt-0.5 text-[0.625rem]"
+                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
+                >
+                  {hhmm(m)}
+                </div>
+              ))
+            : null}
         </div>
 
         {spaltenModell.map((s) => {
@@ -207,7 +261,11 @@ export function CalendarGrid({
                       if (event.target !== event.currentTarget) return;
                       if (ziehen.klickUnterdruecken()) return;
                       const kasten = event.currentTarget.getBoundingClientRect();
-                      const roh = pixelZuMinute(event.clientY - kasten.top, fenster.vonMinute);
+                      const roh = pixelZuMinute(
+                        event.clientY - kasten.top,
+                        fenster.vonMinute,
+                        stundenHoehe,
+                      );
                       const minute = Math.max(
                         fenster.vonMinute,
                         Math.min(fenster.bisMinute, aufRaster(roh, raster)),
@@ -224,19 +282,37 @@ export function CalendarGrid({
                   aria-hidden="true"
                   className="bg-surface-sunken pointer-events-none absolute inset-x-0"
                   style={{
-                    top: `${minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute)}px`,
-                    height: `${minuteZuPixel(Math.min(b.bisMinute, fenster.bisMinute), fenster.vonMinute) - minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute)}px`,
+                    top: `${minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute, stundenHoehe)}px`,
+                    height: `${minuteZuPixel(Math.min(b.bisMinute, fenster.bisMinute), fenster.vonMinute, stundenHoehe) - minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute, stundenHoehe)}px`,
                   }}
                 />
               ))}
 
-              {/* Stundenlinien. */}
-              {stundenAchse(fenster.vonMinute, fenster.bisMinute).map((m) => (
+              {/* Die drei Linienarten von fein nach kraeftig: die spaetere
+                  Regel gewinnt bei gleicher Deckkraft nicht, aber die
+                  Zeichenreihenfolge haelt die Stunde obenauf. */}
+              {feine.map((m) => (
                 <div
-                  key={m}
+                  key={`f${m}`}
                   aria-hidden="true"
-                  className="border-line pointer-events-none absolute inset-x-0 border-t"
-                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute)}px` }}
+                  className={`${LINIE.fein} pointer-events-none absolute inset-x-0 border-t`}
+                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
+                />
+              ))}
+              {halbe.map((m) => (
+                <div
+                  key={`h${m}`}
+                  aria-hidden="true"
+                  className={`${LINIE.halb} pointer-events-none absolute inset-x-0 border-t`}
+                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
+                />
+              ))}
+              {stunden.map((m) => (
+                <div
+                  key={`s${m}`}
+                  aria-hidden="true"
+                  className={`${LINIE.stunde} pointer-events-none absolute inset-x-0 border-t`}
+                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
                 />
               ))}
 
@@ -249,6 +325,7 @@ export function CalendarGrid({
                     key={g.eintrag.id}
                     gitter={g}
                     fensterVon={fenster.vonMinute}
+                    stundenHoehe={stundenHoehe}
                     links={links}
                     breite={breite}
                     stapel={spalte + 1}
@@ -275,8 +352,8 @@ export function CalendarGrid({
                 <div
                   className="border-accent bg-accent-soft/70 text-accent pointer-events-none absolute inset-x-1 z-40 rounded-lg border-2 border-dashed px-2 py-1 text-xs font-medium"
                   style={{
-                    top: `${minuteZuPixel(ziehen.vorschau.startMinute, fenster.vonMinute)}px`,
-                    height: `${(ziehen.vorschau.dauer / 60) * STUNDEN_HOEHE}px`,
+                    top: `${minuteZuPixel(ziehen.vorschau.startMinute, fenster.vonMinute, stundenHoehe)}px`,
+                    height: `${(ziehen.vorschau.dauer / 60) * stundenHoehe}px`,
                   }}
                   aria-hidden="true"
                 >
@@ -294,6 +371,7 @@ export function CalendarGrid({
 function Kachel({
   gitter,
   fensterVon,
+  stundenHoehe,
   links,
   breite,
   stapel,
@@ -305,6 +383,7 @@ function Kachel({
 }: {
   gitter: GitterEintrag;
   fensterVon: number;
+  stundenHoehe: number;
   links: number;
   breite: number;
   stapel: number;
@@ -316,9 +395,12 @@ function Kachel({
   onClickCapture: (event: React.MouseEvent) => void;
 }) {
   const { eintrag, beginnMinute, endeMinute, farbe } = gitter;
-  const oben = minuteZuPixel(beginnMinute, fensterVon);
-  // Mindesthöhe, damit auch ein sehr kurzer Termin greifbar bleibt.
-  const hoehe = Math.max(28, ((endeMinute - beginnMinute) / 60) * STUNDEN_HOEHE);
+  const oben = minuteZuPixel(beginnMinute, fensterVon, stundenHoehe);
+  // Mindesthöhe, damit auch ein sehr kurzer Termin greifbar bleibt. Sie
+  // verzerrt einen Termin unterhalb dieser Dauer nach oben; die Zieh-Vorschau
+  // zeigt daneben die tatsächliche Dauer, und auf einer höheren Zoomstufe
+  // greift die Mindesthöhe ohnehin nicht mehr.
+  const hoehe = Math.max(28, ((endeMinute - beginnMinute) / 60) * stundenHoehe);
   const vermerk = eintrag.status === 'scheduled' ? null : appointmentStatusLabels[eintrag.status];
   // Der Ort steht als dritte Zeile und zusätzlich im Tooltip: bei einem kurzen
   // Termin ist die Kachel zu niedrig für drei Zeilen. Ein abweichender Status

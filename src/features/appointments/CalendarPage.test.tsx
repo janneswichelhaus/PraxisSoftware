@@ -5,6 +5,16 @@ import type * as AppointmentsApi from './api';
 import type * as SchedulingApi from '@/features/scheduling/api';
 import type * as RouterModule from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
+import { ZOOM_STANDARD } from './calendar';
+
+/**
+ * Eine Stunde nach unten, in Pixeln der voreingestellten Zoomstufe (CAL-011).
+ *
+ * Abgeleitet statt fest verdrahtet: das Gitter ist seit CAL-011 zoombar, und
+ * eine Zahl wie "56 px sind eine Stunde" waere beim naechsten Wechsel der
+ * Voreinstellung still falsch geworden.
+ */
+const EINE_STUNDE = ZOOM_STANDARD;
 
 const navigate = vi.fn();
 
@@ -450,6 +460,43 @@ describe('CalendarPage', () => {
     });
   });
 
+  describe('CAL-011: Zoomstufen und sichtbares Praxisraster', () => {
+    it('zeigt in der Voreinstellung das Fuenf-Minuten-Raster an', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const zoom = screen.getByRole('group', { name: 'Zoom' });
+      expect(within(zoom).getByText('5-Minuten-Raster')).toBeInTheDocument();
+    });
+
+    it('nimmt die Zoomstufe aus der Adresszeile', async () => {
+      // 40 px je Stunde tragen die Viertelstunde, nicht die fuenf Minuten.
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=40');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const zoom = screen.getByRole('group', { name: 'Zoom' });
+      expect(within(zoom).getByText('15-Minuten-Raster')).toBeInTheDocument();
+    });
+
+    it('faellt bei einer erfundenen Zoomstufe auf die Voreinstellung zurueck', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=9999');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const zoom = screen.getByRole('group', { name: 'Zoom' });
+      expect(within(zoom).getByText('5-Minuten-Raster')).toBeInTheDocument();
+    });
+
+    it('vergroebert das Gitter ueber die Bedienung', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      await userEvent.click(screen.getByRole('button', { name: 'Gitter verkleinern' }));
+
+      const zoom = screen.getByRole('group', { name: 'Zoom' });
+      expect(within(zoom).getByText('15-Minuten-Raster')).toBeInTheDocument();
+    });
+  });
+
   describe('CAL-006: Verschieben per Zeigegerät', () => {
     /**
      * jsdom kennt kein Layout: `getBoundingClientRect` liefert überall Nullen.
@@ -509,8 +556,7 @@ describe('CalendarPage', () => {
     it('verschiebt einen Termin auf eine andere Uhrzeit', async () => {
       const kachel = await tagesansicht();
 
-      // STUNDEN_HOEHE ist 56 px; 56 px nach unten sind genau eine Stunde.
-      ziehen(kachel, { dy: 56 });
+      ziehen(kachel, { dy: EINE_STUNDE });
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       const { werte, bestaetigt } = letzterSchreibvorgang();
@@ -524,11 +570,28 @@ describe('CalendarPage', () => {
       expect(bestaetigt).toBe(false);
     });
 
+    it('rechnet die gezogene Strecke auf der gewaehlten Zoomstufe (CAL-011)', async () => {
+      // Auf der groessten Stufe ist eine Stunde 208 px hoch. Wuerde das
+      // Ziehen weiter mit der Voreinstellung rechnen, waeren dieselben 208 px
+      // gut zwei Stunden - der Termin landete bei 11:10 statt bei 10:00.
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=208');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+
+      ziehen(kachel, { dy: 208 });
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      expect(letzterSchreibvorgang().werte).toMatchObject({
+        start_time: '10:00',
+        end_time: '11:00',
+      });
+    });
+
     it('rastet den Beginn auf dem Praxisraster ein', async () => {
       const kachel = await tagesansicht();
 
-      // 30 px sind rund 32 Minuten; auf einem 5er-Raster wird daraus 09:30.
-      ziehen(kachel, { dy: 30 });
+      // 32 Minuten nach unten; auf einem 5er-Raster wird daraus 09:30.
+      ziehen(kachel, { dy: (32 / 60) * ZOOM_STANDARD });
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       const { werte } = letzterSchreibvorgang();
@@ -540,7 +603,7 @@ describe('CalendarPage', () => {
       const kachel = await tagesansicht();
 
       // Zweite Spalte: x zwischen 300 und 500.
-      ziehen(kachel, { dy: 56, x: 400 });
+      ziehen(kachel, { dy: EINE_STUNDE, x: 400 });
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       const { werte } = letzterSchreibvorgang();
@@ -593,7 +656,7 @@ describe('CalendarPage', () => {
       // Ohne den erwarteten updated_at-Wert griffe der Schutz gegen ein
       // verlorenes Update nicht (CAL-003).
       const kachel = await tagesansicht();
-      ziehen(kachel, { dy: 56 });
+      ziehen(kachel, { dy: EINE_STUNDE });
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       expect(fetchAppointment).toHaveBeenCalledWith('77777777-7777-4777-8777-000000000001');
@@ -606,7 +669,7 @@ describe('CalendarPage', () => {
         fetchAppointments.mockResolvedValue([eintrag({ status })]);
         const kachel = await tagesansicht();
 
-        ziehen(kachel, { dy: 56 });
+        ziehen(kachel, { dy: EINE_STUNDE });
         expect(updateAppointment).not.toHaveBeenCalled();
       },
     );
@@ -619,7 +682,7 @@ describe('CalendarPage', () => {
       const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
       spaltenVermessen();
 
-      ziehen(kachel, { dy: 56 });
+      ziehen(kachel, { dy: EINE_STUNDE });
       expect(updateAppointment).not.toHaveBeenCalled();
     });
 
@@ -627,7 +690,7 @@ describe('CalendarPage', () => {
       updateAppointment.mockRejectedValue(new AusserhalbArbeitszeitError());
       const kachel = await tagesansicht();
 
-      ziehen(kachel, { dy: 56 });
+      ziehen(kachel, { dy: EINE_STUNDE });
 
       const rueckfrage = await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
       expect(rueckfrage).toHaveTextContent(/noch nicht verschoben/);
@@ -640,7 +703,7 @@ describe('CalendarPage', () => {
       const user = userEvent.setup();
       const kachel = await tagesansicht();
 
-      ziehen(kachel, { dy: 56 });
+      ziehen(kachel, { dy: EINE_STUNDE });
       await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
 
       await user.click(screen.getByRole('button', { name: 'Trotzdem verschieben' }));
@@ -657,7 +720,7 @@ describe('CalendarPage', () => {
       );
       const kachel = await tagesansicht();
 
-      ziehen(kachel, { dy: 56 });
+      ziehen(kachel, { dy: EINE_STUNDE });
 
       expect(await screen.findByText(/bereits einen Termin/)).toBeInTheDocument();
       expect(

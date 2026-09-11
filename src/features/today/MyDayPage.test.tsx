@@ -108,9 +108,23 @@ vi.mock('@/features/today/api', async (importOriginal) => {
   };
 });
 
+/**
+ * Haelt den abgefragten Zeitbereich fest.
+ *
+ * Der Bereich war lange falsch (`von` und `bis` derselbe Tag) und ist es
+ * niemandem aufgefallen, weil dieser Ersatz die Argumente gar nicht ansah.
+ */
+const fetchAppointments = vi.fn();
+
 vi.mock('@/features/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApiModule>();
-  return { ...actual, fetchAppointments: () => Promise.resolve(termine) };
+  return {
+    ...actual,
+    fetchAppointments: (query: AppointmentsApiModule.CalendarQuery) => {
+      fetchAppointments(query);
+      return Promise.resolve(termine);
+    },
+  };
 });
 
 /**
@@ -136,6 +150,21 @@ describe('Mein Tag', () => {
   beforeEach(() => {
     fetchDayPlan.mockReset();
     fetchDayPlan.mockResolvedValue(tagesplan);
+    fetchAppointments.mockClear();
+  });
+
+  it('fragt den Tagesplan des Teams als halboffenen Bereich ab', async () => {
+    // `list_appointments` weist `p_to <= p_from` mit "to must be after from"
+    // zurueck. Genau das stand hier: derselbe Tag zweimal - der Abschnitt
+    // zeigte dauerhaft "Die Termine konnten nicht geladen werden".
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    await screen.findByRole('heading', { name: 'Tagesplan des Teams' });
+
+    const query = fetchAppointments.mock.calls[0]?.[0] as
+      AppointmentsApiModule.CalendarQuery | undefined;
+    expect(query).toBeDefined();
+    expect(query!.bis > query!.von).toBe(true);
+    expect(screen.queryByText('Die Termine konnten nicht geladen werden.')).toBeNull();
   });
 
   it('stellt die offenen eigenen Besuche vor den Tagesplan des Teams', async () => {

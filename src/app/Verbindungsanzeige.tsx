@@ -36,7 +36,9 @@ export function Verbindungsanzeige() {
       role="status"
       className="border-warnung/30 bg-warnung-soft text-warnung nicht-drucken border-b px-5 py-2 text-sm"
     >
-      <span className="mx-auto block w-full max-w-5xl">
+      {/* Der Hinweis ist Fließtext und begrenzt sich deshalb selbst auf ein
+          lesbares Maß — die Seitenbreite tut das seit UI-001 nicht mehr. */}
+      <span className="block max-w-prose">
         <strong className="font-semibold">Keine Verbindung.</strong> Änderungen lassen sich gerade
         nicht speichern. Bitte den Text im Feld stehen lassen, bis die Verbindung zurück ist.
       </span>

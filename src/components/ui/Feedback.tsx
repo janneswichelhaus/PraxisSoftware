@@ -40,8 +40,12 @@ export function ErrorState({
 }) {
   return (
     <div role="alert" className="rounded-card border-danger/25 bg-danger-soft border px-4 py-3">
-      <p className="text-danger text-[0.9375rem] font-medium">{title}</p>
-      {description ? <p className="text-ink-muted mt-1 text-sm">{description}</p> : null}
+      {/* Titel und Erklärung sind Fließtext: eigene Zeilenlänge, seit das
+          Gerüst die volle Fensterbreite nutzt (UI-001). */}
+      <p className="text-danger max-w-prose text-[0.9375rem] font-medium">{title}</p>
+      {description ? (
+        <p className="text-ink-muted mt-1 max-w-prose text-sm">{description}</p>
+      ) : null}
     </div>
   );
 }
