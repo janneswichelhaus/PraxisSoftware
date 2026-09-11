@@ -19,6 +19,7 @@ import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentS
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
+import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
 import { MeinKontoPage } from '@/features/account/MeinKontoPage';
 import { SchedulingPage } from '@/features/scheduling/SchedulingPage';
 import { StaffListPage } from '@/features/staff/StaffListPage';
@@ -230,7 +231,12 @@ export function AuthenticatedRoutes({
           ) : null}
 
           {showSecurity ? (
-            <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} />
+            <>
+              <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} />
+              {/* Aufbewahrung und Loeschung stehen neben dem Auditlog: beide
+                  sind Nachweise der Praxisleitung (LOE-002b, ADR-008). */}
+              <Route path="/praxis/sicherheit/aufbewahrung" element={<AufbewahrungPage />} />
+            </>
           ) : null}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

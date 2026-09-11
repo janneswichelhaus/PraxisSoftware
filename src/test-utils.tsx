@@ -46,6 +46,7 @@ export function testPatient(overrides: Partial<Patient> = {}): Patient {
     id: '66666666-6666-4666-8666-000000000001',
     status: 'active',
     care_started_on: '2026-02-10',
+    care_concluded_on: null,
     given_name: 'Max',
     family_name: 'Mustermann',
     date_of_birth: '1957-04-30',

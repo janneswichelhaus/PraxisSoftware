@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-11. Drei Dinge am selben Tag:
+Zuletzt aktualisiert: 2026-09-11. Vier Dinge am selben Tag:
 
 - **Jannes hat die Annahmen aus UX-EPIC-001 bestätigt:** ANN-018, ANN-020 und
   ANN-021 stehen auf `entschieden (Jannes)`. Alle drei sind `Datenschutz` und
@@ -19,6 +19,16 @@ Zuletzt aktualisiert: 2026-09-11. Drei Dinge am selben Tag:
   feststehenden Domain). Alle drei sind `Datenschutz` und bleiben deshalb im
   Prüfpaket. **Offen bleiben ANN-025 und ANN-026** — beide hängen an OPS-001
   beziehungsweise am Löschkonzept.
+
+- **LOE-EPIC-001 bringt ANN-029 bis ANN-033 neu** — Frist des Auditlogs
+  unabhängig von der Akte, Beschäftigtendaten ohne Frist, Löschjournal ohne
+  eigene Frist, Abschluss der Versorgung als ausdrücklicher Vorgang, Legal Hold
+  nur auf Patientenebene. **Jannes hat alle fünf am 2026-09-11 wie empfohlen
+  bestätigt.** Vier davon sind `Datenschutz` beziehungsweise `Recht` und
+  bleiben deshalb im Prüfpaket: Die Bestätigung des Projektinhabers ersetzt die
+  Datenschutzprüfung nicht (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). Allein
+  ANN-032 ist `Praxisprozess` und damit mit dieser Bestätigung erledigt — bis
+  die ersten Praxiswochen zeigen, ob der Vorgang im Alltag getan wird.
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -163,6 +173,16 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-021 | Feldliste und Vorhaltedauer des Tagesplans im Arbeitsspeicher    | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; Jannes nach dem ersten Feldtag |
 | ANN-022 | Tiefgrün der Marke als Hover-Zustand des Akzents                 | Technik       | offen  | Jannes; MARKE-001 (Befund App-Symbole)    |
 | ANN-023 | Die Kopfzeile führt die Marke, nicht den Organisationsnamen      | Praxisprozess | offen  | Jannes; erneut, falls eine zweite Praxis dazukommt (ADR-003) |
+| ANN-024 | Privatangaben Beschäftigter: Schreibrecht folgt dem Leserecht    | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
+| ANN-025 | Die Anwendung legt keine Authentifizierungskonten an             | Technik       | offen  | OPS-001 (Providerprüfung)                 |
+| ANN-026 | Datenklasse und Frist der Einladung                              | Datenschutz   | offen  | Datenschutzprüfung; LOE-001a (im Retention Schedule verankert) |
+| ANN-027 | Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
+| ANN-028 | MFA für `owner`: eingerichtet und sichtbar, nicht erzwungen      | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Jannes, sobald eine Domain feststeht; Datenschutzprüfung |
+| ANN-029 | Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
+| ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; erneut, sobald die erste Person ausscheidet |
+| ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
+| ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | entschieden (Jannes) 2026-09-11 | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
+| ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -202,19 +222,25 @@ die Dreijahresfristen ist die regelmäßige Verjährung nach §195 BGB
 Rechenschaftspflicht nach Art. 5 Abs. 2 DSGVO. Das ist eine Lesart, keine
 belegte Begründung.
 
-**Verankerung.** ADR-008, Abschnitt „Initialer Retention Schedule" (trägt die
-Kennung). Im Code ausschließlich als `COMMENT ON TABLE` in den Migrationen
-(`20260828100000_foundation.sql`, `20260828100200_audit_log.sql`,
-`20260828110000_person_data_minimisation.sql`,
-`20260830100100_appointments.sql`, `20260830120100_working_hours.sql`). Es gibt
-keinen Löschcode und keine zentrale Konfiguration der Fristen
-(`docs/DEVELOPMENT.md`, Go-live-Blocker 1).
+**Verankerung (seit LOE-001a, 2026-09-11).** Die Fristen stehen an **genau
+einer Stelle**: `public.retention_classes` in
+`supabase/migrations/20260911150000_retention_schedule.sql`. Funktionen lesen
+sie ausschließlich über `app.retention_interval()`; keine Zahl steht ein
+zweites Mal im Code. Welche Tabelle zu welcher Klasse gehört, steht in
+`public.retention_assignments`, und `supabase/tests/retention.test.ts` prüft
+die Zuordnung gegen `pg_tables` — eine neue Tabelle ohne Datenklasse macht den
+Lauf rot. ADR-008, Abschnitt „Initialer Retention Schedule", bleibt die
+normative Fassung; die Tabellenkommentare der Migrationen bleiben als
+Erläuterung stehen.
 
-**Änderungspfad.** Solange keine Löschung implementiert ist: Tabelle in ADR-008
-und die Tabellenkommentare anpassen — Aufwand `klein`. Bei der Umsetzung von
-ADR-008 MUSS der Retention Schedule an genau einer Stelle stehen
-(Konfigurationstabelle oder ein Modul), sodass eine Friständerung eine
-Datenänderung bleibt und nicht mehrere Funktionen berührt.
+**Änderungspfad.** Eine Frist ändern: eine Migration mit einem `update` auf
+`public.retention_classes` und die Tabelle in ADR-008 nachziehen — Aufwand
+`klein`, und sie wirkt sofort auf alle Regeln des Löschlaufs. Eine Frist
+**neu** einführen, wo bisher keine galt (etwa für Beschäftigtendaten, ANN-030),
+braucht zusätzlich einen fachlichen Anker im Datenmodell und eine Regel in
+`public.apply_retention()` — Aufwand `mittel`. Bewusst kein Klickweg in der
+Oberfläche: Eine Friständerung soll im Repository nachvollziehbar sein
+(ADR-013).
 
 ### ANN-002 — Versorgungsstatus `inactive` und Rollenschnitt des Wechsels
 
@@ -1503,8 +1529,16 @@ Kopfkommentar trägt die Kennung). Tests in
 `supabase/tests/staff-accounts.test.ts`, „weist eine abgelaufene Einladung ab".
 
 **Änderungspfad.** Andere Gültigkeit: ein Intervall — Aufwand `klein`. Andere
-Aufbewahrung: eine Zeile im Retention Schedule von LOE-001 — Aufwand `klein`,
-solange LOE-EPIC-001 die Klasse ohnehin aufnimmt.
+Aufbewahrung: die Zeile `zugangseinladung` in `public.retention_classes` —
+Aufwand `klein`.
+
+**Nachtrag vom 2026-09-11 (LOE-001a/LOE-002a).** Die Frist ist jetzt gebaut,
+nicht mehr nur beschrieben: Die Datenklasse `zugangseinladung` steht mit zwölf
+Monaten im Retention Schedule, und `public.apply_retention()` löscht
+abgeschlossene Einladungen — angenommen, zurückgenommen oder abgelaufen —
+nach Ablauf dieser Frist. Fälle in `supabase/tests/retention-run.test.ts`.
+Der Eintrag bleibt `offen`: Die Zahl selbst hat die Datenschutzprüfung noch
+nicht bestätigt.
 
 ---
 
@@ -1605,3 +1639,233 @@ stehen, die Einrichtung ist freiwillig möglich, und **kein Datenpfad verlangt
 `aal2`.** Wird die Pflicht später eingeschaltet, ist die Reihenfolge
 unverändert: erst müssen mindestens zwei `owner`-Zugänge einen bestätigten
 Faktor haben, sonst ist es eine Aussperrung.
+
+---
+
+### ANN-029 — Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | LOE-001a; ADR-008 (Retention Schedule), ADR-010 (offene Folgefrage „Wie werden Audit-Einträge behandelt, deren Bezugsdaten früher gelöscht werden?") |
+| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+
+**Annahme.** Ein Auditeintrag wird **drei Jahre nach dem Ereignis** gelöscht —
+unabhängig davon, ob die Akte, auf die er sich bezieht, noch besteht oder
+bereits gelöscht ist. Die Löschung einer Patientenakte löscht **nicht** die
+Auditeinträge über die Zugriffe auf sie; sie behalten ihre eigene Frist.
+
+**Begründung.** ADR-008 führt „Patientenakten-Auditlogs" als **eigene
+Datenklasse** mit eigener Frist (drei Jahre), nicht als Anhängsel der Akte.
+ADR-010 nennt das Auditlog die tragende Kompensation dafür, dass alle
+Therapeut:innen alle Akten sehen dürfen (§4.2); würde es mit der Akte fallen,
+verschwände der Nachweis genau dann, wenn er am längsten zurückreicht. Die
+Datenminimierung leidet darunter kaum: Der Eintrag trägt nur Metadaten
+(ADR-010 Punkt 3), und nach der Löschung der Akte ist die enthaltene
+Patientenkennung ein Schlüssel ohne Schloss — es gibt keine Zeile mehr, die
+sie auflöst. In der Praxis greift die Regel ohnehin selten: Wenn eine Akte
+zehn Jahre nach Abschluss der Versorgung fällt, sind Auditeinträge über
+Zugriffe von damals längst weg; übrig bleiben nur Zugriffe der letzten drei
+Jahre, deren eigene Frist noch läuft.
+**Unsicher:** ob die Prüfung stattdessen verlangt, mit der Akte auch den
+Zugriffsnachweis zu tilgen. Das wäre eine vertretbare Gegenposition
+(Art. 17 DSGVO, Zweckbindung); sie kostet Nachweisbarkeit.
+
+**Verankerung.** Die Datenklasse `auditlog` in
+`supabase/migrations/20260911150000_retention_schedule.sql` (der Eintrag trägt
+die Kennung) und die eigenständige Regel für `audit_log` im Löschlauf
+(LOE-002a). Der Datenbanktest „löscht Auditeinträge nach eigener Frist, nicht
+mit der Akte" in `supabase/tests/retention-run.test.ts` hält den Fall fest.
+
+**Änderungspfad.** Soll das Auditlog mit der Akte fallen: im Löschlauf beim
+Löschen einer Akte zusätzlich die Auditeinträge mit `subject_id = patient_id`
+und `context->>'patient_id'` entfernen — Aufwand `klein`. Die Gegenrichtung
+(Auditeinträge länger halten als drei Jahre) ist eine Friständerung und damit
+eine Datenänderung in `retention_classes` — Aufwand `klein`.
+
+---
+
+### ANN-030 — Beschäftigtendaten ohne Frist: keine automatische Löschung in V1
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | LOE-001a; ADR-008 (der initiale Retention Schedule führt keine Klasse für Beschäftigtendaten); `docs/development/ARBEITSBEREICHE.md` (offener Punkt, `IDEA-QSN-010`) |
+| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
+| Wiedervorlage | Datenschutzprüfung; Jannes, sobald die erste Person ausscheidet — spätestens vor der ersten Einstellung |
+
+**Annahme.** Mitarbeiterdatensätze, Privatangaben und Arbeitszeiten
+(`staff_members`, `staff_private_details`, `staff_working_hours`,
+`staff_working_hour_exceptions`) werden **nicht automatisch gelöscht**. Sie
+tragen die Datenklasse `beschaeftigtendaten` mit der Grundlage `offen`.
+
+**Begründung.** ADR-008 tabelliert für Beschäftigtendaten keine Frist, und die
+naheliegenden Anker sind widersprüchlich: Lohnunterlagen unterliegen
+steuerlichen Fristen (§147 AO, §257 HGB), die diese Anwendung nicht führt;
+für Bewerbungsunterlagen gelten Wochen, für arbeitsrechtliche Streitfälle die
+regelmäßige Verjährung (§195 BGB). Eine erfundene Zahl wäre schlechter als
+keine: Beschäftigtendaten sind nach §20 der Prinzipien besonders geschützt,
+und eine zu kurze Frist löscht Nachweise, die die Praxis im Streitfall
+braucht. Zudem fehlt der Anker im Datenmodell — es gibt kein Datum des
+Ausscheidens, nur `employment_status`. Die datensparsame Seite ist hier
+gewahrt, weil der Bestand winzig ist (eine Praxis, wenige Personen) und keine
+Gesundheitsdaten enthält.
+**Unsicher:** ob die Prüfung eine Frist verlangt, bevor die erste Person
+ausscheidet.
+
+**Verankerung.** Die Datenklasse `beschaeftigtendaten` in
+`supabase/migrations/20260911150000_retention_schedule.sql` — der Eintrag
+trägt die Kennung; sein Feld `basis` steht auf `offen`, und der Test
+„begründet jede Frist ohne gesetzliche Grundlage mit einer Annahme" in
+`supabase/tests/retention.test.ts` verhindert, dass die Lücke stillschweigend
+bleibt.
+
+**Änderungspfad.** Frist setzen: ein Datum des Ausscheidens auf
+`staff_members` ergänzen, die Klasse auf diesen Anker stellen und eine Regel
+im Löschlauf ergänzen — Aufwand `mittel`, weil das Datum fachlich gepflegt
+werden muss. Reine Friständerung ohne neuen Anker: `klein`.
+
+---
+
+### ANN-031 — Das Löschjournal hat selbst keine Frist
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | LOE-001a/LOE-002a; ADR-008 Punkt 8 (Löschungen nach einem Restore erneut anwenden), ADR-012 (Backup-Lebenszyklus offen) |
+| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
+| Wiedervorlage | Datenschutzprüfung; erneut mit OPS-003, sobald der Backup-Lebenszyklus definiert ist (ADR-012, offene Folgefrage) |
+
+**Annahme.** Das Löschjournal (`deletion_journal`) wird **nicht automatisch
+gelöscht**. Es hält je gelöschtem Datensatz Tabelle, Kennung, Datenklasse,
+Fälligkeit und Zeitpunkt fest — **keinen Namen, keinen Inhalt, keine
+Fremdschlüssel auf bestehende Daten**.
+
+**Begründung.** ADR-008 Punkt 8 verlangt, dass wirksam gewordene Löschungen
+nach einer Wiederherstellung erneut angewendet werden, und zwar aus einer
+Liste, die den Restore überlebt. Eine Liste, die selbst einer Frist
+unterliegt, könnte kürzer sein als die älteste Backup-Generation — dann
+kehrten gelöschte Daten unbemerkt zurück, genau der Fall, den ADR-008
+ausschließen will. Solange der Backup-Lebenszyklus nicht definiert ist
+(ADR-012, offene Folgefrage), lässt sich keine sichere Frist bestimmen. Der
+Datenschutzpreis dafür ist gering: Nach der Löschung des Datensatzes ist die
+verbleibende UUID ein Schlüssel ohne Schloss (Erwägungsgrund 26 DSGVO —
+Identifizierung wäre nur über die gelöschten Daten selbst möglich), und die
+Zeile ist zugleich der Nachweis der Löschung, den ADR-008 verlangt.
+**Unsicher:** ob die Prüfung das Journal dennoch als personenbezogen einstuft,
+weil ein Backup die Auflösung theoretisch wiederherstellen könnte.
+
+**Verankerung.** Die Datenklasse `loeschjournal` in
+`supabase/migrations/20260911150000_retention_schedule.sql` (der Eintrag trägt
+die Kennung) und der Tabellenkommentar von `public.deletion_journal`.
+
+**Änderungspfad.** Frist einführen, sobald der Backup-Lebenszyklus steht: Zeile
+in `retention_classes` auf Anker `event_time` und ein Intervall setzen, das die
+älteste Backup-Generation sicher überdauert, und eine Regel im Löschlauf
+ergänzen — Aufwand `klein`.
+
+**Betriebliche Folge, die keine Software löst.** Das Journal liegt in derselben
+Datenbank, die wiederhergestellt wird. Ein Restore setzt es damit auf den Stand
+des Backups zurück — Löschungen danach wären verloren. Das Restore-Verfahren
+(OPS-003, ADR-012) MUSS deshalb das Journal **vor** der Rückspielung sichern
+und danach einspielen, bevor `reapply_deletion_journal()` läuft. Ohne diesen
+Schritt ist die Wiederanwendung unvollständig.
+
+---
+
+### ANN-032 — „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | LOE-001b; ADR-008 (Anker der klinischen Retention, dort als offene Folgefrage geführt), ANN-002 (`inactive` ist kein Behandlungsabschluss), `IDEA-LZK-006` |
+| Status | **entschieden (Jannes) 2026-09-11** |
+| Wiedervorlage | Jannes nach den ersten Praxiswochen (passt der Vorgang in den Alltag?); die Datenschutzprüfung sieht den Fristanker unabhängig davon |
+
+**Annahme.** Der „Abschluss der Behandlung" aus §630f Abs. 3 BGB ist ein
+**ausdrücklicher Vorgang auf der Akte**: `patients.care_concluded_on`, gesetzt
+von owner, therapist oder team_lead, mit frei wählbarem Tag (nicht in der
+Zukunft, nicht vor dem Beginn der Versorgung) und **zurücknehmbar**. Ohne
+diesen Vorgang läuft keine Aufbewahrungsfrist und wird nichts gelöscht. Eine
+Rücknahme lässt die Frist mit dem nächsten Abschluss **neu** beginnen; sie
+setzt sie nicht fort.
+
+**Begründung.** ADR-008 verlangt den Anker und lässt seine Definition
+ausdrücklich offen; ANN-002 hält fest, dass der organisatorische Status
+`inactive` ihn nicht ersetzt, weil er eine Aussage über den Kalender ist und
+keine über die Behandlung. Gegen einen Automatismus („sechs Monate kein
+Termin") sprechen drei Dinge: Er startet eine zehnjährige Frist ohne
+fachliche Entscheidung; eine Pause in der Versorgung ist kein Abschluss; und
+die automatische Klassifizierung, die Jannes sich wünscht
+(`IDEA-LZK-007`), hängt am offenen Rechtsrahmen B9. Die Rücknehmbarkeit ist
+die datenschutzfreundlichere und zugleich sicherere Seite: Ein Irrtum ist
+korrigierbar, solange die Frist läuft, und eine wiederaufgenommene Behandlung
+verlängert die Aufbewahrung, statt sie zu verkürzen (ADR-008 Punkt 2,
+`PROJECT_PRINCIPLES.md` §16).
+**Unsicher:** ob die Praxis den Vorgang im Alltag zuverlässig ausführt. Wird er
+vergessen, wird **nicht** gelöscht — der Fehler geht damit in Richtung
+Aufbewahrung, nicht in Richtung Datenverlust. Eine Erinnerung wäre der
+nächste Schritt, ist aber ein eigenes Feature.
+
+**Verankerung.** `public.conclude_patient_care` und
+`public.reopen_patient_care` samt `app.can_conclude_patient_care()` in
+`supabase/migrations/20260911160000_care_conclusion.sql` — der Kopfkommentar
+trägt die Kennung. Tests in `supabase/tests/care-conclusion.test.ts`;
+Oberfläche `VersorgungAbschliessen` in
+`src/features/patients/PatientDetailPage.tsx`; Abnahmeschritt LOE-001b in
+`docs/abnahme/etappe-1-kernprozess.md`.
+
+**Änderungspfad.** Rollenschnitt ändern: eine Migration, die
+`app.can_conclude_patient_care()` ersetzt — Aufwand `klein`. Automatische
+Klassifizierung ergänzen: eigenes Feature mit eigener Entscheidung, hängt an
+B9 — Aufwand `mittel` bis `groß`, deshalb heute nicht. Den Anker ganz
+verschieben (etwa auf den letzten durchgeführten Termin): eine Migration und
+eine Änderung der Regel im Löschlauf — Aufwand `klein`, solange noch nichts
+gelöscht wurde.
+
+---
+
+### ANN-033 — Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche
+
+| | |
+|---|---|
+| Kategorie | Recht |
+| Herkunft | LOE-001c; ADR-008 Punkt 7 („dokumentierter Legal-Hold-Mechanismus") und die dortige offene Folgefrage „Wer darf einen Legal Hold setzen und aufheben?" |
+| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Recht` im Prüfpaket |
+| Wiedervorlage | Datenschutzprüfung (B2); außerdem sofort, wenn der erste reale Vorgang eintritt — dann zeigt sich, ob der Zuschnitt trägt |
+
+**Annahme.** Eine Löschsperre wirkt **auf genau eine Patientenakte**, wird
+**nur von `owner`** gesetzt und aufgehoben, trägt einen Pflichtgrund als
+Freitext und wird beim Aufheben **nicht gelöscht**, sondern mit Ende und
+verantwortlicher Person fortgeschrieben. Es gibt **keine Pflegeoberfläche**;
+laufende Sperren sind in der Aufbewahrungsübersicht sichtbar.
+
+**Begründung.** ADR-008 verlangt den Mechanismus und lässt Träger und
+Berechtigung offen. Der realistische Anlass in einer Einzelpraxis — Streit um
+eine Behandlung oder ein Honorar, eine Aufsichtsanfrage zu einem Fall — hängt
+an einer Akte; eine Sperre „für alles" wäre heute ein Feature ohne
+Anwendungsfall (ADR-014, Negativliste) und ließe sich als weiterer
+`subject_type` nachziehen, ohne dass sich etwas anderes ändert. Der
+Rollenschnitt folgt §4.1: Ob ein rechtlicher Vorgang läuft, entscheidet die
+Praxisleitung, nicht die behandelnde Person und nicht die Verwaltung. Dass die
+Zeile das Aufheben überlebt, verlangt ADR-008 selbst („Beginn, Grund,
+verantwortliche Person und Ende"). Die fehlende Oberfläche ist eine
+Priorisierung der Roadmap (Komfort in Stufe 1) und keine Lücke im Konzept: Ein
+Hold entsteht selten und nie in Eile.
+**Unsicher:** ob die Datenschutzprüfung eine Sperre auch für Beschäftigten-
+oder Abrechnungsdaten verlangt. Für beide gibt es heute ohnehin keine
+automatische Löschung (ANN-030), die Frage stellt sich also erst mit den
+Rechnungen.
+
+**Verankerung.** `public.legal_holds`, `app.under_legal_hold()` und
+`app.can_manage_legal_hold()` in
+`supabase/migrations/20260911170000_legal_hold.sql` — der Kopfkommentar trägt
+die Kennung. Tests in `supabase/tests/legal-hold.test.ts`, darunter der Fall,
+dass die Sperre den Löschlauf anhält (`supabase/tests/retention-run.test.ts`).
+
+**Änderungspfad.** Weiterer Gegenstand (etwa `staff_member` oder `invoice`):
+`subject_type` um den Wert erweitern und die Prüfung in die betreffende Regel
+des Löschlaufs aufnehmen — Aufwand `klein`. Pflegeoberfläche ergänzen: eine
+Seite mit zwei Aktionen auf den bestehenden Funktionen — Aufwand `klein`,
+bewusst nicht in diesem Epic.

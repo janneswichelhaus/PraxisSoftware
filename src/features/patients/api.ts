@@ -16,6 +16,10 @@ const patientSchema = z.object({
   id: z.string(),
   status: z.enum(['active', 'inactive']),
   care_started_on: z.string().nullable(),
+  // Anker der zehnjährigen Aufbewahrung (ADR-008, LOE-001b). Leer bedeutet:
+  // laufende Versorgung, keine Frist. Wann der Abschluss festgehalten wurde,
+  // steht im Auditlog und wird hier nicht mitgeliefert.
+  care_concluded_on: z.string().nullable(),
   given_name: z.string(),
   family_name: z.string(),
   // Kontaktdaten liegen in patient_contact_details und können für eine Rolle
@@ -43,7 +47,8 @@ const patientSchema = z.object({
 export type Patient = z.infer<typeof patientSchema>;
 
 const SELECT = [
-  'id, status, care_started_on, given_name, family_name, date_of_birth',
+  'id, status, care_started_on, care_concluded_on',
+  'given_name, family_name, date_of_birth',
   'email, phone, phone_work, phone_mobile, fax, institution',
   'street, house_number, postal_code, city',
   'primary_therapist_staff_member_id, primary_therapist_name',
@@ -144,6 +149,20 @@ export function formatDate(value: string | null): string {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return '—';
   return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date);
+}
+
+/**
+ * Jahresangabe `n` Jahre nach einem Datum — für „Aufbewahrung bis 2036".
+ *
+ * Bewusst nur das Jahr: der genaue Tag der Löschung hängt am Lauf und an der
+ * Zeitzone der Praxis, und eine taggenaue Zusage wäre mehr Versprechen als die
+ * Anwendung halten kann.
+ */
+export function jahrPlus(value: string | null, jahre: number): string {
+  if (!value) return '—';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '—';
+  return `${date.getFullYear() + jahre}`;
 }
 
 export function ageInYears(dateOfBirth: string | null, today = new Date()): number | null {
@@ -359,4 +378,30 @@ export async function setPatientStatus(
   });
 
   if (error) throw new Error('Der Versorgungsstatus konnte nicht geändert werden.');
+}
+
+/**
+ * Hält den Abschluss der Versorgung fest (LOE-001b).
+ *
+ * Das ist der Anker der zehnjährigen Aufbewahrung nach ADR-008 und etwas
+ * anderes als der organisatorische Status: „inaktiv" sagt etwas über den
+ * Kalender, „abgeschlossen" über die Behandlung. Der Tag darf zurückdatiert
+ * werden; ohne Angabe gilt heute. Die Berechtigung prüft die Serverfunktion.
+ */
+export async function concludePatientCare(patientId: string, concludedOn?: string): Promise<void> {
+  const { error } = await getSupabase().rpc('conclude_patient_care', {
+    p_patient_id: patientId,
+    p_concluded_on: concludedOn ?? null,
+  });
+
+  if (error) throw new Error('Der Abschluss der Versorgung konnte nicht gespeichert werden.');
+}
+
+/** Nimmt den Abschluss zurück; die Frist beginnt mit dem nächsten Abschluss neu. */
+export async function reopenPatientCare(patientId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('reopen_patient_care', {
+    p_patient_id: patientId,
+  });
+
+  if (error) throw new Error('Der Abschluss der Versorgung konnte nicht zurückgenommen werden.');
 }

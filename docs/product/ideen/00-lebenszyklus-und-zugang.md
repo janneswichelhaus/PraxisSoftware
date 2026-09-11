@@ -278,3 +278,33 @@ Kund:innen nicht als Patient:innen angelegt.
 
 **Offen.** Dieselbe Praxis oder eigener Betrieb — Frage an die Steuerberatung
 mit B4.
+
+---
+
+### IDEA-LZK-009 — Erinnerung an den vergessenen Abschluss der Versorgung
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-11 (aus LOE-001b) |
+| Berührt | [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md), `ANN-032`, `IDEA-LZK-007`, B9 |
+
+**Idee.** Eine Liste oder ein Hinweis für Akten, die seit langer Zeit keinen
+Termin mehr hatten und trotzdem keinen Abschluss der Versorgung tragen — damit
+die Praxis regelmäßig entscheidet, statt es zu vergessen.
+
+**Warum.** Seit LOE-001b hängt die zehnjährige Aufbewahrung an einem
+ausdrücklichen Vorgang: Ohne Abschluss läuft keine Frist, und die Akte wird
+**nie** gelöscht. Das ist die sichere Richtung — ein vergessener Abschluss
+verliert keine Daten —, aber auf Dauer eine Sammlung, die der
+Speicherbegrenzung aus Art. 5 Abs. 1 lit. e DSGVO zuwiderläuft. Die Prüfung
+wird das früher oder später ansprechen.
+
+**Vorsicht.** Das ist ausdrücklich **keine** automatische Klassifizierung: Ein
+Vorschlag darf keine Frist starten, sondern nur fragen. Die automatische
+Variante ist `IDEA-LZK-007` und hängt an B9. Die Grenze ist wichtig, weil am
+Abschluss eine Löschung hängt — eine Automatik, die sich irrt, löscht in zehn
+Jahren eine Akte, die jemand noch braucht.
+
+**Offen.** Ab wann „lange her" — und ob der Hinweis in die Akte gehört, in
+„Mein Tag" oder in eine eigene Liste für die Praxisleitung.
