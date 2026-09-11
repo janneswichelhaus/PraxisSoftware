@@ -104,7 +104,12 @@ describe('StaffListPage', () => {
     );
   });
 
-  it.each([['therapist'], ['team_lead'], ['office']] as const)(
+  it('bietet office die Anlage an (E10)', async () => {
+    renderWithProviders(<StaffListPage user={testUser(['office'])} />);
+    expect(await screen.findByRole('link', { name: 'Mitarbeiter:in anlegen' })).toBeInTheDocument();
+  });
+
+  it.each([['therapist'], ['team_lead']] as const)(
     'blendet die Anlage fuer %s aus',
     async (role) => {
       renderWithProviders(<StaffListPage user={testUser([role])} />);

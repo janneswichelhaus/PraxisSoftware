@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchLocations } from '@/features/appointments/api';
+import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/session/types';
 import {
   fetchStaffMember,
   staffFullName,
@@ -23,11 +24,13 @@ import { StaffMasterDataFields } from './StaffMasterDataFields';
  * Vorbefüllt aus dem gelesenen Datensatz. Der Beschäftigungsstatus ist bewusst
  * kein Eingabefeld: er hat einen eigenen Vorgang mit eigener Rückfrage.
  *
- * Für eine Rolle ohne Zugriff auf die Privatangaben kommen diese Felder leer
- * an. Ein Speichern würde sie damit löschen - deshalb ist das Formular nur für
- * die Rolle erreichbar, die beides darf; verbindlich prüft der Server.
+ * Für eine Rolle ohne Zugriff auf die Privatangaben - seit E10 pflegt auch das
+ * Office Stammdaten - kämen diese Felder leer an, und ein Speichern würde sie
+ * löschen. Deshalb entfällt der Abschnitt für sie vollständig, und die RPC
+ * bekommt für ihn `null`: der Server lässt die gespeicherten Werte dann stehen
+ * (ANN-022). Verbindlich prüft in jedem Fall der Server.
  */
-function EditStaffForm({ staff }: { staff: StaffMember }) {
+function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean }) {
   const [werte, setWerte] = useState<Record<StaffFeld, string>>(() => staffToFormValues(staff));
   const [fehler, setFehler] = useState<Partial<Record<StaffFeld, string>>>({});
   const navigate = useNavigate();
@@ -38,7 +41,7 @@ function EditStaffForm({ staff }: { staff: StaffMember }) {
   const zurueck = `/praxis/team/${staff.id}`;
 
   const mutation = useMutation({
-    mutationFn: (values: StaffMasterDataValues) => updateStaffMember(staff.id, values),
+    mutationFn: (values: StaffMasterDataValues) => updateStaffMember(staff.id, values, privat),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['staff-members'] });
       await queryClient.invalidateQueries({ queryKey: ['staff-member', staff.id] });
@@ -98,6 +101,7 @@ function EditStaffForm({ staff }: { staff: StaffMember }) {
           werte={werte}
           fehler={fehler}
           standorte={standorte.data ?? []}
+          privat={privat}
           onChange={setzen}
         />
 
@@ -119,7 +123,7 @@ function EditStaffForm({ staff }: { staff: StaffMember }) {
   );
 }
 
-export function EditStaffMemberPage() {
+export function EditStaffMemberPage({ user }: { user: CurrentUser }) {
   const { staffMemberId } = useParams<{ staffMemberId: string }>();
 
   const { data, isPending, isError } = useQuery({
@@ -139,7 +143,9 @@ export function EditStaffMemberPage() {
           description="Dieser Datensatz existiert nicht oder ist für Ihren Zugang nicht freigegeben."
         />
       ) : null}
-      {data ? <EditStaffForm staff={data} /> : null}
+      {data ? (
+        <EditStaffForm staff={data} privat={canManageStaffPrivateDetails(user.roles)} />
+      ) : null}
     </>
   );
 }

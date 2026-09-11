@@ -157,19 +157,29 @@ export function staffToFormValues(staff: StaffMember): Record<StaffFeld, string>
   };
 }
 
-function rpcArgumente(values: StaffMasterDataValues) {
+/**
+ * Baut die Argumente der Stammdaten-RPCs.
+ *
+ * `privat` entscheidet, ob die Privatangaben überhaupt mitgeschickt werden.
+ * Für eine Rolle ohne Zugriff darauf (office) stehen sie nicht im Formular; sie
+ * werden dann als `null` übergeben, und der Server lässt die gespeicherten
+ * Werte unangetastet, statt sie zu leeren (ANN-022). Der Server weist einen
+ * nicht-null-Wert von einer solchen Rolle ausdrücklich zurück - hier wird also
+ * nichts stillschweigend verworfen.
+ */
+function rpcArgumente(values: StaffMasterDataValues, privat: boolean) {
   return {
     p_given_name: values.given_name,
     p_family_name: values.family_name,
     p_work_email: values.work_email,
     p_work_phone: values.work_phone,
     p_primary_location_id: values.primary_location_id,
-    p_date_of_birth: values.date_of_birth,
-    p_private_email: values.private_email,
-    p_private_phone: values.private_phone,
-    p_street: values.street,
-    p_postal_code: values.postal_code,
-    p_city: values.city,
+    p_date_of_birth: privat ? values.date_of_birth : null,
+    p_private_email: privat ? values.private_email : null,
+    p_private_phone: privat ? values.private_phone : null,
+    p_street: privat ? values.street : null,
+    p_postal_code: privat ? values.postal_code : null,
+    p_city: privat ? values.city : null,
   };
 }
 
@@ -180,10 +190,13 @@ function rpcArgumente(values: StaffMasterDataValues) {
  * die Organisation aus der Sitzung ab und erzeugt die Schlüssel selbst. Ein
  * Benutzerkonto entsteht dabei ausdrücklich nicht.
  */
-export async function createStaffMember(values: StaffMasterDataValues): Promise<string> {
+export async function createStaffMember(
+  values: StaffMasterDataValues,
+  privat = true,
+): Promise<string> {
   const { data, error } = (await getSupabase().rpc(
     'create_staff_member',
-    rpcArgumente(values),
+    rpcArgumente(values, privat),
   )) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Der Mitarbeiterdatensatz konnte nicht angelegt werden.');
@@ -195,10 +208,11 @@ export async function createStaffMember(values: StaffMasterDataValues): Promise<
 export async function updateStaffMember(
   staffMemberId: string,
   values: StaffMasterDataValues,
+  privat = true,
 ): Promise<void> {
   const { error } = await getSupabase().rpc('update_staff_member', {
     p_staff_member_id: staffMemberId,
-    ...rpcArgumente(values),
+    ...rpcArgumente(values, privat),
   });
 
   // Keine Details aus der Datenbank nach außen: eine fremde und eine unbekannte

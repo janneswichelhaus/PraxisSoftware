@@ -1,8 +1,8 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-10 (UX-EPIC-001: ANN-020 Textbausteine und
-ANN-021 Tagesplan im Arbeitsspeicher neu; ANN-018 verankert, ANN-015 um den
-Textverlust-Schutz ergänzt, Restpunkt in ANN-019 behoben)
+Zuletzt aktualisiert: 2026-09-11 (STAFF-EPIC-002: ANN-022 bis ANN-025 neu -
+Privatangaben Beschäftigter, Einladungsweg über die Auth-Mails, Frist der
+Einladung, MFA für `owner` ohne Anmeldesperre)
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -1230,3 +1230,54 @@ bleibt: `gcTime` auf 0 und die Kennzeichnung entfernen — Aufwand `klein`, mit
 dem Verlust der Anschrift im Funkloch als bewusster Folge. Verlangt der
 Betrieb einen echten Offline-Modus: eigenes Epic nach ADR-001, ersetzt
 ADR-015 Punkt 16 und bringt die Endgeräteanforderungen mit — Aufwand `groß`.
+
+---
+
+### ANN-022 — Privatangaben Beschäftigter: Schreibrecht folgt dem Leserecht
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-002a (Umsetzung von E10); `PROJECT_PRINCIPLES.md` §20, §4.3, §4.7 |
+| Status | **offen**, getroffen 2026-09-11 |
+| Wiedervorlage | Jannes (ein Satz genügt); Datenschutzprüfung im Rahmen der TOM |
+
+**Annahme.** E10 gibt dem Office die **Stammdaten** einer beschäftigten Person
+und nennt dabei „Anschrift" und „Telefon". Das wird als **dienstliche**
+Erreichbarkeit gelesen: Name, dienstliche E-Mail, Diensttelefon,
+Hauptstandort. Die **Privatangaben** in `staff_private_details` (Geburtsdatum,
+private E-Mail, Privattelefon, Privatanschrift) bleiben bei `owner` — nicht
+nur beim Lesen, wie bisher, sondern auch beim Schreiben. Schreibrecht und
+Leserecht sind hier deckungsgleich.
+
+**Begründung.** §20 beschränkt das **Lesen** dieser Angaben seit
+`20260828110000` auf `owner` und die betroffene Person selbst; §4.7 verbietet,
+geschützte Inhalte auszuliefern und erst im Client auszublenden. Ein
+Schreibrecht ohne Leserecht wäre deshalb nicht die restriktivere, sondern die
+**gefährlichere** Variante: Das Formular des Office bekäme die Privatfelder als
+`null` und würde sie beim Speichern löschen — stiller Datenverlust bei jeder
+Adressänderung. Die Alternative, dem Office auch das Leserecht zu geben, wäre
+eine Ausweitung des Zugriffs auf Beschäftigtendaten und damit genau das, was §20
+und §16 nicht wollen. E10 nennt als Zweck ausdrücklich den Betrieb
+(Adressänderung ohne Nadelöhr); die dienstliche Erreichbarkeit deckt diesen
+Zweck, und die Privatanschrift wird für Terminplanung und Vertretung nicht
+gebraucht (Datenminimierung, Art. 5 Abs. 1 lit. c DSGVO).
+**Unsicher:** ob Jannes mit „Anschrift" die Privatanschrift gemeint hat. Falls
+ja, ist der Änderungspfad klein — aber dann muss auch das Leserecht bewusst
+geöffnet werden, und das ist eine Entscheidung zu §20, nicht zu §4.3.
+
+**Verankerung.** `app.can_manage_staff_private_details()` in
+`supabase/migrations/20260911100000_staff_permission_split.sql` — genau ein
+Ausdruck; der Kopfkommentar der Migration trägt die Kennung. In der Oberfläche
+`canManageStaffPrivateDetails` in `src/features/session/types.ts` (steuert nur
+die Darstellung). Tests: `supabase/tests/staff-management.test.ts`, Abschnitt
+„Mitarbeiterverwaltung: wer darf schreiben"; `EditStaffMemberPage.test.tsx`,
+Abschnitt „E10, ANN-022".
+
+**Änderungspfad.** Office soll auch die Privatangaben schreiben **und** lesen:
+`app.can_manage_staff_private_details()` und die Lese-Policy auf
+`staff_private_details` gemeinsam auf `owner, office` erweitern, Hinweistext im
+Formular anpassen — Aufwand `klein`, aber mit Änderung an §20, also erst nach
+ausdrücklicher Entscheidung. Umgekehrt (Office verliert auch die dienstlichen
+Angaben): `app.can_manage_staff_master_data()` auf `owner` zurück — Aufwand
+`klein`.

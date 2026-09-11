@@ -50,7 +50,7 @@ import {
 } from '@/features/billing/BillingPage';
 import {
   canManageAppointments,
-  canManageStaff,
+  canManageStaffMasterData,
   canReadPatientDirectory,
   canReadTreatmentNote,
   canWriteTreatmentNote,
@@ -87,8 +87,9 @@ export function AuthenticatedRoutes({
   const showAppointments = canManageAppointments(user.roles);
   const showOperations = isStaff(user.roles);
   // Die Mitarbeiterliste ist fuer alle Praxisrollen lesbar; Anlegen und
-  // Aendern prueft die Seite selbst und - verbindlich - der Server (STAFF-001).
-  const showStaffWrite = canManageStaff(user.roles);
+  // Aendern prueft die Seite selbst und - verbindlich - der Server (STAFF-001,
+  // seit E10 owner und office).
+  const showStaffWrite = canManageStaffMasterData(user.roles);
   const showDocumentation = canWriteTreatmentNote(user.roles);
   // Der Aenderungsverlauf ist ein Lesepfad: die Praxisleitung sieht ihn, ohne
   // selbst zu dokumentieren (ADR-016 Punkt 8, PROJECT_PRINCIPLES.md 4.1/4.2).
@@ -207,10 +208,10 @@ export function AuthenticatedRoutes({
 
           {showStaffWrite ? (
             <>
-              <Route path="/praxis/team/neu" element={<NewStaffMemberPage />} />
+              <Route path="/praxis/team/neu" element={<NewStaffMemberPage user={user} />} />
               <Route
                 path="/praxis/team/:staffMemberId/bearbeiten"
-                element={<EditStaffMemberPage />}
+                element={<EditStaffMemberPage user={user} />}
               />
             </>
           ) : null}

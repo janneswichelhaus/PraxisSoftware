@@ -6,7 +6,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { SearchField } from '@/components/ui/SearchField';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
-import { canManageStaff, type CurrentUser } from '@/features/session/types';
+import { canManageStaffMasterData, type CurrentUser } from '@/features/session/types';
 import { fetchStaffMembers, staffFullName, type StaffMember } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -92,7 +92,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
         title="Mitarbeitende"
         description="Mitarbeitende der Praxis. Ein Zugang zur Anwendung entsteht hier nicht."
         actions={
-          canManageStaff(user.roles) ? (
+          canManageStaffMasterData(user.roles) ? (
             <ButtonLink to="/praxis/team/neu">Mitarbeiter:in anlegen</ButtonLink>
           ) : null
         }

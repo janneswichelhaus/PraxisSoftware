@@ -4,12 +4,31 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.5** |
-| **Änderungsdatum** | **2026-09-08** |
-| Vorversion | 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.6** |
+| **Änderungsdatum** | **2026-09-11** |
+| Vorversion | 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-016, siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
+
+### Änderungsvermerk 0.6
+
+Die Entscheidung **E10** des Projektinhabers vom 2026-09-08 wird verbindlich.
+Anlass: Sie war bis dahin nur in `docs/decisions/OPEN_DECISIONS.md` festgehalten;
+§21 verlangt, dass eine geänderte Prinzipienaussage in einer neuen Version
+nachgezogen wird, sobald die Aufteilung im Code steht und getestet ist
+(STAFF-002a).
+
+- **§4.3 präzisiert:** „Mitarbeiterorganisation" ist für das Office ein
+  **schreibendes** Recht auf die **Stammdaten** einer beschäftigten Person —
+  Name, dienstliche Erreichbarkeit, Hauptstandort. Nicht dazu gehören
+  Rollenvergabe, Beschäftigungsstatus und die Privatangaben nach §20.
+- **§4.5 präzisiert:** „Mitarbeiterplanung" bleibt für die Teamleitung ein
+  **mögliches**, nicht vergebenes Zusatzrecht. Sie schreibt weder Stammdaten
+  noch Rollen noch den Beschäftigungsstatus.
+- **§4.1 unverändert:** Rollenvergabe und Beschäftigungsstatus bleiben beim
+  Praxisinhaber. Eine Rolle zu vergeben ist Berechtigungsvergabe und damit
+  eine Sicherheitsentscheidung nach ADR-004.
 
 ### Änderungsvermerk 0.5
 
@@ -436,6 +455,23 @@ Standardmäßig Zugriff auf organisatorische Informationen:
 **Office hat standardmäßig KEINEN Zugriff auf klinischen Freitext und keinen
 Zugriff auf vollständige klinische Dokumentationen.**
 
+**Mitarbeiterorganisation (entschieden 2026-09-08, E10).** Office DARF die
+**Stammdaten** einer beschäftigten Person anlegen und ändern: Name, dienstliche
+Erreichbarkeit, Hauptstandort. Liefe jede Adressänderung über den
+Praxisinhaber, wäre er das Nadelöhr — bei Bus-Faktor 1 ein reales
+Betriebsrisiko ([ADR-012](docs/adr/ADR-012-backup-recovery-and-continuity.md)).
+
+Office DARF NICHT:
+
+- Rollen vergeben oder ändern (§4.1, ADR-004)
+- den Beschäftigungsstatus wechseln (§4.1)
+- Zugänge einladen oder sperren (§4.1, ADR-004)
+- die Privatangaben nach §20 lesen oder schreiben
+
+Die Privatangaben sind bewusst beidseitig ausgenommen: Ein Schreibrecht ohne
+Leserecht würde bedeuten, dass ein Formular sie leer anzeigt und beim Speichern
+löscht. Schreib- und Leserecht bleiben hier deckungsgleich.
+
 Vorgesehen bleiben ein organisatorischer Behandlungsnachweis (§4.4) und später
 kontrollierte Sonderfreigaben (§4.4).
 
@@ -486,6 +522,11 @@ Mögliche Zusatzrechte:
 - organisatorische Auswertungen
 
 Teamleitung ist keine technische Administratorrolle.
+
+**„Mitarbeiterplanung" bleibt ein mögliches, nicht vergebenes Zusatzrecht**
+(entschieden 2026-09-08, E10). Teamleitung schreibt weder Mitarbeiterstammdaten
+noch Rollen noch den Beschäftigungsstatus. §16 gilt: im Zweifel restriktiver;
+später zu öffnen ist billig.
 
 ### 4.6 Patient
 
