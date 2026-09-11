@@ -633,3 +633,162 @@ describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', 
     expect(await invarianteGilt()).toBe(true);
   });
 });
+
+describe('Tag umplanen (CAL-009)', () => {
+  beforeEach(resetDatabase);
+
+  const TAG_UMPLANEN = 'select public.cancel_staff_day($1::uuid, $2::date, $3) as anzahl';
+  const TIM = '55555555-5555-4555-8555-000000000004';
+
+  async function anlegenFuer(staff: string, von: string, bis: string): Promise<Termin> {
+    const { rows } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
+      patients.max,
+      staff,
+      'video',
+      TAG,
+      von,
+      bis,
+      null,
+    ]);
+    return stand(rows[0]!.id);
+  }
+
+  it('sagt alle bestaetigten Termine der Person an diesem Tag ab', async () => {
+    const a = await anlegen('09:00', '10:00');
+    const b = await anlegen('11:00', '12:00');
+
+    const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
+      ANNA,
+      TAG,
+      'practice_request',
+    ]);
+
+    expect(rows[0]!.anzahl).toBe(2);
+    expect(await zustand(a.id)).toBe('cancelled');
+    expect(await zustand(b.id)).toBe('cancelled');
+  });
+
+  it('schreibt den Grund an jede einzelne Zeile', async () => {
+    const a = await anlegen('09:00', '10:00');
+    const b = await anlegen('11:00', '12:00');
+    await asUserCommitted(users.office, TAG_UMPLANEN, [ANNA, TAG, 'practice_request']);
+
+    const { rows } = await asPostgres<{ cancellation_reason: string }>(
+      'select cancellation_reason from public.appointments where id = any($1::uuid[]) order by starts_at',
+      [[a.id, b.id]],
+    );
+    expect(rows.map((r) => r.cancellation_reason)).toEqual([
+      'practice_request',
+      'practice_request',
+    ]);
+  });
+
+  it('schreibt je Termin ein eigenes appointment.cancelled und kein Sammelereignis', async () => {
+    await anlegen('09:00', '10:00');
+    await anlegen('11:00', '12:00');
+    await asUserCommitted(users.office, TAG_UMPLANEN, [ANNA, TAG, 'practice_request']);
+
+    const { rows } = await asPostgres<{ anzahl: string }>(
+      `select count(*)::text as anzahl from public.audit_log
+        where action = 'appointment.cancelled'`,
+    );
+    expect(rows[0]?.anzahl).toBe('2');
+  });
+
+  it('laesst die Termine anderer Personen unberuehrt', async () => {
+    const anna = await anlegen('09:00', '10:00');
+    const tim = await anlegenFuer(TIM, '09:00', '10:00');
+
+    await asUserCommitted(users.office, TAG_UMPLANEN, [ANNA, TAG, 'practice_request']);
+
+    expect(await zustand(anna.id)).toBe('cancelled');
+    expect(await zustand(tim.id)).toBe('confirmed');
+  });
+
+  it('laesst einen anderen Kalendertag unberuehrt', async () => {
+    const heute = await anlegen('09:00', '10:00');
+    const { rows } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
+      patients.max,
+      ANNA,
+      'video',
+      tagInTagen(71),
+      '09:00',
+      '10:00',
+      null,
+    ]);
+
+    await asUserCommitted(users.office, TAG_UMPLANEN, [ANNA, TAG, 'practice_request']);
+
+    expect(await zustand(heute.id)).toBe('cancelled');
+    expect(await zustand(rows[0]!.id)).toBe('confirmed');
+  });
+
+  it('laesst abgeschlossene und bereits abgesagte Termine stehen', async () => {
+    const offen = await anlegen('09:00', '10:00');
+    const fertig = await anlegen('11:00', '12:00');
+    await asUserCommitted(users.office, ABSCHLIESSEN, [fertig.id, fertig.updated_at]);
+    const schonAbgesagt = await anlegen('13:00', '14:00');
+    await asUserCommitted(users.office, ABSAGEN, [
+      schonAbgesagt.id,
+      schonAbgesagt.updated_at,
+      'moved',
+    ]);
+
+    const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
+      ANNA,
+      TAG,
+      'practice_request',
+    ]);
+
+    expect(rows[0]!.anzahl).toBe(1);
+    expect(await zustand(offen.id)).toBe('cancelled');
+    expect(await zustand(fertig.id)).toBe('completed');
+    // Der frueher genannte Grund bleibt stehen, er wird nicht ueberschrieben.
+    const { rows: grund } = await asPostgres<{ cancellation_reason: string }>(
+      'select cancellation_reason from public.appointments where id = $1',
+      [schonAbgesagt.id],
+    );
+    expect(grund[0]?.cancellation_reason).toBe('moved');
+  });
+
+  it('verlangt einen gueltigen Grund und schreibt ohne ihn nichts', async () => {
+    const a = await anlegen('09:00', '10:00');
+
+    await expect(asUser(users.office, TAG_UMPLANEN, [ANNA, TAG, null])).rejects.toThrow(
+      /cancellation reason is required/,
+    );
+    expect(await zustand(a.id)).toBe('confirmed');
+  });
+
+  it('weist ein Patientenkonto ab', async () => {
+    await anlegen('09:00', '10:00');
+    await expect(
+      asUser(users.patientMax, TAG_UMPLANEN, [ANNA, TAG, 'practice_request']),
+    ).rejects.toThrow(/not allowed to cancel appointments/);
+  });
+
+  it('taugt nicht als Orakel fuer fremde Mitarbeiter-IDs', async () => {
+    await expect(
+      asUser(users.office, TAG_UMPLANEN, [
+        '55555555-5555-4555-8555-0000000000d1',
+        TAG,
+        'practice_request',
+      ]),
+    ).rejects.toThrow(/staff member not found/);
+  });
+
+  it('zaehlt an einem leeren Tag null und schreibt nichts', async () => {
+    const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
+      ANNA,
+      tagInTagen(72),
+      'practice_request',
+    ]);
+    expect(rows[0]!.anzahl).toBe(0);
+
+    const { rows: audit } = await asPostgres<{ anzahl: string }>(
+      `select count(*)::text as anzahl from public.audit_log
+        where action = 'appointment.cancelled'`,
+    );
+    expect(audit[0]?.anzahl).toBe('0');
+  });
+});

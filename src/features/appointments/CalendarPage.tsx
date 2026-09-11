@@ -414,17 +414,31 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Der Weg ueber die Tastatur zu dem, was das Tippen auf eine freie
           // Stelle abkuerzt (UX-005). Ohne Uhrzeit: die waehlt das Formular.
           darfAendern ? (
-            <ButtonLink
-              to={`/termine/neu${schreibeTerminVorbelegung({
-                datum: p.datum,
-                art: 'home_visit',
-                ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
-                ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
-              })}`}
-              variant="secondary"
-            >
-              Termin anlegen
-            </ButtonLink>
+            <div className="flex flex-wrap gap-2">
+              {/* Tag umplanen bei einem Ausfall (CAL-009). Nur dort, wo Person
+                  UND Tag feststehen: in der Tagesansicht mit Personenfilter.
+                  Ohne beides wäre der Knopf eine Einladung zum teuersten
+                  denkbaren Irrtum. */}
+              {p.ansicht === 'tag' && p.person ? (
+                <ButtonLink
+                  to={`/kalender/tag-umplanen?person=${p.person}&datum=${p.datum}`}
+                  variant="secondary"
+                >
+                  Tag umplanen
+                </ButtonLink>
+              ) : null}
+              <ButtonLink
+                to={`/termine/neu${schreibeTerminVorbelegung({
+                  datum: p.datum,
+                  art: 'home_visit',
+                  ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
+                  ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
+                })}`}
+                variant="secondary"
+              >
+                Termin anlegen
+              </ButtonLink>
+            </div>
           ) : null
         }
       />

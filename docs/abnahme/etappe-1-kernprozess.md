@@ -1048,3 +1048,95 @@ gelöscht (ADR-008, ADR-007). Sie ist eine reine Lesesicht — Fristen ändern s
    ```
 
 „Ohne Befund" ist das erwartete Ergebnis.
+
+---
+
+## CAL-EPIC-003a — Terminzustände (CAL-008a bis CAL-008d, CAL-009)
+
+Der Termin kennt jetzt die sechs Zustände aus ADR-018. Drei davon sind neu
+sichtbar: **bestätigt** (hieß vorher „geplant"), **nicht angetroffen** und
+**dokumentiert**. Was hier geprüft wird, ist genau das, was eine Maschine
+nicht beurteilt: ob die Wörter stimmen, ob die Wege sich richtig anfühlen und
+ob das Ganze am Telefon bedienbar ist.
+
+Vorher einmal `pnpm dlx supabase db reset` — die Migrationen und `seed.sql`
+haben sich geändert.
+
+### 1. Das Wort „bestätigt" steht überall
+
+1. Kalender → einen Termin öffnen. Erwartung: **Status: Bestätigt**. Nirgends
+   steht noch „Geplant".
+2. Im Kalender den Statusfilter aufklappen. Erwartung: „Alle außer
+   abgesagten" (Standard), „Nur bestätigte", „Nur erledigte", „Nur nicht
+   angetroffene", „Nur abgesagte", „Alle" — und jede Auswahl ändert die
+   Ansicht sichtbar.
+3. Akte einer Patientin → „Nächste Termine". Erwartung: ein bestätigter
+   Termin trägt **kein** Abzeichen, alles andere eines mit dem Wort daneben.
+
+### 2. Absage nur noch mit Grund
+
+1. Einen bestätigten Termin öffnen → **Termin absagen**. Erwartung: Die
+   Rückfrage enthält eine Auswahl **Absagegrund** ohne Vorbelegung und den
+   Satz, dass eine Absage sich nicht zurücknehmen lässt.
+2. Ohne Auswahl auf „Ja, Termin absagen". Erwartung: **„Bitte einen
+   Absagegrund auswählen."** direkt am Feld, der Termin bleibt bestätigt.
+3. „Patient:in hat abgesagt" wählen und bestätigen. Erwartung: Status
+   **Abgesagt**, darunter die Zeile **Absagegrund: Patient:in hat abgesagt**.
+4. Am abgesagten Termin: keine Aktionen mehr, auch kein „wieder öffnen".
+
+### 3. Nicht angetroffen, mit Entscheidung zum Ausfallhonorar
+
+1. Einen bestätigten Termin öffnen → **Nicht angetroffen**. Erwartung: Die
+   Rückfrage fragt **„Ausfallhonorar berechnen?"**, ohne Vorbelegung, mit dem
+   Hinweis, dass nur die Entscheidung erfasst wird.
+2. Ohne Auswahl bestätigen. Erwartung: Hinweis am Feld, nichts passiert.
+3. „Ja, berechnen" wählen und bestätigen. Erwartung: Status **Nicht
+   angetroffen**, Zeilen **Vermerkt am** und **Ausfallhonorar: Wird
+   berechnet**, darunter **Termin wieder öffnen**.
+4. „Termin wieder öffnen". Erwartung: zurück auf **Bestätigt**, die beiden
+   Zeilen sind weg.
+5. Am vermerkten Termin: **Behandlung abschließen** wird nicht angeboten —
+   wo niemand angetroffen wurde, gibt es nichts zu dokumentieren.
+
+### 4. Dokumentiert kommt von selbst
+
+1. Einen bestätigten Termin öffnen → **Behandlung abschließen**, Text
+   schreiben, abschließen. Erwartung: Der Termin steht danach auf
+   **Dokumentiert**, nicht auf „Abgeschlossen".
+2. Einen zweiten Termin nur über **Termin abschließen** abhaken (ohne
+   Dokumentation). Erwartung: **Abgeschlossen**; in „Mein Tag" steht er
+   weiter unter „offen" mit dem Hinweis „Dokumentation fehlt".
+3. Zu diesem Termin die Dokumentation schreiben und **finalisieren**.
+   Erwartung: Ohne Neuladen springt der Status daneben auf **Dokumentiert**.
+4. Am dokumentierten Termin: kein „Bearbeiten", kein „Absagen", kein „wieder
+   öffnen" — stattdessen der Satz, dass in der Dokumentation korrigiert wird.
+   Eine **Korrektur** in der Dokumentation ändert den Status nicht.
+
+### 5. Tag umplanen mit Anrufliste
+
+1. Kalender → **Tagesansicht**, oben eine behandelnde Person auswählen.
+   Erwartung: Der Knopf **Tag umplanen** erscheint (ohne Personenauswahl
+   nicht).
+2. Draufklicken. Erwartung: Die Seite nennt Person und Tag und listet nur die
+   **bestätigten** Termine; abgeschlossene und abgesagte fehlen.
+3. Grund wählen → „N Termine absagen" → bestätigen. Erwartung: Die Seite
+   zeigt die **Anrufliste** mit Uhrzeit, Name, Rufnummer als Wählziel und
+   einem Haken „Angerufen", dazu den Hinweis, dass die Haken nicht gespeichert
+   werden.
+4. Auf die Rufnummer tippen. Erwartung: Das Telefon bietet den Anruf an.
+5. Im Kalender nachsehen: alle Termine des Tages sind abgesagt, die Termine
+   der anderen Person unverändert.
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /kalender
+```
+
+Erwartung: Kein waagerechtes Scrollen, „Tag umplanen" und „Termin anlegen"
+brechen untereinander um, die Auswahl des Absagegrunds ist mit einem Daumen
+bedienbar, jedes Tippziel mindestens 44 px.
+
+„Ohne Befund" ist das erwartete Ergebnis. Was nicht stimmt, kommt mit einem
+Satz zurück — Befunde gehen als erste Story in den nächsten Loop derselben
+Spur.

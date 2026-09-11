@@ -709,6 +709,30 @@ export async function completeAppointment(
 }
 
 /**
+ * Sagt alle bestätigten Termine einer Person an einem Kalendertag ab (CAL-009).
+ *
+ * Ein Vorgang, eine Transaktion: Entweder der ganze Tag ist umgeplant oder
+ * keiner der Termine. Serverseitig löst das n Einzelabsagen aus — mit je
+ * eigener Prüfung und eigenem Auditeintrag.
+ *
+ * Gibt die Anzahl der abgesagten Termine zurück.
+ */
+export async function cancelStaffDay(
+  staffMemberId: string,
+  datum: string,
+  reason: CancellationReason,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('cancel_staff_day', {
+    p_staff_member_id: staffMemberId,
+    p_date: datum,
+    p_reason: reason,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Tag konnte nicht umgeplant werden.');
+  return z.number().parse(data);
+}
+
+/**
  * Vermerkt einen bestätigten Termin als „nicht angetroffen".
  *
  * Das Ausfallhonorar-Kennzeichen gehört in denselben Schritt und hat keine
