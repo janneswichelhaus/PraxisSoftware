@@ -1,0 +1,132 @@
+{
+  "stand": "2026-09-11",
+  "ziel": {
+    "meilenstein": "M5",
+    "name": "Eröffnung — erster Behandlungstag mit der Software",
+    "termin": "2027-07-01"
+  },
+  "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab.",
+  "statuswerte": {
+    "offen": { "anteil": 0, "text": "noch nicht begonnen" },
+    "in_arbeit": { "anteil": 0.4, "text": "begonnen, nicht fertig" },
+    "entwurf": { "anteil": 0.5, "text": "Dokument steht, Bestätigung fehlt" },
+    "vorlaeufig": {
+      "anteil": 0.5,
+      "text": "von Jannes vorläufig entschieden, externe Bestätigung fehlt (zählt für M3 nicht)"
+    },
+    "gebaut": {
+      "anteil": 0.85,
+      "text": "Skill-Schritt I durchlaufen, Abnahme durch Jannes steht aus"
+    },
+    "fertig": { "anteil": 1, "text": "abgenommen beziehungsweise extern bestätigt" }
+  },
+  "bloecke": [
+    {
+      "id": "A",
+      "name": "Kernprozess — Software Stufe 1",
+      "gewicht": 30,
+      "bezug": "ROADMAP.md, Spur A1 Etappe 1 (bis M1)",
+      "posten": [
+        {
+          "id": "fundament",
+          "name": "Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001",
+          "gewicht": 3,
+          "status": "fertig"
+        },
+        { "id": "dok-epic", "name": "DOK-EPIC (DOK-001 bis DOK-004)", "gewicht": 2, "status": "gebaut" },
+        { "id": "ver-epic-001", "name": "VER-EPIC-001 Verordnungen", "gewicht": 2, "status": "gebaut" },
+        { "id": "ui-000", "name": "UI-000 Fundament der Oberfläche", "gewicht": 2, "status": "gebaut" },
+        { "id": "marke-001", "name": "MARKE-001 Marke in der Anwendung", "gewicht": 1, "status": "gebaut" },
+        { "id": "ux-epic-001", "name": "UX-EPIC-001 Hausbesuchstag (11 Stories)", "gewicht": 4, "status": "gebaut" },
+        { "id": "loe-epic-001", "name": "LOE-EPIC-001 Löschung und Retention (5 Stories)", "gewicht": 3, "status": "gebaut" },
+        { "id": "cal-epic-003a", "name": "CAL-EPIC-003a Terminzustände", "gewicht": 2, "status": "offen" },
+        { "id": "cal-epic-003b", "name": "CAL-EPIC-003b Serie und Terminfenster", "gewicht": 3, "status": "offen" },
+        { "id": "dat-epic-001", "name": "DAT-EPIC-001 Dateiablage (G4)", "gewicht": 2, "status": "offen" },
+        { "id": "abr-epic-001", "name": "ABR-EPIC-001 Leistungen und Katalog", "gewicht": 3, "status": "offen" },
+        { "id": "abr-epic-002a", "name": "ABR-EPIC-002a Rechnung entsteht", "gewicht": 2, "status": "offen" },
+        { "id": "abr-epic-002b", "name": "ABR-EPIC-002b Rechnung als Dokument", "gewicht": 2, "status": "offen" },
+        { "id": "abr-epic-003", "name": "ABR-EPIC-003 Zahlungen und offene Posten", "gewicht": 1, "status": "offen" },
+        { "id": "pat-006", "name": "PAT-006 Datenschutzinformation und Einwilligungen (G8)", "gewicht": 1, "status": "offen" },
+        { "id": "e2-tagesplan", "name": "E2 Tagesplan druck- und exportierbar (G10, Funktionsteil)", "gewicht": 1, "status": "offen" }
+      ]
+    },
+    {
+      "id": "B",
+      "name": "Software Stufe 2 vor der Eröffnung",
+      "gewicht": 10,
+      "bezug": "ROADMAP.md, Etappe T (MAP-LOOPS.md) und Etappe 2",
+      "posten": [
+        { "id": "map-002", "name": "MAP-002 In-App-Kartenprototyp", "gewicht": 1, "status": "offen" },
+        { "id": "map-003", "name": "MAP-003 Fahrradroute als Linie", "gewicht": 1, "status": "offen" },
+        { "id": "map-004", "name": "MAP-004 Fahrzeiten und Erreichbarkeit", "gewicht": 1, "status": "offen" },
+        { "id": "map-005", "name": "MAP-005 Navigations-Handoff mit Koordinaten", "gewicht": 1, "status": "offen" },
+        { "id": "map-006", "name": "MAP-006 Tagesroute mit echten Adressen (nach Gate)", "gewicht": 2, "status": "offen" },
+        { "id": "frb-epic-001", "name": "FRB-EPIC-001 Instrumentenbibliothek", "gewicht": 1, "status": "offen" },
+        { "id": "frb-epic-002", "name": "FRB-EPIC-002 Anamnese und Verlauf", "gewicht": 2, "status": "offen" },
+        { "id": "ui-001", "name": "UI-001 Politur und Barrierefreiheit (G17)", "gewicht": 1, "status": "offen" }
+      ]
+    },
+    {
+      "id": "C",
+      "name": "Betriebsreife — Etappe G",
+      "gewicht": 25,
+      "bezug": "ROADMAP.md, Spur A3 Etappe G (vor M3)",
+      "posten": [
+        { "id": "g1-adr-017", "name": "G1 ADR-017 Dateiablage (Dokument)", "gewicht": 1, "status": "offen" },
+        { "id": "g2-staff-epic-002", "name": "G2 STAFF-EPIC-002 Konten und Rollen", "gewicht": 2, "status": "fertig" },
+        { "id": "g3-ops-001", "name": "G3 OPS-001 Providerprüfung und Cloudprojekt", "gewicht": 2, "status": "offen" },
+        { "id": "g5-ops-002", "name": "G5 OPS-002 Deployment und Freigabe", "gewicht": 2, "status": "offen" },
+        { "id": "g6-ops-004", "name": "G6 OPS-004 Logging, Redaction, Monitoring", "gewicht": 2, "status": "offen" },
+        { "id": "g7-ops-003", "name": "G7 OPS-003 Backup und Restore-Test", "gewicht": 2, "status": "offen" },
+        { "id": "g9-ops-006", "name": "G9 OPS-006 Betroffenenrechte (minimal)", "gewicht": 1, "status": "offen" },
+        { "id": "g10-e2-prozess", "name": "G10 E2 Ausfallkonzept als Praxisprozess", "gewicht": 1, "status": "offen" },
+        { "id": "g11-ops-007", "name": "G11 OPS-007 Bootstrap Produktion (Runbook)", "gewicht": 1, "status": "offen" },
+        { "id": "g12-adr-019", "name": "G12 ADR-019 Kartendienst (Fassung 2, Bestätigung offen)", "gewicht": 1, "status": "entwurf" },
+        { "id": "g13-steuer", "name": "G13 Steuerliche Grundeinstellungen", "gewicht": 1, "status": "offen" },
+        { "id": "g14-dsfa", "name": "G14 DSFA-Paket (VVT, TOM, Löschkonzept, Breach)", "gewicht": 3, "status": "offen" },
+        { "id": "g16-betrieb-001", "name": "G16 BETRIEB-001 Betriebsmodell", "gewicht": 1, "status": "offen" },
+        { "id": "g18-go-live-gate", "name": "G18 Go-live-Gate (M3)", "gewicht": 2, "status": "offen" }
+      ]
+    },
+    {
+      "id": "D",
+      "name": "Eröffnung — Etappe H",
+      "gewicht": 15,
+      "bezug": "ROADMAP.md, Spur A3 Etappe H (bis M5)",
+      "posten": [
+        { "id": "h1-probewoche-1", "name": "H1 Probewoche 1 (synthetisch)", "gewicht": 3, "status": "offen" },
+        { "id": "h2-kurzanleitung", "name": "H2 Kurzanleitung und Schulung", "gewicht": 1, "status": "offen" },
+        { "id": "h3-produktionssystem", "name": "H3 Produktionssystem steht (M4)", "gewicht": 3, "status": "offen" },
+        { "id": "h4-rueckfallplan", "name": "H4 Rückfallplan (Papierprozess)", "gewicht": 1, "status": "offen" },
+        { "id": "h5-probewoche-2", "name": "H5 Probewoche 2 (Eröffnungswoche)", "gewicht": 3, "status": "offen" },
+        { "id": "h6-eroeffnung", "name": "H6 Eröffnung am 01.07.2027 (M5)", "gewicht": 4, "status": "offen" }
+      ]
+    },
+    {
+      "id": "E",
+      "name": "Entscheidungen und externe Prüfungen — Spur B",
+      "gewicht": 20,
+      "bezug": "ROADMAP.md, Spur B und docs/decisions/OPEN_DECISIONS.md",
+      "posten": [
+        { "id": "d-adr-018", "name": "D → ADR-018 Terminzustände", "gewicht": 1, "status": "fertig" },
+        { "id": "e10", "name": "E10 Schreibrecht Mitarbeiterdaten", "gewicht": 1, "status": "fertig" },
+        { "id": "e8-adr-017", "name": "E8 → ADR-017 Dateiablage", "gewicht": 1, "status": "offen" },
+        { "id": "b7-adr-019", "name": "B7 → ADR-019 Kartendienst bestätigen (E-20)", "gewicht": 1, "status": "vorlaeufig" },
+        { "id": "providerpruefung", "name": "Providerprüfung Supabase (OPS-001)", "gewicht": 2, "status": "offen" },
+        { "id": "b4-steuer", "name": "B4 Steuerliche Validierung", "gewicht": 2, "status": "vorlaeufig" },
+        { "id": "b14-pdf", "name": "B14 PDF-Weg der Rechnung", "gewicht": 1, "status": "offen" },
+        { "id": "b2-dsfa", "name": "B2 DSFA, Schwellwertprüfung, DSB", "gewicht": 3, "status": "vorlaeufig" },
+        { "id": "b1-mdr", "name": "B1 Zweckbestimmung, MDR-Abgrenzung, AI Act", "gewicht": 3, "status": "vorlaeufig" },
+        { "id": "b3-fristen", "name": "B3 Validierung der Fristen (ANN-001)", "gewicht": 1, "status": "vorlaeufig" },
+        { "id": "e2-ausfallkonzept", "name": "E2 Ausfallkonzept (Entscheidungsteil)", "gewicht": 1, "status": "vorlaeufig" },
+        { "id": "b8-lizenz", "name": "B8 Lizenzstatus der Instrumente", "gewicht": 1, "status": "offen" },
+        {
+          "id": "ann-pruefpaket",
+          "name": "Prüfpaket: alle Annahmen Datenschutz/Recht extern bestätigt (M3)",
+          "gewicht": 2,
+          "status": "offen"
+        }
+      ]
+    }
+  ]
+}

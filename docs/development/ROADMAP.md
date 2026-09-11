@@ -797,6 +797,45 @@ Abgehakt wird hier, mit Datum und Commit. Ein Loop gilt als **fertig**, wenn
 Skill-Schritt I durchlaufen ist, und als **abgenommen**, wenn Jannes die
 Abnahmeschritte aus `docs/abnahme/` durchlaufen hat.
 
+### Eine Zahl für den Gesamtstand
+
+```bash
+pnpm fortschritt            # Übersicht je Block
+pnpm fortschritt --posten   # jeder einzelne Posten
+pnpm fortschritt --json     # maschinenlesbar
+```
+
+Die Tabelle unten zählt abgehakte Loops. Sie sagt damit nicht, **wie weit es
+insgesamt** ist — ein Loop wiegt nicht so viel wie eine Probewoche und eine
+Probewoche nicht so viel wie die externe Datenschutzprüfung. Dafür gewichtet
+`docs/development/fortschritt.json` fünf Blöcke gegeneinander und
+`scripts/fortschritt.mjs` rechnet sie zu einem Prozentwert zusammen.
+
+| Block | Inhalt                                              | Gewicht |
+| ----- | --------------------------------------------------- | ------- |
+| A     | Kernprozess — Software Stufe 1 (Etappe 1, bis M1)   | 30      |
+| B     | Software Stufe 2 vor der Eröffnung (Etappe T und 2) | 10      |
+| C     | Betriebsreife (Etappe G, vor M3)                    | 25      |
+| D     | Eröffnung (Etappe H, bis M5)                        | 15      |
+| E     | Entscheidungen und externe Prüfungen (Spur B)       | 20      |
+
+Drei Festlegungen, damit die Zahl nicht schmeichelt:
+
+- **Gerechnet wird gegen M5**, den ersten Behandlungstag mit der Software —
+  nicht gegen „Code fertig". Software ist deshalb 40 Prozent, der Rest 60.
+  Das folgt „Kapazität und Puffer": Der Engpass ist nicht die Baukapazität,
+  sondern Jannes' Zeit für Entscheidungen, Abnahmen und externe Anfragen.
+- **Gebaut ist nicht fertig.** Ein Loop ohne Abnahme zählt `0,85`; die
+  restlichen 15 Prozent holt die Abnahme (Definition of Done).
+- **Vorläufig entschieden ist halb entschieden.** Ein Punkt aus Spur B mit
+  Status `vorläufig entschieden (Jannes)` zählt `0,5` — er löst das Bauen,
+  für M3 zählt er nicht.
+
+Das Ergebnis ist eine **Schätzung mit offengelegtem Modell**, keine Messung.
+Wer die Gewichte für falsch hält, ändert sie in der JSON-Datei; das Skript
+prüft nur, dass die Blockgewichte 100 ergeben. **Gepflegt wird die Datei am
+Ende eines Loops**, zusammen mit der Tabelle unten.
+
 | Loop                                                   | Status | Fertig am      | Commit                                                              | Abgenommen am |
 | ------------------------------------------------------ | ------ | -------------- | ------------------------------------------------------------------- | ------------- |
 | PAT-001 bis PAT-004                                    | fertig | vor 2026-09-01 | PAT-004: Merge PR #1                                                |               |

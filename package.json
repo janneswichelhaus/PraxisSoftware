@@ -25,7 +25,8 @@
     "db:reset": "./scripts/test-db.sh reset",
     "scan:secrets": "./scripts/scan-secrets.sh",
     "audit": "pnpm audit --audit-level=high",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "fortschritt": "node scripts/fortschritt.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
