@@ -13,9 +13,12 @@ Zuletzt aktualisiert: 2026-09-11. Drei Dinge am selben Tag:
   Beschäftigter, keine Kontoanlage durch die Anwendung, Frist der Einladung,
   Mindestlänge des Kennworts, MFA für `owner` ohne Anmeldesperre. **Auch diese
   fünf sind beim Zusammenführen verschoben worden** (vorher ANN-022 bis
-  ANN-026) — aus demselben Grund. ANN-028 hat Jannes am selben Tag
-  entschieden: Die Planung der MFA-Pflicht beginnt erst, wenn eine Domain
-  feststeht.
+  ANN-026) — aus demselben Grund. **Drei davon hat Jannes am selben Tag
+  entschieden:** ANN-024 (dienstliche statt privater Anschrift), ANN-027
+  (zwölf Zeichen ohne Zeichenklassen) und ANN-028 (MFA-Pflicht erst mit einer
+  feststehenden Domain). Alle drei sind `Datenschutz` und bleiben deshalb im
+  Prüfpaket. **Offen bleiben ANN-025 und ANN-026** — beide hängen an OPS-001
+  beziehungsweise am Löschkonzept.
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -1349,8 +1352,8 @@ diese Annahme vorweggenommen.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | STAFF-002a (Umsetzung von E10); `PROJECT_PRINCIPLES.md` §20, §4.3, §4.7 |
-| Status | **offen**, getroffen 2026-09-11 |
-| Wiedervorlage | Jannes (ein Satz genügt); Datenschutzprüfung im Rahmen der TOM |
+| Status | **entschieden (Jannes) 2026-09-11** — die Auslegung wie vorgeschlagen bestätigt |
+| Wiedervorlage | Datenschutzprüfung im Rahmen der TOM (G14). Kategorie `Datenschutz`: Die Bestätigung durch den Projektinhaber ersetzt sie nicht, der Eintrag bleibt im Prüfpaket |
 
 **Annahme.** E10 gibt dem Office die **Stammdaten** einer beschäftigten Person
 und nennt dabei „Anschrift" und „Telefon". Das wird als **dienstliche**
@@ -1372,9 +1375,11 @@ und §16 nicht wollen. E10 nennt als Zweck ausdrücklich den Betrieb
 (Adressänderung ohne Nadelöhr); die dienstliche Erreichbarkeit deckt diesen
 Zweck, und die Privatanschrift wird für Terminplanung und Vertretung nicht
 gebraucht (Datenminimierung, Art. 5 Abs. 1 lit. c DSGVO).
-**Unsicher:** ob Jannes mit „Anschrift" die Privatanschrift gemeint hat. Falls
-ja, ist der Änderungspfad klein — aber dann muss auch das Leserecht bewusst
-geöffnet werden, und das ist eine Entscheidung zu §20, nicht zu §4.3.
+**Beantwortet am 2026-09-11 durch Jannes:** „Anschrift" und „Telefon" aus E10
+sind die **dienstlichen** Angaben. Die Privatanschrift bleibt beim `owner`,
+Schreibrecht und Leserecht bleiben deckungsgleich. Damit ist die einzige
+Unsicherheit dieses Eintrags ausgeräumt; offen ist nur noch, ob die
+Datenschutzprüfung die Aufteilung im Rahmen der TOM so bestätigt.
 
 **Verankerung.** `app.can_manage_staff_private_details()` in
 `supabase/migrations/20260911100000_staff_permission_split.sql` — genau ein
@@ -1509,8 +1514,8 @@ solange LOE-EPIC-001 die Klasse ohnehin aufnimmt.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | STAFF-004a; ADR-010; `PROJECT_PRINCIPLES.md` §3.4, §16 |
-| Status | **offen**, getroffen 2026-09-11 |
-| Wiedervorlage | Datenschutzprüfung im Rahmen der TOM (G14); OPS-001 (Einstellung beim Provider) |
+| Status | **entschieden (Jannes) 2026-09-11** — die zwölf Zeichen ohne Zeichenklassen wie vorgeschlagen bestätigt |
+| Wiedervorlage | Datenschutzprüfung im Rahmen der TOM (G14); OPS-001 (Einstellung beim Provider). Kategorie `Datenschutz`: Die Bestätigung durch den Projektinhaber ersetzt die Prüfung nicht |
 
 **Annahme.** Ein Kennwort für die Praxisplattform braucht **mindestens 12
 Zeichen**. Keine erzwungenen Zeichenklassen (Großbuchstabe, Ziffer,

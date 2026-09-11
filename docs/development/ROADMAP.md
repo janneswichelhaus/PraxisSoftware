@@ -62,7 +62,10 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   `claude/zealous-pascal-xwur59`, **PR #20 offen**). Abnahmeschritte in
   `docs/abnahme/etappe-g-betriebsreife.md`; sie brauchen den vollen
   Supabase-Stack mit Mailfänger und liegen damit vollständig bei Jannes. Neu
-  zu bestätigen: **ANN-024** bis **ANN-027**. **E10 und E11 sind damit
+  zu bestätigen: **ANN-025** (kein Konto durch die Anwendung, hängt an OPS-001)
+  und **ANN-026** (Frist der Einladung, geht in das Löschkonzept von
+  LOE-EPIC-001 ein). **ANN-024, ANN-027 und ANN-028 hat Jannes am 2026-09-11
+  bestätigt**; als `Datenschutz` bleiben sie im Prüfpaket. **E10 und E11 sind
   erledigt**, §4.3 und §4.5 der Prinzipien nach §21 nachgezogen (Version 0.6).
 - **MFA vertagt (Jannes, 2026-09-11).** Die **Pflicht** zum zweiten Faktor für
   `owner` wird erst geplant, **wenn eine Domain für die Anwendung feststeht**
