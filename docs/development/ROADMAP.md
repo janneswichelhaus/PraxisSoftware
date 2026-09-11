@@ -57,9 +57,14 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   als Daten, Anker „Abschluss der Versorgung", Legal Hold, täglicher Löschlauf
   mit Löschjournal und Wiederanwendung nach einem Restore, Aufbewahrungs-
   übersicht für `owner`. Die Abnahmeschritte stehen in
-  `docs/abnahme/etappe-1-kernprozess.md` (LOE-001b, LOE-002b); der Blick auf
-  die laufende Anwendung hinter der Anmeldung war in der Cloudumgebung wieder
-  nicht möglich und liegt bei Jannes. **Neu zu bestätigen: ANN-029 bis
+  `docs/abnahme/etappe-1-kernprozess.md` (LOE-001b, LOE-002b). **Die Oberfläche
+  ist erstmals auch hinter der Anmeldung maschinell geprüft:**
+  `tests/e2e/authenticated/retention-workflows.spec.ts` fährt in CI den echten
+  Pfad Browser → GoTrue → PostgREST → RPC → PostgreSQL. In der Cloudumgebung
+  ging das nicht (kein GoTrue) — **in CI aber schon**, und das gilt für jeden
+  künftigen Loop mit Oberflächenanteil. Beim Menschen bleibt damit nur noch,
+  was eine Maschine nicht beurteilt: Aussehen, Sprache und die Bedienung am
+  Telefon. **Neu zu bestätigen: ANN-029 bis
   ANN-033.** Zwei betriebliche Punkte hängen daran und stehen in
   `docs/DEVELOPMENT.md`: Der Löschlauf braucht `pg_cron` im Produktivprojekt
   (OPS-001), und das Restore-Verfahren muss das Löschjournal sichern und
