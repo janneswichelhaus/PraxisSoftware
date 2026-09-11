@@ -146,6 +146,16 @@ einem Verwurf. Neue Einträge hängen hinten an.
   als E12 und E13 in `../decisions/OPEN_DECISIONS.md`. **Entschieden heißt
   weiterhin nicht gebaut** — beide sind noch nicht umgesetzt.
 
+- **2026-09-11** — Jannes hat zwei Design-Kanvas geteilt. Der Logo-Kanvas
+  liegt jetzt als Beleg im Markenverzeichnis (`marke/kanvas/`) — er gehört
+  nicht hierher, weil `marke/` für die Marke verbindlich ist und nicht Rang 6.
+  Aus dem zweiten, „Own Motion · Praxis", sind `IDEA-PRX-034` bis `-037`
+  entstanden: der Entwurf selbst, die Merkliste „Mitnehmen", die Indikation in
+  der Tagesliste (mit Bedenken) und die Abrechnungslage am Termin. **Die
+  Kanvas-Datei liegt nicht im Repository**: Sie zeigt vier Personen mit
+  Anschrift und Indikation, und §3.1 lässt nur synthetische Daten zu. Dieselbe
+  Linie wie beim Referenz-Screenshot vom 2026-09-01.
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |

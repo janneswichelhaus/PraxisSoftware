@@ -7,6 +7,7 @@ import { useCurrentUser } from '@/features/session/useCurrentUser';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Wortmarke } from '@/components/ui/Wortmarke';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,12 @@ function AuthenticatedApp() {
   if (isError || !user) {
     return (
       <main className="mx-auto max-w-sm px-5 py-16">
+        {/* Die einzige Vollseite außerhalb des Anwendungsrahmens neben der
+            Anmeldemaske - und die einzige, die jemand nach erfolgreicher
+            Anmeldung zu sehen bekommt. Ohne die Marke stünde hier ein nackter
+            Fehlerkasten ohne Absender; 40 px und der Abstand darunter folgen
+            der Anmeldemaske (MARKE-001, marke/README.md). */}
+        <Wortmarke hoehe={40} className="mb-6" />
         <ErrorState
           title="Zugang nicht vollständig eingerichtet"
           description={error?.message ?? 'Bitte wenden Sie sich an die Praxisleitung.'}

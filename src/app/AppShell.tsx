@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { SubNav } from '@/components/ui/SubNav';
+import { Wortmarke } from '@/components/ui/Wortmarke';
 import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
 import { Patientensuche } from '@/features/patients/Patientensuche';
 import { aktiverBereich, arbeitsbereiche, mehrSymbol, tableiste } from './navigation';
@@ -70,10 +71,15 @@ export function AppShell({
         <div
           className={`mx-auto flex min-h-14 w-full ${breite} items-center justify-between gap-3 px-5`}
         >
-          <div className="min-w-0">
-            <p className="text-ink truncate text-[0.9375rem] font-semibold tracking-[-0.01em]">
-              {user.organizationName ?? 'Praxisplattform'}
-            </p>
+          {/* Die Wortmarke steht hier statt des Organisationsnamens. Nach
+              ADR-003 ist Mandantenfähigkeit ausdrücklich keine
+              Produktfunktion — es gibt genau eine Praxis, und die heißt Own
+              Motion (PRODUCT_VISION §6a). Der Name aus den Stammdaten wäre
+              daneben eine zweite Antwort auf dieselbe Frage; im Seed lautet er
+              „Test Praxis Tuebingen" und stünde dann unter der Marke. Siehe
+              ANN-023 für den Weg zurück. */}
+          <div className="flex min-w-0 items-center gap-3">
+            <Wortmarke hoehe={26} />
             {aktuell ? (
               <p className="text-ink-subtle truncate text-xs sm:hidden">{aktuell.label}</p>
             ) : null}
