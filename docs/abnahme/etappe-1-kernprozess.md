@@ -825,3 +825,66 @@ Offline-Modus wird.
 7. **Geschrieben wird nichts aus dem Speicher.** Offline auf „Behandlung
    abschließen" tippen und speichern: Es erscheint eine Fehlermeldung, und der
    Termin bleibt unverändert. Der Zwischenspeicher ist ausschließlich lesend.
+
+## MARKE-001 — Marke Own Motion in der Anwendung
+
+Kein Feature, sondern das Erscheinungsbild: Favicon, Akzentfarbe und Wortmarke.
+Die Prüfschritte suchen nach zwei Dingen — ob die Marke da ist, wo sie
+hingehört, und ob die neue Farbe irgendwo schlechter lesbar ist als die alte.
+Verbindlich für Farben, Schutzraum, Mindestgröße und Verbote ist
+[`../../marke/README.md`](../../marke/README.md).
+
+1. **Tab und Lesezeichen.** Anwendung öffnen. Der Browser-Tab trägt das grüne
+   Symbol und den Titel „Own Motion" — vorher war der Tab leer und hieß
+   „Praxisplattform". Ein Lesezeichen setzen: es übernimmt beides.
+   **Bekannter Befund:** bei der kleinsten Größe (16 px) ist die zweizeilige
+   Wortmarke im Symbol nicht mehr lesbar; zu sehen ist ein grüner Block. Das
+   ist so geliefert und wartet auf eine Entscheidung — `marke/README.md`,
+   „Befunde", Punkt 2.
+2. **Anmeldemaske.** Abmelden. Über „Anmelden" steht jetzt die Wortmarke statt
+   des Worts „PRAXISPLATTFORM". Sie ist zweizeilig, „OWN" über eingerücktem
+   „MOTION", dunkelgrün auf hellem Grund. Rundum bleibt Platz — nichts drängt
+   sich an sie heran.
+3. **Kopfzeile.** Anmelden. Oben links steht die Wortmarke. Der Praxisname
+   aus den Stammdaten steht **nicht** mehr dort — im Seed wäre das
+   „Test Praxis Tuebingen" gewesen. Wenn du ihn vermisst, ist das ein Befund
+   und kein Fehler: die Entscheidung steht als ANN-023 im Annahmenregister und
+   ist mit wenig Aufwand umkehrbar.
+4. **Akzentfarbe im Alltag.** Als `anna.beispiel@praxis.invalid` eine Akte
+   öffnen. Alles, was vorher petrol war, ist jetzt dunkelgrün: der aktive
+   Eintrag in der Navigation, Links, die primäre Schaltfläche, der aktive
+   Reiter im Untermenü. Mit dem Mauszeiger über einen Link und über
+   „Patient anlegen" fahren — beide werden **dunkler**, nicht heller. Ist der
+   Unterschied für dich zu schwach zu sehen, sag Bescheid (ANN-022, eine Zeile
+   in `src/index.css`).
+5. **Zwei grüne Abzeichen.** Unter „Praxis → Mitarbeitende" die Rollenabzeichen
+   ansehen, und in der Akte die Statusabzeichen. Akzent und „positiv" liegen
+   im Farbton jetzt dicht beieinander. Prüfen: lässt sich trotzdem auf einen
+   Blick unterscheiden, was ein Rollenabzeichen und was eine Statusmeldung
+   ist? Die Bedeutung hängt nie an der Farbe allein — der Zustand steht immer
+   als Wort daneben —, aber wenn es dich stört, ist es ein Befund.
+6. **Tastatur und Fokus.** Mit Tab durch die Anmeldemaske und durch ein
+   Formular in der Akte gehen. Der Fokusring ist jetzt grün und muss auf allen
+   Flächen deutlich sichtbar bleiben, auch auf den grau hinterlegten.
+7. **Drucken.** Eine Akte öffnen und Strg+P (bzw. Cmd+P). Die Wortmarke
+   erscheint **nicht** im Ausdruck — die Kopfzeile wird beim Drucken
+   ausgeblendet, wie seit UI-000. Das ist gewollt; das Logo auf Papier kommt
+   mit der Rechnung (ABR-000).
+8. **Am Handy** (~375 px): Anmeldemaske und Kopfzeile ansehen. Die Wortmarke
+   bleibt neben dem Bereichsnamen und „Abmelden" vollständig sichtbar, nichts
+   scrollt seitwärts, nichts überlappt. Ohne Anmeldung geht das auch in der
+   Cloudumgebung:
+
+   ```bash
+   pnpm dev                              # in einem zweiten Terminal
+   pnpm screenshots --breite=375 /
+   pnpm screenshots --breite=1280 /
+   ```
+
+   Für die Kopfzeile braucht es den vollen Supabase-Stack und `--konto`:
+
+   ```bash
+   pnpm screenshots --breite=375 --konto=therapist /patienten
+   ```
+
+   „Ohne Befund" ist das erwartete Ergebnis.
