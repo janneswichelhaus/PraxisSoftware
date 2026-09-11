@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
 
 /**
  * Behandlungsdokumentation zum Termin (DOK-001).
@@ -122,7 +122,7 @@ describe('DOK-001: Behandlungsdokumentation anlegen', () => {
   const nurOwnerPerson = '44444444-4444-4444-8444-0000000000d1';
 
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
     await asPostgres(`
       insert into auth.users (id, email, aud, role)
         values ('${nurOwner}', 'olaf.ohnetherapie@praxis.invalid', 'authenticated', 'authenticated');
@@ -268,7 +268,7 @@ describe('DOK-001: Behandlungsdokumentation anlegen', () => {
 
 describe('DOK-001: Entwurf bearbeiten', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   async function entwurf(): Promise<Stand> {
@@ -377,7 +377,7 @@ describe('DOK-001: Lesen', () => {
   let ohneDoku: Stand;
 
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
     const t = await termin();
     terminId = t.id;
     const { rows } = await asUserCommitted<{ id: string }>(users.therapist, ANLEGEN, [t.id, TEXT]);
@@ -476,7 +476,7 @@ describe('DOK-001: Mandantentrennung', () => {
   let fremdeDoku: Stand;
 
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
 
     await asPostgres(`
       insert into auth.users (id, email, aud, role)

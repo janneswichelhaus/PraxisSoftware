@@ -7,7 +7,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
-  resetDatabase,
+  resetDatabaseOhneTermine,
   testDatabaseUrl,
 } from './helpers/db';
 
@@ -179,7 +179,7 @@ function tagInTagen(tage: number): string {
 // -----------------------------------------------------------------------------
 describe('Mitarbeiterverwaltung: wer darf schreiben', () => {
   beforeEach(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('erlaubt owner das Anlegen', async () => {
@@ -253,7 +253,7 @@ describe('Mitarbeiterverwaltung: Organisationsgrenze', () => {
   const fremderStandort = '33333333-3333-4333-8333-0000000000ff';
 
   beforeEach(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
     await asPostgres(`
       insert into public.organizations (id, name, time_zone)
         values ('${fremdeOrg}', 'Test Praxis Woanders', 'Europe/Berlin');
@@ -311,7 +311,7 @@ describe('Mitarbeiterverwaltung: Organisationsgrenze', () => {
 // -----------------------------------------------------------------------------
 describe('create_staff_member', () => {
   beforeEach(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('legt Person, Mitarbeiterdatensatz und Privatdaten in einem Vorgang an', async () => {
@@ -429,7 +429,7 @@ describe('create_staff_member', () => {
 // -----------------------------------------------------------------------------
 describe('update_staff_member', () => {
   beforeEach(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('aendert Name, dienstliche Erreichbarkeit und Standort', async () => {
@@ -525,7 +525,7 @@ describe('update_staff_member', () => {
 // -----------------------------------------------------------------------------
 describe('set_staff_employment_status', () => {
   beforeEach(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   async function terminFuer(staffId: string, tage = 3): Promise<string> {
@@ -656,7 +656,7 @@ describe('set_staff_employment_status', () => {
 // -----------------------------------------------------------------------------
 describe('Aktivstatus bei Terminzuweisungen', () => {
   beforeEach(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
     await asUserCommitted(users.ownerTherapist, STATUS, [STAFF.anna, 'inactive', true]);
   }, 120_000);
 
@@ -776,7 +776,7 @@ describe('Aktivstatus bei Terminzuweisungen', () => {
 // -----------------------------------------------------------------------------
 describe('Nebenlaeufigkeit von Deaktivierung und Terminzuweisung', () => {
   beforeEach(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   async function beginne(c: Client, userId: string) {
@@ -864,7 +864,7 @@ describe('Nebenlaeufigkeit von Deaktivierung und Terminzuweisung', () => {
 // -----------------------------------------------------------------------------
 describe('list_staff_future_appointments', () => {
   beforeEach(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('zeigt owner die offenen zukuenftigen Termine der Person', async () => {
@@ -938,7 +938,7 @@ describe('list_staff_future_appointments', () => {
 // -----------------------------------------------------------------------------
 describe('staff_directory', () => {
   beforeAll(async () => {
-    await resetDatabase();
+    await resetDatabaseOhneTermine();
   }, 120_000);
 
   it('zeigt allen Praxisrollen die Liste mit dienstlichen Angaben', async () => {
