@@ -68,11 +68,16 @@ Abweichungen werden im Bericht begründet und in der nächsten Ablaufrunde
 2. Nur Bausteine aus `src/components/ui` und Tokens aus `src/index.css`;
    fehlt ein Baustein, entsteht er dort — nur für Module, die der Auftrag
    berührt. Vorhanden sind: `Button`, `ButtonLink`, `Field`, `Select`,
-   `TextArea`, `SearchField`, `Section`/`Feldgruppe`, `DetailList`/`DetailRow`,
+   `TextArea`, `SearchField`, `SearchCombobox`, `Section`/`Feldgruppe`,
+   `DetailList`/`DetailRow`,
    `Card`/`CardGrid`/`DataRow`/`DataList`/`Disclosure`, `Badge`, `RoleBadge`,
    `PageHeader`, `SubNav`, `Rueckfrage`, `Statusmeldung` und die Zustände aus
-   `Feedback.tsx`. Die Kontrastwerte der Tokens hält
-   `src/lib/kontrast.test.ts` auf WCAG AA fest.
+   `Feedback.tsx`. Für mehrere Aktionen nebeneinander in einer Karte gibt es
+   `kartenAktionKlassen` aus `buttonStile.ts` — kleiner in Schrift und
+   Polsterung, unverändert 44 px hoch. `SearchField` filtert eine Liste, die
+   schon auf der Seite steht; `SearchCombobox` holt Treffer und führt woanders
+   hin (Tastatur, `aria-activedescendant`, Zustand als Text). Die
+   Kontrastwerte der Tokens hält `src/lib/kontrast.test.ts` auf WCAG AA fest.
 3. Jedes Feld hat Label und Fehlertext, verbunden über `aria-describedby`;
    Laden, Leer und Fehler laufen über `Feedback.tsx`, kurze Meldungen daneben
    über `Statusmeldung`. Den maschinell prüfbaren Teil davon deckt seit UI-000

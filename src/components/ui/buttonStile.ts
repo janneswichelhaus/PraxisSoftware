@@ -25,3 +25,20 @@ const varianten: Record<Variant, string> = {
 export function buttonKlassen(variant: Variant = 'primary', zusatz = ''): string {
   return `${basis} ${varianten[variant]} ${zusatz}`.trim();
 }
+
+/**
+ * Dieselben Varianten, kompakter (UX-001).
+ *
+ * Eine Tageskarte trägt mehrere Aktionen nebeneinander - anrufen, navigieren,
+ * abschließen. In voller Größe brechen sie auf dem Telefon in drei Zeilen um.
+ * Kleiner ist hier ausschließlich Schrift und waagerechte Polsterung: Die
+ * Höhe bleibt bei `min-h-11`, weil ein Tippziel von 44 px nicht verhandelbar
+ * ist (Oberflächen-Checkliste Punkt 1).
+ */
+const kompakt =
+  'nicht-drucken inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 ' +
+  'text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-55';
+
+export function kartenAktionKlassen(variant: Variant = 'secondary', zusatz = ''): string {
+  return `${kompakt} ${varianten[variant]} ${zusatz}`.trim();
+}

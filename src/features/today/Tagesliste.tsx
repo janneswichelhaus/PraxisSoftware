@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { appointmentTypeLabels, formatLocalTimeRange } from '@/features/appointments/api';
 import {
   adressZeilen,
@@ -28,7 +30,7 @@ export function Tageskarte({
 }: {
   termin: DayPlanEntry;
   /** Zusätzliche Aktionen der Karte, etwa der Navigations-Handoff (UX-002). */
-  aktionen?: React.ReactNode;
+  aktionen?: ReactNode;
 }) {
   const zone = termin.organization_time_zone;
   const adresse = adressZeilen(termin);
@@ -94,11 +96,7 @@ export function Tageskarte({
       <div className="mt-3 flex flex-wrap gap-2">
         {/* Kontakt ist Aktion, nicht Text (Oberflächen-Checkliste Punkt 8). */}
         {nummern.map((nummer) => (
-          <a
-            key={nummer.label}
-            href={nummer.href}
-            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors"
-          >
+          <a key={nummer.label} href={nummer.href} className={kartenAktionKlassen()}>
             <span className="text-ink-muted">{nummer.label}</span>
             <span className="tabular-nums">{nummer.anzeige}</span>
           </a>

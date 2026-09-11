@@ -1,3 +1,4 @@
+import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import {
   buildGoogleMapsDayUrls,
   buildGoogleMapsUrl,
@@ -20,9 +21,7 @@ import {
  * Zugangshinweis bleibt in der Anwendung.
  */
 
-const knopf =
-  'nicht-drucken border-line-strong bg-surface text-ink hover:bg-surface-sunken ' +
-  'inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors';
+const knopf = kartenAktionKlassen();
 
 /** „Navigation starten" für einen einzelnen Hausbesuch. */
 export function NavigationZumTermin({ termin }: { termin: Besuchsadresse }) {

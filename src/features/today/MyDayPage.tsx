@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
+import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
@@ -172,7 +173,7 @@ function MeineTagesliste({
           frisch ist (UX-011). Dauerhaft angezeigt wäre es Rauschen - wie ein
           dauerhaftes „verbunden" (ANN-015). */}
       {isError ? (
-        <Statusmeldung ton="fehler" className="mt-4">
+        <Statusmeldung ton="warnung" className="mt-4">
           Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der Stand von{' '}
           {standVon(dataUpdatedAt, zeitzone)} Uhr – er kann veraltet sein. Geschrieben wird davon
           nichts.
@@ -207,7 +208,7 @@ function MeineTagesliste({
                       {darfDokumentieren ? (
                         <Link
                           to={`/termine/${termin.id}/abschluss`}
-                          className="nicht-drucken bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-white transition-colors"
+                          className={kartenAktionKlassen('primary')}
                         >
                           Behandlung abschließen
                         </Link>

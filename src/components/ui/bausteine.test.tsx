@@ -49,6 +49,17 @@ describe('Statusmeldung', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Speichern fehlgeschlagen.');
     expect(screen.getByRole('status')).toHaveTextContent('3 von 12 Terminen');
   });
+
+  it('unterbricht bei einer Warnung nicht - sie muss sichtbar sein, nicht dringend', () => {
+    renderWithProviders(<Statusmeldung ton="warnung">Der Stand kann veraltet sein.</Statusmeldung>);
+
+    const meldung = screen.getByRole('status');
+    expect(meldung).toHaveTextContent('Der Stand kann veraltet sein.');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // Der Zustand haengt nicht allein an der Farbe, aber die Farbe traegt ihn
+    // mit (Oberflaechen-Checkliste Punkt 4).
+    expect(meldung.className).toContain('text-warnung');
+  });
 });
 
 describe('Section', () => {
