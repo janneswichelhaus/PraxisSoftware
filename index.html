@@ -11,9 +11,14 @@
          Quelle, src/marke.test.ts haelt die Gleichheit fest. Absolute Pfade
          statt eines Imports: Browser und Betriebssysteme holen Symbole ueber
          feste Adressen, ein gehashter Bundle-Name traegt das nicht. -->
-    <link rel="icon" type="image/png" sizes="48x48" href="/marke/own-motion-favicon-48.png" />
-    <link rel="icon" type="image/png" sizes="24x24" href="/marke/own-motion-favicon-24.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/marke/own-motion-favicon-16.png" />
+    <!-- Kleinformat ist das Monogramm, nicht die Wortmarke: zweizeilig war sie
+         im Tab unlesbar (marke/README.md, Befund 2, entschieden 2026-09-11).
+         SVG zuerst - wo der Browser es nimmt, skaliert das Symbol auf jeder
+         Bildschirmdichte sauber; die drei PNG bleiben als Rueckfall. -->
+    <link rel="icon" type="image/svg+xml" href="/marke/own-motion-monogramm.svg" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/marke/own-motion-monogramm-48.png" />
+    <link rel="icon" type="image/png" sizes="24x24" href="/marke/own-motion-monogramm-24.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/marke/own-motion-monogramm-16.png" />
     <!-- Das quadratische Master, nicht die iOS-gerundete Fassung: iOS legt
          seine eigene Maske darueber, ein vorgerundetes Symbol wird zweimal
          beschnitten. -->

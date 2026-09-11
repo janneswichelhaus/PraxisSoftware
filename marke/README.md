@@ -58,6 +58,17 @@ darin — auch keine Unterzeile außer der festgelegten.
 ohne Unterzeile. Mit Unterzeile: 60 px beziehungsweise 20 mm; darunter steht
 der Block allein.
 
+Die Regel gilt für die **Wortmarke** — sie schützt die Lesbarkeit der
+MOTION-Zeile. Ein **Symbol hat keine zweite Zeile zu verlieren** und fällt
+deshalb nicht darunter; für alles unterhalb der Mindestgröße gibt es das
+Monogramm (entschieden von Jannes am 2026-09-11, Befund 2).
+
+**Monogramm.** „OM" auf Tiefgrün, für Favicon und jede Fläche, auf der die
+Wortmarke unter ihre Mindestgröße fiele. Die beiden Buchstaben sind **keine
+Neuzeichnung**: Es sind die Formen O und M aus der MOTION-Zeile der Wortmarke,
+mit dem Buchstabenabstand von dort. Nur diese Reihenfolge, nur diese Farben,
+keine anderen Buchstabenpaare.
+
 **Verbote.** Nicht drehen, dehnen, umfärben, mit Kontur oder Schatten versehen.
 Versatz und Abstände nicht ändern. Kein Piktogramm daneben, kein Rad.
 
@@ -80,14 +91,33 @@ Pixelgröße — sie skalieren.
 
 App-Symbole — `app/`, PNG, Fläche Tiefgrün:
 
-| Datei                            | Größe       | Form                     |
-| -------------------------------- | ----------- | ------------------------ |
-| `own-motion-app-1024.png`        | 1024 × 1024 | quadratisch, das Master  |
-| `own-motion-app-ios-1024.png`    | 1024 × 1024 | iOS-Rundung              |
-| `own-motion-app-android-512.png` | 512 × 512   | Kreis, Ecken transparent |
-| `own-motion-favicon-48.png`      | 48 × 48     | Favicon                  |
-| `own-motion-favicon-24.png`      | 24 × 24     | Favicon                  |
-| `own-motion-favicon-16.png`      | 16 × 16     | Favicon                  |
+| Datei                            | Größe       | Form                                 |
+| -------------------------------- | ----------- | ------------------------------------ |
+| `own-motion-app-1024.png`        | 1024 × 1024 | quadratisch, das Master              |
+| `own-motion-app-ios-1024.png`    | 1024 × 1024 | iOS-Rundung                          |
+| `own-motion-app-android-512.png` | 512 × 512   | Kreis, Ecken transparent             |
+| `own-motion-favicon-48.png`      | 48 × 48     | **wie geliefert, nicht in Gebrauch** |
+| `own-motion-favicon-24.png`      | 24 × 24     | **wie geliefert, nicht in Gebrauch** |
+| `own-motion-favicon-16.png`      | 16 × 16     | **wie geliefert, nicht in Gebrauch** |
+
+Die drei Favicons tragen die zweizeilige Wortmarke und sind deshalb seit dem
+2026-09-11 **nicht mehr eingebunden** (Befund 2). Sie bleiben hier als Beleg
+dessen, was der Kanvas geliefert hat; `src/marke.test.ts` hält fest, dass sie
+nicht versehentlich zurückkehren.
+
+Monogramm — `app/`, Fläche Tiefgrün, Eckradius wie im gelieferten
+Favicon-Satz (7 von 48 der Seitenlänge):
+
+| Datei                         | Größe      | Wofür                                    |
+| ----------------------------- | ---------- | ---------------------------------------- |
+| `own-motion-monogramm.svg`    | skalierbar | die Quelle; im Browser bevorzugt geladen |
+| `own-motion-monogramm-48.png` | 48 × 48    | Favicon                                  |
+| `own-motion-monogramm-24.png` | 24 × 24    | Favicon                                  |
+| `own-motion-monogramm-16.png` | 16 × 16    | Favicon                                  |
+
+Die PNG sind aus der SVG gerastert, nicht getrennt gezeichnet. Die SVG trägt
+die Buchstabenpfade der Wortmarke unverändert und verschiebt sie nur — wer die
+Wortmarke ändert, muss das Monogramm neu rastern.
 
 ## Anwendungen außerhalb der Anwendung
 
@@ -112,12 +142,12 @@ Umgesetzt am 2026-09-10 auf ausdrücklichen Auftrag von Jannes.
 
 | Stelle                        | Was dort steht                                                                                                          |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Favicon                       | `app/own-motion-favicon-48/24/16.png` über `<link rel="icon">` in `index.html`                                          |
+| Favicon                       | `app/own-motion-monogramm.svg`, dazu die drei PNG als Rückfall — `index.html` (seit 2026-09-11, Befund 2)               |
 | App-Symbol auf dem Homescreen | `app/own-motion-app-1024.png` als `apple-touch-icon` — das quadratische Master, weil iOS seine eigene Maske darüberlegt |
 | Seitentitel                   | „Own Motion"                                                                                                            |
 | Anmeldemaske                  | Wortmarke `logo/own-motion-block-farbig.svg`, 40 px                                                                     |
 | Kopfzeile der Anwendung       | dieselbe Wortmarke, 26 px — sie ersetzt den Organisationsnamen (ANN-023)                                                |
-| „Zugang nicht eingerichtet"   | dieselbe Wortmarke, 40 px — die einzige Vollseite nach der Anmeldung ohne Anwendungsrahmen                              |
+| Vollseiten ohne Rahmen        | dieselbe Wortmarke, 40 px — „Zugang einrichten", „Zugang gesperrt" und der Fehlerkasten ohne Praxisprofil               |
 | Akzentfarbe                   | Hauptfarbe `#004429`; Hover trägt Tiefgrün `#042c1b` (ANN-022)                                                          |
 
 **Ausgeliefert wird über `public/marke/`.** Vite liefert nur aus, was dort
@@ -157,15 +187,20 @@ entschieden; sie stehen hier, damit sie nicht verloren gehen.
    vereinfachtes Kleinformat — oder die Regel bewusst für Favicons ausnehmen.
    Das ist eine Gestaltungsentscheidung, keine Korrektur.
 
-   **Stand 2026-09-10:** die Dateien sind eingesetzt **wie geliefert**, der
-   Befund ist damit sichtbar geworden, nicht behoben. Empfehlung: ein eigenes
-   Kleinformat zeichnen — ein „OM"-Monogramm oder das alleinstehende „O" auf
-   Tiefgrün —, und die Mindestgröße-Regel ausdrücklich auf die **Wortmarke**
-   beziehen, nicht auf das App-Symbol. Beides sind verschiedene Dinge: die
-   Regel schützt die Lesbarkeit von „MOTION", ein Symbol hat keine zweite
-   Zeile zu verlieren. Solange das offen ist, zeigt der Browser bei 16 px
-   einen grünen Block mit unlesbarer Schrift — erkennbar als Farbe, nicht als
-   Wort. Die Entscheidung gehört Jannes.
+   **Entschieden von Jannes am 2026-09-11: Monogramm.** Der Empfehlung
+   gefolgt, in beiden Teilen — es gibt ein eigenes Kleinformat, und die
+   Mindestgröße-Regel ist ausdrücklich an die Wortmarke gebunden (Abschnitt
+   „Regeln"). Das Monogramm zeigt „OM" auf Tiefgrün.
+
+   **Nichts daran ist neu gezeichnet.** Die beiden Buchstaben sind die Formen
+   O und M aus der MOTION-Zeile der Wortmarke, mit dem Buchstabenabstand von
+   dort; beide stammen aus derselben Zeile und tragen deshalb dieselbe Größe
+   und dasselbe Gewicht. Verschoben, nicht verändert — die Verbote oben
+   bleiben damit gewahrt. Eckradius wie im gelieferten Favicon-Satz gemessen.
+
+   Im Tab steht jetzt „OM" statt eines grünen Blocks mit unlesbarer Schrift.
+   Geprüft bei 16, 24 und 48 px; die drei gelieferten Favicons bleiben als
+   Beleg liegen, eingebunden sind sie nicht mehr.
 
 3. **Die SVG tragen C2PA-Metadaten des Entwurfswerkzeugs**, je rund 7,7 KB —
    bei den Block-Dateien etwa zwei Drittel des Dateiinhalts. Sie sind
@@ -178,7 +213,13 @@ Akzentfarbe und Kopfzeile tragen die Marke; was wo steht, sagt der Abschnitt
 nachgerechnet und in `src/lib/kontrast.test.ts` festgehalten — der Akzent
 erreicht als Textfarbe 10,30:1 auf der ungünstigsten Fläche.
 
-**Weiterhin offen** neben den drei Befunden oben:
+**Erledigt am 2026-09-11: Befund 2.** Das Kleinformat ist das Monogramm; die
+Mindestgröße-Regel gilt für die Wortmarke. Von den drei Befunden bleiben damit
+**Nummer 1 und 3**. Nummer 1 ist für das Kleinformat nebenbei mit erledigt —
+das Monogramm liegt als SVG vor und wird vom Browser bevorzugt geladen; für
+das 1024er Master und den Android-Kreis fehlt die SVG-Fassung weiterhin.
+
+**Weiterhin offen** neben den verbliebenen Befunden:
 
 - Das Logo auf der Rechnung — die Roadmap führt es als Teil von **ABR-000**
   (Praxis-Stammdaten für Rechnungen). Die schwarze Fassung ist laut Farbtabelle

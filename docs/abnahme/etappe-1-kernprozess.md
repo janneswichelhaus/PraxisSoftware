@@ -427,6 +427,47 @@ etwas, das vorher ging und jetzt nicht mehr.
 
 ---
 
+## Vor dem Start: UX-001 bis UX-011
+
+Die elf Abschnitte gehören zu einem Epic und prüfen sich am besten in einem
+Zug — sie bauen aufeinander auf, und mehrere brauchen denselben frisch
+aufgesetzten Tag. Die allgemeine Einrichtung steht in
+[`../DEVELOPMENT.md`](../DEVELOPMENT.md), „Lokale Abnahme"; hier nur, was für
+diesen Durchgang dazukommt.
+
+**Der Tagesplan liegt auf dem Tag des Zurücksetzens.** Der Seed legt die
+Hausbesuche relativ zu `current_date` an, nicht auf ein festes Datum. Setzt du
+heute zurück und prüfst morgen weiter, liegen dieselben Termine in der
+Vergangenheit und „Mein Tag" ist leer — das ist dann kein Befund. Vor dem
+Durchgang deshalb einmal:
+
+```bash
+pnpm dlx supabase@2.116.0 db reset
+pnpm dev
+```
+
+**Zwei Konten reichen für zehn der elf Abschnitte.**
+
+| Konto                          | Rolle                 | Wofür in diesem Epic                                   |
+| ------------------------------ | --------------------- | ------------------------------------------------------ |
+| `anna.beispiel@praxis.invalid` | `therapist`           | der Hausbesuchstag selbst — die meisten Abschnitte     |
+| `olivia.office@praxis.invalid` | `office`              | die Gegenproben: was eine Rolle ohne Behandlung sieht  |
+| `jannes.test@praxis.invalid`   | `owner` + `therapist` | Textbausteine praxisweit, Rollen- und Auditgegenproben |
+
+Das Kennwort steht in `DEVELOPMENT.md` unter „Testkonten".
+
+**Was sich seit dem Bau geändert hat.** Die Anwendung trägt inzwischen die
+Marke (MARKE-001) und die Kontoverwaltung aus STAFF-EPIC-002. Beides ist hier
+nicht Gegenstand der Prüfung; es erklärt nur, warum Kopfzeile und Anmeldemaske
+anders aussehen als in den Beschreibungen unten.
+
+**Wohin das Ergebnis.** In die Spalte „Abnahme" der Fortschrittstabelle in
+[`../development/ROADMAP.md`](../development/ROADMAP.md). Befunde gehören
+nicht hierher, sondern als eigene Zeile in die Roadmap oder — wenn es eine
+Ablauffrage ist — in die nächste Ablaufrunde.
+
+---
+
 ## UX-001 — Tagesliste des Hausbesuchstags
 
 **Was geprüft wird:** dass „Mein Tag" alles trägt, was an der Wohnungstür
@@ -837,10 +878,12 @@ Verbindlich für Farben, Schutzraum, Mindestgröße und Verbote ist
 1. **Tab und Lesezeichen.** Anwendung öffnen. Der Browser-Tab trägt das grüne
    Symbol und den Titel „Own Motion" — vorher war der Tab leer und hieß
    „Praxisplattform". Ein Lesezeichen setzen: es übernimmt beides.
-   **Bekannter Befund:** bei der kleinsten Größe (16 px) ist die zweizeilige
-   Wortmarke im Symbol nicht mehr lesbar; zu sehen ist ein grüner Block. Das
-   ist so geliefert und wartet auf eine Entscheidung — `marke/README.md`,
-   „Befunde", Punkt 2.
+   Im Symbol steht seit dem 2026-09-11 das **Monogramm „OM"** statt der
+   zweizeiligen Wortmarke (deine Entscheidung, `marke/README.md`, Befund 2).
+   Prüfen: Lässt sich „OM" im Tab erkennen — auch auf einem Bildschirm ohne
+   hohe Auflösung, wo der Browser die 16-px-Fassung nimmt? Wenn du dort immer
+   noch nur Farbe siehst, ist das ein Befund und keine Kleinigkeit: Dann
+   müsste das Monogramm größer auf der Kachel sitzen.
 2. **Anmeldemaske.** Abmelden. Über „Anmelden" steht jetzt die Wortmarke statt
    des Worts „PRAXISPLATTFORM". Sie ist zweizeilig, „OWN" über eingerücktem
    „MOTION", dunkelgrün auf hellem Grund. Rundum bleibt Platz — nichts drängt

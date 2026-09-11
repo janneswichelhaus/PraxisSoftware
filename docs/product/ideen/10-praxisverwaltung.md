@@ -832,9 +832,9 @@ Tag? Ohne diese Entscheidung ist nichts spezifizierbar.
 
 | | |
 |---|---|
-| Status | notiert · Bedenken |
+| Status | **verworfen** in dieser Form (2026-09-11) — das Bedürfnis lebt in `IDEA-PRX-016` weiter |
 | Quelle | Jannes, 2026-09-11 (Kanvas „Own Motion · Praxis") |
-| Berührt | §4.3, §4.6; ADR-004; `IDEA-PRX-016`; `list_day_plan` (UX-001) |
+| Berührt | §4.3, §4.6, §16; ADR-004; `IDEA-PRX-016`; `list_day_plan` (UX-001) |
 
 **Idee.** Der Entwurf nennt zu jedem Termin die Indikation — Diagnose und
 Verlaufswoche — direkt in der Liste, ohne Aufklappen.
@@ -842,16 +842,30 @@ Verlaufswoche — direkt in der Liste, ohne Aufklappen.
 **Warum.** Auf dem Rad zwischen zwei Terminen ist die Vorbereitungszeit die
 Fahrtzeit. Wer weiß, was ansteht, kommt vorbereitet an.
 
-**Bedenken.** `list_day_plan` liefert bewusst **keinen** klinischen Inhalt:
-§4.3 und §4.6 halten klinische Angaben aus organisatorischen Ansichten heraus,
-und die Tagesliste ist eine. Ständig sichtbar ist etwas anderes als auf
-Anforderung sichtbar — eine offene Liste auf dem Telefon liest jede Person
-mit, die daneben steht. `IDEA-PRX-016` löst dasselbe Bedürfnis bereits anders:
-aufklappbar und auditiert. Wenn überhaupt, dann so.
+**Entscheidung (2026-09-11).** Jannes hat die Entscheidung ausdrücklich
+abgegeben; sie lautet: **nein, nicht ständig sichtbar.** Verworfen ist damit
+die Form, nicht das Bedürfnis.
 
-**Offen.** Eine Datenschutzentscheidung, keine Gestaltungsfrage. Sie gehört in
-[../../decisions/OPEN_DECISIONS.md](../../decisions/OPEN_DECISIONS.md), bevor
-sie irgendwo spezifiziert wird.
+Ausschlaggebend ist nicht die Regel, sondern der Ort. §4.3 und §4.6 halten
+klinische Angaben aus organisatorischen Ansichten heraus, und die Tagesliste
+ist eine — aber der eigentliche Grund steht im Treppenhaus: Eine Tagesliste
+ist der Bildschirm, der im Aufzug offen ist, an der Wohnungstür, im Hausflur
+neben einer fremden Person. Ständig sichtbar heißt hier: mitlesbar von
+jemandem, der nichts damit zu tun hat. Auf Anforderung sichtbar heißt: nur,
+wenn jemand hinsieht, der hinsehen will. Das ist der ganze Unterschied, und er
+kostet einen Tipp.
+
+`IDEA-PRX-016` löst dasselbe Bedürfnis längst, und zwar besser: letzter
+Eintrag, Zugangshinweis, feste Therapeut:in und Verordnungsstand am Termin,
+**aufklappbar und auditiert**. Wer die Fahrtzeit zum Vorbereiten nutzt, tippt
+einmal und hat mehr vor sich als eine Diagnosezeile. Deshalb wird nicht neu
+gebaut, was es schon gibt.
+
+**Umkehrbar, falls sich das als falsch erweist.** Die Angabe käme aus
+`list_day_plan`; das ist eine Funktion und eine Projektion. Ergibt der erste
+Feldtag, dass der zusätzliche Tipp im Hausflur mit Handschuhen nicht
+funktioniert, ist das ein Befund für die Ablaufrunde — dann wird `IDEA-PRX-016`
+neu zugeschnitten, nicht dieser Eintrag wiederbelebt.
 
 ---
 

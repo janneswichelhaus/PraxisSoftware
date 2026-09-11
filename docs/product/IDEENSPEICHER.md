@@ -157,6 +157,14 @@ einem Verwurf. Neue Einträge hängen hinten an.
   **Jannes hat noch am selben Tag bestätigt, dass die Namen erfunden sind** —
   die Datei liegt seitdem unter `ideen/../kanvas/own-motion-praxis.html`.
 
+- **2026-09-11, zweite Runde** — Jannes hat zwei Entscheidungen getroffen und
+  eine abgegeben. **Monogramm** für das Kleinformat der Marke (Befund 2 in
+  `marke/README.md`, umgesetzt). **`IDEA-PRX-036` verworfen** in der Form
+  „Indikation ständig sichtbar in der Tagesliste" — die Entscheidung hat er
+  ausdrücklich abgegeben, die Begründung steht am Eintrag. Das Bedürfnis lebt
+  in `IDEA-PRX-016` weiter: aufklappbar und auditiert am Termin, nicht offen
+  in einer Liste, die im Treppenhaus mitgelesen wird.
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
