@@ -14,17 +14,19 @@ import { roleKeySchema, type RoleKey } from '@/features/session/types';
  *   3. `nimmZugangAn` — bindet das Konto an Organisation, Person und Rollen
  *      (`claim_staff_invitation`).
  *
- * Warum der Versand über `signInWithOtp` läuft und nicht über die Admin-API
- * des Providers: Die Admin-API verlangt den `service_role`-Schlüssel, und der
- * gehört niemals in den Browser (ADR-002, §13). Ein eigener Mailversand wäre
- * ein zweiter Dienstleister und ist durch B13 ausgeschlossen. Bleibt die
- * Auth-Mail, die der Provider selbst verschickt.
+ * **Diese Anwendung legt keine Authentifizierungskonten an.**
+ * `supabase/config.toml` setzt `[auth].enable_signup = false` — keine
+ * Selbstregistrierung, verankert in §4.2. Die Admin-API des Providers, die ein
+ * Konto anlegen dürfte, verlangt den `service_role`-Schlüssel, und der gehört
+ * niemals in den Browser (ADR-002, §13); eine serverseitige Funktion dafür gibt
+ * es noch nicht (ADR-015, `[edge_runtime] enabled = false`). Ein eigener
+ * Mailversand wäre ein zweiter Dienstleister und ist durch B13 ausgeschlossen.
  *
- * Dass dieser Weg ein Konto erzeugen kann, ohne dass jemand eingeladen hat,
- * ist bewusst hingenommen und abgesichert: Ein Konto ohne passende offene
- * Einladung bleibt vollständig zugriffslos, weil ohne `user_profiles` jede
- * Policy ins Leere läuft. Die Berechtigung hängt an der Einladung, nicht am
- * Konto (ANN-023).
+ * Deshalb entsteht das Konto **einmalig auf der Oberfläche des
+ * Anmeldedienstes**, und Schritt 1 legt nur die Berechtigung an. Das ist die
+ * restriktivere Seite und kostet einen manuellen Handgriff je neuem Zugang —
+ * bis OPS-001 die Auth-Mails einschließt und eine Edge Function den Versand
+ * übernehmen kann (ANN-023).
  */
 const invitationSchema = z.object({
   id: z.string(),
@@ -108,28 +110,47 @@ function einladungsProblem(meldung: string): EinladungsProblem {
 }
 
 /**
- * Lässt die Auth-Mail des Providers zustellen.
+ * Konnte die Anmeldemail zugestellt werden?
  *
- * Getrennt von der Einladung selbst, damit ein misslungener Versand die
- * bereits angelegte Berechtigung nicht entwertet: Die Einladung steht dann als
- * offen im Datensatz, und die Oberfläche bietet „erneut senden" an.
+ * `kein_konto` ist der **Normalfall bei einer ersten Einladung** und kein
+ * Fehler: Zu der Adresse gibt es beim Anmeldedienst noch kein Konto, und diese
+ * Anwendung legt keines an (siehe `sendeZugangsMail`).
  */
-export async function sendeZugangsMail(email: string): Promise<void> {
+export type Zustellung = 'gesendet' | 'kein_konto';
+
+/**
+ * Lässt den Anmeldedienst seine Mail an ein **bestehendes** Konto schicken.
+ *
+ * `shouldCreateUser: false` ist die entscheidende Zeile. `supabase/config.toml`
+ * setzt `[auth].enable_signup = false` — keine Selbstregistrierung, verankert
+ * in §4.2. Diese Anwendung legt deshalb **keine Authentifizierungskonten an**;
+ * sie verwaltet ausschließlich die Berechtigung (ANN-023).
+ *
+ * Daraus folgt: Bei einer ersten Einladung gibt es noch kein Konto, und der
+ * Aufruf kommt mit `kein_konto` zurück. Das ist kein Fehler und entwertet die
+ * Einladung nicht — sie steht in der Datenbank und wartet. Das Konto entsteht
+ * einmalig auf der Oberfläche des Anmeldedienstes; danach nimmt die Person die
+ * Einladung in der Anwendung an.
+ *
+ * Ein misslungener Versand darf die bereits angelegte Berechtigung nie
+ * entwerten — deshalb wirft diese Funktion nicht, sondern berichtet.
+ */
+export async function sendeZugangsMail(email: string): Promise<Zustellung> {
   const { error } = await getSupabase().auth.signInWithOtp({
     email,
     options: {
-      shouldCreateUser: true,
+      shouldCreateUser: false,
       emailRedirectTo: window.location.origin,
     },
   });
-  if (error) throw new Error('Die Einladung konnte nicht zugestellt werden.');
+  return error ? 'kein_konto' : 'gesendet';
 }
 
 export async function ladeZugangEin(
   staffMemberId: string,
   email: string,
   rollen: readonly RoleKey[],
-): Promise<void> {
+): Promise<Zustellung> {
   const { error } = (await getSupabase().rpc('invite_staff_account', {
     p_staff_member_id: staffMemberId,
     p_email: email,
@@ -138,7 +159,7 @@ export async function ladeZugangEin(
 
   if (error) throw new EinladungsError(einladungsProblem(error.message ?? ''));
 
-  await sendeZugangsMail(email);
+  return sendeZugangsMail(email);
 }
 
 export async function widerrufeEinladung(invitationId: string): Promise<void> {

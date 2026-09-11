@@ -205,21 +205,29 @@ test.describe('STAFF-001: Durchsetzung am Server', () => {
     await annaReaktivieren(request);
   });
 
-  test('verweigert office das Anlegen, obwohl die Liste lesbar ist', async ({ page, request }) => {
-    // Erst die Oberfläche: office sieht die Liste, aber keine Schaltflächen.
+  test('laesst office Stammdaten pflegen, aber nichts darueber hinaus (E10)', async ({
+    page,
+    request,
+  }) => {
+    // E10 (entschieden 2026-09-08) teilt die Mitarbeiterverwaltung in drei
+    // Bereiche. Das Office bekommt genau einen davon - woertlich die
+    // "Mitarbeiterorganisation" aus PROJECT_PRINCIPLES.md 4.3.
     await anmelden(page, KONTEN.office);
     await page.goto('/praxis/team');
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Mitarbeiter:in anlegen' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Mitarbeiter:in anlegen' })).toBeVisible();
+
+    const vorname = name('Office');
+    const staffId = await anlegenUeberOberflaeche(page, vorname);
+    await expect(page.getByRole('heading', { name: `${vorname} Testperson` })).toBeVisible();
+
+    // Die anderen beiden Bereiche bleiben zu - schon in der Oberflaeche.
+    await expect(page.getByRole('button', { name: 'Als inaktiv führen' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Zugang' })).toHaveCount(0);
 
     // Und dann an der Oberfläche vorbei: die ausgeblendete Schaltfläche ist
     // keine Zugriffskontrolle (ADR-004, PROJECT_PRINCIPLES.md 4.7).
     const token = await zugriffstoken(request, KONTEN.office);
-    const anlegen = await rpcAufrufen(request, token, 'create_staff_member', {
-      p_given_name: name('Verboten'),
-      p_family_name: 'Testperson',
-    });
-    expect(anlegen.status(), 'office darf keine Mitarbeiterdatensätze anlegen').toBe(403);
 
     const status = await rpcAufrufen(request, token, 'set_staff_employment_status', {
       p_staff_member_id: MITARBEITENDE.anna,
@@ -227,6 +235,65 @@ test.describe('STAFF-001: Durchsetzung am Server', () => {
       p_acknowledge_future_appointments: true,
     });
     expect(status.status(), 'office darf den Beschäftigungsstatus nicht wechseln').toBe(403);
+
+    const einladen = await rpcAufrufen(request, token, 'invite_staff_account', {
+      p_staff_member_id: staffId,
+      p_email: `${vorname.toLowerCase()}.zugang@praxis.invalid`,
+      p_role_keys: ['therapist'],
+    });
+    expect(einladen.status(), 'office darf keinen Zugang einladen').toBe(403);
+
+    const rollen = await rpcAufrufen(request, token, 'set_staff_account_roles', {
+      p_staff_member_id: MITARBEITENDE.anna,
+      p_role_keys: ['owner'],
+    });
+    expect(rollen.status(), 'office darf keine Rollen vergeben').toBe(403);
+
+    const sperren = await rpcAufrufen(request, token, 'set_staff_account_active', {
+      p_staff_member_id: MITARBEITENDE.anna,
+      p_active: false,
+    });
+    expect(sperren.status(), 'office darf keinen Zugang sperren').toBe(403);
+  });
+
+  test('haelt die Privatangaben fuer office auch beim Schreiben geschlossen (ANN-022)', async ({
+    page,
+    request,
+  }) => {
+    // Wer sie nicht lesen darf, darf sie auch nicht schreiben: Das Formular
+    // bekaeme sie als leere Felder und wuerde sie beim Speichern loeschen.
+    await anmelden(page, KONTEN.office);
+    await page.goto(`/praxis/team/${MITARBEITENDE.anna}/bearbeiten`);
+    await expect(page.getByLabel('Diensttelefon')).toBeVisible();
+    await expect(page.getByLabel('Private E-Mail')).toHaveCount(0);
+    await expect(page.getByLabel('Geburtsdatum')).toHaveCount(0);
+
+    // Ein Speichern aus diesem Formular laesst die Privatangaben stehen …
+    await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+    await expect
+      .poll(() => new URL(page.url()).pathname)
+      .toBe(`/praxis/team/${MITARBEITENDE.anna}`);
+
+    const ownerToken = await zugriffstoken(request, KONTEN.owner);
+    const { url, anonKey } = supabaseKonfiguration();
+    const nachher = await request.get(
+      `${url}/rest/v1/staff_directory?select=private_email,street&id=eq.${MITARBEITENDE.anna}`,
+      { headers: { apikey: anonKey, Authorization: `Bearer ${ownerToken}` } },
+    );
+    const zeilen = (await nachher.json()) as Record<string, unknown>[];
+    expect(zeilen[0]!.private_email, 'die Privatanschrift ueberlebt das Speichern').not.toBeNull();
+    expect(zeilen[0]!.street).not.toBeNull();
+
+    // … und ein ausdruecklicher Versuch an der Oberflaeche vorbei wird
+    // abgewiesen, statt still verworfen zu werden.
+    const officeToken = await zugriffstoken(request, KONTEN.office);
+    const versuch = await rpcAufrufen(request, officeToken, 'update_staff_member', {
+      p_staff_member_id: MITARBEITENDE.anna,
+      p_given_name: 'Anna',
+      p_family_name: 'Beispiel',
+      p_private_email: 'heimlich@beispiel.invalid',
+    });
+    expect(versuch.status(), 'office darf keine Privatangaben schreiben').toBe(403);
   });
 
   test('liefert Privatangaben Dritter gar nicht erst aus', async ({ request }) => {

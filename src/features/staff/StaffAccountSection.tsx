@@ -102,14 +102,14 @@ function Einladungsformular({ staff }: { staff: StaffMember }) {
     mutation.error instanceof EinladungsError
       ? problemTexte[mutation.error.problem]
       : mutation.isError
-        ? 'Die Einladung konnte nicht angelegt oder zugestellt werden.'
+        ? 'Die Einladung konnte nicht angelegt werden.'
         : undefined;
 
   return (
     <div className="max-w-md">
       <p className="text-ink-muted mb-4 text-sm">
-        Die eingeladene Person erhält eine E-Mail des Anmeldedienstes und richtet ihr Kennwort
-        selbst ein. Ein Zugang entsteht erst, wenn sie die Einladung annimmt.
+        Hier entsteht die Berechtigung, noch kein Konto. Wirksam wird sie, wenn die Person sich
+        anmeldet und die Einladung annimmt.
       </p>
 
       <Field
@@ -195,6 +195,18 @@ function OffeneEinladung({
         </Statusmeldung>
       ) : null}
 
+      {!abgelaufen ? (
+        <div className="border-line bg-surface-sunken mt-4 rounded-lg border p-3">
+          <p className="text-ink text-sm font-medium">Nächster Schritt</p>
+          <p className="text-ink-muted mt-1 text-sm leading-relaxed">
+            Die Berechtigung steht. Damit sich die Person anmelden kann, braucht sie einmalig ein
+            Konto beim Anmeldedienst — die Praxisplattform legt keines an, weil die
+            Selbstregistrierung bewusst abgeschaltet ist. Danach meldet sie sich an und nimmt die
+            Einladung an; die Rollen oben werden dabei gesetzt.
+          </p>
+        </div>
+      ) : null}
+
       <div className="mt-4 flex flex-wrap items-center gap-3">
         {!abgelaufen ? (
           <button
@@ -203,7 +215,7 @@ function OffeneEinladung({
             disabled={erneutSenden.isPending}
             onClick={() => erneutSenden.mutate()}
           >
-            {erneutSenden.isPending ? 'Wird gesendet …' : 'Einladung erneut senden'}
+            {erneutSenden.isPending ? 'Wird gesendet …' : 'Anmeldemail senden'}
           </button>
         ) : null}
 
@@ -225,12 +237,20 @@ function OffeneEinladung({
         </Rueckfrage>
       </div>
 
-      {erneutSenden.isSuccess ? (
-        <Statusmeldung className="mt-3">Die Einladung wurde erneut zugestellt.</Statusmeldung>
+      {erneutSenden.data === 'gesendet' ? (
+        <Statusmeldung className="mt-3">
+          Die Anmeldemail wurde an {einladung.email} geschickt.
+        </Statusmeldung>
+      ) : null}
+      {erneutSenden.data === 'kein_konto' ? (
+        <Statusmeldung ton="warnung" className="mt-3">
+          Zu {einladung.email} gibt es beim Anmeldedienst noch kein Konto. Es muss dort einmalig
+          angelegt werden; die Einladung bleibt so lange offen.
+        </Statusmeldung>
       ) : null}
       {erneutSenden.isError ? (
         <Statusmeldung ton="fehler" className="mt-3">
-          Die Einladung konnte nicht zugestellt werden.
+          Der Anmeldedienst war nicht erreichbar.
         </Statusmeldung>
       ) : null}
     </div>

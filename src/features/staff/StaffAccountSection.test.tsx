@@ -97,9 +97,9 @@ describe('StaffAccountSection', () => {
     stosseKennwortZuruecksetzenAn.mockResolvedValue(undefined);
     fetchStaffAccount.mockResolvedValue(ohneZugang);
     fetchStaffInvitations.mockResolvedValue([]);
-    ladeZugangEin.mockResolvedValue(undefined);
+    ladeZugangEin.mockResolvedValue('kein_konto');
     widerrufeEinladung.mockResolvedValue(undefined);
-    sendeZugangsMail.mockResolvedValue(undefined);
+    sendeZugangsMail.mockResolvedValue('gesendet');
   });
 
   it('belegt die Adresse aus der dienstlichen E-Mail vor, die Rollen aber nicht', async () => {
@@ -174,7 +174,7 @@ describe('StaffAccountSection', () => {
 
     expect(await screen.findByText('nina.neu@praxis.invalid')).toBeInTheDocument();
     expect(screen.getByText('Therapeut:in')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Einladung erneut senden' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Anmeldemail senden' })).toBeInTheDocument();
     // Kein zweites Formular, solange eine Einladung offen ist.
     expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
   });
@@ -198,9 +198,7 @@ describe('StaffAccountSection', () => {
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
     expect(await screen.findByText(/Diese Einladung gilt nicht mehr/)).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Einladung erneut senden' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Anmeldemail senden' })).not.toBeInTheDocument();
   });
 
   it('zeigt bei bestehendem Zugang die Verwaltung statt eines Einladungsformulars', async () => {
@@ -348,5 +346,57 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     expect(
       await screen.findByText(/Die Mail zum Zurücksetzen wurde an die hinterlegte Adresse/),
     ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zustellung der Anmeldemail (ANN-023)
+//
+// Die Anwendung legt keine Authentifizierungskonten an - enable_signup ist
+// bewusst aus (§4.2). Bei einer ersten Einladung gibt es also noch kein Konto,
+// und das ist kein Fehler, sondern der Normalfall.
+// ---------------------------------------------------------------------------
+describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
+  beforeEach(() => {
+    for (const mock of [fetchStaffAccount, fetchStaffInvitations, sendeZugangsMail]) {
+      mock.mockReset();
+    }
+    fetchStaffAccount.mockResolvedValue(ohneZugang);
+    fetchStaffInvitations.mockResolvedValue([offeneEinladung]);
+    sendeZugangsMail.mockResolvedValue('gesendet');
+  });
+
+  it('nennt bei einer offenen Einladung den nächsten Schritt', async () => {
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    expect(await screen.findByText('Nächster Schritt')).toBeInTheDocument();
+    expect(
+      screen.getByText(/braucht sie einmalig ein\s+Konto beim Anmeldedienst/s),
+    ).toBeInTheDocument();
+  });
+
+  it('bestätigt die zugestellte Anmeldemail', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Anmeldemail senden' }));
+
+    expect(
+      await screen.findByText(/Die Anmeldemail wurde an nina.neu@praxis.invalid geschickt/),
+    ).toBeInTheDocument();
+  });
+
+  it('erklärt ein fehlendes Konto, statt einen Fehler zu melden', async () => {
+    const user = userEvent.setup();
+    sendeZugangsMail.mockResolvedValue('kein_konto');
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Anmeldemail senden' }));
+
+    const meldung = await screen.findByText(/gibt es beim Anmeldedienst noch kein Konto/);
+    expect(meldung).toBeInTheDocument();
+    // Die Einladung bleibt gültig - es ist kein Fehlschlag.
+    expect(screen.getByText(/die Einladung bleibt so lange offen/)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/konnte nicht zugestellt werden/);
   });
 });

@@ -56,36 +56,42 @@ Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
 2. **Ohne Rolle geht es nicht.** Direkt auf „Zugang einladen" tippen: Es
    erscheint „Bitte mindestens eine Rolle wählen." Nichts wurde gesendet.
 3. **Einladen.** „Therapeut:in" ankreuzen, „Zugang einladen". Der Abschnitt
-   zeigt jetzt die Adresse, die vorgesehene Rolle und „Offen bis <Datum>"
-   (14 Tage).
-4. **Die Mail ist da.** <http://127.0.0.1:54324> öffnen: Es liegt eine Mail an
+   zeigt jetzt die Adresse, die vorgesehene Rolle, „Offen bis <Datum>"
+   (14 Tage) und den Kasten „Nächster Schritt".
+4. **Im Auditlog.** Betrieb → Sicherheit: Es steht „Zugang eingeladen" mit
+   Bezug auf den Mitarbeiterdatensatz — und die E-Mail-Adresse steht **nicht**
+   darin.
+5. **Das Konto beim Anmeldedienst anlegen.** Das ist der manuelle Schritt aus
+   ANN-023: Die Praxisplattform legt bewusst keine Konten an, weil die
+   Selbstregistrierung abgeschaltet ist. In Supabase Studio
+   (<http://127.0.0.1:54323>) → Authentication → Users → „Add user" →
+   „Send invitation" für `nina.neu@praxis.invalid`. Zur Gegenprobe vorher in
+   der Anwendung auf „Anmeldemail senden" tippen: Es erscheint der Hinweis,
+   dass es noch kein Konto gibt — **keine** Fehlermeldung, und die Einladung
+   bleibt offen.
+6. **Die Mail ist da.** <http://127.0.0.1:54324> öffnen: Es liegt eine Mail an
    `nina.neu@praxis.invalid` mit einem Anmeldelink.
-5. **Noch kein Zugriff.** Vorher im Auditlog nachsehen (Betrieb → Sicherheit):
-   Es steht „Zugang eingeladen" mit Bezug auf den Mitarbeiterdatensatz — und
-   die E-Mail-Adresse steht **nicht** darin.
-6. **Annehmen.** In einem privaten Fenster den Link aus der Mail öffnen. Es
-   erscheint „Zugang einrichten". Auf „Einladung annehmen" tippen: Die
-   Anwendung öffnet sich als Nina Neu.
-7. **Die Rolle wirkt.** Als Nina ist Praxis → Team lesbar, „Mitarbeiter:in
+7. **Annehmen.** In einem privaten Fenster den Link aus der Mail öffnen und ein
+   Kennwort setzen. Es erscheint „Zugang einrichten". Auf „Einladung annehmen"
+   tippen: Die Anwendung öffnet sich als Nina Neu.
+8. **Die Rolle wirkt.** Als Nina ist Praxis → Team lesbar, „Mitarbeiter:in
    anlegen" fehlt (kein `office`), und unter „Mein Tag" steht ihr eigener Tag.
-8. **Der Nachweis.** Zurück als `jannes.test@praxis.invalid`: Der Abschnitt
+9. **Der Nachweis.** Zurück als `jannes.test@praxis.invalid`: Der Abschnitt
    „Zugang" bei Nina zeigt jetzt „Eingerichtet" und die Rolle. Im Auditlog steht
    zusätzlich „Einladung angenommen" — mit **Nina** als handelnder Person, nicht
    mit Jannes.
-9. **Jetzt ist sie einplanbar.** Kalender → Termin anlegen: „Nina Neu" steht in
-   der Auswahl der behandelnden Personen. Vorher stand sie dort nicht.
-10. **Ein Konto ohne Einladung bleibt leer.** Abmelden. Auf der Anmeldemaske
-    gibt es keinen Weg zur Selbstregistrierung. Wer trotzdem eines erzeugt (etwa
-    über einen zweiten Einladungslink an eine andere Adresse), landet auf
-    „Zugang einrichten" und bekommt dort „Für diesen Zugang liegt keine offene
-    Einladung vor." — ohne Auskunft darüber, ob es die Adresse in der Praxis
-    gibt.
-11. **Zurücknehmen.** Als Jannes eine zweite Person einladen (Praxis → Team →
-    „Petra Platzhalter" gibt es nicht; stattdessen unter „Mitarbeiter:in
-    anlegen" eine neue anlegen und einladen), dann „Einladung zurücknehmen" und
-    bestätigen. Der Abschnitt zeigt wieder das Formular; im Auditlog steht
-    „Einladung zurückgenommen".
-12. **Am Handy.** Schritt 1 bis 3 bei ~375 px Breite: Die Rollenliste ist ohne
+10. **Jetzt ist sie einplanbar.** Kalender → Termin anlegen: „Nina Neu" steht in
+    der Auswahl der behandelnden Personen. Vorher stand sie dort nicht.
+11. **Ein Konto ohne Einladung bleibt leer.** In Supabase Studio ein Konto für
+    eine Adresse anlegen, zu der **keine** Einladung existiert, und sich damit
+    anmelden: Es erscheint „Zugang einrichten", und „Einladung annehmen" meldet
+    „Für diesen Zugang liegt keine offene Einladung vor." — ohne Auskunft
+    darüber, ob es die Adresse in der Praxis gibt. Das Konto sieht nichts.
+12. **Zurücknehmen.** Als Jannes unter „Mitarbeiter:in anlegen" eine weitere
+    Person anlegen und einladen, dann „Einladung zurücknehmen" und bestätigen.
+    Der Abschnitt zeigt wieder das Formular; im Auditlog steht „Einladung
+    zurückgenommen".
+13. **Am Handy.** Schritt 1 bis 3 bei ~375 px Breite: Die Rollenliste ist ohne
     waagerechtes Scrollen bedienbar, jedes Kontrollkästchen samt Beschriftung
     ist mindestens 44 px hoch antippbar.
 
