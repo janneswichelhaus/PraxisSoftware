@@ -781,14 +781,22 @@ ADR-019 Punkt 9 und kommt frühestens mit MAP-002 bis MAP-006. Die
 Navigationsleiste des Entwurfs kennt vier Bereiche, die Anwendung sechs — der
 Entwurf ist keine Vorgabe für die Informationsarchitektur.
 
-**Die Kanvas-Datei liegt nicht im Repository.** Sie zeigt vier Personen mit
-vollständiger Anschrift und Indikation. Ob die Namen erfunden sind, lässt sich
-von außen nicht feststellen, und §3.1 erlaubt ausschließlich synthetische
-Daten — wo Zweifel bleiben, entscheidet §16 für die datensparsamere Seite.
-Dieselbe Linie gilt seit dem 2026-09-01 für den Referenz-Screenshot in
-[referenz-navigation.md](referenz-navigation.md). Bestätigt Jannes, dass die
-vier Namen erfunden sind, kann die Datei nachgelegt werden; der Entwurf ist
-hier so beschrieben, dass das inhaltlich nichts nachträgt.
+**Die Kanvas-Datei liegt unter**
+[`../kanvas/own-motion-praxis.html`](../kanvas/own-motion-praxis.html) — eine
+in sich geschlossene HTML-Datei, die sich in jedem Browser öffnen lässt.
+
+Sie zeigt vier Personen mit vollständiger Anschrift und Indikation. Deshalb
+lag sie zunächst **nicht** im Repository: §3.1 erlaubt ausschließlich
+synthetische Daten, und von außen war nicht feststellbar, ob die Namen
+erfunden sind — §16 entscheidet in diesem Zweifel für die datensparsamere
+Seite, und dieselbe Linie gilt seit dem 2026-09-01 für den
+Referenz-Screenshot in [referenz-navigation.md](referenz-navigation.md).
+**Jannes hat am 2026-09-11 bestätigt, dass die vier Namen erfunden sind.**
+Damit sind es synthetische Daten, und die Datei ist nachgelegt.
+
+Für den nächsten Entwurf dieser Art: Namen im Muster des Seeds („Anna
+Beispiel", „Max Mustermann") ersparen die Rückfrage — sie sind als erfunden
+erkennbar, ohne dass jemand danach fragen muss.
 
 **Offen.** Ob die Tagesansicht diese Gestalt bekommen soll, entscheidet eine
 Ablaufrunde oder ein eigenes Epic — nicht dieser Eintrag.
@@ -872,7 +880,7 @@ Versand? Das ist eine Frage an ADR-009, nicht an die Oberfläche.
 
 ---
 
-Zuletzt aktualisiert: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt aus Datenschutzgründen nicht im Repository, siehe `IDEA-PRX-034`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
+Zuletzt aktualisiert: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt seit der Bestätigung, dass die Namen erfunden sind, unter `../kanvas/own-motion-praxis.html`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
 Terminfenster steht als §8.1 in den Prinzipien, der Fahrpuffer-Mechanismus als
 E12 in den offenen Entscheidungen). Vorherige Aktualisierung: 2026-09-06
 (Entscheidungen E-9, E-12, E-13; Tagesroute `IDEA-PRX-029` bis `-033`)

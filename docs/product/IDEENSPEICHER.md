@@ -151,10 +151,11 @@ einem Verwurf. Neue Einträge hängen hinten an.
   nicht hierher, weil `marke/` für die Marke verbindlich ist und nicht Rang 6.
   Aus dem zweiten, „Own Motion · Praxis", sind `IDEA-PRX-034` bis `-037`
   entstanden: der Entwurf selbst, die Merkliste „Mitnehmen", die Indikation in
-  der Tagesliste (mit Bedenken) und die Abrechnungslage am Termin. **Die
-  Kanvas-Datei liegt nicht im Repository**: Sie zeigt vier Personen mit
-  Anschrift und Indikation, und §3.1 lässt nur synthetische Daten zu. Dieselbe
-  Linie wie beim Referenz-Screenshot vom 2026-09-01.
+  der Tagesliste (mit Bedenken) und die Abrechnungslage am Termin. Die
+  Kanvas-Datei lag zunächst **nicht** im Repository: Sie zeigt vier Personen
+  mit Anschrift und Indikation, und §3.1 lässt nur synthetische Daten zu.
+  **Jannes hat noch am selben Tag bestätigt, dass die Namen erfunden sind** —
+  die Datei liegt seitdem unter `ideen/../kanvas/own-motion-praxis.html`.
 
 ## Index — welche Datei wofür
 
