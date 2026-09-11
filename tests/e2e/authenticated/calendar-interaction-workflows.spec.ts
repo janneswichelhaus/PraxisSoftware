@@ -126,9 +126,15 @@ test.describe('CAL-006: Darstellung', () => {
     // Der Kopf ist klebend gesetzt; die Auszeichnung ist Teil der Zusage.
     // Bewusst innerhalb des Gitters gesucht: derselbe Name steht auch in der
     // Personenauswahl darueber.
+    //
+    // Angefasst wird der Link, den CAL-012 in den Kopf gesetzt hat: er traegt
+    // einen eindeutigen Namen, und sein Elternelement ist genau die Kopfzelle.
+    // Vorher wurde ueber die Beschriftung gesucht - seit zwischen Beschriftung
+    // und Zelle der Link liegt, traf `..` den Link statt der Zelle. Die
+    // Klebrigkeit selbst hat sich nie geaendert.
     const kopf = page
       .getByRole('grid', { name: 'Tagesansicht nach behandelnder Person' })
-      .getByText('Anna Beispiel', { exact: true });
+      .getByRole('link', { name: 'Wochenplan von Anna Beispiel' });
     await expect(kopf.locator('xpath=..')).toHaveCSS('position', 'sticky');
   });
 
