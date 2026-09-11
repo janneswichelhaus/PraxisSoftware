@@ -20,9 +20,10 @@ export function PageHeader({
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-ink text-[1.375rem] font-semibold tracking-[-0.01em] sm:text-2xl">
-          {title}
-        </h1>
+        {/* Seitentitel als `--type-h2` in der Hauptfarbe (DS-001). Der Titel
+            ist die einzige Stelle, an der die Marke im Inhalt vorkommt —
+            deshalb Hauptfarbe statt Tinte. */}
+        <h1 className="text-accent text-h2 tracking-display font-extrabold">{title}</h1>
         {description ? (
           <p className="text-ink-muted mt-1 max-w-prose text-sm">{description}</p>
         ) : null}

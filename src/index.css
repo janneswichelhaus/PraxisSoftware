@@ -117,6 +117,22 @@
     'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
     Arial, sans-serif;
 
+  /* Schriftrollen des Systems. Tailwinds eigene Stufen treffen sie nicht:
+     `text-3xl` sind 30 px, gebraucht werden 32. Deshalb eigene Namen — sie
+     heißen nach ihrer Rolle, nicht nach ihrer Größe, damit eine Seite nicht
+     zwischen „groß" und „Seitentitel" wählen muss.
+
+     Display/H1/H2 stehen in 800 mit −0.03em, H3 und H4 in 700, Beschriftungen
+     in 600 mit 0.14em in Versalien. */
+  --text-h2: 32px;
+  --text-h2--line-height: 1.05;
+  --text-h3: 24px;
+  --text-h3--line-height: 1.25;
+  --text-h4: 20px;
+  --text-h4--line-height: 1.25;
+  --tracking-display: -0.03em;
+  --tracking-label: 0.14em;
+
   /* Radien des Systems: Knöpfe und Felder 10, Karten 14, Bilder 16,
      Etiketten 999. */
   --radius-button: 10px;
