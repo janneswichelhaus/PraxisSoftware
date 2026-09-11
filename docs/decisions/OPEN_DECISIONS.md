@@ -130,7 +130,7 @@ Feature.
 | C7    | Sprachliche Trennung LLM / deterministische Regeln in §6, §7.1 | architektonisch entschieden; Wortlaut bei nächster Prinzipienversion | [ADR-005](../adr/ADR-005-provider-independent-ai.md); nicht planungsrelevant                             |
 | C8    | „Nicht verbauen" gegen „nicht vorbauen"                      | entschieden 2026-08-28                                        | [ADR-014](../adr/ADR-014-foundational-data-model.md)                                                          |
 | D     | „finalisiert", „nachvollziehbar"                             | entschieden 2026-09-01                                        | [ADR-016](../adr/ADR-016-clinical-documentation-record.md)                                                    |
-| D     | „bestätigt" — Terminstatus-Automat                           | **Umfang entschieden 2026-09-05; ADR-018 ausstehend**         | unten; Roadmap CAL-EPIC-003, Okt 2026; bis dahin ANN-005                                                      |
+| D     | „bestätigt" — Terminstatus-Automat                           | **Umfang entschieden 2026-09-05; ADR-018 geschrieben 2026-09-11, wartet auf Bestätigung** | [ADR-018](../adr/ADR-018-appointment-states.md); unten; Roadmap CAL-EPIC-003a; bis zur Bestätigung ANN-005 |
 | D     | übrige Begriffe                                              | erledigt                                                      | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 · „Behandlungsnachweis" → C1, ANN-006 · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
 | D     | Normativität und Nachweis                                    | Normativität erledigt (0.2, §0); **Nachweistabelle offen**    | Roadmap G12                                                                                                   |
 | E1    | Betreibbarkeit bei Bus-Faktor 1                              | entschieden 2026-08-28                                        | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7                         |
@@ -899,9 +899,17 @@ vorbauen". ADR-018 beschreibt die beiden Zustände, CAL-EPIC-003a implementiert
 sie nicht. Rücknahme `klein`. Die übrigen Punkte der Ausgestaltung bleiben
 offen.
 
-Bis ADR-018 vorliegt, gilt ANN-005 (Abschluss ohne
-Dokumentationspflicht). Danach ist `PROJECT_PRINCIPLES.md` §8 nachzuziehen
-(§21).
+**Stand 2026-09-11: ADR-018 liegt vor** — als
+[ADR-018](../adr/ADR-018-appointment-states.md), Status **vorgeschlagen**. Er
+beantwortet die offenen Punkte der Ausgestaltung: Übergänge und Auslöser, die
+Migration der drei heutigen Status, `documented` und `invoiced` als gesetzte
+Werte derselben Spalte statt abgeleiteter Merkmale, das Ausfallhonorar als
+Kennzeichen am Nichtantreffen, und die Serie ohne eigenen Status. Die sieben
+Bestätigungsfragen stehen am Ende des ADR.
+
+Bis zur Bestätigung bleibt dieser Punkt offen und **ANN-005 in Kraft**
+(Abschluss ohne Dokumentationspflicht). Mit der Bestätigung wird
+`PROJECT_PRINCIPLES.md` §8 nachgezogen (§21) und dieser Punkt erledigt.
 
 ### E2 — Ausfallkonzept
 

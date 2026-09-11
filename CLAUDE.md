@@ -98,6 +98,8 @@ davon abhängt, vorher fertigstellen.
 | 014 | Datenmodell-Fundament: UUIDs, Zeitstempel, Geldwerte, Rollen, Trennung    |
 | 015 | Stack, Ordnerstruktur, Abgrenzungen (kein Next.js, kein Service Worker …) |
 | 016 | Dokumentation: Entwurf/Finalisierung, Versionierung, wer ändern darf      |
+| 018 | Terminzustände, Übergänge, Ausfallhonorar-Kennzeichen, Terminserie        |
+| 019 | Kartendienst, Navigations-Handoff, Fahrzeiten, Vertrags-/§203-Gate        |
 
 ## Repository
 
