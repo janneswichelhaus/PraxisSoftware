@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 3.3 · Stand 2026-09-11 · **in Kraft**
+Version 3.4 · Stand 2026-09-12 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -45,123 +45,96 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop CAL-EPIC-003a Terminzustände
+/feature-loop CAL-EPIC-003b Serie und Terminfenster
 ```
 
-- **Voraussetzung erfüllt: [`ADR-018`](../adr/ADR-018-appointment-states.md) ist
-  seit dem 2026-09-11 angenommen** — Jannes hat alle sieben Bestätigungsfragen
-  wie empfohlen entschieden. Der Loop baut den ADR, er entscheidet ihn nicht
-  mehr; Abweichungen davon sind Annahmen nach §15.1.
-- **Nachgezogen ist bereits alles, was nicht in den Code-Loop gehört:**
-  `PROJECT_PRINCIPLES.md` §8 in Version 0.7 (§21, eigener Commit) und Punkt D
-  in `OPEN_DECISIONS.md` als erledigt. Der Loop muss dort nichts mehr ändern.
-- **Die teuerste Einzelheit zuerst:** die Umbenennung `scheduled` → `confirmed`
-  gehört in CAL-008 und wird teurer, je länger sie wartet.
-- **Danach, in dieser Reihenfolge:** `CAL-EPIC-003b` Serie ·
-  `DAT-EPIC-001` Dateiablage · `ABR-EPIC-001`.
+- **Voraussetzung erfüllt:** `VER-001` steht, `CAL-EPIC-003a` ist seit dem
+  2026-09-12 fertig, `UI-000` ebenso. Für **CAL-010a** gilt
+  `PROJECT_PRINCIPLES.md` §8.1 unverändert; **E12** (Herkunft der Fahrzeit,
+  Warnung oder Sperre) ist weiter offen und blockiert nur **CAL-010b** — der
+  Loop baut CAL-007 und CAL-010a und schlägt für CAL-010b eine Annahme vor
+  oder lässt ihn liegen.
+- **CAL-EPIC-003a ist am 2026-09-12 fertig** (fünf Stories): sechs
+  Terminzustände nach ADR-018 mit der Umbenennung `scheduled` → `confirmed` ·
+  Absage nur mit codiertem Pflichtgrund und ohne Rückweg · „nicht angetroffen"
+  mit Pflichtentscheidung zum Ausfallhonorar, samt Löschregel · `documented`
+  aus der Finalisierung mit getesteter Invariante · Tag umplanen mit
+  Anrufliste (`IDEA-PRX-004`, jetzt überführt). **Neu zu bestätigen:**
+  **ANN-034** (Absagegrund als codierte Auswahl, kein Freitext), **ANN-035**
+  (No-show unter der Frist der abgesagten Termine; mit Ausfallhonorar keine
+  Löschung) und **ANN-036** (`documented` auch aus `confirmed`). Die
+  Abnahmeschritte stehen in `docs/abnahme/etappe-1-kernprozess.md`; die
+  Oberfläche ist hinter der Anmeldung maschinell geprüft
+  (`tests/e2e/authenticated/appointment-states.spec.ts`, läuft in CI).
+  **`invoiced` ist im Wertebereich, hat aber keinen Schreibpfad** — den bringt
+  ABR-003, zusammen mit dem Auditereignis `appointment.invoiced` und der
+  Anpassung der beiden Feld-Constraints.
+- **Danach, in dieser Reihenfolge:** `DAT-EPIC-001` Dateiablage ·
+  `ABR-EPIC-001` · `ABR-EPIC-002a`.
 - **LOE-EPIC-001 ist am 2026-09-11 fertig** (fünf Stories): Retention Schedule
   als Daten, Anker „Abschluss der Versorgung", Legal Hold, täglicher Löschlauf
   mit Löschjournal und Wiederanwendung nach einem Restore, Aufbewahrungs-
-  übersicht für `owner`. Die Abnahmeschritte stehen in
-  `docs/abnahme/etappe-1-kernprozess.md` (LOE-001b, LOE-002b). **Die Oberfläche
-  ist erstmals auch hinter der Anmeldung maschinell geprüft:**
-  `tests/e2e/authenticated/retention-workflows.spec.ts` fährt in CI den echten
-  Pfad Browser → GoTrue → PostgREST → RPC → PostgreSQL. In der Cloudumgebung
-  ging das nicht (kein GoTrue) — **in CI aber schon**, und das gilt für jeden
-  künftigen Loop mit Oberflächenanteil. Beim Menschen bleibt damit nur noch,
-  was eine Maschine nicht beurteilt: Aussehen, Sprache und die Bedienung am
-  Telefon. **ANN-029 bis ANN-033 hat Jannes am
-  2026-09-11 wie empfohlen bestätigt**; vier davon bleiben als `Datenschutz`
-  beziehungsweise `Recht` im Prüfpaket. Zwei betriebliche Punkte hängen daran und stehen in
+  übersicht für `owner`. Zwei betriebliche Punkte hängen daran und stehen in
   `docs/DEVELOPMENT.md`: Der Löschlauf braucht `pg_cron` im Produktivprojekt
   (OPS-001), und das Restore-Verfahren muss das Löschjournal sichern und
   wieder einspielen (OPS-003).
-- **UX-EPIC-001 ist am 2026-09-11 fertig und in `main`** (elf Stories, PR #18).
-  Die Abnahmeschritte stehen in `docs/abnahme/etappe-1-kernprozess.md`; der
-  Blick auf die laufende Anwendung hinter der Anmeldung war in der
-  Cloudumgebung nicht möglich und liegt deshalb vollständig bei Jannes. Die
-  Annahmen daraus sind bestätigt (siehe unten); **ANN-018** ist nur für Google
-  Maps umgesetzt — Apple Maps und `geo:` bleiben MAP-005.
 - **Sechs Epics sind am 2026-09-11 von Jannes abgenommen:** DOK-001 bis
   DOK-004, VER-EPIC-001, UI-000, MARKE-001, UX-EPIC-001 und LOE-EPIC-001.
-  Zusammen mit STAFF-EPIC-002 trägt die Fortschrittstabelle damit bei jedem
-  gebauten Epic ein Abnahmedatum — **kein Epic wartet mehr auf Abnahme**.
+  Zusammen mit STAFF-EPIC-002 wartet damit nur CAL-EPIC-003a auf Abnahme.
   Die Gegenmaßnahme zu R6 (Befundwelle aus späten Abnahmen) greift damit;
   Befunde aus den Abnahmen gehören als erste Story in den nächsten Loop
   derselben Spur, nicht in einen eigenen.
-- **STAFF-EPIC-002 ist am 2026-09-11 fertig und von Jannes abgenommen**
-  (fünf Stories, PR #20). Die Abnahmeschritte stehen in
-  `docs/abnahme/etappe-g-betriebsreife.md`; sie brauchen den vollen
-  Supabase-Stack mit Mailfänger und sind am 2026-09-11 durchlaufen. Neu
-  zu bestätigen: **ANN-025** (kein Konto durch die Anwendung, hängt an OPS-001)
-  und **ANN-026** (Frist der Einladung, geht in das Löschkonzept von
-  LOE-EPIC-001 ein). **ANN-024, ANN-027 und ANN-028 hat Jannes am 2026-09-11
-  bestätigt**; als `Datenschutz` bleiben sie im Prüfpaket. **E10 und E11 sind
-  erledigt**, §4.3 und §4.5 der Prinzipien nach §21 nachgezogen (Version 0.6).
 - **MFA vertagt (Jannes, 2026-09-11).** Die **Pflicht** zum zweiten Faktor für
   `owner` wird erst geplant, **wenn eine Domain für die Anwendung feststeht**
   — also frühestens mit dem Frontend-Hosting (G5/OPS-002). Gebaut und
-  benutzbar ist sie bereits: einrichten, entfernen, Hinweis in „Mein Konto".
-  Erzwungen wird sie nicht, und **kein Datenpfad verlangt heute `aal2`**;
-  ANN-028 hält den Stand und den Weg dorthin fest. Damit ist der Punkt **kein
-  offener Entscheidungsbedarf mehr** — er kommt mit der Domain zurück.
+  benutzbar ist sie bereits; ANN-028 hält den Stand und den Weg dorthin fest.
 - **Zuschnitt geklärt (ADR-019 Fassung 2, MAP-001, 2026-09-08), mit UX-002
   umgesetzt:** der Handoff übermittelt nichts aus der Anwendung; er baut die
   URL nach ANN-018 (Adresse ohne Namen, Fahrradmodus) und ist nicht
   automatisch risikofrei (ADR-019 Punkt 23, Frage an B2). Bedingung: **nur
-  auf Aktion, nie automatisch** — deshalb eine Schaltfläche ohne `href`,
-  Prüfregel im Review. Die **In-App-Karte** und die **Fahrzeiten** sind kein
-  Komfort mehr, sondern Produktziel; sie kommen als MAP-002 bis MAP-006
-  (Etappe T, `MAP-LOOPS.md`) mit **PTV Developer** als Kandidat statt Google.
+  auf Aktion, nie automatisch**. Die **In-App-Karte** und die **Fahrzeiten**
+  kommen als MAP-002 bis MAP-006 (Etappe T, `MAP-LOOPS.md`) mit **PTV
+  Developer** als Kandidat.
 - **Parallel startbar, sobald der PTV-Schlüssel vorliegt:**
   `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md`
-  — nur synthetische Daten. Die Reihenfolgefrage E-21 hat sich erledigt:
-  UX-EPIC-001 ist gebaut.
+  — nur synthetische Daten.
 - **Offen aus UI-000:** die Vorschaubereiche nutzen die gemeinsamen
   Bausteine noch nicht. Sie werden in ihrem eigenen Loop ersetzt, nicht
   vorher umgestellt (ARBEITSBEREICHE.md).
-- **Von Jannes bestätigt am 2026-09-11:** die Annahmen aus UX-EPIC-001 —
-  **ANN-018** (Übergabeziel des Handoffs), **ANN-020** (Textbausteine als
-  Betriebsdaten ohne Patientenbezug) und **ANN-021** (Feldliste und
-  Vorhaltedauer des Tagesplans, zugleich die Antwort auf die offene
-  Folgefrage aus ADR-001). Alle drei sind `Datenschutz` und bleiben deshalb
-  **im Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die
-  Datenschutzprüfung nicht (Lebenszyklus im Register). **ANN-019 ist
-  erledigt** — der Restpunkt aus VER-003 ist mit UX-009 behoben.
+- **Von Jannes bestätigt am 2026-09-11:** ANN-018, ANN-020, ANN-021 aus
+  UX-EPIC-001, ANN-024, ANN-027, ANN-028 aus STAFF-EPIC-002 und ANN-029 bis
+  ANN-033 aus LOE-EPIC-001. Alle mit Kategorie `Datenschutz` oder `Recht`
+  bleiben **im Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die
+  Datenschutzprüfung nicht.
 - **Weiter offen:** ANN-001, ANN-004, ANN-005, ANN-008, ANN-009, ANN-011,
-  ANN-013, ANN-014, ANN-016, ANN-017 und die Providerfrage aus ANN-007. Sie
-  blockieren nichts, aber ANN-011 (Rollenschnitt der Verordnung) und ANN-014
-  (Empfehlung zum Verordnungsende, ADR-006) gehören in die Anfragen B1 und
-  B2, ANN-016 und ANN-017 (Koordinaten bei der Adresse, Edge Function als
-  Adapter) in die Anfrage B2, und ANN-015 (Verbindungsanzeige ohne
-  Server-Ping, seit UX-009 mit Textverlust-Schutz) gehört auf den ersten
-  Feldtag.
+  ANN-013, ANN-014, ANN-016, ANN-017, die Providerfrage aus ANN-007 sowie neu
+  ANN-034 bis ANN-036. Sie blockieren nichts, aber ANN-011 (Rollenschnitt der
+  Verordnung) und ANN-014 (Empfehlung zum Verordnungsende, ADR-006) gehören in
+  die Anfragen B1 und B2, ANN-016 und ANN-017 in die Anfrage B2, ANN-034 und
+  ANN-035 ebenfalls in B2, und ANN-015 gehört auf den ersten Feldtag.
 - **Zu beantworten (MAP-001):** E-20 ADR-019 Fassung 2 bestätigen — damit
-  entfällt die Google Maps Embed API aus E-16. **E-21 (Reihenfolge MAP-002 zu
-  UX-EPIC-001) ist gegenstandslos**, seit UX-EPIC-001 fertig ist.
+  entfällt die Google Maps Embed API aus E-16.
 - **Entschieden am 2026-09-08, noch nicht gebaut:** Terminfenster
-  (`PROJECT_PRINCIPLES.md` §8.1) und Sprachdokumentation (§6.3). Die
-  Terminlänge ist heute frei, ein Fahrpuffer existiert nicht, eine
-  Sprachfunktion gibt es nicht. Das Terminfenster kommt als **CAL-010a** in
-  CAL-EPIC-003b; die Sprachdokumentation bekommt einen **eigenen Auftrag**
-  und steht bewusst in keiner Etappe. Offen geblieben sind **E12** und
-  **E13** — beide blockieren nichts.
+  (`PROJECT_PRINCIPLES.md` §8.1) und Sprachdokumentation (§6.3). Das
+  Terminfenster kommt als **CAL-010a** im nächsten Loop; die
+  Sprachdokumentation bekommt einen **eigenen Auftrag** und steht bewusst in
+  keiner Etappe. Offen geblieben sind **E12** und **E13** — beide blockieren
+  nichts.
 - **Parallel als Docs-Sessions** (kein Code): im September `ADR-017
-  Dateiablage` · `ADR-018 Terminzustände` · `OPS-001 Providerprüfung`
-  (Dokument). `ADR-019 Kartendienst` liegt seit dem 2026-09-08 in Fassung 2
-  vor (MAP-001) und wartet auf E-20. Jede endet mit einer Bestätigung durch
-  Jannes.
+  Dateiablage` · `OPS-001 Providerprüfung` (Dokument). `ADR-019 Kartendienst`
+  liegt seit dem 2026-09-08 in Fassung 2 vor (MAP-001) und wartet auf E-20.
+  Jede endet mit einer Bestätigung durch Jannes.
 - **Jannes-seitig diese Woche** (Meilenstein M0, 30.09.): Branch Protection
   und Secret Scanning in den GitHub-Einstellungen aktivieren (zehn Minuten,
   `docs/DEVELOPMENT.md` „Manuelle Schritte") · Anfragen B1, B2, B4 mit
   Fristwunsch verschicken — B4 mit den Steuerfragen aus `OPEN_DECISIONS.md`
   (Umsatzsteuer, Kleinunternehmerregelung, Nummernkreis), B2 mit dem
-  Kartendienst (B7) und der Terminerinnerung (B15) — und Stelle, Datum,
-  Zusage in der Spur-B-Tabelle eintragen · die Genehmigung der
-  Datenschutz-Fachkraft für den Kartendienst schriftlich zu den
-  DSFA-Unterlagen legen (G14) · **vor MAP-002:** kostenloses
-  PTV-Developer-Abo anlegen (nur Test, ein Schlüssel) und den Schlüssel in
-  `.env.local` ablegen — nie im Repository; **vor MAP-006:** die
+  Kartendienst (B7), der Terminerinnerung (B15) und den drei neuen Annahmen
+  aus CAL-EPIC-003a — und Stelle, Datum, Zusage in der Spur-B-Tabelle
+  eintragen · die Genehmigung der Datenschutz-Fachkraft für den Kartendienst
+  schriftlich zu den DSFA-Unterlagen legen (G14) · **vor MAP-002:**
+  kostenloses PTV-Developer-Abo anlegen (nur Test, ein Schlüssel) und den
+  Schlüssel in `.env.local` ablegen — nie im Repository; **vor MAP-006:** die
   PTV-Vertragsdokumente von einem ungeproxten Rechner laden (Liste in
   `docs/decisions/providerpruefung-kartendienst.md`, Teil 1) und mit B2 an
   die Datenschutzberatung geben.
@@ -872,6 +845,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | STAFF-EPIC-002 (STAFF-002a/b/c, STAFF-003, STAFF-004)   | fertig | 2026-09-11     | `3938482`, `06b758c`, `0d7bd3c`, `719faed`, `56b2706`, `4afaf97`, `23cfb35`, PR #20 | 2026-09-11    |
 | LOE-EPIC-001 (LOE-001a/b/c, LOE-002a/b)                 | fertig | 2026-09-11     | `042c325`, `169469d`, `310dc3b`, `0a3a2d7`, `c88bc71`, `ae4e85a`, Merge PR #25 | 2026-09-11    |
 | ADR-018 Terminzustände (Docs)                            | fertig | 2026-09-11     | angenommen 2026-09-11, alle sieben Fragen wie empfohlen; §8 auf 0.7 nachgezogen | —             |
+| CAL-EPIC-003a (CAL-008a bis CAL-008d, CAL-009)           | fertig | 2026-09-12     | `42f9fc3`, `262b5cd`, `718bd59`, `6eccadb`, `6ed26e5`, `6cd2c6b`    |               |
 
 ---
 
@@ -879,6 +853,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.4     | 2026-09-12 | **CAL-EPIC-003a fertig** (fünf Stories): Ein Statusfeld mit sechs in V1 erreichbaren Werten nach ADR-018, samt der Umbenennung `scheduled` → `confirmed` quer durch Migrationen, Lesepfade, Filter, Planungsregeln und Oberfläche · Absage nur mit codiertem Pflichtgrund und ohne Rückweg (ANN-034) · „nicht angetroffen" mit Pflichtentscheidung zum Ausfallhonorar, Wiederöffnen und eigener Löschregel (ANN-035) · `documented` setzt die Finalisierung in derselben Transaktion, mit der von ADR-018 verlangten Invariante in beiden Richtungen (ANN-036) · `cancel_staff_day` plant einen ganzen Tag in einem Vorgang um und zeigt danach die Anrufliste (CAL-009, `IDEA-PRX-004` überführt). Neu hinter der Anmeldung maschinell geprüft: `tests/e2e/authenticated/appointment-states.spec.ts`. Der Punkt „Terminstatusautomat" fällt aus der Liste offener Entscheidungen in `ARBEITSBEREICHE.md`. **Nächster Loop: CAL-EPIC-003b.** |
 | 3.3     | 2026-09-11 | **Sechs Epics von Jannes abgenommen** (DOK-001 bis DOK-004, VER-EPIC-001, UI-000, MARKE-001, UX-EPIC-001, LOE-EPIC-001) — die Spalte „Abgenommen am" trägt jetzt überall dort ein Datum. Damit ist der Kernprozess zur Hälfte erledigt: Block A des Fortschrittsmodells steht auf 50 Prozent, der Gesamtstand auf **25,3 Prozent** (vorher 23,5). Neu ist dieses Modell selbst — `docs/development/fortschritt.json`, `scripts/fortschritt.mjs` und `pnpm fortschritt` beantworten „wie weit sind wir insgesamt", was die Fortschrittstabelle absichtlich nicht tut; die Gewichte und die drei Festlegungen dahinter stehen im Abschnitt „Eine Zahl für den Gesamtstand". **Reihenfolge unverändert — CAL-EPIC-003a bleibt der nächste Loop**, seine Voraussetzung ADR-018 ist mit PR #26 in `main`. |
 | 3.2     | 2026-09-11 | **ADR-018 angenommen** — Jannes hat alle sieben Bestätigungsfragen wie empfohlen entschieden. Nachgezogen wie in 3.1 angekündigt: `PROJECT_PRINCIPLES.md` **Version 0.7** ersetzt in §8 den Satz, der den Zustandsautomaten als offenen Punkt führte, durch die acht Werte und den Hinweis, welche zwei davon nur beschrieben sind (§21, eigener Commit, Änderungsvermerk im Dokument) · **Punkt D („bestätigt") in `OPEN_DECISIONS.md` ist erledigt** · **ANN-005 bleibt in Kraft** und wechselt auf `entschieden (Jannes)`: ADR-018 bestätigt sie ausdrücklich und setzt die §19-Kopplung an die Rechnung, nicht an den Abschluss; Wiedervorlage zurück auf ABR-002. Die Umsetzung selbst ist unverändert **CAL-EPIC-003a** — die Entscheidung ist deren Vorbedingung, nicht ihr Ersatz. **Nächster Loop bleibt CAL-EPIC-003a.** |
 | 3.1     | 2026-09-11 | **ADR-018 Terminzustände geschrieben** (Docs-Session, Status vorgeschlagen): ein Statusfeld mit acht Werten, sechs davon in V1 erreichbar — `requested` und `tentative` bleiben beschrieben und ungebaut (Entscheidung vom 2026-09-08) · Übergänge samt Auslöser, `cancelled` und `documented` ohne Rückweg · `documented` und `invoiced` werden vom besitzenden Vorgang in derselben Transaktion gesetzt, nicht abgeleitet, mit getesteter Invariante · Ausfallhonorar als Pflichtkennzeichen am Nichtantreffen, Betrag bleibt bei ABR · Serie ohne eigenen Status · Migration der drei heutigen Werte samt Umbenennung `scheduled` → `confirmed`. Sieben Bestätigungsfragen offen; erst danach werden §8 (§21) und Punkt D geschlossen. Außerdem: der ADR-Index in `CLAUDE.md` führte ADR-018 und ADR-019 nicht, die Aufruftabelle verwies für ADR-018 auf die falsche Zeile — beides berichtigt. **Nächster Loop bleibt CAL-EPIC-003a.** |

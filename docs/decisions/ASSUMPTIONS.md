@@ -1,6 +1,15 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-11. Vier Dinge am selben Tag:
+Zuletzt aktualisiert: 2026-09-12.
+
+- **CAL-EPIC-003a bringt ANN-034 bis ANN-036 neu:** Absagegrund als codierte
+  Auswahl ohne Freitext, No-show unter der Frist der abgesagten Termine (mit
+  gesetztem Ausfallhonorar-Kennzeichen keine Löschung) und `documented` auch
+  aus `confirmed`. Alle drei stehen auf `offen`. ANN-034 und ANN-035 gehören
+  als `Datenschutz` beziehungsweise `Recht` ins Prüfpaket; ANN-036 ist
+  `Technik` und mit einem Satz von Jannes erledigt.
+
+Davor, am 2026-09-11, vier Dinge am selben Tag:
 
 - **Jannes hat die Annahmen aus UX-EPIC-001 bestätigt:** ANN-018, ANN-020 und
   ANN-021 stehen auf `entschieden (Jannes)`. Alle drei sind `Datenschutz` und
