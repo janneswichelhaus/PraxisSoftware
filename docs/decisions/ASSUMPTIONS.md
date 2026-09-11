@@ -163,6 +163,14 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-021 | Feldliste und Vorhaltedauer des Tagesplans im Arbeitsspeicher    | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; Jannes nach dem ersten Feldtag |
 | ANN-022 | Tiefgrün der Marke als Hover-Zustand des Akzents                 | Technik       | offen  | Jannes; MARKE-001 (Befund App-Symbole)    |
 | ANN-023 | Die Kopfzeile führt die Marke, nicht den Organisationsnamen      | Praxisprozess | offen  | Jannes; erneut, falls eine zweite Praxis dazukommt (ADR-003) |
+| ANN-024 | Privatangaben Beschäftigter: Schreibrecht folgt dem Leserecht    | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
+| ANN-025 | Die Anwendung legt keine Authentifizierungskonten an             | Technik       | offen  | OPS-001 (Providerprüfung)                 |
+| ANN-026 | Datenklasse und Frist der Einladung                              | Datenschutz   | offen  | Datenschutzprüfung; LOE-001a (im Retention Schedule verankert) |
+| ANN-027 | Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
+| ANN-028 | MFA für `owner`: eingerichtet und sichtbar, nicht erzwungen      | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Jannes, sobald eine Domain feststeht; Datenschutzprüfung |
+| ANN-029 | Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte     | Datenschutz   | offen  | Datenschutzprüfung                        |
+| ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | offen  | Datenschutzprüfung; Jannes (Aufbewahrung Personalakte) |
+| ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | offen  | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1605,3 +1613,135 @@ stehen, die Einrichtung ist freiwillig möglich, und **kein Datenpfad verlangt
 `aal2`.** Wird die Pflicht später eingeschaltet, ist die Reihenfolge
 unverändert: erst müssen mindestens zwei `owner`-Zugänge einen bestätigten
 Faktor haben, sonst ist es eine Aussperrung.
+
+---
+
+### ANN-029 — Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | LOE-001a; ADR-008 (Retention Schedule), ADR-010 (offene Folgefrage „Wie werden Audit-Einträge behandelt, deren Bezugsdaten früher gelöscht werden?") |
+| Status | offen, seit 2026-09-11 |
+| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+
+**Annahme.** Ein Auditeintrag wird **drei Jahre nach dem Ereignis** gelöscht —
+unabhängig davon, ob die Akte, auf die er sich bezieht, noch besteht oder
+bereits gelöscht ist. Die Löschung einer Patientenakte löscht **nicht** die
+Auditeinträge über die Zugriffe auf sie; sie behalten ihre eigene Frist.
+
+**Begründung.** ADR-008 führt „Patientenakten-Auditlogs" als **eigene
+Datenklasse** mit eigener Frist (drei Jahre), nicht als Anhängsel der Akte.
+ADR-010 nennt das Auditlog die tragende Kompensation dafür, dass alle
+Therapeut:innen alle Akten sehen dürfen (§4.2); würde es mit der Akte fallen,
+verschwände der Nachweis genau dann, wenn er am längsten zurückreicht. Die
+Datenminimierung leidet darunter kaum: Der Eintrag trägt nur Metadaten
+(ADR-010 Punkt 3), und nach der Löschung der Akte ist die enthaltene
+Patientenkennung ein Schlüssel ohne Schloss — es gibt keine Zeile mehr, die
+sie auflöst. In der Praxis greift die Regel ohnehin selten: Wenn eine Akte
+zehn Jahre nach Abschluss der Versorgung fällt, sind Auditeinträge über
+Zugriffe von damals längst weg; übrig bleiben nur Zugriffe der letzten drei
+Jahre, deren eigene Frist noch läuft.
+**Unsicher:** ob die Prüfung stattdessen verlangt, mit der Akte auch den
+Zugriffsnachweis zu tilgen. Das wäre eine vertretbare Gegenposition
+(Art. 17 DSGVO, Zweckbindung); sie kostet Nachweisbarkeit.
+
+**Verankerung.** Die Datenklasse `auditlog` in
+`supabase/migrations/20260911150000_retention_schedule.sql` (der Eintrag trägt
+die Kennung) und die eigenständige Regel für `audit_log` im Löschlauf
+(LOE-002a). Der Datenbanktest „löscht Auditeinträge nach eigener Frist, nicht
+mit der Akte" in `supabase/tests/retention-run.test.ts` hält den Fall fest.
+
+**Änderungspfad.** Soll das Auditlog mit der Akte fallen: im Löschlauf beim
+Löschen einer Akte zusätzlich die Auditeinträge mit `subject_id = patient_id`
+und `context->>'patient_id'` entfernen — Aufwand `klein`. Die Gegenrichtung
+(Auditeinträge länger halten als drei Jahre) ist eine Friständerung und damit
+eine Datenänderung in `retention_classes` — Aufwand `klein`.
+
+---
+
+### ANN-030 — Beschäftigtendaten ohne Frist: keine automatische Löschung in V1
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | LOE-001a; ADR-008 (der initiale Retention Schedule führt keine Klasse für Beschäftigtendaten); `docs/development/ARBEITSBEREICHE.md` (offener Punkt, `IDEA-QSN-010`) |
+| Status | offen, seit 2026-09-11 |
+| Wiedervorlage | Datenschutzprüfung; Jannes, sobald die erste Person ausscheidet — spätestens vor der ersten Einstellung |
+
+**Annahme.** Mitarbeiterdatensätze, Privatangaben und Arbeitszeiten
+(`staff_members`, `staff_private_details`, `staff_working_hours`,
+`staff_working_hour_exceptions`) werden **nicht automatisch gelöscht**. Sie
+tragen die Datenklasse `beschaeftigtendaten` mit der Grundlage `offen`.
+
+**Begründung.** ADR-008 tabelliert für Beschäftigtendaten keine Frist, und die
+naheliegenden Anker sind widersprüchlich: Lohnunterlagen unterliegen
+steuerlichen Fristen (§147 AO, §257 HGB), die diese Anwendung nicht führt;
+für Bewerbungsunterlagen gelten Wochen, für arbeitsrechtliche Streitfälle die
+regelmäßige Verjährung (§195 BGB). Eine erfundene Zahl wäre schlechter als
+keine: Beschäftigtendaten sind nach §20 der Prinzipien besonders geschützt,
+und eine zu kurze Frist löscht Nachweise, die die Praxis im Streitfall
+braucht. Zudem fehlt der Anker im Datenmodell — es gibt kein Datum des
+Ausscheidens, nur `employment_status`. Die datensparsame Seite ist hier
+gewahrt, weil der Bestand winzig ist (eine Praxis, wenige Personen) und keine
+Gesundheitsdaten enthält.
+**Unsicher:** ob die Prüfung eine Frist verlangt, bevor die erste Person
+ausscheidet.
+
+**Verankerung.** Die Datenklasse `beschaeftigtendaten` in
+`supabase/migrations/20260911150000_retention_schedule.sql` — der Eintrag
+trägt die Kennung; sein Feld `basis` steht auf `offen`, und der Test
+„begründet jede Frist ohne gesetzliche Grundlage mit einer Annahme" in
+`supabase/tests/retention.test.ts` verhindert, dass die Lücke stillschweigend
+bleibt.
+
+**Änderungspfad.** Frist setzen: ein Datum des Ausscheidens auf
+`staff_members` ergänzen, die Klasse auf diesen Anker stellen und eine Regel
+im Löschlauf ergänzen — Aufwand `mittel`, weil das Datum fachlich gepflegt
+werden muss. Reine Friständerung ohne neuen Anker: `klein`.
+
+---
+
+### ANN-031 — Das Löschjournal hat selbst keine Frist
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | LOE-001a/LOE-002a; ADR-008 Punkt 8 (Löschungen nach einem Restore erneut anwenden), ADR-012 (Backup-Lebenszyklus offen) |
+| Status | offen, seit 2026-09-11 |
+| Wiedervorlage | Datenschutzprüfung; erneut mit OPS-003, sobald der Backup-Lebenszyklus definiert ist (ADR-012, offene Folgefrage) |
+
+**Annahme.** Das Löschjournal (`deletion_journal`) wird **nicht automatisch
+gelöscht**. Es hält je gelöschtem Datensatz Tabelle, Kennung, Datenklasse,
+Fälligkeit und Zeitpunkt fest — **keinen Namen, keinen Inhalt, keine
+Fremdschlüssel auf bestehende Daten**.
+
+**Begründung.** ADR-008 Punkt 8 verlangt, dass wirksam gewordene Löschungen
+nach einer Wiederherstellung erneut angewendet werden, und zwar aus einer
+Liste, die den Restore überlebt. Eine Liste, die selbst einer Frist
+unterliegt, könnte kürzer sein als die älteste Backup-Generation — dann
+kehrten gelöschte Daten unbemerkt zurück, genau der Fall, den ADR-008
+ausschließen will. Solange der Backup-Lebenszyklus nicht definiert ist
+(ADR-012, offene Folgefrage), lässt sich keine sichere Frist bestimmen. Der
+Datenschutzpreis dafür ist gering: Nach der Löschung des Datensatzes ist die
+verbleibende UUID ein Schlüssel ohne Schloss (Erwägungsgrund 26 DSGVO —
+Identifizierung wäre nur über die gelöschten Daten selbst möglich), und die
+Zeile ist zugleich der Nachweis der Löschung, den ADR-008 verlangt.
+**Unsicher:** ob die Prüfung das Journal dennoch als personenbezogen einstuft,
+weil ein Backup die Auflösung theoretisch wiederherstellen könnte.
+
+**Verankerung.** Die Datenklasse `loeschjournal` in
+`supabase/migrations/20260911150000_retention_schedule.sql` (der Eintrag trägt
+die Kennung) und der Tabellenkommentar von `public.deletion_journal`.
+
+**Änderungspfad.** Frist einführen, sobald der Backup-Lebenszyklus steht: Zeile
+in `retention_classes` auf Anker `event_time` und ein Intervall setzen, das die
+älteste Backup-Generation sicher überdauert, und eine Regel im Löschlauf
+ergänzen — Aufwand `klein`.
+
+**Betriebliche Folge, die keine Software löst.** Das Journal liegt in derselben
+Datenbank, die wiederhergestellt wird. Ein Restore setzt es damit auf den Stand
+des Backups zurück — Löschungen danach wären verloren. Das Restore-Verfahren
+(OPS-003, ADR-012) MUSS deshalb das Journal **vor** der Rückspielung sichern
+und danach einspielen, bevor `reapply_deletion_journal()` läuft. Ohne diesen
+Schritt ist die Wiederanwendung unvollständig.

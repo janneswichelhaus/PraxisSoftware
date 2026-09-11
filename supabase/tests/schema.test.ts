@@ -35,8 +35,13 @@ describe('Schema-Invarianten', () => {
        and c.column_name = k.column_name
       where tc.constraint_type = 'PRIMARY KEY' and tc.table_schema = 'public'
     `);
-    // roles ist ein Referenzkatalog mit sprechendem Schluessel; alles andere uuid.
-    const abweichend = rows.filter((r) => r.data_type !== 'uuid' && r.table_name !== 'roles');
+    // Referenzkataloge tragen einen sprechenden Schluessel: roles, und seit
+    // LOE-001a der Retention Schedule (Klasse und Tabellenname). Alles
+    // Fachliche bleibt uuid.
+    const katalogeMitTextschluessel = ['roles', 'retention_classes', 'retention_assignments'];
+    const abweichend = rows.filter(
+      (r) => r.data_type !== 'uuid' && !katalogeMitTextschluessel.includes(r.table_name),
+    );
     expect(abweichend).toEqual([]);
   });
 
