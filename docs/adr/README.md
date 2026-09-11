@@ -62,7 +62,7 @@ ADR-XXXX" am alten. Berührt einer der beiden Wege eine Prinzipienaussage, wird
 
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.6)
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.7)
 - `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist
 - `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
 - `docs/adr/` — was entschieden wurde und warum
@@ -93,4 +93,5 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen |
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen |
 | [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen, Fassung 2 (2026-09-08) |
+| [ADR-018](ADR-018-appointment-states.md) | Zustandsautomat des Termins | Angenommen (bestätigt 2026-09-11) |
 | [ADR-019](ADR-019-map-service.md) | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | **Vorgeschlagen, Fassung 2** — PTV Developer als Kandidat für Prototyp und Bewertung; produktive Freigabe am Vertrags-/§203-/DSFA-Gate |

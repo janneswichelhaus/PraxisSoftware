@@ -154,7 +154,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | entschieden (Jannes) 2026-09-08 | erledigt; Fristanker erneut bei LOE-001 |
 | ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
 | ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | entschieden (Jannes) 2026-09-08 | verbindlich mit ADR-018       |
+| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | entschieden (Jannes) 2026-09-11 | bleibt in Kraft; ADR-018 bestätigt sie, Wiedervorlage ABR-002 |
 | ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; Leistungskürzel bei ABR-002 |
 | ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden 2026-09-05 | Providerprüfung nach ADR-002 |
 | ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | entschieden (Jannes) 2026-09-08; **Zahl offen** | Jannes nach den ersten Praxiswochen |
@@ -361,7 +361,7 @@ lesbar; ob sie bereinigt werden müssen, entscheidet die Prüfung.
 |---|---|
 | Kategorie | Praxisprozess |
 | Herkunft | CAL-004 |
-| Status | offen, seit 2026-08-30 (rückwirkend erfasst 2026-09-03) |
+| Status | **entschieden (Jannes) 2026-09-11** — ADR-018 ist angenommen und bestätigt die Annahme ausdrücklich: der Abschluss verlangt keine Dokumentation, die Kopplung sitzt an der Rechnung. Erfasst 2026-08-30, rückwirkend registriert 2026-09-03. |
 | Wiedervorlage | ABR-002 (Leistungserfassung am abgeschlossenen Termin); DOK-003 hat die Kopplung geprüft und nicht eingeführt, siehe Nachtrag |
 
 **Annahme.** Ein Termin kann abgeschlossen werden, ohne dass eine
@@ -405,6 +405,17 @@ abgesagt, nicht angetroffen, durchgeführt, dokumentiert, abgerechnet;
 „abgeschlossen" wird — legt ADR-018 im Loop CAL-EPIC-003 fest. Bis dahin
 bleibt diese Annahme unverändert in Kraft; die Wiedervorlage wechselt von
 ABR-002 auf CAL-EPIC-003.
+
+**Nachtrag 2026-09-11 (ADR-018 angenommen).** Die Ausgestaltung ist
+entschieden, und sie bestätigt diese Annahme, statt sie abzulösen: Der
+Abschluss (`completed`) verlangt weiterhin keine Dokumentation. Neu ist der
+technische Anker für §19 — die Rechnung darf nur aus `documented` entstehen
+oder aus `no_show` mit Ausfallhonorar (ADR-018, Konsequenzen). Damit sitzt
+die Kopplung genau dort, wohin diese Annahme sie von Anfang an verwiesen hat:
+an der Leistung beziehungsweise Rechnung, nicht am Terminstatus. Die Annahme
+bleibt in Kraft; die Wiedervorlage wechselt zurück auf **ABR-002**, weil dort
+die Leistungserfassung entsteht, die sie berührt. Der Satz in der Begründung,
+der Automat sei offen, ist mit ADR-018 überholt.
 
 ### ANN-006 — Umfang und Protokollierung des Behandlungsnachweises in der Akte
 

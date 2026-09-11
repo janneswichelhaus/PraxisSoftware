@@ -7,7 +7,7 @@ Gesundheitsdaten. Früher Entwicklungsstand, kein Produktivbetrieb.
 
 Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 
-1. `PROJECT_PRINCIPLES.md` (aktuell v0.6) — übergeordnete Leitplanken
+1. `PROJECT_PRINCIPLES.md` (aktuell v0.7) — übergeordnete Leitplanken
 2. geltende ADRs in `docs/adr/` — konkretisieren die Leitplanken
 3. die konkrete Feature-Spezifikation — verbindlich für ihre Aufgabe
 4. `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen;
@@ -98,6 +98,8 @@ davon abhängt, vorher fertigstellen.
 | 014 | Datenmodell-Fundament: UUIDs, Zeitstempel, Geldwerte, Rollen, Trennung    |
 | 015 | Stack, Ordnerstruktur, Abgrenzungen (kein Next.js, kein Service Worker …) |
 | 016 | Dokumentation: Entwurf/Finalisierung, Versionierung, wer ändern darf      |
+| 018 | Terminzustände, Übergänge, Ausfallhonorar-Kennzeichen, Terminserie        |
+| 019 | Kartendienst, Navigations-Handoff, Fahrzeiten, Vertrags-/§203-Gate        |
 
 ## Repository
 
