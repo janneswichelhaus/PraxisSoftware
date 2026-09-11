@@ -25,11 +25,11 @@ durchführbar — dort greifen `pnpm test:db` und die Komponententests.
 Eine Datei je Etappe aus [`../development/ROADMAP.md`](../development/ROADMAP.md).
 Innerhalb einer Datei eine Überschrift je Loop, benannt nach dessen Kennung.
 
-| Datei                                                                  | Etappe                                      | Loops                                                       |
-| ---------------------------------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
-| [etappe-0-patienten-und-termine.md](etappe-0-patienten-und-termine.md) | vor der Roadmap gebaut                      | PAT-002, PAT-003, CAL-001 bis CAL-006, STAFF-001            |
-| [etappe-1-kernprozess.md](etappe-1-kernprozess.md)                     | Etappe 1 — Der Kernprozess wird vollständig | DOK-001 bis DOK-004, VER-001 bis VER-003, UX-001 bis UX-011 |
-| [etappe-g-betriebsreife.md](etappe-g-betriebsreife.md)                 | Etappe G — Betriebsreife (Spur A3)          | STAFF-002, STAFF-003, STAFF-004                             |
+| Datei                                                                  | Etappe                                      | Loops                                                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [etappe-0-patienten-und-termine.md](etappe-0-patienten-und-termine.md) | vor der Roadmap gebaut                      | PAT-002, PAT-003, CAL-001 bis CAL-006, STAFF-001                                        |
+| [etappe-1-kernprozess.md](etappe-1-kernprozess.md)                     | Etappe 1 — Der Kernprozess wird vollständig | DOK-001 bis DOK-004, PAT-005, VER-001 bis VER-003, UI-000, UX-001 bis UX-011, MARKE-001 |
+| [etappe-g-betriebsreife.md](etappe-g-betriebsreife.md)                 | Etappe G — Betriebsreife (Spur A3)          | STAFF-002, STAFF-003, STAFF-004                                                         |
 
 ## Für Loops
 

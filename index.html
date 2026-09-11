@@ -5,7 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Praxisplattform</title>
+
+    <!-- Marke Own Motion. Die Dateien unter /marke/ sind byte-gleiche Kopien
+         aus marke/app/ und marke/logo/ - marke/README.md bleibt die einzige
+         Quelle, src/marke.test.ts haelt die Gleichheit fest. Absolute Pfade
+         statt eines Imports: Browser und Betriebssysteme holen Symbole ueber
+         feste Adressen, ein gehashter Bundle-Name traegt das nicht. -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/marke/own-motion-favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="24x24" href="/marke/own-motion-favicon-24.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/marke/own-motion-favicon-16.png" />
+    <!-- Das quadratische Master, nicht die iOS-gerundete Fassung: iOS legt
+         seine eigene Maske darueber, ein vorgerundetes Symbol wird zweimal
+         beschnitten. -->
+    <link rel="apple-touch-icon" href="/marke/own-motion-app-1024.png" />
+
+    <title>Own Motion</title>
   </head>
   <body>
     <div id="root"></div>

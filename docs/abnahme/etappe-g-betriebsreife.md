@@ -32,7 +32,7 @@ noch versehentlich löscht.
 5. **Nichts verloren.** Abmelden, als `jannes.test@praxis.invalid` anmelden,
    denselben Datensatz öffnen: Das neue Diensttelefon steht da — und der
    Abschnitt „Privat" trägt unverändert Geburtsdatum, private E-Mail und
-   Adresse. Genau das wäre ohne ANN-022 gelöscht worden.
+   Adresse. Genau das wäre ohne ANN-024 gelöscht worden.
 6. **Therapie pflegt nicht.** Als `anna.beispiel@praxis.invalid` anmelden,
    Praxis → Team: Die Liste ist lesbar, „Mitarbeiter:in anlegen" fehlt, und auf
    einem Datensatz gibt es weder „Stammdaten bearbeiten" noch „Zugang". Dasselbe
@@ -62,7 +62,7 @@ Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
    Bezug auf den Mitarbeiterdatensatz — und die E-Mail-Adresse steht **nicht**
    darin.
 5. **Das Konto beim Anmeldedienst anlegen.** Das ist der manuelle Schritt aus
-   ANN-023: Die Praxisplattform legt bewusst keine Konten an, weil die
+   ANN-025: Die Praxisplattform legt bewusst keine Konten an, weil die
    Selbstregistrierung abgeschaltet ist. In Supabase Studio
    (<http://127.0.0.1:54323>) → Authentication → Users → „Add user" →
    „Send invitation" für `nina.neu@praxis.invalid`. Zur Gegenprobe vorher in

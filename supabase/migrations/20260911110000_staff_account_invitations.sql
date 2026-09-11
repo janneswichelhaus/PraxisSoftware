@@ -27,7 +27,7 @@
 --                            entsteht Zugriff.
 --
 -- Dass Schritt 2 ein Konto ohne jeden Zugriff erzeugt, ist die tragende
--- Sicherheitseigenschaft dieses Entwurfs (ANN-023): Ein Konto, zu dem keine
+-- Sicherheitseigenschaft dieses Entwurfs (ANN-025): Ein Konto, zu dem keine
 -- offene Einladung passt, bleibt dauerhaft leer. Die Berechtigung haengt
 -- ausschliesslich an der Einladung, die eine Praxisinhaberin gesetzt hat, nicht
 -- daran, wer sich anmelden konnte.
@@ -39,7 +39,7 @@
 -- widerrufen.
 --
 -- Datenklasse: Zugangs- und Authentifizierungsdatum, Frist 12 Monate nach
--- Abschluss der Einladung (ADR-008, ANN-024). Klinische Daten entstehen keine.
+-- Abschluss der Einladung (ADR-008, ANN-026). Klinische Daten entstehen keine.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -129,7 +129,7 @@ create table public.staff_account_invitations (
 );
 
 comment on table public.staff_account_invitations is
-  'Einladung eines Zugangs (STAFF-002b). Haelt die BERECHTIGUNG fest - Organisation, Mitarbeiterdatensatz, Rollen; das Konto selbst entsteht beim Provider. Datenklasse: Zugangsdatum, 12 Monate nach Abschluss (ADR-008, ANN-024).';
+  'Einladung eines Zugangs (STAFF-002b). Haelt die BERECHTIGUNG fest - Organisation, Mitarbeiterdatensatz, Rollen; das Konto selbst entsteht beim Provider. Datenklasse: Zugangsdatum, 12 Monate nach Abschluss (ADR-008, ANN-026).';
 comment on column public.staff_account_invitations.email is
   'Normalisiert klein und getrimmt. Einziger Anknuepfungspunkt zum spaeter entstehenden Konto.';
 comment on column public.staff_account_invitations.role_keys is
@@ -208,7 +208,7 @@ comment on function app.assert_staff_role_keys(text[]) is
 -- und aktiv ist, dass es noch keinen Zugang gibt, und dass die Adresse nicht
 -- bereits an einem anderen Zugang derselben Praxis haengt.
 --
--- Die Frist von 14 Tagen ist eine Annahme (ANN-024): lang genug fuer Urlaub
+-- Die Frist von 14 Tagen ist eine Annahme (ANN-026): lang genug fuer Urlaub
 -- und Krankheit, kurz genug, dass eine vergessene Einladung nicht dauerhaft
 -- offensteht. Sie wird nicht durch einen Job aufgeraeumt - eine abgelaufene
 -- Einladung wird bei der Annahme abgewiesen und in der Oberflaeche als
@@ -387,7 +387,7 @@ grant execute on function public.revoke_staff_invitation(uuid) to authenticated;
 --     vom Client mitgebracht; auth.users ist die Quelle, die der Provider
 --     pflegt.
 --   * Sie verlangt eine offene, nicht abgelaufene Einladung. Ohne sie
---     entsteht nichts - das Konto bleibt zugriffslos (ANN-023).
+--     entsteht nichts - das Konto bleibt zugriffslos (ANN-025).
 --   * Sie ist wiederholbar: ein Konto, das sein Profil schon hat, bekommt es
 --     zurueck, statt einen zweiten Vorgang auszuloesen. Ein Neuladen der
 --     Seite darf nicht zum Fehler fuehren.
@@ -489,7 +489,7 @@ end;
 $$;
 
 comment on function public.claim_staff_invitation() is
-  'Bindet das angemeldete Konto an Organisation, Person und Rollen einer offenen Einladung. Ohne passende Einladung entsteht nichts (STAFF-002b, ANN-023).';
+  'Bindet das angemeldete Konto an Organisation, Person und Rollen einer offenen Einladung. Ohne passende Einladung entsteht nichts (STAFF-002b, ANN-025).';
 
 revoke all on function public.claim_staff_invitation() from public, anon;
 grant execute on function public.claim_staff_invitation() to authenticated;

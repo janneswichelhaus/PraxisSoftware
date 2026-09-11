@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Wortmarke } from '@/components/ui/Wortmarke';
 import { getSupabase } from '@/lib/supabase';
 import { fordereKennwortMailAn } from '@/features/account/api';
 
@@ -129,8 +130,13 @@ export function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10">
       <div className="mb-8">
-        <p className="text-accent text-sm font-medium tracking-wide uppercase">Praxisplattform</p>
-        <h1 className="text-ink mt-2 text-2xl font-semibold tracking-[-0.01em]">Anmelden</h1>
+        {/* Die Anmeldemaske ist die Haustür — hier steht die Marke selbst, nicht
+            ihr Name als Text. 40 px liegen deutlich über der Mindestgröße von
+            24 px, und `mt-5` (20 px) hält den Schutzraum ein, den die
+            MOTION-Zeile bei dieser Höhe verlangt (14,4 px) — mit etwas Luft,
+            damit die Überschrift die Marke nicht optisch berührt. */}
+        <Wortmarke hoehe={40} />
+        <h1 className="text-ink mt-5 text-2xl font-semibold tracking-[-0.01em]">Anmelden</h1>
         <p className="text-ink-muted mt-2 text-sm">
           Zugang ausschließlich für Mitarbeitende und Patient:innen der Praxis.
         </p>

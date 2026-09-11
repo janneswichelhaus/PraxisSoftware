@@ -183,7 +183,7 @@ export function canManageStaffMasterData(roles: readonly RoleKey[]): boolean {
  * Deckungsgleich mit dem Leserecht aus 20: nur owner. Wer sie nicht lesen darf,
  * bekaeme sie im Formular als leere Felder und wuerde sie beim Speichern
  * loeschen - ein Schreibrecht ohne Leserecht waere hier nicht restriktiver,
- * sondern gefaehrlich (ANN-022). Verbindlich ist
+ * sondern gefaehrlich (ANN-024). Verbindlich ist
  * app.can_manage_staff_private_details().
  */
 export function canManageStaffPrivateDetails(roles: readonly RoleKey[]): boolean {

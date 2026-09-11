@@ -96,8 +96,40 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     },
   );
 
-  it.each([['accent'], ['danger']])('erreicht mit %s mindestens 4.5:1 als Textfarbe', (token) => {
-    expect(schlechtesterKontrast(token)).toBeGreaterThanOrEqual(4.5);
+  // accent-hover ist mitgeprueft, weil es nicht nur Knopfflaeche ist: rund ein
+  // Dutzend Stellen nutzen `text-accent hover:text-accent-hover`, der Wert
+  // steht dort also als Textfarbe auf canvas, surface und surface-sunken.
+  // Bis zur Marke war das ungeprueft.
+  it.each([['accent'], ['accent-hover'], ['danger']])(
+    'erreicht mit %s mindestens 4.5:1 als Textfarbe',
+    (token) => {
+      expect(schlechtesterKontrast(token)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  // Weisser Text auf der Akzentflaeche - die primaere Schaltflaeche
+  // (`bg-accent text-white`, buttonStile.ts) und ihr Hover-Zustand.
+  it.each([['accent'], ['accent-hover']])('traegt weissen Text auf %s mit 4.5:1', (token) => {
+    expect(kontrastverhaeltnis(tokens[token]!, { L: 1, C: 0, H: 0 })).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // Der Hover-Zustand muss sichtbar sein, sonst zeigt er nichts an. Gemessen
+  // als Helligkeitsabstand in Oklch, wo 1 % ungefaehr einem wahrnehmbaren
+  // Schritt entspricht. Die Palette vor der Marke lag bei 6 Punkten
+  // (48 % -> 42 %); weniger soll es nicht werden. Die Richtung ist bewusst
+  // offen - geprueft wird der Abstand, nicht ob heller oder dunkler.
+  it('setzt accent-hover deutlich genug von accent ab', () => {
+    const abstand = Math.abs(tokens.accent!.L - tokens['accent-hover']!.L);
+    expect(abstand).toBeGreaterThanOrEqual(0.06);
+  });
+
+  // Akzent und Positiv liegen im Farbton nur wenige Grad auseinander, seit der
+  // Akzent gruen ist. Als Abzeichenflaechen stehen sie nebeneinander
+  // (Badge.tsx: `akzent` und `positiv`) und muessen unterscheidbar bleiben.
+  // Die Bedeutung haengt nie an der Farbe allein (WCAG 1.4.1, Zeile unten),
+  // aber verwechselbare Flaechen sind trotzdem schlechte Gestaltung.
+  it('haelt accent-soft ruhiger als positiv-soft', () => {
+    expect(tokens['accent-soft']!.C).toBeLessThan(tokens['positiv-soft']!.C);
   });
 
   // 3:1 nach WCAG 1.4.11 fuer die Begrenzung von Bedienelementen.

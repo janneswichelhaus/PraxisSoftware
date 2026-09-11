@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Wortmarke } from '@/components/ui/Wortmarke';
 import { KeineEinladungError, nimmZugangAn } from './konto-api';
 
 /**
@@ -16,7 +17,7 @@ import { KeineEinladungError, nimmZugangAn } from './konto-api';
  * Gesundheitsdaten bei. Das soll eine bewusste Handlung sein und im Auditlog
  * als solche stehen (ADR-010).
  *
- * Liegt keine Einladung vor, bleibt das Konto zugriffslos (ANN-023). Die
+ * Liegt keine Einladung vor, bleibt das Konto zugriffslos (ANN-025). Die
  * Meldung dazu nennt keinen Grund, der Auskunft über die Praxis gäbe: Sie
  * unterscheidet nicht zwischen „nie eingeladen", „abgelaufen" und
  * „zurückgenommen".
@@ -37,7 +38,10 @@ export function ZugangEinrichtenPage({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-10">
-      <h1 className="text-ink text-2xl font-semibold tracking-[-0.01em]">Zugang einrichten</h1>
+      {/* Vollseite ausserhalb des Anwendungsrahmens, gesehen direkt nach der
+          Anmeldung - sie traegt die Marke wie die Anmeldemaske (MARKE-001). */}
+      <Wortmarke hoehe={40} />
+      <h1 className="text-ink mt-5 text-2xl font-semibold tracking-[-0.01em]">Zugang einrichten</h1>
 
       {ohneEinladung ? (
         <div className="mt-6">

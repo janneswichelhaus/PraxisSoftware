@@ -30,7 +30,7 @@
 -- als moegliches Zusatzrecht, 16 sagt im Zweifel restriktiver, und spaeter
 -- oeffnen ist billig.
 --
--- ABGRENZUNG PRIVATDATEN (ANN-022). E10 nennt bei den Stammdaten "Anschrift"
+-- ABGRENZUNG PRIVATDATEN (ANN-024). E10 nennt bei den Stammdaten "Anschrift"
 -- und "Telefon". Die privaten Angaben einer beschaeftigten Person liegen seit
 -- 20260828110000 in staff_private_details und sind nach 20 ausschliesslich fuer
 -- owner und die betroffene Person selbst lesbar. Office darf sie deshalb auch
@@ -70,7 +70,7 @@ as $$
 $$;
 
 comment on function app.can_manage_staff_private_details() is
-  'Wer die Privatangaben einer beschaeftigten Person schreiben darf: nur owner - deckungsgleich mit dem Leserecht (PROJECT_PRINCIPLES.md 20, ANN-022).';
+  'Wer die Privatangaben einer beschaeftigten Person schreiben darf: nur owner - deckungsgleich mit dem Leserecht (PROJECT_PRINCIPLES.md 20, ANN-024).';
 
 create or replace function app.can_manage_staff_employment()
 returns boolean
@@ -247,7 +247,7 @@ comment on function public.create_staff_member(text, text, text, text, uuid, dat
 -- verwalten darf, laesst sie unangetastet: seine Parameter MUESSEN null sein,
 -- und die gespeicherten Werte bleiben stehen. Genau das ist der Unterschied
 -- zum Anlegen - ein Formular ohne Privatfelder wuerde sie sonst beim Speichern
--- leeren, obwohl die Rolle sie nie zu Gesicht bekommen hat (ANN-022).
+-- leeren, obwohl die Rolle sie nie zu Gesicht bekommen hat (ANN-024).
 -- -----------------------------------------------------------------------------
 create or replace function public.update_staff_member(
   p_staff_member_id     uuid,

@@ -9,7 +9,7 @@ import { roleKeySchema, userProfileSchema, type CurrentUser, type RoleKey } from
  * Der Normalfall dahinter ist eine eingeladene Person beim ersten Anmelden: Das
  * Konto entsteht beim Provider, die Zuordnung erst mit der Annahme der
  * Einladung (STAFF-002b). Der andere Fall ist ein Konto ohne Einladung - es
- * bleibt zugriffslos (ANN-023). Die Anwendung kann beide erst unterscheiden,
+ * bleibt zugriffslos (ANN-025). Die Anwendung kann beide erst unterscheiden,
  * nachdem sie die Annahme versucht hat.
  */
 export class KeinProfilError extends Error {

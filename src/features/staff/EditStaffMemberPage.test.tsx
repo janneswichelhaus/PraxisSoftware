@@ -113,7 +113,7 @@ describe('EditStaffMemberPage', () => {
 // ---------------------------------------------------------------------------
 // E10: das Office pflegt Stammdaten, sieht die Privatangaben aber nicht
 // ---------------------------------------------------------------------------
-describe('EditStaffMemberPage fuer office (E10, ANN-022)', () => {
+describe('EditStaffMemberPage fuer office (E10, ANN-024)', () => {
   beforeEach(() => {
     fetchStaffMember.mockReset();
     updateStaffMember.mockReset();

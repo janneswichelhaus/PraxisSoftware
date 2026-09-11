@@ -19,7 +19,7 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
  * Für eine Rolle ohne diesen Zugriff - seit E10 kann das Office Stammdaten
  * pflegen - entfällt der Abschnitt vollständig. Er wird nicht mit leeren
  * Feldern gezeigt: die Werte kommen gar nicht erst an, und ein Speichern
- * dürfte sie nicht löschen (ANN-022, PROJECT_PRINCIPLES.md 4.7).
+ * dürfte sie nicht löschen (ANN-024, PROJECT_PRINCIPLES.md 4.7).
  */
 export function StaffMasterDataFields({
   werte,

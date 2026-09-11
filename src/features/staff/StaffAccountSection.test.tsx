@@ -350,7 +350,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Zustellung der Anmeldemail (ANN-023)
+// Zustellung der Anmeldemail (ANN-025)
 //
 // Die Anwendung legt keine Authentifizierungskonten an - enable_signup ist
 // bewusst aus (§4.2). Bei einer ersten Einladung gibt es also noch kein Konto,

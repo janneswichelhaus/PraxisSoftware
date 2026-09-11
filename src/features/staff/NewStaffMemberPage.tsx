@@ -21,7 +21,7 @@ import { StaffMasterDataFields } from './StaffMasterDataFields';
  * Zugang wird anschließend am Datensatz eingeladen (STAFF-002b).
  *
  * Die Privatangaben erscheinen nur für Rollen, die sie auch lesen dürfen
- * (ANN-022).
+ * (ANN-024).
  */
 export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
   const privat = canManageStaffPrivateDetails(user.roles);

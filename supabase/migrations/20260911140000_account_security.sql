@@ -109,7 +109,7 @@ alter table public.audit_log add constraint audit_log_subject_type_check
 --
 -- Die Funktion PRUEFT heute nichts ab - keine Policy und keine RPC verlangt
 -- aal2. Sie ist der eine Ausdruck, an dem eine spaetere Durchsetzung haengen
--- wuerde, und macht den Zustand fuer die Oberflaeche lesbar (ANN-026). Das ist
+-- wuerde, und macht den Zustand fuer die Oberflaeche lesbar (ANN-028). Das ist
 -- kein Vorbauen im Sinne von ADR-014: Ohne sie liesse sich der Hinweis "Ihr
 -- Zugang hat noch keinen zweiten Faktor" nur aus dem Browser-Token ableiten,
 -- und damit haette die verbindliche Seite gar keinen Ort.
@@ -124,7 +124,7 @@ as $$
 $$;
 
 comment on function app.has_strong_authentication() is
-  'Hat sich das Konto mit zweitem Faktor angemeldet (JWT-Claim aal)? Heute nur lesbar, nicht durchgesetzt (STAFF-004b, ANN-026).';
+  'Hat sich das Konto mit zweitem Faktor angemeldet (JWT-Claim aal)? Heute nur lesbar, nicht durchgesetzt (STAFF-004b, ANN-028).';
 
 grant execute on function app.has_strong_authentication() to authenticated;
 

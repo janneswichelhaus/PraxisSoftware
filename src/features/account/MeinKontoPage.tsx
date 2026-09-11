@@ -99,7 +99,7 @@ function KennwortAendern() {
  * Zweiter Faktor (STAFF-004b).
  *
  * Für `owner` ist er nach ADR-010 Punkt 10 Pflicht bei privilegiertem Zugriff.
- * Diese Anwendung **erzwingt ihn heute nicht beim Anmelden** (ANN-026): Ein
+ * Diese Anwendung **erzwingt ihn heute nicht beim Anmelden** (ANN-028): Ein
  * Zwang, bevor irgendjemand einen Faktor eingerichtet hat, würde die einzige
  * Praxisinhaberin aussperren, und ein Weg zurück wäre genau der privilegierte
  * Produktionszugriff, den ADR-010 Punkt 9 ausschließt. Stattdessen steht hier

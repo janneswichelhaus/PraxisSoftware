@@ -243,7 +243,7 @@ describe('Mitarbeiterverwaltung: wer darf schreiben', () => {
     expect((await satz(STAFF.anna)).work_phone).toBe('+49 7071 0000999');
   });
 
-  it('laesst office die Privatangaben unangetastet, statt sie zu leeren (ANN-022)', async () => {
+  it('laesst office die Privatangaben unangetastet, statt sie zu leeren (ANN-024)', async () => {
     // Das Formular des Office enthaelt die Privatfelder gar nicht; es schickt
     // fuer sie null. Wuerde der Server das als "leeren" lesen, verloere jede
     // Adressaenderung durch das Office die Privatanschrift.
@@ -262,7 +262,7 @@ describe('Mitarbeiterverwaltung: wer darf schreiben', () => {
     expect(nachher.geburtstag).toBe(vorher.geburtstag);
   });
 
-  it('weist office ab, wenn es Privatangaben doch mitschickt (ANN-022)', async () => {
+  it('weist office ab, wenn es Privatangaben doch mitschickt (ANN-024)', async () => {
     await expect(
       asUser(
         users.office,

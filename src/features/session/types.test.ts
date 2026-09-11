@@ -98,7 +98,7 @@ describe('canManageStaffMasterData', () => {
 });
 
 describe('canManageStaffPrivateDetails', () => {
-  it('bleibt bei owner - deckungsgleich mit dem Leserecht (ANN-022)', () => {
+  it('bleibt bei owner - deckungsgleich mit dem Leserecht (ANN-024)', () => {
     expect(canManageStaffPrivateDetails(['owner'])).toBe(true);
   });
 

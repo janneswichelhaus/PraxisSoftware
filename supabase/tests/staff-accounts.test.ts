@@ -14,7 +14,7 @@ import {
  * Geprüft wird die tragende Zusage des Entwurfs: Die Berechtigung hängt
  * ausschließlich an der Einladung, die eine Praxisinhaberin gesetzt hat - nicht
  * daran, wer sich beim Provider anmelden konnte. Ein Konto ohne passende
- * offene Einladung bleibt dauerhaft zugriffslos (ANN-023).
+ * offene Einladung bleibt dauerhaft zugriffslos (ANN-025).
  */
 const { users, organizationId } = SEED;
 
@@ -305,7 +305,7 @@ describe('claim_staff_invitation', () => {
     await resetDatabaseOhneTermine();
   }, 120_000);
 
-  it('laesst ein Konto ohne passende Einladung vollstaendig zugriffslos (ANN-023)', async () => {
+  it('laesst ein Konto ohne passende Einladung vollstaendig zugriffslos (ANN-025)', async () => {
     await kontoAnlegen();
 
     await expect(asUser(NEUES_KONTO, ANNEHMEN)).rejects.toThrow(/no_open_invitation/);
@@ -864,7 +864,7 @@ describe('app.has_strong_authentication', () => {
   });
 
   it('setzt heute nichts durch - keine Policy und keine RPC verlangt aal2', async () => {
-    // Das ist Absicht (ANN-026): Ein Zwang vor der ersten Einrichtung wuerde
+    // Das ist Absicht (ANN-028): Ein Zwang vor der ersten Einrichtung wuerde
     // die einzige Praxisinhaberin aussperren. Der Test haelt den Stand fest,
     // damit eine spaetere Durchsetzung eine bewusste Aenderung ist.
     const { rows } = await asPostgres<{ anzahl: string }>(

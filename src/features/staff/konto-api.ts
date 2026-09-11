@@ -26,7 +26,7 @@ import { roleKeySchema, type RoleKey } from '@/features/session/types';
  * Anmeldedienstes**, und Schritt 1 legt nur die Berechtigung an. Das ist die
  * restriktivere Seite und kostet einen manuellen Handgriff je neuem Zugang —
  * bis OPS-001 die Auth-Mails einschließt und eine Edge Function den Versand
- * übernehmen kann (ANN-023).
+ * übernehmen kann (ANN-025).
  */
 const invitationSchema = z.object({
   id: z.string(),
@@ -124,7 +124,7 @@ export type Zustellung = 'gesendet' | 'kein_konto';
  * `shouldCreateUser: false` ist die entscheidende Zeile. `supabase/config.toml`
  * setzt `[auth].enable_signup = false` — keine Selbstregistrierung, verankert
  * in §4.2. Diese Anwendung legt deshalb **keine Authentifizierungskonten an**;
- * sie verwaltet ausschließlich die Berechtigung (ANN-023).
+ * sie verwaltet ausschließlich die Berechtigung (ANN-025).
  *
  * Daraus folgt: Bei einer ersten Einladung gibt es noch kein Konto, und der
  * Aufruf kommt mit `kein_konto` zurück. Das ist kein Fehler und entwertet die

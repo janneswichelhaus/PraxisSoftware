@@ -105,10 +105,19 @@ davon abhängt, vorher fertigstellen.
 src/app  src/components  src/features  src/lib  src/routes
 supabase/migrations  supabase/tests  supabase/seed.sql
 tests/e2e  scripts  docs/adr  docs/decisions  docs/development  docs/product  docs/abnahme
+marke/logo  marke/app
 ```
 
 Feature-Code liegt fachlich unter `src/features/<domäne>/`. Modularer Monolith
 nach ADR-015 — keine Microservices, keine Clean-Architecture-Schichten.
+
+`marke/` enthält Wortmarke, App-Symbole und die Regeln ihrer Verwendung
+(`marke/README.md`, festgelegt 2026-09-10). Es ist die **einzige Quelle** dafür.
+Die Anwendung trägt die Marke seit MARKE-001: Wortmarke in Kopfzeile und
+Anmeldemaske, Favicon, Akzentfarbe. Ausgeliefert wird über byte-gleiche Kopien
+in `public/marke/`; `src/marke.test.ts` hält die Gleichheit fest. Wer ein Logo
+braucht, nimmt eine Datei von dort — keine zweite Fassung an anderer Stelle,
+kein Umfärben.
 
 ## Befehle
 

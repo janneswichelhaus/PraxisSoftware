@@ -12,6 +12,7 @@ import { ZugangEinrichtenPage } from '@/features/staff/ZugangEinrichtenPage';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Wortmarke } from '@/components/ui/Wortmarke';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,7 +50,7 @@ function AuthenticatedApp() {
    * Angemeldet, aber keiner Praxis zugeordnet - der Normalfall direkt nach der
    * Anmeldung über eine Einladungsmail (STAFF-002b). Die Seite bietet an, die
    * Einladung anzunehmen; ohne Einladung bleibt das Konto zugriffslos
-   * (ANN-023).
+   * (ANN-025).
    */
   if (error instanceof KeinProfilError) {
     return (
@@ -70,6 +71,9 @@ function AuthenticatedApp() {
   if (error instanceof ZugangGesperrtError) {
     return (
       <main className="mx-auto max-w-sm px-5 py-16">
+        {/* Dieselbe Begruendung wie beim Fehlerkasten unten: eine Vollseite
+            ausserhalb des Anwendungsrahmens traegt die Marke (MARKE-001). */}
+        <Wortmarke hoehe={40} className="mb-6" />
         <ErrorState
           title="Dieser Zugang ist gesperrt."
           description="Bitte wenden Sie sich an die Praxisleitung. Ihre bisherige Arbeit bleibt unverändert erhalten."
@@ -87,6 +91,12 @@ function AuthenticatedApp() {
   if (isError || !user) {
     return (
       <main className="mx-auto max-w-sm px-5 py-16">
+        {/* Die einzige Vollseite außerhalb des Anwendungsrahmens neben der
+            Anmeldemaske - und die einzige, die jemand nach erfolgreicher
+            Anmeldung zu sehen bekommt. Ohne die Marke stünde hier ein nackter
+            Fehlerkasten ohne Absender; 40 px und der Abstand darunter folgen
+            der Anmeldemaske (MARKE-001, marke/README.md). */}
+        <Wortmarke hoehe={40} className="mb-6" />
         <ErrorState
           title="Zugang nicht vollständig eingerichtet"
           description={error?.message ?? 'Bitte wenden Sie sich an die Praxisleitung.'}

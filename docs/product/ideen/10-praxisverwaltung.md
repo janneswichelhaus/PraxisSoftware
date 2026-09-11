@@ -752,7 +752,127 @@ Bis eine Entscheidung vorliegt: nicht bauen.
 
 ---
 
-Zuletzt aktualisiert: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
+### IDEA-PRX-034 — Entwurf „Own Motion · Praxis": der Tagesplan als Startseite
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-11 (Design-Kanvas „Own Motion · Praxis", als Anhang geteilt) |
+| Berührt | UX-EPIC-001 (gebaut), MARKE-001, `IDEA-PRX-017`, `-029`, `-032`; ADR-019 |
+
+**Idee.** Ein gestalteter Entwurf der Tagesansicht: links eine dunkelgrüne
+Leiste mit der Marke und vier Punkten (Tagesplan, Patient:innen, Rechnungen,
+Einstellungen) samt Tagesbilanz am Fuß; in der Mitte die Termine als Karten
+mit Uhrzeit, Dauer, Anschrift und zwei Aktionen („Absagen",
+„Behandlung starten"), zwischen den Karten die Radstrecke zum nächsten Stopp;
+rechts die Tageskarte mit Route und eine Merkliste. Kopfzeile: Datum,
+„4 Termine · 11 km · Start 8:45 zu Hause", „Route öffnen" und „+ Termin".
+
+**Warum.** Der Entwurf zeigt, wie Jannes sich den Hausbesuchstag vorstellt,
+wenn Karte und Fahrzeiten da sind. Er deckt sich in den tragenden Teilen mit
+dem, was UX-EPIC-001 gebaut hat — Tagesliste mit Anschrift, Abschluss in einem
+Schritt, Folgetermin —, und er zeigt an drei Stellen darüber hinaus (siehe
+`IDEA-PRX-035` bis `-037`).
+
+**Vorsicht.** Zwei Abweichungen sind keine Gestaltungsfragen. Erstens zeigt der
+Entwurf zu jedem Termin die **Indikation** — dazu `IDEA-PRX-036`. Zweitens
+setzt er Karte und Fahrzeiten als vorhanden voraus; beides hängt am Gate aus
+ADR-019 Punkt 9 und kommt frühestens mit MAP-002 bis MAP-006. Die
+Navigationsleiste des Entwurfs kennt vier Bereiche, die Anwendung sechs — der
+Entwurf ist keine Vorgabe für die Informationsarchitektur.
+
+**Die Kanvas-Datei liegt nicht im Repository.** Sie zeigt vier Personen mit
+vollständiger Anschrift und Indikation. Ob die Namen erfunden sind, lässt sich
+von außen nicht feststellen, und §3.1 erlaubt ausschließlich synthetische
+Daten — wo Zweifel bleiben, entscheidet §16 für die datensparsamere Seite.
+Dieselbe Linie gilt seit dem 2026-09-01 für den Referenz-Screenshot in
+[referenz-navigation.md](referenz-navigation.md). Bestätigt Jannes, dass die
+vier Namen erfunden sind, kann die Datei nachgelegt werden; der Entwurf ist
+hier so beschrieben, dass das inhaltlich nichts nachträgt.
+
+**Offen.** Ob die Tagesansicht diese Gestalt bekommen soll, entscheidet eine
+Ablaufrunde oder ein eigenes Epic — nicht dieser Eintrag.
+
+---
+
+### IDEA-PRX-035 — „Mitnehmen": Materialliste aus den letzten Befunden
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-11 (Kanvas „Own Motion · Praxis") |
+| Berührt | DOK-EPIC, ADR-006, §4.6 |
+
+**Idee.** Eine kurze Liste am Tagesplan: was heute ins Lastenrad gehört —
+ein Theraband, Kinesiotape, ein ausgedruckter Übungsplan, jeweils mit der
+Person dahinter. Überschrift im Entwurf: „Aus den letzten Befunden".
+
+**Warum.** Das ist der Zettel, den eine Hausbesuchspraxis heute an den
+Kühlschrank klebt. Wer ohne das Material vor der Tür steht, fährt zweimal.
+
+**Vorsicht.** „Aus den letzten Befunden" ist die heikle Stelle: Automatisch aus
+Dokumentationstext abgeleitete Materialvorschläge wären eine Auswertung
+klinischer Inhalte und fielen unter ADR-006 (auswählen und anordnen, nicht
+interpretieren). Eine von Hand geführte Liste je Termin ist das nicht.
+
+**Offen.** Von Hand gepflegt oder abgeleitet? Am Termin, an der Person oder am
+Tag? Ohne diese Entscheidung ist nichts spezifizierbar.
+
+---
+
+### IDEA-PRX-036 — Indikation in der Tagesliste
+
+| | |
+|---|---|
+| Status | notiert · Bedenken |
+| Quelle | Jannes, 2026-09-11 (Kanvas „Own Motion · Praxis") |
+| Berührt | §4.3, §4.6; ADR-004; `IDEA-PRX-016`; `list_day_plan` (UX-001) |
+
+**Idee.** Der Entwurf nennt zu jedem Termin die Indikation — Diagnose und
+Verlaufswoche — direkt in der Liste, ohne Aufklappen.
+
+**Warum.** Auf dem Rad zwischen zwei Terminen ist die Vorbereitungszeit die
+Fahrtzeit. Wer weiß, was ansteht, kommt vorbereitet an.
+
+**Bedenken.** `list_day_plan` liefert bewusst **keinen** klinischen Inhalt:
+§4.3 und §4.6 halten klinische Angaben aus organisatorischen Ansichten heraus,
+und die Tagesliste ist eine. Ständig sichtbar ist etwas anderes als auf
+Anforderung sichtbar — eine offene Liste auf dem Telefon liest jede Person
+mit, die daneben steht. `IDEA-PRX-016` löst dasselbe Bedürfnis bereits anders:
+aufklappbar und auditiert. Wenn überhaupt, dann so.
+
+**Offen.** Eine Datenschutzentscheidung, keine Gestaltungsfrage. Sie gehört in
+[../../decisions/OPEN_DECISIONS.md](../../decisions/OPEN_DECISIONS.md), bevor
+sie irgendwo spezifiziert wird.
+
+---
+
+### IDEA-PRX-037 — Abrechnungslage am Termin
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-11 (Kanvas „Own Motion · Praxis") |
+| Berührt | ADR-009; ABR-EPIC; `IDEA-PRX-010`, `-012` |
+
+**Idee.** Am Termin zwei Abzeichen: die Kostenträgerart (Beihilfe,
+Selbstzahler, Privat) und ein Warnhinweis, wenn für diese Person eine Rechnung
+offen ist.
+
+**Warum.** Beides entscheidet, was am Termin zu tun ist — ob abkassiert wird
+und ob ein offener Betrag anzusprechen ist. Heute stünde es in der Akte, nicht
+am Termin.
+
+**Vorsicht.** „Rechnung offen" am Termin ist eine Zahlungsinformation in einer
+Ansicht, die auch eine Vertretung sieht. Rollenschnitt und Sichtbarkeit gehören
+geklärt, bevor das gebaut wird (ADR-004).
+
+**Offen.** Ab wann gilt eine Rechnung als „offen" — nach Fälligkeit oder ab
+Versand? Das ist eine Frage an ADR-009, nicht an die Oberfläche.
+
+---
+
+Zuletzt aktualisiert: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt aus Datenschutzgründen nicht im Repository, siehe `IDEA-PRX-034`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
 Terminfenster steht als §8.1 in den Prinzipien, der Fahrpuffer-Mechanismus als
 E12 in den offenen Entscheidungen). Vorherige Aktualisierung: 2026-09-06
 (Entscheidungen E-9, E-12, E-13; Tagesroute `IDEA-PRX-029` bis `-033`)

@@ -28,7 +28,7 @@ import { StaffMasterDataFields } from './StaffMasterDataFields';
  * Office Stammdaten - kämen diese Felder leer an, und ein Speichern würde sie
  * löschen. Deshalb entfällt der Abschnitt für sie vollständig, und die RPC
  * bekommt für ihn `null`: der Server lässt die gespeicherten Werte dann stehen
- * (ANN-022). Verbindlich prüft in jedem Fall der Server.
+ * (ANN-024). Verbindlich prüft in jedem Fall der Server.
  */
 function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean }) {
   const [werte, setWerte] = useState<Record<StaffFeld, string>>(() => staffToFormValues(staff));

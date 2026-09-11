@@ -256,7 +256,7 @@ test.describe('STAFF-001: Durchsetzung am Server', () => {
     expect(sperren.status(), 'office darf keinen Zugang sperren').toBe(403);
   });
 
-  test('haelt die Privatangaben fuer office auch beim Schreiben geschlossen (ANN-022)', async ({
+  test('haelt die Privatangaben fuer office auch beim Schreiben geschlossen (ANN-024)', async ({
     page,
     request,
   }) => {

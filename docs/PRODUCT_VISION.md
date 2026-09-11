@@ -43,6 +43,9 @@ Eine zentrale Softwareplattform für eine privat abrechnende
 Physiotherapiepraxis mit starkem Hausbesuchs- und Mobile-Fokus.
 
 Das Produkt wird zunächst **ausschließlich für die eigene Praxis** entwickelt.
+Sie heißt seit dem 2026-09-10 **Own Motion** — „Physiotherapie per Lastenrad",
+Tübingen. Marke, Farben und die Regeln ihrer Verwendung stehen in
+`../marke/README.md`; die Anwendung selbst ist noch nicht umgebrandet.
 
 Eine spätere Erweiterung auf mehrere Standorte, mehrere Organisationen oder
 andere Praxen soll architektonisch nicht unnötig verbaut werden. Daraus

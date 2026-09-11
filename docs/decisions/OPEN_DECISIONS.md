@@ -142,7 +142,7 @@ Feature.
 | E7    | CI-Gates, Branch Protection                                  | entschieden 2026-08-28                                        | [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md); Freigabeprozess Roadmap G5                         |
 | E8    | Dateiablage                                                  | **in Arbeit: ADR-017**, beauftragt 2026-09-05                 | Roadmap G1, Sep 2026                                                                                          |
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
-| E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-022)          |
+| E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024)          |
 | E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | unten                                                                                    |
 | E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1); vier Anschlussfragen **offen**    | unten; `PROJECT_PRINCIPLES.md` §8.1; vor CAL-010a/CAL-010b (Roadmap CAL-EPIC-003b)                  |
 | E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
@@ -988,7 +988,7 @@ nicht `vorläufig entschieden`.
 §21 nachgezogen (Version 0.6). **Eine Abgrenzung war zu treffen:** „Anschrift"
 und „Telefon" sind als **dienstliche** Angaben umgesetzt; die Privatangaben
 nach §20 bleiben bei `owner`, weil ein Schreibrecht ohne Leserecht die
-gespeicherten Werte beim Speichern gelöscht hätte (ANN-022, von Jannes zu
+gespeicherten Werte beim Speichern gelöscht hätte (ANN-024, von Jannes zu
 bestätigen).
 
 **Rücknahme:** `klein` — je Bereich eine Policy-Funktion.

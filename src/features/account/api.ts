@@ -26,7 +26,7 @@ async function melde(ereignis: Sicherheitsereignis): Promise<void> {
 }
 
 /**
- * Mindestlänge des Kennworts in Zeichen (ANN-025).
+ * Mindestlänge des Kennworts in Zeichen (ANN-027).
  *
  * Länge statt Zeichenklassen: Das BSI und das NIST empfehlen seit Jahren
  * Passphrasen und raten von erzwungener Komplexität und regelmäßigem Wechsel
