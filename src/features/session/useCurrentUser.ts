@@ -3,6 +3,23 @@ import { getSupabase } from '@/lib/supabase';
 import { roleKeySchema, userProfileSchema, type CurrentUser, type RoleKey } from './types';
 
 /**
+ * Das angemeldete Konto existiert beim Anmeldedienst, ist aber keiner Praxis
+ * zugeordnet.
+ *
+ * Der Normalfall dahinter ist eine eingeladene Person beim ersten Anmelden: Das
+ * Konto entsteht beim Provider, die Zuordnung erst mit der Annahme der
+ * Einladung (STAFF-002b). Der andere Fall ist ein Konto ohne Einladung - es
+ * bleibt zugriffslos (ANN-023). Die Anwendung kann beide erst unterscheiden,
+ * nachdem sie die Annahme versucht hat.
+ */
+export class KeinProfilError extends Error {
+  constructor() {
+    super('Für diesen Zugang ist kein Praxisprofil hinterlegt.');
+    this.name = 'KeinProfilError';
+  }
+}
+
+/**
  * Lädt Profil und Rollen des angemeldeten Accounts.
  *
  * Die Rollen steuern ausschließlich die Darstellung. Die verbindliche
@@ -24,7 +41,7 @@ export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
   if (profileResult.error) throw new Error('Profil konnte nicht geladen werden.');
   if (rolesResult.error) throw new Error('Berechtigungen konnten nicht geladen werden.');
   if (!profileResult.data) {
-    throw new Error('Für diesen Zugang ist kein Praxisprofil hinterlegt.');
+    throw new KeinProfilError();
   }
 
   const profile = userProfileSchema.parse(profileResult.data);

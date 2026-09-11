@@ -1281,3 +1281,95 @@ Formular anpassen — Aufwand `klein`, aber mit Änderung an §20, also erst nac
 ausdrücklicher Entscheidung. Umgekehrt (Office verliert auch die dienstlichen
 Angaben): `app.can_manage_staff_master_data()` auf `owner` zurück — Aufwand
 `klein`.
+
+---
+
+### ANN-023 — Einladungsweg: Auth-Mail des Providers statt Admin-API
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-002b; B13 (entschieden 2026-09-06); ADR-002; `PROJECT_PRINCIPLES.md` §3.4, §13 |
+| Status | **offen**, getroffen 2026-09-11 |
+| Wiedervorlage | OPS-001 (Providerprüfung, Auth-Mails) — dort wird der Weg entweder bestätigt oder auf die Admin-API umgestellt; Datenschutzprüfung |
+
+**Annahme.** Die Einladungsmail geht über den **Anmeldedienst des geprüften
+Providers**, ausgelöst aus dem Browser (`signInWithOtp` mit
+`shouldCreateUser: true`). Nicht über dessen Admin-API und nicht über einen
+eigenen Mailversand. Daraus folgt bewusst: **Über diesen Weg kann ein
+Authentifizierungskonto entstehen, ohne dass jemand eingeladen hat.** Das ist
+hingenommen, weil ein solches Konto **vollständig zugriffslos** ist: Ohne Zeile
+in `user_profiles` liefert `app.current_organization_id()` `null`, und jede
+Policy läuft ins Leere. Die Berechtigung hängt ausschließlich an der Einladung,
+die eine Praxisinhaberin gesetzt hat — nicht daran, wer sich anmelden konnte.
+
+**Begründung.** Die Admin-API (`inviteUserByEmail`) wäre der saubere Weg, aber
+sie verlangt den `service_role`-Schlüssel. Der gehört nicht in den Browser
+(ADR-002, §13) und bräuchte eine serverseitige Funktion — die es noch nicht gibt
+und die in der Cloud-Entwicklungsumgebung nicht verifizierbar wäre (kein
+GoTrue, `supabase start` blockiert). Ein eigener Maildienst wäre ein zweiter
+Dienstleister und ist durch B13 ausgeschlossen. §3.4 verbietet zudem, Identität
+selbst zu bauen. Bleibt die Auth-Mail des Providers. Das Restrisiko ist
+**Kontenaufkommen**, nicht Zugriff: Fremde könnten leere Konten und
+Mailzustellungen auslösen. Dagegen greifen die Rate Limits des Providers; eine
+Obergrenze und die Abschaltung der Selbstregistrierung sind Teil von OPS-001.
+**Unsicher:** ob der Provider die Selbstregistrierung abschalten lässt, ohne
+`signInWithOtp` mitzunehmen. Falls nicht, ist der Änderungspfad unten zu gehen.
+
+**Verankerung.** `sendeZugangsMail` in `src/features/staff/konto-api.ts` — die
+eine Stelle, die den Versand auslöst; der Kopfkommentar trägt die Kennung. Die
+tragende Eigenschaft dahinter ist
+`supabase/migrations/20260911110000_staff_account_invitations.sql`
+(`claim_staff_invitation`). Tests:
+`supabase/tests/staff-accounts.test.ts`, „laesst ein Konto ohne passende
+Einladung vollstaendig zugriffslos".
+
+**Änderungspfad.** Umstellung auf die Admin-API: eine Edge Function mit dem
+`service_role`-Schlüssel als Secret, aufgerufen aus `sendeZugangsMail`;
+Datenmodell, Rollen und Annahme bleiben unverändert — Aufwand `mittel`, und
+erst sinnvoll, wenn eine serverseitige Funktion ohnehin entsteht (ADR-019 sieht
+mit `location-provider` eine vor).
+
+---
+
+### ANN-024 — Datenklasse und Frist der Einladung
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | STAFF-002b; ADR-008 (Retention Schedule), ADR-010 |
+| Status | **offen**, getroffen 2026-09-11 |
+| Wiedervorlage | Datenschutzprüfung; LOE-001 nimmt die Klasse in den Retention Schedule auf |
+
+**Annahme.** Eine Einladung (`public.staff_account_invitations`) ist ein
+**Zugangs- und Authentifizierungsdatum**, kein Gesundheitsdatum und kein
+Beschäftigtendatum im Sinne von §20. Frist: **12 Monate nach Abschluss des
+Vorgangs** (angenommen, zurückgenommen oder abgelaufen) — dieselbe Frist wie
+„Normale Authentifizierungs- und Securitylogs" in ADR-008. Die **Gültigkeit**
+einer offenen Einladung beträgt **14 Tage**; sie läuft ab, statt aufgeräumt zu
+werden: Eine abgelaufene Einladung wird bei der Annahme abgewiesen und in der
+Oberfläche als abgelaufen gezeigt. Kein Hintergrundjob, kein Zustand, der ohne
+Beobachtung kippt (ANN-007 setzt `pg_cron` nicht voraus).
+
+**Begründung.** Der Datensatz enthält eine E-Mail-Adresse, eine Rollenliste und
+Zeitstempel — Kontaktdatum und Berechtigungsentscheidung, kein Inhalt über eine
+Person. Er ist zugleich der **Nachweis**, auf welcher Grundlage ein Zugang
+entstanden ist; ADR-010 Punkt 2 führt „Änderungen von Rollen und
+Berechtigungen" ausdrücklich als auditpflichtig, und ein Nachweis, der früher
+verschwindet als das Auditlog, wäre wertlos. Deshalb wird eine Einladung nie
+gelöscht, sondern abgeschlossen. 14 Tage sind lang genug für Urlaub und
+Krankheit und kurz genug, dass eine vergessene Einladung nicht dauerhaft
+offensteht.
+**Unsicher:** ob die Prüfung 12 Monate für den Nachweis als ausreichend
+ansieht oder die drei Jahre des Auditlogs verlangt — dann wäre die Frist eine
+andere, das Modell aber unverändert.
+
+**Verankerung.** `COMMENT ON TABLE public.staff_account_invitations` und die
+Frist `now() + interval '14 days'` in `invite_staff_account`, beides in
+`supabase/migrations/20260911110000_staff_account_invitations.sql` (der
+Kopfkommentar trägt die Kennung). Tests in
+`supabase/tests/staff-accounts.test.ts`, „weist eine abgelaufene Einladung ab".
+
+**Änderungspfad.** Andere Gültigkeit: ein Intervall — Aufwand `klein`. Andere
+Aufbewahrung: eine Zeile im Retention Schedule von LOE-001 — Aufwand `klein`,
+solange LOE-EPIC-001 die Klasse ohnehin aufnimmt.

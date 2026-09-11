@@ -1,0 +1,216 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type * as KontoApi from './konto-api';
+import type * as StaffApi from './api';
+import { renderWithProviders } from '@/test-utils';
+
+const anna: StaffApi.StaffMember = {
+  id: '55555555-5555-4555-8555-000000000002',
+  person_id: '44444444-4444-4444-8444-000000000002',
+  given_name: 'Anna',
+  family_name: 'Beispiel',
+  employment_status: 'active',
+  work_email: 'anna.beispiel@praxis.invalid',
+  work_phone: '+49 7071 0000102',
+  primary_location_id: null,
+  primary_location_name: null,
+  date_of_birth: null,
+  private_email: null,
+  private_phone: null,
+  street: null,
+  postal_code: null,
+  city: null,
+};
+
+const fetchStaffAccount = vi.fn();
+const fetchStaffInvitations = vi.fn();
+const ladeZugangEin = vi.fn();
+const widerrufeEinladung = vi.fn();
+const sendeZugangsMail = vi.fn();
+
+vi.mock('./konto-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof KontoApi>();
+  return {
+    ...actual,
+    fetchStaffAccount: (id: string) => fetchStaffAccount(id) as Promise<KontoApi.StaffAccount>,
+    fetchStaffInvitations: (id: string) =>
+      fetchStaffInvitations(id) as Promise<KontoApi.StaffInvitation[]>,
+    ladeZugangEin: (id: string, mail: string, rollen: readonly string[]) =>
+      ladeZugangEin(id, mail, rollen) as Promise<void>,
+    widerrufeEinladung: (id: string) => widerrufeEinladung(id) as Promise<void>,
+    sendeZugangsMail: (mail: string) => sendeZugangsMail(mail) as Promise<void>,
+  };
+});
+
+const { StaffAccountSection } = await import('./StaffAccountSection');
+const { EinladungsError } = await import('./konto-api');
+
+const offeneEinladung: KontoApi.StaffInvitation = {
+  id: '99999999-9999-4999-8999-0000000000e1',
+  staff_member_id: anna.id,
+  email: 'nina.neu@praxis.invalid',
+  role_keys: ['therapist'],
+  status: 'pending',
+  expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+  created_at: new Date().toISOString(),
+};
+
+const ohneZugang: KontoApi.StaffAccount = {
+  staff_member_id: anna.id,
+  user_id: null,
+  account_active: null,
+  role_keys: null,
+};
+
+describe('StaffAccountSection', () => {
+  beforeEach(() => {
+    for (const mock of [
+      fetchStaffAccount,
+      fetchStaffInvitations,
+      ladeZugangEin,
+      widerrufeEinladung,
+      sendeZugangsMail,
+    ]) {
+      mock.mockReset();
+    }
+    fetchStaffAccount.mockResolvedValue(ohneZugang);
+    fetchStaffInvitations.mockResolvedValue([]);
+    ladeZugangEin.mockResolvedValue(undefined);
+    widerrufeEinladung.mockResolvedValue(undefined);
+    sendeZugangsMail.mockResolvedValue(undefined);
+  });
+
+  it('belegt die Adresse aus der dienstlichen E-Mail vor, die Rollen aber nicht', async () => {
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    expect(await screen.findByLabelText('E-Mail-Adresse für den Zugang')).toHaveValue(
+      'anna.beispiel@praxis.invalid',
+    );
+    // Eine Rolle zu vergeben ist Berechtigungsvergabe - nichts davon ist
+    // vorbelegt (ADR-004).
+    for (const rolle of ['Therapeut:in', 'Teamleitung', 'Praxismanagement', 'Praxisinhaber']) {
+      expect(screen.getByRole('checkbox', { name: rolle })).not.toBeChecked();
+    }
+  });
+
+  it('verlangt mindestens eine Rolle', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Zugang einladen' }));
+
+    expect(await screen.findByText('Bitte mindestens eine Rolle wählen.')).toBeInTheDocument();
+    expect(ladeZugangEin).not.toHaveBeenCalled();
+  });
+
+  it('verlangt eine brauchbare Adresse', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    const feld = await screen.findByLabelText('E-Mail-Adresse für den Zugang');
+    await user.clear(feld);
+    await user.type(feld, 'kein-at-zeichen');
+    await user.click(screen.getByRole('button', { name: 'Zugang einladen' }));
+
+    expect(
+      await screen.findByText('Bitte eine gültige E-Mail-Adresse angeben.'),
+    ).toBeInTheDocument();
+    expect(ladeZugangEin).not.toHaveBeenCalled();
+  });
+
+  it('lädt mit den gewählten Rollen ein', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Therapeut:in' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Teamleitung' }));
+    await user.click(screen.getByRole('button', { name: 'Zugang einladen' }));
+
+    await waitFor(() => expect(ladeZugangEin).toHaveBeenCalledTimes(1));
+    expect(ladeZugangEin).toHaveBeenCalledWith(anna.id, 'anna.beispiel@praxis.invalid', [
+      'therapist',
+      'team_lead',
+    ]);
+  });
+
+  it('erklärt eine abgewiesene Einladung, statt nur zu scheitern', async () => {
+    const user = userEvent.setup();
+    ladeZugangEin.mockRejectedValue(new EinladungsError('email_already_in_use'));
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Praxismanagement' }));
+    await user.click(screen.getByRole('button', { name: 'Zugang einladen' }));
+
+    expect(
+      await screen.findByText('Diese E-Mail-Adresse gehört bereits zu einem Zugang dieser Praxis.'),
+    ).toBeInTheDocument();
+  });
+
+  it('zeigt eine offene Einladung mit Adresse, Rollen und Frist', async () => {
+    fetchStaffInvitations.mockResolvedValue([offeneEinladung]);
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    expect(await screen.findByText('nina.neu@praxis.invalid')).toBeInTheDocument();
+    expect(screen.getByText('Therapeut:in')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Einladung erneut senden' })).toBeInTheDocument();
+    // Kein zweites Formular, solange eine Einladung offen ist.
+    expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
+  });
+
+  it('nimmt eine Einladung erst nach der Rückfrage zurück', async () => {
+    const user = userEvent.setup();
+    fetchStaffInvitations.mockResolvedValue([offeneEinladung]);
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Einladung zurücknehmen' }));
+    expect(widerrufeEinladung).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Zurücknehmen' }));
+    await waitFor(() => expect(widerrufeEinladung).toHaveBeenCalledWith(offeneEinladung.id));
+  });
+
+  it('kennzeichnet eine abgelaufene Einladung und bietet kein erneutes Senden an', async () => {
+    fetchStaffInvitations.mockResolvedValue([
+      { ...offeneEinladung, expires_at: new Date(Date.now() - 86_400_000).toISOString() },
+    ]);
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    expect(await screen.findByText(/Diese Einladung gilt nicht mehr/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Einladung erneut senden' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('zeigt bei bestehendem Zugang die Rollen statt eines Formulars', async () => {
+    fetchStaffAccount.mockResolvedValue({
+      staff_member_id: anna.id,
+      user_id: '11111111-1111-4111-8111-000000000002',
+      account_active: true,
+      role_keys: ['therapist', 'team_lead'],
+    });
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    expect(await screen.findByText('Eingerichtet')).toBeInTheDocument();
+    expect(screen.getByText('Therapeut:in')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
+  });
+
+  it('lädt für eine ausgeschiedene Person niemanden ein', async () => {
+    renderWithProviders(<StaffAccountSection staff={{ ...anna, employment_status: 'inactive' }} />);
+
+    expect(
+      await screen.findByText(/Für eine ausgeschiedene Person wird kein Zugang eingeladen/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
+  });
+
+  it('meldet einen Ladefehler verständlich', async () => {
+    fetchStaffInvitations.mockRejectedValue(new Error('kaputt'));
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    expect(
+      await screen.findByText('Der Zugangsstand konnte nicht geladen werden.'),
+    ).toBeInTheDocument();
+  });
+});

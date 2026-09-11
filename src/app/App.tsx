@@ -3,7 +3,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
 import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
-import { useCurrentUser } from '@/features/session/useCurrentUser';
+import { KeinProfilError, useCurrentUser } from '@/features/session/useCurrentUser';
+import { ZugangEinrichtenPage } from '@/features/staff/ZugangEinrichtenPage';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -39,6 +40,23 @@ function AuthenticatedApp() {
   }
 
   if (isPending) return <LoadingState label="Profil wird geladen …" />;
+
+  /**
+   * Angemeldet, aber keiner Praxis zugeordnet - der Normalfall direkt nach der
+   * Anmeldung über eine Einladungsmail (STAFF-002b). Die Seite bietet an, die
+   * Einladung anzunehmen; ohne Einladung bleibt das Konto zugriffslos
+   * (ANN-023).
+   */
+  if (error instanceof KeinProfilError) {
+    return (
+      <ZugangEinrichtenPage
+        onEingerichtet={() => {
+          void queryClient.invalidateQueries({ queryKey: ['current-user'] });
+        }}
+        onAbmelden={() => void abmelden()}
+      />
+    );
+  }
 
   // PROJECT_PRINCIPLES.md 13: Bei unklarem Zustand nichts anzeigen, sondern
   // verständlich abbrechen. Ohne Profil ist keine Organisationszuordnung und
