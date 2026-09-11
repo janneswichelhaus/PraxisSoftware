@@ -26,6 +26,8 @@ const praxistermin: AppointmentsApi.Appointment = {
   visit_city: null,
   completed_at: null,
   cancellation_reason: null,
+  no_show_recorded_at: null,
+  no_show_fee: null,
   patient_given_name: 'Berta',
   patient_family_name: 'Bestand',
   staff_given_name: 'Anna',
@@ -38,6 +40,7 @@ const fetchAppointment = vi.fn();
 const cancelAppointment = vi.fn();
 const completeAppointment = vi.fn();
 const reopenAppointment = vi.fn();
+const recordNoShow = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -51,6 +54,8 @@ vi.mock('./api', async (importOriginal) => {
       completeAppointment(id, erwartet) as Promise<void>,
     reopenAppointment: (id: string, erwartet: string) =>
       reopenAppointment(id, erwartet) as Promise<void>,
+    recordNoShow: (id: string, erwartet: string, honorar: boolean) =>
+      recordNoShow(id, erwartet, honorar) as Promise<void>,
   };
 });
 
@@ -102,6 +107,8 @@ describe('AppointmentDetailPage', () => {
     cancelAppointment.mockResolvedValue(undefined);
     completeAppointment.mockResolvedValue(undefined);
     reopenAppointment.mockResolvedValue(undefined);
+    recordNoShow.mockReset();
+    recordNoShow.mockResolvedValue(undefined);
     fetchTreatmentDocumentation.mockReset();
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
   });
@@ -341,6 +348,80 @@ describe('AppointmentDetailPage', () => {
       expect(
         await screen.findByText(/zwischenzeitlich von einer anderen Person/),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('CAL-008c: Nicht angetroffen', () => {
+    it('vermerkt erst nach Rueckfrage und mit der Entscheidung zum Ausfallhonorar', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
+      await user.selectOptions(screen.getByLabelText('Ausfallhonorar berechnen?'), 'ja');
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      await waitFor(() =>
+        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at, true),
+      );
+    });
+
+    it('vermerkt ohne Entscheidung nichts - das Kennzeichen hat keine Vorbelegung', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      expect(
+        await screen.findByText('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.'),
+      ).toBeInTheDocument();
+      expect(recordNoShow).not.toHaveBeenCalled();
+    });
+
+    it('gibt "nein" unveraendert weiter, statt es als fehlende Angabe zu behandeln', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
+      await user.selectOptions(screen.getByLabelText('Ausfallhonorar berechnen?'), 'nein');
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      await waitFor(() =>
+        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at, false),
+      );
+    });
+
+    it('zeigt am vermerkten Termin Zustand, Kennzeichen und den Weg zurueck', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'no_show',
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+        no_show_fee: true,
+      });
+      rendern();
+
+      await screen.findByText(/Hier wurde niemand angetroffen/);
+      expect(zeile('Status')).toBe('Nicht angetroffen');
+      expect(zeile('Ausfallhonorar')).toBe('Wird berechnet');
+      expect(screen.getByRole('button', { name: 'Termin wieder öffnen' })).toBeInTheDocument();
+    });
+
+    it('bietet am vermerkten Termin kein zweites Vermerken und kein Absagen an', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'no_show',
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+        no_show_fee: false,
+      });
+      rendern();
+
+      await screen.findByText(/Hier wurde niemand angetroffen/);
+      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
+      expect(zeile('Ausfallhonorar')).toBe('Wird nicht berechnet');
     });
   });
 

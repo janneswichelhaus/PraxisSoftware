@@ -184,6 +184,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | entschieden (Jannes) 2026-09-11 | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
 | ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
 | ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | offen | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (B2) |
+| ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | offen | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1936,3 +1937,60 @@ Absagegründe entgegen, keinen Freitext" und der Auditkontext-Fall).
 Zeilen nötig. Freitext zusätzlich aufnehmen: neue Spalte, Redaction-Regel im
 Logging, Aufnahme in die Löschprüfung und eine Aussage in der DSFA — Aufwand
 `mittel`, und genau die Abwägung oben spricht dagegen.
+
+---
+
+### ANN-035 — No-show fällt unter die Frist der abgesagten Termine; mit Ausfallhonorar wird nicht gelöscht
+
+| | |
+|---|---|
+| Kategorie | Recht |
+| Herkunft | CAL-008c; ADR-018 („Offene Folgefragen": „Braucht ‚nicht angetroffen' eine eigene Frist im Retention Schedule, oder fällt es unter ‚abgesagte Termine und No-shows ohne Rechnung'? Beim Bauen von CAL-008 zu prüfen") |
+| Status | **offen** |
+| Wiedervorlage | ABR-003 — sobald es Rechnungen gibt, entscheidet die Rechnung statt des Kennzeichens; Datenschutzprüfung (B2) |
+
+**Annahme.** Ein Termin im Zustand `no_show` fällt unter die **bestehende**
+Retention-Klasse `termin_ohne_nachweis` — drei Jahre ab Ende des
+Kalenderjahres, **gerechnet ab dem Zeitpunkt des Vermerks** statt ab der
+Absage. Er wird **nicht** gelöscht, wenn das Ausfallhonorar-Kennzeichen gesetzt
+ist; ein Behandlungsnachweis und eine Löschsperre halten ihn wie bisher
+zurück. Eine eigene Datenklasse bekommt er nicht.
+
+**Begründung.** Die Klasse trägt seit LOE-001a im Text ausdrücklich
+„Abgesagte Termine und No-shows ohne Rechnung" (ADR-008) — die Regel im
+Löschlauf fragte bisher nur nach `cancelled`, weil es den Zustand nicht gab.
+Fachlich sind beide dasselbe: ein Termin, an dem nicht behandelt wurde, also
+ohne Behandlungsnachweis und ohne die Zehnjahresfrist aus § 630f Abs. 3 BGB.
+Eine eigene Klasse mit derselben Frist wäre eine zweite Zahl für denselben
+Sachverhalt (ANN-001, ADR-014).
+
+Der Anker ist der Vermerk und nicht der Termintag: Er ist der Vorgang, den die
+Praxis vollzogen hat, er entspricht dem `cancelled_at` der Absage, und beide
+liegen im Alltag ohnehin am selben Tag. Gerechnet wird unverändert auf das
+Kalenderjahresende, die Frist selbst bleibt `app.retention_interval()`.
+
+Dass ein No-show **mit** Kennzeichen stehen bleibt, ist die vorsichtigere
+Seite (§16): Das Kennzeichen sagt, dass abgerechnet werden soll; was
+abgerechnet wird, unterliegt der steuerlichen Aufbewahrung (§ 147 AO,
+§ 257 HGB — zehn beziehungsweise sechs Jahre) und nicht der internen
+Dreijahresfrist. Eine Löschung lässt sich nachholen, eine gelöschte Grundlage
+einer Forderung nicht. Bis ABR-003 die Rechnung führt, ist das Kennzeichen der
+einzige verfügbare Anhaltspunkt.
+**Unsicher:** ob die steuerliche Frist an der **Rechnung** hängt (dann fällt
+ein nie abgerechneter No-show mit Kennzeichen nach drei Jahren doch) oder am
+Vorgang. ABR-003 beantwortet das mit der Rechnung selbst; bis dahin bleibt der
+Datensatz stehen, und das ist die rückholbare Seite des Irrtums.
+
+**Verankerung.** Die Regel „Abgesagte Termine und No-shows ohne
+Behandlungsnachweis" in `public.apply_retention()`
+(`supabase/migrations/20260912120000_appointment_no_show.sql`) — der
+Regelkommentar trägt die Kennung. Tests in
+`supabase/tests/retention-run.test.ts` (gelöscht ohne Kennzeichen, stehen
+geblieben mit Kennzeichen, Journalzeile unter derselben Klasse).
+
+**Änderungspfad.** Eigene Klasse mit eigener Frist: eine Zeile in
+`retention_classes`, eine Zuordnung in `retention_assignments`, die Regel im
+Lauf aufteilen — Aufwand `klein`. Kennzeichen nicht mehr als Haltegrund,
+sondern die Rechnung: eine Bedingung in derselben Regel austauschen, sobald
+ABR-003 die Rechnungstabelle bringt — Aufwand `klein`, und genau dafür ist die
+Wiedervorlage gesetzt.

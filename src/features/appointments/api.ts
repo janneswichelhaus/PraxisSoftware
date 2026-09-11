@@ -110,6 +110,10 @@ const appointmentSchema = z.object({
   // `null` bei jeder Absage aus der Zeit vor CAL-008b - der Grund wird nicht
   // rueckwirkend erfunden.
   cancellation_reason: cancellationReasonSchema.nullable(),
+  // Nur Zeitpunkt und Kennzeichen, nicht die vermerkende Person: die
+  // Detailansicht zeigt keine Akteure (ADR-010).
+  no_show_recorded_at: z.string().nullable(),
+  no_show_fee: z.boolean().nullable(),
   patient_given_name: z.string(),
   patient_family_name: z.string(),
   staff_given_name: z.string(),
@@ -125,7 +129,7 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 const SELECT =
   'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
-  'cancellation_reason, ' +
+  'cancellation_reason, no_show_recorded_at, no_show_fee, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -619,6 +623,14 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
   if (error?.message?.includes('cancellation reason is required')) {
     return new Error('Bitte einen Absagegrund auswählen.');
   }
+  if (error?.message?.includes('no-show fee decision is required')) {
+    return new Error('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.');
+  }
+  if (error?.message?.includes('cannot be recorded as no-show')) {
+    return new Error(
+      'Für diesen Termin lässt sich „nicht angetroffen" nicht vermerken: Er ist abgesagt oder es hängt bereits eine Dokumentation daran.',
+    );
+  }
   if (error?.message?.includes('documented appointment cannot be changed')) {
     return new Error(
       'Der Termin ist dokumentiert und lässt sich nicht mehr ändern. Eine Korrektur gehört in die Behandlungsdokumentation.',
@@ -694,6 +706,27 @@ export async function completeAppointment(
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgeschlossen werden.');
+}
+
+/**
+ * Vermerkt einen bestätigten Termin als „nicht angetroffen".
+ *
+ * Das Ausfallhonorar-Kennzeichen gehört in denselben Schritt und hat keine
+ * Vorbelegung: Der Termin sagt damit nur, **ob** abgerechnet werden soll — wie
+ * viel, steht im Leistungskatalog (ADR-018 Punkt 4, ABR-001).
+ */
+export async function recordNoShow(
+  appointmentId: string,
+  expectedUpdatedAt: string,
+  fee: boolean,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('record_no_show', {
+    p_appointment_id: appointmentId,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_fee: fee,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Termin konnte nicht vermerkt werden.');
 }
 
 /**

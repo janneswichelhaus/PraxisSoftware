@@ -26,6 +26,8 @@ const termin: AppointmentsApi.Appointment = {
   visit_city: 'Tuebingen',
   completed_at: null,
   cancellation_reason: null,
+  no_show_recorded_at: null,
+  no_show_fee: null,
   patient_given_name: 'Max',
   patient_family_name: 'Mustermann',
   staff_given_name: 'Anna',

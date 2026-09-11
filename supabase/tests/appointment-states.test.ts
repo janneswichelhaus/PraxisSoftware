@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
 
 /**
  * Zustandsautomat des Termins (CAL-008, ADR-018).
@@ -27,6 +27,9 @@ const AENDERN =
 const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz, $3) as id';
 const ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
 const OEFFNEN = 'select public.reopen_appointment($1::uuid, $2::timestamptz) as id';
+const NICHT_ANGETROFFEN =
+  'select public.record_no_show($1::uuid, $2::timestamptz, $3::boolean) as id';
+const DOKUMENTIEREN = 'select public.create_treatment_note($1::uuid, $2) as id';
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 
@@ -294,5 +297,152 @@ describe('Statusfilter des Kalenderlesepfads', () => {
     await expect(asUser(users.office, LESEN, [TAG, tagInTagen(71), 'requested'])).rejects.toThrow(
       /unknown status filter/,
     );
+  });
+});
+
+describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
+  beforeEach(resetDatabase);
+
+  async function zeile(id: string) {
+    const { rows } = await asPostgres<Record<string, unknown>>(
+      'select * from public.appointments where id = $1',
+      [id],
+    );
+    return rows[0];
+  }
+
+  it.each([
+    ['owner', 'ownerTherapist'],
+    ['therapist', 'therapist'],
+    ['team_lead', 'teamLead'],
+    ['office', 'office'],
+  ] as const)('erlaubt %s den Vermerk', async (_rolle, schluessel) => {
+    const termin = await anlegen();
+    await asUserCommitted(users[schluessel], NICHT_ANGETROFFEN, [
+      termin.id,
+      termin.updated_at,
+      false,
+    ]);
+    expect(await zustand(termin.id)).toBe('no_show');
+  });
+
+  it('haelt Zeitpunkt, Person und Kennzeichen gemeinsam fest', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.therapist, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, true]);
+
+    expect(await zeile(termin.id)).toMatchObject({
+      status: 'no_show',
+      no_show_fee: true,
+      no_show_recorded_by: users.therapist,
+    });
+    expect((await zeile(termin.id))?.no_show_recorded_at).not.toBeNull();
+  });
+
+  it('verlangt die Entscheidung ueber das Ausfallhonorar und schreibt ohne sie nichts', async () => {
+    const termin = await anlegen();
+
+    await expect(
+      asUser(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, null]),
+    ).rejects.toThrow(/no-show fee decision is required/);
+    expect(await zustand(termin.id)).toBe('confirmed');
+  });
+
+  it('protokolliert appointment.no_show mit dem Kennzeichen im Kontext', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, true]);
+
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log
+        where action = 'appointment.no_show' and subject_id = $1`,
+      [termin.id],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.context).toMatchObject({ fee: true, surface: 'web' });
+  });
+
+  it('vermerkt einen abgesagten Termin nicht', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at, 'other']);
+    const abgesagt = await stand(termin.id);
+
+    await expect(
+      asUser(users.office, NICHT_ANGETROFFEN, [abgesagt.id, abgesagt.updated_at, false]),
+    ).rejects.toThrow(/cancelled appointment cannot be recorded as no-show/);
+  });
+
+  it('vermerkt einen abgeschlossenen Termin nicht ohne Wiederoeffnen', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, ABSCHLIESSEN, [termin.id, termin.updated_at]);
+    const fertig = await stand(termin.id);
+
+    await expect(
+      asUser(users.office, NICHT_ANGETROFFEN, [fertig.id, fertig.updated_at, false]),
+    ).rejects.toThrow(/must be reopened first/);
+  });
+
+  it('vermerkt keinen Termin, an dem eine Dokumentation haengt', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.therapist, DOKUMENTIEREN, [termin.id, 'Behandlung durchgefuehrt.']);
+    const dokumentiert = await stand(termin.id);
+
+    await expect(
+      asUser(users.office, NICHT_ANGETROFFEN, [dokumentiert.id, dokumentiert.updated_at, false]),
+    ).rejects.toThrow(/documented appointment cannot be recorded as no-show/);
+  });
+
+  it('laesst an einem vermerkten Termin keine Dokumentation zu', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]);
+
+    await expect(asUser(users.therapist, DOKUMENTIEREN, [termin.id, 'Nachtrag.'])).rejects.toThrow(
+      /no-show appointment cannot be documented/,
+    );
+  });
+
+  it('oeffnet den Vermerk wieder und raeumt alle drei Felder ab', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, true]);
+    const vermerkt = await stand(termin.id);
+
+    await asUserCommitted(users.office, OEFFNEN, [vermerkt.id, vermerkt.updated_at]);
+
+    expect(await zeile(termin.id)).toMatchObject({
+      status: 'confirmed',
+      no_show_recorded_at: null,
+      no_show_recorded_by: null,
+      no_show_fee: null,
+    });
+  });
+
+  it('haelt den Zeitraum belegt - die Person ist hingefahren', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]);
+
+    await expect(
+      asUser(users.office, ANLEGEN, [patients.erika, ANNA, 'video', TAG, '09:30', '10:30', null]),
+    ).rejects.toThrow(/overlaps/);
+  });
+
+  it('weist ein Patientenkonto ab', async () => {
+    const termin = await anlegen();
+    await expect(
+      asUser(users.patientMax, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]),
+    ).rejects.toThrow(/not allowed to record no-shows/);
+  });
+
+  it('weist einen unangemeldeten Aufruf ab', async () => {
+    const termin = await anlegen();
+    await expect(asAnon(NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false])).rejects.toThrow(
+      /permission denied|not authenticated/i,
+    );
+  });
+
+  it('weist einen veralteten Stand ab', async () => {
+    const termin = await anlegen();
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]);
+
+    await expect(
+      asUser(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]),
+    ).rejects.toThrow(/already recorded as no-show/);
   });
 });
