@@ -1,9 +1,14 @@
 import type { ReactNode } from 'react';
 
-/** Flächiger Container für einen einzelnen Gegenstand einer Liste. */
+/**
+ * Flächiger Container für einen einzelnen Gegenstand einer Liste.
+ *
+ * Radius 14, Papier, eine Linie als Rahmen, 24 innen (DS-001). Kein Schatten —
+ * dass die Karte über der Seite liegt, tragen Fläche und Linie.
+ */
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-card border-line bg-surface border p-4 ${className}`}>{children}</div>
+    <div className={`rounded-card border-line bg-surface border p-6 ${className}`}>{children}</div>
   );
 }
 

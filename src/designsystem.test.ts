@@ -98,4 +98,26 @@ describe('Radien des Systems', () => {
       expect(css).toContain(`${token}: ${wert}`);
     }
   });
+
+  /**
+   * Das System kennt genau fuenf Radien; Tailwinds eigene Stufen (`rounded-lg`
+   * = 8, `rounded-md` = 6, `rounded-full`) gehoeren nicht dazu. Ohne diesen
+   * Waechter waere jede neue Seite wieder eine Gelegenheit, aus Gewohnheit
+   * `rounded-lg` zu schreiben - und die Radien liefen still auseinander.
+   *
+   * Die Ausnahme ist `rounded-[6px]` fuer die Checkbox: das System nennt
+   * sie eigens neben den vier Hauptradien.
+   */
+  it('verwendet nur die Radien des Systems', () => {
+    const erlaubt = new Set(['button', 'field', 'card', 'image', 'pill', '[6px]']);
+    const treffer: string[] = [];
+    for (const datei of quelldateien(join(stamm, 'src'))) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      const inhalt = readFileSync(datei, 'utf8');
+      for (const fund of inhalt.matchAll(/\brounded-(\[[^\]]+\]|[a-z0-9]+)\b/g)) {
+        if (!erlaubt.has(fund[1]!)) treffer.push(`${datei.replace(`${stamm}/`, '')}: ${fund[0]}`);
+      }
+    }
+    expect(treffer).toEqual([]);
+  });
 });

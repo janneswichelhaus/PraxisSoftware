@@ -44,7 +44,7 @@ export function TextbausteinLeiste({ onEinfuegen }: { onEinfuegen: (text: string
               type="button"
               title={baustein.body}
               onClick={() => onEinfuegen(baustein.body)}
-              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center rounded-lg border px-3 text-sm font-medium transition-colors"
+              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center border px-3 text-sm font-medium transition-colors"
             >
               {baustein.title}
             </button>

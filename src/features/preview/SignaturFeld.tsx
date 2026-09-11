@@ -87,7 +87,7 @@ export function SignaturFeld({
     <fieldset className="border-line rounded-card mt-2 border p-4">
       <legend className="text-ink px-1 text-sm font-medium">{beschriftung}</legend>
       {erklaerung ? (
-        <p className="text-ink-muted bg-surface-sunken rounded-lg px-3 py-2 text-sm">
+        <p className="text-ink-muted bg-surface-sunken rounded-card px-3 py-2 text-sm">
           {erklaerung}
         </p>
       ) : null}
@@ -99,7 +99,7 @@ export function SignaturFeld({
         onPointerMove={ziehen}
         onPointerUp={beenden}
         onPointerLeave={beenden}
-        className="border-line-strong bg-surface mt-3 block h-32 w-full max-w-sm touch-none rounded-lg border"
+        className="border-line-strong bg-surface rounded-card mt-3 block h-32 w-full max-w-sm touch-none border"
       />
 
       <div className="mt-2 flex flex-wrap items-end gap-3">
@@ -119,7 +119,7 @@ export function SignaturFeld({
               setGetippt(event.target.value);
               onChange(event.target.value.trim().length > 0);
             }}
-            className="border-line-strong bg-surface text-ink placeholder:text-ink-subtle min-h-11 w-full rounded-lg border px-3 text-base"
+            className="border-line-strong bg-surface text-ink placeholder:text-ink-subtle rounded-field min-h-11 w-full border px-3 text-base"
           />
         </div>
       </div>

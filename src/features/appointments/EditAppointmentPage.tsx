@@ -183,7 +183,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           </div>
         ) : null}
 
-        <div className="border-line bg-surface-sunken mb-5 rounded-lg border p-4">
+        <div className="border-line bg-surface-sunken rounded-card mb-5 border p-4">
           <p className="text-ink-muted text-sm">Patient:in</p>
           <p className="text-ink text-[0.9375rem] font-medium">{patientName(daten)}</p>
           <p className="text-ink-subtle mt-2 text-xs leading-relaxed">

@@ -163,7 +163,7 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
           darfAendern ? (
             <Link
               to={`/termine/${appointment.id}/bearbeiten`}
-              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
+              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
             >
               Bearbeiten
             </Link>

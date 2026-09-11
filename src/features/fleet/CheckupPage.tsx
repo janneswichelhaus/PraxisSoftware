@@ -168,7 +168,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
                     {bewertungen.map((option) => (
                       <label
                         key={option.wert}
-                        className={`inline-flex min-h-11 cursor-pointer items-center rounded-lg border px-3 text-sm ${
+                        className={`rounded-button inline-flex min-h-11 cursor-pointer items-center border px-3 text-sm ${
                           befund.bewertung === option.wert
                             ? 'border-accent bg-accent-soft text-accent font-medium'
                             : 'border-line-strong bg-surface text-ink-muted'

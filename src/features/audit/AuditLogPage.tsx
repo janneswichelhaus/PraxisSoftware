@@ -22,7 +22,7 @@ import {
 const PAGE_SIZE = 25;
 
 const selectClass =
-  'min-h-11 rounded-lg border border-line-strong bg-surface px-3 text-base text-ink';
+  'min-h-11 rounded-field border border-line-strong bg-surface px-3 text-base text-ink';
 
 function label(map: Record<string, string>, key: string): string {
   return map[key] ?? key;

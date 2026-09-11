@@ -161,7 +161,7 @@ export function CalendarGrid({
 
   return (
     <div
-      className="border-line mt-4 overflow-x-auto rounded-lg border"
+      className="border-line rounded-card mt-4 overflow-x-auto border"
       // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
       // auf einer Kachel wird nicht vom Browser übernommen.
       style={{ touchAction: 'pan-x pan-y' }}
@@ -350,7 +350,7 @@ export function CalendarGrid({
               {/* Vorschau: zeigt nur, wohin es ginge. Geschrieben ist noch nichts. */}
               {ziehen.vorschau && ziehen.vorschau.spalteId === s.id ? (
                 <div
-                  className="border-accent bg-accent-soft/70 text-accent pointer-events-none absolute inset-x-1 z-40 rounded-lg border-2 border-dashed px-2 py-1 text-xs font-medium"
+                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 border-2 border-dashed px-2 py-1 text-xs font-medium"
                   style={{
                     top: `${minuteZuPixel(ziehen.vorschau.startMinute, fenster.vonMinute, stundenHoehe)}px`,
                     height: `${(ziehen.vorschau.dauer / 60) * stundenHoehe}px`,
@@ -435,7 +435,7 @@ function Kachel({
         ...(ziehbar ? { touchAction: 'pan-x pan-y' } : {}),
       }}
       className={[
-        'border-line bg-surface hover:bg-surface-sunken absolute block overflow-hidden rounded-lg',
+        'border-line bg-surface hover:bg-surface-sunken rounded-button absolute block overflow-hidden',
         'border border-l-4 px-1.5 py-1 text-left transition-colors',
         eintrag.status === 'cancelled' ? 'opacity-60' : '',
         gedimmt ? 'opacity-40' : '',

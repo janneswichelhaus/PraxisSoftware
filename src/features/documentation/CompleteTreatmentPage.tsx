@@ -129,7 +129,7 @@ function Abschluss({
 
         {/* Die Folge steht vor der Schaltfläche, nicht in einer Rückfrage
             danach: So liest man sie, bevor man tippt (ADR-016 Punkt 4, 5). */}
-        <div className="border-line-strong bg-surface-sunken mt-5 rounded-lg border p-4">
+        <div className="border-line-strong bg-surface-sunken rounded-card mt-5 border p-4">
           <p className="text-ink text-sm leading-relaxed">
             Mit dem Abschluss geschieht zweierlei in einem Schritt: Der Termin wird als durchgeführt
             geführt, und der Eintrag wird als Version 1 festgeschrieben. Ab dann ist er Bestandteil
@@ -178,7 +178,7 @@ function Abschluss({
           ) : (
             <Link
               to={zurueck}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium transition-colors"
+              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
             >
               Abbrechen
             </Link>
@@ -191,7 +191,7 @@ function Abschluss({
           <div
             role="group"
             aria-label="Bearbeitung abbrechen"
-            className="border-line-strong bg-surface-sunken mt-4 rounded-lg border p-4"
+            className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
           >
             <p className="text-ink text-sm">
               Der eingegebene Text ist noch nicht gespeichert und geht beim Abbrechen verloren.

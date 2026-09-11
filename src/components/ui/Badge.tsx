@@ -37,7 +37,7 @@ const zeichen: Partial<Record<Ton, string>> = {
 export function Badge({ ton = 'neutral', children }: { ton?: Ton; children: ReactNode }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${toene[ton]}`}
+      className={`rounded-pill inline-flex shrink-0 items-center gap-1 px-2.5 py-0.5 text-xs font-medium ${toene[ton]}`}
     >
       {/* Das Zeichen ist für Vorlesesoftware ausgeblendet: der Zustand steht
           daneben als Wort, und „Häkchen Abgeschlossen" wäre nur Rauschen. */}

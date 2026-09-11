@@ -209,7 +209,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
               <img
                 src={einrichtung.qrCode}
                 alt="QR-Code zum Einrichten des zweiten Faktors"
-                className="border-line mt-4 w-44 rounded-lg border bg-white p-2"
+                className="border-line rounded-card mt-4 w-44 border bg-white p-2"
               />
               <p className="text-ink-subtle mt-2 text-xs break-all">
                 Zum Abtippen: <code>{einrichtung.secret}</code>

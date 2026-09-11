@@ -131,7 +131,7 @@ export function BreakdownPage() {
         <div className="flex flex-wrap gap-3">
           <Link
             to="/betrieb/flotte"
-            className="bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors"
+            className="bg-accent hover:bg-accent-hover rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium text-white transition-colors"
           >
             Zurück zur Radflotte
           </Link>

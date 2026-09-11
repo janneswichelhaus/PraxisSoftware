@@ -76,7 +76,7 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
         description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
       />
 
-      <div className="border-line-strong bg-surface-sunken mb-6 max-w-2xl rounded-lg border p-4">
+      <div className="border-line-strong bg-surface-sunken rounded-card mb-6 max-w-2xl border p-4">
         <p className="text-ink text-sm leading-relaxed">
           Der bisherige Wortlaut bleibt als eigene Version erhalten und abrufbar. Eine Korrektur ist
           für echte Fehler gedacht - wer nachträglich etwas ergänzen möchte, legt stattdessen einen{' '}
@@ -130,7 +130,7 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
           </Button>
           <Link
             to={zurueck}
-            className="text-ink-muted hover:bg-surface-sunken hover:text-ink inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium transition-colors"
+            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
           >
             Abbrechen
           </Link>

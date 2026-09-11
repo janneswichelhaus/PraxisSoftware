@@ -519,7 +519,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         <div
           role="group"
           aria-label="Außerhalb der Arbeitszeit"
-          className="border-line-strong bg-surface-sunken mt-4 rounded-lg border p-4"
+          className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
         >
           <p className="text-ink text-sm">
             {offen.beschreibung} liegt außerhalb der hinterlegten Arbeitszeit. Der Termin wurde noch
@@ -561,7 +561,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {rueckgaengig && !verschieben.isPending ? (
         <div
           role="status"
-          className="border-line-strong bg-surface-sunken nicht-drucken mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3"
+          className="border-line-strong bg-surface-sunken nicht-drucken rounded-card mt-4 flex flex-wrap items-center justify-between gap-3 border px-4 py-3"
         >
           <p className="text-ink text-sm">
             Termin verschoben. Vorher: <strong>{rueckgaengig.beschreibung}</strong>

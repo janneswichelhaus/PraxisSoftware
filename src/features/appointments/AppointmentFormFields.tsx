@@ -125,7 +125,7 @@ export function AppointmentFormFields({
       {art === 'home_visit' ? hausbesuch : null}
 
       {art === 'video' ? (
-        <div className="border-line bg-surface-sunken rounded-lg border p-4">
+        <div className="border-line bg-surface-sunken rounded-card border p-4">
           <p className="text-ink text-sm">
             Für Videotermine wird in diesem Stand noch kein Videolink erzeugt.
           </p>
@@ -154,7 +154,7 @@ export function UebernommeneAdresse({
   const vollstaendig = Boolean(street && houseNumber && postalCode && city);
 
   return (
-    <div className="border-line bg-surface-sunken rounded-lg border p-4">
+    <div className="border-line bg-surface-sunken rounded-card border p-4">
       <p className="text-ink-muted text-sm">{ueberschrift}</p>
       {vollstaendig ? (
         <>
@@ -198,7 +198,7 @@ export function ArbeitszeitRueckfrage({
     <div
       role="group"
       aria-label="Außerhalb der Arbeitszeit"
-      className="border-line-strong bg-surface-sunken mb-6 rounded-lg border p-4"
+      className="border-line-strong bg-surface-sunken rounded-card mb-6 border p-4"
     >
       <p className="text-ink text-sm">
         Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit der behandelnden Person. Der

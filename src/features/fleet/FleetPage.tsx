@@ -56,7 +56,7 @@ const statusTon: Record<Radstatus, Ton> = {
 };
 
 const selectKlasse =
-  'min-h-11 rounded-lg border border-line-strong bg-surface px-3 text-base text-ink';
+  'min-h-11 rounded-field border border-line-strong bg-surface px-3 text-base text-ink';
 
 /** Kalendertage der laufenden Woche, nach Wochentag. */
 function wochentagsdaten(stichtag: string): Record<Wochentag, string> {
@@ -196,7 +196,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
         actions={
           <Link
             to="/betrieb/flotte/rad/neu"
-            className="bg-accent hover:bg-accent-hover inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium text-white transition-colors"
+            className="bg-accent hover:bg-accent-hover rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium text-white transition-colors"
           >
             Rad hinzufügen
           </Link>
@@ -209,19 +209,19 @@ export function FleetPage({ user }: { user: CurrentUser }) {
       <div className="mb-5 flex flex-wrap gap-3">
         <Link
           to="/betrieb/flotte/panne"
-          className="border-danger/40 text-danger hover:bg-danger-soft inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
+          className="border-danger/40 text-danger hover:bg-danger-soft rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
         >
           Panne melden
         </Link>
         <Link
           to="/betrieb/flotte/schluessel"
-          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
+          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
         >
           Schlüssel entnehmen
         </Link>
         <Link
           to="/betrieb/flotte/checkup"
-          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
+          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
         >
           Fahrrad-Check-Up
         </Link>
@@ -369,13 +369,13 @@ function Radkarte({
       </DataList>
 
       {rad.notiz ? (
-        <p className="text-ink-muted bg-surface-sunken mt-2 rounded-lg px-3 py-2 text-sm">
+        <p className="text-ink-muted bg-surface-sunken rounded-card mt-2 px-3 py-2 text-sm">
           {rad.notiz}
         </p>
       ) : null}
 
       <div
-        className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm ${
+        className={`rounded-card mt-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm ${
           rad.schluesselInhaber ? 'bg-warnung-soft text-warnung' : 'bg-positiv-soft text-positiv'
         }`}
       >
@@ -394,7 +394,7 @@ function Radkarte({
         ) : (
           <Link
             to={`/betrieb/flotte/schluessel?rad=${rad.id}`}
-            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-[0.9375rem] font-medium transition-colors"
+            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
           >
             Entnehmen
           </Link>

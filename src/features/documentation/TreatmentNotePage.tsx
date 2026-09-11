@@ -124,7 +124,7 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
           ) : (
             <Link
               to={zurueck}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-[0.9375rem] font-medium transition-colors"
+              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
             >
               Abbrechen
             </Link>
@@ -137,7 +137,7 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
           <div
             role="group"
             aria-label="Bearbeitung abbrechen"
-            className="border-line-strong bg-surface-sunken mt-4 rounded-lg border p-4"
+            className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
           >
             <p className="text-ink text-sm">
               Der eingegebene Text ist noch nicht gespeichert und geht beim Abbrechen verloren.
