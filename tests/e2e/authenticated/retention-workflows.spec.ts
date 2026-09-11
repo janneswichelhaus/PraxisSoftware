@@ -161,10 +161,19 @@ test.describe('LOE-001c: Löschsperre', () => {
       await anmelden(page, KONTEN.owner);
       await page.goto('/praxis/sicherheit/aufbewahrung');
 
-      // Name, Grund und Zustand stehen auf dieser Seite nur in der Sperre.
-      await expect(page.getByRole('heading', { name: 'Max Mustermann' })).toBeVisible();
+      // Name und Grund stehen auf dieser Seite nur in der Sperre.
+      const karte = page.getByRole('heading', { name: 'Max Mustermann' });
+      await expect(karte).toBeVisible();
       await expect(page.getByText('E2E-Testsperre')).toBeVisible();
-      await expect(page.getByText('Gesperrt')).toBeVisible();
+
+      // Der Zustand steht als Wort im Abzeichen, nicht nur als Farbe
+      // (Oberflächen-Checkliste Punkt 4). Geprüft wird er im Kopf der Karte
+      // und nicht auf der ganzen Seite: `getByText` sucht case-insensitiv
+      // nach einem Teilstring und fand sonst auch den Hinweis über dem
+      // Abschnitt („Eine gesperrte Akte wird nicht gelöscht …"). Und `exact`
+      // hilft hier nicht - das Abzeichen trägt vor dem Wort noch sein
+      // Zeichen, sein Textinhalt ist also „!Gesperrt".
+      await expect(karte.locator('..')).toContainText('Gesperrt');
     } finally {
       // Auch wenn oben etwas scheitert: die Sperre darf nicht stehen bleiben,
       // sonst findet der nächste Lauf einen anderen Ausgangspunkt vor.
