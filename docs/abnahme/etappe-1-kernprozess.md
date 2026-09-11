@@ -870,7 +870,15 @@ Verbindlich für Farben, Schutzraum, Mindestgröße und Verbote ist
    erscheint **nicht** im Ausdruck — die Kopfzeile wird beim Drucken
    ausgeblendet, wie seit UI-000. Das ist gewollt; das Logo auf Papier kommt
    mit der Rechnung (ABR-000).
-8. **Am Handy** (~375 px): Anmeldemaske und Kopfzeile ansehen. Die Wortmarke
+8. **Die dritte Seite ohne Rahmen.** Neben Anmeldemaske und Kopfzeile gibt es
+   genau eine Stelle, die die Marke tragen muss: die Seite „Zugang nicht
+   vollständig eingerichtet". Sie erscheint, wenn eine Anmeldung klappt, aber
+   kein Praxisprofil dahintersteht — auslösen lässt sie sich nur mit einem
+   Konto ohne Profil. Wenn du sie siehst, steht die Wortmarke über dem
+   Fehlertext. Zwei Komponententests halten das fest
+   (`src/app/App.test.tsx`); ein eigener Prüfschritt ist deshalb nur nötig,
+   falls dir die Seite im Alltag begegnet.
+9. **Am Handy** (~375 px): Anmeldemaske und Kopfzeile ansehen. Die Wortmarke
    bleibt neben dem Bereichsnamen und „Abmelden" vollständig sichtbar, nichts
    scrollt seitwärts, nichts überlappt. Ohne Anmeldung geht das auch in der
    Cloudumgebung:

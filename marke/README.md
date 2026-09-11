@@ -91,6 +91,7 @@ Umgesetzt am 2026-09-10 auf ausdrücklichen Auftrag von Jannes.
 | Seitentitel                   | „Own Motion"                                                                                                            |
 | Anmeldemaske                  | Wortmarke `logo/own-motion-block-farbig.svg`, 40 px                                                                     |
 | Kopfzeile der Anwendung       | dieselbe Wortmarke, 26 px — sie ersetzt den Organisationsnamen (ANN-023)                                                |
+| „Zugang nicht eingerichtet"   | dieselbe Wortmarke, 40 px — die einzige Vollseite nach der Anmeldung ohne Anwendungsrahmen                              |
 | Akzentfarbe                   | Hauptfarbe `#004429`; Hover trägt Tiefgrün `#042c1b` (ANN-022)                                                          |
 
 **Ausgeliefert wird über `public/marke/`.** Vite liefert nur aus, was dort
