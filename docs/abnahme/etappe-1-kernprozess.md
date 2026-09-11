@@ -837,10 +837,12 @@ Verbindlich für Farben, Schutzraum, Mindestgröße und Verbote ist
 1. **Tab und Lesezeichen.** Anwendung öffnen. Der Browser-Tab trägt das grüne
    Symbol und den Titel „Own Motion" — vorher war der Tab leer und hieß
    „Praxisplattform". Ein Lesezeichen setzen: es übernimmt beides.
-   **Bekannter Befund:** bei der kleinsten Größe (16 px) ist die zweizeilige
-   Wortmarke im Symbol nicht mehr lesbar; zu sehen ist ein grüner Block. Das
-   ist so geliefert und wartet auf eine Entscheidung — `marke/README.md`,
-   „Befunde", Punkt 2.
+   Im Symbol steht seit dem 2026-09-11 das **Monogramm „OM"** statt der
+   zweizeiligen Wortmarke (deine Entscheidung, `marke/README.md`, Befund 2).
+   Prüfen: Lässt sich „OM" im Tab erkennen — auch auf einem Bildschirm ohne
+   hohe Auflösung, wo der Browser die 16-px-Fassung nimmt? Wenn du dort immer
+   noch nur Farbe siehst, ist das ein Befund und keine Kleinigkeit: Dann
+   müsste das Monogramm größer auf der Kachel sitzen.
 2. **Anmeldemaske.** Abmelden. Über „Anmelden" steht jetzt die Wortmarke statt
    des Worts „PRAXISPLATTFORM". Sie ist zweizeilig, „OWN" über eingerücktem
    „MOTION", dunkelgrün auf hellem Grund. Rundum bleibt Platz — nichts drängt

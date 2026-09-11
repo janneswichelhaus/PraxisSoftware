@@ -42,7 +42,7 @@ describe('Ausgelieferte Marke', () => {
   it('liegt ueberhaupt im Auslieferungspfad', () => {
     // Ohne diese Zusicherung waere ein leeres Verzeichnis stillschweigend
     // gruen und die Anwendung haette kein Symbol mehr.
-    expect(kopien).toContain('own-motion-favicon-48.png');
+    expect(kopien).toContain('own-motion-monogramm-48.png');
     expect(kopien).toContain('own-motion-app-1024.png');
     expect(kopien).toContain('own-motion-block-farbig.svg');
   });
@@ -58,12 +58,23 @@ describe('index.html bindet die Marke ein', () => {
   const html = readFileSync(join(stamm, 'index.html'), 'utf8');
 
   it.each([
-    ['own-motion-favicon-48.png'],
-    ['own-motion-favicon-24.png'],
-    ['own-motion-favicon-16.png'],
+    ['own-motion-monogramm.svg'],
+    ['own-motion-monogramm-48.png'],
+    ['own-motion-monogramm-24.png'],
+    ['own-motion-monogramm-16.png'],
     ['own-motion-app-1024.png'],
   ])('verweist auf /marke/%s', (datei) => {
     expect(html).toContain(`href="/marke/${datei}"`);
+  });
+
+  /**
+   * Befund 2 aus `marke/README.md`, entschieden am 2026-09-11: Im Kleinformat
+   * steht das Monogramm, nicht die Wortmarke. Die gelieferten Favicons liegen
+   * weiter in `marke/app/` — als Beleg, nicht zur Verwendung. Dieser Test
+   * hält fest, dass sie nicht versehentlich zurückkehren.
+   */
+  it('bindet die zweizeilige Wortmarke nicht als Favicon ein', () => {
+    expect(html).not.toContain('own-motion-favicon-');
   });
 
   it('traegt den Markennamen als Seitentitel', () => {
