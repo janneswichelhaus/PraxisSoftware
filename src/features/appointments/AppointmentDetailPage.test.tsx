@@ -25,6 +25,7 @@ const praxistermin: AppointmentsApi.Appointment = {
   visit_postal_code: null,
   visit_city: null,
   completed_at: null,
+  cancellation_reason: null,
   patient_given_name: 'Berta',
   patient_family_name: 'Bestand',
   staff_given_name: 'Anna',
@@ -44,8 +45,8 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
-    cancelAppointment: (id: string, erwartet: string) =>
-      cancelAppointment(id, erwartet) as Promise<void>,
+    cancelAppointment: (id: string, erwartet: string, grund: AppointmentsApi.CancellationReason) =>
+      cancelAppointment(id, erwartet, grund) as Promise<void>,
     completeAppointment: (id: string, erwartet: string) =>
       completeAppointment(id, erwartet) as Promise<void>,
     reopenAppointment: (id: string, erwartet: string) =>
@@ -166,6 +167,30 @@ describe('AppointmentDetailPage', () => {
     expect(zeile('Status')).toBe('Abgesagt');
   });
 
+  it('zeigt den Absagegrund als Wort, nicht als Schluessel (CAL-008b)', async () => {
+    fetchAppointment.mockResolvedValue({
+      ...praxistermin,
+      status: 'cancelled',
+      cancellation_reason: 'practice_request',
+    });
+    rendern();
+
+    await screen.findByText(/Dieser Termin ist abgesagt\./);
+    expect(zeile('Absagegrund')).toBe('Praxis hat abgesagt');
+  });
+
+  it('nennt eine Absage aus der Zeit vor dem Pflichtgrund "Nicht erfasst"', async () => {
+    fetchAppointment.mockResolvedValue({
+      ...praxistermin,
+      status: 'cancelled',
+      cancellation_reason: null,
+    });
+    rendern();
+
+    await screen.findByText(/Dieser Termin ist abgesagt\./);
+    expect(zeile('Absagegrund')).toBe('Nicht erfasst');
+  });
+
   describe('Aktionen (CAL-003)', () => {
     it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
       'bietet %s Bearbeiten und Absagen an',
@@ -247,16 +272,34 @@ describe('AppointmentDetailPage', () => {
       expect(cancelAppointment).not.toHaveBeenCalled();
     });
 
-    it('sagt nach Bestaetigung mit dem gelesenen Stand ab', async () => {
+    it('sagt nach Bestaetigung mit dem gelesenen Stand und dem Grund ab', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      await waitFor(() =>
+        expect(cancelAppointment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          praxistermin.updated_at,
+          'patient_request',
+        ),
+      );
+    });
+
+    it('sagt ohne ausgewaehlten Grund nicht ab (CAL-008b)', async () => {
       const user = userEvent.setup();
       rendern();
       await screen.findByText('Anna Beispiel');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
-      await waitFor(() =>
-        expect(cancelAppointment).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
-      );
+      expect(await screen.findByText('Bitte einen Absagegrund auswählen.')).toBeInTheDocument();
+      expect(cancelAppointment).not.toHaveBeenCalled();
+      // Die Rueckfrage bleibt offen: die Auswahl steht weiter zur Verfuegung.
+      expect(screen.getByLabelText('Absagegrund')).toBeInTheDocument();
     });
 
     it('loest bei doppeltem Klick nur einen Schreibvorgang aus', async () => {
@@ -272,6 +315,7 @@ describe('AppointmentDetailPage', () => {
       rendern();
       await screen.findByText('Anna Beispiel');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'moved');
 
       const knopf = screen.getByRole('button', { name: 'Ja, Termin absagen' });
       await user.click(knopf);
@@ -291,6 +335,7 @@ describe('AppointmentDetailPage', () => {
       rendern();
       await screen.findByText('Anna Beispiel');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'other');
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
       expect(

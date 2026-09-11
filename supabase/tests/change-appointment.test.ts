@@ -21,7 +21,7 @@ const ANLEGEN =
   'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
 const AENDERN =
   'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true) as id';
-const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz) as id';
+const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz, $3) as id';
 
 const STAFF = {
   jannes: '55555555-5555-4555-8555-000000000001',
@@ -397,7 +397,7 @@ describe('update_appointment: Ueberschneidungen', () => {
 
   it('laesst einen abgesagten Termin den Zeitraum freigeben', async () => {
     const erster = await anlegen({ von: '09:00', bis: '10:00' });
-    await asUserCommitted(users.office, ABSAGEN, [erster.id, erster.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [erster.id, erster.updated_at, 'other']);
 
     // Derselbe Zeitraum ist jetzt wieder belegbar.
     const neuer = await anlegen({ patient: patients.erika, von: '09:00', bis: '10:00' });
@@ -509,7 +509,7 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
       await beginne(b, users.teamLead);
 
       // Eine Person sagt ab, die andere bearbeitet - beide auf demselben Stand.
-      await a.query(ABSAGEN, [t.id, t.updated_at]);
+      await a.query(ABSAGEN, [t.id, t.updated_at, 'other']);
       const bearbeitung = abgefangen(
         b.query(AENDERN, aendernArgs(t, { von: '15:00', bis: '16:00' })),
       );
@@ -555,8 +555,8 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
       await beginne(a, users.office);
       await beginne(b, users.teamLead);
 
-      await a.query(ABSAGEN, [t.id, t.updated_at]);
-      const zweite = abgefangen(b.query(ABSAGEN, [t.id, t.updated_at]));
+      await a.query(ABSAGEN, [t.id, t.updated_at, 'other']);
+      const zweite = abgefangen(b.query(ABSAGEN, [t.id, t.updated_at, 'other']));
 
       await a.query('commit');
 
@@ -581,7 +581,7 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
     await expect(
       asUser(users.office, AENDERN, [t.id, null, STAFF.anna, 'video', TAG, '09:00', '10:00', null]),
     ).rejects.toThrow(/expected updated_at is required/);
-    await expect(asUser(users.office, ABSAGEN, [t.id, null])).rejects.toThrow(
+    await expect(asUser(users.office, ABSAGEN, [t.id, null, 'other'])).rejects.toThrow(
       /expected updated_at is required/,
     );
   });
@@ -723,11 +723,11 @@ describe('cancel_appointment', () => {
   });
 
   function absagen(userId: string | null, t: Termin, erwartet?: string) {
-    return asUser<{ id: string }>(userId, ABSAGEN, [t.id, erwartet ?? t.updated_at]);
+    return asUser<{ id: string }>(userId, ABSAGEN, [t.id, erwartet ?? t.updated_at, 'other']);
   }
 
   function absagenCommitted(userId: string, t: Termin) {
-    return asUserCommitted<{ id: string }>(userId, ABSAGEN, [t.id, t.updated_at]);
+    return asUserCommitted<{ id: string }>(userId, ABSAGEN, [t.id, t.updated_at, 'other']);
   }
 
   it.each([
@@ -834,16 +834,61 @@ describe('cancel_appointment', () => {
 
   it('weist anon ab', async () => {
     const t = await anlegen({});
-    await expect(asAnon(ABSAGEN, [t.id, t.updated_at])).rejects.toThrow(
+    await expect(asAnon(ABSAGEN, [t.id, t.updated_at, 'other'])).rejects.toThrow(
       /permission denied|not authenticated/i,
     );
   });
 
-  it('nimmt keinen Freitextgrund entgegen', async () => {
-    const { rows } = await asPostgres<{ argumente: string }>(
-      "select pg_get_function_arguments(oid) as argumente from pg_proc where proname = 'cancel_appointment'",
+  // Seit CAL-008b traegt die Absage einen Grund (ADR-018 Punkt 6). Die Zusage
+  // von CAL-003 bleibt dabei erhalten und wird hier weiter geprueft: Es ist
+  // eine codierte Auswahl und kein Freitextfeld, in dem eine
+  // Gesundheitsangabe landen koennte (ANN-034).
+  it('nimmt nur codierte Absagegruende entgegen, keinen Freitext', async () => {
+    const t = await anlegen({ von: '15:00', bis: '16:00' });
+
+    await expect(
+      asUser(users.office, ABSAGEN, [t.id, t.updated_at, 'Ruecken war wieder schlimmer']),
+    ).rejects.toThrow(/cancellation reason is required/);
+
+    const { rows } = await asPostgres<{ definition: string }>(
+      `select pg_get_constraintdef(oid) as definition
+         from pg_constraint where conname = 'appointments_cancellation_reason_values'`,
     );
-    expect(rows[0]?.argumente).not.toMatch(/reason|grund|comment|note/i);
+    for (const wert of ['patient_request', 'practice_request', 'moved', 'other']) {
+      expect(rows[0]?.definition).toContain(`'${wert}'`);
+    }
+  });
+
+  it('verlangt den Grund und schreibt ohne ihn nichts', async () => {
+    const t = await anlegen({ von: '16:00', bis: '17:00' });
+
+    await expect(asUser(users.office, ABSAGEN, [t.id, t.updated_at, null])).rejects.toThrow(
+      /cancellation reason is required/,
+    );
+    expect((await zeile(t.id))?.status).toBe('confirmed');
+  });
+
+  it('haelt den Grund an der Zeile fest', async () => {
+    const t = await anlegen({ von: '17:00', bis: '18:00' });
+    await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at, 'patient_request']);
+
+    expect(await zeile(t.id)).toMatchObject({
+      status: 'cancelled',
+      cancellation_reason: 'patient_request',
+    });
+  });
+
+  it('schreibt den Grund NICHT ins Auditlog - er laeuft mit der Zeile, nicht mit dem Ereignis', async () => {
+    const t = await anlegen({ von: '18:00', bis: '19:00' });
+    await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at, 'patient_request']);
+
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log
+        where action = 'appointment.cancelled' and subject_id = $1`,
+      [t.id],
+    );
+    expect(rows).toHaveLength(1);
+    expect(JSON.stringify(rows[0]?.context)).not.toContain('patient_request');
   });
 });
 
@@ -893,9 +938,9 @@ describe('CAL-003: Mandantentrennung', () => {
   });
 
   it('laesst den Termin einer fremden Praxis nicht absagen', async () => {
-    await expect(asUser(users.office, ABSAGEN, [fremder.id, fremder.updated_at])).rejects.toThrow(
-      /appointment not found/,
-    );
+    await expect(
+      asUser(users.office, ABSAGEN, [fremder.id, fremder.updated_at, 'other']),
+    ).rejects.toThrow(/appointment not found/);
   });
 
   it('erzeugt fuer eine unbekannte und eine fremde Termin-ID dieselbe Meldung', async () => {

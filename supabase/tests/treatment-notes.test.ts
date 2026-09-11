@@ -35,7 +35,7 @@ const STAFF = {
 // waeren sie nur Rauschen (CAL-005).
 const TERMIN_ANLEGEN =
   'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
-const TERMIN_ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz) as id';
+const TERMIN_ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz, $3) as id';
 const TERMIN_ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
 
 const ANLEGEN = 'select public.create_treatment_note($1::uuid, $2) as id';
@@ -193,7 +193,7 @@ describe('DOK-001: Behandlungsdokumentation anlegen', () => {
 
   it('weist einen abgesagten Termin ab', async () => {
     const t = await termin();
-    await asUserCommitted(users.office, TERMIN_ABSAGEN, [t.id, t.updated_at]);
+    await asUserCommitted(users.office, TERMIN_ABSAGEN, [t.id, t.updated_at, 'other']);
 
     await expect(asUser(users.therapist, ANLEGEN, [t.id, TEXT])).rejects.toThrow(
       /cancelled appointment cannot be documented/,

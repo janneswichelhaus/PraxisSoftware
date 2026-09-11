@@ -714,8 +714,8 @@ describe('set_staff_employment_status', () => {
     const stand = await terminStand(termin);
     await asUserCommitted(
       users.office,
-      'select public.cancel_appointment($1::uuid, $2::timestamptz)',
-      [stand.id, stand.updated_at],
+      'select public.cancel_appointment($1::uuid, $2::timestamptz, $3)',
+      [stand.id, stand.updated_at, 'other'],
     );
 
     await asUserCommitted(users.ownerTherapist, STATUS, [STAFF.anna, 'inactive', false]);
@@ -847,8 +847,8 @@ describe('Aktivstatus bei Terminzuweisungen', () => {
     const stand = await terminStand(rows[0]!.id);
     await asUserCommitted(
       users.office,
-      'select public.cancel_appointment($1::uuid, $2::timestamptz)',
-      [stand.id, stand.updated_at],
+      'select public.cancel_appointment($1::uuid, $2::timestamptz, $3)',
+      [stand.id, stand.updated_at, 'other'],
     );
 
     expect((await terminStand(stand.id)).status).toBe('cancelled');

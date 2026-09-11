@@ -183,6 +183,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
 | ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | entschieden (Jannes) 2026-09-11 | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
 | ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
+| ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | offen | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (B2) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1880,3 +1881,58 @@ dass die Sperre den Löschlauf anhält (`supabase/tests/retention-run.test.ts`).
 des Löschlaufs aufnehmen — Aufwand `klein`. Pflegeoberfläche ergänzen: eine
 Seite mit zwei Aktionen auf den bestehenden Funktionen — Aufwand `klein`,
 bewusst nicht in diesem Epic.
+
+---
+
+### ANN-034 — Absagegrund als codierte Auswahl aus vier Werten, kein Freitext
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | CAL-008b; ADR-018 Punkt 6 verlangt den Grund als Pflichtangabe und nennt die Werteliste ausdrücklich „bewusst nicht Bestandteil dieser Entscheidung" (CAL-008) |
+| Status | **offen** |
+| Wiedervorlage | Jannes nach den ersten Praxiswochen — dort zeigt sich, ob vier Werte reichen; Datenschutzprüfung (B2) |
+
+**Annahme.** Der Absagegrund ist eine **codierte Auswahl aus genau vier
+Werten** — „Patient:in hat abgesagt", „Praxis hat abgesagt", „Termin verlegt",
+„Sonstiger Grund" — **ohne Freitextfeld**. Er ist Pflicht für jede neue Absage,
+Bestandszeilen behalten `null`. Er steht an der Terminzeile und **nicht** im
+Auditkontext.
+
+**Begründung.** ADR-018 nennt den Zweck des Grundes: „Ohne Grund ist die
+Absagequote später nicht lesbar." Genau das leisten die vier Werte — wer
+abgesagt hat und ob der Termin verlegt wurde, ist die ganze Auskunft, die eine
+Quote braucht. Ein Freitextfeld leistet dafür nichts zusätzlich, ist aber die
+wahrscheinlichste Stelle im ganzen Terminmodell, an der eine Gesundheitsangabe
+in einen ausdrücklich klinikfreien Datensatz rutscht („Rücken war wieder
+schlimmer", „liegt im Krankenhaus"). `PROJECT_PRINCIPLES.md` §4.6 und §5
+halten den Termin frei von klinischen Inhalten; §16 verlangt im Zweifel die
+datensparsamere Option. Vier Werte statt einer feineren Liste, weil jede
+zusätzliche Kategorie eine Aussage über die Patientin trifft, sobald sie über
+„wer hat abgesagt" hinausgeht — „krank", „verstorben", „unzufrieden" wären
+genau das.
+
+Dass der Grund **nicht** ins Auditlog wandert, folgt derselben Linie: Die
+Terminzeile fällt nach drei Jahren ab Jahresende (`termin_ohne_nachweis`,
+ANN-001), das Auditlog läuft nach eigener Frist (ANN-029). Eine Kopie im
+Auditkontext ließe die Angabe die Zeile überleben, ohne dass sie dort jemand
+braucht (ADR-010, ADR-011).
+**Unsicher:** ob die Praxis im Alltag eine fünfte Kategorie vermisst — am
+ehesten „kurzfristig abgesagt", sobald ADR-009 das Ausfallhonorar bei Absagen
+regelt. ADR-018 verweist die Fristenregel ausdrücklich in den Praxisprozess und
+nicht ins Datenmodell.
+
+**Verankerung.** `public.appointments.cancellation_reason` mit der Constraint
+`appointments_cancellation_reason_values` und die Prüfung in
+`public.cancel_appointment` — beide in
+`supabase/migrations/20260912110000_cancellation_reason.sql`, der Kopfkommentar
+trägt die Kennung. Beschriftungen in `cancellationReasonLabels`
+(`src/features/appointments/api.ts`). Tests in
+`supabase/tests/change-appointment.test.ts` („nimmt nur codierte
+Absagegründe entgegen, keinen Freitext" und der Auditkontext-Fall).
+
+**Änderungspfad.** Weiterer Wert: einen Eintrag in der Constraint, einen in
+`cancellationReasonLabels` — Aufwand `klein`, keine Migration bestehender
+Zeilen nötig. Freitext zusätzlich aufnehmen: neue Spalte, Redaction-Regel im
+Logging, Aufnahme in die Löschprüfung und eine Aussage in der DSFA — Aufwand
+`mittel`, und genau die Abwägung oben spricht dagegen.

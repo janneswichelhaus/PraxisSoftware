@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Select } from '@/components/ui/Select';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -18,8 +20,11 @@ import { NavigationZumTermin } from './NavigationStarten';
 import {
   appointmentStatusLabels,
   cancelAppointment,
+  cancellationReasonLabels,
+  cancellationReasonSchema,
   appointmentTypeLabels,
   completeAppointment,
+  type CancellationReason,
   fetchAppointment,
   folgeterminVorbelegung,
   formatLocalDate,
@@ -65,27 +70,46 @@ function zustandsHinweis(appointment: Appointment): string {
 }
 
 /**
- * Absage mit Rückfrage.
+ * Absage mit Rückfrage und Pflichtgrund.
  *
- * Bewusst zweistufig: eine Absage betrifft eine reale Verabredung, und ein
- * versehentlicher Einzelklick soll sie nicht auslösen
- * (PROJECT_PRINCIPLES.md 13). Die Rückfrage ist Bedienkomfort - verbindlich
- * prüft `cancel_appointment` Berechtigung und Zustand erneut.
+ * Bewusst zweistufig: eine Absage betrifft eine reale Verabredung, sie hat
+ * keinen Rückweg (ADR-018 Punkt 2), und ein versehentlicher Einzelklick soll
+ * sie nicht auslösen (PROJECT_PRINCIPLES.md 13). Die Rückfrage ist
+ * Bedienkomfort - verbindlich prüft `cancel_appointment` Berechtigung, Zustand
+ * und Grund erneut.
+ *
+ * Der Grund ist eine Auswahl ohne Freitext und ohne Vorbelegung: Wer absagt,
+ * trifft die Entscheidung bewusst, und ein Freitextfeld am Termin wäre die
+ * wahrscheinlichste Stelle für eine Gesundheitsangabe (ANN-034).
  *
  * Es ist ausdrücklich keine Löschung: der Termin bleibt erhalten. Die
  * Beschriftung vermeidet deshalb jede Löschsprache.
  */
 function AbsageAktion({ appointment }: { appointment: Appointment }) {
   const queryClient = useQueryClient();
+  const [grund, setGrund] = useState('');
+  const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
 
   const mutation = useMutation({
-    mutationFn: () => cancelAppointment(appointment.id, appointment.updated_at),
+    mutationFn: (gewaehlt: CancellationReason) =>
+      cancelAppointment(appointment.id, appointment.updated_at, gewaehlt),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
-      // Der Kalender zeigt sonst weiter einen geplanten Termin.
+      // Der Kalender zeigt sonst weiter einen bestätigten Termin.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
+
+  async function absagen() {
+    const gewaehlt = cancellationReasonSchema.safeParse(grund);
+    if (!gewaehlt.success) {
+      setGrundFehler('Bitte einen Absagegrund auswählen.');
+      // Ohne den Wurf schlösse die Rückfrage sich trotz fehlender Angabe.
+      throw new Error('Absagegrund fehlt');
+    }
+    setGrundFehler(undefined);
+    await mutation.mutateAsync(gewaehlt.data);
+  }
 
   return (
     <Rueckfrage
@@ -95,12 +119,34 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
       bestaetigenLaeuft="Wird abgesagt …"
       fehler={mutation.isError ? mutation.error.message : undefined}
       laeuft={mutation.isPending}
-      onBestaetigen={() => mutation.mutateAsync()}
+      onAbbrechen={() => setGrundFehler(undefined)}
+      onBestaetigen={absagen}
     >
-      Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
-      {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
-      {patientName(appointment)} wird als abgesagt geführt. Er bleibt vollständig erhalten und gibt
-      seinen Zeitraum wieder frei.
+      <p>
+        Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
+        um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
+        {patientName(appointment)} wird als abgesagt geführt. Er bleibt vollständig erhalten und
+        gibt seinen Zeitraum wieder frei. Eine Absage lässt sich nicht zurücknehmen – für einen
+        neuen Termin bitte neu anlegen.
+      </p>
+      <div className="mt-3 max-w-xs">
+        <Select
+          label="Absagegrund"
+          value={grund}
+          error={grundFehler}
+          onChange={(e) => {
+            setGrund(e.target.value);
+            setGrundFehler(undefined);
+          }}
+        >
+          <option value="">Bitte wählen</option>
+          {Object.entries(cancellationReasonLabels).map(([wert, beschriftung]) => (
+            <option key={wert} value={wert}>
+              {beschriftung}
+            </option>
+          ))}
+        </Select>
+      </div>
     </Rueckfrage>
   );
 }
@@ -217,6 +263,13 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
           {appointment.appointment_type === 'home_visit' ? (
             <DetailRow label="Anfahrt">
               <NavigationZumTermin termin={appointment} />
+            </DetailRow>
+          ) : null}
+          {appointment.status === 'cancelled' ? (
+            <DetailRow label="Absagegrund">
+              {appointment.cancellation_reason
+                ? cancellationReasonLabels[appointment.cancellation_reason]
+                : 'Nicht erfasst'}
             </DetailRow>
           ) : null}
           {appointment.completed_at ? (

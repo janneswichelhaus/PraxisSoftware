@@ -65,6 +65,29 @@ export const appointmentStatusTon: Record<AppointmentStatus, 'positiv' | 'warnun
   invoiced: 'positiv',
 };
 
+/**
+ * Absagegründe (CAL-008b, ANN-034).
+ *
+ * Eine codierte Auswahl, kein Freitext: ein freies Feld am Termin wäre die
+ * wahrscheinlichste Stelle, an der eine Gesundheitsangabe in einen
+ * organisatorischen Datensatz rutscht (PROJECT_PRINCIPLES.md §4.6, §5). Die
+ * Reihenfolge ist die der Häufigkeit im Praxisalltag.
+ */
+export const cancellationReasonSchema = z.enum([
+  'patient_request',
+  'practice_request',
+  'moved',
+  'other',
+]);
+export type CancellationReason = z.infer<typeof cancellationReasonSchema>;
+
+export const cancellationReasonLabels: Record<CancellationReason, string> = {
+  patient_request: 'Patient:in hat abgesagt',
+  practice_request: 'Praxis hat abgesagt',
+  moved: 'Termin verlegt',
+  other: 'Sonstiger Grund',
+};
+
 const appointmentSchema = z.object({
   id: z.string(),
   patient_id: z.string(),
@@ -84,6 +107,9 @@ const appointmentSchema = z.object({
   // Nur der Zeitpunkt, nicht die abschliessende Person: die Detailansicht
   // zeigt keine Akteure, die Historie steht im Auditlog (ADR-010).
   completed_at: z.string().nullable(),
+  // `null` bei jeder Absage aus der Zeit vor CAL-008b - der Grund wird nicht
+  // rueckwirkend erfunden.
+  cancellation_reason: cancellationReasonSchema.nullable(),
   patient_given_name: z.string(),
   patient_family_name: z.string(),
   staff_given_name: z.string(),
@@ -99,6 +125,7 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 const SELECT =
   'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
+  'cancellation_reason, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -589,6 +616,9 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
       'Der Termin ist bereits abgeschlossen oder als „nicht angetroffen" geführt. Er muss erst wieder geöffnet werden, bevor er geändert oder abgesagt werden kann.',
     );
   }
+  if (error?.message?.includes('cancellation reason is required')) {
+    return new Error('Bitte einen Absagegrund auswählen.');
+  }
   if (error?.message?.includes('documented appointment cannot be changed')) {
     return new Error(
       'Der Termin ist dokumentiert und lässt sich nicht mehr ändern. Eine Korrektur gehört in die Behandlungsdokumentation.',
@@ -626,18 +656,21 @@ export async function updateAppointment(
 }
 
 /**
- * Sagt einen geplanten Termin ab.
+ * Sagt einen bestätigten Termin ab.
  *
  * Absage ist ein Statuswechsel, kein Löschen: der Termin bleibt vollständig
- * erhalten und nachvollziehbar.
+ * erhalten und nachvollziehbar. Der Grund ist Pflicht und wird serverseitig
+ * erneut geprüft — die Auswahl im Formular ist nur Bedienkomfort (ADR-004).
  */
 export async function cancelAppointment(
   appointmentId: string,
   expectedUpdatedAt: string,
+  reason: CancellationReason,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('cancel_appointment', {
     p_appointment_id: appointmentId,
     p_expected_updated_at: expectedUpdatedAt,
+    p_reason: reason,
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgesagt werden.');

@@ -24,7 +24,7 @@ const ANLEGEN =
   'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
 const AENDERN =
   'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true) as id';
-const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz) as id';
+const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz, $3) as id';
 const ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
 const OEFFNEN = 'select public.reopen_appointment($1::uuid, $2::timestamptz) as id';
 
@@ -146,7 +146,7 @@ describe('Uebergaenge ohne Rueckweg (ADR-018 Punkt 2)', () => {
 
   it('nimmt eine Absage nicht zurueck - auch nicht ueber das Wiederoeffnen', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at, 'other']);
     const abgesagt = await stand(termin.id);
 
     await expect(asUser(users.office, OEFFNEN, [abgesagt.id, abgesagt.updated_at])).rejects.toThrow(
@@ -188,7 +188,7 @@ describe('Uebergaenge ohne Rueckweg (ADR-018 Punkt 2)', () => {
     const dokumentiert = await zustandSetzen(termin.id, 'documented');
 
     await expect(
-      asUser(users.office, ABSAGEN, [dokumentiert.id, dokumentiert.updated_at]),
+      asUser(users.office, ABSAGEN, [dokumentiert.id, dokumentiert.updated_at, 'other']),
     ).rejects.toThrow(/documented appointment cannot be changed/);
   });
 
@@ -234,7 +234,7 @@ describe('Zeitraum: nur die Absage gibt ihn frei', () => {
 
   it('gibt den Zeitraum nach einer Absage frei', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at, 'other']);
 
     const { rows } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
       patients.erika,
@@ -260,7 +260,7 @@ describe('Statusfilter des Kalenderlesepfads', () => {
     const dokumentiert = await anlegen('11:00', '12:00');
     await zustandSetzen(dokumentiert.id, 'documented');
     const abgesagt = await anlegen('13:00', '14:00');
-    await asUserCommitted(users.office, ABSAGEN, [abgesagt.id, abgesagt.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [abgesagt.id, abgesagt.updated_at, 'other']);
 
     const { rows } = await asUser<{ id: string }>(users.office, LESEN, [
       TAG,

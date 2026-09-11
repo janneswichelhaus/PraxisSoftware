@@ -201,9 +201,17 @@ test.describe('CAL-003: Absagen', () => {
     await expect(rueckfrage).toContainText('Max Mustermann');
     await expect(rueckfrage).toContainText(/bleibt vollständig erhalten/);
 
+    // Ohne Grund passiert nichts - die Pflichtangabe sitzt serverseitig, der
+    // Hinweis daneben ist nur die Erklaerung (CAL-008b).
+    await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
+    await expect(rueckfrage).toContainText('Bitte einen Absagegrund auswählen.');
+    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+
+    await page.getByLabel('Absagegrund').selectOption('patient_request');
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
+    await expect(detailWert(page, 'Absagegrund')).toContainText('Patient:in hat abgesagt');
     await page.reload();
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
 
@@ -232,6 +240,7 @@ test.describe('CAL-003: Absagen', () => {
     await terminAnlegen(page, { tag, von, bis });
 
     await page.getByRole('button', { name: 'Termin absagen' }).click();
+    await page.getByLabel('Absagegrund').selectOption('patient_request');
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
 
@@ -270,6 +279,7 @@ test.describe('CAL-003: Absagen', () => {
       data: {
         p_appointment_id: '77777777-7777-4777-8777-000000000001',
         p_expected_updated_at: '2027-01-01T00:00:00+00',
+        p_reason: 'other',
       },
     });
     expect(abgesagt.status()).toBe(403);
