@@ -8,6 +8,7 @@ import {
   arbeitszeitBestaetigen,
   detailWert,
   tagImFenster,
+  terminKachel,
 } from './helpers';
 
 /**
@@ -45,6 +46,12 @@ async function terminAnlegen(
   await page.goto(`/patienten/${opts.patient ?? PATIENTEN.max}/termine/neu`);
   await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
   await page.getByLabel('Terminart *').selectOption('practice');
+  // Bei genau einem Standort waehlt das Formular ihn vor - aber erst, wenn die
+  // Standorte geladen sind (`NewAppointmentPage`, useEffect auf die Abfrage).
+  // Wer vorher abschickt, schickt ein leeres Pflichtfeld ab und bleibt auf dem
+  // Formular stehen. Auf einem belasteten Runner ist genau das passiert;
+  // derselbe Riegel steht in appointment-workflows.spec.ts.
+  await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
   await page.getByLabel('Datum *').fill(opts.tag);
   await page.getByLabel('Beginn *').fill(opts.von);
   await page.getByLabel('Ende *').fill(opts.bis);
@@ -154,8 +161,13 @@ test.describe('CAL-009: Tag umplanen', () => {
     const tag = laufTag(4);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
-    await terminAnlegen(page, { tag, von: zeit(60), bis: zeit(105), patient: PATIENTEN.erika });
+    const ersterTermin = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    const zweiterTermin = await terminAnlegen(page, {
+      tag,
+      von: zeit(60),
+      bis: zeit(105),
+      patient: PATIENTEN.erika,
+    });
 
     // Der Einstieg steht nur dort, wo Person UND Tag feststehen.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
@@ -174,8 +186,16 @@ test.describe('CAL-009: Tag umplanen', () => {
     await expect(page.getByText('2 Termine sind abgesagt. Jetzt anrufen.')).toBeVisible();
     await expect(page.getByText(/nicht gespeichert/)).toBeVisible();
 
-    // Und im Kalender sind beide Termine tatsaechlich abgesagt.
+    // Und im Kalender sind beide Termine tatsaechlich abgesagt. Adressiert ueber
+    // die Kachel des jeweiligen Termins, nicht ueber den Text "Abgesagt": den
+    // findet `getByText` als Teilstring ohne Ruecksicht auf Gross- und
+    // Kleinschreibung auch im Statusfilter ("Alle ausser abgesagten"), und ein
+    // Eintrag in einer geschlossenen Auswahlliste ist nie sichtbar.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&person=${MITARBEITENDE.anna}&status=all`);
-    await expect(page.getByText('Abgesagt').first()).toBeVisible();
+    for (const id of [ersterTermin, zweiterTermin]) {
+      const kachel = terminKachel(page, id);
+      await expect(kachel).toBeVisible();
+      await expect(kachel).toContainText('Abgesagt');
+    }
   });
 });
