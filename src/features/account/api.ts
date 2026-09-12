@@ -8,21 +8,48 @@ import { getSupabase } from '@/lib/supabase';
  * dessen Funktionen auf und meldet anschließend ins Auditlog, **dass** der
  * Vorgang stattgefunden hat — nie mit Kennwort, Token oder Geheimnis.
  *
- * Die Reihenfolge ist überall dieselbe: erst der Vorgang beim Provider, dann
- * die Meldung. Scheitert der Vorgang, wird nichts gemeldet; scheitert die
- * Meldung, ist der Vorgang trotzdem passiert — deshalb bricht sie den Ablauf
- * nicht ab, sondern bleibt still. Eine Fehlermeldung, die ein erfolgreich
- * geändertes Kennwort als Misserfolg darstellt, wäre die schlechtere Auskunft
- * (Oberflächen-Checkliste Punkt 6).
+ * Die Reihenfolge ist **fast** überall dieselbe: erst der Vorgang beim
+ * Provider, dann die Meldung. Scheitert der Vorgang, wird nichts gemeldet;
+ * scheitert die Meldung, ist der Vorgang trotzdem passiert — deshalb bricht
+ * sie den Ablauf nicht ab, sondern bleibt still. Eine Fehlermeldung, die ein
+ * erfolgreich geändertes Kennwort als Misserfolg darstellt, wäre die
+ * schlechtere Auskunft (Oberflächen-Checkliste Punkt 6).
+ *
+ * **Die eine Ausnahme ist `sessions_ended`** (ANN-043). Dieser Vorgang nimmt
+ * dem Konto die eigene Sitzung — danach gibt es kein `auth.uid()` mehr, und
+ * `log_account_security_event` weist den Aufruf ab. Nachher melden heißt
+ * deshalb: gar nicht melden. Der Vermerk steht dort vor dem Vorgang und ist
+ * seine Vorbedingung; scheitert er, unterbleibt das Abmelden. Dasselbe Muster
+ * wie bei der Termin-E-Mail (ANN-041 Punkt 5).
  */
 type Sicherheitsereignis = 'password_changed' | 'sessions_ended' | 'mfa_enrolled' | 'mfa_removed';
 
+/**
+ * Meldet im Nachhinein und hält den Ablauf nicht auf.
+ *
+ * `rpc` wirft bei einem Serverfehler nicht, sondern löst mit `{ error }` auf —
+ * ein `try`/`catch` darum herum fängt nichts und täuscht eine Behandlung vor.
+ * Deshalb wird `error` ausgewertet. Sichtbar bleibt der Fehlschlag auf der
+ * Konsole, wie beim Aktenzugriff in `features/patients/api.ts`; ohne
+ * Kontoangabe, denn ADR-011 lässt keine personenbezogenen Daten ins Log.
+ */
 async function melde(ereignis: Sicherheitsereignis): Promise<void> {
-  try {
-    await getSupabase().rpc('log_account_security_event', { p_event: ereignis });
-  } catch {
-    // Siehe oben: der Vorgang beim Provider ist bereits geschehen.
+  const { error } = await getSupabase().rpc('log_account_security_event', { p_event: ereignis });
+  if (error) {
+    console.error('Auditeintrag für ein Kontoereignis fehlgeschlagen.');
   }
+}
+
+/**
+ * Meldet vorab und ist Vorbedingung: ohne Vermerk kein Vorgang (ANN-043).
+ *
+ * Der Vermerk hält fest, dass diese Person die Beendigung **ausgelöst** hat —
+ * nicht, dass sie überall gewirkt hat. Das ist der ehrliche Inhalt: Ob ein
+ * fremdes Gerät den Zugriff schon verloren hat, sieht diese Anwendung nicht.
+ */
+async function meldeVorab(ereignis: Sicherheitsereignis): Promise<void> {
+  const { error } = await getSupabase().rpc('log_account_security_event', { p_event: ereignis });
+  if (error) throw new Error('Der Vorgang wurde nicht protokolliert und deshalb nicht ausgeführt.');
 }
 
 /**
@@ -53,13 +80,25 @@ export async function aendereKennwort(neuesKennwort: string): Promise<void> {
  * Beendet alle Sitzungen dieses Kontos — auch die auf anderen Geräten.
  *
  * Der Punkt aus R10 der Roadmap: Wer sein Diensttelefon verliert, muss das
- * angemeldete Gerät ohne fremde Hilfe abmelden können. `scope: 'global'`
- * entwertet alle ausgegebenen Token, die eigene Sitzung eingeschlossen — die
- * Abmeldung im laufenden Fenster ist die sichtbare Folge, nicht ein
- * Nebeneffekt.
+ * angemeldete Gerät ohne fremde Hilfe abmelden können.
+ *
+ * **Was `scope: 'global'` wirklich tut** (ANN-043): Der Anmeldedienst löscht
+ * alle Sitzungen des Kontos und mit ihnen die Erneuerungstoken. Ein verlorenes
+ * Gerät kann sich damit nicht mehr verlängern. Sein **bereits ausgestelltes**
+ * Zugriffstoken bleibt aber bis zum Ablauf gültig, weil die Datenschnittstelle
+ * nur die Signatur und `exp` prüft und dafür nicht in die Datenbank sieht. Das
+ * Fenster ist `jwt_expiry` aus `supabase/config.toml`, heute 3600 Sekunden.
+ *
+ * Sofort wirkt allein die **Sperre des Zugangs** durch die Praxisleitung: Die
+ * Datenbank liest bei jeder Anfrage `user_profiles.is_active`
+ * (`app.current_organization_id()`), und ein gesperrtes Profil liefert keine
+ * Organisation mehr. Wer ein Gerät wirklich verloren hat, braucht deshalb
+ * beides — und die Oberfläche sagt das an der Stelle der Entscheidung.
  */
 export async function beendeAlleSitzungen(): Promise<void> {
-  await melde('sessions_ended');
+  // Vor dem Vorgang, weil danach kein `auth.uid()` mehr existiert - siehe
+  // Dateikopf und ANN-043. Wirft der Vermerk, unterbleibt das Abmelden.
+  await meldeVorab('sessions_ended');
   const { error } = await getSupabase().auth.signOut({ scope: 'global' });
   if (error) throw new Error('Die Sitzungen konnten nicht beendet werden.');
 }
