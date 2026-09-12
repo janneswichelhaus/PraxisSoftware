@@ -320,14 +320,61 @@ export function nachJahr<T extends Prescription>(
   return gruppen;
 }
 
-/** Summe der noch offenen Behandlungen über alle Positionen. */
+/** Summe der noch offenen Leistungseinheiten über alle Positionen. */
 export function restkontingent(prescription: Prescription): number {
   return prescription.items.reduce((summe, item) => summe + item.remaining_quantity, 0);
 }
 
-/** Summe der verordneten Behandlungen über alle Positionen. */
+/** Summe der verordneten Leistungseinheiten über alle Positionen. */
 export function gesamtkontingent(prescription: Prescription): number {
   return prescription.items.reduce((summe, item) => summe + item.prescribed_quantity, 0);
+}
+
+// -----------------------------------------------------------------------------
+// Einheiten und Termine je Verordnung (AKTE-002)
+// -----------------------------------------------------------------------------
+
+const kontingentSchema = z.object({
+  prescription_id: z.string(),
+  /** Verordnete Leistungseinheiten aus den Positionen. */
+  prescribed: z.number(),
+  /** Genutzte Leistungseinheiten; bis ABR-002 von Hand gepflegt (ANN-012). */
+  used: z.number(),
+  /** Zugeordnete Termine ohne abgesagte - eine Terminzahl, keine Einheit. */
+  planned: z.number(),
+  /** Davon noch bevorstehend. */
+  upcoming: z.number(),
+  /** Was sich noch planen lässt: verordnet minus dem größeren Wert (ANN-038). */
+  remaining: z.number(),
+});
+
+export type PrescriptionKontingent = z.infer<typeof kontingentSchema>;
+
+/**
+ * Kontingent und Terminzahlen aller Verordnungen einer Person.
+ *
+ * Der Grund für diesen Lesepfad ist die Trennung zweier Zahlen, die vorher
+ * beide „Kontingent" hießen: **Leistungseinheiten** stehen an den Positionen
+ * der Verordnung, **Termine** an den Terminen. Die Akte nennt sie deshalb
+ * getrennt — und `remaining` ist das, was die Serienplanung noch anbietet
+ * (ANN-038).
+ */
+export async function fetchPatientPrescriptionSlots(
+  patientId: string,
+): Promise<PrescriptionKontingent[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_prescription_slots', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Kontingente konnten nicht geladen werden.');
+  return z.array(kontingentSchema).parse(data ?? []);
+}
+
+/** Die Kontingente nach Verordnung, für den Zugriff je Karte. */
+export function kontingentJeVerordnung(
+  zeilen: readonly PrescriptionKontingent[],
+): Map<string, PrescriptionKontingent> {
+  return new Map(zeilen.map((zeile) => [zeile.prescription_id, zeile]));
 }
 
 // -----------------------------------------------------------------------------
