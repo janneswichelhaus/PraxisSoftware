@@ -214,7 +214,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-025 | Die Anwendung legt keine Authentifizierungskonten an             | Technik       | offen  | OPS-001 (Providerprüfung)                 |
 | ANN-026 | Datenklasse und Frist der Einladung                              | Datenschutz   | offen  | Datenschutzprüfung; LOE-001a (im Retention Schedule verankert) |
 | ANN-027 | Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
-| ANN-028 | MFA für `owner`: eingerichtet und sichtbar, nicht erzwungen      | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Jannes, sobald eine Domain feststeht; Datenschutzprüfung |
+| ANN-028 | MFA für `owner`: eingerichtet und sichtbar, nicht abgefragt      | Datenschutz   | entschieden (Jannes) 2026-09-11, Nachtrag 2026-09-12, weiter im Prüfpaket | Jannes nach dem Online-Schalten; Datenschutzprüfung |
 | ANN-029 | Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
 | ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; erneut, sobald die erste Person ausscheidet |
 | ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
@@ -1659,7 +1659,7 @@ ausdrückliches Verlangen der Prüfung.
 | Kategorie | Datenschutz |
 | Herkunft | STAFF-004b; ADR-010 Punkt 10 und Punkt 9; ADR-012 (Bus-Faktor 1) |
 | Status | **entschieden (Jannes) 2026-09-11** — die Durchsetzung wird bewusst später geplant |
-| Wiedervorlage | **Jannes, sobald eine Domain für die Anwendung feststeht.** Vorher wird die MFA-Pflicht nicht geplant und nicht eingeschaltet (Entscheidung vom 2026-09-11). Die Datenschutzprüfung sieht den Punkt unabhängig davon. |
+| Wiedervorlage | **Jannes, nach dem Online-Schalten der Anwendung** (Entscheidung vom 2026-09-12; bis dahin galt „sobald eine Domain feststeht“). Vorher wird der zweite Faktor weder abgefragt noch erzwungen. Die Datenschutzprüfung sieht den Punkt unabhängig davon. |
 
 **Annahme.** Der zweite Faktor (TOTP) ist **einrichtbar und sichtbar**, aber
 die Anmeldung wird **nicht** darauf festgelegt: Kein Datenpfad verlangt heute
@@ -1708,6 +1708,26 @@ stehen, die Einrichtung ist freiwillig möglich, und **kein Datenpfad verlangt
 `aal2`.** Wird die Pflicht später eingeschaltet, ist die Reihenfolge
 unverändert: erst müssen mindestens zwei `owner`-Zugänge einen bestätigten
 Faktor haben, sonst ist es eine Aussperrung.
+
+**Nachtrag vom 2026-09-12 (Jannes, UI-002d).** Zwei Dinge kommen hinzu.
+
+**Erstens die Entscheidung:** Der zweite Faktor wird **erst nach dem
+Online-Schalten der Anwendung** integriert. Das ersetzt „sobald eine Domain
+feststeht“ — sachlich derselbe Zeitpunkt, aber als Bedingung klarer, weil die
+Domain nur ein Teil davon ist. `FIX-EPIC-002` rückt damit hinter die
+Inbetriebnahme.
+
+**Zweitens eine Berichtigung, die diese Annahme genauer macht:** Der Befund
+aus FIX-EPIC-001 hat gezeigt, dass die Anmeldung einen eingerichteten Faktor
+**nicht einmal abfragt**. „Nicht erzwungen“ traf also nur die halbe Wahrheit —
+es klang nach „wer ihn hat, wird gefragt; wer keinen hat, kommt trotzdem
+hinein“. In Wirklichkeit ist der Faktor für die Anmeldung heute **wirkungslos**:
+Er liegt beim Anmeldedienst und wird nirgends geprüft. An der Bewertung ändert
+das nichts — kein Datenpfad verlangt `aal2`, und es gibt weiter genau einen
+`owner`-Zugang. An der Oberfläche schon: Ein Hinweis, der zum Einrichten rät,
+ohne das zu sagen, ist eine Zusage ohne Deckung — dieselbe Klasse Fehler, die
+FIX-EPIC-001 abgeräumt hat. Seit UI-002d steht der Sachverhalt in „Mein
+Konto“, und zwar **vor** der Einrichtung, nicht dahinter.
 
 ---
 
