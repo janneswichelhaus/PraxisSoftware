@@ -33,7 +33,7 @@ describe('istInternerPfad', () => {
     [null],
     [undefined],
   ])('weist %s ab', (pfad) => {
-    expect(istInternerPfad(pfad as string | null | undefined)).toBe(false);
+    expect(istInternerPfad(pfad)).toBe(false);
   });
 
   it('weist Steuerzeichen ab - eine Adresse hat keine Zeilenumbrueche', () => {
