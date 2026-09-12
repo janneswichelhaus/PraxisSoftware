@@ -227,7 +227,11 @@ test.describe('CAL-003: Absagen', () => {
     const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText('Abgesagt');
-    await expect(eintrag).toHaveAttribute('href', `/termine/${terminId}`);
+    // Die Kachel fuehrt zu genau diesem Termin. Seit UX-012b haengt der
+    // Rueckweg in die Kalenderansicht daran (`?zurueck=`); zugesichert ist
+    // deshalb der Pfad, nicht die ganze Adresse.
+    const ziel = new URL((await eintrag.getAttribute('href'))!, 'http://ort.invalid');
+    expect(ziel.pathname).toBe(`/termine/${terminId}`);
   });
 
   test('gibt den Zeitraum eines abgesagten Termins wieder frei', async ({ page }) => {

@@ -1,13 +1,22 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { z } from 'zod';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { useSession } from '@/features/auth/sessionContext';
+import { fetchPatient, fullName } from '@/features/patients/api';
 import { PrescriptionFormFields, type PositionsFehler } from './PrescriptionFormFields';
+import {
+  VERORDNUNG_BESCHRIFTUNG,
+  VERORDNUNG_REIHENFOLGE,
+  verordnungFeldId,
+} from './verordnungsfelder';
 import {
   createPrescription,
   deletePrescription,
@@ -51,7 +60,9 @@ function VerordnungsFormular({
   const { session } = useSession();
   const userId = session?.user.id;
 
-  const zurueck = `/patienten/${patientId}`;
+  // In den Verordnungsbereich der Akte und nicht auf ihre Übersicht: Dort
+  // steht, was gerade entstanden ist (AKTE-002).
+  const zurueck = `/patienten/${patientId}/verordnungen`;
   const verordnerRueckpfad = bestand
     ? `/patienten/${patientId}/verordnungen/${bestand.id}/bearbeiten`
     : `/patienten/${patientId}/verordnungen/neu`;
@@ -95,6 +106,24 @@ function VerordnungsFormular({
   const verordner = useQuery({
     queryKey: ['prescribers'],
     queryFn: fetchPrescribers,
+    retry: false,
+  });
+
+  /**
+   * Für wen wird hier geschrieben? (UX-012)
+   *
+   * Das Formular nannte die Person nirgends — weder im Titel noch im Kopf.
+   * Eine Verordnung enthält Diagnose und Therapieziel; sie in der falschen
+   * Akte zu erfassen, ist der teuerste Irrtum dieses Formulars. Die
+   * Dokumentationsseiten tragen den Namen aus genau diesem Grund
+   * (`PageHeader`, `kompakt`); hier fehlte er.
+   *
+   * Derselbe Schlüssel wie in der Akte: Wer von dort kommt, hat die Abfrage
+   * schon im Zwischenspeicher und sieht den Namen ohne zweite Runde.
+   */
+  const patient = useQuery({
+    queryKey: ['patient', patientId],
+    queryFn: () => fetchPatient(patientId),
     retry: false,
   });
 
@@ -203,16 +232,15 @@ function VerordnungsFormular({
 
   return (
     <>
-      <Link
-        to={zurueck}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zurück zur Akte
-      </Link>
+      <Rueckweg standard={zurueck} beschriftung="Zurück zu den Verordnungen" />
 
       <PageHeader
         title={bestand ? 'Verordnung bearbeiten' : 'Verordnung erfassen'}
-        description="Mit * markierte Felder sind erforderlich."
+        description={
+          patient.data
+            ? `Für ${fullName(patient.data)}. Mit * markierte Felder sind erforderlich.`
+            : 'Mit * markierte Felder sind erforderlich.'
+        }
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
@@ -229,6 +257,15 @@ function VerordnungsFormular({
             <ErrorState title="Die Verordner:innen konnten nicht geladen werden." />
           </div>
         ) : null}
+
+        <Fehlerzusammenfassung
+          fehler={alsFormularfehler(
+            VERORDNUNG_REIHENFOLGE,
+            VERORDNUNG_BESCHRIFTUNG,
+            fehler,
+            verordnungFeldId,
+          )}
+        />
 
         <PrescriptionFormFields
           werte={werte}
@@ -262,9 +299,6 @@ function VerordnungsFormular({
         </div>
       </form>
 
-      {/* Löschen ist der Weg für eine Verordnung, die in der falschen Akte
-          gelandet ist (Art. 16 DSGVO). Bewusst mit Rückfrage und außerhalb des
-          Formulars, damit kein versehentliches Absenden sie auslöst. */}
       {/* Löschen ist der Weg für eine Verordnung, die in der falschen Akte
           gelandet ist (Art. 16 DSGVO). Bewusst mit Rückfrage und außerhalb des
           Formulars, damit kein versehentliches Absenden sie auslöst. */}

@@ -184,7 +184,7 @@ absichern kann — und dass „alle Sitzungen beenden" wirklich alle meint.
 
     Das **zweite** Fenster kann bis zu einer Stunde weiterarbeiten — sein
     Zugriffstoken bleibt bis zum Ablauf gültig, es kann sich nur nicht mehr
-    verlängern (ANN-043). Das ist kein Fehler, sondern die Bauart des
+    verlängern (ANN-044). Das ist kein Fehler, sondern die Bauart des
     Anmeldedienstes, und die Rückfrage sagt es auch. Wer sofortige Wirkung
     braucht, prüft stattdessen Schritt 8 aus STAFF-003: Nach dem Sperren des
     Zugangs zeigt das zweite Fenster beim nächsten Laden „Dieser Zugang ist
@@ -245,7 +245,7 @@ Sie den alten Stand.
     einem **anderen Browser** öffnen (Firefox statt Chrome, nicht nur ein
     privates Fenster). Er muss dort genauso funktionieren.
 
-    Das ist der Kern von ANN-042: Ein anderer Browser hat keinen
+    Das ist der Kern von ANN-043: Ein anderer Browser hat keinen
     Prüfschlüssel der anfordernden Sitzung — genau daran wäre der PKCE-Weg
     gescheitert, und genau das ist der Praxisfall „angefordert am
     Praxisrechner, geöffnet auf dem Telefon".
@@ -323,10 +323,10 @@ Sie den alten Stand.
 
 26. **Abmelden meldet nicht überall ab.** Als Anna in zwei Browsern anmelden.
     In Browser A über die Kopfzeile abmelden. Browser B bleibt nach einem
-    Neuladen angemeldet (ANN-044). Vorher war das nicht so, und „Mein Konto"
+    Neuladen angemeldet (ANN-045). Vorher war das nicht so, und „Mein Konto"
     versprach es trotzdem.
 27. **Der Vermerk ist Vorbedingung.** Das lässt sich von Hand kaum auslösen;
     abgedeckt ist es durch `src/features/account/api.test.ts`. Zu prüfen bleibt
     der sichtbare Teil: Die Rückfrage unter „Alle Sitzungen beenden" nennt das
     Restfenster von bis zu einer Stunde und verweist auf die Sperre durch die
-    Praxisleitung (ANN-043).
+    Praxisleitung (ANN-044).

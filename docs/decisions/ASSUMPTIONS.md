@@ -225,12 +225,13 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
 | ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit E12 Punkt 1 und 2 |
 | ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-002 |
-| ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); Versandweg mit B15 |
+| ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert; **Fassung 2: vermerkt wird erst auf Bestätigung** | Datenschutz   | entschieden (Jannes) 2026-09-12, Fassung 2 vom 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); Versandweg mit B15 |
 | ANN-040 | Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
-| ANN-041 | Termin-E-Mail als Handoff ins eigene Mailprogramm: Inhalt, Betreff, Längengrenze, Vermerk auf die Übergabe | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
-| ANN-042 | Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); Providerprüfung OPS-001 (Auth-Mails, B13) |
-| ANN-043 | „Alle Sitzungen beenden": Vermerk als Vorbedingung, und die Zusage nennt das Restfenster | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); `jwt_expiry` mit OPS-001 |
-| ANN-044 | Das gewöhnliche Abmelden endet nur die eigene Sitzung | Technik       | offen (2026-09-12)    | Jannes nach dem ersten Feldtag |
+| ANN-041 | Termin-E-Mail als Handoff ins eigene Mailprogramm: Inhalt, Betreff, Längengrenze; **Fassung 2: vermerkt wird erst auf Bestätigung** | Datenschutz   | offen (2026-09-12), Fassung 2 vom 2026-09-12 | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
+| ANN-042 | Eine Verordnung ist „ausgeschöpft", wenn ihre Leistungseinheiten genutzt sind — nicht nach Ablauf einer Frist | Praxisprozess | offen (2026-09-12)    | Jannes nach den ersten Praxiswochen; erneut mit ABR-002 (genutzte Menge aus der Abrechnung) |
+| ANN-043 | Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); Providerprüfung OPS-001 (Auth-Mails, B13) |
+| ANN-044 | „Alle Sitzungen beenden": Vermerk vor dem Vorgang, weil danach keiner mehr möglich ist; die Zusage nennt das Restfenster | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); `jwt_expiry` mit OPS-001 |
+| ANN-045 | Das gewöhnliche Abmelden endet nur die eigene Sitzung | Technik       | offen (2026-09-12)    | Jannes nach dem ersten Feldtag |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -2248,11 +2249,11 @@ nimmt die Tage ohnehin einzeln entgegen.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | CAL-011, `IDEA-PRX-006`; ADR-010 Punkt 2; `OPEN_DECISIONS.md` B15 |
-| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; als `Datenschutz` **weiter im Prüfpaket** |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; **Fassung 2 vom 2026-09-12** (Punkt 4 neu, siehe unten); als `Datenschutz` **weiter im Prüfpaket** |
 | Wiedervorlage | Datenschutzprüfung (B2); der Versandweg mit B15 |
 
 **Annahme.** Der Terminzettel ist ein Ausdruck, der die Praxis in der Hand
-einer Patient:in verlässt. Drei Festlegungen dazu:
+einer Patient:in verlässt. Vier Festlegungen dazu:
 
 1. **Inhalt.** Name der Patient:in, und je Termin Datum, Uhrzeit, Ort und die
    behandelnde Person. **Nicht** darauf: Terminstatus, Verordnung, Diagnose,
@@ -2269,6 +2270,11 @@ einer Patient:in verlässt. Drei Festlegungen dazu:
    bliebe. Geschrieben wird das bestehende `patient_record.viewed` mit dem
    Kontext `view: 'appointment_slip'` — kein neues Ereignis im Katalog
    (ADR-010 Punkt 2).
+
+4. **Der Druck vermerkt nichts; die Bestätigung danach vermerkt.** Der Knopf
+   öffnet den Druckdialog. Erst die anschließende Frage „Wurde der Zettel
+   ausgehändigt?" schreibt den Mitteilungsvermerk (CAL-012). **Neu in Fassung
+   2** — bis dahin vermerkte der Klick **vor** dem Druckdialog.
 
 **Begründung.** Zu 1: Was auf Papier steht, lässt sich nicht zurückrufen. Der
 Zettel beantwortet genau eine Frage — „wann bin ich wieder dran und wo" — und
@@ -2288,6 +2294,22 @@ sagen; der Kontext unterscheidet die beiden Wege trotzdem. **Unsicher:** ob
 die Datenschutzprüfung den Ausdruck lieber als eigenes Ereignis („Dokument
 ausgegeben") sähe — dann wäre er in einem Audit-Report leichter zu zählen.
 
+Zu 4 (**Fassung 2, 2026-09-12**): Die erste Fassung vermerkte vor dem Druck
+und begründete das mit der restriktiveren Reihenfolge — der Fehlerfall sei
+„vermerkt, aber nicht ausgehändigt" und damit sichtbar und rücknehmbar. Der
+Praxisbetrieb zeigt, dass dieser Fehlerfall nicht die Ausnahme ist, sondern
+der Regelfall: Ein Druckdialog wird laufend abgebrochen — falscher Drucker,
+kein Papier, nur mal nachsehen —, und die Anwendung sieht davon nichts. Ein
+Vermerk, der regelmäßig eine Aushändigung behauptet, die nicht stattgefunden
+hat, ist als Nachweis wertlos; er wäre zudem ein unrichtiges Datum über die
+betroffene Person (Art. 5 Abs. 1 lit. d DSGVO).
+
+Die Umkehrung („ausgehändigt, aber nicht vermerkt") bleibt möglich, ist aber
+nicht mehr still: Die Frage steht unmittelbar nach dem Druckdialog an
+derselben Stelle und bleibt stehen, bis sie beantwortet ist. Wer sie
+wegklickt, hat eine Entscheidung getroffen statt eine Annahme geerbt. Die
+Anwendung behauptet damit nur noch, was ihr jemand bestätigt hat (§13).
+
 **Keine Wortmarke auf dem Zettel:** `marke/README.md` regelt das bereits und
 ist dafür die einzige Quelle — die Druckregeln blenden die Kopfzeile aus, und
 die Marke auf Papier kommt innerhalb der Anwendung erst mit ABR-000. Das ist
@@ -2300,8 +2322,10 @@ Funktion tragen die Kennung, Spaltenliste und Auditeintrag sind die Grenze);
 `supabase/tests/appointment-slip.test.ts` (Inhalt, Auditeintrag, Rollen) und
 `src/features/appointments/AppointmentSlipPage.test.tsx`.
 
-**Änderungspfad.** Mehr oder weniger Inhalt: die Spaltenliste der Funktion und
-die Darstellung; Aufwand `klein`. Versand nach B15: ein Anbieter mit Prüfung
+**Änderungspfad.** Zur Reihenfolge aus Fassung 1 zurück (vermerken vor dem
+Druck): `AppointmentSlipPage.tsx`, der Klickhandler und der Bestätigungskasten
+— Aufwand `klein`, keine Datenmigration. Mehr oder weniger Inhalt: die
+Spaltenliste der Funktion und die Darstellung; Aufwand `klein`. Versand nach B15: ein Anbieter mit Prüfung
 nach §3.5, eine Einwilligung je Patient:in und ein eigener Schreibpfad mit
 eigenem Auditereignis; Aufwand `groß` und ein eigenes Epic. Eigenes
 Auditereignis: ein Eintrag im Katalog (Constraint, `AUDIT_ACTIONS`, Beschriftung)
@@ -2398,7 +2422,7 @@ wäre dann sein Ergebnis, nicht sein Ersatz.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | CAL-013 (Auftrag von Jannes, 2026-09-12); `OPEN_DECISIONS.md` B15; ADR-019 und ANN-018 (Handoff-Muster); `PROJECT_PRINCIPLES.md` §3.5, §10, §16 |
-| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch die Datenschutzprüfung steht aus |
+| Status | **offen** — getroffen am 2026-09-12, **Fassung 2 vom 2026-09-12** (Punkt 5 geändert, siehe unten); Bestätigung durch die Datenschutzprüfung steht aus |
 | Wiedervorlage | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
 
 **Vorgeschichte.** Jannes hat am 2026-09-12 geschrieben: „Ich widerspreche
@@ -2423,10 +2447,11 @@ zu übermitteln. Sechs Festlegungen:
    die Oberfläche den vollständigen Text, die Empfängeradresse und den Satz,
    dass eine E-Mail unterwegs nicht verschlüsselt ist und der Weg den
    ausdrücklichen Wunsch der Patient:in voraussetzt.
-5. **Vermerkt wird die Übergabe, nicht der Versand** — und zwar **vor** ihr.
-   Scheitert der Vermerk, öffnet sich keine E-Mail. Die Anwendung kann nicht
-   sehen, ob die Nachricht abgeschickt wurde; der Text sagt das, und der
-   Vermerk lässt sich am Termin zurücknehmen (CAL-012).
+5. **Die Übergabe vermerkt nichts; die Bestätigung danach vermerkt.**
+   „E-Mail öffnen" übergibt den Entwurf an das Mailprogramm. Erst die
+   anschließende Frage „Wurde sie gesendet?" schreibt den Vermerk (CAL-012);
+   er lässt sich am Termin zurücknehmen. **Geändert in Fassung 2** — bis dahin
+   vermerkte die Anwendung **vor** der Übergabe.
 6. **Längengrenze statt stillem Abschneiden.** `mailto:` hat keine
    standardisierte Höchstlänge; die Praxisgrenze liegt beim Weg über die
    Kommandozeile des Betriebssystems. Der Entwurf bleibt unter 1800 Zeichen,
@@ -2466,12 +2491,18 @@ Mindestangabe, und der Betreff verrät nichts. Empfänger ist ausschließlich di
 betroffene Person selbst; gegenüber ihr gibt es kein Offenbaren im Sinne von
 §203 StGB.
 
-Zu 5: Eine Anwendung, die den Versand behauptet, den sie nicht beobachten
-kann, wäre unehrlich — und der Vermerk wäre wertlos, sobald er einmal falsch
-war. Vor der Übergabe zu vermerken ist die restriktivere Reihenfolge (§16):
-Der Fehlerfall ist „vermerkt, aber nicht gesendet", und der ist sichtbar und
-rücknehmbar; die Umkehrung wäre „gesendet, aber nicht vermerkt" und bliebe
-unbemerkt. Dieselbe Reihenfolge gilt seit CAL-012 beim Druck.
+Zu 5 (**Fassung 2, 2026-09-12**): Eine Anwendung, die den Versand behauptet,
+den sie nicht beobachten kann, wäre unehrlich — und der Vermerk wäre wertlos,
+sobald er einmal falsch war. Genau das tat die erste Fassung: Sie vermerkte
+vor der Übergabe, und ein im Mailprogramm verworfener Entwurf hinterließ eine
+Mitteilung, die nie stattgefunden hat. Die Begründung von damals — „vermerkt,
+aber nicht gesendet" sei sichtbar und rücknehmbar — trägt nicht, weil niemand
+nachsieht, was er für erledigt hält.
+
+Jetzt fragt die Anwendung die Person, die es weiß, unmittelbar nach der
+Übergabe und an derselben Stelle. Sie behauptet damit nur noch, was ihr jemand
+bestätigt hat (§13). Dieselbe Reihenfolge gilt beim Druck (ANN-039 Fassung 2)
+— beide Wege sind bewusst gleich gebaut.
 
 Zu 6: Ein Mailprogramm, das eine zu lange Adresse abschneidet, meldet das
 nicht. Die Patient:in bekäme weniger Termine, als die Praxis vermerkt hat —
@@ -2501,8 +2532,10 @@ Kopfzeilen-Injektion, Kürzung),
 und Übergabe, Abbruch, fehlende Adresse) und
 `tests/e2e/authenticated/appointment-notification.spec.ts`.
 
-**Änderungspfad.** Inhalt oder Betreff ändern: `terminMailText` und
-`MAIL_BETREFF` — Aufwand `klein`. Den Weg ganz zurücknehmen: `TermineMailen`
+**Änderungspfad.** Zur Reihenfolge aus Fassung 1 zurück (vermerken vor der
+Übergabe): `TermineMailen.tsx`, der Klickhandler und der Bestätigungskasten —
+Aufwand `klein`, keine Datenmigration. Inhalt oder Betreff ändern:
+`terminMailText` und `MAIL_BETREFF` — Aufwand `klein`. Den Weg ganz zurücknehmen: `TermineMailen`
 aus `AppointmentSlipPage.tsx` entfernen, die beiden Dateien löschen; der Weg
 `email` bleibt als Vermerk von Hand bestehen — Aufwand `klein`, keine
 Datenmigration. Einen dokumentierten Wunsch je Patient:in verlangen: ein
@@ -2510,8 +2543,72 @@ Kennzeichen in den Kontaktdaten, gesetzt über `update_patient`, plus die
 Bedingung in `TermineMailen` — Aufwand `mittel`, gehört zu PAT-006. Echter
 Versand aus der Anwendung (Dienstleister, Warteschlange, Zustellstatus):
 Aufwand `groß`, eigenes Epic, setzt B15 und eine Prüfung nach §3.5 voraus.
+---
 
-### ANN-042 — Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile
+### ANN-042 — Wann eine Verordnung ausgeschöpft ist
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | AKTE-002 (Auftrag von Jannes, 2026-09-12); ANN-012 (genutzte Menge von Hand); ANN-038 (verplant ist nicht genutzt); `PROJECT_PRINCIPLES.md` §13, §16 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach den ersten Praxiswochen; erneut mit ABR-002, sobald die genutzte Menge aus der Abrechnung kommt |
+
+**Anlass.** Die Akte teilt die Verordnungen seit AKTE-002 in „laufend" und
+„ausgeschöpft": Die laufenden stehen ausführlich oben, die ausgeschöpften
+kompakt in einer aufklappbaren Zeile darunter, und „Terminserie anlegen" steht
+nur an einer Verordnung, an der sich noch etwas planen lässt. Dafür braucht es
+eine Regel, wann eine Verordnung erledigt ist — und das Datenmodell kennt
+**kein** Ablaufdatum.
+
+**Annahme.** Eine Verordnung gilt als **ausgeschöpft**, sobald ihre genutzten
+Leistungseinheiten die verordneten erreichen (`used >= prescribed`, summiert
+über die Positionen). Solange Einheiten offen sind, gilt sie als laufend — und
+zerfällt dort in zwei Zustände:
+
+- **offen** — es lässt sich noch etwas planen (`remaining > 0`).
+- **vollständig verplant** — es sind Einheiten offen, aber für jede steht
+  bereits ein Termin. Hier ist nichts mehr zu planen, wohl aber zu behandeln.
+
+Ein **Ablauf nach Zeit** kommt nicht vor: Weder das Ausstellungsdatum noch eine
+Frist entscheidet über den Zustand.
+
+**Begründung.** Die Praxis rechnet privat ab. Die Fristen des
+Heilmittelkatalogs (Behandlungsbeginn binnen 28 Tagen, Unterbrechung von
+höchstens 14 Tagen) sind Regeln des GKV-Systems und gelten für eine
+Privatverordnung nicht unmittelbar; welche Frist ein privater Kostenträger
+ansetzt, steht in seinem Tarif und nicht in der Verordnung. Eine Frist zu
+erfinden, hieße eine Verordnung als erledigt zu zeigen, die es nicht ist —
+und genau davor warnt §13: Die Anwendung darf nicht behaupten, was sie nicht
+weiß. Die genutzte Menge dagegen ist eine Zahl, die in der Akte steht und die
+die Praxis selbst pflegt (ANN-012).
+
+Die Zahl ist bewusst **die der Einheiten** und nicht die der Termine: Ein
+Termin kann abgesagt werden und gibt seinen Platz zurück; eine genutzte
+Einheit bleibt genutzt (ANN-038). Deshalb entscheidet über „ausgeschöpft"
+allein `used`, über „noch planbar" dagegen der größere Wert aus genutzt und
+verplant.
+
+**Was diese Annahme ausdrücklich NICHT tut.** Sie verbirgt nichts: Eine
+ausgeschöpfte Verordnung bleibt vollständig in der Akte, mit allen Zahlen und
+allen Angaben, und lässt sich weiterhin bearbeiten — ein Tippfehler in einer
+alten Verordnung gehört behoben. Sie ändert auch keine Zahl; sie ordnet nur,
+was oben steht und welche Aktion angeboten wird.
+
+**Verankerung.** `src/features/prescriptions/verordnungen.ts`,
+`verordnungszustand()` — die eine Stelle, an der die Regel steht; der
+Kopfkommentar trägt die Kennung. Tests in
+`src/features/prescriptions/PatientPrescriptionsPage.test.tsx` (alle drei
+Zustände und die Aktionen, die daran hängen).
+
+**Änderungspfad.** Die Schwelle ändern (etwa „ausgeschöpft erst, wenn auch
+jeder Termin stattgefunden hat"): `verordnungszustand()` — Aufwand `klein`,
+keine Datenmigration. Einen Ablauf nach Zeit ergänzen: ein Feld
+`valid_until` an `prescriptions`, im Formular und in `create/update_prescription`
+gepflegt, dazu die Regel hier — Aufwand `mittel`, mit Migration. Die genutzte
+Menge automatisch aus der Abrechnung zu führen, ist ABR-002 und ändert an
+dieser Regel nichts.
+### ANN-043 — Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile
 
 | | |
 |---|---|
@@ -2620,12 +2717,12 @@ geräteübergreifende Fall bricht; nicht empfohlen. Einen eigenen Mailversand
 statt der Auth-Mails: Aufwand `groß`, eigenes Epic, neuer Dienstleister nach
 §3.5 und Rücknahme von B13.
 
-### ANN-043 — „Alle Sitzungen beenden": Vermerk als Vorbedingung, und die Zusage nennt das Restfenster
+### ANN-044 — „Alle Sitzungen beenden": Vermerk als Vorbedingung, und die Zusage nennt das Restfenster
 
 | | |
 |---|---|
 | Kategorie | Datenschutz |
-| Herkunft | FIX-003 (Befund aus der Prüfung vom 2026-09-12); ADR-010; `PROJECT_PRINCIPLES.md` §13, §16; Oberflächen-Checkliste Punkt 6; ANN-041 Punkt 5 als Muster |
+| Herkunft | FIX-003 (Befund aus der Prüfung vom 2026-09-12); ADR-010; `PROJECT_PRINCIPLES.md` §13, §16; Oberflächen-Checkliste Punkt 6; ANN-041 Fassung 2 (Gegenrichtung, siehe Begründung) |
 | Status | **offen** — getroffen am 2026-09-12, Bestätigung durch die Datenschutzprüfung steht aus |
 | Wiedervorlage | Datenschutzprüfung (B2); der Wert `jwt_expiry` mit OPS-001 |
 
@@ -2653,11 +2750,31 @@ ausgesperrt dar.
 
 **Begründung.**
 
-Zu 1 und 2: Dasselbe Muster wie bei der Termin-E-Mail (ANN-041 Punkt 5):
-vermerkt wird, was die Anwendung tatsächlich beobachtet, und der Vermerk geht
-dem Vorgang voraus, wenn er ihm nicht folgen kann. Ein Auditlog, dessen
-Einträge nach dem ersten Netzwerkfehler nicht mehr zu den Tatsachen passen,
-ist als Nachweis nach ADR-010 wertlos.
+Zu 1 und 2: Vermerkt wird, was die Anwendung tatsächlich beobachtet, und der
+Vermerk geht dem Vorgang voraus, weil er ihm nicht folgen kann. Ein Auditlog,
+dessen Einträge nicht mehr zu den Tatsachen passen, ist als Nachweis nach
+ADR-010 wertlos.
+
+**Das läuft der Richtung von ANN-041 Fassung 2 entgegen, und das ist bewusst
+so.** Dort wandert der Vermerk vom Vorher ins Nachher, weil die Anwendung den
+Ausgang eines `mailto:`-Handoffs grundsätzlich **nicht sehen** kann — ein
+Vermerk davor behauptete etwas Unbeobachtbares. Hier ist es umgekehrt: Der
+Ausgang ist beobachtbar (`signOut` liefert einen Fehler oder nicht), aber er
+lässt sich **nicht mehr aufschreiben**, weil der Vorgang dem Konto die eigene
+Sitzung nimmt und `log_account_security_event` `auth.uid()` verlangt. Das
+gemeinsame Prinzip beider Annahmen ist dasselbe — nichts festhalten, wofür man
+nicht einstehen kann —, nur die technische Lage kehrt die Reihenfolge um.
+Deshalb hält der Eintrag die **Auslösung** fest, nicht die Wirkung, und die
+Oberfläche sagt genau das.
+
+**Der Restfall bleibt offen.** Scheitert `signOut` nach einem geschriebenen
+Vermerk, steht ein Eintrag zu einem Vorgang, der nicht durchlief — genau die
+Lage, die ANN-041 Fassung 2 für ihren Fall abgestellt hat. Hier ist sie mit
+den Mitteln des Browsers nicht abstellbar: Nach einem gescheiterten
+`signOut` hat `supabase-js` die lokale Sitzung in den meisten Fällen schon
+entfernt, ein nachträglicher Gegenvermerk wäre also ebenso unmöglich. Die
+Auflösung ist ein serverseitiger Vermerk aus dem Vorgang selbst; sie steht im
+Änderungspfad und gehört der Datenschutzprüfung vorgelegt.
 
 Zu 3: Die Oberflächen-Checkliste Punkt 6 verbietet eine Erfolgsmeldung, die
 nicht stattfand. „Alle Geräte sind abgemeldet" ist für bis zu eine Stunde
@@ -2686,7 +2803,7 @@ Widerruf einzelner Token: Aufwand `groß`, verlangt eine Prüfung des
 `session_id`-Claims in jeder Policy und ist ohne Not eine zweite
 Berechtigungsschicht.
 
-### ANN-044 — Das gewöhnliche Abmelden endet nur die eigene Sitzung
+### ANN-045 — Das gewöhnliche Abmelden endet nur die eigene Sitzung
 
 | | |
 |---|---|

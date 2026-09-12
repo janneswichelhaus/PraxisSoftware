@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
@@ -28,8 +29,12 @@ import {
  * und beteiligt keinen neuen Dienstleister (ANN-041, `TermineMailen.tsx`).
  * SMS und Messenger gibt es nicht — Messenger ist nach B15 ausgeschlossen.
  *
- * Beide Wege vermerken die aufgeführten Termine von selbst (CAL-012) — damit
- * in der Akte steht, dass sie mitgeteilt sind.
+ * **Vorbereiten und Mitteilen sind zwei Schritte** (seit UX-012). Drucken
+ * öffnet den Druckdialog, die E-Mail öffnet das Mailprogramm — beides
+ * vermerkt nichts. Erst die Bestätigung danach hält fest, dass der Zettel
+ * ausgehändigt beziehungsweise die Nachricht gesendet wurde (CAL-012, ANN-039
+ * und ANN-041 je Fassung 2). Vorher vermerkte schon die Vorbereitung, und ein
+ * abgebrochener Druckdialog hinterließ eine Aushändigung, die nie stattfand.
  *
  * **Keine Wortmarke.** `marke/README.md` ist dazu ausdrücklich: Die
  * Druckregeln blenden die Kopfzeile aus, und die Marke auf Papier kommt
@@ -59,20 +64,27 @@ export function AppointmentSlipPage() {
   });
 
   /**
-   * Drucken heißt mitteilen (CAL-012).
+   * Drucken ist noch keine Mitteilung (CAL-012, ANN-039 Fassung 2).
    *
-   * Der Zettel listet alle bevorstehenden Termine auf einem Blatt — wer ihn
-   * aushändigt, teilt sie alle mit und soll sie nicht einzeln abhaken müssen.
-   * Vermerkt wird **vor** dem Druckdialog: Scheitert der Vermerk, wird auch
-   * nicht gedruckt, statt eine Aushändigung zu behaupten, die nicht
-   * festgehalten ist. Einen Irrtum nimmt die Terminseite wieder zurück.
+   * Bis UX-012 vermerkte ein Klick auf „Drucken" die Termine **vor** dem
+   * Druckdialog als ausgehändigt. Der Dialog wird aber laufend abgebrochen —
+   * falscher Drucker, kein Papier, nur mal nachsehen — und in der Akte stand
+   * danach eine Aushändigung, die nie stattgefunden hat. Der Vermerk ist ein
+   * Nachweis; ein Nachweis, der regelmäßig falsch ist, ist keiner.
+   *
+   * Deshalb zwei Schritte: Der Knopf öffnet den Druckdialog und schreibt
+   * nichts. Danach fragt die Seite, ob der Zettel tatsächlich ausgehändigt
+   * wurde — erst diese Bestätigung vermerkt. Die Anwendung sieht den Ausgang
+   * des Druckdialogs nicht; sie fragt deshalb die Person, die ihn gesehen hat.
    */
-  const drucken = useMutation({
+  const [gedruckt, setGedruckt] = useState(false);
+
+  const vermerken = useMutation({
     mutationFn: (ids: string[]) => addAppointmentNotification(ids, 'slip'),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['appointment-slip', patientId] });
-      window.print();
+      setGedruckt(false);
     },
   });
 
@@ -147,20 +159,57 @@ export function AppointmentSlipPage() {
           <div className="flex flex-wrap items-center gap-3">
             <Button
               type="button"
-              disabled={drucken.isPending}
-              onClick={() => drucken.mutate(eintraege.map((eintrag) => eintrag.id))}
+              onClick={() => {
+                vermerken.reset();
+                window.print();
+                setGedruckt(true);
+              }}
             >
-              {drucken.isPending ? 'Wird vermerkt …' : 'Terminzettel drucken'}
+              Terminzettel drucken
             </Button>
-            {drucken.isError ? (
-              <Statusmeldung ton="fehler">
-                {drucken.error.message} Es wurde nichts gedruckt und nichts vermerkt.
+            {vermerken.isSuccess ? (
+              <Statusmeldung>
+                Die aufgeführten Termine sind als „Terminzettel ausgehändigt" vermerkt. Am Termin
+                lässt sich der Vermerk zurücknehmen.
               </Statusmeldung>
             ) : null}
           </div>
+
+          {/* Die Frage nach dem Druckdialog - der zweite Schritt (ANN-039
+              Fassung 2). Sie bleibt stehen, bis sie beantwortet ist: Eine
+              Meldung, die von selbst verschwindet, wäre genau die stille
+              Annahme, die hier abgeschafft wird. */}
+          {gedruckt ? (
+            <div
+              role="status"
+              className="border-line-strong bg-surface-sunken rounded-card flex flex-col gap-3 border px-4 py-3"
+            >
+              <p className="text-ink text-[0.9375rem]">
+                Wurde der Zettel ausgehändigt? Nur dann gelten die Termine als mitgeteilt.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  disabled={vermerken.isPending}
+                  onClick={() => vermerken.mutate(eintraege.map((eintrag) => eintrag.id))}
+                >
+                  {vermerken.isPending ? 'Wird vermerkt …' : 'Ja, als mitgeteilt vermerken'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setGedruckt(false)}>
+                  Nein, nichts vermerken
+                </Button>
+                {vermerken.isError ? (
+                  <Statusmeldung ton="fehler">
+                    {vermerken.error.message} Es wurde nichts vermerkt.
+                  </Statusmeldung>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
-            Die aufgeführten Termine werden dabei als „Terminzettel ausgehändigt" vermerkt und
-            tragen das Zeichen danach in der Akte. Am Termin lässt sich der Vermerk zurücknehmen.
+            Der Druck selbst vermerkt nichts. Erst die Bestätigung danach hält fest, dass die
+            Termine ausgehändigt wurden; am Termin lässt sich der Vermerk zurücknehmen.
           </p>
 
           {/* Der zweite Weg steht unter dem ersten, nicht daneben: Der Ausdruck

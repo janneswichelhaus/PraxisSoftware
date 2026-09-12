@@ -46,7 +46,7 @@ site_url = "http://127.0.0.1:5173"
 # Jedes Ziel, das in einer Auth-Mail vorkommen darf, steht hier - sonst faellt
 # GoTrue stillschweigend auf site_url zurueck und der Link landet wieder auf
 # der Anmeldemaske. /kennwort-neu ist die oeffentliche Seite, die einen
-# Wiederherstellungslink einloest (FIX-001, ANN-042).
+# Wiederherstellungslink einloest (FIX-001, ANN-043).
 # ACHTUNG: Dieselben Eintraege muessen im spaeteren Cloudprojekt unter
 # Authentication > URL Configuration stehen, sonst laufen lokal und produktiv
 # auseinander (OPS-001).
@@ -76,7 +76,7 @@ enable_signup = true
 enable_confirmations = false
 double_confirm_changes = true
 
-# Eigene Vorlage fuer "Kennwort zuruecksetzen" (FIX-001, ANN-042). Die
+# Eigene Vorlage fuer "Kennwort zuruecksetzen" (FIX-001, ANN-043). Die
 # Begruendung steht vollstaendig in der Datei selbst: Der Link uebergibt nur
 # den TokenHash, nicht eine fertige Sitzung im Adressfragment.
 # Im Cloudprojekt liegt dieselbe Vorlage unter Authentication > Email
@@ -85,7 +85,7 @@ double_confirm_changes = true
 subject = "Neues Kennwort setzen"
 content_path = "./supabase/templates/recovery.html"
 
-# Zugangsmail an eine offene Einladung (FIX-002, ANN-042), gleiche Bauart.
+# Zugangsmail an eine offene Einladung (FIX-002, ANN-043), gleiche Bauart.
 # Im Cloudprojekt: Authentication > Email Templates > Magic Link.
 [auth.email.template.magic_link]
 subject = "Zugang zur Praxisanwendung"

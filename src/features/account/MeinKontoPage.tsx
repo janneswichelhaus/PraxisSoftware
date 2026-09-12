@@ -266,7 +266,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
 /**
  * Alle Sitzungen beenden — der Weg nach einem verlorenen Gerät (R10).
  *
- * Der Text sagt, was der Vorgang leistet **und wo er aufhört** (ANN-043,
+ * Der Text sagt, was der Vorgang leistet **und wo er aufhört** (ANN-044,
  * Oberflächen-Checkliste Punkt 6). Ein verlorenes Telefon behält sein
  * Zugriffstoken bis zu einer Stunde; wer das nicht abwarten kann, braucht die
  * Sperre durch die Praxisleitung. Das gehört an die Stelle der Entscheidung

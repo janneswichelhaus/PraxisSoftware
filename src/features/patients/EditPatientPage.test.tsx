@@ -105,8 +105,12 @@ describe('EditPatientPage', () => {
       PATIENT_ID,
       expect.objectContaining({ given_name: 'Berta', city: 'Bonn' }),
     );
+    // Zurueck in die Stammdaten: dort steht, was gerade geaendert wurde
+    // (AKTE-005). Auf der Uebersicht der Akte kaeme der Ort gar nicht vor.
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}`, { replace: true }),
+      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/stammdaten`, {
+        replace: true,
+      }),
     );
   });
 

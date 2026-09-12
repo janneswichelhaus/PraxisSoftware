@@ -1,7 +1,7 @@
 import { getSupabase } from '@/lib/supabase';
 
 /**
- * Einlösen eines Links aus einer Auth-Mail (FIX-001, ANN-042).
+ * Einlösen eines Links aus einer Auth-Mail (FIX-001, ANN-043).
  *
  * Der Anmeldedienst verschickt zwei Sorten Links: einen zum Setzen eines neuen
  * Kennworts (`recovery`) und einen zum Anmelden ohne Kennwort (`magiclink`,

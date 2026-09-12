@@ -1,0 +1,291 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Route, Routes } from 'react-router-dom';
+import type * as PatientsApi from './api';
+import type * as DokumentationApi from '@/features/documentation/api';
+import type * as VerordnungenApi from '@/features/prescriptions/api';
+import type * as AppointmentsApi from '@/features/appointments/api';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+import type { RoleKey } from '@/features/session/types';
+
+const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
+
+const aktiv: PatientsApi.Patient = testPatient({
+  id: PATIENT_ID,
+  status: 'active',
+  given_name: 'Max',
+  family_name: 'Mustermann',
+  date_of_birth: '1985-07-19',
+});
+
+const fetchPatient = vi.fn();
+const logPatientRecordView = vi.fn();
+const fetchUpcomingAppointments = vi.fn();
+const fetchPatientAppointments = vi.fn();
+const fetchPatientPrescriptions = vi.fn();
+const fetchPatientPrescriptionsClinical = vi.fn();
+const fetchPatientPrescriptionSlots = vi.fn();
+const fetchTreatmentEvidencePage = vi.fn();
+const fetchPatientTreatmentNotesPage = vi.fn();
+
+vi.mock('./api', async (importOriginal) => {
+  const actual = await importOriginal<typeof PatientsApi>();
+  return {
+    ...actual,
+    fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
+    logPatientRecordView: (id: string) => logPatientRecordView(id) as Promise<void>,
+  };
+});
+
+vi.mock('@/features/appointments/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    fetchUpcomingAppointments: (patientId: string, limit?: number) =>
+      fetchUpcomingAppointments(patientId, limit) as Promise<AppointmentsApi.UpcomingAppointment[]>,
+    fetchPatientAppointments: (patientId: string, query: unknown) =>
+      fetchPatientAppointments(patientId, query) as Promise<AppointmentsApi.PatientAppointment[]>,
+  };
+});
+
+vi.mock('@/features/prescriptions/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof VerordnungenApi>();
+  return {
+    ...actual,
+    fetchPatientPrescriptions: (id: string) =>
+      fetchPatientPrescriptions(id) as Promise<VerordnungenApi.Prescription[]>,
+    fetchPatientPrescriptionsClinical: (id: string) =>
+      fetchPatientPrescriptionsClinical(id) as Promise<VerordnungenApi.ClinicalPrescription[]>,
+    fetchPatientPrescriptionSlots: (id: string) =>
+      fetchPatientPrescriptionSlots(id) as Promise<VerordnungenApi.PrescriptionKontingent[]>,
+  };
+});
+
+vi.mock('@/features/documentation/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof DokumentationApi>();
+  return {
+    ...actual,
+    fetchTreatmentEvidencePage: (patientId: string, cursor: DokumentationApi.AkteCursor | null) =>
+      fetchTreatmentEvidencePage(patientId, cursor) as Promise<
+        DokumentationApi.TreatmentEvidenceEntry[]
+      >,
+    fetchPatientTreatmentNotesPage: (
+      patientId: string,
+      cursor: DokumentationApi.AkteCursor | null,
+    ) =>
+      fetchPatientTreatmentNotesPage(patientId, cursor) as Promise<
+        DokumentationApi.PatientTreatmentNotesEntry[]
+      >,
+  };
+});
+
+const { PatientRecordLayout } = await import('./PatientRecordLayout');
+const { PatientOverviewPage } = await import('./PatientOverviewPage');
+const { PatientMasterDataPage } = await import('./PatientMasterDataPage');
+const { PatientAppointmentsPage } = await import('@/features/appointments/PatientAppointmentsPage');
+const { PatientPrescriptionsPage } =
+  await import('@/features/prescriptions/PatientPrescriptionsPage');
+const { PatientCoursePage } = await import('@/features/documentation/PatientCoursePage');
+
+/**
+ * Die Akte wird als Routenbaum gerendert und nicht als einzelne Komponente:
+ * Der Rahmen und seine Bereiche sind genau das - eine verschachtelte Route -,
+ * und der Bereichswechsel ist das, was hier zu prüfen ist.
+ */
+function akteRendern(roles: RoleKey[], pfad = `/patienten/${PATIENT_ID}`) {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/patienten/:patientId" element={<PatientRecordLayout user={testUser(roles)} />}>
+        <Route index element={<PatientOverviewPage />} />
+        <Route path="termine" element={<PatientAppointmentsPage />} />
+        <Route path="verordnungen" element={<PatientPrescriptionsPage />} />
+        <Route path="verlauf" element={<PatientCoursePage />} />
+        <Route path="stammdaten" element={<PatientMasterDataPage />} />
+      </Route>
+    </Routes>,
+    pfad,
+  );
+}
+
+describe('Rahmen der Patientenakte (AKTE-000)', () => {
+  beforeEach(() => {
+    for (const mock of [
+      fetchPatient,
+      logPatientRecordView,
+      fetchUpcomingAppointments,
+      fetchPatientAppointments,
+      fetchPatientPrescriptions,
+      fetchPatientPrescriptionsClinical,
+      fetchPatientPrescriptionSlots,
+      fetchTreatmentEvidencePage,
+      fetchPatientTreatmentNotesPage,
+    ]) {
+      mock.mockReset();
+    }
+    fetchPatient.mockResolvedValue(aktiv);
+    logPatientRecordView.mockResolvedValue(undefined);
+    fetchUpcomingAppointments.mockResolvedValue([]);
+    fetchPatientAppointments.mockResolvedValue([]);
+    fetchPatientPrescriptions.mockResolvedValue([]);
+    fetchPatientPrescriptionsClinical.mockResolvedValue([]);
+    fetchPatientPrescriptionSlots.mockResolvedValue([]);
+    fetchTreatmentEvidencePage.mockResolvedValue([]);
+    fetchPatientTreatmentNotesPage.mockResolvedValue([]);
+  });
+
+  describe('Kopf der Akte', () => {
+    it('nennt Name, Geburtsdatum und Versorgungsstatus', async () => {
+      akteRendern(['office']);
+
+      expect(await screen.findByRole('heading', { name: 'Max Mustermann' })).toBeInTheDocument();
+      // Das Alter haengt am heutigen Tag - geprueft wird die Form, nicht die
+      // Zahl, damit der Test nicht an einem Geburtstag rot wird.
+      expect(screen.getByText(/^geb\. 19\.07\.1985 · \d+ Jahre$/)).toBeInTheDocument();
+      expect(screen.getByText('In Versorgung')).toBeInTheDocument();
+    });
+
+    it('kennzeichnet eine nicht laufende Versorgung', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
+      akteRendern(['office']);
+
+      expect(await screen.findByText('Nicht in laufender Versorgung')).toBeInTheDocument();
+      expect(screen.queryByText('In Versorgung')).not.toBeInTheDocument();
+    });
+
+    it('nennt den Abschluss der Versorgung im Kopf', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, care_concluded_on: '2026-03-12' });
+      akteRendern(['therapist']);
+
+      expect(await screen.findByText('Versorgung abgeschlossen am 12.03.2026')).toBeInTheDocument();
+    });
+
+    it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+      'bietet %s den Termin aus dem Kopf heraus an',
+      async (role) => {
+        akteRendern([role]);
+
+        const link = await screen.findByRole('link', { name: 'Termin anlegen' });
+        expect(link).toHaveAttribute('href', `/patienten/${PATIENT_ID}/termine/neu`);
+      },
+    );
+
+    it('bietet fuer eine:n inaktive:n Patient:in keinen Termin an', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
+      akteRendern(['office']);
+
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      expect(screen.queryByRole('link', { name: 'Termin anlegen' })).not.toBeInTheDocument();
+    });
+
+    it('bietet das Erfassen einer Verordnung nur den therapeutischen Rollen an', async () => {
+      akteRendern(['therapist']);
+      expect(await screen.findByRole('link', { name: 'Verordnung erfassen' })).toHaveAttribute(
+        'href',
+        `/patienten/${PATIENT_ID}/verordnungen/neu`,
+      );
+    });
+
+    it('zeigt office im Kopf kein Erfassen einer Verordnung', async () => {
+      akteRendern(['office']);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      // Im Kopf nicht - im Verordnungsbereich prueft das dessen eigener Test.
+      expect(screen.queryByRole('link', { name: 'Verordnung erfassen' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Bereichsnavigation', () => {
+    it('fuehrt alle fuenf Bereiche fuer eine therapeutische Rolle', async () => {
+      akteRendern(['therapist']);
+
+      const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
+      const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
+      expect(eintraege.map((link) => link.textContent)).toEqual([
+        'Übersicht',
+        'Termine',
+        'Verordnungen',
+        'Behandlungsverlauf',
+        'Stammdaten',
+      ]);
+    });
+
+    it('laesst einem Patientenkonto nur die Stammdaten', async () => {
+      akteRendern(['patient']);
+
+      const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
+      const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
+      expect(eintraege.map((link) => link.textContent)).toEqual(['Übersicht', 'Stammdaten']);
+    });
+
+    it('wechselt den Bereich, ohne die Akte neu zu laden', async () => {
+      const user = userEvent.setup();
+      akteRendern(['office']);
+
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      await user.click(screen.getByRole('link', { name: 'Stammdaten' }));
+
+      expect(await screen.findByText('Kontakt')).toBeInTheDocument();
+      // Der Kopf bleibt stehen - er gehoert dem Rahmen, nicht dem Bereich.
+      expect(screen.getByRole('heading', { name: 'Max Mustermann' })).toBeInTheDocument();
+      expect(fetchPatient).toHaveBeenCalledTimes(1);
+    });
+
+    it('protokolliert den Aktenzugriff einmal je geoeffneter Akte', async () => {
+      const user = userEvent.setup();
+      akteRendern(['office']);
+
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      await user.click(screen.getByRole('link', { name: 'Stammdaten' }));
+      await screen.findByText('Kontakt');
+
+      expect(logPatientRecordView).toHaveBeenCalledTimes(1);
+      expect(logPatientRecordView).toHaveBeenCalledWith(PATIENT_ID);
+    });
+
+    it('protokolliert erst bei sichtbarem Datensatz', async () => {
+      fetchPatient.mockResolvedValue(null);
+      akteRendern(['office']);
+
+      expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+      expect(logPatientRecordView).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Bereiche hinter ihren Adressen', () => {
+    it('zeigt office im Verlauf den Behandlungsnachweis', async () => {
+      akteRendern(['office'], `/patienten/${PATIENT_ID}/verlauf`);
+
+      expect(
+        await screen.findByRole('region', { name: 'Behandlungsnachweis' }),
+      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(fetchTreatmentEvidencePage).toHaveBeenCalledWith(PATIENT_ID, null),
+      );
+    });
+
+    it.each([['owner'], ['therapist'], ['team_lead']] as const)(
+      'zeigt %s im Verlauf die Behandlungsdokumentation',
+      async (role) => {
+        akteRendern([role], `/patienten/${PATIENT_ID}/verlauf`);
+
+        expect(
+          await screen.findByRole('region', { name: 'Behandlungsdokumentation' }),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByRole('region', { name: 'Behandlungsnachweis' }),
+        ).not.toBeInTheDocument();
+      },
+    );
+
+    it('holt die Dokumentation erst, wenn der Verlauf geoeffnet ist', async () => {
+      akteRendern(['therapist']);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      // Die Uebersicht liest den datensparsamen Nachweis, nicht die klinische
+      // Sicht: Jeder gelesene Eintrag der klinischen Sicht wird protokolliert
+      // (ADR-010) - ein Auditeintrag fuer etwas, das niemand sieht, waere
+      // falsch.
+      expect(fetchPatientTreatmentNotesPage).not.toHaveBeenCalled();
+    });
+  });
+});

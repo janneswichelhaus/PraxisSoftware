@@ -16,12 +16,24 @@ import { WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEinloesen';
  * erfolgreich geändertes Kennwort als Misserfolg darstellt, wäre die
  * schlechtere Auskunft (Oberflächen-Checkliste Punkt 6).
  *
- * **Die eine Ausnahme ist `sessions_ended`** (ANN-043). Dieser Vorgang nimmt
+ * **Die eine Ausnahme ist `sessions_ended`** (ANN-044). Dieser Vorgang nimmt
  * dem Konto die eigene Sitzung — danach gibt es kein `auth.uid()` mehr, und
  * `log_account_security_event` weist den Aufruf ab. Nachher melden heißt
  * deshalb: gar nicht melden. Der Vermerk steht dort vor dem Vorgang und ist
- * seine Vorbedingung; scheitert er, unterbleibt das Abmelden. Dasselbe Muster
- * wie bei der Termin-E-Mail (ANN-041 Punkt 5).
+ * seine Vorbedingung; scheitert er, unterbleibt das Abmelden.
+ *
+ * **Das geht in die andere Richtung als ANN-041 Fassung 2**, und der
+ * Unterschied ist nicht Bequemlichkeit. Dort vermerkt die Anwendung erst, wenn
+ * ein Mensch den Versand bestätigt hat, weil sie den Ausgang eines `mailto:`
+ * grundsätzlich nicht sehen kann. Hier sieht sie ihn (`signOut` liefert einen
+ * Fehler oder nicht), kann ihn aber nicht mehr aufschreiben. Was der Eintrag
+ * deshalb festhält, ist die **Auslösung** durch diese Person, nicht die
+ * Wirkung auf allen Geräten — die Oberfläche sagt genau das.
+ *
+ * Der Restfall bleibt und ist in ANN-044 benannt: Scheitert `signOut` nach
+ * einem geschriebenen Vermerk, steht ein Eintrag zu einem Vorgang, der nicht
+ * durchlief. Ihn aufzulösen braucht einen serverseitigen Vermerk und damit
+ * eine Migration; der Änderungspfad steht im Register.
  */
 type Sicherheitsereignis = 'password_changed' | 'sessions_ended' | 'mfa_enrolled' | 'mfa_removed';
 
@@ -42,7 +54,7 @@ async function melde(ereignis: Sicherheitsereignis): Promise<void> {
 }
 
 /**
- * Meldet vorab und ist Vorbedingung: ohne Vermerk kein Vorgang (ANN-043).
+ * Meldet vorab und ist Vorbedingung: ohne Vermerk kein Vorgang (ANN-044).
  *
  * Der Vermerk hält fest, dass diese Person die Beendigung **ausgelöst** hat —
  * nicht, dass sie überall gewirkt hat. Das ist der ehrliche Inhalt: Ob ein
@@ -83,7 +95,7 @@ export async function aendereKennwort(neuesKennwort: string): Promise<void> {
  * Der Punkt aus R10 der Roadmap: Wer sein Diensttelefon verliert, muss das
  * angemeldete Gerät ohne fremde Hilfe abmelden können.
  *
- * **Was `scope: 'global'` wirklich tut** (ANN-043): Der Anmeldedienst löscht
+ * **Was `scope: 'global'` wirklich tut** (ANN-044): Der Anmeldedienst löscht
  * alle Sitzungen des Kontos und mit ihnen die Erneuerungstoken. Ein verlorenes
  * Gerät kann sich damit nicht mehr verlängern. Sein **bereits ausgestelltes**
  * Zugriffstoken bleibt aber bis zum Ablauf gültig, weil die Datenschnittstelle
@@ -98,7 +110,7 @@ export async function aendereKennwort(neuesKennwort: string): Promise<void> {
  */
 export async function beendeAlleSitzungen(): Promise<void> {
   // Vor dem Vorgang, weil danach kein `auth.uid()` mehr existiert - siehe
-  // Dateikopf und ANN-043. Wirft der Vermerk, unterbleibt das Abmelden.
+  // Dateikopf und ANN-044. Wirft der Vermerk, unterbleibt das Abmelden.
   await meldeVorab('sessions_ended');
   const { error } = await getSupabase().auth.signOut({ scope: 'global' });
   if (error) throw new Error('Die Sitzungen konnten nicht beendet werden.');

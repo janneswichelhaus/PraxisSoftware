@@ -91,7 +91,7 @@ test.describe('LOE-001b: Abschluss der Versorgung', () => {
   test('hält den Abschluss dauerhaft fest und nimmt ihn wieder zurück', async ({ page }) => {
     await anmelden(page, KONTEN.therapist);
 
-    await page.goto(`/patienten/${PATIENTEN.erika}`);
+    await page.goto(`/patienten/${PATIENTEN.erika}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Erika Beispiel' })).toBeVisible();
     await expect(detailWert(page, 'Abschluss')).toHaveText('Laufende Versorgung');
 
@@ -120,7 +120,7 @@ test.describe('LOE-001b: Abschluss der Versorgung', () => {
   test('bietet office den Abschluss nicht an, wohl aber den Statuswechsel', async ({ page }) => {
     await anmelden(page, KONTEN.office);
 
-    await page.goto(`/patienten/${PATIENTEN.max}`);
+    await page.goto(`/patienten/${PATIENTEN.max}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Max Mustermann' })).toBeVisible();
 
     // Der Rollenschnitt ist hier bewusst ein anderer als beim

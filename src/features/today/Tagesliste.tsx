@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { appointmentTypeLabels, formatLocalTimeRange } from '@/features/appointments/api';
 import {
   adressZeilen,
@@ -99,7 +100,7 @@ export function Tageskarte({
           </a>
         ))}
         <Link
-          to={`/termine/${termin.id}`}
+          to={mitRueckweg(`/termine/${termin.id}`, '/')}
           className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center px-1 text-sm font-medium"
         >
           Termin öffnen →

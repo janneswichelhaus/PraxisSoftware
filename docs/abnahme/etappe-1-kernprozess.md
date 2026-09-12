@@ -1460,3 +1460,190 @@ Kein waagerechtes Scrollen, der Text bleibt lesbar, „E-Mail öffnen" und
 
 **Zielwert:** Die Termine gehen mit **drei** Taps als fertige Nachricht
 hinaus, und in der Akte steht danach ohne Zutun, dass sie mitgeteilt sind.
+---
+
+## AKTE-000 bis AKTE-005: Die Patientenakte als Arbeitsplatz
+
+Vorbedingung: angemeldet, eine Akte mit mindestens einer laufenden Verordnung
+und einigen Terminen (im Seed **Max Mustermann**, für die Verordnungen auch
+**Erika Beispiel**).
+
+### 1. Der Kopf trägt, was zählt — und bleibt stehen
+
+1. Akte öffnen. Erwartung oben: **Name**, **Geburtsdatum mit Alter**, das
+   Abzeichen **In Versorgung** und die beiden Wege **Termin anlegen** und
+   **Verordnung erfassen**. Keine Anschrift, keine Telefonnummern.
+2. Nacheinander **Termine**, **Verordnungen**, **Behandlungsverlauf**,
+   **Stammdaten** anwählen. Erwartung: Der Kopf bleibt unverändert stehen, nur
+   der Inhalt darunter wechselt; die Adresse in der Zeile ändert sich mit.
+3. Als `jannes.test@praxis.invalid` unter **Organisatorisches → Sicherheit →
+   Auditlog** nachsehen. Erwartung: **Ein** Eintrag „Patientenakte geöffnet"
+   für den ganzen Durchgang — nicht einer je Bereich.
+
+### 2. Die Übersicht beantwortet „was ist zu tun"
+
+1. Bereich **Übersicht**. Erwartung: **Nächste Termine**, **Laufende
+   Verordnungen**, **Letzter Behandlungsstand** und — wenn hinterlegt — **Vor
+   dem Hausbesuch** mit Zugangshinweis und Besonderheit.
+2. Auf einem Bildschirm ab 1280 px Breite: Termine und Verordnungen stehen
+   **nebeneinander** und beide **ohne Scrollen** im Bild.
+3. Jeder Ausschnitt führt weiter: **Alle Termine und Historie**, **Alle
+   Verordnungen**, **Behandlungsverlauf**, **Alle Stammdaten**.
+
+### 3. Termine mit Historie
+
+1. Bereich **Termine**. Erwartung: **Kommende Termine** und darunter
+   **Vergangene Termine**, neueste zuerst — einschließlich **abgesagter**
+   Termine mit ihrem Abzeichen.
+2. Gibt es mehr als zwanzig vergangene Termine: **Ältere Termine anzeigen**
+   lädt die nächste Seite nach.
+3. **Im Kalender zeigen** antippen. Erwartung: Der Kalender öffnet den Tag des
+   nächsten Termins, zeigt **nur** die Termine dieser Person und sagt das über
+   dem Gitter; **Filter aufheben** bringt die übrigen zurück, **Zur Akte**
+   führt zurück.
+
+### 4. Verordnung und Termine finden einander
+
+1. Bereich **Verordnungen** einer Person mit Serienterminen (Seed: Erika
+   Beispiel). Erwartung an einer laufenden Verordnung **drei getrennte
+   Zahlen**: **Leistungseinheiten** (aus den Positionen), **Termine**
+   (zugeordnet und bevorstehend) und **Noch planbar**.
+2. **Termine dieser Verordnung** antippen. Erwartung: die Terminliste, gefiltert,
+   mit dem Hinweis „Nur die Termine einer Verordnung." und dem Weg zurück.
+3. In der ungefilterten Terminliste trägt jeder Serientermin den Rückweg
+   **Verordnung vom …**.
+4. Eine **ausgeschöpfte** Verordnung steht unter „Ausgeschöpfte Verordnungen"
+   als **eine Zeile** und klappt auf Wunsch auf. Erwartung: **kein**
+   „Terminserie anlegen" daran — dort ist nichts mehr zu planen.
+
+### 5. Stammdaten zuletzt
+
+1. Bereich **Stammdaten**. Erwartung: Person, Kontakt, Hausbesuch und
+   Versorgung — und **ganz unten** der Abschnitt **Verwaltung** mit
+   „Als inaktiv markieren" und „Versorgung abschließen".
+2. **Stammdaten bearbeiten**, den Ort ändern, speichern. Erwartung: zurück in
+   den **Stammdaten**, der neue Wert steht da.
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann die Akte öffnen. Erwartung: Der Kopf trägt beide Aktionen **nebeneinander**
+in einer Zeile, die Bereichsleiste lässt sich waagerecht wischen, und die
+Ausschnitte stehen gestapelt untereinander. Kein waagerechtes Scrollen der
+Seite.
+
+**Zielwert:** Was mit dieser Person zu tun ist, steht **ohne Scrollen** im
+Bild; alles Seltene ist genau einen Tap entfernt.
+
+---
+
+## UX-012: Die Bedienabläufe zwischen den Bereichen
+
+Eigener Auftrag von Jannes, nicht aus der Roadmap: nicht ein neuer Bereich,
+sondern die Wege **zwischen** den vorhandenen. Vorbedingung: angemeldet, Seed
+eingespielt.
+
+### 1. Vom Termin in die Akte und zurück
+
+1. Kalender öffnen, eine **Wochenansicht** einstellen, auf einen Tag blättern
+   und einen Termin öffnen. Erwartung im Kopf: „Termin – **Name**", der Name
+   ist ein Weg in die Akte.
+2. Den Namen antippen. Erwartung: die Akte dieser Person.
+3. Im Browser zurück, dann **Zurück zum Kalender** antippen. Erwartung:
+   **dieselbe** Woche, **derselbe** Tag, **dieselbe** behandelnde Person —
+   nicht die Vorgabeansicht von heute.
+4. Dasselbe aus der **Patientensuche** heraus: suchen, Treffer öffnen,
+   zurückgehen. Erwartung: Die Liste steht wieder da, wo sie war.
+
+### 2. Anlegen aus dem laufenden Vorgang
+
+1. Im Kalender auf eine **freie Stelle** tippen → **Termin anlegen**. Datum,
+   Zeit und Person stehen oben.
+2. Nach einer Person suchen, die es nicht gibt. Erwartung: der Hinweis
+   **„Noch nicht in der Kartei? Patient:in anlegen"** samt der Zusage, dass
+   Datum, Zeit und Person erhalten bleiben.
+3. Den Weg gehen, die Person anlegen. Erwartung: Es geht **direkt** ins
+   Terminformular dieser Person weiter — mit **unveränderter** Vorbelegung.
+   Kein zweites „jetzt noch auswählen".
+4. Denselben Weg mit **Abbrechen** beenden. Erwartung: zurück in die
+   Terminanlage, Vorbelegung erhalten, **kein** neuer Datensatz.
+
+### 3. Fehlende Adresse aus dem Formular ergänzen
+
+1. Eine Person ohne vollständige Anschrift wählen, Termin anlegen,
+   Terminart **Hausbesuch**. Erwartung: die Meldung samt Weg **„Jetzt in den
+   Stammdaten ergänzen"**.
+2. Den Weg gehen, Straße, Hausnummer, PLZ und Ort eintragen, speichern.
+   Erwartung: zurück im **Terminformular**, die Adresse steht jetzt da, die
+   übrigen Angaben sind unverändert.
+
+### 4. Kontext und Benennung
+
+1. Aus einer Akte **Verordnung erfassen**. Erwartung unter der Überschrift:
+   **„Für <Name>."** — und der Rückweg heißt **Zurück zu den Verordnungen**.
+2. Einen Termin öffnen, der abgeschlossen werden kann. Erwartung: **zwei**
+   unterscheidbare Wege — **Dokumentieren und abschließen** und **Ohne
+   Dokumentation abschließen**.
+3. **Organisatorisches → Mitarbeitende** → eine Person öffnen. Erwartung:
+   Telefonnummern wählen, E-Mail schreiben (je ein Weg, kein blosser Text) und
+   — bei behandelnden Personen — **Woche im Kalender** und **Arbeitszeiten**.
+   Beim Office fehlen die beiden Planungswege.
+
+### 5. Formularfehler stehen oben und führen ins Feld
+
+1. **Patienten → Neue:r Patient:in**, ohne eine Eingabe auf **Patient anlegen**
+   tippen. Erwartung: ein roter Kasten **über** den Feldern, „Bitte prüfen Sie
+   diese Angaben", darunter je Fehler eine Zeile **Feldname: Meldung**.
+2. Eine Zeile antippen. Erwartung: Das genannte Feld bekommt den **Fokus** und
+   rollt **mittig** ins Bild; die Meldung steht weiterhin auch am Feld.
+3. Dasselbe nur mit der **Tastatur**: Nach dem Absenden liegt der Fokus im
+   Kasten, ein Tabulator erreicht den ersten Eintrag, die **Eingabetaste**
+   springt ins Feld.
+4. Ein genanntes Feld ausfüllen. Erwartung: Der Eintrag verschwindet aus dem
+   Kasten; der Kasten selbst verschwindet, sobald nichts mehr offen ist.
+5. Als **Office** eine:n Mitarbeiter:in anlegen und leer absenden. Erwartung:
+   Der Kasten nennt **keine** Privatangabe — der Abschnitt steht für diese
+   Rolle gar nicht auf der Seite.
+
+### 6. Suche: Fehler ist nicht „kein Treffer"
+
+1. In der Patientensuche einen Namen eingeben, der sicher nicht existiert.
+   Erwartung: **„Kein Treffer."**
+2. Die Netzwerkverbindung trennen (Entwicklerwerkzeuge → Offline) und erneut
+   suchen. Erwartung: eine **andere** Meldung, die von einem **Fehler** spricht
+   — nicht „Kein Treffer".
+
+### 7. Terminserie: die Prüfung gehört zum Vorschlag
+
+1. Aus einer Verordnung eine **Terminserie** vorschlagen lassen und prüfen.
+2. Einen der vorgeschlagenen Termine **ändern**. Erwartung: Das alte
+   Prüfergebnis gilt nicht mehr — es wird neu geprüft, bevor angelegt werden
+   kann.
+3. Die Serie anlegen. Erwartung: In der Akte stehen die neuen Termine
+   **sofort** — in der Übersicht, in der Terminliste und in den Zahlen der
+   Verordnung. Kein Neuladen nötig.
+
+### 8. Vorbereiten ist noch kein Mitteilen
+
+1. An einem Termin **Terminzettel** öffnen und drucken. Erwartung: Der Vermerk
+   wird **nicht** von selbst gesetzt; stattdessen fragt die Seite **„Wurde der
+   Zettel ausgehändigt?"** mit **Ja, als mitgeteilt vermerken** und **Nein,
+   nichts vermerken**.
+2. **Nein** wählen. Erwartung: kein Vermerk am Termin.
+3. Denselben Weg über **Termine mailen** gehen, das Mailprogramm öffnen und
+   **Ja** wählen. Erwartung: Der Termin trägt den Mitteilungsvermerk.
+
+### 9. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten/neu
+```
+
+Erwartung: Der Fehlerkasten füllt die Breite, jede Zeile ist mindestens 44 px
+hoch und mit dem Daumen zu treffen; kein waagerechtes Scrollen.
+
+**Zielwert:** Kein Weg endet in einer Sackgasse. Wer abbiegt, kommt dorthin
+zurück, wo er war — mit allem, was er schon eingegeben hatte.

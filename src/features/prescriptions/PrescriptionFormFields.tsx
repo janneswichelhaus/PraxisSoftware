@@ -11,6 +11,7 @@ import {
   type Prescriber,
   type PrescriptionFeld,
 } from './api';
+import { verordnungFeldId } from './verordnungsfelder';
 
 export type PositionsFehler = Partial<Record<keyof PositionEingabe, string>>;
 
@@ -58,6 +59,7 @@ export function PrescriptionFormFields({
           <Select
             label="Verordner:in *"
             name="prescriber_id"
+            feldId={verordnungFeldId('prescriber_id')}
             required
             value={werte.prescriber_id}
             error={fehler.prescriber_id}
@@ -85,6 +87,7 @@ export function PrescriptionFormFields({
           <Select
             label="Art *"
             name="prescription_kind"
+            feldId={verordnungFeldId('prescription_kind')}
             required
             value={werte.prescription_kind}
             error={fehler.prescription_kind}
@@ -96,6 +99,7 @@ export function PrescriptionFormFields({
           <Field
             label="Ausstellungsdatum *"
             name="issued_on"
+            feldId={verordnungFeldId('issued_on')}
             type="date"
             required
             value={werte.issued_on}
@@ -105,6 +109,7 @@ export function PrescriptionFormFields({
           <Field
             label="Frequenz"
             name="frequency_note"
+            feldId={verordnungFeldId('frequency_note')}
             autoComplete="off"
             hint={'So, wie sie auf dem Rezept steht — etwa „2x pro Woche".'}
             value={werte.frequency_note}
@@ -190,6 +195,7 @@ export function PrescriptionFormFields({
           <TextArea
             label="Diagnose oder Leitsymptomatik"
             name="diagnosis"
+            feldId={verordnungFeldId('diagnosis')}
             rows={3}
             value={werte.diagnosis}
             error={fehler.diagnosis}
@@ -198,6 +204,7 @@ export function PrescriptionFormFields({
           <TextArea
             label="Therapieziel"
             name="therapy_goal"
+            feldId={verordnungFeldId('therapy_goal')}
             rows={2}
             value={werte.therapy_goal}
             error={fehler.therapy_goal}
@@ -206,6 +213,7 @@ export function PrescriptionFormFields({
           <TextArea
             label="Hinweis der Verordner:in"
             name="prescriber_note"
+            feldId={verordnungFeldId('prescriber_note')}
             rows={2}
             hint="Was auf dem Rezept steht, unverändert übernommen."
             value={werte.prescriber_note}
@@ -215,6 +223,7 @@ export function PrescriptionFormFields({
           <TextArea
             label="Empfehlung der Therapeut:in zum Verordnungsende"
             name="follow_up_recommendation"
+            feldId={verordnungFeldId('follow_up_recommendation')}
             rows={2}
             hint="Ihre eigene Einschätzung. Die Anwendung erzeugt keine Empfehlung."
             value={werte.follow_up_recommendation}
@@ -229,6 +238,7 @@ export function PrescriptionFormFields({
           <TextArea
             label="Bemerkung"
             name="note"
+            feldId={verordnungFeldId('note')}
             rows={2}
             hint={'Für alle Praxisrollen sichtbar, etwa „Rezept liegt im Ordner".'}
             value={werte.note}

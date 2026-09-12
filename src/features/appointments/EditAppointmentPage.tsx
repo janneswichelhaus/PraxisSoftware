@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchPatient } from '@/features/patients/api';
@@ -40,6 +41,10 @@ import {
 export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const navigate = useNavigate();
+  const [suche] = useSearchParams();
+  // Der Termin hat einen Rückweg (Kalender, Akte, Tagesliste); die Bearbeitung
+  // reicht ihn durch, damit er über diese Station nicht verloren geht (UX-012).
+  const rueckweg = suche.get(RUECKWEG_PARAM);
   const queryClient = useQueryClient();
 
   const [werte, setWerte] = useState<Record<AppointmentFormField, string>>(leererTermin);
@@ -94,7 +99,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
       // Detailansicht und Kalender zeigen sonst weiter den alten Stand.
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] });
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      void navigate(`/termine/${appointmentId}`, { replace: true });
+      void navigate(mitRueckweg(`/termine/${appointmentId}`, rueckweg), { replace: true });
     },
   });
 
@@ -163,7 +168,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     return (
       <>
         <Link
-          to={`/termine/${daten.id}`}
+          to={mitRueckweg(`/termine/${daten.id}`, rueckweg)}
           className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
         >
           ← Zurück zum Termin
@@ -182,7 +187,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <Link
-        to={`/termine/${daten.id}`}
+        to={mitRueckweg(`/termine/${daten.id}`, rueckweg)}
         className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
       >
         ← Zurück zum Termin
@@ -274,7 +279,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => void navigate(`/termine/${daten.id}`)}
+            onClick={() => void navigate(mitRueckweg(`/termine/${daten.id}`, rueckweg))}
           >
             Abbrechen
           </Button>

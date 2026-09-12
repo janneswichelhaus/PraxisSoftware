@@ -16,6 +16,7 @@ import {
   staffName,
 } from '@/features/appointments/api';
 import type { Patient } from '@/features/patients/api';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchPatientTreatmentNotesPage,
   fetchTreatmentEvidencePage,
@@ -159,7 +160,13 @@ function Behandlungsnachweis({ patient }: { patient: Patient }) {
             <li key={eintrag.appointment_id} className="py-4">
               <TerminKopf termin={eintrag} />
               <p className="text-ink mt-2 text-[0.9375rem]">{nachweisText(eintrag)}</p>
-              <Link to={`/termine/${eintrag.appointment_id}`} className={`${linkLeise} mt-1`}>
+              <Link
+                to={mitRueckweg(
+                  `/termine/${eintrag.appointment_id}`,
+                  `/patienten/${patient.id}/verlauf`,
+                )}
+                className={`${linkLeise} mt-1`}
+              >
                 Zum Termin
               </Link>
             </li>
@@ -284,7 +291,13 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
                 ))
               )}
 
-              <Link to={`/termine/${termin.appointment_id}`} className={`${linkLeise} mt-1`}>
+              <Link
+                to={mitRueckweg(
+                  `/termine/${termin.appointment_id}`,
+                  `/patienten/${patient.id}/verlauf`,
+                )}
+                className={`${linkLeise} mt-1`}
+              >
                 Zum Termin
               </Link>
             </li>

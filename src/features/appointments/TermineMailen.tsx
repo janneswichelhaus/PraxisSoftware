@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fullName, type Patient } from '@/features/patients/api';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { addAppointmentNotification, type AppointmentSlipEntry } from './api';
 import { mailOeffnen, terminmailEntwurf, type Terminmail } from './terminmail';
 
@@ -25,14 +27,15 @@ import { mailOeffnen, terminmailEntwurf, type Terminmail } from './terminmail';
  *      Wunsch der betroffenen Person zu (ANN-041). Der Satz steht deshalb
  *      neben dem Knopf und nicht in einem Hilfetext.
  *   3. **Sie behauptet nicht mehr, als sie weiß.** Die Anwendung sieht die
- *      Übergabe an das Mailprogramm, nicht den Versand. Der Vermerk sagt
- *      genau das, und die Terminseite nimmt ihn zurück, wenn der Entwurf doch
- *      verworfen wurde — dieselbe Ehrlichkeit wie beim abgebrochenen
- *      Druckdialog (CAL-012).
+ *      Übergabe an das Mailprogramm, nicht den Versand — und fragt deshalb
+ *      danach.
  *
- * Vermerkt wird **vor** der Übergabe: Scheitert der Vermerk, öffnet sich auch
- * keine E-Mail, statt eine Mitteilung zu behaupten, die nicht festgehalten
- * ist.
+ * **Übergeben und mitgeteilt sind zwei Schritte** (seit UX-012, ANN-041
+ * Fassung 2). „E-Mail öffnen" übergibt den Entwurf und vermerkt **nichts**;
+ * erst die Bestätigung danach hält fest, dass die Nachricht gesendet wurde.
+ * Vorher vermerkte schon die Übergabe: Ein im Mailprogramm verworfener Entwurf
+ * hinterließ eine Mitteilung, die nie stattgefunden hat. Der Vermerk ist ein
+ * Nachweis, und ein Nachweis, der regelmäßig falsch ist, ist keiner.
  */
 export function TermineMailen({
   patient,
@@ -48,8 +51,19 @@ export function TermineMailen({
   if (!patient.email) {
     return (
       <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
-        Für eine E-Mail fehlt die Adresse. Sie steht in den Stammdaten der Akte unter „Kontakt" —
-        eintragen darf sie nur, wer sie von der Patient:in selbst hat.
+        Für eine E-Mail fehlt die Adresse — eintragen darf sie nur, wer sie von der Patient:in
+        selbst hat.{' '}
+        {/* Der Abstecher in die Stammdaten und zurück auf diese Seite (UX-012).
+            Vorher stand hier nur, wo die Adresse hingehört. */}
+        <Link
+          to={mitRueckweg(
+            `/patienten/${patient.id}/bearbeiten`,
+            `/patienten/${patient.id}/terminzettel`,
+          )}
+          className="text-accent inline-flex min-h-11 items-center underline"
+        >
+          Adresse in den Stammdaten ergänzen
+        </Link>
       </p>
     );
   }
@@ -68,42 +82,82 @@ function Mailentwurf({
 }) {
   const queryClient = useQueryClient();
   const [entwurf, setEntwurf] = useState<Terminmail | null>(null);
-  const [uebergeben, setUebergeben] = useState(false);
+  /** Der übergebene Entwurf, solange die Bestätigung aussteht. */
+  const [uebergeben, setUebergeben] = useState<Terminmail | null>(null);
 
-  const uebergabe = useMutation({
+  const vermerken = useMutation({
     mutationFn: (mail: Terminmail) =>
       addAppointmentNotification(
         mail.enthalten.map((eintrag) => eintrag.id),
         'email',
       ),
-    onSuccess: async (_anzahl, mail) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
-      mailOeffnen(mail.url);
-      setUebergeben(true);
-      setEntwurf(null);
+      setUebergeben(null);
     },
   });
 
   // Der Entwurf entsteht im Klickhandler, nicht beim Rendern: Die Anwendung
   // baut keine Nachricht auf Vorrat (ADR-019 Punkt 20, hier sinngemäß).
   function entwerfen() {
-    uebergabe.reset();
-    setUebergeben(false);
+    vermerken.reset();
+    setUebergeben(null);
     setEntwurf(terminmailEntwurf(fullName(patient), adresse, eintraege));
+  }
+
+  /** Übergibt den Entwurf und fragt danach, ob er gesendet wurde. */
+  function uebergabeStarten(mail: Terminmail) {
+    mailOeffnen(mail.url);
+    setEntwurf(null);
+    setUebergeben(mail);
   }
 
   return (
     <div className="flex flex-col gap-3">
       {entwurf === null ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="secondary" onClick={entwerfen}>
-            Termine per E-Mail senden
-          </Button>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="button" variant="secondary" onClick={entwerfen}>
+              Termine per E-Mail senden
+            </Button>
+            {vermerken.isSuccess ? (
+              <Statusmeldung>
+                Die Termine sind als „Per E-Mail mitgeteilt" vermerkt. Am Termin lässt sich der
+                Vermerk zurücknehmen.
+              </Statusmeldung>
+            ) : null}
+          </div>
+
+          {/* Der zweite Schritt: Die Anwendung sieht die Übergabe, nicht den
+              Versand - also fragt sie (ANN-041 Fassung 2). Die Frage bleibt
+              stehen, bis sie beantwortet ist. */}
           {uebergeben ? (
-            <Statusmeldung>
-              Die E-Mail ist im Mailprogramm geöffnet, die Termine sind als „Per E-Mail mitgeteilt"
-              vermerkt. Senden Sie sie doch nicht, nehmen Sie den Vermerk am Termin zurück.
-            </Statusmeldung>
+            <div
+              role="status"
+              className="border-line-strong bg-surface-sunken rounded-card flex flex-col gap-3 border px-4 py-3"
+            >
+              <p className="text-ink text-[0.9375rem]">
+                Die E-Mail ist im Mailprogramm geöffnet. Wurde sie gesendet? Nur dann gelten die
+                Termine als mitgeteilt.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  disabled={vermerken.isPending}
+                  onClick={() => vermerken.mutate(uebergeben)}
+                >
+                  {vermerken.isPending ? 'Wird vermerkt …' : 'Ja, als mitgeteilt vermerken'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setUebergeben(null)}>
+                  Nein, nichts vermerken
+                </Button>
+                {vermerken.isError ? (
+                  <Statusmeldung ton="fehler">
+                    {vermerken.error.message} Es wurde nichts vermerkt.
+                  </Statusmeldung>
+                ) : null}
+              </div>
+            </div>
           ) : null}
         </div>
       ) : (
@@ -139,21 +193,12 @@ function Mailentwurf({
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              disabled={uebergabe.isPending}
-              onClick={() => uebergabe.mutate(entwurf)}
-            >
-              {uebergabe.isPending ? 'Wird vermerkt …' : 'E-Mail öffnen'}
+            <Button type="button" onClick={() => uebergabeStarten(entwurf)}>
+              E-Mail öffnen
             </Button>
             <Button type="button" variant="secondary" onClick={() => setEntwurf(null)}>
               Abbrechen
             </Button>
-            {uebergabe.isError ? (
-              <Statusmeldung ton="fehler">
-                {uebergabe.error.message} Es wurde nichts geöffnet und nichts vermerkt.
-              </Statusmeldung>
-            ) : null}
           </div>
         </div>
       )}

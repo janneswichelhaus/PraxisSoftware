@@ -14,7 +14,13 @@ export function PageHeader({
   actions,
   kompakt = false,
 }: {
-  title: string;
+  /**
+   * Der Seitentitel. `ReactNode`, weil ein Titel den Gegenstand der Seite
+   * benennt und der manchmal anklickbar sein soll: Am Termin führt der Name
+   * der Patient:in von hier direkt in ihre Akte (UX-012). Fließtext bleibt der
+   * Regelfall.
+   */
+  title: ReactNode;
   description?: string | undefined;
   actions?: ReactNode;
   /**

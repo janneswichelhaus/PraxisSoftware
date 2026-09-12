@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  *
  * Geprüft wird die **Reihenfolge**, nicht nur das Ob. Sie ist bei
  * `sessions_ended` die Sache selbst: Nach dem Abmelden gibt es kein
- * `auth.uid()` mehr, mit dem sich noch etwas protokollieren ließe (ANN-043).
+ * `auth.uid()` mehr, mit dem sich noch etwas protokollieren ließe (ANN-044).
  */
 
 const rpc = vi.fn();

@@ -94,7 +94,7 @@ describe('SessionProvider — Reichweite des Abmeldens', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
 
-    // Ohne ausdrückliches `local` wäre es `global` - siehe ANN-044.
+    // Ohne ausdrückliches `local` wäre es `global` - siehe ANN-045.
     await waitFor(() => expect(signOut).toHaveBeenCalledWith({ scope: 'local' }));
   });
 });

@@ -113,7 +113,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
        * diesen einen Pfad wird hier nachgeräumt.
        */
       signOut: async () => {
-        // `scope: 'local'` ausdrücklich, nicht als Weglassung (ANN-044).
+        // `scope: 'local'` ausdrücklich, nicht als Weglassung (ANN-045).
         // supabase-js hat den Default `{ scope: 'global' }` - ohne diese
         // Angabe beendete der gewöhnliche Abmelden-Knopf die Sitzungen auf
         // allen Geräten. Damit wäre der Satz „Angemeldete Geräte bleiben

@@ -426,6 +426,76 @@ export async function fetchUpcomingAppointments(
 }
 
 // -----------------------------------------------------------------------------
+// Alle Termine einer Person in der Akte (AKTE-001)
+// -----------------------------------------------------------------------------
+
+const patientAppointmentSchema = upcomingAppointmentSchema.extend({
+  prescription_id: z.string().nullable(),
+  prescription_issued_on: z.string().nullable(),
+});
+
+export type PatientAppointment = z.infer<typeof patientAppointmentSchema>;
+
+/** Termine je Seite im Terminbereich der Akte. Obergrenze der Datenbank: 50. */
+export const TERMINE_SEITENGROESSE = 20;
+
+/** Keyset-Cursor: der letzte Termin der vorigen Seite. */
+export interface TerminCursor {
+  afterStartsAt: string;
+  afterId: string;
+}
+
+export interface PatientAppointmentQuery {
+  /** Vorwärts (kommende) statt rückwärts (vergangene Termine). */
+  kuenftig: boolean;
+  cursor?: TerminCursor | null;
+  /** Nur Termine dieser Verordnung. */
+  verordnung?: string | null;
+  limit?: number;
+}
+
+/**
+ * Eine Seite der Terminliste einer Patient:in - vorwärts oder rückwärts.
+ *
+ * Anders als `fetchUpcomingAppointments` (der Blick nach vorn in der
+ * Übersicht) zeigt diese Liste **alle** Zustände, auch abgesagte: Im
+ * Terminbereich der Akte ist gerade die Absage die Auskunft, die gebraucht
+ * wird. Ohne Anschrift und ohne klinische Inhalte.
+ */
+export async function fetchPatientAppointments(
+  patientId: string,
+  query: PatientAppointmentQuery,
+): Promise<PatientAppointment[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_appointments', {
+    p_patient_id: patientId,
+    p_upcoming: query.kuenftig,
+    p_limit: query.limit ?? TERMINE_SEITENGROESSE,
+    p_after_starts_at: query.cursor?.afterStartsAt ?? null,
+    p_after_id: query.cursor?.afterId ?? null,
+    p_prescription_id: query.verordnung ?? null,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Termine konnten nicht geladen werden.');
+  return z.array(patientAppointmentSchema).parse(data ?? []);
+}
+
+/**
+ * Cursor für die nächste Seite - oder null, wenn die Seite nicht voll war.
+ *
+ * Wie in der Akte (`naechsteAkteSeite`): Eine volle Seite kann die letzte
+ * gewesen sein; dann liefert der nächste Aufruf nichts und die Schaltfläche
+ * verschwindet. Das ist billiger als eine eigene Zählabfrage.
+ */
+export function naechsteTerminSeite(
+  seite: readonly PatientAppointment[],
+  seitengroesse = TERMINE_SEITENGROESSE,
+): TerminCursor | null {
+  if (seite.length < seitengroesse) return null;
+  const letzte = seite[seite.length - 1]!;
+  return { afterStartsAt: letzte.starts_at, afterId: letzte.id };
+}
+
+// -----------------------------------------------------------------------------
 // Vorbelegung des Terminformulars (UX-003)
 //
 // Der häufigste Einzelvorgang am Ende eines Besuchs ist der nächste Termin

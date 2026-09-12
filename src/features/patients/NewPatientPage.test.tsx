@@ -60,6 +60,38 @@ describe('NewPatientPage', () => {
     expect(document.getElementById(beschreibung!)).toHaveTextContent('Vorname ist erforderlich.');
   });
 
+  it('fuehrt aus der Fehlerzusammenfassung direkt ins Feld', async () => {
+    // Die Stammdaten sind das laengste Formular der Anwendung: Ein Fehler im
+    // Vornamen steht beim Absenden ausserhalb des Bildes (UX-012).
+    const user = userEvent.setup();
+    renderWithProviders(<NewPatientPage />);
+    await user.click(screen.getByRole('button', { name: 'Patient anlegen' }));
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveFocus();
+    expect(kasten).toHaveTextContent('Vorname: Vorname ist erforderlich.');
+    expect(kasten).toHaveTextContent('Geburtsdatum: Geburtsdatum ist erforderlich.');
+
+    await user.click(
+      screen.getByRole('link', { name: 'Geburtsdatum: Geburtsdatum ist erforderlich.' }),
+    );
+    expect(screen.getByLabelText('Geburtsdatum *')).toHaveFocus();
+  });
+
+  it('nimmt die korrigierte Angabe aus der Fehlerzusammenfassung heraus', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewPatientPage />);
+    await user.click(screen.getByRole('button', { name: 'Patient anlegen' }));
+    await screen.findByRole('alert');
+
+    await user.type(screen.getByLabelText('Vorname *'), 'Nora');
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).not.toHaveTextContent('Vorname ist erforderlich.'),
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Nachname ist erforderlich.');
+  });
+
   it('lehnt ein Geburtsdatum in der Zukunft ab', async () => {
     const user = userEvent.setup();
     const morgen = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
@@ -138,6 +170,44 @@ describe('NewPatientPage', () => {
     for (const verboten of ['status', 'organization_id', 'id', 'person_id', 'patient_id']) {
       expect(gesendet).not.toContain(verboten);
     }
+  });
+
+  // ---------------------------------------------------------------------------
+  // UX-012: Aus einem laufenden Vorgang heraus anlegen - die Anlage fuehrt
+  // dorthin zurueck und nimmt die neue Kennung mit.
+  // ---------------------------------------------------------------------------
+  it('kehrt mit der neuen Kennung in den laufenden Vorgang zurueck', async () => {
+    createPatient.mockResolvedValue('66666666-6666-4666-8666-0000000000ee');
+    const user = userEvent.setup();
+    const vorgang = '/termine/neu?datum=2027-05-12&beginn=09%3A00';
+    renderWithProviders(
+      <NewPatientPage />,
+      `/patienten/neu?zurueck=${encodeURIComponent(vorgang)}`,
+    );
+
+    await ausfuellen(user);
+    await user.click(screen.getByRole('button', { name: 'Patient anlegen' }));
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(
+        `${vorgang}&patient=66666666-6666-4666-8666-0000000000ee`,
+        { replace: true },
+      ),
+    );
+  });
+
+  it('bricht in den laufenden Vorgang ab, ohne etwas anzulegen', async () => {
+    const user = userEvent.setup();
+    const vorgang = '/termine/neu?datum=2027-05-12';
+    renderWithProviders(
+      <NewPatientPage />,
+      `/patienten/neu?zurueck=${encodeURIComponent(vorgang)}`,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+    expect(navigate).toHaveBeenCalledWith(vorgang);
+    expect(createPatient).not.toHaveBeenCalled();
   });
 
   it('navigiert nach erfolgreicher Anlage zur neuen Patientenakte', async () => {

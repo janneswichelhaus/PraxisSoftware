@@ -1,9 +1,14 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Patientensuche } from '@/features/patients/Patientensuche';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { appointmentTypeLabels, leseTerminVorbelegung, schreibeTerminVorbelegung } from './api';
+
+/** Eine Kennung aus der Adresszeile, wie sie die Patientenanlage zurückgibt. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Termin anlegen, wenn die Zeit schon feststeht und die Person noch nicht
@@ -25,6 +30,31 @@ export function NewAppointmentStartPage() {
   const [suche] = useSearchParams();
   const vorbelegung = leseTerminVorbelegung(suche);
   const anhang = schreibeTerminVorbelegung(vorbelegung);
+
+  /**
+   * Der Rückweg für den Abstecher „Patient:in anlegen" (UX-012).
+   *
+   * Er ist diese Seite **samt Vorbelegung** — Datum, Zeit und behandelnde
+   * Person stehen darin. Das Anlegen führt hierher zurück und hängt die neue
+   * Kennung an; damit ist keine der Angaben verloren, die der Tap auf die
+   * freie Stelle im Kalender mitgebracht hat.
+   */
+  const hierher = `/termine/neu${anhang}`;
+
+  /**
+   * Zurück aus der Patientenanlage: direkt weiter ins Terminformular.
+   *
+   * Wer gerade eine Person angelegt hat, will keinen zweiten Schritt „jetzt
+   * noch auswählen" — sie ist die gesuchte. Die Vorbelegung reist über
+   * `anhang` weiter; der Parameter `patient` bleibt dabei von selbst zurück,
+   * weil `schreibeTerminVorbelegung` nur die Terminfelder schreibt.
+   */
+  const neuerPatient = suche.get('patient');
+  useEffect(() => {
+    if (neuerPatient && UUID.test(neuerPatient)) {
+      void navigate(`/patienten/${neuerPatient}/termine/neu${anhang}`, { replace: true });
+    }
+  }, [neuerPatient, anhang, navigate]);
 
   const zeit =
     vorbelegung.beginn && vorbelegung.ende
@@ -60,6 +90,19 @@ export function NewAppointmentStartPage() {
             onAuswahl={(patientId) => void navigate(`/patienten/${patientId}/termine/neu${anhang}`)}
           />
         </div>
+        {/* Der häufigste Grund für einen leeren Treffer: Die Person ist neu.
+            Vorher war das hier eine Sackgasse - Kartei öffnen, anlegen,
+            zurückfinden, von vorn beginnen (UX-012). */}
+        <p className="text-ink-muted mt-3 max-w-prose text-sm">
+          Noch nicht in der Kartei?{' '}
+          <Link
+            to={mitRueckweg('/patienten/neu', hierher)}
+            className="text-accent inline-flex min-h-11 items-center hover:underline"
+          >
+            Patient:in anlegen
+          </Link>{' '}
+          — Datum, Zeit und behandelnde Person bleiben dabei erhalten.
+        </p>
       </Section>
     </>
   );

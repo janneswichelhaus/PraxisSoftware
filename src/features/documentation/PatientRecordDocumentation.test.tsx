@@ -179,7 +179,10 @@ describe('PatientRecordDocumentation: Behandlungsnachweis (DOK-003)', () => {
     );
 
     const links = await screen.findAllByRole('link', { name: 'Zum Termin' });
-    expect(links[0]).toHaveAttribute('href', '/termine/77777777-7777-4777-8777-000000000001');
+    // Mit Rueckweg in den Behandlungsverlauf der Akte (UX-012).
+    expect(links[0]!.getAttribute('href')).toMatch(
+      /^\/termine\/77777777-7777-4777-8777-000000000001\?zurueck=/,
+    );
     expect(links).toHaveLength(3);
   });
 
@@ -347,7 +350,9 @@ describe('PatientRecordDocumentation: klinische Sicht (DOK-003)', () => {
 
     const termine = screen.getAllByRole('link', { name: 'Zum Termin' });
     expect(termine).toHaveLength(2);
-    expect(termine[1]).toHaveAttribute('href', '/termine/77777777-7777-4777-8777-000000000002');
+    expect(termine[1]!.getAttribute('href')).toMatch(
+      /^\/termine\/77777777-7777-4777-8777-000000000002\?zurueck=/,
+    );
   });
 
   it('bietet in der Akte keine Schreibhandlungen an', async () => {
