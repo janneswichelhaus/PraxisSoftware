@@ -109,9 +109,10 @@ describe('Farbtokens erfuellen WCAG AA', () => {
   );
 
   // Heller Text auf der Akzentflaeche - die primaere Schaltflaeche
-  // (`bg-accent text-surface`, buttonStile.ts) und ihr Hover-Zustand. Seit
-  // DS-001 ist dieser Text Papier und nicht Weiss (`--action-primary-text`);
-  // geprueft wird deshalb das Paar, das tatsaechlich auf dem Schirm steht.
+  // (`bg-accent text-surface`, buttonStile.ts) und ihr Hover-Zustand. DS-001
+  // setzte dafuer Papier statt Weiss (`--action-primary-text`); seit UI-002b
+  // ist beides dasselbe. Geprueft wird unveraendert das Paar, das
+  // tatsaechlich auf dem Schirm steht.
   it.each([['accent'], ['accent-hover']])('traegt Papier auf %s mit 4.5:1', (token) => {
     expect(kontrastverhaeltnis(tokens[token]!, tokens.surface!)).toBeGreaterThanOrEqual(4.5);
   });
@@ -141,6 +142,28 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     expect(kontrastverhaeltnis(tokens.positiv!, tokens['positiv-soft']!)).toBeGreaterThanOrEqual(
       4.5,
     );
+  });
+
+  // UI-002b: Karten tragen Weiss, damit sie sich vom Seitengrund abheben.
+  // Vorher lagen Papier (#f6f7f4) und Flaeche (#eceee8) bei 1.09:1 - eine
+  // Karte war als Karte nicht zu erkennen, und der getoente Grund stand
+  // optisch hinter dem Inhalt statt unter ihm. Der Wert steht hier als
+  // Zusicherung, damit ein Zurueckdrehen eine Entscheidung ist und kein
+  // Versehen.
+  it('traegt auf Karten Weiss und hebt sie vom Seitengrund ab', () => {
+    expect(tokens.surface).toEqual({ L: 1, C: 0, H: 0 });
+    expect(kontrastverhaeltnis(tokens.surface!, tokens.canvas!)).toBeGreaterThanOrEqual(1.15);
+  });
+
+  // Die Gegenprobe dazu: Eingabefelder sind seit UI-002b nicht mehr heller
+  // als ihre Umgebung. Was sie als Feld ausweist, ist allein die Umrandung -
+  // und die muss die 3:1 aus WCAG 1.4.11 halten, was der Test darunter
+  // ohnehin prueft. Diese Zusicherung haelt die Begruendung fest.
+  it('laesst Feld und Papier dieselbe Flaeche sein - der Rahmen traegt', () => {
+    expect(tokens['surface-field']).toEqual(tokens.surface);
+    expect(
+      kontrastverhaeltnis(tokens['line-strong']!, tokens['surface-field']!),
+    ).toBeGreaterThanOrEqual(3);
   });
 
   // 3:1 nach WCAG 1.4.11 fuer die Begrenzung von Bedienelementen.

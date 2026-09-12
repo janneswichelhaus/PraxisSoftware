@@ -70,8 +70,10 @@ export function Field({ label, hint, error, feldId, className = '', type, ...pro
           aria-describedby={describedBy}
           aria-invalid={error ? true : undefined}
           className={[
-            // DS-001: Felder sind die hellste Flaeche (weiss), 48 px hoch,
-            // Radius 10, Schrift 16 px - unter 16 px zoomt iOS beim Fokus.
+            // DS-001: Felder sind weiss, 48 px hoch, Radius 10, Schrift 16 px
+            // - unter 16 px zoomt iOS beim Fokus. Seit UI-002b ist das Papier
+            // darunter ebenfalls weiss; als Feld erkennbar macht das Feld
+            // deshalb seine Umrandung, nicht mehr seine Flaeche.
             'bg-surface-field text-ink placeholder:text-ink-subtle rounded-field h-12 w-full border px-4 text-base',
             isPassword ? 'pr-11' : '',
             error ? 'border-danger' : 'border-line-strong',
