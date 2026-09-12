@@ -1201,3 +1201,70 @@ Ende stehen untereinander, kein waagerechtes Scrollen, das Zeitfeld ist mit
 einem Daumen erreichbar.
 
 **Zielwert:** Ein Termin entsteht mit **einer** Zeiteingabe statt zweien.
+
+---
+
+## CAL-007 — Terminserie aus einer Verordnung
+
+Ziel: Aus einer Verordnung entsteht in **einem** Vorgang eine Terminserie.
+Der Seed enthält dafür eine frische Folgeverordnung für Erika Beispiel
+(10× Krankengymnastik, nichts genutzt).
+
+### 1. Einstieg und Kontingent
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte **Erika Beispiel**
+   öffnen, Abschnitt „Verordnungen".
+2. An der Folgeverordnung vom 08.09.2026 steht **Terminserie anlegen**.
+   Erwartung: Der Link erscheint auch für `anna.beispiel@praxis.invalid`
+   (therapist), aber für kein Patientenkonto.
+3. Draufklicken. Erwartung: Die Seite zeigt **Verordnet 10 · Genutzt 0 ·
+   Bereits verplant 0 · Offen 10** und die Frequenz „2x pro Woche"; im Feld
+   „Anzahl Termine" steht **10**.
+
+### 2. Vorschlag und Einzelabweichung
+
+1. Behandelnde Person **Anna Beispiel**, Terminart **Hausbesuch**, erster
+   Termin auf einen Montag in vier Wochen, Beginn **09:00**, Rhythmus
+   **Zweimal pro Woche**, Anzahl **10**. → **Termine vorschlagen**.
+2. Erwartung: Zehn Zeilen, abwechselnd Montag und Donnerstag, jeweils
+   „bis 10:00 Uhr", darunter **„Alle 10 Termine sind planbar."**
+3. Bei einer Zeile das Datum auf einen Tag ändern, an dem Anna schon einen
+   Termin um 09:00 hat. Erwartung: Sofort der Hinweis **„Die Liste wurde
+   geändert und ist noch nicht geprüft."**, und „10 Termine anlegen" ist
+   nicht anklickbar.
+4. **Erneut prüfen**. Erwartung: An dieser Zeile steht **„Zeitraum ist
+   bereits belegt"**, darunter „1 von 10 Terminen sind so nicht planbar."
+5. Die Zeile mit **Entfernen** herausnehmen → erneut prüfen. Erwartung:
+   „Alle 9 Termine sind planbar.", der Knopf heißt jetzt „9 Termine anlegen".
+
+### 3. Anlegen — alles oder nichts
+
+1. **9 Termine anlegen**. Liegt ein Termin außerhalb der Arbeitszeit, kommt
+   zuerst die Rückfrage „Serie trotzdem anlegen" — ohne sie wird nichts
+   angelegt.
+2. Erwartung: Rücksprung in die Akte; unter „Nächste Termine" stehen die
+   ersten Termine der Serie, jeder **Bestätigt**.
+3. Im Kalender (Tagesansicht, Anna) an einem der Serientage nachsehen:
+   der Termin steht dort mit **60 Minuten**.
+4. Zurück auf die Serienseite. Erwartung: **Bereits verplant 9 · Offen 1**;
+   „Genutzt" steht weiter auf 0 — verplant ist nicht genutzt (ANN-038).
+5. Einen Termin der Serie absagen (mit Grund) und die Serienseite neu laden.
+   Erwartung: **Bereits verplant 8 · Offen 2** — eine Absage gibt ihren Platz
+   im Kontingent wieder frei.
+6. Gegenprobe „alles oder nichts": eine neue Serie über zwei Termine planen,
+   von denen einer auf einen bereits belegten Zeitraum fällt, die Prüfung
+   ignorieren und über die Adresszeile neu laden — der Knopf bleibt gesperrt.
+   Es entsteht kein einziger Termin.
+
+### 4. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann in der Akte „Terminserie anlegen" öffnen. Erwartung: Kein waagerechtes
+Scrollen; Datum, Beginn und „Entfernen" jeder Zeile brechen untereinander um
+und sind mit einem Daumen erreichbar; jedes Tippziel mindestens 44 px.
+
+**Zielwert:** Zehn Termine aus einer Verordnung in **unter einer Minute**,
+statt zehnmal das Terminformular.

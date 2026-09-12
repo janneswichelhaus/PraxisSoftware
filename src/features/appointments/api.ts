@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import type { StatusFilter } from './calendar';
+import type { Serientermin } from './serie';
 
 /**
  * Datenzugriff auf die Terminverwaltung.
@@ -844,4 +845,132 @@ export async function reopenAppointment(
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht wieder geöffnet werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Terminserie aus einer Verordnung (CAL-007)
+//
+// Drei Serverfunktionen, drei Aufgaben: das Kontingent lesen, die geplanten
+// Zeiten prüfen, die Serie anlegen. Die Rhythmusrechnung selbst steht in
+// `serie.ts` und spricht mit keinem Server (§6.2).
+// -----------------------------------------------------------------------------
+
+const prescriptionSlotsSchema = z.object({
+  patient_id: z.string(),
+  frequency_note: z.string().nullable(),
+  prescribed: z.number(),
+  used: z.number(),
+  planned: z.number(),
+  remaining: z.number(),
+});
+
+export type PrescriptionSlots = z.infer<typeof prescriptionSlotsSchema>;
+
+/**
+ * Kontingent einer Verordnung: verordnet, genutzt, verplant und offen.
+ *
+ * Ausschließlich organisatorische Zahlen - Diagnose und Therapieziel bleiben
+ * bei der klinischen Sicht (ANN-011). „Verplant" zählt die nicht abgesagten
+ * Termine dieser Verordnung; verplant ist nicht genutzt (ANN-012, ANN-038).
+ */
+export async function fetchPrescriptionSlots(prescriptionId: string): Promise<PrescriptionSlots> {
+  const { data, error } = (await getSupabase().rpc('get_prescription_slots', {
+    p_prescription_id: prescriptionId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Das Kontingent der Verordnung konnte nicht geladen werden.');
+  const zeilen = z.array(prescriptionSlotsSchema).parse(data ?? []);
+  const erste = zeilen[0];
+  if (!erste) throw new Error('Das Kontingent der Verordnung konnte nicht geladen werden.');
+  return erste;
+}
+
+/**
+ * Befund einer geplanten Terminzeit (CAL-007).
+ *
+ * Der Server liefert ein Wort, nicht den kollidierenden Termin - die
+ * Serienplanung braucht ihn nicht (ADR-004, Datenminimierung).
+ */
+export const slotConflictSchema = z.enum([
+  'invalid',
+  'past',
+  'off_grid',
+  'duplicate',
+  'overlap',
+  'outside_working_hours',
+]);
+export type SlotConflict = z.infer<typeof slotConflictSchema>;
+
+export const slotConflictLabels: Record<SlotConflict, string> = {
+  invalid: 'Datum oder Uhrzeit unvollständig',
+  past: 'Liegt in der Vergangenheit',
+  off_grid: 'Beginn passt nicht zum Praxisraster',
+  duplicate: 'Steht doppelt in dieser Serie',
+  overlap: 'Zeitraum ist bereits belegt',
+  outside_working_hours: 'Außerhalb der Arbeitszeit',
+};
+
+/**
+ * Befunde, die das Anlegen verhindern.
+ *
+ * „Außerhalb der Arbeitszeit" gehört ausdrücklich nicht dazu: Es ist eine
+ * Rückfrage, keine Grenze (CAL-005). Alles andere würde der Server abweisen,
+ * und weil die Serie alles oder nichts ist, käme kein einziger Termin an.
+ */
+export function istHinderlich(conflict: SlotConflict | null): boolean {
+  return conflict !== null && conflict !== 'outside_working_hours';
+}
+
+const slotCheckSchema = z.object({
+  slot_index: z.number(),
+  conflict: slotConflictSchema.nullable(),
+});
+
+/** Prüft geplante Terminzeiten, ohne etwas anzulegen. */
+export async function checkAppointmentSlots(
+  staffMemberId: string,
+  slots: Serientermin[],
+): Promise<(SlotConflict | null)[]> {
+  const { data, error } = (await getSupabase().rpc('check_appointment_slots', {
+    p_staff_member_id: staffMemberId,
+    p_slots: slots,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw new Error('Die Termine konnten nicht geprüft werden.');
+
+  const zeilen = z.array(slotCheckSchema).parse(data ?? []);
+  const befunde: (SlotConflict | null)[] = slots.map(() => null);
+  for (const zeile of zeilen) {
+    if (zeile.slot_index >= 0 && zeile.slot_index < befunde.length) {
+      befunde[zeile.slot_index] = zeile.conflict;
+    }
+  }
+  return befunde;
+}
+
+/**
+ * Legt die Termine einer Verordnung in einem Vorgang an.
+ *
+ * Alles oder nichts: Scheitert ein Termin, entsteht keiner. Gibt die Anzahl
+ * der angelegten Termine zurück.
+ */
+export async function createAppointmentSeries(
+  patientId: string,
+  prescriptionId: string,
+  values: AppointmentFormValues,
+  slots: Serientermin[],
+  allowOutsideWorkingHours = false,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('create_appointment_series', {
+    p_patient_id: patientId,
+    p_prescription_id: prescriptionId,
+    p_staff_member_id: values.staff_member_id,
+    p_appointment_type: values.appointment_type,
+    p_slots: slots,
+    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Die Terminserie konnte nicht angelegt werden.');
+  return z.number().parse(data);
 }

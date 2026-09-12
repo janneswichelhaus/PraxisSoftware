@@ -199,6 +199,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
 | ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
 | ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | offen (2026-09-12)    | Jannes; E12 Punkt 1 und 2 |
+| ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | offen (2026-09-12)    | Jannes nach den ersten Praxiswochen; verbindlich mit ABR-002 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -2130,3 +2131,71 @@ Bedingung `v_neu_laenge is distinct from v_alt_laenge` in
 (begründete Abweichung nach E12 Punkt 1): ein weiterer Parameter nach dem
 Muster von `p_allow_outside_working_hours` mit Auditvermerk — Aufwand `klein`
 bis `mittel`.
+
+---
+
+### ANN-038 — Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-007; die Roadmap verlangt „Anzahl aus dem Kontingent", ohne zu sagen, was das Kontingent verbraucht |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes steht aus |
+| Wiedervorlage | Jannes nach den ersten Praxiswochen; verbindlich entschieden mit ABR-002 |
+
+**Annahme.** Drei Festlegungen, die zusammengehören:
+
+1. **Verplant ist nicht genutzt.** Ein Termin, der aus einer Verordnung
+   geplant wurde, trägt deren Kennung (`appointments.prescription_id`). Als
+   **offen** gilt `verordnet − max(genutzt, verplant)`: das Maximum, nicht die
+   Summe, weil eine durchgeführte Behandlung beides ist. Abgesagte Termine
+   zählen nicht als verplant; „nicht angetroffen" zählt mit. Die **genutzte**
+   Menge pflegt die Praxis unverändert von Hand (ANN-012) — CAL-007 schreibt
+   sie **nicht** fort, das bleibt ABR-002.
+2. **Das Kontingent begrenzt die Serie nicht.** Die Oberfläche schlägt das
+   offene Kontingent als Anzahl vor und weist auf eine Überschreitung hin; der
+   Server lässt sie zu. Wer die Folgeverordnung in Aussicht hat, plant zu Recht
+   darüber hinaus.
+3. **Drei Rhythmen, höchstens 30 Termine je Vorgang.** „Einmal pro Woche" (7
+   Tage), „Zweimal pro Woche" (3 und 4 Tage im Wechsel, also zwei feste
+   Wochentage) und „Alle zwei Wochen" (14 Tage). Einzelne Termine sind in der
+   Liste frei verschiebbar.
+
+**Begründung.** Zu 1: Ohne die Verknüpfung wäre „Anzahl aus dem Kontingent"
+beim **zweiten** Aufruf falsch — die Anwendung böte dieselben zehn Behandlungen
+erneut an. Eine Addition von genutzt und verplant wäre ebenso falsch, weil sie
+jede durchgeführte Behandlung doppelt zählte. Die genutzte Menge automatisch
+fortzuschreiben, wäre dagegen eine Aussage über die **Leistung** und gehört
+deshalb zur Leistungserfassung (ABR-002, ANN-012), nicht zum Kalender.
+
+Zu 2: Die harte Grenze sitzt bereits an der richtigen Stelle —
+`prescription_items_used_within_prescribed` verhindert, dass mehr abgerechnet
+wird als verordnet ist (VER-001). Eine zweite Grenze am Kalender würde
+alltägliche Planung blockieren, ohne die Abrechnung sicherer zu machen.
+**Unsicher:** ob Jannes stattdessen eine Rückfrage will („mehr als verordnet —
+trotzdem?").
+
+Zu 3: Die Rhythmen decken die Frequenzen ab, die auf den Verordnungen stehen
+(„1x pro Woche", „2x pro Woche"). Zweimal pro Woche als 3/4-Wechsel statt als
+3,5 Tage hält die Serie auf zwei festen Wochentagen — so steht sie im
+Terminkalender. Dreißig Termine sind rund ein halbes Jahr bei zwei Behandlungen
+je Woche; die Grenze begrenzt zugleich die Transaktion, die als „alles oder
+nichts" Sperren hält. **Unsicher:** ob eine Praxis mit Gebietstagen
+(`IDEA-PRX-031`) stattdessen feste Wochentage wählen will.
+
+**Verankerung.** `app.prescription_slot_counts()` und
+`app.appointment_series_limit()` in
+`supabase/migrations/20260912160000_appointment_series.sql` (Kopfkommentar und
+Funktionen tragen die Kennung); die Spalte
+`appointments.prescription_id` ebenda; `rhythmen` und `SERIE_HOECHSTZAHL` in
+`src/features/appointments/serie.ts`. Tests in
+`supabase/tests/appointment-series.test.ts` (Kontingentrechnung, Obergrenze,
+Serie über dem Kontingent) und `src/features/appointments/serie.test.ts`.
+
+**Änderungspfad.** Zu 1 — automatischer Verbrauch: ABR-002 schreibt
+`used_quantity` fort, die Rechnung in `app.prescription_slot_counts` fällt auf
+`verordnet − genutzt` zurück; Aufwand `mittel`, ohne Datenumzug. Zu 2 — harte
+Grenze: eine Prüfung in `create_appointment_series` gegen `remaining`; Aufwand
+`klein`. Zu 3 — weitere Rhythmen oder ein freier Abstand in Tagen: ein Eintrag
+in `rhythmen` beziehungsweise ein Zahlenfeld; Aufwand `klein`, die Serverseite
+nimmt die Tage ohnehin einzeln entgegen.

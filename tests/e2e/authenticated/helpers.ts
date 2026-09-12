@@ -73,6 +73,7 @@ export const TAGESFENSTER = {
   treatmentNoteFinalisation: 8,
   patientRecord: 9,
   appointmentStates: 10,
+  appointmentSeries: 11,
 } as const;
 
 /**
@@ -171,7 +172,7 @@ export async function anmelden(page: Page, email: string): Promise<void> {
  */
 export async function arbeitszeitBestaetigen(
   page: Page,
-  knopf: 'Termin trotzdem anlegen' | 'Änderung trotzdem speichern',
+  knopf: 'Termin trotzdem anlegen' | 'Änderung trotzdem speichern' | 'Serie trotzdem anlegen',
   weiter: RegExp,
 ): Promise<void> {
   const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });

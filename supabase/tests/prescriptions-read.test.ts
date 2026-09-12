@@ -18,6 +18,7 @@ const KLINISCH = 'select * from public.list_patient_prescriptions_clinical($1::u
 const MAX_ERST = '88888888-8888-4888-8888-000000000001';
 const MAX_FOLGE = '88888888-8888-4888-8888-000000000002';
 const ERIKA_ERST = '88888888-8888-4888-8888-000000000003';
+const ERIKA_FOLGE = '88888888-8888-4888-8888-000000000004';
 const UNBEKANNT = '66666666-6666-4666-8666-0000000000ff';
 
 interface Item {
@@ -136,12 +137,12 @@ describe('VER-002: Verordnungen in der Akte', () => {
       `select subject_id, actor_user_id, context from public.audit_log
         where action = 'prescription.viewed' and subject_type = 'prescription'`,
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.subject_id).toBe(ERIKA_ERST);
-    expect(rows[0]?.actor_user_id).toBe(users.therapist);
+    // Erika hat zwei Verordnungen - genau zwei Eintraege, kein Sammeleintrag.
+    expect(rows.map((r) => r.subject_id).sort()).toEqual([ERIKA_ERST, ERIKA_FOLGE].sort());
+    expect(rows.every((r) => r.actor_user_id === users.therapist)).toBe(true);
     expect(rows[0]?.context).toMatchObject({ surface: 'web', patient_id: patients.erika });
     // Keine klinischen Inhalte im Auditlog (ADR-010 Punkt 3, ADR-011).
-    expect(JSON.stringify(rows[0]?.context)).not.toMatch(/Nacken|Verspannung/i);
+    expect(JSON.stringify(rows.map((r) => r.context))).not.toMatch(/Nacken|Verspannung/i);
   });
 
   it('protokolliert die organisatorische Sicht nicht', async () => {

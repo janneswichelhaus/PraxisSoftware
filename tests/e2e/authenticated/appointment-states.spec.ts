@@ -54,7 +54,9 @@ async function terminAnlegen(
   await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
   await page.getByLabel('Datum *').fill(opts.tag);
   await page.getByLabel('Beginn *').fill(opts.von);
-  await page.getByLabel('Ende *').fill(opts.bis);
+  // Das Ende ist seit CAL-010a eine Ableitung aus dem Beginn (8.1) und kein
+  // Feld mehr. Geprueft wird es trotzdem - sonst waere `bis` nur noch Zierde.
+  await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
   await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
@@ -66,7 +68,7 @@ test.describe('CAL-008a: Der Zustand heisst bestaetigt', () => {
     const tag = laufTag();
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&status=confirmed`);
@@ -79,7 +81,7 @@ test.describe('CAL-008b: Absage nur mit Grund', () => {
     const tag = laufTag(1);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
     await page.getByRole('button', { name: 'Termin absagen' }).click();
     const rueckfrage = page.getByRole('group', { name: 'Termin absagen' });
@@ -105,7 +107,7 @@ test.describe('CAL-008c: Nicht angetroffen', () => {
     const tag = laufTag(2);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
     await page.getByRole('button', { name: 'Nicht angetroffen' }).click();
     const rueckfrage = page.getByRole('group', { name: 'Nicht angetroffen' });
@@ -134,7 +136,7 @@ test.describe('CAL-008d: Dokumentiert kommt aus der Finalisierung', () => {
     const tag = laufTag(3);
 
     await anmelden(page, KONTEN.therapist);
-    const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
     await page.getByRole('link', { name: 'Behandlung abschließen' }).click();
     await page
@@ -161,11 +163,11 @@ test.describe('CAL-009: Tag umplanen', () => {
     const tag = laufTag(4);
 
     await anmelden(page, KONTEN.office);
-    const ersterTermin = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    const ersterTermin = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     const zweiterTermin = await terminAnlegen(page, {
       tag,
       von: zeit(60),
-      bis: zeit(105),
+      bis: zeit(120),
       patient: PATIENTEN.erika,
     });
 

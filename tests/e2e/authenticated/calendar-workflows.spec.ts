@@ -41,7 +41,7 @@ function laufZeit(offsetMinuten = 0): string {
 
 const TAG = laufTag();
 const BEGINN = laufZeit();
-const ENDE = laufZeit(30);
+const ENDE = laufZeit(60);
 
 /** Legt den Termin dieses Laufs über die echte Oberfläche an. */
 async function terminAnlegen(page: Page): Promise<string> {
@@ -50,7 +50,6 @@ async function terminAnlegen(page: Page): Promise<string> {
   await page.getByLabel('Terminart *').selectOption('practice');
   await page.getByLabel('Datum *').fill(TAG);
   await page.getByLabel('Beginn *').fill(BEGINN);
-  await page.getByLabel('Ende *').fill(ENDE);
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
   await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);

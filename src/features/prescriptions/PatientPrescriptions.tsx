@@ -6,6 +6,7 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
+  canManageAppointments,
   canReadPrescriptionClinical,
   canReadPrescriptions,
   canWritePrescriptions,
@@ -101,6 +102,7 @@ function Verordnungskarte({
   klinisch: ClinicalPrescription | null;
 }) {
   const darfSchreiben = canWritePrescriptions(user.roles);
+  const darfPlanen = canManageAppointments(user.roles);
 
   return (
     <li className="border-line bg-surface rounded-card border p-4">
@@ -116,14 +118,27 @@ function Verordnungskarte({
               .join(' · ')}
           </p>
         </div>
-        {darfSchreiben ? (
-          <Link
-            to={`/patienten/${patient.id}/verordnungen/${prescription.id}/bearbeiten`}
-            className="text-accent min-h-11 shrink-0 text-sm hover:underline"
-          >
-            Bearbeiten
-          </Link>
-        ) : null}
+        <div className="flex shrink-0 flex-wrap items-center gap-4">
+          {/* Die Serie hängt an der Verordnung, weil dort das Kontingent steht
+              (CAL-007). Wer Termine plant, sieht sie - das ist ein anderes
+              Recht als das Schreiben der Verordnung (ADR-004). */}
+          {darfPlanen ? (
+            <Link
+              to={`/patienten/${patient.id}/verordnungen/${prescription.id}/serie`}
+              className="text-accent min-h-11 text-sm hover:underline"
+            >
+              Terminserie anlegen
+            </Link>
+          ) : null}
+          {darfSchreiben ? (
+            <Link
+              to={`/patienten/${patient.id}/verordnungen/${prescription.id}/bearbeiten`}
+              className="text-accent min-h-11 text-sm hover:underline"
+            >
+              Bearbeiten
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <ul className="divide-line border-line mt-3 divide-y border-t">

@@ -47,7 +47,9 @@ async function terminAnlegen(
   await page.getByLabel('Terminart *').selectOption('video');
   await page.getByLabel('Datum *').fill(opts.tag);
   await page.getByLabel('Beginn *').fill(opts.von);
-  await page.getByLabel('Ende *').fill(opts.bis);
+  // Das Ende ist seit CAL-010a eine Ableitung aus dem Beginn (8.1) und kein
+  // Feld mehr. Geprueft wird es trotzdem - sonst waere `bis` nur noch Zierde.
+  await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
   await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);

@@ -503,7 +503,14 @@ describe('create_appointment: Audit', () => {
     const rows = await eintrag();
 
     expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      ['patient_id', 'staff_member_id', 'surface', 'outside_working_hours'].sort(),
+      // prescription_id kam mit CAL-007 dazu und ist eine ID, kein Inhalt.
+      [
+        'patient_id',
+        'staff_member_id',
+        'surface',
+        'outside_working_hours',
+        'prescription_id',
+      ].sort(),
     );
     expect(rows[0]!.context).toMatchObject({
       surface: 'web',

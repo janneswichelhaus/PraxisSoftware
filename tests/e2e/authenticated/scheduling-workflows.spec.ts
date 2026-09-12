@@ -49,7 +49,9 @@ async function terminFormular(
   await page.getByLabel('Terminart *').selectOption('video');
   await page.getByLabel('Datum *').fill(opts.tag);
   await page.getByLabel('Beginn *').fill(opts.von);
-  await page.getByLabel('Ende *').fill(opts.bis);
+  // Das Ende ist seit CAL-010a eine Ableitung aus dem Beginn (8.1) und kein
+  // Feld mehr. Geprueft wird es trotzdem - sonst waere `bis` nur noch Zierde.
+  await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
 }
 
@@ -83,7 +85,16 @@ test.describe('CAL-005: Praxisraster', () => {
     await page.goto(`/patienten/${PATIENTEN.max}/termine/neu`);
     // Der Seed startet bei 5 Minuten - also 300 Sekunden.
     await expect(page.getByLabel('Beginn *')).toHaveAttribute('step', '300');
-    await expect(page.getByLabel('Ende *')).not.toHaveAttribute('step', /.+/);
+
+    // Das Ende ist seit CAL-010a kein Feld mehr, sondern eine Ableitung aus
+    // dem Beginn: 8.1 legt die Laenge fest, und ein beschreibbares Ende waere
+    // eine Falle.
+    await expect(page.getByLabel('Ende *')).toHaveCount(0);
+    await page.getByLabel('Beginn *').fill('09:05');
+    await expect(page.getByText('10:05 Uhr')).toBeVisible();
+    await expect(
+      page.getByText('Terminfenster: 60 Minuten, Dokumentation eingeschlossen.'),
+    ).toBeVisible();
   });
 });
 

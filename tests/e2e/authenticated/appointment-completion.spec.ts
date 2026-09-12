@@ -47,7 +47,9 @@ async function terminAnlegen(
   await page.getByLabel('Terminart *').selectOption('practice');
   await page.getByLabel('Datum *').fill(opts.tag);
   await page.getByLabel('Beginn *').fill(opts.von);
-  await page.getByLabel('Ende *').fill(opts.bis);
+  // Das Ende ist seit CAL-010a eine Ableitung aus dem Beginn (8.1) und kein
+  // Feld mehr. Geprueft wird es trotzdem - sonst waere `bis` nur noch Zierde.
+  await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
   await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
@@ -59,7 +61,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     const tag = laufTag();
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
 
@@ -77,7 +79,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     const tag = laufTag(1);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
@@ -89,7 +91,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     const tag = laufTag(2);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
@@ -101,7 +103,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
   test('haelt den Zeitraum eines abgeschlossenen Termins weiter belegt', async ({ page }) => {
     const tag = laufTag(3);
     const von = zeit(0);
-    const bis = zeit(45);
+    const bis = zeit(60);
 
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von, bis });
@@ -115,7 +117,6 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await page.getByLabel('Terminart *').selectOption('practice');
     await page.getByLabel('Datum *').fill(tag);
     await page.getByLabel('Beginn *').fill(von);
-    await page.getByLabel('Ende *').fill(bis);
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
     await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
@@ -126,7 +127,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     const tag = laufTag(4);
 
     await anmelden(page, KONTEN.office);
-    const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
@@ -144,10 +145,10 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
   test('oeffnet einen Termin wieder und macht ihn erneut bearbeitbar', async ({ page }) => {
     const tag = laufTag(5);
     const neuVon = zeit(120);
-    const neuBis = zeit(165);
+    const neuBis = zeit(180);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
@@ -159,7 +160,6 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     // Und der Termin laesst sich jetzt wieder verschieben.
     await page.getByRole('link', { name: 'Bearbeiten' }).click();
     await page.getByLabel('Beginn *').fill(neuVon);
-    await page.getByLabel('Ende *').fill(neuBis);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
@@ -169,7 +169,7 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     const tag = laufTag(6);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     await page.getByRole('button', { name: 'Termin absagen' }).click();
     await page.getByLabel('Absagegrund').selectOption('patient_request');
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
@@ -209,7 +209,7 @@ test.describe('CAL-004: Serverseitige Grenzen', () => {
     const tag = laufTag(7);
 
     await anmelden(page, KONTEN.office);
-    const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 

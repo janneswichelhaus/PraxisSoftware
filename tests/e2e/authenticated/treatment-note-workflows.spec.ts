@@ -47,7 +47,6 @@ async function terminAnlegen(page: Page, tag: string): Promise<string> {
   await page.getByLabel('Terminart *').selectOption('practice');
   await page.getByLabel('Datum *').fill(tag);
   await page.getByLabel('Beginn *').fill(zeit(0));
-  await page.getByLabel('Ende *').fill(zeit(45));
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
   await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);

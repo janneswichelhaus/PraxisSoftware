@@ -17,6 +17,7 @@ import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { TagUmplanenPage } from '@/features/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentStartPage';
+import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeriesPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
@@ -154,6 +155,13 @@ export function AuthenticatedRoutes({
               <Route
                 path="/termine/:appointmentId/bearbeiten"
                 element={<EditAppointmentPage user={user} />}
+              />
+              {/* Terminserie aus einer Verordnung - der Einstieg steht in der
+                  Akte an der Verordnung, weil dort das Kontingent steht
+                  (CAL-007). */}
+              <Route
+                path="/patienten/:patientId/verordnungen/:prescriptionId/serie"
+                element={<AppointmentSeriesPage user={user} />}
               />
               <Route path="/touren" element={<ToursPage user={user} />} />
               <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
