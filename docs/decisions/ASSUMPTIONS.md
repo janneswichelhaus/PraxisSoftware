@@ -228,6 +228,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); Versandweg mit B15 |
 | ANN-040 | Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
 | ANN-041 | Termin-E-Mail als Handoff ins eigene Mailprogramm: Inhalt, Betreff, Längengrenze, Vermerk auf die Übergabe | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
+| ANN-042 | Eine Verordnung ist „ausgeschöpft", wenn ihre Leistungseinheiten genutzt sind — nicht nach Ablauf einer Frist | Praxisprozess | offen (2026-09-12)    | Jannes nach den ersten Praxiswochen; erneut mit ABR-002 (genutzte Menge aus der Abrechnung) |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -2498,3 +2499,68 @@ Kennzeichen in den Kontaktdaten, gesetzt über `update_patient`, plus die
 Bedingung in `TermineMailen` — Aufwand `mittel`, gehört zu PAT-006. Echter
 Versand aus der Anwendung (Dienstleister, Warteschlange, Zustellstatus):
 Aufwand `groß`, eigenes Epic, setzt B15 und eine Prüfung nach §3.5 voraus.
+---
+
+### ANN-042 — Wann eine Verordnung ausgeschöpft ist
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | AKTE-002 (Auftrag von Jannes, 2026-09-12); ANN-012 (genutzte Menge von Hand); ANN-038 (verplant ist nicht genutzt); `PROJECT_PRINCIPLES.md` §13, §16 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach den ersten Praxiswochen; erneut mit ABR-002, sobald die genutzte Menge aus der Abrechnung kommt |
+
+**Anlass.** Die Akte teilt die Verordnungen seit AKTE-002 in „laufend" und
+„ausgeschöpft": Die laufenden stehen ausführlich oben, die ausgeschöpften
+kompakt in einer aufklappbaren Zeile darunter, und „Terminserie anlegen" steht
+nur an einer Verordnung, an der sich noch etwas planen lässt. Dafür braucht es
+eine Regel, wann eine Verordnung erledigt ist — und das Datenmodell kennt
+**kein** Ablaufdatum.
+
+**Annahme.** Eine Verordnung gilt als **ausgeschöpft**, sobald ihre genutzten
+Leistungseinheiten die verordneten erreichen (`used >= prescribed`, summiert
+über die Positionen). Solange Einheiten offen sind, gilt sie als laufend — und
+zerfällt dort in zwei Zustände:
+
+- **offen** — es lässt sich noch etwas planen (`remaining > 0`).
+- **vollständig verplant** — es sind Einheiten offen, aber für jede steht
+  bereits ein Termin. Hier ist nichts mehr zu planen, wohl aber zu behandeln.
+
+Ein **Ablauf nach Zeit** kommt nicht vor: Weder das Ausstellungsdatum noch eine
+Frist entscheidet über den Zustand.
+
+**Begründung.** Die Praxis rechnet privat ab. Die Fristen des
+Heilmittelkatalogs (Behandlungsbeginn binnen 28 Tagen, Unterbrechung von
+höchstens 14 Tagen) sind Regeln des GKV-Systems und gelten für eine
+Privatverordnung nicht unmittelbar; welche Frist ein privater Kostenträger
+ansetzt, steht in seinem Tarif und nicht in der Verordnung. Eine Frist zu
+erfinden, hieße eine Verordnung als erledigt zu zeigen, die es nicht ist —
+und genau davor warnt §13: Die Anwendung darf nicht behaupten, was sie nicht
+weiß. Die genutzte Menge dagegen ist eine Zahl, die in der Akte steht und die
+die Praxis selbst pflegt (ANN-012).
+
+Die Zahl ist bewusst **die der Einheiten** und nicht die der Termine: Ein
+Termin kann abgesagt werden und gibt seinen Platz zurück; eine genutzte
+Einheit bleibt genutzt (ANN-038). Deshalb entscheidet über „ausgeschöpft"
+allein `used`, über „noch planbar" dagegen der größere Wert aus genutzt und
+verplant.
+
+**Was diese Annahme ausdrücklich NICHT tut.** Sie verbirgt nichts: Eine
+ausgeschöpfte Verordnung bleibt vollständig in der Akte, mit allen Zahlen und
+allen Angaben, und lässt sich weiterhin bearbeiten — ein Tippfehler in einer
+alten Verordnung gehört behoben. Sie ändert auch keine Zahl; sie ordnet nur,
+was oben steht und welche Aktion angeboten wird.
+
+**Verankerung.** `src/features/prescriptions/verordnungen.ts`,
+`verordnungszustand()` — die eine Stelle, an der die Regel steht; der
+Kopfkommentar trägt die Kennung. Tests in
+`src/features/prescriptions/PatientPrescriptionsPage.test.tsx` (alle drei
+Zustände und die Aktionen, die daran hängen).
+
+**Änderungspfad.** Die Schwelle ändern (etwa „ausgeschöpft erst, wenn auch
+jeder Termin stattgefunden hat"): `verordnungszustand()` — Aufwand `klein`,
+keine Datenmigration. Einen Ablauf nach Zeit ergänzen: ein Feld
+`valid_until` an `prescriptions`, im Formular und in `create/update_prescription`
+gepflegt, dazu die Regel hier — Aufwand `mittel`, mit Migration. Die genutzte
+Menge automatisch aus der Abrechnung zu führen, ist ABR-002 und ändert an
+dieser Regel nichts.

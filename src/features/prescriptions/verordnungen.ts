@@ -37,6 +37,12 @@ export interface VerordnungMitZahlen {
 /**
  * Der Zustand einer Verordnung - und damit, welche Aktion überhaupt passt.
  *
+ * **ANN-042 ist hier verankert**: Ausgeschöpft ist eine Verordnung, wenn ihre
+ * Leistungseinheiten genutzt sind - nicht nach Ablauf einer Frist. Das
+ * Datenmodell kennt kein Ablaufdatum, und die Fristen des Heilmittelkatalogs
+ * sind Regeln des GKV-Systems; die Praxis rechnet privat ab. Wer die Regel
+ * ändern will, ändert sie hier.
+ *
  * Die Unterscheidung läuft über zwei verschiedene Zahlen, und genau das ist
  * der Punkt (ANN-038):
  *

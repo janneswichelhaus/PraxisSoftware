@@ -1460,3 +1460,80 @@ Kein waagerechtes Scrollen, der Text bleibt lesbar, „E-Mail öffnen" und
 
 **Zielwert:** Die Termine gehen mit **drei** Taps als fertige Nachricht
 hinaus, und in der Akte steht danach ohne Zutun, dass sie mitgeteilt sind.
+---
+
+## AKTE-000 bis AKTE-005: Die Patientenakte als Arbeitsplatz
+
+Vorbedingung: angemeldet, eine Akte mit mindestens einer laufenden Verordnung
+und einigen Terminen (im Seed **Max Mustermann**, für die Verordnungen auch
+**Erika Beispiel**).
+
+### 1. Der Kopf trägt, was zählt — und bleibt stehen
+
+1. Akte öffnen. Erwartung oben: **Name**, **Geburtsdatum mit Alter**, das
+   Abzeichen **In Versorgung** und die beiden Wege **Termin anlegen** und
+   **Verordnung erfassen**. Keine Anschrift, keine Telefonnummern.
+2. Nacheinander **Termine**, **Verordnungen**, **Behandlungsverlauf**,
+   **Stammdaten** anwählen. Erwartung: Der Kopf bleibt unverändert stehen, nur
+   der Inhalt darunter wechselt; die Adresse in der Zeile ändert sich mit.
+3. Als `jannes.test@praxis.invalid` unter **Organisatorisches → Sicherheit →
+   Auditlog** nachsehen. Erwartung: **Ein** Eintrag „Patientenakte geöffnet"
+   für den ganzen Durchgang — nicht einer je Bereich.
+
+### 2. Die Übersicht beantwortet „was ist zu tun"
+
+1. Bereich **Übersicht**. Erwartung: **Nächste Termine**, **Laufende
+   Verordnungen**, **Letzter Behandlungsstand** und — wenn hinterlegt — **Vor
+   dem Hausbesuch** mit Zugangshinweis und Besonderheit.
+2. Auf einem Bildschirm ab 1280 px Breite: Termine und Verordnungen stehen
+   **nebeneinander** und beide **ohne Scrollen** im Bild.
+3. Jeder Ausschnitt führt weiter: **Alle Termine und Historie**, **Alle
+   Verordnungen**, **Behandlungsverlauf**, **Alle Stammdaten**.
+
+### 3. Termine mit Historie
+
+1. Bereich **Termine**. Erwartung: **Kommende Termine** und darunter
+   **Vergangene Termine**, neueste zuerst — einschließlich **abgesagter**
+   Termine mit ihrem Abzeichen.
+2. Gibt es mehr als zwanzig vergangene Termine: **Ältere Termine anzeigen**
+   lädt die nächste Seite nach.
+3. **Im Kalender zeigen** antippen. Erwartung: Der Kalender öffnet den Tag des
+   nächsten Termins, zeigt **nur** die Termine dieser Person und sagt das über
+   dem Gitter; **Filter aufheben** bringt die übrigen zurück, **Zur Akte**
+   führt zurück.
+
+### 4. Verordnung und Termine finden einander
+
+1. Bereich **Verordnungen** einer Person mit Serienterminen (Seed: Erika
+   Beispiel). Erwartung an einer laufenden Verordnung **drei getrennte
+   Zahlen**: **Leistungseinheiten** (aus den Positionen), **Termine**
+   (zugeordnet und bevorstehend) und **Noch planbar**.
+2. **Termine dieser Verordnung** antippen. Erwartung: die Terminliste, gefiltert,
+   mit dem Hinweis „Nur die Termine einer Verordnung." und dem Weg zurück.
+3. In der ungefilterten Terminliste trägt jeder Serientermin den Rückweg
+   **Verordnung vom …**.
+4. Eine **ausgeschöpfte** Verordnung steht unter „Ausgeschöpfte Verordnungen"
+   als **eine Zeile** und klappt auf Wunsch auf. Erwartung: **kein**
+   „Terminserie anlegen" daran — dort ist nichts mehr zu planen.
+
+### 5. Stammdaten zuletzt
+
+1. Bereich **Stammdaten**. Erwartung: Person, Kontakt, Hausbesuch und
+   Versorgung — und **ganz unten** der Abschnitt **Verwaltung** mit
+   „Als inaktiv markieren" und „Versorgung abschließen".
+2. **Stammdaten bearbeiten**, den Ort ändern, speichern. Erwartung: zurück in
+   den **Stammdaten**, der neue Wert steht da.
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann die Akte öffnen. Erwartung: Der Kopf trägt beide Aktionen **nebeneinander**
+in einer Zeile, die Bereichsleiste lässt sich waagerecht wischen, und die
+Ausschnitte stehen gestapelt untereinander. Kein waagerechtes Scrollen der
+Seite.
+
+**Zielwert:** Was mit dieser Person zu tun ist, steht **ohne Scrollen** im
+Bild; alles Seltene ist genau einen Tap entfernt.

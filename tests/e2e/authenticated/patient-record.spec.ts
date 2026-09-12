@@ -92,8 +92,19 @@ test.describe('AKTE-003: Termine mit Historie', () => {
     await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Vergangene Termine' })).toBeVisible();
 
-    // Genau dieser Termin - andere Laeufe hinterlassen weitere.
-    await expect(page.locator(`a[href="/termine/${terminId}"]`).first()).toBeVisible();
+    // Genau dieser Termin. Max Mustermann kommt in vielen Spezifikationen vor,
+    // und dieses Tagesfenster liegt am weitesten in der Zukunft - der Termin
+    // steht also am Ende der Liste und kann auf einer spaeteren Seite liegen.
+    // Deshalb wird geblaettert, bis er da ist (oder nichts mehr nachkommt).
+    const eintrag = page.locator(`a[href="/termine/${terminId}"]`);
+    const weitere = page.getByRole('button', { name: 'Weitere Termine anzeigen' });
+    for (let versuch = 0; versuch < 5; versuch += 1) {
+      if ((await eintrag.count()) > 0) break;
+      if ((await weitere.count()) === 0) break;
+      await weitere.click();
+      await expect(weitere).toBeEnabled();
+    }
+    await expect(eintrag.first()).toBeVisible();
   });
 
   test('uebergibt den Patientenfilter an den Kalender', async ({ page }) => {
@@ -103,7 +114,8 @@ test.describe('AKTE-003: Termine mit Historie', () => {
     await page.goto(`${AKTE}/termine`);
     await page.getByRole('link', { name: 'Im Kalender zeigen' }).click();
 
-    await expect(page).toHaveURL(new RegExp(`patient=${PATIENTEN.max}`));
+    await expect(page).toHaveURL(/\/kalender\?/);
+    expect(page.url()).toContain(`patient=${PATIENTEN.max}`);
     await expect(page.getByText(/Nur die Termine von/)).toBeVisible();
 
     // Der Filter laesst sich aufheben, ohne die Ansicht zu verlassen.

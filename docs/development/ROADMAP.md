@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 3.8 · Stand 2026-09-12 · **in Kraft**
+Version 3.9 · Stand 2026-09-12 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -69,6 +69,15 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   Terminänderung. **ANN-040 ist neu und `Datenschutz`**: Er gehört in die
   Anfrage B2, zusammen mit der Frage, ob der Weg „per E-Mail mitgeteilt" in
   der Auswahl bleiben soll.
+- **Als eigener Auftrag nachgereicht: die Patientenakte als Arbeitsplatz**
+  (AKTE-000 bis AKTE-005, 2026-09-12). Jannes hat die Akte anhand eines
+  Screenrecordings beurteilt: zu viel Scrollen, die aktuellen Arbeitsaufgaben
+  zu weit unten. Gebaut ist ein Rahmen mit kompaktem Kopf und fünf Bereichen;
+  die Übersicht beantwortet „was ist zu tun", alles Seltene ist einen Tap
+  entfernt. Dazu zwei rein organisatorische Lesepfade und die Trennung von
+  **Leistungseinheiten** und **Terminen**, die vorher beide „Kontingent"
+  hießen (ANN-038 unverändert, nur sauber benannt). **Keine neue Annahme** —
+  Rollenschnitte, Lesepfade und Fachregeln sind dieselben.
 - **Als Folgeauftrag nachgereicht: CAL-013 Termine per E-Mail** (2026-09-12).
   Jannes hat den Versand von Terminmails ausdrücklich vorgesehen und damit
   seine eigene vorläufige Entscheidung zu **B15** in einem Punkt geändert
@@ -887,6 +896,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | CAL-EPIC-003b (CAL-010a, CAL-007, CAL-011)               | fertig | 2026-09-12     | `b2626ae`, `89ab30b`, `acddcc6`                                     |               |
 | CAL-012 Mitteilungsvermerk am Termin                     | fertig | 2026-09-12     | Folgeauftrag zu CAL-EPIC-003b                                       |               |
 | CAL-013 Termine per E-Mail (Handoff)                     | fertig | 2026-09-12     | Folgeauftrag zu CAL-012; B15-Nachtrag, ANN-041                      |               |
+| AKTE-000 bis AKTE-005 Patientenakte als Arbeitsplatz     | fertig | 2026-09-12     | `77ab995`, `1c7219c`, `d9eda45` — eigener Auftrag von Jannes nach einem Screenrecording, **nicht** aus der Roadmap |               |
 
 ---
 
@@ -894,6 +904,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.9     | 2026-09-12 | **Die Patientenakte ist umgebaut** (eigener Auftrag von Jannes anhand eines Screenrecordings, **nicht** aus der Roadmap — wie MARKE-001). Aus einer sehr langen Seite werden ein Kopf und fünf Bereiche: **Übersicht** mit nächsten Terminen, laufenden Verordnungen und letztem Behandlungsstand · **Termine** mit Historie, allen Zuständen und Filter auf eine Verordnung · **Verordnungen** getrennt nach laufend und ausgeschöpft · **Behandlungsverlauf** · **Stammdaten** mit den seltenen Verwaltungsvorgängen am Ende. Zwei neue Lesepfade (`list_patient_appointments`, `list_patient_prescription_slots`), keine neuen Rechte, keine neuen Felder. **Sachlich korrigiert:** „Kontingent" stand über zwei verschiedenen Zahlen — Leistungseinheiten aus den Positionen und verplante Termine (ANN-038); beide tragen jetzt ihre Einheit im Namen, und „Terminserie anlegen" steht nur noch an einer Verordnung, an der sich etwas planen lässt. Neu: der **Patientenfilter im Kalender** (`?patient=`), übergeben aus der Akte. **Keine neue Annahme.** **Nächster Loop unverändert: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
 | 3.8     | 2026-09-12 | **B15 im Nachtrag geändert und CAL-013 gebaut.** Jannes hat ausdrücklich vorgesehen, dass die Praxis Terminmails verschickt, und damit seine eigene vorläufige Entscheidung vom 2026-09-08 in **einem** Punkt geändert. Der Nachtrag in `OPEN_DECISIONS.md` B15 trennt, was dort in einem Satz stand: **keine automatische Erinnerung über einen Versanddienstleister** (unverändert) und **die Terminmail aus dem eigenen Postfach, auf Klick** (neu). **Neu gebaut: CAL-013 Termine per E-Mail** — die Anwendung baut aus den Terminen des Zettels einen fertigen Entwurf und übergibt ihn dem Mailprogramm der Praxis; gesendet wird dort von Hand. Inhalt und Betreff sind auf das Organisatorische begrenzt, der Hinweis auf die fehlende Verschlüsselung steht an der Stelle der Entscheidung, und vermerkt wird **vor** der Übergabe und nur, was auch im Text steht. Aus dem Knopf „Terminzettel" wird „Termine mitteilen". Neu offen: **ANN-041** (`Datenschutz`, Prüfpaket) — offen bleibt der dokumentierte Wunsch je Patient:in (PAT-006). |
 | 3.7     | 2026-09-12 | **ANN-037 bis ANN-039 von Jannes bestätigt** — alle drei wie empfohlen. ANN-037 und ANN-038 sind `Praxisprozess` und damit **erledigt**; ANN-039 (`Datenschutz`) bleibt im Prüfpaket und gehört in die Anfrage B2. **E12 Punkt 3 und 4 vorläufig entschieden: der Fahrpuffer kommt erst mit MAP-006** — kein pauschaler Mindestabstand, keine von Hand gepflegten Fahrminuten. **CAL-010b entfällt** als eigene Story und geht samt der Aufrundungsregel aus §8.1 in MAP-006 auf; offen bleiben allein E12 Punkt 1 und 2. **Neu gebaut: CAL-012 Mitteilungsvermerk am Termin** (Folgeauftrag von Jannes, Vorbild iPrax): In der Terminliste der Akte steht hinter jedem Termin, ob und auf welchem Weg er mitgeteilt wurde — persönlich, telefonisch, Terminzettel, E-Mail. Der Vermerk verfällt automatisch mit jeder Terminänderung; der Druck des Terminzettels vermerkt alle aufgeführten Termine. **Die Anwendung verschickt weiterhin nichts** (B15 unverändert). Neu offen: **ANN-040** (`Datenschutz`, Prüfpaket). |
 | 3.6     | 2026-09-12 | **CAL-EPIC-003b fertig** (drei Stories): Das 60-Minuten-Terminfenster aus §8.1 wird serverseitig durchgesetzt — beide Schreibpfade, abgeleitetes Ende im Formular, Bestandstermine bleiben gültig und verschiebbar (CAL-010a, ANN-037) · Eine Verordnung wird in **einem** Vorgang zur Terminserie: Anzahl aus dem offenen Kontingent, drei Rhythmen, serverseitige Konfliktprüfung je Zeile, Einzelabweichung, alles oder nichts; der Termin kennt seine Verordnung (CAL-007, ANN-038) · Terminzettel als Druckansicht, nur Druck und kein Versand (CAL-011, `IDEA-PRX-006` überführt, ANN-039). **CAL-010b (Fahrpuffer) bleibt liegen** — E12 Punkt 3 und 4 sind offen; ein pauschaler Wert wäre neben MAP-004 ein zweiter, schlechterer Mechanismus. **Nächster Loop: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
