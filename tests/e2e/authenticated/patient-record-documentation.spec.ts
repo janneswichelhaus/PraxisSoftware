@@ -7,6 +7,7 @@ import {
   arbeitszeitBestaetigen,
   rpcAufrufen,
   tagImFenster,
+  terminLinkWahl,
   zugriffstoken,
 } from './helpers';
 
@@ -83,7 +84,7 @@ test.describe('DOK-003: Dokumentation in der Akte', () => {
     // Die Zeile genau dieses Termins - andere Laeufe hinterlassen weitere.
     const zeile = akte
       .getByRole('listitem')
-      .filter({ has: page.locator(`a[href="/termine/${terminId}"]`) });
+      .filter({ has: page.locator(terminLinkWahl(terminId)) });
     await expect(zeile.getByText(ENTWURF)).toBeVisible();
     await expect(zeile.getByText('Finalisiert', { exact: true })).toBeVisible();
     await expect(zeile.getByText(/Finalisiert am .* von Anna Beispiel/)).toBeVisible();
@@ -100,7 +101,7 @@ test.describe('DOK-003: Dokumentation in der Akte', () => {
     await expect(nachweis).toBeVisible();
     const nachweisZeile = nachweis
       .getByRole('listitem')
-      .filter({ has: page.locator(`a[href="/termine/${terminId}"]`) });
+      .filter({ has: page.locator(terminLinkWahl(terminId)) });
     await expect(nachweisZeile.getByText(/Dokumentation finalisiert am/)).toBeVisible();
 
     // Kein klinischer Inhalt, keine klinische Sicht (PROJECT_PRINCIPLES.md 4.3).

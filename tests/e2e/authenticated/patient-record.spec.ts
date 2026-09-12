@@ -6,6 +6,7 @@ import {
   anmelden,
   arbeitszeitBestaetigen,
   tagImFenster,
+  terminLinkWahl,
 } from './helpers';
 
 /**
@@ -96,13 +97,23 @@ test.describe('AKTE-003: Termine mit Historie', () => {
     // und dieses Tagesfenster liegt am weitesten in der Zukunft - der Termin
     // steht also am Ende der Liste und kann auf einer spaeteren Seite liegen.
     // Deshalb wird geblaettert, bis er da ist (oder nichts mehr nachkommt).
-    const eintrag = page.locator(`a[href="/termine/${terminId}"]`);
+    const eintrag = page.locator(terminLinkWahl(terminId));
     const weitere = page.getByRole('button', { name: 'Weitere Termine anzeigen' });
+    const alleTermine = page.locator('a[href^="/termine/"]');
     for (let versuch = 0; versuch < 5; versuch += 1) {
       if ((await eintrag.count()) > 0) break;
       if ((await weitere.count()) === 0) break;
+
+      // Nachgeladen ist, wenn mehr Zeilen dastehen - oder wenn der Knopf
+      // verschwunden ist, weil nichts mehr nachkommt (`hasNextPage`). Auf
+      // „wieder bedienbar" zu warten ging nicht: Nach der letzten Seite wird
+      // der Knopf ausgehaengt, und eine Zusicherung auf ein entferntes
+      // Element scheitert.
+      const vorher = await alleTermine.count();
       await weitere.click();
-      await expect(weitere).toBeEnabled();
+      await expect
+        .poll(async () => (await alleTermine.count()) > vorher || (await weitere.count()) === 0)
+        .toBe(true);
     }
     await expect(eintrag.first()).toBeVisible();
   });

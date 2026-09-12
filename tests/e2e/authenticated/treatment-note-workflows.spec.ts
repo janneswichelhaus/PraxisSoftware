@@ -117,7 +117,11 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await anmelden(page, KONTEN.therapist);
     await terminAnlegen(page, laufTag(3));
 
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    // Fuer eine therapeutische Rolle heisst der Knopf seit UX-012e
+    // „Ohne Dokumentation abschließen" - daneben steht „Dokumentieren und
+    // abschließen". Hier ist ausdruecklich der Abschluss ohne Eintrag
+    // gemeint; dokumentiert wird gleich danach nachtraeglich.
+    await page.getByRole('button', { name: 'Ohne Dokumentation abschließen' }).click();
     await expect(
       page.getByText('Dieser Termin ist abgeschlossen.', { exact: false }),
     ).toBeVisible();

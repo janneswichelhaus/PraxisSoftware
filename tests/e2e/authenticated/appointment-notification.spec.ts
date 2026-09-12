@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { KONTEN, PATIENTEN, anmelden, arbeitszeitBestaetigen, nahtag } from './helpers';
+import {
+  KONTEN,
+  PATIENTEN,
+  anmelden,
+  arbeitszeitBestaetigen,
+  nahtag,
+  terminLinkWahl,
+} from './helpers';
 
 /**
  * Mitteilungsvermerk am Termin im echten Ablauf (CAL-012, CAL-013).
@@ -48,7 +55,7 @@ async function terminAnlegen(page: Page, tag: string, von: string): Promise<stri
 
 /** Der Eintrag dieses Termins in der Terminliste der Akte. */
 function akteneintrag(page: Page, terminId: string) {
-  return page.locator(`a[href="/termine/${terminId}"]`).first();
+  return page.locator(terminLinkWahl(terminId)).first();
 }
 
 test.describe('CAL-012: Mitteilungsvermerk', () => {
