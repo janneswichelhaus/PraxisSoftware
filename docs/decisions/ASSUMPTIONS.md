@@ -2,12 +2,15 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
-- **CAL-EPIC-003a bringt ANN-034 bis ANN-036 neu:** Absagegrund als codierte
-  Auswahl ohne Freitext, No-show unter der Frist der abgesagten Termine (mit
-  gesetztem Ausfallhonorar-Kennzeichen keine Löschung) und `documented` auch
-  aus `confirmed`. Alle drei stehen auf `offen`. ANN-034 und ANN-035 gehören
-  als `Datenschutz` beziehungsweise `Recht` ins Prüfpaket; ANN-036 ist
-  `Technik` und mit einem Satz von Jannes erledigt.
+- **CAL-EPIC-003a bringt ANN-034 bis ANN-036 neu, und Jannes hat alle drei am
+  2026-09-12 wie empfohlen bestätigt:** Absagegrund als codierte Auswahl ohne
+  Freitext, No-show unter der Frist der abgesagten Termine (mit gesetztem
+  Ausfallhonorar-Kennzeichen keine Löschung) und `documented` auch aus
+  `confirmed`. **ANN-034 (`Datenschutz`) und ANN-035 (`Recht`) bleiben trotzdem
+  im Prüfpaket** — die Bestätigung des Projektinhabers ersetzt die
+  Datenschutzprüfung nicht (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). **ANN-036
+  ist `Technik` und damit erledigt**; er kommt nur zurück, wenn ABR-003
+  `invoiced` denselben Weg gehen lässt.
 
 Davor, am 2026-09-11, vier Dinge am selben Tag:
 
@@ -192,9 +195,9 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
 | ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | entschieden (Jannes) 2026-09-11 | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
 | ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
-| ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | offen | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (B2) |
-| ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | offen | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
-| ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | offen | Jannes — ein Satz genügt; sonst mit ABR-003, wenn `invoiced` dazukommt |
+| ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen |
+| ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
+| ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1901,8 +1904,8 @@ bewusst nicht in diesem Epic.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | CAL-008b; ADR-018 Punkt 6 verlangt den Grund als Pflichtangabe und nennt die Werteliste ausdrücklich „bewusst nicht Bestandteil dieser Entscheidung" (CAL-008) |
-| Status | **offen** |
-| Wiedervorlage | Jannes nach den ersten Praxiswochen — dort zeigt sich, ob vier Werte reichen; Datenschutzprüfung (B2) |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; bleibt als `Datenschutz` im Prüfpaket |
+| Wiedervorlage | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen — dort zeigt sich, ob vier Werte reichen |
 
 **Annahme.** Der Absagegrund ist eine **codierte Auswahl aus genau vier
 Werten** — „Patient:in hat abgesagt", „Praxis hat abgesagt", „Termin verlegt",
@@ -1956,7 +1959,7 @@ Logging, Aufnahme in die Löschprüfung und eine Aussage in der DSFA — Aufwand
 |---|---|
 | Kategorie | Recht |
 | Herkunft | CAL-008c; ADR-018 („Offene Folgefragen": „Braucht ‚nicht angetroffen' eine eigene Frist im Retention Schedule, oder fällt es unter ‚abgesagte Termine und No-shows ohne Rechnung'? Beim Bauen von CAL-008 zu prüfen") |
-| Status | **offen** |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; bleibt als `Recht` im Prüfpaket |
 | Wiedervorlage | ABR-003 — sobald es Rechnungen gibt, entscheidet die Rechnung statt des Kennzeichens; Datenschutzprüfung (B2) |
 
 **Annahme.** Ein Termin im Zustand `no_show` fällt unter die **bestehende**
@@ -2013,8 +2016,8 @@ Wiedervorlage gesetzt.
 |---|---|
 | Kategorie | Technik |
 | Herkunft | CAL-008d; ADR-018 Punkt 2 (Übergangstabelle) gegen ADR-018 Punkt 3 (Invariante) |
-| Status | **offen** |
-| Wiedervorlage | Jannes — ein Satz genügt; spätestens mit ABR-003, wenn `invoiced` denselben Weg geht |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Technik`, damit erledigt |
+| Wiedervorlage | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
 
 **Annahme.** Die Finalisierung einer Behandlungsdokumentation hebt den Termin
 auf `documented` — **auch dann, wenn er noch `confirmed` ist** und niemand ihn
