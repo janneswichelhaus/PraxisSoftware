@@ -32,7 +32,13 @@ export function Inhaltsflaeche({
   className?: string;
 }) {
   return (
-    <div className={`border-line bg-surface rounded-card border px-4 py-3 sm:px-5 ${className}`}>
+    // Die beiden Ausnahmen betreffen `DetailList`: Sie trägt eine eigene
+    // Kopflinie und einen Abstand nach oben, weil sie auch ohne Rahmen
+    // vorkommt - etwa in einer Karte, wo die Linie sie vom Kartenkopf trennt.
+    // Im Rahmen wäre beides eine zweite Kante direkt neben der ersten.
+    <div
+      className={`border-line bg-surface rounded-card border px-4 py-3 sm:px-5 [&>dl:first-child]:mt-0 [&>dl:first-child]:border-t-0 ${className}`}
+    >
       {children}
     </div>
   );

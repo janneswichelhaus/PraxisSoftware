@@ -341,7 +341,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         description="Anmeldung und Sicherheit dieses Zugangs. Ihre Stammdaten pflegt die Praxisleitung."
       />
 
-      <Section titel="Zugang">
+      <Section titel="Zugang" rahmen>
         <DetailList>
           <DetailRow label="Name">{user.profile.display_name}</DetailRow>
           <DetailRow label="Praxis">{user.organizationName ?? '—'}</DetailRow>
