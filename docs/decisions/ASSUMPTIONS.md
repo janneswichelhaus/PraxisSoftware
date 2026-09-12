@@ -2,6 +2,14 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
+- **CAL-014 bringt ANN-047 und ANN-048 neu** (Absage unter 24 Stunden):
+  welcher Absagegrund die Ausfallgebühr auslöst — nur die Patientenabsage,
+  ausdrücklich nicht „verlegt" und „sonstiger Grund" — und wie der Eingang der
+  Absage erfasst wird (zwei Wege, Ortszeit, „gerade eben" stempelt der
+  Server). Beide `Praxisprozess`, also erledigt, sobald Jannes zustimmt oder
+  widerspricht. **ANN-035 ist mit CAL-014b erweitert**: Der Löschlauf hält
+  jetzt jeden Vorgang mit Gebührenanlass zurück, nicht mehr nur den No-show
+  mit Kennzeichen.
 - **FIX-EPIC-003 bringt ANN-046 neu** (Navigationsschutz der
   Behandlungsdokumentation): Data Router statt `<BrowserRouter>`, Rückfrage mit
   drei Wegen, „Speichern" sichert den **Entwurf** und löst keine Finalisierung
@@ -2077,6 +2085,19 @@ sondern die Rechnung: eine Bedingung in derselben Regel austauschen, sobald
 ABR-003 die Rechnungstabelle bringt — Aufwand `klein`, und genau dafür ist die
 Wiedervorlage gesetzt.
 
+**Nachtrag 2026-09-12 (CAL-014b).** Der Haltegrund heißt jetzt
+**Gebührenanlass** (`fee_basis`) und gilt für die **Absage unter 24 Stunden
+genauso wie für den No-show** — vorher hielt die Regel nur den No-show mit
+Ausfallhonorar-Kennzeichen zurück, weil es keinen anderen Gebührenanlass gab.
+Die Begründung ist unverändert und trägt hier schwerer: Was abgerechnet wird,
+unterliegt der steuerlichen Aufbewahrung. **Der Anker bleibt die Eintragung**
+(`cancelled_at` beziehungsweise `no_show_recorded_at`) und ausdrücklich nicht
+der neue `cancellation_received_at` — ein nachgetragener Eingang würde die
+Löschfrist sonst vorziehen. Die Regel steht jetzt in
+`supabase/migrations/20260912200000_cancellation_notice.sql`; der Test „lässt
+eine Absage MIT Gebührenanlass stehen" kommt in
+`supabase/tests/retention-run.test.ts` dazu.
+
 ---
 
 ### ANN-036 — `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab
@@ -2935,3 +2956,105 @@ für die Korrektur anbieten: ein Parameter mehr, aber eine fachliche Entscheidun
 gegen ADR-016 — Aufwand `klein`, Folge `groß`. Den Schutz auf weitere Formulare
 ausdehnen (Stammdaten, Terminformular, Verordnung): je Formular ein Aufruf des
 Hooks — Aufwand `klein` je Stelle.
+
+---
+
+### ANN-047 — Nur die Patientenabsage löst die Ausfallgebühr aus; „verlegt" und „sonstiger Grund" nicht
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-014b; Festlegung des Projektinhabers vom 2026-09-12 („Patientenabsage weniger als 24 Stunden vor Behandlungsbeginn → Ausfallgebühr"); ADR-018 Fassung 2 Punkt 8 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes, zusammen mit ABR-001 (Leistungskatalog) |
+
+**Annahme.** Von den vier Absagegründen (ANN-034) löst genau einer die
+24-Stunden-Regel aus: `patient_request`. `practice_request` ist ausdrücklich
+ausgenommen — das hat der Projektinhaber gesagt. `moved` („Termin verlegt") und
+`other` („Sonstiger Grund") lösen **ebenfalls nicht** aus; das ist die Lücke,
+die diese Annahme schließt.
+
+**Begründung.** Die Festlegung nennt zwei Fälle und lässt zwei offen. Für
+`moved` spricht der Wortsinn: Eine Verlegung ist in der Praxis das Ergebnis
+einer Absprache, und wer einen Ersatztermin bekommt, zahlt nicht für den
+ersten. `other` sagt über den Anlass per Definition nichts — daraus eine
+Forderung abzuleiten hieße, sie auf eine Angabe zu stützen, die ausdrücklich
+keine ist.
+
+Beide Male ist das die **leichter umkehrbare** Seite (§16): Eine Gebühr, die
+nicht entstanden ist, lässt sich nachtragen, solange der Vorgang steht — und er
+steht, weil der Löschlauf drei Jahre wartet. Eine zu Unrecht vorgemerkte
+Forderung gegen eine Patientin ist dagegen erst aus der Welt, wenn jemand sie
+bemerkt. Wer eine Patientenabsage kurzfristig erhält und abrechnen will, wählt
+den Grund, der zutrifft.
+
+**Unsicher:** ob „verlegt" im Praxisalltag auch für eine kurzfristige
+Verschiebung **durch die Patient:in** benutzt wird. Dann wäre die Abgrenzung
+zwischen `moved` und `patient_request` eine Frage der Gewohnheit und nicht der
+Bedeutung, und der Wert bräuchte entweder eine schärfere Beschriftung oder die
+Regel eine zweite Bedingung.
+
+**Verankerung.** `app.is_late_cancellation()` in
+`supabase/migrations/20260912200000_cancellation_notice.sql` — der Kommentar
+dort trägt die Begründung. Tests in
+`supabase/tests/cancellation-notice.test.ts` (je ein Fall für alle drei
+ausgenommenen Gründe).
+
+**Änderungspfad.** Weitere Gründe aufnehmen: eine Bedingung in
+`app.is_late_cancellation` — Aufwand `klein`, eine Zeile. Die Beschriftung von
+`moved` schärfen: eine Zeile in `cancellationReasonLabels` — Aufwand `klein`.
+Rückwirkend gilt eine Änderung ausdrücklich **nicht**: Was ohne
+Gebührenanlass abgesagt wurde, bleibt ohne.
+
+---
+
+### ANN-048 — Der Eingang der Absage wird in Ortszeit erfasst, ohne Vorbelegung aus der Vergangenheit
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-014b/c; ADR-018 Fassung 2 Punkt 8 Nummer 1 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach den ersten Wochen im Betrieb |
+
+**Annahme.** Drei Festlegungen zur Erfassung:
+
+1. **Zwei Wege statt eines Feldes.** Die Absage-Rückfrage fragt „Wann ist die
+   Absage eingegangen?" mit den Antworten „Gerade eben" (vorbelegt) und
+   „Früher – jetzt erst eingetragen". Erst die zweite blendet Datum und Uhrzeit
+   ein.
+2. **„Gerade eben" stempelt der Server.** Die Anwendung schickt dann kein
+   Datum, und die Datenbank setzt `now()`. Eine falsch gehende Uhr im Browser
+   entscheidet damit nie über eine Forderung.
+3. **Datum und Uhrzeit in Ortszeit der Praxis**, wie beim Anlegen eines
+   Termins. Die Umrechnung in einen Zeitpunkt macht der Server, der die
+   Zeitzone der Organisation ohnehin führt.
+
+**Begründung.** Zu 1: Der Regelfall ist das Telefonat, das gerade geführt wird
+— dafür darf niemand ein Datum tippen. Der Ausnahmefall ist der Anrufbeantworter
+von gestern Abend, und der braucht die genaue Angabe, weil an ihr eine Forderung
+hängt. Ein einzelnes vorbelegtes Feld hätte beides vermischt: Wer die
+Vorbelegung stehen lässt, hätte eine Angabe gemacht, ohne sie zu treffen.
+
+Zu 3: Die Alternative wäre ein Zeitstempel aus dem Browser. Der verlangte, dass
+die Oberfläche eine Wanduhrzeit der Praxis in einen Zeitpunkt umrechnet — eine
+Rechnung, die sie an keiner anderen Stelle macht und die auf einem Gerät in
+einer anderen Zeitzone still falsch wäre.
+
+**Unsicher:** ob „Gerade eben" im Büroalltag oft genug stehen bleibt, wo
+eigentlich „gestern Abend" richtig wäre. Das ließe sich nur an der Praxis
+beobachten, nicht am Code — daher die Wiedervorlage. Ein Gegenmittel wäre, die
+Vorbelegung wegzunehmen und eine Antwort zu verlangen; das kostet bei jeder
+Absage einen Tap.
+
+**Verankerung.** `AbsageAktion` in
+`src/features/appointments/AppointmentDetailPage.tsx` und der Parameterblock
+von `public.cancel_appointment` in
+`supabase/migrations/20260912200000_cancellation_notice.sql`. Tests in
+`src/features/appointments/AppointmentDetailPage.test.tsx` (drei Fälle) und
+`supabase/tests/cancellation-notice.test.ts`.
+
+**Änderungspfad.** Vorbelegung entfernen und eine Antwort verlangen: ein
+Anfangswert und eine Prüfung — Aufwand `klein`. Den Eingang zur Pflichtangabe
+für **jede** Absage machen: ebenfalls `klein`, aber dann trägt jede Absage am
+Telefon einen Tap mehr.

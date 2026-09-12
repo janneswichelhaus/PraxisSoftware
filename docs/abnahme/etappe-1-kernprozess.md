@@ -1089,19 +1089,23 @@ haben sich geändert.
    **Abgesagt**, darunter die Zeile **Absagegrund: Patient:in hat abgesagt**.
 4. Am abgesagten Termin: keine Aktionen mehr, auch kein „wieder öffnen".
 
-### 3. Nicht angetroffen, mit Entscheidung zum Ausfallhonorar
+### 3. Nicht angetroffen — ein Schritt, keine Gebührenfrage
+
+**Seit CAL-014c geändert:** Die Pflichtauswahl „Ausfallhonorar berechnen?" ist
+entfallen (ADR-018 Fassung 2 Punkt 8).
 
 1. Einen bestätigten Termin öffnen → **Nicht angetroffen**. Erwartung: Die
-   Rückfrage fragt **„Ausfallhonorar berechnen?"**, ohne Vorbelegung, mit dem
-   Hinweis, dass nur die Entscheidung erfasst wird.
-2. Ohne Auswahl bestätigen. Erwartung: Hinweis am Feld, nichts passiert.
-3. „Ja, berechnen" wählen und bestätigen. Erwartung: Status **Nicht
-   angetroffen**, Zeilen **Vermerkt am** und **Ausfallhonorar: Wird
-   berechnet**, darunter **Termin wieder öffnen**.
-4. „Termin wieder öffnen". Erwartung: zurück auf **Bestätigt**, die beiden
-   Zeilen sind weg.
-5. Am vermerkten Termin: **Behandlung abschließen** wird nicht angeboten —
+   Rückfrage nennt den Termin und sagt, dass es **keine durchgeführte
+   Behandlung, keine Dokumentation und keine verbrauchte Verordnungsleistung**
+   ist und **keine Gebühr** entsteht. **Keine Auswahl** zum Ausfallhonorar.
+2. Bestätigen. Erwartung: Status **Nicht angetroffen**, Zeile **Vermerkt am**,
+   **keine** Zeile „Gebühr vorgemerkt", darunter **Termin wieder öffnen**.
+3. „Termin wieder öffnen". Erwartung: zurück auf **Bestätigt**, die Zeile ist
+   weg.
+4. Am vermerkten Termin: **Behandlung abschließen** wird nicht angeboten —
    wo niemand angetroffen wurde, gibt es nichts zu dokumentieren.
+5. Gegenprobe Verordnung: In der Akte unter **Verordnungen** steht die genutzte
+   Menge unverändert. Ein Vermerk verbraucht keine Leistung.
 
 ### 4. Dokumentiert kommt von selbst
 
@@ -1798,3 +1802,87 @@ erreichbar und mindestens 44 px hoch, kein waagerechtes Scrollen.
 
 **Bekannte Grenze (ANN-046):** „Abmelden" ist keine Navigation. Wer mit
 ungespeichertem Text abmeldet, verliert ihn weiterhin.
+
+---
+
+## CAL-014 — Absage unter 24 Stunden
+
+Prüfschritte zu CAL-014b (Datenbank) und CAL-014c (Oberfläche). Grundlage:
+`PROJECT_PRINCIPLES.md` 0.8 §8, ADR-018 Fassung 2 Punkt 8, ANN-047 und
+ANN-048.
+
+> **Wichtig für diese Abnahme:** Maßgeblich ist der **Eingang** der Absage,
+> nicht der Zeitpunkt der Eingabe. Für die Fälle unter der Frist braucht es
+> deshalb entweder einen Termin am selben oder am nächsten Tag oder einen
+> nachgetragenen Eingang.
+
+Alles als `olivia.office@praxis.invalid` (office).
+
+### 1. Die Rückfrage fragt nach dem Eingang
+
+1. Einen bestätigten Termin **in einigen Tagen** öffnen → **Termin absagen**.
+2. Erwartung: Unter dem Absagegrund steht **„Wann ist die Absage
+   eingegangen?"** mit **„Gerade eben"** vorbelegt, darunter ein Satz, dass
+   die Frist der Server rechnet und genau 24 Stunden außerhalb der Regel
+   liegen.
+3. „Patient:in hat abgesagt" wählen und bestätigen. Erwartung: Status
+   **Abgesagt**, Zeile **Absage eingegangen** mit dem heutigen Zeitpunkt,
+   **keine** Zeile „Gebühr vorgemerkt" — der Termin lag mehr als 24 Stunden
+   entfernt.
+
+### 2. Unter der Frist entsteht ein Gebührenanlass
+
+1. Einen Termin für **morgen zu einer Uhrzeit, die weniger als 24 Stunden
+   entfernt ist**, anlegen (liegt der Termin morgen früher als jetzt, ist er
+   unter der Frist).
+2. Absagen mit Grund **„Patient:in hat abgesagt"**, Eingang **„Gerade eben"**.
+3. Erwartung: Zeile **Gebühr vorgemerkt: Absage weniger als 24 Stunden
+   vorher** und darunter der Satz, dass **Höhe und Abrechnung noch ausstehen**
+   — es steht **kein Betrag** da.
+4. Neu laden. Erwartung: beides steht weiterhin da.
+
+### 3. Die Praxis sagt ab — nie eine Gebühr
+
+1. Denselben Fall wie in Schritt 2, aber mit Grund **„Praxis hat abgesagt"**.
+2. Erwartung: Status **Abgesagt**, **keine** Zeile „Gebühr vorgemerkt".
+3. Dasselbe mit **„Termin verlegt"** und **„Sonstiger Grund"**: ebenfalls keine
+   Gebühr (ANN-047 — widersprich hier, wenn das im Alltag anders gemeint ist).
+
+### 4. Nachträgliche Erfassung
+
+1. Einen Termin **morgen** anlegen und absagen — diesmal **„Früher – jetzt
+   erst eingetragen"** wählen.
+2. Erwartung: Es erscheinen **Datum des Eingangs** und **Uhrzeit**. Das Datum
+   lässt sich nicht in die Zukunft setzen.
+3. Nur das Datum ausfüllen und bestätigen. Erwartung: **„Bitte Datum und
+   Uhrzeit des Eingangs angeben."**, nichts passiert.
+4. Datum **vorgestern**, Uhrzeit **19:30**, bestätigen. Erwartung: Zeile
+   **Absage eingegangen: vorgestern, 19:30 Uhr** und **keine** Gebühr — der
+   Eingang lag mehr als 24 Stunden vor dem Termin, obwohl die Eingabe heute
+   passiert.
+5. Gegenprobe: derselbe Ablauf mit einem Eingang **heute**, wenn der Termin
+   morgen näher als 24 Stunden liegt. Erwartung: **Gebühr vorgemerkt**.
+
+### 5. Die Grenze selbst
+
+Die Sekunden-Genauigkeit prüft `supabase/tests/cancellation-notice.test.ts`
+(genau 24 Stunden ⇒ **keine** Gebühr, eine Sekunde darunter ⇒ Gebühr, über die
+Zeitumstellung hinweg). Von Hand genügt ein Fall knapp auf jeder Seite.
+
+### 6. Nichts wird nachträglich umgedeutet
+
+1. Einen **vor** dieser Änderung abgesagten Termin öffnen (im Seed gibt es
+   einen). Erwartung: Zeile **Absage eingegangen** fehlt, **keine** Gebühr,
+   der Absagegrund steht wie bisher.
+2. Ein Termin, dessen Zeit ohne Zutun vorbeigegangen ist, steht weiterhin auf
+   **Bestätigt** — weder abgesagt noch „nicht angetroffen".
+
+### 7. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /termine/<id>
+```
+
+Erwartung: Die Rückfrage mit Grund, Eingangsauswahl und den beiden Feldern
+passt in die Breite, kein waagerechtes Scrollen, jedes Feld mindestens 44 px
+hoch.

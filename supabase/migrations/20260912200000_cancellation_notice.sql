@@ -131,10 +131,11 @@ immutable
 set search_path = ''
 as $$
   select
-    -- Nur die Patientenabsage. Praxisbedingte Absagen loesen nie aus; "verlegt"
-    -- und "sonstiger Grund" sagen zu wenig ueber den Anlass, und eine zu
-    -- Unrecht vorgemerkte Forderung ist teurer zurueckzunehmen als eine
-    -- nachzutragende (PROJECT_PRINCIPLES.md 16).
+    -- Nur die Patientenabsage. Praxisbedingte Absagen loesen nie aus (so
+    -- entschieden); "verlegt" und "sonstiger Grund" ebenfalls nicht - sie
+    -- sagen zu wenig ueber den Anlass, und eine zu Unrecht vorgemerkte
+    -- Forderung ist teurer zurueckzunehmen als eine nachzutragende
+    -- (PROJECT_PRINCIPLES.md 16). Das ist ANN-047.
     p_reason = 'patient_request'
     and p_received_at is not null
     and p_starts_at - p_received_at < app.cancellation_notice_period()

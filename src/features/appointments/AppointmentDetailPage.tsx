@@ -98,7 +98,7 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
   // Der Eingang: „jetzt" ist der Regelfall am Telefon, „früher" die
   // nachträgliche Erfassung. Vorbelegt ist „jetzt" - das ist keine stille
-  // Annahme, sondern der Augenblick, in dem gerade jemand absagt.
+  // Annahme, sondern der Augenblick, in dem gerade jemand absagt (ANN-048).
   const [eingang, setEingang] = useState<'jetzt' | 'frueher'>('jetzt');
   const [datum, setDatum] = useState('');
   const [uhrzeit, setUhrzeit] = useState('');
