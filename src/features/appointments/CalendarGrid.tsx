@@ -10,6 +10,7 @@ import {
   spalten,
   type Zeitband,
 } from './calendar';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { appointmentStatusLabels, appointmentTypeLabels, type CalendarEntry } from './api';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 
@@ -107,6 +108,7 @@ export function CalendarGrid({
   ziehbarErlaubt,
   onVerschieben,
   onFreieZeit,
+  rueckweg,
   beschriftung,
 }: {
   spaltenModell: GitterSpalte[];
@@ -126,6 +128,14 @@ export function CalendarGrid({
    * Tastatur ist die Schaltfläche „Termin anlegen" über dem Gitter.
    */
   onFreieZeit?: ((ziel: { spalteId: string; startMinute: number }) => void) | undefined;
+  /**
+   * Der Weg zurück in genau diesen Kalenderstand (UX-012).
+   *
+   * Die Kachel führt zum Termin; von dort soll der Weg zurück wieder hier
+   * ankommen - mit Ansicht, Datum, Zoomstufe und allen Filtern. Der Kalender
+   * kennt seinen eigenen Stand, das Gitter nicht; deshalb kommt er von oben.
+   */
+  rueckweg?: string | undefined;
   beschriftung: string;
 }) {
   const spaltenRefs = useRef(new Map<string, HTMLElement>());
@@ -362,6 +372,7 @@ export function CalendarGrid({
                     gedimmt={wirdGezogen}
                     wartet={ziehen.wartetAuf === g.eintrag.id}
                     ziehbar={ziehbarErlaubt && g.ziehbar}
+                    rueckweg={rueckweg}
                     onPointerDown={(event) =>
                       ziehen.beginnen(event, {
                         id: g.eintrag.id,
@@ -408,6 +419,7 @@ function Kachel({
   gedimmt,
   wartet,
   ziehbar,
+  rueckweg,
   onPointerDown,
   onClickCapture,
 }: {
@@ -421,6 +433,7 @@ function Kachel({
   /** Der lange Druck läuft gerade - sichtbare Rückmeldung am Finger (UX-010). */
   wartet: boolean;
   ziehbar: boolean;
+  rueckweg: string | undefined;
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
   onClickCapture: (event: React.MouseEvent) => void;
 }) {
@@ -439,7 +452,7 @@ function Kachel({
 
   return (
     <Link
-      to={`/termine/${eintrag.id}`}
+      to={mitRueckweg(`/termine/${eintrag.id}`, rueckweg)}
       // Ein Link ist im Browser von Haus aus ziehbar. Diese eingebaute Geste
       // bricht die Zeigerverfolgung sofort mit pointercancel ab - ohne
       // draggable=false kaeme das Verschieben gar nicht erst zustande.

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { SearchCombobox, type Suchtreffer } from '@/components/ui/SearchCombobox';
 import { SUCHE_MINDESTLAENGE, formatDate, searchPatients, type PatientSearchHit } from './api';
 
@@ -49,6 +50,7 @@ export function Patientensuche({
   onAuswahl?: (patientId: string) => void;
 } = {}) {
   const navigate = useNavigate();
+  const ort = useLocation();
   const [eingabe, setEingabe] = useState('');
   const [begriff, setBegriff] = useState('');
 
@@ -104,7 +106,11 @@ export function Patientensuche({
           onAuswahl(gewaehlt.id);
           return;
         }
-        void navigate(`/patienten/${gewaehlt.id}`);
+        // Die Suche steht in der Kopfleiste und wird von jeder Seite aus
+        // benutzt - auch mitten im Kalender. Der Weg zurück führt deshalb
+        // genau dorthin, wo gesucht wurde, samt Ansicht, Datum und Filtern
+        // (UX-012).
+        void navigate(mitRueckweg(`/patienten/${gewaehlt.id}`, `${ort.pathname}${ort.search}`));
       }}
     />
   );

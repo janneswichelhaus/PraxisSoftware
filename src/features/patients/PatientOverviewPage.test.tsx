@@ -140,7 +140,11 @@ describe('Uebersicht der Akte', () => {
       renderWithProviders(<Uebersicht patient={patient} user={testUser(['therapist'])} />);
 
       const link = await screen.findByRole('link', { name: /19\. Mai 2027/ });
-      expect(link).toHaveAttribute('href', `/termine/${naechsterTermin.id}`);
+      // Mit Rueckweg auf die Uebersicht der Akte (UX-012).
+      expect(link).toHaveAttribute(
+        'href',
+        `/termine/${naechsterTermin.id}?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}`)}`,
+      );
       expect(screen.getByText(/09:00–10:00 Uhr · Hausbesuch · Anna Beispiel/)).toBeInTheDocument();
     });
 
@@ -263,7 +267,9 @@ describe('Uebersicht der Akte', () => {
 
       expect(await screen.findByRole('link', { name: 'Zum Termin' })).toHaveAttribute(
         'href',
-        `/termine/${nachweis.appointment_id}`,
+        `/termine/${nachweis.appointment_id}?zurueck=${encodeURIComponent(
+          `/patienten/${PATIENT_ID}`,
+        )}`,
       );
       expect(screen.getByRole('link', { name: 'Behandlungsverlauf' })).toHaveAttribute(
         'href',

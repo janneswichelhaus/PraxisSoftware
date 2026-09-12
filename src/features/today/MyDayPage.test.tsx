@@ -175,12 +175,16 @@ describe('Übersicht', () => {
 
     // Schreiben ohne Abschluss: der Abschluss schreibt als Version 1 fest.
     const doku = within(offen).getByRole('link', { name: 'Dokumentation schreiben' });
-    expect(doku).toHaveAttribute('href', '/termine/t1/dokumentation');
+    // Mit Rueckweg auf die Uebersicht (UX-012).
+    expect(doku).toHaveAttribute(
+      'href',
+      `/termine/t1/dokumentation?zurueck=${encodeURIComponent('/')}`,
+    );
     expect(doku.textContent).toBe('Doku');
 
     expect(within(offen).getByRole('link', { name: 'Behandlung abschließen' })).toHaveAttribute(
       'href',
-      '/termine/t1/abschluss',
+      `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
     );
   });
 
@@ -193,7 +197,7 @@ describe('Übersicht', () => {
     const ziele = within(offen)
       .getAllByRole('link')
       .map((l) => l.getAttribute('href') ?? '');
-    const doku = ziele.findIndex((z) => z.endsWith('/dokumentation'));
+    const doku = ziele.findIndex((z) => z.includes('/dokumentation'));
     const nummer = ziele.findIndex((z) => z.startsWith('tel:'));
 
     expect(doku).toBeGreaterThanOrEqual(0);

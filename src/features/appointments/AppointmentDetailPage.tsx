@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Select } from '@/components/ui/Select';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
@@ -17,6 +18,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
+import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { NavigationZumTermin } from './NavigationStarten';
 import {
   appointmentStatusLabels,
@@ -282,7 +284,19 @@ function StatusAktion({
   );
 }
 
-function AppointmentDetail({ appointment, user }: { appointment: Appointment; user: CurrentUser }) {
+function AppointmentDetail({
+  appointment,
+  user,
+  eingehend,
+  zumTermin,
+}: {
+  appointment: Appointment;
+  user: CurrentUser;
+  /** Der Rückweg dieser Seite - für die Unterseiten desselben Termins. */
+  eingehend: string;
+  /** Der Weg zurück zu diesem Termin - für die Wege zu anderen Gegenständen. */
+  zumTermin: string;
+}) {
   const zone = appointment.organization_time_zone;
   const darfVerwalten = canManageAppointments(user.roles);
   // Geaendert wird ausschliesslich aus „bestätigt". Abgesagte, dokumentierte
@@ -298,12 +312,27 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
   return (
     <>
       <PageHeader
-        title={`Termin – ${patientName(appointment)}`}
+        /* Der Name führt von hier direkt in die Akte (UX-012). Er ist die
+           häufigste Anschlussfrage am Termin — „wer ist das noch mal, was
+           steht sonst noch an?" — und stand vorher nur als Text da; der Weg
+           ging über die Zeile darunter oder über die Suche. Der Rückweg reist
+           mit, damit der Weg zurück am Termin endet und nicht in der Liste. */
+        title={
+          <>
+            Termin –{' '}
+            <Link
+              to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
+              className="underline decoration-2 underline-offset-4 hover:no-underline"
+            >
+              {patientName(appointment)}
+            </Link>
+          </>
+        }
         description={zustandsHinweis(appointment)}
         actions={
           darfAendern ? (
             <Link
-              to={`/termine/${appointment.id}/bearbeiten`}
+              to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
               className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
             >
               Bearbeiten
@@ -314,14 +343,10 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
 
       <Section titel="Termin">
         <DetailList>
-          <DetailRow label="Patient:in">
-            <Link
-              to={`/patienten/${appointment.patient_id}`}
-              className="text-accent inline-flex min-h-11 items-center hover:underline"
-            >
-              {patientName(appointment)}
-            </Link>
-          </DetailRow>
+          {/* Bewusst Text und kein zweiter Link: Der Name im Kopf führt in die
+              Akte (UX-012). Zwei gleichnamige Links auf dieselbe Seite wären
+              für Vorlesesoftware zwei Angebote mit einer Wirkung. */}
+          <DetailRow label="Patient:in">{patientName(appointment)}</DetailRow>
           <DetailRow label="Behandelnde Person">{staffName(appointment)}</DetailRow>
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
@@ -374,18 +399,26 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
       {darfAendern ? (
         <div className="mt-5 flex flex-wrap items-start gap-3">
           {/* Der Regelfall am Ende eines Besuchs: Dokumentation und Abschluss
-              in einem Schritt (UX-007). „Termin abschließen" bleibt daneben -
-              der Abschluss ohne Dokumentation ist ausdrücklich weiter möglich
-              (ANN-005). */}
+              in einem Schritt (UX-007). Der Abschluss ohne Dokumentation ist
+              ausdrücklich weiter möglich (ANN-005) - er steht daneben.
+
+              Die Beschriftungen sagen seit UX-012, worin sie sich
+              unterscheiden. „Behandlung abschließen" neben „Termin
+              abschließen" waren zwei Knöpfe, deren Unterschied man kennen
+              musste; wer dokumentieren wollte und den falschen traf, schloss
+              den Termin ohne Eintrag ab. Wer gar nicht dokumentieren darf,
+              sieht weiterhin nur den einen und für den heißt er wie bisher. */}
           {darfDokumentieren ? (
-            <ButtonLink to={`/termine/${appointment.id}/abschluss`}>
-              Behandlung abschließen
+            <ButtonLink to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}>
+              Dokumentieren und abschließen
             </ButtonLink>
           ) : null}
           <StatusAktion
             appointment={appointment}
             aktion={completeAppointment}
-            beschriftung="Termin abschließen"
+            beschriftung={
+              darfDokumentieren ? 'Ohne Dokumentation abschließen' : 'Termin abschließen'
+            }
             laufend="Wird abgeschlossen …"
             variant={darfDokumentieren ? 'secondary' : 'primary'}
           />
@@ -400,9 +433,12 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
       {darfVerwalten && appointment.status !== 'cancelled' ? (
         <div className="mt-5 flex">
           <ButtonLink
-            to={`/patienten/${appointment.patient_id}/termine/neu${schreibeTerminVorbelegung(
-              folgeterminVorbelegung(appointment),
-            )}`}
+            to={mitRueckweg(
+              `/patienten/${appointment.patient_id}/termine/neu${schreibeTerminVorbelegung(
+                folgeterminVorbelegung(appointment),
+              )}`,
+              zumTermin,
+            )}
             variant="secondary"
           >
             Folgetermin anlegen
@@ -454,6 +490,20 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
 
 export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
   const { appointmentId } = useParams<{ appointmentId: string }>();
+  const [suche] = useSearchParams();
+
+  // Zwei verschiedene Wege, und die Unterscheidung ist der Punkt (UX-012):
+  //
+  //   * `eingehend` ist der Rückweg DIESER Seite - Kalender, Akte, Tagesliste.
+  //     Er wird an die Unterseiten desselben Termins weitergereicht
+  //     (Bearbeiten, Abschluss), damit er über diese Stationen nicht verloren
+  //     geht.
+  //   * `zumTermin` ist der Rückweg zu DIESEM Termin, samt seinem eigenen
+  //     Rückweg. Ihn bekommen die Wege zu anderen Gegenständen - die Akte, das
+  //     Formular für den Folgetermin -, damit man von dort hierher zurückkommt
+  //     und von hier weiter dorthin, wo man hergekommen ist.
+  const eingehend = leseRueckweg(suche, '');
+  const zumTermin = mitRueckweg(`/termine/${appointmentId}`, eingehend);
 
   const { data, isPending, isError } = useQuery({
     queryKey: ['appointment', appointmentId],
@@ -464,12 +514,7 @@ export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <Link
-        to="/patienten"
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zurück zur Patientenliste
-      </Link>
+      <Rueckweg standard="/patienten" beschriftung="Zurück zur Patientenliste" />
 
       {isPending ? <LoadingState label="Termin wird geladen …" /> : null}
       {isError ? <ErrorState title="Der Termin konnte nicht geladen werden." /> : null}
@@ -479,7 +524,14 @@ export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
           description="Dieser Termin existiert nicht oder ist für Ihren Zugang nicht freigegeben."
         />
       ) : null}
-      {data ? <AppointmentDetail appointment={data} user={user} /> : null}
+      {data ? (
+        <AppointmentDetail
+          appointment={data}
+          user={user}
+          eingehend={eingehend}
+          zumTermin={zumTermin}
+        />
+      ) : null}
     </>
   );
 }

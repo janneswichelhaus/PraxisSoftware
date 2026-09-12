@@ -27,8 +27,7 @@ export function Rueckweg({
 }) {
   const [suche] = useSearchParams();
   const ziel = leseRueckweg(suche, standard);
-  const text =
-    ziel === standard && beschriftung ? beschriftung : rueckwegBeschriftung(ziel);
+  const text = ziel === standard && beschriftung ? beschriftung : rueckwegBeschriftung(ziel);
 
   return (
     <Link

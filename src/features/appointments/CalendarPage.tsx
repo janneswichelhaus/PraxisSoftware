@@ -668,6 +668,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
       {termine.isSuccess && !laedt && spaltenModell.length > 0 ? (
         <CalendarGrid
+          // Der Rückweg ist der Kalenderstand selbst - Ansicht, Datum,
+          // Zoomstufe und alle Filter (UX-012). Wer von einer Kachel in den
+          // Termin springt, kommt damit genau hierher zurück.
+          rueckweg={`/kalender?${suche.toString()}`}
           spaltenModell={spaltenModell}
           eintraege={gitterEintraege}
           fenster={fenster}

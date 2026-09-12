@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
@@ -91,7 +92,7 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
   return (
     <li>
       <Link
-        to={`/termine/${termin.id}`}
+        to={mitRueckweg(`/termine/${termin.id}`, '/')}
         className="hover:bg-surface-sunken flex min-h-16 items-center gap-4 py-3 transition-colors"
       >
         <span className="text-ink w-28 shrink-0 text-sm font-medium tabular-nums">
@@ -213,7 +214,7 @@ function MeineTagesliste({
                           sagt, was gemeint ist. */}
                       {darfDokumentieren ? (
                         <Link
-                          to={`/termine/${termin.id}/dokumentation`}
+                          to={mitRueckweg(`/termine/${termin.id}/dokumentation`, '/')}
                           aria-label="Dokumentation schreiben"
                           className={kartenAktionKlassen()}
                         >
@@ -224,7 +225,7 @@ function MeineTagesliste({
                           geht - von der Tagesliste aus ein Tap (UX-007). */}
                       {darfDokumentieren ? (
                         <Link
-                          to={`/termine/${termin.id}/abschluss`}
+                          to={mitRueckweg(`/termine/${termin.id}/abschluss`, '/')}
                           className={kartenAktionKlassen('primary')}
                         >
                           Behandlung abschließen

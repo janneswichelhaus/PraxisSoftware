@@ -44,15 +44,7 @@ function EyeIcon({ crossedOut }: { crossedOut: boolean }) {
  * (type="password") erhält zusätzlich einen Sichtbar-Schalter, damit
  * Tippfehler bei der Eingabe auffallen.
  */
-export function Field({
-  label,
-  hint,
-  error,
-  feldId,
-  className = '',
-  type,
-  ...props
-}: FieldProps) {
+export function Field({ label, hint, error, feldId, className = '', type, ...props }: FieldProps) {
   const erzeugt = useId();
   const id = feldId ?? erzeugt;
   const hintId = hint ? `${id}-hint` : undefined;

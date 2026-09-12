@@ -64,13 +64,15 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Kommende Termine' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Vergangene Termine' })).toBeInTheDocument();
+    // Der Rueckweg fuehrt in den Terminbereich der Akte zurueck (UX-012).
+    const zurueck = encodeURIComponent(`/patienten/${PATIENT_ID}/termine`);
     expect(await screen.findByRole('link', { name: /19\. Mai 2027/ })).toHaveAttribute(
       'href',
-      '/termine/kuenftig',
+      `/termine/kuenftig?zurueck=${zurueck}`,
     );
     expect(screen.getByRole('link', { name: /8\. September 2026/ })).toHaveAttribute(
       'href',
-      '/termine/vergangen',
+      `/termine/vergangen?zurueck=${zurueck}`,
     );
   });
 

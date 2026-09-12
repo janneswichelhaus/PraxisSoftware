@@ -22,14 +22,7 @@ interface TextAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>
  * Feld vorlesen. Die Schriftgröße bleibt bei 16 px - kleinere Werte lassen
  * iOS beim Fokussieren hineinzoomen.
  */
-export function TextArea({
-  label,
-  hint,
-  error,
-  feldId,
-  className = '',
-  ...props
-}: TextAreaProps) {
+export function TextArea({ label, hint, error, feldId, className = '', ...props }: TextAreaProps) {
   const erzeugt = useId();
   const id = feldId ?? erzeugt;
   const hintId = hint ? `${id}-hint` : undefined;

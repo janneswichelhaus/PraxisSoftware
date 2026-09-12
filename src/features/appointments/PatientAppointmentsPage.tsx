@@ -8,6 +8,7 @@ import { Section } from '@/components/ui/Section';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { usePatientRecord } from '@/features/patients/akte';
+import { mitRueckweg } from '@/lib/rueckweg';
 import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { formatDate as formatIsoDate } from '@/features/prescriptions/api';
@@ -60,7 +61,7 @@ function Terminzeile({
     <li className="border-line border-t">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2">
         <Link
-          to={`/termine/${termin.id}`}
+          to={mitRueckweg(`/termine/${termin.id}`, `/patienten/${patientId}/termine`)}
           className="hover:bg-surface-sunken -mx-2 flex min-h-11 min-w-48 flex-1 flex-col justify-center rounded px-2 transition-colors"
         >
           <span className="text-ink text-[0.9375rem] font-medium">

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { Section } from '@/components/ui/Section';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
@@ -93,7 +94,7 @@ export function PatientUpcomingAppointments({
           {data.map((termin) => (
             <li key={termin.id}>
               <Link
-                to={`/termine/${termin.id}`}
+                to={mitRueckweg(`/termine/${termin.id}`, `/patienten/${patientId}`)}
                 className="hover:bg-surface-sunken flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 py-2.5 transition-colors"
               >
                 {/* min-w-48: Ohne Mindestbreite schrumpft der Text, statt die

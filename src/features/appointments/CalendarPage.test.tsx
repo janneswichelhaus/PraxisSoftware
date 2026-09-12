@@ -366,7 +366,22 @@ describe('CalendarPage', () => {
     it('verlinkt jeden Termin auf seine Detailansicht', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       const link = await screen.findByRole('link', { name: /Max Mustermann/ });
-      expect(link).toHaveAttribute('href', '/termine/77777777-7777-4777-8777-000000000001');
+      expect(link.getAttribute('href')).toMatch(
+        /^\/termine\/77777777-7777-4777-8777-000000000001\?/,
+      );
+    });
+
+    // UX-012: Der Weg zurueck fuehrt in genau diesen Kalenderstand - mit
+    // Ansicht, Datum und Filtern. Vorher landete man auf der Patientenliste.
+    it('nimmt Ansicht, Datum und Filter als Rueckweg mit', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&status=all');
+      const link = await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const zurueck = new URL(link.getAttribute('href')!, 'http://x').searchParams.get('zurueck');
+      const parameter = new URLSearchParams(zurueck!.split('?')[1]);
+      expect(parameter.get('ansicht')).toBe('tag');
+      expect(parameter.get('datum')).toBe('2027-05-12');
+      expect(parameter.get('status')).toBe('all');
     });
 
     it('zeigt in der Wochenansicht sieben Tagesspalten', async () => {

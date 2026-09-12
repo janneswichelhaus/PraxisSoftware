@@ -12,6 +12,7 @@ import {
   staffName,
 } from '@/features/appointments/api';
 import type { Patient } from '@/features/patients/api';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchTreatmentEvidencePage, type TreatmentEvidenceEntry } from './api';
 import { zeitpunkt } from './format';
 
@@ -111,7 +112,7 @@ export function LetzterBehandlungsstand({
 
           <div className="flex flex-wrap items-center gap-x-4">
             <Link
-              to={`/termine/${letzter.appointment_id}`}
+              to={mitRueckweg(`/termine/${letzter.appointment_id}`, `/patienten/${patient.id}`)}
               className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
             >
               Zum Termin

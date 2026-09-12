@@ -1,14 +1,16 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import {
   canManageAppointments,
   canWritePrescriptions,
   type CurrentUser,
 } from '@/features/session/types';
+import { istInternerPfad, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { aktenBereiche, type PatientRecordContext } from './akte';
 import {
   ageInYears,
@@ -44,7 +46,16 @@ import {
  * Navigation (PROJECT_PRINCIPLES.md 13, UX-009).
  */
 
-function Aktenavigation({ patient, user }: { patient: Patient; user: CurrentUser }) {
+function Aktenavigation({
+  patient,
+  user,
+  anhang,
+}: {
+  patient: Patient;
+  user: CurrentUser;
+  /** Der Rückweg der Akte, damit er beim Bereichswechsel nicht verloren geht. */
+  anhang: string;
+}) {
   const bereiche = aktenBereiche(patient.id, user);
 
   return (
@@ -59,7 +70,7 @@ function Aktenavigation({ patient, user }: { patient: Patient; user: CurrentUser
         {bereiche.map((bereich) => (
           <li key={bereich.to} className="shrink-0">
             <NavLink
-              to={bereich.to}
+              to={`${bereich.to}${anhang}`}
               end={bereich.end ?? false}
               className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent flex min-h-11 items-center px-3 text-[0.9375rem] whitespace-nowrap transition-colors aria-[current=page]:font-medium"
             >
@@ -140,6 +151,16 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
 
 export function PatientRecordLayout({ user }: { user: CurrentUser }) {
   const { patientId } = useParams<{ patientId: string }>();
+  const [suche] = useSearchParams();
+
+  // Der Rückweg gehört der ganzen Akte, nicht einem ihrer Bereiche: Wer aus
+  // dem Kalender kommt, im Behandlungsverlauf nachsieht und dann zurückgeht,
+  // landet wieder im Kalender. Ohne das wäre der Rückweg beim ersten
+  // Bereichswechsel weg.
+  const rueckweg = suche.get(RUECKWEG_PARAM);
+  const anhang = istInternerPfad(rueckweg)
+    ? `?${RUECKWEG_PARAM}=${encodeURIComponent(rueckweg)}`
+    : '';
 
   const { data, isPending, isError } = useQuery({
     queryKey: ['patient', patientId],
@@ -158,12 +179,9 @@ export function PatientRecordLayout({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <Link
-        to="/patienten"
-        className="text-ink-muted hover:text-ink mb-3 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zurück zur Liste
-      </Link>
+      {/* Wer aus dem Kalender oder von einem Termin kommt, kommt dorthin
+          zurück - mit allem, was dort eingestellt war (UX-012). */}
+      <Rueckweg standard="/patienten" beschriftung="Zurück zur Liste" className="mb-3" />
 
       {isPending ? <LoadingState label="Patientendaten werden geladen …" /> : null}
       {isError ? <ErrorState title="Die Patientendaten konnten nicht geladen werden." /> : null}
@@ -178,7 +196,7 @@ export function PatientRecordLayout({ user }: { user: CurrentUser }) {
         <>
           <header className="border-line bg-surface rounded-card overflow-hidden border">
             <PatientKopf patient={data} user={user} />
-            <Aktenavigation patient={data} user={user} />
+            <Aktenavigation patient={data} user={user} anhang={anhang} />
           </header>
 
           <div className="mt-6">
