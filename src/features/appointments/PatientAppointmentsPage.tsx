@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { Section } from '@/components/ui/Section';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -247,13 +248,18 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
       <Section
         titel="Kommende Termine"
         aktion={
+          // Kompakte Größe: Zwei Schaltflächen in voller Höhe schoben den
+          // ersten Termin bei 375 px um mehr als hundert Pixel nach unten.
           <div className="flex flex-wrap gap-2">
-            <ButtonLink to={`/patienten/${patient.id}/terminzettel`} variant="secondary">
+            <Link
+              to={`/patienten/${patient.id}/terminzettel`}
+              className={kartenAktionKlassen('secondary')}
+            >
               Termine mitteilen
-            </ButtonLink>
-            <ButtonLink to={kalenderZiel} variant="secondary">
+            </Link>
+            <Link to={kalenderZiel} className={kartenAktionKlassen('secondary')}>
               Im Kalender zeigen
-            </ButtonLink>
+            </Link>
           </div>
         }
       >

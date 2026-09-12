@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
-import { ButtonLink } from '@/components/ui/ButtonLink';
+import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canManageAppointments,
@@ -110,15 +110,28 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
       </div>
 
       {/* Die beiden Vorgänge, die im Alltag aus der Akte heraus entstehen. Alles
-          Weitere steht in dem Bereich, zu dem es gehört. */}
-      <div className="flex flex-wrap gap-2">
+          Weitere steht in dem Bereich, zu dem es gehört.
+
+          In der kompakten Größe (44 px, 14 px Schrift): In voller Größe standen
+          die beiden bei 375 px untereinander und kosteten den Kopf über hundert
+          Pixel Höhe - genau das, was dieser Umbau abstellen soll. Das Tippziel
+          bleibt bei 44 px (Oberflächen-Checkliste Punkt 1). */}
+      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
         {darfTerminePlanen && patient.status === 'active' ? (
-          <ButtonLink to={`/patienten/${patient.id}/termine/neu`}>Termin anlegen</ButtonLink>
+          <Link
+            to={`/patienten/${patient.id}/termine/neu`}
+            className={kartenAktionKlassen('primary')}
+          >
+            Termin anlegen
+          </Link>
         ) : null}
         {darfVerordnen ? (
-          <ButtonLink to={`/patienten/${patient.id}/verordnungen/neu`} variant="secondary">
+          <Link
+            to={`/patienten/${patient.id}/verordnungen/neu`}
+            className={kartenAktionKlassen('secondary')}
+          >
             Verordnung erfassen
-          </ButtonLink>
+          </Link>
         ) : null}
       </div>
     </div>

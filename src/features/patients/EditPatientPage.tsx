@@ -41,7 +41,10 @@ function EditPatientForm({ patient }: { patient: Patient }) {
     retry: false,
   });
 
-  const zurueck = `/patienten/${patient.id}`;
+  // Zurück in die Stammdaten und nicht auf die Übersicht der Akte: Dort steht,
+  // was gerade geändert wurde (AKTE-005). Die Übersicht zeigt Termine und
+  // Verordnungen - der geänderte Ort käme dort gar nicht vor.
+  const zurueck = `/patienten/${patient.id}/stammdaten`;
 
   const mutation = useMutation({
     mutationFn: (values: PatientMasterDataValues) => updatePatient(patient.id, values),

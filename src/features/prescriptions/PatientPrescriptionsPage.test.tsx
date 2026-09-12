@@ -266,16 +266,14 @@ describe('Verordnungsbereich der Akte', () => {
     });
   });
 
-  it('bietet den therapeutischen Rollen das Erfassen an, office nicht', async () => {
+  it('fuehrt keinen zweiten Weg "Verordnung erfassen" neben dem der Akte', async () => {
+    // Der Weg steht im Kopf der Akte und ist aus jedem Bereich erreichbar.
+    // Zweimal derselbe Knopf auf einer Seite waere ein Raetsel; der
+    // Rollenschnitt dahinter wird am Kopf geprueft.
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
-    expect(await screen.findByRole('link', { name: 'Verordnung erfassen' })).toHaveAttribute(
-      'href',
-      `/patienten/${patient.id}/verordnungen/neu`,
-    );
 
-    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
-    const links = await screen.findAllByRole('link', { name: 'Verordnung erfassen' });
-    expect(links).toHaveLength(1);
+    await screen.findByText('Keine laufende Verordnung');
+    expect(screen.queryByRole('link', { name: 'Verordnung erfassen' })).not.toBeInTheDocument();
   });
 
   it('zeigt einem Patientenkonto den Abschnitt gar nicht', () => {

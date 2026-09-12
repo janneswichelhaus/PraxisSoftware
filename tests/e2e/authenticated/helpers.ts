@@ -76,6 +76,7 @@ export const TAGESFENSTER = {
   appointmentSeries: 11,
   // 12 ist wieder frei: `appointment-notification` rechnet seit 2026-09-12 im
   // Nahfenster (siehe unten) und braucht kein eigenes Tagesfenster mehr.
+  patientRecordWorkspace: 13,
 } as const;
 
 /**

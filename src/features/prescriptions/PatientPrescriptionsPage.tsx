@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
-import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -115,18 +114,34 @@ function Verordnungskopf({ verordnung }: { verordnung: Verordnung }) {
   );
 }
 
+/**
+ * Die Positionen als Wert einer Zeile, nicht als eigene Tabelle.
+ *
+ * Sie sagen dasselbe wie die Summe darüber, nur je Heilmittel. Als eigener
+ * Block mit Rahmen wirkten sie wie eine zweite, widersprechende Zahl.
+ */
 function Positionen({ verordnung }: { verordnung: Verordnung }) {
   return (
-    <ul className="divide-line border-line mt-3 divide-y border-t">
+    <ul>
       {verordnung.items.map((item) => (
-        <li key={item.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
-          <span className="text-ink text-[0.9375rem]">{item.remedy}</span>
-          <span className="text-ink-muted text-sm">
-            {item.used_quantity} von {item.prescribed_quantity} Einheiten genutzt
-          </span>
+        <li key={item.id}>
+          {item.remedy}: {item.used_quantity} von {item.prescribed_quantity} genutzt
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Hat die Verordnung außer ihren Zahlen überhaupt etwas zu sagen? */
+function hatWeitereAngaben(verordnung: Verordnung): boolean {
+  const klinisch = klinischeFelder(verordnung);
+  return Boolean(
+    verordnung.frequency_note ||
+    verordnung.note ||
+    klinisch?.diagnosis ||
+    klinisch?.therapy_goal ||
+    klinisch?.prescriber_note ||
+    klinisch?.follow_up_recommendation,
   );
 }
 
@@ -219,6 +234,7 @@ function LaufendeVerordnung({
   user: CurrentUser;
 }) {
   const { verordnung, kontingent, zustand } = eintrag;
+  const weitereAngaben = hatWeitereAngaben(verordnung);
 
   return (
     <li
@@ -232,17 +248,32 @@ function LaufendeVerordnung({
         <Badge ton={zustand === 'offen' ? 'akzent' : 'neutral'}>{zustandLabels[zustand]}</Badge>
       </div>
 
-      <DetailList>
-        <Kontingentzeilen
-          kontingent={kontingent}
-          terminlink={terminlink(patient.id, verordnung.id)}
-        />
-        <KlinischeAngaben verordnung={verordnung} />
-      </DetailList>
+      {/* Zwei Spalten, sobald es beides gibt: Zahlen links, Angaben rechts.
+          In einer einzigen Spalte lief die Karte auf dem Desktop über die
+          volle Breite, obwohl in jeder Zeile drei Wörter standen - und sie
+          wurde so hoch, dass die zweite Verordnung aus dem Bild fiel. */}
+      <div className={`grid gap-x-8 ${weitereAngaben ? 'lg:grid-cols-2' : ''}`}>
+        <DetailList>
+          <Kontingentzeilen
+            kontingent={kontingent}
+            terminlink={terminlink(patient.id, verordnung.id)}
+          />
+          {/* Mehr als eine Position ist der Regelfall bei Kombinationen; bei
+              einer einzigen sagt die Positionsliste nichts, was oben nicht
+              steht. */}
+          {verordnung.items.length > 1 ? (
+            <DetailRow label="Positionen">
+              <Positionen verordnung={verordnung} />
+            </DetailRow>
+          ) : null}
+        </DetailList>
 
-      {/* Mehr als eine Position ist der Regelfall bei Kombinationen; bei einer
-          einzigen sagt die Positionsliste nichts, was oben nicht steht. */}
-      {verordnung.items.length > 1 ? <Positionen verordnung={verordnung} /> : null}
+        {weitereAngaben ? (
+          <DetailList>
+            <KlinischeAngaben verordnung={verordnung} />
+          </DetailList>
+        ) : null}
+      </div>
 
       <Verordnungsaktionen eintrag={eintrag} patient={patient} user={user} />
     </li>
@@ -290,9 +321,13 @@ function AbgeschlosseneVerordnung({
               kontingent={kontingent}
               terminlink={terminlink(patient.id, verordnung.id)}
             />
+            {verordnung.items.length > 1 ? (
+              <DetailRow label="Positionen">
+                <Positionen verordnung={verordnung} />
+              </DetailRow>
+            ) : null}
             <KlinischeAngaben verordnung={verordnung} />
           </DetailList>
-          {verordnung.items.length > 1 ? <Positionen verordnung={verordnung} /> : null}
           <Verordnungsaktionen eintrag={eintrag} patient={patient} user={user} />
         </div>
       </details>
@@ -317,16 +352,13 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
 
   return (
     <>
+      {/* Bewusst ohne eigene Schaltfläche „Verordnung erfassen": Sie steht im
+          Kopf der Akte und ist dort aus jedem Bereich erreichbar. Zwei
+          gleichnamige Wege auf einer Seite wären ein Rätsel, kein Angebot -
+          derselbe Grund wie bei „Termin anlegen" (UX-006). */}
       <Section
         titel="Aktuelle Verordnungen"
         hinweis="Verordnungen, deren Leistungseinheiten noch nicht vollständig genutzt sind."
-        aktion={
-          darfSchreiben ? (
-            <ButtonLink to={`/patienten/${patient.id}/verordnungen/neu`} variant="secondary">
-              Verordnung erfassen
-            </ButtonLink>
-          ) : null
-        }
       >
         {isPending ? <LoadingState label="Verordnungen werden geladen …" /> : null}
         {isError ? (

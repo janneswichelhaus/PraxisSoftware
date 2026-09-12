@@ -76,7 +76,7 @@ test.describe('DOK-003: Dokumentation in der Akte', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await finalisierterEintrag(page, laufTag());
 
-    await page.goto(`/patienten/${PATIENTEN.max}`);
+    await page.goto(`/patienten/${PATIENTEN.max}/verlauf`);
     const akte = page.getByRole('region', { name: 'Behandlungsdokumentation' });
     await expect(akte).toBeVisible();
 
@@ -94,7 +94,7 @@ test.describe('DOK-003: Dokumentation in der Akte', () => {
 
     await page.getByRole('button', { name: 'Abmelden' }).click();
     await anmelden(page, KONTEN.office);
-    await page.goto(`/patienten/${PATIENTEN.max}`);
+    await page.goto(`/patienten/${PATIENTEN.max}/verlauf`);
 
     const nachweis = page.getByRole('region', { name: 'Behandlungsnachweis' });
     await expect(nachweis).toBeVisible();

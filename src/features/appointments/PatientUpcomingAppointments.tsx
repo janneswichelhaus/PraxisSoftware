@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
-import { ButtonLink } from '@/components/ui/ButtonLink';
+import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { Section } from '@/components/ui/Section';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
@@ -72,9 +72,12 @@ export function PatientUpcomingAppointments({
       // die Seite bietet seit CAL-013 beides an.
       aktion={
         data && data.length > 0 ? (
-          <ButtonLink to={`/patienten/${patientId}/terminzettel`} variant="secondary">
+          <Link
+            to={`/patienten/${patientId}/terminzettel`}
+            className={kartenAktionKlassen('secondary')}
+          >
             Termine mitteilen
-          </ButtonLink>
+          </Link>
         ) : null
       }
     >

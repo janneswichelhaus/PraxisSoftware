@@ -29,7 +29,7 @@ test.describe('PAT-002: Stammdaten bearbeiten', () => {
 
     await anmelden(page, KONTEN.office);
 
-    await page.goto(`/patienten/${PATIENTEN.erika}`);
+    await page.goto(`/patienten/${PATIENTEN.erika}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Erika Beispiel' })).toBeVisible();
 
     await page.getByRole('link', { name: 'Stammdaten bearbeiten' }).click();
@@ -60,7 +60,7 @@ test.describe('PAT-003: Versorgungsstatus wechseln', () => {
   test('setzt den Status dauerhaft auf inaktiv und wieder zurück', async ({ page }) => {
     await anmelden(page, KONTEN.office);
 
-    await page.goto(`/patienten/${PATIENTEN.max}`);
+    await page.goto(`/patienten/${PATIENTEN.max}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Max Mustermann' })).toBeVisible();
     await expect(detailWert(page, 'Status')).toHaveText('Aktiv');
 

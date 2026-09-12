@@ -1,0 +1,135 @@
+import { expect, test, type Page } from '@playwright/test';
+import {
+  KONTEN,
+  PATIENTEN,
+  TAGESFENSTER,
+  anmelden,
+  arbeitszeitBestaetigen,
+  tagImFenster,
+} from './helpers';
+
+/**
+ * Die Patientenakte als Arbeitsplatz (AKTE-000 bis AKTE-005).
+ *
+ * Geprueft wird der Weg durch die Akte hinter der Anmeldung: Browser → GoTrue
+ * → PostgREST → SECURITY-DEFINER-RPC → PostgreSQL, nichts gestubbt. Die
+ * Aufteilung selbst hat Komponententests; hier zaehlt, dass die Bereiche
+ * hinter ihren Adressen echte Daten zeigen und die Wege zwischen ihnen
+ * tragen.
+ *
+ * Wie in den uebrigen Spezifikationen belegt jeder Lauf einen eigenen
+ * Zeitraum: ein angelegter Termin laesst sich fachlich nicht entfernen.
+ */
+test.describe.configure({ mode: 'serial' });
+
+const LAUF = Date.now();
+
+/** Kalendertag im eigenen Tagesfenster dieser Spezifikation (siehe helpers.ts). */
+function laufTag(versatz = 0): string {
+  return tagImFenster(TAGESFENSTER.patientRecordWorkspace, LAUF, versatz);
+}
+
+function zeit(minutenAbAcht = 0): string {
+  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
+  const gesamt = 8 * 60 + (LAUF % 12) * 5 + minutenAbAcht;
+  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
+  const m = String(gesamt % 60).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+const AKTE = `/patienten/${PATIENTEN.max}`;
+
+async function terminAnlegen(page: Page, tag: string): Promise<string> {
+  await page.goto(`${AKTE}/termine/neu`);
+  await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
+  await page.getByLabel('Terminart *').selectOption('practice');
+  await page.getByLabel('Datum *').fill(tag);
+  await page.getByLabel('Beginn *').fill(zeit());
+  await page.getByRole('button', { name: 'Termin anlegen' }).click();
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
+  return page.url().split('/').pop()!;
+}
+
+test.describe('AKTE-000: Rahmen und Bereiche', () => {
+  test('haelt den Kopf stehen und wechselt den Bereich', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    await page.goto(AKTE);
+
+    const kopf = page.getByRole('heading', { name: 'Max Mustermann' });
+    await expect(kopf).toBeVisible();
+    await expect(page.getByText('In Versorgung')).toBeVisible();
+
+    const navigation = page.getByRole('navigation', { name: 'Bereiche der Akte' });
+    await expect(navigation).toBeVisible();
+
+    // Stammdaten: die Anschrift steht nicht mehr auf der Uebersicht.
+    await navigation.getByRole('link', { name: 'Stammdaten' }).click();
+    await expect(page).toHaveURL(`${AKTE}/stammdaten`);
+    await expect(page.getByText('Kontakt', { exact: true })).toBeVisible();
+    await expect(kopf).toBeVisible();
+
+    // Verordnungen: der Bereich liest denselben rollenabhaengigen Lesepfad
+    // wie vorher der Abschnitt der langen Seite (VER-002).
+    await navigation.getByRole('link', { name: 'Verordnungen' }).click();
+    await expect(page).toHaveURL(`${AKTE}/verordnungen`);
+    await expect(page.getByRole('heading', { name: 'Aktuelle Verordnungen' })).toBeVisible();
+    await expect(kopf).toBeVisible();
+
+    // Zurueck auf die Uebersicht.
+    await navigation.getByRole('link', { name: 'Übersicht' }).click();
+    await expect(page).toHaveURL(AKTE);
+    await expect(page.getByRole('heading', { name: 'Nächste Termine' })).toBeVisible();
+  });
+});
+
+test.describe('AKTE-003: Termine mit Historie', () => {
+  test('zeigt einen angelegten Termin unter den kommenden Terminen', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    const terminId = await terminAnlegen(page, laufTag());
+
+    await page.goto(`${AKTE}/termine`);
+    await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Vergangene Termine' })).toBeVisible();
+
+    // Genau dieser Termin - andere Laeufe hinterlassen weitere.
+    await expect(page.locator(`a[href="/termine/${terminId}"]`).first()).toBeVisible();
+  });
+
+  test('uebergibt den Patientenfilter an den Kalender', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    await terminAnlegen(page, laufTag(1));
+
+    await page.goto(`${AKTE}/termine`);
+    await page.getByRole('link', { name: 'Im Kalender zeigen' }).click();
+
+    await expect(page).toHaveURL(new RegExp(`patient=${PATIENTEN.max}`));
+    await expect(page.getByText(/Nur die Termine von/)).toBeVisible();
+
+    // Der Filter laesst sich aufheben, ohne die Ansicht zu verlassen.
+    await page.getByRole('button', { name: 'Filter aufheben' }).click();
+    await expect(page.getByText(/Nur die Termine von/)).toHaveCount(0);
+  });
+});
+
+test.describe('AKTE-002: Verordnung und Termine finden einander', () => {
+  test('fuehrt von der Verordnung zu ihren Terminen und zurueck', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    await page.goto(`/patienten/${PATIENTEN.erika}/verordnungen`);
+
+    // Die Zahlen stehen getrennt da: Einheiten aus den Positionen, Termine
+    // von den Terminen (ANN-038).
+    await expect(page.getByText('Leistungseinheiten').first()).toBeVisible();
+    await expect(page.getByText('Noch planbar').first()).toBeVisible();
+
+    const zuDenTerminen = page.getByRole('link', { name: 'Termine dieser Verordnung' }).first();
+    if ((await zuDenTerminen.count()) > 0) {
+      await zuDenTerminen.click();
+      await expect(page).toHaveURL(/\/termine\?verordnung=[0-9a-f-]{36}$/);
+      await expect(page.getByText('Nur die Termine einer Verordnung.')).toBeVisible();
+
+      await page.getByRole('link', { name: 'Zur Verordnung' }).click();
+      await expect(page).toHaveURL(/\/verordnungen#verordnung-[0-9a-f-]{36}$/);
+    }
+  });
+});

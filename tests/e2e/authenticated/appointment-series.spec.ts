@@ -74,7 +74,7 @@ test.describe('CAL-007: Terminserie', () => {
 
   test('ist aus der Akte an der Verordnung erreichbar', async ({ page }) => {
     await anmelden(page, KONTEN.office);
-    await page.goto(`/patienten/${PATIENTEN.erika}`);
+    await page.goto(`/patienten/${PATIENTEN.erika}/verordnungen`);
 
     await page.getByRole('link', { name: 'Terminserie anlegen' }).first().click();
     await expect(page).toHaveURL(/\/verordnungen\/[0-9a-f-]{36}\/serie$/);
