@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -8,8 +9,10 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentTypeLabels,
+  fetchAssignableTherapists,
   formatLocalDate,
   formatLocalTimeRange,
+  todayInTimeZone,
 } from '@/features/appointments/api';
 import {
   canManageStaffAccounts,
@@ -27,6 +30,33 @@ import {
   staffFullName,
   type StaffMember,
 } from './api';
+
+/**
+ * Eine Kontaktangabe als Weg, nicht als Text (UX-012).
+ *
+ * Dieselbe Entscheidung wie in der Patientenakte (Oberflächen-Checkliste
+ * Punkt 8): Wer im Mitarbeiterdatensatz nachsieht, will in aller Regel gleich
+ * anrufen oder schreiben - und tippt die Nummer sonst am Handy ab.
+ */
+function KontaktZeile({
+  label,
+  wert,
+  schema,
+}: {
+  label: string;
+  wert: string | null;
+  schema: 'tel' | 'mailto';
+}) {
+  if (!wert) return <DetailRow label={label}>—</DetailRow>;
+  const ziel = schema === 'tel' ? `tel:${wert.replace(/[^+\d]/g, '')}` : `mailto:${wert}`;
+  return (
+    <DetailRow label={label}>
+      <a className="text-accent hover:underline" href={ziel}>
+        {wert}
+      </a>
+    </DetailRow>
+  );
+}
 
 /**
  * Liste der Termine, die eine Deaktivierung offen ließe.
@@ -141,6 +171,21 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
 }
 
 function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser }) {
+  /**
+   * Kalender und Arbeitszeiten stehen nur zur Verfügung, wenn diese Person
+   * überhaupt behandelt (UX-012).
+   *
+   * Beide Ziele arbeiten über `staff_member_id` und kennen nur zuordenbare
+   * Personen. Für das Office führten sie auf eine leere Spalte und eine
+   * Auswahl ohne passenden Eintrag - ein Angebot, das keins ist.
+   */
+  const therapeuten = useQuery({
+    queryKey: ['assignable-therapists'],
+    queryFn: fetchAssignableTherapists,
+    retry: false,
+  });
+  const behandelt = (therapeuten.data ?? []).some((t) => t.staff_member_id === staff.id);
+  const zone = user.organizationTimeZone;
   // Zwei getrennte Rechte seit E10: Stammdaten pflegt auch das Office, den
   // Beschaeftigungsstatus wechselt nur die Praxisinhaberin.
   const darfStammdaten = canManageStaffMasterData(user.roles);
@@ -176,10 +221,32 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
 
       <Section titel="Dienstlich">
         <DetailList>
-          <DetailRow label="Diensttelefon">{staff.work_phone ?? '—'}</DetailRow>
-          <DetailRow label="Dienstliche E-Mail">{staff.work_email ?? '—'}</DetailRow>
+          <KontaktZeile label="Diensttelefon" wert={staff.work_phone} schema="tel" />
+          <KontaktZeile label="Dienstliche E-Mail" wert={staff.work_email} schema="mailto" />
           <DetailRow label="Hauptstandort">{staff.primary_location_name ?? '—'}</DetailRow>
           <DetailRow label="Beschäftigung">{aktiv ? 'Aktiv' : 'Inaktiv'}</DetailRow>
+          {/* Die beiden Fragen, die am Mitarbeiterdatensatz tatsächlich
+              anschließen: „wann arbeitet die Person" und „was hat sie vor".
+              Beide waren vorher nur über die Hauptnavigation und eine erneute
+              Auswahl erreichbar (UX-012). */}
+          {behandelt ? (
+            <DetailRow label="Planung">
+              <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <Link
+                  to={`/kalender?ansicht=woche${zone ? `&datum=${todayInTimeZone(zone)}` : ''}&person=${staff.id}`}
+                  className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+                >
+                  Woche im Kalender
+                </Link>
+                <Link
+                  to={`/praxis/planung?person=${staff.id}`}
+                  className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+                >
+                  Arbeitszeiten
+                </Link>
+              </span>
+            </DetailRow>
+          ) : null}
         </DetailList>
       </Section>
 
@@ -187,8 +254,8 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
         <Section titel="Privat">
           <DetailList>
             <DetailRow label="Geburtsdatum">{formatDate(staff.date_of_birth)}</DetailRow>
-            <DetailRow label="Privattelefon">{staff.private_phone ?? '—'}</DetailRow>
-            <DetailRow label="Private E-Mail">{staff.private_email ?? '—'}</DetailRow>
+            <KontaktZeile label="Privattelefon" wert={staff.private_phone} schema="tel" />
+            <KontaktZeile label="Private E-Mail" wert={staff.private_email} schema="mailto" />
             <DetailRow label="Adresse">{adresse || '—'}</DetailRow>
           </DetailList>
         </Section>
@@ -224,12 +291,7 @@ export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <Link
-        to="/praxis/team"
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zurück zu den Mitarbeitenden
-      </Link>
+      <Rueckweg standard="/praxis/team" beschriftung="Zurück zu den Mitarbeitenden" />
 
       {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" /> : null}
       {isError ? <ErrorState title="Die Mitarbeiterdaten konnten nicht geladen werden." /> : null}

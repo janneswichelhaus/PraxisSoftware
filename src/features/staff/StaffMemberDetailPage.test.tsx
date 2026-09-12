@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
+import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModule from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -28,6 +29,18 @@ const aktiv: StaffApi.StaffMember = {
 const fetchStaffMember = vi.fn();
 const setStaffEmploymentStatus = vi.fn();
 const fetchStaffFutureAppointments = vi.fn();
+const fetchAssignableTherapists = vi.fn();
+
+// Kalender und Arbeitszeiten kennen nur zuordenbare Personen (UX-012); die
+// Seite fragt deshalb, ob diese Person ueberhaupt behandelt.
+vi.mock('@/features/appointments/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    fetchAssignableTherapists: () =>
+      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
+  };
+});
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof StaffApi>();
@@ -65,6 +78,53 @@ describe('StaffMemberDetailPage', () => {
     fetchStaffMember.mockResolvedValue(aktiv);
     setStaffEmploymentStatus.mockResolvedValue(undefined);
     fetchStaffFutureAppointments.mockResolvedValue([]);
+    fetchAssignableTherapists.mockReset();
+    fetchAssignableTherapists.mockResolvedValue([
+      { staff_member_id: STAFF_ID, display_name: 'Anna Beispiel' },
+    ]);
+  });
+
+  // ---------------------------------------------------------------------------
+  // UX-012: Der Datensatz ist der Ausgangspunkt fuer das, was mit dieser Person
+  // zu tun ist - anrufen, schreiben, nachsehen wann sie arbeitet.
+  // ---------------------------------------------------------------------------
+  describe('Kontakt und Planung', () => {
+    it('bietet Diensttelefon und dienstliche E-Mail als Weg an', async () => {
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Anna Beispiel' });
+
+      expect(screen.getByRole('link', { name: '+49 7071 0000102' })).toHaveAttribute(
+        'href',
+        'tel:+4970710000102',
+      );
+      expect(screen.getByRole('link', { name: 'anna.beispiel@praxis.invalid' })).toHaveAttribute(
+        'href',
+        'mailto:anna.beispiel@praxis.invalid',
+      );
+    });
+
+    it('fuehrt in die Woche im Kalender und zu den Arbeitszeiten dieser Person', async () => {
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Anna Beispiel' });
+
+      const kalender = await screen.findByRole('link', { name: 'Woche im Kalender' });
+      expect(kalender.getAttribute('href')).toContain(`person=${STAFF_ID}`);
+      expect(kalender.getAttribute('href')).toContain('ansicht=woche');
+      expect(screen.getByRole('link', { name: 'Arbeitszeiten' })).toHaveAttribute(
+        'href',
+        `/praxis/planung?person=${STAFF_ID}`,
+      );
+    });
+
+    it('bietet beides nicht an, wenn die Person gar nicht behandelt', async () => {
+      fetchAssignableTherapists.mockResolvedValue([]);
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Anna Beispiel' });
+
+      await waitFor(() => expect(fetchAssignableTherapists).toHaveBeenCalled());
+      expect(screen.queryByRole('link', { name: 'Woche im Kalender' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Arbeitszeiten' })).not.toBeInTheDocument();
+    });
   });
 
   it('zeigt die dienstlichen Angaben', async () => {

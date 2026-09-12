@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
@@ -535,14 +536,38 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
+  /**
+   * Die gewählte Person steht in der Adresszeile (UX-012).
+   *
+   * Damit führt ein Weg aus dem Mitarbeiterdatensatz direkt auf **diese**
+   * Arbeitszeiten, statt auf die Seite mit der ersten Person - und der Stand
+   * überlebt ein Neuladen wie im Kalender. Ein unbekannter oder verstellter
+   * Wert fällt still auf die erste Person zurück.
+   */
+  const [suche, setSuche] = useSearchParams();
+  const gewuenscht = suche.get('person');
+
   const [person, setPerson] = useState('');
 
   // Ohne Vorauswahl bliebe die Seite leer. Die erste Person ist eine
   // Darstellungsentscheidung, keine fachliche.
   useEffect(() => {
-    const erste = therapeuten.data?.[0];
-    if (erste) setPerson((bisher) => (bisher === '' ? erste.staff_member_id : bisher));
-  }, [therapeuten.data]);
+    const liste = therapeuten.data;
+    if (!liste || liste.length === 0) return;
+    const ausAdresse = liste.find((t) => t.staff_member_id === gewuenscht);
+    setPerson((bisher) => {
+      if (ausAdresse) return ausAdresse.staff_member_id;
+      if (bisher !== '') return bisher;
+      return liste[0]!.staff_member_id;
+    });
+  }, [therapeuten.data, gewuenscht]);
+
+  function personWaehlen(staffMemberId: string) {
+    setPerson(staffMemberId);
+    const naechste = new URLSearchParams(suche);
+    naechste.set('person', staffMemberId);
+    setSuche(naechste, { replace: true });
+  }
 
   return (
     <>
@@ -565,7 +590,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
             <Select
               label="Behandelnde Person"
               value={person}
-              onChange={(e) => setPerson(e.target.value)}
+              onChange={(e) => personWaehlen(e.target.value)}
             >
               {therapeuten.data.map((t) => (
                 <option key={t.staff_member_id} value={t.staff_member_id}>

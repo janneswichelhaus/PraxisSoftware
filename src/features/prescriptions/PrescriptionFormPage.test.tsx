@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import type * as PrescriptionsApi from './api';
 import type * as RouterModule from 'react-router-dom';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
-import { renderWithProviders } from '@/test-utils';
+import type * as PatientsApi from '@/features/patients/api';
+import { renderWithProviders, testPatient } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const PRESCRIPTION_ID = '88888888-8888-4888-8888-000000000002';
@@ -17,6 +18,17 @@ const createPrescription = vi.fn();
 const updatePrescription = vi.fn();
 const deletePrescription = vi.fn();
 const navigate = vi.fn();
+const fetchPatient = vi.fn();
+
+// Der Patientenkontext im Kopf des Formulars (UX-012): dieselbe Abfrage wie in
+// der Akte, damit sie aus dem Zwischenspeicher kommt.
+vi.mock('@/features/patients/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof PatientsApi>();
+  return {
+    ...actual,
+    fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
+  };
+});
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PrescriptionsApi>();
@@ -111,12 +123,23 @@ async function formularAusfuellen(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('NewPrescriptionPage', () => {
+  // UX-012: Eine Verordnung traegt Diagnose und Therapieziel - sie in der
+  // falschen Akte zu erfassen ist der teuerste Irrtum dieses Formulars.
+  it('nennt die Patient:in, fuer die geschrieben wird', async () => {
+    renderWithProviders(<NewPrescriptionPage />);
+
+    expect(await screen.findByText(/Für Max Mustermann/)).toBeInTheDocument();
+  });
   beforeEach(() => {
     fetchPrescribers.mockReset();
     fetchPrescribers.mockResolvedValue([verordner]);
     createPrescription.mockReset();
     createPrescription.mockResolvedValue('neue-id');
     navigate.mockReset();
+    fetchPatient.mockReset();
+    fetchPatient.mockResolvedValue(
+      testPatient({ id: PATIENT_ID, given_name: 'Max', family_name: 'Mustermann' }),
+    );
   });
 
   it('haelt fehlende Pflichtangaben im Formular auf', async () => {
@@ -151,7 +174,9 @@ describe('NewPrescriptionPage', () => {
       { id: null, remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: 0 },
     ]);
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}`, { replace: true }),
+      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/verordnungen`, {
+        replace: true,
+      }),
     );
   });
 
@@ -310,7 +335,9 @@ describe('EditPrescriptionPage', () => {
     await user.click(screen.getByRole('button', { name: 'Ja, Verordnung löschen' }));
     await waitFor(() => expect(deletePrescription).toHaveBeenCalledWith(PRESCRIPTION_ID));
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}`, { replace: true }),
+      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/verordnungen`, {
+        replace: true,
+      }),
     );
   });
 
