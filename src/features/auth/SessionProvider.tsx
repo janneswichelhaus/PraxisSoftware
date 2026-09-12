@@ -34,7 +34,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       session,
       initialising,
       signOut: async () => {
-        await getSupabase().auth.signOut();
+        // `scope: 'local'` ausdrücklich, nicht als Weglassung (ANN-044).
+        // supabase-js hat den Default `{ scope: 'global' }` - ohne diese
+        // Angabe beendete der gewöhnliche Abmelden-Knopf die Sitzungen auf
+        // allen Geräten. Damit wäre der Satz „Angemeldete Geräte bleiben
+        // angemeldet" auf „Mein Konto" falsch und „Alle Sitzungen beenden"
+        // ohne eigenen Zweck. Wer am Praxisrechner Feierabend macht, meldet
+        // nicht sein Diensttelefon mit ab.
+        await getSupabase().auth.signOut({ scope: 'local' });
         // Verordnungsentwürfe sind an die abmeldende Person gebunden (VER-003,
         // ANN-019) und sollen keine spätere Anmeldung in diesem Tab betreffen.
         alleEntwuerfeVerwerfen();
