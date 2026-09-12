@@ -7,6 +7,7 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { MitteilungVermerken } from './MitteilungVermerken';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -418,6 +419,15 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
             laufend="Wird geöffnet …"
             variant="secondary"
           />
+        </div>
+      ) : null}
+
+      {/* „Ist der Termin schon mitgeteilt?" ist eine organisatorische Frage am
+          bevorstehenden Termin - an einem abgesagten oder abgeschlossenen gibt
+          es nichts mehr mitzuteilen (CAL-012). */}
+      {darfVerwalten && appointment.status === 'confirmed' ? (
+        <div className="mt-8">
+          <MitteilungVermerken appointment={appointment} />
         </div>
       ) : null}
 

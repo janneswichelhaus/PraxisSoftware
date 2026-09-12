@@ -143,6 +143,9 @@ describe('list_patient_upcoming_appointments', () => {
       'appointment_type',
       'ends_at',
       'id',
+      // Die Mitteilungswege kamen mit CAL-012 dazu: nur die Wege, nicht wer
+      // wann vermerkt hat.
+      'notification_channels',
       'organization_time_zone',
       'staff_family_name',
       'staff_given_name',

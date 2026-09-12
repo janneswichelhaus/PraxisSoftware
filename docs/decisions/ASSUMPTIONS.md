@@ -2,6 +2,31 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
+- **CAL-013 bringt ANN-041 neu** (Termine per E-Mail): Die Praxis wird
+  Terminmails verschicken — Jannes hat das am 2026-09-12 ausdrücklich
+  vorgesehen und damit seine eigene vorläufige Entscheidung zu B15 in einem
+  Punkt geändert. Gebaut ist ein **Handoff**: Die Anwendung baut den Entwurf
+  und übergibt ihn dem Mailprogramm der Praxis, gesendet wird dort von Hand.
+  Kein neuer Dienstleister, keine automatische Erinnerung. `Datenschutz` und
+  damit im Prüfpaket — offen bleibt der **dokumentierte Wunsch je Patient:in**
+  (PAT-006).
+- **ANN-040 ist am 2026-09-12 in Punkt 1 geändert** (siehe dort): „Die
+  Anwendung verschickt weiterhin nichts" galt für den Vermerk als reine
+  Nachhut. Seit CAL-013 entsteht der Weg `email` auch aus der Übergabe ans
+  Mailprogramm; die übrigen drei Festlegungen gelten unverändert.
+- **CAL-012 bringt ANN-040 neu** (Mitteilungsvermerk am Termin): vier Wege,
+  Verfall mit jeder Terminänderung, Auditeintrag. `Datenschutz`
+  und damit im Prüfpaket — offen ist insbesondere, ob der Weg „per E-Mail
+  mitgeteilt" in der Auswahl bleiben soll.
+- **CAL-EPIC-003b bringt ANN-037 bis ANN-039 neu, und Jannes hat alle drei am
+  2026-09-12 wie empfohlen bestätigt:** geprüft wird die Länge des
+  Terminfensters statt des Zeitpunkts, „verplant ist nicht genutzt" samt
+  Rhythmen und Obergrenze der Serie, und der Terminzettel bleibt ein Ausdruck
+  ohne Versand. **ANN-037 und ANN-038 sind `Praxisprozess` und damit
+  erledigt**; sie kommen nur mit E12 beziehungsweise ABR-002 zurück.
+  **ANN-039 ist `Datenschutz` und bleibt im Prüfpaket** — die Bestätigung des
+  Projektinhabers ersetzt die Datenschutzprüfung nicht
+  (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). Er gehört damit in die Anfrage B2.
 - **CAL-EPIC-003a bringt ANN-034 bis ANN-036 neu, und Jannes hat alle drei am
   2026-09-12 wie empfohlen bestätigt:** Absagegrund als codierte Auswahl ohne
   Freitext, No-show unter der Frist der abgesagten Termine (mit gesetztem
@@ -198,6 +223,11 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen |
 | ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
 | ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
+| ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit E12 Punkt 1 und 2 |
+| ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-002 |
+| ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); Versandweg mit B15 |
+| ANN-040 | Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
+| ANN-041 | Termin-E-Mail als Handoff ins eigene Mailprogramm: Inhalt, Betreff, Längengrenze, Vermerk auf die Übergabe | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -2066,3 +2096,405 @@ leer") samt der Invariantenprüfung über alle Termine.
 automatische Finalisierung bräuchte dann eine eigene Antwort auf dieselbe
 Frage — Aufwand `klein` im Code, aber eine neue fachliche Entscheidung für den
 Scheduler-Fall.
+
+---
+
+### ANN-037 — Geprüft wird die Länge des Terminfensters, nicht der Zeitpunkt
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-010a; `PROJECT_PRINCIPLES.md` §8.1 („neu gesetztes Zeitfenster" gegen „Bestehende Termine werden nicht rückwirkend verändert") |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Praxisprozess`, damit erledigt |
+| Wiedervorlage | nur noch mit E12 Punkt 1 und 2 (begründete Abweichung von 60 Minuten, Länge je Praxis einstellbar) |
+
+**Annahme.** `create_appointment` verlangt **immer** ein Zeitfenster von 60
+Minuten. `update_appointment` prüft die Länge **genau dann, wenn sie sich
+ändert**. Ein Bestandstermin mit abweichender Länge bleibt damit gültig,
+organisatorisch bearbeitbar **und verschiebbar**, solange seine Länge
+unangetastet bleibt; wer sie ändert, bekommt die 60 Minuten. Im
+Bearbeitungsformular zieht ein geänderter Beginn das Ende mit der **bisherigen**
+Länge mit; ein eigener Knopf setzt den Termin ausdrücklich auf das
+Terminfenster.
+
+**Begründung.** §8.1 sagt zwei Dinge, die sich beim Verschieben eines
+Bestandstermins nicht beide wörtlich halten lassen. „Geprüft wird das
+Zeitfenster, wenn es neu gesetzt wird" spricht für eine Prüfung bei jeder
+Zeitänderung. Der Abschnitt „Bestehende Termine" sagt dagegen: Ein Termin mit
+anderer Länge „bleibt gültig, sichtbar und bearbeitbar", und „die Anwendung
+DARF ihn NICHT selbsttätig verlängern, verkürzen oder verschieben."
+
+Beide Alternativen verletzen den zweiten Satz: Ein Verschieben, das die Länge
+auf 60 Minuten zieht, verlängert den Termin selbsttätig; ein Verschieben, das
+abgewiesen wird, macht ihn unbeweglich und damit nicht mehr „bearbeitbar". Die
+Auflösung nach Rang gibt dem stärkeren Verbot recht — der Bestandsschutz ist
+als Verbot formuliert, die Prüfregel als Zeitpunktangabe.
+
+Die MUSS-Anforderung bleibt dabei vollständig durchgesetzt: Es gibt **keinen**
+Weg, ein Zeitfenster mit einer anderen Länge als 60 Minuten **neu** entstehen
+zu lassen. Bestehen bleiben kann eine abweichende Länge nur dort, wo §8.1 sie
+ausdrücklich bestehen lässt. **Unsicher:** ob Jannes lieber hätte, dass ein
+verschobener Altfall die 60 Minuten gleich mitbekommt — das wäre bequemer und
+widerspräche dem Verbot.
+
+**Nicht Bestandteil.** Ob es eine begründete Abweichung von den 60 Minuten
+geben soll und ob die Länge je Praxis einstellbar wird, sind **E12 Punkt 1 und
+2** und bleiben offen. CAL-010a baut deshalb ohne Ausnahmeparameter und mit
+einer festen Zahl (§16: im Zweifel die restriktivere Option).
+
+**Verankerung.** `app.appointment_window_minutes()` und die beiden
+Längenprüfungen in
+`supabase/migrations/20260912150000_appointment_window.sql` (Kopfkommentar und
+Funktionsrümpfe tragen die Kennung); `TERMINFENSTER_MINUTEN`,
+`fensterEnde` und `terminLaengeMinuten` in
+`src/features/appointments/api.ts`; die Ableitung im Formular in
+`AppointmentFormFields.tsx` und `EditAppointmentPage.tsx`. Tests in
+`supabase/tests/appointment-window.test.ts` (beide Schreibpfade, drei
+Bestandsfälle) und `src/features/appointments/EditAppointmentPage.test.tsx`.
+
+**Änderungspfad.** Strenger (jede Zeitänderung erzwingt 60 Minuten): die
+Bedingung `v_neu_laenge is distinct from v_alt_laenge` in
+`update_appointment` streichen und im Formular die Länge beim Verschieben auf
+`TERMINFENSTER_MINUTEN` ziehen — Aufwand `klein`, ohne Datenumzug. Lockerer
+(begründete Abweichung nach E12 Punkt 1): ein weiterer Parameter nach dem
+Muster von `p_allow_outside_working_hours` mit Auditvermerk — Aufwand `klein`
+bis `mittel`.
+
+---
+
+### ANN-038 — Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-007; die Roadmap verlangt „Anzahl aus dem Kontingent", ohne zu sagen, was das Kontingent verbraucht |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Praxisprozess`, damit erledigt |
+| Wiedervorlage | nur noch mit ABR-002: dort entscheidet sich, ob die genutzte Menge automatisch fortgeschrieben wird |
+
+**Annahme.** Drei Festlegungen, die zusammengehören:
+
+1. **Verplant ist nicht genutzt.** Ein Termin, der aus einer Verordnung
+   geplant wurde, trägt deren Kennung (`appointments.prescription_id`). Als
+   **offen** gilt `verordnet − max(genutzt, verplant)`: das Maximum, nicht die
+   Summe, weil eine durchgeführte Behandlung beides ist. Abgesagte Termine
+   zählen nicht als verplant; „nicht angetroffen" zählt mit. Die **genutzte**
+   Menge pflegt die Praxis unverändert von Hand (ANN-012) — CAL-007 schreibt
+   sie **nicht** fort, das bleibt ABR-002.
+2. **Das Kontingent begrenzt die Serie nicht.** Die Oberfläche schlägt das
+   offene Kontingent als Anzahl vor und weist auf eine Überschreitung hin; der
+   Server lässt sie zu. Wer die Folgeverordnung in Aussicht hat, plant zu Recht
+   darüber hinaus.
+3. **Drei Rhythmen, höchstens 30 Termine je Vorgang.** „Einmal pro Woche" (7
+   Tage), „Zweimal pro Woche" (3 und 4 Tage im Wechsel, also zwei feste
+   Wochentage) und „Alle zwei Wochen" (14 Tage). Einzelne Termine sind in der
+   Liste frei verschiebbar.
+
+**Begründung.** Zu 1: Ohne die Verknüpfung wäre „Anzahl aus dem Kontingent"
+beim **zweiten** Aufruf falsch — die Anwendung böte dieselben zehn Behandlungen
+erneut an. Eine Addition von genutzt und verplant wäre ebenso falsch, weil sie
+jede durchgeführte Behandlung doppelt zählte. Die genutzte Menge automatisch
+fortzuschreiben, wäre dagegen eine Aussage über die **Leistung** und gehört
+deshalb zur Leistungserfassung (ABR-002, ANN-012), nicht zum Kalender.
+
+Zu 2: Die harte Grenze sitzt bereits an der richtigen Stelle —
+`prescription_items_used_within_prescribed` verhindert, dass mehr abgerechnet
+wird als verordnet ist (VER-001). Eine zweite Grenze am Kalender würde
+alltägliche Planung blockieren, ohne die Abrechnung sicherer zu machen.
+**Unsicher:** ob Jannes stattdessen eine Rückfrage will („mehr als verordnet —
+trotzdem?").
+
+Zu 3: Die Rhythmen decken die Frequenzen ab, die auf den Verordnungen stehen
+(„1x pro Woche", „2x pro Woche"). Zweimal pro Woche als 3/4-Wechsel statt als
+3,5 Tage hält die Serie auf zwei festen Wochentagen — so steht sie im
+Terminkalender. Dreißig Termine sind rund ein halbes Jahr bei zwei Behandlungen
+je Woche; die Grenze begrenzt zugleich die Transaktion, die als „alles oder
+nichts" Sperren hält. **Unsicher:** ob eine Praxis mit Gebietstagen
+(`IDEA-PRX-031`) stattdessen feste Wochentage wählen will.
+
+**Verankerung.** `app.prescription_slot_counts()` und
+`app.appointment_series_limit()` in
+`supabase/migrations/20260912160000_appointment_series.sql` (Kopfkommentar und
+Funktionen tragen die Kennung); die Spalte
+`appointments.prescription_id` ebenda; `rhythmen` und `SERIE_HOECHSTZAHL` in
+`src/features/appointments/serie.ts`. Tests in
+`supabase/tests/appointment-series.test.ts` (Kontingentrechnung, Obergrenze,
+Serie über dem Kontingent) und `src/features/appointments/serie.test.ts`.
+
+**Änderungspfad.** Zu 1 — automatischer Verbrauch: ABR-002 schreibt
+`used_quantity` fort, die Rechnung in `app.prescription_slot_counts` fällt auf
+`verordnet − genutzt` zurück; Aufwand `mittel`, ohne Datenumzug. Zu 2 — harte
+Grenze: eine Prüfung in `create_appointment_series` gegen `remaining`; Aufwand
+`klein`. Zu 3 — weitere Rhythmen oder ein freier Abstand in Tagen: ein Eintrag
+in `rhythmen` beziehungsweise ein Zahlenfeld; Aufwand `klein`, die Serverseite
+nimmt die Tage ohnehin einzeln entgegen.
+
+---
+
+### ANN-039 — Terminzettel: Inhalt, nur Druck, kein Versand
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | CAL-011, `IDEA-PRX-006`; ADR-010 Punkt 2; `OPEN_DECISIONS.md` B15 |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; als `Datenschutz` **weiter im Prüfpaket** |
+| Wiedervorlage | Datenschutzprüfung (B2); der Versandweg mit B15 |
+
+**Annahme.** Der Terminzettel ist ein Ausdruck, der die Praxis in der Hand
+einer Patient:in verlässt. Drei Festlegungen dazu:
+
+1. **Inhalt.** Name der Patient:in, und je Termin Datum, Uhrzeit, Ort und die
+   behandelnde Person. **Nicht** darauf: Terminstatus, Verordnung, Diagnose,
+   Behandlungsinhalt und die Hausbesuchsadresse. Die Adresse ist ihre eigene;
+   der Ort steht als „bei Ihnen zu Hause". Ausgegeben werden nur **bestätigte
+   künftige** Termine.
+2. **Nur Druck, kein Versand.** Kein Knopf für E-Mail oder SMS. Eine
+   Terminliste in Verbindung mit einer Praxis ist ein Gesundheitsdatum
+   (Art. 9 DSGVO); ein Versandweg braucht einen Dienstleister, eine
+   Rechtsgrundlage und eine Einwilligung — das ist **B15** und offen
+   (`PROJECT_PRINCIPLES.md` §3.5).
+3. **Der Aufruf wird protokolliert.** Die Seite hat eine eigene Adresse; ohne
+   Eintrag ließe sich Name und Terminlage offenlegen, ohne dass eine Spur
+   bliebe. Geschrieben wird das bestehende `patient_record.viewed` mit dem
+   Kontext `view: 'appointment_slip'` — kein neues Ereignis im Katalog
+   (ADR-010 Punkt 2).
+
+**Begründung.** Zu 1: Was auf Papier steht, lässt sich nicht zurückrufen. Der
+Zettel beantwortet genau eine Frage — „wann bin ich wieder dran und wo" — und
+alles darüber hinaus wäre eine Offenlegung ohne Zweck (§5,
+`PROJECT_PRINCIPLES.md` §4.6). Der Status gehört nicht dazu, weil ohnehin nur
+bestätigte Termine ausgegeben werden; ein abgesagter Termin auf einem Zettel
+zum Mitnehmen wäre irreführend.
+
+Zu 2: `IDEA-PRX-006` nennt den Versand als Idee und sagt selbst „kein Versand
+ohne B15". §3.5 verlangt für jeden Dienstleister mit Zugang zu Patientendaten
+eine Prüfung; dieser Loop legt keinen an.
+
+Zu 3: ADR-010 Punkt 2 verlangt das Öffnen einer Patientenakte als
+auditierbares Ereignis. Der Zettel ist fachlich derselbe Blick über eine andere
+Adresse. Ein eigener Ereignistyp hätte den Katalog verlängert, ohne mehr zu
+sagen; der Kontext unterscheidet die beiden Wege trotzdem. **Unsicher:** ob
+die Datenschutzprüfung den Ausdruck lieber als eigenes Ereignis („Dokument
+ausgegeben") sähe — dann wäre er in einem Audit-Report leichter zu zählen.
+
+**Keine Wortmarke auf dem Zettel:** `marke/README.md` regelt das bereits und
+ist dafür die einzige Quelle — die Druckregeln blenden die Kopfzeile aus, und
+die Marke auf Papier kommt innerhalb der Anwendung erst mit ABR-000. Das ist
+keine Annahme, sondern eine bestehende Festlegung.
+
+**Verankerung.** `public.list_patient_appointment_slip()` in
+`supabase/migrations/20260912170000_appointment_slip.sql` (Kopfkommentar und
+Funktion tragen die Kennung, Spaltenliste und Auditeintrag sind die Grenze);
+`src/features/appointments/AppointmentSlipPage.tsx`. Tests in
+`supabase/tests/appointment-slip.test.ts` (Inhalt, Auditeintrag, Rollen) und
+`src/features/appointments/AppointmentSlipPage.test.tsx`.
+
+**Änderungspfad.** Mehr oder weniger Inhalt: die Spaltenliste der Funktion und
+die Darstellung; Aufwand `klein`. Versand nach B15: ein Anbieter mit Prüfung
+nach §3.5, eine Einwilligung je Patient:in und ein eigener Schreibpfad mit
+eigenem Auditereignis; Aufwand `groß` und ein eigenes Epic. Eigenes
+Auditereignis: ein Eintrag im Katalog (Constraint, `AUDIT_ACTIONS`, Beschriftung)
+und ein geänderter `insert`; Aufwand `klein`.
+
+---
+
+### ANN-040 — Mitteilungsvermerk: vier Wege, kein Versand, verfällt mit jeder Terminänderung
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | CAL-012 (Auftrag von Jannes, 2026-09-12, nach dem Vorbild von iPrax); `OPEN_DECISIONS.md` B15; ADR-010 |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes und die Datenschutzprüfung steht aus |
+| Wiedervorlage | Datenschutzprüfung (B2); der Weg `email` zusätzlich mit B15 und PAT-006 |
+
+**Annahme.** Ein Termin trägt einen Vermerk, **ob** und **auf welchem Weg** er
+der Patient:in mitgeteilt wurde. Vier Festlegungen:
+
+1. ~~**Die Anwendung verschickt weiterhin nichts.** Der Vermerk beschreibt
+   einen Vorgang **außerhalb** der Anwendung. Auch `email` heißt „die Praxis
+   hat die Nachricht selbst geschrieben" — es gibt keinen Versandknopf, keinen
+   Dienstleister und keine Einwilligung (§3.5, B15).~~
+   **Geändert am 2026-09-12 (CAL-013, ANN-041).** Jannes hat den Versand von
+   Terminmails ausdrücklich vorgesehen. Der Weg `email` entsteht seitdem auch
+   aus der Anwendung heraus — als Übergabe eines fertigen Entwurfs an das
+   Mailprogramm der Praxis. **Unverändert bleibt:** Es gibt keinen
+   Dienstleister und keinen automatischen Versand; die Anwendung sieht die
+   Übergabe, nicht den Versand. Der Vermerk bleibt damit, was er war — eine
+   Aussage der Praxis darüber, was sie getan hat. Die Punkte 2 bis 4 gelten
+   unverändert.
+2. **Vier Wege:** persönlich gesagt, telefonisch mitgeteilt, Terminzettel
+   ausgehändigt, per E-Mail mitgeteilt. **`sms` und `messenger` fehlen
+   bewusst** — Messenger ist nach B15 ausgeschlossen, SMS gibt es nicht, und
+   ein Wert ohne Schreiber wäre Vorbau (ADR-014).
+3. **Der Vermerk verfällt mit jeder Terminänderung.** Gültig ist er nur,
+   solange `notified_at >= appointments.updated_at`. Gelöscht wird dabei
+   nichts: Der alte Vermerk bleibt als Historie stehen und wird nur ungültig.
+4. **Der Vorgang ist auditiert** (`appointment.notified`), mit den Wegen im
+   Kontext und ohne jeden Inhalt.
+
+**Begründung.** Zu 1 und 2: Die Wahl des Kanals bleibt Sache der Praxis. Die
+Anwendung **bewertet** sie nicht und **ermöglicht** sie nicht — sie hält fest,
+was geschehen ist. Genau deshalb ist der Vermerk kein neuer Verarbeitungsweg
+im Sinne von §3.5: Es entsteht kein Empfänger, der vorher keiner war.
+**Unsicher und deshalb im Prüfpaket:** ob die Datenschutzprüfung den Weg
+`email` in der Auswahl sehen will. Ein Termin per unverschlüsselter E-Mail ist
+eine Offenlegung von Gesundheitsdaten; die Auswahl macht sie sichtbar und
+nachvollziehbar, könnte aber auch als Ermutigung gelesen werden. Die
+Gegenposition wäre, `email` zu streichen und die Praxis auf Telefon und Zettel
+zu verweisen.
+
+Zu 3: Ein Vermerk, der eine verschobene Zeit überlebt, ist schlimmer als
+keiner — er behauptet, die Patient:in wisse Bescheid. Der Vergleich gegen
+`updated_at` löst das ohne jede Pflege: Es gibt keine Frist, keinen
+Aufräumlauf und keinen Weg, den Verfall zu vergessen. Die Kehrseite: „noch nie
+mitgeteilt" und „seit der Mitteilung geändert" sehen gleich aus. Das ist
+beabsichtigt — der Handlungsbedarf ist derselbe.
+
+Zu 4: Der Vermerk sagt aus, dass Termindaten die Praxis verlassen haben. Die
+Tabelle trägt zwar Zeitpunkt und Person, aber die Rücknahme entfernt eine
+Zeile; ohne Auditeintrag ließe sich das nicht nachvollziehen. Ein Ereignis
+statt zwei, weil immer die vollständige Menge gesetzt wird: Eine leere Liste
+im Kontext **ist** die Rücknahme.
+
+**Verankerung.** Tabelle `public.appointment_notifications`,
+`app.appointment_notification_channels()`,
+`public.set_appointment_notification()` und
+`public.add_appointment_notification()` in
+`supabase/migrations/20260912180000_appointment_notification.sql`
+(Kopfkommentar und Tabellenkommentar tragen die Kennung);
+`notificationChannelSchema` in `src/features/appointments/api.ts`;
+`MitteilungVermerken.tsx` und `Mitteilungszeichen.tsx`. Tests in
+`supabase/tests/appointment-notification.test.ts` (Verfall, Wertebereich,
+Audit, Rollen) und
+`tests/e2e/authenticated/appointment-notification.spec.ts`.
+
+**Änderungspfad.** Weg streichen oder ergänzen: ein Wert in der
+Check-Constraint, im Zod-Schema und in der Beschriftungstabelle — Aufwand
+`klein`; bereits gesetzte Vermerke des gestrichenen Weges müssten einmalig
+entfernt werden. Verfallsregel lockern (etwa nur bei Zeitänderungen): die
+Bedingung `notified_at >= a.updated_at` durch einen Vergleich gegen einen
+eigenen Zeitstempel ersetzen, den nur `update_appointment` bei Zeitänderungen
+bumpt — Aufwand `mittel`. Echter Versand nach B15: ein Anbieter mit Prüfung
+nach §3.5, eine Einwilligung je Patient:in und ein eigener Schreibpfad mit
+eigenem Auditereignis — Aufwand `groß` und ein eigenes Epic; dieser Vermerk
+wäre dann sein Ergebnis, nicht sein Ersatz.
+
+---
+
+### ANN-041 — Termin-E-Mail als Handoff ins eigene Mailprogramm
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | CAL-013 (Auftrag von Jannes, 2026-09-12); `OPEN_DECISIONS.md` B15; ADR-019 und ANN-018 (Handoff-Muster); `PROJECT_PRINCIPLES.md` §3.5, §10, §16 |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch die Datenschutzprüfung steht aus |
+| Wiedervorlage | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
+
+**Vorgeschichte.** Jannes hat am 2026-09-12 geschrieben: „Ich widerspreche
+möglicherweise früherer Planung, aber es ist ausdrücklich vorgesehen, dass die
+Praxis E-Mails versenden wird, welche die Termine beinhaltet." Das ändert
+seine eigene vorläufige Entscheidung zu B15 in **einem** Punkt — dazu B15.
+
+**Annahme.** Die Anwendung bietet an, die Termine einer Patient:in per E-Mail
+zu übermitteln. Sechs Festlegungen:
+
+1. **Handoff, kein Versand.** Die Anwendung baut eine `mailto:`-Adresse und
+   übergibt sie dem Mailprogramm der Praxis. Sie öffnet keine Verbindung,
+   spricht mit keinem Mailserver und speichert keine Nachricht. Gesendet wird
+   im Postfach der Praxis, von Hand.
+2. **Nur auf Aktion, nie automatisch.** Der Entwurf entsteht im Klickhandler,
+   wird nirgends gespeichert und nie von allein geöffnet.
+3. **Inhalt wie auf dem Zettel.** Datum, Uhrzeit, Ort, behandelnde Person —
+   genau die Felder von `list_patient_appointment_slip`. Kein Status, keine
+   Verordnung, keine Diagnose, keine Adresse. Der **Betreff** nennt weder
+   Praxis noch Fach: „Ihre nächsten Termine".
+4. **Das Risiko steht an der Stelle der Entscheidung.** Vor der Übergabe zeigt
+   die Oberfläche den vollständigen Text, die Empfängeradresse und den Satz,
+   dass eine E-Mail unterwegs nicht verschlüsselt ist und der Weg den
+   ausdrücklichen Wunsch der Patient:in voraussetzt.
+5. **Vermerkt wird die Übergabe, nicht der Versand** — und zwar **vor** ihr.
+   Scheitert der Vermerk, öffnet sich keine E-Mail. Die Anwendung kann nicht
+   sehen, ob die Nachricht abgeschickt wurde; der Text sagt das, und der
+   Vermerk lässt sich am Termin zurücknehmen (CAL-012).
+6. **Längengrenze statt stillem Abschneiden.** `mailto:` hat keine
+   standardisierte Höchstlänge; die Praxisgrenze liegt beim Weg über die
+   Kommandozeile des Betriebssystems. Der Entwurf bleibt unter 1800 Zeichen,
+   kürzt dafür von hinten und benennt, welche Termine nicht mitgehen. Vermerkt
+   wird nur, was tatsächlich im Text steht.
+
+**Begründung.**
+
+Zu 1 und 2: §3.5 verlangt vor der Freischaltung eines **Dienstleisters mit
+Zugang zu Patientendaten** eine dokumentierte Prüfung (AVV, §203 StGB,
+Verschlüsselung, Zugriffskontrolle, Retention, Unterauftragnehmer). Ein
+Handoff schaltet keinen frei: Die Nachricht entsteht im Postfach, das die
+Praxis ohnehin betreibt, und geht denselben Weg wie jede andere E-Mail der
+Praxis. Es entsteht kein Empfänger, der vorher keiner war. Das ist genau die
+Konstruktion, die ADR-019 für die Navigation gewählt hat (ANN-018: „der
+Handoff übermittelt nichts aus der Anwendung … Bedingung: nur auf Aktion, nie
+automatisch"). **Das Postfach der Praxis selbst bleibt prüfpflichtig** — es
+ist nur nichts, was diese Anwendung freischaltet, sondern eine
+Organisationsfrage für die DSFA (ADR-007, B2).
+
+Zu 3 und 4: Eine Terminliste ist ein Gesundheitsdatum — sie sagt, dass jemand
+in Behandlung ist. Die DSK-Orientierungshilfe „Maßnahmen zum Schutz
+personenbezogener Daten bei der Übermittlung per E-Mail" (Stand 16.06.2021)
+verlangt für Daten mit hohem Risiko, und dazu zählen Gesundheitsdaten,
+Ende-zu-Ende-Verschlüsselung **und** qualifizierte Transportverschlüsselung.
+Anerkannt ist zugleich der Weg über den **ausdrücklichen Wunsch der
+betroffenen Person nach Aufklärung über das Risiko** — die Empfehlungen der
+Landesdatenschutzbehörden für Arztpraxen und die „Hinweise und Empfehlungen
+zur ärztlichen Schweigepflicht, Datenschutz und Datenverarbeitung in der
+Arztpraxis" (Bundesärztekammer/KBV) beschreiben ihn so. **Unsicher und
+deshalb ausdrücklich im Prüfpaket:** Dieselben Quellen sagen, dass die Pflicht
+zu einem angemessenen Schutzniveau nicht durch eine Vereinbarung zwischen
+Praxis und Patient:in **abgesenkt** werden kann. Die Antwort dieser Annahme
+ist deshalb keine Einwilligung, die alles erlaubt, sondern
+**Datenminimierung**: Was verschickt wird, ist die organisatorische
+Mindestangabe, und der Betreff verrät nichts. Empfänger ist ausschließlich die
+betroffene Person selbst; gegenüber ihr gibt es kein Offenbaren im Sinne von
+§203 StGB.
+
+Zu 5: Eine Anwendung, die den Versand behauptet, den sie nicht beobachten
+kann, wäre unehrlich — und der Vermerk wäre wertlos, sobald er einmal falsch
+war. Vor der Übergabe zu vermerken ist die restriktivere Reihenfolge (§16):
+Der Fehlerfall ist „vermerkt, aber nicht gesendet", und der ist sichtbar und
+rücknehmbar; die Umkehrung wäre „gesendet, aber nicht vermerkt" und bliebe
+unbemerkt. Dieselbe Reihenfolge gilt seit CAL-012 beim Druck.
+
+Zu 6: Ein Mailprogramm, das eine zu lange Adresse abschneidet, meldet das
+nicht. Die Patient:in bekäme weniger Termine, als die Praxis vermerkt hat —
+ein Vermerk, der eine Mitteilung behauptet, die nicht stattgefunden hat.
+
+**Was diese Annahme ausdrücklich NICHT tut.** Sie führt keine automatische
+Terminerinnerung ein, keinen Versanddienstleister, keinen SMS- oder
+Messenger-Weg und keine Massenaussendung. Ein Klick ergibt eine Nachricht an
+eine Person.
+
+**Was offen bleibt.** Der **dokumentierte Wunsch je Patient:in**. Heute steht
+die Bedingung als Satz neben dem Knopf, und die Auslösung ist auditiert
+(`appointment.notified` mit dem Weg `email`) — festgehalten ist damit, **dass**
+und **wann** übergeben wurde, nicht **dass die Patient:in es gewünscht hat**.
+Ein eigenes Kennzeichen dafür gehört zu PAT-006 (Einwilligungen) und wäre
+hier Vorbau (ADR-014). Die Datenschutzprüfung entscheidet, ob der Satz reicht
+oder ein Kennzeichen her muss.
+
+**Verankerung.** `src/features/appointments/terminmail.ts` — Kopfkommentar und
+Konstanten tragen die Kennung; dort stehen Inhalt, Betreff, Längengrenze und
+die Übergabe. Oberfläche in
+`src/features/appointments/TermineMailen.tsx`, eingebunden in
+`AppointmentSlipPage.tsx`. Tests in
+`src/features/appointments/terminmail.test.ts` (Inhalt, Kodierung,
+Kopfzeilen-Injektion, Kürzung),
+`src/features/appointments/TermineMailen.test.tsx` (Reihenfolge von Vermerk
+und Übergabe, Abbruch, fehlende Adresse) und
+`tests/e2e/authenticated/appointment-notification.spec.ts`.
+
+**Änderungspfad.** Inhalt oder Betreff ändern: `terminMailText` und
+`MAIL_BETREFF` — Aufwand `klein`. Den Weg ganz zurücknehmen: `TermineMailen`
+aus `AppointmentSlipPage.tsx` entfernen, die beiden Dateien löschen; der Weg
+`email` bleibt als Vermerk von Hand bestehen — Aufwand `klein`, keine
+Datenmigration. Einen dokumentierten Wunsch je Patient:in verlangen: ein
+Kennzeichen in den Kontaktdaten, gesetzt über `update_patient`, plus die
+Bedingung in `TermineMailen` — Aufwand `mittel`, gehört zu PAT-006. Echter
+Versand aus der Anwendung (Dienstleister, Warteschlange, Zustellstatus):
+Aufwand `groß`, eigenes Epic, setzt B15 und eine Prüfung nach §3.5 voraus.

@@ -50,7 +50,7 @@ function laufZeit(offsetMinuten = 0): string {
 
 const TAG = laufTag();
 const BEGINN = laufZeit();
-const ENDE = laufZeit(45);
+const ENDE = laufZeit(60);
 
 test.describe('CAL-001: Termin anlegen', () => {
   test('legt einen Praxistermin an, der das Neuladen überlebt', async ({ page }) => {
@@ -75,7 +75,6 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByLabel('Terminart *').selectOption('practice');
     await page.getByLabel('Datum *').fill(TAG);
     await page.getByLabel('Beginn *').fill(BEGINN);
-    await page.getByLabel('Ende *').fill(ENDE);
     // Bei genau einem Standort ist er vorausgewählt.
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
 
@@ -109,7 +108,6 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByLabel('Terminart *').selectOption('video');
     await page.getByLabel('Datum *').fill(TAG);
     await page.getByLabel('Beginn *').fill(BEGINN);
-    await page.getByLabel('Ende *').fill(ENDE);
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
     await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
@@ -142,7 +140,6 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByLabel('Terminart *').selectOption('video');
     await page.getByLabel('Datum *').fill(TAG);
     await page.getByLabel('Beginn *').fill(laufZeit(15));
-    await page.getByLabel('Ende *').fill(laufZeit(60));
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
     await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
@@ -160,7 +157,6 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByLabel('Datum *').fill(TAG);
     // Beginnt exakt zum Ende des ersten Termins - halboffenes Intervall.
     await page.getByLabel('Beginn *').fill(ENDE);
-    await page.getByLabel('Ende *').fill(laufZeit(90));
 
     // Die Adresse wird aus den Stammdaten übernommen und nicht erfragt.
     await expect(page.getByText('Adresse des Hausbesuchs')).toBeVisible();

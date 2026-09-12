@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import type { StatusFilter } from './calendar';
+import type { Serientermin } from './serie';
 
 /**
  * Datenzugriff auf die Terminverwaltung.
@@ -88,6 +89,43 @@ export const cancellationReasonLabels: Record<CancellationReason, string> = {
   other: 'Sonstiger Grund',
 };
 
+/**
+ * Mitteilungswege eines Termins (CAL-012, ANN-040).
+ *
+ * **Die Anwendung versendet nichts.** B15 ist vorläufig entschieden: in
+ * Stufe 1 und 2 gibt es keine automatische Terminerinnerung. Auch `email`
+ * heißt deshalb „die Praxis hat die Nachricht selbst geschrieben" — der
+ * Vermerk beschreibt einen Vorgang außerhalb der Anwendung.
+ *
+ * `sms` und `messenger` fehlen bewusst: Messenger ist nach B15 ausgeschlossen,
+ * SMS gibt es nicht. Ein Wert, den niemand setzen kann, wäre Vorbau (ADR-014).
+ */
+export const notificationChannelSchema = z.enum(['slip', 'phone', 'in_person', 'email']);
+export type NotificationChannel = z.infer<typeof notificationChannelSchema>;
+
+/**
+ * Zwei Beschriftungen je Weg: `kurz` steht als Abzeichen in der Terminliste,
+ * `lang` an der Auswahl auf der Terminseite. Die Reihenfolge ist die der
+ * Häufigkeit im Praxisalltag.
+ */
+export const notificationChannelLabels: Record<
+  NotificationChannel,
+  { kurz: string; lang: string }
+> = {
+  in_person: { kurz: 'Persönlich', lang: 'Persönlich gesagt' },
+  phone: { kurz: 'Telefon', lang: 'Telefonisch mitgeteilt' },
+  slip: { kurz: 'Zettel', lang: 'Terminzettel ausgehändigt' },
+  email: { kurz: 'E-Mail', lang: 'Per E-Mail mitgeteilt' },
+};
+
+/** Auswahlreihenfolge - `Object.keys` wäre eine Zusage, die das Objekt nicht gibt. */
+export const notificationChannelOrder: readonly NotificationChannel[] = [
+  'in_person',
+  'phone',
+  'slip',
+  'email',
+] as const;
+
 const appointmentSchema = z.object({
   id: z.string(),
   patient_id: z.string(),
@@ -114,6 +152,10 @@ const appointmentSchema = z.object({
   // Detailansicht zeigt keine Akteure (ADR-010).
   no_show_recorded_at: z.string().nullable(),
   no_show_fee: z.boolean().nullable(),
+  // Die seit der letzten Terminänderung vermerkten Mitteilungswege (CAL-012).
+  // Leer heißt „noch nicht mitgeteilt" ODER „seit der Mitteilung geändert" -
+  // beides ist derselbe Handlungsbedarf.
+  notification_channels: z.array(notificationChannelSchema),
   patient_given_name: z.string(),
   patient_family_name: z.string(),
   staff_given_name: z.string(),
@@ -129,7 +171,7 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 const SELECT =
   'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
-  'cancellation_reason, no_show_recorded_at, no_show_fee, ' +
+  'cancellation_reason, no_show_recorded_at, no_show_fee, notification_channels, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -290,6 +332,61 @@ export const leererTermin: Record<AppointmentFormField, string> = {
   location_id: '',
 };
 
+/**
+ * Länge eines angebotenen Terminfensters in Minuten (CAL-010a).
+ *
+ * `PROJECT_PRINCIPLES.md` §8.1: Ein angebotener Behandlungstermin MUSS ein
+ * Zeitfenster von 60 Minuten haben, die Dokumentation eingeschlossen.
+ *
+ * Diese Konstante steuert die Oberfläche. Verbindlich ist sie **nicht**:
+ * `app.appointment_window_minutes()` setzt dieselbe Zahl serverseitig durch
+ * (§8.1: „eine Vorbelegung im Formular allein erfüllt sie nicht"). Ein
+ * Datenbanktest hält beide gegeneinander.
+ */
+export const TERMINFENSTER_MINUTEN = 60;
+
+const UHRZEIT_ZERLEGT = /^([01]\d|2[0-3]):([0-5]\d)/;
+
+/** Minuten seit Mitternacht aus `HH:MM`; `null`, wenn die Eingabe keine Uhrzeit ist. */
+function minutenAusZeit(zeit: string): number | null {
+  const teile = UHRZEIT_ZERLEGT.exec(zeit);
+  return teile ? Number(teile[1]) * 60 + Number(teile[2]) : null;
+}
+
+/**
+ * Ende eines Zeitfensters aus Beginn und Länge, als `HH:MM`.
+ *
+ * Reine Minutenarithmetik auf der Ortszeit der Praxis - dieselbe Auslegung wie
+ * serverseitig, wo Beginn und Ende als `time` in die Zeitzone der Organisation
+ * gerechnet werden. Überschreitet das Ende Mitternacht, kommt eine leere
+ * Zeichenkette zurück: ein Termin über den Tageswechsel ist keiner, und das
+ * Formular soll dafür kein Ende erfinden.
+ */
+export function fensterEnde(beginn: string, minuten = TERMINFENSTER_MINUTEN): string {
+  const start = minutenAusZeit(beginn);
+  if (start === null) return '';
+  const gesamt = start + minuten;
+  if (gesamt >= 24 * 60) return '';
+  const stunde = String(Math.floor(gesamt / 60)).padStart(2, '0');
+  const minute = String(gesamt % 60).padStart(2, '0');
+  return `${stunde}:${minute}`;
+}
+
+/**
+ * Länge eines gespeicherten Termins in Minuten.
+ *
+ * Bestandstermine aus der Zeit vor §8.1 dürfen davon abweichen und bleiben
+ * gültig. Das Bearbeitungsformular rechnet deshalb mit **dieser** Länge weiter,
+ * solange niemand sie ausdrücklich auf das Terminfenster setzt (ANN-037).
+ */
+export function terminLaengeMinuten(appointment: Appointment): number {
+  const werte = appointmentToFormValues(appointment);
+  const beginn = minutenAusZeit(werte.start_time);
+  const ende = minutenAusZeit(werte.end_time);
+  if (beginn === null || ende === null) return TERMINFENSTER_MINUTEN;
+  return ende - beginn;
+}
+
 // -----------------------------------------------------------------------------
 // Künftige Termine in der Akte (UX-006)
 // -----------------------------------------------------------------------------
@@ -302,6 +399,7 @@ const upcomingAppointmentSchema = z.object({
   status: appointmentStatusSchema,
   staff_given_name: z.string(),
   staff_family_name: z.string(),
+  notification_channels: z.array(notificationChannelSchema),
   organization_time_zone: z.string(),
 });
 
@@ -387,12 +485,16 @@ export function schreibeTerminVorbelegung(vorbelegung: TerminVorbelegung): strin
 
 /**
  * Der Folgetermin zu einem Termin: dieselbe Person, dieselbe Art, dieselbe
- * Uhrzeit, dieselbe Dauer - `tageSpaeter` Tage später.
+ * Uhrzeit - `tageSpaeter` Tage später.
+ *
+ * Das Ende kommt aus dem Terminfenster und **nicht** aus der Dauer des
+ * Ausgangstermins: ein Folgetermin ist ein neu angebotener Termin und damit
+ * 60 Minuten lang (§8.1, CAL-010a). Hinge er an einem Bestandstermin mit
+ * abweichender Länge, würde der Server ihn abweisen.
  *
  * Eine Woche ist die übliche Taktung einer Verordnung und bewusst nur eine
  * Vorbelegung: Datum und Uhrzeit stehen im Formular und sind mit einem Tap
- * änderbar. Nichts davon ist eine Terminserie - die kommt mit CAL-007 und
- * rechnet mit dem Kontingent der Verordnung.
+ * änderbar. Für eine ganze Verordnung gibt es die Serie (CAL-007).
  *
  * Der Kalendertag wird in der Zeitzone der Praxis gebildet, nicht im Browser:
  * sonst verschöbe sich ein Abendtermin je nach Gerät um einen Tag.
@@ -405,7 +507,7 @@ export function folgeterminVorbelegung(
   return {
     datum: naechsterTag(werte.date, tageSpaeter),
     beginn: werte.start_time,
-    ende: werte.end_time,
+    ende: fensterEnde(werte.start_time),
     art: appointment.appointment_type,
     person: appointment.staff_member_id,
   };
@@ -479,6 +581,9 @@ export async function createAppointment(
       throw new Error(
         'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
       );
+    }
+    if (error.message?.includes('appointment window')) {
+      throw new Error(TERMINFENSTER_MELDUNG);
     }
     throw new Error('Der Termin konnte nicht angelegt werden.');
   }
@@ -594,9 +699,22 @@ export function appointmentToFormValues(
   };
 }
 
+/**
+ * Meldung zum Terminfenster (CAL-010a).
+ *
+ * An einer Stelle, weil beide Schreibpfade sie brauchen. Sie nennt die Regel
+ * und den Ausweg, ohne interne Details preiszugeben.
+ */
+const TERMINFENSTER_MELDUNG =
+  `Ein Terminfenster ist ${TERMINFENSTER_MINUTEN} Minuten lang, die Dokumentation eingeschlossen. ` +
+  'Bitte den Beginn wählen; das Ende ergibt sich daraus.';
+
 function schreibfehler(error: { message?: string } | null, standard: string): Error {
   if (error?.message?.includes('outside_working_hours')) {
     return new AusserhalbArbeitszeitError();
+  }
+  if (error?.message?.includes('appointment window')) {
+    return new Error(TERMINFENSTER_MELDUNG);
   }
   if (error?.message?.includes('not on the appointment grid')) {
     return new Error(
@@ -771,14 +889,225 @@ export async function reopenAppointment(
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht wieder geöffnet werden.');
 }
 
+// -----------------------------------------------------------------------------
+// Terminserie aus einer Verordnung (CAL-007)
+//
+// Drei Serverfunktionen, drei Aufgaben: das Kontingent lesen, die geplanten
+// Zeiten prüfen, die Serie anlegen. Die Rhythmusrechnung selbst steht in
+// `serie.ts` und spricht mit keinem Server (§6.2).
+// -----------------------------------------------------------------------------
+
+const prescriptionSlotsSchema = z.object({
+  patient_id: z.string(),
+  frequency_note: z.string().nullable(),
+  prescribed: z.number(),
+  used: z.number(),
+  planned: z.number(),
+  remaining: z.number(),
+});
+
+export type PrescriptionSlots = z.infer<typeof prescriptionSlotsSchema>;
+
 /**
- * Vorbelegte Länge eines neu angelegten Terminfensters in Minuten.
+ * Kontingent einer Verordnung: verordnet, genutzt, verplant und offen.
  *
- * `PROJECT_PRINCIPLES.md` §8.1: Ein angebotener Behandlungstermin MUSS ein
- * Zeitfenster von 60 Minuten haben, die Dokumentation eingeschlossen. Diese
- * Konstante ist die **Vorbelegung** im Formular - §8.1 sagt ausdrücklich, dass
- * eine Vorbelegung allein die Anforderung nicht erfüllt: die serverseitige
- * Durchsetzung kommt mit CAL-010a. Bis dahin ist die Länge frei änderbar, und
- * Bestandstermine bleiben unangetastet.
+ * Ausschließlich organisatorische Zahlen - Diagnose und Therapieziel bleiben
+ * bei der klinischen Sicht (ANN-011). „Verplant" zählt die nicht abgesagten
+ * Termine dieser Verordnung; verplant ist nicht genutzt (ANN-012, ANN-038).
  */
-export const STANDARD_DAUER_MINUTEN = 60;
+export async function fetchPrescriptionSlots(prescriptionId: string): Promise<PrescriptionSlots> {
+  const { data, error } = (await getSupabase().rpc('get_prescription_slots', {
+    p_prescription_id: prescriptionId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Das Kontingent der Verordnung konnte nicht geladen werden.');
+  const zeilen = z.array(prescriptionSlotsSchema).parse(data ?? []);
+  const erste = zeilen[0];
+  if (!erste) throw new Error('Das Kontingent der Verordnung konnte nicht geladen werden.');
+  return erste;
+}
+
+/**
+ * Befund einer geplanten Terminzeit (CAL-007).
+ *
+ * Der Server liefert ein Wort, nicht den kollidierenden Termin - die
+ * Serienplanung braucht ihn nicht (ADR-004, Datenminimierung).
+ */
+export const slotConflictSchema = z.enum([
+  'invalid',
+  'past',
+  'off_grid',
+  'duplicate',
+  'overlap',
+  'outside_working_hours',
+]);
+export type SlotConflict = z.infer<typeof slotConflictSchema>;
+
+export const slotConflictLabels: Record<SlotConflict, string> = {
+  invalid: 'Datum oder Uhrzeit unvollständig',
+  past: 'Liegt in der Vergangenheit',
+  off_grid: 'Beginn passt nicht zum Praxisraster',
+  duplicate: 'Steht doppelt in dieser Serie',
+  overlap: 'Zeitraum ist bereits belegt',
+  outside_working_hours: 'Außerhalb der Arbeitszeit',
+};
+
+/**
+ * Befunde, die das Anlegen verhindern.
+ *
+ * „Außerhalb der Arbeitszeit" gehört ausdrücklich nicht dazu: Es ist eine
+ * Rückfrage, keine Grenze (CAL-005). Alles andere würde der Server abweisen,
+ * und weil die Serie alles oder nichts ist, käme kein einziger Termin an.
+ */
+export function istHinderlich(conflict: SlotConflict | null): boolean {
+  return conflict !== null && conflict !== 'outside_working_hours';
+}
+
+const slotCheckSchema = z.object({
+  slot_index: z.number(),
+  conflict: slotConflictSchema.nullable(),
+});
+
+/** Prüft geplante Terminzeiten, ohne etwas anzulegen. */
+export async function checkAppointmentSlots(
+  staffMemberId: string,
+  slots: Serientermin[],
+): Promise<(SlotConflict | null)[]> {
+  const { data, error } = (await getSupabase().rpc('check_appointment_slots', {
+    p_staff_member_id: staffMemberId,
+    p_slots: slots,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw new Error('Die Termine konnten nicht geprüft werden.');
+
+  const zeilen = z.array(slotCheckSchema).parse(data ?? []);
+  const befunde: (SlotConflict | null)[] = slots.map(() => null);
+  for (const zeile of zeilen) {
+    if (zeile.slot_index >= 0 && zeile.slot_index < befunde.length) {
+      befunde[zeile.slot_index] = zeile.conflict;
+    }
+  }
+  return befunde;
+}
+
+/**
+ * Legt die Termine einer Verordnung in einem Vorgang an.
+ *
+ * Alles oder nichts: Scheitert ein Termin, entsteht keiner. Gibt die Anzahl
+ * der angelegten Termine zurück.
+ */
+export async function createAppointmentSeries(
+  patientId: string,
+  prescriptionId: string,
+  values: AppointmentFormValues,
+  slots: Serientermin[],
+  allowOutsideWorkingHours = false,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('create_appointment_series', {
+    p_patient_id: patientId,
+    p_prescription_id: prescriptionId,
+    p_staff_member_id: values.staff_member_id,
+    p_appointment_type: values.appointment_type,
+    p_slots: slots,
+    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Die Terminserie konnte nicht angelegt werden.');
+  return z.number().parse(data);
+}
+
+// -----------------------------------------------------------------------------
+// Terminzettel (CAL-011, IDEA-PRX-006)
+// -----------------------------------------------------------------------------
+
+const appointmentSlipSchema = z.object({
+  id: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: appointmentTypeSchema,
+  location_name: z.string().nullable(),
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  organization_time_zone: z.string(),
+});
+
+export type AppointmentSlipEntry = z.infer<typeof appointmentSlipSchema>;
+
+/**
+ * Die nächsten bestätigten Termine für den Terminzettel.
+ *
+ * Eigener Lesepfad und nicht `fetchUpcomingAppointments`: Der Zettel braucht
+ * den Standortnamen, die Akte braucht ihn nicht (ADR-004, Datenminimierung).
+ * Der Server protokolliert den Aufruf als `patient_record.viewed` — das
+ * Dokument verlässt die Praxis.
+ */
+export async function fetchAppointmentSlip(
+  patientId: string,
+  limit = 20,
+): Promise<AppointmentSlipEntry[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_appointment_slip', {
+    p_patient_id: patientId,
+    p_limit: limit,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Der Terminzettel konnte nicht geladen werden.');
+  return z.array(appointmentSlipSchema).parse(data ?? []);
+}
+
+/**
+ * Ortsangabe für den Zettel — aus Sicht der Patient:in, nicht der Praxis.
+ *
+ * Beim Hausbesuch steht dort bewusst kein Standortname und keine Adresse: Es
+ * ist ihre eigene Wohnung, und der Zettel soll sagen, was sie wissen muss.
+ */
+export function slipOrt(eintrag: AppointmentSlipEntry): string {
+  if (eintrag.appointment_type === 'home_visit') return 'bei Ihnen zu Hause';
+  if (eintrag.appointment_type === 'video') return 'Videotermin';
+  return eintrag.location_name ?? 'in der Praxis';
+}
+
+// -----------------------------------------------------------------------------
+// Mitteilungsvermerk am Termin (CAL-012)
+//
+// Zwei Schreibwege, weil es zwei Vorgänge gibt: an einem Termin die Auswahl
+// setzen, und beim Druck des Terminzettels einen Weg bei allen Terminen des
+// Blattes ergänzen. Die Fachlogik liegt in beiden Fällen serverseitig; die
+// Auswahl in der Oberfläche ist Bedienkomfort (ADR-004).
+// -----------------------------------------------------------------------------
+
+/**
+ * Setzt die vermerkten Mitteilungswege eines Termins auf genau diese Menge.
+ *
+ * Eine leere Liste nimmt den Vermerk zurück — der Fall „der Drucker ging
+ * nicht". Gibt die tatsächlich gültigen Wege zurück.
+ */
+export async function setAppointmentNotification(
+  appointmentId: string,
+  channels: readonly NotificationChannel[],
+): Promise<NotificationChannel[]> {
+  const { data, error } = (await getSupabase().rpc('set_appointment_notification', {
+    p_appointment_id: appointmentId,
+    p_channels: channels,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Vermerk konnte nicht gespeichert werden.');
+  return z.array(notificationChannelSchema).parse(data ?? []);
+}
+
+/**
+ * Ergänzt einen Mitteilungsweg bei mehreren Terminen, ohne vorhandene zu
+ * verlieren. Gibt die Anzahl der vermerkten Termine zurück.
+ */
+export async function addAppointmentNotification(
+  appointmentIds: readonly string[],
+  channel: NotificationChannel,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('add_appointment_notification', {
+    p_appointment_ids: appointmentIds,
+    p_channel: channel,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Vermerk konnte nicht gespeichert werden.');
+  return z.number().parse(data);
+}

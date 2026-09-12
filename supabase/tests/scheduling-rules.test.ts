@@ -52,6 +52,18 @@ function tagNach(datum: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Ende eines Terminfensters zu einem Beginn (CAL-010a).
+ *
+ * Seit 8.1 serverseitig durchgesetzt ist, muss auch ein Rastertest ein
+ * gueltiges Fenster mitgeben - sonst scheitert er an der Laenge statt am
+ * Raster und prueft nicht mehr, was er zu pruefen vorgibt.
+ */
+function eineStundeSpaeter(von: string): string {
+  const [stunde, minute] = von.split(':').map(Number) as [number, number];
+  return `${String(stunde + 1).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
 /** Mittwoch und Samstag - im Seed ein Arbeitstag und ein freier Tag. */
 const MITTWOCH = naechster(3);
 const SAMSTAG = naechster(6);
@@ -242,7 +254,7 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
   it.each([['09:00'], ['09:15'], ['09:30'], ['09:45']])(
     'nimmt den Beginn %s auf einem 15er-Raster an',
     async (von) => {
-      const t = await anlegen({ von, bis: '17:00', bestaetigt: true });
+      const t = await anlegen({ von, bis: eineStundeSpaeter(von), bestaetigt: true });
       expect(await zeile(t.id)).toBeDefined();
     },
   );
@@ -250,16 +262,17 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
   it.each([['09:05'], ['09:07'], ['09:10'], ['09:20'], ['09:59']])(
     'weist den Beginn %s ab',
     async (von) => {
-      await expect(anlegenVersuch({ von, bis: '17:00', bestaetigt: true })).rejects.toThrow(
-        /start time is not on the appointment grid/,
-      );
+      await expect(
+        anlegenVersuch({ von, bis: eineStundeSpaeter(von), bestaetigt: true }),
+      ).rejects.toThrow(/start time is not on the appointment grid/);
     },
   );
 
-  it('laesst die Dauer frei - nur der Beginn liegt auf dem Raster', async () => {
-    // 45 Minuten auf einem 15er-Raster: das Ende faellt hier zufaellig auch
-    // aufs Raster, 50 Minuten aber nicht - und muessen trotzdem gehen.
-    const t = await anlegen({ von: '09:00', bis: '09:50', bestaetigt: true });
+  it('bindet nur den Beginn ans Raster, nicht an die volle Stunde', async () => {
+    // PROJECT_PRINCIPLES.md 8.1: "Die feste Laenge beschraenkt ihn NICHT auf
+    // volle oder halbe Stunden." Die Laenge selbst ist seit CAL-010a nicht mehr
+    // frei - dafuer gibt es appointment-window.test.ts.
+    const t = await anlegen({ von: '09:45', bis: '10:45', bestaetigt: true });
     expect(await zeile(t.id)).toBeDefined();
   });
 
@@ -301,7 +314,7 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
     await asPostgres('update public.organizations set appointment_grid_minutes = 5 where id = $1', [
       organizationId,
     ]);
-    const t = await anlegen({ von: '09:05', bis: '09:50', bestaetigt: true });
+    const t = await anlegen({ von: '09:05', bis: '10:05', bestaetigt: true });
     await asPostgres(
       'update public.organizations set appointment_grid_minutes = 15 where id = $1',
       [organizationId],
@@ -323,7 +336,7 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
       'video',
       MITTWOCH,
       '09:05',
-      '09:50',
+      '10:05',
       null,
       true,
     ]);
@@ -339,7 +352,7 @@ describe('CAL-005: Rasterpruefung beim Schreiben', () => {
 
   it('laesst sich durch die Arbeitszeitbestaetigung nicht umgehen', async () => {
     // Die Bestaetigung gilt ausschliesslich der Arbeitszeit.
-    await expect(anlegenVersuch({ von: '09:07', bis: '10:00', bestaetigt: true })).rejects.toThrow(
+    await expect(anlegenVersuch({ von: '09:07', bis: '10:07', bestaetigt: true })).rejects.toThrow(
       /start time is not on the appointment grid/,
     );
   });
@@ -729,8 +742,8 @@ describe('CAL-005: Warnung ausserhalb der Arbeitszeit', () => {
   });
 
   it('weist einen Termin ab, der nur teilweise in der Arbeitszeit liegt', async () => {
-    // 11:00-13:00 ragt in die Mittagspause hinein.
-    await expect(anlegenVersuch({ von: '11:00', bis: '13:00' })).rejects.toThrow(
+    // 11:30-12:30 ragt in die Mittagspause hinein.
+    await expect(anlegenVersuch({ von: '11:30', bis: '12:30' })).rejects.toThrow(
       /outside_working_hours/,
     );
   });
@@ -749,8 +762,12 @@ describe('CAL-005: Warnung ausserhalb der Arbeitszeit', () => {
   });
 
   it('nimmt einen Termin genau an den Blockgrenzen an', async () => {
-    const t = await anlegen({ von: '08:00', bis: '12:00' });
-    expect(await zeile(t.id)).toBeDefined();
+    // Beide Raender des Vormittagsblocks 08:00-12:00, je ein Terminfenster
+    // lang (CAL-010a).
+    const anfang = await anlegen({ von: '08:00', bis: '09:00' });
+    expect(await zeile(anfang.id)).toBeDefined();
+    const ende = await anlegen({ von: '11:00', bis: '12:00' });
+    expect(await zeile(ende.id)).toBeDefined();
   });
 
   it('beachtet eine datumsbezogene Abwesenheit vor dem Wochenplan', async () => {

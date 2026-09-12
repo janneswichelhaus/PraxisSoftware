@@ -1142,3 +1142,321 @@ bedienbar, jedes Tippziel mindestens 44 px.
 „Ohne Befund" ist das erwartete Ergebnis. Was nicht stimmt, kommt mit einem
 Satz zurück — Befunde gehen als erste Story in den nächsten Loop derselben
 Spur.
+
+---
+
+## CAL-010a — Terminfenster von 60 Minuten
+
+`PROJECT_PRINCIPLES.md` §8.1: Ein angebotener Behandlungstermin hat ein
+Zeitfenster von **60 Minuten**, die Dokumentation eingeschlossen. Die Regel
+gilt serverseitig; das Formular bietet das Ende gar nicht mehr als Feld an.
+
+### 1. Termin anlegen
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte „Max Mustermann" →
+   **Termin anlegen**.
+2. Erwartung: Statt eines Ende-Feldes steht dort „Ende —" mit dem Hinweis
+   „Terminfenster: 60 Minuten, Dokumentation eingeschlossen."
+3. Beginn **09:05** eintragen. Erwartung: Daneben erscheint **10:05 Uhr**.
+   §8.1 lässt jeden Rasterpunkt als Beginn zu — 09:05 ist zulässig, obwohl es
+   keine volle oder halbe Stunde ist.
+4. Speichern und die Detailansicht ansehen: **09:05–10:05 Uhr**.
+
+### 2. Termin verschieben
+
+1. Denselben Termin → **Bearbeiten**, Beginn auf **14:30** setzen.
+   Erwartung: Das Ende springt auf **15:30 Uhr** mit.
+2. Speichern. Erwartung: Der Termin steht auf 14:30–15:30 Uhr.
+3. Im Kalender denselben Termin mit dem Zeigegerät auf eine andere Zeit
+   ziehen (Tagesansicht, langer Druck am Finger). Erwartung: Die Vorschau
+   nennt ein Fenster von 60 Minuten, und der Termin landet dort.
+
+### 3. Bestandstermin mit abweichender Länge
+
+Der Seed enthält keinen solchen Termin — dafür einen von Hand anlegen:
+
+```bash
+psql "$DATABASE_URL" -c "update public.appointments
+  set ends_at = starts_at + interval '45 minutes'
+  where id = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001'"
+```
+
+1. Diesen Termin öffnen → **Bearbeiten**. Erwartung: Das Ende zeigt die
+   **45 Minuten** an, nicht 60 — die Anwendung verlängert ihn nicht von
+   selbst (§8.1, „Bestehende Termine werden nicht rückwirkend verändert").
+   Darunter steht ein Hinweis mit dem Knopf **Auf 60 Minuten setzen**.
+2. Nur die behandelnde Person wechseln und speichern. Erwartung: Das geht
+   durch; die Länge bleibt 45 Minuten.
+3. Erneut bearbeiten, nur den Beginn verschieben und speichern. Erwartung:
+   Auch das geht durch, das Ende zieht mit 45 Minuten mit.
+4. Erneut bearbeiten, **Auf 60 Minuten setzen** klicken und speichern.
+   Erwartung: Der Termin steht danach auf 60 Minuten, der Hinweis ist weg.
+
+### 4. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann in der Akte „Termin anlegen" öffnen. Erwartung: Beginn und abgeleitetes
+Ende stehen untereinander, kein waagerechtes Scrollen, das Zeitfeld ist mit
+einem Daumen erreichbar.
+
+**Zielwert:** Ein Termin entsteht mit **einer** Zeiteingabe statt zweien.
+
+---
+
+## CAL-007 — Terminserie aus einer Verordnung
+
+Ziel: Aus einer Verordnung entsteht in **einem** Vorgang eine Terminserie.
+Der Seed enthält dafür eine frische Folgeverordnung für Erika Beispiel
+(10× Krankengymnastik, nichts genutzt).
+
+### 1. Einstieg und Kontingent
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte **Erika Beispiel**
+   öffnen, Abschnitt „Verordnungen".
+2. An der Folgeverordnung vom 08.09.2026 steht **Terminserie anlegen**.
+   Erwartung: Der Link erscheint auch für `anna.beispiel@praxis.invalid`
+   (therapist), aber für kein Patientenkonto.
+3. Draufklicken. Erwartung: Die Seite zeigt **Verordnet 10 · Genutzt 0 ·
+   Bereits verplant 0 · Offen 10** und die Frequenz „2x pro Woche"; im Feld
+   „Anzahl Termine" steht **10**.
+
+### 2. Vorschlag und Einzelabweichung
+
+1. Behandelnde Person **Anna Beispiel**, Terminart **Hausbesuch**, erster
+   Termin auf einen Montag in vier Wochen, Beginn **09:00**, Rhythmus
+   **Zweimal pro Woche**, Anzahl **10**. → **Termine vorschlagen**.
+2. Erwartung: Zehn Zeilen, abwechselnd Montag und Donnerstag, jeweils
+   „bis 10:00 Uhr", darunter **„Alle 10 Termine sind planbar."**
+3. Bei einer Zeile das Datum auf einen Tag ändern, an dem Anna schon einen
+   Termin um 09:00 hat. Erwartung: Sofort der Hinweis **„Die Liste wurde
+   geändert und ist noch nicht geprüft."**, und „10 Termine anlegen" ist
+   nicht anklickbar.
+4. **Erneut prüfen**. Erwartung: An dieser Zeile steht **„Zeitraum ist
+   bereits belegt"**, darunter „1 von 10 Terminen sind so nicht planbar."
+5. Die Zeile mit **Entfernen** herausnehmen → erneut prüfen. Erwartung:
+   „Alle 9 Termine sind planbar.", der Knopf heißt jetzt „9 Termine anlegen".
+
+### 3. Anlegen — alles oder nichts
+
+1. **9 Termine anlegen**. Liegt ein Termin außerhalb der Arbeitszeit, kommt
+   zuerst die Rückfrage „Serie trotzdem anlegen" — ohne sie wird nichts
+   angelegt.
+2. Erwartung: Rücksprung in die Akte; unter „Nächste Termine" stehen die
+   ersten Termine der Serie, jeder **Bestätigt**.
+3. Im Kalender (Tagesansicht, Anna) an einem der Serientage nachsehen:
+   der Termin steht dort mit **60 Minuten**.
+4. Zurück auf die Serienseite. Erwartung: **Bereits verplant 9 · Offen 1**;
+   „Genutzt" steht weiter auf 0 — verplant ist nicht genutzt (ANN-038).
+5. Einen Termin der Serie absagen (mit Grund) und die Serienseite neu laden.
+   Erwartung: **Bereits verplant 8 · Offen 2** — eine Absage gibt ihren Platz
+   im Kontingent wieder frei.
+6. Gegenprobe „alles oder nichts": eine neue Serie über zwei Termine planen,
+   von denen einer auf einen bereits belegten Zeitraum fällt, die Prüfung
+   ignorieren und über die Adresszeile neu laden — der Knopf bleibt gesperrt.
+   Es entsteht kein einziger Termin.
+
+### 4. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann in der Akte „Terminserie anlegen" öffnen. Erwartung: Kein waagerechtes
+Scrollen; Datum, Beginn und „Entfernen" jeder Zeile brechen untereinander um
+und sind mit einem Daumen erreichbar; jedes Tippziel mindestens 44 px.
+
+**Zielwert:** Zehn Termine aus einer Verordnung in **unter einer Minute**,
+statt zehnmal das Terminformular.
+
+---
+
+## CAL-011 — Terminzettel zum Ausdrucken
+
+Ein Blatt für die Patient:in: „Ihre nächsten Termine". Es verlässt die Praxis,
+deshalb zählt hier vor allem, was **nicht** darauf steht (ANN-039).
+
+### 1. Einstieg und Inhalt
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte **Erika Beispiel** öffnen
+   (nach CAL-007 hat sie eine Serie). Abschnitt **Nächste Termine**.
+2. Erwartung: Rechts neben der Überschrift steht **Termine mitteilen** — und
+   zwar nur, wenn es überhaupt einen künftigen Termin gibt.
+3. Draufklicken. Erwartung: Die Seite heißt **„Ihre nächsten Termine"** und
+   ist an die Patient:in gerichtet; darunter ihr Name und je Termin Datum,
+   Uhrzeit, Ort und behandelnde Person.
+4. Gegenprobe Inhalt: Auf dem Zettel steht **kein** Status („Bestätigt"),
+   **keine** Verordnung, **keine** Diagnose und bei einem Hausbesuch **keine
+   Adresse** — dort steht „bei Ihnen zu Hause".
+5. Einen Termin der Person absagen und den Zettel neu laden. Erwartung: Der
+   abgesagte Termin fehlt.
+
+### 2. Druck
+
+1. **Terminzettel drucken** klicken (oder Strg/Cmd + P). Erwartung in der
+   Druckvorschau: Kopfzeile, Navigation, der Zurück-Link und alle
+   Schaltflächen fehlen; die Terminliste steht auf weißem Grund; ein Termin
+   wird nicht über zwei Seiten zerrissen.
+2. Erwartung: **Keine Wortmarke** auf dem Ausdruck — das ist so gewollt
+   (`marke/README.md`); auf der Rechnung kommt sie mit ABR-000.
+
+### 3. Kein SMS- und kein Messenger-Weg
+
+Erwartung: Es gibt auf der Seite **keinen** Knopf für SMS oder Messenger.
+Messenger ist nach B15 ausgeschlossen, SMS gibt es nicht. Der E-Mail-Weg
+kommt mit CAL-013 und ist ein Handoff, kein Versand aus der Anwendung.
+
+### 4. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann in der Akte **Termine mitteilen** öffnen. Erwartung: Kein waagerechtes
+Scrollen, die Liste bleibt lesbar, „Terminzettel drucken" ist mit einem Daumen
+erreichbar.
+
+**Zielwert:** Der Zettel entsteht mit **zwei** Taps aus der Akte, statt von
+Hand geschrieben zu werden.
+
+---
+
+## CAL-012 — Mitteilungsvermerk am Termin
+
+Vorbild ist die Terminliste von iPrax: Ein Zeichen hinter dem Termin sagt, ob
+er der Patient:in schon mitgeteilt wurde und auf welchem Weg.
+
+> **Die Auswahl am Termin ist die Nachhut.** Druck und E-Mail aus der
+> Anwendung vermerken sich seit CAL-012 und CAL-013 von selbst; hier trägt man
+> nach, was die Anwendung nicht sehen kann — das Gespräch am Tresen, den
+> Anruf — und nimmt einen Vermerk zurück (ANN-040, ANN-041).
+
+### 1. Vermerken und sehen
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte **Max Mustermann**,
+   Abschnitt **Nächste Termine**. Erwartung: Am heutigen 09:00-Termin steht
+   aus dem Seed bereits das Zeichen **Telefon**; an den übrigen steht keins.
+2. Einen Termin ohne Zeichen öffnen. Unten steht **Mitteilung an die
+   Patient:in** mit vier Kästchen und dem Satz, dass hier von Hand
+   nachgetragen und zurückgenommen wird.
+3. **Telefonisch mitgeteilt** anhaken. Erwartung: „Vermerk speichern" wird
+   anklickbar — vorher nicht.
+4. Speichern. Erwartung: **Vermerk gespeichert.** Neu laden (F5): das Häkchen
+   steht weiterhin.
+5. Zurück in die Akte. Erwartung: Hinter dem Termin steht **Telefon**.
+6. Zwei Wege gleichzeitig anhaken (etwa Telefon und E-Mail) und speichern.
+   Erwartung: In der Akte stehen **beide** Zeichen nebeneinander.
+
+### 2. Der Vermerk verfällt mit einer Änderung
+
+1. Denselben Termin **bearbeiten** und den Beginn verschieben, speichern.
+2. Zurück in die Akte. Erwartung: **Das Zeichen ist weg.** Die neue Zeit ist
+   noch nicht mitgeteilt — genau das soll der leere Platz sagen.
+3. Am Termin nachsehen: die Kästchen sind wieder leer.
+
+### 3. Zurücknehmen
+
+1. Einen Weg anhaken, speichern, danach das Häkchen wieder entfernen und
+   erneut speichern. Erwartung: **Vermerk zurückgenommen.**, und in der Akte
+   steht kein Zeichen mehr. Das ist der Fall „der Drucker ging nicht".
+
+### 4. Terminzettel drucken vermerkt mit
+
+1. In der Akte **Termine mitteilen** öffnen. Unter dem Knopf steht, dass die
+   aufgeführten Termine dabei als ausgehändigt vermerkt werden.
+2. **Terminzettel drucken** klicken und den Druckdialog abbrechen.
+3. Zurück in die Akte. Erwartung: **Alle** aufgeführten Termine tragen jetzt
+   das Zeichen **Zettel**.
+
+### 5. Auditlog
+
+Als `jannes.test@praxis.invalid` unter **Praxis → Sicherheit → Auditlog**
+nachsehen. Erwartung: Einträge **„Mitteilung an die Patient:in vermerkt"** —
+je Termin einer, mit den Wegen im Kontext und ohne Inhalt.
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann Akte → Termin öffnen. Erwartung: Die vier Kästchen stehen untereinander,
+jedes Tippziel mindestens 44 px, kein waagerechtes Scrollen; in der Terminliste
+brechen die Zeichen unter die Terminzeile um, statt sie zu quetschen.
+
+**Zielwert:** „Ist dieser Termin schon mitgeteilt?" ist in der Akte **ohne
+Klick** beantwortet.
+
+---
+
+## CAL-013 — Termine per E-Mail
+
+Dieselbe Liste wie auf dem Zettel, aber als fertige Nachricht im
+Mailprogramm. Der Weg ist am 2026-09-12 mit dem Nachtrag zu B15 dazugekommen.
+
+> **Die Anwendung verschickt nichts selbst.** Sie öffnet den Entwurf in
+> **Ihrem** Mailprogramm; gesendet wird dort von Ihnen. Es gibt keinen
+> Dienstleister, keinen automatischen Versand und keine Massenaussendung
+> (ANN-041).
+
+### 1. Entwurf ansehen
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte **Max Mustermann**,
+   **Termine mitteilen** öffnen.
+2. Unter dem Druckknopf steht **Termine per E-Mail senden**. Klicken.
+3. Erwartung: Ein Kasten mit **An** (die hinterlegte Adresse), **Betreff**
+   („Ihre nächsten Termine" — er nennt weder Praxis noch Fach) und dem
+   **vollständigen Text**: Anrede, je Termin Datum, Uhrzeit, Ort und
+   behandelnde Person, Schlusssatz zur rechtzeitigen Absage.
+4. Gegenprobe Inhalt: Im Text steht **kein** Status, **keine** Verordnung,
+   **keine** Diagnose und bei einem Hausbesuch **keine Adresse**.
+5. Erwartung: Darunter der Hinweis, dass eine E-Mail **nicht verschlüsselt**
+   ist und der Weg den **ausdrücklichen Wunsch** der Patient:in voraussetzt.
+
+### 2. Übergabe und Vermerk
+
+1. **E-Mail öffnen** klicken. Erwartung: Das Mailprogramm des Rechners öffnet
+   einen Entwurf mit genau diesem Text — **nicht gesendet**.
+2. In der Anwendung steht: Die E-Mail ist im Mailprogramm geöffnet und die
+   Termine sind vermerkt; wenn Sie sie doch nicht senden, nehmen Sie den
+   Vermerk am Termin zurück.
+3. Den Entwurf im Mailprogramm **verwerfen** — nichts geht hinaus.
+4. Zurück in die Akte. Erwartung: Alle Termine, die im Entwurf standen, tragen
+   jetzt das Zeichen **E-Mail**.
+5. Einen davon öffnen, **Per E-Mail mitgeteilt** abwählen, speichern.
+   Erwartung: **Vermerk zurückgenommen.** — genau der Fall aus Schritt 3.
+
+### 3. Abbrechen vermerkt nichts
+
+1. Erneut **Termine per E-Mail senden**, dann **Abbrechen**. Erwartung: Der
+   Kasten verschwindet, kein Mailprogramm, und in der Akte ändert sich kein
+   Zeichen.
+
+### 4. Ohne Adresse kein Weg
+
+1. Akte einer Person **ohne hinterlegte E-Mail-Adresse** öffnen (im Seed etwa
+   der dritte Patient) und **Termine mitteilen** aufrufen.
+2. Erwartung: **Kein** Knopf für E-Mail, stattdessen der Satz, dass die
+   Adresse fehlt und in den Stammdaten unter „Kontakt" steht.
+
+### 5. Auditlog
+
+Als `jannes.test@praxis.invalid` unter **Praxis → Sicherheit → Auditlog**
+nachsehen. Erwartung: Je Termin ein Eintrag **„Mitteilung an die Patient:in
+vermerkt"**, im Kontext der Weg `email` — **kein Nachrichtentext**, keine
+Adresse.
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann Akte → **Termine mitteilen** → **Termine per E-Mail senden**. Erwartung:
+Kein waagerechtes Scrollen, der Text bleibt lesbar, „E-Mail öffnen" und
+„Abbrechen" sind beide mit einem Daumen erreichbar.
+
+**Zielwert:** Die Termine gehen mit **drei** Taps als fertige Nachricht
+hinaus, und in der Akte steht danach ohne Zutun, dass sie mitgeteilt sind.

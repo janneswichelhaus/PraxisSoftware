@@ -138,10 +138,10 @@ describe('list_day_plan', () => {
   });
 
   it('zieht die Tagesgrenze in der Zeitzone der Praxis, nicht in UTC', async () => {
-    // 23:30 Ortszeit ist am 10.09. noch derselbe Praxistag, in UTC bereits der
-    // 10.09.21:30 - und am Folgetag 00:30 Ortszeit ist es der 11.09.
-    await termin({ von: '23:00', bis: '23:30' });
-    await termin({ tag: '2026-09-11', von: '00:15', bis: '00:45' });
+    // 22:30 Ortszeit ist am 10.09. noch derselbe Praxistag, in UTC bereits der
+    // 10.09.20:30 - und am Folgetag 00:15 Ortszeit ist es der 11.09.
+    await termin({ von: '22:30', bis: '23:30' });
+    await termin({ tag: '2026-09-11', von: '00:15', bis: '01:15' });
 
     const { rows } = await lesen(users.therapist);
     expect(rows).toHaveLength(1);

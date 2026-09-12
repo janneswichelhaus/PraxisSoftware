@@ -80,27 +80,25 @@ freigegeben; Fahrzeiten aus dem Dienst kommen mit MAP-006 (`IDEA-PRX-032`).
 Bis dahin müsste die Zahl aus der Praxis kommen — genau das ist die offene
 Frage aus E12.
 
-**Umsetzungsstand (2026-09-08): entschieden heißt nicht gebaut.**
+**Umsetzungsstand (2026-09-12).**
 
 - **Raster: gebaut.** `appointment_grid_minutes` erlaubt 5, 10 oder 15
   Minuten, praxisweiter Standard ist 5; der Beginn wird gegen Mitternacht der
   Praxiszeitzone geprüft (CAL-005,
   `supabase/migrations/20260830120000_scheduling_grid.sql`).
-- **60-Minuten-Terminfenster: nicht gebaut.** `create_appointment` und
-  `update_appointment` lassen Beginn und Ende unabhängig frei wählen — „die
-  Dauer bleibt frei" ist dort ausdrücklich so kommentiert, damit ein
-  Bestandstermin auf einem verschärften Raster verschiebbar bleibt
-  (`supabase/migrations/20260830120200_appointment_scheduling_rules.sql`). Das
-  Formular hat zwei leere Zeitfelder ohne Vorbelegung
-  (`AppointmentFormFields.tsx`, `leererTermin` in
-  `src/features/appointments/api.ts`). Geplant als CAL-010a; §8.1 verlangt
-  dafür ausdrücklich auch die serverseitige Prüfung, nicht nur die
-  Vorbelegung.
+- **60-Minuten-Terminfenster: gebaut** (CAL-010a, 2026-09-12).
+  `app.appointment_window_minutes()` hält die Zahl an einer Stelle;
+  `create_appointment` verlangt sie immer, `update_appointment` prüft sie,
+  sobald sich die Länge ändert. Im Formular ist das Ende eine Ableitung statt
+  eines Feldes. Bestandstermine mit abweichender Länge bleiben gültig und
+  verschiebbar — die Abgrenzung steht als **ANN-037** im Register.
 - **Fahrpuffer: nicht gebaut.** Weder eine Mindestabstands-Einstellung noch je
   Patient:in gepflegte Fahrminuten noch eine Warnung im Kalender; zwei
   Hausbesuche an verschiedenen Adressen lassen sich heute ohne jeden Abstand
-  hintereinander anlegen. Geplant als CAL-010b in CAL-EPIC-003b (Roadmap,
-  Oktober 2026), nach VER-001 und CAL-EPIC-003a.
+  hintereinander anlegen. **CAL-EPIC-003b hat CAL-010b bewusst liegen
+  gelassen** (2026-09-12): E12 Punkt 3 und 4 sind offen, und ein pauschaler
+  Wert neben den echten Fahrzeiten aus MAP-004 wäre genau der zweite,
+  schlechtere Mechanismus, vor dem E12 warnt.
 
 **Vorsicht.** Deterministisch (§6.2), keine Optimierung, keine Verschiebung
 bestätigter Termine (§8). Die Aufrundungsregel ist ein eigenständiges, leicht
@@ -187,18 +185,37 @@ bis zu 30 Prozent. Das Telefon ist der Kanal, den es schon gibt.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | **überführt** (2026-09-12) — als Druckansicht gebaut (CAL-011), der E-Mail-Weg als Handoff (CAL-013); der PDF-Teil und die Tourenliste bleiben `vorschlag` |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (THEORG, appointmed, iPrax, Optica) |
-| Berührt | CAL-007, UI-000 (Druck-Basis), B14 |
+| Berührt | CAL-011 und CAL-013 (gebaut), UI-000 (Druck-Basis), B14, B15; ANN-039, ANN-041 |
 
-**Idee.** „Ihre nächsten Termine" als Ausdruck oder PDF je Person; eine
-Tages- oder Tourenliste je Therapeut:in zum Drucken (deckt E2 mit ab).
+**Gebaut ist der Terminzettel je Person** (CAL-011, 2026-09-12): „Ihre
+nächsten Termine" unter `/patienten/:id/terminzettel`, erreichbar aus dem
+Abschnitt „Nächste Termine" der Akte. Datum, Uhrzeit, Ort und behandelnde
+Person der nächsten bestätigten Termine; kein Status, keine Verordnung, keine
+Adresse. **Nur Druck über die Druck-Basis aus UI-000**, kein PDF und kein
+Versand. Was der Zettel enthält und warum, steht als **ANN-039** im Register
+und ist dort verbindlich, nicht hier.
+
+**Gebaut ist auch der E-Mail-Weg** (CAL-013, 2026-09-12), nachdem Jannes den
+Versand von Terminmails ausdrücklich vorgesehen hat (B15-Nachtrag): dieselbe
+Liste als fertiger Entwurf im Mailprogramm der Praxis, gesendet wird dort von
+Hand. Verbindlich ist dazu **ANN-041**, nicht dieser Eintrag.
+
+**Offen geblieben (weiter nur Vorschlag).** Das PDF als Datei (hängt an B14,
+dem PDF-Weg der Rechnung) · der Versand per **SMS** (bleibt an B15; Messenger
+ist ausgeschlossen) · echter Versand **aus der Anwendung** statt eines
+Handoffs, also mit Dienstleister und Zustellstatus · die **Tages- oder
+Tourenliste je Therapeut:in** zum Drucken, die E2 mit abdecken würde — sie ist
+ein anderer Ausdruck mit anderem Empfänger und anderer Datenlage.
 
 **Warum.** Hochbetagte Patient:innen ohne Portal; heute schreibt die
 Therapeutin Zettel per Hand. THEORG verkauft dafür sogar Papierblöcke.
 
 **Vorsicht.** Das Dokument enthält Termine, also ein Gesundheitsdatum;
-Ausgabe nur an die Person selbst, kein Versand ohne B15.
+Ausgabe nur an die Person selbst. Für die E-Mail gilt zusätzlich, was ANN-041
+festhält: nur auf ausdrücklichen Wunsch, Inhalt auf das Organisatorische
+begrenzt, Betreff ohne Aussage.
 
 ---
 

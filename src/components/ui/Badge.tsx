@@ -33,15 +33,31 @@ const zeichen: Partial<Record<Ton, string>> = {
  *
  * Der Zustand steht immer als Text im Abzeichen, der Ton ergänzt ihn nur.
  * Bedeutung darf nicht allein an einer Farbe hängen (WCAG 1.4.1).
+ *
+ * `eigenesZeichen` ersetzt das Zeichen des Tons. Das braucht, wer eine Sache
+ * unterscheidet, die kein Status ist — die Mitteilungswege am Termin etwa
+ * (CAL-012): vier Abzeichen im selben Ton, die sich am Bild auseinanderhalten
+ * lassen müssen. Es bleibt für Vorlesesoftware ausgeblendet; getragen wird die
+ * Bedeutung weiterhin vom Text daneben.
  */
-export function Badge({ ton = 'neutral', children }: { ton?: Ton; children: ReactNode }) {
+export function Badge({
+  ton = 'neutral',
+  eigenesZeichen,
+  children,
+}: {
+  ton?: Ton;
+  eigenesZeichen?: ReactNode;
+  children: ReactNode;
+}) {
+  const bild = eigenesZeichen ?? zeichen[ton];
+
   return (
     <span
       className={`rounded-pill inline-flex shrink-0 items-center gap-1 px-2.5 py-0.5 text-xs font-medium ${toene[ton]}`}
     >
       {/* Das Zeichen ist für Vorlesesoftware ausgeblendet: der Zustand steht
           daneben als Wort, und „Häkchen Abgeschlossen" wäre nur Rauschen. */}
-      {zeichen[ton] ? <span aria-hidden="true">{zeichen[ton]}</span> : null}
+      {bild ? <span aria-hidden="true">{bild}</span> : null}
       {children}
     </span>
   );

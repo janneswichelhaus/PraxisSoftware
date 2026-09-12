@@ -49,7 +49,9 @@ async function terminAnlegen(
   await page.getByLabel('Terminart *').selectOption('practice');
   await page.getByLabel('Datum *').fill(opts.tag);
   await page.getByLabel('Beginn *').fill(opts.von);
-  await page.getByLabel('Ende *').fill(opts.bis);
+  // Das Ende ist seit CAL-010a eine Ableitung aus dem Beginn (8.1) und kein
+  // Feld mehr. Geprueft wird es trotzdem - sonst waere `bis` nur noch Zierde.
+  await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
   await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
@@ -60,9 +62,9 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
   test('verschiebt einen Termin dauerhaft', async ({ page }) => {
     const tag = laufTag();
     const von = zeit(0);
-    const bis = zeit(45);
+    const bis = zeit(60);
     const neuVon = zeit(120);
-    const neuBis = zeit(165);
+    const neuBis = zeit(180);
 
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, { tag, von, bis });
@@ -75,7 +77,6 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await expect(page.getByLabel('Datum *')).toHaveValue(tag);
 
     await page.getByLabel('Beginn *').fill(neuVon);
-    await page.getByLabel('Ende *').fill(neuBis);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
@@ -92,7 +93,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     const tag = laufTag(1);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
     await page.getByRole('link', { name: 'Bearbeiten' }).click();
     await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Tim Teamleitung' });
@@ -112,13 +113,12 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     const tag = laufTag(2);
 
     await anmelden(page, KONTEN.office);
-    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
-    await terminAnlegen(page, { tag, von: zeit(120), bis: zeit(165) });
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
+    await terminAnlegen(page, { tag, von: zeit(120), bis: zeit(180) });
 
     // Der zweite Termin soll auf den ersten geschoben werden.
     await page.getByRole('link', { name: 'Bearbeiten' }).click();
     await page.getByLabel('Beginn *').fill(zeit(15));
-    await page.getByLabel('Ende *').fill(zeit(60));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
@@ -132,7 +132,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
   }) => {
     const tag = laufTag(3);
     const von = zeit(0);
-    const bis = zeit(45);
+    const bis = zeit(60);
 
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, { tag, von, bis });
@@ -174,7 +174,6 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
 
     // Jetzt speichert das offene Formular auf einem veralteten Stand.
     await page.getByLabel('Beginn *').fill(zeit(240));
-    await page.getByLabel('Ende *').fill(zeit(285));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
@@ -192,7 +191,7 @@ test.describe('CAL-003: Absagen', () => {
     const tag = laufTag(4);
 
     await anmelden(page, KONTEN.office);
-    const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
+    const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
     // Eine Absage darf kein versehentlicher Einzelklick auslösen.
     await page.getByRole('button', { name: 'Termin absagen' }).click();
@@ -234,7 +233,7 @@ test.describe('CAL-003: Absagen', () => {
   test('gibt den Zeitraum eines abgesagten Termins wieder frei', async ({ page }) => {
     const tag = laufTag(5);
     const von = zeit(0);
-    const bis = zeit(45);
+    const bis = zeit(60);
 
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von, bis });

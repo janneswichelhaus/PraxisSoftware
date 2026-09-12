@@ -20,6 +20,7 @@ delete from public.audit_log;
 delete from public.treatment_text_snippets;
 delete from public.staff_working_hour_exceptions;
 delete from public.staff_working_hours;
+delete from public.appointment_notifications;
 delete from public.appointments;
 delete from public.prescription_items;
 delete from public.prescriptions;
@@ -147,13 +148,19 @@ insert into public.prescribers (id, organization_id, title, given_name, family_n
 insert into public.prescriptions (id, organization_id, patient_id, prescriber_id, prescription_kind, issued_on, frequency_note, note, diagnosis, therapy_goal, prescriber_note, follow_up_recommendation) values
   ('88888888-8888-4888-8888-000000000001', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '77777777-7777-4777-8777-000000000001', 'first',     '2026-02-05', '2x pro Woche', null,                          'Synthetisch: Bewegungseinschraenkung der rechten Schulter nach Sturz.', 'Schmerzfreie Beweglichkeit im Alltag.', 'Belastung langsam steigern.', null),
   ('88888888-8888-4888-8888-000000000002', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '77777777-7777-4777-8777-000000000001', 'follow_up', '2026-06-18', '2x pro Woche', 'Rezept liegt im Ordner.',     'Synthetisch: Fortbestehende Bewegungseinschraenkung rechte Schulter.',  'Rueckkehr zur Gartenarbeit.',          null,                          'Synthetisch: Eine weitere Folgeverordnung waere aus meiner Sicht sinnvoll.'),
-  ('88888888-8888-4888-8888-000000000003', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '77777777-7777-4777-8777-000000000002', 'first',     '2025-11-12', '1x pro Woche', null,                          'Synthetisch: Verspannung der Nackenmuskulatur.',                        null,                                   null,                          null);
+  ('88888888-8888-4888-8888-000000000003', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '77777777-7777-4777-8777-000000000002', 'first',     '2025-11-12', '1x pro Woche', null,                          'Synthetisch: Verspannung der Nackenmuskulatur.',                        null,                                   null,                          null),
+  -- Frische Verordnung ohne genutzte Behandlung: die Vorlage fuer die
+  -- Terminserie (CAL-007). Ohne sie waere in der Abnahme keine Verordnung mit
+  -- vollem Kontingent da, und eine Serie ueber zehn Termine liesse sich nur
+  -- ueber das Kontingent hinaus planen.
+  ('88888888-8888-4888-8888-000000000004', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '77777777-7777-4777-8777-000000000001', 'follow_up', '2026-09-08', '2x pro Woche', null,                          'Synthetisch: Anschlussbehandlung der Nackenmuskulatur.',                'Beschwerdefreie Kopfdrehung im Alltag.', null,                        null);
 
 insert into public.prescription_items (id, organization_id, prescription_id, sort_order, remedy, prescribed_quantity, used_quantity) values
   ('99999999-9999-4999-8999-000000000001', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000001', 1, 'Krankengymnastik',        10, 10),
   ('99999999-9999-4999-8999-000000000002', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000001', 2, 'Waermetherapie',          10, 10),
   ('99999999-9999-4999-8999-000000000003', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000002', 1, 'Krankengymnastik',        10,  7),
-  ('99999999-9999-4999-8999-000000000004', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000003', 1, 'Manuelle Therapie',        6,  2);
+  ('99999999-9999-4999-8999-000000000004', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000003', 1, 'Manuelle Therapie',        6,  2),
+  ('99999999-9999-4999-8999-000000000005', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000004', 1, 'Krankengymnastik',        10,  0);
 
 -- -----------------------------------------------------------------------------
 -- Accountzuordnung
@@ -213,6 +220,20 @@ insert into public.appointments (
   ('aaaaaaaa-aaaa-4aaa-8aaa-000000000004', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '55555555-5555-4555-8555-000000000001', '33333333-3333-4333-8333-000000000001',
    'practice', 'confirmed', (current_date + time '16:00') at time zone 'Europe/Berlin', (current_date + time '17:00') at time zone 'Europe/Berlin',
    null, null, null, null, null, null, null, null);
+
+-- -----------------------------------------------------------------------------
+-- Mitteilungsvermerk (CAL-012)
+--
+-- Ein einziger Vermerk, damit in der Abnahme beide Faelle nebeneinander stehen:
+-- ein Termin MIT Zeichen und drei ohne. Der Vermerk gilt, weil er in derselben
+-- Transaktion entsteht wie der Termin - notified_at ist damit nicht aelter als
+-- dessen updated_at.
+--
+-- Die Anwendung verschickt nichts; der Vermerk beschreibt einen Anruf, den die
+-- Praxis selbst gefuehrt hat (B15, ANN-040).
+-- -----------------------------------------------------------------------------
+insert into public.appointment_notifications (organization_id, appointment_id, channel, notified_by) values
+  ('22222222-2222-4222-8222-000000000001', 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001', 'phone', '11111111-1111-4111-8111-000000000003');
 
 -- -----------------------------------------------------------------------------
 -- Textbausteine (UX-008)

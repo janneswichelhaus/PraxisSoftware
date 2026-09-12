@@ -151,7 +151,7 @@ async function terminVorTagen(
     'video',
     tagInTagen(30 + laufend),
     '09:00',
-    '09:45',
+    '10:00',
     null,
   ]);
   await asPostgres(

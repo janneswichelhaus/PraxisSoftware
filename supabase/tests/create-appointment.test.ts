@@ -373,8 +373,22 @@ describe('create_appointment: Ueberschneidungen', () => {
   });
 
   it('weist auch einen vollstaendig eingeschlossenen Termin ab', async () => {
-    await anlegenCommitted(users.office, { von: '09:00', bis: '11:00' });
-    await expect(anlegen(users.office, { von: '09:30', bis: '10:00' })).rejects.toThrow(/overlap/);
+    // Der umschliessende Termin entsteht an der RPC vorbei: seit CAL-010a ist
+    // jedes neue Zeitfenster 60 Minuten lang, ein laengerer Termin kann also
+    // nur ein Bestandstermin sein. Die EXCLUDE-Constraint muss ihn trotzdem
+    // schuetzen - genau das prueft dieser Fall.
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type, status,
+         starts_at, ends_at
+       ) values (
+         $1::uuid, $2::uuid, $3::uuid, 'video', 'confirmed',
+         ($4::date + time '09:00') at time zone 'Europe/Berlin',
+         ($4::date + time '11:00') at time zone 'Europe/Berlin'
+       )`,
+      [organizationId, patients.max, STAFF.anna, TAG],
+    );
+    await expect(anlegen(users.office, { von: '09:30', bis: '10:30' })).rejects.toThrow(/overlap/);
   });
 
   it('erlaubt zeitgleiche Termine verschiedener behandelnder Personen', async () => {
@@ -489,7 +503,14 @@ describe('create_appointment: Audit', () => {
     const rows = await eintrag();
 
     expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      ['patient_id', 'staff_member_id', 'surface', 'outside_working_hours'].sort(),
+      // prescription_id kam mit CAL-007 dazu und ist eine ID, kein Inhalt.
+      [
+        'patient_id',
+        'staff_member_id',
+        'surface',
+        'outside_working_hours',
+        'prescription_id',
+      ].sort(),
     );
     expect(rows[0]!.context).toMatchObject({
       surface: 'web',
@@ -620,7 +641,7 @@ describe('create_appointment: fachliche Pruefungen', () => {
     const id = await anlegenCommitted(users.office, {
       tag: rows[0]!.heute,
       von: '00:00',
-      bis: '00:30',
+      bis: '01:00',
     });
     expect(await termin(id)).toBeDefined();
   });

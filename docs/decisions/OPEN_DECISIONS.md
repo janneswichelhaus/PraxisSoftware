@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Zuletzt aktualisiert: 2026-09-11 (Punkt D „bestätigt" erledigt) · Struktur 2.1
+Zuletzt aktualisiert: 2026-09-12 (E12 Punkt 3 und 4 vorläufig entschieden: Fahrpuffer erst mit MAP-006) · Struktur 2.1
 
 Dieses Dokument hält fest, **was noch nicht entschieden ist**, warum es offen
 ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
@@ -121,7 +121,7 @@ Feature.
 | B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | unten                                                                                                         |
 | B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **entschieden 2026-09-06** durch Jannes (Option a)            | unten; Roadmap G2, G3                                                                                         |
 | B14   | PDF-Erzeugung für Rechnungen und Tagesplan                   | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen** (P1 für ABR-EPIC-002b) | unten; Roadmap ABR-EPIC-002a, Nov 2026                                                            |
-| B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung | unten                                                                                                         |
+| B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten                                                                                                         |
 | C1    | Leistungsziffern und Office                                  | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006                                               |
 | C2    | Klinische Inhalte in organisatorischer Kommunikation         | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §10                                                                               |
 | C3    | Fail-closed gegen Patientensicherheit, Break Glass           | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
@@ -145,7 +145,7 @@ Feature.
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
 | E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024)          |
 | E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | unten                                                                                    |
-| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1); vier Anschlussfragen **offen**    | unten; `PROJECT_PRINCIPLES.md` §8.1; vor CAL-010a/CAL-010b (Roadmap CAL-EPIC-003b)                  |
+| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Fahrpuffer **vorläufig entschieden 2026-09-12**: erst mit MAP-006 · Punkt 1 und 2 weiter **offen** | unten; `PROJECT_PRINCIPLES.md` §8.1; CAL-010a gebaut, CAL-010b entfällt zugunsten von MAP-006 |
 | E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
 
 ---
@@ -837,6 +837,41 @@ Nicht in Stufe 2.
 **Blockiert:** jede Erinnerungs- oder Buchungsfunktion. **Nicht blockiert:**
 Anrufliste, Terminzettel als PDF.
 
+#### Nachtrag 2026-09-12 — Jannes ändert seine eigene Entscheidung in einem Punkt
+
+**Wortlaut:** „Ich widerspreche möglicherweise früherer Planung, aber es ist
+ausdrücklich vorgesehen, dass die Praxis E-Mails versenden wird, welche die
+Termine beinhaltet."
+
+Die Entscheidung vom 2026-09-08 hat **zwei Dinge in einen Satz gepackt**, die
+auseinandergehören. Der Nachtrag trennt sie:
+
+| | Stand 2026-09-08 | Stand 2026-09-12 |
+|---|---|---|
+| **Automatische Erinnerung** über einen Versanddienstleister (SMS-Gateway, Mailversender) | nein | **unverändert nein** |
+| **Terminmail aus dem eigenen Postfach der Praxis**, auf Klick, Nachricht für Nachricht | nicht bedacht | **ja, gebaut als CAL-013** |
+
+**Warum das kein Widerspruch zur Begründung von 2026-09-08 ist.** Diese
+Begründung trägt auf einem Satz: „Jeder automatisierte Kanal ist ein **neuer
+Dienstleister mit einem Gesundheitsdatum**." Genau das trifft auf einen
+Handoff nicht zu. Die Anwendung übergibt einen fertigen Entwurf an das
+Mailprogramm der Praxis; gesendet wird dort von Hand, über das Postfach, das
+die Praxis ohnehin betreibt. Es entsteht kein Empfänger, der vorher keiner war
+— dieselbe Konstruktion wie beim Navigations-Handoff (ADR-019, ANN-018).
+**Die Reihenfolge „E-Mail vor SMS, Messenger ausgeschlossen" bleibt** und ist
+damit genau eingehalten: gebaut ist E-Mail, sonst nichts.
+
+**Was durch den Nachtrag NICHT entschieden ist** und weiter zu B15 gehört:
+die automatische Terminerinnerung, ein Versanddienstleister, SMS, die
+Online-Terminbuchung — und die **Einwilligung je Patient:in**. Für den
+Handoff steht die Bedingung heute als Satz an der Stelle der Entscheidung
+(„nur auf ausdrücklichen Wunsch, eine E-Mail ist nicht verschlüsselt") und die
+Auslösung ist auditiert; ein eigenes Kennzeichen für den dokumentierten Wunsch
+gehört zu PAT-006. Begründung, Quellen und Änderungspfad stehen in **ANN-041**.
+
+**Rücknahme des Nachtrags:** `klein` — `TermineMailen` aus der Zettelseite
+nehmen; es bleibt kein Datenbestand zurück.
+
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
 
 | | |
@@ -1070,18 +1105,35 @@ Bestandstermine unverändert, Durchsetzung serverseitig.
    Terminlänge ist nach §8.1 durchzusetzen; für den Fahrpuffer sagt die
    Entscheidung dazu nichts.
 
-**Warum offen:** Punkt 1 und 2 sind Praxisprozess und lassen sich erst nach
-den ersten Wochen im Betrieb sinnvoll beantworten. Punkt 3 hängt an B7 und
-ADR-019: mit MAP-004 kommen echte Fahrzeiten, und ein pauschaler Wert wäre
-dann ein zweiter, schlechterer Mechanismus daneben.
+**Punkt 3 und 4 vorläufig entschieden am 2026-09-12 durch Jannes: der
+Fahrpuffer kommt erst mit MAP-006.** Es wird **kein** pauschaler
+Mindestabstand gebaut und es werden **keine** Fahrminuten von Hand gepflegt.
+Die Fahrzeit entsteht aus dem Kartendienst (MAP-003/MAP-004); ob eine
+Unterschreitung warnt oder sperrt, wird mit MAP-006 entschieden, wenn die
+Zahlen echt sind.
 
-**Blockiert:** nichts. UX-EPIC-001 braucht die Antwort nicht; CAL-010a baut die
-entschiedenen Teile von §8.1, und CAL-010b lässt offen, was ohne Antwort offen
-bleiben muss.
+**Begründung.** Ein pauschaler Wert wäre neben den Fahrzeiten aus dem Dienst
+ein zweiter, schlechterer Mechanismus — genau das nennt dieser Punkt selbst
+als Grund, ihn offen zu lassen. Die Aufrundungsregel aus §8.1 bleibt davon
+unberührt: Sie ist entschieden und gilt, **sobald** eine Fahrzeit vorliegt;
+heute liegt keine vor, und eine Funktion ohne Aufrufer wäre Vorbau (ADR-014).
+Der Testfall mit dem Beispiel aus §8.1 (09:05–10:05 plus 12 Minuten ergibt
+10:20) gehört damit zu MAP-006.
 
-**Rücknahme:** `klein` bis `mittel` — die Regel greift an genau zwei
-Schreibpfaden (`create_appointment`, `update_appointment`) und einer
-Vorbelegung im Formular.
+**Folge für die Roadmap:** **CAL-010b entfällt als eigene Story** und geht in
+MAP-006 auf. CAL-EPIC-003b ist ohne sie am 2026-09-12 fertig geworden.
+
+**Weiter offen sind Punkt 1 und 2** — begründete Abweichung von den 60 Minuten
+und Einstellbarkeit der Länge je Praxis. Beide sind Praxisprozess und lassen
+sich erst nach den ersten Wochen im Betrieb sinnvoll beantworten; sie stehen
+als Wiedervorlage an **ANN-037**.
+
+**Blockiert:** nichts.
+
+**Rücknahme:** `klein` bis `mittel` — die Terminfensterregel greift an genau
+zwei Schreibpfaden (`create_appointment`, `update_appointment`) und einer
+Ableitung im Formular. Für den Fahrpuffer ist nichts zurückzunehmen: Es wurde
+nichts gebaut.
 
 ### E13 — Sprachdokumentation: Anbieter, Architektur, Audio, Frist
 
@@ -1272,3 +1324,15 @@ aus der Roadmap nicht abgeschlossen werden kann.
   bleibt in Kraft**, von ADR-018 ausdrücklich bestätigt. Gebaut wird der
   Automat in CAL-EPIC-003a — die Entscheidung ist die Vorbedingung dafür,
   nicht die Umsetzung.
+- **2026-09-12, B15 im Nachtrag geändert:** Jannes sieht ausdrücklich vor,
+  dass die Praxis Terminmails verschickt. Der Nachtrag im Abschnitt B15 trennt
+  zwei Dinge, die die Entscheidung vom 2026-09-08 in einen Satz gepackt hatte:
+  **keine automatische Erinnerung über einen Versanddienstleister** (bleibt)
+  und **die Terminmail aus dem eigenen Postfach der Praxis, auf Klick** (neu,
+  gebaut als CAL-013). Die Anwendung übergibt einen fertigen Entwurf an das
+  Mailprogramm — kein neuer Empfänger, kein automatischer Versand, dieselbe
+  Konstruktion wie der Navigations-Handoff aus ADR-019. Die Reihenfolge
+  „E-Mail vor SMS, Messenger ausgeschlossen" ist eingehalten. **Offen bleiben**
+  die automatische Erinnerung, ein Versanddienstleister, die
+  Online-Terminbuchung und die Einwilligung je Patient:in (PAT-006). Neu
+  offen: **ANN-041**.

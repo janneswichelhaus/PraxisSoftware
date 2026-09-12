@@ -14,11 +14,13 @@ import {
 import {
   appointmentFormSchema,
   createAppointment,
+  fensterEnde,
   fetchAssignableTherapists,
   fetchLocations,
   istAusserhalbArbeitszeit,
   leererTermin,
   leseTerminVorbelegung,
+  TERMINFENSTER_MINUTEN,
   todayInTimeZone,
   type AppointmentFormField,
   type AppointmentFormValues,
@@ -55,7 +57,11 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       vorbelegung.datum ??
       (user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : ''),
     start_time: vorbelegung.beginn ?? '',
-    end_time: vorbelegung.ende ?? '',
+    // Das Ende wird abgeleitet, nicht übernommen (CAL-010a): ein neu
+    // angelegter Termin ist ein angebotener Termin und damit 60 Minuten lang.
+    // Eine abweichende Länge aus der Adresszeile wäre eine Falle - der Server
+    // wiese sie ab.
+    end_time: vorbelegung.beginn ? fensterEnde(vorbelegung.beginn) : '',
     staff_member_id: vorbelegung.person ?? '',
   }));
   const [fehler, setFehler] = useState<Partial<Record<AppointmentFormField, string>>>({});
@@ -123,7 +129,11 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   });
 
   function setzen(feld: AppointmentFormField, wert: string) {
-    setWerte((bisher) => ({ ...bisher, [feld]: wert }));
+    setWerte((bisher) =>
+      feld === 'start_time'
+        ? { ...bisher, start_time: wert, end_time: fensterEnde(wert) }
+        : { ...bisher, [feld]: wert },
+    );
     if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
     // Eine geänderte Eingabe macht die Rückfrage gegenstandslos: sie bezieht
     // sich auf genau den Zeitraum, der abgewiesen wurde.
@@ -219,6 +229,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           standorte={standorte.data ?? []}
           minDatum={praxisZeitzone ? todayInTimeZone(praxisZeitzone) : undefined}
           rasterMinuten={user.appointmentGridMinutes ?? undefined}
+          fensterMinuten={TERMINFENSTER_MINUTEN}
           hausbesuch={
             <UebernommeneAdresse
               street={patientDaten.street}

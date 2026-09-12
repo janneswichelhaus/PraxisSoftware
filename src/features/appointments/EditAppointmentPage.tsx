@@ -14,12 +14,15 @@ import {
 import {
   appointmentFormSchema,
   appointmentToFormValues,
+  fensterEnde,
   fetchAppointment,
   fetchAssignableTherapists,
   fetchLocations,
   istAusserhalbArbeitszeit,
   leererTermin,
   patientName,
+  TERMINFENSTER_MINUTEN,
+  terminLaengeMinuten,
   todayInTimeZone,
   updateAppointment,
   type AppointmentFormField,
@@ -42,6 +45,15 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   const [werte, setWerte] = useState<Record<AppointmentFormField, string>>(leererTermin);
   const [fehler, setFehler] = useState<Partial<Record<AppointmentFormField, string>>>({});
   const [vorbefuellt, setVorbefuellt] = useState(false);
+  /**
+   * Länge, aus der sich das Ende ergibt (CAL-010a).
+   *
+   * Startwert ist die Länge des gespeicherten Termins, nicht das Terminfenster:
+   * §8.1 verbietet, einen Bestandstermin selbsttätig zu verlängern oder zu
+   * verkürzen. Wer die Länge ausdrücklich ändern will, tut das über den Knopf
+   * unten — dann greift die Regel.
+   */
+  const [fensterMinuten, setFensterMinuten] = useState(TERMINFENSTER_MINUTEN);
 
   const termin = useQuery({
     queryKey: ['appointment', appointmentId],
@@ -70,6 +82,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   useEffect(() => {
     if (termin.data && !vorbefuellt) {
       setWerte(appointmentToFormValues(termin.data));
+      setFensterMinuten(terminLaengeMinuten(termin.data));
       setVorbefuellt(true);
     }
   }, [termin.data, vorbefuellt]);
@@ -86,9 +99,22 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   });
 
   function setzen(feld: AppointmentFormField, wert: string) {
-    setWerte((bisher) => ({ ...bisher, [feld]: wert }));
+    setWerte((bisher) =>
+      feld === 'start_time'
+        ? // Verschieben lässt die Länge unangetastet - auch bei einem
+          // Bestandstermin, der von den 60 Minuten abweicht (ANN-037).
+          { ...bisher, start_time: wert, end_time: fensterEnde(wert, fensterMinuten) }
+        : { ...bisher, [feld]: wert },
+    );
     if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
     // Eine geänderte Eingabe macht die Rückfrage gegenstandslos.
+    if (mutation.isError) mutation.reset();
+  }
+
+  /** Setzt einen Bestandstermin ausdrücklich auf das Terminfenster (§8.1). */
+  function aufTerminfensterSetzen() {
+    setFensterMinuten(TERMINFENSTER_MINUTEN);
+    setWerte((bisher) => ({ ...bisher, end_time: fensterEnde(bisher.start_time) }));
     if (mutation.isError) mutation.reset();
   }
 
@@ -201,6 +227,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
             user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : undefined
           }
           rasterMinuten={user.appointmentGridMinutes ?? undefined}
+          fensterMinuten={fensterMinuten}
           hausbesuch={
             bleibtHausbesuch ? (
               <UebernommeneAdresse
@@ -221,6 +248,24 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
             )
           }
         />
+
+        {/* Ein Termin aus der Zeit vor §8.1 behält seine Länge und bleibt
+            verschiebbar (ANN-037). Verändert wird sie nur auf ausdrückliche
+            Anweisung - danach gilt das Terminfenster. */}
+        {fensterMinuten !== TERMINFENSTER_MINUTEN ? (
+          <div className="border-line-strong bg-surface-sunken rounded-card mt-5 border p-4">
+            <p className="text-ink text-sm">
+              Dieser Termin hat ein Zeitfenster von {fensterMinuten} Minuten und stammt aus der Zeit
+              vor der Festlegung auf {TERMINFENSTER_MINUTEN} Minuten. Er bleibt so gültig und
+              verschiebbar.
+            </p>
+            <div className="mt-3">
+              <Button type="button" variant="secondary" onClick={aufTerminfensterSetzen}>
+                Auf {TERMINFENSTER_MINUTEN} Minuten setzen
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>

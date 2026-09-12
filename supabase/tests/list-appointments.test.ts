@@ -126,10 +126,10 @@ describe('list_appointments: Zeitfenster', () => {
   });
 
   it('schliesst den ersten Moment des Bereichs ein und den ersten danach aus', async () => {
-    const ganzFrueh = await termin({ tag: '2027-05-12', von: '00:00', bis: '00:30' });
-    const ganzSpaet = await termin({ tag: '2027-05-12', von: '23:30', bis: '23:59' });
+    const ganzFrueh = await termin({ tag: '2027-05-12', von: '00:00', bis: '01:00' });
+    const ganzSpaet = await termin({ tag: '2027-05-12', von: '22:30', bis: '23:30' });
     // Erster Moment des Folgetages - gehoert nicht mehr dazu.
-    await termin({ tag: '2027-05-13', von: '00:00', bis: '00:30' });
+    await termin({ tag: '2027-05-13', von: '00:00', bis: '01:00' });
 
     const { rows } = await lesen(users.office, '2027-05-12', '2027-05-13');
     expect(rows.map((r) => r.id)).toEqual([ganzFrueh, ganzSpaet]);
@@ -181,7 +181,7 @@ describe('list_appointments: Praxiszeitzone', () => {
 
   it('ordnet einen Termin dem Kalendertag der Praxis zu, nicht dem UTC-Tag', async () => {
     // 00:30 Ortszeit am 12.05. ist 22:30 UTC am 11.05.
-    const id = await termin({ tag: '2027-05-12', von: '00:30', bis: '01:00' });
+    const id = await termin({ tag: '2027-05-12', von: '00:30', bis: '01:30' });
 
     const { rows: utcTag } = await asPostgres<{ utc: string }>(
       "select to_char(starts_at at time zone 'UTC', 'YYYY-MM-DD') as utc from public.appointments where id = $1",
@@ -200,9 +200,9 @@ describe('list_appointments: Praxiszeitzone', () => {
 
   it('behandelt den kurzen Tag der Zeitumstellung im Fruehjahr korrekt', async () => {
     // 28.03.2027: die Uhr springt um 02:00 auf 03:00, der Tag hat 23 Stunden.
-    const frueh = await termin({ tag: '2027-03-28', von: '01:30', bis: '01:45' });
-    const spaet = await termin({ tag: '2027-03-28', von: '23:00', bis: '23:30' });
-    await termin({ tag: '2027-03-27', von: '23:00', bis: '23:30' });
+    const frueh = await termin({ tag: '2027-03-28', von: '00:30', bis: '01:30' });
+    const spaet = await termin({ tag: '2027-03-28', von: '22:30', bis: '23:30' });
+    await termin({ tag: '2027-03-27', von: '22:30', bis: '23:30' });
 
     const { rows } = await lesen(users.office, '2027-03-28', '2027-03-29');
     expect(rows.map((r) => r.id)).toEqual([frueh, spaet]);
@@ -210,9 +210,9 @@ describe('list_appointments: Praxiszeitzone', () => {
 
   it('behandelt den langen Tag der Zeitumstellung im Herbst korrekt', async () => {
     // 31.10.2027: die Uhr springt um 03:00 auf 02:00, der Tag hat 25 Stunden.
-    const frueh = await termin({ tag: '2027-10-31', von: '01:30', bis: '01:45' });
-    const spaet = await termin({ tag: '2027-10-31', von: '23:00', bis: '23:30' });
-    await termin({ tag: '2027-11-01', von: '00:30', bis: '01:00' });
+    const frueh = await termin({ tag: '2027-10-31', von: '00:30', bis: '01:30' });
+    const spaet = await termin({ tag: '2027-10-31', von: '22:30', bis: '23:30' });
+    await termin({ tag: '2027-11-01', von: '00:30', bis: '01:30' });
 
     const { rows } = await lesen(users.office, '2027-10-31', '2027-11-01');
     expect(rows.map((r) => r.id)).toEqual([frueh, spaet]);
