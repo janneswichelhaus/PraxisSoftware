@@ -77,10 +77,13 @@ test.describe('AKTE-000: Rahmen und Bereiche', () => {
     await expect(page.getByRole('heading', { name: 'Aktuelle Verordnungen' })).toBeVisible();
     await expect(kopf).toBeVisible();
 
-    // Zurueck auf die Uebersicht.
-    await navigation.getByRole('link', { name: 'Übersicht' }).click();
-    await expect(page).toHaveURL(AKTE);
-    await expect(page.getByRole('heading', { name: 'Nächste Termine' })).toBeVisible();
+    // UI-002a: Es gibt keinen Bereich "Uebersicht" mehr, und die Adresse der
+    // Akte fuehrt in die Termine - dorthin, wo gearbeitet wird.
+    await expect(navigation.getByRole('link', { name: 'Übersicht' })).toHaveCount(0);
+    await page.goto(AKTE);
+    await expect(page).toHaveURL(`${AKTE}/termine`);
+    await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+    await expect(kopf).toBeVisible();
   });
 });
 

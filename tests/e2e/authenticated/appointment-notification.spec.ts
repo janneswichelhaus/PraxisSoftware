@@ -22,10 +22,11 @@ import {
  * ankommt.
  *
  * **Diese Datei rechnet im Nahfenster** (`nahtag` in `helpers.ts`), nicht in
- * einem Tagesfenster. Die Akte zeigt nur die nächsten fünf Termine, und Max
- * Mustermann sammelt über fünfzehn Spezifikationen hinweg weit mehr; ein
- * Termin aus einem Tagesfenster ab Tag 60 stünde nie in der Liste, und ohne
- * Eintrag ließe sich das Zeichen dahinter nicht prüfen. Im Nahfenster zählt
+ * einem Tagesfenster. Der Terminbereich der Akte blättert, und Max
+ * Mustermann sammelt über fünfzehn Spezifikationen hinweg weit mehr Termine
+ * als eine Seite fasst; ein Termin aus einem Tagesfenster ab Tag 60 stünde
+ * auf einer späteren Seite, und ohne Eintrag ließe sich das Zeichen dahinter
+ * nicht prüfen. Im Nahfenster zählt
  * der Versatz **rückwärts**: höhere Zahl, früherer Tag — jeder neu angelegte
  * Termin steht damit vor den zuvor angelegten. Jeder Test nimmt die nächste
  * freie Stufe.
