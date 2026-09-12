@@ -307,4 +307,4 @@ Abschluss eine Löschung hängt — eine Automatik, die sich irrt, löscht in ze
 Jahren eine Akte, die jemand noch braucht.
 
 **Offen.** Ab wann „lange her" — und ob der Hinweis in die Akte gehört, in
-„Mein Tag" oder in eine eigene Liste für die Praxisleitung.
+„Übersicht" oder in eine eigene Liste für die Praxisleitung.

@@ -28,7 +28,8 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
   test('führt owner über das Untermenü zum Aufbewahrungsplan', async ({ page }) => {
     await anmelden(page, KONTEN.owner);
 
-    // Der Weg, den Jannes geht: Betrieb, dann der neue Punkt im Untermenü.
+    // Der Weg, den Jannes geht: Organisatorisches, dann der neue Punkt im
+    // Untermenü.
     await page.goto('/praxis/team');
     await page.getByRole('link', { name: 'Aufbewahrung' }).click();
 

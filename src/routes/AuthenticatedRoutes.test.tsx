@@ -170,7 +170,8 @@ describe('AuthenticatedRoutes', () => {
     expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
   });
 
-  // Der Sicherheitsbereich sitzt im Untermenue des Arbeitsbereichs "Betrieb";
+  // Der Sicherheitsbereich sitzt im Untermenue des Arbeitsbereichs
+  // "Organisatorisches";
   // geprueft wird deshalb auf einer Seite dieses Bereichs.
   it('blendet den Sicherheitsbereich fuer Nicht-owner aus der Navigation aus', () => {
     renderWithProviders(

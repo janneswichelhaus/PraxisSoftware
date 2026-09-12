@@ -282,7 +282,8 @@ Ausgangsstruktur und keine unveränderliche Festlegung.
 
 Die Beschriftungen hat Jannes am 2026-09-12 neu gefasst; vorher hießen die
 vier ersten „Mein Tag", „Touren & Termine", „Team" und „Betrieb". Der Zuschnitt
-der Bereiche ist derselbe geblieben.
+der Bereiche ist derselbe geblieben; Oberfläche, Abnahmeschritte und
+Dokumentation benutzen durchgehend die neuen Namen.
 
 Regeln, die sich daraus ergeben haben:
 

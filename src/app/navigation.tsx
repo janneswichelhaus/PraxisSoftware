@@ -250,7 +250,8 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       pfade: ['/team'],
       icon: symbole.team,
       // Kein Unterpunkt „Verzeichnis": wer im Team ist und wie man die Person
-      // erreicht, steht in der echten Mitarbeiterverwaltung unter Betrieb
+      // erreicht, steht in der echten Mitarbeiterverwaltung unter
+      // Organisatorisches
       // (STAFF-001). Ein zweites, synthetisches Verzeichnis daneben waere eine
       // vorgetaeuschte Funktion.
       unterpunkte: [],
@@ -294,7 +295,8 @@ export const mehrSymbol = symbole.mehr;
 /**
  * Der Bereich, zu dem ein Pfad gehört.
  *
- * Längster passender Pfadanfang gewinnt, damit `/praxis/planung` im Betrieb
+ * Längster passender Pfadanfang gewinnt, damit `/praxis/planung` unter
+ * Organisatorisches
  * landet und nicht in einem allgemeineren Bereich.
  */
 export function aktiverBereich(

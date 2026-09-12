@@ -8,7 +8,7 @@ import { SUCHE_MINDESTLAENGE, formatDate, searchPatients, type PatientSearchHit 
 /**
  * Patientensuche von jeder Seite (UX-004, IDEA-PRX-020).
  *
- * Vom Kalender und von „Mein Tag" führte bisher kein Weg zu einer Akte, ohne
+ * Vom Kalender und von der Übersicht führte bisher kein Weg zu einer Akte, ohne
  * über die Kartei zu gehen. Das Feld steht deshalb in der Kopfleiste - dort,
  * wo es unabhängig von der Seite ist.
  *

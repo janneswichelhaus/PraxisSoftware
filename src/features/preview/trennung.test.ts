@@ -18,7 +18,7 @@ import { standortvorlageKoeln } from './standortvorlage';
  * abdeckt, die ein Test zufällig durchläuft - ein neuer Serveraufruf in einer
  * ungetesteten Ecke bliebe unbemerkt.
  *
- * `src/features/today` ist bewusst nicht dabei: „Mein Tag" mischt echte Termine
+ * `src/features/today` ist bewusst nicht dabei: die Übersicht mischt echte Termine
  * mit einem sichtbar abgesetzten Vorschaublock und muss deshalb mit dem Server
  * sprechen.
  *

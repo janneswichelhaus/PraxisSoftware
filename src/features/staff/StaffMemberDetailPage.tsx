@@ -228,7 +228,7 @@ export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
         to="/praxis/team"
         className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
       >
-        ← Zurück zum Team
+        ← Zurück zu den Mitarbeitenden
       </Link>
 
       {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" /> : null}

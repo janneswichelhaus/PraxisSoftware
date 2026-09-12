@@ -438,7 +438,7 @@ diesen Durchgang dazukommt.
 **Der Tagesplan liegt auf dem Tag des Zurücksetzens.** Der Seed legt die
 Hausbesuche relativ zu `current_date` an, nicht auf ein festes Datum. Setzt du
 heute zurück und prüfst morgen weiter, liegen dieselben Termine in der
-Vergangenheit und „Mein Tag" ist leer — das ist dann kein Befund. Vor dem
+Vergangenheit und „Übersicht" ist leer — das ist dann kein Befund. Vor dem
 Durchgang deshalb einmal:
 
 ```bash
@@ -470,7 +470,7 @@ Ablauffrage ist — in die nächste Ablaufrunde.
 
 ## UX-001 — Tagesliste des Hausbesuchstags
 
-**Was geprüft wird:** dass „Mein Tag" alles trägt, was an der Wohnungstür
+**Was geprüft wird:** dass „Übersicht" alles trägt, was an der Wohnungstür
 gebraucht wird, und dass „offen" und „erledigt" auseinandergehen.
 
 **Vorbereitung:** `pnpm dlx supabase db reset` — der Seed legt für **heute**
@@ -753,7 +753,8 @@ der Praxis und einen persönlichen von Anna Beispiel an.
 9. **Office.** Als `olivia.office@praxis.invalid`: Der Punkt „Textbausteine"
    fehlt im Menü, und `/praxis/textbausteine` direkt aufgerufen meldet „Nicht
    freigegeben".
-10. **Audit.** Als `jannes.test@praxis.invalid` unter Betrieb → Sicherheit:
+10. **Audit.** Als `jannes.test@praxis.invalid` unter Organisatorisches →
+    Sicherheit:
     Es stehen Einträge „Textbaustein angelegt/geändert/gelöscht" mit Titel —
     **ohne** den Text des Bausteins.
 11. **Am Handy** (~375 px): Die Bausteinleiste bricht um, jeder Knopf bleibt
@@ -792,7 +793,7 @@ der Praxis und einen persönlichen von Anna Beispiel an.
 6. **Abstecher abbrechen über die Hauptnavigation.** Eine Verordnung erfassen
    (`/patienten/…/verordnungen/neu`), Heilmittel „Aufgegebener Versuch"
    eintragen, „Verordner:in anlegen" tippen — und dann **über die
-   Hauptnavigation** weggehen (etwa auf „Mein Tag"), nicht über „Abbrechen".
+   Hauptnavigation** weggehen (etwa auf „Übersicht"), nicht über „Abbrechen".
 7. **Neuer Versuch bleibt leer.** Innerhalb der nächsten Minuten erneut
    „Verordnung erfassen" für dieselbe Person öffnen: Das Formular ist **leer**.
    Vorher stand hier „Aufgegebener Versuch" — das war der dokumentierte
@@ -970,8 +971,8 @@ UX-007 der Abschluss eines einzelnen Termins.
    inaktiv markieren" ist da, „Versorgung abschließen" **nicht**. Umgekehrt
    sieht `therapist` den Abschluss, aber nicht die Statusaktion. Das ist
    Absicht: Der Status ist Verwaltung, der Abschluss eine fachliche Aussage.
-7. **Im Auditlog.** Als `owner` unter „Betrieb → Sicherheit" die Einträge
-   ansehen: „Versorgung abgeschlossen" und „Abschluss der Versorgung
+7. **Im Auditlog.** Als `owner` unter „Organisatorisches → Sicherheit" die
+   Einträge ansehen: „Versorgung abgeschlossen" und „Abschluss der Versorgung
    zurückgenommen" stehen dort mit Zeitpunkt und handelnder Person.
 8. **Am Handy** (~375 px): Akte öffnen, Kasten aufklappen. Das Datumsfeld und
    beide Schaltflächen bleiben vollständig sichtbar und mindestens 44 px hoch;
@@ -992,10 +993,11 @@ wie lange aufbewahrt, was ist gerade von der Löschung ausgenommen, was wurde
 gelöscht (ADR-008, ADR-007). Sie ist eine reine Lesesicht — Fristen ändern sich
 über eine Migration, nicht über einen Klick.
 
-1. **Nur für die Inhaberin.** Als `owner` anmelden, „Betrieb" öffnen. Im
+1. **Nur für die Inhaberin.** Als `owner` anmelden, „Organisatorisches"
+   öffnen. Im
    Untermenü steht neben „Sicherheit" der neue Punkt **„Aufbewahrung"**. Mit
    `therapist` oder `office` anmelden: Der Punkt fehlt, und der direkte Aufruf
-   von `/praxis/sicherheit/aufbewahrung` landet auf „Mein Tag".
+   von `/praxis/sicherheit/aufbewahrung` landet auf „Übersicht".
 2. **Aufbewahrungsplan.** Zwölf Karten, je eine Datenklasse. Prüfen:
    - „Klinische Patientenakte" nennt **10 Jahre**, „ab Abschluss der
      Versorgung" und als Grundlage **Par. 630f Abs. 3 BGB**.
@@ -1104,7 +1106,7 @@ haben sich geändert.
    schreiben, abschließen. Erwartung: Der Termin steht danach auf
    **Dokumentiert**, nicht auf „Abgeschlossen".
 2. Einen zweiten Termin nur über **Termin abschließen** abhaken (ohne
-   Dokumentation). Erwartung: **Abgeschlossen**; in „Mein Tag" steht er
+   Dokumentation). Erwartung: **Abgeschlossen**; in „Übersicht" steht er
    weiter unter „offen" mit dem Hinweis „Dokumentation fehlt".
 3. Zu diesem Termin die Dokumentation schreiben und **finalisieren**.
    Erwartung: Ohne Neuladen springt der Status daneben auf **Dokumentiert**.

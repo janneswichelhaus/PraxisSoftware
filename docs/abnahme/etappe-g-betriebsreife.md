@@ -75,7 +75,7 @@ Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
    Kennwort setzen. Es erscheint „Zugang einrichten". Auf „Einladung annehmen"
    tippen: Die Anwendung öffnet sich als Nina Neu.
 8. **Die Rolle wirkt.** Als Nina ist Praxis → Team lesbar, „Mitarbeiter:in
-   anlegen" fehlt (kein `office`), und unter „Mein Tag" steht ihr eigener Tag.
+   anlegen" fehlt (kein `office`), und unter „Übersicht" steht ihr eigener Tag.
 9. **Der Nachweis.** Zurück als `jannes.test@praxis.invalid`: Der Abschnitt
    „Zugang" bei Nina zeigt jetzt „Eingerichtet" und die Rolle. Im Auditlog steht
    zusätzlich „Einladung angenommen" — mit **Nina** als handelnder Person, nicht

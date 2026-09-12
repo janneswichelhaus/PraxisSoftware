@@ -9,7 +9,7 @@ import { renderMitVorschau, testUser } from '@/test-utils';
 import { MyDayPage } from './MyDayPage';
 
 /**
- * „Mein Tag" mischt bewusst zwei Dinge: echte Termine aus dem Kalender und
+ * Die Übersicht mischt bewusst zwei Dinge: echte Termine aus dem Kalender und
  * Hinweise aus Bereichen, die noch keine Anbindung haben. Geprüft wird, dass
  * beides unterscheidbar bleibt, dass die eigenen Besuche nicht über den
  * Anzeigenamen, sondern über die Beschäftigtenkennung gefunden werden, und
@@ -146,7 +146,7 @@ function rendernMitCache(queryClient: QueryClient) {
   );
 }
 
-describe('Mein Tag', () => {
+describe('Übersicht', () => {
   beforeEach(() => {
     fetchDayPlan.mockReset();
     fetchDayPlan.mockResolvedValue(tagesplan);
@@ -251,7 +251,9 @@ describe('Mein Tag', () => {
   it('kennzeichnet den noch nicht angebundenen Teil als zusammengefaltete Vorschau', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-    const ueberschrift = await screen.findByRole('heading', { name: 'Betrieb, Wege und Team' });
+    const ueberschrift = await screen.findByRole('heading', {
+      name: 'Organisatorisches, Wege und Kommunikation',
+    });
     expect(ueberschrift).toBeInTheDocument();
     // Zusammengefaltet: der echte Teil des Tages steht davor, nicht dahinter.
     expect(ueberschrift.closest('details')).not.toHaveAttribute('open');
@@ -260,13 +262,13 @@ describe('Mein Tag', () => {
 
   it('benennt die Demoperson, der die Vorschaudaten gehoeren', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Betrieb, Wege und Team' });
+    await screen.findByRole('heading', { name: 'Organisatorisches, Wege und Kommunikation' });
     expect(screen.getByText(/zur Rolle passend gewählt/)).toBeInTheDocument();
   });
 
   it('sagt bei den Wegen, dass die Zeiten geschaetzt und nicht berechnet sind', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Betrieb, Wege und Team' });
+    await screen.findByRole('heading', { name: 'Organisatorisches, Wege und Kommunikation' });
     expect(screen.getByText(/Wegzeiten sind geschätzt, nicht berechnet/)).toBeInTheDocument();
   });
 
@@ -285,7 +287,7 @@ describe('Mein Tag', () => {
 
   it('zeigt einer behandelnden Rolle keine Freigabeaufgaben', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Betrieb, Wege und Team' });
+    await screen.findByRole('heading', { name: 'Organisatorisches, Wege und Kommunikation' });
     expect(screen.queryByText('Zu entscheiden')).toBeNull();
   });
 
@@ -293,7 +295,9 @@ describe('Mein Tag', () => {
     renderMitVorschau(<MyDayPage user={testUser(['patient'], 'Max Mustermann')} />);
     expect(await screen.findByRole('heading', { name: 'Ihr Zugang' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Tagesplan des Teams' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Betrieb, Wege und Team' })).toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: 'Organisatorisches, Wege und Kommunikation' }),
+    ).toBeNull();
   });
 
   describe('UX-011: Tagesplan bleibt lesbar', () => {

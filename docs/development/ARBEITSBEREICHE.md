@@ -11,8 +11,11 @@ ersetzt keine Feature-Spezifikation.
 Jannes): „Mein Tag" → **Übersicht**, „Touren & Termine" → **Kalender**, „Team"
 → **Kommunikation**, „Betrieb" → **Organisatorisches**. Patient:innen und
 Abrechnung blieben. Geändert hat sich allein die Beschriftung samt Symbol —
-Zuschnitt, Routen und Berechtigungen sind dieselben. Ältere Dokumente,
-besonders unter `../product/`, benutzen noch die alten Namen.
+Zuschnitt, Routen und Berechtigungen sind dieselben. Oberfläche, Abnahmeschritte
+und Dokumentation sind nachgezogen. Die alten Namen stehen nur noch dort, wo
+sie einen Stand von damals festhalten und nicht nachträglich geändert werden:
+in den Fassungseinträgen der `ROADMAP.md`, in Kommentaren bereits angewendeter
+Migrationen und in dieser Notiz.
 
 Vier Zustände:
 
@@ -118,7 +121,7 @@ benennen die offene Frage, statt sie zu verstecken.
 | Endgültige Fakturierung erst nach Finalisierung — die Finalisierung selbst ist entschieden und gebaut (ADR-016, DOK-002/DOK-004); offen ist die Kopplung an die Leistungserfassung (ABR-002) | Abrechnung → Leistungen | `PROJECT_PRINCIPLES.md` §19      |
 | Kartendienst: Zielarchitektur und Kandidat entschieden (ADR-019 Fassung 2, 2026-09-08: MapLibre, serverseitiger Adapter, PTV Developer zur Erprobung); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7, ADR-019, `MAP-LOOPS.md` |
 | Aggregierte Auswertungen über Beschäftigte                | Zeitkonto               | §20, `OPEN_DECISIONS.md` B6      |
-| Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Team                    | §10, §18                         |
+| Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Kommunikation           | §10, §18                         |
 | Aufbewahrung und Löschung von Beschäftigtendaten          | nicht mehr sichtbar — die Vorschau-Personalakte ist entfallen; der Punkt bleibt offen (`IDEA-QSN-010`) | ADR-008                          |
 | Aufbewahrung von Belegen, Bestätigung der Auszahlung      | Erstattungen            | ADR-008, ADR-009                 |
 | Tübinger Werkstatt, Ruhetag, Depot, Transportoptionen     | Pannenassistent, Flotte | Standortvorlage, ungeprüft       |

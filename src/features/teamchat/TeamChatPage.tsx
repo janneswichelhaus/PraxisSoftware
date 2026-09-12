@@ -127,7 +127,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
       />
 
       <VorschauBanner
-        bereich="Teamkommunikation"
+        bereich="Kommunikation"
         beschreibung="Nachrichten bleiben in dieser Sitzung. Es wird nichts versendet und niemand benachrichtigt."
       />
       <SimulationsMeldung eintrag={meldung} />

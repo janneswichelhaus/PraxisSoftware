@@ -85,9 +85,10 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      {/* „Mitarbeitende" statt „Team": der Arbeitsbereich „Team" ist seit dem
-          Umbau die Teamkommunikation. Zwei Seiten mit derselben Ueberschrift in
-          derselben Anwendung waeren nicht auseinanderzuhalten. */}
+      {/* „Mitarbeitende" statt „Team": das Verzeichnis der Beschaeftigten
+          steht unter Organisatorisches, der gleichnamige Arbeitsbereich heisst
+          seit dem 2026-09-12 Kommunikation und meint den Chat. Zwei Seiten mit
+          derselben Ueberschrift waeren nicht auseinanderzuhalten. */}
       <PageHeader
         title="Mitarbeitende"
         description="Mitarbeitende der Praxis. Ein Zugang zur Anwendung entsteht hier nicht."
