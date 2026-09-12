@@ -50,6 +50,14 @@ export function KennwortNeuPage() {
    * Der Hash ist einmalig — ein zweiter Versuch verbrennt ihn. In der
    * Entwicklung montiert React jede Komponente unter `StrictMode` zweimal,
    * deshalb dieser Riegel.
+   *
+   * **Und deshalb kein zusätzliches `aktiv`-Flag in der Aufräumfunktion.** Die
+   * naheliegende Form — eine lokale Variable, die beim Aufräumen auf `false`
+   * geht — verträgt sich mit diesem Riegel nicht: Der erste Durchlauf startet
+   * den Aufruf und wird sofort aufgeräumt, der zweite kehrt am Riegel um, und
+   * die eintreffende Antwort findet nur noch ein abgemeldetes `aktiv` vor. Die
+   * Seite bliebe für immer bei „Der Link wird geprüft …". Ein `setState` nach
+   * dem Abmelden ist seit React 18 folgenlos; der Riegel allein genügt.
    */
   const eingeloest = useRef(false);
 
@@ -57,14 +65,9 @@ export function KennwortNeuPage() {
     if (!tokenHash || eingeloest.current) return;
     eingeloest.current = true;
 
-    let aktiv = true;
     loeseLinkEin(tokenHash, 'recovery')
-      .then(() => aktiv && setZustand('formular'))
-      .catch(() => aktiv && setZustand('ungueltig'));
-
-    return () => {
-      aktiv = false;
-    };
+      .then(() => setZustand('formular'))
+      .catch(() => setZustand('ungueltig'));
   }, [tokenHash]);
 
   async function absenden(event: FormEvent<HTMLFormElement>) {

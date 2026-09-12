@@ -26,19 +26,19 @@ export function ZugangPage() {
   const tokenHash = suche.get('token_hash');
   const [ungueltig, setUngueltig] = useState(!tokenHash);
 
-  /** Einmalige Kennung, doppelte Montage unter `StrictMode` — siehe FIX-001. */
+  /**
+   * Einmalige Kennung, doppelte Montage unter `StrictMode` — und deshalb ohne
+   * `aktiv`-Flag in einer Aufräumfunktion. Die Begründung steht ausführlich in
+   * `KennwortNeuPage`: Riegel und Flag zusammen verwerfen die Antwort des
+   * einzigen Aufrufs, und die Seite bliebe für immer beim Ladezustand.
+   */
   const eingeloest = useRef(false);
 
   useEffect(() => {
     if (!tokenHash || eingeloest.current) return;
     eingeloest.current = true;
 
-    let aktiv = true;
-    loeseLinkEin(tokenHash, 'magiclink').catch(() => aktiv && setUngueltig(true));
-
-    return () => {
-      aktiv = false;
-    };
+    loeseLinkEin(tokenHash, 'magiclink').catch(() => setUngueltig(true));
   }, [tokenHash]);
 
   return (
