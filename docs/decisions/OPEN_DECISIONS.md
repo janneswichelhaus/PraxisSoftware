@@ -952,6 +952,12 @@ bestätigt sie ausdrücklich und setzt die Kopplung aus §19 an die Rechnung, ni
 an den Abschluss. Die Umsetzung des Automaten ist **CAL-EPIC-003a** und noch
 nicht gebaut — bis dahin gelten in der Anwendung die drei heutigen Status.
 
+**Nachtrag 2026-09-12:** Gebaut ist er inzwischen. CAL-EPIC-003a liegt mit
+PR #28 in `main` und ist am 2026-09-12 von Jannes abgenommen; in der Anwendung
+gelten damit die Werte aus ADR-018 statt der drei heutigen Status. `requested`
+und `tentative` bleiben wie oben beschrieben ungebaut, `invoiced` steht im
+Wertebereich und bekommt seinen Schreibpfad erst mit ABR-003.
+
 ### E2 — Ausfallkonzept
 
 | | |
