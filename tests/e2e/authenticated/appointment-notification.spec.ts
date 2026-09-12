@@ -54,9 +54,21 @@ async function terminAnlegen(page: Page, tag: string, von: string): Promise<stri
   return page.url().split('/').pop()!;
 }
 
-/** Der Eintrag dieses Termins in der Terminliste der Akte. */
+/**
+ * Der Eintrag dieses Termins in der Terminliste der Akte.
+ *
+ * Bewusst die ganze **Zeile** und nicht nur ihr Link: Seit UI-002a fuehrt
+ * `/patienten/:id` in den Terminbereich statt auf die entfallene Uebersicht,
+ * und dort steht das Mitteilungszeichen NEBEN dem Link in derselben Zeile
+ * (`Terminzeile`), waehrend auf der Uebersicht die ganze Zeile der Link war.
+ * Die Zusicherung bleibt dieselbe - das Zeichen muss an genau diesem Termin
+ * stehen -, nur der Ausschnitt stimmt wieder mit der Oberflaeche ueberein.
+ */
 function akteneintrag(page: Page, terminId: string) {
-  return page.locator(terminLinkWahl(terminId)).first();
+  return page
+    .locator('li')
+    .filter({ has: page.locator(terminLinkWahl(terminId)) })
+    .first();
 }
 
 test.describe('CAL-012: Mitteilungsvermerk', () => {
