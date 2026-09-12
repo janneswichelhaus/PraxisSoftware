@@ -4,12 +4,35 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.8** |
+| **Dokumentversion** | **0.9** |
 | **Änderungsdatum** | **2026-09-12** |
-| Vorversion | 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Vorversion | 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-018 außer ADR-019 (nur vorgeschlagen), siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
+
+### Änderungsvermerk 0.9
+
+Zwei Festlegungen des Projektinhabers vom 2026-09-12 zum Kalender, beide in
+§8.1. Sie ändern eine MUSS-Anforderung und brauchen deshalb eine eigene
+Version (§21):
+
+- **§8.1 geändert:** Ein Behandlungstermin hat **60 oder 45 Minuten**. 60
+  bleibt die Vorbelegung; eine dritte Länge lässt der Server nicht zu. Damit
+  ist **E12 Punkt 1** beantwortet — es gibt eine Abweichung, aber keine freie
+  und keine begründete. Was vorher galt („MUSS 60 Minuten"), steht in der
+  Vorversion; Bestandstermine bleiben unverändert gültig (die Abgrenzung aus
+  ANN-037 gilt weiter).
+- **§8.1 ergänzt:** Termine, die **keine Behandlung** sind — Besprechungen,
+  Teamtermine, andere Ereignisse des Praxisbetriebs — fallen nicht unter die
+  Fensterregel. Beginn und Ende sind im Praxisraster frei. Sie haben weder
+  Patient:in noch Verordnung und DÜRFEN keine abrechenbare Leistung erzeugen.
+  Damit bekommt §19 eine Abgrenzung, die es vorher nicht brauchte, weil es
+  keine terminlosen Termine gab.
+- **Unverändert:** die Fahrzeitregel samt Aufrundung, das Praxisraster, §8 im
+  Übrigen und der Rollenschnitt.
+
+Gebaut wird das in CAL-015.
 
 ### Änderungsvermerk 0.8
 
@@ -940,7 +963,16 @@ für Termine, die die Anwendung **anbietet** — für jedes neu angelegte und je
 neu gesetzte Zeitfenster.
 
 Ein angebotener Behandlungstermin MUSS ein Zeitfenster von **60 Minuten**
-haben. Die Dokumentation der Behandlung ist darin enthalten.
+haben; **45 Minuten sind ebenfalls zulässig** (ergänzt am 2026-09-12). Die
+Dokumentation der Behandlung ist darin enthalten. Andere Längen sind für
+Behandlungstermine NICHT zulässig, und die Wahl zwischen den beiden MUSS
+serverseitig geprüft werden. **60 Minuten bleiben die Vorbelegung.**
+
+Termine, die **keine Behandlung** sind — Besprechungen, Teamtermine und andere
+Ereignisse des Praxisbetriebs —, fallen nicht unter diese Regel. Ihr Beginn und
+ihr Ende sind innerhalb des Praxisrasters frei wählbar. Sie haben weder
+Patient:in noch Verordnung, und sie DÜRFEN keine abrechenbare Leistung
+erzeugen (§19).
 
 Ein eigener Dokumentationsblock neben dem Termin DARF NICHT geplant werden. Die
 Anwendung DARF NICHT eine feste Aufteilung zwischen Behandlung und
@@ -986,9 +1018,10 @@ stehen (§6.2).
 Nicht entschieden und deshalb **nicht** Bestandteil dieses Abschnitts sind: ein
 pauschaler Mindestabstand zwischen Hausbesuchen, von Hand gepflegte
 Fahrminuten, die Frage Warnung oder Sperre bei Unterschreitung und die Frage,
-ob eine begründete Abweichung von den 60 Minuten möglich sein soll und wie sie
-protokolliert würde. Sie stehen als E12 in
-`docs/decisions/OPEN_DECISIONS.md`.
+ob die zulässigen Längen je Praxis einstellbar werden. Sie stehen als E12 in
+`docs/decisions/OPEN_DECISIONS.md`. **Erledigt ist dagegen E12 Punkt 1**: Eine
+Abweichung von 60 Minuten ist möglich, aber keine freie und keine begründete —
+es sind genau zwei Längen, und der Server lässt keine dritte zu.
 
 
 ## 9. Routenplanung

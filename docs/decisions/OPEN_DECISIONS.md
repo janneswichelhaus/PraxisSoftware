@@ -145,7 +145,7 @@ Feature.
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
 | E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024)          |
 | E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | unten                                                                                    |
-| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Fahrpuffer **vorläufig entschieden 2026-09-12**: erst mit MAP-006 · Punkt 1 und 2 weiter **offen** | unten; `PROJECT_PRINCIPLES.md` §8.1; CAL-010a gebaut, CAL-010b entfällt zugunsten von MAP-006 |
+| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Fahrpuffer **vorläufig entschieden 2026-09-12**: erst mit MAP-006 · **Punkt 1 entschieden 2026-09-12**: 60 **oder** 45 Minuten, keine dritte Länge · Punkt 2 weiter **offen** | unten; `PROJECT_PRINCIPLES.md` 0.9 §8.1; CAL-010a und CAL-015 gebaut, CAL-010b entfällt zugunsten von MAP-006 |
 | E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
 | E14   | Gebühr beim Nichtantreffen am Hausbesuch                     | Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Regel für das Nichtantreffen **offen** | unten; `PROJECT_PRINCIPLES.md` 0.8 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 2 Punkt 8; mit ABR-001 |
 
@@ -1141,12 +1141,15 @@ Bestandstermine unverändert, Durchsetzung serverseitig.
 **Was daran offen ist** — vier Fragen, die die Entscheidung ausdrücklich
 **nicht** mitbeantwortet:
 
-1. **Gibt es eine begründete Abweichung von den 60 Minuten?** Ein Erstbefund
-   oder eine Doppelbehandlung könnte länger dauern. Ist das zulässig, und wenn
-   ja: als ausdrückliche Bestätigung nach dem Muster von
-   `p_allow_outside_working_hours` (CAL-005) mit Auditvermerk, oder gar nicht?
-   Ohne Antwort baut CAL-010a die Regel **ohne** Ausnahme — §16, im Zweifel
-   restriktiver, und später öffnen ist billig.
+1. ~~**Gibt es eine begründete Abweichung von den 60 Minuten?**~~
+   **Entschieden am 2026-09-12 durch Jannes, gebaut in CAL-015:** Es gibt
+   **zwei** zulässige Längen, 60 (Vorbelegung) und **45** Minuten. Keine
+   begründete Abweichung, keine Bestätigung nach dem Muster von
+   `p_allow_outside_working_hours`, kein Auditvermerk dafür — eine dritte
+   Länge weist der Server ab. Die Frage nach dem Erstbefund ist damit
+   beantwortet, ohne ein Verfahren dafür zu bauen. Ergänzend gilt seit
+   derselben Festlegung: Termine, die **keine Behandlung** sind, fallen gar
+   nicht unter die Regel (§8.1, CAL-015).
 2. **Wird die Länge je Praxis einstellbar?** Heute ist 60 eine feste Zahl im
    Prinzipiendokument, kein `owner`-Wert wie das Raster. Für eine Praxis
    reicht das; für ein zweites Unternehmen später nicht.
@@ -1177,10 +1180,10 @@ Der Testfall mit dem Beispiel aus §8.1 (09:05–10:05 plus 12 Minuten ergibt
 **Folge für die Roadmap:** **CAL-010b entfällt als eigene Story** und geht in
 MAP-006 auf. CAL-EPIC-003b ist ohne sie am 2026-09-12 fertig geworden.
 
-**Weiter offen sind Punkt 1 und 2** — begründete Abweichung von den 60 Minuten
-und Einstellbarkeit der Länge je Praxis. Beide sind Praxisprozess und lassen
-sich erst nach den ersten Wochen im Betrieb sinnvoll beantworten; sie stehen
-als Wiedervorlage an **ANN-037**.
+**Weiter offen ist Punkt 2** — Einstellbarkeit der zulässigen Längen je
+Praxis. Praxisprozess; lässt sich erst nach den ersten Wochen im Betrieb
+sinnvoll beantworten und steht als Wiedervorlage an **ANN-037**. **Punkt 1 ist
+am 2026-09-12 entschieden** (60 oder 45).
 
 **Blockiert:** nichts.
 
