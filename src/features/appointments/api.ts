@@ -290,6 +290,61 @@ export const leererTermin: Record<AppointmentFormField, string> = {
   location_id: '',
 };
 
+/**
+ * Länge eines angebotenen Terminfensters in Minuten (CAL-010a).
+ *
+ * `PROJECT_PRINCIPLES.md` §8.1: Ein angebotener Behandlungstermin MUSS ein
+ * Zeitfenster von 60 Minuten haben, die Dokumentation eingeschlossen.
+ *
+ * Diese Konstante steuert die Oberfläche. Verbindlich ist sie **nicht**:
+ * `app.appointment_window_minutes()` setzt dieselbe Zahl serverseitig durch
+ * (§8.1: „eine Vorbelegung im Formular allein erfüllt sie nicht"). Ein
+ * Datenbanktest hält beide gegeneinander.
+ */
+export const TERMINFENSTER_MINUTEN = 60;
+
+const UHRZEIT_ZERLEGT = /^([01]\d|2[0-3]):([0-5]\d)/;
+
+/** Minuten seit Mitternacht aus `HH:MM`; `null`, wenn die Eingabe keine Uhrzeit ist. */
+function minutenAusZeit(zeit: string): number | null {
+  const teile = UHRZEIT_ZERLEGT.exec(zeit);
+  return teile ? Number(teile[1]) * 60 + Number(teile[2]) : null;
+}
+
+/**
+ * Ende eines Zeitfensters aus Beginn und Länge, als `HH:MM`.
+ *
+ * Reine Minutenarithmetik auf der Ortszeit der Praxis - dieselbe Auslegung wie
+ * serverseitig, wo Beginn und Ende als `time` in die Zeitzone der Organisation
+ * gerechnet werden. Überschreitet das Ende Mitternacht, kommt eine leere
+ * Zeichenkette zurück: ein Termin über den Tageswechsel ist keiner, und das
+ * Formular soll dafür kein Ende erfinden.
+ */
+export function fensterEnde(beginn: string, minuten = TERMINFENSTER_MINUTEN): string {
+  const start = minutenAusZeit(beginn);
+  if (start === null) return '';
+  const gesamt = start + minuten;
+  if (gesamt >= 24 * 60) return '';
+  const stunde = String(Math.floor(gesamt / 60)).padStart(2, '0');
+  const minute = String(gesamt % 60).padStart(2, '0');
+  return `${stunde}:${minute}`;
+}
+
+/**
+ * Länge eines gespeicherten Termins in Minuten.
+ *
+ * Bestandstermine aus der Zeit vor §8.1 dürfen davon abweichen und bleiben
+ * gültig. Das Bearbeitungsformular rechnet deshalb mit **dieser** Länge weiter,
+ * solange niemand sie ausdrücklich auf das Terminfenster setzt (ANN-037).
+ */
+export function terminLaengeMinuten(appointment: Appointment): number {
+  const werte = appointmentToFormValues(appointment);
+  const beginn = minutenAusZeit(werte.start_time);
+  const ende = minutenAusZeit(werte.end_time);
+  if (beginn === null || ende === null) return TERMINFENSTER_MINUTEN;
+  return ende - beginn;
+}
+
 // -----------------------------------------------------------------------------
 // Künftige Termine in der Akte (UX-006)
 // -----------------------------------------------------------------------------
@@ -387,12 +442,16 @@ export function schreibeTerminVorbelegung(vorbelegung: TerminVorbelegung): strin
 
 /**
  * Der Folgetermin zu einem Termin: dieselbe Person, dieselbe Art, dieselbe
- * Uhrzeit, dieselbe Dauer - `tageSpaeter` Tage später.
+ * Uhrzeit - `tageSpaeter` Tage später.
+ *
+ * Das Ende kommt aus dem Terminfenster und **nicht** aus der Dauer des
+ * Ausgangstermins: ein Folgetermin ist ein neu angebotener Termin und damit
+ * 60 Minuten lang (§8.1, CAL-010a). Hinge er an einem Bestandstermin mit
+ * abweichender Länge, würde der Server ihn abweisen.
  *
  * Eine Woche ist die übliche Taktung einer Verordnung und bewusst nur eine
  * Vorbelegung: Datum und Uhrzeit stehen im Formular und sind mit einem Tap
- * änderbar. Nichts davon ist eine Terminserie - die kommt mit CAL-007 und
- * rechnet mit dem Kontingent der Verordnung.
+ * änderbar. Für eine ganze Verordnung gibt es die Serie (CAL-007).
  *
  * Der Kalendertag wird in der Zeitzone der Praxis gebildet, nicht im Browser:
  * sonst verschöbe sich ein Abendtermin je nach Gerät um einen Tag.
@@ -405,7 +464,7 @@ export function folgeterminVorbelegung(
   return {
     datum: naechsterTag(werte.date, tageSpaeter),
     beginn: werte.start_time,
-    ende: werte.end_time,
+    ende: fensterEnde(werte.start_time),
     art: appointment.appointment_type,
     person: appointment.staff_member_id,
   };
@@ -479,6 +538,9 @@ export async function createAppointment(
       throw new Error(
         'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
       );
+    }
+    if (error.message?.includes('appointment window')) {
+      throw new Error(TERMINFENSTER_MELDUNG);
     }
     throw new Error('Der Termin konnte nicht angelegt werden.');
   }
@@ -594,9 +656,22 @@ export function appointmentToFormValues(
   };
 }
 
+/**
+ * Meldung zum Terminfenster (CAL-010a).
+ *
+ * An einer Stelle, weil beide Schreibpfade sie brauchen. Sie nennt die Regel
+ * und den Ausweg, ohne interne Details preiszugeben.
+ */
+const TERMINFENSTER_MELDUNG =
+  `Ein Terminfenster ist ${TERMINFENSTER_MINUTEN} Minuten lang, die Dokumentation eingeschlossen. ` +
+  'Bitte den Beginn wählen; das Ende ergibt sich daraus.';
+
 function schreibfehler(error: { message?: string } | null, standard: string): Error {
   if (error?.message?.includes('outside_working_hours')) {
     return new AusserhalbArbeitszeitError();
+  }
+  if (error?.message?.includes('appointment window')) {
+    return new Error(TERMINFENSTER_MELDUNG);
   }
   if (error?.message?.includes('not on the appointment grid')) {
     return new Error(
@@ -770,15 +845,3 @@ export async function reopenAppointment(
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht wieder geöffnet werden.');
 }
-
-/**
- * Vorbelegte Länge eines neu angelegten Terminfensters in Minuten.
- *
- * `PROJECT_PRINCIPLES.md` §8.1: Ein angebotener Behandlungstermin MUSS ein
- * Zeitfenster von 60 Minuten haben, die Dokumentation eingeschlossen. Diese
- * Konstante ist die **Vorbelegung** im Formular - §8.1 sagt ausdrücklich, dass
- * eine Vorbelegung allein die Anforderung nicht erfüllt: die serverseitige
- * Durchsetzung kommt mit CAL-010a. Bis dahin ist die Länge frei änderbar, und
- * Bestandstermine bleiben unangetastet.
- */
-export const STANDARD_DAUER_MINUTEN = 60;

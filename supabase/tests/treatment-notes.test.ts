@@ -89,7 +89,7 @@ async function termin(opts: { staff?: string; patient?: string } = {}): Promise<
     'video',
     tagInTagen(30 + laufend),
     '09:00',
-    '09:45',
+    '10:00',
     null,
   ]);
   return terminStand(rows[0]!.id);
@@ -506,7 +506,7 @@ describe('DOK-001: Mandantentrennung', () => {
     const { rows: termine } = await asUserCommitted<{ id: string }>(
       fremderTherapeut,
       TERMIN_ANLEGEN,
-      [fremderPatient, fremderStaff, 'video', tagInTagen(400), '09:00', '09:45', null],
+      [fremderPatient, fremderStaff, 'video', tagInTagen(400), '09:00', '10:00', null],
     );
     fremderTermin = termine[0]!.id;
 

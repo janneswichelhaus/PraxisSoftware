@@ -18,7 +18,7 @@ import {
   istAusserhalbArbeitszeit,
   minutesOfDay,
   schreibeTerminVorbelegung,
-  STANDARD_DAUER_MINUTEN,
+  TERMINFENSTER_MINUTEN,
   todayInTimeZone,
   updateAppointment,
   type TerminVorbelegung,
@@ -385,9 +385,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
    * Patient:in noch nicht (UX-005). Die Auswahl passiert auf der naechsten
    * Seite; hier wird nur uebersetzt, was die Spalte bedeutet.
    *
-   * Das Ende wird auf 60 Minuten nach dem Beginn vorbelegt
-   * (PROJECT_PRINCIPLES.md 8.1). Das ist die Vorbelegung, nicht die
-   * Durchsetzung - die verlangt 8.1 serverseitig und sie kommt mit CAL-010a.
+   * Das Ende ergibt sich aus dem Terminfenster (PROJECT_PRINCIPLES.md 8.1).
+   * Durchgesetzt wird es serverseitig in create_appointment (CAL-010a); hier
+   * steht nur die Vorbelegung, die das Formular ohnehin selbst ableitet.
    */
   function freieZeit(ziel: { spalteId: string; startMinute: number }) {
     const staffMemberId = p.ansicht === 'tag' ? ziel.spalteId : wochenPerson;
@@ -396,7 +396,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     const vorbelegung: TerminVorbelegung = {
       datum,
       beginn: minuteZuZeit(ziel.startMinute),
-      ende: minuteZuZeit(ziel.startMinute + STANDARD_DAUER_MINUTEN),
+      ende: minuteZuZeit(ziel.startMinute + TERMINFENSTER_MINUTEN),
       art: 'home_visit',
       ...(staffMemberId ? { person: staffMemberId } : {}),
     };

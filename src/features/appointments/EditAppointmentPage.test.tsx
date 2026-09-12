@@ -128,7 +128,8 @@ describe('EditAppointmentPage', () => {
     // 07:00 UTC ist 09:00 Ortszeit - vorbefuellt wird die Praxiszeit.
     expect(screen.getByLabelText('Datum *')).toHaveValue('2027-05-12');
     expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
-    expect(screen.getByLabelText('Ende *')).toHaveValue('10:00');
+    // Das Ende ist seit CAL-010a eine Ableitung, kein Feld.
+    expect(screen.getByText('10:00 Uhr')).toBeInTheDocument();
     expect(screen.getByLabelText('Standort *')).toHaveValue(ORT);
   });
 
@@ -150,8 +151,6 @@ describe('EditAppointmentPage', () => {
 
     await user.clear(screen.getByLabelText('Beginn *'));
     await user.type(screen.getByLabelText('Beginn *'), '11:00');
-    await user.clear(screen.getByLabelText('Ende *'));
-    await user.type(screen.getByLabelText('Ende *'), '12:00');
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
     await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
@@ -224,17 +223,72 @@ describe('EditAppointmentPage', () => {
     expect(screen.queryByText(/Adresse des Hausbesuchs/)).not.toBeInTheDocument();
   });
 
-  it('meldet ein Ende vor dem Beginn inline und sendet nicht', async () => {
+  it('zieht das Ende beim Verschieben mit und laesst die Laenge unangetastet', async () => {
     const user = userEvent.setup();
     rendern();
     await formularAbwarten();
 
-    await user.clear(screen.getByLabelText('Ende *'));
-    await user.type(screen.getByLabelText('Ende *'), '08:00');
-    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    await user.clear(screen.getByLabelText('Beginn *'));
+    await user.type(screen.getByLabelText('Beginn *'), '14:30');
 
-    expect(await screen.findByText('Das Ende muss nach dem Beginn liegen.')).toBeInTheDocument();
-    expect(updateAppointment).not.toHaveBeenCalled();
+    expect(screen.getByText('15:30 Uhr')).toBeInTheDocument();
+  });
+
+  describe('CAL-010a: Bestandstermin mit abweichender Laenge', () => {
+    /** Derselbe Termin, aber 09:00-09:45 - angelegt vor der Festlegung. */
+    const kurz: AppointmentsApi.Appointment = {
+      ...termin,
+      ends_at: '2027-05-12T07:45:00.000Z',
+    };
+
+    it('behaelt seine Laenge beim Oeffnen und beim Verschieben', async () => {
+      // 8.1: "Die Anwendung DARF ihn NICHT selbsttaetig verlaengern, verkuerzen
+      // oder verschieben."
+      fetchAppointment.mockResolvedValue(kurz);
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      expect(screen.getByText('09:45 Uhr')).toBeInTheDocument();
+      expect(
+        screen.getByText('Terminfenster: 45 Minuten, Dokumentation eingeschlossen.'),
+      ).toBeInTheDocument();
+
+      await user.clear(screen.getByLabelText('Beginn *'));
+      await user.type(screen.getByLabelText('Beginn *'), '14:00');
+      expect(screen.getByText('14:45 Uhr')).toBeInTheDocument();
+    });
+
+    it('bekommt das Terminfenster erst auf ausdrueckliche Anweisung', async () => {
+      fetchAppointment.mockResolvedValue(kurz);
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.click(screen.getByRole('button', { name: 'Auf 60 Minuten setzen' }));
+
+      expect(screen.getByText('10:00 Uhr')).toBeInTheDocument();
+      // Der Hinweis ist danach gegenstandslos.
+      expect(
+        screen.queryByRole('button', { name: 'Auf 60 Minuten setzen' }),
+      ).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment).toHaveBeenCalledWith(
+        TERMIN_ID,
+        STAND,
+        expect.objectContaining({ start_time: '09:00', end_time: '10:00' }),
+      );
+    });
+
+    it('zeigt den Hinweis bei einem Termin im Terminfenster nicht', async () => {
+      rendern();
+      await formularAbwarten();
+      expect(
+        screen.queryByRole('button', { name: 'Auf 60 Minuten setzen' }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('loest bei doppeltem Klick nur einen Schreibvorgang aus', async () => {

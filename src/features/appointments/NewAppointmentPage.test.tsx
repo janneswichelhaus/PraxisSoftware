@@ -78,16 +78,16 @@ async function formularAbwarten() {
 }
 
 /**
- * Fuellt Datum, Beginn und Ende mit einem gueltigen zukuenftigen Termin.
+ * Fuellt Datum und Beginn mit einem gueltigen zukuenftigen Termin.
  *
  * Das Datum wird zuerst geleert: seit UX-003 steht dort der heutige Tag als
- * Vorbelegung, und Tippen wuerde ihn nicht ersetzen, sondern ergaenzen.
+ * Vorbelegung, und Tippen wuerde ihn nicht ersetzen, sondern ergaenzen. Das
+ * Ende wird nicht getippt - es ergibt sich seit CAL-010a aus dem Beginn.
  */
 async function zeitenSetzen(user: ReturnType<typeof userEvent.setup>) {
   await user.clear(screen.getByLabelText('Datum *'));
   await user.type(screen.getByLabelText('Datum *'), '2027-05-12');
   await user.type(screen.getByLabelText('Beginn *'), '09:00');
-  await user.type(screen.getByLabelText('Ende *'), '10:00');
 }
 
 describe('NewAppointmentPage', () => {
@@ -152,20 +152,18 @@ describe('NewAppointmentPage', () => {
     expect(createAppointment).not.toHaveBeenCalled();
   });
 
-  it('weist ein Ende vor dem Beginn zurueck', async () => {
+  it('leitet das Ende aus dem Beginn ab (CAL-010a)', async () => {
     const user = userEvent.setup();
     rendern();
     await formularAbwarten();
 
-    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
-    await user.clear(screen.getByLabelText('Datum *'));
-    await user.type(screen.getByLabelText('Datum *'), '2027-05-12');
-    await user.type(screen.getByLabelText('Beginn *'), '10:00');
-    await user.type(screen.getByLabelText('Ende *'), '09:00');
-    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+    await user.type(screen.getByLabelText('Beginn *'), '10:15');
 
-    expect(await screen.findByText('Das Ende muss nach dem Beginn liegen.')).toBeInTheDocument();
-    expect(createAppointment).not.toHaveBeenCalled();
+    // 8.1: 60 Minuten, und der Beginn darf auf jedem Rasterpunkt liegen.
+    expect(screen.getByText('11:15 Uhr')).toBeInTheDocument();
+    expect(
+      screen.getByText('Terminfenster: 60 Minuten, Dokumentation eingeschlossen.'),
+    ).toBeInTheDocument();
   });
 
   it('begrenzt das Datumsfeld auf den laufenden Praxistag', async () => {
@@ -357,10 +355,13 @@ describe('NewAppointmentPage', () => {
       expect(screen.getByText('Praxisraster: 5 Minuten')).toBeInTheDocument();
     });
 
-    it('bindet das Ende nicht an das Raster', async () => {
+    it('bietet das Ende gar nicht erst als Eingabefeld an', async () => {
+      // Das Raster bindet den Beginn; die Laenge kommt aus dem Terminfenster
+      // (CAL-010a). Ein beschreibbares Ende waere eine Falle - der Server
+      // wiese es ab.
       rendern();
       await formularAbwarten();
-      expect(screen.getByLabelText('Ende *')).not.toHaveAttribute('step');
+      expect(screen.queryByLabelText('Ende *')).not.toBeInTheDocument();
     });
 
     it('meldet einen Beginn ausserhalb des Rasters verstaendlich', async () => {
@@ -522,7 +523,8 @@ describe('NewAppointmentPage', () => {
 
       expect(screen.getByLabelText('Datum *')).toHaveValue('2027-05-19');
       expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
-      expect(screen.getByLabelText('Ende *')).toHaveValue('10:00');
+      // Das Ende kommt aus dem Terminfenster, nicht aus der Adresszeile.
+      expect(screen.getByText('10:00 Uhr')).toBeInTheDocument();
       expect(screen.getByLabelText('Terminart *')).toHaveValue('practice');
       await waitFor(() =>
         expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_TIM),

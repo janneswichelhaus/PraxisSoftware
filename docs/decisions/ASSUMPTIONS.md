@@ -198,6 +198,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen |
 | ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
 | ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
+| ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | offen (2026-09-12)    | Jannes; E12 Punkt 1 und 2 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -2066,3 +2067,66 @@ leer") samt der Invariantenprüfung über alle Termine.
 automatische Finalisierung bräuchte dann eine eigene Antwort auf dieselbe
 Frage — Aufwand `klein` im Code, aber eine neue fachliche Entscheidung für den
 Scheduler-Fall.
+
+---
+
+### ANN-037 — Geprüft wird die Länge des Terminfensters, nicht der Zeitpunkt
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-010a; `PROJECT_PRINCIPLES.md` §8.1 („neu gesetztes Zeitfenster" gegen „Bestehende Termine werden nicht rückwirkend verändert") |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes steht aus |
+| Wiedervorlage | Jannes; spätestens mit der Antwort auf E12 Punkt 1 und 2 |
+
+**Annahme.** `create_appointment` verlangt **immer** ein Zeitfenster von 60
+Minuten. `update_appointment` prüft die Länge **genau dann, wenn sie sich
+ändert**. Ein Bestandstermin mit abweichender Länge bleibt damit gültig,
+organisatorisch bearbeitbar **und verschiebbar**, solange seine Länge
+unangetastet bleibt; wer sie ändert, bekommt die 60 Minuten. Im
+Bearbeitungsformular zieht ein geänderter Beginn das Ende mit der **bisherigen**
+Länge mit; ein eigener Knopf setzt den Termin ausdrücklich auf das
+Terminfenster.
+
+**Begründung.** §8.1 sagt zwei Dinge, die sich beim Verschieben eines
+Bestandstermins nicht beide wörtlich halten lassen. „Geprüft wird das
+Zeitfenster, wenn es neu gesetzt wird" spricht für eine Prüfung bei jeder
+Zeitänderung. Der Abschnitt „Bestehende Termine" sagt dagegen: Ein Termin mit
+anderer Länge „bleibt gültig, sichtbar und bearbeitbar", und „die Anwendung
+DARF ihn NICHT selbsttätig verlängern, verkürzen oder verschieben."
+
+Beide Alternativen verletzen den zweiten Satz: Ein Verschieben, das die Länge
+auf 60 Minuten zieht, verlängert den Termin selbsttätig; ein Verschieben, das
+abgewiesen wird, macht ihn unbeweglich und damit nicht mehr „bearbeitbar". Die
+Auflösung nach Rang gibt dem stärkeren Verbot recht — der Bestandsschutz ist
+als Verbot formuliert, die Prüfregel als Zeitpunktangabe.
+
+Die MUSS-Anforderung bleibt dabei vollständig durchgesetzt: Es gibt **keinen**
+Weg, ein Zeitfenster mit einer anderen Länge als 60 Minuten **neu** entstehen
+zu lassen. Bestehen bleiben kann eine abweichende Länge nur dort, wo §8.1 sie
+ausdrücklich bestehen lässt. **Unsicher:** ob Jannes lieber hätte, dass ein
+verschobener Altfall die 60 Minuten gleich mitbekommt — das wäre bequemer und
+widerspräche dem Verbot.
+
+**Nicht Bestandteil.** Ob es eine begründete Abweichung von den 60 Minuten
+geben soll und ob die Länge je Praxis einstellbar wird, sind **E12 Punkt 1 und
+2** und bleiben offen. CAL-010a baut deshalb ohne Ausnahmeparameter und mit
+einer festen Zahl (§16: im Zweifel die restriktivere Option).
+
+**Verankerung.** `app.appointment_window_minutes()` und die beiden
+Längenprüfungen in
+`supabase/migrations/20260912150000_appointment_window.sql` (Kopfkommentar und
+Funktionsrümpfe tragen die Kennung); `TERMINFENSTER_MINUTEN`,
+`fensterEnde` und `terminLaengeMinuten` in
+`src/features/appointments/api.ts`; die Ableitung im Formular in
+`AppointmentFormFields.tsx` und `EditAppointmentPage.tsx`. Tests in
+`supabase/tests/appointment-window.test.ts` (beide Schreibpfade, drei
+Bestandsfälle) und `src/features/appointments/EditAppointmentPage.test.tsx`.
+
+**Änderungspfad.** Strenger (jede Zeitänderung erzwingt 60 Minuten): die
+Bedingung `v_neu_laenge is distinct from v_alt_laenge` in
+`update_appointment` streichen und im Formular die Länge beim Verschieben auf
+`TERMINFENSTER_MINUTEN` ziehen — Aufwand `klein`, ohne Datenumzug. Lockerer
+(begründete Abweichung nach E12 Punkt 1): ein weiterer Parameter nach dem
+Muster von `p_allow_outside_working_hours` mit Auditvermerk — Aufwand `klein`
+bis `mittel`.

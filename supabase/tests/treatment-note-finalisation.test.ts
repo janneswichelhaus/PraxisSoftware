@@ -117,7 +117,7 @@ async function termin(): Promise<Stand> {
     'video',
     tagInTagen(400 + laufend),
     '09:00',
-    '09:45',
+    '10:00',
     null,
   ]);
   return terminStand(rows[0]!.id);

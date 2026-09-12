@@ -29,6 +29,7 @@ export function AppointmentFormFields({
   standorte,
   minDatum,
   rasterMinuten,
+  fensterMinuten,
   hausbesuch,
 }: {
   werte: Record<AppointmentFormField, string>;
@@ -39,6 +40,15 @@ export function AppointmentFormFields({
   minDatum?: string | undefined;
   /** Praxisraster in Minuten. Steuert die Schrittweite des Beginns (CAL-005). */
   rasterMinuten?: number | undefined;
+  /**
+   * Länge des Zeitfensters in Minuten, aus der sich das Ende ergibt (CAL-010a).
+   *
+   * Kein Eingabefeld: §8.1 legt die Länge fest, und ein frei beschreibbares
+   * Ende wäre eine Falle - der Server wiese es ab. Beim Bearbeiten reicht die
+   * Seite die Länge des Bestandstermins herein, damit ein Termin aus der Zeit
+   * vor §8.1 nicht allein durch Öffnen des Formulars verlängert wird.
+   */
+  fensterMinuten: number;
   /** Darstellung der Adresse bei `home_visit` - je nach Vorgang verschieden. */
   hausbesuch: ReactNode;
 }) {
@@ -83,7 +93,7 @@ export function AppointmentFormFields({
       />
 
       {/* items-end: der Rasterhinweis steht nur am Beginn - ohne Ausrichtung
-          stuenden die beiden Eingabefelder auf verschiedenen Hoehen. */}
+          stuenden Eingabefeld und Ableitung auf verschiedenen Hoehen. */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-end">
         <Field
           label="Beginn *"
@@ -97,13 +107,18 @@ export function AppointmentFormFields({
           hint={rasterMinuten ? `Praxisraster: ${rasterMinuten} Minuten` : undefined}
           onChange={(e) => onChange('start_time', e.target.value)}
         />
-        <Field
-          label="Ende *"
-          type="time"
-          value={werte.end_time}
-          error={fehler.end_time}
-          onChange={(e) => onChange('end_time', e.target.value)}
-        />
+        {/* Das Ende ist eine Ableitung, kein Feld (CAL-010a). Fehler von dort
+            bleiben trotzdem sichtbar: der Server prueft die Laenge erneut. */}
+        <div>
+          <p className="text-ink-muted text-sm">Ende</p>
+          <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+            {werte.end_time ? `${werte.end_time} Uhr` : '—'}
+          </p>
+          <p className="text-ink-subtle mt-1 text-xs leading-relaxed">
+            Terminfenster: {fensterMinuten} Minuten, Dokumentation eingeschlossen.
+          </p>
+          {fehler.end_time ? <p className="text-danger mt-1 text-xs">{fehler.end_time}</p> : null}
+        </div>
       </div>
 
       {art === 'practice' ? (

@@ -1140,3 +1140,64 @@ bedienbar, jedes Tippziel mindestens 44 px.
 „Ohne Befund" ist das erwartete Ergebnis. Was nicht stimmt, kommt mit einem
 Satz zurück — Befunde gehen als erste Story in den nächsten Loop derselben
 Spur.
+
+---
+
+## CAL-010a — Terminfenster von 60 Minuten
+
+`PROJECT_PRINCIPLES.md` §8.1: Ein angebotener Behandlungstermin hat ein
+Zeitfenster von **60 Minuten**, die Dokumentation eingeschlossen. Die Regel
+gilt serverseitig; das Formular bietet das Ende gar nicht mehr als Feld an.
+
+### 1. Termin anlegen
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte „Max Mustermann" →
+   **Termin anlegen**.
+2. Erwartung: Statt eines Ende-Feldes steht dort „Ende —" mit dem Hinweis
+   „Terminfenster: 60 Minuten, Dokumentation eingeschlossen."
+3. Beginn **09:05** eintragen. Erwartung: Daneben erscheint **10:05 Uhr**.
+   §8.1 lässt jeden Rasterpunkt als Beginn zu — 09:05 ist zulässig, obwohl es
+   keine volle oder halbe Stunde ist.
+4. Speichern und die Detailansicht ansehen: **09:05–10:05 Uhr**.
+
+### 2. Termin verschieben
+
+1. Denselben Termin → **Bearbeiten**, Beginn auf **14:30** setzen.
+   Erwartung: Das Ende springt auf **15:30 Uhr** mit.
+2. Speichern. Erwartung: Der Termin steht auf 14:30–15:30 Uhr.
+3. Im Kalender denselben Termin mit dem Zeigegerät auf eine andere Zeit
+   ziehen (Tagesansicht, langer Druck am Finger). Erwartung: Die Vorschau
+   nennt ein Fenster von 60 Minuten, und der Termin landet dort.
+
+### 3. Bestandstermin mit abweichender Länge
+
+Der Seed enthält keinen solchen Termin — dafür einen von Hand anlegen:
+
+```bash
+psql "$DATABASE_URL" -c "update public.appointments
+  set ends_at = starts_at + interval '45 minutes'
+  where id = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001'"
+```
+
+1. Diesen Termin öffnen → **Bearbeiten**. Erwartung: Das Ende zeigt die
+   **45 Minuten** an, nicht 60 — die Anwendung verlängert ihn nicht von
+   selbst (§8.1, „Bestehende Termine werden nicht rückwirkend verändert").
+   Darunter steht ein Hinweis mit dem Knopf **Auf 60 Minuten setzen**.
+2. Nur die behandelnde Person wechseln und speichern. Erwartung: Das geht
+   durch; die Länge bleibt 45 Minuten.
+3. Erneut bearbeiten, nur den Beginn verschieben und speichern. Erwartung:
+   Auch das geht durch, das Ende zieht mit 45 Minuten mit.
+4. Erneut bearbeiten, **Auf 60 Minuten setzen** klicken und speichern.
+   Erwartung: Der Termin steht danach auf 60 Minuten, der Hinweis ist weg.
+
+### 4. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann in der Akte „Termin anlegen" öffnen. Erwartung: Beginn und abgeleitetes
+Ende stehen untereinander, kein waagerechtes Scrollen, das Zeitfeld ist mit
+einem Daumen erreichbar.
+
+**Zielwert:** Ein Termin entsteht mit **einer** Zeiteingabe statt zweien.
