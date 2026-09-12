@@ -2,7 +2,8 @@
 
 ## Status
 
-**Vorgeschlagen** — Bestätigung durch Jannes ausstehend (Fragen am Ende).
+**Angenommen** — von Jannes am 2026-09-12 bestätigt, alle acht Fragen wie
+empfohlen (Abschnitt am Ende).
 
 Dieser ADR **legt keine Datei an und gibt keinen produktiven Speicher frei.**
 Er legt fest, wie eine Datei in dieser Anwendung entsteht, wer sie sieht, wie
@@ -368,10 +369,18 @@ aus Forendiskussionen:
   Plattform wechselt? Die Regeln überleben, die Policies auf `storage.objects`
   nicht. Der Aufwand wäre `mittel` und beträfe nur die Ablageschicht.
 
-## Bestätigungsfragen für Jannes
+## Bestätigungsfragen für Jannes — beantwortet am 2026-09-12
 
-Je eine Zeile genügt; „wie empfohlen" reicht. Erst nach der Bestätigung wird
-E8 in `docs/decisions/OPEN_DECISIONS.md` geschlossen und DAT-EPIC-001 gestartet.
+**Alle acht wie empfohlen bestätigt.** Damit ist Punkt E8 in
+`docs/decisions/OPEN_DECISIONS.md` erledigt und DAT-EPIC-001 baubar. Die Fragen
+bleiben mitsamt ihrer Begründung stehen: Wer in zwei Jahren wissen will, warum
+ein Verweis nur eine Minute lebt oder warum `office` den Verordnungsscan nicht
+sieht, findet hier die Abwägung und nicht nur das Ergebnis.
+
+**Was die Bestätigung nicht erledigt:** Die **produktive** Ablage bleibt an
+OPS-001 gebunden (fünf Prüfpunkte oben) und an den dokumentierten
+Sicherungsweg für den Objektspeicher aus Frage 7 (OPS-003, Roadmap G7). Beides
+ist Vorbedingung für die erste echte Datei, nicht für DAT-EPIC-001.
 
 1. **Kurzlebige Verweise mit 60 Sekunden, kein Teilen-Link** (Punkt 15 bis 17)
    — auch um den Preis, dass man eine Datei nicht „mal eben" per Link

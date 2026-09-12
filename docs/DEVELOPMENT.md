@@ -346,12 +346,11 @@ deckungsgleich.
    Auswertung oder Alarmierung.
 8. **Keine Anhänge zur Behandlungsdokumentation — es gibt noch keine
    Dateiablage.** Die Regeln dafür stehen seit dem 2026-09-12 in
-   [ADR-017](adr/ADR-017-file-storage.md) (Status **vorgeschlagen**, acht
-   Bestätigungsfragen offen); gebaut wird sie mit DAT-EPIC-001. Punkt E8 in
-   `docs/decisions/OPEN_DECISIONS.md` bleibt bis zur Bestätigung offen, die
-   **produktive** Ablage zusätzlich bis zu OPS-001 und einem dokumentierten
-   Sicherungsweg für den Objektspeicher (er läuft im Datenbank-Backup nicht
-   mit). Das Datenmodell verbaut nichts: Die Dateitabelle kommt additiv hinzu.
+   [ADR-017](adr/ADR-017-file-storage.md) (**angenommen**, Punkt E8 damit
+   erledigt); gebaut wird sie mit DAT-EPIC-001. **Vor der ersten echten Datei**
+   braucht es zusätzlich OPS-001 und einen dokumentierten, getesteten
+   Sicherungsweg für den Objektspeicher — er läuft im Datenbank-Backup nicht
+   mit. Das Datenmodell verbaut nichts: Die Dateitabelle kommt additiv hinzu.
 9. **Die automatische Finalisierung braucht `pg_cron`.** ADR-016 Punkt 7 ist
    mit DOK-004 umgesetzt: `finalize_overdue_treatment_notes` schreibt
    überfällige Entwürfe fest, und die Migration registriert den Aufruf alle
