@@ -26,9 +26,12 @@ Patientenkonto ebenso wenig (§4.6).
 4. Neu laden (F5): der Entwurf steht weiterhin da, Absätze bleiben erhalten.
 5. „Dokumentation bearbeiten": das Feld ist vorbefüllt. Ohne Änderung ist
    „Als Entwurf speichern" nicht anklickbar.
-6. Text ändern, „Abbrechen" klicken — es erscheint eine Rückfrage, und der Text
-   bleibt stehen. „Weiter bearbeiten" führt zurück ins Feld, „Ja, Bearbeitung
-   verwerfen" zurück zum Termin ohne zu speichern.
+6. Text ändern, „Abbrechen" klicken — es erscheint die Rückfrage des
+   Navigationsschutzes (seit FIX-011), und der Text bleibt stehen. „Hier
+   bleiben" führt zurück ins Feld, „Verwerfen und weitergehen" zurück zum
+   Termin ohne zu speichern, „Speichern und weitergehen" sichert den Entwurf
+   und geht erst danach. Ausführlich im Abschnitt **FIX-EPIC-003** am Ende
+   dieser Datei.
 7. Konfliktprobe: dieselbe Dokumentation in zwei Browser-Tabs zum Bearbeiten
    öffnen, im ersten speichern, danach im zweiten. Der zweite Versuch wird
    abgewiesen — **und der eigene Text bleibt im Feld stehen**, damit nichts
@@ -1710,3 +1713,88 @@ waagerechtes Scrollen, jede Zeile mindestens 44 px hoch.
 
 **Zielwert:** Wer auf eine Seite schaut, sieht auf den ersten Blick, was Inhalt
 ist und was ihn erklärt — ohne lesen zu müssen.
+
+---
+
+## FIX-EPIC-003 — Ungespeicherte Dokumentation überlebt einen Seitenwechsel
+
+Prüfschritte zu FIX-010 (Data Router) und FIX-011 (Navigationsschutz).
+Grundlage: `PROJECT_PRINCIPLES.md` §13 und ANN-046.
+
+Alles als `anna.beispiel@praxis.invalid` (therapist).
+
+### 1. Das Hauptmenü nimmt den Text nicht mit
+
+1. Einen Termin öffnen, „Dokumentation anlegen", einen Satz tippen —
+   **nicht** speichern.
+2. In der Seitenleiste (am Handy: in der Leiste unten) einen anderen Bereich
+   antippen, etwa „Patient:innen".
+3. Erwartung: Die Seite wechselt **nicht**. Stattdessen erscheint der Kasten
+   „Ungespeicherte Dokumentation" mit drei Schaltflächen, und die Tastatur
+   steht auf der ersten davon.
+4. „Hier bleiben": Der Text steht unverändert im Feld, der Kasten ist fort.
+
+### 2. Dieselbe Frage beim Patientenwechsel und beim Zurück
+
+1. Wieder mit ungespeichertem Text: oben über die Suche eine andere Patient:in
+   auswählen. Erwartung: derselbe Kasten.
+2. „Hier bleiben", dann den **Zurück-Knopf des Browsers** drücken. Erwartung:
+   derselbe Kasten, die Adresszeile bleibt auf der Dokumentation.
+
+### 3. Speichern geht erst nach dem Speichern weiter
+
+1. Mit ungespeichertem Text ins Hauptmenü, dann „Speichern und weitergehen".
+2. Erwartung: Die Schaltfläche zeigt „Wird gespeichert …", danach erscheint
+   das gewählte Ziel.
+3. Zurück zum Termin: Der Eintrag steht dort als **Entwurf** — ausdrücklich
+   **nicht** finalisiert und der Termin **nicht** abgeschlossen.
+4. Gegenprobe auf „Behandlung abschließen": Text tippen, Hauptmenü,
+   „Speichern und weitergehen". Erwartung: Der Termin bleibt `bestätigt`, die
+   Dokumentation bleibt Entwurf.
+
+### 4. Ein Fehlschlag nimmt weder Text noch Seite mit
+
+1. Mit ungespeichertem Text die Netzverbindung des Rechners trennen
+   (Flugmodus, WLAN aus).
+2. Ins Hauptmenü tippen, „Speichern und weitergehen".
+3. Erwartung: Die Seite bleibt stehen, der Text steht im Feld, und im Kasten
+   steht die Fehlermeldung mit dem Zusatz, dass die Seite geöffnet bleibt. Die
+   drei Schaltflächen stehen weiter zur Wahl.
+4. Verbindung zurück, erneut „Speichern und weitergehen": Jetzt geht es
+   weiter.
+
+### 5. Keine Frage ohne Anlass
+
+1. Eine Dokumentation öffnen und **nichts** ändern. Ins Hauptmenü tippen.
+   Erwartung: kein Kasten, die Seite wechselt sofort.
+2. Text tippen, „Als Entwurf speichern". Erwartung: kein Kasten — der eigene
+   Rückweg zum Termin läuft durch.
+3. In der Dokumentation auf „Bausteine verwalten →" tippen (mit
+   ungespeichertem Text). Erwartung: Kasten. Ohne Text: kein Kasten.
+
+### 6. Korrektur und Nachtrag
+
+1. Einen finalisierten Eintrag öffnen, „Korrigieren", Text ändern, ins
+   Hauptmenü tippen. Erwartung: Der Kasten bietet **nur** „Verwerfen und
+   weitergehen" und „Hier bleiben" und erklärt, dass eine Korrektur mit dem
+   Absenden Bestandteil der Akte wird.
+2. Dasselbe beim **Nachtrag**. Erwartung: Hier steht „Speichern und
+   weitergehen" wieder zur Verfügung — der Nachtrag beginnt als Entwurf.
+
+### 7. Fenster schließen und neu laden
+
+1. Mit ungespeichertem Text F5 drücken beziehungsweise den Tab schließen.
+2. Erwartung: Der Browser fragt mit **seinem eigenen** Text nach. Den Wortlaut
+   bestimmt der Browser; die Anwendung kann ihn nicht setzen.
+
+### 8. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=therapist /termine/<id>/dokumentation
+```
+
+Erwartung: Der Kasten passt in die Breite, alle drei Schaltflächen sind
+erreichbar und mindestens 44 px hoch, kein waagerechtes Scrollen.
+
+**Bekannte Grenze (ANN-046):** „Abmelden" ist keine Navigation. Wer mit
+ungespeichertem Text abmeldet, verliert ihn weiterhin.

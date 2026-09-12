@@ -2,6 +2,12 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
+- **FIX-EPIC-003 bringt ANN-046 neu** (Navigationsschutz der
+  Behandlungsdokumentation): Data Router statt `<BrowserRouter>`, Rückfrage mit
+  drei Wegen, „Speichern" sichert den **Entwurf** und löst keine Finalisierung
+  aus, ein Fehlschlag navigiert nicht. `Technik`, also erledigt, sobald Jannes
+  widerspricht oder zustimmt. Die bekannte Grenze steht im Eintrag: Das
+  Abmelden ist keine Navigation und wird nicht erfasst.
 - **CAL-013 bringt ANN-041 neu** (Termine per E-Mail): Die Praxis wird
   Terminmails verschicken — Jannes hat das am 2026-09-12 ausdrücklich
   vorgesehen und damit seine eigene vorläufige Entscheidung zu B15 in einem
@@ -2863,3 +2869,69 @@ setzen — Aufwand `klein`; dann muss der Text in `MeinKontoPage.tsx` mitgeände
 werden und „Alle Sitzungen beenden" verliert seinen Zweck. Eine Wahl beim
 Abmelden anbieten („nur hier" / „überall"): Aufwand `klein`, aber eine
 Entscheidung mehr an einer Stelle, an der niemand eine treffen will.
+
+---
+
+### ANN-046 — Navigationsschutz: Data Router, drei Wege, und „Speichern" heißt Entwurf
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | FIX-EPIC-003 (Befund aus FIX-EPIC-001); Roadmap „braucht eine Entscheidung zum Router"; `PROJECT_PRINCIPLES.md` §13 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach dem ersten Feldtag mit Dokumentation unterwegs |
+
+**Annahme.** Vier Festlegungen, die zusammen den Schutz ausmachen:
+
+1. **Der Router wird ein Data Router** (`createBrowserRouter` mit einer
+   Platzhalterroute, darin unverändert `Gate` und die bestehenden `<Routes>`).
+   Nur so gibt es `useBlocker`.
+2. **Die Rückfrage bietet drei Wege**: speichern und weitergehen, verwerfen und
+   weitergehen, hier bleiben. Sie ist kein modaler Dialog, sondern derselbe
+   eingelassene Kasten wie `Rueckfrage` (UI-000).
+3. **„Speichern" sichert den Entwurf, nie mehr.** Auf der Abschlussseite
+   ausdrücklich nicht `completeTreatment`. Wo es keinen Entwurfszustand gibt —
+   die Korrektur eines finalisierten Eintrags —, gibt es auch kein Speichern,
+   sondern nur Verwerfen und Bleiben.
+4. **Ein Fehlschlag navigiert nicht.** Text und Seite bleiben stehen, die
+   Rückfrage bleibt offen.
+
+**Begründung.** Zu 1: Der Alternativweg wäre ein eigener Wachposten mit
+umhüllten `Link`s und einem umhüllten `useNavigate`. Er käme an das **Zurück
+des Browsers** nur über einen Eingriff in die Verlaufsliste heran — selbst
+gebaute Infrastruktur an einer Stelle, an der die eingesetzte Bibliothek eine
+geprüfte anbietet (ADR-015, §3.4 sinngemäß). Der gewählte Weg ändert die
+Routentabelle nicht und ist mit zwei Dateien wieder zurückzunehmen.
+
+Zu 3: §19 und ADR-016 machen die Finalisierung zum ausdrücklichen Schritt mit
+Folgen — ab ihr ist der Eintrag Bestandteil der Akte und nur noch als Korrektur
+mit Begründung änderbar. Etwas, das als Nebenwirkung eines Tastendrucks im
+Hauptmenü passiert, darf diese Folge nicht haben. Die datensparsamere und
+leichter umkehrbare Seite (§16) ist hier der Entwurf.
+
+Zu 4: Ein Seitenwechsel nach fehlgeschlagenem Speichern wäre genau der stille
+Verlust, den §13 ausschließt — und die wahrscheinlichste Form davon im
+Hausbesuch, wo das Funkloch der Normalfall ist.
+
+**Unsicher:** ob die Rückfrage auf einem 375-px-Bildschirm mitten im Hausbesuch
+als Hilfe oder als Hindernis erlebt wird. Deshalb die Wiedervorlage nach dem
+ersten Feldtag.
+
+**Bekannte Grenze, ausdrücklich nicht geschlossen:** Das **Abmelden** ist keine
+Navigation, sondern ein Wechsel der Identität — der Blocker sieht es nicht. Wer
+mit ungespeichertem Text auf „Abmelden" tippt, verliert ihn weiterhin (die
+Räumung der Entwürfe an der Identitätsgrenze ist gewollt, FIX-005). Das ist ein
+eigener Zuschnitt und keine Lücke dieses Schutzes; es steht im Bericht.
+
+**Verankerung.** `src/features/documentation/Textverlustschutz.tsx`
+(`useTextverlustschutz`) — trägt die Kennung im Kopfkommentar. Der Router in
+`src/app/App.tsx`. Tests in
+`src/features/documentation/Textverlustschutz.test.tsx` (18 Fälle, darunter
+Speicherfehler und Browser-Zurück).
+
+**Änderungspfad.** Zurück auf `<BrowserRouter>`: zwei Dateien, dann entfällt
+der Schutz für interne Navigation ersatzlos — Aufwand `klein`. Speichern auch
+für die Korrektur anbieten: ein Parameter mehr, aber eine fachliche Entscheidung
+gegen ADR-016 — Aufwand `klein`, Folge `groß`. Den Schutz auf weitere Formulare
+ausdehnen (Stammdaten, Terminformular, Verordnung): je Formular ein Aufruf des
+Hooks — Aufwand `klein` je Stelle.

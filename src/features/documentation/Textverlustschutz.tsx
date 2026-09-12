@@ -27,6 +27,11 @@ import { useIstVerbunden } from '@/app/verbindung';
  *      über der Kopfleiste sagt es allgemein; hier steht es dort, wo die
  *      Person gerade tippt und gleich auf „Speichern" tippen will (ANN-015).
  *
+ * Die vier Festlegungen dahinter - Data Router, drei Wege, „Speichern" heißt
+ * Entwurf, ein Fehlschlag navigiert nicht - stehen als **ANN-046** im
+ * Annahmenregister, samt der bekannten Grenze: Das Abmelden ist keine
+ * Navigation und wird hier nicht erfasst.
+ *
  * **Kein lokaler Zwischenspeicher.** Ein Entwurf, der nur im Browser läge,
  * wäre nicht gespeichert, würde aber so aussehen - genau die Situation, die
  * ADR-001 und ADR-015 Punkt 16 ausschließen. „Speichern" schreibt deshalb auf
