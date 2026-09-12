@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 4.1 · Stand 2026-09-12 · **in Kraft**
+Version 4.2 · Stand 2026-09-12 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -52,6 +52,43 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   (Etappe G, Zeile G1) — er läuft als Docs-Session und wartet auf Jannes'
   Bestätigung. Bis dahin kann DAT-EPIC-001 nicht sinnvoll beginnen; wer früher
   starten will, zieht `ABR-EPIC-001` vor (Voraussetzung: B4 als Annahme).
+- **Rückmeldung von Jannes zur Oberfläche (2026-09-12) — neues Epic `UI-002
+  Lesbarkeit`, vorgeschlagen als nächster Loop.** Drei Akzeptanzhinweise, alle
+  drei am Gebauten, keiner neu erfunden:
+  1. **Der Bereich „Übersicht" der Akte entfällt** samt seiner Schaltfläche
+     (AKTE-001). Er ist ein Auszug aus den vier anderen Bereichen; wer die Akte
+     öffnet, soll dort landen, wo gearbeitet wird. Zu klären im SPEC-Schritt:
+     worauf `/patienten/:id` dann führt, und wo die beiden Angaben bleiben, die
+     in keinem anderen Bereich stehen — Zugangshinweis und Besonderheit vor dem
+     Hausbesuch (`IDEA-PRX-001`, PAT-005).
+  2. **Wichtige Inhalte stehen auf Weiß.** Heute liegt Papier (`#f6f7f4`) auf
+     Fläche (`#eceee8`) — 1,09:1, praktisch nicht unterscheidbar, und der
+     getönte Grund liegt damit optisch hinter den Terminen statt unter ihnen.
+     Karten und Listen werden weiß, die Fläche bleibt getönt und trägt den
+     Rahmen. Der Hebel ist `--color-surface` in `src/index.css`, dazu eine
+     Durchsicht der 60 Stellen mit `bg-surface-sunken`.
+  3. **Kopf und Bereichsleiste der Akte bleiben, wie sie sind** — Jannes hat
+     sie ausdrücklich bestätigt.
+  Das ist **nicht** UI-001 (G17, Feb 2027): UI-001 ist Feinschliff vor dem
+  Gate, UI-002 sind drei benannte Befunde am täglich benutzten Bereich.
+- **Zweiter Faktor: vertagt bis nach dem Online-Schalten (Jannes,
+  2026-09-12).** Damit rückt `FIX-EPIC-002` hinter die Inbetriebnahme, und
+  ANN-028 bekommt seine Wiedervorlage von dort statt von der Domain. **Offen
+  bleibt die Zusage ohne Deckung:** „Mein Konto" lässt einen zweiten Faktor
+  einrichten und empfiehlt ihn `owner` dringend, die Anmeldung fragt ihn aber
+  nie ab (Befund aus FIX-EPIC-001). Bis der Faktor wirkt, muss die Oberfläche
+  das sagen — ein Satz an der Stelle, wo eingerichtet wird. Das gehört in den
+  nächsten Loop, der ohnehin an der Oberfläche arbeitet, nicht in ein eigenes
+  Epic.
+- **Terminieren mit ausgewählter Person (`CAL-EPIC-004`, vorgeschlagen, noch
+  ohne Platz in der Reihenfolge).** Jannes' Vorgabe vom 2026-09-12 steht als
+  `IDEA-PRX-042` im Ideenspeicher. Sie zerfällt sauber in zwei Teile: Person
+  auswählen, durch den Kalender scrollen, freie Lücke antippen — das ginge
+  **jetzt**, ohne Kartendienst. Die Einfärbung „hier passt der Termin mit
+  Fahrweg hin" (Tiefgarage → Termin → nächster Termin → Tiefgarage) braucht
+  Fahrzeiten und damit **MAP-006**, das am Gate aus ADR-019 Punkt 9 hängt.
+  Vorher gebaut wäre sie eine geschätzte Zahl neben einer gemessenen — genau
+  das, was E12 Punkt 3 und 4 am 2026-09-12 ausgeschlossen haben.
 - **FIX-EPIC-001 ist am 2026-09-12 fertig** (fünf Stories) — ein Befund-Loop
   aus einer Prüfung, nicht aus dieser Reihenfolge (R6). Er hat drei Zusagen
   eingelöst, die die Oberfläche gab, ohne sie zu halten: Auth-Links hatten
@@ -929,6 +966,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.2     | 2026-09-12 | **Planungssession ohne Code.** Gesamtstand geprüft: alle sechs Remote-Branches sind in `main` aufgegangen, **kein unveröffentlichter Code** — offen ist allein ein Docs-Stand auf `claude/jolly-galileo-vgpuzb` (Abnahme von CAL-EPIC-003a am 2026-09-12), der in `main` fehlt und nachgetragen wird, sobald Jannes ihn bestätigt. Drei Vorgaben von Jannes aufgenommen: **`UI-002 Lesbarkeit`** als neues Epic und Vorschlag für den nächsten Loop (Bereich „Übersicht" der Akte entfällt · wichtige Inhalte auf Weiß statt auf getönter Fläche · Kopf und Bereichsleiste bleiben) · **der zweite Faktor wird erst nach dem Online-Schalten integriert**, womit `FIX-EPIC-002` hinter die Inbetriebnahme rückt und die ungedeckte Zusage in „Mein Konto" bis dahin benannt werden muss · **Terminieren mit ausgewählter Person** als `IDEA-PRX-042` im Ideenspeicher und `CAL-EPIC-004` als Vorschlag, dessen Fahrweg-Einfärbung an MAP-006 und dem Gate aus ADR-019 hängt. **Reihenfolge unverändert**, solange Jannes UI-002 nicht vorzieht. |
 | 4.1     | 2026-09-12 | **FIX-EPIC-001 fertig** (fuenf Stories) — ein Befund-Loop aus einer Pruefung, nicht aus der Reihenfolge dieser Roadmap (R6). Links aus den Auth-Mails hatten keinen Empfangspfad: `detectSessionInUrl` steht auf `false`, und es gab im ganzen Projekt kein `verifyOtp`, `exchangeCodeForSession` oder `setSession`; `/kennwort-neu` war eine Adresse ohne Route. Jetzt zwei oeffentliche Seiten, eingeloest ueber den einmaligen `token_hash` mit eigenen Mailvorlagen — datensparsamer als Token im Adressfragment und der einzige Weg, der geraeteuebergreifend traegt (ANN-043) · Der Auditvermerk zu "Alle Sitzungen beenden" stand vor dem Vorgang und blieb auch bei dessen Fehlschlag stehen; ein blosses Vertauschen haette ihn ersatzlos geloescht, weil `log_account_security_event` `auth.uid()` verlangt. Er ist jetzt Vorbedingung, `melde()` erkennt Fehlschlaege ueberhaupt erst, und die Zusage nennt das Restfenster von bis zu einer Stunde samt Verweis auf die sofort wirkende Sperre (ANN-044) · Das gewoehnliche Abmelden lief mit dem supabase-js-Default `scope: 'global'` und beendete alle Geraete, waehrend "Mein Konto" das Gegenteil versprach (ANN-045) · Der Abfragespeicher wurde nur beim Knopf in der Kopfzeile geraeumt; "Alle Sitzungen beenden", die Abmeldung im zweiten Tab und die abgelaufene Sitzung liefen daran vorbei. Die Raeumung steht jetzt im Ereignisstrom und vergleicht die Benutzerkennung, damit `TOKEN_REFRESHED` nicht stuendlich die acht Stunden aus ANN-021 zuruecknimmt (ANN-021 umgezogen). **Drei Abnahmeschritte beschrieben Verhalten, das es nicht gibt** und sind berichtigt — darunter STAFF-004 Nr. 9: ein eingerichteter zweiter Faktor wird beim Anmelden **nie abgefragt**. Das ist ein eigenes Epic (`FIX-EPIC-002`), ebenso der Navigationsschutz fuer ungespeicherte Dokumentation (`FIX-EPIC-003`). **Naechster Loop unveraendert: DAT-EPIC-001**, sobald ADR-017 bestaetigt ist; sonst `ABR-EPIC-001` vorziehen. |
 | 4.0     | 2026-09-12 | **Die Bedienabläufe zwischen den Bereichen sind überarbeitet** (eigener Auftrag von Jannes, **nicht** aus der Roadmap). Kein neuer Bereich — die **Wege** dazwischen: Der Name im Terminkopf führt in die Akte; **Rückwege** tragen Ansicht, Person, Datum, Filter und den Stand der Patientensuche mit (`?zurueck=`, nur interne Pfade, nie ein Name in der Adresszeile nach ADR-011); **Patient:in anlegen** und **Adresse ergänzen** gehen aus dem laufenden Vorgang heraus und kommen mit allem Eingetippten zurück; das Verordnungsformular nennt die Person, für die geschrieben wird; **Formularfehler** stehen als Zusammenfassung über den Feldern und führen mit Klick, Tap oder Tastatur ins Feld; ein **Suchfehler** ist nicht mehr „Kein Treffer"; der Mitarbeiterdatensatz verbindet Telefon, E-Mail, Kalenderwoche und Arbeitszeiten. **Zwei echte Fehler behoben:** ein falscher Abfrageschlüssel ließ die Akte nach dem Anlegen einer Terminserie veraltet stehen, und die Serienprüfung konnte ein altes Ergebnis für eine **geänderte** Liste als gültig ansehen — sie ist jetzt an ihren Vorschlag gebunden. **ANN-039 und ANN-041 in Fassung 2:** Drucken und Mailen **bereiten vor**; der Mitteilungsvermerk entsteht erst auf ausdrückliche Bestätigung, weil er sonst eine Übergabe behauptet, die niemand gesehen hat. Keine Migration, keine neuen Rechte. **Nächster Loop unverändert: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
 | 3.9     | 2026-09-12 | **Die Patientenakte ist umgebaut** (eigener Auftrag von Jannes anhand eines Screenrecordings, **nicht** aus der Roadmap — wie MARKE-001). Aus einer sehr langen Seite werden ein Kopf und fünf Bereiche: **Übersicht** mit nächsten Terminen, laufenden Verordnungen und letztem Behandlungsstand · **Termine** mit Historie, allen Zuständen und Filter auf eine Verordnung · **Verordnungen** getrennt nach laufend und ausgeschöpft · **Behandlungsverlauf** · **Stammdaten** mit den seltenen Verwaltungsvorgängen am Ende. Zwei neue Lesepfade (`list_patient_appointments`, `list_patient_prescription_slots`), keine neuen Rechte, keine neuen Felder. **Sachlich korrigiert:** „Kontingent" stand über zwei verschiedenen Zahlen — Leistungseinheiten aus den Positionen und verplante Termine (ANN-038); beide tragen jetzt ihre Einheit im Namen, und „Terminserie anlegen" steht nur noch an einer Verordnung, an der sich etwas planen lässt. Neu: der **Patientenfilter im Kalender** (`?patient=`), übergeben aus der Akte. **Keine neue Annahme.** **Nächster Loop unverändert: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
