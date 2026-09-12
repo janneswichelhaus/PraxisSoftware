@@ -438,7 +438,7 @@ describe('PatientDetailPage', () => {
       fetchUpcomingAppointments.mockResolvedValue([naechster]);
       renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
 
-      const zettel = await screen.findByRole('link', { name: 'Terminzettel' });
+      const zettel = await screen.findByRole('link', { name: 'Termine mitteilen' });
       expect(zettel).toHaveAttribute('href', `/patienten/${PATIENT_ID}/terminzettel`);
     });
 

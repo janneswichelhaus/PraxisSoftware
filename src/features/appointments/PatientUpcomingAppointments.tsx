@@ -61,13 +61,16 @@ export function PatientUpcomingAppointments({
     // gleichnamige Wege auf einer Seite wären ein Rätsel, kein Angebot.
     <Section
       titel="Nächste Termine"
-      // Der Zettel gehört hierher und nicht neben „Termin anlegen": Er ist die
-      // Antwort auf „wann bin ich wieder dran" - für die Patient:in zum
-      // Mitnehmen (CAL-011). Nur, wenn es etwas zu drucken gibt.
+      // Das Mitteilen gehört hierher und nicht neben „Termin anlegen": Es ist
+      // die Antwort auf „wann bin ich wieder dran" - zum Mitnehmen oder als
+      // E-Mail (CAL-011, CAL-013). Nur, wenn es etwas mitzuteilen gibt.
+      //
+      // Nicht „Terminzettel": Hinter dem Wort suchte niemand die E-Mail, und
+      // die Seite bietet seit CAL-013 beides an.
       aktion={
         data && data.length > 0 ? (
           <ButtonLink to={`/patienten/${patientId}/terminzettel`} variant="secondary">
-            Terminzettel
+            Termine mitteilen
           </ButtonLink>
         ) : null
       }

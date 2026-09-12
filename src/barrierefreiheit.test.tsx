@@ -456,8 +456,15 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
     await pruefeBarrierefreiheit(container);
   });
 
-  it('haelt den Terminzettel sauber', async () => {
-    fetchPatient.mockResolvedValue(testPatient({ given_name: 'Max', family_name: 'Mustermann' }));
+  it('haelt den Terminzettel sauber - auch mit offenem Mailentwurf (CAL-013)', async () => {
+    fetchPatient.mockResolvedValue(
+      testPatient({
+        given_name: 'Max',
+        family_name: 'Mustermann',
+        email: 'max@example.invalid',
+      }),
+    );
+    const user = userEvent.setup();
     const { container } = renderWithProviders(
       <main>
         <Routes>
@@ -468,6 +475,12 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
     );
 
     await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+    await pruefeBarrierefreiheit(container);
+
+    // Der Entwurf bringt eine zweite Überschrift und eine Beschreibungsliste
+    // mit - genau dort entsteht leicht eine Sprungmarke in der Gliederung.
+    await user.click(screen.getByRole('button', { name: 'Termine per E-Mail senden' }));
+    await screen.findByRole('heading', { name: 'E-Mail an die Patient:in' });
     await pruefeBarrierefreiheit(container);
   });
 });

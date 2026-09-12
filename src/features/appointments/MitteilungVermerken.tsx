@@ -15,15 +15,20 @@ import {
 /**
  * Vermerken, dass ein Termin der Patient:in mitgeteilt wurde (CAL-012).
  *
- * **Die Anwendung versendet nichts.** B15 ist vorläufig entschieden: In Stufe 1
- * und 2 gibt es keine automatische Terminerinnerung, die Anrufliste bleibt der
- * Weg. Diese Auswahl hält fest, was die Praxis selbst getan hat — auch
- * „Per E-Mail mitgeteilt" heißt, dass jemand die Nachricht selbst geschrieben
- * hat (ANN-040).
+ * **Die Nachhut, nicht der Regelweg.** Druck und E-Mail vermerken sich seit
+ * CAL-012 und CAL-013 von selbst, wenn sie aus der Anwendung ausgelöst werden.
+ * Hier steht, was die Anwendung nicht sehen kann: das Gespräch am Tresen, der
+ * Anruf, die Nachricht aus einem fremden Postfach — und die Rücknahme eines
+ * Vermerks, dessen Vorgang doch nicht stattgefunden hat (ANN-040, ANN-041).
+ *
+ * **Automatisch versendet wird weiterhin nichts.** B15 bleibt dabei: keine
+ * automatische Terminerinnerung über einen Dienstleister; SMS und Messenger
+ * gibt es nicht.
  *
  * Eine Mehrfachauswahl und kein Knopf je Weg: Gespeichert wird der Stand, den
  * man sieht. Alles abwählen nimmt den Vermerk zurück — der Fall „der Drucker
- * ging nicht". Verbindlich prüft und setzt die Serverfunktion
+ * ging nicht" und der Fall „den Entwurf habe ich dann doch verworfen".
+ * Verbindlich prüft und setzt die Serverfunktion
  * `set_appointment_notification` (ADR-004).
  *
  * Der Vermerk verfällt von selbst, sobald sich der Termin ändert; deshalb gibt
@@ -64,7 +69,7 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
     <Section
       titel="Mitteilung an die Patient:in"
       ebene={3}
-      hinweis="Festgehalten wird, was die Praxis selbst getan hat. Die Anwendung verschickt nichts."
+      hinweis="Nachtragen und zurücknehmen von Hand. Druck und E-Mail aus der Anwendung vermerken sich selbst."
     >
       <div className="flex flex-col gap-1">
         {notificationChannelOrder.map((kanal) => (

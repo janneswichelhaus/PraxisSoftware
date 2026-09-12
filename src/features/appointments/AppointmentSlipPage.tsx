@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchPatient, fullName } from '@/features/patients/api';
+import { TermineMailen } from './TermineMailen';
 import {
   addAppointmentNotification,
   fetchAppointmentSlip,
@@ -15,18 +16,20 @@ import {
 } from './api';
 
 /**
- * Terminzettel zum Ausdrucken (CAL-011, `IDEA-PRX-006`).
+ * Die Termine der Patient:in mitteilen (CAL-011, CAL-013, `IDEA-PRX-006`).
  *
  * Ein Blatt, das die Patient:in mitnimmt: Datum, Uhrzeit, wo und wer. Kein
  * Status, keine Verordnung, kein Behandlungsinhalt — was nicht darauf gehört,
  * liefert der Server gar nicht erst.
  *
- * **Kein Versand.** Der Zettel wird gedruckt und in die Hand gegeben. Eine
- * Terminliste ist ein Gesundheitsdatum; E-Mail oder SMS setzen einen
- * Dienstleister und eine Einwilligung voraus und hängen an B15 (ANN-039).
+ * **Zwei Wege, eine Liste.** Gedruckt und in die Hand gegeben, oder als
+ * E-Mail an die Patient:in. Die E-Mail entsteht seit CAL-013 als Entwurf im
+ * Mailprogramm der Praxis; die Anwendung verschickt weiterhin nichts selbst
+ * und beteiligt keinen neuen Dienstleister (ANN-041, `TermineMailen.tsx`).
+ * SMS und Messenger gibt es nicht — Messenger ist nach B15 ausgeschlossen.
  *
- * Der Druck vermerkt die aufgeführten Termine als ausgehändigt (CAL-012) —
- * damit in der Akte steht, dass sie mitgeteilt sind.
+ * Beide Wege vermerken die aufgeführten Termine von selbst (CAL-012) — damit
+ * in der Akte steht, dass sie mitgeteilt sind.
  *
  * **Keine Wortmarke.** `marke/README.md` ist dazu ausdrücklich: Die
  * Druckregeln blenden die Kopfzeile aus, und die Marke auf Papier kommt
@@ -140,7 +143,7 @@ export function AppointmentSlipPage() {
       </section>
 
       {eintraege.length > 0 ? (
-        <div className="nicht-drucken mt-8 flex flex-col gap-2">
+        <div className="nicht-drucken mt-8 flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <Button
               type="button"
@@ -159,12 +162,19 @@ export function AppointmentSlipPage() {
             Die aufgeführten Termine werden dabei als „Terminzettel ausgehändigt" vermerkt und
             tragen das Zeichen danach in der Akte. Am Termin lässt sich der Vermerk zurücknehmen.
           </p>
+
+          {/* Der zweite Weg steht unter dem ersten, nicht daneben: Der Ausdruck
+              bleibt der Normalfall, die E-Mail die Ausnahme auf Wunsch. */}
+          <div className="border-line mt-3 border-t pt-4">
+            <TermineMailen patient={patientDaten} eintraege={eintraege} />
+          </div>
         </div>
       ) : null}
 
       <p className="text-ink-subtle nicht-drucken mt-10 max-w-prose text-xs leading-relaxed">
-        Der Ausdruck enthält ausschließlich organisatorische Angaben. Er wird nicht versendet — eine
-        Terminliste ist ein Gesundheitsdatum und wird persönlich übergeben.
+        Ausdruck und E-Mail enthalten ausschließlich organisatorische Angaben — dieselbe Liste, die
+        oben steht. Eine Terminliste ist trotzdem ein Gesundheitsdatum: Sie sagt, dass jemand in
+        Behandlung ist.
       </p>
     </>
   );

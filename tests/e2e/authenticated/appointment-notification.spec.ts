@@ -9,12 +9,17 @@ import {
 } from './helpers';
 
 /**
- * Mitteilungsvermerk am Termin im echten Ablauf (CAL-012).
+ * Mitteilungsvermerk am Termin im echten Ablauf (CAL-012, CAL-013).
  *
  * Browser → GoTrue → PostgREST → SECURITY-DEFINER-RPC → PostgreSQL, nichts
  * gestubbt. Die Zusage, auf die es ankommt, lässt sich nur hier prüfen: dass
  * der Vermerk verfällt, sobald der Termin verschoben wird — dazwischen liegen
  * ein Schreibpfad, `updated_at` und zwei Lesepfade.
+ *
+ * Für CAL-013 gilt dasselbe in die andere Richtung: Der Vermerk entsteht aus
+ * der Übergabe ans Mailprogramm, ohne dass jemand ihn setzt. Das `mailto:`
+ * selbst bleibt im Testbrowser folgenlos — geprüft wird, was in der Datenbank
+ * ankommt.
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -139,6 +144,50 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await terminAnlegen(page, laufTag(5), zeit());
 
     await expect(page.getByRole('button', { name: 'Vermerk speichern' })).toBeVisible();
-    await expect(page.getByText('Die Anwendung verschickt nichts.')).toBeVisible();
+    await expect(page.getByText(/Nachtragen und zurücknehmen von Hand/)).toBeVisible();
+  });
+});
+
+test.describe('CAL-013: Termine per E-Mail', () => {
+  test('vermerkt die Übergabe ans Mailprogramm für alle Termine der E-Mail', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    const ersterTermin = await terminAnlegen(page, laufTag(6), zeit());
+    const zweiterTermin = await terminAnlegen(page, laufTag(7), zeit(120));
+
+    await page.goto(`/patienten/${PATIENTEN.max}/terminzettel`);
+    await page.getByRole('button', { name: 'Termine per E-Mail senden' }).click();
+
+    // Der Text steht vor der Übergabe auf dem Bildschirm - wer eine Nachricht
+    // mit Gesundheitsbezug auslöst, soll vorher lesen, was darin steht. Die
+    // beiden Uhrzeiten belegen zugleich, dass keiner der Termine wegen der
+    // Längengrenze weggefallen ist - sonst stimmte auch der Vermerk nicht.
+    const entwurf = page.getByText(/Guten Tag Max Mustermann/);
+    await expect(entwurf).toBeVisible();
+    await expect(entwurf).toContainText(`${zeit()}–`);
+    await expect(entwurf).toContainText(`${zeit(120)}–`);
+    await expect(page.getByText('max.mustermann@patient.invalid')).toBeVisible();
+    await expect(page.getByText(/nicht verschlüsselt/)).toBeVisible();
+
+    // Ein mailto ohne Handler bleibt im Browser folgenlos; geprüft wird der
+    // Vermerk, nicht das Mailprogramm.
+    await page.getByRole('button', { name: 'E-Mail öffnen' }).click();
+    await expect(page.getByText(/im Mailprogramm geöffnet/)).toBeVisible();
+
+    await page.goto(`/patienten/${PATIENTEN.max}`);
+    for (const id of [ersterTermin, zweiterTermin]) {
+      await expect(akteneintrag(page, id)).toContainText('E-Mail');
+    }
+  });
+
+  test('lässt den Entwurf abbrechen, ohne etwas zu vermerken', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    const terminId = await terminAnlegen(page, laufTag(8), zeit());
+
+    await page.goto(`/patienten/${PATIENTEN.max}/terminzettel`);
+    await page.getByRole('button', { name: 'Termine per E-Mail senden' }).click();
+    await page.getByRole('button', { name: 'Abbrechen' }).click();
+
+    await page.goto(`/patienten/${PATIENTEN.max}`);
+    await expect(akteneintrag(page, terminId)).not.toContainText('E-Mail');
   });
 });

@@ -56,14 +56,16 @@ describe('MitteilungVermerken', () => {
     );
   });
 
-  it('bietet die vier Wege an und sagt, dass nichts verschickt wird', () => {
+  it('bietet die vier Wege an und sagt, wofuer die Auswahl da ist', () => {
     renderWithProviders(<MitteilungVermerken appointment={termin()} />);
 
     expect(screen.getByLabelText('Persönlich gesagt')).not.toBeChecked();
     expect(screen.getByLabelText('Telefonisch mitgeteilt')).not.toBeChecked();
     expect(screen.getByLabelText('Terminzettel ausgehändigt')).not.toBeChecked();
     expect(screen.getByLabelText('Per E-Mail mitgeteilt')).not.toBeChecked();
-    expect(screen.getByText(/Die Anwendung verschickt nichts/)).toBeInTheDocument();
+    // Seit CAL-013 vermerken sich Druck und E-Mail selbst; hier steht die
+    // Nachhut für alles, was die Anwendung nicht sehen kann.
+    expect(screen.getByText(/Nachtragen und zurücknehmen von Hand/)).toBeInTheDocument();
   });
 
   it('zeigt vorhandene Vermerke als gesetzt', () => {

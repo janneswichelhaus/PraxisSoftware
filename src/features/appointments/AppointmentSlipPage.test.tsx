@@ -13,6 +13,7 @@ const patient: PatientsApi.Patient = testPatient({
   status: 'active',
   given_name: 'Max',
   family_name: 'Mustermann',
+  email: 'max@example.invalid',
 });
 
 const eintraege: AppointmentsApi.AppointmentSlipEntry[] = [
@@ -108,14 +109,29 @@ describe('AppointmentSlipPage', () => {
     }
   });
 
-  it('bietet das Drucken an und sagt, dass nichts versendet wird', async () => {
+  it('bietet beide Wege an - Druck und E-Mail (CAL-013)', async () => {
     rendern();
     await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
 
     expect(screen.getByRole('button', { name: 'Terminzettel drucken' })).toBeInTheDocument();
-    expect(screen.getByText(/wird nicht versendet/)).toBeInTheDocument();
-    // Kein Versandweg auf der Seite - B15 ist offen (ANN-039).
-    expect(screen.queryByRole('button', { name: /senden|mail|sms/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Termine per E-Mail senden' })).toBeInTheDocument();
+    expect(screen.getByText(/organisatorische Angaben/)).toBeInTheDocument();
+    // Weiter kein SMS- oder Messenger-Weg: Messenger ist nach B15
+    // ausgeschlossen, SMS gibt es nicht.
+    expect(
+      screen.queryByRole('button', { name: /sms|messenger|whatsapp/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('bietet die E-Mail nur an, wenn eine Adresse hinterlegt ist', async () => {
+    fetchPatient.mockResolvedValue({ ...patient, email: null });
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    expect(
+      screen.queryByRole('button', { name: 'Termine per E-Mail senden' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/fehlt die Adresse/)).toBeInTheDocument();
   });
 
   it('vermerkt beim Drucken alle aufgeführten Termine als ausgehändigt (CAL-012)', async () => {
