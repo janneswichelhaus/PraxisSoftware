@@ -1,12 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import {
-  KONTEN,
-  PATIENTEN,
-  TAGESFENSTER,
-  anmelden,
-  arbeitszeitBestaetigen,
-  tagImFenster,
-} from './helpers';
+import { KONTEN, PATIENTEN, anmelden, arbeitszeitBestaetigen, nahtag } from './helpers';
 
 /**
  * Mitteilungsvermerk am Termin im echten Ablauf (CAL-012, CAL-013).
@@ -20,14 +13,19 @@ import {
  * der Übergabe ans Mailprogramm, ohne dass jemand ihn setzt. Das `mailto:`
  * selbst bleibt im Testbrowser folgenlos — geprüft wird, was in der Datenbank
  * ankommt.
+ *
+ * **Diese Datei rechnet im Nahfenster** (`nahtag` in `helpers.ts`), nicht in
+ * einem Tagesfenster. Die Akte zeigt nur die nächsten fünf Termine, und Max
+ * Mustermann sammelt über fünfzehn Spezifikationen hinweg weit mehr; ein
+ * Termin aus einem Tagesfenster ab Tag 60 stünde nie in der Liste, und ohne
+ * Eintrag ließe sich das Zeichen dahinter nicht prüfen. Im Nahfenster zählt
+ * der Versatz **rückwärts**: höhere Zahl, früherer Tag — jeder neu angelegte
+ * Termin steht damit vor den zuvor angelegten. Jeder Test nimmt die nächste
+ * freie Stufe.
  */
 test.describe.configure({ mode: 'serial' });
 
 const LAUF = Date.now();
-
-function laufTag(versatz = 0): string {
-  return tagImFenster(TAGESFENSTER.appointmentNotification, LAUF, versatz);
-}
 
 function zeit(minutenAbAcht = 0): string {
   const gesamt = 8 * 60 + (LAUF % 10) * 5 + minutenAbAcht;
@@ -56,7 +54,7 @@ function akteneintrag(page: Page, terminId: string) {
 test.describe('CAL-012: Mitteilungsvermerk', () => {
   test('vermerkt einen Weg und zeigt ihn in der Terminliste der Akte', async ({ page }) => {
     await anmelden(page, KONTEN.office);
-    const terminId = await terminAnlegen(page, laufTag(), zeit());
+    const terminId = await terminAnlegen(page, nahtag(), zeit());
 
     // Ohne Vermerk steht kein Zeichen am Eintrag.
     await page.goto(`/patienten/${PATIENTEN.max}`);
@@ -76,7 +74,7 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
   });
 
   test('lässt den Vermerk verfallen, sobald der Termin verschoben wird', async ({ page }) => {
-    const tag = laufTag(1);
+    const tag = nahtag(1);
 
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, tag, zeit());
@@ -103,7 +101,7 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
 
   test('nimmt einen Vermerk zurück', async ({ page }) => {
     await anmelden(page, KONTEN.office);
-    const terminId = await terminAnlegen(page, laufTag(2), zeit());
+    const terminId = await terminAnlegen(page, nahtag(2), zeit());
 
     await page.getByLabel('Telefonisch mitgeteilt').check();
     await page.getByRole('button', { name: 'Vermerk speichern' }).click();
@@ -119,8 +117,8 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
 
   test('vermerkt den Terminzettel beim Drucken für alle aufgeführten Termine', async ({ page }) => {
     await anmelden(page, KONTEN.office);
-    const ersterTermin = await terminAnlegen(page, laufTag(3), zeit());
-    const zweiterTermin = await terminAnlegen(page, laufTag(4), zeit());
+    const ersterTermin = await terminAnlegen(page, nahtag(3), zeit());
+    const zweiterTermin = await terminAnlegen(page, nahtag(4), zeit());
 
     // Der Druckdialog blockiert den Browser - window.print wird deshalb
     // stillgelegt. Geprüft wird der Vermerk, nicht der Dialog.
@@ -141,7 +139,7 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     // Ohne Kontowechsel mitten im Ablauf: Der Therapiezugang darf Termine
     // selbst anlegen (CAL-001), und genau darum geht es hier.
     await anmelden(page, KONTEN.therapist);
-    await terminAnlegen(page, laufTag(5), zeit());
+    await terminAnlegen(page, nahtag(5), zeit());
 
     await expect(page.getByRole('button', { name: 'Vermerk speichern' })).toBeVisible();
     await expect(page.getByText(/Nachtragen und zurücknehmen von Hand/)).toBeVisible();
@@ -151,8 +149,8 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
 test.describe('CAL-013: Termine per E-Mail', () => {
   test('vermerkt die Übergabe ans Mailprogramm für alle Termine der E-Mail', async ({ page }) => {
     await anmelden(page, KONTEN.office);
-    const ersterTermin = await terminAnlegen(page, laufTag(6), zeit());
-    const zweiterTermin = await terminAnlegen(page, laufTag(7), zeit(120));
+    const ersterTermin = await terminAnlegen(page, nahtag(6), zeit());
+    const zweiterTermin = await terminAnlegen(page, nahtag(7), zeit(120));
 
     await page.goto(`/patienten/${PATIENTEN.max}/terminzettel`);
     await page.getByRole('button', { name: 'Termine per E-Mail senden' }).click();
@@ -181,7 +179,7 @@ test.describe('CAL-013: Termine per E-Mail', () => {
 
   test('lässt den Entwurf abbrechen, ohne etwas zu vermerken', async ({ page }) => {
     await anmelden(page, KONTEN.office);
-    const terminId = await terminAnlegen(page, laufTag(8), zeit());
+    const terminId = await terminAnlegen(page, nahtag(8), zeit());
 
     await page.goto(`/patienten/${PATIENTEN.max}/terminzettel`);
     await page.getByRole('button', { name: 'Termine per E-Mail senden' }).click();

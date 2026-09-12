@@ -74,7 +74,8 @@ export const TAGESFENSTER = {
   patientRecord: 9,
   appointmentStates: 10,
   appointmentSeries: 11,
-  appointmentNotification: 12,
+  // 12 ist wieder frei: `appointment-notification` rechnet seit 2026-09-12 im
+  // Nahfenster (siehe unten) und braucht kein eigenes Tagesfenster mehr.
 } as const;
 
 /**
@@ -99,6 +100,53 @@ export function laufTagImFenster(fenster: number, lauf: number, versatz = 0): Da
 /** Wie `laufTagImFenster`, aber gleich als Datumszeichenkette. */
 export function tagImFenster(fenster: number, lauf: number, versatz = 0): string {
   return laufTagImFenster(fenster, lauf, versatz).toISOString().slice(0, 10);
+}
+
+// -----------------------------------------------------------------------------
+// Nahfenster - die Tage VOR dem ersten Tagesfenster
+//
+// Die Akte zeigt nur die **naechsten fuenf** Termine (`PatientUpcomingAppointments`,
+// ANZAHL = 5). Ein Test, der pruefen will, dass hinter *seinem* Termin ein
+// Zeichen steht, muss ihn dort auch finden. Ein Termin aus einem Tagesfenster
+// ab Tag 60 steht aber hinter allen Terminen, die andere Spezifikationen
+// derselben Person angelegt haben - und Max Mustermann kommt in fuenfzehn
+// Spezifikationen vor. Genau daran ist `appointment-notification` am
+// 2026-09-12 in CI gescheitert: `a[href="/termine/<id>"]` war gar nicht auf der
+// Seite, und eine Verneinung auf ein fehlendes Element scheitert zu Recht.
+//
+// Das Nahfenster loest das mit zwei Regeln:
+//
+//   1. **Vor allen Tagesfenstern.** Die Tage 30 bis 55 liegen unter
+//      `FENSTER_BASIS`; kein Fenster reicht dorthin. Ein Termin hier steht
+//      also vor jedem Termin, den eine andere Datei anlegt.
+//   2. **Rueckwaerts gezaehlt.** Ein hoeherer Versatz ergibt einen
+//      **frueheren** Tag. Damit steht jeder neu angelegte Termin vor den zuvor
+//      in derselben Datei angelegten und bleibt unter den ersten fuenf,
+//      gleich wie viele die Datei insgesamt anlegt.
+//
+// **Nur eine Spezifikation darf das Nahfenster benutzen** - zwei Dateien
+// traefen sich am selben Tag. Zustaendig ist `appointment-notification`. Wer
+// es fuer eine zweite Datei braucht, baut kein zweites daneben, sondern
+// verschiebt die Frage hierher.
+//
+// Die Streuung ueber Laeufe traegt hier die Uhrzeit (`zeit()` in der
+// Spezifikation), nicht der Tag: Fuer beides ist das Nahfenster zu schmal.
+// -----------------------------------------------------------------------------
+
+/** Erster Tag des Nahfensters, gezaehlt ab heute. Mit Abstand unter `FENSTER_BASIS`. */
+export const NAHFENSTER_START = FENSTER_BASIS - 5;
+/** Abstand zweier Nahfenstertage. Neun Versatzstufen passen damit ins Fenster. */
+export const NAHFENSTER_SCHRITT = 3;
+
+/**
+ * Ein Tag im Nahfenster, als `YYYY-MM-DD` - je hoeher der Versatz, desto
+ * frueher der Tag.
+ */
+export function nahtag(versatz = 0): string {
+  const d = new Date();
+  d.setUTCHours(12, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() + NAHFENSTER_START - versatz * NAHFENSTER_SCHRITT);
+  return d.toISOString().slice(0, 10);
 }
 
 /** Synthetische Seed-Konten (siehe docs/DEVELOPMENT.md, "Testkonten"). */
