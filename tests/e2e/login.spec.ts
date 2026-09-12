@@ -149,13 +149,25 @@ test.describe('Neues Kennwort setzen', () => {
     await expect(page.getByRole('button', { name: 'Zur Anmeldung' })).toBeVisible();
   });
 
-  test('gibt bei einer unbrauchbaren Kennung keine Auskunft ueber das Konto', async ({ page }) => {
-    // Ohne laufenden Anmeldedienst scheitert das Einloesen - genau wie bei
-    // einem abgelaufenen oder bereits benutzten Link. Die Seite darf in allen
-    // drei Faellen dasselbe sagen.
+  test('nennt einen nicht erreichbaren Anmeldedienst als solchen, statt den Link fuer verbraucht zu erklaeren', async ({
+    page,
+  }) => {
+    // Hier laeuft kein Anmeldedienst, das Einloesen scheitert also am
+    // Netzwerk. Genau diese Lage hat die Seite anfangs als "Link verbraucht"
+    // ausgegeben - eine Aussage, die sie nicht treffen kann, und sie haette
+    // jemanden dazu gebracht, einen noch gueltigen Link wegzuwerfen
+    // (FIX-007, Oberflaechen-Checkliste Punkt 6).
+    //
+    // Der abgelaufene und der bereits benutzte Link sind der ANDERE Fall; die
+    // Unterscheidung braucht eine echte Antwort des Servers und steht deshalb
+    // als manueller Schritt in docs/abnahme/etappe-g-betriebsreife.md.
     await page.goto('/kennwort-neu?token_hash=unbrauchbar&type=recovery');
 
-    await expect(page.getByText('Dieser Link lässt sich nicht mehr verwenden.')).toBeVisible();
+    await expect(page.getByText('Der Anmeldedienst ist gerade nicht erreichbar.')).toBeVisible();
+    await expect(page.getByText(/Ihr Link ist deswegen nicht verbraucht/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Erneut versuchen' })).toBeVisible();
+
+    // Und auch dieser Zustand sagt nichts ueber den Kontobestand.
     await expect(page.getByText(/unbekannt|nicht gefunden|existiert|kein Konto/i)).toHaveCount(0);
   });
 
