@@ -714,7 +714,7 @@ describe('set_staff_employment_status', () => {
     const stand = await terminStand(termin);
     await asUserCommitted(
       users.office,
-      'select public.cancel_appointment($1::uuid, $2::timestamptz, $3)',
+      'select public.cancel_appointment($1::uuid, $2::timestamptz, $3, null::date, null::time)',
       [stand.id, stand.updated_at, 'other'],
     );
 
@@ -847,7 +847,7 @@ describe('Aktivstatus bei Terminzuweisungen', () => {
     const stand = await terminStand(rows[0]!.id);
     await asUserCommitted(
       users.office,
-      'select public.cancel_appointment($1::uuid, $2::timestamptz, $3)',
+      'select public.cancel_appointment($1::uuid, $2::timestamptz, $3, null::date, null::time)',
       [stand.id, stand.updated_at, 'other'],
     );
 

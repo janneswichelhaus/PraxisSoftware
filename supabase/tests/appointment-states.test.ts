@@ -24,11 +24,11 @@ const ANLEGEN =
   'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
 const AENDERN =
   'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true) as id';
-const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz, $3) as id';
+const ABSAGEN =
+  'select public.cancel_appointment($1::uuid, $2::timestamptz, $3, $4::date, $5::time) as id';
 const ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
 const OEFFNEN = 'select public.reopen_appointment($1::uuid, $2::timestamptz) as id';
-const NICHT_ANGETROFFEN =
-  'select public.record_no_show($1::uuid, $2::timestamptz, $3::boolean) as id';
+const NICHT_ANGETROFFEN = 'select public.record_no_show($1::uuid, $2::timestamptz) as id';
 const DOKUMENTIEREN = 'select public.create_treatment_note($1::uuid, $2) as id';
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
@@ -149,7 +149,13 @@ describe('Uebergaenge ohne Rueckweg (ADR-018 Punkt 2)', () => {
 
   it('nimmt eine Absage nicht zurueck - auch nicht ueber das Wiederoeffnen', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at, 'other']);
+    await asUserCommitted(users.office, ABSAGEN, [
+      termin.id,
+      termin.updated_at,
+      'other',
+      null,
+      null,
+    ]);
     const abgesagt = await stand(termin.id);
 
     await expect(asUser(users.office, OEFFNEN, [abgesagt.id, abgesagt.updated_at])).rejects.toThrow(
@@ -191,7 +197,13 @@ describe('Uebergaenge ohne Rueckweg (ADR-018 Punkt 2)', () => {
     const dokumentiert = await zustandSetzen(termin.id, 'documented');
 
     await expect(
-      asUser(users.office, ABSAGEN, [dokumentiert.id, dokumentiert.updated_at, 'other']),
+      asUser(users.office, ABSAGEN, [
+        dokumentiert.id,
+        dokumentiert.updated_at,
+        'other',
+        null,
+        null,
+      ]),
     ).rejects.toThrow(/documented appointment cannot be changed/);
   });
 
@@ -237,7 +249,13 @@ describe('Zeitraum: nur die Absage gibt ihn frei', () => {
 
   it('gibt den Zeitraum nach einer Absage frei', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at, 'other']);
+    await asUserCommitted(users.office, ABSAGEN, [
+      termin.id,
+      termin.updated_at,
+      'other',
+      null,
+      null,
+    ]);
 
     const { rows } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
       patients.erika,
@@ -263,7 +281,13 @@ describe('Statusfilter des Kalenderlesepfads', () => {
     const dokumentiert = await anlegen('11:00', '12:00');
     await zustandSetzen(dokumentiert.id, 'documented');
     const abgesagt = await anlegen('13:00', '14:00');
-    await asUserCommitted(users.office, ABSAGEN, [abgesagt.id, abgesagt.updated_at, 'other']);
+    await asUserCommitted(users.office, ABSAGEN, [
+      abgesagt.id,
+      abgesagt.updated_at,
+      'other',
+      null,
+      null,
+    ]);
 
     const { rows } = await asUser<{ id: string }>(users.office, LESEN, [
       TAG,
@@ -318,38 +342,38 @@ describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
     ['office', 'office'],
   ] as const)('erlaubt %s den Vermerk', async (_rolle, schluessel) => {
     const termin = await anlegen();
-    await asUserCommitted(users[schluessel], NICHT_ANGETROFFEN, [
-      termin.id,
-      termin.updated_at,
-      false,
-    ]);
+    await asUserCommitted(users[schluessel], NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
     expect(await zustand(termin.id)).toBe('no_show');
   });
 
-  it('haelt Zeitpunkt, Person und Kennzeichen gemeinsam fest', async () => {
+  it('haelt Zeitpunkt und Person fest - und keine Gebuehr', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.therapist, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, true]);
+    await asUserCommitted(users.therapist, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
 
     expect(await zeile(termin.id)).toMatchObject({
       status: 'no_show',
-      no_show_fee: true,
       no_show_recorded_by: users.therapist,
+      // ADR-018 Fassung 2 Punkt 8: Aus dem Vermerk allein entsteht keine
+      // Gebuehr. Die Regel dafuer ist offen (E14).
+      fee_basis: null,
     });
     expect((await zeile(termin.id))?.no_show_recorded_at).not.toBeNull();
   });
 
-  it('verlangt die Entscheidung ueber das Ausfallhonorar und schreibt ohne sie nichts', async () => {
+  it('verlangt KEINE Entscheidung ueber eine Gebuehr - ein Tap genuegt', async () => {
     const termin = await anlegen();
 
-    await expect(
-      asUser(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, null]),
-    ).rejects.toThrow(/no-show fee decision is required/);
-    expect(await zustand(termin.id)).toBe('confirmed');
+    // Bis ADR-018 Fassung 1 war das Ausfallhonorar-Kennzeichen hier eine
+    // Pflichtangabe. Jannes hat das am 2026-09-12 geaendert: Das Abhaken vor
+    // der Tuer darf keine Entscheidung verlangen, fuer die es noch gar keine
+    // Regel gibt.
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
+    expect(await zustand(termin.id)).toBe('no_show');
   });
 
-  it('protokolliert appointment.no_show mit dem Kennzeichen im Kontext', async () => {
+  it('protokolliert appointment.no_show ohne Gebuehrenangabe', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, true]);
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
 
     const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
       `select context from public.audit_log
@@ -357,16 +381,25 @@ describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
       [termin.id],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.context).toMatchObject({ fee: true, surface: 'web' });
+    expect(rows[0]?.context).toMatchObject({ surface: 'web' });
+    // Ein Schluessel, der immer `false` traegt, waere eine Zusicherung, die
+    // niemand gegeben hat.
+    expect(rows[0]?.context).not.toHaveProperty('fee');
   });
 
   it('vermerkt einen abgesagten Termin nicht', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, ABSAGEN, [termin.id, termin.updated_at, 'other']);
+    await asUserCommitted(users.office, ABSAGEN, [
+      termin.id,
+      termin.updated_at,
+      'other',
+      null,
+      null,
+    ]);
     const abgesagt = await stand(termin.id);
 
     await expect(
-      asUser(users.office, NICHT_ANGETROFFEN, [abgesagt.id, abgesagt.updated_at, false]),
+      asUser(users.office, NICHT_ANGETROFFEN, [abgesagt.id, abgesagt.updated_at]),
     ).rejects.toThrow(/cancelled appointment cannot be recorded as no-show/);
   });
 
@@ -376,7 +409,7 @@ describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
     const fertig = await stand(termin.id);
 
     await expect(
-      asUser(users.office, NICHT_ANGETROFFEN, [fertig.id, fertig.updated_at, false]),
+      asUser(users.office, NICHT_ANGETROFFEN, [fertig.id, fertig.updated_at]),
     ).rejects.toThrow(/must be reopened first/);
   });
 
@@ -386,22 +419,22 @@ describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
     const dokumentiert = await stand(termin.id);
 
     await expect(
-      asUser(users.office, NICHT_ANGETROFFEN, [dokumentiert.id, dokumentiert.updated_at, false]),
+      asUser(users.office, NICHT_ANGETROFFEN, [dokumentiert.id, dokumentiert.updated_at]),
     ).rejects.toThrow(/documented appointment cannot be recorded as no-show/);
   });
 
   it('laesst an einem vermerkten Termin keine Dokumentation zu', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]);
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
 
     await expect(asUser(users.therapist, DOKUMENTIEREN, [termin.id, 'Nachtrag.'])).rejects.toThrow(
       /no-show appointment cannot be documented/,
     );
   });
 
-  it('oeffnet den Vermerk wieder und raeumt alle drei Felder ab', async () => {
+  it('oeffnet den Vermerk wieder und raeumt seine Felder ab', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, true]);
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
     const vermerkt = await stand(termin.id);
 
     await asUserCommitted(users.office, OEFFNEN, [vermerkt.id, vermerkt.updated_at]);
@@ -410,13 +443,13 @@ describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
       status: 'confirmed',
       no_show_recorded_at: null,
       no_show_recorded_by: null,
-      no_show_fee: null,
+      fee_basis: null,
     });
   });
 
   it('haelt den Zeitraum belegt - die Person ist hingefahren', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]);
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
 
     await expect(
       asUser(users.office, ANLEGEN, [patients.erika, ANNA, 'video', TAG, '09:30', '10:30', null]),
@@ -426,23 +459,23 @@ describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
   it('weist ein Patientenkonto ab', async () => {
     const termin = await anlegen();
     await expect(
-      asUser(users.patientMax, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]),
+      asUser(users.patientMax, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]),
     ).rejects.toThrow(/not allowed to record no-shows/);
   });
 
   it('weist einen unangemeldeten Aufruf ab', async () => {
     const termin = await anlegen();
-    await expect(asAnon(NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false])).rejects.toThrow(
+    await expect(asAnon(NICHT_ANGETROFFEN, [termin.id, termin.updated_at])).rejects.toThrow(
       /permission denied|not authenticated/i,
     );
   });
 
   it('weist einen veralteten Stand ab', async () => {
     const termin = await anlegen();
-    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]);
+    await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
 
     await expect(
-      asUser(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at, false]),
+      asUser(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]),
     ).rejects.toThrow(/already recorded as no-show/);
   });
 });
@@ -754,6 +787,8 @@ describe('Tag umplanen (CAL-009)', () => {
       schonAbgesagt.id,
       schonAbgesagt.updated_at,
       'moved',
+      null,
+      null,
     ]);
 
     const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [

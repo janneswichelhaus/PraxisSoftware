@@ -27,7 +27,8 @@ const praxistermin: AppointmentsApi.Appointment = {
   completed_at: null,
   cancellation_reason: null,
   no_show_recorded_at: null,
-  no_show_fee: null,
+  cancellation_received_at: null,
+  fee_basis: null,
   patient_given_name: 'Berta',
   patient_family_name: 'Bestand',
   staff_given_name: 'Anna',
@@ -49,14 +50,18 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
-    cancelAppointment: (id: string, erwartet: string, grund: AppointmentsApi.CancellationReason) =>
-      cancelAppointment(id, erwartet, grund) as Promise<void>,
+    cancelAppointment: (
+      id: string,
+      erwartet: string,
+      grund: AppointmentsApi.CancellationReason,
+      datum: string | null,
+      uhrzeit: string | null,
+    ) => cancelAppointment(id, erwartet, grund, datum, uhrzeit) as Promise<void>,
     completeAppointment: (id: string, erwartet: string) =>
       completeAppointment(id, erwartet) as Promise<void>,
     reopenAppointment: (id: string, erwartet: string) =>
       reopenAppointment(id, erwartet) as Promise<void>,
-    recordNoShow: (id: string, erwartet: string, honorar: boolean) =>
-      recordNoShow(id, erwartet, honorar) as Promise<void>,
+    recordNoShow: (id: string, erwartet: string) => recordNoShow(id, erwartet) as Promise<void>,
   };
 });
 
@@ -295,6 +300,9 @@ describe('AppointmentDetailPage', () => {
           TERMIN_ID,
           praxistermin.updated_at,
           'patient_request',
+          // Ohne Angabe stempelt der Server den Eingang (CAL-014c).
+          null,
+          null,
         ),
       );
     });
@@ -354,61 +362,50 @@ describe('AppointmentDetailPage', () => {
     });
   });
 
-  describe('CAL-008c: Nicht angetroffen', () => {
-    it('vermerkt erst nach Rueckfrage und mit der Entscheidung zum Ausfallhonorar', async () => {
+  describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
+    it('vermerkt nach einer Rueckfrage - und fragt dabei nach keiner Gebuehr', async () => {
       const user = userEvent.setup();
       rendern();
       await screen.findByText('Anna Beispiel');
 
       await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
-      await user.selectOptions(screen.getByLabelText('Ausfallhonorar berechnen?'), 'ja');
+
+      // Bis ADR-018 Fassung 1 stand hier eine Pflichtauswahl. Jannes hat das
+      // am 2026-09-12 geaendert: Das Abhaken vor der Tuer verlangt keine
+      // Entscheidung, fuer die es noch keine Regel gibt (E14).
+      expect(screen.queryByLabelText('Ausfallhonorar berechnen?')).not.toBeInTheDocument();
+      expect(screen.getByText(/Eine Gebühr entsteht daraus nicht/)).toBeInTheDocument();
+
       await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
 
       await waitFor(() =>
-        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at, true),
+        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
       );
     });
 
-    it('vermerkt ohne Entscheidung nichts - das Kennzeichen hat keine Vorbelegung', async () => {
+    it('sagt im Vermerk, dass es keine Behandlung war', async () => {
       const user = userEvent.setup();
       rendern();
       await screen.findByText('Anna Beispiel');
 
       await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
-      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
 
       expect(
-        await screen.findByText('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.'),
+        screen.getByText(/keine durchgeführte Behandlung, keine Dokumentation/),
       ).toBeInTheDocument();
-      expect(recordNoShow).not.toHaveBeenCalled();
     });
 
-    it('gibt "nein" unveraendert weiter, statt es als fehlende Angabe zu behandeln', async () => {
-      const user = userEvent.setup();
-      rendern();
-      await screen.findByText('Anna Beispiel');
-
-      await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
-      await user.selectOptions(screen.getByLabelText('Ausfallhonorar berechnen?'), 'nein');
-      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
-
-      await waitFor(() =>
-        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at, false),
-      );
-    });
-
-    it('zeigt am vermerkten Termin Zustand, Kennzeichen und den Weg zurueck', async () => {
+    it('zeigt am vermerkten Termin Zustand und den Weg zurueck - ohne Gebuehrenzeile', async () => {
       fetchAppointment.mockResolvedValue({
         ...praxistermin,
         status: 'no_show',
         no_show_recorded_at: '2027-05-12T08:05:00.000Z',
-        no_show_fee: true,
       });
       rendern();
 
       await screen.findByText(/Hier wurde niemand angetroffen/);
       expect(zeile('Status')).toBe('Nicht angetroffen');
-      expect(zeile('Ausfallhonorar')).toBe('Wird berechnet');
+      expect(screen.queryByText('Gebühr vorgemerkt')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Termin wieder öffnen' })).toBeInTheDocument();
     });
 
@@ -417,14 +414,134 @@ describe('AppointmentDetailPage', () => {
         ...praxistermin,
         status: 'no_show',
         no_show_recorded_at: '2027-05-12T08:05:00.000Z',
-        no_show_fee: false,
       });
       rendern();
 
       await screen.findByText(/Hier wurde niemand angetroffen/);
       expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
-      expect(zeile('Ausfallhonorar')).toBe('Wird nicht berechnet');
+    });
+
+    /**
+     * Ein Kennzeichen aus der Zeit vor ADR-018 Fassung 2 bleibt sichtbar -
+     * historische Vorgaenge werden nicht umgedeutet, aber auch nicht
+     * versteckt.
+     */
+    it('zeigt ein Kennzeichen aus frueherer Fassung weiter an', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'no_show',
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+        fee_basis: 'no_show',
+      });
+      rendern();
+
+      await screen.findByText(/Hier wurde niemand angetroffen/);
+      expect(zeile('Gebühr vorgemerkt')).toMatch(/Nicht angetroffen/);
+    });
+  });
+
+  describe('CAL-014c: Absage mit Eingang und Gebuehrenanlass', () => {
+    it('sagt mit Grund ab und ueberlaesst den Eingang dem Server', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      // Ohne Angabe stempelt der Server: null, null.
+      await waitFor(() =>
+        expect(cancelAppointment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          praxistermin.updated_at,
+          'patient_request',
+          null,
+          null,
+        ),
+      );
+    });
+
+    it('reicht einen nachgetragenen Eingang in Ortszeit durch', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.selectOptions(
+        screen.getByLabelText('Wann ist die Absage eingegangen?'),
+        'frueher',
+      );
+      await user.type(screen.getByLabelText('Datum des Eingangs'), '2027-05-11');
+      await user.type(screen.getByLabelText('Uhrzeit'), '19:30');
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      await waitFor(() =>
+        expect(cancelAppointment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          praxistermin.updated_at,
+          'patient_request',
+          '2027-05-11',
+          '19:30',
+        ),
+      );
+    });
+
+    it('verlangt bei nachgetragenem Eingang Datum UND Uhrzeit', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.selectOptions(
+        screen.getByLabelText('Wann ist die Absage eingegangen?'),
+        'frueher',
+      );
+      await user.type(screen.getByLabelText('Datum des Eingangs'), '2027-05-11');
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      expect(
+        await screen.findByText('Bitte Datum und Uhrzeit des Eingangs angeben.'),
+      ).toBeInTheDocument();
+      expect(cancelAppointment).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Die Frist rechnet ausschliesslich der Server. Die Oberflaeche zeigt das
+     * Ergebnis und nennt ausdruecklich keinen Betrag - der Leistungskatalog
+     * (ABR-001) ist nicht gebaut, und eine Zahl hier waere erfunden.
+     */
+    it('zeigt den vorgemerkten Gebuehrenanlass ohne Betrag', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'cancelled',
+        cancellation_reason: 'patient_request',
+        cancellation_received_at: '2027-05-12T05:00:00.000Z',
+        fee_basis: 'late_cancellation',
+      });
+      rendern();
+
+      await screen.findByText(/Dieser Termin ist abgesagt/);
+      expect(zeile('Status')).toBe('Abgesagt');
+      expect(zeile('Absagegrund')).toBe('Patient:in hat abgesagt');
+      expect(zeile('Gebühr vorgemerkt')).toMatch(/weniger als 24 Stunden/);
+      expect(screen.getByText(/Höhe und Abrechnung stehen noch aus/)).toBeInTheDocument();
+    });
+
+    it('nennt bei einer Absage ohne Gebuehr keine Gebuehrenzeile', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'cancelled',
+        cancellation_reason: 'practice_request',
+        cancellation_received_at: '2027-05-12T05:00:00.000Z',
+      });
+      rendern();
+
+      await screen.findByText(/Dieser Termin ist abgesagt/);
+      expect(screen.queryByText('Gebühr vorgemerkt')).not.toBeInTheDocument();
     });
   });
 

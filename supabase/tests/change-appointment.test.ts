@@ -21,7 +21,8 @@ const ANLEGEN =
   'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
 const AENDERN =
   'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true) as id';
-const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz, $3) as id';
+const ABSAGEN =
+  'select public.cancel_appointment($1::uuid, $2::timestamptz, $3, null::date, null::time) as id';
 
 const STAFF = {
   jannes: '55555555-5555-4555-8555-000000000001',
@@ -785,9 +786,15 @@ describe('cancel_appointment', () => {
       subject_id: t.id,
       outcome: 'success',
     });
+    // `fee` und `received_later` kommen mit CAL-014b dazu: Die
+    // Gebuehrenentscheidung begruendet spaeter eine Forderung und gehoert
+    // deshalb ins Protokoll; ob der Eingang nachgetragen wurde, sagt, warum
+    // die Frist so ausgegangen ist. Der codierte Absagegrund bleibt draussen
+    // (ANN-034) - er wuerde sonst die Zeile ueberleben.
     expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      ['patient_id', 'staff_member_id', 'surface'].sort(),
+      ['fee', 'patient_id', 'received_later', 'staff_member_id', 'surface'].sort(),
     );
+    expect(rows[0]!.context).toMatchObject({ fee: false, received_later: false });
   });
 
   it('weist eine erneute Absage ab und erzeugt kein Erfolgsaudit', async () => {

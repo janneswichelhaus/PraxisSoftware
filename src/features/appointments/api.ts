@@ -90,6 +90,24 @@ export const cancellationReasonLabels: Record<CancellationReason, string> = {
 };
 
 /**
+ * Gebührenanlass eines Termins (CAL-014b, ADR-018 Fassung 2 Punkt 4).
+ *
+ * Gesetzt wird er **ausschließlich vom Server** aus der 24-Stunden-Frist. Die
+ * Oberfläche liest ihn und rechnet nichts nach: Eine im Browser gerechnete
+ * Frist wäre weder prüfbar noch verlässlich (`PROJECT_PRINCIPLES.md` §8).
+ *
+ * `no_show` entsteht in V1 nicht mehr; er steht an Zeilen aus der Zeit, als
+ * das Nichtantreffen eine Pflichtentscheidung über das Ausfallhonorar trug.
+ */
+export const feeBasisSchema = z.enum(['late_cancellation', 'no_show']);
+export type FeeBasis = z.infer<typeof feeBasisSchema>;
+
+export const feeBasisLabels: Record<FeeBasis, string> = {
+  late_cancellation: 'Absage weniger als 24 Stunden vorher',
+  no_show: 'Nicht angetroffen (Kennzeichen aus früherer Fassung)',
+};
+
+/**
  * Mitteilungswege eines Termins (CAL-012, ANN-040).
  *
  * **Die Anwendung versendet nichts.** B15 ist vorläufig entschieden: in
@@ -148,10 +166,17 @@ const appointmentSchema = z.object({
   // `null` bei jeder Absage aus der Zeit vor CAL-008b - der Grund wird nicht
   // rueckwirkend erfunden.
   cancellation_reason: cancellationReasonSchema.nullable(),
-  // Nur Zeitpunkt und Kennzeichen, nicht die vermerkende Person: die
-  // Detailansicht zeigt keine Akteure (ADR-010).
+  // Wann die Absage die Praxis erreicht hat - nicht, wann sie eingetragen
+  // wurde (das ist `cancelled_at` und bleibt in der Datenbank). Grundlage der
+  // 24-Stunden-Frist (CAL-014b). `null` bei jeder Absage aus der Zeit davor.
+  cancellation_received_at: z.string().nullable(),
+  // Nur der Zeitpunkt, nicht die vermerkende Person: die Detailansicht zeigt
+  // keine Akteure (ADR-010).
   no_show_recorded_at: z.string().nullable(),
-  no_show_fee: z.boolean().nullable(),
+  // Der Gebührenanlass, serverseitig gesetzt (ADR-018 Fassung 2 Punkt 4).
+  // `late_cancellation` entsteht aus der Frist; `no_show` gibt es nur an
+  // Zeilen aus der Zeit vor dieser Entscheidung.
+  fee_basis: feeBasisSchema.nullable(),
   // Die seit der letzten Terminänderung vermerkten Mitteilungswege (CAL-012).
   // Leer heißt „noch nicht mitgeteilt" ODER „seit der Mitteilung geändert" -
   // beides ist derselbe Handlungsbedarf.
@@ -171,7 +196,8 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 const SELECT =
   'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
-  'cancellation_reason, no_show_recorded_at, no_show_fee, notification_channels, ' +
+  'cancellation_reason, cancellation_received_at, no_show_recorded_at, fee_basis, ' +
+  'notification_channels, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -811,8 +837,13 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
   if (error?.message?.includes('cancellation reason is required')) {
     return new Error('Bitte einen Absagegrund auswählen.');
   }
-  if (error?.message?.includes('no-show fee decision is required')) {
-    return new Error('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.');
+  if (error?.message?.includes('cancellation cannot be received in the future')) {
+    return new Error(
+      'Der Eingang der Absage kann nicht in der Zukunft liegen. Bitte den Zeitpunkt prüfen.',
+    );
+  }
+  if (error?.message?.includes('cancellation receipt needs date and time')) {
+    return new Error('Bitte Datum und Uhrzeit des Eingangs angeben.');
   }
   if (error?.message?.includes('cannot be recorded as no-show')) {
     return new Error(
@@ -866,11 +897,25 @@ export async function cancelAppointment(
   appointmentId: string,
   expectedUpdatedAt: string,
   reason: CancellationReason,
+  /**
+   * Wann die Absage die Praxis erreicht hat — Datum und Uhrzeit in **Ortszeit
+   * der Praxis**, wie beim Anlegen eines Termins. Beide `null` heißen „jetzt"
+   * und lassen den Server stempeln; das ist der Regelfall am Telefon. Mit
+   * Angabe heißt es „früher eingegangen, jetzt erst eingetragen".
+   *
+   * Ob daraus eine Ausfallgebühr wird, rechnet ausschließlich der Server
+   * (PROJECT_PRINCIPLES.md §8). Hier wird nichts gerechnet und nichts
+   * vorbelegt.
+   */
+  receivedOn: string | null = null,
+  receivedTime: string | null = null,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('cancel_appointment', {
     p_appointment_id: appointmentId,
     p_expected_updated_at: expectedUpdatedAt,
     p_reason: reason,
+    p_received_on: receivedOn,
+    p_received_time: receivedTime,
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgesagt werden.');
@@ -923,19 +968,18 @@ export async function cancelStaffDay(
 /**
  * Vermerkt einen bestätigten Termin als „nicht angetroffen".
  *
- * Das Ausfallhonorar-Kennzeichen gehört in denselben Schritt und hat keine
- * Vorbelegung: Der Termin sagt damit nur, **ob** abgerechnet werden soll — wie
- * viel, steht im Leistungskatalog (ADR-018 Punkt 4, ABR-001).
+ * Ein Schritt, keine Entscheidung: Die behandelnde Person steht vor der Tür,
+ * niemand öffnet, und sie hakt den Termin ab. Aus dem Vermerk allein entsteht
+ * **keine** Gebühr; ob das Nichtantreffen eine eigene Gebührenregel bekommt,
+ * ist offen (ADR-018 Fassung 2 Punkt 8, `OPEN_DECISIONS.md` E14).
  */
 export async function recordNoShow(
   appointmentId: string,
   expectedUpdatedAt: string,
-  fee: boolean,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('record_no_show', {
     p_appointment_id: appointmentId,
     p_expected_updated_at: expectedUpdatedAt,
-    p_fee: fee,
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht vermerkt werden.');

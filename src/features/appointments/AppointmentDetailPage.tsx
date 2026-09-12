@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Select } from '@/components/ui/Select';
+import { Field } from '@/components/ui/Field';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -33,12 +34,14 @@ import {
   formatLocalDate,
   formatLocalTime,
   formatLocalTimeRange,
+  feeBasisLabels,
   locationSummary,
   patientName,
   recordNoShow,
   reopenAppointment,
   schreibeTerminVorbelegung,
   staffName,
+  todayInTimeZone,
   type Appointment,
 } from './api';
 
@@ -93,14 +96,33 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
   const queryClient = useQueryClient();
   const [grund, setGrund] = useState('');
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
+  // Der Eingang: „jetzt" ist der Regelfall am Telefon, „früher" die
+  // nachträgliche Erfassung. Vorbelegt ist „jetzt" - das ist keine stille
+  // Annahme, sondern der Augenblick, in dem gerade jemand absagt.
+  const [eingang, setEingang] = useState<'jetzt' | 'frueher'>('jetzt');
+  const [datum, setDatum] = useState('');
+  const [uhrzeit, setUhrzeit] = useState('');
+  const [eingangFehler, setEingangFehler] = useState<string | undefined>(undefined);
 
   const mutation = useMutation({
-    mutationFn: (gewaehlt: CancellationReason) =>
-      cancelAppointment(appointment.id, appointment.updated_at, gewaehlt),
+    mutationFn: (eingabe: {
+      grund: CancellationReason;
+      datum: string | null;
+      uhrzeit: string | null;
+    }) =>
+      cancelAppointment(
+        appointment.id,
+        appointment.updated_at,
+        eingabe.grund,
+        eingabe.datum,
+        eingabe.uhrzeit,
+      ),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
       // Der Kalender zeigt sonst weiter einen bestätigten Termin.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      // Die Tagesliste ebenso.
+      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
     },
   });
 
@@ -112,7 +134,18 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
       throw new Error('Absagegrund fehlt');
     }
     setGrundFehler(undefined);
-    await mutation.mutateAsync(gewaehlt.data);
+
+    if (eingang === 'frueher' && (!datum || !uhrzeit)) {
+      setEingangFehler('Bitte Datum und Uhrzeit des Eingangs angeben.');
+      throw new Error('Eingang unvollständig');
+    }
+    setEingangFehler(undefined);
+
+    await mutation.mutateAsync({
+      grund: gewaehlt.data,
+      datum: eingang === 'frueher' ? datum : null,
+      uhrzeit: eingang === 'frueher' ? uhrzeit : null,
+    });
   }
 
   return (
@@ -151,44 +184,89 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
           ))}
         </Select>
       </div>
+
+      {/* Der Eingang, getrennt vom Zeitpunkt der Eingabe (§8, ADR-018
+          Fassung 2 Punkt 8). Der Anruf kommt abends aufs Band, eingetragen
+          wird am nächsten Morgen - ohne diese Angabe entschiede die
+          Schreibgeschwindigkeit des Büros über eine Forderung. */}
+      <div className="mt-3 max-w-xs">
+        <Select
+          label="Wann ist die Absage eingegangen?"
+          value={eingang}
+          hint="Maßgeblich für die Ausfallgebühr ist der Eingang, nicht die Eingabe."
+          onChange={(e) => {
+            setEingang(e.target.value === 'frueher' ? 'frueher' : 'jetzt');
+            setEingangFehler(undefined);
+          }}
+        >
+          <option value="jetzt">Gerade eben</option>
+          <option value="frueher">Früher – jetzt erst eingetragen</option>
+        </Select>
+      </div>
+
+      {eingang === 'frueher' ? (
+        <div className="mt-3 flex max-w-sm flex-wrap gap-3">
+          <div className="min-w-[9rem] flex-1">
+            <Field
+              label="Datum des Eingangs"
+              type="date"
+              value={datum}
+              max={todayInTimeZone(appointment.organization_time_zone)}
+              error={eingangFehler}
+              onChange={(e) => {
+                setDatum(e.target.value);
+                setEingangFehler(undefined);
+              }}
+            />
+          </div>
+          <div className="min-w-[7rem] flex-1">
+            <Field
+              label="Uhrzeit"
+              type="time"
+              value={uhrzeit}
+              onChange={(e) => {
+                setUhrzeit(e.target.value);
+                setEingangFehler(undefined);
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+        Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt,
+        merkt die Anwendung eine Ausfallgebühr vor. Die Frist rechnet der Server; genau 24 Stunden
+        liegen außerhalb der Regel.
+      </p>
     </Rueckfrage>
   );
 }
 
 /**
- * „Nicht angetroffen" mit Rückfrage und Pflichtentscheidung.
+ * „Nicht angetroffen" — ein Schritt, keine Entscheidung (CAL-014c).
  *
- * Die Entscheidung über das Ausfallhonorar fällt im selben Schritt und hat
- * bewusst keine Vorbelegung (ADR-018 Punkt 4): Sie fällt im Hausflur, nicht
- * später im Büro, und ein voreingestelltes „nein" wäre eine stille Antwort auf
- * eine Frage, die niemand gestellt hat.
+ * Die behandelnde Person steht vor der Tür, niemand öffnet, und sie hakt den
+ * Termin ab. Bis ADR-018 Fassung 1 verlangte dieser Schritt eine
+ * Pflichtentscheidung über das Ausfallhonorar; Jannes hat das am 2026-09-12
+ * geändert. Aus dem Vermerk allein entsteht **keine** Gebühr, und die Frage
+ * nach einer Regel dafür ist offen (`OPEN_DECISIONS.md` E14) — eine
+ * Entscheidung zu verlangen, für die es keine Regel gibt, hielte den Ablauf
+ * an der Tür auf.
  *
- * Der Termin sagt damit nur, **ob** abgerechnet werden soll. Wie viel, steht
- * im Leistungskatalog (ABR-001); ob eine Rechnung entsteht, entscheidet
- * ABR-003.
+ * Die Rückfrage bleibt: Der Vermerk sperrt die Dokumentation und ist damit
+ * mehr als ein Haken. Zurückgenommen wird er über „Termin wieder öffnen".
  */
 function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
   const queryClient = useQueryClient();
-  const [honorar, setHonorar] = useState('');
-  const [fehler, setFehler] = useState<string | undefined>(undefined);
 
   const mutation = useMutation({
-    mutationFn: (fee: boolean) => recordNoShow(appointment.id, appointment.updated_at, fee),
+    mutationFn: () => recordNoShow(appointment.id, appointment.updated_at),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
     },
   });
-
-  async function vermerken() {
-    if (honorar !== 'ja' && honorar !== 'nein') {
-      setFehler('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.');
-      // Ohne den Wurf schlösse die Rückfrage sich trotz fehlender Angabe.
-      throw new Error('Entscheidung fehlt');
-    }
-    setFehler(undefined);
-    await mutation.mutateAsync(honorar === 'ja');
-  }
 
   return (
     <Rueckfrage
@@ -198,8 +276,7 @@ function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
       bestaetigenLaeuft="Wird vermerkt …"
       fehler={mutation.isError ? mutation.error.message : undefined}
       laeuft={mutation.isPending}
-      onAbbrechen={() => setFehler(undefined)}
-      onBestaetigen={vermerken}
+      onBestaetigen={() => mutation.mutateAsync()}
     >
       <p>
         Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
@@ -207,22 +284,10 @@ function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
         {patientName(appointment)} wird als „nicht angetroffen" geführt. Der Zeitraum bleibt belegt.
         Ein Irrtum lässt sich über „Termin wieder öffnen" zurücknehmen.
       </p>
-      <div className="mt-3 max-w-xs">
-        <Select
-          label="Ausfallhonorar berechnen?"
-          value={honorar}
-          error={fehler}
-          hint="Nur die Entscheidung. Den Betrag legt der Leistungskatalog fest."
-          onChange={(e) => {
-            setHonorar(e.target.value);
-            setFehler(undefined);
-          }}
-        >
-          <option value="">Bitte wählen</option>
-          <option value="nein">Nein, nicht berechnen</option>
-          <option value="ja">Ja, berechnen</option>
-        </Select>
-      </div>
+      <p className="text-ink-muted mt-2 text-sm leading-relaxed">
+        Das ist ein organisatorischer Vermerk: keine durchgeführte Behandlung, keine Dokumentation,
+        keine verbrauchte Verordnungsleistung. Eine Gebühr entsteht daraus nicht.
+      </p>
     </Rueckfrage>
   );
 }
@@ -380,9 +445,28 @@ function AppointmentDetail({
               )} Uhr`}
             </DetailRow>
           ) : null}
-          {appointment.status === 'no_show' ? (
-            <DetailRow label="Ausfallhonorar">
-              {appointment.no_show_fee ? 'Wird berechnet' : 'Wird nicht berechnet'}
+          {appointment.cancellation_received_at ? (
+            <DetailRow label="Absage eingegangen">
+              {`${formatLocalDate(appointment.cancellation_received_at, zone)}, ${formatLocalTime(
+                appointment.cancellation_received_at,
+                zone,
+              )} Uhr`}
+            </DetailRow>
+          ) : null}
+          {/* Der Gebührenanlass steht nur da, wenn es einen gibt. Ein
+              „Keine Gebühr" an jedem abgesagten Termin wäre eine Zeile, die
+              nichts sagt — und am Nichtantreffen die Antwort auf eine Frage,
+              die noch offen ist (E14). */}
+          {appointment.fee_basis ? (
+            <DetailRow label="Gebühr vorgemerkt">
+              <span>{feeBasisLabels[appointment.fee_basis]}</span>
+              {/* Kein Betrag: Der Leistungskatalog (ABR-001) und die Rechnung
+                  (ABR-003) sind noch nicht gebaut. Eine Zahl hier wäre
+                  erfunden. */}
+              <span className="text-ink-muted mt-1 block text-sm">
+                Höhe und Abrechnung stehen noch aus – der Leistungskatalog ist noch nicht
+                eingerichtet.
+              </span>
             </DetailRow>
           ) : null}
           {appointment.completed_at ? (

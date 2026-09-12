@@ -88,8 +88,8 @@ export const TAGESPLAN_VORHALTEDAUER_MS = 8 * 60 * 60 * 1000;
  *      Für alle anderen wäre es eine Aufgabe, die sie nicht erledigen können.
  *
  * Ein abgesagter Termin ist nie offen, und ein nicht angetroffener auch nicht:
- * die Entscheidung über das Ausfallhonorar ist mit dem Vermerk gefallen
- * (ADR-018 Punkt 4). Ein dokumentierter Termin ist es ebenfalls nicht - der
+ * Der Vermerk schließt den Vorgang ab, und offen bleibt daran nichts (ADR-018
+ * Fassung 2 Punkt 8). Ein dokumentierter Termin ist es ebenfalls nicht - der
  * Zustand sagt bereits, dass die Dokumentation festgeschrieben ist.
  *
  * Ist der Dokumentationsstand unbekannt (`null`, weil die Rolle den

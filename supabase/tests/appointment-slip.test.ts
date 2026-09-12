@@ -106,7 +106,7 @@ describe('CAL-011: Terminzettel', () => {
     await asUserCommitted(
       users.office,
       `select public.cancel_appointment($1::uuid,
-         (select updated_at from public.appointments where id = $1::uuid), 'moved')`,
+         (select updated_at from public.appointments where id = $1::uuid), 'moved', null::date, null::time)`,
       [abgesagt],
     );
 
@@ -132,7 +132,7 @@ describe('CAL-011: Terminzettel', () => {
     await asUserCommitted(
       users.office,
       `select public.record_no_show($1::uuid,
-         (select updated_at from public.appointments where id = $1::uuid), false)`,
+         (select updated_at from public.appointments where id = $1::uuid))`,
       [id],
     );
 
