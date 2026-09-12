@@ -4,12 +4,42 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.7** |
-| **Änderungsdatum** | **2026-09-11** |
-| Vorversion | 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-016 und ADR-018, siehe `docs/adr/` |
+| **Dokumentversion** | **0.8** |
+| **Änderungsdatum** | **2026-09-12** |
+| Vorversion | 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-018 außer ADR-019 (nur vorgeschlagen), siehe `docs/adr/` |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
+
+### Änderungsvermerk 0.8
+
+Der Projektinhaber hat am 2026-09-12 zwei Dinge festgelegt, die §8 bis dahin
+offen ließ: **eine Patientenabsage weniger als 24 Stunden vor
+Behandlungsbeginn löst eine Ausfallgebühr aus**, und **eine beim Hausbesuch
+nicht angetroffene Person wird mit einem Vermerk abgehakt** — ohne
+Gebührenentscheidung in diesem Schritt. ADR-018 ist dafür in **Fassung 2**
+ergänzt (Punkt 8); §21 verlangt, dass die Prinzipien nachziehen.
+
+- **§8 ergänzt** um vier verbindliche Aussagen: Der **Eingang** einer Absage
+  wird getrennt vom Zeitpunkt ihrer Eingabe festgehalten · die Frist rechnet
+  **der Server** aus Eingang und vereinbartem Beginn · **genau 24 Stunden**
+  liegen außerhalb der Regel · eine **praxisbedingte** Absage löst sie nicht
+  aus. Dazu die Klarstellung, dass das Nichtantreffen keine Gebühr erzeugt und
+  nicht als Behandlung erscheint.
+- **§19 unverändert,** aber sein Anker wird genauer: Fakturiert wird aus
+  `documented` oder aus einem Vorgang mit **Gebührenanlass** — das ist ab jetzt
+  die Absage unter 24 Stunden, und es bleibt der No-show mit einem Kennzeichen
+  aus der Zeit vor dieser Version.
+- **§18 unverändert,** mit einer Folge: Ein Vorgang mit Gebührenanlass fällt
+  nicht unter die interne Dreijahresfrist, solange die Forderung nicht
+  abgerechnet ist (ADR-008, ANN-035).
+- **§21 ergänzt:** ADR-017 (Dateiablage) ist am 2026-09-12 angenommen worden
+  und steht jetzt in der Tabelle. ADR-019 (Kartendienst) ist weiterhin nur
+  **vorgeschlagen** und steht deshalb nicht darin.
+- **Unverändert:** §8.1, der Rollenschnitt in §4, §6 und §5.
+
+Gebaut wird das in CAL-014. Historische Vorgänge werden **nicht** nachträglich
+umgedeutet und bekommen keine Gebühr.
 
 ### Änderungsvermerk 0.7
 
@@ -867,6 +897,39 @@ Drei Aussagen sind dabei verbindlich:
 Übergänge im Einzelnen, Auslöser, Rollen und die Migration der heutigen Werte:
 ADR-018.
 
+**Absage unter 24 Stunden und Nichtantreffen** (festgelegt vom Projektinhaber
+am 2026-09-12, ausgeführt in ADR-018 Fassung 2 Punkt 8):
+
+Eine Absage durch die Patient:in **weniger als 24 Stunden vor dem vereinbarten
+Behandlungsbeginn** löst eine Ausfallgebühr aus. Vier Aussagen dazu sind
+verbindlich:
+
+- Der **Eingang** der Absage MUSS getrennt vom Zeitpunkt ihrer Eingabe
+  festgehalten werden. Maßgeblich ist der Eingang: Wann das Büro dazu kommt,
+  ihn einzutragen, DARF über eine Forderung NICHT entscheiden.
+- Die Frist MUSS **serverseitig** aus diesem Eingang und dem vereinbarten
+  Beginn gerechnet werden. Eine im Browser gerechnete Frist erfüllt das nicht.
+- **Genau 24 Stunden liegen außerhalb der Regel.** Die Gebühr entsteht bei
+  *weniger als* 24 Stunden.
+- Eine **praxisbedingte** Absage löst die Regel NICHT aus.
+
+Der Termin bleibt als abgesagt erkennbar; der Gebührenanlass ist ein Merkmal
+daneben und kein eigener Zustand. Höhe und Abrechnungsweg gehören zum
+Leistungskatalog (ABR-001) und zur Rechnung (ABR-003); fehlen sie, wird **kein
+Betrag erfunden**, sondern die ausstehende Festlegung benannt.
+
+Wird eine Person beim Hausbesuch **vor Ort nicht angetroffen**, KANN die
+behandelnde Person den Vorgang unmittelbar mit einem datensparsamen
+organisatorischen Vermerk abschließen. Dieser Vermerk DARF NICHT als
+durchgeführte Behandlung, als finalisierte Behandlungsdokumentation oder als
+verbrauchte Verordnungsleistung erscheinen, und er DARF keine
+Gebührenentscheidung verlangen. Aus ihm allein entsteht **keine** Gebühr; eine
+eigene Gebührenregel für diesen Fall ist noch nicht entschieden
+(`docs/decisions/OPEN_DECISIONS.md`).
+
+**Zeitablauf allein erzeugt weder eine Absage noch ein Nichtantreffen**
+(ADR-018 Punkt 7). Was stattgefunden hat, weiß nur die behandelnde Person.
+
 Länge eines angebotenen Termins, Dokumentationszeit und der Abstand zum
 Folgetermin sind mit §8.1 entschieden.
 
@@ -1353,7 +1416,8 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
 | ADR-015 | Initialer technischer Stack | §2.1, §2.2, §3.4 |
 | ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit (Fassung 2) | §5, §6.3 |
-| ADR-018 | Zustandsautomat des Termins | §8 |
+| ADR-017 | Dateiablage | §5, §18 (noch nicht gebaut) |
+| ADR-018 | Zustandsautomat des Termins (Fassung 2) | §8 |
 
 Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
 Dokumentversion und ergänztem Änderungsvermerk.
