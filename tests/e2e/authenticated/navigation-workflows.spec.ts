@@ -52,13 +52,15 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     await tableiste.getByRole('link', { name: 'Mehr' }).click();
     await expect(page).toHaveURL(/\/bereiche$/);
     const uebersicht = page.getByRole('main');
+    // Angeheftet an den Anfang des zugaenglichen Namens: dahinter steht auf
+    // der Bereichsuebersicht noch die Leitfrage.
     for (const bereich of [
-      /Mein Tag/,
-      /Touren & Termine/,
-      /Patient:innen/,
-      /Team/,
-      /Betrieb/,
-      /Abrechnung/,
+      /^Übersicht/,
+      /^Kalender/,
+      /^Patient:innen/,
+      /^Kommunikation/,
+      /^Organisatorisches/,
+      /^Abrechnung/,
     ]) {
       await expect(uebersicht.getByRole('link', { name: bereich })).toBeVisible();
     }
@@ -68,8 +70,8 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     await anmelden(page, KONTEN.owner);
 
     // Die Seiten mit den meisten nebeneinanderliegenden Elementen: die
-    // Bereichsuebersicht, das laengste Untermenue (Betrieb, sieben Punkte) und
-    // der Kalender.
+    // Bereichsuebersicht, das laengste Untermenue (Organisatorisches, sieben
+    // Punkte) und der Kalender.
     for (const pfad of ['/', '/bereiche', '/praxis/team', '/betrieb/flotte', '/kalender']) {
       await page.goto(pfad);
       await expect(page.getByRole('main')).toBeVisible();
@@ -77,13 +79,14 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     }
   });
 
-  test('fuehrt die angebundene Mitarbeiterverwaltung im Betrieb', async ({ page }) => {
+  test('fuehrt die angebundene Mitarbeiterverwaltung unter Organisatorisches', async ({ page }) => {
     await anmelden(page, KONTEN.owner);
     await page.goto('/praxis/team');
 
-    // Das Untermenue gehoert zum Bereich Betrieb, und „Mitarbeitende" ist
-    // darin der angebundene Punkt - nicht als Vorschau gekennzeichnet.
-    const untermenue = page.getByRole('navigation', { name: 'Bereich Betrieb' });
+    // Das Untermenue gehoert zum Bereich Organisatorisches, und
+    // „Mitarbeitende" ist darin der angebundene Punkt - nicht als Vorschau
+    // gekennzeichnet.
+    const untermenue = page.getByRole('navigation', { name: 'Bereich Organisatorisches' });
     const mitarbeitende = untermenue.getByRole('link', { name: 'Mitarbeitende' });
     await expect(mitarbeitende).toHaveAttribute('aria-current', 'page');
     await expect(mitarbeitende).not.toContainText('Vorschau');

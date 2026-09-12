@@ -63,9 +63,9 @@ test.describe('CAL-002: Kalender', () => {
     const terminId = await terminAnlegen(page);
 
     // Über die Navigation in den Kalender, dann gezielt auf den Tag. Der
-    // Arbeitsbereich heisst "Touren & Termine"; seine Einstiegsseite ist der
-    // Kalender.
-    await page.getByRole('link', { name: 'Touren & Termine' }).first().click();
+    // Arbeitsbereich heisst "Kalender"; der erste Treffer ist sein Eintrag in
+    // der seitlichen Navigation, nicht der gleichnamige Punkt im Untermenue.
+    await page.getByRole('link', { name: 'Kalender' }).first().click();
     await expect(page.getByRole('heading', { name: 'Kalender' })).toBeVisible();
 
     await page.goto(`/kalender?ansicht=tag&datum=${TAG}`);

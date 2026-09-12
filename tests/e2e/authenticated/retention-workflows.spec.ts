@@ -79,7 +79,7 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
     await page.goto('/praxis/team');
     await expect(page.getByRole('link', { name: 'Aufbewahrung' })).toHaveCount(0);
 
-    // Der direkte Aufruf landet auf „Mein Tag" - die Seite gibt nichts preis.
+    // Der direkte Aufruf landet auf „Übersicht" - die Seite gibt nichts preis.
     await page.goto('/praxis/sicherheit/aufbewahrung');
     await expect(page.getByRole('heading', { name: 'Aufbewahrung und Löschung' })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: /Guten/ })).toBeVisible();

@@ -35,6 +35,45 @@ describe('Arbeitsbereiche je Rolle', () => {
     ]);
   });
 
+  it('traegt die von Jannes vorgegebenen Beschriftungen', () => {
+    // Die Beschriftung ist das, was in der Leiste steht - die Kennung
+    // daneben bleibt fachlich und aendert sich mit einer Umbenennung nicht.
+    const beschriftungen = Object.fromEntries(
+      bereicheFuer(['owner']).map((bereich) => [bereich.id, bereich.label]),
+    );
+    expect(beschriftungen).toEqual({
+      heute: 'Übersicht',
+      termine: 'Kalender',
+      patienten: 'Patient:innen',
+      team: 'Kommunikation',
+      betrieb: 'Organisatorisches',
+      abrechnung: 'Abrechnung',
+    });
+  });
+
+  it('kuerzt fuer die Tableiste nur, wo die volle Bezeichnung nicht passt', () => {
+    // Bei 375 px bleiben je Ziel 67 px fuer die Beschriftung. Gemessen in
+    // Hanken Grotesk bei 11 px passen bis zu rund 13 Zeichen; "Kommunikation"
+    // (76 px) und "Organisatorisches" (89 px) passen nicht und wuerden die
+    // Seite waagerecht scrollen lassen. Das Mass selbst prueft
+    // tests/e2e/authenticated/navigation-workflows.spec.ts im Browser -
+    // jsdom kennt keine Breiten.
+    const kurzformen = Object.fromEntries(
+      bereicheFuer(['owner']).map((bereich) => [bereich.id, bereich.kurz]),
+    );
+    expect(kurzformen).toEqual({
+      heute: 'Übersicht',
+      termine: 'Kalender',
+      patienten: 'Patienten',
+      team: 'Nachrichten',
+      betrieb: 'Organisation',
+      abrechnung: 'Abrechnung',
+    });
+    for (const kurz of Object.values(kurzformen)) {
+      expect(kurz.length).toBeLessThanOrEqual(13);
+    }
+  });
+
   it('haelt die Abrechnung von behandelnden Rollen fern', () => {
     expect(ids(['therapist'])).not.toContain('abrechnung');
     expect(ids(['team_lead'])).not.toContain('abrechnung');
@@ -43,7 +82,7 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(canSeeBilling(['therapist', 'team_lead'])).toBe(false);
   });
 
-  it('fuehrt die Mitarbeiterverwaltung fuer alle Praxisrollen im Betrieb', () => {
+  it('fuehrt die Mitarbeiterverwaltung fuer alle Praxisrollen unter Organisatorisches', () => {
     function mitarbeitende(roles: RoleKey[]): SubNavEintrag | undefined {
       const betrieb = bereicheFuer(roles).find((bereich) => bereich.id === 'betrieb');
       return betrieb?.unterpunkte.find((punkt) => punkt.to === '/praxis/team');
@@ -57,7 +96,7 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(mitarbeitende(['owner'])?.vorschau).toBeUndefined();
   });
 
-  it('stellt der Vorschau im Betrieb die angebundenen Punkte voran', () => {
+  it('stellt der Vorschau unter Organisatorisches die angebundenen Punkte voran', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
     const punkte = betrieb?.unterpunkte ?? [];
     const ersteVorschau = punkte.findIndex((punkt) => punkt.vorschau);
@@ -87,7 +126,7 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(touren?.vorschau).toBe(true);
   });
 
-  it('ordnet die Arbeitszeiten dem Betrieb zu und nicht dem Kalender', () => {
+  it('ordnet die Arbeitszeiten dem Organisatorischen zu und nicht dem Kalender', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
     expect(betrieb?.unterpunkte.map((punkt) => punkt.to)).toContain('/praxis/planung');
   });

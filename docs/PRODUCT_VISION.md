@@ -271,19 +271,23 @@ Kapitel sagt, _wo_ eine Person ihre Aufgabe beginnt. Die Aufteilung ist
 umgesetzt und in `src/app/navigation.tsx` abgebildet; sie ist die
 Ausgangsstruktur und keine unveränderliche Festlegung.
 
-| Arbeitsbereich   | Leitfrage                                              |
-| ---------------- | ------------------------------------------------------ |
-| Mein Tag         | Was muss ich als Nächstes tun?                         |
-| Touren & Termine | Wer behandelt wen, wann und mit welchen Wegen?         |
-| Patient:innen    | Was gehört zur Versorgung dieser Person?               |
-| Team             | Mit wem muss ich etwas klären?                         |
-| Betrieb          | Welche Voraussetzungen und Anträge sind zu bearbeiten? |
-| Abrechnung       | Welche Leistungen sind abzurechnen oder zu bezahlen?   |
+| Arbeitsbereich    | Leitfrage                                              |
+| ----------------- | ------------------------------------------------------ |
+| Übersicht         | Was muss ich als Nächstes tun?                         |
+| Kalender          | Wer behandelt wen, wann und mit welchen Wegen?         |
+| Patient:innen     | Was gehört zur Versorgung dieser Person?               |
+| Kommunikation     | Mit wem muss ich etwas klären?                         |
+| Organisatorisches | Welche Voraussetzungen und Anträge sind zu bearbeiten? |
+| Abrechnung        | Welche Leistungen sind abzurechnen oder zu bezahlen?   |
+
+Die Beschriftungen hat Jannes am 2026-09-12 neu gefasst; vorher hießen die
+vier ersten „Mein Tag", „Touren & Termine", „Team" und „Betrieb". Der Zuschnitt
+der Bereiche ist derselbe geblieben.
 
 Regeln, die sich daraus ergeben haben:
 
-- **Ein Vorgang, mehrere Sichten.** „Mein Tag" und „Touren & Termine"
-  betrachten dieselben Besuche wie der Kalender. Es entsteht keine zweite
+- **Ein Vorgang, mehrere Sichten.** „Übersicht" und „Kalender" betrachten
+  dieselben Besuche. Es entsteht keine zweite
   Terminliste, kein zweiter Mitarbeiterstamm und keine zweite Patientenakte.
 - **Der Arbeitsgegenstand trägt seine Werkzeuge.** Suche, Filter und Aktionen
   stehen im jeweiligen Bereich, nicht in der globalen Navigation.
