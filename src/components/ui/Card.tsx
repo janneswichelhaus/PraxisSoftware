@@ -12,6 +12,32 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
   );
 }
 
+/**
+ * Fläche für einen Abschnitt, der fachlichen Inhalt trägt (UI-002c).
+ *
+ * Der Unterschied zu `Card`: Die Karte ist **ein Gegenstand** einer Liste,
+ * diese Fläche ist **der Rahmen um eine Liste** oder um eine Auskunft. Beide
+ * liegen auf Papier, die Fläche ist nur knapper gepolstert, damit Zeilen mit
+ * eigener Höhe nicht doppelt Luft bekommen.
+ *
+ * Wofür sie nicht da ist: Bedienung. Filterleisten, Legenden und Hinweise
+ * bleiben vertieft (`bg-surface-sunken`) - sie erklären den Inhalt, sie sind
+ * keiner.
+ */
+export function Inhaltsflaeche({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`border-line bg-surface rounded-card border px-4 py-3 sm:px-5 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 /** Rasterlayout für Karten, das ohne feste Spaltenzahl auskommt. */
 export function CardGrid({ children }: { children: ReactNode }) {
   return (

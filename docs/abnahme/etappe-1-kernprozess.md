@@ -1674,3 +1674,39 @@ Vorbedingung: angemeldet als `office` oder `therapist`, im Seed
    nicht nur in den Stammdaten.
 3. Den Hinweis wieder leeren. Erwartung: Die Zeile verschwindet; der Kopf
    bleibt so kompakt wie vorher. Keine leere Beschriftung.
+
+### 3. Wichtiges steht auf Weiß (UI-002b, UI-002c)
+
+1. Eine Akte im Bereich **Termine** öffnen. Erwartung: Kopf und Terminlisten
+   stehen in **weißen Rahmen** auf der getönten Fläche; die Trennlinien liegen
+   **zwischen** den Zeilen, nicht über der ersten.
+2. Dasselbe prüfen auf der **Startseite** („Tagesplan des Teams"), in der
+   **Patientenliste**, bei **Verordner:innen**, bei **Mitarbeitenden**, im
+   **Behandlungsverlauf**, in den **Stammdaten** und am **Termin** selbst.
+3. Gegenprobe — was bewusst **nicht** weiß ist: die Filterleiste über einer
+   Terminliste, die Legende unter dem Kalender, Rückfragen wie „Wurde der
+   Zettel ausgehändigt?" und die Kennzeichnung eines Vorschaubereichs. Sie
+   erklären den Inhalt, sie sind keiner, und bleiben deshalb vertieft.
+4. Ein **Formular** öffnen (Termin anlegen). Erwartung: Die Felder sind weiß
+   und an ihrer **Umrandung** als Feld erkennbar — kein zusätzlicher weißer
+   Kasten um das Formular herum.
+
+### 4. Der zweite Faktor sagt, was er kann (UI-002d)
+
+1. **Mein Konto → Zweiter Faktor**. Erwartung: Vor dem Einrichten steht, dass
+   die Anmeldung den zweiten Faktor **derzeit noch nicht abfragt** und wann
+   sich das ändert.
+2. Abmelden und neu anmelden. Erwartung: Es wird kein Code verlangt — genau
+   das, was der Hinweis ankündigt.
+
+### 5. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten /
+```
+
+Erwartung: Die weißen Rahmen füllen die Breite bis auf den Seitenrand, kein
+waagerechtes Scrollen, jede Zeile mindestens 44 px hoch.
+
+**Zielwert:** Wer auf eine Seite schaut, sieht auf den ersten Blick, was Inhalt
+ist und was ihn erklärt — ohne lesen zu müssen.
