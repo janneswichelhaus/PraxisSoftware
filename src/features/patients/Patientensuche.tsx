@@ -61,7 +61,7 @@ export function Patientensuche({
 
   const langGenug = begriff.length >= SUCHE_MINDESTLAENGE;
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isError } = useQuery({
     queryKey: ['patient-search', begriff],
     queryFn: () => searchPatients(begriff),
     enabled: langGenug,
@@ -77,6 +77,13 @@ export function Patientensuche({
     if (eingabe.trim().length === 0) return undefined;
     if (!langGenug) return `Mindestens ${SUCHE_MINDESTLAENGE} Zeichen.`;
     if (isFetching && !data) return 'Wird gesucht …';
+    // Ein Fehlschlag ist kein leeres Ergebnis (UX-012). Vorher stand in beiden
+    // Fällen „Kein Treffer." - wer die Verbindung verloren hatte, legte die
+    // Akte deshalb ein zweites Mal an. Die Unterscheidung ist ein Satz und
+    // verhindert genau das.
+    if (isError) {
+      return 'Die Suche ist fehlgeschlagen. Das heißt nicht, dass es keinen Treffer gibt – bitte erneut versuchen.';
+    }
     if (treffer.length === 0) return 'Kein Treffer.';
     return undefined;
   }

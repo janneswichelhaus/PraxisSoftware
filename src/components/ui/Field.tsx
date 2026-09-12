@@ -4,6 +4,14 @@ interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
   label: string;
   hint?: ReactNode;
   error?: string | undefined;
+  /**
+   * Feste Kennung statt der erzeugten (UX-012).
+   *
+   * Die Fehlerzusammenfassung eines Formulars springt auf das Feld, in dem
+   * der Fehler steht. Dafür muss die Kennung von außen bekannt sein; eine mit
+   * `useId` erzeugte ist es nicht. Ohne Angabe bleibt alles wie bisher.
+   */
+  feldId?: string | undefined;
 }
 
 function EyeIcon({ crossedOut }: { crossedOut: boolean }) {
@@ -36,8 +44,17 @@ function EyeIcon({ crossedOut }: { crossedOut: boolean }) {
  * (type="password") erhält zusätzlich einen Sichtbar-Schalter, damit
  * Tippfehler bei der Eingabe auffallen.
  */
-export function Field({ label, hint, error, className = '', type, ...props }: FieldProps) {
-  const id = useId();
+export function Field({
+  label,
+  hint,
+  error,
+  feldId,
+  className = '',
+  type,
+  ...props
+}: FieldProps) {
+  const erzeugt = useId();
+  const id = feldId ?? erzeugt;
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
