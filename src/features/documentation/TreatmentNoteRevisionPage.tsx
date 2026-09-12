@@ -13,7 +13,7 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
-import { Textverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from './Textverlustschutz';
 import {
   MAX_BEGRUENDUNG,
   begruendungFehler,
@@ -46,12 +46,27 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
 
   const zurueck = `/termine/${appointment.id}`;
   const geaendert = inhalt !== note.content;
+  // Auch eine allein getippte Begründung ist Arbeit, die verloren ginge.
+  const ungespeichert = geaendert || begruendung.trim() !== '';
+
+  /**
+   * Die Korrektur kennt keinen Entwurf - deshalb bekommt der Schutz hier
+   * keinen Speicherweg.
+   *
+   * Sie wird mit dem Absenden eine neue, festgeschriebene Version der Akte
+   * (ADR-016). Ein „Speichern" aus einer Navigation heraus wäre also nicht das
+   * Sichern eines Zwischenstands, sondern genau die Finalisierung, die hier
+   * nicht nebenbei passieren darf. Die Rückfrage bietet deshalb Verwerfen und
+   * Bleiben an und sagt, warum.
+   */
+  const { freigeben, schutz } = useTextverlustschutz({ ungespeichert });
 
   const speichern = useMutation({
     mutationFn: () => reviseTreatmentNote(note.id, note.updated_at, inhalt, begruendung),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
       await queryClient.invalidateQueries({ queryKey: ['treatment-note-versions', note.id] });
+      freigeben();
       void navigate(zurueck);
     },
   });
@@ -123,7 +138,7 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
           </div>
         ) : null}
 
-        <Textverlustschutz ungespeichert={geaendert} />
+        {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={speichern.isPending || !geaendert}>

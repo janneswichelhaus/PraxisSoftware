@@ -13,7 +13,7 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
-import { Textverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { bausteinEinfuegen } from './textbausteine';
 import {
@@ -56,11 +56,39 @@ function Abschluss({
 
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
-  const [abbruchfrage, setAbbruchfrage] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>(undefined);
 
   const wert = entwurf ?? gespeichert;
   const geaendert = wert !== gespeichert;
+
+  /**
+   * Nur den Entwurf sichern - ohne Abschluss und ohne Seitenwechsel.
+   *
+   * Derselbe Weg, den „Nur als Entwurf speichern" nimmt, und der Weg, den der
+   * Navigationsschutz anbietet. Ausdrücklich **nicht** `completeTreatment`:
+   * Ein Seitenwechsel darf keinen Termin abschließen und keine Dokumentation
+   * festschreiben (ADR-016, ADR-018).
+   */
+  async function entwurfSichern() {
+    if (note) {
+      await updateTreatmentNote(note.id, note.updated_at, wert);
+    } else {
+      await createTreatmentNote(appointment.id, wert);
+    }
+    await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+  }
+
+  const { freigeben, schutz } = useTextverlustschutz({
+    ungespeichert: geaendert,
+    speichern: async () => {
+      const meldung = inhaltFehler(wert);
+      if (meldung) {
+        setFehler(meldung);
+        throw new Error(meldung);
+      }
+      await entwurfSichern();
+    },
+  });
 
   async function nachSchreiben() {
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
@@ -68,6 +96,7 @@ function Abschluss({
     // Kalender und Tagesliste führen den Termin sonst weiter im alten Zustand.
     await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+    freigeben();
     void navigate(zurueck);
   }
 
@@ -78,13 +107,7 @@ function Abschluss({
   });
 
   const entwurfSpeichern = useMutation({
-    mutationFn: async () => {
-      if (note) {
-        await updateTreatmentNote(note.id, note.updated_at, wert);
-        return;
-      }
-      await createTreatmentNote(appointment.id, wert);
-    },
+    mutationFn: entwurfSichern,
     onSuccess: nachSchreiben,
   });
 
@@ -153,7 +176,7 @@ function Abschluss({
           </div>
         ) : null}
 
-        <Textverlustschutz ungespeichert={geaendert} />
+        {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={laeuft}>
@@ -172,41 +195,16 @@ function Abschluss({
             {entwurfSpeichern.isPending ? 'Wird gespeichert …' : 'Nur als Entwurf speichern'}
           </Button>
 
-          {geaendert ? (
-            <Button type="button" variant="quiet" onClick={() => setAbbruchfrage(true)}>
-              Abbrechen
-            </Button>
-          ) : (
-            <Link
-              to={zurueck}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
-            >
-              Abbrechen
-            </Link>
-          )}
-        </div>
-
-        {/* Ein versehentlicher Klick darf einen ungespeicherten Text nicht
-            verwerfen (PROJECT_PRINCIPLES.md 13). */}
-        {abbruchfrage ? (
-          <div
-            role="group"
-            aria-label="Bearbeitung abbrechen"
-            className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
+          {/* Die Rückfrage vor dem Verwerfen stellt seit FIX-011 der
+              Navigationsschutz - für diesen Weg wie für jeden anderen aus
+              dieser Seite heraus. */}
+          <Link
+            to={zurueck}
+            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
           >
-            <p className="text-ink text-sm">
-              Der eingegebene Text ist noch nicht gespeichert und geht beim Abbrechen verloren.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
-                Ja, Bearbeitung verwerfen
-              </Button>
-              <Button type="button" variant="quiet" onClick={() => setAbbruchfrage(false)}>
-                Weiter bearbeiten
-              </Button>
-            </div>
-          </div>
-        ) : null}
+            Abbrechen
+          </Link>
+        </div>
       </form>
 
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">

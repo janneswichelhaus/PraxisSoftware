@@ -13,7 +13,7 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
-import { Textverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from './Textverlustschutz';
 import { createTreatmentNoteAddendum, findeEintrag, inhaltFehler, type TreatmentNote } from './api';
 
 /**
@@ -33,10 +33,32 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
   const [fehler, setFehler] = useState<string | undefined>(undefined);
   const zurueck = `/termine/${appointment.id}`;
 
+  /**
+   * Den Nachtrag als Entwurf anlegen - ohne Seitenwechsel.
+   *
+   * Der Nachtrag entsteht ausdrücklich als Entwurf (ADR-016 Punkt 6); seine
+   * Finalisierung ist ein eigener Schritt am Termin. Der Navigationsschutz
+   * darf ihn deshalb sichern, ohne etwas festzuschreiben.
+   */
+  async function entwurfSichern() {
+    const meldung = inhaltFehler(inhalt);
+    if (meldung) {
+      setFehler(meldung);
+      throw new Error(meldung);
+    }
+    await createTreatmentNoteAddendum(parent.id, inhalt);
+    await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+  }
+
+  const { freigeben, schutz } = useTextverlustschutz({
+    ungespeichert: inhalt.trim().length > 0,
+    speichern: entwurfSichern,
+  });
+
   const speichern = useMutation({
-    mutationFn: () => createTreatmentNoteAddendum(parent.id, inhalt),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+    mutationFn: entwurfSichern,
+    onSuccess: () => {
+      freigeben();
       void navigate(zurueck);
     },
   });
@@ -88,7 +110,7 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
           </div>
         ) : null}
 
-        <Textverlustschutz ungespeichert={inhalt.trim().length > 0} />
+        {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={speichern.isPending || inhalt.trim().length === 0}>

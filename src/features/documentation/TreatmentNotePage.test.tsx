@@ -206,17 +206,37 @@ describe('TreatmentNotePage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue(''));
     await user.type(feld(), 'Noch nicht gespeichert.');
-    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
 
-    expect(await screen.findByText(/geht beim Abbrechen verloren/)).toBeInTheDocument();
-    expect(navigate).not.toHaveBeenCalled();
+    // Die Rückfrage stellt seit FIX-011 der Navigationsschutz: derselbe Kasten
+    // für „Abbrechen", das Hauptmenü, den Patientenwechsel und das Zurück des
+    // Browsers.
+    expect(await screen.findByText(/Beim Weitergehen geht er verloren/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Weiter bearbeiten' }));
+    await user.click(screen.getByRole('button', { name: 'Hier bleiben' }));
     expect(feld()).toHaveValue('Noch nicht gespeichert.');
+    expect(
+      screen.queryByRole('group', { name: 'Ungespeicherte Dokumentation' }),
+    ).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
-    await user.click(screen.getByRole('button', { name: 'Ja, Bearbeitung verwerfen' }));
-    expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`);
+  /**
+   * „Speichern" aus der Rückfrage heraus ist der Entwurfsweg - derselbe, den
+   * die Schaltfläche nimmt. Eine Finalisierung entsteht daraus nicht
+   * (FIX-EPIC-003, ADR-016).
+   */
+  it('sichert aus der Rueckfrage den Entwurf', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue(''));
+    await user.type(feld(), 'Noch nicht gespeichert.');
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+    await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+
+    await waitFor(() =>
+      expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Noch nicht gespeichert.'),
+    );
   });
 
   it('zeigt einem office-Zugang nichts und fragt nichts ab', async () => {

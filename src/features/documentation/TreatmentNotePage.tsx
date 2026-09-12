@@ -13,7 +13,7 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
-import { Textverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { bausteinEinfuegen } from './textbausteine';
 import {
@@ -48,25 +48,48 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
 
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
-  const [abbruchfrage, setAbbruchfrage] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>(undefined);
 
   const wert = entwurf ?? gespeichert;
   const geaendert = wert !== gespeichert;
   const zurueck = `/termine/${appointment.id}`;
 
-  const speichern = useMutation({
-    mutationFn: async () => {
-      if (note) {
-        // Der gelesene Stand geht unverändert zurück; der Server weist eine
-        // Änderung auf veraltetem Stand ab (ADR-001).
-        await updateTreatmentNote(note.id, note.updated_at, wert);
-        return;
-      }
+  /**
+   * Den Entwurf sichern - ohne Seitenwechsel.
+   *
+   * Beide Wege gehen hier durch: die Schaltfläche und die Rückfrage des
+   * Navigationsschutzes. Der Unterschied liegt allein danach, und genau
+   * deshalb steht das Speichern für sich: Eine Finalisierung löst es in keinem
+   * der beiden Fälle aus (ADR-016).
+   */
+  async function entwurfSichern() {
+    const meldung = inhaltFehler(wert);
+    if (meldung) {
+      setFehler(meldung);
+      throw new Error(meldung);
+    }
+
+    if (note) {
+      // Der gelesene Stand geht unverändert zurück; der Server weist eine
+      // Änderung auf veraltetem Stand ab (ADR-001).
+      await updateTreatmentNote(note.id, note.updated_at, wert);
+    } else {
       await createTreatmentNote(appointment.id, wert);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+  }
+
+  const { freigeben, schutz } = useTextverlustschutz({
+    ungespeichert: geaendert,
+    speichern: entwurfSichern,
+  });
+
+  const speichern = useMutation({
+    mutationFn: entwurfSichern,
+    onSuccess: () => {
+      // Der eigene Rückweg ist gewollt und braucht keine Rückfrage.
+      freigeben();
       void navigate(zurueck);
     },
   });
@@ -111,48 +134,25 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
           </div>
         ) : null}
 
-        <Textverlustschutz ungespeichert={geaendert} />
+        {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={speichern.isPending || !geaendert}>
             {speichern.isPending ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
           </Button>
 
-          {geaendert ? (
-            <Button type="button" variant="quiet" onClick={() => setAbbruchfrage(true)}>
-              Abbrechen
-            </Button>
-          ) : (
-            <Link
-              to={zurueck}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
-            >
-              Abbrechen
-            </Link>
-          )}
-        </div>
-
-        {/* Ein versehentlicher Klick darf einen ungespeicherten Text nicht
-            verwerfen (PROJECT_PRINCIPLES.md 13). */}
-        {abbruchfrage ? (
-          <div
-            role="group"
-            aria-label="Bearbeitung abbrechen"
-            className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
+          {/* „Abbrechen" ist seit FIX-011 ein gewöhnlicher Weg zurück: Die
+              Rückfrage vor dem Verwerfen stellt der Navigationsschutz, und
+              zwar für diesen Weg wie für jeden anderen aus dieser Seite
+              heraus. Eine zweite eigene Rückfrage an dieser Stelle hätte
+              zweimal dasselbe gefragt. */}
+          <Link
+            to={zurueck}
+            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
           >
-            <p className="text-ink text-sm">
-              Der eingegebene Text ist noch nicht gespeichert und geht beim Abbrechen verloren.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
-                Ja, Bearbeitung verwerfen
-              </Button>
-              <Button type="button" variant="quiet" onClick={() => setAbbruchfrage(false)}>
-                Weiter bearbeiten
-              </Button>
-            </div>
-          </div>
-        ) : null}
+            Abbrechen
+          </Link>
+        </div>
       </form>
 
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">

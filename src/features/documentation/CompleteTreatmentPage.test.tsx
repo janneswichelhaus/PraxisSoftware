@@ -217,10 +217,36 @@ describe('CompleteTreatmentPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Ungespeichert');
-    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
 
-    expect(await screen.findByRole('group', { name: 'Bearbeitung abbrechen' })).toBeInTheDocument();
-    expect(navigate).not.toHaveBeenCalled();
+    // Seit FIX-011 stellt der Navigationsschutz die Rückfrage - für
+    // „Abbrechen" wie für jeden anderen Weg aus dieser Seite heraus.
+    expect(
+      await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Hier bleiben' }));
+    expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Ungespeichert');
+  });
+
+  /**
+   * Der Kern der Zusicherung aus FIX-EPIC-003: „Speichern" aus der Rückfrage
+   * heraus sichert den **Entwurf**. Ein Seitenwechsel schließt keinen Termin
+   * ab und schreibt keine Dokumentation fest (ADR-016, ADR-018).
+   */
+  it('sichert aus der Rueckfrage nur den Entwurf und schliesst nichts ab', async () => {
+    const user = userEvent.setup();
+    createTreatmentNote.mockResolvedValue(NOTE_ID);
+    rendern();
+
+    await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Ungespeichert');
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+    await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+
+    await waitFor(() =>
+      expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Ungespeichert'),
+    );
+    expect(completeTreatment).not.toHaveBeenCalled();
   });
 
   it('sagt am bereits abgeschlossenen Termin, dass nur noch dokumentiert wird', async () => {
