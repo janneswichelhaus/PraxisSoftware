@@ -40,9 +40,36 @@ export class LinkUngueltigError extends Error {
   }
 }
 
+/**
+ * Der Anmeldedienst war nicht erreichbar — über den Link ist damit nichts
+ * gesagt.
+ *
+ * Diese Unterscheidung ist keine Feinheit: Ein Funkloch als „Link verbraucht"
+ * auszugeben, ist eine Aussage, die die Anwendung nicht treffen kann, und sie
+ * bringt jemanden dazu, einen noch gültigen Link wegzuwerfen und einen neuen
+ * anzufordern (Oberflächen-Checkliste Punkt 6, `PROJECT_PRINCIPLES.md` §13).
+ */
+export class VerbindungError extends Error {
+  constructor() {
+    super('Der Anmeldedienst ist gerade nicht erreichbar.');
+    this.name = 'VerbindungError';
+  }
+}
+
 export async function loeseLinkEin(tokenHash: string, typ: LinkTyp): Promise<void> {
   const { error } = await getSupabase().auth.verifyOtp({ token_hash: tokenHash, type: typ });
-  if (error) throw new LinkUngueltigError();
+  if (!error) return;
+
+  /**
+   * `AuthRetryableFetchError` ist der Name, den der Anmeldedienst einem
+   * Fehlschlag des Netzwerkzugriffs gibt — im Unterschied zu einer Antwort des
+   * Servers, die den Link ablehnt. Geprüft wird der Name und nicht die Klasse:
+   * `@supabase/supabase-js` reicht `isAuthRetryableFetchError` nicht nach
+   * außen, und `@supabase/auth-js` als zweite direkte Abhängigkeit
+   * aufzunehmen wäre für eine Fallunterscheidung zu viel.
+   */
+  if (error.name === 'AuthRetryableFetchError') throw new VerbindungError();
+  throw new LinkUngueltigError();
 }
 
 /** Der Pfad, auf den die Mail „Kennwort zurücksetzen" führt. */
@@ -50,3 +77,16 @@ export const WIEDERHERSTELLUNG_PFAD = '/kennwort-neu';
 
 /** Der Pfad, auf den die Zugangsmail an eine offene Einladung führt. */
 export const ZUGANG_PFAD = '/zugang';
+
+/**
+ * Löst dieser Pfad einen Link ein?
+ *
+ * Das Gate in `app/App.tsx` braucht die Antwort, weil eine solche Seite auch
+ * **mit** bestehender Sitzung sichtbar bleiben muss: Das Einlösen erzeugt eine
+ * Sitzung, bevor die Seite fertig ist. Die Liste steht hier und nicht dort,
+ * damit eine dritte Seite nicht hinzugefügt werden kann, ohne das Gate
+ * mitzunehmen — genau dieser Fehler ist bei `/zugang` passiert.
+ */
+export function istEinloesePfad(pfad: string): boolean {
+  return pfad === WIEDERHERSTELLUNG_PFAD || pfad === ZUGANG_PFAD;
+}

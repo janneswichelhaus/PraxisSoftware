@@ -29,11 +29,13 @@ vi.mock('@/features/auth/sessionContext', () => ({
   useSession: () => ({ session: sitzung, initialising: false, signOut: vi.fn() }),
 }));
 
+const verifyOtp = vi.fn();
+
 vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({
     rpc: vi.fn().mockResolvedValue({ error: null }),
     auth: {
-      verifyOtp: vi.fn().mockResolvedValue({ error: null }),
+      verifyOtp,
       updateUser: vi.fn().mockResolvedValue({ error: null }),
       signInWithPassword: vi.fn(),
       resetPasswordForEmail: vi.fn(),
@@ -50,6 +52,9 @@ function oeffne(pfad: string) {
 
 beforeEach(() => {
   sitzung = null;
+  // Haengt bewusst: Geprueft wird, WELCHE Seite das Gate zeigt, nicht wohin
+  // sie danach springt.
+  verifyOtp.mockReset().mockReturnValue(new Promise(() => {}));
 });
 
 afterEach(() => {
@@ -79,6 +84,15 @@ describe('Gate ohne Sitzung', () => {
   });
 });
 
+describe('Gate ohne Sitzung, Fortsetzung', () => {
+  it('öffnet die Seite der Zugangsmail und nicht die Anmeldemaske', async () => {
+    oeffne('/zugang?token_hash=abc&type=magiclink');
+
+    expect(await screen.findByText('Der Link wird geprüft …')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Anmelden' })).not.toBeInTheDocument();
+  });
+});
+
 describe('Gate mit Sitzung', () => {
   it('hält die Wiederherstellungsseite offen, obwohl der eingelöste Link schon eine Sitzung erzeugt hat', async () => {
     sitzung = { user: { id: '00000000-0000-0000-0000-000000000001' } };
@@ -88,6 +102,22 @@ describe('Gate mit Sitzung', () => {
     // deren Auffangroute /kennwort-neu auf "/" umleitet.
     expect(
       await screen.findByRole('heading', { name: 'Neues Kennwort setzen' }),
+    ).toBeInTheDocument();
+  });
+
+  /**
+   * Der Befund aus dem Review, und der Grund, warum die Liste der
+   * Einlösepfade bei den Seiten steht und nicht hier: `/zugang` war in der
+   * Gate-Bedingung vergessen. Mit bestehender Sitzung wurde der Link deshalb
+   * nie eingelöst — die Auffangroute der angemeldeten Anwendung leitete
+   * stumm auf den Tagesplan der bereits angemeldeten Person.
+   */
+  it('hält auch die Seite der Zugangsmail offen, wenn schon jemand angemeldet ist', async () => {
+    sitzung = { user: { id: '00000000-0000-0000-0000-000000000001' } };
+    oeffne('/zugang?token_hash=abc&type=magiclink');
+
+    expect(
+      await screen.findByText(/Auf diesem Gerät ist bereits jemand angemeldet/),
     ).toBeInTheDocument();
   });
 });

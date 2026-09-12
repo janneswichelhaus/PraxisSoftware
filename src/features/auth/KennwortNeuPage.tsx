@@ -6,7 +6,8 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { KENNWORT_MINDESTLAENGE, aendereKennwort, kennwortProblem } from '@/features/account/api';
-import { loeseLinkEin } from './linkEinloesen';
+import { useSession } from './sessionContext';
+import { VerbindungError, loeseLinkEin } from './linkEinloesen';
 
 /**
  * Neues Kennwort über den Link aus der Mail setzen (FIX-001).
@@ -18,29 +19,48 @@ import { loeseLinkEin } from './linkEinloesen';
  * Browser geprüft wurde, in dem noch eine Sitzung stand — angemeldet öffnet
  * „Mein Konto" ja immer.
  *
- * Drei Zustände, und der erste läuft von allein:
+ * Der Weg durch die Seite, und nur der zweite Schritt läuft von allein:
  *
- *   1. **Einlösen.** Der Hash aus der Adresszeile wird gegen eine Sitzung
+ *   1. **Fragen, wenn schon jemand angemeldet ist.** Nur in diesem Fall —
+ *      sonst wird der Schritt übersprungen.
+ *   2. **Einlösen.** Der Hash aus der Adresszeile wird gegen eine Sitzung
  *      getauscht. Ohne diesen Schritt hätte die Person kein Recht, ein
  *      Kennwort zu setzen — das Formular kommt deshalb erst danach.
- *   2. **Setzen.** Dieselbe Prüfung wie auf „Mein Konto", aus derselben
+ *   3. **Setzen.** Dieselbe Prüfung wie auf „Mein Konto", aus derselben
  *      Funktion (ANN-027). Eine zweite Regel an zweiter Stelle wäre eine
  *      zweite Wahrheit.
- *   3. **Fertig.** Die Person ist angemeldet und geht weiter. Der Schritt ist
+ *   4. **Fertig.** Die Person ist angemeldet und geht weiter. Der Schritt ist
  *      ausdrücklich, damit die Bestätigung nicht im Seitenwechsel untergeht.
+ *
+ * Dazu zwei Abbrüche, die auseinandergehalten werden: ein Link, der nicht mehr
+ * gilt, und ein Anmeldedienst, der nicht antwortet. Das zweite über das erste
+ * zu berichten wäre eine Aussage, die die Anwendung nicht treffen kann — und
+ * sie brächte jemanden dazu, einen gültigen Link wegzuwerfen.
  *
  * Was hier **nicht** passiert: andere Geräte abmelden. Wer das will, findet es
  * auf „Mein Konto"; der Text unten sagt es. Ungefragt alle Sitzungen zu
  * beenden wäre eine Nebenwirkung, die niemand angefordert hat.
  */
-type Zustand = 'einloesen' | 'ungueltig' | 'formular' | 'fertig';
+type Zustand = 'fremde-sitzung' | 'einloesen' | 'ungueltig' | 'verbindung' | 'formular' | 'fertig';
 
 export function KennwortNeuPage() {
   const [suche] = useSearchParams();
   const navigate = useNavigate();
+  const { session } = useSession();
   const tokenHash = suche.get('token_hash');
 
-  const [zustand, setZustand] = useState<Zustand>(tokenHash ? 'einloesen' : 'ungueltig');
+  /**
+   * War beim Öffnen schon jemand angemeldet, wird erst gefragt.
+   *
+   * Auf dem Praxisrechner bleibt schnell eine Sitzung stehen. Diesen Link dort
+   * stillschweigend einzulösen tauschte die fremde Sitzung aus und verwürfe
+   * ihre nicht gespeicherten Verordnungsentwürfe — der `SessionProvider` räumt
+   * bei jedem Wechsel der Kennung. §13: nicht unbemerkt.
+   */
+  const [zustand, setZustand] = useState<Zustand>(() => {
+    if (session !== null) return 'fremde-sitzung';
+    return tokenHash ? 'einloesen' : 'ungueltig';
+  });
   const [kennwort, setKennwort] = useState('');
   const [wiederholung, setWiederholung] = useState('');
   const [fehler, setFehler] = useState<string | null>(null);
@@ -62,13 +82,20 @@ export function KennwortNeuPage() {
   const eingeloest = useRef(false);
 
   useEffect(() => {
-    if (!tokenHash || eingeloest.current) return;
+    if (zustand !== 'einloesen' || !tokenHash || eingeloest.current) return;
     eingeloest.current = true;
 
     loeseLinkEin(tokenHash, 'recovery')
       .then(() => setZustand('formular'))
-      .catch(() => setZustand('ungueltig'));
-  }, [tokenHash]);
+      .catch((fehler: unknown) =>
+        setZustand(fehler instanceof VerbindungError ? 'verbindung' : 'ungueltig'),
+      );
+  }, [zustand, tokenHash]);
+
+  function erneutVersuchen() {
+    eingeloest.current = false;
+    setZustand(tokenHash ? 'einloesen' : 'ungueltig');
+  }
 
   async function absenden(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -103,7 +130,37 @@ export function KennwortNeuPage() {
         </h1>
       </div>
 
+      {zustand === 'fremde-sitzung' ? (
+        <>
+          <Statusmeldung ton="warnung">
+            Auf diesem Gerät ist bereits jemand angemeldet. Mit diesem Link setzen Sie das Kennwort
+            eines anderen Zugangs; nicht gespeicherte Eingaben der laufenden Sitzung gehen dabei
+            verloren.
+          </Statusmeldung>
+          <div className="mt-4 flex flex-col gap-3">
+            <Button onClick={() => setZustand(tokenHash ? 'einloesen' : 'ungueltig')}>
+              Trotzdem fortfahren
+            </Button>
+            <Button variant="secondary" onClick={() => void navigate('/', { replace: true })}>
+              Angemeldet bleiben
+            </Button>
+          </div>
+        </>
+      ) : null}
+
       {zustand === 'einloesen' ? <LoadingState label="Der Link wird geprüft …" /> : null}
+
+      {zustand === 'verbindung' ? (
+        <>
+          <ErrorState
+            title="Der Anmeldedienst ist gerade nicht erreichbar."
+            description="Ihr Link ist deswegen nicht verbraucht. Bitte prüfen Sie die Verbindung und versuchen Sie es erneut."
+          />
+          <Button className="mt-4" onClick={erneutVersuchen}>
+            Erneut versuchen
+          </Button>
+        </>
+      ) : null}
 
       {zustand === 'ungueltig' ? (
         <>

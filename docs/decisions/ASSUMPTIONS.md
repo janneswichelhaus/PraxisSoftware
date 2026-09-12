@@ -2550,6 +2550,16 @@ noch eine Sitzung stand.
 5. **Nach dem Setzen bleibt die Person auf diesem Gerät angemeldet.** Andere
    Geräte bleiben unberührt; die Seite sagt das und verweist auf „Alle
    Sitzungen beenden".
+6. **Steht auf dem Gerät schon eine Sitzung, wird zuerst gefragt.** Ein Link
+   löst nicht stillschweigend ein, wenn jemand anderes angemeldet ist: Der
+   Wechsel der Kennung räumt den Abfragespeicher und die Verordnungsentwürfe
+   der laufenden Sitzung (ANN-021, ANN-019), und das darf nicht unbemerkt
+   geschehen (§13). „Angemeldet bleiben" lässt den Link unverbraucht.
+7. **Ein Verbindungsfehler ist kein verbrauchter Link.** Ist der
+   Anmeldedienst nicht erreichbar, sagt die Seite das und bietet einen
+   erneuten Versuch an. „Dieser Link lässt sich nicht mehr verwenden" wäre
+   eine Aussage, die die Anwendung nicht treffen kann, und sie brächte jemanden
+   dazu, einen gültigen Link wegzuwerfen (Oberflächen-Checkliste Punkt 6).
 
 **Begründung.**
 
@@ -2591,8 +2601,12 @@ ob ein Tieflink auf `/kennwort-neu` außerhalb des Vite-Entwicklungsservers
 Diese Frage stellt sich mit der ersten Auslieferung (G5).
 
 **Verankerung.** `src/features/auth/linkEinloesen.ts` — trägt die Kennung im
-Kopfkommentar; dort stehen `loeseLinkEin`, beide Pfadkonstanten und die
-Begründung. Die Vorlagen unter `supabase/templates/`, die Einträge in
+Kopfkommentar; dort stehen `loeseLinkEin`, die Unterscheidung von
+`LinkUngueltigError` und `VerbindungError`, beide Pfadkonstanten und
+`istEinloesePfad`. Die Liste der Einlösepfade steht **dort** und nicht im Gate,
+weil genau diese Trennung einmal schiefgegangen ist: `/zugang` fehlte in der
+Bedingung des Gates, und mit bestehender Sitzung wurde der Link deshalb nie
+eingelöst. Die Vorlagen unter `supabase/templates/`, die Einträge in
 `supabase/config.toml`. Tests in `src/features/auth/KennwortNeuPage.test.tsx`,
 `ZugangPage.test.tsx`, `src/app/Gate.test.tsx` und `tests/e2e/login.spec.ts`.
 

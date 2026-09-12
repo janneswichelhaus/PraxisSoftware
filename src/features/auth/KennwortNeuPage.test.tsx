@@ -28,12 +28,19 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useNavigate: () => navigate,
 }));
 
+let sitzung: { user: { id: string } } | null = null;
+
+vi.mock('./sessionContext', () => ({
+  useSession: () => ({ session: sitzung, initialising: false, signOut: vi.fn() }),
+}));
+
 const { KennwortNeuPage } = await import('./KennwortNeuPage');
 
 const HASH = 'abcdef0123456789';
 const MIT_LINK = `/kennwort-neu?token_hash=${HASH}&type=recovery`;
 
 beforeEach(() => {
+  sitzung = null;
   verifyOtp.mockReset().mockResolvedValue({ error: null });
   updateUser.mockReset().mockResolvedValue({ error: null });
   rpc.mockReset().mockResolvedValue({ error: null });
@@ -156,5 +163,70 @@ describe('KennwortNeuPage — das Kennwort setzen', () => {
 
     expect(await screen.findByText(/konnte nicht geändert werden/)).toBeInTheDocument();
     expect(screen.queryByText(/Das Kennwort ist gesetzt/)).not.toBeInTheDocument();
+  });
+});
+
+describe('KennwortNeuPage — die Befunde aus dem Review', () => {
+  it('nennt einen Verbindungsfehler als solchen, statt den Link für verbraucht zu erklären', async () => {
+    // Ein Funkloch als "Link verbraucht" auszugeben brächte jemanden dazu,
+    // einen noch gültigen Link wegzuwerfen (Checkliste Punkt 6).
+    verifyOtp.mockResolvedValue({
+      error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch' },
+    });
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+
+    expect(
+      await screen.findByText('Der Anmeldedienst ist gerade nicht erreichbar.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Ihr Link ist deswegen nicht verbraucht/)).toBeInTheDocument();
+    expect(
+      screen.queryByText('Dieser Link lässt sich nicht mehr verwenden.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('löst nach einem Verbindungsfehler auf Knopfdruck erneut ein', async () => {
+    verifyOtp.mockResolvedValue({
+      error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch' },
+    });
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    await screen.findByRole('button', { name: 'Erneut versuchen' });
+
+    verifyOtp.mockResolvedValue({ error: null });
+    await userEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+
+    expect(await screen.findByLabelText(/Neues Kennwort$/)).toBeInTheDocument();
+    expect(verifyOtp).toHaveBeenCalledTimes(2);
+  });
+
+  it('fragt erst, wenn auf dem Gerät schon jemand angemeldet ist', async () => {
+    sitzung = { user: { id: 'olivia' } };
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+
+    expect(
+      await screen.findByText(/Auf diesem Gerät ist bereits jemand angemeldet/),
+    ).toBeInTheDocument();
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText(/Neues Kennwort$/)).not.toBeInTheDocument();
+  });
+
+  it('löst nach ausdrücklicher Bestätigung ein', async () => {
+    sitzung = { user: { id: 'olivia' } };
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    await screen.findByRole('button', { name: 'Trotzdem fortfahren' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Trotzdem fortfahren' }));
+
+    expect(await screen.findByLabelText(/Neues Kennwort$/)).toBeInTheDocument();
+  });
+
+  it('lässt die laufende Sitzung in Ruhe, wenn man sich dafür entscheidet', async () => {
+    sitzung = { user: { id: 'olivia' } };
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    await screen.findByRole('button', { name: 'Angemeldet bleiben' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Angemeldet bleiben' }));
+
+    expect(verifyOtp).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/', { replace: true });
   });
 });

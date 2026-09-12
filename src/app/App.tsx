@@ -5,7 +5,11 @@ import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { KennwortNeuPage } from '@/features/auth/KennwortNeuPage';
 import { ZugangPage } from '@/features/auth/ZugangPage';
-import { WIEDERHERSTELLUNG_PFAD, ZUGANG_PFAD } from '@/features/auth/linkEinloesen';
+import {
+  WIEDERHERSTELLUNG_PFAD,
+  ZUGANG_PFAD,
+  istEinloesePfad,
+} from '@/features/auth/linkEinloesen';
 import {
   KeinProfilError,
   ZugangGesperrtError,
@@ -140,18 +144,23 @@ function OeffentlicheRouten() {
  * Entscheidet, welche der drei Welten die Person zu sehen bekommt.
  *
  * Die Bedingung auf den Pfad ist **nicht** überflüssig neben `!session`, und
- * zwar wegen der Reihenfolge im Wiederherstellungsablauf: Sobald
- * `KennwortNeuPage` den Link eingelöst hat, existiert eine Sitzung. Ohne die
- * zusätzliche Bedingung schwenkte diese Stelle im selben Augenblick auf die
- * angemeldete Anwendung, deren Auffangroute `/kennwort-neu` auf „/" umleitet —
- * das Formular zum Setzen des Kennworts wäre nie zu sehen. Die Seite verlässt
- * den Pfad selbst, wenn sie fertig ist.
+ * zwar wegen der Reihenfolge beim Einlösen: Sobald eine der beiden Seiten den
+ * Link eingelöst hat, existiert eine Sitzung. Ohne die zusätzliche Bedingung
+ * schwenkte diese Stelle im selben Augenblick auf die angemeldete Anwendung,
+ * deren Auffangroute den Pfad auf „/" umleitet — die Seite käme nie dazu,
+ * fertig zu werden. Beide Seiten verlassen ihren Pfad selbst, wenn sie es
+ * sind.
+ *
+ * Gefragt wird `istEinloesePfad` und nicht eine Aufzählung an dieser Stelle:
+ * Die Liste gehört zu den Seiten, nicht zum Gate. `/zugang` war hier zuerst
+ * vergessen, und die Folge war still — mit bestehender Sitzung wurde der Link
+ * nie eingelöst und die Person landete im Konto der vorigen.
  */
 function Gate() {
   const { session, initialising } = useSession();
   const { pathname } = useLocation();
   if (initialising) return <LoadingState label="Sitzung wird geprüft …" />;
-  if (!session || pathname === WIEDERHERSTELLUNG_PFAD) return <OeffentlicheRouten />;
+  if (!session || istEinloesePfad(pathname)) return <OeffentlicheRouten />;
   return <AuthenticatedApp />;
 }
 

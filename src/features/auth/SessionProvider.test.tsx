@@ -130,7 +130,15 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     expect(await screen.findByText('bert')).toBeInTheDocument();
   });
 
-  it('lässt eine verspätete Antwort des vorigen Kontos nicht mehr in den Speicher', async () => {
+  /**
+   * Was dieser Test belegt und was nicht: Er hält fest, dass eine Antwort,
+   * die **nach** dem Wechsel eintrifft, nicht im Speicher landet. Das ist die
+   * Anforderung. Er unterscheidet **nicht** zwischen `clear()` und
+   * `removeQueries()` — nachgeprüft, beide bestehen ihn. Die Wahl von
+   * `clear()` ist damit keine Notwendigkeit, sondern eine Entscheidung, und
+   * der Kommentar an der Stelle sagt das jetzt auch so.
+   */
+  it('lässt eine verspätet eintreffende Antwort des vorigen Kontos nicht im Speicher', async () => {
     await anbieterZeigen();
 
     let antworten: ((wert: unknown) => void) | undefined;
@@ -140,13 +148,11 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     });
 
     act(() => melde?.('SIGNED_OUT', null));
-    // Die Antwort kommt erst NACH der Abmeldung an - der Fall, den ein
-    // Aufräumen ohne Abbruch der laufenden Abfragen offen ließe.
+    // Die Antwort kommt erst NACH der Abmeldung an.
     antworten?.([{ id: 'p1', family_name: 'Mustermann' }]);
     await act(async () => {
-      // `clear()` bricht die laufende Abfrage ab; die Ablehnung ist der
-      // Beleg, nicht ein Fehler. Ohne Abbruch liefe sie hier durch und
-      // schriebe die Daten des vorigen Kontos in den frischen Speicher.
+      // Die Ablehnung ist erwartet: Die Abfrage ist mit dem Speicher
+      // verworfen worden.
       await laufend.catch(() => undefined);
     });
 
