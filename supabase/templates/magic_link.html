@@ -1,0 +1,27 @@
+<!--
+  Mailvorlage "Zugangsmail" (FIX-002, ANN-042).
+
+  Dieselbe Bauart und dieselbe Begründung wie recovery.html: Der Link trägt
+  nur {{ .TokenHash }}, keine fertige Sitzung im Adressfragment. Eingelöst wird
+  er auf /zugang über verifyOtp.
+
+  Diese Mail geht an ein Konto, dessen Einladung in der Praxis offen ist. Sie
+  legt kein Konto an - signInWithOtp läuft mit shouldCreateUser: false, und
+  [auth].enable_signup steht auf false (ANN-025). Wer keinen Zugang hat,
+  bekommt auch keine Mail; deshalb steht hier nichts, was einem falschen
+  Empfänger etwas verriete.
+-->
+<h2>Zugang zur Praxisanwendung</h2>
+
+<p>Über den folgenden Link melden Sie sich einmalig ohne Kennwort an:</p>
+
+<p>
+  <a href="{{ .SiteURL }}/zugang?token_hash={{ .TokenHash }}&amp;type=magiclink">
+    Jetzt anmelden
+  </a>
+</p>
+
+<p>
+  Der Link gilt einmalig und nur für kurze Zeit. Wurde er nicht von Ihnen angefordert, ist nichts zu
+  tun.
+</p>

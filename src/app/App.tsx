@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
 import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { KennwortNeuPage } from '@/features/auth/KennwortNeuPage';
+import { ZugangPage } from '@/features/auth/ZugangPage';
+import { WIEDERHERSTELLUNG_PFAD, ZUGANG_PFAD } from '@/features/auth/linkEinloesen';
 import {
   KeinProfilError,
   ZugangGesperrtError,
@@ -116,10 +119,39 @@ function AuthenticatedApp() {
   return <AuthenticatedRoutes user={user} onSignOut={() => void abmelden()} />;
 }
 
+/**
+ * Die Seiten, die ohne Sitzung erreichbar sind.
+ *
+ * Der Auffangpfad ist die Anmeldemaske und nicht ein Fehler: Wer ohne Sitzung
+ * irgendeine Adresse der Anwendung öffnet, soll sich anmelden können und nicht
+ * erfahren, ob es diese Seite gibt. `tests/e2e/login.spec.ts` hält das fest.
+ */
+function OeffentlicheRouten() {
+  return (
+    <Routes>
+      <Route path={WIEDERHERSTELLUNG_PFAD} element={<KennwortNeuPage />} />
+      <Route path={ZUGANG_PFAD} element={<ZugangPage />} />
+      <Route path="*" element={<LoginPage />} />
+    </Routes>
+  );
+}
+
+/**
+ * Entscheidet, welche der drei Welten die Person zu sehen bekommt.
+ *
+ * Die Bedingung auf den Pfad ist **nicht** überflüssig neben `!session`, und
+ * zwar wegen der Reihenfolge im Wiederherstellungsablauf: Sobald
+ * `KennwortNeuPage` den Link eingelöst hat, existiert eine Sitzung. Ohne die
+ * zusätzliche Bedingung schwenkte diese Stelle im selben Augenblick auf die
+ * angemeldete Anwendung, deren Auffangroute `/kennwort-neu` auf „/" umleitet —
+ * das Formular zum Setzen des Kennworts wäre nie zu sehen. Die Seite verlässt
+ * den Pfad selbst, wenn sie fertig ist.
+ */
 function Gate() {
   const { session, initialising } = useSession();
+  const { pathname } = useLocation();
   if (initialising) return <LoadingState label="Sitzung wird geprüft …" />;
-  if (!session) return <LoginPage />;
+  if (!session || pathname === WIEDERHERSTELLUNG_PFAD) return <OeffentlicheRouten />;
   return <AuthenticatedApp />;
 }
 

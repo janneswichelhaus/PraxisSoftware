@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEinloesen';
 
 /**
  * Das eigene Konto (STAFF-004).
@@ -111,10 +112,14 @@ export async function beendeAlleSitzungen(): Promise<void> {
  * wurde zurückgesetzt" wäre selbst eine Auskunft darüber, wer ein Konto hat.
  * Der Anmeldedienst führt den Vorgang; die Änderung des Kennworts wird beim
  * Setzen protokolliert.
+ *
+ * Das Ziel war `/mein-konto` — eine Seite hinter der Anmeldung, und damit für
+ * genau die Person unerreichbar, die den Link braucht (FIX-001). Es ist jetzt
+ * die öffentliche Seite, die den Link auch einlösen kann.
  */
 export async function fordereKennwortMailAn(email: string): Promise<void> {
   await getSupabase().auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: `${window.location.origin}/mein-konto`,
+    redirectTo: `${window.location.origin}${WIEDERHERSTELLUNG_PFAD}`,
   });
 }
 

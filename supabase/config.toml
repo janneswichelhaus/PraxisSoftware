@@ -43,7 +43,18 @@ file_size_limit = "50MiB"
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:5173"
-additional_redirect_urls = ["http://127.0.0.1:5173"]
+# Jedes Ziel, das in einer Auth-Mail vorkommen darf, steht hier - sonst faellt
+# GoTrue stillschweigend auf site_url zurueck und der Link landet wieder auf
+# der Anmeldemaske. /kennwort-neu ist die oeffentliche Seite, die einen
+# Wiederherstellungslink einloest (FIX-001, ANN-042).
+# ACHTUNG: Dieselben Eintraege muessen im spaeteren Cloudprojekt unter
+# Authentication > URL Configuration stehen, sonst laufen lokal und produktiv
+# auseinander (OPS-001).
+additional_redirect_urls = [
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5173/kennwort-neu",
+  "http://127.0.0.1:5173/zugang",
+]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
@@ -64,6 +75,21 @@ enable_anonymous_sign_ins = false
 enable_signup = true
 enable_confirmations = false
 double_confirm_changes = true
+
+# Eigene Vorlage fuer "Kennwort zuruecksetzen" (FIX-001, ANN-042). Die
+# Begruendung steht vollstaendig in der Datei selbst: Der Link uebergibt nur
+# den TokenHash, nicht eine fertige Sitzung im Adressfragment.
+# Im Cloudprojekt liegt dieselbe Vorlage unter Authentication > Email
+# Templates > Reset Password - config.toml wirkt dort nicht.
+[auth.email.template.recovery]
+subject = "Neues Kennwort setzen"
+content_path = "./supabase/templates/recovery.html"
+
+# Zugangsmail an eine offene Einladung (FIX-002, ANN-042), gleiche Bauart.
+# Im Cloudprojekt: Authentication > Email Templates > Magic Link.
+[auth.email.template.magic_link]
+subject = "Zugang zur Praxisanwendung"
+content_path = "./supabase/templates/magic_link.html"
 
 # Edge Functions sind NICHT fuer produktive Gesundheitsdaten freigegeben
 # (ADR-015). Lokal deaktiviert, damit nichts unbemerkt entsteht.

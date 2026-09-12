@@ -1,0 +1,43 @@
+<!--
+  Mailvorlage "Kennwort zurücksetzen" (FIX-001, ANN-042).
+
+  Warum eine eigene Vorlage und nicht die mitgelieferte:
+
+  Die Standardvorlage verlinkt auf {{ .ConfirmationURL }}. Dieser Weg führt
+  über den Endpunkt /auth/v1/verify des Anmeldedienstes, der den Link einlöst
+  und den Browser mit fertigen Token im Adressfragment zurückschickt. Damit
+  stünde ein gültiges Zugriffs- und Erneuerungstoken im Verlauf des Browsers
+  und in jedem Skript auf der Seite. Die Anwendung müsste außerdem
+  detectSessionInUrl einschalten - eine bewusste Entscheidung, die in
+  src/lib/supabase.ts anders getroffen ist.
+
+  Diese Vorlage übergibt stattdessen nur {{ .TokenHash }}. Er ist einmalig,
+  kurzlebig und für sich genommen keine Sitzung. Die Anwendung tauscht ihn auf
+  /kennwort-neu über verifyOtp gegen eine Sitzung - ein Aufruf des SDK des
+  Anmeldedienstes, kein Eigenbau an der Sitzungsmechanik (PROJECT_PRINCIPLES
+  §3.4). Der Weg funktioniert außerdem geräteübergreifend: angefordert am
+  Praxisrechner, geöffnet auf dem Telefon.
+
+  Das Ziel ist {{ .SiteURL }} und nicht {{ .RedirectTo }}: So steht die Adresse
+  fest und lässt sich nicht vom Aufrufer steuern.
+
+  Die Mail nennt weder Namen noch Praxis im Betreff und sagt nichts darüber,
+  wer ein Konto hat - dieselbe Zurückhaltung wie auf der Anmeldemaske.
+-->
+<h2>Neues Kennwort setzen</h2>
+
+<p>
+  Für diesen Zugang wurde ein neues Kennwort angefordert. Über den folgenden Link lässt sich eines
+  setzen:
+</p>
+
+<p>
+  <a href="{{ .SiteURL }}/kennwort-neu?token_hash={{ .TokenHash }}&amp;type=recovery">
+    Neues Kennwort setzen
+  </a>
+</p>
+
+<p>
+  Der Link gilt einmalig und nur für kurze Zeit. Wurde die Anfrage nicht von Ihnen gestellt, ist
+  nichts zu tun - das bisherige Kennwort bleibt unverändert gültig.
+</p>

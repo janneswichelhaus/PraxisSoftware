@@ -297,8 +297,8 @@ function Sitzungen() {
         </p>
         <p className="mt-3">
           Ein bereits geöffnetes Gerät kann noch bis zu einer Stunde weiterlesen, bevor es neu
-          anmelden muss. Ist ein Gerät abhandengekommen und eilt es, lassen Sie den Zugang zusätzlich
-          von der Praxisleitung sperren — das wirkt sofort.
+          anmelden muss. Ist ein Gerät abhandengekommen und eilt es, lassen Sie den Zugang
+          zusätzlich von der Praxisleitung sperren — das wirkt sofort.
         </p>
       </Rueckfrage>
     </Section>
