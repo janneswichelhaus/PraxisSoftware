@@ -1022,4 +1022,74 @@ describe('CalendarPage', () => {
       expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
     });
   });
+  // ---------------------------------------------------------------------------
+  // AKTE-003: Der Patientenfilter kommt aus der Akte mit.
+  //
+  // Er wirkt in der Darstellung und nicht im Lesepfad: Der Kalender liest den
+  // Ausschnitt ohnehin vollstaendig, und eine eigene Serverabfrage je
+  // Patient:in waere ein zweiter Weg zu denselben Daten.
+  // ---------------------------------------------------------------------------
+  describe('AKTE-003: Patientenfilter aus der Akte', () => {
+    const ANDERE = '66666666-6666-4666-8666-000000000002';
+
+    it('zeigt nur die Termine der uebergebenen Patient:in', async () => {
+      fetchAppointments.mockResolvedValue([
+        eintrag(),
+        eintrag({
+          id: '77777777-7777-4777-8777-000000000009',
+          patient_id: ANDERE,
+          patient_given_name: 'Erika',
+          patient_family_name: 'Beispiel',
+          starts_at: '2027-05-12T09:00:00.000Z',
+          ends_at: '2027-05-12T10:00:00.000Z',
+        }),
+      ]);
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
+
+      expect(await screen.findByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /Erika Beispiel/ })).toBeNull();
+    });
+
+    it('nennt den Filter und den Namen aus den geladenen Terminen', async () => {
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
+
+      const hinweis = await screen.findByRole('status');
+      expect(hinweis).toHaveTextContent('Nur die Termine von Max Mustermann');
+      expect(within(hinweis).getByRole('link', { name: 'Zur Akte' })).toHaveAttribute(
+        'href',
+        `/patienten/${PATIENT}/termine`,
+      );
+    });
+
+    it('hebt den Filter wieder auf', async () => {
+      const user = userEvent.setup();
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
+
+      await user.click(await screen.findByRole('button', { name: 'Filter aufheben' }));
+
+      await waitFor(() => expect(screen.queryByText(/Nur die Termine von/)).toBeNull());
+    });
+
+    it('erklaert eine leere Ansicht mit dem Filter statt mit dem Tag', async () => {
+      fetchAppointments.mockResolvedValue([]);
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${ANDERE}`);
+
+      expect(
+        await screen.findByText('Für diese Patient:in steht an diesem Tag kein Termin an.'),
+      ).toBeInTheDocument();
+    });
+
+    it('fragt den Server unveraendert - der Filter ist keine zweite Abfrage', async () => {
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      expect(letzteAbfrage()).toEqual({
+        von: '2027-05-12',
+        bis: '2027-05-13',
+        person: null,
+        standort: null,
+        status: 'active',
+      });
+    });
+  });
 });

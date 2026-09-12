@@ -322,8 +322,23 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         }));
 
   // Die Wochenansicht zeigt genau eine Person; alles andere blendet sie aus.
-  const sichtbar =
+  const nachPerson =
     p.ansicht === 'woche' ? eintraege.filter((e) => e.staff_member_id === wochenPerson) : eintraege;
+
+  // Der Patientenfilter kommt aus der Akte mit (AKTE-003). Er wirkt in der
+  // Darstellung und nicht im Lesepfad: Der Kalender liest den Ausschnitt
+  // ohnehin vollständig, und eine eigene Serverabfrage je Patient:in wäre ein
+  // zweiter Weg zu denselben Daten. Was sichtbar ist, entscheidet unverändert
+  // die RLS (ADR-004).
+  const sichtbar = p.patient ? nachPerson.filter((e) => e.patient_id === p.patient) : nachPerson;
+
+  // Der Name für die Filteranzeige stammt aus den geladenen Terminen und nicht
+  // aus einer zusätzlichen Abfrage: Wer aus der Akte kommt, landet auf einem
+  // Tag mit einem Termin dieser Person. Findet sich keiner, bleibt der Hinweis
+  // ohne Namen stehen - er nennt keine Person, die hier gerade nicht vorkommt.
+  const gefilterterName = p.patient
+    ? (nachPerson.find((e) => e.patient_id === p.patient) ?? null)
+    : null;
 
   const gitterEintraege: GitterEintrag[] = sichtbar.map((e) => ({
     eintrag: e,
@@ -553,6 +568,34 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         </Select>
       </div>
 
+      {/* Der Filter aus der Akte steht sichtbar über dem Gitter und lässt sich
+          mit einem Tap aufheben: Ein Kalender, der ohne erkennbaren Grund fast
+          leer ist, ist ein Fehlerbild (PROJECT_PRINCIPLES.md 13). */}
+      {p.patient ? (
+        <div
+          role="status"
+          className="border-line-strong bg-surface-sunken rounded-card mt-4 flex flex-wrap items-center justify-between gap-3 border px-4 py-3"
+        >
+          <p className="text-ink text-sm">
+            Nur die Termine von{' '}
+            <strong>
+              {gefilterterName
+                ? `${gefilterterName.patient_given_name} ${gefilterterName.patient_family_name}`
+                : 'einer Patient:in'}
+            </strong>
+            . Andere Termine dieses Zeitraums sind ausgeblendet.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink to={`/patienten/${p.patient}/termine`} variant="secondary">
+              Zur Akte
+            </ButtonLink>
+            <Button type="button" variant="secondary" onClick={() => setze({ patient: null })}>
+              Filter aufheben
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {verschieben.isPending ? (
         <Statusmeldung className="mt-4">Der Termin wird verschoben …</Statusmeldung>
       ) : null}
@@ -649,9 +692,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
       {termine.isSuccess && !laedt && spaltenModell.length > 0 && gitterEintraege.length === 0 ? (
         <p className="text-ink-muted mt-3 text-sm">
-          {p.ansicht === 'tag'
-            ? 'Für diesen Tag sind keine Termine geplant.'
-            : 'Für diese Woche sind keine Termine geplant.'}
+          {p.patient
+            ? p.ansicht === 'tag'
+              ? 'Für diese Patient:in steht an diesem Tag kein Termin an.'
+              : 'Für diese Patient:in steht in dieser Woche kein Termin an.'
+            : p.ansicht === 'tag'
+              ? 'Für diesen Tag sind keine Termine geplant.'
+              : 'Für diese Woche sind keine Termine geplant.'}
         </p>
       ) : null}
 

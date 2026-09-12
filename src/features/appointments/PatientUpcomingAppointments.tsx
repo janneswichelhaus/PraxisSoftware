@@ -27,14 +27,17 @@ import {
  * Patient:in mitgeteilt wurde. Kein Zeichen heißt: noch offen — oder der
  * Termin hat sich seit der Mitteilung geändert.
  *
- * Bewusst über der Dokumentation und unter den Stammdaten: Es ist eine
- * organisatorische Auskunft, keine klinische. Der Abschnitt erscheint für alle
- * Rollen, die den Kalender lesen dürfen - für ein Patientenkonto liefert die
- * Serverfunktion nichts, und die Ansicht bleibt leer statt zu behaupten, es
- * gäbe keine Termine.
+ * Seit AKTE-003 steht der Abschnitt auf der Übersicht der Akte und ist dort
+ * der Blick nach vorn: die nächsten Termine, mehr nicht. Alles Weitere -
+ * Historie, abgesagte Termine, der Filter auf eine Verordnung - steht im
+ * Terminbereich, und der Weg dorthin steht unter der Liste.
+ *
+ * Der Abschnitt erscheint für alle Rollen, die den Kalender lesen dürfen - für
+ * ein Patientenkonto liefert die Serverfunktion nichts, und die Ansicht bleibt
+ * leer statt zu behaupten, es gäbe keine Termine.
  */
 
-/** Wie viele künftige Termine die Akte zeigt. Mehr wäre eine Terminliste. */
+/** Wie viele künftige Termine die Übersicht zeigt. Mehr wäre eine Terminliste. */
 const ANZAHL = 5;
 
 export function PatientUpcomingAppointments({
@@ -88,7 +91,7 @@ export function PatientUpcomingAppointments({
             <li key={termin.id}>
               <Link
                 to={`/termine/${termin.id}`}
-                className="hover:bg-surface-sunken flex min-h-16 flex-wrap items-center gap-x-4 gap-y-1 py-3 transition-colors"
+                className="hover:bg-surface-sunken flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 py-2.5 transition-colors"
               >
                 {/* min-w-48: Ohne Mindestbreite schrumpft der Text, statt die
                     Zeichen umbrechen zu lassen - bei 375 px zerfiel das Datum
@@ -119,6 +122,15 @@ export function PatientUpcomingAppointments({
           ))}
         </ul>
       ) : null}
+
+      {/* Der Weg in die vollständige Liste steht immer da - auch ohne künftigen
+          Termin führt er zur Historie, und genau die sucht man dann. */}
+      <Link
+        to={`/patienten/${patientId}/termine`}
+        className="text-accent mt-2 inline-flex min-h-11 items-center text-sm hover:underline"
+      >
+        Alle Termine und Historie
+      </Link>
     </Section>
   );
 }
