@@ -14,6 +14,7 @@ import {
   NewPrescriptionPage,
 } from '@/features/prescriptions/PrescriptionFormPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
+import { TagUmplanenPage } from '@/features/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentStartPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
@@ -136,6 +137,9 @@ export function AuthenticatedRoutes({
           {showAppointments ? (
             <>
               <Route path="/kalender" element={<CalendarPage user={user} />} />
+              {/* Tag umplanen bei einem Ausfall - aus dem Kalender heraus,
+                  wenn Person und Tag dort feststehen (CAL-009). */}
+              <Route path="/kalender/tag-umplanen" element={<TagUmplanenPage user={user} />} />
               {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
                   nicht - aus dem Kalender heraus (UX-005). */}
               <Route path="/termine/neu" element={<NewAppointmentStartPage />} />

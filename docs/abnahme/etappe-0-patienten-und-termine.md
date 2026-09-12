@@ -120,7 +120,7 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
 6. Gegenprobe belegter Zeitraum: einen zweiten Termin für dieselbe Person zur
    selben Zeit anlegen. Er wird abgewiesen. Anders als eine Absage gibt ein
    Abschluss den Zeitraum **nicht** frei.
-7. „Termin wieder öffnen" klicken: der Status steht wieder auf „Geplant",
+7. „Termin wieder öffnen" klicken: der Status steht wieder auf „Bestätigt",
    „Abgeschlossen am" ist verschwunden, Bearbeiten und Absagen sind zurück.
    Der Termin lässt sich jetzt wieder verschieben.
 8. Einen abgesagten Termin öffnen: dort gibt es weder „Termin abschließen"
@@ -232,7 +232,7 @@ Person, Mitarbeiterdatensatz und Zugang bleiben getrennte Konzepte (ADR-014).
    Kalender. Es wurde nichts abgesagt und nichts umgebucht.
 10. Denselben Weg erneut gehen und „Trotz offener Termine deaktivieren"
     klicken. Erst jetzt ist Anna inaktiv — und der Termin steht **weiterhin**
-    auf „Geplant".
+    auf „Bestätigt".
 11. Gegenprobe Serverdurchsetzung: einen **neuen** Termin für Anna anlegen. Sie
     steht nicht mehr in der Auswahl. Einen bestehenden Termin auf sie
     umzuhängen, wird ebenfalls abgewiesen.

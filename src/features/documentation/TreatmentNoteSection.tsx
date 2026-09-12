@@ -47,6 +47,11 @@ function Eintrag({
     onSuccess: async () => {
       setFrage(false);
       await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+      // Die Finalisierung hebt den Termin auf „dokumentiert" (CAL-008d,
+      // ADR-018 Punkt 3). Ohne diese beiden Zeilen zeigte die Seite daneben
+      // weiter den alten Zustand — und der Kalender ebenfalls.
+      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
 

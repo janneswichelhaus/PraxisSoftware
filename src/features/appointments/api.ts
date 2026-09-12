@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import type { StatusFilter } from './calendar';
 
 /**
  * Datenzugriff auf die Terminverwaltung.
@@ -15,7 +16,22 @@ import { getSupabase } from '@/lib/supabase';
 export const appointmentTypeSchema = z.enum(['home_visit', 'practice', 'video']);
 export type AppointmentType = z.infer<typeof appointmentTypeSchema>;
 
-export const appointmentStatusSchema = z.enum(['scheduled', 'completed', 'cancelled']);
+/**
+ * Zustände des Termins nach ADR-018.
+ *
+ * Sechs Werte, genau die der Datenbank-Constraint. „Angefragt" und
+ * „vorgemerkt" sind im ADR beschrieben, aber nicht gebaut: ohne Portal gibt es
+ * niemanden, der einen Termin anfragt (ADR-014). `invoiced` steht im
+ * Wertebereich und bekommt seinen Schreibpfad mit ABR-003.
+ */
+export const appointmentStatusSchema = z.enum([
+  'confirmed',
+  'cancelled',
+  'no_show',
+  'completed',
+  'documented',
+  'invoiced',
+]);
 export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
 
 export const appointmentTypeLabels: Record<AppointmentType, string> = {
@@ -25,9 +41,51 @@ export const appointmentTypeLabels: Record<AppointmentType, string> = {
 };
 
 export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
-  scheduled: 'Geplant',
-  completed: 'Abgeschlossen',
+  confirmed: 'Bestätigt',
   cancelled: 'Abgesagt',
+  no_show: 'Nicht angetroffen',
+  completed: 'Abgeschlossen',
+  documented: 'Dokumentiert',
+  invoiced: 'Abgerechnet',
+};
+
+/**
+ * Ton des Statusabzeichens.
+ *
+ * An genau einer Stelle, weil ihn drei Ansichten brauchen — Kalender,
+ * Tagesliste und Akte — und ein Zustand überall gleich aussehen muss. Der Ton
+ * ergänzt nur: der Zustand steht immer als Wort daneben (`Badge`, WCAG 1.4.1).
+ */
+export const appointmentStatusTon: Record<AppointmentStatus, 'positiv' | 'warnung' | 'kritisch'> = {
+  confirmed: 'positiv',
+  cancelled: 'kritisch',
+  no_show: 'warnung',
+  completed: 'positiv',
+  documented: 'positiv',
+  invoiced: 'positiv',
+};
+
+/**
+ * Absagegründe (CAL-008b, ANN-034).
+ *
+ * Eine codierte Auswahl, kein Freitext: ein freies Feld am Termin wäre die
+ * wahrscheinlichste Stelle, an der eine Gesundheitsangabe in einen
+ * organisatorischen Datensatz rutscht (PROJECT_PRINCIPLES.md §4.6, §5). Die
+ * Reihenfolge ist die der Häufigkeit im Praxisalltag.
+ */
+export const cancellationReasonSchema = z.enum([
+  'patient_request',
+  'practice_request',
+  'moved',
+  'other',
+]);
+export type CancellationReason = z.infer<typeof cancellationReasonSchema>;
+
+export const cancellationReasonLabels: Record<CancellationReason, string> = {
+  patient_request: 'Patient:in hat abgesagt',
+  practice_request: 'Praxis hat abgesagt',
+  moved: 'Termin verlegt',
+  other: 'Sonstiger Grund',
 };
 
 const appointmentSchema = z.object({
@@ -49,6 +107,13 @@ const appointmentSchema = z.object({
   // Nur der Zeitpunkt, nicht die abschliessende Person: die Detailansicht
   // zeigt keine Akteure, die Historie steht im Auditlog (ADR-010).
   completed_at: z.string().nullable(),
+  // `null` bei jeder Absage aus der Zeit vor CAL-008b - der Grund wird nicht
+  // rueckwirkend erfunden.
+  cancellation_reason: cancellationReasonSchema.nullable(),
+  // Nur Zeitpunkt und Kennzeichen, nicht die vermerkende Person: die
+  // Detailansicht zeigt keine Akteure (ADR-010).
+  no_show_recorded_at: z.string().nullable(),
+  no_show_fee: z.boolean().nullable(),
   patient_given_name: z.string(),
   patient_family_name: z.string(),
   staff_given_name: z.string(),
@@ -64,6 +129,7 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 const SELECT =
   'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
+  'cancellation_reason, no_show_recorded_at, no_show_fee, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -449,7 +515,7 @@ export interface CalendarQuery {
   bis: string;
   person: string | null;
   standort: string | null;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'active' | 'all';
+  status: StatusFilter;
 }
 
 /**
@@ -551,7 +617,23 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
   }
   if (error?.message?.includes('must be reopened first')) {
     return new Error(
-      'Der Termin ist abgeschlossen. Er muss erst wieder geöffnet werden, bevor er geändert oder abgesagt werden kann.',
+      'Der Termin ist bereits abgeschlossen oder als „nicht angetroffen" geführt. Er muss erst wieder geöffnet werden, bevor er geändert oder abgesagt werden kann.',
+    );
+  }
+  if (error?.message?.includes('cancellation reason is required')) {
+    return new Error('Bitte einen Absagegrund auswählen.');
+  }
+  if (error?.message?.includes('no-show fee decision is required')) {
+    return new Error('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.');
+  }
+  if (error?.message?.includes('cannot be recorded as no-show')) {
+    return new Error(
+      'Für diesen Termin lässt sich „nicht angetroffen" nicht vermerken: Er ist abgesagt oder es hängt bereits eine Dokumentation daran.',
+    );
+  }
+  if (error?.message?.includes('documented appointment cannot be changed')) {
+    return new Error(
+      'Der Termin ist dokumentiert und lässt sich nicht mehr ändern. Eine Korrektur gehört in die Behandlungsdokumentation.',
     );
   }
   return new Error(standard);
@@ -586,18 +668,21 @@ export async function updateAppointment(
 }
 
 /**
- * Sagt einen geplanten Termin ab.
+ * Sagt einen bestätigten Termin ab.
  *
  * Absage ist ein Statuswechsel, kein Löschen: der Termin bleibt vollständig
- * erhalten und nachvollziehbar.
+ * erhalten und nachvollziehbar. Der Grund ist Pflicht und wird serverseitig
+ * erneut geprüft — die Auswahl im Formular ist nur Bedienkomfort (ADR-004).
  */
 export async function cancelAppointment(
   appointmentId: string,
   expectedUpdatedAt: string,
+  reason: CancellationReason,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('cancel_appointment', {
     p_appointment_id: appointmentId,
     p_expected_updated_at: expectedUpdatedAt,
+    p_reason: reason,
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgesagt werden.');
@@ -621,6 +706,51 @@ export async function completeAppointment(
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgeschlossen werden.');
+}
+
+/**
+ * Sagt alle bestätigten Termine einer Person an einem Kalendertag ab (CAL-009).
+ *
+ * Ein Vorgang, eine Transaktion: Entweder der ganze Tag ist umgeplant oder
+ * keiner der Termine. Serverseitig löst das n Einzelabsagen aus — mit je
+ * eigener Prüfung und eigenem Auditeintrag.
+ *
+ * Gibt die Anzahl der abgesagten Termine zurück.
+ */
+export async function cancelStaffDay(
+  staffMemberId: string,
+  datum: string,
+  reason: CancellationReason,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('cancel_staff_day', {
+    p_staff_member_id: staffMemberId,
+    p_date: datum,
+    p_reason: reason,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Tag konnte nicht umgeplant werden.');
+  return z.number().parse(data);
+}
+
+/**
+ * Vermerkt einen bestätigten Termin als „nicht angetroffen".
+ *
+ * Das Ausfallhonorar-Kennzeichen gehört in denselben Schritt und hat keine
+ * Vorbelegung: Der Termin sagt damit nur, **ob** abgerechnet werden soll — wie
+ * viel, steht im Leistungskatalog (ADR-018 Punkt 4, ABR-001).
+ */
+export async function recordNoShow(
+  appointmentId: string,
+  expectedUpdatedAt: string,
+  fee: boolean,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('record_no_show', {
+    p_appointment_id: appointmentId,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_fee: fee,
+  })) as { error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Termin konnte nicht vermerkt werden.');
 }
 
 /**

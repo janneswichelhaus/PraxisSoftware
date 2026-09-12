@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Select } from '@/components/ui/Select';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -18,8 +20,11 @@ import { NavigationZumTermin } from './NavigationStarten';
 import {
   appointmentStatusLabels,
   cancelAppointment,
+  cancellationReasonLabels,
+  cancellationReasonSchema,
   appointmentTypeLabels,
   completeAppointment,
+  type CancellationReason,
   fetchAppointment,
   folgeterminVorbelegung,
   formatLocalDate,
@@ -27,6 +32,7 @@ import {
   formatLocalTimeRange,
   locationSummary,
   patientName,
+  recordNoShow,
   reopenAppointment,
   schreibeTerminVorbelegung,
   staffName,
@@ -41,27 +47,70 @@ function ortsBeschriftung(art: Appointment['appointment_type']): string {
 }
 
 /**
- * Absage mit Rückfrage.
+ * Der Satz unter der Überschrift: der Zustand, wenn er einer ist, sonst die
+ * Terminart.
  *
- * Bewusst zweistufig: eine Absage betrifft eine reale Verabredung, und ein
- * versehentlicher Einzelklick soll sie nicht auslösen
- * (PROJECT_PRINCIPLES.md 13). Die Rückfrage ist Bedienkomfort - verbindlich
- * prüft `cancel_appointment` Berechtigung und Zustand erneut.
+ * Er sagt bei jedem Zustand ohne Rückweg auch, wo korrigiert wird — im
+ * Kalender gibt es dafür keinen Knopf, und das ist Absicht (ADR-018 Punkt 2).
+ */
+function zustandsHinweis(appointment: Appointment): string {
+  switch (appointment.status) {
+    case 'cancelled':
+      return 'Dieser Termin ist abgesagt. Eine Absage wird nicht zurückgenommen – für einen neuen Termin bitte neu anlegen.';
+    case 'no_show':
+      return 'Hier wurde niemand angetroffen. Zum Ändern erst wieder öffnen.';
+    case 'completed':
+      return 'Dieser Termin ist abgeschlossen. Zum Ändern erst wieder öffnen.';
+    case 'documented':
+      return 'Dieser Termin ist dokumentiert. Korrigiert wird in der Dokumentation, nicht am Termin.';
+    case 'invoiced':
+      return 'Dieser Termin ist abgerechnet.';
+    default:
+      return appointmentTypeLabels[appointment.appointment_type];
+  }
+}
+
+/**
+ * Absage mit Rückfrage und Pflichtgrund.
+ *
+ * Bewusst zweistufig: eine Absage betrifft eine reale Verabredung, sie hat
+ * keinen Rückweg (ADR-018 Punkt 2), und ein versehentlicher Einzelklick soll
+ * sie nicht auslösen (PROJECT_PRINCIPLES.md 13). Die Rückfrage ist
+ * Bedienkomfort - verbindlich prüft `cancel_appointment` Berechtigung, Zustand
+ * und Grund erneut.
+ *
+ * Der Grund ist eine Auswahl ohne Freitext und ohne Vorbelegung: Wer absagt,
+ * trifft die Entscheidung bewusst, und ein Freitextfeld am Termin wäre die
+ * wahrscheinlichste Stelle für eine Gesundheitsangabe (ANN-034).
  *
  * Es ist ausdrücklich keine Löschung: der Termin bleibt erhalten. Die
  * Beschriftung vermeidet deshalb jede Löschsprache.
  */
 function AbsageAktion({ appointment }: { appointment: Appointment }) {
   const queryClient = useQueryClient();
+  const [grund, setGrund] = useState('');
+  const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
 
   const mutation = useMutation({
-    mutationFn: () => cancelAppointment(appointment.id, appointment.updated_at),
+    mutationFn: (gewaehlt: CancellationReason) =>
+      cancelAppointment(appointment.id, appointment.updated_at, gewaehlt),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
-      // Der Kalender zeigt sonst weiter einen geplanten Termin.
+      // Der Kalender zeigt sonst weiter einen bestätigten Termin.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
+
+  async function absagen() {
+    const gewaehlt = cancellationReasonSchema.safeParse(grund);
+    if (!gewaehlt.success) {
+      setGrundFehler('Bitte einen Absagegrund auswählen.');
+      // Ohne den Wurf schlösse die Rückfrage sich trotz fehlender Angabe.
+      throw new Error('Absagegrund fehlt');
+    }
+    setGrundFehler(undefined);
+    await mutation.mutateAsync(gewaehlt.data);
+  }
 
   return (
     <Rueckfrage
@@ -71,12 +120,106 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
       bestaetigenLaeuft="Wird abgesagt …"
       fehler={mutation.isError ? mutation.error.message : undefined}
       laeuft={mutation.isPending}
-      onBestaetigen={() => mutation.mutateAsync()}
+      onAbbrechen={() => setGrundFehler(undefined)}
+      onBestaetigen={absagen}
     >
-      Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
-      {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
-      {patientName(appointment)} wird als abgesagt geführt. Er bleibt vollständig erhalten und gibt
-      seinen Zeitraum wieder frei.
+      <p>
+        Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
+        um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
+        {patientName(appointment)} wird als abgesagt geführt. Er bleibt vollständig erhalten und
+        gibt seinen Zeitraum wieder frei. Eine Absage lässt sich nicht zurücknehmen – für einen
+        neuen Termin bitte neu anlegen.
+      </p>
+      <div className="mt-3 max-w-xs">
+        <Select
+          label="Absagegrund"
+          value={grund}
+          error={grundFehler}
+          onChange={(e) => {
+            setGrund(e.target.value);
+            setGrundFehler(undefined);
+          }}
+        >
+          <option value="">Bitte wählen</option>
+          {Object.entries(cancellationReasonLabels).map(([wert, beschriftung]) => (
+            <option key={wert} value={wert}>
+              {beschriftung}
+            </option>
+          ))}
+        </Select>
+      </div>
+    </Rueckfrage>
+  );
+}
+
+/**
+ * „Nicht angetroffen" mit Rückfrage und Pflichtentscheidung.
+ *
+ * Die Entscheidung über das Ausfallhonorar fällt im selben Schritt und hat
+ * bewusst keine Vorbelegung (ADR-018 Punkt 4): Sie fällt im Hausflur, nicht
+ * später im Büro, und ein voreingestelltes „nein" wäre eine stille Antwort auf
+ * eine Frage, die niemand gestellt hat.
+ *
+ * Der Termin sagt damit nur, **ob** abgerechnet werden soll. Wie viel, steht
+ * im Leistungskatalog (ABR-001); ob eine Rechnung entsteht, entscheidet
+ * ABR-003.
+ */
+function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
+  const queryClient = useQueryClient();
+  const [honorar, setHonorar] = useState('');
+  const [fehler, setFehler] = useState<string | undefined>(undefined);
+
+  const mutation = useMutation({
+    mutationFn: (fee: boolean) => recordNoShow(appointment.id, appointment.updated_at, fee),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
+  });
+
+  async function vermerken() {
+    if (honorar !== 'ja' && honorar !== 'nein') {
+      setFehler('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.');
+      // Ohne den Wurf schlösse die Rückfrage sich trotz fehlender Angabe.
+      throw new Error('Entscheidung fehlt');
+    }
+    setFehler(undefined);
+    await mutation.mutateAsync(honorar === 'ja');
+  }
+
+  return (
+    <Rueckfrage
+      ausloeser="Nicht angetroffen"
+      bezeichnung="Nicht angetroffen"
+      bestaetigen="Ja, niemand angetroffen"
+      bestaetigenLaeuft="Wird vermerkt …"
+      fehler={mutation.isError ? mutation.error.message : undefined}
+      laeuft={mutation.isPending}
+      onAbbrechen={() => setFehler(undefined)}
+      onBestaetigen={vermerken}
+    >
+      <p>
+        Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
+        um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
+        {patientName(appointment)} wird als „nicht angetroffen" geführt. Der Zeitraum bleibt belegt.
+        Ein Irrtum lässt sich über „Termin wieder öffnen" zurücknehmen.
+      </p>
+      <div className="mt-3 max-w-xs">
+        <Select
+          label="Ausfallhonorar berechnen?"
+          value={honorar}
+          error={fehler}
+          hint="Nur die Entscheidung. Den Betrag legt der Leistungskatalog fest."
+          onChange={(e) => {
+            setHonorar(e.target.value);
+            setFehler(undefined);
+          }}
+        >
+          <option value="">Bitte wählen</option>
+          <option value="nein">Nein, nicht berechnen</option>
+          <option value="ja">Ja, berechnen</option>
+        </Select>
+      </div>
     </Rueckfrage>
   );
 }
@@ -141,24 +284,21 @@ function StatusAktion({
 function AppointmentDetail({ appointment, user }: { appointment: Appointment; user: CurrentUser }) {
   const zone = appointment.organization_time_zone;
   const darfVerwalten = canManageAppointments(user.roles);
-  // Abgesagte Termine sind terminal. Abgeschlossene sind es nicht, aber sie
-  // werden erst wieder geoeffnet und dann bearbeitet - nicht ueber den
-  // Abschluss hinweg. Verbindlich pruefen das die Serverfunktionen.
-  const darfAendern = darfVerwalten && appointment.status === 'scheduled';
-  const darfWiederOeffnen = darfVerwalten && appointment.status === 'completed';
+  // Geaendert wird ausschliesslich aus „bestätigt". Abgesagte, dokumentierte
+  // und abgerechnete Termine sind terminal; abgeschlossene und nicht
+  // angetroffene werden erst wieder geoeffnet und dann bearbeitet - nicht
+  // ueber den Abschluss hinweg. Verbindlich pruefen das die Serverfunktionen
+  // (ADR-018, ADR-004).
+  const darfAendern = darfVerwalten && appointment.status === 'confirmed';
+  const darfWiederOeffnen =
+    darfVerwalten && (appointment.status === 'completed' || appointment.status === 'no_show');
   const darfDokumentieren = canWriteTreatmentNote(user.roles);
 
   return (
     <>
       <PageHeader
         title={`Termin – ${patientName(appointment)}`}
-        description={
-          appointment.status === 'cancelled'
-            ? 'Dieser Termin ist abgesagt.'
-            : appointment.status === 'completed'
-              ? 'Dieser Termin ist abgeschlossen. Zum Ändern erst wieder öffnen.'
-              : appointmentTypeLabels[appointment.appointment_type]
-        }
+        description={zustandsHinweis(appointment)}
         actions={
           darfAendern ? (
             <Link
@@ -199,6 +339,26 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
               <NavigationZumTermin termin={appointment} />
             </DetailRow>
           ) : null}
+          {appointment.status === 'cancelled' ? (
+            <DetailRow label="Absagegrund">
+              {appointment.cancellation_reason
+                ? cancellationReasonLabels[appointment.cancellation_reason]
+                : 'Nicht erfasst'}
+            </DetailRow>
+          ) : null}
+          {appointment.no_show_recorded_at ? (
+            <DetailRow label="Vermerkt am">
+              {`${formatLocalDate(appointment.no_show_recorded_at, zone)}, ${formatLocalTime(
+                appointment.no_show_recorded_at,
+                zone,
+              )} Uhr`}
+            </DetailRow>
+          ) : null}
+          {appointment.status === 'no_show' ? (
+            <DetailRow label="Ausfallhonorar">
+              {appointment.no_show_fee ? 'Wird berechnet' : 'Wird nicht berechnet'}
+            </DetailRow>
+          ) : null}
           {appointment.completed_at ? (
             <DetailRow label="Abgeschlossen am">
               {`${formatLocalDate(appointment.completed_at, zone)}, ${formatLocalTime(
@@ -228,6 +388,7 @@ function AppointmentDetail({ appointment, user }: { appointment: Appointment; us
             laufend="Wird abgeschlossen …"
             variant={darfDokumentieren ? 'secondary' : 'primary'}
           />
+          <NichtAngetroffenAktion appointment={appointment} />
           <AbsageAktion appointment={appointment} />
         </div>
       ) : null}

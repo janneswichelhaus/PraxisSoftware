@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-11",
+  "stand": "2026-09-12",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -39,7 +39,7 @@
         { "id": "marke-001", "name": "MARKE-001 Marke in der Anwendung", "gewicht": 1, "status": "fertig" },
         { "id": "ux-epic-001", "name": "UX-EPIC-001 Hausbesuchstag (11 Stories)", "gewicht": 4, "status": "fertig" },
         { "id": "loe-epic-001", "name": "LOE-EPIC-001 Löschung und Retention (5 Stories)", "gewicht": 3, "status": "fertig" },
-        { "id": "cal-epic-003a", "name": "CAL-EPIC-003a Terminzustände", "gewicht": 2, "status": "offen" },
+        { "id": "cal-epic-003a", "name": "CAL-EPIC-003a Terminzustände", "gewicht": 2, "status": "gebaut" },
         { "id": "cal-epic-003b", "name": "CAL-EPIC-003b Serie und Terminfenster", "gewicht": 3, "status": "offen" },
         { "id": "dat-epic-001", "name": "DAT-EPIC-001 Dateiablage (G4)", "gewicht": 2, "status": "offen" },
         { "id": "abr-epic-001", "name": "ABR-EPIC-001 Leistungen und Katalog", "gewicht": 3, "status": "offen" },

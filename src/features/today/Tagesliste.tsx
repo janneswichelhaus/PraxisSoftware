@@ -7,6 +7,7 @@ import { appointmentTypeLabels, formatLocalTimeRange } from '@/features/appointm
 import {
   adressZeilen,
   dayPlanStatusLabels,
+  dayPlanStatusTon,
   offenGrund,
   rufnummern,
   type DayPlanEntry,
@@ -43,17 +44,7 @@ export function Tageskarte({
         <p className="text-ink text-[0.9375rem] font-semibold tabular-nums">
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
         </p>
-        <Badge
-          ton={
-            termin.status === 'cancelled'
-              ? 'kritisch'
-              : termin.status === 'completed'
-                ? 'positiv'
-                : 'neutral'
-          }
-        >
-          {dayPlanStatusLabels[termin.status]}
-        </Badge>
+        <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
       </div>
 
       <p className="text-ink mt-1 text-[1.0625rem] font-medium">

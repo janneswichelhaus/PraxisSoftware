@@ -17,11 +17,23 @@ export type KalenderAnsicht = (typeof KALENDER_ANSICHTEN)[number];
 /**
  * Werte des Statusfilters.
  *
- * `active` ist der Standard und umfasst geplante UND abgeschlossene Termine.
- * Beide belegen den Tag tatsächlich; ein Filter, der nur `scheduled` kennt,
- * ließe jeden abgehakten Termin aus der Ansicht verschwinden (CAL-004).
+ * `active` ist der Standard und umfasst alles außer der Absage: Jeder andere
+ * Zustand belegt den Tag tatsächlich. Ein Filter, der nur bestätigte Termine
+ * kennt, ließe jeden abgehakten Termin aus der Ansicht verschwinden (CAL-004).
+ *
+ * `done` fasst die drei erledigten Zustände zusammen — durchgeführt,
+ * dokumentiert, abgerechnet. Wer im Kalender sucht, fragt „ist das erledigt?"
+ * und nicht, ob die Dokumentation schon festgeschrieben ist; beide Gruppen
+ * werden serverseitig aufgelöst (CAL-008a).
  */
-export const STATUS_FILTER = ['active', 'scheduled', 'completed', 'cancelled', 'all'] as const;
+export const STATUS_FILTER = [
+  'active',
+  'confirmed',
+  'done',
+  'no_show',
+  'cancelled',
+  'all',
+] as const;
 export type StatusFilter = (typeof STATUS_FILTER)[number];
 
 const ISO_DATUM = /^\d{4}-\d{2}-\d{2}$/;

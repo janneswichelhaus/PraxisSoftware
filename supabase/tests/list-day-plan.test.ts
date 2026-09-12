@@ -51,10 +51,10 @@ async function termin(opts: {
   staff?: string;
   patient?: string;
   typ?: 'home_visit' | 'practice' | 'video';
-  status?: 'scheduled' | 'completed' | 'cancelled';
+  status?: 'confirmed' | 'completed' | 'cancelled';
 }): Promise<string> {
   const typ = opts.typ ?? 'home_visit';
-  const status = opts.status ?? 'scheduled';
+  const status = opts.status ?? 'confirmed';
   const hausbesuch = typ === 'home_visit';
 
   const { rows } = await asPostgres<{ id: string }>(
@@ -175,12 +175,12 @@ describe('list_day_plan', () => {
   });
 
   it('zeigt abgesagte und abgeschlossene Termine des Tages weiter an', async () => {
-    await termin({ von: '09:00', bis: '10:00', status: 'scheduled' });
+    await termin({ von: '09:00', bis: '10:00', status: 'confirmed' });
     await termin({ von: '10:00', bis: '11:00', status: 'completed' });
     await termin({ von: '11:00', bis: '12:00', status: 'cancelled' });
 
     const { rows } = await lesen(users.therapist);
-    expect(rows.map((zeile) => zeile.status)).toEqual(['scheduled', 'completed', 'cancelled']);
+    expect(rows.map((zeile) => zeile.status)).toEqual(['confirmed', 'completed', 'cancelled']);
   });
 
   it('liefert den Dokumentationsstand ohne Inhalt', async () => {

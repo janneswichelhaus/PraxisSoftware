@@ -109,9 +109,9 @@ describe('create_appointment: berechtigte Rollen', () => {
     expect(await termin(id)).toBeDefined();
   });
 
-  it('setzt den Status serverseitig auf scheduled', async () => {
+  it('setzt den Status serverseitig auf confirmed', async () => {
     const id = await anlegenCommitted(users.office);
-    expect((await termin(id))?.status).toBe('scheduled');
+    expect((await termin(id))?.status).toBe('confirmed');
   });
 
   it('nimmt keinen Status entgegen - er ist kein Argument der Funktion', async () => {
@@ -334,7 +334,7 @@ describe('create_appointment: Terminart und Ort', () => {
       asPostgres(
         `insert into public.appointments
            (organization_id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at)
-         values ($1, $2, $3, $4, 'video', 'scheduled', now() + interval '1 day', now() + interval '1 day 1 hour')`,
+         values ($1, $2, $3, $4, 'video', 'confirmed', now() + interval '1 day', now() + interval '1 day 1 hour')`,
         [organizationId, patients.max, STAFF.anna, LOCATION],
       ),
     ).rejects.toThrow(/appointments_location_matches_type/);
@@ -345,7 +345,7 @@ describe('create_appointment: Terminart und Ort', () => {
       asPostgres(
         `insert into public.appointments
            (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at, visit_street)
-         values ($1, $2, $3, 'home_visit', 'scheduled', now() + interval '1 day', now() + interval '1 day 1 hour', 'Nurstrasse')`,
+         values ($1, $2, $3, 'home_visit', 'confirmed', now() + interval '1 day', now() + interval '1 day 1 hour', 'Nurstrasse')`,
         [organizationId, patients.max, STAFF.anna],
       ),
     ).rejects.toThrow(/appointments_address_matches_type/);
@@ -395,12 +395,10 @@ describe('create_appointment: Ueberschneidungen', () => {
     );
     expect(rows[0]?.definition).toMatch(/EXCLUDE USING gist/i);
     expect(rows[0]?.definition).toMatch(/tstzrange\(starts_at, ends_at, '\[\)'/);
-    // Geplante UND abgeschlossene Termine belegen ihren Zeitraum; nur eine
-    // Absage gibt ihn wieder frei (CAL-004).
-    expect(rows[0]?.definition).toMatch(/WHERE \(+status = ANY/);
-    expect(rows[0]?.definition).toContain("'scheduled'");
-    expect(rows[0]?.definition).toContain("'completed'");
-    expect(rows[0]?.definition).not.toContain("'cancelled'");
+    // Jeder Zustand ausser der Absage belegt seinen Zeitraum: durchgefuehrt,
+    // dokumentiert und abgerechnet haben stattgefunden, und ein wieder
+    // geoeffneter No-show braucht seinen Zeitraum zurueck (ADR-018).
+    expect(rows[0]?.definition).toMatch(/WHERE \(+status <> 'cancelled'/);
   });
 
   it('laesst zwei gleichzeitige ueberschneidende Anlagen nicht beide gelingen', async () => {
@@ -555,7 +553,7 @@ describe('create_appointment: nicht berechtigte Zugriffe', () => {
         users.office,
         `insert into public.appointments
            (organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at)
-         values ($1, $2, $3, 'video', 'scheduled', now() + interval '1 day', now() + interval '1 day 1 hour')`,
+         values ($1, $2, $3, 'video', 'confirmed', now() + interval '1 day', now() + interval '1 day 1 hour')`,
         [organizationId, patients.max, STAFF.anna],
       ),
     ).rejects.toThrow(/permission denied/i);
@@ -927,7 +925,7 @@ describe('appointment_directory: Lesepfad', () => {
       staff_given_name: 'Anna',
       staff_family_name: 'Beispiel',
       appointment_type: 'home_visit',
-      status: 'scheduled',
+      status: 'confirmed',
       organization_time_zone: 'Europe/Berlin',
     });
   });

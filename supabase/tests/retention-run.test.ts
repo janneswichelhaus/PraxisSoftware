@@ -302,6 +302,63 @@ describe('Loeschlauf: abgesagte Termine ohne Behandlungsnachweis', () => {
 
     expect(await anzahl('select count(*) from public.appointments where id = $1', [id])).toBe(1);
   });
+
+  // CAL-008c, ANN-035: Der Zustand 'no_show' faellt unter dieselbe Klasse -
+  // die Klasse nennt seit LOE-001a ausdruecklich "Abgesagte Termine und
+  // No-shows ohne Rechnung". Mit gesetztem Ausfallhonorar-Kennzeichen ist der
+  // Termin die Grundlage einer Forderung und bleibt stehen.
+  /** Legt einen No-show an, dessen Vermerk `jahre` zurueckliegt. */
+  async function nichtAngetroffen(jahre: number, honorar: boolean): Promise<string> {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type, status,
+         starts_at, ends_at, no_show_recorded_at, no_show_recorded_by, no_show_fee,
+         visit_street, visit_house_number, visit_postal_code, visit_city
+       )
+       select $1::uuid, $2::uuid, sm.id, 'home_visit', 'no_show',
+              now() - ($3::int * interval '1 year'),
+              now() - ($3::int * interval '1 year') + interval '1 hour',
+              now() - ($3::int * interval '1 year'), $4::uuid, $5::boolean,
+              'Teststrasse', '2', '72070', 'Tuebingen'
+       from public.staff_members sm limit 1
+       returning id::text as id`,
+      [organizationId, patients.max, jahre, users.ownerTherapist, honorar],
+    );
+    return rows[0]!.id;
+  }
+
+  it('loescht einen No-show ohne Ausfallhonorar nach derselben Frist', async () => {
+    const id = await nichtAngetroffen(5, false);
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.appointments where id = $1', [id])).toBe(0);
+  });
+
+  it('laesst einen No-show vor Fristablauf stehen', async () => {
+    const id = await nichtAngetroffen(1, false);
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.appointments where id = $1', [id])).toBe(1);
+  });
+
+  it('laesst einen No-show MIT Ausfallhonorar stehen - er ist Grundlage einer Forderung', async () => {
+    const id = await nichtAngetroffen(5, true);
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.appointments where id = $1', [id])).toBe(1);
+  });
+
+  it('journalisiert den geloeschten No-show unter derselben Klasse', async () => {
+    const id = await nichtAngetroffen(5, false);
+    await lauf();
+
+    const { rows } = await asPostgres<{ retention_class: string }>(
+      `select retention_class from public.deletion_journal
+        where target_table = 'appointments' and target_id = $1::uuid`,
+      [id],
+    );
+    expect(rows.map((r) => r.retention_class)).toEqual(['termin_ohne_nachweis']);
+  });
 });
 
 describe('Loeschlauf: Auditlog', () => {

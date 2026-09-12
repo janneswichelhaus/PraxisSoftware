@@ -152,7 +152,7 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
-    await expect(detailWert(page, 'Status')).toContainText('Geplant');
+    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
     // Der Abschlusszeitpunkt ist mit dem Status verschwunden.
     await expect(page.getByText('Abgeschlossen am')).toHaveCount(0);
 
@@ -171,6 +171,7 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(45) });
     await page.getByRole('button', { name: 'Termin absagen' }).click();
+    await page.getByLabel('Absagegrund').selectOption('patient_request');
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
 
@@ -231,7 +232,11 @@ test.describe('CAL-004: Serverseitige Grenzen', () => {
 
     const abgesagt = await request.post(`${url}/rest/v1/rpc/cancel_appointment`, {
       headers: kopf,
-      data: { p_appointment_id: terminId, p_expected_updated_at: stand!.updated_at },
+      data: {
+        p_appointment_id: terminId,
+        p_expected_updated_at: stand!.updated_at,
+        p_reason: 'other',
+      },
     });
     expect(abgesagt.status()).toBe(400);
     expect(await abgesagt.text()).toContain('must be reopened first');

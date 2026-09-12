@@ -141,9 +141,16 @@ wie groß die Nachfrage ist.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | **überführt** — gebaut als CAL-009 am 2026-09-12 |
 | Quelle | Produktreview 2026-09-06 |
-| Berührt | ADR-018, CAL-EPIC-003a (Entwurf CAL-009), §4.3 |
+| Berührt | ADR-018, CAL-EPIC-003a (CAL-009), §4.3 |
+
+**Was davon gebaut ist.** Alle bestätigten Termine einer Person eines Tages
+werden in einer Transaktion abgesagt, danach steht die Anrufliste mit Uhrzeit,
+Name und Wählziel auf derselben Seite. **Nicht gebaut:** „vorgemerkt" (der
+Zustand existiert nach ADR-018 nur auf dem Papier), die Übergabe an eine
+Kollegin und ein **gespeicherter** Erledigt-Haken — der Haken hält heute nur,
+solange die Seite offen ist. Siehe `IDEA-PRX-041`.
 
 **Idee.** Ein Platten um 8:10 Uhr trifft sechs Haushalte ohne Wartezimmer.
 Eine Aktion „Tag umplanen": alle Termine einer Person eines Tages auf
@@ -1061,7 +1068,31 @@ womöglich gar nicht mehr, sobald die Karte in der Anwendung steht.
 
 ---
 
-Zuletzt aktualisiert: 2026-09-11 (`IDEA-PRX-038` bis `-040` aus dem Gespräch über Dokumentationsablauf, Tageskarte und Kalenderwechsel). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt seit der Bestätigung, dass die Namen erfunden sind, unter `../kanvas/own-motion-praxis.html`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
+### IDEA-PRX-041 — Anrufliste mit gespeichertem Stand
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | CAL-009, 2026-09-12 |
+| Berührt | CAL-009, ADR-008 (Frist), §20 |
+
+**Idee.** Der Erledigt-Haken der Anrufliste überlebt heute kein Neuladen und
+keinen Gerätewechsel. Wer den Tag zu zweit abtelefoniert oder zwischendurch
+etwas anderes tun muss, fängt von vorn an. Ein gespeicherter Stand — wer wann
+angerufen wurde, vielleicht mit „nicht erreicht" — würde das lösen.
+
+**Warum nicht in CAL-009.** Das ist eine neue Tabelle mit Personenbezug: sie
+braucht eine Datenklasse, eine Frist, eine Zuordnung im Retention Schedule und
+eine Antwort darauf, ob „nicht erreicht" ein Merkmal an der Patientin wird
+(§20). Das ist ein eigenes Epic, keine Ergänzung.
+
+**Offene Frage.** Gehört der Stand an den Termin oder an einen eigenen Vorgang
+„Umplanung"? Die zweite Form würde auch beantworten, warum ein Tag umgeplant
+wurde — heute steht das nur als Absagegrund an jedem einzelnen Termin.
+
+---
+
+Zuletzt aktualisiert: 2026-09-12 (`IDEA-PRX-004` auf `überführt`, neu `IDEA-PRX-041` aus CAL-009). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-038` bis `-040` aus dem Gespräch über Dokumentationsablauf, Tageskarte und Kalenderwechsel). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt seit der Bestätigung, dass die Namen erfunden sind, unter `../kanvas/own-motion-praxis.html`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
 Terminfenster steht als §8.1 in den Prinzipien, der Fahrpuffer-Mechanismus als
 E12 in den offenen Entscheidungen). Vorherige Aktualisierung: 2026-09-06
 (Entscheidungen E-9, E-12, E-13; Tagesroute `IDEA-PRX-029` bis `-033`)

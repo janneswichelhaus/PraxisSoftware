@@ -16,7 +16,7 @@ const praxistermin: AppointmentsApi.Appointment = {
   staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: '33333333-3333-4333-8333-000000000001',
   appointment_type: 'practice',
-  status: 'scheduled',
+  status: 'confirmed',
   starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T08:00:00.000Z',
   updated_at: '2027-05-01T10:00:00.000000+00',
@@ -25,6 +25,9 @@ const praxistermin: AppointmentsApi.Appointment = {
   visit_postal_code: null,
   visit_city: null,
   completed_at: null,
+  cancellation_reason: null,
+  no_show_recorded_at: null,
+  no_show_fee: null,
   patient_given_name: 'Berta',
   patient_family_name: 'Bestand',
   staff_given_name: 'Anna',
@@ -37,6 +40,7 @@ const fetchAppointment = vi.fn();
 const cancelAppointment = vi.fn();
 const completeAppointment = vi.fn();
 const reopenAppointment = vi.fn();
+const recordNoShow = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -44,12 +48,14 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
-    cancelAppointment: (id: string, erwartet: string) =>
-      cancelAppointment(id, erwartet) as Promise<void>,
+    cancelAppointment: (id: string, erwartet: string, grund: AppointmentsApi.CancellationReason) =>
+      cancelAppointment(id, erwartet, grund) as Promise<void>,
     completeAppointment: (id: string, erwartet: string) =>
       completeAppointment(id, erwartet) as Promise<void>,
     reopenAppointment: (id: string, erwartet: string) =>
       reopenAppointment(id, erwartet) as Promise<void>,
+    recordNoShow: (id: string, erwartet: string, honorar: boolean) =>
+      recordNoShow(id, erwartet, honorar) as Promise<void>,
   };
 });
 
@@ -101,6 +107,8 @@ describe('AppointmentDetailPage', () => {
     cancelAppointment.mockResolvedValue(undefined);
     completeAppointment.mockResolvedValue(undefined);
     reopenAppointment.mockResolvedValue(undefined);
+    recordNoShow.mockReset();
+    recordNoShow.mockResolvedValue(undefined);
     fetchTreatmentDocumentation.mockReset();
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
   });
@@ -110,7 +118,7 @@ describe('AppointmentDetailPage', () => {
     expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
     expect(screen.getAllByText('Berta Bestand').length).toBeGreaterThan(0);
     expect(zeile('Art')).toBe('Praxis');
-    expect(zeile('Status')).toBe('Geplant');
+    expect(zeile('Status')).toBe('Bestätigt');
   });
 
   it('zeigt Datum und Zeit in der Praxiszeitzone, nicht in UTC', async () => {
@@ -162,8 +170,32 @@ describe('AppointmentDetailPage', () => {
     fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
     rendern();
 
-    expect(await screen.findByText('Dieser Termin ist abgesagt.')).toBeInTheDocument();
+    expect(await screen.findByText(/Dieser Termin ist abgesagt\./)).toBeInTheDocument();
     expect(zeile('Status')).toBe('Abgesagt');
+  });
+
+  it('zeigt den Absagegrund als Wort, nicht als Schluessel (CAL-008b)', async () => {
+    fetchAppointment.mockResolvedValue({
+      ...praxistermin,
+      status: 'cancelled',
+      cancellation_reason: 'practice_request',
+    });
+    rendern();
+
+    await screen.findByText(/Dieser Termin ist abgesagt\./);
+    expect(zeile('Absagegrund')).toBe('Praxis hat abgesagt');
+  });
+
+  it('nennt eine Absage aus der Zeit vor dem Pflichtgrund "Nicht erfasst"', async () => {
+    fetchAppointment.mockResolvedValue({
+      ...praxistermin,
+      status: 'cancelled',
+      cancellation_reason: null,
+    });
+    rendern();
+
+    await screen.findByText(/Dieser Termin ist abgesagt\./);
+    expect(zeile('Absagegrund')).toBe('Nicht erfasst');
   });
 
   describe('Aktionen (CAL-003)', () => {
@@ -192,7 +224,7 @@ describe('AppointmentDetailPage', () => {
     it('bietet bei einem abgesagten Termin keine Aktionen mehr an', async () => {
       fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
       rendern();
-      await screen.findByText('Dieser Termin ist abgesagt.');
+      await screen.findByText(/Dieser Termin ist abgesagt\./);
 
       expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
@@ -247,16 +279,34 @@ describe('AppointmentDetailPage', () => {
       expect(cancelAppointment).not.toHaveBeenCalled();
     });
 
-    it('sagt nach Bestaetigung mit dem gelesenen Stand ab', async () => {
+    it('sagt nach Bestaetigung mit dem gelesenen Stand und dem Grund ab', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      await waitFor(() =>
+        expect(cancelAppointment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          praxistermin.updated_at,
+          'patient_request',
+        ),
+      );
+    });
+
+    it('sagt ohne ausgewaehlten Grund nicht ab (CAL-008b)', async () => {
       const user = userEvent.setup();
       rendern();
       await screen.findByText('Anna Beispiel');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
-      await waitFor(() =>
-        expect(cancelAppointment).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
-      );
+      expect(await screen.findByText('Bitte einen Absagegrund auswählen.')).toBeInTheDocument();
+      expect(cancelAppointment).not.toHaveBeenCalled();
+      // Die Rueckfrage bleibt offen: die Auswahl steht weiter zur Verfuegung.
+      expect(screen.getByLabelText('Absagegrund')).toBeInTheDocument();
     });
 
     it('loest bei doppeltem Klick nur einen Schreibvorgang aus', async () => {
@@ -272,6 +322,7 @@ describe('AppointmentDetailPage', () => {
       rendern();
       await screen.findByText('Anna Beispiel');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'moved');
 
       const knopf = screen.getByRole('button', { name: 'Ja, Termin absagen' });
       await user.click(knopf);
@@ -291,11 +342,86 @@ describe('AppointmentDetailPage', () => {
       rendern();
       await screen.findByText('Anna Beispiel');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'other');
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
       expect(
         await screen.findByText(/zwischenzeitlich von einer anderen Person/),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('CAL-008c: Nicht angetroffen', () => {
+    it('vermerkt erst nach Rueckfrage und mit der Entscheidung zum Ausfallhonorar', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
+      await user.selectOptions(screen.getByLabelText('Ausfallhonorar berechnen?'), 'ja');
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      await waitFor(() =>
+        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at, true),
+      );
+    });
+
+    it('vermerkt ohne Entscheidung nichts - das Kennzeichen hat keine Vorbelegung', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      expect(
+        await screen.findByText('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.'),
+      ).toBeInTheDocument();
+      expect(recordNoShow).not.toHaveBeenCalled();
+    });
+
+    it('gibt "nein" unveraendert weiter, statt es als fehlende Angabe zu behandeln', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
+      await user.selectOptions(screen.getByLabelText('Ausfallhonorar berechnen?'), 'nein');
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      await waitFor(() =>
+        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at, false),
+      );
+    });
+
+    it('zeigt am vermerkten Termin Zustand, Kennzeichen und den Weg zurueck', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'no_show',
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+        no_show_fee: true,
+      });
+      rendern();
+
+      await screen.findByText(/Hier wurde niemand angetroffen/);
+      expect(zeile('Status')).toBe('Nicht angetroffen');
+      expect(zeile('Ausfallhonorar')).toBe('Wird berechnet');
+      expect(screen.getByRole('button', { name: 'Termin wieder öffnen' })).toBeInTheDocument();
+    });
+
+    it('bietet am vermerkten Termin kein zweites Vermerken und kein Absagen an', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'no_show',
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+        no_show_fee: false,
+      });
+      rendern();
+
+      await screen.findByText(/Hier wurde niemand angetroffen/);
+      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
+      expect(zeile('Ausfallhonorar')).toBe('Wird nicht berechnet');
     });
   });
 
@@ -504,7 +630,7 @@ describe('AppointmentDetailPage', () => {
     it('bietet den Folgetermin am abgesagten Termin nicht an', async () => {
       fetchAppointment.mockResolvedValue({ ...hausbesuch, status: 'cancelled' });
       rendern();
-      await screen.findByText('Dieser Termin ist abgesagt.');
+      await screen.findByText(/Dieser Termin ist abgesagt\./);
       expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).toBeNull();
     });
 

@@ -31,7 +31,7 @@ interface Notiz {
   finalized_at: string | null;
 }
 
-async function termin(status: 'scheduled' | 'completed' | 'cancelled' = 'scheduled') {
+async function termin(status: 'confirmed' | 'completed' | 'cancelled' = 'confirmed') {
   const { rows } = await asPostgres<Termin>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,
@@ -121,8 +121,11 @@ describe('complete_treatment', () => {
     expect(notiz).toMatchObject({ status: 'final', content: 'Synthetischer Behandlungstext' });
     expect(notiz!.finalized_at).not.toBeNull();
 
+    // Seit CAL-008d hebt die Finalisierung den Termin auf documented
+    // (ADR-018 Punkt 3). Der Abschluss ist dabei trotzdem passiert:
+    // completed_at steht, und appointment.completed liegt im Auditlog.
     const nachher = await terminLesen(t.id);
-    expect(nachher.status).toBe('completed');
+    expect(nachher.status).toBe('documented');
     expect(nachher.completed_at).not.toBeNull();
   });
 
@@ -189,7 +192,7 @@ describe('complete_treatment', () => {
 
     // Entscheidend: die Dokumentation ist NICHT stehen geblieben.
     expect(await notizLesen(t.id)).toBeNull();
-    expect((await terminLesen(t.id)).status).toBe('scheduled');
+    expect((await terminLesen(t.id)).status).toBe('confirmed');
   });
 
   it('laesst einen leeren Text nicht durch und schreibt dann gar nichts', async () => {
@@ -199,7 +202,7 @@ describe('complete_treatment', () => {
     ).rejects.toThrow(/documentation must not be empty/);
 
     expect(await notizLesen(t.id)).toBeNull();
-    expect((await terminLesen(t.id)).status).toBe('scheduled');
+    expect((await terminLesen(t.id)).status).toBe('confirmed');
   });
 
   it('weist einen abgesagten Termin ab', async () => {
@@ -219,7 +222,9 @@ describe('complete_treatment', () => {
     ]);
 
     expect((await notizLesen(t.id))!.status).toBe('final');
-    expect((await terminLesen(t.id)).status).toBe('completed');
+    // Kein zweiter Abschluss - aber die Finalisierung hebt den Zustand
+    // weiter auf documented (CAL-008d).
+    expect((await terminLesen(t.id)).status).toBe('documented');
   });
 
   it('weist eine bereits finalisierte Dokumentation ab', async () => {

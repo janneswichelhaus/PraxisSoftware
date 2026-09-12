@@ -33,7 +33,7 @@ function termin(
     starts_at: '2027-05-12T07:00:00+00:00',
     ends_at: '2027-05-12T08:00:00+00:00',
     appointment_type: 'practice',
-    appointment_status: 'scheduled',
+    appointment_status: 'confirmed',
     staff_given_name: 'Anna',
     staff_family_name: 'Beispiel',
     organization_time_zone: 'Europe/Berlin',

@@ -82,7 +82,7 @@ test.describe('CAL-002: Kalender', () => {
 
     await eintrag.click();
     await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
-    await expect(detailWert(page, 'Status')).toContainText('Geplant');
+    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
   });
 
   test('behält Ansicht, Datum und Filter beim Neuladen', async ({ page, request }) => {

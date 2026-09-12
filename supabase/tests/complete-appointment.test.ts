@@ -21,7 +21,7 @@ const ANLEGEN =
   'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
 const AENDERN =
   'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true) as id';
-const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz) as id';
+const ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz, $3) as id';
 const ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
 const OEFFNEN = 'select public.reopen_appointment($1::uuid, $2::timestamptz) as id';
 
@@ -121,7 +121,7 @@ describe('complete_appointment: Rollen', () => {
     await expect(asUser(userId, ABSCHLIESSEN, [t.id, t.updated_at])).rejects.toThrow(
       /not allowed to complete appointments/,
     );
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('weist einen anonymen Zugriff ab', async () => {
@@ -161,7 +161,7 @@ describe('complete_appointment: Vorgang', () => {
 
   it('laesst einen abgesagten Termin nicht abschliessen', async () => {
     const t = await anlegen();
-    await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at, 'other']);
     const abgesagt = await stand(t.id);
 
     await expect(
@@ -185,7 +185,7 @@ describe('complete_appointment: Vorgang', () => {
     await expect(
       asUser(users.office, ABSCHLIESSEN, [t.id, '2020-01-01T00:00:00+00']),
     ).rejects.toThrow(/appointment was changed meanwhile/);
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('protokolliert appointment.completed ohne Terminzeit', async () => {
@@ -260,10 +260,10 @@ describe('CAL-004: abgeschlossene Termine belegen ihren Zeitraum weiter', () => 
 
   it('gibt den Zeitraum weiterhin frei, wenn der Termin abgesagt wird', async () => {
     const t = await anlegen({ von: '09:00', bis: '10:00' });
-    await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at, 'other']);
 
     const neuer = await anlegen({ von: '09:00', bis: '10:00' });
-    expect(await zeile(neuer.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(neuer.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('haelt den Schutz als Constraint mit beiden belegenden Status', async () => {
@@ -272,9 +272,7 @@ describe('CAL-004: abgeschlossene Termine belegen ihren Zeitraum weiter', () => 
          from pg_constraint where conname = 'appointments_no_overlap'`,
     );
     expect(rows[0]?.definition).toMatch(/EXCLUDE USING gist/i);
-    expect(rows[0]?.definition).toContain("'scheduled'");
-    expect(rows[0]?.definition).toContain("'completed'");
-    expect(rows[0]?.definition).not.toContain("'cancelled'");
+    expect(rows[0]?.definition).toMatch(/WHERE \(+status <> 'cancelled'/);
   });
 });
 
@@ -331,7 +329,7 @@ describe('CAL-004: abgeschlossene Termine erst wieder oeffnen', () => {
 
     // Und zwar mit einer fachlichen Meldung, nicht als Nebenlaeufigkeitsfehler:
     // hier hat gar nichts zwischenzeitlich zugegriffen.
-    const fehler = await asUser(users.office, ABSAGEN, [t.id, t.updated_at]).catch(
+    const fehler = await asUser(users.office, ABSAGEN, [t.id, t.updated_at, 'other']).catch(
       (e: Error) => e.message,
     );
     expect(fehler).toMatch(/completed appointment must be reopened first/);
@@ -340,7 +338,7 @@ describe('CAL-004: abgeschlossene Termine erst wieder oeffnen', () => {
 
   it('unterscheidet die Meldung fuer abgesagte und abgeschlossene Termine', async () => {
     const abzusagen = await anlegen({ von: '11:00', bis: '12:00' });
-    await asUserCommitted(users.office, ABSAGEN, [abzusagen.id, abzusagen.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [abzusagen.id, abzusagen.updated_at, 'other']);
     const abgesagt = await stand(abzusagen.id);
 
     const meldung = await asUser(users.office, AENDERN, [
@@ -371,7 +369,7 @@ describe('CAL-004: abgeschlossene Termine erst wieder oeffnen', () => {
       '16:00',
       null,
     ]);
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 });
 
@@ -396,7 +394,7 @@ describe('reopen_appointment', () => {
   ])('erlaubt %s das Wiederoeffnen', async (_rolle, userId) => {
     const t = await abgeschlossen();
     await asUserCommitted(userId, OEFFNEN, [t.id, t.updated_at]);
-    expect(await zeile(t.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('weist ein Patientenkonto ab', async () => {
@@ -419,7 +417,7 @@ describe('reopen_appointment', () => {
     await asUserCommitted(users.office, OEFFNEN, [t.id, t.updated_at]);
 
     expect(await zeile(t.id)).toMatchObject({
-      status: 'scheduled',
+      status: 'confirmed',
       completed_at: null,
       completed_by: null,
     });
@@ -434,7 +432,7 @@ describe('reopen_appointment', () => {
 
   it('laesst einen abgesagten Termin nicht wieder oeffnen', async () => {
     const t = await anlegen();
-    await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at, 'other']);
     const abgesagt = await stand(t.id);
 
     await expect(asUser(users.office, OEFFNEN, [abgesagt.id, abgesagt.updated_at])).rejects.toThrow(
@@ -531,7 +529,7 @@ describe('list_appointments: abgeschlossene Termine', () => {
     await abgeschlossen({ von: '09:00', bis: '10:00' });
     const geplant = await anlegen({ von: '11:00', bis: '12:00' });
     const abzusagen = await anlegen({ von: '13:00', bis: '14:00' });
-    await asUserCommitted(users.office, ABSAGEN, [abzusagen.id, abzusagen.updated_at]);
+    await asUserCommitted(users.office, ABSAGEN, [abzusagen.id, abzusagen.updated_at, 'other']);
     expect(geplant.id).toBeDefined();
   }, 120_000);
 
@@ -543,7 +541,7 @@ describe('list_appointments: abgeschlossene Termine', () => {
   }
 
   it('zeigt geplante und abgeschlossene Termine im Standardfilter', async () => {
-    expect(await status('active')).toEqual(['completed', 'scheduled']);
+    expect(await status('active')).toEqual(['completed', 'confirmed']);
   });
 
   it('nutzt active auch dann, wenn kein Filter uebergeben wird', async () => {
@@ -552,7 +550,7 @@ describe('list_appointments: abgeschlossene Termine', () => {
       'select * from public.list_appointments($1::date, $2::date)',
       [TAG, bis],
     );
-    expect(rows.map((r) => r.status).sort()).toEqual(['completed', 'scheduled']);
+    expect(rows.map((r) => r.status).sort()).toEqual(['completed', 'confirmed']);
   });
 
   it('filtert gezielt auf abgeschlossene Termine', async () => {
@@ -560,11 +558,11 @@ describe('list_appointments: abgeschlossene Termine', () => {
   });
 
   it('blendet abgeschlossene Termine bei "nur geplante" aus', async () => {
-    expect(await status('scheduled')).toEqual(['scheduled']);
+    expect(await status('confirmed')).toEqual(['confirmed']);
   });
 
   it('zeigt mit all auch die Absage', async () => {
-    expect(await status('all')).toEqual(['cancelled', 'completed', 'scheduled']);
+    expect(await status('all')).toEqual(['cancelled', 'completed', 'confirmed']);
   });
 
   it('weist einen unbekannten Filter ab', async () => {
@@ -621,7 +619,7 @@ describe('CAL-004: Mandantentrennung', () => {
     await expect(
       asUser(users.office, ABSCHLIESSEN, [fremder.id, fremder.updated_at]),
     ).rejects.toThrow(/appointment not found/);
-    expect(await zeile(fremder.id)).toMatchObject({ status: 'scheduled' });
+    expect(await zeile(fremder.id)).toMatchObject({ status: 'confirmed' });
   });
 
   it('laesst den Termin einer fremden Praxis nicht wieder oeffnen', async () => {

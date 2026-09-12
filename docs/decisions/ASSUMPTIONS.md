@@ -1,6 +1,18 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-11. Vier Dinge am selben Tag:
+Zuletzt aktualisiert: 2026-09-12.
+
+- **CAL-EPIC-003a bringt ANN-034 bis ANN-036 neu, und Jannes hat alle drei am
+  2026-09-12 wie empfohlen bestätigt:** Absagegrund als codierte Auswahl ohne
+  Freitext, No-show unter der Frist der abgesagten Termine (mit gesetztem
+  Ausfallhonorar-Kennzeichen keine Löschung) und `documented` auch aus
+  `confirmed`. **ANN-034 (`Datenschutz`) und ANN-035 (`Recht`) bleiben trotzdem
+  im Prüfpaket** — die Bestätigung des Projektinhabers ersetzt die
+  Datenschutzprüfung nicht (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). **ANN-036
+  ist `Technik` und damit erledigt**; er kommt nur zurück, wenn ABR-003
+  `invoiced` denselben Weg gehen lässt.
+
+Davor, am 2026-09-11, vier Dinge am selben Tag:
 
 - **Jannes hat die Annahmen aus UX-EPIC-001 bestätigt:** ANN-018, ANN-020 und
   ANN-021 stehen auf `entschieden (Jannes)`. Alle drei sind `Datenschutz` und
@@ -183,6 +195,9 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
 | ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | entschieden (Jannes) 2026-09-11 | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
 | ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
+| ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen |
+| ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
+| ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1880,3 +1895,174 @@ dass die Sperre den Löschlauf anhält (`supabase/tests/retention-run.test.ts`).
 des Löschlaufs aufnehmen — Aufwand `klein`. Pflegeoberfläche ergänzen: eine
 Seite mit zwei Aktionen auf den bestehenden Funktionen — Aufwand `klein`,
 bewusst nicht in diesem Epic.
+
+---
+
+### ANN-034 — Absagegrund als codierte Auswahl aus vier Werten, kein Freitext
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | CAL-008b; ADR-018 Punkt 6 verlangt den Grund als Pflichtangabe und nennt die Werteliste ausdrücklich „bewusst nicht Bestandteil dieser Entscheidung" (CAL-008) |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; bleibt als `Datenschutz` im Prüfpaket |
+| Wiedervorlage | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen — dort zeigt sich, ob vier Werte reichen |
+
+**Annahme.** Der Absagegrund ist eine **codierte Auswahl aus genau vier
+Werten** — „Patient:in hat abgesagt", „Praxis hat abgesagt", „Termin verlegt",
+„Sonstiger Grund" — **ohne Freitextfeld**. Er ist Pflicht für jede neue Absage,
+Bestandszeilen behalten `null`. Er steht an der Terminzeile und **nicht** im
+Auditkontext.
+
+**Begründung.** ADR-018 nennt den Zweck des Grundes: „Ohne Grund ist die
+Absagequote später nicht lesbar." Genau das leisten die vier Werte — wer
+abgesagt hat und ob der Termin verlegt wurde, ist die ganze Auskunft, die eine
+Quote braucht. Ein Freitextfeld leistet dafür nichts zusätzlich, ist aber die
+wahrscheinlichste Stelle im ganzen Terminmodell, an der eine Gesundheitsangabe
+in einen ausdrücklich klinikfreien Datensatz rutscht („Rücken war wieder
+schlimmer", „liegt im Krankenhaus"). `PROJECT_PRINCIPLES.md` §4.6 und §5
+halten den Termin frei von klinischen Inhalten; §16 verlangt im Zweifel die
+datensparsamere Option. Vier Werte statt einer feineren Liste, weil jede
+zusätzliche Kategorie eine Aussage über die Patientin trifft, sobald sie über
+„wer hat abgesagt" hinausgeht — „krank", „verstorben", „unzufrieden" wären
+genau das.
+
+Dass der Grund **nicht** ins Auditlog wandert, folgt derselben Linie: Die
+Terminzeile fällt nach drei Jahren ab Jahresende (`termin_ohne_nachweis`,
+ANN-001), das Auditlog läuft nach eigener Frist (ANN-029). Eine Kopie im
+Auditkontext ließe die Angabe die Zeile überleben, ohne dass sie dort jemand
+braucht (ADR-010, ADR-011).
+**Unsicher:** ob die Praxis im Alltag eine fünfte Kategorie vermisst — am
+ehesten „kurzfristig abgesagt", sobald ADR-009 das Ausfallhonorar bei Absagen
+regelt. ADR-018 verweist die Fristenregel ausdrücklich in den Praxisprozess und
+nicht ins Datenmodell.
+
+**Verankerung.** `public.appointments.cancellation_reason` mit der Constraint
+`appointments_cancellation_reason_values` und die Prüfung in
+`public.cancel_appointment` — beide in
+`supabase/migrations/20260912110000_cancellation_reason.sql`, der Kopfkommentar
+trägt die Kennung. Beschriftungen in `cancellationReasonLabels`
+(`src/features/appointments/api.ts`). Tests in
+`supabase/tests/change-appointment.test.ts` („nimmt nur codierte
+Absagegründe entgegen, keinen Freitext" und der Auditkontext-Fall).
+
+**Änderungspfad.** Weiterer Wert: einen Eintrag in der Constraint, einen in
+`cancellationReasonLabels` — Aufwand `klein`, keine Migration bestehender
+Zeilen nötig. Freitext zusätzlich aufnehmen: neue Spalte, Redaction-Regel im
+Logging, Aufnahme in die Löschprüfung und eine Aussage in der DSFA — Aufwand
+`mittel`, und genau die Abwägung oben spricht dagegen.
+
+---
+
+### ANN-035 — No-show fällt unter die Frist der abgesagten Termine; mit Ausfallhonorar wird nicht gelöscht
+
+| | |
+|---|---|
+| Kategorie | Recht |
+| Herkunft | CAL-008c; ADR-018 („Offene Folgefragen": „Braucht ‚nicht angetroffen' eine eigene Frist im Retention Schedule, oder fällt es unter ‚abgesagte Termine und No-shows ohne Rechnung'? Beim Bauen von CAL-008 zu prüfen") |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; bleibt als `Recht` im Prüfpaket |
+| Wiedervorlage | ABR-003 — sobald es Rechnungen gibt, entscheidet die Rechnung statt des Kennzeichens; Datenschutzprüfung (B2) |
+
+**Annahme.** Ein Termin im Zustand `no_show` fällt unter die **bestehende**
+Retention-Klasse `termin_ohne_nachweis` — drei Jahre ab Ende des
+Kalenderjahres, **gerechnet ab dem Zeitpunkt des Vermerks** statt ab der
+Absage. Er wird **nicht** gelöscht, wenn das Ausfallhonorar-Kennzeichen gesetzt
+ist; ein Behandlungsnachweis und eine Löschsperre halten ihn wie bisher
+zurück. Eine eigene Datenklasse bekommt er nicht.
+
+**Begründung.** Die Klasse trägt seit LOE-001a im Text ausdrücklich
+„Abgesagte Termine und No-shows ohne Rechnung" (ADR-008) — die Regel im
+Löschlauf fragte bisher nur nach `cancelled`, weil es den Zustand nicht gab.
+Fachlich sind beide dasselbe: ein Termin, an dem nicht behandelt wurde, also
+ohne Behandlungsnachweis und ohne die Zehnjahresfrist aus § 630f Abs. 3 BGB.
+Eine eigene Klasse mit derselben Frist wäre eine zweite Zahl für denselben
+Sachverhalt (ANN-001, ADR-014).
+
+Der Anker ist der Vermerk und nicht der Termintag: Er ist der Vorgang, den die
+Praxis vollzogen hat, er entspricht dem `cancelled_at` der Absage, und beide
+liegen im Alltag ohnehin am selben Tag. Gerechnet wird unverändert auf das
+Kalenderjahresende, die Frist selbst bleibt `app.retention_interval()`.
+
+Dass ein No-show **mit** Kennzeichen stehen bleibt, ist die vorsichtigere
+Seite (§16): Das Kennzeichen sagt, dass abgerechnet werden soll; was
+abgerechnet wird, unterliegt der steuerlichen Aufbewahrung (§ 147 AO,
+§ 257 HGB — zehn beziehungsweise sechs Jahre) und nicht der internen
+Dreijahresfrist. Eine Löschung lässt sich nachholen, eine gelöschte Grundlage
+einer Forderung nicht. Bis ABR-003 die Rechnung führt, ist das Kennzeichen der
+einzige verfügbare Anhaltspunkt.
+**Unsicher:** ob die steuerliche Frist an der **Rechnung** hängt (dann fällt
+ein nie abgerechneter No-show mit Kennzeichen nach drei Jahren doch) oder am
+Vorgang. ABR-003 beantwortet das mit der Rechnung selbst; bis dahin bleibt der
+Datensatz stehen, und das ist die rückholbare Seite des Irrtums.
+
+**Verankerung.** Die Regel „Abgesagte Termine und No-shows ohne
+Behandlungsnachweis" in `public.apply_retention()`
+(`supabase/migrations/20260912120000_appointment_no_show.sql`) — der
+Regelkommentar trägt die Kennung. Tests in
+`supabase/tests/retention-run.test.ts` (gelöscht ohne Kennzeichen, stehen
+geblieben mit Kennzeichen, Journalzeile unter derselben Klasse).
+
+**Änderungspfad.** Eigene Klasse mit eigener Frist: eine Zeile in
+`retention_classes`, eine Zuordnung in `retention_assignments`, die Regel im
+Lauf aufteilen — Aufwand `klein`. Kennzeichen nicht mehr als Haltegrund,
+sondern die Rechnung: eine Bedingung in derselben Regel austauschen, sobald
+ABR-003 die Rechnungstabelle bringt — Aufwand `klein`, und genau dafür ist die
+Wiedervorlage gesetzt.
+
+---
+
+### ANN-036 — `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | CAL-008d; ADR-018 Punkt 2 (Übergangstabelle) gegen ADR-018 Punkt 3 (Invariante) |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Technik`, damit erledigt |
+| Wiedervorlage | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
+
+**Annahme.** Die Finalisierung einer Behandlungsdokumentation hebt den Termin
+auf `documented` — **auch dann, wenn er noch `confirmed` ist** und niemand ihn
+ausdrücklich abgeschlossen hat. `completed_at` wird dabei gesetzt, falls es
+noch fehlt; `completed_by` bleibt leer.
+
+**Begründung.** ADR-018 sagt zwei Dinge, die sich in diesem Fall nicht beide
+wörtlich halten lassen. Die Übergangstabelle (Punkt 2) nennt nur
+`completed` → `documented`. Die Invariante (Punkt 3) sagt: „`status =
+'documented'` **genau dann**, wenn zu diesem Termin eine finalisierte
+Dokumentation existiert" — und verlangt ausdrücklich beide Richtungen als Test
+in `pnpm test:db`.
+
+Es gibt zwei reale Wege zu einer finalisierten Dokumentation an einem nicht
+abgeschlossenen Termin: die Finalisierung auf der Dokumentationsseite und die
+automatische Finalisierung nach Fristablauf (ADR-016 Punkt 7). Bliebe der
+Termin in beiden Fällen `confirmed`, wäre die Invariante verletzt. Sie ist die
+stärkere Zusage — sie ist als Prüfung formuliert, die Tabelle zählt Auslöser
+auf —, und fachlich ist sie auch die richtigere: Wer eine Behandlung
+dokumentiert und festschreibt, sagt damit, dass sie stattgefunden hat.
+
+`completed_by` bleibt leer, weil tatsächlich niemand abgeschlossen hat; ein
+erfundener Akteur wäre schlimmer als ein leeres Feld. Wer finalisiert hat,
+steht in `treatment_notes.finalized_by` und im Auditlog. Für die automatische
+Finalisierung ist das derselbe Umgang wie bei `finalized_by = null` dort.
+
+Das berührt ADR-018 Punkt 7 („keine automatischen Übergänge durch Zeitablauf")
+**nicht**: Der Zustand folgt einer Dokumentation, die ein Mensch geschrieben
+hat, nicht der Uhr. Punkt 7 nimmt die automatische Finalisierung ausdrücklich
+aus.
+**Unsicher:** ob Jannes den Terminabschluss lieber als eigenen, bewussten
+Klick behielte — dann müsste die Finalisierung an einem `confirmed`-Termin
+stattdessen abgewiesen werden, und die Dokumentationsseite bräuchte einen
+Hinweis „erst abschließen".
+
+**Verankerung.** `app.mark_appointment_documented()` in
+`supabase/migrations/20260912130000_appointment_documented.sql` — der
+Kopfkommentar der Migration und der Funktionsrumpf tragen die Kennung. Tests in
+`supabase/tests/appointment-states.test.ts` („hebt auch einen nur bestätigten
+Termin auf documented", „setzt dabei completed_at, lässt completed_by aber
+leer") samt der Invariantenprüfung über alle Termine.
+
+**Änderungspfad.** Umkehren: die `where`-Bedingung in
+`app.mark_appointment_documented` auf `status = 'completed'` verengen und
+`finalize_treatment_note` einen `confirmed`-Termin abweisen lassen; die
+automatische Finalisierung bräuchte dann eine eigene Antwort auf dieselbe
+Frage — Aufwand `klein` im Code, aber eine neue fachliche Entscheidung für den
+Scheduler-Fall.

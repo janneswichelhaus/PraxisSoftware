@@ -9,6 +9,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
+  appointmentStatusTon,
   appointmentTypeLabels,
   fetchAppointments,
   formatLocalTimeRange,
@@ -106,8 +107,8 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
             {` · ${staffName(termin)}`}
           </span>
         </span>
-        {termin.status !== 'scheduled' ? (
-          <Badge ton={termin.status === 'cancelled' ? 'kritisch' : 'positiv'}>
+        {termin.status !== 'confirmed' ? (
+          <Badge ton={appointmentStatusTon[termin.status]}>
             {appointmentStatusLabels[termin.status]}
           </Badge>
         ) : null}

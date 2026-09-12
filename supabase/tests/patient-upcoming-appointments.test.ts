@@ -29,11 +29,11 @@ async function termin(opts: {
   inStunden: number;
   dauerMinuten?: number;
   patient?: string;
-  status?: 'scheduled' | 'completed' | 'cancelled';
+  status?: 'confirmed' | 'completed' | 'cancelled';
   typ?: 'home_visit' | 'practice';
 }): Promise<string> {
   const typ = opts.typ ?? 'practice';
-  const status = opts.status ?? 'scheduled';
+  const status = opts.status ?? 'confirmed';
   const { rows } = await asPostgres<{ id: string }>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,

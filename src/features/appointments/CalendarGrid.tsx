@@ -431,7 +431,7 @@ function Kachel({
   // zeigt daneben die tatsächliche Dauer, und auf einer höheren Zoomstufe
   // greift die Mindesthöhe ohnehin nicht mehr.
   const hoehe = Math.max(28, ((endeMinute - beginnMinute) / 60) * stundenHoehe);
-  const vermerk = eintrag.status === 'scheduled' ? null : appointmentStatusLabels[eintrag.status];
+  const vermerk = eintrag.status === 'confirmed' ? null : appointmentStatusLabels[eintrag.status];
   // Der Ort steht als dritte Zeile und zusätzlich im Tooltip: bei einem kurzen
   // Termin ist die Kachel zu niedrig für drei Zeilen. Ein abweichender Status
   // gehört deshalb in die zweite Zeile - er ist die wichtigere Auskunft und

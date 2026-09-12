@@ -36,7 +36,7 @@ const STAFF = {
 
 const TERMIN_ANLEGEN =
   'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
-const TERMIN_ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz) as id';
+const TERMIN_ABSAGEN = 'select public.cancel_appointment($1::uuid, $2::timestamptz, $3) as id';
 const TERMIN_ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
 
 const ANLEGEN = 'select public.create_treatment_note($1::uuid, $2) as id';
@@ -273,7 +273,9 @@ describe('DOK-003: Behandlungsnachweis in der Akte', () => {
     ]);
     expect(zeilen[0]).toMatchObject({
       appointment_type: 'video',
-      appointment_status: 'scheduled',
+      // Der Termin mit finalisierter Dokumentation steht seit CAL-008d auf
+      // documented (ADR-018 Punkt 3).
+      appointment_status: 'documented',
       staff_given_name: 'Anna',
       staff_family_name: 'Beispiel',
       organization_time_zone: 'Europe/Berlin',
@@ -570,7 +572,11 @@ describe('DOK-003: Seitenregel der Akte', () => {
   it('nimmt begonnene, dokumentierte und abgesagte Termine auf - rein zukuenftige nicht', async () => {
     const vergangen = await vergangenerTermin(3);
     const abgesagt = await vergangenerTermin(2);
-    await asUserCommitted(users.office, TERMIN_ABSAGEN, [abgesagt.id, abgesagt.updated_at]);
+    await asUserCommitted(users.office, TERMIN_ABSAGEN, [
+      abgesagt.id,
+      abgesagt.updated_at,
+      'other',
+    ]);
     const abgeschlossen = await vergangenerTermin(1);
     await asUserCommitted(users.office, TERMIN_ABSCHLIESSEN, [
       abgeschlossen.id,
