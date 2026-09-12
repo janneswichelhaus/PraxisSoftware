@@ -1,10 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import {
+  addAppointmentNotification,
   fetchAppointmentSlip,
   formatLocalDate,
   formatLocalTimeRange,
@@ -23,6 +25,9 @@ import {
  * Terminliste ist ein Gesundheitsdatum; E-Mail oder SMS setzen einen
  * Dienstleister und eine Einwilligung voraus und hängen an B15 (ANN-039).
  *
+ * Der Druck vermerkt die aufgeführten Termine als ausgehändigt (CAL-012) —
+ * damit in der Akte steht, dass sie mitgeteilt sind.
+ *
  * **Keine Wortmarke.** `marke/README.md` ist dazu ausdrücklich: Die
  * Druckregeln blenden die Kopfzeile aus, und die Marke auf Papier kommt
  * innerhalb der Anwendung erst mit ABR-000 aus den Praxis-Stammdaten. Hier
@@ -34,6 +39,7 @@ import {
  */
 export function AppointmentSlipPage() {
   const { patientId } = useParams<{ patientId: string }>();
+  const queryClient = useQueryClient();
 
   const patient = useQuery({
     queryKey: ['patient', patientId],
@@ -47,6 +53,24 @@ export function AppointmentSlipPage() {
     queryFn: () => fetchAppointmentSlip(patientId!),
     enabled: Boolean(patientId),
     retry: false,
+  });
+
+  /**
+   * Drucken heißt mitteilen (CAL-012).
+   *
+   * Der Zettel listet alle bevorstehenden Termine auf einem Blatt — wer ihn
+   * aushändigt, teilt sie alle mit und soll sie nicht einzeln abhaken müssen.
+   * Vermerkt wird **vor** dem Druckdialog: Scheitert der Vermerk, wird auch
+   * nicht gedruckt, statt eine Aushändigung zu behaupten, die nicht
+   * festgehalten ist. Einen Irrtum nimmt die Terminseite wieder zurück.
+   */
+  const drucken = useMutation({
+    mutationFn: (ids: string[]) => addAppointmentNotification(ids, 'slip'),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
+      await queryClient.invalidateQueries({ queryKey: ['appointment-slip', patientId] });
+      window.print();
+    },
   });
 
   if (patient.isPending || termine.isPending) {
@@ -116,10 +140,25 @@ export function AppointmentSlipPage() {
       </section>
 
       {eintraege.length > 0 ? (
-        <div className="mt-8">
-          <Button type="button" onClick={() => window.print()}>
-            Terminzettel drucken
-          </Button>
+        <div className="nicht-drucken mt-8 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              disabled={drucken.isPending}
+              onClick={() => drucken.mutate(eintraege.map((eintrag) => eintrag.id))}
+            >
+              {drucken.isPending ? 'Wird vermerkt …' : 'Terminzettel drucken'}
+            </Button>
+            {drucken.isError ? (
+              <Statusmeldung ton="fehler">
+                {drucken.error.message} Es wurde nichts gedruckt und nichts vermerkt.
+              </Statusmeldung>
+            ) : null}
+          </div>
+          <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+            Die aufgeführten Termine werden dabei als „Terminzettel ausgehändigt" vermerkt und
+            tragen das Zeichen danach in der Akte. Am Termin lässt sich der Vermerk zurücknehmen.
+          </p>
         </div>
       ) : null}
 

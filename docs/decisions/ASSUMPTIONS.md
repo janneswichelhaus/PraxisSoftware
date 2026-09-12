@@ -2,6 +2,19 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
+- **CAL-012 bringt ANN-040 neu** (Mitteilungsvermerk am Termin): vier Wege,
+  kein Versand, Verfall mit jeder Terminänderung, Auditeintrag. `Datenschutz`
+  und damit im Prüfpaket — offen ist insbesondere, ob der Weg „per E-Mail
+  mitgeteilt" in der Auswahl bleiben soll.
+- **CAL-EPIC-003b bringt ANN-037 bis ANN-039 neu, und Jannes hat alle drei am
+  2026-09-12 wie empfohlen bestätigt:** geprüft wird die Länge des
+  Terminfensters statt des Zeitpunkts, „verplant ist nicht genutzt" samt
+  Rhythmen und Obergrenze der Serie, und der Terminzettel bleibt ein Ausdruck
+  ohne Versand. **ANN-037 und ANN-038 sind `Praxisprozess` und damit
+  erledigt**; sie kommen nur mit E12 beziehungsweise ABR-002 zurück.
+  **ANN-039 ist `Datenschutz` und bleibt im Prüfpaket** — die Bestätigung des
+  Projektinhabers ersetzt die Datenschutzprüfung nicht
+  (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). Er gehört damit in die Anfrage B2.
 - **CAL-EPIC-003a bringt ANN-034 bis ANN-036 neu, und Jannes hat alle drei am
   2026-09-12 wie empfohlen bestätigt:** Absagegrund als codierte Auswahl ohne
   Freitext, No-show unter der Frist der abgesagten Termine (mit gesetztem
@@ -198,9 +211,10 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen |
 | ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
 | ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
-| ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | offen (2026-09-12)    | Jannes; E12 Punkt 1 und 2 |
-| ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | offen (2026-09-12)    | Jannes nach den ersten Praxiswochen; verbindlich mit ABR-002 |
-| ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); Versandweg mit B15 |
+| ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit E12 Punkt 1 und 2 |
+| ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-002 |
+| ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); Versandweg mit B15 |
+| ANN-040 | Mitteilungsvermerk: vier Wege, kein Versand, verfällt mit jeder Terminänderung | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -2078,8 +2092,8 @@ Scheduler-Fall.
 |---|---|
 | Kategorie | Praxisprozess |
 | Herkunft | CAL-010a; `PROJECT_PRINCIPLES.md` §8.1 („neu gesetztes Zeitfenster" gegen „Bestehende Termine werden nicht rückwirkend verändert") |
-| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes steht aus |
-| Wiedervorlage | Jannes; spätestens mit der Antwort auf E12 Punkt 1 und 2 |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Praxisprozess`, damit erledigt |
+| Wiedervorlage | nur noch mit E12 Punkt 1 und 2 (begründete Abweichung von 60 Minuten, Länge je Praxis einstellbar) |
 
 **Annahme.** `create_appointment` verlangt **immer** ein Zeitfenster von 60
 Minuten. `update_appointment` prüft die Länge **genau dann, wenn sie sich
@@ -2141,8 +2155,8 @@ bis `mittel`.
 |---|---|
 | Kategorie | Praxisprozess |
 | Herkunft | CAL-007; die Roadmap verlangt „Anzahl aus dem Kontingent", ohne zu sagen, was das Kontingent verbraucht |
-| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes steht aus |
-| Wiedervorlage | Jannes nach den ersten Praxiswochen; verbindlich entschieden mit ABR-002 |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Praxisprozess`, damit erledigt |
+| Wiedervorlage | nur noch mit ABR-002: dort entscheidet sich, ob die genutzte Menge automatisch fortgeschrieben wird |
 
 **Annahme.** Drei Festlegungen, die zusammengehören:
 
@@ -2209,7 +2223,7 @@ nimmt die Tage ohnehin einzeln entgegen.
 |---|---|
 | Kategorie | Datenschutz |
 | Herkunft | CAL-011, `IDEA-PRX-006`; ADR-010 Punkt 2; `OPEN_DECISIONS.md` B15 |
-| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes und die Datenschutzprüfung steht aus |
+| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; als `Datenschutz` **weiter im Prüfpaket** |
 | Wiedervorlage | Datenschutzprüfung (B2); der Versandweg mit B15 |
 
 **Annahme.** Der Terminzettel ist ein Ausdruck, der die Praxis in der Hand
@@ -2267,3 +2281,78 @@ nach §3.5, eine Einwilligung je Patient:in und ein eigener Schreibpfad mit
 eigenem Auditereignis; Aufwand `groß` und ein eigenes Epic. Eigenes
 Auditereignis: ein Eintrag im Katalog (Constraint, `AUDIT_ACTIONS`, Beschriftung)
 und ein geänderter `insert`; Aufwand `klein`.
+
+---
+
+### ANN-040 — Mitteilungsvermerk: vier Wege, kein Versand, verfällt mit jeder Terminänderung
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | CAL-012 (Auftrag von Jannes, 2026-09-12, nach dem Vorbild von iPrax); `OPEN_DECISIONS.md` B15; ADR-010 |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes und die Datenschutzprüfung steht aus |
+| Wiedervorlage | Datenschutzprüfung (B2); der Weg `email` zusätzlich mit B15 und PAT-006 |
+
+**Annahme.** Ein Termin trägt einen Vermerk, **ob** und **auf welchem Weg** er
+der Patient:in mitgeteilt wurde. Vier Festlegungen:
+
+1. **Die Anwendung verschickt weiterhin nichts.** Der Vermerk beschreibt einen
+   Vorgang **außerhalb** der Anwendung. Auch `email` heißt „die Praxis hat die
+   Nachricht selbst geschrieben" — es gibt keinen Versandknopf, keinen
+   Dienstleister und keine Einwilligung (§3.5, B15).
+2. **Vier Wege:** persönlich gesagt, telefonisch mitgeteilt, Terminzettel
+   ausgehändigt, per E-Mail mitgeteilt. **`sms` und `messenger` fehlen
+   bewusst** — Messenger ist nach B15 ausgeschlossen, SMS gibt es nicht, und
+   ein Wert ohne Schreiber wäre Vorbau (ADR-014).
+3. **Der Vermerk verfällt mit jeder Terminänderung.** Gültig ist er nur,
+   solange `notified_at >= appointments.updated_at`. Gelöscht wird dabei
+   nichts: Der alte Vermerk bleibt als Historie stehen und wird nur ungültig.
+4. **Der Vorgang ist auditiert** (`appointment.notified`), mit den Wegen im
+   Kontext und ohne jeden Inhalt.
+
+**Begründung.** Zu 1 und 2: Die Wahl des Kanals bleibt Sache der Praxis. Die
+Anwendung **bewertet** sie nicht und **ermöglicht** sie nicht — sie hält fest,
+was geschehen ist. Genau deshalb ist der Vermerk kein neuer Verarbeitungsweg
+im Sinne von §3.5: Es entsteht kein Empfänger, der vorher keiner war.
+**Unsicher und deshalb im Prüfpaket:** ob die Datenschutzprüfung den Weg
+`email` in der Auswahl sehen will. Ein Termin per unverschlüsselter E-Mail ist
+eine Offenlegung von Gesundheitsdaten; die Auswahl macht sie sichtbar und
+nachvollziehbar, könnte aber auch als Ermutigung gelesen werden. Die
+Gegenposition wäre, `email` zu streichen und die Praxis auf Telefon und Zettel
+zu verweisen.
+
+Zu 3: Ein Vermerk, der eine verschobene Zeit überlebt, ist schlimmer als
+keiner — er behauptet, die Patient:in wisse Bescheid. Der Vergleich gegen
+`updated_at` löst das ohne jede Pflege: Es gibt keine Frist, keinen
+Aufräumlauf und keinen Weg, den Verfall zu vergessen. Die Kehrseite: „noch nie
+mitgeteilt" und „seit der Mitteilung geändert" sehen gleich aus. Das ist
+beabsichtigt — der Handlungsbedarf ist derselbe.
+
+Zu 4: Der Vermerk sagt aus, dass Termindaten die Praxis verlassen haben. Die
+Tabelle trägt zwar Zeitpunkt und Person, aber die Rücknahme entfernt eine
+Zeile; ohne Auditeintrag ließe sich das nicht nachvollziehen. Ein Ereignis
+statt zwei, weil immer die vollständige Menge gesetzt wird: Eine leere Liste
+im Kontext **ist** die Rücknahme.
+
+**Verankerung.** Tabelle `public.appointment_notifications`,
+`app.appointment_notification_channels()`,
+`public.set_appointment_notification()` und
+`public.add_appointment_notification()` in
+`supabase/migrations/20260912180000_appointment_notification.sql`
+(Kopfkommentar und Tabellenkommentar tragen die Kennung);
+`notificationChannelSchema` in `src/features/appointments/api.ts`;
+`MitteilungVermerken.tsx` und `Mitteilungszeichen.tsx`. Tests in
+`supabase/tests/appointment-notification.test.ts` (Verfall, Wertebereich,
+Audit, Rollen) und
+`tests/e2e/authenticated/appointment-notification.spec.ts`.
+
+**Änderungspfad.** Weg streichen oder ergänzen: ein Wert in der
+Check-Constraint, im Zod-Schema und in der Beschriftungstabelle — Aufwand
+`klein`; bereits gesetzte Vermerke des gestrichenen Weges müssten einmalig
+entfernt werden. Verfallsregel lockern (etwa nur bei Zeitänderungen): die
+Bedingung `notified_at >= a.updated_at` durch einen Vergleich gegen einen
+eigenen Zeitstempel ersetzen, den nur `update_appointment` bei Zeitänderungen
+bumpt — Aufwand `mittel`. Echter Versand nach B15: ein Anbieter mit Prüfung
+nach §3.5, eine Einwilligung je Patient:in und ein eigener Schreibpfad mit
+eigenem Auditereignis — Aufwand `groß` und ein eigenes Epic; dieser Vermerk
+wäre dann sein Ergebnis, nicht sein Ersatz.

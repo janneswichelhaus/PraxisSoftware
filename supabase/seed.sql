@@ -20,6 +20,7 @@ delete from public.audit_log;
 delete from public.treatment_text_snippets;
 delete from public.staff_working_hour_exceptions;
 delete from public.staff_working_hours;
+delete from public.appointment_notifications;
 delete from public.appointments;
 delete from public.prescription_items;
 delete from public.prescriptions;
@@ -219,6 +220,20 @@ insert into public.appointments (
   ('aaaaaaaa-aaaa-4aaa-8aaa-000000000004', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '55555555-5555-4555-8555-000000000001', '33333333-3333-4333-8333-000000000001',
    'practice', 'confirmed', (current_date + time '16:00') at time zone 'Europe/Berlin', (current_date + time '17:00') at time zone 'Europe/Berlin',
    null, null, null, null, null, null, null, null);
+
+-- -----------------------------------------------------------------------------
+-- Mitteilungsvermerk (CAL-012)
+--
+-- Ein einziger Vermerk, damit in der Abnahme beide Faelle nebeneinander stehen:
+-- ein Termin MIT Zeichen und drei ohne. Der Vermerk gilt, weil er in derselben
+-- Transaktion entsteht wie der Termin - notified_at ist damit nicht aelter als
+-- dessen updated_at.
+--
+-- Die Anwendung verschickt nichts; der Vermerk beschreibt einen Anruf, den die
+-- Praxis selbst gefuehrt hat (B15, ANN-040).
+-- -----------------------------------------------------------------------------
+insert into public.appointment_notifications (organization_id, appointment_id, channel, notified_by) values
+  ('22222222-2222-4222-8222-000000000001', 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001', 'phone', '11111111-1111-4111-8111-000000000003');
 
 -- -----------------------------------------------------------------------------
 -- Textbausteine (UX-008)

@@ -74,6 +74,7 @@ export const TAGESFENSTER = {
   patientRecord: 9,
   appointmentStates: 10,
   appointmentSeries: 11,
+  appointmentNotification: 12,
 } as const;
 
 /**

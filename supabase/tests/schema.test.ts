@@ -67,6 +67,7 @@ describe('Schema-Invarianten', () => {
       'user_roles',
       'audit_log',
       'appointments',
+      'appointment_notifications',
       'staff_working_hours',
       'staff_working_hour_exceptions',
       'treatment_notes',

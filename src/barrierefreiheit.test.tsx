@@ -120,6 +120,7 @@ const { NavigationZumTermin } = await import('@/features/appointments/Navigation
 const { TextbausteinLeiste } = await import('@/features/documentation/TextbausteinLeiste');
 const { AppointmentSeriesPage } = await import('@/features/appointments/AppointmentSeriesPage');
 const { AppointmentSlipPage } = await import('@/features/appointments/AppointmentSlipPage');
+const { MitteilungVermerken } = await import('@/features/appointments/MitteilungVermerken');
 
 /** Ein Hausbesuch mit allem, was die Tageskarte zeigen kann. */
 const tagesEintrag = {
@@ -413,6 +414,45 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
     await user.type(screen.getByLabelText('Beginn *'), '09:00');
     await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
     await screen.findByLabelText('Datum 1');
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('haelt die Mitteilungsauswahl am Termin sauber (CAL-012)', async () => {
+    const { container } = renderWithProviders(
+      <main>
+        <h1>Termin</h1>
+        <MitteilungVermerken
+          appointment={{
+            id: 'ter-1',
+            patient_id: 'pat-1',
+            staff_member_id: 'st-1',
+            location_id: null,
+            appointment_type: 'home_visit',
+            status: 'confirmed',
+            starts_at: '2027-05-12T07:00:00.000Z',
+            ends_at: '2027-05-12T08:00:00.000Z',
+            updated_at: '2027-05-01T10:00:00.000000+00',
+            visit_street: 'Testweg',
+            visit_house_number: '7',
+            visit_postal_code: '72072',
+            visit_city: 'Tuebingen',
+            completed_at: null,
+            cancellation_reason: null,
+            no_show_recorded_at: null,
+            no_show_fee: null,
+            patient_given_name: 'Max',
+            patient_family_name: 'Mustermann',
+            staff_given_name: 'Anna',
+            staff_family_name: 'Beispiel',
+            location_name: null,
+            notification_channels: ['phone'],
+            organization_time_zone: 'Europe/Berlin',
+          }}
+        />
+      </main>,
+    );
+
+    await screen.findByRole('button', { name: 'Vermerk speichern' });
     await pruefeBarrierefreiheit(container);
   });
 

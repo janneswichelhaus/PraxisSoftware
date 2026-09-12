@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Zuletzt aktualisiert: 2026-09-11 (Punkt D „bestätigt" erledigt) · Struktur 2.1
+Zuletzt aktualisiert: 2026-09-12 (E12 Punkt 3 und 4 vorläufig entschieden: Fahrpuffer erst mit MAP-006) · Struktur 2.1
 
 Dieses Dokument hält fest, **was noch nicht entschieden ist**, warum es offen
 ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
@@ -145,7 +145,7 @@ Feature.
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
 | E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024)          |
 | E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | unten                                                                                    |
-| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1); vier Anschlussfragen **offen**    | unten; `PROJECT_PRINCIPLES.md` §8.1; vor CAL-010a/CAL-010b (Roadmap CAL-EPIC-003b)                  |
+| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Fahrpuffer **vorläufig entschieden 2026-09-12**: erst mit MAP-006 · Punkt 1 und 2 weiter **offen** | unten; `PROJECT_PRINCIPLES.md` §8.1; CAL-010a gebaut, CAL-010b entfällt zugunsten von MAP-006 |
 | E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
 
 ---
@@ -1070,18 +1070,35 @@ Bestandstermine unverändert, Durchsetzung serverseitig.
    Terminlänge ist nach §8.1 durchzusetzen; für den Fahrpuffer sagt die
    Entscheidung dazu nichts.
 
-**Warum offen:** Punkt 1 und 2 sind Praxisprozess und lassen sich erst nach
-den ersten Wochen im Betrieb sinnvoll beantworten. Punkt 3 hängt an B7 und
-ADR-019: mit MAP-004 kommen echte Fahrzeiten, und ein pauschaler Wert wäre
-dann ein zweiter, schlechterer Mechanismus daneben.
+**Punkt 3 und 4 vorläufig entschieden am 2026-09-12 durch Jannes: der
+Fahrpuffer kommt erst mit MAP-006.** Es wird **kein** pauschaler
+Mindestabstand gebaut und es werden **keine** Fahrminuten von Hand gepflegt.
+Die Fahrzeit entsteht aus dem Kartendienst (MAP-003/MAP-004); ob eine
+Unterschreitung warnt oder sperrt, wird mit MAP-006 entschieden, wenn die
+Zahlen echt sind.
 
-**Blockiert:** nichts. UX-EPIC-001 braucht die Antwort nicht; CAL-010a baut die
-entschiedenen Teile von §8.1, und CAL-010b lässt offen, was ohne Antwort offen
-bleiben muss.
+**Begründung.** Ein pauschaler Wert wäre neben den Fahrzeiten aus dem Dienst
+ein zweiter, schlechterer Mechanismus — genau das nennt dieser Punkt selbst
+als Grund, ihn offen zu lassen. Die Aufrundungsregel aus §8.1 bleibt davon
+unberührt: Sie ist entschieden und gilt, **sobald** eine Fahrzeit vorliegt;
+heute liegt keine vor, und eine Funktion ohne Aufrufer wäre Vorbau (ADR-014).
+Der Testfall mit dem Beispiel aus §8.1 (09:05–10:05 plus 12 Minuten ergibt
+10:20) gehört damit zu MAP-006.
 
-**Rücknahme:** `klein` bis `mittel` — die Regel greift an genau zwei
-Schreibpfaden (`create_appointment`, `update_appointment`) und einer
-Vorbelegung im Formular.
+**Folge für die Roadmap:** **CAL-010b entfällt als eigene Story** und geht in
+MAP-006 auf. CAL-EPIC-003b ist ohne sie am 2026-09-12 fertig geworden.
+
+**Weiter offen sind Punkt 1 und 2** — begründete Abweichung von den 60 Minuten
+und Einstellbarkeit der Länge je Praxis. Beide sind Praxisprozess und lassen
+sich erst nach den ersten Wochen im Betrieb sinnvoll beantworten; sie stehen
+als Wiedervorlage an **ANN-037**.
+
+**Blockiert:** nichts.
+
+**Rücknahme:** `klein` bis `mittel` — die Terminfensterregel greift an genau
+zwei Schreibpfaden (`create_appointment`, `update_appointment`) und einer
+Ableitung im Formular. Für den Fahrpuffer ist nichts zurückzunehmen: Es wurde
+nichts gebaut.
 
 ### E13 — Sprachdokumentation: Anbieter, Architektur, Audio, Frist
 

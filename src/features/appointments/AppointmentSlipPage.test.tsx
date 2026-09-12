@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as RouterModule from 'react-router-dom';
@@ -39,6 +40,7 @@ const eintraege: AppointmentsApi.AppointmentSlipEntry[] = [
 
 const fetchPatient = vi.fn();
 const fetchAppointmentSlip = vi.fn();
+const addAppointmentNotification = vi.fn();
 
 vi.mock('@/features/patients/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApi>()),
@@ -51,6 +53,8 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchAppointmentSlip: (id: string) =>
       fetchAppointmentSlip(id) as Promise<AppointmentsApi.AppointmentSlipEntry[]>,
+    addAppointmentNotification: (ids: readonly string[], kanal: string) =>
+      addAppointmentNotification(ids, kanal) as Promise<number>,
   };
 });
 
@@ -58,6 +62,10 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModule>()),
   useParams: () => ({ patientId: PATIENT_ID }),
 }));
+
+/** `window.print` gibt es in jsdom nicht - ohne Attrappe wirft der Klick. */
+const drucken = vi.fn();
+vi.stubGlobal('print', drucken);
 
 const { AppointmentSlipPage } = await import('./AppointmentSlipPage');
 
@@ -69,8 +77,11 @@ describe('AppointmentSlipPage', () => {
   beforeEach(() => {
     fetchPatient.mockReset();
     fetchAppointmentSlip.mockReset();
+    addAppointmentNotification.mockReset();
     fetchPatient.mockResolvedValue(patient);
     fetchAppointmentSlip.mockResolvedValue(eintraege);
+    addAppointmentNotification.mockResolvedValue(2);
+    drucken.mockClear();
   });
 
   it('richtet sich an die Patient:in und listet Datum, Zeit, Ort und Person', async () => {
@@ -105,6 +116,39 @@ describe('AppointmentSlipPage', () => {
     expect(screen.getByText(/wird nicht versendet/)).toBeInTheDocument();
     // Kein Versandweg auf der Seite - B15 ist offen (ANN-039).
     expect(screen.queryByRole('button', { name: /senden|mail|sms/i })).not.toBeInTheDocument();
+  });
+
+  it('vermerkt beim Drucken alle aufgeführten Termine als ausgehändigt (CAL-012)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+
+    await waitFor(() =>
+      expect(addAppointmentNotification).toHaveBeenCalledWith(
+        eintraege.map((eintrag) => eintrag.id),
+        'slip',
+      ),
+    );
+    await waitFor(() => expect(drucken).toHaveBeenCalledTimes(1));
+    expect(screen.getByText(/als „Terminzettel ausgehändigt" vermerkt/)).toBeInTheDocument();
+  });
+
+  it('druckt nicht, wenn der Vermerk scheitert', async () => {
+    addAppointmentNotification.mockRejectedValue(
+      new Error('Der Vermerk konnte nicht gespeichert werden.'),
+    );
+    const user = userEvent.setup();
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+
+    expect(
+      await screen.findByText(/Es wurde nichts gedruckt und nichts vermerkt/),
+    ).toBeInTheDocument();
+    expect(drucken).not.toHaveBeenCalled();
   });
 
   it('bietet ohne Termine nichts zum Drucken an', async () => {

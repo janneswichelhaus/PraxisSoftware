@@ -1318,3 +1318,70 @@ erreichbar.
 
 **Zielwert:** Der Zettel entsteht mit **zwei** Taps aus der Akte, statt von
 Hand geschrieben zu werden.
+
+---
+
+## CAL-012 — Mitteilungsvermerk am Termin
+
+Vorbild ist die Terminliste von iPrax: Ein Zeichen hinter dem Termin sagt, ob
+er der Patient:in schon mitgeteilt wurde und auf welchem Weg.
+
+> **Die Anwendung verschickt nichts.** Der Vermerk hält fest, was die Praxis
+> selbst getan hat — auch „per E-Mail mitgeteilt" heißt, dass jemand die
+> Nachricht selbst geschrieben hat (B15, ANN-040).
+
+### 1. Vermerken und sehen
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte **Max Mustermann**,
+   Abschnitt **Nächste Termine**. Erwartung: Am heutigen 09:00-Termin steht
+   aus dem Seed bereits das Zeichen **Telefon**; an den übrigen steht keins.
+2. Einen Termin ohne Zeichen öffnen. Unten steht **Mitteilung an die
+   Patient:in** mit vier Kästchen und dem Satz, dass die Anwendung nichts
+   verschickt.
+3. **Telefonisch mitgeteilt** anhaken. Erwartung: „Vermerk speichern" wird
+   anklickbar — vorher nicht.
+4. Speichern. Erwartung: **Vermerk gespeichert.** Neu laden (F5): das Häkchen
+   steht weiterhin.
+5. Zurück in die Akte. Erwartung: Hinter dem Termin steht **Telefon**.
+6. Zwei Wege gleichzeitig anhaken (etwa Telefon und E-Mail) und speichern.
+   Erwartung: In der Akte stehen **beide** Zeichen nebeneinander.
+
+### 2. Der Vermerk verfällt mit einer Änderung
+
+1. Denselben Termin **bearbeiten** und den Beginn verschieben, speichern.
+2. Zurück in die Akte. Erwartung: **Das Zeichen ist weg.** Die neue Zeit ist
+   noch nicht mitgeteilt — genau das soll der leere Platz sagen.
+3. Am Termin nachsehen: die Kästchen sind wieder leer.
+
+### 3. Zurücknehmen
+
+1. Einen Weg anhaken, speichern, danach das Häkchen wieder entfernen und
+   erneut speichern. Erwartung: **Vermerk zurückgenommen.**, und in der Akte
+   steht kein Zeichen mehr. Das ist der Fall „der Drucker ging nicht".
+
+### 4. Terminzettel drucken vermerkt mit
+
+1. In der Akte **Terminzettel** öffnen. Unter dem Knopf steht, dass die
+   aufgeführten Termine dabei als ausgehändigt vermerkt werden.
+2. **Terminzettel drucken** klicken und den Druckdialog abbrechen.
+3. Zurück in die Akte. Erwartung: **Alle** aufgeführten Termine tragen jetzt
+   das Zeichen **Zettel**.
+
+### 5. Auditlog
+
+Als `jannes.test@praxis.invalid` unter **Praxis → Sicherheit → Auditlog**
+nachsehen. Erwartung: Einträge **„Mitteilung an die Patient:in vermerkt"** —
+je Termin einer, mit den Wegen im Kontext und ohne Inhalt.
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann Akte → Termin öffnen. Erwartung: Die vier Kästchen stehen untereinander,
+jedes Tippziel mindestens 44 px, kein waagerechtes Scrollen; in der Terminliste
+brechen die Zeichen unter die Terminzeile um, statt sie zu quetschen.
+
+**Zielwert:** „Ist dieser Termin schon mitgeteilt?" ist in der Akte **ohne
+Klick** beantwortet.

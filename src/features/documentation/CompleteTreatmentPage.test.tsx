@@ -33,6 +33,7 @@ const termin: AppointmentsApi.Appointment = {
   staff_given_name: 'Anna',
   staff_family_name: 'Beispiel',
   location_name: null,
+  notification_channels: [],
   organization_time_zone: 'Europe/Berlin',
 };
 

@@ -33,6 +33,7 @@ const praxistermin: AppointmentsApi.Appointment = {
   staff_given_name: 'Anna',
   staff_family_name: 'Beispiel',
   location_name: 'Hauptstandort Tuebingen',
+  notification_channels: [],
   organization_time_zone: 'Europe/Berlin',
 };
 

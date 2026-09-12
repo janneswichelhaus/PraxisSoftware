@@ -393,6 +393,7 @@ describe('PatientDetailPage', () => {
       status: 'confirmed',
       staff_given_name: 'Anna',
       staff_family_name: 'Beispiel',
+      notification_channels: [],
       organization_time_zone: 'Europe/Berlin',
     };
 
@@ -411,6 +412,34 @@ describe('PatientDetailPage', () => {
 
       const link = await screen.findByRole('link', { name: /19\. Mai 2027/ });
       expect(link).toHaveAttribute('href', `/termine/${naechster.id}`);
+    });
+
+    it('zeigt hinter dem Termin die Mitteilungswege (CAL-012)', async () => {
+      fetchUpcomingAppointments.mockResolvedValue([
+        { ...naechster, notification_channels: ['phone', 'slip'] },
+      ]);
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      await screen.findByText(/19\. Mai 2027/);
+      expect(screen.getByText('Telefon')).toBeInTheDocument();
+      expect(screen.getByText('Zettel')).toBeInTheDocument();
+    });
+
+    it('zeigt ohne Vermerk kein Zeichen - kein „noch nicht" als Rauschen', async () => {
+      fetchUpcomingAppointments.mockResolvedValue([naechster]);
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      await screen.findByText(/19\. Mai 2027/);
+      expect(screen.queryByText('Telefon')).not.toBeInTheDocument();
+      expect(screen.queryByText('Zettel')).not.toBeInTheDocument();
+    });
+
+    it('bietet den Terminzettel nur an, wenn es einen Termin gibt', async () => {
+      fetchUpcomingAppointments.mockResolvedValue([naechster]);
+      renderWithProviders(<PatientDetailPage user={testUser(['therapist'])} />);
+
+      const zettel = await screen.findByRole('link', { name: 'Terminzettel' });
+      expect(zettel).toHaveAttribute('href', `/patienten/${PATIENT_ID}/terminzettel`);
     });
 
     it('sagt es als Text, wenn nichts vereinbart ist', async () => {

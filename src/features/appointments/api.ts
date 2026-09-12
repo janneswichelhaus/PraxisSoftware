@@ -89,6 +89,43 @@ export const cancellationReasonLabels: Record<CancellationReason, string> = {
   other: 'Sonstiger Grund',
 };
 
+/**
+ * Mitteilungswege eines Termins (CAL-012, ANN-040).
+ *
+ * **Die Anwendung versendet nichts.** B15 ist vorläufig entschieden: in
+ * Stufe 1 und 2 gibt es keine automatische Terminerinnerung. Auch `email`
+ * heißt deshalb „die Praxis hat die Nachricht selbst geschrieben" — der
+ * Vermerk beschreibt einen Vorgang außerhalb der Anwendung.
+ *
+ * `sms` und `messenger` fehlen bewusst: Messenger ist nach B15 ausgeschlossen,
+ * SMS gibt es nicht. Ein Wert, den niemand setzen kann, wäre Vorbau (ADR-014).
+ */
+export const notificationChannelSchema = z.enum(['slip', 'phone', 'in_person', 'email']);
+export type NotificationChannel = z.infer<typeof notificationChannelSchema>;
+
+/**
+ * Zwei Beschriftungen je Weg: `kurz` steht als Abzeichen in der Terminliste,
+ * `lang` an der Auswahl auf der Terminseite. Die Reihenfolge ist die der
+ * Häufigkeit im Praxisalltag.
+ */
+export const notificationChannelLabels: Record<
+  NotificationChannel,
+  { kurz: string; lang: string }
+> = {
+  in_person: { kurz: 'Persönlich', lang: 'Persönlich gesagt' },
+  phone: { kurz: 'Telefon', lang: 'Telefonisch mitgeteilt' },
+  slip: { kurz: 'Zettel', lang: 'Terminzettel ausgehändigt' },
+  email: { kurz: 'E-Mail', lang: 'Per E-Mail mitgeteilt' },
+};
+
+/** Auswahlreihenfolge - `Object.keys` wäre eine Zusage, die das Objekt nicht gibt. */
+export const notificationChannelOrder: readonly NotificationChannel[] = [
+  'in_person',
+  'phone',
+  'slip',
+  'email',
+] as const;
+
 const appointmentSchema = z.object({
   id: z.string(),
   patient_id: z.string(),
@@ -115,6 +152,10 @@ const appointmentSchema = z.object({
   // Detailansicht zeigt keine Akteure (ADR-010).
   no_show_recorded_at: z.string().nullable(),
   no_show_fee: z.boolean().nullable(),
+  // Die seit der letzten Terminänderung vermerkten Mitteilungswege (CAL-012).
+  // Leer heißt „noch nicht mitgeteilt" ODER „seit der Mitteilung geändert" -
+  // beides ist derselbe Handlungsbedarf.
+  notification_channels: z.array(notificationChannelSchema),
   patient_given_name: z.string(),
   patient_family_name: z.string(),
   staff_given_name: z.string(),
@@ -130,7 +171,7 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 const SELECT =
   'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
-  'cancellation_reason, no_show_recorded_at, no_show_fee, ' +
+  'cancellation_reason, no_show_recorded_at, no_show_fee, notification_channels, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -358,6 +399,7 @@ const upcomingAppointmentSchema = z.object({
   status: appointmentStatusSchema,
   staff_given_name: z.string(),
   staff_family_name: z.string(),
+  notification_channels: z.array(notificationChannelSchema),
   organization_time_zone: z.string(),
 });
 
@@ -1023,4 +1065,49 @@ export function slipOrt(eintrag: AppointmentSlipEntry): string {
   if (eintrag.appointment_type === 'home_visit') return 'bei Ihnen zu Hause';
   if (eintrag.appointment_type === 'video') return 'Videotermin';
   return eintrag.location_name ?? 'in der Praxis';
+}
+
+// -----------------------------------------------------------------------------
+// Mitteilungsvermerk am Termin (CAL-012)
+//
+// Zwei Schreibwege, weil es zwei Vorgänge gibt: an einem Termin die Auswahl
+// setzen, und beim Druck des Terminzettels einen Weg bei allen Terminen des
+// Blattes ergänzen. Die Fachlogik liegt in beiden Fällen serverseitig; die
+// Auswahl in der Oberfläche ist Bedienkomfort (ADR-004).
+// -----------------------------------------------------------------------------
+
+/**
+ * Setzt die vermerkten Mitteilungswege eines Termins auf genau diese Menge.
+ *
+ * Eine leere Liste nimmt den Vermerk zurück — der Fall „der Drucker ging
+ * nicht". Gibt die tatsächlich gültigen Wege zurück.
+ */
+export async function setAppointmentNotification(
+  appointmentId: string,
+  channels: readonly NotificationChannel[],
+): Promise<NotificationChannel[]> {
+  const { data, error } = (await getSupabase().rpc('set_appointment_notification', {
+    p_appointment_id: appointmentId,
+    p_channels: channels,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Vermerk konnte nicht gespeichert werden.');
+  return z.array(notificationChannelSchema).parse(data ?? []);
+}
+
+/**
+ * Ergänzt einen Mitteilungsweg bei mehreren Terminen, ohne vorhandene zu
+ * verlieren. Gibt die Anzahl der vermerkten Termine zurück.
+ */
+export async function addAppointmentNotification(
+  appointmentIds: readonly string[],
+  channel: NotificationChannel,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('add_appointment_notification', {
+    p_appointment_ids: appointmentIds,
+    p_channel: channel,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) throw schreibfehler(error, 'Der Vermerk konnte nicht gespeichert werden.');
+  return z.number().parse(data);
 }
