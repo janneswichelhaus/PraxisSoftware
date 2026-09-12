@@ -185,9 +185,9 @@ bis zu 30 Prozent. Das Telefon ist der Kanal, den es schon gibt.
 
 | | |
 |---|---|
-| Status | **überführt** (2026-09-12) — als Druckansicht gebaut (CAL-011); der PDF- und Versandteil bleibt `vorschlag` |
+| Status | **überführt** (2026-09-12) — als Druckansicht gebaut (CAL-011), der E-Mail-Weg als Handoff (CAL-013); der PDF-Teil und die Tourenliste bleiben `vorschlag` |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (THEORG, appointmed, iPrax, Optica) |
-| Berührt | CAL-011 (gebaut), UI-000 (Druck-Basis), B14, B15; ANN-039 |
+| Berührt | CAL-011 und CAL-013 (gebaut), UI-000 (Druck-Basis), B14, B15; ANN-039, ANN-041 |
 
 **Gebaut ist der Terminzettel je Person** (CAL-011, 2026-09-12): „Ihre
 nächsten Termine" unter `/patienten/:id/terminzettel`, erreichbar aus dem
@@ -197,17 +197,25 @@ Adresse. **Nur Druck über die Druck-Basis aus UI-000**, kein PDF und kein
 Versand. Was der Zettel enthält und warum, steht als **ANN-039** im Register
 und ist dort verbindlich, nicht hier.
 
+**Gebaut ist auch der E-Mail-Weg** (CAL-013, 2026-09-12), nachdem Jannes den
+Versand von Terminmails ausdrücklich vorgesehen hat (B15-Nachtrag): dieselbe
+Liste als fertiger Entwurf im Mailprogramm der Praxis, gesendet wird dort von
+Hand. Verbindlich ist dazu **ANN-041**, nicht dieser Eintrag.
+
 **Offen geblieben (weiter nur Vorschlag).** Das PDF als Datei (hängt an B14,
-dem PDF-Weg der Rechnung) · der Versand per E-Mail oder SMS (hängt an B15:
-Anbieter, Rechtsgrundlage, Einwilligung) · die **Tages- oder Tourenliste je
-Therapeut:in** zum Drucken, die E2 mit abdecken würde — sie ist ein anderer
-Ausdruck mit anderem Empfänger und anderer Datenlage.
+dem PDF-Weg der Rechnung) · der Versand per **SMS** (bleibt an B15; Messenger
+ist ausgeschlossen) · echter Versand **aus der Anwendung** statt eines
+Handoffs, also mit Dienstleister und Zustellstatus · die **Tages- oder
+Tourenliste je Therapeut:in** zum Drucken, die E2 mit abdecken würde — sie ist
+ein anderer Ausdruck mit anderem Empfänger und anderer Datenlage.
 
 **Warum.** Hochbetagte Patient:innen ohne Portal; heute schreibt die
 Therapeutin Zettel per Hand. THEORG verkauft dafür sogar Papierblöcke.
 
 **Vorsicht.** Das Dokument enthält Termine, also ein Gesundheitsdatum;
-Ausgabe nur an die Person selbst, kein Versand ohne B15.
+Ausgabe nur an die Person selbst. Für die E-Mail gilt zusätzlich, was ANN-041
+festhält: nur auf ausdrücklichen Wunsch, Inhalt auf das Organisatorische
+begrenzt, Betreff ohne Aussage.
 
 ---
 

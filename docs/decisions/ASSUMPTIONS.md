@@ -2,8 +2,20 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
+- **CAL-013 bringt ANN-041 neu** (Termine per E-Mail): Die Praxis wird
+  Terminmails verschicken — Jannes hat das am 2026-09-12 ausdrücklich
+  vorgesehen und damit seine eigene vorläufige Entscheidung zu B15 in einem
+  Punkt geändert. Gebaut ist ein **Handoff**: Die Anwendung baut den Entwurf
+  und übergibt ihn dem Mailprogramm der Praxis, gesendet wird dort von Hand.
+  Kein neuer Dienstleister, keine automatische Erinnerung. `Datenschutz` und
+  damit im Prüfpaket — offen bleibt der **dokumentierte Wunsch je Patient:in**
+  (PAT-006).
+- **ANN-040 ist am 2026-09-12 in Punkt 1 geändert** (siehe dort): „Die
+  Anwendung verschickt weiterhin nichts" galt für den Vermerk als reine
+  Nachhut. Seit CAL-013 entsteht der Weg `email` auch aus der Übergabe ans
+  Mailprogramm; die übrigen drei Festlegungen gelten unverändert.
 - **CAL-012 bringt ANN-040 neu** (Mitteilungsvermerk am Termin): vier Wege,
-  kein Versand, Verfall mit jeder Terminänderung, Auditeintrag. `Datenschutz`
+  Verfall mit jeder Terminänderung, Auditeintrag. `Datenschutz`
   und damit im Prüfpaket — offen ist insbesondere, ob der Weg „per E-Mail
   mitgeteilt" in der Auswahl bleiben soll.
 - **CAL-EPIC-003b bringt ANN-037 bis ANN-039 neu, und Jannes hat alle drei am
@@ -214,7 +226,8 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit E12 Punkt 1 und 2 |
 | ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-002 |
 | ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); Versandweg mit B15 |
-| ANN-040 | Mitteilungsvermerk: vier Wege, kein Versand, verfällt mit jeder Terminänderung | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
+| ANN-040 | Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
+| ANN-041 | Termin-E-Mail als Handoff ins eigene Mailprogramm: Inhalt, Betreff, Längengrenze, Vermerk auf die Übergabe | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -2296,10 +2309,18 @@ und ein geänderter `insert`; Aufwand `klein`.
 **Annahme.** Ein Termin trägt einen Vermerk, **ob** und **auf welchem Weg** er
 der Patient:in mitgeteilt wurde. Vier Festlegungen:
 
-1. **Die Anwendung verschickt weiterhin nichts.** Der Vermerk beschreibt einen
-   Vorgang **außerhalb** der Anwendung. Auch `email` heißt „die Praxis hat die
-   Nachricht selbst geschrieben" — es gibt keinen Versandknopf, keinen
-   Dienstleister und keine Einwilligung (§3.5, B15).
+1. ~~**Die Anwendung verschickt weiterhin nichts.** Der Vermerk beschreibt
+   einen Vorgang **außerhalb** der Anwendung. Auch `email` heißt „die Praxis
+   hat die Nachricht selbst geschrieben" — es gibt keinen Versandknopf, keinen
+   Dienstleister und keine Einwilligung (§3.5, B15).~~
+   **Geändert am 2026-09-12 (CAL-013, ANN-041).** Jannes hat den Versand von
+   Terminmails ausdrücklich vorgesehen. Der Weg `email` entsteht seitdem auch
+   aus der Anwendung heraus — als Übergabe eines fertigen Entwurfs an das
+   Mailprogramm der Praxis. **Unverändert bleibt:** Es gibt keinen
+   Dienstleister und keinen automatischen Versand; die Anwendung sieht die
+   Übergabe, nicht den Versand. Der Vermerk bleibt damit, was er war — eine
+   Aussage der Praxis darüber, was sie getan hat. Die Punkte 2 bis 4 gelten
+   unverändert.
 2. **Vier Wege:** persönlich gesagt, telefonisch mitgeteilt, Terminzettel
    ausgehändigt, per E-Mail mitgeteilt. **`sms` und `messenger` fehlen
    bewusst** — Messenger ist nach B15 ausgeschlossen, SMS gibt es nicht, und
@@ -2356,3 +2377,124 @@ bumpt — Aufwand `mittel`. Echter Versand nach B15: ein Anbieter mit Prüfung
 nach §3.5, eine Einwilligung je Patient:in und ein eigener Schreibpfad mit
 eigenem Auditereignis — Aufwand `groß` und ein eigenes Epic; dieser Vermerk
 wäre dann sein Ergebnis, nicht sein Ersatz.
+
+---
+
+### ANN-041 — Termin-E-Mail als Handoff ins eigene Mailprogramm
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | CAL-013 (Auftrag von Jannes, 2026-09-12); `OPEN_DECISIONS.md` B15; ADR-019 und ANN-018 (Handoff-Muster); `PROJECT_PRINCIPLES.md` §3.5, §10, §16 |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch die Datenschutzprüfung steht aus |
+| Wiedervorlage | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
+
+**Vorgeschichte.** Jannes hat am 2026-09-12 geschrieben: „Ich widerspreche
+möglicherweise früherer Planung, aber es ist ausdrücklich vorgesehen, dass die
+Praxis E-Mails versenden wird, welche die Termine beinhaltet." Das ändert
+seine eigene vorläufige Entscheidung zu B15 in **einem** Punkt — dazu B15.
+
+**Annahme.** Die Anwendung bietet an, die Termine einer Patient:in per E-Mail
+zu übermitteln. Sechs Festlegungen:
+
+1. **Handoff, kein Versand.** Die Anwendung baut eine `mailto:`-Adresse und
+   übergibt sie dem Mailprogramm der Praxis. Sie öffnet keine Verbindung,
+   spricht mit keinem Mailserver und speichert keine Nachricht. Gesendet wird
+   im Postfach der Praxis, von Hand.
+2. **Nur auf Aktion, nie automatisch.** Der Entwurf entsteht im Klickhandler,
+   wird nirgends gespeichert und nie von allein geöffnet.
+3. **Inhalt wie auf dem Zettel.** Datum, Uhrzeit, Ort, behandelnde Person —
+   genau die Felder von `list_patient_appointment_slip`. Kein Status, keine
+   Verordnung, keine Diagnose, keine Adresse. Der **Betreff** nennt weder
+   Praxis noch Fach: „Ihre nächsten Termine".
+4. **Das Risiko steht an der Stelle der Entscheidung.** Vor der Übergabe zeigt
+   die Oberfläche den vollständigen Text, die Empfängeradresse und den Satz,
+   dass eine E-Mail unterwegs nicht verschlüsselt ist und der Weg den
+   ausdrücklichen Wunsch der Patient:in voraussetzt.
+5. **Vermerkt wird die Übergabe, nicht der Versand** — und zwar **vor** ihr.
+   Scheitert der Vermerk, öffnet sich keine E-Mail. Die Anwendung kann nicht
+   sehen, ob die Nachricht abgeschickt wurde; der Text sagt das, und der
+   Vermerk lässt sich am Termin zurücknehmen (CAL-012).
+6. **Längengrenze statt stillem Abschneiden.** `mailto:` hat keine
+   standardisierte Höchstlänge; die Praxisgrenze liegt beim Weg über die
+   Kommandozeile des Betriebssystems. Der Entwurf bleibt unter 1800 Zeichen,
+   kürzt dafür von hinten und benennt, welche Termine nicht mitgehen. Vermerkt
+   wird nur, was tatsächlich im Text steht.
+
+**Begründung.**
+
+Zu 1 und 2: §3.5 verlangt vor der Freischaltung eines **Dienstleisters mit
+Zugang zu Patientendaten** eine dokumentierte Prüfung (AVV, §203 StGB,
+Verschlüsselung, Zugriffskontrolle, Retention, Unterauftragnehmer). Ein
+Handoff schaltet keinen frei: Die Nachricht entsteht im Postfach, das die
+Praxis ohnehin betreibt, und geht denselben Weg wie jede andere E-Mail der
+Praxis. Es entsteht kein Empfänger, der vorher keiner war. Das ist genau die
+Konstruktion, die ADR-019 für die Navigation gewählt hat (ANN-018: „der
+Handoff übermittelt nichts aus der Anwendung … Bedingung: nur auf Aktion, nie
+automatisch"). **Das Postfach der Praxis selbst bleibt prüfpflichtig** — es
+ist nur nichts, was diese Anwendung freischaltet, sondern eine
+Organisationsfrage für die DSFA (ADR-007, B2).
+
+Zu 3 und 4: Eine Terminliste ist ein Gesundheitsdatum — sie sagt, dass jemand
+in Behandlung ist. Die DSK-Orientierungshilfe „Maßnahmen zum Schutz
+personenbezogener Daten bei der Übermittlung per E-Mail" (Stand 16.06.2021)
+verlangt für Daten mit hohem Risiko, und dazu zählen Gesundheitsdaten,
+Ende-zu-Ende-Verschlüsselung **und** qualifizierte Transportverschlüsselung.
+Anerkannt ist zugleich der Weg über den **ausdrücklichen Wunsch der
+betroffenen Person nach Aufklärung über das Risiko** — die Empfehlungen der
+Landesdatenschutzbehörden für Arztpraxen und die „Hinweise und Empfehlungen
+zur ärztlichen Schweigepflicht, Datenschutz und Datenverarbeitung in der
+Arztpraxis" (Bundesärztekammer/KBV) beschreiben ihn so. **Unsicher und
+deshalb ausdrücklich im Prüfpaket:** Dieselben Quellen sagen, dass die Pflicht
+zu einem angemessenen Schutzniveau nicht durch eine Vereinbarung zwischen
+Praxis und Patient:in **abgesenkt** werden kann. Die Antwort dieser Annahme
+ist deshalb keine Einwilligung, die alles erlaubt, sondern
+**Datenminimierung**: Was verschickt wird, ist die organisatorische
+Mindestangabe, und der Betreff verrät nichts. Empfänger ist ausschließlich die
+betroffene Person selbst; gegenüber ihr gibt es kein Offenbaren im Sinne von
+§203 StGB.
+
+Zu 5: Eine Anwendung, die den Versand behauptet, den sie nicht beobachten
+kann, wäre unehrlich — und der Vermerk wäre wertlos, sobald er einmal falsch
+war. Vor der Übergabe zu vermerken ist die restriktivere Reihenfolge (§16):
+Der Fehlerfall ist „vermerkt, aber nicht gesendet", und der ist sichtbar und
+rücknehmbar; die Umkehrung wäre „gesendet, aber nicht vermerkt" und bliebe
+unbemerkt. Dieselbe Reihenfolge gilt seit CAL-012 beim Druck.
+
+Zu 6: Ein Mailprogramm, das eine zu lange Adresse abschneidet, meldet das
+nicht. Die Patient:in bekäme weniger Termine, als die Praxis vermerkt hat —
+ein Vermerk, der eine Mitteilung behauptet, die nicht stattgefunden hat.
+
+**Was diese Annahme ausdrücklich NICHT tut.** Sie führt keine automatische
+Terminerinnerung ein, keinen Versanddienstleister, keinen SMS- oder
+Messenger-Weg und keine Massenaussendung. Ein Klick ergibt eine Nachricht an
+eine Person.
+
+**Was offen bleibt.** Der **dokumentierte Wunsch je Patient:in**. Heute steht
+die Bedingung als Satz neben dem Knopf, und die Auslösung ist auditiert
+(`appointment.notified` mit dem Weg `email`) — festgehalten ist damit, **dass**
+und **wann** übergeben wurde, nicht **dass die Patient:in es gewünscht hat**.
+Ein eigenes Kennzeichen dafür gehört zu PAT-006 (Einwilligungen) und wäre
+hier Vorbau (ADR-014). Die Datenschutzprüfung entscheidet, ob der Satz reicht
+oder ein Kennzeichen her muss.
+
+**Verankerung.** `src/features/appointments/terminmail.ts` — Kopfkommentar und
+Konstanten tragen die Kennung; dort stehen Inhalt, Betreff, Längengrenze und
+die Übergabe. Oberfläche in
+`src/features/appointments/TermineMailen.tsx`, eingebunden in
+`AppointmentSlipPage.tsx`. Tests in
+`src/features/appointments/terminmail.test.ts` (Inhalt, Kodierung,
+Kopfzeilen-Injektion, Kürzung),
+`src/features/appointments/TermineMailen.test.tsx` (Reihenfolge von Vermerk
+und Übergabe, Abbruch, fehlende Adresse) und
+`tests/e2e/authenticated/appointment-notification.spec.ts`.
+
+**Änderungspfad.** Inhalt oder Betreff ändern: `terminMailText` und
+`MAIL_BETREFF` — Aufwand `klein`. Den Weg ganz zurücknehmen: `TermineMailen`
+aus `AppointmentSlipPage.tsx` entfernen, die beiden Dateien löschen; der Weg
+`email` bleibt als Vermerk von Hand bestehen — Aufwand `klein`, keine
+Datenmigration. Einen dokumentierten Wunsch je Patient:in verlangen: ein
+Kennzeichen in den Kontaktdaten, gesetzt über `update_patient`, plus die
+Bedingung in `TermineMailen` — Aufwand `mittel`, gehört zu PAT-006. Echter
+Versand aus der Anwendung (Dienstleister, Warteschlange, Zustellstatus):
+Aufwand `groß`, eigenes Epic, setzt B15 und eine Prüfung nach §3.5 voraus.

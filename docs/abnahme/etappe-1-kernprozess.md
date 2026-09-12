@@ -1280,8 +1280,8 @@ deshalb zählt hier vor allem, was **nicht** darauf steht (ANN-039).
 
 1. Als `olivia.office@praxis.invalid` anmelden, Akte **Erika Beispiel** öffnen
    (nach CAL-007 hat sie eine Serie). Abschnitt **Nächste Termine**.
-2. Erwartung: Rechts neben der Überschrift steht **Terminzettel** — und zwar
-   nur, wenn es überhaupt einen künftigen Termin gibt.
+2. Erwartung: Rechts neben der Überschrift steht **Termine mitteilen** — und
+   zwar nur, wenn es überhaupt einen künftigen Termin gibt.
 3. Draufklicken. Erwartung: Die Seite heißt **„Ihre nächsten Termine"** und
    ist an die Patient:in gerichtet; darunter ihr Name und je Termin Datum,
    Uhrzeit, Ort und behandelnde Person.
@@ -1300,11 +1300,11 @@ deshalb zählt hier vor allem, was **nicht** darauf steht (ANN-039).
 2. Erwartung: **Keine Wortmarke** auf dem Ausdruck — das ist so gewollt
    (`marke/README.md`); auf der Rechnung kommt sie mit ABR-000.
 
-### 3. Kein Versand
+### 3. Kein SMS- und kein Messenger-Weg
 
-Erwartung: Es gibt auf der Seite **keinen** Knopf für E-Mail oder SMS, dafür
-den Satz, dass der Zettel nicht versendet wird. Ein Versandweg braucht einen
-Dienstleister und eine Einwilligung (B15).
+Erwartung: Es gibt auf der Seite **keinen** Knopf für SMS oder Messenger.
+Messenger ist nach B15 ausgeschlossen, SMS gibt es nicht. Der E-Mail-Weg
+kommt mit CAL-013 und ist ein Handoff, kein Versand aus der Anwendung.
 
 ### 4. Am Handy (~375 px)
 
@@ -1312,7 +1312,7 @@ Dienstleister und eine Einwilligung (B15).
 pnpm screenshots --breite=375 --konto=office /patienten
 ```
 
-Dann in der Akte den Terminzettel öffnen. Erwartung: Kein waagerechtes
+Dann in der Akte **Termine mitteilen** öffnen. Erwartung: Kein waagerechtes
 Scrollen, die Liste bleibt lesbar, „Terminzettel drucken" ist mit einem Daumen
 erreichbar.
 
@@ -1326,9 +1326,10 @@ Hand geschrieben zu werden.
 Vorbild ist die Terminliste von iPrax: Ein Zeichen hinter dem Termin sagt, ob
 er der Patient:in schon mitgeteilt wurde und auf welchem Weg.
 
-> **Die Anwendung verschickt nichts.** Der Vermerk hält fest, was die Praxis
-> selbst getan hat — auch „per E-Mail mitgeteilt" heißt, dass jemand die
-> Nachricht selbst geschrieben hat (B15, ANN-040).
+> **Die Auswahl am Termin ist die Nachhut.** Druck und E-Mail aus der
+> Anwendung vermerken sich seit CAL-012 und CAL-013 von selbst; hier trägt man
+> nach, was die Anwendung nicht sehen kann — das Gespräch am Tresen, den
+> Anruf — und nimmt einen Vermerk zurück (ANN-040, ANN-041).
 
 ### 1. Vermerken und sehen
 
@@ -1336,8 +1337,8 @@ er der Patient:in schon mitgeteilt wurde und auf welchem Weg.
    Abschnitt **Nächste Termine**. Erwartung: Am heutigen 09:00-Termin steht
    aus dem Seed bereits das Zeichen **Telefon**; an den übrigen steht keins.
 2. Einen Termin ohne Zeichen öffnen. Unten steht **Mitteilung an die
-   Patient:in** mit vier Kästchen und dem Satz, dass die Anwendung nichts
-   verschickt.
+   Patient:in** mit vier Kästchen und dem Satz, dass hier von Hand
+   nachgetragen und zurückgenommen wird.
 3. **Telefonisch mitgeteilt** anhaken. Erwartung: „Vermerk speichern" wird
    anklickbar — vorher nicht.
 4. Speichern. Erwartung: **Vermerk gespeichert.** Neu laden (F5): das Häkchen
@@ -1361,7 +1362,7 @@ er der Patient:in schon mitgeteilt wurde und auf welchem Weg.
 
 ### 4. Terminzettel drucken vermerkt mit
 
-1. In der Akte **Terminzettel** öffnen. Unter dem Knopf steht, dass die
+1. In der Akte **Termine mitteilen** öffnen. Unter dem Knopf steht, dass die
    aufgeführten Termine dabei als ausgehändigt vermerkt werden.
 2. **Terminzettel drucken** klicken und den Druckdialog abbrechen.
 3. Zurück in die Akte. Erwartung: **Alle** aufgeführten Termine tragen jetzt
@@ -1385,3 +1386,75 @@ brechen die Zeichen unter die Terminzeile um, statt sie zu quetschen.
 
 **Zielwert:** „Ist dieser Termin schon mitgeteilt?" ist in der Akte **ohne
 Klick** beantwortet.
+
+---
+
+## CAL-013 — Termine per E-Mail
+
+Dieselbe Liste wie auf dem Zettel, aber als fertige Nachricht im
+Mailprogramm. Der Weg ist am 2026-09-12 mit dem Nachtrag zu B15 dazugekommen.
+
+> **Die Anwendung verschickt nichts selbst.** Sie öffnet den Entwurf in
+> **Ihrem** Mailprogramm; gesendet wird dort von Ihnen. Es gibt keinen
+> Dienstleister, keinen automatischen Versand und keine Massenaussendung
+> (ANN-041).
+
+### 1. Entwurf ansehen
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte **Max Mustermann**,
+   **Termine mitteilen** öffnen.
+2. Unter dem Druckknopf steht **Termine per E-Mail senden**. Klicken.
+3. Erwartung: Ein Kasten mit **An** (die hinterlegte Adresse), **Betreff**
+   („Ihre nächsten Termine" — er nennt weder Praxis noch Fach) und dem
+   **vollständigen Text**: Anrede, je Termin Datum, Uhrzeit, Ort und
+   behandelnde Person, Schlusssatz zur rechtzeitigen Absage.
+4. Gegenprobe Inhalt: Im Text steht **kein** Status, **keine** Verordnung,
+   **keine** Diagnose und bei einem Hausbesuch **keine Adresse**.
+5. Erwartung: Darunter der Hinweis, dass eine E-Mail **nicht verschlüsselt**
+   ist und der Weg den **ausdrücklichen Wunsch** der Patient:in voraussetzt.
+
+### 2. Übergabe und Vermerk
+
+1. **E-Mail öffnen** klicken. Erwartung: Das Mailprogramm des Rechners öffnet
+   einen Entwurf mit genau diesem Text — **nicht gesendet**.
+2. In der Anwendung steht: Die E-Mail ist im Mailprogramm geöffnet und die
+   Termine sind vermerkt; wenn Sie sie doch nicht senden, nehmen Sie den
+   Vermerk am Termin zurück.
+3. Den Entwurf im Mailprogramm **verwerfen** — nichts geht hinaus.
+4. Zurück in die Akte. Erwartung: Alle Termine, die im Entwurf standen, tragen
+   jetzt das Zeichen **E-Mail**.
+5. Einen davon öffnen, **Per E-Mail mitgeteilt** abwählen, speichern.
+   Erwartung: **Vermerk zurückgenommen.** — genau der Fall aus Schritt 3.
+
+### 3. Abbrechen vermerkt nichts
+
+1. Erneut **Termine per E-Mail senden**, dann **Abbrechen**. Erwartung: Der
+   Kasten verschwindet, kein Mailprogramm, und in der Akte ändert sich kein
+   Zeichen.
+
+### 4. Ohne Adresse kein Weg
+
+1. Akte einer Person **ohne hinterlegte E-Mail-Adresse** öffnen (im Seed etwa
+   der dritte Patient) und **Termine mitteilen** aufrufen.
+2. Erwartung: **Kein** Knopf für E-Mail, stattdessen der Satz, dass die
+   Adresse fehlt und in den Stammdaten unter „Kontakt" steht.
+
+### 5. Auditlog
+
+Als `jannes.test@praxis.invalid` unter **Praxis → Sicherheit → Auditlog**
+nachsehen. Erwartung: Je Termin ein Eintrag **„Mitteilung an die Patient:in
+vermerkt"**, im Kontext der Weg `email` — **kein Nachrichtentext**, keine
+Adresse.
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann Akte → **Termine mitteilen** → **Termine per E-Mail senden**. Erwartung:
+Kein waagerechtes Scrollen, der Text bleibt lesbar, „E-Mail öffnen" und
+„Abbrechen" sind beide mit einem Daumen erreichbar.
+
+**Zielwert:** Die Termine gehen mit **drei** Taps als fertige Nachricht
+hinaus, und in der Akte steht danach ohne Zutun, dass sie mitgeteilt sind.

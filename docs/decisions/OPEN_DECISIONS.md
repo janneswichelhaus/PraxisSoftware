@@ -121,7 +121,7 @@ Feature.
 | B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | unten                                                                                                         |
 | B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **entschieden 2026-09-06** durch Jannes (Option a)            | unten; Roadmap G2, G3                                                                                         |
 | B14   | PDF-Erzeugung für Rechnungen und Tagesplan                   | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen** (P1 für ABR-EPIC-002b) | unten; Roadmap ABR-EPIC-002a, Nov 2026                                                            |
-| B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung | unten                                                                                                         |
+| B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten                                                                                                         |
 | C1    | Leistungsziffern und Office                                  | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006                                               |
 | C2    | Klinische Inhalte in organisatorischer Kommunikation         | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §10                                                                               |
 | C3    | Fail-closed gegen Patientensicherheit, Break Glass           | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
@@ -837,6 +837,41 @@ Nicht in Stufe 2.
 **Blockiert:** jede Erinnerungs- oder Buchungsfunktion. **Nicht blockiert:**
 Anrufliste, Terminzettel als PDF.
 
+#### Nachtrag 2026-09-12 — Jannes ändert seine eigene Entscheidung in einem Punkt
+
+**Wortlaut:** „Ich widerspreche möglicherweise früherer Planung, aber es ist
+ausdrücklich vorgesehen, dass die Praxis E-Mails versenden wird, welche die
+Termine beinhaltet."
+
+Die Entscheidung vom 2026-09-08 hat **zwei Dinge in einen Satz gepackt**, die
+auseinandergehören. Der Nachtrag trennt sie:
+
+| | Stand 2026-09-08 | Stand 2026-09-12 |
+|---|---|---|
+| **Automatische Erinnerung** über einen Versanddienstleister (SMS-Gateway, Mailversender) | nein | **unverändert nein** |
+| **Terminmail aus dem eigenen Postfach der Praxis**, auf Klick, Nachricht für Nachricht | nicht bedacht | **ja, gebaut als CAL-013** |
+
+**Warum das kein Widerspruch zur Begründung von 2026-09-08 ist.** Diese
+Begründung trägt auf einem Satz: „Jeder automatisierte Kanal ist ein **neuer
+Dienstleister mit einem Gesundheitsdatum**." Genau das trifft auf einen
+Handoff nicht zu. Die Anwendung übergibt einen fertigen Entwurf an das
+Mailprogramm der Praxis; gesendet wird dort von Hand, über das Postfach, das
+die Praxis ohnehin betreibt. Es entsteht kein Empfänger, der vorher keiner war
+— dieselbe Konstruktion wie beim Navigations-Handoff (ADR-019, ANN-018).
+**Die Reihenfolge „E-Mail vor SMS, Messenger ausgeschlossen" bleibt** und ist
+damit genau eingehalten: gebaut ist E-Mail, sonst nichts.
+
+**Was durch den Nachtrag NICHT entschieden ist** und weiter zu B15 gehört:
+die automatische Terminerinnerung, ein Versanddienstleister, SMS, die
+Online-Terminbuchung — und die **Einwilligung je Patient:in**. Für den
+Handoff steht die Bedingung heute als Satz an der Stelle der Entscheidung
+(„nur auf ausdrücklichen Wunsch, eine E-Mail ist nicht verschlüsselt") und die
+Auslösung ist auditiert; ein eigenes Kennzeichen für den dokumentierten Wunsch
+gehört zu PAT-006. Begründung, Quellen und Änderungspfad stehen in **ANN-041**.
+
+**Rücknahme des Nachtrags:** `klein` — `TermineMailen` aus der Zettelseite
+nehmen; es bleibt kein Datenbestand zurück.
+
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
 
 | | |
@@ -1289,3 +1324,15 @@ aus der Roadmap nicht abgeschlossen werden kann.
   bleibt in Kraft**, von ADR-018 ausdrücklich bestätigt. Gebaut wird der
   Automat in CAL-EPIC-003a — die Entscheidung ist die Vorbedingung dafür,
   nicht die Umsetzung.
+- **2026-09-12, B15 im Nachtrag geändert:** Jannes sieht ausdrücklich vor,
+  dass die Praxis Terminmails verschickt. Der Nachtrag im Abschnitt B15 trennt
+  zwei Dinge, die die Entscheidung vom 2026-09-08 in einen Satz gepackt hatte:
+  **keine automatische Erinnerung über einen Versanddienstleister** (bleibt)
+  und **die Terminmail aus dem eigenen Postfach der Praxis, auf Klick** (neu,
+  gebaut als CAL-013). Die Anwendung übergibt einen fertigen Entwurf an das
+  Mailprogramm — kein neuer Empfänger, kein automatischer Versand, dieselbe
+  Konstruktion wie der Navigations-Handoff aus ADR-019. Die Reihenfolge
+  „E-Mail vor SMS, Messenger ausgeschlossen" ist eingehalten. **Offen bleiben**
+  die automatische Erinnerung, ein Versanddienstleister, die
+  Online-Terminbuchung und die Einwilligung je Patient:in (PAT-006). Neu
+  offen: **ANN-041**.

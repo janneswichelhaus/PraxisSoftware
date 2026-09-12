@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 3.7 · Stand 2026-09-12 · **in Kraft**
+Version 3.8 · Stand 2026-09-12 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -66,10 +66,20 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 - **Als Folgeauftrag nachgereicht: CAL-012 Mitteilungsvermerk am Termin**
   (2026-09-12, Vorbild iPrax). Hinter jedem Termin der Akte steht, ob und auf
   welchem Weg er mitgeteilt wurde; der Vermerk verfällt mit jeder
-  Terminänderung. **Die Anwendung verschickt weiterhin nichts** — B15 bleibt
-  unberührt. **ANN-040 ist neu und `Datenschutz`**: Er gehört in die Anfrage
-  B2, zusammen mit der Frage, ob der Weg „per E-Mail mitgeteilt" in der
-  Auswahl bleiben soll.
+  Terminänderung. **ANN-040 ist neu und `Datenschutz`**: Er gehört in die
+  Anfrage B2, zusammen mit der Frage, ob der Weg „per E-Mail mitgeteilt" in
+  der Auswahl bleiben soll.
+- **Als Folgeauftrag nachgereicht: CAL-013 Termine per E-Mail** (2026-09-12).
+  Jannes hat den Versand von Terminmails ausdrücklich vorgesehen und damit
+  seine eigene vorläufige Entscheidung zu **B15** in einem Punkt geändert
+  (Nachtrag dort). Gebaut ist ein **Handoff**: Die Anwendung baut aus den
+  Terminen des Zettels einen fertigen Entwurf und übergibt ihn dem
+  Mailprogramm der Praxis; gesendet wird dort von Hand. Kein Dienstleister,
+  keine automatische Erinnerung, kein SMS- oder Messenger-Weg. Der Vermerk
+  entsteht dabei von allein — wie beim Druck seit CAL-012. **ANN-041 ist neu
+  und `Datenschutz`**: Er gehört in die Anfrage B2, zusammen mit der Frage,
+  ob der Hinweis an der Stelle der Entscheidung reicht oder ein dokumentierter
+  Wunsch je Patient:in verlangt wird (PAT-006).
 - **E12 Punkt 3 und 4 sind am 2026-09-12 vorläufig entschieden: der Fahrpuffer
   kommt erst mit MAP-006.** Kein pauschaler Mindestabstand, keine von Hand
   gepflegten Fahrminuten. **CAL-010b entfällt als eigene Story** und geht in
@@ -876,6 +886,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | CAL-EPIC-003a (CAL-008a bis CAL-008d, CAL-009)           | fertig | 2026-09-12     | `42f9fc3`, `262b5cd`, `718bd59`, `6eccadb`, `6ed26e5`, `6cd2c6b`    |               |
 | CAL-EPIC-003b (CAL-010a, CAL-007, CAL-011)               | fertig | 2026-09-12     | `b2626ae`, `89ab30b`, `acddcc6`                                     |               |
 | CAL-012 Mitteilungsvermerk am Termin                     | fertig | 2026-09-12     | Folgeauftrag zu CAL-EPIC-003b                                       |               |
+| CAL-013 Termine per E-Mail (Handoff)                     | fertig | 2026-09-12     | Folgeauftrag zu CAL-012; B15-Nachtrag, ANN-041                      |               |
 
 ---
 
@@ -883,6 +894,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.8     | 2026-09-12 | **B15 im Nachtrag geändert und CAL-013 gebaut.** Jannes hat ausdrücklich vorgesehen, dass die Praxis Terminmails verschickt, und damit seine eigene vorläufige Entscheidung vom 2026-09-08 in **einem** Punkt geändert. Der Nachtrag in `OPEN_DECISIONS.md` B15 trennt, was dort in einem Satz stand: **keine automatische Erinnerung über einen Versanddienstleister** (unverändert) und **die Terminmail aus dem eigenen Postfach, auf Klick** (neu). **Neu gebaut: CAL-013 Termine per E-Mail** — die Anwendung baut aus den Terminen des Zettels einen fertigen Entwurf und übergibt ihn dem Mailprogramm der Praxis; gesendet wird dort von Hand. Inhalt und Betreff sind auf das Organisatorische begrenzt, der Hinweis auf die fehlende Verschlüsselung steht an der Stelle der Entscheidung, und vermerkt wird **vor** der Übergabe und nur, was auch im Text steht. Aus dem Knopf „Terminzettel" wird „Termine mitteilen". Neu offen: **ANN-041** (`Datenschutz`, Prüfpaket) — offen bleibt der dokumentierte Wunsch je Patient:in (PAT-006). |
 | 3.7     | 2026-09-12 | **ANN-037 bis ANN-039 von Jannes bestätigt** — alle drei wie empfohlen. ANN-037 und ANN-038 sind `Praxisprozess` und damit **erledigt**; ANN-039 (`Datenschutz`) bleibt im Prüfpaket und gehört in die Anfrage B2. **E12 Punkt 3 und 4 vorläufig entschieden: der Fahrpuffer kommt erst mit MAP-006** — kein pauschaler Mindestabstand, keine von Hand gepflegten Fahrminuten. **CAL-010b entfällt** als eigene Story und geht samt der Aufrundungsregel aus §8.1 in MAP-006 auf; offen bleiben allein E12 Punkt 1 und 2. **Neu gebaut: CAL-012 Mitteilungsvermerk am Termin** (Folgeauftrag von Jannes, Vorbild iPrax): In der Terminliste der Akte steht hinter jedem Termin, ob und auf welchem Weg er mitgeteilt wurde — persönlich, telefonisch, Terminzettel, E-Mail. Der Vermerk verfällt automatisch mit jeder Terminänderung; der Druck des Terminzettels vermerkt alle aufgeführten Termine. **Die Anwendung verschickt weiterhin nichts** (B15 unverändert). Neu offen: **ANN-040** (`Datenschutz`, Prüfpaket). |
 | 3.6     | 2026-09-12 | **CAL-EPIC-003b fertig** (drei Stories): Das 60-Minuten-Terminfenster aus §8.1 wird serverseitig durchgesetzt — beide Schreibpfade, abgeleitetes Ende im Formular, Bestandstermine bleiben gültig und verschiebbar (CAL-010a, ANN-037) · Eine Verordnung wird in **einem** Vorgang zur Terminserie: Anzahl aus dem offenen Kontingent, drei Rhythmen, serverseitige Konfliktprüfung je Zeile, Einzelabweichung, alles oder nichts; der Termin kennt seine Verordnung (CAL-007, ANN-038) · Terminzettel als Druckansicht, nur Druck und kein Versand (CAL-011, `IDEA-PRX-006` überführt, ANN-039). **CAL-010b (Fahrpuffer) bleibt liegen** — E12 Punkt 3 und 4 sind offen; ein pauschaler Wert wäre neben MAP-004 ein zweiter, schlechterer Mechanismus. **Nächster Loop: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
 | 3.5     | 2026-09-12 | **ANN-034 bis ANN-036 von Jannes bestätigt** — alle drei wie empfohlen. ANN-034 (Absagegrund als codierte Auswahl ohne Freitext) und ANN-035 (No-show unter der Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung) wechseln auf `entschieden (Jannes)` und bleiben als `Datenschutz` beziehungsweise `Recht` **im Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die Datenschutzprüfung nicht (§15.1 Punkt 5). Beide gehören damit in die Anfrage B2. ANN-036 (`documented` auch aus `confirmed`) ist `Technik` und **erledigt**; er kommt nur zurück, wenn ABR-003 `invoiced` denselben Weg gehen lässt. **Reihenfolge unverändert — CAL-EPIC-003b bleibt der nächste Loop**; CAL-EPIC-003a wartet nur noch auf die Abnahme am eigenen Rechner. |
