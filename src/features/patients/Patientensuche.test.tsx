@@ -107,7 +107,10 @@ describe('Patientensuche', () => {
     await user.type(screen.getByRole('combobox', { name: 'Patient:in suchen' }), 'mus');
     await user.click(await screen.findByRole('option', { name: /Max Mustermann/ }));
 
-    expect(navigate).toHaveBeenCalledWith(`/patienten/${MAX.id}`);
+    // Mit Rueckweg auf die Seite, von der aus gesucht wurde (UX-012).
+    expect(navigate).toHaveBeenCalledWith(
+      `/patienten/${MAX.id}?zurueck=${encodeURIComponent('/')}`,
+    );
   });
 
   it('ist mit der Tastatur bedienbar: Pfeil runter, Eingabe', async () => {
@@ -127,7 +130,10 @@ describe('Patientensuche', () => {
     );
 
     await user.keyboard('{Enter}');
-    expect(navigate).toHaveBeenCalledWith(`/patienten/${MAX.id}`);
+    // Mit Rueckweg auf die Seite, von der aus gesucht wurde (UX-012).
+    expect(navigate).toHaveBeenCalledWith(
+      `/patienten/${MAX.id}?zurueck=${encodeURIComponent('/')}`,
+    );
   });
 
   it('schliesst die Liste mit Escape, ohne zu navigieren', async () => {

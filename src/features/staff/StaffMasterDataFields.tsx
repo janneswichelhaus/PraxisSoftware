@@ -2,6 +2,7 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import type { Location } from '@/features/appointments/api';
 import type { StaffFeld } from './api';
+import { staffFeldId } from './mitarbeiterfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 
 /**
@@ -41,6 +42,7 @@ export function StaffMasterDataFields({
           <Field
             label="Vorname *"
             name="given_name"
+            feldId={staffFeldId('given_name')}
             autoComplete="off"
             required
             value={werte.given_name}
@@ -50,6 +52,7 @@ export function StaffMasterDataFields({
           <Field
             label="Nachname *"
             name="family_name"
+            feldId={staffFeldId('family_name')}
             autoComplete="off"
             required
             value={werte.family_name}
@@ -67,6 +70,7 @@ export function StaffMasterDataFields({
           <Field
             label="Dienstliche E-Mail"
             name="work_email"
+            feldId={staffFeldId('work_email')}
             type="email"
             autoComplete="off"
             value={werte.work_email}
@@ -76,6 +80,7 @@ export function StaffMasterDataFields({
           <Field
             label="Diensttelefon"
             name="work_phone"
+            feldId={staffFeldId('work_phone')}
             type="tel"
             autoComplete="off"
             value={werte.work_phone}
@@ -85,6 +90,7 @@ export function StaffMasterDataFields({
           <Select
             label="Hauptstandort"
             name="primary_location_id"
+            feldId={staffFeldId('primary_location_id')}
             value={werte.primary_location_id}
             error={fehler.primary_location_id}
             onChange={(event) => onChange('primary_location_id', event.target.value)}
@@ -115,6 +121,7 @@ export function StaffMasterDataFields({
             <Field
               label="Geburtsdatum"
               name="date_of_birth"
+              feldId={staffFeldId('date_of_birth')}
               type="date"
               value={werte.date_of_birth}
               error={fehler.date_of_birth}
@@ -123,6 +130,7 @@ export function StaffMasterDataFields({
             <Field
               label="Private E-Mail"
               name="private_email"
+              feldId={staffFeldId('private_email')}
               type="email"
               autoComplete="off"
               value={werte.private_email}
@@ -132,6 +140,7 @@ export function StaffMasterDataFields({
             <Field
               label="Privattelefon"
               name="private_phone"
+              feldId={staffFeldId('private_phone')}
               type="tel"
               autoComplete="off"
               value={werte.private_phone}
@@ -141,6 +150,7 @@ export function StaffMasterDataFields({
             <Field
               label="Straße und Hausnummer"
               name="street"
+              feldId={staffFeldId('street')}
               autoComplete="off"
               value={werte.street}
               error={fehler.street}
@@ -150,6 +160,7 @@ export function StaffMasterDataFields({
               <Field
                 label="PLZ"
                 name="postal_code"
+                feldId={staffFeldId('postal_code')}
                 inputMode="numeric"
                 autoComplete="off"
                 value={werte.postal_code}
@@ -159,6 +170,7 @@ export function StaffMasterDataFields({
               <Field
                 label="Ort"
                 name="city"
+                feldId={staffFeldId('city')}
                 autoComplete="off"
                 value={werte.city}
                 error={fehler.city}

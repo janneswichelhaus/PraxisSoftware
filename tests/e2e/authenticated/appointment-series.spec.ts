@@ -74,7 +74,7 @@ test.describe('CAL-007: Terminserie', () => {
 
   test('ist aus der Akte an der Verordnung erreichbar', async ({ page }) => {
     await anmelden(page, KONTEN.office);
-    await page.goto(`/patienten/${PATIENTEN.erika}`);
+    await page.goto(`/patienten/${PATIENTEN.erika}/verordnungen`);
 
     await page.getByRole('link', { name: 'Terminserie anlegen' }).first().click();
     await expect(page).toHaveURL(/\/verordnungen\/[0-9a-f-]{36}\/serie$/);
@@ -103,10 +103,14 @@ test.describe('CAL-007: Terminserie', () => {
     await expect(page.getByLabel('Datum 3')).toHaveValue(laufTag(15));
 
     await page.getByRole('button', { name: '3 Termine anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Serie trotzdem anlegen', /\/patienten\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(
+      page,
+      'Serie trotzdem anlegen',
+      /\/patienten\/[0-9a-f-]{36}\/termine$/,
+    );
 
-    // Zurück in der Akte, und die drei Termine stehen unter „Nächste Termine".
-    await expect(page).toHaveURL(`/patienten/${PATIENTEN.erika}`);
+    // Zurück in der Akte, im Terminbereich - dort stehen die drei Termine.
+    await expect(page).toHaveURL(`/patienten/${PATIENTEN.erika}/termine`);
 
     // Das verplante Kontingent ist auf der Serienseite nachgeführt: drei
     // Termine weniger offen als vorher (CAL-007, ANN-038).

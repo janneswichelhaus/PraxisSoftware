@@ -95,12 +95,35 @@ describe('TermineMailen', () => {
     expect(screen.getByText(/ausdrücklich wünscht/)).toBeInTheDocument();
   });
 
-  it('vermerkt zuerst und uebergibt dann ans Mailprogramm', async () => {
+  // ---------------------------------------------------------------------------
+  // UX-012 (ANN-041 Fassung 2): Uebergeben bereitet vor, die Bestaetigung
+  // teilt mit. Die Anwendung sieht die Uebergabe ans Mailprogramm, nicht den
+  // Versand - ein im Mailprogramm verworfener Entwurf hinterliess vorher eine
+  // Mitteilung, die nie stattgefunden hat.
+  // ---------------------------------------------------------------------------
+  it('uebergibt ans Mailprogramm und vermerkt dabei noch nichts', async () => {
     const user = userEvent.setup();
     rendern();
 
     await user.click(screen.getByRole('button', { name: 'Termine per E-Mail senden' }));
     await user.click(screen.getByRole('button', { name: 'E-Mail öffnen' }));
+
+    await waitFor(() => expect(mailOeffnen).toHaveBeenCalledTimes(1));
+    expect(addAppointmentNotification).not.toHaveBeenCalled();
+
+    const url = mailOeffnen.mock.calls[0]?.[0] as string;
+    expect(url.startsWith('mailto:max@example.invalid?')).toBe(true);
+    expect(decodeURIComponent(url)).toContain('Guten Tag Max Mustermann');
+    expect(screen.getByText(/Wurde sie gesendet\?/)).toBeInTheDocument();
+  });
+
+  it('vermerkt erst auf die Bestaetigung hin', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await user.click(screen.getByRole('button', { name: 'Termine per E-Mail senden' }));
+    await user.click(screen.getByRole('button', { name: 'E-Mail öffnen' }));
+    await user.click(await screen.findByRole('button', { name: 'Ja, als mitgeteilt vermerken' }));
 
     await waitFor(() =>
       expect(addAppointmentNotification).toHaveBeenCalledWith(
@@ -108,14 +131,24 @@ describe('TermineMailen', () => {
         'email',
       ),
     );
-    await waitFor(() => expect(mailOeffnen).toHaveBeenCalledTimes(1));
-
-    const url = mailOeffnen.mock.calls[0]?.[0] as string;
-    expect(url.startsWith('mailto:max@example.invalid?')).toBe(true);
-    expect(decodeURIComponent(url)).toContain('Guten Tag Max Mustermann');
+    expect(
+      await screen.findByText(/sind als „Per E-Mail mitgeteilt" vermerkt/),
+    ).toBeInTheDocument();
   });
 
-  it('oeffnet nichts, wenn der Vermerk scheitert', async () => {
+  it('vermerkt nichts, wenn die E-Mail doch nicht gesendet wurde', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await user.click(screen.getByRole('button', { name: 'Termine per E-Mail senden' }));
+    await user.click(screen.getByRole('button', { name: 'E-Mail öffnen' }));
+    await user.click(await screen.findByRole('button', { name: 'Nein, nichts vermerken' }));
+
+    expect(addAppointmentNotification).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByText(/Wurde sie gesendet\?/)).not.toBeInTheDocument());
+  });
+
+  it('meldet einen gescheiterten Vermerk, ohne ihn zu behaupten', async () => {
     addAppointmentNotification.mockRejectedValue(
       new Error('Der Vermerk konnte nicht gespeichert werden.'),
     );
@@ -124,22 +157,9 @@ describe('TermineMailen', () => {
 
     await user.click(screen.getByRole('button', { name: 'Termine per E-Mail senden' }));
     await user.click(screen.getByRole('button', { name: 'E-Mail öffnen' }));
+    await user.click(await screen.findByRole('button', { name: 'Ja, als mitgeteilt vermerken' }));
 
-    expect(
-      await screen.findByText(/Es wurde nichts geöffnet und nichts vermerkt/),
-    ).toBeInTheDocument();
-    expect(mailOeffnen).not.toHaveBeenCalled();
-  });
-
-  it('sagt nach der Uebergabe, was vermerkt ist und wie man es zuruecknimmt', async () => {
-    const user = userEvent.setup();
-    rendern();
-
-    await user.click(screen.getByRole('button', { name: 'Termine per E-Mail senden' }));
-    await user.click(screen.getByRole('button', { name: 'E-Mail öffnen' }));
-
-    expect(await screen.findByText(/im Mailprogramm geöffnet/)).toBeInTheDocument();
-    expect(screen.getByText(/Vermerk am Termin zurück/)).toBeInTheDocument();
+    expect(await screen.findByText(/Es wurde nichts vermerkt/)).toBeInTheDocument();
   });
 
   it('laesst den Entwurf abbrechen, ohne etwas zu vermerken', async () => {
@@ -187,6 +207,7 @@ describe('TermineMailen', () => {
 
     await user.click(screen.getByRole('button', { name: 'Termine per E-Mail senden' }));
     await user.click(screen.getByRole('button', { name: 'E-Mail öffnen' }));
+    await user.click(await screen.findByRole('button', { name: 'Ja, als mitgeteilt vermerken' }));
 
     await waitFor(() => expect(addAppointmentNotification).toHaveBeenCalledTimes(1));
     const vermerkt = addAppointmentNotification.mock.calls[0]?.[0] as string[];

@@ -56,6 +56,34 @@ describe('NewStaffMemberPage', () => {
     expect(createStaffMember).not.toHaveBeenCalled();
   });
 
+  it('fuehrt aus der Fehlerzusammenfassung ins Feld', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewStaffMemberPage user={testUser(['owner'])} />);
+
+    await user.click(screen.getByRole('button', { name: 'Mitarbeiter:in anlegen' }));
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Nachname: Nachname ist erforderlich.');
+
+    await user.click(screen.getByRole('link', { name: 'Nachname: Nachname ist erforderlich.' }));
+    expect(screen.getByLabelText('Nachname *')).toHaveFocus();
+  });
+
+  it('nennt dem Office keine Privatangabe, die es gar nicht sieht', async () => {
+    // Ohne Privatzugriff fehlt der Abschnitt (ANN-024); ein Eintrag dorthin
+    // fuehrte ins Leere.
+    const user = userEvent.setup();
+    renderWithProviders(<NewStaffMemberPage user={testUser(['office'])} />);
+
+    expect(screen.queryByLabelText('Private E-Mail')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Mitarbeiter:in anlegen' }));
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Vorname: Vorname ist erforderlich.');
+    expect(kasten).not.toHaveTextContent('Private E-Mail');
+    expect(kasten).not.toHaveTextContent('Geburtsdatum');
+  });
+
   it('legt an und leitet auf den neuen Datensatz weiter', async () => {
     const user = userEvent.setup();
     renderWithProviders(<NewStaffMemberPage user={testUser(['owner'])} />);

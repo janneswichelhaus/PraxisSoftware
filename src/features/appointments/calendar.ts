@@ -108,6 +108,18 @@ export interface KalenderParameter {
   person: string | null;
   standort: string | null;
   status: StatusFilter;
+  /**
+   * Eingrenzung auf eine Patient:in (AKTE-003).
+   *
+   * Der Weg aus der Akte in den Kalender: „zeig mir diese Person im Kalender".
+   * Anders als die übrigen Filter grenzt er nicht den Lesepfad ein, sondern
+   * nur, was im Gitter hervorgehoben bleibt - der Kalender liest ohnehin
+   * ausschließlich die Termine der eigenen Praxis (ADR-004).
+   *
+   * In der Adresse steht die Kennung, niemals der Name: Adressen landen in
+   * Verläufen und Protokollen (ADR-011).
+   */
+  patient: string | null;
   /** Höhe einer Stunde in Pixeln (CAL-011). */
   zoom: Zoomstufe;
 }
@@ -120,6 +132,7 @@ export function leseParameter(suche: URLSearchParams, heute: string): KalenderPa
   const person = suche.get('person');
   const standort = suche.get('standort');
   const status = suche.get('status');
+  const patient = suche.get('patient');
   const zoom = Number(suche.get('zoom'));
 
   return {
@@ -130,6 +143,7 @@ export function leseParameter(suche: URLSearchParams, heute: string): KalenderPa
     person: person && UUID.test(person) ? person : null,
     standort: standort && UUID.test(standort) ? standort : null,
     status: STATUS_FILTER.includes(status as StatusFilter) ? (status as StatusFilter) : 'active',
+    patient: patient && UUID.test(patient) ? patient : null,
     zoom: istZoomstufe(zoom) ? zoom : ZOOM_STANDARD,
   };
 }
@@ -148,6 +162,7 @@ export function schreibeParameter(p: KalenderParameter): URLSearchParams {
   if (p.person) suche.set('person', p.person);
   if (p.standort) suche.set('standort', p.standort);
   if (p.status !== 'active') suche.set('status', p.status);
+  if (p.patient) suche.set('patient', p.patient);
   // Die Zoomstufe reist mit, sobald sie von der Voreinstellung abweicht: sie
   // ueberlebt damit das Neuladen, ohne jede Adresse zu verlaengern.
   if (p.zoom !== ZOOM_STANDARD) suche.set('zoom', String(p.zoom));

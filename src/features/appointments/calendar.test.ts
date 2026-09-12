@@ -106,6 +106,7 @@ describe('Query-Parameter', () => {
       person: '55555555-5555-4555-8555-000000000002',
       standort: '33333333-3333-4333-8333-000000000001',
       status: 'all',
+      patient: null,
       zoom: ZOOM_STANDARD,
     });
   });
@@ -119,6 +120,8 @@ describe('Query-Parameter', () => {
       // Standard ist 'active': geplante UND abgeschlossene Termine belegen den
       // Tag, ein abgehakter Termin darf nicht aus der Ansicht fallen (CAL-004).
       status: 'active',
+      // Der Patientenfilter kommt nur aus der Akte mit (AKTE-003).
+      patient: null,
       zoom: ZOOM_STANDARD,
     });
   });
@@ -143,6 +146,7 @@ describe('Query-Parameter', () => {
       person: null,
       standort: null,
       status: 'active',
+      patient: null,
       zoom: ZOOM_STANDARD,
     });
     expect(suche.toString()).toBe('ansicht=woche&datum=2027-05-12');
@@ -155,6 +159,7 @@ describe('Query-Parameter', () => {
       person: '55555555-5555-4555-8555-000000000002',
       standort: null,
       status: 'all',
+      patient: null,
       zoom: ZOOM_STANDARD,
     });
     expect(suche.get('person')).toBe('55555555-5555-4555-8555-000000000002');
@@ -169,6 +174,7 @@ describe('Query-Parameter', () => {
       person: '55555555-5555-4555-8555-000000000002',
       standort: '33333333-3333-4333-8333-000000000001',
       status: 'all' as const,
+      patient: '66666666-6666-4666-8666-000000000001',
       zoom: 144 as const,
     };
     expect(leseParameter(schreibeParameter(original), HEUTE)).toEqual(original);

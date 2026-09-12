@@ -108,7 +108,7 @@ vi.mock('@/features/account/api', async (importOriginal) => ({
 
 const { PatientMasterDataFields } = await import('@/features/patients/PatientMasterDataFields');
 const { PrescriptionFormFields } = await import('@/features/prescriptions/PrescriptionFormFields');
-const { PatientPrescriptions } = await import('@/features/prescriptions/PatientPrescriptions');
+const { Verordnungsbereich } = await import('@/features/prescriptions/PatientPrescriptionsPage');
 const { Rueckfrage } = await import('@/components/ui/Rueckfrage');
 const { Section } = await import('@/components/ui/Section');
 const { DetailList, DetailRow } = await import('@/components/ui/DetailList');
@@ -266,7 +266,7 @@ describe('Barrierefreiheit der Kernformulare', () => {
     const { container } = renderWithProviders(
       <main>
         <h1>Max Mustermann</h1>
-        <PatientPrescriptions patient={testPatient()} user={testUser(['therapist'])} />
+        <Verordnungsbereich patient={testPatient()} user={testUser(['therapist'])} />
       </main>,
     );
     await pruefeBarrierefreiheit(container);

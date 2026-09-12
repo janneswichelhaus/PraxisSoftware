@@ -7,6 +7,7 @@ import {
   arbeitszeitBestaetigen,
   rpcAufrufen,
   tagImFenster,
+  terminLinkWahl,
   zugriffstoken,
 } from './helpers';
 
@@ -76,14 +77,14 @@ test.describe('DOK-003: Dokumentation in der Akte', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await finalisierterEintrag(page, laufTag());
 
-    await page.goto(`/patienten/${PATIENTEN.max}`);
+    await page.goto(`/patienten/${PATIENTEN.max}/verlauf`);
     const akte = page.getByRole('region', { name: 'Behandlungsdokumentation' });
     await expect(akte).toBeVisible();
 
     // Die Zeile genau dieses Termins - andere Laeufe hinterlassen weitere.
     const zeile = akte
       .getByRole('listitem')
-      .filter({ has: page.locator(`a[href="/termine/${terminId}"]`) });
+      .filter({ has: page.locator(terminLinkWahl(terminId)) });
     await expect(zeile.getByText(ENTWURF)).toBeVisible();
     await expect(zeile.getByText('Finalisiert', { exact: true })).toBeVisible();
     await expect(zeile.getByText(/Finalisiert am .* von Anna Beispiel/)).toBeVisible();
@@ -94,13 +95,13 @@ test.describe('DOK-003: Dokumentation in der Akte', () => {
 
     await page.getByRole('button', { name: 'Abmelden' }).click();
     await anmelden(page, KONTEN.office);
-    await page.goto(`/patienten/${PATIENTEN.max}`);
+    await page.goto(`/patienten/${PATIENTEN.max}/verlauf`);
 
     const nachweis = page.getByRole('region', { name: 'Behandlungsnachweis' });
     await expect(nachweis).toBeVisible();
     const nachweisZeile = nachweis
       .getByRole('listitem')
-      .filter({ has: page.locator(`a[href="/termine/${terminId}"]`) });
+      .filter({ has: page.locator(terminLinkWahl(terminId)) });
     await expect(nachweisZeile.getByText(/Dokumentation finalisiert am/)).toBeVisible();
 
     // Kein klinischer Inhalt, keine klinische Sicht (PROJECT_PRINCIPLES.md 4.3).

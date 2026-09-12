@@ -206,6 +206,8 @@ describe('AppointmentDetailPage', () => {
         rendern([rolle]);
         await screen.findByText('Anna Beispiel');
 
+        // Ohne eigenen Rueckweg bleibt die Adresse schlicht: Die Bearbeitung
+        // kehrt ohnehin zum Termin zurueck (UX-012).
         expect(screen.getByRole('link', { name: 'Bearbeiten' })).toHaveAttribute(
           'href',
           `/termine/${TERMIN_ID}/bearbeiten`,
@@ -533,10 +535,22 @@ describe('AppointmentDetailPage', () => {
     });
   });
 
-  it('verlinkt zurueck in die Patientenakte', async () => {
+  // UX-012: Der Name im Kopf ist der Weg in die Akte - und er nimmt den Weg
+  // zurueck zu diesem Termin mit.
+  it('verlinkt den Namen im Kopf in die Patientenakte, mit Rueckweg zum Termin', async () => {
     rendern();
     const link = await screen.findByRole('link', { name: 'Berta Bestand' });
-    expect(link).toHaveAttribute('href', `/patienten/${PATIENT_ID}`);
+    expect(link).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT_ID}?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
+    );
+  });
+
+  it('fuehrt den Namen nur einmal als Link - die Zeile darunter bleibt Text', async () => {
+    rendern();
+    await screen.findByText('Anna Beispiel');
+
+    expect(screen.getAllByRole('link', { name: 'Berta Bestand' })).toHaveLength(1);
   });
 
   it('zeigt keine klinischen Angaben', async () => {
@@ -614,7 +628,9 @@ describe('AppointmentDetailPage', () => {
       const link = await screen.findByRole('link', { name: 'Folgetermin anlegen' });
       expect(link).toHaveAttribute(
         'href',
-        `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09%3A00&ende=10%3A00&art=home_visit&person=55555555-5555-4555-8555-000000000002`,
+        `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09%3A00&ende=10%3A00&art=home_visit&person=55555555-5555-4555-8555-000000000002&zurueck=${encodeURIComponent(
+          `/termine/${TERMIN_ID}`,
+        )}`,
       );
     });
 

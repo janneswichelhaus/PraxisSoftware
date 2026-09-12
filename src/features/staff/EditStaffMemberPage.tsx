@@ -4,6 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import { fetchLocations } from '@/features/appointments/api';
 import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/session/types';
 import {
@@ -17,6 +19,7 @@ import {
   type StaffMember,
 } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
+import { STAFF_BESCHRIFTUNG, staffFeldId, staffReihenfolge } from './mitarbeiterfelder';
 
 /**
  * Formular für die Änderung der Mitarbeiterstammdaten.
@@ -96,6 +99,15 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
             />
           </div>
         ) : null}
+
+        <Fehlerzusammenfassung
+          fehler={alsFormularfehler(
+            staffReihenfolge(privat),
+            STAFF_BESCHRIFTUNG,
+            fehler,
+            staffFeldId,
+          )}
+        />
 
         <StaffMasterDataFields
           werte={werte}

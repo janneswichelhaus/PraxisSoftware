@@ -76,6 +76,7 @@ export const TAGESFENSTER = {
   appointmentSeries: 11,
   // 12 ist wieder frei: `appointment-notification` rechnet seit 2026-09-12 im
   // Nahfenster (siehe unten) und braucht kein eigenes Tagesfenster mehr.
+  patientRecordWorkspace: 13,
 } as const;
 
 /**
@@ -240,6 +241,21 @@ export async function arbeitszeitBestaetigen(
 }
 
 /**
+ * CSS-Auswahl fuer den Weg zu EINEM bestimmten Termin.
+ *
+ * Seit UX-012b traegt ein Weg seinen Rueckweg in der Adresse: Aus
+ * `/termine/<id>` wird im Kalender und in der Akte
+ * `/termine/<id>?zurueck=<pfad>`. Das **Ziel** ist dasselbe geblieben, nur die
+ * Adresse ist laenger - ein Vergleich auf Gleichheit traf deshalb nichts mehr.
+ *
+ * Geprueft wird weiterhin die genaue Kennung: Entweder endet die Adresse dort,
+ * oder es folgt das Fragezeichen. Ein anderer Termin passt damit nicht.
+ */
+export function terminLinkWahl(appointmentId: string): string {
+  return `a[href="/termine/${appointmentId}"], a[href^="/termine/${appointmentId}?"]`;
+}
+
+/**
  * Die Kachel EINES bestimmten Termins im Kalender.
  *
  * Bewusst ueber die Zieladresse und nicht ueber den Patientennamen: alle
@@ -248,7 +264,7 @@ export async function arbeitszeitBestaetigen(
  * Namensfilter traf dann zwei Kacheln und brach im Strict Mode ab.
  */
 export function terminKachel(page: Page, appointmentId: string): Locator {
-  return page.locator(`a[href="/termine/${appointmentId}"]`);
+  return page.locator(terminLinkWahl(appointmentId));
 }
 
 /**

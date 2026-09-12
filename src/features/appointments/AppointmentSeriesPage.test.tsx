@@ -147,6 +147,43 @@ describe('AppointmentSeriesPage', () => {
     expect(await screen.findByText('Alle 3 Termine sind planbar.')).toBeInTheDocument();
   });
 
+  /**
+   * UX-012: Ein Befund gilt fuer den Vorschlag, zu dem er gehoert.
+   *
+   * Die Pruefung laeuft ueber den Server. Wer in dieser Zeit ein Datum aendert,
+   * bekam vorher die Antwort auf die ALTE Liste zurueck - und weil nur die
+   * Laenge verglichen wurde, galt sie als gueltiger Befund fuer die neue.
+   */
+  it('verwirft einen Befund, der zu einem ueberholten Vorschlag gehoert', async () => {
+    const user = userEvent.setup();
+    let antworten: (werte: (string | null)[]) => void = () => undefined;
+    checkAppointmentSlots.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          antworten = resolve;
+        }),
+    );
+
+    rendern();
+    await formularAbwarten();
+    await vorschlagen(user);
+
+    // Waehrend die Pruefung laeuft, wandert der zweite Termin.
+    await user.clear(screen.getByLabelText('Datum 2'));
+    await user.type(screen.getByLabelText('Datum 2'), '2027-05-20');
+
+    // Jetzt erst antwortet der Server - auf den alten Vorschlag.
+    antworten([null, null, null]);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Die Liste wurde geändert und ist noch nicht geprüft.'),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByText('Alle 3 Termine sind planbar.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3 Termine anlegen' })).toBeDisabled();
+  });
+
   it('legt die Serie an und kehrt in die Akte zurück', async () => {
     const user = userEvent.setup();
     rendern();
@@ -168,8 +205,10 @@ describe('AppointmentSeriesPage', () => {
       ],
       false,
     );
+    // In den Terminbereich der Akte, nicht auf die Übersicht: Dort stehen die
+    // eben angelegten Termine (AKTE-003).
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}`, { replace: true }),
+      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/termine`, { replace: true }),
     );
   });
 

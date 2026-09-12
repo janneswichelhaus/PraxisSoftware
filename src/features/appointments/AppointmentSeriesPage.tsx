@@ -83,8 +83,21 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
 
   /** Die Liste, sobald ein Vorschlag steht. `null` heißt „noch keiner". */
   const [liste, setListe] = useState<Serientermin[] | null>(null);
-  /** Befunde zur aktuellen Liste. `null` heißt „noch nicht geprüft". */
-  const [befunde, setBefunde] = useState<(SlotConflict | null)[] | null>(null);
+  /**
+   * Befunde **samt dem Vorschlag, zu dem sie gehören**. `null` heißt „noch
+   * nicht geprüft".
+   *
+   * Der Stempel ist der Kern (UX-012): Eine Prüfung läuft über den Server und
+   * braucht ihre Zeit. Wer in dieser Zeit ein Datum ändert, bekam vorher die
+   * Antwort auf die **alte** Liste zurück — und weil nur die Länge verglichen
+   * wurde, galt sie als gültiger Befund für die neue. „Alle drei Termine sind
+   * planbar" konnte damit eine Aussage über eine Liste sein, die es nicht mehr
+   * gab. Der Stempel verwirft eine überholte Antwort, statt sie einzusetzen.
+   */
+  const [befunde, setBefunde] = useState<{
+    fuer: string;
+    werte: (SlotConflict | null)[];
+  } | null>(null);
   const [formFehler, setFormFehler] = useState<string | null>(null);
 
   const patient = useQuery({
@@ -130,10 +143,28 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
     if (offen > 0) setAnzahl(Math.min(offen, SERIE_HOECHSTZAHL));
   }, [offen]);
 
+  /**
+   * Wofür ein Befund gilt: die behandelnde Person und jede Zeile der Liste.
+   *
+   * Beides geht in die serverseitige Prüfung ein — eine andere Person hat
+   * andere Arbeitszeiten und andere Überschneidungen.
+   */
+  function stempel(person: string, termine: Serientermin[]): string {
+    return [person, ...termine.map((t) => `${t.datum} ${t.beginn}`)].join('|');
+  }
+
   const pruefung = useMutation({
-    mutationFn: (termine: Serientermin[]) => checkAppointmentSlots(staffMemberId, termine),
-    onSuccess: setBefunde,
+    mutationFn: (auftrag: { person: string; termine: Serientermin[] }) =>
+      checkAppointmentSlots(auftrag.person, auftrag.termine),
+    onSuccess: (werte, auftrag) =>
+      setBefunde({ fuer: stempel(auftrag.person, auftrag.termine), werte }),
   });
+
+  /** Startet eine Prüfung für genau diesen Stand. */
+  function pruefen(termine: Serientermin[]) {
+    if (termine.length === 0) return;
+    pruefung.mutate({ person: staffMemberId, termine });
+  }
 
   const anlegen = useMutation({
     mutationFn: (eingabe: { termine: Serientermin[]; bestaetigt: boolean }) => {
@@ -154,9 +185,20 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
       );
     },
     onSuccess: async () => {
+      // Die Schlüssel sind genau die, unter denen die Akte ihre Listen führt.
+      // `patient-upcoming` war keiner davon (UX-012): Der Abschnitt „Nächste
+      // Termine" heißt `patient-upcoming-appointments` und blieb deshalb nach
+      // dem Anlegen auf dem alten Stand — die eben erzeugte Serie fehlte dort,
+      // bis jemand neu lud.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      await queryClient.invalidateQueries({ queryKey: ['patient-upcoming', patientId] });
-      void navigate(`/patienten/${patientId}`, { replace: true });
+      await queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-appointments', patientId] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-next-appointment', patientId] });
+      // Verplant ist nicht genutzt, aber verplant zählt gegen das offene
+      // Kontingent (ANN-038) - beide Zählungen sind jetzt veraltet.
+      await queryClient.invalidateQueries({ queryKey: ['patient-prescription-slots', patientId] });
+      await queryClient.invalidateQueries({ queryKey: ['prescription-slots', prescriptionId] });
+      void navigate(`/patienten/${patientId}/termine`, { replace: true });
     },
   });
 
@@ -183,7 +225,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
     setFormFehler(null);
     const termine = serienTermine(ersterTag, beginn, rhythmus, anzahl);
     listeSetzen(termine);
-    pruefung.mutate(termine);
+    pruefen(termine);
   }
 
   function zeileSetzen(index: number, feld: 'datum' | 'beginn', wert: string) {
@@ -215,9 +257,13 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
 
   const patientDaten = patient.data;
   const zahlen = kontingent.data;
-  const geprueft = befunde !== null && liste !== null && befunde.length === liste.length;
-  const hindernisse = geprueft ? befunde.filter(istHinderlich).length : 0;
-  const randzeiten = geprueft ? befunde.filter((b) => b === 'outside_working_hours').length : 0;
+  // Geprüft ist nur, was zu genau diesem Stand geprüft wurde - nicht, was
+  // zufällig dieselbe Anzahl Zeilen hat.
+  const geprueft =
+    befunde !== null && liste !== null && befunde.fuer === stempel(staffMemberId, liste);
+  const werte = geprueft ? befunde.werte : [];
+  const hindernisse = werte.filter(istHinderlich).length;
+  const randzeiten = werte.filter((b) => b === 'outside_working_hours').length;
 
   return (
     <>
@@ -388,7 +434,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           ) : (
             <ul className="flex flex-col gap-3">
               {liste.map((termin, index) => {
-                const befund = geprueft ? befunde[index] : null;
+                const befund = werte[index] ?? null;
                 return (
                   <li
                     key={`${index}-${termin.datum}`}
@@ -492,7 +538,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                   type="button"
                   variant="secondary"
                   disabled={pruefung.isPending}
-                  onClick={() => pruefung.mutate(liste)}
+                  onClick={() => pruefen(liste)}
                 >
                   Erneut prüfen
                 </Button>

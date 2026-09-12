@@ -3,6 +3,7 @@ import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import type { AssignableTherapist } from '@/features/appointments/api';
 import type { StammdatenFeld } from './api';
+import { stammdatenFeldId } from './stammdatenfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 
 /**
@@ -36,6 +37,7 @@ export function PatientMasterDataFields({
           <Field
             label="Vorname *"
             name="given_name"
+            feldId={stammdatenFeldId('given_name')}
             autoComplete="off"
             required
             value={werte.given_name}
@@ -45,6 +47,7 @@ export function PatientMasterDataFields({
           <Field
             label="Nachname *"
             name="family_name"
+            feldId={stammdatenFeldId('family_name')}
             autoComplete="off"
             required
             value={werte.family_name}
@@ -54,6 +57,7 @@ export function PatientMasterDataFields({
           <Field
             label="Geburtsdatum *"
             name="date_of_birth"
+            feldId={stammdatenFeldId('date_of_birth')}
             type="date"
             required
             value={werte.date_of_birth}
@@ -68,6 +72,7 @@ export function PatientMasterDataFields({
           <Field
             label="E-Mail"
             name="email"
+            feldId={stammdatenFeldId('email')}
             type="email"
             autoComplete="off"
             value={werte.email}
@@ -77,6 +82,7 @@ export function PatientMasterDataFields({
           <Field
             label="Telefon (privat)"
             name="phone"
+            feldId={stammdatenFeldId('phone')}
             type="tel"
             autoComplete="off"
             value={werte.phone}
@@ -86,6 +92,7 @@ export function PatientMasterDataFields({
           <Field
             label="Mobil"
             name="phone_mobile"
+            feldId={stammdatenFeldId('phone_mobile')}
             type="tel"
             autoComplete="off"
             hint="Die Nummer, unter der eine Verspätung angekündigt wird."
@@ -96,6 +103,7 @@ export function PatientMasterDataFields({
           <Field
             label="Telefon (geschäftlich)"
             name="phone_work"
+            feldId={stammdatenFeldId('phone_work')}
             type="tel"
             autoComplete="off"
             value={werte.phone_work}
@@ -105,6 +113,7 @@ export function PatientMasterDataFields({
           <Field
             label="Telefax"
             name="fax"
+            feldId={stammdatenFeldId('fax')}
             type="tel"
             autoComplete="off"
             value={werte.fax}
@@ -119,6 +128,7 @@ export function PatientMasterDataFields({
           <Field
             label="Einrichtung"
             name="institution"
+            feldId={stammdatenFeldId('institution')}
             autoComplete="off"
             hint="Pflegeheim, betreutes Wohnen oder Pflegedienst, falls vorhanden."
             value={werte.institution}
@@ -129,6 +139,7 @@ export function PatientMasterDataFields({
             <Field
               label="Straße"
               name="street"
+              feldId={stammdatenFeldId('street')}
               autoComplete="off"
               value={werte.street}
               error={fehler.street}
@@ -137,6 +148,7 @@ export function PatientMasterDataFields({
             <Field
               label="Hausnummer"
               name="house_number"
+              feldId={stammdatenFeldId('house_number')}
               autoComplete="off"
               value={werte.house_number}
               error={fehler.house_number}
@@ -147,6 +159,7 @@ export function PatientMasterDataFields({
             <Field
               label="PLZ"
               name="postal_code"
+              feldId={stammdatenFeldId('postal_code')}
               inputMode="numeric"
               autoComplete="off"
               value={werte.postal_code}
@@ -156,6 +169,7 @@ export function PatientMasterDataFields({
             <Field
               label="Ort"
               name="city"
+              feldId={stammdatenFeldId('city')}
               autoComplete="off"
               value={werte.city}
               error={fehler.city}
@@ -173,6 +187,7 @@ export function PatientMasterDataFields({
           <Select
             label="Feste Therapeut:in"
             name="primary_therapist_staff_member_id"
+            feldId={stammdatenFeldId('primary_therapist_staff_member_id')}
             hint="Vorbelegung für die Terminplanung. Sie schränkt den Zugriff auf die Akte nicht ein."
             value={werte.primary_therapist_staff_member_id}
             error={fehler.primary_therapist_staff_member_id}
@@ -188,6 +203,7 @@ export function PatientMasterDataFields({
           <TextArea
             label="Zugangshinweis Hausbesuch"
             name="home_visit_access_note"
+            feldId={stammdatenFeldId('home_visit_access_note')}
             rows={3}
             hint="Etage, Klingelname, Schlüssel, Hund, Abstellplatz fürs Rad."
             value={werte.home_visit_access_note}
@@ -197,6 +213,7 @@ export function PatientMasterDataFields({
           <TextArea
             label="Besonderheit"
             name="special_note"
+            feldId={stammdatenFeldId('special_note')}
             rows={2}
             hint="Was vor dem Besuch bekannt sein muss, organisatorisch."
             value={werte.special_note}
@@ -206,6 +223,7 @@ export function PatientMasterDataFields({
           <TextArea
             label="Bemerkung"
             name="remark"
+            feldId={stammdatenFeldId('remark')}
             rows={3}
             value={werte.remark}
             error={fehler.remark}

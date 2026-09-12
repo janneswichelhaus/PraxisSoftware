@@ -1,5 +1,12 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import {
+  abstecherAblegen,
+  abstecherAnsehen,
+  abstecherEntfernen,
+  abstecherErgaenzen,
+  alleAbstecherVerwerfen,
+} from '@/lib/abstecher';
 
 /**
  * Datenzugriff auf Verordnungen und Verordner:innen (VER-EPIC-001).
@@ -320,14 +327,61 @@ export function nachJahr<T extends Prescription>(
   return gruppen;
 }
 
-/** Summe der noch offenen Behandlungen über alle Positionen. */
+/** Summe der noch offenen Leistungseinheiten über alle Positionen. */
 export function restkontingent(prescription: Prescription): number {
   return prescription.items.reduce((summe, item) => summe + item.remaining_quantity, 0);
 }
 
-/** Summe der verordneten Behandlungen über alle Positionen. */
+/** Summe der verordneten Leistungseinheiten über alle Positionen. */
 export function gesamtkontingent(prescription: Prescription): number {
   return prescription.items.reduce((summe, item) => summe + item.prescribed_quantity, 0);
+}
+
+// -----------------------------------------------------------------------------
+// Einheiten und Termine je Verordnung (AKTE-002)
+// -----------------------------------------------------------------------------
+
+const kontingentSchema = z.object({
+  prescription_id: z.string(),
+  /** Verordnete Leistungseinheiten aus den Positionen. */
+  prescribed: z.number(),
+  /** Genutzte Leistungseinheiten; bis ABR-002 von Hand gepflegt (ANN-012). */
+  used: z.number(),
+  /** Zugeordnete Termine ohne abgesagte - eine Terminzahl, keine Einheit. */
+  planned: z.number(),
+  /** Davon noch bevorstehend. */
+  upcoming: z.number(),
+  /** Was sich noch planen lässt: verordnet minus dem größeren Wert (ANN-038). */
+  remaining: z.number(),
+});
+
+export type PrescriptionKontingent = z.infer<typeof kontingentSchema>;
+
+/**
+ * Kontingent und Terminzahlen aller Verordnungen einer Person.
+ *
+ * Der Grund für diesen Lesepfad ist die Trennung zweier Zahlen, die vorher
+ * beide „Kontingent" hießen: **Leistungseinheiten** stehen an den Positionen
+ * der Verordnung, **Termine** an den Terminen. Die Akte nennt sie deshalb
+ * getrennt — und `remaining` ist das, was die Serienplanung noch anbietet
+ * (ANN-038).
+ */
+export async function fetchPatientPrescriptionSlots(
+  patientId: string,
+): Promise<PrescriptionKontingent[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_prescription_slots', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Kontingente konnten nicht geladen werden.');
+  return z.array(kontingentSchema).parse(data ?? []);
+}
+
+/** Die Kontingente nach Verordnung, für den Zugriff je Karte. */
+export function kontingentJeVerordnung(
+  zeilen: readonly PrescriptionKontingent[],
+): Map<string, PrescriptionKontingent> {
+  return new Map(zeilen.map((zeile) => [zeile.prescription_id, zeile]));
 }
 
 // -----------------------------------------------------------------------------
@@ -506,77 +560,28 @@ export interface PrescriptionDraft {
   neuerVerordnerId?: string;
 }
 
-interface EntwurfEintrag {
-  entwurf: PrescriptionDraft;
-  angelegtAm: number;
-}
-
 /**
- * ANN-019: eine Verordner-Anlage dauert praxisnah deutlich unter 30 Minuten;
- * danach gilt ein liegen gebliebener Entwurf als abgebrochener statt als noch
- * laufender Vorgang und wird beim nächsten Zugriff verworfen.
+ * Die Mechanik steht seit UX-012 in `@/lib/abstecher`: Dieselben Regeln
+ * brauchen auch die Terminanlage (Patient:in fehlt) und der Terminzettel
+ * (Adresse fehlt). Hier bleiben die getypten Zugänge - der Entwurf einer
+ * Verordnung hat eine feste Form, und die soll an der Aufrufstelle sichtbar
+ * sein.
  */
-const ENTWURF_MAX_ALTER_MS = 30 * 60 * 1000;
-
-const entwurfSpeicher = new Map<string, EntwurfEintrag>();
-
-function entwurfSchluessel(vorgang: string, userId: string): string {
-  return `${userId} ${vorgang}`;
-}
-
-/**
- * Eine neue Vorgangskennung.
- *
- * `crypto.randomUUID` ist im Browser und in der Testumgebung vorhanden; der
- * Rückfall deckt ältere Umgebungen ab. Die Kennung ist kein Geheimnis - sie
- * unterscheidet nur zwei Besuche derselben Seite voneinander und steht sichtbar
- * in der Adresszeile.
- */
-export function neueVorgangskennung(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-}
-
-/**
- * Liest die Vorgangskennung aus einem Rücksprungpfad.
- *
- * Die Verordner-Anlage bekommt den Pfad, nicht die Kennung: So gibt es genau
- * eine Quelle für beides, und der Rückweg trägt die Kennung von selbst mit.
- */
-export function vorgangAusPfad(pfad: string): string | null {
-  const frage = pfad.indexOf('?');
-  if (frage < 0) return null;
-  return new URLSearchParams(pfad.slice(frage + 1)).get('vorgang');
-}
+export { neueVorgangskennung, vorgangAusPfad } from '@/lib/abstecher';
 
 /** Legt den Formularzustand vor dem Abstecher zur Verordner-Anlage ab (VER-003). */
 export function entwurfAblegen(vorgang: string, userId: string, entwurf: PrescriptionDraft): void {
-  entwurfSpeicher.set(entwurfSchluessel(vorgang, userId), { entwurf, angelegtAm: Date.now() });
+  abstecherAblegen(vorgang, userId, entwurf);
 }
 
-/**
- * Liest einen Entwurf, ohne ihn zu entfernen (siehe `entwurfEntfernen`) - zwei
- * getrennte Schritte, damit ein lesender Aufruf aus einem Zustands-Initialisierer
- * heraus wiederholbar bleibt (React StrictMode ruft ihn im Entwicklungsmodus
- * zweimal auf). Ein zu alter oder einer anderen Person gehörender Entwurf
- * gilt als nicht vorhanden.
- */
+/** Liest einen Entwurf, ohne ihn zu entfernen (siehe `entwurfEntfernen`). */
 export function entwurfAnsehen(vorgang: string, userId: string): PrescriptionDraft | undefined {
-  const eintrag = entwurfSpeicher.get(entwurfSchluessel(vorgang, userId));
-  if (!eintrag) return undefined;
-  if (Date.now() - eintrag.angelegtAm > ENTWURF_MAX_ALTER_MS) return undefined;
-  return eintrag.entwurf;
+  return abstecherAnsehen<PrescriptionDraft>(vorgang, userId);
 }
 
-/**
- * Entfernt einen Entwurf endgültig - nach dem Wiederaufbau des Formulars,
- * damit ein späterer, unabhängiger Besuch derselben Seite nichts mehr
- * vorfindet. Mehrfacher Aufruf ist unschädlich (React StrictMode).
- */
+/** Entfernt einen Entwurf endgültig - nach dem Wiederaufbau des Formulars. */
 export function entwurfEntfernen(vorgang: string, userId: string): void {
-  entwurfSpeicher.delete(entwurfSchluessel(vorgang, userId));
+  abstecherEntfernen(vorgang, userId);
 }
 
 /**
@@ -589,18 +594,12 @@ export function entwurfVerordnerNachtragen(
   userId: string,
   verordnerId: string,
 ): void {
-  const schluessel = entwurfSchluessel(vorgang, userId);
-  const eintrag = entwurfSpeicher.get(schluessel);
-  if (!eintrag) return;
-  entwurfSpeicher.set(schluessel, {
-    ...eintrag,
-    entwurf: { ...eintrag.entwurf, neuerVerordnerId: verordnerId },
-  });
+  abstecherErgaenzen<PrescriptionDraft>(vorgang, userId, { neuerVerordnerId: verordnerId });
 }
 
 /** Verwirft alle Entwürfe aller Benutzer:innen - bei Abmeldung (VER-003). */
 export function alleEntwuerfeVerwerfen(): void {
-  entwurfSpeicher.clear();
+  alleAbstecherVerwerfen();
 }
 
 function rpcVerordnung(values: PrescriptionFormValues, items: z.output<typeof positionSchema>[]) {
