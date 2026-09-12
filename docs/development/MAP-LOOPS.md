@@ -229,7 +229,7 @@ Karte, mit Route, Fahrzeiten und Erreichbarkeit im Kalender.
 - **MAP-006b** Tagesstopps aus den Terminen des Tages (TOUR-001 Startort:
   Depot des Standorts, persönlicher Startort nur von der Person selbst, §20);
   Marker mit Nummer und lokal gerenderter Beschriftung (Vorname-Kürzel oder
-  Nummer — nie Vollname auf der Karte); Karte in „Mein Tag" und unter Touren;
+  Nummer — nie Vollname auf der Karte); Karte in „Übersicht" und unter Touren;
   ersetzt die Vorschau `/touren`.
 - **MAP-006c** Route und Fahrzeiten der Tagesroute; Erreichbarkeitswarnung
   im Kalender aus MAP-004; keine Speicherung; Auswirkung einer Terminänderung

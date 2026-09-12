@@ -143,7 +143,7 @@ export function AppShell({
               Auf dem Telefon trägt die Kopfzeile die Marke, weil es dort
               keine Seitenleiste gibt. Ab sm steht sie oben in der
               Seitenleiste und wäre hier eine zweite Fassung derselben Sache.
-              Der Link nach „Mein Tag" ist die Erwartung an ein Logo oben
+              Der Link auf die Übersicht ist die Erwartung an ein Logo oben
               links; das Ziel steht zusätzlich im zugänglichen Namen, sonst
               hieße der Link für eine Vorlesehilfe bloß „Own Motion". */}
             <div className="flex min-w-0 items-center gap-3 sm:hidden">
@@ -189,7 +189,7 @@ export function AppShell({
           </div>
 
           {/* Auf dem Telefon eine eigene Zeile: das Suchfeld ist der einzige Weg
-            von Kalender und „Mein Tag" in eine Akte, und dafür muss es ohne
+            von Kalender und Übersicht in eine Akte, und dafür muss es ohne
             Aufklappen erreichbar sein (UX-004). */}
           {darfSuchen ? (
             <div className="w-full px-5 pb-2 sm:hidden">

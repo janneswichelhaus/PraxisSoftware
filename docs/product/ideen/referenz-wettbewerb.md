@@ -233,7 +233,7 @@ es, viele Wettbewerber nicht).
 | Funktion | Bei wem (Beleg) | Bei uns | Einordnung |
 | --- | --- | --- | --- |
 | Globale Suche; Schnellanlegen „Neu →" (Termin, Patient, Rechnung); Tastenkürzel | thevea, appointmed, THEORG | Suche nur in der Patientenliste; Entwurf UX-EPIC-001 | Stufe 1, `IDEA-PRX-020` |
-| Wiedervorlage-Badge im Hauptmenü, Kalender als Startansicht | appointmed | „Mein Tag" als Start; „Offen heute" Entwurf UX-EPIC-001 | Stufe 1 |
+| Wiedervorlage-Badge im Hauptmenü, Kalender als Startansicht | appointmed | „Übersicht" als Start; „Offen heute" Entwurf UX-EPIC-001 | Stufe 1 |
 | Intuitive Bedienung ohne Ballast — häufigste Nutzererwartung und häufigster Wechselgrund | Foren, Bewertungen | Maßstab in `OPTIMIERUNG.md` | Verfahren |
 | Kalender-Abo (iCal) nur lesend für Apple/Google/Outlook | appointmed ([Kalender-Abo](https://intercom.help/appointmed/de/articles/2619676-verknupfe-deinen-appointmed-kalender-mit-google-kalender)) | fehlt | Idee mit Bedenken `IDEA-PRX-024` (`IDEA-ORG-004`) |
 

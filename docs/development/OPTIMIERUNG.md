@@ -155,7 +155,7 @@ nur die Logik:
 
 | Anlass | Format | Bereiche |
 | --- | --- | --- |
-| vor dem Loop eines Bereichs | Vollrunde | Touren & Termine vor CAL-EPIC-003a · Patient:innen nach VER-EPIC-001 · Abrechnung vor ABR-EPIC-002a · Mein Tag nach CAL-EPIC-003a (speist E2 und UI-001) |
+| vor dem Loop eines Bereichs | Vollrunde | Kalender vor CAL-EPIC-003a · Patient:innen nach VER-EPIC-001 · Abrechnung vor ABR-EPIC-002a · Übersicht nach CAL-EPIC-003a (speist E2 und UI-001) |
 | vor dem Go-live-Gate (M3) | Messrunde mit Schattentag, Ladeprobe und Kollegin-Test | alle gemessenen Bereiche |
 | vier Wochen nach der Eröffnung (M6, 31.07.2027) | Messrunde mit Praxistagebuch und Störfallliste; Vollrunde für die zwei schlechtesten Bereiche | alle |
 | jährlich | Messrunde alle, Vollrunde zwei; Abläufe streichen, die niemand mehr hat | alle |
@@ -189,7 +189,7 @@ erste Runde des Bereichs misst. `?` = funktional, noch nicht gemessen. `—` =
 Vorschau, wird bis zum Loop nicht gemessen. Je Messung kommt eine Spalte hinzu
 (`R1 <Datum>`, `Go-live`, `+4 Wo`), Notation `Score (Reibung)`.
 
-**Mein Tag** — „Was muss ich als Nächstes tun?"
+**Übersicht** — „Was muss ich als Nächstes tun?"
 
 | Kernaufgabe | Zielwert | heute (geschätzt) | Gew. | Score |
 | --- | --- | --- | --- | --- |
@@ -200,7 +200,7 @@ Vorschau, wird bis zum Loop nicht gemessen. Je Messung kommt eine Spalte hinzu
 
 Bereichsreibung (geschätzt): 27.
 
-**Touren & Termine** — „Wer behandelt wen, wann und mit welchen Wegen?"
+**Kalender** — „Wer behandelt wen, wann und mit welchen Wegen?"
 
 | Kernaufgabe | Zielwert | heute (geschätzt) | Gew. | Score |
 | --- | --- | --- | --- | --- |
@@ -277,7 +277,7 @@ ersten Erhebung durch jemand anderen als Jannes.
 - **Unterbrechungstest** — je mobilem Ablauf, jede Vollrunde: Formular
   beginnen, Telefon fünf Minuten sperren, Anruf annehmen, App wechseln,
   zurückkommen. Steht alles noch da? Zählt für N.
-- **Ladeprobe im Funkloch** — Mein Tag und eine Akte an drei realen Orten
+- **Ladeprobe im Funkloch** — die Übersicht und eine Akte an drei realen Orten
   (Keller, Treppenhaus, Rad) mit synthetischen Daten: Sekunden bis bedienbar;
   einmal Verbindungsabbruch mitten im Formular.
 - **Schattentag** — zweimal vor dem Gate (nach CAL-EPIC-003a; in der

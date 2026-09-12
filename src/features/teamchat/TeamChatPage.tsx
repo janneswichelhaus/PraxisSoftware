@@ -67,7 +67,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
     if (!kanal || !identitaet) return;
     const eintrag = simuliere(
       {
-        bereich: 'Team',
+        bereich: 'Kommunikation',
         vorgang: antwortAuf
           ? `Antwort im Thread verfasst (${kanal.name})`
           : `Nachricht verfasst (${kanal.name})`,
@@ -104,7 +104,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
   function alsGelesen() {
     const eintrag = simuliere(
       {
-        bereich: 'Team',
+        bereich: 'Kommunikation',
         vorgang: `Kanal als gelesen markiert: ${kanal?.name ?? ''}`,
         folgen: ['Ungelesen-Markierung in der Vorschau entfernt'],
         nichtGeschehen: ['Kein Lesestatus gespeichert'],
@@ -122,12 +122,12 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <PageHeader
-        title="Team"
+        title="Kommunikation"
         description="Kanäle, Direktnachrichten und Threads für organisatorische Abstimmung."
       />
 
       <VorschauBanner
-        bereich="Teamkommunikation"
+        bereich="Kommunikation"
         beschreibung="Nachrichten bleiben in dieser Sitzung. Es wird nichts versendet und niemand benachrichtigt."
       />
       <SimulationsMeldung eintrag={meldung} />

@@ -448,7 +448,7 @@ Dokumentation, ausgestellte Rechnungen); der Bezug wechselt, der Inhalt nicht.
 
 **Idee.** Eine Aufgabe mit Fälligkeit und Zuweisung, optional mit Bezug auf
 eine Person („Verordnung nachfordern", „Rückruf Frau X"); überfällige als
-Abschnitt in „Mein Tag" und als Zähler im Menü.
+Abschnitt in „Übersicht" und als Zähler im Menü.
 
 **Warum.** Die häufigste Frage „was muss ich als Nächstes tun" bekommt einen
 zweiten Inhalt neben den Terminen. Organisatorisch, keine klinische Bewertung.
@@ -472,7 +472,7 @@ Buchstaben Personen findet (serverseitig, RLS, umlautunempfindlich); ein
 Rechner.
 
 **Warum.** Die Patientenliste lädt heute alle Datensätze und filtert im
-Browser; von Kalender und Mein Tag gibt es keinen Weg zur Akte ohne Umweg.
+Browser; von Kalender und Übersicht gibt es keinen Weg zur Akte ohne Umweg.
 
 ---
 
@@ -627,7 +627,7 @@ ein Datenfluss mit Gesundheitsdaten, der vor der Nutzung bewertet werden muss
 
 **Idee.** Eine Karte zeigt die gesamte Route des Tages: alle Wege zwischen
 Startort, Hausbesuchen und Endort in Terminreihenfolge — auf einmal, oder ein
-einzelner Weg als Vorschau. In „Mein Tag" und unter Touren; aus jeder Ansicht
+einzelner Weg als Vorschau. In „Übersicht" und unter Touren; aus jeder Ansicht
 führt ein Link zur Navigation (`IDEA-PRX-030`).
 
 **Warum.** Das Lastenrad-Hausbesuchskonzept lebt von der Route: Reihenfolge,
@@ -905,7 +905,7 @@ Versand? Das ist eine Frage an ADR-009, nicht an die Oberfläche.
 
 | | |
 |---|---|
-| Status | notiert — Eingabe für die Ablaufrunde „Mein Tag" (Jan 2027) |
+| Status | notiert — Eingabe für die Ablaufrunde „Übersicht" (Jan 2027) |
 | Quelle | Jannes, 2026-09-11 |
 | Berührt | §8.1; ADR-016; UX-007, UX-009, DOK-001/002; `ANN-015`, `ANN-019`; ABR-002 |
 
@@ -927,7 +927,7 @@ Richtungen:
    hat sich also gerade **verschärft**, nicht entspannt.
 2. **Der Weg dorthin.** Aus der Akte heraus liegt die Dokumentation hinter
    Person, Kontakt, Hausbesuch und Versorgung. Der kurze Weg ist der über
-   „Mein Tag" → „Behandlung abschließen"; wer ihn nicht kennt, scrollt.
+   „Übersicht" → „Behandlung abschließen"; wer ihn nicht kennt, scrollt.
 
 **Potenziale.**
 
@@ -1037,7 +1037,7 @@ Grenzfall. `ABR-EPIC-001` steht für **November 2026**.
 
 | | |
 |---|---|
-| Status | notiert — Eingabe für die Ablaufrunde „Mein Tag" |
+| Status | notiert — Eingabe für die Ablaufrunde „Übersicht" |
 | Quelle | Jannes, 2026-09-11 (mit Screenshot) |
 | Berührt | UX-001, UX-007; ADR-019; MAP-005, MAP-006; `IDEA-PRX-039` |
 

@@ -1,11 +1,21 @@
 # Arbeitsbereiche: was funktioniert, was Vorschau ist, was offen ist
 
-Stand: 11.09.2026
+Stand: 12.09.2026
 
 Diese Liste ist die Antwort auf eine einzige Frage: **Worauf kann ich mich in
 der laufenden Anwendung verlassen?** Sie ergänzt
 [`../PRODUCT_VISION.md`](../PRODUCT_VISION.md) §6a um den Umsetzungsstand und
 ersetzt keine Feature-Spezifikation.
+
+**Vier Arbeitsbereiche heißen seit dem 12.09.2026 anders** (Vorgabe von
+Jannes): „Mein Tag" → **Übersicht**, „Touren & Termine" → **Kalender**, „Team"
+→ **Kommunikation**, „Betrieb" → **Organisatorisches**. Patient:innen und
+Abrechnung blieben. Geändert hat sich allein die Beschriftung samt Symbol —
+Zuschnitt, Routen und Berechtigungen sind dieselben. Oberfläche, Abnahmeschritte
+und Dokumentation sind nachgezogen. Die alten Namen stehen nur noch dort, wo
+sie einen Stand von damals festhalten und nicht nachträglich geändert werden:
+in den Fassungseinträgen der `ROADMAP.md`, in Kommentaren bereits angewendeter
+Migrationen und in dieser Notiz.
 
 Vier Zustände:
 
@@ -45,12 +55,12 @@ Beschriftung geändert, nicht das Verhalten.
 | Mitarbeiterverwaltung                   | `/praxis/team…`                                         | Liste für alle Praxisrollen; Stammdaten schreiben `owner` und `office`, Beschäftigungsstatus nur `owner` (E10, STAFF-002a). Privatdaten werden `office` weder geliefert noch von ihm geschrieben (ANN-024) |
 | Zugänge und Rollen                      | `/praxis/team/:id`, Abschnitt „Zugang"                  | nur `owner`: einladen, Rollen ändern, sperren, Kennwort zurücksetzen. Das Konto selbst entsteht beim Anmeldedienst; ohne offene Einladung bleibt es zugriffslos (STAFF-002b/c, STAFF-003, ANN-025) |
 | Mein Konto                              | `/mein-konto`                                           | jede angemeldete Rolle: Kennwort, zweiter Faktor (TOTP), alle Sitzungen beenden. MFA für `owner` ist empfohlen, nicht erzwungen (STAFF-004, ANN-028) |
-| Arbeitszeiten und Raster                | `/praxis/planung`                                       | im Menü jetzt unter „Betrieb"                    |
+| Arbeitszeiten und Raster                | `/praxis/planung`                                       | im Menü jetzt unter „Organisatorisches"          |
 | Auditansicht                            | `/praxis/sicherheit/audit`                              | nur `owner`; kennt seit DOK-004 einen Systemakteur |
 | Aufbewahrung und Löschung                | `/praxis/sicherheit/aufbewahrung`                       | nur `owner`, reine Lesesicht: Aufbewahrungsplan je Datenklasse, laufende Löschsperren, Löschjournal. Fristen ändern sich über eine Migration, nicht über die Oberfläche (LOE-002b, ADR-008). Eine Pflegeoberfläche für Löschsperren gibt es bewusst nicht (Komfort, ANN-033) |
 | Abschluss der Versorgung                 | `/patienten/:id`, Abschnitt „Versorgung"                | `owner`, `therapist`, `team_lead`: Abschluss festhalten und zurücknehmen. Startet die zehnjährige Aufbewahrung (§630f BGB) und ist etwas anderes als der organisatorische Status (LOE-001b, ANN-032) |
 | Verbindungsanzeige und Textverlust-Schutz | überall (App-Gerüst), Dokumentationsformulare          | erscheint nur bei getrenntem Gerät; in den Dokumentationsformularen zusätzlich eine Browserwarnung vor dem Verlassen mit ungespeichertem Text und der Hinweis neben den Schaltflächen. **Kein lokaler Zwischenspeicher** (UI-000, UX-009, ANN-015) |
-| Mein Tag – Tagesliste des Hausbesuchstags | `/`                                                   | „Offen heute" mit Anschrift, `tel:`-Link und Zugangshinweis aus dem eigenen Lesepfad `list_day_plan`; der Tagesplan des Teams liest weiter den Kalender und bekommt **keine** Adressen (UX-001). Die zuletzt geladene Liste bleibt bei einem Funkloch lesbar und als älterer Stand gekennzeichnet — kein Offline-Modus (UX-011, ANN-021) |
+| Übersicht – Tagesliste des Hausbesuchstags | `/`                                                   | „Offen heute" mit Anschrift, `tel:`-Link und Zugangshinweis aus dem eigenen Lesepfad `list_day_plan`; der Tagesplan des Teams liest weiter den Kalender und bekommt **keine** Adressen (UX-001). Die zuletzt geladene Liste bleibt bei einem Funkloch lesbar und als älterer Stand gekennzeichnet — kein Offline-Modus (UX-011, ANN-021) |
 | Nächste Termine in der Akte             | `/patienten/:id`                                        | über die Anzahl begrenzt statt über einen Zeitraum, ohne Anschrift (UX-006) |
 | Einheitliche Seitenbreite               | überall (App-Gerüst)                                    | seit UI-001 (2026-09-11) nutzt jede Seite die volle Fensterbreite. Vorher bekam allein der Kalender die breite Spalte, und das Gerüst sprang beim Wechsel. Die Lesbarkeit hängt jetzt an der Zeilenlänge (`max-w-prose` für Fließtext, `max-w-xl` für Formulare), nicht an der Seitenbreite |
 | Wortmarke als Weg zur Startseite        | Kopfzeile, überall                                      | Klick auf „Own Motion" führt nach `/` |
@@ -74,7 +84,7 @@ Sitzung simuliert wurde, steht unter `/vorschau/protokoll`.
 | Urlaub                   | `/betrieb/urlaub`             | Antrag, Wochenübersicht, offene Anträge, Genehmigung und Ablehnung mit Unterschrift, Überschneidungswarnung, Resturlaubsanzeige                               |
 | Zeitkonto                | `/betrieb/zeitkonto`          | Buchungen geleistet/abgebaut mit Datum, Grund und laufendem Saldo je Person                                                                                   |
 | Erstattungen             | `/betrieb/erstattungen`       | Strom und Einkauf, IBAN, Zeitraum, Arbeitstage mit Berechnung, Positionen mit Summe, Belege, Erklärung, Unterschrift, Historie je Person                      |
-| Teamkommunikation        | `/team`                       | eigene Anforderung: Kanäle, Direktnachrichten, Threads, Erwähnungen, Ungelesenes, Suche                                                                       |
+| Kommunikation            | `/team`                       | eigene Anforderung: Kanäle, Direktnachrichten, Threads, Erwähnungen, Ungelesenes, Suche                                                                       |
 | Touren                   | `/touren`                     | eigene Anforderung: Besuchsfolge mit unterscheidbarer Behandlungs- und Wegzeit                                                                                |
 | Abrechnung               | `/abrechnung` und Unterseiten | eigene Anforderung: Rechnungen, Leistungen, Katalog, Zahlungen                                                                                                |
 
@@ -111,7 +121,7 @@ benennen die offene Frage, statt sie zu verstecken.
 | Endgültige Fakturierung erst nach Finalisierung — die Finalisierung selbst ist entschieden und gebaut (ADR-016, DOK-002/DOK-004); offen ist die Kopplung an die Leistungserfassung (ABR-002) | Abrechnung → Leistungen | `PROJECT_PRINCIPLES.md` §19      |
 | Kartendienst: Zielarchitektur und Kandidat entschieden (ADR-019 Fassung 2, 2026-09-08: MapLibre, serverseitiger Adapter, PTV Developer zur Erprobung); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7, ADR-019, `MAP-LOOPS.md` |
 | Aggregierte Auswertungen über Beschäftigte                | Zeitkonto               | §20, `OPEN_DECISIONS.md` B6      |
-| Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Team                    | §10, §18                         |
+| Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Kommunikation           | §10, §18                         |
 | Aufbewahrung und Löschung von Beschäftigtendaten          | nicht mehr sichtbar — die Vorschau-Personalakte ist entfallen; der Punkt bleibt offen (`IDEA-QSN-010`) | ADR-008                          |
 | Aufbewahrung von Belegen, Bestätigung der Auszahlung      | Erstattungen            | ADR-008, ADR-009                 |
 | Tübinger Werkstatt, Ruhetag, Depot, Transportoptionen     | Pannenassistent, Flotte | Standortvorlage, ungeprüft       |

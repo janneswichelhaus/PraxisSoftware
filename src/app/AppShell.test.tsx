@@ -54,17 +54,17 @@ describe('AppShell', () => {
       </AppShell>,
     );
     expect(screen.queryByRole('link', { name: 'Patient:innen' })).toBeNull();
-    expect(screen.getAllByRole('link', { name: 'Mein Tag' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Übersicht' }).length).toBeGreaterThan(0);
   });
 
-  it('haelt Betrieb und Team von einem Patientenkonto fern', () => {
+  it('haelt Organisatorisches und Kommunikation von einem Patientenkonto fern', () => {
     renderWithProviders(
       <AppShell user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()}>
         <p>Inhalt</p>
       </AppShell>,
     );
-    expect(screen.queryByRole('link', { name: 'Betrieb' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Team' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Organisatorisches' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Kommunikation' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Abrechnung' })).toBeNull();
   });
 
@@ -75,8 +75,11 @@ describe('AppShell', () => {
       </AppShell>,
       '/betrieb/urlaub',
     );
-    // Bereichsintern, nicht global: die Unterpunkte gehoeren zu "Betrieb".
-    expect(screen.getByRole('navigation', { name: 'Bereich Betrieb' })).toBeInTheDocument();
+    // Bereichsintern, nicht global: die Unterpunkte gehoeren zu
+    // "Organisatorisches".
+    expect(
+      screen.getByRole('navigation', { name: 'Bereich Organisatorisches' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Radflotte/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Arbeitszeiten' })).toBeInTheDocument();
   });
@@ -88,7 +91,7 @@ describe('AppShell', () => {
       </AppShell>,
       '/patienten',
     );
-    expect(screen.queryByRole('navigation', { name: 'Bereich Betrieb' })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Bereich Organisatorisches' })).toBeNull();
   });
 
   it('markiert den Arbeitsbereich, nicht nur seine Einstiegsseite', () => {
@@ -98,7 +101,7 @@ describe('AppShell', () => {
       </AppShell>,
       '/betrieb/erstattungen',
     );
-    const betrieb = screen.getAllByRole('link', { name: 'Betrieb' });
+    const betrieb = screen.getAllByRole('link', { name: 'Organisatorisches' });
     expect(betrieb.some((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
   });
 

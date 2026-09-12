@@ -37,7 +37,7 @@ import { fetchDayPlan, istOffen, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from 
 import { Tageskarte } from './Tagesliste';
 
 /**
- * Mein Tag - der persönliche Einstieg.
+ * Übersicht - der persönliche Einstieg.
  *
  * Die Seite beantwortet eine Frage: was ist als Nächstes zu tun. Sie ist
  * deshalb kein Begrüßungsbildschirm mit Kennzahl, sondern eine Aufgabenliste
@@ -374,7 +374,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         </>
       ) : null}
 
-      <MeinTagVorschau user={user} />
+      <UebersichtVorschau user={user} />
 
       {canReadPatientDirectory(user.roles) ? (
         <p className="text-ink-subtle mt-10 max-w-prose text-sm">
@@ -390,7 +390,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
 // -----------------------------------------------------------------------------
 
 /**
- * Der Teil von „Mein Tag", dessen Hintergrundfunktionen noch fehlen.
+ * Der Teil der Übersicht, dessen Hintergrundfunktionen noch fehlen.
  *
  * Seit UX-001 zusammengefaltet: Der Tag beginnt mit dem, was echt ist. Die
  * fünf Vorschaukarten standen bisher als erstes im Blickfeld, sobald man die
@@ -399,7 +399,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
  * auf. Der Aufklapper trägt die Kennzeichnung „Vorschau" auch im
  * zugeklappten Zustand.
  */
-function MeinTagVorschau({ user }: { user: CurrentUser }) {
+function UebersichtVorschau({ user }: { user: CurrentUser }) {
   const { zustand } = useVorschau();
   const identitaet = vorschauidentitaet(zustand, user);
   if (!identitaet) return null;
@@ -434,7 +434,7 @@ function MeinTagVorschau({ user }: { user: CurrentUser }) {
         <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-2">
           <Badge ton="warnung">Vorschau</Badge>
           <h2 className="text-ink text-[1.0625rem] font-semibold tracking-[-0.01em]">
-            Betrieb, Wege und Team
+            Organisatorisches, Wege und Kommunikation
           </h2>
           <span className="text-ink-muted text-sm">– noch nicht angebunden</span>
         </summary>
@@ -524,7 +524,7 @@ function MeinTagVorschau({ user }: { user: CurrentUser }) {
           ) : null}
 
           <Card>
-            <p className="text-ink-muted text-sm">Team</p>
+            <p className="text-ink-muted text-sm">Kommunikation</p>
             <p className="text-ink mt-1 text-[0.9375rem] font-medium">
               {ungelesen === 0 ? 'Nichts Ungelesenes' : `${ungelesen} ungelesen`}
             </p>
@@ -533,7 +533,7 @@ function MeinTagVorschau({ user }: { user: CurrentUser }) {
               to="/team"
               className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
             >
-              Zum Team →
+              Zur Kommunikation →
             </Link>
           </Card>
         </div>

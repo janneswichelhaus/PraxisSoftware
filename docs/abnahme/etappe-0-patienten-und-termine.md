@@ -210,8 +210,8 @@ ausdrücklichen Entscheidung bewusst eng gehalten (offener Punkt E10).
 **Anlegen bedeutet ausdrücklich nicht: Benutzerkonto, Einladung oder Rolle.**
 Person, Mitarbeiterdatensatz und Zugang bleiben getrennte Konzepte (ADR-014).
 
-1. Als `jannes.test@praxis.invalid` (owner) anmelden, „Team" in der Navigation
-   öffnen. Die Liste zeigt die vier Mitarbeitenden aus dem Seed.
+1. Als `jannes.test@praxis.invalid` (owner) anmelden, in der Navigation
+   „Organisatorisches" → „Mitarbeitende" öffnen. Die Liste zeigt die vier Mitarbeitenden aus dem Seed.
 2. „Mitarbeiter:in anlegen": Vor- und Nachname sind Pflicht, alles andere ist
    freiwillig. Anlegen.
 3. Die Detailansicht erscheint. In der Liste steht die neue Person mit dem
@@ -239,8 +239,8 @@ Person, Mitarbeiterdatensatz und Zugang bleiben getrennte Konzepte (ADR-014).
 12. Der bestehende Termin bleibt beherrschbar: er lässt sich absagen oder einer
     aktiven Person zuordnen.
 13. Anna wieder aktiv setzen.
-14. Gegenprobe Rollen: als `olivia.office@praxis.invalid` (office) „Team"
-    öffnen. Die Liste ist lesbar, „Mitarbeiter:in anlegen" und der
+14. Gegenprobe Rollen: als `olivia.office@praxis.invalid` (office)
+    „Mitarbeitende" öffnen. Die Liste ist lesbar, „Mitarbeiter:in anlegen" und der
     Statuswechsel fehlen. Das ist ausdrücklich **kein** Sicherheitsnachweis;
     verbindlich sind `create_staff_member`, `update_staff_member` und
     `set_staff_employment_status`, geprüft in `pnpm test:db` und im E2E-Test
