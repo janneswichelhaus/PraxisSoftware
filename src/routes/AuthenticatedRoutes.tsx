@@ -6,8 +6,7 @@ import { MyDayPage } from '@/features/today/MyDayPage';
 import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
-import { PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
-import { PatientOverviewPage } from '@/features/patients/PatientOverviewPage';
+import { AkteEinstieg, PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
 import { PatientPrescriptionsPage } from '@/features/prescriptions/PatientPrescriptionsPage';
@@ -121,13 +120,14 @@ export function AuthenticatedRoutes({
             <>
               <Route path="/patienten" element={<PatientsListPage />} />
               <Route path="/patienten/neu" element={<NewPatientPage />} />
-              {/* Die Akte ist ein Rahmen mit fünf Bereichen (AKTE-000). Der
-                  Rahmen lädt die Patient:in einmal und protokolliert den
-                  Zugriff einmal; ein Bereichswechsel wechselt nur den Inhalt.
-                  Die Formulare stehen bewusst daneben und nicht darin: Wer
-                  tippt, soll die Bereichsleiste nicht sehen (UX-009). */}
+              {/* Die Akte ist ein Rahmen mit vier Bereichen (AKTE-000, seit
+                  UI-002a ohne „Übersicht"). Der Rahmen lädt die Patient:in
+                  einmal und protokolliert den Zugriff einmal; ein
+                  Bereichswechsel wechselt nur den Inhalt. Die Formulare stehen
+                  bewusst daneben und nicht darin: Wer tippt, soll die
+                  Bereichsleiste nicht sehen (UX-009). */}
               <Route path="/patienten/:patientId" element={<PatientRecordLayout user={user} />}>
-                <Route index element={<PatientOverviewPage />} />
+                <Route index element={<AkteEinstieg />} />
                 {showAppointments ? (
                   <Route path="termine" element={<PatientAppointmentsPage />} />
                 ) : null}

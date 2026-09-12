@@ -5,6 +5,7 @@ import {
   TAGESFENSTER,
   anmelden,
   arbeitszeitBestaetigen,
+  laufTagImFenster,
   tagImFenster,
 } from './helpers';
 
@@ -28,6 +29,27 @@ const SERIE = `/patienten/${PATIENTEN.erika}/verordnungen/${VERORDNUNG_ERIKA}/se
 
 function laufTag(versatz = 0): string {
   return tagImFenster(TAGESFENSTER.appointmentSeries, LAUF, versatz);
+}
+
+/**
+ * Der naechste Versatz ab `ab`, der auf einen Werktag faellt.
+ *
+ * Die Arbeitszeiten im Seed decken Montag bis Freitag ab
+ * (`generate_series(1, 5)`, verglichen mit `extract(isodow …)`). Welcher
+ * Wochentag ein Versatz ist, haengt am Laufzeitpunkt - und die Zusammenfassung
+ * der Serienpruefung ist eine Kaskade: Sobald **eine** Zeile ausserhalb der
+ * hinterlegten Arbeitszeit liegt, steht dort dieser Hinweis statt "planbar",
+ * auch wenn keine Ueberschneidung mehr vorliegt. Wer auf "planbar" zusichert,
+ * muss die Zeilen deshalb auf Werktage legen; sonst faellt der Test an zwei
+ * von sieben Tagen um, ohne dass sich an der Anwendung etwas geaendert hat.
+ */
+function werktagVersatz(ab: number): number {
+  for (let versatz = ab; versatz < ab + 7; versatz += 1) {
+    const wochentag = laufTagImFenster(TAGESFENSTER.appointmentSeries, LAUF, versatz).getUTCDay();
+    // getUTCDay: 0 = Sonntag, 6 = Samstag.
+    if (wochentag >= 1 && wochentag <= 5) return versatz;
+  }
+  throw new Error('Kein Werktag im Fenster gefunden - das kann nicht passieren.');
 }
 
 /** Beginn auf dem Praxisraster (im Seed 5 Minuten), je Lauf verschieden. */
@@ -124,7 +146,13 @@ test.describe('CAL-007: Terminserie', () => {
   test('meldet eine Überschneidung je Zeile und legt keinen einzigen Termin an', async ({
     page,
   }) => {
-    const start = laufTag(2);
+    // Werktage, damit die Zusammenfassung am Ende ueberhaupt "planbar" sagen
+    // kann (siehe `werktagVersatz`). Die zweite Zeile der woechentlichen Serie
+    // liegt sieben Tage spaeter und ist damit derselbe Wochentag.
+    const startVersatz = werktagVersatz(2);
+    const start = laufTag(startVersatz);
+    const belegt = laufTag(startVersatz + 7);
+    const ausweichtag = laufTag(werktagVersatz(startVersatz + 8));
 
     await anmelden(page, KONTEN.office);
 
@@ -132,7 +160,7 @@ test.describe('CAL-007: Terminserie', () => {
     await page.goto(`/patienten/${PATIENTEN.max}/termine/neu`);
     await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
     await page.getByLabel('Terminart *').selectOption('video');
-    await page.getByLabel('Datum *').fill(laufTag(9));
+    await page.getByLabel('Datum *').fill(belegt);
     await page.getByLabel('Beginn *').fill(zeit());
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
     await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
@@ -149,8 +177,8 @@ test.describe('CAL-007: Terminserie', () => {
     await expect(page.getByText(/1 von 2 Terminen ist so nicht planbar/)).toBeVisible();
     await expect(page.getByRole('button', { name: '2 Termine anlegen' })).toBeDisabled();
 
-    // Einzelabweichung: die belegte Zeile auf einen freien Tag ziehen.
-    await page.getByLabel('Datum 2').fill(laufTag(10));
+    // Einzelabweichung: die belegte Zeile auf einen freien Werktag ziehen.
+    await page.getByLabel('Datum 2').fill(ausweichtag);
     await expect(
       page.getByText('Die Liste wurde geändert und ist noch nicht geprüft.'),
     ).toBeVisible();

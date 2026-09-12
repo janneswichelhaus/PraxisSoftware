@@ -219,7 +219,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
         }
       />
 
-      <Section titel="Dienstlich">
+      <Section titel="Dienstlich" rahmen>
         <DetailList>
           <KontaktZeile label="Diensttelefon" wert={staff.work_phone} schema="tel" />
           <KontaktZeile label="Dienstliche E-Mail" wert={staff.work_email} schema="mailto" />
@@ -251,7 +251,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
       </Section>
 
       {privatSichtbar ? (
-        <Section titel="Privat">
+        <Section titel="Privat" rahmen>
           <DetailList>
             <DetailRow label="Geburtsdatum">{formatDate(staff.date_of_birth)}</DetailRow>
             <KontaktZeile label="Privattelefon" wert={staff.private_phone} schema="tel" />

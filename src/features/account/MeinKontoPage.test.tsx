@@ -111,6 +111,30 @@ describe('MeinKontoPage', () => {
   // ---------------------------------------------------------------------------
   // Zweiter Faktor (STAFF-004b)
   // ---------------------------------------------------------------------------
+  // UI-002d, ANN-028: Die Anmeldung prueft den Faktor heute nicht. Wer ihn
+  // einrichtet, soll das vorher wissen - sonst verspricht die Oberflaeche
+  // einen Schutz, den es nicht gibt.
+  it('sagt vor der Einrichtung, dass die Anmeldung den Faktor noch nicht abfragt', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
+
+    const hinweis = await screen.findByText(/derzeit noch nicht ab/);
+    expect(hinweis).toBeInTheDocument();
+    // Vor der Schaltflaeche, nicht dahinter: Die Reihenfolge im Dokument ist
+    // die Reihenfolge des Lesens.
+    const knopf = await screen.findByRole('button', { name: 'Zweiten Faktor einrichten' });
+    expect(hinweis.compareDocumentPosition(knopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('steht auch dann da, wenn bereits ein Faktor eingerichtet ist', async () => {
+    ladeMfaFaktoren.mockResolvedValue([{ id: 'faktor-1', bestaetigt: true }]);
+    renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
+
+    expect(
+      await screen.findByText('Für diesen Zugang ist ein zweiter Faktor eingerichtet.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/derzeit noch nicht ab/)).toBeInTheDocument();
+  });
+
   it('warnt owner deutlicher als andere Rollen, wenn der zweite Faktor fehlt', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
     expect(

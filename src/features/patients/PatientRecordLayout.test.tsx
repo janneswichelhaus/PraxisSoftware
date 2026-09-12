@@ -80,8 +80,7 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
   };
 });
 
-const { PatientRecordLayout } = await import('./PatientRecordLayout');
-const { PatientOverviewPage } = await import('./PatientOverviewPage');
+const { AkteEinstieg, PatientRecordLayout } = await import('./PatientRecordLayout');
 const { PatientMasterDataPage } = await import('./PatientMasterDataPage');
 const { PatientAppointmentsPage } = await import('@/features/appointments/PatientAppointmentsPage');
 const { PatientPrescriptionsPage } =
@@ -97,7 +96,7 @@ function akteRendern(roles: RoleKey[], pfad = `/patienten/${PATIENT_ID}`) {
   return renderWithProviders(
     <Routes>
       <Route path="/patienten/:patientId" element={<PatientRecordLayout user={testUser(roles)} />}>
-        <Route index element={<PatientOverviewPage />} />
+        <Route index element={<AkteEinstieg />} />
         <Route path="termine" element={<PatientAppointmentsPage />} />
         <Route path="verordnungen" element={<PatientPrescriptionsPage />} />
         <Route path="verlauf" element={<PatientCoursePage />} />
@@ -195,13 +194,12 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   });
 
   describe('Bereichsnavigation', () => {
-    it('fuehrt alle fuenf Bereiche fuer eine therapeutische Rolle', async () => {
+    it('fuehrt alle vier Bereiche fuer eine therapeutische Rolle', async () => {
       akteRendern(['therapist']);
 
       const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
       const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
       expect(eintraege.map((link) => link.textContent)).toEqual([
-        'Übersicht',
         'Termine',
         'Verordnungen',
         'Behandlungsverlauf',
@@ -209,12 +207,24 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       ]);
     });
 
+    // UI-002a: Der Bereich ist samt seiner Schaltflaeche weg - nicht nur
+    // versteckt. Ein Auszug aus den vier anderen Bereichen kostete bei jedem
+    // Aufruf der Akte einen Tap, bevor etwas zu tun war.
+    it('fuehrt keinen Bereich "Uebersicht" mehr', async () => {
+      akteRendern(['therapist']);
+
+      const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
+      expect(
+        screen.queryAllByRole('link', { name: 'Übersicht' }).filter((l) => navigation.contains(l)),
+      ).toEqual([]);
+    });
+
     it('laesst einem Patientenkonto nur die Stammdaten', async () => {
       akteRendern(['patient']);
 
       const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
       const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
-      expect(eintraege.map((link) => link.textContent)).toEqual(['Übersicht', 'Stammdaten']);
+      expect(eintraege.map((link) => link.textContent)).toEqual(['Stammdaten']);
     });
 
     it('wechselt den Bereich, ohne die Akte neu zu laden', async () => {
@@ -251,6 +261,57 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
     });
   });
 
+  describe('Einstieg in die Akte (UI-002a)', () => {
+    it('fuehrt von /patienten/:id in die Termine', async () => {
+      akteRendern(['office']);
+
+      expect(await screen.findByRole('heading', { name: 'Kommende Termine' })).toBeInTheDocument();
+      await waitFor(() => expect(fetchPatientAppointments).toHaveBeenCalled());
+    });
+
+    it('fuehrt ein Patientenkonto in die Stammdaten', async () => {
+      akteRendern(['patient']);
+
+      expect(await screen.findByText('Kontakt')).toBeInTheDocument();
+    });
+
+    // Der Rueckweg der Akte steht in den Suchparametern (UX-012). Ginge er
+    // beim Weiterleiten verloren, waere er genau beim Oeffnen weg.
+    it('nimmt den Rueckweg mit', async () => {
+      akteRendern(['office'], `/patienten/${PATIENT_ID}?zurueck=%2Fkalender%3Fansicht%3Dtag`);
+
+      const zurueck = await screen.findByRole('link', { name: /Zurück/ });
+      expect(zurueck).toHaveAttribute('href', '/kalender?ansicht=tag');
+    });
+  });
+
+  describe('Hinweise vor dem Hausbesuch im Kopf (UI-002a)', () => {
+    it('nennt Zugang und Besonderheit, wenn sie hinterlegt sind', async () => {
+      fetchPatient.mockResolvedValue({
+        ...aktiv,
+        home_visit_access_note: 'Klingel defekt, bitte anrufen',
+        special_note: 'Hund im Flur',
+      });
+      akteRendern(['therapist']);
+
+      expect(await screen.findByText('Klingel defekt, bitte anrufen')).toBeInTheDocument();
+      expect(screen.getByText('Hund im Flur')).toBeInTheDocument();
+    });
+
+    it('laesst den Kopf leer, wenn nichts hinterlegt ist', async () => {
+      fetchPatient.mockResolvedValue({
+        ...aktiv,
+        home_visit_access_note: null,
+        special_note: null,
+      });
+      akteRendern(['therapist']);
+
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      expect(screen.queryByText('Zugang:')).not.toBeInTheDocument();
+      expect(screen.queryByText('Besonderheit:')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Bereiche hinter ihren Adressen', () => {
     it('zeigt office im Verlauf den Behandlungsnachweis', async () => {
       akteRendern(['office'], `/patienten/${PATIENT_ID}/verlauf`);
@@ -281,10 +342,9 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       akteRendern(['therapist']);
       await screen.findByRole('heading', { name: 'Max Mustermann' });
 
-      // Die Uebersicht liest den datensparsamen Nachweis, nicht die klinische
-      // Sicht: Jeder gelesene Eintrag der klinischen Sicht wird protokolliert
-      // (ADR-010) - ein Auditeintrag fuer etwas, das niemand sieht, waere
-      // falsch.
+      // Der Einstieg fuehrt in die Termine, nicht in den Verlauf: Jeder
+      // gelesene Eintrag der klinischen Sicht wird protokolliert (ADR-010) -
+      // ein Auditeintrag fuer etwas, das niemand sieht, waere falsch.
       expect(fetchPatientTreatmentNotesPage).not.toHaveBeenCalled();
     });
   });

@@ -92,6 +92,23 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
     ).toBeInTheDocument();
   });
 
+  // Der Mitteilungsvermerk (CAL-012) wird hinter der Anmeldung geprueft, und
+  // die dortige Zusicherung greift die Zeile ueber den Link des Termins. Bis
+  // UI-002a war die ganze Zeile der Link (Uebersicht der Akte); hier steht das
+  // Zeichen NEBEN ihm. Genau daran ist die Spezifikation gescheitert - dieser
+  // Test haelt die Struktur fest, damit das nicht erst in CI auffaellt.
+  it('stellt das Mitteilungszeichen neben den Link, in dieselbe Zeile', async () => {
+    antwortet([termin({ id: 'kuenftig', notification_channels: ['phone'] })], []);
+    renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
+
+    const link = await screen.findByRole('link', { name: /Mai 2027/ });
+    expect(link).not.toHaveTextContent('Telefon');
+
+    const zeile = link.closest('li');
+    expect(zeile).not.toBeNull();
+    expect(zeile).toHaveTextContent('Telefon');
+  });
+
   describe('Verordnung und Termine finden einander', () => {
     it('nennt an jedem Termin seine Verordnung', async () => {
       antwortet(

@@ -155,7 +155,7 @@ function Behandlungsnachweis({ patient }: { patient: Patient }) {
       ) : null}
 
       {eintraege.length > 0 ? (
-        <ol className="divide-line border-line mt-3 divide-y border-t">
+        <ol className="divide-line border-line bg-surface rounded-card mt-3 divide-y border px-4 sm:px-5">
           {eintraege.map((eintrag) => (
             <li key={eintrag.appointment_id} className="py-4">
               <TerminKopf termin={eintrag} />
@@ -278,7 +278,7 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
       ) : null}
 
       {termine.length > 0 ? (
-        <ol className="divide-line border-line mt-3 divide-y border-t">
+        <ol className="divide-line border-line bg-surface rounded-card mt-3 divide-y border px-4 sm:px-5">
           {termine.map((termin) => (
             <li key={termin.appointment_id} className="py-4">
               <TerminKopf termin={termin} />

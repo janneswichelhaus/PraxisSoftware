@@ -75,7 +75,7 @@ export function PrescribersListPage() {
       ) : null}
 
       {sichtbar.length > 0 ? (
-        <ul className="divide-line border-line divide-y border-y">
+        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
           {sichtbar.map((prescriber) => (
             <li key={prescriber.id}>
               <Link

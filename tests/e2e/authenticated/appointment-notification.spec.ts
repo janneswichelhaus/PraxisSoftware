@@ -22,10 +22,11 @@ import {
  * ankommt.
  *
  * **Diese Datei rechnet im Nahfenster** (`nahtag` in `helpers.ts`), nicht in
- * einem Tagesfenster. Die Akte zeigt nur die nächsten fünf Termine, und Max
- * Mustermann sammelt über fünfzehn Spezifikationen hinweg weit mehr; ein
- * Termin aus einem Tagesfenster ab Tag 60 stünde nie in der Liste, und ohne
- * Eintrag ließe sich das Zeichen dahinter nicht prüfen. Im Nahfenster zählt
+ * einem Tagesfenster. Der Terminbereich der Akte blättert, und Max
+ * Mustermann sammelt über fünfzehn Spezifikationen hinweg weit mehr Termine
+ * als eine Seite fasst; ein Termin aus einem Tagesfenster ab Tag 60 stünde
+ * auf einer späteren Seite, und ohne Eintrag ließe sich das Zeichen dahinter
+ * nicht prüfen. Im Nahfenster zählt
  * der Versatz **rückwärts**: höhere Zahl, früherer Tag — jeder neu angelegte
  * Termin steht damit vor den zuvor angelegten. Jeder Test nimmt die nächste
  * freie Stufe.
@@ -53,9 +54,21 @@ async function terminAnlegen(page: Page, tag: string, von: string): Promise<stri
   return page.url().split('/').pop()!;
 }
 
-/** Der Eintrag dieses Termins in der Terminliste der Akte. */
+/**
+ * Der Eintrag dieses Termins in der Terminliste der Akte.
+ *
+ * Bewusst die ganze **Zeile** und nicht nur ihr Link: Seit UI-002a fuehrt
+ * `/patienten/:id` in den Terminbereich statt auf die entfallene Uebersicht,
+ * und dort steht das Mitteilungszeichen NEBEN dem Link in derselben Zeile
+ * (`Terminzeile`), waehrend auf der Uebersicht die ganze Zeile der Link war.
+ * Die Zusicherung bleibt dieselbe - das Zeichen muss an genau diesem Termin
+ * stehen -, nur der Ausschnitt stimmt wieder mit der Oberflaeche ueberein.
+ */
 function akteneintrag(page: Page, terminId: string) {
-  return page.locator(terminLinkWahl(terminId)).first();
+  return page
+    .locator('li')
+    .filter({ has: page.locator(terminLinkWahl(terminId)) })
+    .first();
 }
 
 test.describe('CAL-012: Mitteilungsvermerk', () => {

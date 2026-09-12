@@ -35,9 +35,16 @@ export interface Aktenbereich {
 /**
  * Die Bereiche der Akte in der Reihenfolge des Arbeitstags.
  *
- * Übersicht zuerst, weil sie die Frage „was ist offen" beantwortet.
- * Stammdaten zuletzt, weil sie sich am seltensten ändern - sie sind die
- * Auskunft, die man einmal bei der Aufnahme braucht (§13: das Häufige zuerst).
+ * Termine zuerst, weil dort gearbeitet wird. Stammdaten zuletzt, weil sie sich
+ * am seltensten ändern - sie sind die Auskunft, die man einmal bei der
+ * Aufnahme braucht (§13: das Häufige zuerst).
+ *
+ * **Einen Bereich „Übersicht" gibt es nicht mehr** (UI-002a). Er war ein
+ * Auszug aus den vier anderen - nächste Termine, laufende Verordnungen,
+ * letzter Behandlungsstand - und kostete bei jedem Aufruf der Akte einen Tap,
+ * bevor irgendetwas zu tun war. Wer die Akte öffnet, landet jetzt dort, wo
+ * gearbeitet wird. Die beiden Angaben, die vor einem Hausbesuch zählen und
+ * sonst nur in den Stammdaten stünden, stehen im Kopf der Akte.
  *
  * Die Rollenprüfung steuert ausschließlich die Navigation. Sie ist **keine**
  * Zugriffskontrolle: Wer eine Adresse direkt aufruft, bekommt vom Server
@@ -45,7 +52,7 @@ export interface Aktenbereich {
  */
 export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereich[] {
   const basis = `/patienten/${patientId}`;
-  const bereiche: Aktenbereich[] = [{ to: basis, label: 'Übersicht', end: true }];
+  const bereiche: Aktenbereich[] = [];
 
   if (canManageAppointments(user.roles)) {
     bereiche.push({ to: `${basis}/termine`, label: 'Termine' });
@@ -63,4 +70,16 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
   bereiche.push({ to: `${basis}/stammdaten`, label: 'Stammdaten' });
 
   return bereiche;
+}
+
+/**
+ * Wohin `/patienten/:id` führt (UI-002a).
+ *
+ * Immer der erste Bereich, den die Rolle sehen darf. Für die behandelnden und
+ * verwaltenden Rollen sind das die Termine; einem Patientenkonto bleiben die
+ * Stammdaten, und die stehen in jeder Liste - `aktenBereiche` gibt deshalb nie
+ * eine leere Liste zurück.
+ */
+export function ersterAktenbereich(patientId: string, user: CurrentUser): string {
+  return aktenBereiche(patientId, user)[0]!.to;
 }

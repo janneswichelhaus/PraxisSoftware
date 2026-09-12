@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, NavLink, Outlet, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -11,7 +11,12 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { istInternerPfad, RUECKWEG_PARAM } from '@/lib/rueckweg';
-import { aktenBereiche, type PatientRecordContext } from './akte';
+import {
+  aktenBereiche,
+  ersterAktenbereich,
+  usePatientRecord,
+  type PatientRecordContext,
+} from './akte';
 import {
   ageInYears,
   fetchPatient,
@@ -31,9 +36,11 @@ import {
  * geändert hat.
  *
  * Der Rahmen dreht das um: Oben steht, wer die Person ist und was man mit ihr
- * als Nächstes tut; darunter fünf Bereiche, die jeweils **eine** Frage
+ * als Nächstes tut; darunter vier Bereiche, die jeweils **eine** Frage
  * beantworten. Was selten gebraucht wird, ist einen Tap entfernt, statt sich
- * jedes Mal in den Weg zu stellen.
+ * jedes Mal in den Weg zu stellen. (Seit UI-002a sind es vier statt fünf: Der
+ * Bereich „Übersicht" war ein Auszug aus den anderen und stand jedem Aufruf
+ * der Akte im Weg.)
  *
  * Der Rahmen lädt die Patient:in **einmal** und reicht sie an den offenen
  * Bereich weiter; ein Bereichswechsel lädt sie nicht neu und erzeugt damit
@@ -64,7 +71,7 @@ function Aktenavigation({
     // offen ist. Zwei gleich aussehende Reihen übereinander wären ein Rätsel.
     //
     // Schmal scrollt die Reihe waagerecht, statt in zwei Zeilen umzubrechen -
-    // fünf Ziele passen bei 375 px nicht nebeneinander.
+    // auch vier Ziele passen bei 375 px nicht nebeneinander.
     <nav aria-label="Bereiche der Akte" className="border-line border-t">
       <ul className="flex gap-1 overflow-x-auto px-2 py-1.5 sm:px-3">
         {bereiche.map((bereich) => (
@@ -80,6 +87,39 @@ function Aktenavigation({
         ))}
       </ul>
     </nav>
+  );
+}
+
+/**
+ * Die Hinweise, die vor der Tür zählen (PAT-005, `IDEA-PRX-001`).
+ *
+ * Sie standen bis UI-002a auf der Übersicht der Akte. Mit ihr wären sie in die
+ * Stammdaten gerutscht und damit hinter einen Bereichswechsel - „Klingel
+ * defekt, bitte anrufen" nützt dort niemandem. Deshalb stehen sie jetzt im
+ * Kopf, und nur dann, wenn etwas hinterlegt ist: Wer nichts eingetragen hat,
+ * sieht auch keine leere Zeile.
+ *
+ * Für ein Patientenkonto liefert die Sicht die Felder gar nicht erst; die
+ * Zeilen verschwinden dann von allein (ANN-010, ADR-004).
+ */
+function HausbesuchHinweise({ patient }: { patient: Patient }) {
+  if (!patient.home_visit_access_note && !patient.special_note) return null;
+
+  return (
+    <dl className="mt-2 flex flex-col gap-0.5 text-sm">
+      {patient.home_visit_access_note ? (
+        <div className="flex gap-2">
+          <dt className="text-ink-muted shrink-0">Zugang:</dt>
+          <dd className="text-ink min-w-0">{patient.home_visit_access_note}</dd>
+        </div>
+      ) : null}
+      {patient.special_note ? (
+        <div className="flex gap-2">
+          <dt className="text-ink-muted shrink-0">Besonderheit:</dt>
+          <dd className="text-ink min-w-0">{patient.special_note}</dd>
+        </div>
+      ) : null}
+    </dl>
   );
 }
 
@@ -118,6 +158,7 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
             <Badge>Versorgung abgeschlossen am {formatDate(patient.care_concluded_on)}</Badge>
           ) : null}
         </div>
+        <HausbesuchHinweise patient={patient} />
       </div>
 
       {/* Die beiden Vorgänge, die im Alltag aus der Akte heraus entstehen. Alles
@@ -147,6 +188,25 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
       </div>
     </div>
   );
+}
+
+/**
+ * Der Einstieg in die Akte (UI-002a).
+ *
+ * `/patienten/:id` zeigt selbst nichts mehr, sondern führt weiter in den
+ * ersten Bereich, den die Rolle sehen darf. `replace`, damit der Rückweg des
+ * Browsers nicht auf einer Adresse landet, die sofort wieder weiterleitet.
+ *
+ * Die Suchparameter wandern vollständig mit: Darin steht der Rückweg der Akte
+ * (`?zurueck=`), und der ginge sonst genau beim Öffnen verloren (UX-012).
+ */
+export function AkteEinstieg() {
+  const { patient, user } = usePatientRecord();
+  const [suche] = useSearchParams();
+  const anhang = suche.toString();
+  const ziel = ersterAktenbereich(patient.id, user);
+
+  return <Navigate to={anhang ? `${ziel}?${anhang}` : ziel} replace />;
 }
 
 export function PatientRecordLayout({ user }: { user: CurrentUser }) {

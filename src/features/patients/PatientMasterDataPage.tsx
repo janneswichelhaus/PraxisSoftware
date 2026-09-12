@@ -211,6 +211,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
         <div>
           <Section
             titel="Person"
+            rahmen
             aktion={
               <ButtonLink to={`/patienten/${patient.id}/bearbeiten`} variant="secondary">
                 Stammdaten bearbeiten
@@ -232,7 +233,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
         </div>
 
         <div>
-          <Section titel="Kontakt">
+          <Section titel="Kontakt" rahmen>
             <DetailList>
               <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
               <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
@@ -260,7 +261,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
             unterwegs sucht. */}
         {hatVersorgungsangaben ? (
           <div>
-            <Section titel="Hausbesuch und Versorgung">
+            <Section titel="Hausbesuch und Versorgung" rahmen>
               <DetailList>
                 {patient.home_visit_access_note ? (
                   <DetailRow label="Zugang">{patient.home_visit_access_note}</DetailRow>
@@ -278,7 +279,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
         ) : null}
 
         <div>
-          <Section titel="Versorgung">
+          <Section titel="Versorgung" rahmen>
             <DetailList>
               <DetailRow label="Beginn">{formatDate(patient.care_started_on)}</DetailRow>
               <DetailRow label="Status">

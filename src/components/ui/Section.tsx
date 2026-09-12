@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Inhaltsflaeche } from './Card';
 
 /**
  * Abschnitt mit Überschrift innerhalb einer Seite (UI-000).
@@ -12,12 +13,19 @@ import type { ReactNode } from 'react';
  * Eine Seite mit `PageHeader` (h1) nutzt `h2`; ein Abschnitt innerhalb eines
  * Abschnitts nutzt `h3`. Übersprungene Ebenen sind für Vorlesesoftware eine
  * fehlende Stufe in der Gliederung.
+ *
+ * `rahmen` stellt den Inhalt auf Papier (UI-002c). Die Überschrift bleibt
+ * außerhalb: Sie ist die Beschriftung des Rahmens, nicht sein erster Eintrag.
+ * Gedacht für **Auskunft** — Termine, Verordnungen, Stammdaten, Tagesliste.
+ * Formulare bekommen keinen: Ihre Felder sind ohnehin weiß, und ein zweiter
+ * weißer Kasten darum trägt nichts bei.
  */
 export function Section({
   titel,
   hinweis,
   ebene = 2,
   aktion,
+  rahmen = false,
   children,
 }: {
   titel: string;
@@ -26,6 +34,8 @@ export function Section({
   ebene?: 2 | 3;
   /** Schaltfläche oder Link rechts neben der Überschrift. */
   aktion?: ReactNode;
+  /** Stellt den Inhalt in einen weißen Rahmen (UI-002c). */
+  rahmen?: boolean;
   children: ReactNode;
 }) {
   const Ueberschrift = ebene === 3 ? 'h3' : 'h2';
@@ -40,7 +50,11 @@ export function Section({
         {aktion}
       </div>
       {hinweis ? <p className="text-ink-muted mt-1 max-w-prose text-sm">{hinweis}</p> : null}
-      <div className="mt-3">{children}</div>
+      {rahmen ? (
+        <Inhaltsflaeche className="mt-3">{children}</Inhaltsflaeche>
+      ) : (
+        <div className="mt-3">{children}</div>
+      )}
     </section>
   );
 }

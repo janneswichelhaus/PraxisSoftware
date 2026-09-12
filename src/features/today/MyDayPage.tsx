@@ -365,7 +365,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             {termine && alleHeute.length === 0 ? (
               <EmptyState title="Heute sind keine Termine geplant" />
             ) : (
-              <ul className="divide-line border-line divide-y border-y">
+              <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
                 {alleHeute.map((termin) => (
                   <Terminzeile key={termin.id} termin={termin} zeitzone={zeitzone} />
                 ))}
