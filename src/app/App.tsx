@@ -31,17 +31,22 @@ function AuthenticatedApp() {
   const { data: user, isPending, isError, error } = useCurrentUser(userId);
 
   /**
-   * Abmelden räumt den Abfragespeicher mit ab (UX-011).
+   * Abmelden räumt den Abfragespeicher mit ab (UX-011, ANN-021) — aber nicht
+   * mehr hier.
    *
    * Die Tagesliste hält Anschrift, Rufnummer und Zugangshinweis im
-   * Arbeitsspeicher der laufenden Seite - lange genug, dass ein Funkloch sie
-   * nicht vom Bildschirm nimmt (ANN-021). Nach einer Abmeldung hat dort
-   * nichts davon mehr etwas zu suchen, auch nicht bis zum Ablauf einer Frist:
-   * das nächste Konto in demselben Tab darf sie nicht vorfinden.
+   * Arbeitsspeicher der laufenden Seite, lange genug, dass ein Funkloch sie
+   * nicht vom Bildschirm nimmt. Nach einer Abmeldung hat dort nichts davon
+   * mehr etwas zu suchen: das nächste Konto in demselben Tab darf sie nicht
+   * vorfinden.
+   *
+   * Diese Stelle sah davon nur einen einzigen Weg — den Knopf in der
+   * Kopfzeile. „Alle Sitzungen beenden", die Abmeldung im zweiten Tab und die
+   * abgelaufene Sitzung liefen daran vorbei. Die Räumung steht deshalb jetzt
+   * im `SessionProvider`, wo jeder Wechsel der Identität ankommt.
    */
   async function abmelden() {
     await signOut();
-    queryClient.clear();
   }
 
   if (isPending) return <LoadingState label="Profil wird geladen …" />;
