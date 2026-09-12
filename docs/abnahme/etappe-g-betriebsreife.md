@@ -147,7 +147,11 @@ absichern kann — und dass „alle Sitzungen beenden" wirklich alle meint.
    besteht …" — sie verrät nicht, ob es das Konto gibt. Dieselbe Meldung
    erscheint für eine echte Adresse.
 3. **Der Link führt zum Ziel.** Für `anna.beispiel@praxis.invalid` anfordern, im
-   Mailfänger den Link öffnen: Die Anwendung öffnet „Mein Konto".
+   Mailfänger den Link öffnen: Die Anwendung öffnet „Neues Kennwort setzen".
+   **Wichtig: in einem privaten Fenster, also abgemeldet.** Im angemeldeten
+   Browser sagt dieser Schritt nichts aus — dort öffnet jede Adresse der
+   Anwendung. Genau daran ist der Befund aus FIX-001 monatelang vorbeigelaufen.
+   Der vollständige Ablauf steht unten unter FIX-EPIC-001.
 4. **Zu kurz geht nicht.** Dort ein Kennwort mit 8 Zeichen eingeben: „Das
    Kennwort braucht mindestens 12 Zeichen."
 5. **Zwei gleiche Eingaben.** Zwei verschiedene Eingaben: „Die beiden Eingaben
@@ -160,18 +164,169 @@ absichern kann — und dass „alle Sitzungen beenden" wirklich alle meint.
    sechsstelligen Code eintragen, „Einrichtung abschließen".
 8. **Ein falscher Code wird abgewiesen.** Vorher einmal `000000` eintragen: „Der
    Code wurde nicht angenommen."
-9. **Er wirkt.** Abmelden und neu anmelden: Nach dem Kennwort fragt die
-   Anmeldung nach dem Einmalkennwort.
+9. **Er wirkt — noch nicht.** ~~Abmelden und neu anmelden: Nach dem Kennwort
+   fragt die Anmeldung nach dem Einmalkennwort.~~ **Dieser Schritt beschreibt
+   Verhalten, das es nicht gibt** (Befund vom 2026-09-12). Die Anmeldemaske
+   ruft ausschließlich `signInWithPassword`; in `src/features/auth/` und
+   `src/app/` gibt es keinen Treffer für `mfa`, `aal` oder `challenge`. Ein
+   eingerichteter zweiter Faktor wird beim Anmelden **nie abgefragt** und
+   schützt damit heute nichts. Zu prüfen ist deshalb nur, dass die Einrichtung
+   selbst funktioniert (Schritte 7 und 8). Die Abfrage beim Anmelden ist ein
+   eigenes Epic und steht als Vorschlag im Bericht zu FIX-EPIC-001.
 10. **Der Hinweis für die Leitung.** Als `jannes.test@praxis.invalid` → „Mein
     Konto": Solange dort kein zweiter Faktor eingerichtet ist, steht der gelbe
     Hinweis, dass dieser Zugang Zugänge, Rollen und das Auditlog verwaltet. Bei
     `olivia.office@praxis.invalid` steht derselbe Stand **ohne** Warnton.
 11. **Alle Sitzungen beenden.** Als Anna in zwei Fenstern anmelden. In einem
-    „Alle Sitzungen beenden" → „Überall abmelden". Beide Fenster zeigen nach
-    einem Neuladen die Anmeldemaske. Im Auditlog steht „Alle eigenen Sitzungen
-    beendet".
+    „Alle Sitzungen beenden" → „Überall abmelden". Das **auslösende** Fenster
+    zeigt nach einem Neuladen die Anmeldemaske. Im Auditlog steht „Alle eigenen
+    Sitzungen beendet".
+
+    Das **zweite** Fenster kann bis zu einer Stunde weiterarbeiten — sein
+    Zugriffstoken bleibt bis zum Ablauf gültig, es kann sich nur nicht mehr
+    verlängern (ANN-044). Das ist kein Fehler, sondern die Bauart des
+    Anmeldedienstes, und die Rückfrage sagt es auch. Wer sofortige Wirkung
+    braucht, prüft stattdessen Schritt 8 aus STAFF-003: Nach dem Sperren des
+    Zugangs zeigt das zweite Fenster beim nächsten Laden „Dieser Zugang ist
+    gesperrt." — **das** wirkt ohne Wartezeit.
+
 12. **Kein Weg zu fremden Rechten.** Auf „Mein Konto" gibt es weder eine
     Rollenwahl noch „Zugang sperren" — auch nicht für `jannes.test`. Das eigene
     Konto ändert seine Berechtigungen nicht.
 13. **Am Handy.** Schritte 1, 6 und 7 bei ~375 px Breite: Kennwortfelder, der
     QR-Code und die Rückfragen sind ohne waagerechtes Scrollen bedienbar.
+
+## FIX-EPIC-001 — Zugang und Sitzung halten, was sie versprechen
+
+**Was geprüft wird:** dass ein Link aus einer Mail tatsächlich ankommt, dass
+kein Konto die Daten des vorigen zu sehen bekommt und dass die Oberfläche über
+die Reichweite ihrer Vorgänge die Wahrheit sagt.
+
+Diese Schritte brauchen den vollen Stack (Docker, GoTrue, Mailfänger). In der
+Cloud-Entwicklungsumgebung sind sie **nicht** durchführbar — dort greifen die
+Komponententests und `tests/e2e/login.spec.ts`.
+
+**Vorbereitung, einmalig:** `pnpm dlx supabase stop && pnpm dlx supabase start`.
+Die Mailvorlagen unter `supabase/templates/` und die Ziele in
+`additional_redirect_urls` werden nur beim Start gelesen — ohne Neustart prüfen
+Sie den alten Stand.
+
+### Kennwort vergessen, vollständig
+
+1. **Abgemeldet beginnen.** Ein privates Fenster öffnen. Das ist kein Beiwerk:
+   Im angemeldeten Browser öffnet jede Adresse, und der Schritt sagt nichts aus.
+2. **Anfordern.** Auf der Anmeldemaske „Kennwort vergessen?" →
+   `anna.beispiel@praxis.invalid` → „Link anfordern".
+3. **Die Mail ansehen.** Im Mailfänger (<http://127.0.0.1:54324>) liegt eine
+   Mail mit dem Betreff „Neues Kennwort setzen". Der Link zeigt auf
+   `/kennwort-neu?token_hash=…&type=recovery` — **nicht** auf `/auth/v1/verify`
+   und **nicht** auf `/mein-konto`. Steht dort etwas anderes, wurde die Vorlage
+   nicht geladen: Stack neu starten.
+4. **Öffnen.** Der Link führt auf „Neues Kennwort setzen". Kurz steht „Der Link
+   wird geprüft …", dann erscheint das Formular. **Bleibt die Seite im
+   Ladezustand stehen, ist der Fehler aus FIX-001b zurück** — dann melden.
+5. **Zu kurz geht nicht.** Acht Zeichen eingeben: „Das Kennwort braucht
+   mindestens 12 Zeichen."
+6. **Zwei gleiche Eingaben.** Zwei verschiedene: „Die beiden Eingaben stimmen
+   nicht überein."
+7. **Setzen.** Ein langes Kennwort zweimal, „Kennwort setzen": Die Bestätigung
+   sagt, dass Sie auf diesem Gerät angemeldet sind und andere Geräte angemeldet
+   bleiben. „Weiter zu ‚Mein Konto'" führt in die Anwendung.
+8. **Es gilt wirklich.** Abmelden, mit dem **neuen** Kennwort anmelden. Im
+   Auditlog steht „Eigenes Kennwort geändert" — ohne Kennwort.
+9. **Der Link ist verbraucht.** Denselben Link aus der Mail noch einmal öffnen,
+   wieder im privaten Fenster: „Dieser Link lässt sich nicht mehr verwenden."
+   Kein Formular, und **keine Auskunft darüber, ob es das Konto gibt**.
+10. **Ein erfundener Link.** `/kennwort-neu?token_hash=erfunden&type=recovery`
+    aufrufen: dieselbe Meldung, wortgleich.
+11. **Ohne Kennung.** `/kennwort-neu` ohne Parameter: dieselbe Meldung und der
+    Knopf „Zur Anmeldung".
+12. **In einem anderen Browser.** Einen frischen Link anfordern und ihn in
+    einem **anderen Browser** öffnen (Firefox statt Chrome, nicht nur ein
+    privates Fenster). Er muss dort genauso funktionieren.
+
+    Das ist der Kern von ANN-043: Ein anderer Browser hat keinen
+    Prüfschlüssel der anfordernden Sitzung — genau daran wäre der PKCE-Weg
+    gescheitert, und genau das ist der Praxisfall „angefordert am
+    Praxisrechner, geöffnet auf dem Telefon".
+
+    **Das Telefon selbst lässt sich lokal nicht prüfen**, ohne die
+    Konfiguration anzufassen: `site_url` und `additional_redirect_urls` in
+    `supabase/config.toml` stehen auf `http://127.0.0.1:5173`, und diese
+    Adresse erreicht ein Telefon nicht. Wer es dennoch will, setzt beide
+    Werte vorübergehend auf die Netzadresse des Rechners, startet den Stack
+    neu und den Entwicklungsserver mit `--host` — und stellt danach zurück.
+    Der andere Browser prüft dieselbe Eigenschaft ohne diesen Umbau.
+
+13. **Am Telefon bedienbar.** Bei ~375 px: kein waagerechtes Scrollen, beide
+    Felder beschriftet, der Knopf mindestens 44 px hoch.
+
+### Die Praxisleitung stößt es an
+
+14. Als `jannes.test@praxis.invalid` → Praxis → Team → „Anna Beispiel" →
+    „Kennwort zurücksetzen" → „Mail senden". Die Mail im Mailfänger zeigt
+    ebenfalls auf `/kennwort-neu`. Der Ablauf ist derselbe wie oben. Annas
+    bisheriges Kennwort funktioniert, bis sie ein neues setzt.
+
+### Die Zugangsmail an eine Einladung
+
+15. Eine Einladung anlegen und „Anmeldemail senden" auslösen. Die Mail trägt
+    den Betreff „Zugang zur Praxisanwendung" und zeigt auf
+    `/zugang?token_hash=…&type=magiclink`.
+16. Im privaten Fenster öffnen: kurz „Der Link wird geprüft …", danach steht
+    die Anwendung offen — bei offener Einladung auf „Zugang einrichten", sonst
+    auf dem Tagesplan. Es gibt bewusst keine Zwischenseite zum Weiterklicken.
+17. Denselben Link erneut öffnen, und zwar in einem **frischen privaten
+    Fenster**: „Dieser Link lässt sich nicht mehr verwenden." mit dem Hinweis
+    auf die Praxisleitung. In dem Fenster, das den Link gerade benutzt hat,
+    besteht inzwischen eine Sitzung — dort kommt stattdessen die Rückfrage aus
+    Schritt 18, und der Schritt sagt nichts über den verbrauchten Link.
+18. **Nicht stillschweigend die Sitzung tauschen.** Einen frischen Zugangslink
+    anfordern und ihn in einem Fenster öffnen, in dem **jemand anderes
+    angemeldet** ist. Es erscheint zuerst die Rückfrage „Auf diesem Gerät ist
+    bereits jemand angemeldet" mit „Trotzdem mit diesem Link anmelden" und
+    „Angemeldet bleiben".
+
+    Beides prüfen: „Angemeldet bleiben" lässt die laufende Sitzung unberührt
+    und **löst den Link nicht ein** (er ist danach noch brauchbar).
+    „Trotzdem" meldet als die andere Person an. Ohne diese Rückfrage gingen
+    nicht gespeicherte Verordnungsentwürfe der laufenden Sitzung verloren,
+    ohne dass es jemand merkt. Dasselbe gilt für `/kennwort-neu`.
+
+19. **Ein Verbindungsfehler ist kein verbrauchter Link.** Den Supabase-Stack
+    stoppen (`pnpm dlx supabase stop`) und einen Link öffnen: Es erscheint
+    „Der Anmeldedienst ist gerade nicht erreichbar." mit dem Satz, dass der
+    Link deswegen nicht verbraucht ist, und „Erneut versuchen" — **nicht**
+    „Dieser Link lässt sich nicht mehr verwenden." Stack starten, „Erneut
+    versuchen": Der Link greift.
+
+### Kein Konto sieht die Daten des vorigen
+
+20. **Der eigentliche Befund.** Als `jannes.test@praxis.invalid` anmelden,
+    Patient:innen öffnen, sodass die Liste geladen ist.
+21. Auf „Mein Konto" → „Alle Sitzungen beenden" → „Überall abmelden".
+22. **Im selben Tab** als `olivia.office@praxis.invalid` anmelden und sofort
+    Patient:innen öffnen. Es darf **zu keinem Zeitpunkt** ein Stand zu sehen
+    sein, der zu Jannes gehörte — auch nicht für einen Lidschlag, bevor
+    nachgeladen ist.
+23. Dasselbe mit dem gewöhnlichen Abmelden über die Kopfzeile.
+24. Dasselbe mit einer Abmeldung **in einem zweiten Tab**: Tab A zeigt die
+    Patientenliste, in Tab B abmelden, in Tab A neu anmelden als jemand
+    anderes. Auch hier kein alter Stand.
+25. **Der Tagesplan bleibt trotzdem stehen.** Als Therapeut:in anmelden, den
+    Tagesplan öffnen, das Gerät in den Flugmodus schalten und die Ansicht neu
+    aufrufen: Adresse und Rufnummer stehen weiterhin da (ANN-021). Der Schutz
+    aus Schritt 22 darf das nicht kaputtmachen — er greift bei einem Wechsel
+    der Person, nicht bei jeder Verlängerung der Sitzung.
+
+### Die Reichweite stimmt
+
+26. **Abmelden meldet nicht überall ab.** Als Anna in zwei Browsern anmelden.
+    In Browser A über die Kopfzeile abmelden. Browser B bleibt nach einem
+    Neuladen angemeldet (ANN-045). Vorher war das nicht so, und „Mein Konto"
+    versprach es trotzdem.
+27. **Der Vermerk ist Vorbedingung.** Das lässt sich von Hand kaum auslösen;
+    abgedeckt ist es durch `src/features/account/api.test.ts`. Zu prüfen bleibt
+    der sichtbare Teil: Die Rückfrage unter „Alle Sitzungen beenden" nennt das
+    Restfenster von bis zu einer Stunde und verweist auf die Sperre durch die
+    Praxisleitung (ANN-044).

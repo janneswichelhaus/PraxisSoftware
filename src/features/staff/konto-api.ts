@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import { roleKeySchema, type RoleKey } from '@/features/session/types';
+import { WIEDERHERSTELLUNG_PFAD, ZUGANG_PFAD } from '@/features/auth/linkEinloesen';
 
 /**
  * Zugänge zur Anwendung (STAFF-002b).
@@ -140,7 +141,10 @@ export async function sendeZugangsMail(email: string): Promise<Zustellung> {
     email,
     options: {
       shouldCreateUser: false,
-      emailRedirectTo: window.location.origin,
+      // Bis FIX-002 stand hier die Wurzel der Anwendung. Dort las niemand die
+      // Kennung aus dem Link, und die eingeladene Person sah die
+      // Anmeldemaske - also genau das, woran sie vorbeikommen wollte.
+      emailRedirectTo: `${window.location.origin}${ZUGANG_PFAD}`,
     },
   });
   return error ? 'kein_konto' : 'gesendet';
@@ -258,8 +262,10 @@ export async function stosseKennwortZuruecksetzenAn(staffMemberId: string): Prom
   const email = z.string().safeParse(data);
   if (!email.success) throw new Error('Das Zurücksetzen konnte nicht angestoßen werden.');
 
+  // Der Pfad kommt aus einer Konstante, nicht aus einer zweiten Zeichenkette:
+  // Bis FIX-001 zeigte er auf eine Route, die es nirgends gab.
   const { error: mailError } = await getSupabase().auth.resetPasswordForEmail(email.data, {
-    redirectTo: `${window.location.origin}/kennwort-neu`,
+    redirectTo: `${window.location.origin}${WIEDERHERSTELLUNG_PFAD}`,
   });
   if (mailError) throw new Error('Die Mail zum Zurücksetzen konnte nicht zugestellt werden.');
 }

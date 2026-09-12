@@ -1,8 +1,15 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
 import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { KennwortNeuPage } from '@/features/auth/KennwortNeuPage';
+import { ZugangPage } from '@/features/auth/ZugangPage';
+import {
+  WIEDERHERSTELLUNG_PFAD,
+  ZUGANG_PFAD,
+  istEinloesePfad,
+} from '@/features/auth/linkEinloesen';
 import {
   KeinProfilError,
   ZugangGesperrtError,
@@ -31,17 +38,22 @@ function AuthenticatedApp() {
   const { data: user, isPending, isError, error } = useCurrentUser(userId);
 
   /**
-   * Abmelden räumt den Abfragespeicher mit ab (UX-011).
+   * Abmelden räumt den Abfragespeicher mit ab (UX-011, ANN-021) — aber nicht
+   * mehr hier.
    *
    * Die Tagesliste hält Anschrift, Rufnummer und Zugangshinweis im
-   * Arbeitsspeicher der laufenden Seite - lange genug, dass ein Funkloch sie
-   * nicht vom Bildschirm nimmt (ANN-021). Nach einer Abmeldung hat dort
-   * nichts davon mehr etwas zu suchen, auch nicht bis zum Ablauf einer Frist:
-   * das nächste Konto in demselben Tab darf sie nicht vorfinden.
+   * Arbeitsspeicher der laufenden Seite, lange genug, dass ein Funkloch sie
+   * nicht vom Bildschirm nimmt. Nach einer Abmeldung hat dort nichts davon
+   * mehr etwas zu suchen: das nächste Konto in demselben Tab darf sie nicht
+   * vorfinden.
+   *
+   * Diese Stelle sah davon nur einen einzigen Weg — den Knopf in der
+   * Kopfzeile. „Alle Sitzungen beenden", die Abmeldung im zweiten Tab und die
+   * abgelaufene Sitzung liefen daran vorbei. Die Räumung steht deshalb jetzt
+   * im `SessionProvider`, wo jeder Wechsel der Identität ankommt.
    */
   async function abmelden() {
     await signOut();
-    queryClient.clear();
   }
 
   if (isPending) return <LoadingState label="Profil wird geladen …" />;
@@ -111,10 +123,44 @@ function AuthenticatedApp() {
   return <AuthenticatedRoutes user={user} onSignOut={() => void abmelden()} />;
 }
 
+/**
+ * Die Seiten, die ohne Sitzung erreichbar sind.
+ *
+ * Der Auffangpfad ist die Anmeldemaske und nicht ein Fehler: Wer ohne Sitzung
+ * irgendeine Adresse der Anwendung öffnet, soll sich anmelden können und nicht
+ * erfahren, ob es diese Seite gibt. `tests/e2e/login.spec.ts` hält das fest.
+ */
+function OeffentlicheRouten() {
+  return (
+    <Routes>
+      <Route path={WIEDERHERSTELLUNG_PFAD} element={<KennwortNeuPage />} />
+      <Route path={ZUGANG_PFAD} element={<ZugangPage />} />
+      <Route path="*" element={<LoginPage />} />
+    </Routes>
+  );
+}
+
+/**
+ * Entscheidet, welche der drei Welten die Person zu sehen bekommt.
+ *
+ * Die Bedingung auf den Pfad ist **nicht** überflüssig neben `!session`, und
+ * zwar wegen der Reihenfolge beim Einlösen: Sobald eine der beiden Seiten den
+ * Link eingelöst hat, existiert eine Sitzung. Ohne die zusätzliche Bedingung
+ * schwenkte diese Stelle im selben Augenblick auf die angemeldete Anwendung,
+ * deren Auffangroute den Pfad auf „/" umleitet — die Seite käme nie dazu,
+ * fertig zu werden. Beide Seiten verlassen ihren Pfad selbst, wenn sie es
+ * sind.
+ *
+ * Gefragt wird `istEinloesePfad` und nicht eine Aufzählung an dieser Stelle:
+ * Die Liste gehört zu den Seiten, nicht zum Gate. `/zugang` war hier zuerst
+ * vergessen, und die Folge war still — mit bestehender Sitzung wurde der Link
+ * nie eingelöst und die Person landete im Konto der vorigen.
+ */
 function Gate() {
   const { session, initialising } = useSession();
+  const { pathname } = useLocation();
   if (initialising) return <LoadingState label="Sitzung wird geprüft …" />;
-  if (!session) return <LoginPage />;
+  if (!session || istEinloesePfad(pathname)) return <OeffentlicheRouten />;
   return <AuthenticatedApp />;
 }
 

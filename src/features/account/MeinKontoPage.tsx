@@ -263,14 +263,23 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
   );
 }
 
-/** Alle Sitzungen beenden — der Weg nach einem verlorenen Gerät (R10). */
+/**
+ * Alle Sitzungen beenden — der Weg nach einem verlorenen Gerät (R10).
+ *
+ * Der Text sagt, was der Vorgang leistet **und wo er aufhört** (ANN-044,
+ * Oberflächen-Checkliste Punkt 6). Ein verlorenes Telefon behält sein
+ * Zugriffstoken bis zu einer Stunde; wer das nicht abwarten kann, braucht die
+ * Sperre durch die Praxisleitung. Das gehört an die Stelle der Entscheidung
+ * und nicht in eine Fußnote — sonst hält jemand ein gestohlenes Gerät für
+ * ausgesperrt, das es noch nicht ist.
+ */
 function Sitzungen() {
   const mutation = useMutation({ mutationFn: beendeAlleSitzungen });
 
   return (
     <Section
       titel="Sitzungen"
-      hinweis="Meldet dieses Konto auf allen Geräten ab - auch auf einem verlorenen Telefon."
+      hinweis="Meldet dieses Konto auf allen Geräten ab und nimmt ihnen die Möglichkeit, sich zu verlängern."
     >
       <Rueckfrage
         ausloeser="Alle Sitzungen beenden"
@@ -285,6 +294,11 @@ function Sitzungen() {
           Alle angemeldeten Geräte werden abgemeldet, dieses eingeschlossen. Sie melden sich danach
           neu an. Das Kennwort ändert sich dadurch nicht — wurde es womöglich bekannt, zuerst oben
           ein neues setzen.
+        </p>
+        <p className="mt-3">
+          Ein bereits geöffnetes Gerät kann noch bis zu einer Stunde weiterlesen, bevor es neu
+          anmelden muss. Ist ein Gerät abhandengekommen und eilt es, lassen Sie den Zugang
+          zusätzlich von der Praxisleitung sperren — das wirkt sofort.
         </p>
       </Rueckfrage>
     </Section>

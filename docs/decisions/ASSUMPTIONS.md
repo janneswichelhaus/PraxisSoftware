@@ -229,6 +229,9 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-040 | Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
 | ANN-041 | Termin-E-Mail als Handoff ins eigene Mailprogramm: Inhalt, Betreff, Längengrenze; **Fassung 2: vermerkt wird erst auf Bestätigung** | Datenschutz   | offen (2026-09-12), Fassung 2 vom 2026-09-12 | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
 | ANN-042 | Eine Verordnung ist „ausgeschöpft", wenn ihre Leistungseinheiten genutzt sind — nicht nach Ablauf einer Frist | Praxisprozess | offen (2026-09-12)    | Jannes nach den ersten Praxiswochen; erneut mit ABR-002 (genutzte Menge aus der Abrechnung) |
+| ANN-043 | Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); Providerprüfung OPS-001 (Auth-Mails, B13) |
+| ANN-044 | „Alle Sitzungen beenden": Vermerk vor dem Vorgang, weil danach keiner mehr möglich ist; die Zusage nennt das Restfenster | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); `jwt_expiry` mit OPS-001 |
+| ANN-045 | Das gewöhnliche Abmelden endet nur die eigene Sitzung | Technik       | offen (2026-09-12)    | Jannes nach dem ersten Feldtag |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -1321,9 +1324,18 @@ wo er ohnehin steht.
 **Verankerung.** `TAGESPLAN_VORHALTEDAUER_MS` in
 `src/features/today/api.ts` (trägt die Kennung) — die eine Zahl; die Feldliste
 ist die Rückgabe von `public.list_day_plan`
-(`supabase/migrations/20260910100000_day_plan.sql`). Das Leeren bei der
-Abmeldung in `src/app/App.tsx` (`abmelden`). Tests in
-`src/features/today/MyDayPage.test.tsx`, Abschnitt „UX-011".
+(`supabase/migrations/20260910100000_day_plan.sql`). Das Leeren beim Wechsel
+der Identität in `src/features/auth/SessionProvider.tsx` — **umgezogen mit
+FIX-005 am 2026-09-12**; es stand zuvor in `src/app/App.tsx` (`abmelden`) und
+sah dort nur einen einzigen Weg: „Alle Sitzungen beenden", die Abmeldung im
+zweiten Tab und die abgelaufene Sitzung liefen daran vorbei. Tests in
+`src/features/today/MyDayPage.test.tsx`, Abschnitt „UX-011", und in
+`src/features/auth/SessionProvider.test.tsx`.
+
+Dass dort die **Benutzerkennung** verglichen wird und nicht die Ereignisart,
+gehört zu dieser Annahme: Der Ereignisstrom führt auch `TOKEN_REFRESHED`, und
+das trifft bei `jwt_expiry = 3600` stündlich ein. Ein Leeren je Ereignis
+nähme die acht Stunden achtmal am Tag zurück.
 
 **Änderungspfad.** Andere Vorhaltedauer: eine Zahl — Aufwand `klein`.
 Verlangt die Prüfung, dass gar nichts über einen Fehlversuch hinaus stehen
@@ -2596,3 +2608,238 @@ keine Datenmigration. Einen Ablauf nach Zeit ergänzen: ein Feld
 gepflegt, dazu die Regel hier — Aufwand `mittel`, mit Migration. Die genutzte
 Menge automatisch aus der Abrechnung zu führen, ist ABR-002 und ändert an
 dieser Regel nichts.
+### ANN-043 — Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | FIX-001 (Befund aus der Prüfung vom 2026-09-12); `OPEN_DECISIONS.md` B13; `PROJECT_PRINCIPLES.md` §3.4, §13, §16; ADR-002 |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch die Datenschutzprüfung steht aus |
+| Wiedervorlage | Datenschutzprüfung (B2); Providerprüfung OPS-001, Teil Auth-Mails |
+
+**Vorgeschichte.** STAFF-004 hat den Versand der Auth-Mails gebaut, aber keinen
+Empfang. `src/lib/supabase.ts` setzt `detectSessionInUrl: false`, und im
+gesamten Projekt gab es weder `exchangeCodeForSession` noch `verifyOtp` noch
+`setSession`. Die Mail zum Zurücksetzen zeigte auf `/mein-konto` — eine Seite
+hinter der Anmeldung —, die Mail der Praxisleitung auf `/kennwort-neu`, eine
+Route, die es nicht gab, und die Zugangsmail auf die Wurzel. Kein Link konnte
+eine Sitzung herstellen. Der Abnahmeschritt STAFF-004 Nr. 3 behauptete das
+Gegenteil; er war unauffällig, weil er im selben Browser geprüft wurde, in dem
+noch eine Sitzung stand.
+
+**Annahme.** Der Rückweg aus einer Auth-Mail läuft über den einmaligen
+`token_hash`. Fünf Festlegungen:
+
+1. **Eigene Mailvorlagen.** `supabase/templates/recovery.html` und
+   `magic_link.html` übergeben `{{ .TokenHash }}` an eine Adresse dieser
+   Anwendung. Nicht `{{ .ConfirmationURL }}`: Der führt über
+   `/auth/v1/verify` und schickt den Browser mit fertigen Token im
+   Adressfragment zurück.
+2. **Eingelöst wird mit `verifyOtp`.** Kein `setSession` auf selbst zerlegten
+   Fragmenten — das wäre der Eigenbau an der Sitzungsmechanik, den §3.4
+   ausschließt. `detectSessionInUrl` bleibt `false`.
+3. **Zwei öffentliche Seiten**, `/kennwort-neu` und `/zugang`, und sonst
+   keine. Der Auffangpfad ohne Sitzung bleibt die Anmeldemaske.
+4. **Das Ziel steht in der Vorlage, nicht im Aufruf.** Die Vorlagen bauen den
+   Link aus `{{ .SiteURL }}`; `redirectTo` bleibt gesetzt und die Pfade stehen
+   in `additional_redirect_urls`, damit ein Wechsel der Vorlage nicht ins
+   Leere fällt.
+5. **Nach dem Setzen bleibt die Person auf diesem Gerät angemeldet.** Andere
+   Geräte bleiben unberührt; die Seite sagt das und verweist auf „Alle
+   Sitzungen beenden".
+6. **Steht auf dem Gerät schon eine Sitzung, wird zuerst gefragt.** Ein Link
+   löst nicht stillschweigend ein, wenn jemand anderes angemeldet ist: Der
+   Wechsel der Kennung räumt den Abfragespeicher und die Verordnungsentwürfe
+   der laufenden Sitzung (ANN-021, ANN-019), und das darf nicht unbemerkt
+   geschehen (§13). „Angemeldet bleiben" lässt den Link unverbraucht.
+7. **Ein Verbindungsfehler ist kein verbrauchter Link.** Ist der
+   Anmeldedienst nicht erreichbar, sagt die Seite das und bietet einen
+   erneuten Versuch an. „Dieser Link lässt sich nicht mehr verwenden" wäre
+   eine Aussage, die die Anwendung nicht treffen kann, und sie brächte jemanden
+   dazu, einen gültigen Link wegzuwerfen (Oberflächen-Checkliste Punkt 6).
+
+**Begründung.**
+
+Zu 1 und 2: Der Weg über `{{ .ConfirmationURL }}` verlangt
+`detectSessionInUrl: true`. Dann stünde ein vollwertiges Zugriffs- **und**
+Erneuerungstoken im Adressfragment — im Browserverlauf und für jedes Skript
+auf der Seite lesbar. Ein `token_hash` ist einmalig, kurzlebig und für sich
+genommen keine Sitzung. §16 verlangt im Zweifel die datensparsamere Option,
+und das ist eindeutig diese.
+
+Der dritte denkbare Weg, PKCE mit `exchangeCodeForSession`, scheidet fachlich
+aus: Er verlangt den Prüfschlüssel im selben Browserprofil und bricht damit
+genau im häufigsten Praxisfall — angefordert am Praxisrechner, geöffnet auf
+dem Telefon. `verifyOtp` funktioniert geräteübergreifend und ist zugleich der
+heute von Supabase empfohlene Weg.
+
+Zu 3: §13 verlangt, bei unklarem Zustand nichts anzuzeigen. Eine öffentliche
+Seite mehr ist eine Angriffsfläche mehr, deshalb genau zwei und beide ohne
+Auskunft über den Kontobestand: Abgelaufener Link, bereits benutzter Link und
+das Voraböffnen durch einen Mailfilter liefern beim Anmeldedienst denselben
+Fehler, und die Seite unterscheidet sie ebenfalls nicht.
+
+Zu 5: Ungefragt alle Sitzungen zu beenden wäre eine Nebenwirkung, die niemand
+angefordert hat. Wer den Verdacht hat, dass das alte Kennwort bekannt wurde,
+findet den ausdrücklichen Weg auf „Mein Konto".
+
+**Was offen bleibt.** Die **Vorlagen im Cloudprojekt.** `config.toml` wirkt
+nur lokal; im Cloudprojekt stehen dieselben Vorlagen unter Authentication >
+Email Templates und dieselben Ziele unter URL Configuration. Läuft beides
+auseinander, fällt GoTrue stillschweigend auf `site_url` zurück und der Fehler
+sieht genauso aus wie vorher. Das gehört in OPS-001 und in den
+Produktions-Bootstrap (OPS-007).
+
+**Unsicher:** ob `http://127.0.0.1:5173/kennwort-neu` gegen den Eintrag ohne
+Pfad als erlaubt gilt oder den Pfadeintrag zwingend braucht — beides ist
+eingetragen, nachgeprüft ist es erst mit laufendem GoTrue. Ebenso ungeprüft:
+ob ein Tieflink auf `/kennwort-neu` außerhalb des Vite-Entwicklungsservers
+`index.html` erreicht; das Repository hat keine SPA-Rückfallkonfiguration.
+Diese Frage stellt sich mit der ersten Auslieferung (G5).
+
+**Verankerung.** `src/features/auth/linkEinloesen.ts` — trägt die Kennung im
+Kopfkommentar; dort stehen `loeseLinkEin`, die Unterscheidung von
+`LinkUngueltigError` und `VerbindungError`, beide Pfadkonstanten und
+`istEinloesePfad`. Die Liste der Einlösepfade steht **dort** und nicht im Gate,
+weil genau diese Trennung einmal schiefgegangen ist: `/zugang` fehlte in der
+Bedingung des Gates, und mit bestehender Sitzung wurde der Link deshalb nie
+eingelöst. Die Vorlagen unter `supabase/templates/`, die Einträge in
+`supabase/config.toml`. Tests in `src/features/auth/KennwortNeuPage.test.tsx`,
+`ZugangPage.test.tsx`, `src/app/Gate.test.tsx` und `tests/e2e/login.spec.ts`.
+
+**Änderungspfad.** Anderen Wortlaut in der Mail: die Vorlagen — Aufwand
+`klein`. Auf `detectSessionInUrl: true` zurückgehen: eine Zeile in
+`src/lib/supabase.ts`, die Vorlagen auf `{{ .ConfirmationURL }}` zurückstellen,
+die beiden Seiten entfallen — Aufwand `klein`, mit den Token im Verlauf als
+bewusster Folge. Auf PKCE wechseln: `flowType: 'pkce'` und
+`exchangeCodeForSession` statt `verifyOtp` — Aufwand `klein` im Code, aber der
+geräteübergreifende Fall bricht; nicht empfohlen. Einen eigenen Mailversand
+statt der Auth-Mails: Aufwand `groß`, eigenes Epic, neuer Dienstleister nach
+§3.5 und Rücknahme von B13.
+
+### ANN-044 — „Alle Sitzungen beenden": Vermerk als Vorbedingung, und die Zusage nennt das Restfenster
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | FIX-003 (Befund aus der Prüfung vom 2026-09-12); ADR-010; `PROJECT_PRINCIPLES.md` §13, §16; Oberflächen-Checkliste Punkt 6; ANN-041 Fassung 2 (Gegenrichtung, siehe Begründung) |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch die Datenschutzprüfung steht aus |
+| Wiedervorlage | Datenschutzprüfung (B2); der Wert `jwt_expiry` mit OPS-001 |
+
+**Vorgeschichte.** `beendeAlleSitzungen` meldete `sessions_ended` ins
+Auditlog, **bevor** der Vorgang beim Anmeldedienst lief — entgegen der Regel
+im Kopf derselben Datei. Scheiterte der Vorgang, stand der Vermerk trotzdem.
+Zugleich behauptete der Kommentar dort, `scope: 'global'` entwerte alle
+ausgegebenen Token, und die Oberfläche stellte ein verlorenes Telefon als
+ausgesperrt dar.
+
+**Annahme.** Drei Festlegungen:
+
+1. **Der Vermerk steht vor dem Vorgang und ist seine Vorbedingung.**
+   Scheitert er, unterbleibt das Abmelden. Umgekehrt geht nicht: Der Vorgang
+   nimmt dem Konto die eigene Sitzung, und `log_account_security_event`
+   verlangt `auth.uid()`. Nachher melden hieße gar nicht melden.
+2. **Der Vermerk hält die Auslösung fest, nicht die Wirkung.** Ob ein fremdes
+   Gerät den Zugriff schon verloren hat, sieht diese Anwendung nicht.
+3. **Die Zusage nennt das Restfenster.** Der Anmeldedienst löscht Sitzungen
+   und Erneuerungstoken sofort; ein bereits ausgestelltes Zugriffstoken bleibt
+   bis zu `jwt_expiry` gültig, weil die Datenschnittstelle nur Signatur und
+   `exp` prüft. Sofort wirkt allein die **Sperre des Zugangs**, weil die
+   Datenbank bei jeder Anfrage `user_profiles.is_active` liest. Beides steht
+   in der Rückfrage, an der Stelle der Entscheidung.
+
+**Begründung.**
+
+Zu 1 und 2: Vermerkt wird, was die Anwendung tatsächlich beobachtet, und der
+Vermerk geht dem Vorgang voraus, weil er ihm nicht folgen kann. Ein Auditlog,
+dessen Einträge nicht mehr zu den Tatsachen passen, ist als Nachweis nach
+ADR-010 wertlos.
+
+**Das läuft der Richtung von ANN-041 Fassung 2 entgegen, und das ist bewusst
+so.** Dort wandert der Vermerk vom Vorher ins Nachher, weil die Anwendung den
+Ausgang eines `mailto:`-Handoffs grundsätzlich **nicht sehen** kann — ein
+Vermerk davor behauptete etwas Unbeobachtbares. Hier ist es umgekehrt: Der
+Ausgang ist beobachtbar (`signOut` liefert einen Fehler oder nicht), aber er
+lässt sich **nicht mehr aufschreiben**, weil der Vorgang dem Konto die eigene
+Sitzung nimmt und `log_account_security_event` `auth.uid()` verlangt. Das
+gemeinsame Prinzip beider Annahmen ist dasselbe — nichts festhalten, wofür man
+nicht einstehen kann —, nur die technische Lage kehrt die Reihenfolge um.
+Deshalb hält der Eintrag die **Auslösung** fest, nicht die Wirkung, und die
+Oberfläche sagt genau das.
+
+**Der Restfall bleibt offen.** Scheitert `signOut` nach einem geschriebenen
+Vermerk, steht ein Eintrag zu einem Vorgang, der nicht durchlief — genau die
+Lage, die ANN-041 Fassung 2 für ihren Fall abgestellt hat. Hier ist sie mit
+den Mitteln des Browsers nicht abstellbar: Nach einem gescheiterten
+`signOut` hat `supabase-js` die lokale Sitzung in den meisten Fällen schon
+entfernt, ein nachträglicher Gegenvermerk wäre also ebenso unmöglich. Die
+Auflösung ist ein serverseitiger Vermerk aus dem Vorgang selbst; sie steht im
+Änderungspfad und gehört der Datenschutzprüfung vorgelegt.
+
+Zu 3: Die Oberflächen-Checkliste Punkt 6 verbietet eine Erfolgsmeldung, die
+nicht stattfand. „Alle Geräte sind abgemeldet" ist für bis zu eine Stunde
+genau das. Wer ein Diensttelefon verloren hat, trifft auf dieser Grundlage
+eine Entscheidung — ob er die Praxisleitung anruft oder nicht —, und eine zu
+starke Zusage nimmt ihm genau die. §16 stellt Informationssicherheit über
+Bedienkomfort.
+
+**Was diese Annahme ausdrücklich NICHT tut.** Sie senkt `jwt_expiry` nicht.
+Das wäre eine Betriebsentscheidung mit Wirkung auf jede Anfrage der
+Anwendung, sie gehört ins Cloudprojekt und damit zu OPS-001 — hier stünde sie
+an der falschen Stelle.
+
+**Verankerung.** `src/features/account/api.ts` — der Dateikopf und
+`meldeVorab` tragen die Kennung; der Text in
+`src/features/account/MeinKontoPage.tsx` (Abschnitt „Sitzungen"). Tests in
+`src/features/account/api.test.ts`.
+
+**Änderungspfad.** Anderen Wortlaut: der Text in `MeinKontoPage` — Aufwand
+`klein`. Das Restfenster verkleinern: `jwt_expiry` in `config.toml` und im
+Cloudprojekt — Aufwand `klein`, mit häufigerem Erneuern als Folge. Den
+Vermerk serverseitig aus dem Vorgang erzeugen, damit Auslösung und Wirkung
+zusammenfallen: eine Migration mit autonomer Transaktion — Aufwand `mittel`,
+hängt an der offenen Lücke 6 aus `docs/DEVELOPMENT.md`. Einen sofortigen
+Widerruf einzelner Token: Aufwand `groß`, verlangt eine Prüfung des
+`session_id`-Claims in jeder Policy und ist ohne Not eine zweite
+Berechtigungsschicht.
+
+### ANN-045 — Das gewöhnliche Abmelden endet nur die eigene Sitzung
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | FIX-004 (Befund aus der Prüfung vom 2026-09-12); Oberflächen-Checkliste Punkt 6; R10 der Roadmap |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach dem ersten Feldtag |
+
+**Vorgeschichte.** `supabase-js` hat für `signOut` den Default
+`{ scope: 'global' }`. Der Abmelden-Knopf der Kopfzeile rief `signOut()` ohne
+Angabe und beendete damit die Sitzungen auf **allen** Geräten. „Mein Konto"
+versprach an derselben Stelle wörtlich „Angemeldete Geräte bleiben angemeldet
+— dafür gibt es unten ‚Alle Sitzungen beenden'". Das war falsch, und „Alle
+Sitzungen beenden" hatte keinen eigenen Zweck mehr.
+
+**Annahme.** Das gewöhnliche Abmelden läuft mit `scope: 'local'`, ausdrücklich
+angegeben und nicht als Weglassung. Alle Geräte beendet ausschließlich der
+eigene Weg auf „Mein Konto".
+
+**Begründung.** Der Praxisfall entscheidet: Wer am Praxisrechner Feierabend
+macht, meldet nicht sein Diensttelefon mit ab — er müsste sich beim nächsten
+Hausbesuch neu anmelden, unterwegs, womöglich im Funkloch. Die weiter
+reichende Wirkung ist hier nicht die sicherere, sondern die überraschende.
+Zwei Wege mit unterschiedlicher Reichweite sind zudem nur dann verständlich,
+wenn sie sich unterscheiden.
+
+Die Angabe steht ausdrücklich im Code, weil ein Weglassen hier nicht neutral
+ist: Der Default des Anmeldedienstes kann sich ändern, und die Absicht wäre
+aus dem Fehlen nicht zu lesen.
+
+**Verankerung.** `src/features/auth/SessionProvider.tsx` (`signOut`) — trägt
+die Kennung im Kommentar. Test in
+`src/features/auth/SessionProvider.test.tsx`.
+
+**Änderungspfad.** Zurück auf global: die Angabe entfernen oder auf `'global'`
+setzen — Aufwand `klein`; dann muss der Text in `MeinKontoPage.tsx` mitgeändert
+werden und „Alle Sitzungen beenden" verliert seinen Zweck. Eine Wahl beim
+Abmelden anbieten („nur hier" / „überall"): Aufwand `klein`, aber eine
+Entscheidung mehr an einer Stelle, an der niemand eine treffen will.

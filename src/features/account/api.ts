@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEinloesen';
 
 /**
  * Das eigene Konto (STAFF-004).
@@ -8,21 +9,60 @@ import { getSupabase } from '@/lib/supabase';
  * dessen Funktionen auf und meldet anschließend ins Auditlog, **dass** der
  * Vorgang stattgefunden hat — nie mit Kennwort, Token oder Geheimnis.
  *
- * Die Reihenfolge ist überall dieselbe: erst der Vorgang beim Provider, dann
- * die Meldung. Scheitert der Vorgang, wird nichts gemeldet; scheitert die
- * Meldung, ist der Vorgang trotzdem passiert — deshalb bricht sie den Ablauf
- * nicht ab, sondern bleibt still. Eine Fehlermeldung, die ein erfolgreich
- * geändertes Kennwort als Misserfolg darstellt, wäre die schlechtere Auskunft
- * (Oberflächen-Checkliste Punkt 6).
+ * Die Reihenfolge ist **fast** überall dieselbe: erst der Vorgang beim
+ * Provider, dann die Meldung. Scheitert der Vorgang, wird nichts gemeldet;
+ * scheitert die Meldung, ist der Vorgang trotzdem passiert — deshalb bricht
+ * sie den Ablauf nicht ab, sondern bleibt still. Eine Fehlermeldung, die ein
+ * erfolgreich geändertes Kennwort als Misserfolg darstellt, wäre die
+ * schlechtere Auskunft (Oberflächen-Checkliste Punkt 6).
+ *
+ * **Die eine Ausnahme ist `sessions_ended`** (ANN-044). Dieser Vorgang nimmt
+ * dem Konto die eigene Sitzung — danach gibt es kein `auth.uid()` mehr, und
+ * `log_account_security_event` weist den Aufruf ab. Nachher melden heißt
+ * deshalb: gar nicht melden. Der Vermerk steht dort vor dem Vorgang und ist
+ * seine Vorbedingung; scheitert er, unterbleibt das Abmelden.
+ *
+ * **Das geht in die andere Richtung als ANN-041 Fassung 2**, und der
+ * Unterschied ist nicht Bequemlichkeit. Dort vermerkt die Anwendung erst, wenn
+ * ein Mensch den Versand bestätigt hat, weil sie den Ausgang eines `mailto:`
+ * grundsätzlich nicht sehen kann. Hier sieht sie ihn (`signOut` liefert einen
+ * Fehler oder nicht), kann ihn aber nicht mehr aufschreiben. Was der Eintrag
+ * deshalb festhält, ist die **Auslösung** durch diese Person, nicht die
+ * Wirkung auf allen Geräten — die Oberfläche sagt genau das.
+ *
+ * Der Restfall bleibt und ist in ANN-044 benannt: Scheitert `signOut` nach
+ * einem geschriebenen Vermerk, steht ein Eintrag zu einem Vorgang, der nicht
+ * durchlief. Ihn aufzulösen braucht einen serverseitigen Vermerk und damit
+ * eine Migration; der Änderungspfad steht im Register.
  */
 type Sicherheitsereignis = 'password_changed' | 'sessions_ended' | 'mfa_enrolled' | 'mfa_removed';
 
+/**
+ * Meldet im Nachhinein und hält den Ablauf nicht auf.
+ *
+ * `rpc` wirft bei einem Serverfehler nicht, sondern löst mit `{ error }` auf —
+ * ein `try`/`catch` darum herum fängt nichts und täuscht eine Behandlung vor.
+ * Deshalb wird `error` ausgewertet. Sichtbar bleibt der Fehlschlag auf der
+ * Konsole, wie beim Aktenzugriff in `features/patients/api.ts`; ohne
+ * Kontoangabe, denn ADR-011 lässt keine personenbezogenen Daten ins Log.
+ */
 async function melde(ereignis: Sicherheitsereignis): Promise<void> {
-  try {
-    await getSupabase().rpc('log_account_security_event', { p_event: ereignis });
-  } catch {
-    // Siehe oben: der Vorgang beim Provider ist bereits geschehen.
+  const { error } = await getSupabase().rpc('log_account_security_event', { p_event: ereignis });
+  if (error) {
+    console.error('Auditeintrag für ein Kontoereignis fehlgeschlagen.');
   }
+}
+
+/**
+ * Meldet vorab und ist Vorbedingung: ohne Vermerk kein Vorgang (ANN-044).
+ *
+ * Der Vermerk hält fest, dass diese Person die Beendigung **ausgelöst** hat —
+ * nicht, dass sie überall gewirkt hat. Das ist der ehrliche Inhalt: Ob ein
+ * fremdes Gerät den Zugriff schon verloren hat, sieht diese Anwendung nicht.
+ */
+async function meldeVorab(ereignis: Sicherheitsereignis): Promise<void> {
+  const { error } = await getSupabase().rpc('log_account_security_event', { p_event: ereignis });
+  if (error) throw new Error('Der Vorgang wurde nicht protokolliert und deshalb nicht ausgeführt.');
 }
 
 /**
@@ -53,13 +93,25 @@ export async function aendereKennwort(neuesKennwort: string): Promise<void> {
  * Beendet alle Sitzungen dieses Kontos — auch die auf anderen Geräten.
  *
  * Der Punkt aus R10 der Roadmap: Wer sein Diensttelefon verliert, muss das
- * angemeldete Gerät ohne fremde Hilfe abmelden können. `scope: 'global'`
- * entwertet alle ausgegebenen Token, die eigene Sitzung eingeschlossen — die
- * Abmeldung im laufenden Fenster ist die sichtbare Folge, nicht ein
- * Nebeneffekt.
+ * angemeldete Gerät ohne fremde Hilfe abmelden können.
+ *
+ * **Was `scope: 'global'` wirklich tut** (ANN-044): Der Anmeldedienst löscht
+ * alle Sitzungen des Kontos und mit ihnen die Erneuerungstoken. Ein verlorenes
+ * Gerät kann sich damit nicht mehr verlängern. Sein **bereits ausgestelltes**
+ * Zugriffstoken bleibt aber bis zum Ablauf gültig, weil die Datenschnittstelle
+ * nur die Signatur und `exp` prüft und dafür nicht in die Datenbank sieht. Das
+ * Fenster ist `jwt_expiry` aus `supabase/config.toml`, heute 3600 Sekunden.
+ *
+ * Sofort wirkt allein die **Sperre des Zugangs** durch die Praxisleitung: Die
+ * Datenbank liest bei jeder Anfrage `user_profiles.is_active`
+ * (`app.current_organization_id()`), und ein gesperrtes Profil liefert keine
+ * Organisation mehr. Wer ein Gerät wirklich verloren hat, braucht deshalb
+ * beides — und die Oberfläche sagt das an der Stelle der Entscheidung.
  */
 export async function beendeAlleSitzungen(): Promise<void> {
-  await melde('sessions_ended');
+  // Vor dem Vorgang, weil danach kein `auth.uid()` mehr existiert - siehe
+  // Dateikopf und ANN-044. Wirft der Vermerk, unterbleibt das Abmelden.
+  await meldeVorab('sessions_ended');
   const { error } = await getSupabase().auth.signOut({ scope: 'global' });
   if (error) throw new Error('Die Sitzungen konnten nicht beendet werden.');
 }
@@ -72,10 +124,14 @@ export async function beendeAlleSitzungen(): Promise<void> {
  * wurde zurückgesetzt" wäre selbst eine Auskunft darüber, wer ein Konto hat.
  * Der Anmeldedienst führt den Vorgang; die Änderung des Kennworts wird beim
  * Setzen protokolliert.
+ *
+ * Das Ziel war `/mein-konto` — eine Seite hinter der Anmeldung, und damit für
+ * genau die Person unerreichbar, die den Link braucht (FIX-001). Es ist jetzt
+ * die öffentliche Seite, die den Link auch einlösen kann.
  */
 export async function fordereKennwortMailAn(email: string): Promise<void> {
   await getSupabase().auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: `${window.location.origin}/mein-konto`,
+    redirectTo: `${window.location.origin}${WIEDERHERSTELLUNG_PFAD}`,
   });
 }
 
