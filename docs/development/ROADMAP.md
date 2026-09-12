@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 3.5 · Stand 2026-09-12 · **in Kraft**
+Version 3.6 · Stand 2026-09-12 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -45,15 +45,26 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop CAL-EPIC-003b Serie und Terminfenster
+/feature-loop DAT-EPIC-001 Dateiablage
 ```
 
-- **Voraussetzung erfüllt:** `VER-001` steht, `CAL-EPIC-003a` ist seit dem
-  2026-09-12 fertig, `UI-000` ebenso. Für **CAL-010a** gilt
-  `PROJECT_PRINCIPLES.md` §8.1 unverändert; **E12** (Herkunft der Fahrzeit,
-  Warnung oder Sperre) ist weiter offen und blockiert nur **CAL-010b** — der
-  Loop baut CAL-007 und CAL-010a und schlägt für CAL-010b eine Annahme vor
-  oder lässt ihn liegen.
+- **Voraussetzung:** ADR-017 Dateiablage. Der ADR ist noch nicht geschrieben
+  (Etappe G, Zeile G1) — er läuft als Docs-Session und wartet auf Jannes'
+  Bestätigung. Bis dahin kann DAT-EPIC-001 nicht sinnvoll beginnen; wer früher
+  starten will, zieht `ABR-EPIC-001` vor (Voraussetzung: B4 als Annahme).
+- **CAL-EPIC-003b ist am 2026-09-12 fertig** (drei Stories): 60-Minuten-Terminfenster
+  nach §8.1, serverseitig durchgesetzt in beiden Schreibpfaden, mit
+  abgeleitetem Ende im Formular und Bestandsschutz (CAL-010a) · Terminserie aus
+  einer Verordnung in **einem** Vorgang mit Anzahl aus dem Kontingent, drei
+  Rhythmen, Konfliktprüfung je Zeile und Einzelabweichung (CAL-007) ·
+  Terminzettel als Druckansicht (CAL-011, `IDEA-PRX-006`, damit überführt).
+  **Neu offen: ANN-037, ANN-038, ANN-039** — Prüfung der Terminfensterlänge
+  statt des Zeitpunkts, „verplant ist nicht genutzt" samt Rhythmen und
+  Obergrenze, Inhalt und Ausgabeweg des Terminzettels. ANN-039 ist
+  `Datenschutz` und gehört in die Anfrage B2. **CAL-010b (Fahrpuffer) bleibt
+  liegen** — E12 Punkt 3 und 4 sind offen, und ein pauschaler Wert wäre neben
+  MAP-004 ein zweiter, schlechterer Mechanismus. Der Vorschlag dazu steht im
+  Bericht des Loops.
 - **CAL-EPIC-003a ist am 2026-09-12 fertig** (fünf Stories): sechs
   Terminzustände nach ADR-018 mit der Umbenennung `scheduled` → `confirmed` ·
   Absage nur mit codiertem Pflichtgrund und ohne Rückweg · „nicht angetroffen"
@@ -71,8 +82,8 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   **`invoiced` ist im Wertebereich, hat aber keinen Schreibpfad** — den bringt
   ABR-003, zusammen mit dem Auditereignis `appointment.invoiced` und der
   Anpassung der beiden Feld-Constraints.
-- **Danach, in dieser Reihenfolge:** `DAT-EPIC-001` Dateiablage ·
-  `ABR-EPIC-001` · `ABR-EPIC-002a`.
+- **Danach, in dieser Reihenfolge:** `ABR-EPIC-001` · `ABR-EPIC-002a` ·
+  `ABR-EPIC-002b`.
 - **LOE-EPIC-001 ist am 2026-09-11 fertig** (fünf Stories): Retention Schedule
   als Daten, Anker „Abschluss der Versorgung", Legal Hold, täglicher Löschlauf
   mit Löschjournal und Wiederanwendung nach einem Restore, Aufbewahrungs-
@@ -111,7 +122,8 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   Datenschutzprüfung nicht. Erledigt sind damit allein ANN-032 und ANN-036 —
   die beiden Einträge der Kategorien `Praxisprozess` und `Technik`.
 - **Weiter offen:** ANN-001, ANN-004, ANN-005, ANN-008, ANN-009, ANN-011,
-  ANN-013, ANN-014, ANN-016, ANN-017 und die Providerfrage aus ANN-007. Sie
+  ANN-013, ANN-014, ANN-016, ANN-017, die neuen ANN-037 bis ANN-039 und die
+  Providerfrage aus ANN-007. Sie
   blockieren nichts, aber ANN-011 (Rollenschnitt der Verordnung) und ANN-014
   (Empfehlung zum Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2,
   ANN-016 und ANN-017 in die Anfrage B2, und ANN-015 gehört auf den ersten
@@ -851,6 +863,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | LOE-EPIC-001 (LOE-001a/b/c, LOE-002a/b)                 | fertig | 2026-09-11     | `042c325`, `169469d`, `310dc3b`, `0a3a2d7`, `c88bc71`, `ae4e85a`, Merge PR #25 | 2026-09-11    |
 | ADR-018 Terminzustände (Docs)                            | fertig | 2026-09-11     | angenommen 2026-09-11, alle sieben Fragen wie empfohlen; §8 auf 0.7 nachgezogen | —             |
 | CAL-EPIC-003a (CAL-008a bis CAL-008d, CAL-009)           | fertig | 2026-09-12     | `42f9fc3`, `262b5cd`, `718bd59`, `6eccadb`, `6ed26e5`, `6cd2c6b`    |               |
+| CAL-EPIC-003b (CAL-010a, CAL-007, CAL-011)               | fertig | 2026-09-12     | `b2626ae`, `89ab30b`, `acddcc6`                                     |               |
 
 ---
 
@@ -858,6 +871,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.6     | 2026-09-12 | **CAL-EPIC-003b fertig** (drei Stories): Das 60-Minuten-Terminfenster aus §8.1 wird serverseitig durchgesetzt — beide Schreibpfade, abgeleitetes Ende im Formular, Bestandstermine bleiben gültig und verschiebbar (CAL-010a, ANN-037) · Eine Verordnung wird in **einem** Vorgang zur Terminserie: Anzahl aus dem offenen Kontingent, drei Rhythmen, serverseitige Konfliktprüfung je Zeile, Einzelabweichung, alles oder nichts; der Termin kennt seine Verordnung (CAL-007, ANN-038) · Terminzettel als Druckansicht, nur Druck und kein Versand (CAL-011, `IDEA-PRX-006` überführt, ANN-039). **CAL-010b (Fahrpuffer) bleibt liegen** — E12 Punkt 3 und 4 sind offen; ein pauschaler Wert wäre neben MAP-004 ein zweiter, schlechterer Mechanismus. **Nächster Loop: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
 | 3.5     | 2026-09-12 | **ANN-034 bis ANN-036 von Jannes bestätigt** — alle drei wie empfohlen. ANN-034 (Absagegrund als codierte Auswahl ohne Freitext) und ANN-035 (No-show unter der Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung) wechseln auf `entschieden (Jannes)` und bleiben als `Datenschutz` beziehungsweise `Recht` **im Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die Datenschutzprüfung nicht (§15.1 Punkt 5). Beide gehören damit in die Anfrage B2. ANN-036 (`documented` auch aus `confirmed`) ist `Technik` und **erledigt**; er kommt nur zurück, wenn ABR-003 `invoiced` denselben Weg gehen lässt. **Reihenfolge unverändert — CAL-EPIC-003b bleibt der nächste Loop**; CAL-EPIC-003a wartet nur noch auf die Abnahme am eigenen Rechner. |
 | 3.4     | 2026-09-12 | **CAL-EPIC-003a fertig** (fünf Stories): Ein Statusfeld mit sechs in V1 erreichbaren Werten nach ADR-018, samt der Umbenennung `scheduled` → `confirmed` quer durch Migrationen, Lesepfade, Filter, Planungsregeln und Oberfläche · Absage nur mit codiertem Pflichtgrund und ohne Rückweg (ANN-034) · „nicht angetroffen" mit Pflichtentscheidung zum Ausfallhonorar, Wiederöffnen und eigener Löschregel (ANN-035) · `documented` setzt die Finalisierung in derselben Transaktion, mit der von ADR-018 verlangten Invariante in beiden Richtungen (ANN-036) · `cancel_staff_day` plant einen ganzen Tag in einem Vorgang um und zeigt danach die Anrufliste (CAL-009, `IDEA-PRX-004` überführt). Neu hinter der Anmeldung maschinell geprüft: `tests/e2e/authenticated/appointment-states.spec.ts`. Der Punkt „Terminstatusautomat" fällt aus der Liste offener Entscheidungen in `ARBEITSBEREICHE.md`. **Nächster Loop: CAL-EPIC-003b.** |
 | 3.3     | 2026-09-11 | **Sechs Epics von Jannes abgenommen** (DOK-001 bis DOK-004, VER-EPIC-001, UI-000, MARKE-001, UX-EPIC-001, LOE-EPIC-001) — die Spalte „Abgenommen am" trägt jetzt überall dort ein Datum. Damit ist der Kernprozess zur Hälfte erledigt: Block A des Fortschrittsmodells steht auf 50 Prozent, der Gesamtstand auf **25,3 Prozent** (vorher 23,5). Neu ist dieses Modell selbst — `docs/development/fortschritt.json`, `scripts/fortschritt.mjs` und `pnpm fortschritt` beantworten „wie weit sind wir insgesamt", was die Fortschrittstabelle absichtlich nicht tut; die Gewichte und die drei Festlegungen dahinter stehen im Abschnitt „Eine Zahl für den Gesamtstand". **Reihenfolge unverändert — CAL-EPIC-003a bleibt der nächste Loop**, seine Voraussetzung ADR-018 ist mit PR #26 in `main`. |
