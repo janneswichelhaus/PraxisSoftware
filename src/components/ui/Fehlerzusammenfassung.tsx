@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { Formularfehler } from '@/lib/formularfehler';
 
 /**
  * Was ist noch zu korrigieren — und wo? (UX-012)
@@ -19,14 +20,6 @@ import { useEffect, useRef } from 'react';
  * die Meldung wäre für jemanden ohne Blick auf den Bildschirm nicht auffindbar
  * (WCAG 3.3.1).
  */
-
-export interface Formularfehler {
-  /** Kennung des Feldes, auf das der Eintrag springt (`feldId`). */
-  feldId: string;
-  /** Beschriftung des Feldes, damit der Eintrag ohne Blick verständlich ist. */
-  feld: string;
-  meldung: string;
-}
 
 export function Fehlerzusammenfassung({
   fehler,
@@ -78,26 +71,4 @@ export function Fehlerzusammenfassung({
       </ul>
     </div>
   );
-}
-
-/**
- * Baut die Zusammenfassung aus den Feldfehlern eines Formulars.
- *
- * Die Reihenfolge folgt der Feldreihenfolge und nicht der Fundreihenfolge der
- * Prüfung: Wer die Liste von oben abarbeitet, geht damit durch das Formular
- * und nicht kreuz und quer.
- */
-export function alsFormularfehler<F extends string>(
-  reihenfolge: readonly F[],
-  beschriftungen: Readonly<Record<F, string>>,
-  fehler: Partial<Record<F, string>>,
-  feldId: (feld: F) => string,
-): Formularfehler[] {
-  return reihenfolge
-    .filter((feld) => Boolean(fehler[feld]))
-    .map((feld) => ({
-      feldId: feldId(feld),
-      feld: beschriftungen[feld],
-      meldung: fehler[feld]!,
-    }));
 }

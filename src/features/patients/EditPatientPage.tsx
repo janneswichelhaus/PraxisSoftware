@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -18,6 +20,11 @@ import {
   type StammdatenFeld,
 } from './api';
 import { PatientMasterDataFields } from './PatientMasterDataFields';
+import {
+  STAMMDATEN_BESCHRIFTUNG,
+  STAMMDATEN_REIHENFOLGE,
+  stammdatenFeldId,
+} from './stammdatenfelder';
 
 /**
  * Formular für die Änderung der Stammdaten.
@@ -109,6 +116,15 @@ function EditPatientForm({ patient }: { patient: Patient }) {
             />
           </div>
         ) : null}
+
+        <Fehlerzusammenfassung
+          fehler={alsFormularfehler(
+            STAMMDATEN_REIHENFOLGE,
+            STAMMDATEN_BESCHRIFTUNG,
+            fehler,
+            stammdatenFeldId,
+          )}
+        />
 
         <PatientMasterDataFields
           werte={werte}

@@ -4,10 +4,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import { fetchLocations } from '@/features/appointments/api';
 import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/session/types';
 import { createStaffMember, leereStammdaten, staffMasterDataSchema, type StaffFeld } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
+import { STAFF_BESCHRIFTUNG, staffFeldId, staffReihenfolge } from './mitarbeiterfelder';
 
 /**
  * Anlage eines Mitarbeiterdatensatzes.
@@ -90,6 +93,15 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
             />
           </div>
         ) : null}
+
+        <Fehlerzusammenfassung
+          fehler={alsFormularfehler(
+            staffReihenfolge(privat),
+            STAFF_BESCHRIFTUNG,
+            fehler,
+            staffFeldId,
+          )}
+        />
 
         <StaffMasterDataFields
           werte={werte}

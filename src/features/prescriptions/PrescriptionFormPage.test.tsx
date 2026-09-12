@@ -155,6 +155,26 @@ describe('NewPrescriptionPage', () => {
     expect(createPrescription).not.toHaveBeenCalled();
   });
 
+  it('fuehrt aus der Fehlerzusammenfassung ins Kopffeld', async () => {
+    // Das Verordnungsformular ist lang: Kopf, Positionen, klinische Angaben.
+    // Ein Fehler im Kopf steht beim Absenden weit ausserhalb des Bildes
+    // (UX-012). Die Positionen tragen ihre Meldung direkt an der Zeile.
+    const user = userEvent.setup();
+    renderWithProviders(<NewPrescriptionPage />);
+    await screen.findByRole('option', { name: /Probst/ });
+
+    await user.click(screen.getByRole('button', { name: 'Verordnung speichern' }));
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Verordner:in: Verordner:in ist erforderlich.');
+    expect(kasten).toHaveTextContent('Ausstellungsdatum: Ausstellungsdatum ist erforderlich.');
+
+    await user.click(
+      screen.getByRole('link', { name: 'Ausstellungsdatum: Ausstellungsdatum ist erforderlich.' }),
+    );
+    expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveFocus();
+  });
+
   it('speichert Kopf und Positionen und kehrt zur Akte zurueck', async () => {
     const user = userEvent.setup();
     renderWithProviders(<NewPrescriptionPage />);

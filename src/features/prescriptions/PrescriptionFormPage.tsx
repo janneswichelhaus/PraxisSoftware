@@ -5,11 +5,18 @@ import type { z } from 'zod';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { useSession } from '@/features/auth/sessionContext';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { PrescriptionFormFields, type PositionsFehler } from './PrescriptionFormFields';
+import {
+  VERORDNUNG_BESCHRIFTUNG,
+  VERORDNUNG_REIHENFOLGE,
+  verordnungFeldId,
+} from './verordnungsfelder';
 import {
   createPrescription,
   deletePrescription,
@@ -250,6 +257,15 @@ function VerordnungsFormular({
             <ErrorState title="Die Verordner:innen konnten nicht geladen werden." />
           </div>
         ) : null}
+
+        <Fehlerzusammenfassung
+          fehler={alsFormularfehler(
+            VERORDNUNG_REIHENFOLGE,
+            VERORDNUNG_BESCHRIFTUNG,
+            fehler,
+            verordnungFeldId,
+          )}
+        />
 
         <PrescriptionFormFields
           werte={werte}
