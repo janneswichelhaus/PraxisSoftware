@@ -141,7 +141,7 @@ Feature.
 | E5    | Produktions-Logs                                             | entschieden 2026-08-28                                        | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G8                                            |
 | E6    | Synthetische Testdaten                                       | erledigt: der Seed ist der Generator                          | `supabase/seed.sql`; Erweiterung im Loop, der sie braucht                                                     |
 | E7    | CI-Gates, Branch Protection                                  | entschieden 2026-08-28                                        | [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md); Freigabeprozess Roadmap G5                         |
-| E8    | Dateiablage                                                  | **in Arbeit: ADR-017**, beauftragt 2026-09-05                 | Roadmap G1, Sep 2026                                                                                          |
+| E8    | Dateiablage                                                  | **erledigt 2026-09-12** — ADR-017 angenommen, alle acht Fragen wie empfohlen | [ADR-017](../adr/ADR-017-file-storage.md); unten; Bau in Roadmap G4; **produktive** Ablage an OPS-001 (G3) und OPS-003 (G7) gebunden |
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
 | E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024)          |
 | E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | unten                                                                                    |
@@ -1004,6 +1004,53 @@ Claude) und die Funktion „Tagesplan exportierbar" (Roadmap, Dezember).
 
 **Blockiert:** Go-live-Abnahme (Roadmap G10, G18).
 
+### E8 — Dateiablage
+
+| | |
+|---|---|
+| Dringlichkeit | P1 — DAT-EPIC-001 ist der nächste Loop; VER-004 und ABR-003b hängen daran |
+| Bezug | §4.7, §12 („Dateizugriffe"), §18; ADR-004 Punkt 6, ADR-008, ADR-010 Punkt 2, ADR-012 Punkt 5, ADR-015 Punkt 10 |
+
+**Frage:** Wo liegen Dateien, wer darf sie sehen, wie werden sie ausgeliefert,
+wie lange bleiben sie, und wird auf Schadsoftware geprüft?
+
+**Warum das offen war:** ADR-015 Punkt 10 hat den Ort gewählt — Supabase
+Storage — und sonst nichts gesagt; derselbe ADR führt die Frage nach §12 und
+ADR-008 als offene Folgefrage. ADR-004 nennt die Dateiablage zugleich den
+„wahrscheinlichsten Umgehungsweg" des Berechtigungsmodells.
+
+**Stand 2026-09-12: [ADR-017](../adr/ADR-017-file-storage.md) liegt vor**,
+Status **vorgeschlagen**. Er entscheidet dreißig Punkte, darunter: die
+Datenbankzeile führt und das Objekt folgt (zweiphasiger Upload mit
+Bestätigung) · Objektschlüssel nur aus Kennungen, nie ein Name · Dateien sind
+unveränderlich · **Rollenschnitt an der Dokumentart**, der Verordnungsscan ist
+klinisch, weil sich ein Scan nicht projizieren lässt (ANN-011) · Auslieferung
+nur über **signierte Verweise mit 60 Sekunden**, ohne CDN-Zwischenspeicher und
+ohne Teilen-Link, weil ein solcher Verweis nicht widerrufbar ist · drei
+Auditereignisse samt der ehrlichen Grenze, dass die **Ausstellung** des
+Verweises protokolliert wird und nicht das Laden · Datenklasse und Frist erbt
+die Datei vom Bezugsdatensatz · **zweistufige Löschung mit Quittung**, weil
+eine Datenbankfunktion kein Objekt löschen kann · **keine Virenprüfung in V1**,
+Pflicht ab dem ersten Upload von außen.
+
+**Was dabei herauskam und vorher niemand auf dem Zettel hatte:** Der
+Objektspeicher läuft im Datenbank-Backup **nicht** mit. ADR-012 Punkt 5 hat das
+vorausgesehen; ADR-017 macht daraus eine Vorbedingung für den Echtbetrieb mit
+Dateien (OPS-003, Roadmap G7) und eine dreistufige Wiederherstellung.
+
+**Erledigt am 2026-09-12:** Jannes hat **alle acht Bestätigungsfragen wie
+empfohlen** beantwortet. ADR-017 ist damit **angenommen**, dieser Punkt ist
+geschlossen, und DAT-EPIC-001 ist baubar.
+
+**Was der Punkt nicht mehr, die Roadmap aber weiter offen führt:** Die
+**produktive** Ablage hängt an OPS-001 (fünf zusätzliche Prüfpunkte zum
+Objektspeicher, G3) und an einem dokumentierten, getesteten Sicherungsweg für
+den Bucket (G7) — der Objektspeicher läuft im Datenbank-Backup nicht mit. Beides
+ist Vorbedingung für die erste echte Datei, nicht für den Loop.
+
+**Blockiert:** nichts mehr. DAT-EPIC-001 (Roadmap G4) kann starten; VER-004 und
+ABR-003b hängen nur noch an ihren eigenen Vorläufern.
+
 ### E10 — Wer verwaltet Mitarbeiterdatensätze
 
 | | |
@@ -1342,3 +1389,27 @@ aus der Roadmap nicht abgeschlossen werden kann.
   die automatische Erinnerung, ein Versanddienstleister, die
   Online-Terminbuchung und die Einwilligung je Patient:in (PAT-006). Neu
   offen: **ANN-041**.
+- **2026-09-12, ADR-017 geschrieben (Docs-Session, Punkt E8):** Die Dateiablage
+  hat Regeln — Ort, Dokumentart mit Rollenschnitt, zweiphasiger Upload,
+  unveränderliche Dateien, signierte Verweise mit 60 Sekunden ohne
+  CDN-Zwischenspeicher, drei Auditereignisse, Frist vom Bezugsdatensatz,
+  zweistufige Löschung mit Quittung, keine Virenprüfung in V1. **Punkt E8
+  bleibt offen bis zur Bestätigung** (acht Fragen am Ende des ADR); die
+  produktive Geltung hängt zusätzlich an OPS-001, für den der ADR **fünf
+  zusätzliche Prüfpunkte** zum Objektspeicher benennt. Zwei Befunde aus der
+  Recherche, die über den ADR hinausreichen: Ein **signierter Verweis ist nicht
+  widerrufbar** und eine am CDN zwischengespeicherte Antwort kann ihn
+  überleben — beides trägt die kurze Gültigkeit und `cacheControl: '0'`. Und
+  der **Objektspeicher läuft im Datenbank-Backup nicht mit**; das macht ADR-012
+  Punkt 5 zur Vorbedingung für den Echtbetrieb mit Dateien (OPS-003, Roadmap
+  G7). Keine neue Annahme.
+- **2026-09-12, ADR-017 angenommen:** Jannes beantwortet die acht
+  Bestätigungsfragen **ausnahmslos nach Empfehlung** — 60-Sekunden-Verweise
+  ohne Teilen-Link, Verordnungsscan klinisch, PDF/JPEG/PNG bis 10 MB, keine
+  Virenprüfung in V1, unveränderliche Dateien, zweistufige Löschung mit
+  Quittung, keine produktive Datei ohne getestete Objektsicherung, fünf
+  zusätzliche Prüfpunkte in OPS-001. Damit ist **Punkt E8 erledigt** und
+  DAT-EPIC-001 baubar. `PROJECT_PRINCIPLES.md` wird **nicht** nachgezogen: §4.7
+  (Dateien folgen denselben Berechtigungsregeln), §12 (Dateizugriffe sind
+  testpflichtig) und §18 (Fristen) gelten unverändert — ADR-017 konkretisiert
+  sie, ändert aber keine Prinzipienaussage (§21).

@@ -80,26 +80,27 @@ davon abhängt, vorher fertigstellen.
 
 ## ADR-Index — welcher ADR wofür
 
-| ADR | Lesen, wenn es um … geht                                                  |
-| --- | ------------------------------------------------------------------------- |
-| 001 | Offline-Verhalten, Synchronisation, Finalisierung von Dokumentation       |
-| 002 | Hosting, Datenstandort, neue Dienstleister, Umgebungstrennung, Logziele   |
-| 003 | `organization_id` / `location_id`, Mandantenfähigkeit                     |
-| 004 | Rollen, Policies, RLS, Projektionen, Suche/Export/RAG-Berechtigungen      |
-| 005 | KI-Anbindung, AI Gateway, Trennung LLM/Determinismus                      |
-| 006 | MDR-Abgrenzung, Red Flags, Zweckbestimmung, `MDR_REVIEW_REQUIRED`         |
-| 007 | DSFA, Datenschutzprozess, Go-live-Vorbedingungen                          |
-| 008 | Aufbewahrung, Löschung, Retention Schedule, Legal Hold, Backups           |
-| 009 | Abrechnung, Leistungen, Rechnungszustände, Snapshots, Zahlungen           |
-| 010 | Audit-Ereignisse, Audit-Lesepfad, privilegierter Produktionszugriff       |
-| 011 | Logging, Observability, Redaction, Log-Retention                          |
-| 012 | Backup/Restore, RPO/RTO, Degraded-Betrieb, Betriebsdokumentation          |
-| 013 | CI-Gates, Branch Protection, Release-Freigabe                             |
-| 014 | Datenmodell-Fundament: UUIDs, Zeitstempel, Geldwerte, Rollen, Trennung    |
-| 015 | Stack, Ordnerstruktur, Abgrenzungen (kein Next.js, kein Service Worker …) |
-| 016 | Dokumentation: Entwurf/Finalisierung, Versionierung, wer ändern darf      |
-| 018 | Terminzustände, Übergänge, Ausfallhonorar-Kennzeichen, Terminserie        |
-| 019 | Kartendienst, Navigations-Handoff, Fahrzeiten, Vertrags-/§203-Gate        |
+| ADR | Lesen, wenn es um … geht                                                    |
+| --- | --------------------------------------------------------------------------- |
+| 001 | Offline-Verhalten, Synchronisation, Finalisierung von Dokumentation         |
+| 002 | Hosting, Datenstandort, neue Dienstleister, Umgebungstrennung, Logziele     |
+| 003 | `organization_id` / `location_id`, Mandantenfähigkeit                       |
+| 004 | Rollen, Policies, RLS, Projektionen, Suche/Export/RAG-Berechtigungen        |
+| 005 | KI-Anbindung, AI Gateway, Trennung LLM/Determinismus                        |
+| 006 | MDR-Abgrenzung, Red Flags, Zweckbestimmung, `MDR_REVIEW_REQUIRED`           |
+| 007 | DSFA, Datenschutzprozess, Go-live-Vorbedingungen                            |
+| 008 | Aufbewahrung, Löschung, Retention Schedule, Legal Hold, Backups             |
+| 009 | Abrechnung, Leistungen, Rechnungszustände, Snapshots, Zahlungen             |
+| 010 | Audit-Ereignisse, Audit-Lesepfad, privilegierter Produktionszugriff         |
+| 011 | Logging, Observability, Redaction, Log-Retention                            |
+| 012 | Backup/Restore, RPO/RTO, Degraded-Betrieb, Betriebsdokumentation            |
+| 013 | CI-Gates, Branch Protection, Release-Freigabe                               |
+| 014 | Datenmodell-Fundament: UUIDs, Zeitstempel, Geldwerte, Rollen, Trennung      |
+| 015 | Stack, Ordnerstruktur, Abgrenzungen (kein Next.js, kein Service Worker …)   |
+| 016 | Dokumentation: Entwurf/Finalisierung, Versionierung, wer ändern darf        |
+| 017 | Dateien: Ablageort, Dokumentart, signierte Verweise, Löschung, Virenprüfung |
+| 018 | Terminzustände, Übergänge, Ausfallhonorar-Kennzeichen, Terminserie          |
+| 019 | Kartendienst, Navigations-Handoff, Fahrzeiten, Vertrags-/§203-Gate          |
 
 ## Repository
 
