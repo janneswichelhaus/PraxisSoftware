@@ -72,7 +72,7 @@
       "gewicht": 25,
       "bezug": "ROADMAP.md, Spur A3 Etappe G (vor M3)",
       "posten": [
-        { "id": "g1-adr-017", "name": "G1 ADR-017 Dateiablage (Dokument)", "gewicht": 1, "status": "offen" },
+        { "id": "g1-adr-017", "name": "G1 ADR-017 Dateiablage (Dokument, Bestätigung offen)", "gewicht": 1, "status": "entwurf" },
         { "id": "g2-staff-epic-002", "name": "G2 STAFF-EPIC-002 Konten und Rollen", "gewicht": 2, "status": "fertig" },
         { "id": "g3-ops-001", "name": "G3 OPS-001 Providerprüfung und Cloudprojekt", "gewicht": 2, "status": "offen" },
         { "id": "g5-ops-002", "name": "G5 OPS-002 Deployment und Freigabe", "gewicht": 2, "status": "offen" },
@@ -110,7 +110,7 @@
       "posten": [
         { "id": "d-adr-018", "name": "D → ADR-018 Terminzustände", "gewicht": 1, "status": "fertig" },
         { "id": "e10", "name": "E10 Schreibrecht Mitarbeiterdaten", "gewicht": 1, "status": "fertig" },
-        { "id": "e8-adr-017", "name": "E8 → ADR-017 Dateiablage", "gewicht": 1, "status": "offen" },
+        { "id": "e8-adr-017", "name": "E8 → ADR-017 Dateiablage bestätigen", "gewicht": 1, "status": "entwurf" },
         { "id": "b7-adr-019", "name": "B7 → ADR-019 Kartendienst bestätigen (E-20)", "gewicht": 1, "status": "vorlaeufig" },
         { "id": "providerpruefung", "name": "Providerprüfung Supabase (OPS-001)", "gewicht": 2, "status": "offen" },
         { "id": "b4-steuer", "name": "B4 Steuerliche Validierung", "gewicht": 2, "status": "vorlaeufig" },
