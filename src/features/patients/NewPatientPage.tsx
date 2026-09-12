@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
 import {
   createPatient,
@@ -25,6 +27,18 @@ export function NewPatientPage() {
   const [fehler, setFehler] = useState<Partial<Record<StammdatenFeld, string>>>({});
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [suche] = useSearchParams();
+
+  /**
+   * Der Abstecher aus einem laufenden Vorgang (UX-012).
+   *
+   * „Die Person steht noch gar nicht in der Kartei" passiert beim Anlegen
+   * eines Termins ständig. Vorher war das eine Sackgasse: Kartei öffnen,
+   * anlegen, zurückfinden, von vorn beginnen. Kommt ein Rückweg mit, führt
+   * das Anlegen dorthin zurück — und nimmt die neue Kennung mit, damit der
+   * begonnene Vorgang sie sofort verwenden kann.
+   */
+  const zurueck = leseRueckweg(suche, '/patienten');
 
   // Auswahl für die feste Therapeut:in (PAT-005). Schlägt die Abfrage fehl,
   // bleibt die Auswahl leer - das Formular bleibt bedienbar.
@@ -38,7 +52,13 @@ export function NewPatientPage() {
     mutationFn: createPatient,
     onSuccess: async (patientId) => {
       await queryClient.invalidateQueries({ queryKey: ['patients'] });
-      void navigate(`/patienten/${patientId}`, { replace: true });
+      const trenner = zurueck.includes('?') ? '&' : '?';
+      void navigate(
+        zurueck === '/patienten'
+          ? `/patienten/${patientId}`
+          : `${zurueck}${trenner}patient=${patientId}`,
+        { replace: true },
+      );
     },
   });
 
@@ -70,12 +90,7 @@ export function NewPatientPage() {
 
   return (
     <>
-      <Link
-        to="/patienten"
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zurück zur Liste
-      </Link>
+      <Rueckweg standard="/patienten" beschriftung="Zurück zur Liste" />
 
       <PageHeader
         title="Neue:r Patient:in"
@@ -103,7 +118,7 @@ export function NewPatientPage() {
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Wird angelegt …' : 'Patient anlegen'}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void navigate('/patienten')}>
+          <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
             Abbrechen
           </Button>
         </div>

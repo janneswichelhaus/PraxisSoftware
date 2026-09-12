@@ -47,6 +47,38 @@ describe('NewAppointmentStartPage', () => {
     searchPatients.mockResolvedValue([MAX]);
   });
 
+  // ---------------------------------------------------------------------------
+  // UX-012: Die Person ist noch gar nicht in der Kartei - der haeufigste Grund
+  // fuer einen leeren Treffer. Vorher war das hier eine Sackgasse.
+  // ---------------------------------------------------------------------------
+  describe('Abstecher: Patient:in anlegen', () => {
+    it('bietet den Weg an und nimmt die Vorbelegung als Rueckweg mit', () => {
+      renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
+
+      const link = screen.getByRole('link', { name: 'Patient:in anlegen' });
+      const zurueck = new URL(link.getAttribute('href')!, 'http://x').searchParams.get('zurueck');
+      expect(link.getAttribute('href')!.startsWith('/patienten/neu?')).toBe(true);
+      expect(zurueck).toContain('/termine/neu?');
+      expect(zurueck).toContain('datum=2027-05-12');
+      expect(zurueck).toContain(`person=${STAFF_ANNA}`);
+    });
+
+    it('geht mit der neu angelegten Person direkt ins Terminformular', () => {
+      renderWithProviders(<NewAppointmentStartPage />, `${VORBELEGT}&patient=${MAX.id}`);
+
+      expect(navigate).toHaveBeenCalledWith(
+        `/patienten/${MAX.id}/termine/neu?datum=2027-05-12&beginn=09%3A00&ende=10%3A00&art=home_visit&person=${STAFF_ANNA}`,
+        { replace: true },
+      );
+    });
+
+    it('ignoriert eine verstellte Kennung still', () => {
+      renderWithProviders(<NewAppointmentStartPage />, `${VORBELEGT}&patient=kein-uuid`);
+
+      expect(navigate).not.toHaveBeenCalled();
+    });
+  });
+
   it('zeigt die vorbelegte Zeit, damit sie vor der Auswahl prüfbar ist', () => {
     renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
 

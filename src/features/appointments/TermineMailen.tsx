@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fullName, type Patient } from '@/features/patients/api';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { addAppointmentNotification, type AppointmentSlipEntry } from './api';
 import { mailOeffnen, terminmailEntwurf, type Terminmail } from './terminmail';
 
@@ -49,8 +51,19 @@ export function TermineMailen({
   if (!patient.email) {
     return (
       <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
-        Für eine E-Mail fehlt die Adresse. Sie steht in den Stammdaten der Akte unter „Kontakt" —
-        eintragen darf sie nur, wer sie von der Patient:in selbst hat.
+        Für eine E-Mail fehlt die Adresse — eintragen darf sie nur, wer sie von der Patient:in
+        selbst hat.{' '}
+        {/* Der Abstecher in die Stammdaten und zurück auf diese Seite (UX-012).
+            Vorher stand hier nur, wo die Adresse hingehört. */}
+        <Link
+          to={mitRueckweg(
+            `/patienten/${patient.id}/bearbeiten`,
+            `/patienten/${patient.id}/terminzettel`,
+          )}
+          className="text-accent inline-flex min-h-11 items-center underline"
+        >
+          Adresse in den Stammdaten ergänzen
+        </Link>
       </p>
     );
   }

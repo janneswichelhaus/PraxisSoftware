@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   AppointmentFormFields,
   ArbeitszeitRueckfrage,
@@ -20,10 +21,12 @@ import {
   istAusserhalbArbeitszeit,
   leererTermin,
   leseTerminVorbelegung,
+  schreibeTerminVorbelegung,
   TERMINFENSTER_MINUTEN,
   todayInTimeZone,
   type AppointmentFormField,
   type AppointmentFormValues,
+  type AppointmentType,
 } from './api';
 
 /**
@@ -236,6 +239,13 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
               houseNumber={patientDaten.house_number}
               postalCode={patientDaten.postal_code}
               city={patientDaten.city}
+              // Der Abstecher in die Stammdaten und zurück in genau dieses
+              // Formular - mit derselben Vorbelegung, die es mitgebracht hat
+              // (UX-012).
+              ergaenzenZiel={mitRueckweg(
+                `/patienten/${patientDaten.id}/bearbeiten`,
+                `/patienten/${patientDaten.id}/termine/neu${schreibeTerminVorbelegung(werte.date || werte.start_time ? { datum: werte.date, beginn: werte.start_time, art: werte.appointment_type as AppointmentType, person: werte.staff_member_id } : vorbelegung)}`,
+              )}
             />
           }
         />

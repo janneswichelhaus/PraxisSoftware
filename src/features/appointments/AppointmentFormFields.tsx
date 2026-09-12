@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
@@ -157,12 +158,21 @@ export function UebernommeneAdresse({
   postalCode,
   city,
   ueberschrift = 'Adresse des Hausbesuchs',
+  ergaenzenZiel,
 }: {
   street: string | null;
   houseNumber: string | null;
   postalCode: string | null;
   city: string | null;
   ueberschrift?: string;
+  /**
+   * Weg in die Stammdaten, um die fehlende Adresse zu ergänzen (UX-012).
+   *
+   * Ohne Angabe bleibt es beim Satz „bitte zuerst die Stammdaten ergänzen" -
+   * so wie bisher. Wo der Aufrufer einen Rückweg bauen kann, wird daraus ein
+   * Abstecher, der wieder hierher zurückführt.
+   */
+  ergaenzenZiel?: string | undefined;
 }) {
   const strasse = [street, houseNumber].filter(Boolean).join(' ');
   const ort = [postalCode, city].filter(Boolean).join(' ');
@@ -181,8 +191,17 @@ export function UebernommeneAdresse({
         </>
       ) : (
         <p className="text-danger text-sm">
-          Für einen Hausbesuch fehlt eine vollständige Adresse (Straße, Hausnummer, PLZ und Ort).
-          Bitte zuerst die Stammdaten ergänzen.
+          Für einen Hausbesuch fehlt eine vollständige Adresse (Straße, Hausnummer, PLZ und Ort).{' '}
+          {ergaenzenZiel ? (
+            <Link
+              to={ergaenzenZiel}
+              className="text-danger inline-flex min-h-11 items-center underline"
+            >
+              Jetzt in den Stammdaten ergänzen
+            </Link>
+          ) : (
+            'Bitte zuerst die Stammdaten ergänzen.'
+          )}
         </p>
       )}
     </div>

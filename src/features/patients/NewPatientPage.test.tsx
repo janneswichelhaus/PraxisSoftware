@@ -140,6 +140,44 @@ describe('NewPatientPage', () => {
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // UX-012: Aus einem laufenden Vorgang heraus anlegen - die Anlage fuehrt
+  // dorthin zurueck und nimmt die neue Kennung mit.
+  // ---------------------------------------------------------------------------
+  it('kehrt mit der neuen Kennung in den laufenden Vorgang zurueck', async () => {
+    createPatient.mockResolvedValue('66666666-6666-4666-8666-0000000000ee');
+    const user = userEvent.setup();
+    const vorgang = '/termine/neu?datum=2027-05-12&beginn=09%3A00';
+    renderWithProviders(
+      <NewPatientPage />,
+      `/patienten/neu?zurueck=${encodeURIComponent(vorgang)}`,
+    );
+
+    await ausfuellen(user);
+    await user.click(screen.getByRole('button', { name: 'Patient anlegen' }));
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(
+        `${vorgang}&patient=66666666-6666-4666-8666-0000000000ee`,
+        { replace: true },
+      ),
+    );
+  });
+
+  it('bricht in den laufenden Vorgang ab, ohne etwas anzulegen', async () => {
+    const user = userEvent.setup();
+    const vorgang = '/termine/neu?datum=2027-05-12';
+    renderWithProviders(
+      <NewPatientPage />,
+      `/patienten/neu?zurueck=${encodeURIComponent(vorgang)}`,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+    expect(navigate).toHaveBeenCalledWith(vorgang);
+    expect(createPatient).not.toHaveBeenCalled();
+  });
+
   it('navigiert nach erfolgreicher Anlage zur neuen Patientenakte', async () => {
     createPatient.mockResolvedValue('66666666-6666-4666-8666-0000000000dd');
     const user = userEvent.setup();

@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
 import {
   fetchPatient,
@@ -32,6 +34,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
   const [fehler, setFehler] = useState<Partial<Record<StammdatenFeld, string>>>({});
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [suche] = useSearchParams();
 
   // Auswahl für die feste Therapeut:in (PAT-005). Schlägt die Abfrage fehl,
   // bleibt die Auswahl leer - das Formular bleibt bedienbar.
@@ -44,7 +47,11 @@ function EditPatientForm({ patient }: { patient: Patient }) {
   // Zurück in die Stammdaten und nicht auf die Übersicht der Akte: Dort steht,
   // was gerade geändert wurde (AKTE-005). Die Übersicht zeigt Termine und
   // Verordnungen - der geänderte Ort käme dort gar nicht vor.
-  const zurueck = `/patienten/${patient.id}/stammdaten`;
+  //
+  // Kommt die Änderung aus einem laufenden Vorgang - „für die E-Mail fehlt die
+  // Adresse", „für den Hausbesuch fehlt die Anschrift" -, führt sie dorthin
+  // zurück (UX-012).
+  const zurueck = leseRueckweg(suche, `/patienten/${patient.id}/stammdaten`);
 
   const mutation = useMutation({
     mutationFn: (values: PatientMasterDataValues) => updatePatient(patient.id, values),
@@ -83,12 +90,10 @@ function EditPatientForm({ patient }: { patient: Patient }) {
 
   return (
     <>
-      <Link
-        to={zurueck}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zurück zur Akte
-      </Link>
+      <Rueckweg
+        standard={`/patienten/${patient.id}/stammdaten`}
+        beschriftung="Zurück zu den Stammdaten"
+      />
 
       <PageHeader
         title="Stammdaten bearbeiten"
