@@ -115,7 +115,10 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await expect(akteneintrag(page, terminId)).not.toContainText('Telefon');
   });
 
-  test('vermerkt den Terminzettel beim Drucken für alle aufgeführten Termine', async ({ page }) => {
+  // Seit UX-012 (ANN-039 Fassung 2) sind Drucken und Mitteilen zwei Schritte:
+  // Der Druckdialog wird laufend abgebrochen, und ein Vermerk, der eine
+  // Aushändigung behauptet, die nicht stattfand, ist als Nachweis wertlos.
+  test('vermerkt den Terminzettel erst auf die Bestätigung nach dem Druck', async ({ page }) => {
     await anmelden(page, KONTEN.office);
     const ersterTermin = await terminAnlegen(page, nahtag(3), zeit());
     const zweiterTermin = await terminAnlegen(page, nahtag(4), zeit());
@@ -128,11 +131,31 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
 
     await page.goto(`/patienten/${PATIENTEN.max}/terminzettel`);
     await page.getByRole('button', { name: 'Terminzettel drucken' }).click();
+    await expect(page.getByText(/Wurde der Zettel ausgehändigt\?/)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Ja, als mitgeteilt vermerken' }).click();
+    await expect(page.getByText(/als „Terminzettel ausgehändigt" vermerkt/)).toBeVisible();
 
     await page.goto(`/patienten/${PATIENTEN.max}`);
     for (const id of [ersterTermin, zweiterTermin]) {
       await expect(akteneintrag(page, id)).toContainText('Zettel');
     }
+  });
+
+  test('vermerkt nichts, wenn der Zettel doch nicht ausgehändigt wurde', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    const terminId = await terminAnlegen(page, nahtag(9), zeit());
+
+    await page.addInitScript(() => {
+      window.print = () => undefined;
+    });
+
+    await page.goto(`/patienten/${PATIENTEN.max}/terminzettel`);
+    await page.getByRole('button', { name: 'Terminzettel drucken' }).click();
+    await page.getByRole('button', { name: 'Nein, nichts vermerken' }).click();
+
+    await page.goto(`/patienten/${PATIENTEN.max}`);
+    await expect(akteneintrag(page, terminId)).not.toContainText('Zettel');
   });
 
   test('bietet einem Therapiezugang dieselbe Auswahl', async ({ page }) => {
@@ -167,9 +190,12 @@ test.describe('CAL-013: Termine per E-Mail', () => {
     await expect(page.getByText(/nicht verschlüsselt/)).toBeVisible();
 
     // Ein mailto ohne Handler bleibt im Browser folgenlos; geprüft wird der
-    // Vermerk, nicht das Mailprogramm.
+    // Vermerk, nicht das Mailprogramm. Übergeben und mitgeteilt sind seit
+    // UX-012 zwei Schritte (ANN-041 Fassung 2).
     await page.getByRole('button', { name: 'E-Mail öffnen' }).click();
-    await expect(page.getByText(/im Mailprogramm geöffnet/)).toBeVisible();
+    await expect(page.getByText(/Wurde sie gesendet\?/)).toBeVisible();
+    await page.getByRole('button', { name: 'Ja, als mitgeteilt vermerken' }).click();
+    await expect(page.getByText(/als „Per E-Mail mitgeteilt" vermerkt/)).toBeVisible();
 
     await page.goto(`/patienten/${PATIENTEN.max}`);
     for (const id of [ersterTermin, zweiterTermin]) {

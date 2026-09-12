@@ -134,12 +134,32 @@ describe('AppointmentSlipPage', () => {
     expect(screen.getByText(/fehlt die Adresse/)).toBeInTheDocument();
   });
 
-  it('vermerkt beim Drucken alle aufgeführten Termine als ausgehändigt (CAL-012)', async () => {
+  // ---------------------------------------------------------------------------
+  // UX-012 (ANN-039 Fassung 2): Drucken bereitet vor, die Bestaetigung teilt mit.
+  //
+  // Vorher vermerkte der Klick auf "Drucken" vor dem Druckdialog. Der wird
+  // laufend abgebrochen - falscher Drucker, kein Papier, nur mal nachsehen -,
+  // und in der Akte stand danach eine Aushaendigung, die nie stattfand.
+  // ---------------------------------------------------------------------------
+  it('druckt sofort und vermerkt dabei noch nichts', async () => {
     const user = userEvent.setup();
     rendern();
     await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
 
     await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+
+    await waitFor(() => expect(drucken).toHaveBeenCalledTimes(1));
+    expect(addAppointmentNotification).not.toHaveBeenCalled();
+    expect(screen.getByText(/Wurde der Zettel ausgehändigt\?/)).toBeInTheDocument();
+  });
+
+  it('vermerkt erst auf die Bestaetigung hin (CAL-012)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+    await user.click(await screen.findByRole('button', { name: 'Ja, als mitgeteilt vermerken' }));
 
     await waitFor(() =>
       expect(addAppointmentNotification).toHaveBeenCalledWith(
@@ -147,11 +167,26 @@ describe('AppointmentSlipPage', () => {
         'slip',
       ),
     );
-    await waitFor(() => expect(drucken).toHaveBeenCalledTimes(1));
-    expect(screen.getByText(/als „Terminzettel ausgehändigt" vermerkt/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/sind als „Terminzettel ausgehändigt" vermerkt/),
+    ).toBeInTheDocument();
   });
 
-  it('druckt nicht, wenn der Vermerk scheitert', async () => {
+  it('vermerkt nichts, wenn der Zettel doch nicht ausgehaendigt wurde', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+    await user.click(await screen.findByRole('button', { name: 'Nein, nichts vermerken' }));
+
+    expect(addAppointmentNotification).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByText(/Wurde der Zettel ausgehändigt\?/)).not.toBeInTheDocument(),
+    );
+  });
+
+  it('meldet einen gescheiterten Vermerk, ohne ihn zu behaupten', async () => {
     addAppointmentNotification.mockRejectedValue(
       new Error('Der Vermerk konnte nicht gespeichert werden.'),
     );
@@ -160,11 +195,9 @@ describe('AppointmentSlipPage', () => {
     await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
 
     await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+    await user.click(await screen.findByRole('button', { name: 'Ja, als mitgeteilt vermerken' }));
 
-    expect(
-      await screen.findByText(/Es wurde nichts gedruckt und nichts vermerkt/),
-    ).toBeInTheDocument();
-    expect(drucken).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Es wurde nichts vermerkt/)).toBeInTheDocument();
   });
 
   it('bietet ohne Termine nichts zum Drucken an', async () => {
