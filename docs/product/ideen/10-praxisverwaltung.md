@@ -1109,7 +1109,63 @@ wurde — heute steht das nur als Absagegrund an jedem einzelnen Termin.
 
 ---
 
-Zuletzt aktualisiert: 2026-09-12 (`IDEA-PRX-004` auf `überführt`, neu `IDEA-PRX-041` aus CAL-009). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-038` bis `-040` aus dem Gespräch über Dokumentationsablauf, Tageskarte und Kalenderwechsel). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt seit der Bestätigung, dass die Namen erfunden sind, unter `../kanvas/own-motion-praxis.html`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
+### IDEA-PRX-042 — Terminieren mit ausgewählter Person: der Kalender als Suchfläche
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-12 (Gespräch über die Oberfläche) |
+| Berührt | §8.1, §9, §20; `IDEA-PRX-008` (automatische Terminsuche), `IDEA-PRX-017` (Startort je Tag), `IDEA-PRX-031` (Gebietstage), `IDEA-PRX-032` (Fahrzeit je Weg); MAP-004, MAP-006; E12; B6 |
+
+**Idee.** Zwei Schritte statt eines Formulars. Erst **eine Person auswählen**,
+dann **durch den Kalender scrollen** und die Lücke selbst suchen. Der Kalender
+bleibt dabei der Kalender — kein eigener Suchdialog, keine Vorschlagsliste:
+Wer scrollt, sieht den ganzen Tag und entscheidet mit dem, was er über die
+Woche weiß. Die ausgewählte Person bleibt oben sichtbar, der Tap auf eine freie
+Stelle legt den Termin an.
+
+Der zweite Teil ist der eigentliche Hebel und setzt Fahrzeiten voraus: Solange
+eine Person ausgewählt ist, färbt der Kalender ein, **wo dieser Termin
+hinpasst** — gerechnet aus dem Weg vom vorherigen Termin (oder von der
+Tiefgarage zu Tagesbeginn) zur Adresse dieser Person und von dort weiter zum
+nächsten Termin (oder zurück zur Tiefgarage zum Feierabend). Eine Lücke, die
+nur auf dem Papier frei ist, sieht dann auch auf dem Bildschirm nicht frei aus.
+
+**Warum.** Das Terminieren ist der häufigste Vorgang der Praxis, und auf dem
+Rad entscheidet nicht die freie Zeile, sondern der Weg dorthin. Genau das
+unterscheidet eine Hausbesuchspraxis von einer Praxis mit Behandlungsräumen:
+Dort ist jede freie Zeile gleich gut, hier nicht. Dass die Anwendung erkennen
+muss, ob zwei Termine erreichbar sind, verlangt bereits §9; sichtbar zu machen,
+**wo** ein Termin noch hineinpasst, ist die Bedienform dazu.
+
+**Vorsicht.**
+
+- **Der zweite Teil hängt am Gate.** Fahrzeiten kommen frühestens mit MAP-006
+  (ADR-019 Punkt 9: DPA, §203-Verpflichtung, Subprozessoren, EU-Region, Paid
+  Plan, DSFA-Wiedervorlage). Ohne das Gate gibt es keine Fahrzeit und damit
+  keine belastbare Einfärbung — eine geschätzte wäre schlimmer als keine, weil
+  sie eine Genauigkeit behauptet, die sie nicht hat (E12 Punkt 3 und 4 sind
+  genau deshalb so entschieden worden).
+- **Die Tiefgarage ist ein Startort, kein Gerät.** Start und Ende des Tages
+  gehören zu `IDEA-PRX-017`; die Praxiseinstellung „Standard-Depot" reicht bis
+  MAP-006. Ein persönlicher Startort bleibt ein Beschäftigtendatum (§20).
+- **Einfärben ist eine Auskunft, keine Sperre** (B6, `IDEA-PRX-032`): Termine
+  bleiben frei vergebbar, und nichts davon wird je Person ausgewertet.
+- **Kein Name in der Adresszeile**, auch nicht im Auswahlmodus (ADR-011) — der
+  Patientenfilter des Kalenders trägt bereits nur die Kennung.
+
+**Was schon davon steht.** Der Kalender kennt seit AKTE-003 den Filter
+`?patient=`, seit UI-001 ein zoombares Gitter und seit CAL-010a das
+60-Minuten-Terminfenster. Der erste Teil — auswählen, scrollen, tippen — ist
+damit **ohne** Kartendienst erreichbar; nur die Einfärbung wartet auf MAP-006.
+
+**Offene Frage.** Ist die Einfärbung ein Band je Tag („ab 14:20 erreichbar"),
+eine Markierung je freier Lücke oder eine Abstufung (erreichbar / knapp /
+nicht)? Das entscheidet sich am besten an echten Wegen, also nach MAP-004.
+
+---
+
+Zuletzt aktualisiert: 2026-09-12 (neu `IDEA-PRX-042` aus dem Gespräch über die Oberfläche; `IDEA-PRX-004` auf `überführt`, neu `IDEA-PRX-041` aus CAL-009). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-038` bis `-040` aus dem Gespräch über Dokumentationsablauf, Tageskarte und Kalenderwechsel). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt seit der Bestätigung, dass die Namen erfunden sind, unter `../kanvas/own-motion-praxis.html`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
 Terminfenster steht als §8.1 in den Prinzipien, der Fahrpuffer-Mechanismus als
 E12 in den offenen Entscheidungen). Vorherige Aktualisierung: 2026-09-06
 (Entscheidungen E-9, E-12, E-13; Tagesroute `IDEA-PRX-029` bis `-033`)

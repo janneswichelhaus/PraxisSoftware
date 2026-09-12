@@ -58,7 +58,10 @@ function Terminzeile({
   const zone = termin.organization_time_zone;
 
   return (
-    <li className="border-line border-t">
+    // Die Trennlinie steht zwischen den Zeilen, nicht ueber der ersten: Im
+    // weissen Rahmen (UI-002c) waere sie dort eine zweite Kante neben dem
+    // Rahmen selbst.
+    <li className="border-line border-t first:border-t-0">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2">
         <Link
           to={mitRueckweg(`/termine/${termin.id}`, `/patienten/${patientId}/termine`)}
@@ -142,7 +145,7 @@ function Terminliste({
       ) : null}
 
       {termine.length > 0 ? (
-        <ul className="border-line border-b">
+        <ul>
           {termine.map((termin) => (
             <Terminzeile
               key={termin.id}
@@ -248,6 +251,7 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
 
       <Section
         titel="Kommende Termine"
+        rahmen
         aktion={
           // Kompakte Größe: Zwei Schaltflächen in voller Höhe schoben den
           // ersten Termin bei 375 px um mehr als hundert Pixel nach unten.
@@ -276,6 +280,7 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
       <Section
         titel="Vergangene Termine"
         hinweis="Neueste zuerst, einschließlich abgesagter Termine."
+        rahmen
       >
         <Terminliste
           patientId={patient.id}

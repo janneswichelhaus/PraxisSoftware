@@ -165,6 +165,16 @@ einem Verwurf. Neue Einträge hängen hinten an.
   in `IDEA-PRX-016` weiter: aufklappbar und auditiert am Termin, nicht offen
   in einer Liste, die im Treppenhaus mitgelesen wird.
 
+- **2026-09-12** — Aus dem Gespräch über die Oberfläche: `IDEA-PRX-042`
+  notiert — eine Person auswählen, durch den Kalender scrollen, die Lücke
+  selbst finden, und der Kalender färbt ein, wo der Termin mit Fahrweg
+  hinpasst (Tiefgarage als Start und Feierabendziel). Der erste Teil ginge
+  ohne Kartendienst, die Einfärbung **nicht**: Sie hängt am Gate aus ADR-019
+  und kommt frühestens mit MAP-006. Die Rückmeldungen zur bestehenden
+  Oberfläche aus demselben Gespräch stehen **nicht** hier, sondern als Epic
+  `UI-002` in `../development/ROADMAP.md` — sie korrigieren Gebautes und sind
+  keine Idee für später.
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
@@ -191,7 +201,8 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-09-08 (`IDEA-PRX-002` und `IDEA-KI-007` auf
+Zuletzt aktualisiert: 2026-09-12 (`IDEA-PRX-042` notiert). Vorherige
+Aktualisierung: 2026-09-08 (`IDEA-PRX-002` und `IDEA-KI-007` auf
 `überführt`; Google-Maps-Vermerk vom 2026-09-06 als überholt gekennzeichnet).
 Vorherige Aktualisierung: 2026-09-06 (Wettbewerbsreferenz und Bereichsdatei
 Praxisverwaltung mit `IDEA-PRX-001` bis `IDEA-PRX-028`; Entscheidungen vom

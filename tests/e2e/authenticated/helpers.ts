@@ -106,10 +106,11 @@ export function tagImFenster(fenster: number, lauf: number, versatz = 0): string
 // -----------------------------------------------------------------------------
 // Nahfenster - die Tage VOR dem ersten Tagesfenster
 //
-// Die Akte zeigt nur die **naechsten fuenf** Termine (`PatientUpcomingAppointments`,
-// ANZAHL = 5). Ein Test, der pruefen will, dass hinter *seinem* Termin ein
-// Zeichen steht, muss ihn dort auch finden. Ein Termin aus einem Tagesfenster
-// ab Tag 60 steht aber hinter allen Terminen, die andere Spezifikationen
+// Der Terminbereich der Akte blaettert (`TERMINE_SEITENGROESSE` = 20; bis
+// UI-002a waren es die naechsten fuenf auf der Uebersicht). Ein Test, der
+// pruefen will, dass hinter *seinem* Termin ein Zeichen steht, muss ihn auf
+// der ersten Seite finden. Ein Termin aus einem Tagesfenster ab Tag 60 steht
+// aber hinter allen Terminen, die andere Spezifikationen
 // derselben Person angelegt haben - und Max Mustermann kommt in fuenfzehn
 // Spezifikationen vor. Genau daran ist `appointment-notification` am
 // 2026-09-12 in CI gescheitert: `a[href="/termine/<id>"]` war gar nicht auf der

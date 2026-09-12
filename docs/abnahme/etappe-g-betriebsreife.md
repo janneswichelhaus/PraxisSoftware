@@ -172,11 +172,16 @@ absichern kann — und dass „alle Sitzungen beenden" wirklich alle meint.
    eingerichteter zweiter Faktor wird beim Anmelden **nie abgefragt** und
    schützt damit heute nichts. Zu prüfen ist deshalb nur, dass die Einrichtung
    selbst funktioniert (Schritte 7 und 8). Die Abfrage beim Anmelden ist ein
-   eigenes Epic und steht als Vorschlag im Bericht zu FIX-EPIC-001.
+   eigenes Epic (`FIX-EPIC-002`); Jannes hat am 2026-09-12 entschieden, sie
+   **erst nach dem Online-Schalten** zu integrieren (ANN-028, Nachtrag).
+   **Seit UI-002d sagt die Oberfläche das auch** — siehe Schritt 10.
 10. **Der Hinweis für die Leitung.** Als `jannes.test@praxis.invalid` → „Mein
-    Konto": Solange dort kein zweiter Faktor eingerichtet ist, steht der gelbe
-    Hinweis, dass dieser Zugang Zugänge, Rollen und das Auditlog verwaltet. Bei
-    `olivia.office@praxis.invalid` steht derselbe Stand **ohne** Warnton.
+    Konto": Ganz oben im Abschnitt „Zweiter Faktor" steht — unabhängig davon,
+    ob einer eingerichtet ist —, dass die Anmeldung ihn **derzeit noch nicht
+    abfragt** (UI-002d). Darunter, solange keiner eingerichtet ist, der
+    Hinweis, dass dieser Zugang Zugänge, Rollen und das Auditlog verwaltet.
+    Bei `olivia.office@praxis.invalid` steht derselbe Stand ohne diesen
+    Zusatz.
 11. **Alle Sitzungen beenden.** Als Anna in zwei Fenstern anmelden. In einem
     „Alle Sitzungen beenden" → „Überall abmelden". Das **auslösende** Fenster
     zeigt nach einem Neuladen die Anmeldemaske. Im Auditlog steht „Alle eigenen

@@ -99,11 +99,18 @@ function KennwortAendern() {
  * Zweiter Faktor (STAFF-004b).
  *
  * Für `owner` ist er nach ADR-010 Punkt 10 Pflicht bei privilegiertem Zugriff.
- * Diese Anwendung **erzwingt ihn heute nicht beim Anmelden** (ANN-028): Ein
+ * Diese Anwendung **fragt ihn heute beim Anmelden nicht ab** (ANN-028): Ein
  * Zwang, bevor irgendjemand einen Faktor eingerichtet hat, würde die einzige
  * Praxisinhaberin aussperren, und ein Weg zurück wäre genau der privilegierte
- * Produktionszugriff, den ADR-010 Punkt 9 ausschließt. Stattdessen steht hier
- * ein deutlicher Hinweis, solange der Faktor fehlt.
+ * Produktionszugriff, den ADR-010 Punkt 9 ausschließt. Jannes hat am
+ * 2026-09-12 entschieden, den zweiten Faktor erst nach dem Online-Schalten zu
+ * integrieren (`FIX-EPIC-002`).
+ *
+ * Deshalb steht das hier, und zwar **vor** der Einrichtung (UI-002d): Wer
+ * einen Faktor anlegt, soll nicht glauben, er schütze bereits etwas. Ein
+ * Hinweis, der zum Einrichten rät, ohne die Wirkung zu nennen, wäre eine
+ * Zusage ohne Deckung - genau die Klasse Fehler, die FIX-EPIC-001 abgeräumt
+ * hat. Der Satz verschwindet, sobald die Anmeldung den Faktor prüft.
  */
 function ZweiterFaktor({ user }: { user: CurrentUser }) {
   const queryClient = useQueryClient();
@@ -149,6 +156,14 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
       titel="Zweiter Faktor"
       hinweis="Ein Einmalkennwort aus einer App auf dem Telefon, zusätzlich zum Kennwort. Kein SMS-Code - dafür bräuchte es einen weiteren Dienstleister."
     >
+      {/* UI-002d, ANN-028: Die Auskunft steht ganz oben und unabhängig davon,
+          ob schon ein Faktor eingerichtet ist - sie gilt in beiden Fällen. */}
+      <Statusmeldung ton="warnung" className="max-w-md">
+        Die Anmeldung fragt den zweiten Faktor <strong>derzeit noch nicht ab</strong>. Er lässt sich
+        einrichten und bleibt gespeichert, schützt die Anmeldung aber erst, wenn die Anwendung
+        online erreichbar ist. Bis dahin trägt allein das Kennwort.
+      </Statusmeldung>
+
       {faktoren.isPending ? <LoadingState label="Stand wird geladen …" /> : null}
       {faktoren.isError ? (
         <Statusmeldung ton="fehler">
@@ -158,7 +173,9 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
 
       {faktoren.data && bestaetigt.length > 0 ? (
         <div className="max-w-md">
-          <Statusmeldung>Für diesen Zugang ist ein zweiter Faktor eingerichtet.</Statusmeldung>
+          <Statusmeldung className="mt-4">
+            Für diesen Zugang ist ein zweiter Faktor eingerichtet.
+          </Statusmeldung>
           <div className="mt-4">
             <Rueckfrage
               ausloeser="Zweiten Faktor entfernen"
@@ -172,7 +189,8 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
               onAbbrechen={() => entfernen.reset()}
             >
               <p>
-                Die Anmeldung läuft danach wieder nur mit dem Kennwort. Der Vorgang wird
+                Der eingerichtete Faktor wird gelöscht. Die Anmeldung verlangt ihn ohnehin noch
+                nicht; sobald sie es tut, müsste er neu eingerichtet werden. Der Vorgang wird
                 protokolliert.
               </p>
             </Rueckfrage>
@@ -183,12 +201,14 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
       {faktoren.data && bestaetigt.length === 0 ? (
         <div className="max-w-md">
           {isOwner(user.roles) ? (
-            <Statusmeldung ton="warnung">
+            <Statusmeldung className="mt-4">
               Dieser Zugang darf Zugänge, Rollen und das Auditlog verwalten und hat noch keinen
-              zweiten Faktor. Für diese Rechte ist er dringend empfohlen.
+              zweiten Faktor. Für diese Rechte ist er vorgesehen, sobald die Anmeldung ihn abfragt.
             </Statusmeldung>
           ) : (
-            <Statusmeldung>Für diesen Zugang ist kein zweiter Faktor eingerichtet.</Statusmeldung>
+            <Statusmeldung className="mt-4">
+              Für diesen Zugang ist kein zweiter Faktor eingerichtet.
+            </Statusmeldung>
           )}
 
           {!einrichtung ? (
@@ -321,7 +341,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         description="Anmeldung und Sicherheit dieses Zugangs. Ihre Stammdaten pflegt die Praxisleitung."
       />
 
-      <Section titel="Zugang">
+      <Section titel="Zugang" rahmen>
         <DetailList>
           <DetailRow label="Name">{user.profile.display_name}</DetailRow>
           <DetailRow label="Praxis">{user.organizationName ?? '—'}</DetailRow>

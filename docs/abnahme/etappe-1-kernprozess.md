@@ -1480,15 +1480,13 @@ und einigen Terminen (im Seed **Max Mustermann**, für die Verordnungen auch
    Auditlog** nachsehen. Erwartung: **Ein** Eintrag „Patientenakte geöffnet"
    für den ganzen Durchgang — nicht einer je Bereich.
 
-### 2. Die Übersicht beantwortet „was ist zu tun"
+### 2. Die Übersicht — entfallen
 
-1. Bereich **Übersicht**. Erwartung: **Nächste Termine**, **Laufende
-   Verordnungen**, **Letzter Behandlungsstand** und — wenn hinterlegt — **Vor
-   dem Hausbesuch** mit Zugangshinweis und Besonderheit.
-2. Auf einem Bildschirm ab 1280 px Breite: Termine und Verordnungen stehen
-   **nebeneinander** und beide **ohne Scrollen** im Bild.
-3. Jeder Ausschnitt führt weiter: **Alle Termine und Historie**, **Alle
-   Verordnungen**, **Behandlungsverlauf**, **Alle Stammdaten**.
+**Dieser Schritt ist seit UI-002a gegenstandslos.** Den Bereich „Übersicht"
+gibt es nicht mehr; was er zeigte, steht in den vier Bereichen, aus denen er
+seine Auszüge nahm. Geprüft wird das im Abschnitt **UI-002** am Ende dieser
+Datei. Der Schritt bleibt stehen, damit nachvollziehbar ist, was hier einmal
+abgenommen wurde.
 
 ### 3. Termine mit Historie
 
@@ -1647,3 +1645,68 @@ hoch und mit dem Daumen zu treffen; kein waagerechtes Scrollen.
 
 **Zielwert:** Kein Weg endet in einer Sackgasse. Wer abbiegt, kommt dorthin
 zurück, wo er war — mit allem, was er schon eingegeben hatte.
+
+---
+
+## UI-002: Lesbarkeit — weiße Rahmen und eine Akte ohne Umweg
+
+Rückmeldung von Jannes am 12.09.2026 an der laufenden Anwendung.
+Vorbedingung: angemeldet als `office` oder `therapist`, im Seed
+**Max Mustermann**.
+
+### 1. Die Akte öffnet dort, wo gearbeitet wird (UI-002a)
+
+1. Aus der Patientenliste eine Akte öffnen. Erwartung: Es erscheinen sofort
+   die **Termine** — kein Zwischenschritt, keine Schaltfläche „Übersicht" in
+   der Bereichsleiste. Die Adresse in der Zeile endet auf `/termine`.
+2. In der Bereichsleiste stehen genau vier Ziele: **Termine**,
+   **Verordnungen**, **Behandlungsverlauf**, **Stammdaten**.
+3. Aus dem **Kalender** heraus über einen Termin in die Akte gehen und
+   **Zurück** antippen. Erwartung: Der Kalender steht wieder so da, wie er
+   war — der Rückweg überlebt das Weiterleiten in den Terminbereich.
+
+### 2. Was vor der Tür zählt, steht im Kopf (UI-002a)
+
+1. Bei **Max Mustermann** unter **Stammdaten** einen **Zugangshinweis**
+   eintragen („Klingel defekt, bitte anrufen") und speichern.
+2. Zurück in die Akte. Erwartung: Im Kopf steht unter dem Namen
+   **Zugang: Klingel defekt, bitte anrufen** — sichtbar in **jedem** Bereich,
+   nicht nur in den Stammdaten.
+3. Den Hinweis wieder leeren. Erwartung: Die Zeile verschwindet; der Kopf
+   bleibt so kompakt wie vorher. Keine leere Beschriftung.
+
+### 3. Wichtiges steht auf Weiß (UI-002b, UI-002c)
+
+1. Eine Akte im Bereich **Termine** öffnen. Erwartung: Kopf und Terminlisten
+   stehen in **weißen Rahmen** auf der getönten Fläche; die Trennlinien liegen
+   **zwischen** den Zeilen, nicht über der ersten.
+2. Dasselbe prüfen auf der **Startseite** („Tagesplan des Teams"), in der
+   **Patientenliste**, bei **Verordner:innen**, bei **Mitarbeitenden**, im
+   **Behandlungsverlauf**, in den **Stammdaten** und am **Termin** selbst.
+3. Gegenprobe — was bewusst **nicht** weiß ist: die Filterleiste über einer
+   Terminliste, die Legende unter dem Kalender, Rückfragen wie „Wurde der
+   Zettel ausgehändigt?" und die Kennzeichnung eines Vorschaubereichs. Sie
+   erklären den Inhalt, sie sind keiner, und bleiben deshalb vertieft.
+4. Ein **Formular** öffnen (Termin anlegen). Erwartung: Die Felder sind weiß
+   und an ihrer **Umrandung** als Feld erkennbar — kein zusätzlicher weißer
+   Kasten um das Formular herum.
+
+### 4. Der zweite Faktor sagt, was er kann (UI-002d)
+
+1. **Mein Konto → Zweiter Faktor**. Erwartung: Vor dem Einrichten steht, dass
+   die Anmeldung den zweiten Faktor **derzeit noch nicht abfragt** und wann
+   sich das ändert.
+2. Abmelden und neu anmelden. Erwartung: Es wird kein Code verlangt — genau
+   das, was der Hinweis ankündigt.
+
+### 5. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten /
+```
+
+Erwartung: Die weißen Rahmen füllen die Breite bis auf den Seitenrand, kein
+waagerechtes Scrollen, jede Zeile mindestens 44 px hoch.
+
+**Zielwert:** Wer auf eine Seite schaut, sieht auf den ersten Blick, was Inhalt
+ist und was ihn erklärt — ohne lesen zu müssen.

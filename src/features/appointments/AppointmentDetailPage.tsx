@@ -341,7 +341,7 @@ function AppointmentDetail({
         }
       />
 
-      <Section titel="Termin">
+      <Section titel="Termin" rahmen>
         <DetailList>
           {/* Bewusst Text und kein zweiter Link: Der Name im Kopf führt in die
               Akte (UX-012). Zwei gleichnamige Links auf dieselbe Seite wären

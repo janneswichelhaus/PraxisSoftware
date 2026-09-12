@@ -179,6 +179,7 @@ export function AufbewahrungPage() {
       <Section
         titel="Aufbewahrungsplan"
         hinweis="Eine Zeile je Datenklasse. Ein Kürzel ANN-NNN bedeutet: Die Frist ist eine begründete Annahme und wartet auf die Datenschutzprüfung."
+        rahmen
       >
         <Aufbewahrungsplan />
       </Section>
@@ -186,6 +187,7 @@ export function AufbewahrungPage() {
       <Section
         titel="Löschsperren"
         hinweis="Eine gesperrte Akte wird nicht gelöscht, bleibt aber vollständig benutzbar."
+        rahmen
       >
         <Loeschsperren />
       </Section>
@@ -193,6 +195,7 @@ export function AufbewahrungPage() {
       <Section
         titel="Löschjournal"
         hinweis="Der Nachweis der ausgeführten Löschungen. Er überlebt eine Wiederherstellung und wird danach erneut angewendet."
+        rahmen
       >
         <Loeschjournal />
       </Section>
