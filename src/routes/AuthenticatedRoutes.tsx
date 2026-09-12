@@ -18,6 +18,7 @@ import { TagUmplanenPage } from '@/features/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentStartPage';
 import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeriesPage';
+import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
@@ -163,6 +164,9 @@ export function AuthenticatedRoutes({
                 path="/patienten/:patientId/verordnungen/:prescriptionId/serie"
                 element={<AppointmentSeriesPage user={user} />}
               />
+              {/* Terminzettel zum Ausdrucken - ein Blatt fuer die Patient:in
+                  (CAL-011, IDEA-PRX-006). */}
+              <Route path="/patienten/:patientId/terminzettel" element={<AppointmentSlipPage />} />
               <Route path="/touren" element={<ToursPage user={user} />} />
               <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
             </>

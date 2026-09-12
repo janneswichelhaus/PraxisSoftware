@@ -7,6 +7,7 @@ import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as Bausteine from '@/features/documentation/textbausteine';
 import type * as KontoApi from '@/features/staff/konto-api';
 import type * as AccountApi from '@/features/account/api';
+import { Route, Routes } from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from './barrierefreiheit';
 
@@ -22,10 +23,17 @@ import { pruefeBarrierefreiheit } from './barrierefreiheit';
  * kann, was nur ein Mensch beurteilt.
  */
 
+/**
+ * Der Patient ist je Fall verschieden: die meisten Pruefungen brauchen keinen,
+ * die Terminserie und der Terminzettel schon. Deshalb eine Attrappe mit
+ * Standardantwort statt einer festen.
+ */
+const fetchPatient = vi.fn<() => Promise<PatientsApi.Patient | null>>(() => Promise.resolve(null));
+
 vi.mock('@/features/patients/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApi>()),
   fetchPatients: () => Promise.resolve([]),
-  fetchPatient: () => Promise.resolve(null),
+  fetchPatient: () => fetchPatient(),
   logPatientRecordView: () => Promise.resolve(),
 }));
 
@@ -38,7 +46,33 @@ vi.mock('@/features/prescriptions/api', async (importOriginal) => ({
 
 vi.mock('@/features/appointments/api', async (importOriginal) => ({
   ...(await importOriginal<typeof AppointmentsApi>()),
-  fetchAssignableTherapists: () => Promise.resolve([]),
+  fetchAssignableTherapists: () =>
+    Promise.resolve([{ staff_member_id: 'st-1', display_name: 'Anna Beispiel' }]),
+  fetchLocations: () => Promise.resolve([{ id: 'ort-1', name: 'Hauptstandort' }]),
+  fetchPrescriptionSlots: () =>
+    Promise.resolve({
+      patient_id: 'pat-1',
+      frequency_note: '2x pro Woche',
+      prescribed: 10,
+      used: 0,
+      planned: 0,
+      remaining: 10,
+    }),
+  checkAppointmentSlots: (_staff: string, slots: { datum: string }[]) =>
+    Promise.resolve(slots.map(() => null)),
+  fetchAppointmentSlip: () =>
+    Promise.resolve([
+      {
+        id: 'ter-1',
+        starts_at: '2027-05-12T07:00:00.000Z',
+        ends_at: '2027-05-12T08:00:00.000Z',
+        appointment_type: 'home_visit' as const,
+        location_name: null,
+        staff_given_name: 'Anna',
+        staff_family_name: 'Beispiel',
+        organization_time_zone: 'Europe/Berlin',
+      },
+    ]),
 }));
 
 vi.mock('@/features/documentation/textbausteine', async (importOriginal) => ({
@@ -84,6 +118,8 @@ const { SearchCombobox } = await import('@/components/ui/SearchCombobox');
 const { Tageskarte } = await import('@/features/today/Tagesliste');
 const { NavigationZumTermin } = await import('@/features/appointments/NavigationStarten');
 const { TextbausteinLeiste } = await import('@/features/documentation/TextbausteinLeiste');
+const { AppointmentSeriesPage } = await import('@/features/appointments/AppointmentSeriesPage');
+const { AppointmentSlipPage } = await import('@/features/appointments/AppointmentSlipPage');
 
 /** Ein Hausbesuch mit allem, was die Tageskarte zeigen kann. */
 const tagesEintrag = {
@@ -346,6 +382,52 @@ describe('Barrierefreiheit der Zugangsverwaltung (STAFF-EPIC-002)', () => {
   it('haelt das eigene Konto mit Kennwortfeldern und Rueckfragen sauber', async () => {
     const { container } = renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
     await screen.findByRole('button', { name: 'Zweiten Faktor einrichten' });
+    await pruefeBarrierefreiheit(container);
+  });
+});
+
+describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
+  it('haelt die Serienseite sauber - Formular und geprüfte Liste', async () => {
+    fetchPatient.mockResolvedValue(testPatient({ given_name: 'Max', family_name: 'Mustermann' }));
+    const user = userEvent.setup();
+    const { container } = renderWithProviders(
+      // Ueber eine echte Route, damit useParams die Kennungen sieht - ohne sie
+      // bleibt die Seite im Ladezustand und die Pruefung findet nichts.
+      <main>
+        <Routes>
+          <Route
+            path="/patienten/:patientId/verordnungen/:prescriptionId/serie"
+            element={<AppointmentSeriesPage user={testUser(['office'])} />}
+          />
+        </Routes>
+      </main>,
+      '/patienten/pat-1/verordnungen/ver-1/serie',
+    );
+
+    await screen.findByRole('button', { name: 'Termine vorschlagen' });
+    await pruefeBarrierefreiheit(container);
+
+    // Die Liste bringt je Zeile zwei weitere Felder und eine Schaltfläche -
+    // genau dort entstehen Beschriftungen, die sich leicht doppeln.
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), 'st-1');
+    await user.type(screen.getByLabelText('Beginn *'), '09:00');
+    await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
+    await screen.findByLabelText('Datum 1');
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('haelt den Terminzettel sauber', async () => {
+    fetchPatient.mockResolvedValue(testPatient({ given_name: 'Max', family_name: 'Mustermann' }));
+    const { container } = renderWithProviders(
+      <main>
+        <Routes>
+          <Route path="/patienten/:patientId/terminzettel" element={<AppointmentSlipPage />} />
+        </Routes>
+      </main>,
+      '/patienten/pat-1/terminzettel',
+    );
+
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
     await pruefeBarrierefreiheit(container);
   });
 });

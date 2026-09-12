@@ -200,6 +200,7 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
 | ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | offen (2026-09-12)    | Jannes; E12 Punkt 1 und 2 |
 | ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | offen (2026-09-12)    | Jannes nach den ersten Praxiswochen; verbindlich mit ABR-002 |
+| ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); Versandweg mit B15 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -2199,3 +2200,70 @@ Grenze: eine Prüfung in `create_appointment_series` gegen `remaining`; Aufwand
 `klein`. Zu 3 — weitere Rhythmen oder ein freier Abstand in Tagen: ein Eintrag
 in `rhythmen` beziehungsweise ein Zahlenfeld; Aufwand `klein`, die Serverseite
 nimmt die Tage ohnehin einzeln entgegen.
+
+---
+
+### ANN-039 — Terminzettel: Inhalt, nur Druck, kein Versand
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | CAL-011, `IDEA-PRX-006`; ADR-010 Punkt 2; `OPEN_DECISIONS.md` B15 |
+| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes und die Datenschutzprüfung steht aus |
+| Wiedervorlage | Datenschutzprüfung (B2); der Versandweg mit B15 |
+
+**Annahme.** Der Terminzettel ist ein Ausdruck, der die Praxis in der Hand
+einer Patient:in verlässt. Drei Festlegungen dazu:
+
+1. **Inhalt.** Name der Patient:in, und je Termin Datum, Uhrzeit, Ort und die
+   behandelnde Person. **Nicht** darauf: Terminstatus, Verordnung, Diagnose,
+   Behandlungsinhalt und die Hausbesuchsadresse. Die Adresse ist ihre eigene;
+   der Ort steht als „bei Ihnen zu Hause". Ausgegeben werden nur **bestätigte
+   künftige** Termine.
+2. **Nur Druck, kein Versand.** Kein Knopf für E-Mail oder SMS. Eine
+   Terminliste in Verbindung mit einer Praxis ist ein Gesundheitsdatum
+   (Art. 9 DSGVO); ein Versandweg braucht einen Dienstleister, eine
+   Rechtsgrundlage und eine Einwilligung — das ist **B15** und offen
+   (`PROJECT_PRINCIPLES.md` §3.5).
+3. **Der Aufruf wird protokolliert.** Die Seite hat eine eigene Adresse; ohne
+   Eintrag ließe sich Name und Terminlage offenlegen, ohne dass eine Spur
+   bliebe. Geschrieben wird das bestehende `patient_record.viewed` mit dem
+   Kontext `view: 'appointment_slip'` — kein neues Ereignis im Katalog
+   (ADR-010 Punkt 2).
+
+**Begründung.** Zu 1: Was auf Papier steht, lässt sich nicht zurückrufen. Der
+Zettel beantwortet genau eine Frage — „wann bin ich wieder dran und wo" — und
+alles darüber hinaus wäre eine Offenlegung ohne Zweck (§5,
+`PROJECT_PRINCIPLES.md` §4.6). Der Status gehört nicht dazu, weil ohnehin nur
+bestätigte Termine ausgegeben werden; ein abgesagter Termin auf einem Zettel
+zum Mitnehmen wäre irreführend.
+
+Zu 2: `IDEA-PRX-006` nennt den Versand als Idee und sagt selbst „kein Versand
+ohne B15". §3.5 verlangt für jeden Dienstleister mit Zugang zu Patientendaten
+eine Prüfung; dieser Loop legt keinen an.
+
+Zu 3: ADR-010 Punkt 2 verlangt das Öffnen einer Patientenakte als
+auditierbares Ereignis. Der Zettel ist fachlich derselbe Blick über eine andere
+Adresse. Ein eigener Ereignistyp hätte den Katalog verlängert, ohne mehr zu
+sagen; der Kontext unterscheidet die beiden Wege trotzdem. **Unsicher:** ob
+die Datenschutzprüfung den Ausdruck lieber als eigenes Ereignis („Dokument
+ausgegeben") sähe — dann wäre er in einem Audit-Report leichter zu zählen.
+
+**Keine Wortmarke auf dem Zettel:** `marke/README.md` regelt das bereits und
+ist dafür die einzige Quelle — die Druckregeln blenden die Kopfzeile aus, und
+die Marke auf Papier kommt innerhalb der Anwendung erst mit ABR-000. Das ist
+keine Annahme, sondern eine bestehende Festlegung.
+
+**Verankerung.** `public.list_patient_appointment_slip()` in
+`supabase/migrations/20260912170000_appointment_slip.sql` (Kopfkommentar und
+Funktion tragen die Kennung, Spaltenliste und Auditeintrag sind die Grenze);
+`src/features/appointments/AppointmentSlipPage.tsx`. Tests in
+`supabase/tests/appointment-slip.test.ts` (Inhalt, Auditeintrag, Rollen) und
+`src/features/appointments/AppointmentSlipPage.test.tsx`.
+
+**Änderungspfad.** Mehr oder weniger Inhalt: die Spaltenliste der Funktion und
+die Darstellung; Aufwand `klein`. Versand nach B15: ein Anbieter mit Prüfung
+nach §3.5, eine Einwilligung je Patient:in und ein eigener Schreibpfad mit
+eigenem Auditereignis; Aufwand `groß` und ein eigenes Epic. Eigenes
+Auditereignis: ein Eintrag im Katalog (Constraint, `AUDIT_ACTIONS`, Beschriftung)
+und ein geänderter `insert`; Aufwand `klein`.

@@ -974,3 +974,53 @@ export async function createAppointmentSeries(
   if (error) throw schreibfehler(error, 'Die Terminserie konnte nicht angelegt werden.');
   return z.number().parse(data);
 }
+
+// -----------------------------------------------------------------------------
+// Terminzettel (CAL-011, IDEA-PRX-006)
+// -----------------------------------------------------------------------------
+
+const appointmentSlipSchema = z.object({
+  id: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: appointmentTypeSchema,
+  location_name: z.string().nullable(),
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  organization_time_zone: z.string(),
+});
+
+export type AppointmentSlipEntry = z.infer<typeof appointmentSlipSchema>;
+
+/**
+ * Die nächsten bestätigten Termine für den Terminzettel.
+ *
+ * Eigener Lesepfad und nicht `fetchUpcomingAppointments`: Der Zettel braucht
+ * den Standortnamen, die Akte braucht ihn nicht (ADR-004, Datenminimierung).
+ * Der Server protokolliert den Aufruf als `patient_record.viewed` — das
+ * Dokument verlässt die Praxis.
+ */
+export async function fetchAppointmentSlip(
+  patientId: string,
+  limit = 20,
+): Promise<AppointmentSlipEntry[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_appointment_slip', {
+    p_patient_id: patientId,
+    p_limit: limit,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Der Terminzettel konnte nicht geladen werden.');
+  return z.array(appointmentSlipSchema).parse(data ?? []);
+}
+
+/**
+ * Ortsangabe für den Zettel — aus Sicht der Patient:in, nicht der Praxis.
+ *
+ * Beim Hausbesuch steht dort bewusst kein Standortname und keine Adresse: Es
+ * ist ihre eigene Wohnung, und der Zettel soll sagen, was sie wissen muss.
+ */
+export function slipOrt(eintrag: AppointmentSlipEntry): string {
+  if (eintrag.appointment_type === 'home_visit') return 'bei Ihnen zu Hause';
+  if (eintrag.appointment_type === 'video') return 'Videotermin';
+  return eintrag.location_name ?? 'in der Praxis';
+}

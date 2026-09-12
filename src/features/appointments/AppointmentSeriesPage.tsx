@@ -40,6 +40,17 @@ import {
 } from './serie';
 
 /**
+ * „1 Termin" gegen „3 Termine" — an einer Stelle statt in jeder Meldung.
+ *
+ * Ohne das steht in der Oberfläche „1 Termine anlegen" und „1 von 10 Terminen
+ * sind nicht planbar". Bei einer Serie ist die Eins kein Sonderfall: Genau so
+ * sieht der letzte offene Platz einer Verordnung aus.
+ */
+function termineWort(anzahl: number): string {
+  return anzahl === 1 ? '1 Termin' : `${anzahl} Termine`;
+}
+
+/**
  * Terminserie aus einer Verordnung (CAL-007).
  *
  * Der Vorgang hat zwei Schritte, und das ist Absicht: erst ein Vorschlag aus
@@ -342,7 +353,8 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
 
             {anzahl > zahlen.remaining ? (
               <Statusmeldung ton="warnung">
-                Geplant sind {anzahl} Termine, offen sind {zahlen.remaining}. Das ist zulässig — die
+                Geplant {anzahl === 1 ? 'ist' : 'sind'} {termineWort(anzahl)}, offen{' '}
+                {zahlen.remaining === 1 ? 'ist' : 'sind'} {zahlen.remaining}. Das ist zulässig — die
                 Verordnung deckt dann nicht alle Termine ab.
               </Statusmeldung>
             ) : null}
@@ -438,16 +450,21 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 </Statusmeldung>
               ) : hindernisse > 0 ? (
                 <Statusmeldung ton="fehler">
-                  {hindernisse} von {liste.length} Terminen sind so nicht planbar. Weil die Serie
-                  alles oder nichts ist, muss jeder davon erst geändert oder entfernt werden.
+                  {hindernisse} von {liste.length} Terminen {hindernisse === 1 ? 'ist' : 'sind'} so
+                  nicht planbar. Weil die Serie alles oder nichts ist, muss jeder davon erst
+                  geändert oder entfernt werden.
                 </Statusmeldung>
               ) : randzeiten > 0 ? (
                 <Statusmeldung ton="warnung">
-                  {randzeiten} Termine liegen außerhalb der hinterlegten Arbeitszeit. Das Anlegen
-                  fragt dann noch einmal nach.
+                  {termineWort(randzeiten)} {randzeiten === 1 ? 'liegt' : 'liegen'} außerhalb der
+                  hinterlegten Arbeitszeit. Das Anlegen fragt dann noch einmal nach.
                 </Statusmeldung>
               ) : (
-                <Statusmeldung>Alle {liste.length} Termine sind planbar.</Statusmeldung>
+                <Statusmeldung>
+                  {liste.length === 1
+                    ? 'Der Termin ist planbar.'
+                    : `Alle ${liste.length} Termine sind planbar.`}
+                </Statusmeldung>
               )}
 
               {istAusserhalbArbeitszeit(anlegen.error) ? (
@@ -469,7 +486,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                   onClick={() => absenden(false)}
                   disabled={anlegen.isPending || !geprueft || hindernisse > 0}
                 >
-                  {anlegen.isPending ? 'Wird angelegt …' : `${liste.length} Termine anlegen`}
+                  {anlegen.isPending ? 'Wird angelegt …' : `${termineWort(liste.length)} anlegen`}
                 </Button>
                 <Button
                   type="button"

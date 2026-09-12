@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Section } from '@/components/ui/Section';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
@@ -53,7 +54,19 @@ export function PatientUpcomingAppointments({
     // Bewusst ohne eigene Schaltfläche „Termin anlegen": die steht schon oben
     // in der Akte und ist dort an den Versorgungsstatus gebunden. Zwei
     // gleichnamige Wege auf einer Seite wären ein Rätsel, kein Angebot.
-    <Section titel="Nächste Termine">
+    <Section
+      titel="Nächste Termine"
+      // Der Zettel gehört hierher und nicht neben „Termin anlegen": Er ist die
+      // Antwort auf „wann bin ich wieder dran" - für die Patient:in zum
+      // Mitnehmen (CAL-011). Nur, wenn es etwas zu drucken gibt.
+      aktion={
+        data && data.length > 0 ? (
+          <ButtonLink to={`/patienten/${patientId}/terminzettel`} variant="secondary">
+            Terminzettel
+          </ButtonLink>
+        ) : null
+      }
+    >
       {isPending ? <LoadingState label="Termine werden geladen …" /> : null}
       {isError ? <ErrorState title="Die Termine konnten nicht geladen werden." /> : null}
 

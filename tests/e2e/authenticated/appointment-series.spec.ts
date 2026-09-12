@@ -142,7 +142,7 @@ test.describe('CAL-007: Terminserie', () => {
     await page.getByRole('button', { name: 'Termine vorschlagen' }).click();
 
     await expect(page.getByText('Zeitraum ist bereits belegt')).toBeVisible();
-    await expect(page.getByText(/1 von 2 Terminen sind so nicht planbar/)).toBeVisible();
+    await expect(page.getByText(/1 von 2 Terminen ist so nicht planbar/)).toBeVisible();
     await expect(page.getByRole('button', { name: '2 Termine anlegen' })).toBeDisabled();
 
     // Einzelabweichung: die belegte Zeile auf einen freien Tag ziehen.

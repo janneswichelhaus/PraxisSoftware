@@ -1268,3 +1268,53 @@ und sind mit einem Daumen erreichbar; jedes Tippziel mindestens 44 px.
 
 **Zielwert:** Zehn Termine aus einer Verordnung in **unter einer Minute**,
 statt zehnmal das Terminformular.
+
+---
+
+## CAL-011 — Terminzettel zum Ausdrucken
+
+Ein Blatt für die Patient:in: „Ihre nächsten Termine". Es verlässt die Praxis,
+deshalb zählt hier vor allem, was **nicht** darauf steht (ANN-039).
+
+### 1. Einstieg und Inhalt
+
+1. Als `olivia.office@praxis.invalid` anmelden, Akte **Erika Beispiel** öffnen
+   (nach CAL-007 hat sie eine Serie). Abschnitt **Nächste Termine**.
+2. Erwartung: Rechts neben der Überschrift steht **Terminzettel** — und zwar
+   nur, wenn es überhaupt einen künftigen Termin gibt.
+3. Draufklicken. Erwartung: Die Seite heißt **„Ihre nächsten Termine"** und
+   ist an die Patient:in gerichtet; darunter ihr Name und je Termin Datum,
+   Uhrzeit, Ort und behandelnde Person.
+4. Gegenprobe Inhalt: Auf dem Zettel steht **kein** Status („Bestätigt"),
+   **keine** Verordnung, **keine** Diagnose und bei einem Hausbesuch **keine
+   Adresse** — dort steht „bei Ihnen zu Hause".
+5. Einen Termin der Person absagen und den Zettel neu laden. Erwartung: Der
+   abgesagte Termin fehlt.
+
+### 2. Druck
+
+1. **Terminzettel drucken** klicken (oder Strg/Cmd + P). Erwartung in der
+   Druckvorschau: Kopfzeile, Navigation, der Zurück-Link und alle
+   Schaltflächen fehlen; die Terminliste steht auf weißem Grund; ein Termin
+   wird nicht über zwei Seiten zerrissen.
+2. Erwartung: **Keine Wortmarke** auf dem Ausdruck — das ist so gewollt
+   (`marke/README.md`); auf der Rechnung kommt sie mit ABR-000.
+
+### 3. Kein Versand
+
+Erwartung: Es gibt auf der Seite **keinen** Knopf für E-Mail oder SMS, dafür
+den Satz, dass der Zettel nicht versendet wird. Ein Versandweg braucht einen
+Dienstleister und eine Einwilligung (B15).
+
+### 4. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten
+```
+
+Dann in der Akte den Terminzettel öffnen. Erwartung: Kein waagerechtes
+Scrollen, die Liste bleibt lesbar, „Terminzettel drucken" ist mit einem Daumen
+erreichbar.
+
+**Zielwert:** Der Zettel entsteht mit **zwei** Taps aus der Akte, statt von
+Hand geschrieben zu werden.

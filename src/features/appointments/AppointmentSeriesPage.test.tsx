@@ -181,7 +181,7 @@ describe('AppointmentSeriesPage', () => {
     await vorschlagen(user);
 
     expect(await screen.findByText('Zeitraum ist bereits belegt')).toBeInTheDocument();
-    expect(screen.getByText(/1 von 3 Terminen sind so nicht planbar/)).toBeInTheDocument();
+    expect(screen.getByText(/1 von 3 Terminen ist so nicht planbar/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '3 Termine anlegen' })).toBeDisabled();
   });
 
@@ -260,6 +260,17 @@ describe('AppointmentSeriesPage', () => {
       expect.anything(),
       true,
     );
+  });
+
+  it('sagt „1 Termin" statt „1 Termine"', async () => {
+    checkAppointmentSlots.mockResolvedValue([null]);
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+    await vorschlagen(user, 1);
+
+    expect(await screen.findByText('Der Termin ist planbar.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1 Termin anlegen' })).toBeInTheDocument();
   });
 
   it('weist auf eine Serie über dem offenen Kontingent hin, ohne sie zu verhindern', async () => {
