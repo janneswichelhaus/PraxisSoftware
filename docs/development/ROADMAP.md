@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 4.6 · Stand 2026-09-12 · **in Kraft**
+Version 4.9 · Stand 2026-09-13 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -86,11 +86,10 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   abfragt. Der Nachtrag benennt außerdem den Unterschied, den ANN-028 bis
   dahin verwischte — „nicht erzwungen" hieß in Wirklichkeit „gar nicht
   geprüft".
-- **Terminieren mit ausgewählter Person (`CAL-EPIC-004`, vorgeschlagen, noch
-  ohne Platz in der Reihenfolge).** Jannes' Vorgabe vom 2026-09-12 steht als
-  `IDEA-PRX-042` im Ideenspeicher. Sie zerfällt sauber in zwei Teile: Person
-  auswählen, durch den Kalender scrollen, freie Lücke antippen — das ginge
-  **jetzt**, ohne Kartendienst. Die Einfärbung „hier passt der Termin mit
+- **Terminieren mit ausgewählter Person ist gebaut (`CAL-015c`, 2026-09-12).**
+  Der erste Teil von `IDEA-PRX-042` — Person beziehungsweise Verordnung
+  auswählen, durch den Kalender scrollen, freie Lücke antippen — läuft; der
+  Kontext reist im Kalenderstand mit (ANN-050). Die Einfärbung „hier passt der Termin mit
   Fahrweg hin" (Tiefgarage → Termin → nächster Termin → Tiefgarage) braucht
   Fahrzeiten und damit **MAP-006**, das am Gate aus ADR-019 Punkt 9 hängt.
   Vorher gebaut wäre sie eine geschätzte Zahl neben einer gemessenen — genau
@@ -101,11 +100,12 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   keinen Empfangspfad, der Abfragespeicher wurde nur an einem von vier Wegen
   geräumt, und „Alle Sitzungen beenden" versprach mehr, als der Anmeldedienst
   leistet. **Seine Abnahme steht aus** und braucht Docker (Mailfänger).
-- **Zwei Befunde daraus sind eigene Epics und ungebaut**: der zweite Faktor
-  wird beim Anmelden nie abgefragt (`FIX-EPIC-002`, sicherheitsrelevant), und
-  ungespeicherte Dokumentation ist bei interner Navigation ungeschützt
-  (`FIX-EPIC-003`, braucht eine Entscheidung zum Router). Beide stehen im
-  Bericht zu FIX-EPIC-001 mit Zuschnitt.
+- **Von den zwei Befunden daraus ist einer erledigt:** Ungespeicherte
+  Dokumentation ist seit **FIX-EPIC-003** (2026-09-12) bei interner Navigation
+  geschützt — die Entscheidung zum Router ist gefallen (Data Router mit einer
+  Platzhalterroute, ANN-046), und die Rückfrage bietet Speichern, Verwerfen und
+  Bleiben. Offen bleibt: Der zweite Faktor wird beim Anmelden nie abgefragt
+  (`FIX-EPIC-002`, sicherheitsrelevant, vertagt bis nach dem Online-Schalten).
 - **CAL-EPIC-003b ist am 2026-09-12 fertig** (drei Stories): 60-Minuten-Terminfenster
   nach §8.1, serverseitig durchgesetzt in beiden Schreibpfaden, mit
   abgeleitetem Ende im Formular und Bestandsschutz (CAL-010a) · Terminserie aus
@@ -158,14 +158,18 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 - **E12 Punkt 3 und 4 sind am 2026-09-12 vorläufig entschieden: der Fahrpuffer
   kommt erst mit MAP-006.** Kein pauschaler Mindestabstand, keine von Hand
   gepflegten Fahrminuten. **CAL-010b entfällt als eigene Story** und geht in
-  MAP-006 auf — samt der Aufrundungsregel aus §8.1 und ihrem Testfall. Offen
-  bleiben allein E12 Punkt 1 und 2 (begründete Abweichung von 60 Minuten,
-  Länge je Praxis einstellbar); sie hängen als Wiedervorlage an ANN-037.
+  MAP-006 auf — samt der Aufrundungsregel aus §8.1 und ihrem Testfall.
+  **Punkt 1 ist am 2026-09-12 entschieden und mit CAL-015 gebaut:** Es gibt
+  zwei zulässige Längen, 60 (Vorbelegung) und 45 Minuten — keine begründete
+  Abweichung, keine dritte Länge. Offen bleibt allein **Punkt 2** (Länge je
+  Praxis einstellbar); er hängt als Wiedervorlage an ANN-037.
 - **CAL-EPIC-003a ist am 2026-09-12 fertig, abgenommen und in `main`** (fünf
   Stories, PR #28): sechs
   Terminzustände nach ADR-018 mit der Umbenennung `scheduled` → `confirmed` ·
   Absage nur mit codiertem Pflichtgrund und ohne Rückweg · „nicht angetroffen"
-  mit Pflichtentscheidung zum Ausfallhonorar, samt Löschregel · `documented`
+  mit Pflichtentscheidung zum Ausfallhonorar, samt Löschregel (**die
+  Pflichtentscheidung ist mit CAL-014 entfallen**, ADR-018 Fassung 2) ·
+  `documented`
   aus der Finalisierung mit getesteter Invariante · Tag umplanen mit
   Anrufliste (`IDEA-PRX-004`, jetzt überführt). **ANN-034 bis ANN-036 hat
   Jannes am 2026-09-12 wie empfohlen bestätigt** — Absagegrund als codierte
@@ -972,6 +976,13 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | AKTE-000 bis AKTE-005 Patientenakte als Arbeitsplatz     | fertig | 2026-09-12     | `77ab995`, `1c7219c`, `d9eda45` — eigener Auftrag von Jannes nach einem Screenrecording, **nicht** aus der Roadmap |               |
 | UI-002a bis UI-002d Lesbarkeit (Akte ohne Übersicht, weißes Papier, weiße Rahmen, zweiter Faktor) | fertig | 2026-09-12 | `bc2713a`, `a6d9cea`, `c4d8517`, `5e977b6`, `ac1fcd7` — eigener Auftrag von Jannes aus der Sicht auf die laufende Anwendung, **nicht** aus der Roadmap; ANN-028 mit Nachtrag |               |
 | UX-012a bis UX-012f Bedienabläufe zwischen den Bereichen | fertig | 2026-09-12     | `5d29756`, `65886e8`, `68e62c8`, `6edc13a`, `ccb4a24`, `dedb380` — eigener Auftrag von Jannes, **nicht** aus der Roadmap; ANN-039 und ANN-041 in Fassung 2 |               |
+| FIX-EPIC-003 (FIX-010 bis FIX-012) Ungespeicherte Dokumentation bei interner Navigation | fertig | 2026-09-12 | `e05d34b`, `ebfe8e3`, `07fbbee` — eigener Auftrag von Jannes, **nicht** aus der Roadmap; Router auf Data Router, ANN-046 |               |
+| CAL-014 (a bis d) Absage unter 24 Stunden und Nichtantreffen | fertig | 2026-09-12     | `f8c33ac`, `5101c7e`, `89a3652` — eigener Auftrag von Jannes; ADR-018 Fassung 2, `PROJECT_PRINCIPLES.md` 0.8, ANN-047, ANN-048, E14 neu |               |
+| CAL-015 (a bis d) Kalender als vollständiger Arbeitsablauf | fertig | 2026-09-12     | `206f932`, `edfa850`, `58b7a31` — eigener Auftrag von Jannes; `PROJECT_PRINCIPLES.md` 0.9 (§8.1: 60 **oder** 45 Minuten, Ereignisse ohne Patient:in), E12 Punkt 1 erledigt, ANN-049, ANN-050 |               |
+| CAL-016 Ereignisse ohne Gebührenanlass, Tagesplan vollständig | fertig | 2026-09-13 | `b0bf149` — Nachbesserung aus zwei unabhängigen Reviews zu CAL-014/CAL-015; keine neue Entscheidung, keine neue Annahme |               |
+| FIX-013 Angemeldete E2E-Prüfungen wieder grün | fertig | 2026-09-13 | `3ffd295` — sechs Fehlschläge aus CI-Lauf 34732537869; ein echter Befund (Standortvorbelegung im Ereignisformular), zwei veraltete RPC-Signaturen, zwei Tests auf alte Darstellung, ein Tagkonflikt |               |
+| FIX-014 Textverlustschutz beim Abmelden und im Wettlauf | fertig | 2026-09-13 | `90ca0f6` — ANN-046 erweitert; Abmelderückfrage, ein Schreibweg je Seite, kein Weitergehen nach Weiterschreiben |               |
+| CAL-017 Teamereignisse als ein Vorgang | fertig | 2026-09-13 | `10e439b` — Gruppenkennung, gruppenweites Ändern und Absagen, Trigger gegen ausscherende Zeilen; ANN-051 |               |
 
 ---
 
@@ -979,6 +990,9 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.9     | 2026-09-13 | **Drei Korrekturen aus der CI und einem Befund am laufenden Stand.** **FIX-013**: Die angemeldeten E2E-Prüfungen sind wieder grün — sechs Fehlschläge, drei Ursachen. Ein echter Befund in der Oberfläche (das Ereignisformular wählte den einzigen Standort nicht vor, obwohl die Terminanlage genau das tut), zwei Tests mit veralteter `cancel_appointment`-Signatur (PostgREST fand die Funktion nicht, die Antwort war 404 statt der geprüften Berechtigung), zwei Tests auf die vor CAL-015b gültige Darstellung und ein Tagkonflikt zwischen zwei Tests derselben Datei. **FIX-014**: Der Textverlustschutz erfasst jetzt auch das **freiwillige Abmelden** — die in ANN-046 ausdrücklich offen gelassene Grenze —, alle Schreibvorgänge einer Seite laufen durch **einen** Weg (kein zweiter startet, solange einer läuft), und wer während des Speicherns weiterschreibt, geht nicht weiter; beim Abschluss und bei der Korrektur ist das Feld währenddessen unveränderlich. Die erzwungene Beendigung einer Sitzung kommt daran nie vorbei und greift unverändert sofort. **CAL-017**: Ein Teamereignis ist **ein Vorgang**. Die Zeilen tragen eine gemeinsame Gruppenkennung; Bezeichnung, Zeit, Länge, Art und Ort ändert `update_appointment_event` für alle Beteiligten in einer Transaktion, mit Konfliktprüfung je Person vor dem Schreiben, und `cancel_appointment_event` sagt alle offenen Teilnahmen zugleich ab. Eine einzelne Ereigniszeile kann nicht mehr ausscheren (Trigger); die einzelne **Teilnahme** bleibt davon getrennt änderbar und absagbar. Bestandszeilen werden **nicht** über Titel oder Uhrzeit zusammengeführt. Dafür **ANN-051**; eine Migration, ein neues Formular, zwei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |
+| 4.8     | 2026-09-13 | **CAL-016: die Nachbesserung zu CAL-014 und CAL-015** — aus zwei unabhängigen Reviews in frischem Kontext, keine neue Entscheidung und keine neue Annahme. Der Befund mit Geldfolge: `cancel_appointment` hatte als einzige der berührten Schreibfunktionen keine Artprüfung bekommen; eine Teambesprechung, die jemand mit dem Grund „Patient:in hat abgesagt" innerhalb der Frist absagte, bekam einen **Gebührenanlass** — an einer Zeile ohne Patient:in und ohne Behandlungsbeginn, und der Löschlauf hätte sie deshalb nie wieder angefasst (§16, ADR-008). Dazu: `cancel_staff_day` nimmt nur noch praxisbedingte Gründe an (der Ausfall einer behandelnden Person ist definitionsgemäß praxisbedingt; ein Fehlgriff im Auswahlfeld hätte Forderungen gegen **alle** Patient:innen des Tages innerhalb der Frist erzeugt), `list_day_plan` ließ Ereignisse still fallen (INNER JOIN auf `patients` — dieselbe Stelle, die CAL-015b bei zwei anderen Lesepfaden behoben hatte, hier übersehen), und der Mitteilungsvermerk weist ein Ereignis jetzt auch serverseitig ab. Oberfläche entsprechend: Absagedialog, „Tag umplanen", Tagesliste und `EditAppointmentPage` kennen Ereignisse; der Data Router bekommt ein `errorElement` mit deutschem Fehlerkasten statt der eingebauten englischen Seite mit Stacktrace (§13, ADR-011). Eine Migration, zwei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |
+| 4.7     | 2026-09-12 | **Drei Aufträge von Jannes fertig, keiner aus dieser Reihenfolge** — der zweite und dritte ändern verbindliche Dokumente. **FIX-EPIC-003**: Ungespeicherte Behandlungsdokumentation ist bei interner Navigation geschützt; die offene Entscheidung zum Router ist gefallen (Data Router mit einer Platzhalterroute — `useBlocker` verlangt ihn, ein selbstgebauter Wachposten käme an das Zurück des Browsers nicht heran), die Rückfrage bietet Speichern, Verwerfen und Bleiben, und ein Speicherfehler nimmt weder Text noch Seite mit (ANN-046). **CAL-014**: Eine Patientenabsage unter 24 Stunden löst eine Ausfallgebühr aus, gerechnet serverseitig aus dem **Eingang** der Absage — der jetzt getrennt von der Eingabe erfasst wird; das Nichtantreffen verliert seine Pflichtentscheidung über das Honorar und ist ein Schritt. Dafür **ADR-018 Fassung 2** und **`PROJECT_PRINCIPLES.md` 0.8** (§8); **E14 neu** (ob das Nichtantreffen eine eigene Gebührenregel bekommt, ist offen und blockiert nichts); ANN-047, ANN-048, ANN-035 erweitert. **CAL-015**: Behandlungstermine haben 60 **oder** 45 Minuten — damit ist **E12 Punkt 1 erledigt**, ohne das dort angebotene Verfahren zu bauen —, Ereignisse des Praxisbetriebs (Besprechung, Teamtermin) lassen sich ohne Patient:in und Verordnung eintragen und erzeugen keine Leistung, und der Weg von der Verordnung in den Kalender trägt den Kontext bis ins Formular. Dafür **`PROJECT_PRINCIPLES.md` 0.9** (§8.1); ANN-049, ANN-050. Zwei Migrationen, drei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |
 | 4.6     | 2026-09-12 | **ADR-017 angenommen** — Jannes bestätigt alle acht Fragen **wie empfohlen**: 60-Sekunden-Verweise ohne Teilen-Link, Verordnungsscan klinisch (für `office` nicht sichtbar), PDF/JPEG/PNG bis 10 MB, keine Virenprüfung in V1, unveränderliche Dateien, zweistufige Löschung mit Quittung, keine produktive Datei ohne getestete Objektsicherung, fünf zusätzliche Prüfpunkte in OPS-001. Damit ist **Zeile G1 erledigt**, **Punkt E8 geschlossen** und **DAT-EPIC-001 baubar** — die Voraussetzung im Abschnitt „Nächster Loop" ist erfüllt. `PROJECT_PRINCIPLES.md` wird **nicht** nachgezogen: §4.7, §12 und §18 gelten unverändert, ADR-017 konkretisiert sie nur (§21). Im Fortschrittsmodell gehen G1 und E8 von `entwurf` auf `fertig`: Block C **15,9 Prozent** (vorher 13,6), Block E **42,5** (vorher 40,0), Gesamtstand **31,5** (vorher 30,4). Offen bleiben die **produktiven** Vorbedingungen: OPS-001 (G3) und der Sicherungsweg für den Objektspeicher (G7). |
 | 4.5     | 2026-09-12 | **ADR-017 Dateiablage geschrieben** (Docs-Session zu Zeile G1, kein Code). Dreißig Punkte: Supabase Storage im selben Projekt, private Buckets je Datenklasse, Objektschlüssel nur aus Kennungen · **die Datenbankzeile führt, das Objekt folgt** — zweiphasiger Upload mit serverseitiger Bestätigung, Dateien unveränderlich, Prüfsumme als Nachweis · **Rollenschnitt an der Dokumentart**: der Verordnungsscan ist klinisch, weil sich ein Scan nicht projizieren lässt (ANN-011) · Auslieferung nur über **signierte Verweise mit 60 Sekunden**, `cacheControl: '0'`, **kein Teilen-Link** · drei Auditereignisse mit der ehrlichen Grenze, dass die Ausstellung protokolliert wird und nicht das Laden · Frist erbt die Datei vom Bezugsdatensatz, **zweistufige Löschung mit Quittung** · **keine Virenprüfung in V1**, Pflicht ab dem ersten Upload von außen. Zwei Befunde aus der Recherche mit Folgen über den ADR hinaus: ein signierter Verweis ist **nicht widerrufbar** und kann einen CDN-Zwischenspeicher hinter sich lassen; und der **Objektspeicher läuft im Datenbank-Backup nicht mit** — G7 ist entsprechend erweitert und wird Vorbedingung für produktive Dateien. Präzisiert: Storage ist kein neuer Dienstleister, deshalb steht der ADR **vor** OPS-001 und liefert ihm fünf zusätzliche Prüfpunkte (G1, G3). **Acht Bestätigungsfragen offen; E8 bleibt bis dahin offen.** Im Fortschrittsmodell stehen G1 und E8 damit auf `entwurf` (0,5): Block C **13,6 Prozent** (vorher 11,4), Block E **40,0** (vorher 37,5), Gesamtstand **30,4** (vorher 29,4). Reihenfolge unverändert — nächster Loop DAT-EPIC-001. |
 | 4.4     | 2026-09-12 | **UI-002 Lesbarkeit fertig** (vier Stories, eigener Auftrag von Jannes aus der Sicht auf die laufende Anwendung). Der Bereich **„Übersicht" der Akte ist entfallen** — er war ein Auszug aus den vier anderen Bereichen und kostete bei jedem Aufruf einen Tap; `/patienten/:id` führt jetzt in den ersten Bereich, den die Rolle sehen darf, und die Suchparameter wandern mit, damit der Rückweg nicht beim Öffnen verloren geht. Zugangshinweis und Besonderheit stehen im Kopf der Akte (UI-002a). **Papier ist weiß** — Karte (#f6f7f4) und Seitengrund (#eceee8) lagen bei 1,09:1, also praktisch nicht unterscheidbar; der getönte Grund stand optisch hinter dem Inhalt statt unter ihm. Ein Token, 103 Stellen; die Folge für Eingabefelder (nicht mehr die hellste Fläche, erkennbar allein an `line-strong` mit 4,56:1) ist als Test festgehalten (UI-002b). **Termine, Listen und Auskünfte stehen im weißen Rahmen**, die Bedienung bleibt vertieft — die Regel trägt `Section rahmen` und `Inhaltsflaeche`, nicht dreißig einzelne Klassenlisten (UI-002c). **„Mein Konto" sagt vor der Einrichtung, dass die Anmeldung den zweiten Faktor derzeit nicht abfragt** (UI-002d) — Jannes hat am selben Tag entschieden, den Faktor erst nach dem Online-Schalten zu integrieren, und ANN-028 trägt den Nachtrag samt der Berichtigung „nicht erzwungen" → „nicht abgefragt". Keine Migration, keine neuen Rechte, keine neue Annahme. **Nächster Loop unverändert: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |

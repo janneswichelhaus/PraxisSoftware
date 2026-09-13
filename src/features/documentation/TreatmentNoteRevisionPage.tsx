@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -13,7 +13,7 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
-import { Textverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from './Textverlustschutz';
 import {
   MAX_BEGRUENDUNG,
   begruendungFehler,
@@ -46,19 +46,37 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
 
   const zurueck = `/termine/${appointment.id}`;
   const geaendert = inhalt !== note.content;
+  // Auch eine allein getippte Begründung ist Arbeit, die verloren ginge.
+  const ungespeichert = geaendert || begruendung.trim() !== '';
 
-  const speichern = useMutation({
-    mutationFn: () => reviseTreatmentNote(note.id, note.updated_at, inhalt, begruendung),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
-      await queryClient.invalidateQueries({ queryKey: ['treatment-note-versions', note.id] });
-      void navigate(zurueck);
-    },
-  });
+  /**
+   * Die Korrektur kennt keinen Entwurf - deshalb bekommt der Schutz hier
+   * keinen Speicherweg.
+   *
+   * Sie wird mit dem Absenden eine neue, festgeschriebene Version der Akte
+   * (ADR-016). Ein „Speichern" aus einer Navigation heraus wäre also nicht das
+   * Sichern eines Zwischenstands, sondern genau die Finalisierung, die hier
+   * nicht nebenbei passieren darf. Die Rückfrage bietet deshalb Verwerfen und
+   * Bleiben an und sagt, warum.
+   */
+  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({ ungespeichert });
+
+  /**
+   * Die Korrektur schreiben - festgeschrieben, nicht als Entwurf.
+   *
+   * Das Feld bleibt währenddessen unveränderlich (`laeuft`): Was hier
+   * durchgeht, wird eine neue Version der Akte, und die muss genau das
+   * enthalten, was auf dem Bildschirm stand (FIX-014, ADR-016).
+   */
+  async function korrekturSchreiben(): Promise<boolean> {
+    await reviseTreatmentNote(note.id, note.updated_at, inhalt, begruendung);
+    await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+    await queryClient.invalidateQueries({ queryKey: ['treatment-note-versions', note.id] });
+    return true;
+  }
 
   function absenden(event: React.FormEvent) {
     event.preventDefault();
-    if (speichern.isPending) return;
 
     const inhaltMeldung = inhaltFehler(inhalt);
     const grundMeldung = begruendungFehler(begruendung);
@@ -66,7 +84,14 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
     setGrundfehler(grundMeldung);
     if (inhaltMeldung || grundMeldung) return;
 
-    speichern.mutate();
+    void schreiben({
+      ausfuehren: korrekturSchreiben,
+      fehlertitel: 'Nicht gespeichert',
+      danach: () => {
+        freigeben();
+        void navigate(zurueck);
+      },
+    });
   }
 
   return (
@@ -97,6 +122,7 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
           rows={14}
           value={inhalt}
           error={inhaltsfehler}
+          readOnly={laeuft}
           onChange={(event) => {
             setInhalt(event.target.value);
             if (inhaltsfehler) setInhaltsfehler(undefined);
@@ -110,6 +136,7 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
             rows={3}
             value={begruendung}
             error={grundfehler}
+            readOnly={laeuft}
             onChange={(event) => {
               setBegruendung(event.target.value);
               if (grundfehler) setGrundfehler(undefined);
@@ -117,17 +144,13 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
           />
         </div>
 
-        {speichern.isError ? (
-          <div className="mt-4">
-            <ErrorState title="Nicht gespeichert" description={speichern.error.message} />
-          </div>
-        ) : null}
-
-        <Textverlustschutz ungespeichert={geaendert} />
+        {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer
+            Stelle. */}
+        {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={speichern.isPending || !geaendert}>
-            {speichern.isPending ? 'Wird gespeichert …' : 'Korrektur speichern'}
+          <Button type="submit" disabled={laeuft || !geaendert}>
+            {laeuft ? 'Wird gespeichert …' : 'Korrektur speichern'}
           </Button>
           <Link
             to={zurueck}

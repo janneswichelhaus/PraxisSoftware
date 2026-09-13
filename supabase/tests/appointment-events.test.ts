@@ -1,0 +1,995 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+
+/**
+ * Ereignisse des Praxisbetriebs (CAL-015b, PROJECT_PRINCIPLES.md 0.9
+ * Abschnitt 8.1).
+ *
+ * Eine Besprechung ist ein Termin ohne Patient:in: Sie belegt Zeit in einem
+ * oder mehreren Kalendern, sie hat einen Titel, und sie ist ausdruecklich
+ * keine Behandlung. Geprueft wird beides - dass sie den Kalender wirklich
+ * belegt, und dass sie in keinen Zustand kommt, aus dem spaeter eine Leistung
+ * entstehen koennte (19).
+ *
+ * Die Datei prueft ausserdem die zweite Terminlaenge: 45 Minuten sind seit
+ * derselben Festlegung zulaessig, eine dritte Laenge weiterhin nicht.
+ */
+
+const { users, patients, organizationId } = SEED;
+
+const ANLEGEN =
+  'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true) as id';
+const EREIGNIS =
+  'select public.create_appointment_event($1, $2::uuid[], $3, $4::date, $5::time, $6::time, $7::uuid, $8::boolean) as anzahl';
+const AENDERN =
+  'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true) as id';
+const ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
+const NICHT_ANGETROFFEN = 'select public.record_no_show($1::uuid, $2::timestamptz) as id';
+const DOKUMENTIEREN = 'select public.create_treatment_note($1::uuid, $2) as id';
+const TAG_UMPLANEN = 'select public.cancel_staff_day($1::uuid, $2::date, $3) as anzahl';
+const ABSAGEN =
+  'select public.cancel_appointment($1::uuid, $2::timestamptz, $3, $4::date, $5::time) as id';
+const EREIGNIS_AENDERN =
+  'select public.update_appointment_event($1::uuid, $2::timestamptz, $3, $4, $5::date, $6::time, $7::time, $8::uuid, $9::boolean) as anzahl';
+const EREIGNIS_ABSAGEN =
+  'select public.cancel_appointment_event($1::uuid, $2::timestamptz, $3) as anzahl';
+const BETEILIGTE = 'select * from public.list_event_participants($1::uuid)';
+const LESEN =
+  "select * from public.list_appointments($1::date, $2::date, null, null, 'all') order by starts_at";
+
+const ANNA = '55555555-5555-4555-8555-000000000002';
+const OLIVIA = '55555555-5555-4555-8555-000000000003';
+const TIM = '55555555-5555-4555-8555-000000000004';
+const STANDORT = '33333333-3333-4333-8333-000000000001';
+
+/** Ein Kalendertag weit voraus - die Seed-Termine liegen heute. */
+function tagInTagen(tage: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + tage);
+  return d.toISOString().slice(0, 10);
+}
+
+const TAG = tagInTagen(95);
+
+async function ereignis(
+  optionen: {
+    titel?: string;
+    personen?: string[];
+    art?: 'practice' | 'video';
+    tag?: string;
+    von?: string;
+    bis?: string;
+    ort?: string | null;
+    ausserhalbErlaubt?: boolean;
+    user?: string;
+  } = {},
+): Promise<number> {
+  const art = optionen.art ?? 'video';
+  const { rows } = await asUserCommitted<{ anzahl: number }>(
+    optionen.user ?? users.office,
+    EREIGNIS,
+    [
+      optionen.titel ?? 'Teambesprechung',
+      optionen.personen ?? [ANNA],
+      art,
+      optionen.tag ?? TAG,
+      optionen.von ?? '08:00',
+      optionen.bis ?? '08:30',
+      optionen.ort === undefined ? (art === 'practice' ? STANDORT : null) : optionen.ort,
+      optionen.ausserhalbErlaubt ?? true,
+    ],
+  );
+  return rows[0]!.anzahl;
+}
+
+/**
+ * Die Ereignisse dieser Datei - erkennbar am Tag. Der Seed bringt seit
+ * CAL-015b selbst eine Teambesprechung von heute mit; sie gehoert nicht in
+ * diese Zaehlungen.
+ */
+async function zeilen(): Promise<Record<string, unknown>[]> {
+  const { rows } = await asPostgres<Record<string, unknown>>(
+    `select * from public.appointments
+      where kind = 'event'
+        and (starts_at at time zone 'Europe/Berlin')::date = $1::date
+      order by staff_member_id`,
+    [TAG],
+  );
+  return rows;
+}
+
+async function stand(id: string): Promise<{ id: string; updated_at: string }> {
+  const { rows } = await asPostgres<{ id: string; updated_at: string }>(
+    'select id, to_char(updated_at at time zone \'UTC\', \'YYYY-MM-DD"T"HH24:MI:SS.US"+00"\') as updated_at from public.appointments where id = $1',
+    [id],
+  );
+  return rows[0]!;
+}
+
+describe('Ereignis anlegen', () => {
+  beforeEach(resetDatabase);
+
+  it('legt je beteiligter Person einen Termin an', async () => {
+    const anzahl = await ereignis({ personen: [ANNA, OLIVIA, TIM] });
+
+    expect(anzahl).toBe(3);
+    const rows = await zeilen();
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toMatchObject({
+      kind: 'event',
+      title: 'Teambesprechung',
+      status: 'confirmed',
+      patient_id: null,
+      prescription_id: null,
+    });
+  });
+
+  /**
+   * Das Buero nimmt an einer Teambesprechung teil. `is_assignable_therapist`
+   * waere hier die falsche Frage - sie gilt fuer Behandlungen.
+   */
+  it('laesst auch Beteiligte ohne therapeutische Rolle zu', async () => {
+    const anzahl = await ereignis({ personen: [OLIVIA] });
+    expect(anzahl).toBe(1);
+  });
+
+  it('belegt den Zeitraum wie jeder andere Termin', async () => {
+    await ereignis({ personen: [ANNA], von: '08:00', bis: '08:30' });
+
+    await expect(
+      asUser(users.office, ANLEGEN, [patients.max, ANNA, 'video', TAG, '08:00', '09:00', null]),
+    ).rejects.toThrow(/overlaps/);
+  });
+
+  /**
+   * Alles oder nichts: Wenn eine der beteiligten Personen zu dieser Zeit schon
+   * etwas hat, entsteht die Besprechung gar nicht - auch nicht halb.
+   */
+  it('legt gar nichts an, wenn eine Person nicht kann', async () => {
+    await asUserCommitted(users.office, ANLEGEN, [
+      patients.max,
+      ANNA,
+      'video',
+      TAG,
+      '08:00',
+      '09:00',
+      null,
+    ]);
+
+    await expect(
+      asUser(users.office, EREIGNIS, [
+        'Teambesprechung',
+        [OLIVIA, ANNA],
+        'video',
+        TAG,
+        '08:15',
+        '08:45',
+        null,
+        true,
+      ]),
+    ).rejects.toThrow(/overlaps/);
+
+    expect(await zeilen()).toHaveLength(0);
+  });
+
+  it('verlangt einen Titel', async () => {
+    await expect(
+      asUser(users.office, EREIGNIS, ['   ', [ANNA], 'video', TAG, '08:00', '08:30', null, true]),
+    ).rejects.toThrow(/event title is required/);
+  });
+
+  it('verlangt mindestens eine beteiligte Person', async () => {
+    await expect(
+      asUser(users.office, EREIGNIS, [
+        'Teambesprechung',
+        [],
+        'video',
+        TAG,
+        '08:00',
+        '08:30',
+        null,
+        true,
+      ]),
+    ).rejects.toThrow(/at least one participant/);
+  });
+
+  it('kennt keinen Hausbesuch ohne Patient:in', async () => {
+    await expect(
+      asUser(users.office, EREIGNIS, [
+        'Teambesprechung',
+        [ANNA],
+        'home_visit',
+        TAG,
+        '08:00',
+        '08:30',
+        null,
+        true,
+      ]),
+    ).rejects.toThrow(/unknown appointment type/);
+  });
+
+  it('weist ein Patientenkonto ab', async () => {
+    await expect(
+      asUser(users.patientMax, EREIGNIS, [
+        'Teambesprechung',
+        [ANNA],
+        'video',
+        TAG,
+        '08:00',
+        '08:30',
+        null,
+        true,
+      ]),
+    ).rejects.toThrow(/not allowed to create appointments/);
+  });
+
+  it('protokolliert je Zeile ein appointment.created mit der Art', async () => {
+    await ereignis({ personen: [ANNA, OLIVIA] });
+
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log
+        where action = 'appointment.created' and context->>'kind' = 'event'`,
+    );
+    expect(rows).toHaveLength(2);
+    // Kein Personenbezug ueber die Beteiligten hinaus, kein Titel im Log.
+    expect(rows[0]?.context).not.toHaveProperty('patient_id');
+    expect(rows[0]?.context).not.toHaveProperty('title');
+  });
+});
+
+describe('Ereignis: Laenge frei, aber im Raster', () => {
+  beforeEach(resetDatabase);
+
+  it('laesst eine freie Laenge zu', async () => {
+    // 25 Minuten - fuer eine Behandlung unzulaessig, fuer eine Besprechung
+    // genau richtig.
+    expect(await ereignis({ von: '08:00', bis: '08:25' })).toBe(1);
+  });
+
+  it('verlangt den Beginn auf dem Praxisraster', async () => {
+    await expect(
+      asUser(users.office, EREIGNIS, [
+        'Teambesprechung',
+        [ANNA],
+        'video',
+        TAG,
+        '08:02',
+        '08:30',
+        null,
+        true,
+      ]),
+    ).rejects.toThrow(/start time is not on the appointment grid/);
+  });
+
+  /**
+   * Beim Behandlungstermin genuegt der Beginn, weil die Laenge fest ist. Hier
+   * ist sie es nicht - also gehoert auch das Ende auf einen Rasterpunkt.
+   */
+  it('verlangt auch das Ende auf dem Praxisraster', async () => {
+    await expect(
+      asUser(users.office, EREIGNIS, [
+        'Teambesprechung',
+        [ANNA],
+        'video',
+        TAG,
+        '08:00',
+        '08:22',
+        null,
+        true,
+      ]),
+    ).rejects.toThrow(/end time is not on the appointment grid/);
+  });
+
+  it('achtet auf die Arbeitszeit und laesst sich ausdruecklich uebergehen', async () => {
+    // 05:00 liegt ausserhalb jeder Arbeitszeit des Seeds.
+    await expect(
+      asUser(users.office, EREIGNIS, [
+        'Teambesprechung',
+        [ANNA],
+        'video',
+        TAG,
+        '05:00',
+        '05:30',
+        null,
+        false,
+      ]),
+    ).rejects.toThrow(/outside_working_hours/);
+
+    expect(await ereignis({ von: '05:00', bis: '05:30', ausserhalbErlaubt: true })).toBe(1);
+  });
+});
+
+describe('Ereignis: keine Behandlung', () => {
+  beforeEach(resetDatabase);
+
+  async function eineZeile(): Promise<{ id: string; updated_at: string }> {
+    await ereignis({ personen: [ANNA] });
+    const rows = await zeilen();
+    return stand(rows[0]!.id as string);
+  }
+
+  it('laesst sich nicht abschliessen', async () => {
+    const e = await eineZeile();
+    await expect(asUser(users.office, ABSCHLIESSEN, [e.id, e.updated_at])).rejects.toThrow(
+      /event cannot be completed/,
+    );
+  });
+
+  it('laesst sich nicht als nicht angetroffen vermerken', async () => {
+    const e = await eineZeile();
+    await expect(asUser(users.office, NICHT_ANGETROFFEN, [e.id, e.updated_at])).rejects.toThrow(
+      /event cannot be recorded as no-show/,
+    );
+  });
+
+  it('laesst sich nicht dokumentieren', async () => {
+    const e = await eineZeile();
+    await expect(
+      asUser(users.therapist, DOKUMENTIEREN, [e.id, 'Synthetischer Text']),
+    ).rejects.toThrow(/event cannot be documented/);
+  });
+
+  it('bekommt keinen Mitteilungsvermerk - es gibt niemanden zu benachrichtigen', async () => {
+    const e = await eineZeile();
+    await expect(
+      asUser(users.office, "select public.set_appointment_notification($1::uuid, array['phone'])", [
+        e.id,
+      ]),
+    ).rejects.toThrow(/event has nobody to notify/);
+  });
+
+  it('bleibt beim Umplanen eines Tages stehen', async () => {
+    await ereignis({ personen: [ANNA], von: '08:00', bis: '08:30' });
+    await asUserCommitted(users.office, ANLEGEN, [
+      patients.max,
+      ANNA,
+      'video',
+      TAG,
+      '09:00',
+      '10:00',
+      null,
+    ]);
+
+    const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
+      ANNA,
+      TAG,
+      'practice_request',
+    ]);
+
+    // Nur der Behandlungstermin faellt - die Besprechung ist kein Anruf wert.
+    expect(rows[0]!.anzahl).toBe(1);
+    const rowsDanach = await zeilen();
+    expect(rowsDanach[0]).toMatchObject({ status: 'confirmed' });
+  });
+});
+
+/**
+ * Ereignis absagen (CAL-016).
+ *
+ * Ein Ereignis laesst sich absagen - es belegt einen Kalender, und der wird
+ * wieder frei. Was dabei nicht entstehen darf, ist ein Gebuehrenanlass: Die
+ * Frist des Ausfallhonorars knuepft an die Absage DURCH DIE PATIENT:IN vor dem
+ * BEHANDLUNGSbeginn (PROJECT_PRINCIPLES.md 8), und ein Ereignis hat weder das
+ * eine noch das andere. Ein Anlass an dieser Zeile haette zwei Folgen: eine
+ * Forderung ohne Schuldnerin, und eine Zeile, die der Loeschlauf nie wieder
+ * anfasst (16, ADR-008).
+ */
+describe('Ereignis: absagen ohne Gebuehrenanlass (CAL-016)', () => {
+  beforeEach(resetDatabase);
+
+  /** Ein Ereignis, das in zwei Stunden beginnt - also weit innerhalb der Frist. */
+  async function ereignisGleich(): Promise<{ id: string; updated_at: string }> {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type,
+         kind, title, event_group_id, status, starts_at, ends_at
+       )
+       values ($1::uuid, null, $2::uuid, 'video',
+               'event', 'Teambesprechung', gen_random_uuid(), 'confirmed',
+               now() + interval '2 hours', now() + interval '2 hours 30 minutes')
+       returning id::text as id`,
+      [organizationId, TIM],
+    );
+    return stand(rows[0]!.id);
+  }
+
+  it('bleibt ohne Anlass, auch mit dem Grund "Patient:in hat abgesagt"', async () => {
+    const e = await ereignisGleich();
+
+    await asUserCommitted(users.office, ABSAGEN, [
+      e.id,
+      e.updated_at,
+      'patient_request',
+      null,
+      null,
+    ]);
+
+    const { rows } = await asPostgres<{ status: string; fee_basis: string | null }>(
+      'select status, fee_basis from public.appointments where id = $1',
+      [e.id],
+    );
+    expect(rows[0]).toMatchObject({ status: 'cancelled', fee_basis: null });
+  });
+
+  it('meldet die Absage ohne Gebuehr ins Protokoll', async () => {
+    const e = await ereignisGleich();
+    await asUserCommitted(users.office, ABSAGEN, [
+      e.id,
+      e.updated_at,
+      'patient_request',
+      null,
+      null,
+    ]);
+
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      "select context from public.audit_log where action = 'appointment.cancelled' and subject_id = $1",
+      [e.id],
+    );
+    expect(rows[0]?.context).toMatchObject({ fee: false });
+  });
+
+  /**
+   * Der zweite Riegel (ADR-004): Selbst ein direkter Schreibzugriff an allen
+   * Funktionen vorbei kommt nicht durch.
+   */
+  it('laesst sich auch unmittelbar kein Anlass anhaengen', async () => {
+    const e = await ereignisGleich();
+    await asPostgres(
+      `update public.appointments
+          set status = 'cancelled', cancellation_reason = 'other',
+              cancelled_at = now(), cancelled_by = $2::uuid
+        where id = $1`,
+      [e.id, users.office],
+    );
+
+    await expect(
+      asPostgres('update public.appointments set fee_basis = $2 where id = $1', [
+        e.id,
+        'late_cancellation',
+      ]),
+    ).rejects.toThrow(/appointments_fee_basis_values/);
+  });
+});
+
+/**
+ * "Tag umplanen" ist praxisbedingt (CAL-016, ADR-018 Fassung 2 Punkt 8.4).
+ *
+ * Der Vorgang sagt alle Termine einer Person an einem Tag ab, weil die Person
+ * ausfaellt. Ein Fehlgriff im Auswahlfeld haette Forderungen gegen jede
+ * Patient:in des Tages erzeugt, die innerhalb der Frist lag.
+ */
+describe('Tag umplanen: nur mit praxisbedingtem Grund (CAL-016)', () => {
+  beforeEach(resetDatabase);
+
+  it('weist "Patient:in hat abgesagt" ab', async () => {
+    await expect(
+      asUser(users.office, TAG_UMPLANEN, [ANNA, TAG, 'patient_request']),
+    ).rejects.toThrow(/day rescheduling needs a practice reason/);
+  });
+
+  it('weist einen fehlenden Grund ab', async () => {
+    await expect(asUser(users.office, TAG_UMPLANEN, [ANNA, TAG, null])).rejects.toThrow(
+      /day rescheduling needs a practice reason/,
+    );
+  });
+
+  it('nimmt die praxisbedingten Gruende an', async () => {
+    for (const grund of ['practice_request', 'moved', 'other']) {
+      const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
+        ANNA,
+        TAG,
+        grund,
+      ]);
+      expect(rows[0]!.anzahl).toBe(0);
+    }
+  });
+
+  it('erzeugt beim Umplanen keinen Gebuehrenanlass', async () => {
+    // Ein Termin in zwei Stunden - innerhalb der Frist, waere er eine
+    // Patientenabsage.
+    const { rows: angelegt } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type, status,
+         starts_at, ends_at
+       )
+       values ($1::uuid, $2::uuid, $3::uuid, 'video', 'confirmed',
+               now() + interval '2 hours', now() + interval '3 hours')
+       returning id::text as id`,
+      [organizationId, patients.max, TIM],
+    );
+
+    const { rows: heute } = await asPostgres<{ tag: string }>(
+      "select (now() at time zone 'Europe/Berlin')::date::text as tag",
+    );
+    const { rows: geplant } = await asPostgres<{ tag: string }>(
+      "select (starts_at at time zone 'Europe/Berlin')::date::text as tag from public.appointments where id = $1",
+      [angelegt[0]!.id],
+    );
+    // Faellt die Stunde ueber Mitternacht, gilt der Tag des Termins.
+    expect([heute[0]!.tag, geplant[0]!.tag]).toContain(geplant[0]!.tag);
+
+    await asUserCommitted(users.office, TAG_UMPLANEN, [TIM, geplant[0]!.tag, 'practice_request']);
+
+    const { rows } = await asPostgres<{ status: string; fee_basis: string | null }>(
+      'select status, fee_basis from public.appointments where id = $1',
+      [angelegt[0]!.id],
+    );
+    expect(rows[0]).toMatchObject({ status: 'cancelled', fee_basis: null });
+  });
+});
+
+describe('Ereignis: aendern', () => {
+  beforeEach(resetDatabase);
+
+  /**
+   * Seit CAL-017 wandert ein Ereignis nur als Ganzes. Eine einzelne Zeile zu
+   * verschieben hiesse, die Besprechung fuer eine Person auf 10 Uhr zu legen
+   * und fuer die uebrigen auf 9 zu lassen. Der Trigger weist das ab - gleich
+   * ueber welchen Schreibweg.
+   */
+  it('laesst eine einzelne Zeile nicht verschieben', async () => {
+    await ereignis({ personen: [ANNA], von: '08:00', bis: '08:25' });
+    const rows = await zeilen();
+    const e = await stand(rows[0]!.id as string);
+
+    await expect(
+      asUser(users.office, AENDERN, [
+        e.id,
+        e.updated_at,
+        ANNA,
+        'video',
+        TAG,
+        '10:00',
+        '10:25',
+        null,
+      ]),
+    ).rejects.toThrow(/event must be changed as a whole/);
+  });
+
+  it('laesst die beteiligte Person wechseln - das ist eine Teilnahme', async () => {
+    await ereignis({ personen: [ANNA], von: '08:00', bis: '08:25' });
+    const rows = await zeilen();
+    const e = await stand(rows[0]!.id as string);
+
+    // Art, Ort und Zeit bleiben, wie sie sind - geaendert wird allein, WER
+    // teilnimmt.
+    await asUserCommitted(users.office, AENDERN, [
+      e.id,
+      e.updated_at,
+      TIM,
+      'video',
+      TAG,
+      '08:00',
+      '08:25',
+      null,
+    ]);
+
+    const { rows: danach } = await asPostgres<{ staff_member_id: string }>(
+      'select staff_member_id from public.appointments where id = $1',
+      [e.id],
+    );
+    expect(danach[0]?.staff_member_id).toBe(TIM);
+  });
+
+  it('laesst ein Ereignis nicht zum Hausbesuch werden', async () => {
+    await ereignis({ personen: [ANNA] });
+    const rows = await zeilen();
+    const e = await stand(rows[0]!.id as string);
+
+    await expect(
+      asUser(users.office, AENDERN, [
+        e.id,
+        e.updated_at,
+        ANNA,
+        'home_visit',
+        TAG,
+        '08:00',
+        '08:30',
+        null,
+      ]),
+    ).rejects.toThrow(/unknown appointment type/);
+  });
+});
+
+describe('Ereignis im Lesepfad des Kalenders', () => {
+  beforeEach(resetDatabase);
+
+  it('steht mit Titel und ohne Patientennamen in der Liste', async () => {
+    await ereignis({ personen: [ANNA], von: '08:00', bis: '08:30' });
+
+    const { rows } = await asUser<Record<string, unknown>>(users.office, LESEN, [
+      TAG,
+      tagInTagen(96),
+    ]);
+
+    const gefunden = rows.find((r) => r.kind === 'event');
+    expect(gefunden).toMatchObject({
+      kind: 'event',
+      title: 'Teambesprechung',
+      patient_id: null,
+      patient_given_name: null,
+      patient_family_name: null,
+    });
+    // Die behandelnde Person steht weiterhin da - es ist ihr Kalender.
+    expect(gefunden?.staff_family_name).toBe('Beispiel');
+  });
+
+  it('steht in den offenen Terminen der Person', async () => {
+    await ereignis({ personen: [ANNA], von: '08:00', bis: '08:30' });
+
+    const { rows } = await asUser<Record<string, unknown>>(
+      users.ownerTherapist,
+      'select * from public.list_staff_future_appointments($1::uuid)',
+      [ANNA],
+    );
+
+    expect(rows.some((r) => r.kind === 'event' && r.title === 'Teambesprechung')).toBe(true);
+  });
+
+  it('steht in der Terminsicht der Anwendung', async () => {
+    await ereignis({ personen: [ANNA] });
+
+    const { rows } = await asUser<Record<string, unknown>>(
+      users.office,
+      `select id, kind, title, patient_id from public.appointment_directory
+        where kind = 'event' and (starts_at at time zone 'Europe/Berlin')::date = $1::date`,
+      [TAG],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kind: 'event', title: 'Teambesprechung', patient_id: null });
+  });
+});
+
+describe('Zwei Terminlaengen (CAL-015b)', () => {
+  beforeEach(resetDatabase);
+
+  it('legt einen Termin mit 45 Minuten an', async () => {
+    const { rows } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
+      patients.max,
+      ANNA,
+      'video',
+      TAG,
+      '13:00',
+      '13:45',
+      null,
+    ]);
+    expect(rows[0]?.id).toBeTruthy();
+  });
+
+  it('weist eine dritte Laenge weiterhin ab', async () => {
+    await expect(
+      asUser(users.office, ANLEGEN, [patients.max, ANNA, 'video', TAG, '13:00', '13:30', null]),
+    ).rejects.toThrow(/appointment window must be/);
+  });
+
+  it('nennt in der Meldung beide zulaessigen Laengen', async () => {
+    await expect(
+      asUser(users.office, ANLEGEN, [patients.max, ANNA, 'video', TAG, '13:00', '13:30', null]),
+    ).rejects.toThrow(/60 or 45/);
+  });
+
+  it('laesst einen Bestandstermin mit anderer Laenge organisatorisch aendern', async () => {
+    // Direkt eingefuegt: eine Laenge, die der Schreibpfad nicht mehr anlegen
+    // wuerde - der Bestandsschutz aus ANN-037 gilt unveraendert.
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type, status,
+         starts_at, ends_at
+       )
+       values ($1::uuid, $2::uuid, $3::uuid, 'video', 'confirmed',
+               ($4::date + time '15:00') at time zone 'Europe/Berlin',
+               ($4::date + time '15:30') at time zone 'Europe/Berlin')
+       returning id::text as id`,
+      [organizationId, patients.max, ANNA, TAG],
+    );
+    const bestand = await stand(rows[0]!.id);
+
+    await asUserCommitted(users.office, AENDERN, [
+      bestand.id,
+      bestand.updated_at,
+      TIM,
+      'video',
+      TAG,
+      '15:00',
+      '15:30',
+      null,
+    ]);
+
+    const { rows: danach } = await asPostgres<{ staff_member_id: string }>(
+      'select staff_member_id from public.appointments where id = $1',
+      [bestand.id],
+    );
+    expect(danach[0]?.staff_member_id).toBe(TIM);
+  });
+});
+
+/**
+ * Ein Teamereignis ist ein Vorgang, nicht n Termine (CAL-017).
+ *
+ * Bis hierher wussten die Zeilen nichts voneinander: Verschieben hiess, die
+ * Besprechung in jedem Kalender einzeln zu verschieben, und wer dabei
+ * unterbrochen wurde, hinterliess sie bei Anna um 9 und bei Tim um 10.
+ * Geprueft wird deshalb beides - dass eine gemeinsame Aenderung wirklich alle
+ * Beteiligten trifft, und dass eine einzelne Zeile nicht mehr ausscheren kann.
+ */
+describe('Ereignis als ein Vorgang (CAL-017)', () => {
+  beforeEach(resetDatabase);
+
+  /** Legt ein Ereignis an und liefert Gruppenkennung und Stand der Gruppe. */
+  async function gruppe(
+    personen: string[] = [ANNA, TIM],
+    von = '08:00',
+    bis = '08:25',
+  ): Promise<{ id: string; stand: string }> {
+    await ereignis({ personen, von, bis, art: 'practice' });
+    const { rows } = await asPostgres<{ id: string; stand: string }>(
+      `select event_group_id::text as id,
+              to_char(max(updated_at) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"+00"') as stand
+         from public.appointments
+        where kind = 'event'
+          and (starts_at at time zone 'Europe/Berlin')::date = $1::date
+        group by event_group_id`,
+      [TAG],
+    );
+    return rows[0]!;
+  }
+
+  async function beginnZeiten(): Promise<string[]> {
+    const { rows } = await asPostgres<{ beginn: string }>(
+      `select to_char(starts_at at time zone 'Europe/Berlin', 'HH24:MI') as beginn
+         from public.appointments
+        where kind = 'event'
+          and (starts_at at time zone 'Europe/Berlin')::date = $1::date
+        order by staff_member_id`,
+      [TAG],
+    );
+    return rows.map((r) => r.beginn);
+  }
+
+  it('gibt allen Zeilen eines Vorgangs dieselbe Kennung', async () => {
+    await ereignis({ personen: [ANNA, OLIVIA, TIM] });
+    const rows = await zeilen();
+
+    const kennungen = new Set(rows.map((r) => r.event_group_id));
+    expect(kennungen.size).toBe(1);
+    expect([...kennungen][0]).toBeTruthy();
+  });
+
+  it('zaehlt eine doppelt genannte Person einmal', async () => {
+    const anzahl = await ereignis({ personen: [ANNA, ANNA, TIM] });
+    expect(anzahl).toBe(2);
+    expect(await zeilen()).toHaveLength(2);
+  });
+
+  it('verschiebt das Ereignis in allen Kalendern zugleich', async () => {
+    const g = await gruppe();
+    expect(await beginnZeiten()).toEqual(['08:00', '08:00']);
+
+    const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, EREIGNIS_AENDERN, [
+      g.id,
+      g.stand,
+      'Teambesprechung',
+      'practice',
+      TAG,
+      '10:00',
+      '10:25',
+      STANDORT,
+      true,
+    ]);
+
+    expect(rows[0]!.anzahl).toBe(2);
+    expect(await beginnZeiten()).toEqual(['10:00', '10:00']);
+  });
+
+  it('benennt das Ereignis fuer alle Beteiligten um', async () => {
+    const g = await gruppe();
+
+    await asUserCommitted(users.office, EREIGNIS_AENDERN, [
+      g.id,
+      g.stand,
+      'Fallbesprechung',
+      'practice',
+      TAG,
+      '08:00',
+      '08:25',
+      STANDORT,
+      true,
+    ]);
+
+    const rows = await zeilen();
+    expect(rows.map((r) => r.title)).toEqual(['Fallbesprechung', 'Fallbesprechung']);
+  });
+
+  it('aendert die Laenge frei - ein Ereignis kennt die Laengenregel nicht', async () => {
+    const g = await gruppe();
+
+    await asUserCommitted(users.office, EREIGNIS_AENDERN, [
+      g.id,
+      g.stand,
+      'Teambesprechung',
+      'practice',
+      TAG,
+      '08:00',
+      '08:55',
+      STANDORT,
+      true,
+    ]);
+
+    const { rows } = await asPostgres<{ ende: string }>(
+      `select distinct to_char(ends_at at time zone 'Europe/Berlin', 'HH24:MI') as ende
+         from public.appointments
+        where kind = 'event' and event_group_id = $1::uuid`,
+      [g.id],
+    );
+    expect(rows.map((r) => r.ende)).toEqual(['08:55']);
+  });
+
+  /**
+   * Die Constraint griffe ohnehin - aber erst bei irgendeiner Zeile, und ihre
+   * Meldung sagt nicht, wen es trifft. Die Vorpruefung nennt die Person, und
+   * sie laeuft VOR dem ersten Schreibzugriff: Ein halb verschobenes Ereignis
+   * gibt es nicht.
+   */
+  it('weist die Verschiebung ab, wenn eine beteiligte Person dann nicht kann', async () => {
+    const g = await gruppe();
+    // Tim bekommt um 10 einen Behandlungstermin.
+    await asUserCommitted(users.office, ANLEGEN, [
+      patients.max,
+      TIM,
+      'video',
+      TAG,
+      '10:00',
+      '11:00',
+      null,
+    ]);
+
+    await expect(
+      asUser(users.office, EREIGNIS_AENDERN, [
+        g.id,
+        g.stand,
+        'Teambesprechung',
+        'practice',
+        TAG,
+        '10:00',
+        '10:25',
+        STANDORT,
+        true,
+      ]),
+    ).rejects.toThrow(/overlaps/);
+
+    // Nichts verschoben - auch nicht die Zeile, die gekonnt haette.
+    expect(await beginnZeiten()).toEqual(['08:00', '08:00']);
+  });
+
+  it('weist eine Aenderung auf veraltetem Stand ab', async () => {
+    const g = await gruppe();
+
+    await expect(
+      asUser(users.office, EREIGNIS_AENDERN, [
+        g.id,
+        '2020-01-01T00:00:00.000000+00',
+        'Teambesprechung',
+        'practice',
+        TAG,
+        '10:00',
+        '10:25',
+        STANDORT,
+        true,
+      ]),
+    ).rejects.toThrow(/changed meanwhile/);
+  });
+
+  it('weist ein Patientenkonto ab', async () => {
+    const g = await gruppe();
+
+    await expect(
+      asUser(users.patientMax, EREIGNIS_AENDERN, [
+        g.id,
+        g.stand,
+        'Teambesprechung',
+        'practice',
+        TAG,
+        '10:00',
+        '10:25',
+        STANDORT,
+        true,
+      ]),
+    ).rejects.toThrow(/not allowed to update appointments/);
+  });
+
+  it('sagt das Ereignis in allen Kalendern zugleich ab', async () => {
+    const g = await gruppe();
+
+    const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, EREIGNIS_ABSAGEN, [
+      g.id,
+      g.stand,
+      'practice_request',
+    ]);
+
+    expect(rows[0]!.anzahl).toBe(2);
+    const zeilenDanach = await zeilen();
+    expect(zeilenDanach.map((r) => r.status)).toEqual(['cancelled', 'cancelled']);
+    // Und ausdruecklich ohne Gebuehrenanlass (CAL-016).
+    expect(zeilenDanach.map((r) => r.fee_basis)).toEqual([null, null]);
+  });
+
+  it('protokolliert je abgesagter Zeile einen Eintrag', async () => {
+    const g = await gruppe();
+    await asUserCommitted(users.office, EREIGNIS_ABSAGEN, [g.id, g.stand, 'practice_request']);
+
+    const { rows } = await asPostgres<{ anzahl: string }>(
+      `select count(*)::text as anzahl from public.audit_log
+        where action = 'appointment.cancelled'
+          and subject_id in (select id from public.appointments where event_group_id = $1::uuid)`,
+      [g.id],
+    );
+    expect(rows[0]?.anzahl).toBe('2');
+  });
+
+  it('weist eine Absage auf veraltetem Stand ab', async () => {
+    const g = await gruppe();
+
+    await expect(
+      asUser(users.office, EREIGNIS_ABSAGEN, [
+        g.id,
+        '2020-01-01T00:00:00.000000+00',
+        'practice_request',
+      ]),
+    ).rejects.toThrow(/changed meanwhile/);
+  });
+
+  /**
+   * Eine einzelne Teilnahme bleibt absagbar - wer nicht kann, sagt ab, und die
+   * Besprechung findet ohne sie statt. Genau das unterscheidet die Teilnahme
+   * vom Ereignis.
+   */
+  it('laesst eine einzelne Teilnahme absagen, ohne die uebrigen zu treffen', async () => {
+    await gruppe();
+    const rows = await zeilen();
+    const eine = await stand(rows[0]!.id as string);
+
+    await asUserCommitted(users.office, ABSAGEN, [eine.id, eine.updated_at, 'other', null, null]);
+
+    const danach = await zeilen();
+    expect(danach.filter((r) => r.status === 'cancelled')).toHaveLength(1);
+    expect(danach.filter((r) => r.status === 'confirmed')).toHaveLength(1);
+  });
+
+  it('nennt die Beteiligten mit Namen und Zustand', async () => {
+    const g = await gruppe([ANNA, TIM]);
+
+    const { rows } = await asUser<{ display_name: string; status: string }>(
+      users.office,
+      BETEILIGTE,
+      [g.id],
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.display_name).sort()).toEqual(['Anna Beispiel', 'Tim Teamleitung']);
+    expect(rows.every((r) => r.status === 'confirmed')).toBe(true);
+  });
+
+  it('gibt den Beteiligten nur mit Leserecht auf Termine', async () => {
+    const g = await gruppe();
+    await expect(asUser(users.patientMax, BETEILIGTE, [g.id])).rejects.toThrow(
+      /not allowed to read appointments/,
+    );
+  });
+
+  /**
+   * Bestandszeilen aus der Zeit vor CAL-017 bekommen ihre EIGENE Kennung. Zwei
+   * Besprechungen mit gleichem Titel zur gleichen Zeit koennen zwei getrennte
+   * Vorgaenge sein; eine Heuristik ueber Titel und Uhrzeit wuerde sie
+   * stillschweigend verheiraten.
+   */
+  it('fuehrt die beiden Seed-Zeilen nicht ueber ihren Titel zusammen', async () => {
+    const { rows } = await asPostgres<{ anzahl: string }>(
+      `select count(distinct event_group_id)::text as anzahl
+         from public.appointments
+        where kind = 'event' and title = 'Teambesprechung'
+          and (starts_at at time zone 'Europe/Berlin')::date = current_date`,
+    );
+    // Der Seed legt die beiden Zeilen ausdruecklich als EINEN Vorgang an; eine
+    // Zusammenfuehrung waere ein zweiter, der so nicht entstehen darf.
+    expect(rows[0]?.anzahl).toBe('1');
+  });
+});

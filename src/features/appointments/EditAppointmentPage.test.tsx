@@ -17,6 +17,9 @@ const STAND = '2027-05-01T10:00:00.000000+00';
 const termin: AppointmentsApi.Appointment = {
   id: TERMIN_ID,
   patient_id: PATIENT_ID,
+  kind: 'treatment',
+  title: null,
+  event_group_id: null,
   staff_member_id: STAFF_ANNA,
   location_id: ORT,
   appointment_type: 'practice',
@@ -31,7 +34,8 @@ const termin: AppointmentsApi.Appointment = {
   completed_at: null,
   cancellation_reason: null,
   no_show_recorded_at: null,
-  no_show_fee: null,
+  cancellation_received_at: null,
+  fee_basis: null,
   patient_given_name: 'Berta',
   patient_family_name: 'Bestand',
   staff_given_name: 'Anna',
@@ -129,8 +133,9 @@ describe('EditAppointmentPage', () => {
     // 07:00 UTC ist 09:00 Ortszeit - vorbefuellt wird die Praxiszeit.
     expect(screen.getByLabelText('Datum *')).toHaveValue('2027-05-12');
     expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
-    // Das Ende ist seit CAL-010a eine Ableitung, kein Feld.
-    expect(screen.getByText('10:00 Uhr')).toBeInTheDocument();
+    // Das Ende ist seit CAL-010a eine Ableitung, kein Feld; gewaehlt wird
+    // seit CAL-015b die Dauer.
+    expect(screen.getByText('Ende: 10:00 Uhr')).toBeInTheDocument();
     expect(screen.getByLabelText('Standort *')).toHaveValue(ORT);
   });
 
@@ -232,14 +237,19 @@ describe('EditAppointmentPage', () => {
     await user.clear(screen.getByLabelText('Beginn *'));
     await user.type(screen.getByLabelText('Beginn *'), '14:30');
 
-    expect(screen.getByText('15:30 Uhr')).toBeInTheDocument();
+    expect(screen.getByText('Ende: 15:30 Uhr')).toBeInTheDocument();
   });
 
   describe('CAL-010a: Bestandstermin mit abweichender Laenge', () => {
-    /** Derselbe Termin, aber 09:00-09:45 - angelegt vor der Festlegung. */
+    /**
+     * Derselbe Termin, aber 09:00-09:30 - angelegt vor der Festlegung.
+     *
+     * Seit CAL-015b sind 45 Minuten zulaessig; der Bestandsfall braucht
+     * deshalb eine Laenge, die es auch heute nicht gibt.
+     */
     const kurz: AppointmentsApi.Appointment = {
       ...termin,
-      ends_at: '2027-05-12T07:45:00.000Z',
+      ends_at: '2027-05-12T07:30:00.000Z',
     };
 
     it('behaelt seine Laenge beim Oeffnen und beim Verschieben', async () => {
@@ -250,29 +260,26 @@ describe('EditAppointmentPage', () => {
       rendern();
       await formularAbwarten();
 
-      expect(screen.getByText('09:45 Uhr')).toBeInTheDocument();
-      expect(
-        screen.getByText('Terminfenster: 45 Minuten, Dokumentation eingeschlossen.'),
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Dauer')).toHaveValue('30');
+      expect(screen.getByText('Ende: 09:30 Uhr')).toBeInTheDocument();
+      expect(screen.getByText(/stammt aus der Zeit vor der Festlegung/)).toBeInTheDocument();
 
       await user.clear(screen.getByLabelText('Beginn *'));
       await user.type(screen.getByLabelText('Beginn *'), '14:00');
-      expect(screen.getByText('14:45 Uhr')).toBeInTheDocument();
+      expect(screen.getByText('Ende: 14:30 Uhr')).toBeInTheDocument();
     });
 
-    it('bekommt das Terminfenster erst auf ausdrueckliche Anweisung', async () => {
+    it('bekommt eine zulaessige Laenge erst auf ausdrueckliche Anweisung', async () => {
       fetchAppointment.mockResolvedValue(kurz);
       const user = userEvent.setup();
       rendern();
       await formularAbwarten();
 
-      await user.click(screen.getByRole('button', { name: 'Auf 60 Minuten setzen' }));
+      await user.selectOptions(screen.getByLabelText('Dauer'), '60');
 
-      expect(screen.getByText('10:00 Uhr')).toBeInTheDocument();
+      expect(screen.getByText('Ende: 10:00 Uhr')).toBeInTheDocument();
       // Der Hinweis ist danach gegenstandslos.
-      expect(
-        screen.queryByRole('button', { name: 'Auf 60 Minuten setzen' }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/stammt aus der Zeit vor der Festlegung/)).not.toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
       await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
@@ -286,9 +293,7 @@ describe('EditAppointmentPage', () => {
     it('zeigt den Hinweis bei einem Termin im Terminfenster nicht', async () => {
       rendern();
       await formularAbwarten();
-      expect(
-        screen.queryByRole('button', { name: 'Auf 60 Minuten setzen' }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/stammt aus der Zeit vor der Festlegung/)).not.toBeInTheDocument();
     });
   });
 

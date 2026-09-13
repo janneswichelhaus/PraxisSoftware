@@ -166,7 +166,7 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
       await asUserCommitted(
         users.office,
         `select public.cancel_appointment($1::uuid,
-           (select updated_at from public.appointments where id = $1::uuid), 'moved')`,
+           (select updated_at from public.appointments where id = $1::uuid), 'moved', null::date, null::time)`,
         [erster!.id],
       );
 

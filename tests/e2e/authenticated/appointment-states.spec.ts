@@ -31,6 +31,13 @@ function laufTag(versatz = 0): string {
   return tagImFenster(TAGESFENSTER.appointmentStates, LAUF, versatz);
 }
 
+/** Der gestrige Kalendertag - fuer einen Eingang, der sicher in der Vergangenheit liegt. */
+function gestern(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function zeit(minutenAbAcht: number): string {
   // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
   const gesamt = 8 * 60 + (LAUF % 12) * 5 + minutenAbAcht;
@@ -100,10 +107,8 @@ test.describe('CAL-008b: Absage nur mit Grund', () => {
   });
 });
 
-test.describe('CAL-008c: Nicht angetroffen', () => {
-  test('verlangt die Entscheidung zum Ausfallhonorar und laesst sich wieder oeffnen', async ({
-    page,
-  }) => {
+test.describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
+  test('vermerkt mit einem Schritt und laesst sich wieder oeffnen', async ({ page }) => {
     const tag = laufTag(2);
 
     await anmelden(page, KONTEN.office);
@@ -111,15 +116,14 @@ test.describe('CAL-008c: Nicht angetroffen', () => {
 
     await page.getByRole('button', { name: 'Nicht angetroffen' }).click();
     const rueckfrage = page.getByRole('group', { name: 'Nicht angetroffen' });
-    await page.getByRole('button', { name: 'Ja, niemand angetroffen' }).click();
-    await expect(rueckfrage).toContainText('Bitte entscheiden, ob ein Ausfallhonorar');
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    // Seit ADR-018 Fassung 2: keine Pflichtauswahl mehr an dieser Stelle.
+    await expect(rueckfrage).toContainText('Eine Gebühr entsteht daraus nicht');
+    await expect(page.getByLabel('Ausfallhonorar berechnen?')).toHaveCount(0);
 
-    await page.getByLabel('Ausfallhonorar berechnen?').selectOption('ja');
     await page.getByRole('button', { name: 'Ja, niemand angetroffen' }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Nicht angetroffen');
-    await expect(detailWert(page, 'Ausfallhonorar')).toContainText('Wird berechnet');
+    await expect(page.getByText('Gebühr vorgemerkt')).toHaveCount(0);
 
     // Kein zweites Vermerken, kein Absagen - erst wieder oeffnen.
     await expect(page.getByRole('button', { name: 'Nicht angetroffen' })).toHaveCount(0);
@@ -127,7 +131,64 @@ test.describe('CAL-008c: Nicht angetroffen', () => {
 
     await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
-    await expect(page.getByText('Ausfallhonorar')).toHaveCount(0);
+  });
+});
+
+test.describe('CAL-014c: Absage unter 24 Stunden', () => {
+  /**
+   * Der Termin liegt zwei Tage voraus; die Absage geht "gerade eben" ein.
+   * Damit sind es mehr als 24 Stunden - und genau das soll KEINE Gebuehr
+   * ausloesen. Die Gegenprobe unter der Frist braucht einen Termin am selben
+   * Tag und laeuft in der Abnahme von Hand (docs/abnahme).
+   */
+  test('merkt bei rechtzeitiger Absage keine Gebuehr vor', async ({ page }) => {
+    // Versatz 5 und nicht 2: Der Test darueber legt an Tag 2 denselben
+    // Zeitraum bei derselben Person an und oeffnet ihn am Ende wieder - der
+    // Platz ist also belegt, und `create_appointment` wiese den zweiten Termin
+    // zu Recht ab. Der Test waere an etwas gescheitert, das er nicht prueft
+    // (genau der Fall, den `tests/e2e/tagesfenster.spec.ts` beschreibt).
+    const tag = laufTag(5);
+
+    await anmelden(page, KONTEN.office);
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
+
+    await page.getByRole('button', { name: 'Termin absagen' }).click();
+    await page.getByLabel('Absagegrund').selectOption('patient_request');
+    await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
+
+    await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
+    await expect(detailWert(page, 'Absage eingegangen')).not.toBeEmpty();
+    await expect(page.getByText('Gebühr vorgemerkt')).toHaveCount(0);
+  });
+
+  /**
+   * Der nachgetragene Eingang - der Alltagsfall aus dem Buero. Geprueft wird
+   * hier der Weg durch die Oberflaeche: Die Angabe kommt an, wird
+   * festgehalten und steht danach an der Seite.
+   *
+   * Ob aus einem bestimmten Abstand eine Gebuehr wird, steht ausdruecklich
+   * NICHT hier: Die Grenze haengt an Uhrzeiten, die dieser Lauf nicht
+   * festlegt, und sie wird in `supabase/tests/cancellation-notice.test.ts`
+   * auf die Sekunde geprueft. Ein E2E-Test, der sie nachstellte, waere von
+   * der Tageszeit des Laufs abhaengig.
+   */
+  test('haelt einen nachgetragenen Eingang fest', async ({ page }) => {
+    const tag = laufTag(3);
+
+    await anmelden(page, KONTEN.office);
+    await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
+
+    await page.getByRole('button', { name: 'Termin absagen' }).click();
+    await page.getByLabel('Absagegrund').selectOption('patient_request');
+    await page.getByLabel('Wann ist die Absage eingegangen?').selectOption('frueher');
+    // Gestern: ein Eingang in der Zukunft wird zu Recht abgewiesen, und die
+    // Tagesfenster dieser Datei liegen in der Zukunft.
+    await page.getByLabel('Datum des Eingangs').fill(gestern());
+    await page.getByLabel('Uhrzeit').fill('08:00');
+    await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
+
+    await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
+    await expect(detailWert(page, 'Absage eingegangen')).toContainText('08:00');
   });
 });
 

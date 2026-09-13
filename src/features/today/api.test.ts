@@ -14,6 +14,8 @@ function eintrag(teil: Partial<DayPlanEntry> = {}): DayPlanEntry {
     patient_id: 'p1',
     staff_member_id: 's1',
     appointment_type: 'home_visit',
+    kind: 'treatment',
+    title: null,
     status: 'confirmed',
     starts_at: '2026-09-10T07:00:00.000Z',
     ends_at: '2026-09-10T08:00:00.000Z',
@@ -67,6 +69,24 @@ describe('istOffen', () => {
   it('behauptet nichts, wenn der Dokumentationsstand nicht ausgeliefert wurde', () => {
     const termin = eintrag({ status: 'completed', documentation_status: null });
     expect(istOffen(termin, true)).toBe(false);
+  });
+
+  /**
+   * Ein Ereignis belegt den Tag, verlangt aber nichts: Es wird weder
+   * abgeschlossen noch dokumentiert (CAL-016). Stünde es in der Zahl über der
+   * Liste, bliebe sie am Abend stehen und wäre nicht zu erledigen.
+   */
+  it('fuehrt ein Ereignis des Praxisbetriebs nie als offen', () => {
+    const ereignis = eintrag({
+      kind: 'event',
+      title: 'Teambesprechung',
+      patient_id: null,
+      patient_given_name: null,
+      patient_family_name: null,
+      documentation_status: null,
+    });
+    expect(istOffen(ereignis, true)).toBe(false);
+    expect(istOffen({ ...ereignis, status: 'completed' }, true)).toBe(false);
   });
 });
 

@@ -11,7 +11,12 @@ import {
   type Zeitband,
 } from './calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { appointmentStatusLabels, appointmentTypeLabels, type CalendarEntry } from './api';
+import {
+  appointmentStatusLabels,
+  appointmentTypeLabels,
+  terminBezeichnung,
+  type CalendarEntry,
+} from './api';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 
 /**
@@ -490,8 +495,13 @@ function Kachel({
         .filter(Boolean)
         .join(' ')}
     >
+      {/* Der Titel eines Ereignisses steht dort, wo sonst der Name steht -
+          und ein Zeichen davor sagt, dass es keine Behandlung ist
+          (CAL-015b). Ohne das Zeichen sähe eine Teambesprechung aus wie eine
+          Patient:in mit ungewöhnlichem Namen. */}
       <span className="text-ink block truncate text-xs font-medium">
-        {eintrag.patient_given_name} {eintrag.patient_family_name}
+        {eintrag.kind === 'event' ? '▪ ' : ''}
+        {terminBezeichnung(eintrag)}
       </span>
       <span className="text-ink-muted block truncate text-[0.6875rem]">
         {hhmm(beginnMinute)}–{hhmm(endeMinute)}

@@ -6,6 +6,7 @@ import { mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchPatient } from '@/features/patients/api';
+import { fetchStaffMembers } from '@/features/staff/api';
 import type { CurrentUser } from '@/features/session/types';
 import {
   AppointmentFormFields,
@@ -23,11 +24,14 @@ import {
   leererTermin,
   patientName,
   TERMINFENSTER_MINUTEN,
+  TERMINFENSTER_OPTIONEN,
   terminLaengeMinuten,
   todayInTimeZone,
   updateAppointment,
   type AppointmentFormField,
   type AppointmentFormValues,
+  type AppointmentType,
+  type AssignableTherapist,
 } from './api';
 
 /**
@@ -67,11 +71,40 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
+  const istEreignis = termin.data?.kind === 'event';
+
   const therapeuten = useQuery({
     queryKey: ['assignable-therapists'],
     queryFn: fetchAssignableTherapists,
+    enabled: termin.isSuccess && !istEreignis,
     retry: false,
   });
+
+  /**
+   * Beteiligte eines Ereignisses sind Beschäftigte, nicht notwendig
+   * Behandelnde (CAL-016).
+   *
+   * Das Büro nimmt an einer Teambesprechung teil; in
+   * `list_assignable_therapists` steht es nicht. Mit dieser Liste stünde die
+   * eingetragene Person nicht in der Auswahl, und das Formular träte mit einer
+   * leeren Auswahl an - die erste Speicherung hätte die Beteiligung
+   * stillschweigend verschoben.
+   */
+  const beteiligte = useQuery({
+    queryKey: ['staff-members'],
+    queryFn: fetchStaffMembers,
+    enabled: termin.isSuccess && istEreignis,
+    retry: false,
+  });
+
+  const personen: AssignableTherapist[] = istEreignis
+    ? (beteiligte.data ?? [])
+        .filter((person) => person.employment_status === 'active')
+        .map((person) => ({
+          staff_member_id: person.id,
+          display_name: `${person.given_name} ${person.family_name}`,
+        }))
+    : (therapeuten.data ?? []);
 
   const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
 
@@ -79,7 +112,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   // gewechselt wird; erst dann entsteht ein neuer Snapshot.
   const patient = useQuery({
     queryKey: ['patient', termin.data?.patient_id],
-    queryFn: () => fetchPatient(termin.data!.patient_id),
+    queryFn: () => fetchPatient(termin.data!.patient_id!),
     enabled: Boolean(termin.data?.patient_id),
     retry: false,
   });
@@ -116,10 +149,11 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     if (mutation.isError) mutation.reset();
   }
 
-  /** Setzt einen Bestandstermin ausdrücklich auf das Terminfenster (§8.1). */
-  function aufTerminfensterSetzen() {
-    setFensterMinuten(TERMINFENSTER_MINUTEN);
-    setWerte((bisher) => ({ ...bisher, end_time: fensterEnde(bisher.start_time) }));
+  /** Wechselt die Länge ausdrücklich - danach gilt die Regel aus §8.1. */
+  function laengeWechseln(minuten: number) {
+    setFensterMinuten(minuten);
+    setWerte((bisher) => ({ ...bisher, end_time: fensterEnde(bisher.start_time, minuten) }));
+    if (fehler.end_time) setFehler(({ end_time: _entfaellt, ...rest }) => rest);
     if (mutation.isError) mutation.reset();
   }
 
@@ -162,6 +196,8 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
 
   const daten = termin.data;
 
+  const zurueck = istEreignis ? '← Zurück zum Ereignis' : '← Zurück zum Termin';
+
   // Ein abgesagter Termin ist terminal. Die Serverfunktion weist ihn ohnehin
   // ab; hier wird gar nicht erst ein Formular angeboten.
   if (daten.status === 'cancelled') {
@@ -171,7 +207,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           to={mitRueckweg(`/termine/${daten.id}`, rueckweg)}
           className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
         >
-          ← Zurück zum Termin
+          {zurueck}
         </Link>
         <ErrorState
           title="Abgesagte Termine werden nicht bearbeitet"
@@ -190,12 +226,16 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         to={mitRueckweg(`/termine/${daten.id}`, rueckweg)}
         className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
       >
-        ← Zurück zum Termin
+        {zurueck}
       </Link>
 
       <PageHeader
-        title="Termin bearbeiten"
-        description={`Für ${patientName(daten)}. Mit * markierte Felder sind erforderlich.`}
+        title={istEreignis ? 'Ereignis bearbeiten' : 'Termin bearbeiten'}
+        description={
+          istEreignis
+            ? 'Zeit, Ort und beteiligte Person. Mit * markierte Felder sind erforderlich.'
+            : `Für ${patientName(daten)}. Mit * markierte Felder sind erforderlich.`
+        }
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
@@ -214,11 +254,19 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           </div>
         ) : null}
 
+        {/* Ein Ereignis hat keine Patient:in - der Kasten nennt stattdessen,
+            worum es geht. Die Bezeichnung selbst ist hier nicht änderbar: Die
+            Serverfunktion `update_appointment` nimmt sie nicht entgegen
+            (CAL-016). */}
         <div className="border-line bg-surface-sunken rounded-card mb-5 border p-4">
-          <p className="text-ink-muted text-sm">Patient:in</p>
-          <p className="text-ink text-[0.9375rem] font-medium">{patientName(daten)}</p>
+          <p className="text-ink-muted text-sm">{istEreignis ? 'Ereignis' : 'Patient:in'}</p>
+          <p className="text-ink text-[0.9375rem] font-medium">
+            {istEreignis ? (daten.title ?? '—') : patientName(daten)}
+          </p>
           <p className="text-ink-subtle mt-2 text-xs leading-relaxed">
-            Ein Termin kann nicht auf eine andere Person übertragen werden.
+            {istEreignis
+              ? 'Die Bezeichnung lässt sich hier nicht ändern. Änderbar sind Zeit, Ort und die beteiligte Person.'
+              : 'Ein Termin kann nicht auf eine andere Person übertragen werden.'}
           </p>
         </div>
 
@@ -226,13 +274,27 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           werte={werte}
           fehler={fehler}
           onChange={setzen}
-          therapeuten={therapeuten.data ?? []}
+          therapeuten={personen}
+          personBeschriftung={istEreignis ? 'Beteiligte Person *' : undefined}
           standorte={standorte.data ?? []}
+          // Ein Ereignis ohne Patient:in hätte bei einem Hausbesuch keine
+          // Anschrift; der Server weist ihn ab (CAL-015b).
+          arten={
+            istEreignis ? (['practice', 'video'] as const satisfies AppointmentType[]) : undefined
+          }
           minDatum={
             user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : undefined
           }
           rasterMinuten={user.appointmentGridMinutes ?? undefined}
           fensterMinuten={fensterMinuten}
+          onFensterMinuten={
+            // Ein Ereignis hat keine Längenregel; seine Dauer wird hier nicht
+            // über die Auswahl geändert, sondern bleibt, wie sie ist.
+            daten.kind === 'treatment' ? laengeWechseln : undefined
+          }
+          laengeHinweis={
+            istEreignis ? `Dauer: ${fensterMinuten} Minuten, wie eingetragen.` : undefined
+          }
           hausbesuch={
             bleibtHausbesuch ? (
               <UebernommeneAdresse
@@ -255,22 +317,19 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         />
 
         {/* Ein Termin aus der Zeit vor §8.1 behält seine Länge und bleibt
-            verschiebbar (ANN-037). Verändert wird sie nur auf ausdrückliche
-            Anweisung - danach gilt das Terminfenster. */}
-        {fensterMinuten !== TERMINFENSTER_MINUTEN ? (
+            verschiebbar (ANN-037). Die Auswahl oben führt sie als eigenen
+            Eintrag; wer eine der zulässigen Längen wählt, ändert sie
+            ausdrücklich. */}
+        {istEreignis ||
+        (TERMINFENSTER_OPTIONEN as readonly number[]).includes(fensterMinuten) ? null : (
           <div className="border-line-strong bg-surface-sunken rounded-card mt-5 border p-4">
             <p className="text-ink text-sm">
               Dieser Termin hat ein Zeitfenster von {fensterMinuten} Minuten und stammt aus der Zeit
-              vor der Festlegung auf {TERMINFENSTER_MINUTEN} Minuten. Er bleibt so gültig und
-              verschiebbar.
+              vor der Festlegung auf {TERMINFENSTER_OPTIONEN.join(' oder ')} Minuten. Er bleibt so
+              gültig und verschiebbar; über „Dauer" lässt er sich ausdrücklich ändern.
             </p>
-            <div className="mt-3">
-              <Button type="button" variant="secondary" onClick={aufTerminfensterSetzen}>
-                Auf {TERMINFENSTER_MINUTEN} Minuten setzen
-              </Button>
-            </div>
           </div>
-        ) : null}
+        )}
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>

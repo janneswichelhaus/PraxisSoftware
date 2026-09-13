@@ -213,6 +213,8 @@ describe('StaffMemberDetailPage', () => {
         ends_at: '2026-09-15T09:00:00.000Z',
         appointment_type: 'home_visit',
         patient_id: '66666666-6666-4666-8666-000000000001',
+        kind: 'treatment' as const,
+        title: null,
         patient_given_name: 'Max',
         patient_family_name: 'Mustermann',
         location_name: null,

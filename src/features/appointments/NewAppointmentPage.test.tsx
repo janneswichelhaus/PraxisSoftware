@@ -159,11 +159,30 @@ describe('NewAppointmentPage', () => {
 
     await user.type(screen.getByLabelText('Beginn *'), '10:15');
 
-    // 8.1: 60 Minuten, und der Beginn darf auf jedem Rasterpunkt liegen.
-    expect(screen.getByText('11:15 Uhr')).toBeInTheDocument();
+    // 8.1: 60 Minuten sind die Vorbelegung, und der Beginn darf auf jedem
+    // Rasterpunkt liegen.
+    expect(screen.getByLabelText('Dauer')).toHaveValue('60');
+    expect(screen.getByText('Ende: 11:15 Uhr')).toBeInTheDocument();
+  });
+
+  /**
+   * CAL-015b: Seit der Festlegung vom 12.09.2026 gibt es zwei zulaessige
+   * Laengen. Die Auswahl bietet genau diese beiden an - ein frei
+   * beschreibbares Ende waere eine Falle, weil der Server eine dritte Laenge
+   * abweist.
+   */
+  it('bietet 60 und 45 Minuten an und zieht das Ende mit (CAL-015b)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.type(screen.getByLabelText('Beginn *'), '10:15');
     expect(
-      screen.getByText('Terminfenster: 60 Minuten, Dokumentation eingeschlossen.'),
-    ).toBeInTheDocument();
+      Array.from(screen.getByLabelText('Dauer').querySelectorAll('option')).map((o) => o.value),
+    ).toEqual(['60', '45']);
+
+    await user.selectOptions(screen.getByLabelText('Dauer'), '45');
+    expect(screen.getByText('Ende: 11:00 Uhr')).toBeInTheDocument();
   });
 
   it('begrenzt das Datumsfeld auf den laufenden Praxistag', async () => {
@@ -524,7 +543,7 @@ describe('NewAppointmentPage', () => {
       expect(screen.getByLabelText('Datum *')).toHaveValue('2027-05-19');
       expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
       // Das Ende kommt aus dem Terminfenster, nicht aus der Adresszeile.
-      expect(screen.getByText('10:00 Uhr')).toBeInTheDocument();
+      expect(screen.getByText('Ende: 10:00 Uhr')).toBeInTheDocument();
       expect(screen.getByLabelText('Terminart *')).toHaveValue('practice');
       await waitFor(() =>
         expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_TIM),

@@ -1,20 +1,57 @@
-import type { ReactElement, ReactNode } from 'react';
+import { createContext, useState, type ReactElement, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { render, type RenderResult } from '@testing-library/react';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import type { Patient } from '@/features/patients/api';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
 
+/**
+ * Der zu prüfende Inhalt auf dem Weg in die Route.
+ *
+ * `Consumer` statt einer eigenen Komponente: Eine Komponente in dieser Datei
+ * wäre ein Verstoß gegen `react-refresh/only-export-components`, und für einen
+ * einzelnen Durchreicher lohnt keine zweite Datei.
+ */
+const KinderKontext = createContext<ReactNode>(null);
+
+/**
+ * Derselbe Routertyp wie in der Anwendung (`src/app/App.tsx`): ein Data Router
+ * mit einer Platzhalterroute.
+ *
+ * `<MemoryRouter>` stand hier bis FIX-EPIC-003. Er stellt den
+ * Data-Router-Kontext nicht bereit, und ein Test einer Seite mit
+ * Navigationsschutz hätte deshalb an `useBlocker` geworfen — die Prüfung wäre
+ * grün gewesen, ohne den Schutz je gesehen zu haben.
+ */
 export function renderWithProviders(ui: ReactElement, initialPath = '/'): RenderResult {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
 
   function Wrapper({ children }: { children: ReactNode }) {
+    // Der Router entsteht genau einmal: `createMemoryRouter` legt den
+    // Verlaufszustand an, und ein neuer bei jedem Rendern setzte ihn zurück -
+    // ein `rerender()` im Test landete wieder auf `initialPath`. Der Inhalt
+    // kommt deshalb über den Kontext in die Route hinein und nicht über das
+    // Routenobjekt.
+    const [router] = useState(() =>
+      createMemoryRouter(
+        [
+          {
+            path: '*',
+            element: <KinderKontext.Consumer>{(kinder) => kinder}</KinderKontext.Consumer>,
+          },
+        ],
+        { initialEntries: [initialPath] },
+      ),
+    );
+
     return (
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
+        <KinderKontext.Provider value={children}>
+          <RouterProvider router={router} />
+        </KinderKontext.Provider>
       </QueryClientProvider>
     );
   }

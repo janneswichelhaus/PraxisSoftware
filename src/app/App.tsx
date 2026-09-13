@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { Route, RouterProvider, Routes, createBrowserRouter, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
 import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -164,13 +165,63 @@ function Gate() {
   return <AuthenticatedApp />;
 }
 
+/**
+ * Was ein Renderfehler zeigt (FIX-EPIC-003).
+ *
+ * Ein Data Router fängt einen geworfenen Fehler selbst ab. Ohne eigenes
+ * `errorElement` zeigt er dabei seine eingebaute Seite — englisch, mit
+ * Stacktrace, auch im Produktionsbuild. Das wäre in einer Praxis mit
+ * Gesundheitsdaten die falsche Antwort gleich zweimal: unverständlich für die
+ * Person davor (`PROJECT_PRINCIPLES.md` §13) und gesprächiger, als ein
+ * Fehlerbild sein muss (ADR-011).
+ *
+ * Kein „Erneut versuchen": Was geworfen hat, wirft nach einem Neurendern
+ * wieder. Das Neuladen liegt beim Browser, und die Seite sagt es.
+ */
+function Absturzseite() {
+  return (
+    <main className="mx-auto max-w-sm px-5 py-16">
+      <Wortmarke hoehe={40} className="mb-6" />
+      <ErrorState
+        title="Da ist etwas schiefgegangen."
+        description="Die Seite konnte nicht angezeigt werden. Bitte laden Sie die Anwendung neu. Ihre gespeicherte Arbeit bleibt unverändert erhalten."
+      />
+    </main>
+  );
+}
+
+/**
+ * Ein **Data Router** statt `<BrowserRouter>` (FIX-EPIC-003).
+ *
+ * Der Grund ist einziger und benannt: `useBlocker` — der einzige Weg, eine
+ * angefangene Navigation innerhalb der Anwendung anzuhalten und zurückzugeben —
+ * verlangt den Data-Router-Kontext und wirft unter `<BrowserRouter>`. Ohne ihn
+ * bliebe ungespeicherte Behandlungsdokumentation bei jedem Tap im Hauptmenü,
+ * bei jedem Patientenwechsel und beim Zurück des Browsers still verloren
+ * (`PROJECT_PRINCIPLES.md` §13).
+ *
+ * Es bleibt bei **einer** Route mit Platzhalter: Die Routentabelle selbst
+ * ändert sich nicht. `Gate`, `OeffentlicheRouten` und `AuthenticatedRoutes`
+ * arbeiten unverändert mit `<Routes>` weiter — verschachtelte `<Routes>` sind
+ * unter einem Data Router ausdrücklich vorgesehen. Damit kostet der Wechsel
+ * keine Umstellung von zwanzig Routen auf Routenobjekte, und die Rollenprüfung
+ * bleibt dort, wo sie steht (ADR-004). Was er bringt, ist allein der Kontext.
+ *
+ * Der Router entsteht **einmal je Anwendung**, nicht einmal je Modul:
+ * `createBrowserRouter` liest die Adresse des Fensters beim Erzeugen. Ein
+ * Router im Modulrumpf läse sie beim Import — in der Anwendung derselbe
+ * Augenblick, in einem Test aber lange vor dem `pushState`, das die zu
+ * prüfende Adresse setzt (`Gate.test.tsx`).
+ */
 export function App() {
+  const [router] = useState(() =>
+    createBrowserRouter([{ path: '*', element: <Gate />, errorElement: <Absturzseite /> }]),
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        <BrowserRouter>
-          <Gate />
-        </BrowserRouter>
+        <RouterProvider router={router} />
       </SessionProvider>
     </QueryClientProvider>
   );

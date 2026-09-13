@@ -216,6 +216,10 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
     standort: null,
     status: 'active',
     patient: patient.id,
+    // Der Verordnungsfilter reist mit in den Kalender: Wer dort eine freie
+    // Stelle antippt, legt den Termin gleich zu dieser Verordnung an
+    // (CAL-015c).
+    verordnung,
     zoom: ZOOM_STANDARD,
   })}`;
 

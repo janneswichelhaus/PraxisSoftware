@@ -426,6 +426,10 @@ describe('list_appointments: Datensparsamkeit', () => {
         'staff_member_id',
         'location_id',
         'appointment_type',
+        // Art und Titel seit CAL-015b: Der Kalender zeigt auch Ereignisse des
+        // Praxisbetriebs, und die haben keinen Patientennamen.
+        'kind',
+        'title',
         'status',
         'starts_at',
         'ends_at',

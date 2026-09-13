@@ -91,10 +91,18 @@ test.describe('CAL-005: Praxisraster', () => {
     // eine Falle.
     await expect(page.getByLabel('Ende *')).toHaveCount(0);
     await page.getByLabel('Beginn *').fill('09:05');
-    await expect(page.getByText('10:05 Uhr')).toBeVisible();
-    await expect(
-      page.getByText('Terminfenster: 60 Minuten, Dokumentation eingeschlossen.'),
-    ).toBeVisible();
+    await expect(page.getByText('Ende: 10:05 Uhr')).toBeVisible();
+
+    // Seit CAL-015b kennt 8.1 ZWEI Laengen. Aus der Ableitung ist damit eine
+    // Auswahl mit genau zwei Antworten geworden - 60 vorbelegt, 45 daneben -,
+    // und das Ende steht als Hinweis daran. Ein drittes Angebot gibt es nicht:
+    // Der Server wiese es ab.
+    const dauer = page.getByLabel('Dauer');
+    await expect(dauer).toHaveValue('60');
+    await expect(dauer.getByRole('option')).toHaveText(['60 Minuten', '45 Minuten']);
+
+    await dauer.selectOption('45');
+    await expect(page.getByText('Ende: 09:50 Uhr')).toBeVisible();
   });
 });
 

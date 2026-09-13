@@ -6,9 +6,16 @@
 Fragen wie empfohlen. `PROJECT_PRINCIPLES.md` §8 ist mit Version 0.7
 nachgezogen (§21), Punkt D in `OPEN_DECISIONS.md` ist geschlossen.
 
+**Fassung 2 (2026-09-12)** — begrenzte Ergänzung nach einer Festlegung des
+Projektinhabers: Die Frist für das Ausfallhonorar ist entschieden (24 Stunden,
+Punkt 8), und das Nichtantreffen verliert seine Pflichtentscheidung über das
+Honorar (Punkt 4 neu gefasst). Fassung 1 hatte beides ausdrücklich offen
+gelassen beziehungsweise anders geregelt; was sich ändert, steht in Punkt 8
+und ist dort als Änderung gekennzeichnet. Alles Übrige gilt unverändert.
+
 ## Datum
 
-2026-09-11
+2026-09-11 · Fassung 2: 2026-09-12
 
 ## Kontext
 
@@ -119,12 +126,21 @@ dafür mit der Pflicht, die Invariante zu testen.
 
 ### 4. Das Ausfallhonorar ist ein Kennzeichen, kein Geldbetrag
 
-`no_show` trägt ein Pflichtkennzeichen „Ausfallhonorar ja/nein", gesetzt im
-selben Schritt wie der Zustand. Der Termin sagt damit nur, **ob** abgerechnet
-werden soll. **Wie viel** steht im Leistungskatalog (ABR-001), und ob eine
+**Fassung 2, 2026-09-12 — neu gefasst.** Der Termin trägt ein Kennzeichen
+**Gebührenanlass** (`fee_basis`): entweder nichts, oder den Grund, aus dem eine
+Gebühr entstehen soll. Es sagt damit nur, **ob** abgerechnet werden soll und
+**woraus**. **Wie viel** steht im Leistungskatalog (ABR-001), und ob eine
 Rechnung entsteht, entscheidet ABR-003. ADR-009 führt das Ausfallhonorar
 bewusst als offenen Punkt; dieser ADR nimmt ihm nichts vorweg außer dem
 Anknüpfungspunkt.
+
+Gesetzt wird das Kennzeichen **ausschließlich vom Server** und ausschließlich
+aus der Frist in Punkt 8. Es gibt in V1 genau einen Anlass:
+`late_cancellation`.
+
+*In Fassung 1 stand hier:* „`no_show` trägt ein **Pflicht**kennzeichen
+‚Ausfallhonorar ja/nein', gesetzt im selben Schritt wie der Zustand." Diese
+Pflichtentscheidung entfällt — siehe Punkt 8.
 
 ### 5. Die Serie hat keinen Status
 
@@ -164,6 +180,60 @@ gültig.
 - **Keine Zustandsänderung offline** (ADR-001).
 - **Keine Statusänderung ohne Auditeintrag** (ADR-010).
 
+### 8. Die Frist des Ausfallhonorars — und warum das Nichtantreffen keine trägt
+
+**Neu in Fassung 2 (2026-09-12).** Der Projektinhaber hat festgelegt:
+
+> Patientenabsage weniger als 24 Stunden vor Behandlungsbeginn →
+> Ausfallgebühr. Person beim Hausbesuch vor Ort nicht angetroffen → Termin
+> abhaken mit Vermerk.
+
+Daraus folgen fünf Festlegungen:
+
+1. **Der Eingang der Absage ist ein eigenes Datum.** `cancellation_received_at`
+   hält fest, **wann die Absage die Praxis erreicht hat**; `cancelled_at` hält
+   unverändert fest, **wann sie eingetragen wurde**. Die beiden fallen im
+   Alltag auseinander: Der Anruf kommt abends aufs Band, eingetragen wird am
+   nächsten Morgen. Ohne die Trennung entschiede die Schreibgeschwindigkeit des
+   Büros über eine Forderung gegen eine Patientin.
+2. **Die Frist rechnet der Server**, aus dem Eingang und dem vereinbarten
+   Beginn des Termins, nie aus der Eingabezeit und nie im Browser. Sie ist eine
+   Geldfrage (§19); eine im Browser gerechnete Frist wäre weder prüfbar noch
+   verlässlich.
+3. **Weniger als 24 Stunden heißt weniger als 24 Stunden.** Genau 24 Stunden
+   liegen **außerhalb** der Regel. Gerechnet wird in absoluten Stunden auf
+   Zeitstempeln mit Zone; eine Zeitumstellung verschiebt die Grenze deshalb um
+   die Stunde, die sie auch in Wirklichkeit verschiebt.
+4. **Nur die Patientenabsage löst aus.** Eine praxisbedingte Absage
+   (`practice_request`) löst nie eine Gebühr aus. „Verlegt" und „Sonstiger
+   Grund" lösen ebenfalls keine automatische Gebühr aus — beides sagt über den
+   Anlass zu wenig, und eine zu Unrecht vorgemerkte Forderung gegen eine
+   Patientin ist teurer zurückzunehmen als eine nachzutragende (§16).
+5. **Das Nichtantreffen trägt keine Gebührenentscheidung.** Der Vermerk ist
+   ein datensparsamer organisatorischer Abschluss: ein Tap, kein Formular. Aus
+   ihm allein entsteht **keine** Gebühr. Ob das Nichtantreffen beim Hausbesuch
+   eine eigene Gebührenregel bekommen soll, ist **offen** und steht als Punkt
+   in `OPEN_DECISIONS.md`; bis dahin blockiert es den Ablauf nicht.
+
+Der Termin bleibt in allen Fällen als **abgesagt** beziehungsweise **nicht
+angetroffen** erkennbar. Der Gebührenanlass ist ein Merkmal daneben, kein
+eigener Zustand: Eine Absage mit Gebühr ist eine Absage.
+
+**Was das für Bestandsdaten heißt.** Nichts. Historische Vorgänge werden nicht
+nachträglich umgedeutet und bekommen keine Gebühr: Für eine Absage ohne
+festgehaltenen Eingang gibt es keine Frist zu rechnen, und ein bereits
+gesetztes Ausfallhonorar-Kennzeichen aus Fassung 1 wandert unverändert als
+`fee_basis = 'no_show'` mit — es war eine ausdrückliche Entscheidung eines
+Menschen und bleibt eine.
+
+**Was daran hängt.** Der Löschlauf (ADR-008, ANN-035): Ein Vorgang mit
+Gebührenanlass wird **nicht** nach der Dreijahresfrist gelöscht — er ist die
+Grundlage einer Forderung. Das galt bisher für den No-show mit Kennzeichen und
+gilt ab jetzt genauso für die Absage mit `late_cancellation`. Und die
+Rechnung: Zu den Übergängen in Punkt 2 tritt mit ABR-003
+`cancelled → invoiced` für eine Absage mit Gebührenanlass, parallel zu
+`no_show → invoiced`.
+
 ## Konsequenzen
 
 - §19 bekommt seinen technischen Anker: „Fakturierung erst nach finalisierter
@@ -196,16 +266,21 @@ gültig.
   (CAL-010a, §8.1).
 - Das Patientenportal und alles, was `requested` und `tentative` erreichbar
   machen würde (Etappe 4).
-- Die Frage, ob eine Absage kurz vor dem Termin anders behandelt wird als eine
-  frühe — eine Fristenregel für Ausfallhonorare ist Praxisprozess, nicht
-  Datenmodell.
+- ~~Die Frage, ob eine Absage kurz vor dem Termin anders behandelt wird als
+  eine frühe — eine Fristenregel für Ausfallhonorare ist Praxisprozess, nicht
+  Datenmodell.~~ **Mit Fassung 2 entschieden** (Punkt 8). Die Einschätzung war
+  richtig und nicht vollständig: Die Regel ist Praxisprozess, aber sie braucht
+  ein Datum, das das Datenmodell bis dahin nicht hatte — den Eingang der
+  Absage.
 
 ## Offene Folgefragen
 
-- Braucht „nicht angetroffen" eine eigene Frist im Retention Schedule, oder
+- ~~Braucht „nicht angetroffen" eine eigene Frist im Retention Schedule, oder
   fällt es unter „abgesagte Termine und No-shows ohne Rechnung" (ADR-008,
-  ANN-001)? Beim Bauen von CAL-008 zu prüfen — die Datenklasse existiert, die
-  Regel im Löschlauf fragt heute nur nach `cancelled`.
+  ANN-001)?~~ Mit ANN-035 beantwortet: dieselbe Klasse, Anker ist der Vermerk.
+- **Neu mit Fassung 2:** Soll das Nichtantreffen beim Hausbesuch eine eigene
+  Gebührenregel bekommen — und wenn ja, welche? Der Weg ist da (derselbe
+  `fee_basis`), die Regel fehlt. Steht in `OPEN_DECISIONS.md`.
 - Wie verhält sich der Automat zu einem Termin, der von einer anderen Person
   abgeschlossen wird als der behandelnden?
 - Soll die Praxis sehen können, wie oft eine Patientin nicht angetroffen wurde

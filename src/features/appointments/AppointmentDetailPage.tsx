@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Select } from '@/components/ui/Select';
+import { Field } from '@/components/ui/Field';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -23,6 +24,7 @@ import { NavigationZumTermin } from './NavigationStarten';
 import {
   appointmentStatusLabels,
   cancelAppointment,
+  cancelAppointmentEvent,
   cancellationReasonLabels,
   cancellationReasonSchema,
   appointmentTypeLabels,
@@ -33,13 +35,17 @@ import {
   formatLocalDate,
   formatLocalTime,
   formatLocalTimeRange,
+  feeBasisLabels,
   locationSummary,
   patientName,
   recordNoShow,
   reopenAppointment,
   schreibeTerminVorbelegung,
   staffName,
+  todayInTimeZone,
+  fetchEventParticipants,
   type Appointment,
+  type EventParticipant,
 } from './api';
 
 /** Bezeichnung des Ortsfeldes - je nach Terminart eine andere Frage. */
@@ -91,16 +97,41 @@ function zustandsHinweis(appointment: Appointment): string {
  */
 function AbsageAktion({ appointment }: { appointment: Appointment }) {
   const queryClient = useQueryClient();
+  // Ein Ereignis sagt keine Patient:in ab: Es gibt keine, es gibt keinen
+  // Behandlungsbeginn, auf den sich eine Frist bezöge, und der Server setzt
+  // dort keinen Gebührenanlass (CAL-016). Also weder der Grund
+  // „Patient:in hat abgesagt" noch die Frage nach dem Eingang noch der
+  // Hinweis auf die Gebühr - alles drei wäre hier eine Behauptung.
+  const istEreignis = appointment.kind === 'event';
   const [grund, setGrund] = useState('');
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
+  // Der Eingang: „jetzt" ist der Regelfall am Telefon, „früher" die
+  // nachträgliche Erfassung. Vorbelegt ist „jetzt" - das ist keine stille
+  // Annahme, sondern der Augenblick, in dem gerade jemand absagt (ANN-048).
+  const [eingang, setEingang] = useState<'jetzt' | 'frueher'>('jetzt');
+  const [datum, setDatum] = useState('');
+  const [uhrzeit, setUhrzeit] = useState('');
+  const [eingangFehler, setEingangFehler] = useState<string | undefined>(undefined);
 
   const mutation = useMutation({
-    mutationFn: (gewaehlt: CancellationReason) =>
-      cancelAppointment(appointment.id, appointment.updated_at, gewaehlt),
+    mutationFn: (eingabe: {
+      grund: CancellationReason;
+      datum: string | null;
+      uhrzeit: string | null;
+    }) =>
+      cancelAppointment(
+        appointment.id,
+        appointment.updated_at,
+        eingabe.grund,
+        eingabe.datum,
+        eingabe.uhrzeit,
+      ),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
       // Der Kalender zeigt sonst weiter einen bestätigten Termin.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      // Die Tagesliste ebenso.
+      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
     },
   });
 
@@ -112,14 +143,26 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
       throw new Error('Absagegrund fehlt');
     }
     setGrundFehler(undefined);
-    await mutation.mutateAsync(gewaehlt.data);
+
+    const nachtraeglich = !istEreignis && eingang === 'frueher';
+    if (nachtraeglich && (!datum || !uhrzeit)) {
+      setEingangFehler('Bitte Datum und Uhrzeit des Eingangs angeben.');
+      throw new Error('Eingang unvollständig');
+    }
+    setEingangFehler(undefined);
+
+    await mutation.mutateAsync({
+      grund: gewaehlt.data,
+      datum: nachtraeglich ? datum : null,
+      uhrzeit: nachtraeglich ? uhrzeit : null,
+    });
   }
 
   return (
     <Rueckfrage
-      ausloeser="Termin absagen"
-      bezeichnung="Termin absagen"
-      bestaetigen="Ja, Termin absagen"
+      ausloeser={istEreignis ? 'Nur diese Teilnahme absagen' : 'Termin absagen'}
+      bezeichnung={istEreignis ? 'Teilnahme absagen' : 'Termin absagen'}
+      bestaetigen={istEreignis ? 'Ja, Teilnahme absagen' : 'Ja, Termin absagen'}
       bestaetigenLaeuft="Wird abgesagt …"
       fehler={mutation.isError ? mutation.error.message : undefined}
       laeuft={mutation.isPending}
@@ -127,11 +170,16 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
       onBestaetigen={absagen}
     >
       <p>
-        Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
-        um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
-        {patientName(appointment)} wird als abgesagt geführt. Er bleibt vollständig erhalten und
-        gibt seinen Zeitraum wieder frei. Eine Absage lässt sich nicht zurücknehmen – für einen
-        neuen Termin bitte neu anlegen.
+        {istEreignis
+          ? `Die Teilnahme von ${staffName(appointment)} am Ereignis „${appointment.title ?? ''}" `
+          : 'Der Termin '}
+        am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
+        {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr
+        {istEreignis ? ' ' : ` für ${patientName(appointment)} `}
+        wird als abgesagt geführt.{' '}
+        {istEreignis ? 'Das Ereignis selbst bleibt für die übrigen Beteiligten bestehen. ' : ''}
+        Der Eintrag bleibt vollständig erhalten und gibt seinen Zeitraum wieder frei. Eine Absage
+        lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.
       </p>
       <div className="mt-3 max-w-xs">
         <Select
@@ -144,51 +192,204 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
           }}
         >
           <option value="">Bitte wählen</option>
-          {Object.entries(cancellationReasonLabels).map(([wert, beschriftung]) => (
-            <option key={wert} value={wert}>
-              {beschriftung}
-            </option>
-          ))}
+          {Object.entries(cancellationReasonLabels)
+            .filter(([wert]) => !istEreignis || wert !== 'patient_request')
+            .map(([wert, beschriftung]) => (
+              <option key={wert} value={wert}>
+                {beschriftung}
+              </option>
+            ))}
         </Select>
       </div>
+
+      {/* Der Eingang, getrennt vom Zeitpunkt der Eingabe (§8, ADR-018
+          Fassung 2 Punkt 8). Der Anruf kommt abends aufs Band, eingetragen
+          wird am nächsten Morgen - ohne diese Angabe entschiede die
+          Schreibgeschwindigkeit des Büros über eine Forderung.
+
+          Am Ereignis entfällt die Frage: Es gibt keine Frist, die vom Eingang
+          abhinge (CAL-016). */}
+      {istEreignis ? null : (
+        <div className="mt-3 max-w-xs">
+          <Select
+            label="Wann ist die Absage eingegangen?"
+            value={eingang}
+            hint="Maßgeblich für die Ausfallgebühr ist der Eingang, nicht die Eingabe."
+            onChange={(e) => {
+              setEingang(e.target.value === 'frueher' ? 'frueher' : 'jetzt');
+              setEingangFehler(undefined);
+            }}
+          >
+            <option value="jetzt">Gerade eben</option>
+            <option value="frueher">Früher – jetzt erst eingetragen</option>
+          </Select>
+        </div>
+      )}
+
+      {!istEreignis && eingang === 'frueher' ? (
+        <div className="mt-3 flex max-w-sm flex-wrap gap-3">
+          <div className="min-w-[9rem] flex-1">
+            <Field
+              label="Datum des Eingangs"
+              type="date"
+              value={datum}
+              max={todayInTimeZone(appointment.organization_time_zone)}
+              error={eingangFehler}
+              onChange={(e) => {
+                setDatum(e.target.value);
+                setEingangFehler(undefined);
+              }}
+            />
+          </div>
+          <div className="min-w-[7rem] flex-1">
+            <Field
+              label="Uhrzeit"
+              type="time"
+              value={uhrzeit}
+              onChange={(e) => {
+                setUhrzeit(e.target.value);
+                setEingangFehler(undefined);
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {istEreignis ? (
+        <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+          Ein Ereignis des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
+          die absagen könnte.
+        </p>
+      ) : (
+        <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+          Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt,
+          merkt die Anwendung eine Ausfallgebühr vor. Die Frist rechnet der Server; genau 24 Stunden
+          liegen außerhalb der Regel.
+        </p>
+      )}
     </Rueckfrage>
   );
 }
 
 /**
- * „Nicht angetroffen" mit Rückfrage und Pflichtentscheidung.
+ * Das ganze Ereignis absagen (CAL-017).
  *
- * Die Entscheidung über das Ausfallhonorar fällt im selben Schritt und hat
- * bewusst keine Vorbelegung (ADR-018 Punkt 4): Sie fällt im Hausflur, nicht
- * später im Büro, und ein voreingestelltes „nein" wäre eine stille Antwort auf
- * eine Frage, die niemand gestellt hat.
+ * Neben der Absage der einzelnen Teilnahme, und ausdrücklich davon getrennt:
+ * Eine Besprechung, die für die einen abgesagt ist und für die anderen noch
+ * steht, ist der Zustand, den diese Klammer beseitigt. Der Server sagt alle
+ * noch bestätigten Zeilen in **einer** Transaktion ab.
  *
- * Der Termin sagt damit nur, **ob** abgerechnet werden soll. Wie viel, steht
- * im Leistungskatalog (ABR-001); ob eine Rechnung entsteht, entscheidet
- * ABR-003.
+ * Der Grund ist Pflicht wie bei jeder Absage (ANN-034), aber ohne
+ * „Patient:in hat abgesagt" und ohne die Frage nach dem Eingang: Ein Ereignis
+ * hat keine Patient:in und löst keine Ausfallgebühr aus (CAL-016).
  */
-function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
+function EreignisAbsageAktion({
+  appointment,
+  beteiligte,
+}: {
+  appointment: Appointment;
+  beteiligte: EventParticipant[];
+}) {
   const queryClient = useQueryClient();
-  const [honorar, setHonorar] = useState('');
-  const [fehler, setFehler] = useState<string | undefined>(undefined);
+  const [grund, setGrund] = useState('');
+  const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
+
+  const offen = beteiligte.filter((b) => b.status === 'confirmed');
+  const stand = beteiligte[0]?.group_updated_at ?? '';
 
   const mutation = useMutation({
-    mutationFn: (fee: boolean) => recordNoShow(appointment.id, appointment.updated_at, fee),
+    mutationFn: (gewaehlt: CancellationReason) =>
+      cancelAppointmentEvent(appointment.event_group_id!, stand, gewaehlt),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
+      await queryClient.invalidateQueries({ queryKey: ['appointment'] });
+      await queryClient.invalidateQueries({ queryKey: ['event-participants'] });
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
     },
   });
 
-  async function vermerken() {
-    if (honorar !== 'ja' && honorar !== 'nein') {
-      setFehler('Bitte entscheiden, ob ein Ausfallhonorar berechnet wird.');
-      // Ohne den Wurf schlösse die Rückfrage sich trotz fehlender Angabe.
-      throw new Error('Entscheidung fehlt');
+  async function absagen() {
+    const gewaehlt = cancellationReasonSchema.safeParse(grund);
+    if (!gewaehlt.success) {
+      setGrundFehler('Bitte einen Absagegrund auswählen.');
+      throw new Error('Absagegrund fehlt');
     }
-    setFehler(undefined);
-    await mutation.mutateAsync(honorar === 'ja');
+    setGrundFehler(undefined);
+    await mutation.mutateAsync(gewaehlt.data);
   }
+
+  return (
+    <Rueckfrage
+      ausloeser="Ereignis absagen"
+      bezeichnung="Ereignis absagen"
+      bestaetigen="Ja, für alle absagen"
+      bestaetigenLaeuft="Wird abgesagt …"
+      fehler={mutation.isError ? mutation.error.message : undefined}
+      laeuft={mutation.isPending}
+      onAbbrechen={() => setGrundFehler(undefined)}
+      onBestaetigen={absagen}
+    >
+      <p>
+        {`Das Ereignis „${appointment.title ?? ''}" `}
+        am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
+        {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr wird für{' '}
+        {offen.length === 1 ? 'die eine noch offene Teilnahme' : `alle ${offen.length} Beteiligten`}{' '}
+        als abgesagt geführt. Die Einträge bleiben erhalten und geben ihre Zeiträume wieder frei.
+        Eine Absage lässt sich nicht zurücknehmen.
+      </p>
+      <div className="mt-3 max-w-xs">
+        <Select
+          label="Absagegrund"
+          value={grund}
+          error={grundFehler}
+          onChange={(e) => {
+            setGrund(e.target.value);
+            setGrundFehler(undefined);
+          }}
+        >
+          <option value="">Bitte wählen</option>
+          {Object.entries(cancellationReasonLabels)
+            .filter(([wert]) => wert !== 'patient_request')
+            .map(([wert, beschriftung]) => (
+              <option key={wert} value={wert}>
+                {beschriftung}
+              </option>
+            ))}
+        </Select>
+      </div>
+      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+        Ein Ereignis des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in, die
+        absagen könnte.
+      </p>
+    </Rueckfrage>
+  );
+}
+
+/**
+ * „Nicht angetroffen" — ein Schritt, keine Entscheidung (CAL-014c).
+ *
+ * Die behandelnde Person steht vor der Tür, niemand öffnet, und sie hakt den
+ * Termin ab. Bis ADR-018 Fassung 1 verlangte dieser Schritt eine
+ * Pflichtentscheidung über das Ausfallhonorar; Jannes hat das am 2026-09-12
+ * geändert. Aus dem Vermerk allein entsteht **keine** Gebühr, und die Frage
+ * nach einer Regel dafür ist offen (`OPEN_DECISIONS.md` E14) — eine
+ * Entscheidung zu verlangen, für die es keine Regel gibt, hielte den Ablauf
+ * an der Tür auf.
+ *
+ * Die Rückfrage bleibt: Der Vermerk sperrt die Dokumentation und ist damit
+ * mehr als ein Haken. Zurückgenommen wird er über „Termin wieder öffnen".
+ */
+function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: () => recordNoShow(appointment.id, appointment.updated_at),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+    },
+  });
 
   return (
     <Rueckfrage
@@ -198,8 +399,7 @@ function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
       bestaetigenLaeuft="Wird vermerkt …"
       fehler={mutation.isError ? mutation.error.message : undefined}
       laeuft={mutation.isPending}
-      onAbbrechen={() => setFehler(undefined)}
-      onBestaetigen={vermerken}
+      onBestaetigen={() => mutation.mutateAsync()}
     >
       <p>
         Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
@@ -207,22 +407,10 @@ function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
         {patientName(appointment)} wird als „nicht angetroffen" geführt. Der Zeitraum bleibt belegt.
         Ein Irrtum lässt sich über „Termin wieder öffnen" zurücknehmen.
       </p>
-      <div className="mt-3 max-w-xs">
-        <Select
-          label="Ausfallhonorar berechnen?"
-          value={honorar}
-          error={fehler}
-          hint="Nur die Entscheidung. Den Betrag legt der Leistungskatalog fest."
-          onChange={(e) => {
-            setHonorar(e.target.value);
-            setFehler(undefined);
-          }}
-        >
-          <option value="">Bitte wählen</option>
-          <option value="nein">Nein, nicht berechnen</option>
-          <option value="ja">Ja, berechnen</option>
-        </Select>
-      </div>
+      <p className="text-ink-muted mt-2 text-sm leading-relaxed">
+        Das ist ein organisatorischer Vermerk: keine durchgeführte Behandlung, keine Dokumentation,
+        keine verbrauchte Verordnungsleistung. Eine Gebühr entsteht daraus nicht.
+      </p>
     </Rueckfrage>
   );
 }
@@ -308,6 +496,31 @@ function AppointmentDetail({
   const darfWiederOeffnen =
     darfVerwalten && (appointment.status === 'completed' || appointment.status === 'no_show');
   const darfDokumentieren = canWriteTreatmentNote(user.roles);
+  /**
+   * Ein Ereignis des Praxisbetriebs (CAL-015b).
+   *
+   * Es hat keine Patient:in, keine Dokumentation und keinen Abschluss - und
+   * damit auch keinen Weg in die Abrechnung (§19). Was bleibt: verschieben und
+   * absagen.
+   */
+  const istEreignis = appointment.kind === 'event';
+
+  /**
+   * Die Beteiligten des Ereignisses (CAL-017).
+   *
+   * Sie machen aus n Zeilen einen sichtbaren Vorgang: Wer hier steht, hat
+   * denselben Zeitraum belegt, und eine Änderung trifft alle zugleich. Für
+   * einen Behandlungstermin wird gar nicht erst gefragt.
+   */
+  const beteiligte = useQuery({
+    queryKey: ['event-participants', appointment.event_group_id],
+    queryFn: () => fetchEventParticipants(appointment.event_group_id!),
+    enabled: istEreignis && Boolean(appointment.event_group_id),
+    retry: false,
+  });
+
+  const beteiligteListe = beteiligte.data ?? [];
+  const offeneTeilnahmen = beteiligteListe.filter((b) => b.status === 'confirmed');
 
   return (
     <>
@@ -318,25 +531,44 @@ function AppointmentDetail({
            ging über die Zeile darunter oder über die Suche. Der Rückweg reist
            mit, damit der Weg zurück am Termin endet und nicht in der Liste. */
         title={
-          <>
-            Termin –{' '}
-            <Link
-              to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
-              className="underline decoration-2 underline-offset-4 hover:no-underline"
-            >
-              {patientName(appointment)}
-            </Link>
-          </>
+          istEreignis ? (
+            `Ereignis – ${appointment.title ?? ''}`
+          ) : (
+            <>
+              Termin –{' '}
+              <Link
+                to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
+                className="underline decoration-2 underline-offset-4 hover:no-underline"
+              >
+                {patientName(appointment)}
+              </Link>
+            </>
+          )
         }
         description={zustandsHinweis(appointment)}
         actions={
           darfAendern ? (
-            <Link
-              to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
-              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
-            >
-              Bearbeiten
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              {/* Zwei Wege, und der Unterschied steht in der Beschriftung
+                  (CAL-017): „Ereignis bearbeiten" trifft alle Beteiligten
+                  zugleich, „Teilnahme ändern" nur diese eine Zeile. Ohne die
+                  Trennung wäre jede Verschiebung eine Wette darauf, was
+                  gemeint war. */}
+              {istEreignis ? (
+                <Link
+                  to={mitRueckweg(`/termine/${appointment.id}/ereignis-bearbeiten`, eingehend)}
+                  className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+                >
+                  Ereignis bearbeiten
+                </Link>
+              ) : null}
+              <Link
+                to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
+                className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+              >
+                {istEreignis ? 'Teilnahme ändern' : 'Bearbeiten'}
+              </Link>
+            </div>
           ) : null
         }
       />
@@ -346,8 +578,33 @@ function AppointmentDetail({
           {/* Bewusst Text und kein zweiter Link: Der Name im Kopf führt in die
               Akte (UX-012). Zwei gleichnamige Links auf dieselbe Seite wären
               für Vorlesesoftware zwei Angebote mit einer Wirkung. */}
-          <DetailRow label="Patient:in">{patientName(appointment)}</DetailRow>
-          <DetailRow label="Behandelnde Person">{staffName(appointment)}</DetailRow>
+          {istEreignis ? (
+            <DetailRow label="Ereignis">{appointment.title ?? '—'}</DetailRow>
+          ) : (
+            <DetailRow label="Patient:in">{patientName(appointment)}</DetailRow>
+          )}
+          <DetailRow label={istEreignis ? 'Diese Teilnahme' : 'Behandelnde Person'}>
+            {staffName(appointment)}
+          </DetailRow>
+          {/* Aus n Zeilen wird hier ein sichtbarer Vorgang: Wer hier steht,
+              hat denselben Zeitraum belegt, und „Ereignis bearbeiten" trifft
+              alle zugleich (CAL-017). */}
+          {istEreignis && beteiligteListe.length > 1 ? (
+            <DetailRow label="Beteiligte">
+              <span>
+                {beteiligteListe
+                  .map((b) =>
+                    b.status === 'confirmed'
+                      ? b.display_name
+                      : `${b.display_name} (${appointmentStatusLabels[b.status]})`,
+                  )
+                  .join(', ')}
+              </span>
+              <span className="text-ink-muted mt-1 block text-sm">
+                Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
+              </span>
+            </DetailRow>
+          ) : null}
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
           <DetailRow label="Datum">{formatLocalDate(appointment.starts_at, zone)}</DetailRow>
@@ -380,9 +637,28 @@ function AppointmentDetail({
               )} Uhr`}
             </DetailRow>
           ) : null}
-          {appointment.status === 'no_show' ? (
-            <DetailRow label="Ausfallhonorar">
-              {appointment.no_show_fee ? 'Wird berechnet' : 'Wird nicht berechnet'}
+          {appointment.cancellation_received_at ? (
+            <DetailRow label="Absage eingegangen">
+              {`${formatLocalDate(appointment.cancellation_received_at, zone)}, ${formatLocalTime(
+                appointment.cancellation_received_at,
+                zone,
+              )} Uhr`}
+            </DetailRow>
+          ) : null}
+          {/* Der Gebührenanlass steht nur da, wenn es einen gibt. Ein
+              „Keine Gebühr" an jedem abgesagten Termin wäre eine Zeile, die
+              nichts sagt — und am Nichtantreffen die Antwort auf eine Frage,
+              die noch offen ist (E14). */}
+          {appointment.fee_basis ? (
+            <DetailRow label="Gebühr vorgemerkt">
+              <span>{feeBasisLabels[appointment.fee_basis]}</span>
+              {/* Kein Betrag: Der Leistungskatalog (ABR-001) und die Rechnung
+                  (ABR-003) sind noch nicht gebaut. Eine Zahl hier wäre
+                  erfunden. */}
+              <span className="text-ink-muted mt-1 block text-sm">
+                Höhe und Abrechnung stehen noch aus – der Leistungskatalog ist noch nicht
+                eingerichtet.
+              </span>
             </DetailRow>
           ) : null}
           {appointment.completed_at ? (
@@ -408,21 +684,35 @@ function AppointmentDetail({
               musste; wer dokumentieren wollte und den falschen traf, schloss
               den Termin ohne Eintrag ab. Wer gar nicht dokumentieren darf,
               sieht weiterhin nur den einen und für den heißt er wie bisher. */}
-          {darfDokumentieren ? (
-            <ButtonLink to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}>
-              Dokumentieren und abschließen
-            </ButtonLink>
+          {/* Ein Ereignis wird weder abgeschlossen noch dokumentiert noch als
+              „nicht angetroffen" vermerkt - der Server weist alle drei ab
+              (CAL-015b). Bleiben Verschieben und Absagen. */}
+          {istEreignis ? null : (
+            <>
+              {darfDokumentieren ? (
+                <ButtonLink to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}>
+                  Dokumentieren und abschließen
+                </ButtonLink>
+              ) : null}
+              <StatusAktion
+                appointment={appointment}
+                aktion={completeAppointment}
+                beschriftung={
+                  darfDokumentieren ? 'Ohne Dokumentation abschließen' : 'Termin abschließen'
+                }
+                laufend="Wird abgeschlossen …"
+                variant={darfDokumentieren ? 'secondary' : 'primary'}
+              />
+              <NichtAngetroffenAktion appointment={appointment} />
+            </>
+          )}
+          {/* Zwei Absagen, und der Unterschied steht in der Beschriftung
+              (CAL-017): „Ereignis absagen" trifft alle noch offenen
+              Teilnahmen, „Nur diese Teilnahme absagen" diese eine. Die
+              zweite steht daneben, weil sie der seltenere Fall ist. */}
+          {istEreignis && offeneTeilnahmen.length > 1 ? (
+            <EreignisAbsageAktion appointment={appointment} beteiligte={beteiligteListe} />
           ) : null}
-          <StatusAktion
-            appointment={appointment}
-            aktion={completeAppointment}
-            beschriftung={
-              darfDokumentieren ? 'Ohne Dokumentation abschließen' : 'Termin abschließen'
-            }
-            laufend="Wird abgeschlossen …"
-            variant={darfDokumentieren ? 'secondary' : 'primary'}
-          />
-          <NichtAngetroffenAktion appointment={appointment} />
           <AbsageAktion appointment={appointment} />
         </div>
       ) : null}
@@ -430,7 +720,7 @@ function AppointmentDetail({
       {/* Der Folgetermin ist der häufigste Einzelvorgang am Ende eines
           Besuchs. Er steht auch am abgeschlossenen Termin: dort wird er
           tatsächlich gebraucht (UX-003, IDEA-PRX-007). */}
-      {darfVerwalten && appointment.status !== 'cancelled' ? (
+      {darfVerwalten && !istEreignis && appointment.status !== 'cancelled' ? (
         <div className="mt-5 flex">
           <ButtonLink
             to={mitRueckweg(
@@ -461,7 +751,8 @@ function AppointmentDetail({
       {/* „Ist der Termin schon mitgeteilt?" ist eine organisatorische Frage am
           bevorstehenden Termin - an einem abgesagten oder abgeschlossenen gibt
           es nichts mehr mitzuteilen (CAL-012). */}
-      {darfVerwalten && appointment.status === 'confirmed' ? (
+      {/* Ein Ereignis teilt niemand einer Patient:in mit. */}
+      {darfVerwalten && !istEreignis && appointment.status === 'confirmed' ? (
         <div className="mt-8">
           <MitteilungVermerken appointment={appointment} />
         </div>
@@ -474,8 +765,10 @@ function AppointmentDetail({
       ) : null}
 
       {/* Klinische Inhalte stehen bewusst in einem eigenen Datensatz und werden
-          über einen eigenen, protokollierten Lesepfad geholt (DOK-001). */}
-      <TreatmentNoteSection appointment={appointment} user={user} />
+          über einen eigenen, protokollierten Lesepfad geholt (DOK-001). An
+          einem Ereignis gibt es sie nicht - und der Abschnitt fragt auch nicht
+          danach (CAL-015b). */}
+      {istEreignis ? null : <TreatmentNoteSection appointment={appointment} user={user} />}
 
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
         Zeiten gelten in der Zeitzone der Praxis ({zone}). Der Termin selbst enthält ausschließlich

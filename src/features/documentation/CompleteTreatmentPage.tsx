@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -13,7 +13,7 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
-import { Textverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { bausteinEinfuegen } from './textbausteine';
 import {
@@ -56,11 +56,49 @@ function Abschluss({
 
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
-  const [abbruchfrage, setAbbruchfrage] = useState(false);
   const [fehler, setFehler] = useState<string | undefined>(undefined);
+  // Welcher der beiden Wege gerade läuft. Der Schutz kennt nur „es läuft
+  // einer"; die Beschriftung und das unveränderliche Feld brauchen die
+  // Unterscheidung.
+  const [schreibtAbschluss, setSchreibtAbschluss] = useState(false);
 
   const wert = entwurf ?? gespeichert;
   const geaendert = wert !== gespeichert;
+
+  // Der Text, wie er in diesem Augenblick im Feld steht - nicht der von
+  // vorhin. Ein Schreibvorgang dauert (FIX-014).
+  const wertRef = useRef(wert);
+  wertRef.current = wert;
+
+  /**
+   * Nur den Entwurf sichern - ohne Abschluss und ohne Seitenwechsel.
+   *
+   * Derselbe Weg, den „Nur als Entwurf speichern" nimmt, und der Weg, den der
+   * Navigationsschutz anbietet. Ausdrücklich **nicht** `completeTreatment`:
+   * Ein Seitenwechsel darf keinen Termin abschließen und keine Dokumentation
+   * festschreiben (ADR-016, ADR-018).
+   */
+  async function entwurfSichern(): Promise<boolean> {
+    const zuSichern = wertRef.current;
+    const meldung = inhaltFehler(zuSichern);
+    if (meldung) {
+      setFehler(meldung);
+      throw new Error(meldung);
+    }
+
+    if (note) {
+      await updateTreatmentNote(note.id, note.updated_at, zuSichern);
+    } else {
+      await createTreatmentNote(appointment.id, zuSichern);
+    }
+    await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+    return wertRef.current === zuSichern;
+  }
+
+  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
+    ungespeichert: geaendert,
+    speichern: entwurfSichern,
+  });
 
   async function nachSchreiben() {
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
@@ -68,27 +106,33 @@ function Abschluss({
     // Kalender und Tagesliste führen den Termin sonst weiter im alten Zustand.
     await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
-    void navigate(zurueck);
   }
 
-  const abschliessen = useMutation({
-    mutationFn: () =>
-      completeTreatment(appointment.id, wert, appointment.updated_at, note?.updated_at ?? null),
-    onSuccess: nachSchreiben,
-  });
+  /**
+   * Abschließen - und dabei genau den Text festschreiben, der im Feld steht.
+   *
+   * Anders als beim Entwurf ist dieser Vorgang **nicht umkehrbar**: Was hier
+   * durchgeht, ist Bestandteil der Akte und nur noch als Korrektur mit
+   * Begründung änderbar. Deshalb bleibt das Feld währenddessen unveränderlich
+   * (`festgehalten`): Ein Zeichen, das nach dem Absenden dazukommt, stünde
+   * sonst nicht in der festgeschriebenen Fassung, und die Person hätte es nie
+   * erfahren (FIX-014, ADR-016).
+   */
+  async function abschlussSchreiben(): Promise<boolean> {
+    await completeTreatment(
+      appointment.id,
+      wertRef.current,
+      appointment.updated_at,
+      note?.updated_at ?? null,
+    );
+    await nachSchreiben();
+    return true;
+  }
 
-  const entwurfSpeichern = useMutation({
-    mutationFn: async () => {
-      if (note) {
-        await updateTreatmentNote(note.id, note.updated_at, wert);
-        return;
-      }
-      await createTreatmentNote(appointment.id, wert);
-    },
-    onSuccess: nachSchreiben,
-  });
-
-  const laeuft = abschliessen.isPending || entwurfSpeichern.isPending;
+  function weiterZumTermin() {
+    freigeben();
+    void navigate(zurueck);
+  }
 
   /** Gemeinsame Eingabeprüfung beider Wege. Verbindlich prüft der Server. */
   function geprueft(): boolean {
@@ -110,8 +154,13 @@ function Abschluss({
         className="max-w-2xl"
         onSubmit={(event) => {
           event.preventDefault();
-          if (laeuft || !geprueft()) return;
-          abschliessen.mutate();
+          if (!geprueft()) return;
+          setSchreibtAbschluss(true);
+          void schreiben({
+            ausfuehren: abschlussSchreiben,
+            fehlertitel: 'Nicht abgeschlossen',
+            danach: weiterZumTermin,
+          }).finally(() => setSchreibtAbschluss(false));
         }}
       >
         <TextbausteinLeiste onEinfuegen={(text) => setEntwurf(bausteinEinfuegen(wert, text))} />
@@ -122,6 +171,9 @@ function Abschluss({
           rows={12}
           value={wert}
           error={fehler}
+          // Während des Abschlusses unveränderlich: Was festgeschrieben wird,
+          // muss genau das sein, was auf dem Bildschirm stand (FIX-014).
+          readOnly={schreibtAbschluss}
           onChange={(event) => {
             setEntwurf(event.target.value);
             if (fehler) setFehler(undefined);
@@ -142,22 +194,14 @@ function Abschluss({
           </p>
         </div>
 
-        {abschliessen.isError ? (
-          <div className="mt-4">
-            <ErrorState title="Nicht abgeschlossen" description={abschliessen.error.message} />
-          </div>
-        ) : null}
-        {entwurfSpeichern.isError ? (
-          <div className="mt-4">
-            <ErrorState title="Nicht gespeichert" description={entwurfSpeichern.error.message} />
-          </div>
-        ) : null}
-
-        <Textverlustschutz ungespeichert={geaendert} />
+        {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer Stelle:
+            Beide Schaltflächen und die Rückfrage laufen durch denselben
+            Schreibweg, und es läuft immer höchstens einer. */}
+        {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={laeuft}>
-            {abschliessen.isPending ? 'Wird abgeschlossen …' : 'Behandlung abschließen'}
+            {schreibtAbschluss ? 'Wird abgeschlossen …' : 'Behandlung abschließen'}
           </Button>
 
           <Button
@@ -165,48 +209,27 @@ function Abschluss({
             variant="secondary"
             disabled={laeuft || !geaendert}
             onClick={() => {
-              if (laeuft || !geprueft()) return;
-              entwurfSpeichern.mutate();
+              if (!geprueft()) return;
+              void schreiben({
+                ausfuehren: entwurfSichern,
+                fehlertitel: 'Nicht gespeichert',
+                danach: weiterZumTermin,
+              });
             }}
           >
-            {entwurfSpeichern.isPending ? 'Wird gespeichert …' : 'Nur als Entwurf speichern'}
+            {laeuft && !schreibtAbschluss ? 'Wird gespeichert …' : 'Nur als Entwurf speichern'}
           </Button>
 
-          {geaendert ? (
-            <Button type="button" variant="quiet" onClick={() => setAbbruchfrage(true)}>
-              Abbrechen
-            </Button>
-          ) : (
-            <Link
-              to={zurueck}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
-            >
-              Abbrechen
-            </Link>
-          )}
-        </div>
-
-        {/* Ein versehentlicher Klick darf einen ungespeicherten Text nicht
-            verwerfen (PROJECT_PRINCIPLES.md 13). */}
-        {abbruchfrage ? (
-          <div
-            role="group"
-            aria-label="Bearbeitung abbrechen"
-            className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
+          {/* Die Rückfrage vor dem Verwerfen stellt seit FIX-011 der
+              Navigationsschutz - für diesen Weg wie für jeden anderen aus
+              dieser Seite heraus. */}
+          <Link
+            to={zurueck}
+            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
           >
-            <p className="text-ink text-sm">
-              Der eingegebene Text ist noch nicht gespeichert und geht beim Abbrechen verloren.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
-                Ja, Bearbeitung verwerfen
-              </Button>
-              <Button type="button" variant="quiet" onClick={() => setAbbruchfrage(false)}>
-                Weiter bearbeiten
-              </Button>
-            </div>
-          </div>
-        ) : null}
+            Abbrechen
+          </Link>
+        </div>
       </form>
 
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">

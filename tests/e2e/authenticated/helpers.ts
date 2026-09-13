@@ -77,6 +77,7 @@ export const TAGESFENSTER = {
   // 12 ist wieder frei: `appointment-notification` rechnet seit 2026-09-12 im
   // Nahfenster (siehe unten) und braucht kein eigenes Tagesfenster mehr.
   patientRecordWorkspace: 13,
+  appointmentEvents: 14,
 } as const;
 
 /**
@@ -204,7 +205,10 @@ export async function anmelden(page: Page, email: string): Promise<void> {
   // exact grenzt das Feld gegen den Sichtbar-Schalter ab.
   await page.getByLabel('Kennwort', { exact: true }).fill(TESTKENNWORT);
   await page.getByRole('button', { name: 'Anmelden' }).click();
-  await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
+  // `exact`: Steht eine Rückfrage des Textverlustschutzes offen, tragen auch
+  // „Speichern und abmelden" und „Verwerfen und abmelden" diesen Namen
+  // (FIX-014).
+  await expect(page.getByRole('button', { name: 'Abmelden', exact: true })).toBeVisible();
 }
 
 /**
@@ -223,7 +227,12 @@ export async function anmelden(page: Page, email: string): Promise<void> {
  */
 export async function arbeitszeitBestaetigen(
   page: Page,
-  knopf: 'Termin trotzdem anlegen' | 'Änderung trotzdem speichern' | 'Serie trotzdem anlegen',
+  knopf:
+    | 'Termin trotzdem anlegen'
+    | 'Änderung trotzdem speichern'
+    | 'Serie trotzdem anlegen'
+    | 'Trotzdem ändern'
+    | 'Trotzdem eintragen',
   weiter: RegExp,
 ): Promise<void> {
   const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });
@@ -373,4 +382,33 @@ export async function terminUeberApi(
   expect(antwort.status(), 'Lesen des Termins').toBe(200);
   const zeilen = (await antwort.json()) as Record<string, unknown>[];
   return zeilen[0] ?? null;
+}
+
+/**
+ * Die drei Breiten, auf denen in der Praxis gearbeitet wird.
+ *
+ * Telefon im Hausflur, Tablet am Empfang, Bildschirm im Buero. Die
+ * Komponententests sehen davon nichts - jsdom rechnet kein Layout -, und die
+ * Bildschirmfotos sind in Umgebungen ohne vollstaendigen Supabase-Stack nicht
+ * zu machen. Diese Pruefung ist das, was davon automatisch geht: kein
+ * waagerechtes Scrollen, und jede Bedienflaeche mindestens 44 px hoch
+ * (Oberflaechen-Checkliste, UI-000).
+ */
+export const BREITEN = [
+  { name: 'Telefon', breite: 375, hoehe: 780 },
+  { name: 'Tablet', breite: 768, hoehe: 1024 },
+  { name: 'Bildschirm', breite: 1280, hoehe: 900 },
+] as const;
+
+/** Prueft eine bereits geoeffnete Seite auf allen drei Breiten. */
+export async function pruefeBreiten(page: Page, sichtbar: () => Promise<void>): Promise<void> {
+  for (const { name, breite, hoehe } of BREITEN) {
+    await page.setViewportSize({ width: breite, height: hoehe });
+    await sichtbar();
+
+    const ueberbreit = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    );
+    expect(ueberbreit, `${name} (${breite} px) scrollt waagerecht`).toBe(false);
+  }
 }

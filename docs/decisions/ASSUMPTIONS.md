@@ -2,6 +2,36 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
+- **CAL-017 bringt ANN-051 neu** (Teamereignis als ein Vorgang): gemeinsame
+  Gruppenkennung, Bezeichnung und Zeit gelten für alle Beteiligten zugleich,
+  die einzelne Teilnahme bleibt getrennt änderbar und absagbar, und
+  Bestandszeilen werden nicht zusammengeführt. `Praxisprozess`, also
+  erledigt, sobald Jannes widerspricht oder zustimmt.
+- **CAL-015 bringt ANN-049 und ANN-050 neu** (Kalender als vollständiger
+  Arbeitsablauf): Ereignisse des Praxisbetriebs stehen in derselben Tabelle wie
+  Behandlungstermine — sonst griffe die Belegungsprüfung nicht — und können
+  weder abgeschlossen noch dokumentiert werden; und der Kalender trägt
+  Patient:in und Verordnung als Kontext mit, damit der Weg „Verordnung →
+  Kalender → freie Stelle" ohne zweite Suche endet. `Technik` und
+  `Praxisprozess`. Dieselbe Festlegung beantwortet **E12 Punkt 1**: 60 oder 45
+  Minuten, keine dritte Länge — nachgezogen in `PROJECT_PRINCIPLES.md` 0.9.
+- **CAL-014 bringt ANN-047 und ANN-048 neu** (Absage unter 24 Stunden):
+  welcher Absagegrund die Ausfallgebühr auslöst — nur die Patientenabsage,
+  ausdrücklich nicht „verlegt" und „sonstiger Grund" — und wie der Eingang der
+  Absage erfasst wird (zwei Wege, Ortszeit, „gerade eben" stempelt der
+  Server). Beide `Praxisprozess`, also erledigt, sobald Jannes zustimmt oder
+  widerspricht. **ANN-035 ist mit CAL-014b erweitert**: Der Löschlauf hält
+  jetzt jeden Vorgang mit Gebührenanlass zurück, nicht mehr nur den No-show
+  mit Kennzeichen.
+- **FIX-EPIC-003 bringt ANN-046 neu** (Navigationsschutz der
+  Behandlungsdokumentation): Data Router statt `<BrowserRouter>`, Rückfrage mit
+  drei Wegen, „Speichern" sichert den **Entwurf** und löst keine Finalisierung
+  aus, ein Fehlschlag navigiert nicht. `Technik`, also erledigt, sobald Jannes
+  widerspricht oder zustimmt. **Am 2026-09-13 mit FIX-014 erweitert**: Das
+  freiwillige Abmelden fragt dieselbe Rückfrage — die bis dahin ausdrücklich
+  offene Grenze ist damit geschlossen —, alle Schreibvorgänge einer Seite
+  laufen durch einen Weg, und wer während des Speicherns weiterschreibt, geht
+  nicht weiter.
 - **CAL-013 bringt ANN-041 neu** (Termine per E-Mail): Die Praxis wird
   Terminmails verschicken — Jannes hat das am 2026-09-12 ausdrücklich
   vorgesehen und damit seine eigene vorläufige Entscheidung zu B15 in einem
@@ -2071,6 +2101,19 @@ sondern die Rechnung: eine Bedingung in derselben Regel austauschen, sobald
 ABR-003 die Rechnungstabelle bringt — Aufwand `klein`, und genau dafür ist die
 Wiedervorlage gesetzt.
 
+**Nachtrag 2026-09-12 (CAL-014b).** Der Haltegrund heißt jetzt
+**Gebührenanlass** (`fee_basis`) und gilt für die **Absage unter 24 Stunden
+genauso wie für den No-show** — vorher hielt die Regel nur den No-show mit
+Ausfallhonorar-Kennzeichen zurück, weil es keinen anderen Gebührenanlass gab.
+Die Begründung ist unverändert und trägt hier schwerer: Was abgerechnet wird,
+unterliegt der steuerlichen Aufbewahrung. **Der Anker bleibt die Eintragung**
+(`cancelled_at` beziehungsweise `no_show_recorded_at`) und ausdrücklich nicht
+der neue `cancellation_received_at` — ein nachgetragener Eingang würde die
+Löschfrist sonst vorziehen. Die Regel steht jetzt in
+`supabase/migrations/20260912200000_cancellation_notice.sql`; der Test „lässt
+eine Absage MIT Gebührenanlass stehen" kommt in
+`supabase/tests/retention-run.test.ts` dazu.
+
 ---
 
 ### ANN-036 — `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab
@@ -2863,3 +2906,349 @@ setzen — Aufwand `klein`; dann muss der Text in `MeinKontoPage.tsx` mitgeände
 werden und „Alle Sitzungen beenden" verliert seinen Zweck. Eine Wahl beim
 Abmelden anbieten („nur hier" / „überall"): Aufwand `klein`, aber eine
 Entscheidung mehr an einer Stelle, an der niemand eine treffen will.
+
+---
+
+### ANN-046 — Navigationsschutz: Data Router, drei Wege, und „Speichern" heißt Entwurf
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | FIX-EPIC-003 (Befund aus FIX-EPIC-001); Roadmap „braucht eine Entscheidung zum Router"; `PROJECT_PRINCIPLES.md` §13 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach dem ersten Feldtag mit Dokumentation unterwegs |
+
+**Annahme.** Vier Festlegungen, die zusammen den Schutz ausmachen:
+
+1. **Der Router wird ein Data Router** (`createBrowserRouter` mit einer
+   Platzhalterroute, darin unverändert `Gate` und die bestehenden `<Routes>`).
+   Nur so gibt es `useBlocker`.
+2. **Die Rückfrage bietet drei Wege**: speichern und weitergehen, verwerfen und
+   weitergehen, hier bleiben. Sie ist kein modaler Dialog, sondern derselbe
+   eingelassene Kasten wie `Rueckfrage` (UI-000).
+3. **„Speichern" sichert den Entwurf, nie mehr.** Auf der Abschlussseite
+   ausdrücklich nicht `completeTreatment`. Wo es keinen Entwurfszustand gibt —
+   die Korrektur eines finalisierten Eintrags —, gibt es auch kein Speichern,
+   sondern nur Verwerfen und Bleiben.
+4. **Ein Fehlschlag navigiert nicht.** Text und Seite bleiben stehen, die
+   Rückfrage bleibt offen.
+
+**Begründung.** Zu 1: Der Alternativweg wäre ein eigener Wachposten mit
+umhüllten `Link`s und einem umhüllten `useNavigate`. Er käme an das **Zurück
+des Browsers** nur über einen Eingriff in die Verlaufsliste heran — selbst
+gebaute Infrastruktur an einer Stelle, an der die eingesetzte Bibliothek eine
+geprüfte anbietet (ADR-015, §3.4 sinngemäß). Der gewählte Weg ändert die
+Routentabelle nicht und ist mit zwei Dateien wieder zurückzunehmen.
+
+Zu 3: §19 und ADR-016 machen die Finalisierung zum ausdrücklichen Schritt mit
+Folgen — ab ihr ist der Eintrag Bestandteil der Akte und nur noch als Korrektur
+mit Begründung änderbar. Etwas, das als Nebenwirkung eines Tastendrucks im
+Hauptmenü passiert, darf diese Folge nicht haben. Die datensparsamere und
+leichter umkehrbare Seite (§16) ist hier der Entwurf.
+
+Zu 4: Ein Seitenwechsel nach fehlgeschlagenem Speichern wäre genau der stille
+Verlust, den §13 ausschließt — und die wahrscheinlichste Form davon im
+Hausbesuch, wo das Funkloch der Normalfall ist.
+
+**Unsicher:** ob die Rückfrage auf einem 375-px-Bildschirm mitten im Hausbesuch
+als Hilfe oder als Hindernis erlebt wird. Deshalb die Wiedervorlage nach dem
+ersten Feldtag.
+
+**Nachtrag vom 2026-09-13 (FIX-014): drei Festlegungen kommen dazu.** Die
+oben als offene Grenze benannte Lücke ist geschlossen, und zwei Wettläufe sind
+es auch.
+
+5. **Das freiwillige Abmelden fragt dieselbe Rückfrage** — speichern und
+   abmelden, verwerfen und abmelden, hier bleiben. Die Sitzung endet erst,
+   wenn das Speichern **abgeschlossen** ist; scheitert es, bleiben Sitzung,
+   Seite und Text stehen. Die **erzwungene** Beendigung (Ablauf, „Alle
+   Sitzungen beenden", Entzug der Berechtigung) läuft über den Ereignisstrom
+   in den `SessionProvider`, kommt hier nie vorbei und greift unverändert
+   sofort — eine Rückfrage wäre dort auch falsch: Wer ausgesperrt wird, darf
+   nicht mehr schreiben.
+6. **Alle Schreibvorgänge einer Seite laufen durch einen Weg**, und es läuft
+   immer höchstens einer. Zwei gleichzeitige Schreibzugriffe auf denselben
+   Eintrag holen sich gegenseitig ein: Der zweite schreibt auf einem Stand,
+   den der erste gerade verschiebt.
+7. **Wer während des Speicherns weiterschreibt, geht nicht weiter.** Der
+   Vorgang meldet, ob danach **alles Getippte** auf dem Server liegt; sonst
+   bleibt die Seite stehen und sagt, dass noch etwas offen ist. Bei den
+   **festschreibenden** Vorgängen — Abschluss und Korrektur — ist das Feld
+   währenddessen unveränderlich: Was Bestandteil der Akte wird, muss genau
+   das sein, was auf dem Bildschirm stand, und eine Korrektur davon wäre nur
+   noch mit Begründung möglich.
+
+**Verankerung.** `src/features/documentation/Textverlustschutz.tsx`
+(`useTextverlustschutz`) — trägt die Kennung im Kopfkommentar. Der Router in
+`src/app/App.tsx`, der Abmeldeschutz in `src/app/abmeldeschutz.ts` und
+`src/app/AbmeldeschutzProvider.tsx`. Tests in
+`src/features/documentation/Textverlustschutz.test.tsx` (29 Fälle, darunter
+Speicherfehler, Browser-Zurück, Abmelden mit hängender Antwort und der
+Wettlauf beim Weiterschreiben) sowie angemeldet in
+`tests/e2e/authenticated/treatment-note-workflows.spec.ts`.
+
+**Änderungspfad.** Zurück auf `<BrowserRouter>`: zwei Dateien, dann entfällt
+der Schutz für interne Navigation ersatzlos — Aufwand `klein`. Speichern auch
+für die Korrektur anbieten: ein Parameter mehr, aber eine fachliche Entscheidung
+gegen ADR-016 — Aufwand `klein`, Folge `groß`. Den Schutz auf weitere Formulare
+ausdehnen (Stammdaten, Terminformular, Verordnung): je Formular ein Aufruf des
+Hooks — Aufwand `klein` je Stelle.
+
+---
+
+### ANN-047 — Nur die Patientenabsage löst die Ausfallgebühr aus; „verlegt" und „sonstiger Grund" nicht
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-014b; Festlegung des Projektinhabers vom 2026-09-12 („Patientenabsage weniger als 24 Stunden vor Behandlungsbeginn → Ausfallgebühr"); ADR-018 Fassung 2 Punkt 8 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes, zusammen mit ABR-001 (Leistungskatalog) |
+
+**Annahme.** Von den vier Absagegründen (ANN-034) löst genau einer die
+24-Stunden-Regel aus: `patient_request`. `practice_request` ist ausdrücklich
+ausgenommen — das hat der Projektinhaber gesagt. `moved` („Termin verlegt") und
+`other` („Sonstiger Grund") lösen **ebenfalls nicht** aus; das ist die Lücke,
+die diese Annahme schließt.
+
+**Begründung.** Die Festlegung nennt zwei Fälle und lässt zwei offen. Für
+`moved` spricht der Wortsinn: Eine Verlegung ist in der Praxis das Ergebnis
+einer Absprache, und wer einen Ersatztermin bekommt, zahlt nicht für den
+ersten. `other` sagt über den Anlass per Definition nichts — daraus eine
+Forderung abzuleiten hieße, sie auf eine Angabe zu stützen, die ausdrücklich
+keine ist.
+
+Beide Male ist das die **leichter umkehrbare** Seite (§16): Eine Gebühr, die
+nicht entstanden ist, lässt sich nachtragen, solange der Vorgang steht — und er
+steht, weil der Löschlauf drei Jahre wartet. Eine zu Unrecht vorgemerkte
+Forderung gegen eine Patientin ist dagegen erst aus der Welt, wenn jemand sie
+bemerkt. Wer eine Patientenabsage kurzfristig erhält und abrechnen will, wählt
+den Grund, der zutrifft.
+
+**Unsicher:** ob „verlegt" im Praxisalltag auch für eine kurzfristige
+Verschiebung **durch die Patient:in** benutzt wird. Dann wäre die Abgrenzung
+zwischen `moved` und `patient_request` eine Frage der Gewohnheit und nicht der
+Bedeutung, und der Wert bräuchte entweder eine schärfere Beschriftung oder die
+Regel eine zweite Bedingung.
+
+**Verankerung.** `app.is_late_cancellation()` in
+`supabase/migrations/20260912200000_cancellation_notice.sql` — der Kommentar
+dort trägt die Begründung. Tests in
+`supabase/tests/cancellation-notice.test.ts` (je ein Fall für alle drei
+ausgenommenen Gründe).
+
+**Änderungspfad.** Weitere Gründe aufnehmen: eine Bedingung in
+`app.is_late_cancellation` — Aufwand `klein`, eine Zeile. Die Beschriftung von
+`moved` schärfen: eine Zeile in `cancellationReasonLabels` — Aufwand `klein`.
+Rückwirkend gilt eine Änderung ausdrücklich **nicht**: Was ohne
+Gebührenanlass abgesagt wurde, bleibt ohne.
+
+---
+
+### ANN-048 — Der Eingang der Absage wird in Ortszeit erfasst, ohne Vorbelegung aus der Vergangenheit
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-014b/c; ADR-018 Fassung 2 Punkt 8 Nummer 1 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach den ersten Wochen im Betrieb |
+
+**Annahme.** Drei Festlegungen zur Erfassung:
+
+1. **Zwei Wege statt eines Feldes.** Die Absage-Rückfrage fragt „Wann ist die
+   Absage eingegangen?" mit den Antworten „Gerade eben" (vorbelegt) und
+   „Früher – jetzt erst eingetragen". Erst die zweite blendet Datum und Uhrzeit
+   ein.
+2. **„Gerade eben" stempelt der Server.** Die Anwendung schickt dann kein
+   Datum, und die Datenbank setzt `now()`. Eine falsch gehende Uhr im Browser
+   entscheidet damit nie über eine Forderung.
+3. **Datum und Uhrzeit in Ortszeit der Praxis**, wie beim Anlegen eines
+   Termins. Die Umrechnung in einen Zeitpunkt macht der Server, der die
+   Zeitzone der Organisation ohnehin führt.
+
+**Begründung.** Zu 1: Der Regelfall ist das Telefonat, das gerade geführt wird
+— dafür darf niemand ein Datum tippen. Der Ausnahmefall ist der Anrufbeantworter
+von gestern Abend, und der braucht die genaue Angabe, weil an ihr eine Forderung
+hängt. Ein einzelnes vorbelegtes Feld hätte beides vermischt: Wer die
+Vorbelegung stehen lässt, hätte eine Angabe gemacht, ohne sie zu treffen.
+
+Zu 3: Die Alternative wäre ein Zeitstempel aus dem Browser. Der verlangte, dass
+die Oberfläche eine Wanduhrzeit der Praxis in einen Zeitpunkt umrechnet — eine
+Rechnung, die sie an keiner anderen Stelle macht und die auf einem Gerät in
+einer anderen Zeitzone still falsch wäre.
+
+**Unsicher:** ob „Gerade eben" im Büroalltag oft genug stehen bleibt, wo
+eigentlich „gestern Abend" richtig wäre. Das ließe sich nur an der Praxis
+beobachten, nicht am Code — daher die Wiedervorlage. Ein Gegenmittel wäre, die
+Vorbelegung wegzunehmen und eine Antwort zu verlangen; das kostet bei jeder
+Absage einen Tap.
+
+**Verankerung.** `AbsageAktion` in
+`src/features/appointments/AppointmentDetailPage.tsx` und der Parameterblock
+von `public.cancel_appointment` in
+`supabase/migrations/20260912200000_cancellation_notice.sql`. Tests in
+`src/features/appointments/AppointmentDetailPage.test.tsx` (drei Fälle) und
+`supabase/tests/cancellation-notice.test.ts`.
+
+**Änderungspfad.** Vorbelegung entfernen und eine Antwort verlangen: ein
+Anfangswert und eine Prüfung — Aufwand `klein`. Den Eingang zur Pflichtangabe
+für **jede** Absage machen: ebenfalls `klein`, aber dann trägt jede Absage am
+Telefon einen Tap mehr.
+
+---
+
+### ANN-049 — Ereignisse stehen in derselben Tabelle wie Behandlungstermine
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | CAL-015b; Festlegung des Projektinhabers vom 2026-09-12 („Meetings, Teambesprechungen und andere Ereignisse … benötigen weder Patient noch Verordnung"); `PROJECT_PRINCIPLES.md` 0.9 §8.1 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | ABR-002 (Leistungserfassung) — dort muss die Abgrenzung halten |
+
+**Annahme.** Ein Ereignis des Praxisbetriebs ist eine Zeile in
+`public.appointments` mit `kind = 'event'`, ohne `patient_id`, ohne
+`prescription_id`, mit `title`. Es ist **kein** eigenes Datenmodell und keine
+eigene Tabelle.
+
+**Begründung.** Ein Ereignis belegt denselben Kalender und denselben Zeitraum
+wie eine Behandlung. Die `EXCLUDE`-Constraint, die Doppelbuchungen verhindert,
+wirkt nur **innerhalb** einer Tabelle: Eine zweite Tabelle hätte die
+Belegungsprüfung in Anwendungscode verlagert — und damit genau den Schutz
+aufgegeben, der hier zählt. Nebenbei hätte jede Kalenderabfrage zwei Quellen
+zusammenführen müssen.
+
+Der Preis ist die Fallunterscheidung in den Schreibpfaden. Sie steht dort, wo
+sie fällt, und vier Constraints halten sie zusammen — eine Behandlung ohne
+Patient:in und ein Ereignis mit Patient:in sind schemaseitig unmöglich.
+
+**Die Abgrenzung, auf die es fachlich ankommt:** Ein Ereignis lässt sich
+**nicht** abschließen, **nicht** dokumentieren und **nicht** als „nicht
+angetroffen" vermerken. Damit kommt es nie in einen Zustand, aus dem ABR-002
+später eine abrechenbare Leistung erzeugen könnte (§19). Das ist die Stelle,
+an der die Annahme hält oder bricht — daher die Wiedervorlage.
+
+**Unsicher:** ob „ein Ereignis je beteiligter Person" auf Dauer genügt. Heute
+legt `create_appointment_event` je Person eine eigene Zeile an; danach ist jede
+ein eigener Vorgang, und „die Besprechung verschieben" heißt, sie einzeln zu
+verschieben. Eine gemeinsame Kennung wäre der nächste Schritt und wäre heute
+Vorbau (ADR-014).
+
+**Verankerung.** `supabase/migrations/20260912210000_appointment_events.sql` —
+Kopfkommentar und Constraints. Tests in
+`supabase/tests/appointment-events.test.ts` (26 Fälle, darunter die drei
+verweigerten Zustandswechsel).
+
+**Änderungspfad.** Eigene Tabelle: Migration mit Datenübernahme, neue
+Belegungsprüfung über beide Tabellen, jede Kalenderabfrage anfassen — Aufwand
+`groß`. Gemeinsame Kennung für die Zeilen eines Ereignisses: eine Spalte, ein
+Schreibpfad mehr — Aufwand `klein` bis `mittel`.
+
+---
+
+### ANN-050 — Der Kalender trägt Patient:in und Verordnung als Kontext mit
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-015c; Festlegung des Projektinhabers vom 2026-09-12 („Aus einer ausgewählten Person beziehungsweise ihrer Verordnung in den vollständigen Kalender wechseln … Der fachliche Kontext bleibt erhalten") |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach den ersten Wochen im Betrieb |
+
+**Annahme.** Der Kalenderstand führt neben `patient` einen zweiten
+Kontextparameter `verordnung`. Beide stehen als **Kennung** in der Adresse,
+nie als Name und nie als Diagnose (ADR-011). Ist der Kalender auf eine
+Patient:in gefiltert, führt ein Tap auf eine freie Stelle **direkt** in das
+Terminformular dieser Person — mit Verordnung, wenn eine mitgereist ist — statt
+über die Patientensuche. Der Rückweg ist der Kalenderstand.
+
+**Begründung.** Der Weg „Akte → Verordnung → Kalender → freie Stelle" ist
+genau dann etwas wert, wenn am Ende nicht noch einmal gesucht werden muss. Ein
+Formular, das nach der Person fragt, die man gerade ausgewählt hat, ist eine
+Rückfrage ohne Erkenntnis.
+
+Der Filter grenzt dabei weiterhin **nur die Darstellung** ein, nicht den
+Lesepfad (AKTE-003): Der Kalender liest den Ausschnitt ohnehin vollständig, und
+sichtbar ist, was die RLS liefert.
+
+**Unsicher:** ob der Patientenfilter im Kalender beim Planen hilft oder stört.
+Er blendet aus, was sonst noch im Zeitraum liegt — genau das, wonach man beim
+Suchen einer Lücke schaut. Die Leiste über dem Gitter bietet deshalb „Filter
+aufheben" an, und der Gegenversuch gehört in die Abnahme.
+
+**Verankerung.** `KalenderParameter.verordnung` in
+`src/features/appointments/calendar.ts` und `freieZeit` in
+`src/features/appointments/CalendarPage.tsx`. Tests in
+`src/features/appointments/CalendarPage.test.tsx` (zwei Fälle) und
+`src/features/appointments/calendar.test.ts`.
+
+**Änderungspfad.** Den Kontextweg wieder herausnehmen: zwei Stellen —
+Aufwand `klein`. Den Patientenfilter beim Planen nicht mehr ausblenden,
+sondern nur hervorheben: eine Änderung in der Darstellung des Gitters —
+Aufwand `klein` bis `mittel`.
+
+---
+
+### ANN-051 — Ein Teamereignis ist ein Vorgang; die einzelne Teilnahme bleibt davon getrennt
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-017; Befund am laufenden Stand: `create_appointment_event` legt je Person eine Zeile an, und die Zeilen wussten nichts voneinander |
+| Status | **offen** — getroffen am 2026-09-13 |
+| Wiedervorlage | Jannes, nach der ersten Woche mit Teambesprechungen im Kalender |
+
+**Annahme.** Vier Festlegungen:
+
+1. **Die Zeilen eines Ereignisses tragen eine gemeinsame Gruppenkennung**
+   (`event_group_id`). Sie sind damit ein Vorgang und nicht n Termine.
+2. **Bezeichnung, Tag, Zeit, Länge, Art und Ort gehören dem Ereignis** und
+   werden für alle Beteiligten zugleich geändert — in einer Transaktion, mit
+   Konfliktprüfung für jede beteiligte Person **vor** dem ersten
+   Schreibzugriff. Dasselbe gilt für die Absage.
+3. **Wer teilnimmt, gehört der einzelnen Zeile.** Die beteiligte Person
+   austauschen und die Teilnahme absagen bleiben möglich und heißen in der
+   Oberfläche ausdrücklich so („Teilnahme ändern", „Nur diese Teilnahme
+   absagen"). Das Ereignis besteht für die übrigen fort.
+4. **Bestandszeilen werden nicht zusammengeführt.** Jede vorhandene
+   Ereigniszeile bekommt ihre eigene Kennung.
+
+**Begründung.** Zu 1 und 2: Eine Besprechung, die bei Anna um 9 und bei Tim um
+10 steht, ist kein Zustand, den irgendjemand gemeint hat — sie entsteht aber
+zwangsläufig, sobald das Verschieben je Kalender einzeln geschieht und
+irgendwo unterbrochen wird. Die Belegungsprüfung hängt weiterhin an der
+einzelnen Zeile (`appointments_no_overlap`), das bleibt richtig; ergänzt wird
+nur die Klammer darüber.
+
+Zu 3: Die beiden Vorgänge sehen ähnlich aus und bedeuten Verschiedenes. Wer
+absagt, muss wissen, ob er für sich oder für alle absagt — deshalb zwei
+Schaltflächen mit zwei Namen statt einer mit Rückfrage.
+
+Zu 4: Zwei Besprechungen mit gleichem Titel zur gleichen Zeit können zwei
+getrennte Vorgänge sein. Eine Heuristik über Titel und Uhrzeit würde sie
+stillschweigend verheiraten — das wäre eine nachträgliche Umdeutung
+vorhandener Daten, und die macht dieses Projekt nicht (`PROJECT_PRINCIPLES.md`
+§13).
+
+**Unsicher:** ob das Austauschen einer einzelnen Beteiligten im Alltag
+überhaupt vorkommt oder ob stattdessen abgesagt und neu eingetragen wird. Der
+Weg bleibt, weil er nichts kostet; die Wiedervorlage fragt danach. Ebenso
+offen: ob später Beteiligte **nachträglich hinzukommen** sollen — heute geht
+das nicht, und das ist eine bewusste Auslassung, kein Versehen.
+
+**Verankerung.** `supabase/migrations/20260913100000_event_groups.sql`:
+`event_group_id`, `update_appointment_event`, `cancel_appointment_event`,
+`list_event_participants` und der Trigger `appointments_event_group_guard`.
+Oberfläche in `src/features/appointments/EditEventPage.tsx` und
+`AppointmentDetailPage.tsx`. Tests in
+`supabase/tests/appointment-events.test.ts` (Abschnitt „Ereignis als ein
+Vorgang"), `src/features/appointments/EditEventPage.test.tsx` und
+`tests/e2e/authenticated/appointment-events.spec.ts`.
+
+**Änderungspfad.** Beteiligte nachträglich hinzufügen: eine Personenliste im
+Bearbeitungsformular und ein Einfügezweig in `update_appointment_event` —
+Aufwand `mittel`. Die Trennung zwischen Ereignis und Teilnahme aufgeben und
+alles gruppenweit machen: der Trigger bleibt, `update_appointment` verlöre
+seinen Ereigniszweig — Aufwand `klein`, Folge `mittel` (der Austausch einer
+Person wäre dann nur noch über Absage und Neueintrag möglich).

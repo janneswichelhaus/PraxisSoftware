@@ -305,20 +305,22 @@ describe('Loeschlauf: abgesagte Termine ohne Behandlungsnachweis', () => {
 
   // CAL-008c, ANN-035: Der Zustand 'no_show' faellt unter dieselbe Klasse -
   // die Klasse nennt seit LOE-001a ausdruecklich "Abgesagte Termine und
-  // No-shows ohne Rechnung". Mit gesetztem Ausfallhonorar-Kennzeichen ist der
-  // Termin die Grundlage einer Forderung und bleibt stehen.
+  // No-shows ohne Rechnung". Ein Vorgang MIT Gebuehrenanlass ist die
+  // Grundlage einer Forderung und bleibt stehen (seit CAL-014b gilt das fuer
+  // Absage und Vermerk gleichermassen).
   /** Legt einen No-show an, dessen Vermerk `jahre` zurueckliegt. */
   async function nichtAngetroffen(jahre: number, honorar: boolean): Promise<string> {
     const { rows } = await asPostgres<{ id: string }>(
       `insert into public.appointments (
          organization_id, patient_id, staff_member_id, appointment_type, status,
-         starts_at, ends_at, no_show_recorded_at, no_show_recorded_by, no_show_fee,
+         starts_at, ends_at, no_show_recorded_at, no_show_recorded_by, fee_basis,
          visit_street, visit_house_number, visit_postal_code, visit_city
        )
        select $1::uuid, $2::uuid, sm.id, 'home_visit', 'no_show',
               now() - ($3::int * interval '1 year'),
               now() - ($3::int * interval '1 year') + interval '1 hour',
-              now() - ($3::int * interval '1 year'), $4::uuid, $5::boolean,
+              now() - ($3::int * interval '1 year'), $4::uuid,
+              case when $5::boolean then 'no_show' else null end,
               'Teststrasse', '2', '72070', 'Tuebingen'
        from public.staff_members sm limit 1
        returning id::text as id`,
@@ -326,6 +328,41 @@ describe('Loeschlauf: abgesagte Termine ohne Behandlungsnachweis', () => {
     );
     return rows[0]!.id;
   }
+
+  /**
+   * Legt eine Absage an, deren Eintragung `jahre` zurueckliegt - wahlweise mit
+   * dem Gebuehrenanlass "unter 24 Stunden".
+   *
+   * Der Eingang liegt eine Stunde vor dem Termin; das ist der Fall, den die
+   * Regel meint, und die Constraint verlangt ihn zum Anlass dazu.
+   */
+  async function abgesagtMitGebuehr(jahre: number): Promise<string> {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type, status,
+         starts_at, ends_at, cancelled_at, cancelled_by, cancellation_reason,
+         cancellation_received_at, fee_basis,
+         visit_street, visit_house_number, visit_postal_code, visit_city
+       )
+       select $1::uuid, $2::uuid, sm.id, 'home_visit', 'cancelled',
+              now() - ($3::int * interval '1 year'),
+              now() - ($3::int * interval '1 year') + interval '1 hour',
+              now() - ($3::int * interval '1 year'), $4::uuid, 'patient_request',
+              now() - ($3::int * interval '1 year') - interval '1 hour', 'late_cancellation',
+              'Teststrasse', '3', '72070', 'Tuebingen'
+       from public.staff_members sm limit 1
+       returning id::text as id`,
+      [organizationId, patients.max, jahre, users.ownerTherapist],
+    );
+    return rows[0]!.id;
+  }
+
+  it('laesst eine Absage MIT Gebuehrenanlass stehen - sie ist Grundlage einer Forderung', async () => {
+    const id = await abgesagtMitGebuehr(5);
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.appointments where id = $1', [id])).toBe(1);
+  });
 
   it('loescht einen No-show ohne Ausfallhonorar nach derselben Frist', async () => {
     const id = await nichtAngetroffen(5, false);

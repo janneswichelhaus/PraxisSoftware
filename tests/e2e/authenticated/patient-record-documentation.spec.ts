@@ -93,7 +93,7 @@ test.describe('DOK-003: Dokumentation in der Akte', () => {
     await expect(akte.getByRole('link', { name: 'Korrigieren' })).toHaveCount(0);
     await expect(akte.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Abmelden' }).click();
+    await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
     await anmelden(page, KONTEN.office);
     await page.goto(`/patienten/${PATIENTEN.max}/verlauf`);
 

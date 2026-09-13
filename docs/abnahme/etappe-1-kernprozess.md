@@ -26,9 +26,12 @@ Patientenkonto ebenso wenig (§4.6).
 4. Neu laden (F5): der Entwurf steht weiterhin da, Absätze bleiben erhalten.
 5. „Dokumentation bearbeiten": das Feld ist vorbefüllt. Ohne Änderung ist
    „Als Entwurf speichern" nicht anklickbar.
-6. Text ändern, „Abbrechen" klicken — es erscheint eine Rückfrage, und der Text
-   bleibt stehen. „Weiter bearbeiten" führt zurück ins Feld, „Ja, Bearbeitung
-   verwerfen" zurück zum Termin ohne zu speichern.
+6. Text ändern, „Abbrechen" klicken — es erscheint die Rückfrage des
+   Navigationsschutzes (seit FIX-011), und der Text bleibt stehen. „Hier
+   bleiben" führt zurück ins Feld, „Verwerfen und weitergehen" zurück zum
+   Termin ohne zu speichern, „Speichern und weitergehen" sichert den Entwurf
+   und geht erst danach. Ausführlich im Abschnitt **FIX-EPIC-003** am Ende
+   dieser Datei.
 7. Konfliktprobe: dieselbe Dokumentation in zwei Browser-Tabs zum Bearbeiten
    öffnen, im ersten speichern, danach im zweiten. Der zweite Versuch wird
    abgewiesen — **und der eigene Text bleibt im Feld stehen**, damit nichts
@@ -1086,19 +1089,23 @@ haben sich geändert.
    **Abgesagt**, darunter die Zeile **Absagegrund: Patient:in hat abgesagt**.
 4. Am abgesagten Termin: keine Aktionen mehr, auch kein „wieder öffnen".
 
-### 3. Nicht angetroffen, mit Entscheidung zum Ausfallhonorar
+### 3. Nicht angetroffen — ein Schritt, keine Gebührenfrage
+
+**Seit CAL-014c geändert:** Die Pflichtauswahl „Ausfallhonorar berechnen?" ist
+entfallen (ADR-018 Fassung 2 Punkt 8).
 
 1. Einen bestätigten Termin öffnen → **Nicht angetroffen**. Erwartung: Die
-   Rückfrage fragt **„Ausfallhonorar berechnen?"**, ohne Vorbelegung, mit dem
-   Hinweis, dass nur die Entscheidung erfasst wird.
-2. Ohne Auswahl bestätigen. Erwartung: Hinweis am Feld, nichts passiert.
-3. „Ja, berechnen" wählen und bestätigen. Erwartung: Status **Nicht
-   angetroffen**, Zeilen **Vermerkt am** und **Ausfallhonorar: Wird
-   berechnet**, darunter **Termin wieder öffnen**.
-4. „Termin wieder öffnen". Erwartung: zurück auf **Bestätigt**, die beiden
-   Zeilen sind weg.
-5. Am vermerkten Termin: **Behandlung abschließen** wird nicht angeboten —
+   Rückfrage nennt den Termin und sagt, dass es **keine durchgeführte
+   Behandlung, keine Dokumentation und keine verbrauchte Verordnungsleistung**
+   ist und **keine Gebühr** entsteht. **Keine Auswahl** zum Ausfallhonorar.
+2. Bestätigen. Erwartung: Status **Nicht angetroffen**, Zeile **Vermerkt am**,
+   **keine** Zeile „Gebühr vorgemerkt", darunter **Termin wieder öffnen**.
+3. „Termin wieder öffnen". Erwartung: zurück auf **Bestätigt**, die Zeile ist
+   weg.
+4. Am vermerkten Termin: **Behandlung abschließen** wird nicht angeboten —
    wo niemand angetroffen wurde, gibt es nichts zu dokumentieren.
+5. Gegenprobe Verordnung: In der Akte unter **Verordnungen** steht die genutzte
+   Menge unverändert. Ein Vermerk verbraucht keine Leistung.
 
 ### 4. Dokumentiert kommt von selbst
 
@@ -1710,3 +1717,324 @@ waagerechtes Scrollen, jede Zeile mindestens 44 px hoch.
 
 **Zielwert:** Wer auf eine Seite schaut, sieht auf den ersten Blick, was Inhalt
 ist und was ihn erklärt — ohne lesen zu müssen.
+
+---
+
+## FIX-EPIC-003 — Ungespeicherte Dokumentation überlebt einen Seitenwechsel
+
+Prüfschritte zu FIX-010 (Data Router) und FIX-011 (Navigationsschutz).
+Grundlage: `PROJECT_PRINCIPLES.md` §13 und ANN-046.
+
+Alles als `anna.beispiel@praxis.invalid` (therapist).
+
+### 1. Das Hauptmenü nimmt den Text nicht mit
+
+1. Einen Termin öffnen, „Dokumentation anlegen", einen Satz tippen —
+   **nicht** speichern.
+2. In der Seitenleiste (am Handy: in der Leiste unten) einen anderen Bereich
+   antippen, etwa „Patient:innen".
+3. Erwartung: Die Seite wechselt **nicht**. Stattdessen erscheint der Kasten
+   „Ungespeicherte Dokumentation" mit drei Schaltflächen, und die Tastatur
+   steht auf der ersten davon.
+4. „Hier bleiben": Der Text steht unverändert im Feld, der Kasten ist fort.
+
+### 2. Dieselbe Frage beim Patientenwechsel und beim Zurück
+
+1. Wieder mit ungespeichertem Text: oben über die Suche eine andere Patient:in
+   auswählen. Erwartung: derselbe Kasten.
+2. „Hier bleiben", dann den **Zurück-Knopf des Browsers** drücken. Erwartung:
+   derselbe Kasten, die Adresszeile bleibt auf der Dokumentation.
+
+### 3. Speichern geht erst nach dem Speichern weiter
+
+1. Mit ungespeichertem Text ins Hauptmenü, dann „Speichern und weitergehen".
+2. Erwartung: Die Schaltfläche zeigt „Wird gespeichert …", danach erscheint
+   das gewählte Ziel.
+3. Zurück zum Termin: Der Eintrag steht dort als **Entwurf** — ausdrücklich
+   **nicht** finalisiert und der Termin **nicht** abgeschlossen.
+4. Gegenprobe auf „Behandlung abschließen": Text tippen, Hauptmenü,
+   „Speichern und weitergehen". Erwartung: Der Termin bleibt `bestätigt`, die
+   Dokumentation bleibt Entwurf.
+
+### 4. Ein Fehlschlag nimmt weder Text noch Seite mit
+
+1. Mit ungespeichertem Text die Netzverbindung des Rechners trennen
+   (Flugmodus, WLAN aus).
+2. Ins Hauptmenü tippen, „Speichern und weitergehen".
+3. Erwartung: Die Seite bleibt stehen, der Text steht im Feld, und im Kasten
+   steht die Fehlermeldung mit dem Zusatz, dass die Seite geöffnet bleibt. Die
+   drei Schaltflächen stehen weiter zur Wahl.
+4. Verbindung zurück, erneut „Speichern und weitergehen": Jetzt geht es
+   weiter.
+
+### 5. Keine Frage ohne Anlass
+
+1. Eine Dokumentation öffnen und **nichts** ändern. Ins Hauptmenü tippen.
+   Erwartung: kein Kasten, die Seite wechselt sofort.
+2. Text tippen, „Als Entwurf speichern". Erwartung: kein Kasten — der eigene
+   Rückweg zum Termin läuft durch.
+3. In der Dokumentation auf „Bausteine verwalten →" tippen (mit
+   ungespeichertem Text). Erwartung: Kasten. Ohne Text: kein Kasten.
+
+### 6. Korrektur und Nachtrag
+
+1. Einen finalisierten Eintrag öffnen, „Korrigieren", Text ändern, ins
+   Hauptmenü tippen. Erwartung: Der Kasten bietet **nur** „Verwerfen und
+   weitergehen" und „Hier bleiben" und erklärt, dass eine Korrektur mit dem
+   Absenden Bestandteil der Akte wird.
+2. Dasselbe beim **Nachtrag**. Erwartung: Hier steht „Speichern und
+   weitergehen" wieder zur Verfügung — der Nachtrag beginnt als Entwurf.
+
+### 7. Fenster schließen und neu laden
+
+1. Mit ungespeichertem Text F5 drücken beziehungsweise den Tab schließen.
+2. Erwartung: Der Browser fragt mit **seinem eigenen** Text nach. Den Wortlaut
+   bestimmt der Browser; die Anwendung kann ihn nicht setzen.
+
+### 9. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=therapist /termine/<id>/dokumentation
+```
+
+Erwartung: Der Kasten passt in die Breite, alle drei Schaltflächen sind
+erreichbar und mindestens 44 px hoch, kein waagerechtes Scrollen.
+
+**Bekannte Grenze (ANN-046):** „Abmelden" ist keine Navigation. Wer mit
+ungespeichertem Text abmeldet, verliert ihn weiterhin.
+
+---
+
+## CAL-014 — Absage unter 24 Stunden
+
+Prüfschritte zu CAL-014b (Datenbank) und CAL-014c (Oberfläche). Grundlage:
+`PROJECT_PRINCIPLES.md` 0.8 §8, ADR-018 Fassung 2 Punkt 8, ANN-047 und
+ANN-048.
+
+> **Wichtig für diese Abnahme:** Maßgeblich ist der **Eingang** der Absage,
+> nicht der Zeitpunkt der Eingabe. Für die Fälle unter der Frist braucht es
+> deshalb entweder einen Termin am selben oder am nächsten Tag oder einen
+> nachgetragenen Eingang.
+
+Alles als `olivia.office@praxis.invalid` (office).
+
+### 1. Die Rückfrage fragt nach dem Eingang
+
+1. Einen bestätigten Termin **in einigen Tagen** öffnen → **Termin absagen**.
+2. Erwartung: Unter dem Absagegrund steht **„Wann ist die Absage
+   eingegangen?"** mit **„Gerade eben"** vorbelegt, darunter ein Satz, dass
+   die Frist der Server rechnet und genau 24 Stunden außerhalb der Regel
+   liegen.
+3. „Patient:in hat abgesagt" wählen und bestätigen. Erwartung: Status
+   **Abgesagt**, Zeile **Absage eingegangen** mit dem heutigen Zeitpunkt,
+   **keine** Zeile „Gebühr vorgemerkt" — der Termin lag mehr als 24 Stunden
+   entfernt.
+
+### 2. Unter der Frist entsteht ein Gebührenanlass
+
+1. Einen Termin für **morgen zu einer Uhrzeit, die weniger als 24 Stunden
+   entfernt ist**, anlegen (liegt der Termin morgen früher als jetzt, ist er
+   unter der Frist).
+2. Absagen mit Grund **„Patient:in hat abgesagt"**, Eingang **„Gerade eben"**.
+3. Erwartung: Zeile **Gebühr vorgemerkt: Absage weniger als 24 Stunden
+   vorher** und darunter der Satz, dass **Höhe und Abrechnung noch ausstehen**
+   — es steht **kein Betrag** da.
+4. Neu laden. Erwartung: beides steht weiterhin da.
+
+### 3. Die Praxis sagt ab — nie eine Gebühr
+
+1. Denselben Fall wie in Schritt 2, aber mit Grund **„Praxis hat abgesagt"**.
+2. Erwartung: Status **Abgesagt**, **keine** Zeile „Gebühr vorgemerkt".
+3. Dasselbe mit **„Termin verlegt"** und **„Sonstiger Grund"**: ebenfalls keine
+   Gebühr (ANN-047 — widersprich hier, wenn das im Alltag anders gemeint ist).
+
+### 4. Nachträgliche Erfassung
+
+1. Einen Termin **morgen** anlegen und absagen — diesmal **„Früher – jetzt
+   erst eingetragen"** wählen.
+2. Erwartung: Es erscheinen **Datum des Eingangs** und **Uhrzeit**. Das Datum
+   lässt sich nicht in die Zukunft setzen.
+3. Nur das Datum ausfüllen und bestätigen. Erwartung: **„Bitte Datum und
+   Uhrzeit des Eingangs angeben."**, nichts passiert.
+4. Datum **vorgestern**, Uhrzeit **19:30**, bestätigen. Erwartung: Zeile
+   **Absage eingegangen: vorgestern, 19:30 Uhr** und **keine** Gebühr — der
+   Eingang lag mehr als 24 Stunden vor dem Termin, obwohl die Eingabe heute
+   passiert.
+5. Gegenprobe: derselbe Ablauf mit einem Eingang **heute**, wenn der Termin
+   morgen näher als 24 Stunden liegt. Erwartung: **Gebühr vorgemerkt**.
+
+### 5. Die Grenze selbst
+
+Die Sekunden-Genauigkeit prüft `supabase/tests/cancellation-notice.test.ts`
+(genau 24 Stunden ⇒ **keine** Gebühr, eine Sekunde darunter ⇒ Gebühr, über die
+Zeitumstellung hinweg). Von Hand genügt ein Fall knapp auf jeder Seite.
+
+### 6. Nichts wird nachträglich umgedeutet
+
+1. Einen **vor** dieser Änderung abgesagten Termin öffnen (im Seed gibt es
+   einen). Erwartung: Zeile **Absage eingegangen** fehlt, **keine** Gebühr,
+   der Absagegrund steht wie bisher.
+2. Ein Termin, dessen Zeit ohne Zutun vorbeigegangen ist, steht weiterhin auf
+   **Bestätigt** — weder abgesagt noch „nicht angetroffen".
+
+### 7. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /termine/<id>
+```
+
+Erwartung: Die Rückfrage mit Grund, Eingangsauswahl und den beiden Feldern
+passt in die Breite, kein waagerechtes Scrollen, jedes Feld mindestens 44 px
+hoch.
+
+---
+
+## CAL-015 — Der Kalender als vollständiger Arbeitsablauf
+
+Prüfschritte zu CAL-015b (Datenbank) und CAL-015c (Oberfläche). Grundlage:
+`PROJECT_PRINCIPLES.md` 0.9 §8.1, ANN-049 und ANN-050.
+
+Alles als `olivia.office@praxis.invalid` (office), sofern nicht anders
+genannt.
+
+### 1. 60 oder 45 Minuten — und nichts dazwischen
+
+1. **Patient:innen → Max Mustermann → Termine → Termin anlegen.** Erwartung:
+   Neben dem Beginn steht **Dauer** mit **60 Minuten** vorbelegt und darunter
+   das abgeleitete Ende.
+2. Beginn **09:05** eintragen. Erwartung: „Ende: 10:05 Uhr".
+3. Dauer auf **45 Minuten** stellen. Erwartung: „Ende: 09:50 Uhr". Anlegen.
+4. Den Termin öffnen → **Bearbeiten**. Erwartung: Die Dauer steht auf 45, die
+   Auswahl bietet genau **zwei** Werte an.
+5. Verschieben (Beginn ändern) ohne die Dauer anzufassen. Erwartung: Das Ende
+   wandert mit, die Länge bleibt 45.
+
+### 2. Ereignis eintragen
+
+1. **Kalender → Tagesansicht → „Ereignis eintragen".**
+2. Erwartung: Das Formular fragt nach **Bezeichnung**, **beteiligten
+   Personen** (Ankreuzfelder, auch Olivia Office steht dabei), Ort, Datum,
+   **Beginn und Ende**. Keine Patient:in, keine Verordnung, keine Dauerwahl.
+3. „Teambesprechung", **Anna Beispiel** und die eigene Person ankreuzen,
+   Standort wählen, **08:00 bis 08:25** eintragen — eine Länge, die ein
+   Behandlungstermin nicht haben dürfte. Eintragen.
+4. Erwartung: zurück im Kalender, und die Besprechung steht **in beiden
+   Spalten**.
+5. Gegenprobe Raster: noch einmal, diesmal mit Ende **08:22**. Erwartung: Die
+   Meldung sagt, dass Beginn und Ende auf dem Praxisraster liegen müssen; es
+   wird nichts eingetragen.
+
+### 3. Ein Ereignis ist keine Behandlung
+
+1. Die Besprechung im Kalender antippen. Erwartung: Überschrift **„Ereignis –
+   Teambesprechung"**, Zeile **Ereignis**, **kein** Weg in eine Akte.
+2. Erwartung: **Kein** „Dokumentieren und abschließen", **kein** „Termin
+   abschließen", **kein** „Nicht angetroffen", **kein** „Folgetermin anlegen",
+   **kein** Abschnitt Behandlungsdokumentation und **keine** Mitteilungswege.
+3. Erwartung: **„Bearbeiten"** und **„Termin absagen"** gibt es.
+4. Gegenprobe Belegung: Für **Anna Beispiel** einen Behandlungstermin zur
+   selben Zeit anlegen. Erwartung: „In diesem Zeitraum hat die behandelnde
+   Person bereits einen Termin."
+5. Gegenprobe „Tag umplanen": In der Tagesansicht mit Personenfilter auf Anna
+   **Tag umplanen** ausführen. Erwartung: Die Behandlungstermine sind abgesagt,
+   die **Besprechung steht noch**.
+
+### 4. Von der Verordnung in den Kalender und zurück
+
+1. **Patient:innen → Max Mustermann → Verordnungen.** An einer offenen
+   Verordnung steht neben „Terminserie anlegen" jetzt **„Im Kalender einen
+   Platz suchen"**.
+2. Antippen. Erwartung: Die **Tagesansicht** öffnet sich, über dem Gitter
+   steht die Leiste „Nur die Termine von Max Mustermann", und in der Adresse
+   stehen `patient=` **und** `verordnung=` — als Kennungen, ohne Namen.
+3. Vor- und zurückblättern, scrollen, eine **freie Stelle antippen**.
+4. Erwartung: Das Terminformular **dieser Person** öffnet sich, Datum und
+   Beginn stehen schon, und es wird **nicht** nach der Patient:in gefragt.
+5. **Abbrechen**. Erwartung: zurück im Kalender, an derselben Stelle, mit
+   demselben Filter.
+6. Noch einmal, diesmal anlegen. Danach **Akte → Verordnungen**: Der Termin
+   zählt bei dieser Verordnung als **verplant** (die genutzte Menge bleibt
+   unverändert — verplant ist nicht genutzt, ANN-038).
+7. Gegenprobe Filter: In der Leiste **„Filter aufheben"**. Erwartung: Der
+   Kalender zeigt wieder alles; der Weg über die freie Stelle führt jetzt
+   wieder in die Patientensuche.
+
+### 5. Ein Ereignis kostet nichts (CAL-016)
+
+Die Abgrenzung, an der es um Geld geht: Ein Ereignis des Praxisbetriebs darf
+unter keinen Umständen eine Ausfallgebühr auslösen — es gibt keine Patient:in,
+die absagen könnte.
+
+1. Die Besprechung öffnen → **„Termin absagen"**. Erwartung in der Rückfrage:
+   Der Satz nennt die **Bezeichnung** und keinen leeren Namen; die Auswahl
+   **Absagegrund** bietet **„Patient:in hat abgesagt" nicht** an; es gibt
+   **keine** Frage „Wann ist die Absage eingegangen?"; unten steht, dass ein
+   Ereignis **keine Ausfallgebühr** auslöst.
+2. Mit „Praxis hat abgesagt" absagen. Erwartung: Am abgesagten Ereignis steht
+   **keine** Zeile „Gebühr vorgemerkt".
+3. **Tag umplanen** (Tagesansicht mit Personenfilter → „Tag umplanen"):
+   Erwartung: In der Auswahl **Absagegrund** fehlt „Patient:in hat abgesagt"
+   auch hier — der Ausfall einer behandelnden Person ist praxisbedingt.
+4. Eine noch stehende Besprechung an demselben Tag: Sie steht **nicht** in der
+   Liste „Diese Termine werden abgesagt" und taucht danach **nicht** in der
+   Anrufliste auf.
+
+### 6. Die Besprechung steht auch im eigenen Tagesplan (CAL-016)
+
+1. Als `anna.beispiel@praxis.invalid` (therapist) die **Übersicht** öffnen an
+   einem Tag, an dem eine Besprechung eingetragen ist.
+2. Erwartung: Die Besprechung steht in der **eigenen Tagesliste** oben — mit
+   ihrer Bezeichnung, ohne Namen, ohne Anschrift, und der Weg heißt
+   **„Ereignis öffnen"**.
+3. Erwartung: Die Zahl der **offenen** Punkte über der Liste zählt sie
+   **nicht** mit — an einem Ereignis ist nichts zu erledigen.
+4. Erwartung: Dieselbe Besprechung steht auch im **Tagesplan des Teams**
+   darunter. Beide Listen zeigen denselben Tag.
+
+### 7. Ein Teamereignis ist ein Vorgang (CAL-017)
+
+Die Abgrenzung, um die es hier geht: Eine Besprechung, die bei einer Person um
+9 und bei einer anderen um 10 steht, darf es nicht geben.
+
+1. **Kalender → „Ereignis eintragen"**: „Teambesprechung", **Anna Beispiel**
+   **und** Tim Teamleitung ankreuzen, Standort, 10:00 bis 10:25. Eintragen.
+2. Erwartung: Die Besprechung steht in **beiden** Spalten.
+3. Eine der beiden Kacheln antippen. Erwartung: Die Zeile **Beteiligte** nennt
+   beide Namen und sagt, dass Bezeichnung, Zeit und Ort für alle gelten. Oben
+   stehen **zwei** Wege: „Ereignis bearbeiten" und „Teilnahme ändern".
+4. **„Ereignis bearbeiten"**: Bezeichnung auf „Fallbesprechung", Beginn auf
+   11:00, Ende auf 11:25. Speichern. Erwartung: Zurück am Ereignis stehen der
+   neue Name und die neue Zeit — und im Kalender sind **beide** Kacheln
+   gewandert und heißen beide neu.
+5. Gegenprobe Konflikt: Für **Tim** einen Behandlungstermin um 12:00 anlegen.
+   Dann das Ereignis auf 12:00 verschieben wollen. Erwartung: Die Meldung sagt,
+   dass mindestens eine beteiligte Person schon einen Termin hat, und es wurde
+   **nichts** geändert — auch nicht die Zeile von Anna.
+6. Gegenprobe Teilnahme: Am Ereignis **„Nur diese Teilnahme absagen"** mit
+   „Praxis hat abgesagt". Erwartung: Diese eine Zeile ist abgesagt, die andere
+   steht weiter. Bei den Beteiligten steht die abgesagte mit Kennzeichen.
+7. **„Ereignis absagen"** an der verbliebenen Zeile: Erwartung — in der
+   Auswahl fehlt „Patient:in hat abgesagt", nach der Bestätigung sind alle
+   offenen Teilnahmen abgesagt und **keine** trägt „Gebühr vorgemerkt".
+
+### 8. Konsistenz nach einer Änderung
+
+1. Einen Termin im Kalender per **Ziehen** verschieben.
+2. Ohne Neuladen prüfen: **Übersicht** (Tagesplan des Teams) und **Akte →
+   Termine** zeigen die neue Zeit.
+3. Die Besprechung aus Schritt 2 absagen. Erwartung: Sie verschwindet aus der
+   Standardansicht des Kalenders (Filter „aktive") und steht mit dem Filter
+   „abgesagt" wieder da.
+
+### 8. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /termine/ereignis /kalender
+```
+
+Erwartung: Das Ereignisformular mit seinen Ankreuzfeldern passt in die Breite,
+kein waagerechtes Scrollen, jede Zeile mindestens 44 px hoch.
+
+**Zielwert:** Ein ganzer Planungsvorgang — Person wählen, Lücke suchen, Termin
+anlegen — ohne die Anwendung zu verlassen und ohne dieselbe Angabe zweimal zu
+machen.

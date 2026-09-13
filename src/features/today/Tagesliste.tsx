@@ -48,13 +48,23 @@ export function Tageskarte({
         <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
       </div>
 
+      {/* Ein Ereignis des Praxisbetriebs hat keine Akte, in die ein Link
+          führen könnte - es trägt seine Bezeichnung (CAL-016). */}
       <p className="text-ink mt-1 text-[1.0625rem] font-medium">
-        <Link to={`/patienten/${termin.patient_id}`} className="hover:text-accent hover:underline">
-          {termin.patient_given_name} {termin.patient_family_name}
-        </Link>
+        {termin.kind === 'event' || !termin.patient_id ? (
+          (termin.title ?? 'Ereignis')
+        ) : (
+          <Link
+            to={`/patienten/${termin.patient_id}`}
+            className="hover:text-accent hover:underline"
+          >
+            {termin.patient_given_name} {termin.patient_family_name}
+          </Link>
+        )}
       </p>
 
       <p className="text-ink-muted mt-0.5 text-sm">
+        {termin.kind === 'event' ? 'Ereignis · ' : ''}
         {appointmentTypeLabels[termin.appointment_type]}
         {termin.location_name ? ` · ${termin.location_name}` : ''}
       </p>
@@ -103,7 +113,7 @@ export function Tageskarte({
           to={mitRueckweg(`/termine/${termin.id}`, '/')}
           className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center px-1 text-sm font-medium"
         >
-          Termin öffnen →
+          {termin.kind === 'event' ? 'Ereignis öffnen →' : 'Termin öffnen →'}
         </Link>
       </div>
     </Card>

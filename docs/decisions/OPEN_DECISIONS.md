@@ -145,8 +145,9 @@ Feature.
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
 | E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024)          |
 | E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | unten                                                                                    |
-| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Fahrpuffer **vorläufig entschieden 2026-09-12**: erst mit MAP-006 · Punkt 1 und 2 weiter **offen** | unten; `PROJECT_PRINCIPLES.md` §8.1; CAL-010a gebaut, CAL-010b entfällt zugunsten von MAP-006 |
+| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Fahrpuffer **vorläufig entschieden 2026-09-12**: erst mit MAP-006 · **Punkt 1 entschieden 2026-09-12**: 60 **oder** 45 Minuten, keine dritte Länge · Punkt 2 weiter **offen** | unten; `PROJECT_PRINCIPLES.md` 0.9 §8.1; CAL-010a und CAL-015 gebaut, CAL-010b entfällt zugunsten von MAP-006 |
 | E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
+| E14   | Gebühr beim Nichtantreffen am Hausbesuch                     | Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Regel für das Nichtantreffen **offen** | unten; `PROJECT_PRINCIPLES.md` 0.8 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 2 Punkt 8; mit ABR-001 |
 
 ---
 
@@ -1140,12 +1141,15 @@ Bestandstermine unverändert, Durchsetzung serverseitig.
 **Was daran offen ist** — vier Fragen, die die Entscheidung ausdrücklich
 **nicht** mitbeantwortet:
 
-1. **Gibt es eine begründete Abweichung von den 60 Minuten?** Ein Erstbefund
-   oder eine Doppelbehandlung könnte länger dauern. Ist das zulässig, und wenn
-   ja: als ausdrückliche Bestätigung nach dem Muster von
-   `p_allow_outside_working_hours` (CAL-005) mit Auditvermerk, oder gar nicht?
-   Ohne Antwort baut CAL-010a die Regel **ohne** Ausnahme — §16, im Zweifel
-   restriktiver, und später öffnen ist billig.
+1. ~~**Gibt es eine begründete Abweichung von den 60 Minuten?**~~
+   **Entschieden am 2026-09-12 durch Jannes, gebaut in CAL-015:** Es gibt
+   **zwei** zulässige Längen, 60 (Vorbelegung) und **45** Minuten. Keine
+   begründete Abweichung, keine Bestätigung nach dem Muster von
+   `p_allow_outside_working_hours`, kein Auditvermerk dafür — eine dritte
+   Länge weist der Server ab. Die Frage nach dem Erstbefund ist damit
+   beantwortet, ohne ein Verfahren dafür zu bauen. Ergänzend gilt seit
+   derselben Festlegung: Termine, die **keine Behandlung** sind, fallen gar
+   nicht unter die Regel (§8.1, CAL-015).
 2. **Wird die Länge je Praxis einstellbar?** Heute ist 60 eine feste Zahl im
    Prinzipiendokument, kein `owner`-Wert wie das Raster. Für eine Praxis
    reicht das; für ein zweites Unternehmen später nicht.
@@ -1176,10 +1180,10 @@ Der Testfall mit dem Beispiel aus §8.1 (09:05–10:05 plus 12 Minuten ergibt
 **Folge für die Roadmap:** **CAL-010b entfällt als eigene Story** und geht in
 MAP-006 auf. CAL-EPIC-003b ist ohne sie am 2026-09-12 fertig geworden.
 
-**Weiter offen sind Punkt 1 und 2** — begründete Abweichung von den 60 Minuten
-und Einstellbarkeit der Länge je Praxis. Beide sind Praxisprozess und lassen
-sich erst nach den ersten Wochen im Betrieb sinnvoll beantworten; sie stehen
-als Wiedervorlage an **ANN-037**.
+**Weiter offen ist Punkt 2** — Einstellbarkeit der zulässigen Längen je
+Praxis. Praxisprozess; lässt sich erst nach den ersten Wochen im Betrieb
+sinnvoll beantworten und steht als Wiedervorlage an **ANN-037**. **Punkt 1 ist
+am 2026-09-12 entschieden** (60 oder 45).
 
 **Blockiert:** nichts.
 
@@ -1226,6 +1230,51 @@ Jannes hat sie ausdrücklich nicht mitbeauftragt.
 **Blockiert:** nichts. Kein Loop der aktuellen Roadmap hängt daran.
 
 **Rücknahme:** entfällt — es ist nichts gebaut.
+
+---
+
+### E14 — Gebühr beim Nichtantreffen am Hausbesuch
+
+| | |
+|---|---|
+| Dringlichkeit | P3 — spätestens mit ABR-001 (Leistungskatalog) |
+| Bezug | §8, §19; ADR-018 Fassung 2 Punkt 8; ADR-009; CAL-014 |
+
+**Entschieden ist die Absage** (Jannes, 2026-09-12): Eine Patientenabsage
+weniger als 24 Stunden vor dem vereinbarten Beginn löst eine Ausfallgebühr
+aus; genau 24 Stunden nicht; eine praxisbedingte Absage nie. Gebaut in
+CAL-014, serverseitig gerechnet aus dem **Eingang** der Absage.
+
+**Entschieden ist außerdem, was beim Nichtantreffen *nicht* gilt:** Der
+Vermerk verlangt **keine** Gebührenentscheidung, und aus ihm allein entsteht
+**keine** Gebühr. Die Pflichtentscheidung aus ADR-018 Fassung 1 ist damit
+entfallen.
+
+**Offen ist die Regel selbst.** Beim Hausbesuch ist die Therapeut:in
+hingefahren; die Zeit ist in derselben Weise verloren wie bei einer Absage
+fünf Minuten vorher. Drei Fragen:
+
+1. Soll das Nichtantreffen eine eigene Gebühr auslösen — und wenn ja:
+   dieselbe Höhe wie die Ausfallgebühr, oder eine eigene Position im
+   Leistungskatalog (ABR-001)?
+2. Wenn ja, **automatisch** wie bei der Absage, oder als ausdrückliche
+   Entscheidung der behandelnden Person? Die Pflichtentscheidung aus Fassung 1
+   ist ausdrücklich verworfen — eine freiwillige wäre etwas anderes.
+3. Gilt eine Regel auch für einen Termin **in der Praxis**, zu dem niemand
+   erscheint, oder nur für den Hausbesuch?
+
+**Bis dahin:** Der Weg ist gebaut und ungenutzt — `fee_basis` trägt in V1 den
+einen Wert `late_cancellation`; für das Nichtantreffen bleibt er leer, und
+Bestandszeilen aus Fassung 1 behalten ihren Wert `no_show`. Der Ablauf ist
+**nicht blockiert**: Abhaken geht mit einem Tap.
+
+**Blockiert:** nichts. ABR-001 braucht die Antwort, sobald der
+Leistungskatalog Positionen bekommt.
+
+**Rücknahme:** `klein` — eine Bedingung in `record_no_show`, die `fee_basis`
+setzt, und eine Zeile im Katalog. Was **nicht** zurückgeholt werden kann, sind
+Vorgänge, die bis dahin gelöscht wurden; deshalb hält der Löschlauf jeden
+Vorgang mit Gebührenanlass zurück (ANN-035).
 
 ---
 
