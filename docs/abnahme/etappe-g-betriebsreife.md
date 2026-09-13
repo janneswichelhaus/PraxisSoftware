@@ -450,3 +450,55 @@ Akte von Max Mustermann.
 **Was hier nicht geprüft werden kann:** ob der Anbieter das Objekt danach
 wirklich überall entfernt — Cache, Replikate, seine eigenen Sicherungen. Das
 ist Prüfpunkt 3 von OPS-001 und aus der Anwendung heraus nicht feststellbar.
+
+---
+
+## DAT-003 — Abgleich: was in dem einen Speicher steht und im anderen nicht
+
+**Was geprüft wird:** dass die Anwendung merkt, wenn Datenbank und Ablage
+auseinanderlaufen — und zwar in beide Richtungen (ADR-017 Punkt 27). Ein
+Verlust darf nicht als leere Fläche durchgehen, und ein vergessenes Objekt
+nicht liegen bleiben.
+
+**Vorbereitung:** DAT-001 und DAT-002 durchlaufen; mindestens eine Datei liegt
+in der Akte von Max Mustermann.
+
+1. **Im Normalfall ist nichts zu tun.** Als `jannes.test@praxis.invalid`
+   Praxis → Sicherheit → **Aufbewahrung und Löschung** öffnen. Unter „Abgleich
+   der Dateiablage" steht „Beide Speicher sind deckungsgleich".
+2. **Einen Verlust herstellen.** Diesen Schritt ausdrücklich nur am lokalen
+   Wegwerf-Stack: Supabase Studio unter <http://127.0.0.1:54323> öffnen,
+   Storage → Bucket `patientenakte`, die abgelegte Datei dort **von Hand
+   löschen**. Die Zeile in der Akte bleibt damit ohne Objekt zurück.
+3. **Der Abgleich meldet ihn.** Seite neu laden. Unter „Abgleich der
+   Dateiablage" steht jetzt, dass zu einer Datei die abgelegte Fassung fehlt —
+   mit Dateiname, Patientenname und dem Link „Akte öffnen". Der Text sagt
+   ausdrücklich, dass das **ein Verlust und kein Aufräumfall** ist.
+4. **Und die Akte auch.** Über „Akte öffnen" in den Bereich Dateien wechseln:
+   Die Zeile trägt die rote Meldung „in der Ablage nicht auffindbar" und
+   **bietet kein „Öffnen" an** — statt eines Verweises, der ins Leere liefe.
+5. **Ein verwaistes Objekt herstellen.** Zurück in Studio, Storage → Bucket
+   `patientenakte`: eine beliebige kleine PDF-Datei **von Hand hochladen**, in
+   einen Ordner mit der Organisationskennung (der Pfad, den die vorhandenen
+   Objekte zeigen). Dazu gibt es keine Zeile in der Datenbank.
+6. **Der Abgleich meldet auch das.** Aufbewahrung neu laden: „1 Objekt in der
+   Ablage gehört zu keiner Datei mehr."
+7. **Der entscheidende Schritt.** „Zur Löschung vormerken" tippen. Die Meldung
+   nennt die Zahl der angelegten Aufträge. Nach oben scrollen: Unter „Offene
+   Löschaufträge" steht der neue Auftrag. „Alle ausführen und quittieren"
+   tippen — danach ist unter „Abgleich" nur noch der Verlust aus Schritt 3 zu
+   sehen. **Es gibt keinen zweiten Löschweg**: Auch ein verwaistes Objekt geht
+   durch Auftrag und Quittung.
+8. **Wer das sieht.** Abmelden, als `tim.teamleitung@praxis.invalid` anmelden:
+   Praxis → Sicherheit → Aufbewahrung ist für ihn nicht erreichbar.
+9. **Aufräumen.** Als Jannes die Datei aus Schritt 3 in der Akte löschen und
+   den Auftrag ausführen; danach steht überall wieder „deckungsgleich".
+10. **Am Handy.** Schritt 1 und 6 bei ~375 px: kein waagerechtes Scrollen,
+    die Meldungen sind vollständig lesbar, „Zur Löschung vormerken" ist
+    erreichbar.
+
+**Was hier bewusst fehlt:** Der Abgleich läuft nicht von allein und meldet sich
+nicht. Er wird gerechnet, wenn diese Seite geöffnet wird — die Anwendung
+verschickt nichts (CAL-013). Er gehört deshalb in den monatlichen Bericht
+(ADR-010 Punkt 6) und auf die Liste nach jeder Wiederherstellung
+(ADR-017 Punkt 26).

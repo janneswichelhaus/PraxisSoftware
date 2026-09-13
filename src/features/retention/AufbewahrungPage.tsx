@@ -14,7 +14,13 @@ import {
   formatZeitpunkt,
   type Datenklasse,
 } from './api';
-import { useLoeschauftraege, useLoeschauftraegeAusfuehren } from '@/features/files/dateien';
+import { Link } from 'react-router-dom';
+import {
+  useDateiabgleich,
+  useLoeschauftraege,
+  useLoeschauftraegeAusfuehren,
+  useVerwaisteVormerken,
+} from '@/features/files/dateien';
 import type { CurrentUser } from '@/features/session/types';
 
 /**
@@ -264,6 +270,106 @@ function Loeschauftraege({ user }: { user: CurrentUser }) {
   );
 }
 
+/**
+ * Abgleich zwischen Datenbank und Ablage (DAT-003, ADR-017 Punkt 27).
+ *
+ * Zwei Zustände, die es nicht geben darf, und beide sind hier keine Statistik,
+ * sondern eine Arbeitsaufgabe:
+ *
+ *   * **Eine Datei ohne Objekt** ist ein Verlust. Sie steht mit Akte und Namen
+ *     da, damit jemand nachsehen kann — eine Zahl allein wäre unbrauchbar.
+ *     An der einzelnen Datei meldet die Akte denselben Befund (§13).
+ *   * **Ein Objekt ohne Datei** ist Abfall. Es wird über denselben Löschweg
+ *     entfernt wie alles andere, mit Auftrag und Quittung — nicht über eine
+ *     zweite, stille Abkürzung.
+ *
+ * Der Abgleich läuft nicht von allein: Er wird gerechnet, wenn diese Seite
+ * geöffnet wird. Die Anwendung verschickt nichts (CAL-013), und einen
+ * Meldeweg zu bauen wäre ein eigener Auftrag. Deshalb gehört der Blick hierher
+ * in den monatlichen Bericht (ADR-010 Punkt 6).
+ */
+function Dateiabgleich({ user }: { user: CurrentUser }) {
+  const { fehlende, verwaiste, isPending, isError, verborgen } = useDateiabgleich(user);
+  const vormerken = useVerwaisteVormerken();
+
+  if (verborgen) return null;
+  if (isPending) return <LoadingState label="Abgleich wird gerechnet …" />;
+  if (isError) return <ErrorState title="Der Abgleich konnte nicht gerechnet werden." />;
+
+  if (fehlende.length === 0 && verwaiste === 0) {
+    return (
+      <EmptyState
+        title="Beide Speicher sind deckungsgleich"
+        description="Zu jeder Datei in einer Akte liegt genau ein Objekt in der Ablage — und umgekehrt."
+      />
+    );
+  }
+
+  return (
+    <>
+      {fehlende.length > 0 ? (
+        <>
+          <Statusmeldung ton="fehler">
+            {fehlende.length === 1
+              ? 'Zu einer Datei in einer Akte fehlt die abgelegte Fassung.'
+              : `Zu ${fehlende.length} Dateien in Akten fehlt die abgelegte Fassung.`}{' '}
+            Das ist ein Verlust und kein Aufräumfall — bitte prüfen, ob eine Wiederherstellung nötig
+            ist.
+          </Statusmeldung>
+          <ul className="mt-3">
+            {fehlende.map((datei) => (
+              <li key={datei.file_id} className="border-line border-t py-2.5 first:border-t-0">
+                <span className="text-ink text-[0.9375rem]">
+                  {datei.display_name}
+                  <span className="text-ink-muted mt-0.5 block text-sm">
+                    {datei.patient_name}
+                    {datei.uploaded_at
+                      ? ` · hinzugefügt ${formatZeitpunkt(datei.uploaded_at)}`
+                      : ''}
+                  </span>
+                </span>
+                <Link
+                  to={`/patienten/${datei.patient_id}/dateien`}
+                  className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+                >
+                  Akte öffnen
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      {verwaiste > 0 ? (
+        <div className={fehlende.length > 0 ? 'mt-6' : ''}>
+          <Statusmeldung ton="warnung">
+            {verwaiste === 1
+              ? 'Ein Objekt in der Ablage gehört zu keiner Datei mehr.'
+              : `${verwaiste} Objekte in der Ablage gehören zu keiner Datei mehr.`}{' '}
+            Sie sind Abfall und werden über einen gewöhnlichen Löschauftrag entfernt.
+          </Statusmeldung>
+          <div className="mt-3">
+            <Button type="button" disabled={vormerken.isPending} onClick={() => vormerken.mutate()}>
+              {vormerken.isPending ? 'Wird vorgemerkt …' : 'Zur Löschung vormerken'}
+            </Button>
+          </div>
+          {vormerken.isSuccess ? (
+            <Statusmeldung className="mt-2">
+              {vormerken.data} Löschauftr{vormerken.data === 1 ? 'ag' : 'äge'} angelegt — oben unter
+              „Offene Löschaufträge" ausführen.
+            </Statusmeldung>
+          ) : null}
+          {vormerken.isError ? (
+            <Statusmeldung ton="fehler" className="mt-2">
+              {vormerken.error.message}
+            </Statusmeldung>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export function AufbewahrungPage({ user }: { user: CurrentUser }) {
   return (
     <>
@@ -294,6 +400,14 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
         rahmen
       >
         <Loeschauftraege user={user} />
+      </Section>
+
+      <Section
+        titel="Abgleich der Dateiablage"
+        hinweis="Datenbank und Objektspeicher können auseinanderlaufen. Hier steht, ob sie es tun — gerechnet beim Öffnen dieser Seite, nicht laufend überwacht."
+        rahmen
+      >
+        <Dateiabgleich user={user} />
       </Section>
 
       <Section

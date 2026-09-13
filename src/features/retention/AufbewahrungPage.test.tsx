@@ -11,6 +11,9 @@ const fetchLegalHolds = vi.fn();
 const fetchDeletionRuns = vi.fn();
 const fetchLoeschauftraege = vi.fn();
 const fuehreLoeschauftragAus = vi.fn();
+const fetchFehlendeDateien = vi.fn();
+const fetchVerwaisteAnzahl = vi.fn();
+const merkeVerwaisteZurLoeschungVor = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof RetentionApi>();
@@ -28,6 +31,9 @@ vi.mock('@/features/files/api', async (importOriginal) => {
     ...actual,
     fetchLoeschauftraege: () => fetchLoeschauftraege() as Promise<FilesApi.Loeschauftrag[]>,
     fuehreLoeschauftragAus: (id: string) => fuehreLoeschauftragAus(id) as Promise<void>,
+    fetchFehlendeDateien: () => fetchFehlendeDateien() as Promise<FilesApi.FehlendeDatei[]>,
+    fetchVerwaisteAnzahl: () => fetchVerwaisteAnzahl() as Promise<number>,
+    merkeVerwaisteZurLoeschungVor: () => merkeVerwaisteZurLoeschungVor() as Promise<number>,
   };
 });
 
@@ -82,6 +88,12 @@ describe('AufbewahrungPage', () => {
     fuehreLoeschauftragAus.mockReset();
     fetchLoeschauftraege.mockResolvedValue([]);
     fuehreLoeschauftragAus.mockResolvedValue(undefined);
+    fetchFehlendeDateien.mockReset();
+    fetchVerwaisteAnzahl.mockReset();
+    merkeVerwaisteZurLoeschungVor.mockReset();
+    fetchFehlendeDateien.mockResolvedValue([]);
+    fetchVerwaisteAnzahl.mockResolvedValue(0);
+    merkeVerwaisteZurLoeschungVor.mockResolvedValue(1);
   });
 
   it('nennt Frist, Anker und gesetzliche Grundlage je Datenklasse', async () => {
@@ -267,6 +279,52 @@ describe('AufbewahrungPage', () => {
       expect(
         await screen.findByText(/0 erledigt, 1 offen geblieben: Die Ablage meldet/),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('Abgleich der Dateiablage (DAT-003, ADR-017 Punkt 27)', () => {
+    it('sagt, dass beide Speicher deckungsgleich sind', async () => {
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+      expect(await screen.findByText('Beide Speicher sind deckungsgleich')).toBeInTheDocument();
+    });
+
+    it('nennt eine fehlende Datei als Verlust, mit Akte und Weg dorthin', async () => {
+      fetchFehlendeDateien.mockResolvedValue([
+        {
+          file_id: 'd1',
+          patient_id: 'p1',
+          patient_name: 'Max Mustermann',
+          document_type: 'verordnungsscan',
+          display_name: 'Rezept.pdf',
+          uploaded_at: '2026-09-13T07:00:00.000Z',
+        },
+      ]);
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      expect(await screen.findByText(/fehlt die abgelegte Fassung/)).toBeInTheDocument();
+      expect(screen.getByText(/kein Aufräumfall/)).toBeInTheDocument();
+      expect(screen.getByText('Rezept.pdf')).toBeInTheDocument();
+      expect(screen.getByText(/Max Mustermann/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Akte öffnen' })).toHaveAttribute(
+        'href',
+        '/patienten/p1/dateien',
+      );
+    });
+
+    it('merkt verwaiste Objekte über den gewöhnlichen Löschweg vor', async () => {
+      fetchVerwaisteAnzahl.mockResolvedValue(3);
+      merkeVerwaisteZurLoeschungVor.mockResolvedValue(3);
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      expect(
+        await screen.findByText(/3 Objekte in der Ablage gehören zu keiner Datei/),
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Zur Löschung vormerken' }));
+
+      expect(await screen.findByText(/3 Löschaufträge angelegt/)).toBeInTheDocument();
+      expect(merkeVerwaisteZurLoeschungVor).toHaveBeenCalled();
     });
   });
 });

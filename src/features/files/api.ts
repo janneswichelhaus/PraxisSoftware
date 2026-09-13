@@ -323,3 +323,54 @@ export async function fuehreLoeschauftragAus(orderId: string): Promise<void> {
     );
   }
 }
+
+// -----------------------------------------------------------------------------
+// Abgleich (DAT-003, ADR-017 Punkt 27)
+// -----------------------------------------------------------------------------
+
+const fehlendeDateiSchema = z.object({
+  file_id: z.string(),
+  patient_id: z.string(),
+  patient_name: z.string(),
+  document_type: z.string(),
+  display_name: z.string(),
+  uploaded_at: z.string().nullable(),
+});
+
+export type FehlendeDatei = z.infer<typeof fehlendeDateiSchema>;
+
+export async function fetchFehlendeDateien(): Promise<FehlendeDatei[]> {
+  const { data, error } = (await getSupabase().rpc('list_missing_patient_file_objects')) as {
+    data: unknown;
+    error: unknown;
+  };
+
+  if (error) throw new Error('Der Abgleich der Dateiablage konnte nicht geladen werden.');
+  return z.array(fehlendeDateiSchema).parse(data ?? []);
+}
+
+export async function fetchVerwaisteAnzahl(): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('count_orphaned_patient_file_objects')) as {
+    data: unknown;
+    error: unknown;
+  };
+
+  if (error) throw new Error('Der Abgleich der Dateiablage konnte nicht geladen werden.');
+  return z.coerce.number().parse(data ?? 0);
+}
+
+/**
+ * Merkt verwaiste Objekte zur Löschung vor.
+ *
+ * Kein zweiter Löschweg: Es entstehen gewöhnliche Löschaufträge, die danach
+ * ausgeführt und quittiert werden wie alle anderen (ADR-017 Punkt 25 und 27).
+ */
+export async function merkeVerwaisteZurLoeschungVor(): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('order_orphaned_object_deletion')) as {
+    data: unknown;
+    error: unknown;
+  };
+
+  if (error) throw new Error('Die verwaisten Objekte konnten nicht vorgemerkt werden.');
+  return z.coerce.number().parse(data ?? 0);
+}

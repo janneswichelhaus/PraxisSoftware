@@ -3,6 +3,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as PrescriptionsApi from '@/features/prescriptions/api';
+import type * as FilesApi from '@/features/files/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as Bausteine from '@/features/documentation/textbausteine';
 import type * as KontoApi from '@/features/staff/konto-api';
@@ -35,6 +36,26 @@ vi.mock('@/features/patients/api', async (importOriginal) => ({
   fetchPatients: () => Promise.resolve([]),
   fetchPatient: () => fetchPatient(),
   logPatientRecordView: () => Promise.resolve(),
+}));
+
+vi.mock('@/features/files/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof FilesApi>()),
+  fetchPatientFiles: () =>
+    Promise.resolve([
+      {
+        id: 'd1',
+        prescription_id: null,
+        document_type: 'befund',
+        is_clinical: true,
+        display_name: 'Befund Schulter.pdf',
+        mime_type: 'application/pdf',
+        byte_size: 204_800,
+        checksum_sha256: 'a'.repeat(64),
+        uploaded_at: '2026-09-13T08:00:00.000Z',
+        uploaded_by_name: 'Anna Beispiel',
+        object_missing: false,
+      },
+    ]),
 }));
 
 vi.mock('@/features/prescriptions/api', async (importOriginal) => ({
@@ -109,6 +130,7 @@ vi.mock('@/features/account/api', async (importOriginal) => ({
 const { PatientMasterDataFields } = await import('@/features/patients/PatientMasterDataFields');
 const { PrescriptionFormFields } = await import('@/features/prescriptions/PrescriptionFormFields');
 const { Verordnungsbereich } = await import('@/features/prescriptions/PatientPrescriptionsPage');
+const { Dateienbereich } = await import('@/features/files/PatientFilesPage');
 const { Rueckfrage } = await import('@/components/ui/Rueckfrage');
 const { Section } = await import('@/components/ui/Section');
 const { DetailList, DetailRow } = await import('@/components/ui/DetailList');
@@ -271,6 +293,24 @@ describe('Barrierefreiheit der Kernformulare', () => {
         <Verordnungsbereich patient={testPatient()} user={testUser(['therapist'])} />
       </main>,
     );
+    await pruefeBarrierefreiheit(container);
+  });
+
+  // Neu mit DAT-001: Dateifeld, Auswahl der Dokumentart und die Rueckfrage vor
+  // dem Loeschen stehen dicht beieinander - genau die Mischung, bei der eine
+  // fehlende Verknuepfung von Label und Fehlertext untergeht.
+  it('haelt die Dateien der Akte sauber - Liste, Uploadfeld und Rueckfrage', async () => {
+    const { container } = renderWithProviders(
+      <main>
+        <h1>Max Mustermann</h1>
+        <Dateienbereich patientId="pat-1" user={testUser(['therapist'])} />
+      </main>,
+    );
+
+    expect(await screen.findByText('Befund Schulter.pdf')).toBeInTheDocument();
+    await pruefeBarrierefreiheit(container);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Löschen' }));
     await pruefeBarrierefreiheit(container);
   });
 });

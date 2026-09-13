@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { canReadPatientFiles, type CurrentUser } from '@/features/session/types';
 import {
+  fetchFehlendeDateien,
   fetchLoeschauftraege,
   fetchPatientFiles,
+  fetchVerwaisteAnzahl,
   fuehreLoeschauftragAus,
   korrigiereDokumentart,
   ladeDateiHoch,
   loescheDatei,
+  merkeVerwaisteZurLoeschungVor,
   type Loeschauftrag,
   type PatientFile,
   type UploadAuftrag,
@@ -166,6 +169,52 @@ export function useLoeschauftraegeAusfuehren() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['storage-deletion-orders'] });
       void queryClient.invalidateQueries({ queryKey: ['patient-files'] });
+    },
+  });
+}
+
+/**
+ * Der Abgleich zwischen Datenbank und Ablage (DAT-003, ADR-017 Punkt 27).
+ *
+ * Er läuft nicht von allein und meldet sich nicht — er wird gerechnet, wenn
+ * jemand „Aufbewahrung und Löschung" öffnet. Einen Benachrichtigungsweg gibt
+ * es in dieser Anwendung nicht; deshalb gehört der Abgleich in den monatlichen
+ * Bericht (ADR-010 Punkt 6) und nicht in eine stille Warteschlange.
+ */
+export function useDateiabgleich(user: CurrentUser) {
+  const darfSehen = user.roles.includes('owner');
+
+  const fehlende = useQuery({
+    queryKey: ['patient-file-reconciliation', 'missing'],
+    queryFn: () => fetchFehlendeDateien(),
+    enabled: darfSehen,
+    retry: false,
+  });
+
+  const verwaiste = useQuery({
+    queryKey: ['patient-file-reconciliation', 'orphaned'],
+    queryFn: () => fetchVerwaisteAnzahl(),
+    enabled: darfSehen,
+    retry: false,
+  });
+
+  return {
+    fehlende: fehlende.data ?? [],
+    verwaiste: verwaiste.data ?? 0,
+    isPending: fehlende.isPending || verwaiste.isPending,
+    isError: fehlende.isError || verwaiste.isError,
+    verborgen: !darfSehen,
+  };
+}
+
+export function useVerwaisteVormerken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => merkeVerwaisteZurLoeschungVor(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['patient-file-reconciliation'] });
+      void queryClient.invalidateQueries({ queryKey: ['storage-deletion-orders'] });
     },
   });
 }
