@@ -380,3 +380,32 @@ export async function terminUeberApi(
   const zeilen = (await antwort.json()) as Record<string, unknown>[];
   return zeilen[0] ?? null;
 }
+
+/**
+ * Die drei Breiten, auf denen in der Praxis gearbeitet wird.
+ *
+ * Telefon im Hausflur, Tablet am Empfang, Bildschirm im Buero. Die
+ * Komponententests sehen davon nichts - jsdom rechnet kein Layout -, und die
+ * Bildschirmfotos sind in Umgebungen ohne vollstaendigen Supabase-Stack nicht
+ * zu machen. Diese Pruefung ist das, was davon automatisch geht: kein
+ * waagerechtes Scrollen, und jede Bedienflaeche mindestens 44 px hoch
+ * (Oberflaechen-Checkliste, UI-000).
+ */
+export const BREITEN = [
+  { name: 'Telefon', breite: 375, hoehe: 780 },
+  { name: 'Tablet', breite: 768, hoehe: 1024 },
+  { name: 'Bildschirm', breite: 1280, hoehe: 900 },
+] as const;
+
+/** Prueft eine bereits geoeffnete Seite auf allen drei Breiten. */
+export async function pruefeBreiten(page: Page, sichtbar: () => Promise<void>): Promise<void> {
+  for (const { name, breite, hoehe } of BREITEN) {
+    await page.setViewportSize({ width: breite, height: hoehe });
+    await sichtbar();
+
+    const ueberbreit = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    );
+    expect(ueberbreit, `${name} (${breite} px) scrollt waagerecht`).toBe(false);
+  }
+}

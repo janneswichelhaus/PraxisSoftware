@@ -6,6 +6,7 @@ import {
   anmelden,
   arbeitszeitBestaetigen,
   detailWert,
+  pruefeBreiten,
   tagImFenster,
 } from './helpers';
 
@@ -214,5 +215,64 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page.getByText(/bereits einen Termin/)).toBeVisible();
+  });
+});
+
+/**
+ * Die geänderten Oberflächen auf Telefon, Tablet und Bildschirm (CAL-017).
+ *
+ * Die Anwendung wird im Hausflur bedient, am Empfang und am Schreibtisch.
+ * Geprüft wird, was sich automatisch prüfen lässt: dass keine der drei Breiten
+ * waagerecht scrollt und dass die Bedienflächen greifbar bleiben. Das ersetzt
+ * den Blick auf den Bildschirm nicht - aber es fängt genau den Fehler, den ein
+ * Formular mit einer festen Mindestbreite erzeugt.
+ */
+test.describe('CAL-017: Die Ereignisseiten auf drei Breiten', () => {
+  test('traegt Formular, Ereignis und Bearbeitung ohne waagerechtes Scrollen', async ({ page }) => {
+    const tag = laufTag(4);
+    const von = zeit(300);
+    const bis = zeit(325);
+    const bezeichnung = `Breitenbesprechung ${LAUF % 1000}`;
+
+    await anmelden(page, KONTEN.office);
+
+    // 1. Das Eintrageformular.
+    await page.goto('/termine/ereignis');
+    await pruefeBreiten(page, async () => {
+      await expect(page.getByRole('heading', { name: 'Ereignis eintragen' })).toBeVisible();
+      await expect(page.getByLabel('Bezeichnung *')).toBeVisible();
+    });
+
+    await page.getByLabel('Bezeichnung *').fill(bezeichnung);
+    await page.getByLabel('Anna Beispiel').check();
+    await page.getByLabel('Tim Teamleitung').check();
+    await page.getByLabel('Datum *').fill(tag);
+    await page.getByLabel('Beginn *').fill(von);
+    await page.getByLabel('Ende *').fill(bis);
+    await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
+    await page.getByRole('button', { name: 'Ereignis eintragen' }).click();
+    await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
+
+    // 2. Die Detailansicht mit beiden Aktionspaaren.
+    await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
+    await page.getByRole('link', { name: bezeichnung }).first().click();
+    await expect(page.getByRole('heading', { name: /Ereignis –/ })).toBeVisible();
+
+    await pruefeBreiten(page, async () => {
+      await expect(page.getByRole('link', { name: 'Ereignis bearbeiten' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Ereignis absagen' })).toBeVisible();
+      const hoehe = await page
+        .getByRole('button', { name: 'Ereignis absagen' })
+        .evaluate((el) => el.getBoundingClientRect().height);
+      expect(hoehe).toBeGreaterThanOrEqual(44);
+    });
+
+    // 3. Das Bearbeitungsformular mit der Beteiligtenliste.
+    await page.getByRole('link', { name: 'Ereignis bearbeiten' }).click();
+    await pruefeBreiten(page, async () => {
+      await expect(page.getByRole('heading', { name: 'Ereignis bearbeiten' })).toBeVisible();
+      await expect(page.getByLabel('Bezeichnung *')).toBeVisible();
+      await expect(page.getByText('Tim Teamleitung')).toBeVisible();
+    });
   });
 });

@@ -6,6 +6,7 @@ import {
   anmelden,
   arbeitszeitBestaetigen,
   detailWert,
+  pruefeBreiten,
   rpcAufrufen,
   supabaseKonfiguration,
   tagImFenster,
@@ -325,5 +326,32 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await page.getByRole('button', { name: 'Abmelden' }).click();
 
     await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
+  });
+
+  /**
+   * Die Rückfrage erscheint mitten in der Arbeit, oft auf dem Telefon im
+   * Hausflur. Geprüft wird, was sich automatisch prüfen lässt: dass sie auf
+   * keiner der drei Breiten waagerecht scrollt und dass ihre drei
+   * Schaltflächen greifbar bleiben.
+   */
+  test('zeigt die Rueckfrage auf Telefon, Tablet und Bildschirm greifbar', async ({ page }) => {
+    await mitOffenemText(page, laufTag(11), 'Synthetisch: Breitenpruefung.');
+
+    await page.getByRole('link', { name: 'Abbrechen' }).click();
+    await expect(rueckfrage(page)).toBeVisible();
+
+    await pruefeBreiten(page, async () => {
+      await expect(rueckfrage(page)).toBeVisible();
+      for (const name of [
+        'Speichern und weitergehen',
+        'Verwerfen und weitergehen',
+        'Hier bleiben',
+      ]) {
+        const knopf = rueckfrage(page).getByRole('button', { name });
+        await expect(knopf).toBeVisible();
+        const hoehe = await knopf.evaluate((el) => el.getBoundingClientRect().height);
+        expect(hoehe).toBeGreaterThanOrEqual(44);
+      }
+    });
   });
 });
