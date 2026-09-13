@@ -296,7 +296,10 @@ export function AuthenticatedRoutes({
                 <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} />
                 {/* Aufbewahrung und Loeschung stehen neben dem Auditlog: beide
                   sind Nachweise der Praxisleitung (LOE-002b, ADR-008). */}
-                <Route path="/praxis/sicherheit/aufbewahrung" element={<AufbewahrungPage />} />
+                <Route
+                  path="/praxis/sicherheit/aufbewahrung"
+                  element={<AufbewahrungPage user={user} />}
+                />
               </>
             ) : null}
             <Route path="*" element={<Navigate to="/" replace />} />

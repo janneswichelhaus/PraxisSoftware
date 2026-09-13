@@ -402,3 +402,51 @@ zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
 tatsächlich verschwindet (OPS-001 Prüfpunkt 3) und ob der Bucket gesichert ist
 (OPS-003, ADR-017 Punkt 26). Beides ist Vorbedingung für die erste **echte**
 Datei, nicht für diese Abnahme.
+
+---
+
+## DAT-002 — Löschen in zwei Speichern, und der Nachweis dafür
+
+**Was geprüft wird:** dass „gelöscht" zwei Zustände sind — Zeile weg,
+Objekt weg — und dass die Anwendung beide auseinanderhält, statt das eine für
+das andere auszugeben (ADR-017 Punkt 25).
+
+**Vorbereitung:** DAT-001 durchlaufen; es liegen mindestens zwei Dateien in der
+Akte von Max Mustermann.
+
+1. **Löschen fragt nach.** Als `jannes.test@praxis.invalid` in der Akte →
+   Dateien auf „Löschen" tippen. Der Kasten sagt zwei Dinge: die Datei ist
+   **sofort** aus der Akte, und die abgelegte Fassung wird gelöscht, sobald
+   der Löschauftrag ausgeführt ist. „Endgültig löschen" tippen.
+2. **Die Akte ist sofort sauber.** Die Datei steht nicht mehr in der Liste —
+   auch nicht nach einem Neuladen der Seite.
+3. **Der Auftrag steht.** Praxis → Sicherheit → **Aufbewahrung und Löschung**.
+   Unter „Offene Löschaufträge" steht eine Zeile mit dem Zeitpunkt und dem
+   Vermerk „Datei liegt noch in der Ablage".
+4. **Der entscheidende Schritt.** „Alle 1 ausführen und quittieren" tippen.
+   Danach steht dort „Nichts offen" und die Meldung „1 Löschung abgeschlossen
+   und quittiert". **Das ist keine Behauptung der Oberfläche:** Der Server
+   quittiert nur, wenn die Datei tatsächlich weg ist — bliebe sie liegen,
+   stünde der Auftrag noch da.
+5. **Wer das darf.** Abmelden, als `anna.beispiel@praxis.invalid` anmelden:
+   Praxis → Sicherheit → Aufbewahrung ist für sie nicht erreichbar. Sie kann
+   in der Akte weiterhin löschen — der Auftrag landet dann bei der
+   Praxisinhaberin.
+6. **Die Art korrigieren.** Als Jannes in der Akte → Dateien bei einer
+   organisatorischen Datei auf „Art korrigieren" tippen, „Befund" wählen. Der
+   Hinweis wechselt zu „nicht für die Verwaltung". „Art übernehmen".
+7. **Und die Folge ist echt.** Abmelden, als `olivia.office@praxis.invalid`
+   anmelden, dieselbe Akte → Dateien: Die Datei ist weg. Das ist der Punkt der
+   Übung — die Art ist eine Sichtbarkeitsgrenze, kein Etikett.
+8. **Die Verwaltung korrigiert nicht.** Bei Olivia gibt es an keiner Datei
+   „Art korrigieren"; an einer organisatorischen Datei gibt es „Löschen".
+9. **Das Protokoll.** Als Jannes Praxis → Auditlog: „Datei gelöscht",
+   „Dokumentart einer Datei korrigiert" und „Löschung in der Ablage quittiert"
+   stehen dort. Auch hier **kein Dateiname und kein Ablageort**.
+10. **Am Handy.** Schritt 1 bis 4 bei ~375 px wiederholen: Die Rückfrage passt
+    ins Bild, die Schaltflächen sind mit dem Daumen erreichbar, kein
+    waagerechtes Scrollen.
+
+**Was hier nicht geprüft werden kann:** ob der Anbieter das Objekt danach
+wirklich überall entfernt — Cache, Replikate, seine eigenen Sicherungen. Das
+ist Prüfpunkt 3 von OPS-001 und aus der Anwendung heraus nicht feststellbar.

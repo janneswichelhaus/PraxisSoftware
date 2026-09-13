@@ -6,8 +6,9 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { oeffneDatei, type PatientFile } from './api';
-import { useDateiUpload, useDateien } from './dateien';
+import { useDateiLoeschen, useDateiUpload, useDateien, useDokumentartKorrigieren } from './dateien';
 import {
   DATEI_ACCEPT,
   dateiAblehnungsgrund,
@@ -199,16 +200,105 @@ function Uploadfeld({ patientId, prescriptionId, arten }: UploadfeldProps) {
 }
 
 /**
+ * Die Dokumentart einer bestehenden Datei korrigieren (DAT-002).
+ *
+ * Aufgeklappt statt in einem Dialog, weil die Folge mitgelesen werden soll:
+ * Die Auswahl zeigt bei jeder Art, wer die Datei danach sieht. ADR-017
+ * Punkt 13 nennt das ausdrücklich keinen Stammdatenvorgang — die Änderung
+ * verschiebt eine Sichtbarkeitsgrenze und wird protokolliert.
+ */
+function Artkorrektur({
+  datei,
+  patientId,
+  arten,
+}: {
+  datei: PatientFile;
+  patientId: string;
+  arten: readonly Dokumentart[];
+}) {
+  const [offen, setOffen] = useState(false);
+  const [art, setArt] = useState<Dokumentart>(datei.document_type as Dokumentart);
+  const korrektur = useDokumentartKorrigieren(patientId);
+
+  // Ein Verordnungsscan braucht eine Verordnung (ADR-017 Punkt 10). Hängt die
+  // Datei an keiner, steht die Art gar nicht erst zur Wahl - der Server würde
+  // sie abweisen, und ein Angebot, das keins ist, ist ein Rätsel (§13).
+  const waehlbar = datei.prescription_id
+    ? arten
+    : arten.filter((eintrag) => eintrag !== 'verordnungsscan');
+
+  if (!offen) {
+    return (
+      <button type="button" onClick={() => setOffen(true)} className={kartenAktionKlassen('quiet')}>
+        Art korrigieren
+      </button>
+    );
+  }
+
+  return (
+    <div className="border-line bg-surface-sunken rounded-card mt-2 w-full border p-3">
+      <Dokumentartauswahl wert={art} onChange={setArt} arten={waehlbar} />
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          type="button"
+          disabled={korrektur.isPending || art === datei.document_type}
+          onClick={() =>
+            korrektur.mutate(
+              { fileId: datei.id, documentType: art },
+              { onSuccess: () => setOffen(false) },
+            )
+          }
+        >
+          {korrektur.isPending ? 'Wird geändert …' : 'Art übernehmen'}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            setArt(datei.document_type as Dokumentart);
+            setOffen(false);
+          }}
+        >
+          Abbrechen
+        </Button>
+      </div>
+      {korrektur.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {korrektur.error.message}
+        </Statusmeldung>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * Eine Zeile der Liste.
  *
  * „Öffnen" erzeugt den Verweis erst beim Tap und öffnet ihn in einem neuen
  * Fenster. Der Verweis lebt 60 Sekunden und ist nicht widerrufbar (ADR-017
  * Punkt 17) — deshalb steht er nirgendwo im Markup und wird nirgends gemerkt.
+ *
+ * „Löschen" nimmt die Datei sofort aus der Akte; das Objekt folgt über den
+ * Löschauftrag (Punkt 25). Genau das sagt die Rückfrage auch — sonst wäre
+ * „gelöscht" ein Wort für zwei verschiedene Zustände.
  */
-function Dateizeile({ datei }: { datei: PatientFile }) {
+function Dateizeile({
+  datei,
+  patientId,
+  darfLoeschen,
+  darfArtKorrigieren,
+  arten,
+}: {
+  datei: PatientFile;
+  patientId: string;
+  darfLoeschen: boolean;
+  darfArtKorrigieren: boolean;
+  arten: readonly Dokumentart[];
+}) {
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
   const art = datei.document_type as Dokumentart;
+  const loeschen = useDateiLoeschen(patientId);
 
   async function oeffnen() {
     setFehler(null);
@@ -251,6 +341,25 @@ function Dateizeile({ datei }: { datei: PatientFile }) {
               {laeuft ? 'Wird geöffnet …' : 'Öffnen'}
             </button>
           )}
+          {darfArtKorrigieren ? (
+            <Artkorrektur datei={datei} patientId={patientId} arten={arten} />
+          ) : null}
+          {darfLoeschen ? (
+            <Rueckfrage
+              ausloeser="Löschen"
+              ausloeserVariante="quiet"
+              bezeichnung={`„${datei.display_name}“ löschen`}
+              bestaetigen="Endgültig löschen"
+              bestaetigenLaeuft="Wird gelöscht …"
+              laeuft={loeschen.isPending}
+              fehler={loeschen.isError ? loeschen.error.message : undefined}
+              onBestaetigen={() => loeschen.mutate(datei.id)}
+            >
+              „{datei.display_name}“ wird sofort aus der Akte entfernt. Die abgelegte Datei selbst
+              wird gelöscht, sobald die Praxisinhaber:in den Löschauftrag ausführt — das steht unter
+              „Aufbewahrung und Löschung". Rückgängig machen lässt sich beides nicht.
+            </Rueckfrage>
+          ) : null}
         </div>
       </div>
 
@@ -302,6 +411,23 @@ export function Dateiliste({
       ? (['befund', 'arztbrief', 'klinisches_bild', 'einwilligung', 'vertrag'] as const)
       : (['einwilligung', 'vertrag'] as const);
 
+  // Beim Korrigieren steht an einer Verordnung mehr zur Wahl als beim Anlegen:
+  // Was dort als Scan liegt, kann ein Arztbrief sein, den jemand am falschen
+  // Ort eingestellt hat. Ein Scan bleibt aber an seine Verordnung gebunden -
+  // Arten, die keine sein können, sind trotzdem wählbar, weil die Datei die
+  // Verordnung behält (ADR-017 Punkt 10); die Datenbank weist nur den
+  // umgekehrten Fall ab.
+  const korrekturarten: readonly Dokumentart[] = canReadClinicalPatientFiles(user.roles)
+    ? ([
+        'verordnungsscan',
+        'befund',
+        'arztbrief',
+        'klinisches_bild',
+        'einwilligung',
+        'vertrag',
+      ] as const)
+    : (['einwilligung', 'vertrag'] as const);
+
   return (
     <>
       {isPending ? <LoadingState label="Dateien werden geladen …" /> : null}
@@ -319,7 +445,16 @@ export function Dateiliste({
       {dateien.length > 0 ? (
         <ul className="flex flex-col">
           {dateien.map((datei) => (
-            <Dateizeile key={datei.id} datei={datei} />
+            <Dateizeile
+              key={datei.id}
+              datei={datei}
+              patientId={patientId}
+              // Löschen folgt demselben Recht wie Hinzufügen (ADR-017
+              // Punkt 13); die Datenbank prüft es noch einmal.
+              darfLoeschen={darfHinzufuegen}
+              darfArtKorrigieren={canReadClinicalPatientFiles(user.roles)}
+              arten={korrekturarten}
+            />
           ))}
         </ul>
       ) : null}

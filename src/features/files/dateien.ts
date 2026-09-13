@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { canReadPatientFiles, type CurrentUser } from '@/features/session/types';
-import { fetchPatientFiles, ladeDateiHoch, type PatientFile, type UploadAuftrag } from './api';
+import {
+  fetchLoeschauftraege,
+  fetchPatientFiles,
+  fuehreLoeschauftragAus,
+  korrigiereDokumentart,
+  ladeDateiHoch,
+  loescheDatei,
+  type Loeschauftrag,
+  type PatientFile,
+  type UploadAuftrag,
+} from './api';
 
 /**
  * Die Dateien einer Akte — für die beiden Stellen, die sie zeigen (DAT-001).
@@ -66,6 +76,96 @@ export function useDateiUpload(patientId: string) {
     mutationFn: (auftrag: UploadAuftrag) => ladeDateiHoch(auftrag),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
+    },
+  });
+}
+
+/**
+ * Löschen und Dokumentart korrigieren (DAT-002).
+ *
+ * Beide machen dieselben Abfragen ungültig wie der Upload: Eine korrigierte
+ * Art ändert, wer die Datei sieht — die Liste an der Verordnung und die der
+ * Akte müssen beide neu geladen werden.
+ */
+export function useDateiLoeschen(patientId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (fileId: string) => loescheDatei(fileId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
+      // Ein gelöschtes Objekt erzeugt einen Auftrag; die Übersicht der
+      // Praxisinhaber:in zeigt ihn ohne Neuladen der Seite.
+      void queryClient.invalidateQueries({ queryKey: ['storage-deletion-orders'] });
+    },
+  });
+}
+
+export function useDokumentartKorrigieren(patientId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ fileId, documentType }: { fileId: string; documentType: string }) =>
+      korrigiereDokumentart(fileId, documentType),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
+    },
+  });
+}
+
+/**
+ * Die offenen Löschaufträge (ADR-017 Punkt 25).
+ *
+ * Sie stehen in „Aufbewahrung und Löschung" neben dem Löschjournal, weil sie
+ * dieselbe Frage von der anderen Seite beantworten: Das Journal sagt, welche
+ * Zeile weg ist, der Auftrag, welches Objekt noch nicht.
+ */
+export function useLoeschauftraege(user: CurrentUser) {
+  const darfSehen = user.roles.includes('owner');
+
+  const abfrage = useQuery({
+    queryKey: ['storage-deletion-orders'],
+    queryFn: () => fetchLoeschauftraege(),
+    enabled: darfSehen,
+    retry: false,
+  });
+
+  return {
+    auftraege: abfrage.data ?? [],
+    isPending: abfrage.isPending,
+    isError: abfrage.isError,
+    verborgen: !darfSehen,
+  };
+}
+
+/**
+ * Führt alle offenen Aufträge nacheinander aus.
+ *
+ * Nacheinander und nicht parallel: Jeder Auftrag spricht mit dem
+ * Objektspeicher, und ein halb durchgelaufener Stapel soll nachvollziehbar
+ * bleiben. Was scheitert, bleibt offen und steht beim nächsten Aufruf wieder
+ * da — es gibt keinen Zustand „in Arbeit", der hängen bleiben könnte.
+ */
+export function useLoeschauftraegeAusfuehren() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (auftraege: Loeschauftrag[]) => {
+      let erledigt = 0;
+      const fehler: string[] = [];
+      for (const auftrag of auftraege) {
+        try {
+          await fuehreLoeschauftragAus(auftrag.id);
+          erledigt += 1;
+        } catch (ursache) {
+          fehler.push((ursache as Error).message);
+        }
+      }
+      return { erledigt, fehler };
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['storage-deletion-orders'] });
+      void queryClient.invalidateQueries({ queryKey: ['patient-files'] });
     },
   });
 }

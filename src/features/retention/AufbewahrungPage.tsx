@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Button } from '@/components/ui/Button';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Section } from '@/components/ui/Section';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardGrid, DataList, DataRow, Disclosure } from '@/components/ui/Card';
@@ -12,6 +14,8 @@ import {
   formatZeitpunkt,
   type Datenklasse,
 } from './api';
+import { useLoeschauftraege, useLoeschauftraegeAusfuehren } from '@/features/files/dateien';
+import type { CurrentUser } from '@/features/session/types';
 
 /**
  * Aufbewahrung und Löschung (LOE-002b).
@@ -168,7 +172,99 @@ function Loeschjournal() {
   );
 }
 
-export function AufbewahrungPage() {
+/**
+ * Offene Löschaufträge für den Objektspeicher (DAT-002, ADR-017 Punkt 25).
+ *
+ * Der Gegenpol zum Löschjournal: Dort steht, welche Zeile weg ist, hier,
+ * welches Objekt noch nicht. Ein Auftrag entsteht automatisch, sobald eine
+ * Dateizeile fällt — durch den Löschlauf, durch eine gelöschte Verordnung
+ * oder von Hand. Ausführen kann ihn nur ein angemeldeter Vorgang, weil eine
+ * Datenbankfunktion kein Objekt löschen kann und eine Edge Function für
+ * produktive Gesundheitsdaten nicht freigegeben ist (ADR-015 Punkt 20).
+ *
+ * **Die Quittung wird verdient, nicht behauptet.** Der Server prüft nach dem
+ * Entfernen selbst, dass das Objekt weg ist; sonst bleibt der Auftrag offen.
+ * Deshalb kann hier nichts als „erledigt" dastehen, was es nicht ist.
+ */
+function Loeschauftraege({ user }: { user: CurrentUser }) {
+  const { auftraege, isPending, isError, verborgen } = useLoeschauftraege(user);
+  const ausfuehren = useLoeschauftraegeAusfuehren();
+
+  if (verborgen) return null;
+  if (isPending) return <LoadingState label="Löschaufträge werden geladen …" />;
+  if (isError)
+    return <ErrorState title="Die offenen Löschaufträge konnten nicht geladen werden." />;
+
+  if (auftraege.length === 0) {
+    return (
+      <EmptyState
+        title="Nichts offen"
+        description="Zu jeder gelöschten Datei ist auch die abgelegte Fassung entfernt und quittiert."
+      />
+    );
+  }
+
+  const ergebnis = ausfuehren.data;
+
+  return (
+    <>
+      <Statusmeldung ton="warnung">
+        {auftraege.length === 1
+          ? 'Eine Datei ist aus der Akte entfernt, liegt aber noch in der Ablage.'
+          : `${auftraege.length} Dateien sind aus der Akte entfernt, liegen aber noch in der Ablage.`}{' '}
+        Erst das Ausführen schließt die Löschung ab.
+      </Statusmeldung>
+
+      <ul className="mt-3">
+        {auftraege.map((auftrag) => (
+          <li key={auftrag.id} className="border-line border-t py-2.5 first:border-t-0">
+            <span className="text-ink text-[0.9375rem]">
+              Ablage „{auftrag.bucket_id}“
+              <span className="text-ink-muted mt-0.5 block text-sm">
+                Beauftragt {formatZeitpunkt(auftrag.ordered_at)} ·{' '}
+                {auftrag.object_present
+                  ? 'Datei liegt noch in der Ablage'
+                  : 'Datei ist bereits weg, nur die Quittung fehlt'}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          disabled={ausfuehren.isPending}
+          onClick={() => ausfuehren.mutate(auftraege)}
+        >
+          {ausfuehren.isPending
+            ? 'Wird ausgeführt …'
+            : `Alle ${auftraege.length} ausführen und quittieren`}
+        </Button>
+      </div>
+
+      {ergebnis && ergebnis.fehler.length > 0 ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {ergebnis.erledigt} erledigt, {ergebnis.fehler.length} offen geblieben:{' '}
+          {ergebnis.fehler[0]}
+        </Statusmeldung>
+      ) : null}
+      {ergebnis && ergebnis.fehler.length === 0 && ergebnis.erledigt > 0 ? (
+        <Statusmeldung className="mt-2">
+          {ergebnis.erledigt} Löschung{ergebnis.erledigt === 1 ? '' : 'en'} abgeschlossen und
+          quittiert.
+        </Statusmeldung>
+      ) : null}
+      {ausfuehren.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {ausfuehren.error.message}
+        </Statusmeldung>
+      ) : null}
+    </>
+  );
+}
+
+export function AufbewahrungPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <PageHeader
@@ -190,6 +286,14 @@ export function AufbewahrungPage() {
         rahmen
       >
         <Loeschsperren />
+      </Section>
+
+      <Section
+        titel="Offene Löschaufträge"
+        hinweis="Dateien, die aus einer Akte entfernt sind, deren abgelegte Fassung aber noch existiert. Die Löschung ist erst mit der Quittung abgeschlossen (ADR-017)."
+        rahmen
+      >
+        <Loeschauftraege user={user} />
       </Section>
 
       <Section

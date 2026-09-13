@@ -17,6 +17,8 @@ import { renderWithProviders, testUser } from '@/test-utils';
 const fetchPatientFiles = vi.fn();
 const ladeDateiHoch = vi.fn();
 const oeffneDatei = vi.fn();
+const loescheDatei = vi.fn();
+const korrigiereDokumentart = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof FilesApi>();
@@ -26,6 +28,9 @@ vi.mock('./api', async (importOriginal) => {
       fetchPatientFiles(id, verordnung) as Promise<FilesApi.PatientFile[]>,
     ladeDateiHoch: (auftrag: FilesApi.UploadAuftrag) => ladeDateiHoch(auftrag) as Promise<string>,
     oeffneDatei: (id: string) => oeffneDatei(id) as Promise<string>,
+    loescheDatei: (id: string) => loescheDatei(id) as Promise<void>,
+    korrigiereDokumentart: (id: string, art: string) =>
+      korrigiereDokumentart(id, art) as Promise<void>,
   };
 });
 
@@ -62,6 +67,8 @@ describe('Dateiliste', () => {
     fetchPatientFiles.mockResolvedValue([]);
     ladeDateiHoch.mockResolvedValue('neu');
     oeffneDatei.mockResolvedValue('https://beispiel.invalid/signiert');
+    loescheDatei.mockResolvedValue(undefined);
+    korrigiereDokumentart.mockResolvedValue(undefined);
   });
 
   it('zeigt Name, Art und Größe einer Datei', async () => {
@@ -293,5 +300,99 @@ describe('Dateiliste', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
 
     expect(await screen.findByText(/„Rezept.pdf“ ist in der Akte./)).toBeInTheDocument();
+  });
+
+  describe('Löschen und korrigieren (DAT-002)', () => {
+    it('löscht erst nach einer Rückfrage und sagt, was mit der Ablage passiert', async () => {
+      fetchPatientFiles.mockResolvedValue([datei()]);
+
+      renderWithProviders(
+        <Dateiliste
+          patientId={PATIENT}
+          user={testUser(['therapist'])}
+          darfHinzufuegen
+          leerHinweis="Nichts da."
+        />,
+      );
+
+      await screen.findByText('Befund Schulter.pdf');
+      await userEvent.click(screen.getByRole('button', { name: 'Löschen' }));
+
+      // Die Rückfrage sagt beide Hälften: sofort aus der Akte, das Objekt
+      // über den Löschauftrag (ADR-017 Punkt 25).
+      expect(screen.getByText(/sofort aus der Akte entfernt/)).toBeInTheDocument();
+      expect(screen.getByText(/Löschauftrag/)).toBeInTheDocument();
+      expect(loescheDatei).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Endgültig löschen' }));
+      await waitFor(() => expect(loescheDatei).toHaveBeenCalledWith('d1'));
+    });
+
+    it('bietet der Verwaltung weder Löschen noch Art korrigieren an', async () => {
+      fetchPatientFiles.mockResolvedValue([
+        datei({ document_type: 'einwilligung', is_clinical: false }),
+      ]);
+
+      renderWithProviders(
+        <Dateiliste
+          patientId={PATIENT}
+          user={testUser(['office'])}
+          darfHinzufuegen={false}
+          leerHinweis="Nichts da."
+        />,
+      );
+
+      await screen.findByText('Befund Schulter.pdf');
+      expect(screen.queryByRole('button', { name: 'Löschen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Art korrigieren' })).not.toBeInTheDocument();
+    });
+
+    it('korrigiert die Dokumentart und zeigt dabei die neue Sichtbarkeit', async () => {
+      fetchPatientFiles.mockResolvedValue([datei()]);
+
+      // Ohne Uploadfeld, damit es genau eine Auswahl „Art des Dokuments" gibt.
+      renderWithProviders(
+        <Dateiliste
+          patientId={PATIENT}
+          user={testUser(['therapist'])}
+          darfHinzufuegen={false}
+          leerHinweis="Nichts da."
+        />,
+      );
+
+      await screen.findByText('Befund Schulter.pdf');
+      await userEvent.click(screen.getByRole('button', { name: 'Art korrigieren' }));
+
+      const auswahl = screen.getByLabelText<HTMLSelectElement>(/Art des Dokuments/);
+      // Die Datei hängt an keiner Verordnung - „Verordnungsscan" steht deshalb
+      // gar nicht zur Wahl (ADR-017 Punkt 10).
+      expect(Array.from(auswahl.options).map((o) => o.value)).not.toContain('verordnungsscan');
+
+      await userEvent.selectOptions(auswahl, 'einwilligung');
+      expect(screen.getByText(/auch für die Verwaltung/)).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Art übernehmen' }));
+      await waitFor(() => expect(korrigiereDokumentart).toHaveBeenCalledWith('d1', 'einwilligung'));
+    });
+
+    it('bietet den Verordnungsscan nur an einer Datei mit Verordnung an', async () => {
+      fetchPatientFiles.mockResolvedValue([datei({ prescription_id: 'v1' })]);
+
+      renderWithProviders(
+        <Dateiliste
+          patientId={PATIENT}
+          user={testUser(['therapist'])}
+          prescriptionId="v1"
+          darfHinzufuegen={false}
+          leerHinweis="Nichts da."
+        />,
+      );
+
+      await screen.findByText('Befund Schulter.pdf');
+      await userEvent.click(screen.getByRole('button', { name: 'Art korrigieren' }));
+
+      const auswahl = screen.getByLabelText<HTMLSelectElement>(/Art des Dokuments/);
+      expect(Array.from(auswahl.options).map((o) => o.value)).toContain('verordnungsscan');
+    });
   });
 });

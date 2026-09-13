@@ -223,3 +223,103 @@ export async function oeffneDatei(fileId: string): Promise<string> {
 
   return signiert.signedUrl;
 }
+
+// -----------------------------------------------------------------------------
+// Löschen und korrigieren (DAT-002)
+// -----------------------------------------------------------------------------
+
+/**
+ * Löscht die Zeile. Das Objekt folgt über den Löschauftrag (ADR-017 Punkt 25).
+ *
+ * Bewusst löscht diese Funktion das Objekt **nicht** gleich mit: Wer die Datei
+ * aus der Akte nimmt, ist selten dieselbe Person, die den Objektspeicher
+ * aufräumt, und der Nachweis hängt an der Quittung. Was hier passiert, ist die
+ * eine Hälfte — und sie ist die, die sofort wirkt.
+ */
+export async function loescheDatei(fileId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('delete_patient_file', {
+    p_file_id: fileId,
+  })) as { error: unknown };
+
+  if (error) throw new Error('Die Datei konnte nicht gelöscht werden. Fehlt die Berechtigung?');
+}
+
+/**
+ * Korrigiert die Dokumentart — und damit, wer die Datei sehen kann.
+ *
+ * Kein Feld unter vielen: ADR-017 Punkt 13 nennt es ausdrücklich einen
+ * protokollierten Vorgang der therapeutischen Rollen, weil es eine
+ * Sichtbarkeitsgrenze verschiebt.
+ */
+export async function korrigiereDokumentart(fileId: string, documentType: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_patient_file_document_type', {
+    p_file_id: fileId,
+    p_document_type: documentType,
+  })) as { error: unknown };
+
+  if (error) throw new Error('Die Dokumentart konnte nicht geändert werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Löschaufträge (DAT-002, ADR-017 Punkt 25)
+// -----------------------------------------------------------------------------
+
+const loeschauftragSchema = z.object({
+  id: z.string(),
+  bucket_id: z.string(),
+  ordered_at: z.string(),
+  object_present: z.boolean(),
+});
+
+export type Loeschauftrag = z.infer<typeof loeschauftragSchema>;
+
+export async function fetchLoeschauftraege(): Promise<Loeschauftrag[]> {
+  const { data, error } = (await getSupabase().rpc('list_storage_deletion_orders')) as {
+    data: unknown;
+    error: unknown;
+  };
+
+  if (error) throw new Error('Die offenen Löschaufträge konnten nicht geladen werden.');
+  return z.array(loeschauftragSchema).parse(data ?? []);
+}
+
+const auftragsschluesselSchema = z.object({
+  bucket_id: z.string(),
+  object_key: z.string(),
+});
+
+/**
+ * Führt einen Löschauftrag aus: Objekt entfernen, dann quittieren.
+ *
+ * Die Quittung wird **verdient**, nicht behauptet — `receipt_storage_deletion_order`
+ * prüft selbst, dass das Objekt weg ist, und verweigert sonst. Diese Funktion
+ * kann deshalb nicht so scheitern, dass am Ende eine Quittung ohne Löschung
+ * steht; sie kann nur scheitern, und dann bleibt der Auftrag offen.
+ */
+export async function fuehreLoeschauftragAus(orderId: string): Promise<void> {
+  const { data, error } = (await getSupabase().rpc('claim_storage_deletion_order', {
+    p_order_id: orderId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Der Löschauftrag konnte nicht ausgeführt werden.');
+  const auftrag = z.array(auftragsschluesselSchema).parse(data ?? [])[0];
+  if (!auftrag) throw new Error('Der Löschauftrag ist nicht mehr offen.');
+
+  const { error: entfernenFehler } = await getSupabase()
+    .storage.from(auftrag.bucket_id)
+    .remove([auftrag.object_key]);
+
+  if (entfernenFehler) {
+    throw new Error('Die Datei konnte in der Ablage nicht entfernt werden.');
+  }
+
+  const { error: quittungsFehler } = (await getSupabase().rpc('receipt_storage_deletion_order', {
+    p_order_id: orderId,
+  })) as { error: unknown };
+
+  if (quittungsFehler) {
+    throw new Error(
+      'Die Ablage meldet die Datei weiterhin als vorhanden. Der Auftrag bleibt offen.',
+    );
+  }
+}
