@@ -11,7 +11,7 @@ Testdaten; ein Produktivbetrieb ist ausdrücklich nicht freigegeben.
 | Dokument                                                               | Inhalt                                              |
 | ---------------------------------------------------------------------- | --------------------------------------------------- |
 | [`PROJECT_PRINCIPLES.md`](PROJECT_PRINCIPLES.md)                       | Produkt-, Sicherheits- und Datenschutzprinzipien    |
-| [`docs/adr/`](docs/adr/)                                               | Architecture Decision Records (ADR-001 bis ADR-016) |
+| [`docs/adr/`](docs/adr/)                                               | Architecture Decision Records (ADR-001 bis ADR-019) |
 | [`docs/decisions/OPEN_DECISIONS.md`](docs/decisions/OPEN_DECISIONS.md) | offene Entscheidungen                               |
 | [`docs/decisions/ASSUMPTIONS.md`](docs/decisions/ASSUMPTIONS.md)       | begründete, vorläufige Annahmen                     |
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)                           | Einrichtung, Testkonten, Einschränkungen            |
@@ -42,7 +42,7 @@ supabase/
 tests/e2e/         Playwright
 docs/adr/          Architecture Decision Records
 docs/decisions/    offene Entscheidungen und Annahmenregister
-docs/development/  Roadmap, Arbeitsbereiche, Entwicklungs-Workflow
+docs/development/  Roadmap, Arbeitsbereiche, Befunde, Entwicklungs-Workflow
 docs/abnahme/      manuelle Prüfschritte je Feature
 docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)
 ```

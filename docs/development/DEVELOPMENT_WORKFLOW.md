@@ -20,10 +20,13 @@ Bericht am Ende macht den nächsten Einstieg billig.
 
 ## Zuschnitt eines Loops
 
-Ein Loop umfasst ein **Epic**: eine zusammenhängende Fähigkeit von der
-Datenbank bis zur Oberfläche, geschnitten in Stories. Nicht „Terminplanung",
-aber auch nicht nur „Termin anlegen" — sondern „Termine anlegen, bearbeiten,
-absagen und im Kalender zeigen", als drei oder vier Stories in einem Loop.
+Ein Loop umfasst in der Regel ein **Epic**: eine zusammenhängende Fähigkeit
+von der Datenbank bis zur Oberfläche, geschnitten in Stories. Nicht
+„Terminplanung", aber auch nicht nur „Termin anlegen" — sondern „Termine
+anlegen, bearbeiten, absagen und im Kalender zeigen", als drei oder vier
+Stories in einem Loop. Befunde, Korrekturen und Folgeaufträge (`FIX-`,
+`CAL-01x`) dürfen als Einzel-Story-Loop laufen; die Regel dafür steht in
+`CLAUDE.md` und im Skill.
 
 Die Einheit des Reviews bleibt die **Story**: ein Commit, ein vertikaler
 Schnitt, ein Diff, der sich am Stück lesen lässt. Genau dort sitzen die
@@ -60,11 +63,10 @@ wer abrechnet. Es stimmt nicht für Aufbewahrungsfristen, Rechtsgrundlagen,
 Auditumfang oder Datenminimierung im Detail. Dort blockierte die Rückfrage,
 ohne eine bessere Antwort zu liefern.
 
-Seit Version 0.3 der Prinzipien gilt §15.1: **recherchieren, entscheiden,
-dokumentieren, reversibel verankern, validieren lassen.** Die Annahme steht im
-Annahmenregister `docs/decisions/ASSUMPTIONS.md` mit Begründung, Quellen,
-Verankerung im Code und Änderungspfad; die Codestelle trägt die Kennung
-`ANN-NNN`.
+Seit Version 0.3 der Prinzipien gilt §15.1 (Verfahren dort, Kurzfassung in
+`CLAUDE.md`). Die Annahme steht im Annahmenregister
+`docs/decisions/ASSUMPTIONS.md` mit Begründung, Quellen, Verankerung im Code
+und Änderungspfad; die Codestelle trägt die Kennung `ANN-NNN`.
 
 Das Register ist der Mechanismus, der eine falsche Annahme billig macht: Die
 Datenschutzprüfung liest die Einträge, nicht den Code, und sieht je Eintrag,
@@ -72,13 +74,10 @@ was eine Änderung kostet. Eine Annahme, die nur an einer Stelle greift, ist
 in einer Migration korrigiert. Deshalb ist „reversibel verankern" eine
 Entwurfsregel und nicht nur eine Dokumentationspflicht.
 
-Was bleibt ein Stopp? Die Liste in §15.1 ist abschließend: Widerspruch zu
-einer MUSS-Anforderung, Aufweichen einer Sicherheitsmaßnahme oder eines
-Gates, alles rund um echte Daten, Produktionscredentials, Secrets und
-Deployment, und Entscheidungen, deren Rücknahme einen großen Umbau bedeuten
-würde. Dort ist eine klare Frage billiger als drei Runden in die falsche
-Richtung. Überall sonst ist eine dokumentierte Annahme billiger als eine
-Frage, die niemand beantworten kann.
+Was bleibt ein Stopp? Die Liste in §15.1 ist abschließend (Wortlaut dort).
+Dort ist eine klare Frage billiger als drei Runden in die falsche Richtung.
+Überall sonst ist eine dokumentierte Annahme billiger als eine Frage, die
+niemand beantworten kann.
 
 ## Die Datenschutzprüfung
 
@@ -135,13 +134,12 @@ Ersatz — und bei sicherheitsrelevanten Änderungen keine Kür.
 
 ## Stoppen und eskalieren
 
-Der Loop bricht ab und fragt, statt zu improvisieren, wenn:
-
-- eine Sicherheitsanforderung aufgeweicht werden müsste
-- ein Test nur durch Abschwächung erfüllbar wäre
-- eine Festlegung in die Hard-Stop-Liste aus §15.1 fällt
-- ein Widerspruch zwischen Prinzipien und ADR sich nicht nach Rang auflösen
-  lässt
+Der Loop bricht ab und fragt, statt zu improvisieren, wenn eine Festlegung
+in die Hard-Stop-Liste aus §15.1 fällt — etwa eine Sicherheitsanforderung
+aufgeweicht oder ein Test abgeschwächt werden müsste — oder wenn zwei
+Dokumente **gleichen Rangs** sich widersprechen und die Wahl später teuer
+zurückzunehmen wäre. Ein Widerspruch zwischen Rängen ist kein Stopp: Er
+wird nach Rang aufgelöst und als Annahme registriert (`CLAUDE.md`).
 
 Dieselbe Ursache nach drei Reparaturversuchen ist kein Abbruch des Loops,
 sondern eine unvollständige Story im Bericht: Die übrigen Stories werden
@@ -149,3 +147,23 @@ fertiggestellt, die offene mit Ursache und Stand benannt.
 
 Ein Abbruch mit klarer Frage ist billiger als drei Runden in die falsche
 Richtung — aber nur dort, wo die Frage beantwortbar ist.
+
+## Wer ändert welches Steuerungsdokument
+
+| Dokument | Loop (`/feature-loop`) | Docs-Session, Planungssession | Ablaufrunde (eingefroren bis Probewoche 1) | Wochenupdate |
+| --- | --- | --- | --- | --- |
+| `ROADMAP.md` | Fortschrittstabelle, „Nächster Loop", `fortschritt.json` (Schritt I) | nachstellen, neue Zeilen als Vorschlag | nur als Diff, den Jannes freigibt | liest nur |
+| `OPEN_DECISIONS.md` | Verweis auf neue `ANN`-Kennungen | Entscheidungen von Jannes eintragen | — | liest nur |
+| `ASSUMPTIONS.md` | neue Annahmen sofort (Schritt D) | Bestätigungen, Nachträge | — | — |
+| `BEFUNDE.md` | bearbeitete Befunde als erledigt | neue Befunde aus Abnahmen und Reviews | Bruchstellen als Befunde | — |
+| Ideenspeicher | neue Ideen als `vorschlag` | Ideen von Jannes als `notiert` | Ziel 3 („Idee") | — |
+| Prinzipien, ADRs | nie ohne Auftrag (§21) | auf Auftrag, eigener Commit | nie | nie |
+
+## Merge und Abnahme
+
+Ein Pull Request wird gemergt, sobald die CI grün ist — Docs wie Code, gern
+über „Auto-Merge" (entschieden 2026-09-13). Die Abnahme durch Jannes folgt
+binnen sieben Tagen am eigenen Rechner nach `docs/abnahme/`; Befunde daraus
+kommen nach `BEFUNDE.md` und als erste Story in den nächsten Loop derselben
+Spur (Roadmap, R6). So bleibt „ein aktiver Feature-Branch" einhaltbar, und
+gemergte Branches werden gelöscht.

@@ -7,8 +7,9 @@ disable-model-invocation: true
 # Feature Loop
 
 Ablauf für **einen Auftrag**: in der Regel ein Epic aus mehreren
-zusammengehörigen Stories, mindestens ein vollständiger vertikaler Schnitt. Am
-Ende wird gestoppt.
+zusammengehörigen Stories; ein Einzel-Story-Loop ist zulässig für Befunde,
+Korrekturen und Folgeaufträge (`FIX-`, `CAL-01x`) — auch dann ein
+vollständiger vertikaler Schnitt. Am Ende wird gestoppt.
 
 Die inhaltlichen Regeln stehen in `CLAUDE.md`, `PROJECT_PRINCIPLES.md` und den
 ADRs. Dieser Skill wiederholt sie nicht — er beschreibt nur die Reihenfolge,
@@ -38,9 +39,12 @@ Aus dem Auftrag ableiten und kurz festhalten:
   Auditpflicht, Datenminimierung, Datenklasse und Frist neuer Tabellen
 - **Relevante ADRs** — Nummern, nach dem Index in `CLAUDE.md`
 - **UI-Erwartung**, falls die Oberfläche betroffen ist
-- **Ablaufkarten-Hinweis** — steht in der Roadmap-Zeile des Epics ein Hinweis
-  „Ablaufkarte … AC aus …", werden die dort genannten Akzeptanzkriterien und
-  die Zielzeile übernommen; die Ablaufkarte selbst wird nicht gelesen
+- **Befunde** — offene Einträge in `docs/development/BEFUNDE.md` zum Bereich
+  des Epics werden als erste Story übernommen (Roadmap-Regel R6); steht in
+  der Roadmap-Zeile ein Hinweis „Ablaufkarte … AC aus …", werden die dort
+  genannten Akzeptanzkriterien übernommen, die Karte selbst wird nicht gelesen
+- **`IDEA-`-Verweise** in der Roadmap-Zeile nennen die Herkunft der Idee und
+  importieren nichts; der Scope entsteht hier
 - **Annahmen** — jede Festlegung, die Auftrag, Prinzipien und ADRs nicht
   treffen, wird hier als `ANN-NNN` vorgemerkt (Abschnitt „Annahmen statt
   Rückfragen" in `CLAUDE.md`)
@@ -183,15 +187,15 @@ Ursache und Stand für den Bericht festhalten, die betroffene Story als
 unvollständig kennzeichnen und mit den Stories weitermachen, die nicht davon
 abhängen.
 
-Sofort stoppen und berichten, wenn:
+Sofort stoppen und berichten, wenn eine Festlegung in die abschließende
+Hard-Stop-Liste fällt (`PROJECT_PRINCIPLES.md` §15.1, Kurzfassung in
+`CLAUDE.md`) — insbesondere:
 
 - eine Sicherheits- oder Datenschutzanforderung aufgeweicht werden müsste
 - eine Testanforderung nur durch Abschwächung des Tests erfüllbar wäre
-- eine Festlegung nötig würde, die in die Hard-Stop-Liste fällt
-  (`PROJECT_PRINCIPLES.md` §15.1): neuer Anbieter, Deployment, großer Umbau,
-  Widerspruch zu einer MUSS-Anforderung
-- ein Widerspruch zwischen Prinzipien und ADR sich nicht nach Rang auflösen
-  lässt (`CLAUDE.md`)
+- ein Widerspruch zwischen zwei Dokumenten **gleichen Rangs** besteht und
+  die Wahl später teuer zurückzunehmen wäre (ein Widerspruch zwischen
+  Rängen wird nach Rang aufgelöst und als Annahme registriert, `CLAUDE.md`)
 
 Eine fehlende Fach- oder Datenschutzentscheidung ist **kein** Stoppgrund — sie
 wird als Annahme getroffen. Eine Scope-Erweiterung ist kein Stoppgrund, wenn
@@ -199,7 +203,7 @@ die Akzeptanzkriterien des Epics sie brauchen; sie wird gebaut und im Bericht
 benannt. Wäre sie ein eigenes Epic, wird sie vorgeschlagen, nicht gebaut.
 
 Tests, RLS-Policies, Secret-Scanning und andere Security-Gates werden **niemals**
-abgeschwächt, um grün zu werden. Das ist keine Ermessensfrage.
+abgeschwächt, um grün zu werden (`PROJECT_PRINCIPLES.md` §12).
 
 ## H. FINAL VERIFY
 
@@ -227,9 +231,13 @@ Kompakt berichten:
 9. Was das logisch nächste Epic wäre — als Vorschlag mit Zuschnitt
 
 Dann in `docs/development/ROADMAP.md` den Eintrag in der Fortschrittstabelle
-auf `fertig` setzen, mit Datum und Commit, und den Abschnitt „Nächster Loop"
-auf den folgenden Eintrag der Roadmap stellen. Ein Eintrag ohne durchlaufenen
-Schritt I wird nicht abgehakt.
+auf `fertig` setzen, mit Datum und Commit, den Posten in
+`docs/development/fortschritt.json` auf `fertig`, den Abschnitt „Nächster
+Loop" auf den folgenden Eintrag stellen (er trägt nur den Livestand; was
+fertig wurde, kommt in den Änderungsvermerk) und bearbeitete Befunde in
+`docs/development/BEFUNDE.md` als erledigt markieren. Ein Eintrag ohne
+durchlaufenen Schritt I wird nicht abgehakt. Der Pull Request wird gemergt,
+sobald die CI grün ist; die Abnahme durch Jannes folgt danach.
 
 **Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein
 neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.

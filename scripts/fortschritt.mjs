@@ -15,10 +15,11 @@
 // externe Anfragen. Deshalb stehen Software (Bloecke A und B) mit 40 Prozent
 // und Betrieb, Eroeffnung und Entscheidungen mit 60 Prozent im Modell.
 //
-// Ein gebauter, aber nicht abgenommener Loop zaehlt 0,85 - fertig ist er erst
-// mit der Abnahme (Definition of Done in ROADMAP.md). Eine von Jannes
-// vorlaeufig entschiedene Frage zaehlt 0,5, weil sie das Bauen loest, fuer
-// M3 aber nicht zaehlt (Spur B).
+// Ein fertig gebauter, aber nicht abgenommener Loop zaehlt 0,85 - "abgenommen"
+// ist er erst, wenn Jannes docs/abnahme/ durchlaufen hat (Definition of Done
+// in ROADMAP.md; die Stufen heissen wie in der Fortschrittstabelle dort). Eine
+// von Jannes vorlaeufig entschiedene Frage zaehlt 0,5, weil sie das Bauen
+// loest, fuer M3 aber nicht zaehlt (Spur B).
 //
 // Die Zahlen sind eine Schaetzung mit offengelegtem Modell, keine Messung.
 // Gepflegt wird docs/development/fortschritt.json - am Ende eines Loops,

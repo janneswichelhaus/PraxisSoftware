@@ -33,7 +33,8 @@ Widerspricht ein ADR den Prinzipien, ist das ein Fehler und wird gemeldet,
 nicht stillschweigend aufgelöst (`PROJECT_PRINCIPLES.md` §21).
 
 Was noch **nicht** entschieden ist, steht in `decisions/OPEN_DECISIONS.md`.
-Dieses Dokument entscheidet nichts davon.
+Jenes Dokument hat keinen Rang und entscheidet nichts; dieses hier auch
+nicht.
 
 ---
 
@@ -130,9 +131,11 @@ Das langfristige Zielbild umfasst:
 - Erstattungen und Belege
 - Fahrradflotte, Wartung und Pannenmanagement
 - Plattform für Patient:innen und für Kund:innen des Personal Trainings:
-  Trainingspläne, Check-ins, Fortschritt, Assessments, Gewohnheiten,
-  Ernährungsprotokoll, Chat (Präzisierung vom 06.09.2026; Themenliste in
-  `product/ideen/referenz-navigation.md`)
+  Trainingspläne, Check-ins, Fortschritt, Assessments, Gewohnheiten, Chat
+  (Präzisierung vom 06.09.2026; Themenliste in
+  `product/ideen/referenz-navigation.md`). Ein Ernährungsprotokoll ist mit
+  B9 Punkt 6 (2026-09-08) vorerst ausgeschlossen — berufsrechtliche Frage,
+  keine Softwarefrage.
 
 **Diese Liste ist eine langfristige Orientierung.** Sie trifft keine Aussage
 über Reihenfolge, Priorität oder bereits freigegebenen Scope. Kein Eintrag
@@ -188,7 +191,8 @@ zugehörigen Fragen zu Identitätsprüfung und Vertretung sind in
 Dieselbe Plattform ist das Zielbild für die **Kund:innen des Personal
 Trainings** — nach Abschluss einer Therapie und auch ohne vorherige
 Heilbehandlung (Präzisierung vom 06.09.2026): Trainingspläne, Check-ins,
-Fortschritt, Assessments, Gewohnheiten, Ernährungsprotokoll, Chat. Vorlage
+Fortschritt, Assessments, Gewohnheiten, Chat — ein Ernährungsprotokoll erst
+nach einer neuen Entscheidung (B9 Punkt 6: vorerst nicht). Vorlage
 für den Umfang ist der Funktionsumfang einer fremden Coaching-Software
 (`product/ideen/referenz-navigation.md`); das Personal Training beginnt
 ebenfalls am 01.07.2027, die Plattform dafür folgt in Stufe 3. Für sie

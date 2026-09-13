@@ -1,6 +1,16 @@
 # Optimierung der Arbeitsbereiche
 
-Stand 2026-09-06 · Steuerungsdokument ohne Inhaltsrang, wie `ROADMAP.md`.
+Stand 2026-09-13 · Steuerungsdokument ohne Inhaltsrang, wie `ROADMAP.md`.
+
+> **Eingefroren bis Probewoche 1** (Entscheidung Jannes, 2026-09-13, nach der
+> Abbruchregel in Abschnitt 12: die Runden „Kalender vor CAL-EPIC-003a" und
+> „Patient:innen nach VER-EPIC-001" sind nicht gelaufen). Bis dahin gelten
+> weiter: der Praxistest-Bogen vor jedem Loop mit Oberfläche, die
+> Oberflächen-Checkliste (`docs/abnahme/README.md`) und das Praxistagebuch.
+> Befunde an der laufenden Anwendung sammelt
+> [`BEFUNDE.md`](BEFUNDE.md). Scorecard und Ablaufkarten ruhen; die
+> Scorecard unten ist der Schätzstand vom 2026-09-06, **vor** UX-EPIC-001,
+> CAL-EPIC-003 und den Umbauten vom 12.09., und wurde nicht nachgemessen.
 
 **Zweck.** Dieses Dokument sagt, wie die Arbeitsbereiche und Oberflächen der
 Praxissoftware gemessen und verbessert werden: in **Ablaufrunden** je Bereich,
@@ -155,11 +165,11 @@ nur die Logik:
 
 | Anlass | Format | Bereiche |
 | --- | --- | --- |
-| vor dem Loop eines Bereichs | Vollrunde | Kalender vor CAL-EPIC-003a · Patient:innen nach VER-EPIC-001 · Abrechnung vor ABR-EPIC-002a · Übersicht nach CAL-EPIC-003a (speist E2 und UI-001) |
+| vor dem Loop eines Bereichs | Vollrunde | ~~Kalender vor CAL-EPIC-003a · Patient:innen nach VER-EPIC-001~~ (nicht gelaufen; Methode eingefroren 2026-09-13) · nach Probewoche 1 neu terminieren: Abrechnung, Übersicht (speist E2 und UI-001) |
 | vor dem Go-live-Gate (M3) | Messrunde mit Schattentag, Ladeprobe und Kollegin-Test | alle gemessenen Bereiche |
 | vier Wochen nach der Eröffnung (M6, 31.07.2027) | Messrunde mit Praxistagebuch und Störfallliste; Vollrunde für die zwei schlechtesten Bereiche | alle |
 | jährlich | Messrunde alle, Vollrunde zwei; Abläufe streichen, die niemand mehr hat | alle |
-| ein Vorschaubereich wird echt | Vollrunde vier Wochen nach seinem Loop | Team, Betrieb, Touren (nach TOUR-EPIC-001a, Mai 2027) — **keine Runde vorher**; eine Vorschau zu messen, misst die Vorlage |
+| ein Vorschaubereich wird echt | Vollrunde vier Wochen nach seinem Loop | Kommunikation, Organisatorisches, Touren (nach MAP-006, Mai 2027) — **keine Runde vorher**; eine Vorschau zu messen, misst die Vorlage |
 
 Eine Runde ersetzt keinen Loop und verschiebt keinen. Was sie findet, landet in
 geplanten Epics, in „Befunde aus der Abnahme" (Jan 2027) oder in `UI-001`
@@ -167,20 +177,19 @@ geplanten Epics, in „Befunde aus der Abnahme" (Jan 2027) oder in `UI-001`
 
 ## 5. Automatische Prüfungen
 
-Das billige, wiederholbare Messinstrument. Sie entstehen als Stories im ersten
-Loop, der sie braucht (Vorschlag: „Befunde aus der Abnahme"); eine Runde baut
-sie nicht.
+Das billige, wiederholbare Messinstrument. **Stand 2026-09-13: gebaut** —
+mit UI-000 und FIX-EPIC-003, nicht in einer Runde.
 
-- **375-px-E2E je Kernpfad** (Playwright, Projekt `mobile`): zählt Taps im
-  Seed-Szenario, prüft Querscrollen und Tippziele ≥ 44 px. Nur lokal — in der
-  Cloudumgebung gibt es kein GoTrue.
-- **Kontrast-Test der Tokens**: ein Unit-Test rechnet die Kontraste aus
-  `src/index.css` und schlägt unter 4,5:1 fehl.
-- **grep-Prüfungen**: keine Roh-Farbwerte in `src/features/`, keine
-  Inline-Bausteine (Button, Select, Badge) neben `src/components/ui`.
-- **axe** (`@axe-core/playwright`): findet grob ein Drittel der
-  Barrierefreiheitsprobleme, ist aber eine neue Dev-Abhängigkeit — **eine
-  Entscheidung für Jannes**, keine Annahme. Empfehlung: ja.
+- **375-px-E2E je Kernpfad** (Playwright, Projekt `mobile` in
+  `playwright.config.ts`): prüft Querscrollen und Tippziele ≥ 44 px. Nur
+  lokal und im CI-Job `e2e-supabase` — in der Cloudumgebung gibt es kein
+  GoTrue.
+- **Kontrast-Test der Tokens**: `src/lib/kontrast.test.ts` rechnet die
+  Kontraste aus `src/index.css` und schlägt unter 4,5:1 fehl.
+- **Screenshot-Helfer** `pnpm screenshots` (UI-000) meldet waagerechtes
+  Scrollen und Konsolenfehler.
+- **axe** (`axe-core`, entschieden 2026-09-06): `src/barrierefreiheit.test.tsx`
+  läuft in `pnpm test`.
 
 ## 6. Scorecard
 
@@ -223,19 +232,19 @@ Bereichsreibung (geschätzt): 25.
 Bereichsreibung (geschätzt): 8. Datensparsamkeit (Office sieht nichts
 Klinisches) bleibt Testfall in `test:db` und E2E, kein Score.
 
-**Abrechnung, Betrieb, Team** — Zielwerte stehen fest, gemessen wird nach dem
-jeweiligen Loop
+**Abrechnung, Organisatorisches, Kommunikation** (bis 12.09. „Betrieb" und
+„Team") — Zielwerte stehen fest, gemessen wird nach dem jeweiligen Loop
 
 | Bereich | Kernaufgabe | Zielwert | heute | Gew. | Score |
 | --- | --- | --- | --- | --- | --- |
 | Abrechnung | Rechnung aus dokumentierten Terminen einer Person | ≤ 60 s, keine Tastatur außer Empfänger-Auswahl | Vorschau bis ABR-EPIC-002 | 2 | — |
 | Abrechnung | Offene Posten sehen | 0 Taps auf der Einstiegsseite | Vorschau | 2 | — |
 | Abrechnung | Zahlung buchen | ≤ 3 Taps, Teilzahlung ohne Sonderweg | Vorschau | 2 | — |
-| Betrieb | Abwesenheit oder Arbeitszeit ändern | ≤ 30 s, Wirkung im Kalender sofort sichtbar | funktional (`/praxis/planung`) | 1 | ? |
-| Betrieb | „Wer hat wann Akte X geöffnet?" (`owner`) | ≤ 30 s über Filter | funktional (`/praxis/sicherheit/audit`) | 1 | ? |
-| Betrieb | Panne melden (FLT-003) | einhändig, im Regen, ≤ 3 Taps bis „Hilfe unterwegs" | Vorschau, Stufe 2 | 2 | — |
-| Team | Kollegin erreichen | ≤ 2 Taps bis `tel:` | Mitarbeiterliste funktional, Kontakt ist Text | 2 | ? |
-| Team | Nachricht mit Bezug auf Termin oder Patient:in (TEAM-001) | ≤ 3 Taps; Bezug ist ein Link, der keine Berechtigung erweitert | Vorschau, Stufe 2 | 2 | — |
+| Organisatorisches | Abwesenheit oder Arbeitszeit ändern | ≤ 30 s, Wirkung im Kalender sofort sichtbar | funktional (`/praxis/planung`) | 1 | ? |
+| Organisatorisches | „Wer hat wann Akte X geöffnet?" (`owner`) | ≤ 30 s über Filter | funktional (`/praxis/sicherheit/audit`) | 1 | ? |
+| Organisatorisches | Panne melden (FLT-003) | einhändig, im Regen, ≤ 3 Taps bis „Hilfe unterwegs" | Vorschau, Stufe 2 | 2 | — |
+| Kommunikation | Kollegin erreichen | ≤ 2 Taps bis `tel:` | Mitarbeiterliste funktional, Kontakt seit UX-012 als `tel:` | 2 | ? |
+| Kommunikation | Nachricht mit Bezug auf Termin oder Patient:in (TEAM-001) | ≤ 3 Taps; Bezug ist ein Link, der keine Berechtigung erweitert | Vorschau, Stufe 2 | 2 | — |
 
 Doppelabrechnung und Storno-Nachvollziehbarkeit sind Testfälle (ADR-009).
 
@@ -376,36 +385,13 @@ Bereich ohne Einweisung nutzbar: ja / nein — weil: … (ein Abbruch zählt als
 
 ## 9. Oberflächen-Checkliste je Story
 
-Wortgleich für `docs/abnahme/README.md`; dort ist sie die Review-Checkliste,
-die ADR-013 Nr. 8 verlangt.
-
-```markdown
-## Oberflächen-Checkliste je Story
-
-Für jede Story mit Oberflächenanteil, abgehakt in Schritt F des Loops.
-Abweichungen werden im Bericht begründet und in der nächsten Ablaufrunde
-(`docs/development/OPTIMIERUNG.md`) als Befund geführt.
-
-1. Bei 375 px vollständig bedienbar: kein horizontales Scrollen, Tippziele
-   mindestens 44 px, Primäraktion einhändig erreichbar.
-2. Nur Bausteine aus `src/components/ui` und Tokens aus `src/index.css`;
-   fehlt ein Baustein, entsteht er dort — nur für Module, die der Auftrag
-   berührt.
-3. Jedes Feld hat Label und Fehlertext, verbunden über `aria-describedby`;
-   Laden, Leer und Fehler laufen über `Feedback.tsx`.
-4. Farbe ist nie allein Bedeutungsträger; der Zustand steht als Text.
-5. Formulare mit mehr als einem Feld schützen ungespeicherte Eingaben — auch
-   bei Zurück, Neuladen und Sitzungsverlust.
-6. Die Fehlermeldung sagt, was zu tun ist, ohne interne Details; keine
-   Erfolgsmeldung, die nicht stattfand.
-7. Tastatur: alles erreichbar, sinnvolle Reihenfolge, Fokus nach Dialog und
-   Aktion gesetzt.
-8. Kontakt ist Aktion, nicht Text: `tel:`, `mailto:`, Adresse kopierbar.
-9. Wörter ohne Fachjargon-Falle und ohne Coaching-Begriffe (`IDEA-QSN-007`);
-   gleiche Sache, gleiches Wort.
-10. Je Kernpfad ein Test bei 375 px; der Abnahmeschritt enthält einen Schritt
-    am Handy und den Zielwert der Story als Zahl.
-```
+Die Checkliste steht **einmal**, in `docs/abnahme/README.md` (Abschnitt
+„Oberflächen-Checkliste je Story"), und wird dort gepflegt; die frühere Kopie
+an dieser Stelle war seit UI-000 nicht mehr wortgleich. Sie ist die
+Oberflächen-Checkliste für Schritt F des Loops — **nicht** die
+Review-Checkliste für kritische Änderungen, die ADR-013 Nr. 8 verlangt; die
+fehlt weiterhin (Eigentümer OPS-002, Entwurf im Graph-Engineering-Workflow
+vom 2026-09-13).
 
 ## 10. Verankerung
 
@@ -443,9 +429,9 @@ er etwas weiß. Zwischen Gate und Eröffnung kommen eine Vollrunde Touren (nach
 TOUR-EPIC-001a) und ein Schattentag mit der Tagesroute hinzu.
 
 Sieben kleine Ergänzungen verankern die Methode (Abschnitt 10); sie sind mit
-dem Review vom 2026-09-06 eingetragen. Die Roadmap-Zeilen und der Zusatz im
-Go-live-Gate (G18) sind seit Roadmap 2.1 (2026-09-06, Entscheidung E-11)
-ebenfalls eingetragen.
+dem Review vom 2026-09-06 eingetragen und seit dem 2026-09-13 auf den Stand
+der Einfrierung gebracht (CLAUDE.md und SKILL.md verweisen auf `BEFUNDE.md`;
+die Checklisten-Kopie in Abschnitt 9 ist durch einen Verweis ersetzt).
 
 ## 12. Grenzen und Abbruchregel
 
@@ -492,4 +478,5 @@ ebenfalls eingetragen.
   n = 1 bis 3 täuschen sie Genauigkeit vor. **Keine Runde für Vorschaubereiche,
   kein zweiter Skill, kein ADR, keine Änderung an Prinzipien oder Hierarchie.**
 
-Zuletzt aktualisiert: 2026-09-06
+Zuletzt aktualisiert: 2026-09-13 (eingefroren bis Probewoche 1; Bereichsnamen,
+Abschnitt 5 und 9 nachgezogen)
