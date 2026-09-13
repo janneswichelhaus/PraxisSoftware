@@ -129,6 +129,31 @@ export function canWritePrescriptions(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Rollen mit Zugriff auf die Dateien einer Akte (DAT-001, ADR-017 Punkt 12).
+ *
+ * Alle vier Praxisrollen - aber office sieht nur die ORGANISATORISCHEN
+ * Dokumentarten. Welche das sind, entscheidet der Katalog in der Datenbank;
+ * verbindlich sind app.can_read_patient_files() und
+ * app.can_see_patient_file_type(). Diese Funktion steuert nur, ob der Bereich
+ * in der Akte ueberhaupt auftaucht.
+ */
+export function canReadPatientFiles(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => directoryRoles.includes(role));
+}
+
+/**
+ * Rollen, die klinische Dateien sehen duerfen (ADR-017 Punkt 12).
+ *
+ * Ohne office - und das schliesst den Verordnungsscan ein, obwohl office die
+ * Verordnungsdaten organisatorisch sieht (ANN-011): Ein Scan zeigt das ganze
+ * Blatt samt Diagnose und laesst sich nicht projizieren. Verbindlich ist
+ * app.can_read_clinical_patient_files().
+ */
+export function canReadClinicalPatientFiles(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => clinicalReadRoles.includes(role));
+}
+
+/**
  * Rollen, die den Abschluss der Versorgung setzen duerfen (LOE-001b).
  *
  * Wie beim Schreiben von Verordnungen: owner, therapist, team_lead - ohne

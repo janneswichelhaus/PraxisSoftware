@@ -10,6 +10,7 @@ import { AkteEinstieg, PatientRecordLayout } from '@/features/patients/PatientRe
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
 import { PatientPrescriptionsPage } from '@/features/prescriptions/PatientPrescriptionsPage';
+import { PatientFilesPage } from '@/features/files/PatientFilesPage';
 import { PatientCoursePage } from '@/features/documentation/PatientCoursePage';
 import { PrescribersListPage } from '@/features/prescriptions/PrescribersListPage';
 import { EditPrescriberPage, NewPrescriberPage } from '@/features/prescriptions/PrescriberFormPage';
@@ -128,8 +129,8 @@ export function AuthenticatedRoutes({
               <>
                 <Route path="/patienten" element={<PatientsListPage />} />
                 <Route path="/patienten/neu" element={<NewPatientPage />} />
-                {/* Die Akte ist ein Rahmen mit vier Bereichen (AKTE-000, seit
-                  UI-002a ohne „Übersicht"). Der Rahmen lädt die Patient:in
+                {/* Die Akte ist ein Rahmen mit fünf Bereichen (AKTE-000, seit
+                  UI-002a ohne „Übersicht", seit DAT-001 mit „Dateien"). Der Rahmen lädt die Patient:in
                   einmal und protokolliert den Zugriff einmal; ein
                   Bereichswechsel wechselt nur den Inhalt. Die Formulare stehen
                   bewusst daneben und nicht darin: Wer tippt, soll die
@@ -141,6 +142,7 @@ export function AuthenticatedRoutes({
                   ) : null}
                   <Route path="verordnungen" element={<PatientPrescriptionsPage />} />
                   <Route path="verlauf" element={<PatientCoursePage />} />
+                  <Route path="dateien" element={<PatientFilesPage />} />
                   <Route path="stammdaten" element={<PatientMasterDataPage />} />
                 </Route>
                 <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />

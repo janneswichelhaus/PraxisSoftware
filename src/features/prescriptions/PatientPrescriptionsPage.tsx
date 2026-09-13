@@ -5,9 +5,11 @@ import { Section } from '@/components/ui/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canManageAppointments,
+  canReadClinicalPatientFiles,
   canWritePrescriptions,
   type CurrentUser,
 } from '@/features/session/types';
+import { Dateiliste } from '@/features/files/Dateiliste';
 import { usePatientRecord } from '@/features/patients/akte';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { ZOOM_STANDARD, schreibeParameter } from '@/features/appointments/calendar';
@@ -258,6 +260,46 @@ function terminlink(patientId: string, verordnungId: string): string {
   return `/patienten/${patientId}/termine?verordnung=${verordnungId}`;
 }
 
+/**
+ * Der Scan des Rezepts an seiner Verordnung (VER-004, ADR-017).
+ *
+ * Er steht hier und nicht im Bereich „Dateien", weil er zu genau diesem
+ * Auftrag gehört: Ohne Bezugsdatensatz hätte er weder Berechtigung noch Frist
+ * (ADR-017 Punkt 10). Im Bereich „Dateien" taucht er trotzdem auf — gelesen
+ * wird derselbe Pfad.
+ *
+ * **Nur für die behandelnden Rollen.** Der Scan ist klinisch, obwohl `office`
+ * die Verordnungsdaten organisatorisch sieht (ANN-011, Punkt 12): Ein Scan
+ * zeigt das ganze Blatt samt Diagnose und lässt sich nicht projizieren. Der
+ * Server liefert `office` die Zeile ohnehin nicht; der Block bleibt hier
+ * trotzdem weg, damit dort keine leere Fläche steht, die eine Datei vermuten
+ * lässt.
+ */
+function Verordnungsscan({
+  patientId,
+  verordnungId,
+  user,
+}: {
+  patientId: string;
+  verordnungId: string;
+  user: CurrentUser;
+}) {
+  if (!canReadClinicalPatientFiles(user.roles)) return null;
+
+  return (
+    <div className="border-line mt-3 border-t pt-3">
+      <p className="text-ink text-sm font-medium">Scan des Rezepts</p>
+      <Dateiliste
+        patientId={patientId}
+        user={user}
+        prescriptionId={verordnungId}
+        darfHinzufuegen={canWritePrescriptions(user.roles)}
+        leerHinweis="Noch kein Scan. Ein Foto des Rezepts hält fest, was auf dem Blatt steht."
+      />
+    </div>
+  );
+}
+
 /** Eine laufende Verordnung: ausführlich, weil an ihr gearbeitet wird. */
 function LaufendeVerordnung({
   eintrag,
@@ -311,6 +353,7 @@ function LaufendeVerordnung({
       </div>
 
       <Verordnungsaktionen eintrag={eintrag} patient={patient} user={user} />
+      <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
     </li>
   );
 }
@@ -364,6 +407,7 @@ function AbgeschlosseneVerordnung({
             <KlinischeAngaben verordnung={verordnung} />
           </DetailList>
           <Verordnungsaktionen eintrag={eintrag} patient={patient} user={user} />
+          <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
         </div>
       </details>
     </li>

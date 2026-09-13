@@ -38,7 +38,12 @@ describe('Schema-Invarianten', () => {
     // Referenzkataloge tragen einen sprechenden Schluessel: roles, und seit
     // LOE-001a der Retention Schedule (Klasse und Tabellenname). Alles
     // Fachliche bleibt uuid.
-    const katalogeMitTextschluessel = ['roles', 'retention_classes', 'retention_assignments'];
+    const katalogeMitTextschluessel = [
+      'roles',
+      'retention_classes',
+      'retention_assignments',
+      'patient_file_document_types',
+    ];
     const abweichend = rows.filter(
       (r) => r.data_type !== 'uuid' && !katalogeMitTextschluessel.includes(r.table_name),
     );
@@ -79,6 +84,8 @@ describe('Schema-Invarianten', () => {
       'staff_account_invitations',
       'legal_holds',
       'deletion_journal',
+      'patient_files',
+      'storage_deletion_orders',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

@@ -335,3 +335,70 @@ Sie den alten Stand.
     der sichtbare Teil: Die Rückfrage unter „Alle Sitzungen beenden" nennt das
     Restfenster von bis zu einer Stunde und verweist auf die Sperre durch die
     Praxisleitung (ANN-044).
+
+---
+
+## DAT-001 — Dateien in der Akte: hinzufügen, ansehen, wer sie sieht
+
+**Was geprüft wird:** dass eine Datei nur über den zweiphasigen Weg in die Akte
+kommt (ADR-017 Punkt 7), dass die Dokumentart wirklich eine Sichtbarkeitsgrenze
+ist (Punkt 12) und dass ein Verweis nach einer Minute nicht mehr funktioniert
+(Punkt 15) — die drei Zusagen, die man an Tests allein nicht sieht.
+
+**Vorbereitung:** zwei synthetische Dateien anlegen, die keine echten Daten
+enthalten — ein beliebiges PDF (etwa eine Rechnung aus dem eigenen Ordner,
+umbenannt) und ein Foto. **Keine echten Patientenunterlagen**, auch nicht
+zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
+
+1. **Der Scan gehört zur Verordnung.** Als `jannes.test@praxis.invalid`
+   anmelden, Patient:innen → Max Mustermann → **Verordnungen**. Unter der
+   laufenden Verordnung steht „Scan des Rezepts" mit „Keine Datei". Die
+   Dokumentart steht fest — es gibt **keine** Auswahlliste —, und daneben der
+   Satz, dass die Verwaltung sie nicht sieht.
+2. **Hinzufügen.** Das PDF wählen. Der Name in der Akte ist vorbelegt und
+   änderbar: auf „Rezept Schulter" ändern. „Datei hinzufügen" tippen. Danach
+   steht die Datei in der Liste mit Name, Art, Größe, Datum und dem eigenen
+   Namen; die Meldung nennt den Namen der Datei.
+3. **Öffnen ist ein bewusster Schritt.** „Öffnen" tippen: Ein neues Fenster
+   zeigt die Datei beziehungsweise lädt sie herunter. **Der Verweis lebt
+   60 Sekunden** — die Adresse aus dem neuen Fenster kopieren, eine Minute
+   warten und sie erneut aufrufen: Sie funktioniert nicht mehr. Das ist die
+   Zusage aus ADR-017 Punkt 15 und Punkt 17, und sie ist der Grund, warum es
+   keinen Teilen-Link gibt.
+4. **Die Akte kennt die Datei auch.** Bereich **Dateien** öffnen: Der Scan
+   steht dort ebenfalls, mit dem Vermerk „Klinisch".
+5. **Eine Datei an der Person.** Im Bereich Dateien das Foto wählen, Art
+   „Befund", Name „Befund Schulter". Hinzufügen. Der Hinweis unter der Auswahl
+   ändert sich mit der Art: bei „Einwilligung" steht dort „auch für die
+   Verwaltung", bei „Befund" „nicht für die Verwaltung".
+6. **Der entscheidende Schritt — die Verwaltung sieht das Klinische nicht.**
+   Abmelden, als `olivia.office@praxis.invalid` anmelden, dieselbe Akte,
+   Bereich **Dateien**. Weder der Scan noch der Befund steht dort — **nicht
+   ausgegraut und nicht als „2 weitere Dateien" gezählt, sondern gar nicht.**
+   Im Bereich Verordnungen fehlt der Abschnitt „Scan des Rezepts" ganz.
+   In der Auswahl beim Hinzufügen stehen nur „Einwilligung" und „Vertrag".
+7. **Die Verwaltung darf trotzdem etwas beitragen.** Als Olivia eine
+   Einwilligung hinzufügen (das PDF genügt). Sie erscheint. Abmelden, als
+   Jannes anmelden: Die Einwilligung steht auch dort, mit dem Vermerk
+   „Organisatorisch" und Olivias Namen.
+8. **Was nicht angenommen wird.** Als Jannes im Bereich Dateien eine Datei
+   über 10 MB wählen: Die Meldung nennt die Größe der Datei **und** die
+   Grenze, und „Datei hinzufügen" bleibt abgeschaltet. Im Dateidialog werden
+   nur PDF, JPEG und PNG angeboten.
+   **Bitte hier zusätzlich mit einem iPhone-Foto prüfen** (offene Folgefrage
+   aus ADR-017): Kommt es als JPEG an oder als HEIC? Kommt HEIC an, erscheint
+   die Meldung mit dem Hinweis auf die Einstellung „Sehr kompatibel" — und
+   Jannes sagt bitte Bescheid, ob das im Alltag reicht.
+9. **Das Protokoll.** Als Jannes Praxis → Auditlog öffnen. Für jeden Upload
+   steht dort „Datei zur Akte hinzugefügt", für jedes Öffnen „Datei zum Öffnen
+   freigegeben". **Im Eintrag steht kein Dateiname** — nur Kennung, Art und
+   Zeitpunkt. Das Öffnen des Dateibereichs selbst erzeugt keinen Eintrag; das
+   Öffnen der Akte ist bereits protokolliert (ADR-017 Punkt 22).
+10. **Am Handy.** Die Schritte 1 bis 3 bei ~375 px Breite wiederholen: kein
+    waagerechtes Scrollen, „Öffnen" und „Datei hinzufügen" mit dem Daumen
+    erreichbar, das Dateifeld öffnet die Kamera-Auswahl des Geräts.
+
+**Was hier nicht geprüft werden kann:** ob ein gelöschtes Objekt beim Anbieter
+tatsächlich verschwindet (OPS-001 Prüfpunkt 3) und ob der Bucket gesichert ist
+(OPS-003, ADR-017 Punkt 26). Beides ist Vorbedingung für die erste **echte**
+Datei, nicht für diese Abnahme.
