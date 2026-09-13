@@ -26,6 +26,7 @@ import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeries
 import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
+import { EditEventPage } from '@/features/appointments/EditEventPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
 import { MeinKontoPage } from '@/features/account/MeinKontoPage';
@@ -184,6 +185,13 @@ export function AuthenticatedRoutes({
                 <Route
                   path="/termine/:appointmentId"
                   element={<AppointmentDetailPage user={user} />}
+                />
+                {/* Das ganze Ereignis - Bezeichnung, Zeit und Ort fuer alle
+                    Beteiligten zugleich (CAL-017). Der Weg daneben aendert
+                    eine einzelne Teilnahme. */}
+                <Route
+                  path="/termine/:appointmentId/ereignis-bearbeiten"
+                  element={<EditEventPage user={user} />}
                 />
                 <Route
                   path="/termine/:appointmentId/bearbeiten"

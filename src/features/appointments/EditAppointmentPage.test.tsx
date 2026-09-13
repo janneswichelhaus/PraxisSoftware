@@ -19,6 +19,7 @@ const termin: AppointmentsApi.Appointment = {
   patient_id: PATIENT_ID,
   kind: 'treatment',
   title: null,
+  event_group_id: null,
   staff_member_id: STAFF_ANNA,
   location_id: ORT,
   appointment_type: 'practice',

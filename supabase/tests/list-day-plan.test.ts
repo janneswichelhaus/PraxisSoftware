@@ -237,9 +237,9 @@ describe('list_day_plan', () => {
     await asPostgres(
       `insert into public.appointments (
          organization_id, patient_id, staff_member_id, appointment_type,
-         kind, title, status, starts_at, ends_at
+         kind, title, event_group_id, status, starts_at, ends_at
        ) values (
-         $1, null, $2, 'video', 'event', 'Teambesprechung', 'confirmed',
+         $1, null, $2, 'video', 'event', 'Teambesprechung', gen_random_uuid(), 'confirmed',
          (($3::date + time '08:00') at time zone 'Europe/Berlin'),
          (($3::date + time '08:30') at time zone 'Europe/Berlin')
        )`,
@@ -263,9 +263,9 @@ describe('list_day_plan', () => {
     await asPostgres(
       `insert into public.appointments (
          organization_id, patient_id, staff_member_id, appointment_type,
-         kind, title, status, starts_at, ends_at
+         kind, title, event_group_id, status, starts_at, ends_at
        ) values (
-         $1, null, $2, 'video', 'event', 'Teambesprechung', 'confirmed',
+         $1, null, $2, 'video', 'event', 'Teambesprechung', gen_random_uuid(), 'confirmed',
          (($3::date + time '08:00') at time zone 'Europe/Berlin'),
          (($3::date + time '08:30') at time zone 'Europe/Berlin')
        )`,

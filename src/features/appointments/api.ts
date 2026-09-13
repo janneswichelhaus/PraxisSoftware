@@ -162,6 +162,15 @@ const appointmentSchema = z.object({
   kind: appointmentKindSchema,
   /** Bezeichnung eines Ereignisses; `null` an jedem Behandlungstermin. */
   title: z.string().nullable(),
+  /**
+   * Klammer über die Zeilen EINES Ereignisses (CAL-017).
+   *
+   * Je beteiligter Person eine Zeile, alle mit derselben Kennung. Sie ist der
+   * Weg von einer Zeile zum ganzen Vorgang: Verschieben, Umbenennen und
+   * Absagen treffen alle Beteiligten zugleich. `null` an jedem
+   * Behandlungstermin.
+   */
+  event_group_id: z.string().nullable(),
   staff_member_id: z.string(),
   location_id: z.string().nullable(),
   appointment_type: appointmentTypeSchema,
@@ -209,7 +218,7 @@ const appointmentSchema = z.object({
 export type Appointment = z.infer<typeof appointmentSchema>;
 
 const SELECT =
-  'id, patient_id, staff_member_id, location_id, appointment_type, kind, title, status, starts_at, ends_at, updated_at, ' +
+  'id, patient_id, staff_member_id, location_id, appointment_type, kind, title, event_group_id, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
   'cancellation_reason, cancellation_received_at, no_show_recorded_at, fee_basis, ' +
   'notification_channels, ' +
@@ -821,6 +830,114 @@ export async function createAppointmentEvent(
       throw new Error('Der Tag liegt in der Vergangenheit.');
     }
     throw new Error('Das Ereignis konnte nicht eingetragen werden.');
+  }
+
+  return z.number().parse(data);
+}
+
+/**
+ * Die Beteiligten eines Ereignisses (CAL-017).
+ *
+ * `group_updated_at` ist der **jüngste Stand der Gruppe** und nicht der der
+ * einzelnen Zeile: Genau diesen Wert erwarten die beiden gruppenweiten
+ * Schreibwege. Hat jemand zwischendurch irgendeine Zeile angefasst, weisen sie
+ * den Vorgang ab, statt ihn halb auszuführen.
+ */
+const eventParticipantSchema = z.object({
+  appointment_id: z.string(),
+  staff_member_id: z.string(),
+  display_name: z.string(),
+  status: appointmentStatusSchema,
+  group_updated_at: z.string(),
+});
+export type EventParticipant = z.infer<typeof eventParticipantSchema>;
+
+export async function fetchEventParticipants(eventGroupId: string): Promise<EventParticipant[]> {
+  const { data, error } = (await getSupabase().rpc('list_event_participants', {
+    p_event_group_id: eventGroupId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Beteiligten konnten nicht geladen werden.');
+  return z.array(eventParticipantSchema).parse(data ?? []);
+}
+
+/**
+ * Das ganze Ereignis ändern - Bezeichnung, Zeit, Länge, Art und Ort.
+ *
+ * Ausdrücklich **nicht**, wer teilnimmt: Das ist eine Teilnahme und läuft über
+ * `updateAppointment` an der einzelnen Zeile. Die Trennung steht auch
+ * serverseitig; ein Verschieben einer einzelnen Ereigniszeile weist die
+ * Datenbank ab (CAL-017).
+ */
+export async function updateAppointmentEvent(
+  eventGroupId: string,
+  expectedUpdatedAt: string,
+  values: EreignisFormValues,
+  allowOutsideWorkingHours = false,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('update_appointment_event', {
+    p_event_group_id: eventGroupId,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_title: values.title.trim(),
+    p_appointment_type: values.appointment_type,
+    p_date: values.date,
+    p_start_time: values.start_time,
+    p_end_time: values.end_time,
+    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) {
+    if (error.message?.includes('outside_working_hours')) throw new AusserhalbArbeitszeitError();
+    if (error.message?.includes('overlaps')) {
+      throw new Error(
+        'In diesem Zeitraum hat mindestens eine beteiligte Person schon einen Termin. Es wurde nichts geändert.',
+      );
+    }
+    if (error.message?.includes('changed meanwhile')) {
+      throw new Error(
+        'Dieses Ereignis wurde zwischenzeitlich geändert. Bitte die Seite neu laden und noch einmal ansehen.',
+      );
+    }
+    if (error.message?.includes('cancelled appointment cannot be changed')) {
+      throw new Error('Ein abgesagtes Ereignis wird nicht mehr geändert.');
+    }
+    if (error.message?.includes('not on the appointment grid')) {
+      throw new Error(
+        'Beginn und Ende müssen auf dem Praxisraster liegen. Bitte Zeiten im Raster der Praxis wählen.',
+      );
+    }
+    if (error.message?.includes('event title is required')) {
+      throw new Error('Bitte eine Bezeichnung angeben.');
+    }
+    if (error.message?.includes('in the past')) {
+      throw new Error('Der Tag liegt in der Vergangenheit.');
+    }
+    throw new Error('Das Ereignis konnte nicht geändert werden.');
+  }
+
+  return z.number().parse(data);
+}
+
+/** Sagt alle noch bestätigten Zeilen eines Ereignisses ab (CAL-017). */
+export async function cancelAppointmentEvent(
+  eventGroupId: string,
+  expectedUpdatedAt: string,
+  reason: CancellationReason,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('cancel_appointment_event', {
+    p_event_group_id: eventGroupId,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_reason: reason,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) {
+    if (error.message?.includes('changed meanwhile')) {
+      throw new Error(
+        'Dieses Ereignis wurde zwischenzeitlich geändert. Bitte die Seite neu laden und noch einmal ansehen.',
+      );
+    }
+    throw new Error('Das Ereignis konnte nicht abgesagt werden.');
   }
 
   return z.number().parse(data);

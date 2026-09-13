@@ -2,6 +2,11 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
+- **CAL-017 bringt ANN-051 neu** (Teamereignis als ein Vorgang): gemeinsame
+  Gruppenkennung, Bezeichnung und Zeit gelten für alle Beteiligten zugleich,
+  die einzelne Teilnahme bleibt getrennt änderbar und absagbar, und
+  Bestandszeilen werden nicht zusammengeführt. `Praxisprozess`, also
+  erledigt, sobald Jannes widerspricht oder zustimmt.
 - **CAL-015 bringt ANN-049 und ANN-050 neu** (Kalender als vollständiger
   Arbeitsablauf): Ereignisse des Praxisbetriebs stehen in derselben Tabelle wie
   Behandlungstermine — sonst griffe die Belegungsprüfung nicht — und können
@@ -3182,3 +3187,68 @@ aufheben" an, und der Gegenversuch gehört in die Abnahme.
 Aufwand `klein`. Den Patientenfilter beim Planen nicht mehr ausblenden,
 sondern nur hervorheben: eine Änderung in der Darstellung des Gitters —
 Aufwand `klein` bis `mittel`.
+
+---
+
+### ANN-051 — Ein Teamereignis ist ein Vorgang; die einzelne Teilnahme bleibt davon getrennt
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-017; Befund am laufenden Stand: `create_appointment_event` legt je Person eine Zeile an, und die Zeilen wussten nichts voneinander |
+| Status | **offen** — getroffen am 2026-09-13 |
+| Wiedervorlage | Jannes, nach der ersten Woche mit Teambesprechungen im Kalender |
+
+**Annahme.** Vier Festlegungen:
+
+1. **Die Zeilen eines Ereignisses tragen eine gemeinsame Gruppenkennung**
+   (`event_group_id`). Sie sind damit ein Vorgang und nicht n Termine.
+2. **Bezeichnung, Tag, Zeit, Länge, Art und Ort gehören dem Ereignis** und
+   werden für alle Beteiligten zugleich geändert — in einer Transaktion, mit
+   Konfliktprüfung für jede beteiligte Person **vor** dem ersten
+   Schreibzugriff. Dasselbe gilt für die Absage.
+3. **Wer teilnimmt, gehört der einzelnen Zeile.** Die beteiligte Person
+   austauschen und die Teilnahme absagen bleiben möglich und heißen in der
+   Oberfläche ausdrücklich so („Teilnahme ändern", „Nur diese Teilnahme
+   absagen"). Das Ereignis besteht für die übrigen fort.
+4. **Bestandszeilen werden nicht zusammengeführt.** Jede vorhandene
+   Ereigniszeile bekommt ihre eigene Kennung.
+
+**Begründung.** Zu 1 und 2: Eine Besprechung, die bei Anna um 9 und bei Tim um
+10 steht, ist kein Zustand, den irgendjemand gemeint hat — sie entsteht aber
+zwangsläufig, sobald das Verschieben je Kalender einzeln geschieht und
+irgendwo unterbrochen wird. Die Belegungsprüfung hängt weiterhin an der
+einzelnen Zeile (`appointments_no_overlap`), das bleibt richtig; ergänzt wird
+nur die Klammer darüber.
+
+Zu 3: Die beiden Vorgänge sehen ähnlich aus und bedeuten Verschiedenes. Wer
+absagt, muss wissen, ob er für sich oder für alle absagt — deshalb zwei
+Schaltflächen mit zwei Namen statt einer mit Rückfrage.
+
+Zu 4: Zwei Besprechungen mit gleichem Titel zur gleichen Zeit können zwei
+getrennte Vorgänge sein. Eine Heuristik über Titel und Uhrzeit würde sie
+stillschweigend verheiraten — das wäre eine nachträgliche Umdeutung
+vorhandener Daten, und die macht dieses Projekt nicht (`PROJECT_PRINCIPLES.md`
+§13).
+
+**Unsicher:** ob das Austauschen einer einzelnen Beteiligten im Alltag
+überhaupt vorkommt oder ob stattdessen abgesagt und neu eingetragen wird. Der
+Weg bleibt, weil er nichts kostet; die Wiedervorlage fragt danach. Ebenso
+offen: ob später Beteiligte **nachträglich hinzukommen** sollen — heute geht
+das nicht, und das ist eine bewusste Auslassung, kein Versehen.
+
+**Verankerung.** `supabase/migrations/20260913100000_event_groups.sql`:
+`event_group_id`, `update_appointment_event`, `cancel_appointment_event`,
+`list_event_participants` und der Trigger `appointments_event_group_guard`.
+Oberfläche in `src/features/appointments/EditEventPage.tsx` und
+`AppointmentDetailPage.tsx`. Tests in
+`supabase/tests/appointment-events.test.ts` (Abschnitt „Ereignis als ein
+Vorgang"), `src/features/appointments/EditEventPage.test.tsx` und
+`tests/e2e/authenticated/appointment-events.spec.ts`.
+
+**Änderungspfad.** Beteiligte nachträglich hinzufügen: eine Personenliste im
+Bearbeitungsformular und ein Einfügezweig in `update_appointment_event` —
+Aufwand `mittel`. Die Trennung zwischen Ereignis und Teilnahme aufgeben und
+alles gruppenweit machen: der Trigger bleibt, `update_appointment` verlöre
+seinen Ereigniszweig — Aufwand `klein`, Folge `mittel` (der Austausch einer
+Person wäre dann nur noch über Absage und Neueintrag möglich).

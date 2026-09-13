@@ -228,6 +228,7 @@ export async function arbeitszeitBestaetigen(
     | 'Termin trotzdem anlegen'
     | 'Änderung trotzdem speichern'
     | 'Serie trotzdem anlegen'
+    | 'Trotzdem ändern'
     | 'Trotzdem eintragen',
   weiter: RegExp,
 ): Promise<void> {

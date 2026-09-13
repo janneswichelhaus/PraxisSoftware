@@ -15,6 +15,7 @@ const praxistermin: AppointmentsApi.Appointment = {
   patient_id: PATIENT_ID,
   kind: 'treatment',
   title: null,
+  event_group_id: null,
   staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: '33333333-3333-4333-8333-000000000001',
   appointment_type: 'practice',
@@ -45,6 +46,8 @@ const cancelAppointment = vi.fn();
 const completeAppointment = vi.fn();
 const reopenAppointment = vi.fn();
 const recordNoShow = vi.fn();
+const fetchEventParticipants = vi.fn();
+const cancelAppointmentEvent = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -64,6 +67,13 @@ vi.mock('./api', async (importOriginal) => {
     reopenAppointment: (id: string, erwartet: string) =>
       reopenAppointment(id, erwartet) as Promise<void>,
     recordNoShow: (id: string, erwartet: string) => recordNoShow(id, erwartet) as Promise<void>,
+    fetchEventParticipants: (gruppe: string) =>
+      fetchEventParticipants(gruppe) as Promise<AppointmentsApi.EventParticipant[]>,
+    cancelAppointmentEvent: (
+      gruppe: string,
+      erwartet: string,
+      grund: AppointmentsApi.CancellationReason,
+    ) => cancelAppointmentEvent(gruppe, erwartet, grund) as Promise<number>,
   };
 });
 
@@ -117,6 +127,10 @@ describe('AppointmentDetailPage', () => {
     reopenAppointment.mockResolvedValue(undefined);
     recordNoShow.mockReset();
     recordNoShow.mockResolvedValue(undefined);
+    fetchEventParticipants.mockReset();
+    fetchEventParticipants.mockResolvedValue([]);
+    cancelAppointmentEvent.mockReset();
+    cancelAppointmentEvent.mockResolvedValue(2);
     fetchTreatmentDocumentation.mockReset();
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
   });
@@ -548,14 +562,35 @@ describe('AppointmentDetailPage', () => {
   });
 
   describe('CAL-015b: Ereignis des Praxisbetriebs', () => {
+    const GRUPPE = '88888888-8888-4888-8888-000000000001';
+
     const ereignis: AppointmentsApi.Appointment = {
       ...praxistermin,
       kind: 'event',
       title: 'Teambesprechung',
+      event_group_id: GRUPPE,
       patient_id: null,
       patient_given_name: null,
       patient_family_name: null,
     };
+
+    /** Zwei Beteiligte - der Regelfall einer Besprechung (CAL-017). */
+    const zweiBeteiligte: AppointmentsApi.EventParticipant[] = [
+      {
+        appointment_id: TERMIN_ID,
+        staff_member_id: '55555555-5555-4555-8555-000000000002',
+        display_name: 'Anna Beispiel',
+        status: 'confirmed',
+        group_updated_at: praxistermin.updated_at,
+      },
+      {
+        appointment_id: '77777777-7777-4777-8777-000000000002',
+        staff_member_id: '55555555-5555-4555-8555-000000000004',
+        display_name: 'Tim Teamleitung',
+        status: 'confirmed',
+        group_updated_at: praxistermin.updated_at,
+      },
+    ];
 
     it('zeigt die Bezeichnung statt eines Namens und keinen Weg in eine Akte', async () => {
       fetchAppointment.mockResolvedValue(ereignis);
@@ -583,13 +618,16 @@ describe('AppointmentDetailPage', () => {
       expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).not.toBeInTheDocument();
     });
 
-    it('laesst sich absagen und bearbeiten', async () => {
+    it('laesst sich absagen und bearbeiten - und trennt Ereignis von Teilnahme', async () => {
       fetchAppointment.mockResolvedValue(ereignis);
       rendern();
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
-      expect(screen.getByRole('button', { name: 'Termin absagen' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Bearbeiten' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Ereignis bearbeiten' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Teilnahme ändern' })).toBeInTheDocument();
     });
 
     /**
@@ -607,7 +645,7 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
-      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.click(screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }));
 
       const auswahl = await screen.findByLabelText('Absagegrund');
       expect(
@@ -628,13 +666,64 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
-      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.click(screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }));
 
-      const satz = await screen.findByText(/Das Ereignis am/);
+      const satz = await screen.findByText(/Die Teilnahme von/);
       expect(satz).toHaveTextContent('Teambesprechung');
+      expect(satz).toHaveTextContent('Anna Beispiel');
+      // Das Ereignis selbst bleibt stehen - genau das unterscheidet die
+      // Teilnahme vom Ereignis (CAL-017).
+      expect(satz).toHaveTextContent('bleibt für die übrigen Beteiligten bestehen');
       // „… Uhr für  wird als abgesagt geführt" - die Lücke, wo am
       // Behandlungstermin der Name steht.
       expect(satz.textContent).not.toContain('Uhr für');
+    });
+
+    /**
+     * Die Klammer sichtbar machen: Wer hier steht, hat denselben Zeitraum
+     * belegt, und eine Änderung trifft alle zugleich (CAL-017).
+     */
+    it('nennt die Beteiligten und bietet die Absage fuer alle an', async () => {
+      fetchAppointment.mockResolvedValue(ereignis);
+      fetchEventParticipants.mockResolvedValue(zweiBeteiligte);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teambesprechung/ });
+      expect(await screen.findByText(/Anna Beispiel, Tim Teamleitung/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Ereignis absagen' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }),
+      ).toBeInTheDocument();
+    });
+
+    it('sagt das ganze Ereignis auf dem Stand der Gruppe ab', async () => {
+      const user = userEvent.setup();
+      fetchAppointment.mockResolvedValue(ereignis);
+      fetchEventParticipants.mockResolvedValue(zweiBeteiligte);
+      rendern();
+
+      await screen.findByRole('button', { name: 'Ereignis absagen' });
+      await user.click(screen.getByRole('button', { name: 'Ereignis absagen' }));
+      await user.selectOptions(await screen.findByLabelText('Absagegrund'), 'practice_request');
+      await user.click(screen.getByRole('button', { name: 'Ja, für alle absagen' }));
+
+      await waitFor(() =>
+        expect(cancelAppointmentEvent).toHaveBeenCalledWith(
+          GRUPPE,
+          praxistermin.updated_at,
+          'practice_request',
+        ),
+      );
+    });
+
+    it('bietet bei nur einer offenen Teilnahme keine Absage fuer alle an', async () => {
+      fetchAppointment.mockResolvedValue(ereignis);
+      fetchEventParticipants.mockResolvedValue([zweiBeteiligte[0]!]);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teambesprechung/ });
+      await screen.findByRole('button', { name: 'Nur diese Teilnahme absagen' });
+      expect(screen.queryByRole('button', { name: 'Ereignis absagen' })).not.toBeInTheDocument();
     });
 
     it('sagt ohne Eingangsangabe ab', async () => {
@@ -643,9 +732,9 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
-      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.click(screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }));
       await user.selectOptions(await screen.findByLabelText('Absagegrund'), 'practice_request');
-      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+      await user.click(screen.getByRole('button', { name: 'Ja, Teilnahme absagen' }));
 
       await waitFor(() =>
         expect(cancelAppointment).toHaveBeenCalledWith(

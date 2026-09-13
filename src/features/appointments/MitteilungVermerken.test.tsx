@@ -25,6 +25,7 @@ function termin(kanaele: AppointmentsApi.NotificationChannel[] = []): Appointmen
     patient_id: '66666666-6666-4666-8666-000000000001',
     kind: 'treatment',
     title: null,
+    event_group_id: null,
     staff_member_id: '55555555-5555-4555-8555-000000000002',
     location_id: null,
     appointment_type: 'home_visit',

@@ -1791,7 +1791,7 @@ Alles als `anna.beispiel@praxis.invalid` (therapist).
 2. Erwartung: Der Browser fragt mit **seinem eigenen** Text nach. Den Wortlaut
    bestimmt der Browser; die Anwendung kann ihn nicht setzen.
 
-### 8. Am Handy (~375 px)
+### 9. Am Handy (~375 px)
 
 ```bash
 pnpm screenshots --breite=375 --konto=therapist /termine/<id>/dokumentation
@@ -1991,7 +1991,33 @@ die absagen könnte.
 4. Erwartung: Dieselbe Besprechung steht auch im **Tagesplan des Teams**
    darunter. Beide Listen zeigen denselben Tag.
 
-### 7. Konsistenz nach einer Änderung
+### 7. Ein Teamereignis ist ein Vorgang (CAL-017)
+
+Die Abgrenzung, um die es hier geht: Eine Besprechung, die bei einer Person um
+9 und bei einer anderen um 10 steht, darf es nicht geben.
+
+1. **Kalender → „Ereignis eintragen"**: „Teambesprechung", **Anna Beispiel**
+   **und** Tim Teamleitung ankreuzen, Standort, 10:00 bis 10:25. Eintragen.
+2. Erwartung: Die Besprechung steht in **beiden** Spalten.
+3. Eine der beiden Kacheln antippen. Erwartung: Die Zeile **Beteiligte** nennt
+   beide Namen und sagt, dass Bezeichnung, Zeit und Ort für alle gelten. Oben
+   stehen **zwei** Wege: „Ereignis bearbeiten" und „Teilnahme ändern".
+4. **„Ereignis bearbeiten"**: Bezeichnung auf „Fallbesprechung", Beginn auf
+   11:00, Ende auf 11:25. Speichern. Erwartung: Zurück am Ereignis stehen der
+   neue Name und die neue Zeit — und im Kalender sind **beide** Kacheln
+   gewandert und heißen beide neu.
+5. Gegenprobe Konflikt: Für **Tim** einen Behandlungstermin um 12:00 anlegen.
+   Dann das Ereignis auf 12:00 verschieben wollen. Erwartung: Die Meldung sagt,
+   dass mindestens eine beteiligte Person schon einen Termin hat, und es wurde
+   **nichts** geändert — auch nicht die Zeile von Anna.
+6. Gegenprobe Teilnahme: Am Ereignis **„Nur diese Teilnahme absagen"** mit
+   „Praxis hat abgesagt". Erwartung: Diese eine Zeile ist abgesagt, die andere
+   steht weiter. Bei den Beteiligten steht die abgesagte mit Kennzeichen.
+7. **„Ereignis absagen"** an der verbliebenen Zeile: Erwartung — in der
+   Auswahl fehlt „Patient:in hat abgesagt", nach der Bestätigung sind alle
+   offenen Teilnahmen abgesagt und **keine** trägt „Gebühr vorgemerkt".
+
+### 8. Konsistenz nach einer Änderung
 
 1. Einen Termin im Kalender per **Ziehen** verschieben.
 2. Ohne Neuladen prüfen: **Übersicht** (Tagesplan des Teams) und **Akte →

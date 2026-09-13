@@ -24,6 +24,7 @@ import { NavigationZumTermin } from './NavigationStarten';
 import {
   appointmentStatusLabels,
   cancelAppointment,
+  cancelAppointmentEvent,
   cancellationReasonLabels,
   cancellationReasonSchema,
   appointmentTypeLabels,
@@ -42,7 +43,9 @@ import {
   schreibeTerminVorbelegung,
   staffName,
   todayInTimeZone,
+  fetchEventParticipants,
   type Appointment,
+  type EventParticipant,
 } from './api';
 
 /** Bezeichnung des Ortsfeldes - je nach Terminart eine andere Frage. */
@@ -157,9 +160,9 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
 
   return (
     <Rueckfrage
-      ausloeser="Termin absagen"
-      bezeichnung="Termin absagen"
-      bestaetigen="Ja, Termin absagen"
+      ausloeser={istEreignis ? 'Nur diese Teilnahme absagen' : 'Termin absagen'}
+      bezeichnung={istEreignis ? 'Teilnahme absagen' : 'Termin absagen'}
+      bestaetigen={istEreignis ? 'Ja, Teilnahme absagen' : 'Ja, Termin absagen'}
       bestaetigenLaeuft="Wird abgesagt …"
       fehler={mutation.isError ? mutation.error.message : undefined}
       laeuft={mutation.isPending}
@@ -167,13 +170,16 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
       onBestaetigen={absagen}
     >
       <p>
-        {istEreignis ? 'Das Ereignis am ' : 'Der Termin am '}
-        {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
+        {istEreignis
+          ? `Die Teilnahme von ${staffName(appointment)} am Ereignis „${appointment.title ?? ''}" `
+          : 'Der Termin '}
+        am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
         {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr
         {istEreignis ? ' ' : ` für ${patientName(appointment)} `}
-        {istEreignis ? `„${appointment.title ?? ''}" ` : ''}
-        wird als abgesagt geführt. Es bleibt vollständig erhalten und gibt seinen Zeitraum wieder
-        frei. Eine Absage lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.
+        wird als abgesagt geführt.{' '}
+        {istEreignis ? 'Das Ereignis selbst bleibt für die übrigen Beteiligten bestehen. ' : ''}
+        Der Eintrag bleibt vollständig erhalten und gibt seinen Zeitraum wieder frei. Eine Absage
+        lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.
       </p>
       <div className="mt-3 max-w-xs">
         <Select
@@ -261,6 +267,100 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
           liegen außerhalb der Regel.
         </p>
       )}
+    </Rueckfrage>
+  );
+}
+
+/**
+ * Das ganze Ereignis absagen (CAL-017).
+ *
+ * Neben der Absage der einzelnen Teilnahme, und ausdrücklich davon getrennt:
+ * Eine Besprechung, die für die einen abgesagt ist und für die anderen noch
+ * steht, ist der Zustand, den diese Klammer beseitigt. Der Server sagt alle
+ * noch bestätigten Zeilen in **einer** Transaktion ab.
+ *
+ * Der Grund ist Pflicht wie bei jeder Absage (ANN-034), aber ohne
+ * „Patient:in hat abgesagt" und ohne die Frage nach dem Eingang: Ein Ereignis
+ * hat keine Patient:in und löst keine Ausfallgebühr aus (CAL-016).
+ */
+function EreignisAbsageAktion({
+  appointment,
+  beteiligte,
+}: {
+  appointment: Appointment;
+  beteiligte: EventParticipant[];
+}) {
+  const queryClient = useQueryClient();
+  const [grund, setGrund] = useState('');
+  const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
+
+  const offen = beteiligte.filter((b) => b.status === 'confirmed');
+  const stand = beteiligte[0]?.group_updated_at ?? '';
+
+  const mutation = useMutation({
+    mutationFn: (gewaehlt: CancellationReason) =>
+      cancelAppointmentEvent(appointment.event_group_id!, stand, gewaehlt),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['appointment'] });
+      await queryClient.invalidateQueries({ queryKey: ['event-participants'] });
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+    },
+  });
+
+  async function absagen() {
+    const gewaehlt = cancellationReasonSchema.safeParse(grund);
+    if (!gewaehlt.success) {
+      setGrundFehler('Bitte einen Absagegrund auswählen.');
+      throw new Error('Absagegrund fehlt');
+    }
+    setGrundFehler(undefined);
+    await mutation.mutateAsync(gewaehlt.data);
+  }
+
+  return (
+    <Rueckfrage
+      ausloeser="Ereignis absagen"
+      bezeichnung="Ereignis absagen"
+      bestaetigen="Ja, für alle absagen"
+      bestaetigenLaeuft="Wird abgesagt …"
+      fehler={mutation.isError ? mutation.error.message : undefined}
+      laeuft={mutation.isPending}
+      onAbbrechen={() => setGrundFehler(undefined)}
+      onBestaetigen={absagen}
+    >
+      <p>
+        {`Das Ereignis „${appointment.title ?? ''}" `}
+        am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
+        {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr wird für{' '}
+        {offen.length === 1 ? 'die eine noch offene Teilnahme' : `alle ${offen.length} Beteiligten`}{' '}
+        als abgesagt geführt. Die Einträge bleiben erhalten und geben ihre Zeiträume wieder frei.
+        Eine Absage lässt sich nicht zurücknehmen.
+      </p>
+      <div className="mt-3 max-w-xs">
+        <Select
+          label="Absagegrund"
+          value={grund}
+          error={grundFehler}
+          onChange={(e) => {
+            setGrund(e.target.value);
+            setGrundFehler(undefined);
+          }}
+        >
+          <option value="">Bitte wählen</option>
+          {Object.entries(cancellationReasonLabels)
+            .filter(([wert]) => wert !== 'patient_request')
+            .map(([wert, beschriftung]) => (
+              <option key={wert} value={wert}>
+                {beschriftung}
+              </option>
+            ))}
+        </Select>
+      </div>
+      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+        Ein Ereignis des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in, die
+        absagen könnte.
+      </p>
     </Rueckfrage>
   );
 }
@@ -405,6 +505,23 @@ function AppointmentDetail({
    */
   const istEreignis = appointment.kind === 'event';
 
+  /**
+   * Die Beteiligten des Ereignisses (CAL-017).
+   *
+   * Sie machen aus n Zeilen einen sichtbaren Vorgang: Wer hier steht, hat
+   * denselben Zeitraum belegt, und eine Änderung trifft alle zugleich. Für
+   * einen Behandlungstermin wird gar nicht erst gefragt.
+   */
+  const beteiligte = useQuery({
+    queryKey: ['event-participants', appointment.event_group_id],
+    queryFn: () => fetchEventParticipants(appointment.event_group_id!),
+    enabled: istEreignis && Boolean(appointment.event_group_id),
+    retry: false,
+  });
+
+  const beteiligteListe = beteiligte.data ?? [];
+  const offeneTeilnahmen = beteiligteListe.filter((b) => b.status === 'confirmed');
+
   return (
     <>
       <PageHeader
@@ -431,12 +548,27 @@ function AppointmentDetail({
         description={zustandsHinweis(appointment)}
         actions={
           darfAendern ? (
-            <Link
-              to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
-              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
-            >
-              Bearbeiten
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              {/* Zwei Wege, und der Unterschied steht in der Beschriftung
+                  (CAL-017): „Ereignis bearbeiten" trifft alle Beteiligten
+                  zugleich, „Teilnahme ändern" nur diese eine Zeile. Ohne die
+                  Trennung wäre jede Verschiebung eine Wette darauf, was
+                  gemeint war. */}
+              {istEreignis ? (
+                <Link
+                  to={mitRueckweg(`/termine/${appointment.id}/ereignis-bearbeiten`, eingehend)}
+                  className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+                >
+                  Ereignis bearbeiten
+                </Link>
+              ) : null}
+              <Link
+                to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
+                className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+              >
+                {istEreignis ? 'Teilnahme ändern' : 'Bearbeiten'}
+              </Link>
+            </div>
           ) : null
         }
       />
@@ -451,7 +583,28 @@ function AppointmentDetail({
           ) : (
             <DetailRow label="Patient:in">{patientName(appointment)}</DetailRow>
           )}
-          <DetailRow label="Behandelnde Person">{staffName(appointment)}</DetailRow>
+          <DetailRow label={istEreignis ? 'Diese Teilnahme' : 'Behandelnde Person'}>
+            {staffName(appointment)}
+          </DetailRow>
+          {/* Aus n Zeilen wird hier ein sichtbarer Vorgang: Wer hier steht,
+              hat denselben Zeitraum belegt, und „Ereignis bearbeiten" trifft
+              alle zugleich (CAL-017). */}
+          {istEreignis && beteiligteListe.length > 1 ? (
+            <DetailRow label="Beteiligte">
+              <span>
+                {beteiligteListe
+                  .map((b) =>
+                    b.status === 'confirmed'
+                      ? b.display_name
+                      : `${b.display_name} (${appointmentStatusLabels[b.status]})`,
+                  )
+                  .join(', ')}
+              </span>
+              <span className="text-ink-muted mt-1 block text-sm">
+                Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
+              </span>
+            </DetailRow>
+          ) : null}
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
           <DetailRow label="Datum">{formatLocalDate(appointment.starts_at, zone)}</DetailRow>
@@ -553,6 +706,13 @@ function AppointmentDetail({
               <NichtAngetroffenAktion appointment={appointment} />
             </>
           )}
+          {/* Zwei Absagen, und der Unterschied steht in der Beschriftung
+              (CAL-017): „Ereignis absagen" trifft alle noch offenen
+              Teilnahmen, „Nur diese Teilnahme absagen" diese eine. Die
+              zweite steht daneben, weil sie der seltenere Fall ist. */}
+          {istEreignis && offeneTeilnahmen.length > 1 ? (
+            <EreignisAbsageAktion appointment={appointment} beteiligte={beteiligteListe} />
+          ) : null}
           <AbsageAktion appointment={appointment} />
         </div>
       ) : null}
