@@ -47,6 +47,12 @@ async function terminAnlegen(page: Page, tag: string): Promise<string> {
   await page.goto(`/patienten/${PATIENTEN.max}/termine/neu`);
   await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
   await page.getByLabel('Terminart *').selectOption('practice');
+  // Bei genau einem Standort waehlt das Formular ihn vor - aber erst, wenn die
+  // Standorte geladen sind. Wer vorher abschickt, schickt ein leeres
+  // Pflichtfeld ab und bleibt auf dem Formular stehen; auf einem belasteten
+  // Runner ist genau das passiert. Derselbe Riegel steht in
+  // appointment-states.spec.ts und appointment-workflows.spec.ts.
+  await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
   await page.getByLabel('Datum *').fill(tag);
   await page.getByLabel('Beginn *').fill(zeit(0));
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
@@ -160,7 +166,7 @@ test.describe('DOK-001: Office sieht keinen klinischen Freitext', () => {
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
-    await page.getByRole('button', { name: 'Abmelden' }).click();
+    await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
     await anmelden(page, KONTEN.office);
     await page.goto(`/termine/${terminId}`);
 
@@ -296,18 +302,22 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     const text = 'Synthetisch: noch nicht gespeichert, Abmelden.';
     const terminId = await mitOffenemText(page, laufTag(10), text);
 
-    await page.getByRole('button', { name: 'Abmelden' }).click();
+    // `exact`, weil „Speichern und abmelden" und „Verwerfen und abmelden"
+    // denselben Namen als Teilzeichenkette tragen, sobald die Rückfrage steht.
+    const abmeldenKnopf = page.getByRole('button', { name: 'Abmelden', exact: true });
+
+    await abmeldenKnopf.click();
 
     await expect(rueckfrage(page)).toContainText('Beim Abmelden geht er verloren');
     await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
     // Die Sitzung besteht noch: Die Kopfzeile ist da, die Anmeldemaske nicht.
-    await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
+    await expect(abmeldenKnopf).toBeVisible();
 
     await rueckfrage(page).getByRole('button', { name: 'Hier bleiben' }).click();
     await expect(rueckfrage(page)).toHaveCount(0);
     await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(text);
 
-    await page.getByRole('button', { name: 'Abmelden' }).click();
+    await abmeldenKnopf.click();
     await rueckfrage(page).getByRole('button', { name: 'Speichern und abmelden' }).click();
 
     // Erst gespeichert, dann abgemeldet: Die Anmeldemaske kommt, und der Text
@@ -323,7 +333,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await anmelden(page, KONTEN.therapist);
     await page.goto('/');
 
-    await page.getByRole('button', { name: 'Abmelden' }).click();
+    await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
 
     await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
   });
