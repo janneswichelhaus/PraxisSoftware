@@ -153,16 +153,24 @@ describe('Terminfenster (CAL-010a)', () => {
       expect(await fensterVon(id)).toBe('01:00');
     });
 
+    it('laesst seit CAL-015b auch 45 Minuten zu', async () => {
+      // 8.1 in der Fassung 0.9: zwei zulaessige Laengen, 60 (Vorbelegung) und
+      // 45. Bis dahin war genau dieser Fall der "kuerzere" und abgewiesen.
+      const id = await anlegenCommitted('09:00', '09:45');
+      expect(id).toBeTruthy();
+    });
+
     it('weist ein kuerzeres Zeitfenster ab', async () => {
-      await expect(anlegen('09:00', '09:45')).rejects.toThrow(/appointment window must be 60/);
+      await expect(anlegen('09:00', '09:30')).rejects.toThrow(/appointment window must be/);
     });
 
     it('weist ein laengeres Zeitfenster ab', async () => {
-      await expect(anlegen('09:00', '10:30')).rejects.toThrow(/appointment window must be 60/);
+      await expect(anlegen('09:00', '10:30')).rejects.toThrow(/appointment window must be/);
     });
 
     it('weist auch ein Zeitfenster ab, das nur um fuenf Minuten abweicht', async () => {
-      await expect(anlegen('09:00', '10:05')).rejects.toThrow(/appointment window must be 60/);
+      await expect(anlegen('09:00', '10:05')).rejects.toThrow(/appointment window must be/);
+      await expect(anlegen('09:00', '09:50')).rejects.toThrow(/appointment window must be/);
     });
 
     it('laesst jeden Rasterpunkt als Beginn zu', async () => {

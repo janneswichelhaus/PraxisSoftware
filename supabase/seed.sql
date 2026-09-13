@@ -222,6 +222,25 @@ insert into public.appointments (
    null, null, null, null, null, null, null, null);
 
 -- -----------------------------------------------------------------------------
+-- Ein Ereignis des Praxisbetriebs (CAL-015b)
+--
+-- Eine Besprechung in zwei Kalendern, damit in der Abnahme sichtbar ist, was
+-- ein Termin ohne Patient:in ist: Titel statt Name, keine Verordnung, keine
+-- Dokumentation - und in beiden Spalten belegte Zeit. 25 Minuten: eine Laenge,
+-- die ein Behandlungstermin nicht haben duerfte.
+-- -----------------------------------------------------------------------------
+insert into public.appointments (
+  id, organization_id, patient_id, staff_member_id, location_id,
+  appointment_type, kind, title, status, starts_at, ends_at
+) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000005', '22222222-2222-4222-8222-000000000001', null, '55555555-5555-4555-8555-000000000001', '33333333-3333-4333-8333-000000000001',
+   'practice', 'event', 'Teambesprechung', 'confirmed',
+   (current_date + time '08:00') at time zone 'Europe/Berlin', (current_date + time '08:25') at time zone 'Europe/Berlin'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000006', '22222222-2222-4222-8222-000000000001', null, '55555555-5555-4555-8555-000000000003', '33333333-3333-4333-8333-000000000001',
+   'practice', 'event', 'Teambesprechung', 'confirmed',
+   (current_date + time '08:00') at time zone 'Europe/Berlin', (current_date + time '08:25') at time zone 'Europe/Berlin');
+
+-- -----------------------------------------------------------------------------
 -- Mitteilungsvermerk (CAL-012)
 --
 -- Ein einziger Vermerk, damit in der Abnahme beide Faelle nebeneinander stehen:
