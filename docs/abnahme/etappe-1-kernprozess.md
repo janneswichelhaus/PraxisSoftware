@@ -1959,7 +1959,39 @@ genannt.
    Kalender zeigt wieder alles; der Weg über die freie Stelle führt jetzt
    wieder in die Patientensuche.
 
-### 5. Konsistenz nach einer Änderung
+### 5. Ein Ereignis kostet nichts (CAL-016)
+
+Die Abgrenzung, an der es um Geld geht: Ein Ereignis des Praxisbetriebs darf
+unter keinen Umständen eine Ausfallgebühr auslösen — es gibt keine Patient:in,
+die absagen könnte.
+
+1. Die Besprechung öffnen → **„Termin absagen"**. Erwartung in der Rückfrage:
+   Der Satz nennt die **Bezeichnung** und keinen leeren Namen; die Auswahl
+   **Absagegrund** bietet **„Patient:in hat abgesagt" nicht** an; es gibt
+   **keine** Frage „Wann ist die Absage eingegangen?"; unten steht, dass ein
+   Ereignis **keine Ausfallgebühr** auslöst.
+2. Mit „Praxis hat abgesagt" absagen. Erwartung: Am abgesagten Ereignis steht
+   **keine** Zeile „Gebühr vorgemerkt".
+3. **Tag umplanen** (Tagesansicht mit Personenfilter → „Tag umplanen"):
+   Erwartung: In der Auswahl **Absagegrund** fehlt „Patient:in hat abgesagt"
+   auch hier — der Ausfall einer behandelnden Person ist praxisbedingt.
+4. Eine noch stehende Besprechung an demselben Tag: Sie steht **nicht** in der
+   Liste „Diese Termine werden abgesagt" und taucht danach **nicht** in der
+   Anrufliste auf.
+
+### 6. Die Besprechung steht auch im eigenen Tagesplan (CAL-016)
+
+1. Als `anna.beispiel@praxis.invalid` (therapist) die **Übersicht** öffnen an
+   einem Tag, an dem eine Besprechung eingetragen ist.
+2. Erwartung: Die Besprechung steht in der **eigenen Tagesliste** oben — mit
+   ihrer Bezeichnung, ohne Namen, ohne Anschrift, und der Weg heißt
+   **„Ereignis öffnen"**.
+3. Erwartung: Die Zahl der **offenen** Punkte über der Liste zählt sie
+   **nicht** mit — an einem Ereignis ist nichts zu erledigen.
+4. Erwartung: Dieselbe Besprechung steht auch im **Tagesplan des Teams**
+   darunter. Beide Listen zeigen denselben Tag.
+
+### 7. Konsistenz nach einer Änderung
 
 1. Einen Termin im Kalender per **Ziehen** verschieben.
 2. Ohne Neuladen prüfen: **Übersicht** (Tagesplan des Teams) und **Akte →
@@ -1968,7 +2000,7 @@ genannt.
    Standardansicht des Kalenders (Filter „aktive") und steht mit dem Filter
    „abgesagt" wieder da.
 
-### 6. Am Handy (~375 px)
+### 8. Am Handy (~375 px)
 
 ```bash
 pnpm screenshots --breite=375 --konto=office /termine/ereignis /kalender
