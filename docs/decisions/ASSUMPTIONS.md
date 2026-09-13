@@ -2,6 +2,14 @@
 
 Zuletzt aktualisiert: 2026-09-12.
 
+- **CAL-015 bringt ANN-049 und ANN-050 neu** (Kalender als vollständiger
+  Arbeitsablauf): Ereignisse des Praxisbetriebs stehen in derselben Tabelle wie
+  Behandlungstermine — sonst griffe die Belegungsprüfung nicht — und können
+  weder abgeschlossen noch dokumentiert werden; und der Kalender trägt
+  Patient:in und Verordnung als Kontext mit, damit der Weg „Verordnung →
+  Kalender → freie Stelle" ohne zweite Suche endet. `Technik` und
+  `Praxisprozess`. Dieselbe Festlegung beantwortet **E12 Punkt 1**: 60 oder 45
+  Minuten, keine dritte Länge — nachgezogen in `PROJECT_PRINCIPLES.md` 0.9.
 - **CAL-014 bringt ANN-047 und ANN-048 neu** (Absage unter 24 Stunden):
   welcher Absagegrund die Ausfallgebühr auslöst — nur die Patientenabsage,
   ausdrücklich nicht „verlegt" und „sonstiger Grund" — und wie der Eingang der
@@ -3058,3 +3066,95 @@ von `public.cancel_appointment` in
 Anfangswert und eine Prüfung — Aufwand `klein`. Den Eingang zur Pflichtangabe
 für **jede** Absage machen: ebenfalls `klein`, aber dann trägt jede Absage am
 Telefon einen Tap mehr.
+
+---
+
+### ANN-049 — Ereignisse stehen in derselben Tabelle wie Behandlungstermine
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | CAL-015b; Festlegung des Projektinhabers vom 2026-09-12 („Meetings, Teambesprechungen und andere Ereignisse … benötigen weder Patient noch Verordnung"); `PROJECT_PRINCIPLES.md` 0.9 §8.1 |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | ABR-002 (Leistungserfassung) — dort muss die Abgrenzung halten |
+
+**Annahme.** Ein Ereignis des Praxisbetriebs ist eine Zeile in
+`public.appointments` mit `kind = 'event'`, ohne `patient_id`, ohne
+`prescription_id`, mit `title`. Es ist **kein** eigenes Datenmodell und keine
+eigene Tabelle.
+
+**Begründung.** Ein Ereignis belegt denselben Kalender und denselben Zeitraum
+wie eine Behandlung. Die `EXCLUDE`-Constraint, die Doppelbuchungen verhindert,
+wirkt nur **innerhalb** einer Tabelle: Eine zweite Tabelle hätte die
+Belegungsprüfung in Anwendungscode verlagert — und damit genau den Schutz
+aufgegeben, der hier zählt. Nebenbei hätte jede Kalenderabfrage zwei Quellen
+zusammenführen müssen.
+
+Der Preis ist die Fallunterscheidung in den Schreibpfaden. Sie steht dort, wo
+sie fällt, und vier Constraints halten sie zusammen — eine Behandlung ohne
+Patient:in und ein Ereignis mit Patient:in sind schemaseitig unmöglich.
+
+**Die Abgrenzung, auf die es fachlich ankommt:** Ein Ereignis lässt sich
+**nicht** abschließen, **nicht** dokumentieren und **nicht** als „nicht
+angetroffen" vermerken. Damit kommt es nie in einen Zustand, aus dem ABR-002
+später eine abrechenbare Leistung erzeugen könnte (§19). Das ist die Stelle,
+an der die Annahme hält oder bricht — daher die Wiedervorlage.
+
+**Unsicher:** ob „ein Ereignis je beteiligter Person" auf Dauer genügt. Heute
+legt `create_appointment_event` je Person eine eigene Zeile an; danach ist jede
+ein eigener Vorgang, und „die Besprechung verschieben" heißt, sie einzeln zu
+verschieben. Eine gemeinsame Kennung wäre der nächste Schritt und wäre heute
+Vorbau (ADR-014).
+
+**Verankerung.** `supabase/migrations/20260912210000_appointment_events.sql` —
+Kopfkommentar und Constraints. Tests in
+`supabase/tests/appointment-events.test.ts` (26 Fälle, darunter die drei
+verweigerten Zustandswechsel).
+
+**Änderungspfad.** Eigene Tabelle: Migration mit Datenübernahme, neue
+Belegungsprüfung über beide Tabellen, jede Kalenderabfrage anfassen — Aufwand
+`groß`. Gemeinsame Kennung für die Zeilen eines Ereignisses: eine Spalte, ein
+Schreibpfad mehr — Aufwand `klein` bis `mittel`.
+
+---
+
+### ANN-050 — Der Kalender trägt Patient:in und Verordnung als Kontext mit
+
+| | |
+|---|---|
+| Kategorie | Praxisprozess |
+| Herkunft | CAL-015c; Festlegung des Projektinhabers vom 2026-09-12 („Aus einer ausgewählten Person beziehungsweise ihrer Verordnung in den vollständigen Kalender wechseln … Der fachliche Kontext bleibt erhalten") |
+| Status | **offen** — getroffen am 2026-09-12 |
+| Wiedervorlage | Jannes nach den ersten Wochen im Betrieb |
+
+**Annahme.** Der Kalenderstand führt neben `patient` einen zweiten
+Kontextparameter `verordnung`. Beide stehen als **Kennung** in der Adresse,
+nie als Name und nie als Diagnose (ADR-011). Ist der Kalender auf eine
+Patient:in gefiltert, führt ein Tap auf eine freie Stelle **direkt** in das
+Terminformular dieser Person — mit Verordnung, wenn eine mitgereist ist — statt
+über die Patientensuche. Der Rückweg ist der Kalenderstand.
+
+**Begründung.** Der Weg „Akte → Verordnung → Kalender → freie Stelle" ist
+genau dann etwas wert, wenn am Ende nicht noch einmal gesucht werden muss. Ein
+Formular, das nach der Person fragt, die man gerade ausgewählt hat, ist eine
+Rückfrage ohne Erkenntnis.
+
+Der Filter grenzt dabei weiterhin **nur die Darstellung** ein, nicht den
+Lesepfad (AKTE-003): Der Kalender liest den Ausschnitt ohnehin vollständig, und
+sichtbar ist, was die RLS liefert.
+
+**Unsicher:** ob der Patientenfilter im Kalender beim Planen hilft oder stört.
+Er blendet aus, was sonst noch im Zeitraum liegt — genau das, wonach man beim
+Suchen einer Lücke schaut. Die Leiste über dem Gitter bietet deshalb „Filter
+aufheben" an, und der Gegenversuch gehört in die Abnahme.
+
+**Verankerung.** `KalenderParameter.verordnung` in
+`src/features/appointments/calendar.ts` und `freieZeit` in
+`src/features/appointments/CalendarPage.tsx`. Tests in
+`src/features/appointments/CalendarPage.test.tsx` (zwei Fälle) und
+`src/features/appointments/calendar.test.ts`.
+
+**Änderungspfad.** Den Kontextweg wieder herausnehmen: zwei Stellen —
+Aufwand `klein`. Den Patientenfilter beim Planen nicht mehr ausblenden,
+sondern nur hervorheben: eine Änderung in der Darstellung des Gitters —
+Aufwand `klein` bis `mittel`.

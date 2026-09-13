@@ -34,6 +34,9 @@
 -- ihm auch keine abrechenbare Leistung entstehen (19, ADR-009): Die
 -- Leistungserfassung in ABR-002 haengt an "durchgefuehrt", und dorthin kommt
 -- ein Ereignis gar nicht erst.
+--
+-- Die Entscheidung, beides in EINER Tabelle zu fuehren, steht als ANN-049 im
+-- Annahmenregister - samt dem, was daran unsicher ist.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------

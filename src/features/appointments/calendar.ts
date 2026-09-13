@@ -130,7 +130,7 @@ export interface KalenderParameter {
    * mit, bis der Termin angelegt ist. Nur zusammen mit `patient` sinnvoll.
    *
    * In der Adresse steht die Kennung, niemals eine Diagnose oder ein Name
-   * (ADR-011).
+   * (ADR-011). Das Ganze ist ANN-050.
    */
   verordnung: string | null;
   /** Höhe einer Stunde in Pixeln (CAL-011). */

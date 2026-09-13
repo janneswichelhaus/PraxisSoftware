@@ -1886,3 +1886,97 @@ pnpm screenshots --breite=375 --konto=office /termine/<id>
 Erwartung: Die Rückfrage mit Grund, Eingangsauswahl und den beiden Feldern
 passt in die Breite, kein waagerechtes Scrollen, jedes Feld mindestens 44 px
 hoch.
+
+---
+
+## CAL-015 — Der Kalender als vollständiger Arbeitsablauf
+
+Prüfschritte zu CAL-015b (Datenbank) und CAL-015c (Oberfläche). Grundlage:
+`PROJECT_PRINCIPLES.md` 0.9 §8.1, ANN-049 und ANN-050.
+
+Alles als `olivia.office@praxis.invalid` (office), sofern nicht anders
+genannt.
+
+### 1. 60 oder 45 Minuten — und nichts dazwischen
+
+1. **Patient:innen → Max Mustermann → Termine → Termin anlegen.** Erwartung:
+   Neben dem Beginn steht **Dauer** mit **60 Minuten** vorbelegt und darunter
+   das abgeleitete Ende.
+2. Beginn **09:05** eintragen. Erwartung: „Ende: 10:05 Uhr".
+3. Dauer auf **45 Minuten** stellen. Erwartung: „Ende: 09:50 Uhr". Anlegen.
+4. Den Termin öffnen → **Bearbeiten**. Erwartung: Die Dauer steht auf 45, die
+   Auswahl bietet genau **zwei** Werte an.
+5. Verschieben (Beginn ändern) ohne die Dauer anzufassen. Erwartung: Das Ende
+   wandert mit, die Länge bleibt 45.
+
+### 2. Ereignis eintragen
+
+1. **Kalender → Tagesansicht → „Ereignis eintragen".**
+2. Erwartung: Das Formular fragt nach **Bezeichnung**, **beteiligten
+   Personen** (Ankreuzfelder, auch Olivia Office steht dabei), Ort, Datum,
+   **Beginn und Ende**. Keine Patient:in, keine Verordnung, keine Dauerwahl.
+3. „Teambesprechung", **Anna Beispiel** und die eigene Person ankreuzen,
+   Standort wählen, **08:00 bis 08:25** eintragen — eine Länge, die ein
+   Behandlungstermin nicht haben dürfte. Eintragen.
+4. Erwartung: zurück im Kalender, und die Besprechung steht **in beiden
+   Spalten**.
+5. Gegenprobe Raster: noch einmal, diesmal mit Ende **08:22**. Erwartung: Die
+   Meldung sagt, dass Beginn und Ende auf dem Praxisraster liegen müssen; es
+   wird nichts eingetragen.
+
+### 3. Ein Ereignis ist keine Behandlung
+
+1. Die Besprechung im Kalender antippen. Erwartung: Überschrift **„Ereignis –
+   Teambesprechung"**, Zeile **Ereignis**, **kein** Weg in eine Akte.
+2. Erwartung: **Kein** „Dokumentieren und abschließen", **kein** „Termin
+   abschließen", **kein** „Nicht angetroffen", **kein** „Folgetermin anlegen",
+   **kein** Abschnitt Behandlungsdokumentation und **keine** Mitteilungswege.
+3. Erwartung: **„Bearbeiten"** und **„Termin absagen"** gibt es.
+4. Gegenprobe Belegung: Für **Anna Beispiel** einen Behandlungstermin zur
+   selben Zeit anlegen. Erwartung: „In diesem Zeitraum hat die behandelnde
+   Person bereits einen Termin."
+5. Gegenprobe „Tag umplanen": In der Tagesansicht mit Personenfilter auf Anna
+   **Tag umplanen** ausführen. Erwartung: Die Behandlungstermine sind abgesagt,
+   die **Besprechung steht noch**.
+
+### 4. Von der Verordnung in den Kalender und zurück
+
+1. **Patient:innen → Max Mustermann → Verordnungen.** An einer offenen
+   Verordnung steht neben „Terminserie anlegen" jetzt **„Im Kalender einen
+   Platz suchen"**.
+2. Antippen. Erwartung: Die **Tagesansicht** öffnet sich, über dem Gitter
+   steht die Leiste „Nur die Termine von Max Mustermann", und in der Adresse
+   stehen `patient=` **und** `verordnung=` — als Kennungen, ohne Namen.
+3. Vor- und zurückblättern, scrollen, eine **freie Stelle antippen**.
+4. Erwartung: Das Terminformular **dieser Person** öffnet sich, Datum und
+   Beginn stehen schon, und es wird **nicht** nach der Patient:in gefragt.
+5. **Abbrechen**. Erwartung: zurück im Kalender, an derselben Stelle, mit
+   demselben Filter.
+6. Noch einmal, diesmal anlegen. Danach **Akte → Verordnungen**: Der Termin
+   zählt bei dieser Verordnung als **verplant** (die genutzte Menge bleibt
+   unverändert — verplant ist nicht genutzt, ANN-038).
+7. Gegenprobe Filter: In der Leiste **„Filter aufheben"**. Erwartung: Der
+   Kalender zeigt wieder alles; der Weg über die freie Stelle führt jetzt
+   wieder in die Patientensuche.
+
+### 5. Konsistenz nach einer Änderung
+
+1. Einen Termin im Kalender per **Ziehen** verschieben.
+2. Ohne Neuladen prüfen: **Übersicht** (Tagesplan des Teams) und **Akte →
+   Termine** zeigen die neue Zeit.
+3. Die Besprechung aus Schritt 2 absagen. Erwartung: Sie verschwindet aus der
+   Standardansicht des Kalenders (Filter „aktive") und steht mit dem Filter
+   „abgesagt" wieder da.
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /termine/ereignis /kalender
+```
+
+Erwartung: Das Ereignisformular mit seinen Ankreuzfeldern passt in die Breite,
+kein waagerechtes Scrollen, jede Zeile mindestens 44 px hoch.
+
+**Zielwert:** Ein ganzer Planungsvorgang — Person wählen, Lücke suchen, Termin
+anlegen — ohne die Anwendung zu verlassen und ohne dieselbe Angabe zweimal zu
+machen.

@@ -77,6 +77,7 @@ export const TAGESFENSTER = {
   // 12 ist wieder frei: `appointment-notification` rechnet seit 2026-09-12 im
   // Nahfenster (siehe unten) und braucht kein eigenes Tagesfenster mehr.
   patientRecordWorkspace: 13,
+  appointmentEvents: 14,
 } as const;
 
 /**
@@ -223,7 +224,11 @@ export async function anmelden(page: Page, email: string): Promise<void> {
  */
 export async function arbeitszeitBestaetigen(
   page: Page,
-  knopf: 'Termin trotzdem anlegen' | 'Änderung trotzdem speichern' | 'Serie trotzdem anlegen',
+  knopf:
+    | 'Termin trotzdem anlegen'
+    | 'Änderung trotzdem speichern'
+    | 'Serie trotzdem anlegen'
+    | 'Trotzdem eintragen',
   weiter: RegExp,
 ): Promise<void> {
   const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });
