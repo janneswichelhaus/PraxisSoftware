@@ -1,13 +1,35 @@
 # Entwicklungs-Workflow
 
 Warum wir so arbeiten. Die Regeln selbst stehen in `CLAUDE.md`,
-`PROJECT_PRINCIPLES.md` §15.1 und `.claude/skills/feature-loop/SKILL.md` —
-dieses Dokument erklärt die Absicht dahinter.
+`PROJECT_PRINCIPLES.md` §15.1, ADR-013 Fassung 2,
+`GRAPH-ENGINEERING-WORKFLOW.md` und den Skills `feature-loop` und `sandbox`
+— dieses Dokument erklärt die Absicht dahinter.
+
+## Drei Pfade, ein Klassifikationsknoten
+
+Seit dem 2026-09-13 nimmt ein Auftrag einen von drei Pfaden — beschrieben
+als Graph in [`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md).
+Der Knoten K1 entscheidet deterministisch: Wessen Diff einen Auslöser aus
+ADR-013 Fassung 2, Punkt 9 berührt, geht den **Pfad A** (Feature-Loop, mit
+Compliance-Gate und Zweitreview). Wer nur die Oberfläche zeigt und nichts
+über die Sitzung hinaus behält, geht den **Pfad S** (Sandbox). Wem erst eine
+Entscheidung aus der Hard-Stop-Liste fehlt, geht den **Pfad D**
+(Docs-Session).
+
+Die Absicht: Eine RLS-Policy und eine Schaltflächenbeschriftung brauchen
+nicht dieselben Gates. Der Loop hatte dafür nur implizite Unterscheidungen
+(Plan-Bedingung, Check-Tabelle, Modellwahl). Der Graph macht sie zu einem
+Knoten, gibt der Architektur die Review-Checkliste, die ADR-013 seit dem
+28.08. verlangte, und gibt der Oberfläche einen Sandkasten, der technisch
+nicht an echte Daten herankommt (`trennung.test.ts`) und deshalb frei sein
+darf — zeitlich begrenzt, damit keine Vorschau neben einer echten Funktion
+stehen bleibt.
 
 ## Der Feature Loop
 
-Ein Auftrag läuft über `/feature-loop <Aufgabe>` in neun Schritten: Spec,
-Inspect, Plan, Build, Verify, Review, Fix, Final Verify, Report.
+Ein Auftrag auf Pfad A läuft über `/feature-loop <Aufgabe>` in zehn
+Schritten: Klassifikation, Spec, Inspect, Plan, Build, Verify, Review, Fix,
+Final Verify, Report.
 
 Der Skill startet **nur** auf ausdrücklichen Aufruf. Das ist Absicht: Er soll
 für echte Featurearbeit greifen, nicht für eine Frage nach einer Datei oder
@@ -130,7 +152,13 @@ Kontext — lohnt bei:
 
 Weil die Praxis von einer Person entwickelt und betrieben wird, gibt es kein
 echtes Vier-Augen-Prinzip (ADR-013). Der zweite Blick ist der nächstbeste
-Ersatz — und bei sicherheitsrelevanten Änderungen keine Kür.
+Ersatz — und bei sicherheitsrelevanten Änderungen keine Kür: Seit ADR-013
+Fassung 2 (Punkt 9, Nr. 8) ist er für Policies, `SECURITY DEFINER`,
+Datenumzug, Rechnungsausstellung, Nummernkreis und Löschung Pflicht, und
+zwar **vor dem Merge** (Gate A5 im Graph-Engineering-Workflow): in
+derselben Session als Review-Subagent mit eigenem Kontext, sonst als eigene
+Session, auf die der Pull Request wartet. Was er findet, wird ein eigener
+Loop — so wie CAL-016 aus zwei frischen Reviews entstand.
 
 ## Stoppen und eskalieren
 
@@ -150,14 +178,15 @@ Richtung — aber nur dort, wo die Frage beantwortbar ist.
 
 ## Wer ändert welches Steuerungsdokument
 
-| Dokument | Loop (`/feature-loop`) | Docs-Session, Planungssession | Ablaufrunde (eingefroren bis Probewoche 1) | Wochenupdate |
-| --- | --- | --- | --- | --- |
-| `ROADMAP.md` | Fortschrittstabelle, „Nächster Loop", `fortschritt.json` (Schritt I) | nachstellen, neue Zeilen als Vorschlag | nur als Diff, den Jannes freigibt | liest nur |
-| `OPEN_DECISIONS.md` | Verweis auf neue `ANN`-Kennungen | Entscheidungen von Jannes eintragen | — | liest nur |
-| `ASSUMPTIONS.md` | neue Annahmen sofort (Schritt D) | Bestätigungen, Nachträge | — | — |
-| `BEFUNDE.md` | bearbeitete Befunde als erledigt | neue Befunde aus Abnahmen und Reviews | Bruchstellen als Befunde | — |
-| Ideenspeicher | neue Ideen als `vorschlag` | Ideen von Jannes als `notiert` | Ziel 3 („Idee") | — |
-| Prinzipien, ADRs | nie ohne Auftrag (§21) | auf Auftrag, eigener Commit | nie | nie |
+| Dokument | Loop (`/feature-loop`, Pfad A) | Sandbox (`/sandbox`, Pfad S) | Docs-Session, Planungssession (Pfad D) | Ablaufrunde (eingefroren bis Probewoche 1) | Wochenupdate |
+| --- | --- | --- | --- | --- | --- |
+| `ROADMAP.md` | Fortschrittstabelle, „Nächster Loop", `fortschritt.json` (Schritt I) | — | nachstellen, neue Zeilen als Vorschlag | nur als Diff, den Jannes freigibt | liest nur |
+| `ARBEITSBEREICHE.md` | ersetzte Vorschau austragen | Prototyp eintragen (S4) und austragen (S6) | Stand nachführen | — | abgelaufene Prototypen melden (Schritt 6) |
+| `OPEN_DECISIONS.md` | Verweis auf neue `ANN`-Kennungen | — | Entscheidungen von Jannes eintragen | — | liest nur |
+| `ASSUMPTIONS.md` | neue Annahmen sofort (Schritt D) | keine — was nach einer Annahme aussieht, kommt ins Härtungs-Ticket | Bestätigungen, Nachträge | — | — |
+| `BEFUNDE.md` | bearbeitete Befunde als erledigt | Befund aus der Schau | neue Befunde aus Abnahmen und Reviews | Bruchstellen als Befunde | — |
+| Ideenspeicher | neue Ideen als `vorschlag` | Idee aus der Schau als `vorschlag` | Ideen von Jannes als `notiert` | Ziel 3 („Idee") | — |
+| Prinzipien, ADRs | nie ohne Auftrag (§21) | nie | auf Auftrag, eigener Commit | nie | nie |
 
 ## Merge und Abnahme
 

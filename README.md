@@ -42,7 +42,7 @@ supabase/
 tests/e2e/         Playwright
 docs/adr/          Architecture Decision Records
 docs/decisions/    offene Entscheidungen und Annahmenregister
-docs/development/  Roadmap, Arbeitsbereiche, Befunde, Entwicklungs-Workflow
+docs/development/  Roadmap, Arbeitsbereiche, Befunde, Entwicklungs- und Graph-Engineering-Workflow
 docs/abnahme/      manuelle Prüfschritte je Feature
 docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)
 ```

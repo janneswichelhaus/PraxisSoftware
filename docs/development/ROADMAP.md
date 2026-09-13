@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 5.1 · Stand 2026-09-13 · **in Kraft**
+Version 5.2 · Stand 2026-09-13 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Die Entscheidungen, aus denen dieser Rahmen entstanden ist
@@ -108,7 +108,10 @@ geht:
 2. **Aufruf:** genau einen Aufruf aus der Tabelle unten, unverändert, als
    erste Nachricht. **Ein Thema je Session.** Ein zweiter Wunsch geht nicht in
    dieselbe Session — er wird ein eigener Aufruf oder eine Zeile im
-   Ideenspeicher (Aufruf „Idee").
+   Ideenspeicher (Aufruf „Idee"). Welchen Pfad ein Auftrag nimmt — Loop,
+   Sandbox oder Docs-Session —, sagt die Klassifikation K1 in
+   [`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md); eine
+   Session, die den falschen Aufruf bekommt, sagt das und baut nichts.
 3. **Nachher:** den Bericht lesen und die Fragen mit je einem Satz
    beantworten („wie empfohlen" reicht). **Gemergt wird, sobald die CI grün
    ist** — Docs wie Code, gern über „Auto-Merge" des Pull Requests
@@ -132,6 +135,8 @@ in dieser Roadmap.
 | Docs-Session Providerprüfung    | `Docs-Session ohne Code: OPS-001 Providerprüfung Supabase nach dem Prüfkatalog aus ADR-002 als Dokument, einschließlich der Auth-Mails (B13). Vorgaben: docs/development/ROADMAP.md, Zeile G3. Keine Cloud-Ressource anlegen.`                                                              | Opus 5 `high`          |
 | Ablaufrunde                     | `Ablaufrunde <Bereich> nach docs/development/OPTIMIERUNG.md` — **eingefroren bis Probewoche 1** (Jannes, 2026-09-13); bis dahin Befunde über die Zeile „Befund"                                                                                                              | Sonnet 5 `medium`      |
 | Befund                          | `Befund: <Beobachtung an der laufenden Anwendung, Bereich, Rolle>. In docs/development/BEFUNDE.md eintragen, nicht bauen.`                                                                                                                                                     | Sonnet 5 `low`         |
+| Sandbox                         | `/sandbox <Thema>` — Oberflächen-Prototyp ohne Server, Netz und Persistenz nach `GRAPH-ENGINEERING-WORKFLOW.md` (Pfad S); endet mit der Frage „übernehmen oder verwerfen", beantwortet mit `/sandbox <Thema> übernehmen` (Härtungs-Ticket) oder `/sandbox <Thema> verwerfen` (Löschen); ein Prototyp lebt höchstens zwei Code-Loops | Sonnet 5 `medium`      |
+| Zweitreview                     | `Zweitreview <Loop-Kennung>: den Diff des offenen Pull Requests gegen die Review-Checkliste aus ADR-013 Fassung 2, Punkt 9 lesen. Befunde als Einzel-Story-Loop vorschlagen, nichts bauen.` — nur, wenn der Loop-Bericht den Zweitreview (A5) als ausstehend nennt; danach Auto-Merge einschalten | Opus 5 `xhigh`         |
 | Kartendienst-Loop               | `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md` — für MAP-003 bis MAP-005 entsprechend; MAP-006 erst nach dem Gate aus ADR-019                                                                                                                       | Opus 5 `high`          |
 | Antworten und Abnahmen eintragen | `Docs-Session ohne Code: meine Antworten und Abnahmen in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …`                                                                                                                                    | Sonnet 5 `low`         |
 | Idee                            | `Ideenspeicher: <Idee in zwei Sätzen>. Nur eintragen, nicht bauen.`                                                                                                                                                                                                                      | Sonnet 5 `low`         |
@@ -471,9 +476,9 @@ Ergebnisse der ersten Betriebsmonate neu geprüft.
 ## Spur A2 — Praxisbetrieb (Stufe 2, nach M6)
 
 Die Vorschaubereiche aus [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md) bleiben
-bis zu ihrem Loop stehen (entschieden 2026-09-05). Drei Regeln: **keine neue
-Vorschau**, **keine Erweiterung einer Vorschau**, und jede Vorschau wird in
-ihrem Loop **ersetzt**, nicht daneben gebaut. Vor dem ersten A2-Loop
+bis zu ihrem Loop stehen (entschieden 2026-09-05). Die drei Regeln für
+Vorschauen stehen dort in Abschnitt 6 (seit 2026-09-13 mit Sandbox-Prototyp
+statt „keine neue Vorschau"). Vor dem ersten A2-Loop
 entscheidet eine Optimierungsrunde mit Zählung aus dem Betrieb, ob die
 Reihenfolge noch stimmt. Die Vorschau `/touren` ersetzt MAP-006 schon
 im April 2027 (Etappe T).
@@ -496,7 +501,7 @@ im April 2027 (Etappe T).
 | G2  | **STAFF-EPIC-002 Konten und Rollen**                  | STAFF-002 Zugang einladen, Rolle vergeben und ändern (auditiert) · STAFF-003 sperren, Passwort zurücksetzen, MFA für `owner` · **STAFF-004** Passwort vergessen als Selbstbedienung, alle Sitzungen beenden. E-Mails ausschließlich über die Auth-Mails des geprüften Providers (B13, entschieden 2026-09-06). Löst E11; E10 als Annahme (`owner`).                                                                                    | Claude                                | Okt 2026                |
 | G3  | **OPS-001 Providerprüfung und Cloudprojekt**          | Prüfkatalog aus ADR-002 für Supabase dokumentieren, einschließlich der Auth-Mails (B13) **und der fünf Punkte zum Objektspeicher aus ADR-017** (Vertragsdeckung, Unterauftragskette, Löschung beim Anbieter, S3-Zugang für die Sicherung, Entzug signierter Verweise); bei positivem Ergebnis Cloudprojekt in EU-Region und Umgebungen Dev/Test/Prod. **Dokument im September, Anlage im Oktober.** Keine Cloud-Ressource durch einen Agenten (ADR-013).                                                      | Claude (Dokument), Jannes (Anlage)    | Sep/Okt 2026            |
 | G4  | ~~**DAT-EPIC-001 Dateiablage**~~ — **fertig 2026-09-13**, Abnahme steht aus | DAT-001 Bucket, Berechtigungen, signierte Verweise, Datenklasse, Audit — **alles nach ADR-017**, einschließlich zweiphasigem Upload mit Bestätigung, Dokumentart als Rollenschnitt, Löschauftrag mit Quittung und einer Nachbildung von `storage.objects` im Test-Shim · VER-004 Scan-Anhang je Verordnung                                                                                                                               | Claude                                | Nov 2026                |
-| G5  | **OPS-002 Deployment und Freigabe**                   | Frontend-Hosting mit Prüfung nach ADR-002; Release aus Tag mit menschlicher Freigabe; Migrationen nur über die Pipeline; Rollback; `service_role` nie im Browser; Review-Checkliste. **Test-Umgebung im November**, damit Jannes ohne Docker abnimmt.                                                                                                                                                                                  | Claude (Pipeline), Jannes (Freigabe)  | Nov 2026                |
+| G5  | **OPS-002 Deployment und Freigabe**                   | Frontend-Hosting mit Prüfung nach ADR-002; Release aus Tag mit menschlicher Freigabe; Migrationen nur über die Pipeline; Rollback; `service_role` nie im Browser; die Review-Checkliste aus ADR-013 Fassung 2 in der Pipeline verankern (die Liste selbst steht seit dem 2026-09-13). **Test-Umgebung im November**, damit Jannes ohne Docker abnimmt.                                                                                                                                                                                  | Claude (Pipeline), Jannes (Freigabe)  | Nov 2026                |
 | G6  | **OPS-004 Logging, Redaction, Monitoring**            | Verbotsliste aus ADR-011 automatisiert geprüft, Entscheidung zu externem Error-Tracking, Alarmierung, Security-Log 12 Monate, Erkennung für Art. 33. **Enthält OPS-005 minimal:** Audit-Abfrage als Runbook für `owner`, abgewiesene Zugriffe protokolliert.                                                                                                                                                                              | Claude                                | Jan 2027                |
 | G7  | **OPS-003 Backup und Restore-Test**                   | PITR aktiv, Backup-Lebenszyklus, Restore-Test in isolierter Umgebung inklusive Nachziehen der Löschungen, Notfallzugang verwahrt, Betriebsdokumentation mit den 13 Positionen aus ADR-012. **Neu aus ADR-017 (2026-09-12):** Der Objektspeicher läuft im Datenbank-Backup **nicht** mit — eigener Sicherungsweg (S3-kompatibler Zugang, Taktung gegen RPO ≤ 1 h), dreistufige Wiederherstellung (Datenbank, Objekte, Löschjournal und offene Löschaufträge). **Vorbedingung für produktive Dateien.**                                                                              | Jannes und Claude                     | Jan 2027                |
 | G8  | **PAT-006 Datenschutzinformation und Einwilligungen** | „Datenschutzinformation ausgehändigt am", Hinweis auf Behandlungsvertrag, minimale Einwilligungsstruktur je Zweck mit Widerruf; Textvorlage Ausfallhonorar-Regel; die Datenschutzinformation nennt den Kartendienst (ADR-019). Behandlungsvertrag und Datenschutzinformation bleiben Papier mit Vermerk; keine Unterschrift in der Anwendung (E-13).                                                                                     | Claude                                | Dez 2026                |
@@ -627,7 +632,9 @@ gelaufen ist.
    vollständige Testsuite läuft einmal am Ende des Epics.
 3. **Neues Thema = neue Session.** Rückfragen zum laufenden Loop in derselben.
 4. **Ein aktiver Feature-Branch.** Jeder Pull Request wird gemergt, sobald die
-   CI grün ist (Auto-Merge erlaubt); Abnahme und Befunde folgen danach (R6).
+   CI grün ist (Auto-Merge erlaubt) — außer ein Zweitreview nach ADR-013
+   Fassung 2 steht aus, dann wartet er darauf; Abnahme und Befunde folgen
+   danach (R6).
    Gemergte Branches werden gelöscht; die elf Remote-Branches vom 13.09.
    sollen sich nicht wiederholen.
 
@@ -639,7 +646,10 @@ gelaufen ist.
    kein Grund zu kürzen.
 7. **Höchstens eine Ideenspeicher-Datei** je Loop, nach dem Index in
    `IDEENSPEICHER.md`.
-8. **Keine Subagenten** außer bei echt breiter Suche über viele Dateien.
+8. **Keine Subagenten** außer bei echt breiter Suche über viele Dateien und
+   für den Zweitreview in frischem Kontext, den ADR-013 Fassung 2 (Punkt 9,
+   Nr. 8) bei kritischen Änderungen verlangt (Gate A5 in
+   `GRAPH-ENGINEERING-WORKFLOW.md`).
 
 **Verifikation**
 
@@ -648,9 +658,10 @@ gelaufen ist.
 10. Keine identischen teuren Läufe ohne Änderung dazwischen.
 11. `pnpm test:db` läuft auch in der Cloudumgebung und ist bei Migrationen und
     Policies das wichtigste Gate.
-12. **Unabhängiger Zweitreview** in frischer Session bei RLS-Policies,
-    `SECURITY DEFINER`, Löschung, Rechnungsausstellung und Nummernkreis
-    (`DEVELOPMENT_WORKFLOW.md`).
+12. **Unabhängiger Zweitreview** in frischem Kontext vor dem Merge, wo
+    ADR-013 Fassung 2 (Punkt 9, Nr. 8) ihn verlangt — Auslöser stehen nur
+    dort: Review-Subagent in derselben Session (Regel 8) oder die Zeile
+    „Zweitreview" aus „Sessions starten".
 
 **Rhythmus**
 
@@ -674,7 +685,7 @@ Modell und Aufwandsstufe werden zu Sitzungsbeginn gewählt und nicht gewechselt.
 | Löschung und Retention (LOE-EPIC-001)                            | Opus 5    | `max`                    |
 | Rechnungsausstellung, Nummernkreis, Snapshot (ABR-EPIC-002a)     | Opus 5    | `xhigh` + Zweitreview    |
 | Fachlogik ohne bestehendes Muster; neuer Datenweg (MAP-003, MAP-006) | Opus 5  | `high`                   |
-| Unabhängiger Zweitreview                                         | Opus 5    | `xhigh`, frische Session |
+| Unabhängiger Zweitreview (Zeile „Zweitreview")                   | Opus 5    | `xhigh`, eigene Session  |
 | UI-Seite nach dem Muster vorhandener Seiten, UI-000, UX-EPIC-001 | Sonnet 5  | `medium`                 |
 | Tests zu bereits geschriebenem Code ergänzen                     | Sonnet 5  | `medium`                 |
 | Vollrunde (`OPTIMIERUNG.md`), Formulierung, Doku                 | Sonnet 5  | `medium`                 |
@@ -700,6 +711,11 @@ Auftrag für die wöchentliche Planungssession. Sie **baut nichts.**
 5. Antwort in festem Format, höchstens zwölf Zeilen: _diese Woche ansteht ·
    Jannes entscheidet oder liefert (mit Datum) · hängt (Spur-B-Punkte über
    Termin) · Ampel M0 bis M6 mit je einem Wort Begründung_.
+6. Die Tabelle „Sandbox-Prototypen" in `ARBEITSBEREICHE.md` §2 lesen: Für
+   jede Zeile die seit „Angelegt" fertigen Code-Loops in der
+   Fortschrittstabelle zählen; ab zwei den Prototyp als **abgelaufen** nennen
+   (Jannes startet dann `/sandbox <Thema> verwerfen` oder den ersetzenden
+   Loop). Ohne Zeilen entfällt der Schritt in einem Wort.
 
 Die eingerichtete Routine (montags 07:50 Uhr) ist in `docs/DEVELOPMENT.md`
 beschrieben; ihr Prompt wurde am 2026-09-06 auf dieses Format umgestellt
@@ -824,7 +840,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | FIX-014 Textverlustschutz beim Abmelden und im Wettlauf | fertig | 2026-09-13 | `90ca0f6` — ANN-046 erweitert; Abmelderückfrage, ein Schreibweg je Seite, kein Weitergehen nach Weiterschreiben |               |
 | CAL-017 Teamereignisse als ein Vorgang | fertig | 2026-09-13 | `10e439b` — Gruppenkennung, gruppenweites Ändern und Absagen, Trigger gegen ausscherende Zeilen; ANN-051 |               |
 | DAT-EPIC-001 (DAT-001 bis DAT-003, mit VER-004) | fertig | 2026-09-13 | `84bec9b`, `42bf51e`, `8f7816c`, `fd10a37` — Dateiablage nach ADR-017; `storage.objects` im Test-Shim, ANN-052, ANN-053 |               |
-| Dokumentations-Audit und Bereinigung (Docs)             | fertig | 2026-09-13     | Branch `claude/praxissoftware-arch-graph-gc1a3u` — Prinzipien 0.10, ADR-004/010/018/019, OPEN_DECISIONS 3.0, Register, Ideenspeicher, Roadmap 5.1; E14 erledigt, E15 neu | — |
+| Dokumentations-Audit und Bereinigung (Docs)             | fertig | 2026-09-13     | Branch `claude/praxissoftware-arch-graph-gc1a3u` — Prinzipien 0.10, ADR-004/010/018/019, OPEN_DECISIONS 3.0, Register, Ideenspeicher, Roadmap 5.1; E14 erledigt, E15 neu; Graph-Engineering-Workflow 1.0 mit ADR-013 Fassung 2 und `/sandbox` | — |
 
 ---
 
@@ -832,6 +848,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5.2     | 2026-09-13 | **Graph-Engineering-Workflow 1.0** (Docs-Session, Knoten 4 des Dokumentations-Audits; freigegeben von Jannes). Jeder Auftrag wird vor dem ersten Schritt **klassifiziert** (K1): Pfad A — der Feature-Loop, jetzt mit benanntem Compliance-Gate A4 und Zweitreview A5 **vor dem Merge** (Review-Subagent in derselben Session oder Zeile „Zweitreview"; der Pull Request wartet dann); Pfad S — die neue **Frontend-Sandbox** (`/sandbox <Thema>`, `.claude/skills/sandbox/SKILL.md`), technisch ohne Server, Netz und Persistenz — `trennung.test.ts` prüft jetzt auch Importe aus echten API-Modulen —, höchstens zwei Code-Loops lang, endet mit Härtungs-Ticket (`… übernehmen`) oder Löschung (`… verwerfen`); Pfad D — Docs-Session, wenn eine Hard-Stop-Entscheidung fehlt. Dafür **ADR-013 Fassung 2**: Punkt 9 definiert „kritische Änderung" (§12 plus technische Auslöser, Liste nur dort) und legt die zehn Punkte der Review-Checkliste fest, die Punkt 8 seit dem 28.08. verlangte. Nachgezogen: `CLAUDE.md`, Feature-Loop-Skill (K1, Schritt F, Schritt I), `ARBEITSBEREICHE.md` (Sandbox-Prototypen, Regel statt „keine neue Vorschau"), Zeilen „Sandbox" und „Zweitreview" hier, Credit-Regeln 4, 8 und 12, Modelltabelle, Wochenupdate Schritt 6, G5, `DEVELOPMENT_WORKFLOW.md`. **Reihenfolge unverändert: nächster Loop ROL-EPIC-001.** |
 | 5.1     | 2026-09-13 | **Dokumentations-Audit und Bereinigung** (Docs-Session, kein Feature-Code). Drei Festlegungen des Projektinhabers: **E15** — Office liest alle klinischen Inhalte wie Therapeut:innen (`PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4, ADR-004 Fassung 2; Umsetzung **ROL-EPIC-001**, jetzt nächster Loop); **E14 erledigt** — Hausbesuch-Szenarien: Nichtantreffen nach Protokoll mit Ausfallgebühr, „Tür geöffnet" gilt als durchgeführt (§8, ADR-018 Fassung 3; Umsetzung **CAL-018**); **E-20** — ADR-019 angenommen. Dazu **VER-EPIC-002** (Verordnung im Office-Alltag, Vorgabe aus PR #37 auf `main` übernommen) vor ABR-EPIC-001. Aufgeräumt: „Nächster Loop" trägt nur noch den Livestand, die Vermerke 2.0–4.6 liegen in `archiv/`, der Rückwärtsplan ist auf den Stand vom 13.09. gezogen (13 Loops im September fertig), fertige Loops der Etappe 1 sind durchgestrichen, `fortschritt.json` nennt die Stufen jetzt `fertig`/`abgenommen` wie die Tabelle, `BEFUNDE.md` sammelt Befunde, die Ablaufrunden sind bis Probewoche 1 eingefroren, Merge-Regel: bei grüner CI (Auto-Merge), Abnahme binnen sieben Tagen. Register: Übersicht vollständig, Status normiert, ANN-006/011 durch E15 abgelöst, ANN-036 in ADR-018 überführt. OPEN_DECISIONS: Struktur 3.0 mit Archiv, Rückverweisen und Glossar. Ideenspeicher: Statusmodell mit `zurückgestellt`, gebaute Ideen `überführt`. |
 | 5.0     | 2026-09-13 | **DAT-EPIC-001 fertig** (drei Stories) — die erste Zeile der Etappe G, die Code ist, und die erste Stelle, an der die Anwendung **zwei** Speicher führt. **DAT-001**: Dateien hängen an einem Bezugsdatensatz und kommen nur über zwei Phasen mit serverseitiger Bestätigung in die Akte — die Berechtigung wird geprüft, bevor Bytes fließen, und `confirm_patient_file_upload` vergleicht Größe und MIME-Typ gegen das, was die Storage-API tatsächlich abgelegt hat. Der Objektschlüssel trägt nur Kennungen und ist eine **generierte Spalte**; er verlässt die Datenbank ausschließlich über den Vorgang, der die Ausstellung protokolliert (**ANN-052**) — der Lesepfad liefert ihn nicht. Ausgeliefert wird über signierte Verweise mit **60 Sekunden** und `cacheControl: '0'`, je Zugriff neu, nie auf Vorrat. Der Rollenschnitt hängt an der Dokumentart und steht als Daten im Katalog: **der Verordnungsscan ist klinisch**, und `office` bekommt ihn gar nicht erst geliefert — nicht ausgegraut und nicht gezählt (ANN-011). **DAT-002**: Löschen ist zweistufig, und die Quittung wird **verdient** — der Server prüft selbst, dass das Objekt weg ist, sonst bleibt der Auftrag offen; umgekehrt lässt die DELETE-Policy nur Objekte mit offenem Auftrag entfernen, womit die Reihenfolge „erst Datenbank, dann Objekt" erzwungen und nicht bloß vereinbart ist. Dazu die protokollierte Korrektur der Dokumentart, die eine Sichtbarkeitsgrenze verschiebt. **DAT-003**: Der Abgleich meldet fehlende Objekte als Verlust mit Akte und Namen und verwaiste Objekte als Abfall, der über denselben Löschweg fällt — kein zweiter, stiller Pfad. **ANN-053** benennt die ehrliche Grenze: Die Prüfsumme rechnet der Browser, und die Datenbank kann sie nicht nachrechnen. Drei Migrationen, 68 neue Datenbanktests, drei Abnahmeabschnitte; der Test-Shim bildet jetzt `storage.buckets` und `storage.objects` nach, damit der Dateizugriff (§12) in der Cloudumgebung überhaupt prüfbar ist. Ein Befund aus dem vollständigen Lauf ist mitbehoben: Beim Erweitern des Ereigniskatalogs war eine veraltete Fassung der Subjekttypen fortgeschrieben worden. Im Fortschrittsmodell geht der Posten auf `gebaut` (0,85): Block A **68,4 Prozent** (vorher 63,4), Gesamtstand **33,0** (vorher 31,5). **Nächster Loop: `ABR-EPIC-001`** — B4 liegt noch nicht vor und blockiert nach §15.1 nicht, aber Leistungskatalog und Praxisstammdaten braucht er von Jannes. |
 | 4.9     | 2026-09-13 | **Drei Korrekturen aus der CI und einem Befund am laufenden Stand.** **FIX-013**: Die angemeldeten E2E-Prüfungen sind wieder grün — sechs Fehlschläge, drei Ursachen. Ein echter Befund in der Oberfläche (das Ereignisformular wählte den einzigen Standort nicht vor, obwohl die Terminanlage genau das tut), zwei Tests mit veralteter `cancel_appointment`-Signatur (PostgREST fand die Funktion nicht, die Antwort war 404 statt der geprüften Berechtigung), zwei Tests auf die vor CAL-015b gültige Darstellung und ein Tagkonflikt zwischen zwei Tests derselben Datei. **FIX-014**: Der Textverlustschutz erfasst jetzt auch das **freiwillige Abmelden** — die in ANN-046 ausdrücklich offen gelassene Grenze —, alle Schreibvorgänge einer Seite laufen durch **einen** Weg (kein zweiter startet, solange einer läuft), und wer während des Speicherns weiterschreibt, geht nicht weiter; beim Abschluss und bei der Korrektur ist das Feld währenddessen unveränderlich. Die erzwungene Beendigung einer Sitzung kommt daran nie vorbei und greift unverändert sofort. **CAL-017**: Ein Teamereignis ist **ein Vorgang**. Die Zeilen tragen eine gemeinsame Gruppenkennung; Bezeichnung, Zeit, Länge, Art und Ort ändert `update_appointment_event` für alle Beteiligten in einer Transaktion, mit Konfliktprüfung je Person vor dem Schreiben, und `cancel_appointment_event` sagt alle offenen Teilnahmen zugleich ab. Eine einzelne Ereigniszeile kann nicht mehr ausscheren (Trigger); die einzelne **Teilnahme** bleibt davon getrennt änderbar und absagbar. Bestandszeilen werden **nicht** über Titel oder Uhrzeit zusammengeführt. Dafür **ANN-051**; eine Migration, ein neues Formular, zwei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |

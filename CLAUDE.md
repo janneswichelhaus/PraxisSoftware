@@ -203,10 +203,33 @@ Verifikation:
 
 ## Arbeitsweise
 
+**Jeder Auftrag wird zuerst klassifiziert** (Knoten K1 in
+`docs/development/GRAPH-ENGINEERING-WORKFLOW.md`, in Kraft seit 2026-09-13):
+Berührt der Diff einen Auslöser aus ADR-013 Fassung 2, Punkt 9 — die Liste
+steht nur dort; kurz: Migration, Policy, RPC, Auth, Audit, Retention,
+Rechnung, Außenverbindung, personenbezogene Daten —, ist er **Pfad A** und
+läuft über den Feature-Loop. Berührt er nur die Oberfläche und überlebt kein
+Wert die Sitzung, ist er **Pfad S** und läuft über die Sandbox. Fehlt erst
+eine Entscheidung aus der Hard-Stop-Liste (§15.1), ist er **Pfad D**, eine
+Docs-Session. Die Klassifikation ist eine Liste, keine Ermessensfrage; das
+Ergebnis wird in einem Satz genannt.
+
 Für Featurearbeit gibt es den Skill **`/feature-loop <Aufgabe>`**
-(`.claude/skills/feature-loop/SKILL.md`): Spec → Inspect → Plan → Build →
+(`.claude/skills/feature-loop/SKILL.md`): K1 → Spec → Inspect → Plan → Build →
 Verify → Review → Fix → Final Verify → Report → Stopp. Er startet nur auf
-ausdrücklichen Aufruf.
+ausdrücklichen Aufruf. Schritt F arbeitet die Review-Checkliste aus ADR-013
+Fassung 2, Punkt 9 ab; wo deren Nr. 8 es verlangt, folgt der Zweitreview in
+frischem Kontext vor dem Merge.
+
+Für Oberflächen-Prototypen gibt es den Skill **`/sandbox <Thema>`**
+(`.claude/skills/sandbox/SKILL.md`): Skizze → Bauen in
+`src/features/preview/` → Sandbox-Gate → Schau → auf
+`/sandbox <Thema> übernehmen` ein Härtungs-Ticket, auf
+`/sandbox <Thema> verwerfen` Löschen. Ein Prototyp berührt technisch
+erzwungen keinen Server, kein Netz und keine Persistenz
+(`trennung.test.ts`), lebt höchstens zwei Code-Loops und begründet keinen
+Scope. Er ersetzt die frühere Regel „keine neue Vorschau"; die bestehenden
+Vorschaubereiche bleiben eingefroren, bis ihr Loop sie ersetzt.
 
 `docs/development/ROADMAP.md` sagt, **was als Nächstes** dran ist, welche
 Entscheidung ein Etappenschritt voraussetzt und welche Regeln den

@@ -2,11 +2,15 @@
 
 ## Status
 
-Angenommen
+**Angenommen** (2026-08-28).
+
+**Fassung 2 (2026-09-13)** — Punkt 9 definiert „kritische Änderung" und legt
+die Review-Checkliste fest, die Punkt 8 seit Fassung 1 verlangt. Alle übrigen
+Punkte gelten unverändert.
 
 ## Datum
 
-2026-08-28
+2026-08-28 · Fassung 2: 2026-09-13
 
 ## Kontext
 
@@ -58,6 +62,62 @@ Dieser ADR schließt den offenen Punkt E7.
 8. Da das Projekt zunächst von einer Person entwickelt wird, ist **kein
    künstliches verpflichtendes Zwei-Personen-Review erforderlich**. Kritische
    Änderungen erhalten stattdessen eine **dokumentierte Review-Checkliste**.
+9. **Kritische Änderung und Review-Checkliste** (Fassung 2). Eine Änderung
+   ist **kritisch**, wenn sie eine der in `PROJECT_PRINCIPLES.md` §12 als
+   besonders kritisch genannten Funktionen berührt (Wortlaut dort) oder
+   mindestens einen dieser technischen Auslöser:
+   - eine Migration in `supabase/migrations/`, auch eine reine Datenmigration
+   - eine RLS-Policy oder eine `SECURITY DEFINER`-Funktion
+   - einen neuen oder geänderten RPC-Aufruf in `src/features/*/api.ts`
+   - Authentifizierung, Sitzungen, Rollen oder Sichtbarkeit zwischen Rollen
+   - den Auditkatalog oder einen Audit-Lesepfad (ADR-010)
+   - den Retention Schedule, eine Datenklasse oder einen Löschpfad (ADR-008)
+   - Rechnungsdaten, Leistungen oder Zahlungen (ADR-009)
+   - einen externen Datenfluss oder einen Anbieter (ADR-002, ADR-005, ADR-019)
+   - ein neues personenbezogenes Feld oder eine neue Datenklasse
+
+   Maßgeblich ist, was der Diff der Änderung berührt — nicht, was eine
+   spätere Funktion einmal bräuchte. Diese Liste steht nur hier; wer sie
+   anderswo braucht, verweist auf diesen Punkt.
+
+   Für jede kritische Änderung wird die folgende Checkliste abgearbeitet und
+   im Abschlussbericht je Punkt mit Ergebnis genannt. Ein Punkt, dessen
+   Gegenstand die Änderung nicht berührt, wird als „entfällt" mit Begründung
+   genannt; ein nicht erfüllter Punkt ist ein Befund, der behoben wird, keine
+   „bekannte Einschränkung". Die Punkte 1 bis 7, 9 und 10 werden vor dem
+   Abschlussbericht des Loops erfüllt, Punkt 8 **vor dem Merge**:
+   1. Jede neue oder geänderte Policy hat Negativtests in `pnpm test:db`:
+      andere Organisation, Rolle ohne Recht, Patientenkonto.
+   2. Jede `SECURITY DEFINER`-Funktion setzt `search_path = ''`, prüft Rolle
+      und Organisation selbst und schreibt ihren Auditeintrag in derselben
+      Transaktion.
+   3. Projektionen liefern nur die Spalten, die die Rolle nach §4 sehen darf;
+      nichts wird ausgeliefert und im Client ausgeblendet (§4.7).
+   4. Jede neue Tabelle trägt Datenklasse und Frist (`COMMENT`,
+      `retention_assignments`) und einen Löschtest.
+   5. Keine Namen und keine klinischen Inhalte in URL, Logs und
+      Audit-Kontext ([ADR-011](ADR-011-logging-and-observability.md)).
+   6. Jede Annahme steht im Register und trägt ihren Anker im Code; keine
+      fällt in die Hard-Stop-Liste aus §15.1.
+   7. Externe Datenflüsse nur nach Prüfung
+      ([ADR-002](ADR-002-hosting-data-residency.md)); in Dev und Test gegen
+      Mock.
+   8. Migration mit Datenumzug, Rechnungsausstellung, Nummernkreis, Löschung,
+      neue oder geänderte Policy oder `SECURITY DEFINER`-Funktion:
+      **Zweitreview in frischem Kontext vor dem Merge** — in derselben
+      Session durch einen Review-Subagenten mit eigenem Kontext, der nur den
+      Diff und diese Checkliste als Auftrag bekommt; ist das nicht möglich,
+      in einer eigenen Review-Session (Opus 5 `xhigh`), und der Pull Request
+      wird bis dahin ohne Auto-Merge geführt. Befunde daraus werden ein
+      eigener Loop.
+   9. Rechnungsdaten: Snapshot, Unveränderbarkeit, Storno-Kette
+      ([ADR-009](ADR-009-private-billing-model.md)).
+   10. `pnpm test:db` und die vollständige Suite auf dem Endstand; angemeldete
+       E2E-Prüfungen, wo Docker verfügbar ist.
+
+   Wo die Checkliste im Ablauf sitzt (Gate A4, Zweitreview A5), steht in
+   `docs/development/GRAPH-ENGINEERING-WORKFLOW.md`; die Punkte selbst stehen
+   nur hier. Eine Änderung an der Liste ist eine neue Fassung dieses ADR.
 
 ## Konsequenzen
 
@@ -87,10 +147,18 @@ Dieser ADR schließt den offenen Punkt E7.
   das nicht herstellbare Vier-Augen-Prinzip. Ihr Wert hängt daran, dass sie
   benannt, versioniert und tatsächlich abgearbeitet wird; andernfalls ist sie
   wirkungsloser als gar keine Regel.
-- „Kritische Änderung" ist noch nicht definiert. Bis dahin bleibt §12 der
+- ~~„Kritische Änderung" ist noch nicht definiert. Bis dahin bleibt §12 der
   Maßstab: Authentifizierung, Berechtigungen, Trennung zwischen
   Patientenaccounts, Dokumentationszuordnung, Dateizugriffe, KI-Datenflüsse und
-  Rechnungsdaten.
+  Rechnungsdaten.~~ *Beantwortet mit Punkt 9 (Fassung 2): §12 bleibt der Kern
+  und ist um die technischen Auslöser ergänzt — bewusst weiter als die reine
+  §12-Liste, weil die Punkte 1, 4 und 7 der Checkliste sonst nie greifen
+  würden.*
+- Die Checkliste in Punkt 9 ist bewusst eine Liste und kein Werkzeug. Ihre
+  Wirkung hängt daran, dass der Abschlussbericht jedes Loops sie je Punkt
+  beantwortet — ein Bericht ohne diese Antworten ist bei einer kritischen
+  Änderung unvollständig. OPS-002 verankert sie später in der Pipeline; bis
+  dahin ist Skill-Schritt F die Stelle, an der sie abgearbeitet wird.
 - Neun Pflichtprüfungen kosten Laufzeit bei jeder Änderung. Langsame CI
   verführt zum Umgehen; die Prüfungen sollten deshalb schnell und parallel
   gehalten werden. Das ist ein Betriebsziel, keine Ausnahme von der Pflicht.
@@ -105,15 +173,16 @@ Dieser ADR schließt den offenen Punkt E7.
 - Umgebungs- und Branch-Strategie über den Schutz von `main` hinaus.
 - Deployment-Verfahren, Rollback-Strategie und Release-Kadenz.
 - Testabdeckungsziele und Testarten im Einzelnen.
-- Die Definition von „kritischer Änderung" und der Inhalt der
-  Review-Checkliste.
+- ~~Die Definition von „kritischer Änderung" und der Inhalt der
+  Review-Checkliste.~~ *Seit Fassung 2 Bestandteil (Punkt 9).*
 - Der Umgang mit Befunden der Scanner, insbesondere Schwellen und Fristen für
   Schwachstellen in Abhängigkeiten.
 - Ob und wie ein Notfall-Merge-Weg eingerichtet wird.
 
 ## Offene Folgefragen
 
-- Was gilt als „kritische Änderung", und wie sieht die Review-Checkliste aus?
+- ~~Was gilt als „kritische Änderung", und wie sieht die Review-Checkliste
+  aus?~~ *Beantwortet mit Punkt 9 (Fassung 2, 2026-09-13).*
 - Welche Schweregrade eines Dependency-Scans blockieren einen Merge, und
   welche werden nur berichtet?
 - Wie werden Befunde behandelt, für die es keine Behebung gibt?
@@ -126,3 +195,10 @@ Dieser ADR schließt den offenen Punkt E7.
   ADR-010 auditpflichtig?
 - Wie werden Datenbankmigrationen getestet, ohne Produktionsdaten zu
   verwenden (§3.1)?
+
+## Änderungshistorie
+
+| Fassung | Datum | Änderung |
+|---|---|---|
+| 1 | 2026-08-28 | Angenommen. |
+| 2 | 2026-09-13 | Punkt 9 neu: Definition „kritische Änderung" (§12 plus technische Auslöser) und die zehn Punkte der Review-Checkliste, die Punkt 8 seit Fassung 1 verlangt; Nr. 8 verlangt den Zweitreview in frischem Kontext vor dem Merge. Erledigungsvermerke in Konsequenzen, Abgrenzung und Folgefragen. Punkte 1 bis 8 unverändert. Anlass: Docs-Session „Dokumentations-Audit", Graph-Engineering-Workflow. |

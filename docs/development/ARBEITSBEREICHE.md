@@ -108,6 +108,22 @@ Sitzung simuliert wurde, steht unter `/vorschau/protokoll`.
 | Touren                   | `/touren`                     | eigene Anforderung: Besuchsfolge mit unterscheidbarer Behandlungs- und Wegzeit                                                                                |
 | Abrechnung               | `/abrechnung` und Unterseiten | eigene Anforderung: Rechnungen, Leistungen, Katalog, Zahlungen                                                                                                |
 
+### Sandbox-Prototypen (Pfad S)
+
+Neue Vorschauen entstehen seit dem 2026-09-13 als **Sandbox-Prototyp** nach
+den Regeln in Abschnitt 6 (Pfad S in
+[`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md)). Jeder
+Prototyp steht hier mit Anlagedatum und dem Loop, der ihn ersetzen soll; das
+Wochenupdate meldet abgelaufene Einträge (Roadmap, Schritt 6).
+
+| Thema | Route | Angelegt | Ersetzt durch | Härtungs-Ticket |
+| ----- | ----- | -------- | ------------- | --------------- |
+| —     | —     | —        | —             | derzeit keiner  |
+
+Die Bereiche in der Tabelle oben sind **Bestand** aus dem Umbau vom
+2026-09-05 und keine Sandbox-Prototypen: Sie haben keine Ablauffrist, werden
+aber auch nicht erweitert, bis ihr Loop sie ersetzt.
+
 ### Entfallen: Teamverzeichnis und Personalakte
 
 Beide waren in diesem Umbau als Vorschau angelegt. Beim Zusammenführen mit
@@ -192,11 +208,21 @@ MAP-006 (Etappe T, `MAP-LOOPS.md`, seit MAP-001 am 2026-09-08): Karte der
 Tagesroute, Fahrradroute, Fahrzeiten, Navigations-Handoff, Tourenliste.
 MAP-002 bis MAP-005 sind Prototypen mit synthetischen Daten und laufen als
 **gekennzeichnete Vorschau** unter `/touren/karte`; MAP-006 bindet die echten
-Termine an und ersetzt `/touren`. Bis dahin gelten drei Regeln: keine neue
-Vorschau, keine Erweiterung einer Vorschau, und jede Vorschau wird in ihrem
-Loop ersetzt, nicht daneben gebaut. Die Kartenprototypen sind die eine
-bewusste Ausnahme von der ersten Regel — sie sind in der Roadmap eingeplant
-und tragen ihre Kennzeichnung.
+Termine an und ersetzt `/touren`. Sie berühren einen externen Datenfluss
+(ADR-019) und sind deshalb Pfad A, keine Sandbox-Prototypen.
+
+Für Vorschauen gelten seit dem 2026-09-13 drei Regeln
+([`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md), Pfad S):
+**Eine neue Vorschau entsteht nur als Sandbox-Prototyp** — über `/sandbox`,
+unter `src/features/preview/<thema>/` und damit von `trennung.test.ts`
+erfasst, technisch ohne Server, Netz und Persistenz, mit höchstens zwei
+Code-Loops Lebensdauer und einem Eintrag in Abschnitt 2; die eine in der
+Roadmap eingeplante Ausnahme sind die Kartenprototypen MAP-002 bis MAP-005,
+die als Pfad A mit Vorschau-Kennzeichnung laufen (ADR-019). **Ein
+bestehender Vorschaubereich wird nicht erweitert.** **Jede Vorschau wird in
+ihrem Loop ersetzt, nicht daneben gebaut.** Die frühere Regel „keine neue
+Vorschau" ist damit durch eine zeitlich begrenzte, technisch abgesicherte
+Erlaubnis abgelöst.
 
 Die Ablaufrunden nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md) sind bis Probewoche 1
 eingefroren (2026-09-13); Befunde an der laufenden Anwendung sammelt

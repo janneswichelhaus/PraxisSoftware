@@ -1,6 +1,6 @@
 ---
 name: feature-loop
-description: Strukturierter Ablauf für ein Epic in diesem Repository - Spec je Story, gezielte Inspektion, Plan, Story für Story bauen und verifizieren, Selbstreview, Fix-Loop, Abschlussbericht mit Annahmen. Nur auf ausdrücklichen Aufruf mit /feature-loop <Aufgabe>.
+description: Pfad A des Graph-Engineering-Workflows - Klassifikation (K1), Spec je Story, gezielte Inspektion, Plan, Story für Story bauen und verifizieren, Selbstreview mit Review-Checkliste bei kritischer Änderung, Fix-Loop, Abschlussbericht mit Annahmen. Nur auf ausdrücklichen Aufruf mit /feature-loop <Aufgabe>.
 disable-model-invocation: true
 ---
 
@@ -23,6 +23,20 @@ registriert; fällt sie in die Hard-Stop-Liste, wird das gemeldet und nur der
 davon abhängige Teil nicht begonnen.
 
 ---
+
+## K1. KLASSIFIKATION
+
+Vor dem ersten Schritt den Pfad nach
+`docs/development/GRAPH-ENGINEERING-WORKFLOW.md` („K1 — Klassifikation")
+bestimmen und in einem Satz nennen. Dieser Skill ist **Pfad A**: Der Diff
+berührt einen Auslöser aus ADR-013 Fassung 2, Punkt 9 (Liste nur dort).
+Berührt der Auftrag keinen davon und soll kein Wert die Sitzung überleben,
+ist er Pfad S: stoppen und `/sandbox <Thema>` vorschlagen. Fehlt eine
+Entscheidung aus der Hard-Stop-Liste (§15.1), ist das Pfad D: die Frage mit
+Optionen, Empfehlung und Konsequenzen stellen und nur bauen, was nicht davon
+abhängt. Ein Pfad-A-Auftrag enthält per Definition kritische Änderungen;
+Schritt F arbeitet die Review-Checkliste je Story ab, nicht zutreffende
+Punkte werden im Bericht als „entfällt" mit Begründung genannt.
 
 ## A. SPEC
 
@@ -171,6 +185,17 @@ Eigenen Diff (`git diff main...HEAD`) durchgehen auf:
 - Fehlerbehandlung: verständlich, ohne interne Details preiszugeben
 - bei Oberflächenanteil: Oberflächen-Checkliste aus `docs/abnahme/README.md`
   abgehakt; Abweichungen im Bericht begründet
+- die **Review-Checkliste** aus ADR-013 Fassung 2, Punkt 9, je Story Punkt
+  für Punkt — das Compliance-Gate A4; nicht zutreffende Punkte als
+  „entfällt" mit Begründung. Ein roter Punkt geht zurück in den Build, nicht
+  als „bekannte Einschränkung" in den Bericht. Verlangt Nr. 8 der Liste
+  einen **Zweitreview** (A5), läuft er **vor dem Merge** in frischem
+  Kontext: ein Review-Subagent mit eigenem Kontext (`/code-review`,
+  `/security-review` oder ein allgemeiner Subagent), der nur den Diff und
+  die Checkliste als Auftrag bekommt — die zweite zulässige Ausnahme von
+  Credit-Regel 8. Ist das nicht möglich, nennt der Bericht den Zweitreview
+  als ausstehend, und der Pull Request wird ohne Auto-Merge eröffnet; Jannes
+  startet dann die Zeile „Zweitreview" aus der Roadmap
 - unnötiger Scope
 - fehlende Tests, besonders für Negativfälle
 - versehentliche Secrets oder Logging sensibler Daten
@@ -222,7 +247,9 @@ Kompakt berichten:
 2. Wesentlich geänderte Dateien und Datenbankbereiche
 3. Erfüllte Akzeptanzkriterien; unvollständige Stories mit Ursache
 4. Gelaufene Tests und Checks mit Ergebnis
-5. Durchgeführte UI-Verifikation
+5. Durchgeführte UI-Verifikation; bei kritischer Änderung die
+   Review-Checkliste (ADR-013 Fassung 2, Punkt 9) je Punkt mit Ergebnis und
+   der Stand des Zweitreviews
 6. **Getroffene Annahmen** — `ANN`-Kennungen mit je einem Satz, besonders die,
    die Jannes oder die Datenschutzprüfung bestätigen müssen
 7. Bekannte Einschränkungen, Risiken und Vorschläge außerhalb des Epics
@@ -237,7 +264,8 @@ Loop" auf den folgenden Eintrag stellen (er trägt nur den Livestand; was
 fertig wurde, kommt in den Änderungsvermerk) und bearbeitete Befunde in
 `docs/development/BEFUNDE.md` als erledigt markieren. Ein Eintrag ohne
 durchlaufenen Schritt I wird nicht abgehakt. Der Pull Request wird gemergt,
-sobald die CI grün ist; die Abnahme durch Jannes folgt danach.
+sobald die CI grün ist — außer ein Zweitreview (A5) steht aus, dann ohne
+Auto-Merge bis dahin; die Abnahme durch Jannes folgt danach.
 
 **Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein
 neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.

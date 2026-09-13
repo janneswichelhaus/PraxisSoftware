@@ -217,6 +217,10 @@ Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
 - Prompt am 2026-09-06 auf das Format der Roadmap 2.1 umgestellt
   (Entscheidung E-10): `git log --since='8 days ago'`, Fortschritt mit
   Abnahme-Spalte, Spur B mit Stand, Ampel je Meilenstein M0 bis M6.
+- Seit Roadmap 5.2 (2026-09-13) hat der Auftrag einen sechsten Schritt:
+  abgelaufene Sandbox-Prototypen aus `development/ARBEITSBEREICHE.md` §2
+  melden. Zählt der Routine-Prompt die Schritte selbst auf, zieht Jannes ihn
+  nach; verweist er nur auf den Abschnitt, ist nichts zu tun.
 - Nach der Zeitumstellung Ende Oktober fällt sie auf 06:50 Uhr; wer 07:50
   behalten will, ändert den Cron-Ausdruck auf `50 6 * * 1`.
 - Abschalten, Takt oder Prompt ändern: über die Routines-Oberfläche auf
