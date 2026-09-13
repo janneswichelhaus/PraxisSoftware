@@ -46,8 +46,11 @@ keine. Sie ist die zusätzliche Prüfung durch einen Menschen.
 ## Oberflächen-Checkliste je Story
 
 Für jede Story mit Oberflächenanteil, abgehakt in Schritt F des Loops.
-Abweichungen werden im Bericht begründet und in der nächsten Ablaufrunde
-(`docs/development/OPTIMIERUNG.md`) als Befund geführt.
+Abweichungen werden im Bericht begründet und in
+[`docs/development/BEFUNDE.md`](../development/BEFUNDE.md) als Befund
+geführt (die Ablaufrunden nach `OPTIMIERUNG.md` ruhen bis Probewoche 1).
+Diese Liste ist die Oberflächen-Checkliste — nicht die Review-Checkliste für
+kritische Änderungen nach ADR-013 Nr. 8.
 
 1. Bei 375 px vollständig bedienbar: kein horizontales Scrollen, Tippziele
    mindestens 44 px, Primäraktion einhändig erreichbar. Für das Scrollen und

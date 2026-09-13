@@ -390,8 +390,8 @@ Die Checkliste steht **einmal**, in `docs/abnahme/README.md` (Abschnitt
 an dieser Stelle war seit UI-000 nicht mehr wortgleich. Sie ist die
 Oberflächen-Checkliste für Schritt F des Loops — **nicht** die
 Review-Checkliste für kritische Änderungen, die ADR-013 Nr. 8 verlangt; die
-fehlt weiterhin (Eigentümer OPS-002, Entwurf im Graph-Engineering-Workflow
-vom 2026-09-13).
+fehlt weiterhin (Eigentümer OPS-002, Entwurf aus der Docs-Session vom 2026-09-13
+(Graph-Engineering-Workflow)).
 
 ## 10. Verankerung
 
