@@ -124,6 +124,8 @@ alter table public.audit_log add constraint audit_log_subject_type_check
     'staff_member',
     'treatment_note',
     'prescription',
+    'text_snippet',
+    'user_account',
     'patient_file',
     'storage_deletion_order'
   ));
