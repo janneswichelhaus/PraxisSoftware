@@ -22,8 +22,11 @@ Zuletzt aktualisiert: 2026-09-12.
   Behandlungsdokumentation): Data Router statt `<BrowserRouter>`, Rückfrage mit
   drei Wegen, „Speichern" sichert den **Entwurf** und löst keine Finalisierung
   aus, ein Fehlschlag navigiert nicht. `Technik`, also erledigt, sobald Jannes
-  widerspricht oder zustimmt. Die bekannte Grenze steht im Eintrag: Das
-  Abmelden ist keine Navigation und wird nicht erfasst.
+  widerspricht oder zustimmt. **Am 2026-09-13 mit FIX-014 erweitert**: Das
+  freiwillige Abmelden fragt dieselbe Rückfrage — die bis dahin ausdrücklich
+  offene Grenze ist damit geschlossen —, alle Schreibvorgänge einer Seite
+  laufen durch einen Weg, und wer während des Speicherns weiterschreibt, geht
+  nicht weiter.
 - **CAL-013 bringt ANN-041 neu** (Termine per E-Mail): Die Praxis wird
   Terminmails verschicken — Jannes hat das am 2026-09-12 ausdrücklich
   vorgesehen und damit seine eigene vorläufige Entscheidung zu B15 in einem
@@ -2946,17 +2949,38 @@ Hausbesuch, wo das Funkloch der Normalfall ist.
 als Hilfe oder als Hindernis erlebt wird. Deshalb die Wiedervorlage nach dem
 ersten Feldtag.
 
-**Bekannte Grenze, ausdrücklich nicht geschlossen:** Das **Abmelden** ist keine
-Navigation, sondern ein Wechsel der Identität — der Blocker sieht es nicht. Wer
-mit ungespeichertem Text auf „Abmelden" tippt, verliert ihn weiterhin (die
-Räumung der Entwürfe an der Identitätsgrenze ist gewollt, FIX-005). Das ist ein
-eigener Zuschnitt und keine Lücke dieses Schutzes; es steht im Bericht.
+**Nachtrag vom 2026-09-13 (FIX-014): drei Festlegungen kommen dazu.** Die
+oben als offene Grenze benannte Lücke ist geschlossen, und zwei Wettläufe sind
+es auch.
+
+5. **Das freiwillige Abmelden fragt dieselbe Rückfrage** — speichern und
+   abmelden, verwerfen und abmelden, hier bleiben. Die Sitzung endet erst,
+   wenn das Speichern **abgeschlossen** ist; scheitert es, bleiben Sitzung,
+   Seite und Text stehen. Die **erzwungene** Beendigung (Ablauf, „Alle
+   Sitzungen beenden", Entzug der Berechtigung) läuft über den Ereignisstrom
+   in den `SessionProvider`, kommt hier nie vorbei und greift unverändert
+   sofort — eine Rückfrage wäre dort auch falsch: Wer ausgesperrt wird, darf
+   nicht mehr schreiben.
+6. **Alle Schreibvorgänge einer Seite laufen durch einen Weg**, und es läuft
+   immer höchstens einer. Zwei gleichzeitige Schreibzugriffe auf denselben
+   Eintrag holen sich gegenseitig ein: Der zweite schreibt auf einem Stand,
+   den der erste gerade verschiebt.
+7. **Wer während des Speicherns weiterschreibt, geht nicht weiter.** Der
+   Vorgang meldet, ob danach **alles Getippte** auf dem Server liegt; sonst
+   bleibt die Seite stehen und sagt, dass noch etwas offen ist. Bei den
+   **festschreibenden** Vorgängen — Abschluss und Korrektur — ist das Feld
+   währenddessen unveränderlich: Was Bestandteil der Akte wird, muss genau
+   das sein, was auf dem Bildschirm stand, und eine Korrektur davon wäre nur
+   noch mit Begründung möglich.
 
 **Verankerung.** `src/features/documentation/Textverlustschutz.tsx`
 (`useTextverlustschutz`) — trägt die Kennung im Kopfkommentar. Der Router in
-`src/app/App.tsx`. Tests in
-`src/features/documentation/Textverlustschutz.test.tsx` (18 Fälle, darunter
-Speicherfehler und Browser-Zurück).
+`src/app/App.tsx`, der Abmeldeschutz in `src/app/abmeldeschutz.ts` und
+`src/app/AbmeldeschutzProvider.tsx`. Tests in
+`src/features/documentation/Textverlustschutz.test.tsx` (29 Fälle, darunter
+Speicherfehler, Browser-Zurück, Abmelden mit hängender Antwort und der
+Wettlauf beim Weiterschreiben) sowie angemeldet in
+`tests/e2e/authenticated/treatment-note-workflows.spec.ts`.
 
 **Änderungspfad.** Zurück auf `<BrowserRouter>`: zwei Dateien, dann entfällt
 der Schutz für interne Navigation ersatzlos — Aufwand `klein`. Speichern auch

@@ -5,6 +5,7 @@ import {
   TAGESFENSTER,
   anmelden,
   arbeitszeitBestaetigen,
+  detailWert,
   rpcAufrufen,
   supabaseKonfiguration,
   tagImFenster,
@@ -221,5 +222,108 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     );
     expect(antwort.status()).toBeGreaterThanOrEqual(400);
     expect(await antwort.text()).not.toContain('Uebungen angeleitet');
+  });
+});
+
+/**
+ * Der Schutz vor Textverlust in der laufenden Anwendung (FIX-011, FIX-014).
+ *
+ * Die Komponententests prüfen den Schutz für sich; hier geht es um die drei
+ * Wege, auf denen im Alltag wirklich etwas verloren ginge, mit echtem Router,
+ * echter Kopfzeile und echtem Abmelden: der Tap ins Hauptmenü, das Zurück des
+ * Browsers und der Tap auf „Abmelden".
+ *
+ * `PROJECT_PRINCIPLES.md` §13: Dokumentation darf niemals unbemerkt verloren
+ * gehen.
+ */
+test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus', () => {
+  const OFFEN = 'Synthetisch: noch nicht gespeichert, Hauptmenue.';
+
+  /** Öffnet ein Dokumentationsformular mit ungespeichertem Text darin. */
+  async function mitOffenemText(page: Page, tag: string, text: string): Promise<string> {
+    await anmelden(page, KONTEN.therapist);
+    const terminId = await terminAnlegen(page, tag);
+    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    await page.getByLabel('Eintrag zur Behandlung').fill(text);
+    return terminId;
+  }
+
+  const rueckfrage = (page: Page) =>
+    page.getByRole('group', { name: 'Ungespeicherte Dokumentation' });
+
+  test('haelt den Tap ins Hauptmenue an und speichert auf Wunsch zuerst', async ({ page }) => {
+    const terminId = await mitOffenemText(page, laufTag(8), OFFEN);
+
+    // Der Kalender ist ein Hauptbereich und steht in der globalen Navigation.
+    await page.getByRole('link', { name: 'Kalender' }).first().click();
+
+    await expect(rueckfrage(page)).toBeVisible();
+    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+
+    await rueckfrage(page).getByRole('button', { name: 'Speichern und weitergehen' }).click();
+
+    // Erst gespeichert, dann weitergegangen - und ausdruecklich nur als
+    // Entwurf: Der Termin bleibt bestaetigt (ADR-016).
+    await expect(page).toHaveURL(/\/kalender/);
+    await page.goto(`/termine/${terminId}`);
+    await expect(page.getByText(OFFEN)).toBeVisible();
+    // Nur der Entwurf wurde gesichert: Der Termin ist nicht abgeschlossen und
+    // die Dokumentation nicht festgeschrieben (ADR-016, ADR-018).
+    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+  });
+
+  test('haelt das Zurueck des Browsers an', async ({ page }) => {
+    const terminId = await mitOffenemText(page, laufTag(9), 'Synthetisch: Zurueck-Taste.');
+
+    await page.goBack();
+
+    await expect(rueckfrage(page)).toBeVisible();
+    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+
+    await rueckfrage(page).getByRole('button', { name: 'Verwerfen und weitergehen' }).click();
+    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page.getByText('Synthetisch: Zurueck-Taste.')).toHaveCount(0);
+  });
+
+  /**
+   * Das Abmelden ist keine Navigation - `useBlocker` sieht davon nichts. Bis
+   * FIX-014 nahm ein Tap auf „Abmelden" den Text still mit.
+   */
+  test('haelt das freiwillige Abmelden an und meldet erst nach dem Speichern ab', async ({
+    page,
+  }) => {
+    const text = 'Synthetisch: noch nicht gespeichert, Abmelden.';
+    const terminId = await mitOffenemText(page, laufTag(10), text);
+
+    await page.getByRole('button', { name: 'Abmelden' }).click();
+
+    await expect(rueckfrage(page)).toContainText('Beim Abmelden geht er verloren');
+    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    // Die Sitzung besteht noch: Die Kopfzeile ist da, die Anmeldemaske nicht.
+    await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
+
+    await rueckfrage(page).getByRole('button', { name: 'Hier bleiben' }).click();
+    await expect(rueckfrage(page)).toHaveCount(0);
+    await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(text);
+
+    await page.getByRole('button', { name: 'Abmelden' }).click();
+    await rueckfrage(page).getByRole('button', { name: 'Speichern und abmelden' }).click();
+
+    // Erst gespeichert, dann abgemeldet: Die Anmeldemaske kommt, und der Text
+    // liegt auf dem Server.
+    await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
+
+    await anmelden(page, KONTEN.therapist);
+    await page.goto(`/termine/${terminId}`);
+    await expect(page.getByText(text)).toBeVisible();
+  });
+
+  test('meldet ohne ungespeicherten Text ohne Rueckfrage ab', async ({ page }) => {
+    await anmelden(page, KONTEN.therapist);
+    await page.goto('/');
+
+    await page.getByRole('button', { name: 'Abmelden' }).click();
+
+    await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
   });
 });

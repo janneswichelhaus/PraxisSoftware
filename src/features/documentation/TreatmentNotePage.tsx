@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -54,6 +54,14 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
   const geaendert = wert !== gespeichert;
   const zurueck = `/termine/${appointment.id}`;
 
+  // Der Text, wie er in diesem Augenblick im Feld steht. Ein Schreibvorgang
+  // dauert; wer währenddessen weitertippt, hat danach wieder ungespeicherten
+  // Text. Ohne diese Referenz läse der Vorgang den Stand von vorhin, und die
+  // Seite ginge mit einem Ergebnis weiter, das den neuen Text nicht enthält
+  // (FIX-014).
+  const wertRef = useRef(wert);
+  wertRef.current = wert;
+
   /**
    * Den Entwurf sichern - ohne Seitenwechsel.
    *
@@ -61,9 +69,12 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
    * Navigationsschutzes. Der Unterschied liegt allein danach, und genau
    * deshalb steht das Speichern für sich: Eine Finalisierung löst es in keinem
    * der beiden Fälle aus (ADR-016).
+   *
+   * Der Rückgabewert sagt, ob **alles Getippte** auf dem Server liegt.
    */
-  async function entwurfSichern() {
-    const meldung = inhaltFehler(wert);
+  async function entwurfSichern(): Promise<boolean> {
+    const zuSichern = wertRef.current;
+    const meldung = inhaltFehler(zuSichern);
     if (meldung) {
       setFehler(meldung);
       throw new Error(meldung);
@@ -72,37 +83,36 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
     if (note) {
       // Der gelesene Stand geht unverändert zurück; der Server weist eine
       // Änderung auf veraltetem Stand ab (ADR-001).
-      await updateTreatmentNote(note.id, note.updated_at, wert);
+      await updateTreatmentNote(note.id, note.updated_at, zuSichern);
     } else {
-      await createTreatmentNote(appointment.id, wert);
+      await createTreatmentNote(appointment.id, zuSichern);
     }
 
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+    return wertRef.current === zuSichern;
   }
 
-  const { freigeben, schutz } = useTextverlustschutz({
+  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
     ungespeichert: geaendert,
     speichern: entwurfSichern,
   });
 
-  const speichern = useMutation({
-    mutationFn: entwurfSichern,
-    onSuccess: () => {
-      // Der eigene Rückweg ist gewollt und braucht keine Rückfrage.
-      freigeben();
-      void navigate(zurueck);
-    },
-  });
-
   function absenden(event: React.FormEvent) {
     event.preventDefault();
-    if (speichern.isPending) return;
 
     const meldung = inhaltFehler(wert);
     setFehler(meldung);
     if (meldung) return;
 
-    speichern.mutate();
+    void schreiben({
+      ausfuehren: entwurfSichern,
+      fehlertitel: 'Nicht gespeichert',
+      danach: () => {
+        // Der eigene Rückweg ist gewollt und braucht keine Rückfrage.
+        freigeben();
+        void navigate(zurueck);
+      },
+    });
   }
 
   return (
@@ -128,17 +138,13 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
           }}
         />
 
-        {speichern.isError ? (
-          <div className="mt-4">
-            <ErrorState title="Nicht gespeichert" description={speichern.error.message} />
-          </div>
-        ) : null}
-
+        {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer Stelle:
+            Alle Schreibwege dieser Seite laufen durch denselben Vorgang. */}
         {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={speichern.isPending || !geaendert}>
-            {speichern.isPending ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
+          <Button type="submit" disabled={laeuft || !geaendert}>
+            {laeuft ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
           </Button>
 
           {/* „Abbrechen" ist seit FIX-011 ein gewöhnlicher Weg zurück: Die

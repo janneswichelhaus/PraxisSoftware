@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -57,9 +57,18 @@ function Abschluss({
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | undefined>(undefined);
+  // Welcher der beiden Wege gerade läuft. Der Schutz kennt nur „es läuft
+  // einer"; die Beschriftung und das unveränderliche Feld brauchen die
+  // Unterscheidung.
+  const [schreibtAbschluss, setSchreibtAbschluss] = useState(false);
 
   const wert = entwurf ?? gespeichert;
   const geaendert = wert !== gespeichert;
+
+  // Der Text, wie er in diesem Augenblick im Feld steht - nicht der von
+  // vorhin. Ein Schreibvorgang dauert (FIX-014).
+  const wertRef = useRef(wert);
+  wertRef.current = wert;
 
   /**
    * Nur den Entwurf sichern - ohne Abschluss und ohne Seitenwechsel.
@@ -69,25 +78,26 @@ function Abschluss({
    * Ein Seitenwechsel darf keinen Termin abschließen und keine Dokumentation
    * festschreiben (ADR-016, ADR-018).
    */
-  async function entwurfSichern() {
+  async function entwurfSichern(): Promise<boolean> {
+    const zuSichern = wertRef.current;
+    const meldung = inhaltFehler(zuSichern);
+    if (meldung) {
+      setFehler(meldung);
+      throw new Error(meldung);
+    }
+
     if (note) {
-      await updateTreatmentNote(note.id, note.updated_at, wert);
+      await updateTreatmentNote(note.id, note.updated_at, zuSichern);
     } else {
-      await createTreatmentNote(appointment.id, wert);
+      await createTreatmentNote(appointment.id, zuSichern);
     }
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+    return wertRef.current === zuSichern;
   }
 
-  const { freigeben, schutz } = useTextverlustschutz({
+  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
     ungespeichert: geaendert,
-    speichern: async () => {
-      const meldung = inhaltFehler(wert);
-      if (meldung) {
-        setFehler(meldung);
-        throw new Error(meldung);
-      }
-      await entwurfSichern();
-    },
+    speichern: entwurfSichern,
   });
 
   async function nachSchreiben() {
@@ -96,22 +106,33 @@ function Abschluss({
     // Kalender und Tagesliste führen den Termin sonst weiter im alten Zustand.
     await queryClient.invalidateQueries({ queryKey: ['appointments'] });
     await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+  }
+
+  /**
+   * Abschließen - und dabei genau den Text festschreiben, der im Feld steht.
+   *
+   * Anders als beim Entwurf ist dieser Vorgang **nicht umkehrbar**: Was hier
+   * durchgeht, ist Bestandteil der Akte und nur noch als Korrektur mit
+   * Begründung änderbar. Deshalb bleibt das Feld währenddessen unveränderlich
+   * (`festgehalten`): Ein Zeichen, das nach dem Absenden dazukommt, stünde
+   * sonst nicht in der festgeschriebenen Fassung, und die Person hätte es nie
+   * erfahren (FIX-014, ADR-016).
+   */
+  async function abschlussSchreiben(): Promise<boolean> {
+    await completeTreatment(
+      appointment.id,
+      wertRef.current,
+      appointment.updated_at,
+      note?.updated_at ?? null,
+    );
+    await nachSchreiben();
+    return true;
+  }
+
+  function weiterZumTermin() {
     freigeben();
     void navigate(zurueck);
   }
-
-  const abschliessen = useMutation({
-    mutationFn: () =>
-      completeTreatment(appointment.id, wert, appointment.updated_at, note?.updated_at ?? null),
-    onSuccess: nachSchreiben,
-  });
-
-  const entwurfSpeichern = useMutation({
-    mutationFn: entwurfSichern,
-    onSuccess: nachSchreiben,
-  });
-
-  const laeuft = abschliessen.isPending || entwurfSpeichern.isPending;
 
   /** Gemeinsame Eingabeprüfung beider Wege. Verbindlich prüft der Server. */
   function geprueft(): boolean {
@@ -133,8 +154,13 @@ function Abschluss({
         className="max-w-2xl"
         onSubmit={(event) => {
           event.preventDefault();
-          if (laeuft || !geprueft()) return;
-          abschliessen.mutate();
+          if (!geprueft()) return;
+          setSchreibtAbschluss(true);
+          void schreiben({
+            ausfuehren: abschlussSchreiben,
+            fehlertitel: 'Nicht abgeschlossen',
+            danach: weiterZumTermin,
+          }).finally(() => setSchreibtAbschluss(false));
         }}
       >
         <TextbausteinLeiste onEinfuegen={(text) => setEntwurf(bausteinEinfuegen(wert, text))} />
@@ -145,6 +171,9 @@ function Abschluss({
           rows={12}
           value={wert}
           error={fehler}
+          // Während des Abschlusses unveränderlich: Was festgeschrieben wird,
+          // muss genau das sein, was auf dem Bildschirm stand (FIX-014).
+          readOnly={schreibtAbschluss}
           onChange={(event) => {
             setEntwurf(event.target.value);
             if (fehler) setFehler(undefined);
@@ -165,22 +194,14 @@ function Abschluss({
           </p>
         </div>
 
-        {abschliessen.isError ? (
-          <div className="mt-4">
-            <ErrorState title="Nicht abgeschlossen" description={abschliessen.error.message} />
-          </div>
-        ) : null}
-        {entwurfSpeichern.isError ? (
-          <div className="mt-4">
-            <ErrorState title="Nicht gespeichert" description={entwurfSpeichern.error.message} />
-          </div>
-        ) : null}
-
+        {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer Stelle:
+            Beide Schaltflächen und die Rückfrage laufen durch denselben
+            Schreibweg, und es läuft immer höchstens einer. */}
         {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={laeuft}>
-            {abschliessen.isPending ? 'Wird abgeschlossen …' : 'Behandlung abschließen'}
+            {schreibtAbschluss ? 'Wird abgeschlossen …' : 'Behandlung abschließen'}
           </Button>
 
           <Button
@@ -188,11 +209,15 @@ function Abschluss({
             variant="secondary"
             disabled={laeuft || !geaendert}
             onClick={() => {
-              if (laeuft || !geprueft()) return;
-              entwurfSpeichern.mutate();
+              if (!geprueft()) return;
+              void schreiben({
+                ausfuehren: entwurfSichern,
+                fehlertitel: 'Nicht gespeichert',
+                danach: weiterZumTermin,
+              });
             }}
           >
-            {entwurfSpeichern.isPending ? 'Wird gespeichert …' : 'Nur als Entwurf speichern'}
+            {laeuft && !schreibtAbschluss ? 'Wird gespeichert …' : 'Nur als Entwurf speichern'}
           </Button>
 
           {/* Die Rückfrage vor dem Verwerfen stellt seit FIX-011 der

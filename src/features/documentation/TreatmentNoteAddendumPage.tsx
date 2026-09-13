@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +31,10 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
 
   const [inhalt, setInhalt] = useState('');
   const [fehler, setFehler] = useState<string | undefined>(undefined);
+
+  // Der Text, wie er in diesem Augenblick im Feld steht (FIX-014).
+  const inhaltRef = useRef(inhalt);
+  inhaltRef.current = inhalt;
   const zurueck = `/termine/${appointment.id}`;
 
   /**
@@ -40,38 +44,40 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
    * Finalisierung ist ein eigener Schritt am Termin. Der Navigationsschutz
    * darf ihn deshalb sichern, ohne etwas festzuschreiben.
    */
-  async function entwurfSichern() {
-    const meldung = inhaltFehler(inhalt);
+  async function entwurfSichern(): Promise<boolean> {
+    const zuSichern = inhaltRef.current;
+    const meldung = inhaltFehler(zuSichern);
     if (meldung) {
       setFehler(meldung);
       throw new Error(meldung);
     }
-    await createTreatmentNoteAddendum(parent.id, inhalt);
+    await createTreatmentNoteAddendum(parent.id, zuSichern);
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+    // Wer während des Schreibens weitertippt, hat danach wieder
+    // ungespeicherten Text (FIX-014).
+    return inhaltRef.current === zuSichern;
   }
 
-  const { freigeben, schutz } = useTextverlustschutz({
+  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
     ungespeichert: inhalt.trim().length > 0,
     speichern: entwurfSichern,
   });
 
-  const speichern = useMutation({
-    mutationFn: entwurfSichern,
-    onSuccess: () => {
-      freigeben();
-      void navigate(zurueck);
-    },
-  });
-
   function absenden(event: React.FormEvent) {
     event.preventDefault();
-    if (speichern.isPending) return;
 
     const meldung = inhaltFehler(inhalt);
     setFehler(meldung);
     if (meldung) return;
 
-    speichern.mutate();
+    void schreiben({
+      ausfuehren: entwurfSichern,
+      fehlertitel: 'Nicht gespeichert',
+      danach: () => {
+        freigeben();
+        void navigate(zurueck);
+      },
+    });
   }
 
   return (
@@ -104,17 +110,15 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
           }}
         />
 
-        {speichern.isError ? (
-          <div className="mt-4">
-            <ErrorState title="Nicht gespeichert" description={speichern.error.message} />
-          </div>
-        ) : null}
+        {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer
+            Stelle: Alle Schreibwege dieser Seite laufen durch denselben
+            Vorgang. */}
 
         {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={speichern.isPending || inhalt.trim().length === 0}>
-            {speichern.isPending ? 'Wird gespeichert …' : 'Nachtrag als Entwurf speichern'}
+          <Button type="submit" disabled={laeuft || inhalt.trim().length === 0}>
+            {laeuft ? 'Wird gespeichert …' : 'Nachtrag als Entwurf speichern'}
           </Button>
           <Link
             to={zurueck}

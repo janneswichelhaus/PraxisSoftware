@@ -5,6 +5,7 @@ import { SubNav } from '@/components/ui/SubNav';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
 import { Patientensuche } from '@/features/patients/Patientensuche';
+import { useAbmeldeanfrage } from './abmeldeschutz';
 import { aktiverBereich, arbeitsbereiche, mehrSymbol, tableiste } from './navigation';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
 
@@ -59,6 +60,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { pathname } = useLocation();
+  const anfordern = useAbmeldeanfrage();
   const bereiche = arbeitsbereiche(user);
   const aktuell = aktiverBereich(bereiche, pathname);
   const { sichtbar, weitere } = tableiste(bereiche);
@@ -182,7 +184,12 @@ export function AppShell({
               >
                 Konto
               </Link>
-              <Button variant="quiet" onClick={onSignOut}>
+              {/* Der Knopf fragt, statt selbst abzumelden: Steht in einem
+                  Dokumentationsformular ungespeicherter Text, übernimmt dessen
+                  Wache die Rückfrage (FIX-014). Ohne eingerichteten Schutz -
+                  in Tests und Vorschauen - bleibt es beim unmittelbaren
+                  Abmelden. */}
+              <Button variant="quiet" onClick={anfordern ?? onSignOut}>
                 Abmelden
               </Button>
             </div>
