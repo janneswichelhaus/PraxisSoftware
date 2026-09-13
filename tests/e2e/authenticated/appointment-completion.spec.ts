@@ -234,12 +234,16 @@ test.describe('CAL-004: Serverseitige Grenzen', () => {
     expect(gelesen.status()).toBe(200);
     const [stand] = (await gelesen.json()) as { updated_at: string }[];
 
+    // Vollstaendige Signatur, sonst findet PostgREST die Funktion nicht und
+    // die Antwort waere 404 statt der gesuchten Zustandspruefung (CAL-014b).
     const abgesagt = await request.post(`${url}/rest/v1/rpc/cancel_appointment`, {
       headers: kopf,
       data: {
         p_appointment_id: terminId,
         p_expected_updated_at: stand!.updated_at,
         p_reason: 'other',
+        p_received_on: null,
+        p_received_time: null,
       },
     });
     expect(abgesagt.status()).toBe(400);

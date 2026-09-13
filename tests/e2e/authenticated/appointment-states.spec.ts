@@ -142,7 +142,12 @@ test.describe('CAL-014c: Absage unter 24 Stunden', () => {
    * Tag und laeuft in der Abnahme von Hand (docs/abnahme).
    */
   test('merkt bei rechtzeitiger Absage keine Gebuehr vor', async ({ page }) => {
-    const tag = laufTag(2);
+    // Versatz 5 und nicht 2: Der Test darueber legt an Tag 2 denselben
+    // Zeitraum bei derselben Person an und oeffnet ihn am Ende wieder - der
+    // Platz ist also belegt, und `create_appointment` wiese den zweiten Termin
+    // zu Recht ab. Der Test waere an etwas gescheitert, das er nicht prueft
+    // (genau der Fall, den `tests/e2e/tagesfenster.spec.ts` beschreibt).
+    const tag = laufTag(5);
 
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });

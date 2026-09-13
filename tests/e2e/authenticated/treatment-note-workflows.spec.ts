@@ -97,18 +97,33 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await expect(page.getByText(ERGAENZT)).toBeVisible();
   });
 
+  /**
+   * Seit FIX-011 stellt den Rückfragen der **Navigationsschutz** - und zwar
+   * für „Abbrechen" wie für jeden anderen Weg aus dieser Seite heraus. Deshalb
+   * ist „Abbrechen" ein gewöhnlicher Verweis und kein Knopf mit eigenem Dialog
+   * mehr; die Rückfrage hat drei Antworten statt zwei.
+   */
   test('fragt vor dem Verwerfen ungespeicherter Eingaben nach', async ({ page }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(2));
 
     await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: noch nicht gespeichert.');
-    await page.getByRole('button', { name: 'Abbrechen' }).click();
+    await page.getByRole('link', { name: 'Abbrechen' }).click();
 
-    await expect(page.getByText(/geht beim Abbrechen verloren/)).toBeVisible();
+    const rueckfrage = page.getByRole('group', { name: 'Ungespeicherte Dokumentation' });
+    await expect(rueckfrage).toContainText('noch nicht gespeichert');
     await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
 
-    await page.getByRole('button', { name: 'Ja, Bearbeitung verwerfen' }).click();
+    // „Hier bleiben" lässt Seite und Text stehen.
+    await rueckfrage.getByRole('button', { name: 'Hier bleiben' }).click();
+    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(
+      'Synthetisch: noch nicht gespeichert.',
+    );
+
+    await page.getByRole('link', { name: 'Abbrechen' }).click();
+    await rueckfrage.getByRole('button', { name: 'Verwerfen und weitergehen' }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText('Synthetisch: noch nicht gespeichert.')).toHaveCount(0);
   });

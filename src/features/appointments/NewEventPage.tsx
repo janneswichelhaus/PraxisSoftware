@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -79,6 +79,20 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
   const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
+
+  // Bei genau einem verfügbaren Standort darf vorausgewählt werden - eine
+  // Auswahl ohne Alternative ist keine Entscheidung. Dieselbe Regel und
+  // dieselbe Begründung wie in `NewAppointmentPage`; hier fehlte sie, und das
+  // Formular verlangte ein Pflichtfeld, für das es nur eine Antwort gab
+  // (FIX-013).
+  useEffect(() => {
+    const nurEiner = standorte.data?.length === 1 ? standorte.data[0] : undefined;
+    if (nurEiner) {
+      setWerte((bisher) =>
+        bisher.location_id === '' ? { ...bisher, location_id: nurEiner.id } : bisher,
+      );
+    }
+  }, [standorte.data]);
 
   const mutation = useMutation({
     mutationFn: (eingabe: { werte: EreignisFormValues; bestaetigt: boolean }) =>

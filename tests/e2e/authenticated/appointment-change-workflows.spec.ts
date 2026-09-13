@@ -277,12 +277,18 @@ test.describe('CAL-003: Absagen', () => {
     });
     expect(geaendert.status()).toBe(403);
 
+    // Die Signatur ist vollstaendig anzugeben: PostgREST sucht die Funktion
+    // ueber die benannten Argumente, und ein fehlendes Argument findet gar
+    // keine Funktion (404). Der Test pruefte dann nicht mehr die
+    // Berechtigung, sondern einen Tippfehler (CAL-014b).
     const abgesagt = await request.post(`${url}/rest/v1/rpc/cancel_appointment`, {
       headers: kopf,
       data: {
         p_appointment_id: '77777777-7777-4777-8777-000000000001',
         p_expected_updated_at: '2027-01-01T00:00:00+00',
         p_reason: 'other',
+        p_received_on: null,
+        p_received_time: null,
       },
     });
     expect(abgesagt.status()).toBe(403);

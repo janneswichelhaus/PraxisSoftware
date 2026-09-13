@@ -141,6 +141,30 @@ describe('NewEventPage', () => {
     expect(screen.queryByLabelText('Frida Fortgezogen')).not.toBeInTheDocument();
   });
 
+  /**
+   * Dieselbe Regel wie bei der Terminanlage: Eine Auswahl ohne Alternative ist
+   * keine Entscheidung. Ohne die Vorbelegung verlangte das Formular ein
+   * Pflichtfeld, für das es nur eine Antwort gab — in CI hat genau das den
+   * angemeldeten Ereignistest scheitern lassen (FIX-013).
+   */
+  it('waehlt den einzigen Standort vor', async () => {
+    rendern();
+    await formularAbwarten();
+
+    await waitFor(() => expect(screen.getByLabelText('Standort *')).toHaveValue(ORT));
+  });
+
+  it('waehlt bei mehreren Standorten nichts vor', async () => {
+    fetchLocations.mockResolvedValue([
+      { id: ORT, name: 'Hauptstandort' },
+      { id: '33333333-3333-4333-8333-000000000002', name: 'Zweigstelle' },
+    ]);
+    rendern();
+    await formularAbwarten();
+
+    expect(screen.getByLabelText('Standort *')).toHaveValue('');
+  });
+
   it('uebernimmt Tag und Zeiten aus der angetippten Stelle im Kalender', async () => {
     rendern('/termine/ereignis?datum=2027-05-12&beginn=09:30&ende=10:00');
     await formularAbwarten();
