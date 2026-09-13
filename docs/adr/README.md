@@ -22,7 +22,7 @@ warum etwas so gebaut wurde.
 Kurz halten. Eine Seite reicht fast immer.
 
 - **Titel** — die Entscheidung in einem Satz
-- **Status** — vorgeschlagen / angenommen / abgelöst durch ADR-XXXX;
+- **Status** — vorgeschlagen / angenommen / abgelöst durch ADR-NNN;
   bei einer späteren begrenzten Ergänzung zusätzlich die **Fassung** mit Datum
 - **Datum**
 - **Kontext** — welches Problem stand an, welche Rahmenbedingungen galten
@@ -56,14 +56,31 @@ vorige Fassung bleibt in der Git-Historie lesbar.
 
 Wird dagegen eine bestehende Aussage **zurückgenommen oder umgekehrt**, ist das
 kein Fassungswechsel, sondern ein neuer ADR mit Status „abgelöst durch
-ADR-XXXX" am alten. Berührt einer der beiden Wege eine Prinzipienaussage, wird
-`PROJECT_PRINCIPLES.md` in einem eigenen Commit mit neuer Version nachgezogen
-(§21).
+ADR-NNN" am alten. **Eine Ausnahme** (festgelegt 2026-09-13): Kehrt der
+Projektinhaber einen **einzelnen Punkt** eines angenommenen ADR ausdrücklich
+um und bleiben die übrigen Punkte unberührt, DARF das als neue Fassung
+geführt werden — wenn die Statuszeile und die Änderungshistorie die Umkehr
+als solche benennen und der alte Wortlaut im Punkt lesbar bleibt
+(durchgestrichen oder als „Fassung N lautete"). Wird die Entscheidung als
+Ganzes umgekehrt, bleibt es beim neuen ADR. Berührt einer der Wege eine
+Prinzipienaussage, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit mit
+neuer Version nachgezogen (§21).
+
+Eine Fassung **zitiert, statt zu wiederholen**: Steht eine Festlegung bereits
+in `PROJECT_PRINCIPLES.md` oder einem anderen ADR, verweist die Fassung auf
+die Stelle und ergänzt nur, was dieser ADR technisch daraus macht. Jeder ADR
+mit mehr als einer Fassung führt am Ende eine **Änderungshistorie** als Tabelle
+`Fassung | Datum | Änderung`.
+
+Wird ein Punkt, den ein ADR als offen führt, anderswo entschieden (ADR,
+Annahme, Prinzipienversion), bekommt die Stelle einen kurzen
+**Erledigungsvermerk** in Kursiv („*Beantwortet mit …*") oder eine
+Durchstreichung — der Wortlaut des angenommenen Punktes bleibt.
 
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (aktuell Version 0.7)
-- `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (die aktuelle Version steht in dessen Dokumentinformation; Stand 2026-09-13: 0.10)
+- `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist; ohne Rang
 - `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
 - `docs/adr/` — was entschieden wurde und warum
 
@@ -80,13 +97,13 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-001](ADR-001-online-first-limited-offline.md) | Online-first mit begrenzter Offline-Fähigkeit | Angenommen |
 | [ADR-002](ADR-002-hosting-data-residency.md) | Hosting und Datenstandort | Angenommen |
 | [ADR-003](ADR-003-organization-location-model.md) | organization_id und location_id im Datenmodell | Angenommen |
-| [ADR-004](ADR-004-authorization-model.md) | Berechtigungsmodell | Angenommen |
+| [ADR-004](ADR-004-authorization-model.md) | Berechtigungsmodell | Angenommen, **Fassung 2 (2026-09-13)**: Office liest klinische Inhalte (E15, Umkehr von Punkt 3) |
 | [ADR-005](ADR-005-provider-independent-ai.md) | Providerunabhängige KI-Anbindung | Angenommen, Fassung 2 (2026-09-08) |
 | [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | Angenommen, Fassung 2 (2026-09-08) |
 | [ADR-007](ADR-007-data-protection-impact-assessment.md) | Datenschutz-Folgenabschätzung und Datenschutzprozess | Angenommen |
 | [ADR-008](ADR-008-data-retention-and-deletion.md) | Aufbewahrung und Löschung personenbezogener Daten | Angenommen |
 | [ADR-009](ADR-009-private-billing-model.md) | Privatabrechnung | Angenommen |
-| [ADR-010](ADR-010-audit-and-privileged-access.md) | Audit-Logging und privilegierter Produktionszugriff | Angenommen |
+| [ADR-010](ADR-010-audit-and-privileged-access.md) | Audit-Logging und privilegierter Produktionszugriff | Angenommen, Fassung 2 (2026-09-13): Lesepfad `owner`, Verweisausstellung gilt als Download |
 | [ADR-011](ADR-011-logging-and-observability.md) | Logging und Observability | Angenommen |
 | [ADR-012](ADR-012-backup-and-business-continuity.md) | Backup, Wiederherstellung und Betriebskontinuität | Angenommen |
 | [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen |
@@ -94,5 +111,5 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen |
 | [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen, Fassung 2 (2026-09-08) |
 | [ADR-017](ADR-017-file-storage.md) | Dateiablage: Ort, Zugriff, kurzlebige Verweise, Aufbewahrung, Virenprüfung | Angenommen (bestätigt 2026-09-12); produktive Ablage zusätzlich an OPS-001 und OPS-003 gebunden |
-| [ADR-018](ADR-018-appointment-states.md) | Zustandsautomat des Termins | Angenommen (bestätigt 2026-09-11), **Fassung 2 vom 2026-09-12**: Frist des Ausfallhonorars (24 Stunden), Nichtantreffen ohne Gebührenentscheidung |
-| [ADR-019](ADR-019-map-service.md) | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | **Vorgeschlagen, Fassung 2** — PTV Developer als Kandidat für Prototyp und Bewertung; produktive Freigabe am Vertrags-/§203-/DSFA-Gate |
+| [ADR-018](ADR-018-appointment-states.md) | Zustandsautomat des Termins | Angenommen (bestätigt 2026-09-11), Fassung 2 (2026-09-12): 24-Stunden-Frist; **Fassung 3 (2026-09-13)**: Hausbesuch-Szenarien (Nichtantreffen nach Protokoll mit Gebühr, „Tür geöffnet" gilt als durchgeführt), `confirmed → documented`, Storno-Rückweg |
+| [ADR-019](ADR-019-map-service.md) | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | **Angenommen (2026-09-13, E-20), Fassung 2** — PTV Developer als Kandidat für Prototyp und Bewertung; produktive Freigabe am Vertrags-/§203-/DSFA-Gate |

@@ -2,11 +2,16 @@
 
 ## Status
 
-Angenommen
+**Angenommen** (2026-08-28).
+
+**Fassung 2 (2026-09-13)** — begrenzte Ergänzung: Zwei eigene Folgefragen
+sind beantwortet (Punkt 13: wer das Auditlog liest; Punkt 14: was bei Dateien
+als Download gilt), und die Konsequenz aus ADR-004 Fassung 2 (E15: Office
+liest klinische Inhalte) ist nachgetragen. Alles Übrige gilt unverändert.
 
 ## Datum
 
-2026-08-28
+2026-08-28 · Fassung 2: 2026-09-13
 
 ## Kontext
 
@@ -86,6 +91,25 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
 12. **Coding- und KI-Entwicklungswerkzeuge erhalten niemals
     Produktionscredentials oder reale Produktionsdaten.**
 
+### Lesen des Auditlogs und Dateien (Fassung 2, 2026-09-13)
+
+13. **Das Auditlog liest in V1 allein die Rolle `owner`**, ausschließlich über
+    die Funktion `list_audit_events` — begrenzt auf die eigene Organisation,
+    mit Pagination und Filtern nach Zeitraum, Benutzer und Aktion; die Spalte
+    `context` wird nicht herausgegeben. **Jeder Lesezugriff wird selbst als
+    `audit_log.read` protokolliert.** Ein direktes `SELECT` auf die Tabelle
+    gibt es für keine Rolle. So gebaut seit
+    `supabase/migrations/20260828110100_audit_read_path.sql`; dieser Punkt
+    holt die Entscheidung in den ADR nach. Der Schutz der Beschäftigten (§20)
+    liegt im Zweck des Lesens (Nachweis, monatlicher Report) und darin, dass
+    das Lesen selbst sichtbar ist.
+14. **Bei Dateien gilt die Ausstellung eines signierten Verweises als
+    Download-Ereignis** im Sinne von Punkt 2. Ob die Bytes tatsächlich geflossen
+    sind, kann die Anwendung nicht feststellen
+    ([ADR-017](ADR-017-file-storage.md) Punkt 21); der Verweis ist mit
+    60 Sekunden so kurzlebig, dass Ausstellung und Laden praktisch
+    zusammenfallen.
+
 ## Konsequenzen
 
 - Der Ereigniskatalog macht das Auditlog prüfbar. Jedes der zehn Ereignisse
@@ -103,6 +127,11 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
   Audit-Einträge kein Update und kein Delete. Löschung findet ausschließlich
   über den Retention-Vorgang aus ADR-008 statt. Das ist eine Anforderung an
   Schema und Datenbankrechte, nicht nur an den Code.
+- **Fassung 2:** Seit E15 (ADR-004 Fassung 2) liest auch Office klinische
+  Inhalte. Das Auditlog ist damit für zwei Rollen die Kompensation für einen
+  Zugriff ohne Need-to-know-Grenze; die Ereignisse aus Punkt 2 gelten für
+  Office ohne Abstriche, und der monatliche Report (Punkt 6) gewinnt an
+  Gewicht.
 - Die Absage an einen klinischen Break Glass ist keine Lücke, sondern die
   logische Folge von §4.2: Ein Notfallzugriff auf etwas, das ohnehin zugänglich
   ist, wäre eine Attrappe. Sollte §4.2 später eingeschränkt werden, wird ein
@@ -130,22 +159,23 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
 - Das konkrete Schema der Audit-Einträge und die Wahl des Speicherorts.
-- Wer die Audit-Logs lesen darf, und wie diese Leseberechtigung selbst
-  auditiert wird.
+- ~~Wer die Audit-Logs lesen darf, und wie diese Leseberechtigung selbst
+  auditiert wird.~~ Mit Fassung 2 (Punkt 13) entschieden.
 - Der Inhalt und die Zustellung des monatlichen Reports sowie die Schwellen
   für „ungewöhnlich".
 - Auswahl von Identitätsanbieter und MFA-Verfahren (§3.4 bleibt maßgeblich).
 - Die technische Umsetzung zeitlich begrenzter Rechteerteilung.
-- Die Frage, ob ein fallbezogener Sonderzugriff des Office auf klinische
-  Dokumentation nach §4.4 realisiert wird — dieser bleibt offen und ist kein
-  Break Glass im Sinne dieses ADR.
+- ~~Die Frage, ob ein fallbezogener Sonderzugriff des Office auf klinische
+  Dokumentation nach §4.4 realisiert wird.~~ Mit E15 (2026-09-13)
+  gegenstandslos: Office liest klinische Inhalte regulär.
 - Betriebs- und Alarmierungsschwellen für Security-Ereignisse.
 
 ## Offene Folgefragen
 
-- Wer darf Audit-Logs lesen, und wie wird verhindert, dass diese
+- ~~Wer darf Audit-Logs lesen, und wie wird verhindert, dass diese
   Leseberechtigung selbst zur unbemerkten Beobachtung von Beschäftigten wird
-  (§20)?
+  (§20)?~~ Beantwortet mit Fassung 2, Punkt 13: `owner`, eigener Lesepfad,
+  jedes Lesen protokolliert.
 - Was genau gilt als „größerer Datenexport", und ab welcher Menge?
 - Wie wird die Unveränderbarkeit technisch abgesichert — durch
   Datenbankrechte, durch Append-only-Strukturen, oder durch beides?
@@ -153,7 +183,15 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
   ohne dass der Entzug vom Wohlwollen der zugreifenden Person abhängt?
 - Was passiert, wenn der monatliche Report nicht gelesen wird — gibt es eine
   Eskalation?
-- Wie werden Audit-Einträge behandelt, deren Bezugsdaten nach ADR-008 früher
-  gelöscht werden als das Log selbst?
+- ~~Wie werden Audit-Einträge behandelt, deren Bezugsdaten nach ADR-008 früher
+  gelöscht werden als das Log selbst?~~ Beantwortet mit ANN-029 (eigene
+  Datenklasse des Auditlogs, drei Jahre unabhängig von der Akte, LOE-EPIC-001).
 - Wie werden auditpflichtige Vorgänge erfasst, die offline entstanden sind
   (ADR-001)?
+
+## Änderungshistorie
+
+| Fassung | Datum | Änderung |
+|---|---|---|
+| 1 | 2026-08-28 | Angenommen. |
+| 2 | 2026-09-13 | Punkte 13 (Lesepfad: `owner`, `list_audit_events`, jedes Lesen protokolliert) und 14 (Verweisausstellung gilt als Download) ergänzen eigene Folgefragen; Konsequenz aus E15 (Office) nachgetragen; Erledigungsvermerke. Punkte 1–12 unverändert. |

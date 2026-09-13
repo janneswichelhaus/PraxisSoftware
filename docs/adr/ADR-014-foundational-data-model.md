@@ -119,11 +119,15 @@ vorzeitig zu implementieren.**
   bleibt maßgeblich: keine eigene Datenbank-Engine.
 - Das konkrete Schema, Tabellennamen, Normalisierungsgrad und Indizes.
 - Ob `organization_id` Teil des Primärschlüssels wird — das bleibt bei ADR-003
-  offen.
+  offen. *(De facto seit der ersten Migration: eigener UUID-Primärschlüssel
+  und `organization_id` als Fremdschlüsselspalte,
+  `supabase/migrations/20260828100000_foundation.sql`.)*
 - Der Mechanismus der klinischen Versionierung; `PROJECT_PRINCIPLES.md` §5
   fordert Nachvollziehbarkeit, die technische Umsetzung ist weiterhin offen.
-- Die konkrete Ausgestaltung der Vertreterbeziehung (offener Punkt B5).
-- Der Zustandsautomat für Termine.
+  *(Entschieden mit ADR-016.)*
+- Die konkrete Ausgestaltung der Vertreterbeziehung (B5 — Rahmen vorläufig
+  entschieden 2026-09-08, Verfahren offen).
+- Der Zustandsautomat für Termine. *(Entschieden mit ADR-018.)*
 - Die Datentypwahl für Geldwerte im Einzelnen; verbindlich ist nur der
   Ausschluss von Fließkomma.
 - Historisierungsstrategien über die von ADR-009 geforderten

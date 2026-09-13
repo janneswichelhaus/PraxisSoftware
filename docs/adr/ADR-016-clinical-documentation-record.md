@@ -38,7 +38,10 @@ Weitere Randbedingungen aus bereits getroffenen Entscheidungen:
 
 - [ADR-004](ADR-004-authorization-model.md): Therapeut:innen sehen
   grundsätzlich alle Akten der Organisation; Office hat keinen Zugriff auf
-  klinische Freitexte.
+  klinische Freitexte. *Vermerk 2026-09-13: Mit ADR-004 Fassung 2 (E15)
+  liest Office die Dokumentation im selben Umfang wie Therapeut:innen; die
+  Office-Projektion aus DOK-003 (Behandlungsnachweis) wird in ROL-EPIC-001
+  zur Rechnungssicht. Schreibrechte und Versionierung bleiben unverändert.*
 - [ADR-001](ADR-001-online-first-limited-offline.md): Finalisierung erst nach
   Serversynchronisation; nicht finalisierte Entwürfe dürfen offline entstehen.
 - [ADR-009](ADR-009-private-billing-model.md): Fakturierung grundsätzlich erst

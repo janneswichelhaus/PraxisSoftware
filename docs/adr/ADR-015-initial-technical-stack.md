@@ -164,7 +164,8 @@ und würde Patientendaten unkontrolliert auf Endgeräten ablegen.
 - Wie wird sichergestellt, dass kein `service_role`-Schlüssel jemals in den
   Browser gelangt?
 - Wie verhält sich Supabase Storage zu den Anforderungen aus §12
-  (Dateizugriffe) und ADR-008 (Retention von Dateien)?
+  (Dateizugriffe) und ADR-008 (Retention von Dateien)? *Beantwortet mit
+  ADR-017 (angenommen 2026-09-12), gebaut mit DAT-EPIC-001.*
 - Welche Teile des Backends müssten bei einem späteren Plattformwechsel
   ersetzt werden, und wie wird diese Abhängigkeit klein gehalten?
 - Ab welchem Punkt wird der modulare Monolith zu groß, und woran würden wir

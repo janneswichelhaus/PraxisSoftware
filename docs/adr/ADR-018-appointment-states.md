@@ -13,9 +13,21 @@ Honorar (Punkt 4 neu gefasst). Fassung 1 hatte beides ausdrücklich offen
 gelassen beziehungsweise anders geregelt; was sich ändert, steht in Punkt 8
 und ist dort als Änderung gekennzeichnet. Alles Übrige gilt unverändert.
 
+**Fassung 3 (2026-09-13)** — nach einer verbindlichen Festlegung des
+Projektinhabers zu den Hausbesuch-Szenarien (E14 in `OPEN_DECISIONS.md`
+erledigt; `PROJECT_PRINCIPLES.md` 0.10 §8): Das Nichtantreffen nach Protokoll
+löst eine Ausfallgebühr aus, und „Tür geöffnet, keine Behandlung" gilt als
+durchgeführt (Punkt 9 neu; Punkt 8 Nr. 5 und Punkt 4 entsprechend geändert).
+Außerdem holt Fassung 3 drei Korrekturen aus dem Dokumentations-Audit nach:
+der Übergang `confirmed → documented` aus ANN-036 steht jetzt im ADR, der
+Storno-Rückweg nach `cancelled` ist benannt, und „genau ein Anlass" ist
+berichtigt. Fassung 2 hatte Punkt 4 aus Fassung 1 umgekehrt; Fassung 3 kehrt
+ihn in der Sache zurück — beides Festlegungen des Projektinhabers, beides hier
+als Umkehr benannt (Fassungsregel in `docs/adr/README.md`).
+
 ## Datum
 
-2026-09-11 · Fassung 2: 2026-09-12
+2026-09-11 · Fassung 2: 2026-09-12 · Fassung 3: 2026-09-13
 
 ## Kontext
 
@@ -90,15 +102,20 @@ freien Statuswechsel über die Tabelle.
 | `confirmed` | `no_show` | `record_no_show` (Ausfallhonorar-Kennzeichen) | Terminverwaltung |
 | `confirmed` | `completed` | `complete_appointment`, auch aus `complete_treatment` | therapeutische Rollen |
 | `completed` | `documented` | Finalisierung der Dokumentation (ADR-016) | derselbe Vorgang, dieselbe Transaktion |
+| `confirmed` | `documented` | Finalisierung der Dokumentation eines noch nicht abgeschlossenen Termins, auch automatisch nach ADR-016 Punkt 7; setzt `completed_at` mit (**Fassung 3**, aus ANN-036) | derselbe Vorgang, dieselbe Transaktion |
 | `completed` | `confirmed` | `reopen_appointment` | therapeutische Rollen |
 | `no_show` | `confirmed` | `reopen_appointment` | therapeutische Rollen |
 | `documented` | `invoiced` | Ausstellung der Rechnung (ABR-003) | derselbe Vorgang, dieselbe Transaktion |
 | `no_show` | `invoiced` | Ausstellung der Rechnung über das Ausfallhonorar | wie oben |
-| `invoiced` | `documented` bzw. `no_show` | Storno der Rechnung (ADR-009) | wie oben |
+| `cancelled` | `invoiced` | Ausstellung der Rechnung über die Ausfallgebühr einer Absage mit Gebührenanlass (**Fassung 2**, Punkt 8) | wie oben |
+| `invoiced` | `documented`, `no_show` bzw. `cancelled` | Storno der Rechnung (ADR-009) — zurück in den Zustand vor der Ausstellung (**Fassung 3**: `cancelled` ergänzt) | wie oben |
 
 **`cancelled` ist endgültig.** Ein versehentlich abgesagter Termin wird neu
 angelegt, nicht wiederbelebt: Die Absage ist gegenüber der Patientin
 kommuniziert worden, und ein stiller Rückweg würde diese Tatsache verwischen.
+Endgültig heißt: **kein Rückweg nach `confirmed`.** Der Übergang nach
+`invoiced` und zurück per Storno (Fassung 2 und 3) ändert daran nichts — der
+Termin bleibt eine Absage, der Gebührenanlass ist ein Merkmal daneben.
 
 **`documented` kehrt nicht nach `confirmed` zurück.** Ist die Dokumentation
 finalisiert, ist sie Bestandteil der Akte (ADR-016). Ein Irrtum wird dort
@@ -134,13 +151,18 @@ Rechnung entsteht, entscheidet ABR-003. ADR-009 führt das Ausfallhonorar
 bewusst als offenen Punkt; dieser ADR nimmt ihm nichts vorweg außer dem
 Anknüpfungspunkt.
 
-Gesetzt wird das Kennzeichen **ausschließlich vom Server** und ausschließlich
-aus der Frist in Punkt 8. Es gibt in V1 genau einen Anlass:
-`late_cancellation`.
+Gesetzt wird das Kennzeichen **ausschließlich vom Server**: aus der Frist in
+Punkt 8 (`late_cancellation`) und — **Fassung 3** — aus dem bestätigten
+Protokoll des Nichtantreffens in Punkt 9 (`no_show`). Es gibt in V1 damit
+zwei Anlässe; Bestandszeilen aus Fassung 1 tragen `no_show` bereits.
 
 *In Fassung 1 stand hier:* „`no_show` trägt ein **Pflicht**kennzeichen
-‚Ausfallhonorar ja/nein', gesetzt im selben Schritt wie der Zustand." Diese
-Pflichtentscheidung entfällt — siehe Punkt 8.
+‚Ausfallhonorar ja/nein', gesetzt im selben Schritt wie den Zustand." Fassung 2
+hatte diese Entscheidung gestrichen; **Fassung 3** ersetzt sie nicht durch
+eine Wahl, sondern durch eine Regel: Nach bestätigtem Protokoll entsteht die
+Gebühr immer (Punkt 9). *(Fassung 2 sagte hier: „genau einen Anlass:
+`late_cancellation`" — das war schon wegen der Bestandszeilen mit `no_show`
+ungenau.)*
 
 ### 5. Die Serie hat keinen Status
 
@@ -209,11 +231,12 @@ Daraus folgen fünf Festlegungen:
    Grund" lösen ebenfalls keine automatische Gebühr aus — beides sagt über den
    Anlass zu wenig, und eine zu Unrecht vorgemerkte Forderung gegen eine
    Patientin ist teurer zurückzunehmen als eine nachzutragende (§16).
-5. **Das Nichtantreffen trägt keine Gebührenentscheidung.** Der Vermerk ist
+5. ~~**Das Nichtantreffen trägt keine Gebührenentscheidung.** Der Vermerk ist
    ein datensparsamer organisatorischer Abschluss: ein Tap, kein Formular. Aus
    ihm allein entsteht **keine** Gebühr. Ob das Nichtantreffen beim Hausbesuch
-   eine eigene Gebührenregel bekommen soll, ist **offen** und steht als Punkt
-   in `OPEN_DECISIONS.md`; bis dahin blockiert es den Ablauf nicht.
+   eine eigene Gebührenregel bekommen soll, ist **offen**.~~ **Mit Fassung 3
+   entschieden — siehe Punkt 9.** Bis CAL-018 gebaut ist, verhält sich die
+   Anwendung noch wie hier beschrieben.
 
 Der Termin bleibt in allen Fällen als **abgesagt** beziehungsweise **nicht
 angetroffen** erkennbar. Der Gebührenanlass ist ein Merkmal daneben, kein
@@ -232,15 +255,53 @@ Grundlage einer Forderung. Das galt bisher für den No-show mit Kennzeichen und
 gilt ab jetzt genauso für die Absage mit `late_cancellation`. Und die
 Rechnung: Zu den Übergängen in Punkt 2 tritt mit ABR-003
 `cancelled → invoiced` für eine Absage mit Gebührenanlass, parallel zu
-`no_show → invoiced`.
+`no_show → invoiced` (seit Fassung 3 auch in der Tabelle in Punkt 2).
+
+### 9. Die drei Hausbesuch-Szenarien
+
+**Neu in Fassung 3 (2026-09-13).** Der Projektinhaber hat verbindlich
+festgelegt (E14 erledigt, `PROJECT_PRINCIPLES.md` 0.10 §8):
+
+> Tür geöffnet, Behandlung findet auf Angabe der Patient:in nicht statt →
+> Termin gilt als durchgeführt, Pflichtvermerk in der Dokumentation, normale
+> Abrechnung, keine Ausfallgebühr. Nicht angetroffen nach Protokoll
+> (15 Minuten gewartet, geklingelt, angerufen) → nicht wahrgenommen,
+> Ausfallgebühr. Absage unter 24 Stunden → Ausfallgebühr.
+
+Daraus folgen vier Festlegungen:
+
+1. **Das Nichtantreffen setzt den Gebührenanlass, sobald das Protokoll
+   bestätigt ist.** `record_no_show` verlangt die Bestätigung der drei
+   Protokollschritte als Pflichtangabe und setzt dann `fee_basis = 'no_show'`
+   serverseitig; ohne Bestätigung gibt es kein Nichtantreffen — der Termin
+   bleibt `confirmed`, bis die behandelnde Person entscheidet. Der Vermerk
+   bleibt datensparsam: Er erscheint weder als Behandlung noch als verbrauchte
+   Verordnungsleistung.
+2. **„Tür geöffnet, keine Behandlung" ist kein eigener Zustand.** Der Termin
+   wird über `complete_treatment` abgeschlossen und dokumentiert; die
+   Dokumentation trägt einen **Pflichtvermerk** (ein Merkmal am Eintrag, dessen
+   Zuschnitt CAL-018 festlegt — kein Freitext als einzige Quelle). Damit
+   entsteht `documented`, und die Rechnung folgt dem regulären Weg aus Punkt 2.
+   Eine Ausfallgebühr entsteht nicht; `fee_basis` bleibt leer.
+3. **Die Oberfläche führt erklärend durch die drei Szenarien** — welcher Fall
+   vorliegt, was daraus folgt, welche Angabe fehlt. Die Erklärung ist
+   Bedienhilfe, keine Auswertung; sie wertet nichts je Person aus (§20).
+4. **Rechnungstext und Rechtsgrundlage für Szenario 1** (Vergütung ohne
+   erbrachte Behandlung) legt dieser ADR nicht fest; sie gehen als Festlegung
+   des Projektinhabers in die Anfrage B4 (`OPEN_DECISIONS.md`, E14).
+
+Umgesetzt wird das in **CAL-018**; bis dahin gilt für das Nichtantreffen der
+Stand aus Fassung 2 (Vermerk ohne Gebühr).
 
 ## Konsequenzen
 
 - §19 bekommt seinen technischen Anker: „Fakturierung erst nach finalisierter
   Dokumentation" ist ab jetzt prüfbar als „nur aus `documented` oder aus
-  `no_show` mit Ausfallhonorar". **ANN-005 bleibt trotzdem in Kraft** — ein
-  Termin lässt sich weiterhin ohne Dokumentation abschließen; die Sperre sitzt
-  an der Rechnung, nicht am Abschluss. Der Eintrag bekommt bei ABR-002 seine
+  einem Vorgang mit Gebührenanlass (`no_show`, `late_cancellation`)". Einen
+  Override gibt es nicht — `PROJECT_PRINCIPLES.md` 0.10 §19 sagt das seit
+  Fassung 3 ausdrücklich. **ANN-005 bleibt trotzdem in Kraft** — ein Termin
+  lässt sich weiterhin ohne Dokumentation abschließen; die Sperre sitzt an der
+  Rechnung, nicht am Abschluss. Der Eintrag bekommt bei ABR-002 seine
   Wiedervorlage.
 - Der Auditkatalog wächst um `appointment.no_show`, `appointment.documented`
   und `appointment.invoiced`; `appointment.completed`, `.cancelled` und
@@ -278,9 +339,9 @@ Rechnung: Zu den Übergängen in Punkt 2 tritt mit ABR-003
 - ~~Braucht „nicht angetroffen" eine eigene Frist im Retention Schedule, oder
   fällt es unter „abgesagte Termine und No-shows ohne Rechnung" (ADR-008,
   ANN-001)?~~ Mit ANN-035 beantwortet: dieselbe Klasse, Anker ist der Vermerk.
-- **Neu mit Fassung 2:** Soll das Nichtantreffen beim Hausbesuch eine eigene
-  Gebührenregel bekommen — und wenn ja, welche? Der Weg ist da (derselbe
-  `fee_basis`), die Regel fehlt. Steht in `OPEN_DECISIONS.md`.
+- ~~**Neu mit Fassung 2:** Soll das Nichtantreffen beim Hausbesuch eine eigene
+  Gebührenregel bekommen — und wenn ja, welche?~~ Mit Fassung 3 (Punkt 9)
+  entschieden: ja, nach bestätigtem Protokoll, immer.
 - Wie verhält sich der Automat zu einem Termin, der von einer anderen Person
   abgeschlossen wird als der behandelnden?
 - Soll die Praxis sehen können, wie oft eine Patientin nicht angetroffen wurde
@@ -312,3 +373,11 @@ hier die Abwägung und nicht nur das Ergebnis.
    *Empfehlung: ja.* Die Entscheidung fällt im Hausflur, nicht im Büro.
 7. Nach deiner Bestätigung ziehe ich **§8 der Prinzipien** nach (§21, eigener
    Commit) und markiere Punkt D in `OPEN_DECISIONS.md` als erledigt. *Einverstanden?*
+
+## Änderungshistorie
+
+| Fassung | Datum | Änderung |
+|---|---|---|
+| 1 | 2026-09-11 | Angenommen, alle sieben Fragen wie empfohlen. |
+| 2 | 2026-09-12 | Punkt 8 neu (24-Stunden-Frist, Eingang der Absage, nur Patientenabsage); Punkt 4 neu gefasst (Pflichtentscheidung beim Nichtantreffen entfällt) — eine Umkehr von Frage 6. |
+| 3 | 2026-09-13 | Punkt 9 neu (Hausbesuch-Szenarien, E14 erledigt): Nichtantreffen nach Protokoll setzt `no_show` als Gebührenanlass; „Tür geöffnet, keine Behandlung" gilt als durchgeführt mit Pflichtvermerk. Punkt 8 Nr. 5 aufgehoben, Punkt 4 auf zwei Anlässe berichtigt. Korrekturen aus dem Audit: `confirmed → documented` (ANN-036) und Storno-Rückweg nach `cancelled` in der Tabelle; Klarstellung zu „endgültig". Umsetzung CAL-018. Punkte 1, 3, 5–7 unverändert. |

@@ -2,11 +2,20 @@
 
 ## Status
 
-Angenommen
+**Angenommen** (2026-08-28).
+
+**Fassung 2 (2026-09-13)** — der Projektinhaber hat am 2026-09-13 entschieden
+(E15 in `docs/decisions/OPEN_DECISIONS.md`), dass Office alle klinischen
+Inhalte lesen darf, die Therapeut:innen sehen. Das **kehrt Punkt 3 um** und
+fasst Punkt 4 neu; alle übrigen Punkte gelten unverändert. Die Umkehr ist
+hier ausdrücklich als solche benannt (Fassungsregel in `docs/adr/README.md`);
+`PROJECT_PRINCIPLES.md` §4.3/§4.4 sind mit Version 0.10 nachgezogen (§21).
+Umgesetzt wird der neue Rollenschnitt in ROL-EPIC-001; bis dahin gilt der
+gebaute Stand nach Fassung 1.
 
 ## Datum
 
-2026-08-28
+2026-08-28 · Fassung 2: 2026-09-13
 
 ## Kontext
 
@@ -39,9 +48,17 @@ als P0 offen.
 1. **Ein Benutzer kann mehrere Rollen besitzen.**
 2. **Alle Therapeut:innen einer Organisation dürfen grundsätzlich alle
    Patientenakten dieser Organisation einsehen.**
-3. **Office hat standardmäßig keinen Zugriff auf klinische Freitexte.**
-4. Für organisatorische Streitfälle steht ein **datensparsamer
-   Behandlungsnachweis** zur Verfügung.
+3. **Office hat lesenden Zugriff auf alle klinischen Inhalte einer
+   Patientenakte im selben Umfang wie Therapeut:innen** — Diagnose und
+   Verordnung einschließlich Scan, Behandlungsdokumentation mit Verlauf,
+   Befunde, patientenbezogene Nachrichten. Office schreibt keine klinische
+   Dokumentation. Jeder Zugriff ist auditpflichtig wie bei Therapeut:innen
+   (Punkt 7, ADR-010). *(Fassung 2, E15. Fassung 1 lautete: „Office hat
+   standardmäßig keinen Zugriff auf klinische Freitexte." — aufgehoben.)*
+4. Für Rechnung und organisatorische Streitfälle bleibt ein **datensparsamer
+   Behandlungsnachweis** als eigene Sicht ohne klinischen Inhalt bestehen.
+   *(Fassung 2: Er ist keine Zugriffsgrenze mehr, sondern die Sicht, die
+   außerhalb der Praxis gezeigt werden kann.)*
 5. Ein **zentraler Policy-/Authorization-Layer** wird mit **Datenbank-RLS als
    Defense-in-Depth** kombiniert.
 6. **Suche, Dateien, Exporte und spätere KI-/RAG-Funktionen müssen dieselben
@@ -72,6 +89,17 @@ als P0 offen.
   das wäre nach §13 eine Offenlegung.
 - Der Behandlungsnachweis ist folgerichtig eine eigene Sicht mit eigenem
   Datenumfang, kein gefilterter Auszug der klinischen Dokumentation.
+- **Fassung 2:** Mit dem Lesezugriff des Office entfällt die Need-to-know-
+  Trennung zwischen organisatorischer und klinischer Sicht innerhalb der
+  Praxis. Das Auditlog (ADR-010) ist damit auch für Office die tragende
+  Kompensation — jeder lesende Zugriff auf Dokumentation, Verordnung, Scan
+  und Nachrichten wird wie bei Therapeut:innen protokolliert. Die
+  datenschutzrechtliche Bewertung (Need-to-know, DSFA nach ADR-007) gehört in
+  die Anfrage B2. Technisch betrifft die Umkehr die Policy-Funktionen
+  `app.can_read_prescriptions()`, `app.can_read_treatment_evidence()`, die
+  Projektionen `list_patient_treatment_*`, `list_patient_prescription_*`, die
+  Dokumentart als Rollenschnitt in ADR-017 Punkt 12 und die Office-Sicht der
+  Patientenkommunikation — gesammelt in ROL-EPIC-001.
 - Suchindex, Dateiablage, Exporte und spätere Embedding-/RAG-Speicher sind
   Kopien beziehungsweise Sichten auf geschützte Daten. Sie sind der
   wahrscheinlichste Umgehungsweg des Modells und unterliegen deshalb
@@ -95,26 +123,33 @@ als P0 offen.
   entwickelt.
 - Die vollständige Rechtematrix je Rolle und Ressource.
 - Umfang, Aufbewahrungsdauer, Leseberechtigung und Auswertung des Audit-Logs
-  (offener Punkt C4).
-- Ein Break-Glass- beziehungsweise Notfallzugriffskonzept (offener Punkt C3).
-- Der fallbezogene, zeitlich begrenzte und protokollierte Zugriff auf
-  vollständige klinische Dokumentation nach §4.4.
+  (C4 — beantwortet mit ADR-010; Leseberechtigung mit ADR-010 Fassung 2).
+- Ein Break-Glass- beziehungsweise Notfallzugriffskonzept (C3 — beantwortet
+  mit ADR-010: kein klinischer Break Glass in V1).
+- ~~Der fallbezogene, zeitlich begrenzte und protokollierte Zugriff auf
+  vollständige klinische Dokumentation nach §4.4.~~ Mit Fassung 2 entfallen
+  (E15).
 - Die Einordnung von Leistungsziffern als organisatorische oder klinische
-  Daten (offener Punkt C1).
+  Daten (C1 — entschieden 2026-09-05, `PROJECT_PRINCIPLES.md` 0.4 §4.4; durch
+  E15 überholt).
 - Die Klassifikation klinischer Inhalte in der Patientenkommunikation
-  (offener Punkt C2).
+  (C2 — entschieden 2026-09-05, §10; die Ausnahme für Office ist durch E15
+  gegenstandslos).
 - Patientenidentität, Identitätsprüfung und Vertretungsvollmachten
-  (offener Punkt B5).
+  (B5 — Rahmen vorläufig entschieden 2026-09-08, Verfahren offen).
 - Die organisatorische Besetzung der Administratorrolle.
 
 ## Offene Folgefragen
 
-- Welche Felder umfasst der Behandlungsnachweis genau, und wie verhält sich
+- ~~Welche Felder umfasst der Behandlungsnachweis genau, und wie verhält sich
   das zu den Leistungsangaben auf der Rechnung, die das Office ohnehin sieht
-  (C1)?
+  (C1)?~~ Mit ANN-006 gebaut (DOK-003) und durch E15 überholt: Office sieht
+  die Dokumentation vollständig; der Nachweis bleibt Rechnungssicht.
 - Was genau gilt als auditpflichtiger Zugriff — Trefferliste, Detailansicht,
   Export, KI-Zusammenfassung? Wie lange wird aufbewahrt, wer darf lesen, und
-  wer wertet regelmäßig aus (C4)?
+  wer wertet regelmäßig aus (C4)? *Beantwortet mit ADR-010 (Katalog, drei
+  Jahre) und ADR-010 Fassung 2 (Lesepfad); offen bleibt die Auswertung
+  (monatlicher Report, OPS-005).*
 - Wie wird technisch verhindert, dass ein neuer Endpunkt, ein Job oder ein
   Report den Policy-Layer umgeht?
 - Wie wird das Berechtigungsmodell getestet, und welche Testarten sind
@@ -123,3 +158,10 @@ als P0 offen.
   nur eine Person das System betreibt (E1, E4)?
 - Wie werden Berechtigungsänderungen selbst protokolliert und geprüft?
 - Wie wirkt sich der Offline-Modus aus ADR-001 auf Audit und Durchsetzung aus?
+
+## Änderungshistorie
+
+| Fassung | Datum | Änderung |
+|---|---|---|
+| 1 | 2026-08-28 | Angenommen. |
+| 2 | 2026-09-13 | **Umkehr von Punkt 3** (E15, Projektinhaber): Office liest alle klinischen Inhalte wie Therapeut:innen; Punkt 4 neu gefasst (Behandlungsnachweis bleibt als Rechnungssicht, keine Zugriffsgrenze); Konsequenz zur Kompensation durch das Auditlog ergänzt; Erledigungsvermerke zu C1–C4, B5. Punkte 1, 2, 5–8 unverändert. Umsetzung ROL-EPIC-001. |

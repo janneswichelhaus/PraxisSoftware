@@ -157,6 +157,11 @@ und gehören in den Prüfkatalog von OPS-001, nicht in diese Entscheidung.
     einschließlich Diagnose — die Trennung in zwei Sichten, die bei der
     strukturierten Verordnung funktioniert, gibt es beim Bild davon nicht.
     Deshalb folgt eine Datei immer dem **strengsten** Teil ihres Inhalts.
+    *Vermerk 2026-09-13 (E15, ADR-004 Fassung 2):* `office` liest künftig
+    auch die klinischen Dokumentarten. Die Dokumentart bleibt Katalog und
+    Rollenschnitt — für Patient:innen (Etappe 4), Dritte und die
+    Rechnungssicht; für die Praxisrollen entfällt die Grenze mit
+    ROL-EPIC-001. Bis dahin gilt dieser Punkt wie geschrieben (DAT-EPIC-001).
 13. **Wer hochladen, die Art ändern oder löschen darf, folgt dem Schreibrecht
     am Bezugsdatensatz**, nicht dem Leserecht an der Datei. Eine Korrektur der
     Dokumentart ist ein protokollierter Vorgang der therapeutischen Rollen: Sie
