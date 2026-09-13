@@ -2,7 +2,10 @@
 
 ## Status
 
-**Vorgeschlagen, Fassung 2** — Bestätigung durch Jannes ausstehend.
+**Angenommen, Fassung 2** — von Jannes am 2026-09-13 bestätigt (E-20).
+Die Annahme gilt der Zielarchitektur, dem Kandidaten und dem Gate; **produktiv
+freigeschaltet ist damit nichts** — die Freigabe echter Adressen an einen
+Anbieter bleibt am Gate aus Punkt 9 (Vertrag, §203, DSFA).
 
 Fassung 2 ersetzt die Fassung 1 vom selben Tag (Commit `c5c7b21`) vollständig.
 Eine neue ADR-Nummer war nach der Governance nicht nötig: „abgelöst durch
@@ -17,7 +20,7 @@ Gate fest, das vor Echtdaten zu passieren ist.
 
 ## Datum
 
-2026-09-08 (Fassung 2; Fassung 1 vom selben Tag)
+2026-09-08 (Fassung 2; Fassung 1 vom selben Tag) · angenommen 2026-09-13
 
 ## Kontext
 
@@ -143,6 +146,15 @@ zurückzubauen ist.
     Browser-Metadaten der Person nicht beim Anbieter landen. Die Kacheln
     lädt der Browser direkt — das ist der einzige Browser-Kontakt zum
     Anbieter und trägt nur Kartenausschnitt und Zoom.
+    **Edge Runtime:** ADR-015 Punkt 20 gibt Supabase Edge Functions nicht
+    automatisch für Gesundheitsdaten frei, und ADR-017 Punkt 25 verzichtet
+    aus demselben Grund bewusst auf sie. Für diesen Datenweg gilt deshalb:
+    Der Adapter läuft bis zur dokumentierten Prüfung der Edge Runtime in
+    OPS-001 ausschließlich gegen den `mock`-Adapter oder mit synthetischen
+    Koordinaten (MAP-002 bis MAP-005); echte Adressen erreichen ihn erst
+    nach positivem Ergebnis (Gate, Punkt 9). ANN-017 (Adapter als Edge
+    Function) und ANN-025 (keine Edge Function für die Kontoanlage) sind
+    zwei Lesarten derselben Regel: geplant ja, freigegeben nein.
 16. **Keine dauerhafte Speicherung** von Fahrzeiten, Distanzen, Matrizen oder
     Routing-Rohantworten. Sie werden im Moment der Planung abgerufen,
     angezeigt und verworfen (entschieden 2026-09-08, B7). §9 und §18 werden
@@ -306,11 +318,12 @@ Grund für „bevorzugter Kandidat", nicht „freigegeben".
 
 ## Offene Folgefragen
 
-- **E-20 (an Jannes):** Fassung 2 bestätigen? Damit entfällt die Google Maps
-  Embed API aus E-16, und PTV Developer wird Kandidat für die Prototypen.
-- **E-21 (an Jannes):** Reihenfolge — MAP-002 vor oder nach UX-EPIC-001?
-  Empfehlung: UX-EPIC-001 zuerst (Kernprozess, keine Anbieterabhängigkeit),
-  MAP-002 sobald der PTV-Schlüssel vorliegt, parallel als eigener Loop.
+- ~~**E-20 (an Jannes):** Fassung 2 bestätigen?~~ **Bestätigt am 2026-09-13.**
+  Die Google Maps Embed API aus E-16 entfällt; PTV Developer ist Kandidat für
+  die Prototypen.
+- ~~**E-21 (an Jannes):** Reihenfolge — MAP-002 vor oder nach UX-EPIC-001?~~
+  Gegenstandslos: UX-EPIC-001 ist seit 2026-09-11 fertig; MAP-002 startet,
+  sobald der PTV-Schlüssel vorliegt.
 - **B2:** Handoff und §203/Art. 9 (Punkt 23); Einwilligung oder Art. 9 Abs. 2
   lit. h in Verbindung mit §22 BDSG.
 - **PTV-Support (Jannes):** Referrer-/Domainbindung von Schlüsseln; Höchstzahl

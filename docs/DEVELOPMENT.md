@@ -1,11 +1,15 @@
 # Entwicklungsumgebung
 
-Stand: 2026-09-05 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-13 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
 > auftauchen (`PROJECT_PRINCIPLES.md` §3.1). Coding- und KI-Werkzeuge erhalten
-> niemals Produktionscredentials.
+> niemals Produktionscredentials. Das gilt auch für Design-Entwürfe und
+> Kanvas-Dateien im Repository: Für den nächsten Entwurf dieser Art gilt —
+> Namen im Muster des Seeds („Anna Beispiel", „Max Mustermann") ersparen die
+> Rückfrage; sie sind als erfunden erkennbar, ohne dass jemand danach fragen
+> muss.
 
 ## Voraussetzungen
 
@@ -149,11 +153,9 @@ wieder her.
 **7. Featurebezogene Prüfschritte**
 
 Die manuellen Klickwege je Feature stehen in
-[`abnahme/`](abnahme/) — eine Datei je Roadmap-Etappe. Für den heutigen Stand:
-[Patientenverwaltung und Termine](abnahme/etappe-0-patienten-und-termine.md)
-(PAT-002, PAT-003, CAL-001 bis CAL-006, STAFF-001) und
-[Behandlungsdokumentation](abnahme/etappe-1-kernprozess.md) (DOK-001 bis
-DOK-004).
+[`abnahme/`](abnahme/) — eine Datei je Roadmap-Etappe; welche Loops in
+welcher Datei stehen, sagt die Tabelle in
+[`abnahme/README.md`](abnahme/README.md).
 
 Sie liegen dort statt hier, weil sie mit jedem Loop wachsen und diese Datei
 sonst unlesbar würde.
@@ -215,6 +217,10 @@ Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
 - Prompt am 2026-09-06 auf das Format der Roadmap 2.1 umgestellt
   (Entscheidung E-10): `git log --since='8 days ago'`, Fortschritt mit
   Abnahme-Spalte, Spur B mit Stand, Ampel je Meilenstein M0 bis M6.
+- Seit Roadmap 5.2 (2026-09-13) hat der Auftrag einen sechsten Schritt:
+  abgelaufene Sandbox-Prototypen aus `development/ARBEITSBEREICHE.md` §2
+  melden. Zählt der Routine-Prompt die Schritte selbst auf, zieht Jannes ihn
+  nach; verweist er nur auf den Abschnitt, ist nichts zu tun.
 - Nach der Zeitumstellung Ende Oktober fällt sie auf 06:50 Uhr; wer 07:50
   behalten will, ändert den Cron-Ausdruck auf `50 6 * * 1`.
 - Abschalten, Takt oder Prompt ändern: über die Routines-Oberfläche auf
@@ -308,6 +314,10 @@ protokolliert **je Eintrag** `treatment_note.viewed`; die Verwaltung bekommt
 Inhalt und ohne eigenen Auditeintrag — das Öffnen der Akte steht als
 `patient_record.viewed` (ANN-006). Beide Sichten blättern über dieselbe
 Seitenregel `app.patient_record_page` mit höchstens 50 Terminen je Aufruf.
+**Mit E15 (2026-09-13) ändert sich das:** `office` liest künftig die
+Dokumentation wie die klinischen Rollen, mit `treatment_note.viewed` je
+Eintrag; der Behandlungsnachweis bleibt als Rechnungssicht. Umgebaut wird
+das in ROL-EPIC-001 (`PROJECT_PRINCIPLES.md` 0.10 §4.3, ADR-004 Fassung 2).
 
 Seit DOK-004 kennt das Auditlog einen **Systemakteur**: Ereignisse eines
 zeitgesteuerten Vorgangs — heute die automatische Finalisierung — tragen
@@ -344,13 +354,13 @@ deckungsgleich.
    Versuche wäre eine autonome Transaktion nötig — offen.
 7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
    Auswertung oder Alarmierung.
-8. **Keine Anhänge zur Behandlungsdokumentation — es gibt noch keine
-   Dateiablage.** Die Regeln dafür stehen seit dem 2026-09-12 in
-   [ADR-017](adr/ADR-017-file-storage.md) (**angenommen**, Punkt E8 damit
-   erledigt); gebaut wird sie mit DAT-EPIC-001. **Vor der ersten echten Datei**
-   braucht es zusätzlich OPS-001 und einen dokumentierten, getesteten
-   Sicherungsweg für den Objektspeicher — er läuft im Datenbank-Backup nicht
-   mit. Das Datenmodell verbaut nichts: Die Dateitabelle kommt additiv hinzu.
+8. **Die Dateiablage ist gebaut (DAT-EPIC-001, 2026-09-13), aber nicht
+   produktiv.** Die Regeln stehen in [ADR-017](adr/ADR-017-file-storage.md).
+   **Vor der ersten echten Datei** braucht es zusätzlich OPS-001 und einen
+   dokumentierten, getesteten Sicherungsweg für den Objektspeicher — er läuft
+   im Datenbank-Backup nicht mit (OPS-003). Anhänge an der
+   Behandlungsdokumentation selbst gibt es weiterhin nicht; Dateien hängen an
+   der Akte und an der Verordnung (VER-004).
 9. **Die automatische Finalisierung braucht `pg_cron`.** ADR-016 Punkt 7 ist
    mit DOK-004 umgesetzt: `finalize_overdue_treatment_notes` schreibt
    überfällige Entwürfe fest, und die Migration registriert den Aufruf alle
@@ -367,10 +377,10 @@ deckungsgleich.
     §4.4 nennt sie, aber es gibt noch keine Leistungserfassung. Dass
     Leistungskürzel organisatorisch sind und dem Office offenstehen, ist seit
     dem 2026-09-05 mit Punkt C1 entschieden (`PROJECT_PRINCIPLES.md` §4.4,
-    Version 0.4); geliefert werden können sie erst mit ABR-002. Umfang und
-    Protokollierung des Nachweises bleiben als ANN-006 offen. Der fallbezogene,
-    zeitlich begrenzte Office-Zugriff auf vollständige Dokumentation (§4.4
-    Absatz 3) ist ebenfalls nicht gebaut.
+    Version 0.4); geliefert werden können sie erst mit ABR-002. Seit E15
+    (2026-09-13) ist der Nachweis keine Zugriffsgrenze mehr — `office` liest
+    die Dokumentation vollständig, sobald ROL-EPIC-001 gebaut ist; ANN-006 ist
+    damit verworfen, der fallbezogene Sonderzugriff (§4.4 bis 0.9) entfallen.
 
 ## Manuelle Schritte im Repository
 
@@ -379,6 +389,11 @@ Diese Einstellungen lassen sich nicht aus dem Code setzen:
 - Branch Protection auf `main`: erforderliche Checks `quality`, `database`,
   `security`, `e2e`, `e2e-supabase`; Force Push verbieten (ADR-013).
 - GitHub Secret Scanning und Push Protection aktivieren.
+- **„Allow auto-merge"** in den Repository-Einstellungen aktivieren
+  (entschieden 2026-09-13): Ein Pull Request wird gemergt, sobald die
+  erforderlichen Checks grün sind; die Branch Protection bleibt die
+  Voraussetzung dafür (ADR-013). Gemergte Branches automatisch löschen
+  („Automatically delete head branches").
 - Dependabot oder eine vergleichbare Aktualisierung der Abhängigkeiten.
 - **Die Supabase-CLI-Version in `.github/workflows/ci.yml` von Hand erhöhen.**
   Sie steht dort fest statt auf `latest`, weil `latest` die Action bei jedem

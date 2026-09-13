@@ -85,14 +85,14 @@ als P0 offen.
   Mailversand, Kartendienst, KI oder Error-Tracking.
 - Region, Rechenzentrum oder Verfügbarkeitszonen.
 - Verschlüsselungsverfahren und Key-Management-Architektur.
-- Backup-Strategie, RPO und RTO (offener Punkt E3).
+- Backup-Strategie, RPO und RTO (E3 — beantwortet mit ADR-012).
 - Die Frage nach Datenschutz-Folgenabschätzung, Datenschutzbeauftragtem,
   Verzeichnis der Verarbeitungstätigkeiten und TOM-Dokumentation
-  (offener Punkt B2).
+  (B2 — Prozess mit ADR-007 entschieden; Schwellwertprüfung und DSFA offen).
 - Aufbewahrungsfristen und Löschkonzept für die Fachdaten
-  (offener Punkt B3).
+  (B3 — beantwortet mit ADR-008, gebaut mit LOE-EPIC-001).
 - Anzahl der Umgebungen über Dev/Test/Prod hinaus sowie Deploy-Berechtigungen
-  (offener Punkt E4).
+  (E4 — beantwortet mit ADR-010; Deployment mit OPS-002).
 - Kosten und Budgetrahmen.
 
 ## Offene Folgefragen

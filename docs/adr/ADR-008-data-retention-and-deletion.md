@@ -92,7 +92,9 @@ Verankerung im Code und Änderungspfad.
 - Das Datenmodell benötigt die fachlichen Anker, auf die sich die Fristen
   beziehen — insbesondere einen definierten „Abschluss der Behandlung". Dieser
   Zeitpunkt ist bisher nirgends definiert und wird zur Voraussetzung für die
-  gesamte klinische Retention.
+  gesamte klinische Retention. *(Seit LOE-001b definiert: der ausdrückliche,
+  rücknehmbare Vorgang „Abschluss der Versorgung", `care_concluded_on`,
+  ANN-032.)*
 - Löschung ist ein aktiver, wiederkehrender Vorgang mit eigener Protokollierung
   und nicht die Abwesenheit eines Zugriffs. Sie muss selbst nachweisbar sein.
 - Der Vorrang gesetzlicher Aufbewahrung bedeutet, dass ein Löschverlangen nach
@@ -123,8 +125,8 @@ Verankerung im Code und Änderungspfad.
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
 - Die technische Umsetzung von Löschung, Anonymisierung und Legal Hold.
-- Der Backup-Lebenszyklus selbst — Aufbewahrung, RPO und RTO bleiben offener
-  Punkt E3.
+- Der Backup-Lebenszyklus selbst — Aufbewahrung, RPO und RTO (E3 — beantwortet
+  mit ADR-012).
 - Die abschließende steuerrechtliche Bewertung der Belegarten und Fristen.
 - Die Rechtsgrundlagen je Verarbeitungsvorgang und ein Einwilligungsmodell;
   das bleibt bei ADR-007 offen.
@@ -151,4 +153,5 @@ Verankerung im Code und Änderungspfad.
 - Welche Fristen ändern sich nach der Validierung im DSFA-Prozess, und wie
   wird diese Änderung nachgezogen?
 - Wie werden Dateien und Anhänge behandelt, die in mehreren Kontexten
-  referenziert sind?
+  referenziert sind? *Beantwortet mit ADR-017 Punkt 10 (eine Datei, ein
+  Bezugsdatensatz; Frist vom Bezugsdatensatz geerbt).*

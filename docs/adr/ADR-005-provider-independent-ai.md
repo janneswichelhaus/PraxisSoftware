@@ -100,8 +100,10 @@ Patientendaten ist ein Dienstleister im Sinne jener Prüfpflichten.
 - Umfang und Verfahren der Pseudonymisierung und Datenminimierung im Gateway
   (berührt den offenen Punkt C6).
 - Welche KI-Features gebaut werden und in welcher Reihenfolge.
-- Die Abgrenzung zu MDR und EU AI Act (offener Punkt B1). Dieser ADR regelt
-  die technische Anbindung, nicht die regulatorische Einordnung der Funktionen.
+- Die Abgrenzung zu MDR und EU AI Act (B1 — die MDR-Abgrenzung ist mit ADR-006
+  entschieden, die Einordnung nach EU AI Act und die externe Prüfung bleiben
+  offen). Dieser ADR regelt die technische Anbindung, nicht die regulatorische
+  Einordnung der Funktionen.
 - Die Entscheidung über Embedding-/RAG-Speicher als solchen; ihre Bindung an
   das Berechtigungsmodell regelt ADR-004.
 - Kosten, Kontingente und Ratenbegrenzung.

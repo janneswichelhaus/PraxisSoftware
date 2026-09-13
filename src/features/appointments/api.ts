@@ -869,6 +869,7 @@ export async function fetchEventParticipants(eventGroupId: string): Promise<Even
  * serverseitig; ein Verschieben einer einzelnen Ereigniszeile weist die
  * Datenbank ab (CAL-017).
  */
+// ANN-051: Ein Teamereignis ist ein Vorgang - Gruppenkennung, gemeinsame Aenderung und Absage (docs/decisions/ASSUMPTIONS.md).
 export async function updateAppointmentEvent(
   eventGroupId: string,
   expectedUpdatedAt: string,

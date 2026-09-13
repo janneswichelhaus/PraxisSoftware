@@ -5,7 +5,7 @@
     "name": "Eröffnung — erster Behandlungstag mit der Software",
     "termin": "2027-07-01"
   },
-  "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab.",
+  "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab. Die Stufen heißen wie in der Fortschrittstabelle: fertig = Skill-Schritt I durchlaufen, abgenommen = Jannes hat docs/abnahme/ durchlaufen.",
   "statuswerte": {
     "offen": { "anteil": 0, "text": "noch nicht begonnen" },
     "in_arbeit": { "anteil": 0.4, "text": "begonnen, nicht fertig" },
@@ -14,11 +14,11 @@
       "anteil": 0.5,
       "text": "von Jannes vorläufig entschieden, externe Bestätigung fehlt (zählt für M3 nicht)"
     },
-    "gebaut": {
+    "fertig": {
       "anteil": 0.85,
-      "text": "Skill-Schritt I durchlaufen, Abnahme durch Jannes steht aus"
+      "text": "Skill-Schritt I durchlaufen (fertig gebaut), Abnahme durch Jannes steht aus"
     },
-    "fertig": { "anteil": 1, "text": "abgenommen beziehungsweise extern bestätigt" }
+    "abgenommen": { "anteil": 1, "text": "von Jannes abgenommen beziehungsweise extern bestätigt" }
   },
   "bloecke": [
     {
@@ -31,17 +31,20 @@
           "id": "fundament",
           "name": "Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001",
           "gewicht": 3,
-          "status": "fertig"
+          "status": "abgenommen"
         },
-        { "id": "dok-epic", "name": "DOK-EPIC (DOK-001 bis DOK-004)", "gewicht": 2, "status": "fertig" },
-        { "id": "ver-epic-001", "name": "VER-EPIC-001 Verordnungen", "gewicht": 2, "status": "fertig" },
-        { "id": "ui-000", "name": "UI-000 Fundament der Oberfläche", "gewicht": 2, "status": "fertig" },
-        { "id": "marke-001", "name": "MARKE-001 Marke in der Anwendung", "gewicht": 1, "status": "fertig" },
-        { "id": "ux-epic-001", "name": "UX-EPIC-001 Hausbesuchstag (11 Stories)", "gewicht": 4, "status": "fertig" },
-        { "id": "loe-epic-001", "name": "LOE-EPIC-001 Löschung und Retention (5 Stories)", "gewicht": 3, "status": "fertig" },
-        { "id": "cal-epic-003a", "name": "CAL-EPIC-003a Terminzustände", "gewicht": 2, "status": "fertig" },
-        { "id": "cal-epic-003b", "name": "CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013)", "gewicht": 3, "status": "gebaut" },
-        { "id": "dat-epic-001", "name": "DAT-EPIC-001 Dateiablage (G4)", "gewicht": 2, "status": "gebaut" },
+        { "id": "dok-epic", "name": "DOK-EPIC (DOK-001 bis DOK-004)", "gewicht": 2, "status": "abgenommen" },
+        { "id": "ver-epic-001", "name": "VER-EPIC-001 Verordnungen", "gewicht": 2, "status": "abgenommen" },
+        { "id": "ui-000", "name": "UI-000 Fundament der Oberfläche", "gewicht": 2, "status": "abgenommen" },
+        { "id": "marke-001", "name": "MARKE-001 Marke in der Anwendung", "gewicht": 1, "status": "abgenommen" },
+        { "id": "ux-epic-001", "name": "UX-EPIC-001 Hausbesuchstag (11 Stories)", "gewicht": 4, "status": "abgenommen" },
+        { "id": "loe-epic-001", "name": "LOE-EPIC-001 Löschung und Retention (5 Stories)", "gewicht": 3, "status": "abgenommen" },
+        { "id": "cal-epic-003a", "name": "CAL-EPIC-003a Terminzustände", "gewicht": 2, "status": "abgenommen" },
+        { "id": "cal-epic-003b", "name": "CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013)", "gewicht": 3, "status": "fertig" },
+        { "id": "dat-epic-001", "name": "DAT-EPIC-001 Dateiablage (G4)", "gewicht": 2, "status": "fertig" },
+        { "id": "rol-epic-001", "name": "ROL-EPIC-001 Office liest klinische Inhalte (E15)", "gewicht": 2, "status": "offen" },
+        { "id": "cal-018", "name": "CAL-018 Hausbesuch-Szenarien (E14)", "gewicht": 1, "status": "offen" },
+        { "id": "ver-epic-002", "name": "VER-EPIC-002 Verordnung im Office-Alltag", "gewicht": 2, "status": "offen" },
         { "id": "abr-epic-001", "name": "ABR-EPIC-001 Leistungen und Katalog", "gewicht": 3, "status": "offen" },
         { "id": "abr-epic-002a", "name": "ABR-EPIC-002a Rechnung entsteht", "gewicht": 2, "status": "offen" },
         { "id": "abr-epic-002b", "name": "ABR-EPIC-002b Rechnung als Dokument", "gewicht": 2, "status": "offen" },
@@ -72,8 +75,8 @@
       "gewicht": 25,
       "bezug": "ROADMAP.md, Spur A3 Etappe G (vor M3)",
       "posten": [
-        { "id": "g1-adr-017", "name": "G1 ADR-017 Dateiablage (Dokument)", "gewicht": 1, "status": "fertig" },
-        { "id": "g2-staff-epic-002", "name": "G2 STAFF-EPIC-002 Konten und Rollen", "gewicht": 2, "status": "fertig" },
+        { "id": "g1-adr-017", "name": "G1 ADR-017 Dateiablage (Dokument)", "gewicht": 1, "status": "abgenommen" },
+        { "id": "g2-staff-epic-002", "name": "G2 STAFF-EPIC-002 Konten und Rollen", "gewicht": 2, "status": "abgenommen" },
         { "id": "g3-ops-001", "name": "G3 OPS-001 Providerprüfung und Cloudprojekt", "gewicht": 2, "status": "offen" },
         { "id": "g5-ops-002", "name": "G5 OPS-002 Deployment und Freigabe", "gewicht": 2, "status": "offen" },
         { "id": "g6-ops-004", "name": "G6 OPS-004 Logging, Redaction, Monitoring", "gewicht": 2, "status": "offen" },
@@ -81,7 +84,7 @@
         { "id": "g9-ops-006", "name": "G9 OPS-006 Betroffenenrechte (minimal)", "gewicht": 1, "status": "offen" },
         { "id": "g10-e2-prozess", "name": "G10 E2 Ausfallkonzept als Praxisprozess", "gewicht": 1, "status": "offen" },
         { "id": "g11-ops-007", "name": "G11 OPS-007 Bootstrap Produktion (Runbook)", "gewicht": 1, "status": "offen" },
-        { "id": "g12-adr-019", "name": "G12 ADR-019 Kartendienst (Fassung 2, Bestätigung offen)", "gewicht": 1, "status": "entwurf" },
+        { "id": "g12-adr-019", "name": "G12 ADR-019 Kartendienst (Fassung 2, angenommen 2026-09-13)", "gewicht": 1, "status": "abgenommen" },
         { "id": "g13-steuer", "name": "G13 Steuerliche Grundeinstellungen", "gewicht": 1, "status": "offen" },
         { "id": "g14-dsfa", "name": "G14 DSFA-Paket (VVT, TOM, Löschkonzept, Breach)", "gewicht": 3, "status": "offen" },
         { "id": "g16-betrieb-001", "name": "G16 BETRIEB-001 Betriebsmodell", "gewicht": 1, "status": "offen" },
@@ -108,10 +111,12 @@
       "gewicht": 20,
       "bezug": "ROADMAP.md, Spur B und docs/decisions/OPEN_DECISIONS.md",
       "posten": [
-        { "id": "d-adr-018", "name": "D → ADR-018 Terminzustände", "gewicht": 1, "status": "fertig" },
-        { "id": "e10", "name": "E10 Schreibrecht Mitarbeiterdaten", "gewicht": 1, "status": "fertig" },
-        { "id": "e8-adr-017", "name": "E8 → ADR-017 Dateiablage", "gewicht": 1, "status": "fertig" },
-        { "id": "b7-adr-019", "name": "B7 → ADR-019 Kartendienst bestätigen (E-20)", "gewicht": 1, "status": "vorlaeufig" },
+        { "id": "d-adr-018", "name": "D → ADR-018 Terminzustände", "gewicht": 1, "status": "abgenommen" },
+        { "id": "e10", "name": "E10 Schreibrecht Mitarbeiterdaten", "gewicht": 1, "status": "abgenommen" },
+        { "id": "e8-adr-017", "name": "E8 → ADR-017 Dateiablage", "gewicht": 1, "status": "abgenommen" },
+        { "id": "b7-adr-019", "name": "B7 → ADR-019 Kartendienst bestätigen (E-20)", "gewicht": 1, "status": "abgenommen" },
+        { "id": "e14-hausbesuch", "name": "E14 Hausbesuch-Szenarien (Rechtsgrundlage Fall 1 mit B4)", "gewicht": 1, "status": "vorlaeufig" },
+        { "id": "e15-office", "name": "E15 Office liest klinische Inhalte (Bewertung mit B2)", "gewicht": 1, "status": "vorlaeufig" },
         { "id": "providerpruefung", "name": "Providerprüfung Supabase (OPS-001)", "gewicht": 2, "status": "offen" },
         { "id": "b4-steuer", "name": "B4 Steuerliche Validierung", "gewicht": 2, "status": "vorlaeufig" },
         { "id": "b14-pdf", "name": "B14 PDF-Weg der Rechnung", "gewicht": 1, "status": "offen" },

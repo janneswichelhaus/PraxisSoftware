@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Zuletzt aktualisiert: 2026-09-12 (E12 Punkt 3 und 4 vorläufig entschieden: Fahrpuffer erst mit MAP-006) · Struktur 2.1
+Zuletzt aktualisiert: 2026-09-13 (E14 erledigt, E15 neu, E-20 erledigt) · Struktur 3.0
 
 Dieses Dokument hält fest, **was noch nicht entschieden ist**, warum es offen
 ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
@@ -8,7 +8,7 @@ ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
 muss, stehen in `docs/development/ROADMAP.md`, Spur B.
 
 **Stand:** Alle Architektur-Grundentscheidungen sind getroffen (ADR-001
-bis ADR-016). Am **2026-09-08** hat Jannes die Entscheidungsrunde vom Vortag
+bis ADR-019; ADR-019 seit 2026-09-13 angenommen). Am **2026-09-08** hat Jannes die Entscheidungsrunde vom Vortag
 **vollständig und ohne Ausnahme** nach der jeweiligen Empfehlung entschieden —
 20 Punkte, siehe Historie und die Abschnitte unten. Damit ist **kein fachlicher
 Punkt mehr blockierend**.
@@ -33,12 +33,36 @@ Sprachdokumentation (§6.3). Beide werfen Anschlussfragen auf, die Jannes
 ausdrücklich **nicht** mitentschieden hat; sie stehen als **E12** und **E13**
 unten. Keine davon blockiert einen Loop.
 
-Die fünf Rückfragen E-15 bis E-19 hat ## Wie dieses Dokument benutzt wird
+Am **2026-09-13** ist **E15** dazugekommen und am selben Tag entschieden:
+Office liest alle klinischen Inhalte einer Akte im Umfang der Therapeut:innen
+(Umsetzung ROL-EPIC-001, Prüfvermerk für B2). Am selben Tag sind **E14**
+(Hausbesuch-Szenarien) und die Rückfragen **E-20** und **E-21** erledigt.
+
+Die fünf Rückfragen E-15 bis E-19 hat Jannes am 2026-09-06 beantwortet;
+Wortlaut in `docs/development/ROADMAP.md`, Abschnitt „Antworten E-15 bis
+E-19", und in der Historie unten.
+
+## Wie dieses Dokument benutzt wird
 
 Ein offener Punkt blockiert keine Aufgabe. Braucht eine Aufgabe eine
 Festlegung, die hier offen ist, wird sie als begründete Annahme in
 `ASSUMPTIONS.md` getroffen (`PROJECT_PRINCIPLES.md` §15.1). Der Punkt bleibt
 hier offen und verweist auf die `ANN`-Kennung, bis er entschieden ist.
+
+**Dieses Dokument hat keinen Rang** in der Dokumentenhierarchie. Es
+entscheidet nichts; was hier offen ist, gilt in keinem Dokument als
+entschieden, und was hier als entschieden vermerkt ist, hat seine Fundstelle
+in einem ADR, in `PROJECT_PRINCIPLES.md` oder als Vermerk mit Datum in diesem
+Dokument.
+
+**Kennungen:** `E12`, `E13` … (ohne Bindestrich) sind offene Punkte dieses
+Dokuments; `E-1` bis `E-21` (mit Bindestrich) sind die Rückfragen und
+Entscheidungen aus dem Roadmap-Review vom 2026-09-06 (Historie). Sie werden
+nicht umnummeriert.
+
+**Archiv:** Die Volltexte erledigter Punkte stehen in
+`archiv/OPEN_DECISIONS-erledigt.md`; hier bleibt je Punkt ein Zweizeiler mit
+Überschrift und Verweis, damit keine Kennung verschwindet.
 
 1. Ein Punkt wird besprochen und entschieden.
 2. Die Entscheidung wird als ADR unter `docs/adr/` festgehalten, wenn sie
@@ -104,26 +128,26 @@ Feature.
 | Punkt | Thema                                                        | Status                                                        | Wo                                                                                                            |
 | ----- | ------------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | A1    | Offline-Fähigkeit                                            | entschieden 2026-08-28                                        | [ADR-001](../adr/ADR-001-online-first-limited-offline.md); Mechanismus offen, siehe F                        |
-| A2    | Hosting, Datenstandort, Provider                             | entschieden 2026-08-28; **Anbieterprüfung offen**             | [ADR-002](../adr/ADR-002-hosting-data-residency.md), [ADR-015](../adr/ADR-015-initial-technical-stack.md); Roadmap OPS-001 |
+| A2    | Hosting, Datenstandort, Provider                             | entschieden 2026-08-28; **Anbieterprüfung offen**             | [ADR-002](../adr/ADR-002-hosting-data-residency.md), [ADR-015](../adr/ADR-015-initial-technical-stack.md); Roadmap OPS-001; unten |
 | A3    | `organization_id` / `location_id`                            | entschieden 2026-08-28                                        | [ADR-003](../adr/ADR-003-organization-location-model.md)                                                      |
 | A4    | Berechtigungsmodell                                          | entschieden 2026-08-28                                        | [ADR-004](../adr/ADR-004-authorization-model.md)                                                              |
 | B1    | MDR / EU AI Act                                              | Zweckbestimmung **vorläufig entschieden 2026-09-08**; **externe Prüfung offen** | [ADR-006](../adr/ADR-006-medical-device-boundary.md); Roadmap G13, Feb 2027                                   |
 | B2    | DSFA, DSB, Verzeichnis, TOM, Meldeprozess                    | Prozess entschieden; DSB **vorläufig entschieden 2026-09-08** (ja); Schwellwertprüfung offen | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md); Roadmap G12                                   |
-| B3    | Aufbewahrung und Löschung                                    | entschieden; **Fristen-Validierung offen**, Umsetzung LOE     | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md), ANN-001, ANN-002; Roadmap LOE-EPIC-001              |
+| B3    | Aufbewahrung und Löschung                                    | entschieden; **Fristen-Validierung offen**; Umsetzung LOE-EPIC-001 fertig 2026-09-11 | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md); unten (Annahmen); Roadmap LOE-EPIC-001              |
 | B4    | Abrechnungsmodell                                            | entschieden; vier Festlegungen **vorläufig entschieden 2026-09-08**; **steuerliche Validierung offen** | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13, Nov 2026                          |
 | B5    | Patientenidentität, Vertretung                               | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | unten; vor Etappe 4                                                                                           |
 | B6    | Beschäftigtendaten: Touren, Leistungskontrolle               | **vorläufig entschieden 2026-09-08: nein**                    | unten; vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit                                                     |
-| B7    | Adressdaten an den Kartendienst                              | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); produktive Freigabe am Gate **offen** | unten; ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12)                                |
+| B7    | Adressdaten an den Kartendienst                              | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); **E-20 erledigt 2026-09-13** (Fassung 2 angenommen), Gate **offen** | unten; ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12); überholte Stände im Archiv    |
 | B8    | Lizenzen für Fragebögen und PROMs                            | Auskunft des Lizenzgebers **offen**; Rückfall entschieden 2026-09-08 | unten; vor FRB-003                                                                                            |
 | B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08) | unten; vor Etappe 8; Steuerteil mit B4                                              |
 | B10   | Automatisierte Progression: MDR-Grenze                       | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1      | unten; vor Etappe 9                                                                                           |
 | B11   | Paketpreise, Vorauszahlung, Anreize                          | **vorläufig entschieden 2026-09-08**: vorerst nicht anbieten  | unten; vor Etappe 8                                                                                           |
-| B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | unten                                                                                                         |
-| B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **entschieden 2026-09-06** durch Jannes (Option a)            | unten; Roadmap G2, G3                                                                                         |
+| B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`                                                     |
+| B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **entschieden 2026-09-06** durch Jannes (Option a); Auth-Mails Teil von OPS-001 (A2) | Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`; Roadmap G2, G3                    |
 | B14   | PDF-Erzeugung für Rechnungen und Tagesplan                   | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen** (P1 für ABR-EPIC-002b) | unten; Roadmap ABR-EPIC-002a, Nov 2026                                                            |
 | B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten                                                                                                         |
-| C1    | Leistungsziffern und Office                                  | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006                                               |
-| C2    | Klinische Inhalte in organisatorischer Kommunikation         | entschieden 2026-09-05 durch Jannes                           | `PROJECT_PRINCIPLES.md` 0.4 §10                                                                               |
+| C1    | Leistungsziffern und Office                                  | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15             |
+| C2    | Klinische Inhalte in organisatorischer Kommunikation         | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15                                                                    |
 | C3    | Fail-closed gegen Patientensicherheit, Break Glass           | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
 | C4    | Auditlog als Kompensation                                    | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md); Betrieb Roadmap G6                                  |
 | C5    | Provider-Oberflächen, Admin-Trennung                         | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
@@ -131,8 +155,8 @@ Feature.
 | C7    | Sprachliche Trennung LLM / deterministische Regeln in §6, §7.1 | architektonisch entschieden; Wortlaut bei nächster Prinzipienversion | [ADR-005](../adr/ADR-005-provider-independent-ai.md); nicht planungsrelevant                             |
 | C8    | „Nicht verbauen" gegen „nicht vorbauen"                      | entschieden 2026-08-28                                        | [ADR-014](../adr/ADR-014-foundational-data-model.md)                                                          |
 | D     | „finalisiert", „nachvollziehbar"                             | entschieden 2026-09-01                                        | [ADR-016](../adr/ADR-016-clinical-documentation-record.md)                                                    |
-| D     | „bestätigt" — Terminstatus-Automat                           | **erledigt 2026-09-11** — Umfang 2026-09-05, Ausgestaltung mit ADR-018 bestätigt | [ADR-018](../adr/ADR-018-appointment-states.md); unten; `PROJECT_PRINCIPLES.md` 0.7 §8; Umsetzung Roadmap CAL-EPIC-003a |
-| D     | übrige Begriffe                                              | erledigt                                                      | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 · „Behandlungsnachweis" → C1, ANN-006 · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
+| D     | „bestätigt" — Terminstatus-Automat                           | **erledigt 2026-09-11** — Umfang 2026-09-05, Ausgestaltung mit ADR-018 bestätigt | [ADR-018](../adr/ADR-018-appointment-states.md); Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`; `PROJECT_PRINCIPLES.md` 0.7 §8; gebaut in CAL-EPIC-003a |
+| D     | übrige Begriffe                                              | erledigt                                                      | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 (überholt durch E15) · „Behandlungsnachweis" → C1, ANN-006 (überholt durch E15) · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
 | D     | Normativität und Nachweis                                    | Normativität erledigt (0.2, §0); **Nachweistabelle offen**    | Roadmap G12                                                                                                   |
 | E1    | Betreibbarkeit bei Bus-Faktor 1                              | entschieden 2026-08-28                                        | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7                         |
 | E2    | Ausfallkonzept — zugleich Rückfallplan der Eröffnung         | Kern **vorläufig entschieden 2026-09-08**; Ausarbeitung Jan 2027 | unten; Roadmap G10 und H4, Jan 2027                                                                           |
@@ -141,17 +165,41 @@ Feature.
 | E5    | Produktions-Logs                                             | entschieden 2026-08-28                                        | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G8                                            |
 | E6    | Synthetische Testdaten                                       | erledigt: der Seed ist der Generator                          | `supabase/seed.sql`; Erweiterung im Loop, der sie braucht                                                     |
 | E7    | CI-Gates, Branch Protection                                  | entschieden 2026-08-28                                        | [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md); Freigabeprozess Roadmap G5                         |
-| E8    | Dateiablage                                                  | **erledigt 2026-09-12** — ADR-017 angenommen, alle acht Fragen wie empfohlen | [ADR-017](../adr/ADR-017-file-storage.md); unten; Bau in Roadmap G4; **produktive** Ablage an OPS-001 (G3) und OPS-003 (G7) gebunden |
+| E8    | Dateiablage                                                  | **erledigt 2026-09-12** — ADR-017 angenommen, alle acht Fragen wie empfohlen | [ADR-017](../adr/ADR-017-file-storage.md); Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`; gebaut in DAT-EPIC-001 (PR #38); **produktive** Ablage an OPS-001 (G3) und OPS-003 (G7) gebunden |
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
-| E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | unten; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024)          |
-| E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | unten                                                                                    |
-| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Fahrpuffer **vorläufig entschieden 2026-09-12**: erst mit MAP-006 · **Punkt 1 entschieden 2026-09-12**: 60 **oder** 45 Minuten, keine dritte Länge · Punkt 2 weiter **offen** | unten; `PROJECT_PRINCIPLES.md` 0.9 §8.1; CAL-010a und CAL-015 gebaut, CAL-010b entfällt zugunsten von MAP-006 |
+| E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024) |
+| E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`                                 |
+| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **entschieden 2026-09-12** (60 **oder** 45) · Punkt 3 und 4 **vorläufig entschieden 2026-09-12** (Fahrpuffer erst mit MAP-006) · **offen: nur Punkt 2** (Einstellbarkeit je Praxis, ANN-037) · **Punkt 3a neu 2026-09-13** (Fahrzeit ohne Speicherung gegen serverseitige Rundungsregel; MAP-006) | unten; `PROJECT_PRINCIPLES.md` 0.9 §8.1; CAL-010a und CAL-015 gebaut, CAL-010b entfallen (in MAP-006 aufgegangen) |
 | E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
-| E14   | Gebühr beim Nichtantreffen am Hausbesuch                     | Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Regel für das Nichtantreffen **offen** | unten; `PROJECT_PRINCIPLES.md` 0.8 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 2 Punkt 8; mit ABR-001 |
+| E14   | Gebühr beim Nichtantreffen am Hausbesuch                     | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Umsetzung CAL-018 | unten; `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
+| E15   | Office sieht klinische Inhalte                               | **entschieden (Jannes) 2026-09-13**; Umsetzung ROL-EPIC-001; Prüfvermerk für B2 | unten; `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
+| E-20  | ADR-019 Fassung 2 bestätigen                                 | **erledigt 2026-09-13** — angenommen; produktive Freigabe am Gate **offen** (ADR-019 Punkt 9) | unten (E-20 / E-21); [ADR-019](../adr/ADR-019-map-service.md); Gate in B7                                    |
+| E-21  | Reihenfolge MAP-002 zu UX-EPIC-001                           | **erledigt 2026-09-13** — gegenstandslos, UX-EPIC-001 seit 2026-09-11 fertig | unten (E-20 / E-21); Roadmap                                                                                  |
 
 ---
 
 ## Offene Punkte im Einzelnen
+
+### A2 — Anbieterprüfung Supabase (OPS-001)
+
+| | |
+|---|---|
+| Dringlichkeit | P1 — vor dem Cloudprojekt; Roadmap G3 |
+| Bezug | §2.1, §3.5; ADR-002, ADR-015 Punkt 20, ADR-017 (fünf Prüfpunkte zum Objektspeicher) |
+
+Hosting, Datenstandort und Provider sind entschieden (ADR-002, ADR-015).
+**Offen ist die Ausgestaltung der Anbieterprüfung** als Dokument OPS-001. Zu
+ihr gehören die **Auth-Mails des Providers** — Einladung eines Zugangs,
+Passwort zurücksetzen — als einziger Versandweg der Plattform in Stufe 1
+(B13, entschieden 2026-09-06; Volltext im Archiv), die Prüfung der Edge
+Runtime (ADR-015 Punkt 20, ANN-017) und die fünf zusätzlichen Prüfpunkte zum
+Objektspeicher aus ADR-017.
+
+**Annahmen:** ANN-007 (`pg_cron`, Providerfrage offen), ANN-017 (Edge
+Function als Kartendienst-Adapter), ANN-025 (keine Authentifizierungskonten
+aus der Anwendung), ANN-027 (Kennwortlänge, Einstellung beim Provider),
+ANN-043 (Auth-Links über `token_hash`), ANN-044 (`jwt_expiry` und das
+Restfenster nach „Alle Sitzungen beenden").
 
 ### B1 — MDR / EU AI Act: die Zweckbestimmung
 
@@ -194,6 +242,9 @@ lassen, nicht umgekehrt.
 **Blockiert:** nichts mehr für die Anfrage. Weiterhin gesperrt bleibt jedes
 Feature mit `MDR_REVIEW_REQUIRED` (B10).
 
+**Annahmen:** ANN-014 („Empfehlung zum Verordnungsende" ist eine erfasste
+Angabe, keine Systemempfehlung).
+
 ### B2 — Datenschutzbeauftragter
 
 | | |
@@ -225,6 +276,34 @@ trifft Jannes.
 **Rücknahme:** in der Software `klein` (Nennung in den
 Datenschutzinformationen); außerhalb ein laufender Vertrag — eine
 Kostenentscheidung, keine technische.
+
+**Annahmen** (alle Einträge der Kategorien `Datenschutz` und `Recht` mit
+Status `offen` oder `entschieden (Jannes)`, Stand 2026-09-13 — das Prüfpaket
+der Anfrage B2): ANN-001, ANN-003, ANN-004, ANN-006 (mit E15 verworfen),
+ANN-009, ANN-010, ANN-011, ANN-013, ANN-014, ANN-016, ANN-018, ANN-020,
+ANN-021, ANN-024, ANN-025, ANN-026, ANN-027, ANN-028, ANN-029, ANN-030,
+ANN-031, ANN-033, ANN-034, ANN-035, ANN-039, ANN-040, ANN-041, ANN-043,
+ANN-044, ANN-052. Dazu der Prüfvermerk aus E15.
+
+### B3 — Aufbewahrung und Löschung: Fristen-Validierung
+
+| | |
+|---|---|
+| Dringlichkeit | P1 — Validierung mit der Anfrage B2, Ergebnis vor M3 |
+| Bezug | §18; ADR-008; LOE-EPIC-001 |
+
+Das Modell ist entschieden (ADR-008: Retention Schedule, Löschlauf, Legal
+Hold) und mit LOE-EPIC-001 gebaut (fertig 2026-09-11). **Offen ist die
+Validierung der Fristen** durch die Datenschutzberatung — sie geht mit der
+Anfrage B2; die Belegfristen der Rechnungen laufen als eigene Datenklasse mit
+B4 (Punkt 4).
+
+**Annahmen:** ANN-001 (interne Initialfristen), ANN-002 (`inactive` ist kein
+Behandlungsabschluss), ANN-013 (Verordnerkartei), ANN-020 (Textbausteine),
+ANN-026 (Einladung), ANN-029 (Auditeinträge mit eigener Frist), ANN-030
+(Beschäftigtendaten ohne Frist), ANN-031 (Löschjournal ohne Frist), ANN-032
+(„Abschluss der Versorgung" als Fristanker), ANN-033 (Legal Hold), ANN-035
+(No-show unter der Frist der Absagen; mit Gebührenanlass keine Löschung).
 
 ### B4 — Steuerliche Validierung: Fragen an die Steuerberatung
 
@@ -387,31 +466,13 @@ kein Live-Tracking). ANN-004 hält Arbeitszeiten bereits aus dem Auditlog heraus
 
 | | |
 |---|---|
-| Dringlichkeit | Handoff nicht blockiert; Karte und Fahrzeiten (MAP-006) am Vertragsgate aus ADR-019 Fassung 2 — siehe Nachtrag unten |
-| Bezug | §9, §18, §20, §3.5; ADR-002, ADR-007 Punkt 2 |
+| Dringlichkeit | Handoff nicht blockiert; Karte und Fahrzeiten (MAP-006) am Vertrags-/§203-/DSFA-Gate aus ADR-019 Punkt 9 |
+| Bezug | §9, §18, §20, §3.5; ADR-002, ADR-007 Punkt 2; ADR-019 Fassung 2 (angenommen 2026-09-13) |
 
-**Entschieden am 2026-09-06 durch Jannes:** Der Kartendienst ist **Google
-Maps**. Aus der Anwendung führt immer ein Link zur Navigation in Google Maps
-— je Termin und für den ganzen Tag. Die Übermittlung der Adresse für die
-Navigation ist datenschutzrechtlich genehmigt; die Entscheidung steht fest.
-Umsetzung: Link in UX-EPIC-001 (Adresse ohne Namen, ohne Uhrzeit,
-Fahrradmodus; URL-Format und Feldliste als `ANN`), Dokumentation der
-Vertrags- und Datenschutzseite in ADR-019 (Roadmap G12), Nennung in der
-Datenschutzinformation (PAT-006), DSFA-Wiedervorlage nach ADR-007 Punkt 2
-(„wesentliche Änderung der Routing-/Standortverarbeitung").
-
-**Entschieden am 2026-09-06 durch Jannes (E-16) — Datenweg der In-App-Karte:**
-Die Karte der Tagesroute läuft über die **Google Maps Embed API** im
-eingebetteten Rahmen — derselbe Anbieter wie der Link. Beim Öffnen gehen alle
-Adressen eines Tages in einer Anfrage an den Dienst; die zuständige
-Datenschutz-Fachkraft hat diesen Weg genehmigt (laut Jannes). Die Genehmigung
-wird schriftlich zu den DSFA-Unterlagen gelegt (Roadmap G14, M0). Festgelegt
-damit: Karte nur auf ausdrückliche Aktion, nie beim Öffnen einer Seite;
-Adressen ohne Namen und ohne Uhrzeit; Schlüssel an die Domain gebunden; kein
-Standort der Person, kein Verlauf, keine Speicherung von Routing-Rohdaten
-(§18, §20). ADR-019 hält Vertragsgrundlage der Google Maps Platform,
-Prüfkatalog aus ADR-002 und Schlüsselverwaltung fest; die Höchstzahl der
-Zwischenziele je Anfrage kommt aus der Anbieterdokumentation.
+**Überholte Stände** — Google Maps als Kartendienst (2026-09-06), die Google
+Maps Embed API (E-16), das Ergebnis von ADR-019 Fassung 1 mit den drei Wegen
+A, B, C und der damalige Blockiert-Vermerk — stehen wörtlich in
+`archiv/OPEN_DECISIONS-erledigt.md`. Geltend ist Weg C (Nachtrag unten).
 
 **Vorläufig entschieden am 2026-09-08 durch Jannes — Fahrzeiten: abrufen ja,
 speichern nein.** Die Fahrzeit je Weg wird im Moment der Planung abgerufen und
@@ -430,32 +491,6 @@ speichern nein.
 Telefon der Therapeutin. Ein dort angemeldetes privates Google-Konto speichert
 Suchen und Wege. Die Endgeräte-Richtlinie (Roadmap G14, BETRIEB-001) regelt
 Konto und Verlauf; das ist Teil von ADR-019.
-
-**Ergebnis von ADR-019 (2026-09-08) — die drei Wege liegen unterschiedlich:**
-
-- **Navigationslink: entschieden und frei.** Die Anwendung übermittelt nichts;
-  die Verbindung baut das Endgerät der Therapeutin nach ihrem Tippen auf.
-  Bedingung ist die Regel „nur auf Aktion, nie automatisch" — sie trägt diese
-  Einordnung (EuGH C-40/17, *Fashion ID*). Dazu die Endgeräteregel und die
-  Nennung in der Datenschutzinformation. UX-EPIC-001 kann bauen.
-- **In-App-Karte und Fahrzeiten: nicht freigeschaltet.** Der Prüfkatalog nach
-  ADR-002 scheitert an einem Kriterium, das nicht verhandelbar ist: Google
-  bietet für die **Maps Platform keinen Auftragsverarbeitungsvertrag** an,
-  sondern Controller-Controller-Bedingungen — Google verarbeitet als **eigener
-  Verantwortlicher**. Damit fehlen AVV und §203-Verpflichtung, die §3.5 vor
-  Freischaltung als MUSS verlangt, und §9 ordnet den Kartendienst
-  ausdrücklich dort ein. **Das ist ein Widerspruch zu einer
-  MUSS-Anforderung**, den ein ADR nicht auflösen darf (§21).
-
-**Zur Auflösung** stehen drei Wege in ADR-019 („Der ungelöste Punkt"):
-schriftliche Genehmigung plus Prinzipienänderung nach §21 (A), ohne In-App-Karte
-auskommen (B), oder ein Kartendienst mit AVV für Karte und Fahrzeiten (C).
-Empfehlung dort: **B, bis A geklärt ist** — das entspricht der bereits
-vorgesehenen Gegenmaßnahme zu Risiko R12.
-
-**Blockiert:** die In-App-Karte (TOUR-002) und die Fahrzeiten
-(TOUR-EPIC-001b), bis A, B oder C gewählt ist. **Nicht blockiert:** der
-Navigationslink, die Tourenliste, der Fahrpuffer als Praxisregel (CAL-010b).
 
 **Nachtrag 2026-09-08 (MAP-001, ADR-019 Fassung 2) — Weg C gewählt.** Jannes
 hat Convenience hoch priorisiert: In-App-Karte, Fahrradrouting und Fahrzeiten
@@ -481,6 +516,11 @@ sind Produktziel. Damit gilt:
 - **Für Jannes:** E-20 (Fassung 2 bestätigen, E-16 überholt), E-21
   (Reihenfolge MAP-002 zu UX-EPIC-001), PTV-Free-Abo vor MAP-002,
   Vertragsdokumente vor MAP-006 laden.
+
+**E-20 erledigt am 2026-09-13:** ADR-019 Fassung 2 ist angenommen; die
+produktive Freigabe bleibt am Gate (ADR-019 Punkt 9). **E-21** ist
+gegenstandslos, weil UX-EPIC-001 seit 2026-09-11 fertig ist — erledigt. Beide
+unten unter „E-20 / E-21".
 
 **Blockiert jetzt nur noch:** MAP-006 (echte Adressen), bis das Gate
 passiert ist. **Nicht blockiert:** MAP-002 bis MAP-005 mit synthetischen
@@ -637,6 +677,10 @@ Heilbehandlung (Stufe 3). **Nicht blockiert:** die Empfehlung der Therapeutin
 zum Verordnungsende als Teil der Verordnung (VER-001); die
 Umsatzsteuer-Felder je Katalogposition, die ADR-009 Punkt 6 ohnehin verlangt.
 
+**Annahmen:** ANN-002 (`inactive` ist kein Behandlungsabschluss), ANN-014
+(Empfehlung zum Verordnungsende), ANN-032 („Abschluss der Versorgung" als
+Fristanker).
+
 ### B10 — Automatisierte Progression: MDR-Grenze und Verantwortung
 
 | | |
@@ -716,48 +760,14 @@ heilmittelwerberechtliche Beratung.
 
 ### B12 — Stichtag der Umstellung und Rechnungsnummernkreis
 
-| | |
-|---|---|
-| Dringlichkeit | erledigt |
-| Bezug | §19; ADR-009 (Folgefrage Nummernkreis); GoBD |
-
-**Erledigt am 2026-09-06 durch Jannes:** Es gibt kein altes Werkzeug. Die
-Praxis nimmt den Betrieb am 01.07.2027 erstmals auf — ohne
-Bestandspatient:innen, ohne laufende Verordnungen, ohne offene Rechnungen,
-ohne bisherigen Nummernkreis. Damit entfallen Stichtag, Bestandsdatenübernahme
-(MIG-000, MIG-001) und Parallelbetrieb. Der Nummernkreis beginnt mit der
-ersten ausgestellten Rechnung; sein **Format** ist eine Frage an die
-Steuerberatung und steht jetzt unter B4 (Punkt 3), bis dahin Annahme in
-ABR-EPIC-002a.
+Erledigt am 2026-09-06 (kein Altsystem; Nummernformat → B4 Punkt 3) —
+Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
 
 ### B13 — E-Mail-Versand aus der Plattform
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — vor STAFF-EPIC-002 |
-| Bezug | §2.1, §3.5; ADR-002; ADR-012 Punkt 10 |
-
-**Frage:** Über welchen Anbieter versendet die Plattform Transaktions-E-Mails
-(Einladung eines Zugangs, Passwort zurücksetzen, später Rechnungsversand)?
-Braucht das eine Prüfung nach ADR-002 und einen AVV, oder bleibt die Praxis in
-Stufe 1 ohne Versand aus der Plattform (Einladung über die Provider-Oberfläche,
-Rechnungsversand aus dem Praxispostfach)?
-
-**Entschieden am 2026-09-06 durch Jannes (Option a der Entscheidung E-4):**
-In Stufe 1 versendet die Plattform ausschließlich die **Auth-Mails des
-geprüften Providers** — Einladung eines Zugangs, Passwort zurücksetzen. Sie
-sind Teil der Providerprüfung OPS-001 (Roadmap G3); ein zweiter Dienstleister
-kommt nicht hinzu. Rechnungen und alle anderen Nachrichten an Patient:innen
-gehen aus dem Praxispostfach, außerhalb der Plattform; der Rechnungszustand
-„versendet" wird von Hand gesetzt. Ein eigener E-Mail-Dienst mit AVV (Option b)
-bleibt für Stufe 2 möglich und wäre eine neue Prüfung nach ADR-002.
-
-**Warum das reicht:** Ein E-Mail-Dienst wäre ein neuer Dienstleister mit
-Zugang zu personenbezogenen Daten (mindestens Adresse und Rolle der
-Mitarbeitenden). Die Auth-Mails laufen beim Provider, der ohnehin geprüft wird.
-
-**Blockiert:** nichts mehr; STAFF-EPIC-002 mit STAFF-004 läuft im Oktober,
-sobald OPS-001 die Auth-Mails einschließt.
+Entschieden am 2026-09-06 (Option a: nur die Auth-Mails des Providers, Teil
+von OPS-001 — siehe A2) — Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
+Annahmen: ANN-025, ANN-043.
 
 ### B14 — PDF-Erzeugung
 
@@ -873,6 +883,10 @@ gehört zu PAT-006. Begründung, Quellen und Änderungspfad stehen in **ANN-041*
 **Rücknahme des Nachtrags:** `klein` — `TermineMailen` aus der Zettelseite
 nehmen; es bleibt kein Datenbestand zurück.
 
+**Annahmen:** ANN-039 (Terminzettel: nur Druck, kein Versand), ANN-040
+(Mitteilungsvermerk: vier Wege, kein Versand), ANN-041 (Termin-E-Mail als
+Handoff ins eigene Mailprogramm).
+
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
 
 | | |
@@ -913,51 +927,8 @@ nach ADR-002 und eine DSFA-Wiedervorlage aus (ADR-007).
 
 ### D — „bestätigt": der Terminstatus-Automat
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — vor der Leistungserfassung (ABR-002) |
-| Bezug | §8; ADR-009 (Ausfallhonorar, „durchgeführt" als abrechenbares Ereignis) |
-
-**Entschieden am 2026-09-05 durch Jannes — Umfang:** der vollständige
-Zustandsautomat: angefragt · vorgemerkt · bestätigt · abgesagt · nicht
-angetroffen · durchgeführt · dokumentiert · abgerechnet. Nicht die
-Minimalvariante (nur „nicht angetroffen").
-
-**Noch offen — Ausgestaltung, als ADR-018 in CAL-EPIC-003:** Übergänge und wer
-sie auslöst; Migration der heutigen Status (geplant, abgesagt, abgeschlossen);
-ob „angefragt" und „vorgemerkt" vor dem Portal überhaupt erreichbar sind oder
-nur vorgesehen werden; „dokumentiert" aus der Finalisierung (ADR-016) und
-„abgerechnet" aus ABR-003 abgeleitet oder gesetzt; Ausfallhonorar als
-Kennzeichen an „nicht angetroffen"; Terminserien (CAL-007) und ihr Verhältnis
-zum Status je Termin. **Vorläufig entschieden am 2026-09-08 durch Jannes — eine der Vorfragen:**
-„angefragt" und „vorgemerkt" werden **nur vorgesehen, nicht gebaut**. Ohne
-Portal gibt es niemanden, der einen Termin anfragt; ADR-014 sagt „nicht
-vorbauen". ADR-018 beschreibt die beiden Zustände, CAL-EPIC-003a implementiert
-sie nicht. Rücknahme `klein`. Die übrigen Punkte der Ausgestaltung bleiben
-offen.
-
-**Erledigt am 2026-09-11.** [ADR-018](../adr/ADR-018-appointment-states.md) ist
-**angenommen** — Jannes hat alle sieben Bestätigungsfragen wie empfohlen
-entschieden. Der ADR beantwortet die offenen Punkte der Ausgestaltung:
-Übergänge und Auslöser, die Migration der drei heutigen Status, `documented`
-und `invoiced` als gesetzte Werte derselben Spalte statt abgeleiteter Merkmale,
-das Ausfallhonorar als Kennzeichen am Nichtantreffen, und die Serie ohne
-eigenen Status.
-
-Nachgezogen: `PROJECT_PRINCIPLES.md` **§8 in Version 0.7** (§21, eigener
-Commit) — der Satz, der den Automaten als offenen Punkt führte, ist durch die
-Aufzählung der acht Werte ersetzt.
-
-**ANN-005 bleibt in Kraft** (Abschluss ohne Dokumentationspflicht): ADR-018
-bestätigt sie ausdrücklich und setzt die Kopplung aus §19 an die Rechnung, nicht
-an den Abschluss. Die Umsetzung des Automaten ist **CAL-EPIC-003a** und noch
-nicht gebaut — bis dahin gelten in der Anwendung die drei heutigen Status.
-
-**Nachtrag 2026-09-12:** Gebaut ist er inzwischen. CAL-EPIC-003a liegt mit
-PR #28 in `main` und ist am 2026-09-12 von Jannes abgenommen; in der Anwendung
-gelten damit die Werte aus ADR-018 statt der drei heutigen Status. `requested`
-und `tentative` bleiben wie oben beschrieben ungebaut, `invoiced` steht im
-Wertebereich und bekommt seinen Schreibpfad erst mit ABR-003.
+Erledigt am 2026-09-11 (ADR-018 angenommen; gebaut in CAL-EPIC-003a, PR #28,
+abgenommen 2026-09-12) — Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
 
 ### E2 — Ausfallkonzept
 
@@ -1007,130 +978,26 @@ Claude) und die Funktion „Tagesplan exportierbar" (Roadmap, Dezember).
 
 ### E8 — Dateiablage
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — DAT-EPIC-001 ist der nächste Loop; VER-004 und ABR-003b hängen daran |
-| Bezug | §4.7, §12 („Dateizugriffe"), §18; ADR-004 Punkt 6, ADR-008, ADR-010 Punkt 2, ADR-012 Punkt 5, ADR-015 Punkt 10 |
-
-**Frage:** Wo liegen Dateien, wer darf sie sehen, wie werden sie ausgeliefert,
-wie lange bleiben sie, und wird auf Schadsoftware geprüft?
-
-**Warum das offen war:** ADR-015 Punkt 10 hat den Ort gewählt — Supabase
-Storage — und sonst nichts gesagt; derselbe ADR führt die Frage nach §12 und
-ADR-008 als offene Folgefrage. ADR-004 nennt die Dateiablage zugleich den
-„wahrscheinlichsten Umgehungsweg" des Berechtigungsmodells.
-
-**Stand 2026-09-12: [ADR-017](../adr/ADR-017-file-storage.md) liegt vor**,
-Status **vorgeschlagen**. Er entscheidet dreißig Punkte, darunter: die
-Datenbankzeile führt und das Objekt folgt (zweiphasiger Upload mit
-Bestätigung) · Objektschlüssel nur aus Kennungen, nie ein Name · Dateien sind
-unveränderlich · **Rollenschnitt an der Dokumentart**, der Verordnungsscan ist
-klinisch, weil sich ein Scan nicht projizieren lässt (ANN-011) · Auslieferung
-nur über **signierte Verweise mit 60 Sekunden**, ohne CDN-Zwischenspeicher und
-ohne Teilen-Link, weil ein solcher Verweis nicht widerrufbar ist · drei
-Auditereignisse samt der ehrlichen Grenze, dass die **Ausstellung** des
-Verweises protokolliert wird und nicht das Laden · Datenklasse und Frist erbt
-die Datei vom Bezugsdatensatz · **zweistufige Löschung mit Quittung**, weil
-eine Datenbankfunktion kein Objekt löschen kann · **keine Virenprüfung in V1**,
-Pflicht ab dem ersten Upload von außen.
-
-**Was dabei herauskam und vorher niemand auf dem Zettel hatte:** Der
-Objektspeicher läuft im Datenbank-Backup **nicht** mit. ADR-012 Punkt 5 hat das
-vorausgesehen; ADR-017 macht daraus eine Vorbedingung für den Echtbetrieb mit
-Dateien (OPS-003, Roadmap G7) und eine dreistufige Wiederherstellung.
-
-**Erledigt am 2026-09-12:** Jannes hat **alle acht Bestätigungsfragen wie
-empfohlen** beantwortet. ADR-017 ist damit **angenommen**, dieser Punkt ist
-geschlossen, und DAT-EPIC-001 ist baubar.
-
-**Was der Punkt nicht mehr, die Roadmap aber weiter offen führt:** Die
-**produktive** Ablage hängt an OPS-001 (fünf zusätzliche Prüfpunkte zum
-Objektspeicher, G3) und an einem dokumentierten, getesteten Sicherungsweg für
-den Bucket (G7) — der Objektspeicher läuft im Datenbank-Backup nicht mit. Beides
-ist Vorbedingung für die erste echte Datei, nicht für den Loop.
-
-**Blockiert:** nichts mehr. DAT-EPIC-001 (Roadmap G4) kann starten; VER-004 und
-ABR-003b hängen nur noch an ihren eigenen Vorläufern.
+Erledigt am 2026-09-12 (ADR-017 angenommen; gebaut in DAT-EPIC-001, PR #38
+in `main` am 2026-09-13; produktive Ablage weiter an OPS-001 und OPS-003
+gebunden) — Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
 
 ### E10 — Wer verwaltet Mitarbeiterdatensätze
 
-| | |
-|---|---|
-| Dringlichkeit | P2 — vor STAFF-EPIC-002 |
-| Bezug | §4.1, §4.3, §4.5 |
-
-**Frage:** Dürfen neben `owner` auch Office („Mitarbeiterorganisation", §4.3)
-und Teamleitung („Mitarbeiterplanung" als mögliches Zusatzrecht, §4.5)
-Mitarbeiterdaten anlegen, ändern und den Beschäftigungsstatus wechseln?
-
-**Warum offen:** Für den schreibenden Zugriff liegt nur für den Praxisinhaber
-eine verbindliche Aussage vor. STAFF-001 folgt bis zur Entscheidung §13 („im
-Zweifel blockieren"): Schreiben nur `owner`, Lesen für alle Praxisrollen.
-
-**Entschieden am 2026-09-08 durch Jannes — dreigeteilt statt ja/nein:**
-
-- **Stammdaten** (Name, Anschrift, Telefon, Arbeitszeitmodell): **`office` darf
-  schreiben.** Das ist wörtlich die „Mitarbeiterorganisation" aus §4.3; liefe
-  jede Adressänderung über den Praxisinhaber, wäre er das Nadelöhr — bei
-  Bus-Faktor 1 ein reales Risiko (ADR-012).
-- **Rollenvergabe** (wer wird `therapist`, wer `team_lead`): **nur `owner`.**
-  Eine Rolle zu vergeben ist Berechtigungsvergabe und damit eine
-  Sicherheitsentscheidung nach ADR-004.
-- **Beschäftigungsstatus** (aktiv / ausgeschieden): **nur `owner`.** Der
-  Wechsel sperrt einen Zugang und hat arbeitsrechtliche Wirkung.
-- **`team_lead`: für nichts davon.** Die Rolle existiert für Planung; §16 sagt
-  im Zweifel restriktiver, und später öffnen ist billig.
-
-Kein Datenschutz- oder Rechtspunkt, sondern Praxisprozess — damit **entschieden**,
-nicht `vorläufig entschieden`.
-
-**Erledigt am 2026-09-11 (STAFF-002a).** Die Dreiteilung steht als
-`app.can_manage_staff_master_data()`, `app.can_manage_staff_employment()` und
-`app.can_manage_staff_accounts()` im Code; die Sammelfunktion
-`app.can_manage_staff()` ist entfallen. §4.3 und §4.5 der Prinzipien sind nach
-§21 nachgezogen (Version 0.6). **Eine Abgrenzung war zu treffen:** „Anschrift"
-und „Telefon" sind als **dienstliche** Angaben umgesetzt; die Privatangaben
-nach §20 bleiben bei `owner`, weil ein Schreibrecht ohne Leserecht die
-gespeicherten Werte beim Speichern gelöscht hätte (ANN-024, von Jannes zu
-bestätigen).
-
-**Rücknahme:** `klein` — je Bereich eine Policy-Funktion.
-
-**Blockiert:** nichts; STAFF-EPIC-002 übernimmt bis zur Entscheidung dieselbe
-Annahme für Konten und Rollen.
+Erledigt am 2026-09-11 (STAFF-002a; Privatangaben folgen dem Leserecht,
+ANN-024) — Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
 
 ### E11 — Wer gilt als behandelnde Person
 
-| | |
-|---|---|
-| Dringlichkeit | P2 |
-| Bezug | §4.2, ADR-014 |
-
-**Stand:** Zuordenbar für Termine ist, wer aktiv beschäftigt ist **und** einen
-eigenen aktiven Zugang mit therapeutischer Rolle besitzt (aus CAL-001). Eine
-neu angelegte Therapeutin ohne Zugang kann deshalb weder eingeplant werden
-noch Arbeitszeiten erhalten.
-
-**Erledigt sich mit STAFF-EPIC-002** (entschieden 2026-09-05: Konten und
-Rollen werden in der Anwendung verwaltet): Wer einen Mitarbeiterdatensatz
-anlegt, lädt in derselben Oberfläche den Zugang ein und vergibt die Rolle. Die
-Kopplung an den Zugang bleibt damit bewusst bestehen — ein Konto ist nach §4.2
-ohnehin Pflicht. Sollte sich das im Praxisbetrieb als hinderlich erweisen
-(Vertretung ohne Konto), wird der Punkt wieder geöffnet.
-
-**Erledigt am 2026-09-11 (STAFF-002b).** Der Zugang wird am
-Mitarbeiterdatensatz eingeladen (`invite_staff_account`), die Rollen entstehen
-bei der Annahme (`claim_staff_invitation`). Eine neu angelegte Therapeutin ist
-unmittelbar nach der Annahme für Termine zuordenbar — dafür gibt es einen Test
-(`supabase/tests/staff-accounts.test.ts`, „macht die Person damit fuer Termine
-zuordenbar"). Die Kopplung an den Zugang bleibt wie beschrieben bestehen.
+Erledigt am 2026-09-11 (STAFF-002b) — Volltext in
+`archiv/OPEN_DECISIONS-erledigt.md`.
 
 ### E12 — Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre
 
 | | |
 |---|---|
-| Dringlichkeit | P2 — vor CAL-010a und CAL-010b |
-| Bezug | §8.1, §9, §6.2; ADR-019; CAL-EPIC-003b |
+| Dringlichkeit | P2 — Punkt 2 nach den ersten Praxiswochen (Wiedervorlage ANN-037), Punkt 3a vor MAP-006. CAL-010a ist gebaut, CAL-010b ist entfallen und in MAP-006 aufgegangen |
+| Bezug | §8.1, §9, §6.2; ADR-019 Punkt 16; ADR-008 (Datenklasse „Routing-Rohdaten"); CAL-EPIC-003b, MAP-006 |
 
 **Entschieden ist §8.1** (Jannes, 2026-09-08): 60 Minuten je angebotenem
 Termin einschließlich Dokumentation, Beginn frei im 5-Minuten-Raster, Fahrzeit
@@ -1138,52 +1005,42 @@ zusätzlich zwischen den Terminfenstern, früheste Folgezeit auf dem ersten
 Rasterpunkt auf oder nach Ende plus Fahrzeit (aufrunden, nie abrunden),
 Bestandstermine unverändert, Durchsetzung serverseitig.
 
-**Was daran offen ist** — vier Fragen, die die Entscheidung ausdrücklich
-**nicht** mitbeantwortet:
+Von den vier Anschlussfragen, die die Entscheidung ausdrücklich **nicht**
+mitbeantwortet hat, sind drei erledigt oder vorläufig entschieden — je ein
+Satz:
 
-1. ~~**Gibt es eine begründete Abweichung von den 60 Minuten?**~~
-   **Entschieden am 2026-09-12 durch Jannes, gebaut in CAL-015:** Es gibt
-   **zwei** zulässige Längen, 60 (Vorbelegung) und **45** Minuten. Keine
-   begründete Abweichung, keine Bestätigung nach dem Muster von
-   `p_allow_outside_working_hours`, kein Auditvermerk dafür — eine dritte
-   Länge weist der Server ab. Die Frage nach dem Erstbefund ist damit
-   beantwortet, ohne ein Verfahren dafür zu bauen. Ergänzend gilt seit
-   derselben Festlegung: Termine, die **keine Behandlung** sind, fallen gar
-   nicht unter die Regel (§8.1, CAL-015).
-2. **Wird die Länge je Praxis einstellbar?** Heute ist 60 eine feste Zahl im
-   Prinzipiendokument, kein `owner`-Wert wie das Raster. Für eine Praxis
-   reicht das; für ein zweites Unternehmen später nicht.
-3. **Woher kommt die Fahrzeit, bis ein Kartendienst freigegeben ist?** Ein
-   pauschaler Mindestabstand zwischen Hausbesuchen an verschiedenen Adressen,
-   von Hand gepflegte Fahrminuten je Patient:in ab Depot, beides oder keines
-   von beidem. Der ursprüngliche Vorschlag dazu steht als `IDEA-PRX-002` im
-   Ideenspeicher und ist **nicht** mitentschieden.
-4. **Warnung oder Sperre**, wenn der Abstand unterschritten wird? Die
-   Terminlänge ist nach §8.1 durchzusetzen; für den Fahrpuffer sagt die
-   Entscheidung dazu nichts.
+- **Punkt 1, Abweichung von den 60 Minuten — entschieden am 2026-09-12 durch
+  Jannes, gebaut in CAL-015:** zwei zulässige Längen, 60 (Vorbelegung) und
+  45 Minuten, keine dritte Länge, keine begründete Abweichung und kein
+  Bestätigungs- oder Auditverfahren dafür; Termine, die keine Behandlung
+  sind, fallen nicht unter die Regel (§8.1).
+- **Punkt 3, Herkunft der Fahrzeit — vorläufig entschieden am 2026-09-12
+  durch Jannes:** kein pauschaler Mindestabstand, keine von Hand gepflegten
+  Fahrminuten; die Fahrzeit entsteht aus dem Kartendienst (MAP-003/MAP-004),
+  der Fahrpuffer kommt deshalb erst mit MAP-006, CAL-010b ist als eigene
+  Story entfallen, und `IDEA-PRX-002` bleibt nicht mitentschieden.
+- **Punkt 4, Warnung oder Sperre — vorläufig entschieden am 2026-09-12 durch
+  Jannes:** wird mit MAP-006 entschieden, wenn die Zahlen echt sind; die
+  Aufrundungsregel aus §8.1 gilt unverändert, sobald eine Fahrzeit vorliegt,
+  und ihr Testfall (09:05–10:05 plus 12 Minuten ergibt 10:20) gehört zu
+  MAP-006.
 
-**Punkt 3 und 4 vorläufig entschieden am 2026-09-12 durch Jannes: der
-Fahrpuffer kommt erst mit MAP-006.** Es wird **kein** pauschaler
-Mindestabstand gebaut und es werden **keine** Fahrminuten von Hand gepflegt.
-Die Fahrzeit entsteht aus dem Kartendienst (MAP-003/MAP-004); ob eine
-Unterschreitung warnt oder sperrt, wird mit MAP-006 entschieden, wenn die
-Zahlen echt sind.
+**Weiter offen:**
 
-**Begründung.** Ein pauschaler Wert wäre neben den Fahrzeiten aus dem Dienst
-ein zweiter, schlechterer Mechanismus — genau das nennt dieser Punkt selbst
-als Grund, ihn offen zu lassen. Die Aufrundungsregel aus §8.1 bleibt davon
-unberührt: Sie ist entschieden und gilt, **sobald** eine Fahrzeit vorliegt;
-heute liegt keine vor, und eine Funktion ohne Aufrufer wäre Vorbau (ADR-014).
-Der Testfall mit dem Beispiel aus §8.1 (09:05–10:05 plus 12 Minuten ergibt
-10:20) gehört damit zu MAP-006.
-
-**Folge für die Roadmap:** **CAL-010b entfällt als eigene Story** und geht in
-MAP-006 auf. CAL-EPIC-003b ist ohne sie am 2026-09-12 fertig geworden.
-
-**Weiter offen ist Punkt 2** — Einstellbarkeit der zulässigen Längen je
-Praxis. Praxisprozess; lässt sich erst nach den ersten Wochen im Betrieb
-sinnvoll beantworten und steht als Wiedervorlage an **ANN-037**. **Punkt 1 ist
-am 2026-09-12 entschieden** (60 oder 45).
+- **Punkt 2 — Wird die Länge je Praxis einstellbar?** Heute sind 60 und 45
+  feste Zahlen im Prinzipiendokument, kein `owner`-Wert wie das Raster. Für
+  eine Praxis reicht das; für ein zweites Unternehmen später nicht.
+  Praxisprozess; lässt sich erst nach den ersten Wochen im Betrieb sinnvoll
+  beantworten und steht als Wiedervorlage an **ANN-037**.
+- **Punkt 3a — Fahrzeit ohne Speicherung gegen serverseitige Rundungsregel**
+  (neu 2026-09-13, aus dem Audit): ADR-019 Punkt 16 sieht **keine
+  Speicherung** von Fahrzeiten vor — abrufen, anzeigen, verwerfen. §8.1
+  verlangt die **serverseitige** Rundungsregel, sobald eine Fahrzeit
+  vorliegt. Beides zusammen erzwingt entweder einen **Live-Abruf je
+  Planungsprüfung** (der Server holt die Fahrzeit beim Anlegen oder
+  Verschieben des Termins selbst) oder eine **kurze Speicherung**. Die
+  Datenklasse „Routing-Rohdaten" in ADR-008 (maximal 30 Tage) ist bis dahin
+  leer. Wiedervorlage: **MAP-006**.
 
 **Blockiert:** nichts.
 
@@ -1191,6 +1048,10 @@ am 2026-09-12 entschieden** (60 oder 45).
 zwei Schreibpfaden (`create_appointment`, `update_appointment`) und einer
 Ableitung im Formular. Für den Fahrpuffer ist nichts zurückzunehmen: Es wurde
 nichts gebaut.
+
+**Annahmen:** ANN-037 (geprüft wird die Länge, nicht der Zeitpunkt;
+Wiedervorlage für Punkt 2), ANN-049 (Ereignisse ohne Behandlung in derselben
+Tabelle wie Behandlungstermine).
 
 ### E13 — Sprachdokumentation: Anbieter, Architektur, Audio, Frist
 
@@ -1237,8 +1098,8 @@ Jannes hat sie ausdrücklich nicht mitbeauftragt.
 
 | | |
 |---|---|
-| Dringlichkeit | P3 — spätestens mit ABR-001 (Leistungskatalog) |
-| Bezug | §8, §19; ADR-018 Fassung 2 Punkt 8; ADR-009; CAL-014 |
+| Dringlichkeit | erledigt 2026-09-13; Umsetzung CAL-018, Rechnungstext für Fall 1 mit B4 |
+| Bezug | §8, §19; ADR-018 Fassung 3 (2026-09-13) Punkt 8; ADR-009; CAL-014, CAL-018 |
 
 **Entschieden ist die Absage** (Jannes, 2026-09-12): Eine Patientenabsage
 weniger als 24 Stunden vor dem vereinbarten Beginn löst eine Ausfallgebühr
@@ -1250,7 +1111,7 @@ Vermerk verlangt **keine** Gebührenentscheidung, und aus ihm allein entsteht
 **keine** Gebühr. Die Pflichtentscheidung aus ADR-018 Fassung 1 ist damit
 entfallen.
 
-**Offen ist die Regel selbst.** Beim Hausbesuch ist die Therapeut:in
+**Offen war die Regel selbst** (bis 2026-09-13). Beim Hausbesuch ist die Therapeut:in
 hingefahren; die Zeit ist in derselben Weise verloren wie bei einer Absage
 fünf Minuten vorher. Drei Fragen:
 
@@ -1263,7 +1124,25 @@ fünf Minuten vorher. Drei Fragen:
 3. Gilt eine Regel auch für einen Termin **in der Praxis**, zu dem niemand
    erscheint, oder nur für den Hausbesuch?
 
-**Bis dahin:** Der Weg ist gebaut und ungenutzt — `fee_basis` trägt in V1 den
+**Erledigt am 2026-09-13 durch Jannes — Hausbesuch-Szenarien, verbindlich:**
+
+1. Tür geöffnet, Behandlung findet auf Angabe der Patient:in nicht statt →
+   Termin gilt als durchgeführt, Pflichtvermerk in der Dokumentation, normale
+   Abrechnung, keine Ausfallgebühr.
+2. Nicht angetroffen nach Protokoll (15 Minuten gewartet, geklingelt,
+   angerufen) → Termin gilt als nicht wahrgenommen, Ausfallgebühr.
+3. Patientenabsage unter 24 Stunden → Ausfallgebühr (unverändert).
+
+Die Software führt die behandelnde Person erklärend durch die Szenarien.
+Umsetzung: CAL-018; ADR-018 Fassung 3 (2026-09-13); `PROJECT_PRINCIPLES.md`
+0.10 §8. Frage 3 oben (Termin in der Praxis) nennt der Wortlaut nicht eigens.
+
+**Prüfvermerk.** Rechnungstext und Rechtsgrundlage für Fall 1 (Vergütung ohne
+erbrachte Behandlung, Annahmeverzug §615 BGB, gegenüber „Ausfallhonorar in
+Honorarhöhe") gehen als Festlegung in die Anfrage B4. Jannes hat die Grauzone
+selbst benannt und die Regel für verbindlich erklärt.
+
+**Bis CAL-018:** Der Weg ist gebaut und ungenutzt — `fee_basis` trägt in V1 den
 einen Wert `late_cancellation`; für das Nichtantreffen bleibt er leer, und
 Bestandszeilen aus Fassung 1 behalten ihren Wert `no_show`. Der Ablauf ist
 **nicht blockiert**: Abhaken geht mit einem Tap.
@@ -1275,6 +1154,55 @@ Leistungskatalog Positionen bekommt.
 setzt, und eine Zeile im Katalog. Was **nicht** zurückgeholt werden kann, sind
 Vorgänge, die bis dahin gelöscht wurden; deshalb hält der Löschlauf jeden
 Vorgang mit Gebührenanlass zurück (ANN-035).
+
+**Annahmen:** ANN-035 (No-show unter der Frist der Absagen; mit
+Gebührenanlass keine Löschung), ANN-047 (nur die Patientenabsage löst die
+Ausfallgebühr aus), ANN-048 (Eingang der Absage in Ortszeit).
+
+### E15 — Office sieht klinische Inhalte
+
+| | |
+|---|---|
+| Dringlichkeit | entschieden 2026-09-13; Umsetzung ROL-EPIC-001 |
+| Bezug | §4.2, §4.3, §4.4, §10; ADR-004 Punkt 3, ADR-007, ADR-010, ADR-016, ADR-017; C1, C2 |
+
+**Entschieden am 2026-09-13 durch Jannes** — Wortlaut:
+
+> Office hat lesenden Zugriff auf alle klinischen Inhalte einer Patientenakte
+> im selben Umfang wie Therapeut:innen: Diagnose und Verordnung
+> einschließlich Scan, Behandlungsdokumentation mit Verlauf, Befunde,
+> patientenbezogene Nachrichten. Office schreibt keine klinische
+> Dokumentation. Jeder Zugriff ist auditpflichtig wie bei Therapeut:innen
+> (§4.2, ADR-010). Umsetzung in ROL-EPIC-001; bis dahin gilt der gebaute
+> Rollenschnitt.
+
+Status: `entschieden (Jannes) 2026-09-13`.
+
+**Prüfvermerk.** Die Entscheidung hebt die Need-to-know-Trennung auf, die
+ADR-004 Punkt 3 und die DSFA-Argumentation (ADR-007) tragen; sie gehört in die
+Anfrage B2, und das Auditlog wird damit auch für Office die
+Kompensationsmaßnahme nach §4.2.
+
+**Betroffen:** `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, ADR-004 Fassung 2,
+ADR-016/017 (Vermerke), ANN-006 (verworfen), ANN-011 (Rollenschnitt-Teil).
+**C1 und C2 sind damit überholt** — ihre Einträge in der Übersicht tragen den
+Vermerk; die Volltexte bleiben, weil sie kurz sind.
+
+**Blockiert:** nichts. Bis ROL-EPIC-001 gilt der gebaute Rollenschnitt.
+
+**Annahmen:** ANN-006 (mit E15 verworfen), ANN-011 (Rollenschnitt-Teil),
+ANN-052 (betroffen: der Verordnungsscan wird für Office lesbar, und der
+auditierte Vorgang je ausgestelltem Verweis trägt damit auch diesen Zugriff).
+
+### E-20 / E-21 — Rückfragen aus MAP-001 (ADR-019 Fassung 2)
+
+**E-20 erledigt am 2026-09-13:** ADR-019 Fassung 2 ist am 2026-09-13
+angenommen; produktive Freigabe weiterhin am Gate (ADR-019 Punkt 9). Das
+Gate führt B7.
+
+**E-21 erledigt am 2026-09-13:** gegenstandslos, weil UX-EPIC-001 seit
+2026-09-11 fertig ist — die Reihenfolge MAP-002 zu UX-EPIC-001 stellt sich
+nicht mehr.
 
 ---
 
@@ -1290,21 +1218,21 @@ aus der Roadmap nicht abgeschlossen werden kann.
 | Ist externes Error-Tracking zulässig, und wie werden Redaction-Regeln erzwungen und getestet?                  | ADR-002, ADR-011 | OPS-004 (G8)                                      |
 | Wie wird „keine Produktionsdaten in Dev/Test" technisch abgesichert?                                           | ADR-002          | OPS-001, OPS-002                                  |
 | Frontend-Hosting und dessen Prüfung; `service_role` nie im Browser; freigegebener Stand, Nachweis der Freigabe | ADR-015, ADR-013 | OPS-002 (G5)                                      |
-| Kritische Änderung, Review-Checkliste, Schweregrade im Dependency-Scan                                         | ADR-013          | OPS-002 (G5)                                      |
+| Kritische Änderung, Review-Checkliste, Schweregrade im Dependency-Scan                                         | ADR-013          | Kritische Änderung und Review-Checkliste: beantwortet mit ADR-013 Fassung 2, Punkt 9 (2026-09-13; Gate A4 in `docs/development/GRAPH-ENGINEERING-WORKFLOW.md`); Schweregrade: OPS-002 (G5) |
 | Backup-Lebenszyklus, Notfallzugang, Restore-Dokumentation, Degraded-Kerninformationen                          | ADR-012          | OPS-003 (G7), E2 (G11)                            |
-| Wer liest Auditlogs; Schwelle „größerer Export"; Eskalation beim Report; Audit gelöschter Bezugsdaten          | ADR-010          | OPS-005 (G6), LOE-002                             |
+| Wer liest Auditlogs; Schwelle „größerer Export"; Eskalation beim Report; Audit gelöschter Bezugsdaten          | ADR-010          | Wer liest: ADR-010 Fassung 2 (2026-09-13: `owner`, `list_audit_events`); Audit gelöschter Bezugsdaten: ANN-029; Schwelle und Eskalation: OPS-005 (G6) |
 | Wie werden Berechtigungsänderungen protokolliert; Umgehungsschutz des Policy-Layers                            | ADR-004          | STAFF-EPIC-002 (Rollenänderungen), OPS-005        |
-| „Abschluss der Behandlung": manuell, durch Zeitablauf, oder beides                                             | ADR-008          | LOE-001 als Annahme; Anker Verordnungsende (VER-001) |
-| Löschnachweis nach Restore; Legal-Hold-Rechte; Teamchat rollierend löschen; Dateien in mehreren Kontexten      | ADR-008          | LOE-002, TEAM-001, ADR-017                        |
+| „Abschluss der Behandlung": manuell, durch Zeitablauf, oder beides                                             | ADR-008          | beantwortet: ANN-032 (`care_concluded_on`, LOE-001b) |
+| Löschnachweis nach Restore; Legal-Hold-Rechte; Teamchat rollierend löschen; Dateien in mehreren Kontexten      | ADR-008          | Legal-Hold-Rechte: ANN-033; Löschnachweis: LOE-002; Teamchat: TEAM-001; Dateien: ADR-017 |
 | Rechtsgrundlage je Verarbeitung und Einwilligungsmodell; Betroffenenrechte technisch; Wiedervorlage koppeln     | ADR-007          | PAT-006 (G9), OPS-006 (G10), G12; Skill-Schritt A prüft die acht Ereignisse |
 | Nummernkreis, Snapshot-Felder, Storno-Kette, Empfängertypen, Override-Rechte, „überfällig" ohne Mahnwesen       | ADR-009          | ABR-EPIC-002                                      |
 | Abrechenbare Ereignisse neben Terminen; Katalog global oder je Organisation; Datentyp für Geldwerte            | ADR-009, ADR-003, ADR-014 | ABR-001 (Annahme: nur Termine in V1)      |
 | Zeitzonen bei wiederkehrenden Terminen und Kalenderjahr-Fristen                                                | ADR-014          | CAL-007, LOE-001                                  |
-| Speicherort und Retention von Dateien                                                                          | ADR-015, ADR-008 | ADR-017 (G1)                                      |
+| Speicherort und Retention von Dateien                                                                          | ADR-015, ADR-008 | ADR-017 angenommen (2026-09-12), DAT-EPIC-001 gebaut (PR #38) |
 | Begründung als Pflichtfeld; Frist bei Hausbesuchen am Freitag; Azubi-Rolle                                     | ADR-016          | ANN-008 nach Praxiserfahrung; Rolle in STAFF-EPIC-002 |
 | Fristanker bei später Übernahme eines KI-Vorschlags; Rohaudio; Prüfbarkeit der Inhaltstreue                    | ADR-016 Fassung 2, ADR-005 Fassung 2, ADR-006 Fassung 2 | E13; Anbieter mit C6              |
 | Wer pflegt die Zweckbestimmung; wo wird `MDR_REVIEW_REQUIRED` geführt; Cutoff-Anzeige als Klassifikation?      | ADR-006          | G12/G13 (Dokument); FRB-002 (Cutoff, bis dahin nicht anzeigen) |
-| Offline: Felder, Unsynchronisiert-Dauer, Konfliktauflösung, Geräteanforderungen, Audit offline                 | ADR-001          | Tagesplan-Cache lesend als `ANN` in UX-EPIC-001 (E-12); vollständiger Offline-ADR vor einem späteren Offline-Loop |
+| Offline: Felder, Unsynchronisiert-Dauer, Konfliktauflösung, Geräteanforderungen, Audit offline                 | ADR-001          | Tagesplan-Cache: ANN-021 (UX-011, gebaut); vollständiger Offline-ADR vor einem späteren Offline-Loop |
 | Kartendienst: Anbieter, Datenweg, Vertragsgrundlage, Endgerät                                                  | ADR-002, §9, §20 | ADR-019 (Roadmap G12); B7                          |
 | KI: Provider, Zweck → erlaubte Felder, Protokollierung, Nachweis der Freigabe                                  | ADR-005          | C6, Etappe 10                                     |
 | Minimale Struktur für Vertreterzugriffe                                                                        | ADR-014          | B5                                                |
@@ -1462,3 +1390,26 @@ aus der Roadmap nicht abgeschlossen werden kann.
   (Dateien folgen denselben Berechtigungsregeln), §12 (Dateizugriffe sind
   testpflichtig) und §18 (Fristen) gelten unverändert — ADR-017 konkretisiert
   sie, ändert aber keine Prinzipienaussage (§21).
+- **2026-09-13:** DAT-EPIC-001 liegt mit PR #38 in `main` (Dateiablage nach
+  ADR-017; ANN-052 und ANN-053 neu). **E14 erledigt** — Jannes legt die
+  Hausbesuch-Szenarien verbindlich fest: Tür geöffnet, Behandlung findet auf
+  Angabe der Patient:in nicht statt → durchgeführt, Pflichtvermerk, normale
+  Abrechnung, keine Ausfallgebühr; nicht angetroffen nach Protokoll (15
+  Minuten gewartet, geklingelt, angerufen) → nicht wahrgenommen,
+  Ausfallgebühr; Patientenabsage unter 24 Stunden → Ausfallgebühr
+  (unverändert); die Software führt erklärend durch die Szenarien (CAL-018;
+  Rechnungstext und Rechtsgrundlage für Fall 1 gehen in B4). **E15 neu und
+  entschieden** — Office liest alle klinischen Inhalte einer Akte im Umfang
+  der Therapeut:innen, schreibt keine klinische Dokumentation, jeder Zugriff
+  auditpflichtig (ROL-EPIC-001; C1 und C2 überholt; Prüfvermerk für B2;
+  ANN-006 verworfen). **E-20 erledigt** — ADR-019 Fassung 2 angenommen, Gate
+  offen; **E-21 erledigt** — gegenstandslos, UX-EPIC-001 seit 2026-09-11
+  fertig. Nachgezogen: ADR-018 Fassung 3, ADR-010 Fassung 2, ADR-004
+  Fassung 2, `PROJECT_PRINCIPLES.md` 0.10. **Struktur 3.0:** Archivdatei
+  `archiv/OPEN_DECISIONS-erledigt.md` mit den Volltexten erledigter Punkte
+  (B12, B13, D „bestätigt", E8, E10, E11 und die überholten Stände von B7;
+  hier bleibt je Punkt ein Zweizeiler), Rückverweise `Annahmen:` je Punkt,
+  Glossar der Kennungen (`E12` gegen `E-12`), Rangvermerk, Reparatur der
+  abgebrochenen Zeile zu E-15 bis E-19; neu die kurzen Abschnitte A2 und B3
+  als Träger ihrer Annahmen und Punkt 3a in E12 (Fahrzeit ohne Speicherung
+  gegen serverseitige Rundungsregel, MAP-006).

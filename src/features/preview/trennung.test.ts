@@ -84,6 +84,38 @@ function quelldateien(verzeichnis: string): string[] {
   return gefunden;
 }
 
+/**
+ * Reine Hilfsfunktionen aus echten API-Modulen, die ein Vorschaubereich
+ * importieren darf: Sie formatieren oder rechnen, ohne mit dem Server zu
+ * sprechen. Alles andere aus `src/features/<bereich>/api.ts` bleibt draussen -
+ * sonst liefe der Datenbankzugriff ueber den Import an dieser Pruefung vorbei,
+ * weil nur der eigene Quelltext des Vorschaubereichs gescannt wird.
+ */
+const ERLAUBTE_API_IMPORTE = new Set(['todayInTimeZone']);
+
+/**
+ * `{ a, b } from '@/features/<bereich>/api'` - der Bereich steht in Gruppe 2,
+ * `preview` wird im Code ausgenommen. Bewusst ohne verschachtelte Quantoren,
+ * damit das Muster nicht rueckwaerts laeuft (eslint security/detect-unsafe-regex).
+ */
+const API_IMPORT = /\{([^}]*)\}\s*from\s*'@\/features\/([^'/]+)\/api'/g;
+
+function unerlaubteApiImporte(quelltext: string): string[] {
+  const treffer: string[] = [];
+  for (const match of quelltext.matchAll(API_IMPORT)) {
+    if (match[2] === 'preview') continue;
+    for (const eintrag of match[1]!.split(',')) {
+      const name = eintrag
+        .trim()
+        .replace(/^type\s+/, '')
+        .split(/\s+as\s+/)[0]!
+        .trim();
+      if (name && !ERLAUBTE_API_IMPORTE.has(name)) treffer.push(name);
+    }
+  }
+  return treffer;
+}
+
 describe('Trennung von Vorschau und echten Vorgängen', () => {
   const dateien = VORSCHAUBEREICHE.flatMap(quelldateien);
 
@@ -96,6 +128,24 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
       muster.test(ohneKommentare(readFileSync(pfad, 'utf8'))),
     );
     expect(treffer).toEqual([]);
+  });
+
+  it('importiert aus echten API-Modulen hoechstens reine Hilfsfunktionen', () => {
+    const treffer = dateien
+      .map((pfad) => ({ pfad, namen: unerlaubteApiImporte(readFileSync(pfad, 'utf8')) }))
+      .filter(({ namen }) => namen.length > 0);
+    expect(treffer).toEqual([]);
+  });
+
+  it('wuerde einen Import einer echten API-Funktion tatsaechlich finden', () => {
+    expect(
+      unerlaubteApiImporte(
+        "import { fetchPatient, todayInTimeZone } from '@/features/patients/api';",
+      ),
+    ).toEqual(['fetchPatient']);
+    expect(unerlaubteApiImporte("import { vorschauId } from '@/features/preview/api';")).toEqual(
+      [],
+    );
   });
 
   it('wuerde einen Serveraufruf tatsaechlich finden', () => {

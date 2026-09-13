@@ -4,221 +4,15 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.9** |
-| **Änderungsdatum** | **2026-09-12** |
-| Vorversion | 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-018 außer ADR-019 (nur vorgeschlagen), siehe `docs/adr/` |
-| Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` |
+| **Dokumentversion** | **0.10** |
+| **Änderungsdatum** | **2026-09-13** |
+| Vorversion | 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-019, siehe `docs/adr/` (ADR-019 angenommen am 2026-09-13; produktive Freigabe des Kartendienstes am Gate aus ADR-019 Punkt 9) |
+| Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
 
-### Änderungsvermerk 0.9
-
-Zwei Festlegungen des Projektinhabers vom 2026-09-12 zum Kalender, beide in
-§8.1. Sie ändern eine MUSS-Anforderung und brauchen deshalb eine eigene
-Version (§21):
-
-- **§8.1 geändert:** Ein Behandlungstermin hat **60 oder 45 Minuten**. 60
-  bleibt die Vorbelegung; eine dritte Länge lässt der Server nicht zu. Damit
-  ist **E12 Punkt 1** beantwortet — es gibt eine Abweichung, aber keine freie
-  und keine begründete. Was vorher galt („MUSS 60 Minuten"), steht in der
-  Vorversion; Bestandstermine bleiben unverändert gültig (die Abgrenzung aus
-  ANN-037 gilt weiter).
-- **§8.1 ergänzt:** Termine, die **keine Behandlung** sind — Besprechungen,
-  Teamtermine, andere Ereignisse des Praxisbetriebs — fallen nicht unter die
-  Fensterregel. Beginn und Ende sind im Praxisraster frei. Sie haben weder
-  Patient:in noch Verordnung und DÜRFEN keine abrechenbare Leistung erzeugen.
-  Damit bekommt §19 eine Abgrenzung, die es vorher nicht brauchte, weil es
-  keine terminlosen Termine gab.
-- **Unverändert:** die Fahrzeitregel samt Aufrundung, das Praxisraster, §8 im
-  Übrigen und der Rollenschnitt.
-
-Gebaut wird das in CAL-015.
-
-### Änderungsvermerk 0.8
-
-Der Projektinhaber hat am 2026-09-12 zwei Dinge festgelegt, die §8 bis dahin
-offen ließ: **eine Patientenabsage weniger als 24 Stunden vor
-Behandlungsbeginn löst eine Ausfallgebühr aus**, und **eine beim Hausbesuch
-nicht angetroffene Person wird mit einem Vermerk abgehakt** — ohne
-Gebührenentscheidung in diesem Schritt. ADR-018 ist dafür in **Fassung 2**
-ergänzt (Punkt 8); §21 verlangt, dass die Prinzipien nachziehen.
-
-- **§8 ergänzt** um vier verbindliche Aussagen: Der **Eingang** einer Absage
-  wird getrennt vom Zeitpunkt ihrer Eingabe festgehalten · die Frist rechnet
-  **der Server** aus Eingang und vereinbartem Beginn · **genau 24 Stunden**
-  liegen außerhalb der Regel · eine **praxisbedingte** Absage löst sie nicht
-  aus. Dazu die Klarstellung, dass das Nichtantreffen keine Gebühr erzeugt und
-  nicht als Behandlung erscheint.
-- **§19 unverändert,** aber sein Anker wird genauer: Fakturiert wird aus
-  `documented` oder aus einem Vorgang mit **Gebührenanlass** — das ist ab jetzt
-  die Absage unter 24 Stunden, und es bleibt der No-show mit einem Kennzeichen
-  aus der Zeit vor dieser Version.
-- **§18 unverändert,** mit einer Folge: Ein Vorgang mit Gebührenanlass fällt
-  nicht unter die interne Dreijahresfrist, solange die Forderung nicht
-  abgerechnet ist (ADR-008, ANN-035).
-- **§21 ergänzt:** ADR-017 (Dateiablage) ist am 2026-09-12 angenommen worden
-  und steht jetzt in der Tabelle. ADR-019 (Kartendienst) ist weiterhin nur
-  **vorgeschlagen** und steht deshalb nicht darin.
-- **Unverändert:** §8.1, der Rollenschnitt in §4, §6 und §5.
-
-Gebaut wird das in CAL-014. Historische Vorgänge werden **nicht** nachträglich
-umgedeutet und bekommen keine Gebühr.
-
-### Änderungsvermerk 0.7
-
-**ADR-018** (Zustandsautomat des Termins) ist am 2026-09-11 vom Projektinhaber
-angenommen worden — alle sieben Bestätigungsfragen wie empfohlen. Anlass für
-diese Version: §8 führte den Zustandsautomaten bis dahin ausdrücklich als
-offenen Punkt; §21 verlangt, dass eine so geänderte Prinzipienaussage in einer
-neuen Version nachgezogen wird.
-
-- **§8 geändert:** Der Satz „Der Zustandsautomat des Termins ist noch nicht
-  definiert …" entfällt. An seine Stelle treten die acht Zustände, der Hinweis,
-  dass „angefragt" und „vorgemerkt" beschrieben, aber nicht gebaut sind, und
-  drei verbindliche Aussagen: jeder Wechsel über eine Serverfunktion mit
-  Rollenprüfung und Auditeintrag; „dokumentiert" und „abgerechnet" setzt der
-  Vorgang, dem die Tatsache gehört; Absage und finalisierte Dokumentation ohne
-  Rückweg.
-- **§19 bekommt seinen technischen Anker,** ohne selbst geändert zu werden:
-  „Fakturierung erst nach finalisierter Dokumentation" ist ab jetzt prüfbar als
-  „aus `documented` oder aus `no_show` mit Ausfallhonorar". Der Abschluss eines
-  Termins verlangt weiterhin keine Dokumentation (ANN-005 bleibt in Kraft).
-- **§21 ergänzt:** ADR-018 steht in der Tabelle der angenommenen ADRs.
-- **Unverändert:** §8.1 (Terminfenster), §6 und §6.3, §4 und der Rollenschnitt.
-  ADR-018 legt Zustände und Übergänge fest, keine Rechte.
-
-Nicht gebaut: Die Umsetzung ist CAL-EPIC-003a. Bis dahin kennt die Anwendung
-die drei bisherigen Werte; diese Version entscheidet, sie beschreibt keinen
-erreichten Stand.
-
-### Änderungsvermerk 0.6
-
-Die Entscheidung **E10** des Projektinhabers vom 2026-09-08 wird verbindlich.
-Anlass: Sie war bis dahin nur in `docs/decisions/OPEN_DECISIONS.md` festgehalten;
-§21 verlangt, dass eine geänderte Prinzipienaussage in einer neuen Version
-nachgezogen wird, sobald die Aufteilung im Code steht und getestet ist
-(STAFF-002a).
-
-- **§4.3 präzisiert:** „Mitarbeiterorganisation" ist für das Office ein
-  **schreibendes** Recht auf die **Stammdaten** einer beschäftigten Person —
-  Name, dienstliche Erreichbarkeit, Hauptstandort. Nicht dazu gehören
-  Rollenvergabe, Beschäftigungsstatus und die Privatangaben nach §20.
-- **§4.5 präzisiert:** „Mitarbeiterplanung" bleibt für die Teamleitung ein
-  **mögliches**, nicht vergebenes Zusatzrecht. Sie schreibt weder Stammdaten
-  noch Rollen noch den Beschäftigungsstatus.
-- **§4.1 unverändert:** Rollenvergabe und Beschäftigungsstatus bleiben beim
-  Praxisinhaber. Eine Rolle zu vergeben ist Berechtigungsvergabe und damit
-  eine Sicherheitsentscheidung nach ADR-004.
-
-### Änderungsvermerk 0.5
-
-Zwei Produktentscheidungen des Projektinhabers vom 2026-09-08 werden
-verbindlich. Anlass: Jannes hat beide selbst getroffen und zur Aufnahme in die
-verbindlichen Dokumente beauftragt.
-
-- **Neu §8.1 „Terminfenster, Dokumentationszeit und Fahrzeit":** ein
-  angebotener Behandlungstermin dauert 60 Minuten einschließlich
-  Dokumentation, ohne eigenen Dokumentationsblock und ohne feste Aufteilung;
-  der Beginn bleibt frei auf dem Praxisraster (heute 5 Minuten); eine Fahrzeit
-  kommt zwischen den Terminfenstern hinzu, und der früheste Folgetermin liegt
-  auf dem ersten Rasterpunkt auf oder nach Ende plus Fahrzeit (aufrunden, nie
-  abrunden).
-  Es ist eine **Angebotsregel mit serverseitiger Durchsetzung**, keine
-  Voreinstellung der Oberfläche. Bestehende Termine bleiben unverändert.
-- **Neu §6.3 „Sprachdokumentation: Diktat, Transkription und Übernahme":**
-  bewusst gestartetes Nachdiktat aus dem Termin, inhaltstreue Transkription
-  und Strukturierung ohne eigene klinische Ergänzung und ohne inhaltliche
-  Auslassung, Kennzeichnung unverständlicher Stellen, Prüfung und Korrektur
-  vor der Übernahme. Ein KI-Vorschlag ist **kein Dokumentationsentwurf**; die
-  automatische Finalisierung nach ADR-016 Punkt 7 DARF ihn NICHT erfassen.
-- §5 verweist auf §6.3; §8 verweist auf §8.1; §21 führt die geänderten ADRs
-  nach (ADR-005 Fassung 2, ADR-006 Fassung 2, ADR-016 Fassung 2).
-- Beide Abschnitte halten die Anforderung fest und sind **kein
-  Implementierungsauftrag**. Was an ihnen nicht entschieden ist, steht als
-  E12 und E13 in `docs/decisions/OPEN_DECISIONS.md`.
-- Keine Anforderung aus §3, §12, §13 oder §16 wurde geändert oder
-  abgeschwächt. §6, §7.1 und die Liste der Constraints in §8 sind unverändert.
-
-### Änderungsvermerk 0.4
-
-C1 und C2 entschieden. Anlass: Jannes hat beide in
-`docs/decisions/OPEN_DECISIONS.md` Abschnitt C geführten Widersprüche
-aufgelöst (2026-09-05):
-
-- §4.4 legt fest, dass Leistungskürzel (z. B. „MT", „KG") als organisatorische
-  Information gelten und dem Office wie die übrige Rechnung zugänglich
-  bleiben; der Diagnosetext bleibt klinisch und gesperrt.
-- §10 legt fest, dass Patientenkommunikation über einen gemeinsamen Kanal
-  läuft; erkennt eine Therapeutin nachträglich klinischen Inhalt, ordnet sie
-  ihn der Akte zu. Dass das Office eine solche Nachricht bis zur Zuordnung
-  gelesen haben kann, ist eine akzeptierte, dokumentierte Ausnahme, kein
-  Fehler.
-
-Keine Anforderung aus §3, §12, §13 oder §16 wurde geändert oder abgeschwächt.
-
-### Änderungsvermerk 0.3
-
-Arbeitsweise bei fehlenden Entscheidungen. Anlass: Der Projektinhaber hat
-festgestellt, dass die Regel „nicht eigenständig entscheiden, stoppen und
-vorlegen" die Entwicklung blockiert, weil er insbesondere datenschutz- und
-rechtsbezogene Detailfragen selbst nicht beantworten kann. Eine
-Datenschutzprüfung steht bevor; das Produkt muss deren Ergebnis aufnehmen
-können, ohne dass die Entwicklung bis dahin wartet.
-
-- Neu §15.1 „Begründete Annahmen": Fehlt eine Entscheidung, wird recherchiert,
-  nach bestem Wissen entschieden, die Annahme im Annahmenregister
-  (`docs/decisions/ASSUMPTIONS.md`) dokumentiert und reversibel verankert.
-  Datenschutz- und rechtsbezogene Annahmen MÜSSEN vor Produktivstart
-  validiert werden. §15.1 nennt abschließend, was keine Annahme sein darf.
-- §2.3 präzisiert: Detailentscheidungen innerhalb einer beauftragten Aufgabe
-  sind keine „grundlegenden Praxisprozesse" und werden nach §15.1 getroffen.
-- §11 nennt Recherche und das Schließen von Lücken durch dokumentierte
-  Annahmen als zulässige Tätigkeiten; die Verbotsliste ist unverändert.
-- §21 nimmt das Annahmenregister in die Dokumentenordnung auf, regelt den
-  Umgang mit einem entdeckten Widerspruch bis zu seiner Auflösung und führt
-  ADR-015 und ADR-016 in der Tabelle nach.
-- Keine Anforderung aus §3 (Datenschutz und Sicherheit), §12, §13 oder §16
-  wurde geändert oder abgeschwächt.
-
-### Änderungsvermerk 0.2.2
-
-Korrekturversion. Sie behebt ausschließlich eine Aussage, die durch ADR-016
-überholt ist, und ändert keine Anforderung:
-
-- §5 bezeichnete den Mechanismus der Nachvollziehbarkeit — Versionierung
-  gegenüber Änderungsprotokoll — als offen. ADR-016 hat ihn am 2026-09-01
-  entschieden; `docs/decisions/OPEN_DECISIONS.md` Abschnitt D führt ihn
-  seither nicht mehr als offen. Die MUSS-Anforderungen aus §5 bleiben
-  unverändert — ADR-016 erfüllt sie und erweitert sie nicht.
-
-### Änderungsvermerk 0.2.1
-
-Korrekturversion. Sie behebt ausschließlich Widersprüche, die durch ADR-010 bis
-ADR-014 entstanden sind, und enthält keine stilistischen Änderungen:
-
-- §4.2 bezeichnete Umfang und Aufbewahrung des Auditlogs als offen; das ist
-  seit ADR-010 falsch.
-- §13 bezeichnete ein Notfallzugriffskonzept als offen; ADR-010 stellt fest,
-  dass ein klinischer Break Glass in V1 nicht erforderlich ist.
-- §14 beschränkte die strukturelle Vorbereitung auf ADR-003; ADR-014 legt eine
-  umfassendere verbindliche Liste fest.
-- §21 führte die zitierten ADRs nicht auf.
-
-### Änderungsvermerk 0.2
-
-- Normative Begriffe eingeführt (§0). Sicherheitskritische Formulierungen wie
-  „langfristig", „perspektivisch", „möglichst" und „soll" wurden durch
-  eindeutige normative Aussagen ersetzt, soweit eine Entscheidung vorliegt.
-- Die angenommenen Architekturentscheidungen ADR-001 bis ADR-009 wurden auf
-  Prinzipienebene konsolidiert. Details, die im jeweiligen ADR vollständig
-  geregelt sind, werden hier nicht wiederholt, sondern verlinkt.
-- Neue Abschnitte: §17 Regulatorische Abgrenzung, §18 Aufbewahrung und
-  Löschung, §19 Abrechnung, §20 Beschäftigtendaten, §21 Governance.
-- Die Nummerierung der Abschnitte §1 bis §16 ist unverändert, damit bestehende
-  Verweise aus den ADRs gültig bleiben.
-- Es wurde keine Anforderung der Baseline entfernt. Offene Punkte sind als
-  offen gekennzeichnet und nicht durch Formulierung geschlossen worden.
-
+Die Änderungsvermerke aller Versionen stehen am **Ende** dieses Dokuments
+(Abschnitt „Änderungsvermerke"), damit der normative Text mit §0 beginnt.
 
 ## 0. Normative Begriffe
 
@@ -501,8 +295,10 @@ das Auditlog die tragende Kompensationsmaßnahme und damit
 sicherheitskritisch. Der Katalog auditpflichtiger Ereignisse, die Beschränkung
 auf Metadaten ohne klinische Inhalte, die Unveränderbarkeit über den
 Anwendungspfad, die Aufbewahrungsfrist und der monatliche Audit-/Security-Report
-sind in [ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md) geregelt. Wer
-Auditlogs lesen darf, ist dort als offene Folgefrage geführt.
+sind in [ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md) geregelt.
+Lesen darf das Auditlog in V1 allein der Praxisinhaber, über einen eigenen,
+selbst auditierten Lesepfad (ADR-010 Fassung 2). Dieselbe Auditpflicht gilt
+für jeden lesenden Zugriff des Office auf klinische Inhalte (§4.3).
 
 Therapeut:innen dürfen insbesondere:
 
@@ -532,14 +328,27 @@ Standardmäßig Zugriff auf organisatorische Informationen:
 - Mitarbeiterorganisation
 - Belege, soweit erforderlich
 
-**Office hat standardmäßig KEINEN Zugriff auf klinischen Freitext und keinen
-Zugriff auf vollständige klinische Dokumentationen.**
+**Klinische Inhalte (entschieden 2026-09-13, E15).** Office hat lesenden
+Zugriff auf alle klinischen Inhalte einer Patientenakte im selben Umfang wie
+Therapeut:innen: Diagnose und Verordnung einschließlich Scan,
+Behandlungsdokumentation mit Verlauf, Befunde, patientenbezogene Nachrichten.
+Office schreibt keine klinische Dokumentation und keine Befunde. Jeder Zugriff
+ist auditpflichtig wie bei Therapeut:innen (§4.2, ADR-010); das Auditlog ist
+damit auch für diese Rolle die tragende Kompensationsmaßnahme. Die
+datenschutzrechtliche Bewertung dieser Öffnung (Need-to-know, DSFA) gehört in
+die Anfrage B2 ([ADR-007](docs/adr/ADR-007-data-protection-impact-assessment.md)).
+Umgesetzt wird der Rollenschnitt in ROL-EPIC-001; bis dahin gilt der gebaute
+Stand ([ADR-004](docs/adr/ADR-004-authorization-model.md) Fassung 2).
+
+*Bis Version 0.9 galt an dieser Stelle:* „Office hat standardmäßig KEINEN
+Zugriff auf klinischen Freitext und keinen Zugriff auf vollständige klinische
+Dokumentationen." Diese Aussage ist aufgehoben.
 
 **Mitarbeiterorganisation (entschieden 2026-09-08, E10).** Office DARF die
 **Stammdaten** einer beschäftigten Person anlegen und ändern: Name, dienstliche
 Erreichbarkeit, Hauptstandort. Liefe jede Adressänderung über den
 Praxisinhaber, wäre er das Nadelöhr — bei Bus-Faktor 1 ein reales
-Betriebsrisiko ([ADR-012](docs/adr/ADR-012-backup-recovery-and-continuity.md)).
+Betriebsrisiko ([ADR-012](docs/adr/ADR-012-backup-and-business-continuity.md)).
 
 Office DARF NICHT:
 
@@ -552,13 +361,16 @@ Die Privatangaben sind bewusst beidseitig ausgenommen: Ein Schreibrecht ohne
 Leserecht würde bedeuten, dass ein Formular sie leer anzeigt und beim Speichern
 löscht. Schreib- und Leserecht bleiben hier deckungsgleich.
 
-Vorgesehen bleiben ein organisatorischer Behandlungsnachweis (§4.4) und später
-kontrollierte Sonderfreigaben (§4.4).
+Der Behandlungsnachweis nach §4.4 bleibt als datensparsame Sicht für Rechnung
+und organisatorische Konflikte bestehen; eine Sonderfreigabe für klinische
+Inhalte braucht Office seit E15 nicht mehr.
 
 ### 4.4 Sonderfall Behandlungsnachweis
 
 Für organisatorische Konflikte MUSS ein eigener datensparsamer
-Behandlungsnachweis existieren.
+Behandlungsnachweis existieren. Seit E15 (2026-09-13) ist er keine
+Zugriffsgrenze mehr, sondern die Sicht ohne klinischen Inhalt, die auf der
+Rechnung erscheint und außerhalb der Praxis gezeigt werden kann.
 
 Beispiel:
 
@@ -575,18 +387,14 @@ Das Office darf dafür sehen:
 - Zeitpunkt der Dokumentation
 - gegebenenfalls Signatur/Bestätigung der Behandlung
 
-Das Office DARF hierfür NICHT automatisch den medizinischen Inhalt der
-Behandlung sehen.
+Der Nachweis trägt keinen klinischen Inhalt. Dass Office die vollständige
+Dokumentation lesen darf, regelt §4.3 (E15); der fallbezogene, zeitlich
+begrenzte Sonderzugriff aus den Versionen bis 0.9 ist damit entfallen.
 
-Falls vollständige klinische Dokumentation für einen konkreten Vorgang
-erforderlich ist, ist ein fallbezogener, zeitlich begrenzter und
-protokollierter Zugriff vorgesehen.
-
-Dieser Zugriff MUSS durch eine dazu berechtigte Rolle freigegeben werden.
-
-**Entschieden am 2026-09-05:** Leistungskürzel (z. B. „MT", „KG") gelten als
-organisatorische Information. Das Office darf sie wie die übrige Rechnung
-sehen. Der Diagnosetext bleibt davon unberührt klinisch und gesperrt.
+**Entschieden am 2026-09-05 (C1):** Leistungskürzel (z. B. „MT", „KG") gelten
+als organisatorische Information. Das Office darf sie wie die übrige Rechnung
+sehen. *Der Zusatz „Der Diagnosetext bleibt davon unberührt klinisch und
+gesperrt" ist durch E15 (2026-09-13) überholt.*
 
 ### 4.5 Teamleitung
 
@@ -941,14 +749,29 @@ daneben und kein eigener Zustand. Höhe und Abrechnungsweg gehören zum
 Leistungskatalog (ABR-001) und zur Rechnung (ABR-003); fehlen sie, wird **kein
 Betrag erfunden**, sondern die ausstehende Festlegung benannt.
 
-Wird eine Person beim Hausbesuch **vor Ort nicht angetroffen**, KANN die
-behandelnde Person den Vorgang unmittelbar mit einem datensparsamen
-organisatorischen Vermerk abschließen. Dieser Vermerk DARF NICHT als
-durchgeführte Behandlung, als finalisierte Behandlungsdokumentation oder als
-verbrauchte Verordnungsleistung erscheinen, und er DARF keine
-Gebührenentscheidung verlangen. Aus ihm allein entsteht **keine** Gebühr; eine
-eigene Gebührenregel für diesen Fall ist noch nicht entschieden
-(`docs/decisions/OPEN_DECISIONS.md`).
+**Hausbesuch-Szenarien** (festgelegt vom Projektinhaber am 2026-09-13, E14
+erledigt; verbindlich, ausgeführt in ADR-018 Fassung 3 Punkt 9):
+
+1. **Tür geöffnet, Behandlung findet nicht statt.** Wird die Tür geöffnet und
+   die Behandlung auf Angabe der Patient:in nicht durchgeführt, gilt der Termin
+   als **durchgeführt**. Die behandelnde Person hält das mit einem
+   Pflichtvermerk in der Behandlungsdokumentation fest; der Termin wird normal
+   abgerechnet, eine Ausfallgebühr entsteht nicht.
+2. **Nicht angetroffen.** Wird die Person nach dem Protokoll — 15 Minuten
+   gewartet, an der Tür geklingelt, telefonisch angerufen — nicht angetroffen,
+   gilt der Termin als **nicht wahrgenommen** und löst eine Ausfallgebühr aus.
+   Der Vermerk DARF NICHT als durchgeführte Behandlung, als finalisierte
+   Behandlungsdokumentation oder als verbrauchte Verordnungsleistung
+   erscheinen.
+3. **Absage unter 24 Stunden** löst eine Ausfallgebühr aus (oben).
+
+Die Anwendung MUSS die behandelnde Person erklärend durch diese Szenarien
+führen und das Protokoll aus Fall 2 abfragen, bevor sie den Gebührenanlass
+setzt. Höhe und Abrechnungsweg gehören zum Leistungskatalog (ABR-001);
+Rechnungstext und Rechtsgrundlage für Fall 1 gehen als Festlegung in die
+Anfrage B4 (`docs/decisions/OPEN_DECISIONS.md`, E14). Gebaut wird das in
+CAL-018; bis dahin gilt der Stand aus Version 0.8 (Nichtantreffen als Vermerk
+ohne Gebühr).
 
 **Zeitablauf allein erzeugt weder eine Absage noch ein Nichtantreffen**
 (ADR-018 Punkt 7). Was stattgefunden hat, weiß nur die behandelnde Person.
@@ -1075,12 +898,12 @@ internem Teamchat vermischt werden.
 Medizinisch relevante Inhalte MÜSSEN der Patientenakte zugeordnet werden
 können.
 
-**Entschieden am 2026-09-05:** Patientenkommunikation läuft über einen
+**Entschieden am 2026-09-05 (C2):** Patientenkommunikation läuft über einen
 gemeinsamen Kanal. Erkennt eine Therapeutin nachträglich klinischen Inhalt in
-einer Nachricht, ordnet sie ihn der Patientenakte zu. Dass das Office eine
-solche Nachricht bis zu dieser Zuordnung im organisatorischen Kanal nach §4.3
-gelesen haben kann, ist eine akzeptierte, dokumentierte Ausnahme — kein
-Fehler und kein Grund, den Kanal vorab aufzuteilen.
+einer Nachricht, ordnet sie ihn der Patientenakte zu. *Seit E15 (2026-09-13)
+darf Office klinische Nachrichten regulär lesen (§4.3); die bis Version 0.9
+hier geführte „akzeptierte Ausnahme" ist damit gegenstandslos.* Die Zuordnung
+klinischer Inhalte zur Akte durch die Therapeut:in bleibt Pflicht.
 
 
 ## 11. Softwareentwicklung
@@ -1378,8 +1201,12 @@ Zahlungen MÜSSEN als eigene Transaktionen modelliert werden und Teilzahlungen
 sowie spätere Rückzahlungen ermöglichen.
 
 Therapeutische Leistungen SOLLTEN erst endgültig fakturiert werden können,
-wenn die zugehörige Dokumentation finalisiert ist. Berechtigte Overrides
-MÜSSEN begründet und protokolliert werden.
+wenn die zugehörige Dokumentation finalisiert ist. **In V1 gibt es keinen
+Override:** Fakturiert wird ausschließlich aus „dokumentiert" oder aus einem
+Vorgang mit Gebührenanlass (ADR-018). Der Fall „Tür geöffnet, keine
+Behandlung" (§8) läuft über die Dokumentation mit Pflichtvermerk und damit
+über denselben Weg. Würde ein Override eingeführt, MÜSSTE er begründet und
+protokolliert werden.
 
 V1 unterstützt PDF-Rechnungen für private Rechnungsempfänger. Die Architektur
 DARF spätere strukturierte E-Rechnungen NICHT verhindern.
@@ -1417,7 +1244,11 @@ Es steht in folgendem Verhältnis zu den übrigen Dokumenten:
 - `PROJECT_PRINCIPLES.md` — die Prinzipien. Verbindlich, versioniert.
 - `docs/adr/` — Architecture Decision Records. Getroffene Entscheidungen mit
   Kontext, Konsequenzen und offenen Folgefragen.
-- `docs/decisions/OPEN_DECISIONS.md` — was noch nicht entschieden ist.
+- `docs/decisions/OPEN_DECISIONS.md` — was noch nicht entschieden ist. Das
+  Dokument hat **keinen Rang**: Es entscheidet nichts; was dort offen ist,
+  gilt in keinem Dokument als entschieden, und was dort als entschieden
+  vermerkt ist, hat seine Fundstelle in einem ADR, in diesem Dokument oder als
+  datierter Vermerk dort.
 - `docs/decisions/ASSUMPTIONS.md` — begründete, vorläufige Annahmen nach
   §15.1. Sie stehen unterhalb der ADRs und der Feature-Spezifikationen,
   schließen deren Lücken und überschreiben nichts. Eine bestätigte Annahme,
@@ -1436,21 +1267,22 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-001 | Online-first mit begrenzter Offline-Fähigkeit | §2.2, §5 |
 | ADR-002 | Hosting und Datenstandort | §3.2, §3.5, §3.6 |
 | ADR-003 | `organization_id` und `location_id` | §1, §14 |
-| ADR-004 | Berechtigungsmodell | §4 |
+| ADR-004 | Berechtigungsmodell (Fassung 2: Office liest klinische Inhalte, E15) | §4 |
 | ADR-005 | Providerunabhängige KI-Anbindung (Fassung 2) | §6, §6.1, §6.2, §6.3 |
 | ADR-006 | Abgrenzung gegenüber Medical Device Software (Fassung 2) | §7.1, §17, §6.3 |
 | ADR-007 | Datenschutz-Folgenabschätzung und Datenschutzprozess | §3.7 |
 | ADR-008 | Aufbewahrung und Löschung | §4.6, §10, §18 |
 | ADR-009 | Privatabrechnung | §19 |
-| ADR-010 | Audit-Logging und privilegierter Produktionszugriff | §3.1, §4.1, §4.2, §13 |
+| ADR-010 | Audit-Logging und privilegierter Produktionszugriff (Fassung 2: Lesepfad, Dateien) | §3.1, §4.1, §4.2, §13 |
 | ADR-011 | Logging und Observability | §3.6 |
 | ADR-012 | Backup, Wiederherstellung und Betriebskontinuität | §3.4, §13 |
 | ADR-013 | CI/CD und Release-Governance | §11, §12 |
 | ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
 | ADR-015 | Initialer technischer Stack | §2.1, §2.2, §3.4 |
 | ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit (Fassung 2) | §5, §6.3 |
-| ADR-017 | Dateiablage | §5, §18 (noch nicht gebaut) |
-| ADR-018 | Zustandsautomat des Termins (Fassung 2) | §8 |
+| ADR-017 | Dateiablage | §4.7, §12, §18 (gebaut mit DAT-EPIC-001) |
+| ADR-018 | Zustandsautomat des Termins (Fassung 3: Hausbesuch-Szenarien) | §8, §19 |
+| ADR-019 | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff (angenommen 2026-09-13; produktive Freigabe am Gate) | §8.1, §9, §20 |
 
 Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
 Dokumentversion und ergänztem Änderungsvermerk.
@@ -1460,4 +1292,259 @@ keinen eigenen ADR gibt: §8.1 (Terminfenster) und §6.3 (Sprachdokumentation).
 Beide lösen kein Architekturproblem, sondern halten eine Produktentscheidung
 des Projektinhabers fest. Was daran technisch zu entscheiden war, steht in
 ADR-005, ADR-006 und ADR-016; was daran offen geblieben ist, in
-`docs/decisions/OPEN_DECISIONS.md` E12 und E13.
+`docs/decisions/OPEN_DECISIONS.md` E12 und E13. Die Hausbesuch-Szenarien in
+§8 und der Rollenschnitt in §4.3 sind ebenfalls Produktentscheidungen; ihr
+technischer Teil steht in ADR-018 Fassung 3 und ADR-004 Fassung 2.
+
+
+## Änderungsvermerke
+
+Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
+und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.10
+
+Drei Festlegungen des Projektinhabers vom 2026-09-13 und die Bereinigung aus
+dem Dokumentations-Audit vom selben Tag. Zwei davon ändern MUSS-Anforderungen
+und brauchen deshalb eine eigene Version (§21):
+
+- **§4.3 und §4.4 geändert (E15):** Office hat lesenden Zugriff auf alle
+  klinischen Inhalte einer Patientenakte im selben Umfang wie
+  Therapeut:innen. Der Satz „Office hat standardmäßig KEINEN Zugriff auf
+  klinischen Freitext" entfällt; der Behandlungsnachweis bleibt als
+  datensparsame Sicht, ist aber keine Zugriffsgrenze mehr; der fallbezogene
+  Sonderzugriff entfällt. C1 (Diagnosetext gesperrt) und die „akzeptierte
+  Ausnahme" aus C2 (§10) sind damit überholt. ADR-004 Fassung 2 zieht nach;
+  umgesetzt wird der Rollenschnitt in ROL-EPIC-001. Die datenschutzrechtliche
+  Bewertung (Need-to-know, DSFA) geht in die Anfrage B2.
+- **§8 ergänzt (E14 erledigt):** drei verbindliche Hausbesuch-Szenarien —
+  Tür geöffnet ohne Behandlung gilt als durchgeführt mit Pflichtvermerk und
+  normaler Abrechnung; Nichtantreffen nach Protokoll (15 Minuten, Klingeln,
+  Anruf) löst eine Ausfallgebühr aus; Absage unter 24 Stunden unverändert.
+  Die Anwendung führt erklärend durch die Szenarien. ADR-018 Fassung 3;
+  gebaut wird das in CAL-018.
+- **§19 präzisiert, nicht geändert:** In V1 gibt es keinen Override;
+  fakturiert wird aus „dokumentiert" oder aus einem Vorgang mit
+  Gebührenanlass (ADR-018). Der bisherige Wortlaut ließ offen, ob ein Override
+  existiert; ADR-018 hatte ihn stillschweigend ausgeschlossen.
+- **§4.2 präzisiert:** Wer das Auditlog liest, ist mit ADR-010 Fassung 2
+  festgelegt (Praxisinhaber, eigener auditierter Lesepfad); der Satz „als
+  offene Folgefrage geführt" entfällt. Die Auditpflicht gilt ausdrücklich
+  auch für lesende Zugriffe des Office.
+- **§10 ergänzt:** Folge von E15 für die Patientenkommunikation.
+- **§21 ergänzt:** ADR-019 (Kartendienst) ist am 2026-09-13 angenommen
+  (E-20) und steht in der Tabelle; `docs/decisions/OPEN_DECISIONS.md` ist
+  ausdrücklich ohne Rang.
+- **Korrekturen:** toter Verweis auf ADR-012 in §4.3 berichtigt; die
+  Änderungsvermerke stehen ab dieser Version am Ende des Dokuments, damit der
+  normative Text mit §0 beginnt.
+- **Unverändert:** §3, §6, §8.1, §12, §13, §16, der Rollenschnitt in §4.1,
+  §4.5 und §4.6.
+
+### Änderungsvermerk 0.9
+
+Zwei Festlegungen des Projektinhabers vom 2026-09-12 zum Kalender, beide in
+§8.1. Sie ändern eine MUSS-Anforderung und brauchen deshalb eine eigene
+Version (§21):
+
+- **§8.1 geändert:** Ein Behandlungstermin hat **60 oder 45 Minuten**. 60
+  bleibt die Vorbelegung; eine dritte Länge lässt der Server nicht zu. Damit
+  ist **E12 Punkt 1** beantwortet — es gibt eine Abweichung, aber keine freie
+  und keine begründete. Was vorher galt („MUSS 60 Minuten"), steht in der
+  Vorversion; Bestandstermine bleiben unverändert gültig (die Abgrenzung aus
+  ANN-037 gilt weiter).
+- **§8.1 ergänzt:** Termine, die **keine Behandlung** sind — Besprechungen,
+  Teamtermine, andere Ereignisse des Praxisbetriebs — fallen nicht unter die
+  Fensterregel. Beginn und Ende sind im Praxisraster frei. Sie haben weder
+  Patient:in noch Verordnung und DÜRFEN keine abrechenbare Leistung erzeugen.
+  Damit bekommt §19 eine Abgrenzung, die es vorher nicht brauchte, weil es
+  keine terminlosen Termine gab.
+- **Unverändert:** die Fahrzeitregel samt Aufrundung, das Praxisraster, §8 im
+  Übrigen und der Rollenschnitt.
+
+Gebaut wird das in CAL-015.
+
+### Änderungsvermerk 0.8
+
+Der Projektinhaber hat am 2026-09-12 zwei Dinge festgelegt, die §8 bis dahin
+offen ließ: **eine Patientenabsage weniger als 24 Stunden vor
+Behandlungsbeginn löst eine Ausfallgebühr aus**, und **eine beim Hausbesuch
+nicht angetroffene Person wird mit einem Vermerk abgehakt** — ohne
+Gebührenentscheidung in diesem Schritt. ADR-018 ist dafür in **Fassung 2**
+ergänzt (Punkt 8); §21 verlangt, dass die Prinzipien nachziehen.
+
+- **§8 ergänzt** um vier verbindliche Aussagen: Der **Eingang** einer Absage
+  wird getrennt vom Zeitpunkt ihrer Eingabe festgehalten · die Frist rechnet
+  **der Server** aus Eingang und vereinbartem Beginn · **genau 24 Stunden**
+  liegen außerhalb der Regel · eine **praxisbedingte** Absage löst sie nicht
+  aus. Dazu die Klarstellung, dass das Nichtantreffen keine Gebühr erzeugt und
+  nicht als Behandlung erscheint.
+- **§19 unverändert,** aber sein Anker wird genauer: Fakturiert wird aus
+  `documented` oder aus einem Vorgang mit **Gebührenanlass** — das ist ab jetzt
+  die Absage unter 24 Stunden, und es bleibt der No-show mit einem Kennzeichen
+  aus der Zeit vor dieser Version.
+- **§18 unverändert,** mit einer Folge: Ein Vorgang mit Gebührenanlass fällt
+  nicht unter die interne Dreijahresfrist, solange die Forderung nicht
+  abgerechnet ist (ADR-008, ANN-035).
+- **§21 ergänzt:** ADR-017 (Dateiablage) ist am 2026-09-12 angenommen worden
+  und steht jetzt in der Tabelle. ADR-019 (Kartendienst) ist weiterhin nur
+  **vorgeschlagen** und steht deshalb nicht darin.
+- **Unverändert:** §8.1, der Rollenschnitt in §4, §6 und §5.
+
+Gebaut wird das in CAL-014. Historische Vorgänge werden **nicht** nachträglich
+umgedeutet und bekommen keine Gebühr.
+
+### Änderungsvermerk 0.7
+
+**ADR-018** (Zustandsautomat des Termins) ist am 2026-09-11 vom Projektinhaber
+angenommen worden — alle sieben Bestätigungsfragen wie empfohlen. Anlass für
+diese Version: §8 führte den Zustandsautomaten bis dahin ausdrücklich als
+offenen Punkt; §21 verlangt, dass eine so geänderte Prinzipienaussage in einer
+neuen Version nachgezogen wird.
+
+- **§8 geändert:** Der Satz „Der Zustandsautomat des Termins ist noch nicht
+  definiert …" entfällt. An seine Stelle treten die acht Zustände, der Hinweis,
+  dass „angefragt" und „vorgemerkt" beschrieben, aber nicht gebaut sind, und
+  drei verbindliche Aussagen: jeder Wechsel über eine Serverfunktion mit
+  Rollenprüfung und Auditeintrag; „dokumentiert" und „abgerechnet" setzt der
+  Vorgang, dem die Tatsache gehört; Absage und finalisierte Dokumentation ohne
+  Rückweg.
+- **§19 bekommt seinen technischen Anker,** ohne selbst geändert zu werden:
+  „Fakturierung erst nach finalisierter Dokumentation" ist ab jetzt prüfbar als
+  „aus `documented` oder aus `no_show` mit Ausfallhonorar". Der Abschluss eines
+  Termins verlangt weiterhin keine Dokumentation (ANN-005 bleibt in Kraft).
+- **§21 ergänzt:** ADR-018 steht in der Tabelle der angenommenen ADRs.
+- **Unverändert:** §8.1 (Terminfenster), §6 und §6.3, §4 und der Rollenschnitt.
+  ADR-018 legt Zustände und Übergänge fest, keine Rechte.
+
+Nicht gebaut: Die Umsetzung ist CAL-EPIC-003a. Bis dahin kennt die Anwendung
+die drei bisherigen Werte; diese Version entscheidet, sie beschreibt keinen
+erreichten Stand.
+
+### Änderungsvermerk 0.6
+
+Die Entscheidung **E10** des Projektinhabers vom 2026-09-08 wird verbindlich.
+Anlass: Sie war bis dahin nur in `docs/decisions/OPEN_DECISIONS.md` festgehalten;
+§21 verlangt, dass eine geänderte Prinzipienaussage in einer neuen Version
+nachgezogen wird, sobald die Aufteilung im Code steht und getestet ist
+(STAFF-002a).
+
+- **§4.3 präzisiert:** „Mitarbeiterorganisation" ist für das Office ein
+  **schreibendes** Recht auf die **Stammdaten** einer beschäftigten Person —
+  Name, dienstliche Erreichbarkeit, Hauptstandort. Nicht dazu gehören
+  Rollenvergabe, Beschäftigungsstatus und die Privatangaben nach §20.
+- **§4.5 präzisiert:** „Mitarbeiterplanung" bleibt für die Teamleitung ein
+  **mögliches**, nicht vergebenes Zusatzrecht. Sie schreibt weder Stammdaten
+  noch Rollen noch den Beschäftigungsstatus.
+- **§4.1 unverändert:** Rollenvergabe und Beschäftigungsstatus bleiben beim
+  Praxisinhaber. Eine Rolle zu vergeben ist Berechtigungsvergabe und damit
+  eine Sicherheitsentscheidung nach ADR-004.
+
+### Änderungsvermerk 0.5
+
+Zwei Produktentscheidungen des Projektinhabers vom 2026-09-08 werden
+verbindlich. Anlass: Jannes hat beide selbst getroffen und zur Aufnahme in die
+verbindlichen Dokumente beauftragt.
+
+- **Neu §8.1 „Terminfenster, Dokumentationszeit und Fahrzeit":** ein
+  angebotener Behandlungstermin dauert 60 Minuten einschließlich
+  Dokumentation, ohne eigenen Dokumentationsblock und ohne feste Aufteilung;
+  der Beginn bleibt frei auf dem Praxisraster (heute 5 Minuten); eine Fahrzeit
+  kommt zwischen den Terminfenstern hinzu, und der früheste Folgetermin liegt
+  auf dem ersten Rasterpunkt auf oder nach Ende plus Fahrzeit (aufrunden, nie
+  abrunden).
+  Es ist eine **Angebotsregel mit serverseitiger Durchsetzung**, keine
+  Voreinstellung der Oberfläche. Bestehende Termine bleiben unverändert.
+- **Neu §6.3 „Sprachdokumentation: Diktat, Transkription und Übernahme":**
+  bewusst gestartetes Nachdiktat aus dem Termin, inhaltstreue Transkription
+  und Strukturierung ohne eigene klinische Ergänzung und ohne inhaltliche
+  Auslassung, Kennzeichnung unverständlicher Stellen, Prüfung und Korrektur
+  vor der Übernahme. Ein KI-Vorschlag ist **kein Dokumentationsentwurf**; die
+  automatische Finalisierung nach ADR-016 Punkt 7 DARF ihn NICHT erfassen.
+- §5 verweist auf §6.3; §8 verweist auf §8.1; §21 führt die geänderten ADRs
+  nach (ADR-005 Fassung 2, ADR-006 Fassung 2, ADR-016 Fassung 2).
+- Beide Abschnitte halten die Anforderung fest und sind **kein
+  Implementierungsauftrag**. Was an ihnen nicht entschieden ist, steht als
+  E12 und E13 in `docs/decisions/OPEN_DECISIONS.md`.
+- Keine Anforderung aus §3, §12, §13 oder §16 wurde geändert oder
+  abgeschwächt. §6, §7.1 und die Liste der Constraints in §8 sind unverändert.
+
+### Änderungsvermerk 0.4
+
+C1 und C2 entschieden. Anlass: Jannes hat beide in
+`docs/decisions/OPEN_DECISIONS.md` Abschnitt C geführten Widersprüche
+aufgelöst (2026-09-05):
+
+- §4.4 legt fest, dass Leistungskürzel (z. B. „MT", „KG") als organisatorische
+  Information gelten und dem Office wie die übrige Rechnung zugänglich
+  bleiben; der Diagnosetext bleibt klinisch und gesperrt.
+- §10 legt fest, dass Patientenkommunikation über einen gemeinsamen Kanal
+  läuft; erkennt eine Therapeutin nachträglich klinischen Inhalt, ordnet sie
+  ihn der Akte zu. Dass das Office eine solche Nachricht bis zur Zuordnung
+  gelesen haben kann, ist eine akzeptierte, dokumentierte Ausnahme, kein
+  Fehler.
+
+Keine Anforderung aus §3, §12, §13 oder §16 wurde geändert oder abgeschwächt.
+
+### Änderungsvermerk 0.3
+
+Arbeitsweise bei fehlenden Entscheidungen. Anlass: Der Projektinhaber hat
+festgestellt, dass die Regel „nicht eigenständig entscheiden, stoppen und
+vorlegen" die Entwicklung blockiert, weil er insbesondere datenschutz- und
+rechtsbezogene Detailfragen selbst nicht beantworten kann. Eine
+Datenschutzprüfung steht bevor; das Produkt muss deren Ergebnis aufnehmen
+können, ohne dass die Entwicklung bis dahin wartet.
+
+- Neu §15.1 „Begründete Annahmen": Fehlt eine Entscheidung, wird recherchiert,
+  nach bestem Wissen entschieden, die Annahme im Annahmenregister
+  (`docs/decisions/ASSUMPTIONS.md`) dokumentiert und reversibel verankert.
+  Datenschutz- und rechtsbezogene Annahmen MÜSSEN vor Produktivstart
+  validiert werden. §15.1 nennt abschließend, was keine Annahme sein darf.
+- §2.3 präzisiert: Detailentscheidungen innerhalb einer beauftragten Aufgabe
+  sind keine „grundlegenden Praxisprozesse" und werden nach §15.1 getroffen.
+- §11 nennt Recherche und das Schließen von Lücken durch dokumentierte
+  Annahmen als zulässige Tätigkeiten; die Verbotsliste ist unverändert.
+- §21 nimmt das Annahmenregister in die Dokumentenordnung auf, regelt den
+  Umgang mit einem entdeckten Widerspruch bis zu seiner Auflösung und führt
+  ADR-015 und ADR-016 in der Tabelle nach.
+- Keine Anforderung aus §3 (Datenschutz und Sicherheit), §12, §13 oder §16
+  wurde geändert oder abgeschwächt.
+
+### Änderungsvermerk 0.2.2
+
+Korrekturversion. Sie behebt ausschließlich eine Aussage, die durch ADR-016
+überholt ist, und ändert keine Anforderung:
+
+- §5 bezeichnete den Mechanismus der Nachvollziehbarkeit — Versionierung
+  gegenüber Änderungsprotokoll — als offen. ADR-016 hat ihn am 2026-09-01
+  entschieden; `docs/decisions/OPEN_DECISIONS.md` Abschnitt D führt ihn
+  seither nicht mehr als offen. Die MUSS-Anforderungen aus §5 bleiben
+  unverändert — ADR-016 erfüllt sie und erweitert sie nicht.
+
+### Änderungsvermerk 0.2.1
+
+Korrekturversion. Sie behebt ausschließlich Widersprüche, die durch ADR-010 bis
+ADR-014 entstanden sind, und enthält keine stilistischen Änderungen:
+
+- §4.2 bezeichnete Umfang und Aufbewahrung des Auditlogs als offen; das ist
+  seit ADR-010 falsch.
+- §13 bezeichnete ein Notfallzugriffskonzept als offen; ADR-010 stellt fest,
+  dass ein klinischer Break Glass in V1 nicht erforderlich ist.
+- §14 beschränkte die strukturelle Vorbereitung auf ADR-003; ADR-014 legt eine
+  umfassendere verbindliche Liste fest.
+- §21 führte die zitierten ADRs nicht auf.
+
+### Änderungsvermerk 0.2
+
+- Normative Begriffe eingeführt (§0). Sicherheitskritische Formulierungen wie
+  „langfristig", „perspektivisch", „möglichst" und „soll" wurden durch
+  eindeutige normative Aussagen ersetzt, soweit eine Entscheidung vorliegt.
+- Die angenommenen Architekturentscheidungen ADR-001 bis ADR-009 wurden auf
+  Prinzipienebene konsolidiert. Details, die im jeweiligen ADR vollständig
+  geregelt sind, werden hier nicht wiederholt, sondern verlinkt.
+- Neue Abschnitte: §17 Regulatorische Abgrenzung, §18 Aufbewahrung und
+  Löschung, §19 Abrechnung, §20 Beschäftigtendaten, §21 Governance.
+- Die Nummerierung der Abschnitte §1 bis §16 ist unverändert, damit bestehende
+  Verweise aus den ADRs gültig bleiben.
+- Es wurde keine Anforderung der Baseline entfernt. Offene Punkte sind als
+  offen gekennzeichnet und nicht durch Formulierung geschlossen worden.

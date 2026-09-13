@@ -28,7 +28,9 @@ allein die Dokumentation darüber, ob der Betrieb weitergeführt werden kann.
 Das ist nach §16 kein organisatorisches Nebenthema, sondern ein
 Patientensicherheitsthema.
 
-Dieser ADR schließt die offenen Punkte E1, E2 und E3. Er ergänzt
+Dieser ADR schließt die offenen Punkte E1 und E3; E2 (Ausfallkonzept als
+Praxisprozess) ist im Kern am 2026-09-08 vorläufig entschieden und bleibt bis
+zur Ausarbeitung als Betriebsdokument offen (`OPEN_DECISIONS.md`). Er ergänzt
 [ADR-008](ADR-008-data-retention-and-deletion.md), der bereits regelt, wie mit
 gelöschten Daten in Backups umzugehen ist.
 
@@ -145,5 +147,7 @@ gelöschten Daten in Backups umzugehen ist.
 - Wie wird sichergestellt, dass die Betriebsdokumentation bei
   Infrastrukturänderungen mitgeführt wird?
 - Gilt RPO ≤ 1 Stunde auch für Objektspeicher, oder nur für die Datenbank?
+  *Beantwortet mit ADR-017 Punkt 26: auch für Dateien; der Objektspeicher
+  braucht dafür einen eigenen Sicherungsweg (OPS-003).*
 - Wie verhält sich der RTO-Wert zu einem Ausfall des Identitätsanbieters oder
   eines anderen externen Dienstes, den wir nicht wiederherstellen können?

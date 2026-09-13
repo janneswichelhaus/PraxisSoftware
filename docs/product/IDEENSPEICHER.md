@@ -85,10 +85,28 @@ lesbar.
 | `notiert`            | Von Jannes eingebracht. Festgehalten, nicht bewertet.                         |
 | `vorschlag`          | Von Claude vorgeschlagen. **Noch nicht von Jannes bestätigt.**                |
 | `bestätigt`          | Jannes hat die Richtung bestätigt. Weiterhin **kein Auftrag**.                |
-| `Bedenken`           | Festgehalten, aber mit begründetem Abraten. Zusatz zu `notiert`.              |
-| `entscheidung nötig` | Vor jeder Spezifikation braucht es eine Entscheidung (siehe „Berührt").       |
-| `überführt`          | Als ADR, offene Entscheidung oder Feature-Spec weitergeführt. Verweis dabei.  |
-| `verworfen`          | Bewusst nicht weiterverfolgt. Bleibt mit Begründung stehen.                   |
+| `entscheidung nötig` | Vor jeder Spezifikation braucht es eine Entscheidung (siehe „Berührt"). Steht allein oder als Zusatz zu `notiert`, `vorschlag` oder `bestätigt`. |
+| `zurückgestellt`     | Durch eine Entscheidung (`OPEN_DECISIONS.md`, ADR, Prinzipien) vorerst ausgeschlossen; **Verweis auf die Entscheidung Pflicht**, in Klammern. Kommt nur mit einer neuen Entscheidung zurück. |
+| `überführt`          | Als ADR, offene Entscheidung, Feature-Spec oder gebaute Story weitergeführt. **Ziel nach einem Pfeil** (`überführt → CAL-009`). |
+| `verworfen`          | Bewusst nicht weiterverfolgt. Bleibt mit Begründung stehen; Verweis auf die Entscheidung in Klammern, wenn es eine Kennung gibt. |
+
+**Erlaubte Zusätze**, mit ` · ` an den Status gehängt:
+
+| Zusatz          | Bedeutung                                                                   | Zu                                   |
+| --------------- | --------------------------------------------------------------------------- | ------------------------------------ |
+| `ausgearbeitet` | Von Jannes eingebracht oder bestätigt, von Claude ausgearbeitet.            | `notiert`, `vorschlag`, `bestätigt`  |
+| `Abgrenzung`    | Der Eintrag hält fest, was **nicht** gebaut wird.                           | `notiert`, `vorschlag`, `bestätigt`  |
+| `Einordnung`    | Der Eintrag bewertet etwas Fremdes (Referenz, Begriff), schlägt nichts vor. | `notiert`, `vorschlag`, `bestätigt`  |
+| `Bedenken`      | Festgehalten, aber mit begründetem Abraten.                                 | `notiert`, `vorschlag`               |
+
+**Freitext im Statusfeld ist nicht zulässig** — kein Datum, kein Name, keine
+Begründung, keine Bedingung. Erlaubt sind allein die Werte und Zusätze oben,
+der Pfeil mit Ziel bei `überführt` und die Kennung in Klammern bei
+`zurückgestellt` und `verworfen`. **Erläuterungen stehen in einer Zeile
+`**Stand.**` unter der Tabelle** — was gebaut ist, wer wann entschieden hat,
+was übrig bleibt. Umsetzungsstände im Einzelnen stehen nicht hier, sondern in
+`../development/ARBEITSBEREICHE.md` und `../development/ROADMAP.md`; ein
+Eintrag verweist nur auf die Kennung.
 
 ## Eintragsformat
 
@@ -103,6 +121,9 @@ schnell erfassbar bleibt:
 | Status | notiert |
 | Quelle | Jannes, 2026-09-01 |
 | Berührt | ADR-006, B1 |
+
+**Stand.** Nur wenn nötig: was davon gebaut ist (Kennung), wer wann
+entschieden hat, was übrig bleibt. Ein Satz, kein Umsetzungsbericht.
 
 **Idee.** Ein bis drei Sätze.
 
@@ -120,6 +141,7 @@ einem Verwurf. Neue Einträge hängen hinten an.
 ## Bestätigungen
 
 - **2026-09-01** — Jannes hat alle 58 damals als `vorschlag` geführten Einträge
+  (Zählung 2026-09-01; heute tragen 60 Einträge die Quelle Claude, 2026-09-01)
   auf `bestätigt` gesetzt. Sie sind damit als Zielrichtung bestätigt und
   weiterhin **kein Auftrag**: gebaut wird nur, was in
   `docs/development/ROADMAP.md` an der Reihe ist und im Loop eine eigene
@@ -155,7 +177,7 @@ einem Verwurf. Neue Einträge hängen hinten an.
   Kanvas-Datei lag zunächst **nicht** im Repository: Sie zeigt vier Personen
   mit Anschrift und Indikation, und §3.1 lässt nur synthetische Daten zu.
   **Jannes hat noch am selben Tag bestätigt, dass die Namen erfunden sind** —
-  die Datei liegt seitdem unter `ideen/../kanvas/own-motion-praxis.html`.
+  die Datei liegt seitdem unter `kanvas/own-motion-praxis.html`.
 
 - **2026-09-11, zweite Runde** — Jannes hat zwei Entscheidungen getroffen und
   eine abgegeben. **Monogramm** für das Kleinformat der Marke (Befund 2 in
@@ -175,6 +197,31 @@ einem Verwurf. Neue Einträge hängen hinten an.
   `UI-002` in `../development/ROADMAP.md` — sie korrigieren Gebautes und sind
   keine Idee für später.
 
+- **2026-09-13** — Bereinigung des Ideenspeichers nach den Entscheidungen des
+  Tages. **Statusmodell** erweitert: neuer Status `zurückgestellt`, die
+  Zusätze `ausgearbeitet`, `Abgrenzung`, `Einordnung` und `Bedenken` sind
+  definiert, Freitext im Statusfeld ist nicht mehr zulässig — Erläuterungen
+  stehen in einer Zeile `**Stand.**`; alle 121 Einträge sind auf diese Form
+  gebracht. **Überführt**, weil gebaut: `IDEA-PRX-001` (PAT-005), `-007`
+  (UX-003), `-011` (UX-008), `-014` (UX-011), `-020` (UX-004), `-029` und
+  `-030` (ADR-019, UX-002), `-032` (MAP-003/004/006), `-042` Teil 1
+  (CAL-015c), `IDEA-LZK-006` in Teilen (LOE-001b) und `IDEA-PRX-028` (→
+  `IDEA-KI-007`, §6.3). **Zurückgestellt** nach Entscheidung: `IDEA-ALT-005`
+  (B9 Punkt 6), `IDEA-TRN-003` (B10: kein Ampelmodell), `IDEA-ANG-001` und
+  `-004` (B11); `IDEA-ANG-002` **verworfen** (B11). **E14 erledigt** —
+  Hausbesuch-Szenarien: Tür geöffnet, keine Behandlung → durchgeführt mit
+  Pflichtvermerk, normale Abrechnung; nicht angetroffen nach Protokoll (15
+  Minuten, Klingeln, Anruf) → Ausfallgebühr; Absage unter 24 Stunden →
+  Ausfallgebühr; Umsetzung CAL-018. **E15** — Office hat lesenden Zugriff auf
+  alle klinischen Inhalte wie Therapeut:innen (Umsetzung ROL-EPIC-001); die
+  „akzeptierte Ausnahme" aus §10 entfällt damit (`IDEA-KOM-001`, `-007`).
+  **E-20** — ADR-019 Fassung 2 angenommen. Die beiden UI-Befunde
+  `IDEA-PRX-038` und `-040` sind keine Ideen und stehen jetzt als BEF-001 und
+  BEF-002 in `../development/BEFUNDE.md` — der neuen Sammelstelle für
+  Befunde an der laufenden Anwendung, solange die Ablaufrunden bis Probewoche 1
+  ruhen; hier bleibt je ein Stub. Die Wettbewerbsreferenz führt in der Spalte
+  „Bei uns" den Stand vom 2026-09-13 und keine Reihenfolge mehr.
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
@@ -192,6 +239,7 @@ einem Verwurf. Neue Einträge hängen hinten an.
 | [07-ki-assistenz.md](ideen/07-ki-assistenz.md)                               | KI-Analyse, Assistenzfunktionen, Grenzen nach ADR-005 und ADR-006                           | KI     |
 | [08-querschnitt-plattform.md](ideen/08-querschnitt-plattform.md)             | Themen über alle Bereiche: Zeitstrahl, Sprache, Barrierefreiheit, Export, Testbarkeit       | QSN    |
 | [09-angebote-und-abrechnung.md](ideen/09-angebote-und-abrechnung.md)         | Paketpreise, Vorauszahlung, Rabatte, Anreize, Preisdarstellung im Portal                    | ANG    |
+| [kanvas/own-motion-praxis.html](kanvas/own-motion-praxis.html)               | Design-Kanvas „Own Motion · Praxis" von Jannes (2026-09-11): 1,2 MB gebündelter HTML-Export, nur **Beleg** für `IDEA-PRX-034` bis `-037`; keine Vorgabe, nichts daraus übernehmen | —      |
 
 ## Pflege
 
@@ -201,7 +249,9 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-09-12 (`IDEA-PRX-042` notiert). Vorherige
+Zuletzt aktualisiert: 2026-09-13 (Bereinigung: Statusmodell, Stände nach
+E14/E15/E-20, `BEFUNDE.md`, Wettbewerbsreferenz). Vorherige Aktualisierung:
+2026-09-12 (`IDEA-PRX-042` notiert). Vorherige
 Aktualisierung: 2026-09-08 (`IDEA-PRX-002` und `IDEA-KI-007` auf
 `überführt`; Google-Maps-Vermerk vom 2026-09-06 als überholt gekennzeichnet).
 Vorherige Aktualisierung: 2026-09-06 (Wettbewerbsreferenz und Bereichsdatei

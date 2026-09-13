@@ -116,7 +116,14 @@ Dieser ADR schließt den offenen Punkt E5 und konkretisiert §3.6.
 - Wie werden interne IDs so gewählt, dass sie selbst keine Rückschlüsse
   erlauben und dennoch stabil korrelierbar bleiben?
 - Wer darf Betriebs- und Sicherheitslogs lesen, und ist dieser Zugriff
-  seinerseits auditpflichtig (ADR-010)?
+  seinerseits auditpflichtig (ADR-010)? *Für das Auditlog beantwortet mit
+  ADR-010 Fassung 2 (Punkt 13); für Betriebs- und Sicherheitslogs offen bis
+  OPS-004.*
+- **Vermerk 2026-09-13:** „Audit Logs" in Punkt 4 meint alle Auditereignisse
+  aus ADR-010 Punkt 2, nicht nur Patientenakten-Zugriffe. Die Frist ist mit
+  ANN-029 als eigene Datenklasse `auditlog` (drei Jahre, unabhängig von der
+  Akte) verankert; ADR-008 Punkt „Patientenakten-Auditlogs 3 Jahre" ist
+  damit die engere Formulierung desselben Werts.
 - Wie verhält sich die Redaction zu Logs, die der Infrastrukturanbieter
   selbst erzeugt und die wir nicht filtern können?
 - Wie werden Logs behandelt, die auf dem Endgerät im Offline-Betrieb entstehen

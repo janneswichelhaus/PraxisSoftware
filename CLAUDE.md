@@ -7,7 +7,8 @@ Gesundheitsdaten. Früher Entwicklungsstand, kein Produktivbetrieb.
 
 Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
 
-1. `PROJECT_PRINCIPLES.md` (aktuell v0.7) — übergeordnete Leitplanken
+1. `PROJECT_PRINCIPLES.md` (Version steht in dessen Dokumentinformation) —
+   übergeordnete Leitplanken
 2. geltende ADRs in `docs/adr/` — konkretisieren die Leitplanken
 3. die konkrete Feature-Spezifikation — verbindlich für ihre Aufgabe
 4. `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen;
@@ -29,10 +30,13 @@ Dokumentenhierarchie — bei Konflikten gilt der höhere Rang:
   gleichwertig sind **und** die Wahl später teuer zurückzunehmen wäre.
 - **Nicht bei jeder Aufgabe alle ADRs laden.** Der Index unten sagt, welcher
   ADR wofür zuständig ist; nur die relevanten vollständig lesen.
-- `docs/decisions/OPEN_DECISIONS.md` listet, was noch offen ist. **Ein
-  offener Punkt blockiert keine Aufgabe**: recherchieren, Annahme treffen,
-  registrieren, weiterarbeiten. Der Punkt bleibt offen, bis Jannes oder die
-  Datenschutzprüfung ihn bestätigt.
+- `docs/decisions/OPEN_DECISIONS.md` listet, was noch offen ist. **Es hat
+  keinen Rang**: Es entscheidet nichts; was dort offen ist, gilt in keinem
+  Dokument als entschieden. **Ein offener Punkt blockiert keine Aufgabe**:
+  recherchieren, Annahme treffen, registrieren, weiterarbeiten. Der Punkt
+  bleibt offen, bis Jannes oder die Datenschutzprüfung ihn bestätigt.
+  Kennungen: `E12`, `E13` (ohne Bindestrich) sind offene Punkte; `E-1` bis
+  `E-21` (mit Bindestrich) die Rückfragen des Roadmap-Reviews vom 2026-09-06.
 - `docs/PRODUCT_VISION.md` beschreibt das langfristige Zielbild und steht an
   vorletzter Stelle. **Es ist nicht normativ**: kein Implementierungsauftrag,
   keine Feature-Spezifikation, keine Freigabe. Es begründet **niemals** eine
@@ -199,10 +203,33 @@ Verifikation:
 
 ## Arbeitsweise
 
+**Jeder Auftrag wird zuerst klassifiziert** (Knoten K1 in
+`docs/development/GRAPH-ENGINEERING-WORKFLOW.md`, in Kraft seit 2026-09-13):
+Berührt der Diff einen Auslöser aus ADR-013 Fassung 2, Punkt 9 — die Liste
+steht nur dort; kurz: Migration, Policy, RPC, Auth, Audit, Retention,
+Rechnung, Außenverbindung, personenbezogene Daten —, ist er **Pfad A** und
+läuft über den Feature-Loop. Berührt er nur die Oberfläche und überlebt kein
+Wert die Sitzung, ist er **Pfad S** und läuft über die Sandbox. Fehlt erst
+eine Entscheidung aus der Hard-Stop-Liste (§15.1), ist er **Pfad D**, eine
+Docs-Session. Die Klassifikation ist eine Liste, keine Ermessensfrage; das
+Ergebnis wird in einem Satz genannt.
+
 Für Featurearbeit gibt es den Skill **`/feature-loop <Aufgabe>`**
-(`.claude/skills/feature-loop/SKILL.md`): Spec → Inspect → Plan → Build →
+(`.claude/skills/feature-loop/SKILL.md`): K1 → Spec → Inspect → Plan → Build →
 Verify → Review → Fix → Final Verify → Report → Stopp. Er startet nur auf
-ausdrücklichen Aufruf.
+ausdrücklichen Aufruf. Schritt F arbeitet die Review-Checkliste aus ADR-013
+Fassung 2, Punkt 9 ab; wo deren Nr. 8 es verlangt, folgt der Zweitreview in
+frischem Kontext vor dem Merge.
+
+Für Oberflächen-Prototypen gibt es den Skill **`/sandbox <Thema>`**
+(`.claude/skills/sandbox/SKILL.md`): Skizze → Bauen in
+`src/features/preview/` → Sandbox-Gate → Schau → auf
+`/sandbox <Thema> übernehmen` ein Härtungs-Ticket, auf
+`/sandbox <Thema> verwerfen` Löschen. Ein Prototyp berührt technisch
+erzwungen keinen Server, kein Netz und keine Persistenz
+(`trennung.test.ts`), lebt höchstens zwei Code-Loops und begründet keinen
+Scope. Er ersetzt die frühere Regel „keine neue Vorschau"; die bestehenden
+Vorschaubereiche bleiben eingefroren, bis ihr Loop sie ersetzt.
 
 `docs/development/ROADMAP.md` sagt, **was als Nächstes** dran ist, welche
 Entscheidung ein Etappenschritt voraussetzt und welche Regeln den
@@ -210,12 +237,17 @@ Credit-Verbrauch begrenzen. Zu Beginn eines Loops lesen und am Ende den
 Eintrag abhaken. Die Roadmap legt die **Reihenfolge** fest, nie den Scope —
 und startet nichts von allein.
 
-**Ein Loop ist ein Epic**, nicht eine Story: mehrere zusammengehörige
-vertikale Schnitte, Story für Story gebaut und je Story committet, ohne
-Zwischenstopp und ohne Zwischenbericht. Zum Epic gehört alles, was seine
+**Ein Loop ist in der Regel ein Epic**, nicht eine Story: mehrere
+zusammengehörige vertikale Schnitte, Story für Story gebaut und je Story
+committet, ohne Zwischenstopp und ohne Zwischenbericht. Ein
+Einzel-Story-Loop ist zulässig für Befunde, Korrekturen und Folgeaufträge
+(`FIX-`, `CAL-01x`); sein Abschlussbericht ist der Bericht, der die
+Update-Schritte für Jannes enthält (unten). Zum Epic gehört alles, was seine
 Akzeptanzkriterien brauchen — Seed, Testkonten, Audit-Ereignisse,
 Abnahmeschritte in `docs/abnahme/`, Registereinträge. Was ein anderes
-Epic wäre, wird am Ende vorgeschlagen, nicht gebaut.
+Epic wäre, wird am Ende vorgeschlagen, nicht gebaut. Ein `IDEA-`-Verweis in
+einer Roadmap-Zeile nennt die Herkunft der Idee und importiert nichts; der
+Scope entsteht im SPEC-Schritt.
 
 **Vor jedem Loop den Gesamtstand prüfen, nicht nur `main`.** Erst
 `git fetch origin --prune` und `git branch -r`, dazu die offenen Pull Requests.
@@ -232,14 +264,14 @@ diese Liste lesen** — sonst entsteht leicht eine zweite Implementierung neben
 einer bereits vorhandenen.
 
 Für die Optimierung eines Bereichs gibt es **Ablaufrunden** — Docs-Sessions
-ohne Code nach `docs/development/OPTIMIERUNG.md`. Eine Runde misst Abläufe,
-benennt Bruchstellen und schreibt **Akzeptanzhinweise in bestehende
-Roadmap-Zeilen** oder höchstens ein neues Epic. Sie führt keine zweite
-Reihenfolge und begründet keinen Scope; verbindlich wird ein Hinweis erst im
-SPEC-Schritt des Loops. Ablaufkarten unter `docs/development/ablaeufe/`
-entstehen nur in der Runde ihres Bereichs; ein Loop liest sie nicht. Gemessen
-wird nur durch Jannes selbst, nie an Mitarbeitenden und nie per Telemetrie
-(§20).
+ohne Code nach `docs/development/OPTIMIERUNG.md`; sie sind **bis Probewoche 1
+eingefroren** (Jannes, 2026-09-13). Bis dahin sammelt
+`docs/development/BEFUNDE.md` Befunde aus Abnahmen, Screenrecordings und
+Reviews; ein Befund wird die erste Story des nächsten Loops derselben Spur,
+nie ein eigener Scope. Eine Runde führt keine zweite Reihenfolge und
+begründet keinen Scope; verbindlich wird ein Hinweis erst im SPEC-Schritt des
+Loops. Gemessen wird nur durch Jannes selbst, nie an Mitarbeitenden und nie
+per Telemetrie (§20).
 
 Kleine Commits mit aussagekräftiger Nachricht, einer je Story. Nach
 abgeschlossenem Epic stoppen und berichten — mit allen neuen Annahmen und
@@ -251,9 +283,11 @@ Auftrag gehört, oder entsteht eine im Loop: **in `docs/product/` eintragen,
 nicht bauen.** Das gilt auch für gute Ideen — besonders für die.
 
 Jannes (Projektinhaber) schaut sich Ergebnisse lokal auf seinem eigenen
-Rechner an, nicht nur über Tests. **Nach jeder abgeschlossenen Änderung kurz
-die Schritte nennen, mit denen er seinen lokalen Stand aktualisiert**,
+Rechner an, nicht nur über Tests. **Im Abschlussbericht jedes Loops die
+Schritte nennen, mit denen er seinen lokalen Stand aktualisiert**,
 mindestens `git pull origin <branch>`; zusätzlich `pnpm install` bei
 geänderten Abhängigkeiten und `pnpm dlx supabase db reset`, wenn sich
-Migrationen oder `supabase/seed.sql` geändert haben. Das gilt auch bei
-kleinen Zwischen-Fixes, nicht nur am Ende eines ganzen Epics.
+Migrationen oder `supabase/seed.sql` geändert haben. Bei einem
+Einzel-Story-Loop ist dessen Bericht der Abschlussbericht; innerhalb eines
+Epics gibt es keinen Zwischenbericht. Ein Pull Request wird gemergt, sobald
+die CI grün ist (Auto-Merge erlaubt); die Abnahme folgt binnen sieben Tagen.

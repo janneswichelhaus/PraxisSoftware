@@ -97,7 +97,8 @@ offen.
   ADR-005 und der Abgrenzung aus ADR-006.
 - Der Zustandsautomat der Rechnung ist normativ. Das schließt die bisher
   fehlende Modellierung der Rechnungsseite; der Terminstatus bleibt davon
-  unberührt und weiterhin offen.
+  unberührt und weiterhin offen. *(Seit ADR-018 entschieden; die Kopplung an
+  die Rechnung steht dort in Punkt 2 und 3.)*
 - Nummernvergabe erst bei Ausstellung heißt, dass Entwürfe keine Nummer tragen
   und beliebig verworfen werden können, ohne Lücken zu erzeugen. Die Eindeutigkeit
   und Nichtwiederverwendung ist unter gleichzeitigen Zugriffen sicherzustellen.
@@ -131,12 +132,13 @@ offen.
 - Das Format und der Zeitpunkt einer späteren strukturierten E-Rechnung.
 - Mahnwesen, Ausfallhonorar und Zahlungserinnerungen.
 - Zahlungsanbieter, Bankanbindung, Kontoauszugsabgleich.
-- Der Terminstatus-Automat (weiterhin offener Punkt in Abschnitt D).
+- Der Terminstatus-Automat (entschieden mit ADR-018, 2026-09-11).
 - Die Einordnung von Leistungsziffern als organisatorische oder klinische
-  Daten (offener Punkt C1) und damit der genaue Umfang des
-  Behandlungsnachweises.
+  Daten (C1 — entschieden 2026-09-05: organisatorisch; der Umfang des
+  Behandlungsnachweises ist mit E15 vom 2026-09-13 nur noch eine
+  Rechnungssicht, ADR-004 Fassung 2).
 - Vertretungs- und Vollmachtsregelungen für den Zugriff auf Daten
-  (offener Punkt B5).
+  (B5 — Rahmen vorläufig entschieden 2026-09-08, Verfahren offen).
 - Die Verfahrensdokumentation nach GoBD als Dokument.
 
 ## Offene Folgefragen

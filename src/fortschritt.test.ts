@@ -86,11 +86,12 @@ describe('Fortschrittsmodell', () => {
     }
   });
 
-  it('zählt einen gebauten, aber nicht abgenommenen Loop unter einem fertigen', () => {
+  it('zählt einen fertigen, aber nicht abgenommenen Loop unter einem abgenommenen', () => {
     // Die Definition of Done trennt "fertig" (Skill-Schritt I) von "abgenommen"
-    // (Jannes hat docs/abnahme/ durchlaufen). Faellt diese Ordnung, zaehlt die
+    // (Jannes hat docs/abnahme/ durchlaufen) - dieselben Woerter wie in der
+    // Fortschrittstabelle der Roadmap. Faellt diese Ordnung, zaehlt die
     // Abnahme nichts mehr und die Zahl schmeichelt.
-    expect(anteilVon('gebaut')).toBeLessThan(anteilVon('fertig'));
-    expect(anteilVon('vorlaeufig')).toBeLessThan(anteilVon('fertig'));
+    expect(anteilVon('fertig')).toBeLessThan(anteilVon('abgenommen'));
+    expect(anteilVon('vorlaeufig')).toBeLessThan(anteilVon('abgenommen'));
   });
 });

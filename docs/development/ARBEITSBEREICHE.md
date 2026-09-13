@@ -1,6 +1,6 @@
 # Arbeitsbereiche: was funktioniert, was Vorschau ist, was offen ist
 
-Stand: 12.09.2026
+Stand: 13.09.2026
 
 Diese Liste ist die Antwort auf eine einzige Frage: **Worauf kann ich mich in
 der laufenden Anwendung verlassen?** Sie ergänzt
@@ -33,6 +33,16 @@ Vier Zustände:
 Unverändert an ihren echten Anbindungen. Der Umbau hat Einordnung und
 Beschriftung geändert, nicht das Verhalten.
 
+> **Rollenschnitt in Bewegung (E15, 2026-09-13).** Jannes hat entschieden,
+> dass `office` alle klinischen Inhalte lesen darf, die Therapeut:innen sehen
+> — Diagnose, Verordnung samt Scan, Dokumentation, Nachrichten
+> (`PROJECT_PRINCIPLES.md` 0.10 §4.3, ADR-004 Fassung 2). **Gebaut ist das
+> noch nicht**: Die Zeilen unten beschreiben den heutigen Stand, in dem
+> `office` klinische Inhalte nicht bekommt (Behandlungsnachweis statt
+> Dokumentation, Verordnung ohne Diagnose, Verordnungsscan unsichtbar).
+> Umgestellt wird in **ROL-EPIC-001**, dem nächsten Loop; danach werden die
+> betroffenen Zeilen hier nachgezogen.
+
 | Bereich                                 | Route                                                   | Anmerkung                                        |
 | --------------------------------------- | ------------------------------------------------------- | ------------------------------------------------ |
 | Patientenliste, Suche                   | `/patienten`                                            | RLS-gestützt, Audit auf Aktenzugriff             |
@@ -62,7 +72,7 @@ Beschriftung geändert, nicht das Verhalten.
 | Verordnungsscan an der Verordnung       | Akte → Verordnungen → „Scan des Rezepts“                | Derselbe Baustein, auf die Verordnung gefiltert und auf die Art `verordnungsscan` festgelegt (VER-004). Der Scan ist **klinisch**, obwohl `office` die Verordnungsdaten organisatorisch sieht (ANN-011): Ein Scan zeigt das ganze Blatt samt Diagnose und lässt sich nicht projizieren — für `office` fehlt der Abschnitt ganz. Er fällt mit seiner Verordnung; das Objekt bekommt dabei einen Löschauftrag |
 | Mitarbeiterverwaltung                   | `/praxis/team…`                                         | Liste für alle Praxisrollen; Stammdaten schreiben `owner` und `office`, Beschäftigungsstatus nur `owner` (E10, STAFF-002a). Privatdaten werden `office` weder geliefert noch von ihm geschrieben (ANN-024) |
 | Zugänge und Rollen                      | `/praxis/team/:id`, Abschnitt „Zugang"                  | nur `owner`: einladen, Rollen ändern, sperren, Kennwort zurücksetzen. Das Konto selbst entsteht beim Anmeldedienst; ohne offene Einladung bleibt es zugriffslos (STAFF-002b/c, STAFF-003, ANN-025) |
-| Mein Konto                              | `/mein-konto`                                           | jede angemeldete Rolle: Kennwort, zweiter Faktor (TOTP), alle Sitzungen beenden. MFA für `owner` ist empfohlen, nicht erzwungen (STAFF-004, ANN-028) |
+| Mein Konto                              | `/mein-konto`                                           | jede angemeldete Rolle: Kennwort, zweiter Faktor (TOTP) einrichtbar, alle Sitzungen beenden. Der zweite Faktor wird beim Anmelden **derzeit nicht abgefragt** — die Seite sagt das (UI-002d); die Integration ist bis nach dem Online-Schalten vertagt (`FIX-EPIC-002`, ANN-028 mit Nachtrag) |
 | Arbeitszeiten und Raster                | `/praxis/planung`                                       | im Menü jetzt unter „Organisatorisches"          |
 | Auditansicht                            | `/praxis/sicherheit/audit`                              | nur `owner`; kennt seit DOK-004 einen Systemakteur |
 | Aufbewahrung und Löschung                | `/praxis/sicherheit/aufbewahrung`                       | nur `owner`, reine Lesesicht: Aufbewahrungsplan je Datenklasse, laufende Löschsperren, Löschjournal. Fristen ändern sich über eine Migration, nicht über die Oberfläche (LOE-002b, ADR-008). Eine Pflegeoberfläche für Löschsperren gibt es bewusst nicht (Komfort, ANN-033) |
@@ -98,6 +108,22 @@ Sitzung simuliert wurde, steht unter `/vorschau/protokoll`.
 | Touren                   | `/touren`                     | eigene Anforderung: Besuchsfolge mit unterscheidbarer Behandlungs- und Wegzeit                                                                                |
 | Abrechnung               | `/abrechnung` und Unterseiten | eigene Anforderung: Rechnungen, Leistungen, Katalog, Zahlungen                                                                                                |
 
+### Sandbox-Prototypen (Pfad S)
+
+Neue Vorschauen entstehen seit dem 2026-09-13 als **Sandbox-Prototyp** nach
+den Regeln in Abschnitt 6 (Pfad S in
+[`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md)). Jeder
+Prototyp steht hier mit Anlagedatum und dem Loop, der ihn ersetzen soll; das
+Wochenupdate meldet abgelaufene Einträge (Roadmap, Schritt 6).
+
+| Thema | Route | Angelegt | Ersetzt durch | Härtungs-Ticket |
+| ----- | ----- | -------- | ------------- | --------------- |
+| —     | —     | —        | —             | derzeit keiner  |
+
+Die Bereiche in der Tabelle oben sind **Bestand** aus dem Umbau vom
+2026-09-05 und keine Sandbox-Prototypen: Sie haben keine Ablauffrist, werden
+aber auch nicht erweitert, bis ihr Loop sie ersetzt.
+
 ### Entfallen: Teamverzeichnis und Personalakte
 
 Beide waren in diesem Umbau als Vorschau angelegt. Beim Zusammenführen mit
@@ -129,7 +155,8 @@ benennen die offene Frage, statt sie zu verstecken.
 | Offener Punkt                                             | Wo sichtbar             | Quelle                           |
 | --------------------------------------------------------- | ----------------------- | -------------------------------- |
 | Endgültige Fakturierung erst nach Finalisierung — die Finalisierung selbst ist entschieden und gebaut (ADR-016, DOK-002/DOK-004); offen ist die Kopplung an die Leistungserfassung (ABR-002) | Abrechnung → Leistungen | `PROJECT_PRINCIPLES.md` §19      |
-| Kartendienst: Zielarchitektur und Kandidat entschieden (ADR-019 Fassung 2, 2026-09-08: MapLibre, serverseitiger Adapter, PTV Developer zur Erprobung); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7, ADR-019, `MAP-LOOPS.md` |
+| Kartendienst: Zielarchitektur und Kandidat entschieden (ADR-019 Fassung 2, angenommen 2026-09-13: MapLibre, serverseitiger Adapter, PTV Developer zur Erprobung); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7, ADR-019, `MAP-LOOPS.md` |
+| Hausbesuch-Szenarien: „Tür geöffnet, keine Behandlung" gilt als durchgeführt, Nichtantreffen nach Protokoll löst eine Ausfallgebühr aus — entschieden 2026-09-13 (E14), gebaut wird es mit CAL-018; bis dahin verhält sich „Nicht angetroffen" wie oben beschrieben | Termin (`/termine/:id`) | §8 in 0.10, ADR-018 Fassung 3 |
 | Aggregierte Auswertungen über Beschäftigte                | Zeitkonto               | §20, `OPEN_DECISIONS.md` B6      |
 | Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Kommunikation           | §10, §18                         |
 | Aufbewahrung und Löschung von Beschäftigtendaten          | nicht mehr sichtbar — die Vorschau-Personalakte ist entfallen; der Punkt bleibt offen (`IDEA-QSN-010`) | ADR-008                          |
@@ -181,12 +208,22 @@ MAP-006 (Etappe T, `MAP-LOOPS.md`, seit MAP-001 am 2026-09-08): Karte der
 Tagesroute, Fahrradroute, Fahrzeiten, Navigations-Handoff, Tourenliste.
 MAP-002 bis MAP-005 sind Prototypen mit synthetischen Daten und laufen als
 **gekennzeichnete Vorschau** unter `/touren/karte`; MAP-006 bindet die echten
-Termine an und ersetzt `/touren`. Bis dahin gelten drei Regeln: keine neue
-Vorschau, keine Erweiterung einer Vorschau, und jede Vorschau wird in ihrem
-Loop ersetzt, nicht daneben gebaut. Die Kartenprototypen sind die eine
-bewusste Ausnahme von der ersten Regel — sie sind in der Roadmap eingeplant
-und tragen ihre Kennzeichnung.
+Termine an und ersetzt `/touren`. Sie berühren einen externen Datenfluss
+(ADR-019) und sind deshalb Pfad A, keine Sandbox-Prototypen.
 
-Ablaufkarten unter `docs/development/ablaeufe/` **messen** den Stand eines
-Bereichs nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md); die Reihenfolge bleibt
-allein Sache der Roadmap.
+Für Vorschauen gelten seit dem 2026-09-13 drei Regeln
+([`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md), Pfad S):
+**Eine neue Vorschau entsteht nur als Sandbox-Prototyp** — über `/sandbox`,
+unter `src/features/preview/<thema>/` und damit von `trennung.test.ts`
+erfasst, technisch ohne Server, Netz und Persistenz, mit höchstens zwei
+Code-Loops Lebensdauer und einem Eintrag in Abschnitt 2; die eine in der
+Roadmap eingeplante Ausnahme sind die Kartenprototypen MAP-002 bis MAP-005,
+die als Pfad A mit Vorschau-Kennzeichnung laufen (ADR-019). **Ein
+bestehender Vorschaubereich wird nicht erweitert.** **Jede Vorschau wird in
+ihrem Loop ersetzt, nicht daneben gebaut.** Die frühere Regel „keine neue
+Vorschau" ist damit durch eine zeitlich begrenzte, technisch abgesicherte
+Erlaubnis abgelöst.
+
+Die Ablaufrunden nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md) sind bis Probewoche 1
+eingefroren (2026-09-13); Befunde an der laufenden Anwendung sammelt
+[`BEFUNDE.md`](BEFUNDE.md). Die Reihenfolge bleibt allein Sache der Roadmap.

@@ -1,22 +1,12 @@
 # Roadmap
 
-Version 5.0 · Stand 2026-09-13 · **in Kraft**
+Version 5.2 · Stand 2026-09-13 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
-sonst nichts.
-
-Version 2.1 setzt die Entscheidungen E-1 bis E-14 aus dem Roadmap-Review vom
-2026-09-06 um; Jannes hat sie am 2026-09-06 beantwortet (Wortlaut in
-`docs/decisions/OPEN_DECISIONS.md`, Historie). Review und Entwurf sind nach
-ihrer eigenen Regel gelöscht und liegen in der Git-Historie (Commit
-`7ab6f71`). Aus derselben Antwort stammen drei neue Vorgaben — **die Praxis
-eröffnet am 01.07.2027 ohne Vorgängersystem**, **Navigation über Google Maps
-ist entschieden**, **eine Plattform für Patient:innen und
-Personal-Training-Kund:innen gehört zum Zielbild**. Die fünf Rückfragen dazu
-(E-15 bis E-19) hat Jannes am selben Tag beantwortet; die Antworten stehen im
-Abschnitt „Antworten E-15 bis E-19" und in der Historie von
-`OPEN_DECISIONS.md`. **Die wichtigste: Die Reihenfolge ist verbindlich, der
-Kalender nachrangig** (E-15) — siehe „Sessions starten".
+sonst nichts. Die Entscheidungen, aus denen dieser Rahmen entstanden ist
+(Roadmap-Review vom 2026-09-06, E-1 bis E-21), stehen in der Historie von
+`docs/decisions/OPEN_DECISIONS.md` und im Abschnitt „Antworten E-15 bis
+E-19" unten.
 
 ## Was dieses Dokument ist und was nicht
 
@@ -29,8 +19,19 @@ Kalender nachrangig** (E-15) — siehe „Sessions starten".
   eine Voraussetzung aus Spur B, gilt `PROJECT_PRINCIPLES.md` §15.1: reversibel
   überbrückbar → als Annahme registrieren und bauen; Hard-Stop-Liste → melden
   und nur den abhängigen Teil nicht beginnen.
-- Die fachlichen Inhalte dahinter stehen im Ideenspeicher (`docs/product/`,
-  nicht normativ). Verweise wie `IDEA-PRX-004` zeigen dorthin.
+- Verweise wie `IDEA-PRX-004` zeigen die **Herkunft** einer Idee im
+  Ideenspeicher (`docs/product/`, Rang 6, nicht normativ). Sie importieren
+  nichts: Der Scope einer Story entsteht im SPEC-Schritt des Loops, und kein
+  Eintrag von dort begründet eine Implementierung.
+- Entscheidungen trifft dieses Dokument nicht. Was hier als „entschieden"
+  steht, hat seine Fundstelle in `PROJECT_PRINCIPLES.md`, einem ADR oder
+  einem datierten Vermerk in `docs/decisions/OPEN_DECISIONS.md` (ohne Rang).
+  Kennungen: `E12`, `E13` (ohne Bindestrich) sind offene Punkte dort; `E-1`
+  bis `E-21` (mit Bindestrich) die Rückfragen des Roadmap-Reviews vom
+  2026-09-06.
+- Befunde aus Abnahmen und Reviews an der laufenden Anwendung sammelt
+  [`BEFUNDE.md`](BEFUNDE.md); die Ablaufrunden nach `OPTIMIERUNG.md` sind bis
+  Probewoche 1 eingefroren (Jannes, 2026-09-13).
 - Was in der Anwendung echt angebunden ist und was gekennzeichnete Vorschau,
   steht in [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md).
 - Wie ein Arbeitsbereich systematisch besser wird, steht in
@@ -45,232 +46,45 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 ## Nächster Loop
 
 ```
-/feature-loop ABR-EPIC-001 Leistungen entstehen aus durchgeführten Terminen
+/feature-loop ROL-EPIC-001 Office liest klinische Inhalte
 ```
 
-- **DAT-EPIC-001 ist am 2026-09-13 fertig** (drei Stories): Dateien in der
-  Akte mit zweiphasigem Upload und serverseitiger Bestätigung, Dokumentart als
-  Rollenschnitt (**der Verordnungsscan ist klinisch**, für `office` unsichtbar),
-  signierte Verweise mit 60 Sekunden und `cacheControl: '0'`, vier
-  Auditereignisse (DAT-001) · Löschen in zwei Speichern mit **verdienter**
-  Quittung — der Server quittiert nur, wenn das Objekt wirklich weg ist —, dazu
-  die protokollierte Korrektur der Dokumentart (DAT-002) · Abgleich beider
-  Speicher mit fehlenden und verwaisten Objekten (DAT-003). Der Test-Shim
-  bildet jetzt `storage.buckets` und `storage.objects` nach; damit ist der
-  Dateizugriff (§12) im wichtigsten Gate der Cloudumgebung geprüft.
-  **ANN-052 und ANN-053 sind neu** — ANN-052 ist `Datenschutz` und gehört in
-  die Anfrage B2. **Seine Abnahme steht aus**
-  (`docs/abnahme/etappe-g-betriebsreife.md`, Abschnitte DAT-001 bis DAT-003).
-- **Was DAT-EPIC-001 nicht löst:** Die **produktive** Ablage hängt zusätzlich
-  an OPS-001 (Providerprüfung, fünf zusätzliche Prüfpunkte zum Objektspeicher
-  stehen im ADR) und an einem dokumentierten Sicherungsweg für den Bucket —
-  der Objektspeicher läuft im Datenbank-Backup **nicht** mit (OPS-003, G7).
-  Beides bleibt Vorbedingung für die erste echte Datei.
-- **Voraussetzung von ABR-EPIC-001 aus Spur B: B4 liegt noch nicht vor.** Die
-  steuerlichen Festlegungen (Umsatzsteuer, Kleinunternehmerregelung,
-  Nummernkreis) stehen seit dem 2026-09-08 als Fragen bereit; die Anfrage ist
-  Jannes-seitig offen. Nach `PROJECT_PRINCIPLES.md` §15.1 blockiert das den
-  Loop nicht: Was reversibel überbrückbar ist, wird als Annahme registriert.
-  **Jannes-seitig gebraucht werden vorher** der Leistungskatalog mit Preisen
-  und die Praxisstammdaten für Rechnungen (Anschrift, Bank, Steuernummer) —
-  ohne sie hat ABR-000 und ABR-001 keine Daten.
-- **`UI-002 Lesbarkeit` ist am 2026-09-12 fertig** (vier Stories) — ein Epic
-  aus Jannes' Rückmeldung an der laufenden Anwendung, **nicht** aus dieser
-  Reihenfolge. Der Bereich **„Übersicht" der Akte ist entfallen**; er war ein
-  Auszug aus den vier anderen Bereichen, und `/patienten/:id` führt jetzt in
-  den ersten Bereich, den die Rolle sehen darf. Zugangshinweis und
-  Besonderheit stehen im Kopf, damit sie nicht hinter einen Bereichswechsel
-  rutschen (UI-002a) · **Papier ist weiß**: Karte und Seitengrund lagen bei
-  1,09:1 und waren als Ebenen nicht unterscheidbar; ein Token, 103 Stellen
-  (UI-002b) · **Termine, Listen und Auskünfte stehen im weißen Rahmen**, die
-  Bedienung — Filterleisten, Legenden, Rückfragen — bleibt vertieft; die Regel
-  dazu trägt `Section rahmen` (UI-002c) · **„Mein Konto" sagt, dass die
-  Anmeldung den zweiten Faktor noch nicht abfragt** (UI-002d). Keine
-  Migration, keine neuen Rechte. **Seine Abnahme steht aus**
-  (`docs/abnahme/etappe-1-kernprozess.md`, Abschnitt UI-002).
-- **Zweiter Faktor: vertagt bis nach dem Online-Schalten (Jannes,
-  2026-09-12).** Damit rückt `FIX-EPIC-002` hinter die Inbetriebnahme, und
-  ANN-028 hat seine Wiedervorlage von dort statt von der Domain (Nachtrag im
-  Register). Die **Zusage ohne Deckung ist mit UI-002d geschlossen**: „Mein
-  Konto" sagt vor der Einrichtung, dass die Anmeldung den Faktor derzeit nicht
-  abfragt. Der Nachtrag benennt außerdem den Unterschied, den ANN-028 bis
-  dahin verwischte — „nicht erzwungen" hieß in Wirklichkeit „gar nicht
-  geprüft".
-- **Terminieren mit ausgewählter Person ist gebaut (`CAL-015c`, 2026-09-12).**
-  Der erste Teil von `IDEA-PRX-042` — Person beziehungsweise Verordnung
-  auswählen, durch den Kalender scrollen, freie Lücke antippen — läuft; der
-  Kontext reist im Kalenderstand mit (ANN-050). Die Einfärbung „hier passt der Termin mit
-  Fahrweg hin" (Tiefgarage → Termin → nächster Termin → Tiefgarage) braucht
-  Fahrzeiten und damit **MAP-006**, das am Gate aus ADR-019 Punkt 9 hängt.
-  Vorher gebaut wäre sie eine geschätzte Zahl neben einer gemessenen — genau
-  das, was E12 Punkt 3 und 4 am 2026-09-12 ausgeschlossen haben.
-- **FIX-EPIC-001 ist am 2026-09-12 fertig** (fünf Stories) — ein Befund-Loop
-  aus einer Prüfung, nicht aus dieser Reihenfolge (R6). Er hat drei Zusagen
-  eingelöst, die die Oberfläche gab, ohne sie zu halten: Auth-Links hatten
-  keinen Empfangspfad, der Abfragespeicher wurde nur an einem von vier Wegen
-  geräumt, und „Alle Sitzungen beenden" versprach mehr, als der Anmeldedienst
-  leistet. **Seine Abnahme steht aus** und braucht Docker (Mailfänger).
-- **Von den zwei Befunden daraus ist einer erledigt:** Ungespeicherte
-  Dokumentation ist seit **FIX-EPIC-003** (2026-09-12) bei interner Navigation
-  geschützt — die Entscheidung zum Router ist gefallen (Data Router mit einer
-  Platzhalterroute, ANN-046), und die Rückfrage bietet Speichern, Verwerfen und
-  Bleiben. Offen bleibt: Der zweite Faktor wird beim Anmelden nie abgefragt
-  (`FIX-EPIC-002`, sicherheitsrelevant, vertagt bis nach dem Online-Schalten).
-- **CAL-EPIC-003b ist am 2026-09-12 fertig** (drei Stories): 60-Minuten-Terminfenster
-  nach §8.1, serverseitig durchgesetzt in beiden Schreibpfaden, mit
-  abgeleitetem Ende im Formular und Bestandsschutz (CAL-010a) · Terminserie aus
-  einer Verordnung in **einem** Vorgang mit Anzahl aus dem Kontingent, drei
-  Rhythmen, Konfliktprüfung je Zeile und Einzelabweichung (CAL-007) ·
-  Terminzettel als Druckansicht (CAL-011, `IDEA-PRX-006`, damit überführt).
-  **ANN-037 bis ANN-039 hat Jannes am 2026-09-12 wie empfohlen bestätigt** —
-  Prüfung der Terminfensterlänge statt des Zeitpunkts, „verplant ist nicht
-  genutzt" samt Rhythmen und Obergrenze, Inhalt und Ausgabeweg des
-  Terminzettels. ANN-037 und ANN-038 sind `Praxisprozess` und damit erledigt;
-  **ANN-039 (`Datenschutz`) bleibt im Prüfpaket** und gehört in die Anfrage B2.
-- **Als Folgeauftrag nachgereicht: CAL-012 Mitteilungsvermerk am Termin**
-  (2026-09-12, Vorbild iPrax). Hinter jedem Termin der Akte steht, ob und auf
-  welchem Weg er mitgeteilt wurde; der Vermerk verfällt mit jeder
-  Terminänderung. **ANN-040 ist neu und `Datenschutz`**: Er gehört in die
-  Anfrage B2, zusammen mit der Frage, ob der Weg „per E-Mail mitgeteilt" in
-  der Auswahl bleiben soll.
-- **Als eigener Auftrag nachgereicht: die Patientenakte als Arbeitsplatz**
-  (AKTE-000 bis AKTE-005, 2026-09-12). Jannes hat die Akte anhand eines
-  Screenrecordings beurteilt: zu viel Scrollen, die aktuellen Arbeitsaufgaben
-  zu weit unten. Gebaut ist ein Rahmen mit kompaktem Kopf und fünf Bereichen;
-  die Übersicht beantwortet „was ist zu tun", alles Seltene ist einen Tap
-  entfernt. Dazu zwei rein organisatorische Lesepfade und die Trennung von
-  **Leistungseinheiten** und **Terminen**, die vorher beide „Kontingent"
-  hießen (ANN-038 unverändert, nur sauber benannt). **Keine neue Annahme** —
-  Rollenschnitte, Lesepfade und Fachregeln sind dieselben.
-- **Als eigener Auftrag nachgereicht: die Bedienabläufe zwischen den
-  Bereichen** (UX-012a bis UX-012f, 2026-09-12). Kein neuer Bereich, sondern
-  die Wege **zwischen** den vorhandenen: Rückwege, die Ansicht, Person, Datum
-  und Filter erhalten; Anlegen und Ergänzen aus dem laufenden Vorgang heraus,
-  ohne das Eingetippte zu verlieren; Kontext und eindeutige Benennung in
-  Formularen; Formularfehler oben mit dem Weg ins Feld; Suchfehler getrennt
-  von „Kein Treffer". Dazu **zwei echte Fehler**: Nach dem Anlegen einer
-  Terminserie stand ein falscher Abfrageschlüssel, sodass die Akte veraltet
-  blieb; und die Serienprüfung konnte ein altes Ergebnis für eine **geänderte**
-  Liste als gültig ansehen. **ANN-039 und ANN-041 in Fassung 2**: Drucken und
-  Mailen **bereiten** nur vor — vermerkt wird erst auf Bestätigung, weil der
-  Vermerk sonst eine Übergabe behauptet, die niemand gesehen hat.
-- **Als Folgeauftrag nachgereicht: CAL-013 Termine per E-Mail** (2026-09-12).
-  Jannes hat den Versand von Terminmails ausdrücklich vorgesehen und damit
-  seine eigene vorläufige Entscheidung zu **B15** in einem Punkt geändert
-  (Nachtrag dort). Gebaut ist ein **Handoff**: Die Anwendung baut aus den
-  Terminen des Zettels einen fertigen Entwurf und übergibt ihn dem
-  Mailprogramm der Praxis; gesendet wird dort von Hand. Kein Dienstleister,
-  keine automatische Erinnerung, kein SMS- oder Messenger-Weg. Der Vermerk
-  entsteht dabei von allein — wie beim Druck seit CAL-012. **ANN-041 ist neu
-  und `Datenschutz`**: Er gehört in die Anfrage B2, zusammen mit der Frage,
-  ob der Hinweis an der Stelle der Entscheidung reicht oder ein dokumentierter
-  Wunsch je Patient:in verlangt wird (PAT-006).
-- **E12 Punkt 3 und 4 sind am 2026-09-12 vorläufig entschieden: der Fahrpuffer
-  kommt erst mit MAP-006.** Kein pauschaler Mindestabstand, keine von Hand
-  gepflegten Fahrminuten. **CAL-010b entfällt als eigene Story** und geht in
-  MAP-006 auf — samt der Aufrundungsregel aus §8.1 und ihrem Testfall.
-  **Punkt 1 ist am 2026-09-12 entschieden und mit CAL-015 gebaut:** Es gibt
-  zwei zulässige Längen, 60 (Vorbelegung) und 45 Minuten — keine begründete
-  Abweichung, keine dritte Länge. Offen bleibt allein **Punkt 2** (Länge je
-  Praxis einstellbar); er hängt als Wiedervorlage an ANN-037.
-- **CAL-EPIC-003a ist am 2026-09-12 fertig, abgenommen und in `main`** (fünf
-  Stories, PR #28): sechs
-  Terminzustände nach ADR-018 mit der Umbenennung `scheduled` → `confirmed` ·
-  Absage nur mit codiertem Pflichtgrund und ohne Rückweg · „nicht angetroffen"
-  mit Pflichtentscheidung zum Ausfallhonorar, samt Löschregel (**die
-  Pflichtentscheidung ist mit CAL-014 entfallen**, ADR-018 Fassung 2) ·
-  `documented`
-  aus der Finalisierung mit getesteter Invariante · Tag umplanen mit
-  Anrufliste (`IDEA-PRX-004`, jetzt überführt). **ANN-034 bis ANN-036 hat
-  Jannes am 2026-09-12 wie empfohlen bestätigt** — Absagegrund als codierte
-  Auswahl ohne Freitext, No-show unter der Frist der abgesagten Termine (mit
-  Ausfallhonorar keine Löschung), `documented` auch aus `confirmed`. ANN-034
-  (`Datenschutz`) und ANN-035 (`Recht`) bleiben deshalb **im Prüfpaket**;
-  ANN-036 ist `Technik` und damit erledigt. Die
-  Abnahmeschritte stehen in `docs/abnahme/etappe-1-kernprozess.md`; die
-  Oberfläche ist hinter der Anmeldung maschinell geprüft
-  (`tests/e2e/authenticated/appointment-states.spec.ts`, läuft in CI).
-  **`invoiced` ist im Wertebereich, hat aber keinen Schreibpfad** — den bringt
-  ABR-003, zusammen mit dem Auditereignis `appointment.invoiced` und der
-  Anpassung der beiden Feld-Constraints.
-- **Danach, in dieser Reihenfolge:** `ABR-EPIC-001` · `ABR-EPIC-002a` ·
-  `ABR-EPIC-002b`.
-- **LOE-EPIC-001 ist am 2026-09-11 fertig** (fünf Stories): Retention Schedule
-  als Daten, Anker „Abschluss der Versorgung", Legal Hold, täglicher Löschlauf
-  mit Löschjournal und Wiederanwendung nach einem Restore, Aufbewahrungs-
-  übersicht für `owner`. Zwei betriebliche Punkte hängen daran und stehen in
-  `docs/DEVELOPMENT.md`: Der Löschlauf braucht `pg_cron` im Produktivprojekt
-  (OPS-001), und das Restore-Verfahren muss das Löschjournal sichern und
-  wieder einspielen (OPS-003).
-- **Sechs Epics sind am 2026-09-11 von Jannes abgenommen:** DOK-001 bis
-  DOK-004, VER-EPIC-001, UI-000, MARKE-001, UX-EPIC-001 und LOE-EPIC-001.
-  **CAL-EPIC-003a ist am 2026-09-12 abgenommen** (PR #28). Zusammen mit
-  STAFF-EPIC-002 trägt damit jedes Epic bis einschließlich der Terminzustände
-  ein Abnahmedatum. Auf Abnahme wartet nur noch, was danach gebaut wurde:
-  CAL-EPIC-003b samt CAL-012 und CAL-013, die Patientenakte (AKTE-000 bis
-  AKTE-005), die Bedienabläufe (UX-012a bis UX-012f) und FIX-EPIC-001.
-  Die Gegenmaßnahme zu R6 (Befundwelle aus späten Abnahmen) greift damit;
-  Befunde aus den Abnahmen gehören als erste Story in den nächsten Loop
-  derselben Spur, nicht in einen eigenen.
-- **MFA vertagt (Jannes, 2026-09-11).** Die **Pflicht** zum zweiten Faktor für
-  `owner` wird erst geplant, **wenn eine Domain für die Anwendung feststeht**
-  — also frühestens mit dem Frontend-Hosting (G5/OPS-002). Gebaut und
-  benutzbar ist sie bereits; ANN-028 hält den Stand und den Weg dorthin fest.
-- **Zuschnitt geklärt (ADR-019 Fassung 2, MAP-001, 2026-09-08), mit UX-002
-  umgesetzt:** der Handoff übermittelt nichts aus der Anwendung; er baut die
-  URL nach ANN-018 (Adresse ohne Namen, Fahrradmodus) und ist nicht
-  automatisch risikofrei (ADR-019 Punkt 23, Frage an B2). Bedingung: **nur
-  auf Aktion, nie automatisch**. Die **In-App-Karte** und die **Fahrzeiten**
-  kommen als MAP-002 bis MAP-006 (Etappe T, `MAP-LOOPS.md`) mit **PTV
-  Developer** als Kandidat.
+- **Voraussetzung erfüllt:** E15 ist am 2026-09-13 vom Projektinhaber
+  entschieden — `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4 und ADR-004 Fassung 2.
+  Der Loop stellt Policies und Projektionen so um, dass `office` alles liest,
+  was Therapeut:innen sehen (Diagnose, Verordnung samt Scan, Dokumentation,
+  Nachrichten), ohne Schreibrecht auf Dokumentation und mit Auditpflicht je
+  Zugriff (ADR-010). Stories und Voraussetzungen stehen in Etappe 1.
+- **Danach, in dieser Reihenfolge:** `CAL-018` (Hausbesuch-Szenarien, E14) ·
+  `VER-EPIC-002` (Verordnung im Office-Alltag, Vorgabe in
+  [`VER-EPIC-002.md`](VER-EPIC-002.md)) · `ABR-EPIC-001` · `ABR-EPIC-002a` ·
+  `ABR-EPIC-002b`. Für ABR-EPIC-001 gilt B4 als Annahme (§15.1);
+  Jannes-seitig braucht es vorher den Leistungskatalog mit Preisen und die
+  Praxisstammdaten für Rechnungen (Anschrift, Bank, Steuernummer).
+- **Auf Abnahme warten:** CAL-EPIC-003b samt CAL-012/013, AKTE-000 bis
+  AKTE-005, UX-012, UI-002, FIX-EPIC-001 (braucht Docker), FIX-EPIC-003,
+  CAL-014 bis CAL-017, DAT-EPIC-001 — Prüfschritte in `docs/abnahme/`.
+  Befunde daraus kommen nach [`BEFUNDE.md`](BEFUNDE.md) und als erste Story in
+  den nächsten Loop derselben Spur (R6).
 - **Parallel startbar, sobald der PTV-Schlüssel vorliegt:**
   `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md`
-  — nur synthetische Daten.
-- **Offen aus UI-000:** die Vorschaubereiche nutzen die gemeinsamen
-  Bausteine noch nicht. Sie werden in ihrem eigenen Loop ersetzt, nicht
-  vorher umgestellt (ARBEITSBEREICHE.md).
-- **Von Jannes bestätigt:** am 2026-09-12 ANN-037 bis ANN-039 aus
-  CAL-EPIC-003b; am 2026-09-11 ANN-018, ANN-020, ANN-021 aus
-  UX-EPIC-001, ANN-024, ANN-027, ANN-028 aus STAFF-EPIC-002 und ANN-029 bis
-  ANN-033 aus LOE-EPIC-001; am 2026-09-12 ANN-034 bis ANN-036 aus
-  CAL-EPIC-003a. Alle mit Kategorie `Datenschutz` oder `Recht` bleiben **im
-  Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die
-  Datenschutzprüfung nicht. Erledigt sind damit allein ANN-032 und ANN-036 —
-  die beiden Einträge der Kategorien `Praxisprozess` und `Technik`.
-- **Weiter offen:** ANN-001, ANN-004, ANN-005, ANN-008, ANN-009, ANN-011,
-  ANN-013, ANN-014, ANN-016, ANN-017 und die Providerfrage aus ANN-007. Sie
-  blockieren nichts, aber ANN-011 (Rollenschnitt der Verordnung) und ANN-014
-  (Empfehlung zum Verordnungsende, ADR-006) gehören in die Anfragen B1 und B2,
-  ANN-016 und ANN-017 in die Anfrage B2, und ANN-015 gehört auf den ersten
-  Feldtag.
-- **Zu beantworten (MAP-001):** E-20 ADR-019 Fassung 2 bestätigen — damit
-  entfällt die Google Maps Embed API aus E-16.
-- **Entschieden am 2026-09-08, noch nicht gebaut:** Terminfenster
-  (`PROJECT_PRINCIPLES.md` §8.1) und Sprachdokumentation (§6.3). Das
-  Terminfenster kommt als **CAL-010a** im nächsten Loop; die
-  Sprachdokumentation bekommt einen **eigenen Auftrag** und steht bewusst in
-  keiner Etappe. Offen geblieben sind **E12** und **E13** — beide blockieren
-  nichts.
-- **Parallel als Docs-Sessions** (kein Code): im September bleibt `OPS-001
-  Providerprüfung` (Dokument) — mit den fünf Objektspeicher-Punkten aus
-  ADR-017. `ADR-017 Dateiablage` ist am 2026-09-12 geschrieben **und
-  angenommen**; `ADR-019 Kartendienst` liegt seit dem 2026-09-08 in Fassung 2
-  vor (MAP-001) und wartet weiter auf E-20.
-- **Jannes-seitig diese Woche** (Meilenstein M0, 30.09.): Branch Protection
-  und Secret Scanning in den GitHub-Einstellungen aktivieren (zehn Minuten,
-  `docs/DEVELOPMENT.md` „Manuelle Schritte") · Anfragen B1, B2, B4 mit
-  Fristwunsch verschicken — B4 mit den Steuerfragen aus `OPEN_DECISIONS.md`
-  (Umsatzsteuer, Kleinunternehmerregelung, Nummernkreis), B2 mit dem
-  Kartendienst (B7), der Terminerinnerung (B15) und den beiden bestätigten,
-  aber weiter prüfpflichtigen Annahmen aus CAL-EPIC-003a (ANN-034, ANN-035) —
-  und Stelle, Datum, Zusage in der Spur-B-Tabelle
-  eintragen · die Genehmigung der Datenschutz-Fachkraft für den Kartendienst
-  schriftlich zu den DSFA-Unterlagen legen (G14) · **vor MAP-002:**
-  kostenloses PTV-Developer-Abo anlegen (nur Test, ein Schlüssel) und den
-  Schlüssel in `.env.local` ablegen — nie im Repository; **vor MAP-006:** die
-  PTV-Vertragsdokumente von einem ungeproxten Rechner laden (Liste in
-  `docs/decisions/providerpruefung-kartendienst.md`, Teil 1) und mit B2 an
-  die Datenschutzberatung geben.
+  — nur synthetische Daten (ADR-019 angenommen am 2026-09-13, E-20).
+- **Docs-Session offen:** `OPS-001 Providerprüfung` — mit den fünf
+  Objektspeicher-Punkten aus ADR-017 und der Edge-Runtime-Prüfung aus
+  ADR-019.
+- **Jannes-seitig (M0, 30.09.):** Branch Protection, Secret Scanning und
+  „Allow auto-merge" in den GitHub-Einstellungen (`docs/DEVELOPMENT.md`,
+  „Manuelle Schritte") · Anfragen B1, B2, B4 verschicken — B2 mit Kartendienst
+  (B7), Terminerinnerung (B15), **E15** (Office liest klinische Inhalte) und
+  den prüfpflichtigen Annahmen des Registers; B4 mit den Steuerfragen und
+  **E14 Fall 1** (Vergütung ohne erbrachte Behandlung) · Genehmigung des
+  Kartendienstes schriftlich ablegen (G14) · vor MAP-002 das PTV-Free-Abo,
+  vor MAP-006 die PTV-Vertragsdokumente (`providerpruefung-kartendienst.md`).
+
+Was seit dem letzten Loop fertig, bestätigt oder entschieden wurde, steht im
+Änderungsvermerk am Ende (neueste Version zuerst); Entscheidungen in
+`docs/decisions/OPEN_DECISIONS.md`, Annahmen im Register. Dieser Abschnitt
+trägt nur den Livestand.
 
 Nach jedem abgeschlossenen Loop wird dieser Abschnitt auf den nächsten Eintrag
 gestellt (Skill-Schritt I).
@@ -294,13 +108,18 @@ geht:
 2. **Aufruf:** genau einen Aufruf aus der Tabelle unten, unverändert, als
    erste Nachricht. **Ein Thema je Session.** Ein zweiter Wunsch geht nicht in
    dieselbe Session — er wird ein eigener Aufruf oder eine Zeile im
-   Ideenspeicher (Aufruf „Idee").
+   Ideenspeicher (Aufruf „Idee"). Welchen Pfad ein Auftrag nimmt — Loop,
+   Sandbox oder Docs-Session —, sagt die Klassifikation K1 in
+   [`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md); eine
+   Session, die den falschen Aufruf bekommt, sagt das und baut nichts.
 3. **Nachher:** den Bericht lesen und die Fragen mit je einem Satz
-   beantworten („wie empfohlen" reicht); den Pull Request mergen — Docs sofort,
-   Code nach der Abnahme; die Abnahmeschritte aus `docs/abnahme/` am eigenen
-   Rechner durchgehen und der nächsten Session sagen „Abnahme <Loop> am
-   <Datum> erledigt", damit sie das Datum in der Fortschrittstabelle
-   einträgt.
+   beantworten („wie empfohlen" reicht). **Gemergt wird, sobald die CI grün
+   ist** — Docs wie Code, gern über „Auto-Merge" des Pull Requests
+   (entschieden 2026-09-13); die Abnahme folgt binnen sieben Tagen am eigenen
+   Rechner nach `docs/abnahme/`, und Befunde daraus kommen nach `BEFUNDE.md`
+   und als erste Story in den nächsten Loop derselben Spur (R6). Der nächsten
+   Session sagen „Abnahme <Loop> am <Datum> erledigt", damit sie das Datum in
+   der Fortschrittstabelle einträgt.
 4. **Montags** sagt das Wochenupdate, was fällig ist. Es liest `main` —
    deshalb Regel 3.
 
@@ -311,10 +130,13 @@ in dieser Roadmap.
 
 | Zweck                           | Aufruf (kopieren, nichts ergänzen)                                                                                                                                                                                                                                                       | Modell (Tabelle unten) |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| Code-Loop                       | der Befehl aus „Nächster Loop", zum Beispiel `/feature-loop UX-EPIC-001 Hausbesuchstag: Tagesliste, Folgetermin, Textbausteine`                                                                                                                                                                     | nach Aufgabe           |
-| Docs-Session ADR                | `Docs-Session ohne Code: ADR-017 Dateiablage schreiben. Vorgaben: docs/development/ROADMAP.md, Etappe G, Zeile G1, und die dort genannten ADRs. Am Ende die Bestätigungsfragen für Jannes als Liste mit Empfehlung.` — für ADR-018 (Spur B, Zeile D) und ADR-019 (G12) entsprechend | Opus 5 `xhigh`         |
+| Code-Loop                       | der Befehl aus „Nächster Loop", zum Beispiel `/feature-loop ROL-EPIC-001 Office liest klinische Inhalte`                                                                                                                                                                     | nach Aufgabe           |
+| Docs-Session ADR                | `Docs-Session ohne Code: ADR-NNN <Thema> schreiben. Vorgaben: docs/development/ROADMAP.md, <Zeile>, und die dort genannten ADRs. Am Ende die Bestätigungsfragen für Jannes als Liste mit Empfehlung.` — so entstanden ADR-017, ADR-018 und ADR-019 | Opus 5 `xhigh`         |
 | Docs-Session Providerprüfung    | `Docs-Session ohne Code: OPS-001 Providerprüfung Supabase nach dem Prüfkatalog aus ADR-002 als Dokument, einschließlich der Auth-Mails (B13). Vorgaben: docs/development/ROADMAP.md, Zeile G3. Keine Cloud-Ressource anlegen.`                                                              | Opus 5 `high`          |
-| Ablaufrunde                     | `Ablaufrunde Kalender nach docs/development/OPTIMIERUNG.md` — Bereich nach Rückwärtsplan                                                                                                                                                                                         | Sonnet 5 `medium`      |
+| Ablaufrunde                     | `Ablaufrunde <Bereich> nach docs/development/OPTIMIERUNG.md` — **eingefroren bis Probewoche 1** (Jannes, 2026-09-13); bis dahin Befunde über die Zeile „Befund"                                                                                                              | Sonnet 5 `medium`      |
+| Befund                          | `Befund: <Beobachtung an der laufenden Anwendung, Bereich, Rolle>. In docs/development/BEFUNDE.md eintragen, nicht bauen.`                                                                                                                                                     | Sonnet 5 `low`         |
+| Sandbox                         | `/sandbox <Thema>` — Oberflächen-Prototyp ohne Server, Netz und Persistenz nach `GRAPH-ENGINEERING-WORKFLOW.md` (Pfad S); endet mit der Frage „übernehmen oder verwerfen", beantwortet mit `/sandbox <Thema> übernehmen` (Härtungs-Ticket) oder `/sandbox <Thema> verwerfen` (Löschen); ein Prototyp lebt höchstens zwei Code-Loops | Sonnet 5 `medium`      |
+| Zweitreview                     | `Zweitreview <Loop-Kennung>: den Diff des offenen Pull Requests gegen die Review-Checkliste aus ADR-013 Fassung 2, Punkt 9 lesen. Befunde als Einzel-Story-Loop vorschlagen, nichts bauen.` — nur, wenn der Loop-Bericht den Zweitreview (A5) als ausstehend nennt; danach Auto-Merge einschalten | Opus 5 `xhigh`         |
 | Kartendienst-Loop               | `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md` — für MAP-003 bis MAP-005 entsprechend; MAP-006 erst nach dem Gate aus ADR-019                                                                                                                       | Opus 5 `high`          |
 | Antworten und Abnahmen eintragen | `Docs-Session ohne Code: meine Antworten und Abnahmen in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …`                                                                                                                                    | Sonnet 5 `low`         |
 | Idee                            | `Ideenspeicher: <Idee in zwei Sätzen>. Nur eintragen, nicht bauen.`                                                                                                                                                                                                                      | Sonnet 5 `low`         |
@@ -385,11 +207,11 @@ hinweg ist das Verbindliche (E-15).
 
 | Monat       | Kap. | Code-Loops (Last)                                                                                   | Docs-Sessions                                                                          | Jannes liefert / entscheidet                                                                                                                              | Extern                           | MS     |
 | ----------- | ---- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------ |
-| Sep 2026    | 7    | VER-EPIC-001 · UI-000 (2)                                                                           | ADR-017 · ADR-018 · OPS-001 Providerprüfung                                            | Branch Protection · B1/B2/B4 anfragen · Genehmigung Kartendienst schriftlich ablegen (ADR-018 am 2026-09-11, ADR-017 am 2026-09-12 erledigt)                | —                                | M0     |
-| Okt 2026    | 9    | UX-EPIC-001 · STAFF-EPIC-002 · LOE-EPIC-001 · CAL-EPIC-003a Zustände (4)                            | ADR-019 Fassung 2 bestätigen (E-20) · Optimierungsrunde Kalender · VVT- und TOM-Entwurf | Test-Cloudprojekt anlegen (nach OPS-001) · E10 · ADR-019 bestätigen · erste Abnahmen · Urlaub eintragen                                                   | —                                | —      |
-| Nov 2026    | 8    | CAL-EPIC-003b Serie · DAT-EPIC-001 · ABR-EPIC-001 · ABR-EPIC-002a Rechnung (4)                      | Optimierungsrunde Patient:innen · Löschkonzept, Breach-Prozess, Subprozessoren        | Leistungskatalog mit Preisen · Praxisstammdaten, Logo, Bank · B4-Termin · steuerliche Grundeinstellungen (G13) · PDF-Weg für die Rechnung (B14)          | B4 Ergebnis                      | —      |
-| Dez 2026    | 6    | ABR-EPIC-002b Dokument/Storno · ABR-EPIC-003 Zahlungen · E2-Funktion Tagesplan · PAT-006 (4)        | Optimierungsrunde Abrechnung · DSFA-Entwurf an die Prüfung (15.12.)                    | Ende-zu-Ende-Abnahme · Feldtag 1                                                                                                                          | B2 Ergebnis                      | M1     |
-| Jan 2027    | 8    | OPS-003 Backup/Restore · OPS-004 Logging (mit OPS-005 minimal) · OPS-006 minimal · OPS-007 Bootstrap · Befunde (5) | Betriebsdokumentation · BETRIEB-001 · Optimierungsrunde Übersicht                       | Restore-Test mitführen · Notfallzugang verwahren · Endgeräte-Richtlinie                                                                                    | DSFA-Rückfragen                  | —      |
+| Sep 2026    | 7    | **erledigt (13 Code-Loops):** VER-EPIC-001 · UI-000 · UX-EPIC-001 · STAFF-EPIC-002 · LOE-EPIC-001 · CAL-EPIC-003a/b · DAT-EPIC-001 · MARKE-001, AKTE, UX-012, UI-002, FIX-EPIC-001/003, CAL-012 bis CAL-017 | ADR-017 · ADR-018 · ADR-019 (alle angenommen) · Dokumentations-Audit 2026-09-13 · **OPS-001 Providerprüfung offen** | Branch Protection, Secret Scanning, Auto-Merge · B1/B2/B4 anfragen · Genehmigung Kartendienst schriftlich ablegen · Abnahmen der Loops seit dem 12.09. | —                                | M0     |
+| Okt 2026    | 9    | ROL-EPIC-001 · CAL-018 · VER-EPIC-002 · ABR-EPIC-001 (4)                                            | OPS-001 abschließen · VVT- und TOM-Entwurf                                              | Test-Cloudprojekt anlegen (nach OPS-001) · Leistungskatalog mit Preisen · Praxisstammdaten, Logo, Bank · PTV-Free-Abo · Urlaub eintragen                   | —                                | —      |
+| Nov 2026    | 8    | ABR-EPIC-002a Rechnung · ABR-EPIC-002b Dokument/Storno · ABR-EPIC-003 Zahlungen · MAP-002 (4)         | Löschkonzept, Breach-Prozess, Subprozessoren                                            | B4-Termin · steuerliche Grundeinstellungen (G13) · PDF-Weg für die Rechnung (B14)                                                                          | B4 Ergebnis                      | —      |
+| Dez 2026    | 6    | E2-Funktion Tagesplan · PAT-006 · MAP-003 · Befunde (4)                                              | DSFA-Entwurf an die Prüfung (15.12.)                                                   | Ende-zu-Ende-Abnahme · Feldtag 1                                                                                                                          | B2 Ergebnis                      | M1     |
+| Jan 2027    | 8    | OPS-003 Backup/Restore · OPS-004 Logging (mit OPS-005 minimal) · OPS-006 minimal · OPS-007 Bootstrap · MAP-004 · MAP-005 · Befunde (7) | Betriebsdokumentation · BETRIEB-001                                                     | Restore-Test mitführen · Notfallzugang verwahren · Endgeräte-Richtlinie                                                                                    | DSFA-Rückfragen                  | —      |
 | Feb 2027    | 8    | Befunde aus Probewoche 1 · UI-001 Politur (3)                                                       | Rückfallplan (Papierprozess aus E2) · Kurzanleitung „erster Tag" · Messrunde vor dem Gate | Probewoche 1 (H1) · Restore-Test 2 · Feldtag 2 · **Feature-Freeze Stufe 1 am 26.02.**                                                                     | B1 Ergebnis · DSFA abgeschlossen | M2     |
 | Mär 2027    | 8    | **Puffer** — nur Befunde und Dokumentation (0 geplant)                                              | Nachweistabelle MUSS → Test/Policy · Vertragscheck PTV Developer (Gate aus ADR-019)     | Go-live-Gate 19.03. · Produktions-Bootstrap nach OPS-007 am 31.03.                                                                                        | —                                | M3, M4 |
 | Apr 2027    | 8    | MAP-006 Patient/Tour-Integration · Befunde aus dem Produktivsystem (1)                                     | DSFA-Wiedervorlage Kartendienst                                                        | PTV Paid Plan und Server-Schlüssel (Jannes, nicht der Agent) · Abnahme auf einer echten Radrunde mit synthetischen Adressen                                    | —                                | —      |
@@ -399,8 +221,8 @@ hinweg ist das Verbindliche (E-15).
 | ab Aug 2027 | —    | Stufe 2 nach der Eröffnung (Etappe 3, Warteliste, Feinjustierung der Erreichbarkeitswarnung aus MAP-006, Spur A2) · danach Stufe 3 in der Reihenfolge des Abschnitts „Stufe 3" |                                                                                        |                                                                                                                                                           |                                  |        |
 
 Sperrzeit 21.12.2026 bis 04.01.2027; Jannes' Urlaub wird eingetragen, sobald
-er feststeht. Rechnung: rund 22 Code-Loops von September bis Februar bei 46
-Loop-Plätzen — knapp die Hälfte. Von April bis Juni drei Loops bei 24 Plätzen.
+er feststeht. Rechnung (Stand 13.09.): 13 Code-Loops sind im September gebaut; von Oktober
+bis Februar sind rund 21 bei 39 Loop-Plätzen geplant — gut die Hälfte. Von April bis Juni drei Loops bei 24 Plätzen.
 Der Rest ist Puffer für Abnahme, Befunde, Krankheit und dafür, dass die
 Startwoche kein Maß ist.
 
@@ -502,12 +324,15 @@ liefert.
 | Loop              | Ergebnis                                                           | Stories                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Voraussetzung                                                     | Jannes liefert                                          |
 | ----------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
 | ~~DOK-EPIC~~      | Behandlungsdokumentation mit Finalisierung                         | DOK-001 bis DOK-004                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | **fertig** (PR #5, PR #9)                                         | abgenommen 2026-09-11                                   |
-| **VER-EPIC-001**  | Verordnungen liegen in der Akte, mit Kontingent und Verordner:in   | **PAT-005** Stammdaten: Telefon (Geschäftlich), Mobil, Telefax, Einrichtung, Besonderheit, Bemerkung, feste Therapeut:in, **Zugangshinweis Hausbesuch** (`IDEA-PRX-001`) · **VER-001** Datenmodell Verordnung mit `prescribers`, Positionen mit verordneter/genutzter Menge, Erst-/Folgeverordnung, Empfehlung zum Verordnungsende · **VER-002** je Patient:in, nach Jahr · **VER-003** anlegen und bearbeiten                                                                                                                                                                                                                                                                                                                                                                                                                                       | —                                                                 | —                                                       |
-| **UI-000**        | Das Fundament trägt die nächsten zwanzig Seiten                    | Tokens `ink-subtle` und `line-strong` auf AA heben, Kontrast-Test · Bausteine `ButtonLink`, `Rueckfrage`, `Section`, `DataRow`, `Statusmeldung`, `SearchField` und Ersetzen der Duplikate · Druck-Basis (`@media print`, entschieden 2026-09-06) · Verbindungsanzeige · 375-px-Screenshot-Helfer · axe als Dev-Abhängigkeit für die automatische Barrierefreiheitsprüfung (entschieden 2026-09-06) · Oberflächen-Checkliste in `docs/abnahme/README.md`                                                                                                                                                                                                                                                                                                                                                                                             | —                                                                 | —                                                       |
-| **UX-EPIC-001**   | Ein Hausbesuchstag läuft ohne Umwege durch die Anwendung           | Tagesliste mit Adresse, `tel:`-Link, Zugangshinweis, „Offen heute"; Vorschau-Karten zusammengefaltet · **Navigation über Google Maps** (entschieden 2026-09-06, `IDEA-PRX-030`): Link je Termin mit Adresse ohne Namen im Fahrradmodus, Link „ganzer Tag" mit allen Adressen in Terminreihenfolge; URL-Format und Feldliste als `ANN`, Vertrags- und Datenschutzseite in ADR-019 · Folgetermin am Termin und Tap auf freie Zeit im Kalender, Vorbelegung Hausbesuch/ich/heute (`IDEA-PRX-007`) · nächste Termine in der Akte · „Behandlung abschließen" in einem Schritt · Textverlust-Schutz und Verbindungsanzeige (`ANN`), **darin der bekannte Restpunkt aus VER-003:** wer die Verordner:innen-Anlage über die Hauptnavigation verlässt statt über „Abbrechen", bricht den Abstecher ab — der Entwurf bleibt aber bis zum Ablauf der 30 Minuten aus ANN-019 liegen und taucht bei einem unabhängigen neuen Versuch auf demselben Pfad wieder auf (`src/features/prescriptions/api.ts`, `entwurfAnsehen`; der Kommentar dort benennt genau diesen Fall). Zu bauen: den Entwurf beim Verlassen des Abstechers verwerfen, statt sich auf die Frist zu verlassen; Test mit echtem Seitenwechsel wie in `PrescriptionFormPage.entwurf.test.tsx` · Tagesplan-Cache lesend nach ADR-001, Feldliste als `ANN` (`IDEA-PRX-014`, entschieden 2026-09-06) · Touch-Ziehen erst nach Long-Press, Rückgängig-Leiste · serverseitige Patientensuche von jeder Seite (`IDEA-PRX-020`) · Textbausteine in der Dokumentation (`IDEA-PRX-011`, entschieden 2026-09-06) | VER-EPIC-001, UI-000; Google-Link durch ADR-019 frei (Teil 1)                          | Daumen-Test nach dem Loop                               |
-| **LOE-EPIC-001**  | Löschung und Retention sind gebaut und getestet                    | **LOE-001** Datenklassen und Retention Schedule an genau einer Stelle (ANN-001), Anker „Abschluss der Behandlung", Legal Hold (Modell; Oberfläche Komfort) · **LOE-002** Löschjournal mit idempotenter Wiederanwendung, Auditbezug, alle Versionen; `pnpm test:db` deckt jede Datenklasse ab                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | ANN-001, ANN-002; erfasst Verordnungen                            | —                                                       |
+| ~~VER-EPIC-001~~ | Verordnungen liegen in der Akte, mit Kontingent und Verordner:in   | **PAT-005** Stammdaten: Telefon (Geschäftlich), Mobil, Telefax, Einrichtung, Besonderheit, Bemerkung, feste Therapeut:in, **Zugangshinweis Hausbesuch** (`IDEA-PRX-001`) · **VER-001** Datenmodell Verordnung mit `prescribers`, Positionen mit verordneter/genutzter Menge, Erst-/Folgeverordnung, Empfehlung zum Verordnungsende · **VER-002** je Patient:in, nach Jahr · **VER-003** anlegen und bearbeiten                                                                                                                                                                                                                                                                                                                                                                                                                                       | **fertig 2026-09-07** | abgenommen 2026-09-11 |
+| ~~UI-000~~ | Das Fundament trägt die nächsten zwanzig Seiten                    | Tokens `ink-subtle` und `line-strong` auf AA heben, Kontrast-Test · Bausteine `ButtonLink`, `Rueckfrage`, `Section`, `DataRow`, `Statusmeldung`, `SearchField` und Ersetzen der Duplikate · Druck-Basis (`@media print`, entschieden 2026-09-06) · Verbindungsanzeige · 375-px-Screenshot-Helfer · axe als Dev-Abhängigkeit für die automatische Barrierefreiheitsprüfung (entschieden 2026-09-06) · Oberflächen-Checkliste in `docs/abnahme/README.md`                                                                                                                                                                                                                                                                                                                                                                                             | **fertig 2026-09-07** | abgenommen 2026-09-11 |
+| ~~UX-EPIC-001~~ | Ein Hausbesuchstag läuft ohne Umwege durch die Anwendung           | Tagesliste mit Adresse, `tel:`-Link, Zugangshinweis, „Offen heute" · Navigations-Handoff an Google Maps (ADR-019, ANN-018) · Folgetermin und Tap auf freie Zeit im Kalender (`IDEA-PRX-007`) · nächste Termine in der Akte · „Behandlung abschließen" in einem Schritt · Textverlust-Schutz und Verbindungsanzeige · Tagesplan-Cache lesend (ANN-021, `IDEA-PRX-014`) · Touch-Ziehen nach Long-Press · serverseitige Patientensuche (`IDEA-PRX-020`) · Textbausteine (`IDEA-PRX-011`) — UX-001 bis UX-011 | **fertig 2026-09-11 (PR #18)** | abgenommen 2026-09-11 |
+| ~~LOE-EPIC-001~~ | Löschung und Retention sind gebaut und getestet                    | **LOE-001** Datenklassen und Retention Schedule an genau einer Stelle (ANN-001), Anker „Abschluss der Behandlung", Legal Hold (Modell; Oberfläche Komfort) · **LOE-002** Löschjournal mit idempotenter Wiederanwendung, Auditbezug, alle Versionen; `pnpm test:db` deckt jede Datenklasse ab                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | **fertig 2026-09-11 (PR #25)** | abgenommen 2026-09-11 |
 | ~~CAL-EPIC-003a~~ | Termine kennen alle Zustände, die die Praxis heute braucht         | **CAL-008** Zustandsautomat nach ADR-018: bestätigt, abgesagt (mit Grund), nicht angetroffen (Ausfallhonorar-Kennzeichen), durchgeführt (aus „Behandlung abschließen"), dokumentiert (aus Finalisierung), abgerechnet (aus ABR-003); Migration der heutigen Status; Auditkatalog · **CAL-009** Tag umplanen: alle Termine einer Person eines Tages absagen/vormerken mit Anrufliste (`IDEA-PRX-004`)                                                                                                                                                                                                                                                                                                                                                                                                                                                  | **fertig** (PR #28); Voraussetzung ADR-018 war bestätigt           | abgenommen 2026-09-12                                   |
-| **CAL-EPIC-003b** | Eine Verordnung wird in einer Minute zu einer Terminserie          | **CAL-007** Serie aus der Verordnung: Anzahl aus dem Kontingent, fester Rhythmus, Konfliktprüfung je Termin inline, Einzelabweichung · **CAL-010a** Terminfenster nach `PROJECT_PRINCIPLES.md` §8.1 (entschieden 2026-09-08): 60 Minuten einschließlich Dokumentation, Vorbelegung im Formular **und** serverseitige Durchsetzung in `create_appointment`/`update_appointment` — eine Vorbelegung allein erfüllt §8.1 nicht; geprüft wird nur ein **neu gesetztes** Zeitfenster, Bestandstermine bleiben gültig und rein organisatorisch bearbeitbar (dieselbe Abgrenzung wie beim Raster, CAL-005); Beginn weiter frei im 5-Minuten-Raster; Testfälle in `pnpm test:db` für beide Schreibpfade und für den Bestandstermin · ~~**CAL-010b** Fahrpuffer~~ **entfällt** (E12 Punkt 3 und 4, Jannes 2026-09-12): kein pauschaler Mindestabstand und keine von Hand gepflegten Fahrminuten — der Fahrpuffer kommt mit **MAP-006** aus echten Fahrzeiten, samt der Aufrundungsregel aus §8.1 und ihrem Testfall · **CAL-011** Terminzettel als Druckansicht (`IDEA-PRX-006`)                                                                                                                                                                                                                                                                                                                                                                                                                                       | VER-001, CAL-EPIC-003a, UI-000 (Druck); §8.1 für CAL-010a         | Antwort auf E12 (blockiert nichts) |
+| ~~CAL-EPIC-003b~~ | Eine Verordnung wird in einer Minute zu einer Terminserie          | **CAL-007** Serie aus der Verordnung: Anzahl aus dem Kontingent, fester Rhythmus, Konfliktprüfung je Termin inline, Einzelabweichung · **CAL-010a** Terminfenster nach `PROJECT_PRINCIPLES.md` §8.1 (entschieden 2026-09-08): 60 Minuten einschließlich Dokumentation, Vorbelegung im Formular **und** serverseitige Durchsetzung in `create_appointment`/`update_appointment` — eine Vorbelegung allein erfüllt §8.1 nicht; geprüft wird nur ein **neu gesetztes** Zeitfenster, Bestandstermine bleiben gültig und rein organisatorisch bearbeitbar (dieselbe Abgrenzung wie beim Raster, CAL-005); Beginn weiter frei im 5-Minuten-Raster; Testfälle in `pnpm test:db` für beide Schreibpfade und für den Bestandstermin · ~~**CAL-010b** Fahrpuffer~~ **entfällt** (E12 Punkt 3 und 4, Jannes 2026-09-12): kein pauschaler Mindestabstand und keine von Hand gepflegten Fahrminuten — der Fahrpuffer kommt mit **MAP-006** aus echten Fahrzeiten, samt der Aufrundungsregel aus §8.1 und ihrem Testfall · **CAL-011** Terminzettel als Druckansicht (`IDEA-PRX-006`)                                                                                                                                                                                                                                                                                                                                                                                                                                       | **fertig 2026-09-12 (PR #29), dazu CAL-012 und CAL-013** | Abnahme offen |
+| **ROL-EPIC-001**  | Office liest alles, was Therapeut:innen sehen — auditiert, ohne Schreibrecht | **ROL-001** Policies und Projektionen der Akte: `app.can_read_*` für `office` auf Dokumentation, Verlauf und Befunde; `list_patient_treatment_notes` statt Behandlungsnachweis, `treatment_note.viewed` auch für `office`; der Behandlungsnachweis bleibt als Rechnungssicht (ADR-004 Fassung 2, ADR-010) · **ROL-002** Verordnung und Dateien: Diagnose in den Verordnungsprojektionen für `office`, Dokumentart-Rollenschnitt aus ADR-017 Punkt 12 für Praxisrollen aufgehoben (Verordnungsscan sichtbar), Katalog bleibt · **ROL-003** Kommunikation, Oberfläche, Abnahmeschritte; `test:db` für jede geöffnete Sicht mit Negativfällen (kein Schreiben, Audit je Zugriff); Register (ANN-006 und ANN-011 abgelöst) | E15 (entschieden 2026-09-13); `PROJECT_PRINCIPLES.md` 0.10; ADR-004 Fassung 2 | Anfrage B2 um E15 ergänzen |
+| **CAL-018**       | Die drei Hausbesuch-Szenarien werden geführt und setzen den Gebührenanlass richtig | Geführter Ablauf am Termin („Was ist passiert?"): Tür geöffnet ohne Behandlung → `complete_treatment` mit Pflichtvermerk, normale Abrechnung · nicht angetroffen → `record_no_show` verlangt das bestätigte Protokoll (15 Minuten, Klingeln, Anruf) und setzt `fee_basis = 'no_show'` · Absage unter 24 Stunden unverändert; Erklärtexte je Szenario; ANN-035 nachgezogen; Abnahmeschritte; `test:db` für Protokollpflicht und Gebührenanlass | E14 (entschieden 2026-09-13); ADR-018 Fassung 3; §8 in 0.10 | Rechnungstext für Fall 1 mit B4 |
+| **VER-EPIC-002**  | Das Office erfasst eine Verordnung mit wenigen klaren Eingaben | Vorgabe in [`VER-EPIC-002.md`](VER-EPIC-002.md): Heilmittelauswahl als beschriftete Kästchen (KG, MT, je als Doppelbehandlung, Hausbesuch), Feld „Anzahl möglicher Termine", „Genutzt" und „Position hinzufügen" entfallen, ein Feld „Anmerkungen", Diagnose bleibt; Bestandswerte erhalten; Empfehlung nur aus vorhandener Dokumentation; sechs Abnahmefälle | ROL-EPIC-001 (Sichtbarkeit), VER-EPIC-001; ANN-012/038/042 prüfen | Bestätigung der Feldvorgaben aus dem Plan |
 | **ABR-EPIC-001**  | Leistungen entstehen aus durchgeführten Terminen                   | **ABR-000** Praxis-Stammdaten für Rechnungen (Anschrift, Bank, Steuernummer, Umsatzsteuer-Status, Logo — die Datei liegt fertig in `marke/logo/own-motion-block-schwarz.svg`, schwarz ist laut `marke/README.md` genau der Fall Rechnung und Fax —, `owner`) · **ABR-001** Leistungskatalog versioniert, Steuerkennzeichen je Version, Hausbesuchspauschale und Ausfallhonorar als Katalogpositionen · **ABR-002** Leistungserfassung am durchgeführten Termin, vorbelegt aus der Verordnung, Kopplung an finalisierte Dokumentation mit protokolliertem Override (C1, ANN-006)                                                                                                                                                                                                                                                                                                                                                                                                                       | B4 als Annahme                                                    | Katalog mit Preisen, Stammdaten, Antwort aus G13        |
 | **ABR-EPIC-002a** | Eine Rechnung entsteht aus Leistungen, mit dem richtigen Empfänger | **ABR-003a** Rechnungsempfänger-Stammdaten (Beihilfe, PKV, Betreuung, Eltern; `IDEA-PRX-010`) · Rechnung: Zustände nach ADR-009 bis „ausgestellt", Nummer erst bei Ausstellung, neuer Nummernkreis ab der ersten Rechnung (kein Altsystem; Format als Annahme, B4 bestätigt), Snapshot mit Verordnungsbezug, Sammelrechnung je Person und Monat mit Behandlungsnachweis (`IDEA-PRX-013`) · Optionen für das Rechnungs-PDF mit Aufwand vorlegen (B14)                                                                                                                                                                                                                                                                                                                                                                                                | ABR-EPIC-001                                                      | Nummernformat und Umsatzsteuer-Status (G13); PDF-Weg   |
 | **ABR-EPIC-002b** | Die Rechnung ist ein Dokument, das bleibt                          | **ABR-003b** PDF nach dem in B14 entschiedenen Weg, Ablage nach ADR-017, Storno- und Korrekturdokument (einfache Kette), Zahlungserinnerung als Dokument ohne Stufenlogik (`IDEA-PRX-012`, entschieden 2026-09-06)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | DAT-001, B14                                                      | —                                                       |
@@ -616,8 +441,9 @@ Was das für die Planung heißt:
 - **Reihenfolge (entschieden 2026-09-06, E-19):** Etappe 4 Portalfundament →
   Etappe 3 Übungspläne mit Ausgabe im Portal → Etappe 5 Tracking und
   Check-ins → Etappe 6 Kommunikation (Chat als strukturierte Rückfrage) →
-  Etappe 8 Kund:innen, Episoden und Pakete → Gewohnheiten, Aktivitäten und
-  Ernährung zuletzt (`IDEA-ALT-005`, `IDEA-ALT-006`; nur nach Klärung in B9)
+  Etappe 8 Kund:innen, Episoden und Pakete → Gewohnheiten und Aktivitäten
+  zuletzt (`IDEA-ALT-006`); Ernährung ist mit B9 Punkt 6 vorerst
+  ausgeschlossen (`IDEA-ALT-005` zurückgestellt)
   → Etappen 9 und 10 nach B10 und C6. Beginn frühestens nach M6, früher nur,
   wenn Stufe 1 und Stufe 2 vor der Eröffnung fertig und abgenommen sind
   (E-15).
@@ -642,7 +468,7 @@ Ergebnisse der ersten Betriebsmonate neu geprüft.
 | 6      | **Kommunikation:** strukturierte Rückfragen (`IDEA-KOM-001`) · Notfallabgrenzung (`IDEA-KOM-002`) · Foto/Video mit eigener Einwilligung, kurzer Frist, Metadatenentfernung (`IDEA-KOM-003`) · Zuordnung zur Akte (`IDEA-KOM-007`)                                                                                                                                                           | ADR-017, C2 (erledigt)                   |
 | 7      | **Zeitstrahl und Sitzungsvorbereitung:** `IDEA-QSN-001`, `IDEA-ORG-005`, `IDEA-ORG-001`                                                                                                                                                                                                                                                                                                     | genug Inhalt aus 2 bis 6                 |
 | 8      | **Kund:innen und Weiterbetreuung:** Betreuungsepisode mit Typ (`IDEA-LZK-002`), Kund:innen ohne vorherige Heilbehandlung (`IDEA-LZK-008`), Zweckbindung (`IDEA-LZK-003`), Klientenprofil (`IDEA-LZK-004`), Pakete und Guthaben (`IDEA-ANG-001`), Rückfall (`IDEA-ANG-003`), Preise (`IDEA-ANG-004`), Offboarding (`IDEA-LZK-006`). Hier wird aus der Praxissoftware eine Betreuungsplattform. | **B9** (erweitert), **B11**, §1-Ergänzung nach §21 |
-| 9      | **Progression:** versioniertes deterministisches Regelwerk (`IDEA-TRN-002`), Schattenbetrieb (`IDEA-TRN-012`), Regeltests (`IDEA-QSN-004`), mehrdimensional (`IDEA-TRN-004`), doppelte Progression (`IDEA-TRN-007`), Ampel (`IDEA-TRN-003`), Adhärenz (`IDEA-TRN-009`), Wiedereinstieg (`IDEA-TRN-010`). Bis B10 entschieden ist: `MDR_REVIEW_REQUIRED`, produktiv nicht erreichbar.        | **B10** und externe Prüfung aus **B1**   |
+| 9      | **Progression:** versioniertes deterministisches Regelwerk (`IDEA-TRN-002`), Schattenbetrieb (`IDEA-TRN-012`), Regeltests (`IDEA-QSN-004`), mehrdimensional (`IDEA-TRN-004`), doppelte Progression (`IDEA-TRN-007`), ~~Ampel (`IDEA-TRN-003`)~~ (ausgeschlossen mit B10, 2026-09-08), Adhärenz (`IDEA-TRN-009`), Wiedereinstieg (`IDEA-TRN-010`). Bis B10 entschieden ist: `MDR_REVIEW_REQUIRED`, produktiv nicht erreichbar.        | **B10** und externe Prüfung aus **B1**   |
 | 10     | **KI-Assistenz:** zuerst der zentrale Pfad (`IDEA-KI-001`), dann Freitext strukturieren, Patientensprache, Antwortentwürfe — mit Quellenbindung (`IDEA-KI-003`) und menschlicher Freigabe                                                                                                                                                                                                   | Etappen 1 bis 3, ADR-005-Gateway, **C6** |
 
 ---
@@ -650,9 +476,9 @@ Ergebnisse der ersten Betriebsmonate neu geprüft.
 ## Spur A2 — Praxisbetrieb (Stufe 2, nach M6)
 
 Die Vorschaubereiche aus [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md) bleiben
-bis zu ihrem Loop stehen (entschieden 2026-09-05). Drei Regeln: **keine neue
-Vorschau**, **keine Erweiterung einer Vorschau**, und jede Vorschau wird in
-ihrem Loop **ersetzt**, nicht daneben gebaut. Vor dem ersten A2-Loop
+bis zu ihrem Loop stehen (entschieden 2026-09-05). Die drei Regeln für
+Vorschauen stehen dort in Abschnitt 6 (seit 2026-09-13 mit Sandbox-Prototyp
+statt „keine neue Vorschau"). Vor dem ersten A2-Loop
 entscheidet eine Optimierungsrunde mit Zählung aus dem Betrieb, ob die
 Reihenfolge noch stimmt. Die Vorschau `/touren` ersetzt MAP-006 schon
 im April 2027 (Etappe T).
@@ -675,14 +501,14 @@ im April 2027 (Etappe T).
 | G2  | **STAFF-EPIC-002 Konten und Rollen**                  | STAFF-002 Zugang einladen, Rolle vergeben und ändern (auditiert) · STAFF-003 sperren, Passwort zurücksetzen, MFA für `owner` · **STAFF-004** Passwort vergessen als Selbstbedienung, alle Sitzungen beenden. E-Mails ausschließlich über die Auth-Mails des geprüften Providers (B13, entschieden 2026-09-06). Löst E11; E10 als Annahme (`owner`).                                                                                    | Claude                                | Okt 2026                |
 | G3  | **OPS-001 Providerprüfung und Cloudprojekt**          | Prüfkatalog aus ADR-002 für Supabase dokumentieren, einschließlich der Auth-Mails (B13) **und der fünf Punkte zum Objektspeicher aus ADR-017** (Vertragsdeckung, Unterauftragskette, Löschung beim Anbieter, S3-Zugang für die Sicherung, Entzug signierter Verweise); bei positivem Ergebnis Cloudprojekt in EU-Region und Umgebungen Dev/Test/Prod. **Dokument im September, Anlage im Oktober.** Keine Cloud-Ressource durch einen Agenten (ADR-013).                                                      | Claude (Dokument), Jannes (Anlage)    | Sep/Okt 2026            |
 | G4  | ~~**DAT-EPIC-001 Dateiablage**~~ — **fertig 2026-09-13**, Abnahme steht aus | DAT-001 Bucket, Berechtigungen, signierte Verweise, Datenklasse, Audit — **alles nach ADR-017**, einschließlich zweiphasigem Upload mit Bestätigung, Dokumentart als Rollenschnitt, Löschauftrag mit Quittung und einer Nachbildung von `storage.objects` im Test-Shim · VER-004 Scan-Anhang je Verordnung                                                                                                                               | Claude                                | Nov 2026                |
-| G5  | **OPS-002 Deployment und Freigabe**                   | Frontend-Hosting mit Prüfung nach ADR-002; Release aus Tag mit menschlicher Freigabe; Migrationen nur über die Pipeline; Rollback; `service_role` nie im Browser; Review-Checkliste. **Test-Umgebung im November**, damit Jannes ohne Docker abnimmt.                                                                                                                                                                                  | Claude (Pipeline), Jannes (Freigabe)  | Nov 2026                |
+| G5  | **OPS-002 Deployment und Freigabe**                   | Frontend-Hosting mit Prüfung nach ADR-002; Release aus Tag mit menschlicher Freigabe; Migrationen nur über die Pipeline; Rollback; `service_role` nie im Browser; die Review-Checkliste aus ADR-013 Fassung 2 in der Pipeline verankern (die Liste selbst steht seit dem 2026-09-13). **Test-Umgebung im November**, damit Jannes ohne Docker abnimmt.                                                                                                                                                                                  | Claude (Pipeline), Jannes (Freigabe)  | Nov 2026                |
 | G6  | **OPS-004 Logging, Redaction, Monitoring**            | Verbotsliste aus ADR-011 automatisiert geprüft, Entscheidung zu externem Error-Tracking, Alarmierung, Security-Log 12 Monate, Erkennung für Art. 33. **Enthält OPS-005 minimal:** Audit-Abfrage als Runbook für `owner`, abgewiesene Zugriffe protokolliert.                                                                                                                                                                              | Claude                                | Jan 2027                |
 | G7  | **OPS-003 Backup und Restore-Test**                   | PITR aktiv, Backup-Lebenszyklus, Restore-Test in isolierter Umgebung inklusive Nachziehen der Löschungen, Notfallzugang verwahrt, Betriebsdokumentation mit den 13 Positionen aus ADR-012. **Neu aus ADR-017 (2026-09-12):** Der Objektspeicher läuft im Datenbank-Backup **nicht** mit — eigener Sicherungsweg (S3-kompatibler Zugang, Taktung gegen RPO ≤ 1 h), dreistufige Wiederherstellung (Datenbank, Objekte, Löschjournal und offene Löschaufträge). **Vorbedingung für produktive Dateien.**                                                                              | Jannes und Claude                     | Jan 2027                |
 | G8  | **PAT-006 Datenschutzinformation und Einwilligungen** | „Datenschutzinformation ausgehändigt am", Hinweis auf Behandlungsvertrag, minimale Einwilligungsstruktur je Zweck mit Widerruf; Textvorlage Ausfallhonorar-Regel; die Datenschutzinformation nennt den Kartendienst (ADR-019). Behandlungsvertrag und Datenschutzinformation bleiben Papier mit Vermerk; keine Unterschrift in der Anwendung (E-13).                                                                                     | Claude                                | Dez 2026                |
 | G9  | **OPS-006 Betroffenenrechte (minimal)**               | Verfahren dokumentiert; Export der Akte als einfache `owner`-Funktion, auditiert; begründete Ablehnung bei Aufbewahrungspflicht als Vorlage. Vollständige Funktion: Komfort.                                                                                                                                                                                                                                                              | Claude                                | Jan 2027                |
 | G10 | **E2 Ausfallkonzept**                                 | Tagesplan mit Adressen und Telefonnummern druck- und exportierbar (**Dezember**, klein) · Praxisprozess für einen Tag ohne Anwendung (ADR-012). Ist zugleich der Rückfallplan der Eröffnung (H4), weil es kein Altsystem gibt.                                                                                                                                                                                                             | Claude (Funktion), Jannes (Prozess)   | Dez 2026 / Jan 2027     |
 | G11 | **OPS-007 Bootstrap Produktion**                      | Runbook: Organisation, Standort, erstes `owner`-Konto, Mitarbeitende, Katalog, Praxisstammdaten ohne Seed anlegen; gegen die Test-Umgebung geprobt (M3), am 31.03.2027 im Produktivprojekt durchlaufen (M4).                                                                                                                                                                                                                              | Claude (Runbook), Jannes (Durchlauf)  | Jan / Mär 2027          |
-| G12 | **ADR-019 Kartendienst** — *Fassung 2 vom 2026-09-08 (MAP-001), Bestätigung offen (E-20)* | In-App-Karte, Fahrradrouting, Fahrzeiten und Handoff als Produktziel; Zielarchitektur MapLibre + serverseitiger Adapter (`src/lib/location/contract.ts`); PTV Developer als Kandidat für Prototyp und Bewertung, **nicht** produktiv freigegeben; Google Maps nur als Handoff-Ziel; Privacy-Regeln als Prüfregeln; Prüfkatalog nach ADR-002 mit Belegtiefe in `docs/decisions/providerpruefung-kartendienst.md` — alle Vertragspunkte `CONTRACT_CONFIRMATION_REQUIRED`. DSFA-Wiedervorlage je Datenweg (ADR-007). Schließt B7 bis auf das Gate. | Claude (Docs), Jannes bestätigt; Vertragscheck mit B2 | Okt 2026 (E-20) / Mär 2027 (Gate) |
+| G12 | **ADR-019 Kartendienst** — *Fassung 2 vom 2026-09-08 (MAP-001), **angenommen 2026-09-13 (E-20)**; Gate offen* | In-App-Karte, Fahrradrouting, Fahrzeiten und Handoff als Produktziel; Zielarchitektur MapLibre + serverseitiger Adapter (`src/lib/location/contract.ts`); PTV Developer als Kandidat für Prototyp und Bewertung, **nicht** produktiv freigegeben; Google Maps nur als Handoff-Ziel; Privacy-Regeln als Prüfregeln; Prüfkatalog nach ADR-002 mit Belegtiefe in `docs/decisions/providerpruefung-kartendienst.md` — alle Vertragspunkte `CONTRACT_CONFIRMATION_REQUIRED`. DSFA-Wiedervorlage je Datenweg (ADR-007). Schließt B7 bis auf das Gate. | Claude (Docs), Jannes bestätigt; Vertragscheck mit B2 | erledigt 2026-09-13 (E-20) / Mär 2027 (Gate) |
 | G13 | **Steuerliche Grundeinstellungen**                    | Aus B4: Format des neuen Nummernkreises, Umsatzsteuer-Status der Praxis (Kleinunternehmerregelung ja/nein, Steuernummer), steuerliche Einordnung der Katalogpositionen, Belegfristen. Eine Seite, vor ABR-EPIC-002a.                                                                                                                                                                                                                       | Jannes mit Steuerberatung             | Nov 2026                |
 | G14 | **DSFA-Paket**                                        | Schwellwertprüfung und DSB-Entscheidung (B2), Verzeichnis der Verarbeitungstätigkeiten, TOM (mit Endgeräte-Richtlinie), Löschkonzept (aus LOE), Subprozessoren (aus G3 und G12), Datenschutzinformationen (G8), Verfahren für Betroffenenrechte (G9), Data-Breach-Prozess; Nachweistabelle MUSS → Test/Policy/Prüfschritt; Zweckbestimmung (ADR-006). **Entwürfe ab Oktober als Docs-Sessions, Stand 15.12. an die Prüfung.**              | Jannes, externe Prüfung               | Okt 2026 bis Feb 2027   |
 | G15 | **B1 Regulatorische Prüfung**                         | Externe Bestätigung der Zweckbestimmung und MDR-Abgrenzung (ADR-006), Einordnung nach EU AI Act.                                                                                                                                                                                                                                                                                                                                       | Jannes, extern                        | Feb 2027                |
@@ -735,11 +561,13 @@ Punkt 7 — MUSS; der Inhalt der Zweckbestimmung dagegen schon).
 | **E8 → ADR-017**             | Dateiablage: Ort, Zugriff, signierte Verweise, Retention, Virenprüfung                                                                             | Claude schreibt, Jannes bestätigt   | DAT-EPIC-001, ABR-EPIC-002b  | Sep 2026                            | **erledigt 2026-09-12** — angenommen, alle acht Fragen wie empfohlen |
 | **D → ADR-018**              | Terminzustände: Übergänge, Auslöser, Migration; „angefragt"/„vorgemerkt" definiert, nicht gebaut                                                   | Claude schreibt, Jannes bestätigt   | CAL-EPIC-003a                | Sep 2026                            | **erledigt 2026-09-11** — angenommen, alle sieben Fragen wie empfohlen; §8 auf 0.7 nachgezogen |
 | **Providerprüfung Supabase** | Prüfkatalog ADR-002 dokumentiert und bestanden — sonst Alternative; schließt die Auth-Mails ein (B13) und die fünf Objektspeicher-Punkte aus ADR-017 | Jannes mit Claude-Dokument          | produktive Dateiablage, OPS-001 Anlage | 30.09.2026                          |                       |
-| **B7 → ADR-019**             | **Weg C gewählt (MAP-001, 2026-09-08):** Handoff nicht blockiert (ANN-018, Frage an B2); Karte und Fahrzeiten über PTV Developer als Kandidat; produktive Freigabe am Gate aus ADR-019 Punkt 9 — neun Punkte, alle `CONTRACT_CONFIRMATION_REQUIRED` | Jannes (Vertragsdokumente, PTV-Support), Datenschutzberatung (B2) | MAP-006 | Dokumente Okt 2026; Gate mit B2 bis Feb 2027 | ADR-019 Fassung 2 |
+| **B7 → ADR-019**             | **Weg C gewählt (MAP-001, 2026-09-08):** Handoff nicht blockiert (ANN-018, Frage an B2); Karte und Fahrzeiten über PTV Developer als Kandidat; produktive Freigabe am Gate aus ADR-019 Punkt 9 — neun Punkte, alle `CONTRACT_CONFIRMATION_REQUIRED` | Jannes (Vertragsdokumente, PTV-Support), Datenschutzberatung (B2) | MAP-006 | Dokumente Okt 2026; Gate mit B2 bis Feb 2027 | ADR-019 angenommen 2026-09-13 (E-20); Gate offen |
 | **E10**                      | Wer darf Mitarbeiterdaten schreiben (bis dahin `owner`)                                                                                            | Jannes                              | STAFF-EPIC-002               | Okt 2026                            | entschieden 2026-09-08 |
-| **B4**                       | Steuerliche Validierung: Leistungsarten, Umsatzsteuer (Personal Training im **selben** Unternehmen, B9), Kleinunternehmerregelung und Gesamtumsatz nach §19 Abs. 3 UStG, Nummernkreis-Format, Belegfristen | Steuerberatung                      | ABR-EPIC-001 (als Annahme)   | Nov 2026                            | Festlegungen stehen 2026-09-08; Anfrage Sep |
+| **E14**                      | Hausbesuch-Szenarien: Nichtantreffen nach Protokoll mit Ausfallgebühr, „Tür geöffnet" gilt als durchgeführt                                        | Jannes                              | CAL-018                      | Sep 2026                            | **entschieden 2026-09-13**; Rechtsgrundlage Fall 1 mit B4 |
+| **E15**                      | Office liest alle klinischen Inhalte wie Therapeut:innen (lesend, auditiert)                                                                      | Jannes; Datenschutzbewertung mit B2 | ROL-EPIC-001                 | Sep 2026                            | **entschieden 2026-09-13**; B2-Bewertung offen |
+| **B4**                       | Steuerliche Validierung: Leistungsarten, Umsatzsteuer (Personal Training im **selben** Unternehmen, B9), Kleinunternehmerregelung und Gesamtumsatz nach §19 Abs. 3 UStG, Nummernkreis-Format, Belegfristen; **E14 Fall 1** (Rechnungstext und Rechtsgrundlage bei Vergütung ohne erbrachte Behandlung) | Steuerberatung                      | ABR-EPIC-001 (als Annahme)   | Nov 2026                            | Festlegungen stehen 2026-09-08; Anfrage Sep |
 | **B14 PDF-Weg**              | Rechnungs-PDF: Browser-Druck, Bibliothek im Browser oder serverseitige Funktion — Optionen legt ABR-EPIC-002a vor; Druckansichten sind entschieden | Jannes mit Claude-Optionen          | ABR-EPIC-002b                | Nov 2026                            | bewusst offen; Tendenz serverseitig |
-| **B2**                       | DSFA-Schwellwertprüfung, DSB-Entscheidung, danach DSFA; Kartendienst und Terminerinnerung mit anfragen                                             | externe Datenschutzberatung         | M3                           | Anfrage Sep, Ergebnis Dez, DSFA Feb | DSB entschieden 2026-09-08; Anfrage Sep |
+| **B2**                       | DSFA-Schwellwertprüfung, DSB-Entscheidung, danach DSFA; Kartendienst, Terminerinnerung, **E15** (Office liest klinische Inhalte) und das Prüfpaket des Registers mit anfragen | externe Datenschutzberatung         | M3                           | Anfrage Sep, Ergebnis Dez, DSFA Feb | DSB entschieden 2026-09-08; Anfrage Sep |
 | **B1**                       | Zweckbestimmung, MDR-Abgrenzung, EU AI Act                                                                                                         | externe Prüfstelle                  | M3                           | Anfrage Sep, Ergebnis Feb           | Zweckbestimmung steht 2026-09-08; Anfrage Sep |
 | **B3**                       | Validierung der internen Fristen (ANN-001), Belegarten                                                                                             | im DSFA-Prozess                     | M3                           | Feb 2027                            | gilt wie ANN-001; Prüfung Feb |
 | **E2**                       | Ausfallkonzept als Praxisprozess — zugleich Rückfallplan der Eröffnung                                                                             | Jannes mit Claude                   | M3                           | Jan 2027                            | Kern entschieden 2026-09-08 |
@@ -753,9 +581,10 @@ Punkt 7 — MUSS; der Inhalt der Zweckbestimmung dagegen schon).
 | **C6**                       | KI: Schutzumfang und Provider                                                                                                                      | Jannes und Prüfung nach ADR-002/005 | Etappe 10                    | Stufe 3                             | Schutzumfang entschieden 2026-09-08 |
 
 Erledigt: A1 bis A4, B1 bis B4 architektonisch, B12 (kein Altsystem), B13
-(Auth-Mails des Providers, kein zweiter Dienst), C1 bis C5, C8, D
-„finalisiert"/„nachvollziehbar", E1, E3 bis E5, E7, E9, E11 (mit STAFF-002),
-E-13 (keine Unterschrift am Hausbesuch).
+(Auth-Mails des Providers, kein zweiter Dienst), C1 bis C5 (C1 und C2 durch
+E15 überholt), C8, D „finalisiert"/„nachvollziehbar", E1, E3 bis E5, E7, E9,
+E11 (mit STAFF-002), E14 (2026-09-13), E-13 (keine Unterschrift am
+Hausbesuch), E-20 und E-21 (ADR-019 angenommen, 2026-09-13).
 
 **Stand 2026-09-08: kein Punkt blockiert mehr das Bauen.** Jannes hat die
 Entscheidungsrunde vom Vortag ausnahmslos entschieden (Historie in
@@ -775,9 +604,10 @@ Registereinträge (Skill-Schritt D), Oberflächen-Checkliste abgehakt
 Frist als `COMMENT`, Löschpfad in LOE-002, ein `test:db`-Fall, der die Löschung
 dieser Klasse prüft.
 
-**Je Epic:** Checks nach Skill-Schritt H · Roadmap nachgestellt · **von Jannes
-binnen sieben Tagen abgenommen** (Datum in der Fortschrittstabelle) · Befunde
-als erste Story in den nächsten Loop derselben Spur.
+**Je Epic:** Checks nach Skill-Schritt H · Roadmap nachgestellt · Pull Request
+mit grüner CI gemergt (Auto-Merge erlaubt) · **von Jannes binnen sieben Tagen
+abgenommen** (Datum in der Fortschrittstabelle) · Befunde nach `BEFUNDE.md`
+und als erste Story in den nächsten Loop derselben Spur.
 
 **Etappe 1 fertig:** M1 erreicht; der Ende-zu-Ende-Fall liegt als E2E-Test
 hinter der Anmeldung.
@@ -793,13 +623,20 @@ gelaufen ist.
 
 **Sitzungszuschnitt**
 
-1. **Ein Loop = eine Session = ein Epic aus mehreren Stories.** Je Story ein
-   Commit und die eng betroffenen Checks. Danach Session beenden.
+1. **Ein Loop = eine Session = in der Regel ein Epic aus mehreren Stories.**
+   Ein Einzel-Story-Loop ist zulässig für Befunde, Korrekturen und
+   Folgeaufträge (`FIX-`, `CAL-01x`); sein Abschlussbericht ist der Bericht,
+   der die Update-Schritte für Jannes enthält. Je Story ein Commit und die
+   eng betroffenen Checks. Danach Session beenden.
 2. **Stories so schneiden, dass jeder Diff am Stück lesbar bleibt.** Die
    vollständige Testsuite läuft einmal am Ende des Epics.
 3. **Neues Thema = neue Session.** Rückfragen zum laufenden Loop in derselben.
-4. **Ein aktiver Feature-Branch.** Docs-Sessions werden sofort gemergt; die
-   sieben Merge-Commits vom 04.09. sollen sich nicht wiederholen.
+4. **Ein aktiver Feature-Branch.** Jeder Pull Request wird gemergt, sobald die
+   CI grün ist (Auto-Merge erlaubt) — außer ein Zweitreview nach ADR-013
+   Fassung 2 steht aus, dann wartet er darauf; Abnahme und Befunde folgen
+   danach (R6).
+   Gemergte Branches werden gelöscht; die elf Remote-Branches vom 13.09.
+   sollen sich nicht wiederholen.
 
 **Leseverhalten**
 
@@ -809,7 +646,10 @@ gelaufen ist.
    kein Grund zu kürzen.
 7. **Höchstens eine Ideenspeicher-Datei** je Loop, nach dem Index in
    `IDEENSPEICHER.md`.
-8. **Keine Subagenten** außer bei echt breiter Suche über viele Dateien.
+8. **Keine Subagenten** außer bei echt breiter Suche über viele Dateien und
+   für den Zweitreview in frischem Kontext, den ADR-013 Fassung 2 (Punkt 9,
+   Nr. 8) bei kritischen Änderungen verlangt (Gate A5 in
+   `GRAPH-ENGINEERING-WORKFLOW.md`).
 
 **Verifikation**
 
@@ -818,9 +658,10 @@ gelaufen ist.
 10. Keine identischen teuren Läufe ohne Änderung dazwischen.
 11. `pnpm test:db` läuft auch in der Cloudumgebung und ist bei Migrationen und
     Policies das wichtigste Gate.
-12. **Unabhängiger Zweitreview** in frischer Session bei RLS-Policies,
-    `SECURITY DEFINER`, Löschung, Rechnungsausstellung und Nummernkreis
-    (`DEVELOPMENT_WORKFLOW.md`).
+12. **Unabhängiger Zweitreview** in frischem Kontext vor dem Merge, wo
+    ADR-013 Fassung 2 (Punkt 9, Nr. 8) ihn verlangt — Auslöser stehen nur
+    dort: Review-Subagent in derselben Session (Regel 8) oder die Zeile
+    „Zweitreview" aus „Sessions starten".
 
 **Rhythmus**
 
@@ -844,7 +685,7 @@ Modell und Aufwandsstufe werden zu Sitzungsbeginn gewählt und nicht gewechselt.
 | Löschung und Retention (LOE-EPIC-001)                            | Opus 5    | `max`                    |
 | Rechnungsausstellung, Nummernkreis, Snapshot (ABR-EPIC-002a)     | Opus 5    | `xhigh` + Zweitreview    |
 | Fachlogik ohne bestehendes Muster; neuer Datenweg (MAP-003, MAP-006) | Opus 5  | `high`                   |
-| Unabhängiger Zweitreview                                         | Opus 5    | `xhigh`, frische Session |
+| Unabhängiger Zweitreview (Zeile „Zweitreview")                   | Opus 5    | `xhigh`, eigene Session  |
 | UI-Seite nach dem Muster vorhandener Seiten, UI-000, UX-EPIC-001 | Sonnet 5  | `medium`                 |
 | Tests zu bereits geschriebenem Code ergänzen                     | Sonnet 5  | `medium`                 |
 | Vollrunde (`OPTIMIERUNG.md`), Formulierung, Doku                 | Sonnet 5  | `medium`                 |
@@ -870,6 +711,11 @@ Auftrag für die wöchentliche Planungssession. Sie **baut nichts.**
 5. Antwort in festem Format, höchstens zwölf Zeilen: _diese Woche ansteht ·
    Jannes entscheidet oder liefert (mit Datum) · hängt (Spur-B-Punkte über
    Termin) · Ampel M0 bis M6 mit je einem Wort Begründung_.
+6. Die Tabelle „Sandbox-Prototypen" in `ARBEITSBEREICHE.md` §2 lesen: Für
+   jede Zeile die seit „Angelegt" fertigen Code-Loops in der
+   Fortschrittstabelle zählen; ab zwei den Prototyp als **abgelaufen** nennen
+   (Jannes startet dann `/sandbox <Thema> verwerfen` oder den ersetzenden
+   Loop). Ohne Zeilen entfällt der Schritt in einem Wort.
 
 Die eingerichtete Routine (montags 07:50 Uhr) ist in `docs/DEVELOPMENT.md`
 beschrieben; ihr Prompt wurde am 2026-09-06 auf dieses Format umgestellt
@@ -994,6 +840,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | FIX-014 Textverlustschutz beim Abmelden und im Wettlauf | fertig | 2026-09-13 | `90ca0f6` — ANN-046 erweitert; Abmelderückfrage, ein Schreibweg je Seite, kein Weitergehen nach Weiterschreiben |               |
 | CAL-017 Teamereignisse als ein Vorgang | fertig | 2026-09-13 | `10e439b` — Gruppenkennung, gruppenweites Ändern und Absagen, Trigger gegen ausscherende Zeilen; ANN-051 |               |
 | DAT-EPIC-001 (DAT-001 bis DAT-003, mit VER-004) | fertig | 2026-09-13 | `84bec9b`, `42bf51e`, `8f7816c`, `fd10a37` — Dateiablage nach ADR-017; `storage.objects` im Test-Shim, ANN-052, ANN-053 |               |
+| Dokumentations-Audit und Bereinigung (Docs)             | fertig | 2026-09-13     | Branch `claude/praxissoftware-arch-graph-gc1a3u` — Prinzipien 0.10, ADR-004/010/018/019, OPEN_DECISIONS 3.0, Register, Ideenspeicher, Roadmap 5.1; E14 erledigt, E15 neu; Graph-Engineering-Workflow 1.0 mit ADR-013 Fassung 2 und `/sandbox` | — |
 
 ---
 
@@ -1001,35 +848,12 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5.2     | 2026-09-13 | **Graph-Engineering-Workflow 1.0** (Docs-Session, Knoten 4 des Dokumentations-Audits; freigegeben von Jannes). Jeder Auftrag wird vor dem ersten Schritt **klassifiziert** (K1): Pfad A — der Feature-Loop, jetzt mit benanntem Compliance-Gate A4 und Zweitreview A5 **vor dem Merge** (Review-Subagent in derselben Session oder Zeile „Zweitreview"; der Pull Request wartet dann); Pfad S — die neue **Frontend-Sandbox** (`/sandbox <Thema>`, `.claude/skills/sandbox/SKILL.md`), technisch ohne Server, Netz und Persistenz — `trennung.test.ts` prüft jetzt auch Importe aus echten API-Modulen —, höchstens zwei Code-Loops lang, endet mit Härtungs-Ticket (`… übernehmen`) oder Löschung (`… verwerfen`); Pfad D — Docs-Session, wenn eine Hard-Stop-Entscheidung fehlt. Dafür **ADR-013 Fassung 2**: Punkt 9 definiert „kritische Änderung" (§12 plus technische Auslöser, Liste nur dort) und legt die zehn Punkte der Review-Checkliste fest, die Punkt 8 seit dem 28.08. verlangte. Nachgezogen: `CLAUDE.md`, Feature-Loop-Skill (K1, Schritt F, Schritt I), `ARBEITSBEREICHE.md` (Sandbox-Prototypen, Regel statt „keine neue Vorschau"), Zeilen „Sandbox" und „Zweitreview" hier, Credit-Regeln 4, 8 und 12, Modelltabelle, Wochenupdate Schritt 6, G5, `DEVELOPMENT_WORKFLOW.md`. **Reihenfolge unverändert: nächster Loop ROL-EPIC-001.** |
+| 5.1     | 2026-09-13 | **Dokumentations-Audit und Bereinigung** (Docs-Session, kein Feature-Code). Drei Festlegungen des Projektinhabers: **E15** — Office liest alle klinischen Inhalte wie Therapeut:innen (`PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4, ADR-004 Fassung 2; Umsetzung **ROL-EPIC-001**, jetzt nächster Loop); **E14 erledigt** — Hausbesuch-Szenarien: Nichtantreffen nach Protokoll mit Ausfallgebühr, „Tür geöffnet" gilt als durchgeführt (§8, ADR-018 Fassung 3; Umsetzung **CAL-018**); **E-20** — ADR-019 angenommen. Dazu **VER-EPIC-002** (Verordnung im Office-Alltag, Vorgabe aus PR #37 auf `main` übernommen) vor ABR-EPIC-001. Aufgeräumt: „Nächster Loop" trägt nur noch den Livestand, die Vermerke 2.0–4.6 liegen in `archiv/`, der Rückwärtsplan ist auf den Stand vom 13.09. gezogen (13 Loops im September fertig), fertige Loops der Etappe 1 sind durchgestrichen, `fortschritt.json` nennt die Stufen jetzt `fertig`/`abgenommen` wie die Tabelle, `BEFUNDE.md` sammelt Befunde, die Ablaufrunden sind bis Probewoche 1 eingefroren, Merge-Regel: bei grüner CI (Auto-Merge), Abnahme binnen sieben Tagen. Register: Übersicht vollständig, Status normiert, ANN-006/011 durch E15 abgelöst, ANN-036 in ADR-018 überführt. OPEN_DECISIONS: Struktur 3.0 mit Archiv, Rückverweisen und Glossar. Ideenspeicher: Statusmodell mit `zurückgestellt`, gebaute Ideen `überführt`. |
 | 5.0     | 2026-09-13 | **DAT-EPIC-001 fertig** (drei Stories) — die erste Zeile der Etappe G, die Code ist, und die erste Stelle, an der die Anwendung **zwei** Speicher führt. **DAT-001**: Dateien hängen an einem Bezugsdatensatz und kommen nur über zwei Phasen mit serverseitiger Bestätigung in die Akte — die Berechtigung wird geprüft, bevor Bytes fließen, und `confirm_patient_file_upload` vergleicht Größe und MIME-Typ gegen das, was die Storage-API tatsächlich abgelegt hat. Der Objektschlüssel trägt nur Kennungen und ist eine **generierte Spalte**; er verlässt die Datenbank ausschließlich über den Vorgang, der die Ausstellung protokolliert (**ANN-052**) — der Lesepfad liefert ihn nicht. Ausgeliefert wird über signierte Verweise mit **60 Sekunden** und `cacheControl: '0'`, je Zugriff neu, nie auf Vorrat. Der Rollenschnitt hängt an der Dokumentart und steht als Daten im Katalog: **der Verordnungsscan ist klinisch**, und `office` bekommt ihn gar nicht erst geliefert — nicht ausgegraut und nicht gezählt (ANN-011). **DAT-002**: Löschen ist zweistufig, und die Quittung wird **verdient** — der Server prüft selbst, dass das Objekt weg ist, sonst bleibt der Auftrag offen; umgekehrt lässt die DELETE-Policy nur Objekte mit offenem Auftrag entfernen, womit die Reihenfolge „erst Datenbank, dann Objekt" erzwungen und nicht bloß vereinbart ist. Dazu die protokollierte Korrektur der Dokumentart, die eine Sichtbarkeitsgrenze verschiebt. **DAT-003**: Der Abgleich meldet fehlende Objekte als Verlust mit Akte und Namen und verwaiste Objekte als Abfall, der über denselben Löschweg fällt — kein zweiter, stiller Pfad. **ANN-053** benennt die ehrliche Grenze: Die Prüfsumme rechnet der Browser, und die Datenbank kann sie nicht nachrechnen. Drei Migrationen, 68 neue Datenbanktests, drei Abnahmeabschnitte; der Test-Shim bildet jetzt `storage.buckets` und `storage.objects` nach, damit der Dateizugriff (§12) in der Cloudumgebung überhaupt prüfbar ist. Ein Befund aus dem vollständigen Lauf ist mitbehoben: Beim Erweitern des Ereigniskatalogs war eine veraltete Fassung der Subjekttypen fortgeschrieben worden. Im Fortschrittsmodell geht der Posten auf `gebaut` (0,85): Block A **68,4 Prozent** (vorher 63,4), Gesamtstand **33,0** (vorher 31,5). **Nächster Loop: `ABR-EPIC-001`** — B4 liegt noch nicht vor und blockiert nach §15.1 nicht, aber Leistungskatalog und Praxisstammdaten braucht er von Jannes. |
 | 4.9     | 2026-09-13 | **Drei Korrekturen aus der CI und einem Befund am laufenden Stand.** **FIX-013**: Die angemeldeten E2E-Prüfungen sind wieder grün — sechs Fehlschläge, drei Ursachen. Ein echter Befund in der Oberfläche (das Ereignisformular wählte den einzigen Standort nicht vor, obwohl die Terminanlage genau das tut), zwei Tests mit veralteter `cancel_appointment`-Signatur (PostgREST fand die Funktion nicht, die Antwort war 404 statt der geprüften Berechtigung), zwei Tests auf die vor CAL-015b gültige Darstellung und ein Tagkonflikt zwischen zwei Tests derselben Datei. **FIX-014**: Der Textverlustschutz erfasst jetzt auch das **freiwillige Abmelden** — die in ANN-046 ausdrücklich offen gelassene Grenze —, alle Schreibvorgänge einer Seite laufen durch **einen** Weg (kein zweiter startet, solange einer läuft), und wer während des Speicherns weiterschreibt, geht nicht weiter; beim Abschluss und bei der Korrektur ist das Feld währenddessen unveränderlich. Die erzwungene Beendigung einer Sitzung kommt daran nie vorbei und greift unverändert sofort. **CAL-017**: Ein Teamereignis ist **ein Vorgang**. Die Zeilen tragen eine gemeinsame Gruppenkennung; Bezeichnung, Zeit, Länge, Art und Ort ändert `update_appointment_event` für alle Beteiligten in einer Transaktion, mit Konfliktprüfung je Person vor dem Schreiben, und `cancel_appointment_event` sagt alle offenen Teilnahmen zugleich ab. Eine einzelne Ereigniszeile kann nicht mehr ausscheren (Trigger); die einzelne **Teilnahme** bleibt davon getrennt änderbar und absagbar. Bestandszeilen werden **nicht** über Titel oder Uhrzeit zusammengeführt. Dafür **ANN-051**; eine Migration, ein neues Formular, zwei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |
 | 4.8     | 2026-09-13 | **CAL-016: die Nachbesserung zu CAL-014 und CAL-015** — aus zwei unabhängigen Reviews in frischem Kontext, keine neue Entscheidung und keine neue Annahme. Der Befund mit Geldfolge: `cancel_appointment` hatte als einzige der berührten Schreibfunktionen keine Artprüfung bekommen; eine Teambesprechung, die jemand mit dem Grund „Patient:in hat abgesagt" innerhalb der Frist absagte, bekam einen **Gebührenanlass** — an einer Zeile ohne Patient:in und ohne Behandlungsbeginn, und der Löschlauf hätte sie deshalb nie wieder angefasst (§16, ADR-008). Dazu: `cancel_staff_day` nimmt nur noch praxisbedingte Gründe an (der Ausfall einer behandelnden Person ist definitionsgemäß praxisbedingt; ein Fehlgriff im Auswahlfeld hätte Forderungen gegen **alle** Patient:innen des Tages innerhalb der Frist erzeugt), `list_day_plan` ließ Ereignisse still fallen (INNER JOIN auf `patients` — dieselbe Stelle, die CAL-015b bei zwei anderen Lesepfaden behoben hatte, hier übersehen), und der Mitteilungsvermerk weist ein Ereignis jetzt auch serverseitig ab. Oberfläche entsprechend: Absagedialog, „Tag umplanen", Tagesliste und `EditAppointmentPage` kennen Ereignisse; der Data Router bekommt ein `errorElement` mit deutschem Fehlerkasten statt der eingebauten englischen Seite mit Stacktrace (§13, ADR-011). Eine Migration, zwei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |
 | 4.7     | 2026-09-12 | **Drei Aufträge von Jannes fertig, keiner aus dieser Reihenfolge** — der zweite und dritte ändern verbindliche Dokumente. **FIX-EPIC-003**: Ungespeicherte Behandlungsdokumentation ist bei interner Navigation geschützt; die offene Entscheidung zum Router ist gefallen (Data Router mit einer Platzhalterroute — `useBlocker` verlangt ihn, ein selbstgebauter Wachposten käme an das Zurück des Browsers nicht heran), die Rückfrage bietet Speichern, Verwerfen und Bleiben, und ein Speicherfehler nimmt weder Text noch Seite mit (ANN-046). **CAL-014**: Eine Patientenabsage unter 24 Stunden löst eine Ausfallgebühr aus, gerechnet serverseitig aus dem **Eingang** der Absage — der jetzt getrennt von der Eingabe erfasst wird; das Nichtantreffen verliert seine Pflichtentscheidung über das Honorar und ist ein Schritt. Dafür **ADR-018 Fassung 2** und **`PROJECT_PRINCIPLES.md` 0.8** (§8); **E14 neu** (ob das Nichtantreffen eine eigene Gebührenregel bekommt, ist offen und blockiert nichts); ANN-047, ANN-048, ANN-035 erweitert. **CAL-015**: Behandlungstermine haben 60 **oder** 45 Minuten — damit ist **E12 Punkt 1 erledigt**, ohne das dort angebotene Verfahren zu bauen —, Ereignisse des Praxisbetriebs (Besprechung, Teamtermin) lassen sich ohne Patient:in und Verordnung eintragen und erzeugen keine Leistung, und der Weg von der Verordnung in den Kalender trägt den Kontext bis ins Formular. Dafür **`PROJECT_PRINCIPLES.md` 0.9** (§8.1); ANN-049, ANN-050. Zwei Migrationen, drei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |
-| 4.6     | 2026-09-12 | **ADR-017 angenommen** — Jannes bestätigt alle acht Fragen **wie empfohlen**: 60-Sekunden-Verweise ohne Teilen-Link, Verordnungsscan klinisch (für `office` nicht sichtbar), PDF/JPEG/PNG bis 10 MB, keine Virenprüfung in V1, unveränderliche Dateien, zweistufige Löschung mit Quittung, keine produktive Datei ohne getestete Objektsicherung, fünf zusätzliche Prüfpunkte in OPS-001. Damit ist **Zeile G1 erledigt**, **Punkt E8 geschlossen** und **DAT-EPIC-001 baubar** — die Voraussetzung im Abschnitt „Nächster Loop" ist erfüllt. `PROJECT_PRINCIPLES.md` wird **nicht** nachgezogen: §4.7, §12 und §18 gelten unverändert, ADR-017 konkretisiert sie nur (§21). Im Fortschrittsmodell gehen G1 und E8 von `entwurf` auf `fertig`: Block C **15,9 Prozent** (vorher 13,6), Block E **42,5** (vorher 40,0), Gesamtstand **31,5** (vorher 30,4). Offen bleiben die **produktiven** Vorbedingungen: OPS-001 (G3) und der Sicherungsweg für den Objektspeicher (G7). |
-| 4.5     | 2026-09-12 | **ADR-017 Dateiablage geschrieben** (Docs-Session zu Zeile G1, kein Code). Dreißig Punkte: Supabase Storage im selben Projekt, private Buckets je Datenklasse, Objektschlüssel nur aus Kennungen · **die Datenbankzeile führt, das Objekt folgt** — zweiphasiger Upload mit serverseitiger Bestätigung, Dateien unveränderlich, Prüfsumme als Nachweis · **Rollenschnitt an der Dokumentart**: der Verordnungsscan ist klinisch, weil sich ein Scan nicht projizieren lässt (ANN-011) · Auslieferung nur über **signierte Verweise mit 60 Sekunden**, `cacheControl: '0'`, **kein Teilen-Link** · drei Auditereignisse mit der ehrlichen Grenze, dass die Ausstellung protokolliert wird und nicht das Laden · Frist erbt die Datei vom Bezugsdatensatz, **zweistufige Löschung mit Quittung** · **keine Virenprüfung in V1**, Pflicht ab dem ersten Upload von außen. Zwei Befunde aus der Recherche mit Folgen über den ADR hinaus: ein signierter Verweis ist **nicht widerrufbar** und kann einen CDN-Zwischenspeicher hinter sich lassen; und der **Objektspeicher läuft im Datenbank-Backup nicht mit** — G7 ist entsprechend erweitert und wird Vorbedingung für produktive Dateien. Präzisiert: Storage ist kein neuer Dienstleister, deshalb steht der ADR **vor** OPS-001 und liefert ihm fünf zusätzliche Prüfpunkte (G1, G3). **Acht Bestätigungsfragen offen; E8 bleibt bis dahin offen.** Im Fortschrittsmodell stehen G1 und E8 damit auf `entwurf` (0,5): Block C **13,6 Prozent** (vorher 11,4), Block E **40,0** (vorher 37,5), Gesamtstand **30,4** (vorher 29,4). Reihenfolge unverändert — nächster Loop DAT-EPIC-001. |
-| 4.4     | 2026-09-12 | **UI-002 Lesbarkeit fertig** (vier Stories, eigener Auftrag von Jannes aus der Sicht auf die laufende Anwendung). Der Bereich **„Übersicht" der Akte ist entfallen** — er war ein Auszug aus den vier anderen Bereichen und kostete bei jedem Aufruf einen Tap; `/patienten/:id` führt jetzt in den ersten Bereich, den die Rolle sehen darf, und die Suchparameter wandern mit, damit der Rückweg nicht beim Öffnen verloren geht. Zugangshinweis und Besonderheit stehen im Kopf der Akte (UI-002a). **Papier ist weiß** — Karte (#f6f7f4) und Seitengrund (#eceee8) lagen bei 1,09:1, also praktisch nicht unterscheidbar; der getönte Grund stand optisch hinter dem Inhalt statt unter ihm. Ein Token, 103 Stellen; die Folge für Eingabefelder (nicht mehr die hellste Fläche, erkennbar allein an `line-strong` mit 4,56:1) ist als Test festgehalten (UI-002b). **Termine, Listen und Auskünfte stehen im weißen Rahmen**, die Bedienung bleibt vertieft — die Regel trägt `Section rahmen` und `Inhaltsflaeche`, nicht dreißig einzelne Klassenlisten (UI-002c). **„Mein Konto" sagt vor der Einrichtung, dass die Anmeldung den zweiten Faktor derzeit nicht abfragt** (UI-002d) — Jannes hat am selben Tag entschieden, den Faktor erst nach dem Online-Schalten zu integrieren, und ANN-028 trägt den Nachtrag samt der Berichtigung „nicht erzwungen" → „nicht abgefragt". Keine Migration, keine neuen Rechte, keine neue Annahme. **Nächster Loop unverändert: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
-| 4.3     | 2026-09-12 | **Planungssession ohne Code.** Gesamtstand geprüft: alle sechs Remote-Branches sind in `main` aufgegangen, **kein unveröffentlichter Code** — offen war allein ein Docs-Stand auf `claude/jolly-galileo-vgpuzb` (Abnahme von CAL-EPIC-003a am 2026-09-12), den Jannes nicht bestätigen konnte; er ist noch am selben Tag über PR #33 in `main` gelandet (Vermerk 4.2) und damit erledigt. Drei Vorgaben von Jannes aufgenommen: **`UI-002 Lesbarkeit`** als neues Epic und Vorschlag für den nächsten Loop (Bereich „Übersicht" der Akte entfällt · wichtige Inhalte auf Weiß statt auf getönter Fläche · Kopf und Bereichsleiste bleiben) · **der zweite Faktor wird erst nach dem Online-Schalten integriert**, womit `FIX-EPIC-002` hinter die Inbetriebnahme rückt und die ungedeckte Zusage in „Mein Konto" bis dahin benannt werden muss · **Terminieren mit ausgewählter Person** als `IDEA-PRX-042` im Ideenspeicher und `CAL-EPIC-004` als Vorschlag, dessen Fahrweg-Einfärbung an MAP-006 und dem Gate aus ADR-019 hängt. **Reihenfolge unverändert**, solange Jannes UI-002 nicht vorzieht. |
-| 4.2     | 2026-09-12 | **CAL-EPIC-003a von Jannes abgenommen** — die Abnahme am eigenen Rechner ist durchlaufen (Abnahmeschritte in `docs/abnahme/etappe-1-kernprozess.md`, Abschnitt CAL-EPIC-003a); der Code liegt seit PR #28 (Merge-Commit `58af03e`) in `main`. Nachgezogen: die Fortschrittstabelle trägt in der Zeile jetzt `fc1cd10` und den Merge und in der Spalte „Abgenommen am" das Datum · in der Loop-Tabelle der Etappe 1 ist der Loop durchgestrichen und als **fertig** mit Abnahmedatum geführt, wie beim DOK-EPIC · im Fortschrittsmodell wechselt der Posten von `gebaut` (0,85) auf `fertig` (1,0): Block A steht auf **63,4 Prozent** (vorher 62,5), der Gesamtstand auf **29,4 Prozent** (vorher 29,1). Damit trägt **jedes Epic bis einschließlich der Terminzustände** ein Abnahmedatum; auf Abnahme wartet nur noch, was danach gebaut wurde — CAL-EPIC-003b samt CAL-012 und CAL-013, AKTE-000 bis AKTE-005, UX-012a bis UX-012f und FIX-EPIC-001. Die Gegenmaßnahme zu R6 (Befundwelle aus späten Abnahmen) greift weiter. Keine Codeänderung, keine Migration, keine neue Annahme. **Reihenfolge unverändert — nächster Loop bleibt DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
-| 4.1     | 2026-09-12 | **FIX-EPIC-001 fertig** (fuenf Stories) — ein Befund-Loop aus einer Pruefung, nicht aus der Reihenfolge dieser Roadmap (R6). Links aus den Auth-Mails hatten keinen Empfangspfad: `detectSessionInUrl` steht auf `false`, und es gab im ganzen Projekt kein `verifyOtp`, `exchangeCodeForSession` oder `setSession`; `/kennwort-neu` war eine Adresse ohne Route. Jetzt zwei oeffentliche Seiten, eingeloest ueber den einmaligen `token_hash` mit eigenen Mailvorlagen — datensparsamer als Token im Adressfragment und der einzige Weg, der geraeteuebergreifend traegt (ANN-043) · Der Auditvermerk zu "Alle Sitzungen beenden" stand vor dem Vorgang und blieb auch bei dessen Fehlschlag stehen; ein blosses Vertauschen haette ihn ersatzlos geloescht, weil `log_account_security_event` `auth.uid()` verlangt. Er ist jetzt Vorbedingung, `melde()` erkennt Fehlschlaege ueberhaupt erst, und die Zusage nennt das Restfenster von bis zu einer Stunde samt Verweis auf die sofort wirkende Sperre (ANN-044) · Das gewoehnliche Abmelden lief mit dem supabase-js-Default `scope: 'global'` und beendete alle Geraete, waehrend "Mein Konto" das Gegenteil versprach (ANN-045) · Der Abfragespeicher wurde nur beim Knopf in der Kopfzeile geraeumt; "Alle Sitzungen beenden", die Abmeldung im zweiten Tab und die abgelaufene Sitzung liefen daran vorbei. Die Raeumung steht jetzt im Ereignisstrom und vergleicht die Benutzerkennung, damit `TOKEN_REFRESHED` nicht stuendlich die acht Stunden aus ANN-021 zuruecknimmt (ANN-021 umgezogen). **Drei Abnahmeschritte beschrieben Verhalten, das es nicht gibt** und sind berichtigt — darunter STAFF-004 Nr. 9: ein eingerichteter zweiter Faktor wird beim Anmelden **nie abgefragt**. Das ist ein eigenes Epic (`FIX-EPIC-002`), ebenso der Navigationsschutz fuer ungespeicherte Dokumentation (`FIX-EPIC-003`). **Naechster Loop unveraendert: DAT-EPIC-001**, sobald ADR-017 bestaetigt ist; sonst `ABR-EPIC-001` vorziehen. |
-| 4.0     | 2026-09-12 | **Die Bedienabläufe zwischen den Bereichen sind überarbeitet** (eigener Auftrag von Jannes, **nicht** aus der Roadmap). Kein neuer Bereich — die **Wege** dazwischen: Der Name im Terminkopf führt in die Akte; **Rückwege** tragen Ansicht, Person, Datum, Filter und den Stand der Patientensuche mit (`?zurueck=`, nur interne Pfade, nie ein Name in der Adresszeile nach ADR-011); **Patient:in anlegen** und **Adresse ergänzen** gehen aus dem laufenden Vorgang heraus und kommen mit allem Eingetippten zurück; das Verordnungsformular nennt die Person, für die geschrieben wird; **Formularfehler** stehen als Zusammenfassung über den Feldern und führen mit Klick, Tap oder Tastatur ins Feld; ein **Suchfehler** ist nicht mehr „Kein Treffer"; der Mitarbeiterdatensatz verbindet Telefon, E-Mail, Kalenderwoche und Arbeitszeiten. **Zwei echte Fehler behoben:** ein falscher Abfrageschlüssel ließ die Akte nach dem Anlegen einer Terminserie veraltet stehen, und die Serienprüfung konnte ein altes Ergebnis für eine **geänderte** Liste als gültig ansehen — sie ist jetzt an ihren Vorschlag gebunden. **ANN-039 und ANN-041 in Fassung 2:** Drucken und Mailen **bereiten vor**; der Mitteilungsvermerk entsteht erst auf ausdrückliche Bestätigung, weil er sonst eine Übergabe behauptet, die niemand gesehen hat. Keine Migration, keine neuen Rechte. **Nächster Loop unverändert: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
-| 3.9     | 2026-09-12 | **Die Patientenakte ist umgebaut** (eigener Auftrag von Jannes anhand eines Screenrecordings, **nicht** aus der Roadmap — wie MARKE-001). Aus einer sehr langen Seite werden ein Kopf und fünf Bereiche: **Übersicht** mit nächsten Terminen, laufenden Verordnungen und letztem Behandlungsstand · **Termine** mit Historie, allen Zuständen und Filter auf eine Verordnung · **Verordnungen** getrennt nach laufend und ausgeschöpft · **Behandlungsverlauf** · **Stammdaten** mit den seltenen Verwaltungsvorgängen am Ende. Zwei neue Lesepfade (`list_patient_appointments`, `list_patient_prescription_slots`), keine neuen Rechte, keine neuen Felder. **Sachlich korrigiert:** „Kontingent" stand über zwei verschiedenen Zahlen — Leistungseinheiten aus den Positionen und verplante Termine (ANN-038); beide tragen jetzt ihre Einheit im Namen, und „Terminserie anlegen" steht nur noch an einer Verordnung, an der sich etwas planen lässt. Neu: der **Patientenfilter im Kalender** (`?patient=`), übergeben aus der Akte. **Keine neue Annahme.** **Nächster Loop unverändert: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
-| 3.8     | 2026-09-12 | **B15 im Nachtrag geändert und CAL-013 gebaut.** Jannes hat ausdrücklich vorgesehen, dass die Praxis Terminmails verschickt, und damit seine eigene vorläufige Entscheidung vom 2026-09-08 in **einem** Punkt geändert. Der Nachtrag in `OPEN_DECISIONS.md` B15 trennt, was dort in einem Satz stand: **keine automatische Erinnerung über einen Versanddienstleister** (unverändert) und **die Terminmail aus dem eigenen Postfach, auf Klick** (neu). **Neu gebaut: CAL-013 Termine per E-Mail** — die Anwendung baut aus den Terminen des Zettels einen fertigen Entwurf und übergibt ihn dem Mailprogramm der Praxis; gesendet wird dort von Hand. Inhalt und Betreff sind auf das Organisatorische begrenzt, der Hinweis auf die fehlende Verschlüsselung steht an der Stelle der Entscheidung, und vermerkt wird **vor** der Übergabe und nur, was auch im Text steht. Aus dem Knopf „Terminzettel" wird „Termine mitteilen". Neu offen: **ANN-041** (`Datenschutz`, Prüfpaket) — offen bleibt der dokumentierte Wunsch je Patient:in (PAT-006). |
-| 3.7     | 2026-09-12 | **ANN-037 bis ANN-039 von Jannes bestätigt** — alle drei wie empfohlen. ANN-037 und ANN-038 sind `Praxisprozess` und damit **erledigt**; ANN-039 (`Datenschutz`) bleibt im Prüfpaket und gehört in die Anfrage B2. **E12 Punkt 3 und 4 vorläufig entschieden: der Fahrpuffer kommt erst mit MAP-006** — kein pauschaler Mindestabstand, keine von Hand gepflegten Fahrminuten. **CAL-010b entfällt** als eigene Story und geht samt der Aufrundungsregel aus §8.1 in MAP-006 auf; offen bleiben allein E12 Punkt 1 und 2. **Neu gebaut: CAL-012 Mitteilungsvermerk am Termin** (Folgeauftrag von Jannes, Vorbild iPrax): In der Terminliste der Akte steht hinter jedem Termin, ob und auf welchem Weg er mitgeteilt wurde — persönlich, telefonisch, Terminzettel, E-Mail. Der Vermerk verfällt automatisch mit jeder Terminänderung; der Druck des Terminzettels vermerkt alle aufgeführten Termine. **Die Anwendung verschickt weiterhin nichts** (B15 unverändert). Neu offen: **ANN-040** (`Datenschutz`, Prüfpaket). |
-| 3.6     | 2026-09-12 | **CAL-EPIC-003b fertig** (drei Stories): Das 60-Minuten-Terminfenster aus §8.1 wird serverseitig durchgesetzt — beide Schreibpfade, abgeleitetes Ende im Formular, Bestandstermine bleiben gültig und verschiebbar (CAL-010a, ANN-037) · Eine Verordnung wird in **einem** Vorgang zur Terminserie: Anzahl aus dem offenen Kontingent, drei Rhythmen, serverseitige Konfliktprüfung je Zeile, Einzelabweichung, alles oder nichts; der Termin kennt seine Verordnung (CAL-007, ANN-038) · Terminzettel als Druckansicht, nur Druck und kein Versand (CAL-011, `IDEA-PRX-006` überführt, ANN-039). **CAL-010b (Fahrpuffer) bleibt liegen** — E12 Punkt 3 und 4 sind offen; ein pauschaler Wert wäre neben MAP-004 ein zweiter, schlechterer Mechanismus. **Nächster Loop: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |
-| 3.5     | 2026-09-12 | **ANN-034 bis ANN-036 von Jannes bestätigt** — alle drei wie empfohlen. ANN-034 (Absagegrund als codierte Auswahl ohne Freitext) und ANN-035 (No-show unter der Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung) wechseln auf `entschieden (Jannes)` und bleiben als `Datenschutz` beziehungsweise `Recht` **im Prüfpaket**: Die Bestätigung des Projektinhabers ersetzt die Datenschutzprüfung nicht (§15.1 Punkt 5). Beide gehören damit in die Anfrage B2. ANN-036 (`documented` auch aus `confirmed`) ist `Technik` und **erledigt**; er kommt nur zurück, wenn ABR-003 `invoiced` denselben Weg gehen lässt. **Reihenfolge unverändert — CAL-EPIC-003b bleibt der nächste Loop**; CAL-EPIC-003a wartet nur noch auf die Abnahme am eigenen Rechner. |
-| 3.4     | 2026-09-12 | **CAL-EPIC-003a fertig** (fünf Stories): Ein Statusfeld mit sechs in V1 erreichbaren Werten nach ADR-018, samt der Umbenennung `scheduled` → `confirmed` quer durch Migrationen, Lesepfade, Filter, Planungsregeln und Oberfläche · Absage nur mit codiertem Pflichtgrund und ohne Rückweg (ANN-034) · „nicht angetroffen" mit Pflichtentscheidung zum Ausfallhonorar, Wiederöffnen und eigener Löschregel (ANN-035) · `documented` setzt die Finalisierung in derselben Transaktion, mit der von ADR-018 verlangten Invariante in beiden Richtungen (ANN-036) · `cancel_staff_day` plant einen ganzen Tag in einem Vorgang um und zeigt danach die Anrufliste (CAL-009, `IDEA-PRX-004` überführt). Neu hinter der Anmeldung maschinell geprüft: `tests/e2e/authenticated/appointment-states.spec.ts`. Der Punkt „Terminstatusautomat" fällt aus der Liste offener Entscheidungen in `ARBEITSBEREICHE.md`. **Nächster Loop: CAL-EPIC-003b.** |
-| 3.3     | 2026-09-11 | **Sechs Epics von Jannes abgenommen** (DOK-001 bis DOK-004, VER-EPIC-001, UI-000, MARKE-001, UX-EPIC-001, LOE-EPIC-001) — die Spalte „Abgenommen am" trägt jetzt überall dort ein Datum. Damit ist der Kernprozess zur Hälfte erledigt: Block A des Fortschrittsmodells steht auf 50 Prozent, der Gesamtstand auf **25,3 Prozent** (vorher 23,5). Neu ist dieses Modell selbst — `docs/development/fortschritt.json`, `scripts/fortschritt.mjs` und `pnpm fortschritt` beantworten „wie weit sind wir insgesamt", was die Fortschrittstabelle absichtlich nicht tut; die Gewichte und die drei Festlegungen dahinter stehen im Abschnitt „Eine Zahl für den Gesamtstand". **Reihenfolge unverändert — CAL-EPIC-003a bleibt der nächste Loop**, seine Voraussetzung ADR-018 ist mit PR #26 in `main`. |
-| 3.2     | 2026-09-11 | **ADR-018 angenommen** — Jannes hat alle sieben Bestätigungsfragen wie empfohlen entschieden. Nachgezogen wie in 3.1 angekündigt: `PROJECT_PRINCIPLES.md` **Version 0.7** ersetzt in §8 den Satz, der den Zustandsautomaten als offenen Punkt führte, durch die acht Werte und den Hinweis, welche zwei davon nur beschrieben sind (§21, eigener Commit, Änderungsvermerk im Dokument) · **Punkt D („bestätigt") in `OPEN_DECISIONS.md` ist erledigt** · **ANN-005 bleibt in Kraft** und wechselt auf `entschieden (Jannes)`: ADR-018 bestätigt sie ausdrücklich und setzt die §19-Kopplung an die Rechnung, nicht an den Abschluss; Wiedervorlage zurück auf ABR-002. Die Umsetzung selbst ist unverändert **CAL-EPIC-003a** — die Entscheidung ist deren Vorbedingung, nicht ihr Ersatz. **Nächster Loop bleibt CAL-EPIC-003a.** |
-| 3.1     | 2026-09-11 | **ADR-018 Terminzustände geschrieben** (Docs-Session, Status vorgeschlagen): ein Statusfeld mit acht Werten, sechs davon in V1 erreichbar — `requested` und `tentative` bleiben beschrieben und ungebaut (Entscheidung vom 2026-09-08) · Übergänge samt Auslöser, `cancelled` und `documented` ohne Rückweg · `documented` und `invoiced` werden vom besitzenden Vorgang in derselben Transaktion gesetzt, nicht abgeleitet, mit getesteter Invariante · Ausfallhonorar als Pflichtkennzeichen am Nichtantreffen, Betrag bleibt bei ABR · Serie ohne eigenen Status · Migration der drei heutigen Werte samt Umbenennung `scheduled` → `confirmed`. Sieben Bestätigungsfragen offen; erst danach werden §8 (§21) und Punkt D geschlossen. Außerdem: der ADR-Index in `CLAUDE.md` führte ADR-018 und ADR-019 nicht, die Aufruftabelle verwies für ADR-018 auf die falsche Zeile — beides berichtigt. **Nächster Loop bleibt CAL-EPIC-003a.** |
-| 3.0     | 2026-09-11 | **LOE-EPIC-001 fertig** (fünf Stories): Retention Schedule und Datenklassen an genau einer Stelle — `retention_classes`/`retention_assignments`, jede der 22 Tabellen zugeordnet, ein Test gegen `pg_tables` (ANN-001 verankert, ANN-029 bis ANN-031 neu) · Anker „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang in der Akte, Rollenschnitt ohne `office` (ANN-032) · Legal Hold als expliziter Zustand mit Beginn, Grund, Person und Ende, nur `owner`, ohne Pflegeoberfläche (ANN-033) · täglicher Löschlauf mit vier Regeln, Löschjournal als Nachweis und idempotente Wiederanwendung nach einem Restore · Aufbewahrungsübersicht für `owner` unter Betrieb → Aufbewahrung. Go-live-Blocker 1 in `docs/DEVELOPMENT.md` ist damit auf zwei betriebliche Punkte geschrumpft (pg_cron im Produktivprojekt, Journal-Sicherung im Restore-Verfahren). **Nächster Loop: CAL-EPIC-003a.** |
-| 2.9     | 2026-09-11 | **STAFF-EPIC-002 fertig** (fünf Stories): Rechteschnitt nach E10 — Stammdaten `owner` und `office`, Beschäftigungsstatus und Zugänge nur `owner`, Privatangaben folgen dem Leserecht (ANN-024); `PROJECT_PRINCIPLES.md` 0.6 zieht §4.3 und §4.5 nach §21 nach · Zugang einladen, annehmen, zurücknehmen: die Berechtigung entsteht in der Datenbank, das Konto beim Anmeldedienst, und ein Konto ohne offene Einladung bleibt zugriffslos (ANN-025, ANN-026) · Rollen ändern und Zugang sperren mit Aussperrschutz für die letzte aktive Inhaberin · Kennwort zurücksetzen über die Auth-Mails des Providers (B13) · Selbstbedienung „Mein Konto": Kennwort (ANN-027), zweiter Faktor als TOTP, alle Sitzungen beenden (R10) · MFA für `owner` eingerichtet und sichtbar, **nicht** erzwungen (ANN-028; Jannes hat am selben Tag entschieden, die Pflicht erst mit einer feststehenden Domain zu planen). **E10 und E11 erledigt. Nächster Loop: LOE-EPIC-001.** |
-| 2.8     | 2026-09-11 | **MARKE-001 — die Anwendung trägt die Marke Own Motion** (auf ausdrücklichen Auftrag, **nicht** aus der Roadmap): Favicon und App-Symbol über byte-gleiche Kopien in `public/marke/` (`src/marke.test.ts` hält die Gleichheit fest, `marke/` bleibt einzige Quelle); `--color-accent` auf die Hauptfarbe `#004429`, Hover auf das Tiefgrün `#042c1b` der Marke (ANN-022) — dunkler statt heller, weil `accent-hover` überwiegend Textfarbe ist; Wortmarke in Kopfzeile und Anmeldemaske, Seitentitel „Own Motion", der Organisationsname entfällt aus der Kopfzeile (ANN-023). Kontrastgate erweitert statt abgeschwächt. Abnahmeschritt MARKE-001 in `docs/abnahme/etappe-1-kernprozess.md`. Offen bleiben die drei Befunde aus `marke/README.md` (Favicon bei 16 px unlesbar, App-Symbole nur als PNG, C2PA-Metadaten) sowie Schrift und Radien. Beim Zusammenführen mit UX-EPIC-001 wurden die beiden Annahmen der Marke von ANN-020/021 auf **ANN-022/023** umnummeriert: Beide Zweige hatten parallel dieselben freien Nummern gegriffen. **Nächster Loop bleibt STAFF-EPIC-002.** |
-| 2.7     | 2026-09-11 | **UX-EPIC-001 fertig** (elf Stories): Tagesliste des Hausbesuchstags mit Anschrift, `tel:`-Link und Zugangshinweis · Navigations-Handoff an Google Maps (ANN-018 verankert, nur auf Aktion) · Folgetermin und Vorbelegung „Hausbesuch, ich, heute" · serverseitige Patientensuche von jeder Seite · Tap auf freie Zeit im Kalender · nächste Termine in der Akte · „Behandlung abschließen" in einem serverseitigen Vorgang · Textbausteine (ANN-020) · Textverlust-Schutz und Behebung des VER-003-Restpunkts aus ANN-019 · langer Druck am Finger und Rückgängig-Leiste · Tagesplan im Funkloch lesbar (ANN-021, beantwortet die offene Folgefrage aus ADR-001). **Nächster Loop: STAFF-EPIC-002.** |
-| 2.6     | 2026-09-08 | **Produktentscheidungen Terminfenster und Sprachdokumentation** (Docs, kein Code): `PROJECT_PRINCIPLES.md` 0.5 mit §8.1 (60-Minuten-Terminfenster einschließlich Dokumentation, 5-Minuten-Raster, Fahrzeit zusätzlich, Aufrunden auf den Rasterpunkt, Bestandstermine unverändert, serverseitige Durchsetzung) und §6.3 (Sprachdokumentation mit ausdrücklicher Übernahme); ADR-005/006/016 je Fassung 2; CAL-010 in CAL-EPIC-003b zu CAL-010a/CAL-010b präzisiert; VER-003-Restpunkt als konkrete Folgeaufgabe in UX-EPIC-001; E12 und E13 neu offen. **Reihenfolge unverändert — UX-EPIC-001 bleibt der nächste Loop.** |
-| 2.5     | 2026-09-08 | **MAP-001:** In-App-Karte, Fahrradrouting und Fahrzeiten sind Produktziel (Convenience hoch priorisiert). ADR-019 Fassung 2: MapLibre + serverseitiger Adapter, PTV Developer als Kandidat für Prototyp/Bewertung, Google nur als Handoff-Ziel, Gate vor Echtdaten; Prüfdokument `providerpruefung-kartendienst.md`; Vertrag `src/lib/location/contract.ts`; ANN-016 bis ANN-018; Etappe T mit MAP-002 bis MAP-006 (`MAP-LOOPS.md`), TOUR-EPIC-001a/b aufgegangen; R12 aufgelöst, R13 neu; E-20/E-21 offen |
-| 2.4     | 2026-09-08 | ADR-019 geschrieben. Navigationslink frei — UX-EPIC-001 ohne Vorbehalt. **In-App-Karte und Fahrzeiten blockiert**: Google bietet für die Maps Platform keinen AVV, sondern Controller-Controller-Bedingungen; §3.5 verlangt den AVV als MUSS und §9 ordnet den Kartendienst dort ein. R12 eingetreten, Gegenmaßnahme greift wie vorgesehen (Weg B) |
-| 2.3     | 2026-09-08 | Entscheidungsrunde September ausnahmslos entschieden (Historie in `OPEN_DECISIONS.md`): Spur B trägt in „Stand" überall ein Datum, kein Punkt blockiert mehr das Bauen · H4 geändert — Rechnungen ruhen im Ausfall, statt von Hand aus dem Nummernkreis (E2) · E10 entschieden, §4.3/§4.5 werden mit STAFF-EPIC-002 nach §21 nachgezogen |
-| 2.2     | 2026-09-07 | Spur B wartet nicht mehr: Jannes entscheidet vorläufig selbst (`vorläufig entschieden (Jannes)`), das löst das Bauen, nicht die Freigabe · M3 und G18 entsprechend **verschärft** — eine Festlegung durch Jannes allein erfüllt das Gate nicht · B9: ein Unternehmen für Heilbehandlung und Personal Training, geht als Festlegung in B4 · B4 um den Gesamtumsatz nach §19 Abs. 3 UStG erweitert · B8 als Auskunft statt Entscheidung gekennzeichnet |
-| 2.1     | 2026-09-06 | In Kraft nach den Antworten E-1 bis E-14. Zwei Zeitpunkte statt einem (Gate, Produktionssystem) und die Eröffnung am 01.07.2027 als dritter · kein Altsystem: MIG-000/001, B12 und Parallelbetrieb gestrichen, Rückfall ist der Papierprozess · Meilensteine M0 bis M6 · Risiken · Kapazität kalibriert, März und Juni als Puffer, abgestufte Abweichungsregel mit festem Eröffnungstermin · Kern und Komfort getrennt · Etappe H als Eröffnung · Etappe T Tagesroute und Navigation über Google Maps (TOUR-EPIC-001a/b, ADR-019) · Etappe 2 vor der Eröffnung · Stufe 3 Plattform für Patient:innen und Kund:innen · OPS-007, BETRIEB-001, STAFF-004, G13 · UI-000 und UX-EPIC-001 · CAL-EPIC-003 und ABR-EPIC-002 geteilt · B13, B14, E-13 entschieden · Definition of Done · Fortschritt mit Abnahme-Spalte · Optimierungsrunden · Wochenupdate mit Ampel · Rückfragen E-15 bis E-19 |
-| 2.1.1   | 2026-09-06 | Antworten E-15 bis E-19 eingearbeitet: Reihenfolge verbindlich, Kalender nachrangig (Monate als Spätest-Termine) · In-App-Karte über Google Maps Embed API, genehmigt · Personal Training ab 01.07.2027, Stufe 3 nach M6 · Referenz-Screenshot ist ein fremdes Produkt, Nachbau des Umfangs · Reihenfolge Stufe 3 bestätigt · neuer Abschnitt „Sessions starten" mit kopierbaren Aufrufen                                                                                                                                                                                                                                                             |
-| 2.0     | 2026-09-05 | Drei Spuren, Zieltermin März 2027, Spur B mit Fälligkeiten                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+
+Ältere Vermerke (2.0 bis 4.6) stehen in
+[`archiv/ROADMAP-AENDERUNGEN.md`](archiv/ROADMAP-AENDERUNGEN.md).

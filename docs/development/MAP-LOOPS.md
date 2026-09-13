@@ -1,8 +1,10 @@
 # Folge-Loops Kartendienst: MAP-002 bis MAP-006
 
-Stand: 2026-09-08 · Ergebnis von MAP-001 · Rang 3 (Feature-Spezifikation)
-für den jeweils aufgerufenen Loop · Reihenfolge und Termine bestimmt
-`ROADMAP.md`, Etappe T.
+Stand: 2026-09-08 · Ergebnis von MAP-001 · **Loop-Vorgabe**: Eingabe für den
+SPEC-Schritt des jeweils aufgerufenen Loops, kein eigener Rang in der
+Dokumentenhierarchie · Reihenfolge und Termine bestimmt `ROADMAP.md`,
+Etappe T. ADR-019 Fassung 2 ist seit dem 2026-09-13 angenommen (E-20); das
+Gate vor Echtdaten (Punkt 9) bleibt.
 
 Grundlage ist ADR-019 (Fassung 2) und der Vertrag in
 `src/lib/location/contract.ts`. Jeder Loop ist ein eigener

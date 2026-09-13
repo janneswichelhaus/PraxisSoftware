@@ -94,7 +94,8 @@ als P0 offen.
   Gate mit prüfbarer Liste statt zu einem Datum. Ohne vollständige Liste kein
   realer Patientendatenbetrieb.
 - Das Lösch- und Aufbewahrungskonzept bleibt inhaltlich offen (Punkt B3), hat
-  aber jetzt eine verbindliche Frist. Dasselbe gilt für die
+  aber jetzt eine verbindliche Frist. *(Inzwischen: ADR-008 vom selben Tag,
+  gebaut mit LOE-EPIC-001; die Validierung der Fristen bleibt Teil der DSFA.)* Dasselbe gilt für die
   Subprozessorenübersicht, die auf dem Prüfkatalog aus ADR-002 aufsetzt.
 - Betroffenenrechte und Data-Breach-Prozess sind organisatorische Verfahren,
   brauchen aber technische Grundlagen: Auskunft und Export, Berichtigung unter
