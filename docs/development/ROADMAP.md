@@ -1,6 +1,12 @@
 # Roadmap
 
-Version 4.6 · Stand 2026-09-12 · **in Kraft**
+Version 4.6 mit Planänderung VER-EPIC-002 · Stand 2026-09-13 · **Entwurf**
+
+Dieser Entwurf ergänzt `main` bei `6e790d2`. Vor dem Zusammenführen sind die
+Roadmap-Nachträge aus [PR #36](https://github.com/janneswichelhaus/PraxisSoftware/pull/36)
+auf dessen endgültigem Stand zu übernehmen und die Versionsnummer fortzuschreiben.
+Abnahmen, Befunde, Registerverweise und erledigte Arbeit aus #36 bleiben erhalten.
+Bis dahin ersetzt dieser Entwurf die Roadmap auf `main` nicht.
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts.
@@ -44,9 +50,46 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
 
 ## Nächster Loop
 
+**Zuerst den laufenden Auftrag in PR #36 abschließen.** Dessen Korrekturen,
+Prüfungen, offene Befunde und Abnahme gehören zu diesem Auftrag; die
+Verordnungsänderung wird dort nicht angehängt. Ein grüner Build ersetzt weder
+die angemeldeten Prüfungen noch Jannes' Abnahme. Dieser Planungsentwurf wird
+anschließend mit dem übernommenen Stand von #36 zusammengeführt.
+
+**Danach als eigener Loop, sobald die Planänderung übernommen ist:**
+
 ```
-/feature-loop DAT-EPIC-001 Dateiablage
+/feature-loop VER-EPIC-002 Verordnung im Office-Alltag nach docs/development/VER-EPIC-002.md
 ```
+
+- **Grund für die Einordnung vor Dateiablage und Abrechnung:** Jannes'
+  Korrektur vom 2026-09-13 betrifft die Heilmittelauswahl, die Zahl möglicher
+  Termine und die Sichtbarkeit der Verordnungsangaben. Diese Grundlagen
+  sollen feststehen, bevor Datei- und Abrechnungsabläufe darauf aufbauen.
+  [Vorgaben und Abnahmekriterien](VER-EPIC-002.md) sind die Eingabe für SPEC.
+- **Bewusste Änderung der Reihenfolge:** PR #36 abschließen → VER-EPIC-002 →
+  DAT-EPIC-001 → ABR-EPIC-001 → ABR-EPIC-002a → ABR-EPIC-002b. Danach gilt die
+  vorhandene Reihenfolge weiter, einschließlich Zahlungen, Betriebsreife und
+  Eröffnung. Die Meilensteine und externen Voraussetzungen bleiben bestehen.
+- **Aufwand sichtbar halten:** ein zusätzliches Epic vor DAT-EPIC-001, im
+  Fortschrittsmodell offen mit Gewicht 2 innerhalb von Block A. Das ist eine
+  vorläufige Gewichtung wie beim bisherigen Verordnungs-Epic, keine
+  Zeitschätzung. Bestehende Posten, Gewichte und Abnahmen werden nicht
+  heruntergesetzt. Beim Wochenupdate wird der zusätzliche Aufwand gegen
+  den vorhandenen Puffer geprüft; kein anderes Paket fällt dafür weg.
+- **Vor dem ersten Code dieses Loops:** die gezielte Änderung der
+  Verordnungsrechte in PROJECT_PRINCIPLES §4.3/§4.4 und ADR-004 nachziehen,
+  ANN-011/012/014/038 abgleichen und die Grenze zum Scan nach ADR-017
+  festhalten. Die unten beschriebenen alten Rollenschnitte sind
+  Ausgangsstand, keine Gegenentscheidung zu Jannes' neuer Feldvorgabe.
+- **Der vollständige Feature-Loop bleibt verbindlich:** SPEC → INSPECT →
+  PLAN → BUILD → VERIFY → REVIEW → FIX → FINAL VERIFY → REPORT → Stopp.
+  Stories bleiben vertikale Schnitte mit eigenem Commit; Befunde und
+  Abnahmen werden wie bisher festgehalten. Die Nachtpakete begründen keine
+  dauerhafte Ausnahme für weitere Themen.
+
+**Im Anschluss: DAT-EPIC-001 Dateiablage.** Dessen Voraussetzungen und die
+bisherigen Statusvermerke folgen hier; kein offener Punkt daraus entfällt.
 
 - **Voraussetzung erfüllt: [ADR-017](../adr/ADR-017-file-storage.md) ist am
   2026-09-12 angenommen** — Jannes hat alle acht Fragen wie empfohlen
@@ -179,8 +222,8 @@ Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
   **`invoiced` ist im Wertebereich, hat aber keinen Schreibpfad** — den bringt
   ABR-003, zusammen mit dem Auditereignis `appointment.invoiced` und der
   Anpassung der beiden Feld-Constraints.
-- **Danach, in dieser Reihenfolge:** `ABR-EPIC-001` · `ABR-EPIC-002a` ·
-  `ABR-EPIC-002b`.
+- **Nach DAT-EPIC-001, in dieser Reihenfolge:** `ABR-EPIC-001` ·
+  `ABR-EPIC-002a` · `ABR-EPIC-002b`.
 - **LOE-EPIC-001 ist am 2026-09-11 fertig** (fünf Stories): Retention Schedule
   als Daten, Anker „Abschluss der Versorgung", Legal Hold, täglicher Löschlauf
   mit Löschjournal und Wiederanwendung nach einem Restore, Aufbewahrungs-
@@ -494,6 +537,7 @@ liefert.
 | **LOE-EPIC-001**  | Löschung und Retention sind gebaut und getestet                    | **LOE-001** Datenklassen und Retention Schedule an genau einer Stelle (ANN-001), Anker „Abschluss der Behandlung", Legal Hold (Modell; Oberfläche Komfort) · **LOE-002** Löschjournal mit idempotenter Wiederanwendung, Auditbezug, alle Versionen; `pnpm test:db` deckt jede Datenklasse ab                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | ANN-001, ANN-002; erfasst Verordnungen                            | —                                                       |
 | ~~CAL-EPIC-003a~~ | Termine kennen alle Zustände, die die Praxis heute braucht         | **CAL-008** Zustandsautomat nach ADR-018: bestätigt, abgesagt (mit Grund), nicht angetroffen (Ausfallhonorar-Kennzeichen), durchgeführt (aus „Behandlung abschließen"), dokumentiert (aus Finalisierung), abgerechnet (aus ABR-003); Migration der heutigen Status; Auditkatalog · **CAL-009** Tag umplanen: alle Termine einer Person eines Tages absagen/vormerken mit Anrufliste (`IDEA-PRX-004`)                                                                                                                                                                                                                                                                                                                                                                                                                                                  | **fertig** (PR #28); Voraussetzung ADR-018 war bestätigt           | abgenommen 2026-09-12                                   |
 | **CAL-EPIC-003b** | Eine Verordnung wird in einer Minute zu einer Terminserie          | **CAL-007** Serie aus der Verordnung: Anzahl aus dem Kontingent, fester Rhythmus, Konfliktprüfung je Termin inline, Einzelabweichung · **CAL-010a** Terminfenster nach `PROJECT_PRINCIPLES.md` §8.1 (entschieden 2026-09-08): 60 Minuten einschließlich Dokumentation, Vorbelegung im Formular **und** serverseitige Durchsetzung in `create_appointment`/`update_appointment` — eine Vorbelegung allein erfüllt §8.1 nicht; geprüft wird nur ein **neu gesetztes** Zeitfenster, Bestandstermine bleiben gültig und rein organisatorisch bearbeitbar (dieselbe Abgrenzung wie beim Raster, CAL-005); Beginn weiter frei im 5-Minuten-Raster; Testfälle in `pnpm test:db` für beide Schreibpfade und für den Bestandstermin · ~~**CAL-010b** Fahrpuffer~~ **entfällt** (E12 Punkt 3 und 4, Jannes 2026-09-12): kein pauschaler Mindestabstand und keine von Hand gepflegten Fahrminuten — der Fahrpuffer kommt mit **MAP-006** aus echten Fahrzeiten, samt der Aufrundungsregel aus §8.1 und ihrem Testfall · **CAL-011** Terminzettel als Druckansicht (`IDEA-PRX-006`)                                                                                                                                                                                                                                                                                                                                                                                                                                       | VER-001, CAL-EPIC-003a, UI-000 (Druck); §8.1 für CAL-010a         | Antwort auf E12 (blockiert nichts) |
+| **VER-EPIC-002** | Verordnung im Office-Alltag zügig erfassen und rollenübergreifend lesen | Korrektur bestehender Verordnungsarbeit nach Jannes' Vorgabe vom 2026-09-13; [Vorgaben für SPEC und Abnahme](VER-EPIC-002.md). Eigener Loop nach PR #36 und vor DAT-EPIC-001; VER-EPIC-001 bleibt als abgenommener Ausgangsstand erhalten. | Rechte und Bestandsabbildung im SPEC abgleichen | offen; ein zusätzliches Epic |
 | **ABR-EPIC-001**  | Leistungen entstehen aus durchgeführten Terminen                   | **ABR-000** Praxis-Stammdaten für Rechnungen (Anschrift, Bank, Steuernummer, Umsatzsteuer-Status, Logo — die Datei liegt fertig in `marke/logo/own-motion-block-schwarz.svg`, schwarz ist laut `marke/README.md` genau der Fall Rechnung und Fax —, `owner`) · **ABR-001** Leistungskatalog versioniert, Steuerkennzeichen je Version, Hausbesuchspauschale und Ausfallhonorar als Katalogpositionen · **ABR-002** Leistungserfassung am durchgeführten Termin, vorbelegt aus der Verordnung, Kopplung an finalisierte Dokumentation mit protokolliertem Override (C1, ANN-006)                                                                                                                                                                                                                                                                                                                                                                                                                       | B4 als Annahme                                                    | Katalog mit Preisen, Stammdaten, Antwort aus G13        |
 | **ABR-EPIC-002a** | Eine Rechnung entsteht aus Leistungen, mit dem richtigen Empfänger | **ABR-003a** Rechnungsempfänger-Stammdaten (Beihilfe, PKV, Betreuung, Eltern; `IDEA-PRX-010`) · Rechnung: Zustände nach ADR-009 bis „ausgestellt", Nummer erst bei Ausstellung, neuer Nummernkreis ab der ersten Rechnung (kein Altsystem; Format als Annahme, B4 bestätigt), Snapshot mit Verordnungsbezug, Sammelrechnung je Person und Monat mit Behandlungsnachweis (`IDEA-PRX-013`) · Optionen für das Rechnungs-PDF mit Aufwand vorlegen (B14)                                                                                                                                                                                                                                                                                                                                                                                                | ABR-EPIC-001                                                      | Nummernformat und Umsatzsteuer-Status (G13); PDF-Weg   |
 | **ABR-EPIC-002b** | Die Rechnung ist ein Dokument, das bleibt                          | **ABR-003b** PDF nach dem in B14 entschiedenen Weg, Ablage nach ADR-017, Storno- und Korrekturdokument (einfache Kette), Zahlungserinnerung als Dokument ohne Stufenlogik (`IDEA-PRX-012`, entschieden 2026-09-06)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | DAT-001, B14                                                      | —                                                       |
@@ -944,6 +988,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Loop                                                   | Status | Fertig am      | Commit                                                              | Abgenommen am |
 | ------------------------------------------------------ | ------ | -------------- | ------------------------------------------------------------------- | ------------- |
+| VER-EPIC-002 Verordnung im Office-Alltag | offen | — | Planänderung vom 2026-09-13; Umsetzung nach Abschluss von PR #36 | — |
 | PAT-001 bis PAT-004                                    | fertig | vor 2026-09-01 | PAT-004: Merge PR #1                                                |               |
 | CAL-001 bis CAL-006                                    | fertig | vor 2026-09-01 | —                                                                   |               |
 | STAFF-001                                              | fertig | 2026-08-30     | `e70775a`, `ca907e9`                                                |               |
@@ -979,6 +1024,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VER-EPIC-002 (Entwurf) | 2026-09-13 | Jannes' Formularkorrektur als eigener Loop erfasst. Geplante Reihenfolge nach Abschluss von PR #36: VER-EPIC-002 → DAT-EPIC-001 → bestehende ABR-Folge. Feldvorgaben, Bestandschutz, gezielter Rollenschnitt und sechs Abnahmefälle stehen in VER-EPIC-002.md. Ein offener Posten mit Gewicht 2 ergänzt das Fortschrittsmodell; vorhandene Posten und Abnahmen bleiben erhalten. Vor Merge die Roadmap-Nachträge aus #36 verlustfrei übernehmen und die Version fortschreiben. Kein Feature-Code. |
 | 4.6     | 2026-09-12 | **ADR-017 angenommen** — Jannes bestätigt alle acht Fragen **wie empfohlen**: 60-Sekunden-Verweise ohne Teilen-Link, Verordnungsscan klinisch (für `office` nicht sichtbar), PDF/JPEG/PNG bis 10 MB, keine Virenprüfung in V1, unveränderliche Dateien, zweistufige Löschung mit Quittung, keine produktive Datei ohne getestete Objektsicherung, fünf zusätzliche Prüfpunkte in OPS-001. Damit ist **Zeile G1 erledigt**, **Punkt E8 geschlossen** und **DAT-EPIC-001 baubar** — die Voraussetzung im Abschnitt „Nächster Loop" ist erfüllt. `PROJECT_PRINCIPLES.md` wird **nicht** nachgezogen: §4.7, §12 und §18 gelten unverändert, ADR-017 konkretisiert sie nur (§21). Im Fortschrittsmodell gehen G1 und E8 von `entwurf` auf `fertig`: Block C **15,9 Prozent** (vorher 13,6), Block E **42,5** (vorher 40,0), Gesamtstand **31,5** (vorher 30,4). Offen bleiben die **produktiven** Vorbedingungen: OPS-001 (G3) und der Sicherungsweg für den Objektspeicher (G7). |
 | 4.5     | 2026-09-12 | **ADR-017 Dateiablage geschrieben** (Docs-Session zu Zeile G1, kein Code). Dreißig Punkte: Supabase Storage im selben Projekt, private Buckets je Datenklasse, Objektschlüssel nur aus Kennungen · **die Datenbankzeile führt, das Objekt folgt** — zweiphasiger Upload mit serverseitiger Bestätigung, Dateien unveränderlich, Prüfsumme als Nachweis · **Rollenschnitt an der Dokumentart**: der Verordnungsscan ist klinisch, weil sich ein Scan nicht projizieren lässt (ANN-011) · Auslieferung nur über **signierte Verweise mit 60 Sekunden**, `cacheControl: '0'`, **kein Teilen-Link** · drei Auditereignisse mit der ehrlichen Grenze, dass die Ausstellung protokolliert wird und nicht das Laden · Frist erbt die Datei vom Bezugsdatensatz, **zweistufige Löschung mit Quittung** · **keine Virenprüfung in V1**, Pflicht ab dem ersten Upload von außen. Zwei Befunde aus der Recherche mit Folgen über den ADR hinaus: ein signierter Verweis ist **nicht widerrufbar** und kann einen CDN-Zwischenspeicher hinter sich lassen; und der **Objektspeicher läuft im Datenbank-Backup nicht mit** — G7 ist entsprechend erweitert und wird Vorbedingung für produktive Dateien. Präzisiert: Storage ist kein neuer Dienstleister, deshalb steht der ADR **vor** OPS-001 und liefert ihm fünf zusätzliche Prüfpunkte (G1, G3). **Acht Bestätigungsfragen offen; E8 bleibt bis dahin offen.** Im Fortschrittsmodell stehen G1 und E8 damit auf `entwurf` (0,5): Block C **13,6 Prozent** (vorher 11,4), Block E **40,0** (vorher 37,5), Gesamtstand **30,4** (vorher 29,4). Reihenfolge unverändert — nächster Loop DAT-EPIC-001. |
 | 4.4     | 2026-09-12 | **UI-002 Lesbarkeit fertig** (vier Stories, eigener Auftrag von Jannes aus der Sicht auf die laufende Anwendung). Der Bereich **„Übersicht" der Akte ist entfallen** — er war ein Auszug aus den vier anderen Bereichen und kostete bei jedem Aufruf einen Tap; `/patienten/:id` führt jetzt in den ersten Bereich, den die Rolle sehen darf, und die Suchparameter wandern mit, damit der Rückweg nicht beim Öffnen verloren geht. Zugangshinweis und Besonderheit stehen im Kopf der Akte (UI-002a). **Papier ist weiß** — Karte (#f6f7f4) und Seitengrund (#eceee8) lagen bei 1,09:1, also praktisch nicht unterscheidbar; der getönte Grund stand optisch hinter dem Inhalt statt unter ihm. Ein Token, 103 Stellen; die Folge für Eingabefelder (nicht mehr die hellste Fläche, erkennbar allein an `line-strong` mit 4,56:1) ist als Test festgehalten (UI-002b). **Termine, Listen und Auskünfte stehen im weißen Rahmen**, die Bedienung bleibt vertieft — die Regel trägt `Section rahmen` und `Inhaltsflaeche`, nicht dreißig einzelne Klassenlisten (UI-002c). **„Mein Konto" sagt vor der Einrichtung, dass die Anmeldung den zweiten Faktor derzeit nicht abfragt** (UI-002d) — Jannes hat am selben Tag entschieden, den Faktor erst nach dem Online-Schalten zu integrieren, und ANN-028 trägt den Nachtrag samt der Berichtigung „nicht erzwungen" → „nicht abgefragt". Keine Migration, keine neuen Rechte, keine neue Annahme. **Nächster Loop unverändert: DAT-EPIC-001**, sobald ADR-017 bestätigt ist; sonst `ABR-EPIC-001` vorziehen. |

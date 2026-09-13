@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-12",
+  "stand": "2026-09-13",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -41,6 +41,7 @@
         { "id": "loe-epic-001", "name": "LOE-EPIC-001 Löschung und Retention (5 Stories)", "gewicht": 3, "status": "fertig" },
         { "id": "cal-epic-003a", "name": "CAL-EPIC-003a Terminzustände", "gewicht": 2, "status": "fertig" },
         { "id": "cal-epic-003b", "name": "CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013)", "gewicht": 3, "status": "gebaut" },
+        { "id": "ver-epic-002", "name": "VER-EPIC-002 Verordnung im Office-Alltag", "gewicht": 2, "status": "offen" },
         { "id": "dat-epic-001", "name": "DAT-EPIC-001 Dateiablage (G4)", "gewicht": 2, "status": "offen" },
         { "id": "abr-epic-001", "name": "ABR-EPIC-001 Leistungen und Katalog", "gewicht": 3, "status": "offen" },
         { "id": "abr-epic-002a", "name": "ABR-EPIC-002a Rechnung entsteht", "gewicht": 2, "status": "offen" },
