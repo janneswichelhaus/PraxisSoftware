@@ -935,6 +935,12 @@ comment on function public.discard_patient_file_upload(uuid) is
 --     ausgegraut, nicht als "1 weitere Datei" gezaehlt - gar nicht. Eine
 --     Zaehlung waere schon eine Aussage ueber den Inhalt der Akte.
 --
+-- Die PRUEFSUMME steht ebenfalls nicht in der Antwort. Sie ist der Nachweis
+-- aus Punkt 9 und liegt in der Datenbank; sie an jede Liste zu haengen, waere
+-- eine Angabe ohne Leser (Datenminimierung, PROJECT_PRINCIPLES.md 16). Wer sie
+-- braucht - eine Wiederherstellung, ein Verdacht auf einen stillen Bitfehler -,
+-- liest sie dort, und dafuer entsteht der Lesepfad, der sie dann auch benutzt.
+--
 -- object_missing beantwortet Punkt 27 an der einzelnen Datei: Ein Datensatz
 -- ohne Objekt ist ein sichtbarer Fehler, keine leere Flaeche und kein stiller
 -- Ausgleich (PROJECT_PRINCIPLES.md 13). Die Uebersicht dazu kommt mit DAT-003.
@@ -953,7 +959,6 @@ returns table (
   display_name     text,
   mime_type        text,
   byte_size        bigint,
-  checksum_sha256  text,
   uploaded_at      timestamptz,
   uploaded_by_name text,
   object_missing   boolean
@@ -986,7 +991,6 @@ begin
            f.display_name,
            f.mime_type,
            f.byte_size,
-           f.checksum_sha256,
            f.confirmed_at,
            nullif(btrim(coalesce(pe.given_name, '') || ' ' || coalesce(pe.family_name, '')), ''),
            not exists (

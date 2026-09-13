@@ -47,7 +47,6 @@ function datei(rest: Partial<FilesApi.PatientFile> = {}): FilesApi.PatientFile {
     display_name: 'Befund Schulter.pdf',
     mime_type: 'application/pdf',
     byte_size: 204_800,
-    checksum_sha256: 'a'.repeat(64),
     uploaded_at: '2026-09-13T08:00:00.000Z',
     uploaded_by_name: 'Anna Beispiel',
     object_missing: false,

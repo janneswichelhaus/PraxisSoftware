@@ -37,7 +37,6 @@ const patientFileSchema = z.object({
   display_name: z.string(),
   mime_type: z.string(),
   byte_size: z.coerce.number(),
-  checksum_sha256: z.string(),
   uploaded_at: z.string().nullable(),
   uploaded_by_name: z.string().nullable(),
   object_missing: z.boolean(),
