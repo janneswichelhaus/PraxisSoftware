@@ -2,110 +2,31 @@
 
 Zuletzt aktualisiert: 2026-09-13.
 
-- **DAT-001 bringt ANN-052 und ANN-053 neu** (Dateiablage nach ADR-017): Der
-  Objektschlüssel verlässt die Datenbank nur über den auditierten Vorgang, der
-  den Verweis ausstellt — der Lesepfad liefert ihn nicht, und ohne ihn nützt
-  die Leseberechtigung am Objekt niemandem. Und: Die Bestätigung eines Uploads
-  prüft Größe und MIME-Typ gegen den Objektspeicher selbst, die Prüfsumme
-  bleibt dagegen eine Erklärung des Browsers, weil die Datenbank die Bytes nie
-  sieht. **ANN-052 ist `Datenschutz`** und gehört damit in die Anfrage B2;
-  ANN-053 ist `Technik`.
-- **Die Übersicht war seit ANN-045 nicht nachgezogen**; die Zeilen ANN-046 bis
-  ANN-051 sind am 2026-09-13 aus ihren Einträgen nachgetragen.
-- **CAL-017 bringt ANN-051 neu** (Teamereignis als ein Vorgang): gemeinsame
-  Gruppenkennung, Bezeichnung und Zeit gelten für alle Beteiligten zugleich,
-  die einzelne Teilnahme bleibt getrennt änderbar und absagbar, und
-  Bestandszeilen werden nicht zusammengeführt. `Praxisprozess`, also
-  erledigt, sobald Jannes widerspricht oder zustimmt.
-- **CAL-015 bringt ANN-049 und ANN-050 neu** (Kalender als vollständiger
-  Arbeitsablauf): Ereignisse des Praxisbetriebs stehen in derselben Tabelle wie
-  Behandlungstermine — sonst griffe die Belegungsprüfung nicht — und können
-  weder abgeschlossen noch dokumentiert werden; und der Kalender trägt
-  Patient:in und Verordnung als Kontext mit, damit der Weg „Verordnung →
-  Kalender → freie Stelle" ohne zweite Suche endet. `Technik` und
-  `Praxisprozess`. Dieselbe Festlegung beantwortet **E12 Punkt 1**: 60 oder 45
-  Minuten, keine dritte Länge — nachgezogen in `PROJECT_PRINCIPLES.md` 0.9.
-- **CAL-014 bringt ANN-047 und ANN-048 neu** (Absage unter 24 Stunden):
-  welcher Absagegrund die Ausfallgebühr auslöst — nur die Patientenabsage,
-  ausdrücklich nicht „verlegt" und „sonstiger Grund" — und wie der Eingang der
-  Absage erfasst wird (zwei Wege, Ortszeit, „gerade eben" stempelt der
-  Server). Beide `Praxisprozess`, also erledigt, sobald Jannes zustimmt oder
-  widerspricht. **ANN-035 ist mit CAL-014b erweitert**: Der Löschlauf hält
-  jetzt jeden Vorgang mit Gebührenanlass zurück, nicht mehr nur den No-show
-  mit Kennzeichen.
-- **FIX-EPIC-003 bringt ANN-046 neu** (Navigationsschutz der
-  Behandlungsdokumentation): Data Router statt `<BrowserRouter>`, Rückfrage mit
-  drei Wegen, „Speichern" sichert den **Entwurf** und löst keine Finalisierung
-  aus, ein Fehlschlag navigiert nicht. `Technik`, also erledigt, sobald Jannes
-  widerspricht oder zustimmt. **Am 2026-09-13 mit FIX-014 erweitert**: Das
-  freiwillige Abmelden fragt dieselbe Rückfrage — die bis dahin ausdrücklich
-  offene Grenze ist damit geschlossen —, alle Schreibvorgänge einer Seite
-  laufen durch einen Weg, und wer während des Speicherns weiterschreibt, geht
-  nicht weiter.
-- **CAL-013 bringt ANN-041 neu** (Termine per E-Mail): Die Praxis wird
-  Terminmails verschicken — Jannes hat das am 2026-09-12 ausdrücklich
-  vorgesehen und damit seine eigene vorläufige Entscheidung zu B15 in einem
-  Punkt geändert. Gebaut ist ein **Handoff**: Die Anwendung baut den Entwurf
-  und übergibt ihn dem Mailprogramm der Praxis, gesendet wird dort von Hand.
-  Kein neuer Dienstleister, keine automatische Erinnerung. `Datenschutz` und
-  damit im Prüfpaket — offen bleibt der **dokumentierte Wunsch je Patient:in**
-  (PAT-006).
-- **ANN-040 ist am 2026-09-12 in Punkt 1 geändert** (siehe dort): „Die
-  Anwendung verschickt weiterhin nichts" galt für den Vermerk als reine
-  Nachhut. Seit CAL-013 entsteht der Weg `email` auch aus der Übergabe ans
-  Mailprogramm; die übrigen drei Festlegungen gelten unverändert.
-- **CAL-012 bringt ANN-040 neu** (Mitteilungsvermerk am Termin): vier Wege,
-  Verfall mit jeder Terminänderung, Auditeintrag. `Datenschutz`
-  und damit im Prüfpaket — offen ist insbesondere, ob der Weg „per E-Mail
-  mitgeteilt" in der Auswahl bleiben soll.
-- **CAL-EPIC-003b bringt ANN-037 bis ANN-039 neu, und Jannes hat alle drei am
-  2026-09-12 wie empfohlen bestätigt:** geprüft wird die Länge des
-  Terminfensters statt des Zeitpunkts, „verplant ist nicht genutzt" samt
-  Rhythmen und Obergrenze der Serie, und der Terminzettel bleibt ein Ausdruck
-  ohne Versand. **ANN-037 und ANN-038 sind `Praxisprozess` und damit
-  erledigt**; sie kommen nur mit E12 beziehungsweise ABR-002 zurück.
-  **ANN-039 ist `Datenschutz` und bleibt im Prüfpaket** — die Bestätigung des
-  Projektinhabers ersetzt die Datenschutzprüfung nicht
-  (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). Er gehört damit in die Anfrage B2.
-- **CAL-EPIC-003a bringt ANN-034 bis ANN-036 neu, und Jannes hat alle drei am
-  2026-09-12 wie empfohlen bestätigt:** Absagegrund als codierte Auswahl ohne
-  Freitext, No-show unter der Frist der abgesagten Termine (mit gesetztem
-  Ausfallhonorar-Kennzeichen keine Löschung) und `documented` auch aus
-  `confirmed`. **ANN-034 (`Datenschutz`) und ANN-035 (`Recht`) bleiben trotzdem
-  im Prüfpaket** — die Bestätigung des Projektinhabers ersetzt die
-  Datenschutzprüfung nicht (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). **ANN-036
-  ist `Technik` und damit erledigt**; er kommt nur zurück, wenn ABR-003
-  `invoiced` denselben Weg gehen lässt.
+## Änderungsjournal
 
-Davor, am 2026-09-11, vier Dinge am selben Tag:
+Ältere Fassungen dieses Journals stehen in der Git-Historie.
 
-- **Jannes hat die Annahmen aus UX-EPIC-001 bestätigt:** ANN-018, ANN-020 und
-  ANN-021 stehen auf `entschieden (Jannes)`. Alle drei sind `Datenschutz` und
-  bleiben deshalb im Prüfpaket — die Bestätigung durch den Projektinhaber
-  ersetzt die Datenschutzprüfung nicht.
-- **Marke Own Motion:** ANN-022 und ANN-023 neu — beim Zusammenführen aus
-  ANN-020/021 umnummeriert, weil zwei Zweige parallel dieselben freien Nummern
-  gegriffen hatten.
-- **STAFF-EPIC-002 bringt ANN-024 bis ANN-028 neu:** Privatangaben
-  Beschäftigter, keine Kontoanlage durch die Anwendung, Frist der Einladung,
-  Mindestlänge des Kennworts, MFA für `owner` ohne Anmeldesperre. **Auch diese
-  fünf sind beim Zusammenführen verschoben worden** (vorher ANN-022 bis
-  ANN-026) — aus demselben Grund. **Drei davon hat Jannes am selben Tag
-  entschieden:** ANN-024 (dienstliche statt privater Anschrift), ANN-027
-  (zwölf Zeichen ohne Zeichenklassen) und ANN-028 (MFA-Pflicht erst mit einer
-  feststehenden Domain). Alle drei sind `Datenschutz` und bleiben deshalb im
-  Prüfpaket. **Offen bleiben ANN-025 und ANN-026** — beide hängen an OPS-001
-  beziehungsweise am Löschkonzept.
-
-- **LOE-EPIC-001 bringt ANN-029 bis ANN-033 neu** — Frist des Auditlogs
-  unabhängig von der Akte, Beschäftigtendaten ohne Frist, Löschjournal ohne
-  eigene Frist, Abschluss der Versorgung als ausdrücklicher Vorgang, Legal Hold
-  nur auf Patientenebene. **Jannes hat alle fünf am 2026-09-11 wie empfohlen
-  bestätigt.** Vier davon sind `Datenschutz` beziehungsweise `Recht` und
-  bleiben deshalb im Prüfpaket: Die Bestätigung des Projektinhabers ersetzt die
-  Datenschutzprüfung nicht (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). Allein
-  ANN-032 ist `Praxisprozess` und damit mit dieser Bestätigung erledigt — bis
-  die ersten Praxiswochen zeigen, ob der Vorgang im Alltag getan wird.
+| Datum      | Loop                  | Kennungen                                   | Änderung |
+|------------|-----------------------|---------------------------------------------|----------|
+| 2026-09-13 | Pflege des Registers  | ANN-001 bis ANN-053                         | Das Statusfeld aller Einträge steht in einer Form (`Wert · Datum · Instanz · Zusatz`), das Feld **Ablösung** ist eingeführt und bei ANN-002/032, ANN-012/038/042, ANN-015/046, ANN-039/041 und ANN-049/051 eingetragen, die Übersicht ist mit den Einträgen abgeglichen; ANN-003 und ANN-019 stehen auf `offen`, weil die Entscheidungsrunde vom 2026-09-08 beide nicht umfasste, und der bei ANN-006 geführte Vorbehalt zur Zahl (Voreinstellung 1 Tag) gehört zu ANN-008 und steht jetzt dort. |
+| 2026-09-13 | E15 (Jannes)          | ANN-006 verworfen; ANN-011 entschieden; ANN-002, ANN-010 | Office liest alle klinischen Inhalte einer Akte im Umfang der Therapeut:innen (Umsetzung ROL-EPIC-001, Bewertung mit B2): ANN-006 ist verworfen, der Rollenschnitt-Teil von ANN-011 ersetzt (Datenklasse und Frist unverändert, `Datenschutz`, Prüfpaket), ANN-002 ist in der Frage „Behandlungsabschluss" durch ANN-032 abgelöst, und ANN-010 ist nicht berührt, weil er `office` nie ausschloss. |
+| 2026-09-13 | E14 (Jannes), CAL-018 | ANN-035 Nachtrag; ANN-036 in ADR überführt  | Die Hausbesuch-Szenarien sind verbindlich (Nichtantreffen nach Protokoll trägt immer `fee_basis = 'no_show'`, Umsetzung CAL-018), die Löschregel „No-show ohne Kennzeichen" in ANN-035 wird damit gegenstandslos, und ANN-036 (`confirmed → documented`) ist in ADR-018 Fassung 3 überführt. |
+| 2026-09-13 | DAT-001               | ANN-052, ANN-053 neu                        | Dateiablage nach ADR-017: Der Objektschlüssel verlässt die Datenbank nur über den auditierten Vorgang, der den Verweis ausstellt — der Lesepfad liefert ihn nicht, und ohne ihn nützt die Leseberechtigung am Objekt niemandem (ANN-052, `Datenschutz`, Anfrage B2); die Bestätigung eines Uploads prüft Größe und MIME-Typ gegen den Objektspeicher selbst, die Prüfsumme bleibt eine Erklärung des Browsers, weil die Datenbank die Bytes nie sieht (ANN-053, `Technik`). |
+| 2026-09-13 | Pflege des Registers  | ANN-046 bis ANN-051                         | Die Übersicht war seit ANN-045 nicht nachgezogen; die Zeilen sind aus ihren Einträgen nachgetragen. |
+| 2026-09-13 | CAL-017               | ANN-051 neu                                 | Teamereignis als ein Vorgang: gemeinsame Gruppenkennung, Bezeichnung und Zeit gelten für alle Beteiligten zugleich, die einzelne Teilnahme bleibt getrennt änderbar und absagbar, Bestandszeilen werden nicht zusammengeführt — `Praxisprozess`, also erledigt, sobald Jannes widerspricht oder zustimmt. |
+| 2026-09-13 | FIX-014               | ANN-046 erweitert                           | Das freiwillige Abmelden fragt dieselbe Rückfrage wie die Navigation — die bis dahin ausdrücklich offene Grenze ist geschlossen —, alle Schreibvorgänge einer Seite laufen durch einen Weg, und wer während des Speicherns weiterschreibt, geht nicht weiter. |
+| 2026-09-12 | CAL-015               | ANN-049, ANN-050 neu                        | Kalender als vollständiger Arbeitsablauf: Ereignisse des Praxisbetriebs stehen in derselben Tabelle wie Behandlungstermine — sonst griffe die Belegungsprüfung nicht — und können weder abgeschlossen noch dokumentiert werden (`Technik`); der Kalender trägt Patient:in und Verordnung als Kontext mit, damit der Weg „Verordnung → Kalender → freie Stelle" ohne zweite Suche endet (`Praxisprozess`); dieselbe Festlegung beantwortet E12 Punkt 1 — 60 oder 45 Minuten, keine dritte Länge, nachgezogen in `PROJECT_PRINCIPLES.md` 0.9. |
+| 2026-09-12 | CAL-014               | ANN-047, ANN-048 neu; ANN-035 erweitert     | Absage unter 24 Stunden: Nur die Patientenabsage löst die Ausfallgebühr aus, ausdrücklich nicht „verlegt" und „sonstiger Grund" (ANN-047), und der Eingang der Absage wird über zwei Wege in Ortszeit erfasst, „gerade eben" stempelt der Server (ANN-048) — beide `Praxisprozess`, also erledigt, sobald Jannes zustimmt oder widerspricht; mit CAL-014b hält der Löschlauf jeden Vorgang mit Gebührenanlass zurück, nicht mehr nur den No-show mit Kennzeichen (ANN-035). |
+| 2026-09-12 | FIX-EPIC-003          | ANN-046 neu                                 | Navigationsschutz der Behandlungsdokumentation: Data Router statt `<BrowserRouter>`, Rückfrage mit drei Wegen, „Speichern" sichert den Entwurf und löst keine Finalisierung aus, ein Fehlschlag navigiert nicht — `Technik`, also erledigt, sobald Jannes widerspricht oder zustimmt. |
+| 2026-09-12 | CAL-013               | ANN-041 neu                                 | Termine per E-Mail: Jannes hat am 2026-09-12 ausdrücklich vorgesehen, dass die Praxis Terminmails verschickt, und damit seine vorläufige Entscheidung zu B15 in einem Punkt geändert; gebaut ist ein Handoff — die Anwendung baut den Entwurf und übergibt ihn dem Mailprogramm der Praxis, gesendet wird dort von Hand, kein neuer Dienstleister, keine automatische Erinnerung — `Datenschutz` und damit im Prüfpaket, offen bleibt der dokumentierte Wunsch je Patient:in (PAT-006). |
+| 2026-09-12 | CAL-013               | ANN-040 geändert (Punkt 1)                  | „Die Anwendung verschickt weiterhin nichts" galt für den Vermerk als reine Nachhut; seit CAL-013 entsteht der Weg `email` auch aus der Übergabe ans Mailprogramm, die übrigen drei Festlegungen gelten unverändert. |
+| 2026-09-12 | CAL-012               | ANN-040 neu                                 | Mitteilungsvermerk am Termin: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag — `Datenschutz` und damit im Prüfpaket; offen ist insbesondere, ob der Weg „per E-Mail mitgeteilt" in der Auswahl bleiben soll. |
+| 2026-09-12 | CAL-EPIC-003b         | ANN-037 bis ANN-039 neu, von Jannes bestätigt | Geprüft wird die Länge des Terminfensters statt des Zeitpunkts, „verplant ist nicht genutzt" samt Rhythmen und Obergrenze der Serie, und der Terminzettel bleibt ein Ausdruck ohne Versand — Jannes hat alle drei am 2026-09-12 wie empfohlen bestätigt; ANN-037 und ANN-038 sind `Praxisprozess` und damit erledigt (zurück nur mit E12 beziehungsweise ABR-002), ANN-039 ist `Datenschutz`, bleibt im Prüfpaket und gehört in die Anfrage B2, weil die Bestätigung des Projektinhabers die Datenschutzprüfung nicht ersetzt (`PROJECT_PRINCIPLES.md` §15.1 Punkt 5). |
+| 2026-09-12 | CAL-EPIC-003a         | ANN-034 bis ANN-036 neu, von Jannes bestätigt | Absagegrund als codierte Auswahl ohne Freitext, No-show unter der Frist der abgesagten Termine (mit gesetztem Ausfallhonorar-Kennzeichen keine Löschung) und `documented` auch aus `confirmed` — Jannes hat alle drei am 2026-09-12 wie empfohlen bestätigt; ANN-034 (`Datenschutz`) und ANN-035 (`Recht`) bleiben im Prüfpaket (§15.1 Punkt 5), ANN-036 ist `Technik` und damit erledigt und kommt nur zurück, wenn ABR-003 `invoiced` denselben Weg gehen lässt. |
+| 2026-09-11 | UX-EPIC-001           | ANN-018, ANN-020, ANN-021 von Jannes bestätigt | Alle drei stehen auf `entschieden (Jannes)`, sind `Datenschutz` und bleiben deshalb im Prüfpaket — die Bestätigung durch den Projektinhaber ersetzt die Datenschutzprüfung nicht. |
+| 2026-09-11 | Marke Own Motion      | ANN-022, ANN-023 neu (umnummeriert)         | Beim Zusammenführen aus ANN-020/021 umnummeriert, weil zwei Zweige parallel dieselben freien Nummern gegriffen hatten. |
+| 2026-09-11 | STAFF-EPIC-002        | ANN-024 bis ANN-028 neu (umnummeriert); ANN-024, ANN-027, ANN-028 von Jannes entschieden | Privatangaben Beschäftigter, keine Kontoanlage durch die Anwendung, Frist der Einladung, Mindestlänge des Kennworts, MFA für `owner` ohne Anmeldesperre — beim Zusammenführen aus demselben Grund verschoben (vorher ANN-022 bis ANN-026); Jannes hat am selben Tag ANN-024 (dienstliche statt privater Anschrift), ANN-027 (zwölf Zeichen ohne Zeichenklassen) und ANN-028 (MFA-Pflicht erst mit einer feststehenden Domain) entschieden, alle drei `Datenschutz` und deshalb im Prüfpaket; offen bleiben ANN-025 und ANN-026, die an OPS-001 beziehungsweise am Löschkonzept hängen. |
+| 2026-09-11 | LOE-EPIC-001          | ANN-029 bis ANN-033 neu, von Jannes bestätigt | Frist des Auditlogs unabhängig von der Akte, Beschäftigtendaten ohne Frist, Löschjournal ohne eigene Frist, Abschluss der Versorgung als ausdrücklicher Vorgang, Legal Hold nur auf Patientenebene — Jannes hat alle fünf am 2026-09-11 wie empfohlen bestätigt; vier sind `Datenschutz` beziehungsweise `Recht` und bleiben im Prüfpaket (§15.1 Punkt 5), allein ANN-032 ist `Praxisprozess` und damit erledigt, bis die ersten Praxiswochen zeigen, ob der Vorgang im Alltag getan wird. |
 
 Dieses Register hält **begründete, vorläufige Annahmen** fest: Entscheidungen,
 die für eine Aufgabe nötig waren, aber weder in `PROJECT_PRINCIPLES.md` noch in
@@ -134,6 +55,8 @@ Produktivstart (ADR-007).
 - Überbrückt eine Annahme einen Punkt aus `OPEN_DECISIONS.md`, bleibt der Punkt
   dort **offen** und verweist auf die `ANN`-Kennung. Das Register entscheidet
   nichts endgültig.
+- `docs/decisions/OPEN_DECISIONS.md` hat keinen Rang; was dort offen ist, gilt
+  in keinem Dokument als entschieden.
 
 ## Lebenszyklus
 
@@ -170,8 +93,9 @@ Jeder Eintrag hat eine fortlaufende Kennung `ANN-NNN` und diese Felder:
 | **Begründung**    | was recherchiert wurde und warum diese Option: Gesetzestext, Behördenleitlinie, ADR, Praxislogik. Unsicheres steht als unsicher da |
 | **Verankerung**   | wo die Annahme im Code oder in Dokumenten greift — Datei, Funktion, Migration, Test. Die Stelle trägt die Kennung als Kommentar |
 | **Änderungspfad** | was zu tun ist, wenn die Annahme nicht hält, und der geschätzte Aufwand: `klein` (eine Stelle), `mittel` (ein Modul, Migration ohne Datenumzug), `groß` (mehrere Module oder Datenumzug) |
-| **Status**        | siehe Lebenszyklus, mit Datum                                                                                             |
+| **Status**        | siehe Lebenszyklus, in genau dieser Form: `Wert · JJJJ-MM-TT · Instanz oder — · Zusatz`. Der Zusatz ist `Prüfpaket` (Kategorie `Datenschutz` oder `Recht`, solange die Datenschutzprüfung aussteht), `erledigt` (Kategorie `Praxisprozess` oder `Technik` nach `entschieden (Jannes)`, oder `in ADR überführt`) oder `—`. Erklärender Text steht nicht im Feld, sondern in einer Zeile **Nachtrag.** unter der Tabelle |
 | **Wiedervorlage** | wer oder was die Annahme prüft: Datenschutzprüfung, Jannes, ein bestimmtes Epic                                          |
+| **Ablösung**      | optional: „ersetzt ANN-…" oder „abgelöst durch ANN-…" — wenn ein Eintrag die Festlegung eines anderen ganz oder in einem benannten Punkt übernimmt; beide Einträge tragen das Feld |
 
 **Reversibel verankern** ist eine Entwurfsregel, keine Kür: Eine Annahme SOLLTE
 an genau einer Stelle greifen — eine Policy-Funktion, ein Konfigurationswert,
@@ -227,59 +151,59 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 
 | Kennung | Thema                                                          | Kategorie     | Status | Wiedervorlage                 |
 |---------|----------------------------------------------------------------|---------------|--------|-------------------------------|
-| ANN-001 | Interne Initialfristen des Retention Schedule                  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | entschieden (Jannes) 2026-09-08 | erledigt; Fristanker erneut bei LOE-001 |
-| ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | entschieden (Jannes) 2026-09-11 | bleibt in Kraft; ADR-018 bestätigt sie, Wiedervorlage ABR-002 |
-| ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | offen  | Datenschutzprüfung; Leistungskürzel bei ABR-002 |
-| ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden 2026-09-05 | Providerprüfung nach ADR-002 |
-| ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | entschieden (Jannes) 2026-09-08; **Zahl offen** | Jannes nach den ersten Praxiswochen |
-| ANN-009 | Systemakteur im Auditlog                                       | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-010 | Sichtbarkeit und Frist der internen Versorgungsangaben          | Datenschutz   | entschieden (Jannes) 2026-09-08 | **Datenschutzprüfung** — bleibt im Prüfpaket |
-| ANN-011 | Datenklasse und Rollenschnitt der Verordnung                    | Datenschutz   | offen  | Datenschutzprüfung; C1 bei ABR-002 |
-| ANN-012 | Genutzte Menge wird bis CAL-007/ABR-002 von Hand gepflegt      | Praxisprozess | entschieden (Jannes) 2026-09-08 | abgelöst durch CAL-007 und ABR-002 |
-| ANN-013 | Datenklasse und Frist der Verordnerkartei                       | Datenschutz   | offen  | Datenschutzprüfung            |
-| ANN-014 | „Empfehlung zum Verordnungsende" ist eine Angabe, keine Systemempfehlung | Recht | offen | Datenschutzprüfung; B1 (MDR-Abgrenzung) |
-| ANN-015 | Umfang und Wortlaut der Verbindungsanzeige                      | Technik       | entschieden (Jannes) 2026-09-08 | UX-EPIC-001 (Textverlust-Schutz) |
-| ANN-016 | Koordinate als abgeleitetes Stammdatum der Adresse             | Datenschutz   | offen  | Datenschutzprüfung; MAP-006 (Migration) |
-| ANN-017 | Serverseitiger Kartendienst-Adapter als Supabase Edge Function  | Technik       | offen  | OPS-001 (Edge Runtime, ADR-015 Punkt 20); MAP-003 |
-| ANN-018 | Übergabeziel und URL-Format des Navigations-Handoffs           | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); MAP-005 |
-| ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | entschieden 2026-09-08 | UX-EPIC-001 (Restpunkt Textverlust-Schutz) |
-| ANN-020 | Datenklasse und Frist der Textbausteine                          | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; LOE-001 (Retention Schedule) |
-| ANN-021 | Feldliste und Vorhaltedauer des Tagesplans im Arbeitsspeicher    | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; Jannes nach dem ersten Feldtag |
-| ANN-022 | Tiefgrün der Marke als Hover-Zustand des Akzents                 | Technik       | offen  | Jannes; MARKE-001 (Befund App-Symbole)    |
-| ANN-023 | Die Kopfzeile führt die Marke, nicht den Organisationsnamen      | Praxisprozess | offen  | Jannes; erneut, falls eine zweite Praxis dazukommt (ADR-003) |
-| ANN-024 | Privatangaben Beschäftigter: Schreibrecht folgt dem Leserecht    | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
-| ANN-025 | Die Anwendung legt keine Authentifizierungskonten an             | Technik       | offen  | OPS-001 (Providerprüfung)                 |
-| ANN-026 | Datenklasse und Frist der Einladung                              | Datenschutz   | offen  | Datenschutzprüfung; LOE-001a (im Retention Schedule verankert) |
-| ANN-027 | Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
-| ANN-028 | MFA für `owner`: eingerichtet und sichtbar, nicht abgefragt      | Datenschutz   | entschieden (Jannes) 2026-09-11, Nachtrag 2026-09-12, weiter im Prüfpaket | Jannes nach dem Online-Schalten; Datenschutzprüfung |
-| ANN-029 | Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte     | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung |
-| ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; erneut, sobald die erste Person ausscheidet |
-| ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
-| ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | entschieden (Jannes) 2026-09-11 | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
-| ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) 2026-09-11, weiter im Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
-| ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen |
-| ANN-035 | No-show: Frist der abgesagten Termine, mit Ausfallhonorar keine Löschung | Recht         | entschieden (Jannes) 2026-09-12, weiter im Prüfpaket | ABR-003 (Rechnung über das Ausfallhonorar); Datenschutzprüfung (B2) |
-| ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
-| ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit E12 Punkt 1 und 2 |
-| ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | **entschieden (Jannes) 2026-09-12 — erledigt** | nur noch mit ABR-002 |
-| ANN-039 | Terminzettel: Inhalt, nur Druck, kein Versand, Aufruf als Aktenzugriff protokolliert; **Fassung 2: vermerkt wird erst auf Bestätigung** | Datenschutz   | entschieden (Jannes) 2026-09-12, Fassung 2 vom 2026-09-12, weiter im Prüfpaket | Datenschutzprüfung (B2); Versandweg mit B15 |
-| ANN-040 | Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
-| ANN-041 | Termin-E-Mail als Handoff ins eigene Mailprogramm: Inhalt, Betreff, Längengrenze; **Fassung 2: vermerkt wird erst auf Bestätigung** | Datenschutz   | offen (2026-09-12), Fassung 2 vom 2026-09-12 | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
-| ANN-042 | Eine Verordnung ist „ausgeschöpft", wenn ihre Leistungseinheiten genutzt sind — nicht nach Ablauf einer Frist | Praxisprozess | offen (2026-09-12)    | Jannes nach den ersten Praxiswochen; erneut mit ABR-002 (genutzte Menge aus der Abrechnung) |
-| ANN-043 | Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); Providerprüfung OPS-001 (Auth-Mails, B13) |
-| ANN-044 | „Alle Sitzungen beenden": Vermerk vor dem Vorgang, weil danach keiner mehr möglich ist; die Zusage nennt das Restfenster | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); `jwt_expiry` mit OPS-001 |
-| ANN-045 | Das gewöhnliche Abmelden endet nur die eigene Sitzung | Technik       | offen (2026-09-12)    | Jannes nach dem ersten Feldtag |
-| ANN-046 | Navigationsschutz: Data Router, drei Wege, und „Speichern" heißt Entwurf | Technik | offen (2026-09-12), am 2026-09-13 mit FIX-014 erweitert | Jannes nach dem ersten Feldtag mit Dokumentation unterwegs |
-| ANN-047 | Nur die Patientenabsage löst die Ausfallgebühr aus | Praxisprozess | offen (2026-09-12)    | Jannes, zusammen mit ABR-001 |
-| ANN-048 | Der Eingang der Absage wird in Ortszeit erfasst, ohne Vorbelegung aus der Vergangenheit | Praxisprozess | offen (2026-09-12) | Jannes nach den ersten Wochen im Betrieb |
-| ANN-049 | Ereignisse stehen in derselben Tabelle wie Behandlungstermine | Technik | offen (2026-09-12) | ABR-002 (Leistungserfassung) |
-| ANN-050 | Der Kalender trägt Patient:in und Verordnung als Kontext mit | Praxisprozess | offen (2026-09-12) | Jannes nach den ersten Wochen im Betrieb |
-| ANN-051 | Ein Teamereignis ist ein Vorgang; die einzelne Teilnahme bleibt getrennt | Praxisprozess | offen (2026-09-13) | Jannes, nach der ersten Woche mit Teambesprechungen im Kalender |
-| ANN-052 | Der Objektschlüssel einer Datei verlässt die Datenbank nur über einen auditierten Vorgang | Datenschutz | offen (2026-09-13) | Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist |
-| ANN-053 | Die Bestätigung prüft Größe und MIME-Typ gegen den Objektspeicher; die Prüfsumme bleibt eine Erklärung des Browsers | Technik | offen (2026-09-13) | mit ABR-003b (Rechnungs-PDF) und dem Restore-Test aus ADR-012 |
+| ANN-001 | Interne Initialfristen des Retention Schedule                  | Datenschutz   | offen · 2026-08-28 · — · Prüfpaket | Datenschutzprüfung            |
+| ANN-002 | Versorgungsstatus `inactive` und Rollenschnitt des Wechsels    | Praxisprozess | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt | Jannes (Rollenschnitt, B9); Behandlungsabschluss durch ANN-032 erledigt |
+| ANN-003 | Adress-Snapshot beim Hausbesuchstermin                         | Datenschutz   | offen · 2026-08-30 · — · Prüfpaket | Datenschutzprüfung; Bestätigung durch Jannes steht aus |
+| ANN-004 | Inhalt des Audit-Kontexts bei organisatorischen Einstellungen  | Datenschutz   | offen · 2026-08-30 · — · Prüfpaket | Datenschutzprüfung            |
+| ANN-005 | Terminabschluss ohne Dokumentationspflicht                     | Praxisprozess | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt | ABR-002 (Leistungserfassung am abgeschlossenen Termin) |
+| ANN-006 | Umfang und Protokollierung des Behandlungsnachweises in der Akte | Datenschutz | verworfen · 2026-09-13 · Jannes · — | ROL-EPIC-001 (Umsetzung E15); Leistungskürzel im Nachweis bei ABR-002 |
+| ANN-007 | Mechanismus der automatischen Finalisierung: pg_cron          | Technik       | entschieden (Jannes) · 2026-09-05 · Jannes · erledigt | Providerprüfung nach ADR-002 (OPS-001): `pg_cron` bestätigen oder Auslöser ersetzen |
+| ANN-008 | Fristbezug der automatischen Finalisierung                     | Praxisprozess | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt | Jannes nach den ersten Praxiswochen (die Zahl, Voreinstellung 1 Tag); Datenschutzprüfung für den Zeitpunktbegriff |
+| ANN-009 | Systemakteur im Auditlog                                       | Datenschutz   | offen · 2026-09-04 · — · Prüfpaket | Datenschutzprüfung            |
+| ANN-010 | Sichtbarkeit und Frist der internen Versorgungsangaben          | Datenschutz   | entschieden (Jannes) · 2026-09-08 · Jannes · Prüfpaket | Datenschutzprüfung; Jannes für den Praxisnutzen |
+| ANN-011 | Datenklasse und Rollenschnitt der Verordnung                    | Datenschutz   | entschieden (Jannes) · 2026-09-13 · Jannes · Prüfpaket | Datenschutzprüfung (B2); Rollenschnitt nach E15 in ROL-EPIC-001 |
+| ANN-012 | Genutzte Menge wird bis CAL-007/ABR-002 von Hand gepflegt      | Praxisprozess | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt | ABR-002 (genutzte Menge aus der Abrechnung) |
+| ANN-013 | Datenklasse und Frist der Verordnerkartei                       | Datenschutz   | offen · 2026-09-07 · — · Prüfpaket | Datenschutzprüfung (Verzeichnis der Verarbeitungstätigkeiten) |
+| ANN-014 | „Empfehlung zum Verordnungsende" ist eine Angabe, keine Systemempfehlung | Recht | offen · 2026-09-07 · — · Prüfpaket | Datenschutzprüfung; B1 (MDR-Abgrenzung) |
+| ANN-015 | Umfang und Wortlaut der Verbindungsanzeige                      | Technik       | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt | Jannes nach dem ersten Feldtag |
+| ANN-016 | Koordinate als abgeleitetes Stammdatum der Adresse             | Datenschutz   | offen · 2026-09-08 · — · Prüfpaket | Datenschutzprüfung; MAP-006 (Migration) |
+| ANN-017 | Serverseitiger Kartendienst-Adapter als Supabase Edge Function  | Technik       | offen · 2026-09-08 · — · — | OPS-001 (Edge Runtime, ADR-015 Punkt 20); MAP-003 |
+| ANN-018 | Übergabeziel und URL-Format des Navigations-Handoffs           | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung (B2); MAP-005 |
+| ANN-019 | Verfallsdauer und Bindung des Verordnungsentwurfs (VER-003)      | Technik       | offen · 2026-09-08 · — · — | Jannes, falls die 30-Minuten-Grenze in der Praxis zu knapp oder zu großzügig wirkt |
+| ANN-020 | Datenklasse und Frist der Textbausteine                          | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung; LOE-001 (Retention Schedule) |
+| ANN-021 | Feldliste und Vorhaltedauer des Tagesplans im Arbeitsspeicher    | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung; Jannes nach dem ersten Feldtag |
+| ANN-022 | Tiefgrün der Marke als Hover-Zustand des Akzents                 | Technik       | offen · 2026-09-10 · — · — | Jannes; MARKE-001, falls die Marke abgestufte Farbwerte bekommt |
+| ANN-023 | Die Kopfzeile führt die Marke, nicht den Organisationsnamen      | Praxisprozess | offen · 2026-09-10 · — · — | Jannes; erneut, falls eine zweite Praxis dazukommt (ADR-003) |
+| ANN-024 | Privatangaben Beschäftigter: Schreibrecht folgt dem Leserecht    | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung (TOM, G14) |
+| ANN-025 | Die Anwendung legt keine Authentifizierungskonten an             | Datenschutz   | offen · 2026-09-11 · — · Prüfpaket | OPS-001 (Providerprüfung, Auth-Mails); Datenschutzprüfung |
+| ANN-026 | Datenklasse und Frist der Einladung                              | Datenschutz   | offen · 2026-09-11 · — · Prüfpaket | Datenschutzprüfung (die Frist); Klasse seit LOE-001a im Retention Schedule |
+| ANN-027 | Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen     | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung (TOM, G14); OPS-001 (Einstellung beim Provider) |
+| ANN-028 | MFA für `owner`: eingerichtet und sichtbar, nicht abgefragt      | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Jannes nach dem Online-Schalten; Datenschutzprüfung |
+| ANN-029 | Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte     | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung |
+| ANN-030 | Beschäftigtendaten ohne Frist: keine automatische Löschung in V1 | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung; erneut, sobald die erste Person ausscheidet |
+| ANN-031 | Das Löschjournal hat selbst keine Frist                          | Datenschutz   | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung; OPS-003 (Backup-Lebenszyklus, ADR-012) |
+| ANN-032 | „Abschluss der Versorgung" als ausdrücklicher, rücknehmbarer Vorgang | Praxisprozess | entschieden (Jannes) · 2026-09-11 · Jannes · erledigt | Jannes nach den ersten Praxiswochen; Datenschutzprüfung (Fristanker) |
+| ANN-033 | Legal Hold nur auf Patientenebene, nur `owner`, ohne Pflegeoberfläche | Recht         | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket | Datenschutzprüfung (B2); erneut, sobald ein Vorgang eintritt |
+| ANN-034 | Absagegrund als codierte Auswahl aus vier Werten, kein Freitext  | Datenschutz   | entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen |
+| ANN-035 | No-show: Frist der abgesagten Termine, mit Gebührenanlass keine Löschung | Recht         | entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket | ABR-003 (Rechnung über das Ausfallhonorar); CAL-018 (E14); Datenschutzprüfung (B2) |
+| ANN-036 | `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab | Technik       | in ADR überführt · 2026-09-13 · ADR-018 Fassung 3 · erledigt | ADR-018; erneut nur mit ABR-003, wenn `invoiced` denselben Weg geht |
+| ANN-037 | Geprüft wird die **Länge** des Terminfensters, nicht der Zeitpunkt | Praxisprozess | entschieden (Jannes) · 2026-09-12 · Jannes · erledigt | nur noch mit E12 Punkt 2 |
+| ANN-038 | Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang | Praxisprozess | entschieden (Jannes) · 2026-09-12 · Jannes · erledigt | nur noch mit ABR-002 |
+| ANN-039 | Terminzettel: Inhalt, Druck, Aufruf als Aktenzugriff protokolliert; **Fassung 2: vermerkt wird erst auf Bestätigung** | Datenschutz   | entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket | Datenschutzprüfung (B2); der Versandweg seit CAL-013 in ANN-041 und B15 |
+| ANN-040 | Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag | Datenschutz   | offen · 2026-09-12 · — · Prüfpaket | Datenschutzprüfung (B2); der Weg `email` mit B15 und PAT-006 |
+| ANN-041 | Termin-E-Mail als Handoff ins eigene Mailprogramm: Inhalt, Betreff, Längengrenze; **Fassung 2: vermerkt wird erst auf Bestätigung** | Datenschutz   | offen · 2026-09-12 · — · Prüfpaket | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
+| ANN-042 | Eine Verordnung ist „ausgeschöpft", wenn ihre Leistungseinheiten genutzt sind — nicht nach Ablauf einer Frist | Praxisprozess | offen · 2026-09-12 · — · — | Jannes nach den ersten Praxiswochen; erneut mit ABR-002 (genutzte Menge aus der Abrechnung) |
+| ANN-043 | Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile | Datenschutz   | offen · 2026-09-12 · — · Prüfpaket | Datenschutzprüfung (B2); Providerprüfung OPS-001 (Auth-Mails, B13) |
+| ANN-044 | „Alle Sitzungen beenden": Vermerk vor dem Vorgang, weil danach keiner mehr möglich ist; die Zusage nennt das Restfenster | Datenschutz   | offen · 2026-09-12 · — · Prüfpaket | Datenschutzprüfung (B2); `jwt_expiry` mit OPS-001 |
+| ANN-045 | Das gewöhnliche Abmelden endet nur die eigene Sitzung | Technik       | offen · 2026-09-12 · — · — | Jannes nach dem ersten Feldtag |
+| ANN-046 | Navigationsschutz: Data Router, drei Wege, und „Speichern" heißt Entwurf | Technik | offen · 2026-09-12 · — · — | Jannes nach dem ersten Feldtag mit Dokumentation unterwegs (am 2026-09-13 mit FIX-014 erweitert) |
+| ANN-047 | Nur die Patientenabsage löst die Ausfallgebühr aus | Praxisprozess | offen · 2026-09-12 · — · — | Jannes, zusammen mit ABR-001 |
+| ANN-048 | Der Eingang der Absage wird in Ortszeit erfasst, ohne Vorbelegung aus der Vergangenheit | Praxisprozess | offen · 2026-09-12 · — · — | Jannes nach den ersten Wochen im Betrieb |
+| ANN-049 | Ereignisse stehen in derselben Tabelle wie Behandlungstermine | Technik | offen · 2026-09-12 · — · — | ABR-002 (Leistungserfassung); die gemeinsame Kennung ist seit CAL-017 ANN-051 |
+| ANN-050 | Der Kalender trägt Patient:in und Verordnung als Kontext mit | Praxisprozess | offen · 2026-09-12 · — · — | Jannes nach den ersten Wochen im Betrieb |
+| ANN-051 | Ein Teamereignis ist ein Vorgang; die einzelne Teilnahme bleibt getrennt | Praxisprozess | offen · 2026-09-13 · — · — | Jannes, nach der ersten Woche mit Teambesprechungen im Kalender |
+| ANN-052 | Der Objektschlüssel einer Datei verlässt die Datenbank nur über einen auditierten Vorgang | Datenschutz | offen · 2026-09-13 · — · Prüfpaket | Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist |
+| ANN-053 | Die Bestätigung prüft Größe und MIME-Typ gegen den Objektspeicher; die Prüfsumme bleibt eine Erklärung des Browsers | Technik | offen · 2026-09-13 · — · — | mit ABR-003b (Rechnungs-PDF) und dem Restore-Test aus ADR-012 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -294,10 +218,12 @@ nachgetragen, sobald ein Loop sie berührt.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | ADR-008 (Retention Schedule), ADR-010 (Auditlog), ADR-011 (Log-Retention) |
-| Status | offen, seit 2026-08-28 (rückwirkend erfasst 2026-09-03) |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | ADR-008 (Retention Schedule), ADR-010 (Auditlog), ADR-011 (Log-Retention) |
+| **Status** | offen · 2026-08-28 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+
+**Nachtrag.** Rückwirkend erfasst am 2026-09-03.
 
 **Annahme.** Die Fristen ohne unmittelbare gesetzliche Vorgabe gelten vorläufig
 so, wie ADR-008 und ADR-011 sie tabellieren: abgesagte Termine und No-shows ohne
@@ -343,10 +269,14 @@ Oberfläche: Eine Friständerung soll im Repository nachvollziehbar sein
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | PAT-003 |
-| Status | **entschieden (Jannes) 2026-09-08**; getroffen 2026-08-29, rückwirkend erfasst 2026-09-03 |
-| Wiedervorlage | Jannes; der Behandlungsabschluss zusätzlich im Epic Behandlungsdokumentation |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | PAT-003 |
+| **Status** | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt |
+| **Wiedervorlage** | Jannes (Rollenschnitt, B9); der Behandlungsabschluss ist mit ANN-032 erledigt |
+| **Ablösung** | abgelöst durch ANN-032 in der Frage „Behandlungsabschluss" |
+
+**Nachtrag.** Getroffen 2026-08-29, rückwirkend erfasst 2026-09-03; entschieden
+in der Entscheidungsrunde vom 2026-09-08.
 
 **Annahme.** `inactive` ist eine rein organisatorische Markierung („nicht in
 laufender Versorgung"). Sie ist kein Behandlungsabschluss im Sinne von ADR-008
@@ -380,14 +310,28 @@ blockiert (Rechtsrahmen offen). Bis zu einer Entscheidung dort bleibt die
 obige Annahme (organisatorische Markierung, kein Behandlungsabschluss,
 Rollenschnitt wie beschrieben) technisch in Kraft — Status bleibt `offen`.
 
+**Nachtrag 2026-09-13.** In der Frage „Behandlungsabschluss" ist diese Annahme
+durch ANN-032 abgelöst: Der Abschluss der Versorgung ist seit LOE-001b ein
+ausdrücklicher, rücknehmbarer Vorgang (`patients.care_concluded_on`), und
+`inactive` bleibt, was es hier war — eine organisatorische Markierung ohne
+Fristwirkung. Die Wiedervorlage „Epic Behandlungsdokumentation" ist damit
+erledigt. Der Satz „Status bleibt `offen`" in der Rückmeldung vom 2026-09-05
+ist durch die Entscheidung vom 2026-09-08 überholt; was von der Rückmeldung
+weiter gilt, ist der Wunsch nach automatischer Klassifizierung
+(`IDEA-LZK-007`, blockiert durch B9).
+
 ### ANN-003 — Adress-Snapshot beim Hausbesuchstermin
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | CAL-001 |
-| Status | **entschieden (Jannes) 2026-09-08**; getroffen 2026-08-30, rückwirkend erfasst 2026-09-03 |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | CAL-001 |
+| **Status** | offen · 2026-08-30 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Bestätigung durch Jannes steht aus |
+
+**Nachtrag.** Getroffen 2026-08-30, rückwirkend erfasst 2026-09-03. Status am
+2026-09-13 berichtigt: die Entscheidungsrunde vom 2026-09-08 umfasste ANN-003
+nicht; Bestätigung durch Jannes steht aus.
 
 **Annahme.** Für Hausbesuche wird die Patientenadresse bei Terminanlage in den
 Termin kopiert (`visit_street`, `visit_house_number`, `visit_postal_code`,
@@ -420,10 +364,12 @@ Verlust der historischen Adresse als bewusster Folge.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | CAL-005 und Nachtrag Arbeitszeit-Audit; ADR-010 |
-| Status | offen, seit 2026-08-30 (rückwirkend erfasst 2026-09-03) |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | CAL-005 und Nachtrag Arbeitszeit-Audit; ADR-010 |
+| **Status** | offen · 2026-08-30 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+
+**Nachtrag.** Rückwirkend erfasst am 2026-09-03.
 
 **Annahme.** Bei `organization.appointment_grid_changed` werden alter und
 neuer Minutenwert in `audit_log.context` gespeichert. Bei Änderungen an
@@ -456,10 +402,17 @@ lesbar; ob sie bereinigt werden müssen, entscheidet die Prüfung.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | CAL-004 |
-| Status | **entschieden (Jannes) 2026-09-11** — ADR-018 ist angenommen und bestätigt die Annahme ausdrücklich: der Abschluss verlangt keine Dokumentation, die Kopplung sitzt an der Rechnung. Erfasst 2026-08-30, rückwirkend registriert 2026-09-03. |
-| Wiedervorlage | ABR-002 (Leistungserfassung am abgeschlossenen Termin); DOK-003 hat die Kopplung geprüft und nicht eingeführt, siehe Nachtrag |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | CAL-004 |
+| **Status** | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt |
+| **Wiedervorlage** | ABR-002 (Leistungserfassung am abgeschlossenen Termin); DOK-003 hat die Kopplung geprüft und nicht eingeführt, siehe Nachtrag |
+
+**Nachtrag.** Erfasst 2026-08-30, rückwirkend registriert 2026-09-03;
+entschieden in der Entscheidungsrunde vom 2026-09-08 (`OPEN_DECISIONS.md`,
+Historie). ADR-018, angenommen 2026-09-11, bestätigt die Annahme ausdrücklich:
+der Abschluss verlangt keine Dokumentation, die Kopplung sitzt an der
+Rechnung. Das Statusfeld nannte bis 2026-09-13 das ADR-Datum statt des
+Entscheidungsdatums.
 
 **Annahme.** Ein Termin kann abgeschlossen werden, ohne dass eine
 Behandlungsdokumentation existiert. Der Abschluss gibt den Zeitraum nicht frei
@@ -518,10 +471,18 @@ der Automat sei offen, ist mit ADR-018 überholt.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | DOK-003 (Dokumentation in der Akte, rollenabhängig projiziert); überbrückte bis zum 2026-09-05 auch Punkt C1 in `OPEN_DECISIONS.md`, der seither entschieden ist |
-| Status | **entschieden (Jannes) 2026-09-08** — mit einem Vorbehalt: die **Zahl** (Voreinstellung 1 Tag) wird nach den ersten Praxiswochen festgezurrt, wie ADR-016 es vorsieht. Mechanik und Fristbezug stehen. |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; die Aufnahme der Leistungskürzel in den Nachweis bei ABR-002 |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | DOK-003 (Dokumentation in der Akte, rollenabhängig projiziert); überbrückte bis zum 2026-09-05 auch Punkt C1 in `OPEN_DECISIONS.md`, der seither entschieden ist |
+| **Status** | verworfen · 2026-09-13 · Jannes · — |
+| **Wiedervorlage** | ROL-EPIC-001 (Umsetzung von E15); die Aufnahme der Leistungskürzel in den Nachweis bei ABR-002 |
+
+**Nachtrag.** Das Statusfeld trug bis 2026-09-13 den Text „entschieden
+(Jannes) 2026-09-08 — mit einem Vorbehalt: die Zahl (Voreinstellung 1 Tag)
+wird nach den ersten Praxiswochen festgezurrt, wie ADR-016 es vorsieht.
+Mechanik und Fristbezug stehen." Dieser Text gehört zu ANN-008 (Fristbezug
+der automatischen Finalisierung) und steht jetzt dort; ANN-006 selbst war bis
+zum 2026-09-13 `offen` — die Entscheidungsrunde vom 2026-09-08 umfasste ihn
+nicht.
 
 **Annahme.** Der Behandlungsnachweis nach `PROJECT_PRINCIPLES.md` §4.4 ist in
 der Akte eine eigene Serverfunktion (`list_patient_treatment_evidence`) mit
@@ -577,14 +538,39 @@ umzusetzen bei ABR-002; braucht dann eine eigene Spalte aus der
 Leistungserfassung — Aufwand `mittel`. Rollenschnitt: `app.can_read_treatment_evidence()` ersetzen —
 Aufwand `klein`.
 
+**Nachtrag 2026-09-13 (E15, Jannes) — verworfen.** Wortlaut der Entscheidung:
+„Office hat lesenden Zugriff auf alle klinischen Inhalte einer Patientenakte
+im selben Umfang wie Therapeut:innen: Diagnose und Verordnung einschließlich
+Scan, Behandlungsdokumentation mit Verlauf, Befunde, patientenbezogene
+Nachrichten. Office schreibt keine klinische Dokumentation. Jeder Zugriff ist
+auditpflichtig wie bei Therapeut:innen (§4.2, ADR-010). Umsetzung in
+ROL-EPIC-001; bis dahin gilt der gebaute Rollenschnitt. Datenschutzrechtliche
+Bewertung (Need-to-know, DSFA) mit Anfrage B2." Damit sieht Office die
+Behandlungsdokumentation vollständig; der Behandlungsnachweis bleibt als
+datensparsame Rechnungssicht bestehen (`PROJECT_PRINCIPLES.md` 0.10
+(2026-09-13) §4.4), ist aber **keine Zugriffsgrenze mehr** — und genau das war
+der Kern dieser Annahme. Bis ROL-EPIC-001 gilt der gebaute Rollenschnitt:
+`list_patient_treatment_evidence` und `app.can_read_treatment_evidence()`
+bleiben unverändert in Kraft, die Kennung im Code bleibt stehen, bis das Epic
+sie ablöst. Was die Datenschutzprüfung an diesem Eintrag weiterhin sieht, ist
+die Frage aus der Begründung, ob das Lesen des Dokumentationsstands ein
+protokollpflichtiger Zugriff ist — sie stellt sich nach E15 für jeden
+Aktenzugriff des Office und wandert mit in die Anfrage B2.
+
 ### ANN-007 — Mechanismus der automatischen Finalisierung: pg_cron
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | DOK-004 (ADR-016 Punkt 7); die Roadmap führte die Wahl als offene Architekturentscheidung |
-| Status | **Mechanismus entschieden am 2026-09-05 durch Jannes** (Weg 2, `pg_cron`, alle 15 Minuten, bedingt registriert). Die Providerfrage bleibt offen. |
-| Wiedervorlage | Providerprüfung nach ADR-002 vor dem Cloudprojekt — sie muss `pg_cron` bestätigen oder den Auslöser ersetzen |
+| **Kategorie** | Technik |
+| **Herkunft** | DOK-004 (ADR-016 Punkt 7); die Roadmap führte die Wahl als offene Architekturentscheidung |
+| **Status** | entschieden (Jannes) · 2026-09-05 · Jannes · erledigt |
+| **Wiedervorlage** | Providerprüfung nach ADR-002 vor dem Cloudprojekt (OPS-001) — sie muss `pg_cron` bestätigen oder den Auslöser ersetzen |
+
+**Nachtrag.** Entschieden ist der Mechanismus (Weg 2, `pg_cron`, alle 15
+Minuten, bedingt registriert); die Providerfrage bleibt offen und liegt bei
+der Wiedervorlage. Seit LOE-002a (2026-09-11) ruft derselbe Scheduler nach
+demselben Muster auch den Löschlauf `apply_retention()` auf
+(`supabase/migrations/20260911180000_retention_run.sql`, siehe ANN-026).
 
 **Annahme.** Die automatische Finalisierung ist eine Datenbankfunktion
 (`finalize_overdue_treatment_notes`), die ein Scheduler in der Datenbank
@@ -635,10 +621,16 @@ Lesepfade und der Versionierung — Aufwand `groß`, deshalb nicht gewählt.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | DOK-004 (ADR-016 Punkt 7) |
-| Status | offen, seit 2026-09-04 |
-| Wiedervorlage | Jannes nach den ersten Wochen Praxisbetrieb (ADR-016 nennt diesen Punkt als den, der am ehesten nachjustiert wird); Datenschutzprüfung für den Zeitpunktbegriff |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | DOK-004 (ADR-016 Punkt 7) |
+| **Status** | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt |
+| **Wiedervorlage** | Jannes nach den ersten Wochen Praxisbetrieb (ADR-016 nennt diesen Punkt als den, der am ehesten nachjustiert wird) — die **Zahl**, Voreinstellung 1 Tag; Datenschutzprüfung für den Zeitpunktbegriff |
+
+**Nachtrag.** Getroffen 2026-09-04; entschieden in der Entscheidungsrunde vom
+2026-09-08 — mit einem Vorbehalt: die **Zahl** (Voreinstellung 1 Tag) wird
+nach den ersten Praxiswochen festgezurrt, wie ADR-016 es vorsieht. Mechanik
+und Fristbezug stehen. Dieser Vorbehalt stand bis 2026-09-13 irrtümlich im
+Statusfeld von ANN-006; das Statusfeld hier nannte bis dahin `offen`.
 
 **Annahme.** Die Frist ist eine praxisweite Zahl von Kalendertagen
 (`documentation_auto_finalize_days`, 0 bis 30, Voreinstellung 1) und endet um
@@ -687,10 +679,10 @@ finalisiert; sie sind über Korrektur und Nachtrag weiter änderbar.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | DOK-004; ADR-010 lässt das konkrete Schema der Audit-Einträge offen |
-| Status | offen, seit 2026-09-04 |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | DOK-004; ADR-010 lässt das konkrete Schema der Audit-Einträge offen |
+| **Status** | offen · 2026-09-04 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
 
 **Annahme.** Auditereignisse ohne handelnden Account tragen
 `actor_kind = 'system'` und keinen `actor_user_id`; alle übrigen bleiben
@@ -732,10 +724,16 @@ Seed anlegen — Aufwand `mittel`, ausdrücklich nicht empfohlen.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | PAT-005 (VER-EPIC-001); `IDEA-PRX-001`; `PROJECT_PRINCIPLES.md` §4.3, §4.6 und ADR-008 lassen die Einordnung solcher Felder offen |
-| Status | **entschieden (Jannes) 2026-09-08** für den Praxisnutzen; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket** — die Sichtbarkeit gegenüber `office` und die Frist bestätigt erst die Datenschutzprüfung |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | PAT-005 (VER-EPIC-001); `IDEA-PRX-001`; `PROJECT_PRINCIPLES.md` §4.3, §4.6 und ADR-008 lassen die Einordnung solcher Felder offen |
+| **Status** | entschieden (Jannes) · 2026-09-08 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen |
+
+**Nachtrag.** Entschieden für den Praxisnutzen; Kategorie `Datenschutz`,
+deshalb weiter im Prüfpaket — die Sichtbarkeit gegenüber `office` und die
+Frist bestätigt erst die Datenschutzprüfung. E15 (Jannes, 2026-09-13; siehe
+ANN-006 und ANN-011) berührt diesen Eintrag nicht: Er hat `office` nie
+ausgeschlossen.
 
 **Annahme.** Zugangshinweis Hausbesuch, Besonderheit, Bemerkung und die feste
 Therapeut:in sind **organisatorische Angaben der Praxis**, keine
@@ -790,10 +788,14 @@ Lesepfad — Aufwand `groß`.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | VER-001 bis VER-003; `PROJECT_PRINCIPLES.md` §4.3 nennt „klinischen Freitext", ohne die Verordnung einzuordnen; C1 in `OPEN_DECISIONS.md` ist offen |
-| Status | offen, seit 2026-09-07 |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess; die Einordnung der Leistungskürzel entscheidet C1 bei ABR-002 |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | VER-001 bis VER-003; `PROJECT_PRINCIPLES.md` §4.3 nennt „klinischen Freitext", ohne die Verordnung einzuordnen; C1 in `OPEN_DECISIONS.md` war beim Erfassen offen (entschieden 2026-09-05) |
+| **Status** | entschieden (Jannes) · 2026-09-13 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Prozess (B2); der Rollenschnitt nach E15 kommt mit ROL-EPIC-001 |
+
+**Nachtrag.** Getroffen 2026-09-07. Entschieden am 2026-09-13 durch E15, siehe
+Nachtrag unten: der Rollenschnitt-Teil ist ersetzt, Datenklasse und Frist
+gelten unverändert.
 
 **Annahme.** Eine Verordnung ist ein **Mischdatensatz** und wird deshalb in
 zwei Projektionen ausgeliefert:
@@ -844,16 +846,43 @@ Oberfläche anpassen — Aufwand `mittel`, mit fachlicher Folge, weil `office`
 dann nicht mehr planen kann. Andere Frist: eigene Datenklasse und Löschregel in
 LOE-001 — Aufwand `mittel`.
 
+**Nachtrag 2026-09-13 (E15, Jannes).** Der Rollenschnitt-Teil dieser Annahme
+ist durch die Entscheidung ersetzt: „Office hat lesenden Zugriff auf alle
+klinischen Inhalte einer Patientenakte im selben Umfang wie Therapeut:innen:
+Diagnose und Verordnung einschließlich Scan, Behandlungsdokumentation mit
+Verlauf, Befunde, patientenbezogene Nachrichten. Office schreibt keine
+klinische Dokumentation. Jeder Zugriff ist auditpflichtig wie bei
+Therapeut:innen (§4.2, ADR-010). Umsetzung in ROL-EPIC-001; bis dahin gilt der
+gebaute Rollenschnitt. Datenschutzrechtliche Bewertung (Need-to-know, DSFA)
+mit Anfrage B2." Damit entfällt beim **Lesen** die Trennung in eine
+organisatorische und eine klinische Projektion für `office`: Diagnose
+beziehungsweise Leitsymptomatik, Therapieziel, Hinweise der Verordner:in, die
+Empfehlung zum Verordnungsende und der Verordnungsscan (DAT-001 —
+`app.may_read_patient_file_object` verweist auf diesen Eintrag) werden für
+`office` lesbar. Das **Schreibrecht** bleibt bei den therapeutischen Rollen,
+weil Office keine klinische Dokumentation schreibt; die Begründung „ein
+Schreibrecht wäre ein Leserecht durch die Hintertür" trägt nicht mehr, die
+Festlegung selbst schon. **Datenklasse und Frist gelten unverändert**:
+klinische Patientenakte, zehn Jahre nach Abschluss der Behandlung. Bis
+ROL-EPIC-001 gilt der gebaute Rollenschnitt; die Verankerung oben bleibt bis
+dahin, wie beschrieben. Die Wiedervorlage „C1 bei ABR-002" ist gestrichen: C1
+ist seit dem 2026-09-05 entschieden und durch E15 überholt. Der Satz in der
+Herkunft, C1 sei offen, beschreibt den Stand vom 2026-09-07.
+
 ---
 
 ### ANN-012 — Genutzte Menge wird bis CAL-007 und ABR-002 von Hand gepflegt
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | VER-001; die Roadmap verortet den automatischen Verbrauch bei CAL-007 und ABR-002 (`IDEA-PRX-009`) |
-| Status | **entschieden (Jannes) 2026-09-08** — bleibt gültig, bis CAL-007 und ABR-002 die Menge automatisch fortschreiben |
-| Wiedervorlage | Jannes; verbindlich entschieden mit CAL-007 und ABR-002 |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | VER-001; die Roadmap verortet den automatischen Verbrauch bei CAL-007 und ABR-002 (`IDEA-PRX-009`) |
+| **Status** | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt |
+| **Wiedervorlage** | ABR-002 (genutzte Menge aus der Abrechnung) |
+| **Ablösung** | abgelöst durch ANN-038 und ANN-042 in der Zählweise („verplant ist nicht genutzt", „ausgeschöpft") |
+
+**Nachtrag.** Bleibt gültig, bis ABR-002 die Menge automatisch fortschreibt;
+CAL-007 hat das nicht getan, siehe Nachtrag 2026-09-13.
 
 **Annahme.** Jede Verordnungsposition führt eine **genutzte Menge**, die die
 Praxis im Verordnungsformular selbst pflegt. Die verbleibende Menge wird daraus
@@ -881,16 +910,23 @@ Berechnung des Rests in `src/features/prescriptions/api.ts`.
 Feld fort, das Eingabefeld entfällt oder wird zur Korrekturmöglichkeit —
 Aufwand `mittel`, ohne Datenumzug, weil die Spalte bleibt.
 
+**Nachtrag 2026-09-13.** CAL-007 hat die genutzte Menge **nicht** übernommen:
+Die Terminserie zählt „verplant", nicht „genutzt" (ANN-038 Punkt 1), und die
+Praxis pflegt `used_quantity` weiter von Hand. Die Zählweise steht heute in
+ANN-038 (offen = verordnet − max(genutzt, verplant)) und ANN-042
+(ausgeschöpft = genutzt ≥ verordnet). Die Wiedervorlage ist damit allein
+ABR-002; im Änderungspfad bleibt nur ABR-002 als Schreiber des Feldes.
+
 ---
 
 ### ANN-013 — Datenklasse und Frist der Verordnerkartei
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | VER-001; ADR-008 kennt keine Datenklasse für personenbezogene Daten Dritter ohne Patientenbezug |
-| Status | offen, seit 2026-09-07 |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess (Verzeichnis der Verarbeitungstätigkeiten) |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | VER-001; ADR-008 kennt keine Datenklasse für personenbezogene Daten Dritter ohne Patientenbezug |
+| **Status** | offen · 2026-09-07 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Prozess (Verzeichnis der Verarbeitungstätigkeiten) |
 
 **Annahme.** `prescribers` enthält **berufliche Kontaktdaten Dritter** —
 Ärzt:innen und ihre Praxen — und ist **kein Gesundheitsdatum und kein
@@ -928,10 +964,10 @@ Art. 14 DSGVO: Textbaustein in G8/G14 — Aufwand `klein`, außerhalb des Codes.
 
 | | |
 |---|---|
-| Kategorie | Recht |
-| Herkunft | VER-001; ADR-006 Punkt 4 verbietet eigene Therapieempfehlungen der Anwendung |
-| Status | offen, seit 2026-09-07 |
-| Wiedervorlage | Datenschutzprüfung; B1 (externe MDR-Abgrenzung, ADR-006 Punkt 7) |
+| **Kategorie** | Recht |
+| **Herkunft** | VER-001; ADR-006 Punkt 4 verbietet eigene Therapieempfehlungen der Anwendung |
+| **Status** | offen · 2026-09-07 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung; B1 (externe MDR-Abgrenzung, ADR-006 Punkt 7) |
 
 **Annahme.** Das Feld „Empfehlung zum Verordnungsende" nimmt **die Empfehlung
 der Therapeut:in** auf, die sie selbst formuliert und selbst verantwortet. Die
@@ -978,10 +1014,15 @@ ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10.
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | UI-000; die Roadmap führt die Verbindungsanzeige in UI-000 und UX-EPIC-001 ausdrücklich als `ANN` |
-| Status | **entschieden (Jannes) 2026-09-08**; der Textverlust-Schutz ist mit UX-009 (2026-09-10) dazugekommen |
-| Wiedervorlage | Jannes nach dem ersten Feldtag |
+| **Kategorie** | Technik |
+| **Herkunft** | UI-000; die Roadmap führt die Verbindungsanzeige in UI-000 und UX-EPIC-001 ausdrücklich als `ANN` |
+| **Status** | entschieden (Jannes) · 2026-09-08 · Jannes · erledigt |
+| **Wiedervorlage** | Jannes nach dem ersten Feldtag |
+| **Ablösung** | abgelöst durch ANN-046 im Textverlustschutz |
+
+**Nachtrag.** Entschieden in der Entscheidungsrunde vom 2026-09-08; der
+Textverlust-Schutz ist mit UX-009 (2026-09-10) dazugekommen, siehe Ergänzung
+unten, und seit FIX-EPIC-003 in ANN-046 weitergeführt.
 
 **Annahme.** Die Verbindungsanzeige stützt sich **allein auf
 `navigator.onLine`** und die Ereignisse `online`/`offline` des Browsers. Es
@@ -1033,14 +1074,22 @@ deshalb nicht ohne Entscheidung. Anderer Wortlaut oder eine dauerhafte Anzeige:
 eine Stelle — Aufwand `klein`. Echte Offline-Fähigkeit: eigenes Epic nach
 ADR-001, ersetzt ADR-015 Punkt 16 — Aufwand `groß`.
 
+**Nachtrag 2026-09-13.** Der Textverlustschutz ist seit FIX-EPIC-003 und
+FIX-014 erweitert (ANN-046): Rückfrage mit drei Wegen bei interner
+Navigation, Abmeldeschutz, ein Schreibweg je Seite, kein Seitenwechsel nach
+fehlgeschlagenem Speichern. Der Satz in der Ergänzung durch UX-009, der
+Schutz bestehe aus zwei Dingen „und ausdrücklich nur diesen", gilt nicht
+mehr. Unverändert gilt: kein lokaler Zwischenspeicher, und die
+Verbindungsanzeige selbst ist, was oben steht.
+
 ### ANN-016 — Koordinate als abgeleitetes Stammdatum der Adresse
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | MAP-001 (ADR-019 Fassung 2, Punkt 14) |
-| Status | **offen**, getroffen 2026-09-08 |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Wiedervorlage Kartendienst; MAP-006 verankert sie in der Migration |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | MAP-001 (ADR-019 Fassung 2, Punkt 14) |
+| **Status** | offen · 2026-09-08 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Wiedervorlage Kartendienst; MAP-006 verankert sie in der Migration |
 
 **Annahme.** Zu jeder Hausbesuchsadresse wird die geocodierte Koordinate
 (`lat`, `lon`, Genauigkeitsstufe) **gespeichert**, und zwar bei der Adresse
@@ -1082,10 +1131,17 @@ Adresse oder umgekehrt: eine Migration — Aufwand `klein`.
 
 | | |
 |---|---|
-| Kategorie | Technik (datenschutzrelevant) |
-| Herkunft | MAP-001 (ADR-019 Fassung 2, Punkt 15) |
-| Status | **offen**, getroffen 2026-09-08 |
-| Wiedervorlage | OPS-001 Providerprüfung (Edge Runtime nach ADR-015 Punkt 20); MAP-003 baut den Adapter |
+| **Kategorie** | Technik |
+| **Herkunft** | MAP-001 (ADR-019 Fassung 2, Punkt 15) |
+| **Status** | offen · 2026-09-08 · — · — |
+| **Wiedervorlage** | OPS-001 Providerprüfung (Edge Runtime nach ADR-015 Punkt 20); MAP-003 baut den Adapter |
+
+**Nachtrag.** Die Kategorie stand bis 2026-09-13 als „Technik
+(datenschutzrelevant)". Die Datenschutzrelevanz bleibt — die Edge Runtime
+braucht für produktive Gesundheitsdaten die Datenfluss- und Providerprüfung
+aus OPS-001 —, die Kategorie ist `Technik`, damit die Prüfung nach den vier
+Werten filtern kann; den Datenschutzteil trägt ANN-016 und das Gate aus
+ADR-019 Punkt 9.
 
 **Annahme.** Geocoding, Routing und Matrix laufen in **einer Supabase Edge
 Function** (`location-provider`), die den Server-Schlüssel des Anbieters als
@@ -1116,8 +1172,8 @@ Komponententests (gemocktes `fetch`) prüfbar, gegen den echten Anbieter nur
 lokal bei Jannes und in `e2e-supabase`.
 
 **Verankerung.** `src/lib/location/contract.ts`, Abschnitt „Serverseitiger
-Anbieteradapter" (trägt die Kennung); ab MAP-003 `supabase/functions/
-location-provider/`.
+Anbieteradapter" (trägt die Kennung); `supabase/functions/location-provider/`
+— geplant für MAP-003, existiert noch nicht.
 
 **Änderungspfad.** Andere Laufzeit (eigener Dienst, Datenbankfunktion): Der
 Adapter ist ein Modul hinter dem Vertrag; die Oberfläche und die Fachlogik
@@ -1128,10 +1184,15 @@ für Gesundheitsdaten ausscheidet, greift derselbe Pfad **vor** MAP-006.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | MAP-001 (ADR-019 Fassung 2, Punkt 20 bis 23); ADR-019 Fassung 1 hatte diese `ANN` für UX-EPIC-001 angekündigt |
-| Status | **entschieden (Jannes) 2026-09-11** — Feldliste und Fahrradmodus bestätigt; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket**: dass die Übergabe an Google in dieser Form zulässig ist, bestätigt erst die Datenschutzprüfung (B2). Getroffen 2026-09-08, mit UX-002 für Google Maps umgesetzt |
-| Wiedervorlage | Datenschutzprüfung (B2, Handoff und §203/Art. 9); MAP-005 bewertet die Ziel-Apps und setzt Apple Maps und `geo:` um |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | MAP-001 (ADR-019 Fassung 2, Punkt 20 bis 23); ADR-019 (Fassung 1 in der Git-Historie; Fassung 2 angenommen 2026-09-13) hatte diese `ANN` für UX-EPIC-001 angekündigt |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2, Handoff und §203/Art. 9); MAP-005 bewertet die Ziel-Apps und setzt Apple Maps und `geo:` um |
+
+**Nachtrag.** Feldliste und Fahrradmodus bestätigt; Kategorie `Datenschutz`,
+deshalb weiter im Prüfpaket: dass die Übergabe an Google in dieser Form
+zulässig ist, bestätigt erst die Datenschutzprüfung (B2). Getroffen
+2026-09-08, mit UX-002 für Google Maps umgesetzt.
 
 **Annahme.** Der Handoff übergibt an die Navigations-App **nur das Ziel und
 den Fahrradmodus**: die Koordinate, sobald sie zur Adresse vorliegt (ANN-016,
@@ -1188,10 +1249,15 @@ Folge.
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | Nachprüfung zu PR #15/#16: der erste Fix für den Eingabenverlust beim Anlegen einer Verordner:in speicherte den Entwurf im TanStack-Query-Cache und verlor ihn dort nach der Standard-`gcTime` von fünf Minuten - ein zweiter, echter Fehler in derselben Story. |
-| Status | **entschieden 2026-09-08** |
-| Wiedervorlage | UX-EPIC-001 (Textverlust-Schutz) — dort wird der unten genannte Restpunkt behoben; außerdem Jannes, falls die 30-Minuten-Grenze in der Praxis zu knapp oder zu großzügig wirkt |
+| **Kategorie** | Technik |
+| **Herkunft** | Nachprüfung zu PR #15/#16: der erste Fix für den Eingabenverlust beim Anlegen einer Verordner:in speicherte den Entwurf im TanStack-Query-Cache und verlor ihn dort nach der Standard-`gcTime` von fünf Minuten - ein zweiter, echter Fehler in derselben Story. |
+| **Status** | offen · 2026-09-08 · — · — |
+| **Wiedervorlage** | Jannes, falls die 30-Minuten-Grenze in der Praxis zu knapp oder zu großzügig wirkt; der Restpunkt aus UX-EPIC-001 ist mit UX-009 behoben, siehe unten |
+
+**Nachtrag.** Status am 2026-09-13 berichtigt: Das Feld nannte „entschieden
+2026-09-08" ohne Instanz; die Entscheidungsrunde vom 2026-09-08 umfasste
+ANN-019 nicht, und eine andere Entscheidung ist nicht dokumentiert.
+Bestätigung durch Jannes steht aus.
 
 **Annahme.** Der Formularzustand liegt nicht mehr im TanStack-Query-Cache,
 sondern in einem eigenen, kleinen In-Memory-Speicher (`src/features/prescriptions/api.ts`,
@@ -1271,10 +1337,15 @@ auseinandergehalten.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | UX-008 (Textbausteine in der Dokumentation, `IDEA-PRX-011`, E-9) |
-| Status | **entschieden (Jannes) 2026-09-11** — Textbaustein ohne Patientenbezug, Löschung durch die Praxis; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket**: ob der Freitext trotz fehlenden Bezugs der Akte zugeordnet wird, entscheidet die Datenschutzprüfung. Getroffen 2026-09-10 |
-| Wiedervorlage | Datenschutzprüfung; LOE-001 nimmt die Klasse in den Retention Schedule auf |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | UX-008 (Textbausteine in der Dokumentation, `IDEA-PRX-011`, E-9) |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung; LOE-001 nimmt die Klasse in den Retention Schedule auf |
+
+**Nachtrag.** Textbaustein ohne Patientenbezug, Löschung durch die Praxis —
+wie vorgeschlagen bestätigt; Kategorie `Datenschutz`, deshalb weiter im
+Prüfpaket: ob der Freitext trotz fehlenden Bezugs der Akte zugeordnet wird,
+entscheidet die Datenschutzprüfung. Getroffen 2026-09-10.
 
 **Annahme.** Ein Textbaustein ist ein **Betriebsdatum der Praxis ohne
 Patientenbezug** und kein Gesundheitsdatum. Die Tabelle
@@ -1323,10 +1394,14 @@ zwei Policies — Aufwand `mittel`.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | UX-011 (Tagesplan-Cache lesend, `IDEA-PRX-014`, E-12); ADR-001 („offene Folgefrage: Feldliste") |
-| Status | **entschieden (Jannes) 2026-09-11** — Feldliste und acht Stunden bestätigt; Kategorie `Datenschutz`, deshalb **weiter im Prüfpaket**. Die Zahl bleibt zudem unter Vorbehalt des ersten Feldtags: Sie ist geschätzt, nicht gemessen. Getroffen 2026-09-10 |
-| Wiedervorlage | Datenschutzprüfung; Jannes nach dem ersten Feldtag (reicht die Vorhaltedauer, ist sie zu lang?) |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | UX-011 (Tagesplan-Cache lesend, `IDEA-PRX-014`, E-12); ADR-001 („offene Folgefrage: Feldliste") |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung; Jannes nach dem ersten Feldtag (reicht die Vorhaltedauer, ist sie zu lang?) |
+
+**Nachtrag.** Feldliste und acht Stunden bestätigt; Kategorie `Datenschutz`,
+deshalb weiter im Prüfpaket. Die Zahl bleibt zudem unter Vorbehalt des ersten
+Feldtags: Sie ist geschätzt, nicht gemessen. Getroffen 2026-09-10.
 
 **Annahme.** Die zuletzt erfolgreich geladene Tagesliste bleibt im
 **Arbeitsspeicher der laufenden Seite** lesbar, auch wenn eine spätere Abfrage
@@ -1396,10 +1471,10 @@ ADR-015 Punkt 16 und bringt die Endgeräteanforderungen mit — Aufwand `groß`.
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | Umstellung der Akzentfarbe auf die Marke Own Motion (2026-09-10). Die Hauptfarbe `#004429` liegt bei 34,1 % Helligkeit; die bisherige Ableitungsregel „Hover ist 6 Punkte dunkler" hätte von dort aus einen fast schwarzen Wert ergeben. |
-| Status | **offen** |
-| Wiedervorlage | Jannes, sobald er die Oberfläche eine Weile bedient hat; außerdem MARKE-001, falls die Marke um abgestufte Farbwerte ergänzt wird |
+| **Kategorie** | Technik |
+| **Herkunft** | Umstellung der Akzentfarbe auf die Marke Own Motion (2026-09-10). Die Hauptfarbe `#004429` liegt bei 34,1 % Helligkeit; die bisherige Ableitungsregel „Hover ist 6 Punkte dunkler" hätte von dort aus einen fast schwarzen Wert ergeben. |
+| **Status** | offen · 2026-09-10 · — · — |
+| **Wiedervorlage** | Jannes, sobald er die Oberfläche eine Weile bedient hat; außerdem MARKE-001, falls die Marke um abgestufte Farbwerte ergänzt wird |
 
 **Annahme.** `--color-accent-hover` trägt das **Tiefgrün der Marke**
 (`#042c1b` = `oklch(26.1% 0.0544 160)`) — also einen **dunkleren**, nicht
@@ -1445,10 +1520,10 @@ Wert an derselben Stelle — Aufwand `klein`.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | Anwenden der Marke Own Motion (2026-09-10). Die Kopfzeile zeigte `user.organizationName ?? 'Praxisplattform'`; mit der Marke gäbe es zwei Antworten auf dieselbe Frage. |
-| Status | **offen** |
-| Wiedervorlage | Jannes; erneut, sobald eine zweite Praxis dazukäme (ADR-003, „echter Mehrmandantenbetrieb") |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | Anwenden der Marke Own Motion (2026-09-10). Die Kopfzeile zeigte `user.organizationName ?? 'Praxisplattform'`; mit der Marke gäbe es zwei Antworten auf dieselbe Frage. |
+| **Status** | offen · 2026-09-10 · — · — |
+| **Wiedervorlage** | Jannes; erneut, sobald eine zweite Praxis dazukäme (ADR-003, „echter Mehrmandantenbetrieb") |
 
 **Annahme.** Die Kopfzeile der angemeldeten Anwendung zeigt die **Wortmarke**.
 Der Organisationsname aus den Stammdaten erscheint dort nicht mehr. Die
@@ -1493,10 +1568,12 @@ diese Annahme vorweggenommen.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | STAFF-002a (Umsetzung von E10); `PROJECT_PRINCIPLES.md` §20, §4.3, §4.7 |
-| Status | **entschieden (Jannes) 2026-09-11** — die Auslegung wie vorgeschlagen bestätigt |
-| Wiedervorlage | Datenschutzprüfung im Rahmen der TOM (G14). Kategorie `Datenschutz`: Die Bestätigung durch den Projektinhaber ersetzt sie nicht, der Eintrag bleibt im Prüfpaket |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | STAFF-002a (Umsetzung von E10); `PROJECT_PRINCIPLES.md` §20, §4.3, §4.7 |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung im Rahmen der TOM (G14). Kategorie `Datenschutz`: Die Bestätigung durch den Projektinhaber ersetzt sie nicht, der Eintrag bleibt im Prüfpaket |
+
+**Nachtrag.** Die Auslegung wie vorgeschlagen bestätigt.
 
 **Annahme.** E10 gibt dem Office die **Stammdaten** einer beschäftigten Person
 und nennt dabei „Anschrift" und „Telefon". Das wird als **dienstliche**
@@ -1546,10 +1623,10 @@ Angaben): `app.can_manage_staff_master_data()` auf `owner` zurück — Aufwand
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | STAFF-002b; B13 (entschieden 2026-09-06); ADR-002, ADR-015; `PROJECT_PRINCIPLES.md` §3.4, §4.2, §13 |
-| Status | **offen**, getroffen 2026-09-11 |
-| Wiedervorlage | **OPS-001** (Providerprüfung, Auth-Mails) — dort entscheidet sich, ob eine Edge Function mit `service_role` den Versand übernimmt; Datenschutzprüfung |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | STAFF-002b; B13 (entschieden 2026-09-06); ADR-002, ADR-015; `PROJECT_PRINCIPLES.md` §3.4, §4.2, §13 |
+| **Status** | offen · 2026-09-11 · — · Prüfpaket |
+| **Wiedervorlage** | **OPS-001** (Providerprüfung, Auth-Mails) — dort entscheidet sich, ob eine Edge Function mit `service_role` den Versand übernimmt; Datenschutzprüfung |
 
 **Annahme.** Die Praxisplattform erzeugt **kein** Konto beim Anmeldedienst. Sie
 verwaltet ausschließlich die **Berechtigung**: `invite_staff_account` legt die
@@ -1611,10 +1688,10 @@ bereits die restriktive Variante.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | STAFF-002b; ADR-008 (Retention Schedule), ADR-010 |
-| Status | **offen**, getroffen 2026-09-11 |
-| Wiedervorlage | Datenschutzprüfung; LOE-001 nimmt die Klasse in den Retention Schedule auf |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | STAFF-002b; ADR-008 (Retention Schedule), ADR-010 |
+| **Status** | offen · 2026-09-11 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (die Frist); die Klasse steht seit LOE-001a im Retention Schedule |
 
 **Annahme.** Eine Einladung (`public.staff_account_invitations`) ist ein
 **Zugangs- und Authentifizierungsdatum**, kein Gesundheitsdatum und kein
@@ -1657,16 +1734,30 @@ nach Ablauf dieser Frist. Fälle in `supabase/tests/retention-run.test.ts`.
 Der Eintrag bleibt `offen`: Die Zahl selbst hat die Datenschutzprüfung noch
 nicht bestätigt.
 
+**Nachtrag 2026-09-13.** Der Satz „Kein Hintergrundjob, kein Zustand, der
+ohne Beobachtung kippt (ANN-007 setzt `pg_cron` nicht voraus)" gilt nicht
+mehr — und war schon in sich schief: ANN-007 **ist** der `pg_cron`-Mechanismus.
+Seit LOE-002a ist der Löschlauf `apply_retention()`, der abgeschlossene und
+abgelaufene Einladungen nach der Zwölfmonatsfrist löscht, per `pg_cron`
+registriert (`supabase/migrations/20260911180000_retention_run.sql`, bedingt
+wie in ANN-007). Unverändert gilt der Kern der Festlegung: Eine offene
+Einladung **läuft ab**, statt aufgeräumt zu werden — der Ablauf der 14 Tage
+kippt keinen Zustand, sondern wird bei der Annahme und in der Oberfläche
+festgestellt; erst die Aufbewahrungsfrist danach ist Sache des Löschlaufs.
+
 ---
 
 ### ANN-027 — Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | STAFF-004a; ADR-010; `PROJECT_PRINCIPLES.md` §3.4, §16 |
-| Status | **entschieden (Jannes) 2026-09-11** — die zwölf Zeichen ohne Zeichenklassen wie vorgeschlagen bestätigt |
-| Wiedervorlage | Datenschutzprüfung im Rahmen der TOM (G14); OPS-001 (Einstellung beim Provider). Kategorie `Datenschutz`: Die Bestätigung durch den Projektinhaber ersetzt die Prüfung nicht |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | STAFF-004a; ADR-010; `PROJECT_PRINCIPLES.md` §3.4, §16 |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung im Rahmen der TOM (G14); OPS-001 (Einstellung beim Provider). Kategorie `Datenschutz`: Die Bestätigung durch den Projektinhaber ersetzt die Prüfung nicht |
+
+**Nachtrag.** Die zwölf Zeichen ohne Zeichenklassen wie vorgeschlagen
+bestätigt.
 
 **Annahme.** Ein Kennwort für die Praxisplattform braucht **mindestens 12
 Zeichen**. Keine erzwungenen Zeichenklassen (Großbuchstabe, Ziffer,
@@ -1704,10 +1795,13 @@ ausdrückliches Verlangen der Prüfung.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | STAFF-004b; ADR-010 Punkt 10 und Punkt 9; ADR-012 (Bus-Faktor 1) |
-| Status | **entschieden (Jannes) 2026-09-11** — die Durchsetzung wird bewusst später geplant |
-| Wiedervorlage | **Jannes, nach dem Online-Schalten der Anwendung** (Entscheidung vom 2026-09-12; bis dahin galt „sobald eine Domain feststeht“). Vorher wird der zweite Faktor weder abgefragt noch erzwungen. Die Datenschutzprüfung sieht den Punkt unabhängig davon. |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | STAFF-004b; ADR-010 Punkt 10 und Punkt 9; ADR-012 (Bus-Faktor 1) |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | **Jannes, nach dem Online-Schalten der Anwendung** (Entscheidung vom 2026-09-12; bis dahin galt „sobald eine Domain feststeht“). Vorher wird der zweite Faktor weder abgefragt noch erzwungen. Die Datenschutzprüfung sieht den Punkt unabhängig davon. |
+
+**Nachtrag.** Die Durchsetzung wird bewusst später geplant — siehe Ergänzung
+vom 2026-09-11 und Nachtrag vom 2026-09-12 unten.
 
 **Annahme.** Der zweite Faktor (TOTP) ist **einrichtbar und sichtbar**, aber
 die Anmeldung wird **nicht** darauf festgelegt: Kein Datenpfad verlangt heute
@@ -1783,10 +1877,10 @@ Konto“, und zwar **vor** der Einrichtung, nicht dahinter.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | LOE-001a; ADR-008 (Retention Schedule), ADR-010 (offene Folgefrage „Wie werden Audit-Einträge behandelt, deren Bezugsdaten früher gelöscht werden?") |
-| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
-| Wiedervorlage | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | LOE-001a; ADR-008 (Retention Schedule), ADR-010 (offene Folgefrage „Wie werden Audit-Einträge behandelt, deren Bezugsdaten früher gelöscht werden?") |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung / DSFA-Prozess vor Produktivstart |
 
 **Annahme.** Ein Auditeintrag wird **drei Jahre nach dem Ereignis** gelöscht —
 unabhängig davon, ob die Akte, auf die er sich bezieht, noch besteht oder
@@ -1827,10 +1921,10 @@ eine Datenänderung in `retention_classes` — Aufwand `klein`.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | LOE-001a; ADR-008 (der initiale Retention Schedule führt keine Klasse für Beschäftigtendaten); `docs/development/ARBEITSBEREICHE.md` (offener Punkt, `IDEA-QSN-010`) |
-| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
-| Wiedervorlage | Datenschutzprüfung; Jannes, sobald die erste Person ausscheidet — spätestens vor der ersten Einstellung |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | LOE-001a; ADR-008 (der initiale Retention Schedule führt keine Klasse für Beschäftigtendaten); `docs/development/ARBEITSBEREICHE.md` (offener Punkt, `IDEA-QSN-010`) |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung; Jannes, sobald die erste Person ausscheidet — spätestens vor der ersten Einstellung |
 
 **Annahme.** Mitarbeiterdatensätze, Privatangaben und Arbeitszeiten
 (`staff_members`, `staff_private_details`, `staff_working_hours`,
@@ -1869,10 +1963,10 @@ werden muss. Reine Friständerung ohne neuen Anker: `klein`.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | LOE-001a/LOE-002a; ADR-008 Punkt 8 (Löschungen nach einem Restore erneut anwenden), ADR-012 (Backup-Lebenszyklus offen) |
-| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Datenschutz` im Prüfpaket |
-| Wiedervorlage | Datenschutzprüfung; erneut mit OPS-003, sobald der Backup-Lebenszyklus definiert ist (ADR-012, offene Folgefrage) |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | LOE-001a/LOE-002a; ADR-008 Punkt 8 (Löschungen nach einem Restore erneut anwenden), ADR-012 (Backup-Lebenszyklus offen) |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung; erneut mit OPS-003, sobald der Backup-Lebenszyklus definiert ist (ADR-012, offene Folgefrage) |
 
 **Annahme.** Das Löschjournal (`deletion_journal`) wird **nicht automatisch
 gelöscht**. Es hält je gelöschtem Datensatz Tabelle, Kennung, Datenklasse,
@@ -1915,10 +2009,11 @@ Schritt ist die Wiederanwendung unvollständig.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | LOE-001b; ADR-008 (Anker der klinischen Retention, dort als offene Folgefrage geführt), ANN-002 (`inactive` ist kein Behandlungsabschluss), `IDEA-LZK-006` |
-| Status | **entschieden (Jannes) 2026-09-11** |
-| Wiedervorlage | Jannes nach den ersten Praxiswochen (passt der Vorgang in den Alltag?); die Datenschutzprüfung sieht den Fristanker unabhängig davon |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | LOE-001b; ADR-008 (Anker der klinischen Retention, dort als offene Folgefrage geführt), ANN-002 (`inactive` ist kein Behandlungsabschluss), `IDEA-LZK-006` |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · erledigt |
+| **Wiedervorlage** | Jannes nach den ersten Praxiswochen (passt der Vorgang in den Alltag?); die Datenschutzprüfung sieht den Fristanker unabhängig davon |
+| **Ablösung** | ersetzt ANN-002 in der Frage „Behandlungsabschluss" |
 
 **Annahme.** Der „Abschluss der Behandlung" aus §630f Abs. 3 BGB ist ein
 **ausdrücklicher Vorgang auf der Akte**: `patients.care_concluded_on`, gesetzt
@@ -1967,10 +2062,10 @@ gelöscht wurde.
 
 | | |
 |---|---|
-| Kategorie | Recht |
-| Herkunft | LOE-001c; ADR-008 Punkt 7 („dokumentierter Legal-Hold-Mechanismus") und die dortige offene Folgefrage „Wer darf einen Legal Hold setzen und aufheben?" |
-| Status | **entschieden (Jannes) 2026-09-11** — bleibt als `Recht` im Prüfpaket |
-| Wiedervorlage | Datenschutzprüfung (B2); außerdem sofort, wenn der erste reale Vorgang eintritt — dann zeigt sich, ob der Zuschnitt trägt |
+| **Kategorie** | Recht |
+| **Herkunft** | LOE-001c; ADR-008 Punkt 7 („dokumentierter Legal-Hold-Mechanismus") und die dortige offene Folgefrage „Wer darf einen Legal Hold setzen und aufheben?" |
+| **Status** | entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2); außerdem sofort, wenn der erste reale Vorgang eintritt — dann zeigt sich, ob der Zuschnitt trägt |
 
 **Annahme.** Eine Löschsperre wirkt **auf genau eine Patientenakte**, wird
 **nur von `owner`** gesetzt und aufgehoben, trägt einen Pflichtgrund als
@@ -2013,10 +2108,12 @@ bewusst nicht in diesem Epic.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | CAL-008b; ADR-018 Punkt 6 verlangt den Grund als Pflichtangabe und nennt die Werteliste ausdrücklich „bewusst nicht Bestandteil dieser Entscheidung" (CAL-008) |
-| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; bleibt als `Datenschutz` im Prüfpaket |
-| Wiedervorlage | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen — dort zeigt sich, ob vier Werte reichen |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | CAL-008b; ADR-018 Punkt 6 verlangt den Grund als Pflichtangabe und nennt die Werteliste ausdrücklich „bewusst nicht Bestandteil dieser Entscheidung" (CAL-008) |
+| **Status** | entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2); außerdem Jannes nach den ersten Praxiswochen — dort zeigt sich, ob vier Werte reichen |
+
+**Nachtrag.** Wie empfohlen bestätigt.
 
 **Annahme.** Der Absagegrund ist eine **codierte Auswahl aus genau vier
 Werten** — „Patient:in hat abgesagt", „Praxis hat abgesagt", „Termin verlegt",
@@ -2064,14 +2161,18 @@ Logging, Aufnahme in die Löschprüfung und eine Aussage in der DSFA — Aufwand
 
 ---
 
-### ANN-035 — No-show fällt unter die Frist der abgesagten Termine; mit Ausfallhonorar wird nicht gelöscht
+### ANN-035 — No-show fällt unter die Frist der abgesagten Termine; mit Gebührenanlass wird nicht gelöscht
 
 | | |
 |---|---|
-| Kategorie | Recht |
-| Herkunft | CAL-008c; ADR-018 („Offene Folgefragen": „Braucht ‚nicht angetroffen' eine eigene Frist im Retention Schedule, oder fällt es unter ‚abgesagte Termine und No-shows ohne Rechnung'? Beim Bauen von CAL-008 zu prüfen") |
-| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; bleibt als `Recht` im Prüfpaket |
-| Wiedervorlage | ABR-003 — sobald es Rechnungen gibt, entscheidet die Rechnung statt des Kennzeichens; Datenschutzprüfung (B2) |
+| **Kategorie** | Recht |
+| **Herkunft** | CAL-008c; ADR-018 („Offene Folgefragen": „Braucht ‚nicht angetroffen' eine eigene Frist im Retention Schedule, oder fällt es unter ‚abgesagte Termine und No-shows ohne Rechnung'? Beim Bauen von CAL-008 zu prüfen") |
+| **Status** | entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket |
+| **Wiedervorlage** | ABR-003 — sobald es Rechnungen gibt, entscheidet die Rechnung statt des Kennzeichens; CAL-018 (Umsetzung von E14); Datenschutzprüfung (B2) |
+
+**Nachtrag.** Wie empfohlen bestätigt. Die Überschrift hieß bis 2026-09-13
+„mit Ausfallhonorar wird nicht gelöscht"; seit CAL-014b heißt der Haltegrund
+Gebührenanlass (Nachtrag 2026-09-12 unten).
 
 **Annahme.** Ein Termin im Zustand `no_show` fällt unter die **bestehende**
 Retention-Klasse `termin_ohne_nachweis` — drei Jahre ab Ende des
@@ -2132,16 +2233,38 @@ Löschfrist sonst vorziehen. Die Regel steht jetzt in
 eine Absage MIT Gebührenanlass stehen" kommt in
 `supabase/tests/retention-run.test.ts` dazu.
 
+**Nachtrag 2026-09-13 (E14, Jannes).** Die Hausbesuch-Szenarien sind
+verbindlich: (1) Tür geöffnet, Behandlung findet auf Angabe der Patient:in
+nicht statt → Termin gilt als durchgeführt, Pflichtvermerk in der
+Dokumentation, normale Abrechnung, keine Ausfallgebühr. (2) Nicht angetroffen
+nach Protokoll (15 Minuten gewartet, geklingelt, angerufen) → Termin gilt als
+nicht wahrgenommen, Ausfallgebühr. (3) Patientenabsage unter 24 Stunden →
+Ausfallgebühr (unverändert). Die Software führt die behandelnde Person
+erklärend durch die Szenarien. Umsetzung: CAL-018. Für diese Annahme heißt
+das: Das Nichtantreffen nach Protokoll trägt künftig **immer**
+`fee_basis = 'no_show'` (ADR-018 Fassung 3); die Löschregel „No-show ohne
+Kennzeichen" wird damit gegenstandslos — es gibt keinen `no_show` ohne
+Gebührenanlass mehr —, die Rückhaltung von Vorgängen mit Gebührenanlass
+bleibt. Szenario 1 ist ein durchgeführter und dokumentierter Termin und fällt
+nicht unter diese Regel. Datenklasse und Anker ändern sich nicht.
+
 ---
 
 ### ANN-036 — `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | CAL-008d; ADR-018 Punkt 2 (Übergangstabelle) gegen ADR-018 Punkt 3 (Invariante) |
-| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Technik`, damit erledigt |
-| Wiedervorlage | nur noch mit ABR-003, wenn `invoiced` denselben Weg geht |
+| **Kategorie** | Technik |
+| **Herkunft** | CAL-008d; ADR-018 Punkt 2 (Übergangstabelle) gegen ADR-018 Punkt 3 (Invariante) |
+| **Status** | in ADR überführt · 2026-09-13 · ADR-018 Fassung 3 · erledigt |
+| **Wiedervorlage** | ADR-018; erneut nur mit ABR-003, wenn `invoiced` denselben Weg geht |
+
+**Nachtrag.** Bis 2026-09-13 `entschieden (Jannes)` vom 2026-09-12, wie
+empfohlen; Kategorie `Technik`, damit erledigt. ADR-018 Fassung 3
+(2026-09-13) übernimmt die Festlegung: `confirmed → documented` steht in der
+Übergangstabelle, der Widerspruch zwischen Punkt 2 und Punkt 3 ist damit im
+ADR selbst aufgelöst. Der Eintrag bleibt mit Verankerung und Änderungspfad
+stehen.
 
 **Annahme.** Die Finalisierung einer Behandlungsdokumentation hebt den Termin
 auf `documented` — **auch dann, wenn er noch `confirmed` ist** und niemand ihn
@@ -2197,10 +2320,12 @@ Scheduler-Fall.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | CAL-010a; `PROJECT_PRINCIPLES.md` §8.1 („neu gesetztes Zeitfenster" gegen „Bestehende Termine werden nicht rückwirkend verändert") |
-| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Praxisprozess`, damit erledigt |
-| Wiedervorlage | nur noch mit E12 Punkt 1 und 2 (begründete Abweichung von 60 Minuten, Länge je Praxis einstellbar) |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | CAL-010a; `PROJECT_PRINCIPLES.md` §8.1 („neu gesetztes Zeitfenster" gegen „Bestehende Termine werden nicht rückwirkend verändert") |
+| **Status** | entschieden (Jannes) · 2026-09-12 · Jannes · erledigt |
+| **Wiedervorlage** | nur noch mit E12 Punkt 2 (Länge je Praxis einstellbar); Punkt 1 ist seit CAL-015b erledigt, siehe Nachtrag 2026-09-13 |
+
+**Nachtrag.** Wie empfohlen bestätigt.
 
 **Annahme.** `create_appointment` verlangt **immer** ein Zeitfenster von 60
 Minuten. `update_appointment` prüft die Länge **genau dann, wenn sie sich
@@ -2254,16 +2379,27 @@ Bedingung `v_neu_laenge is distinct from v_alt_laenge` in
 Muster von `p_allow_outside_working_hours` mit Auditvermerk — Aufwand `klein`
 bis `mittel`.
 
+**Nachtrag 2026-09-13.** `PROJECT_PRINCIPLES.md` 0.9 §8.1 erlaubt seit
+CAL-015b 60 **oder** 45 Minuten, keine dritte Länge. „`create_appointment`
+verlangt immer ein Zeitfenster von 60 Minuten" und „mit einer festen Zahl"
+gelten nicht mehr; die Regel selbst — geprüft wird die Länge, und nur wenn
+sie sich ändert, gegen die erlaubten Längen — gilt unverändert. E12 Punkt 1
+ist damit erledigt, ohne den im Änderungspfad beschriebenen
+Ausnahmeparameter; die Wiedervorlage ist nur noch E12 Punkt 2.
+
 ---
 
 ### ANN-038 — Terminserie: verplant ist nicht genutzt, drei Rhythmen, höchstens 30 je Vorgang
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | CAL-007; die Roadmap verlangt „Anzahl aus dem Kontingent", ohne zu sagen, was das Kontingent verbraucht |
-| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen. Kategorie `Praxisprozess`, damit erledigt |
-| Wiedervorlage | nur noch mit ABR-002: dort entscheidet sich, ob die genutzte Menge automatisch fortgeschrieben wird |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | CAL-007; die Roadmap verlangt „Anzahl aus dem Kontingent", ohne zu sagen, was das Kontingent verbraucht |
+| **Status** | entschieden (Jannes) · 2026-09-12 · Jannes · erledigt |
+| **Wiedervorlage** | nur noch mit ABR-002: dort entscheidet sich, ob die genutzte Menge automatisch fortgeschrieben wird |
+| **Ablösung** | ersetzt ANN-012 in der Zählweise („verplant ist nicht genutzt") |
+
+**Nachtrag.** Wie empfohlen bestätigt.
 
 **Annahme.** Drei Festlegungen, die zusammengehören:
 
@@ -2324,14 +2460,20 @@ nimmt die Tage ohnehin einzeln entgegen.
 
 ---
 
-### ANN-039 — Terminzettel: Inhalt, nur Druck, kein Versand
+### ANN-039 — Terminzettel: Inhalt, Druck, Aufruf als Aktenzugriff protokolliert
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | CAL-011, `IDEA-PRX-006`; ADR-010 Punkt 2; `OPEN_DECISIONS.md` B15 |
-| Status | **entschieden (Jannes) 2026-09-12** — wie empfohlen; **Fassung 2 vom 2026-09-12** (Punkt 4 neu, siehe unten); als `Datenschutz` **weiter im Prüfpaket** |
-| Wiedervorlage | Datenschutzprüfung (B2); der Versandweg mit B15 |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | CAL-011, `IDEA-PRX-006`; ADR-010 Punkt 2; `OPEN_DECISIONS.md` B15 |
+| **Status** | entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2); der Versandweg seit CAL-013 in ANN-041 und B15 |
+| **Ablösung** | abgelöst durch ANN-041 in Punkt 2 (Versand) |
+
+**Nachtrag.** Wie empfohlen bestätigt; **Fassung 2 vom 2026-09-12** (Punkt 4
+neu, siehe unten); als `Datenschutz` weiter im Prüfpaket. Die Überschrift
+hieß bis 2026-09-13 „Inhalt, nur Druck, kein Versand" — Punkt 2 ist seit
+CAL-013 gestrichen.
 
 **Annahme.** Der Terminzettel ist ein Ausdruck, der die Praxis in der Hand
 einer Patient:in verlässt. Vier Festlegungen dazu:
@@ -2341,11 +2483,17 @@ einer Patient:in verlässt. Vier Festlegungen dazu:
    Behandlungsinhalt und die Hausbesuchsadresse. Die Adresse ist ihre eigene;
    der Ort steht als „bei Ihnen zu Hause". Ausgegeben werden nur **bestätigte
    künftige** Termine.
-2. **Nur Druck, kein Versand.** Kein Knopf für E-Mail oder SMS. Eine
+2. ~~**Nur Druck, kein Versand.** Kein Knopf für E-Mail oder SMS. Eine
    Terminliste in Verbindung mit einer Praxis ist ein Gesundheitsdatum
    (Art. 9 DSGVO); ein Versandweg braucht einen Dienstleister, eine
    Rechtsgrundlage und eine Einwilligung — das ist **B15** und offen
-   (`PROJECT_PRINCIPLES.md` §3.5).
+   (`PROJECT_PRINCIPLES.md` §3.5).~~
+   **Geändert am 2026-09-12 (CAL-013, ANN-041).** Jannes hat den Versand von
+   Terminmails ausdrücklich vorgesehen; seit CAL-013 steht neben dem Druck die
+   Übergabe eines Entwurfs an das Mailprogramm der Praxis (ANN-041).
+   **Unverändert bleibt:** kein Dienstleister, kein automatischer Versand,
+   keine SMS; was die E-Mail trägt, ist genau der Inhalt des Zettels
+   (Punkt 1). Die Begründung „Zu 2" unten beschreibt den Stand vor CAL-013.
 3. **Der Aufruf wird protokolliert.** Die Seite hat eine eigene Adresse; ohne
    Eintrag ließe sich Name und Terminlage offenlegen, ohne dass eine Spur
    bliebe. Geschrieben wird das bestehende `patient_record.viewed` mit dem
@@ -2414,14 +2562,18 @@ und ein geänderter `insert`; Aufwand `klein`.
 
 ---
 
-### ANN-040 — Mitteilungsvermerk: vier Wege, kein Versand, verfällt mit jeder Terminänderung
+### ANN-040 — Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | CAL-012 (Auftrag von Jannes, 2026-09-12, nach dem Vorbild von iPrax); `OPEN_DECISIONS.md` B15; ADR-010 |
-| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch Jannes und die Datenschutzprüfung steht aus |
-| Wiedervorlage | Datenschutzprüfung (B2); der Weg `email` zusätzlich mit B15 und PAT-006 |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | CAL-012 (Auftrag von Jannes, 2026-09-12, nach dem Vorbild von iPrax); `OPEN_DECISIONS.md` B15; ADR-010 |
+| **Status** | offen · 2026-09-12 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2); der Weg `email` zusätzlich mit B15 und PAT-006 |
+
+**Nachtrag.** Bestätigung durch Jannes und die Datenschutzprüfung steht aus.
+Die Überschrift hieß bis 2026-09-13 „vier Wege, kein Versand, verfällt mit
+jeder Terminänderung" — Punkt 1 ist seit CAL-013 geändert, siehe unten.
 
 **Annahme.** Ein Termin trägt einen Vermerk, **ob** und **auf welchem Weg** er
 der Patient:in mitgeteilt wurde. Vier Festlegungen:
@@ -2501,10 +2653,14 @@ wäre dann sein Ergebnis, nicht sein Ersatz.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | CAL-013 (Auftrag von Jannes, 2026-09-12); `OPEN_DECISIONS.md` B15; ADR-019 und ANN-018 (Handoff-Muster); `PROJECT_PRINCIPLES.md` §3.5, §10, §16 |
-| Status | **offen** — getroffen am 2026-09-12, **Fassung 2 vom 2026-09-12** (Punkt 5 geändert, siehe unten); Bestätigung durch die Datenschutzprüfung steht aus |
-| Wiedervorlage | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | CAL-013 (Auftrag von Jannes, 2026-09-12); `OPEN_DECISIONS.md` B15; ADR-019 und ANN-018 (Handoff-Muster); `PROJECT_PRINCIPLES.md` §3.5, §10, §16 |
+| **Status** | offen · 2026-09-12 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006 |
+| **Ablösung** | ersetzt ANN-039 Punkt 2 (Versand) |
+
+**Nachtrag.** **Fassung 2 vom 2026-09-12** (Punkt 5 geändert, siehe unten);
+Bestätigung durch die Datenschutzprüfung steht aus.
 
 **Vorgeschichte.** Jannes hat am 2026-09-12 geschrieben: „Ich widerspreche
 möglicherweise früherer Planung, aber es ist ausdrücklich vorgesehen, dass die
@@ -2630,10 +2786,11 @@ Aufwand `groß`, eigenes Epic, setzt B15 und eine Prüfung nach §3.5 voraus.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | AKTE-002 (Auftrag von Jannes, 2026-09-12); ANN-012 (genutzte Menge von Hand); ANN-038 (verplant ist nicht genutzt); `PROJECT_PRINCIPLES.md` §13, §16 |
-| Status | **offen** — getroffen am 2026-09-12 |
-| Wiedervorlage | Jannes nach den ersten Praxiswochen; erneut mit ABR-002, sobald die genutzte Menge aus der Abrechnung kommt |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | AKTE-002 (Auftrag von Jannes, 2026-09-12); ANN-012 (genutzte Menge von Hand); ANN-038 (verplant ist nicht genutzt); `PROJECT_PRINCIPLES.md` §13, §16 |
+| **Status** | offen · 2026-09-12 · — · — |
+| **Wiedervorlage** | Jannes nach den ersten Praxiswochen; erneut mit ABR-002, sobald die genutzte Menge aus der Abrechnung kommt |
+| **Ablösung** | ersetzt ANN-012 in der Frage, wann eine Verordnung ausgeschöpft ist |
 
 **Anlass.** Die Akte teilt die Verordnungen seit AKTE-002 in „laufend" und
 „ausgeschöpft": Die laufenden stehen ausführlich oben, die ausgeschöpften
@@ -2693,10 +2850,12 @@ dieser Regel nichts.
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | FIX-001 (Befund aus der Prüfung vom 2026-09-12); `OPEN_DECISIONS.md` B13; `PROJECT_PRINCIPLES.md` §3.4, §13, §16; ADR-002 |
-| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch die Datenschutzprüfung steht aus |
-| Wiedervorlage | Datenschutzprüfung (B2); Providerprüfung OPS-001, Teil Auth-Mails |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | FIX-001 (Befund aus der Prüfung vom 2026-09-12); `OPEN_DECISIONS.md` B13; `PROJECT_PRINCIPLES.md` §3.4, §13, §16; ADR-002 |
+| **Status** | offen · 2026-09-12 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2); Providerprüfung OPS-001, Teil Auth-Mails |
+
+**Nachtrag.** Bestätigung durch die Datenschutzprüfung steht aus.
 
 **Vorgeschichte.** STAFF-004 hat den Versand der Auth-Mails gebaut, aber keinen
 Empfang. `src/lib/supabase.ts` setzt `detectSessionInUrl: false`, und im
@@ -2802,10 +2961,12 @@ statt der Auth-Mails: Aufwand `groß`, eigenes Epic, neuer Dienstleister nach
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | FIX-003 (Befund aus der Prüfung vom 2026-09-12); ADR-010; `PROJECT_PRINCIPLES.md` §13, §16; Oberflächen-Checkliste Punkt 6; ANN-041 Fassung 2 (Gegenrichtung, siehe Begründung) |
-| Status | **offen** — getroffen am 2026-09-12, Bestätigung durch die Datenschutzprüfung steht aus |
-| Wiedervorlage | Datenschutzprüfung (B2); der Wert `jwt_expiry` mit OPS-001 |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | FIX-003 (Befund aus der Prüfung vom 2026-09-12); ADR-010; `PROJECT_PRINCIPLES.md` §13, §16; Oberflächen-Checkliste Punkt 6; ANN-041 Fassung 2 (Gegenrichtung, siehe Begründung) |
+| **Status** | offen · 2026-09-12 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2); der Wert `jwt_expiry` mit OPS-001 |
+
+**Nachtrag.** Bestätigung durch die Datenschutzprüfung steht aus.
 
 **Vorgeschichte.** `beendeAlleSitzungen` meldete `sessions_ended` ins
 Auditlog, **bevor** der Vorgang beim Anmeldedienst lief — entgegen der Regel
@@ -2888,10 +3049,10 @@ Berechtigungsschicht.
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | FIX-004 (Befund aus der Prüfung vom 2026-09-12); Oberflächen-Checkliste Punkt 6; R10 der Roadmap |
-| Status | **offen** — getroffen am 2026-09-12 |
-| Wiedervorlage | Jannes nach dem ersten Feldtag |
+| **Kategorie** | Technik |
+| **Herkunft** | FIX-004 (Befund aus der Prüfung vom 2026-09-12); Oberflächen-Checkliste Punkt 6; R10 der Roadmap |
+| **Status** | offen · 2026-09-12 · — · — |
+| **Wiedervorlage** | Jannes nach dem ersten Feldtag |
 
 **Vorgeschichte.** `supabase-js` hat für `signOut` den Default
 `{ scope: 'global' }`. Der Abmelden-Knopf der Kopfzeile rief `signOut()` ohne
@@ -2931,10 +3092,14 @@ Entscheidung mehr an einer Stelle, an der niemand eine treffen will.
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | FIX-EPIC-003 (Befund aus FIX-EPIC-001); Roadmap „braucht eine Entscheidung zum Router"; `PROJECT_PRINCIPLES.md` §13 |
-| Status | **offen** — getroffen am 2026-09-12 |
-| Wiedervorlage | Jannes nach dem ersten Feldtag mit Dokumentation unterwegs |
+| **Kategorie** | Technik |
+| **Herkunft** | FIX-EPIC-003 (Befund aus FIX-EPIC-001); Roadmap „braucht eine Entscheidung zum Router"; `PROJECT_PRINCIPLES.md` §13 |
+| **Status** | offen · 2026-09-12 · — · — |
+| **Wiedervorlage** | Jannes nach dem ersten Feldtag mit Dokumentation unterwegs |
+| **Ablösung** | ersetzt ANN-015 im Textverlustschutz |
+
+**Nachtrag.** Am 2026-09-13 mit FIX-014 um drei Festlegungen erweitert, siehe
+unten.
 
 **Annahme.** Vier Festlegungen, die zusammen den Schutz ausmachen:
 
@@ -3018,10 +3183,10 @@ Hooks — Aufwand `klein` je Stelle.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | CAL-014b; Festlegung des Projektinhabers vom 2026-09-12 („Patientenabsage weniger als 24 Stunden vor Behandlungsbeginn → Ausfallgebühr"); ADR-018 Fassung 2 Punkt 8 |
-| Status | **offen** — getroffen am 2026-09-12 |
-| Wiedervorlage | Jannes, zusammen mit ABR-001 (Leistungskatalog) |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | CAL-014b; Festlegung des Projektinhabers vom 2026-09-12 („Patientenabsage weniger als 24 Stunden vor Behandlungsbeginn → Ausfallgebühr"); ADR-018 Fassung 2 Punkt 8 |
+| **Status** | offen · 2026-09-12 · — · — |
+| **Wiedervorlage** | Jannes, zusammen mit ABR-001 (Leistungskatalog) |
 
 **Annahme.** Von den vier Absagegründen (ANN-034) löst genau einer die
 24-Stunden-Regel aus: `patient_request`. `practice_request` ist ausdrücklich
@@ -3067,10 +3232,10 @@ Gebührenanlass abgesagt wurde, bleibt ohne.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | CAL-014b/c; ADR-018 Fassung 2 Punkt 8 Nummer 1 |
-| Status | **offen** — getroffen am 2026-09-12 |
-| Wiedervorlage | Jannes nach den ersten Wochen im Betrieb |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | CAL-014b/c; ADR-018 Fassung 2 Punkt 8 Nummer 1 |
+| **Status** | offen · 2026-09-12 · — · — |
+| **Wiedervorlage** | Jannes nach den ersten Wochen im Betrieb |
 
 **Annahme.** Drei Festlegungen zur Erfassung:
 
@@ -3120,10 +3285,11 @@ Telefon einen Tap mehr.
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | CAL-015b; Festlegung des Projektinhabers vom 2026-09-12 („Meetings, Teambesprechungen und andere Ereignisse … benötigen weder Patient noch Verordnung"); `PROJECT_PRINCIPLES.md` 0.9 §8.1 |
-| Status | **offen** — getroffen am 2026-09-12 |
-| Wiedervorlage | ABR-002 (Leistungserfassung) — dort muss die Abgrenzung halten |
+| **Kategorie** | Technik |
+| **Herkunft** | CAL-015b; Festlegung des Projektinhabers vom 2026-09-12 („Meetings, Teambesprechungen und andere Ereignisse … benötigen weder Patient noch Verordnung"); `PROJECT_PRINCIPLES.md` 0.9 §8.1 |
+| **Status** | offen · 2026-09-12 · — · — |
+| **Wiedervorlage** | ABR-002 (Leistungserfassung) — dort muss die Abgrenzung halten |
+| **Ablösung** | abgelöst durch ANN-051 in der Frage der gemeinsamen Kennung |
 
 **Annahme.** Ein Ereignis des Praxisbetriebs ist eine Zeile in
 `public.appointments` mit `kind = 'event'`, ohne `patient_id`, ohne
@@ -3160,8 +3326,17 @@ verweigerten Zustandswechsel).
 
 **Änderungspfad.** Eigene Tabelle: Migration mit Datenübernahme, neue
 Belegungsprüfung über beide Tabellen, jede Kalenderabfrage anfassen — Aufwand
-`groß`. Gemeinsame Kennung für die Zeilen eines Ereignisses: eine Spalte, ein
-Schreibpfad mehr — Aufwand `klein` bis `mittel`.
+`groß`. ~~Gemeinsame Kennung für die Zeilen eines Ereignisses: eine Spalte, ein
+Schreibpfad mehr — Aufwand `klein` bis `mittel`.~~ Gebaut mit CAL-017
+(ANN-051), siehe Nachtrag.
+
+**Nachtrag 2026-09-13.** Die gemeinsame Kennung, die oben als „nächster
+Schritt" und „heute Vorbau" steht, ist mit CAL-017 gebaut (ANN-051:
+`event_group_id`, gruppenweites Ändern und Absagen, Trigger gegen
+ausscherende Zeilen). Der zweite Weg des Änderungspfads ist damit gegangen;
+offen bleibt nur noch „Eigene Tabelle" (`groß`), und die Abgrenzung zu
+ABR-002 — ein Ereignis wird nie abgeschlossen, dokumentiert oder als „nicht
+angetroffen" vermerkt — gilt unverändert.
 
 ---
 
@@ -3169,10 +3344,10 @@ Schreibpfad mehr — Aufwand `klein` bis `mittel`.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | CAL-015c; Festlegung des Projektinhabers vom 2026-09-12 („Aus einer ausgewählten Person beziehungsweise ihrer Verordnung in den vollständigen Kalender wechseln … Der fachliche Kontext bleibt erhalten") |
-| Status | **offen** — getroffen am 2026-09-12 |
-| Wiedervorlage | Jannes nach den ersten Wochen im Betrieb |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | CAL-015c; Festlegung des Projektinhabers vom 2026-09-12 („Aus einer ausgewählten Person beziehungsweise ihrer Verordnung in den vollständigen Kalender wechseln … Der fachliche Kontext bleibt erhalten") |
+| **Status** | offen · 2026-09-12 · — · — |
+| **Wiedervorlage** | Jannes nach den ersten Wochen im Betrieb |
 
 **Annahme.** Der Kalenderstand führt neben `patient` einen zweiten
 Kontextparameter `verordnung`. Beide stehen als **Kennung** in der Adresse,
@@ -3212,10 +3387,11 @@ Aufwand `klein` bis `mittel`.
 
 | | |
 |---|---|
-| Kategorie | Praxisprozess |
-| Herkunft | CAL-017; Befund am laufenden Stand: `create_appointment_event` legt je Person eine Zeile an, und die Zeilen wussten nichts voneinander |
-| Status | **offen** — getroffen am 2026-09-13 |
-| Wiedervorlage | Jannes, nach der ersten Woche mit Teambesprechungen im Kalender |
+| **Kategorie** | Praxisprozess |
+| **Herkunft** | CAL-017; Befund am laufenden Stand: `create_appointment_event` legt je Person eine Zeile an, und die Zeilen wussten nichts voneinander |
+| **Status** | offen · 2026-09-13 · — · — |
+| **Wiedervorlage** | Jannes, nach der ersten Woche mit Teambesprechungen im Kalender |
+| **Ablösung** | ersetzt ANN-049 in der Frage der gemeinsamen Kennung |
 
 **Annahme.** Vier Festlegungen:
 
@@ -3258,7 +3434,10 @@ das nicht, und das ist eine bewusste Auslassung, kein Versehen.
 **Verankerung.** `supabase/migrations/20260913100000_event_groups.sql`:
 `event_group_id`, `update_appointment_event`, `cancel_appointment_event`,
 `list_event_participants` und der Trigger `appointments_event_group_guard`.
-Oberfläche in `src/features/appointments/EditEventPage.tsx` und
+Die Kennung im Code trägt `src/features/appointments/api.ts`
+(`updateAppointmentEvent`, die Funktion, die den Gruppenvorgang auslöst —
+nachgetragen 2026-09-13). Oberfläche in
+`src/features/appointments/EditEventPage.tsx` und
 `AppointmentDetailPage.tsx`. Tests in
 `supabase/tests/appointment-events.test.ts` (Abschnitt „Ereignis als ein
 Vorgang"), `src/features/appointments/EditEventPage.test.tsx` und
@@ -3277,10 +3456,10 @@ Person wäre dann nur noch über Absage und Neueintrag möglich).
 
 | | |
 |---|---|
-| Kategorie | Datenschutz |
-| Herkunft | DAT-001; ADR-017 Punkt 15, 20 und 21 verlangen einen Auditeintrag je ausgestelltem Verweis, ohne zu sagen, wie er sich erzwingen lässt — die Anwendung hat keinen Server, der zwischen Browser und Objektspeicher steht (ADR-015 Punkt 20) |
-| Status | **offen** — getroffen am 2026-09-13 |
-| Wiedervorlage | Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf) |
+| **Kategorie** | Datenschutz |
+| **Herkunft** | DAT-001; ADR-017 Punkt 15, 20 und 21 verlangen einen Auditeintrag je ausgestelltem Verweis, ohne zu sagen, wie er sich erzwingen lässt — die Anwendung hat keinen Server, der zwischen Browser und Objektspeicher steht (ADR-015 Punkt 20) |
+| **Status** | offen · 2026-09-13 · — · Prüfpaket |
+| **Wiedervorlage** | Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf) |
 
 **Annahme.** Drei Festlegungen:
 
@@ -3338,10 +3517,10 @@ statt des Schlüssels liefert — Aufwand `mittel`, ohne Änderung am Datenmodel
 
 | | |
 |---|---|
-| Kategorie | Technik |
-| Herkunft | DAT-001; ADR-017 Punkt 7c verlangt, dass ein serverseitiger Vorgang „Größe, MIME-Typ und Prüfsumme gegen die Vorgabe" prüft, und Punkt 9 nennt die Prüfsumme den Nachweis, „dass die abgelegte Fassung die erzeugte ist" |
-| Status | **offen** — getroffen am 2026-09-13 |
-| Wiedervorlage | mit ABR-003b (Rechnungs-PDF, ADR-009 Punkt 9) und mit dem Restore-Test aus ADR-012 Punkt 6 |
+| **Kategorie** | Technik |
+| **Herkunft** | DAT-001; ADR-017 Punkt 7c verlangt, dass ein serverseitiger Vorgang „Größe, MIME-Typ und Prüfsumme gegen die Vorgabe" prüft, und Punkt 9 nennt die Prüfsumme den Nachweis, „dass die abgelegte Fassung die erzeugte ist" |
+| **Status** | offen · 2026-09-13 · — · — |
+| **Wiedervorlage** | mit ABR-003b (Rechnungs-PDF, ADR-009 Punkt 9) und mit dem Restore-Test aus ADR-012 Punkt 6 |
 
 **Annahme.** Zwei Festlegungen:
 
