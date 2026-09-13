@@ -1,6 +1,7 @@
 import { useOutletContext } from 'react-router-dom';
 import {
   canManageAppointments,
+  canReadPatientFiles,
   canReadPrescriptions,
   canReadTreatmentEvidence,
   type CurrentUser,
@@ -66,6 +67,12 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
   // passiert" - und stehen deshalb hinter derselben Beschriftung.
   if (canReadTreatmentEvidence(user.roles)) {
     bereiche.push({ to: `${basis}/verlauf`, label: 'Behandlungsverlauf' });
+  }
+  // Dateien vor den Stammdaten: „was liegt uns vor" wird im Gespräch häufiger
+  // gebraucht als eine Adresse. Was `office` dort sieht, entscheidet die
+  // Dokumentart in der Datenbank, nicht diese Zeile (ADR-017 Punkt 12).
+  if (canReadPatientFiles(user.roles)) {
+    bereiche.push({ to: `${basis}/dateien`, label: 'Dateien' });
   }
   bereiche.push({ to: `${basis}/stammdaten`, label: 'Stammdaten' });
 

@@ -335,3 +335,170 @@ Sie den alten Stand.
     der sichtbare Teil: Die Rückfrage unter „Alle Sitzungen beenden" nennt das
     Restfenster von bis zu einer Stunde und verweist auf die Sperre durch die
     Praxisleitung (ANN-044).
+
+---
+
+## DAT-001 — Dateien in der Akte: hinzufügen, ansehen, wer sie sieht
+
+**Was geprüft wird:** dass eine Datei nur über den zweiphasigen Weg in die Akte
+kommt (ADR-017 Punkt 7), dass die Dokumentart wirklich eine Sichtbarkeitsgrenze
+ist (Punkt 12) und dass ein Verweis nach einer Minute nicht mehr funktioniert
+(Punkt 15) — die drei Zusagen, die man an Tests allein nicht sieht.
+
+**Vorbereitung:** zwei synthetische Dateien anlegen, die keine echten Daten
+enthalten — ein beliebiges PDF (etwa eine Rechnung aus dem eigenen Ordner,
+umbenannt) und ein Foto. **Keine echten Patientenunterlagen**, auch nicht
+zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
+
+1. **Der Scan gehört zur Verordnung.** Als `jannes.test@praxis.invalid`
+   anmelden, Patient:innen → Max Mustermann → **Verordnungen**. Unter der
+   laufenden Verordnung steht „Scan des Rezepts" mit „Keine Datei". Die
+   Dokumentart steht fest — es gibt **keine** Auswahlliste —, und daneben der
+   Satz, dass die Verwaltung sie nicht sieht.
+2. **Hinzufügen.** Das PDF wählen. Der Name in der Akte ist vorbelegt und
+   änderbar: auf „Rezept Schulter" ändern. „Datei hinzufügen" tippen. Danach
+   steht die Datei in der Liste mit Name, Art, Größe, Datum und dem eigenen
+   Namen; die Meldung nennt den Namen der Datei.
+3. **Öffnen ist ein bewusster Schritt.** „Öffnen" tippen: Ein neues Fenster
+   zeigt die Datei beziehungsweise lädt sie herunter. **Der Verweis lebt
+   60 Sekunden** — die Adresse aus dem neuen Fenster kopieren, eine Minute
+   warten und sie erneut aufrufen: Sie funktioniert nicht mehr. Das ist die
+   Zusage aus ADR-017 Punkt 15 und Punkt 17, und sie ist der Grund, warum es
+   keinen Teilen-Link gibt.
+4. **Die Akte kennt die Datei auch.** Bereich **Dateien** öffnen: Der Scan
+   steht dort ebenfalls, mit dem Vermerk „Klinisch".
+5. **Eine Datei an der Person.** Im Bereich Dateien das Foto wählen, Art
+   „Befund", Name „Befund Schulter". Hinzufügen. Der Hinweis unter der Auswahl
+   ändert sich mit der Art: bei „Einwilligung" steht dort „auch für die
+   Verwaltung", bei „Befund" „nicht für die Verwaltung".
+6. **Der entscheidende Schritt — die Verwaltung sieht das Klinische nicht.**
+   Abmelden, als `olivia.office@praxis.invalid` anmelden, dieselbe Akte,
+   Bereich **Dateien**. Weder der Scan noch der Befund steht dort — **nicht
+   ausgegraut und nicht als „2 weitere Dateien" gezählt, sondern gar nicht.**
+   Im Bereich Verordnungen fehlt der Abschnitt „Scan des Rezepts" ganz.
+   In der Auswahl beim Hinzufügen stehen nur „Einwilligung" und „Vertrag".
+7. **Die Verwaltung darf trotzdem etwas beitragen.** Als Olivia eine
+   Einwilligung hinzufügen (das PDF genügt). Sie erscheint. Abmelden, als
+   Jannes anmelden: Die Einwilligung steht auch dort, mit dem Vermerk
+   „Organisatorisch" und Olivias Namen.
+8. **Was nicht angenommen wird.** Als Jannes im Bereich Dateien eine Datei
+   über 10 MB wählen: Die Meldung nennt die Größe der Datei **und** die
+   Grenze, und „Datei hinzufügen" bleibt abgeschaltet. Im Dateidialog werden
+   nur PDF, JPEG und PNG angeboten.
+   **Bitte hier zusätzlich mit einem iPhone-Foto prüfen** (offene Folgefrage
+   aus ADR-017): Kommt es als JPEG an oder als HEIC? Kommt HEIC an, erscheint
+   die Meldung mit dem Hinweis auf die Einstellung „Sehr kompatibel" — und
+   Jannes sagt bitte Bescheid, ob das im Alltag reicht.
+9. **Das Protokoll.** Als Jannes Praxis → Auditlog öffnen. Für jeden Upload
+   steht dort „Datei zur Akte hinzugefügt", für jedes Öffnen „Datei zum Öffnen
+   freigegeben". **Im Eintrag steht kein Dateiname** — nur Kennung, Art und
+   Zeitpunkt. Das Öffnen des Dateibereichs selbst erzeugt keinen Eintrag; das
+   Öffnen der Akte ist bereits protokolliert (ADR-017 Punkt 22).
+10. **Am Handy.** Die Schritte 1 bis 3 bei ~375 px Breite wiederholen: kein
+    waagerechtes Scrollen, „Öffnen" und „Datei hinzufügen" mit dem Daumen
+    erreichbar, das Dateifeld öffnet die Kamera-Auswahl des Geräts.
+
+**Was hier nicht geprüft werden kann:** ob ein gelöschtes Objekt beim Anbieter
+tatsächlich verschwindet (OPS-001 Prüfpunkt 3) und ob der Bucket gesichert ist
+(OPS-003, ADR-017 Punkt 26). Beides ist Vorbedingung für die erste **echte**
+Datei, nicht für diese Abnahme.
+
+---
+
+## DAT-002 — Löschen in zwei Speichern, und der Nachweis dafür
+
+**Was geprüft wird:** dass „gelöscht" zwei Zustände sind — Zeile weg,
+Objekt weg — und dass die Anwendung beide auseinanderhält, statt das eine für
+das andere auszugeben (ADR-017 Punkt 25).
+
+**Vorbereitung:** DAT-001 durchlaufen; es liegen mindestens zwei Dateien in der
+Akte von Max Mustermann.
+
+1. **Löschen fragt nach.** Als `jannes.test@praxis.invalid` in der Akte →
+   Dateien auf „Löschen" tippen. Der Kasten sagt zwei Dinge: die Datei ist
+   **sofort** aus der Akte, und die abgelegte Fassung wird gelöscht, sobald
+   der Löschauftrag ausgeführt ist. „Endgültig löschen" tippen.
+2. **Die Akte ist sofort sauber.** Die Datei steht nicht mehr in der Liste —
+   auch nicht nach einem Neuladen der Seite.
+3. **Der Auftrag steht.** Praxis → Sicherheit → **Aufbewahrung und Löschung**.
+   Unter „Offene Löschaufträge" steht eine Zeile mit dem Zeitpunkt und dem
+   Vermerk „Datei liegt noch in der Ablage".
+4. **Der entscheidende Schritt.** „Alle 1 ausführen und quittieren" tippen.
+   Danach steht dort „Nichts offen" und die Meldung „1 Löschung abgeschlossen
+   und quittiert". **Das ist keine Behauptung der Oberfläche:** Der Server
+   quittiert nur, wenn die Datei tatsächlich weg ist — bliebe sie liegen,
+   stünde der Auftrag noch da.
+5. **Wer das darf.** Abmelden, als `anna.beispiel@praxis.invalid` anmelden:
+   Praxis → Sicherheit → Aufbewahrung ist für sie nicht erreichbar. Sie kann
+   in der Akte weiterhin löschen — der Auftrag landet dann bei der
+   Praxisinhaberin.
+6. **Die Art korrigieren.** Als Jannes in der Akte → Dateien bei einer
+   organisatorischen Datei auf „Art korrigieren" tippen, „Befund" wählen. Der
+   Hinweis wechselt zu „nicht für die Verwaltung". „Art übernehmen".
+7. **Und die Folge ist echt.** Abmelden, als `olivia.office@praxis.invalid`
+   anmelden, dieselbe Akte → Dateien: Die Datei ist weg. Das ist der Punkt der
+   Übung — die Art ist eine Sichtbarkeitsgrenze, kein Etikett.
+8. **Die Verwaltung korrigiert nicht.** Bei Olivia gibt es an keiner Datei
+   „Art korrigieren"; an einer organisatorischen Datei gibt es „Löschen".
+9. **Das Protokoll.** Als Jannes Praxis → Auditlog: „Datei gelöscht",
+   „Dokumentart einer Datei korrigiert" und „Löschung in der Ablage quittiert"
+   stehen dort. Auch hier **kein Dateiname und kein Ablageort**.
+10. **Am Handy.** Schritt 1 bis 4 bei ~375 px wiederholen: Die Rückfrage passt
+    ins Bild, die Schaltflächen sind mit dem Daumen erreichbar, kein
+    waagerechtes Scrollen.
+
+**Was hier nicht geprüft werden kann:** ob der Anbieter das Objekt danach
+wirklich überall entfernt — Cache, Replikate, seine eigenen Sicherungen. Das
+ist Prüfpunkt 3 von OPS-001 und aus der Anwendung heraus nicht feststellbar.
+
+---
+
+## DAT-003 — Abgleich: was in dem einen Speicher steht und im anderen nicht
+
+**Was geprüft wird:** dass die Anwendung merkt, wenn Datenbank und Ablage
+auseinanderlaufen — und zwar in beide Richtungen (ADR-017 Punkt 27). Ein
+Verlust darf nicht als leere Fläche durchgehen, und ein vergessenes Objekt
+nicht liegen bleiben.
+
+**Vorbereitung:** DAT-001 und DAT-002 durchlaufen; mindestens eine Datei liegt
+in der Akte von Max Mustermann.
+
+1. **Im Normalfall ist nichts zu tun.** Als `jannes.test@praxis.invalid`
+   Praxis → Sicherheit → **Aufbewahrung und Löschung** öffnen. Unter „Abgleich
+   der Dateiablage" steht „Beide Speicher sind deckungsgleich".
+2. **Einen Verlust herstellen.** Diesen Schritt ausdrücklich nur am lokalen
+   Wegwerf-Stack: Supabase Studio unter <http://127.0.0.1:54323> öffnen,
+   Storage → Bucket `patientenakte`, die abgelegte Datei dort **von Hand
+   löschen**. Die Zeile in der Akte bleibt damit ohne Objekt zurück.
+3. **Der Abgleich meldet ihn.** Seite neu laden. Unter „Abgleich der
+   Dateiablage" steht jetzt, dass zu einer Datei die abgelegte Fassung fehlt —
+   mit Dateiname, Patientenname und dem Link „Akte öffnen". Der Text sagt
+   ausdrücklich, dass das **ein Verlust und kein Aufräumfall** ist.
+4. **Und die Akte auch.** Über „Akte öffnen" in den Bereich Dateien wechseln:
+   Die Zeile trägt die rote Meldung „in der Ablage nicht auffindbar" und
+   **bietet kein „Öffnen" an** — statt eines Verweises, der ins Leere liefe.
+5. **Ein verwaistes Objekt herstellen.** Zurück in Studio, Storage → Bucket
+   `patientenakte`: eine beliebige kleine PDF-Datei **von Hand hochladen**, in
+   einen Ordner mit der Organisationskennung (der Pfad, den die vorhandenen
+   Objekte zeigen). Dazu gibt es keine Zeile in der Datenbank.
+6. **Der Abgleich meldet auch das.** Aufbewahrung neu laden: „1 Objekt in der
+   Ablage gehört zu keiner Datei mehr."
+7. **Der entscheidende Schritt.** „Zur Löschung vormerken" tippen. Die Meldung
+   nennt die Zahl der angelegten Aufträge. Nach oben scrollen: Unter „Offene
+   Löschaufträge" steht der neue Auftrag. „Alle ausführen und quittieren"
+   tippen — danach ist unter „Abgleich" nur noch der Verlust aus Schritt 3 zu
+   sehen. **Es gibt keinen zweiten Löschweg**: Auch ein verwaistes Objekt geht
+   durch Auftrag und Quittung.
+8. **Wer das sieht.** Abmelden, als `tim.teamleitung@praxis.invalid` anmelden:
+   Praxis → Sicherheit → Aufbewahrung ist für ihn nicht erreichbar.
+9. **Aufräumen.** Als Jannes die Datei aus Schritt 3 in der Akte löschen und
+   den Auftrag ausführen; danach steht überall wieder „deckungsgleich".
+10. **Am Handy.** Schritt 1 und 6 bei ~375 px: kein waagerechtes Scrollen,
+    die Meldungen sind vollständig lesbar, „Zur Löschung vormerken" ist
+    erreichbar.
+
+**Was hier bewusst fehlt:** Der Abgleich läuft nicht von allein und meldet sich
+nicht. Er wird gerechnet, wenn diese Seite geöffnet wird — die Anwendung
+verschickt nichts (CAL-013). Er gehört deshalb in den monatlichen Bericht
+(ADR-010 Punkt 6) und auf die Liste nach jeder Wiederherstellung
+(ADR-017 Punkt 26).

@@ -61,6 +61,11 @@ export const AUDIT_ACTIONS = [
   'prescription.created',
   'prescription.updated',
   'prescription.deleted',
+  'patient_file.uploaded',
+  'patient_file.link_issued',
+  'patient_file.deleted',
+  'patient_file.type_corrected',
+  'storage_deletion.receipted',
   'text_snippet.created',
   'text_snippet.updated',
   'text_snippet.deleted',
@@ -126,6 +131,11 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'prescription.created': 'Verordnung erfasst',
   'prescription.updated': 'Verordnung geändert',
   'prescription.deleted': 'Verordnung gelöscht',
+  'patient_file.uploaded': 'Datei zur Akte hinzugefügt',
+  'patient_file.link_issued': 'Datei zum Öffnen freigegeben',
+  'patient_file.deleted': 'Datei gelöscht',
+  'patient_file.type_corrected': 'Dokumentart einer Datei korrigiert',
+  'storage_deletion.receipted': 'Löschung in der Ablage quittiert',
 };
 
 export const auditSubjectLabels: Record<string, string> = {
@@ -137,6 +147,8 @@ export const auditSubjectLabels: Record<string, string> = {
   staff_member: 'Mitarbeiter:in',
   treatment_note: 'Behandlungsdokumentation',
   prescription: 'Verordnung',
+  patient_file: 'Datei der Akte',
+  storage_deletion_order: 'Löschauftrag der Ablage',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {

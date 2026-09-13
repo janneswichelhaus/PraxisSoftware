@@ -1,7 +1,17 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-12.
+Zuletzt aktualisiert: 2026-09-13.
 
+- **DAT-001 bringt ANN-052 und ANN-053 neu** (Dateiablage nach ADR-017): Der
+  Objektschlüssel verlässt die Datenbank nur über den auditierten Vorgang, der
+  den Verweis ausstellt — der Lesepfad liefert ihn nicht, und ohne ihn nützt
+  die Leseberechtigung am Objekt niemandem. Und: Die Bestätigung eines Uploads
+  prüft Größe und MIME-Typ gegen den Objektspeicher selbst, die Prüfsumme
+  bleibt dagegen eine Erklärung des Browsers, weil die Datenbank die Bytes nie
+  sieht. **ANN-052 ist `Datenschutz`** und gehört damit in die Anfrage B2;
+  ANN-053 ist `Technik`.
+- **Die Übersicht war seit ANN-045 nicht nachgezogen**; die Zeilen ANN-046 bis
+  ANN-051 sind am 2026-09-13 aus ihren Einträgen nachgetragen.
 - **CAL-017 bringt ANN-051 neu** (Teamereignis als ein Vorgang): gemeinsame
   Gruppenkennung, Bezeichnung und Zeit gelten für alle Beteiligten zugleich,
   die einzelne Teilnahme bleibt getrennt änderbar und absagbar, und
@@ -262,6 +272,14 @@ stehen. `offen` und `entschieden (Jannes)` blockieren beide den Produktivstart
 | ANN-043 | Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); Providerprüfung OPS-001 (Auth-Mails, B13) |
 | ANN-044 | „Alle Sitzungen beenden": Vermerk vor dem Vorgang, weil danach keiner mehr möglich ist; die Zusage nennt das Restfenster | Datenschutz   | offen (2026-09-12)    | Datenschutzprüfung (B2); `jwt_expiry` mit OPS-001 |
 | ANN-045 | Das gewöhnliche Abmelden endet nur die eigene Sitzung | Technik       | offen (2026-09-12)    | Jannes nach dem ersten Feldtag |
+| ANN-046 | Navigationsschutz: Data Router, drei Wege, und „Speichern" heißt Entwurf | Technik | offen (2026-09-12), am 2026-09-13 mit FIX-014 erweitert | Jannes nach dem ersten Feldtag mit Dokumentation unterwegs |
+| ANN-047 | Nur die Patientenabsage löst die Ausfallgebühr aus | Praxisprozess | offen (2026-09-12)    | Jannes, zusammen mit ABR-001 |
+| ANN-048 | Der Eingang der Absage wird in Ortszeit erfasst, ohne Vorbelegung aus der Vergangenheit | Praxisprozess | offen (2026-09-12) | Jannes nach den ersten Wochen im Betrieb |
+| ANN-049 | Ereignisse stehen in derselben Tabelle wie Behandlungstermine | Technik | offen (2026-09-12) | ABR-002 (Leistungserfassung) |
+| ANN-050 | Der Kalender trägt Patient:in und Verordnung als Kontext mit | Praxisprozess | offen (2026-09-12) | Jannes nach den ersten Wochen im Betrieb |
+| ANN-051 | Ein Teamereignis ist ein Vorgang; die einzelne Teilnahme bleibt getrennt | Praxisprozess | offen (2026-09-13) | Jannes, nach der ersten Woche mit Teambesprechungen im Kalender |
+| ANN-052 | Der Objektschlüssel einer Datei verlässt die Datenbank nur über einen auditierten Vorgang | Datenschutz | offen (2026-09-13) | Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist |
+| ANN-053 | Die Bestätigung prüft Größe und MIME-Typ gegen den Objektspeicher; die Prüfsumme bleibt eine Erklärung des Browsers | Technik | offen (2026-09-13) | mit ABR-003b (Rechnungs-PDF) und dem Restore-Test aus ADR-012 |
 
 Die Einträge ANN-001 bis ANN-005 wurden am 2026-09-03 **rückwirkend** erfasst.
 Sie waren in Migrationen, ADRs und Abnahmeschritten bereits begründet,
@@ -3252,3 +3270,127 @@ Aufwand `mittel`. Die Trennung zwischen Ereignis und Teilnahme aufgeben und
 alles gruppenweit machen: der Trigger bleibt, `update_appointment` verlöre
 seinen Ereigniszweig — Aufwand `klein`, Folge `mittel` (der Austausch einer
 Person wäre dann nur noch über Absage und Neueintrag möglich).
+
+---
+
+### ANN-052 — Der Objektschlüssel einer Datei verlässt die Datenbank nur über einen auditierten Vorgang
+
+| | |
+|---|---|
+| Kategorie | Datenschutz |
+| Herkunft | DAT-001; ADR-017 Punkt 15, 20 und 21 verlangen einen Auditeintrag je ausgestelltem Verweis, ohne zu sagen, wie er sich erzwingen lässt — die Anwendung hat keinen Server, der zwischen Browser und Objektspeicher steht (ADR-015 Punkt 20) |
+| Status | **offen** — getroffen am 2026-09-13 |
+| Wiedervorlage | Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf) |
+
+**Annahme.** Drei Festlegungen:
+
+1. **Der Lesepfad gibt den Objektschlüssel nicht heraus.**
+   `list_patient_files` liefert Name, Art, Größe, Datum — nicht den Schlüssel.
+2. **Es gibt genau eine Funktion, die ihn herausgibt** (`issue_patient_file_link`),
+   und sie schreibt dabei `patient_file.link_issued`. Erst danach
+   unterschreibt die Storage-API.
+3. **Die RLS auf `storage.objects` bleibt trotzdem vollständig.** Sie prüft
+   Organisation, Zustand und Dokumentart unabhängig davon, ob jemand den
+   auditierten Weg genommen hat.
+
+**Begründung.** Ein signierter Verweis entsteht im Browser: Der Client kennt
+den Schlüssel, ruft `createSignedUrl` und spricht danach direkt mit dem
+Anbieter. Die Datenbank sieht davon nichts, und eine serverseitige Zwischen-
+stelle gibt es nicht — eine Edge Function ist für produktive Gesundheitsdaten
+nach ADR-015 Punkt 20 nicht freigegeben. Damit lässt sich die Auditpflicht aus
+ADR-017 Punkt 20 nicht technisch **erzwingen**, wohl aber praktisch
+unumgehbar machen: Wer den Schlüssel nicht hat, kann keinen Verweis erzeugen,
+und der Schlüssel ist eine Kette aus drei zufälligen UUID — nicht ableitbar,
+nicht ratbar (ADR-017 Punkt 5).
+
+Die Alternative wäre gewesen, den Schlüssel in der Liste mitzuliefern und auf
+Wohlverhalten des Clients zu setzen. Dann stünde im Auditlog, was der Browser
+zu protokollieren beliebt — und ein Fehler in der Oberfläche wäre still ein
+Protokolldefekt. Die dritte Möglichkeit, ganz auf den Eintrag zu verzichten,
+verstößt gegen ADR-010 Punkt 2 („Zugriff auf klinische Dokumente").
+
+**Was das nicht behauptet.** Wer den Schlüssel einmal hat, kann ihn behalten
+und später einen zweiten Verweis erzeugen, ohne die Funktion erneut zu rufen —
+sofern die RLS ihn noch lässt. Das ist die ehrliche Grenze, und sie ist klein:
+Es geht um genau die Personen, die die Datei ohnehin sehen dürfen, und um
+genau ihre eigenen Dateien. Die Aussage des Auditlogs bleibt „diese Person
+hatte zu diesem Zeitpunkt Zugriff" (ADR-017 Punkt 21) — sie wird durch diese
+Lücke nicht schwächer, weil sie nie stärker war.
+
+**Verankerung.** `supabase/migrations/20260913110000_patient_files.sql`:
+`list_patient_files` (ohne `object_key`), `issue_patient_file_link` (mit
+Auditeintrag), `app.may_read_patient_file_object`. Oberfläche in
+`src/features/files/api.ts` (`oeffneDatei`, zwei Schritte in fester
+Reihenfolge). Tests in `supabase/tests/patient-files.test.ts`, Abschnitt
+„Auslieferung", und `src/features/files/Dateiliste.test.tsx` („erzeugt den
+Verweis erst beim Tippen auf ‚Öffnen‘").
+
+**Änderungspfad.** Fällt OPS-001 Punkt 5 positiv aus (Entzug eines Verweises
+ohne Support), ändert das nichts an dieser Annahme, sondern ergänzt sie um ein
+Werkzeug — Aufwand `klein`. Wird die Edge Runtime später freigegeben, kann die
+Ausstellung vollständig serverseitig laufen und die Lücke oben verschwinden:
+eine Funktion, die den Verweis selbst unterschreibt, und ein Lesepfad, der ihn
+statt des Schlüssels liefert — Aufwand `mittel`, ohne Änderung am Datenmodell.
+
+---
+
+### ANN-053 — Die Bestätigung prüft Größe und MIME-Typ gegen den Objektspeicher; die Prüfsumme bleibt eine Erklärung des Browsers
+
+| | |
+|---|---|
+| Kategorie | Technik |
+| Herkunft | DAT-001; ADR-017 Punkt 7c verlangt, dass ein serverseitiger Vorgang „Größe, MIME-Typ und Prüfsumme gegen die Vorgabe" prüft, und Punkt 9 nennt die Prüfsumme den Nachweis, „dass die abgelegte Fassung die erzeugte ist" |
+| Status | **offen** — getroffen am 2026-09-13 |
+| Wiedervorlage | mit ABR-003b (Rechnungs-PDF, ADR-009 Punkt 9) und mit dem Restore-Test aus ADR-012 Punkt 6 |
+
+**Annahme.** Zwei Festlegungen:
+
+1. **Größe und MIME-Typ werden serverseitig geprüft** — gegen
+   `storage.objects.metadata`, das die Storage-API beim Upload selbst
+   schreibt. Weichen sie von dem ab, was in Phase (a) angekündigt wurde,
+   bleibt die Datei `pending` und wird nicht sichtbar.
+2. **Die SHA-256-Prüfsumme wird nicht nachgerechnet.** Sie wird vor dem
+   Hochladen im Browser gebildet, in Phase (a) mitgegeben und unverändert
+   festgehalten.
+
+**Begründung.** Zu 1: Das ist der Kern von Punkt 7c und der Grund, warum es
+Phase (c) überhaupt gibt. `metadata` stammt nicht vom Client, sondern von der
+Storage-API — es ist also eine echte zweite Quelle und keine Wiederholung der
+Behauptung aus Phase (a).
+
+Zu 2: Die Datenbank sieht die Bytes nie. Sie könnte die Summe nur nachrechnen,
+wenn sie die Datei lädt, und das kann eine PostgreSQL-Funktion nicht — sie
+hat keinen HTTP-Zugang zum Objektspeicher, und den zu schaffen (`pg_net`, eine
+Edge Function) wäre eine neue wesentliche Abhängigkeit und damit ein Stopp
+nach §15.1. Die Summe ist deshalb heute eine **festgehaltene Erklärung**: Sie
+belegt nichts gegen einen böswilligen Client, aber alles, was sie soll, sobald
+jemand sie gegen eine zweite Messung hält — bei einer Wiederherstellung, bei
+einem Verdacht auf einen stillen Bitfehler, bei der Frage, ob ein PDF noch das
+ausgestellte ist. Die Erklärung ist zudem nicht wertlos: Sie stammt aus
+derselben Sitzung wie der Upload und ist über den Auditeintrag einer Person
+und einem Zeitpunkt zugeordnet.
+
+Der Client, gegen den sie nicht schützt, ist ein angemeldetes Praxiskonto auf
+einem Praxisgerät (ADR-017 Punkt 28). Wer dort die Bytes fälschen wollte,
+könnte auch einfach eine falsche Datei hochladen — dagegen hilft keine
+Prüfsumme, sondern nur, dass die Datei unveränderlich ist und ihre Herkunft
+protokolliert (Punkt 8 und 20).
+
+**Unsicher:** ob die Metadaten der Storage-API in jedem Fall gesetzt sind. In
+der lokalen Umgebung und nach der Dokumentation sind `size` und `mimetype`
+Pflichtfelder des Uploads; falls ein Weg sie doch einmal leer lässt,
+verweigert die Bestätigung — die Datei bliebe unsichtbar statt ungeprüft
+sichtbar zu werden. Das ist die richtige Richtung des Zweifels (§16).
+
+**Verankerung.** `supabase/migrations/20260913110000_patient_files.sql`:
+`confirm_patient_file_upload` (Vergleich gegen `storage.objects.metadata`) und
+der Kommentar an `patient_files.checksum_sha256`. Oberfläche in
+`src/features/files/api.ts` (`pruefsumme`). Tests in
+`supabase/tests/patient-files.test.ts`, Abschnitt „Phase (c): bestaetigen".
+
+**Änderungspfad.** Die Prüfsumme serverseitig nachrechnen: braucht einen
+Vorgang, der die Datei liest — eine freigegebene Edge Runtime oder ein
+Betriebswerkzeug, das den Abgleich aus DAT-003 erweitert. Aufwand `mittel`,
+zusätzlich eine Providerentscheidung, wenn er außer Haus läuft. Die Prüfsumme
+ganz weglassen: Aufwand `klein`, aber ADR-017 Punkt 9 und ADR-009 Punkt 9
+verlören ihren einzigen technischen Anker — deshalb nicht empfohlen.

@@ -2,12 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as RetentionApi from './api';
-import { renderWithProviders } from '@/test-utils';
+import type * as FilesApi from '@/features/files/api';
+import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
 const fetchRetentionSchedule = vi.fn();
 const fetchLegalHolds = vi.fn();
 const fetchDeletionRuns = vi.fn();
+const fetchLoeschauftraege = vi.fn();
+const fuehreLoeschauftragAus = vi.fn();
+const fetchFehlendeDateien = vi.fn();
+const fetchVerwaisteAnzahl = vi.fn();
+const merkeVerwaisteZurLoeschungVor = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof RetentionApi>();
@@ -19,7 +25,29 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
+vi.mock('@/features/files/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof FilesApi>();
+  return {
+    ...actual,
+    fetchLoeschauftraege: () => fetchLoeschauftraege() as Promise<FilesApi.Loeschauftrag[]>,
+    fuehreLoeschauftragAus: (id: string) => fuehreLoeschauftragAus(id) as Promise<void>,
+    fetchFehlendeDateien: () => fetchFehlendeDateien() as Promise<FilesApi.FehlendeDatei[]>,
+    fetchVerwaisteAnzahl: () => fetchVerwaisteAnzahl() as Promise<number>,
+    merkeVerwaisteZurLoeschungVor: () => merkeVerwaisteZurLoeschungVor() as Promise<number>,
+  };
+});
+
 const { AufbewahrungPage } = await import('./AufbewahrungPage');
+
+function auftrag(rest: Partial<FilesApi.Loeschauftrag> = {}): FilesApi.Loeschauftrag {
+  return {
+    id: 'o1',
+    bucket_id: 'patientenakte',
+    ordered_at: '2026-09-13T07:00:00.000Z',
+    object_present: true,
+    ...rest,
+  };
+}
 
 const akte: RetentionApi.Datenklasse = {
   key: 'patientenakte',
@@ -56,10 +84,20 @@ describe('AufbewahrungPage', () => {
     fetchRetentionSchedule.mockResolvedValue([akte, beschaeftigte]);
     fetchLegalHolds.mockResolvedValue([]);
     fetchDeletionRuns.mockResolvedValue([]);
+    fetchLoeschauftraege.mockReset();
+    fuehreLoeschauftragAus.mockReset();
+    fetchLoeschauftraege.mockResolvedValue([]);
+    fuehreLoeschauftragAus.mockResolvedValue(undefined);
+    fetchFehlendeDateien.mockReset();
+    fetchVerwaisteAnzahl.mockReset();
+    merkeVerwaisteZurLoeschungVor.mockReset();
+    fetchFehlendeDateien.mockResolvedValue([]);
+    fetchVerwaisteAnzahl.mockResolvedValue(0);
+    merkeVerwaisteZurLoeschungVor.mockResolvedValue(1);
   });
 
   it('nennt Frist, Anker und gesetzliche Grundlage je Datenklasse', async () => {
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     expect(await screen.findByText('Klinische Patientenakte')).toBeInTheDocument();
     expect(screen.getByText('10 Jahre')).toBeInTheDocument();
@@ -68,14 +106,14 @@ describe('AufbewahrungPage', () => {
   });
 
   it('sagt bei einer Klasse ohne Frist ausdruecklich, dass nicht geloescht wird', async () => {
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     expect(await screen.findByText('Beschäftigtendaten')).toBeInTheDocument();
     expect(screen.getByText('Keine automatische Löschung')).toBeInTheDocument();
   });
 
   it('macht eine ungeklaerte Frist als Annahme sichtbar, statt sie zu verschweigen', async () => {
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     // Die Datenschutzprüfung muss am Bildschirm erkennen, welche Frist noch
     // niemand bestätigt hat.
@@ -84,7 +122,7 @@ describe('AufbewahrungPage', () => {
 
   it('zeigt die betroffenen Tabellen erst auf Wunsch', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     const aufklappen = await screen.findByText('Betroffene Tabellen (2)');
     // Der Inhalt eines geschlossenen <details> steht im Dokument, ist aber
@@ -96,7 +134,7 @@ describe('AufbewahrungPage', () => {
   });
 
   it('sagt als Text, dass keine Loeschsperre laeuft', async () => {
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
     expect(await screen.findByText('Keine laufende Löschsperre')).toBeInTheDocument();
   });
 
@@ -113,7 +151,7 @@ describe('AufbewahrungPage', () => {
       },
     ]);
 
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     expect(await screen.findByText('Max Mustermann')).toBeInTheDocument();
     expect(screen.getByText('Honorarstreit')).toBeInTheDocument();
@@ -121,7 +159,7 @@ describe('AufbewahrungPage', () => {
   });
 
   it('sagt als Text, dass noch nichts geloescht wurde', async () => {
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
     expect(await screen.findByText('Es wurde noch nichts gelöscht')).toBeInTheDocument();
   });
 
@@ -143,7 +181,7 @@ describe('AufbewahrungPage', () => {
       },
     ]);
 
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     expect(await screen.findByText('1 Datensatz')).toBeInTheDocument();
     expect(screen.getByText('12 Datensätze')).toBeInTheDocument();
@@ -174,7 +212,7 @@ describe('AufbewahrungPage', () => {
 
     const { container } = renderWithProviders(
       <main>
-        <AufbewahrungPage />
+        <AufbewahrungPage user={testUser(['owner'])} />
       </main>,
     );
     await screen.findByText('Max Mustermann');
@@ -184,11 +222,109 @@ describe('AufbewahrungPage', () => {
 
   it('meldet einen Fehler, ohne eine leere Liste vorzutaeuschen', async () => {
     fetchDeletionRuns.mockRejectedValue(new Error('abgelehnt'));
-    renderWithProviders(<AufbewahrungPage />);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     expect(
       await screen.findByText('Das Löschjournal konnte nicht geladen werden.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Es wurde noch nichts gelöscht')).toBeNull();
+  });
+
+  describe('Offene Löschaufträge (DAT-002, ADR-017 Punkt 25)', () => {
+    it('sagt, dass nichts offen ist, wenn nichts offen ist', async () => {
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+      expect(await screen.findByText('Nichts offen')).toBeInTheDocument();
+    });
+
+    it('nennt offene Aufträge als noch nicht abgeschlossene Löschung', async () => {
+      fetchLoeschauftraege.mockResolvedValue([auftrag()]);
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      expect(
+        await screen.findByText(/Eine Datei ist aus der Akte entfernt, liegt aber noch/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Datei liegt noch in der Ablage/)).toBeInTheDocument();
+    });
+
+    it('führt alle Aufträge aus und meldet das Ergebnis', async () => {
+      fetchLoeschauftraege.mockResolvedValue([auftrag(), auftrag({ id: 'o2' })]);
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      await screen.findByText(/2 Dateien sind aus der Akte entfernt/);
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Alle 2 ausführen und quittieren' }),
+      );
+
+      expect(
+        await screen.findByText(/2 Löschungen abgeschlossen und quittiert/),
+      ).toBeInTheDocument();
+      expect(fuehreLoeschauftragAus).toHaveBeenCalledTimes(2);
+    });
+
+    it('lässt einen gescheiterten Auftrag offen und sagt warum', async () => {
+      fetchLoeschauftraege.mockResolvedValue([auftrag()]);
+      fuehreLoeschauftragAus.mockRejectedValue(
+        new Error('Die Ablage meldet die Datei weiterhin als vorhanden. Der Auftrag bleibt offen.'),
+      );
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      await screen.findByText(/Eine Datei ist aus der Akte entfernt/);
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Alle 1 ausführen und quittieren' }),
+      );
+
+      expect(
+        await screen.findByText(/0 erledigt, 1 offen geblieben: Die Ablage meldet/),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('Abgleich der Dateiablage (DAT-003, ADR-017 Punkt 27)', () => {
+    it('sagt, dass beide Speicher deckungsgleich sind', async () => {
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+      expect(await screen.findByText('Beide Speicher sind deckungsgleich')).toBeInTheDocument();
+    });
+
+    it('nennt eine fehlende Datei als Verlust, mit Akte und Weg dorthin', async () => {
+      fetchFehlendeDateien.mockResolvedValue([
+        {
+          file_id: 'd1',
+          patient_id: 'p1',
+          patient_name: 'Max Mustermann',
+          document_type: 'verordnungsscan',
+          display_name: 'Rezept.pdf',
+          uploaded_at: '2026-09-13T07:00:00.000Z',
+        },
+      ]);
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      expect(await screen.findByText(/fehlt die abgelegte Fassung/)).toBeInTheDocument();
+      expect(screen.getByText(/kein Aufräumfall/)).toBeInTheDocument();
+      expect(screen.getByText('Rezept.pdf')).toBeInTheDocument();
+      expect(screen.getByText(/Max Mustermann/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Akte öffnen' })).toHaveAttribute(
+        'href',
+        '/patienten/p1/dateien',
+      );
+    });
+
+    it('merkt verwaiste Objekte über den gewöhnlichen Löschweg vor', async () => {
+      fetchVerwaisteAnzahl.mockResolvedValue(3);
+      merkeVerwaisteZurLoeschungVor.mockResolvedValue(3);
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      expect(
+        await screen.findByText(/3 Objekte in der Ablage gehören zu keiner Datei/),
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Zur Löschung vormerken' }));
+
+      expect(await screen.findByText(/3 Löschaufträge angelegt/)).toBeInTheDocument();
+      expect(merkeVerwaisteZurLoeschungVor).toHaveBeenCalled();
+    });
   });
 });

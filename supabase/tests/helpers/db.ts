@@ -39,6 +39,7 @@ export async function resetDatabase(): Promise<void> {
       drop schema if exists public cascade;
       drop schema if exists app cascade;
       drop schema if exists auth cascade;
+      drop schema if exists storage cascade;
       drop schema if exists extensions cascade;
       create schema public;
     `);
