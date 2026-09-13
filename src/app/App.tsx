@@ -166,6 +166,31 @@ function Gate() {
 }
 
 /**
+ * Was ein Renderfehler zeigt (FIX-EPIC-003).
+ *
+ * Ein Data Router fängt einen geworfenen Fehler selbst ab. Ohne eigenes
+ * `errorElement` zeigt er dabei seine eingebaute Seite — englisch, mit
+ * Stacktrace, auch im Produktionsbuild. Das wäre in einer Praxis mit
+ * Gesundheitsdaten die falsche Antwort gleich zweimal: unverständlich für die
+ * Person davor (`PROJECT_PRINCIPLES.md` §13) und gesprächiger, als ein
+ * Fehlerbild sein muss (ADR-011).
+ *
+ * Kein „Erneut versuchen": Was geworfen hat, wirft nach einem Neurendern
+ * wieder. Das Neuladen liegt beim Browser, und die Seite sagt es.
+ */
+function Absturzseite() {
+  return (
+    <main className="mx-auto max-w-sm px-5 py-16">
+      <Wortmarke hoehe={40} className="mb-6" />
+      <ErrorState
+        title="Da ist etwas schiefgegangen."
+        description="Die Seite konnte nicht angezeigt werden. Bitte laden Sie die Anwendung neu. Ihre gespeicherte Arbeit bleibt unverändert erhalten."
+      />
+    </main>
+  );
+}
+
+/**
  * Ein **Data Router** statt `<BrowserRouter>` (FIX-EPIC-003).
  *
  * Der Grund ist einziger und benannt: `useBlocker` — der einzige Weg, eine
@@ -189,7 +214,9 @@ function Gate() {
  * prüfende Adresse setzt (`Gate.test.tsx`).
  */
 export function App() {
-  const [router] = useState(() => createBrowserRouter([{ path: '*', element: <Gate /> }]));
+  const [router] = useState(() =>
+    createBrowserRouter([{ path: '*', element: <Gate />, errorElement: <Absturzseite /> }]),
+  );
 
   return (
     <QueryClientProvider client={queryClient}>

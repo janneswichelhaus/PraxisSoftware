@@ -27,6 +27,8 @@ const ABSCHLIESSEN = 'select public.complete_appointment($1::uuid, $2::timestamp
 const NICHT_ANGETROFFEN = 'select public.record_no_show($1::uuid, $2::timestamptz) as id';
 const DOKUMENTIEREN = 'select public.create_treatment_note($1::uuid, $2) as id';
 const TAG_UMPLANEN = 'select public.cancel_staff_day($1::uuid, $2::date, $3) as anzahl';
+const ABSAGEN =
+  'select public.cancel_appointment($1::uuid, $2::timestamptz, $3, $4::date, $5::time) as id';
 const LESEN =
   "select * from public.list_appointments($1::date, $2::date, null, null, 'all') order by starts_at";
 
@@ -322,6 +324,15 @@ describe('Ereignis: keine Behandlung', () => {
     ).rejects.toThrow(/event cannot be documented/);
   });
 
+  it('bekommt keinen Mitteilungsvermerk - es gibt niemanden zu benachrichtigen', async () => {
+    const e = await eineZeile();
+    await expect(
+      asUser(users.office, "select public.set_appointment_notification($1::uuid, array['phone'])", [
+        e.id,
+      ]),
+    ).rejects.toThrow(/event has nobody to notify/);
+  });
+
   it('bleibt beim Umplanen eines Tages stehen', async () => {
     await ereignis({ personen: [ANNA], von: '08:00', bis: '08:30' });
     await asUserCommitted(users.office, ANLEGEN, [
@@ -344,6 +355,161 @@ describe('Ereignis: keine Behandlung', () => {
     expect(rows[0]!.anzahl).toBe(1);
     const rowsDanach = await zeilen();
     expect(rowsDanach[0]).toMatchObject({ status: 'confirmed' });
+  });
+});
+
+/**
+ * Ereignis absagen (CAL-016).
+ *
+ * Ein Ereignis laesst sich absagen - es belegt einen Kalender, und der wird
+ * wieder frei. Was dabei nicht entstehen darf, ist ein Gebuehrenanlass: Die
+ * Frist des Ausfallhonorars knuepft an die Absage DURCH DIE PATIENT:IN vor dem
+ * BEHANDLUNGSbeginn (PROJECT_PRINCIPLES.md 8), und ein Ereignis hat weder das
+ * eine noch das andere. Ein Anlass an dieser Zeile haette zwei Folgen: eine
+ * Forderung ohne Schuldnerin, und eine Zeile, die der Loeschlauf nie wieder
+ * anfasst (16, ADR-008).
+ */
+describe('Ereignis: absagen ohne Gebuehrenanlass (CAL-016)', () => {
+  beforeEach(resetDatabase);
+
+  /** Ein Ereignis, das in zwei Stunden beginnt - also weit innerhalb der Frist. */
+  async function ereignisGleich(): Promise<{ id: string; updated_at: string }> {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type,
+         kind, title, status, starts_at, ends_at
+       )
+       values ($1::uuid, null, $2::uuid, 'video',
+               'event', 'Teambesprechung', 'confirmed',
+               now() + interval '2 hours', now() + interval '2 hours 30 minutes')
+       returning id::text as id`,
+      [organizationId, TIM],
+    );
+    return stand(rows[0]!.id);
+  }
+
+  it('bleibt ohne Anlass, auch mit dem Grund "Patient:in hat abgesagt"', async () => {
+    const e = await ereignisGleich();
+
+    await asUserCommitted(users.office, ABSAGEN, [
+      e.id,
+      e.updated_at,
+      'patient_request',
+      null,
+      null,
+    ]);
+
+    const { rows } = await asPostgres<{ status: string; fee_basis: string | null }>(
+      'select status, fee_basis from public.appointments where id = $1',
+      [e.id],
+    );
+    expect(rows[0]).toMatchObject({ status: 'cancelled', fee_basis: null });
+  });
+
+  it('meldet die Absage ohne Gebuehr ins Protokoll', async () => {
+    const e = await ereignisGleich();
+    await asUserCommitted(users.office, ABSAGEN, [
+      e.id,
+      e.updated_at,
+      'patient_request',
+      null,
+      null,
+    ]);
+
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      "select context from public.audit_log where action = 'appointment.cancelled' and subject_id = $1",
+      [e.id],
+    );
+    expect(rows[0]?.context).toMatchObject({ fee: false });
+  });
+
+  /**
+   * Der zweite Riegel (ADR-004): Selbst ein direkter Schreibzugriff an allen
+   * Funktionen vorbei kommt nicht durch.
+   */
+  it('laesst sich auch unmittelbar kein Anlass anhaengen', async () => {
+    const e = await ereignisGleich();
+    await asPostgres(
+      `update public.appointments
+          set status = 'cancelled', cancellation_reason = 'other',
+              cancelled_at = now(), cancelled_by = $2::uuid
+        where id = $1`,
+      [e.id, users.office],
+    );
+
+    await expect(
+      asPostgres('update public.appointments set fee_basis = $2 where id = $1', [
+        e.id,
+        'late_cancellation',
+      ]),
+    ).rejects.toThrow(/appointments_fee_basis_values/);
+  });
+});
+
+/**
+ * "Tag umplanen" ist praxisbedingt (CAL-016, ADR-018 Fassung 2 Punkt 8.4).
+ *
+ * Der Vorgang sagt alle Termine einer Person an einem Tag ab, weil die Person
+ * ausfaellt. Ein Fehlgriff im Auswahlfeld haette Forderungen gegen jede
+ * Patient:in des Tages erzeugt, die innerhalb der Frist lag.
+ */
+describe('Tag umplanen: nur mit praxisbedingtem Grund (CAL-016)', () => {
+  beforeEach(resetDatabase);
+
+  it('weist "Patient:in hat abgesagt" ab', async () => {
+    await expect(
+      asUser(users.office, TAG_UMPLANEN, [ANNA, TAG, 'patient_request']),
+    ).rejects.toThrow(/day rescheduling needs a practice reason/);
+  });
+
+  it('weist einen fehlenden Grund ab', async () => {
+    await expect(asUser(users.office, TAG_UMPLANEN, [ANNA, TAG, null])).rejects.toThrow(
+      /day rescheduling needs a practice reason/,
+    );
+  });
+
+  it('nimmt die praxisbedingten Gruende an', async () => {
+    for (const grund of ['practice_request', 'moved', 'other']) {
+      const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
+        ANNA,
+        TAG,
+        grund,
+      ]);
+      expect(rows[0]!.anzahl).toBe(0);
+    }
+  });
+
+  it('erzeugt beim Umplanen keinen Gebuehrenanlass', async () => {
+    // Ein Termin in zwei Stunden - innerhalb der Frist, waere er eine
+    // Patientenabsage.
+    const { rows: angelegt } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type, status,
+         starts_at, ends_at
+       )
+       values ($1::uuid, $2::uuid, $3::uuid, 'video', 'confirmed',
+               now() + interval '2 hours', now() + interval '3 hours')
+       returning id::text as id`,
+      [organizationId, patients.max, TIM],
+    );
+
+    const { rows: heute } = await asPostgres<{ tag: string }>(
+      "select (now() at time zone 'Europe/Berlin')::date::text as tag",
+    );
+    const { rows: geplant } = await asPostgres<{ tag: string }>(
+      "select (starts_at at time zone 'Europe/Berlin')::date::text as tag from public.appointments where id = $1",
+      [angelegt[0]!.id],
+    );
+    // Faellt die Stunde ueber Mitternacht, gilt der Tag des Termins.
+    expect([heute[0]!.tag, geplant[0]!.tag]).toContain(geplant[0]!.tag);
+
+    await asUserCommitted(users.office, TAG_UMPLANEN, [TIM, geplant[0]!.tag, 'practice_request']);
+
+    const { rows } = await asPostgres<{ status: string; fee_basis: string | null }>(
+      'select status, fee_basis from public.appointments where id = $1',
+      [angelegt[0]!.id],
+    );
+    expect(rows[0]).toMatchObject({ status: 'cancelled', fee_basis: null });
   });
 });
 

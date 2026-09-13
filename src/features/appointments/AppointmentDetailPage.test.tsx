@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as RouterModule from 'react-router-dom';
@@ -590,6 +590,72 @@ describe('AppointmentDetailPage', () => {
       await screen.findByRole('heading', { name: /Teambesprechung/ });
       expect(screen.getByRole('button', { name: 'Termin absagen' })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Bearbeiten' })).toBeInTheDocument();
+    });
+
+    /**
+     * Die Absage eines Ereignisses ist eine Absage ohne Frist (CAL-016).
+     *
+     * Es gibt keine Patient:in, die absagen könnte, und keinen
+     * Behandlungsbeginn, auf den sich eine Frist bezöge; der Server setzt dort
+     * keinen Gebührenanlass. Die Rückfrage darf deshalb weder den Grund
+     * „Patient:in hat abgesagt" anbieten noch nach dem Eingang fragen noch
+     * eine Gebühr in Aussicht stellen.
+     */
+    it('fragt beim Absagen weder nach der Patient:in noch nach dem Eingang', async () => {
+      const user = userEvent.setup();
+      fetchAppointment.mockResolvedValue(ereignis);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teambesprechung/ });
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+
+      const auswahl = await screen.findByLabelText('Absagegrund');
+      expect(
+        within(auswahl).queryByRole('option', { name: 'Patient:in hat abgesagt' }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(auswahl).getByRole('option', { name: 'Praxis hat abgesagt' }),
+      ).toBeInTheDocument();
+
+      expect(screen.queryByLabelText('Wann ist die Absage eingegangen?')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Ausfallgebühr vor/)).not.toBeInTheDocument();
+      expect(screen.getByText(/löst keine Ausfallgebühr aus/)).toBeInTheDocument();
+    });
+
+    it('nennt in der Rueckfrage die Bezeichnung und keinen leeren Namen', async () => {
+      const user = userEvent.setup();
+      fetchAppointment.mockResolvedValue(ereignis);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teambesprechung/ });
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+
+      const satz = await screen.findByText(/Das Ereignis am/);
+      expect(satz).toHaveTextContent('Teambesprechung');
+      // „… Uhr für  wird als abgesagt geführt" - die Lücke, wo am
+      // Behandlungstermin der Name steht.
+      expect(satz.textContent).not.toContain('Uhr für');
+    });
+
+    it('sagt ohne Eingangsangabe ab', async () => {
+      const user = userEvent.setup();
+      fetchAppointment.mockResolvedValue(ereignis);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teambesprechung/ });
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(await screen.findByLabelText('Absagegrund'), 'practice_request');
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      await waitFor(() =>
+        expect(cancelAppointment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          ereignis.updated_at,
+          'practice_request',
+          null,
+          null,
+        ),
+      );
     });
   });
 

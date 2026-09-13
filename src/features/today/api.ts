@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import {
+  appointmentKindSchema,
   appointmentStatusSchema,
   appointmentTypeSchema,
   type AppointmentStatus,
@@ -19,14 +20,24 @@ import { documentationStatusSchema } from '@/features/documentation/api';
 
 const dayPlanEntrySchema = z.object({
   id: z.string(),
-  patient_id: z.string(),
+  /**
+   * `null` an einem Ereignis des Praxisbetriebs (CAL-016).
+   *
+   * Es gehört in diese Liste, weil es den Tag belegt — eine Teambesprechung,
+   * die im Kalender steht, aber im eigenen Tagesplan fehlt, ist genau die
+   * Lücke, an der eine Planung scheitert. Es ist aber keine Behandlung: kein
+   * Name, keine Anschrift, keine Dokumentation.
+   */
+  patient_id: z.string().nullable(),
   staff_member_id: z.string(),
   appointment_type: appointmentTypeSchema,
+  kind: appointmentKindSchema,
+  title: z.string().nullable(),
   status: appointmentStatusSchema,
   starts_at: z.string(),
   ends_at: z.string(),
-  patient_given_name: z.string(),
-  patient_family_name: z.string(),
+  patient_given_name: z.string().nullable(),
+  patient_family_name: z.string().nullable(),
   location_name: z.string().nullable(),
   visit_street: z.string().nullable(),
   visit_house_number: z.string().nullable(),
@@ -97,6 +108,10 @@ export const TAGESPLAN_VORHALTEDAUER_MS = 8 * 60 * 60 * 1000;
  * lieber nichts behaupten als etwas Falsches.
  */
 export function istOffen(termin: DayPlanEntry, darfDokumentieren: boolean): boolean {
+  // Ein Ereignis verlangt nichts: Es wird weder abgeschlossen noch
+  // dokumentiert, und eine Aufgabe, die niemand erledigen kann, wäre eine
+  // falsche Zahl über der Liste (CAL-016).
+  if (termin.kind === 'event') return false;
   if (termin.status === 'confirmed') return true;
   if (termin.status !== 'completed') return false;
   if (!darfDokumentieren) return false;

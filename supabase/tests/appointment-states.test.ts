@@ -808,12 +808,21 @@ describe('Tag umplanen (CAL-009)', () => {
     expect(grund[0]?.cancellation_reason).toBe('moved');
   });
 
-  it('verlangt einen gueltigen Grund und schreibt ohne ihn nichts', async () => {
+  /**
+   * Seit CAL-016 ist die Pruefung enger als beim einzelnen Termin: "Tag
+   * umplanen" heisst, dass die behandelnde Person ausfaellt, und das ist
+   * praxisbedingt. "Patient:in hat abgesagt" ist hier kein Grund, sondern ein
+   * Fehlgriff mit Folgen fuer jede einzelne Patient:in des Tages.
+   */
+  it('verlangt einen praxisbedingten Grund und schreibt ohne ihn nichts', async () => {
     const a = await anlegen('09:00', '10:00');
 
     await expect(asUser(users.office, TAG_UMPLANEN, [ANNA, TAG, null])).rejects.toThrow(
-      /cancellation reason is required/,
+      /day rescheduling needs a practice reason/,
     );
+    await expect(
+      asUser(users.office, TAG_UMPLANEN, [ANNA, TAG, 'patient_request']),
+    ).rejects.toThrow(/day rescheduling needs a practice reason/);
     expect(await zustand(a.id)).toBe('confirmed');
   });
 

@@ -28,18 +28,36 @@ export function AppointmentFormFields({
   fehler,
   onChange,
   therapeuten,
+  personBeschriftung = 'Behandelnde Person *',
   standorte,
+  arten,
   minDatum,
   rasterMinuten,
   fensterMinuten,
   onFensterMinuten,
+  laengeHinweis,
   hausbesuch,
 }: {
   werte: Record<AppointmentFormField, string>;
   fehler: Partial<Record<AppointmentFormField, string>>;
   onChange: (feld: AppointmentFormField, wert: string) => void;
   therapeuten: AssignableTherapist[];
+  /**
+   * Beschriftung der Personenauswahl.
+   *
+   * An einem Ereignis behandelt niemand - dort steht die beteiligte Person
+   * (CAL-016).
+   */
+  personBeschriftung?: string | undefined;
   standorte: Location[];
+  /**
+   * Zulässige Terminarten. Ohne Angabe alle.
+   *
+   * Ein Ereignis kennt keinen Hausbesuch - es gäbe keine Anschrift, und der
+   * Server weist ihn ab. Eine Auswahl, die man treffen kann und die dann
+   * scheitert, wäre eine Falle (CAL-016).
+   */
+  arten?: readonly AppointmentType[] | undefined;
   minDatum?: string | undefined;
   /** Praxisraster in Minuten. Steuert die Schrittweite des Beginns (CAL-005). */
   rasterMinuten?: number | undefined;
@@ -61,6 +79,14 @@ export function AppointmentFormFields({
    * ausfüllen kann und das dann scheitert, wäre eine Falle.
    */
   onFensterMinuten?: ((minuten: number) => void) | undefined;
+  /**
+   * Text unter dem abgeleiteten Ende. Ohne Angabe der Hinweis auf das
+   * Terminfenster.
+   *
+   * Ein Ereignis hat kein Terminfenster und schließt keine Dokumentation ein
+   * (CAL-016).
+   */
+  laengeHinweis?: string | undefined;
   /** Darstellung der Adresse bei `home_visit` - je nach Vorgang verschieden. */
   hausbesuch: ReactNode;
 }) {
@@ -69,7 +95,7 @@ export function AppointmentFormFields({
   return (
     <div className="flex flex-col gap-5">
       <Select
-        label="Behandelnde Person *"
+        label={personBeschriftung}
         value={werte.staff_member_id}
         error={fehler.staff_member_id}
         onChange={(e) => onChange('staff_member_id', e.target.value)}
@@ -88,7 +114,7 @@ export function AppointmentFormFields({
         error={fehler.appointment_type}
         onChange={(e) => onChange('appointment_type', e.target.value)}
       >
-        {(Object.keys(appointmentTypeLabels) as AppointmentType[]).map((typ) => (
+        {(arten ?? (Object.keys(appointmentTypeLabels) as AppointmentType[])).map((typ) => (
           <option key={typ} value={typ}>
             {appointmentTypeLabels[typ]}
           </option>
@@ -152,7 +178,8 @@ export function AppointmentFormFields({
                 {werte.end_time ? `${werte.end_time} Uhr` : '—'}
               </p>
               <p className="text-ink-subtle mt-1 text-xs leading-relaxed">
-                Terminfenster: {fensterMinuten} Minuten, Dokumentation eingeschlossen.
+                {laengeHinweis ??
+                  `Terminfenster: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
               </p>
               {fehler.end_time ? (
                 <p className="text-danger mt-1 text-xs">{fehler.end_time}</p>

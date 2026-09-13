@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as TodayApi from '@/features/today/api';
@@ -24,6 +24,8 @@ function eintrag(teil: Partial<TodayApi.DayPlanEntry>): TodayApi.DayPlanEntry {
     patient_id: 'p1',
     staff_member_id: ANNA,
     appointment_type: 'home_visit',
+    kind: 'treatment',
+    title: null,
     status: 'confirmed',
     starts_at: `${DATUM}T07:00:00.000Z`,
     ends_at: `${DATUM}T08:00:00.000Z`,
@@ -112,6 +114,47 @@ describe('TagUmplanenPage', () => {
     rendern();
 
     expect(await screen.findByText(/Diese Termine werden abgesagt \(1\)/)).toBeInTheDocument();
+  });
+
+  /**
+   * „Tag umplanen" sagt Behandlungstermine ab; ein Ereignis des Praxisbetriebs
+   * lässt `cancel_staff_day` ausdrücklich stehen (CAL-015b). Stünde es hier in
+   * der Zählung, verspräche die Vorschau eine Absage, die nicht käme.
+   */
+  it('laesst ein Ereignis des Praxisbetriebs aussen vor', async () => {
+    fetchDayPlan.mockResolvedValue([
+      eintrag({}),
+      eintrag({
+        id: 'ereignis-1',
+        kind: 'event',
+        title: 'Teambesprechung',
+        patient_id: null,
+        patient_given_name: null,
+        patient_family_name: null,
+      }),
+    ]);
+    rendern();
+
+    expect(await screen.findByText(/Diese Termine werden abgesagt \(1\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/Teambesprechung/)).not.toBeInTheDocument();
+  });
+
+  /**
+   * Der Ausfall einer behandelnden Person ist praxisbedingt. Seit CAL-016
+   * weist der Server „Patient:in hat abgesagt" hier ab - die Auswahl bietet
+   * ihn deshalb gar nicht erst an (ADR-018 Fassung 2 Punkt 8.4).
+   */
+  it('bietet "Patient:in hat abgesagt" nicht als Grund an', async () => {
+    rendern();
+    await screen.findByText(/Diese Termine werden abgesagt/);
+
+    const auswahl = screen.getByLabelText('Absagegrund');
+    expect(
+      within(auswahl).queryByRole('option', { name: 'Patient:in hat abgesagt' }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(auswahl).getByRole('option', { name: 'Praxis hat abgesagt' }),
+    ).toBeInTheDocument();
   });
 
   it('sagt nichts ohne ausgewaehlten Grund ab', async () => {

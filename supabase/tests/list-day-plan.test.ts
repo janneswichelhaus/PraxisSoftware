@@ -16,11 +16,13 @@ const TAG = '2026-09-10';
 
 interface Zeile {
   id: string;
-  patient_id: string;
+  patient_id: string | null;
   appointment_type: string;
+  kind: string;
+  title: string | null;
   status: string;
   starts_at: string;
-  patient_family_name: string;
+  patient_family_name: string | null;
   location_name: string | null;
   visit_street: string | null;
   visit_house_number: string | null;
@@ -219,5 +221,61 @@ describe('list_day_plan', () => {
   it('liefert zu einer Person ohne Termine eine leere Liste statt eines Fehlers', async () => {
     const { rows } = await asUser<Zeile>(users.therapist, LESEN, [TAG, STAFF.olivia]);
     expect(rows).toEqual([]);
+  });
+
+  /**
+   * Ereignisse gehoeren in die Tagesliste (CAL-016).
+   *
+   * Bis zur Nachbesserung fiel ein Ereignis hier still heraus - die Funktion
+   * verband ueber einen INNER JOIN mit `patients`, und ein Ereignis hat keine.
+   * Sichtbar war das auf einem einzigen Bildschirm: Die eigene Tagesliste der
+   * Uebersicht liest `list_day_plan`, der Tagesplan des Teams darunter
+   * `list_appointments`. Die Besprechung, die den Kalender blockiert, fehlte
+   * oben und stand unten.
+   */
+  it('zeigt ein Ereignis mit Titel und ohne Patientennamen', async () => {
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type,
+         kind, title, status, starts_at, ends_at
+       ) values (
+         $1, null, $2, 'video', 'event', 'Teambesprechung', 'confirmed',
+         (($3::date + time '08:00') at time zone 'Europe/Berlin'),
+         (($3::date + time '08:30') at time zone 'Europe/Berlin')
+       )`,
+      [organizationId, STAFF.anna, TAG],
+    );
+
+    const { rows } = await lesen(users.therapist);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      kind: 'event',
+      title: 'Teambesprechung',
+      patient_id: null,
+      patient_family_name: null,
+      // Ein Ereignis kann nicht dokumentiert werden; 'none' hiesse "fehlt
+      // noch" und waere eine falsche Aufgabe auf der Liste.
+      documentation_status: null,
+    });
+  });
+
+  it('laesst die Behandlung daneben unveraendert', async () => {
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type,
+         kind, title, status, starts_at, ends_at
+       ) values (
+         $1, null, $2, 'video', 'event', 'Teambesprechung', 'confirmed',
+         (($3::date + time '08:00') at time zone 'Europe/Berlin'),
+         (($3::date + time '08:30') at time zone 'Europe/Berlin')
+       )`,
+      [organizationId, STAFF.anna, TAG],
+    );
+    await termin({ von: '09:00', bis: '10:00' });
+
+    const { rows } = await lesen(users.therapist);
+    expect(rows.map((zeile) => zeile.kind)).toEqual(['event', 'treatment']);
+    expect(rows[1]!.patient_family_name).toBe('Mustermann');
+    expect(rows[1]!.documentation_status).toBe('none');
   });
 });

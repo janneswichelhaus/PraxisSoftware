@@ -61,6 +61,8 @@ function tagesEintrag(teil: Partial<TodayApiModule.DayPlanEntry>): TodayApiModul
     patient_id: 'p1',
     staff_member_id: EIGENE_STAFF_ID,
     appointment_type: 'home_visit',
+    kind: 'treatment',
+    title: null,
     status: 'confirmed',
     starts_at: `${HEUTE}T08:00:00.000Z`,
     ends_at: `${HEUTE}T08:45:00.000Z`,

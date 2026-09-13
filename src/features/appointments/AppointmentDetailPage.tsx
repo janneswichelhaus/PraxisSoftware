@@ -94,6 +94,12 @@ function zustandsHinweis(appointment: Appointment): string {
  */
 function AbsageAktion({ appointment }: { appointment: Appointment }) {
   const queryClient = useQueryClient();
+  // Ein Ereignis sagt keine Patient:in ab: Es gibt keine, es gibt keinen
+  // Behandlungsbeginn, auf den sich eine Frist bezöge, und der Server setzt
+  // dort keinen Gebührenanlass (CAL-016). Also weder der Grund
+  // „Patient:in hat abgesagt" noch die Frage nach dem Eingang noch der
+  // Hinweis auf die Gebühr - alles drei wäre hier eine Behauptung.
+  const istEreignis = appointment.kind === 'event';
   const [grund, setGrund] = useState('');
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
   // Der Eingang: „jetzt" ist der Regelfall am Telefon, „früher" die
@@ -135,7 +141,8 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
     }
     setGrundFehler(undefined);
 
-    if (eingang === 'frueher' && (!datum || !uhrzeit)) {
+    const nachtraeglich = !istEreignis && eingang === 'frueher';
+    if (nachtraeglich && (!datum || !uhrzeit)) {
       setEingangFehler('Bitte Datum und Uhrzeit des Eingangs angeben.');
       throw new Error('Eingang unvollständig');
     }
@@ -143,8 +150,8 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
 
     await mutation.mutateAsync({
       grund: gewaehlt.data,
-      datum: eingang === 'frueher' ? datum : null,
-      uhrzeit: eingang === 'frueher' ? uhrzeit : null,
+      datum: nachtraeglich ? datum : null,
+      uhrzeit: nachtraeglich ? uhrzeit : null,
     });
   }
 
@@ -160,11 +167,13 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
       onBestaetigen={absagen}
     >
       <p>
-        Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
-        um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
-        {patientName(appointment)} wird als abgesagt geführt. Er bleibt vollständig erhalten und
-        gibt seinen Zeitraum wieder frei. Eine Absage lässt sich nicht zurücknehmen – für einen
-        neuen Termin bitte neu anlegen.
+        {istEreignis ? 'Das Ereignis am ' : 'Der Termin am '}
+        {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
+        {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr
+        {istEreignis ? ' ' : ` für ${patientName(appointment)} `}
+        {istEreignis ? `„${appointment.title ?? ''}" ` : ''}
+        wird als abgesagt geführt. Es bleibt vollständig erhalten und gibt seinen Zeitraum wieder
+        frei. Eine Absage lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.
       </p>
       <div className="mt-3 max-w-xs">
         <Select
@@ -177,34 +186,41 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
           }}
         >
           <option value="">Bitte wählen</option>
-          {Object.entries(cancellationReasonLabels).map(([wert, beschriftung]) => (
-            <option key={wert} value={wert}>
-              {beschriftung}
-            </option>
-          ))}
+          {Object.entries(cancellationReasonLabels)
+            .filter(([wert]) => !istEreignis || wert !== 'patient_request')
+            .map(([wert, beschriftung]) => (
+              <option key={wert} value={wert}>
+                {beschriftung}
+              </option>
+            ))}
         </Select>
       </div>
 
       {/* Der Eingang, getrennt vom Zeitpunkt der Eingabe (§8, ADR-018
           Fassung 2 Punkt 8). Der Anruf kommt abends aufs Band, eingetragen
           wird am nächsten Morgen - ohne diese Angabe entschiede die
-          Schreibgeschwindigkeit des Büros über eine Forderung. */}
-      <div className="mt-3 max-w-xs">
-        <Select
-          label="Wann ist die Absage eingegangen?"
-          value={eingang}
-          hint="Maßgeblich für die Ausfallgebühr ist der Eingang, nicht die Eingabe."
-          onChange={(e) => {
-            setEingang(e.target.value === 'frueher' ? 'frueher' : 'jetzt');
-            setEingangFehler(undefined);
-          }}
-        >
-          <option value="jetzt">Gerade eben</option>
-          <option value="frueher">Früher – jetzt erst eingetragen</option>
-        </Select>
-      </div>
+          Schreibgeschwindigkeit des Büros über eine Forderung.
 
-      {eingang === 'frueher' ? (
+          Am Ereignis entfällt die Frage: Es gibt keine Frist, die vom Eingang
+          abhinge (CAL-016). */}
+      {istEreignis ? null : (
+        <div className="mt-3 max-w-xs">
+          <Select
+            label="Wann ist die Absage eingegangen?"
+            value={eingang}
+            hint="Maßgeblich für die Ausfallgebühr ist der Eingang, nicht die Eingabe."
+            onChange={(e) => {
+              setEingang(e.target.value === 'frueher' ? 'frueher' : 'jetzt');
+              setEingangFehler(undefined);
+            }}
+          >
+            <option value="jetzt">Gerade eben</option>
+            <option value="frueher">Früher – jetzt erst eingetragen</option>
+          </Select>
+        </div>
+      )}
+
+      {!istEreignis && eingang === 'frueher' ? (
         <div className="mt-3 flex max-w-sm flex-wrap gap-3">
           <div className="min-w-[9rem] flex-1">
             <Field
@@ -233,11 +249,18 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
         </div>
       ) : null}
 
-      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
-        Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt,
-        merkt die Anwendung eine Ausfallgebühr vor. Die Frist rechnet der Server; genau 24 Stunden
-        liegen außerhalb der Regel.
-      </p>
+      {istEreignis ? (
+        <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+          Ein Ereignis des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
+          die absagen könnte.
+        </p>
+      ) : (
+        <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+          Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt,
+          merkt die Anwendung eine Ausfallgebühr vor. Die Frist rechnet der Server; genau 24 Stunden
+          liegen außerhalb der Regel.
+        </p>
+      )}
     </Rueckfrage>
   );
 }

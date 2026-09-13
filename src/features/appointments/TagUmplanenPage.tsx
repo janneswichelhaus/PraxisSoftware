@@ -50,9 +50,27 @@ function terminWort(anzahl: number): string {
   return anzahl === 1 ? 'Termin' : 'Termine';
 }
 
-/** Ein Termin, den die Umplanung betrifft: bestätigt und damit absagbar. */
+/**
+ * Was „Tag umplanen" absagt.
+ *
+ * Nur Behandlungstermine: `cancel_staff_day` lässt Ereignisse des
+ * Praxisbetriebs seit CAL-015b ausdrücklich stehen. Stünde eine Teambesprechung
+ * in dieser Liste, versprächen Zählung und Vorschau eine Absage, die gar nicht
+ * käme — und die Anrufliste danach hätte einen Eintrag ohne Rufnummer
+ * (CAL-016).
+ */
 function istBetroffen(termin: DayPlanEntry): boolean {
-  return termin.status === 'confirmed';
+  return termin.status === 'confirmed' && termin.kind === 'treatment';
+}
+
+/**
+ * Wer nach dem Umplanen angerufen wird.
+ *
+ * Ein Ereignis hat niemanden, den man anrufen könnte - und es war gar nicht
+ * abgesagt worden (CAL-016).
+ */
+function istAnzurufen(termin: DayPlanEntry): boolean {
+  return termin.status === 'cancelled' && termin.kind === 'treatment';
 }
 
 function Anrufkarte({
@@ -223,11 +241,20 @@ function Umplanung({
                           }}
                         >
                           <option value="">Bitte wählen</option>
-                          {Object.entries(cancellationReasonLabels).map(([wert, beschriftung]) => (
-                            <option key={wert} value={wert}>
-                              {beschriftung}
-                            </option>
-                          ))}
+                          {/* „Patient:in hat abgesagt" steht hier nicht: Der
+                              Tag wird umgeplant, weil die behandelnde Person
+                              ausfällt, und das ist praxisbedingt. Der Grund
+                              hätte für jede Patient:in des Tages innerhalb der
+                              Frist eine Ausfallgebühr vorgemerkt; seit CAL-016
+                              weist ihn auch der Server ab (ADR-018 Fassung 2
+                              Punkt 8.4). */}
+                          {Object.entries(cancellationReasonLabels)
+                            .filter(([wert]) => wert !== 'patient_request')
+                            .map(([wert, beschriftung]) => (
+                              <option key={wert} value={wert}>
+                                {beschriftung}
+                              </option>
+                            ))}
                         </Select>
                       </div>
 
@@ -256,29 +283,25 @@ function Umplanung({
               )}
             </Section>
           ) : (
-            <Section
-              titel={`Anrufliste (${termine.filter((t) => t.status === 'cancelled').length})`}
-            >
+            <Section titel={`Anrufliste (${termine.filter(istAnzurufen).length})`}>
               <Statusmeldung className="mb-4">
                 {abgesagt === 1 ? 'Ein Termin ist abgesagt.' : `${abgesagt} Termine sind abgesagt.`}{' '}
                 Jetzt anrufen.
               </Statusmeldung>
 
               <CardGrid>
-                {termine
-                  .filter((t) => t.status === 'cancelled')
-                  .map((termin) => (
-                    <Anrufkarte
-                      key={termin.id}
-                      termin={termin}
-                      erledigt={erledigt.includes(termin.id)}
-                      onErledigt={(wert) =>
-                        setErledigt((bisher) =>
-                          wert ? [...bisher, termin.id] : bisher.filter((id) => id !== termin.id),
-                        )
-                      }
-                    />
-                  ))}
+                {termine.filter(istAnzurufen).map((termin) => (
+                  <Anrufkarte
+                    key={termin.id}
+                    termin={termin}
+                    erledigt={erledigt.includes(termin.id)}
+                    onErledigt={(wert) =>
+                      setErledigt((bisher) =>
+                        wert ? [...bisher, termin.id] : bisher.filter((id) => id !== termin.id),
+                      )
+                    }
+                  />
+                ))}
               </CardGrid>
 
               <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
