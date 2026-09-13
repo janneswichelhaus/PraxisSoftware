@@ -982,7 +982,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | CAL-016 Ereignisse ohne Gebührenanlass, Tagesplan vollständig | fertig | 2026-09-13 | `b0bf149` — Nachbesserung aus zwei unabhängigen Reviews zu CAL-014/CAL-015; keine neue Entscheidung, keine neue Annahme |               |
 | FIX-013 Angemeldete E2E-Prüfungen wieder grün | fertig | 2026-09-13 | `3ffd295` — sechs Fehlschläge aus CI-Lauf 34732537869; ein echter Befund (Standortvorbelegung im Ereignisformular), zwei veraltete RPC-Signaturen, zwei Tests auf alte Darstellung, ein Tagkonflikt |               |
 | FIX-014 Textverlustschutz beim Abmelden und im Wettlauf | fertig | 2026-09-13 | `90ca0f6` — ANN-046 erweitert; Abmelderückfrage, ein Schreibweg je Seite, kein Weitergehen nach Weiterschreiben |               |
-| CAL-017 Teamereignisse als ein Vorgang | fertig | 2026-09-13 | `%COMMIT%` — Gruppenkennung, gruppenweites Ändern und Absagen, Trigger gegen ausscherende Zeilen; ANN-051 |               |
+| CAL-017 Teamereignisse als ein Vorgang | fertig | 2026-09-13 | `10e439b` — Gruppenkennung, gruppenweites Ändern und Absagen, Trigger gegen ausscherende Zeilen; ANN-051 |               |
 
 ---
 
