@@ -107,9 +107,17 @@ organisatorischen Kanälen), nur eine Ebene höher. Wer trainiert und dabei
 „seit Dienstag Taubheit im Fuß" einträgt, hat klinisch relevante Information
 im Trainingskontext abgelegt.
 
-**Offen.** Wer entscheidet über die Übernahme, und in welche Richtung darf sie
-laufen? Was passiert bei Widerruf der Einwilligung mit Trainingsdaten, die
-inzwischen behandlungsrelevant geworden sind?
+**Offen — beantwortet (B9 Punkt 5, 2026-09-08).** Die Frage lautete: Wer
+entscheidet über die Übernahme, und in welche Richtung darf sie laufen? Was
+passiert bei Widerruf der Einwilligung mit Trainingsdaten, die inzwischen
+behandlungsrelevant geworden sind? Jannes hat vorläufig entschieden: **kein
+automatischer Fluss, in keine Richtung** — aus der Akte ins Training nur auf
+ausdrückliche Einwilligung und als Kopie mit Herkunftsvermerk, nie als
+Verweis; vom Training in die Akte gar nicht, solange keine Heilbehandlung
+läuft. Die Trennung entsteht technisch (eigene Tabellen, Rollenprüfung,
+Policies nach ADR-004); Rücknahme `groß`. Bestätigung durch die
+Datenschutzberatung (B2) steht aus. Der Widerrufsfall ist damit noch nicht im
+Einzelnen beantwortet und gehört in die Spezifikation der Stufe 3.
 
 ---
 
@@ -173,9 +181,16 @@ Einwilligung, die jemand anders für die Person geklickt hat, ist keine.
 
 | | |
 |---|---|
-| Status | bestätigt |
+| Status | überführt → LOE-001b |
 | Quelle | Claude, 2026-09-01 |
-| Berührt | [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md), B3 |
+| Berührt | [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md), B3; LOE-001b, `ANN-032`; `IDEA-LZK-009`, `IDEA-QSN-003` |
+
+**Stand.** Die Aufbewahrungsuhr ist gebaut: „Abschluss der Versorgung" als
+ausdrücklicher, rücknehmbarer Vorgang in der Akte startet die zehnjährige
+Aufbewahrung (LOE-001b, ANN-032; `../../development/ARBEITSBEREICHE.md`). Der
+Rest — Datenexport beim Abschluss (Art. 20 DSGVO, siehe `IDEA-QSN-003`) und
+ein definierter Zugangszustand — bleibt `bestätigt` und ist kein Auftrag. Der
+Hinweis auf vergessene Abschlüsse steht als `IDEA-LZK-009`.
 
 **Idee.** Das Ende einer Betreuung ist ein Vorgang, kein Verstummen: Abschluss
 festhalten, Datenexport anbieten (Art. 20 DSGVO), Zugang in einen definierten
@@ -276,8 +291,14 @@ der Reihenfolge Portalfundament → Übungspläne → Check-ins → Chat →
 Kund:innen und Pakete → Gewohnheiten, Aktivitäten, Ernährung. Bis dahin werden
 Kund:innen nicht als Patient:innen angelegt.
 
-**Offen.** Dieselbe Praxis oder eigener Betrieb — Frage an die Steuerberatung
-mit B4.
+**Offen — beantwortet (B9, 2026-09-07: ein Unternehmen).** Die Frage lautete:
+dieselbe Praxis oder eigener Betrieb? Jannes hat vorläufig entschieden, dass
+Patient:innen und Kund:innen des Personal Trainings **über dasselbe
+Unternehmen** betreut werden — eine `organization_id` nach ADR-003 für beides.
+Die Festlegung geht als solche in die Anfrage B4; die steuerliche Bestätigung
+steht aus. Die sechs Folgefragen (Vertragsart, Dokumentation, Aufbewahrung,
+Rechtsgrundlage, Zweckbindung, Ernährung) hat er am 2026-09-08 vorläufig
+entschieden (B9).
 
 ---
 

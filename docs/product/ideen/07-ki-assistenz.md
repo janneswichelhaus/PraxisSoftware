@@ -153,9 +153,15 @@ ausdrücklich.
 
 | | |
 |---|---|
-| Status | **überführt** (2026-09-08) — die Anforderung ist entschieden und steht in `PROJECT_PRINCIPLES.md` §6.3; Umsetzung, Anbieterwahl und Einführung bleiben ein eigener Auftrag (`OPEN_DECISIONS.md` E13) |
+| Status | überführt → `PROJECT_PRINCIPLES.md` §6.3 |
 | Quelle | Jannes, 2026-09-08 |
-| Berührt | `PROJECT_PRINCIPLES.md` §6.3; [ADR-005](../../adr/ADR-005-provider-independent-ai.md) Punkt 9, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) Punkt 8, [ADR-016](../../adr/ADR-016-clinical-documentation-record.md) Punkt 10, ADR-008 (Datenklasse „nicht angenommene KI-Entwürfe"); `OPEN_DECISIONS.md` E13, C6; `IDEA-KI-002`, `IDEA-KI-003` |
+| Berührt | `PROJECT_PRINCIPLES.md` §6.3; [ADR-005](../../adr/ADR-005-provider-independent-ai.md) Punkt 9, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) Punkt 8, [ADR-016](../../adr/ADR-016-clinical-documentation-record.md) Punkt 10, ADR-008 (Datenklasse „nicht angenommene KI-Entwürfe"); `OPEN_DECISIONS.md` E13, C6; `IDEA-KI-002`, `IDEA-KI-003`, `IDEA-PRX-028` |
+
+**Stand.** Überführt am 2026-09-08: Die Anforderung ist entschieden und steht
+in `PROJECT_PRINCIPLES.md` §6.3; Umsetzung, Anbieterwahl und Einführung
+bleiben ein eigener Auftrag (`OPEN_DECISIONS.md` E13) — entschieden heißt
+nicht gebaut. `IDEA-PRX-028` (Diktat in der Dokumentation) ist am 2026-09-13
+hierher überführt.
 
 **Wohin die Idee gegangen ist.** Jannes hat die Anforderung am 2026-09-08
 entschieden: ein bewusst gestartetes Nachdiktat aus dem zugehörigen Termin auf
@@ -191,8 +197,7 @@ ANN-008); die Architektur des ungeprüften Vorschlags; Bedienung und Zeitpunkt.
 - Die Anbieterwahl läuft über denselben Prüfkatalog wie jeder andere
   Verarbeitungsdienst (ADR-002, ADR-005 Punkte 8 und 9) — kein Startvorteil,
   nur weil es „nur" Transkription ist.
-
----
-
-Zuletzt aktualisiert: 2026-09-08 (`IDEA-KI-007` auf `überführt`; die
-Anforderung steht als §6.3 in den Prinzipien, die offene Umsetzung als E13)
+- Das Diktat über die **Systemtastatur** des Geräts (aus `IDEA-PRX-028`) ist
+  kein Teil dieser Anforderung, sondern ein Datenfluss an den Betreiber des
+  Geräts — er gehört in die Endgeräte-Richtlinie (Roadmap G14/G16), nicht in
+  eine Idee.

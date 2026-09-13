@@ -13,9 +13,16 @@ keine vorausbezahlten Pakete.
 
 | | |
 |---|---|
-| Status | notiert · entscheidung nötig |
+| Status | zurückgestellt (B11) |
 | Quelle | Jannes, 2026-09-01 |
-| Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), B4, B9, B11 |
+| Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), B4, B9, B11 (2026-09-08) |
+
+**Stand.** B11 (Jannes, 2026-09-08): **Pakete vorerst nicht anbieten**, bis B4
+zurück ist. Eine Vorauszahlung ist kein Preismodell, sondern ein
+Guthabenkonto mit Steuerentstehung bei Vereinnahmung und GoBD-Pflichten —
+Buchhaltungsmechanik, die ADR-009 nicht kennt und die teuer nachzurüsten
+wäre, wenn man sie falsch anfängt. Der Eintrag kommt nur mit einer neuen
+Entscheidung zurück; die Anforderungsliste unten bleibt dafür stehen.
 
 **Idee.** Die Weiterbetreuung wird nicht je Einheit abgerechnet, sondern als
 Paket: ein Preis für einen Zeitraum oder ein Kontingent — etwa drei Monate
@@ -52,10 +59,10 @@ Anforderungen mit:
   laufendes Paket behält seinen Preis; eine Preiserhöhung wirkt erst auf neue
   Pakete.
 
-**Offen.** Als neuer Punkt **B11** in `docs/decisions/OPEN_DECISIONS.md`
-aufgenommen. Kontingent nach Einheiten oder nach Zeitraum? Automatische
-Verlängerung — und wenn ja, mit welcher Kündigungsfrist? Das sind
-Geschäftsmodellentscheidungen, keine technischen.
+**Offen.** Als Punkt **B11** in `docs/decisions/OPEN_DECISIONS.md` geführt
+und dort zurückgestellt. Falls Pakete zurückkommen: Kontingent nach Einheiten
+oder nach Zeitraum? Automatische Verlängerung — und wenn ja, mit welcher
+Kündigungsfrist? Das sind Geschäftsmodellentscheidungen, keine technischen.
 
 ---
 
@@ -63,9 +70,15 @@ Geschäftsmodellentscheidungen, keine technischen.
 
 | | |
 |---|---|
-| Status | notiert · Bedenken |
+| Status | verworfen (B11) |
 | Quelle | Jannes, 2026-09-01 · Einordnung Claude |
-| Berührt | B11, [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md), §16 |
+| Berührt | B11 (2026-09-08), [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md), §16; HWG, UWG |
+
+**Stand.** B11 (Jannes, 2026-09-08): **Rabatt für eine Google-Bewertung:
+nein.** Gekaufte Bewertungen sind wettbewerbsrechtlich angreifbar (UWG), im
+Heilbereich kommt das HWG dazu, und eine bezahlte Bewertung ist ihr Geld nicht
+wert. Falls doch gewünscht: vorher anwaltlich prüfen lassen, nicht als
+Annahme. Die Einordnung unten bleibt als Begründung stehen.
 
 **Die Idee.** Ein Rabatt — etwa ein kostenloser Monat Coaching —, wenn ein
 Patient nach der Therapie eine gute Google-Bewertung hinterlässt.
@@ -113,14 +126,24 @@ eine Verknüpfung, die datenschutzrechtlich nichts Gutes bringt.
   ausfällt — ist ein anderer Sachverhalt und fachlich wertvoller, weil man aus
   Kritik mehr lernt als aus fünf Sternen.
 
-**Was die Software dazu beitragen kann, ohne die Grenze zu berühren:** einen
-guten Zeitpunkt erkennbar machen und den Bewertungslink bereitstellen. Nicht:
-Rabatte an Bewertungen koppeln, Bewertungen Personen zuordnen oder
-nachverfolgen, wer bewertet hat.
+**Was die Software dazu beitragen kann, ohne die Grenze zu berühren:** den
+Bewertungslink bereitstellen. Nicht: Rabatte an Bewertungen koppeln,
+Bewertungen Personen zuordnen oder nachverfolgen, wer bewertet hat.
 
-**Offen.** Ob Jannes die Empfehlung teilt. Wenn er den Anreiz trotzdem
-umsetzen will, gehört das vorher zu einer wettbewerbs- und
-heilmittelwerberechtlichen Beratung — nicht in einen Feature-Loop.
+**Vorsicht.** Der Vorschlag oben, den „richtigen Zeitpunkt" für die Bitte um
+eine Bewertung aus den Verlaufsdaten abzuleiten, wäre eine **Zweckänderung
+klinischer Daten**: Verlaufsdaten entstehen zu Behandlungszwecken (Art. 9
+Abs. 2 lit. h DSGVO); sie für die Außendarstellung der Praxis auszuwerten, ist
+ein anderer Zweck, der eine eigene Rechtsgrundlage bräuchte und in der DSFA
+(ADR-007) auftauchen müsste. Er ist zudem HWG-nah: Wer den Fortschritt einer
+Behandlung zum Anlass einer Bewertungsbitte macht, wirbt mit dem
+Behandlungserfolg. Deshalb bleibt von „Was stattdessen geht" nur der kurze
+Weg zum Link — ohne Auslöser aus der Akte.
+
+**Offen — beantwortet (B11, 2026-09-08).** Jannes teilt die Empfehlung; der
+Anreiz kommt nicht. Wenn er je doch umgesetzt werden soll, gehört das vorher
+zu einer wettbewerbs- und heilmittelwerberechtlichen Beratung — nicht in einen
+Feature-Loop.
 
 ---
 
@@ -131,6 +154,11 @@ heilmittelwerberechtlichen Beratung — nicht in einen Feature-Loop.
 | Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-ANG-001, [00 LZK](00-lebenszyklus-und-zugang.md), B9, B11 |
+
+**Stand.** B11 (2026-09-08): Pakete werden vorerst nicht angeboten
+(`IDEA-ANG-001` zurückgestellt). Der Fall hier wird erst wieder relevant, wenn
+Pakete zurückkommen; bis dahin gibt es nichts, in das jemand zurückfallen
+könnte.
 
 **Idee.** Der Fall, den jedes Paketmodell braucht und keines vorsieht: Jemand
 hat drei Monate Coaching bezahlt und bekommt in Monat zwei ein neues Rezept.
@@ -155,9 +183,14 @@ buchhalterisch die aufwendigste.
 
 | | |
 |---|---|
-| Status | bestätigt |
+| Status | zurückgestellt (B11) |
 | Quelle | Claude, 2026-09-01 |
-| Berührt | IDEA-ANG-001, [00 LZK](00-lebenszyklus-und-zugang.md) |
+| Berührt | IDEA-ANG-001, [00 LZK](00-lebenszyklus-und-zugang.md), B11 (2026-09-08), B5 |
+
+**Stand.** B11 (Jannes, 2026-09-08) blockiert die Preisdarstellung im Portal
+zusammen mit Paketverkauf, Guthaben und Rabattlogik. Die Richtung bleibt
+bestätigt; der Eintrag kommt zurück, sobald Pakete oder ein anderes Angebot
+im Portal entschieden sind — und das Portal selbst existiert (B5).
 
 **Idee.** Wenn die Weiterbetreuung im Portal angeboten wird, steht der Preis
 dort — vollständig, mit Laufzeit, Umfang und Kündigungsbedingungen, ohne

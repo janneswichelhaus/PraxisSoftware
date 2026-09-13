@@ -82,7 +82,7 @@ Rohdatenbank ausleitet, hebelt jede Feldbeschränkung aus.
 |---|---|
 | Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
-| Berührt | [ADR-013](../../adr/ADR-013-ci-cd-and-release-governance.md), E6, `PROJECT_PRINCIPLES.md` §12 |
+| Berührt | [ADR-013](../../adr/ADR-013-ci-cd-and-release-governance.md), E6 (erledigt: der Seed ist der Generator), `PROJECT_PRINCIPLES.md` §12 |
 
 **Idee.** Für jede Progressions- oder Auswertungsregel ein Satz synthetischer
 Personenverläufe über mehrere Wochen mit erwartetem Ergebnis, als Testfälle in
@@ -93,8 +93,9 @@ Regelversion erhöht werden.
 Verifikation. Bei einer Regel, die Trainingslasten bestimmt, ist ein Unit-Test
 über eine Funktion zu wenig — der Fehler entsteht im Zusammenspiel über
 Wochen. Ein fester Satz von Verläufen ist zugleich das Material, das eine
-externe Prüfung sehen will, und deckt E6 (fehlender Generator für synthetische
-Daten) mit ab.
+externe Prüfung sehen will. E6 ist erledigt: der Seed ist der Generator für
+synthetische Daten (`../../development/ROADMAP.md`, Etappe G); die Verläufe
+hier wären eine Erweiterung des Seeds, kein zweites Werkzeug.
 
 ---
 
@@ -236,7 +237,8 @@ Urlaubsantrag ohne hinterlegten Anspruch kann nicht gegengerechnet werden.
 verlangen, dass sie nicht an jede Praxisrolle ausgeliefert werden — STAFF-001
 hält das für die vorhandenen Privatdaten bereits so und würde das Muster
 fortsetzen. Aufbewahrung und Löschung von Beschäftigtendaten sind über
-ADR-008 hinaus nicht geklärt (offener Punkt B9); ein Notfallkontakt ist
+ADR-008 hinaus nicht geklärt — in V1 gibt es für sie keine automatische
+Löschung (`ANN-030`, ADR-008); ein Notfallkontakt ist
 zudem ein Datum einer **dritten** Person, die von der Verarbeitung nichts
 weiß. Beides ist vor einer Umsetzung zu klären, nicht danach.
 

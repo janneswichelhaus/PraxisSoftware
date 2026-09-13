@@ -107,9 +107,18 @@ Feature mit eigener regulatorischer Bewertung.
 
 | | |
 |---|---|
-| Status | notiert · entscheidung nötig |
+| Status | zurückgestellt (B9 Punkt 6) |
 | Quelle | Jannes, 2026-09-01 (Navigationspunkt „Ernährung") · Einordnung Claude |
-| Berührt | B9, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
+| Berührt | B9 Punkt 6 (2026-09-08), [ADR-006](../../adr/ADR-006-medical-device-boundary.md), `IDEA-ALT-006` |
+
+**Stand.** B9 Punkt 6 (Jannes, 2026-09-08): **Ernährung vorerst nicht
+anbieten.** Ernährungsberatung ist nicht Teil der Ausbildung nach dem
+Masseur- und Physiotherapeutengesetz; die Abgrenzung zwischen zulässiger
+allgemeiner Information und beratender Tätigkeit ist heikel und
+wettbewerbsrechtlich angreifbar. Wollte die Praxis es anbieten, wäre das eine
+eigene Qualifikation plus eine Frage an den Berufsverband — keine
+Softwarefrage. Der Eintrag kommt nur mit einer neuen Entscheidung zurück;
+`IDEA-ALT-006` bleibt als Abgrenzung für diesen Fall stehen.
 
 **Idee.** Wie in der Referenzsoftware: Tagesprotokoll, Zielwerte für Energie
 und Makronährstoffe, Wasseraufnahme.
@@ -122,9 +131,10 @@ Erkrankung. Wo genau die Grenze liegt und ob eine Zusatzqualifikation
 vorliegt, ist eine Frage an Jannes und gegebenenfalls an eine
 berufsrechtliche Beratung — nicht an einen Loop.
 
-**Offen.** Als Teil von B9 in `docs/decisions/OPEN_DECISIONS.md` mitgeführt.
-Darf die Praxis Zielwerte vorgeben, oder setzt die Person sie selbst? Das ist
-die entscheidende Unterscheidung.
+**Offen — beantwortet (B9 Punkt 6).** Die Frage lautete: Darf die Praxis
+Zielwerte vorgeben, oder setzt die Person sie selbst? Für V1 beantwortet
+durch „vorerst nicht anbieten"; die Unterscheidung bleibt die entscheidende,
+falls der Eintrag zurückkommt.
 
 ---
 

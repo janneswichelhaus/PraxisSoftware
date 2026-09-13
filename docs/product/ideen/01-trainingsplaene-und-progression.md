@@ -40,9 +40,17 @@ nicht kosmetisch und lässt sich nicht durch Formulierung in der Oberfläche
 heilen (ADR-006, Konsequenzen: Sprache und Darstellung sind regulatorisch
 relevant).
 
-**Offen.** Als neuer Punkt B10 in `docs/decisions/OPEN_DECISIONS.md`
-aufgenommen: Wo genau verläuft die Grenze für automatisierte Progression, und
-unterscheidet sie sich zwischen Heilbehandlung und Weiterbetreuung?
+**Stand.** B10 ist am 2026-09-08 durch Jannes vorläufig entschieden: für V1
+ausgeschlossen — ein Regelwerk je Plan gibt die Therapeutin frei, und **jeder
+einzelne Progressionsschritt braucht ihre Bestätigung**, bevor er bei der
+Person ankommt. Die Frage geht mit an die B1-Prüfung. „Die Plattform regelt"
+heißt damit: sie rechnet und schlägt vor; entschieden wird von Hand.
+
+**Offen.** Als Punkt B10 in `docs/decisions/OPEN_DECISIONS.md` geführt: Wo
+genau verläuft die Grenze für automatisierte Progression, und unterscheidet
+sie sich zwischen Heilbehandlung und Weiterbetreuung? Für V1 beantwortet
+(siehe Stand); ob ein späterer Maßstab für die Weiterbetreuung anders liegt,
+klärt die externe Prüfung (B1).
 
 ---
 
@@ -82,9 +90,13 @@ näher an ADR-006 Punkt 2. Ob das für die MDR reicht, entscheidet die externe
 Prüfung, nicht dieser Eintrag. Unabhängig davon ist es die bessere Architektur:
 testbar, erklärbar, reproduzierbar.
 
-**Offen.** Reicht eine einmalige Freigabe je Plan, oder braucht jeder
-Progressionsschritt eine Bestätigung? Letzteres ist regulatorisch sauberer und
-praktisch kaum durchhaltbar.
+**Offen — beantwortet (B10, 2026-09-08).** Die Frage lautete: Reicht eine
+einmalige Freigabe je Plan, oder braucht jeder Progressionsschritt eine
+Bestätigung? Jannes hat vorläufig entschieden: **jeder einzelne
+Progressionsschritt braucht die Bestätigung der Therapeut:in**, bevor er bei
+der Person ankommt — die regulatorisch sauberere Variante. Ob sie praktisch
+durchhaltbar ist, zeigt sich erst im Betrieb; das ändert die Entscheidung
+nicht, sondern wäre eine neue.
 
 ---
 
@@ -92,9 +104,17 @@ praktisch kaum durchhaltbar.
 
 | | |
 |---|---|
-| Status | bestätigt |
+| Status | zurückgestellt (B10) |
 | Quelle | Claude, 2026-09-01 |
-| Berührt | [02 TRK](02-tracking-und-parameter.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
+| Berührt | [02 TRK](02-tracking-und-parameter.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md), `PROJECT_PRINCIPLES.md` §17; B10, B1 |
+
+**Stand.** B10 (Jannes, 2026-09-08): **Ein Ampelmodell wird auch mit
+therapeutisch gesetzten Schwellen nicht gebaut** — eine Ampel *ist* eine
+Risikoklassifikation, unabhängig davon, woher die Schwellen kommen; §17
+schließt das für V1 aus. Die Frage geht mit an die B1-Prüfung. Der Eintrag
+kommt nur mit einer neuen Entscheidung zurück; das Schmerzmonitoring als
+**Erfassung** (Schmerz während der Belastung, Dauer bis zum Ausgangsniveau,
+Morgensteifigkeit) ist davon nicht betroffen und steht in `IDEA-TRK-005`.
 
 **Idee.** Als Grundregel das etablierte Schmerzmonitoring-Modell aus der
 Sehnen- und Belastungsrehabilitation (Thomeé; Silbernagel), das nicht
@@ -225,6 +245,11 @@ wird über Wochen besser. Eine Engine, die RIR-Meldungen in den ersten
 Einheiten für bare Münze nimmt, steigert zu schnell. Eine Einführungsphase mit
 gedämpfter Reaktion gehört dazu.
 
+Eine selbsttätige Anpassung von Last, Umfang oder Plan ist nach ADR-006
+Punkt 4 und B10 (2026-09-08) ausgeschlossen; jeder Schritt braucht die
+Bestätigung der Therapeut:in. Dieser Eintrag beschreibt einen Vorschlag an die
+Therapeut:in, keine Automatik.
+
 **Offen.** RIR oder RPE in der Oberfläche? RIR ist konkreter erklärbar
 („wie viele hättest du noch geschafft"), RPE ist verbreiteter.
 
@@ -247,6 +272,11 @@ auf die Untergrenze.
 funktioniert mit Bändern und Körpergewicht fast genauso und ist in einem Satz
 erklärbar. Für den überwiegenden Teil der Heimprogramme ist es die richtige
 Antwort — und für das erste Regelwerk der naheliegende Kandidat.
+
+**Vorsicht.** Eine selbsttätige Anpassung von Last, Umfang oder Plan ist nach
+ADR-006 Punkt 4 und B10 (2026-09-08) ausgeschlossen; jeder Schritt braucht die
+Bestätigung der Therapeut:in. Dieser Eintrag beschreibt einen Vorschlag an die
+Therapeut:in, keine Automatik.
 
 ---
 
@@ -300,6 +330,11 @@ das liegen bleibt.
 oder Beschämung ankommen. Kein Ausrufezeichen, keine roten Zahlen, keine
 gebrochene Serie als Drama.
 
+Eine selbsttätige Anpassung von Last, Umfang oder Plan ist nach ADR-006
+Punkt 4 und B10 (2026-09-08) ausgeschlossen; jeder Schritt braucht die
+Bestätigung der Therapeut:in. Dieser Eintrag beschreibt einen Vorschlag an die
+Therapeut:in, keine Automatik.
+
 ---
 
 ### IDEA-TRN-010 — Wiedereinstieg nach Unterbrechung
@@ -319,6 +354,12 @@ absolvierten Einheiten.
 Ursachen für einen Rückfall — und einer der Momente, in denen Menschen die
 Anpassung selbst nicht hinbekommen. Genau hier hilft Automatisierung am
 meisten.
+
+**Vorsicht.** Eine selbsttätige Anpassung von Last, Umfang oder Plan ist nach
+ADR-006 Punkt 4 und B10 (2026-09-08) ausgeschlossen; jeder Schritt braucht die
+Bestätigung der Therapeut:in. Dieser Eintrag beschreibt einen Vorschlag an die
+Therapeut:in, keine Automatik — „hilft Automatisierung" heißt: die Rücknahme
+wird vorgerechnet und vorgeschlagen, nicht angewendet.
 
 **Offen.** Ab welcher Pausenlänge greift die Regel, und wie stark ist die
 Rücknahme? Das ist gewebe- und kontextabhängig und gehört in die
@@ -365,7 +406,14 @@ dem Echteinsatz zu validieren — und es ist genau das Material, das eine
 externe MDR-Prüfung sehen will. Nebenbei ist es der beste Weg, überhaupt
 herauszufinden, ob die Regel taugt.
 
-**Offen.** Wie lange, und wie wird Übereinstimmung gemessen?
+**Vorsicht.** Ein Vergleich „Therapeutin gegen Regelwerk" über die Zeit ist
+eine Auswertung je Beschäftigter (§20, B6: nein) — nur als Praxissumme ohne
+Personenbezug denkbar. Dazu gilt B10: Auch nach dem Trockenlauf wird keine
+Automatik „scharf geschaltet"; jeder Progressionsschritt braucht die
+Bestätigung der Therapeut:in.
+
+**Offen.** Wie lange, und wie wird Übereinstimmung gemessen — ohne dass daraus
+eine Auswertung je Person entsteht?
 
 ---
 

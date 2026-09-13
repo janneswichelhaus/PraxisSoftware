@@ -36,9 +36,13 @@ antwortende Person schneller, weil der Kontext dranhängt.
 
 **Stand.** C2 ist seit dem 2026-09-05 entschieden (`PROJECT_PRINCIPLES.md`
 §10, Version 0.4): ein gemeinsamer Kanal, klinische Inhalte ordnet die
-Therapeutin nachträglich der Akte zu; dass Office bis dahin mitgelesen haben
-kann, ist eine akzeptierte Ausnahme. Der Typ einer Rückfrage ist damit
-Bedienhilfe und Erledigungslogik, keine Sichtbarkeitsgrenze.
+Therapeutin nachträglich der Akte zu. Mit **E15** (Jannes, 2026-09-13) hat
+Office lesenden Zugriff auf alle klinischen Inhalte wie Therapeut:innen
+(Umsetzung ROL-EPIC-001); die „akzeptierte Ausnahme" für ein Mitlesen durch
+Office entfällt damit — es ist regulär. Der Typ einer Rückfrage ist
+Bedienhilfe und Erledigungslogik, keine Sichtbarkeitsgrenze; der Satz oben
+unter „Warum" („C2: Office darf organisatorische, nicht klinische Inhalte
+sehen") beschreibt den Stand vor E15.
 
 **Offen.** Die Mechanik der Zuordnung (wer, wann, mit welcher
 Herkunftsangabe) — siehe IDEA-KOM-007.
@@ -84,7 +88,14 @@ Risikoklassifikation nach ADR-006 Punkt 4 und ist ausgeschlossen.
 |---|---|
 | Status | notiert · entscheidung nötig |
 | Quelle | Jannes, 2026-09-01 · Ausarbeitung Claude |
-| Berührt | E8, [ADR-002](../../adr/ADR-002-hosting-data-residency.md), [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md), [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md) |
+| Berührt | [ADR-017](../../adr/ADR-017-file-storage.md) (angenommen 2026-09-12, DAT-EPIC-001 gebaut), [ADR-002](../../adr/ADR-002-hosting-data-residency.md), [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md), [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md) |
+
+**Stand.** Die Dateiablage ist entschieden und gebaut: ADR-017 (angenommen
+2026-09-12), DAT-EPIC-001 (2026-09-13) — Ort, Dokumentart als Rollenschnitt,
+signierte Verweise mit 60 Sekunden, zweistufige Löschung. Ein Upload durch
+Patient:innen ist darin ausdrücklich **nicht** enthalten (ADR-017 Punkt 30);
+die Virenprüfung ist Pflicht ab dem ersten Upload von außen (ADR-017 Punkt
+28/29) — genau dieser Eintrag wäre der erste.
 
 **Idee.** Patient:innen laden Bewegungsvideos oder Fotos zu einer Rückfrage
 hoch, die Praxis antwortet darauf.
@@ -106,13 +117,17 @@ existiert:
 - Speicherung beim geprüften Dienstleister nach ADR-002, kein fremdes CDN,
   keine öffentlichen Links
 - Zugriff nur über kurzlebige signierte Verweise, jeder Zugriff auditiert
-- Virenprüfung beim Hochladen (E8 ist dafür offen)
+- Virenprüfung beim Hochladen — Pflicht ab dem ersten Upload von außen
+  (ADR-017 Punkt 28/29); ihr Ausführungsort ist eine neue wesentliche
+  Abhängigkeit und damit ein eigener ADR und Auftrag
 - Löschung durch die Person selbst möglich, jederzeit
 - **niemals** in Logs, Fehlerberichten oder KI-Aufrufen ohne eigene Prüfung
 
-**Offen.** E8 (Dateiablage: Ort, Verschlüsselung, Virenprüfung, signierte
-Verweise) ist als offener Punkt geführt und blockiert das. Zusätzlich offen:
-Ist ein Bewegungsvideo ein biometrisches Datum? Die Frage gehört in die DSFA.
+**Offen.** Die Virenprüfung (eigener ADR, eigener Auftrag, gegebenenfalls
+eigene Providerprüfung) und die eigene Einwilligung mit Datenklasse und Frist
+nach ADR-008 (ADR-017 Punkt 30 gibt Fotos und Videos von Patient:innen
+ausdrücklich nicht frei). Zusätzlich offen: Ist ein Bewegungsvideo ein
+biometrisches Datum? Die Frage gehört in die DSFA.
 
 ---
 
@@ -190,9 +205,17 @@ Mitfahrenden.
 
 | | |
 |---|---|
-| Status | bestätigt · entscheidung nötig |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
-| Berührt | C2, `PROJECT_PRINCIPLES.md` §5, §10 |
+| Berührt | C2 (entschieden 2026-09-05), E15 (2026-09-13), `PROJECT_PRINCIPLES.md` §5, §10; ROL-EPIC-001 |
+
+**Stand.** C2 ist seit dem 2026-09-05 entschieden (`PROJECT_PRINCIPLES.md`
+§10, Version 0.4): die Therapeutin klassifiziert nachträglich. Mit **E15**
+(Jannes, 2026-09-13) darf Office klinische Nachrichten **regulär lesen** —
+lesender Zugriff auf alle klinischen Inhalte wie Therapeut:innen, Umsetzung
+ROL-EPIC-001; die „akzeptierte Ausnahme" für eine bereits erfolgte Einsicht
+durch Office aus §10 entfällt damit. Es braucht keine Entscheidung mehr vor
+der Spezifikation; offen ist allein die Mechanik (unten).
 
 **Idee.** Eine Nachricht mit klinischem Inhalt wird der Akte zugeordnet — mit
 sichtbarer Herkunft und ohne den Inhalt zu verändern.
@@ -200,10 +223,6 @@ sichtbarer Herkunft und ohne den Inhalt zu verändern.
 **Warum.** §10 verlangt die Zuordnung, §5 verlangt Nachvollziehbarkeit. Eine
 Behandlungsentscheidung, die auf einer Chatnachricht beruht, die nicht in der
 Akte steht, ist nicht dokumentiert.
-
-**Stand.** C2 ist seit dem 2026-09-05 entschieden (`PROJECT_PRINCIPLES.md`
-§10, Version 0.4): die Therapeutin klassifiziert nachträglich; eine bereits
-erfolgte Einsicht durch Office ist eine akzeptierte, dokumentierte Ausnahme.
 
 **Offen.** Die Mechanik: Zuordnung als Kopie oder als Verweis, Herkunftsangabe
 in der Akte, eigenes Auditereignis. Das entscheidet die Spezifikation des

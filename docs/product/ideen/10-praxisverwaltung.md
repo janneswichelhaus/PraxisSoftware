@@ -9,16 +9,13 @@ Betreuungsplattform nach Therapieende. Die Einträge stammen aus der
 Wettbewerbsanalyse und dem Produktreview vom 2026-09-06
 ([referenz-wettbewerb.md](referenz-wettbewerb.md),
 Roadmap-Review vom 2026-09-06, in der Git-Historie unter Commit `7ab6f71`).
-Sie stehen auf `vorschlag`, bis Jannes sie bestätigt; einige sind in der
-Roadmap 2.1 verortet — das macht sie nicht zu Aufträgen. Am 2026-09-06 hat
-Jannes vier davon bestätigt (`IDEA-PRX-003`, `-011`, `-012`, `-014`), einen
-verworfen (`IDEA-PRX-015`) und zwei eigene Vorgaben zum
-Lastenrad-Hausbesuchskonzept eingebracht (`IDEA-PRX-029`, `-030`); drei
-Vorschläge dazu folgen (`IDEA-PRX-031` bis `-033`). Am 2026-09-08 hat Jannes
-das Terminfenster verbindlich entschieden; die Entscheidung steht in
-`PROJECT_PRINCIPLES.md` §8.1, und `IDEA-PRX-002` ist deshalb auf `überführt`
-gestellt — der dort vorgeschlagene Mechanismus für den Fahrpuffer bleibt
-davon unberührt ein Vorschlag (`OPEN_DECISIONS.md` E12).
+Sie stehen auf `vorschlag`, bis Jannes sie bestätigt; eine Verortung in der
+Roadmap macht sie nicht zu Aufträgen. Was inzwischen gebaut ist, trägt
+`überführt` mit der Kennung der Story — der Umsetzungsstand selbst steht in
+`../../development/ARBEITSBEREICHE.md`, nicht hier. Zwei Befunde an der
+gebauten Oberfläche (`IDEA-PRX-038`, `-040`) sind am 2026-09-13 nach
+`../../development/BEFUNDE.md` gegangen; hier bleibt je ein Stub. Das Journal
+der Entscheidungen führt allein `../IDEENSPEICHER.md` unter „Bestätigungen".
 
 ---
 
@@ -26,9 +23,15 @@ davon unberührt ein Vorschlag (`OPEN_DECISIONS.md` E12).
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PAT-005 |
 | Quelle | Produktreview 2026-09-06 |
-| Berührt | PAT-005, UX-EPIC-001 (Entwurf), ADR-011 |
+| Berührt | PAT-005, UX-001, UI-002a, ADR-011 |
+
+**Stand.** Gebaut: Zugangshinweis und Besonderheit vor dem Hausbesuch in den
+Stammdaten (PAT-005, 2026-09-07), in der Tagesliste des Hausbesuchstags
+(UX-001) und seit UI-002a im Kopf der Akte
+(`../../development/ARBEITSBEREICHE.md`). Bevorzugte Zeiten sind kein Feld —
+das wäre `IDEA-PRX-003`.
 
 **Idee.** Ein eigenes Feld in den Stammdaten: Etage, Klingelname, „Schlüssel
 bei Nachbarin", „Hund", Rad-Abstellplatz, bevorzugte Zeiten. Sichtbar in der
@@ -47,19 +50,28 @@ nie in Logs landen darf (ADR-011).
 
 | | |
 |---|---|
-| Status | **überführt** (2026-09-08) — der Kern ist entschieden und steht in `PROJECT_PRINCIPLES.md` §8.1; der hier vorgeschlagene Mechanismus bleibt `vorschlag` |
+| Status | überführt → `PROJECT_PRINCIPLES.md` §8.1 |
 | Quelle | Produktreview 2026-09-06 |
-| Berührt | `PROJECT_PRINCIPLES.md` §8.1, §9, §6.2; `OPEN_DECISIONS.md` E12, B7; CAL-EPIC-003b (CAL-010a, CAL-010b); ADR-019 |
+| Berührt | `PROJECT_PRINCIPLES.md` §8.1 (Fassung 0.9), §9, §6.2; `OPEN_DECISIONS.md` E12, B7; CAL-EPIC-003b (CAL-010a gebaut; CAL-010b entfallen, Fahrpuffer mit MAP-006 — E12 Punkt 3/4); ADR-019 |
+
+**Stand.** Überführt am 2026-09-08: Der Kern steht als §8.1 in den Prinzipien
+und ist gebaut — Raster (CAL-005) und Terminfenster mit **60 oder 45 Minuten**
+(CAL-010a, CAL-015b, ANN-037; `../../development/ARBEITSBEREICHE.md`). Der
+hier vorgeschlagene **Mechanismus ist durch E12 Punkt 3 und 4 (2026-09-12)
+überholt**: kein pauschaler Mindestabstand, keine von Hand gepflegten
+Fahrminuten; der Fahrpuffer kommt erst mit MAP-006 aus dem Kartendienst.
+CAL-010b ist als eigene Story entfallen. Der Text bleibt lesbar.
 
 **Wohin die Idee gegangen ist.** Jannes hat am 2026-09-08 das Terminfenster
-entschieden — 60 Minuten je angebotenem Termin einschließlich Dokumentation,
-Beginn weiter frei im 5-Minuten-Raster, Fahrzeit zusätzlich zwischen den
-Terminfenstern, früheste Folgezeit auf dem ersten Rasterpunkt auf oder nach
-Ende plus Fahrzeit. **Verbindlich ist allein `PROJECT_PRINCIPLES.md` §8.1.**
-Dieser Eintrag regelt nichts und gibt den Wortlaut bewusst nicht wieder; wer
-die Regel braucht, liest §8.1.
+entschieden — 60 oder 45 Minuten je Behandlungstermin (Fassung 0.9,
+2026-09-12) einschließlich Dokumentation, Beginn weiter frei im
+5-Minuten-Raster, Fahrzeit zusätzlich zwischen den Terminfenstern, früheste
+Folgezeit auf dem ersten Rasterpunkt auf oder nach Ende plus Fahrzeit.
+**Verbindlich ist allein `PROJECT_PRINCIPLES.md` §8.1.** Dieser Eintrag regelt
+nichts und gibt den Wortlaut bewusst nicht wieder; wer die Regel braucht,
+liest §8.1.
 
-**Idee (unverändert, weiterhin nur Vorschlag).** Eine `owner`-Einstellung
+**Idee (ursprünglicher Vorschlag, durch E12 überholt).** Eine `owner`-Einstellung
 „Mindestabstand zwischen zwei Hausbesuchen an verschiedenen Adressen" in
 Minuten, dazu optional von Hand gepflegte Fahrminuten je Patient:in ab Depot.
 Der Kalender warnt beim Anlegen und beim Ziehen, wenn der Abstand
@@ -80,31 +92,16 @@ freigegeben; Fahrzeiten aus dem Dienst kommen mit MAP-006 (`IDEA-PRX-032`).
 Bis dahin müsste die Zahl aus der Praxis kommen — genau das ist die offene
 Frage aus E12.
 
-**Umsetzungsstand (2026-09-12).**
-
-- **Raster: gebaut.** `appointment_grid_minutes` erlaubt 5, 10 oder 15
-  Minuten, praxisweiter Standard ist 5; der Beginn wird gegen Mitternacht der
-  Praxiszeitzone geprüft (CAL-005,
-  `supabase/migrations/20260830120000_scheduling_grid.sql`).
-- **60-Minuten-Terminfenster: gebaut** (CAL-010a, 2026-09-12).
-  `app.appointment_window_minutes()` hält die Zahl an einer Stelle;
-  `create_appointment` verlangt sie immer, `update_appointment` prüft sie,
-  sobald sich die Länge ändert. Im Formular ist das Ende eine Ableitung statt
-  eines Feldes. Bestandstermine mit abweichender Länge bleiben gültig und
-  verschiebbar — die Abgrenzung steht als **ANN-037** im Register.
-- **Fahrpuffer: nicht gebaut.** Weder eine Mindestabstands-Einstellung noch je
-  Patient:in gepflegte Fahrminuten noch eine Warnung im Kalender; zwei
-  Hausbesuche an verschiedenen Adressen lassen sich heute ohne jeden Abstand
-  hintereinander anlegen. **CAL-EPIC-003b hat CAL-010b bewusst liegen
-  gelassen** (2026-09-12): E12 Punkt 3 und 4 sind offen, und ein pauschaler
-  Wert neben den echten Fahrzeiten aus MAP-004 wäre genau der zweite,
-  schlechtere Mechanismus, vor dem E12 warnt.
+**Umsetzungsstand.** Raster und Terminfenster sind gebaut (CAL-005, CAL-010a,
+CAL-015b), der Fahrpuffer nicht — Stand und Kennungen in
+`../../development/ARBEITSBEREICHE.md`, die Rechenregel und ihr Testfall in
+MAP-006 (`../../development/ROADMAP.md`, Etappe T).
 
 **Vorsicht.** Deterministisch (§6.2), keine Optimierung, keine Verschiebung
 bestätigter Termine (§8). Die Aufrundungsregel ist ein eigenständiges, leicht
 falsch zu implementierendes Detail — naheliegend wäre fälschlich Abrunden —
 und gehört mit dem Beispiel aus §8.1 als Testfall in `pnpm test:db`, sobald
-CAL-010b gebaut wird.
+MAP-006 den Fahrpuffer baut (E12).
 
 ---
 
@@ -112,9 +109,14 @@ CAL-010b gebaut wird.
 
 | | |
 |---|---|
-| Status | bestätigt für Stufe 2 (Jannes, 2026-09-06, E-9) |
+| Status | bestätigt |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei sieben Produkten) |
-| Berührt | §8; CAL-008 (Absage); B15 |
+| Berührt | §8; CAL-008 (Absage, gebaut); B15; ADR-006 Punkt 4 |
+
+**Stand.** Bestätigt durch Jannes am 2026-09-06 (E-9) für Stufe 2: erster
+Loop nach dem ersten Betriebsmonat (M6) — die Praxis eröffnet am 01.07.2027
+und weiß erst dann, wie groß die Nachfrage ist. Die Reihenfolge steht in
+`../../development/ROADMAP.md`, nicht hier.
 
 **Idee.** Personen ohne zeitnahen Termin stehen mit Wochentag- und
 Tageszeitpräferenz, Dringlichkeit und Verordnungsbezug auf einer Liste. Wird
@@ -126,12 +128,13 @@ Nutzer:innen nennen sie als Zeitersparnis Nr. 1 im Alltag. Für eine Praxis,
 deren Kapazität an Radwegen hängt, ist eine Lücke im Plan teurer als in einer
 Praxis mit Räumen.
 
-**Vorsicht.** Nachrücken „automatisch" hieße Benachrichtigung — das ist B15.
-Bis dahin ist die Warteliste eine Liste mit Anrufhinweis.
-
-**Entschieden 2026-09-06 (E-9):** Stufe 2, erster Loop nach dem ersten
-Betriebsmonat (M6) — die Praxis eröffnet am 01.07.2027 und weiß erst dann,
-wie groß die Nachfrage ist.
+**Vorsicht.** Nachrücken „automatisch" hieße Benachrichtigung — das ist B15
+(2026-09-08: keine automatische Erinnerung, die Anrufliste bleibt). Bis dahin
+ist die Warteliste eine Liste mit Anrufhinweis. Eine **„Dringlichkeit"** auf
+der Warteliste ist organisatorisch zu fassen — Wunsch der Person, Ende einer
+Verordnung, Vorgabe der Praxis —, nicht als klinische Einstufung: Eine
+Einordnung nach Beschwerdebild wäre eine Risikoklassifikation und nach
+ADR-006 Punkt 4 ausgeschlossen.
 
 ---
 
@@ -139,16 +142,14 @@ wie groß die Nachfrage ist.
 
 | | |
 |---|---|
-| Status | **überführt** — gebaut als CAL-009 am 2026-09-12 |
+| Status | überführt → CAL-009 |
 | Quelle | Produktreview 2026-09-06 |
-| Berührt | ADR-018, CAL-EPIC-003a (CAL-009), §4.3 |
+| Berührt | ADR-018, CAL-EPIC-003a (CAL-009), §4.3; `IDEA-PRX-041` |
 
-**Was davon gebaut ist.** Alle bestätigten Termine einer Person eines Tages
-werden in einer Transaktion abgesagt, danach steht die Anrufliste mit Uhrzeit,
-Name und Wählziel auf derselben Seite. **Nicht gebaut:** „vorgemerkt" (der
-Zustand existiert nach ADR-018 nur auf dem Papier), die Übergabe an eine
-Kollegin und ein **gespeicherter** Erledigt-Haken — der Haken hält heute nur,
-solange die Seite offen ist. Siehe `IDEA-PRX-041`.
+**Stand.** Gebaut als CAL-009 am 2026-09-12 („Tag umplanen mit Anrufliste",
+`../../development/ARBEITSBEREICHE.md`); nicht gebaut sind „vorgemerkt"
+(ADR-018: nur beschrieben), die Übergabe an eine Kollegin und ein
+gespeicherter Erledigt-Haken — Letzteres ist `IDEA-PRX-041`.
 
 **Idee.** Ein Platten um 8:10 Uhr trifft sechs Haushalte ohne Wartezimmer.
 Eine Aktion „Tag umplanen": alle Termine einer Person eines Tages auf
@@ -170,7 +171,13 @@ organisatorisch (§4.3).
 |---|---|
 | Status | vorschlag |
 | Quelle | Produktreview 2026-09-06 |
-| Berührt | B15, CAL-008 |
+| Berührt | B15 (2026-09-08), CAL-008, CAL-013 |
+
+**Stand.** B15 (Jannes, 2026-09-08): keine automatische Terminerinnerung in
+Stufe 1 und 2 — **„die Anrufliste bleibt."** Der Nachtrag vom 2026-09-12
+ändert daran nichts: Die Terminmail aus dem Praxispostfach (CAL-013) ist ein
+Handoff auf Klick, keine Erinnerung. Die Liste selbst ist nicht gebaut;
+verwandt ist die Anrufliste nach „Tag umplanen" (CAL-009).
 
 **Idee.** Eine Liste für das Office: wen für morgen anrufen oder bestätigen,
 mit Erledigt-Haken. Der Ersatz für die Terminerinnerung per SMS, solange kein
@@ -185,22 +192,16 @@ bis zu 30 Prozent. Das Telefon ist der Kanal, den es schon gibt.
 
 | | |
 |---|---|
-| Status | **überführt** (2026-09-12) — als Druckansicht gebaut (CAL-011), der E-Mail-Weg als Handoff (CAL-013); der PDF-Teil und die Tourenliste bleiben `vorschlag` |
+| Status | überführt → CAL-011, CAL-013 |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (THEORG, appointmed, iPrax, Optica) |
-| Berührt | CAL-011 und CAL-013 (gebaut), UI-000 (Druck-Basis), B14, B15; ANN-039, ANN-041 |
+| Berührt | CAL-011, CAL-012, CAL-013 (gebaut), UI-000 (Druck-Basis), B14, B15; ANN-039, ANN-041 |
 
-**Gebaut ist der Terminzettel je Person** (CAL-011, 2026-09-12): „Ihre
-nächsten Termine" unter `/patienten/:id/terminzettel`, erreichbar aus dem
-Abschnitt „Nächste Termine" der Akte. Datum, Uhrzeit, Ort und behandelnde
-Person der nächsten bestätigten Termine; kein Status, keine Verordnung, keine
-Adresse. **Nur Druck über die Druck-Basis aus UI-000**, kein PDF und kein
-Versand. Was der Zettel enthält und warum, steht als **ANN-039** im Register
-und ist dort verbindlich, nicht hier.
-
-**Gebaut ist auch der E-Mail-Weg** (CAL-013, 2026-09-12), nachdem Jannes den
-Versand von Terminmails ausdrücklich vorgesehen hat (B15-Nachtrag): dieselbe
-Liste als fertiger Entwurf im Mailprogramm der Praxis, gesendet wird dort von
-Hand. Verbindlich ist dazu **ANN-041**, nicht dieser Eintrag.
+**Stand.** Gebaut am 2026-09-12: der Terminzettel je Person als Druckansicht
+(CAL-011, Inhalt verbindlich in ANN-039) und derselbe Inhalt als E-Mail-Entwurf
+im Praxispostfach (CAL-013, Handoff nach dem B15-Nachtrag, ANN-041), dazu der
+Mitteilungsvermerk am Termin (CAL-012) — Stand in
+`../../development/ARBEITSBEREICHE.md`. Der PDF-Teil und die Tourenliste
+bleiben `vorschlag`.
 
 **Offen geblieben (weiter nur Vorschlag).** Das PDF als Datei (hängt an B14,
 dem PDF-Weg der Rechnung) · der Versand per **SMS** (bleibt an B15; Messenger
@@ -223,9 +224,14 @@ begrenzt, Betreff ohne Aussage.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → UX-003 |
 | Quelle | Produktreview 2026-09-06; iPrax „Weiterer Termin" |
-| Berührt | UX-EPIC-001 (Entwurf) |
+| Berührt | UX-003, UX-005 (gebaut); CAL-010a |
+
+**Stand.** Gebaut am 2026-09-11: Folgetermin und Vorbelegung „Hausbesuch, ich,
+heute" (UX-003) sowie Tap auf freie Zeit im Kalender mit Patientensuche
+(UX-005); das Ende kommt aus dem Terminfenster, nicht aus der Dauer des
+Ausgangstermins (CAL-010a) — `../../development/ARBEITSBEREICHE.md`.
 
 **Idee.** Am Termin ein Knopf „Folgetermin": dieselbe Person, dieselbe Art,
 dieselbe Dauer, eine Woche später zur gleichen Zeit — anpassbar mit einem
@@ -253,8 +259,10 @@ ganze Verordnung mit wenigen Klicks ein.
 groß, wenn Fahrzeiten bekannt sind — vorher schlägt die Suche Termine vor, die
 auf dem Rad nicht erreichbar sind.
 
-**Offen.** Erst nach MAP-006 (Fahrzeiten) oder mit der Regel aus
-PRX-002 und den Gebietstagen aus PRX-031 als Näherung?
+**Offen.** Erst nach MAP-006 (Fahrzeiten) oder mit den Gebietstagen aus
+PRX-031 als Näherung? Eine pauschale Fahrzeitregel als Näherung ist seit E12
+Punkt 3 und 4 (2026-09-12) ausgeschlossen. Der Kalender als Suchfläche
+(`IDEA-PRX-042`, CAL-015c) ist bereits die Bedienform ohne Automatik.
 
 ---
 
@@ -301,9 +309,13 @@ Vertretungszugriff auf die Akte ist etwas anderes (B5).
 
 | | |
 |---|---|
-| Status | bestätigt (Jannes, 2026-09-06, E-9) |
+| Status | überführt → UX-008 |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei fünf Produkten) |
-| Berührt | ADR-016, ADR-006, ADR-005; UX-EPIC-001 |
+| Berührt | ADR-016, ADR-006, ADR-005; UX-008 (gebaut), ANN-020 |
+
+**Stand.** Bestätigt durch Jannes am 2026-09-06 (E-9) und am 2026-09-11 als
+UX-008 gebaut: persönlich oder praxisweit, kein Patientenbezug, keine
+Platzhalter, kein Sprachmodell (ANN-020; `../../development/ARBEITSBEREICHE.md`).
 
 **Idee.** Bausteine je Therapeut:in und je Praxis, per Tap in den Freitext
 eingefügt; keine Variablen aus der Akte in der ersten Stufe; kein
@@ -313,17 +325,19 @@ Sprachmodell.
 Nutzer:innen wollen „digital direkt während der Behandlung dokumentieren".
 Deterministisch, ohne Patientenbezug in den Bausteinen, ADR-006 unberührt.
 
-**Entschieden 2026-09-06 (E-9):** Stufe 1, als kleine Story in UX-EPIC-001.
-
 ---
 
 ### IDEA-PRX-012 — Zahlungserinnerung als Dokument
 
 | | |
 |---|---|
-| Status | bestätigt (Jannes, 2026-09-06, E-9) |
+| Status | bestätigt |
 | Quelle | Produktreview und Wettbewerbsanalyse 2026-09-06 |
 | Berührt | ADR-009 (Mahnwesen offen), ABR-EPIC-002b, ABR-005 |
+
+**Stand.** Bestätigt durch Jannes am 2026-09-06 (E-9): als Dokument in
+ABR-EPIC-002b, ohne Stufen und Gebühren. Noch nicht gebaut; die Reihenfolge
+steht in `../../development/ROADMAP.md`.
 
 **Idee.** Aus einer überfälligen Rechnung eine Zahlungserinnerung als
 Dokument erzeugen (Datum, Betrag, Frist), ohne Stufenlogik, ohne Gebühren,
@@ -332,8 +346,7 @@ ohne Automatik. Mahnstufen kommen mit ABR-005 nach Praxiserfahrung.
 **Warum.** Die Roadmap hält Mahnwesen bewusst aus Stufe 1 heraus. Ohne die
 minimale Erinnerung beginnt das Office ab der Eröffnung im Juli 2027 mit
 Handarbeit außerhalb der Plattform (§2.1). THEORG, thevea, Optica, MD und
-iPrax haben Mahnwesen. **Entschieden 2026-09-06 (E-9):** Stufe 1, als
-Dokument in ABR-EPIC-002b, ohne Stufen und Gebühren.
+iPrax haben Mahnwesen.
 
 ---
 
@@ -360,9 +373,15 @@ eingereicht; C1 hat die Kürzel für das Office freigegeben.
 
 | | |
 |---|---|
-| Status | bestätigt (Jannes, 2026-09-06, E-12) |
+| Status | überführt → UX-011 |
 | Quelle | Produktreview 2026-09-06; thevea Offline-Kalender, iPrax Offline-first |
-| Berührt | ADR-001 (offene Folgefrage Feldliste), ADR-015 (kein Service Worker), §2.2; UX-EPIC-001 |
+| Berührt | ADR-001 (Folgefrage Feldliste, beantwortet durch ANN-021), ADR-015 (kein Service Worker), §2.2; UX-011 (gebaut) |
+
+**Stand.** Bestätigt durch Jannes am 2026-09-06 (E-12) und am 2026-09-11 als
+UX-011 gebaut: Die zuletzt geladene Tagesliste bleibt im Funkloch lesbar und
+als älterer Stand gekennzeichnet — kein Offline-Modus, kein Service Worker,
+keine Akte offline; Feldliste und Vorhaltedauer stehen als ANN-021
+(`../../development/ARBEITSBEREICHE.md`).
 
 **Idee.** Die heute geladenen eigenen Termine mit Adresse und Zugangshinweis
 bleiben im Speicher der Seite lesbar, klar markiert „Stand von 07:52"; am
@@ -372,19 +391,21 @@ Tagesende verworfen. Kein Service Worker, keine Akte offline.
 Hausbesuchsdaten" ausdrücklich; E2 liefert nur Papier. thevea speichert den
 Kalender lesend auf dem Gerät, iPrax alles.
 
-**Entschieden 2026-09-06 (E-12):** eine Story in UX-EPIC-001. Feldliste,
-Vorhaltedauer und Verschlüsselung werden beim Bau als `ANN` nach ADR-001
-registriert; kein Service Worker, keine Akte offline.
-
 ---
 
 ### IDEA-PRX-015 — Unterschrift am Hausbesuch, digitale Vorlagen
 
 | | |
 |---|---|
-| Status | verworfen (Jannes, 2026-09-06, E-13) |
+| Status | verworfen (E-13) |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (iPrax, THEORG Klemmbrett, thevea Signatur) |
 | Berührt | §4.4 („gegebenenfalls Signatur"), ADR-008, ADR-017, PAT-006 |
+
+**Stand.** Verworfen am 2026-09-06 durch Jannes (E-13): Es wird keine
+Unterschrift und keine Behandlungsbestätigung je Termin benötigt.
+Behandlungsvertrag und Datenschutzinformation bleiben in Stufe 1 Papier mit
+Vermerk in der Akte (PAT-006). Der Eintrag bleibt stehen, damit die Frage
+nicht wiederkommt.
 
 **Idee.** Behandlungsvertrag, Datenschutzinformation, Ausfallhonorar-Regel und
 gegebenenfalls eine Behandlungsbestätigung je Termin auf dem Telefon der
@@ -396,11 +417,6 @@ wird eine Bestätigung der Leistungen gelegentlich verlangt.
 **Vorsicht.** Eine Unterschrift ist ein personenbezogenes Datum mit
 Beweisfunktion: Speicherform, Frist, Zugriff nach ADR-008 und ADR-004.
 
-**Verworfen am 2026-09-06 durch Jannes:** Es wird keine Unterschrift und
-keine Behandlungsbestätigung je Termin benötigt. Behandlungsvertrag und
-Datenschutzinformation bleiben in Stufe 1 Papier mit Vermerk in der Akte
-(PAT-006). Der Eintrag bleibt stehen, damit die Frage nicht wiederkommt.
-
 ---
 
 ### IDEA-PRX-016 — Vertretungs-Kurzblick am Termin
@@ -409,7 +425,13 @@ Datenschutzinformation bleiben in Stufe 1 Papier mit Vermerk in der Akte
 |---|---|
 | Status | vorschlag |
 | Quelle | Produktreview 2026-09-06 |
-| Berührt | §4.2 (Vertretung), ADR-010, `IDEA-ORG-005` |
+| Berührt | §4.2 (Vertretung), ADR-010, `IDEA-ORG-005`, `IDEA-PRX-036`; PAT-005, UI-002a |
+
+**Stand.** Zugangshinweis und Besonderheit stehen seit UI-002a (2026-09-12)
+im Kopf der Akte (PAT-005) und in der Tagesliste (UX-001); der aufklappbare,
+auditierte Kurzblick **am Termin** mit letztem Eintrag und Verordnungsstand
+ist nicht gebaut. Seit dem 2026-09-11 trägt der Eintrag zusätzlich das
+Bedürfnis aus dem verworfenen `IDEA-PRX-036`.
 
 **Idee.** Am Termin, aufklappbar und auditiert: letzter Eintrag,
 Zugangshinweis, feste Therapeut:in, Verordnungsstand. Für die Vertreterin,
@@ -479,9 +501,15 @@ Teamchat (TEAM-001): eine Aufgabe ist ein Vorgang, keine Nachricht.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → UX-004 |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (thevea, appointmed „Neu →", THEORG Tastenkürzel) |
-| Berührt | UX-EPIC-001 (Entwurf), ADR-004 |
+| Berührt | UX-004, UX-005, UX-012a (gebaut), ADR-004 |
+
+**Stand.** Gebaut am 2026-09-11: Patientensuche von jeder Seite, serverseitig
+ab drei Zeichen, umlautunempfindlich, RLS-gestützt (UX-004; seit UX-012a mit
+unterscheidbarem Fehlerzustand); der Weg vom Kalender zur Akte über den Tap
+auf freie Zeit (UX-005) — `../../development/ARBEITSBEREICHE.md`. Das
+„Neu"-Menü und Tastenkürzel am Rechner bleiben `vorschlag`.
 
 **Idee.** Ein Suchfeld, das von jeder Seite erreichbar ist und nach drei
 Buchstaben Personen findet (serverseitig, RLS, umlautunempfindlich); ein
@@ -621,16 +649,23 @@ ADR-006 ein. Es gehört zum Befund (Etappe 2), nicht zur Verlaufsnotiz.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → `IDEA-KI-007` / `PROJECT_PRINCIPLES.md` §6.3 |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (iPrax Siri, thevea, MD, THEORG 2GO) |
-| Berührt | `PRODUCT_VISION.md` §6 (eigener Datenfluss), ADR-002, ADR-005 |
+| Berührt | `PROJECT_PRINCIPLES.md` §6.3, `OPEN_DECISIONS.md` E13; ADR-002, ADR-005 Punkt 9; Roadmap G14/G16 (Endgeräte-Richtlinie) |
+
+**Stand.** Überführt am 2026-09-13: Der geprüfte Dienst ist die
+Sprachdokumentation aus `IDEA-KI-007` — entschieden als
+`PROJECT_PRINCIPLES.md` §6.3 (2026-09-08), Umsetzung offen als E13. Das
+Diktat über die **Systemtastatur** ist ein Datenfluss an den Betreiber des
+Geräts und gehört in die Endgeräte-Richtlinie (Roadmap G14/G16), nicht in
+eine Idee.
 
 **Idee.** Diktat über die Systemtastatur des Geräts oder einen geprüften
 Dienst; Nutzer:innen berichten, dass Fachwörter schlecht erkannt werden.
 
 **Vorsicht.** Das Systemdiktat sendet die Sprache an den Gerätehersteller —
 ein Datenfluss mit Gesundheitsdaten, der vor der Nutzung bewertet werden muss
-(Vision §6). Kein Loop entscheidet das.
+(§3.5, ADR-002). Kein Loop entscheidet das.
 
 ---
 
@@ -638,9 +673,16 @@ ein Datenfluss mit Gesundheitsdaten, der vor der Nutzung bewertet werden muss
 
 | | |
 |---|---|
-| Status | bestätigt — Jannes, 2026-09-06: „Diese Entscheidung steht fest" |
+| Status | überführt → ADR-019 / MAP-002 bis MAP-006 |
 | Quelle | Jannes, 2026-09-06 (Lastenrad-Hausbesuchskonzept) |
-| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019 Fassung 2; MAP-002 bis MAP-006 (Roadmap Etappe T); E-16 überholt, siehe Nachtrag |
+| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019 Fassung 2 (E-20 angenommen 2026-09-13); MAP-002 bis MAP-006 (Roadmap Etappe T); E-16 überholt, siehe Nachtrag |
+
+**Stand.** Bestätigt durch Jannes am 2026-09-06 („Diese Entscheidung steht
+fest"), am 2026-09-08 als ADR-019 Fassung 2 gefasst (MapLibre, serverseitiger
+Adapter, PTV Developer als Kandidat; E-16 überholt) und am 2026-09-13 mit
+**E-20** angenommen. Umsetzung als MAP-002 bis MAP-006
+(`../../development/MAP-LOOPS.md`); produktive Freigabe am Vertrags-/§203-/
+DSFA-Gate aus ADR-019 Punkt 9. Noch nichts davon ist gebaut.
 
 **Idee.** Eine Karte zeigt die gesamte Route des Tages: alle Wege zwischen
 Startort, Hausbesuchen und Endort in Terminreihenfolge — auf einmal, oder ein
@@ -679,9 +721,16 @@ Anwendung mit PTV Developer als Kandidat; Umsetzung in MAP-002 bis MAP-006
 
 | | |
 |---|---|
-| Status | bestätigt — Jannes, 2026-09-06, datenschutzrechtlich genehmigt |
+| Status | überführt → UX-002 / ADR-019 / ANN-018 |
 | Quelle | Jannes, 2026-09-06 |
-| Berührt | B7, ADR-019, UX-EPIC-001, PAT-006; URL-Format und Feldliste als `ANN` |
+| Berührt | B7, ADR-019 Punkt 20 bis 23 (E-20 angenommen 2026-09-13), UX-002 (gebaut), MAP-005, PAT-006; ANN-018 |
+
+**Stand.** Bestätigt durch Jannes am 2026-09-06 (datenschutzrechtlich
+genehmigt) und am 2026-09-11 als UX-002 gebaut: „Navigation starten" aus
+Tagesliste und Termin übergibt nur die Anschrift ohne Namen, im Fahrradmodus,
+erst beim Tippen (ADR-019 Punkt 20, ANN-018;
+`../../development/ARBEITSBEREICHE.md`). Apple Maps und `geo:` kommen mit
+MAP-005; der Tages-Link mit allen Zielen ist nicht gebaut.
 
 **Idee.** Aus jeder Adresse in Tagesliste, Termin und Karte führt ein Link,
 der Google Maps mit dem Ziel im Fahrradmodus öffnet; für den ganzen Tag ein
@@ -713,7 +762,7 @@ Ziel-Apps in MAP-005. Nicht automatisch risikofrei; Frage an B2.
 |---|---|
 | Status | vorschlag |
 | Quelle | Claude, 2026-09-06, aus dem Lastenrad-Konzept |
-| Berührt | §6.2, §8, §9; CAL-007, CAL-010b; `IDEA-PRX-008`; B6 |
+| Berührt | §6.2, §8, §9; CAL-007, MAP-006 (CAL-010b entfallen, E12); `IDEA-PRX-008`; B6 |
 
 **Idee.** Die Praxis ordnet Gebieten (Stadtteile, Postleitzahlen) feste
 Wochentage oder Tageshälften zu. Beim Anlegen und bei der Serie schlägt der
@@ -734,9 +783,15 @@ Termine bleiben frei vergebbar; die Regel warnt, sie verbietet nicht.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → MAP-003 / MAP-004 / MAP-006 |
 | Quelle | Claude, 2026-09-06 |
-| Berührt | §9, §18, §20; B6, B7; MAP-006; `IDEA-PRX-002` |
+| Berührt | §9, §18, §20; B6, B7; ADR-019 Punkt 16 und 17; MAP-003, MAP-004, MAP-006; E12 Punkt 3/4; `IDEA-PRX-002`, `IDEA-PRX-042` |
+
+**Stand.** Überführt am 2026-09-13: Fahrzeit je Weg (MAP-003), Erreichbarkeit
+zweier Termine (MAP-004) und die Warnung im Kalender mit echten Terminen
+(MAP-006) stehen als Loops in `../../development/MAP-LOOPS.md`; E12 Punkt 3
+und 4 (2026-09-12) haben festgelegt, dass die Fahrzeit nur aus dem Kartendienst
+kommt. Noch nichts davon ist gebaut.
 
 **Idee.** Zu jedem Weg der Tagesroute die Fahrzeit mit dem Rad aus dem
 Kartendienst; im Kalender die Erreichbarkeit zweier Termine als Warnung,
@@ -748,10 +803,20 @@ ob zwei Termine zeitlich erreichbar sind. Ohne Fahrzeiten schlägt jede
 automatische Terminsuche (`IDEA-PRX-008`) Termine vor, die auf dem Rad nicht
 erreichbar sind.
 
-**Vorsicht.** Fahrzeiten sind Routing-Rohdaten mit kurzer Speicherfrist (§18)
-und dürfen nicht zur Leistungskontrolle werden (§20, B6): Speicherung nur je
-Weg und Tag, keine Summen je Person. Erst nach Betriebserfahrung (nach M6),
-weil erst dann klar ist, wie oft eine Warnung nützt und wie oft sie stört.
+**Vorsicht.** Fahrzeiten sind Routing-Rohdaten (§18) und dürfen nicht zur
+Leistungskontrolle werden (§20, B6): keine Summen je Person. Erst nach
+Betriebserfahrung, weil erst dann klar ist, wie oft eine Warnung nützt und wie
+oft sie stört.
+
+**ADR-019 Punkt 16 schließt die Speicherung aus.** Die ursprüngliche Fassung
+dieses Eintrags sah „Speicherung nur je Weg und Tag" vor. Dem widerspricht
+ADR-019 Punkt 16 (entschieden 2026-09-08, B7): **keine dauerhafte
+Speicherung** von Fahrzeiten, Distanzen, Matrizen oder Routing-Rohantworten —
+sie werden im Moment der Planung abgerufen, angezeigt und verworfen. Der ADR
+gilt (Rang 2 vor Rang 6). Ob eine Erreichbarkeitswarnung im Kalender ohne
+irgendeine Zwischenspeicherung auskommt oder eine kurzlebige, nicht
+personenbezogene Ablage braucht, ist als Punkt 3a von E12 zu führen und mit
+MAP-006 zu beantworten — nicht hier.
 
 ---
 
@@ -816,11 +881,9 @@ erfunden sind — §16 entscheidet in diesem Zweifel für die datensparsamere
 Seite, und dieselbe Linie gilt seit dem 2026-09-01 für den
 Referenz-Screenshot in [referenz-navigation.md](referenz-navigation.md).
 **Jannes hat am 2026-09-11 bestätigt, dass die vier Namen erfunden sind.**
-Damit sind es synthetische Daten, und die Datei ist nachgelegt.
-
-Für den nächsten Entwurf dieser Art: Namen im Muster des Seeds („Anna
-Beispiel", „Max Mustermann") ersparen die Rückfrage — sie sind als erfunden
-erkennbar, ohne dass jemand danach fragen muss.
+Damit sind es synthetische Daten, und die Datei ist nachgelegt. Die Regel für
+den nächsten Entwurf dieser Art (Namen im Muster des Seeds) steht in
+`docs/DEVELOPMENT.md`, nicht hier.
 
 **Offen.** Ob die Tagesansicht diese Gestalt bekommen soll, entscheidet eine
 Ablaufrunde oder ein eigenes Epic — nicht dieser Eintrag.
@@ -847,6 +910,12 @@ Dokumentationstext abgeleitete Materialvorschläge wären eine Auswertung
 klinischer Inhalte und fielen unter ADR-006 (auswählen und anordnen, nicht
 interpretieren). Eine von Hand geführte Liste je Termin ist das nicht.
 
+Dazu der Ort — derselbe Einwand wie bei `IDEA-PRX-036`: Eine Liste **am
+Tagesplan**, die klinisch abgeleitete Inhalte trägt (Kinesiotape für Frau X
+sagt etwas über ihre Behandlung), wird im Treppenhaus mitgelesen — im Aufzug,
+an der Wohnungstür, neben einer fremden Person. Besser aufklappbar **am
+Termin**, nur auf Anforderung sichtbar (§4.3, §4.6).
+
 **Offen.** Von Hand gepflegt oder abgeleitet? Am Termin, an der Person oder am
 Tag? Ohne diese Entscheidung ist nichts spezifizierbar.
 
@@ -856,9 +925,13 @@ Tag? Ohne diese Entscheidung ist nichts spezifizierbar.
 
 | | |
 |---|---|
-| Status | **verworfen** in dieser Form (2026-09-11) — das Bedürfnis lebt in `IDEA-PRX-016` weiter |
+| Status | verworfen |
 | Quelle | Jannes, 2026-09-11 (Kanvas „Own Motion · Praxis") |
 | Berührt | §4.3, §4.6, §16; ADR-004; `IDEA-PRX-016`; `list_day_plan` (UX-001) |
+
+**Stand.** Verworfen in dieser Form am 2026-09-11 durch Jannes (Entscheidung
+ausdrücklich abgegeben, Journal in `../IDEENSPEICHER.md`); das Bedürfnis lebt
+in `IDEA-PRX-016` weiter.
 
 **Idee.** Der Entwurf nennt zu jedem Termin die Indikation — Diagnose und
 Verlaufswoche — direkt in der Liste, ohne Aufklappen.
@@ -922,79 +995,20 @@ Versand? Das ist eine Frage an ADR-009, nicht an die Oberfläche.
 
 | | |
 |---|---|
-| Status | notiert — Eingabe für die Ablaufrunde „Übersicht" (Jan 2027) |
+| Status | überführt → `docs/development/BEFUNDE.md` |
 | Quelle | Jannes, 2026-09-11 |
-| Berührt | §8.1; ADR-016; UX-007, UX-009, DOK-001/002; `ANN-015`, `ANN-019`; ABR-002 |
+| Berührt | BEF-001; §8.1; ADR-016; UX-007, UX-009, DOK-001/002; `ANN-015`, `ANN-019`; ABR-002 |
+
+**Stand.** Kein Eintrag für später, sondern ein Befund an Gebautem: Codebefund,
+Pixelmessung auf 375 × 667 und Risikoanalyse stehen seit dem 2026-09-13
+vollständig als **BEF-001** in
+[`../../development/BEFUNDE.md`](../../development/BEFUNDE.md) und gehen von
+dort nach Roadmap-Regel R6 in die erste Story des nächsten Loops derselben
+Spur. Hier bleibt nur die Kennung.
 
 **Idee.** Die Textfelder der Dokumentation sollen ohne Scrollen sichtbar sein;
 womöglich helfen Unterseiten, damit das Auge nicht an Unwichtigem hängen
 bleibt.
-
-**Befund aus dem Code (2026-09-11), bevor irgendetwas gebaut wird.** Die
-beiden Dokumentationsseiten sind **nicht** schlecht sortiert.
-`CompleteTreatmentPage` und `TreatmentNotePage` stellen das Textfeld an die
-zweite Stelle, direkt hinter die Textbausteinleiste. Wer hier „Feld nach oben"
-baut, baut etwas, das schon so ist. Das Scrollen kommt aus zwei anderen
-Richtungen:
-
-1. **Das Gerüst über dem Feld.** Auf einem 375 × 667-Telefon stehen vor dem
-   Feld: Kopfzeile (56), Untermenü, Seitentitel mit Beschreibung,
-   Textbausteinleiste. Das sind grob 250 von 667 Punkten, bevor die erste
-   Zeile kommt. Seit DS-001 ist der Seitentitel 32 px statt 22 — der Befund
-   hat sich also gerade **verschärft**, nicht entspannt.
-2. **Der Weg dorthin.** Aus der Akte heraus liegt die Dokumentation hinter
-   Person, Kontakt, Hausbesuch und Versorgung. Der kurze Weg ist der über
-   „Übersicht" → „Behandlung abschließen"; wer ihn nicht kennt, scrollt.
-
-**Potenziale.**
-
-- Ein eigener Schreibmodus: Feld, Textbausteine, eine Aktion. Kein Untermenü,
-  keine Seitenbeschreibung, Titel einzeilig. Das ist der größte Hebel und
-  ändert an der Fachlogik nichts.
-- Fokus auf das Feld beim Öffnen — spart den ersten Tipp.
-- Unterseiten je Schritt (Doku → Heilmittel → Abschluss), wenn der Abschluss
-  ohnehin mehr entscheidet als heute (siehe `IDEA-PRX-039`).
-
-**Risiken — und eines davon ist ein Stopp.**
-
-- **Die Patientenidentität darf nicht verschwinden.** Der Seitentitel trägt
-  heute Name, Datum und Uhrzeit. Wer ihn wegkürzt, um Platz zu gewinnen,
-  nimmt die einzige Kontrolle gegen die Falschzuordnung heraus — und
-  „Datenverlust/Falschzuordnung" ist genau die Befundklasse, an der M6
-  hängt. Platz sparen ja, Identität nein.
-- **Unterseiten vervielfachen die Stellen, an denen Text verloren geht.**
-  Es gibt bewusst keinen lokalen Zwischenspeicher (`ANN-015`); der Entwurf
-  liegt serverseitig. Der bekannte Restpunkt aus VER-003 — Entwurf bleibt beim
-  Verlassen über die Hauptnavigation liegen statt verworfen zu werden — ist
-  genau dieser Fehlerklasse. Jede zusätzliche Seite ist eine zusätzliche
-  Gelegenheit dafür.
-- **ADR-016 Punkt 4 und 5 verbieten, die Folge zu verstecken.** Der Text
-  „Mit dem Abschluss geschieht zweierlei …" steht heute absichtlich **vor**
-  der Schaltfläche, nicht in einer Rückfrage danach. Auf eine andere
-  Unterseite geschoben wäre das eine Aufweichung, kein Feinschliff.
-- **§8.1 gibt 60 Minuten einschließlich Dokumentation.** Ein Assistent mit
-  vier Schritten kostet Tipps und schafft vier Stellen zum Steckenbleiben.
-  Mehr Seiten sind nur dann besser, wenn jede Seite eine Entscheidung
-  abnimmt — nicht, wenn sie nur aufteilt.
-- Mehr Routen heißen mehr Routen-Wächter und mehr RLS-Fläche (ADR-004).
-
-**Gemessen am 2026-09-11, nach dem ersten kleinen Schritt.** Der Seitentitel
-der Dokumentationsseiten ist jetzt kompakt (`PageHeader kompakt`). Auf
-375 × 667 beginnt das Textfeld damit bei **359 statt 413 Punkten**, sichtbar
-sind **308 statt 254**. Das sind 54 Punkte und ein Fünftel mehr Feld — und es
-**löst den Befund nicht**: das Feld startet weiter über der Hälfte des
-Schirms. Die verbleibende Höhe steckt in der Kopfzeile (56), im Untermenü
-„Kalender · Touren" — das beim Schreiben nichts beiträgt — und in der
-Polsterung des Inhalts. Der nächstgrößere Hebel ist damit benannt und
-gemessen, nicht vermutet.
-
-**Wie es weitergehen sollte.** Nicht als freier Umbau, sondern als
-Ablaufrunde nach `../../development/OPTIMIERUNG.md`. Die misst den echten
-Ablauf („Besuch dokumentieren und abschließen") gegen die sechs Bedingungen
-und schreibt Akzeptanzhinweise in bestehende Roadmap-Zeilen. Die Runde
-braucht als Eingabe Jannes' eigene Beobachtung an einem echten Tag (§20:
-gemessen wird nur durch ihn selbst) — ohne die bleibt jede Umsortierung
-geraten.
 
 ---
 
@@ -1002,9 +1016,17 @@ geraten.
 
 | | |
 |---|---|
-| Status | notiert — überschneidet sich absichtlich mit ABR-002 |
+| Status | notiert |
 | Quelle | Jannes, 2026-09-11 |
-| Berührt | ADR-009, ADR-016; ABR-001, **ABR-002**; VER-002, VER-003; `ANN-006`, C1 |
+| Berührt | ADR-009, ADR-016; ABR-001, **ABR-002**; VER-002, VER-003; `ANN-006`, C1; E14 (erledigt 2026-09-13, CAL-018) |
+
+**Stand.** Überschneidet sich absichtlich mit ABR-002 — die Heilmittelauswahl
+ist dessen Oberfläche (Empfehlung unten). Seit E14 (Jannes, 2026-09-13) ist
+außerdem entschieden, was beim Hausbesuch als „durchgeführt" gilt: Tür
+geöffnet, keine Behandlung → durchgeführt mit Pflichtvermerk, normale
+Abrechnung; nicht angetroffen nach Protokoll (15 Minuten, Klingeln, Anruf) →
+Ausfallgebühr; Absage unter 24 Stunden → Ausfallgebühr; Umsetzung CAL-018. Das
+„Abhaken" hier trifft also auf einen Vorgang, der diese Fälle schon kennt.
 
 **Idee.** „Termin abhaken" statt „erledigen", womöglich als Kästchen. Beim
 Abhaken wird entschieden, **welche Heilmittel des Rezepts tatsächlich
@@ -1054,34 +1076,21 @@ Grenzfall. `ABR-EPIC-001` steht für **November 2026**.
 
 | | |
 |---|---|
-| Status | notiert — Eingabe für die Ablaufrunde „Übersicht" |
+| Status | überführt → `docs/development/BEFUNDE.md` |
 | Quelle | Jannes, 2026-09-11 (mit Screenshot) |
-| Berührt | UX-001, UX-007; ADR-019; MAP-005, MAP-006; `IDEA-PRX-039` |
+| Berührt | BEF-002; UX-001, UX-007; ADR-019; MAP-005, MAP-006; `IDEA-PRX-039` |
+
+**Stand.** Ein Befund an der gebauten Tageskarte, keine Idee: Potenziale und
+Risiken (Rufnummer als Rettung des gescheiterten Besuchs, „Navigation starten"
+erst nach der Karte) stehen seit dem 2026-09-13 vollständig als **BEF-002** in
+[`../../development/BEFUNDE.md`](../../development/BEFUNDE.md). Hier bleibt
+nur die Kennung.
 
 **Idee.** Die Reihenfolge der Aktionen auf der Tageskarte stimmt nicht: die
-Telefonnummern stehen vorn, obwohl sie selten gebraucht werden. Gewünscht
-sind stattdessen ein eigenes Feld **„Doku"**, ein Abhaken statt „Behandlung
-abschließen" (siehe `IDEA-PRX-039`), und „Navigation starten" braucht es hier
-womöglich gar nicht mehr, sobald die Karte in der Anwendung steht.
-
-**Potenziale.**
-
-- „Doku" als eigene Aktion macht den häufigsten Weg zum kürzesten und zahlt
-  direkt auf `IDEA-PRX-038` ein.
-- Weniger Schaltflächen nebeneinander heißt größere Ziele auf dem Telefon.
-
-**Risiken.**
-
-- **Die Rufnummer ist die Rettung des gescheiterten Besuchs.** Wenn niemand
-  öffnet, ist sie die einzige Handlung, die den Termin noch rettet — und
-  genau dann steht man im Hausflur, mit Handschuhen. Nach hinten ja,
-  weggeklappt nein. Ihre heutige Stelle stammt aus UX-001, nicht aus
-  Zufall.
-- **„Navigation starten" darf erst weichen, wenn die Karte wirklich da ist.**
-  Der Handoff ist heute der einzige Weg zur Route. Die Karte kommt mit
-  MAP-005/MAP-006 und hängt an ADR-019 — und dessen produktive Freigabe
-  steht am Vertrags-, §203- und DSFA-Gate. Die Aktion vorher zu entfernen
-  hieße, einen funktionierenden Weg gegen einen geplanten zu tauschen.
+Telefonnummern stehen vorn, obwohl sie selten gebraucht werden. Gewünscht sind
+ein eigenes Feld „Doku", ein Abhaken statt „Behandlung abschließen" (siehe
+`IDEA-PRX-039`), und „Navigation starten" womöglich erst, wenn die Karte in
+der Anwendung steht.
 
 ---
 
@@ -1113,9 +1122,15 @@ wurde — heute steht das nur als Absagegrund an jedem einzelnen Termin.
 
 | | |
 |---|---|
-| Status | notiert |
+| Status | überführt → CAL-015c |
 | Quelle | Jannes, 2026-09-12 (Gespräch über die Oberfläche) |
-| Berührt | §8.1, §9, §20; `IDEA-PRX-008` (automatische Terminsuche), `IDEA-PRX-017` (Startort je Tag), `IDEA-PRX-031` (Gebietstage), `IDEA-PRX-032` (Fahrzeit je Weg); MAP-004, MAP-006; E12; B6 |
+| Berührt | §8.1, §9, §20; CAL-015c (gebaut), ANN-050; `IDEA-PRX-008` (automatische Terminsuche), `IDEA-PRX-017` (Startort je Tag), `IDEA-PRX-031` (Gebietstage), `IDEA-PRX-032` (Fahrzeit je Weg); MAP-004, MAP-006; E12; B6 |
+
+**Stand.** Teil 1 — Person beziehungsweise Verordnung auswählen, durch den
+Kalender scrollen, freie Lücke antippen — ist am 2026-09-12 als CAL-015c
+gebaut (ANN-050; `../../development/ARBEITSBEREICHE.md`, „Von der Verordnung
+in den Kalender"). Teil 2 — die Einfärbung, wo der Termin mit Fahrweg
+hineinpasst — hängt an MAP-006 und dem Gate aus ADR-019 und bleibt `notiert`.
 
 **Idee.** Zwei Schritte statt eines Formulars. Erst **eine Person auswählen**,
 dann **durch den Kalender scrollen** und die Lücke selbst suchen. Der Kalender
@@ -1154,18 +1169,10 @@ muss, ob zwei Termine erreichbar sind, verlangt bereits §9; sichtbar zu machen,
 - **Kein Name in der Adresszeile**, auch nicht im Auswahlmodus (ADR-011) — der
   Patientenfilter des Kalenders trägt bereits nur die Kennung.
 
-**Was schon davon steht.** Der Kalender kennt seit AKTE-003 den Filter
-`?patient=`, seit UI-001 ein zoombares Gitter und seit CAL-010a das
-60-Minuten-Terminfenster. Der erste Teil — auswählen, scrollen, tippen — ist
-damit **ohne** Kartendienst erreichbar; nur die Einfärbung wartet auf MAP-006.
+**Was schon davon steht.** Der erste Teil ist gebaut (CAL-015c, siehe Stand;
+`../../development/ARBEITSBEREICHE.md`), nur die Einfärbung wartet auf MAP-006.
 
 **Offene Frage.** Ist die Einfärbung ein Band je Tag („ab 14:20 erreichbar"),
 eine Markierung je freier Lücke oder eine Abstufung (erreichbar / knapp /
 nicht)? Das entscheidet sich am besten an echten Wegen, also nach MAP-004.
 
----
-
-Zuletzt aktualisiert: 2026-09-12 (neu `IDEA-PRX-042` aus dem Gespräch über die Oberfläche; `IDEA-PRX-004` auf `überführt`, neu `IDEA-PRX-041` aus CAL-009). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-038` bis `-040` aus dem Gespräch über Dokumentationsablauf, Tageskarte und Kalenderwechsel). Vorherige Aktualisierung: 2026-09-11 (`IDEA-PRX-034` bis `-037` aus dem Design-Kanvas „Own Motion · Praxis"; die Kanvas-Datei liegt seit der Bestätigung, dass die Namen erfunden sind, unter `../kanvas/own-motion-praxis.html`). Vorherige Aktualisierung: 2026-09-08 (`IDEA-PRX-002` auf `überführt`; das
-Terminfenster steht als §8.1 in den Prinzipien, der Fahrpuffer-Mechanismus als
-E12 in den offenen Entscheidungen). Vorherige Aktualisierung: 2026-09-06
-(Entscheidungen E-9, E-12, E-13; Tagesroute `IDEA-PRX-029` bis `-033`)

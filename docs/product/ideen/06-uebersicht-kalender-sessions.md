@@ -37,7 +37,7 @@ Verlauf: zulässig. Die daraus abgeleitete Aufforderung: nicht.
 |---|---|
 | Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
-| Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), [ADR-014](../../adr/ADR-014-foundational-data-model.md), [00 LZK](00-lebenszyklus-und-zugang.md), D („bestätigt") |
+| Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), [ADR-014](../../adr/ADR-014-foundational-data-model.md), [ADR-018](../../adr/ADR-018-appointment-states.md) (Terminzustände, angenommen 2026-09-11), [00 LZK](00-lebenszyklus-und-zugang.md) |
 
 **Idee.** Ein **Termin** ist ein vereinbarter Kontakt mit der Praxis: hat
 Zeit, Ort, Therapeut:in, Status, führt zu Dokumentation und Abrechnung. Eine

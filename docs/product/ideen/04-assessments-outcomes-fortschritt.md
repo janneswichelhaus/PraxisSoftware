@@ -88,6 +88,7 @@ haben — Tätigkeit plus Skala plus Verlauf — und nicht ein Freitextfeld
 |---|---|
 | Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
+| Berührt | B8, `PROJECT_PRINCIPLES.md` §7, IDEA-OUT-001 |
 
 **Idee.** In regelmäßigen Abständen eine einzige Frage: „Wie geht es dir
 verglichen mit dem Beginn der Behandlung?", auf einer Skala von deutlich

@@ -185,7 +185,10 @@ zwischen Daten und Zahlen.
 |---|---|
 | Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
-| Berührt | [ADR-002](../../adr/ADR-002-hosting-data-residency.md), [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md) |
+| Berührt | [ADR-002](../../adr/ADR-002-hosting-data-residency.md), [ADR-007](../../adr/ADR-007-data-protection-impact-assessment.md), [ADR-014](../../adr/ADR-014-foundational-data-model.md), `PROJECT_PRINCIPLES.md` §14 |
+
+**Stand.** Bestätigt ist die Richtung, nicht ein Auftrag; §14 und die
+Negativliste in ADR-014 schließen den Bau ohne ausdrücklichen Auftrag aus.
 
 **Idee.** Import von Schritten, Ruhepuls, Schlaf und Herzfrequenzvariabilität
 aus Gesundheits-Apps oder Uhren. Als Kontextgröße für Belastbarkeit, nicht als
