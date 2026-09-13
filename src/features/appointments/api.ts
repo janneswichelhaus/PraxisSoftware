@@ -144,9 +144,24 @@ export const notificationChannelOrder: readonly NotificationChannel[] = [
   'email',
 ] as const;
 
+/**
+ * Art des Termins (CAL-015b, PROJECT_PRINCIPLES.md 0.9 §8.1).
+ *
+ * `treatment` ist der Behandlungstermin mit Patient:in; `event` ein Ereignis
+ * des Praxisbetriebs — Besprechung, Teamtermin — ohne Patient:in, ohne
+ * Verordnung und ohne Längenregel. Ein Ereignis erzeugt ausdrücklich **keine**
+ * abrechenbare Leistung (§19).
+ */
+export const appointmentKindSchema = z.enum(['treatment', 'event']);
+export type AppointmentKind = z.infer<typeof appointmentKindSchema>;
+
 const appointmentSchema = z.object({
   id: z.string(),
-  patient_id: z.string(),
+  // Beide `null` bei einem Ereignis - dort gibt es niemanden zu behandeln.
+  patient_id: z.string().nullable(),
+  kind: appointmentKindSchema,
+  /** Bezeichnung eines Ereignisses; `null` an jedem Behandlungstermin. */
+  title: z.string().nullable(),
   staff_member_id: z.string(),
   location_id: z.string().nullable(),
   appointment_type: appointmentTypeSchema,
@@ -181,8 +196,8 @@ const appointmentSchema = z.object({
   // Leer heißt „noch nicht mitgeteilt" ODER „seit der Mitteilung geändert" -
   // beides ist derselbe Handlungsbedarf.
   notification_channels: z.array(notificationChannelSchema),
-  patient_given_name: z.string(),
-  patient_family_name: z.string(),
+  patient_given_name: z.string().nullable(),
+  patient_family_name: z.string().nullable(),
   staff_given_name: z.string(),
   staff_family_name: z.string(),
   location_name: z.string().nullable(),
@@ -194,7 +209,7 @@ const appointmentSchema = z.object({
 export type Appointment = z.infer<typeof appointmentSchema>;
 
 const SELECT =
-  'id, patient_id, staff_member_id, location_id, appointment_type, status, starts_at, ends_at, updated_at, ' +
+  'id, patient_id, staff_member_id, location_id, appointment_type, kind, title, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
   'cancellation_reason, cancellation_received_at, no_show_recorded_at, fee_basis, ' +
   'notification_channels, ' +
@@ -310,7 +325,23 @@ export function staffName(
 export function patientName(
   appointment: Pick<Appointment, 'patient_given_name' | 'patient_family_name'>,
 ): string {
-  return `${appointment.patient_given_name} ${appointment.patient_family_name}`;
+  return `${appointment.patient_given_name ?? ''} ${appointment.patient_family_name ?? ''}`.trim();
+}
+
+/**
+ * Was am Termin steht: der Name der Patient:in oder der Titel des Ereignisses.
+ *
+ * Eine Stelle für beide Fälle, weil sie in Kalender, Tagesplan und
+ * Detailansicht dieselbe Antwort brauchen. Fehlt beides — ein Ereignis ohne
+ * Titel kann es nicht geben, eine Behandlung ohne Namen nur, wenn die RLS den
+ * Namen zurückhält —, steht ein Gedankenstrich da und keine leere Zeile
+ * (PROJECT_PRINCIPLES.md §13).
+ */
+export function terminBezeichnung(
+  appointment: Pick<Appointment, 'kind' | 'title' | 'patient_given_name' | 'patient_family_name'>,
+): string {
+  if (appointment.kind === 'event') return appointment.title ?? 'Ereignis';
+  return patientName(appointment) || '—';
 }
 
 // -----------------------------------------------------------------------------
@@ -359,17 +390,26 @@ export const leererTermin: Record<AppointmentFormField, string> = {
 };
 
 /**
- * Länge eines angebotenen Terminfensters in Minuten (CAL-010a).
+ * Vorbelegte Länge eines angebotenen Terminfensters in Minuten (CAL-010a).
  *
- * `PROJECT_PRINCIPLES.md` §8.1: Ein angebotener Behandlungstermin MUSS ein
- * Zeitfenster von 60 Minuten haben, die Dokumentation eingeschlossen.
+ * `PROJECT_PRINCIPLES.md` 0.9 §8.1: Ein angebotener Behandlungstermin hat 60
+ * oder 45 Minuten, die Dokumentation eingeschlossen. 60 ist die Vorbelegung.
  *
  * Diese Konstante steuert die Oberfläche. Verbindlich ist sie **nicht**:
- * `app.appointment_window_minutes()` setzt dieselbe Zahl serverseitig durch
+ * `app.appointment_window_minutes()` führt dieselbe Vorbelegung serverseitig
  * (§8.1: „eine Vorbelegung im Formular allein erfüllt sie nicht"). Ein
  * Datenbanktest hält beide gegeneinander.
  */
 export const TERMINFENSTER_MINUTEN = 60;
+
+/**
+ * Die zulässigen Längen, in der Reihenfolge der Auswahl (CAL-015b).
+ *
+ * Spiegel von `app.appointment_window_options()`; durchgesetzt wird die Liste
+ * serverseitig. Für **Ereignisse** gilt sie nicht — deren Länge ist frei im
+ * Praxisraster.
+ */
+export const TERMINFENSTER_OPTIONEN = [60, 45] as const;
 
 const UHRZEIT_ZERLEGT = /^([01]\d|2[0-3]):([0-5]\d)/;
 
@@ -652,6 +692,14 @@ export async function createAppointment(
   patientId: string,
   values: AppointmentFormValues,
   allowOutsideWorkingHours = false,
+  /**
+   * Verordnung, aus deren Kontingent der Termin geplant wird (CAL-015c).
+   *
+   * Der Regelfall „einzelner Termin" kennt keine; sie kommt aus dem Weg von
+   * der Verordnung über den Kalender ins Formular. Der Server prüft, dass sie
+   * zu dieser Patient:in gehört (CAL-007).
+   */
+  prescriptionId: string | null = null,
 ): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_appointment', {
     p_patient_id: patientId,
@@ -662,6 +710,7 @@ export async function createAppointment(
     p_end_time: values.end_time,
     p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
     p_allow_outside_working_hours: allowOutsideWorkingHours,
+    p_prescription_id: prescriptionId,
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) {
@@ -689,21 +738,112 @@ export async function createAppointment(
   return appointmentId.data;
 }
 
+/**
+ * Eingabe eines Ereignisses des Praxisbetriebs (CAL-015b).
+ *
+ * Bewusst ein eigenes Schema neben `appointmentFormSchema`: Ein Ereignis hat
+ * einen Titel statt einer Patient:in, mehrere Beteiligte statt einer
+ * behandelnden Person und eine **freie** Länge. Ein gemeinsames Schema mit
+ * lauter Wenn-dann-Zweigen hätte beide Fälle schlechter beschrieben.
+ */
+export const ereignisFormSchema = z
+  .object({
+    title: z.string().refine((v) => v.trim().length > 0, 'Bezeichnung ist erforderlich.'),
+    staff_member_ids: z
+      .array(z.string())
+      .refine((v) => v.length > 0, 'Mindestens eine beteiligte Person ist erforderlich.'),
+    appointment_type: z.enum(['practice', 'video']),
+    date: z.string().refine((v) => v.trim().length > 0, 'Datum ist erforderlich.'),
+    start_time: z.string().refine((v) => v.trim().length > 0, 'Beginn ist erforderlich.'),
+    end_time: z.string().refine((v) => v.trim().length > 0, 'Ende ist erforderlich.'),
+    location_id: z.string(),
+  })
+  .superRefine((werte, ctx) => {
+    if (werte.start_time && werte.end_time && werte.end_time <= werte.start_time) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['end_time'],
+        message: 'Das Ende muss nach dem Beginn liegen.',
+      });
+    }
+    if (werte.appointment_type === 'practice' && werte.location_id.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['location_id'],
+        message: 'Für ein Ereignis in der Praxis ist ein Standort erforderlich.',
+      });
+    }
+  });
+
+export type EreignisFormValues = z.infer<typeof ereignisFormSchema>;
+
+/**
+ * Legt ein Ereignis an - je beteiligter Person einen Termin, alles oder nichts.
+ *
+ * Gibt die Anzahl der angelegten Termine zurück. Überschneidet sich auch nur
+ * eine Person, entsteht gar nichts: Eine halb eingetragene Besprechung wäre
+ * schlimmer als keine.
+ */
+export async function createAppointmentEvent(
+  values: EreignisFormValues,
+  allowOutsideWorkingHours = false,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('create_appointment_event', {
+    p_title: values.title.trim(),
+    p_staff_member_ids: values.staff_member_ids,
+    p_appointment_type: values.appointment_type,
+    p_date: values.date,
+    p_start_time: values.start_time,
+    p_end_time: values.end_time,
+    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) {
+    if (error.message?.includes('outside_working_hours')) throw new AusserhalbArbeitszeitError();
+    if (error.message?.includes('overlaps')) {
+      throw new Error(
+        'Mindestens eine beteiligte Person hat in diesem Zeitraum schon einen Termin. Es wurde nichts eingetragen.',
+      );
+    }
+    if (error.message?.includes('not on the appointment grid')) {
+      throw new Error(
+        'Beginn und Ende müssen auf dem Praxisraster liegen. Bitte Zeiten im Raster der Praxis wählen.',
+      );
+    }
+    if (error.message?.includes('event title is required')) {
+      throw new Error('Bitte eine Bezeichnung angeben.');
+    }
+    if (error.message?.includes('at least one participant')) {
+      throw new Error('Bitte mindestens eine beteiligte Person wählen.');
+    }
+    if (error.message?.includes('in the past')) {
+      throw new Error('Der Tag liegt in der Vergangenheit.');
+    }
+    throw new Error('Das Ereignis konnte nicht eingetragen werden.');
+  }
+
+  return z.number().parse(data);
+}
+
 // -----------------------------------------------------------------------------
 // Kalender (CAL-002)
 // -----------------------------------------------------------------------------
 
 const calendarEntrySchema = z.object({
   id: z.string(),
-  patient_id: z.string(),
+  // Ein Ereignis hat keine Patient:in - dafür einen Titel (CAL-015b).
+  patient_id: z.string().nullable(),
   staff_member_id: z.string(),
   location_id: z.string().nullable(),
   appointment_type: appointmentTypeSchema,
+  kind: appointmentKindSchema,
+  title: z.string().nullable(),
   status: appointmentStatusSchema,
   starts_at: z.string(),
   ends_at: z.string(),
-  patient_given_name: z.string(),
-  patient_family_name: z.string(),
+  patient_given_name: z.string().nullable(),
+  patient_family_name: z.string().nullable(),
   staff_given_name: z.string(),
   staff_family_name: z.string(),
   location_name: z.string().nullable(),

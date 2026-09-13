@@ -120,6 +120,19 @@ export interface KalenderParameter {
    * Verläufen und Protokollen (ADR-011).
    */
   patient: string | null;
+  /**
+   * Verordnung, aus deren Kontingent terminiert wird (CAL-015c).
+   *
+   * Der Weg „von der Verordnung in den Kalender": Wer aus der Akte an einer
+   * Verordnung hierher kommt, soll die freie Stelle antippen und den Termin
+   * anlegen können, **ohne** Patient:in und Verordnung noch einmal zu suchen.
+   * Wie `patient` grenzt sie den Lesepfad nicht ein - sie reist als Kontext
+   * mit, bis der Termin angelegt ist. Nur zusammen mit `patient` sinnvoll.
+   *
+   * In der Adresse steht die Kennung, niemals eine Diagnose oder ein Name
+   * (ADR-011).
+   */
+  verordnung: string | null;
   /** Höhe einer Stunde in Pixeln (CAL-011). */
   zoom: Zoomstufe;
 }
@@ -133,6 +146,7 @@ export function leseParameter(suche: URLSearchParams, heute: string): KalenderPa
   const standort = suche.get('standort');
   const status = suche.get('status');
   const patient = suche.get('patient');
+  const verordnung = suche.get('verordnung');
   const zoom = Number(suche.get('zoom'));
 
   return {
@@ -144,6 +158,8 @@ export function leseParameter(suche: URLSearchParams, heute: string): KalenderPa
     standort: standort && UUID.test(standort) ? standort : null,
     status: STATUS_FILTER.includes(status as StatusFilter) ? (status as StatusFilter) : 'active',
     patient: patient && UUID.test(patient) ? patient : null,
+    // Ohne Patient:in ist die Verordnung gegenstandslos - sie gehört zu ihr.
+    verordnung: patient && verordnung && UUID.test(verordnung) ? verordnung : null,
     zoom: istZoomstufe(zoom) ? zoom : ZOOM_STANDARD,
   };
 }
@@ -163,6 +179,7 @@ export function schreibeParameter(p: KalenderParameter): URLSearchParams {
   if (p.standort) suche.set('standort', p.standort);
   if (p.status !== 'active') suche.set('status', p.status);
   if (p.patient) suche.set('patient', p.patient);
+  if (p.verordnung) suche.set('verordnung', p.verordnung);
   // Die Zoomstufe reist mit, sobald sie von der Voreinstellung abweicht: sie
   // ueberlebt damit das Neuladen, ohne jede Adresse zu verlaengern.
   if (p.zoom !== ZOOM_STANDARD) suche.set('zoom', String(p.zoom));

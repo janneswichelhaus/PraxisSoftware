@@ -229,9 +229,14 @@ const futureAppointmentSchema = z.object({
   starts_at: z.string(),
   ends_at: z.string(),
   appointment_type: z.enum(['home_visit', 'practice', 'video']),
-  patient_id: z.string(),
-  patient_given_name: z.string(),
-  patient_family_name: z.string(),
+  // Seit CAL-015b stehen hier auch Ereignisse des Praxisbetriebs: Sie hängen
+  // an dieser Person genauso wie eine Behandlung, und wer sie deaktivieren
+  // will, muss sie sehen.
+  kind: z.enum(['treatment', 'event']),
+  title: z.string().nullable(),
+  patient_id: z.string().nullable(),
+  patient_given_name: z.string().nullable(),
+  patient_family_name: z.string().nullable(),
   location_name: z.string().nullable(),
 });
 

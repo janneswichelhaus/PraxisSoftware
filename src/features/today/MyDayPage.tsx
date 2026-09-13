@@ -14,7 +14,7 @@ import {
   appointmentTypeLabels,
   fetchAppointments,
   formatLocalTimeRange,
-  patientName,
+  terminBezeichnung,
   staffName,
   todayInTimeZone,
   type CalendarEntry,
@@ -99,8 +99,10 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zeitzone)}
         </span>
         <span className="min-w-0 flex-1">
+          {/* Der Tagesplan des Teams liest den Kalender - dort stehen seit
+              CAL-015b auch Ereignisse ohne Patient:in. */}
           <span className="text-ink block truncate text-[0.9375rem] font-medium">
-            {patientName(termin)}
+            {terminBezeichnung(termin)}
           </span>
           <span className="text-ink-muted mt-0.5 block truncate text-sm">
             {appointmentTypeLabels[termin.appointment_type]}

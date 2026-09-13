@@ -9,6 +9,8 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { usePatientRecord } from '@/features/patients/akte';
+import { todayInTimeZone } from '@/features/appointments/api';
+import { ZOOM_STANDARD, schreibeParameter } from '@/features/appointments/calendar';
 import type { Patient } from '@/features/patients/api';
 import {
   formatDate,
@@ -192,6 +194,26 @@ function Verordnungsaktionen({
   const darfSchreiben = canWritePrescriptions(user.roles);
   const planbar = zustand === 'offen' && patient.status === 'active';
 
+  /**
+   * Der Weg in den vollständigen Kalender, mit Patient:in und Verordnung als
+   * Kontext (CAL-015c).
+   *
+   * Die Tagesansicht von heute ist der Ausgangspunkt; von dort wird
+   * geblättert und gescrollt. Wer eine freie Stelle antippt, landet im
+   * Terminformular dieser Person, und der Termin kennt seine Verordnung -
+   * ohne dass jemand beides noch einmal sucht.
+   */
+  const kalenderZiel = `/kalender?${schreibeParameter({
+    ansicht: 'tag',
+    datum: user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '',
+    person: null,
+    standort: null,
+    status: 'active',
+    patient: patient.id,
+    verordnung: verordnung.id,
+    zoom: ZOOM_STANDARD,
+  })}`;
+
   if (!darfPlanen && !darfSchreiben) return null;
 
   return (
@@ -205,6 +227,19 @@ function Verordnungsaktionen({
           className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
         >
           Terminserie anlegen
+        </Link>
+      ) : null}
+      {/* Der zweite Weg neben der Serie: in den vollständigen Kalender wechseln,
+          dort scrollen und eine freie Stelle antippen (CAL-015c). Patient:in
+          und Verordnung reisen als Kontext mit - im Formular steht danach
+          beides schon fest. Die Serie plant im Raster, dieser Weg sucht die
+          Lücke. */}
+      {darfPlanen && planbar ? (
+        <Link
+          to={kalenderZiel}
+          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+        >
+          Im Kalender einen Platz suchen
         </Link>
       ) : null}
       {darfSchreiben ? (

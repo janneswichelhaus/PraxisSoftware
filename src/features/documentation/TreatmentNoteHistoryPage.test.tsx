@@ -17,6 +17,8 @@ const DOKU_ID = '99999999-9999-4999-8999-000000000001';
 const termin: AppointmentsApi.Appointment = {
   id: TERMIN_ID,
   patient_id: '66666666-6666-4666-8666-000000000001',
+  kind: 'treatment',
+  title: null,
   staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: '33333333-3333-4333-8333-000000000001',
   appointment_type: 'practice',

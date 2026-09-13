@@ -373,6 +373,14 @@ function AppointmentDetail({
   const darfWiederOeffnen =
     darfVerwalten && (appointment.status === 'completed' || appointment.status === 'no_show');
   const darfDokumentieren = canWriteTreatmentNote(user.roles);
+  /**
+   * Ein Ereignis des Praxisbetriebs (CAL-015b).
+   *
+   * Es hat keine Patient:in, keine Dokumentation und keinen Abschluss - und
+   * damit auch keinen Weg in die Abrechnung (§19). Was bleibt: verschieben und
+   * absagen.
+   */
+  const istEreignis = appointment.kind === 'event';
 
   return (
     <>
@@ -383,15 +391,19 @@ function AppointmentDetail({
            ging über die Zeile darunter oder über die Suche. Der Rückweg reist
            mit, damit der Weg zurück am Termin endet und nicht in der Liste. */
         title={
-          <>
-            Termin –{' '}
-            <Link
-              to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
-              className="underline decoration-2 underline-offset-4 hover:no-underline"
-            >
-              {patientName(appointment)}
-            </Link>
-          </>
+          istEreignis ? (
+            `Ereignis – ${appointment.title ?? ''}`
+          ) : (
+            <>
+              Termin –{' '}
+              <Link
+                to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
+                className="underline decoration-2 underline-offset-4 hover:no-underline"
+              >
+                {patientName(appointment)}
+              </Link>
+            </>
+          )
         }
         description={zustandsHinweis(appointment)}
         actions={
@@ -411,7 +423,11 @@ function AppointmentDetail({
           {/* Bewusst Text und kein zweiter Link: Der Name im Kopf führt in die
               Akte (UX-012). Zwei gleichnamige Links auf dieselbe Seite wären
               für Vorlesesoftware zwei Angebote mit einer Wirkung. */}
-          <DetailRow label="Patient:in">{patientName(appointment)}</DetailRow>
+          {istEreignis ? (
+            <DetailRow label="Ereignis">{appointment.title ?? '—'}</DetailRow>
+          ) : (
+            <DetailRow label="Patient:in">{patientName(appointment)}</DetailRow>
+          )}
           <DetailRow label="Behandelnde Person">{staffName(appointment)}</DetailRow>
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
@@ -492,21 +508,28 @@ function AppointmentDetail({
               musste; wer dokumentieren wollte und den falschen traf, schloss
               den Termin ohne Eintrag ab. Wer gar nicht dokumentieren darf,
               sieht weiterhin nur den einen und für den heißt er wie bisher. */}
-          {darfDokumentieren ? (
-            <ButtonLink to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}>
-              Dokumentieren und abschließen
-            </ButtonLink>
-          ) : null}
-          <StatusAktion
-            appointment={appointment}
-            aktion={completeAppointment}
-            beschriftung={
-              darfDokumentieren ? 'Ohne Dokumentation abschließen' : 'Termin abschließen'
-            }
-            laufend="Wird abgeschlossen …"
-            variant={darfDokumentieren ? 'secondary' : 'primary'}
-          />
-          <NichtAngetroffenAktion appointment={appointment} />
+          {/* Ein Ereignis wird weder abgeschlossen noch dokumentiert noch als
+              „nicht angetroffen" vermerkt - der Server weist alle drei ab
+              (CAL-015b). Bleiben Verschieben und Absagen. */}
+          {istEreignis ? null : (
+            <>
+              {darfDokumentieren ? (
+                <ButtonLink to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}>
+                  Dokumentieren und abschließen
+                </ButtonLink>
+              ) : null}
+              <StatusAktion
+                appointment={appointment}
+                aktion={completeAppointment}
+                beschriftung={
+                  darfDokumentieren ? 'Ohne Dokumentation abschließen' : 'Termin abschließen'
+                }
+                laufend="Wird abgeschlossen …"
+                variant={darfDokumentieren ? 'secondary' : 'primary'}
+              />
+              <NichtAngetroffenAktion appointment={appointment} />
+            </>
+          )}
           <AbsageAktion appointment={appointment} />
         </div>
       ) : null}
@@ -514,7 +537,7 @@ function AppointmentDetail({
       {/* Der Folgetermin ist der häufigste Einzelvorgang am Ende eines
           Besuchs. Er steht auch am abgeschlossenen Termin: dort wird er
           tatsächlich gebraucht (UX-003, IDEA-PRX-007). */}
-      {darfVerwalten && appointment.status !== 'cancelled' ? (
+      {darfVerwalten && !istEreignis && appointment.status !== 'cancelled' ? (
         <div className="mt-5 flex">
           <ButtonLink
             to={mitRueckweg(
@@ -545,7 +568,8 @@ function AppointmentDetail({
       {/* „Ist der Termin schon mitgeteilt?" ist eine organisatorische Frage am
           bevorstehenden Termin - an einem abgesagten oder abgeschlossenen gibt
           es nichts mehr mitzuteilen (CAL-012). */}
-      {darfVerwalten && appointment.status === 'confirmed' ? (
+      {/* Ein Ereignis teilt niemand einer Patient:in mit. */}
+      {darfVerwalten && !istEreignis && appointment.status === 'confirmed' ? (
         <div className="mt-8">
           <MitteilungVermerken appointment={appointment} />
         </div>
@@ -558,8 +582,10 @@ function AppointmentDetail({
       ) : null}
 
       {/* Klinische Inhalte stehen bewusst in einem eigenen Datensatz und werden
-          über einen eigenen, protokollierten Lesepfad geholt (DOK-001). */}
-      <TreatmentNoteSection appointment={appointment} user={user} />
+          über einen eigenen, protokollierten Lesepfad geholt (DOK-001). An
+          einem Ereignis gibt es sie nicht - und der Abschnitt fragt auch nicht
+          danach (CAL-015b). */}
+      {istEreignis ? null : <TreatmentNoteSection appointment={appointment} user={user} />}
 
       <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
         Zeiten gelten in der Zeitzone der Praxis ({zone}). Der Termin selbst enthält ausschließlich

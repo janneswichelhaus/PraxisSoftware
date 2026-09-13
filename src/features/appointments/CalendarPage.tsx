@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/scheduling/api';
 import {
   dayKey,
@@ -415,7 +416,23 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       art: 'home_visit',
       ...(staffMemberId ? { person: staffMemberId } : {}),
     };
-    void navigate(`/termine/neu${schreibeTerminVorbelegung(vorbelegung)}`);
+
+    const parameter = schreibeTerminVorbelegung(vorbelegung);
+
+    // Ist der Kalender auf eine Person gefiltert, ist die Frage „für wen?"
+    // längst beantwortet (CAL-015c). Dann führt die freie Stelle direkt ins
+    // Formular dieser Person - samt Verordnung, wenn der Weg von dort kam -
+    // statt noch einmal durch die Suche. Der Rückweg ist der Kalenderstand,
+    // damit „Abbrechen" wieder an derselben Stelle landet.
+    if (p.patient) {
+      const ziel = `/patienten/${p.patient}/termine/neu${parameter}${
+        p.verordnung ? `&verordnung=${p.verordnung}` : ''
+      }`;
+      void navigate(mitRueckweg(ziel, `/kalender?${suche.toString()}`));
+      return;
+    }
+
+    void navigate(`/termine/neu${parameter}`);
   }
 
   const laedt = termine.isPending || therapeuten.isPending;
@@ -452,6 +469,19 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                 variant="secondary"
               >
                 Termin anlegen
+              </ButtonLink>
+              {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin
+                  (CAL-015b). Eigener Weg neben dem Termin: Er kennt weder
+                  Patient:in noch Verordnung, und seine Länge ist frei. Der
+                  Rückweg ist der Kalenderstand. */}
+              <ButtonLink
+                to={mitRueckweg(
+                  `/termine/ereignis${schreibeTerminVorbelegung({ datum: p.datum })}`,
+                  `/kalender?${suche.toString()}`,
+                )}
+                variant="secondary"
+              >
+                Ereignis eintragen
               </ButtonLink>
             </div>
           ) : null

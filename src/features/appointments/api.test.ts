@@ -15,6 +15,8 @@ import {
 const basis: Appointment = {
   id: '77777777-7777-4777-8777-000000000001',
   patient_id: '66666666-6666-4666-8666-000000000001',
+  kind: 'treatment',
+  title: null,
   staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: null,
   appointment_type: 'video',

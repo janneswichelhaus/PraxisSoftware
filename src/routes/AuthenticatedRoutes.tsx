@@ -20,6 +20,7 @@ import {
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { TagUmplanenPage } from '@/features/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
+import { NewEventPage } from '@/features/appointments/NewEventPage';
 import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentStartPage';
 import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeriesPage';
 import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
@@ -163,6 +164,10 @@ export function AuthenticatedRoutes({
               {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
                   nicht - aus dem Kalender heraus (UX-005). */}
               <Route path="/termine/neu" element={<NewAppointmentStartPage />} />
+              {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin.
+                  Eigener Weg, weil er weder Patient:in noch Verordnung kennt
+                  (CAL-015b). */}
+              <Route path="/termine/ereignis" element={<NewEventPage user={user} />} />
               <Route
                 path="/patienten/:patientId/termine/neu"
                 element={<NewAppointmentPage user={user} />}

@@ -317,9 +317,9 @@ describe('Ereignis: keine Behandlung', () => {
 
   it('laesst sich nicht dokumentieren', async () => {
     const e = await eineZeile();
-    await expect(asUser(users.therapist, DOKUMENTIEREN, [e.id, 'Synthetischer Text'])).rejects.toThrow(
-      /event cannot be documented/,
-    );
+    await expect(
+      asUser(users.therapist, DOKUMENTIEREN, [e.id, 'Synthetischer Text']),
+    ).rejects.toThrow(/event cannot be documented/);
   });
 
   it('bleibt beim Umplanen eines Tages stehen', async () => {

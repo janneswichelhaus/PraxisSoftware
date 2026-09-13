@@ -13,6 +13,8 @@ const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const praxistermin: AppointmentsApi.Appointment = {
   id: TERMIN_ID,
   patient_id: PATIENT_ID,
+  kind: 'treatment',
+  title: null,
   staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: '33333333-3333-4333-8333-000000000001',
   appointment_type: 'practice',
@@ -542,6 +544,52 @@ describe('AppointmentDetailPage', () => {
 
       await screen.findByText(/Dieser Termin ist abgesagt/);
       expect(screen.queryByText('Gebühr vorgemerkt')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('CAL-015b: Ereignis des Praxisbetriebs', () => {
+    const ereignis: AppointmentsApi.Appointment = {
+      ...praxistermin,
+      kind: 'event',
+      title: 'Teambesprechung',
+      patient_id: null,
+      patient_given_name: null,
+      patient_family_name: null,
+    };
+
+    it('zeigt die Bezeichnung statt eines Namens und keinen Weg in eine Akte', async () => {
+      fetchAppointment.mockResolvedValue(ereignis);
+      rendern();
+
+      expect(await screen.findByRole('heading', { name: /Teambesprechung/ })).toBeInTheDocument();
+      expect(zeile('Ereignis')).toBe('Teambesprechung');
+      expect(screen.queryByText('Patient:in')).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /Mustermann/ })).not.toBeInTheDocument();
+    });
+
+    /**
+     * Der Kern der Abgrenzung: Ein Ereignis kommt nie in einen Zustand, aus
+     * dem eine abrechenbare Leistung entstehen könnte (§19). Die Oberfläche
+     * bietet die Wege gar nicht erst an; der Server weist sie zusätzlich ab.
+     */
+    it('bietet weder Abschluss noch Dokumentation noch "nicht angetroffen" an', async () => {
+      fetchAppointment.mockResolvedValue(ereignis);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teambesprechung/ });
+      expect(screen.queryByRole('button', { name: /abschließen/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /Dokumentieren/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).not.toBeInTheDocument();
+    });
+
+    it('laesst sich absagen und bearbeiten', async () => {
+      fetchAppointment.mockResolvedValue(ereignis);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teambesprechung/ });
+      expect(screen.getByRole('button', { name: 'Termin absagen' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Bearbeiten' })).toBeInTheDocument();
     });
   });
 

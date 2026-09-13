@@ -92,8 +92,12 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
             {formatLocalTimeRange(termin.starts_at, termin.ends_at, timeZone)}
           </span>
           <span className="text-ink-muted block">
-            {termin.patient_given_name} {termin.patient_family_name} ·{' '}
-            {appointmentTypeLabels[termin.appointment_type]}
+            {/* Ein Ereignis des Praxisbetriebs steht mit seinem Titel da
+                (CAL-015b) - es hängt an dieser Person genauso. */}
+            {termin.kind === 'event'
+              ? (termin.title ?? 'Ereignis')
+              : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}{' '}
+            · {appointmentTypeLabels[termin.appointment_type]}
             {termin.location_name ? ` · ${termin.location_name}` : ''}
           </span>
         </li>

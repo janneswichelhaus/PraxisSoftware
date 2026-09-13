@@ -39,6 +39,8 @@ function eintrag(
   return {
     id: '77777777-7777-4777-8777-000000000001',
     patient_id: PATIENT,
+    kind: 'treatment',
+    title: null,
     staff_member_id: STAFF_ANNA,
     location_id: ORT,
     appointment_type: 'practice',
@@ -840,6 +842,25 @@ describe('CalendarPage', () => {
     });
   });
 
+  describe('CAL-015b: Ereignisse im Gitter', () => {
+    it('zeigt ein Ereignis mit seiner Bezeichnung statt eines Namens', async () => {
+      fetchAppointments.mockResolvedValue([
+        eintrag({
+          id: '77777777-7777-4777-8777-00000000000e',
+          kind: 'event',
+          title: 'Teambesprechung',
+          patient_id: null,
+          patient_given_name: null,
+          patient_family_name: null,
+        }),
+      ]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+      expect(await screen.findByRole('link', { name: /Teambesprechung/ })).toBeInTheDocument();
+      expect(screen.queryByText(/Max Mustermann/)).not.toBeInTheDocument();
+    });
+  });
+
   describe('UX-005: Tap auf freie Zeit', () => {
     it('fuehrt aus der Tagesansicht mit Person, Tag und Uhrzeit in die Terminanlage', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
@@ -867,6 +888,36 @@ describe('CalendarPage', () => {
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
       expect(ziel.searchParams.get('datum')).toBe('2027-05-10');
       expect(ziel.searchParams.get('person')).toBe(STAFF_ANNA);
+    });
+
+    /**
+     * CAL-015c: Ist der Kalender auf eine Person gefiltert, ist die Frage
+     * „für wen?" längst beantwortet - die freie Stelle führt direkt in ihr
+     * Formular, und die Verordnung reist mit.
+     */
+    it('fuehrt mit Patientenfilter direkt in das Formular dieser Person', async () => {
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
+      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.pathname).toBe(`/patienten/${PATIENT}/termine/neu`);
+      expect(ziel.searchParams.get('beginn')).toBe('07:00');
+      // Der Rückweg ist der Kalenderstand - „Abbrechen" landet wieder hier.
+      expect(ziel.searchParams.get('zurueck')).toContain('/kalender');
+    });
+
+    it('reicht die Verordnung aus dem Kalenderstand in das Formular durch', async () => {
+      const verordnung = '99999999-9999-4999-8999-000000000001';
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}&verordnung=${verordnung}`);
+      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.pathname).toBe(`/patienten/${PATIENT}/termine/neu`);
+      expect(ziel.searchParams.get('verordnung')).toBe(verordnung);
     });
 
     it('loest nichts aus, wenn auf einen bestehenden Termin getippt wird', async () => {

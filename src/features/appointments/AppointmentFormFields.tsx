@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import {
+  TERMINFENSTER_OPTIONEN,
   appointmentTypeLabels,
   type AppointmentFormField,
   type AppointmentType,
@@ -31,6 +32,7 @@ export function AppointmentFormFields({
   minDatum,
   rasterMinuten,
   fensterMinuten,
+  onFensterMinuten,
   hausbesuch,
 }: {
   werte: Record<AppointmentFormField, string>;
@@ -50,6 +52,15 @@ export function AppointmentFormFields({
    * vor §8.1 nicht allein durch Öffnen des Formulars verlängert wird.
    */
   fensterMinuten: number;
+  /**
+   * Wechselt die Länge (CAL-015b). Fehlt sie, steht die Länge als Text da.
+   *
+   * §8.1 kennt seit dem 2026-09-12 **zwei** zulässige Längen. Damit wird aus
+   * der Ableitung eine Wahl mit zwei Antworten — aber kein frei beschreibbares
+   * Ende: Eine dritte Länge wiese der Server ab, und ein Feld, das man
+   * ausfüllen kann und das dann scheitert, wäre eine Falle.
+   */
+  onFensterMinuten?: ((minuten: number) => void) | undefined;
   /** Darstellung der Adresse bei `home_visit` - je nach Vorgang verschieden. */
   hausbesuch: ReactNode;
 }) {
@@ -108,17 +119,46 @@ export function AppointmentFormFields({
           hint={rasterMinuten ? `Praxisraster: ${rasterMinuten} Minuten` : undefined}
           onChange={(e) => onChange('start_time', e.target.value)}
         />
-        {/* Das Ende ist eine Ableitung, kein Feld (CAL-010a). Fehler von dort
-            bleiben trotzdem sichtbar: der Server prueft die Laenge erneut. */}
+        {/* Das Ende bleibt eine Ableitung, kein Feld (CAL-010a) - gewählt wird
+            die Länge, nicht der Zeitpunkt. Fehler von dort bleiben trotzdem
+            sichtbar: der Server prüft die Länge erneut. */}
         <div>
-          <p className="text-ink-muted text-sm">Ende</p>
-          <p className="text-ink mt-1 text-[0.9375rem] font-medium">
-            {werte.end_time ? `${werte.end_time} Uhr` : '—'}
-          </p>
-          <p className="text-ink-subtle mt-1 text-xs leading-relaxed">
-            Terminfenster: {fensterMinuten} Minuten, Dokumentation eingeschlossen.
-          </p>
-          {fehler.end_time ? <p className="text-danger mt-1 text-xs">{fehler.end_time}</p> : null}
+          {onFensterMinuten ? (
+            <Select
+              label="Dauer"
+              value={String(fensterMinuten)}
+              hint={werte.end_time ? `Ende: ${werte.end_time} Uhr` : 'Dokumentation eingeschlossen'}
+              error={fehler.end_time}
+              onChange={(e) => onFensterMinuten(Number(e.target.value))}
+            >
+              {/* Ein Bestandstermin mit abweichender Länge steht mit in der
+                  Auswahl - sonst könnte man ihn nicht bearbeiten, ohne ihn zu
+                  verlängern (ANN-037). */}
+              {(TERMINFENSTER_OPTIONEN as readonly number[]).includes(fensterMinuten) ? null : (
+                <option value={String(fensterMinuten)}>
+                  {fensterMinuten} Minuten (unverändert)
+                </option>
+              )}
+              {TERMINFENSTER_OPTIONEN.map((minuten) => (
+                <option key={minuten} value={String(minuten)}>
+                  {minuten} Minuten
+                </option>
+              ))}
+            </Select>
+          ) : (
+            <>
+              <p className="text-ink-muted text-sm">Ende</p>
+              <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+                {werte.end_time ? `${werte.end_time} Uhr` : '—'}
+              </p>
+              <p className="text-ink-subtle mt-1 text-xs leading-relaxed">
+                Terminfenster: {fensterMinuten} Minuten, Dokumentation eingeschlossen.
+              </p>
+              {fehler.end_time ? (
+                <p className="text-danger mt-1 text-xs">{fehler.end_time}</p>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
 

@@ -40,6 +40,9 @@ import {
  * Berechtigung, Organisationszuordnung, Zeitzone, Überschneidungsschutz und
  * Ortslogik in der Serverfunktion `create_appointment` (ADR-004).
  */
+/** Kennungen in der Adresszeile werden geprüft, bevor sie weiterreisen. */
+const VERORDNUNG_KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
@@ -49,6 +52,17 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   // Einmalig beim ersten Rendern: die Vorbelegung stammt aus der Adresszeile
   // und soll spätere Eingaben nicht überschreiben.
   const [vorbelegung] = useState(() => leseTerminVorbelegung(suche));
+  /**
+   * Verordnung aus der Adresszeile (CAL-015c).
+   *
+   * Sie kommt vom Weg „Akte → Verordnung → Kalender → freie Stelle" und sagt,
+   * aus welchem Kontingent dieser Termin geplant wird. Der Server prüft, dass
+   * sie zu dieser Patient:in gehört; hier steht nur der Kontext.
+   */
+  const verordnungId = (() => {
+    const roh = suche.get('verordnung');
+    return roh && VERORDNUNG_KENNUNG.test(roh) ? roh : null;
+  })();
 
   const [werte, setWerte] = useState<Record<AppointmentFormField, string>>(() => ({
     ...leererTermin,
@@ -68,6 +82,11 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
     staff_member_id: vorbelegung.person ?? '',
   }));
   const [fehler, setFehler] = useState<Partial<Record<AppointmentFormField, string>>>({});
+  /**
+   * Die gewählte Länge (CAL-015b). 60 ist die Vorbelegung nach §8.1; 45 steht
+   * daneben zur Wahl, eine dritte Länge weist der Server ab.
+   */
+  const [fensterMinuten, setFensterMinuten] = useState(TERMINFENSTER_MINUTEN);
 
   const patient = useQuery({
     queryKey: ['patient', patientId],
@@ -124,7 +143,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
 
   const mutation = useMutation({
     mutationFn: (eingabe: { werte: AppointmentFormValues; bestaetigt: boolean }) =>
-      createAppointment(patientId!, eingabe.werte, eingabe.bestaetigt),
+      createAppointment(patientId!, eingabe.werte, eingabe.bestaetigt, verordnungId),
     onSuccess: async (appointmentId) => {
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       void navigate(`/termine/${appointmentId}`, { replace: true });
@@ -134,7 +153,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   function setzen(feld: AppointmentFormField, wert: string) {
     setWerte((bisher) =>
       feld === 'start_time'
-        ? { ...bisher, start_time: wert, end_time: fensterEnde(wert) }
+        ? { ...bisher, start_time: wert, end_time: fensterEnde(wert, fensterMinuten) }
         : { ...bisher, [feld]: wert },
     );
     if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
@@ -232,7 +251,18 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           standorte={standorte.data ?? []}
           minDatum={praxisZeitzone ? todayInTimeZone(praxisZeitzone) : undefined}
           rasterMinuten={user.appointmentGridMinutes ?? undefined}
-          fensterMinuten={TERMINFENSTER_MINUTEN}
+          fensterMinuten={fensterMinuten}
+          onFensterMinuten={(minuten) => {
+            setFensterMinuten(minuten);
+            setWerte((bisher) => ({
+              ...bisher,
+              end_time: fensterEnde(bisher.start_time, minuten),
+            }));
+            if (fehler.end_time) {
+              setFehler(({ end_time: _entfaellt, ...rest }) => rest);
+            }
+            if (mutation.isError) mutation.reset();
+          }}
           hausbesuch={
             <UebernommeneAdresse
               street={patientDaten.street}

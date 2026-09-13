@@ -52,6 +52,8 @@ vi.mock('@/features/appointments/api', async (importOriginal) => ({
   fetchPrescriptionSlots: () =>
     Promise.resolve({
       patient_id: 'pat-1',
+      kind: 'treatment',
+      title: null,
       frequency_note: '2x pro Woche',
       prescribed: 10,
       used: 0,
@@ -425,6 +427,8 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
           appointment={{
             id: 'ter-1',
             patient_id: 'pat-1',
+            kind: 'treatment',
+            title: null,
             staff_member_id: 'st-1',
             location_id: null,
             appointment_type: 'home_visit',

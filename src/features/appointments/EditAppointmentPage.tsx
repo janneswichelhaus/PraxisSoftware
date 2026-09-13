@@ -23,6 +23,7 @@ import {
   leererTermin,
   patientName,
   TERMINFENSTER_MINUTEN,
+  TERMINFENSTER_OPTIONEN,
   terminLaengeMinuten,
   todayInTimeZone,
   updateAppointment,
@@ -79,7 +80,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   // gewechselt wird; erst dann entsteht ein neuer Snapshot.
   const patient = useQuery({
     queryKey: ['patient', termin.data?.patient_id],
-    queryFn: () => fetchPatient(termin.data!.patient_id),
+    queryFn: () => fetchPatient(termin.data!.patient_id!),
     enabled: Boolean(termin.data?.patient_id),
     retry: false,
   });
@@ -116,10 +117,11 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     if (mutation.isError) mutation.reset();
   }
 
-  /** Setzt einen Bestandstermin ausdrücklich auf das Terminfenster (§8.1). */
-  function aufTerminfensterSetzen() {
-    setFensterMinuten(TERMINFENSTER_MINUTEN);
-    setWerte((bisher) => ({ ...bisher, end_time: fensterEnde(bisher.start_time) }));
+  /** Wechselt die Länge ausdrücklich - danach gilt die Regel aus §8.1. */
+  function laengeWechseln(minuten: number) {
+    setFensterMinuten(minuten);
+    setWerte((bisher) => ({ ...bisher, end_time: fensterEnde(bisher.start_time, minuten) }));
+    if (fehler.end_time) setFehler(({ end_time: _entfaellt, ...rest }) => rest);
     if (mutation.isError) mutation.reset();
   }
 
@@ -233,6 +235,11 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           }
           rasterMinuten={user.appointmentGridMinutes ?? undefined}
           fensterMinuten={fensterMinuten}
+          onFensterMinuten={
+            // Ein Ereignis hat keine Längenregel; seine Dauer wird hier nicht
+            // über die Auswahl geändert, sondern bleibt, wie sie ist.
+            daten.kind === 'treatment' ? laengeWechseln : undefined
+          }
           hausbesuch={
             bleibtHausbesuch ? (
               <UebernommeneAdresse
@@ -255,22 +262,18 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         />
 
         {/* Ein Termin aus der Zeit vor §8.1 behält seine Länge und bleibt
-            verschiebbar (ANN-037). Verändert wird sie nur auf ausdrückliche
-            Anweisung - danach gilt das Terminfenster. */}
-        {fensterMinuten !== TERMINFENSTER_MINUTEN ? (
+            verschiebbar (ANN-037). Die Auswahl oben führt sie als eigenen
+            Eintrag; wer eine der zulässigen Längen wählt, ändert sie
+            ausdrücklich. */}
+        {(TERMINFENSTER_OPTIONEN as readonly number[]).includes(fensterMinuten) ? null : (
           <div className="border-line-strong bg-surface-sunken rounded-card mt-5 border p-4">
             <p className="text-ink text-sm">
               Dieser Termin hat ein Zeitfenster von {fensterMinuten} Minuten und stammt aus der Zeit
-              vor der Festlegung auf {TERMINFENSTER_MINUTEN} Minuten. Er bleibt so gültig und
-              verschiebbar.
+              vor der Festlegung auf {TERMINFENSTER_OPTIONEN.join(' oder ')} Minuten. Er bleibt so
+              gültig und verschiebbar; über „Dauer" lässt er sich ausdrücklich ändern.
             </p>
-            <div className="mt-3">
-              <Button type="button" variant="secondary" onClick={aufTerminfensterSetzen}>
-                Auf {TERMINFENSTER_MINUTEN} Minuten setzen
-              </Button>
-            </div>
           </div>
-        ) : null}
+        )}
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>
