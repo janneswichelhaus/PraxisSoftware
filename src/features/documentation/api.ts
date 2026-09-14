@@ -411,7 +411,6 @@ const recordAppointmentSchema = z.object({
 export type RecordAppointment = z.infer<typeof recordAppointmentSchema>;
 
 export const documentationStatusSchema = z.enum(['none', 'draft', 'final']);
-export type DocumentationStatus = z.infer<typeof documentationStatusSchema>;
 
 /**
  * Behandlungsnachweis (ANN-006): Dokumentationsstand ohne Inhalt. Der

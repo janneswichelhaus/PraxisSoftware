@@ -7,41 +7,6 @@ ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
 `PROJECT_PRINCIPLES.md` nicht. Die Termine, bis wann ein Punkt entschieden sein
 muss, stehen in `docs/development/ROADMAP.md`, Spur B.
 
-**Stand:** Alle Architektur-Grundentscheidungen sind getroffen (ADR-001
-bis ADR-019; ADR-019 seit 2026-09-13 angenommen). Am **2026-09-08** hat Jannes die Entscheidungsrunde vom Vortag
-**vollständig und ohne Ausnahme** nach der jeweiligen Empfehlung entschieden —
-20 Punkte, siehe Historie und die Abschnitte unten. Damit ist **kein fachlicher
-Punkt mehr blockierend**.
-
-Was jetzt noch offen ist, ist von zweierlei Art:
-
-- **Externe Bestätigungen** der vorläufigen Festlegungen: die
-  MDR-/AI-Act-Prüfung (B1), Schwellwertprüfung und DSFA (B2), die
-  Fristen-Validierung (B3), die steuerliche Validierung (B4) und die
-  Teilfragen von B6, B7, B9 und C6, die mit B1 beziehungsweise B2 gehen. Sie
-  blockieren den **Produktivstart** (M3), nicht die Arbeit.
-- **Echte Restfragen:** die Auskunft des Lizenzgebers (B8 — keine
-  Entscheidung), der PDF-Weg der Rechnung (B14, bewusst auf ABR-EPIC-002a
-  vertagt, Tendenz vermerkt), die Anbieterwahl der KI (C6, Etappe 10), das
-  Verfahren der Patientenidentität (B5, mit dem Portal), die Ausgestaltung des
-  Anbieterprüfung Supabase (A2). Die Ausgestaltung des Terminstatus-Automaten
-  ist seit dem **2026-09-11** entschieden (ADR-018, angenommen).
-
-Am **2026-09-08** sind zwei Produktentscheidungen von Jannes dazugekommen und
-verbindlich geworden — das Terminfenster (`PROJECT_PRINCIPLES.md` §8.1) und die
-Sprachdokumentation (§6.3). Beide werfen Anschlussfragen auf, die Jannes
-ausdrücklich **nicht** mitentschieden hat; sie stehen als **E12** und **E13**
-unten. Keine davon blockiert einen Loop.
-
-Am **2026-09-13** ist **E15** dazugekommen und am selben Tag entschieden:
-Office liest alle klinischen Inhalte einer Akte im Umfang der Therapeut:innen
-(Umsetzung ROL-EPIC-001, Prüfvermerk für B2). Am selben Tag sind **E14**
-(Hausbesuch-Szenarien) und die Rückfragen **E-20** und **E-21** erledigt.
-
-Die fünf Rückfragen E-15 bis E-19 hat Jannes am 2026-09-06 beantwortet;
-Wortlaut in `docs/development/ROADMAP.md`, Abschnitt „Antworten E-15 bis
-E-19", und in der Historie unten.
-
 ## Wie dieses Dokument benutzt wird
 
 Ein offener Punkt blockiert keine Aufgabe. Braucht eine Aufgabe eine
@@ -57,12 +22,11 @@ Dokument.
 
 **Kennungen:** `E12`, `E13` … (ohne Bindestrich) sind offene Punkte dieses
 Dokuments; `E-1` bis `E-21` (mit Bindestrich) sind die Rückfragen und
-Entscheidungen aus dem Roadmap-Review vom 2026-09-06 (Historie). Sie werden
-nicht umnummeriert.
+Entscheidungen aus dem Roadmap-Review vom 2026-09-06 — alle beantwortet. Sie
+werden nicht umnummeriert.
 
-**Archiv:** Die Volltexte erledigter Punkte stehen in
-`archiv/OPEN_DECISIONS-erledigt.md`; hier bleibt je Punkt ein Zweizeiler mit
-Überschrift und Verweis, damit keine Kennung verschwindet.
+**Erledigte Punkte:** Hier bleibt je Punkt ein Zweizeiler mit Überschrift und
+Verweis, damit keine Kennung verschwindet. Volltext: Git-Historie bis `7160fd5`.
 
 1. Ein Punkt wird besprochen und entschieden.
 2. Die Entscheidung wird als ADR unter `docs/adr/` festgehalten, wenn sie
@@ -142,8 +106,8 @@ Feature.
 | B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08) | unten; vor Etappe 8; Steuerteil mit B4                                              |
 | B10   | Automatisierte Progression: MDR-Grenze                       | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1      | unten; vor Etappe 9                                                                                           |
 | B11   | Paketpreise, Vorauszahlung, Anreize                          | **vorläufig entschieden 2026-09-08**: vorerst nicht anbieten  | unten; vor Etappe 8                                                                                           |
-| B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`                                                     |
-| B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **entschieden 2026-09-06** durch Jannes (Option a); Auth-Mails Teil von OPS-001 (A2) | Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`; Roadmap G2, G3                    |
+| B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | Stub unten; Volltext: Git-Historie bis `7160fd5`                                                     |
+| B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **entschieden 2026-09-06** durch Jannes (Option a); Auth-Mails Teil von OPS-001 (A2) | Stub unten; Volltext: Git-Historie bis `7160fd5`; Roadmap G2, G3                    |
 | B14   | PDF-Erzeugung für Rechnungen und Tagesplan                   | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen** (P1 für ABR-EPIC-002b) | unten; Roadmap ABR-EPIC-002a, Nov 2026                                                            |
 | B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten                                                                                                         |
 | C1    | Leistungsziffern und Office                                  | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15             |
@@ -155,7 +119,7 @@ Feature.
 | C7    | Sprachliche Trennung LLM / deterministische Regeln in §6, §7.1 | architektonisch entschieden; Wortlaut bei nächster Prinzipienversion | [ADR-005](../adr/ADR-005-provider-independent-ai.md); nicht planungsrelevant                             |
 | C8    | „Nicht verbauen" gegen „nicht vorbauen"                      | entschieden 2026-08-28                                        | [ADR-014](../adr/ADR-014-foundational-data-model.md)                                                          |
 | D     | „finalisiert", „nachvollziehbar"                             | entschieden 2026-09-01                                        | [ADR-016](../adr/ADR-016-clinical-documentation-record.md)                                                    |
-| D     | „bestätigt" — Terminstatus-Automat                           | **erledigt 2026-09-11** — Umfang 2026-09-05, Ausgestaltung mit ADR-018 bestätigt | [ADR-018](../adr/ADR-018-appointment-states.md); Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`; `PROJECT_PRINCIPLES.md` 0.7 §8; gebaut in CAL-EPIC-003a |
+| D     | „bestätigt" — Terminstatus-Automat                           | **erledigt 2026-09-11** — Umfang 2026-09-05, Ausgestaltung mit ADR-018 bestätigt | [ADR-018](../adr/ADR-018-appointment-states.md); Stub unten; Volltext: Git-Historie bis `7160fd5`; `PROJECT_PRINCIPLES.md` 0.7 §8; gebaut in CAL-EPIC-003a |
 | D     | übrige Begriffe                                              | erledigt                                                      | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 (überholt durch E15) · „Behandlungsnachweis" → C1, ANN-006 (überholt durch E15) · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
 | D     | Normativität und Nachweis                                    | Normativität erledigt (0.2, §0); **Nachweistabelle offen**    | Roadmap G12                                                                                                   |
 | E1    | Betreibbarkeit bei Bus-Faktor 1                              | entschieden 2026-08-28                                        | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7                         |
@@ -165,10 +129,10 @@ Feature.
 | E5    | Produktions-Logs                                             | entschieden 2026-08-28                                        | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G8                                            |
 | E6    | Synthetische Testdaten                                       | erledigt: der Seed ist der Generator                          | `supabase/seed.sql`; Erweiterung im Loop, der sie braucht                                                     |
 | E7    | CI-Gates, Branch Protection                                  | entschieden 2026-08-28                                        | [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md); Freigabeprozess Roadmap G5                         |
-| E8    | Dateiablage                                                  | **erledigt 2026-09-12** — ADR-017 angenommen, alle acht Fragen wie empfohlen | [ADR-017](../adr/ADR-017-file-storage.md); Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`; gebaut in DAT-EPIC-001 (PR #38); **produktive** Ablage an OPS-001 (G3) und OPS-003 (G7) gebunden |
+| E8    | Dateiablage                                                  | **erledigt 2026-09-12** — ADR-017 angenommen, alle acht Fragen wie empfohlen | [ADR-017](../adr/ADR-017-file-storage.md); Stub unten; Volltext: Git-Historie bis `7160fd5`; gebaut in DAT-EPIC-001 (PR #38); **produktive** Ablage an OPS-001 (G3) und OPS-003 (G7) gebunden |
 | E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
-| E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024) |
-| E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | Stub unten; Volltext `archiv/OPEN_DECISIONS-erledigt.md`                                 |
+| E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | Stub unten; Volltext: Git-Historie bis `7160fd5`; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024) |
+| E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | Stub unten; Volltext: Git-Historie bis `7160fd5`                                 |
 | E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **entschieden 2026-09-12** (60 **oder** 45) · Punkt 3 und 4 **vorläufig entschieden 2026-09-12** (Fahrpuffer erst mit MAP-006) · **offen: nur Punkt 2** (Einstellbarkeit je Praxis, ANN-037) · **Punkt 3a neu 2026-09-13** (Fahrzeit ohne Speicherung gegen serverseitige Rundungsregel; MAP-006) | unten; `PROJECT_PRINCIPLES.md` 0.9 §8.1; CAL-010a und CAL-015 gebaut, CAL-010b entfallen (in MAP-006 aufgegangen) |
 | E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
 | E14   | Gebühr beim Nichtantreffen am Hausbesuch                     | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Umsetzung CAL-018 | unten; `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
@@ -471,8 +435,8 @@ kein Live-Tracking). ANN-004 hält Arbeitszeiten bereits aus dem Auditlog heraus
 
 **Überholte Stände** — Google Maps als Kartendienst (2026-09-06), die Google
 Maps Embed API (E-16), das Ergebnis von ADR-019 Fassung 1 mit den drei Wegen
-A, B, C und der damalige Blockiert-Vermerk — stehen wörtlich in
-`archiv/OPEN_DECISIONS-erledigt.md`. Geltend ist Weg C (Nachtrag unten).
+A, B, C und der damalige Blockiert-Vermerk — Volltext: Git-Historie bis
+`7160fd5`. Geltend ist Weg C (Nachtrag unten).
 
 **Vorläufig entschieden am 2026-09-08 durch Jannes — Fahrzeiten: abrufen ja,
 speichern nein.** Die Fahrzeit je Weg wird im Moment der Planung abgerufen und
@@ -761,12 +725,12 @@ heilmittelwerberechtliche Beratung.
 ### B12 — Stichtag der Umstellung und Rechnungsnummernkreis
 
 Erledigt am 2026-09-06 (kein Altsystem; Nummernformat → B4 Punkt 3) —
-Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
+Volltext: Git-Historie bis `7160fd5`.
 
 ### B13 — E-Mail-Versand aus der Plattform
 
 Entschieden am 2026-09-06 (Option a: nur die Auth-Mails des Providers, Teil
-von OPS-001 — siehe A2) — Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
+von OPS-001 — siehe A2) — Volltext: Git-Historie bis `7160fd5`.
 Annahmen: ANN-025, ANN-043.
 
 ### B14 — PDF-Erzeugung
@@ -928,7 +892,7 @@ nach ADR-002 und eine DSFA-Wiedervorlage aus (ADR-007).
 ### D — „bestätigt": der Terminstatus-Automat
 
 Erledigt am 2026-09-11 (ADR-018 angenommen; gebaut in CAL-EPIC-003a, PR #28,
-abgenommen 2026-09-12) — Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
+abgenommen 2026-09-12) — Volltext: Git-Historie bis `7160fd5`.
 
 ### E2 — Ausfallkonzept
 
@@ -980,17 +944,16 @@ Claude) und die Funktion „Tagesplan exportierbar" (Roadmap, Dezember).
 
 Erledigt am 2026-09-12 (ADR-017 angenommen; gebaut in DAT-EPIC-001, PR #38
 in `main` am 2026-09-13; produktive Ablage weiter an OPS-001 und OPS-003
-gebunden) — Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
+gebunden) — Volltext: Git-Historie bis `7160fd5`.
 
 ### E10 — Wer verwaltet Mitarbeiterdatensätze
 
 Erledigt am 2026-09-11 (STAFF-002a; Privatangaben folgen dem Leserecht,
-ANN-024) — Volltext in `archiv/OPEN_DECISIONS-erledigt.md`.
+ANN-024) — Volltext: Git-Historie bis `7160fd5`.
 
 ### E11 — Wer gilt als behandelnde Person
 
-Erledigt am 2026-09-11 (STAFF-002b) — Volltext in
-`archiv/OPEN_DECISIONS-erledigt.md`.
+Erledigt am 2026-09-11 (STAFF-002b) — Volltext: Git-Historie bis `7160fd5`.
 
 ### E12 — Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre
 
@@ -1241,175 +1204,4 @@ aus der Roadmap nicht abgeschlossen werden kann.
 
 ## Historie
 
-- **2026-08-28:** Baseline-Review von `PROJECT_PRINCIPLES.md` 0.1 mit den
-  Punkten A1 bis A4, B1 bis B8, C1 bis C8, D, E1 bis E9. Am selben Tag
-  entschieden: A1 bis A4, B1 bis B4 (architektonisch), C3, C4, C5, C8, E1, E3,
-  E4, E5, E7 — ADR-001 bis ADR-014; ADR-015 legt den Stack fest. Prinzipien
-  0.2 führen Normativität (§0) und Governance (§21) ein.
-- **2026-09-01:** ADR-016 entscheidet „finalisiert" und „nachvollziehbar".
-  B9, B10, B11 kommen aus dem Brainstorming zur Betreuungsplattform hinzu.
-- **2026-09-04:** E10 und E11 aus STAFF-001; Prinzipien 0.3 (§15.1 Annahmen).
-- **2026-09-05:** C1 und C2 durch Jannes entschieden (Prinzipien 0.4). Im
-  Planungsreview: Terminstatus-Automat vollständig (ADR-018 ausstehend),
-  Dateiablage als ADR-017 beauftragt, Konten in der Anwendung (E11),
-  Zieltermin Q1 2027, Verordnungen vor Abrechnung, Vorschaubereiche bleiben.
-  Dieses Dokument auf Struktur 2.0 verschlankt; die Volltexte der
-  entschiedenen Punkte stehen in der Git-Historie bis Commit `23d71e5`.
-- **2026-09-06:** B12 bis B15 aus dem Roadmap-Review und der
-  Wettbewerbsanalyse (Review in der Git-Historie, Commit `7ab6f71`):
-  Stichtag und Nummernkreis, E-Mail-Versand, PDF-Erzeugung, Terminerinnerung.
-- **2026-09-06, Antworten von Jannes auf die Entscheidungen E-1 bis E-14 des
-  Reviews:** E-1 Roadmap 2.1 als Rahmen · E-2 UI-000 und UX-EPIC-001 direkt
-  nach VER-EPIC-001 · E-3 Loops geteilt (ADR-018 als Docs-Session, CAL-EPIC-003
-  a/b, ABR-EPIC-002 a/b, ABR-EPIC-003) · E-4 E-Mail nur über die Auth-Mails des
-  Providers (B13 entschieden) · E-5 Druckansichten sofort, Rechnungs-PDF in
-  ABR-EPIC-002a entscheiden (B14 teilweise) · E-6 STAFF-EPIC-002 mit STAFF-004
-  im Oktober · E-7 **kein altes Werkzeug — die Praxis eröffnet am 01.07.2027**;
-  Stabilisierung ist der erste Betriebsmonat, kein Parallelbetrieb (B12
-  erledigt) · E-8 axe als Dev-Abhängigkeit · E-9 Textbausteine und
-  Zahlungserinnerung in Stufe 1, Warteliste und Terminerinnerung in Stufe 2
-  (B15 mit B2 anfragen) · E-10 Wochenupdate-Prompt umgestellt · E-11
-  Optimierungsrunden mit Zusatzkriterium im Gate · E-12 Tagesplan-Cache als
-  Story in UX-EPIC-001 · E-13 **keine Unterschrift und keine
-  Behandlungsbestätigung nötig** (`IDEA-PRX-015` verworfen) · E-14 vorerst keine
-  Nachrecherche. Dazu drei Vorgaben: Navigation über **Google Maps** ist
-  entschieden und datenschutzrechtlich genehmigt (B7 teilweise, ADR-019); eine
-  **Karte der Tagesroute** gehört zum Lastenrad-Hausbesuchskonzept
-  (TOUR-EPIC-001a); eine **Plattform für Patient:innen und
-  Personal-Training-Kund:innen** gehört zum Zielbild (B9 erweitert,
-  `IDEA-LZK-008`, Stufe 3).
-- **2026-09-06, Antworten von Jannes auf die Rückfragen E-15 bis E-19:** E-15
-  **die Reihenfolge der Umsetzung ist verbindlich, der Kalender nachrangig**;
-  Themen dürfen früher kommen (Roadmap „Sessions starten") · E-16 In-App-Karte
-  über die **Google Maps Embed API**, die zuständige Datenschutz-Fachkraft
-  hat genehmigt (B7 entschieden bis auf die Fahrzeiten) · E-17 Personal
-  Training beginnt ebenfalls am 01.07.2027, keine Bestandsdaten; Stufe 3 nach
-  M6, §1 der Prinzipien wird dann ergänzt · E-18 der Referenz-Screenshot ist
-  ein fremdes Produkt; Jannes will dessen Funktionsumfang nachbauen · E-19
-  Reihenfolge der Stufe 3 wie vorgeschlagen.
-- **2026-09-08, MAP-001 (Mapping-Architektur und Providerentscheidung):**
-  Jannes priorisiert Convenience hoch — In-App-Karte, Fahrradrouting und
-  Fahrzeiten sind Produktziel. ADR-019 Fassung 2 ersetzt Fassung 1 vom selben
-  Tag: Weg C (Anbieter mit AVV) statt Weg B; **PTV Developer** als Kandidat
-  für Prototyp und Bewertung, nicht freigegeben; Google nur als
-  Handoff-Ziel; E-16 überholt. Neu offen: **E-20** (Fassung 2 bestätigen),
-  **E-21** (Reihenfolge MAP-002 zu UX-EPIC-001). B7 führt das Gate.
-- **2026-09-07:** Jannes entscheidet die Punkte, die auf externe Stellen
-  warten, **vorläufig selbst** und nimmt zurück, was die Prüfung nicht trägt.
-  Dafür der Status `vorläufig entschieden (Jannes)` oben — er löst das Bauen,
-  nicht die Freigabe. Erste Anwendung: B9, ein Unternehmen für Heilbehandlung
-  und Personal Training. Damit einher geht eine Verschärfung, kein
-  Zugeständnis: das Annahmenregister trennt jetzt `entschieden (Jannes)` von
-  `bestätigt (Prüfung)`, weil beides bisher unter `bestätigt` fiel und eine
-  Bestätigung durch Jannes den Go-live-Blocker der Kategorien Datenschutz und
-  Recht bereits erfüllt hätte.
-- **2026-09-08, Entscheidungsrunde September:** Jannes entscheidet die
-  Entscheidungsvorlage vom Vortag **ausnahmslos nach Empfehlung**. Die Vorlage
-  selbst (`ENTSCHEIDUNGSRUNDE-2026-09.md`, Commit `58344e7`) ist nach ihrer
-  eigenen Regel gelöscht; Begründungen und der jeweilige Preis der Rücknahme
-  stehen dort und, verdichtet, in den Abschnitten oben. Entschieden wurden:
-  **B1** Wortlaut der Zweckbestimmung · **B2** externer DSB unabhängig von der
-  Pflicht · **B4** vier steuerliche Festlegungen (Steuerkennzeichen je
-  Katalogposition und getrennte Rechnungen, Kleinunternehmerregelung,
-  Nummernkreis `RG-JJJJ-NNNN`, gesetzliche Belegfristen als eigene Datenklasse)
-  · **B5** Rahmen der Patientenidentität (ein Konto = eine Person, Vertretung
-  als eigene Beziehung; Portalzugang ≠ §630g-Einsicht) · **B6** keine
-  Leistungskontrolle aus Touren- und Zeitdaten · **B7** Fahrzeiten abrufen,
-  nicht speichern · **B8** Rückfall auf lizenzfreie Instrumente · **B9** die
-  sechs verbliebenen Fragen zum Personal Training · **B10** automatisierte
-  Progression für V1 ausgeschlossen, auch als Ampelmodell · **B11** keine
-  Pakete, kein Bewertungsrabatt · **B15** keine automatische Terminerinnerung
-  · **C6** fünf Vertragszusagen als Schutzumfang der KI · **E2** Kern des
-  Ausfallkonzepts, mit einer Abweichung von H4 (Rechnungen ruhen, statt von
-  Hand aus dem Nummernkreis) · **E10** Schreibrechte auf Mitarbeiterdaten
-  dreigeteilt · **ADR-018** „angefragt"/„vorgemerkt" nur vorsehen. **B14**
-  bleibt bewusst offen (Tendenz vermerkt). Im Annahmenregister gehen
-  **ANN-002, ANN-005, ANN-008, ANN-010, ANN-012 und ANN-015** auf `entschieden
-  (Jannes)`. Zwei Festlegungen tragen einen Rücknahmeaufwand `groß` und wurden
-  mit diesem Hinweis entschieden (§15.1 Punkt 4): die Zweckbindung zwischen
-  Akte und Trainingskontext (B9 Punkt 5) und „ein Konto gehört einer Person"
-  (B5 Rahmensatz 1).
-- **2026-09-08, zwei eigene Produktentscheidungen von Jannes** (nicht aus der
-  Entscheidungsrunde): das **Terminfenster** — 60 Minuten einschließlich
-  Dokumentation, ohne eigenen Dokumentationsblock und ohne feste Aufteilung,
-  Beginn frei im 5-Minuten-Raster, Fahrzeit zusätzlich zwischen den
-  Terminfenstern, früheste Folgezeit auf dem ersten Rasterpunkt auf oder nach
-  Ende plus Fahrzeit, Bestandstermine unverändert — und die
-  **Sprachdokumentation** als bewusst gestartetes Nachdiktat mit inhaltstreuer
-  Transkription und ausdrücklicher menschlicher Übernahme. Verankert in
-  `PROJECT_PRINCIPLES.md` 0.5 §8.1 und §6.3; dazu ADR-005 Fassung 2 (Punkt 9),
-  ADR-006 Fassung 2 (Punkt 8) und ADR-016 Fassung 2 (Punkt 10). **Neu offen:**
-  E12 (Abweichung von der Terminlänge, Herkunft der Fahrzeit, Warnung oder
-  Sperre) und E13 (Anbieter, Rohaudio, Fristanker, Architektur der
-  Sprachdokumentation). Beide Entscheidungen sind **noch nicht umgesetzt** —
-  die Terminlänge ist heute frei, ein Fahrpuffer existiert nicht, und es gibt
-  keine Sprachfunktion.
-- **2026-09-11, ADR-018 angenommen:** Jannes entscheidet die sieben
-  Bestätigungsfragen des ADR **ausnahmslos nach Empfehlung** — ein Statusfeld
-  mit acht Werten, `documented` und `invoiced` vom jeweils zuständigen Vorgang
-  in derselben Transaktion gesetzt, das Ausfallhonorar als Kennzeichen am
-  Nichtantreffen, die Serie ohne eigenen Status, `scheduled` → `confirmed` in
-  der Migration. Damit ist **Punkt D („bestätigt") erledigt** und
-  `PROJECT_PRINCIPLES.md` §8 in Version 0.7 nachgezogen (§21). **ANN-005
-  bleibt in Kraft**, von ADR-018 ausdrücklich bestätigt. Gebaut wird der
-  Automat in CAL-EPIC-003a — die Entscheidung ist die Vorbedingung dafür,
-  nicht die Umsetzung.
-- **2026-09-12, B15 im Nachtrag geändert:** Jannes sieht ausdrücklich vor,
-  dass die Praxis Terminmails verschickt. Der Nachtrag im Abschnitt B15 trennt
-  zwei Dinge, die die Entscheidung vom 2026-09-08 in einen Satz gepackt hatte:
-  **keine automatische Erinnerung über einen Versanddienstleister** (bleibt)
-  und **die Terminmail aus dem eigenen Postfach der Praxis, auf Klick** (neu,
-  gebaut als CAL-013). Die Anwendung übergibt einen fertigen Entwurf an das
-  Mailprogramm — kein neuer Empfänger, kein automatischer Versand, dieselbe
-  Konstruktion wie der Navigations-Handoff aus ADR-019. Die Reihenfolge
-  „E-Mail vor SMS, Messenger ausgeschlossen" ist eingehalten. **Offen bleiben**
-  die automatische Erinnerung, ein Versanddienstleister, die
-  Online-Terminbuchung und die Einwilligung je Patient:in (PAT-006). Neu
-  offen: **ANN-041**.
-- **2026-09-12, ADR-017 geschrieben (Docs-Session, Punkt E8):** Die Dateiablage
-  hat Regeln — Ort, Dokumentart mit Rollenschnitt, zweiphasiger Upload,
-  unveränderliche Dateien, signierte Verweise mit 60 Sekunden ohne
-  CDN-Zwischenspeicher, drei Auditereignisse, Frist vom Bezugsdatensatz,
-  zweistufige Löschung mit Quittung, keine Virenprüfung in V1. **Punkt E8
-  bleibt offen bis zur Bestätigung** (acht Fragen am Ende des ADR); die
-  produktive Geltung hängt zusätzlich an OPS-001, für den der ADR **fünf
-  zusätzliche Prüfpunkte** zum Objektspeicher benennt. Zwei Befunde aus der
-  Recherche, die über den ADR hinausreichen: Ein **signierter Verweis ist nicht
-  widerrufbar** und eine am CDN zwischengespeicherte Antwort kann ihn
-  überleben — beides trägt die kurze Gültigkeit und `cacheControl: '0'`. Und
-  der **Objektspeicher läuft im Datenbank-Backup nicht mit**; das macht ADR-012
-  Punkt 5 zur Vorbedingung für den Echtbetrieb mit Dateien (OPS-003, Roadmap
-  G7). Keine neue Annahme.
-- **2026-09-12, ADR-017 angenommen:** Jannes beantwortet die acht
-  Bestätigungsfragen **ausnahmslos nach Empfehlung** — 60-Sekunden-Verweise
-  ohne Teilen-Link, Verordnungsscan klinisch, PDF/JPEG/PNG bis 10 MB, keine
-  Virenprüfung in V1, unveränderliche Dateien, zweistufige Löschung mit
-  Quittung, keine produktive Datei ohne getestete Objektsicherung, fünf
-  zusätzliche Prüfpunkte in OPS-001. Damit ist **Punkt E8 erledigt** und
-  DAT-EPIC-001 baubar. `PROJECT_PRINCIPLES.md` wird **nicht** nachgezogen: §4.7
-  (Dateien folgen denselben Berechtigungsregeln), §12 (Dateizugriffe sind
-  testpflichtig) und §18 (Fristen) gelten unverändert — ADR-017 konkretisiert
-  sie, ändert aber keine Prinzipienaussage (§21).
-- **2026-09-13:** DAT-EPIC-001 liegt mit PR #38 in `main` (Dateiablage nach
-  ADR-017; ANN-052 und ANN-053 neu). **E14 erledigt** — Jannes legt die
-  Hausbesuch-Szenarien verbindlich fest: Tür geöffnet, Behandlung findet auf
-  Angabe der Patient:in nicht statt → durchgeführt, Pflichtvermerk, normale
-  Abrechnung, keine Ausfallgebühr; nicht angetroffen nach Protokoll (15
-  Minuten gewartet, geklingelt, angerufen) → nicht wahrgenommen,
-  Ausfallgebühr; Patientenabsage unter 24 Stunden → Ausfallgebühr
-  (unverändert); die Software führt erklärend durch die Szenarien (CAL-018;
-  Rechnungstext und Rechtsgrundlage für Fall 1 gehen in B4). **E15 neu und
-  entschieden** — Office liest alle klinischen Inhalte einer Akte im Umfang
-  der Therapeut:innen, schreibt keine klinische Dokumentation, jeder Zugriff
-  auditpflichtig (ROL-EPIC-001; C1 und C2 überholt; Prüfvermerk für B2;
-  ANN-006 verworfen). **E-20 erledigt** — ADR-019 Fassung 2 angenommen, Gate
-  offen; **E-21 erledigt** — gegenstandslos, UX-EPIC-001 seit 2026-09-11
-  fertig. Nachgezogen: ADR-018 Fassung 3, ADR-010 Fassung 2, ADR-004
-  Fassung 2, `PROJECT_PRINCIPLES.md` 0.10. **Struktur 3.0:** Archivdatei
-  `archiv/OPEN_DECISIONS-erledigt.md` mit den Volltexten erledigter Punkte
-  (B12, B13, D „bestätigt", E8, E10, E11 und die überholten Stände von B7;
-  hier bleibt je Punkt ein Zweizeiler), Rückverweise `Annahmen:` je Punkt,
-  Glossar der Kennungen (`E12` gegen `E-12`), Rangvermerk, Reparatur der
-  abgebrochenen Zeile zu E-15 bis E-19; neu die kurzen Abschnitte A2 und B3
-  als Träger ihrer Annahmen und Punkt 3a in E12 (Fahrzeit ohne Speicherung
-  gegen serverseitige Rundungsregel, MAP-006).
+Entscheidungsverlauf und aeltere Faessungen: `git log -- docs/decisions/OPEN_DECISIONS.md`.

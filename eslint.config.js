@@ -72,7 +72,6 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.node } },
     rules: {
       'no-restricted-syntax': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
   prettier,

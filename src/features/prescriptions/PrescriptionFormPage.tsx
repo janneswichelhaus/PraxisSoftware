@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { neueVorgangskennung } from '@/lib/abstecher';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -23,7 +24,6 @@ import {
   entwurfAblegen,
   entwurfAnsehen,
   entwurfEntfernen,
-  neueVorgangskennung,
   fetchPrescribers,
   fetchPrescription,
   itemsToFormValues,

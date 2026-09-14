@@ -327,16 +327,6 @@ export function nachJahr<T extends Prescription>(
   return gruppen;
 }
 
-/** Summe der noch offenen Leistungseinheiten über alle Positionen. */
-export function restkontingent(prescription: Prescription): number {
-  return prescription.items.reduce((summe, item) => summe + item.remaining_quantity, 0);
-}
-
-/** Summe der verordneten Leistungseinheiten über alle Positionen. */
-export function gesamtkontingent(prescription: Prescription): number {
-  return prescription.items.reduce((summe, item) => summe + item.prescribed_quantity, 0);
-}
-
 // -----------------------------------------------------------------------------
 // Einheiten und Termine je Verordnung (AKTE-002)
 // -----------------------------------------------------------------------------
@@ -565,10 +555,9 @@ export interface PrescriptionDraft {
  * brauchen auch die Terminanlage (Patient:in fehlt) und der Terminzettel
  * (Adresse fehlt). Hier bleiben die getypten Zugänge - der Entwurf einer
  * Verordnung hat eine feste Form, und die soll an der Aufrufstelle sichtbar
- * sein.
+ * sein. `neueVorgangskennung` und `vorgangAusPfad` holen die Aufrufer direkt
+ * aus `@/lib/abstecher`.
  */
-export { neueVorgangskennung, vorgangAusPfad } from '@/lib/abstecher';
-
 /** Legt den Formularzustand vor dem Abstecher zur Verordner-Anlage ab (VER-003). */
 export function entwurfAblegen(vorgang: string, userId: string, entwurf: PrescriptionDraft): void {
   abstecherAblegen(vorgang, userId, entwurf);

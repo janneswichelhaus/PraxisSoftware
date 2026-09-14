@@ -153,7 +153,6 @@ export const notificationChannelOrder: readonly NotificationChannel[] = [
  * abrechenbare Leistung (§19).
  */
 export const appointmentKindSchema = z.enum(['treatment', 'event']);
-export type AppointmentKind = z.infer<typeof appointmentKindSchema>;
 
 const appointmentSchema = z.object({
   id: z.string(),

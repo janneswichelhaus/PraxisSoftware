@@ -4,9 +4,8 @@ Version 5.2 · Stand 2026-09-13 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Die Entscheidungen, aus denen dieser Rahmen entstanden ist
-(Roadmap-Review vom 2026-09-06, E-1 bis E-21), stehen in der Historie von
-`docs/decisions/OPEN_DECISIONS.md` und im Abschnitt „Antworten E-15 bis
-E-19" unten.
+(Roadmap-Review vom 2026-09-06, E-1 bis E-21), sind eingearbeitet; Wortlaut:
+Git-Historie bis `7160fd5`.
 
 ## Was dieses Dokument ist und was nicht
 
@@ -558,12 +557,8 @@ Punkt 7 — MUSS; der Inhalt der Zweckbestimmung dagegen schon).
 
 | Punkt                        | Was zu entscheiden ist                                                                                                                             | Wer                                 | Fällig vor                   | Termin                              | Stand (Jannes pflegt) |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------- | ----------------------------------- | --------------------- |
-| **E8 → ADR-017**             | Dateiablage: Ort, Zugriff, signierte Verweise, Retention, Virenprüfung                                                                             | Claude schreibt, Jannes bestätigt   | DAT-EPIC-001, ABR-EPIC-002b  | Sep 2026                            | **erledigt 2026-09-12** — angenommen, alle acht Fragen wie empfohlen |
-| **D → ADR-018**              | Terminzustände: Übergänge, Auslöser, Migration; „angefragt"/„vorgemerkt" definiert, nicht gebaut                                                   | Claude schreibt, Jannes bestätigt   | CAL-EPIC-003a                | Sep 2026                            | **erledigt 2026-09-11** — angenommen, alle sieben Fragen wie empfohlen; §8 auf 0.7 nachgezogen |
 | **Providerprüfung Supabase** | Prüfkatalog ADR-002 dokumentiert und bestanden — sonst Alternative; schließt die Auth-Mails ein (B13) und die fünf Objektspeicher-Punkte aus ADR-017 | Jannes mit Claude-Dokument          | produktive Dateiablage, OPS-001 Anlage | 30.09.2026                          |                       |
 | **B7 → ADR-019**             | **Weg C gewählt (MAP-001, 2026-09-08):** Handoff nicht blockiert (ANN-018, Frage an B2); Karte und Fahrzeiten über PTV Developer als Kandidat; produktive Freigabe am Gate aus ADR-019 Punkt 9 — neun Punkte, alle `CONTRACT_CONFIRMATION_REQUIRED` | Jannes (Vertragsdokumente, PTV-Support), Datenschutzberatung (B2) | MAP-006 | Dokumente Okt 2026; Gate mit B2 bis Feb 2027 | ADR-019 angenommen 2026-09-13 (E-20); Gate offen |
-| **E10**                      | Wer darf Mitarbeiterdaten schreiben (bis dahin `owner`)                                                                                            | Jannes                              | STAFF-EPIC-002               | Okt 2026                            | entschieden 2026-09-08 |
-| **E14**                      | Hausbesuch-Szenarien: Nichtantreffen nach Protokoll mit Ausfallgebühr, „Tür geöffnet" gilt als durchgeführt                                        | Jannes                              | CAL-018                      | Sep 2026                            | **entschieden 2026-09-13**; Rechtsgrundlage Fall 1 mit B4 |
 | **E15**                      | Office liest alle klinischen Inhalte wie Therapeut:innen (lesend, auditiert)                                                                      | Jannes; Datenschutzbewertung mit B2 | ROL-EPIC-001                 | Sep 2026                            | **entschieden 2026-09-13**; B2-Bewertung offen |
 | **B4**                       | Steuerliche Validierung: Leistungsarten, Umsatzsteuer (Personal Training im **selben** Unternehmen, B9), Kleinunternehmerregelung und Gesamtumsatz nach §19 Abs. 3 UStG, Nummernkreis-Format, Belegfristen; **E14 Fall 1** (Rechnungstext und Rechtsgrundlage bei Vergütung ohne erbrachte Behandlung) | Steuerberatung                      | ABR-EPIC-001 (als Annahme)   | Nov 2026                            | Festlegungen stehen 2026-09-08; Anfrage Sep |
 | **B14 PDF-Weg**              | Rechnungs-PDF: Browser-Druck, Bibliothek im Browser oder serverseitige Funktion — Optionen legt ABR-EPIC-002a vor; Druckansichten sind entschieden | Jannes mit Claude-Optionen          | ABR-EPIC-002b                | Nov 2026                            | bewusst offen; Tendenz serverseitig |
@@ -579,12 +574,6 @@ Punkt 7 — MUSS; der Inhalt der Zweckbestimmung dagegen schon).
 | **B11**                      | Paketpreise, Guthaben, Verfall, Rabatte                                                                                                            | Jannes und Steuerberatung           | Etappe 8                     | mit B9                              | entschieden 2026-09-08: nein |
 | **B10**                      | Automatisierte Progression: MDR-Grenze                                                                                                             | externe regulatorische Prüfung      | Etappe 9                     | mit B1 anfragen                     | entschieden 2026-09-08: V1 aus |
 | **C6**                       | KI: Schutzumfang und Provider                                                                                                                      | Jannes und Prüfung nach ADR-002/005 | Etappe 10                    | Stufe 3                             | Schutzumfang entschieden 2026-09-08 |
-
-Erledigt: A1 bis A4, B1 bis B4 architektonisch, B12 (kein Altsystem), B13
-(Auth-Mails des Providers, kein zweiter Dienst), C1 bis C5 (C1 und C2 durch
-E15 überholt), C8, D „finalisiert"/„nachvollziehbar", E1, E3 bis E5, E7, E9,
-E11 (mit STAFF-002), E14 (2026-09-13), E-13 (keine Unterschrift am
-Hausbesuch), E-20 und E-21 (ADR-019 angenommen, 2026-09-13).
 
 **Stand 2026-09-08: kein Punkt blockiert mehr das Bauen.** Jannes hat die
 Entscheidungsrunde vom Vortag ausnahmslos entschieden (Historie in
@@ -723,40 +712,6 @@ beschrieben; ihr Prompt wurde am 2026-09-06 auf dieses Format umgestellt
 
 ---
 
-## Antworten E-15 bis E-19
-
-Gestellt und beantwortet am 2026-09-06; die Fragen im Wortlaut stehen in der
-Git-Historie (Commit `ba46307`). Eingearbeitet an den betreffenden Stellen.
-
-1. **E-15 Zeitfenster vor der Eröffnung:** Die Reihenfolge der Umsetzung
-   ist verbindlich, der Zeitpunkt im Kalender zweitrangig; Jannes hält sich
-   offen, Themen früher abzuarbeiten. Folge: Abschnitt „Sessions starten",
-   Monate als Spätest-Termine, Reihenfolge TOUR-EPIC-001a → Etappe 2 → freier
-   Monat vor der Eröffnung. Eröffnung 01.07.2027 bestätigt.
-2. **E-16 In-App-Karte:** Empfehlung angenommen — Google Maps Embed API. Die
-   zuständige Datenschutz-Fachkraft hat genehmigt. Folge: B7 bis auf die
-   Fahrzeiten entschieden; ADR-019 dokumentiert; die Genehmigung kommt
-   schriftlich zu den DSFA-Unterlagen (M0). **Nachtrag 2026-09-08:** ADR-019
-   hat die Vertragsgrundlage geprüft und die Karte **nicht** freigeschaltet —
-   Google bietet für die Maps Platform keinen AVV an, was §3.5 als MUSS
-   verlangt. Die schriftliche Genehmigung wird damit von einer Formalie zur
-   Voraussetzung; sie muss ausdrücklich die Übermittlung an einen **eigenen
-   Verantwortlichen** decken. **Nachtrag 2 (2026-09-08, MAP-001):** Jannes
-   hat Convenience hoch priorisiert; die In-App-Karte ist Produktziel. ADR-019
-   Fassung 2 ersetzt die Embed API durch MapLibre mit PTV Developer als
-   Kandidat (Weg C). E-16 ist damit überholt — Bestätigung als **E-20**.
-3. **E-17 Personal Training:** beginnt ebenfalls am 01.07.2027, also keine
-   Bestandsdaten; Empfehlung angenommen — Stufe 3 nach M6, §1 der Prinzipien
-   wird dann ergänzt. Ob dieselbe Praxis oder ein eigener Betrieb, klärt die
-   Steuerberatung mit B4.
-4. **E-18 Screenshot:** ein fremdes Produkt; Jannes hat nur diesen Screenshot
-   und will den Funktionsumfang nachbauen. Folge: Vorlage für Umfang und
-   Ablauf, nicht für Datenmodell, Berechtigungen, Rechtsrahmen oder gestaltete
-   Inhalte; keine Nachrecherche.
-5. **E-19 Reihenfolge Stufe 3:** Empfehlung angenommen.
-
----
-
 ## Fortschritt
 
 Abgehakt wird hier, mit Datum und Commit. Ein Loop gilt als **fertig**, wenn
@@ -855,5 +810,4 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | 4.8     | 2026-09-13 | **CAL-016: die Nachbesserung zu CAL-014 und CAL-015** — aus zwei unabhängigen Reviews in frischem Kontext, keine neue Entscheidung und keine neue Annahme. Der Befund mit Geldfolge: `cancel_appointment` hatte als einzige der berührten Schreibfunktionen keine Artprüfung bekommen; eine Teambesprechung, die jemand mit dem Grund „Patient:in hat abgesagt" innerhalb der Frist absagte, bekam einen **Gebührenanlass** — an einer Zeile ohne Patient:in und ohne Behandlungsbeginn, und der Löschlauf hätte sie deshalb nie wieder angefasst (§16, ADR-008). Dazu: `cancel_staff_day` nimmt nur noch praxisbedingte Gründe an (der Ausfall einer behandelnden Person ist definitionsgemäß praxisbedingt; ein Fehlgriff im Auswahlfeld hätte Forderungen gegen **alle** Patient:innen des Tages innerhalb der Frist erzeugt), `list_day_plan` ließ Ereignisse still fallen (INNER JOIN auf `patients` — dieselbe Stelle, die CAL-015b bei zwei anderen Lesepfaden behoben hatte, hier übersehen), und der Mitteilungsvermerk weist ein Ereignis jetzt auch serverseitig ab. Oberfläche entsprechend: Absagedialog, „Tag umplanen", Tagesliste und `EditAppointmentPage` kennen Ereignisse; der Data Router bekommt ein `errorElement` mit deutschem Fehlerkasten statt der eingebauten englischen Seite mit Stacktrace (§13, ADR-011). Eine Migration, zwei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |
 | 4.7     | 2026-09-12 | **Drei Aufträge von Jannes fertig, keiner aus dieser Reihenfolge** — der zweite und dritte ändern verbindliche Dokumente. **FIX-EPIC-003**: Ungespeicherte Behandlungsdokumentation ist bei interner Navigation geschützt; die offene Entscheidung zum Router ist gefallen (Data Router mit einer Platzhalterroute — `useBlocker` verlangt ihn, ein selbstgebauter Wachposten käme an das Zurück des Browsers nicht heran), die Rückfrage bietet Speichern, Verwerfen und Bleiben, und ein Speicherfehler nimmt weder Text noch Seite mit (ANN-046). **CAL-014**: Eine Patientenabsage unter 24 Stunden löst eine Ausfallgebühr aus, gerechnet serverseitig aus dem **Eingang** der Absage — der jetzt getrennt von der Eingabe erfasst wird; das Nichtantreffen verliert seine Pflichtentscheidung über das Honorar und ist ein Schritt. Dafür **ADR-018 Fassung 2** und **`PROJECT_PRINCIPLES.md` 0.8** (§8); **E14 neu** (ob das Nichtantreffen eine eigene Gebührenregel bekommt, ist offen und blockiert nichts); ANN-047, ANN-048, ANN-035 erweitert. **CAL-015**: Behandlungstermine haben 60 **oder** 45 Minuten — damit ist **E12 Punkt 1 erledigt**, ohne das dort angebotene Verfahren zu bauen —, Ereignisse des Praxisbetriebs (Besprechung, Teamtermin) lassen sich ohne Patient:in und Verordnung eintragen und erzeugen keine Leistung, und der Weg von der Verordnung in den Kalender trägt den Kontext bis ins Formular. Dafür **`PROJECT_PRINCIPLES.md` 0.9** (§8.1); ANN-049, ANN-050. Zwei Migrationen, drei Abnahmeabschnitte. **Reihenfolge unverändert: nächster Loop DAT-EPIC-001.** |
 
-Ältere Vermerke (2.0 bis 4.6) stehen in
-[`archiv/ROADMAP-AENDERUNGEN.md`](archiv/ROADMAP-AENDERUNGEN.md).
+Ältere Vermerke (2.0 bis 4.6): Git-Historie bis `7160fd5`.

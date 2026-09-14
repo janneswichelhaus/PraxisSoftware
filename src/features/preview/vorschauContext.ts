@@ -117,11 +117,6 @@ export function depotName(
   return depot?.name ?? 'Unbekannter Standort';
 }
 
-/** Räder, die als Ersatz bereitstehen. */
-export function ersatzraeder(zustand: Vorschauzustand): Rad[] {
-  return zustand.raeder.filter((rad) => rad.ersatzrad);
-}
-
 /**
  * Ist die Person an diesem Kalendertag genehmigt abwesend?
  *
