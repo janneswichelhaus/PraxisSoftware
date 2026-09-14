@@ -1,144 +1,91 @@
 # Offene Entscheidungen
 
-Zuletzt aktualisiert: 2026-09-13 (E14 erledigt, E15 neu, E-20 erledigt) · Struktur 3.0
+Zuletzt aktualisiert: 2026-09-14 · Struktur 4.0
 
-Dieses Dokument hält fest, **was noch nicht entschieden ist**, warum es offen
-ist und was davon abhängt. Es trifft keine Entscheidungen und ändert
-`PROJECT_PRINCIPLES.md` nicht. Die Termine, bis wann ein Punkt entschieden sein
-muss, stehen in `docs/development/ROADMAP.md`, Spur B.
+Was noch nicht entschieden ist, warum es offen ist und was davon abhängt.
+Termine: `docs/development/ROADMAP.md`, Spur B. Die Volltexte der acht Punkte für
+externe Stellen stehen in `ANFRAGEN.md`.
 
 ## Wie dieses Dokument benutzt wird
 
-Ein offener Punkt blockiert keine Aufgabe. Braucht eine Aufgabe eine
-Festlegung, die hier offen ist, wird sie als begründete Annahme in
-`ASSUMPTIONS.md` getroffen (`PROJECT_PRINCIPLES.md` §15.1). Der Punkt bleibt
-hier offen und verweist auf die `ANN`-Kennung, bis er entschieden ist.
+**Dieses Dokument hat keinen Rang.** Es entscheidet nichts; was hier offen ist,
+gilt in keinem Dokument als entschieden, und was hier als entschieden vermerkt
+ist, hat seine Fundstelle in einem ADR, in `PROJECT_PRINCIPLES.md` oder als
+Vermerk mit Datum hier. Ein offener Punkt blockiert keine Aufgabe: Was eine
+Aufgabe braucht, wird als begründete Annahme in `ASSUMPTIONS.md` getroffen
+(§15.1); der Punkt bleibt offen und verweist auf die `ANN`-Kennung.
 
-**Dieses Dokument hat keinen Rang** in der Dokumentenhierarchie. Es
-entscheidet nichts; was hier offen ist, gilt in keinem Dokument als
-entschieden, und was hier als entschieden vermerkt ist, hat seine Fundstelle
-in einem ADR, in `PROJECT_PRINCIPLES.md` oder als Vermerk mit Datum in diesem
-Dokument.
+**`vorläufig entschieden (Jannes)`** ist der Status für Punkte, die eine externe
+Stelle bestätigen soll: Jannes ist der Verantwortliche nach Art. 4 Nr. 7 DSGVO,
+die externen Stellen prüfen seine Festlegung, sie treffen sie nicht für ihn. Für
+das Bauen zählt der Status wie `entschieden`, für die Freigabe wie `offen` — das
+Go-live-Gate (M3) verlangt, dass kein Datenschutz- oder Rechtspunkt mehr auf
+`offen` oder `vorläufig entschieden` steht. Jeder solche Eintrag nennt den Preis
+der Rücknahme (`klein`, `mittel`, `groß`). Nicht so entscheidbar sind B8 (eine
+Auskunft, keine Entscheidung), die externe MDR-Prüfung selbst (§17, ADR-006
+Punkt 7 — MUSS) und das Vorliegen der sieben Dokumente aus ADR-007 Punkt 5.
 
 **Kennungen:** `E12`, `E13` … (ohne Bindestrich) sind offene Punkte dieses
-Dokuments; `E-1` bis `E-21` (mit Bindestrich) sind die Rückfragen und
-Entscheidungen aus dem Roadmap-Review vom 2026-09-06 — alle beantwortet. Sie
-werden nicht umnummeriert.
-
-**Erledigte Punkte:** Hier bleibt je Punkt ein Zweizeiler mit Überschrift und
-Verweis, damit keine Kennung verschwindet. Volltext: Git-Historie bis `7160fd5`.
-
-1. Ein Punkt wird besprochen und entschieden.
-2. Die Entscheidung wird als ADR unter `docs/adr/` festgehalten, wenn sie
-   teuer rückgängig zu machen wäre (`docs/adr/README.md`); sonst genügt der
-   Vermerk hier mit Datum.
-3. Der Punkt wird in der Übersicht auf `entschieden` gesetzt und verweist auf
-   das ADR oder den Vermerk.
-4. Betrifft die Entscheidung `PROJECT_PRINCIPLES.md`, wird das Dokument in
-   einem eigenen Commit mit neuer Version nachgezogen (§21).
-
-### Vorläufig entschieden — Jannes entscheidet, extern wird bestätigt
-
-Mehrere Punkte warten in Spur B auf eine externe Stelle: Steuerberatung (B4,
-B11), Datenschutzberatung (B2, B3), regulatorische Prüfung (B1, B10). **Warten
-ist dafür nicht nötig.** Jannes ist der Verantwortliche nach Art. 4 Nr. 7
-DSGVO und derjenige, der die Zweckbestimmung im Sinne der MDR festlegt; die
-externen Stellen prüfen seine Festlegung, sie treffen sie nicht für ihn. Er
-kann jeden dieser Punkte **vorläufig selbst entscheiden**, damit die Arbeit
-weiterläuft und die Anfrage an die externe Stelle eine konkrete Vorlage hat
-statt einer offenen Frage — erfahrungsgemäß auch die schnellere Anfrage.
-
-Dafür gibt es den Status **`vorläufig entschieden (Jannes)`** mit Datum:
-
-- **Für das Bauen zählt er wie `entschieden`.** Ein Loop darf darauf aufsetzen;
-  der Punkt blockiert nichts mehr.
-- **Für die Freigabe zählt er wie `offen`.** Er ersetzt keine externe
-  Bestätigung. Das Go-live-Gate (M3) verlangt ausdrücklich, dass kein
-  Datenschutz- oder Rechtspunkt mehr auf `offen` **oder** auf `vorläufig
-  entschieden` steht.
-- **Der Eintrag nennt den Preis der Rücknahme.** Was zu ändern wäre, wenn die
-  externe Stelle widerspricht, und mit welchem Aufwand — nach demselben Maß wie
-  der Änderungspfad im Annahmenregister (`klein`, `mittel`, `groß`). Wäre er
-  `groß`, ist das das Signal, doch erst die externe Antwort abzuwarten.
-- Wird die Festlegung im Code verankert, gilt weiter §15.1: ein Eintrag im
-  Annahmenregister mit Kennung an genau einer Stelle. Bleibt sie rein
-  organisatorisch, genügt der Vermerk hier.
-
-**Drei Dinge lassen sich so nicht entscheiden**, weil sie keine Entscheidungen
-sind oder weil eine MUSS-Anforderung sie bindet:
-
-1. **B8 (Lizenzen)** ist eine Tatsachenfrage über einen Dritten: ob der
-   DIGOTOR-Bogen digital lizenziert ist, entscheidet der Lizenzgeber, nicht
-   die Praxis. Entscheidbar ist nur der Rückfall — bis zur Klärung ausschließlich
-   lizenzfreie Instrumente (FRB-001, FRB-002).
-2. **Die externe MDR-Prüfung vor Produktivstart** ist eine MUSS-Anforderung in
-   `PROJECT_PRINCIPLES.md` §17 und ADR-006 Punkt 7. Der **Inhalt** der
-   Zweckbestimmung ist Jannes' Festlegung und darf vorläufig getroffen werden;
-   die **Prüfung** selbst entfällt dadurch nicht. Sie zu streichen wäre eine
-   Prinzipienänderung nach §21, keine Annahme.
-3. **Die sieben Vorbedingungen aus ADR-007 Punkt 5** sind Dokumente, die
-   vorliegen müssen — Verzeichnis, TOM, Löschkonzept, Subprozessoren,
-   Datenschutzinformationen, Betroffenenrechte, Breach-Prozess. Ihr Inhalt ist
-   vorläufig entscheidbar, ihr Vorliegen nicht ersetzbar.
-
-Dringlichkeit: **P0** vor dem technischen Setup (alle erledigt) · **P1** vor
-dem ersten fachlichen Datenmodell des Bereichs · **P2** vor dem betreffenden
-Feature.
+Dokuments, `E-1` bis `E-21` (mit Bindestrich) die Rückfragen des Roadmap-Reviews
+vom 2026-09-06 — alle beantwortet; nicht umnummeriert. Erledigte Punkte behalten
+Überschrift und Verweis (Volltext: Git-Historie bis `7160fd5`). Dringlichkeit:
+**P1** vor dem ersten fachlichen Datenmodell des Bereichs, **P2** vor dem
+Feature, **P3** später.
 
 ---
 
 ## Übersicht — alle Punkte
 
-| Punkt | Thema                                                        | Status                                                        | Wo                                                                                                            |
+| Punkt | Thema | Status | Wo |
 | ----- | ------------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| A1    | Offline-Fähigkeit                                            | entschieden 2026-08-28                                        | [ADR-001](../adr/ADR-001-online-first-limited-offline.md); Mechanismus offen, siehe F                        |
-| A2    | Hosting, Datenstandort, Provider                             | entschieden 2026-08-28; **Anbieterprüfung offen**             | [ADR-002](../adr/ADR-002-hosting-data-residency.md), [ADR-015](../adr/ADR-015-initial-technical-stack.md); Roadmap OPS-001; unten |
-| A3    | `organization_id` / `location_id`                            | entschieden 2026-08-28                                        | [ADR-003](../adr/ADR-003-organization-location-model.md)                                                      |
-| A4    | Berechtigungsmodell                                          | entschieden 2026-08-28                                        | [ADR-004](../adr/ADR-004-authorization-model.md)                                                              |
-| B1    | MDR / EU AI Act                                              | Zweckbestimmung **vorläufig entschieden 2026-09-08**; **externe Prüfung offen** | [ADR-006](../adr/ADR-006-medical-device-boundary.md); Roadmap G13, Feb 2027                                   |
-| B2    | DSFA, DSB, Verzeichnis, TOM, Meldeprozess                    | Prozess entschieden; DSB **vorläufig entschieden 2026-09-08** (ja); Schwellwertprüfung offen | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md); Roadmap G12                                   |
-| B3    | Aufbewahrung und Löschung                                    | entschieden; **Fristen-Validierung offen**; Umsetzung LOE-EPIC-001 fertig 2026-09-11 | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md); unten (Annahmen); Roadmap LOE-EPIC-001              |
-| B4    | Abrechnungsmodell                                            | entschieden; vier Festlegungen **vorläufig entschieden 2026-09-08**; **steuerliche Validierung offen** | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13, Nov 2026                          |
-| B5    | Patientenidentität, Vertretung                               | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | unten; vor Etappe 4                                                                                           |
-| B6    | Beschäftigtendaten: Touren, Leistungskontrolle               | **vorläufig entschieden 2026-09-08: nein**                    | unten; vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit                                                     |
-| B7    | Adressdaten an den Kartendienst                              | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); **E-20 erledigt 2026-09-13** (Fassung 2 angenommen), Gate **offen** | unten; ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12); überholte Stände im Archiv    |
-| B8    | Lizenzen für Fragebögen und PROMs                            | Auskunft des Lizenzgebers **offen**; Rückfall entschieden 2026-09-08 | unten; vor FRB-003                                                                                            |
-| B9    | Betreuung ohne und nach Heilbehandlung (Personal Training)   | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08) | unten; vor Etappe 8; Steuerteil mit B4                                              |
-| B10   | Automatisierte Progression: MDR-Grenze                       | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1      | unten; vor Etappe 9                                                                                           |
-| B11   | Paketpreise, Vorauszahlung, Anreize                          | **vorläufig entschieden 2026-09-08**: vorerst nicht anbieten  | unten; vor Etappe 8                                                                                           |
-| B12   | Stichtag der Umstellung und Rechnungsnummernkreis            | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4   | Stub unten; Volltext: Git-Historie bis `7160fd5`                                                     |
-| B13   | E-Mail-Versand aus der Plattform (Einladung, Passwort)       | **entschieden 2026-09-06** durch Jannes (Option a); Auth-Mails Teil von OPS-001 (A2) | Stub unten; Volltext: Git-Historie bis `7160fd5`; Roadmap G2, G3                    |
-| B14   | PDF-Erzeugung für Rechnungen und Tagesplan                   | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen** (P1 für ABR-EPIC-002b) | unten; Roadmap ABR-EPIC-002a, Nov 2026                                                            |
-| B15   | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter   | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten                                                                                                         |
-| C1    | Leistungsziffern und Office                                  | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15             |
-| C2    | Klinische Inhalte in organisatorischer Kommunikation         | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15                                                                    |
-| C3    | Fail-closed gegen Patientensicherheit, Break Glass           | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
-| C4    | Auditlog als Kompensation                                    | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md); Betrieb Roadmap G6                                  |
-| C5    | Provider-Oberflächen, Admin-Trennung                         | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
-| C6    | AI Privacy Gateway: Schutzumfang und Provider                | Zeitpunkt entschieden; Schutzumfang **vorläufig entschieden 2026-09-08**; Provider offen | [ADR-005](../adr/ADR-005-provider-independent-ai.md); unten; vor Etappe 10                                    |
-| C7    | Sprachliche Trennung LLM / deterministische Regeln in §6, §7.1 | architektonisch entschieden; Wortlaut bei nächster Prinzipienversion | [ADR-005](../adr/ADR-005-provider-independent-ai.md); nicht planungsrelevant                             |
-| C8    | „Nicht verbauen" gegen „nicht vorbauen"                      | entschieden 2026-08-28                                        | [ADR-014](../adr/ADR-014-foundational-data-model.md)                                                          |
-| D     | „finalisiert", „nachvollziehbar"                             | entschieden 2026-09-01                                        | [ADR-016](../adr/ADR-016-clinical-documentation-record.md)                                                    |
-| D     | „bestätigt" — Terminstatus-Automat                           | **erledigt 2026-09-11** — Umfang 2026-09-05, Ausgestaltung mit ADR-018 bestätigt | [ADR-018](../adr/ADR-018-appointment-states.md); Stub unten; Volltext: Git-Historie bis `7160fd5`; `PROJECT_PRINCIPLES.md` 0.7 §8; gebaut in CAL-EPIC-003a |
-| D     | übrige Begriffe                                              | erledigt                                                      | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 (überholt durch E15) · „Behandlungsnachweis" → C1, ANN-006 (überholt durch E15) · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
-| D     | Normativität und Nachweis                                    | Normativität erledigt (0.2, §0); **Nachweistabelle offen**    | Roadmap G12                                                                                                   |
-| E1    | Betreibbarkeit bei Bus-Faktor 1                              | entschieden 2026-08-28                                        | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7                         |
-| E2    | Ausfallkonzept — zugleich Rückfallplan der Eröffnung         | Kern **vorläufig entschieden 2026-09-08**; Ausarbeitung Jan 2027 | unten; Roadmap G10 und H4, Jan 2027                                                                           |
-| E3    | Backup, RPO/RTO, Restore-Test                                | entschieden 2026-08-28                                        | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Roadmap G7                                       |
-| E4    | Produktionszugriff                                           | entschieden 2026-08-28                                        | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md)                                                      |
-| E5    | Produktions-Logs                                             | entschieden 2026-08-28                                        | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G8                                            |
-| E6    | Synthetische Testdaten                                       | erledigt: der Seed ist der Generator                          | `supabase/seed.sql`; Erweiterung im Loop, der sie braucht                                                     |
-| E7    | CI-Gates, Branch Protection                                  | entschieden 2026-08-28                                        | [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md); Freigabeprozess Roadmap G5                         |
-| E8    | Dateiablage                                                  | **erledigt 2026-09-12** — ADR-017 angenommen, alle acht Fragen wie empfohlen | [ADR-017](../adr/ADR-017-file-storage.md); Stub unten; Volltext: Git-Historie bis `7160fd5`; gebaut in DAT-EPIC-001 (PR #38); **produktive** Ablage an OPS-001 (G3) und OPS-003 (G7) gebunden |
-| E9    | Dokument-Governance                                          | erledigt mit Version 0.2 (2026-08-28)                         | `PROJECT_PRINCIPLES.md` §21                                                                                   |
-| E10   | Wer schreibt Mitarbeiterdaten                                | **erledigt 2026-09-11** — umgesetzt in STAFF-002a             | Stub unten; Volltext: Git-Historie bis `7160fd5`; `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024) |
-| E11   | Wer gilt als behandelnde Person                              | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | Stub unten; Volltext: Git-Historie bis `7160fd5`                                 |
-| E12   | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre   | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **entschieden 2026-09-12** (60 **oder** 45) · Punkt 3 und 4 **vorläufig entschieden 2026-09-12** (Fahrpuffer erst mit MAP-006) · **offen: nur Punkt 2** (Einstellbarkeit je Praxis, ANN-037) · **Punkt 3a neu 2026-09-13** (Fahrzeit ohne Speicherung gegen serverseitige Rundungsregel; MAP-006) | unten; `PROJECT_PRINCIPLES.md` 0.9 §8.1; CAL-010a und CAL-015 gebaut, CAL-010b entfallen (in MAP-006 aufgegangen) |
-| E13   | Sprachdokumentation: Anbieter, Architektur, Audio, Frist     | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen**             | unten; §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6         |
-| E14   | Gebühr beim Nichtantreffen am Hausbesuch                     | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Umsetzung CAL-018 | unten; `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
-| E15   | Office sieht klinische Inhalte                               | **entschieden (Jannes) 2026-09-13**; Umsetzung ROL-EPIC-001; Prüfvermerk für B2 | unten; `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
-| E-20  | ADR-019 Fassung 2 bestätigen                                 | **erledigt 2026-09-13** — angenommen; produktive Freigabe am Gate **offen** (ADR-019 Punkt 9) | unten (E-20 / E-21); [ADR-019](../adr/ADR-019-map-service.md); Gate in B7                                    |
-| E-21  | Reihenfolge MAP-002 zu UX-EPIC-001                           | **erledigt 2026-09-13** — gegenstandslos, UX-EPIC-001 seit 2026-09-11 fertig | unten (E-20 / E-21); Roadmap                                                                                  |
+| A1 | Offline-Fähigkeit | entschieden 2026-08-28 | [ADR-001](../adr/ADR-001-online-first-limited-offline.md); Mechanismus offen, siehe F |
+| A2 | Hosting, Datenstandort, Provider | entschieden 2026-08-28; **Anbieterprüfung offen** | [ADR-002](../adr/ADR-002-hosting-data-residency.md), [ADR-015](../adr/ADR-015-initial-technical-stack.md); Roadmap OPS-001; unten |
+| A3 | `organization_id` / `location_id` | entschieden 2026-08-28 | [ADR-003](../adr/ADR-003-organization-location-model.md) |
+| A4 | Berechtigungsmodell | entschieden 2026-08-28 | [ADR-004](../adr/ADR-004-authorization-model.md) |
+| B1 | MDR / EU AI Act | Zweckbestimmung **vorläufig entschieden 2026-09-08**; **externe Prüfung offen** | [ADR-006](../adr/ADR-006-medical-device-boundary.md); Roadmap G13, Feb 2027; Volltext: `ANFRAGEN.md` § B1 |
+| B2 | DSFA, DSB, Verzeichnis, TOM, Meldeprozess | Prozess entschieden; DSB **vorläufig entschieden 2026-09-08** (ja); Schwellwertprüfung offen | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md); Roadmap G12 |
+| B3 | Aufbewahrung und Löschung | entschieden; **Fristen-Validierung offen**; Umsetzung LOE-EPIC-001 fertig 2026-09-11 | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md); unten (Annahmen); Roadmap LOE-EPIC-001 |
+| B4 | Abrechnungsmodell | entschieden; vier Festlegungen **vorläufig entschieden 2026-09-08**; **steuerliche Validierung offen** | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13, Nov 2026; Volltext: `ANFRAGEN.md` § B4 |
+| B5 | Patientenidentität, Vertretung | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | vor Etappe 4; Volltext: `ANFRAGEN.md` § B5 |
+| B6 | Beschäftigtendaten: Touren, Leistungskontrolle | **vorläufig entschieden 2026-09-08: nein** | vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit |
+| B7 | Adressdaten an den Kartendienst | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); **E-20 erledigt 2026-09-13** (Fassung 2 angenommen), Gate **offen** | ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12); überholte Stände im Archiv |
+| B8 | Lizenzen für Fragebögen und PROMs | Auskunft des Lizenzgebers **offen**; Rückfall entschieden 2026-09-08 | vor FRB-003 |
+| B9 | Betreuung ohne und nach Heilbehandlung (Personal Training) | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08) | vor Etappe 8; Steuerteil mit B4; Volltext: `ANFRAGEN.md` § B9 |
+| B10 | Automatisierte Progression: MDR-Grenze | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1 | vor Etappe 9; Volltext: `ANFRAGEN.md` § B10 |
+| B11 | Paketpreise, Vorauszahlung, Anreize | **vorläufig entschieden 2026-09-08**: vorerst nicht anbieten | vor Etappe 8; Volltext: `ANFRAGEN.md` § B11 |
+| B12 | Stichtag der Umstellung und Rechnungsnummernkreis | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4 | — |
+| B13 | E-Mail-Versand aus der Plattform (Einladung, Passwort) | **entschieden 2026-09-06** durch Jannes (Option a); Auth-Mails Teil von OPS-001 (A2) | Roadmap G2, G3 |
+| B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen** (P1 für ABR-EPIC-002b) | Roadmap ABR-EPIC-002a, Nov 2026 |
+| B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten |
+| C1 | Leistungsziffern und Office | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15 |
+| C2 | Klinische Inhalte in organisatorischer Kommunikation | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15 |
+| C3 | Fail-closed gegen Patientensicherheit, Break Glass | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md) |
+| C4 | Auditlog als Kompensation | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md); Betrieb Roadmap G6 |
+| C5 | Provider-Oberflächen, Admin-Trennung | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md) |
+| C6 | AI Privacy Gateway: Schutzumfang und Provider | Zeitpunkt entschieden; Schutzumfang **vorläufig entschieden 2026-09-08**; Provider offen | [ADR-005](../adr/ADR-005-provider-independent-ai.md); vor Etappe 10; Volltext: `ANFRAGEN.md` § C6 |
+| C7 | Sprachliche Trennung LLM / deterministische Regeln in §6, §7.1 | architektonisch entschieden; Wortlaut bei nächster Prinzipienversion | [ADR-005](../adr/ADR-005-provider-independent-ai.md); nicht planungsrelevant |
+| C8 | „Nicht verbauen" gegen „nicht vorbauen" | entschieden 2026-08-28 | [ADR-014](../adr/ADR-014-foundational-data-model.md) |
+| D | „finalisiert", „nachvollziehbar" | entschieden 2026-09-01 | [ADR-016](../adr/ADR-016-clinical-documentation-record.md) |
+| D | „bestätigt" — Terminstatus-Automat | **erledigt 2026-09-11** — Umfang 2026-09-05, Ausgestaltung mit ADR-018 bestätigt | [ADR-018](../adr/ADR-018-appointment-states.md); `PROJECT_PRINCIPLES.md` 0.7 §8; gebaut in CAL-EPIC-003a |
+| D | übrige Begriffe | erledigt | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 (überholt durch E15) · „Behandlungsnachweis" → C1, ANN-006 (überholt durch E15) · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
+| D | Normativität und Nachweis | Normativität erledigt (0.2, §0); **Nachweistabelle offen** | Roadmap G12 |
+| E1 | Betreibbarkeit bei Bus-Faktor 1 | entschieden 2026-08-28 | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7 |
+| E2 | Ausfallkonzept — zugleich Rückfallplan der Eröffnung | Kern **vorläufig entschieden 2026-09-08**; Ausarbeitung Jan 2027 | Roadmap G10 und H4, Jan 2027; Volltext: `ANFRAGEN.md` § E2 |
+| E3 | Backup, RPO/RTO, Restore-Test | entschieden 2026-08-28 | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Roadmap G7 |
+| E4 | Produktionszugriff | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md) |
+| E5 | Produktions-Logs | entschieden 2026-08-28 | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G8 |
+| E6 | Synthetische Testdaten | erledigt: der Seed ist der Generator | `supabase/seed.sql`; Erweiterung im Loop, der sie braucht |
+| E7 | CI-Gates, Branch Protection | entschieden 2026-08-28 | [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md); Freigabeprozess Roadmap G5 |
+| E8 | Dateiablage | **erledigt 2026-09-12** — ADR-017 angenommen, alle acht Fragen wie empfohlen | [ADR-017](../adr/ADR-017-file-storage.md); gebaut in DAT-EPIC-001 (PR #38); **produktive** Ablage an OPS-001 (G3) und OPS-003 (G7) gebunden |
+| E9 | Dokument-Governance | erledigt mit Version 0.2 (2026-08-28) | `PROJECT_PRINCIPLES.md` §21 |
+| E10 | Wer schreibt Mitarbeiterdaten | **erledigt 2026-09-11** — umgesetzt in STAFF-002a | `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024) |
+| E11 | Wer gilt als behandelnde Person | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | — |
+| E12 | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **entschieden 2026-09-12** (60 **oder** 45) · Punkt 3 und 4 **vorläufig entschieden 2026-09-12** (Fahrpuffer erst mit MAP-006) · **offen: nur Punkt 2** (Einstellbarkeit je Praxis, ANN-037) · **Punkt 3a neu 2026-09-13** (Fahrzeit ohne Speicherung gegen serverseitige Rundungsregel; MAP-006) | `PROJECT_PRINCIPLES.md` 0.9 §8.1; CAL-010a und CAL-015 gebaut, CAL-010b entfallen (in MAP-006 aufgegangen) |
+| E13 | Sprachdokumentation: Anbieter, Architektur, Audio, Frist | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen** | §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6 |
+| E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Umsetzung CAL-018 | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
+| E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; Umsetzung ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
+| E-20 | ADR-019 Fassung 2 bestätigen | **erledigt 2026-09-13** — angenommen; produktive Freigabe am Gate **offen** (ADR-019 Punkt 9) | unten (E-20 / E-21); [ADR-019](../adr/ADR-019-map-service.md); Gate in B7 |
+| E-21 | Reihenfolge MAP-002 zu UX-EPIC-001 | **erledigt 2026-09-13** — gegenstandslos, UX-EPIC-001 seit 2026-09-11 fertig | unten (E-20 / E-21); Roadmap |
 
 ---
 
@@ -146,1062 +93,308 @@ Feature.
 
 ### A2 — Anbieterprüfung Supabase (OPS-001)
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — vor dem Cloudprojekt; Roadmap G3 |
-| Bezug | §2.1, §3.5; ADR-002, ADR-015 Punkt 20, ADR-017 (fünf Prüfpunkte zum Objektspeicher) |
+offen · P1 · §2.1, §3.5; ADR-002, ADR-015 Punkt 20, ADR-017
 
-Hosting, Datenstandort und Provider sind entschieden (ADR-002, ADR-015).
-**Offen ist die Ausgestaltung der Anbieterprüfung** als Dokument OPS-001. Zu
-ihr gehören die **Auth-Mails des Providers** — Einladung eines Zugangs,
-Passwort zurücksetzen — als einziger Versandweg der Plattform in Stufe 1
-(B13, entschieden 2026-09-06; Volltext im Archiv), die Prüfung der Edge
-Runtime (ADR-015 Punkt 20, ANN-017) und die fünf zusätzlichen Prüfpunkte zum
-Objektspeicher aus ADR-017.
+Hosting, Datenstandort und Provider sind entschieden (ADR-002, ADR-015); offen
+ist die Ausgestaltung der Anbieterprüfung als Dokument OPS-001. Dazu gehören die
+Auth-Mails des Providers als einziger Versandweg in Stufe 1 (B13), die Prüfung
+der Edge Runtime (ADR-015 Punkt 20) und die fünf Prüfpunkte zum Objektspeicher
+aus ADR-017.
 
-**Annahmen:** ANN-007 (`pg_cron`, Providerfrage offen), ANN-017 (Edge
-Function als Kartendienst-Adapter), ANN-025 (keine Authentifizierungskonten
-aus der Anwendung), ANN-027 (Kennwortlänge, Einstellung beim Provider),
-ANN-043 (Auth-Links über `token_hash`), ANN-044 (`jwt_expiry` und das
-Restfenster nach „Alle Sitzungen beenden").
+Wo: OPS-001, Roadmap G3. Annahmen: ANN-007, ANN-017, ANN-025, ANN-027, ANN-043,
+ANN-044.
 
 ### B1 — MDR / EU AI Act: die Zweckbestimmung
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — Text vor der Anfrage (Sep), Prüfergebnis vor M3 |
-| Bezug | §17; ADR-006 Punkt 7 |
+Zweckbestimmung vorläufig entschieden · 2026-09-08 · Jannes; externe Prüfung offen
 
-**Frage:** Mit welchem Wortlaut beschreibt die Praxis die Zweckbestimmung der
-Software? Die externe Prüfung braucht einen Text, den sie prüfen kann.
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes** — dieser Wortlaut geht in
-die Anfrage:
-
-> Die Software dient der Organisation, Dokumentation und Abrechnung
-> physiotherapeutischer Leistungen einer privat abrechnenden Praxis. Sie
-> erfasst, speichert, strukturiert und stellt Gesundheitsinformationen dar und
-> führt transparente mathematische Berechnungen validierter Instrumente durch.
->
-> Sie ist **nicht** dazu bestimmt, diagnostische oder therapeutische
-> Entscheidungen zu treffen, Therapieempfehlungen zu geben, klinische
-> Risikoklassifikationen oder Differentialdiagnosen zu erzeugen oder klinische
-> Entscheidungen zu automatisieren. Eingesetzte generative KI dient der
-> Dokumentation, sprachlichen Umformung, Zusammenfassung und administrativen
-> Assistenz und fügt keine klinische Interpretation hinzu.
->
-> Alle klinischen Entscheidungen trifft die behandelnde Therapeutin.
-
-Der zweite Absatz benennt die Ausschlüsse positiv, statt sie offenzulassen —
-daran entscheidet sich die MDR-Einordnung.
-
-**Weiterhin offen und nicht ersetzbar:** die externe Prüfung selbst (§17,
-ADR-006 Punkt 7). Sie prüft diesen Text; sie entfällt nicht dadurch, dass er
-vorliegt.
-
-**Rücknahme:** heute `klein` (ein Dokument). Zieht die Prüfung die Abgrenzung
-anders, betrifft das Features, nicht Text — deshalb jetzt festlegen und prüfen
-lassen, nicht umgekehrt.
-
-**Blockiert:** nichts mehr für die Anfrage. Weiterhin gesperrt bleibt jedes
-Feature mit `MDR_REVIEW_REQUIRED` (B10).
-
-**Annahmen:** ANN-014 („Empfehlung zum Verordnungsende" ist eine erfasste
-Angabe, keine Systemempfehlung).
+Volltext: `ANFRAGEN.md` § B1. Wo: ADR-006, §17; Roadmap G12/G13.
+Annahmen: ANN-014.
 
 ### B2 — Datenschutzbeauftragter
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — mit der Anfrage im September |
-| Bezug | §3.7; ADR-007 Punkte 3 und 4 |
+vorläufig entschieden · 2026-09-08 · Jannes · ja, extern beauftragt
 
-**Frage:** ADR-007 Punkt 4 regelt den Fall der gesetzlichen Pflicht. Offen war,
-ob **auch ohne** festgestellte Pflicht ein Datenschutzbeauftragter benannt wird.
+Offen war, ob auch ohne festgestellte Pflicht ein Datenschutzbeauftragter
+benannt wird; Jannes hat das bejaht. Ausschlaggebend war nicht die Pflicht (nach
+Art. 37 Abs. 1 lit. c DSGVO, WP 243 und §38 Abs. 1 BDSG eher unwahrscheinlich),
+sondern die Lage: Gesundheitsdaten als Kerntätigkeit, selbst entwickelte Software,
+keine eigene Datenschutzexpertise. Offen bleiben Schwellwertprüfung und DSFA;
+Rücknahme in der Software `klein`.
 
-**Vorläufig entschieden am 2026-09-08 durch Jannes: ja, extern beauftragt** —
-unabhängig vom Ergebnis der Schwellwertprüfung.
-
-**Begründung.** Die Pflicht nach Art. 37 Abs. 1 lit. c DSGVO greift bei
-**umfangreicher** Verarbeitung besonderer Datenkategorien; Erwägungsgrund 91
-und die Leitlinien der Art.-29-Datenschutzgruppe (WP 243) nennen den einzelnen
-Arzt ausdrücklich als Gegenbeispiel, §38 Abs. 1 BDSG knüpft zusätzlich an 20
-Personen. Eine Pflicht ist danach **unwahrscheinlich** — sicher ist das erst
-mit der Schwellwertprüfung. Ausschlaggebend war nicht die Pflicht, sondern die
-Lage: Gesundheitsdaten als Kerntätigkeit, selbst entwickelte Software, keine
-eigene Datenschutzexpertise und niemand, der gegenliest. Genau diese
-Kombination ist der Grund, warum die Punkte hier überhaupt allein entschieden
-werden.
-
-**Weiterhin offen:** die Schwellwertprüfung selbst und die DSFA (externe
-Datenschutzberatung, Anfrage September). Die Auswahl der Person oder Kanzlei
-trifft Jannes.
-
-**Rücknahme:** in der Software `klein` (Nennung in den
-Datenschutzinformationen); außerhalb ein laufender Vertrag — eine
-Kostenentscheidung, keine technische.
-
-**Annahmen** (alle Einträge der Kategorien `Datenschutz` und `Recht` mit
-Status `offen` oder `entschieden (Jannes)`, Stand 2026-09-13 — das Prüfpaket
-der Anfrage B2): ANN-001, ANN-003, ANN-004, ANN-006 (mit E15 verworfen),
-ANN-009, ANN-010, ANN-011, ANN-013, ANN-014, ANN-016, ANN-018, ANN-020,
-ANN-021, ANN-024, ANN-025, ANN-026, ANN-027, ANN-028, ANN-029, ANN-030,
-ANN-031, ANN-033, ANN-034, ANN-035, ANN-039, ANN-040, ANN-041, ANN-043,
-ANN-044, ANN-052. Dazu der Prüfvermerk aus E15.
+Wo: ADR-007 Punkte 3 und 4, §3.7; Roadmap G14. Annahmen: das Prüfpaket des
+Registers (Stand 2026-09-14: 29 Einträge), dazu der Prüfvermerk aus E15.
 
 ### B3 — Aufbewahrung und Löschung: Fristen-Validierung
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — Validierung mit der Anfrage B2, Ergebnis vor M3 |
-| Bezug | §18; ADR-008; LOE-EPIC-001 |
+offen · P1 · §18; ADR-008; LOE-EPIC-001
 
-Das Modell ist entschieden (ADR-008: Retention Schedule, Löschlauf, Legal
-Hold) und mit LOE-EPIC-001 gebaut (fertig 2026-09-11). **Offen ist die
-Validierung der Fristen** durch die Datenschutzberatung — sie geht mit der
-Anfrage B2; die Belegfristen der Rechnungen laufen als eigene Datenklasse mit
-B4 (Punkt 4).
+Das Modell ist entschieden (Retention Schedule, Löschlauf, Legal Hold) und mit
+LOE-EPIC-001 gebaut; offen ist die Validierung der Fristen durch die
+Datenschutzberatung — sie geht mit B2, die Belegfristen der Rechnungen mit B4.
 
-**Annahmen:** ANN-001 (interne Initialfristen), ANN-002 (`inactive` ist kein
-Behandlungsabschluss), ANN-013 (Verordnerkartei), ANN-020 (Textbausteine),
-ANN-026 (Einladung), ANN-029 (Auditeinträge mit eigener Frist), ANN-030
-(Beschäftigtendaten ohne Frist), ANN-031 (Löschjournal ohne Frist), ANN-032
-(„Abschluss der Versorgung" als Fristanker), ANN-033 (Legal Hold), ANN-035
-(No-show unter der Frist der Absagen; mit Gebührenanlass keine Löschung).
+Wo: ADR-008; Roadmap G14. Annahmen: ANN-001, ANN-002, ANN-013, ANN-020, ANN-026,
+ANN-029 bis ANN-033, ANN-035.
 
 ### B4 — Steuerliche Validierung: Fragen an die Steuerberatung
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — als Annahme vor ABR-EPIC-001, bestätigt vor der ersten ausgestellten Rechnung (ABR-EPIC-002a) |
-| Bezug | §19; ADR-009 Punkte 5, 6 und 8; GoBD; B9, B11 |
+vier Festlegungen vorläufig entschieden · 2026-09-08 · Jannes; Validierung offen
 
-Das Abrechnungsmodell ist entschieden (ADR-009). Offen ist die steuerliche
-Validierung; die Liste wurde am 2026-09-06 um die Punkte erweitert, die aus
-der Eröffnung ohne Vorgängersystem und aus dem Personal Training folgen. Sie
-geht mit der Anfrage B4 im September an die Steuerberatung:
+Volltext: `ANFRAGEN.md` § B4.
 
-**Vorläufig entschieden am 2026-09-08 durch Jannes** — vier Festlegungen, die
-als Vorlage in die Anfrage gehen und die Rechnung in ABR-EPIC-001/002a
-bestimmen:
-
-1. **Steuerkennzeichen je Katalogposition** (ADR-009 Punkt 6 verlangt es
-   ohnehin): Voreinstellung **befreit nach §4 Nr. 14a UStG** für Heilbehandlung
-   auf Verordnung, **steuerpflichtig** für Prävention, Selbstzahler ohne
-   Verordnung und Personal Training. Gemischte Fälle: **getrennte Rechnungen**,
-   nicht eine Rechnung mit zwei Steuersätzen. Rücknahme `klein`.
-2. **Kleinunternehmerregelung nach §19 UStG: in Anspruch nehmen**, solange der
-   Personal-Training-Umsatz unter der geltenden Grenze bleibt. Der aufgegebene
-   Vorsteuerabzug nützt im Heilbehandlungsteil ohnehin nichts — §15 Abs. 2 Nr. 1
-   UStG schließt ihn für steuerfreie Umsätze aus; es bliebe nur der
-   Trainingsanteil, dem die gesamte Umsatzsteuer-Mechanik gegenübersteht. Für
-   die Software: **ein** Umsatzsteuer-Status, **ein** Hinweistext, keine zwei
-   Steuersätze. Rücknahme `mittel` (ein Statuswechsel mitten im Jahr zieht sich
-   durch Rechnungsvorlage und Katalog). **Unsicher und ausdrücklich zu fragen:**
-   die für 2027 geltende Grenze (§19 wurde zum 01.01.2025 geändert) und ob der
-   Gesamtumsatz nach §19 Abs. 3 UStG die befreiten Heilbehandlungsumsätze
-   vollständig herausnimmt.
-3. **Nummernkreis `RG-JJJJ-NNNN`**, je Kalenderjahr neu bei `0001`, lückenlos,
-   Nummer erst bei Ausstellung (ADR-009). §14 Abs. 4 Nr. 4 UStG verlangt eine
-   einmalig vergebene fortlaufende Nummer; das Jahrespräfix macht eine Lücke
-   sofort sichtbar. Rücknahme `klein` **vor** der ersten Rechnung, danach
-   faktisch `groß` — also vor dem 01.07.2027 festzurren.
-4. **Belegfristen: die gesetzlichen übernehmen** (§147 AO, §257 HGB) und als
-   **eigene Datenklasse** im Retention Schedule führen, getrennt von der
-   Patientenakte. Rechnungen folgen der Steuerfrist, klinische Unterlagen der
-   Behandlungsfrist — zwei Uhren, nicht eine. Rücknahme `klein`.
-
-**Weiterhin offen:** die steuerliche Validierung dieser vier Punkte. Sie sind
-Vorlage, nicht Beratung.
-
-**Vorgabe statt Frage (2026-09-07, B9):** Heilbehandlung und Personal Training
-laufen über **ein** Unternehmen. Die Fragen 1 und 2 sind entsprechend als
-Festlegung formuliert und nicht mehr ergebnisoffen.
-
-1. **Leistungsarten und Umsatzsteuer:** Welche Katalogpositionen sind nach
-   §4 Nr. 14a UStG befreit (Heilbehandlung auf Verordnung), welche nicht
-   (Prävention, Selbstzahler ohne Verordnung, Personal Training)? Wie werden
-   gemischte Fälle abgerechnet — getrennte Rechnungen oder eine Rechnung mit
-   zwei Steuersätzen? Beides fällt in **einem** Unternehmen an, nicht in zwei.
-2. **Kleinunternehmerregelung (§19 UStG) im Eröffnungsjahr:** Nimmt die
-   Praxis sie für die steuerpflichtigen Umsätze in Anspruch? Das bestimmt den
-   Umsatzsteuer-Status in den Praxisstammdaten (ABR-000) und den Hinweistext
-   auf der Rechnung. Bitte dabei bestätigen, wie der Gesamtumsatz nach
-   §19 Abs. 3 UStG zu bilden ist, wenn die befreiten Heilbehandlungsumsätze
-   herausfallen und im Wesentlichen das Personal Training gegen die Grenze
-   zählt — und ab wann das die Regelbesteuerung auslöst.
-3. **Nummernkreis:** Die Praxis eröffnet am 01.07.2027 ohne Vorgängersystem;
-   der Nummernkreis beginnt mit der ersten Rechnung. Welches Format (fortlaufend
-   je Jahr, mit Jahrespräfix) und welche Anforderungen an Lückenlosigkeit und
-   Dokumentation gelten?
-4. **Belegfristen und Belegarten** (B3): Rechnungen, Storno- und
-   Korrekturdokumente, Zahlungsbelege, Erstattungsbelege.
-5. **Export für die Steuerberatung:** gewünschtes Format (CSV, DATEV) für
-   Rechnungen und Zahlungen (`IDEA-PRX-026`).
-6. **Personal Training** (B9, B11): Umsatzsteuer, Anzahlungen und Pakete,
-   getrennte oder gemeinsame Rechnungsstellung mit der Praxis.
-
-Nicht mehr Teil der Anfrage: eine Behandlungsbestätigung oder Unterschrift je
-Termin — Jannes hat am 2026-09-06 entschieden, dass keine benötigt wird
-(`IDEA-PRX-015`, verworfen).
-
-**Blockiert:** nichts; bis zur Antwort gelten Annahmen in ABR-EPIC-001 und
-ABR-EPIC-002a (Registereinträge).
+Wo: ADR-009, §19; Roadmap G15. Annahmen: ANN-035 (steuerliche Aufbewahrung des
+Gebührenanlasses), E14 (Rechnungstext für Fall 1).
 
 ### B5 — Patientenidentität, Identitätsprüfung und Vertretung
 
-| | |
-|---|---|
-| Dringlichkeit | P1 für das Portal (Etappe 4) |
-| Bezug | §4.6 |
+Rahmen vorläufig entschieden · 2026-09-08 · Jannes; Verfahren offen · P1 für das Portal
 
-**Frage:** Wie authentifizieren sich Patient:innen, wie wird ihre Identität
-geprüft, und wer darf in ihrem Namen handeln?
+Volltext: `ANFRAGEN.md` § B5.
 
-**Warum offen:** §4.6 setzt „ein Patient = ein Account" voraus. In der mobilen
-Versorgung sind Betreuer:innen, Bevollmächtigte, Angehörige und Eltern
-Minderjähriger der Regelfall. Offen sind außerdem: Identitätssicherheit vor
-Akteneinsicht (§630g BGB), Zugangsverfahren für hochbetagte Patient:innen, und
-ob der Portalzugang der §630g-Einsicht entspricht — und wenn ja, welche Teile
-der Akte sichtbar sind.
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes — der Rahmen, nicht das
-Verfahren:**
-
-1. **Ein Konto gehört einer Person.** Vertretung — Angehörige, Betreuung,
-   Eltern Minderjähriger — wird als **eigene Beziehung** modelliert: eigenes
-   Konto, ausdrücklich erteilter Zugriff, im Auditlog unterscheidbar.
-   **Niemals durch Weitergabe der Zugangsdaten.** Sobald Angehörige das
-   Patientenkonto mitbenutzen, ist jede Zurechnung im Auditlog wertlos — und
-   das Auditlog ist nach ADR-010 die Kompensation für erhebliche
-   Zugriffsrechte.
-2. **Der Portalzugang ist nicht automatisch die Einsicht nach §630g BGB.** Die
-   Einsicht erfolgt auf Antrag, mit dokumentierter Identitätsprüfung und
-   dokumentiertem Umfang. Welche Teile der Akte im Portal sichtbar sind, ist
-   davon getrennt zu entscheiden.
-
-**Rücknahme:** Rahmensatz 1 später einzuziehen wäre `groß` (Auditlog und
-Zugriffsmodell) — deshalb jetzt, obwohl das Portal weit weg ist. Der Aufwand
-war bei der Entscheidung benannt (§15.1 Punkt 4). Alles Übrige `klein`, weil
-noch nichts existiert.
-
-**Weiterhin offen:** das Verfahren selbst — Zugangsverfahren, Identitätsprüfung
-vor Akteneinsicht, Zugang für hochbetagte Patient:innen.
-
-**Blockiert:** Identitäts- und Patientenstammdatenmodell für das Portal,
-Portal-Design. **Nicht blockiert:** Rechnungsempfänger ≠ Patient:in (ADR-009
-regelt den Adressaten der Rechnung, nicht den Zugriff auf die Akte).
+Wo: ADR-014 (minimale Struktur für Vertreterzugriffe); Roadmap Etappe 4.
 
 ### B6 — Beschäftigtendaten: Tourendaten und Leistungskontrolle
 
-| | |
-|---|---|
-| Dringlichkeit | P1 für Zeitkonto und Touren |
-| Bezug | §1, §20 |
+vorläufig entschieden · 2026-09-08 · Jannes · nein
 
-**Frage:** Werden Standort-, Touren- und Arbeitszeitdaten für
-Leistungsbeurteilung verwendet — ja oder nein?
+Standort-, Touren- und Arbeitszeitdaten werden nicht zur Verhaltens- oder
+Leistungsbeurteilung verwendet; die Begrenzung wird technisch umgesetzt
+(Aggregation statt Einzelbewegung, kurze Löschfristen, kein Live-Tracking, keine
+Auswertung je Person). §26 BDSG setzt der Leistungskontrolle enge Grenzen, und
+bei dieser Praxisgröße liefert ein „Ja" nichts Unbekanntes (§16, §20). Rücknahme
+`mittel`.
 
-**Warum offen:** Routenplanung plus Arbeitszeiterfassung erzeugen ein
-lückenloses Bewegungs- und Leistungsprofil der Therapeut:innen. §26 BDSG setzt
-der Verhaltens- und Leistungskontrolle enge Grenzen. §20 verbietet bereits
-Live-Ortung und nennt Auswertungen als offen.
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes: nein.** Standort-, Touren-
-und Arbeitszeitdaten werden **nicht** zur Verhaltens- oder Leistungsbeurteilung
-verwendet. Die Begrenzung wird technisch umgesetzt: Aggregation statt
-Einzelbewegung, kurze Löschfristen, kein Live-Tracking (steht bereits in §20),
-**keine Auswertung je Person**.
-
-**Begründung.** §26 BDSG setzt der Leistungskontrolle enge Grenzen; ein „Ja"
-wäre begründungs- und ab einem Betriebsrat mitbestimmungspflichtig und würde
-die DSFA erheblich aufblähen. Bei einer Praxis dieser Größe liefert es nichts,
-was ohne Datenauswertung unbekannt wäre. Das „Nein" ist die datensparsamere
-Option (§16) und ein Satz, den die Praxis ihren Beschäftigten sagen kann.
-
-**Rücknahme:** `mittel` — das „Nein" wird zu Löschfristen und fehlenden
-Auswertungen; ein späteres „Ja" bräuchte neue Daten, aber keinen Umbau.
-
-**Blockiert:** Datenmodell und Aufbewahrung für Touren- und Zeitdaten; bei
-„nein" ist die Begrenzung technisch umzusetzen (Aggregation, Löschfristen,
-kein Live-Tracking). ANN-004 hält Arbeitszeiten bereits aus dem Auditlog heraus.
+Wo: §20; Roadmap vor ZK-001 und TOUR-001. Annahmen: ANN-004 (Arbeitszeiten
+bleiben aus dem Auditlog heraus).
 
 ### B7 — Übermittlung von Adressdaten an den Kartendienst
 
-| | |
-|---|---|
-| Dringlichkeit | Handoff nicht blockiert; Karte und Fahrzeiten (MAP-006) am Vertrags-/§203-/DSFA-Gate aus ADR-019 Punkt 9 |
-| Bezug | §9, §18, §20, §3.5; ADR-002, ADR-007 Punkt 2; ADR-019 Fassung 2 (angenommen 2026-09-13) |
+Weg C vorläufig entschieden · 2026-09-08 · Jannes (MAP-001); produktive Freigabe am Gate offen
 
-**Überholte Stände** — Google Maps als Kartendienst (2026-09-06), die Google
-Maps Embed API (E-16), das Ergebnis von ADR-019 Fassung 1 mit den drei Wegen
-A, B, C und der damalige Blockiert-Vermerk — Volltext: Git-Historie bis
-`7160fd5`. Geltend ist Weg C (Nachtrag unten).
+Google Maps Platform wird nicht Backend (kein AVV, keine belegte
+EU-Verarbeitung); Kandidat ist PTV Developer mit den OSM-APIs, nicht produktiv
+freigegeben. Fahrzeiten werden abgerufen und angezeigt, nicht gespeichert und nie
+je Person ausgewertet — damit hängt der Punkt an B6. Vor Echtdaten steht das
+neunteilige Gate aus ADR-019 Punkt 9, alle Punkte `CONTRACT_CONFIRMATION_REQUIRED`.
 
-**Vorläufig entschieden am 2026-09-08 durch Jannes — Fahrzeiten: abrufen ja,
-speichern nein.** Die Fahrzeit je Weg wird im Moment der Planung abgerufen und
-angezeigt, **nicht persistiert** und nie je Person ausgewertet. Damit hängt der
-Punkt sauber an B6: ohne gespeicherte Fahrzeit gibt es nichts, woraus sich ein
-Leistungsprofil bauen ließe. Rücknahme `klein`, solange nichts gespeichert
-wird. Die Datenschutzberatung bestätigt oder ändert das mit B2.
-
-**Noch offen — Fahrzeiten** (jetzt MAP-006, ADR-019 Fassung 2, siehe Nachtrag
-unten): ob Fahrzeiten je Weg aus dem Dienst abgerufen und kurz gespeichert
-werden dürfen (§18) und wie sie von jeder Auswertung je Person getrennt
-bleiben (B6). Vorläufig entschieden (unten): abrufen und anzeigen ja,
-speichern nein.
-
-**Endgerät:** Der Link öffnet die Google-Maps-App oder den Browser auf dem
-Telefon der Therapeutin. Ein dort angemeldetes privates Google-Konto speichert
-Suchen und Wege. Die Endgeräte-Richtlinie (Roadmap G14, BETRIEB-001) regelt
-Konto und Verlauf; das ist Teil von ADR-019.
-
-**Nachtrag 2026-09-08 (MAP-001, ADR-019 Fassung 2) — Weg C gewählt.** Jannes
-hat Convenience hoch priorisiert: In-App-Karte, Fahrradrouting und Fahrzeiten
-sind Produktziel. Damit gilt:
-
-- **Anbieter:** Google Maps Platform wird **nicht** Backend (kein AVV, keine
-  belegte EU-Verarbeitung). **PTV Developer** (PTV Logistics GmbH,
-  Karlsruhe) ist Kandidat für Prototyp und Bewertung — nur die OSM-APIs
-  (Vector Maps, Geocoding, Routing, Matrix). **Nicht produktiv freigegeben.**
-- **Gate vor Echtdaten** (`providerpruefung-kartendienst.md`, Teil 5): DPA-Text
-  mit Nennung von PTV Developer und der OSM-APIs · Weisungsbindung ·
-  §203-Verpflichtung (kein Wortlaut gefunden — gesondert anfragen) ·
-  Subprozessoren der OSM-APIs · Retention und Ausschluss der Zweitnutzung ·
-  EU-Region · Paid Plan und Schlüsselbindung · Prüfung der Supabase Edge
-  Runtime (ADR-015 Punkt 20, OPS-001) · DSFA-Wiedervorlage je Datenweg.
-  **Alle neun Punkte `CONTRACT_CONFIRMATION_REQUIRED`** — die PTV-Webseiten
-  waren aus der Entwicklungsumgebung gesperrt.
-- **Handoff:** nicht blockiert, aber nicht automatisch risikofrei (ADR-019
-  Punkt 23; ANN-018). Frage an B2: Art. 9 / §203 bei Übergabe einer Adresse
-  ohne Namen an den Betreiber der Navigations-App vom Gerät der Therapeutin.
-- **Annahmen:** ANN-016 (Koordinate bei der Adresse), ANN-017 (Edge Function
-  als Adapter), ANN-018 (Übergabeziel und URL-Format).
-- **Für Jannes:** E-20 (Fassung 2 bestätigen, E-16 überholt), E-21
-  (Reihenfolge MAP-002 zu UX-EPIC-001), PTV-Free-Abo vor MAP-002,
-  Vertragsdokumente vor MAP-006 laden.
-
-**E-20 erledigt am 2026-09-13:** ADR-019 Fassung 2 ist angenommen; die
-produktive Freigabe bleibt am Gate (ADR-019 Punkt 9). **E-21** ist
-gegenstandslos, weil UX-EPIC-001 seit 2026-09-11 fertig ist — erledigt. Beide
-unten unter „E-20 / E-21".
-
-**Blockiert jetzt nur noch:** MAP-006 (echte Adressen), bis das Gate
-passiert ist. **Nicht blockiert:** MAP-002 bis MAP-005 mit synthetischen
-Daten, der Handoff in UX-EPIC-001, die Tourenliste, CAL-010b.
+Wo: ADR-019 Fassung 2, `providerpruefung-kartendienst.md`; Roadmap G12, MAP-006.
+Annahmen: ANN-016, ANN-017, ANN-018. Blockiert nur MAP-006 (echte Adressen);
+Handoff, MAP-002 bis MAP-005 und Tourenliste laufen synthetisch weiter.
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 
-| | |
-|---|---|
-| Dringlichkeit | P2 |
-| Bezug | §7 |
+Auskunft des Lizenzgebers offen · Rückfall entschieden · 2026-09-08 · Jannes · P2
 
-**Frage:** Ist die digitale Einbettung des DIGOTOR-Anamnesebogens (Version 8 /
-07-2026) lizenzrechtlich abgedeckt? Wie werden Lizenzen je Instrument
-dokumentiert?
+Ob die digitale Einbettung des DIGOTOR-Anamnesebogens lizenzrechtlich abgedeckt
+ist, entscheidet der Lizenzgeber — eine Auskunft, keine Entscheidung. Bis dahin
+nur lizenzfreie Instrumente (NRS, patientenspezifische Funktionsskala, globale
+Veränderungsfrage).
 
-**Warum offen:** Viele etablierte PROMs sind urheberrechtlich geschützt und
-für die digitale Nutzung lizenzpflichtig.
-
-**Entschieden am 2026-09-08 durch Jannes — der Rückfall:** Bis zur Auskunft des
-Lizenzgebers werden **ausschließlich lizenzfreie Instrumente** eingesetzt (NRS,
-patientenspezifische Funktionsskala, globale Veränderungsfrage). Die Anfrage an
-den DIGOTOR-Lizenzgeber geht im Oktober raus. Die Lizenzfrage selbst bleibt
-offen — sie ist eine Auskunft, keine Entscheidung.
-
-**Blockiert:** FRB-003 (Anamnesebogen). **Nicht blockiert:** FRB-001 und
-FRB-002 — die Bibliothek trägt ein Lizenzfeld, und die freien Instrumente (NRS,
-patientenspezifische Funktionsskala, globale Veränderungsfrage) brauchen keine
-Lizenz.
+Wo: §7; Roadmap FRB-003. Nicht blockiert: FRB-001 und FRB-002.
 
 ### B9 — Betreuung ohne und nach Heilbehandlung: Rechtsrahmen und Datentrennung
 
-| | |
-|---|---|
-| Dringlichkeit | P2 — vor dem ersten Feature außerhalb der Heilbehandlung; Steuerteil mit B4 im September anfragen |
-| Bezug | §1, §14, §18, §19; ADR-008, ADR-009; `IDEA-LZK-002`, `IDEA-LZK-008` |
+vollständig vorläufig entschieden · 2026-09-07 und 2026-09-08 · Jannes
 
-**Frage:** Was gilt, wenn eine Person nach Ablauf des Rezepts freiwillig
-weiterbetreut wird — und was gilt für Kund:innen des Personal Trainings, die
-nie in Heilbehandlung waren?
+Volltext: `ANFRAGEN.md` § B9.
 
-**Warum offen:** Jannes hat am 2026-09-01 als langfristiges Ziel benannt,
-frühere Patient:innen nach abgeschlossenem Rezept weiter zu coachen, und am
-2026-09-06 ergänzt, dass die Plattform auch für die Kund:innen seines
-Personal Trainings gedacht ist — ohne vorherige Heilbehandlung. Damit ist der
-Übergang nicht mehr der einzige Fall: es gibt einen zweiten Eintrittsweg ohne
-Verordnung, ohne Behandlungsvertrag und ohne Akte. Für ihn gelten dieselben
-Fragen von Anfang an. Entschieden am 2026-09-06 (E-17): Das Personal
-Training beginnt ebenfalls am 01.07.2027, es gibt keine Bestandsdaten; die
-Plattform dafür ist Stufe 3 nach dem ersten Betriebsmonat; bis dahin werden
-Kund:innen nicht als Patient:innen angelegt; `PROJECT_PRINCIPLES.md` §1 wird
-nach §21 ergänzt, wenn Stufe 3 beginnt.
-
-**Vorläufig entschieden am 2026-09-07 durch Jannes — ein Unternehmen:**
-Patient:innen der Heilbehandlung und Kund:innen des Personal Trainings werden
-**über dasselbe Unternehmen** betreut. Es gibt keinen zweiten Betrieb, keine
-zweite Praxis und in der Plattform keine zweite Organisation — eine
-`organization_id` nach ADR-003 für beides. Damit ist die Teilfrage „derselbe
-Betrieb oder ein eigener?" beantwortet; sie geht als **Festlegung** in die
-Anfrage B4, nicht mehr als Frage.
-
-*Was daran hängt (Recherche zur Vorlage für B4, von der Steuerberatung zu
-bestätigen):* Nach §2 Abs. 1 Satz 2 UStG umfasst das Unternehmen die gesamte
-gewerbliche und berufliche Tätigkeit **einer** Person — als Einzelunternehmer
-wäre Jannes umsatzsteuerlich ohnehin ein Unternehmer, auch mit zwei
-Tätigkeiten; getrennte Unternehmen entstünden erst über eine eigene
-Rechtsform. Die Entscheidung bestätigt damit im Wesentlichen die Rechtslage
-und ist entsprechend risikoarm. Ihr Preis liegt bei §19 UStG: der Gesamtumsatz
-wird für das eine Unternehmen gebildet, wobei die nach §4 Nr. 14 steuerfreien
-Heilbehandlungsumsätze nach §19 Abs. 3 UStG herausfallen. Für die
-Kleinunternehmergrenze zählt also im Kern der Personal-Training-Umsatz — er
-kann die Praxis in die Regelbesteuerung führen. **Unsicher bleibt** die
-Behandlung gemischter Fälle auf einer Rechnung; das ist Frage 1 von B4.
-
-*Was die Entscheidung ausdrücklich **nicht** entscheidet:* Vertragsart,
-Dokumentationspflicht nach §630f BGB, Aufbewahrungsfrist, Rechtsgrundlage nach
-Art. 9 DSGVO und die Zweckbindung bleiben je Betreuungsverhältnis getrennt zu
-beantworten — die Liste unten gilt unverändert. Ein Unternehmen macht die
-**Zweckbindung sogar schärfer**, nicht lockerer: weil es keinen zweiten
-Verantwortlichen und keine zweite Organisation mehr gibt, an denen sich die
-Trennung von Akte und Trainingskontext organisatorisch festmachen ließe, muss
-sie in Stufe 3 **technisch** entstehen — eigene Tabellen, eigene Rollenprüfung,
-eigene Policies (ADR-004). Das ist der Punkt, den die Datenschutzberatung in
-B2 sehen muss.
-
-*Rücknahme:* Solange Stufe 3 nicht gebaut ist, kostet ein Widerspruch der
-Steuerberatung in der Software **nichts** — es gibt keine Verankerung im Code,
-nur diesen Vermerk. Ab Stufe 3 wäre die Trennung in zwei Organisationen ein
-Datenumzug, Aufwand `groß`; das ist der Grund, die Antwort aus B4 **vor**
-Stufe 3 zu haben, nicht danach.
-
-Beim Übergang und beim Eintritt ohne
-Behandlung ändern sich mehrere Dinge gleichzeitig:
-
-- **Vertragsart:** Behandlungsvertrag (§630a BGB) gegenüber Dienstvertrag.
-- **Dokumentationspflicht:** §630f BGB gilt für die Heilbehandlung, nicht für
-  Training.
-- **Aufbewahrung:** ADR-008 knüpft 10 Jahre an den „Abschluss der Behandlung";
-  für Trainingsdaten fehlt die Frist.
-- **Umsatzsteuer:** Heilbehandlung nach §4 Nr. 14a UStG regelmäßig befreit,
-  Prävention und Selbstzahler-Training regelmäßig nicht.
-- **DSGVO-Rechtsgrundlage:** Art. 9 Abs. 2 lit. h gegenüber Einwilligung nach
-  lit. a, mit Widerruf.
-- **Zweckbindung:** Welche Daten dürfen aus der Akte in den Trainingskontext,
-  und was passiert in der Gegenrichtung?
-- **Berufsrecht:** Reicht die physiotherapeutische Qualifikation, insbesondere
-  bei Ernährung (`IDEA-ALT-005`)?
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes — die sechs verbliebenen
-Fragen:**
-
-1. **Vertragsart:** Dienstvertrag (§611 BGB) für Training, Behandlungsvertrag
-   (§630a BGB) nur bei Heilbehandlung. Keine Mischform. Rücknahme `klein`.
-2. **Dokumentationspflicht:** §630f BGB gilt fürs Training nicht. Es wird
-   trotzdem dokumentiert, aber in **eigener Struktur** — nie in der
-   Patientenakte. Wer nie in Heilbehandlung war, bekommt keine Akte. Rücknahme
-   `groß`, wenn erst gemeinsam gespeichert und später getrennt würde; deshalb
-   von Anfang an getrennt.
-3. **Aufbewahrung:** Trainingsdaten **nicht** zehn Jahre, sondern **drei Jahre
-   nach Ende der Betreuung**, angelehnt an die Regelverjährung (§§195, 199
-   BGB) — der Zeitraum, in dem noch Ansprüche aus dem Vertrag entstehen können.
-   Rechnungen und Buchungsbelege laufen davon getrennt auf der Steuerfrist
-   (B4 Punkt 4). Rücknahme `klein`, solange Punkt 2 steht.
-4. **Rechtsgrundlage:** für Gesundheitsdaten im Training **Einwilligung nach
-   Art. 9 Abs. 2 lit. a DSGVO** mit Widerruf, für Vertrags- und
-   Abrechnungsdaten Art. 6 Abs. 1 lit. b. **Nicht** lit. h — der trägt die
-   Heilbehandlung, und Training ist keine. Rücknahme `mittel` (ein
-   Einwilligungsmodell im Datenmodell).
-5. **Zweckbindung:** **kein automatischer Fluss, in keine Richtung.** Aus der
-   Akte ins Training nur auf ausdrückliche Einwilligung und als **Kopie mit
-   Herkunftsvermerk**, nie als Verweis. Vom Training in die Akte gar nicht,
-   solange keine Heilbehandlung läuft. Weil es nur **ein** Unternehmen und eine
-   `organization_id` gibt, muss diese Trennung **technisch** entstehen — eigene
-   Tabellen, eigene Rollenprüfung, eigene Policies nach ADR-004; an zwei
-   Betrieben kann sie sich nicht mehr festmachen. Rücknahme **`groß`** — der
-   Aufwand war bei der Entscheidung benannt (§15.1 Punkt 4). Dieser Punkt geht
-   ausdrücklich mit an die Datenschutzberatung (B2).
-6. **Berufsrecht Ernährung:** **vorerst nicht anbieten.** Ernährungsberatung ist
-   nicht Teil der Ausbildung nach dem Masseur- und Physiotherapeutengesetz; die
-   Abgrenzung zwischen zulässiger allgemeiner Information und beratender
-   Tätigkeit ist heikel und wettbewerbsrechtlich angreifbar. Wollte die Praxis
-   es anbieten, wäre das eine eigene Qualifikation plus eine Frage an den
-   Berufsverband — keine Softwarefrage. Rücknahme `klein`, es wird nichts
-   gebaut.
-
-**Weiterhin offen:** die steuerliche Validierung (mit B4) und die
-datenschutzrechtliche Bestätigung, insbesondere von Punkt 4 und Punkt 5 (mit
-B2).
-
-**Blockiert:** Etappe 8 vollständig und das Datenmodell der Betreuungsepisode
-(`IDEA-LZK-002`, `IDEA-LZK-003`, `IDEA-LZK-008`); die automatische
-Klassifizierung aus `IDEA-LZK-007`; jede Funktion für Kund:innen ohne
-Heilbehandlung (Stufe 3). **Nicht blockiert:** die Empfehlung der Therapeutin
-zum Verordnungsende als Teil der Verordnung (VER-001); die
-Umsatzsteuer-Felder je Katalogposition, die ADR-009 Punkt 6 ohnehin verlangt.
-
-**Annahmen:** ANN-002 (`inactive` ist kein Behandlungsabschluss), ANN-014
-(Empfehlung zum Verordnungsende), ANN-032 („Abschluss der Versorgung" als
-Fristanker).
+Wo: §1; Roadmap Etappe 8. Annahmen: ANN-032 (automatische Klassifizierung hängt
+an B9), ANN-014 (`MDR_REVIEW_REQUIRED` bei Bewertung).
 
 ### B10 — Automatisierte Progression: MDR-Grenze und Verantwortung
 
-| | |
-|---|---|
-| Dringlichkeit | P2 — vor dem ersten Progressionsfeature |
-| Bezug | §6, §7.1, §16, §17; ADR-005, ADR-006 |
+vorläufig entschieden · 2026-09-08 · Jannes; Bestätigung mit B1
 
-**Frage:** Darf die Plattform die Belastung eines Trainingsplans selbsttätig
-anpassen — und wenn ja, unter welchen Bedingungen?
+Volltext: `ANFRAGEN.md` § B10.
 
-**Warum offen:** ADR-006 Punkt 4 schließt für V1 Therapieempfehlungen und
-automatisierte klinische Entscheidungen aus; Punkt 2 erlaubt transparente
-Berechnungen validierter Instrumente. Eine Progressionsregel liegt dazwischen:
-Reicht die Freigabe des Regelwerks je Plan durch die Therapeutin, oder braucht
-jeder Schritt eine Bestätigung? Ist ein Ampelmodell mit therapeutisch gesetzten
-Schwellen eine eigene Risikoklassifikation? Gilt für die Weiterbetreuung (B9)
-ein anderer Maßstab?
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes: für V1 ausgeschlossen.**
-Ein Regelwerk je Plan wird von der Therapeutin freigegeben, und **jeder
-einzelne Progressionsschritt braucht ihre Bestätigung**, bevor er beim
-Patienten ankommt. Damit bleibt die Anwendung auf der Seite von ADR-006 Punkt 2
-(transparente Berechnung) und verletzt Punkt 4 nicht.
-
-**Ein Ampelmodell wird auch mit therapeutisch gesetzten Schwellen nicht
-gebaut** — eine Ampel *ist* eine Risikoklassifikation, unabhängig davon, woher
-die Schwellen kommen; §17 schließt das für V1 aus. Diese Frage geht
-ausdrücklich mit an die B1-Prüfung.
-
-**Rücknahme:** heute `klein` (es wird nichts gebaut). In die andere Richtung
-`groß`: ein Feature jenseits der Grenze ist `MDR_REVIEW_REQUIRED`, produktiv
-gesperrt und braucht eine eigene Prüfung.
-
-**Blockiert:** Etappe 9 vollständig. Bis zur Entscheidung ist jedes solche
-Feature `MDR_REVIEW_REQUIRED` und produktiv nicht erreichbar. Die Frage gehört
-an die externe Prüfung aus B1, nicht in einen Loop. Ausarbeitung:
-`docs/product/ideen/01-trainingsplaene-und-progression.md` (nicht normativ).
+Wo: ADR-006; Roadmap Etappe 9. Annahmen: ANN-014.
 
 ### B11 — Paketpreise, Vorauszahlung und Anreize
 
-| | |
-|---|---|
-| Dringlichkeit | P2 — vor dem ersten Paket- oder Rabattfeature |
-| Bezug | §19; ADR-009, B4, B9 |
+vorläufig entschieden · 2026-09-08 · Jannes · vorerst nicht anbieten
 
-**Frage:** Wie werden vorausbezahlte Betreuungspakete abgebildet, und welche
-Rabatt- und Anreizformen sind zulässig?
+Volltext: `ANFRAGEN.md` § B11.
 
-**Warum offen:** Ein Paket ist eine Vorauszahlung auf noch nicht erbrachte
-Leistungen — ein Vorgang, den ADR-009 nicht kennt: Guthabenführung gegen
-Leistungen, Steuerzeitpunkt bei Vereinnahmung, keine gemischten Pakete aus
-befreiter und steuerpflichtiger Leistung, Laufzeit und Verfall, Rückfall in die
-Heilbehandlung, GoBD für das Guthabenkonto, Preisversionierung. Zum
-Bewertungsanreiz (Rabatt für eine Google-Bewertung) steht die Einordnung in
-`IDEA-ANG-002` mit dem Ergebnis, davon abzuraten — eine Empfehlung, keine
-Entscheidung; wenn er trotzdem kommen soll, vorher wettbewerbs- und
-heilmittelwerberechtliche Beratung.
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes — zwei getrennte Antworten:**
-
-- **Pakete: vorerst nicht anbieten**, bis B4 zurück ist. Eine Vorauszahlung ist
-  kein Preismodell, sondern ein **Guthabenkonto**: Steuerentstehung bereits bei
-  Vereinnahmung (§13 Abs. 1 Nr. 1 lit. a Satz 4 UStG), GoBD-Pflichten für das
-  Guthaben, Verfall und Laufzeit, keine gemischten Pakete aus befreiter und
-  steuerpflichtiger Leistung. Das ist Buchhaltungsmechanik, die ADR-009 nicht
-  kennt — teuer nachzurüsten, wenn man sie falsch anfängt.
-- **Rabatt für eine Google-Bewertung: nein.** `IDEA-ANG-002` rät bereits ab.
-  Gekaufte Bewertungen sind wettbewerbsrechtlich angreifbar (UWG), im
-  Heilbereich kommt das HWG dazu, und eine bezahlte Bewertung ist ihr Geld
-  nicht wert. Falls doch gewünscht: vorher anwaltlich prüfen lassen, nicht als
-  Annahme.
-
-**Rücknahme:** `klein`, es wird nichts gebaut.
-
-**Blockiert:** Paketverkauf, Guthaben, Rabattlogik, Preisdarstellung im Portal.
-**Nicht blockiert:** die reguläre Einzelleistungsabrechnung nach ADR-009.
+Wo: ADR-009; Roadmap Etappe 8.
 
 ### B12 — Stichtag der Umstellung und Rechnungsnummernkreis
 
-Erledigt am 2026-09-06 (kein Altsystem; Nummernformat → B4 Punkt 3) —
-Volltext: Git-Historie bis `7160fd5`.
+erledigt · 2026-09-06 · Jannes
+
+Kein Altsystem; das Nummernformat geht an B4 Punkt 3. Volltext: Git-Historie.
 
 ### B13 — E-Mail-Versand aus der Plattform
 
-Entschieden am 2026-09-06 (Option a: nur die Auth-Mails des Providers, Teil
-von OPS-001 — siehe A2) — Volltext: Git-Historie bis `7160fd5`.
-Annahmen: ANN-025, ANN-043.
+entschieden · 2026-09-06 · Jannes · Option a
+
+Nur die Auth-Mails des Providers, kein zweiter Dienst; Teil von OPS-001 (A2).
+Volltext: Git-Historie bis `7160fd5`. Annahmen: ANN-025, ANN-043.
 
 ### B14 — PDF-Erzeugung
 
-| | |
-|---|---|
-| Dringlichkeit | P1 — vor ABR-EPIC-002b und der Tagesplan-Funktion (E2) |
-| Bezug | §19; ADR-009 Punkt 14; ADR-015; `CLAUDE.md` (Abhängigkeiten) |
+Druckansichten entschieden · 2026-09-06 · Jannes; Rechnungs-PDF offen · P1
 
-**Frage:** Wie entsteht das Rechnungsdokument — Browser-Druck aus einer
-Druckansicht, eine PDF-Bibliothek im Browser oder eine serverseitige Funktion?
-Wo läuft die Erzeugung, welche Abhängigkeit kommt dazu, wie wird das Dokument
-unveränderbar abgelegt (ADR-017)?
+Druckansichten mit `@media print` für Tagesplan, Terminzettel und Tourenliste
+sind gebaut — keine Abhängigkeit, kein neuer Ausführungsort. Für die
+unveränderbare Rechnung legt ABR-EPIC-002a im November 2026 die Optionen vor;
+vermerkte Tendenz: serverseitige Funktion, weil ein Browser-Druck eine Datei beim
+Nutzer erzeugt, die die Anwendung nie sieht. Eine wesentliche Abhängigkeit oder
+ein neuer Ausführungsort ist nach §15.1 ein Stopp.
 
-**Teilweise entschieden am 2026-09-06 durch Jannes (E-5):** Druckansichten
-mit `@media print` für Tagesplan, Terminzettel und Tourenliste kommen sofort
-(UI-000 Druck-Basis) — keine Abhängigkeit, kein neuer Ausführungsort. Für die
-unveränderbare Rechnung legt der Loop ABR-EPIC-002a die Optionen mit Aufwand
-vor (Browser-Druck in PDF, Bibliothek im Browser, serverseitige Funktion);
-Jannes entscheidet dann, im November 2026.
-
-**Warum der Rest offen bleibt:** Eine wesentliche Abhängigkeit oder ein neuer
-Ausführungsort ist nach §15.1 ein Stopp, nicht eine Annahme.
-
-**Nicht entschieden am 2026-09-08 — bewusst.** Jannes hat die Richtung zur
-Kenntnis genommen und die Entscheidung bei E-5 (2026-09-06) an ABR-EPIC-002a
-vertagt, das die Optionen mit Aufwand vorlegt. **Vermerkte Tendenz:
-serverseitige Funktion.** Grund: Die Rechnung muss nach ADR-009 und ADR-017
-unveränderbar abgelegt werden. Ein Browser-Druck erzeugt eine Datei beim
-Nutzer, die die Anwendung nie zu sehen bekommt — sie kann sie weder ablegen
-noch garantieren, dass die abgelegte Fassung die versendete ist. Eine
-Bibliothek im Browser löst das halb, fügt aber eine wesentliche Abhängigkeit
-hinzu und verlagert die Erzeugung auf ein Gerät mit unbekannten Schriftarten.
-Die Tendenz ersetzt den Optionenvergleich im November nicht.
-
-**Blockiert:** ABR-003b. **Nicht blockiert:** Tagesplan drucken, Terminzettel,
-Tourenliste.
+Wo: ADR-009 Punkt 14, ADR-017; Roadmap ABR-EPIC-002a. Blockiert ABR-003b.
 
 ### B15 — Terminerinnerung und Online-Terminbuchung
 
-| | |
-|---|---|
-| Dringlichkeit | P2 — Stufe 2 |
-| Bezug | §2.1, §3.5, §8, §10; ADR-002; ADR-007 |
+vorläufig entschieden · 2026-09-08 · Jannes · keine automatische Erinnerung; Nachtrag 2026-09-12
 
-**Frage:** Über welchen Kanal erinnert die Praxis an Termine (SMS, E-Mail,
-Messenger, Anruf) und mit welchem Anbieter; welche Einwilligung braucht das
-(PAT-006); soll es eine Online-Terminanfrage geben, und wenn ja, im Portal
-(Etappe 4) oder davor?
+In Stufe 1 und 2 gibt es keine automatische Terminerinnerung, die Anrufliste
+bleibt: Jeder automatisierte Kanal wäre ein neuer Dienstleister mit einem
+Gesundheitsdatum und löste Prüfung nach ADR-002, DSFA-Wiedervorlage und
+Einwilligung aus (PAT-006); falls doch, dann E-Mail vor SMS, Messenger
+ausgeschlossen. Der Nachtrag vom 2026-09-12 trennt davon die Terminmail aus dem
+eigenen Postfach — auf Klick, gebaut als CAL-013, ohne dass ein Empfänger
+entsteht, der vorher keiner war. Offen bleiben automatische Erinnerung,
+Versanddienstleister, SMS, Online-Buchung und die Einwilligung je Patient:in.
 
-**Warum offen:** Die Wettbewerbsanalyse vom 2026-09-06 zeigt Terminerinnerung
-und Online-Buchung als Marktstandard. Beides ist ein neuer Dienstleister mit
-Gesundheitsdaten (dass jemand einen Physiotherapietermin hat) und braucht
-Prüfung nach ADR-002 und eine Einwilligung. Für Stufe 1 bleibt die Anrufliste
-der Weg (`IDEA-PRX-005`).
-
-**Termin (E-9, 2026-09-06):** Stufe 2 nach der Eröffnung. Die Frage geht mit
-der Anfrage B2 im September an die Datenschutzberatung; Entscheidung bis M6
-(31.07.2027), erster Loop danach.
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes: in Stufe 1 und 2 keine
-automatische Terminerinnerung — die Anrufliste bleibt.**
-
-**Begründung.** Jeder automatisierte Kanal ist ein **neuer Dienstleister mit
-einem Gesundheitsdatum**: dass jemand einen Physiotherapietermin hat, ist
-bereits eines. Das löst eine Prüfung nach ADR-002, eine DSFA-Wiedervorlage und
-eine eigene Einwilligung aus (PAT-006). Am 2026-09-06 wurde bei B13 gerade
-entschieden, keinen zweiten E-Mail-Dienst einzuführen; eine Terminerinnerung
-ist keine Auth-Mail und liefe deshalb **nicht** über den bestehenden Weg.
-
-**Falls doch, dann in dieser Reihenfolge:** E-Mail vor SMS. **Messenger ist
-ausgeschlossen.** Die Reihenfolge folgt der Zahl der beteiligten Dritten.
-
-**Online-Terminbuchung:** eigenes Thema, setzt das Portal und damit B5 voraus.
-Nicht in Stufe 2.
-
-**Rücknahme:** `klein` — es wird nichts gebaut, was zurückzunehmen wäre.
-
-**Blockiert:** jede Erinnerungs- oder Buchungsfunktion. **Nicht blockiert:**
-Anrufliste, Terminzettel als PDF.
-
-#### Nachtrag 2026-09-12 — Jannes ändert seine eigene Entscheidung in einem Punkt
-
-**Wortlaut:** „Ich widerspreche möglicherweise früherer Planung, aber es ist
-ausdrücklich vorgesehen, dass die Praxis E-Mails versenden wird, welche die
-Termine beinhaltet."
-
-Die Entscheidung vom 2026-09-08 hat **zwei Dinge in einen Satz gepackt**, die
-auseinandergehören. Der Nachtrag trennt sie:
-
-| | Stand 2026-09-08 | Stand 2026-09-12 |
-|---|---|---|
-| **Automatische Erinnerung** über einen Versanddienstleister (SMS-Gateway, Mailversender) | nein | **unverändert nein** |
-| **Terminmail aus dem eigenen Postfach der Praxis**, auf Klick, Nachricht für Nachricht | nicht bedacht | **ja, gebaut als CAL-013** |
-
-**Warum das kein Widerspruch zur Begründung von 2026-09-08 ist.** Diese
-Begründung trägt auf einem Satz: „Jeder automatisierte Kanal ist ein **neuer
-Dienstleister mit einem Gesundheitsdatum**." Genau das trifft auf einen
-Handoff nicht zu. Die Anwendung übergibt einen fertigen Entwurf an das
-Mailprogramm der Praxis; gesendet wird dort von Hand, über das Postfach, das
-die Praxis ohnehin betreibt. Es entsteht kein Empfänger, der vorher keiner war
-— dieselbe Konstruktion wie beim Navigations-Handoff (ADR-019, ANN-018).
-**Die Reihenfolge „E-Mail vor SMS, Messenger ausgeschlossen" bleibt** und ist
-damit genau eingehalten: gebaut ist E-Mail, sonst nichts.
-
-**Was durch den Nachtrag NICHT entschieden ist** und weiter zu B15 gehört:
-die automatische Terminerinnerung, ein Versanddienstleister, SMS, die
-Online-Terminbuchung — und die **Einwilligung je Patient:in**. Für den
-Handoff steht die Bedingung heute als Satz an der Stelle der Entscheidung
-(„nur auf ausdrücklichen Wunsch, eine E-Mail ist nicht verschlüsselt") und die
-Auslösung ist auditiert; ein eigenes Kennzeichen für den dokumentierten Wunsch
-gehört zu PAT-006. Begründung, Quellen und Änderungspfad stehen in **ANN-041**.
-
-**Rücknahme des Nachtrags:** `klein` — `TermineMailen` aus der Zettelseite
-nehmen; es bleibt kein Datenbestand zurück.
-
-**Annahmen:** ANN-039 (Terminzettel: nur Druck, kein Versand), ANN-040
-(Mitteilungsvermerk: vier Wege, kein Versand), ANN-041 (Termin-E-Mail als
-Handoff ins eigene Mailprogramm).
+Wo: §3.5, ADR-002, ADR-007; Roadmap Stufe 2, PAT-006. Annahmen: ANN-039,
+ANN-040, ANN-041.
 
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
 
-| | |
-|---|---|
-| Dringlichkeit | P1 für das erste KI-Feature (Etappe 10) |
-| Bezug | §6.1; ADR-005 |
+Schutzumfang vorläufig entschieden · 2026-09-08 · Jannes; Provider offen
 
-**Frage:** Welchen Schutz leistet Pseudonymisierung bei klinischem Freitext,
-dessen Inhalt die Person identifiziert — und welche vertraglichen Zusagen
-(keine Nutzung zu Trainingszwecken, EU-Verarbeitung, kurze Aufbewahrung,
-§203-Verpflichtung) treten an ihre Stelle? Welcher Anbieter, welches Modell?
+Volltext: `ANFRAGEN.md` § C6.
 
-**Warum offen:** ADR-005 hat den Zeitpunkt entschieden (Gateway ab dem ersten
-Feature, kein direkter Provideraufruf), nicht den Schutzumfang. Die
-Produktionshypothese in `PRODUCT_VISION.md` §6 ist eine Arbeitshypothese.
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes — der Schutzumfang, nicht
-der Anbieter.**
-
-**Pseudonymisierung ist bei klinischem Freitext kein wirksamer Schutz.** Ein
-Befundtext identifiziert die Person über den Inhalt — Diagnose, Beruf,
-Wohnsituation, Verlauf — auch ohne Namen. Die Last tragen deshalb die
-**Vertragszusagen**. Ein Anbieter kommt nur in Frage, wenn **alle fünf**
-vorliegen:
-
-- Verarbeitung ausschließlich in der EU,
-- **keine Nutzung der Eingaben zu Trainingszwecken**, vertraglich zugesichert,
-- keine oder sehr kurze Aufbewahrung („zero retention"),
-- Auftragsverarbeitungsvertrag nach Art. 28 DSGVO,
-- Verpflichtung der Beschäftigten des Anbieters nach §203 StGB.
-
-**Weiterhin offen: der Anbieter.** Die Auswahl kommt mit Etappe 10 und läuft
-durch die Prüfung nach ADR-002. Rücknahme heute `klein`, weil nichts
-angebunden ist.
-
-**Blockiert:** Etappe 10. Die Freischaltung eines Providers löst die Prüfung
-nach ADR-002 und eine DSFA-Wiedervorlage aus (ADR-007).
+Wo: ADR-005; Roadmap Etappe 10. Dazu gehört der Anbieter für Spracherkennung
+und Transkription aus E13 Punkt 1.
 
 ### D — „bestätigt": der Terminstatus-Automat
 
-Erledigt am 2026-09-11 (ADR-018 angenommen; gebaut in CAL-EPIC-003a, PR #28,
-abgenommen 2026-09-12) — Volltext: Git-Historie bis `7160fd5`.
+erledigt · 2026-09-11 · ADR-018
+
+Umfang am 2026-09-05 entschieden, Ausgestaltung mit ADR-018 bestätigt, gebaut in
+CAL-EPIC-003a; Volltext: Git-Historie bis `7160fd5`. Annahmen: ANN-034, ANN-036.
 
 ### E2 — Ausfallkonzept
 
-| | |
-|---|---|
-| Dringlichkeit | P1 vor Go-live |
-| Bezug | §16; ADR-012 Punkte 8 und 9 |
+Kern vorläufig entschieden · 2026-09-08 · Jannes; Ausarbeitung Jan 2027
 
-**Frage:** Was macht die Praxis, wenn die Anwendung einen Tag steht —
-exportierter Tagesplan, Papier-Fallback, Erreichbarkeit der Patient:innen?
+Volltext: `ANFRAGEN.md` § E2.
 
-**Warum offen:** ADR-012 verlangt ein dokumentiertes Degraded-Verfahren und
-dass Kerninformationen des Arbeitstags auch bei einem mehrstündigen Ausfall
-verfügbar sind, lässt den Inhalt aber offen. Das ist ein Praxisprozess mit
-einer Minimalfunktion der Software (Tagesplan druck- und exportierbar).
-
-**Seit dem 2026-09-06 zusätzlich:** Weil es kein Altsystem gibt, ist dieser
-Papierprozess auch der Rückfallplan der Eröffnung (Roadmap H4) — Tagesplan mit
-Adressen und Telefonnummern, Dokumentation auf Papier mit Nachtrag, Rechnung
-von Hand mit fortlaufender Nummer.
-
-**Vorläufig entschieden am 2026-09-08 durch Jannes — der Kern in drei Sätzen:**
-
-1. **Der Tagesplan liegt jeden Morgen auf Papier oder als PDF auf dem Telefon**,
-   mit Adressen und Telefonnummern. Die Druckansicht dafür existiert seit
-   UI-000 — das ist die einzige Stelle, an der die Software etwas beitragen
-   muss.
-2. **Dokumentation auf Papier, Nachtrag binnen 24 Stunden** nach ADR-016 mit
-   Begründung „Ausfall". Kein Warten bis zur Wiederherstellung.
-3. **Rechnungen ruhen.** **Keine** handschriftliche Rechnung aus dem
-   Nummernkreis, solange die Software steht; sie werden nachgeholt. Eine von
-   Hand vergebene Nummer, die das System nicht kennt, reißt genau die Lücke,
-   die §14 UStG nicht haben will — eine Behandlung lässt sich
-   nachdokumentieren, eine Nummernlücke nicht heilen.
-
-Punkt 3 **weicht vom bisherigen Rückfallplan ab** (Roadmap H4: „Rechnung von
-Hand mit fortlaufender Nummer aus dem Nummernkreis"); H4 ist entsprechend
-nachgezogen.
-
-**Abbruchkriterien** (wann der Papierprozess endet und abgesagt wird):
-Datenverlust, eine Falschzuordnung, oder mehr als ein Tag Ausfall.
-
-**Weiterhin offen:** die Ausarbeitung als Betriebsdokument (Januar 2027, mit
-Claude) und die Funktion „Tagesplan exportierbar" (Roadmap, Dezember).
-
-**Blockiert:** Go-live-Abnahme (Roadmap G10, G18).
+Wo: ADR-012; Roadmap G10 und H4.
 
 ### E8 — Dateiablage
 
-Erledigt am 2026-09-12 (ADR-017 angenommen; gebaut in DAT-EPIC-001, PR #38
-in `main` am 2026-09-13; produktive Ablage weiter an OPS-001 und OPS-003
-gebunden) — Volltext: Git-Historie bis `7160fd5`.
+erledigt · 2026-09-12 · ADR-017
+
+Alle acht Fragen wie empfohlen entschieden, gebaut in DAT-EPIC-001; die
+produktive Ablage bleibt an OPS-001 und OPS-003 gebunden. Volltext:
+Git-Historie bis `7160fd5`. Annahmen: ANN-052, ANN-053.
 
 ### E10 — Wer verwaltet Mitarbeiterdatensätze
 
-Erledigt am 2026-09-11 (STAFF-002a; Privatangaben folgen dem Leserecht,
-ANN-024) — Volltext: Git-Historie bis `7160fd5`.
+erledigt · 2026-09-11 · STAFF-002a
+
+Privatangaben folgen dem Leserecht. Volltext: Git-Historie. Annahmen: ANN-024.
 
 ### E11 — Wer gilt als behandelnde Person
 
-Erledigt am 2026-09-11 (STAFF-002b) — Volltext: Git-Historie bis `7160fd5`.
+erledigt · 2026-09-11 · STAFF-002b
+
+Konten und Rollen entstehen in der Anwendung. Volltext: Git-Historie.
+Annahmen: ANN-025, ANN-026.
 
 ### E12 — Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre
 
-| | |
-|---|---|
-| Dringlichkeit | P2 — Punkt 2 nach den ersten Praxiswochen (Wiedervorlage ANN-037), Punkt 3a vor MAP-006. CAL-010a ist gebaut, CAL-010b ist entfallen und in MAP-006 aufgegangen |
-| Bezug | §8.1, §9, §6.2; ADR-019 Punkt 16; ADR-008 (Datenklasse „Routing-Rohdaten"); CAL-EPIC-003b, MAP-006 |
+Kernregel entschieden · 2026-09-08 (§8.1); Punkt 2 und 3a offen · P2
 
-**Entschieden ist §8.1** (Jannes, 2026-09-08): 60 Minuten je angebotenem
-Termin einschließlich Dokumentation, Beginn frei im 5-Minuten-Raster, Fahrzeit
-zusätzlich zwischen den Terminfenstern, früheste Folgezeit auf dem ersten
-Rasterpunkt auf oder nach Ende plus Fahrzeit (aufrunden, nie abrunden),
-Bestandstermine unverändert, Durchsetzung serverseitig.
+Entschieden sind §8.1 (60 Minuten je Termin, Beginn im 5-Minuten-Raster,
+Fahrzeit zusätzlich, Bestandstermine unverändert, Durchsetzung serverseitig),
+Punkt 1 (zwei Längen, 60 oder 45; CAL-015) und die Punkte 3 und 4 (Fahrzeit aus
+dem Kartendienst; Fahrpuffer, Warnung oder Sperre erst mit MAP-006). Offen:
+Punkt 2 — Länge je Praxis einstellbar? (Wiedervorlage an ANN-037) — und Punkt
+3a: ADR-019 Punkt 16 sieht keine Speicherung von Fahrzeiten vor, §8.1 verlangt
+die serverseitige Rundungsregel, sobald eine vorliegt; das erzwingt Live-Abruf je
+Planungsprüfung oder kurze Speicherung („Routing-Rohdaten", bis dahin leer).
 
-Von den vier Anschlussfragen, die die Entscheidung ausdrücklich **nicht**
-mitbeantwortet hat, sind drei erledigt oder vorläufig entschieden — je ein
-Satz:
-
-- **Punkt 1, Abweichung von den 60 Minuten — entschieden am 2026-09-12 durch
-  Jannes, gebaut in CAL-015:** zwei zulässige Längen, 60 (Vorbelegung) und
-  45 Minuten, keine dritte Länge, keine begründete Abweichung und kein
-  Bestätigungs- oder Auditverfahren dafür; Termine, die keine Behandlung
-  sind, fallen nicht unter die Regel (§8.1).
-- **Punkt 3, Herkunft der Fahrzeit — vorläufig entschieden am 2026-09-12
-  durch Jannes:** kein pauschaler Mindestabstand, keine von Hand gepflegten
-  Fahrminuten; die Fahrzeit entsteht aus dem Kartendienst (MAP-003/MAP-004),
-  der Fahrpuffer kommt deshalb erst mit MAP-006, CAL-010b ist als eigene
-  Story entfallen, und `IDEA-PRX-002` bleibt nicht mitentschieden.
-- **Punkt 4, Warnung oder Sperre — vorläufig entschieden am 2026-09-12 durch
-  Jannes:** wird mit MAP-006 entschieden, wenn die Zahlen echt sind; die
-  Aufrundungsregel aus §8.1 gilt unverändert, sobald eine Fahrzeit vorliegt,
-  und ihr Testfall (09:05–10:05 plus 12 Minuten ergibt 10:20) gehört zu
-  MAP-006.
-
-**Weiter offen:**
-
-- **Punkt 2 — Wird die Länge je Praxis einstellbar?** Heute sind 60 und 45
-  feste Zahlen im Prinzipiendokument, kein `owner`-Wert wie das Raster. Für
-  eine Praxis reicht das; für ein zweites Unternehmen später nicht.
-  Praxisprozess; lässt sich erst nach den ersten Wochen im Betrieb sinnvoll
-  beantworten und steht als Wiedervorlage an **ANN-037**.
-- **Punkt 3a — Fahrzeit ohne Speicherung gegen serverseitige Rundungsregel**
-  (neu 2026-09-13, aus dem Audit): ADR-019 Punkt 16 sieht **keine
-  Speicherung** von Fahrzeiten vor — abrufen, anzeigen, verwerfen. §8.1
-  verlangt die **serverseitige** Rundungsregel, sobald eine Fahrzeit
-  vorliegt. Beides zusammen erzwingt entweder einen **Live-Abruf je
-  Planungsprüfung** (der Server holt die Fahrzeit beim Anlegen oder
-  Verschieben des Termins selbst) oder eine **kurze Speicherung**. Die
-  Datenklasse „Routing-Rohdaten" in ADR-008 (maximal 30 Tage) ist bis dahin
-  leer. Wiedervorlage: **MAP-006**.
-
-**Blockiert:** nichts.
-
-**Rücknahme:** `klein` bis `mittel` — die Terminfensterregel greift an genau
-zwei Schreibpfaden (`create_appointment`, `update_appointment`) und einer
-Ableitung im Formular. Für den Fahrpuffer ist nichts zurückzunehmen: Es wurde
-nichts gebaut.
-
-**Annahmen:** ANN-037 (geprüft wird die Länge, nicht der Zeitpunkt;
-Wiedervorlage für Punkt 2), ANN-049 (Ereignisse ohne Behandlung in derselben
-Tabelle wie Behandlungstermine).
+Wo: §8.1, ADR-019 Punkt 16; Roadmap MAP-006. Annahmen: ANN-037, ANN-049.
 
 ### E13 — Sprachdokumentation: Anbieter, Architektur, Audio, Frist
 
-| | |
-|---|---|
-| Dringlichkeit | P3 — vor einem eigenen Sprachdokumentations-Loop, nicht vorher |
-| Bezug | §6.3, §6.1, §3.5, §18; ADR-005 Punkte 8 und 9, ADR-006 Punkt 8, ADR-016 Punkt 10, ADR-008; C6 |
+Anforderung entschieden · 2026-09-08 (§6.3); Umsetzung offen · P3
 
-**Entschieden ist §6.3** (Jannes, 2026-09-08): die Anforderung an ein bewusst
-gestartetes Nachdiktat aus dem Termin — Zuordnung, Inhaltstreue, Kennzeichnung
-unverständlicher Stellen, Prüfung und Korrektur, ausdrückliche Übernahme, und
-das Verbot, einen ungeprüften Vorschlag automatisch zu finalisieren.
+Offen sind fünf Punkte: der Anbieter (über denselben Prüfkatalog wie jeder
+Verarbeitungsdienst, gehört zu C6); ob Rohaudio gespeichert wird, wo und wie
+lange (ADR-008 kennt dafür keine Datenklasse); der Fristanker, weil eine späte
+Übernahme sonst einen Entwurf erzeugt, der sofort finalisiert wird (ADR-016
+Punkt 7, ANN-008); Architektur des ungeprüften Vorschlags (ADR-016 Punkt 10);
+Bedienung und Einordnung in die Roadmap.
 
-**Was daran offen ist:**
-
-1. **Anbieter für Spracherkennung und Transkription.** Läuft über denselben
-   Prüfkatalog wie jeder andere Verarbeitungsdienst (ADR-002, ADR-005 Punkt 8)
-   und gehört zu **C6**, nicht daneben. Kein Startvorteil, weil es „nur"
-   Transkription ist.
-2. **Rohaudio:** Wird es überhaupt gespeichert, wo, wie lange, und geht es
-   durch den Gateway oder nur der daraus entstandene Text? Stimme plus Inhalt
-   ist ein besonders sensibles Gesundheitsdatum (§3.5, §18). ADR-008 kennt
-   dafür heute **keine** Datenklasse — die für KI-Entwürfe deckt den Text ab,
-   nicht die Aufnahme.
-3. **Fristanker.** ADR-016 Punkt 7 hängt die automatische Finalisierung an die
-   Behandlung (ANN-008), nicht an die Entstehung des Entwurfs. Eine Übernahme
-   nach Fristablauf erzeugte damit einen Entwurf, der sofort finalisiert wird —
-   ohne Gelegenheit zur Korrektur. Das ist zu regeln, bevor gebaut wird.
-4. **Architektur und Zustandsführung:** Lebt der ungeprüfte Vorschlag neben dem
-   Dokumentationseintrag oder als eigener Zustand davor? ADR-016 Punkt 10
-   verlangt die Trennung, nicht die Form.
-5. **Bedienung auf dem Gerät**, Zeitpunkt und Einordnung in die Roadmap.
-
-**Warum offen:** Die Anforderung steht, die Umsetzung ist ein eigener Auftrag.
-Jannes hat sie ausdrücklich nicht mitbeauftragt.
-
-**Blockiert:** nichts. Kein Loop der aktuellen Roadmap hängt daran.
-
-**Rücknahme:** entfällt — es ist nichts gebaut.
-
----
+Wo: §6.3, ADR-005 Punkte 8 und 9, ADR-006 Punkt 8; C6. Blockiert nichts.
 
 ### E14 — Gebühr beim Nichtantreffen am Hausbesuch
 
-| | |
-|---|---|
-| Dringlichkeit | erledigt 2026-09-13; Umsetzung CAL-018, Rechnungstext für Fall 1 mit B4 |
-| Bezug | §8, §19; ADR-018 Fassung 3 (2026-09-13) Punkt 8; ADR-009; CAL-014, CAL-018 |
+erledigt · 2026-09-13 · Jannes; Umsetzung CAL-018
 
-**Entschieden ist die Absage** (Jannes, 2026-09-12): Eine Patientenabsage
-weniger als 24 Stunden vor dem vereinbarten Beginn löst eine Ausfallgebühr
-aus; genau 24 Stunden nicht; eine praxisbedingte Absage nie. Gebaut in
-CAL-014, serverseitig gerechnet aus dem **Eingang** der Absage.
+Hausbesuch-Szenarien verbindlich: Tür geöffnet, Behandlung findet auf Angabe der
+Patient:in nicht statt → durchgeführt mit Pflichtvermerk und normaler Abrechnung;
+nicht angetroffen nach Protokoll → nicht wahrgenommen mit Ausfallgebühr;
+Patientenabsage unter 24 Stunden → Ausfallgebühr (CAL-014). Rechnungstext und
+Rechtsgrundlage für Fall 1 gehen in B4.
 
-**Entschieden ist außerdem, was beim Nichtantreffen *nicht* gilt:** Der
-Vermerk verlangt **keine** Gebührenentscheidung, und aus ihm allein entsteht
-**keine** Gebühr. Die Pflichtentscheidung aus ADR-018 Fassung 1 ist damit
-entfallen.
-
-**Offen war die Regel selbst** (bis 2026-09-13). Beim Hausbesuch ist die Therapeut:in
-hingefahren; die Zeit ist in derselben Weise verloren wie bei einer Absage
-fünf Minuten vorher. Drei Fragen:
-
-1. Soll das Nichtantreffen eine eigene Gebühr auslösen — und wenn ja:
-   dieselbe Höhe wie die Ausfallgebühr, oder eine eigene Position im
-   Leistungskatalog (ABR-001)?
-2. Wenn ja, **automatisch** wie bei der Absage, oder als ausdrückliche
-   Entscheidung der behandelnden Person? Die Pflichtentscheidung aus Fassung 1
-   ist ausdrücklich verworfen — eine freiwillige wäre etwas anderes.
-3. Gilt eine Regel auch für einen Termin **in der Praxis**, zu dem niemand
-   erscheint, oder nur für den Hausbesuch?
-
-**Erledigt am 2026-09-13 durch Jannes — Hausbesuch-Szenarien, verbindlich:**
-
-1. Tür geöffnet, Behandlung findet auf Angabe der Patient:in nicht statt →
-   Termin gilt als durchgeführt, Pflichtvermerk in der Dokumentation, normale
-   Abrechnung, keine Ausfallgebühr.
-2. Nicht angetroffen nach Protokoll (15 Minuten gewartet, geklingelt,
-   angerufen) → Termin gilt als nicht wahrgenommen, Ausfallgebühr.
-3. Patientenabsage unter 24 Stunden → Ausfallgebühr (unverändert).
-
-Die Software führt die behandelnde Person erklärend durch die Szenarien.
-Umsetzung: CAL-018; ADR-018 Fassung 3 (2026-09-13); `PROJECT_PRINCIPLES.md`
-0.10 §8. Frage 3 oben (Termin in der Praxis) nennt der Wortlaut nicht eigens.
-
-**Prüfvermerk.** Rechnungstext und Rechtsgrundlage für Fall 1 (Vergütung ohne
-erbrachte Behandlung, Annahmeverzug §615 BGB, gegenüber „Ausfallhonorar in
-Honorarhöhe") gehen als Festlegung in die Anfrage B4. Jannes hat die Grauzone
-selbst benannt und die Regel für verbindlich erklärt.
-
-**Bis CAL-018:** Der Weg ist gebaut und ungenutzt — `fee_basis` trägt in V1 den
-einen Wert `late_cancellation`; für das Nichtantreffen bleibt er leer, und
-Bestandszeilen aus Fassung 1 behalten ihren Wert `no_show`. Der Ablauf ist
-**nicht blockiert**: Abhaken geht mit einem Tap.
-
-**Blockiert:** nichts. ABR-001 braucht die Antwort, sobald der
-Leistungskatalog Positionen bekommt.
-
-**Rücknahme:** `klein` — eine Bedingung in `record_no_show`, die `fee_basis`
-setzt, und eine Zeile im Katalog. Was **nicht** zurückgeholt werden kann, sind
-Vorgänge, die bis dahin gelöscht wurden; deshalb hält der Löschlauf jeden
-Vorgang mit Gebührenanlass zurück (ANN-035).
-
-**Annahmen:** ANN-035 (No-show unter der Frist der Absagen; mit
-Gebührenanlass keine Löschung), ANN-047 (nur die Patientenabsage löst die
-Ausfallgebühr aus), ANN-048 (Eingang der Absage in Ortszeit).
+Wo: §8, ADR-018 Fassung 3 Punkt 8, ADR-009; Roadmap CAL-018. Annahmen: ANN-035,
+ANN-047, ANN-048.
 
 ### E15 — Office sieht klinische Inhalte
 
-| | |
-|---|---|
-| Dringlichkeit | entschieden 2026-09-13; Umsetzung ROL-EPIC-001 |
-| Bezug | §4.2, §4.3, §4.4, §10; ADR-004 Punkt 3, ADR-007, ADR-010, ADR-016, ADR-017; C1, C2 |
+entschieden (Jannes) · 2026-09-13; Umsetzung ROL-EPIC-001
 
-**Entschieden am 2026-09-13 durch Jannes** — Wortlaut:
+Office liest alle klinischen Inhalte einer Akte im Umfang der Therapeut:innen,
+schreibt keine klinische Dokumentation, jeder Zugriff ist auditpflichtig; C1 und
+C2 sind überholt, ANN-006 ist verworfen. Der Prüfvermerk geht in B2.
 
-> Office hat lesenden Zugriff auf alle klinischen Inhalte einer Patientenakte
-> im selben Umfang wie Therapeut:innen: Diagnose und Verordnung
-> einschließlich Scan, Behandlungsdokumentation mit Verlauf, Befunde,
-> patientenbezogene Nachrichten. Office schreibt keine klinische
-> Dokumentation. Jeder Zugriff ist auditpflichtig wie bei Therapeut:innen
-> (§4.2, ADR-010). Umsetzung in ROL-EPIC-001; bis dahin gilt der gebaute
-> Rollenschnitt.
-
-Status: `entschieden (Jannes) 2026-09-13`.
-
-**Prüfvermerk.** Die Entscheidung hebt die Need-to-know-Trennung auf, die
-ADR-004 Punkt 3 und die DSFA-Argumentation (ADR-007) tragen; sie gehört in die
-Anfrage B2, und das Auditlog wird damit auch für Office die
-Kompensationsmaßnahme nach §4.2.
-
-**Betroffen:** `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, ADR-004 Fassung 2,
-ADR-016/017 (Vermerke), ANN-006 (verworfen), ANN-011 (Rollenschnitt-Teil).
-**C1 und C2 sind damit überholt** — ihre Einträge in der Übersicht tragen den
-Vermerk; die Volltexte bleiben, weil sie kurz sind.
-
-**Blockiert:** nichts. Bis ROL-EPIC-001 gilt der gebaute Rollenschnitt.
-
-**Annahmen:** ANN-006 (mit E15 verworfen), ANN-011 (Rollenschnitt-Teil),
-ANN-052 (betroffen: der Verordnungsscan wird für Office lesbar, und der
-auditierte Vorgang je ausgestelltem Verweis trägt damit auch diesen Zugriff).
+Wo: `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4, ADR-004 Fassung 2; Roadmap
+ROL-EPIC-001. Annahmen: ANN-006 (verworfen), ANN-011.
 
 ### E-20 / E-21 — Rückfragen aus MAP-001 (ADR-019 Fassung 2)
 
-**E-20 erledigt am 2026-09-13:** ADR-019 Fassung 2 ist am 2026-09-13
-angenommen; produktive Freigabe weiterhin am Gate (ADR-019 Punkt 9). Das
-Gate führt B7.
+erledigt · 2026-09-13 · Jannes
 
-**E-21 erledigt am 2026-09-13:** gegenstandslos, weil UX-EPIC-001 seit
-2026-09-11 fertig ist — die Reihenfolge MAP-002 zu UX-EPIC-001 stellt sich
-nicht mehr.
+E-20: ADR-019 Fassung 2 ist angenommen, die produktive Freigabe bleibt am Gate
+(Punkt 9, siehe B7). E-21: gegenstandslos, UX-EPIC-001 ist seit 2026-09-11 fertig.
 
 ---
 
 ## F. Folgefragen aus den ADRs mit Planungsrelevanz
 
-Jeder ADR führt „Offene Folgefragen". Die meisten beantworten sich im Loop, der
-das Thema baut. Die folgenden sind planungsrelevant, weil ohne sie ein Paket
-aus der Roadmap nicht abgeschlossen werden kann.
+Planungsrelevant, weil ohne sie ein Paket der Roadmap nicht abgeschlossen werden
+kann; die übrigen beantworten sich im Loop, der das Thema baut.
 
-| Frage                                                                                                          | ADR              | Beantwortet in                                    |
-| -------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------- |
-| Wer führt die Anbieterprüfung durch, wo wird sie dokumentiert, wie oft wiederholt?                             | ADR-002          | OPS-001 (Roadmap G3)                              |
-| Ist externes Error-Tracking zulässig, und wie werden Redaction-Regeln erzwungen und getestet?                  | ADR-002, ADR-011 | OPS-004 (G8)                                      |
-| Wie wird „keine Produktionsdaten in Dev/Test" technisch abgesichert?                                           | ADR-002          | OPS-001, OPS-002                                  |
-| Frontend-Hosting und dessen Prüfung; `service_role` nie im Browser; freigegebener Stand, Nachweis der Freigabe | ADR-015, ADR-013 | OPS-002 (G5)                                      |
-| Kritische Änderung, Review-Checkliste, Schweregrade im Dependency-Scan                                         | ADR-013          | Kritische Änderung und Review-Checkliste: beantwortet mit ADR-013 Fassung 2, Punkt 9 (2026-09-13; Gate A4 in `docs/development/GRAPH-ENGINEERING-WORKFLOW.md`); Schweregrade: OPS-002 (G5) |
-| Backup-Lebenszyklus, Notfallzugang, Restore-Dokumentation, Degraded-Kerninformationen                          | ADR-012          | OPS-003 (G7), E2 (G11)                            |
-| Wer liest Auditlogs; Schwelle „größerer Export"; Eskalation beim Report; Audit gelöschter Bezugsdaten          | ADR-010          | Wer liest: ADR-010 Fassung 2 (2026-09-13: `owner`, `list_audit_events`); Audit gelöschter Bezugsdaten: ANN-029; Schwelle und Eskalation: OPS-005 (G6) |
-| Wie werden Berechtigungsänderungen protokolliert; Umgehungsschutz des Policy-Layers                            | ADR-004          | STAFF-EPIC-002 (Rollenänderungen), OPS-005        |
-| „Abschluss der Behandlung": manuell, durch Zeitablauf, oder beides                                             | ADR-008          | beantwortet: ANN-032 (`care_concluded_on`, LOE-001b) |
-| Löschnachweis nach Restore; Legal-Hold-Rechte; Teamchat rollierend löschen; Dateien in mehreren Kontexten      | ADR-008          | Legal-Hold-Rechte: ANN-033; Löschnachweis: LOE-002; Teamchat: TEAM-001; Dateien: ADR-017 |
-| Rechtsgrundlage je Verarbeitung und Einwilligungsmodell; Betroffenenrechte technisch; Wiedervorlage koppeln     | ADR-007          | PAT-006 (G9), OPS-006 (G10), G12; Skill-Schritt A prüft die acht Ereignisse |
-| Nummernkreis, Snapshot-Felder, Storno-Kette, Empfängertypen, Override-Rechte, „überfällig" ohne Mahnwesen       | ADR-009          | ABR-EPIC-002                                      |
-| Abrechenbare Ereignisse neben Terminen; Katalog global oder je Organisation; Datentyp für Geldwerte            | ADR-009, ADR-003, ADR-014 | ABR-001 (Annahme: nur Termine in V1)      |
-| Zeitzonen bei wiederkehrenden Terminen und Kalenderjahr-Fristen                                                | ADR-014          | CAL-007, LOE-001                                  |
-| Speicherort und Retention von Dateien                                                                          | ADR-015, ADR-008 | ADR-017 angenommen (2026-09-12), DAT-EPIC-001 gebaut (PR #38) |
-| Begründung als Pflichtfeld; Frist bei Hausbesuchen am Freitag; Azubi-Rolle                                     | ADR-016          | ANN-008 nach Praxiserfahrung; Rolle in STAFF-EPIC-002 |
-| Fristanker bei später Übernahme eines KI-Vorschlags; Rohaudio; Prüfbarkeit der Inhaltstreue                    | ADR-016 Fassung 2, ADR-005 Fassung 2, ADR-006 Fassung 2 | E13; Anbieter mit C6              |
-| Wer pflegt die Zweckbestimmung; wo wird `MDR_REVIEW_REQUIRED` geführt; Cutoff-Anzeige als Klassifikation?      | ADR-006          | G12/G13 (Dokument); FRB-002 (Cutoff, bis dahin nicht anzeigen) |
-| Offline: Felder, Unsynchronisiert-Dauer, Konfliktauflösung, Geräteanforderungen, Audit offline                 | ADR-001          | Tagesplan-Cache: ANN-021 (UX-011, gebaut); vollständiger Offline-ADR vor einem späteren Offline-Loop |
-| Kartendienst: Anbieter, Datenweg, Vertragsgrundlage, Endgerät                                                  | ADR-002, §9, §20 | ADR-019 (Roadmap G12); B7                          |
-| KI: Provider, Zweck → erlaubte Felder, Protokollierung, Nachweis der Freigabe                                  | ADR-005          | C6, Etappe 10                                     |
-| Minimale Struktur für Vertreterzugriffe                                                                        | ADR-014          | B5                                                |
+| Frage | ADR | Beantwortet in |
+| --- | --- | --- |
+| Wer führt die Anbieterprüfung durch, wo wird sie dokumentiert, wie oft wiederholt? | ADR-002 | OPS-001 (G3) |
+| Ist externes Error-Tracking zulässig, und wie werden Redaction-Regeln erzwungen und getestet? | ADR-002, ADR-011 | OPS-004 (G8) |
+| Wie wird „keine Produktionsdaten in Dev/Test" technisch abgesichert? | ADR-002 | OPS-001, OPS-002 |
+| Frontend-Hosting und dessen Prüfung; `service_role` nie im Browser; Nachweis der Freigabe | ADR-015, ADR-013 | OPS-002 (G5) |
+| Schweregrade im Dependency-Scan | ADR-013 | ANN-054 (Schwelle `high`); OPS-002 (G5) |
+| Backup-Lebenszyklus, Notfallzugang, Restore-Dokumentation, Degraded-Kerninformationen | ADR-012 | OPS-003 (G7), E2 (G11) |
+| Schwelle „größerer Export"; Eskalation beim Report | ADR-010 | OPS-005 (G6) |
+| Wie werden Berechtigungsänderungen protokolliert; Umgehungsschutz des Policy-Layers | ADR-004 | STAFF-EPIC-002, OPS-005 |
+| Löschnachweis nach Restore; Legal-Hold-Rechte; Teamchat rollierend löschen | ADR-008 | ANN-033; LOE-002; TEAM-001 |
+| Rechtsgrundlage je Verarbeitung und Einwilligungsmodell; Betroffenenrechte technisch | ADR-007 | PAT-006 (G9), OPS-006 (G10), G12 |
+| Nummernkreis, Snapshot-Felder, Storno-Kette, Empfängertypen, „überfällig" ohne Mahnwesen | ADR-009 | ABR-EPIC-002 |
+| Abrechenbare Ereignisse neben Terminen; Katalog global oder je Organisation; Datentyp für Geldwerte | ADR-009, ADR-003, ADR-014 | ABR-001 |
+| Zeitzonen bei wiederkehrenden Terminen und Kalenderjahr-Fristen | ADR-014 | CAL-007, LOE-001 |
+| Begründung als Pflichtfeld; Frist bei Hausbesuchen am Freitag; Azubi-Rolle | ADR-016 | ANN-008; STAFF-EPIC-002 |
+| Fristanker bei später Übernahme eines KI-Vorschlags; Rohaudio; Prüfbarkeit der Inhaltstreue | ADR-016 F2, ADR-005 F2, ADR-006 F2 | E13; Anbieter mit C6 |
+| Wer pflegt die Zweckbestimmung; wo wird `MDR_REVIEW_REQUIRED` geführt; Cutoff-Anzeige | ADR-006 | G12/G13; FRB-002 |
+| Offline: Felder, Unsynchronisiert-Dauer, Konfliktauflösung, Geräteanforderungen, Audit offline | ADR-001 | ANN-021 (Tagesplan-Cache); eigener Offline-ADR vor einem Offline-Loop |
+| Kartendienst: Anbieter, Datenweg, Vertragsgrundlage, Endgerät | ADR-002, §9, §20 | ADR-019 (G12); B7 |
+| KI: Provider, Zweck → erlaubte Felder, Protokollierung, Nachweis der Freigabe | ADR-005 | C6, Etappe 10 |
+| Minimale Struktur für Vertreterzugriffe | ADR-014 | B5 |
 
 ---
 
 ## Historie
 
-Entscheidungsverlauf und aeltere Faessungen: `git log -- docs/decisions/OPEN_DECISIONS.md`.
+Entscheidungsverlauf und ältere Fassungen: `git log -- docs/decisions/OPEN_DECISIONS.md`.
