@@ -222,9 +222,12 @@ und gehören in den Prüfkatalog von OPS-001, nicht in diese Entscheidung.
     Kopieren lässt die Storage-API nur gegen eine einmalige, 30 Sekunden
     gültige Freigabe zu, die `issue_patient_file_link` mit dem Auditeintrag
     anlegt; entfernt wird ein Objekt nur gegen die Freigabe aus
-    `claim_storage_deletion_order` (`storage_deletion.claimed`). Die Grenze
-    dieses Punkts bleibt: Ein ausgestellter Verweis gilt seine 60 Sekunden,
-    und ob die Bytes geflossen sind, steht weiter nicht fest (ANN-052).
+    `claim_storage_deletion_order` (`storage_deletion.claimed`), und diese
+    Freigabe taugt nur zum Entfernen. `storage_deletion.claimed` ist damit ein
+    Ereignis des Löschauftrags, kein Dateizugriff; Punkt 20 bleibt bei seinen
+    drei Dateiereignissen. Die Grenze dieses Punkts bleibt: Ein ausgestellter
+    Verweis gilt seine 60 Sekunden, und ob die Bytes geflossen sind, steht
+    weiter nicht fest (ANN-052).
 22. **Das Auflisten der Dateien einer Akte ist kein eigenes Auditereignis.**
     Das Öffnen der Akte ist bereits auditiert; ADR-010 wägt genauso zwischen
     Aussagekraft und Logvolumen ab („Detailansicht ja, Trefferliste nein").

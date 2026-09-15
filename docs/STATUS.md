@@ -26,7 +26,8 @@ einträgt, hat sie damit nicht eingeplant.
 2. **PR zu FIX-015** — `claude/fix-bef-004`, gestapelt auf #41 und mit dessen
    Commits; erst danach mergen, die Basis vorher auf `main` stellen.
 
-Beide: CI grün, Zweitreview in frischem Kontext gelaufen, Abnahme offen.
+#41: CI grün, Zweitreview mit Befund BEF-004. FIX-015: Zweitreview in frischem
+Kontext, Befunde eingearbeitet, CI-Ergebnis im PR. Abnahme beider offen.
 
 ## Blocker (Jannes-seitig)
 

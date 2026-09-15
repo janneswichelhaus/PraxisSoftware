@@ -214,7 +214,7 @@ Beleg: `pnpm test:db` 1 311 von 1 311 grün (2026-09-15).
 | Datum     | 2026-09-15                                                                                        |
 | Bereich   | Dateien in der Akte, Verordnungsscan — `storage.objects`, `issue_patient_file_link`               |
 | Quelle    | Zweitreview in frischem Kontext zu ROL-EPIC-001 (ADR-013 Punkt 9 Nr. 8), am Code bestätigt        |
-| Status    | erledigt in FIX-015 (Branch `claude/fix-bef-004`, gestapelt auf PR #41)                           |
+| Status    | behoben in FIX-015, noch nicht gemergt (Branch `claude/fix-bef-004`, gestapelt auf PR #41)        |
 | Berührt   | DAT-001, ROL-002; ADR-010 Punkt 2 und 14, ADR-017 Punkt 20; ANN-052                               |
 
 **Beobachtung.** Der Objektschlüssel einer Datei ist
@@ -243,11 +243,12 @@ den ein erstes Öffnen ohnehin preisgibt, nichts geändert. Stattdessen verlangt
 die RLS auf `storage.objects` eine **einmalige Freigabe** der anfragenden
 Person, die nur `issue_patient_file_link` (mit `patient_file.link_issued`) oder
 `claim_storage_deletion_order` (neu mit `storage_deletion.claimed`) anlegt; sie
-gilt 30 Sekunden und wird beim ersten Zugriff verbraucht. Zuerst rot, dann grün
+gilt 30 Sekunden und wird beim ersten Zugriff verbraucht; die Löschfreigabe
+trägt nur ein Entfernen, kein Lesen (Zweitreview). Zuerst rot, dann grün
 belegt: gegen die laufende Storage-API in
 `tests/e2e/authenticated/patient-file-access.spec.ts` (Signieren, Laden,
 Auflisten und Kopieren ohne Ausstellung, zweites Signieren nach erlaubtem
-Öffnen, Entfernen durch `owner` ohne Ausführung) und in
+Öffnen, Entfernen durch `owner` ohne Ausführung, Lesen mit Löschfreigabe) und in
 `supabase/tests/patient-file-access.test.ts`. Ein ausgestellter Verweis bleibt
 60 Sekunden nutzbar. Migration `20260915120000_patient_file_access_grants.sql`,
 ANN-052 Fassung 2.

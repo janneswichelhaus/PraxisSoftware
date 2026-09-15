@@ -369,7 +369,7 @@ zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
    60 Sekunden** — die Adresse aus dem neuen Fenster kopieren, eine Minute
    warten und sie erneut aufrufen: Sie funktioniert nicht mehr. Das ist die
    Zusage aus ADR-017 Punkt 15 und Punkt 17, und sie ist der Grund, warum es
-   keinen Teilen-Link gibt. _Seit FIX-015:_ Innerhalb der Minute lässt sich
+   keinen Teilen-Link gibt. _Auch nach FIX-015:_ Innerhalb der Minute lässt sich
    dieselbe Adresse weiter aufrufen; nur ein **neuer** Verweis braucht ein
    erneutes „Öffnen".
 4. **Die Akte kennt die Datei auch.** Bereich **Dateien** öffnen: Der Scan
@@ -548,7 +548,8 @@ liegt mindestens eine Datei.
 Verweis noch die Datei noch einen Eintrag in der Auflistung heraus — auch
 nicht bei bekanntem Ablageort und nicht nach einem früheren Öffnen; eine Kopie
 ohne „Öffnen" wird abgewiesen; `owner` entfernt das Objekt eines Löschauftrags
-erst nach dessen protokollierter Ausführung. Bei laufendem lokalem Stack und
+erst nach dessen protokollierter Ausführung, und diese Freigabe öffnet kein
+Lesen. Bei laufendem lokalem Stack und
 den Umgebungsvariablen aus [`../DEVELOPMENT.md`](../DEVELOPMENT.md) Schritt 6:
 `pnpm test:e2e --project authenticated tests/e2e/authenticated/patient-file-access.spec.ts`.
 
