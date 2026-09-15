@@ -10,8 +10,7 @@ Inhalte lesen darf, die Therapeut:innen sehen. Das **kehrt Punkt 3 um** und
 fasst Punkt 4 neu; alle übrigen Punkte gelten unverändert. Die Umkehr ist
 hier ausdrücklich als solche benannt (Fassungsregel in `docs/adr/README.md`);
 `PROJECT_PRINCIPLES.md` §4.3/§4.4 sind mit Version 0.10 nachgezogen (§21).
-Umgesetzt wird der neue Rollenschnitt in ROL-EPIC-001; bis dahin gilt der
-gebaute Stand nach Fassung 1.
+Umgesetzt ist der neue Rollenschnitt mit ROL-EPIC-001 (PR #41).
 
 ## Datum
 
