@@ -34,9 +34,12 @@ describe('Dokumentarten und Dateiprüfung', () => {
     expect(istKlinisch('vertrag')).toBe(false);
   });
 
-  it('sagt zu jeder Art, wer sie danach sehen kann', () => {
-    expect(sichtbarkeitHinweis('verordnungsscan')).toMatch(/nicht für die Verwaltung/);
-    expect(sichtbarkeitHinweis('vertrag')).toMatch(/auch für die Verwaltung/);
+  it('sagt zu jeder Art, wer sie sieht und wer sie pflegt (E15, ADR-017 Punkt 13)', () => {
+    expect(sichtbarkeitHinweis('verordnungsscan')).toMatch(/sichtbar für alle Praxisrollen/);
+    expect(sichtbarkeitHinweis('verordnungsscan')).toMatch(
+      /nur Praxisinhaber:in, Therapeut:innen und Teamleitung/,
+    );
+    expect(sichtbarkeitHinweis('vertrag')).toMatch(/auch die Verwaltung/);
   });
 
   it('lässt genau PDF, JPEG und PNG zu', () => {

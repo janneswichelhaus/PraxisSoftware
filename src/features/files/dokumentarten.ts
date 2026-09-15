@@ -44,11 +44,12 @@ export const dokumentartHinweise: Record<Dokumentart, string> = {
 };
 
 /**
- * Welche Arten klinisch sind — und damit für `office` unsichtbar.
+ * Welche Arten klinisch sind.
  *
- * Spiegel von `patient_file_document_types.is_clinical`. Steuert in der
- * Oberfläche nur die Auswahl und den Hinweistext; wer was sieht, entscheidet
- * die Datenbank.
+ * Spiegel von `patient_file_document_types.is_clinical`. Seit E15 sehen alle
+ * vier Praxisrollen jede Art (ROL-002); die Einteilung bestimmt, wer eine
+ * Datei hinzufügen, löschen und korrigieren darf (ADR-017 Punkt 13). Steuert
+ * in der Oberfläche nur Auswahl und Hinweistext; verbindlich ist die Datenbank.
  */
 export const KLINISCHE_DOKUMENTARTEN: readonly Dokumentart[] = [
   'verordnungsscan',
@@ -63,8 +64,8 @@ export function istKlinisch(art: Dokumentart): boolean {
 
 export function sichtbarkeitHinweis(art: Dokumentart): string {
   return istKlinisch(art)
-    ? 'Sichtbar für Praxisinhaber:in, Therapeut:innen und Teamleitung — nicht für die Verwaltung.'
-    : 'Sichtbar für alle Praxisrollen, auch für die Verwaltung.';
+    ? 'Klinisch: sichtbar für alle Praxisrollen; hinzufügen und löschen nur Praxisinhaber:in, Therapeut:innen und Teamleitung.'
+    : 'Organisatorisch: sichtbar für alle Praxisrollen; auch die Verwaltung darf sie hinzufügen und löschen.';
 }
 
 /**

@@ -213,7 +213,7 @@ describe('Dateiliste', () => {
     // steht trotzdem da (ADR-017 Punkt 12).
     expect(screen.queryByLabelText('Art des Dokuments')).not.toBeInTheDocument();
     expect(screen.getByText('Verordnungsscan')).toBeInTheDocument();
-    expect(screen.getByText(/nicht für die Verwaltung/)).toBeInTheDocument();
+    expect(screen.getByText(/hinzufügen und löschen nur/)).toBeInTheDocument();
 
     await userEvent.upload(screen.getByLabelText('Datei'), pdf());
     await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
@@ -246,7 +246,7 @@ describe('Dateiliste', () => {
     expect(arten).toEqual(['einwilligung', 'vertrag']);
   });
 
-  it('sagt bei einer klinischen Art, wer sie danach nicht sieht', async () => {
+  it('sagt bei jeder Art, wer sie sieht und wer sie pflegt (E15)', async () => {
     renderWithProviders(
       <Dateiliste
         patientId={PATIENT}
@@ -257,10 +257,10 @@ describe('Dateiliste', () => {
     );
 
     await screen.findByText('Nichts da.');
-    expect(screen.getByText(/nicht für die Verwaltung/)).toBeInTheDocument();
+    expect(screen.getByText(/hinzufügen und löschen nur/)).toBeInTheDocument();
 
     await userEvent.selectOptions(screen.getByLabelText(/Art des Dokuments/), 'einwilligung');
-    expect(screen.getByText(/auch für die Verwaltung/)).toBeInTheDocument();
+    expect(screen.getByText(/auch die Verwaltung/)).toBeInTheDocument();
   });
 
   it('meldet einen gescheiterten Upload im Klartext', async () => {
@@ -346,6 +346,35 @@ describe('Dateiliste', () => {
       expect(screen.queryByRole('button', { name: 'Art korrigieren' })).not.toBeInTheDocument();
     });
 
+    it('zeigt der Verwaltung klinische Dateien, laesst sie aber nur organisatorische loeschen (E15)', async () => {
+      fetchPatientFiles.mockResolvedValue([
+        datei(),
+        datei({
+          id: 'd2',
+          document_type: 'einwilligung',
+          is_clinical: false,
+          display_name: 'Einwilligung.pdf',
+        }),
+      ]);
+
+      renderWithProviders(
+        <Dateiliste
+          patientId={PATIENT}
+          user={testUser(['office'])}
+          darfHinzufuegen
+          leerHinweis="Nichts da."
+        />,
+      );
+
+      // Beide Dateien sind sichtbar und zu öffnen (ADR-004 Fassung 2 Punkt 3) ...
+      expect(await screen.findByText('Befund Schulter.pdf')).toBeInTheDocument();
+      expect(screen.getByText('Einwilligung.pdf')).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Öffnen' })).toHaveLength(2);
+      // ... gelöscht wird nur die organisatorische, korrigiert keine (Punkt 13).
+      expect(screen.getAllByRole('button', { name: 'Löschen' })).toHaveLength(1);
+      expect(screen.queryByRole('button', { name: 'Art korrigieren' })).not.toBeInTheDocument();
+    });
+
     it('korrigiert die Dokumentart und zeigt dabei die neue Sichtbarkeit', async () => {
       fetchPatientFiles.mockResolvedValue([datei()]);
 
@@ -368,7 +397,7 @@ describe('Dateiliste', () => {
       expect(Array.from(auswahl.options).map((o) => o.value)).not.toContain('verordnungsscan');
 
       await userEvent.selectOptions(auswahl, 'einwilligung');
-      expect(screen.getByText(/auch für die Verwaltung/)).toBeInTheDocument();
+      expect(screen.getByText(/auch die Verwaltung/)).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: 'Art übernehmen' }));
       await waitFor(() => expect(korrigiereDokumentart).toHaveBeenCalledWith('d1', 'einwilligung'));

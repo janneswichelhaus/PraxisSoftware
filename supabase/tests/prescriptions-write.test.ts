@@ -124,6 +124,23 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     );
 
     const id = await anlegen(users.therapist);
+    // E15 oeffnet office das Lesen der Verordnung samt Diagnose - Aendern und
+    // Loeschen bleiben zu (ADR-004 Fassung 2 Punkt 3, ANN-011).
+    await expect(
+      asUser(users.office, AENDERN, [
+        id,
+        PROBST,
+        'first',
+        '2026-03-01',
+        POSITIONEN,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]),
+    ).rejects.toThrow(/not allowed to write prescriptions/i);
     await expect(asUser(users.office, LOESCHEN, [id])).rejects.toThrow(
       /not allowed to write prescriptions/i,
     );
@@ -342,24 +359,26 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     expect(rows[0]?.args ?? '').not.toMatch(/organization/i);
   });
 
-  it('liefert get_prescription nur den therapeutischen Rollen und protokolliert', async () => {
+  it('liefert get_prescription allen Praxisrollen und protokolliert je Zugriff (E15)', async () => {
     const id = await anlegen(users.therapist);
     await asPostgres("delete from public.audit_log where subject_type = 'prescription'");
 
-    const { rows } = await asUserCommitted<{ id: string; patient_id: string }>(
-      users.teamLead,
-      HOLEN,
-      [id],
-    );
-    expect(rows[0]?.id).toBe(id);
-    expect(rows[0]?.patient_id).toBe(patients.max);
+    // ADR-004 Fassung 2 Punkt 3: office liest die Verordnung samt Diagnose -
+    // anlegen, aendern und loeschen darf es weiterhin nicht (ANN-011, oben).
+    for (const konto of [users.teamLead, users.office]) {
+      const { rows } = await asUserCommitted<{ id: string; patient_id: string }>(konto, HOLEN, [
+        id,
+      ]);
+      expect(rows[0]?.id).toBe(id);
+      expect(rows[0]?.patient_id).toBe(patients.max);
+    }
 
-    const { rows: audit } = await asPostgres(
-      `select id from public.audit_log where action = 'prescription.viewed'`,
+    const { rows: audit } = await asPostgres<{ actor_user_id: string }>(
+      `select actor_user_id from public.audit_log where action = 'prescription.viewed'`,
     );
-    expect(audit).toHaveLength(1);
+    expect(audit.map((a) => a.actor_user_id).sort()).toEqual([users.teamLead, users.office].sort());
 
-    await expect(asUser(users.office, HOLEN, [id])).rejects.toThrow(
+    await expect(asUser(users.patientMax, HOLEN, [id])).rejects.toThrow(
       /not allowed to read clinical prescription data/i,
     );
   });
@@ -557,6 +576,21 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
   it('listet eine fremde Patientin ohne Verordnungen der eigenen Praxis', async () => {
     const { rows } = await asUser(users.office, ORGANISATORISCH, [fremderPatient]);
     expect(rows).toEqual([]);
+  });
+
+  it('endet auch fuer die klinische Sicht von office an der eigenen Praxis (E15)', async () => {
+    await asPostgres("delete from public.audit_log where action = 'prescription.viewed'");
+
+    const { rows: liste } = await asUserCommitted(users.office, KLINISCH, [fremderPatient]);
+    expect(liste).toEqual([]);
+    const { rows: detail } = await asUserCommitted(users.office, HOLEN, [fremdeVerordnung]);
+    expect(detail).toEqual([]);
+
+    // Nichts gelesen, nichts protokolliert.
+    const { rows: audit } = await asPostgres(
+      "select id from public.audit_log where action = 'prescription.viewed'",
+    );
+    expect(audit).toEqual([]);
   });
 
   it('sieht die eigene Verordnung nur innerhalb der fremden Organisation', async () => {

@@ -285,7 +285,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(datei.file_id).toBeTruthy();
     });
 
-    it('zeigt office die klinische Datei nicht, der Therapeutin schon', async () => {
+    it('zeigt office seit E15 auch die klinische Datei - wie der Therapeutin', async () => {
       await abgelegteDatei(users.therapist);
       await abgelegteDatei(users.office, {
         verordnungId: null,
@@ -308,8 +308,11 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
         'einwilligung',
         'verordnungsscan',
       ]);
-      // Nicht ausgegraut und nicht als "eine weitere Datei" gezaehlt - gar nicht.
-      expect(buero.rows.map((r) => r.document_type)).toEqual(['einwilligung']);
+      // ADR-004 Fassung 2 Punkt 3: Verordnung einschliesslich Scan.
+      expect(buero.rows.map((r) => r.document_type).sort()).toEqual([
+        'einwilligung',
+        'verordnungsscan',
+      ]);
     });
 
     it('sieht team_lead klinische Dateien, ein Patientenkonto keine', async () => {
@@ -463,11 +466,27 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(Number(rows[0]!.anzahl)).toBe(3);
     });
 
-    it('verweigert office den Verweis auf eine klinische Datei', async () => {
+    it('gibt office den Verweis auf eine klinische Datei und protokolliert ihn (E15)', async () => {
+      const datei = await abgelegteDatei(users.therapist);
+      const { rows } = await asUserCommitted<{ object_key: string }>(
+        users.office,
+        'select object_key from public.issue_patient_file_link($1::uuid)',
+        [datei.file_id],
+      );
+      expect(rows[0]!.object_key).toBe(datei.object_key);
+
+      // ADR-010 Punkt 14: die Ausstellung des Verweises ist das Download-Ereignis.
+      const audit = await asPostgres<{ subject_id: string; actor_user_id: string }>(
+        "select subject_id, actor_user_id from public.audit_log where action = 'patient_file.link_issued'",
+      );
+      expect(audit.rows).toEqual([{ subject_id: datei.file_id, actor_user_id: users.office }]);
+    });
+
+    it('verweigert einem Patientenkonto den Verweis auf eine klinische Datei', async () => {
       const datei = await abgelegteDatei(users.therapist);
       const fehler = await abgefangen(
         asUserCommitted(
-          users.office,
+          users.patientMax,
           'select object_key from public.issue_patient_file_link($1::uuid)',
           [datei.file_id],
         ),
@@ -538,8 +557,9 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       const therapeutin = await asUser(users.therapist, LESEN, [datei.object_key]);
       expect(therapeutin.rows).toHaveLength(1);
 
+      // Seit E15 dieselbe Leseregel fuer office (ADR-004 Fassung 2 Punkt 3).
       const buero = await asUser(users.office, LESEN, [datei.object_key]);
-      expect(buero.rows).toEqual([]);
+      expect(buero.rows).toHaveLength(1);
 
       const patient = await asUser(users.patientMax, LESEN, [datei.object_key]);
       expect(patient.rows).toEqual([]);

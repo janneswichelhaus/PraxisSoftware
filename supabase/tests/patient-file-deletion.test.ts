@@ -193,8 +193,8 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
           [datei.file_id, 'befund'],
         ),
       );
-      // Zwei Gruende zugleich: die Rolle darf nicht korrigieren, und sie
-      // duerfte die Datei danach nicht mehr sehen.
+      // Die Rolle darf nicht korrigieren (Punkt 13). Das Leserecht aus E15
+      // aendert daran nichts: die Art bestimmt, wer schreiben darf.
       expect(fehler?.message).toMatch(/not allowed to correct this document type/);
     });
 
