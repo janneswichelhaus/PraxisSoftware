@@ -4,7 +4,7 @@
 Knoten 4 gelöscht.** Liegt im Repository statt in `/tmp`, weil eine neue Session
 einen frischen Container bekommt und `/tmp` dort leer ist.
 
-Stand: 2026-09-15, nach Gruppe 3. Branch `claude/konsolidierung-r2`,
+Stand: 2026-09-15, nach Gruppe 4. Branch `claude/konsolidierung-r2`,
 Baseline `7160fd5`.
 
 ## Erledigt
@@ -15,20 +15,19 @@ Baseline `7160fd5`.
 | 2 Register | `3e982f3` | R2-012/013/015, Einheitsstruktur 4.7, ANFRAGEN.md (R2-F01), Sammelposten Register | Invarianten-Skript, Anker-Abgleich (53/53), Linkprüfung, `format:check` — alle grün |
 | 3a Steuerung | `2c2cf07` | R2-001…004, 006…008, 017, 018, 024, 028; DEVELOPMENT_WORKFLOW.md gelöscht; GRAPH 1.1; Roadmap-Vermerk 5.3 angelegt | `prettier --check` der geänderten Prettier-Dateien, Linkprüfung (59 Dateien, nur die zwei bekannten Beispielpfade in den R2-Dateien) — grün |
 | 3b Skills, Vision, Ideen | `ad63f99` | R2-002/003/005/006 in den Skills, R2-F02 Freigabe-Stopp, R2-F03, R2-029, R2-030, Sammelposten Vision/Ideen | wie 3a — grün |
+| 4 Korrigieren | `120670f` | R2-016, 019–023, 025, 026 (nur nicht abgenommene Abschnitte), 031, 036, 039; Sammelposten Roadmap/Abnahme | `prettier --check`, `eslint scripts/screenshots.mjs`, JSON und `pnpm fortschritt` (31,2 %), Linkprüfung — grün |
 
 Zeilen: `ASSUMPTIONS.md` 3 575 → 734 · `OPEN_DECISIONS.md` 1 415 → 400 ·
-`ANFRAGEN.md` neu 483 · `ROADMAP.md` 859 → 785 · `CLAUDE.md` 293 → 149 ·
-`README.md` 66 → 57 · `DEVELOPMENT.md` 404 → 363 · GRAPH 249 → 188 ·
+`ANFRAGEN.md` neu 483 · `ROADMAP.md` 859 → 786 · `CLAUDE.md` 293 → 149 ·
+`README.md` 66 → 57 · `DEVELOPMENT.md` 404 → 375 · GRAPH 249 → 188 ·
 `MAP-LOOPS.md` 256 → 243 · `providerpruefung` 172 → 158 · `PRODUCT_VISION.md`
 349 → 311 · `IDEENSPEICHER.md` 259 → 224 · `10-praxisverwaltung.md` 1 178 → 972 ·
 `07-ki-assistenz.md` 203 → 164 · `referenz-wettbewerb.md` 315 → 239 ·
-feature-loop 271 → 247 · sandbox 165 → 167 · drei Dateien gelöscht.
+feature-loop 271 → 247 · sandbox 165 → 167 · `VER-EPIC-002.md` 133 → 120 ·
+`docs/abnahme/` 2 905 → 2 888 · drei Dateien gelöscht.
 
 ## Offen — Reihenfolge nach Arbeitsanweisung 4.11
 
-4. Korrigieren (R2-016, 019–023, 025, 026, 031, 036, 039, Sammelposten
-   Roadmap/Abnahme) → Linkprüfung. Dazu: Vermerk 5.3 um den Skriptwert
-   (31,2 %) ergänzen; `VER-EPIC-002.md:92-110` Prozessabsatz → Verweis.
 5. Code-Hygiene (R2-032–035, 037, 038, ci.yml, .gitignore, Sammelposten Code) →
    `lint && typecheck && test`, Testanzahl 1 462 belegen. Dazu aus dem
    Sammelposten Gates/Skripte: `DEVELOPMENT.md` Befehle `format`, `db:reset`,
@@ -86,6 +85,16 @@ Gruppe 3, im Bericht zu nennen (keine Abweichung in der Sache):
    noch in §15.1; die frühere Abweichung (Punkt 5 „Im Bericht nennen" statt
    „Validieren lassen", R2-004) ist damit aufgelöst. Die Berichtspflicht für
    Annahmen steht im Feature-Loop-Schritt I und in „Abschlussbericht".
+9. **R2-026 und etappe-g Schritt 9 (Gruppe 4):** Jannes' Vorgabe
+   „Abnahmeabschnitte abgenommener Loops bleiben unverändert" ist spezifischer
+   als die Befundliste. Korrigiert sind deshalb nur die 14 Menüpfade in
+   Abschnitten nicht abgenommener Loops (etappe-0 nach R2-020, CAL-012/013,
+   FIX-EPIC-001, DAT-001 bis DAT-003); 16 alte Pfade in DOK, VER, UI-000, UX,
+   MARKE-001 und STAFF-002 bleiben, ebenso die Durchstreichung in STAFF-004
+   Schritt 9. Mit einem Suchen-Ersetzen umkehrbar.
+10. **`DEVELOPMENT.md` 375 statt ~340 Zeilen:** Klickliste (PR #37,
+    Alt-Branches) und Routine-Prompt sind nach 4.9 neu. Gruppe 5 kürzt noch
+    die Stellen mit der Supabase-CLI-Version.
 
 ## Für Gruppe 6 und 9 vormerken
 
