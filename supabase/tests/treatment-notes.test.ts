@@ -534,6 +534,25 @@ describe('DOK-001: Mandantentrennung', () => {
     expect(rows).toEqual([]);
   });
 
+  it('liefert office Eintrag und Verlauf einer fremden Praxis nicht und protokolliert nichts (E15)', async () => {
+    // E15 oeffnet office die eigene Praxis, keine fremde (ADR-003, ADR-004).
+    const { rows: eintrag } = await asUserCommitted(users.office, LESEN, [fremderTermin]);
+    expect(eintrag).toEqual([]);
+
+    const { rows: verlauf } = await asUserCommitted(
+      users.office,
+      'select * from public.get_treatment_note_versions($1::uuid)',
+      [fremdeDoku.id],
+    );
+    expect(verlauf).toEqual([]);
+
+    const { rows: audit } = await asPostgres(
+      'select id from public.audit_log where subject_id = $1 and actor_user_id = $2',
+      [fremdeDoku.id, users.office],
+    );
+    expect(audit).toEqual([]);
+  });
+
   it('laesst die Dokumentation einer fremden Praxis nicht aendern', async () => {
     await expect(
       asUser(users.therapist, AENDERN, [fremdeDoku.id, fremdeDoku.updated_at, 'Fremdzugriff.']),

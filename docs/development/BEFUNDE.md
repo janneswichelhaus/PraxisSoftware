@@ -206,3 +206,34 @@ Geändert ist ausschließlich die Testdatei — keine Migration, keine Policy, u
 `outside_working_hours` ausdrücklich prüfen, rechnen weiter mit rohen
 Kalendertagen: Ein Beginn um 05:00 liegt an jedem Wochentag außerhalb.
 Beleg: `pnpm test:db` 1 311 von 1 311 grün (2026-09-15).
+
+### BEF-004 — Dateien lassen sich am Auditeintrag vorbei laden
+
+|           |                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------- |
+| Datum     | 2026-09-15                                                                                        |
+| Bereich   | Dateien in der Akte, Verordnungsscan — `storage.objects`, `issue_patient_file_link`               |
+| Quelle    | Zweitreview in frischem Kontext zu ROL-EPIC-001 (ADR-013 Punkt 9 Nr. 8), am Code bestätigt        |
+| Status    | offen                                                                                             |
+| Berührt   | DAT-001, ROL-002; ADR-010 Punkt 2 und 14, ADR-017 Punkt 20; ANN-052                               |
+
+**Beobachtung.** Der Objektschlüssel einer Datei ist
+`organization_id/(prescription_id oder patient_id)/id` (Spalte `object_key` in
+`supabase/migrations/20260913110000_patient_files.sql`). Alle drei Teile kennt
+jede Rolle, die die Dateiliste lesen darf — `list_patient_files` liefert die
+Datei-`id`. Die SELECT-Policy auf `storage.objects` lässt das Objekt für diese
+Rollen zu. Wer die Storage-API direkt anspricht (`createSignedUrl`, `download`,
+`list`), lädt eine Datei also, ohne dass `patient_file.link_issued` entsteht.
+Die Begründung von ANN-052 („drei zufällige UUID … praktisch unumgehbar")
+trägt deshalb nicht: zufällig ja, dem Lesenden aber bekannt.
+
+**Warum das zählt.** Der Weg besteht seit DAT-001 für die therapeutischen
+Rollen; seit ROL-002 (E15) gilt er auch für `office` und klinische Dateien.
+Nach ADR-004 Fassung 2 ist das Auditlog für `office` die tragende Kompensation
+des Lesezugriffs. Der Umweg braucht Absicht und API-Kenntnis, aber kein
+zusätzliches Recht.
+
+**Richtung (nicht entschieden).** Ein Zufallsanteil im Schlüssel, der den
+Server nur über `issue_patient_file_link` verlässt, oder die serverseitige
+Ausstellung nach Freigabe der Edge Runtime (ANN-052, Änderungspfad). Eigener
+Loop nach ADR-013 Punkt 9 Nr. 8, vor der ersten echten Datei (OPS-001).

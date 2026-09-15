@@ -711,7 +711,7 @@ Praxisprozess · offen · 2026-09-13 · — · — · Wiedervorlage: Jannes, nac
 
 ### ANN-052 — Der Objektschlüssel einer Datei verlässt die Datenbank nur über einen auditierten Vorgang
 
-Datenschutz · offen · 2026-09-13 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf)
+Datenschutz · offen · 2026-09-13 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf); **Begründung durch BEF-004 widerlegt (2026-09-15, Zweitreview ROL-EPIC-001): der Schlüssel ist für Lesende ableitbar — Korrektur im Folge-Loop**
 
 **Annahme.** Der Lesepfad gibt den Objektschlüssel nicht heraus: `list_patient_files` liefert Name, Art, Größe, Datum. Es gibt genau eine Funktion, die ihn herausgibt (`issue_patient_file_link`), und sie schreibt dabei `patient_file.link_issued`, bevor die Storage-API unterschreibt. Die RLS auf `storage.objects` bleibt trotzdem vollständig und prüft Organisation, Zustand und Dokumentart unabhängig davon, ob jemand den auditierten Weg genommen hat.
 

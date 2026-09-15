@@ -136,8 +136,8 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
   });
 });
 
-test.describe('DOK-001: Office sieht keinen klinischen Freitext', () => {
-  test('zeigt dem Office am selben Termin keine Dokumentation', async ({ page }) => {
+test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', () => {
+  test('zeigt dem Office am selben Termin die Dokumentation ohne Schreibweg', async ({ page }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(4));
     await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
@@ -149,16 +149,17 @@ test.describe('DOK-001: Office sieht keinen klinischen Freitext', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/termine/${terminId}`);
 
-    // Der Termin selbst ist organisatorisch und bleibt sichtbar.
     await expect(page.getByRole('heading', { name: /Termin – Max Mustermann/ })).toBeVisible();
-    // Der klinische Inhalt nicht (PROJECT_PRINCIPLES.md 4.3).
-    await expect(page.getByText(ENTWURF)).toHaveCount(0);
-    await expect(page.getByText('Behandlungsdokumentation')).toHaveCount(0);
+    // Seit E15 liest office den klinischen Inhalt (ADR-004 Fassung 2 Punkt 3) ...
+    await expect(page.getByText(ENTWURF)).toBeVisible();
+    // ... bearbeiten und finalisieren bleiben den therapeutischen Rollen (4.3).
+    await expect(page.getByRole('link', { name: 'Dokumentation bearbeiten' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
   });
 });
 
 test.describe('DOK-001: Serverseitige Grenzen', () => {
-  test('weist office und Patientenkonto am Lesepfad ab', async ({ page, request }) => {
+  test('liefert office den Lesepfad und weist das Patientenkonto ab', async ({ page, request }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(5));
     await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
@@ -166,16 +167,21 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
+    const officeToken = await zugriffstoken(request, KONTEN.office);
+    const gelesen = await rpcAufrufen(request, officeToken, 'get_treatment_note', {
+      p_appointment_id: terminId,
+    });
+    expect(gelesen.status(), 'office liest den Eintrag (E15)').toBe(200);
+    expect(await gelesen.text()).toContain('Uebungen angeleitet');
+
     // Ausgeblendete Elemente sind keine Zugriffskontrolle - verbindlich ist
     // der Server (ADR-004).
-    for (const konto of [KONTEN.office, 'max.mustermann@patient.invalid']) {
-      const token = await zugriffstoken(request, konto);
-      const antwort = await rpcAufrufen(request, token, 'get_treatment_note', {
-        p_appointment_id: terminId,
-      });
-      expect(antwort.status(), `${konto} darf nicht lesen`).toBe(403);
-      expect(await antwort.text()).not.toContain('Uebungen angeleitet');
-    }
+    const patientToken = await zugriffstoken(request, 'max.mustermann@patient.invalid');
+    const abgewiesen = await rpcAufrufen(request, patientToken, 'get_treatment_note', {
+      p_appointment_id: terminId,
+    });
+    expect(abgewiesen.status(), 'ein Patientenkonto darf nicht lesen').toBe(403);
+    expect(await abgewiesen.text()).not.toContain('Uebungen angeleitet');
   });
 
   test('weist office am Schreibpfad ab', async ({ page, request }) => {

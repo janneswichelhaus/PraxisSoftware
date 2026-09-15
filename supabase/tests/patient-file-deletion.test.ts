@@ -149,12 +149,21 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
   });
 
   describe('Dokumentart korrigieren (ADR-017 Punkt 13)', () => {
-    it('verschiebt die Sichtbarkeitsgrenze und protokolliert beide Arten', async () => {
+    it('verschiebt die Schreibgrenze und protokolliert beide Arten', async () => {
       const datei = await abgelegteDatei(users.therapist, {
         verordnungId: null,
         art: 'befund',
         name: 'Blatt.pdf',
       });
+      const LISTE = 'select document_type, is_clinical from public.list_patient_files($1::uuid)';
+      const LOESCHEN = 'select public.delete_patient_file($1::uuid)';
+
+      // Vorher: office sieht die Datei seit E15, aber als klinische - loeschen
+      // darf es sie nicht (ADR-017 Punkt 13). asUser rollt zurueck.
+      const vorher = await asUser(users.office, LISTE, [patients.max]);
+      expect(vorher.rows).toEqual([{ document_type: 'befund', is_clinical: true }]);
+      const verweigert = await abgefangen(asUser(users.office, LOESCHEN, [datei.file_id]));
+      expect(verweigert?.message).toMatch(/not allowed to delete this file/);
 
       await asUserCommitted(
         users.therapist,
@@ -162,13 +171,10 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         [datei.file_id, 'einwilligung'],
       );
 
-      // Vorher unsichtbar fuer die Verwaltung, jetzt sichtbar.
-      const buero = await asUser<{ document_type: string }>(
-        users.office,
-        'select document_type from public.list_patient_files($1::uuid)',
-        [patients.max],
-      );
-      expect(buero.rows.map((r) => r.document_type)).toEqual(['einwilligung']);
+      // Danach organisatorisch - und damit fuer office pflegbar.
+      const nachher = await asUser(users.office, LISTE, [patients.max]);
+      expect(nachher.rows).toEqual([{ document_type: 'einwilligung', is_clinical: false }]);
+      expect(await abgefangen(asUser(users.office, LOESCHEN, [datei.file_id]))).toBeNull();
 
       const audit = await asPostgres<{ context: Record<string, unknown> }>(
         "select context from public.audit_log where action = 'patient_file.type_corrected'",
