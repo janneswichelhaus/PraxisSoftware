@@ -255,14 +255,20 @@ comment on function app.may_read_patient_file_object(text) is
 grant execute on function app.may_read_patient_file_object(text) to authenticated;
 
 -- -----------------------------------------------------------------------------
--- Leseregel fuer Objekte offener Loeschauftraege - verbrauchend
+-- Leseregel fuer Objekte offener Loeschauftraege - nur zum Entfernen, verbrauchend
 --
 -- Die zweite SELECT-Policy aus DAT-002 bleibt noetig: DELETE ... RETURNING der
 -- Storage-API liest die Zeile. Bisher genuegte ein offener Auftrag, und damit
 -- konnte der Owner ein solches Objekt auch signieren und laden. Jetzt braucht
--- jede Operation eine Loeschfreigabe, und die DELETE-Policy selbst bleibt
+-- das Entfernen eine Loeschfreigabe, und die DELETE-Policy selbst bleibt
 -- unveraendert (app.may_delete_storage_object, ohne Verbrauch) - sonst
 -- verbrauchte ein DELETE seine Freigabe zweimal.
+--
+-- Die Loeschfreigabe gilt nur fuer die Entfernen-Operationen. Die Storage-API
+-- setzt je Anfrage transaktionslokal `storage.operation` (v1.72.1,
+-- internal/database/postgres/scope.js). Signieren, Laden, Kopieren, Auflisten
+-- und Verschieben finden die Freigabe deshalb nicht und verbrauchen sie nicht;
+-- ohne gesetzte Operation gilt sie gar nicht (Zweitreview FIX-015).
 -- -----------------------------------------------------------------------------
 create or replace function app.may_read_storage_object_for_deletion(
   p_bucket     text,
@@ -279,6 +285,15 @@ declare
   v_org   uuid;
   v_grant uuid;
 begin
+  if coalesce(current_setting('storage.operation', true), '') not in (
+    'storage.object.delete',
+    'storage.object.delete_many',
+    'storage.s3.object.delete',
+    'storage.s3.object.delete_many'
+  ) then
+    return false;
+  end if;
+
   v_actor := auth.uid();
   v_org := app.current_organization_id();
   if v_actor is null or v_org is null or not app.can_execute_storage_deletion() then
@@ -309,7 +324,7 @@ end;
 $$;
 
 comment on function app.may_read_storage_object_for_deletion(text, text) is
-  'Leseregel fuer das Objekt eines offenen Loeschauftrags (ADR-017 Punkt 25): nur owner, nur gegen eine einmalige Loeschfreigabe aus claim_storage_deletion_order, die dabei verbraucht wird (FIX-015, BEF-004).';
+  'Leseregel fuer das Objekt eines offenen Loeschauftrags (ADR-017 Punkt 25): nur owner, nur fuer die Entfernen-Operationen der Storage-API (storage.operation) und nur gegen eine einmalige Loeschfreigabe aus claim_storage_deletion_order, die dabei verbraucht wird (FIX-015, BEF-004).';
 
 grant execute on function app.may_read_storage_object_for_deletion(text, text) to authenticated;
 

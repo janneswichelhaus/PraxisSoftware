@@ -293,9 +293,9 @@ const auftragsschluesselSchema = z.object({
  * Führt einen Löschauftrag aus: Objekt entfernen, dann quittieren.
  *
  * `claim_storage_deletion_order` protokolliert die Ausführung
- * (`storage_deletion.claimed`) und gibt genau dieses eine Objekt für einen
- * Zugriff frei (FIX-015, ANN-052); ohne diesen Schritt lässt die Storage-API
- * das Objekt nicht entfernen. Die Quittung wird **verdient**, nicht behauptet — `receipt_storage_deletion_order`
+ * (`storage_deletion.claimed`) und gibt genau dieses eine Objekt für ein
+ * einziges Entfernen frei, nicht zum Lesen (FIX-015, ANN-052); ohne diesen
+ * Schritt lässt die Storage-API das Objekt nicht entfernen. Die Quittung wird **verdient**, nicht behauptet — `receipt_storage_deletion_order`
  * prüft selbst, dass das Objekt weg ist, und verweigert sonst. Diese Funktion
  * kann deshalb nicht so scheitern, dass am Ende eine Quittung ohne Löschung
  * steht; sie kann nur scheitern, und dann bleibt der Auftrag offen.

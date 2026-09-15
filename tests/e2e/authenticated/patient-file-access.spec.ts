@@ -118,8 +118,13 @@ test.describe('BEF-004: Storage-API am auditierten Weg vorbei', () => {
       const geladen = await laden(request, token, datei.objectKey);
       expect(geladen.status(), `${konto} laedt ohne Verweis`).not.toBe(200);
 
+      // Eine Fehlerantwort enthielte die Kennung auch nicht - deshalb erst die
+      // Antwort selbst pruefen, dann ihren Inhalt.
       const liste = await auflisten(request, token, praefix);
-      expect(await liste.text(), `${konto} listet ohne Verweis`).not.toContain(datei.fileId);
+      expect(liste.status(), `${konto} listet`).toBe(200);
+      const eintraege: unknown = await liste.json();
+      expect(Array.isArray(eintraege), `${konto} bekommt eine Liste`).toBe(true);
+      expect(JSON.stringify(eintraege), `${konto} listet ohne Verweis`).not.toContain(datei.fileId);
     }
   });
 
@@ -214,6 +219,12 @@ test.describe('BEF-004: Storage-API am auditierten Weg vorbei', () => {
       }
     }
     expect(auftragId, 'offener Auftrag zur Datei').toBeDefined();
+
+    // Die Loeschfreigabe oeffnet kein Lesen - und der Versuch verbraucht sie nicht.
+    const signiertMitFreigabe = await signieren(request, inhaberin, datei.objectKey);
+    expect(signiertMitFreigabe.status(), 'Signieren mit Loeschfreigabe').not.toBe(200);
+    const geladenMitFreigabe = await laden(request, inhaberin, datei.objectKey);
+    expect(geladenMitFreigabe.status(), 'Laden mit Loeschfreigabe').not.toBe(200);
 
     const mitFreigabe = await entfernen(request, inhaberin, datei.objectKey);
     expect(mitFreigabe.status()).toBe(200);

@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, abgefangen, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  abgefangen,
+  asPostgres,
+  asStorageApi,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Loeschen, Dokumentart korrigieren, Loeschauftraege quittieren
@@ -314,8 +322,9 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       );
       expect(geholt.rows[0]!.object_key).toBe(objectKey);
 
-      await asUserCommitted(
+      await asStorageApi(
         users.ownerTherapist,
+        'storage.object.delete_many',
         "delete from storage.objects where bucket_id = 'patientenakte' and name = $1",
         [objectKey],
       );
@@ -373,11 +382,16 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
   describe('DELETE-Policy auf storage.objects', () => {
     const LOESCHEN =
       "delete from storage.objects where bucket_id = 'patientenakte' and name = $1 returning id";
+    // So meldet die Storage-API das Entfernen (FIX-015: nur dafuer gilt die
+    // Loeschfreigabe).
+    const ENTFERNEN = 'storage.object.delete_many';
 
     it('laesst kein Objekt loeschen, dessen Zeile noch steht', async () => {
       const datei = await abgelegteDatei(users.therapist);
 
-      const { rows } = await asUser(users.ownerTherapist, LOESCHEN, [datei.object_key]);
+      const { rows } = await asStorageApi(users.ownerTherapist, ENTFERNEN, LOESCHEN, [
+        datei.object_key,
+      ]);
       expect(rows).toEqual([]);
 
       const objekte = await asPostgres(
@@ -392,7 +406,9 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         datei.file_id,
       ]);
 
-      const therapeutin = await asUser(users.therapist, LOESCHEN, [datei.object_key]);
+      const therapeutin = await asStorageApi(users.therapist, ENTFERNEN, LOESCHEN, [
+        datei.object_key,
+      ]);
       expect(therapeutin.rows).toEqual([]);
 
       // FIX-015: Auch der Owner loescht nur gegen eine Loeschfreigabe.
@@ -406,9 +422,12 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         [auftraege[0]!.id],
       );
 
-      const inhaberin = await asUser<{ id: string }>(users.ownerTherapist, LOESCHEN, [
-        datei.object_key,
-      ]);
+      const inhaberin = await asStorageApi<{ id: string }>(
+        users.ownerTherapist,
+        ENTFERNEN,
+        LOESCHEN,
+        [datei.object_key],
+      );
       expect(inhaberin.rows).toHaveLength(1);
     });
   });
