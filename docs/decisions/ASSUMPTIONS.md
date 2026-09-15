@@ -143,13 +143,13 @@ Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wie
 
 ### ANN-006 — Umfang und Protokollierung des Behandlungsnachweises in der Akte
 
-Datenschutz · verworfen · 2026-09-13 · Jannes · — · Wiedervorlage: ROL-EPIC-001 (Umsetzung von E15); die Aufnahme der Leistungskürzel in den Nachweis bei ABR-002
+Datenschutz · verworfen · 2026-09-13 · Jannes · — · Wiedervorlage: die Aufnahme der Leistungskürzel in den Nachweis bei ABR-002
 
-**Verweis.** Verworfen am 2026-09-13 mit E15: Office liest alle klinischen Inhalte einer Akte im Umfang der Therapeut:innen (`PROJECT_PRINCIPLES.md` §4.3/§4.4, ADR-004 Fassung 2), umgesetzt in ROL-EPIC-001. Wortlaut der verworfenen Annahme und ihrer Begründung: Git-Historie bis `7160fd5`.
+**Verweis.** Verworfen am 2026-09-13 mit E15: Office liest alle klinischen Inhalte einer Akte im Umfang der Therapeut:innen (`PROJECT_PRINCIPLES.md` §4.3/§4.4, ADR-004 Fassung 2). Umgesetzt am 2026-09-15 mit ROL-EPIC-001 (ROL-001): `office` liest die Dokumentation über `list_patient_treatment_notes` mit `treatment_note.viewed` je Eintrag; die Akte fragt den Behandlungsnachweis nicht mehr an, er bleibt serverseitig als Rechnungssicht (Punkt 4). Wortlaut der verworfenen Annahme und ihrer Begründung: Git-Historie bis `7160fd5`.
 
-**Anker.** `app.can_read_treatment_evidence()` und die Spaltenliste von `list_patient_treatment_evidence` in `supabase/migrations/20260904110000_patient_record_documentation.sql`; `canReadTreatmentEvidence` in `src/features/session/types.ts`.
+**Anker.** `app.can_read_treatment_evidence()` und die Spaltenliste von `list_patient_treatment_evidence` in `supabase/migrations/20260904110000_patient_record_documentation.sql`; der Rollenschnitt nach E15 in `app.can_read_treatment_note()`, `supabase/migrations/20260915100000_office_reads_treatment_documentation.sql`. Die Client-Weiche `canReadTreatmentEvidence` ist mit ROL-001 entfallen.
 
-**Änderungspfad.** Rollenschnitt: `app.can_read_treatment_evidence()` in einer Migration ersetzen · Aufwand `klein` — genau das tut ROL-EPIC-001.
+**Änderungspfad.** Umfang der Rechnungssicht ändern: Spaltenliste von `list_patient_treatment_evidence` · Aufwand `klein`. Office wieder auf den Nachweis beschränken: `app.can_read_treatment_note()` in einer Migration ersetzen und die Nachweis-Oberfläche aus der Git-Historie zurückholen · Aufwand `mittel` — widerspräche E15.
 
 ### ANN-007 — Mechanismus der automatischen Finalisierung: pg_cron
 
@@ -201,15 +201,15 @@ Datenschutz · entschieden (Jannes) · 2026-09-08 · Jannes · Prüfpaket · Wie
 
 ### ANN-011 — Datenklasse und Rollenschnitt der Verordnung
 
-Datenschutz · entschieden (Jannes) · 2026-09-13 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess (B2); der Rollenschnitt nach E15 kommt mit ROL-EPIC-001
+Datenschutz · entschieden (Jannes) · 2026-09-13 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess (B2), dort mit E15 (Office liest die Diagnose)
 
-**Annahme.** Eine Verordnung ist ein Mischdatensatz und wird in zwei Projektionen ausgeliefert: organisatorisch für alle vier Praxisrollen einschließlich `office` (Verordner:in, Art, Ausstellungsdatum, Frequenz, organisatorische Bemerkung, Positionen mit Bezeichnung des Heilmittels und verordneter, genutzter, verbleibender Menge) und klinisch nur für `owner`, `therapist`, `team_lead` (Diagnose beziehungsweise Leitsymptomatik, Therapieziel, Hinweise der Verordner:in, Empfehlung zum Verordnungsende). Umgesetzt als zwei Funktionen mit zwei Rückgabetypen, nicht als eine Funktion mit genullten Spalten.
+**Annahme.** Eine Verordnung ist ein Mischdatensatz und wird in zwei Projektionen ausgeliefert: organisatorisch (Verordner:in, Art, Ausstellungsdatum, Frequenz, organisatorische Bemerkung, Positionen mit Bezeichnung des Heilmittels und verordneter, genutzter, verbleibender Menge) und klinisch zusätzlich mit Diagnose beziehungsweise Leitsymptomatik, Therapieziel, Hinweisen der Verordner:in und Empfehlung zum Verordnungsende. Beide lesen alle vier Praxisrollen einschließlich `office`; schreiben dürfen nur `owner`, `therapist`, `team_lead`. Umgesetzt als zwei Funktionen mit zwei Rückgabetypen, nicht als eine Funktion mit genullten Spalten.
 
-**Begründung.** Die Diagnose ist ein Gesundheitsdatum nach Art. 9 DSGVO, und §4.3 hält `office` von klinischem Freitext fern; zugleich ist die Verordnung die Grundlage von Terminserie und Rechnung. Die Heilmittelbezeichnung gilt als organisatorisch, weil sie später ohnehin als Leistungsposition auf der Rechnung steht (C1) — die schwächste Stelle dieser Annahme. Das Schreibrecht ohne `office` folgt §16: Wer erfasst, tippt die Diagnose mit ab. Die zehnjährige Frist folgt §630f BGB und ADR-008 Punkt 4. Unsicher: ob die Prüfung die Heilmittelbezeichnung für `office` zulässt.
+**Begründung.** Die Diagnose ist ein Gesundheitsdatum nach Art. 9 DSGVO; zugleich ist die Verordnung die Grundlage von Terminserie und Rechnung. Die Heilmittelbezeichnung gilt als organisatorisch, weil sie später ohnehin als Leistungsposition auf der Rechnung steht (C1). Das Schreibrecht ohne `office` folgt §16: Wer erfasst, tippt die Diagnose mit ab. Die zehnjährige Frist folgt §630f BGB und ADR-008 Punkt 4. Der ursprüngliche Leseausschluss der klinischen Projektion für `office` ist mit E15 abgelöst (ADR-004 Fassung 2 Punkt 3, umgesetzt 2026-09-15 mit ROL-002); jeder Zugriff wird als `prescription.viewed` protokolliert (ADR-010). Datenklasse, Frist und Schreibregel gelten unverändert. Unsicher: ob die Datenschutzprüfung (B2) den Lesezugriff von `office` auf die Diagnose trägt.
 
-**Anker.** `app.can_read_prescriptions()`, `app.can_read_prescription_clinical()` und `app.can_write_prescriptions()` in `supabase/migrations/20260907110000_prescriptions.sql`; `list_patient_prescriptions` und `list_patient_prescriptions_clinical` in `20260907120000_prescription_read_paths.sql`; Rollenweiche in `src/features/prescriptions/PatientPrescriptions.tsx`.
+**Anker.** `app.can_read_prescriptions()` und `app.can_write_prescriptions()` in `supabase/migrations/20260907110000_prescriptions.sql`; `app.can_read_prescription_clinical()` nach E15 in `20260915110000_office_reads_prescriptions_and_clinical_files.sql`; `list_patient_prescriptions` und `list_patient_prescriptions_clinical` in `20260907120000_prescription_read_paths.sql`; Rollenweiche in `src/features/prescriptions/verordnungen.ts`.
 
-**Änderungspfad.** Anderer Rollenschnitt beim Lesen oder Schreiben: die betroffene `app.can_*`-Funktion ersetzen · Aufwand `klein`. Heilmittel als klinisch einstufen: Spaltenliste und Oberfläche anpassen · Aufwand `mittel`, mit der Folge, dass `office` nicht mehr planen kann. Andere Frist: eigene Datenklasse und Löschregel in LOE-001 · Aufwand `mittel`.
+**Änderungspfad.** Anderer Rollenschnitt beim Lesen oder Schreiben: die betroffene `app.can_*`-Funktion ersetzen · Aufwand `klein` — `office` wieder von der Diagnose auszuschließen widerspräche E15. Heilmittel als klinisch einstufen: Spaltenliste und Oberfläche anpassen · Aufwand `mittel`. Andere Frist: eigene Datenklasse und Löschregel in LOE-001 · Aufwand `mittel`.
 
 ### ANN-012 — Genutzte Menge wird bis CAL-007 und ABR-002 von Hand gepflegt
 

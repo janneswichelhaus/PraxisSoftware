@@ -111,6 +111,12 @@ Inhalt.
 
 ### Behandlungsnachweis (office)
 
+> _Überholt seit ROL-EPIC-001 (E15, 2026-09-15):_ `office` sieht in der Akte
+> die Behandlungsdokumentation wie die klinischen Rollen; der Nachweis steht
+> nur noch als Rechnungssicht auf dem Server. Aktuelle Prüfschritte stehen im
+> Abschnitt „ROL-EPIC-001" am Ende dieser Datei. Die Schritte hier bleiben als
+> abgenommene Chronik von DOK-003 stehen.
+
 1. Als `olivia.office@praxis.invalid` „Patienten" → „Max Mustermann" öffnen.
    Unter „Versorgung" steht der Abschnitt **„Behandlungsnachweis"** mit dem
    Hinweis, dass er keine Behandlungsinhalte enthält.
@@ -219,6 +225,8 @@ Testvorbereitung zurückdatiert, statt einen Tag zu warten.
    den Entwurfstext mit der zuletzt schreibenden Person.
 9. Dieselbe Zeile steht in der Akte („Patienten" → „Max Mustermann"); der
    Behandlungsnachweis für office zeigt „Dokumentation finalisiert am …".
+   _Seit ROL-EPIC-001 sieht office dort stattdessen dieselbe Zeile wie die
+   Therapeutin._
 10. Als owner „Organisatorisches → Sicherheit" öffnen: der Eintrag
     `Behandlungsdokumentation automatisch finalisiert` nennt als Benutzer
     **„System"**. Der Filter „Benutzer" blendet ihn aus, weil er keinem Konto
@@ -2029,3 +2037,55 @@ kein waagerechtes Scrollen, jede Zeile mindestens 44 px hoch.
 **Zielwert:** Ein ganzer Planungsvorgang — Person wählen, Lücke suchen, Termin
 anlegen — ohne die Anwendung zu verlassen und ohne dieselbe Angabe zweimal zu
 machen.
+
+## ROL-EPIC-001 — Office liest klinische Inhalte
+
+Prüfschritte zu ROL-001 bis ROL-003. Grundlage: E15, `PROJECT_PRINCIPLES.md`
+0.10 §4.3, ADR-004 Fassung 2 und ADR-010. Office liest alles, was
+Therapeut:innen sehen — und schreibt davon nichts. Vorher lokal
+`pnpm dlx supabase@2.116.0 db reset` (zwei neue Migrationen).
+
+### 1. Als Therapeutin einen Eintrag anlegen
+
+1. Als `anna.beispiel@praxis.invalid` anmelden. **Patient:innen → Max
+   Mustermann → Termine**, einen Termin öffnen (oder über „Termin anlegen"
+   einen anlegen), „Dokumentation anlegen", einen kurzen synthetischen Text
+   eintragen, speichern und **Finalisieren**.
+
+### 2. Office liest die Dokumentation
+
+1. Abmelden, als `olivia.office@praxis.invalid` anmelden, dieselbe Akte →
+   **Behandlungsverlauf**. Erwartung: Der Abschnitt heißt
+   „Behandlungsdokumentation" und zeigt den Text aus Schritt 1 samt
+   Verfasserin — ein „Behandlungsnachweis" steht dort nicht mehr.
+2. Am Eintrag „Änderungsverlauf" tippen. Erwartung: Version 1 mit Inhalt.
+3. Zurück, „Zum Termin". Erwartung: Der Eintrag steht am Termin — **ohne**
+   „Dokumentation bearbeiten", „Finalisieren", „Korrigieren" und „Nachtrag".
+
+### 3. Office liest Verordnung und Dateien
+
+1. Dieselbe Akte → **Verordnungen**. Erwartung: Die laufende Verordnung zeigt
+   **Diagnose** und Therapieziel, darunter „Scan des Rezepts" — **ohne** Feld
+   zum Hinzufügen und ohne „Bearbeiten".
+2. **Dateien**. Erwartung: Auch klinische Dateien stehen da und lassen sich
+   öffnen. „Löschen" nur an Einwilligung und Vertrag, „Art korrigieren" an
+   keiner Datei; zum Hinzufügen stehen nur Einwilligung und Vertrag zur Wahl.
+
+### 4. Jeder Zugriff steht im Auditlog
+
+1. Abmelden, als `jannes.test@praxis.invalid` anmelden, Auditansicht
+   (`/praxis/sicherheit/audit`), Benutzer „Olivia Office". Erwartung: je
+   gelesenem Eintrag `treatment_note.viewed`, für den Verlauf
+   `treatment_note.history_viewed`, je Verordnung `prescription.viewed` und
+   je geöffneter Datei `patient_file.link_issued` — ohne Inhalte.
+
+### 5. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=office /patienten/66666666-6666-4666-8666-000000000001/verlauf /patienten/66666666-6666-4666-8666-000000000001/verordnungen
+```
+
+Erwartung: kein waagerechtes Scrollen, keine Konsolenfehler.
+
+**Nicht Teil dieses Loops:** eine Office-Sicht auf Patientenkommunikation —
+gebaut ist keine; der Teamchat ist eine Vorschau ohne Patientenbezug.

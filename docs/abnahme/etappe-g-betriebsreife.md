@@ -345,8 +345,9 @@ Sie den alten Stand.
 ## DAT-001 — Dateien in der Akte: hinzufügen, ansehen, wer sie sieht
 
 **Was geprüft wird:** dass eine Datei nur über den zweiphasigen Weg in die Akte
-kommt (ADR-017 Punkt 7), dass die Dokumentart wirklich eine Sichtbarkeitsgrenze
-ist (Punkt 12) und dass ein Verweis nach einer Minute nicht mehr funktioniert
+kommt (ADR-017 Punkt 7), dass die Dokumentart wirklich eine Grenze ist
+(Punkt 12; seit ROL-EPIC-001 für die Praxisrollen eine Schreib-, keine
+Sichtbarkeitsgrenze mehr) und dass ein Verweis nach einer Minute nicht mehr funktioniert
 (Punkt 15) — die drei Zusagen, die man an Tests allein nicht sieht.
 
 **Vorbereitung:** zwei synthetische Dateien anlegen, die keine echten Daten
@@ -373,13 +374,16 @@ zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
    steht dort ebenfalls, mit dem Vermerk „Klinisch".
 5. **Eine Datei an der Person.** Im Bereich Dateien das Foto wählen, Art
    „Befund", Name „Befund Schulter". Hinzufügen. Der Hinweis unter der Auswahl
-   ändert sich mit der Art: bei „Einwilligung" steht dort „auch für die
-   Verwaltung", bei „Befund" „nicht für die Verwaltung".
-6. **Der entscheidende Schritt — die Verwaltung sieht das Klinische nicht.**
+   ändert sich mit der Art: bei „Einwilligung" steht dort „auch die
+   Verwaltung darf sie hinzufügen und löschen", bei „Befund" „hinzufügen und
+   löschen nur Praxisinhaber:in, Therapeut:innen und Teamleitung".
+6. **Die Verwaltung sieht das Klinische, pflegt es aber nicht.** _Seit
+   ROL-EPIC-001 (E15) geändert — bis dahin sah office hier gar nichts._
    Abmelden, als `olivia.office@praxis.invalid` anmelden, dieselbe Akte,
-   Bereich **Dateien**. Weder der Scan noch der Befund steht dort — **nicht
-   ausgegraut und nicht als „2 weitere Dateien" gezählt, sondern gar nicht.**
-   Im Bereich Verordnungen fehlt der Abschnitt „Scan des Rezepts" ganz.
+   Bereich **Dateien**. Scan und Befund stehen dort und lassen sich öffnen;
+   „Löschen" gibt es nur an organisatorischen Dateien, „Art korrigieren" an
+   keiner. Im Bereich Verordnungen steht „Scan des Rezepts" ohne Feld zum
+   Hinzufügen.
    In der Auswahl beim Hinzufügen stehen nur „Einwilligung" und „Vertrag".
 7. **Die Verwaltung darf trotzdem etwas beitragen.** Als Olivia eine
    Einwilligung hinzufügen (das PDF genügt). Sie erscheint. Abmelden, als
@@ -438,10 +442,13 @@ Akte von Max Mustermann.
    Praxisinhaberin.
 6. **Die Art korrigieren.** Als Jannes in der Akte → Dateien bei einer
    organisatorischen Datei auf „Art korrigieren" tippen, „Befund" wählen. Der
-   Hinweis wechselt zu „nicht für die Verwaltung". „Art übernehmen".
+   Hinweis wechselt zu „hinzufügen und löschen nur Praxisinhaber:in,
+   Therapeut:innen und Teamleitung". „Art übernehmen".
 7. **Und die Folge ist echt.** Abmelden, als `olivia.office@praxis.invalid`
-   anmelden, dieselbe Akte → Dateien: Die Datei ist weg. Das ist der Punkt der
-   Übung — die Art ist eine Sichtbarkeitsgrenze, kein Etikett.
+   anmelden, dieselbe Akte → Dateien: Die Datei steht weiter da, aber ohne
+   „Löschen". _Seit ROL-EPIC-001 (E15)_ ist die Art für die Praxisrollen eine
+   Schreibgrenze, keine Sichtbarkeitsgrenze mehr — ein Etikett ist sie
+   trotzdem nicht.
 8. **Die Verwaltung korrigiert nicht.** Bei Olivia gibt es an keiner Datei
    „Art korrigieren"; an einer organisatorischen Datei gibt es „Löschen".
 9. **Das Protokoll.** Als Jannes Organisatorisches → Sicherheit: „Datei gelöscht",
