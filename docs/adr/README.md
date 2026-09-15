@@ -79,7 +79,7 @@ Durchstreichung — der Wortlaut des angenommenen Punktes bleibt.
 
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (die aktuelle Version steht in dessen Dokumentinformation; Stand 2026-09-13: 0.10)
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (die aktuelle Version steht in dessen Dokumentinformation; Stand 2026-09-15: 0.10.1)
 - `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist; ohne Rang
 - `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
 - `docs/adr/` — was entschieden wurde und warum
