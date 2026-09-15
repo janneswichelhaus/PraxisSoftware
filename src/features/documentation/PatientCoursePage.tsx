@@ -4,10 +4,9 @@ import { PatientRecordDocumentation } from './PatientRecordDocumentation';
 /**
  * Der Behandlungsverlauf als eigener Bereich der Akte (AKTE-004).
  *
- * Inhaltlich unverändert (DOK-003): Welche Sicht erscheint, entscheidet die
- * Rolle - die klinische mit Inhalt, der Behandlungsnachweis ohne. Geändert hat
- * sich allein, wo sie steht: Der Verlauf ist die längste Liste der Akte und
- * schob bisher alles andere nach oben aus dem Bild.
+ * Inhaltlich die Behandlungsdokumentation aus DOK-003, seit ROL-001 für alle
+ * vier Praxisrollen dieselbe. Ein eigener Bereich, weil der Verlauf die längste
+ * Liste der Akte ist und bisher alles andere nach oben aus dem Bild schob.
  */
 export function PatientCoursePage() {
   const { patient, user } = usePatientRecord();

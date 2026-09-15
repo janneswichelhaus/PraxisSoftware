@@ -569,11 +569,22 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
     expect(eigener?.context).toMatchObject({ patient_id: patients.max });
   });
 
-  it('laesst office den Verlauf nicht lesen (Punkt 8, 4.3)', async () => {
+  it('laesst office den Verlauf lesen und protokolliert ihn gesondert (E15, Punkt 8 und 9)', async () => {
     const f = await finalisiert();
-    await expect(asUser(users.office, VERLAUF, [f.id])).rejects.toThrow(
-      /not allowed to read treatment documentation/,
+
+    const { rows } = await asUserCommitted<{ version_no: number; content: string }>(
+      users.office,
+      VERLAUF,
+      [f.id],
     );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ version_no: 1, content: ENTWURF });
+
+    const eigener = (await auditEintraege('treatment_note.history_viewed')).find(
+      (a) => a.subject_id === f.id && a.actor_user_id === users.office,
+    );
+    expect(eigener).toMatchObject({ subject_type: 'treatment_note', outcome: 'success' });
+    expect(eigener?.context).toMatchObject({ patient_id: patients.max });
   });
 
   it('laesst ein Patientenkonto den Verlauf nicht lesen (4.6)', async () => {

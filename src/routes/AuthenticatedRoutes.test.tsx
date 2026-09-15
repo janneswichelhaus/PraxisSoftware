@@ -322,7 +322,6 @@ describe('AuthenticatedRoutes', () => {
       ['office', TERMIN_NOTIZ_BEARBEITEN],
       ['office', TERMIN_KORREKTUR],
       ['office', TERMIN_NACHTRAG],
-      ['office', TERMIN_VERLAUF],
       ['patient', TERMIN_VERLAUF],
       ['owner', TERMIN_KORREKTUR],
       ['owner', TERMIN_NACHTRAG],
@@ -334,11 +333,11 @@ describe('AuthenticatedRoutes', () => {
       expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
     });
 
-    it('oeffnet owner den Aenderungsverlauf (ADR-016 Punkt 8)', async () => {
-      // Die Praxisleitung liest die Akte, ohne selbst zu dokumentieren
-      // (PROJECT_PRINCIPLES.md 4.1 gegenueber 4.2).
+    // Praxisleitung und - seit E15 - office lesen die Akte, ohne selbst zu
+    // dokumentieren (PROJECT_PRINCIPLES.md 4.1, 4.3; ADR-016 Punkt 8).
+    it.each([['owner'], ['office']] as const)('oeffnet %s den Aenderungsverlauf', async (role) => {
       renderWithProviders(
-        <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
+        <AuthenticatedRoutes user={testUser([role], 'Jannes Test')} onSignOut={vi.fn()} />,
         TERMIN_VERLAUF,
       );
       expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();

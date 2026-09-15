@@ -155,10 +155,11 @@ function Eintrag({
 /**
  * Behandlungsdokumentation am Termin (DOK-001, DOK-002).
  *
- * Der Abschnitt wird für `office` und Patientenkonten gar nicht erst
- * gerendert und auch nicht abgefragt (PROJECT_PRINCIPLES.md 4.3, 4.6). Das ist
- * ausdrücklich keine Zugriffskontrolle: `get_treatment_note` prüft die Rolle
- * selbst, und auf die Tabellen gibt es überhaupt kein Recht.
+ * Für Patientenkonten wird der Abschnitt gar nicht erst gerendert und auch
+ * nicht abgefragt (PROJECT_PRINCIPLES.md 4.6). `office` liest ihn seit E15 wie
+ * die therapeutischen Rollen, bekommt aber keinen Schreibweg (4.3, ROL-001).
+ * Das ist ausdrücklich keine Zugriffskontrolle: `get_treatment_note` prüft die
+ * Rolle selbst, und auf die Tabellen gibt es überhaupt kein Recht.
  */
 export function TreatmentNoteSection({
   appointment,

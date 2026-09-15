@@ -371,14 +371,13 @@ export function begruendungFehler(reason: string): string | undefined {
 }
 
 // -----------------------------------------------------------------------------
-// Dokumentation in der Akte (DOK-003)
+// Dokumentation in der Akte (DOK-003, ROL-001)
 //
-// Die Akte liest chronologisch ueber alle Termine eines Patienten - in zwei
-// Sichten mit zwei Rueckgabetypen, weil ADR-004 rollenabhaengige Projektionen
-// verlangt und keine genullten Spalten: den Behandlungsnachweis fuer office
-// (PROJECT_PRINCIPLES.md 4.4) und die klinische Sicht fuer owner, therapist
-// und team_lead. Welche Sicht eine Rolle bekommt, entscheidet der Server;
-// die Oberflaeche waehlt nur, welche sie anfragt.
+// Die Akte liest chronologisch ueber alle Termine eines Patienten. Seit E15
+// bekommen alle vier Praxisrollen dieselbe klinische Sicht, office
+// eingeschlossen (ADR-004 Fassung 2 Punkt 3). Der Behandlungsnachweis ohne
+// Inhalt (list_patient_treatment_evidence) bleibt serverseitig als
+// Rechnungssicht bestehen (Punkt 4); die Akte fragt ihn nicht mehr an.
 // -----------------------------------------------------------------------------
 
 /**
@@ -407,22 +406,11 @@ const recordAppointmentSchema = z.object({
   organization_time_zone: z.string(),
 });
 
-/** Ein Termin der Akte - der organisatorische Rahmen beider Sichten. */
+/** Ein Termin der Akte - der organisatorische Rahmen seiner Eintraege. */
 export type RecordAppointment = z.infer<typeof recordAppointmentSchema>;
 
+/** Dokumentationsstand eines Termins ohne Inhalt, wie ihn der Tagesplan liefert. */
 export const documentationStatusSchema = z.enum(['none', 'draft', 'final']);
-
-/**
- * Behandlungsnachweis (ANN-006): Dokumentationsstand ohne Inhalt. Der
- * Zeitpunkt ist nur fuer finalisierte Eintraege gesetzt - ein Entwurf ist kein
- * Nachweis (ADR-016 Punkt 3).
- */
-const treatmentEvidenceSchema = recordAppointmentSchema.extend({
-  documentation_status: documentationStatusSchema,
-  documented_at: z.string().nullable(),
-});
-
-export type TreatmentEvidenceEntry = z.infer<typeof treatmentEvidenceSchema>;
 
 function seitenArgumente(cursor: AkteCursor | null) {
   return {
@@ -430,25 +418,6 @@ function seitenArgumente(cursor: AkteCursor | null) {
     p_before_starts_at: cursor?.beforeStartsAt ?? null,
     p_before_id: cursor?.beforeId ?? null,
   };
-}
-
-/**
- * Eine Seite des Behandlungsnachweises.
- *
- * Kein klinischer Inhalt, deshalb serverseitig auch kein Auditeintrag; das
- * Oeffnen der Akte selbst wird als patient_record.viewed protokolliert.
- */
-export async function fetchTreatmentEvidencePage(
-  patientId: string,
-  cursor: AkteCursor | null,
-): Promise<TreatmentEvidenceEntry[]> {
-  const { data, error } = (await getSupabase().rpc('list_patient_treatment_evidence', {
-    p_patient_id: patientId,
-    ...seitenArgumente(cursor),
-  })) as { data: unknown; error: unknown };
-
-  if (error) throw new Error('Der Behandlungsnachweis konnte nicht geladen werden.');
-  return z.array(treatmentEvidenceSchema).parse(data ?? []);
 }
 
 /**

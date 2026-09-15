@@ -81,17 +81,27 @@ export function canManageAppointments(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Rollen, die fachlich ueber eine Behandlung entscheiden: Verordnungen
+ * schreiben, klinische Dateien ablegen, die Versorgung abschliessen.
+ *
+ * owner, therapist, team_lead - ohne office. Seit E15 liest office klinische
+ * Inhalte wie diese Rollen, schreibt aber keine (PROJECT_PRINCIPLES.md 4.3,
+ * ADR-004 Fassung 2 Punkt 3). Lesen und Schreiben stehen deshalb in
+ * getrennten Listen: Wer das Leserecht aendert, aendert kein Schreibrecht mit.
+ */
+const treatingRoles: RoleKey[] = ['owner', 'therapist', 'team_lead'];
+
+/**
  * Rollen mit Lesezugriff auf klinische Behandlungsdokumentation.
  *
- * office ist bewusst nicht dabei (PROJECT_PRINCIPLES.md 4.3), owner schon
- * (4.1). Steuert ausschliesslich die Darstellung - verbindlich ist
- * app.can_read_treatment_note() in der Datenbank, und gelesen wird
- * ausschliesslich ueber get_treatment_note.
+ * Alle vier Praxisrollen: office liest seit E15 im selben Umfang wie
+ * Therapeut:innen (ROL-001), owner schon immer (4.1). Jeder gelesene Eintrag
+ * wird serverseitig protokolliert (ADR-010). Steuert ausschliesslich die
+ * Darstellung - verbindlich ist app.can_read_treatment_note() in der
+ * Datenbank.
  */
-const clinicalReadRoles: RoleKey[] = ['owner', 'therapist', 'team_lead'];
-
 export function canReadTreatmentNote(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => clinicalReadRoles.includes(role));
+  return roles.some((role) => directoryRoles.includes(role));
 }
 
 /**
@@ -115,7 +125,7 @@ export function canReadPrescriptions(roles: readonly RoleKey[]): boolean {
  * app.can_read_prescription_clinical().
  */
 export function canReadPrescriptionClinical(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => clinicalReadRoles.includes(role));
+  return roles.some((role) => treatingRoles.includes(role));
 }
 
 /**
@@ -125,7 +135,7 @@ export function canReadPrescriptionClinical(roles: readonly RoleKey[]): boolean 
  * ab. Verbindlich ist app.can_write_prescriptions().
  */
 export function canWritePrescriptions(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => clinicalReadRoles.includes(role));
+  return roles.some((role) => treatingRoles.includes(role));
 }
 
 /**
@@ -150,7 +160,7 @@ export function canReadPatientFiles(roles: readonly RoleKey[]): boolean {
  * app.can_read_clinical_patient_files().
  */
 export function canReadClinicalPatientFiles(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => clinicalReadRoles.includes(role));
+  return roles.some((role) => treatingRoles.includes(role));
 }
 
 /**
@@ -163,7 +173,7 @@ export function canReadClinicalPatientFiles(roles: readonly RoleKey[]): boolean 
  * app.can_conclude_patient_care().
  */
 export function canConcludePatientCare(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => clinicalReadRoles.includes(role));
+  return roles.some((role) => treatingRoles.includes(role));
 }
 
 /**
@@ -178,21 +188,6 @@ const clinicalWriteRoles: RoleKey[] = ['therapist', 'team_lead'];
 
 export function canWriteTreatmentNote(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => clinicalWriteRoles.includes(role));
-}
-
-/**
- * Rollen mit Zugriff auf den Behandlungsnachweis in der Akte (DOK-003).
- *
- * Alle vier Praxisrollen: fuer office ist er der einzige Blick auf den
- * Dokumentationsstand (PROJECT_PRINCIPLES.md 4.4), die klinischen Rollen
- * bekommen in der Akte die Sicht mit Inhalt. Steuert ausschliesslich die
- * Darstellung - verbindlich ist app.can_read_treatment_evidence() in der
- * Datenbank (ANN-006).
- */
-const evidenceRoles: RoleKey[] = ['owner', 'therapist', 'team_lead', 'office'];
-
-export function canReadTreatmentEvidence(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => evidenceRoles.includes(role));
 }
 
 /** Rollen, die den Dienstplan pflegen duerfen. therapist liest ihn nur (CAL-005). */

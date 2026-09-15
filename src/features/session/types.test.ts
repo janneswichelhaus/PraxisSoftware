@@ -151,14 +151,17 @@ describe('roleKeySchema', () => {
 });
 
 describe('Behandlungsdokumentation (DOK-001)', () => {
-  it.each([['owner'], ['therapist'], ['team_lead']] as const)('laesst %s lesen', (role) => {
-    expect(canReadTreatmentNote([role])).toBe(true);
-  });
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+    'laesst %s lesen',
+    (role) => {
+      expect(canReadTreatmentNote([role])).toBe(true);
+    },
+  );
 
-  it('schliesst office vom klinischen Freitext aus (PROJECT_PRINCIPLES.md 4.3)', () => {
-    // Office sieht denselben Termin, aber nicht denselben Inhalt.
-    expect(canManageAppointments(['office'])).toBe(true);
-    expect(canReadTreatmentNote(['office'])).toBe(false);
+  it('laesst office lesen, aber nicht dokumentieren (E15, PROJECT_PRINCIPLES.md 4.3)', () => {
+    // Office liest denselben Inhalt wie die Therapeutin - geschrieben wird er
+    // weiterhin nur von den therapeutischen Rollen.
+    expect(canReadTreatmentNote(['office'])).toBe(true);
     expect(canWriteTreatmentNote(['office'])).toBe(false);
   });
 

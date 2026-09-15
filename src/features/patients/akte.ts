@@ -3,7 +3,7 @@ import {
   canManageAppointments,
   canReadPatientFiles,
   canReadPrescriptions,
-  canReadTreatmentEvidence,
+  canReadTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
 import type { Patient } from './api';
@@ -61,11 +61,9 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
   if (canReadPrescriptions(user.roles)) {
     bereiche.push({ to: `${basis}/verordnungen`, label: 'Verordnungen' });
   }
-  // Welche Sicht dahinter steht, entscheidet die Rolle: klinische Inhalte für
-  // die behandelnden Rollen, der Behandlungsnachweis für die Verwaltung
-  // (DOK-003). Beide Sichten beantworten dieselbe Frage - „was ist bisher
-  // passiert" - und stehen deshalb hinter derselben Beschriftung.
-  if (canReadTreatmentEvidence(user.roles)) {
+  // Seit E15 steht hier für alle vier Praxisrollen dieselbe klinische Sicht,
+  // office eingeschlossen (ROL-001); jeder gelesene Eintrag wird protokolliert.
+  if (canReadTreatmentNote(user.roles)) {
     bereiche.push({ to: `${basis}/verlauf`, label: 'Behandlungsverlauf' });
   }
   // Dateien vor den Stammdaten: „was liegt uns vor" wird im Gespräch häufiger

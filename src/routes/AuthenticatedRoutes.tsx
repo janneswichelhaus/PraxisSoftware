@@ -104,8 +104,9 @@ export function AuthenticatedRoutes({
   // seit E10 owner und office).
   const showStaffWrite = canManageStaffMasterData(user.roles);
   const showDocumentation = canWriteTreatmentNote(user.roles);
-  // Der Aenderungsverlauf ist ein Lesepfad: die Praxisleitung sieht ihn, ohne
-  // selbst zu dokumentieren (ADR-016 Punkt 8, PROJECT_PRINCIPLES.md 4.1/4.2).
+  // Der Aenderungsverlauf ist ein Lesepfad: Praxisleitung und - seit E15 -
+  // office sehen ihn, ohne selbst zu dokumentieren (ADR-016 Punkt 8,
+  // PROJECT_PRINCIPLES.md 4.1/4.3).
   const showHistory = canReadTreatmentNote(user.roles);
   const showBilling = canSeeBilling(user.roles);
 

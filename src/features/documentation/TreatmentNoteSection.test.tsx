@@ -116,14 +116,41 @@ describe('TreatmentNoteSection', () => {
     expect(screen.queryByRole('button', { name: 'Finalisieren' })).toBeNull();
   });
 
-  it('fragt fuer office gar nicht erst ab und zeigt nichts an', async () => {
-    const { container } = rendern(['office']);
+  it('zeigt office den Inhalt, aber keine Schaltflaeche zum Schreiben (E15)', async () => {
+    rendern(['office']);
 
-    await waitFor(() => {
-      expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
-    });
-    expect(container).toBeEmptyDOMElement();
-    expect(screen.queryByText(INHALT)).toBeNull();
+    expect(await screen.findByText(INHALT)).toBeInTheDocument();
+    expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID);
+    expect(screen.queryByRole('link', { name: 'Dokumentation bearbeiten' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Finalisieren' })).toBeNull();
+  });
+
+  it('bietet office an einem finalisierten Eintrag weder Korrektur noch Nachtrag an', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [nachtrag] });
+    rendern(['office']);
+
+    expect(await screen.findByText(NACHTRAG_INHALT)).toBeInTheDocument();
+    for (const name of [
+      'Korrigieren',
+      'Nachtrag hinzufügen',
+      'Dokumentation bearbeiten',
+      'Finalisieren',
+    ]) {
+      expect(screen.queryByRole('link', { name })).toBeNull();
+      expect(screen.queryByRole('button', { name })).toBeNull();
+    }
+  });
+
+  it('bietet office fuer einen Termin ohne Eintrag kein Anlegen an', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
+    rendern(['office']);
+
+    expect(
+      await screen.findByText(
+        'Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
   });
 
   it('zeigt Patientenkonten nichts an', async () => {

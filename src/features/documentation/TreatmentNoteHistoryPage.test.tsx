@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
@@ -139,15 +139,11 @@ describe('TreatmentNoteHistoryPage', () => {
     expect(await screen.findByText(ERSTE)).toBeInTheDocument();
   });
 
-  it('zeigt einem office-Zugang nichts und fragt nichts ab (Punkt 8, 4.3)', async () => {
+  it('laesst office den Verlauf lesen, ohne selbst zu dokumentieren (E15, Punkt 8)', async () => {
     rendern(['office']);
 
-    expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
-    });
-    expect(fetchTreatmentNoteVersions).not.toHaveBeenCalled();
-    expect(fetchAppointment).not.toHaveBeenCalled();
+    expect(await screen.findByText(ERSTE)).toBeInTheDocument();
+    expect(fetchTreatmentNoteVersions).toHaveBeenCalledWith(DOKU_ID);
   });
 
   it('zeigt Patientenkonten nichts an (4.6)', async () => {

@@ -427,10 +427,20 @@ describe('DOK-001: Lesen', () => {
     expect(rows[0]?.content).toBe(TEXT);
   });
 
-  it('laesst office nicht lesen (4.3)', async () => {
-    await expect(asUser(users.office, LESEN, [terminId])).rejects.toThrow(
-      /not allowed to read treatment documentation/,
-    );
+  it('laesst office lesen und protokolliert den Zugriff (E15, ADR-004 Fassung 2)', async () => {
+    const vorher = (await auditEintraege('treatment_note.viewed')).length;
+
+    const { rows } = await asUserCommitted<{ content: string }>(users.office, LESEN, [terminId]);
+    expect(rows[0]?.content).toBe(TEXT);
+
+    const eintraege = await auditEintraege('treatment_note.viewed');
+    expect(eintraege.length).toBe(vorher + 1);
+    expect(eintraege.at(-1)).toMatchObject({
+      subject_type: 'treatment_note',
+      subject_id: dokuId,
+      actor_user_id: users.office,
+    });
+    expect(JSON.stringify(eintraege.at(-1)?.context)).not.toContain('Uebungen angeleitet');
   });
 
   it('laesst ein Patientenkonto nicht lesen (4.6)', async () => {
