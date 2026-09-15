@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
-import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders, testUser } from '@/test-utils';
+import type * as RouterModul from 'react-router-dom';
+import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 /**
  * Änderungsverlauf einer Behandlungsdokumentation (DOK-002, ADR-016 Punkt 5, 8).
@@ -14,36 +14,10 @@ import { renderWithProviders, testUser } from '@/test-utils';
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const DOKU_ID = '99999999-9999-4999-8999-000000000001';
 
-const termin: AppointmentsApi.Appointment = {
+const termin = testAppointment({
   id: TERMIN_ID,
-  patient_id: '66666666-6666-4666-8666-000000000001',
-  kind: 'treatment',
-  title: null,
-  event_group_id: null,
-  staff_member_id: '55555555-5555-4555-8555-000000000002',
-  location_id: '33333333-3333-4333-8333-000000000001',
-  appointment_type: 'practice',
-  status: 'confirmed',
-  starts_at: '2027-05-12T07:00:00.000Z',
-  ends_at: '2027-05-12T08:00:00.000Z',
   updated_at: '2027-05-01T10:00:00.000000+00:00',
-  visit_street: null,
-  visit_house_number: null,
-  visit_postal_code: null,
-  visit_city: null,
-  completed_at: null,
-  cancellation_reason: null,
-  no_show_recorded_at: null,
-  cancellation_received_at: null,
-  fee_basis: null,
-  patient_given_name: 'Berta',
-  patient_family_name: 'Bestand',
-  staff_given_name: 'Anna',
-  staff_family_name: 'Beispiel',
-  location_name: 'Hauptstandort Tuebingen',
-  notification_channels: [],
-  organization_time_zone: 'Europe/Berlin',
-};
+});
 
 const ERSTE = 'Synthetisch: Belastung in drei Stufen gesteigert.';
 const ZWEITE = 'Synthetisch: Belastung in vier Stufen gesteigert.';
@@ -105,13 +79,10 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return {
-    ...actual,
-    useParams: () => ({ appointmentId: TERMIN_ID, noteId: DOKU_ID }),
-  };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useParams: () => ({ appointmentId: TERMIN_ID, noteId: DOKU_ID }),
+}));
 
 const { TreatmentNoteHistoryPage } = await import('./TreatmentNoteHistoryPage');
 

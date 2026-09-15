@@ -1,13 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   KONTEN,
-  PATIENTEN,
   TAGESFENSTER,
   anmelden,
-  arbeitszeitBestaetigen,
   rpcAufrufen,
   supabaseKonfiguration,
   tagImFenster,
+  terminUeberOberflaeche,
+  zeitImLauf,
   zugriffstoken,
 } from './helpers';
 
@@ -30,30 +30,15 @@ function laufTag(versatz = 0): string {
   return tagImFenster(TAGESFENSTER.treatmentNoteFinalisation, LAUF, versatz);
 }
 
-function zeit(minutenAbAcht: number): string {
-  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
-  const gesamt = 8 * 60 + (LAUF % 12) * 5 + minutenAbAcht;
-  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
-  const m = String(gesamt % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
+const zeit = (minutenAbAcht: number) => zeitImLauf(LAUF, minutenAbAcht);
 
 const ENTWURF = 'Synthetisch: Belastung in drei Stufen gesteigert.';
 const KORRIGIERT = 'Synthetisch: Belastung in vier Stufen gesteigert.';
 const BEGRUENDUNG = 'Zahlendreher bei der Stufenzahl.';
 const NACHTRAG = 'Synthetisch: Heimprogramm auf zwei Einheiten taeglich gesetzt.';
 
-async function terminAnlegen(page: Page, tag: string): Promise<string> {
-  await page.goto(`/patienten/${PATIENTEN.max}/termine/neu`);
-  await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
-  await page.getByLabel('Terminart *').selectOption('practice');
-  await page.getByLabel('Datum *').fill(tag);
-  await page.getByLabel('Beginn *').fill(zeit(0));
-  await page.getByRole('button', { name: 'Termin anlegen' }).click();
-  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
-  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-  return page.url().split('/').pop()!;
-}
+const terminAnlegen = (page: Page, tag: string) =>
+  terminUeberOberflaeche(page, { tag, von: zeit(0) });
 
 /** Termin mit finalisierter Dokumentation. */
 async function finalisierterEintrag(page: Page, tag: string): Promise<string> {

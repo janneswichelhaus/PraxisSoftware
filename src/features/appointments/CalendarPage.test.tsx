@@ -3,7 +3,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as SchedulingApi from '@/features/scheduling/api';
-import type * as RouterModule from 'react-router-dom';
+import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { ZOOM_STANDARD } from './calendar';
 
@@ -20,10 +20,10 @@ const navigate = vi.fn();
 
 // Nur useNavigate wird ersetzt: useSearchParams traegt die Kalenderparameter
 // und muss echt bleiben.
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return { ...actual, useNavigate: () => navigate };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+}));
 
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
 const STAFF_TIM = '55555555-5555-4555-8555-000000000004';

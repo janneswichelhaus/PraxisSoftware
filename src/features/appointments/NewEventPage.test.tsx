@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as StaffApi from '@/features/staff/api';
-import type * as RouterModule from 'react-router-dom';
+import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
@@ -96,10 +96,10 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return { ...actual, useNavigate: () => navigate };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+}));
 
 const { NewEventPage } = await import('./NewEventPage');
 

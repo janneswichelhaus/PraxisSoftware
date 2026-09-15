@@ -6,6 +6,7 @@ import {
   asUser,
   asUserCommitted,
   resetDatabaseOhneTermine,
+  tagInTagen,
 } from './helpers/db';
 
 /**
@@ -87,12 +88,6 @@ async function dokuStand(id: string): Promise<Stand> {
     [id],
   );
   return rows[0]!;
-}
-
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
 }
 
 /**

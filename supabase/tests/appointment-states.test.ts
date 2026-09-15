@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+  tagInTagen,
+} from './helpers/db';
 
 /**
  * Zustandsautomat des Termins (CAL-008, ADR-018).
@@ -32,12 +40,6 @@ const NICHT_ANGETROFFEN = 'select public.record_no_show($1::uuid, $2::timestampt
 const DOKUMENTIEREN = 'select public.create_treatment_note($1::uuid, $2) as id';
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
-
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
 
 const TAG = tagInTagen(70);
 

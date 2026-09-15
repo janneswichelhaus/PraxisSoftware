@@ -1,14 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   KONTEN,
-  PATIENTEN,
   TAGESFENSTER,
   anmelden,
-  arbeitszeitBestaetigen,
   detailWert,
   supabaseKonfiguration,
   tagImFenster,
   terminKachel,
+  terminUeberOberflaeche,
   zugriffstoken,
 } from './helpers';
 
@@ -43,18 +42,7 @@ const TAG = laufTag();
 const BEGINN = laufZeit();
 const ENDE = laufZeit(60);
 
-/** Legt den Termin dieses Laufs über die echte Oberfläche an. */
-async function terminAnlegen(page: Page): Promise<string> {
-  await page.goto(`/patienten/${PATIENTEN.max}/termine/neu`);
-  await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
-  await page.getByLabel('Terminart *').selectOption('practice');
-  await page.getByLabel('Datum *').fill(TAG);
-  await page.getByLabel('Beginn *').fill(BEGINN);
-  await page.getByRole('button', { name: 'Termin anlegen' }).click();
-  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
-  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-  return page.url().split('/').pop()!;
-}
+const terminAnlegen = (page: Page) => terminUeberOberflaeche(page, { tag: TAG, von: BEGINN });
 
 test.describe('CAL-002: Kalender', () => {
   test('findet den Termin im Kalender und öffnet seine Detailansicht', async ({ page }) => {

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
-import type * as RouterModule from 'react-router-dom';
+import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -18,8 +18,8 @@ const bestand: PatientsApi.Patient = testPatient({
   phone: '0221 111111',
   street: 'Altstrasse',
   house_number: '1',
-  postal_code: '50667',
-  city: 'Koeln',
+  postal_code: '72070',
+  city: 'Tuebingen',
 });
 
 const fetchPatient = vi.fn();
@@ -35,14 +35,11 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return {
-    ...actual,
-    useNavigate: () => navigate,
-    useParams: () => ({ patientId: PATIENT_ID }),
-  };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+  useParams: () => ({ patientId: PATIENT_ID }),
+}));
 
 const { EditPatientPage } = await import('./EditPatientPage');
 
@@ -70,8 +67,8 @@ describe('EditPatientPage', () => {
     expect(screen.getByLabelText('Telefon (privat)')).toHaveValue('0221 111111');
     expect(screen.getByLabelText('Straße')).toHaveValue('Altstrasse');
     expect(screen.getByLabelText('Hausnummer')).toHaveValue('1');
-    expect(screen.getByLabelText('PLZ')).toHaveValue('50667');
-    expect(screen.getByLabelText('Ort')).toHaveValue('Koeln');
+    expect(screen.getByLabelText('PLZ')).toHaveValue('72070');
+    expect(screen.getByLabelText('Ort')).toHaveValue('Tuebingen');
   });
 
   it('zeigt fehlende Werte als leeres Feld statt als "null"', async () => {

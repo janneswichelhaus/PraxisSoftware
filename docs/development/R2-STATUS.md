@@ -4,7 +4,7 @@
 Knoten 4 gelöscht.** Liegt im Repository statt in `/tmp`, weil eine neue Session
 einen frischen Container bekommt und `/tmp` dort leer ist.
 
-Stand: 2026-09-15, nach dem Nachtrag zu Gruppe 4. Branch `claude/konsolidierung-r2`,
+Stand: 2026-09-15, nach Gruppe 5. Branch `claude/konsolidierung-r2`,
 Baseline `7160fd5`.
 
 ## Erledigt
@@ -16,24 +16,27 @@ Baseline `7160fd5`.
 | 3a Steuerung | `2c2cf07` | R2-001…004, 006…008, 017, 018, 024, 028; DEVELOPMENT_WORKFLOW.md gelöscht; GRAPH 1.1; Roadmap-Vermerk 5.3 angelegt | `prettier --check` der geänderten Prettier-Dateien, Linkprüfung (59 Dateien, nur die zwei bekannten Beispielpfade in den R2-Dateien) — grün |
 | 3b Skills, Vision, Ideen | `ad63f99` | R2-002/003/005/006 in den Skills, R2-F02 Freigabe-Stopp, R2-F03, R2-029, R2-030, Sammelposten Vision/Ideen | wie 3a — grün |
 | 4 Korrigieren | `120670f` | R2-016, 019–023, 025, 026 (nur nicht abgenommene Abschnitte), 031, 036, 039; Sammelposten Roadmap/Abnahme | `prettier --check`, `eslint scripts/screenshots.mjs`, JSON und `pnpm fortschritt` (31,2 %), Linkprüfung — grün |
-| 4 Nachtrag | `704589e` | R2-026 vollständig: die 16 verbliebenen Menüpfade (Entscheidung Jannes 2026-09-15); `supabase/.branches/` zurück in `.gitignore` | `prettier --check` der zwei Abnahmedateien, Menüpfad-Grep über `docs/`, `src/`, `tests/` — grün |
+| 4 Nachtrag | `ba17d8c` | R2-026 vollständig: die 16 verbliebenen Menüpfade (Entscheidung Jannes 2026-09-15); `supabase/.branches/` zurück in `.gitignore` | `prettier --check` der zwei Abnahmedateien, Menüpfad-Grep über `docs/`, `src/`, `tests/` — grün |
+| 5a Quellcode | `b79f46b` | R2-032 (Gate verschärft), R2-034 (`src/lib/datum.ts`), R2-037 (ANN-054), R2-038 (0 Warnungen), Sammelposten Code und Gates/Skripte | `format:check`, `lint` (0 Fehler, **0 Warnungen**), `typecheck`, `test` (93 Dateien, 1 462 Tests) in **einem** Aufruf — alle grün |
+| 5b Tests | `e73c6c8` | R2-035: `testAppointment`, `testStaffMember`, `tagInTagen`, `zeitImLauf`, `terminUeberOberflaeche`; Router-Mocks vereinheitlicht; PLZ der Fixtures auf Tübingen | `format:check`, `lint`, `typecheck`, `test` (1 462 Tests) — grün; `test:db` 1 308 von 1 311 grün, drei Fehlschläge vom Wochentag abhängig und auch ohne die Gruppe (BEF-003) |
 
-Zeilen: `ASSUMPTIONS.md` 3 575 → 734 · `OPEN_DECISIONS.md` 1 415 → 400 ·
+Zeilen: `ASSUMPTIONS.md` 3 575 → 746 (mit ANN-054) · `OPEN_DECISIONS.md` 1 415 → 400 ·
 `ANFRAGEN.md` neu 483 · `ROADMAP.md` 859 → 786 · `CLAUDE.md` 293 → 149 ·
-`README.md` 66 → 57 · `DEVELOPMENT.md` 404 → 375 · GRAPH 249 → 188 ·
+`README.md` 66 → 57 · `DEVELOPMENT.md` 404 → 380 · GRAPH 249 → 188 ·
 `MAP-LOOPS.md` 256 → 243 · `providerpruefung` 172 → 158 · `PRODUCT_VISION.md`
 349 → 311 · `IDEENSPEICHER.md` 259 → 224 · `10-praxisverwaltung.md` 1 178 → 972 ·
 `07-ki-assistenz.md` 203 → 164 · `referenz-wettbewerb.md` 315 → 239 ·
 feature-loop 271 → 247 · sandbox 165 → 167 · `VER-EPIC-002.md` 133 → 120 ·
-`docs/abnahme/` 2 905 → 2 888 · drei Dateien gelöscht.
+`docs/abnahme/` 2 905 → 2 891 · drei Dateien gelöscht, drei neu (`ANFRAGEN.md`, `src/lib/datum.ts`,
+`src/lib/telefon.ts`).
+
+Gruppe 5: Quelltext ohne Tests −22 Zeilen; Komponententests 20 406 → 20 076
+(−330, davon +60 für den verschärften Gate-Test), `supabase/tests/`
+21 095 → 21 077 (−18 — eine Definition statt vierzehn, dafür mehrzeilige
+Importe), `tests/e2e/` 4 882 → 4 762 (−120). Testanzahl unverändert 1 462.
 
 ## Offen — Reihenfolge nach Arbeitsanweisung 4.11
 
-5. Code-Hygiene (R2-032–035, 037, 038, ci.yml, .gitignore, Sammelposten Code) →
-   `lint && typecheck && test`, Testanzahl 1 462 belegen. Dazu aus dem
-   Sammelposten Gates/Skripte: `DEVELOPMENT.md` Befehle `format`, `db:reset`,
-   `test:watch`, `preview`; Supabase-CLI-Version nur an einer Stelle
-   (`DEVELOPMENT.md` Z. 73-79, 108-110 verweisen).
 6. Betriebsmodell (STATUS.md, SESSION-START.md, docs-check.mjs, package.json,
    ci.yml-Schritt, settings.json). Dazu: ROADMAP „Nächster Loop" auf Verweis +
    „Jannes-seitig" (R2-F06); Feature-Loop-Schritt I und Sandbox-Skill
@@ -98,9 +101,37 @@ Gruppe 3, im Bericht zu nennen (keine Abweichung in der Sache):
    (Entscheidung Jannes). Dabei fielen zwei Reste aus Gruppe 4 auf und wurden
    mitkorrigiert: `etappe-1:1486` nannte noch „Sicherheit → Auditlog" (dieses
    Untermenü gibt es nicht), `etappe-1:759` war unsauber umbrochen.
-10. **`DEVELOPMENT.md` 375 statt ~340 Zeilen:** Klickliste (PR #37,
-    Alt-Branches) und Routine-Prompt sind nach 4.9 neu. Gruppe 5 kürzt noch
-    die Stellen mit der Supabase-CLI-Version.
+10. **`DEVELOPMENT.md` 380 statt ~340 Zeilen:** Klickliste (PR #37,
+    Alt-Branches) und Routine-Prompt sind nach 4.9 neu; Gruppe 5 hat die
+    CLI-Version auf eine Stelle gezogen, dafür aber vier Befehle ergänzt.
+
+Gruppe 5, im Bericht zu nennen:
+
+11. **`mockRouter` ist nicht baubar (R2-035 / Sammelposten Code).** Der
+    Sammelposten verlangt eine Fabrik `mockRouter({ navigate, params })` in
+    `src/test-utils.tsx`. Vitest zieht `vi.mock` **vor** die Importe der
+    Datei; eine Fabrik, die dabei ausgewertet wird, findet den importierten
+    Helfer nicht (`Cannot access '__vi_import_n__' before initialization`).
+    Auch eine eigene Datei hilft nicht: `test-utils.tsx` importiert
+    `react-router-dom` selbst, und eine Fabrik für genau dieses Modul läuft
+    darüber in einen Ringschluss. Beides ist ausprobiert und gemessen, nicht
+    vermutet. Stattdessen sind alle 24 Fabriken auf **eine** Form gebracht
+    (die kürzere Objektschreibweise) und der Typalias auf `RouterModul`
+    vereinheitlicht — dieselbe Zeilenersparnis, ohne verstecktes Verhalten.
+12. **49 statt 21 `export` entfernt.** Der Scan der Arbeitsanweisung nannte
+    21; ein vollständiger Scan über `src/` und `tests/` findet 50 Symbole, die
+    außerhalb ihrer Datei nirgends vorkommen. Ausgenommen sind
+    `src/lib/location/contract.ts` (ADR-019-Vertrag, Anker ANN-016–018),
+    `src/features/preview/types.ts` (Vokabular der Vorschau) und
+    `tests/e2e/authenticated/helpers.ts`. Von den 50 musste
+    `KLINISCHE_DOKUMENTARTEN` exportiert bleiben: `supabase/tests/` liest es.
+13. **`pnpm test:db` ist gelaufen, obwohl der Plan es nicht verlangt** — die
+    Gruppe fasst `supabase/tests/` an. Ergebnis: 1 308 von 1 311 grün. Die drei
+    Fehlschläge in `appointment-series.test.ts` hängen am Wochentag und treten
+    auf dem Stand vor der Gruppe genauso auf; als **BEF-003** aufgenommen, mit
+    Vorschlag. Erster Lauf war wertlos, weil zwei Läufe gleichzeitig auf
+    denselben Cluster gingen ("tuple concurrently updated") — nach `db:stop`
+    und Neustart war das Bild eindeutig.
 
 ## Für Gruppe 6 und 9 vormerken
 

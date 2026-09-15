@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+  tagInTagen,
+} from './helpers/db';
 
 /**
  * Terminzettel (CAL-011, IDEA-PRX-006).
@@ -16,12 +24,6 @@ const ANLEGEN =
 
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
 const LOCATION = '33333333-3333-4333-8333-000000000001';
-
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
 
 interface Zeile {
   id: string;

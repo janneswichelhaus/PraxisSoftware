@@ -8,6 +8,7 @@ import {
   asUser,
   asUserCommitted,
   resetDatabaseOhneTermine,
+  tagInTagen,
   testDatabaseUrl,
 } from './helpers/db';
 
@@ -165,13 +166,6 @@ async function terminStand(id: string) {
     [id],
   );
   return rows[0]!;
-}
-
-/** Kalendertag in der Zeitzone der Praxis, um n Tage verschoben. */
-function tagInTagen(tage: number): string {
-  const jetzt = new Date();
-  const berlin = new Date(jetzt.getTime() + tage * 86_400_000);
-  return berlin.toISOString().slice(0, 10);
 }
 
 // -----------------------------------------------------------------------------

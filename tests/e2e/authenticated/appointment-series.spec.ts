@@ -7,6 +7,7 @@ import {
   arbeitszeitBestaetigen,
   laufTagImFenster,
   tagImFenster,
+  zeitImLauf,
 } from './helpers';
 
 /**
@@ -52,13 +53,7 @@ function werktagVersatz(ab: number): number {
   throw new Error('Kein Werktag im Fenster gefunden - das kann nicht passieren.');
 }
 
-/** Beginn auf dem Praxisraster (im Seed 5 Minuten), je Lauf verschieden. */
-function zeit(minutenAbAcht = 0): string {
-  const gesamt = 8 * 60 + (LAUF % 10) * 5 + minutenAbAcht;
-  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
-  const m = String(gesamt % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
+const zeit = (minutenAbAcht = 0) => zeitImLauf(LAUF, minutenAbAcht, 10);
 
 test.describe('CAL-010a: Terminfenster', () => {
   test('leitet das Ende aus dem Beginn ab und legt 60 Minuten an', async ({ page }) => {

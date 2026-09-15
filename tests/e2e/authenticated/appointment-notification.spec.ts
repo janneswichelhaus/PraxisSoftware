@@ -6,6 +6,8 @@ import {
   arbeitszeitBestaetigen,
   nahtag,
   terminLinkWahl,
+  terminUeberOberflaeche,
+  zeitImLauf,
 } from './helpers';
 
 /**
@@ -35,24 +37,10 @@ test.describe.configure({ mode: 'serial' });
 
 const LAUF = Date.now();
 
-function zeit(minutenAbAcht = 0): string {
-  const gesamt = 8 * 60 + (LAUF % 10) * 5 + minutenAbAcht;
-  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
-  const m = String(gesamt % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
+const zeit = (minutenAbAcht = 0) => zeitImLauf(LAUF, minutenAbAcht, 10);
 
-async function terminAnlegen(page: Page, tag: string, von: string): Promise<string> {
-  await page.goto(`/patienten/${PATIENTEN.max}/termine/neu`);
-  await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
-  await page.getByLabel('Terminart *').selectOption('video');
-  await page.getByLabel('Datum *').fill(tag);
-  await page.getByLabel('Beginn *').fill(von);
-  await page.getByRole('button', { name: 'Termin anlegen' }).click();
-  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
-  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-  return page.url().split('/').pop()!;
-}
+const terminAnlegen = (page: Page, tag: string, von: string) =>
+  terminUeberOberflaeche(page, { tag, von, art: 'video' });
 
 /**
  * Der Eintrag dieses Termins in der Terminliste der Akte.

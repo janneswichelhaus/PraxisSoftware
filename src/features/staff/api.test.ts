@@ -5,26 +5,10 @@ import {
   staffMasterDataSchema,
   staffToFormValues,
   OffeneTermineError,
-  type StaffMember,
 } from './api';
+import { testStaffMember } from '@/test-utils';
 
-const anna: StaffMember = {
-  id: '55555555-5555-4555-8555-000000000002',
-  person_id: '44444444-4444-4444-8444-000000000002',
-  given_name: 'Anna',
-  family_name: 'Beispiel',
-  employment_status: 'active',
-  work_email: 'anna.beispiel@praxis.invalid',
-  work_phone: null,
-  primary_location_id: null,
-  primary_location_name: null,
-  date_of_birth: null,
-  private_email: null,
-  private_phone: null,
-  street: null,
-  postal_code: null,
-  city: null,
-};
+const anna = testStaffMember();
 
 describe('staffMasterDataSchema', () => {
   it('macht aus leeren Optionalfeldern null statt eines leeren Textes', () => {

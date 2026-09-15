@@ -7,6 +7,7 @@ import {
   asUser,
   asUserCommitted,
   resetDatabase,
+  tagInTagen,
   testDatabaseUrl,
 } from './helpers/db';
 
@@ -30,12 +31,6 @@ const AENDERN =
   'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true) as id';
 
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
-
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
 
 const TAG = tagInTagen(40);
 

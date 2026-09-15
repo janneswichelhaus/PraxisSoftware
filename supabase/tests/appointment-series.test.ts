@@ -1,6 +1,14 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SERIE_HOECHSTZAHL } from '@/features/appointments/serie';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+  tagInTagen,
+} from './helpers/db';
 
 /**
  * Terminserie aus einer Verordnung (CAL-007).
@@ -34,12 +42,6 @@ const PRUEFEN = 'select * from public.check_appointment_slots($1::uuid, $2::json
 const KONTINGENT = 'select * from public.get_prescription_slots($1::uuid)';
 
 /** Kalendertag weit in der Zukunft, damit kein Lauf um Mitternacht kippt. */
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
-
 interface Slot {
   datum: string;
   beginn: string;

@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { render, type RenderResult } from '@testing-library/react';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
+import type { Appointment } from '@/features/appointments/api';
 import type { Patient } from '@/features/patients/api';
+import type { StaffMember } from '@/features/staff/api';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
 
 /**
@@ -140,5 +142,75 @@ export function testUser(roles: RoleKey[], displayName = 'Anna Beispiel'): Curre
     staffMemberId: roles.some((rolle) => rolle !== 'patient')
       ? (STAFF_IDS[displayName] ?? null)
       : null,
+  };
+}
+
+/**
+ * Synthetischer Termin für Komponententests.
+ *
+ * Wie `testPatient`: ein Termin trägt fast dreißig Felder, und ohne
+ * gemeinsamen Ausgangswert müsste jeder Test jedes davon nennen. Die Vorgabe
+ * ist ein gewöhnlicher Praxistermin von Berta Bestand bei Anna Beispiel; alles
+ * Abweichende - Hausbesuch, Ereignis, abgesagt - setzt der Test ausdrücklich.
+ */
+export function testAppointment(overrides: Partial<Appointment> = {}): Appointment {
+  return {
+    id: '77777777-7777-4777-8777-000000000001',
+    patient_id: '66666666-6666-4666-8666-000000000001',
+    kind: 'treatment',
+    title: null,
+    event_group_id: null,
+    staff_member_id: '55555555-5555-4555-8555-000000000002',
+    location_id: '33333333-3333-4333-8333-000000000001',
+    appointment_type: 'practice',
+    status: 'confirmed',
+    starts_at: '2027-05-12T07:00:00.000Z',
+    ends_at: '2027-05-12T08:00:00.000Z',
+    updated_at: '2027-05-01T10:00:00.000000+00',
+    visit_street: null,
+    visit_house_number: null,
+    visit_postal_code: null,
+    visit_city: null,
+    completed_at: null,
+    cancellation_reason: null,
+    no_show_recorded_at: null,
+    cancellation_received_at: null,
+    fee_basis: null,
+    patient_given_name: 'Berta',
+    patient_family_name: 'Bestand',
+    staff_given_name: 'Anna',
+    staff_family_name: 'Beispiel',
+    location_name: 'Hauptstandort Tuebingen',
+    notification_channels: [],
+    organization_time_zone: 'Europe/Berlin',
+    ...overrides,
+  };
+}
+
+/**
+ * Synthetischer Mitarbeiterdatensatz für Komponententests.
+ *
+ * Vorgabe ist Anna Beispiel aus dem Seed. Die privaten Felder sind leer: Wer
+ * sie prüft, setzt sie ausdrücklich - dann steht im Test selbst, dass es um
+ * genau diesen Rollenschnitt geht (§4.7).
+ */
+export function testStaffMember(overrides: Partial<StaffMember> = {}): StaffMember {
+  return {
+    id: '55555555-5555-4555-8555-000000000002',
+    person_id: '44444444-4444-4444-8444-000000000002',
+    given_name: 'Anna',
+    family_name: 'Beispiel',
+    employment_status: 'active',
+    work_email: 'anna.beispiel@praxis.invalid',
+    work_phone: null,
+    primary_location_id: null,
+    primary_location_name: null,
+    date_of_birth: null,
+    private_email: null,
+    private_phone: null,
+    street: null,
+    postal_code: null,
+    city: null,
+    ...overrides,
   };
 }

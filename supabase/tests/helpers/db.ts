@@ -221,3 +221,16 @@ export function abgefangen(versprechen: Promise<unknown>): Promise<Error | null>
     (fehler: Error) => fehler,
   );
 }
+
+/**
+ * Kalendertag `n` Tage von heute aus, als `YYYY-MM-DD`.
+ *
+ * Die Termintests brauchen Tage in der Zukunft, die kein Feiertag und kein
+ * Seed-Termin blockiert; ein fester Tag im Quelltext wäre nach einem Jahr
+ * Vergangenheit. Gerechnet wird über UTC — ein Kalendertag, kein Zeitpunkt.
+ */
+export function tagInTagen(tage: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + tage);
+  return d.toISOString().slice(0, 10);
+}

@@ -1,5 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneTermine,
+  tagInTagen,
+} from './helpers/db';
 
 /**
  * Finalisierung, Versionierung und Nachtrag (DOK-002, ADR-016 Punkte 4 bis 6).
@@ -121,12 +128,6 @@ async function termin(): Promise<Stand> {
     null,
   ]);
   return terminStand(rows[0]!.id);
-}
-
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
 }
 
 /** Entwurf zu einem frischen Termin. */

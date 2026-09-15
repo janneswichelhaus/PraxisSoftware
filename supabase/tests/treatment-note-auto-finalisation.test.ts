@@ -6,6 +6,7 @@ import {
   asUser,
   asUserCommitted,
   resetDatabaseOhneTermine,
+  tagInTagen,
 } from './helpers/db';
 
 /**
@@ -117,12 +118,6 @@ async function auditEintraege(action: string) {
 async function lauf(): Promise<number> {
   const { rows } = await asPostgres<{ n: number }>(UEBERFAELLIGE);
   return Number(rows[0]!.n);
-}
-
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
 }
 
 /**

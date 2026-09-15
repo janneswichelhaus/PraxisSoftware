@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PrescriptionsApi from './api';
-import type * as RouterModule from 'react-router-dom';
+import type * as RouterModul from 'react-router-dom';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
 import type * as PatientsApi from '@/features/patients/api';
 import { renderWithProviders, testPatient } from '@/test-utils';
@@ -45,14 +45,11 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return {
-    ...actual,
-    useNavigate: () => navigate,
-    useParams: () => ({ patientId: PATIENT_ID, prescriptionId: PRESCRIPTION_ID }),
-  };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+  useParams: () => ({ patientId: PATIENT_ID, prescriptionId: PRESCRIPTION_ID }),
+}));
 
 // Der Entwurfsspeicher bindet an die Benutzer-ID aus der Sitzung (ANN-019) -
 // ohne diesen Mock würde useSession() außerhalb eines SessionProvider werfen.

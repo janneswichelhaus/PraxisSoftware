@@ -2,25 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as StaffApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
-import { renderWithProviders, testUser } from '@/test-utils';
+import { renderWithProviders, testStaffMember, testUser } from '@/test-utils';
 
-const anna: StaffApi.StaffMember = {
-  id: '55555555-5555-4555-8555-000000000002',
-  person_id: '44444444-4444-4444-8444-000000000002',
-  given_name: 'Anna',
-  family_name: 'Beispiel',
-  employment_status: 'active',
-  work_email: 'anna.beispiel@praxis.invalid',
+const anna = testStaffMember({
   work_phone: '+49 7071 0000102',
-  primary_location_id: null,
   primary_location_name: 'Hauptstandort Tuebingen',
-  date_of_birth: null,
-  private_email: null,
-  private_phone: null,
-  street: null,
-  postal_code: null,
-  city: null,
-};
+});
 
 const nina: StaffApi.StaffMember = {
   ...anna,

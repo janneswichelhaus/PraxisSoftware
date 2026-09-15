@@ -8,6 +8,7 @@ import {
   asUser,
   asUserCommitted,
   resetDatabase,
+  tagInTagen,
   testDatabaseUrl,
 } from './helpers/db';
 
@@ -32,12 +33,6 @@ const STAFF = {
 } as const;
 
 const LOCATION = '33333333-3333-4333-8333-000000000001';
-
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
 
 const TAG = tagInTagen(40);
 

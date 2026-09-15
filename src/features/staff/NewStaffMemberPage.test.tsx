@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
-import type * as RouterModule from 'react-router-dom';
+import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const createStaffMember = vi.fn();
@@ -27,10 +27,10 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return { ...actual, useNavigate: () => navigate };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+}));
 
 const { NewStaffMemberPage } = await import('./NewStaffMemberPage');
 
