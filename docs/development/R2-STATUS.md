@@ -4,7 +4,7 @@
 Knoten 4 gelöscht.** Liegt im Repository statt in `/tmp`, weil eine neue Session
 einen frischen Container bekommt und `/tmp` dort leer ist.
 
-Stand: 2026-09-15, nach Gruppe 5. Branch `claude/konsolidierung-r2`,
+Stand: 2026-09-15, nach dem Nachtrag 5c. Branch `claude/konsolidierung-r2`,
 Baseline `7160fd5`.
 
 ## Erledigt
@@ -18,7 +18,8 @@ Baseline `7160fd5`.
 | 4 Korrigieren | `120670f` | R2-016, 019–023, 025, 026 (nur nicht abgenommene Abschnitte), 031, 036, 039; Sammelposten Roadmap/Abnahme | `prettier --check`, `eslint scripts/screenshots.mjs`, JSON und `pnpm fortschritt` (31,2 %), Linkprüfung — grün |
 | 4 Nachtrag | `ba17d8c` | R2-026 vollständig: die 16 verbliebenen Menüpfade (Entscheidung Jannes 2026-09-15); `supabase/.branches/` zurück in `.gitignore` | `prettier --check` der zwei Abnahmedateien, Menüpfad-Grep über `docs/`, `src/`, `tests/` — grün |
 | 5a Quellcode | `b79f46b` | R2-032 (Gate verschärft), R2-034 (`src/lib/datum.ts`), R2-037 (ANN-054), R2-038 (0 Warnungen), Sammelposten Code und Gates/Skripte | `format:check`, `lint` (0 Fehler, **0 Warnungen**), `typecheck`, `test` (93 Dateien, 1 462 Tests) in **einem** Aufruf — alle grün |
-| 5b Tests | `1e9876b` | R2-035: `testAppointment`, `testStaffMember`, `tagInTagen`, `zeitImLauf`, `terminUeberOberflaeche`; Router-Mocks vereinheitlicht; PLZ der Fixtures auf Tübingen | `format:check`, `lint`, `typecheck`, `test` (1 462 Tests) — grün; `test:db` 1 308 von 1 311 grün, drei Fehlschläge vom Wochentag abhängig und auch ohne die Gruppe (BEF-003) |
+| 5b Tests | `1e9876b` | R2-035: `testAppointment`, `testStaffMember`, `tagInTagen`, `zeitImLauf`, `terminUeberOberflaeche`; Router-Mocks vereinheitlicht; PLZ der Fixtures auf Tübingen | `format:check`, `lint`, `typecheck`, `test` (1 462 Tests) — grün; `test:db` 1 308 von 1 311 grün, drei Fehlschläge vom Wochentag abhängig und auch ohne die Gruppe (BEF-003, behoben in 5c) |
+| 5c Nachtrag | `<hash>` | R2-040: `appointment-series.test.ts` rechnet mit Werktagen (BEF-003 behoben) | `format:check`, `lint`, `typecheck` — grün; `test:db` nach `db:stop` und Neustart **1 311 von 1 311** grün |
 
 Zeilen: `ASSUMPTIONS.md` 3 575 → 746 (mit ANN-054) · `OPEN_DECISIONS.md` 1 415 → 400 ·
 `ANFRAGEN.md` neu 483 · `ROADMAP.md` 859 → 786 · `CLAUDE.md` 293 → 149 ·
@@ -128,10 +129,12 @@ Gruppe 5, im Bericht zu nennen:
 13. **`pnpm test:db` ist gelaufen, obwohl der Plan es nicht verlangt** — die
     Gruppe fasst `supabase/tests/` an. Ergebnis: 1 308 von 1 311 grün. Die drei
     Fehlschläge in `appointment-series.test.ts` hängen am Wochentag und treten
-    auf dem Stand vor der Gruppe genauso auf; als **BEF-003** aufgenommen, mit
-    Vorschlag. Erster Lauf war wertlos, weil zwei Läufe gleichzeitig auf
-    denselben Cluster gingen ("tuple concurrently updated") — nach `db:stop`
-    und Neustart war das Bild eindeutig.
+    auf dem Stand vor der Gruppe genauso auf; als **BEF-003** aufgenommen und
+    auf Jannes' Entscheidung im **Nachtrag 5c als R2-040 behoben** (nur die
+    Testdatei, keine Migration, keine Policy), Beleg 1 311 von 1 311. Erster
+    Lauf war wertlos, weil zwei Läufe gleichzeitig auf denselben Cluster
+    gingen ("tuple concurrently updated") — nach `db:stop` und Neustart war das
+    Bild eindeutig.
 
 ## Für Gruppe 6 und 9 vormerken
 

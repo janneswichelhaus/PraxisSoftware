@@ -178,7 +178,7 @@ Befund allein ordnet Schaltflächen, er ändert keinen Vorgang.
 | Datum | 2026-09-15 |
 | Bereich | Gate `pnpm test:db` — `supabase/tests/appointment-series.test.ts`, Abschnitt „Konfliktpruefung" |
 | Quelle | Gruppe-5-Lauf der Konsolidierung R2; auf dem Stand vor und nach der Gruppe identisch reproduziert |
-| Status | offen |
+| Status | behoben in R2 (Nachtrag 5c, R2-040) |
 | Berührt | CAL-007; ADR-013 (Pflichtprüfung „Migrationen und RLS-Policies") |
 
 **Beobachtung.** Drei Tests des Abschnitts „Konfliktpruefung" schlagen fehl,
@@ -197,9 +197,12 @@ Gate, das an rund zwei von sieben Tagen ohne Zutun rot ist, lehrt genau das
 Gegenteil dessen, wofür es da ist — und lädt dazu ein, ein rotes Gate als
 „gehört so" zu lesen.
 
-**Wie es weitergehen sollte.** Ein Loop der Kalenderspur nimmt es als erste
-Story auf (R6). Der Vorschlag ist klein und bleibt im Test: `woechentlich`
-nimmt den Werktagversatz, den die Datei schon hat, statt roher Kalendertage —
-etwa `tagInTagen(werktagVersatz(40) + i * 7)`, mit einem Werktagsprung je
-Wiederholung. Der Prüfgegenstand ändert sich dadurch nicht: Geprüft werden
-Überschneidung und Doppelung, nicht die Arbeitszeit.
+**Behoben.** Nicht über R6, sondern sofort als **R2-040** — ein Gate, das an
+zwei von sieben Tagen ohne Zutun rot ist, hätte sonst den Pull Request dieser
+Runde blockiert. `woechentlich` nimmt jetzt den ersten Werktag ab dem Versatz
+als Startpunkt; der Wochenabstand hält alle weiteren auf demselben Wochentag.
+Geändert ist ausschließlich die Testdatei — keine Migration, keine Policy, und
+`check_appointment_slots` selbst bleibt unberührt. Die drei Tests, die
+`outside_working_hours` ausdrücklich prüfen, rechnen weiter mit rohen
+Kalendertagen: Ein Beginn um 05:00 liegt an jedem Wochentag außerhalb.
+Beleg: `pnpm test:db` 1 311 von 1 311 grün (2026-09-15).
