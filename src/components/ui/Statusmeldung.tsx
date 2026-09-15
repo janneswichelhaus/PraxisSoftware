@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type Meldungston = 'neutral' | 'warnung' | 'fehler';
+type Meldungston = 'neutral' | 'warnung' | 'fehler';
 
 /**
  * Kurze Meldung im Fluss der Seite (UI-000).

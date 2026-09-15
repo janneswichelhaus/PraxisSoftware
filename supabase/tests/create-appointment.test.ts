@@ -8,6 +8,7 @@ import {
   asUser,
   asUserCommitted,
   resetDatabase,
+  tagInTagen,
   testDatabaseUrl,
 } from './helpers/db';
 
@@ -34,12 +35,6 @@ const LOCATION = '33333333-3333-4333-8333-000000000001';
  * Kalendertag weit genug in der Zukunft, damit kein Testlauf um Mitternacht
  * kippt. Termine werden in der Praxiszeitzone ausgelegt.
  */
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
-
 const TAG = tagInTagen(30);
 
 interface Termin {

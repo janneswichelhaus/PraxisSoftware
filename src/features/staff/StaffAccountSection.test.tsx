@@ -2,26 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as KontoApi from './konto-api';
-import type * as StaffApi from './api';
-import { renderWithProviders } from '@/test-utils';
+import { renderWithProviders, testStaffMember } from '@/test-utils';
 
-const anna: StaffApi.StaffMember = {
-  id: '55555555-5555-4555-8555-000000000002',
-  person_id: '44444444-4444-4444-8444-000000000002',
-  given_name: 'Anna',
-  family_name: 'Beispiel',
-  employment_status: 'active',
-  work_email: 'anna.beispiel@praxis.invalid',
+const anna = testStaffMember({
   work_phone: '+49 7071 0000102',
-  primary_location_id: null,
-  primary_location_name: null,
-  date_of_birth: null,
-  private_email: null,
-  private_phone: null,
-  street: null,
-  postal_code: null,
-  city: null,
-};
+});
 
 const fetchStaffAccount = vi.fn();
 const fetchStaffInvitations = vi.fn();

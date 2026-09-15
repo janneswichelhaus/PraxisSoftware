@@ -18,9 +18,9 @@ Komponententests.
 und dass das Praxismanagement die Privatanschrift einer Kollegin weder sieht
 noch versehentlich löscht.
 
-1. **Office darf pflegen.** Als `olivia.office@praxis.invalid` anmelden, Praxis
-   → Team öffnen. Die Schaltfläche „Mitarbeiter:in anlegen" ist da. Auf „Anna
-   Beispiel" tippen: „Stammdaten bearbeiten" wird angeboten.
+1. **Office darf pflegen.** Als `olivia.office@praxis.invalid` anmelden,
+   Organisatorisches → Mitarbeitende öffnen. Die Schaltfläche „Mitarbeiter:in
+   anlegen" ist da. Auf „Anna Beispiel" tippen: „Stammdaten bearbeiten" wird angeboten.
 2. **Aber nicht alles.** Auf demselben Datensatz gibt es **keine** Schaltfläche
    „Als inaktiv führen" und **keinen** Abschnitt „Zugang". Beides bleibt bei der
    Praxisinhaberin.
@@ -34,7 +34,8 @@ noch versehentlich löscht.
    Abschnitt „Privat" trägt unverändert Geburtsdatum, private E-Mail und
    Adresse. Genau das wäre ohne ANN-024 gelöscht worden.
 6. **Therapie pflegt nicht.** Als `anna.beispiel@praxis.invalid` anmelden,
-   Praxis → Team: Die Liste ist lesbar, „Mitarbeiter:in anlegen" fehlt, und auf
+   Organisatorisches → Mitarbeitende: Die Liste ist lesbar, „Mitarbeiter:in
+   anlegen" fehlt, und auf
    einem Datensatz gibt es weder „Stammdaten bearbeiten" noch „Zugang". Dasselbe
    gilt für `tim.teamleitung@praxis.invalid`.
 7. **Am Handy.** Schritt 3 bei ~375 px Breite wiederholen: Das Formular ist
@@ -50,7 +51,8 @@ Ausgangslage: **Nina Neu** steht im Seed als Mitarbeiterin **ohne** Zugang.
 Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
 
 1. **Nur die Praxisinhaberin.** Als `jannes.test@praxis.invalid` anmelden,
-   Praxis → Team → „Nina Neu": Es gibt den Abschnitt „Zugang" mit einem
+   Organisatorisches → Mitarbeitende → „Nina Neu": Es gibt den Abschnitt
+   „Zugang" mit einem
    Einladungsformular. Die E-Mail-Adresse ist aus der dienstlichen Adresse
    vorbelegt, **keine** Rolle ist angekreuzt.
 2. **Ohne Rolle geht es nicht.** Direkt auf „Zugang einladen" tippen: Es
@@ -74,8 +76,9 @@ Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
 7. **Annehmen.** In einem privaten Fenster den Link aus der Mail öffnen und ein
    Kennwort setzen. Es erscheint „Zugang einrichten". Auf „Einladung annehmen"
    tippen: Die Anwendung öffnet sich als Nina Neu.
-8. **Die Rolle wirkt.** Als Nina ist Praxis → Team lesbar, „Mitarbeiter:in
-   anlegen" fehlt (kein `office`), und unter „Übersicht" steht ihr eigener Tag.
+8. **Die Rolle wirkt.** Als Nina ist Organisatorisches → Mitarbeitende lesbar,
+   „Mitarbeiter:in anlegen" fehlt (kein `office`), und unter „Übersicht" steht
+   ihr eigener Tag.
 9. **Der Nachweis.** Zurück als `jannes.test@praxis.invalid`: Der Abschnitt
    „Zugang" bei Nina zeigt jetzt „Eingerichtet" und die Rolle. Im Auditlog steht
    zusätzlich „Einladung angenommen" — mit **Nina** als handelnder Person, nicht
@@ -100,13 +103,14 @@ Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
 **Was geprüft wird:** dass die Praxisleitung einen bestehenden Zugang steuern
 kann — und dass sie sich dabei nicht selbst aussperrt.
 
-1. **Rollen ändern.** Als `jannes.test@praxis.invalid` → Praxis → Team → „Anna
-   Beispiel" → Abschnitt „Zugang". Die Kästchen zeigen den aktuellen Stand;
-   „Rollen speichern" ist grau, solange nichts geändert ist.
+1. **Rollen ändern.** Als `jannes.test@praxis.invalid` → Organisatorisches →
+   Mitarbeitende → „Anna Beispiel" → Abschnitt „Zugang". Die Kästchen zeigen
+   den aktuellen Stand; „Rollen speichern" ist grau, solange nichts geändert
+   ist.
 2. **Teamleitung dazu.** „Teamleitung" ankreuzen, speichern. Im Auditlog steht
    „Rollen geändert".
 3. **Es wirkt sofort.** In einem privaten Fenster als Anna anmelden: Der
-   Dienstplan unter Praxis → Planung ist jetzt bearbeitbar.
+   Dienstplan unter Organisatorisches → Arbeitszeiten ist jetzt bearbeitbar.
 4. **Verwerfen funktioniert.** Ein Kästchen ändern, „Verwerfen": Der alte Stand
    steht wieder da, ohne dass etwas gespeichert wurde.
 5. **Keine leere Rolle.** Alle Kästchen abwählen: „Rollen speichern" ist grau,
@@ -268,8 +272,8 @@ Sie den alten Stand.
 
 ### Die Praxisleitung stößt es an
 
-14. Als `jannes.test@praxis.invalid` → Praxis → Team → „Anna Beispiel" →
-    „Kennwort zurücksetzen" → „Mail senden". Die Mail im Mailfänger zeigt
+14. Als `jannes.test@praxis.invalid` → Organisatorisches → Mitarbeitende →
+    „Anna Beispiel" → „Kennwort zurücksetzen" → „Mail senden". Die Mail im Mailfänger zeigt
     ebenfalls auf `/kennwort-neu`. Der Ablauf ist derselbe wie oben. Annas
     bisheriges Kennwort funktioniert, bis sie ein neues setzt.
 
@@ -389,9 +393,9 @@ zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
    aus ADR-017): Kommt es als JPEG an oder als HEIC? Kommt HEIC an, erscheint
    die Meldung mit dem Hinweis auf die Einstellung „Sehr kompatibel" — und
    Jannes sagt bitte Bescheid, ob das im Alltag reicht.
-9. **Das Protokoll.** Als Jannes Praxis → Auditlog öffnen. Für jeden Upload
-   steht dort „Datei zur Akte hinzugefügt", für jedes Öffnen „Datei zum Öffnen
-   freigegeben". **Im Eintrag steht kein Dateiname** — nur Kennung, Art und
+9. **Das Protokoll.** Als Jannes Organisatorisches → Sicherheit öffnen. Für
+   jeden Upload steht dort „Datei zur Akte hinzugefügt", für jedes Öffnen
+   „Datei zum Öffnen freigegeben". **Im Eintrag steht kein Dateiname** — nur Kennung, Art und
    Zeitpunkt. Das Öffnen des Dateibereichs selbst erzeugt keinen Eintrag; das
    Öffnen der Akte ist bereits protokolliert (ADR-017 Punkt 22).
 10. **Am Handy.** Die Schritte 1 bis 3 bei ~375 px Breite wiederholen: kein
@@ -420,7 +424,7 @@ Akte von Max Mustermann.
    der Löschauftrag ausgeführt ist. „Endgültig löschen" tippen.
 2. **Die Akte ist sofort sauber.** Die Datei steht nicht mehr in der Liste —
    auch nicht nach einem Neuladen der Seite.
-3. **Der Auftrag steht.** Praxis → Sicherheit → **Aufbewahrung und Löschung**.
+3. **Der Auftrag steht.** Organisatorisches → **Aufbewahrung**.
    Unter „Offene Löschaufträge" steht eine Zeile mit dem Zeitpunkt und dem
    Vermerk „Datei liegt noch in der Ablage".
 4. **Der entscheidende Schritt.** „Alle 1 ausführen und quittieren" tippen.
@@ -429,7 +433,7 @@ Akte von Max Mustermann.
    quittiert nur, wenn die Datei tatsächlich weg ist — bliebe sie liegen,
    stünde der Auftrag noch da.
 5. **Wer das darf.** Abmelden, als `anna.beispiel@praxis.invalid` anmelden:
-   Praxis → Sicherheit → Aufbewahrung ist für sie nicht erreichbar. Sie kann
+   Organisatorisches → Aufbewahrung ist für sie nicht erreichbar. Sie kann
    in der Akte weiterhin löschen — der Auftrag landet dann bei der
    Praxisinhaberin.
 6. **Die Art korrigieren.** Als Jannes in der Akte → Dateien bei einer
@@ -440,7 +444,7 @@ Akte von Max Mustermann.
    Übung — die Art ist eine Sichtbarkeitsgrenze, kein Etikett.
 8. **Die Verwaltung korrigiert nicht.** Bei Olivia gibt es an keiner Datei
    „Art korrigieren"; an einer organisatorischen Datei gibt es „Löschen".
-9. **Das Protokoll.** Als Jannes Praxis → Auditlog: „Datei gelöscht",
+9. **Das Protokoll.** Als Jannes Organisatorisches → Sicherheit: „Datei gelöscht",
    „Dokumentart einer Datei korrigiert" und „Löschung in der Ablage quittiert"
    stehen dort. Auch hier **kein Dateiname und kein Ablageort**.
 10. **Am Handy.** Schritt 1 bis 4 bei ~375 px wiederholen: Die Rückfrage passt
@@ -464,7 +468,7 @@ nicht liegen bleiben.
 in der Akte von Max Mustermann.
 
 1. **Im Normalfall ist nichts zu tun.** Als `jannes.test@praxis.invalid`
-   Praxis → Sicherheit → **Aufbewahrung und Löschung** öffnen. Unter „Abgleich
+   Organisatorisches → **Aufbewahrung** öffnen. Unter „Abgleich
    der Dateiablage" steht „Beide Speicher sind deckungsgleich".
 2. **Einen Verlust herstellen.** Diesen Schritt ausdrücklich nur am lokalen
    Wegwerf-Stack: Supabase Studio unter <http://127.0.0.1:54323> öffnen,
@@ -490,7 +494,7 @@ in der Akte von Max Mustermann.
    sehen. **Es gibt keinen zweiten Löschweg**: Auch ein verwaistes Objekt geht
    durch Auftrag und Quittung.
 8. **Wer das sieht.** Abmelden, als `tim.teamleitung@praxis.invalid` anmelden:
-   Praxis → Sicherheit → Aufbewahrung ist für ihn nicht erreichbar.
+   Organisatorisches → Aufbewahrung ist für ihn nicht erreichbar.
 9. **Aufräumen.** Als Jannes die Datei aus Schritt 3 in der Akte löschen und
    den Auftrag ausführen; danach steht überall wieder „deckungsgleich".
 10. **Am Handy.** Schritt 1 und 6 bei ~375 px: kein waagerechtes Scrollen,

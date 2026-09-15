@@ -1,13 +1,12 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   KONTEN,
-  PATIENTEN,
   TAGESFENSTER,
   anmelden,
-  arbeitszeitBestaetigen,
   detailWert,
   laufTagImFenster,
   terminKachel,
+  terminUeberOberflaeche,
 } from './helpers';
 
 /**
@@ -36,25 +35,10 @@ function stunde(versatz = 0): string {
   return `${String(8 + ((LAUF + versatz) % 3)).padStart(2, '0')}:00`;
 }
 
-async function terminAnlegen(
+const terminAnlegen = (
   page: Page,
   opts: { tag: string; von: string; bis: string; person?: string },
-): Promise<string> {
-  await page.goto(`/patienten/${PATIENTEN.max}/termine/neu`);
-  await page
-    .getByLabel('Behandelnde Person *')
-    .selectOption({ label: opts.person ?? 'Anna Beispiel' });
-  await page.getByLabel('Terminart *').selectOption('video');
-  await page.getByLabel('Datum *').fill(opts.tag);
-  await page.getByLabel('Beginn *').fill(opts.von);
-  // Das Ende ist seit CAL-010a eine Ableitung aus dem Beginn (8.1) und kein
-  // Feld mehr. Geprueft wird es trotzdem - sonst waere `bis` nur noch Zierde.
-  await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
-  await page.getByRole('button', { name: 'Termin anlegen' }).click();
-  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
-  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-  return page.url().split('/').pop()!;
-}
+) => terminUeberOberflaeche(page, { ...opts, art: 'video' });
 
 interface Kasten {
   x: number;

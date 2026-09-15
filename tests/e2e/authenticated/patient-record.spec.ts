@@ -4,9 +4,10 @@ import {
   PATIENTEN,
   TAGESFENSTER,
   anmelden,
-  arbeitszeitBestaetigen,
   tagImFenster,
   terminLinkWahl,
+  terminUeberOberflaeche,
+  zeitImLauf,
 } from './helpers';
 
 /**
@@ -30,27 +31,12 @@ function laufTag(versatz = 0): string {
   return tagImFenster(TAGESFENSTER.patientRecordWorkspace, LAUF, versatz);
 }
 
-function zeit(minutenAbAcht = 0): string {
-  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
-  const gesamt = 8 * 60 + (LAUF % 12) * 5 + minutenAbAcht;
-  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
-  const m = String(gesamt % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
+const zeit = (minutenAbAcht = 0) => zeitImLauf(LAUF, minutenAbAcht);
 
 const AKTE = `/patienten/${PATIENTEN.max}`;
 
-async function terminAnlegen(page: Page, tag: string): Promise<string> {
-  await page.goto(`${AKTE}/termine/neu`);
-  await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
-  await page.getByLabel('Terminart *').selectOption('practice');
-  await page.getByLabel('Datum *').fill(tag);
-  await page.getByLabel('Beginn *').fill(zeit());
-  await page.getByRole('button', { name: 'Termin anlegen' }).click();
-  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
-  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-  return page.url().split('/').pop()!;
-}
+const terminAnlegen = (page: Page, tag: string) =>
+  terminUeberOberflaeche(page, { tag, von: zeit() });
 
 test.describe('AKTE-000: Rahmen und Bereiche', () => {
   test('haelt den Kopf stehen und wechselt den Bereich', async ({ page }) => {

@@ -7,7 +7,7 @@ Quelle sind Jannes' Korrekturen an „Verordnung bearbeiten" vom 2026-09-13
 (Planentwurf aus PR #37, am selben Tag auf `main` übernommen). Die
 fachlichen Vorgaben unten stammen von ihm; die Einordnung als eigener Loop
 und die Reihenfolge stehen in [ROADMAP.md](ROADMAP.md). Dieses Dokument
-ersetzt keinen Schritt des [Entwicklungsablaufs](DEVELOPMENT_WORKFLOW.md).
+ersetzt keinen Schritt des [Feature-Loops](GRAPH-ENGINEERING-WORKFLOW.md).
 
 ## Ziel und Feldvorgaben
 
@@ -91,23 +91,10 @@ konkreter Wiedervorlage im bestehenden Plan oder Ideenspeicher fest.
 
 ## Loop und Nachführung
 
-1. Reihenfolge: ROL-EPIC-001 → CAL-018 → **VER-EPIC-002** → ABR-EPIC-001
-   (ROADMAP.md, Etappe 1). Dieser Loop startet als eigener
-   `/feature-loop`-Aufruf.
-2. SPEC erfasst die Vorgaben oben und die Daten- und Rechtemigration.
-   ANN-012, ANN-014, ANN-038 und ANN-042 werden geprüft und mit Nachträgen
-   fortgeschrieben; neue Annahmen bekommen erst dann freie Kennungen.
-3. Die zusammengehörigen Abläufe als vertikale Stories bauen und je Story
-   committen. Die Reviews decken insbesondere Berechtigungen und Migration
-   unabhängig ab (Zweitreview nach `DEVELOPMENT_WORKFLOW.md`).
-4. Alle Phasen aus dem Feature-Loop durchführen. Vorgeschriebene Gates auf
-   dem Endstand ausführen und tatsächliche Ergebnisse berichten. Die
-   geänderte Oberfläche angemeldet auf Telefon, Tablet und Desktop prüfen;
-   fehlende Ausführbarkeit ausdrücklich als offen festhalten.
-5. Abschlussbericht, Abnahmeschritte, ROADMAP-Fortschritt und
-   `fortschritt.json` gemeinsam nachführen. VER-EPIC-001 bleibt historisch
-   abgenommen; VER-EPIC-002 bleibt bis zur eigenen Abnahme davon getrennt.
-   Danach stoppen.
+Ein eigener `/feature-loop`-Aufruf; Reihenfolge nach `ROADMAP.md`, Etappe 1.
+Der SPEC prüft ANN-012, ANN-014, ANN-038 und ANN-042 und schreibt sie fort.
+Die Oberfläche wird angemeldet auf Telefon, Tablet und Desktop geprüft.
+VER-EPIC-001 bleibt abgenommen; VER-EPIC-002 wird eigens abgenommen.
 
 ## Sechs Abnahmefälle
 

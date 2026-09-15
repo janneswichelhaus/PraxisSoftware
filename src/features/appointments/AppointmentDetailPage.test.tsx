@@ -2,44 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
-import type * as RouterModule from 'react-router-dom';
+import type * as RouterModul from 'react-router-dom';
 import type * as DokumentationApi from '@/features/documentation/api';
-import { renderWithProviders, testUser } from '@/test-utils';
+import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
 /** Praxistermin am 12.05.2027, 09:00-10:00 Ortszeit Europe/Berlin (CEST, +02:00). */
-const praxistermin: AppointmentsApi.Appointment = {
+const praxistermin = testAppointment({
   id: TERMIN_ID,
   patient_id: PATIENT_ID,
-  kind: 'treatment',
-  title: null,
-  event_group_id: null,
-  staff_member_id: '55555555-5555-4555-8555-000000000002',
-  location_id: '33333333-3333-4333-8333-000000000001',
-  appointment_type: 'practice',
-  status: 'confirmed',
-  starts_at: '2027-05-12T07:00:00.000Z',
-  ends_at: '2027-05-12T08:00:00.000Z',
-  updated_at: '2027-05-01T10:00:00.000000+00',
-  visit_street: null,
-  visit_house_number: null,
-  visit_postal_code: null,
-  visit_city: null,
-  completed_at: null,
-  cancellation_reason: null,
-  no_show_recorded_at: null,
-  cancellation_received_at: null,
-  fee_basis: null,
-  patient_given_name: 'Berta',
-  patient_family_name: 'Bestand',
-  staff_given_name: 'Anna',
-  staff_family_name: 'Beispiel',
-  location_name: 'Hauptstandort Tuebingen',
-  notification_channels: [],
-  organization_time_zone: 'Europe/Berlin',
-};
+});
 
 const fetchAppointment = vi.fn();
 const cancelAppointment = vi.fn();
@@ -91,13 +65,10 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return {
-    ...actual,
-    useParams: () => ({ appointmentId: TERMIN_ID }),
-  };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useParams: () => ({ appointmentId: TERMIN_ID }),
+}));
 
 const { AppointmentDetailPage } = await import('./AppointmentDetailPage');
 
@@ -165,13 +136,13 @@ describe('AppointmentDetailPage', () => {
       location_name: null,
       visit_street: 'Altstrasse',
       visit_house_number: '1',
-      visit_postal_code: '50667',
-      visit_city: 'Koeln',
+      visit_postal_code: '72070',
+      visit_city: 'Tuebingen',
     });
     rendern();
 
     await screen.findByText('Anna Beispiel');
-    expect(zeile('Anschrift')).toBe('Altstrasse 1, 50667 Koeln');
+    expect(zeile('Anschrift')).toBe('Altstrasse 1, 72070 Tuebingen');
   });
 
   it('zeigt beim Videotermin keinen Ort und den Hinweis zum fehlenden Link', async () => {

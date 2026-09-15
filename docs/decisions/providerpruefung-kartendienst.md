@@ -96,19 +96,8 @@ Reife vor Preis.
 | **TomTom**             | „Data Processing Schedule" mit SCC Modul 2/3; Geltung für Self-Service-Konten nicht belegt                                                                                                                     | „route requests through the appropriate regional servers" — keine ausdrückliche EU-Zusage       | nicht belegt                                                                                                                 | Maps SDK for JavaScript **Public Preview** (0.x, „breaking changes will occur", auf MapLibre) | `travelMode=bicycle` ja                                                                                              | SDK Public Preview, Vorgänger „Deprecated"                | Suchauszüge                                                 |
 | **Google Maps Platform** | **Controller-Controller Data Protection Terms**; keine Art.-28-Bedingungen für die Maps Platform gefunden (Cloud Data Processing Addendum nennt sie nicht — **belegt**, `cloud.google.com`)                | keine EU-Datenresidenz für die Maps Platform belegt                                             | als eigener Verantwortlicher nicht weisungsgebunden                                                                          | ja                                                                               | ja                                                                                                                   | GA                                                        | 2018er-Fassung der C2C-Terms belegt; aktuelle: Suchauszüge  |
 
-Zu Google zwei Richtigstellungen gegenüber ADR-019 Fassung 1:
-
-- Die Controller-Controller-Bedingungen **enthalten Standardvertragsklauseln**
-  (EU Controller-to-Controller, Modul 1, mit Google Ireland Limited als
-  Exporteur laut Auszug der Fassung vom 2021-09-27). Die Aussage, ohne Vertrag
-  gebe es keine SCC-Auffanglösung, war falsch. Was fehlt, ist die
-  **Auftragsverarbeitung** (Modul 2), nicht die Übermittlungsgrundlage.
-  Google LLC ist zudem unter dem EU-U.S. Data Privacy Framework zertifiziert
-  (Auszug `policies.google.com/privacy/frameworks`).
-- Fehlender AVV und §203 sind **zwei Fragen**: Ob eine Übermittlung an einen
-  eigenen Verantwortlichen unter §203 Abs. 3 StGB überhaupt fällt und ob eine
-  Adresse ohne Namen ein „Geheimnis" ist, ist eine Rechtsfrage für B2 — nicht
-  hier zu entscheiden, in beide Richtungen nicht.
+Richtigstellungen zu Google (Standardvertragsklauseln, §203): ADR-019,
+„Korrekturen gegenüber Fassung 1".
 
 ## Teil 3 — Externe Navigation (Handoff-Ziele)
 
@@ -118,10 +107,7 @@ Zu Google zwei Richtigstellungen gegenüber ADR-019 Fassung 1:
 | Apple Maps (iOS 18.4+)     | `https://maps.apple.com/directions?destination=<lat,lon oder Adresse>&mode=cycling` — `destination` nimmt „Latitude and longitude as a comma-separated pair"; Modi `driving`, `walking`, `transit`, `cycling`. Altes Schema: `daddr` mit `dirflg` `d`/`w`/`r` — **kein Fahrrad-Flag**.                     | **belegt (Primärquelle)** — `developer.apple.com` (Unified Map URLs, Map Links) |
 | Android `geo:`-URI         | `geo:lat,lon`, `geo:0,0?q=lat,lon(label)` — die Systemnavigation wählt die App; kein Verkehrsmittel-Parameter.                                                                                                                                                                                          | **belegt (Primärquelle)** — `developer.android.com/guide/components/intents-common` |
 
-Die frühere Zahl „20 Zwischenziele" in ADR-019 Fassung 1 war eine
-Vermischung mit dem Limit der Directions **API** (nicht der URL) und ist
-gestrichen. Die 9/3-Grenze gilt für die URL; die 25-Wegpunkt-Grenze aus Punkt 3
-gilt für PTVs Routing OSM API. Beides sind verschiedene Dinge.
+Zur früheren Zahl „20 Zwischenziele": ADR-019, „Korrekturen gegenüber Fassung 1".
 
 ## Teil 4 — Kosten- und Vertragscheckpoint
 

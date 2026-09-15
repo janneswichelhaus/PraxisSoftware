@@ -16,7 +16,7 @@ import { todayInTimeZone, type EreignisFormValues, type Location } from './api';
  * Die Prüfung hier ist Bedienkomfort. Verbindlich prüfen `create_appointment_event`
  * und `update_appointment_event` (ADR-004).
  */
-export type EreignisFeld = keyof EreignisFormValues;
+type EreignisFeld = keyof EreignisFormValues;
 
 export function EreignisFormFields({
   werte,

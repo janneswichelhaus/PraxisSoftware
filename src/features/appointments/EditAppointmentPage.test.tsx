@@ -3,8 +3,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
-import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+import type * as RouterModul from 'react-router-dom';
+import { renderWithProviders, testAppointment, testPatient, testUser } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -14,36 +14,13 @@ const ORT = '33333333-3333-4333-8333-000000000001';
 const STAND = '2027-05-01T10:00:00.000000+00';
 
 /** Praxistermin am 12.05.2027, 09:00-10:00 Ortszeit Europe/Berlin. */
-const termin: AppointmentsApi.Appointment = {
+const termin = testAppointment({
   id: TERMIN_ID,
   patient_id: PATIENT_ID,
-  kind: 'treatment',
-  title: null,
-  event_group_id: null,
   staff_member_id: STAFF_ANNA,
   location_id: ORT,
-  appointment_type: 'practice',
-  status: 'confirmed',
-  starts_at: '2027-05-12T07:00:00.000Z',
-  ends_at: '2027-05-12T08:00:00.000Z',
   updated_at: STAND,
-  visit_street: null,
-  visit_house_number: null,
-  visit_postal_code: null,
-  visit_city: null,
-  completed_at: null,
-  cancellation_reason: null,
-  no_show_recorded_at: null,
-  cancellation_received_at: null,
-  fee_basis: null,
-  patient_given_name: 'Berta',
-  patient_family_name: 'Bestand',
-  staff_given_name: 'Anna',
-  staff_family_name: 'Beispiel',
-  location_name: 'Hauptstandort Tuebingen',
-  notification_channels: [],
-  organization_time_zone: 'Europe/Berlin',
-};
+});
 
 const patient: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
@@ -56,8 +33,8 @@ const patient: PatientsApi.Patient = testPatient({
   phone: null,
   street: 'Altstrasse',
   house_number: '1',
-  postal_code: '50667',
-  city: 'Koeln',
+  postal_code: '72070',
+  city: 'Tuebingen',
 });
 
 const fetchAppointment = vi.fn();
@@ -87,7 +64,7 @@ vi.mock('./api', async (importOriginal) => {
 });
 
 vi.mock('react-router-dom', async (importOriginal) => ({
-  ...(await importOriginal<typeof RouterModule>()),
+  ...(await importOriginal<typeof RouterModul>()),
   useNavigate: () => navigate,
   useParams: () => ({ appointmentId: TERMIN_ID }),
 }));
@@ -193,7 +170,7 @@ describe('EditAppointmentPage', () => {
     await user.selectOptions(screen.getByLabelText('Terminart *'), 'home_visit');
 
     expect(await screen.findByText('Adresse des Hausbesuchs')).toBeInTheDocument();
-    expect(screen.getByText('Altstrasse 1, 50667 Koeln')).toBeInTheDocument();
+    expect(screen.getByText('Altstrasse 1, 72070 Tuebingen')).toBeInTheDocument();
     expect(screen.queryByLabelText('Standort *')).not.toBeInTheDocument();
   });
 
@@ -214,7 +191,7 @@ describe('EditAppointmentPage', () => {
     // Der Snapshot bleibt - er haelt fest, wohin an diesem Tag gefahren wird.
     expect(await screen.findByText('Festgehaltene Anschrift')).toBeInTheDocument();
     expect(screen.getByText('Sicherungsweg 5, 12345 Alteswohnort')).toBeInTheDocument();
-    expect(screen.queryByText('Altstrasse 1, 50667 Koeln')).not.toBeInTheDocument();
+    expect(screen.queryByText('Altstrasse 1, 72070 Tuebingen')).not.toBeInTheDocument();
   });
 
   it('blendet beim Wechsel zu Video Standort und Adresse aus', async () => {

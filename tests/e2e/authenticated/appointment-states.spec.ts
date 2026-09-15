@@ -5,10 +5,11 @@ import {
   PATIENTEN,
   TAGESFENSTER,
   anmelden,
-  arbeitszeitBestaetigen,
   detailWert,
   tagImFenster,
   terminKachel,
+  terminUeberOberflaeche,
+  zeitImLauf,
 } from './helpers';
 
 /**
@@ -38,37 +39,12 @@ function gestern(): string {
   return d.toISOString().slice(0, 10);
 }
 
-function zeit(minutenAbAcht: number): string {
-  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
-  const gesamt = 8 * 60 + (LAUF % 12) * 5 + minutenAbAcht;
-  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
-  const m = String(gesamt % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
+const zeit = (minutenAbAcht: number) => zeitImLauf(LAUF, minutenAbAcht);
 
-async function terminAnlegen(
+const terminAnlegen = (
   page: Page,
   opts: { tag: string; von: string; bis: string; patient?: string },
-): Promise<string> {
-  await page.goto(`/patienten/${opts.patient ?? PATIENTEN.max}/termine/neu`);
-  await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
-  await page.getByLabel('Terminart *').selectOption('practice');
-  // Bei genau einem Standort waehlt das Formular ihn vor - aber erst, wenn die
-  // Standorte geladen sind (`NewAppointmentPage`, useEffect auf die Abfrage).
-  // Wer vorher abschickt, schickt ein leeres Pflichtfeld ab und bleibt auf dem
-  // Formular stehen. Auf einem belasteten Runner ist genau das passiert;
-  // derselbe Riegel steht in appointment-workflows.spec.ts.
-  await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
-  await page.getByLabel('Datum *').fill(opts.tag);
-  await page.getByLabel('Beginn *').fill(opts.von);
-  // Das Ende ist seit CAL-010a eine Ableitung aus dem Beginn (8.1) und kein
-  // Feld mehr. Geprueft wird es trotzdem - sonst waere `bis` nur noch Zierde.
-  await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
-  await page.getByRole('button', { name: 'Termin anlegen' }).click();
-  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
-  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-  return page.url().split('/').pop()!;
-}
+) => terminUeberOberflaeche(page, { ...opts, standortAbwarten: true });
 
 test.describe('CAL-008a: Der Zustand heisst bestaetigt', () => {
   test('legt einen Termin als bestaetigt an und filtert im Kalender danach', async ({ page }) => {

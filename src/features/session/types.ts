@@ -18,7 +18,7 @@ export const userProfileSchema = z.object({
    */
   is_active: z.boolean(),
 });
-export type UserProfile = z.infer<typeof userProfileSchema>;
+type UserProfile = z.infer<typeof userProfileSchema>;
 
 export interface CurrentUser {
   profile: UserProfile;

@@ -28,13 +28,13 @@ import {
  * ausgegraut und nicht gezählt. Diese Datei blendet nichts aus.
  */
 
-export function dateienSchluessel(patientId: string, prescriptionId?: string | null) {
+function dateienSchluessel(patientId: string, prescriptionId?: string | null) {
   return prescriptionId
     ? ['patient-files', patientId, prescriptionId]
     : ['patient-files', patientId];
 }
 
-export interface DateienDerAkte {
+interface DateienDerAkte {
   dateien: PatientFile[];
   isPending: boolean;
   isError: boolean;

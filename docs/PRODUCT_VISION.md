@@ -11,30 +11,10 @@
 > Verbindlich sind ausschließlich `PROJECT_PRINCIPLES.md`, die angenommenen
 > ADRs in `docs/adr/` und die jeweils konkrete Feature-Spezifikation.
 
-## Dokumentenhierarchie
-
-| Rang | Dokument                       | Rolle                                                             |
-| ---- | ------------------------------ | ----------------------------------------------------------------- |
-| 1    | `../PROJECT_PRINCIPLES.md`     | Produkt-, Sicherheits- und Datenschutzprinzipien. Verbindlich.    |
-| 2    | `adr/`                         | Angenommene Architekturentscheidungen. Verbindlich.               |
-| 3    | konkrete Feature-Spezifikation | Legt den Scope einer Aufgabe fest. Verbindlich für diese Aufgabe. |
-| 4    | `decisions/ASSUMPTIONS.md`     | Begründete, vorläufige Annahmen. Gelten bis zur Bestätigung.      |
-| 5    | **dieses Dokument**            | Orientierung. **Nicht normativ.**                                 |
-| 6    | `product/IDEENSPEICHER.md`     | Ideen und Rohmaterial. **Nicht normativ.**                        |
-
-Widerspricht dieses Dokument einem der Ränge 1 bis 4, gilt der höhere Rang —
-ohne Diskussion und ohne Auslegung zugunsten der Vision.
-
-Der Ideenspeicher auf Rang 6 steht noch unter diesem Dokument. Er sammelt, was
-Jannes sich für die Plattform vorstellt, bevor daraus überhaupt ein Zielbild
-geworden ist. Er entscheidet nichts und begründet nichts.
-
-Widerspricht ein ADR den Prinzipien, ist das ein Fehler und wird gemeldet,
-nicht stillschweigend aufgelöst (`PROJECT_PRINCIPLES.md` §21).
-
-Was noch **nicht** entschieden ist, steht in `decisions/OPEN_DECISIONS.md`.
-Jenes Dokument hat keinen Rang und entscheidet nichts; dieses hier auch
-nicht.
+Dieses Dokument steht auf Rang 5 der Rangfolge in `PROJECT_PRINCIPLES.md` §21:
+Widerspricht es einem höheren Rang, gilt der höhere — ohne Auslegung zugunsten
+der Vision. Was noch **nicht** entschieden ist, steht in
+`decisions/OPEN_DECISIONS.md`.
 
 ---
 
@@ -46,7 +26,7 @@ Physiotherapiepraxis mit starkem Hausbesuchs- und Mobile-Fokus.
 Das Produkt wird zunächst **ausschließlich für die eigene Praxis** entwickelt.
 Sie heißt seit dem 2026-09-10 **Own Motion** — „Physiotherapie per Lastenrad",
 Tübingen. Marke, Farben und die Regeln ihrer Verwendung stehen in
-`../marke/README.md`; die Anwendung selbst ist noch nicht umgebrandet.
+`../marke/README.md`; die Anwendung trägt sie seit MARKE-001 (2026-09-11).
 
 Eine spätere Erweiterung auf mehrere Standorte, mehrere Organisationen oder
 andere Praxen soll architektonisch nicht unnötig verbaut werden. Daraus
@@ -95,15 +75,10 @@ Präzisierung vom 06.09.2026 (Jannes):
   Vorgängersystem und keine Bestandsdaten; die Software begleitet die Praxis
   vom ersten Tag an (`development/ROADMAP.md`, Meilensteine M4 bis M6).
 - **Die Tour liegt in der Anwendung auf der Karte; die Navigation übernimmt
-  das Gerät.** Therapeut:innen sehen Patient:innen und Tagesroute auf einer
-  interaktiven Karte innerhalb der Praxissoftware, mit Fahrradroute und
-  Fahrzeiten im Kalender; ein Tap auf „Navigation starten" öffnet die
-  Navigations-App des Geräts (Google Maps, Apple Maps). Convenience hat hohe
-  Priorität (Jannes, 2026-09-08); Datenschutz und §203 werden dafür nicht
-  umgangen, sondern der Anbieter danach gewählt — Stand: PTV Developer als
-  Kandidat, produktive Freigabe am Vertragsgate (`adr/ADR-019-map-service.md`
-  Fassung 2; `product/ideen/10-praxisverwaltung.md`, `IDEA-PRX-029` und
-  `-030`; `decisions/OPEN_DECISIONS.md` B7).
+  das Gerät.** Tagesroute, Fahrradroute und Fahrzeiten liegen in der
+  Praxissoftware; „Navigation starten" öffnet die Navigations-App des Geräts.
+  Datenschutz und §203 werden dafür nicht umgangen, sondern bestimmen den
+  Anbieter (`adr/ADR-019-map-service.md`).
 - **Die Praxissoftware ist nur ein Teilbereich.** Dazu kommt eine Plattform
   für Patient:innen und für die Kund:innen von Jannes' Personal Training
   (§4).
@@ -130,12 +105,7 @@ Das langfristige Zielbild umfasst:
 - Arbeitszeit und Überstunden
 - Erstattungen und Belege
 - Fahrradflotte, Wartung und Pannenmanagement
-- Plattform für Patient:innen und für Kund:innen des Personal Trainings:
-  Trainingspläne, Check-ins, Fortschritt, Assessments, Gewohnheiten, Chat
-  (Präzisierung vom 06.09.2026; Themenliste in
-  `product/ideen/referenz-navigation.md`). Ein Ernährungsprotokoll ist mit
-  B9 Punkt 6 (2026-09-08) vorerst ausgeschlossen — berufsrechtliche Frage,
-  keine Softwarefrage.
+- Plattform für Patient:innen und für Kund:innen des Personal Trainings (§4)
 
 **Diese Liste ist eine langfristige Orientierung.** Sie trifft keine Aussage
 über Reihenfolge, Priorität oder bereits freigegebenen Scope. Kein Eintrag
@@ -189,18 +159,10 @@ zugehörigen Fragen zu Identitätsprüfung und Vertretung sind in
 `decisions/OPEN_DECISIONS.md` als offen geführt.
 
 Dieselbe Plattform ist das Zielbild für die **Kund:innen des Personal
-Trainings** — nach Abschluss einer Therapie und auch ohne vorherige
-Heilbehandlung (Präzisierung vom 06.09.2026): Trainingspläne, Check-ins,
-Fortschritt, Assessments, Gewohnheiten, Chat — ein Ernährungsprotokoll erst
-nach einer neuen Entscheidung (B9 Punkt 6: vorerst nicht). Vorlage
-für den Umfang ist der Funktionsumfang einer fremden Coaching-Software
-(`product/ideen/referenz-navigation.md`); das Personal Training beginnt
-ebenfalls am 01.07.2027, die Plattform dafür folgt in Stufe 3. Für sie
-gelten ein anderer Vertrag, eine andere Rechtsgrundlage, Umsatzsteuer und
-Aufbewahrung (`decisions/OPEN_DECISIONS.md` B9); `PROJECT_PRINCIPLES.md` §1
-nennt bisher nur die Physiotherapiepraxis und wäre nach §21 zu ergänzen.
-Reihenfolge und Voraussetzungen stehen in `development/ROADMAP.md`, Stufe 3.
-Auch das ist **nur eine Produktoption und kein freigegebener Scope**.
+Trainings** — nach einer Therapie oder ohne vorherige Heilbehandlung:
+Trainingspläne, Check-ins, Fortschritt, Assessments, Gewohnheiten, Chat; kein
+Ernährungsprotokoll (B9 Punkt 6). Reihenfolge, Voraussetzungen und
+Rechtsrahmen: `development/ROADMAP.md`, Stufe 3. **Nur eine Produktoption.**
 
 ## 5. Digitaler Intake und Assessments
 

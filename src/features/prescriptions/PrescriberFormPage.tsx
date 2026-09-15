@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { vorgangAusPfad } from '@/lib/abstecher';
 import { useSession } from '@/features/auth/sessionContext';
 import { PrescriberFormFields } from './PrescriberFormFields';
 import {
@@ -16,7 +17,6 @@ import {
   prescriberSchemaForm,
   prescriberToFormValues,
   updatePrescriber,
-  vorgangAusPfad,
   type Prescriber,
   type PrescriberFeld,
   type PrescriberValues,

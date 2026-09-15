@@ -15,10 +15,10 @@ const envSchema = z.object({
   supabaseAnonKey: z.string().min(1, 'VITE_SUPABASE_ANON_KEY fehlt.'),
 });
 
-export type AppEnv = z.infer<typeof envSchema>;
+type AppEnv = z.infer<typeof envSchema>;
 
 /** Nur die Felder, die diese Anwendung tatsächlich liest. */
-export interface EnvSource {
+interface EnvSource {
   VITE_SUPABASE_URL?: string | undefined;
   VITE_SUPABASE_ANON_KEY?: string | undefined;
 }

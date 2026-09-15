@@ -13,6 +13,7 @@ import {
   appointmentStatusTon,
   appointmentTypeLabels,
   fetchAppointments,
+  formatLocalTime,
   formatLocalTimeRange,
   terminBezeichnung,
   staffName,
@@ -51,10 +52,6 @@ import { Tageskarte } from './Tagesliste';
  * darunter bleibt die Kalenderabfrage - er braucht keine Adressen.
  */
 
-function fruehesteZuerst(a: CalendarEntry, b: CalendarEntry): number {
-  return a.starts_at.localeCompare(b.starts_at);
-}
-
 /**
  * Kurze Ortsangabe eines Termins im Tagesplan des Teams.
  *
@@ -77,15 +74,6 @@ function greeting(now = new Date()): string {
 
 function firstName(displayName: string): string {
   return displayName.split(' ')[0] ?? displayName;
-}
-
-/** Uhrzeit des zuletzt erfolgreichen Ladens, in der Zeitzone der Praxis. */
-function standVon(zeitpunkt: number, zeitzone: string): string {
-  return new Intl.DateTimeFormat('de-DE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: zeitzone,
-  }).format(new Date(zeitpunkt));
 }
 
 function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: string }) {
@@ -180,8 +168,8 @@ function MeineTagesliste({
       {isError ? (
         <Statusmeldung ton="warnung" className="mt-4">
           Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der Stand von{' '}
-          {standVon(dataUpdatedAt, zeitzone)} Uhr – er kann veraltet sein. Geschrieben wird davon
-          nichts.
+          {formatLocalTime(new Date(dataUpdatedAt).toISOString(), zeitzone)} Uhr – er kann veraltet
+          sein. Geschrieben wird davon nichts.
         </Statusmeldung>
       ) : null}
 
@@ -307,7 +295,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
-  const alleHeute = [...(termine ?? [])].sort(fruehesteZuerst);
+  const alleHeute = [...(termine ?? [])].sort(nachUhrzeit);
 
   if (!praxisrolle) {
     return (

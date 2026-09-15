@@ -4,16 +4,12 @@ node_modules/
 
 # Build output
 dist/
-dist-ssr/
-build/
 *.tsbuildinfo
 
 # Test / tooling output
 coverage/
 playwright-report/
 test-results/
-blob-report/
-.vitest/
 
 # Environment / secrets  -- siehe PROJECT_PRINCIPLES.md 3.3
 .env
@@ -27,23 +23,23 @@ secrets/
 .secrets
 
 # Supabase lokal
-supabase/.branches/
 supabase/.temp/
+supabase/.branches/
 supabase/.env
 
 # Lokale Test-Datenbank (scripts/test-db.sh)
 .tmp/
 
+# Lokale Werkzeugeinstellungen
+.claude/settings.local.json
+
 # Editor / OS
 .DS_Store
 Thumbs.db
 .idea/
-.vscode/*
-!.vscode/extensions.json
 *.swp
 
 # Logs -- siehe ADR-011
 *.log
 npm-debug.log*
 pnpm-debug.log*
-logs/

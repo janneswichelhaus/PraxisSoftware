@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
-import type * as RouterModule from 'react-router-dom';
+import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -24,8 +24,8 @@ const patientMitAdresse: PatientsApi.Patient = testPatient({
   phone: null,
   street: 'Altstrasse',
   house_number: '1',
-  postal_code: '50667',
-  city: 'Koeln',
+  postal_code: '72070',
+  city: 'Tuebingen',
 });
 
 const fetchPatient = vi.fn();
@@ -54,14 +54,11 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return {
-    ...actual,
-    useNavigate: () => navigate,
-    useParams: () => ({ patientId: PATIENT_ID }),
-  };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+  useParams: () => ({ patientId: PATIENT_ID }),
+}));
 
 const { NewAppointmentPage } = await import('./NewAppointmentPage');
 const { AusserhalbArbeitszeitError } = await import('./api');
@@ -267,7 +264,7 @@ describe('NewAppointmentPage', () => {
     await user.selectOptions(screen.getByLabelText('Terminart *'), 'home_visit');
 
     expect(await screen.findByText('Adresse des Hausbesuchs')).toBeInTheDocument();
-    expect(screen.getByText('Altstrasse 1, 50667 Koeln')).toBeInTheDocument();
+    expect(screen.getByText('Altstrasse 1, 72070 Tuebingen')).toBeInTheDocument();
     expect(screen.queryByLabelText('Standort *')).not.toBeInTheDocument();
   });
 

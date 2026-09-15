@@ -53,7 +53,7 @@ const LANGER_DRUCK_MS = 450;
  */
 const RUHE_TOLERANZ = 8;
 
-export interface ZiehZiel {
+interface ZiehZiel {
   /** Kennung der Zielspalte: behandelnde Person (Tag) oder Datum (Woche). */
   spalteId: string;
   /** Neuer Beginn als Minuten seit Mitternacht der Praxiszeitzone. */
@@ -78,7 +78,7 @@ interface Start {
   wartetAufLangenDruck: boolean;
 }
 
-export interface ZiehOptionen {
+interface ZiehOptionen {
   /** Oberer Rand des Zeitfensters in Minuten seit Mitternacht. */
   fensterVon: number;
   fensterBis: number;
@@ -98,7 +98,7 @@ export interface ZiehOptionen {
   onAblegen: (zustand: ZiehZustand) => void;
 }
 
-export interface TerminZiehen {
+interface TerminZiehen {
   /** Aktuelle Vorschau, solange gezogen wird. */
   vorschau: ZiehZustand | null;
   /**

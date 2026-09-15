@@ -11,37 +11,13 @@ import {
   todayInTimeZone,
   type Appointment,
 } from './api';
+import { testAppointment } from '@/test-utils';
 
-const basis: Appointment = {
-  id: '77777777-7777-4777-8777-000000000001',
-  patient_id: '66666666-6666-4666-8666-000000000001',
-  kind: 'treatment',
-  title: null,
-  event_group_id: null,
-  staff_member_id: '55555555-5555-4555-8555-000000000002',
+const basis = testAppointment({
   location_id: null,
   appointment_type: 'video',
-  status: 'confirmed',
-  starts_at: '2027-05-12T07:00:00.000Z',
-  ends_at: '2027-05-12T08:00:00.000Z',
-  updated_at: '2027-05-01T10:00:00.000000+00',
-  visit_street: null,
-  visit_house_number: null,
-  visit_postal_code: null,
-  visit_city: null,
-  completed_at: null,
-  cancellation_reason: null,
-  no_show_recorded_at: null,
-  cancellation_received_at: null,
-  fee_basis: null,
-  patient_given_name: 'Berta',
-  patient_family_name: 'Bestand',
-  staff_given_name: 'Anna',
-  staff_family_name: 'Beispiel',
   location_name: null,
-  notification_channels: [],
-  organization_time_zone: 'Europe/Berlin',
-};
+});
 
 describe('Darstellung in der Praxiszeitzone', () => {
   it('zeigt eine Sommerzeit-Uhrzeit als Ortszeit (CEST, +02:00)', () => {
@@ -93,10 +69,10 @@ describe('Ortsangabe je Terminart', () => {
         appointment_type: 'home_visit',
         visit_street: 'Altstrasse',
         visit_house_number: '1',
-        visit_postal_code: '50667',
-        visit_city: 'Koeln',
+        visit_postal_code: '72070',
+        visit_city: 'Tuebingen',
       }),
-    ).toBe('Altstrasse 1, 50667 Koeln');
+    ).toBe('Altstrasse 1, 72070 Tuebingen');
   });
 
   it('nennt beim Videotermin keinen Ort', () => {

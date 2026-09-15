@@ -33,17 +33,6 @@ Stammdaten (PAT-005, 2026-09-07), in der Tagesliste des Hausbesuchstags
 (`../../development/ARBEITSBEREICHE.md`). Bevorzugte Zeiten sind kein Feld —
 das wäre `IDEA-PRX-003`.
 
-**Idee.** Ein eigenes Feld in den Stammdaten: Etage, Klingelname, „Schlüssel
-bei Nachbarin", „Hund", Rad-Abstellplatz, bevorzugte Zeiten. Sichtbar in der
-Tagesliste und am Termin, nicht nur in der Akte.
-
-**Warum.** Es gibt keine Rezeption, die die Tür öffnet. Der erste Besuch einer
-Vertretung scheitert sonst am Klingelschild. Kein Wettbewerber hat das Feld,
-weil ihre Praxen Räume haben.
-
-**Vorsicht.** Organisatorisch, keine Gesundheitsdaten — aber Freitext, der
-nie in Logs landen darf (ADR-011).
-
 ---
 
 ### IDEA-PRX-002 — Fahrpuffer als Praxisregel, ohne Kartendienst
@@ -61,47 +50,6 @@ hier vorgeschlagene **Mechanismus ist durch E12 Punkt 3 und 4 (2026-09-12)
 überholt**: kein pauschaler Mindestabstand, keine von Hand gepflegten
 Fahrminuten; der Fahrpuffer kommt erst mit MAP-006 aus dem Kartendienst.
 CAL-010b ist als eigene Story entfallen. Der Text bleibt lesbar.
-
-**Wohin die Idee gegangen ist.** Jannes hat am 2026-09-08 das Terminfenster
-entschieden — 60 oder 45 Minuten je Behandlungstermin (Fassung 0.9,
-2026-09-12) einschließlich Dokumentation, Beginn weiter frei im
-5-Minuten-Raster, Fahrzeit zusätzlich zwischen den Terminfenstern, früheste
-Folgezeit auf dem ersten Rasterpunkt auf oder nach Ende plus Fahrzeit.
-**Verbindlich ist allein `PROJECT_PRINCIPLES.md` §8.1.** Dieser Eintrag regelt
-nichts und gibt den Wortlaut bewusst nicht wieder; wer die Regel braucht,
-liest §8.1.
-
-**Idee (ursprünglicher Vorschlag, durch E12 überholt).** Eine `owner`-Einstellung
-„Mindestabstand zwischen zwei Hausbesuchen an verschiedenen Adressen" in
-Minuten, dazu optional von Hand gepflegte Fahrminuten je Patient:in ab Depot.
-Der Kalender warnt beim Anlegen und beim Ziehen, wenn der Abstand
-unterschritten wird.
-
-**Was daran nicht entschieden ist.** Genau dieser Mechanismus — pauschaler
-Mindestabstand, gepflegte Fahrminuten, Warnung statt Sperre. §8.1 sagt, **wie**
-aus einer Fahrzeit die früheste Folgezeit wird, nicht **woher** die Fahrzeit
-kommt und was bei Unterschreitung passiert. Das steht als **E12** in
-`../../decisions/OPEN_DECISIONS.md` und wird dort entschieden, nicht hier.
-
-**Warum.** §9 verlangt, dass die Anwendung erkennt, ob zwei Termine zeitlich
-erreichbar sind; §8 nennt Behandlungsdauer und Fahrzeit als harte Constraints
-der Terminplanung. MD Therapie plant Fahrzeiten automatisch, THEORG
-kontrolliert Abstände zwischen Terminen. Seit dem 2026-09-08 (MAP-001, ADR-019
-Fassung 2) ist PTV Developer Kandidat für den Kartendienst, noch nicht
-freigegeben; Fahrzeiten aus dem Dienst kommen mit MAP-006 (`IDEA-PRX-032`).
-Bis dahin müsste die Zahl aus der Praxis kommen — genau das ist die offene
-Frage aus E12.
-
-**Umsetzungsstand.** Raster und Terminfenster sind gebaut (CAL-005, CAL-010a,
-CAL-015b), der Fahrpuffer nicht — Stand und Kennungen in
-`../../development/ARBEITSBEREICHE.md`, die Rechenregel und ihr Testfall in
-MAP-006 (`../../development/ROADMAP.md`, Etappe T).
-
-**Vorsicht.** Deterministisch (§6.2), keine Optimierung, keine Verschiebung
-bestätigter Termine (§8). Die Aufrundungsregel ist ein eigenständiges, leicht
-falsch zu implementierendes Detail — naheliegend wäre fälschlich Abrunden —
-und gehört mit dem Beispiel aus §8.1 als Testfall in `pnpm test:db`, sobald
-MAP-006 den Fahrpuffer baut (E12).
 
 ---
 
@@ -151,18 +99,6 @@ ADR-006 Punkt 4 ausgeschlossen.
 (ADR-018: nur beschrieben), die Übergabe an eine Kollegin und ein
 gespeicherter Erledigt-Haken — Letzteres ist `IDEA-PRX-041`.
 
-**Idee.** Ein Platten um 8:10 Uhr trifft sechs Haushalte ohne Wartezimmer.
-Eine Aktion „Tag umplanen": alle Termine einer Person eines Tages auf
-„abgesagt" oder „vorgemerkt" setzen, dazu eine Anrufliste mit Name, Nummer,
-Uhrzeit und Erledigt-Haken; optional Übergabe an eine Kollegin.
-
-**Warum.** Heute sechsmal Termin öffnen, absagen, bestätigen und die Nummern
-zusammensuchen. Optica benachrichtigt bei Therapeutenausfall automatisch —
-das ist bei uns B15; die Anrufliste geht sofort.
-
-**Vorsicht.** Absage ist Statuswechsel und wird auditiert; die Anrufliste ist
-organisatorisch (§4.3).
-
 ---
 
 ### IDEA-PRX-005 — Anrufliste für morgen
@@ -203,21 +139,6 @@ Mitteilungsvermerk am Termin (CAL-012) — Stand in
 `../../development/ARBEITSBEREICHE.md`. Der PDF-Teil und die Tourenliste
 bleiben `vorschlag`.
 
-**Offen geblieben (weiter nur Vorschlag).** Das PDF als Datei (hängt an B14,
-dem PDF-Weg der Rechnung) · der Versand per **SMS** (bleibt an B15; Messenger
-ist ausgeschlossen) · echter Versand **aus der Anwendung** statt eines
-Handoffs, also mit Dienstleister und Zustellstatus · die **Tages- oder
-Tourenliste je Therapeut:in** zum Drucken, die E2 mit abdecken würde — sie ist
-ein anderer Ausdruck mit anderem Empfänger und anderer Datenlage.
-
-**Warum.** Hochbetagte Patient:innen ohne Portal; heute schreibt die
-Therapeutin Zettel per Hand. THEORG verkauft dafür sogar Papierblöcke.
-
-**Vorsicht.** Das Dokument enthält Termine, also ein Gesundheitsdatum;
-Ausgabe nur an die Person selbst. Für die E-Mail gilt zusätzlich, was ANN-041
-festhält: nur auf ausdrücklichen Wunsch, Inhalt auf das Organisatorische
-begrenzt, Betreff ohne Aussage.
-
 ---
 
 ### IDEA-PRX-007 — Folgetermin und Schnellanlage
@@ -232,14 +153,6 @@ begrenzt, Betreff ohne Aussage.
 heute" (UX-003) sowie Tap auf freie Zeit im Kalender mit Patientensuche
 (UX-005); das Ende kommt aus dem Terminfenster, nicht aus der Dauer des
 Ausgangstermins (CAL-010a) — `../../development/ARBEITSBEREICHE.md`.
-
-**Idee.** Am Termin ein Knopf „Folgetermin": dieselbe Person, dieselbe Art,
-dieselbe Dauer, eine Woche später zur gleichen Zeit — anpassbar mit einem
-Tap. Im Kalender Tap auf freie Zeit → Patientensuche. Vorbelegung überall:
-Hausbesuch, angemeldete Person, heute.
-
-**Warum.** Der häufigste Einzelvorgang am Ende jedes Besuchs ist heute der
-teuerste der Anwendung (acht Interaktionen über drei Seiten).
 
 ---
 
@@ -317,14 +230,6 @@ Vertretungszugriff auf die Akte ist etwas anderes (B5).
 UX-008 gebaut: persönlich oder praxisweit, kein Patientenbezug, keine
 Platzhalter, kein Sprachmodell (ANN-020; `../../development/ARBEITSBEREICHE.md`).
 
-**Idee.** Bausteine je Therapeut:in und je Praxis, per Tap in den Freitext
-eingefügt; keine Variablen aus der Akte in der ersten Stufe; kein
-Sprachmodell.
-
-**Warum.** Am Telefon getippte Freitexte sind der Zeitfresser Nr. 1;
-Nutzer:innen wollen „digital direkt während der Behandlung dokumentieren".
-Deterministisch, ohne Patientenbezug in den Bausteinen, ADR-006 unberührt.
-
 ---
 
 ### IDEA-PRX-012 — Zahlungserinnerung als Dokument
@@ -382,14 +287,6 @@ UX-011 gebaut: Die zuletzt geladene Tagesliste bleibt im Funkloch lesbar und
 als älterer Stand gekennzeichnet — kein Offline-Modus, kein Service Worker,
 keine Akte offline; Feldliste und Vorhaltedauer stehen als ANN-021
 (`../../development/ARBEITSBEREICHE.md`).
-
-**Idee.** Die heute geladenen eigenen Termine mit Adresse und Zugangshinweis
-bleiben im Speicher der Seite lesbar, klar markiert „Stand von 07:52"; am
-Tagesende verworfen. Kein Service Worker, keine Akte offline.
-
-**Warum.** ADR-001 nennt „Tagesplan" und „minimal notwendige
-Hausbesuchsdaten" ausdrücklich; E2 liefert nur Papier. thevea speichert den
-Kalender lesend auf dem Gerät, iPrax alles.
 
 ---
 
@@ -510,14 +407,6 @@ ab drei Zeichen, umlautunempfindlich, RLS-gestützt (UX-004; seit UX-012a mit
 unterscheidbarem Fehlerzustand); der Weg vom Kalender zur Akte über den Tap
 auf freie Zeit (UX-005) — `../../development/ARBEITSBEREICHE.md`. Das
 „Neu"-Menü und Tastenkürzel am Rechner bleiben `vorschlag`.
-
-**Idee.** Ein Suchfeld, das von jeder Seite erreichbar ist und nach drei
-Buchstaben Personen findet (serverseitig, RLS, umlautunempfindlich); ein
-„Neu"-Menü für Termin, Patient:in, später Rechnung; Tastenkürzel am
-Rechner.
-
-**Warum.** Die Patientenliste lädt heute alle Datensätze und filtert im
-Browser; von Kalender und Übersicht gibt es keinen Weg zur Akte ohne Umweg.
 
 ---
 
@@ -660,13 +549,6 @@ Diktat über die **Systemtastatur** ist ein Datenfluss an den Betreiber des
 Geräts und gehört in die Endgeräte-Richtlinie (Roadmap G14/G16), nicht in
 eine Idee.
 
-**Idee.** Diktat über die Systemtastatur des Geräts oder einen geprüften
-Dienst; Nutzer:innen berichten, dass Fachwörter schlecht erkannt werden.
-
-**Vorsicht.** Das Systemdiktat sendet die Sprache an den Gerätehersteller —
-ein Datenfluss mit Gesundheitsdaten, der vor der Nutzung bewertet werden muss
-(§3.5, ADR-002). Kein Loop entscheidet das.
-
 ---
 
 ### IDEA-PRX-029 — Tagesroute auf der Karte
@@ -675,7 +557,7 @@ ein Datenfluss mit Gesundheitsdaten, der vor der Nutzung bewertet werden muss
 |---|---|
 | Status | überführt → ADR-019 / MAP-002 bis MAP-006 |
 | Quelle | Jannes, 2026-09-06 (Lastenrad-Hausbesuchskonzept) |
-| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019 Fassung 2 (E-20 angenommen 2026-09-13); MAP-002 bis MAP-006 (Roadmap Etappe T); E-16 überholt, siehe Nachtrag |
+| Berührt | §9, §18, §20, §3.5; ADR-002, ADR-007; B7; ADR-019 Fassung 2 (E-20 angenommen 2026-09-13); MAP-002 bis MAP-006 (Roadmap Etappe T); E-16 überholt |
 
 **Stand.** Bestätigt durch Jannes am 2026-09-06 („Diese Entscheidung steht
 fest"), am 2026-09-08 als ADR-019 Fassung 2 gefasst (MapLibre, serverseitiger
@@ -683,37 +565,6 @@ Adapter, PTV Developer als Kandidat; E-16 überholt) und am 2026-09-13 mit
 **E-20** angenommen. Umsetzung als MAP-002 bis MAP-006
 (`../../development/MAP-LOOPS.md`); produktive Freigabe am Vertrags-/§203-/
 DSFA-Gate aus ADR-019 Punkt 9. Noch nichts davon ist gebaut.
-
-**Idee.** Eine Karte zeigt die gesamte Route des Tages: alle Wege zwischen
-Startort, Hausbesuchen und Endort in Terminreihenfolge — auf einmal, oder ein
-einzelner Weg als Vorschau. In „Übersicht" und unter Touren; aus jeder Ansicht
-führt ein Link zur Navigation (`IDEA-PRX-030`).
-
-**Warum.** Das Lastenrad-Hausbesuchskonzept lebt von der Route: Reihenfolge,
-Länge und Anschluss der Wege bestimmen den Tag, nicht die Raumbelegung. Kein
-Wettbewerber zeigt das, weil ihre Praxen Räume haben; MD Therapie plant
-Fahrzeiten, zeigt aber keine Radroute.
-
-**Vorsicht.** Beim Öffnen der Karte gehen alle Adressen des Tages in einer
-Anfrage an den Kartenanbieter — deshalb Adressen ohne Namen und ohne Uhrzeit,
-Karte nur auf ausdrückliche Aktion laden, kein Standort der Person, kein
-Verlauf, keine Speicherung von Routing-Rohdaten (§18, §20). Der persönliche
-Startort einer Therapeutin ist ein Beschäftigtendatum (`IDEA-PRX-017`). Ein
-privates Google-Konto auf dem Diensttelefon speichert Wege — das regelt die
-Endgeräte-Richtlinie.
-
-**Entschieden 2026-09-06 (E-16):** Datenweg über die Google Maps Embed API,
-derselbe Anbieter wie der genehmigte Link; die zuständige
-Datenschutz-Fachkraft hat genehmigt. Namen erscheinen nie auf der Karte.
-Dokumentation in ADR-019.
-
-**Offen.** Nur noch die Höchstzahl der Zwischenziele je Anfrage
-(Anbieterdokumentation); bei Überschreitung wird der Tag in Abschnitte geteilt.
-
-**Nachtrag 2026-09-08 (MAP-001):** Die Embed API ist überholt — Google bietet
-für die Maps Platform keinen AVV. ADR-019 Fassung 2 setzt auf MapLibre in der
-Anwendung mit PTV Developer als Kandidat; Umsetzung in MAP-002 bis MAP-006
-(`development/MAP-LOOPS.md`). Die Idee selbst bleibt bestätigt.
 
 ---
 
@@ -731,28 +582,6 @@ Tagesliste und Termin übergibt nur die Anschrift ohne Namen, im Fahrradmodus,
 erst beim Tippen (ADR-019 Punkt 20, ANN-018;
 `../../development/ARBEITSBEREICHE.md`). Apple Maps und `geo:` kommen mit
 MAP-005; der Tages-Link mit allen Zielen ist nicht gebaut.
-
-**Idee.** Aus jeder Adresse in Tagesliste, Termin und Karte führt ein Link,
-der Google Maps mit dem Ziel im Fahrradmodus öffnet; für den ganzen Tag ein
-Link mit allen Zielen in Terminreihenfolge. Nichts wird in der Anwendung
-nachgebaut — die Navigation macht die App, die auf dem Telefon schon ist
-(§2.1, §3.4).
-
-**Warum.** THEORG 2GO und MD Therapie übergeben Adressen an die Karten-App.
-Auf dem Rad ist die Sprachnavigation der einzige praktikable Weg; die
-Tagesliste ohne Adresse und ohne Link war Bruchstelle Nr. 1 im Produktreview.
-
-**Vorsicht.** Der Link trägt die Adresse — nie den Namen, nie die Uhrzeit, nie
-die Verordnung. Der Tages-Link enthält alle Adressen eines Tages; er wird erst
-auf Tap gebaut und nirgends gespeichert. Die Datenschutzinformation nennt
-Google Maps (PAT-006). Die Höchstzahl der Zwischenziele je Link steht in der
-Anbieterdokumentation; wird sie überschritten, wird der Tag in Abschnitte
-geteilt.
-
-**Nachtrag 2026-09-08 (MAP-001):** Als Navigations-Handoff in ADR-019
-Fassung 2 (Punkt 20 bis 23) und ANN-018 gefasst — Ziel-Apps Google Maps,
-Apple Maps oder Systemnavigation, nur Ziel und Fahrradmodus, Bewertung der
-Ziel-Apps in MAP-005. Nicht automatisch risikofrei; Frage an B2.
 
 ---
 
@@ -792,31 +621,6 @@ zweier Termine (MAP-004) und die Warnung im Kalender mit echten Terminen
 (MAP-006) stehen als Loops in `../../development/MAP-LOOPS.md`; E12 Punkt 3
 und 4 (2026-09-12) haben festgelegt, dass die Fahrzeit nur aus dem Kartendienst
 kommt. Noch nichts davon ist gebaut.
-
-**Idee.** Zu jedem Weg der Tagesroute die Fahrzeit mit dem Rad aus dem
-Kartendienst; im Kalender die Erreichbarkeit zweier Termine als Warnung,
-ergänzend zur Praxisregel aus `IDEA-PRX-002`; die Auswirkung einer
-Terminänderung sichtbar.
-
-**Warum.** §9 verlangt für die erste Ausbaustufe, dass die Anwendung erkennt,
-ob zwei Termine zeitlich erreichbar sind. Ohne Fahrzeiten schlägt jede
-automatische Terminsuche (`IDEA-PRX-008`) Termine vor, die auf dem Rad nicht
-erreichbar sind.
-
-**Vorsicht.** Fahrzeiten sind Routing-Rohdaten (§18) und dürfen nicht zur
-Leistungskontrolle werden (§20, B6): keine Summen je Person. Erst nach
-Betriebserfahrung, weil erst dann klar ist, wie oft eine Warnung nützt und wie
-oft sie stört.
-
-**ADR-019 Punkt 16 schließt die Speicherung aus.** Die ursprüngliche Fassung
-dieses Eintrags sah „Speicherung nur je Weg und Tag" vor. Dem widerspricht
-ADR-019 Punkt 16 (entschieden 2026-09-08, B7): **keine dauerhafte
-Speicherung** von Fahrzeiten, Distanzen, Matrizen oder Routing-Rohantworten —
-sie werden im Moment der Planung abgerufen, angezeigt und verworfen. Der ADR
-gilt (Rang 2 vor Rang 6). Ob eine Erreichbarkeitswarnung im Kalender ohne
-irgendeine Zwischenspeicherung auskommt oder eine kurzlebige, nicht
-personenbezogene Ablage braucht, ist als Punkt 3a von E12 zu führen und mit
-MAP-006 zu beantworten — nicht hier.
 
 ---
 
@@ -1006,10 +810,6 @@ vollständig als **BEF-001** in
 dort nach Roadmap-Regel R6 in die erste Story des nächsten Loops derselben
 Spur. Hier bleibt nur die Kennung.
 
-**Idee.** Die Textfelder der Dokumentation sollen ohne Scrollen sichtbar sein;
-womöglich helfen Unterseiten, damit das Auge nicht an Unwichtigem hängen
-bleibt.
-
 ---
 
 ### IDEA-PRX-039 — Termin abhaken: Heilmittel, Kontingent und die Freigabe zur Abrechnung
@@ -1085,12 +885,6 @@ Risiken (Rufnummer als Rettung des gescheiterten Besuchs, „Navigation starten"
 erst nach der Karte) stehen seit dem 2026-09-13 vollständig als **BEF-002** in
 [`../../development/BEFUNDE.md`](../../development/BEFUNDE.md). Hier bleibt
 nur die Kennung.
-
-**Idee.** Die Reihenfolge der Aktionen auf der Tageskarte stimmt nicht: die
-Telefonnummern stehen vorn, obwohl sie selten gebraucht werden. Gewünscht sind
-ein eigenes Feld „Doku", ein Abhaken statt „Behandlung abschließen" (siehe
-`IDEA-PRX-039`), und „Navigation starten" womöglich erst, wenn die Karte in
-der Anwendung steht.
 
 ---
 

@@ -65,7 +65,7 @@ import { useIstVerbunden } from '@/app/verbindung';
  * navigiert noch abgemeldet werden. Die Seite kann das genau beantworten - sie
  * hält den Text -, der Schutz nicht.
  */
-export interface Schreibauftrag {
+interface Schreibauftrag {
   ausfuehren: () => Promise<boolean>;
   /** Überschrift des Fehlerkastens, wenn der Vorgang scheitert. */
   fehlertitel: string;

@@ -50,7 +50,6 @@ export async function resetDatabase(): Promise<void> {
     if (files.length === 0) throw new Error('Keine Migrationen gefunden.');
     for (const file of files) {
       // Pfad stammt aus dem festen Migrationsverzeichnis des Repositories.
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
       const sql = await readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
       try {
         await client.query(sql);
@@ -221,4 +220,17 @@ export function abgefangen(versprechen: Promise<unknown>): Promise<Error | null>
     () => null,
     (fehler: Error) => fehler,
   );
+}
+
+/**
+ * Kalendertag `n` Tage von heute aus, als `YYYY-MM-DD`.
+ *
+ * Die Termintests brauchen Tage in der Zukunft, die kein Feiertag und kein
+ * Seed-Termin blockiert; ein fester Tag im Quelltext wäre nach einem Jahr
+ * Vergangenheit. Gerechnet wird über UTC — ein Kalendertag, kein Zeitpunkt.
+ */
+export function tagInTagen(tage: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + tage);
+  return d.toISOString().slice(0, 10);
 }

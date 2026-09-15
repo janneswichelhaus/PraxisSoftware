@@ -4,42 +4,24 @@ import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as DokumentationApi from './api';
 import type * as Bausteine from './textbausteine';
-import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders, testUser } from '@/test-utils';
+import type * as RouterModul from 'react-router-dom';
+import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const NOTE_ID = '88888888-8888-4888-8888-000000000001';
 
-const termin: AppointmentsApi.Appointment = {
+const termin = testAppointment({
   id: TERMIN_ID,
-  patient_id: '66666666-6666-4666-8666-000000000001',
-  kind: 'treatment',
-  title: null,
-  event_group_id: null,
-  staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: null,
   appointment_type: 'home_visit',
-  status: 'confirmed',
-  starts_at: '2027-05-12T07:00:00.000Z',
-  ends_at: '2027-05-12T08:00:00.000Z',
-  updated_at: '2027-05-01T10:00:00.000000+00',
   visit_street: 'Beispielstrasse',
   visit_house_number: '12',
   visit_postal_code: '72070',
   visit_city: 'Tuebingen',
-  completed_at: null,
-  cancellation_reason: null,
-  no_show_recorded_at: null,
-  cancellation_received_at: null,
-  fee_basis: null,
   patient_given_name: 'Max',
   patient_family_name: 'Mustermann',
-  staff_given_name: 'Anna',
-  staff_family_name: 'Beispiel',
   location_name: null,
-  notification_channels: [],
-  organization_time_zone: 'Europe/Berlin',
-};
+});
 
 const entwurf: DokumentationApi.TreatmentNote = {
   id: NOTE_ID,
@@ -94,14 +76,11 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return {
-    ...actual,
-    useNavigate: () => navigate,
-    useParams: () => ({ appointmentId: TERMIN_ID }),
-  };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+  useParams: () => ({ appointmentId: TERMIN_ID }),
+}));
 
 const { CompleteTreatmentPage } = await import('./CompleteTreatmentPage');
 

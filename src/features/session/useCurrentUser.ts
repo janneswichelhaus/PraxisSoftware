@@ -42,7 +42,7 @@ export class ZugangGesperrtError extends Error {
  * Autorisierung liegt in den RLS-Policies (ADR-004); eine im Client
  * ausgeblendete Ansicht ist keine Zugriffsbeschränkung.
  */
-export async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
+async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
   const supabase = getSupabase();
 
   const [profileResult, rolesResult] = await Promise.all([

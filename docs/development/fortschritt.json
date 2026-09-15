@@ -31,7 +31,7 @@
           "id": "fundament",
           "name": "Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001",
           "gewicht": 3,
-          "status": "abgenommen"
+          "status": "fertig"
         },
         { "id": "dok-epic", "name": "DOK-EPIC (DOK-001 bis DOK-004)", "gewicht": 2, "status": "abgenommen" },
         { "id": "ver-epic-001", "name": "VER-EPIC-001 Verordnungen", "gewicht": 2, "status": "abgenommen" },

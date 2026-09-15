@@ -15,8 +15,8 @@ const aktiv: PatientsApi.Patient = testPatient({
   phone: '0221 1234567',
   street: 'Musterweg',
   house_number: '12b',
-  postal_code: '50667',
-  city: 'Köln',
+  postal_code: '72070',
+  city: 'Tübingen',
 });
 
 const setPatientStatus = vi.fn();
@@ -68,7 +68,7 @@ describe('Stammdaten der Akte', () => {
   it('zeigt Anschrift, Versorgungsbeginn und Status', () => {
     renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
 
-    expect(screen.getByText('Musterweg 12b, 50667 Köln')).toBeInTheDocument();
+    expect(screen.getByText('Musterweg 12b, 72070 Tübingen')).toBeInTheDocument();
     expect(screen.getByText('05.01.2026')).toBeInTheDocument();
     expect(screen.getByText('Aktiv')).toBeInTheDocument();
   });

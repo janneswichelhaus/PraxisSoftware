@@ -11,7 +11,7 @@
  * Kalenderrechner; eine Ortszeit wird daraus nie abgeleitet.
  */
 
-export const KALENDER_ANSICHTEN = ['tag', 'woche'] as const;
+const KALENDER_ANSICHTEN = ['tag', 'woche'] as const;
 export type KalenderAnsicht = (typeof KALENDER_ANSICHTEN)[number];
 
 /**
@@ -26,14 +26,7 @@ export type KalenderAnsicht = (typeof KALENDER_ANSICHTEN)[number];
  * und nicht, ob die Dokumentation schon festgeschrieben ist; beide Gruppen
  * werden serverseitig aufgelöst (CAL-008a).
  */
-export const STATUS_FILTER = [
-  'active',
-  'confirmed',
-  'done',
-  'no_show',
-  'cancelled',
-  'all',
-] as const;
+const STATUS_FILTER = ['active', 'confirmed', 'done', 'no_show', 'cancelled', 'all'] as const;
 export type StatusFilter = (typeof STATUS_FILTER)[number];
 
 const ISO_DATUM = /^\d{4}-\d{2}-\d{2}$/;
@@ -190,7 +183,7 @@ export function schreibeParameter(p: KalenderParameter): URLSearchParams {
 // Anordnung in der Wochenansicht
 // -----------------------------------------------------------------------------
 
-export interface ZeitPosition {
+interface ZeitPosition {
   /** Abstand von oben in Prozent des dargestellten Tagesfensters. */
   top: number;
   /** Höhe in Prozent des dargestellten Tagesfensters. */
@@ -336,7 +329,7 @@ export type Zoomstufe = (typeof ZOOMSTUFEN)[number];
  */
 export const ZOOM_STANDARD: Zoomstufe = 96;
 
-export function istZoomstufe(wert: unknown): wert is Zoomstufe {
+function istZoomstufe(wert: unknown): wert is Zoomstufe {
   return ZOOMSTUFEN.includes(wert as Zoomstufe);
 }
 
@@ -358,7 +351,7 @@ export function zoomSchritt(aktuell: Zoomstufe, richtung: 1 | -1): Zoomstufe {
  */
 const LINIEN_MINDESTABSTAND = 7;
 
-export interface Gitterlinien {
+interface Gitterlinien {
   /** Feinste gezeichnete Stufe in Minuten; null, wenn dafür kein Platz ist. */
   fein: number | null;
   /** Halbe Stunden als mittlere Betonung zwischen fein und Stunde. */

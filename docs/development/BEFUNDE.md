@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-13
+Stand: 2026-09-15
 
 ## Zweck
 
@@ -170,3 +170,39 @@ womöglich gar nicht mehr, sobald die Karte in der Anwendung steht.
 „Übersicht" gedacht; die Runden ruhen bis Probewoche 1. Bis dahin gilt R6.
 Das „Abhaken" hängt fachlich an `IDEA-PRX-039` und damit an ABR-002 — der
 Befund allein ordnet Schaltflächen, er ändert keinen Vorgang.
+
+### BEF-003 — `appointment-series.test.ts` ist vom Wochentag abhängig und wird an manchen Tagen rot
+
+| | |
+|---|---|
+| Datum | 2026-09-15 |
+| Bereich | Gate `pnpm test:db` — `supabase/tests/appointment-series.test.ts`, Abschnitt „Konfliktpruefung" |
+| Quelle | Gruppe-5-Lauf der Konsolidierung R2; auf dem Stand vor und nach der Gruppe identisch reproduziert |
+| Status | behoben in R2 (Nachtrag 5c, R2-040) |
+| Berührt | CAL-007; ADR-013 (Pflichtprüfung „Migrationen und RLS-Policies") |
+
+**Beobachtung.** Drei Tests des Abschnitts „Konfliktpruefung" schlagen fehl,
+wenn `heute + 40 Tage` auf ein Wochenende fällt. Am 2026-09-15 ist das der
+Fall: 25.10., 01.11. und 08.11.2026 sind alles Sonntage, und
+`check_appointment_series` meldet zu Recht `outside_working_hours` statt des
+erwarteten `null`/`overlap`/`duplicate`. Die Hilfsfunktion `woechentlich`
+rechnet in Kalendertagen (`tagInTagen(40 + i * 7)`), während die übrigen
+Abschnitte derselben Datei mit `werktagVersatz` ausdrücklich auf einen Werktag
+gehen. Der Befund ist **nicht** durch die Konsolidierung entstanden: Weder die
+Testdatei noch eine Migration ist auf dem Branch angefasst worden, und der Lauf
+gegen den Stand davor zeigt dieselben drei Fehlschläge.
+
+**Warum das zählt.** `pnpm test:db` ist eine Pflichtprüfung nach ADR-013. Ein
+Gate, das an rund zwei von sieben Tagen ohne Zutun rot ist, lehrt genau das
+Gegenteil dessen, wofür es da ist — und lädt dazu ein, ein rotes Gate als
+„gehört so" zu lesen.
+
+**Behoben.** Nicht über R6, sondern sofort als **R2-040** — ein Gate, das an
+zwei von sieben Tagen ohne Zutun rot ist, hätte sonst den Pull Request dieser
+Runde blockiert. `woechentlich` nimmt jetzt den ersten Werktag ab dem Versatz
+als Startpunkt; der Wochenabstand hält alle weiteren auf demselben Wochentag.
+Geändert ist ausschließlich die Testdatei — keine Migration, keine Policy, und
+`check_appointment_slots` selbst bleibt unberührt. Die drei Tests, die
+`outside_working_hours` ausdrücklich prüfen, rechnen weiter mit rohen
+Kalendertagen: Ein Beginn um 05:00 liegt an jedem Wochentag außerhalb.
+Beleg: `pnpm test:db` 1 311 von 1 311 grün (2026-09-15).

@@ -8,6 +8,7 @@ import {
   detailWert,
   pruefeBreiten,
   tagImFenster,
+  zeitImLauf,
 } from './helpers';
 
 /**
@@ -26,13 +27,7 @@ function laufTag(versatz = 0): string {
   return tagImFenster(TAGESFENSTER.appointmentEvents, LAUF, versatz);
 }
 
-/** Eine Uhrzeit in der Seed-Arbeitszeit, je Lauf leicht verschoben. */
-function zeit(minutenAbAcht: number): string {
-  const gesamt = 8 * 60 + (LAUF % 10) * 5 + minutenAbAcht;
-  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
-  const m = String(gesamt % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
+const zeit = (minutenAbAcht: number) => zeitImLauf(LAUF, minutenAbAcht, 10);
 
 test.describe('CAL-015: Ereignis eintragen', () => {
   test('traegt eine Besprechung ein und fuehrt sie ohne Patient:in', async ({ page }) => {

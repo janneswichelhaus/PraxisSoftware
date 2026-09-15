@@ -6,19 +6,14 @@ Schwerpunkt Hausbesuche.
 **Früher Entwicklungsstand.** Es existieren ausschließlich synthetische
 Testdaten; ein Produktivbetrieb ist ausdrücklich nicht freigegeben.
 
-## Verbindliche Grundlagen
+## Grundlagen
 
-| Dokument                                                               | Inhalt                                              |
-| ---------------------------------------------------------------------- | --------------------------------------------------- |
-| [`PROJECT_PRINCIPLES.md`](PROJECT_PRINCIPLES.md)                       | Produkt-, Sicherheits- und Datenschutzprinzipien    |
-| [`docs/adr/`](docs/adr/)                                               | Architecture Decision Records (ADR-001 bis ADR-019) |
-| [`docs/decisions/OPEN_DECISIONS.md`](docs/decisions/OPEN_DECISIONS.md) | offene Entscheidungen                               |
-| [`docs/decisions/ASSUMPTIONS.md`](docs/decisions/ASSUMPTIONS.md)       | begründete, vorläufige Annahmen                     |
-| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)                           | Einrichtung, Testkonten, Einschränkungen            |
-
-Reihenfolge der Umsetzung und Ist-Stand:
-[`docs/development/ROADMAP.md`](docs/development/ROADMAP.md). Was in der
-Anwendung echt angebunden ist und was gekennzeichnete Vorschau:
+Verbindlich sind [`PROJECT_PRINCIPLES.md`](PROJECT_PRINCIPLES.md) und die
+Architecture Decision Records in [`docs/adr/`](docs/adr/); die Rangfolge aller
+Dokumente steht in `PROJECT_PRINCIPLES.md` §21. Offene Entscheidungen und
+vorläufige Annahmen: [`docs/decisions/`](docs/decisions/). Reihenfolge der
+Umsetzung: [`docs/development/ROADMAP.md`](docs/development/ROADMAP.md). Was
+echt angebunden ist und was gekennzeichnete Vorschau:
 [`docs/development/ARBEITSBEREICHE.md`](docs/development/ARBEITSBEREICHE.md).
 
 ## Stack
@@ -40,9 +35,11 @@ supabase/
   tests/       Migrations- und RLS-Tests gegen echtes PostgreSQL
   seed.sql     synthetische Testdaten
 tests/e2e/         Playwright
+scripts/           Prüf- und Hilfsskripte
+marke/             Wortmarke und App-Symbole (einzige Quelle)
 docs/adr/          Architecture Decision Records
-docs/decisions/    offene Entscheidungen und Annahmenregister
-docs/development/  Roadmap, Arbeitsbereiche, Befunde, Entwicklungs- und Graph-Engineering-Workflow
+docs/decisions/    offene Entscheidungen, Anfragen und Annahmenregister
+docs/development/  Roadmap, Arbeitsbereiche, Befunde, Graph-Engineering-Workflow
 docs/abnahme/      manuelle Prüfschritte je Feature
 docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)
 ```
@@ -57,10 +54,4 @@ docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)
 
 ## Schnellstart
 
-```bash
-pnpm install
-cp .env.example .env.local
-pnpm dev
-```
-
-Details in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+Einrichtung, Testkonten und Befehle: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).

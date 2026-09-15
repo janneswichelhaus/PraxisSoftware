@@ -35,7 +35,7 @@ export interface Depotzugang {
   zugangHinweis: string;
 }
 
-export interface Transportoption {
+interface Transportoption {
   id: string;
   /** Wie die Option im Ablauf angeboten wird. */
   label: string;

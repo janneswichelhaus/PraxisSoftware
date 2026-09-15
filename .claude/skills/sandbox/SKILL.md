@@ -6,11 +6,10 @@ disable-model-invocation: true
 
 # Sandbox
 
-Ablauf für **einen Prototyp** der Oberfläche. Er zeigt, wie etwas aussehen
-und sich anfühlen könnte — er entscheidet nichts, speichert nichts und
-begründet keinen Scope. Regeln und Graph in
-`docs/development/GRAPH-ENGINEERING-WORKFLOW.md` (Pfad S); dieser Skill
-beschreibt nur die Reihenfolge und die Abbruchbedingungen.
+Ablauf und Regeln für **einen Prototyp** der Oberfläche. Er zeigt, wie etwas
+aussehen und sich anfühlen könnte — er entscheidet nichts, speichert nichts
+und begründet keinen Scope. Knoten, Lebensdauer und Grenzen von Pfad S stehen
+in `docs/development/GRAPH-ENGINEERING-WORKFLOW.md`; die Regeln dazu hier.
 
 **Einstieg nach Aufruf:** `/sandbox <Thema>` läuft S1 bis S4 und endet mit
 der Frage an Jannes. `/sandbox <Thema> übernehmen` sucht die Zeile des
@@ -21,18 +20,19 @@ Prototyps in `docs/development/ARBEITSBEREICHE.md` §2 und läuft nur S5.
 Maßgeblich ist der **Diff dieser Session**, nicht die echte Funktion, die es
 einmal geben könnte: Berührt er einen Auslöser aus ADR-013 Fassung 2,
 Punkt 9 (Migration, Policy, RPC, Auth, Audit, Retention, Rechnung,
-Außenverbindung, ein gespeichertes personenbezogenes Feld außerhalb
-`src/features/preview`) — oder soll ein Wert die Sitzung überleben —, dann ist
+Außenverbindung, personenbezogene Daten) — oder soll ein Wert die Sitzung
+überleben —, dann ist
 es **Pfad A**: stoppen und `/feature-loop` vorschlagen, nichts bauen.
 Synthetische Anzeigedaten im Prototyp sind kein personenbezogenes Feld. Ein
 von der Roadmap zurückgestelltes Thema darf prototypisiert werden; S1 nennt
 die Zurückstellung. Fehlt eine Entscheidung aus der Hard-Stop-Liste (§15.1):
-Pfad D, Frage stellen.
+Frage mit Optionen, Empfehlung und Konsequenzen stellen, nichts davon
+Abhängiges bauen.
 
 **Was gelesen wird:** `docs/development/ARBEITSBEREICHE.md`, die
 Oberflächen-Checkliste in `docs/abnahme/README.md`, **eine** passende
 Ideen-Datei aus `docs/product/ideen/` (Index in `IDEENSPEICHER.md`). Keine
-ADRs außer ADR-015 und ADR-011. Modell laut Roadmap: Sonnet 5 `medium`.
+ADRs außer ADR-015 und ADR-011.
 
 ---
 
@@ -77,7 +77,8 @@ kommt ins Härtungs-Ticket (S5).
   `src/features/*/api.ts` (außer reinen Hilfsfunktionen, die
   `trennung.test.ts` erlaubt) oder `src/lib/supabase`, Änderung an Rollen,
   Audit, RLS, an einem echten Bereich oder an einer bestehenden
-  Vorschauroute aus `ARBEITSBEREICHE.md` §2 (die bleiben eingefroren).
+  Vorschauroute aus `ARBEITSBEREICHE.md` §2 (die bleiben eingefroren; gemeint
+  sind diese Routen, nicht das Gerüst `VorschauProvider`).
 
 Ein Commit für den Prototyp.
 
@@ -145,17 +146,20 @@ importiert keinen Scope. Zurück nach K1. Ein Commit.
 
 ## S6. LÖSCHEN
 
-Auf `/sandbox <Thema> verwerfen` oder nach Ablauf (zwei Code-Loops nach dem
-Commit, Fortschrittstabelle der Roadmap): Verzeichnis, Route, Link, gegebenenfalls
+Auf `/sandbox <Thema> verwerfen` oder nach Ablauf der Lebensdauer
+(Graph-Engineering-Workflow, Pfad S): Verzeichnis, Route, Link, gegebenenfalls
 die Zeile in `VORSCHAUBEREICHE` und die Zeile in `ARBEITSBEREICHE.md` §2
-entfernen; Befund oder Idee bleiben. Ein Commit.
+entfernen; Befund oder Idee bleiben. Ein Commit. Ersetzt ein Loop den
+Prototyp, ist das Austragen dessen erste Story.
 
 ## Bericht und Stopp
 
 1. Thema, Route, Commit
 2. Gelaufene Prüfungen mit Ergebnis; nichts als gelaufen melden, was nicht lief
 3. Bildschirmfotos (Pfade) oder der Hinweis, dass sie bei der Schau entstehen
-4. Registereinträge (ARBEITSBEREICHE, BEFUNDE oder Ideenspeicher)
+4. Registereinträge (ARBEITSBEREICHE, BEFUNDE oder Ideenspeicher) und die
+   Zeile in `docs/STATUS.md`, falls der Prototyp die nächsten Aufgaben
+   verschiebt; `pnpm docs:check` muss grün sein
 5. Was der Prototyp offen lässt
 6. Die Frage an Jannes: `/sandbox <Thema> übernehmen` oder
    `/sandbox <Thema> verwerfen`

@@ -77,9 +77,9 @@ export function sichtbarkeitHinweis(art: Dokumentart): string {
  * ebenso: ein Video ist eine eigene Risikoklasse mit eigener Einwilligung
  * (`IDEA-KOM-003`) und nicht Gegenstand dieses Epics.
  */
-export const ERLAUBTE_MIME_TYPEN = ['application/pdf', 'image/jpeg', 'image/png'] as const;
+const ERLAUBTE_MIME_TYPEN = ['application/pdf', 'image/jpeg', 'image/png'] as const;
 
-export type ErlaubterMimeTyp = (typeof ERLAUBTE_MIME_TYPEN)[number];
+type ErlaubterMimeTyp = (typeof ERLAUBTE_MIME_TYPEN)[number];
 
 /** Für das `accept`-Attribut des Dateiwählers. */
 export const DATEI_ACCEPT = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';

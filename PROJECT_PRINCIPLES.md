@@ -4,10 +4,10 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.10** |
-| **Änderungsdatum** | **2026-09-13** |
-| Vorversion | 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-019, siehe `docs/adr/` (ADR-019 angenommen am 2026-09-13; produktive Freigabe des Kartendienstes am Gate aus ADR-019 Punkt 9) |
+| **Dokumentversion** | **0.10.1** |
+| **Änderungsdatum** | **2026-09-15** |
+| Vorversion | 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-019, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
 
@@ -1239,20 +1239,29 @@ Punkt geführt.
 Dieses Dokument beschreibt die verbindlichen Produkt-, Sicherheits- und
 Datenschutzprinzipien.
 
-Es steht in folgendem Verhältnis zu den übrigen Dokumenten:
+### Rangfolge bei Konflikten
 
-- `PROJECT_PRINCIPLES.md` — die Prinzipien. Verbindlich, versioniert.
-- `docs/adr/` — Architecture Decision Records. Getroffene Entscheidungen mit
-  Kontext, Konsequenzen und offenen Folgefragen.
-- `docs/decisions/OPEN_DECISIONS.md` — was noch nicht entschieden ist. Das
-  Dokument hat **keinen Rang**: Es entscheidet nichts; was dort offen ist,
-  gilt in keinem Dokument als entschieden, und was dort als entschieden
-  vermerkt ist, hat seine Fundstelle in einem ADR, in diesem Dokument oder als
-  datierter Vermerk dort.
-- `docs/decisions/ASSUMPTIONS.md` — begründete, vorläufige Annahmen nach
-  §15.1. Sie stehen unterhalb der ADRs und der Feature-Spezifikationen,
-  schließen deren Lücken und überschreiben nichts. Eine bestätigte Annahme,
-  deren Rücknahme teuer wäre, wird ADR.
+Widersprechen sich zwei Dokumente, gilt das mit dem kleineren Rang. Die
+Rangfolge ist abschließend; sie steht hier und wird nur hier geändert.
+
+| Rang | Dokument | Geltung |
+|---|---|---|
+| 1 | `PROJECT_PRINCIPLES.md` | verbindlich, versioniert |
+| 2 | geltende ADRs in `docs/adr/` | verbindlich; ein ADR überschreibt Rang 1 nicht |
+| 3 | die Feature-Spezifikation des laufenden Loops | verbindlich für diesen Loop |
+| 4 | `docs/decisions/ASSUMPTIONS.md` | vorläufig (§15.1); füllt Lücken, überschreibt nie |
+| 5 | `docs/PRODUCT_VISION.md` | nicht normativ |
+| 6 | `docs/product/` (Ideenspeicher) | nicht normativ; begründet **niemals** Scope |
+
+Ohne Rang, weil sie nichts entscheiden: `docs/decisions/OPEN_DECISIONS.md` —
+was dort offen ist, gilt in keinem Dokument als entschieden, und was dort als
+entschieden vermerkt ist, hat seine Fundstelle in einem ADR, in diesem
+Dokument oder als datierter Vermerk dort; ein offener Punkt blockiert keine
+Aufgabe. Ebenfalls ohne Rang: `docs/development/` (Roadmap, Befunde,
+Arbeitsbereiche, Status) — es ordnet die Reihenfolge, nicht den Inhalt.
+
+Eine bestätigte Annahme aus Rang 4, deren Rücknahme teuer wäre, wird ADR und
+steigt damit auf Rang 2.
 
 Widerspricht ein ADR diesem Dokument, ist das ein Fehler und MUSS aufgelöst
 werden. Bis zur Auflösung gilt die Aussage dieses Dokuments; wer den
@@ -1267,22 +1276,27 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-001 | Online-first mit begrenzter Offline-Fähigkeit | §2.2, §5 |
 | ADR-002 | Hosting und Datenstandort | §3.2, §3.5, §3.6 |
 | ADR-003 | `organization_id` und `location_id` | §1, §14 |
-| ADR-004 | Berechtigungsmodell (Fassung 2: Office liest klinische Inhalte, E15) | §4 |
-| ADR-005 | Providerunabhängige KI-Anbindung (Fassung 2) | §6, §6.1, §6.2, §6.3 |
-| ADR-006 | Abgrenzung gegenüber Medical Device Software (Fassung 2) | §7.1, §17, §6.3 |
+| ADR-004 | Berechtigungsmodell | §4 |
+| ADR-005 | Providerunabhängige KI-Anbindung | §6, §6.1, §6.2, §6.3 |
+| ADR-006 | Abgrenzung gegenüber Medical Device Software | §7.1, §17, §6.3 |
 | ADR-007 | Datenschutz-Folgenabschätzung und Datenschutzprozess | §3.7 |
 | ADR-008 | Aufbewahrung und Löschung | §4.6, §10, §18 |
 | ADR-009 | Privatabrechnung | §19 |
-| ADR-010 | Audit-Logging und privilegierter Produktionszugriff (Fassung 2: Lesepfad, Dateien) | §3.1, §4.1, §4.2, §13 |
+| ADR-010 | Audit-Logging und privilegierter Produktionszugriff | §3.1, §4.1, §4.2, §13 |
 | ADR-011 | Logging und Observability | §3.6 |
 | ADR-012 | Backup, Wiederherstellung und Betriebskontinuität | §3.4, §13 |
 | ADR-013 | CI/CD und Release-Governance | §11, §12 |
 | ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
 | ADR-015 | Initialer technischer Stack | §2.1, §2.2, §3.4 |
-| ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit (Fassung 2) | §5, §6.3 |
-| ADR-017 | Dateiablage | §4.7, §12, §18 (gebaut mit DAT-EPIC-001) |
-| ADR-018 | Zustandsautomat des Termins (Fassung 3: Hausbesuch-Szenarien) | §8, §19 |
-| ADR-019 | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff (angenommen 2026-09-13; produktive Freigabe am Gate) | §8.1, §9, §20 |
+| ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | §5, §6.3 |
+| ADR-017 | Dateiablage | §4.7, §12, §18 |
+| ADR-018 | Zustandsautomat des Termins | §8, §19 |
+| ADR-019 | Kartendienst: Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | §8.1, §9, §20 |
+
+Die Tabelle nennt, **welcher ADR welchen Paragraphen trägt** — sonst nichts.
+Welche Fassung gilt, welchen Status ein ADR hat und woran eine produktive
+Freigabe hängt, steht allein in [`docs/adr/README.md`](docs/adr/README.md).
+Zwei Stellen, die dasselbe behaupten, driften auseinander; hier ist nur eine.
 
 Änderungen an diesem Dokument erfolgen als eigener Commit mit erhöhter
 Dokumentversion und ergänztem Änderungsvermerk.
@@ -1301,6 +1315,29 @@ technischer Teil steht in ADR-018 Fassung 3 und ADR-004 Fassung 2.
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.10.1
+
+Korrekturversion nach dem Muster von 0.2.1. Sie behebt ausschließlich
+Widersprüche und Dopplungen, die die Konsolidierung R2 gefunden hat, und
+ändert keine einzige Leitplanke:
+
+- **§21 trägt jetzt die Rangfolge.** Die sechsstufige Ordnung stand bisher nur
+  in `CLAUDE.md` — einem Dokument ohne Rang. Damit hing die Regel, welches
+  Dokument gewinnt, an einer Stelle, die selbst nicht verbindlich ist.
+  `CLAUDE.md` verweist jetzt hierher. Inhaltlich ist die Ordnung unverändert;
+  neu benannt sind nur die Ränge 3 (Feature-Spezifikation), 5
+  (`PRODUCT_VISION.md`) und 6 (`docs/product/`), die vorher ungeschrieben
+  galten, sowie die Feststellung, dass `docs/development/` keinen Rang hat.
+- **Die ADR-Tabelle nennt keine Fassungen und keinen Status mehr.** Sie stand
+  in zwei Dokumenten, und beide waren nicht deckungsgleich: ADR-013 Fassung 2
+  fehlte hier. Fassung und Status führt ab sofort allein
+  `docs/adr/README.md`; die Tabelle hier ordnet ADR zu Paragraph.
+
+Nicht Teil dieser Version: eine Kürzung des Dokuments. Mit 1 550 Zeilen wird
+es selten ganz gelesen, und was selten ganz gelesen wird, wird zur
+Dopplungsquelle (§16). Eine Kürzung ohne Regeländerung ist Arbeit einer
+eigenen Docs-Session und gehört nicht in eine Korrekturversion.
 
 ### Änderungsvermerk 0.10
 

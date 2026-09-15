@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import { telHref } from '@/lib/telefon';
 import {
   appointmentKindSchema,
   appointmentStatusSchema,
@@ -138,18 +139,6 @@ export function adressZeilen(termin: DayPlanEntry): string[] {
   return [strasse, ort].filter((zeile) => zeile.length > 0);
 }
 
-/**
- * Rufnummern als Wählziele.
- *
- * `tel:` verträgt keine Leerzeichen zuverlässig; die Anzeige bleibt die
- * eingegebene Schreibweise, gewählt wird die bereinigte Form. Ein führendes
- * Plus bleibt erhalten, alles andere außer Ziffern fällt weg.
- */
-export function telHref(nummer: string): string {
-  const bereinigt = nummer.trim().replace(/(?!^\+)[^0-9]/g, '');
-  return `tel:${bereinigt}`;
-}
-
 export interface Rufnummer {
   label: string;
   anzeige: string;
@@ -166,8 +155,16 @@ export function rufnummern(termin: DayPlanEntry): Rufnummer[] {
     .map(([label, nummer]) => ({ label, anzeige: nummer, href: telHref(nummer) }));
 }
 
-/** Reihenfolge der Tagesliste: früheste zuerst, bei Gleichstand stabil über die ID. */
-export function nachUhrzeit(a: DayPlanEntry, b: DayPlanEntry): number {
+/**
+ * Reihenfolge nach Uhrzeit: früheste zuerst, bei Gleichstand stabil über die ID.
+ *
+ * Gilt für die eigene Tagesliste wie für den Tagesplan des Teams - beide
+ * Datensätze tragen Beginn und Kennung.
+ */
+export function nachUhrzeit(
+  a: { starts_at: string; id: string },
+  b: { starts_at: string; id: string },
+): number {
   return a.starts_at.localeCompare(b.starts_at) || a.id.localeCompare(b.id);
 }
 

@@ -1,6 +1,14 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SERIE_HOECHSTZAHL } from '@/features/appointments/serie';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+  tagInTagen,
+} from './helpers/db';
 
 /**
  * Terminserie aus einer Verordnung (CAL-007).
@@ -34,21 +42,40 @@ const PRUEFEN = 'select * from public.check_appointment_slots($1::uuid, $2::json
 const KONTINGENT = 'select * from public.get_prescription_slots($1::uuid)';
 
 /** Kalendertag weit in der Zukunft, damit kein Lauf um Mitternacht kippt. */
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
-
 interface Slot {
   datum: string;
   beginn: string;
 }
 
-/** `anzahl` Termine im Abstand von sieben Tagen, alle zur selben Uhrzeit. */
+/**
+ * Erster Werktag ab `ab` Tagen, als Versatz in Tagen.
+ *
+ * Die Arbeitszeiten des Seeds decken Montag bis Freitag ab (`supabase/seed.sql`,
+ * `staff_working_hours`, Wochentag 1 bis 5). Ein roher Kalendertag traefe an
+ * zwei von sieben Tagen ein Wochenende, und `check_appointment_slots` meldete
+ * dann zu Recht `outside_working_hours` statt des geprueften Befundes - das
+ * Gate haenge am Wochentag statt am Code (BEF-003, behoben mit R2-040).
+ */
+function werktagVersatz(ab: number): number {
+  for (let versatz = ab; versatz < ab + 7; versatz += 1) {
+    // getUTCDay: 0 = Sonntag, 6 = Samstag.
+    const wochentag = new Date(`${tagInTagen(versatz)}T00:00:00Z`).getUTCDay();
+    if (wochentag >= 1 && wochentag <= 5) return versatz;
+  }
+  throw new Error('Kein Werktag in sieben Tagen - das kann nicht passieren.');
+}
+
+/**
+ * `anzahl` Termine im Abstand von sieben Tagen, alle zur selben Uhrzeit.
+ *
+ * Der erste Tag ist ein Werktag; der Wochenabstand haelt alle weiteren auf
+ * demselben Wochentag. Geprueft werden damit Ueberschneidung, Doppelung und
+ * Kontingent - nicht die Arbeitszeit, die einen eigenen Test hat.
+ */
 function woechentlich(anzahl: number, abTagen = 40, beginn = '09:00'): Slot[] {
+  const start = werktagVersatz(abTagen);
   return Array.from({ length: anzahl }, (_, i) => ({
-    datum: tagInTagen(abTagen + i * 7),
+    datum: tagInTagen(start + i * 7),
     beginn,
   }));
 }

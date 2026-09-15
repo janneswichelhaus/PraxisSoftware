@@ -6,8 +6,9 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { SearchField } from '@/components/ui/SearchField';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
+import { fullName } from '@/features/patients/api';
 import { canManageStaffMasterData, type CurrentUser } from '@/features/session/types';
-import { fetchStaffMembers, staffFullName, type StaffMember } from './api';
+import { fetchStaffMembers, type StaffMember } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 
@@ -28,7 +29,7 @@ function toSearchParams(query: string, status: StatusFilter): URLSearchParams {
 function matches(staff: StaffMember, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
-  return [staffFullName(staff), staff.work_email, staff.work_phone, staff.primary_location_name]
+  return [fullName(staff), staff.work_email, staff.work_phone, staff.primary_location_name]
     .filter((value): value is string => Boolean(value))
     .join(' ')
     .toLowerCase()
@@ -152,7 +153,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
                 >
                   <span className="min-w-0">
                     <span className="text-ink block truncate text-[0.9375rem] font-medium">
-                      {staffFullName(staff)}
+                      {fullName(staff)}
                     </span>
                     <span className="text-ink-muted mt-0.5 block text-sm">
                       {staff.primary_location_name ?? 'Ohne festen Standort'}

@@ -94,7 +94,7 @@ describe('PatientsListPage', () => {
 
   it('filtert ueber die Suche auch nach Ort, Telefon und E-Mail', async () => {
     fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active', { city: 'Koeln' }),
+      patient('1', 'Max', 'Mustermann', 'active', { city: 'Tuebingen' }),
       patient('2', 'Erika', 'Beispiel', 'active', {
         city: 'Hamburg',
         phone: '0221 555123',

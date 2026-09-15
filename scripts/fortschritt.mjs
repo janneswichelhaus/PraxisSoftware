@@ -46,6 +46,9 @@ const { statuswerte } = daten;
 
 /** Anteil eines Status, mit klarer Meldung statt stiller Null bei Tippfehlern. */
 function anteilVon(status, postenId) {
+  // status stammt aus der versionierten fortschritt.json; ein Fehlwert wirft
+  // direkt darunter, statt still eine Null zu liefern.
+  // eslint-disable-next-line security/detect-object-injection
   const eintrag = statuswerte[status];
   if (!eintrag) {
     throw new Error(

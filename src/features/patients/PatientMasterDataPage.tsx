@@ -5,6 +5,9 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
+import { formatDate } from '@/lib/datum';
+import { telHref } from '@/lib/telefon';
+import { todayInTimeZone } from '@/features/appointments/api';
 import {
   canChangePatientStatus,
   canConcludePatientCare,
@@ -14,7 +17,6 @@ import { usePatientRecord } from './akte';
 import {
   ageInYears,
   concludePatientCare,
-  formatDate,
   jahrPlus,
   reopenPatientCare,
   setPatientStatus,
@@ -41,7 +43,7 @@ function TelefonZeile({ label, nummer }: { label: string; nummer: string | null 
   if (!nummer) return <DetailRow label={label}>—</DetailRow>;
   return (
     <DetailRow label={label}>
-      <a className="text-accent hover:underline" href={`tel:${nummer.replace(/[^+\d]/g, '')}`}>
+      <a className="text-accent hover:underline" href={telHref(nummer)}>
         {nummer}
       </a>
     </DetailRow>
@@ -88,19 +90,6 @@ function StatusAktion({ patient }: { patient: Patient }) {
 }
 
 /**
- * Heute als `YYYY-MM-DD` in der Zeitzone des Geräts.
- *
- * Die verbindliche Prüfung („nicht in der Zukunft") macht der Server in der
- * Zeitzone der Praxis; hier geht es nur um eine sinnvolle Vorbelegung.
- */
-function heute(): string {
-  const jetzt = new Date();
-  const monat = `${jetzt.getMonth() + 1}`.padStart(2, '0');
-  const tag = `${jetzt.getDate()}`.padStart(2, '0');
-  return `${jetzt.getFullYear()}-${monat}-${tag}`;
-}
-
-/**
  * Abschluss der Versorgung festhalten oder zurücknehmen (LOE-001b).
  *
  * Der Vorgang startet die zehnjährige Aufbewahrung nach ADR-008 — deshalb die
@@ -109,8 +98,17 @@ function heute(): string {
  * Entscheidung liegt. Verbindlich prüft `conclude_patient_care` Rolle, Datum
  * und Organisation erneut (ADR-004).
  */
-function VersorgungAbschliessen({ patient }: { patient: Patient }) {
+function VersorgungAbschliessen({
+  patient,
+  zeitzone,
+}: {
+  patient: Patient;
+  zeitzone: string | null;
+}) {
   const queryClient = useQueryClient();
+  // Vorbelegung in der Zeitzone der Praxis, nicht in der des Geräts: der
+  // laufende Praxistag ist der Maßstab. Verbindlich prüft der Server erneut.
+  const heute = zeitzone ? todayInTimeZone(zeitzone) : '';
   const [tag, setTag] = useState(heute);
   const abgeschlossen = patient.care_concluded_on !== null;
 
@@ -157,7 +155,7 @@ function VersorgungAbschliessen({ patient }: { patient: Patient }) {
       }
       laeuft={mutation.isPending}
       onBestaetigen={() => mutation.mutateAsync()}
-      onAbbrechen={() => setTag(heute())}
+      onAbbrechen={() => setTag(heute)}
     >
       <p>
         Die Behandlung dieser Person ist beendet. Ab diesem Tag läuft die gesetzliche Aufbewahrung
@@ -168,7 +166,7 @@ function VersorgungAbschliessen({ patient }: { patient: Patient }) {
         <Field
           label="Letzter Behandlungstag"
           type="date"
-          max={heute()}
+          max={heute || undefined}
           value={tag}
           onChange={(event) => setTag(event.target.value)}
         />
@@ -306,7 +304,9 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
         >
           <div className="flex flex-wrap items-start gap-3">
             {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
-            {darfAbschliessen ? <VersorgungAbschliessen patient={patient} /> : null}
+            {darfAbschliessen ? (
+              <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
+            ) : null}
           </div>
         </Section>
       ) : null}

@@ -1,10 +1,5 @@
-/* eslint-disable security/detect-non-literal-fs-filename --
-   Der Test liest ausschliesslich Verzeichnisse des eigenen Repositories, deren
-   Namen unten fest im Quelltext stehen. Es gibt keine Eingabe von aussen, die
-   den Pfad beeinflussen koennte. Die Regel bleibt fuer den Anwendungscode
-   unveraendert aktiv. */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { erzeugeVorschauzustand } from './vorschauZustand';
 import { standortvorlageKoeln } from './standortvorlage';
@@ -90,27 +85,110 @@ function quelldateien(verzeichnis: string): string[] {
  * sprechen. Alles andere aus `src/features/<bereich>/api.ts` bleibt draussen -
  * sonst liefe der Datenbankzugriff ueber den Import an dieser Pruefung vorbei,
  * weil nur der eigene Quelltext des Vorschaubereichs gescannt wird.
+ *
+ * Erfasst werden dafuer **alle** Importformen: benannt, `import * as`,
+ * Standardimport, Seiteneffekt und `import(...)`. Ein Namensraumimport gaebe
+ * Zugriff auf das ganze Modul und ist deshalb nie erlaubt, auch nicht fuer
+ * einen Namen aus dieser Liste.
  */
 const ERLAUBTE_API_IMPORTE = new Set(['todayInTimeZone']);
 
 /**
- * `{ a, b } from '@/features/<bereich>/api'` - der Bereich steht in Gruppe 2,
- * `preview` wird im Code ausgenommen. Bewusst ohne verschachtelte Quantoren,
- * damit das Muster nicht rueckwaerts laeuft (eslint security/detect-unsafe-regex).
+ * Module ausserhalb der Vorschaubereiche, die ein Vorschaubereich benutzen
+ * darf. Eine Positivliste, keine Verbotsliste: ein neues Modul faellt damit
+ * auf, statt unbemerkt hereinzukommen.
+ *
+ * `@/lib/...` ist dabei, weil dort die anbieterfreien Hilfsmittel liegen
+ * (Formate, Kalenderrechnung). Der eine gefaehrliche Fall, `@/lib/supabase`,
+ * steht in VERBOTEN und wird davon nicht beruehrt.
  */
-const API_IMPORT = /\{([^}]*)\}\s*from\s*'@\/features\/([^'/]+)\/api'/g;
+const ERLAUBTE_MODULE = [
+  /^react$/,
+  /^react-router-dom$/,
+  /^@\/components\/ui\//,
+  /^@\/features\/session\/types$/,
+  /^@\/features\/preview\//,
+  /^@\/lib\//,
+];
 
-function unerlaubteApiImporte(quelltext: string): string[] {
+/** `@/features/<bereich>/api` - ohne `preview`, das ist der eigene Bereich. */
+const API_MODUL = /^@\/features\/([^/]+)\/api$/;
+
+interface Import {
+  modul: string;
+  /** Die benannten Bindungen, oder `null` bei Namensraum-, Standard- und Seiteneffektimport. */
+  namen: string[] | null;
+}
+
+/**
+ * Alle Modulangaben einer Datei, mit der Importform davor.
+ *
+ * Gesucht wird nach der Zeichenkette hinter `from`, hinter `import(` und hinter
+ * einem blossen `import`; das deckt auch `export ... from` ab. Welche Form es
+ * war, entscheidet der Text davor bis zum naechsten `import`/`export` - ohne
+ * verschachtelte Quantoren, damit kein Muster rueckwaerts laufen kann
+ * (eslint security/detect-unsafe-regex).
+ */
+const MODULANGABE = /(?:from|import)\s*\(?\s*'([^']+)'/g;
+
+function importe(quelltext: string): Import[] {
+  const gefunden: Import[] = [];
+  for (const treffer of quelltext.matchAll(MODULANGABE)) {
+    const davor = quelltext.slice(0, treffer.index);
+    const beginn = Math.max(davor.lastIndexOf('import'), davor.lastIndexOf('export'));
+    const klausel = beginn === -1 ? '' : davor.slice(beginn);
+    const geschweift = klausel.indexOf('{');
+    if (geschweift !== -1 && !klausel.slice(0, geschweift).includes('*')) {
+      const namen = klausel
+        .slice(geschweift + 1, klausel.indexOf('}') === -1 ? undefined : klausel.indexOf('}'))
+        .split(',')
+        .map((eintrag) =>
+          eintrag
+            .trim()
+            .replace(/^type\s+/, '')
+            .split(/\s+as\s+/)[0]!
+            .trim(),
+        )
+        .filter(Boolean);
+      gefunden.push({ modul: treffer[1]!, namen });
+    } else {
+      gefunden.push({ modul: treffer[1]!, namen: null });
+    }
+  }
+  return gefunden;
+}
+
+/**
+ * Importe, die ein Vorschaubereich nicht haben darf - als lesbare Begruendung.
+ *
+ * `pfad` ist die Datei, damit ein relativer Import aufgeloest werden kann: er
+ * muss innerhalb der Vorschaubereiche bleiben. `../../lib/supabase` ist sonst
+ * genau die Luecke, die eine Namenspruefung uebersieht.
+ */
+function unerlaubteImporte(pfad: string, quelltext: string): string[] {
   const treffer: string[] = [];
-  for (const match of quelltext.matchAll(API_IMPORT)) {
-    if (match[2] === 'preview') continue;
-    for (const eintrag of match[1]!.split(',')) {
-      const name = eintrag
-        .trim()
-        .replace(/^type\s+/, '')
-        .split(/\s+as\s+/)[0]!
-        .trim();
-      if (name && !ERLAUBTE_API_IMPORTE.has(name)) treffer.push(name);
+  for (const { modul, namen } of importe(ohneKommentare(quelltext))) {
+    if (modul.startsWith('.')) {
+      const ziel = join(dirname(pfad), modul);
+      if (!VORSCHAUBEREICHE.some((bereich) => ziel.startsWith(bereich))) {
+        treffer.push(`${modul} (verlaesst die Vorschaubereiche)`);
+      }
+      continue;
+    }
+    const api = API_MODUL.exec(modul);
+    if (api) {
+      if (api[1] === 'preview') continue;
+      if (namen === null) {
+        treffer.push(`${modul} (nur benannte Importe erlaubt)`);
+        continue;
+      }
+      for (const name of namen) {
+        if (!ERLAUBTE_API_IMPORTE.has(name)) treffer.push(`${name} aus ${modul}`);
+      }
+      continue;
+    }
+    if (!ERLAUBTE_MODULE.some((muster) => muster.test(modul))) {
+      treffer.push(`${modul} (nicht in der Positivliste)`);
     }
   }
   return treffer;
@@ -130,22 +208,51 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     expect(treffer).toEqual([]);
   });
 
-  it('importiert aus echten API-Modulen hoechstens reine Hilfsfunktionen', () => {
+  it('importiert nur aus erlaubten Modulen', () => {
     const treffer = dateien
-      .map((pfad) => ({ pfad, namen: unerlaubteApiImporte(readFileSync(pfad, 'utf8')) }))
+      .map((pfad) => ({ pfad, namen: unerlaubteImporte(pfad, readFileSync(pfad, 'utf8')) }))
       .filter(({ namen }) => namen.length > 0);
     expect(treffer).toEqual([]);
   });
 
-  it('wuerde einen Import einer echten API-Funktion tatsaechlich finden', () => {
+  it('wuerde jede Importform einer echten API tatsaechlich finden', () => {
+    // Gegenprobe zu jeder Form, die der Scanner kennen muss. `beispiel` liegt
+    // in einem Vorschaubereich, damit relative Pfade richtig aufgeloest werden.
+    const beispiel = 'src/features/fleet/Beispiel.tsx';
+    const pruefe = (quelltext: string) => unerlaubteImporte(beispiel, quelltext);
+
     expect(
-      unerlaubteApiImporte(
-        "import { fetchPatient, todayInTimeZone } from '@/features/patients/api';",
-      ),
-    ).toEqual(['fetchPatient']);
-    expect(unerlaubteApiImporte("import { vorschauId } from '@/features/preview/api';")).toEqual(
-      [],
-    );
+      pruefe("import { fetchPatient, todayInTimeZone } from '@/features/patients/api';"),
+    ).toEqual(['fetchPatient aus @/features/patients/api']);
+    expect(pruefe("import * as patients from '@/features/patients/api';")).toEqual([
+      '@/features/patients/api (nur benannte Importe erlaubt)',
+    ]);
+    expect(pruefe("import patients from '@/features/patients/api';")).toEqual([
+      '@/features/patients/api (nur benannte Importe erlaubt)',
+    ]);
+    expect(pruefe("import '@/features/patients/api';")).toEqual([
+      '@/features/patients/api (nur benannte Importe erlaubt)',
+    ]);
+    expect(pruefe("const m = await import('@/features/patients/api');")).toEqual([
+      '@/features/patients/api (nur benannte Importe erlaubt)',
+    ]);
+    expect(pruefe("export { fullName } from '@/features/patients/api';")).toEqual([
+      'fullName aus @/features/patients/api',
+    ]);
+
+    // Ein Modul ausserhalb der Positivliste und ein relativer Pfad, der die
+    // Vorschaubereiche verlaesst.
+    expect(pruefe("import { z } from 'zod';")).toEqual(['zod (nicht in der Positivliste)']);
+    expect(pruefe("import { fullName } from '../patients/api';")).toEqual([
+      '../patients/api (verlaesst die Vorschaubereiche)',
+    ]);
+
+    // Und die Gegenprobe zur Gegenprobe: das Erlaubte bleibt erlaubt.
+    expect(pruefe("import { vorschauId } from '@/features/preview/api';")).toEqual([]);
+    expect(pruefe("import type { CurrentUser } from '@/features/session/types';")).toEqual([]);
+    expect(pruefe("import { formatDate } from '@/lib/datum';")).toEqual([]);
+    expect(pruefe("import { useState } from 'react';")).toEqual([]);
+    expect(pruefe("import { Vorschauzustand } from './vorschauZustand';")).toEqual([]);
   });
 
   it('wuerde einen Serveraufruf tatsaechlich finden', () => {

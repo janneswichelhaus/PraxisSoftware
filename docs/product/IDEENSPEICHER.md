@@ -8,22 +8,12 @@
 > Feature-Spezifikation** und **keine Freigabe**. Aus keinem Eintrag darf eine
 > Erweiterung eines aktuellen Feature-Scopes abgeleitet werden.
 
-## Rang in der Dokumentenhierarchie
+## Rang
 
-| Rang | Dokument                             | Rolle                                          |
-| ---- | ------------------------------------ | ---------------------------------------------- |
-| 1    | `../../PROJECT_PRINCIPLES.md`        | Leitplanken. Verbindlich.                      |
-| 2    | `../adr/`                            | Architekturentscheidungen. Verbindlich.        |
-| 3    | konkrete Feature-Spezifikation       | Scope einer Aufgabe. Verbindlich für sie.      |
-| 4    | `../decisions/ASSUMPTIONS.md`        | Begründete, vorläufige Annahmen (§15.1).       |
-| 5    | `../PRODUCT_VISION.md`               | Zielbild. Nicht normativ.                      |
-| 6    | **dieser Ordner (`docs/product/`)**  | Ideen und Rohmaterial. **Nicht normativ.**     |
-
-Rang 6 ist die **schwächste** Ebene im Projekt. Ein Ideenspeicher-Eintrag
-verliert gegen alles darüber — ohne Diskussion und ohne Auslegung zugunsten
-der Idee. Er verliert auch gegen `docs/decisions/OPEN_DECISIONS.md`: was dort
-als offen geführt wird, ist offen, egal wie ausgearbeitet die Idee hier
-aussieht.
+Rang 6 der Rangfolge in `PROJECT_PRINCIPLES.md` §21, die **schwächste** Ebene:
+Ein Eintrag verliert gegen alles darüber und auch gegen
+`../decisions/OPEN_DECISIONS.md` — was dort offen ist, bleibt offen, egal wie
+ausgearbeitet die Idee hier aussieht.
 
 ## Wozu das Ganze
 
@@ -74,9 +64,9 @@ Idee (hier)
   → /feature-loop
 ```
 
-Ist ein Eintrag diesen Weg gegangen, wird er hier auf `überführt` gesetzt und
-verweist auf das Ziel. Er wird **nicht gelöscht** — die Begründung bleibt
-lesbar.
+Ist ein Eintrag diesen Weg gegangen, steht er auf `überführt` mit Ziel.
+Überführte Einträge behalten Kopf und Stand-Zeile; die Begründung liegt im
+Ziel und in Git.
 
 ## Statusmodell
 
@@ -153,12 +143,7 @@ einem Verwurf. Neue Einträge hängen hinten an.
   `IDEA-PRX-029` Tagesroute auf der Karte und `IDEA-PRX-030` Navigationslink
   zu Google Maps. Neu notiert: `IDEA-LZK-008` Kund:innen des Personal
   Trainings ohne vorherige Heilbehandlung. Die übrigen `PRX`-Einträge bleiben
-  `vorschlag`. Mit den Antworten E-15 bis E-19 vom selben Tag: Datenweg der
-  Karte über die Google Maps Embed API entschieden und genehmigt — **am
-  2026-09-08 durch MAP-001 überholt**, siehe ADR-019 Fassung 2 (MapLibre,
-  serverseitiger Adapter, PTV Developer als Kandidat); der
-  Referenz-Screenshot ist ein fremdes Produkt, dessen Funktionsumfang
-  nachgebaut werden soll (Regeln in `referenz-navigation.md`).
+  `vorschlag`.
 - **2026-09-08** — Zwei eigene Entscheidungen von Jannes verlassen den
   Ideenspeicher und werden verbindlich: das **Terminfenster**
   (`IDEA-PRX-002` → `PROJECT_PRINCIPLES.md` §8.1) und die
@@ -197,30 +182,16 @@ einem Verwurf. Neue Einträge hängen hinten an.
   `UI-002` in `../development/ROADMAP.md` — sie korrigieren Gebautes und sind
   keine Idee für später.
 
-- **2026-09-13** — Bereinigung des Ideenspeichers nach den Entscheidungen des
-  Tages. **Statusmodell** erweitert: neuer Status `zurückgestellt`, die
-  Zusätze `ausgearbeitet`, `Abgrenzung`, `Einordnung` und `Bedenken` sind
-  definiert, Freitext im Statusfeld ist nicht mehr zulässig — Erläuterungen
-  stehen in einer Zeile `**Stand.**`; alle 121 Einträge sind auf diese Form
-  gebracht. **Überführt**, weil gebaut: `IDEA-PRX-001` (PAT-005), `-007`
-  (UX-003), `-011` (UX-008), `-014` (UX-011), `-020` (UX-004), `-029` und
-  `-030` (ADR-019, UX-002), `-032` (MAP-003/004/006), `-042` Teil 1
-  (CAL-015c), `IDEA-LZK-006` in Teilen (LOE-001b) und `IDEA-PRX-028` (→
-  `IDEA-KI-007`, §6.3). **Zurückgestellt** nach Entscheidung: `IDEA-ALT-005`
-  (B9 Punkt 6), `IDEA-TRN-003` (B10: kein Ampelmodell), `IDEA-ANG-001` und
-  `-004` (B11); `IDEA-ANG-002` **verworfen** (B11). **E14 erledigt** —
-  Hausbesuch-Szenarien: Tür geöffnet, keine Behandlung → durchgeführt mit
-  Pflichtvermerk, normale Abrechnung; nicht angetroffen nach Protokoll (15
-  Minuten, Klingeln, Anruf) → Ausfallgebühr; Absage unter 24 Stunden →
-  Ausfallgebühr; Umsetzung CAL-018. **E15** — Office hat lesenden Zugriff auf
-  alle klinischen Inhalte wie Therapeut:innen (Umsetzung ROL-EPIC-001); die
-  „akzeptierte Ausnahme" aus §10 entfällt damit (`IDEA-KOM-001`, `-007`).
-  **E-20** — ADR-019 Fassung 2 angenommen. Die beiden UI-Befunde
-  `IDEA-PRX-038` und `-040` sind keine Ideen und stehen jetzt als BEF-001 und
-  BEF-002 in `../development/BEFUNDE.md` — der neuen Sammelstelle für
-  Befunde an der laufenden Anwendung, solange die Ablaufrunden bis Probewoche 1
-  ruhen; hier bleibt je ein Stub. Die Wettbewerbsreferenz führt in der Spalte
-  „Bei uns" den Stand vom 2026-09-13 und keine Reihenfolge mehr.
+- **2026-09-13** — Bereinigung nach den Entscheidungen des Tages:
+  Statusmodell um `zurückgestellt` und die Zusätze erweitert, Freitext im
+  Statusfeld nicht mehr zulässig, alle Einträge auf diese Form gebracht.
+  **Überführt**, weil gebaut: `IDEA-PRX-001`, `-007`, `-011`, `-014`, `-020`,
+  `-042` Teil 1, `IDEA-LZK-006` in Teilen; überführt in Entscheidungen und
+  Loops, **noch nicht gebaut**: `IDEA-PRX-029` und `-032` (ADR-019, MAP-Loops),
+  `-030` außer dem Einzel-Link aus UX-002, `-028` (→ `IDEA-KI-007`).
+  **Zurückgestellt** oder **verworfen** nach B9, B10 und B11. Die UI-Befunde
+  `IDEA-PRX-038` und `-040` stehen als BEF-001 und BEF-002 in
+  `../development/BEFUNDE.md`.
 
 ## Index — welche Datei wofür
 
@@ -249,11 +220,5 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-09-13 (Bereinigung: Statusmodell, Stände nach
-E14/E15/E-20, `BEFUNDE.md`, Wettbewerbsreferenz). Vorherige Aktualisierung:
-2026-09-12 (`IDEA-PRX-042` notiert). Vorherige
-Aktualisierung: 2026-09-08 (`IDEA-PRX-002` und `IDEA-KI-007` auf
-`überführt`; Google-Maps-Vermerk vom 2026-09-06 als überholt gekennzeichnet).
-Vorherige Aktualisierung: 2026-09-06 (Wettbewerbsreferenz und Bereichsdatei
-Praxisverwaltung mit `IDEA-PRX-001` bis `IDEA-PRX-028`; Entscheidungen vom
-2026-09-06, Tagesroute `IDEA-PRX-029` bis `-033`, `IDEA-LZK-008`)
+Zuletzt aktualisiert: 2026-09-14 (Konsolidierung R2: überführte Einträge auf
+Kopf und Stand-Zeile). Ältere Stände: `git log -- docs/product/`.

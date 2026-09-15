@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+  tagInTagen,
+} from './helpers/db';
 
 /**
  * Termine abschliessen und wieder oeffnen (CAL-004).
@@ -30,12 +38,6 @@ const STAFF = {
   anna: '55555555-5555-4555-8555-000000000002',
   tim: '55555555-5555-4555-8555-000000000004',
 } as const;
-
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
 
 const TAG = tagInTagen(60);
 

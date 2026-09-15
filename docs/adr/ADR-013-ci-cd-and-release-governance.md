@@ -4,13 +4,18 @@
 
 **Angenommen** (2026-08-28).
 
+**Fassung 3 (2026-09-15)** — Punkt 2 nimmt die Prüfung der Dokumentation
+(`pnpm docs:check`) als zehnte Pflichtprüfung auf. Punkt 9 Nr. 8 nennt statt
+des nicht verfügbaren Auto-Merge den Merge durch den Projektinhaber und
+verweist für Modell und Aufwand auf `.claude/settings.json` und
+`docs/development/SESSION-START.md`. Alle übrigen Punkte gelten unverändert.
+
 **Fassung 2 (2026-09-13)** — Punkt 9 definiert „kritische Änderung" und legt
-die Review-Checkliste fest, die Punkt 8 seit Fassung 1 verlangt. Alle übrigen
-Punkte gelten unverändert.
+die Review-Checkliste fest, die Punkt 8 seit Fassung 1 verlangt.
 
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-09-13
+2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-09-15
 
 ## Kontext
 
@@ -52,6 +57,11 @@ Dieser ADR schließt den offenen Punkt E7.
    - Secret Scanning
    - Dependency Vulnerability Scan
    - statische Sicherheitsanalyse
+   - Prüfung der Dokumentation (Fassung 3): Obergrenzen der
+     Steuerungsdokumente, ein Anker im Code je Annahme des Registers, keine
+     toten relativen Verweise. Dieselbe Begründung wie bei den übrigen
+     Prüfungen: Eine Regel, die nur im Kopf existiert, wird unter Zeitdruck
+     gebrochen — eine Obergrenze, die niemand misst, ist keine.
 3. Der **`main`-Branch wird geschützt**.
 4. **Force Push auf `main` ist nicht erlaubt.**
 5. **Fehlgeschlagene verpflichtende CI-Checks blockieren den regulären Merge.**
@@ -107,9 +117,10 @@ Dieser ADR schließt den offenen Punkt E7.
       **Zweitreview in frischem Kontext vor dem Merge** — in derselben
       Session durch einen Review-Subagenten mit eigenem Kontext, der nur den
       Diff und diese Checkliste als Auftrag bekommt; ist das nicht möglich,
-      in einer eigenen Review-Session (Opus 5 `xhigh`), und der Pull Request
-      wird bis dahin ohne Auto-Merge geführt. Befunde daraus werden ein
-      eigener Loop.
+      in einer eigenen Review-Session; Modell und Aufwand richten sich nach
+      `.claude/settings.json` und `docs/development/SESSION-START.md`. Der
+      Pull Request wartet bis dahin auf den Merge durch den Projektinhaber.
+      Befunde daraus werden ein eigener Loop.
    9. Rechnungsdaten: Snapshot, Unveränderbarkeit, Storno-Kette
       ([ADR-009](ADR-009-private-billing-model.md)).
    10. `pnpm test:db` und die vollständige Suite auf dem Endstand; angemeldete
@@ -159,9 +170,11 @@ Dieser ADR schließt den offenen Punkt E7.
   beantwortet — ein Bericht ohne diese Antworten ist bei einer kritischen
   Änderung unvollständig. OPS-002 verankert sie später in der Pipeline; bis
   dahin ist Skill-Schritt F die Stelle, an der sie abgearbeitet wird.
-- Neun Pflichtprüfungen kosten Laufzeit bei jeder Änderung. Langsame CI
+- Zehn Pflichtprüfungen kosten Laufzeit bei jeder Änderung. Langsame CI
   verführt zum Umgehen; die Prüfungen sollten deshalb schnell und parallel
   gehalten werden. Das ist ein Betriebsziel, keine Ausnahme von der Pflicht.
+  Die Dokumentationsprüfung ist die billigste von allen — sie liest Dateien
+  und startet nichts.
 - Der Wortlaut „blockieren den **regulären** Merge" lässt einen Notfallweg zu.
   Ein solcher Weg ist damit nicht eingerichtet; falls er eingerichtet wird,
   ist er nach ADR-010 ein privilegierter Vorgang mit Begründung und Audit.

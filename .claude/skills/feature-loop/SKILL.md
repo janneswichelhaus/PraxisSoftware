@@ -16,11 +16,8 @@ ADRs. Dieser Skill wiederholt sie nicht — er beschreibt nur die Reihenfolge,
 den Zuschnitt und die Abbruchbedingungen.
 
 **Zuerst `docs/development/ROADMAP.md` lesen** — Einordnung des Auftrags,
-Voraussetzungen des Schritts, Credit-Regeln. Fehlt eine dort genannte
-Voraussetzung aus Spur B, gilt `PROJECT_PRINCIPLES.md` §15.1: Ist sie als
-begründete Annahme reversibel überbrückbar, wird sie angenommen und
-registriert; fällt sie in die Hard-Stop-Liste, wird das gemeldet und nur der
-davon abhängige Teil nicht begonnen.
+Voraussetzungen des Schritts, Credit-Regeln; fehlt eine Voraussetzung aus
+Spur B, gilt die Regel dort („Was dieses Dokument ist").
 
 ---
 
@@ -31,12 +28,7 @@ Vor dem ersten Schritt den Pfad nach
 bestimmen und in einem Satz nennen. Dieser Skill ist **Pfad A**: Der Diff
 berührt einen Auslöser aus ADR-013 Fassung 2, Punkt 9 (Liste nur dort).
 Berührt der Auftrag keinen davon und soll kein Wert die Sitzung überleben,
-ist er Pfad S: stoppen und `/sandbox <Thema>` vorschlagen. Fehlt eine
-Entscheidung aus der Hard-Stop-Liste (§15.1), ist das Pfad D: die Frage mit
-Optionen, Empfehlung und Konsequenzen stellen und nur bauen, was nicht davon
-abhängt. Ein Pfad-A-Auftrag enthält per Definition kritische Änderungen;
-Schritt F arbeitet die Review-Checkliste je Story ab, nicht zutreffende
-Punkte werden im Bericht als „entfällt" mit Begründung genannt.
+ist er Pfad S: stoppen und `/sandbox <Thema>` vorschlagen.
 
 ## A. SPEC
 
@@ -57,8 +49,6 @@ Aus dem Auftrag ableiten und kurz festhalten:
   des Epics werden als erste Story übernommen (Roadmap-Regel R6); steht in
   der Roadmap-Zeile ein Hinweis „Ablaufkarte … AC aus …", werden die dort
   genannten Akzeptanzkriterien übernommen, die Karte selbst wird nicht gelesen
-- **`IDEA-`-Verweise** in der Roadmap-Zeile nennen die Herkunft der Idee und
-  importieren nichts; der Scope entsteht hier
 - **Annahmen** — jede Festlegung, die Auftrag, Prinzipien und ADRs nicht
   treffen, wird hier als `ANN-NNN` vorgemerkt (Abschnitt „Annahmen statt
   Rückfragen" in `CLAUDE.md`)
@@ -80,20 +70,16 @@ Details sind keine Annahmen im Sinne des Registers.
 
 ### Ideenspeicher konsultieren
 
-Anschließend **eine** passende Bereichsdatei aus `docs/product/ideen/` lesen —
-der Index in `docs/product/IDEENSPEICHER.md` sagt welche. Nicht alle, und nur
-wenn eine zum Auftrag passt.
+Höchstens **eine** passende Bereichsdatei aus `docs/product/ideen/` lesen —
+Index und Regeln in `docs/product/IDEENSPEICHER.md`. Zweck: bessere Rückfragen
+und Benennung; nie Scope, nie Vorbauen. Würde ein Hinweis Mehrarbeit oder eine
+Entscheidung bedeuten, wird er in Schritt I als offene Frage genannt.
 
-Zweck ist ausschließlich: bessere Rückfragen stellen und offensichtliche
-Sackgassen in Benennung und Modellierung vermeiden.
+### Freigabe
 
-- Rang 6. **Begründet nie Scope.** Kein Eintrag von dort ist ein Auftrag.
-- **Nichts vorbauen** — keine Spalte, kein Feld, kein Statuswert, kein
-  UI-Element „für später" (`PROJECT_PRINCIPLES.md` §11, ADR-014).
-- Würde ein Hinweis von dort Mehrarbeit oder eine fachliche Entscheidung
-  bedeuten: nicht umsetzen, in Schritt I als offene Frage nennen.
-- Ideen, die während des Loops entstehen, dort als `vorschlag` eintragen —
-  nicht bauen.
+A endet mit drei Sätzen an Jannes: was gebaut wird, was bewusst nicht, welche
+Prüfungen betroffen sind. **Dann auf „Freigabe" warten.** Ab B läuft der Loop
+ohne Zwischenstopp bis zum Bericht.
 
 ## B. INSPECT
 
@@ -101,9 +87,8 @@ Nur die für das Epic relevanten Teile des Repositories ansehen. Kein
 vollständiges Durchsuchen.
 
 - Erst die vermutete Stelle direkt öffnen, dann gezielt suchen.
-- Bei **umfangreicher** Exploration über viele Dateien: read-only
-  `Explore`-Subagent verwenden, damit große Such- und Dateiausgaben nicht den
-  Hauptkontext füllen. Für zwei, drei bekannte Dateien lohnt das nicht.
+- Ein read-only `Explore`-Subagent nur bei breiter Suche über viele Dateien
+  (Roadmap, Credit-Regel 8).
 - Nur die in A benannten ADRs **vollständig** lesen.
 
 ## C. PLAN
@@ -148,7 +133,8 @@ Datenbanktest.
 
 | Änderung betrifft …         | dann mindestens                                                 |
 | --------------------------- | --------------------------------------------------------------- |
-| immer                       | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check` |
+| immer                       | `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` |
+| Dokumentation               | `pnpm docs:check`                                               |
 | Migrationen, Policies, RPCs | `pnpm test:db`                                                  |
 | Oberfläche                  | `pnpm test:e2e` und visuelle Prüfung                            |
 | Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`            |
@@ -157,10 +143,6 @@ Datenbanktest.
 Diese Tabelle sagt, **welche Prüfung wann sinnvoll** ist. Welche Prüfungen die
 CI erzwingt, steht abschließend in ADR-013; weicht sie von dieser Tabelle ab,
 gilt ADR-013.
-
-`pnpm test:db` läuft **auch in der Cloudumgebung** — es braucht kein Docker.
-Bei Migrationen, Policies und RPCs ist es das wichtigste Gate und wird nicht
-mit dem Hinweis auf `supabase start` übersprungen.
 
 Bei UI-Änderungen die **laufende** Anwendung ansehen (Chromium/Playwright),
 nicht nur Tests. Betrifft das Feature mobile Nutzung, zusätzlich bei ~375 px
@@ -171,8 +153,7 @@ für Jannes** nach `docs/abnahme/` — in die Datei der laufenden Etappe, als
 Abschnitt mit der Loop-Kennung. **Nicht** nach `docs/DEVELOPMENT.md`. Regeln
 in `docs/abnahme/README.md`.
 
-**Keine Prüfung als erfolgreich melden, die nicht gelaufen ist.** Was aus
-Umgebungsgründen nicht geht, wird als solches benannt.
+Was aus Umgebungsgründen nicht läuft, wird als nicht gelaufen benannt.
 
 ## F. REVIEW
 
@@ -188,14 +169,12 @@ Eigenen Diff (`git diff main...HEAD`) durchgehen auf:
 - die **Review-Checkliste** aus ADR-013 Fassung 2, Punkt 9, je Story Punkt
   für Punkt — das Compliance-Gate A4; nicht zutreffende Punkte als
   „entfällt" mit Begründung. Ein roter Punkt geht zurück in den Build, nicht
-  als „bekannte Einschränkung" in den Bericht. Verlangt Nr. 8 der Liste
-  einen **Zweitreview** (A5), läuft er **vor dem Merge** in frischem
-  Kontext: ein Review-Subagent mit eigenem Kontext (`/code-review`,
-  `/security-review` oder ein allgemeiner Subagent), der nur den Diff und
-  die Checkliste als Auftrag bekommt — die zweite zulässige Ausnahme von
-  Credit-Regel 8. Ist das nicht möglich, nennt der Bericht den Zweitreview
-  als ausstehend, und der Pull Request wird ohne Auto-Merge eröffnet; Jannes
-  startet dann die Zeile „Zweitreview" aus der Roadmap
+  als „bekannte Einschränkung" in den Bericht. Verlangt Nr. 8 einen
+  **Zweitreview** (A5), läuft er vor dem Merge als Review-Subagent mit eigenem
+  Kontext (`/code-review`, `/security-review` oder allgemein), der nur den
+  Diff und die Checkliste bekommt (Credit-Regel 8). Geht das nicht, nennt der
+  Bericht ihn als ausstehend; Jannes startet die Zeile „Zweitreview" der
+  Roadmap und mergt erst danach
 - unnötiger Scope
 - fehlende Tests, besonders für Negativfälle
 - versehentliche Secrets oder Logging sensibler Daten
@@ -227,8 +206,8 @@ wird als Annahme getroffen. Eine Scope-Erweiterung ist kein Stoppgrund, wenn
 die Akzeptanzkriterien des Epics sie brauchen; sie wird gebaut und im Bericht
 benannt. Wäre sie ein eigenes Epic, wird sie vorgeschlagen, nicht gebaut.
 
-Tests, RLS-Policies, Secret-Scanning und andere Security-Gates werden **niemals**
-abgeschwächt, um grün zu werden (`PROJECT_PRINCIPLES.md` §12).
+Gates werden **niemals** abgeschwächt, um grün zu werden (`CLAUDE.md`, Harte
+Regeln; `PROJECT_PRINCIPLES.md` §12).
 
 ## H. FINAL VERIFY
 
@@ -259,13 +238,13 @@ Kompakt berichten:
 
 Dann in `docs/development/ROADMAP.md` den Eintrag in der Fortschrittstabelle
 auf `fertig` setzen, mit Datum und Commit, den Posten in
-`docs/development/fortschritt.json` auf `fertig`, den Abschnitt „Nächster
-Loop" auf den folgenden Eintrag stellen (er trägt nur den Livestand; was
-fertig wurde, kommt in den Änderungsvermerk) und bearbeitete Befunde in
-`docs/development/BEFUNDE.md` als erledigt markieren. Ein Eintrag ohne
-durchlaufenen Schritt I wird nicht abgehakt. Der Pull Request wird gemergt,
-sobald die CI grün ist — außer ein Zweitreview (A5) steht aus, dann ohne
-Auto-Merge bis dahin; die Abnahme durch Jannes folgt danach.
+`docs/development/fortschritt.json` auf `fertig`, **`docs/STATUS.md` auf die
+nächste Aufgabe stellen** (Jetzt, Danach, Blocker, „Letzte Session" mit den
+lokalen Schritten) und bearbeitete Befunde in `docs/development/BEFUNDE.md`
+als erledigt markieren. **`pnpm docs:check` muss danach grün sein** — es prüft
+die Obergrenzen, die Anker des Registers und die relativen Verweise. Ein
+Eintrag ohne durchlaufenen Schritt I wird nicht abgehakt. Merge und Abnahme:
+Roadmap, „Definition of Done".
 
 **Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein
 neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.

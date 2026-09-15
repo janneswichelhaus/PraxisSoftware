@@ -7,8 +7,6 @@ STAFF-001.
 > [`../DEVELOPMENT.md`](../DEVELOPMENT.md), Abschnitt „Lokale Abnahme".
 > Anmeldedaten stehen dort unter „Testkonten".
 
-Die Nummerierung ist aus `DEVELOPMENT.md` übernommen und dort entfallen.
-
 ---
 
 ## PAT-002 — Stammdaten bearbeiten
@@ -20,7 +18,7 @@ Die Nummerierung ist aus `DEVELOPMENT.md` übernommen und dort entfallen.
 5. Der neue Ort steht in der Akte unter „Adresse".
 6. Seite neu laden (F5) — der Wert steht weiterhin dort.
 7. Als `jannes.test@praxis.invalid` (owner) anmelden und
-   „Praxis → Sicherheit → Audit" öffnen: dort steht ein Eintrag
+   „Organisatorisches → Sicherheit" öffnen: dort steht ein Eintrag
    `patient.updated`, ohne Stammdatenwerte.
 
 ## PAT-003 — Versorgungsstatus
@@ -99,7 +97,7 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
 7. Im Kalender ist er standardmäßig ausgeblendet und über den Statusfilter
    „Alle" wieder sichtbar.
 8. Der abgesagte Zeitraum lässt sich neu belegen.
-9. Als `jannes.test@praxis.invalid` (owner) „Praxis → Sicherheit → Audit"
+9. Als `jannes.test@praxis.invalid` (owner) „Organisatorisches → Sicherheit"
    öffnen: dort stehen `appointment.created`, `appointment.rescheduled`
    beziehungsweise `appointment.updated` und `appointment.cancelled` — ohne
    Stammdaten und ohne konkrete Terminzeiten.
@@ -125,7 +123,7 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
    Der Termin lässt sich jetzt wieder verschieben.
 8. Einen abgesagten Termin öffnen: dort gibt es weder „Termin abschließen"
    noch „Termin wieder öffnen".
-9. Als `jannes.test@praxis.invalid` (owner) „Praxis → Sicherheit → Audit"
+9. Als `jannes.test@praxis.invalid` (owner) „Organisatorisches → Sicherheit"
    öffnen: dort stehen zusätzlich `appointment.completed` und
    `appointment.reopened`. Beide bleiben stehen — auch der Abschluss, der
    wieder geöffnet wurde.
@@ -163,7 +161,7 @@ Rolle; `olivia.office@praxis.invalid` taucht in der Auswahl deshalb nicht auf.
     „passt schon".
 13. Gegenprobe Grenzen der Bestätigung: denselben Zeitraum ein zweites Mal
     bestätigen. Der Überschneidungsschutz greift weiterhin.
-14. Als owner „Praxis → Sicherheit → Audit" öffnen: dort steht
+14. Als owner „Organisatorisches → Sicherheit" öffnen: dort steht
     `organization.appointment_grid_changed` mit altem und neuem Minutenwert.
     Ein Minutenraster ist eine organisatorische Einstellung, kein Gesundheits-
     oder Stammdatenwert.
@@ -249,7 +247,7 @@ Person, Mitarbeiterdatensatz und Zugang bleiben getrennte Konzepte (ADR-014).
     Beispiel" öffnen — der Abschnitt „Privat" fehlt vollständig. Als owner
     erscheint er. Die Felder werden für office **gar nicht erst geliefert**,
     nicht nur ausgeblendet (§20, §4.7).
-16. Als owner „Praxis → Sicherheit → Audit" öffnen: dort stehen
+16. Als owner „Organisatorisches → Sicherheit" öffnen: dort stehen
     `staff_member.created`, `staff_member.updated` und
     `staff_member.status_changed` — ohne Namen, ohne Kontaktdaten und ohne
     Privatangaben. Bei einer Änderung werden nur die **Namen** der geänderten

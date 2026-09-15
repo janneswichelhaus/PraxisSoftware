@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ageInYears, formatDate, fullName } from './api';
+import { ageInYears, fullName } from './api';
 
 describe('ageInYears', () => {
   const heute = new Date('2026-08-28T12:00:00');
@@ -22,18 +22,12 @@ describe('ageInYears', () => {
   });
 });
 
-describe('formatDate', () => {
-  it('formatiert ein Datum deutsch', () => {
-    expect(formatDate('2026-02-10')).toBe('10.02.2026');
-  });
-
-  it('zeigt einen Platzhalter statt eines leeren Feldes', () => {
-    expect(formatDate(null)).toBe('—');
-  });
-});
-
 describe('fullName', () => {
   it('setzt Vor- und Nachname zusammen', () => {
     expect(fullName({ given_name: 'Max', family_name: 'Mustermann' })).toBe('Max Mustermann');
+  });
+
+  it('gilt auch fuer einen Mitarbeiterdatensatz', () => {
+    expect(fullName({ given_name: 'Anna', family_name: 'Beispiel' })).toBe('Anna Beispiel');
   });
 });

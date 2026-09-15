@@ -21,8 +21,6 @@ function quelldateien(verzeichnis: string): string[] {
   const treffer: string[] = [];
   for (const eintrag of readdirSync(verzeichnis)) {
     const pfad = join(verzeichnis, eintrag);
-    // Der Name kommt aus dem Verzeichnis, nicht aus einer Eingabe.
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (statSync(pfad).isDirectory()) treffer.push(...quelldateien(pfad));
     // Tests sind ausgenommen: sie beschreiben die Regel und müssten das Wort
     // sonst umschreiben, um sich nicht selbst zu melden.
@@ -69,7 +67,6 @@ describe('Keine Schatten', () => {
   it('verwendet nirgends eine Schatten-Utility', () => {
     const treffer: string[] = [];
     for (const datei of quelldateien(join(stamm, 'src'))) {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
       const inhalt = readFileSync(datei, 'utf8');
       // Die Utility steht hinter einem Leerzeichen, einem Anfuehrungszeichen
       // oder einem Varianten-Doppelpunkt (`hover:shadow-md`). Der Rueckblick
@@ -112,7 +109,6 @@ describe('Radien des Systems', () => {
     const erlaubt = new Set(['button', 'field', 'card', 'image', 'pill', '[6px]']);
     const treffer: string[] = [];
     for (const datei of quelldateien(join(stamm, 'src'))) {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
       const inhalt = readFileSync(datei, 'utf8');
       for (const fund of inhalt.matchAll(/\brounded-(\[[^\]]+\]|[a-z0-9]+)\b/g)) {
         if (!erlaubt.has(fund[1]!)) treffer.push(`${datei.replace(`${stamm}/`, '')}: ${fund[0]}`);

@@ -65,7 +65,7 @@ export function zeitgleicheAbwesenheiten(
   );
 }
 
-export interface Urlaubskonto {
+interface Urlaubskonto {
   anspruch: number;
   uebertrag: number;
   genehmigt: number;

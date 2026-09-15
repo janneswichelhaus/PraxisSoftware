@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   KONTEN,
-  PATIENTEN,
   TAGESFENSTER,
   anmelden,
   arbeitszeitBestaetigen,
@@ -10,6 +9,8 @@ import {
   tagImFenster,
   terminKachel,
   terminUeberApi,
+  terminUeberOberflaeche,
+  zeitImLauf,
   zugriffstoken,
 } from './helpers';
 
@@ -29,34 +30,12 @@ function laufTag(versatz = 0): string {
   return tagImFenster(TAGESFENSTER.appointmentChanges, LAUF, versatz);
 }
 
-function zeit(minutenAbAcht: number): string {
-  // Der Beginn muss auf dem Praxisraster liegen (CAL-005; im Seed 5 Minuten).
-  const gesamt = 8 * 60 + (LAUF % 12) * 5 + minutenAbAcht;
-  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
-  const m = String(gesamt % 60).padStart(2, '0');
-  return `${h}:${m}`;
-}
+const zeit = (minutenAbAcht: number) => zeitImLauf(LAUF, minutenAbAcht);
 
-/** Legt einen Termin über die echte Oberfläche an und liefert seine Kennung. */
-async function terminAnlegen(
+const terminAnlegen = (
   page: Page,
   opts: { tag: string; von: string; bis: string; person?: string },
-): Promise<string> {
-  await page.goto(`/patienten/${PATIENTEN.max}/termine/neu`);
-  await page
-    .getByLabel('Behandelnde Person *')
-    .selectOption({ label: opts.person ?? 'Anna Beispiel' });
-  await page.getByLabel('Terminart *').selectOption('practice');
-  await page.getByLabel('Datum *').fill(opts.tag);
-  await page.getByLabel('Beginn *').fill(opts.von);
-  // Das Ende ist seit CAL-010a eine Ableitung aus dem Beginn (8.1) und kein
-  // Feld mehr. Geprueft wird es trotzdem - sonst waere `bis` nur noch Zierde.
-  await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
-  await page.getByRole('button', { name: 'Termin anlegen' }).click();
-  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
-  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-  return page.url().split('/').pop()!;
-}
+) => terminUeberOberflaeche(page, opts);
 
 test.describe('CAL-003: Bearbeiten und Verschieben', () => {
   test('verschiebt einen Termin dauerhaft', async ({ page }) => {

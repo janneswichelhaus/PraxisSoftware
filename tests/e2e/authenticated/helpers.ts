@@ -412,3 +412,61 @@ export async function pruefeBreiten(page: Page, sichtbar: () => Promise<void>): 
     expect(ueberbreit, `${name} (${breite} px) scrollt waagerecht`).toBe(false);
   }
 }
+
+/**
+ * Beginn eines Termins auf dem Praxisraster, je Lauf verschieden.
+ *
+ * Ein fester Beginn ließe zwei Läufe derselben Spezifikation kollidieren: ein
+ * angelegter Termin lässt sich fachlich nicht entfernen, und der
+ * Überschneidungsschutz greift zu Recht. Die Streuung über `lauf` verschiebt
+ * jeden Lauf um ein Vielfaches des Rasters (im Seed 5 Minuten). `stufen` sagt,
+ * wie viele Stufen eine Spezifikation braucht — so viele, wie sie Termine an
+ * einem Tag anlegt.
+ */
+export function zeitImLauf(lauf: number, minutenAbAcht = 0, stufen = 12): string {
+  const gesamt = 8 * 60 + (lauf % stufen) * 5 + minutenAbAcht;
+  const h = String(Math.floor(gesamt / 60)).padStart(2, '0');
+  const m = String(gesamt % 60).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+/**
+ * Legt einen Termin über die echte Oberfläche an und liefert seine Kennung.
+ *
+ * Bewusst über das Formular und nicht über die API: Zehn Spezifikationen
+ * brauchen einen Termin als Voraussetzung, und jede davon soll denselben Weg
+ * gehen, den die Praxis geht. `terminUeberApi` bleibt für die Fälle, in denen
+ * die Oberfläche selbst der Prüfgegenstand ist und der Aufbau schnell sein muss.
+ *
+ * `bis` prüft das aus dem Beginn abgeleitete Ende (CAL-010a, §8.1) — es ist
+ * seitdem kein Feld mehr. `standortAbwarten` wartet auf die Vorbelegung des
+ * Standorts: Bei genau einem Standort füllt das Formular ihn erst, wenn die
+ * Standorte geladen sind; wer vorher abschickt, schickt ein leeres Pflichtfeld
+ * ab und bleibt stehen. Auf einem belasteten Runner ist genau das passiert.
+ */
+export async function terminUeberOberflaeche(
+  page: Page,
+  opts: {
+    tag: string;
+    von: string;
+    bis?: string;
+    art?: 'practice' | 'video' | 'home_visit';
+    person?: string;
+    patient?: string;
+    standortAbwarten?: boolean;
+  },
+): Promise<string> {
+  await page.goto(`/patienten/${opts.patient ?? PATIENTEN.max}/termine/neu`);
+  await page
+    .getByLabel('Behandelnde Person *')
+    .selectOption({ label: opts.person ?? 'Anna Beispiel' });
+  await page.getByLabel('Terminart *').selectOption(opts.art ?? 'practice');
+  if (opts.standortAbwarten) await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
+  await page.getByLabel('Datum *').fill(opts.tag);
+  await page.getByLabel('Beginn *').fill(opts.von);
+  if (opts.bis) await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
+  await page.getByRole('button', { name: 'Termin anlegen' }).click();
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
+  return page.url().split('/').pop()!;
+}

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
-import type * as RouterModule from 'react-router-dom';
-import { renderWithProviders, testUser } from '@/test-utils';
+import type * as RouterModul from 'react-router-dom';
+import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 /**
  * Das ganze Ereignis bearbeiten (CAL-017).
@@ -19,36 +19,17 @@ const GRUPPE = '88888888-8888-4888-8888-000000000001';
 const ORT = '33333333-3333-4333-8333-000000000001';
 
 /** Ereignis am 12.05.2027, 09:00-09:25 Ortszeit Europe/Berlin (CEST, +02:00). */
-const ereignis: AppointmentsApi.Appointment = {
+const ereignis = testAppointment({
   id: TERMIN_ID,
   patient_id: null,
   kind: 'event',
   title: 'Teambesprechung',
   event_group_id: GRUPPE,
-  staff_member_id: '55555555-5555-4555-8555-000000000002',
   location_id: ORT,
-  appointment_type: 'practice',
-  status: 'confirmed',
-  starts_at: '2027-05-12T07:00:00.000Z',
   ends_at: '2027-05-12T07:25:00.000Z',
-  updated_at: '2027-05-01T10:00:00.000000+00',
-  visit_street: null,
-  visit_house_number: null,
-  visit_postal_code: null,
-  visit_city: null,
-  completed_at: null,
-  cancellation_reason: null,
-  no_show_recorded_at: null,
-  cancellation_received_at: null,
-  fee_basis: null,
   patient_given_name: null,
   patient_family_name: null,
-  staff_given_name: 'Anna',
-  staff_family_name: 'Beispiel',
-  location_name: 'Hauptstandort Tuebingen',
-  notification_channels: [],
-  organization_time_zone: 'Europe/Berlin',
-};
+});
 
 const beteiligte: AppointmentsApi.EventParticipant[] = [
   {
@@ -89,10 +70,10 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof RouterModule>();
-  return { ...actual, useParams: () => ({ appointmentId: TERMIN_ID }) };
-});
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useParams: () => ({ appointmentId: TERMIN_ID }),
+}));
 
 const { EditEventPage } = await import('./EditEventPage');
 

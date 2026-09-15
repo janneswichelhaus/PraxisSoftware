@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase, tagInTagen } from './helpers/db';
 
 /**
  * Ereignisse des Praxisbetriebs (CAL-015b, PROJECT_PRINCIPLES.md 0.9
@@ -43,12 +43,6 @@ const TIM = '55555555-5555-4555-8555-000000000004';
 const STANDORT = '33333333-3333-4333-8333-000000000001';
 
 /** Ein Kalendertag weit voraus - die Seed-Termine liegen heute. */
-function tagInTagen(tage: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
-
 const TAG = tagInTagen(95);
 
 async function ereignis(

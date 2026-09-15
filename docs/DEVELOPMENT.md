@@ -70,13 +70,13 @@ pnpm dlx supabase@2.116.0 db reset        # Migrationen + Seed erneut anwenden
 pnpm dlx supabase@2.116.0 status -o env   # API_URL und ANON_KEY dieser Instanz
 ```
 
-Die CLI-Version sollte der in `.github/workflows/ci.yml` festgeschriebenen
-entsprechen (`pnpm dlx supabase@2.116.0 …`), damit lokal und in CI derselbe
-Stack läuft. Lief der Stack zuvor mit einer anderen Postgres-Hauptversion
-(`supabase/config.toml` verlangt `major_version = 17`), zuerst
-`pnpm dlx supabase@2.116.0 stop --no-backup` ausführen — das verwirft die
-lokalen Volumes samt synthetischer Daten; `start` legt den Stack danach neu
-an.
+Die Version steht hier und in `.github/workflows/ci.yml` — nirgends sonst;
+sie wird bewusst von Hand erhöht, damit lokal und in CI derselbe Stack läuft.
+Weiter unten steht `supabase` deshalb ohne Version; gemeint ist immer
+`pnpm dlx supabase@2.116.0`. Lief der Stack zuvor mit einer anderen
+Postgres-Hauptversion (`supabase/config.toml` verlangt `major_version = 17`),
+zuerst `supabase stop --no-backup` ausführen — das verwirft die lokalen Volumes
+samt synthetischer Daten; `start` legt den Stack danach neu an.
 
 Die Werte aus `supabase status` gehören zu einer **lokalen Wegwerf-Instanz**.
 Sie werden bei jedem Neuaufsetzen neu erzeugt, sind kein Secret im Sinne von
@@ -105,9 +105,9 @@ pnpm install --frozen-lockfile
 **3. Supabase starten** (Docker Desktop muss laufen)
 
 ```bash
-pnpm dlx supabase@2.116.0 start
-pnpm dlx supabase@2.116.0 db reset        # Migrationen + synthetischer Seed
-pnpm dlx supabase@2.116.0 status -o env | grep -E "^(API_URL|ANON_KEY)"
+supabase start
+supabase db reset        # Migrationen + synthetischer Seed
+supabase status -o env | grep -E "^(API_URL|ANON_KEY)"
 ```
 
 **4. `.env.local` anlegen**
@@ -157,9 +157,6 @@ Die manuellen Klickwege je Feature stehen in
 welcher Datei stehen, sagt die Tabelle in
 [`abnahme/README.md`](abnahme/README.md).
 
-Sie liegen dort statt hier, weil sie mit jedem Loop wachsen und diese Datei
-sonst unlesbar würde.
-
 **8. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                                                   |
@@ -167,8 +164,8 @@ sonst unlesbar würde.
 | `Port 5173 is already in use`                           | Ein `pnpm dev` läuft noch. `netstat -ano \| findstr :5173` in PowerShell, dann `taskkill /PID <pid> /F`. Der Port ist bewusst fest (`strictPort`).                                    |
 | `Konfiguration unvollständig: VITE_SUPABASE_URL fehlt.` | `.env.local` fehlt oder wurde nach dem Start von `pnpm dev` angelegt — Dev-Server neu starten.                                                                                        |
 | `E2E_SUPABASE_URL und E2E_SUPABASE_ANON_KEY fehlen.`    | Die beiden `export`-Zeilen aus Schritt 6 gelten nur im aktuellen Fenster.                                                                                                             |
-| Anmeldung schlägt fehl, obwohl das Kennwort stimmt      | Der Stack läuft nicht oder wurde neu aufgesetzt. `pnpm dlx supabase status` prüfen, danach `pnpm dlx supabase db reset`.                                                              |
-| E2E-Tests finden „Erika Beispiel" nicht                 | Der Seed fehlt. `pnpm dlx supabase db reset`.                                                                                                                                         |
+| Anmeldung schlägt fehl, obwohl das Kennwort stimmt      | Der Stack läuft nicht oder wurde neu aufgesetzt. `supabase status` prüfen, danach `supabase db reset`.                                                                                |
+| E2E-Tests finden „Erika Beispiel" nicht                 | Der Seed fehlt. `supabase db reset`.                                                                                                                                                  |
 | Docker startet nicht                                    | Docker Desktop muss laufen, bevor `supabase start` aufgerufen wird.                                                                                                                   |
 | `WARN: config section [inbucket] is deprecated`         | Warnung, kein Fehler. Die Umbenennung nach `[local_smtp]` in `supabase/config.toml` steht als kleine Wartung in der Roadmap; sie ist lokal mit `supabase stop` und `start` zu prüfen. |
 
@@ -190,14 +187,34 @@ kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank.
 
 ```bash
 pnpm format:check    # Prettier - eigenes CI-Gate, nicht Teil von lint
+pnpm format          # dieselbe Prüfung, schreibend
 pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse
 pnpm typecheck       # TypeScript strict
 pnpm test            # Unit-/Komponententests
+pnpm test:watch      # dieselben Tests, laufend
 pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
+pnpm docs:check      # Obergrenzen, Register-Anker, relative Verweise
+pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien
 pnpm build
+pnpm preview         # den gebauten Stand lokal ausliefern
 ```
+
+`pnpm docs:check` ist ein Gate nach ADR-013 (Prüfung 2.10) und läuft im Job
+„Lint, Typecheck, Tests, Build" direkt hinter dem Lint. Es prüft drei Dinge:
+die Obergrenzen von `CLAUDE.md` (150), `docs/STATUS.md` (60),
+`ASSUMPTIONS.md` (800) und `OPEN_DECISIONS.md` (400); dass jede `ANN-NNN` des
+Registers einen Anker in `src/`, `supabase/migrations/` oder
+`.github/workflows/` hat; und dass jeder relative Markdown-Verweis auf eine
+vorhandene Datei zeigt.
+
+**Modell und Aufwand.** `.claude/settings.json` setzt Opus 5 projektweit. Einen
+Aufwand je Aufgabe kennt die Datei nicht; die Regel „Migration, RLS, Policy
+oder Zweitreview mit `/effort xhigh`" steht in
+[`development/SESSION-START.md`](development/SESSION-START.md). In der
+Weboberfläche hat die Modellwahl beim Sessionstart Vorrang — die Datei gilt für
+CLI-Sessions.
 
 Steht ein Chromium bereits im System, kann er ohne Download verwendet werden:
 
@@ -214,13 +231,11 @@ Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
 
 - Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, Modell Haiku 4.5, erste
   Ausführung 2026-09-07. Sie liest `main`.
-- Prompt am 2026-09-06 auf das Format der Roadmap 2.1 umgestellt
-  (Entscheidung E-10): `git log --since='8 days ago'`, Fortschritt mit
-  Abnahme-Spalte, Spur B mit Stand, Ampel je Meilenstein M0 bis M6.
-- Seit Roadmap 5.2 (2026-09-13) hat der Auftrag einen sechsten Schritt:
-  abgelaufene Sandbox-Prototypen aus `development/ARBEITSBEREICHE.md` §2
-  melden. Zählt der Routine-Prompt die Schritte selbst auf, zieht Jannes ihn
-  nach; verweist er nur auf den Abschnitt, ist nichts zu tun.
+- Der Prompt hat den Stand vor Roadmap 5.2: fünf eigene Schritte, er liest nur
+  die Roadmap und `git log`. Schritt 1 (mit `docs/STATUS.md` und
+  `development/ARBEITSBEREICHE.md` §2) und Schritt 6 (abgelaufene
+  Sandbox-Prototypen) fehlen ihm; den neuen Prompt-Text trägt Jannes ein
+  („Manuelle Schritte im Repository").
 - Nach der Zeitumstellung Ende Oktober fällt sie auf 06:50 Uhr; wer 07:50
   behalten will, ändert den Cron-Ausdruck auf `50 6 * * 1`.
 - Abschalten, Takt oder Prompt ändern: über die Routines-Oberfläche auf
@@ -233,13 +248,9 @@ am 01.07.2027 ohne Vorgängersystem** (entschieden am 2026-09-05 und
 2026-09-06; Meilensteine, Rückwärtsplan und Etappen G und H in
 [`development/ROADMAP.md`](development/ROADMAP.md)).
 
-**Die maßgebliche Liste offener Punkte ist
-[`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md), die anstehende
-Reihenfolge steht in [`development/ROADMAP.md`](development/ROADMAP.md)
-(„Spur B").** Hier steht nur, was davon **den Entwicklungsstand dieses
-Repositories** betrifft — damit nicht zwei Listen nebeneinander veralten.
-
-**Technisch offen im Code:**
+Offene Punkte führt [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md),
+die Reihenfolge [`development/ROADMAP.md`](development/ROADMAP.md) (Spur B,
+Etappe G). Hier steht nur, was im Code offen ist:
 
 1. **Das Löschverfahren nach [ADR-008](adr/ADR-008-data-retention-and-deletion.md)
    steht, zwei betriebliche Teile fehlen noch.** Gebaut und getestet sind seit
@@ -259,38 +270,19 @@ Repositories** betrifft — damit nicht zwei Listen nebeneinander veralten.
      `reapply_deletion_journal()` aufrufen (ADR-008 Punkt 8, ADR-012, ANN-031).
      Keine Funktion kann das lösen.
 
-**Ausserhalb des Codes zu erbringen** — Einzelheiten und Stand jeweils in
-`OPEN_DECISIONS.md`, hier nur als Erinnerung, dass sie den Produktivstart
-blockieren:
-
-2. Providerprüfung für Supabase nach [ADR-002](adr/ADR-002-hosting-data-residency.md)
-   — ohne dokumentiertes Ergebnis darf kein Cloudprojekt mit personenbezogenen
-   Daten entstehen ([ADR-015](adr/ADR-015-initial-technical-stack.md)).
-   Dasselbe gilt für den Kartendienst: das Vertrags-/§203-/DSFA-Gate aus
-   [ADR-019](adr/ADR-019-map-service.md) Punkt 9 (Teil 5 in
-   [`decisions/providerpruefung-kartendienst.md`](decisions/providerpruefung-kartendienst.md))
-   muss passiert sein, bevor MAP-006 echte Adressen an einen Anbieter gibt;
-   die Prototypen MAP-002 bis MAP-005 laufen nur mit synthetischen Daten.
-3. Datenschutzprozess nach [ADR-007](adr/ADR-007-data-protection-impact-assessment.md)
-   inklusive der sieben dort genannten Vorbedingungen (Punkt B2).
-4. Regulatorische Prüfung der Zweckbestimmung nach
-   [ADR-006](adr/ADR-006-medical-device-boundary.md) (Punkt B1).
-5. Alle Annahmen der Kategorien Datenschutz und Recht im
-   [Annahmenregister](decisions/ASSUMPTIONS.md) sind von der Prüfung bestätigt
-   oder geändert umgesetzt; kein Eintrag dieser Kategorien steht mehr auf
-   `offen` **oder `entschieden (Jannes)`** (`PROJECT_PRINCIPLES.md` §15.1
-   Punkt 5 verlangt dort den Datenschutzprozess nach §3.7, nicht die
-   Festlegung des Projektinhabers). Dasselbe gilt für die Punkte in
-   [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md), die auf
-   `vorläufig entschieden (Jannes)` stehen.
+**Außerhalb des Codes** blockieren den Produktivstart die Providerprüfungen
+(Supabase nach [ADR-002](adr/ADR-002-hosting-data-residency.md), Kartendienst
+nach [ADR-019](adr/ADR-019-map-service.md) Punkt 9), der Datenschutzprozess
+nach [ADR-007](adr/ADR-007-data-protection-impact-assessment.md) Punkt 5, die
+Prüfung der Zweckbestimmung nach [ADR-006](adr/ADR-006-medical-device-boundary.md)
+und die Bestätigung aller Datenschutz- und Rechtsannahmen im
+[Annahmenregister](decisions/ASSUMPTIONS.md) — Stand in `OPEN_DECISIONS.md`,
+Termine in der Roadmap (M3, G18).
 
 ## Audit
 
-Das Auditlog hat **kein** direktes `SELECT`-Recht. Gelesen wird ausschließlich
-über `list_audit_events` — nur für die Rolle `owner`, strikt auf die eigene
-Organisation begrenzt, mit Pagination und Filtern nach Zeitraum, Benutzer und
-Aktion. Die Spalte `context` wird grundsätzlich nicht herausgegeben. Jeder
-Aufruf wird selbst als `audit_log.read` protokolliert.
+Gelesen wird das Auditlog nur über `list_audit_events` (Regeln: ADR-010
+Fassung 2, Punkt 13).
 
 Geschrieben werden Auditeinträge ausschließlich innerhalb der jeweiligen
 Fachfunktion — `log_patient_record_view` für das Öffnen einer Akte, die
@@ -333,13 +325,12 @@ deckungsgleich.
 1. **Die E2E-Abläufe hinter der Anmeldung laufen nur mit Docker.** Sie brauchen
    den lokalen Supabase-Stack und werden über `E2E_SUPABASE_URL` /
    `E2E_SUPABASE_ANON_KEY` freigeschaltet (siehe „Lokale Abnahme"). In CI
-   startet der Job `e2e-supabase` den Stack selbst. In Umgebungen ohne Docker
+   startet der Job „End-to-End hinter der Anmeldung" (`e2e-supabase`) den
+   Stack selbst. In Umgebungen ohne Docker
    — etwa der Cloud-Entwicklungsumgebung — läuft weiterhin ausschließlich die
    Abdeckung des nicht angemeldeten Zustands.
-2. **Die Abdeckung hinter der Anmeldung ist bewusst schmal.** Belegt sind die
-   Kernflüsse von PAT-002 und PAT-003 samt Persistenz über einen Neuladevorgang
-   und ein negativer Berechtigungsnachweis auf RPC-Ebene. Die Breite der
-   Prüfung liegt weiterhin bei `pnpm test:db` und den Komponententests.
+2. **Hinter der Anmeldung** laufen 18 Spezifikationen im Playwright-Projekt
+   `authenticated`; die Breite der Prüfung liegt bei `pnpm test:db`.
 3. **Der Secret-Scan prüft nur den aktuellen Stand**, nicht die Git-Historie.
    GitHub Secret Scanning und Push Protection sollten zusätzlich in den
    Repository-Einstellungen aktiviert werden.
@@ -354,46 +345,47 @@ deckungsgleich.
    Versuche wäre eine autonome Transaktion nötig — offen.
 7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
    Auswertung oder Alarmierung.
-8. **Die Dateiablage ist gebaut (DAT-EPIC-001, 2026-09-13), aber nicht
-   produktiv.** Die Regeln stehen in [ADR-017](adr/ADR-017-file-storage.md).
-   **Vor der ersten echten Datei** braucht es zusätzlich OPS-001 und einen
-   dokumentierten, getesteten Sicherungsweg für den Objektspeicher — er läuft
-   im Datenbank-Backup nicht mit (OPS-003). Anhänge an der
-   Behandlungsdokumentation selbst gibt es weiterhin nicht; Dateien hängen an
-   der Akte und an der Verordnung (VER-004).
-9. **Die automatische Finalisierung braucht `pg_cron`.** ADR-016 Punkt 7 ist
-   mit DOK-004 umgesetzt: `finalize_overdue_treatment_notes` schreibt
-   überfällige Entwürfe fest, und die Migration registriert den Aufruf alle
-   15 Minuten über `pg_cron` — aber nur, wo die Erweiterung verfügbar ist
-   (ANN-007). Der lokale Supabase-Stack bringt sie mit; die Wegwerf-Datenbank
-   von `pnpm test:db` nicht, dort wird die Funktion direkt geprüft. Ob der Job
-   läuft, zeigt `select jobname, schedule from cron.job;`. Auf einem Server
-   ohne `pg_cron` bleibt ein Entwurf Entwurf — vor dem Produktivstart ist die
-   Registrierung deshalb zu prüfen.
+8. **Die Dateiablage ist gebaut, aber nicht produktiv** — vor der ersten
+   echten Datei OPS-001 und ein getesteter Sicherungsweg für den
+   Objektspeicher ([ADR-017](adr/ADR-017-file-storage.md), OPS-003).
+9. **Die automatische Finalisierung braucht `pg_cron`** wie der Löschlauf
+   (ADR-016 Punkt 7, ANN-007); ob der Job läuft, zeigt
+   `select jobname, schedule from cron.job;`.
 10. **Ein Termin mit Dokumentation lässt sich weiterhin absagen.** Ob das
     fachlich zulässig sein soll, ist offen; der Entwurf bleibt in diesem Fall
     erhalten und lesbar, es geht nichts verloren.
-11. **Der Behandlungsnachweis in der Akte enthält keine „erbrachte Leistung".**
-    §4.4 nennt sie, aber es gibt noch keine Leistungserfassung. Dass
-    Leistungskürzel organisatorisch sind und dem Office offenstehen, ist seit
-    dem 2026-09-05 mit Punkt C1 entschieden (`PROJECT_PRINCIPLES.md` §4.4,
-    Version 0.4); geliefert werden können sie erst mit ABR-002. Seit E15
-    (2026-09-13) ist der Nachweis keine Zugriffsgrenze mehr — `office` liest
-    die Dokumentation vollständig, sobald ROL-EPIC-001 gebaut ist; ANN-006 ist
-    damit verworfen, der fallbezogene Sonderzugriff (§4.4 bis 0.9) entfallen.
+11. **Der Behandlungsnachweis in der Akte enthält keine „erbrachte Leistung"**
+    — sie kommt mit ABR-002 (`PROJECT_PRINCIPLES.md` §4.4, Punkt C1).
 
 ## Manuelle Schritte im Repository
 
 Diese Einstellungen lassen sich nicht aus dem Code setzen:
 
-- Branch Protection auf `main`: erforderliche Checks `quality`, `database`,
-  `security`, `e2e`, `e2e-supabase`; Force Push verbieten (ADR-013).
+- Branch Protection auf `main` (M0, 30.09.): erforderliche Checks unter ihren
+  Anzeigenamen „Lint, Typecheck, Tests, Build" (`quality`), „Migrationen und
+  RLS-Policies" (`database`), „Secret Scanning und Dependency Audit"
+  (`security`), „End-to-End" (`e2e`), „End-to-End hinter der Anmeldung"
+  (`e2e-supabase`); Force Push und Deletions aus; keine Pflicht-Approvals
+  (ADR-013).
 - GitHub Secret Scanning und Push Protection aktivieren.
-- **„Allow auto-merge"** in den Repository-Einstellungen aktivieren
-  (entschieden 2026-09-13): Ein Pull Request wird gemergt, sobald die
-  erforderlichen Checks grün sind; die Branch Protection bleibt die
-  Voraussetzung dafür (ADR-013). Gemergte Branches automatisch löschen
-  („Automatically delete head branches").
+- Gemergte Branches automatisch löschen („Automatically delete head
+  branches"). „Allow auto-merge" entfällt — auf diesem GitHub-Plan nicht
+  verfügbar; Jannes mergt nach grüner CI (Roadmap, „Definition of Done").
+- Nach dem Merge der Konsolidierung R2: Pull Request #37 schließen, nicht
+  mergen (sein Inhalt steht als `development/VER-EPIC-002.md` auf `main`), dann
+  `git fetch origin --prune && git push origin --delete claude/focused-hopper-mwkc5d claude/praxissoftware-arch-graph-gc1a3u codex/plan-verordnung-office-20260913`.
+- Wochenupdate-Routine (`trig_01N5FanspQGxJP9S9rnZiZHj`) auf claude.ai: den
+  Prompt ersetzen durch
+
+  ```
+  Wochenupdate für PraxisSoftware auf main. Nichts bauen, nichts ändern.
+  Den Abschnitt „Wochenupdate" in docs/development/ROADMAP.md Schritt für
+  Schritt ausführen und im dort festgelegten Format antworten.
+  ```
+
+  Weil er nur auf den Abschnitt verweist, folgt die Routine jeder künftigen
+  Änderung dort ohne neuen Eingriff.
+
 - Dependabot oder eine vergleichbare Aktualisierung der Abhängigkeiten.
 - **Die Supabase-CLI-Version in `.github/workflows/ci.yml` von Hand erhöhen.**
   Sie steht dort fest statt auf `latest`, weil `latest` die Action bei jedem

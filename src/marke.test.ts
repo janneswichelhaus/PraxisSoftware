@@ -25,9 +25,6 @@ const QUELLEN = [join(stamm, 'marke/app'), join(stamm, 'marke/logo')];
 
 function quelleVon(datei: string): string {
   for (const verzeichnis of QUELLEN) {
-    // readdirSync statt existsSync(join(...)): der Dateiname kommt aus dem
-    // Verzeichnis, nicht aus einer Eingabe, und ein Vergleich gegen die
-    // gelisteten Namen ist kein Pfad-Sink fuer eslint-plugin-security.
     if (readdirSync(verzeichnis).includes(datei)) return join(verzeichnis, datei);
   }
   throw new Error(

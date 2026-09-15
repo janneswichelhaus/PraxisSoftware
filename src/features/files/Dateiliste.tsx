@@ -380,7 +380,7 @@ function Dateizeile({
   );
 }
 
-export interface DateilisteProps {
+interface DateilisteProps {
   patientId: string;
   user: CurrentUser;
   /** Gesetzt: nur die Dateien dieser Verordnung, und der Scan als einzige Art. */

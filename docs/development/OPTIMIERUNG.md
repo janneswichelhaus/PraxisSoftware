@@ -290,7 +290,7 @@ ersten Erhebung durch jemand anderen als Jannes.
   (Keller, Treppenhaus, Rad) mit synthetischen Daten: Sekunden bis bedienbar;
   einmal Verbindungsabbruch mitten im Formular.
 - **Schattentag** — zweimal vor dem Gate (nach CAL-EPIC-003a; in der
-  Messrunde vor M3) und einmal nach TOUR-EPIC-001a mit der Tagesroute: eine
+  Messrunde vor M3) und einmal nach MAP-006 mit der Tagesroute: eine
   echte Radrunde zu eigenen Adressen mit **synthetischen Patient:innen**, App
   parallel zum heutigen Weg. An jeder Tür eine Zeile Diktat: Licht, Handschuh,
   wo ist das Handy, wenn beide Hände am Patienten sind, was gemerkt statt
@@ -386,8 +386,7 @@ Bereich ohne Einweisung nutzbar: ja / nein — weil: … (ein Abbruch zählt als
 ## 9. Oberflächen-Checkliste je Story
 
 Die Checkliste steht **einmal**, in `docs/abnahme/README.md` (Abschnitt
-„Oberflächen-Checkliste je Story"), und wird dort gepflegt; die frühere Kopie
-an dieser Stelle war seit UI-000 nicht mehr wortgleich. Sie ist die
+„Oberflächen-Checkliste je Story") und wird dort gepflegt. Sie ist die
 Oberflächen-Checkliste für Schritt F des Loops — **nicht** die
 Review-Checkliste für kritische Änderungen, die ADR-013 Punkt 8 verlangt; die
 steht seit dem 2026-09-13 in ADR-013 Fassung 2, Punkt 9, und wird am
@@ -410,8 +409,8 @@ und je Runde einer Ablaufkarte.
 | `docs/abnahme/README.md` | Abschnitt 9 wortgleich |
 | `ARBEITSBEREICHE.md` §6 | ein Satz: Ablaufkarten messen, die Roadmap ordnet |
 
-Das Wochenupdate bleibt unverändert: es liest die Roadmap und das Git-Log —
-die Rundentermine stehen dort.
+Das Wochenupdate liest `docs/STATUS.md`, die Roadmap, `ARBEITSBEREICHE.md` §2
+und das Git-Log (Roadmap, „Wochenupdate"); die Rundentermine stehen in der Roadmap.
 
 ## 11. Aufwand je Runde
 
@@ -427,7 +426,7 @@ Bis zum Gate: vier Vollrunden, eine Messrunde, zwei Schattentage, ein
 Kollegin-Test — etwa anderthalb Loops an Credits und rund zehn Stunden Jannes
 über sechs Monate. Der teurere Teil ist Jannes' Zeit; sie liegt dort, wo nur
 er etwas weiß. Zwischen Gate und Eröffnung kommen eine Vollrunde Touren (nach
-TOUR-EPIC-001a) und ein Schattentag mit der Tagesroute hinzu.
+MAP-006) und ein Schattentag mit der Tagesroute hinzu.
 
 Sieben kleine Ergänzungen verankern die Methode (Abschnitt 10); sie sind mit
 dem Review vom 2026-09-06 eingetragen und seit dem 2026-09-13 auf den Stand
