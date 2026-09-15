@@ -157,7 +157,9 @@ Prototyp, ist das Austragen dessen erste Story.
 1. Thema, Route, Commit
 2. Gelaufene Prüfungen mit Ergebnis; nichts als gelaufen melden, was nicht lief
 3. Bildschirmfotos (Pfade) oder der Hinweis, dass sie bei der Schau entstehen
-4. Registereinträge (ARBEITSBEREICHE, BEFUNDE oder Ideenspeicher)
+4. Registereinträge (ARBEITSBEREICHE, BEFUNDE oder Ideenspeicher) und die
+   Zeile in `docs/STATUS.md`, falls der Prototyp die nächsten Aufgaben
+   verschiebt; `pnpm docs:check` muss grün sein
 5. Was der Prototyp offen lässt
 6. Die Frage an Jannes: `/sandbox <Thema> übernehmen` oder
    `/sandbox <Thema> verwerfen`

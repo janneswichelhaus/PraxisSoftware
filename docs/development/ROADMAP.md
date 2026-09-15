@@ -32,57 +32,39 @@ Git-Historie bis `7160fd5`.
   einen Platz.
 
 Jeder Loop liest dieses Dokument zuerst und stellt am Ende die
-Fortschrittstabelle und den Abschnitt „Nächster Loop" nach.
+Fortschrittstabelle, [`../STATUS.md`](../STATUS.md) und den Abschnitt
+„Nächster Loop" nach.
 
 ---
 
 ## Nächster Loop
 
-```
-/feature-loop ROL-EPIC-001 Office liest klinische Inhalte
-```
+**Welche Aufgabe als nächste läuft, steht in
+[`../STATUS.md`](../STATUS.md)** — dort, und nur dort, mit Aufruf, Pfad und
+Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
 
-- **Voraussetzung erfüllt:** E15 ist am 2026-09-13 vom Projektinhaber
-  entschieden — `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4 und ADR-004 Fassung 2.
-  Der Loop stellt Policies und Projektionen so um, dass `office` alles liest,
-  was Therapeut:innen sehen (Diagnose, Verordnung samt Scan, Dokumentation,
-  Nachrichten), ohne Schreibrecht auf Dokumentation und mit Auditpflicht je
-  Zugriff (ADR-010). Stories und Voraussetzungen stehen in Etappe 1.
-- **Danach, in dieser Reihenfolge:** `CAL-018` (Hausbesuch-Szenarien, E14) ·
-  `VER-EPIC-002` (Verordnung im Office-Alltag, Vorgabe in
-  [`VER-EPIC-002.md`](VER-EPIC-002.md)) · `ABR-EPIC-001` · `ABR-EPIC-002a` ·
-  `ABR-EPIC-002b`. Für ABR-EPIC-001 gilt B4 als Annahme (§15.1);
-  Jannes-seitig braucht es vorher den Leistungskatalog mit Preisen und die
-  Praxisstammdaten für Rechnungen (Anschrift, Bank, Steuernummer).
-- **Auf Abnahme warten:** CAL-EPIC-003b samt CAL-012/013, AKTE-000 bis
-  AKTE-005, UX-012, UI-002, FIX-EPIC-001 (braucht Docker), FIX-EPIC-003,
-  CAL-014 bis CAL-017, DAT-EPIC-001 — Prüfschritte in `docs/abnahme/`.
-  Befunde daraus kommen nach [`BEFUNDE.md`](BEFUNDE.md) und als erste Story in
-  den nächsten Loop derselben Spur (R6).
 - **Parallel startbar, sobald der PTV-Schlüssel vorliegt:**
   `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md`
   — nur synthetische Daten (ADR-019 angenommen am 2026-09-13, E-20).
 - **Docs-Session offen:** `OPS-001 Providerprüfung` — mit den fünf
-  Objektspeicher-Punkten aus ADR-017 und der Edge-Runtime-Prüfung aus
-  ADR-019.
-- **Jannes-seitig (M0, 30.09.):** Branch Protection und Secret Scanning in
-  den GitHub-Einstellungen (`docs/DEVELOPMENT.md`,
-  „Manuelle Schritte") · Anfragen B1, B2, B4 verschicken — B2 mit Kartendienst
-  (B7), Terminerinnerung (B15), **E15** (Office liest klinische Inhalte) und
-  den prüfpflichtigen Annahmen des Registers; B4 mit den Steuerfragen und
-  **E14 Fall 1** (Vergütung ohne erbrachte Behandlung) · Genehmigung des
-  Kartendienstes schriftlich ablegen (G14) · vor MAP-002 das PTV-Free-Abo,
-  vor MAP-006 die PTV-Vertragsdokumente (`providerpruefung-kartendienst.md`) ·
-  Prompt der Wochenupdate-Routine nachziehen (`docs/DEVELOPMENT.md`, „Manuelle
-  Schritte").
+  Objektspeicher-Punkten aus ADR-017 und der Edge-Runtime-Prüfung aus ADR-019.
+- **Jannes-seitig (M0, 30.09.):** Branch Protection und Secret Scanning in den
+  GitHub-Einstellungen (`docs/DEVELOPMENT.md`, „Manuelle Schritte") · Anfragen
+  B1, B2, B4 verschicken — B2 mit Kartendienst (B7), Terminerinnerung (B15),
+  **E15** (Office liest klinische Inhalte) und den prüfpflichtigen Annahmen des
+  Registers; B4 mit den Steuerfragen und **E14 Fall 1** (Vergütung ohne
+  erbrachte Behandlung) · Genehmigung des Kartendienstes schriftlich ablegen
+  (G14) · vor MAP-002 das PTV-Free-Abo, vor MAP-006 die PTV-Vertragsdokumente
+  (`providerpruefung-kartendienst.md`) · Prompt der Wochenupdate-Routine
+  nachziehen (`docs/DEVELOPMENT.md`, „Manuelle Schritte").
 
 Was seit dem letzten Loop fertig, bestätigt oder entschieden wurde, steht im
 Änderungsvermerk am Ende (neueste Version zuerst); Entscheidungen in
 `docs/decisions/OPEN_DECISIONS.md`, Annahmen im Register. Dieser Abschnitt
 trägt nur den Livestand.
 
-Nach jedem abgeschlossenen Loop wird dieser Abschnitt auf den nächsten Eintrag
-gestellt (Skill-Schritt I).
+Nach jedem abgeschlossenen Loop stellt Skill-Schritt I `docs/STATUS.md` auf
+die nächste Aufgabe und diesen Abschnitt auf das, was daneben offen bleibt.
 
 ---
 

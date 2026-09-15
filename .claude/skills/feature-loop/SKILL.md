@@ -133,7 +133,8 @@ Datenbanktest.
 
 | Änderung betrifft …         | dann mindestens                                                 |
 | --------------------------- | --------------------------------------------------------------- |
-| immer                       | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check` |
+| immer                       | `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` |
+| Dokumentation               | `pnpm docs:check`                                               |
 | Migrationen, Policies, RPCs | `pnpm test:db`                                                  |
 | Oberfläche                  | `pnpm test:e2e` und visuelle Prüfung                            |
 | Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`            |
@@ -237,11 +238,13 @@ Kompakt berichten:
 
 Dann in `docs/development/ROADMAP.md` den Eintrag in der Fortschrittstabelle
 auf `fertig` setzen, mit Datum und Commit, den Posten in
-`docs/development/fortschritt.json` auf `fertig`, den Abschnitt „Nächster
-Loop" auf den folgenden Eintrag stellen und bearbeitete Befunde in
-`docs/development/BEFUNDE.md` als erledigt markieren. Ein Eintrag ohne
-durchlaufenen Schritt I wird nicht abgehakt. Merge und Abnahme: Roadmap,
-„Definition of Done".
+`docs/development/fortschritt.json` auf `fertig`, **`docs/STATUS.md` auf die
+nächste Aufgabe stellen** (Jetzt, Danach, Blocker, „Letzte Session" mit den
+lokalen Schritten) und bearbeitete Befunde in `docs/development/BEFUNDE.md`
+als erledigt markieren. **`pnpm docs:check` muss danach grün sein** — es prüft
+die Obergrenzen, die Anker des Registers und die relativen Verweise. Ein
+Eintrag ohne durchlaufenen Schritt I wird nicht abgehakt. Merge und Abnahme:
+Roadmap, „Definition of Done".
 
 **Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein
 neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.

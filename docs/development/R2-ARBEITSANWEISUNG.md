@@ -332,7 +332,7 @@ Ergänzung: „Migration/RLS/Policy/Zweitreview: Session mit `/effort xhigh`." P
    `docs/decisions/OPEN_DECISIONS.md` 400 (Zeilen, `wc -l`-Semantik).
 2. Jede `### ANN-NNN`-Überschrift in ASSUMPTIONS.md hat ≥ 1 Treffer `ANN-NNN` in `src/` (ohne `*.test.*`),
    `supabase/migrations/` oder `.github/workflows/`.
-3. Jeder relative Markdown-Link (`[…](pfad)` ohne `http`, `mailto`, `#`) in allen getrackten `*.md`
+3. Jeder relative Markdown-Link (Klammerform `[Text]` + `(Pfad)`, ohne `http`, `mailto`, `#`) in allen getrackten `*.md`
    zeigt auf eine vorhandene Datei (Anker `#…` abschneiden).
 Exit 1 mit Liste der Verstöße. CI: Schritt „Dokumentation (Obergrenzen, Register-Anker, Links)" im Job
 `quality` nach „Lint" (R2-F05 A) → rot blockiert über den bestehenden Required Check. ADR-013 Fassung 3

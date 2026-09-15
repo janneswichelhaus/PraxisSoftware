@@ -4,7 +4,7 @@
 Knoten 4 gelöscht.** Liegt im Repository statt in `/tmp`, weil eine neue Session
 einen frischen Container bekommt und `/tmp` dort leer ist.
 
-Stand: 2026-09-15, nach dem Nachtrag 5c. Branch `claude/konsolidierung-r2`,
+Stand: 2026-09-15, nach Gruppe 6. Branch `claude/konsolidierung-r2`,
 Baseline `7160fd5`.
 
 ## Erledigt
@@ -20,6 +20,7 @@ Baseline `7160fd5`.
 | 5a Quellcode | `b79f46b` | R2-032 (Gate verschärft), R2-034 (`src/lib/datum.ts`), R2-037 (ANN-054), R2-038 (0 Warnungen), Sammelposten Code und Gates/Skripte | `format:check`, `lint` (0 Fehler, **0 Warnungen**), `typecheck`, `test` (93 Dateien, 1 462 Tests) in **einem** Aufruf — alle grün |
 | 5b Tests | `1e9876b` | R2-035: `testAppointment`, `testStaffMember`, `tagInTagen`, `zeitImLauf`, `terminUeberOberflaeche`; Router-Mocks vereinheitlicht; PLZ der Fixtures auf Tübingen | `format:check`, `lint`, `typecheck`, `test` (1 462 Tests) — grün; `test:db` 1 308 von 1 311 grün, drei Fehlschläge vom Wochentag abhängig und auch ohne die Gruppe (BEF-003, behoben in 5c) |
 | 5c Nachtrag | `1d454b0` | R2-040: `appointment-series.test.ts` rechnet mit Werktagen (BEF-003 behoben) | `format:check`, `lint`, `typecheck` — grün; `test:db` nach `db:stop` und Neustart **1 311 von 1 311** grün |
+| 6 Betriebsmodell | `<hash>` | `docs/STATUS.md`, `SESSION-START.md`, `scripts/docs-check.mjs`, `docs:check` in package.json und im Job „quality", `settings.json` Modell, R2-F06, Skills und GRAPH verankert | `format:check`, `lint` (0 Warnungen), `typecheck`, `test` (1 462), `docs:check` in **einem** Aufruf — alle grün |
 
 Zeilen: `ASSUMPTIONS.md` 3 575 → 746 (mit ANN-054) · `OPEN_DECISIONS.md` 1 415 → 400 ·
 `ANFRAGEN.md` neu 483 · `ROADMAP.md` 859 → 786 · `CLAUDE.md` 293 → 149 ·
@@ -38,11 +39,6 @@ Importe), `tests/e2e/` 4 882 → 4 762 (−120). Testanzahl unverändert 1 462.
 
 ## Offen — Reihenfolge nach Arbeitsanweisung 4.11
 
-6. Betriebsmodell (STATUS.md, SESSION-START.md, docs-check.mjs, package.json,
-   ci.yml-Schritt, settings.json). Dazu: ROADMAP „Nächster Loop" auf Verweis +
-   „Jannes-seitig" (R2-F06); Feature-Loop-Schritt I und Sandbox-Skill
-   aktualisieren STATUS und rufen `docs:check`; GRAPH „Verankerung" um
-   STATUS, SESSION-START und settings.json.
 7. `PROJECT_PRINCIPLES.md` 0.10.1 (eigener Commit).
 8. ADR-013 Fassung 3 (eigener Commit; Z. 111 ist die letzte Auto-Merge-Stelle).
 9. Abschlusslauf in einem Aufruf, Baseline-Messungen wiederholen, Push, PR gegen
@@ -80,10 +76,10 @@ Nr. 5 danach ausdrücklich; Nr. 1 ist um `supabase/.branches/` zurückgenommen.
 
 Gruppe 3, im Bericht zu nennen (keine Abweichung in der Sache):
 
-6. **Vorgriff auf Gruppe 6:** Wochenupdate Schritt 1, der Modellabschnitt der
-   Roadmap und `OPTIMIERUNG.md` nennen `docs/STATUS.md`,
-   `docs/development/SESSION-START.md` und `.claude/settings.json` schon jetzt
-   (als Code, nicht als Link). Bis Gruppe 6 fehlen diese Dateien noch.
+6. **Vorgriff auf Gruppe 6 — aufgelöst:** Wochenupdate Schritt 1, der
+   Modellabschnitt der Roadmap und `OPTIMIERUNG.md` nannten `docs/STATUS.md`,
+   `docs/development/SESSION-START.md` und `.claude/settings.json`, bevor es
+   sie gab. Seit Gruppe 6 gibt es alle drei.
 7. **Nicht angefasst:** `OPTIMIERUNG.md` Z. 406 und 420-422 nennen weiter
    Modelle (Nachzugstabelle und Aufwand je Runde, eingefroren) — die Datei
    bekommt nur Korrekturen. Die Roadmap-Chronik 5.2 nennt weiter
@@ -138,10 +134,10 @@ Gruppe 5, im Bericht zu nennen:
 
 ## Für Gruppe 6 und 9 vormerken
 
-- `docs:check` Prüfung 3 (relative Links) schlägt auf dem Beispielpfad
-  `[…](pfad)` in `R2-ARBEITSANWEISUNG.md` Abschnitt 4.5 und in dieser Datei an.
-  Beide Dateien fallen in Knoten 4; bis dahin die Klammerform entschärfen
-  (Backticks statt Link) — das Gate bleibt unangetastet.
+- **Erledigt in Gruppe 6:** Der Beispielpfad in `R2-ARBEITSANWEISUNG.md`
+  Abschnitt 4.5 stand als echte Klammerform da und hätte `docs:check`
+  Prüfung 3 ausgelöst. Er ist jetzt beschreibend geschrieben; das Gate bleibt
+  unangetastet.
 - **Windows-Arbeitskopie:** Diese Session läuft lokal unter Windows mit
   `core.autocrlf=true`. `pnpm format:check` über den ganzen Baum meldet dort
   348 Dateien wegen CRLF, auch unberührte (`src/main.tsx`). Geprüft wird

@@ -161,6 +161,9 @@ Schritt 6).
 | Datei | Was dort steht |
 | --- | --- |
 | `CLAUDE.md`, „Arbeitsweise" | K1 vor jedem Auftrag; beide Aufrufe |
+| [`../STATUS.md`](../STATUS.md) | Livestand: welche Aufgabe jetzt läuft, welche danach, welcher Blocker bei Jannes liegt |
+| [`SESSION-START.md`](SESSION-START.md) | Startprompt jeder Folgesession; die `xhigh`-Regel für Migration, RLS, Policy und Zweitreview |
+| `.claude/settings.json` | Modell projektweit (`opus`); ein Aufwand je Aufgabe steht dort nicht und gehört in SESSION-START |
 | `.claude/skills/feature-loop/SKILL.md` | Schritt K1 vor A; Zuschnitt eines Loops; Schritt F arbeitet die Review-Checkliste ab (A4) und führt den Zweitreview (A5) |
 | `.claude/skills/sandbox/SKILL.md` | Pfad S, Schritte S1 bis S6 samt Regeln |
 | [`docs/adr/ADR-013-ci-cd-and-release-governance.md`](../adr/ADR-013-ci-cd-and-release-governance.md), Fassung 2 | Auslöser für „kritische Änderung" und die zehn Punkte der Review-Checkliste |
@@ -173,6 +176,7 @@ Schritt 6).
 | Dokument | Loop (`/feature-loop`, Pfad A) | Sandbox (`/sandbox`, Pfad S) | Docs- oder Planungssession | Ablaufrunde | Wochenupdate |
 | --- | --- | --- | --- | --- | --- |
 | `ROADMAP.md` | Fortschrittstabelle, „Nächster Loop", `fortschritt.json` (Schritt I) | — | nachstellen, neue Zeilen als Vorschlag | nur als Diff, den Jannes freigibt | liest nur |
+| `../STATUS.md` | Jetzt, Danach, Blocker, Letzte Session (Schritt I) | Zeile, wenn der Prototyp die Reihenfolge verschiebt | Stand nachführen | — | liest nur |
 | `ARBEITSBEREICHE.md` | ersetzte Vorschau austragen | Prototyp eintragen (S4) und austragen (S6) | Stand nachführen | — | abgelaufene Prototypen melden (Schritt 6) |
 | `OPEN_DECISIONS.md` | Verweis auf neue `ANN`-Kennungen | — | Entscheidungen von Jannes eintragen | — | liest nur |
 | `ASSUMPTIONS.md` | neue Annahmen sofort (Schritt D) | keine — was nach einer Annahme aussieht, kommt ins Härtungs-Ticket | Bestätigungen | — | — |

@@ -3,6 +3,9 @@
 Praxisplattform für eine privat abrechnende Physiotherapiepraxis. Verarbeitet
 Gesundheitsdaten. Früher Entwicklungsstand, kein Produktivbetrieb.
 
+**Zuerst lesen:** `docs/STATUS.md` — was jetzt läuft, was danach kommt, was bei Jannes liegt.
+Startprompt jeder Session: `docs/development/SESSION-START.md`.
+
 ## Verbindliche Grundlagen
 
 Rangfolge bei Konflikten (`PROJECT_PRINCIPLES.md` §21): 1
@@ -75,7 +78,7 @@ pnpm, nicht npm/yarn. Erklärungen in `docs/DEVELOPMENT.md`.
 ```bash
 pnpm install
 pnpm dev
-pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
+pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check
 pnpm test:db
 pnpm test:e2e
 pnpm scan:secrets
@@ -101,39 +104,36 @@ pnpm build
 - **Keine Secrets im Repository.** `.env*` außer `.env.example` bleibt ungetrackt.
 - **Autorisierung niemals nur über die UI.** Ausgeblendete Elemente sind keine
   Zugriffskontrolle. RLS bleibt Defense-in-Depth (ADR-004).
-- **Security-, RLS- und Datenschutztests werden niemals entfernt, deaktiviert
-  oder abgeschwächt, um einen Build grün zu bekommen.** Dasselbe gilt für
-  Secret-Scanning und die übrigen CI-Gates. Wenn ein Gate nur durch
-  Abschwächung erfüllbar wäre: stoppen und berichten.
+- **Security-, RLS- und Datenschutztests werden niemals entfernt, deaktiviert oder abgeschwächt,
+  um einen Build grün zu bekommen.** Dasselbe gilt für Secret-Scanning und die übrigen CI-Gates.
+  Wenn ein Gate nur durch Abschwächung erfüllbar wäre: stoppen und berichten.
 - Keine patientenbezogenen Daten in Logs (ADR-011).
 - **Keine neuen Provider, Frameworks oder wesentlichen Dependencies** ohne
   fachliche Notwendigkeit und Prüfung gegen die ADRs.
-- **Keine ungefragten Refactorings** außerhalb der vom Auftrag berührten Module; was nur
-  auffällt, wird vorgeschlagen. Keine Zukunftsfeatures prophylaktisch bauen (ADR-014).
+- **Keine ungefragten Refactorings** außerhalb der berührten Module; was nur auffällt, wird
+  vorgeschlagen. Keine Zukunftsfeatures prophylaktisch bauen (ADR-014).
 - **Kein Produktionsdeployment durch Coding-Agenten** (ADR-013), keine Cloud-Ressourcen ohne Auftrag.
-- **Jede Änderung muss durch Tests oder eine andere objektive Verifikation
-  überprüfbar sein.** Keine Prüfung als erfolgreich melden, die nicht
-  tatsächlich gelaufen ist. Datenbank- oder Berechtigungsänderungen brauchen
-  `pnpm test:db`.
+- **Jede Änderung muss durch Tests oder eine andere objektive Verifikation überprüfbar sein.**
+  Keine Prüfung als erfolgreich melden, die nicht tatsächlich gelaufen ist. Datenbank- oder
+  Berechtigungsänderungen brauchen `pnpm test:db`.
 - **Bei UI-Änderungen die laufende Anwendung visuell prüfen**, soweit technisch
   möglich (Chromium/Playwright), bei mobilrelevanten Features auch bei ~375 px.
 
 ## Arbeitsweise
 
-**Jeder Auftrag wird zuerst klassifiziert** (K1 in
-`docs/development/GRAPH-ENGINEERING-WORKFLOW.md`): Berührt der Diff einen
-Auslöser aus ADR-013 Fassung 2, Punkt 9, ist er **Pfad A** —
-`/feature-loop <Aufgabe>`. Berührt er nur die Oberfläche und überlebt kein
-Wert die Sitzung, ist er **Pfad S** — `/sandbox <Thema>`. Beide Skills
-(`.claude/skills/`) starten nur auf ausdrücklichen Aufruf; Zuschnitt,
-Zweitreview und Bericht stehen dort.
+**Jeder Auftrag wird zuerst klassifiziert** (K1 in `docs/development/GRAPH-ENGINEERING-
+WORKFLOW.md`): Berührt der Diff einen Auslöser aus ADR-013 Fassung 2, Punkt 9, ist er **Pfad A** —
+`/feature-loop <Aufgabe>`. Berührt er nur die Oberfläche und überlebt kein Wert die Sitzung, ist
+er **Pfad S** — `/sandbox <Thema>`. Beide Skills (`.claude/skills/`) starten nur auf
+ausdrücklichen Aufruf; Zuschnitt, Zweitreview und Bericht stehen dort.
 
 - `docs/development/ROADMAP.md` legt die **Reihenfolge** fest, nie den Scope,
-  und startet nichts von allein. Merge und Abnahme: dort, „Definition of Done".
-- **Vor jedem Loop den Gesamtstand prüfen, nicht nur `main`:**
-  `git fetch origin --prune`, `git branch -r`, offene Pull Requests. Nichts
-  neu bauen, was auf einem Branch schon liegt; unveröffentlichte Arbeit im
-  Bericht nennen.
+  und startet nichts von allein; `docs/STATUS.md` trägt davon den Livestand
+  und wird in Skill-Schritt I nachgestellt. Merge und Abnahme: Roadmap,
+  „Definition of Done".
+- **Vor jedem Loop den Gesamtstand prüfen, nicht nur `main`:** `git fetch origin --prune`,
+  `git branch -r`, offene Pull Requests. Nichts neu bauen, was auf einem Branch schon liegt;
+  unveröffentlichte Arbeit im Bericht nennen.
 - **Vor Arbeit an einem Vorschaubereich** `docs/development/ARBEITSBEREICHE.md`
   lesen — sonst entsteht eine zweite Implementierung neben einer vorhandenen.
 - Befunde sammelt `docs/development/BEFUNDE.md`; Ablaufrunden regelt

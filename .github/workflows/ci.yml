@@ -46,6 +46,9 @@ jobs:
       - name: Lint (inkl. statischer Sicherheitsanalyse)
         run: pnpm lint
 
+      - name: Dokumentation (Obergrenzen, Register-Anker, Links)
+        run: pnpm docs:check
+
       - name: Typecheck
         run: pnpm typecheck
 

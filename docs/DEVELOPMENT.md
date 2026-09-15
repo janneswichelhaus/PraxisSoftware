@@ -194,11 +194,27 @@ pnpm test            # Unit-/Komponententests
 pnpm test:watch      # dieselben Tests, laufend
 pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
+pnpm docs:check      # Obergrenzen, Register-Anker, relative Verweise
 pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien
 pnpm build
 pnpm preview         # den gebauten Stand lokal ausliefern
 ```
+
+`pnpm docs:check` ist ein Gate nach ADR-013 (Prüfung 2.10) und läuft im Job
+„Lint, Typecheck, Tests, Build" direkt hinter dem Lint. Es prüft drei Dinge:
+die Obergrenzen von `CLAUDE.md` (150), `docs/STATUS.md` (60),
+`ASSUMPTIONS.md` (800) und `OPEN_DECISIONS.md` (400); dass jede `ANN-NNN` des
+Registers einen Anker in `src/`, `supabase/migrations/` oder
+`.github/workflows/` hat; und dass jeder relative Markdown-Verweis auf eine
+vorhandene Datei zeigt.
+
+**Modell und Aufwand.** `.claude/settings.json` setzt Opus 5 projektweit. Einen
+Aufwand je Aufgabe kennt die Datei nicht; die Regel „Migration, RLS, Policy
+oder Zweitreview mit `/effort xhigh`" steht in
+[`development/SESSION-START.md`](development/SESSION-START.md). In der
+Weboberfläche hat die Modellwahl beim Sessionstart Vorrang — die Datei gilt für
+CLI-Sessions.
 
 Steht ein Chromium bereits im System, kann er ohne Download verwendet werden:
 
