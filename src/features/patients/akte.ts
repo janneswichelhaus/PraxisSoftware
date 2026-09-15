@@ -26,7 +26,7 @@ export function usePatientRecord(): PatientRecordContext {
   return useOutletContext<PatientRecordContext>();
 }
 
-export interface Aktenbereich {
+interface Aktenbereich {
   to: string;
   label: string;
   /** Nur der Einstieg ist exakt; die übrigen haben keine Unterseiten. */

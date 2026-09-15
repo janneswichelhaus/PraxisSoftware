@@ -9,13 +9,13 @@ import {
   canWritePrescriptions,
   type CurrentUser,
 } from '@/features/session/types';
+import { formatDate } from '@/lib/datum';
 import { Dateiliste } from '@/features/files/Dateiliste';
 import { usePatientRecord } from '@/features/patients/akte';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { ZOOM_STANDARD, schreibeParameter } from '@/features/appointments/calendar';
 import type { Patient } from '@/features/patients/api';
 import {
-  formatDate,
   nachJahr,
   prescriptionKindLabels,
   type ClinicalPrescription,

@@ -90,7 +90,7 @@ export async function fetchStaffInvitations(staffMemberId: string): Promise<Staf
  * schon gibt. Beides ist kein technischer Fehler, sondern eine Lage, die die
  * Oberfläche erklären muss.
  */
-export type EinladungsProblem =
+type EinladungsProblem =
   'account_already_exists' | 'email_already_in_use' | 'bereits_eingeladen' | 'unbekannt';
 
 export class EinladungsError extends Error {

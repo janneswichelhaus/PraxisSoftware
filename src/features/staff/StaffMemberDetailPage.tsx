@@ -14,6 +14,9 @@ import {
   formatLocalTimeRange,
   todayInTimeZone,
 } from '@/features/appointments/api';
+import { formatDate } from '@/lib/datum';
+import { telHref } from '@/lib/telefon';
+import { fullName } from '@/features/patients/api';
 import {
   canManageStaffAccounts,
   canManageStaffEmployment,
@@ -24,10 +27,8 @@ import { StaffAccountSection } from './StaffAccountSection';
 import {
   fetchStaffFutureAppointments,
   fetchStaffMember,
-  formatDate,
   setStaffEmploymentStatus,
   sindTermineOffen,
-  staffFullName,
   type StaffMember,
 } from './api';
 
@@ -48,7 +49,7 @@ function KontaktZeile({
   schema: 'tel' | 'mailto';
 }) {
   if (!wert) return <DetailRow label={label}>—</DetailRow>;
-  const ziel = schema === 'tel' ? `tel:${wert.replace(/[^+\d]/g, '')}` : `mailto:${wert}`;
+  const ziel = schema === 'tel' ? telHref(wert) : `mailto:${wert}`;
   return (
     <DetailRow label={label}>
       <a className="text-accent hover:underline" href={ziel}>
@@ -209,7 +210,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
   return (
     <>
       <PageHeader
-        title={staffFullName(staff)}
+        title={fullName(staff)}
         description={aktiv ? undefined : 'Nicht mehr im laufenden Einsatz'}
         actions={
           darfStammdaten ? (

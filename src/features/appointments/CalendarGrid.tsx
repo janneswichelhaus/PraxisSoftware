@@ -6,6 +6,7 @@ import {
   kachelBreite,
   linienAchse,
   minuteZuPixel,
+  minuteZuZeit,
   pixelZuMinute,
   spalten,
   type Zeitband,
@@ -98,10 +99,6 @@ export interface GitterEintrag {
 function ortsHinweis(eintrag: CalendarEntry): string {
   if (eintrag.appointment_type === 'practice') return eintrag.location_name ?? 'Praxis';
   return appointmentTypeLabels[eintrag.appointment_type];
-}
-
-function hhmm(minute: number): string {
-  return `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
 }
 
 export function CalendarGrid({
@@ -257,7 +254,7 @@ export function CalendarGrid({
               className="text-ink-subtle absolute right-1 pt-0.5 text-[0.6875rem]"
               style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
             >
-              {hhmm(m)}
+              {minuteZuZeit(m)}
             </div>
           ))}
           {/* Ab dieser Zoomstufe liegen die halben Stunden 72 px auseinander -
@@ -271,7 +268,7 @@ export function CalendarGrid({
                   className="text-ink-subtle/70 absolute right-1 pt-0.5 text-[0.625rem]"
                   style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
                 >
-                  {hhmm(m)}
+                  {minuteZuZeit(m)}
                 </div>
               ))
             : null}
@@ -403,7 +400,7 @@ export function CalendarGrid({
                   }}
                   aria-hidden="true"
                 >
-                  {hhmm(ziehen.vorschau.startMinute)}
+                  {minuteZuZeit(ziehen.vorschau.startMinute)}
                 </div>
               ) : null}
             </div>
@@ -465,7 +462,11 @@ function Kachel({
       onDragStart={(event) => event.preventDefault()}
       onPointerDown={ziehbar ? onPointerDown : undefined}
       onClickCapture={onClickCapture}
-      title={[`${hhmm(beginnMinute)}–${hhmm(endeMinute)}`, vermerk, ortsHinweis(eintrag)]
+      title={[
+        `${minuteZuZeit(beginnMinute)}–${minuteZuZeit(endeMinute)}`,
+        vermerk,
+        ortsHinweis(eintrag),
+      ]
         .filter(Boolean)
         .join(' · ')}
       style={{
@@ -504,7 +505,7 @@ function Kachel({
         {terminBezeichnung(eintrag)}
       </span>
       <span className="text-ink-muted block truncate text-[0.6875rem]">
-        {hhmm(beginnMinute)}–{hhmm(endeMinute)}
+        {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}
         {vermerk ? ` · ${vermerk}` : ''}
       </span>
       <span className="text-ink-subtle block truncate text-[0.6875rem]">

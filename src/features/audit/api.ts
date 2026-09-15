@@ -34,7 +34,7 @@ export interface AuditFilter {
   pageSize: number;
 }
 
-export interface AuditPage {
+interface AuditPage {
   events: AuditEvent[];
   totalCount: number;
 }
@@ -74,7 +74,7 @@ export async function fetchAuditEvents(filter: AuditFilter): Promise<AuditPage> 
 }
 
 const memberSchema = z.object({ id: z.string(), display_name: z.string() });
-export type OrganizationMember = z.infer<typeof memberSchema>;
+type OrganizationMember = z.infer<typeof memberSchema>;
 
 /** Auswahlliste für den Benutzerfilter. RLS gibt owner die Profile der eigenen Organisation frei. */
 export async function fetchOrganizationMembers(): Promise<OrganizationMember[]> {

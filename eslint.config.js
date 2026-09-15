@@ -72,6 +72,13 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.node } },
     rules: {
       'no-restricted-syntax': 'off',
+
+      /* Gate-Tests lesen den versionierten Baum: sie laufen ueber src/,
+         marke/ und public/, um Regeln gegen den Quelltext zu pruefen. Die
+         Pfade stammen aus dem Verzeichnis, nie aus einer Eingabe - ein
+         Pfad-Sink ist das nicht. Fuer den Anwendungscode bleibt die Regel
+         aktiv. */
+      'security/detect-non-literal-fs-filename': 'off',
     },
   },
   prettier,

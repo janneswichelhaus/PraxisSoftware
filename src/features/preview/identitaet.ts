@@ -22,7 +22,7 @@ const rollenVorgabe: Partial<Record<RoleKey, string>> = {
   therapist: 'm3',
 };
 
-export interface Vorschauidentitaet {
+interface Vorschauidentitaet {
   person: Mitarbeitende;
   /** Wurde über den Anzeigenamen zugeordnet? */
   ueberNamen: boolean;

@@ -22,7 +22,7 @@ import { getSupabase } from '@/lib/supabase';
  * genau im häufigsten Fall — angefordert am Praxisrechner, geöffnet auf dem
  * Telefon.
  */
-export type LinkTyp = 'recovery' | 'magiclink';
+type LinkTyp = 'recovery' | 'magiclink';
 
 /**
  * Der Link trägt nicht mehr.
@@ -33,7 +33,7 @@ export type LinkTyp = 'recovery' | 'magiclink';
  * feinere Auskunft wäre erfunden, und sie wäre zugleich eine Aussage darüber,
  * ob es zu dieser Adresse ein Konto gibt.
  */
-export class LinkUngueltigError extends Error {
+class LinkUngueltigError extends Error {
   constructor() {
     super('Dieser Link lässt sich nicht mehr verwenden.');
     this.name = 'LinkUngueltigError';

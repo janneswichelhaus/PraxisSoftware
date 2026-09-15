@@ -140,15 +140,9 @@ export async function logPatientRecordView(patientId: string): Promise<void> {
   }
 }
 
-export function fullName(patient: Pick<Patient, 'given_name' | 'family_name'>): string {
-  return `${patient.given_name} ${patient.family_name}`;
-}
-
-export function formatDate(value: string | null): string {
-  if (!value) return '—';
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date);
+/** Anzeigename einer Person — gilt für Patient:innen wie für Mitarbeitende. */
+export function fullName(person: { given_name: string; family_name: string }): string {
+  return `${person.given_name} ${person.family_name}`;
 }
 
 /**
@@ -243,7 +237,7 @@ export const patientMasterDataSchema = z.object({
   remark: hoechstens(2000, 'Die Bemerkung ist zu lang.'),
 });
 
-export type PatientMasterDataInput = z.input<typeof patientMasterDataSchema>;
+type PatientMasterDataInput = z.input<typeof patientMasterDataSchema>;
 export type PatientMasterDataValues = z.output<typeof patientMasterDataSchema>;
 export type StammdatenFeld = keyof PatientMasterDataInput;
 

@@ -110,6 +110,9 @@ jobs:
         run: pnpm scan:secrets
 
       - name: Dependency Audit
+        # ANN-054: blockierend ab Schweregrad `high`; `low` und `moderate`
+        # werden berichtet, nicht blockiert. ADR-013 verlangt den Scan, legt die
+        # Schwelle aber nicht fest.
         run: pnpm audit --audit-level=high
 
   e2e:
@@ -205,7 +208,10 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: End-to-End-Tests mit echter Anmeldung
-        run: pnpm test:e2e
+        # Nur das Projekt hinter der Anmeldung: den nicht angemeldeten Zustand
+        # deckt der Job "End-to-End" ab, der ohne Docker auskommt. So laeuft
+        # jeder Test einmal statt zweimal.
+        run: pnpm test:e2e --project authenticated
 
       - uses: actions/upload-artifact@v4
         if: failure()

@@ -28,7 +28,7 @@ import { MARKE_MINDESTHOEHE, MARKE_SEITENVERHAELTNIS } from './markeRegeln';
  * der Hauptfarbe. Umgefärbt wird nie — deshalb zwei Dateien statt einer mit
  * `currentColor`.
  */
-export type Markenfassung = 'farbig' | 'papier';
+type Markenfassung = 'farbig' | 'papier';
 
 const DATEI: Record<Markenfassung, string> = {
   farbig: '/marke/own-motion-block-farbig.svg',

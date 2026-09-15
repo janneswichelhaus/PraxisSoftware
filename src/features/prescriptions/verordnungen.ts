@@ -56,9 +56,9 @@ export interface VerordnungMitZahlen {
  * Ohne geladene Zahlen gilt `offen`: Die Akte soll keine Aktion verstecken,
  * weil eine Nebenabfrage langsam ist.
  */
-export type Verordnungszustand = 'offen' | 'verplant' | 'ausgeschoepft';
+type Verordnungszustand = 'offen' | 'verplant' | 'ausgeschoepft';
 
-export function verordnungszustand(kontingent: PrescriptionKontingent | null): Verordnungszustand {
+function verordnungszustand(kontingent: PrescriptionKontingent | null): Verordnungszustand {
   if (!kontingent) return 'offen';
   if (kontingent.used >= kontingent.prescribed) return 'ausgeschoepft';
   return kontingent.remaining > 0 ? 'offen' : 'verplant';
@@ -70,7 +70,7 @@ export const zustandLabels: Record<Verordnungszustand, string> = {
   ausgeschoepft: 'Ausgeschöpft',
 };
 
-export interface VerordnungenDerAkte {
+interface VerordnungenDerAkte {
   eintraege: VerordnungMitZahlen[];
   aktuell: VerordnungMitZahlen[];
   abgeschlossen: VerordnungMitZahlen[];

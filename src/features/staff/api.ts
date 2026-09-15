@@ -64,17 +64,6 @@ export async function fetchStaffMember(staffMemberId: string): Promise<StaffMemb
   return staffMemberSchema.parse(data);
 }
 
-export function staffFullName(person: Pick<StaffMember, 'given_name' | 'family_name'>): string {
-  return `${person.given_name} ${person.family_name}`;
-}
-
-export function formatDate(value: string | null): string {
-  if (!value) return '—';
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date);
-}
-
 // -----------------------------------------------------------------------------
 // Eingabe
 // -----------------------------------------------------------------------------
@@ -121,7 +110,7 @@ export const staffMasterDataSchema = z.object({
   city: optionalText,
 });
 
-export type StaffMasterDataInput = z.input<typeof staffMasterDataSchema>;
+type StaffMasterDataInput = z.input<typeof staffMasterDataSchema>;
 export type StaffMasterDataValues = z.output<typeof staffMasterDataSchema>;
 export type StaffFeld = keyof StaffMasterDataInput;
 

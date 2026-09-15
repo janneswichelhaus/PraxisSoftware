@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
-import type { StatusFilter } from './calendar';
+import { minuteZuZeit, type StatusFilter } from './calendar';
 import type { Serientermin } from './serie';
 
 /**
@@ -53,9 +53,10 @@ export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
 /**
  * Ton des Statusabzeichens.
  *
- * An genau einer Stelle, weil ihn drei Ansichten brauchen — Kalender,
- * Tagesliste und Akte — und ein Zustand überall gleich aussehen muss. Der Ton
- * ergänzt nur: der Zustand steht immer als Wort daneben (`Badge`, WCAG 1.4.1).
+ * An genau einer Stelle, weil ihn Kalender und Akte brauchen und ein Zustand
+ * überall gleich aussehen muss; die Tagesliste hat mit `dayPlanStatusTon` einen
+ * eigenen Schnitt. Der Ton ergänzt nur: der Zustand steht immer als Wort
+ * daneben (`Badge`, WCAG 1.4.1).
  */
 export const appointmentStatusTon: Record<AppointmentStatus, 'positiv' | 'warnung' | 'kritisch'> = {
   confirmed: 'positiv',
@@ -99,8 +100,8 @@ export const cancellationReasonLabels: Record<CancellationReason, string> = {
  * `no_show` entsteht in V1 nicht mehr; er steht an Zeilen aus der Zeit, als
  * das Nichtantreffen eine Pflichtentscheidung über das Ausfallhonorar trug.
  */
-export const feeBasisSchema = z.enum(['late_cancellation', 'no_show']);
-export type FeeBasis = z.infer<typeof feeBasisSchema>;
+const feeBasisSchema = z.enum(['late_cancellation', 'no_show']);
+type FeeBasis = z.infer<typeof feeBasisSchema>;
 
 export const feeBasisLabels: Record<FeeBasis, string> = {
   late_cancellation: 'Absage weniger als 24 Stunden vorher',
@@ -118,7 +119,7 @@ export const feeBasisLabels: Record<FeeBasis, string> = {
  * `sms` und `messenger` fehlen bewusst: Messenger ist nach B15 ausgeschlossen,
  * SMS gibt es nicht. Ein Wert, den niemand setzen kann, wäre Vorbau (ADR-014).
  */
-export const notificationChannelSchema = z.enum(['slip', 'phone', 'in_person', 'email']);
+const notificationChannelSchema = z.enum(['slip', 'phone', 'in_person', 'email']);
 export type NotificationChannel = z.infer<typeof notificationChannelSchema>;
 
 /**
@@ -441,9 +442,7 @@ export function fensterEnde(beginn: string, minuten = TERMINFENSTER_MINUTEN): st
   if (start === null) return '';
   const gesamt = start + minuten;
   if (gesamt >= 24 * 60) return '';
-  const stunde = String(Math.floor(gesamt / 60)).padStart(2, '0');
-  const minute = String(gesamt % 60).padStart(2, '0');
-  return `${stunde}:${minute}`;
+  return minuteZuZeit(gesamt);
 }
 
 /**
@@ -1045,7 +1044,7 @@ export function appointmentToFormValues(
   return {
     staff_member_id: appointment.staff_member_id,
     appointment_type: appointment.appointment_type,
-    date: todayInTimeZone(zone, new Date(appointment.starts_at)),
+    date: dayKey(appointment.starts_at, zone),
     start_time: uhrzeit(appointment.starts_at),
     end_time: uhrzeit(appointment.ends_at),
     location_id: appointment.location_id ?? '',
@@ -1304,7 +1303,7 @@ export async function fetchPrescriptionSlots(prescriptionId: string): Promise<Pr
  * Der Server liefert ein Wort, nicht den kollidierenden Termin - die
  * Serienplanung braucht ihn nicht (ADR-004, Datenminimierung).
  */
-export const slotConflictSchema = z.enum([
+const slotConflictSchema = z.enum([
   'invalid',
   'past',
   'off_grid',

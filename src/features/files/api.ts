@@ -85,7 +85,7 @@ export interface UploadAuftrag {
  * Messwert. Sie wird zum Nachweis, sobald jemand sie gegen eine zweite Messung
  * hält (ADR-017 Punkt 9).
  */
-export async function pruefsumme(datei: Blob): Promise<string> {
+async function pruefsumme(datei: Blob): Promise<string> {
   const bytes = await datei.arrayBuffer();
   const hash = await crypto.subtle.digest('SHA-256', bytes);
   return Array.from(new Uint8Array(hash))
@@ -183,7 +183,7 @@ const verweisSchema = z.object({
 });
 
 /** Gültigkeit eines signierten Verweises in Sekunden (ADR-017 Punkt 15). */
-export const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
+const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
 
 /**
  * Erzeugt genau einen kurzlebigen Verweis auf genau eine Datei.

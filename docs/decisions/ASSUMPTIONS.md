@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-14.
+Zuletzt aktualisiert: 2026-09-15.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -732,3 +732,15 @@ Technik · offen · 2026-09-13 · — · — · Wiedervorlage: mit ABR-003b (Rec
 **Anker.** `supabase/migrations/20260913110000_patient_files.sql`: `confirm_patient_file_upload` (Vergleich gegen `storage.objects.metadata`) und der Kommentar an `patient_files.checksum_sha256`; `pruefsumme` in `src/features/files/api.ts`; Tests in `supabase/tests/patient-files.test.ts`, Abschnitt „Phase (c): bestaetigen".
 
 **Änderungspfad.** Prüfsumme serverseitig nachrechnen: braucht einen Vorgang, der die Datei liest — freigegebene Edge Runtime oder ein Betriebswerkzeug, das den Abgleich aus DAT-003 erweitert · Aufwand `mittel`, zusätzlich eine Providerentscheidung, wenn er außer Haus läuft. Prüfsumme ganz weglassen · Aufwand `klein`, aber ADR-017 Punkt 9 und ADR-009 Punkt 9 verlören ihren einzigen technischen Anker — nicht empfohlen.
+
+### ANN-054 — Der Dependency-Audit blockiert den Merge ab Schweregrad `high`
+
+Technik · offen · 2026-09-15 · — · — · Wiedervorlage: mit OPS-002 (Betriebsaufnahme, Roadmap G5)
+
+**Annahme.** `pnpm audit --audit-level=high` im Job „Secret Scanning und Dependency Audit" lässt `low` und `moderate` durch und macht den Lauf ab `high` rot. Gemeldet werden alle Schweregrade in der Jobausgabe; blockierend sind nur `high` und `critical`.
+
+**Begründung.** ADR-013 nennt den Dependency-Scan als Pflichtprüfung, legt die Schwelle aber nicht fest; die Folgefrage steht in `OPEN_DECISIONS.md` (Spur F). `high` ist die Schwelle, ab der eine Meldung in der Regel einen praktisch erreichbaren Pfad beschreibt — darunter überwiegen bei einer reinen Browseranwendung ohne Serverlauf transitive Befunde in Werkzeugketten, die ein Gate nur abstumpfen würden (§16: ein Gate, das oft grundlos rot ist, wird umgangen). Die Einschätzung ist vorläufig und gehört mit der Betriebsaufnahme auf den Prüfstand.
+
+**Anker.** `.github/workflows/ci.yml`: der Schritt „Dependency Audit" mit dem Kommentar `ANN-054` über `--audit-level=high`.
+
+**Änderungspfad.** Schwelle senken (`moderate`) oder anheben: ein Wort in `ci.yml` · Aufwand `klein`. Wird zusätzlich eine Ausnahmeliste nötig, kommt sie als `pnpm.auditConfig.ignoreCves` in `package.json` dazu, mit je einer Begründung · Aufwand `klein`.

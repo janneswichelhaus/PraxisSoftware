@@ -70,13 +70,13 @@ pnpm dlx supabase@2.116.0 db reset        # Migrationen + Seed erneut anwenden
 pnpm dlx supabase@2.116.0 status -o env   # API_URL und ANON_KEY dieser Instanz
 ```
 
-Die CLI-Version sollte der in `.github/workflows/ci.yml` festgeschriebenen
-entsprechen (`pnpm dlx supabase@2.116.0 …`), damit lokal und in CI derselbe
-Stack läuft. Lief der Stack zuvor mit einer anderen Postgres-Hauptversion
-(`supabase/config.toml` verlangt `major_version = 17`), zuerst
-`pnpm dlx supabase@2.116.0 stop --no-backup` ausführen — das verwirft die
-lokalen Volumes samt synthetischer Daten; `start` legt den Stack danach neu
-an.
+Die Version steht hier und in `.github/workflows/ci.yml` — nirgends sonst;
+sie wird bewusst von Hand erhöht, damit lokal und in CI derselbe Stack läuft.
+Weiter unten steht `supabase` deshalb ohne Version; gemeint ist immer
+`pnpm dlx supabase@2.116.0`. Lief der Stack zuvor mit einer anderen
+Postgres-Hauptversion (`supabase/config.toml` verlangt `major_version = 17`),
+zuerst `supabase stop --no-backup` ausführen — das verwirft die lokalen Volumes
+samt synthetischer Daten; `start` legt den Stack danach neu an.
 
 Die Werte aus `supabase status` gehören zu einer **lokalen Wegwerf-Instanz**.
 Sie werden bei jedem Neuaufsetzen neu erzeugt, sind kein Secret im Sinne von
@@ -105,9 +105,9 @@ pnpm install --frozen-lockfile
 **3. Supabase starten** (Docker Desktop muss laufen)
 
 ```bash
-pnpm dlx supabase@2.116.0 start
-pnpm dlx supabase@2.116.0 db reset        # Migrationen + synthetischer Seed
-pnpm dlx supabase@2.116.0 status -o env | grep -E "^(API_URL|ANON_KEY)"
+supabase start
+supabase db reset        # Migrationen + synthetischer Seed
+supabase status -o env | grep -E "^(API_URL|ANON_KEY)"
 ```
 
 **4. `.env.local` anlegen**
@@ -164,8 +164,8 @@ welcher Datei stehen, sagt die Tabelle in
 | `Port 5173 is already in use`                           | Ein `pnpm dev` läuft noch. `netstat -ano \| findstr :5173` in PowerShell, dann `taskkill /PID <pid> /F`. Der Port ist bewusst fest (`strictPort`).                                    |
 | `Konfiguration unvollständig: VITE_SUPABASE_URL fehlt.` | `.env.local` fehlt oder wurde nach dem Start von `pnpm dev` angelegt — Dev-Server neu starten.                                                                                        |
 | `E2E_SUPABASE_URL und E2E_SUPABASE_ANON_KEY fehlen.`    | Die beiden `export`-Zeilen aus Schritt 6 gelten nur im aktuellen Fenster.                                                                                                             |
-| Anmeldung schlägt fehl, obwohl das Kennwort stimmt      | Der Stack läuft nicht oder wurde neu aufgesetzt. `pnpm dlx supabase@2.116.0 status` prüfen, danach `pnpm dlx supabase@2.116.0 db reset`.                                              |
-| E2E-Tests finden „Erika Beispiel" nicht                 | Der Seed fehlt. `pnpm dlx supabase@2.116.0 db reset`.                                                                                                                                 |
+| Anmeldung schlägt fehl, obwohl das Kennwort stimmt      | Der Stack läuft nicht oder wurde neu aufgesetzt. `supabase status` prüfen, danach `supabase db reset`.                                                                                |
+| E2E-Tests finden „Erika Beispiel" nicht                 | Der Seed fehlt. `supabase db reset`.                                                                                                                                                  |
 | Docker startet nicht                                    | Docker Desktop muss laufen, bevor `supabase start` aufgerufen wird.                                                                                                                   |
 | `WARN: config section [inbucket] is deprecated`         | Warnung, kein Fehler. Die Umbenennung nach `[local_smtp]` in `supabase/config.toml` steht als kleine Wartung in der Roadmap; sie ist lokal mit `supabase stop` und `start` zu prüfen. |
 
@@ -187,13 +187,17 @@ kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank.
 
 ```bash
 pnpm format:check    # Prettier - eigenes CI-Gate, nicht Teil von lint
+pnpm format          # dieselbe Prüfung, schreibend
 pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse
 pnpm typecheck       # TypeScript strict
 pnpm test            # Unit-/Komponententests
+pnpm test:watch      # dieselben Tests, laufend
 pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
+pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien
 pnpm build
+pnpm preview         # den gebauten Stand lokal ausliefern
 ```
 
 Steht ein Chromium bereits im System, kann er ohne Download verwendet werden:

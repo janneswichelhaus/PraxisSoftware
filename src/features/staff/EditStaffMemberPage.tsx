@@ -7,10 +7,10 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { fetchLocations } from '@/features/appointments/api';
+import { fullName } from '@/features/patients/api';
 import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/session/types';
 import {
   fetchStaffMember,
-  staffFullName,
   staffMasterDataSchema,
   staffToFormValues,
   updateStaffMember,
@@ -87,7 +87,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
 
       <PageHeader
         title="Stammdaten bearbeiten"
-        description={`${staffFullName(staff)} · Mit * markierte Felder sind erforderlich.`}
+        description={`${fullName(staff)} · Mit * markierte Felder sind erforderlich.`}
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">

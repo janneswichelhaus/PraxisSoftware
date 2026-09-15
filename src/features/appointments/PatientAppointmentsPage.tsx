@@ -8,15 +8,16 @@ import { Section } from '@/components/ui/Section';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { usePatientRecord } from '@/features/patients/akte';
+import { formatDate as formatIsoDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
-import { formatDate as formatIsoDate } from '@/features/prescriptions/api';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeLabels,
+  dayKey,
   fetchPatientAppointments,
   formatLocalDate,
   formatLocalTimeRange,
@@ -204,7 +205,7 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
   const ersterTermin = naechster.data?.[0] ?? null;
   const kalendertag =
     zone && ersterTermin
-      ? todayInTimeZone(zone, new Date(ersterTermin.starts_at))
+      ? dayKey(ersterTermin.starts_at, zone)
       : zone
         ? todayInTimeZone(zone)
         : null;

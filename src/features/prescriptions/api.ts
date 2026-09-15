@@ -128,7 +128,7 @@ export const prescriberSchemaForm = z.object({
   ),
 });
 
-export type PrescriberInput = z.input<typeof prescriberSchemaForm>;
+type PrescriberInput = z.input<typeof prescriberSchemaForm>;
 export type PrescriberValues = z.output<typeof prescriberSchemaForm>;
 export type PrescriberFeld = keyof PrescriberInput;
 
@@ -296,15 +296,8 @@ export const prescriptionKindLabels: Record<Prescription['prescription_kind'], s
   follow_up: 'Folgeverordnung',
 };
 
-export function formatDate(value: string | null): string {
-  if (!value) return '—';
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(date);
-}
-
 /** Jahr der Ausstellung, für die Gruppierung in der Akte (VER-002). */
-export function ausstellungsjahr(prescription: Prescription): string {
+function ausstellungsjahr(prescription: Prescription): string {
   return prescription.issued_on.slice(0, 4);
 }
 
@@ -466,8 +459,8 @@ export const prescriptionFormSchema = z.object({
   follow_up_recommendation: hoechstens(2000, 'Die Empfehlung ist zu lang.'),
 });
 
-export type PrescriptionFormInput = z.input<typeof prescriptionFormSchema>;
-export type PrescriptionFormValues = z.output<typeof prescriptionFormSchema>;
+type PrescriptionFormInput = z.input<typeof prescriptionFormSchema>;
+type PrescriptionFormValues = z.output<typeof prescriptionFormSchema>;
 export type PrescriptionFeld = keyof PrescriptionFormInput;
 
 export const leereVerordnung: Record<PrescriptionFeld, string> = {

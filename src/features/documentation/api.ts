@@ -17,15 +17,15 @@ import { appointmentStatusSchema, appointmentTypeSchema } from '@/features/appoi
  * ADR-001 ausschließt: dokumentiert geglaubt, aber nirgends gespeichert.
  */
 
-export const treatmentNoteStatusSchema = z.enum(['draft', 'final']);
-export type TreatmentNoteStatus = z.infer<typeof treatmentNoteStatusSchema>;
+const treatmentNoteStatusSchema = z.enum(['draft', 'final']);
+type TreatmentNoteStatus = z.infer<typeof treatmentNoteStatusSchema>;
 
 export const treatmentNoteStatusLabels: Record<TreatmentNoteStatus, string> = {
   draft: 'Entwurf',
   final: 'Finalisiert',
 };
 
-export const treatmentNoteSchema = z.object({
+const treatmentNoteSchema = z.object({
   id: z.string(),
   appointment_id: z.string(),
   /** Gesetzt, wenn dieser Eintrag ein Nachtrag ist (ADR-016 Punkt 6). */

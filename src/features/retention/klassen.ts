@@ -9,7 +9,7 @@
  * neue Datenklasse ohne Beschriftung lässt den Datenbanktest scheitern.
  */
 
-export interface DatenklasseTexte {
+interface DatenklasseTexte {
   /** Überschrift in der Aufbewahrungsübersicht. */
   label: string;
   /** Ein Satz: worum es geht. */
@@ -108,6 +108,10 @@ export const LOESCHWEG_TEXTE: Record<string, string> = {
 export function fristText(interval: string | null): string {
   if (!interval) return 'keine Frist';
 
+  // Verankert, die optionalen Gruppen haben je ein eigenes Endzeichen - das
+  // Muster laeuft linear und kann nicht rueckwaerts laufen. Der Wert kommt aus
+  // der Datenbank.
+  // eslint-disable-next-line security/detect-unsafe-regex
   const iso = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/.exec(interval.trim());
   if (iso) {
     const [, jahre, monate, tage] = iso;

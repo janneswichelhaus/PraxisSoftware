@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  formatDate,
   leereStammdaten,
   sindTermineOffen,
-  staffFullName,
   staffMasterDataSchema,
   staffToFormValues,
   OffeneTermineError,
@@ -101,16 +99,5 @@ describe('sindTermineOffen', () => {
   it('haelt einen gewoehnlichen Fehler nicht faelschlich fuer eine Rueckfrage', () => {
     expect(sindTermineOffen(new Error('irgendetwas'))).toBe(false);
     expect(sindTermineOffen(null)).toBe(false);
-  });
-});
-
-describe('Darstellung', () => {
-  it('setzt den vollen Namen zusammen', () => {
-    expect(staffFullName(anna)).toBe('Anna Beispiel');
-  });
-
-  it('zeigt fuer ein fehlendes Datum einen Platzhalter', () => {
-    expect(formatDate(null)).toBe('—');
-    expect(formatDate('kein datum')).toBe('—');
   });
 });

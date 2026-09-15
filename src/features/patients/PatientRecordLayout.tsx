@@ -10,6 +10,7 @@ import {
   canWritePrescriptions,
   type CurrentUser,
 } from '@/features/session/types';
+import { formatDate } from '@/lib/datum';
 import { istInternerPfad, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import {
   aktenBereiche,
@@ -17,14 +18,7 @@ import {
   usePatientRecord,
   type PatientRecordContext,
 } from './akte';
-import {
-  ageInYears,
-  fetchPatient,
-  formatDate,
-  fullName,
-  logPatientRecordView,
-  type Patient,
-} from './api';
+import { ageInYears, fetchPatient, fullName, logPatientRecordView, type Patient } from './api';
 
 /**
  * Rahmen der Patientenakte (AKTE-000).

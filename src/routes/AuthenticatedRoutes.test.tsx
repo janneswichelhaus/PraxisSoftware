@@ -62,7 +62,6 @@ vi.mock('@/features/patients/api', async (importOriginal) => ({
   fetchPatient: () => Promise.resolve(null),
   logPatientRecordView: () => Promise.resolve(),
   fullName: () => '',
-  formatDate: () => '—',
   ageInYears: () => null,
 }));
 
