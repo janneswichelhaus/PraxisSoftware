@@ -160,6 +160,31 @@ test.describe('BEF-004: Storage-API am auditierten Weg vorbei', () => {
     expect((await signieren(request, token, datei.objectKey)).status()).toBe(200);
   });
 
+  test('kopiert ohne Ausstellung kein Objekt in eine eigene Ablage', async ({ request }) => {
+    const quelle = await dateiAblegen(request, `BEF-004 Kopierquelle ${LAUF}.pdf`);
+    const token = await zugriffstoken(request, KONTEN.therapist);
+
+    // Ein eigenes, noch nicht bestaetigtes Ziel: dorthin darf die Therapeutin
+    // hochladen. Die Storage-API liest die Quelle beim Kopieren mit ihrer Rolle.
+    const ziel = await rpcAufrufen(request, token, 'prepare_patient_file_upload', {
+      p_patient_id: PATIENTEN.max,
+      p_prescription_id: null,
+      p_document_type: 'befund',
+      p_display_name: `BEF-004 Kopierziel ${LAUF}.pdf`,
+      p_mime_type: 'application/pdf',
+      p_byte_size: INHALT.length,
+      p_checksum_sha256: 'a'.repeat(64),
+    });
+    expect(ziel.status()).toBe(200);
+    const [zeile] = (await ziel.json()) as { object_key: string }[];
+
+    const kopiert = await request.post(storage('/object/copy'), {
+      headers: kopf(token),
+      data: { bucketId: BUCKET, sourceKey: quelle.objectKey, destinationKey: zeile!.object_key },
+    });
+    expect(kopiert.status(), 'Kopieren ohne Ausstellung').not.toBe(200);
+  });
+
   test('entfernt das Objekt eines Loeschauftrags nur mit Loeschfreigabe', async ({ request }) => {
     const datei = await dateiAblegen(request, `BEF-004 Loeschen ${LAUF}.pdf`);
     const therapeutin = await zugriffstoken(request, KONTEN.therapist);

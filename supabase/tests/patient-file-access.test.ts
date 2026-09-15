@@ -196,7 +196,7 @@ describe('BEF-004: Dateizugriff nur ueber den auditierten Weg', () => {
       const datei = await abgelegteDatei();
       await asUserCommitted(users.therapist, VERWEIS, [datei.file_id]);
       await asPostgres(
-        "update public.patient_file_access_grants set expires_at = now() - interval '1 second'",
+        "update public.patient_file_access_grants set created_at = now() - interval '2 minutes', expires_at = now() - interval '1 second'",
       );
 
       const { rows } = await asUserCommitted(users.therapist, LESEN, [datei.object_key]);
@@ -283,7 +283,7 @@ describe('BEF-004: Dateizugriff nur ueber den auditierten Weg', () => {
 
       await asUserCommitted(users.office, VERWEIS, [datei.file_id]);
       await asPostgres(
-        "update public.patient_file_access_grants set expires_at = now() - interval '1 second'",
+        "update public.patient_file_access_grants set created_at = now() - interval '2 minutes', expires_at = now() - interval '1 second'",
       );
       await asUserCommitted(users.therapist, VERWEIS, [datei.file_id]);
       expect(await freigaben()).toBe(1);

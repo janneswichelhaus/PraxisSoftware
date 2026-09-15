@@ -305,8 +305,9 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       const { orderId, objectKey } = await offenerAuftrag();
 
       // Der Weg, den die Oberflaeche geht: Schluessel holen, Objekt entfernen,
-      // quittieren.
-      const geholt = await asUser<{ object_key: string }>(
+      // quittieren. Das Holen legt die Loeschfreigabe an und muss deshalb
+      // bestaetigt sein (FIX-015).
+      const geholt = await asUserCommitted<{ object_key: string }>(
         users.ownerTherapist,
         'select object_key from public.claim_storage_deletion_order($1::uuid)',
         [orderId],
@@ -393,6 +394,17 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
 
       const therapeutin = await asUser(users.therapist, LOESCHEN, [datei.object_key]);
       expect(therapeutin.rows).toEqual([]);
+
+      // FIX-015: Auch der Owner loescht nur gegen eine Loeschfreigabe.
+      const { rows: auftraege } = await asPostgres<{ id: string }>(
+        'select id from public.storage_deletion_orders where object_key = $1',
+        [datei.object_key],
+      );
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select object_key from public.claim_storage_deletion_order($1::uuid)',
+        [auftraege[0]!.id],
+      );
 
       const inhaberin = await asUser<{ id: string }>(users.ownerTherapist, LOESCHEN, [
         datei.object_key,

@@ -549,16 +549,23 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(rows).toEqual([]);
     });
 
-    it('liest das Objekt nur, wer die Dokumentart sehen darf', async () => {
+    it('liest das Objekt nur, wer die Dokumentart sehen darf - und nur gegen eine Ausstellung', async () => {
       const datei = await abgelegteDatei(users.therapist);
       const LESEN =
         "select name from storage.objects where bucket_id = 'patientenakte' and name = $1";
+      const VERWEIS = 'select object_key from public.issue_patient_file_link($1::uuid)';
 
-      const therapeutin = await asUser(users.therapist, LESEN, [datei.object_key]);
+      // FIX-015 (BEF-004): ohne Ausstellung liest auch die Therapeutin nichts.
+      const ohne = await asUserCommitted(users.therapist, LESEN, [datei.object_key]);
+      expect(ohne.rows).toEqual([]);
+
+      await asUserCommitted(users.therapist, VERWEIS, [datei.file_id]);
+      const therapeutin = await asUserCommitted(users.therapist, LESEN, [datei.object_key]);
       expect(therapeutin.rows).toHaveLength(1);
 
       // Seit E15 dieselbe Leseregel fuer office (ADR-004 Fassung 2 Punkt 3).
-      const buero = await asUser(users.office, LESEN, [datei.object_key]);
+      await asUserCommitted(users.office, VERWEIS, [datei.file_id]);
+      const buero = await asUserCommitted(users.office, LESEN, [datei.object_key]);
       expect(buero.rows).toHaveLength(1);
 
       const patient = await asUser(users.patientMax, LESEN, [datei.object_key]);
