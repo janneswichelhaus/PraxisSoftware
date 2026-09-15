@@ -23,20 +23,17 @@ einträgt, hat sie damit nicht eingeplant.
 ## Zum Merge — Reihenfolge verbindlich
 
 1. **PR #41** — ROL-EPIC-001, `claude/rol-epic-001` → `main`.
-2. **PR zu FIX-015** — `claude/fix-bef-004`, gestapelt auf
-   `claude/rol-epic-001`; enthält die Commits von #41. Erst nach #41 mergen,
-   vorher die Basis auf `main` stellen, falls GitHub das nicht selbst tut.
+2. **PR zu FIX-015** — `claude/fix-bef-004`, gestapelt auf #41 und mit dessen
+   Commits; erst danach mergen, die Basis vorher auf `main` stellen.
 
-Stand beider: CI grün, Zweitreview in frischem Kontext gelaufen (ROL-EPIC-001:
-Befund BEF-004, jetzt behoben; FIX-015: siehe PR), Abnahme durch Jannes offen.
+Beide: CI grün, Zweitreview in frischem Kontext gelaufen, Abnahme offen.
 
 ## Blocker (Jannes-seitig)
 
 - Branch Protection und Secret Scanning einschalten (M0, 30.09.) —
   [`DEVELOPMENT.md`](DEVELOPMENT.md), „Manuelle Schritte"
-- Anfragen B1, B2 und B4 verschicken — Volltexte in
-  [`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md); E15 und ANN-052 Fassung 2
-  gehören in B2
+- Anfragen B1, B2 (mit E15 und ANN-052 Fassung 2) und B4 verschicken —
+  Volltexte in [`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)
 - PTV-Free-Abo vor MAP-002, PTV-Vertragsdokumente vor MAP-006
 - Prompt der Wochenupdate-Routine nachziehen (`DEVELOPMENT.md`)
 
