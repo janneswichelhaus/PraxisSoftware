@@ -3,13 +3,6 @@
 Hier stehen die **manuellen Prüfschritte je Feature** — die Klickwege, mit
 denen Jannes ein fertiges Feature lokal abnimmt.
 
-Sie lagen früher in `docs/DEVELOPMENT.md`. Dort wuchsen sie linear mit jedem
-Loop: neun Features ergaben bereits rund 190 Zeilen in einer Datei, die
-gleichzeitig Einrichtung, Testkonten, Go-live-Blocker und bekannte
-Einschränkungen trägt und deshalb oft vollständig gelesen wird. Getrennt bleibt
-beides klein: `DEVELOPMENT.md` beschreibt die Umgebung, dieser Ordner die
-Abnahme.
-
 ## Voraussetzung
 
 Der lokale Stack muss laufen. Einrichtung in Schritt 1 bis 6 von

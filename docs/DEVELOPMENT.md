@@ -157,9 +157,6 @@ Die manuellen Klickwege je Feature stehen in
 welcher Datei stehen, sagt die Tabelle in
 [`abnahme/README.md`](abnahme/README.md).
 
-Sie liegen dort statt hier, weil sie mit jedem Loop wachsen und diese Datei
-sonst unlesbar würde.
-
 **8. Typische Fehler**
 
 | Symptom                                                 | Ursache und Abhilfe                                                                                                                                                                   |
@@ -214,13 +211,11 @@ Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
 
 - Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, Modell Haiku 4.5, erste
   Ausführung 2026-09-07. Sie liest `main`.
-- Prompt am 2026-09-06 auf das Format der Roadmap 2.1 umgestellt
-  (Entscheidung E-10): `git log --since='8 days ago'`, Fortschritt mit
-  Abnahme-Spalte, Spur B mit Stand, Ampel je Meilenstein M0 bis M6.
-- Seit Roadmap 5.2 (2026-09-13) hat der Auftrag einen sechsten Schritt:
-  abgelaufene Sandbox-Prototypen aus `development/ARBEITSBEREICHE.md` §2
-  melden. Zählt der Routine-Prompt die Schritte selbst auf, zieht Jannes ihn
-  nach; verweist er nur auf den Abschnitt, ist nichts zu tun.
+- Der Prompt hat den Stand vor Roadmap 5.2: fünf eigene Schritte, er liest nur
+  die Roadmap und `git log`. Schritt 1 (mit `docs/STATUS.md` und
+  `development/ARBEITSBEREICHE.md` §2) und Schritt 6 (abgelaufene
+  Sandbox-Prototypen) fehlen ihm; den neuen Prompt-Text trägt Jannes ein
+  („Manuelle Schritte im Repository").
 - Nach der Zeitumstellung Ende Oktober fällt sie auf 06:50 Uhr; wer 07:50
   behalten will, ändert den Cron-Ausdruck auf `50 6 * * 1`.
 - Abschalten, Takt oder Prompt ändern: über die Routines-Oberfläche auf
@@ -310,13 +305,12 @@ deckungsgleich.
 1. **Die E2E-Abläufe hinter der Anmeldung laufen nur mit Docker.** Sie brauchen
    den lokalen Supabase-Stack und werden über `E2E_SUPABASE_URL` /
    `E2E_SUPABASE_ANON_KEY` freigeschaltet (siehe „Lokale Abnahme"). In CI
-   startet der Job `e2e-supabase` den Stack selbst. In Umgebungen ohne Docker
+   startet der Job „End-to-End hinter der Anmeldung" (`e2e-supabase`) den
+   Stack selbst. In Umgebungen ohne Docker
    — etwa der Cloud-Entwicklungsumgebung — läuft weiterhin ausschließlich die
    Abdeckung des nicht angemeldeten Zustands.
-2. **Die Abdeckung hinter der Anmeldung ist bewusst schmal.** Belegt sind die
-   Kernflüsse von PAT-002 und PAT-003 samt Persistenz über einen Neuladevorgang
-   und ein negativer Berechtigungsnachweis auf RPC-Ebene. Die Breite der
-   Prüfung liegt weiterhin bei `pnpm test:db` und den Komponententests.
+2. **Hinter der Anmeldung** laufen 18 Spezifikationen im Playwright-Projekt
+   `authenticated`; die Breite der Prüfung liegt bei `pnpm test:db`.
 3. **Der Secret-Scan prüft nur den aktuellen Stand**, nicht die Git-Historie.
    GitHub Secret Scanning und Push Protection sollten zusätzlich in den
    Repository-Einstellungen aktiviert werden.
@@ -347,12 +341,31 @@ deckungsgleich.
 
 Diese Einstellungen lassen sich nicht aus dem Code setzen:
 
-- Branch Protection auf `main`: erforderliche Checks `quality`, `database`,
-  `security`, `e2e`, `e2e-supabase`; Force Push verbieten (ADR-013).
+- Branch Protection auf `main` (M0, 30.09.): erforderliche Checks unter ihren
+  Anzeigenamen „Lint, Typecheck, Tests, Build" (`quality`), „Migrationen und
+  RLS-Policies" (`database`), „Secret Scanning und Dependency Audit"
+  (`security`), „End-to-End" (`e2e`), „End-to-End hinter der Anmeldung"
+  (`e2e-supabase`); Force Push und Deletions aus; keine Pflicht-Approvals
+  (ADR-013).
 - GitHub Secret Scanning und Push Protection aktivieren.
 - Gemergte Branches automatisch löschen („Automatically delete head
   branches"). „Allow auto-merge" entfällt — auf diesem GitHub-Plan nicht
   verfügbar; Jannes mergt nach grüner CI (Roadmap, „Definition of Done").
+- Nach dem Merge der Konsolidierung R2: Pull Request #37 schließen, nicht
+  mergen (sein Inhalt steht als `development/VER-EPIC-002.md` auf `main`), dann
+  `git fetch origin --prune && git push origin --delete claude/focused-hopper-mwkc5d claude/praxissoftware-arch-graph-gc1a3u codex/plan-verordnung-office-20260913`.
+- Wochenupdate-Routine (`trig_01N5FanspQGxJP9S9rnZiZHj`) auf claude.ai: den
+  Prompt ersetzen durch
+
+  ```
+  Wochenupdate für PraxisSoftware auf main. Nichts bauen, nichts ändern.
+  Den Abschnitt „Wochenupdate" in docs/development/ROADMAP.md Schritt für
+  Schritt ausführen und im dort festgelegten Format antworten.
+  ```
+
+  Weil er nur auf den Abschnitt verweist, folgt die Routine jeder künftigen
+  Änderung dort ohne neuen Eingriff.
+
 - Dependabot oder eine vergleichbare Aktualisierung der Abhängigkeiten.
 - **Die Supabase-CLI-Version in `.github/workflows/ci.yml` von Hand erhöhen.**
   Sie steht dort fest statt auf `latest`, weil `latest` die Action bei jedem

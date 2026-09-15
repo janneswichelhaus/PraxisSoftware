@@ -268,7 +268,7 @@ Sie den alten Stand.
 
 ### Die Praxisleitung stößt es an
 
-14. Als `jannes.test@praxis.invalid` → Praxis → Team → „Anna Beispiel" →
+14. Als `jannes.test@praxis.invalid` → Organisatorisches → Mitarbeitende → „Anna Beispiel" →
     „Kennwort zurücksetzen" → „Mail senden". Die Mail im Mailfänger zeigt
     ebenfalls auf `/kennwort-neu`. Der Ablauf ist derselbe wie oben. Annas
     bisheriges Kennwort funktioniert, bis sie ein neues setzt.
@@ -389,7 +389,7 @@ zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
    aus ADR-017): Kommt es als JPEG an oder als HEIC? Kommt HEIC an, erscheint
    die Meldung mit dem Hinweis auf die Einstellung „Sehr kompatibel" — und
    Jannes sagt bitte Bescheid, ob das im Alltag reicht.
-9. **Das Protokoll.** Als Jannes Praxis → Auditlog öffnen. Für jeden Upload
+9. **Das Protokoll.** Als Jannes Organisatorisches → Sicherheit öffnen. Für jeden Upload
    steht dort „Datei zur Akte hinzugefügt", für jedes Öffnen „Datei zum Öffnen
    freigegeben". **Im Eintrag steht kein Dateiname** — nur Kennung, Art und
    Zeitpunkt. Das Öffnen des Dateibereichs selbst erzeugt keinen Eintrag; das
@@ -420,7 +420,7 @@ Akte von Max Mustermann.
    der Löschauftrag ausgeführt ist. „Endgültig löschen" tippen.
 2. **Die Akte ist sofort sauber.** Die Datei steht nicht mehr in der Liste —
    auch nicht nach einem Neuladen der Seite.
-3. **Der Auftrag steht.** Praxis → Sicherheit → **Aufbewahrung und Löschung**.
+3. **Der Auftrag steht.** Organisatorisches → **Aufbewahrung**.
    Unter „Offene Löschaufträge" steht eine Zeile mit dem Zeitpunkt und dem
    Vermerk „Datei liegt noch in der Ablage".
 4. **Der entscheidende Schritt.** „Alle 1 ausführen und quittieren" tippen.
@@ -429,7 +429,7 @@ Akte von Max Mustermann.
    quittiert nur, wenn die Datei tatsächlich weg ist — bliebe sie liegen,
    stünde der Auftrag noch da.
 5. **Wer das darf.** Abmelden, als `anna.beispiel@praxis.invalid` anmelden:
-   Praxis → Sicherheit → Aufbewahrung ist für sie nicht erreichbar. Sie kann
+   Organisatorisches → Aufbewahrung ist für sie nicht erreichbar. Sie kann
    in der Akte weiterhin löschen — der Auftrag landet dann bei der
    Praxisinhaberin.
 6. **Die Art korrigieren.** Als Jannes in der Akte → Dateien bei einer
@@ -440,7 +440,7 @@ Akte von Max Mustermann.
    Übung — die Art ist eine Sichtbarkeitsgrenze, kein Etikett.
 8. **Die Verwaltung korrigiert nicht.** Bei Olivia gibt es an keiner Datei
    „Art korrigieren"; an einer organisatorischen Datei gibt es „Löschen".
-9. **Das Protokoll.** Als Jannes Praxis → Auditlog: „Datei gelöscht",
+9. **Das Protokoll.** Als Jannes Organisatorisches → Sicherheit: „Datei gelöscht",
    „Dokumentart einer Datei korrigiert" und „Löschung in der Ablage quittiert"
    stehen dort. Auch hier **kein Dateiname und kein Ablageort**.
 10. **Am Handy.** Schritt 1 bis 4 bei ~375 px wiederholen: Die Rückfrage passt
@@ -464,7 +464,7 @@ nicht liegen bleiben.
 in der Akte von Max Mustermann.
 
 1. **Im Normalfall ist nichts zu tun.** Als `jannes.test@praxis.invalid`
-   Praxis → Sicherheit → **Aufbewahrung und Löschung** öffnen. Unter „Abgleich
+   Organisatorisches → **Aufbewahrung** öffnen. Unter „Abgleich
    der Dateiablage" steht „Beide Speicher sind deckungsgleich".
 2. **Einen Verlust herstellen.** Diesen Schritt ausdrücklich nur am lokalen
    Wegwerf-Stack: Supabase Studio unter <http://127.0.0.1:54323> öffnen,
@@ -490,7 +490,7 @@ in der Akte von Max Mustermann.
    sehen. **Es gibt keinen zweiten Löschweg**: Auch ein verwaistes Objekt geht
    durch Auftrag und Quittung.
 8. **Wer das sieht.** Abmelden, als `tim.teamleitung@praxis.invalid` anmelden:
-   Praxis → Sicherheit → Aufbewahrung ist für ihn nicht erreichbar.
+   Organisatorisches → Aufbewahrung ist für ihn nicht erreichbar.
 9. **Aufräumen.** Als Jannes die Datei aus Schritt 3 in der Akte löschen und
    den Auftrag ausführen; danach steht überall wieder „deckungsgleich".
 10. **Am Handy.** Schritt 1 und 6 bei ~375 px: kein waagerechtes Scrollen,

@@ -1379,7 +1379,7 @@ er der Patient:in schon mitgeteilt wurde und auf welchem Weg.
 
 ### 5. Auditlog
 
-Als `jannes.test@praxis.invalid` unter **Praxis → Sicherheit → Auditlog**
+Als `jannes.test@praxis.invalid` unter **Organisatorisches → Sicherheit**
 nachsehen. Erwartung: Einträge **„Mitteilung an die Patient:in vermerkt"** —
 je Termin einer, mit den Wegen im Kontext und ohne Inhalt.
 
@@ -1450,7 +1450,7 @@ Mailprogramm. Der Weg ist am 2026-09-12 mit dem Nachtrag zu B15 dazugekommen.
 
 ### 5. Auditlog
 
-Als `jannes.test@praxis.invalid` unter **Praxis → Sicherheit → Auditlog**
+Als `jannes.test@praxis.invalid` unter **Organisatorisches → Sicherheit**
 nachsehen. Erwartung: Je Termin ein Eintrag **„Mitteilung an die Patient:in
 vermerkt"**, im Kontext der Weg `email` — **kein Nachrichtentext**, keine
 Adresse.
@@ -1487,15 +1487,7 @@ und einigen Terminen (im Seed **Max Mustermann**, für die Verordnungen auch
    Auditlog** nachsehen. Erwartung: **Ein** Eintrag „Patientenakte geöffnet"
    für den ganzen Durchgang — nicht einer je Bereich.
 
-### 2. Die Übersicht — entfallen
-
-**Dieser Schritt ist seit UI-002a gegenstandslos.** Den Bereich „Übersicht"
-gibt es nicht mehr; was er zeigte, steht in den vier Bereichen, aus denen er
-seine Auszüge nahm. Geprüft wird das im Abschnitt **UI-002** am Ende dieser
-Datei. Der Schritt bleibt stehen, damit nachvollziehbar ist, was hier einmal
-abgenommen wurde.
-
-### 3. Termine mit Historie
+### 2. Termine mit Historie
 
 1. Bereich **Termine**. Erwartung: **Kommende Termine** und darunter
    **Vergangene Termine**, neueste zuerst — einschließlich **abgesagter**
@@ -1507,7 +1499,7 @@ abgenommen wurde.
    dem Gitter; **Filter aufheben** bringt die übrigen zurück, **Zur Akte**
    führt zurück.
 
-### 4. Verordnung und Termine finden einander
+### 3. Verordnung und Termine finden einander
 
 1. Bereich **Verordnungen** einer Person mit Serienterminen (Seed: Erika
    Beispiel). Erwartung an einer laufenden Verordnung **drei getrennte
@@ -1521,7 +1513,7 @@ abgenommen wurde.
    als **eine Zeile** und klappt auf Wunsch auf. Erwartung: **kein**
    „Terminserie anlegen" daran — dort ist nichts mehr zu planen.
 
-### 5. Stammdaten zuletzt
+### 4. Stammdaten zuletzt
 
 1. Bereich **Stammdaten**. Erwartung: Person, Kontakt, Hausbesuch und
    Versorgung — und **ganz unten** der Abschnitt **Verwaltung** mit
@@ -1529,7 +1521,7 @@ abgenommen wurde.
 2. **Stammdaten bearbeiten**, den Ort ändern, speichern. Erwartung: zurück in
    den **Stammdaten**, der neue Wert steht da.
 
-### 6. Am Handy (~375 px)
+### 5. Am Handy (~375 px)
 
 ```bash
 pnpm screenshots --breite=375 --konto=office /patienten
@@ -1791,7 +1783,7 @@ Alles als `anna.beispiel@praxis.invalid` (therapist).
 2. Erwartung: Der Browser fragt mit **seinem eigenen** Text nach. Den Wortlaut
    bestimmt der Browser; die Anwendung kann ihn nicht setzen.
 
-### 9. Am Handy (~375 px)
+### 8. Am Handy (~375 px)
 
 ```bash
 pnpm screenshots --breite=375 --konto=therapist /termine/<id>/dokumentation
@@ -2026,7 +2018,7 @@ Die Abgrenzung, um die es hier geht: Eine Besprechung, die bei einer Person um
    Standardansicht des Kalenders (Filter „aktive") und steht mit dem Filter
    „abgesagt" wieder da.
 
-### 8. Am Handy (~375 px)
+### 9. Am Handy (~375 px)
 
 ```bash
 pnpm screenshots --breite=375 --konto=office /termine/ereignis /kalender

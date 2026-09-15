@@ -42,8 +42,8 @@ Feature, **P3** später.
 | A2 | Hosting, Datenstandort, Provider | entschieden 2026-08-28; **Anbieterprüfung offen** | [ADR-002](../adr/ADR-002-hosting-data-residency.md), [ADR-015](../adr/ADR-015-initial-technical-stack.md); Roadmap OPS-001; unten |
 | A3 | `organization_id` / `location_id` | entschieden 2026-08-28 | [ADR-003](../adr/ADR-003-organization-location-model.md) |
 | A4 | Berechtigungsmodell | entschieden 2026-08-28 | [ADR-004](../adr/ADR-004-authorization-model.md) |
-| B1 | MDR / EU AI Act | Zweckbestimmung **vorläufig entschieden 2026-09-08**; **externe Prüfung offen** | [ADR-006](../adr/ADR-006-medical-device-boundary.md); Roadmap G13, Feb 2027; Volltext: `ANFRAGEN.md` § B1 |
-| B2 | DSFA, DSB, Verzeichnis, TOM, Meldeprozess | Prozess entschieden; DSB **vorläufig entschieden 2026-09-08** (ja); Schwellwertprüfung offen | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md); Roadmap G12 |
+| B1 | MDR / EU AI Act | Zweckbestimmung **vorläufig entschieden 2026-09-08**; **externe Prüfung offen** | [ADR-006](../adr/ADR-006-medical-device-boundary.md); Roadmap G15, Feb 2027; Volltext: `ANFRAGEN.md` § B1 |
+| B2 | DSFA, DSB, Verzeichnis, TOM, Meldeprozess | Prozess entschieden; DSB **vorläufig entschieden 2026-09-08** (ja); Schwellwertprüfung offen | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md); Roadmap G14 |
 | B3 | Aufbewahrung und Löschung | entschieden; **Fristen-Validierung offen**; Umsetzung LOE-EPIC-001 fertig 2026-09-11 | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md); unten (Annahmen); Roadmap LOE-EPIC-001 |
 | B4 | Abrechnungsmodell | entschieden; vier Festlegungen **vorläufig entschieden 2026-09-08**; **steuerliche Validierung offen** | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13, Nov 2026; Volltext: `ANFRAGEN.md` § B4 |
 | B5 | Patientenidentität, Vertretung | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | vor Etappe 4; Volltext: `ANFRAGEN.md` § B5 |
@@ -68,12 +68,12 @@ Feature, **P3** später.
 | D | „finalisiert", „nachvollziehbar" | entschieden 2026-09-01 | [ADR-016](../adr/ADR-016-clinical-documentation-record.md) |
 | D | „bestätigt" — Terminstatus-Automat | **erledigt 2026-09-11** — Umfang 2026-09-05, Ausgestaltung mit ADR-018 bestätigt | [ADR-018](../adr/ADR-018-appointment-states.md); `PROJECT_PRINCIPLES.md` 0.7 §8; gebaut in CAL-EPIC-003a |
 | D | übrige Begriffe | erledigt | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 (überholt durch E15) · „Behandlungsnachweis" → C1, ANN-006 (überholt durch E15) · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
-| D | Normativität und Nachweis | Normativität erledigt (0.2, §0); **Nachweistabelle offen** | Roadmap G12 |
+| D | Normativität und Nachweis | Normativität erledigt (0.2, §0); **Nachweistabelle offen** | Roadmap G14 |
 | E1 | Betreibbarkeit bei Bus-Faktor 1 | entschieden 2026-08-28 | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7 |
 | E2 | Ausfallkonzept — zugleich Rückfallplan der Eröffnung | Kern **vorläufig entschieden 2026-09-08**; Ausarbeitung Jan 2027 | Roadmap G10 und H4, Jan 2027; Volltext: `ANFRAGEN.md` § E2 |
 | E3 | Backup, RPO/RTO, Restore-Test | entschieden 2026-08-28 | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Roadmap G7 |
 | E4 | Produktionszugriff | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md) |
-| E5 | Produktions-Logs | entschieden 2026-08-28 | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G8 |
+| E5 | Produktions-Logs | entschieden 2026-08-28 | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G6 |
 | E6 | Synthetische Testdaten | erledigt: der Seed ist der Generator | `supabase/seed.sql`; Erweiterung im Loop, der sie braucht |
 | E7 | CI-Gates, Branch Protection | entschieden 2026-08-28 | [ADR-013](../adr/ADR-013-ci-cd-and-release-governance.md); Freigabeprozess Roadmap G5 |
 | E8 | Dateiablage | **erledigt 2026-09-12** — ADR-017 angenommen, alle acht Fragen wie empfohlen | [ADR-017](../adr/ADR-017-file-storage.md); gebaut in DAT-EPIC-001 (PR #38); **produktive** Ablage an OPS-001 (G3) und OPS-003 (G7) gebunden |
@@ -108,7 +108,7 @@ ANN-044.
 
 Zweckbestimmung vorläufig entschieden · 2026-09-08 · Jannes; externe Prüfung offen
 
-Volltext: `ANFRAGEN.md` § B1. Wo: ADR-006, §17; Roadmap G12/G13.
+Volltext: `ANFRAGEN.md` § B1. Wo: ADR-006, §17; Roadmap G15.
 Annahmen: ANN-014.
 
 ### B2 — Datenschutzbeauftragter

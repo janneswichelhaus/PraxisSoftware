@@ -19,7 +19,7 @@
 // Die Bilder landen in .tmp/screenshots/ und sind nicht versioniert.
 //
 // Seiten hinter der Anmeldung brauchen zusaetzlich einen laufenden
-// Supabase-Stack (`pnpm db:start`, siehe docs/DEVELOPMENT.md) UND das Konto
+// Supabase-Stack (`pnpm dlx supabase@2.116.0 start`, docs/DEVELOPMENT.md) UND das Konto
 // muss uebergeben werden - das Skript startet mit jedem Lauf einen frischen,
 // nicht angemeldeten Browserkontext und meldet sich ohne `--konto` bei
 // keiner Seite an. In der Cloud-Entwicklungsumgebung ist `supabase start`
@@ -61,7 +61,7 @@ if (pfade.length === 0) {
   );
   console.error('Voraussetzung: die Anwendung laeuft unter ' + BASIS + ' (pnpm dev).');
   console.error(
-    'Fuer Seiten hinter der Anmeldung zusaetzlich ein laufender Supabase-Stack (pnpm db:start) und --konto.',
+    'Fuer Seiten hinter der Anmeldung zusaetzlich ein laufender Supabase-Stack (pnpm dlx supabase@2.116.0 start) und --konto.',
   );
   process.exit(1);
 }
@@ -108,7 +108,9 @@ if (anmeldeAdresse) {
     console.log(`Angemeldet als ${kontoName} (${anmeldeAdresse}).\n`);
   } catch (fehler) {
     console.error(`Anmeldung als ${kontoName} fehlgeschlagen: ${String(fehler).split('\n')[0]}`);
-    console.error('Laeuft ein Supabase-Stack (pnpm db:start) und die Anwendung (pnpm dev)?');
+    console.error(
+      'Laeuft ein Supabase-Stack (pnpm dlx supabase@2.116.0 start) und die Anwendung (pnpm dev)?',
+    );
     await browser.close();
     process.exit(1);
   } finally {
