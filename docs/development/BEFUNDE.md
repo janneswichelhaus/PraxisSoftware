@@ -244,11 +244,13 @@ die RLS auf `storage.objects` eine **einmalige Freigabe** der anfragenden
 Person, die nur `issue_patient_file_link` (mit `patient_file.link_issued`) oder
 `claim_storage_deletion_order` (neu mit `storage_deletion.claimed`) anlegt; sie
 gilt 30 Sekunden und wird beim ersten Zugriff verbraucht; die Löschfreigabe
-trägt nur ein Entfernen, kein Lesen (Zweitreview). Zuerst rot, dann grün
-belegt: gegen die laufende Storage-API in
+trägt nur ein Entfernen, kein Lesen. Das kam aus dem Zweitreview und hat keinen
+eigenen roten Lauf: `7787ec5` prüfte das Lesen mit Löschfreigabe noch als
+erlaubt, `f8676f9` verlangt das Gegenteil. Die Umgehungswege sind zuerst rot,
+dann grün belegt: gegen die laufende Storage-API in
 `tests/e2e/authenticated/patient-file-access.spec.ts` (Signieren, Laden,
 Auflisten und Kopieren ohne Ausstellung, zweites Signieren nach erlaubtem
-Öffnen, Entfernen durch `owner` ohne Ausführung, Lesen mit Löschfreigabe) und in
+Öffnen, Entfernen durch `owner` ohne Ausführung) und in
 `supabase/tests/patient-file-access.test.ts`. Ein ausgestellter Verweis bleibt
 60 Sekunden nutzbar. Migration `20260915120000_patient_file_access_grants.sql`,
 ANN-052 Fassung 2.

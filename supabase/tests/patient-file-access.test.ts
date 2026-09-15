@@ -369,6 +369,8 @@ describe('BEF-004: Dateizugriff nur ueber den auditierten Weg', () => {
         const gelesen = await asUserCommitted(konto, LESEN, [dateiSchluessel]);
         expect(gelesen.rows).toEqual([]);
       }
+      // Beim Entfernen prueft auch app.may_delete_storage_object die Organisation:
+      // Diese Haelfte ist Verteidigung in der Tiefe, kein Nachweis der Leseregel allein.
       const geloescht = await asStorageApi(users.ownerTherapist, ENTFERNEN, LOESCHEN, [
         auftragSchluessel,
       ]);
