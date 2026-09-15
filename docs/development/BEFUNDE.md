@@ -214,7 +214,7 @@ Beleg: `pnpm test:db` 1 311 von 1 311 grün (2026-09-15).
 | Datum     | 2026-09-15                                                                                        |
 | Bereich   | Dateien in der Akte, Verordnungsscan — `storage.objects`, `issue_patient_file_link`               |
 | Quelle    | Zweitreview in frischem Kontext zu ROL-EPIC-001 (ADR-013 Punkt 9 Nr. 8), am Code bestätigt        |
-| Status    | behoben in FIX-015, noch nicht gemergt (Branch `claude/fix-bef-004`, gestapelt auf PR #41)        |
+| Status    | behoben in FIX-015, noch nicht gemergt (PR #42, gestapelt auf PR #41)        |
 | Berührt   | DAT-001, ROL-002; ADR-010 Punkt 2 und 14, ADR-017 Punkt 20; ANN-052                               |
 
 **Beobachtung.** Der Objektschlüssel einer Datei ist

@@ -23,10 +23,10 @@ einträgt, hat sie damit nicht eingeplant.
 ## Zum Merge — Reihenfolge verbindlich
 
 1. **PR #41** — ROL-EPIC-001, `claude/rol-epic-001` → `main`.
-2. **PR zu FIX-015** — `claude/fix-bef-004`, gestapelt auf #41 und mit dessen
+2. **PR #42** — FIX-015, `claude/fix-bef-004`, gestapelt auf #41 und mit dessen
    Commits; erst danach mergen, die Basis vorher auf `main` stellen.
 
-#41: CI grün, Zweitreview mit Befund BEF-004. FIX-015: Zweitreview in frischem
+#41: CI grün, Zweitreview mit Befund BEF-004. #42: Zweitreview in frischem
 Kontext, Befunde eingearbeitet, CI-Ergebnis im PR. Abnahme beider offen.
 
 ## Blocker (Jannes-seitig)
