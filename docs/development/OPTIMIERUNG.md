@@ -410,8 +410,8 @@ und je Runde einer Ablaufkarte.
 | `docs/abnahme/README.md` | Abschnitt 9 wortgleich |
 | `ARBEITSBEREICHE.md` §6 | ein Satz: Ablaufkarten messen, die Roadmap ordnet |
 
-Das Wochenupdate bleibt unverändert: es liest die Roadmap und das Git-Log —
-die Rundentermine stehen dort.
+Das Wochenupdate liest `docs/STATUS.md`, die Roadmap, `ARBEITSBEREICHE.md` §2
+und das Git-Log (Roadmap, „Wochenupdate"); die Rundentermine stehen in der Roadmap.
 
 ## 11. Aufwand je Runde
 

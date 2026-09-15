@@ -7,7 +7,7 @@ Quelle sind Jannes' Korrekturen an „Verordnung bearbeiten" vom 2026-09-13
 (Planentwurf aus PR #37, am selben Tag auf `main` übernommen). Die
 fachlichen Vorgaben unten stammen von ihm; die Einordnung als eigener Loop
 und die Reihenfolge stehen in [ROADMAP.md](ROADMAP.md). Dieses Dokument
-ersetzt keinen Schritt des [Entwicklungsablaufs](DEVELOPMENT_WORKFLOW.md).
+ersetzt keinen Schritt des [Feature-Loops](GRAPH-ENGINEERING-WORKFLOW.md).
 
 ## Ziel und Feldvorgaben
 
@@ -99,7 +99,7 @@ konkreter Wiedervorlage im bestehenden Plan oder Ideenspeicher fest.
    fortgeschrieben; neue Annahmen bekommen erst dann freie Kennungen.
 3. Die zusammengehörigen Abläufe als vertikale Stories bauen und je Story
    committen. Die Reviews decken insbesondere Berechtigungen und Migration
-   unabhängig ab (Zweitreview nach `DEVELOPMENT_WORKFLOW.md`).
+   unabhängig ab (Zweitreview nach ADR-013 Fassung 2, Punkt 9, Nr. 8).
 4. Alle Phasen aus dem Feature-Loop durchführen. Vorgeschriebene Gates auf
    dem Endstand ausführen und tatsächliche Ergebnisse berichten. Die
    geänderte Oberfläche angemeldet auf Telefon, Tablet und Desktop prüfen;

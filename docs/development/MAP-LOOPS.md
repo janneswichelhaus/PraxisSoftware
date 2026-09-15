@@ -1,35 +1,24 @@
 # Folge-Loops Kartendienst: MAP-002 bis MAP-006
 
-Stand: 2026-09-08 · Ergebnis von MAP-001 · **Loop-Vorgabe**: Eingabe für den
-SPEC-Schritt des jeweils aufgerufenen Loops, kein eigener Rang in der
-Dokumentenhierarchie · Reihenfolge und Termine bestimmt `ROADMAP.md`,
-Etappe T. ADR-019 Fassung 2 ist seit dem 2026-09-13 angenommen (E-20); das
-Gate vor Echtdaten (Punkt 9) bleibt.
+Stand: 2026-09-14 · Ergebnis von MAP-001 · **Loop-Vorgabe**: Eingabe für den
+SPEC-Schritt des jeweils aufgerufenen Loops, kein eigener Rang · Reihenfolge
+und Termine bestimmt `ROADMAP.md`, Etappe T.
 
-Grundlage ist ADR-019 (Fassung 2) und der Vertrag in
+Grundlage sind ADR-019 Fassung 2 (angenommen 2026-09-13) und der Vertrag in
 `src/lib/location/contract.ts`. Jeder Loop ist ein eigener
-`/feature-loop`-Aufruf; er liest diese Datei und baut nur seinen Abschnitt.
-Für alle fünf gilt:
+`/feature-loop`-Aufruf und baut nur seinen Abschnitt. Synthetische Daten,
+Anbieterzugang durch Jannes, Privacy-Regeln und das Gate vor Echtdaten stehen
+in ADR-019, Abschnitte C und E. Zusätzlich gilt für alle fünf:
 
-- **MAP-002 bis MAP-005: ausschließlich synthetische Daten.** Feste
-  Tübinger Koordinaten aus einer Konstante im Code, ohne Bezug zu einer
-  Akte, einem Termin oder einer Person. Keine echte Adresse, auch keine
+- Die Tübinger Teststopps kommen aus einer Konstante im Code — auch keine
   „Testadresse" aus dem Seed.
-- **Anbieterzugang:** das kostenlose PTV-Developer-Abo, das Jannes anlegt.
-  Schlüssel in `.env.local` (Kacheln) und in lokalen Supabase-Secrets
-  (Edge Function), nie im Repository. Fehlt der Schlüssel, läuft der Loop
-  gegen den `mock`-Adapter und meldet das im Bericht — er blockiert nicht.
-- **Kein Produktivcode für Patientendaten** bis MAP-006. Die Prototypen liegen
-  unter `src/features/tours/karte/` und sind als Vorschau gekennzeichnet
-  (`ARBEITSBEREICHE.md`), bis MAP-006 sie anbindet.
-- **Privacy-Regeln aus ADR-019 Abschnitt C** gelten schon im Prototyp:
-  Marker lokal, Koordinaten statt Adressen, keine Speicherung von Fahrzeiten
-  oder Rohantworten, keine Adressen oder Koordinaten in Logs.
-- **STOP-Gate aus MAP-001** gilt weiter: keine Cloud-Ressource, kein
-  Produktionsschlüssel, kein Anbieterkonto durch den Agenten.
-- **Neue Abhängigkeit** `maplibre-gl` (MAP-002): eine Bibliothek, Open Source
-  (BSD-3), keine Netzwerkaufrufe außer zu den konfigurierten Kachel-URLs.
-  Prüfung nach ADR-015 im Loop dokumentieren; `pnpm audit`, `scan:secrets`.
+- Fehlt der PTV-Schlüssel, läuft der Loop gegen den `mock`-Adapter und meldet
+  das im Bericht — er blockiert nicht.
+- Die Prototypen liegen unter `src/features/tours/karte/` und sind als
+  Vorschau gekennzeichnet (`ARBEITSBEREICHE.md`), bis MAP-006 sie anbindet.
+- Neue Abhängigkeit `maplibre-gl` (MAP-002, BSD-3, Netzwerkaufrufe nur zu den
+  Kachel-URLs): Prüfung nach ADR-015 im Loop dokumentieren; Audit-Schwelle nach
+  `.github/workflows/ci.yml`, dazu `pnpm scan:secrets`.
 
 ---
 
@@ -204,9 +193,8 @@ automatische Verbindung.
 3. axe ohne Verstöße; Knopf mindestens 44 px hoch bei 375 px.
 4. Abnahmeschritte in `docs/abnahme/` für die Gerätebewertung.
 
-**Datenschutz.** ADR-019 Punkt 20 bis 23. Der Handoff geht vom Gerät aus,
-nicht von der Anwendung; die drei Bedingungen (Endgeräteregel,
-Datenschutzinformation, nur auf Aktion) stehen im Bericht.
+**Datenschutz.** ADR-019 Punkte 20 bis 23; der Bericht belegt die drei
+Bedingungen dort.
 
 ---
 
@@ -251,6 +239,5 @@ Adressen; E2E des Tagesablaufs.
 
 ## Danach, nicht Teil dieser Loops
 
-**Tourenoptimierung** (Reihenfolge, Sequenzierung) ist ein eigenes Epic nach
-§9 „später KANN" und braucht eine eigene Entscheidung (B6-Bezug, ADR-005
-Punkt 6). `optimizeRoute()` wird bis dahin nicht angelegt.
+Tourenoptimierung ist ein eigenes Epic (ADR-019, „Bewusst nicht Bestandteil";
+B6, ADR-005 Punkt 6); `optimizeRoute()` wird bis dahin nicht angelegt.

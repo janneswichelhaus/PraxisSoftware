@@ -203,8 +203,8 @@ DOK-004).
 Die Vorschaubereiche aus Abschnitt 2 sind seit dem 2026-09-05 in der Roadmap
 als **Spur A2 „Praxisbetrieb"** eingeordnet — Urlaub, Zeitkonto, Radflotte,
 Erstattungen, Teamkommunikation. Sie beginnt nach dem ersten Betriebsmonat
-(M6, Stufe 2). Die Vorschau **Touren** ersetzen die Loops MAP-002 bis
-MAP-006 (Etappe T, `MAP-LOOPS.md`, seit MAP-001 am 2026-09-08): Karte der
+(M6, Stufe 2). Die Loops MAP-002 bis MAP-006 ersetzen die Vorschau **Touren**
+(Etappe T, `MAP-LOOPS.md`, seit MAP-001 am 2026-09-08): Karte der
 Tagesroute, Fahrradroute, Fahrzeiten, Navigations-Handoff, Tourenliste.
 MAP-002 bis MAP-005 sind Prototypen mit synthetischen Daten und laufen als
 **gekennzeichnete Vorschau** unter `/touren/karte`; MAP-006 bindet die echten
@@ -224,6 +224,6 @@ ihrem Loop ersetzt, nicht daneben gebaut.** Die frühere Regel „keine neue
 Vorschau" ist damit durch eine zeitlich begrenzte, technisch abgesicherte
 Erlaubnis abgelöst.
 
-Die Ablaufrunden nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md) sind bis Probewoche 1
-eingefroren (2026-09-13); Befunde an der laufenden Anwendung sammelt
+Den Stand der Ablaufrunden führt [`OPTIMIERUNG.md`](OPTIMIERUNG.md); Befunde
+an der laufenden Anwendung sammelt
 [`BEFUNDE.md`](BEFUNDE.md). Die Reihenfolge bleibt allein Sache der Roadmap.
