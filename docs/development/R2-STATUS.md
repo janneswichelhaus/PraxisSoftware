@@ -4,7 +4,7 @@
 Knoten 4 gelöscht.** Liegt im Repository statt in `/tmp`, weil eine neue Session
 einen frischen Container bekommt und `/tmp` dort leer ist.
 
-Stand: 2026-09-15, nach Gruppe 4. Branch `claude/konsolidierung-r2`,
+Stand: 2026-09-15, nach dem Nachtrag zu Gruppe 4. Branch `claude/konsolidierung-r2`,
 Baseline `7160fd5`.
 
 ## Erledigt
@@ -16,6 +16,7 @@ Baseline `7160fd5`.
 | 3a Steuerung | `2c2cf07` | R2-001…004, 006…008, 017, 018, 024, 028; DEVELOPMENT_WORKFLOW.md gelöscht; GRAPH 1.1; Roadmap-Vermerk 5.3 angelegt | `prettier --check` der geänderten Prettier-Dateien, Linkprüfung (59 Dateien, nur die zwei bekannten Beispielpfade in den R2-Dateien) — grün |
 | 3b Skills, Vision, Ideen | `ad63f99` | R2-002/003/005/006 in den Skills, R2-F02 Freigabe-Stopp, R2-F03, R2-029, R2-030, Sammelposten Vision/Ideen | wie 3a — grün |
 | 4 Korrigieren | `120670f` | R2-016, 019–023, 025, 026 (nur nicht abgenommene Abschnitte), 031, 036, 039; Sammelposten Roadmap/Abnahme | `prettier --check`, `eslint scripts/screenshots.mjs`, JSON und `pnpm fortschritt` (31,2 %), Linkprüfung — grün |
+| 4 Nachtrag | `704589e` | R2-026 vollständig: die 16 verbliebenen Menüpfade (Entscheidung Jannes 2026-09-15); `supabase/.branches/` zurück in `.gitignore` | `prettier --check` der zwei Abnahmedateien, Menüpfad-Grep über `docs/`, `src/`, `tests/` — grün |
 
 Zeilen: `ASSUMPTIONS.md` 3 575 → 734 · `OPEN_DECISIONS.md` 1 415 → 400 ·
 `ANFRAGEN.md` neu 483 · `ROADMAP.md` 859 → 786 · `CLAUDE.md` 293 → 149 ·
@@ -45,11 +46,12 @@ feature-loop 271 → 247 · sandbox 165 → 167 · `VER-EPIC-002.md` 133 → 120
 
 ## Abweichungen von der Arbeitsanweisung (im Bericht zu nennen)
 
-1. **`.gitignore` (Gruppe 1):** Acht der zehn genannten Einträge sind raus,
-   `secrets/` und `.secrets` bleiben. Sie sind das einzige Muster, das
+1. **`.gitignore` (Gruppe 1):** Sieben der zehn genannten Einträge sind raus.
+   `secrets/` und `.secrets` bleiben: sie sind das einzige Muster, das
    Schlüsselmaterial außerhalb von `.env*` erfasst; ihr Wegfall wäre eine
    Lockerung an einer MUSS-Anforderung (`PROJECT_PRINCIPLES.md` §3.3) für zwei
-   Zeilen Gewinn (§16). Jannes kann das überstimmen.
+   Zeilen Gewinn (§16). `supabase/.branches/` steht seit dem Nachtrag zu
+   Gruppe 4 wieder drin (Entscheidung Jannes 2026-09-15).
 2. **`Herkunft` im Register (Gruppe 2):** Abschnitt 1 („Zielgrößen") lässt je
    Eintrag nur Kopf, Aussage, Anker, Änderungspfad, Wiedervorlage und eine Zeile
    Begründung zu, Abschnitt 4.7 nennt zusätzlich eine optionale Zeile
@@ -69,7 +71,8 @@ feature-loop 271 → 247 · sandbox 165 → 167 · `VER-EPIC-002.md` 133 → 120
    `scripts/scan-secrets.sh` nur den Arbeitsbaum liest (`git ls-files`,
    `git grep`) und keine Historie — das Gate verliert nichts.
 
-Jannes hat am 2026-09-15 „die vier Abweichungen aus Gruppe 1/2" bestätigt; die Liste zählt fünf — Nr. 5 im Bericht ausdrücklich nennen.
+Jannes hat am 2026-09-15 „die vier Abweichungen aus Gruppe 1/2" bestätigt und
+Nr. 5 danach ausdrücklich; Nr. 1 ist um `supabase/.branches/` zurückgenommen.
 
 Gruppe 3, im Bericht zu nennen (keine Abweichung in der Sache):
 
@@ -85,13 +88,16 @@ Gruppe 3, im Bericht zu nennen (keine Abweichung in der Sache):
    noch in §15.1; die frühere Abweichung (Punkt 5 „Im Bericht nennen" statt
    „Validieren lassen", R2-004) ist damit aufgelöst. Die Berichtspflicht für
    Annahmen steht im Feature-Loop-Schritt I und in „Abschlussbericht".
-9. **R2-026 und etappe-g Schritt 9 (Gruppe 4):** Jannes' Vorgabe
-   „Abnahmeabschnitte abgenommener Loops bleiben unverändert" ist spezifischer
-   als die Befundliste. Korrigiert sind deshalb nur die 14 Menüpfade in
-   Abschnitten nicht abgenommener Loops (etappe-0 nach R2-020, CAL-012/013,
-   FIX-EPIC-001, DAT-001 bis DAT-003); 16 alte Pfade in DOK, VER, UI-000, UX,
-   MARKE-001 und STAFF-002 bleiben, ebenso die Durchstreichung in STAFF-004
-   Schritt 9. Mit einem Suchen-Ersetzen umkehrbar.
+9. **R2-026 und etappe-g Schritt 9 (Gruppe 4):** Gruppe 4 hatte nur die 14
+   Menüpfade in Abschnitten nicht abgenommener Loops korrigiert (etappe-0 nach
+   R2-020, CAL-012/013, FIX-EPIC-001, DAT-001 bis DAT-003). **Aufgelöst durch
+   Jannes am 2026-09-15:** die übrigen 16 Pfade in DOK, VER, UI-000, UX,
+   MARKE-001 und STAFF-002 sind im Nachtrag zu Gruppe 4 ebenfalls korrigiert —
+   ein falscher Klickweg macht einen Abnahmeschritt unausführbar, auch in einem
+   abgenommenen Abschnitt. Die Durchstreichung in STAFF-004 Schritt 9 **bleibt**
+   (Entscheidung Jannes). Dabei fielen zwei Reste aus Gruppe 4 auf und wurden
+   mitkorrigiert: `etappe-1:1486` nannte noch „Sicherheit → Auditlog" (dieses
+   Untermenü gibt es nicht), `etappe-1:759` war unsauber umbrochen.
 10. **`DEVELOPMENT.md` 375 statt ~340 Zeilen:** Klickliste (PR #37,
     Alt-Branches) und Routine-Prompt sind nach 4.9 neu. Gruppe 5 kürzt noch
     die Stellen mit der Supabase-CLI-Version.
@@ -108,8 +114,10 @@ Gruppe 3, im Bericht zu nennen (keine Abweichung in der Sache):
   deshalb je geänderter Datei; der Abschlusslauf in einem Aufruf braucht eine
   LF-Arbeitskopie (Cloud-Session oder `git worktree` mit
   `core.autocrlf=false`), sonst ist er nicht aussagekräftig.
-- Seit Gruppe 1 steht `supabase/.branches/` nicht mehr in `.gitignore`; lokal
-  taucht das Verzeichnis als untracked auf. Nicht committen; im Bericht nennen.
+- `supabase/.branches/` steht seit dem Nachtrag zu Gruppe 4 wieder in
+  `.gitignore` (Entscheidung Jannes 2026-09-15). Damit sind aus der
+  `.gitignore`-Liste des Sammelpostens sieben der zehn Einträge entfallen;
+  `secrets/`, `.secrets` und `supabase/.branches/` bleiben.
 
 ## Werkzeuge
 

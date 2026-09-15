@@ -47,7 +47,7 @@ Patientenkonto ebenso wenig (§4.6).
 10. Gegenprobe Praxisleitung: als `jannes.test@praxis.invalid` (owner **und**
     therapist) ist beides sichtbar. Ein reiner owner-Zugang dürfte nur lesen —
     im Seed gibt es ihn nicht, geprüft wird der Fall in `pnpm test:db`.
-11. Als owner „Praxis → Sicherheit → Audit" öffnen: dort stehen
+11. Als owner „Organisatorisches → Sicherheit" öffnen: dort stehen
     `treatment_note.created`, `treatment_note.updated` und
     `treatment_note.viewed` — ohne jeden Behandlungsinhalt. Der Lesevermerk
     entsteht bei jedem Öffnen einer vorhandenen Dokumentation.
@@ -94,7 +94,7 @@ Dokumentieren (`therapist`, `team_lead`). Den Änderungsverlauf darf zusätzlich
     unverändert vollständig. Der direkte Aufruf einer Verlaufs-URL landet auf
     der Übersicht. Das ist ausdrücklich **kein** Sicherheitsnachweis;
     verbindlich sind die Serverfunktionen, geprüft in `pnpm test:db`.
-12. Als owner „Praxis → Sicherheit → Audit" öffnen: dort stehen zusätzlich
+12. Als owner „Organisatorisches → Sicherheit" öffnen: dort stehen zusätzlich
     `treatment_note.finalized`, `treatment_note.revised`,
     `treatment_note.addendum_created` und `treatment_note.history_viewed` —
     ohne Behandlungsinhalt und **ohne die Korrekturbegründung**.
@@ -130,7 +130,7 @@ Inhalt.
 6. Blättern: hat Max mehr als 20 Termine in der Akte, steht unter der Liste
    „Ältere Termine anzeigen". Ein Klick hängt die nächsten an; bei der letzten
    Seite verschwindet die Schaltfläche. Ohne so viele Termine gibt es sie nicht.
-7. Als owner „Praxis → Sicherheit → Audit" öffnen: das Öffnen der Akte steht
+7. Als owner „Organisatorisches → Sicherheit" öffnen: das Öffnen der Akte steht
    als `patient_record.viewed`. Für den Nachweis selbst gibt es **keinen**
    eigenen Eintrag — er enthält keinen klinischen Inhalt (ANN-006). Das ist
    ausdrücklich **kein** Sicherheitsnachweis; verbindlich ist
@@ -154,7 +154,7 @@ Inhalt.
    Dokumentation ebenfalls lesbar. Ein reiner owner-Zugang dürfte sie lesen,
    ohne zu schreiben — im Seed gibt es ihn nicht, geprüft wird der Fall in
    `pnpm test:db`.
-5. Als owner „Praxis → Sicherheit → Audit" öffnen: für jeden in der Akte
+5. Als owner „Organisatorisches → Sicherheit" öffnen: für jeden in der Akte
    gelesenen Eintrag — auch jeden Nachtrag — steht ein `treatment_note.viewed`,
    ohne Behandlungsinhalt. Für einen Termin ohne Dokumentation entsteht keiner.
    Das Öffnen der Akte selbst steht daneben als `patient_record.viewed`.
@@ -185,7 +185,7 @@ Supabase Studio (`http://127.0.0.1:54323`) die Abfrage
    „Planung" öffnen: der Abschnitt fehlt. Das ist ausdrücklich **kein**
    Sicherheitsnachweis; verbindlich ist `set_documentation_deadline`, geprüft in
    `pnpm test:db`.
-4. Als owner unter „Praxis → Sicherheit → Audit" steht
+4. Als owner unter „Organisatorisches → Sicherheit" steht
    `organization.documentation_deadline_changed`.
 
 ### Automatische Finalisierung beobachten
@@ -219,7 +219,7 @@ Testvorbereitung zurückdatiert, statt einen Tag zu warten.
    den Entwurfstext mit der zuletzt schreibenden Person.
 9. Dieselbe Zeile steht in der Akte („Patienten" → „Max Mustermann"); der
    Behandlungsnachweis für office zeigt „Dokumentation finalisiert am …".
-10. Als owner „Praxis → Sicherheit → Audit" öffnen: der Eintrag
+10. Als owner „Organisatorisches → Sicherheit" öffnen: der Eintrag
     `Behandlungsdokumentation automatisch finalisiert` nennt als Benutzer
     **„System"**. Der Filter „Benutzer" blendet ihn aus, weil er keinem Konto
     gehört.
@@ -310,10 +310,10 @@ und für ein Patientenkonto nicht sichtbar (ANN-010).
    Auch „Verordnung erfassen" fehlt. Das ist **kein** Sicherheitsnachweis;
    verbindlich sind `list_patient_prescriptions` und
    `list_patient_prescriptions_clinical`, geprüft in `pnpm test:db`.
-7. **Auditprobe:** als `jannes.test@praxis.invalid` (owner) „Praxis →
-   Sicherheit → Audit" öffnen. Je Verordnung, die eine therapeutische Rolle
-   gelesen hat, steht ein Eintrag „Verordnung gelesen". Nach dem Besuch von
-   Office in Schritt 6 entsteht **kein** solcher Eintrag.
+7. **Auditprobe:** als `jannes.test@praxis.invalid` (owner)
+   „Organisatorisches → Sicherheit" öffnen. Je Verordnung, die eine
+   therapeutische Rolle gelesen hat, steht ein Eintrag „Verordnung gelesen".
+   Nach dem Besuch von Office in Schritt 6 entsteht **kein** solcher Eintrag.
 8. **Am Handy** (~375 px): die Verordnungskarten brechen um, es wird nicht
    seitwärts gescrollt, und „noch 3 von 10" steht ohne Zoom lesbar da.
 
@@ -359,9 +359,9 @@ Erfassen dürfen die therapeutischen Rollen `owner`, `therapist` und
     und für eine falsch zugeordnete Verordnung gedacht ist. „Nicht löschen"
     bricht ab, „Ja, Verordnung löschen" entfernt sie; die Akte zeigt sie nicht
     mehr.
-11. **Auditprobe:** als `jannes.test@praxis.invalid` (owner) „Praxis →
-    Sicherheit → Audit": „Verordnung erfasst", „Verordnung geändert" und
-    „Verordnung gelöscht" stehen dort, jeweils ohne Diagnosetext.
+11. **Auditprobe:** als `jannes.test@praxis.invalid` (owner)
+    „Organisatorisches → Sicherheit": „Verordnung erfasst", „Verordnung
+    geändert" und „Verordnung gelöscht" stehen dort, jeweils ohne Diagnosetext.
 12. **Gegenprobe Office** (`olivia.office@praxis.invalid`): in der Akte gibt es
     weder „Verordnung erfassen" noch „Bearbeiten". Das ist **kein**
     Sicherheitsnachweis; verbindlich ist `app.can_write_prescriptions()`,
@@ -386,8 +386,8 @@ etwas, das vorher ging und jetzt nicht mehr.
    der Kasten. Ohne die Maus zu bewegen **Enter** drücken — der Fokus steht
    schon auf der bestätigenden Schaltfläche. Erneut öffnen und „Abbrechen":
    der Fokus springt zurück auf „Als inaktiv markieren". Dasselbe unter
-   „Praxis → Mitarbeitende" bei einer Person, am Termin bei „Termin absagen"
-   und in einer Verordnung bei „Verordnung löschen".
+   „Organisatorisches → Mitarbeitende" bei einer Person, am Termin bei „Termin
+   absagen" und in einer Verordnung bei „Verordnung löschen".
 3. **Mitarbeiter mit offenen Terminen.** Eine Person deaktivieren, für die
    noch Termine geplant sind: der Kasten bleibt offen, listet die Termine und
    die Schaltfläche heißt jetzt „Trotz offener Termine deaktivieren". Ein
@@ -757,9 +757,8 @@ der Praxis und einen persönlichen von Anna Beispiel an.
    fehlt im Menü, und `/praxis/textbausteine` direkt aufgerufen meldet „Nicht
    freigegeben".
 10. **Audit.** Als `jannes.test@praxis.invalid` unter Organisatorisches →
-    Sicherheit:
-    Es stehen Einträge „Textbaustein angelegt/geändert/gelöscht" mit Titel —
-    **ohne** den Text des Bausteins.
+    Sicherheit: Es stehen Einträge „Textbaustein angelegt/geändert/gelöscht"
+    mit Titel — **ohne** den Text des Bausteins.
 11. **Am Handy** (~375 px): Die Bausteinleiste bricht um, jeder Knopf bleibt
     mindestens 44 px hoch. **Zielwert der Story:** ein wiederkehrender Satz
     kostet einen Tap statt einer halben Minute Tippen.
@@ -904,12 +903,12 @@ Verbindlich für Farben, Schutzraum, Mindestgröße und Verbote ist
    „Patient anlegen" fahren — beide werden **dunkler**, nicht heller. Ist der
    Unterschied für dich zu schwach zu sehen, sag Bescheid (ANN-022, eine Zeile
    in `src/index.css`).
-5. **Zwei grüne Abzeichen.** Unter „Praxis → Mitarbeitende" die Rollenabzeichen
-   ansehen, und in der Akte die Statusabzeichen. Akzent und „positiv" liegen
-   im Farbton jetzt dicht beieinander. Prüfen: lässt sich trotzdem auf einen
-   Blick unterscheiden, was ein Rollenabzeichen und was eine Statusmeldung
-   ist? Die Bedeutung hängt nie an der Farbe allein — der Zustand steht immer
-   als Wort daneben —, aber wenn es dich stört, ist es ein Befund.
+5. **Zwei grüne Abzeichen.** Unter „Organisatorisches → Mitarbeitende" die
+   Rollenabzeichen ansehen, und in der Akte die Statusabzeichen. Akzent und
+   „positiv" liegen im Farbton jetzt dicht beieinander. Prüfen: lässt sich
+   trotzdem auf einen Blick unterscheiden, was ein Rollenabzeichen und was eine
+   Statusmeldung ist? Die Bedeutung hängt nie an der Farbe allein — der Zustand
+   steht immer als Wort daneben —, aber wenn es dich stört, ist es ein Befund.
 6. **Tastatur und Fokus.** Mit Tab durch die Anmeldemaske und durch ein
    Formular in der Akte gehen. Der Fokusring ist jetzt grün und muss auf allen
    Flächen deutlich sichtbar bleiben, auch auf den grau hinterlegten.
@@ -1483,9 +1482,9 @@ und einigen Terminen (im Seed **Max Mustermann**, für die Verordnungen auch
 2. Nacheinander **Termine**, **Verordnungen**, **Behandlungsverlauf**,
    **Stammdaten** anwählen. Erwartung: Der Kopf bleibt unverändert stehen, nur
    der Inhalt darunter wechselt; die Adresse in der Zeile ändert sich mit.
-3. Als `jannes.test@praxis.invalid` unter **Organisatorisches → Sicherheit →
-   Auditlog** nachsehen. Erwartung: **Ein** Eintrag „Patientenakte geöffnet"
-   für den ganzen Durchgang — nicht einer je Bereich.
+3. Als `jannes.test@praxis.invalid` unter **Organisatorisches → Sicherheit**
+   nachsehen. Erwartung: **Ein** Eintrag „Patientenakte geöffnet" für den
+   ganzen Durchgang — nicht einer je Bereich.
 
 ### 2. Termine mit Historie
 

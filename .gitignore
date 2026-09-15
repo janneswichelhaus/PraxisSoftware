@@ -24,6 +24,7 @@ secrets/
 
 # Supabase lokal
 supabase/.temp/
+supabase/.branches/
 supabase/.env
 
 # Lokale Test-Datenbank (scripts/test-db.sh)

@@ -18,9 +18,9 @@ Komponententests.
 und dass das Praxismanagement die Privatanschrift einer Kollegin weder sieht
 noch versehentlich löscht.
 
-1. **Office darf pflegen.** Als `olivia.office@praxis.invalid` anmelden, Praxis
-   → Team öffnen. Die Schaltfläche „Mitarbeiter:in anlegen" ist da. Auf „Anna
-   Beispiel" tippen: „Stammdaten bearbeiten" wird angeboten.
+1. **Office darf pflegen.** Als `olivia.office@praxis.invalid` anmelden,
+   Organisatorisches → Mitarbeitende öffnen. Die Schaltfläche „Mitarbeiter:in
+   anlegen" ist da. Auf „Anna Beispiel" tippen: „Stammdaten bearbeiten" wird angeboten.
 2. **Aber nicht alles.** Auf demselben Datensatz gibt es **keine** Schaltfläche
    „Als inaktiv führen" und **keinen** Abschnitt „Zugang". Beides bleibt bei der
    Praxisinhaberin.
@@ -34,7 +34,8 @@ noch versehentlich löscht.
    Abschnitt „Privat" trägt unverändert Geburtsdatum, private E-Mail und
    Adresse. Genau das wäre ohne ANN-024 gelöscht worden.
 6. **Therapie pflegt nicht.** Als `anna.beispiel@praxis.invalid` anmelden,
-   Praxis → Team: Die Liste ist lesbar, „Mitarbeiter:in anlegen" fehlt, und auf
+   Organisatorisches → Mitarbeitende: Die Liste ist lesbar, „Mitarbeiter:in
+   anlegen" fehlt, und auf
    einem Datensatz gibt es weder „Stammdaten bearbeiten" noch „Zugang". Dasselbe
    gilt für `tim.teamleitung@praxis.invalid`.
 7. **Am Handy.** Schritt 3 bei ~375 px Breite wiederholen: Das Formular ist
@@ -50,7 +51,8 @@ Ausgangslage: **Nina Neu** steht im Seed als Mitarbeiterin **ohne** Zugang.
 Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
 
 1. **Nur die Praxisinhaberin.** Als `jannes.test@praxis.invalid` anmelden,
-   Praxis → Team → „Nina Neu": Es gibt den Abschnitt „Zugang" mit einem
+   Organisatorisches → Mitarbeitende → „Nina Neu": Es gibt den Abschnitt
+   „Zugang" mit einem
    Einladungsformular. Die E-Mail-Adresse ist aus der dienstlichen Adresse
    vorbelegt, **keine** Rolle ist angekreuzt.
 2. **Ohne Rolle geht es nicht.** Direkt auf „Zugang einladen" tippen: Es
@@ -74,8 +76,9 @@ Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
 7. **Annehmen.** In einem privaten Fenster den Link aus der Mail öffnen und ein
    Kennwort setzen. Es erscheint „Zugang einrichten". Auf „Einladung annehmen"
    tippen: Die Anwendung öffnet sich als Nina Neu.
-8. **Die Rolle wirkt.** Als Nina ist Praxis → Team lesbar, „Mitarbeiter:in
-   anlegen" fehlt (kein `office`), und unter „Übersicht" steht ihr eigener Tag.
+8. **Die Rolle wirkt.** Als Nina ist Organisatorisches → Mitarbeitende lesbar,
+   „Mitarbeiter:in anlegen" fehlt (kein `office`), und unter „Übersicht" steht
+   ihr eigener Tag.
 9. **Der Nachweis.** Zurück als `jannes.test@praxis.invalid`: Der Abschnitt
    „Zugang" bei Nina zeigt jetzt „Eingerichtet" und die Rolle. Im Auditlog steht
    zusätzlich „Einladung angenommen" — mit **Nina** als handelnder Person, nicht
@@ -100,13 +103,14 @@ Nach einer Änderung an `supabase/seed.sql` zuerst `pnpm dlx supabase db reset`.
 **Was geprüft wird:** dass die Praxisleitung einen bestehenden Zugang steuern
 kann — und dass sie sich dabei nicht selbst aussperrt.
 
-1. **Rollen ändern.** Als `jannes.test@praxis.invalid` → Praxis → Team → „Anna
-   Beispiel" → Abschnitt „Zugang". Die Kästchen zeigen den aktuellen Stand;
-   „Rollen speichern" ist grau, solange nichts geändert ist.
+1. **Rollen ändern.** Als `jannes.test@praxis.invalid` → Organisatorisches →
+   Mitarbeitende → „Anna Beispiel" → Abschnitt „Zugang". Die Kästchen zeigen
+   den aktuellen Stand; „Rollen speichern" ist grau, solange nichts geändert
+   ist.
 2. **Teamleitung dazu.** „Teamleitung" ankreuzen, speichern. Im Auditlog steht
    „Rollen geändert".
 3. **Es wirkt sofort.** In einem privaten Fenster als Anna anmelden: Der
-   Dienstplan unter Praxis → Planung ist jetzt bearbeitbar.
+   Dienstplan unter Organisatorisches → Arbeitszeiten ist jetzt bearbeitbar.
 4. **Verwerfen funktioniert.** Ein Kästchen ändern, „Verwerfen": Der alte Stand
    steht wieder da, ohne dass etwas gespeichert wurde.
 5. **Keine leere Rolle.** Alle Kästchen abwählen: „Rollen speichern" ist grau,
@@ -268,8 +272,8 @@ Sie den alten Stand.
 
 ### Die Praxisleitung stößt es an
 
-14. Als `jannes.test@praxis.invalid` → Organisatorisches → Mitarbeitende → „Anna Beispiel" →
-    „Kennwort zurücksetzen" → „Mail senden". Die Mail im Mailfänger zeigt
+14. Als `jannes.test@praxis.invalid` → Organisatorisches → Mitarbeitende →
+    „Anna Beispiel" → „Kennwort zurücksetzen" → „Mail senden". Die Mail im Mailfänger zeigt
     ebenfalls auf `/kennwort-neu`. Der Ablauf ist derselbe wie oben. Annas
     bisheriges Kennwort funktioniert, bis sie ein neues setzt.
 
@@ -389,9 +393,9 @@ zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
    aus ADR-017): Kommt es als JPEG an oder als HEIC? Kommt HEIC an, erscheint
    die Meldung mit dem Hinweis auf die Einstellung „Sehr kompatibel" — und
    Jannes sagt bitte Bescheid, ob das im Alltag reicht.
-9. **Das Protokoll.** Als Jannes Organisatorisches → Sicherheit öffnen. Für jeden Upload
-   steht dort „Datei zur Akte hinzugefügt", für jedes Öffnen „Datei zum Öffnen
-   freigegeben". **Im Eintrag steht kein Dateiname** — nur Kennung, Art und
+9. **Das Protokoll.** Als Jannes Organisatorisches → Sicherheit öffnen. Für
+   jeden Upload steht dort „Datei zur Akte hinzugefügt", für jedes Öffnen
+   „Datei zum Öffnen freigegeben". **Im Eintrag steht kein Dateiname** — nur Kennung, Art und
    Zeitpunkt. Das Öffnen des Dateibereichs selbst erzeugt keinen Eintrag; das
    Öffnen der Akte ist bereits protokolliert (ADR-017 Punkt 22).
 10. **Am Handy.** Die Schritte 1 bis 3 bei ~375 px Breite wiederholen: kein
