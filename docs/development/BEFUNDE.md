@@ -237,3 +237,26 @@ zusätzliches Recht.
 Server nur über `issue_patient_file_link` verlässt, oder die serverseitige
 Ausstellung nach Freigabe der Edge Runtime (ANN-052, Änderungspfad). Eigener
 Loop nach ADR-013 Punkt 9 Nr. 8, vor der ersten echten Datei (OPS-001).
+
+### BEF-005 — Lange Wörter sprengen die Verordnungskarte bei 1024 px
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-15                                                                                    |
+| Bereich | Verordnungen in der Akte (`/patienten/:id/verordnungen`), Detailzeilen der laufenden Verordnung |
+| Quelle  | Sichtprüfung zu ROL-EPIC-001: `pnpm screenshots --breite=1024` als office und als therapist   |
+| Status  | offen                                                                                         |
+| Berührt | VER-002, AKTE-002; `DetailRow` in `src/components/ui`                                         |
+
+**Beobachtung.** Bei 1024 px meldet das Werkzeug waagerechtes Scrollen um
+8 px: Ein langes Wort in der Diagnose („Bewegungseinschraenkung") läuft über
+den rechten Rand der zweispaltigen Verordnungskarte. Bei 375 px tritt es nicht
+auf. Therapeut:innen sehen das seit VER-002; seit ROL-002 sieht es auch
+`office`.
+
+**Warum das zählt.** Diagnosen bestehen oft aus langen Komposita; eine Seite,
+die dann seitlich scrollt, widerspricht der Oberflächen-Checkliste
+(`docs/abnahme/README.md`, Punkt 1).
+
+**Richtung.** Langes Wort im Wert einer Detailzeile umbrechen
+(`overflow-wrap`) — eine Stelle im Baustein, kein Umbau.
