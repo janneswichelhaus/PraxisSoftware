@@ -121,10 +121,11 @@ Auditzeilen **niemals** umgeschrieben werden (ADR-010). Dasselbe gilt für
 
 - Der **genaue Bezeichner** in Schema und Code — der SPEC von GRD-001 legt ihn
   fest und prüft ihn gegen die bestehende Namensgebung.
-- **Ist das „Privatrezept" eine dritte Bauart?** Nach heutigem Stand nicht: Die
-  Praxis rechnet privat ab, die vorhandene Verordnung **ist** das Privatrezept
-  (`prescription_kind` ist bewusst nicht der GKV-Rezepttyp, ADR-009).
-  Bestätigung durch Jannes steht aus.
+- ~~Ist das „Privatrezept" eine dritte Bauart?~~ **Beantwortet am 2026-09-16
+  (Jannes): nein.** Die vorhandene Verordnung **ist** das Privatrezept — die
+  Praxis rechnet privat ab, und `prescription_kind` war von Anfang an bewusst
+  nicht der GKV-Rezepttyp (ADR-009). Es bleibt bei zwei Bauarten:
+  Verordnung (`first`, `follow_up`) und Selbstzahler (`self_pay`).
 - Ob eine Grundlage **abgeschlossen** werden kann, ohne dass alle Termine
   stattgefunden haben — heute endet eine Verordnung faktisch mit ihrem
   Kontingent. Gehört zu CAL-EPIC-004c.

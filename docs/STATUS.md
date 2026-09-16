@@ -32,9 +32,9 @@ Vorgabe der vier neuen Loops:
   und damit **kein Merge** bis zum Reset. Entwickeln, Pushen und die lokalen
   Gates laufen weiter.
 - **[ADR-020](adr/ADR-020-treatment-basis.md) annehmen** — die
-  Behandlungsgrundlage aus E16, ausgearbeitet; ohne Annahme startet GRD-001
-  nicht. Dabei mitbestätigen: „Privatrezept" ist die vorhandene Verordnung,
-  keine dritte Bauart
+  Behandlungsgrundlage aus E16, ausgearbeitet und ohne offene Rückfrage; ohne
+  Annahme startet GRD-001 nicht. Der Vollzug: Status im ADR, Zeile im
+  ADR-Index in `../CLAUDE.md`, Zeile in §21, Fundstelle bei E16
 - Branch Protection und Secret Scanning einschalten (M0, 30.09.) —
   [`DEVELOPMENT.md`](DEVELOPMENT.md), „Manuelle Schritte"
 - Anfragen B1, B2 (mit E15 und ANN-052 Fassung 2) und B4 verschicken —
