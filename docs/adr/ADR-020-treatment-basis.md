@@ -2,10 +2,12 @@
 
 ## Status
 
-**Vorgeschlagen** — fachlich entschieden vom Projektinhaber am 2026-09-16
-(E16 in `../decisions/OPEN_DECISIONS.md`), formal noch anzunehmen. Erst mit
-der Annahme wandert der ADR in den Index in `CLAUDE.md` und in die Tabelle in
-`PROJECT_PRINCIPLES.md` §21.
+**Angenommen** — vom Projektinhaber am 2026-09-16 bestätigt, alle acht Punkte
+wie vorgeschlagen, dazu die Folgefrage zum Privatrezept (keine dritte Bauart).
+E16 in `../decisions/OPEN_DECISIONS.md` ist damit geschlossen; der ADR steht im
+Index in `CLAUDE.md` und in der Tabelle in `PROJECT_PRINCIPLES.md` §21 (0.11.1).
+Er ändert keine Aussage der Prinzipien — er führt §14 und §19 für die
+Planungsklammer aus.
 
 ## Datum
 

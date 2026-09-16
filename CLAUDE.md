@@ -60,6 +60,7 @@ davon abhängt, vorher fertigstellen.
 | 017 | Dateien: Ablageort, Dokumentart, signierte Verweise, Löschung, Virenprüfung |
 | 018 | Terminzustände, Übergänge, Ausfallhonorar-Kennzeichen, Terminserie          |
 | 019 | Kartendienst, Navigations-Handoff, Fahrzeiten, Vertrags-/§203-Gate          |
+| 020 | Behandlungsgrundlage: Verordnung und Selbstzahler, Kontingent, Gruppierung  |
 
 ## Repository
 
