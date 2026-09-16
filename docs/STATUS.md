@@ -20,18 +20,21 @@ Vorgabe der vier neuen Loops:
 1. **CAL-EPIC-004a** — freie Terminlänge (0.11 §8.1) + Rückfrage beim Ziehen
 2. **CAL-EPIC-004b** — Anlegen-Menü, Fehlzeit und Dauerfehlzeit
 3. **UX-013** — Kopfleiste sucht Funktionen; hängt an nichts, vorziehbar
-4. **VER-EPIC-002** — [`development/VER-EPIC-002.md`](development/VER-EPIC-002.md)
-5. **CAL-EPIC-004c** — Überplanung, Übertragung, Akte je Verordnung · **braucht E16**
-6. **ABR-EPIC-001** — Leistungen aus durchgeführten Terminen · xhigh
+4. **GRD-001** — Behandlungsgrundlage nach [ADR-020](adr/ADR-020-treatment-basis.md);
+   Migration, `test:db` · **wartet auf die Annahme des ADR**
+5. **VER-EPIC-002** — [`development/VER-EPIC-002.md`](development/VER-EPIC-002.md)
+6. **CAL-EPIC-004c** — Überplanung, Übertragung, Akte je Grundlage
+7. **ABR-EPIC-001** — Leistungen aus durchgeführten Terminen · xhigh
 
 ## Blocker (Jannes-seitig)
 
 - **GitHub-Actions-Minuten des Monats aufgebraucht** (2026-09-16): kein CI-Lauf
   und damit **kein Merge** bis zum Reset. Entwickeln, Pushen und die lokalen
   Gates laufen weiter.
-- **E16 entscheiden** — Abrechnungsgrundlage neben der Verordnung
-  (Selbstzahler: planbare Klammer oder nur Abrechnungsart?). P1 **vor**
-  VER-EPIC-002 und ABR-EPIC-001, [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md)
+- **[ADR-020](adr/ADR-020-treatment-basis.md) annehmen** — die
+  Behandlungsgrundlage aus E16, ausgearbeitet; ohne Annahme startet GRD-001
+  nicht. Dabei mitbestätigen: „Privatrezept" ist die vorhandene Verordnung,
+  keine dritte Bauart
 - Branch Protection und Secret Scanning einschalten (M0, 30.09.) —
   [`DEVELOPMENT.md`](DEVELOPMENT.md), „Manuelle Schritte"
 - Anfragen B1, B2 (mit E15 und ANN-052 Fassung 2) und B4 verschicken —
@@ -48,12 +51,10 @@ DAT-EPIC-001, ROL-EPIC-001, FIX-015 — Prüfschritte in
 
 ## Letzte Session
 
-Keine Codeänderung. Jannes hat am Vergleich mit iPrax sechs Festlegungen
-getroffen; sie stehen als Loop-Vorgabe in `development/CAL-EPIC-004.md`, als
-Befunde BEF-006 bis BEF-008 und als E16/E17 in den offenen Entscheidungen. Die
-Terminlänge ist damit **frei** — das ändert eine MUSS-Anforderung und steht in
-`PROJECT_PRINCIPLES.md` **0.11 §8.1**, gebaut wird es in CAL-020. E17 ist
-bestätigt, die Reihenfolge der vier Loops auf Jannes' Auftrag entschieden.
+Keine Codeänderung. Jannes' Festlegungen aus dem iPrax-Vergleich stehen als
+Vorgabe in `development/CAL-EPIC-004.md`, als BEF-006 bis BEF-008 und in den
+offenen Entscheidungen. Die Terminlänge ist **frei** — eine MUSS-Änderung,
+`PROJECT_PRINCIPLES.md` **0.11 §8.1**, gebaut in CAL-020. E16 und E17 sind
+entschieden; aus E16 wurde ADR-020, aus der Reihenfolge ein Plan.
 
-Lokal: `git pull origin claude/nice-goldberg-kcnct0`. Kein `pnpm install`,
-keine neue Migration.
+Lokal: `git pull origin claude/nice-goldberg-kcnct0`. Kein `pnpm install`.

@@ -224,10 +224,12 @@ Namen** mehr, sondern **Funktionen und Bereiche**.
 
 - **Gruppentermine** (Jannes, 2026-09-16: vorerst nicht).
 - Leistungskatalog, Preise, Rechnungsstellung — ABR-EPIC-001 und ADR-009.
-- Die Abrechnungsgrundlage neben der Verordnung (Privatrezept,
-  Selbstzahler-Rechnung, weitere Wege): **E16**, offen, und Voraussetzung für
-  alles, was einen ungedeckten Termin am Ende **abrechnen** soll. Dieses Epic
-  plant ihn nur und macht ihn sichtbar.
+- Die **Behandlungsgrundlage** selbst: **E16** ist am 2026-09-16 entschieden
+  ([ADR-020](../adr/ADR-020-treatment-basis.md), vorgeschlagen) und wird in
+  **GRD-001** gebaut — Umbenennung, zweite Bauart „Selbstzahler". CAL-022 und
+  AKTE-006 setzen darauf auf und sprechen ab dann von der **Grundlage**, wo
+  hier noch „Verordnung" steht; für die Verordnung gilt jedes Wort unverändert
+  weiter.
 - Kein neuer Anbieter, kein neues Paket, keine Kalenderbibliothek (ADR-015).
 
 ## Abnahmefälle
@@ -269,7 +271,7 @@ Jannes hat die Einordnung am 2026-09-16 delegiert; sie steht seitdem in
 | **CAL-EPIC-004a** | CAL-020, CAL-023 | Zuerst, weil `PROJECT_PRINCIPLES.md` 0.11 §8.1 heute etwas erlaubt, was der Server abweist. Eine Lücke zwischen Leitplanke und Code bleibt nicht offen liegen. Beide Stories sind klein und hängen an nichts |
 | **CAL-EPIC-004b** | CAL-019, CAL-021 | Das Anlegen-Menü setzt die freie Länge voraus, sonst müsste es eine aufgezogene Spanne wieder verwerfen |
 | **UX-013** | UX-013 | Hängt an nichts. Kann vorgezogen werden, wenn ein Loop Luft hat |
-| **CAL-EPIC-004c** | CAL-022, AKTE-006 | Braucht **E16** und arbeitet an denselben Zahlen wie VER-EPIC-002 — deshalb danach |
+| **CAL-EPIC-004c** | CAL-022, AKTE-006 | Setzt auf **GRD-001** auf (die Klammer, ADR-020) und arbeitet an denselben Zahlen wie VER-EPIC-002 — deshalb nach beiden |
 
 ## Loop und Nachführung
 

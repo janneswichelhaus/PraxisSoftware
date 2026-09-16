@@ -84,7 +84,7 @@ Feature, **P3** später.
 | E13 | Sprachdokumentation: Anbieter, Architektur, Audio, Frist | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen** | §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6 |
 | E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Umsetzung CAL-018 | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
 | E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; umgesetzt 2026-09-15 in ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
-| E16 | Abrechnungsgrundlage neben der Verordnung (Privatrezept, Selbstzahler, weitere) | **offen** — P1 vor VER-EPIC-002 und ABR-EPIC-001 | unten; ADR-009, ADR-014; `../development/CAL-EPIC-004.md` |
+| E16 | Abrechnungsgrundlage neben der Verordnung (Privatrezept, Selbstzahler, weitere) | **erledigt 2026-09-16** (Jannes) — Teil A: abgerechnet wird auch vor dem Ende einer Grundlage · Teil B: **eine** Klammer „Behandlungsgrundlage", die Verordnung ist eine Bauart davon | [ADR-020](../adr/ADR-020-treatment-basis.md) (vorgeschlagen); unten; gebaut in GRD-001 |
 | E17 | Kopfleistensuche sucht Funktionen statt Namen: wohin die Patientensuche zieht | **erledigt 2026-09-16** (Jannes) — Umwidmung und Ziel bestätigt | unten; UX-004; `../development/CAL-EPIC-004.md` (UX-013) |
 | E-20 | ADR-019 Fassung 2 bestätigen | **erledigt 2026-09-13** — angenommen; produktive Freigabe am Gate **offen** (ADR-019 Punkt 9) | unten (E-20 / E-21); [ADR-019](../adr/ADR-019-map-service.md); Gate in B7 |
 | E-21 | Reihenfolge MAP-002 zu UX-EPIC-001 | **erledigt 2026-09-13** — gegenstandslos, UX-EPIC-001 seit 2026-09-11 fertig | unten (E-20 / E-21); Roadmap |
@@ -337,13 +337,14 @@ wird höchstens einmal abgerechnet, und fakturiert wird je Leistung aus
 `documented`. **Folge für Teil B:** Eine Rechnung kann die Klammer **nicht**
 sein — zu einem Behandlungsblock gehören dann mehrere.
 
-**Teil B — offen:** Bekommt der Selbstzahler eine eigene planbare Klammer mit
-Terminzahl (dann ist die Verordnung eine Bauart davon, und die Tabelle heißt
-nicht mehr „Verordnung"), oder bleibt `prescriptions` die einzige Klammer und
-Selbstzahlertermine stehen im Abschnitt „ohne Verordnung"? Davon hängen
-Tabellenzuschnitt, Serienplanung, Deckungsanzeige und die Übertragung aus
-CAL-022 ab. Wo: §19, ADR-009, ADR-014; `../development/CAL-EPIC-004.md`,
-VER-EPIC-002.
+**Teil B entschieden 2026-09-16 (Jannes):** Ein Termin hängt an einer
+**Behandlungsgrundlage**; die Verordnung ist eine Bauart davon, der
+Selbstzahler die zweite. Umgesetzt wird das durch **Erweitern** der
+vorhandenen Tabelle — Umbenennung, dritter Wert `self_pay`, `prescriber_id`
+nur für Verordnungen —, nicht durch eine zweite Tabelle. Ausgearbeitet in
+**[ADR-020](../adr/ADR-020-treatment-basis.md)** (vorgeschlagen, Annahme
+steht aus); gebaut in **GRD-001** vor VER-EPIC-002. Wo: §19, §13, ADR-009,
+ADR-014; `../development/CAL-EPIC-004.md`, VER-EPIC-002.
 
 ### E17 — Kopfleistensuche: wohin die Patientensuche zieht
 
