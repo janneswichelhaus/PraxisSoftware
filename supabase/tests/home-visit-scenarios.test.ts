@@ -308,10 +308,9 @@ describe('Tuer geoeffnet, keine Behandlung: der Pflichtvermerk (Szenario 1)', ()
     expect(nachher.status).toBe('confirmed');
     expect(
       (
-        await asPostgres(
-          'select 1 from public.treatment_notes where appointment_id = $1',
-          [termin.id],
-        )
+        await asPostgres('select 1 from public.treatment_notes where appointment_id = $1', [
+          termin.id,
+        ])
       ).rows,
     ).toHaveLength(0);
   });

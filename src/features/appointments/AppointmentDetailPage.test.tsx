@@ -5,6 +5,7 @@ import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import type * as DokumentationApi from '@/features/documentation/api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -40,7 +41,8 @@ vi.mock('./api', async (importOriginal) => {
       completeAppointment(id, erwartet) as Promise<void>,
     reopenAppointment: (id: string, erwartet: string) =>
       reopenAppointment(id, erwartet) as Promise<void>,
-    recordNoShow: (id: string, erwartet: string) => recordNoShow(id, erwartet) as Promise<void>,
+    recordNoShow: (id: string, erwartet: string, protokoll: boolean) =>
+      recordNoShow(id, erwartet, protokoll) as Promise<void>,
     fetchEventParticipants: (gruppe: string) =>
       fetchEventParticipants(gruppe) as Promise<AppointmentsApi.EventParticipant[]>,
     cancelAppointmentEvent: (
@@ -365,8 +367,9 @@ describe('AppointmentDetailPage', () => {
 
       await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
 
+      // Ohne Protokoll: Am Praxistermin gilt es nicht (CAL-018, ANN-053).
       await waitFor(() =>
-        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
+        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at, false),
       );
     });
 
@@ -425,6 +428,160 @@ describe('AppointmentDetailPage', () => {
 
       await screen.findByText(/Hier wurde niemand angetroffen/);
       expect(zeile('Gebühr vorgemerkt')).toMatch(/Nicht angetroffen/);
+      // Ohne bestaetigtes Protokoll steht auch keines da (CAL-018).
+      expect(screen.queryByText('Protokoll')).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Der gefuehrte Ablauf am Hausbesuch (CAL-018, ADR-018 Fassung 3 Punkt 9).
+   *
+   * Hier steht die teuerste Verwechslung der Anwendung: „nicht angetroffen"
+   * statt „Tuer geoeffnet" kostet eine Patientin Geld. Deshalb pruefen diese
+   * Tests nicht nur, dass die Wege existieren, sondern dass die Folge jeweils
+   * danebensteht - und dass ohne das Protokoll nichts geschrieben wird.
+   */
+  describe('CAL-018: Die drei Hausbesuch-Szenarien', () => {
+    const hausbesuch = testAppointment({
+      id: TERMIN_ID,
+      patient_id: PATIENT_ID,
+      appointment_type: 'home_visit',
+      location_id: null,
+      location_name: null,
+      visit_street: 'Testweg',
+      visit_house_number: '7',
+      visit_postal_code: '72072',
+      visit_city: 'Tuebingen',
+    });
+
+    it('fuehrt durch die vier Ausgaenge und nennt zu jedem die Folge', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      rendern(['therapist']);
+
+      expect(await screen.findByText('Was ist passiert?')).toBeInTheDocument();
+      expect(screen.getByText('Die Behandlung hat stattgefunden')).toBeInTheDocument();
+      expect(screen.getByText('Tür geöffnet, Behandlung nicht durchgeführt')).toBeInTheDocument();
+      expect(screen.getByText('Niemand hat geöffnet')).toBeInTheDocument();
+      expect(screen.getByText('Die Patient:in hat vorher abgesagt')).toBeInTheDocument();
+
+      expect(screen.getByText(/eine Ausfallgebühr entsteht nicht/)).toBeInTheDocument();
+      expect(screen.getByText(/löst eine Ausfallgebühr aus/)).toBeInTheDocument();
+    });
+
+    it('fuehrt vom zweiten Szenario in den Abschluss mit Pflichtvermerk', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      rendern(['therapist']);
+
+      const weg = await screen.findByRole('link', { name: 'Ohne Behandlung abschließen' });
+      expect(weg).toHaveAttribute(
+        'href',
+        expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
+      );
+    });
+
+    it('vermerkt das Nichtantreffen erst mit allen drei Protokollschritten', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      const user = userEvent.setup();
+      rendern(['therapist']);
+
+      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
+
+      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
+      await user.click(screen.getByLabelText('An der Tür geklingelt'));
+      await user.click(screen.getByLabelText('Telefonisch angerufen'));
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      await waitFor(() =>
+        expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, hausbesuch.updated_at, true),
+      );
+    });
+
+    it('schreibt nichts, solange ein Protokollschritt fehlt', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      const user = userEvent.setup();
+      rendern(['therapist']);
+
+      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
+
+      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
+      await user.click(screen.getByLabelText('An der Tür geklingelt'));
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      expect(
+        await screen.findByText('Bitte alle drei Schritte des Protokolls bestätigen.'),
+      ).toBeInTheDocument();
+      expect(recordNoShow).not.toHaveBeenCalled();
+      // Die Rueckfrage bleibt offen: Wer die fehlende Angabe nachtragen will,
+      // findet sie noch vor.
+      expect(screen.getByLabelText('Telefonisch angerufen')).toBeInTheDocument();
+    });
+
+    it('bietet die beiden Abschlusswege nicht doppelt an', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      rendern(['therapist']);
+
+      await screen.findByText('Was ist passiert?');
+      // „Dokumentieren und abschliessen" steht im gefuehrten Ablauf, nicht
+      // noch einmal in der Knopfreihe darunter.
+      expect(screen.getAllByRole('link', { name: 'Dokumentieren und abschließen' })).toHaveLength(
+        1,
+      );
+      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
+      // Der Abschluss ohne Dokumentation bleibt daneben stehen (ANN-005).
+      expect(
+        screen.getByRole('button', { name: 'Ohne Dokumentation abschließen' }),
+      ).toBeInTheDocument();
+    });
+
+    it('zeigt am vermerkten Hausbesuch Protokoll und Gebuehrenanlass', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...hausbesuch,
+        status: 'no_show',
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+        no_show_protocol_confirmed: true,
+        fee_basis: 'no_show',
+      });
+      rendern(['therapist']);
+
+      await screen.findByText(/Hier wurde niemand angetroffen/);
+      expect(zeile('Protokoll')).toMatch(/15 Minuten vor Ort gewartet/);
+      expect(zeile('Gebühr vorgemerkt')).toMatch(/Nicht angetroffen/);
+      // Kein Betrag: Leistungskatalog und Rechnung sind nicht gebaut.
+      expect(zeile('Gebühr vorgemerkt')).toMatch(/Höhe und Abrechnung stehen noch aus/);
+    });
+
+    it('zeigt den gefuehrten Ablauf nur am bestaetigten Hausbesuch', async () => {
+      fetchAppointment.mockResolvedValue({ ...hausbesuch, status: 'completed' });
+      rendern(['therapist']);
+
+      await screen.findByText(/Dieser Termin ist abgeschlossen/);
+      expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
+    });
+
+    it('zeigt ihn am Praxistermin nicht', async () => {
+      rendern(['therapist']);
+
+      await screen.findByText('Anna Beispiel');
+      expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Nicht angetroffen' })).toBeInTheDocument();
+    });
+
+    /**
+     * Der geführte Ablauf ist neue Oberfläche mit Formularfeldern in einer
+     * Rückfrage — genau die Stelle, an der Beschriftungen und ARIA-Bezüge
+     * gern verloren gehen (UI-000). Die Prüfung steht hier und nicht in
+     * `barrierefreiheit.test.tsx`, weil die Seite dort ihre Attrappen nicht
+     * hat; dasselbe Muster wie in `TagUmplanenPage.test.tsx`.
+     */
+    it('haelt den gefuehrten Ablauf samt Protokoll barrierefrei', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      const user = userEvent.setup();
+      const { container } = rendern(['therapist']);
+
+      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
+      await screen.findByLabelText('An der Tür geklingelt');
+
+      await pruefeBarrierefreiheit(container);
     });
   });
 

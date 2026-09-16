@@ -38,6 +38,7 @@ function eintrag(
     addendum_to_note_id: null,
     status: 'final',
     content: INHALT,
+    visit_without_treatment: false,
     // Format wie aus einem jsonb-Feld: ISO 8601 mit Offset.
     created_at: '2027-05-12T08:10:00.123456+00:00',
     updated_at: '2027-05-12T09:32:00.654321+00:00',

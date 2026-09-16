@@ -26,6 +26,7 @@ const doku: DokumentationApi.TreatmentNote = {
   addendum_to_note_id: null,
   status: 'draft',
   content: INHALT,
+  visit_without_treatment: false,
   // Format wie von PostgREST geliefert: ISO 8601 mit Mikrosekunden und Offset.
   created_at: '2027-05-12T08:10:00.123456+00:00',
   updated_at: STAND,
@@ -99,6 +100,29 @@ describe('TreatmentNoteSection', () => {
         /Verfasst von Anna Beispiel\. Zuletzt geändert am Mittwoch, 12\. Mai 2027, 10:30 Uhr von Tim Teamleitung\./,
       ),
     ).toBeInTheDocument();
+  });
+
+  /**
+   * Hausbesuch-Szenario 1 (CAL-018, ADR-018 Fassung 3 Punkt 9). Der
+   * Pflichtvermerk steht als eigenes Merkmal am Eintrag; ein Vermerk, den
+   * niemand wiedersieht, waere keiner.
+   */
+  it('zeigt den Pflichtvermerk "ohne Behandlung" mit seiner Folge', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({
+      primary: { ...doku, visit_without_treatment: true },
+      addenda: [],
+    });
+    rendern();
+
+    expect(await screen.findByText('Ohne Behandlung')).toBeInTheDocument();
+    expect(screen.getByText(/eine Ausfallgebühr entsteht nicht/)).toBeInTheDocument();
+  });
+
+  it('zeigt ihn an einer gewoehnlichen Behandlung nicht', async () => {
+    rendern();
+
+    expect(await screen.findByText(INHALT)).toBeInTheDocument();
+    expect(screen.queryByText('Ohne Behandlung')).not.toBeInTheDocument();
   });
 
   it('bietet therapeutischen Rollen das Bearbeiten an', async () => {

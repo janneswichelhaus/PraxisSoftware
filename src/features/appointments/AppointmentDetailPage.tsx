@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Select } from '@/components/ui/Select';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
@@ -366,24 +367,52 @@ function EreignisAbsageAktion({
 }
 
 /**
- * „Nicht angetroffen" — ein Schritt, keine Entscheidung (CAL-014c).
+ * Das Protokoll aus Hausbesuch-Szenario 2 (CAL-018, ADR-018 Fassung 3
+ * Punkt 9).
  *
- * Die behandelnde Person steht vor der Tür, niemand öffnet, und sie hakt den
- * Termin ab. Bis ADR-018 Fassung 1 verlangte dieser Schritt eine
- * Pflichtentscheidung über das Ausfallhonorar; Jannes hat das am 2026-09-12
- * geändert. Aus dem Vermerk allein entsteht **keine** Gebühr, und die Frage
- * nach einer Regel dafür ist offen (`OPEN_DECISIONS.md` E14) — eine
- * Entscheidung zu verlangen, für die es keine Regel gibt, hielte den Ablauf
- * an der Tür auf.
- *
- * Die Rückfrage bleibt: Der Vermerk sperrt die Dokumentation und ist damit
- * mehr als ein Haken. Zurückgenommen wird er über „Termin wieder öffnen".
+ * Drei Schritte, die nur gemeinsam gelten. Sie stehen hier als Liste und nicht
+ * als ein Satz mit einem Haken: Wer sie einzeln abhakt, liest sie einzeln —
+ * und das ist der Punkt, denn aus ihnen entsteht eine Forderung gegen eine
+ * Patientin.
  */
-function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
+const PROTOKOLLSCHRITTE = [
+  { id: 'gewartet', label: '15 Minuten vor Ort gewartet' },
+  { id: 'geklingelt', label: 'An der Tür geklingelt' },
+  { id: 'angerufen', label: 'Telefonisch angerufen' },
+] as const;
+
+/**
+ * „Nicht angetroffen" — am Hausbesuch mit Protokoll, sonst ein Schritt.
+ *
+ * Die behandelnde Person steht vor der Tür, niemand öffnet. **Am Hausbesuch**
+ * löst das seit E14 eine Ausfallgebühr aus, aber erst nach bestätigtem
+ * Protokoll: 15 Minuten gewartet, geklingelt, angerufen. Ohne die Bestätigung
+ * gibt es kein Nichtantreffen — der Termin bleibt bestätigt, bis die Person
+ * entscheidet (ADR-018 Fassung 3 Punkt 9).
+ *
+ * **Sonst** bleibt es der Schritt aus CAL-014c: ein Vermerk ohne Gebühr. Das
+ * Protokoll ist ein Hausbesuchsprotokoll; an der Praxistür gibt es nichts zu
+ * klingeln, und für das Nichtantreffen in der Praxis gibt es keine Festlegung
+ * (ANN-053). Verbindlich prüft beides der Server.
+ *
+ * Die Rückfrage bleibt in beiden Fällen: Der Vermerk sperrt die Dokumentation
+ * und ist damit mehr als ein Haken. Zurückgenommen wird er über „Termin wieder
+ * öffnen"; der Gebührenanlass fällt dabei mit weg.
+ */
+function NichtAngetroffenAktion({
+  appointment,
+  mitProtokoll = false,
+}: {
+  appointment: Appointment;
+  /** Am Hausbesuch: das Protokoll ist Pflicht und die Gebühr die Folge. */
+  mitProtokoll?: boolean;
+}) {
   const queryClient = useQueryClient();
+  const [schritte, setSchritte] = useState<Record<string, boolean>>({});
+  const [protokollFehler, setProtokollFehler] = useState<string | undefined>(undefined);
 
   const mutation = useMutation({
-    mutationFn: () => recordNoShow(appointment.id, appointment.updated_at),
+    mutationFn: () => recordNoShow(appointment.id, appointment.updated_at, mitProtokoll),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -391,27 +420,167 @@ function NichtAngetroffenAktion({ appointment }: { appointment: Appointment }) {
     },
   });
 
+  async function vermerken() {
+    if (mitProtokoll && !PROTOKOLLSCHRITTE.every((schritt) => schritte[schritt.id])) {
+      setProtokollFehler('Bitte alle drei Schritte des Protokolls bestätigen.');
+      // Ohne den Wurf schlösse die Rückfrage sich trotz fehlender Angabe.
+      throw new Error('Protokoll unvollständig');
+    }
+    setProtokollFehler(undefined);
+    await mutation.mutateAsync();
+  }
+
   return (
     <Rueckfrage
-      ausloeser="Nicht angetroffen"
+      ausloeser={mitProtokoll ? 'Niemand angetroffen' : 'Nicht angetroffen'}
       bezeichnung="Nicht angetroffen"
       bestaetigen="Ja, niemand angetroffen"
       bestaetigenLaeuft="Wird vermerkt …"
       fehler={mutation.isError ? mutation.error.message : undefined}
       laeuft={mutation.isPending}
-      onBestaetigen={() => mutation.mutateAsync()}
+      onAbbrechen={() => setProtokollFehler(undefined)}
+      onBestaetigen={vermerken}
     >
       <p>
         Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
         um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
-        {patientName(appointment)} wird als „nicht angetroffen" geführt. Der Zeitraum bleibt belegt.
-        Ein Irrtum lässt sich über „Termin wieder öffnen" zurücknehmen.
+        {patientName(appointment)} wird als „nicht angetroffen" geführt
+        {mitProtokoll ? ' und merkt eine Ausfallgebühr vor' : ''}. Der Zeitraum bleibt belegt. Ein
+        Irrtum lässt sich über „Termin wieder öffnen" zurücknehmen.
       </p>
-      <p className="text-ink-muted mt-2 text-sm leading-relaxed">
+
+      {/* Die drei Schritte als Pflichtangabe vor der Gebühr (ADR-018
+          Fassung 3 Punkt 9). Ohne Vorbelegung: Bestätigt wird, was tatsächlich
+          getan wurde. */}
+      {mitProtokoll ? (
+        <fieldset className="mt-3">
+          <legend className="text-ink text-sm font-medium">Protokoll vor Ort</legend>
+          <div className="mt-1">
+            {PROTOKOLLSCHRITTE.map((schritt) => (
+              <Checkbox
+                key={schritt.id}
+                label={schritt.label}
+                checked={schritte[schritt.id] ?? false}
+                onChange={(e) => {
+                  setSchritte((bisher) => ({ ...bisher, [schritt.id]: e.target.checked }));
+                  setProtokollFehler(undefined);
+                }}
+              />
+            ))}
+          </div>
+          {protokollFehler ? (
+            <p role="alert" className="text-danger mt-1 text-sm">
+              {protokollFehler}
+            </p>
+          ) : null}
+        </fieldset>
+      ) : null}
+
+      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
         Das ist ein organisatorischer Vermerk: keine durchgeführte Behandlung, keine Dokumentation,
-        keine verbrauchte Verordnungsleistung. Eine Gebühr entsteht daraus nicht.
+        keine verbrauchte Verordnungsleistung.{' '}
+        {mitProtokoll
+          ? 'Die Gebühr entsteht erst mit dem bestätigten Protokoll; Höhe und Abrechnung stehen noch aus.'
+          : 'Eine Gebühr entsteht daraus nicht.'}
       </p>
     </Rueckfrage>
+  );
+}
+
+/**
+ * Der geführte Ablauf am Hausbesuch: „Was ist passiert?" (CAL-018).
+ *
+ * ADR-018 Fassung 3 Punkt 9 verlangt, dass die Oberfläche **erklärend** durch
+ * die drei Szenarien führt: welcher Fall vorliegt, was daraus folgt, welche
+ * Angabe fehlt. Vorher standen an derselben Stelle vier Schaltflächen
+ * nebeneinander, deren Folgen man kennen musste — und die teuerste
+ * Verwechslung („nicht angetroffen" statt „Tür geöffnet") kostete eine
+ * Patientin Geld.
+ *
+ * Deshalb steht hier der Regelfall zuerst und jede Wahl mit ihrer Folge
+ * daneben. Die Erklärung ist Bedienhilfe, keine Auswertung: Sie zählt nichts
+ * und wertet niemanden aus (§20).
+ *
+ * Verbindlich ist auch hier nichts davon — Protokoll, Gebührenanlass und
+ * Pflichtvermerk prüft der Server (ADR-004).
+ */
+function HausbesuchSzenarien({
+  appointment,
+  eingehend,
+  darfDokumentieren,
+}: {
+  appointment: Appointment;
+  eingehend: string;
+  darfDokumentieren: boolean;
+}) {
+  return (
+    <Section
+      titel="Was ist passiert?"
+      hinweis="Am Hausbesuch entscheidet dieser Schritt über die Abrechnung. Gerechnet wird serverseitig."
+      rahmen
+    >
+      <ol className="divide-line divide-y">
+        <li className="py-4 first:pt-0 last:pb-0">
+          <p className="text-ink font-medium">Die Behandlung hat stattgefunden</p>
+          <p className="text-ink-muted mt-1 max-w-prose text-sm leading-relaxed">
+            Der Regelfall: Der Termin gilt als durchgeführt, die Dokumentation wird festgeschrieben,
+            abgerechnet wird normal.
+          </p>
+          {darfDokumentieren ? (
+            <div className="mt-3">
+              <ButtonLink to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}>
+                Dokumentieren und abschließen
+              </ButtonLink>
+            </div>
+          ) : null}
+        </li>
+
+        <li className="py-4 first:pt-0 last:pb-0">
+          <p className="text-ink font-medium">Tür geöffnet, Behandlung nicht durchgeführt</p>
+          <p className="text-ink-muted mt-1 max-w-prose text-sm leading-relaxed">
+            Die Patient:in öffnet und sagt ab. Der Termin gilt trotzdem als durchgeführt und wird
+            normal abgerechnet; eine Ausfallgebühr entsteht nicht. Die Dokumentation trägt dazu
+            einen Pflichtvermerk.
+          </p>
+          {darfDokumentieren ? (
+            <div className="mt-3">
+              <ButtonLink
+                to={mitRueckweg(
+                  `/termine/${appointment.id}/abschluss?ohne-behandlung=1`,
+                  eingehend,
+                )}
+                variant="secondary"
+              >
+                Ohne Behandlung abschließen
+              </ButtonLink>
+            </div>
+          ) : null}
+        </li>
+
+        <li className="py-4 first:pt-0 last:pb-0">
+          {/* Die Überschrift beschreibt die Lage, die Schaltfläche darunter
+              den Schritt — beide gleich zu benennen hieße, zweimal dasselbe
+              zu sagen und doch Verschiedenes zu meinen. */}
+          <p className="text-ink font-medium">Niemand hat geöffnet</p>
+          <p className="text-ink-muted mt-1 max-w-prose text-sm leading-relaxed">
+            Nach 15 Minuten Wartezeit, Klingeln und Anruf gilt der Termin als nicht wahrgenommen und
+            löst eine Ausfallgebühr aus. Die drei Schritte werden vorher bestätigt.
+          </p>
+          <div className="mt-3">
+            <NichtAngetroffenAktion appointment={appointment} mitProtokoll />
+          </div>
+        </li>
+
+        <li className="py-4 first:pt-0 last:pb-0">
+          <p className="text-ink font-medium">Die Patient:in hat vorher abgesagt</p>
+          <p className="text-ink-muted mt-1 max-w-prose text-sm leading-relaxed">
+            Dann gehört das zur Absage, nicht hierher: „Termin absagen" steht unten. Liegt der
+            Eingang der Absage weniger als 24 Stunden vor dem Beginn, merkt die Anwendung eine
+            Ausfallgebühr vor.
+          </p>
+        </li>
+      </ol>
+    </Section>
   );
 }
 
@@ -504,6 +673,14 @@ function AppointmentDetail({
    * absagen.
    */
   const istEreignis = appointment.kind === 'event';
+
+  /**
+   * Der Hausbesuch führt seinen eigenen Ablauf (CAL-018).
+   *
+   * Die drei Szenarien aus E14 gelten dort — und nur dort (ANN-053). Was in
+   * der Praxis passiert, bleibt bei den Schaltflächen von vorher.
+   */
+  const istHausbesuch = !istEreignis && appointment.appointment_type === 'home_visit';
 
   /**
    * Die Beteiligten des Ereignisses (CAL-017).
@@ -645,10 +822,17 @@ function AppointmentDetail({
               )} Uhr`}
             </DetailRow>
           ) : null}
+          {/* Das bestätigte Protokoll steht neben dem Vermerk, denn es ist
+              die Grundlage der Forderung (CAL-018). An einem Vermerk ohne
+              Gebühr steht es nicht: Dort gibt es nichts zu belegen. */}
+          {appointment.no_show_protocol_confirmed ? (
+            <DetailRow label="Protokoll">
+              Bestätigt: 15 Minuten vor Ort gewartet, an der Tür geklingelt, telefonisch angerufen.
+            </DetailRow>
+          ) : null}
           {/* Der Gebührenanlass steht nur da, wenn es einen gibt. Ein
               „Keine Gebühr" an jedem abgesagten Termin wäre eine Zeile, die
-              nichts sagt — und am Nichtantreffen die Antwort auf eine Frage,
-              die noch offen ist (E14). */}
+              nichts sagt. */}
           {appointment.fee_basis ? (
             <DetailRow label="Gebühr vorgemerkt">
               <span>{feeBasisLabels[appointment.fee_basis]}</span>
@@ -672,6 +856,18 @@ function AppointmentDetail({
         </DetailList>
       </Section>
 
+      {/* Am Hausbesuch steht vor den Schaltflächen die Frage, die über die
+          Abrechnung entscheidet (CAL-018). */}
+      {darfAendern && istHausbesuch ? (
+        <div className="mt-8">
+          <HausbesuchSzenarien
+            appointment={appointment}
+            eingehend={eingehend}
+            darfDokumentieren={darfDokumentieren}
+          />
+        </div>
+      ) : null}
+
       {darfAendern ? (
         <div className="mt-5 flex flex-wrap items-start gap-3">
           {/* Der Regelfall am Ende eines Besuchs: Dokumentation und Abschluss
@@ -687,9 +883,14 @@ function AppointmentDetail({
           {/* Ein Ereignis wird weder abgeschlossen noch dokumentiert noch als
               „nicht angetroffen" vermerkt - der Server weist alle drei ab
               (CAL-015b). Bleiben Verschieben und Absagen. */}
+          {/* Am Hausbesuch stehen die beiden Wege zum Abschluss und das
+              Nichtantreffen oben im geführten Ablauf (CAL-018); hier bliebe
+              nur eine zweite Tür zu denselben Räumen. „Ohne Dokumentation
+              abschließen" bleibt daneben — ANN-005 gilt unverändert, und der
+              Weg hat dort keine eigene Frage zu beantworten. */}
           {istEreignis ? null : (
             <>
-              {darfDokumentieren ? (
+              {darfDokumentieren && !istHausbesuch ? (
                 <ButtonLink to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}>
                   Dokumentieren und abschließen
                 </ButtonLink>
@@ -703,7 +904,7 @@ function AppointmentDetail({
                 laufend="Wird abgeschlossen …"
                 variant={darfDokumentieren ? 'secondary' : 'primary'}
               />
-              <NichtAngetroffenAktion appointment={appointment} />
+              {istHausbesuch ? null : <NichtAngetroffenAktion appointment={appointment} />}
             </>
           )}
           {/* Zwei Absagen, und der Unterschied steht in der Beschriftung

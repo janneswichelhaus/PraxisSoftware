@@ -68,6 +68,15 @@ function Eintrag({
         <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium">
           {treatmentNoteStatusLabels[note.status]}
         </span>
+        {/* Der Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018). Er steht
+            als eigenes Merkmal neben dem Freitext, nicht darin: Ob behandelt
+            wurde, entscheidet später über eine Rechnung ohne erbrachte
+            Leistung (ADR-018 Fassung 3 Punkt 9). */}
+        {note.visit_without_treatment ? (
+          <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium">
+            Ohne Behandlung
+          </span>
+        ) : null}
         {note.status === 'draft' ? (
           <span className="text-ink-subtle text-xs">noch nicht finalisiert</span>
         ) : null}
@@ -77,6 +86,13 @@ function Eintrag({
           </span>
         ) : null}
       </div>
+
+      {note.visit_without_treatment ? (
+        <p className="text-ink-muted mt-3 max-w-prose text-sm leading-relaxed">
+          Tür geöffnet, Behandlung auf Angabe der Patient:in nicht durchgeführt. Der Termin gilt als
+          durchgeführt; eine Ausfallgebühr entsteht nicht.
+        </p>
+      ) : null}
 
       <p className="text-ink mt-3 max-w-prose text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
         {note.content}

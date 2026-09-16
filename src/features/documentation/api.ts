@@ -32,6 +32,15 @@ const treatmentNoteSchema = z.object({
   addendum_to_note_id: z.string().nullable(),
   status: treatmentNoteStatusSchema,
   content: z.string(),
+  /**
+   * Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018, ADR-018 Fassung 3
+   * Punkt 9): Die Tür wurde geöffnet, die Behandlung fand auf Angabe der
+   * Patient:in nicht statt. Der Termin gilt trotzdem als durchgeführt.
+   *
+   * Ein Merkmal am Eintrag und ausdrücklich kein Freitext als einzige Quelle —
+   * die Frage entscheidet später über eine Rechnung ohne erbrachte Leistung.
+   */
+  visit_without_treatment: z.boolean(),
   created_at: z.string(),
   // Grundlage der Konflikterkennung beim Speichern. Bewusst als Zeichenkette
   // geführt: ein Date verlöre Bruchteile von Sekunden.
@@ -270,18 +279,25 @@ export async function finalizeTreatmentNote(
  * beruht, oder `null`, wenn es beim Öffnen keinen gab. Beides wird
  * serverseitig geprüft: ein zwischenzeitlich entstandener oder geänderter
  * Entwurf führt zum Konflikt statt zum stillen Überschreiben.
+ *
+ * `visitWithoutTreatment` trägt den Pflichtvermerk aus Hausbesuch-Szenario 1
+ * ein (CAL-018). Er wird ausschließlich hier gesetzt — mit der Finalisierung
+ * ist der Eintrag Bestandteil der Akte, und der Server nimmt ihn nur am
+ * Hausbesuchstermin an (ANN-053).
  */
 export async function completeTreatment(
   appointmentId: string,
   content: string,
   expectedAppointmentUpdatedAt: string,
   expectedNoteUpdatedAt: string | null,
+  visitWithoutTreatment = false,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('complete_treatment', {
     p_appointment_id: appointmentId,
     p_content: content,
     p_expected_appointment_updated_at: expectedAppointmentUpdatedAt,
     p_expected_note_updated_at: expectedNoteUpdatedAt,
+    p_visit_without_treatment: visitWithoutTreatment,
   })) as { error: { message?: string } | null };
 
   if (error) {
