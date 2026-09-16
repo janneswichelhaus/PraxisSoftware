@@ -85,7 +85,7 @@ Feature, **P3** später.
 | E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Umsetzung CAL-018 | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
 | E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; umgesetzt 2026-09-15 in ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
 | E16 | Abrechnungsgrundlage neben der Verordnung (Privatrezept, Selbstzahler, weitere) | **offen** — P1 vor VER-EPIC-002 und ABR-EPIC-001 | unten; ADR-009, ADR-014; `../development/CAL-EPIC-004.md` |
-| E17 | Kopfleistensuche sucht Funktionen statt Namen: wohin die Patientensuche zieht | Umwidmung **entschieden 2026-09-16** (Jannes); Ziel der Patientensuche **offen** — P2 | unten; UX-004; `../development/CAL-EPIC-004.md` (UX-013) |
+| E17 | Kopfleistensuche sucht Funktionen statt Namen: wohin die Patientensuche zieht | **erledigt 2026-09-16** (Jannes) — Umwidmung und Ziel bestätigt | unten; UX-004; `../development/CAL-EPIC-004.md` (UX-013) |
 | E-20 | ADR-019 Fassung 2 bestätigen | **erledigt 2026-09-13** — angenommen; produktive Freigabe am Gate **offen** (ADR-019 Punkt 9) | unten (E-20 / E-21); [ADR-019](../adr/ADR-019-map-service.md); Gate in B7 |
 | E-21 | Reihenfolge MAP-002 zu UX-EPIC-001 | **erledigt 2026-09-13** — gegenstandslos, UX-EPIC-001 seit 2026-09-11 fertig | unten (E-20 / E-21); Roadmap |
 
@@ -350,13 +350,12 @@ CAL-022 ab; ein Umbau danach wäre teuer. Wo: ADR-009, ADR-014;
 
 ### E17 — Kopfleistensuche: wohin die Patientensuche zieht
 
-offen · P2 vor UX-013 · Jannes 2026-09-16
-
-Entschieden: Die dauerhaft sichtbare Suchleiste sucht **Funktionen und
-Bereiche**, keine Namen. Offen ist, wo die Patientensuche danach stattfindet.
-Vorschlag: serverseitig wie in UX-004, aber im Bereich „Patient:innen"; die
-Funktionssuche führt mit einem Treffer dorthin. Preis: ein Schritt mehr aus
-einem Termin heraus. Wo: UX-004; `../development/CAL-EPIC-004.md` (UX-013).
+erledigt · 2026-09-16 · Jannes · Die dauerhaft sichtbare Suchleiste sucht
+**Funktionen und Bereiche**, keine Namen. Die Patientensuche bleibt
+serverseitig wie in UX-004, zieht in den Bereich „Patient:innen" und ist aus
+der Funktionssuche mit einem Treffer erreichbar; der Preis — ein Schritt mehr
+aus einem Termin heraus — ist bestätigt. Gebaut in UX-013. Wo: UX-004;
+`../development/CAL-EPIC-004.md`.
 
 ### E-20 / E-21 — Rückfragen aus MAP-001 (ADR-019 Fassung 2)
 

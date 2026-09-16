@@ -200,11 +200,14 @@ Namen** mehr, sondern **Funktionen und Bereiche**.
 - Tastatur zuerst: Öffnen, Tippen, mit den Pfeiltasten wählen, Eingabetaste
   ausführen. Bei ~375 px nimmt die Liste den Bildschirm ein, statt zu
   überlagern.
-- **Offen: wo die Patientensuche danach lebt** — `docs/decisions/OPEN_DECISIONS.md`
-  **E17**. Vorschlag zur Bestätigung: Sie bleibt serverseitig wie in UX-004,
-  zieht aber in den Bereich „Patient:innen"; die Funktionssuche führt mit dem
-  Treffer „Patient:in suchen" dorthin. Der Preis ist ein zusätzlicher Schritt
-  aus einem Termin heraus. Gebaut wird erst, wenn Jannes das bestätigt hat.
+- **Die Patientensuche zieht um** (**E17**, von Jannes bestätigt am
+  2026-09-16): Sie bleibt serverseitig wie in UX-004 — ab drei Zeichen,
+  umlautunempfindlich, höchstens 25 Treffer —, lebt aber im Bereich
+  „Patient:innen"; die Funktionssuche führt mit dem Treffer „Patient:in
+  suchen" dorthin. Der zusätzliche Schritt aus einem Termin heraus ist
+  bestätigt und kein Befund.
+- Die Rückwege aus UX-012b gelten unverändert: Ein Treffer merkt sich, woher
+  er aufgerufen wurde, und in der Adresse steht nie ein Name (ADR-011).
 
 ## Was nicht dazugehört
 
@@ -245,12 +248,24 @@ Namen** mehr, sondern **Funktionen und Bereiche**.
    einschließlich Tastaturbedienung, Zieh-Geste am Finger nach langem Druck
    und fehlgeschlagenem Speichern.
 
+## Reihenfolge
+
+Jannes hat die Einordnung am 2026-09-16 delegiert; sie steht seitdem in
+[ROADMAP.md](ROADMAP.md), Etappe 1, und gilt von dort:
+
+| Loop | Stories | Warum hier |
+| --- | --- | --- |
+| **CAL-EPIC-004a** | CAL-020, CAL-023 | Zuerst, weil `PROJECT_PRINCIPLES.md` 0.11 §8.1 heute etwas erlaubt, was der Server abweist. Eine Lücke zwischen Leitplanke und Code bleibt nicht offen liegen. Beide Stories sind klein und hängen an nichts |
+| **CAL-EPIC-004b** | CAL-019, CAL-021 | Das Anlegen-Menü setzt die freie Länge voraus, sonst müsste es eine aufgezogene Spanne wieder verwerfen |
+| **UX-013** | UX-013 | Hängt an nichts. Kann vorgezogen werden, wenn ein Loop Luft hat |
+| **CAL-EPIC-004c** | CAL-022, AKTE-006 | Braucht **E16** und arbeitet an denselben Zahlen wie VER-EPIC-002 — deshalb danach |
+
 ## Loop und Nachführung
 
-Pfad A. Der Zuschnitt oben ist **ein Epic, nicht ein Loop**: CAL-020 (freie
-Länge) und CAL-023 (Rückfrage) sind klein und unabhängig, CAL-022 berührt
-Datenmodell und Abrechnungsgrenze und braucht `pnpm test:db`. Der SPEC
-schneidet daraus die Stories, die Roadmap die Reihenfolge.
+Pfad A, vier Loops nach der Tabelle oben. CAL-022 berührt Datenmodell und
+Abrechnungsgrenze und braucht `pnpm test:db`; die übrigen kommen ohne
+Migration aus. Der SPEC schneidet die Stories fein, die Roadmap bleibt die
+Reihenfolge.
 
 Der SPEC prüft und schreibt fort: **ANN-012**, **ANN-037**, **ANN-038**,
 **ANN-049** sowie die Abnahmeschritte unter [`../abnahme/`](../abnahme/README.md).

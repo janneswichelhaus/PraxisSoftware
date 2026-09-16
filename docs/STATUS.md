@@ -12,17 +12,17 @@ einträgt, hat sie damit nicht eingeplant.
   Protokoll. Aufruf: `/feature-loop CAL-018 Hausbesuch-Szenarien` · Pfad A ·
   Effort: Default · beginnt auf Freigabe
 
-## Danach
+## Danach — Reihenfolge seit 2026-09-16
 
-- **CAL-EPIC-004** — Anlegen-Menü im Kalender, freie Terminlänge, Fehlzeiten,
-  Überplanung einer Verordnung, Rückfrage beim Verschieben, Akte nach
-  Verordnung, Funktionssuche. Vorgabe in
-  [`development/CAL-EPIC-004.md`](development/CAL-EPIC-004.md) · Pfad A ·
-  **Einordnung in die Roadmap steht noch aus**
-- **VER-EPIC-002** — Verordnung im Office-Alltag;
-  [`development/VER-EPIC-002.md`](development/VER-EPIC-002.md), setzt auf
-  ROL-EPIC-001 auf · Pfad A · Effort: Default
-- **ABR-EPIC-001** — Leistungen aus durchgeführten Terminen · Pfad A · xhigh
+Vorgabe der vier neuen Loops:
+[`development/CAL-EPIC-004.md`](development/CAL-EPIC-004.md). Alle Pfad A.
+
+1. **CAL-EPIC-004a** — freie Terminlänge (0.11 §8.1) + Rückfrage beim Ziehen
+2. **CAL-EPIC-004b** — Anlegen-Menü, Fehlzeit und Dauerfehlzeit
+3. **UX-013** — Kopfleiste sucht Funktionen; hängt an nichts, vorziehbar
+4. **VER-EPIC-002** — [`development/VER-EPIC-002.md`](development/VER-EPIC-002.md)
+5. **CAL-EPIC-004c** — Überplanung, Übertragung, Akte je Verordnung · **braucht E16**
+6. **ABR-EPIC-001** — Leistungen aus durchgeführten Terminen · xhigh
 
 ## Blocker (Jannes-seitig)
 
@@ -32,8 +32,6 @@ einträgt, hat sie damit nicht eingeplant.
 - **E16 entscheiden** — Abrechnungsgrundlage neben der Verordnung
   (Selbstzahler: planbare Klammer oder nur Abrechnungsart?). P1 **vor**
   VER-EPIC-002 und ABR-EPIC-001, [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md)
-- **E17 bestätigen** — wohin die Patientensuche zieht, wenn die Kopfleiste
-  Funktionen sucht
 - Branch Protection und Secret Scanning einschalten (M0, 30.09.) —
   [`DEVELOPMENT.md`](DEVELOPMENT.md), „Manuelle Schritte"
 - Anfragen B1, B2 (mit E15 und ANN-052 Fassung 2) und B4 verschicken —
@@ -54,7 +52,8 @@ Keine Codeänderung. Jannes hat am Vergleich mit iPrax sechs Festlegungen
 getroffen; sie stehen als Loop-Vorgabe in `development/CAL-EPIC-004.md`, als
 Befunde BEF-006 bis BEF-008 und als E16/E17 in den offenen Entscheidungen. Die
 Terminlänge ist damit **frei** — das ändert eine MUSS-Anforderung und steht in
-`PROJECT_PRINCIPLES.md` **0.11 §8.1**, gebaut wird es in CAL-020.
+`PROJECT_PRINCIPLES.md` **0.11 §8.1**, gebaut wird es in CAL-020. E17 ist
+bestätigt, die Reihenfolge der vier Loops auf Jannes' Auftrag entschieden.
 
 Lokal: `git pull origin claude/nice-goldberg-kcnct0`. Kein `pnpm install`,
 keine neue Migration.
