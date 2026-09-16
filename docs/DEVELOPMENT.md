@@ -299,17 +299,18 @@ derselben Transaktion. Damit gibt es keinen Weg, klinischen Freitext ohne
 Protokolleintrag zu lesen (ADR-010). Die Begründung einer Korrektur zählt dabei
 wie Inhalt: sie steht in der Versionstabelle, niemals im Auditlog.
 
-In der Akte gilt dasselbe Muster (DOK-003): `list_patient_treatment_notes`
-liefert den klinischen Rollen die Einträge aller Termine eines Patienten und
-protokolliert **je Eintrag** `treatment_note.viewed`; die Verwaltung bekommt
-über `list_patient_treatment_evidence` den Behandlungsnachweis ohne klinischen
-Inhalt und ohne eigenen Auditeintrag — das Öffnen der Akte steht als
-`patient_record.viewed` (ANN-006). Beide Sichten blättern über dieselbe
-Seitenregel `app.patient_record_page` mit höchstens 50 Terminen je Aufruf.
-**Mit E15 (2026-09-13) ändert sich das:** `office` liest künftig die
-Dokumentation wie die klinischen Rollen, mit `treatment_note.viewed` je
-Eintrag; der Behandlungsnachweis bleibt als Rechnungssicht. Umgebaut wird
-das in ROL-EPIC-001 (`PROJECT_PRINCIPLES.md` 0.10 §4.3, ADR-004 Fassung 2).
+In der Akte gilt dasselbe Muster (DOK-003, ROL-001):
+`list_patient_treatment_notes` liefert allen vier Praxisrollen — seit E15 auch
+`office` — die Einträge aller Termine eines Patienten und protokolliert **je
+Eintrag** `treatment_note.viewed`; das Öffnen der Akte steht zusätzlich als
+`patient_record.viewed`. Der Behandlungsnachweis
+`list_patient_treatment_evidence` bleibt als Rechnungssicht ohne klinischen
+Inhalt und ohne eigenen Auditeintrag bestehen (ADR-004 Fassung 2 Punkt 4); die
+Akte fragt ihn nicht mehr an. Beide Sichten blättern über dieselbe Seitenregel
+`app.patient_record_page` mit höchstens 50 Terminen je Aufruf. Verordnung mit
+Diagnose (`prescription.viewed`) und klinische Dateien
+(`patient_file.link_issued`) liest `office` seit ROL-002 ebenso; die
+Schreibrechte sind unverändert.
 
 Seit DOK-004 kennt das Auditlog einen **Systemakteur**: Ereignisse eines
 zeitgesteuerten Vorgangs — heute die automatische Finalisierung — tragen
@@ -329,7 +330,7 @@ deckungsgleich.
    Stack selbst. In Umgebungen ohne Docker
    — etwa der Cloud-Entwicklungsumgebung — läuft weiterhin ausschließlich die
    Abdeckung des nicht angemeldeten Zustands.
-2. **Hinter der Anmeldung** laufen 18 Spezifikationen im Playwright-Projekt
+2. **Hinter der Anmeldung** laufen 19 Spezifikationen im Playwright-Projekt
    `authenticated`; die Breite der Prüfung liegt bei `pnpm test:db`.
 3. **Der Secret-Scan prüft nur den aktuellen Stand**, nicht die Git-Historie.
    GitHub Secret Scanning und Push Protection sollten zusätzlich in den
@@ -354,8 +355,9 @@ deckungsgleich.
 10. **Ein Termin mit Dokumentation lässt sich weiterhin absagen.** Ob das
     fachlich zulässig sein soll, ist offen; der Entwurf bleibt in diesem Fall
     erhalten und lesbar, es geht nichts verloren.
-11. **Der Behandlungsnachweis in der Akte enthält keine „erbrachte Leistung"**
-    — sie kommt mit ABR-002 (`PROJECT_PRINCIPLES.md` §4.4, Punkt C1).
+11. **Der Behandlungsnachweis enthält keine „erbrachte Leistung"** — sie kommt
+    mit ABR-002 (`PROJECT_PRINCIPLES.md` §4.4, Punkt C1). Seit ROL-001 steht er
+    nicht mehr in der Akte, sondern nur noch als Rechnungssicht auf dem Server.
 
 ## Manuelle Schritte im Repository
 

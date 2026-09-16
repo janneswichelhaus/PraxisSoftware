@@ -268,12 +268,10 @@ function terminlink(patientId: string, verordnungId: string): string {
  * (ADR-017 Punkt 10). Im Bereich „Dateien" taucht er trotzdem auf — gelesen
  * wird derselbe Pfad.
  *
- * **Nur für die behandelnden Rollen.** Der Scan ist klinisch, obwohl `office`
- * die Verordnungsdaten organisatorisch sieht (ANN-011, Punkt 12): Ein Scan
- * zeigt das ganze Blatt samt Diagnose und lässt sich nicht projizieren. Der
- * Server liefert `office` die Zeile ohnehin nicht; der Block bleibt hier
- * trotzdem weg, damit dort keine leere Fläche steht, die eine Datei vermuten
- * lässt.
+ * **Für alle vier Praxisrollen sichtbar** (E15, ROL-002). Der Scan zeigt das
+ * ganze Blatt samt Diagnose - und die liest `office` seit ADR-004 Fassung 2
+ * ebenso wie die behandelnden Rollen. Hinzufügen und löschen dürfen ihn nur
+ * die Rollen mit Schreibrecht an der Verordnung (ADR-017 Punkt 13, ANN-011).
  */
 function Verordnungsscan({
   patientId,

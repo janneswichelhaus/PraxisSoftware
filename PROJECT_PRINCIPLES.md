@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.10.1** |
+| **Dokumentversion** | **0.10.2** |
 | **Änderungsdatum** | **2026-09-15** |
-| Vorversion | 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Vorversion | 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-019, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -337,8 +337,8 @@ ist auditpflichtig wie bei Therapeut:innen (§4.2, ADR-010); das Auditlog ist
 damit auch für diese Rolle die tragende Kompensationsmaßnahme. Die
 datenschutzrechtliche Bewertung dieser Öffnung (Need-to-know, DSFA) gehört in
 die Anfrage B2 ([ADR-007](docs/adr/ADR-007-data-protection-impact-assessment.md)).
-Umgesetzt wird der Rollenschnitt in ROL-EPIC-001; bis dahin gilt der gebaute
-Stand ([ADR-004](docs/adr/ADR-004-authorization-model.md) Fassung 2).
+Umgesetzt ist der Rollenschnitt mit ROL-EPIC-001 vom 2026-09-15
+([ADR-004](docs/adr/ADR-004-authorization-model.md) Fassung 2).
 
 *Bis Version 0.9 galt an dieser Stelle:* „Office hat standardmäßig KEINEN
 Zugriff auf klinischen Freitext und keinen Zugriff auf vollständige klinische
@@ -1315,6 +1315,14 @@ technischer Teil steht in ADR-018 Fassung 3 und ADR-004 Fassung 2.
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.10.2
+
+Korrekturversion, ändert keine Leitplanke. Der Satz am Ende von §4.3 („Umgesetzt
+wird der Rollenschnitt in ROL-EPIC-001; bis dahin gilt der gebaute Stand")
+nennt jetzt den Umsetzungsstand: Der Rollenschnitt aus E15 ist mit
+ROL-EPIC-001 gebaut (PR #41, 2026-09-15). Dieselbe Nachführung steht in
+ADR-004, ADR-016, ADR-017 Punkt 12 und `OPEN_DECISIONS.md` E15.
 
 ### Änderungsvermerk 0.10.1
 

@@ -10,15 +10,17 @@ import {
 } from './helpers/db';
 
 /**
- * Dokumentation in der Akte, rollenabhaengig projiziert (DOK-003).
+ * Dokumentation in der Akte (DOK-003, ROL-001).
  *
  * Zwei Sichten auf dieselben Termine, zwei Rueckgabetypen (ADR-004):
  *
- *   * Der Behandlungsnachweis (PROJECT_PRINCIPLES.md 4.4) liefert office den
+ *   * Der Behandlungsnachweis (PROJECT_PRINCIPLES.md 4.4) liefert den
  *     Dokumentationsstand je Termin - und an keiner Stelle klinischen Inhalt.
- *   * Die klinische Sicht liefert owner, therapist und team_lead die Eintraege
- *     samt Inhalt und kommt nicht an der Protokollierung vorbei (ADR-010,
- *     ADR-016 Punkt 9).
+ *     Seit E15 ist er keine Zugriffsgrenze mehr, sondern die Rechnungssicht
+ *     (ADR-004 Fassung 2 Punkt 4).
+ *   * Die klinische Sicht liefert allen vier Praxisrollen - seit E15 auch
+ *     office - die Eintraege samt Inhalt und kommt nicht an der
+ *     Protokollierung vorbei (ADR-010, ADR-016 Punkt 9).
  *
  * Beide teilen sich die Seitenregel: welche Termine zur Akte gehoeren, die
  * Reihenfolge und das Blaettern. Sie wird deshalb am Nachweis geprueft und an
@@ -516,10 +518,22 @@ describe('DOK-003: Klinische Sicht der Akte', () => {
     expect(zeilen[0]!.notes[0]!.content).toBe(GEHEIM);
   });
 
-  it('laesst office nicht lesen (4.3) - die Akte oeffnet keinen zweiten Weg', async () => {
-    await expect(akte(users.office, patients.erika)).rejects.toThrow(
-      /not allowed to read treatment documentation/,
+  it('laesst office lesen und protokolliert je Eintrag (E15, ADR-004 Fassung 2)', async () => {
+    const vorher = (await auditEintraege('treatment_note.viewed')).length;
+
+    const zeilen = await akte(users.office, patients.erika);
+    expect(zeilen[0]!.notes[0]!.content).toBe(GEHEIM);
+
+    // Dieselbe Protokollierung wie bei den therapeutischen Rollen: drei
+    // gelesene Eintraege, drei Auditeintraege - ohne Inhalt.
+    const neue = (await auditEintraege('treatment_note.viewed')).slice(vorher);
+    expect(neue.map((e) => e.subject_id).sort()).toEqual(
+      [finalDoku.id, nachtragId, entwurfDoku.id].sort(),
     );
+    for (const e of neue) {
+      expect(e).toMatchObject({ actor_user_id: users.office, outcome: 'success' });
+      expect(JSON.stringify(e.context)).not.toContain('Geheim');
+    }
   });
 
   it('laesst ein Patientenkonto nicht lesen (4.6)', async () => {
@@ -693,6 +707,11 @@ describe('DOK-003: Mandantentrennung', () => {
   it('liefert die klinische Sicht eines fremden Patienten nicht', async () => {
     expect(await akte(users.therapist, fremderPatient)).toEqual([]);
     expect(await akte(users.ownerTherapist, fremderPatient)).toEqual([]);
+    // E15 oeffnet office die eigene Praxis, keine fremde - und ohne gelesenen
+    // Eintrag entsteht auch kein Auditeintrag.
+    const vorher = await auditAnzahl();
+    expect(await akte(users.office, fremderPatient)).toEqual([]);
+    expect(await auditAnzahl()).toBe(vorher);
 
     const eigene = await akte(fremderTherapeut, fremderPatient);
     expect(eigene).toHaveLength(1);

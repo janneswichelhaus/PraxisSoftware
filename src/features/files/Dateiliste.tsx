@@ -19,7 +19,11 @@ import {
   sichtbarkeitHinweis,
   type Dokumentart,
 } from './dokumentarten';
-import { canReadClinicalPatientFiles, type CurrentUser } from '@/features/session/types';
+import {
+  canCorrectPatientFileType,
+  canWriteClinicalPatientFiles,
+  type CurrentUser,
+} from '@/features/session/types';
 
 /**
  * Dateien einer Akte: anzeigen, hinzufügen, öffnen (DAT-001, ADR-017).
@@ -401,13 +405,19 @@ export function Dateiliste({
 
   if (verborgen) return null;
 
+  // Sehen dürfen seit E15 alle vier Praxisrollen jede Art (ROL-002). Was
+  // hinzugefügt, gelöscht und korrigiert werden darf, hängt dagegen am
+  // Schreibrecht der Art (ADR-017 Punkt 13) - office pflegt nur
+  // organisatorische Unterlagen.
+  const klinischSchreiben = canWriteClinicalPatientFiles(user.roles);
+  const darfArtKorrigieren = canCorrectPatientFileType(user.roles);
+
   // An der Verordnung gibt es genau eine sinnvolle Art (ADR-017 Punkt 12:
-  // Vorbelegung aus dem Kontext). In der Akte stehen alle zur Wahl, die die
-  // Rolle auch wieder sehen könnte - eine Datei hochzuladen, die man danach
-  // nicht mehr findet, wäre eine Falle.
+  // Vorbelegung aus dem Kontext). In der Akte stehen die Arten zur Wahl, die
+  // die Rolle hinzufügen darf.
   const arten: readonly Dokumentart[] = prescriptionId
     ? (['verordnungsscan'] as const)
-    : canReadClinicalPatientFiles(user.roles)
+    : klinischSchreiben
       ? (['befund', 'arztbrief', 'klinisches_bild', 'einwilligung', 'vertrag'] as const)
       : (['einwilligung', 'vertrag'] as const);
 
@@ -417,16 +427,14 @@ export function Dateiliste({
   // Arten, die keine sein können, sind trotzdem wählbar, weil die Datei die
   // Verordnung behält (ADR-017 Punkt 10); die Datenbank weist nur den
   // umgekehrten Fall ab.
-  const korrekturarten: readonly Dokumentart[] = canReadClinicalPatientFiles(user.roles)
-    ? ([
-        'verordnungsscan',
-        'befund',
-        'arztbrief',
-        'klinisches_bild',
-        'einwilligung',
-        'vertrag',
-      ] as const)
-    : (['einwilligung', 'vertrag'] as const);
+  const korrekturarten: readonly Dokumentart[] = [
+    'verordnungsscan',
+    'befund',
+    'arztbrief',
+    'klinisches_bild',
+    'einwilligung',
+    'vertrag',
+  ];
 
   return (
     <>
@@ -449,10 +457,12 @@ export function Dateiliste({
               key={datei.id}
               datei={datei}
               patientId={patientId}
-              // Löschen folgt demselben Recht wie Hinzufügen (ADR-017
-              // Punkt 13); die Datenbank prüft es noch einmal.
-              darfLoeschen={darfHinzufuegen}
-              darfArtKorrigieren={canReadClinicalPatientFiles(user.roles)}
+              // Löschen folgt dem Schreibrecht an der Art (ADR-017 Punkt 13),
+              // nicht dem Leserecht: office sieht seit E15 klinische Dateien,
+              // löscht aber nur organisatorische. Die Datenbank prüft es noch
+              // einmal.
+              darfLoeschen={darfHinzufuegen && (!datei.is_clinical || klinischSchreiben)}
+              darfArtKorrigieren={darfArtKorrigieren}
               arten={korrekturarten}
             />
           ))}

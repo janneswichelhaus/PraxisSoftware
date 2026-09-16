@@ -99,27 +99,15 @@ describe('Verordnungsbereich der Akte', () => {
     expect(fetchPatientPrescriptions).not.toHaveBeenCalled();
   });
 
-  it('ruft fuer office die organisatorische Sicht und zeigt keine Diagnose', async () => {
-    fetchPatientPrescriptions.mockResolvedValue([
-      {
-        id: 'v1',
-        prescriber_id: 'p1',
-        prescriber_name: 'Dr. med. Petra Probst',
-        prescriber_practice_name: 'Praxis Fiktiv',
-        prescription_kind: 'follow_up',
-        issued_on: '2026-06-18',
-        frequency_note: '2x pro Woche',
-        note: null,
-        items: [position()],
-        updated_at: '2026-06-18T10:00:00.000Z',
-      } satisfies PrescriptionsApi.Prescription,
-    ]);
+  it('ruft fuer office die klinische Sicht und zeigt die Diagnose (E15)', async () => {
+    fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
     fetchPatientPrescriptionSlots.mockResolvedValue([kontingent()]);
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
-    expect(await screen.findByText('Folgeverordnung vom 18.06.2026')).toBeInTheDocument();
-    expect(fetchPatientPrescriptionsClinical).not.toHaveBeenCalled();
-    expect(screen.queryByText('Diagnose')).not.toBeInTheDocument();
+    expect(await screen.findByText('Synthetisch: Schulter rechts.')).toBeInTheDocument();
+    expect(screen.getByText('Diagnose')).toBeInTheDocument();
+    expect(fetchPatientPrescriptionsClinical).toHaveBeenCalledWith(patient.id);
+    expect(fetchPatientPrescriptions).not.toHaveBeenCalled();
   });
 
   // ---------------------------------------------------------------------------
@@ -171,7 +159,7 @@ describe('Verordnungsbereich der Akte', () => {
   // ---------------------------------------------------------------------------
   describe('Aktionen passen zum Zustand', () => {
     it('bietet die Serie an, solange sich etwas planen laesst', async () => {
-      fetchPatientPrescriptions.mockResolvedValue([verordnung()]);
+      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
       fetchPatientPrescriptionSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
@@ -182,7 +170,7 @@ describe('Verordnungsbereich der Akte', () => {
     });
 
     it('bietet keine Serie an, wenn jede Einheit verplant ist', async () => {
-      fetchPatientPrescriptions.mockResolvedValue([verordnung()]);
+      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
       fetchPatientPrescriptionSlots.mockResolvedValue([
         kontingent({ prescribed: 10, used: 7, planned: 10, upcoming: 3, remaining: 0 }),
       ]);
@@ -193,7 +181,7 @@ describe('Verordnungsbereich der Akte', () => {
     });
 
     it('bietet einer inaktiven Person keine Serie an', async () => {
-      fetchPatientPrescriptions.mockResolvedValue([verordnung()]);
+      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
       fetchPatientPrescriptionSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
       renderWithProviders(
         <Verordnungsbereich
@@ -207,7 +195,7 @@ describe('Verordnungsbereich der Akte', () => {
     });
 
     it('laesst office die Verordnung nicht bearbeiten', async () => {
-      fetchPatientPrescriptions.mockResolvedValue([verordnung()]);
+      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
       fetchPatientPrescriptionSlots.mockResolvedValue([kontingent()]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 

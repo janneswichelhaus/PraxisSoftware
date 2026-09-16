@@ -160,8 +160,9 @@ und gehören in den Prüfkatalog von OPS-001, nicht in diese Entscheidung.
     *Vermerk 2026-09-13 (E15, ADR-004 Fassung 2):* `office` liest künftig
     auch die klinischen Dokumentarten. Die Dokumentart bleibt Katalog und
     Rollenschnitt — für Patient:innen (Etappe 4), Dritte und die
-    Rechnungssicht; für die Praxisrollen entfällt die Grenze mit
-    ROL-EPIC-001. Bis dahin gilt dieser Punkt wie geschrieben (DAT-EPIC-001).
+    Rechnungssicht; für die Praxisrollen ist die Grenze mit ROL-EPIC-001
+    (PR #41) entfallen. Hochladen, Löschen und die Korrektur der Art folgen
+    weiter dem Schreibrecht (Punkt 13).
 13. **Wer hochladen, die Art ändern oder löschen darf, folgt dem Schreibrecht
     am Bezugsdatensatz**, nicht dem Leserecht an der Datei. Eine Korrektur der
     Dokumentart ist ein protokollierter Vorgang der therapeutischen Rollen: Sie
@@ -216,6 +217,17 @@ und gehören in den Prüfkatalog von OPS-001, nicht in diese Entscheidung.
     Verfahrensbeschreibung, statt einen stärkeren Nachweis zu behaupten.
     Punkt 15 hält den Unterschied klein: ein Verweis je bewusstem Zugriff, nie
     auf Vorrat für eine Liste.
+    *Vermerk 2026-09-15 (FIX-015, BEF-004):* Die Ausstellung ist seitdem
+    erzwungen, nicht nur der vorgesehene Weg. Signieren, Laden, Auflisten und
+    Kopieren lässt die Storage-API nur gegen eine einmalige, 30 Sekunden
+    gültige Freigabe zu, die `issue_patient_file_link` mit dem Auditeintrag
+    anlegt; entfernt wird ein Objekt nur gegen die Freigabe aus
+    `claim_storage_deletion_order` (`storage_deletion.claimed`), und diese
+    Freigabe taugt nur zum Entfernen. `storage_deletion.claimed` ist damit ein
+    Ereignis des Löschauftrags, kein Dateizugriff; Punkt 20 bleibt bei seinen
+    drei Dateiereignissen. Die Grenze dieses Punkts bleibt: Ein ausgestellter
+    Verweis gilt seine 60 Sekunden, und ob die Bytes geflossen sind, steht
+    weiter nicht fest (ANN-052).
 22. **Das Auflisten der Dateien einer Akte ist kein eigenes Auditereignis.**
     Das Öffnen der Akte ist bereits auditiert; ADR-010 wägt genauso zwischen
     Aussagekraft und Logvolumen ab („Detailansicht ja, Trefferliste nein").

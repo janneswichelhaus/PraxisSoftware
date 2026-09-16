@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, abgefangen, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  abgefangen,
+  asPostgres,
+  asStorageApi,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Loeschen, Dokumentart korrigieren, Loeschauftraege quittieren
@@ -149,12 +157,21 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
   });
 
   describe('Dokumentart korrigieren (ADR-017 Punkt 13)', () => {
-    it('verschiebt die Sichtbarkeitsgrenze und protokolliert beide Arten', async () => {
+    it('verschiebt die Schreibgrenze und protokolliert beide Arten', async () => {
       const datei = await abgelegteDatei(users.therapist, {
         verordnungId: null,
         art: 'befund',
         name: 'Blatt.pdf',
       });
+      const LISTE = 'select document_type, is_clinical from public.list_patient_files($1::uuid)';
+      const LOESCHEN = 'select public.delete_patient_file($1::uuid)';
+
+      // Vorher: office sieht die Datei seit E15, aber als klinische - loeschen
+      // darf es sie nicht (ADR-017 Punkt 13). asUser rollt zurueck.
+      const vorher = await asUser(users.office, LISTE, [patients.max]);
+      expect(vorher.rows).toEqual([{ document_type: 'befund', is_clinical: true }]);
+      const verweigert = await abgefangen(asUser(users.office, LOESCHEN, [datei.file_id]));
+      expect(verweigert?.message).toMatch(/not allowed to delete this file/);
 
       await asUserCommitted(
         users.therapist,
@@ -162,13 +179,10 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         [datei.file_id, 'einwilligung'],
       );
 
-      // Vorher unsichtbar fuer die Verwaltung, jetzt sichtbar.
-      const buero = await asUser<{ document_type: string }>(
-        users.office,
-        'select document_type from public.list_patient_files($1::uuid)',
-        [patients.max],
-      );
-      expect(buero.rows.map((r) => r.document_type)).toEqual(['einwilligung']);
+      // Danach organisatorisch - und damit fuer office pflegbar.
+      const nachher = await asUser(users.office, LISTE, [patients.max]);
+      expect(nachher.rows).toEqual([{ document_type: 'einwilligung', is_clinical: false }]);
+      expect(await abgefangen(asUser(users.office, LOESCHEN, [datei.file_id]))).toBeNull();
 
       const audit = await asPostgres<{ context: Record<string, unknown> }>(
         "select context from public.audit_log where action = 'patient_file.type_corrected'",
@@ -193,8 +207,8 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
           [datei.file_id, 'befund'],
         ),
       );
-      // Zwei Gruende zugleich: die Rolle darf nicht korrigieren, und sie
-      // duerfte die Datei danach nicht mehr sehen.
+      // Die Rolle darf nicht korrigieren (Punkt 13). Das Leserecht aus E15
+      // aendert daran nichts: die Art bestimmt, wer schreiben darf.
       expect(fehler?.message).toMatch(/not allowed to correct this document type/);
     });
 
@@ -299,16 +313,18 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       const { orderId, objectKey } = await offenerAuftrag();
 
       // Der Weg, den die Oberflaeche geht: Schluessel holen, Objekt entfernen,
-      // quittieren.
-      const geholt = await asUser<{ object_key: string }>(
+      // quittieren. Das Holen legt die Loeschfreigabe an und muss deshalb
+      // bestaetigt sein (FIX-015).
+      const geholt = await asUserCommitted<{ object_key: string }>(
         users.ownerTherapist,
         'select object_key from public.claim_storage_deletion_order($1::uuid)',
         [orderId],
       );
       expect(geholt.rows[0]!.object_key).toBe(objectKey);
 
-      await asUserCommitted(
+      await asStorageApi(
         users.ownerTherapist,
+        'storage.object.delete_many',
         "delete from storage.objects where bucket_id = 'patientenakte' and name = $1",
         [objectKey],
       );
@@ -366,11 +382,16 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
   describe('DELETE-Policy auf storage.objects', () => {
     const LOESCHEN =
       "delete from storage.objects where bucket_id = 'patientenakte' and name = $1 returning id";
+    // So meldet die Storage-API das Entfernen (FIX-015: nur dafuer gilt die
+    // Loeschfreigabe).
+    const ENTFERNEN = 'storage.object.delete_many';
 
     it('laesst kein Objekt loeschen, dessen Zeile noch steht', async () => {
       const datei = await abgelegteDatei(users.therapist);
 
-      const { rows } = await asUser(users.ownerTherapist, LOESCHEN, [datei.object_key]);
+      const { rows } = await asStorageApi(users.ownerTherapist, ENTFERNEN, LOESCHEN, [
+        datei.object_key,
+      ]);
       expect(rows).toEqual([]);
 
       const objekte = await asPostgres(
@@ -385,12 +406,28 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         datei.file_id,
       ]);
 
-      const therapeutin = await asUser(users.therapist, LOESCHEN, [datei.object_key]);
-      expect(therapeutin.rows).toEqual([]);
-
-      const inhaberin = await asUser<{ id: string }>(users.ownerTherapist, LOESCHEN, [
+      const therapeutin = await asStorageApi(users.therapist, ENTFERNEN, LOESCHEN, [
         datei.object_key,
       ]);
+      expect(therapeutin.rows).toEqual([]);
+
+      // FIX-015: Auch der Owner loescht nur gegen eine Loeschfreigabe.
+      const { rows: auftraege } = await asPostgres<{ id: string }>(
+        'select id from public.storage_deletion_orders where object_key = $1',
+        [datei.object_key],
+      );
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select object_key from public.claim_storage_deletion_order($1::uuid)',
+        [auftraege[0]!.id],
+      );
+
+      const inhaberin = await asStorageApi<{ id: string }>(
+        users.ownerTherapist,
+        ENTFERNEN,
+        LOESCHEN,
+        [datei.object_key],
+      );
       expect(inhaberin.rows).toHaveLength(1);
     });
   });

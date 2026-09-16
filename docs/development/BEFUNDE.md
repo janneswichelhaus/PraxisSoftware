@@ -206,3 +206,74 @@ Geändert ist ausschließlich die Testdatei — keine Migration, keine Policy, u
 `outside_working_hours` ausdrücklich prüfen, rechnen weiter mit rohen
 Kalendertagen: Ein Beginn um 05:00 liegt an jedem Wochentag außerhalb.
 Beleg: `pnpm test:db` 1 311 von 1 311 grün (2026-09-15).
+
+### BEF-004 — Dateien lassen sich am Auditeintrag vorbei laden
+
+|           |                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------- |
+| Datum     | 2026-09-15                                                                                        |
+| Bereich   | Dateien in der Akte, Verordnungsscan — `storage.objects`, `issue_patient_file_link`               |
+| Quelle    | Zweitreview in frischem Kontext zu ROL-EPIC-001 (ADR-013 Punkt 9 Nr. 8), am Code bestätigt        |
+| Status    | behoben in FIX-015, noch nicht gemergt (PR #42, gestapelt auf PR #41)        |
+| Berührt   | DAT-001, ROL-002; ADR-010 Punkt 2 und 14, ADR-017 Punkt 20; ANN-052                               |
+
+**Beobachtung.** Der Objektschlüssel einer Datei ist
+`organization_id/(prescription_id oder patient_id)/id` (Spalte `object_key` in
+`supabase/migrations/20260913110000_patient_files.sql`). Alle drei Teile kennt
+jede Rolle, die die Dateiliste lesen darf — `list_patient_files` liefert die
+Datei-`id`. Die SELECT-Policy auf `storage.objects` lässt das Objekt für diese
+Rollen zu. Wer die Storage-API direkt anspricht (`createSignedUrl`, `download`,
+`list`), lädt eine Datei also, ohne dass `patient_file.link_issued` entsteht.
+Die Begründung von ANN-052 („drei zufällige UUID … praktisch unumgehbar")
+trägt deshalb nicht: zufällig ja, dem Lesenden aber bekannt.
+
+**Warum das zählt.** Der Weg besteht seit DAT-001 für die therapeutischen
+Rollen; seit ROL-002 (E15) gilt er auch für `office` und klinische Dateien.
+Nach ADR-004 Fassung 2 ist das Auditlog für `office` die tragende Kompensation
+des Lesezugriffs. Der Umweg braucht Absicht und API-Kenntnis, aber kein
+zusätzliches Recht.
+
+**Richtung (nicht entschieden).** Ein Zufallsanteil im Schlüssel, der den
+Server nur über `issue_patient_file_link` verlässt, oder die serverseitige
+Ausstellung nach Freigabe der Edge Runtime (ANN-052, Änderungspfad). Eigener
+Loop nach ADR-013 Punkt 9 Nr. 8, vor der ersten echten Datei (OPS-001).
+
+**Behoben (FIX-015, 2026-09-15).** Kein Zufallsanteil — der hätte am Schlüssel,
+den ein erstes Öffnen ohnehin preisgibt, nichts geändert. Stattdessen verlangt
+die RLS auf `storage.objects` eine **einmalige Freigabe** der anfragenden
+Person, die nur `issue_patient_file_link` (mit `patient_file.link_issued`) oder
+`claim_storage_deletion_order` (neu mit `storage_deletion.claimed`) anlegt; sie
+gilt 30 Sekunden und wird beim ersten Zugriff verbraucht; die Löschfreigabe
+trägt nur ein Entfernen, kein Lesen. Das kam aus dem Zweitreview und hat keinen
+eigenen roten Lauf: `7787ec5` prüfte das Lesen mit Löschfreigabe noch als
+erlaubt, `f8676f9` verlangt das Gegenteil. Die Umgehungswege sind zuerst rot,
+dann grün belegt: gegen die laufende Storage-API in
+`tests/e2e/authenticated/patient-file-access.spec.ts` (Signieren, Laden,
+Auflisten und Kopieren ohne Ausstellung, zweites Signieren nach erlaubtem
+Öffnen, Entfernen durch `owner` ohne Ausführung) und in
+`supabase/tests/patient-file-access.test.ts`. Ein ausgestellter Verweis bleibt
+60 Sekunden nutzbar. Migration `20260915120000_patient_file_access_grants.sql`,
+ANN-052 Fassung 2.
+
+### BEF-005 — Lange Wörter sprengen die Verordnungskarte bei 1024 px
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-15                                                                                    |
+| Bereich | Verordnungen in der Akte (`/patienten/:id/verordnungen`), Detailzeilen der laufenden Verordnung |
+| Quelle  | Sichtprüfung zu ROL-EPIC-001: `pnpm screenshots --breite=1024` als office und als therapist   |
+| Status  | offen                                                                                         |
+| Berührt | VER-002, AKTE-002; `DetailRow` in `src/components/ui`                                         |
+
+**Beobachtung.** Bei 1024 px meldet das Werkzeug waagerechtes Scrollen um
+8 px: Ein langes Wort in der Diagnose („Bewegungseinschraenkung") läuft über
+den rechten Rand der zweispaltigen Verordnungskarte. Bei 375 px tritt es nicht
+auf. Therapeut:innen sehen das seit VER-002; seit ROL-002 sieht es auch
+`office`.
+
+**Warum das zählt.** Diagnosen bestehen oft aus langen Komposita; eine Seite,
+die dann seitlich scrollt, widerspricht der Oberflächen-Checkliste
+(`docs/abnahme/README.md`, Punkt 1).
+
+**Richtung.** Langes Wort im Wert einer Detailzeile umbrechen
+(`overflow-wrap`) — eine Stelle im Baustein, kein Umbau.

@@ -21,8 +21,9 @@ import { fetchTreatmentNoteVersions, findeEintrag, type TreatmentNote } from './
  * sie macht den gesonderten Auditeintrag nachvollziehbar: wer hierher
  * navigiert, sieht mehr als den aktuellen Stand.
  *
- * Lesen darf ihn, wer den Eintrag selbst lesen darf (Punkt 8). Für office und
- * Patientenkonten gibt es die Seite nicht und den Serveraufruf ebenso wenig.
+ * Lesen darf ihn, wer den Eintrag selbst lesen darf (Punkt 8) - seit E15 auch
+ * office (ROL-001). Für Patientenkonten gibt es die Seite nicht und den
+ * Serveraufruf ebenso wenig.
  */
 function Verlauf({ appointment, note }: { appointment: Appointment; note: TreatmentNote }) {
   const zone = appointment.organization_time_zone;

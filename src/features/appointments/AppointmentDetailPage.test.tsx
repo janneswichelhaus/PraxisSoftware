@@ -747,8 +747,16 @@ describe('AppointmentDetailPage', () => {
       await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
 
       await waitFor(() => expect(completeAppointment).toHaveBeenCalled());
-      // Kein Zwischenschritt, keine Rueckfrage nach Inhalten.
-      expect(screen.queryByText(/dokumentation/i)).not.toBeInTheDocument();
+      // Kein Zwischenschritt, keine Rueckfrage nach Inhalten. Den lesenden
+      // Abschnitt "Behandlungsdokumentation" sieht office seit E15 trotzdem -
+      // er ist keine Rueckfrage und zaehlt deshalb hier nicht mit.
+      const abschnitt = screen
+        .getByRole('heading', { name: 'Behandlungsdokumentation' })
+        .closest('section');
+      const ausserhalb = screen
+        .queryAllByText(/dokumentation/i)
+        .filter((element) => !abschnitt?.contains(element));
+      expect(ausserhalb).toEqual([]);
     });
 
     it('markiert einen abgeschlossenen Termin nicht als unvollstaendig', async () => {
@@ -872,12 +880,13 @@ describe('AppointmentDetailPage', () => {
       );
     });
 
-    it('zeigt office den Abschnitt gar nicht und fragt ihn nicht ab (4.3)', async () => {
+    it('zeigt office den Abschnitt lesend, ohne Weg zum Dokumentieren (E15)', async () => {
       rendern(['office']);
       await screen.findByText('Anna Beispiel');
 
-      expect(screen.queryByText('Behandlungsdokumentation')).toBeNull();
-      expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
+      expect(await screen.findByText('Behandlungsdokumentation')).toBeInTheDocument();
+      expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID);
+      expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
     });
   });
 

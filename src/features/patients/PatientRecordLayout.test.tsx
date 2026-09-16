@@ -26,7 +26,6 @@ const fetchPatientAppointments = vi.fn();
 const fetchPatientPrescriptions = vi.fn();
 const fetchPatientPrescriptionsClinical = vi.fn();
 const fetchPatientPrescriptionSlots = vi.fn();
-const fetchTreatmentEvidencePage = vi.fn();
 const fetchPatientTreatmentNotesPage = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -66,10 +65,6 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
   const actual = await importOriginal<typeof DokumentationApi>();
   return {
     ...actual,
-    fetchTreatmentEvidencePage: (patientId: string, cursor: DokumentationApi.AkteCursor | null) =>
-      fetchTreatmentEvidencePage(patientId, cursor) as Promise<
-        DokumentationApi.TreatmentEvidenceEntry[]
-      >,
     fetchPatientTreatmentNotesPage: (
       patientId: string,
       cursor: DokumentationApi.AkteCursor | null,
@@ -117,7 +112,6 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       fetchPatientPrescriptions,
       fetchPatientPrescriptionsClinical,
       fetchPatientPrescriptionSlots,
-      fetchTreatmentEvidencePage,
       fetchPatientTreatmentNotesPage,
     ]) {
       mock.mockReset();
@@ -129,7 +123,6 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
     fetchPatientPrescriptions.mockResolvedValue([]);
     fetchPatientPrescriptionsClinical.mockResolvedValue([]);
     fetchPatientPrescriptionSlots.mockResolvedValue([]);
-    fetchTreatmentEvidencePage.mockResolvedValue([]);
     fetchPatientTreatmentNotesPage.mockResolvedValue([]);
   });
 
@@ -316,14 +309,14 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   });
 
   describe('Bereiche hinter ihren Adressen', () => {
-    it('zeigt office im Verlauf den Behandlungsnachweis', async () => {
+    it('zeigt office im Verlauf die Behandlungsdokumentation (E15, ROL-001)', async () => {
       akteRendern(['office'], `/patienten/${PATIENT_ID}/verlauf`);
 
       expect(
-        await screen.findByRole('region', { name: 'Behandlungsnachweis' }),
+        await screen.findByRole('region', { name: 'Behandlungsdokumentation' }),
       ).toBeInTheDocument();
       await waitFor(() =>
-        expect(fetchTreatmentEvidencePage).toHaveBeenCalledWith(PATIENT_ID, null),
+        expect(fetchPatientTreatmentNotesPage).toHaveBeenCalledWith(PATIENT_ID, null),
       );
     });
 

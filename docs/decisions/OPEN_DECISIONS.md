@@ -83,7 +83,7 @@ Feature, **P3** später.
 | E12 | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **entschieden 2026-09-12** (60 **oder** 45) · Punkt 3 und 4 **vorläufig entschieden 2026-09-12** (Fahrpuffer erst mit MAP-006) · **offen: nur Punkt 2** (Einstellbarkeit je Praxis, ANN-037) · **Punkt 3a neu 2026-09-13** (Fahrzeit ohne Speicherung gegen serverseitige Rundungsregel; MAP-006) | `PROJECT_PRINCIPLES.md` 0.9 §8.1; CAL-010a und CAL-015 gebaut, CAL-010b entfallen (in MAP-006 aufgegangen) |
 | E13 | Sprachdokumentation: Anbieter, Architektur, Audio, Frist | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen** | §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6 |
 | E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Umsetzung CAL-018 | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
-| E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; Umsetzung ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
+| E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; umgesetzt 2026-09-15 in ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
 | E-20 | ADR-019 Fassung 2 bestätigen | **erledigt 2026-09-13** — angenommen; produktive Freigabe am Gate **offen** (ADR-019 Punkt 9) | unten (E-20 / E-21); [ADR-019](../adr/ADR-019-map-service.md); Gate in B7 |
 | E-21 | Reihenfolge MAP-002 zu UX-EPIC-001 | **erledigt 2026-09-13** — gegenstandslos, UX-EPIC-001 seit 2026-09-11 fertig | unten (E-20 / E-21); Roadmap |
 
@@ -347,7 +347,7 @@ ANN-047, ANN-048.
 
 ### E15 — Office sieht klinische Inhalte
 
-entschieden (Jannes) · 2026-09-13; Umsetzung ROL-EPIC-001
+entschieden (Jannes) · 2026-09-13; umgesetzt 2026-09-15 in ROL-EPIC-001
 
 Office liest alle klinischen Inhalte einer Akte im Umfang der Therapeut:innen,
 schreibt keine klinische Dokumentation, jeder Zugriff ist auditpflichtig; C1 und

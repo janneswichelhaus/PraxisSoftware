@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
   canChangePatientStatus,
+  canConcludePatientCare,
+  canCorrectPatientFileType,
   canManageAppointments,
   canManageStaffAccounts,
   canManageStaffEmployment,
   canManageStaffMasterData,
   canManageStaffPrivateDetails,
+  canReadClinicalPatientFiles,
   canReadPatientDirectory,
+  canReadPrescriptionClinical,
   canReadTreatmentNote,
+  canWriteClinicalPatientFiles,
+  canWritePrescriptions,
   canWriteTreatmentNote,
   isStaff,
   roleKeySchema,
@@ -151,14 +157,17 @@ describe('roleKeySchema', () => {
 });
 
 describe('Behandlungsdokumentation (DOK-001)', () => {
-  it.each([['owner'], ['therapist'], ['team_lead']] as const)('laesst %s lesen', (role) => {
-    expect(canReadTreatmentNote([role])).toBe(true);
-  });
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+    'laesst %s lesen',
+    (role) => {
+      expect(canReadTreatmentNote([role])).toBe(true);
+    },
+  );
 
-  it('schliesst office vom klinischen Freitext aus (PROJECT_PRINCIPLES.md 4.3)', () => {
-    // Office sieht denselben Termin, aber nicht denselben Inhalt.
-    expect(canManageAppointments(['office'])).toBe(true);
-    expect(canReadTreatmentNote(['office'])).toBe(false);
+  it('laesst office lesen, aber nicht dokumentieren (E15, PROJECT_PRINCIPLES.md 4.3)', () => {
+    // Office liest denselben Inhalt wie die Therapeutin - geschrieben wird er
+    // weiterhin nur von den therapeutischen Rollen.
+    expect(canReadTreatmentNote(['office'])).toBe(true);
     expect(canWriteTreatmentNote(['office'])).toBe(false);
   });
 
@@ -182,5 +191,37 @@ describe('Behandlungsdokumentation (DOK-001)', () => {
   it('behandelt eine leere Rollenliste als kein Recht', () => {
     expect(canReadTreatmentNote([])).toBe(false);
     expect(canWriteTreatmentNote([])).toBe(false);
+  });
+});
+
+describe('Verordnung und Dateien (ROL-002, E15)', () => {
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+    'laesst %s die klinischen Verordnungsfelder und klinische Dateien lesen',
+    (role) => {
+      expect(canReadPrescriptionClinical([role])).toBe(true);
+      expect(canReadClinicalPatientFiles([role])).toBe(true);
+    },
+  );
+
+  it('oeffnet office mit dem Leserecht kein Schreibrecht (PROJECT_PRINCIPLES.md 4.3)', () => {
+    expect(canWritePrescriptions(['office'])).toBe(false);
+    expect(canWriteClinicalPatientFiles(['office'])).toBe(false);
+    expect(canCorrectPatientFileType(['office'])).toBe(false);
+    expect(canConcludePatientCare(['office'])).toBe(false);
+  });
+
+  it.each([['owner'], ['therapist'], ['team_lead']] as const)(
+    'laesst %s klinische Dateien pflegen und die Art korrigieren',
+    (role) => {
+      expect(canWriteClinicalPatientFiles([role])).toBe(true);
+      expect(canCorrectPatientFileType([role])).toBe(true);
+    },
+  );
+
+  it('schliesst ein Patientenkonto aus (4.6)', () => {
+    expect(canReadPrescriptionClinical(['patient'])).toBe(false);
+    expect(canReadClinicalPatientFiles(['patient'])).toBe(false);
+    expect(canWriteClinicalPatientFiles(['patient'])).toBe(false);
+    expect(canCorrectPatientFileType(['patient'])).toBe(false);
   });
 });

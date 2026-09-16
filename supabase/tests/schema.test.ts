@@ -86,6 +86,7 @@ describe('Schema-Invarianten', () => {
       'deletion_journal',
       'patient_files',
       'storage_deletion_orders',
+      'patient_file_access_grants',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

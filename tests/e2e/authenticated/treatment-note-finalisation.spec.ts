@@ -223,7 +223,10 @@ test.describe('DOK-002: Serverseitige Grenzen', () => {
     expect(nachtragen.status()).toBe(403);
   });
 
-  test('haelt office und Patientenkonto vom Versionsverlauf fern', async ({ page, request }) => {
+  test('laesst office den Versionsverlauf lesen und haelt das Patientenkonto fern', async ({
+    page,
+    request,
+  }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await finalisierterEintrag(page, laufTag(5));
 
@@ -233,14 +236,21 @@ test.describe('DOK-002: Serverseitige Grenzen', () => {
     });
     const [eintrag] = (await eintraege.json()) as { id: string }[];
 
-    for (const konto of [KONTEN.office, 'max.mustermann@patient.invalid']) {
-      const token = await zugriffstoken(request, konto);
-      const antwort = await rpcAufrufen(request, token, 'get_treatment_note_versions', {
-        p_note_id: eintrag!.id,
-      });
-      expect(antwort.status(), `${konto} darf den Verlauf nicht lesen`).toBe(403);
-      expect(await antwort.text()).not.toContain('Belastung in drei Stufen');
-    }
+    // Seit E15 liest office auch den Verlauf (ADR-004 Fassung 2, ADR-016
+    // Punkt 8); protokolliert wird er wie bei den therapeutischen Rollen.
+    const officeToken = await zugriffstoken(request, KONTEN.office);
+    const gelesen = await rpcAufrufen(request, officeToken, 'get_treatment_note_versions', {
+      p_note_id: eintrag!.id,
+    });
+    expect(gelesen.status(), 'office liest den Verlauf (E15)').toBe(200);
+    expect(await gelesen.text()).toContain('Belastung in drei Stufen');
+
+    const patientToken = await zugriffstoken(request, 'max.mustermann@patient.invalid');
+    const antwort = await rpcAufrufen(request, patientToken, 'get_treatment_note_versions', {
+      p_note_id: eintrag!.id,
+    });
+    expect(antwort.status(), 'ein Patientenkonto darf den Verlauf nicht lesen').toBe(403);
+    expect(await antwort.text()).not.toContain('Belastung in drei Stufen');
   });
 
   test('laesst die Versionstabelle selbst nicht direkt lesen', async ({ page, request }) => {

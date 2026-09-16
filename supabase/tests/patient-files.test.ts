@@ -285,7 +285,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(datei.file_id).toBeTruthy();
     });
 
-    it('zeigt office die klinische Datei nicht, der Therapeutin schon', async () => {
+    it('zeigt office seit E15 auch die klinische Datei - wie der Therapeutin', async () => {
       await abgelegteDatei(users.therapist);
       await abgelegteDatei(users.office, {
         verordnungId: null,
@@ -308,8 +308,11 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
         'einwilligung',
         'verordnungsscan',
       ]);
-      // Nicht ausgegraut und nicht als "eine weitere Datei" gezaehlt - gar nicht.
-      expect(buero.rows.map((r) => r.document_type)).toEqual(['einwilligung']);
+      // ADR-004 Fassung 2 Punkt 3: Verordnung einschliesslich Scan.
+      expect(buero.rows.map((r) => r.document_type).sort()).toEqual([
+        'einwilligung',
+        'verordnungsscan',
+      ]);
     });
 
     it('sieht team_lead klinische Dateien, ein Patientenkonto keine', async () => {
@@ -463,11 +466,27 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(Number(rows[0]!.anzahl)).toBe(3);
     });
 
-    it('verweigert office den Verweis auf eine klinische Datei', async () => {
+    it('gibt office den Verweis auf eine klinische Datei und protokolliert ihn (E15)', async () => {
+      const datei = await abgelegteDatei(users.therapist);
+      const { rows } = await asUserCommitted<{ object_key: string }>(
+        users.office,
+        'select object_key from public.issue_patient_file_link($1::uuid)',
+        [datei.file_id],
+      );
+      expect(rows[0]!.object_key).toBe(datei.object_key);
+
+      // ADR-010 Punkt 14: die Ausstellung des Verweises ist das Download-Ereignis.
+      const audit = await asPostgres<{ subject_id: string; actor_user_id: string }>(
+        "select subject_id, actor_user_id from public.audit_log where action = 'patient_file.link_issued'",
+      );
+      expect(audit.rows).toEqual([{ subject_id: datei.file_id, actor_user_id: users.office }]);
+    });
+
+    it('verweigert einem Patientenkonto den Verweis auf eine klinische Datei', async () => {
       const datei = await abgelegteDatei(users.therapist);
       const fehler = await abgefangen(
         asUserCommitted(
-          users.office,
+          users.patientMax,
           'select object_key from public.issue_patient_file_link($1::uuid)',
           [datei.file_id],
         ),
@@ -530,16 +549,24 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(rows).toEqual([]);
     });
 
-    it('liest das Objekt nur, wer die Dokumentart sehen darf', async () => {
+    it('liest das Objekt nur, wer die Dokumentart sehen darf - und nur gegen eine Ausstellung', async () => {
       const datei = await abgelegteDatei(users.therapist);
       const LESEN =
         "select name from storage.objects where bucket_id = 'patientenakte' and name = $1";
+      const VERWEIS = 'select object_key from public.issue_patient_file_link($1::uuid)';
 
-      const therapeutin = await asUser(users.therapist, LESEN, [datei.object_key]);
+      // FIX-015 (BEF-004): ohne Ausstellung liest auch die Therapeutin nichts.
+      const ohne = await asUserCommitted(users.therapist, LESEN, [datei.object_key]);
+      expect(ohne.rows).toEqual([]);
+
+      await asUserCommitted(users.therapist, VERWEIS, [datei.file_id]);
+      const therapeutin = await asUserCommitted(users.therapist, LESEN, [datei.object_key]);
       expect(therapeutin.rows).toHaveLength(1);
 
-      const buero = await asUser(users.office, LESEN, [datei.object_key]);
-      expect(buero.rows).toEqual([]);
+      // Seit E15 dieselbe Leseregel fuer office (ADR-004 Fassung 2 Punkt 3).
+      await asUserCommitted(users.office, VERWEIS, [datei.file_id]);
+      const buero = await asUserCommitted(users.office, LESEN, [datei.object_key]);
+      expect(buero.rows).toHaveLength(1);
 
       const patient = await asUser(users.patientMax, LESEN, [datei.object_key]);
       expect(patient.rows).toEqual([]);
@@ -714,6 +741,67 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
         [patients.max, VERORDNUNG_MAX],
       );
       expect(rows.map((r) => r.display_name)).toEqual(['Rezept.pdf']);
+    });
+  });
+
+  describe('Mandantentrennung fuer office (ROL-002, E15)', () => {
+    const FREMDE_ORG = '22222222-2222-4222-8222-0000000000f1';
+    const FREMDE_PERSON = '44444444-4444-4444-8444-0000000000f1';
+    const FREMDE_PATIENTIN = '66666666-6666-4666-8666-0000000000f1';
+    const FREMDE_DATEI = '99999999-9999-4999-8999-0000000000f1';
+
+    it('liefert office weder Liste, Verweis noch Objekt einer fremden Praxis', async () => {
+      // Testvorbereitung als postgres: eine bestaetigte klinische Datei einer
+      // anderen Organisation, ohne den Weg ueber deren Konten.
+      await asPostgres(`
+        insert into public.organizations (id, name, time_zone)
+          values ('${FREMDE_ORG}', 'Test Praxis Andernorts', 'Europe/Berlin')
+          on conflict do nothing;
+        insert into public.persons (id, organization_id, given_name, family_name)
+          values ('${FREMDE_PERSON}', '${FREMDE_ORG}', 'Fritz', 'Fremdpatient')
+          on conflict do nothing;
+        insert into public.patients (id, organization_id, person_id, status)
+          values ('${FREMDE_PATIENTIN}', '${FREMDE_ORG}', '${FREMDE_PERSON}', 'active')
+          on conflict do nothing;
+        insert into public.patient_files (id, organization_id, patient_id, document_type,
+            display_name, mime_type, byte_size, checksum_sha256, status, confirmed_at)
+          values ('${FREMDE_DATEI}', '${FREMDE_ORG}', '${FREMDE_PATIENTIN}', 'befund',
+            'Fremder Befund.pdf', 'application/pdf', 12345, '${PRUEFSUMME}', 'ready', now());
+      `);
+      const { rows } = await asPostgres<{ object_key: string }>(
+        'select object_key from public.patient_files where id = $1',
+        [FREMDE_DATEI],
+      );
+      const schluessel = rows[0]!.object_key;
+      await objektAblegen(schluessel);
+
+      const liste = await abgefangen(
+        asUser(users.office, 'select id from public.list_patient_files($1::uuid)', [
+          FREMDE_PATIENTIN,
+        ]),
+      );
+      expect(liste?.message).toMatch(/patient not accessible/);
+
+      const verweis = await abgefangen(
+        asUserCommitted(
+          users.office,
+          'select object_key from public.issue_patient_file_link($1::uuid)',
+          [FREMDE_DATEI],
+        ),
+      );
+      expect(verweis?.message).toMatch(/file not accessible/);
+
+      const objekt = await asUser(
+        users.office,
+        "select name from storage.objects where bucket_id = 'patientenakte' and name = $1",
+        [schluessel],
+      );
+      expect(objekt.rows).toEqual([]);
+
+      const audit = await asPostgres(
+        "select id from public.audit_log where action = 'patient_file.link_issued'",
+      );
+      expect(audit.rows).toEqual([]);
     });
   });
 });

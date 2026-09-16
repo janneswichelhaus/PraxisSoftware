@@ -2,13 +2,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
 
 /**
- * VER-002: Verordnungen in der Akte, rollenabhängig projiziert.
+ * VER-002, ROL-002: Verordnungen in der Akte, rollenabhängig projiziert.
  *
- * Der Kern dieser Story ist die Trennung: `office` sieht das Kontingent, aber
- * nicht die Diagnose. Umgesetzt ist das als zwei Funktionen mit zwei
- * Rückgabetypen — nicht als eine Funktion mit genullten Spalten (ADR-004,
- * ANN-011). Die Tests prüfen beide Richtungen: dass die organisatorische Sicht
- * genügt und dass sie die klinischen Felder gar nicht erst führt.
+ * Zwei Funktionen mit zwei Rückgabetypen — nicht eine Funktion mit genullten
+ * Spalten (ADR-004, ANN-011). Seit E15 lesen alle vier Praxisrollen die
+ * klinische Sicht, `office` eingeschlossen (ADR-004 Fassung 2 Punkt 3), und
+ * jede gelesene Verordnung wird protokolliert (ADR-010). Die organisatorische
+ * Sicht bleibt bestehen und führt die klinischen Felder weiterhin gar nicht.
  */
 const { users, patients } = SEED;
 
@@ -109,10 +109,25 @@ describe('VER-002: Verordnungen in der Akte', () => {
     }
   });
 
-  it('weist office die klinische Sicht ab', async () => {
-    await expect(asUser(users.office, KLINISCH, [patients.max])).rejects.toThrow(
-      /not allowed to read clinical prescription data/i,
+  it('liefert office die klinischen Felder und protokolliert je Verordnung (E15)', async () => {
+    await asPostgres("delete from public.audit_log where action = 'prescription.viewed'");
+
+    const { rows } = await asUserCommitted<Zeile>(users.office, KLINISCH, [patients.max]);
+    expect(rows.map((r) => r.id)).toEqual([MAX_FOLGE, MAX_ERST]);
+    expect(rows[0]?.diagnosis).toContain('Bewegungseinschraenkung');
+
+    const { rows: audit } = await asPostgres<{
+      subject_id: string;
+      actor_user_id: string;
+      context: Record<string, unknown>;
+    }>(
+      `select subject_id, actor_user_id, context from public.audit_log
+        where action = 'prescription.viewed'`,
     );
+    expect(audit.map((a) => a.subject_id).sort()).toEqual([MAX_ERST, MAX_FOLGE].sort());
+    expect(audit.every((a) => a.actor_user_id === users.office)).toBe(true);
+    // Keine klinischen Inhalte im Auditlog (ADR-010 Punkt 3, ADR-011).
+    expect(JSON.stringify(audit.map((a) => a.context))).not.toMatch(/Bewegungseinschraenkung/);
   });
 
   it('weist ein Patientenkonto und anon beide Sichten ab', async () => {
