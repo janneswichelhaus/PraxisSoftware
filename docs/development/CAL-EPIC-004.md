@@ -129,6 +129,17 @@ Termine **übertragen**.
   Deckung"), am Termin selbst und in der Terminliste der Akte. Eine stille
   Überplanung wäre genau der Abrechnungsfehler, den §13 ausschließt.
 
+**Abgerechnet wird nicht am Ende der Verordnung** (Jannes, 2026-09-16, E16
+Teil A): Vier von zehn Terminen dürfen jetzt auf eine Rechnung, der Rest
+später — bei Selbstzahlern genauso. Das ist keine Änderung, sondern die
+bestehende Architektur: Leistungen existieren unabhängig von Rechnungen (§19,
+ADR-009 Punkte 3 und 4), jede Leistung wird höchstens einmal abgerechnet, und
+fakturiert wird je Leistung aus `documented`. Für diesen Loop heißt das
+zweierlei: **Die Verordnung ist die Planungsklammer, nicht die
+Abrechnungseinheit** — die Deckungsanzeige zählt Termine, nie Rechnungen —,
+und ein Termin, der schon auf einer ausgestellten Rechnung steht, wird nicht
+übertragen.
+
 **Übertragen auf eine andere Verordnung** ist ein eigener, protokollierter
 Vorgang in der Akte:
 

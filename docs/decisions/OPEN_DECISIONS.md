@@ -101,10 +101,8 @@ Hosting, Datenstandort und Provider sind entschieden (ADR-002, ADR-015); offen
 ist die Ausgestaltung der Anbieterprüfung als Dokument OPS-001. Dazu gehören die
 Auth-Mails des Providers als einziger Versandweg in Stufe 1 (B13), die Prüfung
 der Edge Runtime (ADR-015 Punkt 20) und die fünf Prüfpunkte zum Objektspeicher
-aus ADR-017.
-
-Wo: OPS-001, Roadmap G3. Annahmen: ANN-007, ANN-017, ANN-025, ANN-027, ANN-043,
-ANN-044.
+aus ADR-017. Wo: OPS-001, Roadmap G3. Annahmen: ANN-007, ANN-017, ANN-025,
+ANN-027, ANN-043, ANN-044.
 
 ### B1 — MDR / EU AI Act: die Zweckbestimmung
 
@@ -122,10 +120,9 @@ benannt wird; Jannes hat das bejaht. Ausschlaggebend war nicht die Pflicht (nach
 Art. 37 Abs. 1 lit. c DSGVO, WP 243 und §38 Abs. 1 BDSG eher unwahrscheinlich),
 sondern die Lage: Gesundheitsdaten als Kerntätigkeit, selbst entwickelte Software,
 keine eigene Datenschutzexpertise. Offen bleiben Schwellwertprüfung und DSFA;
-Rücknahme in der Software `klein`.
-
-Wo: ADR-007 Punkte 3 und 4, §3.7; Roadmap G14. Annahmen: das Prüfpaket des
-Registers (Stand 2026-09-14: 29 Einträge), dazu der Prüfvermerk aus E15.
+Rücknahme in der Software `klein`. Wo: ADR-007 Punkte 3 und 4, §3.7; Roadmap
+G14. Annahmen: das Prüfpaket des Registers (Stand 2026-09-14: 29 Einträge),
+dazu der Prüfvermerk aus E15.
 
 ### B3 — Aufbewahrung und Löschung: Fristen-Validierung
 
@@ -134,7 +131,6 @@ offen · P1 · §18; ADR-008; LOE-EPIC-001
 Das Modell ist entschieden (Retention Schedule, Löschlauf, Legal Hold) und mit
 LOE-EPIC-001 gebaut; offen ist die Validierung der Fristen durch die
 Datenschutzberatung — sie geht mit B2, die Belegfristen der Rechnungen mit B4.
-
 Wo: ADR-008; Roadmap G14. Annahmen: ANN-001, ANN-002, ANN-013, ANN-020, ANN-026,
 ANN-029 bis ANN-033, ANN-035.
 
@@ -142,18 +138,15 @@ ANN-029 bis ANN-033, ANN-035.
 
 vier Festlegungen vorläufig entschieden · 2026-09-08 · Jannes; Validierung offen
 
-Volltext: `ANFRAGEN.md` § B4.
-
-Wo: ADR-009, §19; Roadmap G15. Annahmen: ANN-035 (steuerliche Aufbewahrung des
-Gebührenanlasses), E14 (Rechnungstext für Fall 1).
+Volltext: `ANFRAGEN.md` § B4. Wo: ADR-009, §19; Roadmap G15. Annahmen: ANN-035
+(steuerliche Aufbewahrung des Gebührenanlasses), E14 (Rechnungstext für Fall 1).
 
 ### B5 — Patientenidentität, Identitätsprüfung und Vertretung
 
 Rahmen vorläufig entschieden · 2026-09-08 · Jannes; Verfahren offen · P1 für das Portal
 
-Volltext: `ANFRAGEN.md` § B5.
-
-Wo: ADR-014 (minimale Struktur für Vertreterzugriffe); Roadmap Etappe 4.
+Volltext: `ANFRAGEN.md` § B5. Wo: ADR-014 (minimale Struktur für
+Vertreterzugriffe); Roadmap Etappe 4.
 
 ### B6 — Beschäftigtendaten: Tourendaten und Leistungskontrolle
 
@@ -169,15 +162,16 @@ bei dieser Praxisgröße liefert ein „Ja" nichts Unbekanntes (§16, §20). Rü
 
 ### B7 — Übermittlung von Adressdaten an den Kartendienst
 
-Weg C vorläufig entschieden · 2026-09-08 · Jannes (MAP-001); produktive Freigabe am Gate offen
+Weg C vorläufig entschieden · 2026-09-08 · Jannes (MAP-001); produktive Freigabe
+am Gate offen
 
 Google Maps Platform wird nicht Backend (kein AVV, keine belegte
 EU-Verarbeitung); Kandidat ist PTV Developer mit den OSM-APIs, nicht produktiv
 freigegeben. Fahrzeiten werden abgerufen und angezeigt, nicht gespeichert und nie
 je Person ausgewertet — damit hängt der Punkt an B6. Vor Echtdaten steht das
-neunteilige Gate aus ADR-019 Punkt 9, alle Punkte `CONTRACT_CONFIRMATION_REQUIRED`.
-
-Wo: ADR-019 Fassung 2, `providerpruefung-kartendienst.md`; Roadmap G12, MAP-006.
+neunteilige Gate aus ADR-019 Punkt 9, alle Punkte
+`CONTRACT_CONFIRMATION_REQUIRED`. Wo: ADR-019 Fassung 2,
+`providerpruefung-kartendienst.md`; Roadmap G12, MAP-006.
 Annahmen: ANN-016, ANN-017, ANN-018. Blockiert nur MAP-006 (echte Adressen).
 
 ### B8 — Lizenzen für Fragebögen und PROMs
@@ -187,34 +181,27 @@ Auskunft des Lizenzgebers offen · Rückfall entschieden · 2026-09-08 · Jannes
 Ob die digitale Einbettung des DIGOTOR-Anamnesebogens lizenzrechtlich abgedeckt
 ist, entscheidet der Lizenzgeber — eine Auskunft, keine Entscheidung. Bis dahin
 nur lizenzfreie Instrumente (NRS, patientenspezifische Funktionsskala, globale
-Veränderungsfrage).
-
-Wo: §7; Roadmap FRB-003. Nicht blockiert: FRB-001 und FRB-002.
+Veränderungsfrage). Wo: §7; Roadmap FRB-003. Nicht blockiert: FRB-001 und FRB-002.
 
 ### B9 — Betreuung ohne und nach Heilbehandlung: Rechtsrahmen und Datentrennung
 
 vollständig vorläufig entschieden · 2026-09-07 und 2026-09-08 · Jannes
 
-Volltext: `ANFRAGEN.md` § B9.
-
-Wo: §1; Roadmap Etappe 8. Annahmen: ANN-032 (automatische Klassifizierung hängt
+Volltext: `ANFRAGEN.md` § B9. Wo: §1; Roadmap Etappe 8. Annahmen: ANN-032
+(automatische Klassifizierung hängt
 an B9), ANN-014 (`MDR_REVIEW_REQUIRED` bei Bewertung).
 
 ### B10 — Automatisierte Progression: MDR-Grenze und Verantwortung
 
 vorläufig entschieden · 2026-09-08 · Jannes; Bestätigung mit B1
 
-Volltext: `ANFRAGEN.md` § B10.
-
-Wo: ADR-006; Roadmap Etappe 9. Annahmen: ANN-014.
+Volltext: `ANFRAGEN.md` § B10. Wo: ADR-006; Roadmap Etappe 9. Annahmen: ANN-014.
 
 ### B11 — Paketpreise, Vorauszahlung und Anreize
 
 vorläufig entschieden · 2026-09-08 · Jannes · vorerst nicht anbieten
 
-Volltext: `ANFRAGEN.md` § B11.
-
-Wo: ADR-009; Roadmap Etappe 8.
+Volltext: `ANFRAGEN.md` § B11. Wo: ADR-009; Roadmap Etappe 8.
 
 ### B12 — Stichtag der Umstellung und Rechnungsnummernkreis
 
@@ -238,13 +225,13 @@ sind gebaut — keine Abhängigkeit, kein neuer Ausführungsort. Für die
 unveränderbare Rechnung legt ABR-EPIC-002a im November 2026 die Optionen vor;
 vermerkte Tendenz: serverseitige Funktion, weil ein Browser-Druck eine Datei beim
 Nutzer erzeugt, die die Anwendung nie sieht. Eine wesentliche Abhängigkeit oder
-ein neuer Ausführungsort ist nach §15.1 ein Stopp.
-
-Wo: ADR-009 Punkt 14, ADR-017; Roadmap ABR-EPIC-002a. Blockiert ABR-003b.
+ein neuer Ausführungsort ist nach §15.1 ein Stopp. Wo: ADR-009 Punkt 14,
+ADR-017; Roadmap ABR-EPIC-002a. Blockiert ABR-003b.
 
 ### B15 — Terminerinnerung und Online-Terminbuchung
 
-vorläufig entschieden · 2026-09-08 · Jannes · keine automatische Erinnerung; Nachtrag 2026-09-12
+vorläufig entschieden · 2026-09-08 · Jannes · keine automatische Erinnerung;
+Nachtrag 2026-09-12
 
 In Stufe 1 und 2 keine automatische Terminerinnerung, die Anrufliste bleibt:
 Jeder automatisierte Kanal wäre ein neuer Dienstleister mit einem
@@ -260,9 +247,8 @@ PAT-006. Annahmen: ANN-039, ANN-040, ANN-041.
 
 Schutzumfang vorläufig entschieden · 2026-09-08 · Jannes; Provider offen
 
-Volltext: `ANFRAGEN.md` § C6.
-
-Wo: ADR-005; Roadmap Etappe 10. Dazu gehört der Anbieter für Spracherkennung
+Volltext: `ANFRAGEN.md` § C6. Wo: ADR-005; Roadmap Etappe 10. Dazu gehört der
+Anbieter für Spracherkennung
 und Transkription aus E13 Punkt 1.
 
 ### D — „bestätigt": der Terminstatus-Automat
@@ -303,9 +289,8 @@ und die Punkte 3 und 4 (Fahrpuffer erst mit MAP-006). **Punkt 2** (Länge je
 Praxis einstellbar) ist damit gegenstandslos, **ANN-037** verliert mit CAL-020
 ihren Gegenstand. Offen bleibt **3a**: ADR-019 Punkt 16 sieht keine
 Speicherung von Fahrzeiten vor, §8.1 verlangt die serverseitige Rundungsregel,
-sobald eine vorliegt — Live-Abruf je Prüfung oder kurze Speicherung.
-
-Wo: §8.1, ADR-019 Punkt 16; Roadmap MAP-006, CAL-EPIC-004. Annahmen: ANN-037,
+sobald eine vorliegt — Live-Abruf je Prüfung oder kurze Speicherung. Wo: §8.1,
+ADR-019 Punkt 16; Roadmap MAP-006, CAL-EPIC-004. Annahmen: ANN-037,
 ANN-049.
 
 ### E13 — Sprachdokumentation: Anbieter, Architektur, Audio, Frist
@@ -337,16 +322,28 @@ keine klinische Dokumentation, jeder Zugriff auditpflichtig; C1 und C2
 
 ### E16 — Abrechnungsgrundlage neben der Verordnung
 
-offen · P1 vor VER-EPIC-002 und ABR-EPIC-001 · Jannes 2026-09-16
+Teil A entschieden 2026-09-16 · Teil B offen · P1 vor VER-EPIC-002 und
+ABR-EPIC-001
 
 Termine sollen in der Akte **je Abrechnungsgrundlage** gruppiert erscheinen —
-Verordnung, Privatrezept, Rechnung für Selbstzahler „oder in Zukunft andere
-Methoden". Heute kennt das Modell eine Klammer: `prescriptions`. Zu
-entscheiden: **Ist die Selbstzahlerform eine planbare Klammer mit Kontingent**
-(wie ein Rezept) oder nur eine Abrechnungsart am Termin? Davon hängen
+Verordnung, Privatrezept, Selbstzahler „oder in Zukunft andere Methoden".
+Heute kennt das Modell eine Klammer: `prescriptions`.
+
+**Teil A — Abrechnungszeitpunkt (Jannes, 2026-09-16):** Abgerechnet wird auch
+**vor** dem Ende einer Verordnung — vier von zehn Terminen jetzt, der Rest
+später —, und bei Selbstzahlern genauso. Das ist keine Änderung: §19 und
+ADR-009 Punkte 3 und 4 trennen Leistung und Rechnung bereits, jede Leistung
+wird höchstens einmal abgerechnet, und fakturiert wird je Leistung aus
+`documented`. **Folge für Teil B:** Eine Rechnung kann die Klammer **nicht**
+sein — zu einem Behandlungsblock gehören dann mehrere.
+
+**Teil B — offen:** Bekommt der Selbstzahler eine eigene planbare Klammer mit
+Terminzahl (dann ist die Verordnung eine Bauart davon, und die Tabelle heißt
+nicht mehr „Verordnung"), oder bleibt `prescriptions` die einzige Klammer und
+Selbstzahlertermine stehen im Abschnitt „ohne Verordnung"? Davon hängen
 Tabellenzuschnitt, Serienplanung, Deckungsanzeige und die Übertragung aus
-CAL-022 ab; ein Umbau danach wäre teuer. Wo: ADR-009, ADR-014;
-`../development/CAL-EPIC-004.md`, VER-EPIC-002.
+CAL-022 ab. Wo: §19, ADR-009, ADR-014; `../development/CAL-EPIC-004.md`,
+VER-EPIC-002.
 
 ### E17 — Kopfleistensuche: wohin die Patientensuche zieht
 
@@ -396,4 +393,5 @@ kann; die übrigen beantworten sich im Loop, der das Thema baut.
 
 ## Historie
 
-Entscheidungsverlauf und ältere Fassungen: `git log -- docs/decisions/OPEN_DECISIONS.md`.
+Entscheidungsverlauf und ältere Fassungen: `git log --
+docs/decisions/OPEN_DECISIONS.md`.
