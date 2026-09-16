@@ -48,10 +48,17 @@ Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
   — nur synthetische Daten (ADR-019 angenommen am 2026-09-13, E-20).
 - **Docs-Session offen:** `OPS-001 Providerprüfung` — mit den fünf
   Objektspeicher-Punkten aus ADR-017 und der Edge-Runtime-Prüfung aus ADR-019.
-- **Zum Merge, in dieser Reihenfolge:** PR #41 (ROL-EPIC-001) nach `main`,
-  danach PR #42 (FIX-015 zu BEF-004, Branch `claude/fix-bef-004`, gestapelt
-  auf `claude/rol-epic-001`). Vor dem zweiten Merge dessen Basis auf `main`
-  stellen, falls GitHub das nicht selbst getan hat.
+- **Gemergt am 2026-09-15/16:** PR #41 (ROL-EPIC-001) und PR #42 (FIX-015).
+  Die Abnahme beider steht noch aus.
+- **CI steht still:** Die GitHub-Actions-Minuten des Monats sind seit dem
+  2026-09-16 aufgebraucht. Bis zum Reset entsteht kein grüner Lauf und damit
+  **kein Merge** (ADR-013); entwickelt, gepusht und lokal geprüft wird weiter.
+- **Noch nicht eingeordnet:** **CAL-EPIC-004** (Vorgabe in
+  [`CAL-EPIC-004.md`](CAL-EPIC-004.md), Festlegungen von Jannes vom
+  2026-09-16). Es enthält mit CAL-020 die freie Terminlänge aus
+  `PROJECT_PRINCIPLES.md` 0.11 §8.1 und mit CAL-022 eine Story, die **E16**
+  voraussetzt. Die Reihenfolge gegenüber CAL-018 und VER-EPIC-002 entscheidet
+  Jannes.
 - **Vor der ersten echten Datei (OPS-001):**
   `tests/e2e/authenticated/patient-file-access.spec.ts` regelmäßig gegen
   Staging laufen lassen — Supabase aktualisiert die Storage-API ohne Zutun

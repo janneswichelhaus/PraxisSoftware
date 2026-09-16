@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-15 · letzte Session: FIX-015 (BEF-004)
+# Status · Stand 2026-09-16 · letzte Session: Vorgaben aus dem iPrax-Vergleich
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
@@ -10,27 +10,30 @@ einträgt, hat sie damit nicht eingeplant.
 
 - **CAL-018** — Hausbesuch-Szenarien aus E14: Nichtantreffen, Ausfallhonorar,
   Protokoll. Aufruf: `/feature-loop CAL-018 Hausbesuch-Szenarien` · Pfad A ·
-  Effort: Default · beginnt erst auf Freigabe, nach den Merges unten
+  Effort: Default · beginnt auf Freigabe
 
 ## Danach
 
-- **VER-EPIC-002** — Verordnung im Office-Alltag; Vorgabe in
+- **CAL-EPIC-004** — Anlegen-Menü im Kalender, freie Terminlänge, Fehlzeiten,
+  Überplanung einer Verordnung, Rückfrage beim Verschieben, Akte nach
+  Verordnung, Funktionssuche. Vorgabe in
+  [`development/CAL-EPIC-004.md`](development/CAL-EPIC-004.md) · Pfad A ·
+  **Einordnung in die Roadmap steht noch aus**
+- **VER-EPIC-002** — Verordnung im Office-Alltag;
   [`development/VER-EPIC-002.md`](development/VER-EPIC-002.md), setzt auf
-  ROL-EPIC-001 auf. Pfad A · Effort: Default
-- **ABR-EPIC-001** — Leistungen entstehen aus durchgeführten Terminen
-  (Praxis-Stammdaten, Leistungskatalog). Pfad A · Effort: xhigh (Migrationen)
-
-## Zum Merge — Reihenfolge verbindlich
-
-1. **PR #41** — ROL-EPIC-001, `claude/rol-epic-001` → `main`.
-2. **PR #42** — FIX-015, `claude/fix-bef-004`, gestapelt auf #41 und mit dessen
-   Commits; erst danach mergen, die Basis vorher auf `main` stellen.
-
-#41: CI grün, Zweitreview mit Befund BEF-004. #42: Zweitreview in frischem
-Kontext, Befunde eingearbeitet, CI-Ergebnis im PR. Abnahme beider offen.
+  ROL-EPIC-001 auf · Pfad A · Effort: Default
+- **ABR-EPIC-001** — Leistungen aus durchgeführten Terminen · Pfad A · xhigh
 
 ## Blocker (Jannes-seitig)
 
+- **GitHub-Actions-Minuten des Monats aufgebraucht** (2026-09-16): kein CI-Lauf
+  und damit **kein Merge** bis zum Reset. Entwickeln, Pushen und die lokalen
+  Gates laufen weiter.
+- **E16 entscheiden** — Abrechnungsgrundlage neben der Verordnung
+  (Selbstzahler: planbare Klammer oder nur Abrechnungsart?). P1 **vor**
+  VER-EPIC-002 und ABR-EPIC-001, [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md)
+- **E17 bestätigen** — wohin die Patientensuche zieht, wenn die Kopfleiste
+  Funktionen sucht
 - Branch Protection und Secret Scanning einschalten (M0, 30.09.) —
   [`DEVELOPMENT.md`](DEVELOPMENT.md), „Manuelle Schritte"
 - Anfragen B1, B2 (mit E15 und ANN-052 Fassung 2) und B4 verschicken —
@@ -43,18 +46,15 @@ Kontext, Befunde eingearbeitet, CI-Ergebnis im PR. Abnahme beider offen.
 CAL-EPIC-003b (mit CAL-012/013), AKTE-000 bis AKTE-005, UX-012, UI-002,
 FIX-EPIC-001 (braucht Docker), FIX-EPIC-003, CAL-014 bis CAL-017,
 DAT-EPIC-001, ROL-EPIC-001, FIX-015 — Prüfschritte in
-[`abnahme/`](abnahme/README.md).
+[`abnahme/`](abnahme/README.md). **PR #41 und #42 sind gemergt.**
 
 ## Letzte Session
 
-FIX-015 (Befund-Loop zu BEF-004, Pfad A): Die Storage-API gibt eine Datei nur
-noch gegen eine einmalige, protokollierte Ausstellung heraus — beim Signieren,
-Laden, Auflisten, Kopieren und Entfernen, auch mit bekanntem Schlüssel und
-nach einem früheren Öffnen; ein ausgestellter Verweis gilt weiter 60 Sekunden.
-Zuerst rot gegen die laufende API belegt, dann behoben (ANN-052 Fassung 2,
-neues Auditereignis `storage_deletion.claimed`). E15-Umsetzungsvermerke
-nachgezogen. Offen bleiben BEF-005 und die Datenschutzprüfung B2.
+Keine Codeänderung. Jannes hat am Vergleich mit iPrax sechs Festlegungen
+getroffen; sie stehen als Loop-Vorgabe in `development/CAL-EPIC-004.md`, als
+Befunde BEF-006 bis BEF-008 und als E16/E17 in den offenen Entscheidungen. Die
+Terminlänge ist damit **frei** — das ändert eine MUSS-Anforderung und steht in
+`PROJECT_PRINCIPLES.md` **0.11 §8.1**, gebaut wird es in CAL-020.
 
-Nach beiden Merges lokal: `git checkout main`, `git pull origin main`, dann
-`pnpm dlx supabase@2.116.0 db reset` (drei neue Migrationen). Kein
-`pnpm install` (Lockfile unverändert).
+Lokal: `git pull origin claude/nice-goldberg-kcnct0`. Kein `pnpm install`,
+keine neue Migration.
