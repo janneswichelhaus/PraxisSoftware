@@ -82,7 +82,7 @@ Feature, **P3** später.
 | E11 | Wer gilt als behandelnde Person | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | — |
 | E12 | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **neu entschieden 2026-09-16**: Länge **frei**, Abweichung von 45/60 wird gekennzeichnet · Punkt 2 damit **gegenstandslos** · Punkt 3 und 4 **vorläufig entschieden 2026-09-12** (Fahrpuffer erst mit MAP-006) · **offen: nur Punkt 3a** | `PROJECT_PRINCIPLES.md` **0.11 §8.1**; CAL-010a und CAL-015 gebaut, **CAL-020 baut die freie Länge**, CAL-010b entfallen |
 | E13 | Sprachdokumentation: Anbieter, Architektur, Audio, Frist | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen** | §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6 |
-| E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); Umsetzung CAL-018 | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
+| E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); **umgesetzt 2026-09-16 in CAL-018** | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
 | E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; umgesetzt 2026-09-15 in ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
 | E16 | Abrechnungsgrundlage neben der Verordnung (Privatrezept, Selbstzahler, weitere) | **erledigt 2026-09-16** (Jannes) — Teil A: abgerechnet wird auch vor dem Ende einer Grundlage · Teil B: **eine** Klammer „Behandlungsgrundlage", die Verordnung ist eine Bauart davon | [ADR-020](../adr/ADR-020-treatment-basis.md) (angenommen 2026-09-16); unten; gebaut in GRD-001 |
 | E17 | Kopfleistensuche sucht Funktionen statt Namen: wohin die Patientensuche zieht | **erledigt 2026-09-16** (Jannes) — Umwidmung und Ziel bestätigt | unten; UX-004; `../development/CAL-EPIC-004.md` (UX-013) |
@@ -306,11 +306,13 @@ Punkte 8 und 9, ADR-006 Punkt 8; C6. Blockiert nichts.
 
 ### E14 — Gebühr beim Nichtantreffen am Hausbesuch
 
-erledigt · 2026-09-13 · Jannes; Umsetzung CAL-018 · Tür geöffnet ohne
-Behandlung → durchgeführt mit Pflichtvermerk; nicht angetroffen nach Protokoll
-→ Ausfallgebühr; Patientenabsage unter 24 Stunden → Ausfallgebühr (CAL-014).
-Rechnungstext und Rechtsgrundlage für Fall 1 in B4. Wo: §8, ADR-018 Fassung 3
-Punkt 8, ADR-009. Annahmen: ANN-035, ANN-047, ANN-048.
+erledigt · 2026-09-13 · Jannes; umgesetzt 2026-09-16 in CAL-018 · Tür
+geöffnet ohne Behandlung → durchgeführt mit Pflichtvermerk; nicht angetroffen
+nach Protokoll → Ausfallgebühr; Patientenabsage unter 24 Stunden →
+Ausfallgebühr (CAL-014). Gebaut für den **Hausbesuch**; für Praxis- und
+Videotermine gibt es keine Festlegung (ANN-055). Rechnungstext und
+Rechtsgrundlage für Fall 1 in B4. Wo: §8, ADR-018 Fassung 3 Punkt 9, ADR-009.
+Annahmen: ANN-035, ANN-047, ANN-048, ANN-055.
 
 ### E15 — Office sieht klinische Inhalte
 

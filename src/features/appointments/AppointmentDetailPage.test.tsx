@@ -367,7 +367,7 @@ describe('AppointmentDetailPage', () => {
 
       await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
 
-      // Ohne Protokoll: Am Praxistermin gilt es nicht (CAL-018, ANN-053).
+      // Ohne Protokoll: Am Praxistermin gilt es nicht (CAL-018, ANN-055).
       await waitFor(() =>
         expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at, false),
       );

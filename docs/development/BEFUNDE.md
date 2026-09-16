@@ -158,8 +158,10 @@ womöglich gar nicht mehr, sobald die Karte in der Anwendung steht.
   genau dann steht man im Hausflur, mit Handschuhen. Nach hinten ja,
   weggeklappt nein. Ihre heutige Stelle stammt aus UX-001, nicht aus
   Zufall. Seit E14 (2026-09-13) ist die Rufnummer zudem Teil des Protokolls
-  beim Nichtantreffen (15 Minuten, Klingeln, Anruf — Umsetzung CAL-018):
-  Sie gehört also auf die Karte, nicht dahinter.
+  beim Nichtantreffen (15 Minuten, Klingeln, Anruf — gebaut mit CAL-018,
+  2026-09-16): Die Rückfrage am Termin verlangt die Bestätigung „telefonisch
+  angerufen", und wer sie geben soll, braucht die Nummer davor. Sie gehört
+  also auf die Karte, nicht dahinter.
 - **„Navigation starten" darf erst weichen, wenn die Karte wirklich da ist.**
   Der Handoff ist heute der einzige Weg zur Route. Die Karte kommt mit
   MAP-005/MAP-006 und hängt an ADR-019 — und dessen produktive Freigabe

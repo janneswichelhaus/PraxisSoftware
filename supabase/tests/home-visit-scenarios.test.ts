@@ -15,7 +15,7 @@ import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './help
  *     Nichtantreffen ohne die Grundlage, aus der die Forderung stammt.
  *   * **Mit Bestaetigung entsteht die Gebuehr immer** - keine zweite
  *     Entscheidung, keine Vorbelegung, kein Weg daran vorbei (E14).
- *   * **Das Protokoll ist ein Hausbesuchsprotokoll** (ANN-053). An der
+ *   * **Das Protokoll ist ein Hausbesuchsprotokoll** (ANN-055). An der
  *     Praxistuer gibt es nichts zu klingeln; dort bleibt der Vermerk, was er
  *     seit CAL-014c ist.
  *   * **Der Pflichtvermerk aus Szenario 1** ist ein Merkmal am Eintrag und
@@ -199,7 +199,7 @@ describe('Nichtantreffen am Hausbesuch: das Protokoll ist Pflicht', () => {
   });
 });
 
-describe('Nichtantreffen ausserhalb des Hausbesuchs: Vermerk ohne Gebuehr (ANN-053)', () => {
+describe('Nichtantreffen ausserhalb des Hausbesuchs: Vermerk ohne Gebuehr (ANN-055)', () => {
   beforeEach(resetDatabase);
 
   it('vermerkt einen Praxistermin ohne Protokoll und ohne Gebuehrenanlass', async () => {
@@ -291,7 +291,7 @@ describe('Tuer geoeffnet, keine Behandlung: der Pflichtvermerk (Szenario 1)', ()
     expect(rows[0]!.visit_without_treatment).toBe(false);
   });
 
-  it('weist den Vermerk an einem Praxistermin ab (ANN-053)', async () => {
+  it('weist den Vermerk an einem Praxistermin ab (ANN-055)', async () => {
     const termin = await terminAm('practice');
 
     await expect(

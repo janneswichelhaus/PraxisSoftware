@@ -283,7 +283,7 @@ export async function finalizeTreatmentNote(
  * `visitWithoutTreatment` trägt den Pflichtvermerk aus Hausbesuch-Szenario 1
  * ein (CAL-018). Er wird ausschließlich hier gesetzt — mit der Finalisierung
  * ist der Eintrag Bestandteil der Akte, und der Server nimmt ihn nur am
- * Hausbesuchstermin an (ANN-053).
+ * Hausbesuchstermin an (ANN-055).
  */
 export async function completeTreatment(
   appointmentId: string,

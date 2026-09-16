@@ -333,7 +333,7 @@ describe('CompleteTreatmentPage', () => {
       );
     });
 
-    it('nimmt den Vermerk an einem Praxistermin nicht an (ANN-053)', async () => {
+    it('nimmt den Vermerk an einem Praxistermin nicht an (ANN-055)', async () => {
       fetchAppointment.mockResolvedValue({
         ...termin,
         appointment_type: 'practice',

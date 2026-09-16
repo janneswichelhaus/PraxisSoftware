@@ -198,7 +198,7 @@ const appointmentSchema = z.object({
   no_show_recorded_at: z.string().nullable(),
   // Bestätigung des Hausbesuchsprotokolls (CAL-018): `true` nur am Hausbesuch
   // und dann immer mit Gebührenanlass, `false` wo das Protokoll nicht gilt
-  // (ANN-053), `null` an Zeilen aus der Zeit davor.
+  // (ANN-055), `null` an Zeilen aus der Zeit davor.
   no_show_protocol_confirmed: z.boolean().nullable(),
   // Der Gebührenanlass, serverseitig gesetzt (ADR-018 Punkt 4).
   // `late_cancellation` entsteht aus der Frist der Absage, `no_show` aus dem
@@ -1233,7 +1233,7 @@ export async function cancelStaffDay(
  * Ausfallgebühr vor (CAL-018, ADR-018 Fassung 3 Punkt 9). Ohne Bestätigung
  * geschieht nichts: Der Termin bleibt bestätigt.
  *
- * An einem Praxis- oder Videotermin gilt das Protokoll nicht (ANN-053); dort
+ * An einem Praxis- oder Videotermin gilt das Protokoll nicht (ANN-055); dort
  * bleibt der Vermerk ein Schritt ohne Gebühr, und `protocolConfirmed` muss
  * `false` sein — der Server weist es sonst ab.
  *

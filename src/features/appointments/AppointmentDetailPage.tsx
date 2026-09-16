@@ -393,7 +393,7 @@ const PROTOKOLLSCHRITTE = [
  * **Sonst** bleibt es der Schritt aus CAL-014c: ein Vermerk ohne Gebühr. Das
  * Protokoll ist ein Hausbesuchsprotokoll; an der Praxistür gibt es nichts zu
  * klingeln, und für das Nichtantreffen in der Praxis gibt es keine Festlegung
- * (ANN-053). Verbindlich prüft beides der Server.
+ * (ANN-055). Verbindlich prüft beides der Server.
  *
  * Die Rückfrage bleibt in beiden Fällen: Der Vermerk sperrt die Dokumentation
  * und ist damit mehr als ein Haken. Zurückgenommen wird er über „Termin wieder
@@ -677,7 +677,7 @@ function AppointmentDetail({
   /**
    * Der Hausbesuch führt seinen eigenen Ablauf (CAL-018).
    *
-   * Die drei Szenarien aus E14 gelten dort — und nur dort (ANN-053). Was in
+   * Die drei Szenarien aus E14 gelten dort — und nur dort (ANN-055). Was in
    * der Praxis passiert, bleibt bei den Schaltflächen von vorher.
    */
   const istHausbesuch = !istEreignis && appointment.appointment_type === 'home_visit';

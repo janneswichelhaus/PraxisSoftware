@@ -309,7 +309,7 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
           <Abschluss
             appointment={appointment}
             note={dokumentation.primary}
-            // Der Vermerk gilt am Hausbesuch (ANN-053). Ein verstellter
+            // Der Vermerk gilt am Hausbesuch (ANN-055). Ein verstellter
             // Parameter an einem Praxistermin fällt hier still weg, statt in
             // eine Fehlermeldung des Servers zu laufen; verbindlich weist der
             // Server ihn ohnehin ab.

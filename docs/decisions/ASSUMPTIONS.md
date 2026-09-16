@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-15.
+Zuletzt aktualisiert: 2026-09-16.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -495,13 +495,13 @@ Datenschutz · entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket · Wie
 
 ### ANN-035 — No-show fällt unter die Frist der abgesagten Termine; mit Gebührenanlass wird nicht gelöscht
 
-Recht · entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket · Wiedervorlage: ABR-003 — sobald es Rechnungen gibt, entscheidet die Rechnung statt des Kennzeichens; CAL-018 (Umsetzung von E14); Datenschutzprüfung (B2)
+Recht · entschieden (Jannes) · 2026-09-12, nachgezogen 2026-09-16 (CAL-018) · Jannes · Prüfpaket · Wiedervorlage: ABR-003 — sobald es Rechnungen gibt, entscheidet die Rechnung statt des Kennzeichens; Datenschutzprüfung (B2)
 
-**Annahme.** Ein Termin im Zustand `no_show` fällt unter die bestehende Klasse `termin_ohne_nachweis` — drei Jahre ab Ende des Kalenderjahres, gerechnet ab dem Zeitpunkt des Vermerks statt ab der Absage. Er wird nicht gelöscht, wenn das Ausfallhonorar-Kennzeichen gesetzt ist; Behandlungsnachweis und Löschsperre halten ihn wie bisher zurück. Eine eigene Datenklasse bekommt er nicht.
+**Annahme.** Ein Termin im Zustand `no_show` fällt unter die bestehende Klasse `termin_ohne_nachweis` — drei Jahre ab Ende des Kalenderjahres, gerechnet ab dem Zeitpunkt des Vermerks statt ab der Absage. Er wird nicht gelöscht, wenn ein Gebührenanlass gesetzt ist; Behandlungsnachweis und Löschsperre halten ihn wie bisher zurück. Eine eigene Datenklasse bekommt er nicht. **Seit CAL-018** trägt jedes Nichtantreffen am Hausbesuch diesen Anlass (E14, ADR-018 Fassung 3 Punkt 9) — dort ist der Löschschutz damit der Regelfall und nicht mehr die Ausnahme; in der Praxis und im Videotermin bleibt es umgekehrt (ANN-055).
 
 **Begründung.** Die Klasse trägt seit LOE-001a ausdrücklich „Abgesagte Termine und No-shows ohne Rechnung" (ADR-008); fachlich ist beides derselbe Fall — ein Termin ohne Behandlungsnachweis und ohne die Zehnjahresfrist aus §630f Abs. 3 BGB —, und eine eigene Klasse mit derselben Frist wäre eine zweite Zahl für denselben Sachverhalt (ADR-014). Dass ein No-show mit Kennzeichen stehen bleibt, ist die vorsichtigere Seite (§16): Was abgerechnet werden soll, unterliegt der steuerlichen Aufbewahrung (§147 AO, §257 HGB). Unsicher: ob diese Frist an der Rechnung hängt statt am Vorgang — ABR-003 beantwortet das mit der Rechnung selbst.
 
-**Anker.** Die Regel „Abgesagte Termine und No-shows ohne Behandlungsnachweis" in `public.apply_retention()` (`supabase/migrations/20260912120000_appointment_no_show.sql`); Tests in `supabase/tests/retention-run.test.ts`.
+**Anker.** Die Regel „Abgesagte Termine und No-shows ohne Behandlungsnachweis" in `public.apply_retention()`, zuletzt gefasst in `supabase/migrations/20260912200000_cancellation_notice.sql` (Bedingung `fee_basis is null`); Tests in `supabase/tests/retention-run.test.ts`. Die Regel selbst blieb mit CAL-018 unverändert — sie fragt seit CAL-014b nach dem Anlass und nicht nach seiner Herkunft.
 
 **Änderungspfad.** Eigene Klasse mit eigener Frist: eine Zeile in `retention_classes`, eine Zuordnung in `retention_assignments`, die Regel aufteilen · Aufwand `klein`. Rechnung statt Kennzeichen als Haltegrund: eine Bedingung in derselben Regel austauschen, sobald ABR-003 die Rechnungstabelle bringt · Aufwand `klein` — dafür ist die Wiedervorlage gesetzt.
 
@@ -744,3 +744,15 @@ Technik · offen · 2026-09-15 · — · — · Wiedervorlage: mit OPS-002 (Betr
 **Anker.** `.github/workflows/ci.yml`: der Schritt „Dependency Audit" mit dem Kommentar `ANN-054` über `--audit-level=high`.
 
 **Änderungspfad.** Schwelle senken (`moderate`) oder anheben: ein Wort in `ci.yml` · Aufwand `klein`. Wird zusätzlich eine Ausnahmeliste nötig, kommt sie als `pnpm.auditConfig.ignoreCves` in `package.json` dazu, mit je einer Begründung · Aufwand `klein`.
+
+### ANN-055 — Protokoll und Ausfallgebühr des Nichtantreffens gelten am Hausbesuch
+
+Praxisprozess · offen · 2026-09-16 · — · — · Wiedervorlage: Jannes, nach der ersten Woche mit Praxisterminen im Kalender — ob ein Nichtantreffen in der Praxis eine eigene Regel bekommt; ABR-003, sobald die Rechnung entscheidet
+
+**Annahme.** Die drei Szenarien aus E14 gelten am **Hausbesuchstermin**: Dort verlangt `record_no_show` das bestätigte Protokoll und setzt daraufhin den Gebührenanlass, und dort nimmt `complete_treatment` den Pflichtvermerk „Tür geöffnet, keine Behandlung" an. An einem Praxis- oder Videotermin bleibt das Nichtantreffen der Vermerk ohne Gebühr aus CAL-014c; ein bestätigtes Protokoll und ein Pflichtvermerk werden dort abgewiesen.
+
+**Begründung.** E14 und `PROJECT_PRINCIPLES.md` 0.10 §8 regeln ausdrücklich den Hausbesuch — die Gebühr hängt an der Anfahrt, und die drei Protokollschritte („15 Minuten gewartet, geklingelt, angerufen") beschreiben eine Haustür. An der Praxistür gibt es nichts zu klingeln; eine Bestätigung, die niemand wahrheitsgemäß geben kann, wäre die Grundlage einer Forderung gegen eine Patientin. Für das Nichtantreffen in der Praxis gibt es keine Festlegung, und eine zu Unrecht vorgemerkte Forderung ist teurer zurückzunehmen als eine nachzutragende (§16). Unsicher: ob Jannes dieselbe Regel auch für Praxistermine will — dann ist das eine Festlegung, keine Annahme.
+
+**Anker.** Die Artprüfung in `public.record_no_show` und in `public.complete_treatment` in `supabase/migrations/20260916100000_home_visit_scenarios.sql`; `istHausbesuch` in `src/features/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/home-visit-scenarios.test.ts`.
+
+**Änderungspfad.** Regel auf alle Behandlungstermine ausdehnen: die Artprüfung in beiden Funktionen fällt weg, die Protokolltexte werden neutral formuliert, der geführte Ablauf gilt für jeden Termin · Aufwand `klein`. Eigene Regel je Terminart (etwa Gebühr ohne Protokoll in der Praxis): eine Verzweigung mehr an derselben Stelle · Aufwand `klein`.

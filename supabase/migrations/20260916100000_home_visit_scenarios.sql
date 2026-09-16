@@ -35,7 +35,7 @@
 -- WIE VIEL steht im Leistungskatalog (ABR-001), OB eine Rechnung entsteht,
 -- entscheidet ABR-003.
 --
--- ANN-053: Protokoll, Ausfallgebuehr und Pflichtvermerk gelten am
+-- ANN-055: Protokoll, Ausfallgebuehr und Pflichtvermerk gelten am
 -- HAUSBESUCHSTERMIN. E14 regelt den Hausbesuch; fuer das Nichtantreffen in der
 -- Praxis oder im Videotermin gibt es keine Festlegung, und eine zu Unrecht
 -- vorgemerkte Forderung ist teurer zurueckzunehmen als eine nachzutragende
@@ -51,7 +51,7 @@ alter table public.appointments
   add column no_show_protocol_confirmed boolean;
 
 comment on column public.appointments.no_show_protocol_confirmed is
-  'Bestaetigung des Protokolls aus ADR-018 Fassung 3 Punkt 9 (15 Minuten gewartet, geklingelt, angerufen). true nur am Hausbesuch und nur mit Gebuehrenanlass; false, wo das Protokoll nicht gilt (Praxis, Video - ANN-053); null an Zeilen aus der Zeit vor CAL-018. Wird beim Wiederoeffnen geleert.';
+  'Bestaetigung des Protokolls aus ADR-018 Fassung 3 Punkt 9 (15 Minuten gewartet, geklingelt, angerufen). true nur am Hausbesuch und nur mit Gebuehrenanlass; false, wo das Protokoll nicht gilt (Praxis, Video - ANN-055); null an Zeilen aus der Zeit vor CAL-018. Wird beim Wiederoeffnen geleert.';
 
 -- Die Bestaetigung gehoert zum Vermerk und zu nichts sonst.
 alter table public.appointments
@@ -177,7 +177,7 @@ begin
     raise exception 'documented appointment cannot be recorded as no-show' using errcode = '22023';
   end if;
 
-  -- Das Protokoll ist ein Hausbesuchsprotokoll (ANN-053). An der Praxistuer
+  -- Das Protokoll ist ein Hausbesuchsprotokoll (ANN-055). An der Praxistuer
   -- gibt es nichts zu klingeln, und eine Bestaetigung, die niemand geben
   -- kann, waere hier die Grundlage einer Forderung.
   if v_alt.appointment_type = 'home_visit' then
@@ -237,7 +237,7 @@ end;
 $$;
 
 comment on function public.record_no_show(uuid, timestamptz, boolean) is
-  'Vermerkt einen bestaetigten Behandlungstermin als nicht angetroffen. Am Hausbesuch nur mit bestaetigtem Protokoll (15 Minuten, Klingeln, Anruf) und setzt dann fee_basis = no_show serverseitig; an Praxis- und Videoterminen bleibt der Vermerk ohne Gebuehr (ANN-053). An einem Ereignis nicht moeglich. Protokolliert appointment.no_show (CAL-018, ADR-018 Fassung 3 Punkt 9).';
+  'Vermerkt einen bestaetigten Behandlungstermin als nicht angetroffen. Am Hausbesuch nur mit bestaetigtem Protokoll (15 Minuten, Klingeln, Anruf) und setzt dann fee_basis = no_show serverseitig; an Praxis- und Videoterminen bleibt der Vermerk ohne Gebuehr (ANN-055). An einem Ereignis nicht moeglich. Protokolliert appointment.no_show (CAL-018, ADR-018 Fassung 3 Punkt 9).';
 
 revoke all on function public.record_no_show(uuid, timestamptz, boolean) from public, anon;
 grant execute on function public.record_no_show(uuid, timestamptz, boolean) to authenticated;
@@ -353,7 +353,7 @@ comment on function public.reopen_appointment(uuid, timestamptz) is
 -- Finalisierung ist der Eintrag Bestandteil der Akte und nur noch als
 -- Korrektur mit Begruendung aenderbar (ADR-016).
 --
--- Der Vermerk steht nur am Hausbesuch (ANN-053). Szenario 1 ist der geoeffnete
+-- Der Vermerk steht nur am Hausbesuch (ANN-055). Szenario 1 ist der geoeffnete
 -- Tuerspalt; ob eine nicht erbrachte Behandlung in der Praxis ebenso verguetet
 -- wird, hat niemand festgelegt, und die Rechnungsgrundlage fuer Fall 1 haengt
 -- ohnehin an der Anfrage B4.
