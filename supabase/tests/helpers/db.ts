@@ -146,6 +146,37 @@ export async function asUserCommitted<T = Record<string, unknown>>(
   }
 }
 
+/**
+ * Wie asUserCommitted, aber so, wie die Storage-API anfragt: mit der Operation
+ * in `storage.operation`, transaktionslokal gesetzt (Storage-API v1.72.1,
+ * `internal/database/postgres/scope.js`). Die Loeschfreigabe aus FIX-015 gilt
+ * nur fuer die Entfernen-Operationen (ANN-052).
+ */
+export async function asStorageApi<T = Record<string, unknown>>(
+  userId: string,
+  operation: string,
+  sql: string,
+  params: unknown[] = [],
+): Promise<QueryResultRows<T>> {
+  const client = await connect();
+  try {
+    await client.query('begin');
+    await client.query("select set_config('role', 'authenticated', true)");
+    await client.query("select set_config('request.jwt.claims', $1, true)", [
+      JSON.stringify({ sub: userId, role: 'authenticated' }),
+    ]);
+    await client.query("select set_config('storage.operation', $1, true)", [operation]);
+    const result = await client.query(sql, params as never[]);
+    await client.query('commit');
+    return { rows: result.rows as T[] };
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    await client.end();
+  }
+}
+
 /** Wie asUser, aber in der Rolle `anon` (nicht angemeldet). */
 export async function asAnon<T = Record<string, unknown>>(
   sql: string,

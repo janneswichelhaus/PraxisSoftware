@@ -65,6 +65,7 @@ export const AUDIT_ACTIONS = [
   'patient_file.link_issued',
   'patient_file.deleted',
   'patient_file.type_corrected',
+  'storage_deletion.claimed',
   'storage_deletion.receipted',
   'text_snippet.created',
   'text_snippet.updated',
@@ -135,6 +136,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'patient_file.link_issued': 'Datei zum Öffnen freigegeben',
   'patient_file.deleted': 'Datei gelöscht',
   'patient_file.type_corrected': 'Dokumentart einer Datei korrigiert',
+  'storage_deletion.claimed': 'Löschung in der Ablage freigegeben',
   'storage_deletion.receipted': 'Löschung in der Ablage quittiert',
 };
 

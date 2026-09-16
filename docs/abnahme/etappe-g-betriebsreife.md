@@ -369,7 +369,9 @@ zum Ausprobieren (`PROJECT_PRINCIPLES.md` §3.1).
    60 Sekunden** — die Adresse aus dem neuen Fenster kopieren, eine Minute
    warten und sie erneut aufrufen: Sie funktioniert nicht mehr. Das ist die
    Zusage aus ADR-017 Punkt 15 und Punkt 17, und sie ist der Grund, warum es
-   keinen Teilen-Link gibt.
+   keinen Teilen-Link gibt. _Auch nach FIX-015:_ Innerhalb der Minute lässt sich
+   dieselbe Adresse weiter aufrufen; nur ein **neuer** Verweis braucht ein
+   erneutes „Öffnen".
 4. **Die Akte kennt die Datei auch.** Bereich **Dateien** öffnen: Der Scan
    steht dort ebenfalls, mit dem Vermerk „Klinisch".
 5. **Eine Datei an der Person.** Im Bereich Dateien das Foto wählen, Art
@@ -452,8 +454,8 @@ Akte von Max Mustermann.
 8. **Die Verwaltung korrigiert nicht.** Bei Olivia gibt es an keiner Datei
    „Art korrigieren"; an einer organisatorischen Datei gibt es „Löschen".
 9. **Das Protokoll.** Als Jannes Organisatorisches → Sicherheit: „Datei gelöscht",
-   „Dokumentart einer Datei korrigiert" und „Löschung in der Ablage quittiert"
-   stehen dort. Auch hier **kein Dateiname und kein Ablageort**.
+   „Dokumentart einer Datei korrigiert", „Löschung in der Ablage freigegeben"
+   (seit FIX-015) und „Löschung in der Ablage quittiert" stehen dort. Auch hier **kein Dateiname und kein Ablageort**.
 10. **Am Handy.** Schritt 1 bis 4 bei ~375 px wiederholen: Die Rückfrage passt
     ins Bild, die Schaltflächen sind mit dem Daumen erreichbar, kein
     waagerechtes Scrollen.
@@ -513,3 +515,44 @@ nicht. Er wird gerechnet, wenn diese Seite geöffnet wird — die Anwendung
 verschickt nichts (CAL-013). Er gehört deshalb in den monatlichen Bericht
 (ADR-010 Punkt 6) und auf die Liste nach jeder Wiederherstellung
 (ADR-017 Punkt 26).
+
+---
+
+## FIX-015 — Eine Datei verlässt die Ablage nur über den protokollierten Weg
+
+**Was geprüft wird:** dass „Öffnen" und „ausführen und quittieren" weiter
+funktionieren und dass jeder Zugriff auf eine Datei eine eigene Zeile im
+Protokoll hat (BEF-004, ANN-052). Der eigentliche Umweg — die Storage-API
+direkt, mit bekanntem Ablageort — lässt sich nicht klicken; ihn prüfen die
+automatischen Tests unten.
+
+**Vorbereitung:** DAT-001 Schritt 1 und 2; in der Akte von Max Mustermann
+liegt mindestens eine Datei.
+
+1. **Öffnen wie bisher.** Als `jannes.test@praxis.invalid` in der Akte →
+   Dateien „Öffnen" tippen: Die Datei erscheint im neuen Fenster. Das Fenster
+   innerhalb der Minute neu laden: Die Datei erscheint wieder — der Verweis
+   gilt seine 60 Sekunden.
+2. **Zweimal öffnen, zweimal protokolliert.** In der Akte ein zweites Mal
+   „Öffnen" tippen. Organisatorisches → Sicherheit: Dort stehen **zwei** neue
+   Einträge „Datei zum Öffnen freigegeben".
+3. **Die Verwaltung genauso.** Als `olivia.office@praxis.invalid` eine
+   klinische Datei öffnen: Sie erscheint. Wieder als Jannes steht danach ein
+   weiterer Eintrag „Datei zum Öffnen freigegeben" im Protokoll.
+4. **Löschen bleibt ein Schritt.** Als Jannes eine Datei löschen und unter
+   Organisatorisches → Aufbewahrung „ausführen und quittieren" tippen: Es
+   endet wie in DAT-002 Schritt 4. Im Protokoll steht vor „Löschung in der
+   Ablage quittiert" jetzt „Löschung in der Ablage freigegeben".
+
+**Was die Tests belegen:** Ohne „Öffnen" gibt die Storage-API weder einen
+Verweis noch die Datei noch einen Eintrag in der Auflistung heraus — auch
+nicht bei bekanntem Ablageort und nicht nach einem früheren Öffnen; eine Kopie
+ohne „Öffnen" wird abgewiesen; `owner` entfernt das Objekt eines Löschauftrags
+erst nach dessen protokollierter Ausführung, und diese Freigabe öffnet kein
+Lesen. Bei laufendem lokalem Stack und
+den Umgebungsvariablen aus [`../DEVELOPMENT.md`](../DEVELOPMENT.md) Schritt 6:
+`pnpm test:e2e --project authenticated tests/e2e/authenticated/patient-file-access.spec.ts`.
+
+**Was hier nicht geprüft werden kann:** ob eine spätere Version der
+Storage-API anders nach der Berechtigung fragt. Deshalb steht dieser Test in
+der Wiedervorlage von ANN-052 bei jedem Upgrade.

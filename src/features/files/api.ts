@@ -189,9 +189,11 @@ const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
  * Erzeugt genau einen kurzlebigen Verweis auf genau eine Datei.
  *
  * Zwei Schritte, und die Reihenfolge ist der Punkt: Erst holt
- * `issue_patient_file_link` den Objektschlüssel und protokolliert die
- * Ausstellung (Punkt 20), dann unterschreibt die Storage-API. Andersherum gäbe
- * es einen Zugriff ohne Auditeintrag.
+ * `issue_patient_file_link` den Objektschlüssel, protokolliert die Ausstellung
+ * (Punkt 20) und legt eine einmalige Freigabe an; dann unterschreibt die
+ * Storage-API und verbraucht diese Freigabe (FIX-015, ANN-052). Ohne den ersten
+ * Schritt verweigert die Storage-API das Signieren — auch mit bekanntem
+ * Schlüssel und auch nach einem früheren Öffnen.
  *
  * Was der Eintrag belegt und was nicht, steht in Punkt 21: Wer den Verweis
  * erzeugt hat, **hatte** den Zugriff. Ob die Bytes geflossen sind, sieht diese
@@ -290,7 +292,10 @@ const auftragsschluesselSchema = z.object({
 /**
  * Führt einen Löschauftrag aus: Objekt entfernen, dann quittieren.
  *
- * Die Quittung wird **verdient**, nicht behauptet — `receipt_storage_deletion_order`
+ * `claim_storage_deletion_order` protokolliert die Ausführung
+ * (`storage_deletion.claimed`) und gibt genau dieses eine Objekt für ein
+ * einziges Entfernen frei, nicht zum Lesen (FIX-015, ANN-052); ohne diesen
+ * Schritt lässt die Storage-API das Objekt nicht entfernen. Die Quittung wird **verdient**, nicht behauptet — `receipt_storage_deletion_order`
  * prüft selbst, dass das Objekt weg ist, und verweigert sonst. Diese Funktion
  * kann deshalb nicht so scheitern, dass am Ende eine Quittung ohne Löschung
  * steht; sie kann nur scheitern, und dann bleibt der Auftrag offen.

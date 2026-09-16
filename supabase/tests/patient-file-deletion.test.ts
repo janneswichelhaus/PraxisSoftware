@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, abgefangen, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  abgefangen,
+  asPostgres,
+  asStorageApi,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Loeschen, Dokumentart korrigieren, Loeschauftraege quittieren
@@ -305,16 +313,18 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       const { orderId, objectKey } = await offenerAuftrag();
 
       // Der Weg, den die Oberflaeche geht: Schluessel holen, Objekt entfernen,
-      // quittieren.
-      const geholt = await asUser<{ object_key: string }>(
+      // quittieren. Das Holen legt die Loeschfreigabe an und muss deshalb
+      // bestaetigt sein (FIX-015).
+      const geholt = await asUserCommitted<{ object_key: string }>(
         users.ownerTherapist,
         'select object_key from public.claim_storage_deletion_order($1::uuid)',
         [orderId],
       );
       expect(geholt.rows[0]!.object_key).toBe(objectKey);
 
-      await asUserCommitted(
+      await asStorageApi(
         users.ownerTherapist,
+        'storage.object.delete_many',
         "delete from storage.objects where bucket_id = 'patientenakte' and name = $1",
         [objectKey],
       );
@@ -372,11 +382,16 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
   describe('DELETE-Policy auf storage.objects', () => {
     const LOESCHEN =
       "delete from storage.objects where bucket_id = 'patientenakte' and name = $1 returning id";
+    // So meldet die Storage-API das Entfernen (FIX-015: nur dafuer gilt die
+    // Loeschfreigabe).
+    const ENTFERNEN = 'storage.object.delete_many';
 
     it('laesst kein Objekt loeschen, dessen Zeile noch steht', async () => {
       const datei = await abgelegteDatei(users.therapist);
 
-      const { rows } = await asUser(users.ownerTherapist, LOESCHEN, [datei.object_key]);
+      const { rows } = await asStorageApi(users.ownerTherapist, ENTFERNEN, LOESCHEN, [
+        datei.object_key,
+      ]);
       expect(rows).toEqual([]);
 
       const objekte = await asPostgres(
@@ -391,12 +406,28 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         datei.file_id,
       ]);
 
-      const therapeutin = await asUser(users.therapist, LOESCHEN, [datei.object_key]);
-      expect(therapeutin.rows).toEqual([]);
-
-      const inhaberin = await asUser<{ id: string }>(users.ownerTherapist, LOESCHEN, [
+      const therapeutin = await asStorageApi(users.therapist, ENTFERNEN, LOESCHEN, [
         datei.object_key,
       ]);
+      expect(therapeutin.rows).toEqual([]);
+
+      // FIX-015: Auch der Owner loescht nur gegen eine Loeschfreigabe.
+      const { rows: auftraege } = await asPostgres<{ id: string }>(
+        'select id from public.storage_deletion_orders where object_key = $1',
+        [datei.object_key],
+      );
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select object_key from public.claim_storage_deletion_order($1::uuid)',
+        [auftraege[0]!.id],
+      );
+
+      const inhaberin = await asStorageApi<{ id: string }>(
+        users.ownerTherapist,
+        ENTFERNEN,
+        LOESCHEN,
+        [datei.object_key],
+      );
       expect(inhaberin.rows).toHaveLength(1);
     });
   });
