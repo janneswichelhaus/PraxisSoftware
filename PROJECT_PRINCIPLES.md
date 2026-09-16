@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.10.2** |
-| **Änderungsdatum** | **2026-09-15** |
-| Vorversion | 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.11** |
+| **Änderungsdatum** | **2026-09-16** |
+| Vorversion | 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-019, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -785,11 +785,19 @@ Diese Festlegungen hat der Projektinhaber am 2026-09-08 getroffen. Sie gelten
 für Termine, die die Anwendung **anbietet** — für jedes neu angelegte und jedes
 neu gesetzte Zeitfenster.
 
-Ein angebotener Behandlungstermin MUSS ein Zeitfenster von **60 Minuten**
-haben; **45 Minuten sind ebenfalls zulässig** (ergänzt am 2026-09-12). Die
-Dokumentation der Behandlung ist darin enthalten. Andere Längen sind für
-Behandlungstermine NICHT zulässig, und die Wahl zwischen den beiden MUSS
-serverseitig geprüft werden. **60 Minuten bleiben die Vorbelegung.**
+Die Länge eines Behandlungstermins ist **frei wählbar** (geändert am
+2026-09-16). Sie MUSS mindestens einen Rasterschritt betragen, und das Ende
+MUSS nach dem Beginn liegen; eine weitere Beschränkung der Länge gibt es
+nicht. Die Dokumentation der Behandlung ist im Zeitfenster enthalten.
+**60 Minuten bleiben die Vorbelegung**, 45 Minuten bleiben die zweite
+Regellänge.
+
+Ein Behandlungstermin, dessen Länge **weder 45 noch 60 Minuten** beträgt, MUSS
+in der Terminanzeige als abweichend **gekennzeichnet** werden — im Kalender
+und in jeder Terminliste, und in einer Form, die auch ohne Farbe und ohne
+Bildschirm erfassbar ist. Das Kennzeichen meldet, es verbietet nicht. Es gilt
+**nur für Behandlungstermine**; Termine ohne Patient:in tragen es nie. Die
+Kennzeichnung ist, wie jede MUSS-Anforderung, test- oder auditierbar (§0).
 
 Termine, die **keine Behandlung** sind — Besprechungen, Teamtermine und andere
 Ereignisse des Praxisbetriebs —, fallen nicht unter diese Regel. Ihr Beginn und
@@ -818,9 +826,11 @@ verkürzen würde.
 > Fahrzeit. Ende plus Fahrzeit ist 10:17. Der früheste Folgetermin beginnt um
 > **10:20** — nicht um 10:15.
 
-Diese Regeln sind **Angebotsregeln**, keine Voreinstellung der Oberfläche. Die
-Länge des Zeitfensters MUSS serverseitig durchgesetzt und geprüft werden; eine
-Vorbelegung im Formular allein erfüllt sie nicht. Die Rundungsregel MUSS
+Diese Regeln sind **Angebotsregeln**, keine Voreinstellung der Oberfläche.
+Raster, Fenstergrenzen und Belegung MÜSSEN serverseitig durchgesetzt und
+geprüft werden; eine Prüfung im Formular allein erfüllt sie nicht. Für die
+**Länge** gilt seit 0.11 keine serverseitige Schranke mehr — an ihre Stelle
+tritt die Kennzeichnungspflicht oben. Die Rundungsregel MUSS
 serverseitig gelten, sobald eine Fahrzeit vorliegt — woher sie kommt und was
 bei Unterschreitung geschieht, ist noch nicht entschieden (siehe unten). Wie
 jede MUSS-Anforderung MÜSSEN beide test- oder auditierbar sein (§0).
@@ -1315,6 +1325,33 @@ technischer Teil steht in ADR-018 Fassung 3 und ADR-004 Fassung 2.
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.11
+
+Eine Festlegung des Projektinhabers vom 2026-09-16 zur Terminlänge. Sie ändert
+eine MUSS-Anforderung und braucht deshalb eine eigene Version (§21). Anlass
+ist der Vergleich mit der heute benutzten Praxissoftware
+(`docs/product/ideen/referenz-iprax.md`); gebaut wird sie in **CAL-020**
+(`docs/development/CAL-EPIC-004.md`).
+
+- **§8.1 geändert:** Die Länge eines Behandlungstermins ist **frei wählbar**,
+  mindestens ein Rasterschritt, Ende nach Beginn. Was vorher galt („60 oder
+  45, andere Längen nicht zulässig, serverseitig geprüft"), steht in der
+  Vorversion. **60 bleibt die Vorbelegung**, 45 die zweite Regellänge.
+- **§8.1 ergänzt:** Weicht die Länge eines Behandlungstermins von 45 oder 60
+  Minuten ab, MUSS die Anzeige das kennzeichnen — im Kalender und in jeder
+  Terminliste, ohne Farbe allein, und nur für Termine mit Patient:in. Damit
+  wandert die Durchsetzung von der Schranke zur Sichtbarkeit: Die Praxis soll
+  abweichen dürfen, aber nicht versehentlich.
+- **Folgen:** **E12 Punkt 1** ist neu beantwortet (frei statt zwei Längen) und
+  **Punkt 2** (Länge je Praxis einstellbar) damit gegenstandslos. **ANN-037**
+  verliert ihren Gegenstand, sobald CAL-020 gebaut ist — bis dahin gilt sie
+  unverändert. Die serverseitigen Tests aus CAL-010a und CAL-015b werden
+  umgeschrieben, nicht gelöscht: Sie prüfen danach die Annahme **und** die
+  Kennzeichnung.
+- **Unverändert:** die Fahrzeitregel samt Aufrundung, das Praxisraster, der
+  Ausschluss eines eigenen Dokumentationsblocks, die Abgrenzung der Termine
+  ohne Behandlung, §8 im Übrigen, §13, §19 und der Rollenschnitt in §4.
 
 ### Änderungsvermerk 0.10.2
 
