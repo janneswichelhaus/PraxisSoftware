@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-16
+Stand: 2026-09-17
 
 ## Zweck
 
@@ -348,3 +348,62 @@ bei einer Patient:in.
 **Richtung.** CAL-023: eine Rückfrage mit alter und neuer Zeit, die den
 Arbeitszeit-Hinweis mitnimmt statt ihn als zweiten Dialog zu zeigen. Die
 Rückgängig-Leiste bleibt (Festlegung von Jannes).
+
+### BEF-009 — `staff-workflows` deaktiviert Anna Beispiel und zieht sie den parallel laufenden Dateien weg
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-17                                                                                    |
+| Bereich | Testbestand, `tests/e2e/authenticated/`                                                        |
+| Quelle  | Jannes, angemeldeter E2E-Lauf zu CAL-018 (der erste, den die Cloud-Umgebung nicht leisten kann) |
+| Status  | offen                                                                                          |
+| Berührt | `staff-workflows.spec.ts` (`annaReaktivieren`), `helpers.ts` (`terminUeberOberflaeche`), jede Datei, die ein Terminformular ausfüllt |
+
+**Beobachtung.** Im parallelen Lauf scheiterten `scheduling-workflows` und
+`treatment-note-finalisation` beide mit „did not find some options" beim Feld
+**Behandelnde Person**. Im seriellen Lauf (`--workers=1`) waren beide grün.
+Ursache: `staff-workflows.spec.ts` deaktiviert Anna Beispiel als Teil seines
+Ablaufs und reaktiviert sie erst danach; wer in diesem Fenster ein
+Terminformular öffnet, findet sie nicht in der Auswahl.
+
+**Warum das zählt.** Der Fehlschlag sieht aus wie ein Fehler in der geprüften
+Funktion und ist keiner — er kostet bei jeder Analyse Zeit und lenkt vom
+echten Befund ab. Genau das ist heute passiert: Er hat die Suche nach BEF-010
+zweimal in die falsche Richtung geschickt. In der CI fällt es kaum auf, weil
+`retries: 1` den zweiten Versuch grün sieht; lokal gilt `retries: 0`.
+
+**Richtung.** Die Datei arbeitet mit einer **eigenen** Mitarbeiterin statt mit
+der geseedeten Anna — dieselbe Trennung, die die Tagesfenster für Termine
+schon leisten. Zweite Möglichkeit: das Deaktivieren in eine eigene, seriell
+laufende Projektgruppe legen. Der erste Weg ist billiger und robuster.
+
+### BEF-010 — Ein gemeinsames Schema über zwei Lesepfade fällt keinem lokalen Gate auf
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-17                                                                                    |
+| Bereich | Behandlungsdokumentation: Termin (`/termine/:id`) und Akte (`…/verlauf`)                       |
+| Quelle  | Jannes, angemeldeter E2E-Lauf zu CAL-018; behoben in CAL-018d                                  |
+| Status  | erledigt für den Einzelfall (CAL-018d), offen als Muster                                       |
+| Berührt | `src/features/documentation/api.ts` (`treatmentNoteSchema`), `get_treatment_note`, `list_patient_treatment_notes` |
+
+**Beobachtung.** CAL-018 machte `visit_without_treatment` zum Pflichtfeld des
+Eintragsschemas. Dieses Schema liegt unter **zwei** Serverfunktionen;
+nachgezogen war nur eine. Die Akte bekam Einträge ohne das Feld, die Prüfung
+im Browser wies die ganze Seite ab, und der Behandlungsverlauf blieb leer —
+in jeder Akte mit Dokumentation, nicht nur im Test.
+
+**Warum das zählt.** Sieben lokale Gates waren grün. Die Komponententests
+reichen ihre Einträge als **getippte Vorgabe** herein, und genau dort wurde
+das Feld ergänzt: Der Typ stimmte, die Wirklichkeit nicht. Sichtbar wurde es
+erst, wo echte Daten durch den echten Lesepfad laufen — und dieser Lauf ist in
+der Cloud-Umgebung nicht möglich. Das Muster wiederholt sich bei jedem
+weiteren Feld an jedem Schema, das mehr als eine Funktion bedient.
+
+**Richtung.** Für den Einzelfall genügt der Datenbanktest aus CAL-018d, der
+beide Lesepfade in einem Fall zusammenhält. Als Muster fehlt eine Prüfung, die
+je Schema alle bedienenden Funktionen kennt — denkbar als Datenbanktest, der
+die Schlüssel der Rückgabe gegen eine Liste hält, oder als Regel, dass ein
+Schema genau einer Funktion gehört und die zweite Sicht ihr eigenes bekommt.
+Entschieden ist das nicht; es gehört in den Loop, der das nächste Feld an ein
+geteiltes Schema hängt.

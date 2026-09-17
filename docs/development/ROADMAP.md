@@ -417,10 +417,51 @@ nachbauen** (E-18) — Vorlage für Umfang und Ablauf, nicht für Datenmodell,
 Berechtigungen, Rechtsrahmen oder gestaltete Inhalte. Die Inhalte dazu stehen
 seit dem 2026-09-01 im Ideenspeicher (Bereichsdateien 00 bis 09); neu ist,
 dass Kund:innen **ohne vorherige Heilbehandlung** dazukommen
-(`IDEA-LZK-008`). Bis Stufe 3 läuft das Personal Training außerhalb der
+(`IDEA-LZK-008`). ~~Bis Stufe 3 läuft das Personal Training außerhalb der
 Plattform: Kund:innen werden nicht als Patient:innen angelegt (andere
 Datenklasse, andere Frist, kein Behandlungsvertrag), Rechnungen dafür
-entstehen außerhalb; wie, klärt B4.
+entstehen außerhalb; wie, klärt B4.~~
+
+> **Überholt am 2026-09-17 (Festlegung von Jannes, E18).** Die Software wird
+> vom Start weg für **drei** Zusammenhänge benutzt: Hausbesuche in der
+> Physiotherapie, **Personal Training** und **Online Coaching**. Räume gibt es
+> aktuell und mindestens im ersten Jahr nach dem Start keine. Damit ist der
+> Satz oben hinfällig — Personal Training läuft **nicht** bis Stufe 3
+> außerhalb der Plattform.
+>
+> **Die Antworten liegen seit dem 2026-09-17 vor** und stehen als
+> Loop-Vorgabe in
+> [`E18-LEISTUNGSBEREICHE.md`](E18-LEISTUNGSBEREICHE.md): Getrennt wird nach
+> **Rechtsverhältnis, nicht nach Person** (`persons` ·
+> `care_relationships` · `training_relationships`), der Termin bekommt einen
+> `context`, die Steuerkennzeichen hängen am Rechnungsposten, und drei
+> Feature-Verbote halten die MDR-Grenze. **Gebaut ist davon nichts.** Vor dem
+> ersten Loop stehen vier ADRs und eine neue Fassung der Prinzipien; die
+> Reihenfolge steht in der Vorgabe. Die Fragen, die dorthin geführt haben:
+>
+> 1. **Wer sind PT- und Coaching-Kund:innen im Datenmodell?** Ein eigener
+>    Datensatz neben `patients` oder dieselbe Person mit einem zweiten
+>    Verhältnis? Davon hängen Datenklasse, Aufbewahrungsfrist (ADR-008),
+>    Rechtsgrundlage und der gesamte Rollenschnitt ab (ADR-004).
+> 2. **Was ist ein Coaching-Termin?** Die Terminart `video` existiert; ein
+>    Termin ohne Patient:in und ohne Verordnung existiert ebenfalls
+>    (CAL-015b). Ob das reicht oder eine eigene Behandlungsgrundlage nötig ist
+>    (ADR-020), ist offen.
+> 3. **Abrechnung:** B4 und B9 rücken damit nach vorn — Umsatzsteuer,
+>    Leistungsarten und Rechnungsnummernkreis für Leistungen **ohne**
+>    Heilbehandlung im selben Unternehmen.
+> 4. **Rechtsrahmen:** §203 StGB und die MDR-Abgrenzung (ADR-006) gelten für
+>    Training anders als für Heilbehandlung. Was für Patient:innen gilt, gilt
+>    nicht automatisch für Kund:innen — und umgekehrt.
+> 5. **Rang 1:** `PROJECT_PRINCIPLES.md` §1 nennt als Gegenstand bisher nur die
+>    Physiotherapiepraxis, §14 führt „Online Coaching" unter den Erweiterungen,
+>    die **nicht vorzeitig** gebaut werden dürfen. Beide Stellen brauchen einen
+>    Nachzug nach §21 — mit eigener Version, bewusst formuliert, nicht als
+>    Nebenwirkung eines Feature-Loops.
+>
+> Die Reihenfolge der Etappe 1 bleibt unverändert, bis die Vorgabe in ADRs
+> überführt ist. B4, B9 und B2 sind die externen Bestätigungen, die dafür
+> gebraucht werden.
 
 Was das für die Planung heißt:
 
@@ -786,6 +827,7 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5.7 | 2026-09-17 | **Festlegung von Jannes (E18): Personal Training und Online Coaching gehören von Anfang an in die Anwendung.** Die Software wird vom Start weg für drei Zusammenhänge benutzt — Hausbesuche in der Physiotherapie, Personal Training, Online Coaching; Räume gibt es aktuell und mindestens im ersten Jahr nach dem Start keine (das deckt sich mit `PRODUCT_VISION.md` §1.1 seit dem 31.08.). Damit ist der Satz in Stufe 3 überholt, PT laufe bis dahin außerhalb der Plattform. **Gebaut ist davon nichts, geplant auch nicht:** Wer PT- und Coaching-Kund:innen im Datenmodell sind, was ein Coaching-Termin ist, wie abgerechnet wird, was §203 und die MDR-Abgrenzung dafür heißen und wie `PROJECT_PRINCIPLES.md` §1 und §14 nachgezogen werden, steht als Fragenliste bei Stufe 3. Das ist ein eigener Planungsschritt vor dem nächsten Feature-Loop, keine Nebenwirkung eines solchen. Die Reihenfolge der Etappe 1 bleibt bis dahin unverändert. **Noch am selben Tag beantwortet:** Die Festlegungen stehen als Loop-Vorgabe in `E18-LEISTUNGSBEREICHE.md` — Trennung nach Rechtsverhältnis statt nach Person, Terminkontext, Steuerkennzeichen am Posten, drei Feature-Verbote zur MDR-Grenze, Nachzug an Paragraph 1 und 4. Daraus werden vier ADRs und eine neue Fassung der Prinzipien, in dieser Reihenfolge und je in einer eigenen Sitzung; Code kommt danach. Zwei Bezuege der Vorgabe waren auf diesen Stand richtigzustellen: Rollen stehen in Paragraph 4, nicht 14, und `persons` ist seit der Gruendungsmigration bereits getrennt - die Migration ist kleiner als angenommen. |
 | 5.6 | 2026-09-16 | **CAL-018 fertig** (zwei Stories, Pfad A, auf Freigabe von Jannes; eigener Branch, ungemergt, weil die Actions-Minuten aufgebraucht sind). E14 ist gebaut: Am **Hausbesuch** verlangt `record_no_show` die Bestätigung des Protokolls — 15 Minuten gewartet, geklingelt, angerufen — und setzt daraufhin serverseitig `fee_basis = 'no_show'`; ohne Bestätigung bleibt der Termin bestätigt. Die Bestätigung steht als `no_show_protocol_confirmed` am Termin, weil das Auditlog nur drei Jahre trägt (ANN-029), ein Vorgang mit Gebührenanlass aber länger (ANN-035) — und eine Constraint hält fest, dass zu einem bestätigten Protokoll immer der Anlass gehört. Szenario 1 bekommt seinen Pflichtvermerk als Merkmal am Eintrag (`treatment_notes.visit_without_treatment`), gesetzt im Abschluss, ausdrücklich kein Freitext als einzige Quelle. Am Termin führt der Abschnitt „Was ist passiert?" erklärend durch die vier Ausgänge, jede Wahl mit ihrer Folge. **ANN-055 neu**: Protokoll, Gebühr und Pflichtvermerk gelten am Hausbesuch — für Praxis- und Videotermine trifft E14 keine Aussage, dort bleibt der Vermerk ohne Gebühr; Wiedervorlage bei Jannes. Nachgezogen: ANN-035, ADR-018 Punkt 8 Nr. 5 und Punkt 9, `PROJECT_PRINCIPLES.md` 0.11.2, `OPEN_DECISIONS.md` E14, ARBEITSBEREICHE, Abnahmeschritte. Kein Betrag: ABR-001 und ABR-003 sind nicht gebaut. **Nachtrag vom 2026-09-17:** Der angemeldete E2E-Lauf bei Jannes (lokal, weil die CI stillsteht) fand einen Fehler, den keines der lokalen Gates hatte: Das Eintragsschema der Oberfläche liegt unter **zwei** Lesepfaden, nachgezogen war nur `get_treatment_note` — die Akte bekam Einträge ohne `visit_without_treatment`, und der Behandlungsverlauf blieb leer. Behoben in `20260917100000_akte_pflichtvermerk.sql`; der neue Datenbanktest prüft beide Lesepfade in einem Fall, und die Akte zeigt den Vermerk jetzt auch an. **Reihenfolge unverändert: nächster Loop CAL-EPIC-004a.** |
 | 5.5 | 2026-09-15 | **FIX-015 fertig** (Befund-Loop zu **BEF-004**, Pfad A, auf Freigabe von Jannes; PR #42, gestapelt auf PR #41, beide ungemergt). Die Storage-API gab eine Datei jeder lesenden Rolle ohne `patient_file.link_issued` heraus, weil der Objektschlüssel ableitbar ist. Jetzt verlangt die RLS auf `storage.objects` eine einmalige, 30 Sekunden gültige Freigabe der anfragenden Person, die nur `issue_patient_file_link` oder — für den Löschauftrag, neu protokolliert als `storage_deletion.claimed` — `claim_storage_deletion_order` anlegt; Signieren, Laden, Auflisten, Kopieren und Entfernen verbrauchen sie. Zuerst rot gegen die laufende Storage-API und in `pnpm test:db` belegt, dann behoben; ein ausgestellter Verweis gilt unverändert 60 Sekunden. ANN-052 Fassung 2, Datenschutzprüfung B2 weiter offen. Redaktionell nachgezogen: die E15-Umsetzungsvermerke in `PROJECT_PRINCIPLES.md` (0.10.2), ADR-004, ADR-016, ADR-017 Punkt 12 und `OPEN_DECISIONS.md` E15. Zweitreview in frischem Kontext: kein Lesezugriff ohne Freigabe; eingearbeitet sind die Beschränkung der Löschfreigabe auf das Entfernen (`storage.operation`), eine Mandanten-Gegenprobe, eine strengere Prüfung der Auflistung und genauere Grenzen in ANN-052. BEF-005 bleibt offen. **Reihenfolge unverändert: nächster Loop CAL-018**, nach dem Merge von #41 und #42. |
 | 5.4 | 2026-09-15 | **ROL-EPIC-001 fertig** (drei Stories, Pfad A). E15 ist gebaut: `office` liest Dokumentation mit Verlauf, Verordnung mit Diagnose und klinische Dateien samt Scan, jeder Zugriff protokolliert; Schreiben, Löschen und Korrektur der Dokumentart bleiben bei den behandelnden Rollen. Zweitreview in frischem Kontext ohne kritischen Befund; der mittlere Befund **BEF-004** (Dateizugriff am Auditeintrag vorbei über ableitbare Objektschlüssel, seit DAT-001) wird ein eigener Loop. |
