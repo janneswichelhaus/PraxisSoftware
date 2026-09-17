@@ -246,5 +246,13 @@ die Obergrenzen, die Anker des Registers und die relativen Verweise. Ein
 Eintrag ohne durchlaufenen Schritt I wird nicht abgehakt. Merge und Abnahme:
 Roadmap, „Definition of Done".
 
+**Außerdem `pnpm status:check` laufen lassen** (`git fetch origin main` davor).
+Es meldet jeden Pull Request, den `docs/STATUS.md` noch als offen führt, obwohl
+er in `main` liegt — der häufigste Weg, auf dem der Livestand veraltet, weil
+der Merge außerhalb der Sitzung passiert. Ist die Meldung rot, wird sie **in
+diesem Schritt** behoben, nicht gemeldet: Der Eintrag verschwindet aus
+STATUS.md, Erledigtes steht in der Fortschrittstabelle. Rot bleiben darf nur
+ein PR, der gerade in dieser Sitzung entsteht.
+
 **Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein
 neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.

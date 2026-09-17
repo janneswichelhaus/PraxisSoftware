@@ -1,0 +1,65 @@
+# =============================================================================
+# Meldet, wenn docs/STATUS.md einen gemergten Pull Request weiter als offen
+# fuehrt.
+#
+# Warum ein eigener Workflow und nicht ein Schritt in ci.yml:
+#
+# Der Verstoss entsteht durch den Merge selbst. Solange ein PR offen ist, darf
+# STATUS.md ihn nennen; in der Sekunde des Merges wird dieselbe, unveraenderte
+# Datei falsch. Ein Schritt im blockierenden Gate wuerde `main` deshalb nach
+# jedem Merge rot faerben, ohne dass jemand etwas falsch gemacht haette - und
+# ein Gate, das regelmaessig aus einem harmlosen Grund rot ist, wird
+# irgendwann abgeschaltet statt beachtet (ADR-013).
+#
+# Dieser Workflow laeuft darum **nicht** bei `pull_request` und gehoert
+# **nicht** in die Liste der erforderlichen Statuschecks der Branch Protection
+# (docs/DEVELOPMENT.md, "Manuelle Schritte"). Er blockiert nichts. Sein
+# Fehlschlag ist ein rotes Kreuz am Commit auf `main` plus die uebliche
+# GitHub-Benachrichtigung - der Hinweis kommt also von allein, ohne dass
+# jemand danach sehen muss.
+#
+# Der woechentliche Lauf faengt den Fall ab, dass ein PR ueber die
+# GitHub-Oberflaeche gemergt wurde, waehrend ein anderer Push den Lauf
+# verdraengt hat.
+# =============================================================================
+name: Statusdrift
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Montags 05:40 UTC, gut zwei Stunden vor dem Wochenupdate
+    # (docs/DEVELOPMENT.md, "Wochenroutine") - der Befund liegt damit vor,
+    # wenn die Planungssession STATUS.md liest.
+    - cron: '40 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: statusdrift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  statusdrift:
+    name: STATUS.md gegen main
+    runs-on: ubuntu-latest
+    steps:
+      # Volle Historie: Die Pruefung liest die Merge-Commits aus `git log`. Ein
+      # flacher Klon kennt sie nicht, und eine Pruefung, die dann still gruen
+      # waere, waere wertlos - das Skript meldet diesen Fall ausdruecklich als
+      # unvollstaendig.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Kein `pnpm install`: Das Skript benutzt nur die Node-Standardbibliothek
+      # und `git`. Ein Gate, das selbst ein Paket braucht, ist ein Gate mehr,
+      # das ausfallen kann (scripts/docs-check.mjs, Kopfkommentar).
+      - name: STATUS.md gegen main pruefen
+        run: node scripts/status-check.mjs

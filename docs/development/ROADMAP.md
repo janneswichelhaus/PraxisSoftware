@@ -662,7 +662,13 @@ Auftrag für die wöchentliche Planungssession. Sie **baut nichts.**
 5. Antwort in festem Format, höchstens zwölf Zeilen: _diese Woche ansteht ·
    Jannes entscheidet oder liefert (mit Datum) · hängt (Spur-B-Punkte über
    Termin) · Ampel M0 bis M6 mit je einem Wort Begründung_.
-6. Die Tabelle „Sandbox-Prototypen" in `ARBEITSBEREICHE.md` §2 lesen: Für
+6. `pnpm status:check` lesen (der Workflow „Statusdrift" hat es montags vor
+   diesem Update schon laufen lassen). Meldet es einen Pull Request, den
+   `docs/STATUS.md` noch als offen führt, obwohl er in `main` liegt: die
+   betroffene Zeile in der Antwort nennen und STATUS.md im selben Zug
+   berichtigen — das ist die eine Ausnahme von „baut nichts", weil sie nur
+   einen veralteten Spiegel entfernt und keinen Scope berührt.
+7. Die Tabelle „Sandbox-Prototypen" in `ARBEITSBEREICHE.md` §2 lesen: Für
    jede Zeile die seit „Angelegt" fertigen Code-Loops in der
    Fortschrittstabelle zählen; ab zwei den Prototyp als **abgelaufen** nennen
    (Jannes startet dann `/sandbox <Thema> verwerfen` oder den ersetzenden

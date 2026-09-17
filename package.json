@@ -23,6 +23,7 @@
     "db:stop": "./scripts/test-db.sh stop",
     "db:reset": "./scripts/test-db.sh reset",
     "docs:check": "node scripts/docs-check.mjs",
+    "status:check": "node scripts/status-check.mjs",
     "scan:secrets": "./scripts/scan-secrets.sh",
     "screenshots": "node scripts/screenshots.mjs",
     "fortschritt": "node scripts/fortschritt.mjs"

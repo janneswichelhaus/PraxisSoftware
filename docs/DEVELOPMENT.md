@@ -195,6 +195,7 @@ pnpm test:watch      # dieselben Tests, laufend
 pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
 pnpm docs:check      # Obergrenzen, Register-Anker, relative Verweise
+pnpm status:check    # nennt STATUS.md einen schon gemergten PR als offen?
 pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien
 pnpm build
@@ -208,6 +209,21 @@ die Obergrenzen von `CLAUDE.md` (150), `docs/STATUS.md` (60),
 Registers einen Anker in `src/`, `supabase/migrations/` oder
 `.github/workflows/` hat; und dass jeder relative Markdown-Verweis auf eine
 vorhandene Datei zeigt.
+
+`pnpm status:check` ist **kein** merge-blockierendes Gate, sondern ein
+Hinweisgeber. Es liest `docs/STATUS.md`, sammelt jede genannte PR-Nummer und
+vergleicht sie mit den Merge-Commits in `main` — ohne Netz, ohne Token, nur
+`git log`. Anlass war der 16.09.: Zwei gemergte Pull Requests standen danach
+noch als „zum Merge" im Livestand, und eine Aufgabe trug den Zusatz „nach den
+Merges unten". Blockierend darf die Prüfung nicht sein, weil der Verstoß erst
+durch den Merge entsteht: Solange der PR offen ist, ist die Datei richtig, und
+in der Sekunde des Merges wird dieselbe Datei falsch — ein Gate in `pnpm test`
+oder `pnpm docs:check` färbte `main` also nach jedem Merge rot, ohne dass
+jemand etwas falsch gemacht hätte. Sie läuft deshalb im eigenen Workflow
+„Statusdrift" (`.github/workflows/status-drift.yml`) bei jedem Push auf `main`,
+montags vor dem Wochenupdate und auf Knopfdruck; der Fehlschlag kommt als
+GitHub-Benachrichtigung. Offline erkennbar ist nur **gemergt** — ein ohne Merge
+geschlossener PR fällt nicht auf.
 
 **Modell und Aufwand.** `.claude/settings.json` setzt Opus 5 projektweit. Einen
 Aufwand je Aufgabe kennt die Datei nicht; die Regel „Migration, RLS, Policy
@@ -227,15 +243,18 @@ export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium
 Seit 2026-09-01 läuft montags um 07:50 Uhr (UTC 05:50, Cron `50 5 * * 1`)
 eine automatische Planungssession mit dem Auftrag aus
 [`development/ROADMAP.md`](development/ROADMAP.md), Abschnitt „Wochenupdate".
-Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
+Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail. Eine einzige
+Ausnahme kennt der Auftrag seit Schritt 6: einen gemergten Pull Request, den
+`docs/STATUS.md` noch als offen führt, berichtigt sie selbst — sobald Branch
+Protection steht, über einen kleinen Pull Request statt direkt auf `main`.
 
 - Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, Modell Haiku 4.5, erste
   Ausführung 2026-09-07. Sie liest `main`.
 - Der Prompt hat den Stand vor Roadmap 5.2: fünf eigene Schritte, er liest nur
   die Roadmap und `git log`. Schritt 1 (mit `docs/STATUS.md` und
-  `development/ARBEITSBEREICHE.md` §2) und Schritt 6 (abgelaufene
-  Sandbox-Prototypen) fehlen ihm; den neuen Prompt-Text trägt Jannes ein
-  („Manuelle Schritte im Repository").
+  `development/ARBEITSBEREICHE.md` §2), Schritt 6 (Statusdrift) und Schritt 7
+  (abgelaufene Sandbox-Prototypen) fehlen ihm; den neuen Prompt-Text trägt
+  Jannes ein („Manuelle Schritte im Repository").
 - Nach der Zeitumstellung Ende Oktober fällt sie auf 06:50 Uhr; wer 07:50
   behalten will, ändert den Cron-Ausdruck auf `50 6 * * 1`.
 - Abschalten, Takt oder Prompt ändern: über die Routines-Oberfläche auf
@@ -368,7 +387,8 @@ Diese Einstellungen lassen sich nicht aus dem Code setzen:
   RLS-Policies" (`database`), „Secret Scanning und Dependency Audit"
   (`security`), „End-to-End" (`e2e`), „End-to-End hinter der Anmeldung"
   (`e2e-supabase`); Force Push und Deletions aus; keine Pflicht-Approvals
-  (ADR-013).
+  (ADR-013). **„Statusdrift" gehört nicht in diese Liste** — der Workflow läuft
+  nicht auf Pull Requests und soll nichts blockieren (Abschnitt „Befehle").
 - GitHub Secret Scanning und Push Protection aktivieren.
 - Gemergte Branches automatisch löschen („Automatically delete head
   branches"). „Allow auto-merge" entfällt — auf diesem GitHub-Plan nicht
