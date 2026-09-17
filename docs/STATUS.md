@@ -27,19 +27,20 @@ Danach unverändert: VER-EPIC-002 · CAL-EPIC-004c · ABR-EPIC-001 (xhigh).
 Die Actions-Minuten sind aufgebraucht: Ein Lauf endet nach Sekunden ohne Logs,
 ein rotes Kreuz am PR heißt **„nicht gelaufen"**. Alle Gates laufen deshalb
 lokal; die **angemeldeten E2E-Tests kann nur Jannes ausführen** (Docker) — sie
-fanden in CAL-018 einen Fehler, den sieben Gates nicht sahen (BEF-010). **PR
-#43 ist gemergt**, `main` ist wieder der Ausgangspunkt jedes Branches.
+fanden in CAL-018 einen Fehler, den sieben Gates nicht sahen (BEF-010).
+`main` ist wieder der Ausgangspunkt jedes Branches.
 
 ## Blocker (Jannes-seitig)
 
 - **Abnahme CAL-018** — fünf Klickwege in
   [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
-- **Offen aus „nur Hausbesuche" (17.09.):** Was folgt daraus für die Terminart
-  `practice`, für Standorte und das Praxisraster? Nichts entschieden.
-- Branch Protection und Secret Scanning einschalten (M0, 30.09.),
-  Anfragen B1, B2 und B4 verschicken ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)),
-  PTV-Free-Abo vor MAP-002 · `claude/issue-42-status-fv319v` hat drei
-  ungemergte Commits
+- **E18 planen (17.09.):** PT und Online Coaching gehören von Anfang an in die
+  Anwendung — Fragen bei Stufe 3 in
+  [`development/ROADMAP.md`](development/ROADMAP.md). Eigener Planungsschritt
+  **vor** dem nächsten Feature-Loop; gebaut ist davon nichts.
+- Branch Protection und Secret Scanning (M0, 30.09.), Anfragen B1, B2, B4
+  ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)), PTV-Free-Abo vor MAP-002 ·
+  `claude/issue-42-status-fv319v` hat drei ungemergte Commits
 
 ## Auf Abnahme warten
 
@@ -49,12 +50,11 @@ DAT-EPIC-001, ROL-EPIC-001, FIX-015 — Schritte in [`abnahme/`](abnahme/README.
 
 ## Letzte Session
 
-**CAL-018** gebaut und gemergt: Am Hausbesuch verlangt das Nichtantreffen das
-bestätigte Protokoll (15 Minuten, Klingeln, Anruf) und merkt eine
-Ausfallgebühr vor; „Tür geöffnet, keine Behandlung" schließt mit
-Pflichtvermerk ab, ohne Gebühr. **ANN-055 ist entschieden**: Es gibt
-ausschließlich Hausbesuche (Jannes, 17.09.). Der angemeldete E2E-Lauf fand
-einen echten Fehler (BEF-010), behoben in CAL-018d; BEF-009 dazu ist offen.
+**CAL-018 gebaut, PR #43 gemergt.** Am Hausbesuch verlangt das Nichtantreffen
+das bestätigte Protokoll (15 Minuten, Klingeln, Anruf) und merkt eine
+Ausfallgebühr vor; „Tür geöffnet" schließt mit Pflichtvermerk ab, ohne Gebühr.
+**ANN-055 entschieden** (nur Hausbesuche). Der angemeldete E2E-Lauf fand einen
+echten Fehler (BEF-010), behoben in CAL-018d; BEF-009 ist offen.
 
 Lokal: `git checkout main && git pull origin main`, dann
 `pnpm dlx supabase@2.116.0 db reset`. Kein `pnpm install`.
