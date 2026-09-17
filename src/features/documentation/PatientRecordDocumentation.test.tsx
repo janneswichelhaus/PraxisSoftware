@@ -172,6 +172,24 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     expect(screen.queryByRole('region', { name: 'Behandlungsnachweis' })).not.toBeInTheDocument();
   });
 
+  /**
+   * Hausbesuch-Szenario 1 (CAL-018). Der Pflichtvermerk steht in der Akte wie
+   * am Termin - sie ist der Ort, an dem spaeter jemand nachliest, warum ein
+   * Termin ohne erbrachte Behandlung abgerechnet wurde.
+   */
+  it('zeigt den Pflichtvermerk "ohne Behandlung" auch in der Akte', async () => {
+    fetchPatientTreatmentNotesPage.mockResolvedValue([
+      akteTermin(1, [eintrag({ visit_without_treatment: true })], {
+        appointment_status: 'documented',
+      }),
+    ]);
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+
+    expect(await screen.findByText('Ohne Behandlung')).toBeInTheDocument();
+  });
+
   it('verlinkt den Aenderungsverlauf nur fuer Eintraege mit Versionen und jeden Termin', async () => {
     renderWithProviders(
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,

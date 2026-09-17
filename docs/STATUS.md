@@ -50,11 +50,11 @@ DAT-EPIC-001, ROL-EPIC-001, FIX-015 — Prüfschritte in
 
 **CAL-018** gebaut: Am Hausbesuch verlangt das Nichtantreffen das bestätigte
 Protokoll (15 Minuten, Klingeln, Anruf) und merkt danach eine Ausfallgebühr
-vor; „Tür geöffnet, keine Behandlung" schließt den Termin mit Pflichtvermerk
-ab und bleibt ohne Gebühr; der Termin führt erklärend durch die Szenarien.
-Neu: **ANN-055** (die Regel gilt am Hausbesuch). Nachgezogen: ANN-035,
-ADR-018 Punkt 9, Prinzipien **0.11.2**, E14, Abnahmeschritte. Ohne Betrag —
-der Leistungskatalog (ABR-001) ist nicht gebaut.
+vor; „Tür geöffnet, keine Behandlung" schließt mit Pflichtvermerk ab, ohne
+Gebühr; der Termin führt erklärend durch die Szenarien. Neu: **ANN-055**.
+Nachgezogen: ANN-035, ADR-018 Punkt 9, Prinzipien **0.11.2**, E14, Abnahme.
+Der angemeldete E2E-Lauf fand dabei einen Fehler, den die lokalen Gates nicht
+sahen (Akte ohne Pflichtvermerk) — behoben, mit Test über beide Lesepfade.
 
 Lokal: `git pull origin claude/erste-offene-aufgabe-76ya36`, dann
 `pnpm dlx supabase@2.116.0 db reset` (neue Migration). Kein `pnpm install`.

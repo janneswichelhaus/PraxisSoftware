@@ -315,7 +315,20 @@ describe('Tuer geoeffnet, keine Behandlung: der Pflichtvermerk (Szenario 1)', ()
     ).toHaveLength(0);
   });
 
-  it('liefert den Vermerk im Lesepfad mit', async () => {
+  /**
+   * BEIDE Lesepfade, und zwar in einem Test.
+   *
+   * Der Eintrag am Termin (`get_treatment_note`) und der in der Akte
+   * (`list_patient_treatment_notes`) werden in der Oberflaeche von DEMSELBEN
+   * Schema geprueft. Als CAL-018 nur den ersten nachzog, wies die Pruefung die
+   * ganze Aktenseite ab und der Behandlungsverlauf blieb leer - sichtbar erst
+   * im angemeldeten E2E-Lauf, weil die Komponententests ihre Eintraege als
+   * getippte Vorgabe hereinreichen und das Feld deshalb immer dabeihatten.
+   *
+   * Dieser Test haelt die beiden Pfade zusammen: Was der eine liefert, liefert
+   * auch der andere.
+   */
+  it('liefert den Vermerk in beiden Lesepfaden mit - am Termin und in der Akte', async () => {
     const termin = await terminAm('home_visit');
     await asUserCommitted(users.ownerTherapist, ABSCHLIESSEN, [
       termin.id,
@@ -325,12 +338,49 @@ describe('Tuer geoeffnet, keine Behandlung: der Pflichtvermerk (Szenario 1)', ()
       true,
     ]);
 
-    const { rows } = await asUser<{ visit_without_treatment: boolean }>(
+    const amTermin = await asUser<{ visit_without_treatment: boolean }>(
       users.ownerTherapist,
       'select visit_without_treatment from public.get_treatment_note($1::uuid)',
       [termin.id],
     );
-    expect(rows[0]!.visit_without_treatment).toBe(true);
+    expect(amTermin.rows[0]!.visit_without_treatment).toBe(true);
+
+    const inDerAkte = await asUser<{ vermerk: boolean }>(
+      users.ownerTherapist,
+      `select (n->>'visit_without_treatment')::boolean as vermerk
+         from public.list_patient_treatment_notes($1::uuid) l,
+              lateral jsonb_array_elements(l.notes) n
+        where l.appointment_id = $2::uuid`,
+      [patients.max, termin.id],
+    );
+    expect(inDerAkte.rows).toHaveLength(1);
+    expect(inDerAkte.rows[0]!.vermerk).toBe(true);
+  });
+
+  it('nennt das Feld in der Akte auch bei einer gewoehnlichen Behandlung', async () => {
+    // Der Schluessel muss IMMER dastehen, nicht nur wenn er true ist: Die
+    // Oberflaeche prueft ihn als Pflichtfeld, ein fehlender Schluessel weist
+    // die ganze Seite ab.
+    const termin = await terminAm('home_visit');
+    await asUserCommitted(users.ownerTherapist, ABSCHLIESSEN, [
+      termin.id,
+      'Behandlung nach Plan durchgefuehrt.',
+      termin.updated_at,
+      null,
+      false,
+    ]);
+
+    const { rows } = await asUser<{ hat_schluessel: boolean; vermerk: boolean }>(
+      users.ownerTherapist,
+      `select n ? 'visit_without_treatment' as hat_schluessel,
+              (n->>'visit_without_treatment')::boolean as vermerk
+         from public.list_patient_treatment_notes($1::uuid) l,
+              lateral jsonb_array_elements(l.notes) n
+        where l.appointment_id = $2::uuid`,
+      [patients.max, termin.id],
+    );
+    expect(rows[0]!.hat_schluessel).toBe(true);
+    expect(rows[0]!.vermerk).toBe(false);
   });
 
   it('haelt die Terminsicht bei der Protokollbestaetigung lesbar', async () => {
