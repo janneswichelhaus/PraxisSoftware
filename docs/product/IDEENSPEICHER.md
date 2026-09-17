@@ -199,6 +199,7 @@ einem Verwurf. Neue Einträge hängen hinten an.
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------ |
 | [referenz-navigation.md](ideen/referenz-navigation.md)                       | Informationsarchitektur, Navigation, Vergleichssoftware, Screenshot-Referenzen              | —      |
 | [referenz-wettbewerb.md](ideen/referenz-wettbewerb.md)                       | Funktionen von iPrax, THEORG, thevea, appointmed, Optica u. a. mit Quellen; „wie lösen es andere" | —  |
+| [referenz-iprax.md](ideen/referenz-iprax.md)                                 | Bildschirmfotos aus iPrax (2026-09-16): Anlegen-Menü im Kalender, Zeitspanne aufziehen, personenzentrierte Unterbereiche | —      |
 | [10-praxisverwaltung.md](ideen/10-praxisverwaltung.md)                       | Terminplanung, Warteliste, Akte, Verordnung, Privatabrechnung, Hausbesuch, Kennzahlen       | PRX    |
 | [00-lebenszyklus-und-zugang.md](ideen/00-lebenszyklus-und-zugang.md)         | Patient wird Klient, Betreuung nach Rezeptende, Portalzugang, Onboarding, Rechtsrahmen      | LZK    |
 | [01-trainingsplaene-und-progression.md](ideen/01-trainingsplaene-und-progression.md) | Trainingspläne, Übungsbibliothek, Progressionsregeln, Periodisierung, Autoregulation | TRN    |

@@ -2089,3 +2089,82 @@ Erwartung: kein waagerechtes Scrollen, keine Konsolenfehler.
 
 **Nicht Teil dieses Loops:** eine Office-Sicht auf Patientenkommunikation —
 gebaut ist keine; der Teamchat ist eine Vorschau ohne Patientenbezug.
+
+## CAL-018 — Die drei Hausbesuch-Szenarien
+
+Prüfschritte zu CAL-018a (Datenbank) und CAL-018b (Oberfläche). Grundlage:
+`PROJECT_PRINCIPLES.md` 0.11 §8 („Hausbesuch-Szenarien"), ADR-018 Fassung 3
+Punkt 9, E14 und ANN-055.
+
+> **Wichtig für diese Abnahme:** Der geführte Ablauf steht **nur am
+> bestätigten Hausbesuchstermin**. Der Seed legt einen an: Berta Bestand
+> (`aaaaaaaa-aaaa-4aaa-8aaa-000000000001`), heute 09:00 Uhr bei Anna Beispiel.
+> Wer ihn in Schritt 2 vermerkt, öffnet ihn danach wieder, sonst fehlt er den
+> folgenden Schritten.
+
+Schritt 1 bis 3 als `anna.beispiel@praxis.invalid` (therapist).
+
+### 1. Der Ablauf führt und nennt zu jedem Fall die Folge
+
+1. Kalender → den Hausbesuch von heute 09:00 Uhr öffnen.
+2. Erwartung: Über den Schaltflächen steht der Abschnitt **„Was ist
+   passiert?"** mit vier Einträgen in dieser Reihenfolge: „Die Behandlung hat
+   stattgefunden", „Tür geöffnet, Behandlung nicht durchgeführt", „Niemand hat
+   geöffnet", „Die Patient:in hat vorher abgesagt". Jeder nennt seine Folge;
+   nur der letzte hat keine eigene Schaltfläche, sondern verweist auf „Termin
+   absagen".
+3. Erwartung: „Dokumentieren und abschließen" und „Nicht angetroffen" stehen
+   **nicht** doppelt in der Reihe darunter. „Ohne Dokumentation abschließen"
+   und „Termin absagen" stehen weiterhin dort.
+
+### 2. Niemand angetroffen: ohne Protokoll passiert nichts
+
+1. „Niemand angetroffen" tippen. Erwartung: Die Rückfrage nennt die
+   Ausfallgebühr und listet unter **„Protokoll vor Ort"** drei Kästchen:
+   „15 Minuten vor Ort gewartet", „An der Tür geklingelt", „Telefonisch
+   angerufen" — alle leer.
+2. Nur die ersten beiden ankreuzen, „Ja, niemand angetroffen" tippen.
+   Erwartung: **„Bitte alle drei Schritte des Protokolls bestätigen."** Der
+   Termin bleibt **Bestätigt**, die Rückfrage bleibt offen, das dritte
+   Kästchen ist noch da.
+3. Das dritte ankreuzen und bestätigen. Erwartung: Status **Nicht
+   angetroffen**, Zeile **Protokoll** („Bestätigt: 15 Minuten vor Ort
+   gewartet, an der Tür geklingelt, telefonisch angerufen"), Zeile **Gebühr
+   vorgemerkt: Nicht angetroffen** — **ohne Betrag**, mit dem Hinweis auf den
+   fehlenden Leistungskatalog.
+4. „Termin wieder öffnen" tippen. Erwartung: Status **Bestätigt**, die Zeilen
+   **Protokoll** und **Gebühr vorgemerkt** sind weg.
+
+### 3. Tür geöffnet: durchgeführt mit Pflichtvermerk, ohne Gebühr
+
+1. Am selben Termin „Ohne Behandlung abschließen" tippen. Erwartung: Die Seite
+   heißt **„Ohne Behandlung abschließen"** und trägt über dem Textfeld den
+   Vermerk „Tür geöffnet, Behandlung auf Angabe der Patient:in nicht
+   durchgeführt" samt Folge (gilt als durchgeführt, normale Abrechnung, keine
+   Ausfallgebühr).
+2. Einen Satz eintragen und „Ohne Behandlung abschließen" tippen. Erwartung:
+   Zurück am Termin steht Status **Dokumentiert**, **keine** Zeile „Gebühr
+   vorgemerkt", und die Behandlungsdokumentation trägt das Abzeichen **„Ohne
+   Behandlung"** mit dem erklärenden Satz darunter.
+
+### 4. In der Praxis gilt das Protokoll nicht (ANN-055)
+
+1. Als `olivia.office@praxis.invalid` (office) den **Praxistermin** von heute
+   bei Jannes Test öffnen → „Nicht angetroffen".
+2. Erwartung: Die Rückfrage zeigt **keine** Protokollkästchen und sagt „Eine
+   Gebühr entsteht daraus nicht". Nach dem Bestätigen: Status **Nicht
+   angetroffen**, **keine** Zeile „Gebühr vorgemerkt", **keine** Zeile
+   „Protokoll".
+
+### 5. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=therapist /termine/aaaaaaaa-aaaa-4aaa-8aaa-000000000001
+```
+
+Erwartung: kein waagerechtes Scrollen, keine Konsolenfehler; die vier Einträge
+stehen untereinander, die Schaltflächen sind mit dem Daumen erreichbar.
+
+**Nicht Teil dieses Loops:** Betrag, Rechnung und Steuerkennzeichen der
+Ausfallgebühr (ABR-001, ABR-003) sowie Rechnungstext und Rechtsgrundlage für
+Fall 1 — die gehen mit Anfrage B4 an die Steuerberatung.

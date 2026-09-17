@@ -29,6 +29,7 @@ const entwurf: DokumentationApi.TreatmentNote = {
   addendum_to_note_id: null,
   status: 'draft',
   content: 'Bereits geschriebener Entwurf',
+  visit_without_treatment: false,
   created_at: '2027-05-12T08:00:00.000Z',
   updated_at: '2027-05-12T08:05:00.000000+00',
   finalized_at: null,
@@ -84,10 +85,10 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { CompleteTreatmentPage } = await import('./CompleteTreatmentPage');
 
-function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
+function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist'], suche = '') {
   return renderWithProviders(
     <CompleteTreatmentPage user={testUser(rollen)} />,
-    `/termine/${TERMIN_ID}/abschluss`,
+    `/termine/${TERMIN_ID}/abschluss${suche}`,
   );
 }
 
@@ -143,6 +144,8 @@ describe('CompleteTreatmentPage', () => {
       'Heute geübt.',
       termin.updated_at,
       null,
+      // Ohne den Weg aus dem geführten Ablauf kein Pflichtvermerk (CAL-018).
+      false,
     );
     // Kein zweiter Schreibweg daneben.
     expect(createTreatmentNote).not.toHaveBeenCalled();
@@ -168,6 +171,7 @@ describe('CompleteTreatmentPage', () => {
         'Neuer Text',
         termin.updated_at,
         entwurf.updated_at,
+        false,
       ),
     );
   });
@@ -289,6 +293,73 @@ describe('CompleteTreatmentPage', () => {
 
       expect(await screen.findByLabelText('Eintrag zur Behandlung')).toBeInTheDocument();
       expect(screen.queryByText('Textbausteine:')).toBeNull();
+    });
+  });
+  /**
+   * Hausbesuch-Szenario 1 (CAL-018, ADR-018 Fassung 3 Punkt 9).
+   *
+   * Der Weg kommt aus dem gefuehrten Ablauf am Termin und traegt seine Wahl in
+   * der Adresszeile. Geprueft wird, dass die Seite die Folge benennt und den
+   * Pflichtvermerk genau dann uebergibt, wenn er gewaehlt wurde.
+   */
+  describe('CAL-018: Ohne Behandlung abschliessen', () => {
+    it('nennt den Pflichtvermerk und seine Folge, bevor abgeschlossen wird', async () => {
+      rendern(['therapist'], '?ohne-behandlung=1');
+
+      expect(
+        await screen.findByText(/Tür geöffnet, Behandlung auf Angabe der Patient:in nicht/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/eine Ausfallgebühr\s+entsteht nicht/)).toBeInTheDocument();
+    });
+
+    it('uebergibt den Vermerk an den Abschluss', async () => {
+      const user = userEvent.setup();
+      rendern(['therapist'], '?ohne-behandlung=1');
+
+      await user.type(
+        await screen.findByLabelText('Eintrag zur Behandlung'),
+        'Tuer geoeffnet, Behandlung abgelehnt.',
+      );
+      await user.click(screen.getByRole('button', { name: 'Ohne Behandlung abschließen' }));
+
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          'Tuer geoeffnet, Behandlung abgelehnt.',
+          termin.updated_at,
+          null,
+          true,
+        ),
+      );
+    });
+
+    it('nimmt den Vermerk an einem Praxistermin nicht an (ANN-055)', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...termin,
+        appointment_type: 'practice',
+        location_id: '33333333-3333-4333-8333-000000000001',
+        location_name: 'Hauptstandort Tuebingen',
+        visit_street: null,
+        visit_house_number: null,
+        visit_postal_code: null,
+        visit_city: null,
+      });
+      const user = userEvent.setup();
+      rendern(['therapist'], '?ohne-behandlung=1');
+
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Behandelt.');
+      // Ohne den Vermerk heisst die Schaltflaeche wieder wie sonst.
+      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          'Behandelt.',
+          termin.updated_at,
+          null,
+          false,
+        ),
+      );
     });
   });
 });

@@ -235,8 +235,9 @@ Daraus folgen fünf Festlegungen:
    ein datensparsamer organisatorischer Abschluss: ein Tap, kein Formular. Aus
    ihm allein entsteht **keine** Gebühr. Ob das Nichtantreffen beim Hausbesuch
    eine eigene Gebührenregel bekommen soll, ist **offen**.~~ **Mit Fassung 3
-   entschieden — siehe Punkt 9.** Bis CAL-018 gebaut ist, verhält sich die
-   Anwendung noch wie hier beschrieben.
+   entschieden — siehe Punkt 9**, seit CAL-018 (2026-09-16) auch gebaut. Am
+   Praxis- und am Videotermin gilt der hier beschriebene Stand weiter
+   (ANN-055).
 
 Der Termin bleibt in allen Fällen als **abgesagt** beziehungsweise **nicht
 angetroffen** erkennbar. Der Gebührenanlass ist ein Merkmal daneben, kein
@@ -290,8 +291,12 @@ Daraus folgen vier Festlegungen:
    erbrachte Behandlung) legt dieser ADR nicht fest; sie gehen als Festlegung
    des Projektinhabers in die Anfrage B4 (`OPEN_DECISIONS.md`, E14).
 
-Umgesetzt wird das in **CAL-018**; bis dahin gilt für das Nichtantreffen der
-Stand aus Fassung 2 (Vermerk ohne Gebühr).
+**Umgesetzt mit CAL-018 (2026-09-16).** `record_no_show` verlangt am
+Hausbesuchstermin die Bestätigung des Protokolls und setzt daraufhin
+`fee_basis = 'no_show'`; der Pflichtvermerk aus Nr. 2 ist das Merkmal
+`treatment_notes.visit_without_treatment`, gesetzt im Abschluss. Für Praxis-
+und Videotermine trifft E14 keine Aussage; dort bleibt es beim Vermerk ohne
+Gebühr (ANN-055, Wiedervorlage bei Jannes).
 
 ## Konsequenzen
 

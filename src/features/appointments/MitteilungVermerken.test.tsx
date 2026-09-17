@@ -40,6 +40,7 @@ function termin(kanaele: AppointmentsApi.NotificationChannel[] = []): Appointmen
     completed_at: null,
     cancellation_reason: null,
     no_show_recorded_at: null,
+    no_show_protocol_confirmed: null,
     cancellation_received_at: null,
     fee_basis: null,
     patient_given_name: 'Max',

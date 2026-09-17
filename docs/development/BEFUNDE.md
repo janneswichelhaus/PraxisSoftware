@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-15
+Stand: 2026-09-16
 
 ## Zweck
 
@@ -158,8 +158,10 @@ womöglich gar nicht mehr, sobald die Karte in der Anwendung steht.
   genau dann steht man im Hausflur, mit Handschuhen. Nach hinten ja,
   weggeklappt nein. Ihre heutige Stelle stammt aus UX-001, nicht aus
   Zufall. Seit E14 (2026-09-13) ist die Rufnummer zudem Teil des Protokolls
-  beim Nichtantreffen (15 Minuten, Klingeln, Anruf — Umsetzung CAL-018):
-  Sie gehört also auf die Karte, nicht dahinter.
+  beim Nichtantreffen (15 Minuten, Klingeln, Anruf — gebaut mit CAL-018,
+  2026-09-16): Die Rückfrage am Termin verlangt die Bestätigung „telefonisch
+  angerufen", und wer sie geben soll, braucht die Nummer davor. Sie gehört
+  also auf die Karte, nicht dahinter.
 - **„Navigation starten" darf erst weichen, wenn die Karte wirklich da ist.**
   Der Handoff ist heute der einzige Weg zur Route. Die Karte kommt mit
   MAP-005/MAP-006 und hängt an ADR-019 — und dessen produktive Freigabe
@@ -277,3 +279,72 @@ die dann seitlich scrollt, widerspricht der Oberflächen-Checkliste
 
 **Richtung.** Langes Wort im Wert einer Detailzeile umbrechen
 (`overflow-wrap`) — eine Stelle im Baustein, kein Umbau.
+
+### BEF-006 — Die Termin-Detailseite trägt sieben Vorgänge und zeigt eine Tabelle
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-16                                                                                    |
+| Bereich | Termin (`/termine/:id`)                                                                       |
+| Quelle  | Jannes, 2026-09-16, im Vergleich mit iPrax (`../product/ideen/referenz-iprax.md`)              |
+| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](CAL-EPIC-004.md), AKTE-006                              |
+| Berührt | CAL-008, CAL-014, CAL-012/013, UX-007, DOK-001/002, ADR-018; `AppointmentDetailPage.tsx`      |
+
+**Beobachtung.** „Die Ansicht eines speziellen Termins mag ich nicht." Die
+Seite zeigt Patient:in, behandelnde Person, Art, Status, Datum und Zeit als
+Feldtabelle — im Vergleichsprodukt ist derselbe Termin ein kleiner Dialog im
+Kalender, und die Person steht im Mittelpunkt, nicht der Termin.
+
+**Warum das nicht nur Geschmack ist.** An der Seite hängen sieben Vorgänge:
+Absage mit codiertem Grund und Eingangszeitpunkt, „nicht angetroffen",
+„Behandlung abschließen", „Termin abschließen", Dokumentation,
+Mitteilungsvermerk, Navigations-Handoff. Wer die Seite umbaut, entscheidet
+über deren Ort — nicht über eine Tabelle.
+
+**Richtung.** AKTE-006 in CAL-EPIC-004: erst festlegen, wohin die sieben
+Vorgänge gehen, dann die Darstellung. Kein Vorgang darf dabei einen
+Bestätigungsschritt verlieren (ADR-018, §8).
+
+### BEF-007 — Termine der Akte stehen flach, die Verordnung ist nur ein Filter
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-16                                                                                    |
+| Bereich | Termine in der Akte (`/patienten/:id/termine`)                                                 |
+| Quelle  | Jannes, 2026-09-16                                                                            |
+| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](CAL-EPIC-004.md), AKTE-006                              |
+| Berührt | AKTE-003, CAL-007, VER-002; `PatientAppointmentsPage.tsx`, `list_patient_appointments`         |
+
+**Beobachtung.** Termine sollen „immer verordnungsbezogen" erscheinen: fünf
+Termine zur laufenden Verordnung, drei zur nächsten, jede mit ihrer eigenen
+Überschrift. Heute ist die Liste chronologisch; die Verordnung steht als
+Angabe an der Zeile und als Filter in der Adresse (`?verordnung=`), aber sie
+gliedert nicht.
+
+**Warum das zählt.** Die Verordnung ist die Klammer, in der die Praxis plant —
+und künftig nicht die einzige (E16). Eine flache Liste zwingt zum Zählen von
+Hand, genau dort, wo die Deckung entscheidet, ob ein Termin abrechenbar ist.
+
+### BEF-008 — Das Ziehen im Kalender schreibt ohne Rückfrage
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-16                                                                                    |
+| Bereich | Kalender (`/kalender`), Ziehen einer Terminkachel                                              |
+| Quelle  | Jannes, 2026-09-16                                                                            |
+| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](CAL-EPIC-004.md), CAL-023                               |
+| Berührt | CAL-006, UX-010, CAL-003; `CalendarPage.tsx` (`ablegen`), `useTerminZiehen.ts`                 |
+
+**Beobachtung.** Das Loslassen schreibt sofort. Eine Rückfrage erscheint nur,
+wenn die Zielzeit außerhalb der Arbeitszeit liegt; danach steht die
+Rückgängig-Leiste. Gewünscht ist eine Rückfrage **immer** — auch wenn am Ziel
+eine Lücke ist.
+
+**Warum das zählt.** Am Finger beginnt das Verschieben nach einem langen Druck
+(UX-010); wer scrollen wollte und zu lange gedrückt hat, verschiebt heute
+einen Termin, ohne gefragt zu werden. Ein verschobener Termin ist ein Anruf
+bei einer Patient:in.
+
+**Richtung.** CAL-023: eine Rückfrage mit alter und neuer Zeit, die den
+Arbeitszeit-Hinweis mitnimmt statt ihn als zweiten Dialog zu zeigen. Die
+Rückgängig-Leiste bleibt (Festlegung von Jannes).

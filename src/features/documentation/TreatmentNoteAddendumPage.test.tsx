@@ -29,6 +29,7 @@ const entwurf: DokumentationApi.TreatmentNote = {
   addendum_to_note_id: null,
   status: 'draft',
   content: INHALT,
+  visit_without_treatment: false,
   created_at: '2027-05-12T08:10:00.123456+00:00',
   updated_at: '2027-05-12T08:30:00.654321+00:00',
   finalized_at: null,

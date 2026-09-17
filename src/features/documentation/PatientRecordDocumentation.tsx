@@ -100,6 +100,10 @@ function AkteEintrag({ termin, note }: { termin: RecordAppointment; note: Treatm
       <div className="flex flex-wrap items-center gap-2">
         {istNachtrag ? <span className={abzeichen}>Nachtrag</span> : null}
         <span className={abzeichen}>{treatmentNoteStatusLabels[note.status]}</span>
+        {/* Der Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018) steht in der
+            Akte wie am Termin: Ob behandelt wurde, entscheidet später über
+            eine Rechnung ohne erbrachte Leistung (ADR-018 Fassung 3 Punkt 9). */}
+        {note.visit_without_treatment ? <span className={abzeichen}>Ohne Behandlung</span> : null}
         {note.status === 'draft' ? (
           <span className="text-ink-subtle text-xs">noch nicht finalisiert</span>
         ) : null}

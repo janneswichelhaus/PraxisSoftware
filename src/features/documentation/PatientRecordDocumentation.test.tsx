@@ -38,6 +38,7 @@ function eintrag(
     addendum_to_note_id: null,
     status: 'final',
     content: INHALT,
+    visit_without_treatment: false,
     // Format wie aus einem jsonb-Feld: ISO 8601 mit Offset.
     created_at: '2027-05-12T08:10:00.123456+00:00',
     updated_at: '2027-05-12T09:32:00.654321+00:00',
@@ -169,6 +170,24 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       await screen.findByRole('region', { name: 'Behandlungsdokumentation' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Behandlungsnachweis' })).not.toBeInTheDocument();
+  });
+
+  /**
+   * Hausbesuch-Szenario 1 (CAL-018). Der Pflichtvermerk steht in der Akte wie
+   * am Termin - sie ist der Ort, an dem spaeter jemand nachliest, warum ein
+   * Termin ohne erbrachte Behandlung abgerechnet wurde.
+   */
+  it('zeigt den Pflichtvermerk "ohne Behandlung" auch in der Akte', async () => {
+    fetchPatientTreatmentNotesPage.mockResolvedValue([
+      akteTermin(1, [eintrag({ visit_without_treatment: true })], {
+        appointment_status: 'documented',
+      }),
+    ]);
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+
+    expect(await screen.findByText('Ohne Behandlung')).toBeInTheDocument();
   });
 
   it('verlinkt den Aenderungsverlauf nur fuer Eintraege mit Versionen und jeden Termin', async () => {

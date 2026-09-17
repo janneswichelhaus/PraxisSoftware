@@ -91,21 +91,20 @@ export const cancellationReasonLabels: Record<CancellationReason, string> = {
 };
 
 /**
- * Gebührenanlass eines Termins (CAL-014b, ADR-018 Fassung 2 Punkt 4).
+ * Gebührenanlass eines Termins (CAL-014b, CAL-018, ADR-018 Punkt 4).
  *
- * Gesetzt wird er **ausschließlich vom Server** aus der 24-Stunden-Frist. Die
- * Oberfläche liest ihn und rechnet nichts nach: Eine im Browser gerechnete
- * Frist wäre weder prüfbar noch verlässlich (`PROJECT_PRINCIPLES.md` §8).
- *
- * `no_show` entsteht in V1 nicht mehr; er steht an Zeilen aus der Zeit, als
- * das Nichtantreffen eine Pflichtentscheidung über das Ausfallhonorar trug.
+ * Gesetzt wird er **ausschließlich vom Server**: aus der 24-Stunden-Frist der
+ * Absage und aus dem bestätigten Protokoll des Nichtantreffens am Hausbesuch.
+ * Die Oberfläche liest ihn und rechnet nichts nach — eine im Browser
+ * gerechnete Frist wäre weder prüfbar noch verlässlich
+ * (`PROJECT_PRINCIPLES.md` §8).
  */
 const feeBasisSchema = z.enum(['late_cancellation', 'no_show']);
 type FeeBasis = z.infer<typeof feeBasisSchema>;
 
 export const feeBasisLabels: Record<FeeBasis, string> = {
   late_cancellation: 'Absage weniger als 24 Stunden vorher',
-  no_show: 'Nicht angetroffen (Kennzeichen aus früherer Fassung)',
+  no_show: 'Nicht angetroffen',
 };
 
 /**
@@ -197,9 +196,13 @@ const appointmentSchema = z.object({
   // Nur der Zeitpunkt, nicht die vermerkende Person: die Detailansicht zeigt
   // keine Akteure (ADR-010).
   no_show_recorded_at: z.string().nullable(),
-  // Der Gebührenanlass, serverseitig gesetzt (ADR-018 Fassung 2 Punkt 4).
-  // `late_cancellation` entsteht aus der Frist; `no_show` gibt es nur an
-  // Zeilen aus der Zeit vor dieser Entscheidung.
+  // Bestätigung des Hausbesuchsprotokolls (CAL-018): `true` nur am Hausbesuch
+  // und dann immer mit Gebührenanlass, `false` wo das Protokoll nicht gilt
+  // (ANN-055), `null` an Zeilen aus der Zeit davor.
+  no_show_protocol_confirmed: z.boolean().nullable(),
+  // Der Gebührenanlass, serverseitig gesetzt (ADR-018 Punkt 4).
+  // `late_cancellation` entsteht aus der Frist der Absage, `no_show` aus dem
+  // bestätigten Protokoll.
   fee_basis: feeBasisSchema.nullable(),
   // Die seit der letzten Terminänderung vermerkten Mitteilungswege (CAL-012).
   // Leer heißt „noch nicht mitgeteilt" ODER „seit der Mitteilung geändert" -
@@ -220,7 +223,8 @@ export type Appointment = z.infer<typeof appointmentSchema>;
 const SELECT =
   'id, patient_id, staff_member_id, location_id, appointment_type, kind, title, event_group_id, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
-  'cancellation_reason, cancellation_received_at, no_show_recorded_at, fee_basis, ' +
+  'cancellation_reason, cancellation_received_at, no_show_recorded_at, ' +
+  'no_show_protocol_confirmed, fee_basis, ' +
   'notification_channels, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
@@ -1224,18 +1228,27 @@ export async function cancelStaffDay(
 /**
  * Vermerkt einen bestätigten Termin als „nicht angetroffen".
  *
- * Ein Schritt, keine Entscheidung: Die behandelnde Person steht vor der Tür,
- * niemand öffnet, und sie hakt den Termin ab. Aus dem Vermerk allein entsteht
- * **keine** Gebühr; ob das Nichtantreffen eine eigene Gebührenregel bekommt,
- * ist offen (ADR-018 Fassung 2 Punkt 8, `OPEN_DECISIONS.md` E14).
+ * Am **Hausbesuch** verlangt der Server die Bestätigung des Protokolls —
+ * 15 Minuten gewartet, geklingelt, angerufen — und merkt daraufhin eine
+ * Ausfallgebühr vor (CAL-018, ADR-018 Fassung 3 Punkt 9). Ohne Bestätigung
+ * geschieht nichts: Der Termin bleibt bestätigt.
+ *
+ * An einem Praxis- oder Videotermin gilt das Protokoll nicht (ANN-055); dort
+ * bleibt der Vermerk ein Schritt ohne Gebühr, und `protocolConfirmed` muss
+ * `false` sein — der Server weist es sonst ab.
+ *
+ * Gesetzt wird der Gebührenanlass ausschließlich serverseitig. Diese Funktion
+ * übergibt eine Bestätigung, keine Entscheidung über Geld.
  */
 export async function recordNoShow(
   appointmentId: string,
   expectedUpdatedAt: string,
+  protocolConfirmed: boolean,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('record_no_show', {
     p_appointment_id: appointmentId,
     p_expected_updated_at: expectedUpdatedAt,
+    p_protocol_confirmed: protocolConfirmed,
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht vermerkt werden.');

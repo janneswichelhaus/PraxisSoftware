@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/TextArea';
@@ -45,9 +45,12 @@ import {
 function Abschluss({
   appointment,
   note,
+  ohneBehandlung,
 }: {
   appointment: Appointment;
   note: TreatmentNote | null;
+  /** Hausbesuch-Szenario 1: Tür geöffnet, Behandlung nicht durchgeführt. */
+  ohneBehandlung: boolean;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -124,6 +127,7 @@ function Abschluss({
       wertRef.current,
       appointment.updated_at,
       note?.updated_at ?? null,
+      ohneBehandlung,
     );
     await nachSchreiben();
     return true;
@@ -144,10 +148,29 @@ function Abschluss({
   return (
     <>
       <PageHeader
-        title="Behandlung abschließen"
+        title={ohneBehandlung ? 'Ohne Behandlung abschließen' : 'Behandlung abschließen'}
         description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
         kompakt
       />
+
+      {/* Der Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018, ADR-018
+          Fassung 3 Punkt 9). Er steht hier als Feststellung und nicht als
+          Kästchen zum Umschalten: Wer diesen Weg gewählt hat, hat die Frage am
+          Termin schon beantwortet, und ein zweites Mal danach zu fragen hieße,
+          die erste Antwort nicht ernst zu nehmen. Wer sich vertan hat, geht
+          zurück und wählt den anderen Weg. */}
+      {ohneBehandlung ? (
+        <div className="border-line-strong bg-surface-sunken rounded-card mb-5 max-w-2xl border p-4">
+          <p className="text-ink text-sm leading-relaxed">
+            <strong className="font-medium">
+              Vermerk: Tür geöffnet, Behandlung auf Angabe der Patient:in nicht durchgeführt.
+            </strong>{' '}
+            Der Termin gilt als durchgeführt und wird normal abgerechnet; eine Ausfallgebühr
+            entsteht nicht. Der Vermerk wird mit dem Abschluss gesetzt und gehört dann zum Eintrag –
+            ein Entwurf trägt ihn noch nicht.
+          </p>
+        </div>
+      ) : null}
 
       <form
         noValidate
@@ -167,7 +190,11 @@ function Abschluss({
 
         <TextArea
           label="Eintrag zur Behandlung"
-          hint="Freitext. Was hier steht, wird mit dem Abschluss Bestandteil der Akte."
+          hint={
+            ohneBehandlung
+              ? 'Freitext. Was hier steht, wird mit dem Abschluss Bestandteil der Akte – etwa, was die Patient:in an der Tür gesagt hat.'
+              : 'Freitext. Was hier steht, wird mit dem Abschluss Bestandteil der Akte.'
+          }
           rows={12}
           value={wert}
           error={fehler}
@@ -201,7 +228,11 @@ function Abschluss({
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={laeuft}>
-            {schreibtAbschluss ? 'Wird abgeschlossen …' : 'Behandlung abschließen'}
+            {schreibtAbschluss
+              ? 'Wird abgeschlossen …'
+              : ohneBehandlung
+                ? 'Ohne Behandlung abschließen'
+                : 'Behandlung abschließen'}
           </Button>
 
           <Button
@@ -242,6 +273,12 @@ function Abschluss({
 
 export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
   const { appointmentId } = useParams<{ appointmentId: string }>();
+  const [suche] = useSearchParams();
+
+  // Der Weg aus dem geführten Ablauf am Hausbesuch (CAL-018). Er reist in der
+  // Adresszeile wie der Rückweg: So überlebt er ein Neuladen, und die Seite
+  // braucht keinen zweiten Zustand neben dem Text.
+  const ohneBehandlungGewaehlt = suche.get('ohne-behandlung') === '1';
 
   return (
     <DocumentationShell
@@ -268,7 +305,17 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
           );
         }
 
-        return <Abschluss appointment={appointment} note={dokumentation.primary} />;
+        return (
+          <Abschluss
+            appointment={appointment}
+            note={dokumentation.primary}
+            // Der Vermerk gilt am Hausbesuch (ANN-055). Ein verstellter
+            // Parameter an einem Praxistermin fällt hier still weg, statt in
+            // eine Fehlermeldung des Servers zu laufen; verbindlich weist der
+            // Server ihn ohnehin ab.
+            ohneBehandlung={ohneBehandlungGewaehlt && appointment.appointment_type === 'home_visit'}
+          />
+        );
       }}
     </DocumentationShell>
   );

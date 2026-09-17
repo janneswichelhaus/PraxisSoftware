@@ -33,6 +33,7 @@ const zeile = {
   addendum_to_note_id: null,
   status: 'draft',
   content: 'Synthetischer Testinhalt.',
+  visit_without_treatment: false,
   created_at: '2027-05-12T08:10:00.123456+00:00',
   updated_at: STAND,
   finalized_at: null,
