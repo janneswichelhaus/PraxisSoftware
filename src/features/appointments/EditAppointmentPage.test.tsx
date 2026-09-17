@@ -217,12 +217,13 @@ describe('EditAppointmentPage', () => {
     expect(screen.getByText('Ende: 15:30 Uhr')).toBeInTheDocument();
   });
 
-  describe('CAL-010a: Bestandstermin mit abweichender Laenge', () => {
+  describe('CAL-010a, CAL-020: Termin mit abweichender Laenge', () => {
     /**
-     * Derselbe Termin, aber 09:00-09:30 - angelegt vor der Festlegung.
+     * Derselbe Termin, aber 09:00-09:30.
      *
-     * Seit CAL-015b sind 45 Minuten zulaessig; der Bestandsfall braucht
-     * deshalb eine Laenge, die es auch heute nicht gibt.
+     * Seit CAL-020 ist das keine Altlast mehr, sondern eine zulaessige Laenge
+     * (8.1 in der Fassung 0.11). Geblieben ist die Zusage, dass das Formular
+     * sie nicht von sich aus aendert (ANN-056).
      */
     const kurz: AppointmentsApi.Appointment = {
       ...termin,
@@ -237,16 +238,18 @@ describe('EditAppointmentPage', () => {
       rendern();
       await formularAbwarten();
 
-      expect(screen.getByLabelText('Dauer')).toHaveValue('30');
+      expect(screen.getByLabelText('Dauer')).toHaveValue('frei');
+      expect(screen.getByLabelText('Länge in Minuten')).toHaveValue(30);
       expect(screen.getByText('Ende: 09:30 Uhr')).toBeInTheDocument();
-      expect(screen.getByText(/stammt aus der Zeit vor der Festlegung/)).toBeInTheDocument();
+      // Die Abweichung wird angekuendigt, nicht verhindert (8.1).
+      expect(screen.getByText(/Weicht von 45 und 60 Minuten ab/)).toBeInTheDocument();
 
       await user.clear(screen.getByLabelText('Beginn *'));
       await user.type(screen.getByLabelText('Beginn *'), '14:00');
       expect(screen.getByText('Ende: 14:30 Uhr')).toBeInTheDocument();
     });
 
-    it('bekommt eine zulaessige Laenge erst auf ausdrueckliche Anweisung', async () => {
+    it('bekommt eine Regellaenge erst auf ausdrueckliche Anweisung', async () => {
       fetchAppointment.mockResolvedValue(kurz);
       const user = userEvent.setup();
       rendern();
@@ -255,8 +258,9 @@ describe('EditAppointmentPage', () => {
       await user.selectOptions(screen.getByLabelText('Dauer'), '60');
 
       expect(screen.getByText('Ende: 10:00 Uhr')).toBeInTheDocument();
-      // Der Hinweis ist danach gegenstandslos.
-      expect(screen.queryByText(/stammt aus der Zeit vor der Festlegung/)).not.toBeInTheDocument();
+      // Der Hinweis ist danach gegenstandslos, das Minutenfeld auch.
+      expect(screen.queryByText(/Weicht von 45 und 60 Minuten ab/)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Länge in Minuten')).not.toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
       await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
@@ -267,10 +271,29 @@ describe('EditAppointmentPage', () => {
       );
     });
 
-    it('zeigt den Hinweis bei einem Termin im Terminfenster nicht', async () => {
+    it('zeigt den Hinweis bei einem Termin mit Regellaenge nicht', async () => {
       rendern();
       await formularAbwarten();
-      expect(screen.queryByText(/stammt aus der Zeit vor der Festlegung/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Weicht von 45 und 60 Minuten ab/)).not.toBeInTheDocument();
+    });
+
+    it('speichert eine frei eingegebene Laenge (CAL-020)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Dauer'), 'frei');
+      await user.clear(screen.getByLabelText('Länge in Minuten'));
+      await user.type(screen.getByLabelText('Länge in Minuten'), '90');
+      expect(screen.getByText('Ende: 10:30 Uhr')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment).toHaveBeenCalledWith(
+        TERMIN_ID,
+        STAND,
+        expect.objectContaining({ start_time: '09:00', end_time: '10:30' }),
+      );
     });
   });
 

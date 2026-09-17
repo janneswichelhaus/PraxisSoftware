@@ -37,6 +37,7 @@ import {
 import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, istOffen, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
+import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 
 /**
  * Übersicht - der persönliche Einstieg.
@@ -98,6 +99,8 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
             {` · ${staffName(termin)}`}
           </span>
         </span>
+        {/* §8.1: weder 45 noch 60 Minuten - gekennzeichnet, nicht verboten (CAL-020). */}
+        <Laengenzeichen termin={termin} />
         {termin.status !== 'confirmed' ? (
           <Badge ton={appointmentStatusTon[termin.status]}>
             {appointmentStatusLabels[termin.status]}

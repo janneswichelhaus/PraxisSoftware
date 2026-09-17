@@ -163,10 +163,9 @@ describe('NewAppointmentPage', () => {
   });
 
   /**
-   * CAL-015b: Seit der Festlegung vom 12.09.2026 gibt es zwei zulaessige
-   * Laengen. Die Auswahl bietet genau diese beiden an - ein frei
-   * beschreibbares Ende waere eine Falle, weil der Server eine dritte Laenge
-   * abweist.
+   * CAL-015b, CAL-020: 60 und 45 Minuten sind die Regellaengen und bleiben
+   * der kurze Weg. Seit 8.1 in der Fassung 0.11 kommt "Andere Laenge" dazu -
+   * der Server nimmt jede Laenge im Praxisraster an.
    */
   it('bietet 60 und 45 Minuten an und zieht das Ende mit (CAL-015b)', async () => {
     const user = userEvent.setup();
@@ -176,10 +175,35 @@ describe('NewAppointmentPage', () => {
     await user.type(screen.getByLabelText('Beginn *'), '10:15');
     expect(
       Array.from(screen.getByLabelText('Dauer').querySelectorAll('option')).map((o) => o.value),
-    ).toEqual(['60', '45']);
+    ).toEqual(['60', '45', 'frei']);
 
     await user.selectOptions(screen.getByLabelText('Dauer'), '45');
     expect(screen.getByText('Ende: 11:00 Uhr')).toBeInTheDocument();
+  });
+
+  it('nimmt ueber "Andere Laenge" eine freie Laenge im Raster an (CAL-020)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.type(screen.getByLabelText('Beginn *'), '10:15');
+    // Ohne ausdrueckliche Wahl gibt es kein Minutenfeld: 60 bleibt der kurze Weg.
+    expect(screen.queryByLabelText('Länge in Minuten')).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Dauer'), 'frei');
+    const feld = screen.getByLabelText('Länge in Minuten');
+    expect(feld).toHaveValue(60);
+
+    await user.clear(feld);
+    await user.type(feld, '30');
+    expect(screen.getByText('Ende: 10:45 Uhr')).toBeInTheDocument();
+    expect(screen.getByText(/Weicht von 45 und 60 Minuten ab/)).toBeInTheDocument();
+
+    // Ausserhalb des Rasters (testUser: 5 Minuten): ein Hinweis am Feld. Die
+    // verbindliche Pruefung bleibt beim Server.
+    await user.clear(feld);
+    await user.type(feld, '32');
+    expect(screen.getByText(/Vielfaches von 5 Minuten/)).toBeInTheDocument();
   });
 
   it('begrenzt das Datumsfeld auf den laufenden Praxistag', async () => {

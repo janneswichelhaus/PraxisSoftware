@@ -650,21 +650,31 @@ describe('Zwei Terminlaengen (CAL-015b)', () => {
     expect(rows[0]?.id).toBeTruthy();
   });
 
-  it('weist eine dritte Laenge weiterhin ab', async () => {
-    await expect(
-      asUser(users.office, ANLEGEN, [patients.max, ANNA, 'video', TAG, '13:00', '13:30', null]),
-    ).rejects.toThrow(/appointment window must be/);
+  it('nimmt seit CAL-020 auch eine dritte Laenge an', async () => {
+    // PROJECT_PRINCIPLES.md 0.11 Abschnitt 8.1: keine Schranke mehr fuer die
+    // Laenge; die Abweichung wird in der Anzeige gekennzeichnet.
+    const { rows } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
+      patients.max,
+      ANNA,
+      'video',
+      TAG,
+      '13:00',
+      '13:30',
+      null,
+    ]);
+    expect(rows[0]?.id).toBeTruthy();
   });
 
-  it('nennt in der Meldung beide zulaessigen Laengen', async () => {
-    await expect(
-      asUser(users.office, ANLEGEN, [patients.max, ANNA, 'video', TAG, '13:00', '13:30', null]),
-    ).rejects.toThrow(/60 or 45/);
+  it('weist eine Laenge ausserhalb des Rasters ab, ohne Laengen vorzuschreiben', async () => {
+    const versuch = (): Promise<unknown> =>
+      asUser(users.office, ANLEGEN, [patients.max, ANNA, 'video', TAG, '13:00', '13:32', null]);
+    await expect(versuch()).rejects.toThrow(/appointment length is not on the appointment grid/);
+    await expect(versuch()).rejects.not.toThrow(/60 or 45/);
   });
 
   it('laesst einen Bestandstermin mit anderer Laenge organisatorisch aendern', async () => {
-    // Direkt eingefuegt: eine Laenge, die der Schreibpfad nicht mehr anlegen
-    // wuerde - der Bestandsschutz aus ANN-037 gilt unveraendert.
+    // Direkt eingefuegt, wie ein Termin aus der Zeit vor 8.1 - der
+    // Bestandsschutz (ANN-056, vormals ANN-037) gilt unveraendert.
     const { rows } = await asPostgres<{ id: string }>(
       `insert into public.appointments (
          organization_id, patient_id, staff_member_id, appointment_type, status,

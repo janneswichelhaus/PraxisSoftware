@@ -6,6 +6,7 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentTypeLabels,
@@ -90,7 +91,9 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
         <li key={termin.id} className="py-2">
           <span className="text-ink block">
             {formatLocalDate(termin.starts_at, timeZone)} ·{' '}
-            {formatLocalTimeRange(termin.starts_at, termin.ends_at, timeZone)}
+            {formatLocalTimeRange(termin.starts_at, termin.ends_at, timeZone)}{' '}
+            {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
+            <Laengenzeichen termin={termin} />
           </span>
           <span className="text-ink-muted block">
             {/* Ein Ereignis des Praxisbetriebs steht mit seinem Titel da

@@ -10,6 +10,7 @@ import { Card, CardGrid } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/today/api';
+import { Laengenzeichen } from './Laengenzeichen';
 import { istIsoDatum } from './calendar';
 import {
   appointmentStatusLabels,
@@ -88,8 +89,10 @@ function Anrufkarte({
   return (
     <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="text-ink text-[0.9375rem] font-semibold tabular-nums">
+        <p className="text-ink flex flex-wrap items-center gap-x-2 text-[0.9375rem] font-semibold tabular-nums">
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
+          {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
+          <Laengenzeichen termin={termin} />
         </p>
         <span className="text-ink-subtle text-xs">{appointmentStatusLabels[termin.status]}</span>
       </div>
@@ -222,7 +225,8 @@ function Umplanung({
                           )}
                         </span>
                         {` · ${termin.patient_given_name} ${termin.patient_family_name}`}
-                        {` · ${appointmentTypeLabels[termin.appointment_type]}`}
+                        {` · ${appointmentTypeLabels[termin.appointment_type]}`}{' '}
+                        <Laengenzeichen termin={termin} />
                       </li>
                     ))}
                   </ul>

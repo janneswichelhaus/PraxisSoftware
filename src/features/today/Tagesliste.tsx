@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { Card } from '@/components/ui/Card';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -42,8 +43,10 @@ export function Tageskarte({
   return (
     <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="text-ink text-[0.9375rem] font-semibold tabular-nums">
+        <p className="text-ink flex flex-wrap items-center gap-x-2 text-[0.9375rem] font-semibold tabular-nums">
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
+          {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
+          <Laengenzeichen termin={termin} />
         </p>
         <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
       </div>

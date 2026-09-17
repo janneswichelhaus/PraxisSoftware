@@ -13,6 +13,7 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
+import { Laengenzeichen } from './Laengenzeichen';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
@@ -80,6 +81,9 @@ function Terminzeile({
 
         {/* Wege und Zustand beantworten dieselbe Frage: Ist an diesem Termin
             noch etwas zu tun? (CAL-012) */}
+        {/* §8.1: weder 45 noch 60 Minuten - gekennzeichnet, nicht verboten
+            (CAL-020). Die Akte führt nur Behandlungstermine. */}
+        <Laengenzeichen termin={termin} />
         <Mitteilungszeichen kanaele={termin.notification_channels} />
         {termin.status !== 'confirmed' ? (
           <Badge ton={appointmentStatusTon[termin.status]}>

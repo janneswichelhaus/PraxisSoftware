@@ -517,7 +517,9 @@ Technik · in ADR überführt · 2026-09-13 · ADR-018 Fassung 3 · erledigt · 
 
 ### ANN-037 — Geprüft wird die Länge des Terminfensters, nicht der Zeitpunkt
 
-Praxisprozess · entschieden (Jannes) · 2026-09-12 · Jannes · erledigt · Wiedervorlage: nur noch mit E12 Punkt 2 (Länge je Praxis einstellbar); Punkt 1 ist seit CAL-015b erledigt, siehe Nachtrag 2026-09-13
+Praxisprozess · entschieden (Jannes) · 2026-09-12 · Jannes · erledigt · Wiedervorlage: keine — die Längenschranke ist mit `PROJECT_PRINCIPLES.md` 0.11 §8.1 entfallen (CAL-020)
+
+**Ablösung.** abgelöst durch ANN-056 in der Frage, wogegen die Länge geprüft wird; der Bestandsschutz („nur wenn sie sich ändert") gilt dort unverändert weiter
 
 **Annahme.** `create_appointment` verlangt immer ein Zeitfenster von 60 Minuten; `update_appointment` prüft die Länge genau dann, wenn sie sich ändert. Ein Bestandstermin mit abweichender Länge bleibt gültig, bearbeitbar und verschiebbar, solange seine Länge unangetastet bleibt. Im Bearbeitungsformular zieht ein geänderter Beginn das Ende mit der bisherigen Länge mit; ein eigener Knopf setzt den Termin ausdrücklich auf das Terminfenster.
 
@@ -756,3 +758,17 @@ Praxisprozess · entschieden (Jannes) · 2026-09-16, bestätigt 2026-09-17 · Ja
 **Anker.** Die Artprüfung in `public.record_no_show` und in `public.complete_treatment` in `supabase/migrations/20260916100000_home_visit_scenarios.sql`; `istHausbesuch` in `src/features/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/home-visit-scenarios.test.ts`.
 
 **Änderungspfad.** Regel auf alle Behandlungstermine ausdehnen: die Artprüfung in beiden Funktionen fällt weg, die Protokolltexte werden neutral formuliert, der geführte Ablauf gilt für jeden Termin · Aufwand `klein`. Eigene Regel je Terminart (etwa Gebühr ohne Protokoll in der Praxis): eine Verzweigung mehr an derselben Stelle · Aufwand `klein`.
+
+### ANN-056 — Die freie Terminlänge liegt im Praxisraster und wird nur geprüft, wenn sie sich ändert
+
+Praxisprozess · offen · 2026-09-17 · — · — · Wiedervorlage: Jannes, falls eine Länge außerhalb des Rasters gebraucht wird (etwa 50 Minuten bei 15er-Raster); erneut mit E12 Punkt 2
+
+**Ablösung.** ersetzt ANN-037 in der Frage, wogegen die Länge geprüft wird
+
+**Annahme.** Ein Behandlungstermin darf jede Länge haben, die ein ganzes Vielfaches des Praxisrasters ist, mindestens einen Rasterschritt; `create_appointment` prüft das immer, `update_appointment` nur, wenn sich die Länge ändert. Ein Termin mit einer Länge außerhalb des Rasters (Altbestand, späterer Rasterwechsel) bleibt gültig, organisatorisch änderbar und verschiebbar. Gekennzeichnet wird in der Anzeige, was weder 45 noch 60 Minuten dauert — gerechnet aus Beginn und Ende, ohne gespeichertes Merkmal.
+
+**Begründung.** `PROJECT_PRINCIPLES.md` 0.11 §8.1 nennt als Schranke „mindestens einen Rasterschritt" und hält zugleich fest, dass das Raster serverseitig durchgesetzt bleibt. „Vielfaches des Rasters" ist die Lesart, bei der mit dem Beginn auch das Ende auf einem Rasterpunkt liegt — dieselbe Regel, die für Ereignisse schon gilt (CAL-015b), und die Voraussetzung dafür, dass CAL-019 eine aufgezogene Spanne ohne Sonderfall übernimmt. 45 und 60 Minuten passen in jedes zulässige Raster (5, 10, 15). Der Bestandsschutz stammt unverändert aus ANN-037 und §8.1 („DARF NICHT an der Länge scheitern"). Das Kennzeichen wird gerechnet statt gespeichert, weil es vollständig aus zwei vorhandenen Werten folgt und so nie von ihnen abweichen kann (ADR-014). Unsicher: ob die Praxis je eine Länge zwischen zwei Rasterpunkten braucht.
+
+**Anker.** `app.is_valid_treatment_length` und die beiden Längenprüfungen in `supabase/migrations/20260917110000_free_appointment_length.sql`; `abweichendeLaengeMinuten` in `src/features/appointments/api.ts`, `Laengenzeichen.tsx`; Tests in `supabase/tests/appointment-window.test.ts` und `src/features/appointments/Laengenzeichen.test.tsx`.
+
+**Änderungspfad.** Länge ganz vom Raster lösen: `app.is_valid_treatment_length` auf „größer null" reduzieren und die Schrittweite des Minutenfelds entfernen · Aufwand `klein`, ohne Datenumzug. Kennzeichen an anderen Regellängen ausrichten: `app.appointment_window_options()` und `TERMINFENSTER_OPTIONEN` gemeinsam ändern (ein Datenbanktest hält sie gegeneinander) · Aufwand `klein`.

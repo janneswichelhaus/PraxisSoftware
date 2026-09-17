@@ -24,7 +24,6 @@ import {
   leererTermin,
   patientName,
   TERMINFENSTER_MINUTEN,
-  TERMINFENSTER_OPTIONEN,
   terminLaengeMinuten,
   todayInTimeZone,
   updateAppointment,
@@ -140,7 +139,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     setWerte((bisher) =>
       feld === 'start_time'
         ? // Verschieben lässt die Länge unangetastet - auch bei einem
-          // Bestandstermin, der von den 60 Minuten abweicht (ANN-037).
+          // Termin, der von den Regellängen abweicht (ANN-056).
           { ...bisher, start_time: wert, end_time: fensterEnde(wert, fensterMinuten) }
         : { ...bisher, [feld]: wert },
     );
@@ -315,21 +314,6 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
             )
           }
         />
-
-        {/* Ein Termin aus der Zeit vor §8.1 behält seine Länge und bleibt
-            verschiebbar (ANN-037). Die Auswahl oben führt sie als eigenen
-            Eintrag; wer eine der zulässigen Längen wählt, ändert sie
-            ausdrücklich. */}
-        {istEreignis ||
-        (TERMINFENSTER_OPTIONEN as readonly number[]).includes(fensterMinuten) ? null : (
-          <div className="border-line-strong bg-surface-sunken rounded-card mt-5 border p-4">
-            <p className="text-ink text-sm">
-              Dieser Termin hat ein Zeitfenster von {fensterMinuten} Minuten und stammt aus der Zeit
-              vor der Festlegung auf {TERMINFENSTER_OPTIONEN.join(' oder ')} Minuten. Er bleibt so
-              gültig und verschiebbar; über „Dauer" lässt er sich ausdrücklich ändern.
-            </p>
-          </div>
-        )}
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>

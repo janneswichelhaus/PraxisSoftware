@@ -1,6 +1,6 @@
 import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { TERMINFENSTER_MINUTEN } from '@/features/appointments/api';
+import { TERMINFENSTER_MINUTEN, TERMINFENSTER_OPTIONEN } from '@/features/appointments/api';
 import {
   SEED,
   asPostgres,
@@ -155,17 +155,54 @@ describe('Terminfenster (CAL-010a)', () => {
       expect(id).toBeTruthy();
     });
 
-    it('weist ein kuerzeres Zeitfenster ab', async () => {
-      await expect(anlegen('09:00', '09:30')).rejects.toThrow(/appointment window must be/);
+    // CAL-020, PROJECT_PRINCIPLES.md 0.11 Abschnitt 8.1: Die Laenge ist frei.
+    // Diese drei Faelle waren bis dahin die abgewiesenen; sie pruefen jetzt,
+    // dass der Server die abweichende Laenge ANNIMMT und unveraendert
+    // speichert - gekennzeichnet wird sie in der Anzeige (istAbweichendeLaenge).
+    it('nimmt ein kuerzeres Zeitfenster an', async () => {
+      const id = await anlegenCommitted('09:00', '09:30');
+      expect(await fensterVon(id)).toBe('00:30');
     });
 
-    it('weist ein laengeres Zeitfenster ab', async () => {
-      await expect(anlegen('09:00', '10:30')).rejects.toThrow(/appointment window must be/);
+    it('nimmt ein laengeres Zeitfenster an', async () => {
+      const id = await anlegenCommitted('09:00', '10:30');
+      expect(await fensterVon(id)).toBe('01:30');
     });
 
-    it('weist auch ein Zeitfenster ab, das nur um fuenf Minuten abweicht', async () => {
-      await expect(anlegen('09:00', '10:05')).rejects.toThrow(/appointment window must be/);
-      await expect(anlegen('09:00', '09:50')).rejects.toThrow(/appointment window must be/);
+    it('nimmt auch ein Zeitfenster an, das nur um fuenf Minuten abweicht', async () => {
+      const id = await anlegenCommitted('09:00', '10:05');
+      expect(await fensterVon(id)).toBe('01:05');
+    });
+
+    it('nimmt einen einzelnen Rasterschritt als kuerzeste Laenge an', async () => {
+      const id = await anlegenCommitted('09:00', '09:05');
+      expect(await fensterVon(id)).toBe('00:05');
+    });
+
+    it('weist eine Laenge ab, die nicht im Praxisraster liegt', async () => {
+      // Raster des Seeds: 5 Minuten. 8.1: "mindestens einen Rasterschritt" -
+      // und das Raster selbst bleibt serverseitig durchgesetzt.
+      await expect(anlegen('09:00', '09:32')).rejects.toThrow(
+        /appointment length is not on the appointment grid/,
+      );
+      await expect(anlegen('09:00', '09:03')).rejects.toThrow(
+        /appointment length is not on the appointment grid/,
+      );
+    });
+
+    it('weist ein Ende ab, das nicht nach dem Beginn liegt', async () => {
+      await expect(anlegen('09:00', '09:00')).rejects.toThrow(/end time must be after start time/);
+      await expect(anlegen('09:00', '08:30')).rejects.toThrow(/end time must be after start time/);
+    });
+
+    it('haelt die Regellaengen der Oberflaeche und der Datenbank gegeneinander', async () => {
+      // Wer weder 45 noch 60 Minuten dauert, wird gekennzeichnet (8.1). Die
+      // Liste steht an zwei Stellen; laufen sie auseinander, kennzeichnet die
+      // Anzeige etwas anderes, als die Datenbank als Regel ausweist.
+      const { rows } = await asPostgres<{ optionen: number[] }>(
+        'select app.appointment_window_options() as optionen',
+      );
+      expect(rows[0]!.optionen).toEqual([...TERMINFENSTER_OPTIONEN]);
     });
 
     it('laesst jeden Rasterpunkt als Beginn zu', async () => {
@@ -191,7 +228,23 @@ describe('Terminfenster (CAL-010a)', () => {
       expect(await fensterVon(id)).toBe('01:00');
     });
 
-    it('weist eine geaenderte Laenge ab, die nicht 60 Minuten ergibt', async () => {
+    it('nimmt eine geaenderte Laenge an, die nicht 60 Minuten ergibt', async () => {
+      // CAL-020: bis 0.11 abgewiesen, jetzt angenommen und gespeichert.
+      const id = await anlegenCommitted('09:00', '10:00');
+      await asUserCommitted(users.therapist, AENDERN, [
+        id,
+        await standVon(id),
+        STAFF_ANNA,
+        'video',
+        TAG,
+        '09:00',
+        '09:30',
+        null,
+      ]);
+      expect(await fensterVon(id)).toBe('00:30');
+    });
+
+    it('weist eine geaenderte Laenge ab, die nicht im Praxisraster liegt', async () => {
       const id = await anlegenCommitted('09:00', '10:00');
       const stand = await standVon(id);
       await expect(
@@ -202,10 +255,10 @@ describe('Terminfenster (CAL-010a)', () => {
           'video',
           TAG,
           '09:00',
-          '09:30',
+          '09:32',
           null,
         ]),
-      ).rejects.toThrow(/appointment window must be 60/);
+      ).rejects.toThrow(/appointment length is not on the appointment grid/);
     });
   });
 
@@ -213,7 +266,9 @@ describe('Terminfenster (CAL-010a)', () => {
     it('bleibt rein organisatorisch bearbeitbar', async () => {
       // 8.1: "eine rein organisatorische Aenderung an ihm DARF NICHT an der
       // Laenge scheitern".
-      const id = await bestandsterminAnlegen('09:00', '09:45');
+      // 47 Minuten: eine Laenge, die der Schreibpfad auch nach CAL-020 nicht
+      // anlegen wuerde, weil sie nicht im 5-Minuten-Raster liegt.
+      const id = await bestandsterminAnlegen('09:00', '09:47');
       await asUserCommitted(users.therapist, AENDERN, [
         id,
         await standVon(id),
@@ -221,7 +276,7 @@ describe('Terminfenster (CAL-010a)', () => {
         'video',
         TAG,
         '09:00',
-        '09:45',
+        '09:47',
         null,
       ]);
 
@@ -230,13 +285,14 @@ describe('Terminfenster (CAL-010a)', () => {
         [id],
       );
       expect(rows[0]!.staff_member_id).toBe('55555555-5555-4555-8555-000000000001');
-      expect(await fensterVon(id)).toBe('00:45');
+      expect(await fensterVon(id)).toBe('00:47');
     });
 
     it('bleibt verschiebbar, solange seine Laenge unveraendert bleibt', async () => {
-      // ANN-037: geprueft wird die Laenge, nicht der Zeitpunkt. Die Anwendung
-      // darf einen Bestandstermin nicht selbsttaetig verlaengern (8.1).
-      const id = await bestandsterminAnlegen('09:00', '09:45');
+      // ANN-056 (vormals ANN-037): geprueft wird die Laenge, nicht der
+      // Zeitpunkt. Die Anwendung darf einen Bestandstermin nicht selbsttaetig
+      // verlaengern (8.1).
+      const id = await bestandsterminAnlegen('09:00', '09:47');
       await asUserCommitted(users.therapist, AENDERN, [
         id,
         await standVon(id),
@@ -244,14 +300,14 @@ describe('Terminfenster (CAL-010a)', () => {
         'video',
         TAG,
         '15:00',
-        '15:45',
+        '15:47',
         null,
       ]);
-      expect(await fensterVon(id)).toBe('00:45');
+      expect(await fensterVon(id)).toBe('00:47');
     });
 
-    it('bekommt das Terminfenster, sobald jemand seine Laenge anfasst', async () => {
-      const id = await bestandsterminAnlegen('09:00', '09:45');
+    it('muss ins Raster, sobald jemand seine Laenge anfasst', async () => {
+      const id = await bestandsterminAnlegen('09:00', '09:47');
       const stand = await standVon(id);
       await expect(
         asUser(users.therapist, AENDERN, [
@@ -261,10 +317,10 @@ describe('Terminfenster (CAL-010a)', () => {
           'video',
           TAG,
           '09:00',
-          '10:15',
+          '10:17',
           null,
         ]),
-      ).rejects.toThrow(/appointment window must be 60/);
+      ).rejects.toThrow(/appointment length is not on the appointment grid/);
 
       await asUserCommitted(users.therapist, AENDERN, [
         id,
