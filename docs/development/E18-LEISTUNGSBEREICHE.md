@@ -186,25 +186,24 @@ stehen, damit niemand die alte Fassung erneut anwendet:
    Gründungsmigration, `patients` ist bereits das Behandlungsverhältnis. Die
    Änderung ist additiv: `training_clients` kommt daneben.
 
-## Pseudonymität — Empfehlung, noch keine Festlegung
+## Pseudonymität — entschieden am 2026-09-17
 
 Der ursprüngliche Verweis auf eine „pseudonyme Patientencode-Architektur aus
-v1" bezog sich auf einen Prototyp-Stand, nicht auf dieses Repository. Hier
-tragen Personen **Klarnamen** in `persons`, geschützt über RLS, Auditpflicht
-und Verschlüsselung.
+v1" bezog sich auf einen Prototyp-Stand, nicht auf dieses Repository.
 
-**Empfehlung des Projektinhabers (2026-09-17):** Klarnamen beibehalten, keine
+**Festlegung des Projektinhabers:** Klarnamen beibehalten, keine
 Pseudonymisierung nachrüsten. In einer Praxis, in der er selbst behandelt,
-bringt sie kaum Schutz — die Zuordnung ist ohnehin bekannt und muss
-herstellbar sein —, erschwert aber Terminorganisation, Abrechnung und
-Kommunikation erheblich. Das Schutzniveau liefern RLS, Audit und
-Verschlüsselung. Für `training_clients` gilt dasselbe; alles andere wären zwei
-Datenschutzniveaus in einer Anwendung.
+schützt sie kaum — die Zuordnung ist ohnehin bekannt und muss herstellbar
+sein —, erschwert aber Terminorganisation, Abrechnung und Kommunikation
+erheblich. Das Schutzniveau liefern Zugriffskontrolle, Audit und
+Verschlüsselung. **Für `training_clients` gilt dasselbe**; zwei
+Datenschutzniveaus in einer Anwendung dürfen nicht entstehen.
 
-**Status: noch nicht als Festlegung markiert.** Fällt die Entscheidung anders
-aus, gehört sie nach **§ 1** und nicht in einen ADR — sie bestimmt alles
-darunter. Ein Wort von Jannes macht aus der Empfehlung eine Festlegung; bis
-dahin gilt der gebaute Stand (Klarnamen), und der Punkt bleibt hier offen.
+**Erledigt:** Die Festlegung steht seit dem 2026-09-17 als **§ 1.1** in
+`PROJECT_PRINCIPLES.md` (Version **0.12**) — nicht in einem ADR, weil sie
+alles darunter bestimmt. Damit ist dieser Punkt des Rang-1-Nachzugs **vorab
+erledigt**; die übrigen Sätze zu § 1, § 4 und § 14 kommen gemeinsam, wenn die
+ADRs darunter stehen.
 
 ## Was vor dem Bauen noch fehlt
 
