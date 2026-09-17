@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-15 · letzte Session: FIX-015 (BEF-004)
+# Status · Stand 2026-09-17 · letzte Session: FIX-015 (BEF-004)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
@@ -10,7 +10,7 @@ einträgt, hat sie damit nicht eingeplant.
 
 - **CAL-018** — Hausbesuch-Szenarien aus E14: Nichtantreffen, Ausfallhonorar,
   Protokoll. Aufruf: `/feature-loop CAL-018 Hausbesuch-Szenarien` · Pfad A ·
-  Effort: Default · beginnt erst auf Freigabe, nach den Merges unten
+  Effort: Default · beginnt erst auf Freigabe
 
 ## Danach
 
@@ -19,15 +19,6 @@ einträgt, hat sie damit nicht eingeplant.
   ROL-EPIC-001 auf. Pfad A · Effort: Default
 - **ABR-EPIC-001** — Leistungen entstehen aus durchgeführten Terminen
   (Praxis-Stammdaten, Leistungskatalog). Pfad A · Effort: xhigh (Migrationen)
-
-## Zum Merge — Reihenfolge verbindlich
-
-1. **PR #41** — ROL-EPIC-001, `claude/rol-epic-001` → `main`.
-2. **PR #42** — FIX-015, `claude/fix-bef-004`, gestapelt auf #41 und mit dessen
-   Commits; erst danach mergen, die Basis vorher auf `main` stellen.
-
-#41: CI grün, Zweitreview mit Befund BEF-004. #42: Zweitreview in frischem
-Kontext, Befunde eingearbeitet, CI-Ergebnis im PR. Abnahme beider offen.
 
 ## Blocker (Jannes-seitig)
 
@@ -55,6 +46,7 @@ Zuerst rot gegen die laufende API belegt, dann behoben (ANN-052 Fassung 2,
 neues Auditereignis `storage_deletion.claimed`). E15-Umsetzungsvermerke
 nachgezogen. Offen bleiben BEF-005 und die Datenschutzprüfung B2.
 
-Nach beiden Merges lokal: `git checkout main`, `git pull origin main`, dann
+ROL-EPIC-001 und FIX-015 sind seit dem 16.09. auf `main`; offen ist nur noch
+die Abnahme. Lokal: `git checkout main`, `git pull origin main`, dann
 `pnpm dlx supabase@2.116.0 db reset` (drei neue Migrationen). Kein
 `pnpm install` (Lockfile unverändert).
