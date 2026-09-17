@@ -744,3 +744,15 @@ Technik · offen · 2026-09-15 · — · — · Wiedervorlage: mit OPS-002 (Betr
 **Anker.** `.github/workflows/ci.yml`: der Schritt „Dependency Audit" mit dem Kommentar `ANN-054` über `--audit-level=high`.
 
 **Änderungspfad.** Schwelle senken (`moderate`) oder anheben: ein Wort in `ci.yml` · Aufwand `klein`. Wird zusätzlich eine Ausnahmeliste nötig, kommt sie als `pnpm.auditConfig.ignoreCves` in `package.json` dazu, mit je einer Begründung · Aufwand `klein`.
+
+### ANN-055 — Die Statusdrift-Prüfung blockiert keinen Merge
+
+Technik · offen · 2026-09-17 · — · — · Wiedervorlage: mit Branch Protection (M0, 30.09.)
+
+**Annahme.** `pnpm status:check` meldet, wenn `docs/STATUS.md` einen Pull Request als offen führt, der in `main` schon gemergt ist. Die Prüfung läuft im eigenen Workflow „Statusdrift" bei Push auf `main`, montags und auf Knopfdruck — nicht bei `pull_request`, nicht in `pnpm test` oder `pnpm docs:check`, und nicht als erforderlicher Statuscheck der Branch Protection. Ihr Fehlschlag ist ein Hinweis, kein Stopp.
+
+**Begründung.** Der Verstoß entsteht durch den Merge selbst: Solange der Pull Request offen ist, darf `STATUS.md` ihn nennen, und in der Sekunde des Merges wird dieselbe, unveränderte Datei falsch. Ein blockierendes Gate färbte `main` also nach jedem Merge rot, ohne dass jemand etwas falsch gemacht hätte — und ein Gate, das regelmäßig aus harmlosem Grund rot ist, wird abgeschaltet statt beachtet (§16, dieselbe Überlegung wie in ANN-054). ADR-013 verlangt Gates für Code, Datenbank und Secrets und sagt zu Steuerungsdokumenten nichts; diese Prüfung ergänzt sie als Hinweisgeber, nicht als sechstes Gate. Behoben wird der Befund in Skill-Schritt I und im Wochenupdate (Schritt 6), also ohne Zutun von Jannes.
+
+**Anker.** `.github/workflows/status-drift.yml`: der Kopfkommentar mit der Kennung `ANN-055` über `on:`.
+
+**Änderungspfad.** Soll die Prüfung doch blockieren: `pull_request` in `status-drift.yml` ergänzen und den Check in die Branch Protection aufnehmen · Aufwand `klein`. Dann ist aber der Ablauf zu ändern, in dem `STATUS.md` den Pull Request nennt, der gerade entsteht — sonst ist jeder eigene Merge rot · Aufwand `mittel`.

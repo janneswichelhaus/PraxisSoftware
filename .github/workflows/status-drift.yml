@@ -21,6 +21,8 @@
 # Der woechentliche Lauf faengt den Fall ab, dass ein PR ueber die
 # GitHub-Oberflaeche gemergt wurde, waehrend ein anderer Push den Lauf
 # verdraengt hat.
+#
+# ANN-055 haelt fest, dass diese Pruefung bewusst nicht blockiert.
 # =============================================================================
 name: Statusdrift
 
