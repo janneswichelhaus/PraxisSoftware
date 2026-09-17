@@ -34,10 +34,10 @@ fanden in CAL-018 einen Fehler, den sieben Gates nicht sahen (BEF-010).
 
 - **Abnahme CAL-018** — fünf Klickwege in
   [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
-- **E18 planen (17.09.):** PT und Online Coaching gehören von Anfang an in die
-  Anwendung — Fragen bei Stufe 3 in
-  [`development/ROADMAP.md`](development/ROADMAP.md). Eigener Planungsschritt
-  **vor** dem nächsten Feature-Loop; gebaut ist davon nichts.
+- **E18 überführen (17.09.):** Physiotherapie, Personal Training und Online
+  Coaching in einer Anwendung, getrennt nach Rechtsverhältnis. Vorgabe steht:
+  [`development/E18-LEISTUNGSBEREICHE.md`](development/E18-LEISTUNGSBEREICHE.md).
+  Nächster Schritt ist **ADR-021**, nicht Code.
 - Branch Protection und Secret Scanning (M0, 30.09.), Anfragen B1, B2, B4
   ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)), PTV-Free-Abo vor MAP-002 ·
   `claude/issue-42-status-fv319v` hat drei ungemergte Commits
