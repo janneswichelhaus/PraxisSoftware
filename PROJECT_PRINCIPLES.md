@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.11.2** |
+| **Dokumentversion** | **0.12** |
 | **Änderungsdatum** | **2026-09-16** |
-| Vorversion | 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Vorversion | 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-020, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -69,6 +69,31 @@ Eine spätere Vermarktung an andere Praxen soll architektonisch nicht
 ausgeschlossen werden, ist aktuell aber kein Produktziel. Die dafür
 vorgesehene, bewusst minimale Vorbereitung im Datenmodell regelt
 [ADR-003](docs/adr/ADR-003-organization-location-model.md).
+
+### 1.1 Klarnamen statt Pseudonymisierung
+
+Festgelegt vom Projektinhaber am 2026-09-17. Die Festlegung steht hier und
+nicht in einem ADR, weil sie alles darunter bestimmt — Datenmodell,
+Oberfläche, Abrechnung und Kommunikation gleichermaßen.
+
+Personen werden in der Anwendung mit **Klarnamen** geführt. Eine
+pseudonymisierende Codearchitektur wird **nicht** eingeführt. Das Schutzniveau
+liefern Zugriffskontrolle in der Datenbank, Auditpflicht und Verschlüsselung
+(§3, §4.7, [ADR-004](docs/adr/ADR-004-authorization-model.md),
+[ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md)).
+
+Begründung: In einer Praxis, in der der Inhaber selbst behandelt, schützt eine
+Pseudonymisierung kaum — die Zuordnung ist ohnehin bekannt und muss jederzeit
+herstellbar sein —, erschwert aber Terminorganisation, Abrechnung und
+Kommunikation erheblich.
+
+**Das Schutzniveau ist für alle Personen dasselbe**, unabhängig davon, ob sie
+in einem Behandlungs- oder in einem Trainingsverhältnis stehen. Zwei
+Datenschutzniveaus in einer Anwendung DÜRFEN NICHT entstehen.
+
+Unberührt bleiben: die Datenminimierung gegenüber externen Diensten (§6.1,
+§9), die Trennung von Entwicklungs- und Produktionsdaten (§3.1, §3.2) und die
+Pseudonymisierung in Auswertungen, wo sie fachlich ohnehin geboten ist (§20).
 
 
 ## 2. Produktprinzipien
@@ -1326,6 +1351,27 @@ technischer Teil steht in ADR-018 Fassung 3 und ADR-004 Fassung 2.
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.12
+
+Eine Festlegung des Projektinhabers vom 2026-09-17. Sie fügt eine
+MUSS-/DARF-NICHT-Aussage hinzu und braucht deshalb eine eigene Version (§21).
+
+- **§1.1 neu:** Personen werden mit **Klarnamen** geführt; eine
+  pseudonymisierende Codearchitektur wird nicht eingeführt. Das Schutzniveau
+  liefern Zugriffskontrolle, Auditpflicht und Verschlüsselung. Es gilt für
+  alle Personen gleich — zwei Datenschutzniveaus in einer Anwendung DÜRFEN
+  NICHT entstehen. Das ist keine Absenkung gegenüber dem gebauten Stand,
+  sondern seine ausdrückliche Bestätigung: Klarnamen in `persons` gibt es seit
+  der Gründungsmigration, geschützt über RLS und Auditpflicht.
+- **Warum in §1 und nicht in einem ADR:** Die Aussage bestimmt Datenmodell,
+  Oberfläche, Abrechnung und Kommunikation gleichermaßen. Ein ADR stünde
+  darunter.
+- **Anlass** ist E18 (zwei Leistungsbereiche,
+  `docs/development/E18-LEISTUNGSBEREICHE.md`): Für das Trainingsverhältnis
+  war zu klären, ob dort ein anderes Niveau gilt. Es gilt dasselbe.
+- **Nicht Gegenstand dieser Version:** die übrigen Nachzüge aus E18 in §1, §4
+  und §14. Sie kommen gemeinsam, wenn die ADRs darunter stehen.
 
 ### Änderungsvermerk 0.11.2
 
