@@ -11,8 +11,16 @@ import { usePatientRecord } from '@/features/patients/akte';
 import { formatDate as formatIsoDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { Patient } from '@/features/patients/api';
-import type { CurrentUser } from '@/features/session/types';
-import { bauartLabels, grundlageBezeichnung, type Bauart } from '@/features/treatment-bases/api';
+import { canReadTreatmentBases, type CurrentUser } from '@/features/session/types';
+import {
+  bauartLabels,
+  fetchPatientTreatmentBasisSlots,
+  grundlageBezeichnung,
+  kontingentJeGrundlage,
+  type Bauart,
+  type TreatmentBasisKontingent,
+} from '@/features/treatment-bases/api';
+import { deckungstext } from '@/features/treatment-bases/grundlagen';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
 import { Deckungszeichen } from './Deckungszeichen';
 import { Laengenzeichen } from './Laengenzeichen';
@@ -33,7 +41,7 @@ import {
 import { schreibeParameter, ZOOM_STANDARD } from './calendar';
 
 /**
- * Der Terminbereich der Akte (AKTE-003).
+ * Der Terminbereich der Akte (AKTE-003, gruppiert seit AKTE-006).
  *
  * Die Akte zeigte bisher fünf künftige Termine und - versteckt im
  * Behandlungsverlauf - die vergangenen als Dokumentationssicht. Die Frage „wann
@@ -44,12 +52,24 @@ import { schreibeParameter, ZOOM_STANDARD } from './calendar';
  * Hier steht beides untereinander: was ansteht, und was war - beides mit allen
  * Zuständen, beides geblättert. Geschrieben wird weiterhin am Termin; diese
  * Liste ist der Weg dorthin.
+ *
+ * **Seit AKTE-006 steht jeder Termin unter der Überschrift seiner
+ * Behandlungsgrundlage**, mit deren Deckung daneben (CAL-022). Termine ohne
+ * Grundlage verschwinden dabei nicht: Sie bekommen einen eigenen, so
+ * benannten Abschnitt am Ende.
+ *
+ * Gruppiert wird **innerhalb** der beiden Richtungen und nicht über sie hinweg
+ * (**ANN-069**): „Was steht an" und „was war" sind zwei verschiedene Fragen,
+ * und beide Listen blättern über einen eigenen Keyset-Cursor. Eine Gruppe je
+ * Grundlage über beide Richtungen bräuchte je Grundlage zwei Cursor - und
+ * zeigte in einer Akte über zehn Jahre zwanzig Abschnitte, von denen zwei
+ * Arbeitsvorrat sind.
  */
 
 /**
- * Wie der Rückweg an einem Termin heißt (ADR-020 Punkt 7).
+ * Wie die Überschrift einer Gruppe heißt (ADR-020 Punkt 7).
  *
- * Die Bauart kommt aus `list_patient_appointments` mit; ohne sie stünde an
+ * Die Bauart kommt aus `list_patient_appointments` mit; ohne sie stünde über
  * einem Selbstzahlertermin „Verordnung vom …" — eine Auskunft, die es so nicht
  * gibt. Ohne Datum bleibt das neutrale Oberwort, denn dann ist auch die Bauart
  * keine verlässliche Angabe.
@@ -69,15 +89,7 @@ function grundlagenBeschriftung(termin: {
 const FILTER = 'verordnung';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function Terminzeile({
-  termin,
-  patientId,
-  mitVerordnung,
-}: {
-  termin: PatientAppointment;
-  patientId: string;
-  mitVerordnung: boolean;
-}) {
+function Terminzeile({ termin, patientId }: { termin: PatientAppointment; patientId: string }) {
   const zone = termin.organization_time_zone;
 
   return (
@@ -115,22 +127,103 @@ function Terminzeile({
             {appointmentStatusLabels[termin.status]}
           </Badge>
         ) : null}
-
-        {/* Der Rückweg zur Grundlage: Wer einen Serientermin vor sich hat,
-            will wissen, aus welchem Auftrag er stammt (CAL-007). Im gefilterten
-            Zustand wäre der Hinweis an jeder Zeile dieselbe Auskunft. Die
-            Beschriftung nennt die Bauart, nicht das Oberwort (ADR-020 Punkt 7):
-            „Erstverordnung vom …" oder „Selbstzahler seit …". */}
-        {mitVerordnung && termin.treatment_basis_id ? (
-          <Link
-            to={`/patienten/${patientId}/verordnungen#verordnung-${termin.treatment_basis_id}`}
-            className="text-accent inline-flex min-h-11 shrink-0 items-center text-sm hover:underline"
-          >
-            {grundlagenBeschriftung(termin)}
-          </Link>
-        ) : null}
       </div>
     </li>
+  );
+}
+
+/**
+ * Ein Abschnitt je Behandlungsgrundlage (AKTE-006).
+ *
+ * `grundlage === null` ist der eigene Abschnitt für alles ohne Klammer — ein
+ * Termin, der zu keiner Verordnung und keinem Selbstzahler gehört, ist kein
+ * Fehler und wird nicht weggelassen.
+ */
+interface Terminguppe {
+  schluessel: string;
+  titel: string;
+  kontingent: TreatmentBasisKontingent | null;
+  termine: PatientAppointment[];
+}
+
+/**
+ * Gruppiert die geladenen Termine nach ihrer Grundlage.
+ *
+ * Die **Reihenfolge der Abschnitte** kommt aus den Kontingentzeilen und ist
+ * damit dieselbe wie im Bereich „Behandlungsgrundlagen" (neueste zuerst). Eine
+ * Grundlage, die dort fehlt — etwa weil die Zahlen noch laden —, hängt hinten
+ * an; „ohne Grundlage" steht immer zuletzt.
+ *
+ * Gruppiert wird, **was geladen ist**. Die Deckung daneben kommt dagegen vom
+ * Server und zählt immer alle Termine der Grundlage: Sie ändert sich deshalb
+ * nicht, wenn jemand weiterblättert.
+ */
+function gruppiere(
+  termine: readonly PatientAppointment[],
+  kontingente: readonly TreatmentBasisKontingent[],
+): Terminguppe[] {
+  const reihenfolge = new Map(kontingente.map((zeile, i) => [zeile.treatment_basis_id, i]));
+  const zahlen = kontingentJeGrundlage(kontingente);
+  const gruppen = new Map<string, Terminguppe>();
+
+  for (const termin of termine) {
+    const schluessel = termin.treatment_basis_id ?? OHNE_GRUNDLAGE;
+    let gruppe = gruppen.get(schluessel);
+    if (!gruppe) {
+      gruppe = {
+        schluessel,
+        titel:
+          schluessel === OHNE_GRUNDLAGE
+            ? 'Ohne Behandlungsgrundlage'
+            : grundlagenBeschriftung(termin),
+        kontingent: termin.treatment_basis_id
+          ? (zahlen.get(termin.treatment_basis_id) ?? null)
+          : null,
+        termine: [],
+      };
+      gruppen.set(schluessel, gruppe);
+    }
+    gruppe.termine.push(termin);
+  }
+
+  const platz = (schluessel: string) =>
+    schluessel === OHNE_GRUNDLAGE
+      ? Number.MAX_SAFE_INTEGER
+      : (reihenfolge.get(schluessel) ?? Number.MAX_SAFE_INTEGER - 1);
+
+  return [...gruppen.values()].sort((a, b) => platz(a.schluessel) - platz(b.schluessel));
+}
+
+const OHNE_GRUNDLAGE = 'ohne';
+
+function Gruppenkopf({ gruppe, patientId }: { gruppe: Terminguppe; patientId: string }) {
+  const kontingent = gruppe.kontingent;
+  const grundlageId = gruppe.schluessel === OHNE_GRUNDLAGE ? null : gruppe.schluessel;
+
+  return (
+    <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+      {/* Die Überschrift ist zugleich der Weg zur Grundlage — vor AKTE-006
+          stand er an jeder einzelnen Zeile und sagte dort immer dasselbe. */}
+      <h4 className="text-ink text-[0.9375rem] font-semibold">
+        {grundlageId ? (
+          <Link
+            to={`/patienten/${patientId}/verordnungen#verordnung-${grundlageId}`}
+            className="hover:text-accent hover:underline"
+          >
+            {gruppe.titel}
+          </Link>
+        ) : (
+          gruppe.titel
+        )}
+      </h4>
+      {/* Die Deckung ist eine Aussage über die Grundlage und steht deshalb an
+          der Überschrift (CAL-022). Als Satz und nicht als Abzeichen: Welche
+          Termine ungedeckt sind, zeigen die Zeichen in den Zeilen darunter —
+          ein zweites Abzeichen hier sagte dasselbe noch einmal. */}
+      {kontingent && kontingent.planned > 0 ? (
+        <span className="text-ink-muted text-sm">{deckungstext(kontingent)}</span>
+      ) : null}
+    </div>
   );
 }
 
@@ -138,12 +231,14 @@ function Terminliste({
   patientId,
   kuenftig,
   verordnung,
+  kontingente,
   leerText,
   weiterText,
 }: {
   patientId: string;
   kuenftig: boolean;
   verordnung: string | null;
+  kontingente: readonly TreatmentBasisKontingent[];
   leerText: string;
   weiterText: string;
 }) {
@@ -174,18 +269,21 @@ function Terminliste({
         <p className="text-ink-muted text-[0.9375rem]">{leerText}</p>
       ) : null}
 
-      {termine.length > 0 ? (
-        <ul>
-          {termine.map((termin) => (
-            <Terminzeile
-              key={termin.id}
-              termin={termin}
-              patientId={patientId}
-              mitVerordnung={verordnung === null}
-            />
-          ))}
-        </ul>
-      ) : null}
+      {gruppiere(termine, kontingente).map((gruppe) => (
+        <div
+          key={gruppe.schluessel}
+          // Eine Linie zwischen den Abschnitten, keine über dem ersten: Im
+          // weißen Rahmen (UI-002c) wäre sie dort eine zweite Kante.
+          className="border-line mt-5 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0"
+        >
+          <Gruppenkopf gruppe={gruppe} patientId={patientId} />
+          <ul>
+            {gruppe.termine.map((termin) => (
+              <Terminzeile key={termin.id} termin={termin} patientId={patientId} />
+            ))}
+          </ul>
+        </div>
+      ))}
 
       {seiten.hasNextPage ? (
         <div className="mt-3">
@@ -223,6 +321,16 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
   // etwas ansteht - ohne Termin den heutigen (AKTE-003). Ohne Praxiszeitzone
   // führt der Weg trotzdem in den Kalender; dort steht dann, warum er sich
   // nicht darstellen lässt.
+  // Die Zahlen der Grundlagen tragen die Überschriften der Gruppen und ihre
+  // Deckung (AKTE-006, CAL-022). Sie dürfen nachlaufen: Bis sie da sind,
+  // stehen die Gruppen mit Bezeichnung und Datum, nur ohne Deckungssatz.
+  const kontingente = useQuery({
+    queryKey: ['patient-treatment-basis-slots', patient.id],
+    queryFn: () => fetchPatientTreatmentBasisSlots(patient.id),
+    enabled: canReadTreatmentBases(user.roles),
+    retry: false,
+  });
+
   const zone = user.organizationTimeZone;
   const naechster = useQuery({
     queryKey: ['patient-next-appointment', patient.id, verordnung],
@@ -306,6 +414,7 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
           patientId={patient.id}
           kuenftig
           verordnung={verordnung}
+          kontingente={kontingente.data ?? []}
           leerText="Kein weiterer Termin vereinbart."
           weiterText="Weitere Termine anzeigen"
         />
@@ -320,6 +429,7 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
           patientId={patient.id}
           kuenftig={false}
           verordnung={verordnung}
+          kontingente={kontingente.data ?? []}
           leerText="Für diese Person gibt es noch keinen vergangenen Termin."
           weiterText="Ältere Termine anzeigen"
         />

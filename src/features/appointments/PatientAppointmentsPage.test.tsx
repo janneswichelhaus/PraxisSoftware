@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
+import type * as TreatmentBasesApi from '@/features/treatment-bases/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const VERORDNUNG = '88888888-8888-4888-8888-000000000002';
 
 const fetchPatientAppointments = vi.fn();
+const fetchPatientTreatmentBasisSlots = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -15,6 +17,15 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchPatientAppointments: (patientId: string, query: AppointmentsApi.PatientAppointmentQuery) =>
       fetchPatientAppointments(patientId, query) as Promise<AppointmentsApi.PatientAppointment[]>,
+  };
+});
+
+vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof TreatmentBasesApi>();
+  return {
+    ...actual,
+    fetchPatientTreatmentBasisSlots: (id: string) =>
+      fetchPatientTreatmentBasisSlots(id) as Promise<TreatmentBasesApi.TreatmentBasisKontingent[]>,
   };
 });
 
@@ -54,6 +65,8 @@ function antwortet(kuenftige: unknown[], vergangene: unknown[]) {
 describe('Terminbereich der Akte (AKTE-003)', () => {
   beforeEach(() => {
     fetchPatientAppointments.mockReset();
+    fetchPatientTreatmentBasisSlots.mockReset();
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
     antwortet([], []);
   });
 
@@ -127,6 +140,124 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
     const zeile = link.closest('li');
     expect(zeile).not.toBeNull();
     expect(zeile).toHaveTextContent('Telefon');
+  });
+
+  // ---------------------------------------------------------------------------
+  // AKTE-006: Termine stehen unter der Ueberschrift ihrer Grundlage.
+  // ---------------------------------------------------------------------------
+  describe('Gruppierung nach Behandlungsgrundlage', () => {
+    const ZWEITE = '88888888-8888-4888-8888-000000000004';
+
+    function kontingent(
+      id: string,
+      rest: Partial<TreatmentBasesApi.TreatmentBasisKontingent> = {},
+    ): TreatmentBasesApi.TreatmentBasisKontingent {
+      return {
+        treatment_basis_id: id,
+        prescribed: 6,
+        used: 0,
+        planned: 1,
+        upcoming: 1,
+        remaining: 5,
+        covered: 1,
+        uncovered: 0,
+        ...rest,
+      };
+    }
+
+    it('macht aus zwei Grundlagen zwei Abschnitte, Termine ohne Grundlage in einen dritten', async () => {
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent(ZWEITE),
+        kontingent(VERORDNUNG),
+      ]);
+      antwortet(
+        [
+          termin({
+            id: 'alt',
+            treatment_basis_id: VERORDNUNG,
+            treatment_basis_kind: 'follow_up',
+            treatment_basis_issued_on: '2026-06-18',
+          }),
+          termin({
+            id: 'neu',
+            starts_at: '2027-05-26T07:00:00.000Z',
+            ends_at: '2027-05-26T08:00:00.000Z',
+            treatment_basis_id: ZWEITE,
+            treatment_basis_kind: 'self_pay',
+            treatment_basis_issued_on: '2026-09-03',
+          }),
+          termin({ id: 'ohne', starts_at: '2027-06-02T07:00:00.000Z' }),
+        ],
+        [],
+      );
+      renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
+
+      expect(await screen.findByText('Selbstzahler seit 03.09.2026')).toBeInTheDocument();
+      expect(screen.getByText('Folgeverordnung vom 18.06.2026')).toBeInTheDocument();
+      // Kein Termin faellt heraus, nur weil er zu keiner Grundlage gehoert.
+      expect(screen.getByText('Ohne Behandlungsgrundlage')).toBeInTheDocument();
+
+      // Die Reihenfolge der Abschnitte ist die der Grundlagen; ohne Grundlage
+      // steht zuletzt.
+      const ueberschriften = screen
+        .getAllByRole('heading', { level: 4 })
+        .map((h) => h.textContent);
+      expect(ueberschriften).toEqual([
+        'Selbstzahler seit 03.09.2026',
+        'Folgeverordnung vom 18.06.2026',
+        'Ohne Behandlungsgrundlage',
+      ]);
+    });
+
+    it('nennt die Deckung an der Ueberschrift, nicht an jeder Zeile', async () => {
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent(VERORDNUNG, { prescribed: 6, planned: 10, covered: 6, uncovered: 4 }),
+      ]);
+      antwortet(
+        [
+          termin({
+            id: 'ungedeckt',
+            treatment_basis_id: VERORDNUNG,
+            treatment_basis_kind: 'follow_up',
+            treatment_basis_issued_on: '2026-06-18',
+            treatment_basis_covered: false,
+          }),
+        ],
+        [],
+      );
+      renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
+
+      expect(
+        await screen.findByText('6 von 10 zugeordneten Terminen gedeckt · 4 ohne Deckung'),
+      ).toBeInTheDocument();
+    });
+
+    it('zeigt die Gruppe auch ohne geladene Zahlen, nur ohne Deckungssatz', async () => {
+      fetchPatientTreatmentBasisSlots.mockRejectedValue(new Error('kaputt'));
+      antwortet(
+        [
+          termin({
+            id: 'alt',
+            treatment_basis_id: VERORDNUNG,
+            treatment_basis_kind: 'follow_up',
+            treatment_basis_issued_on: '2026-06-18',
+          }),
+        ],
+        [],
+      );
+      renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
+
+      expect(await screen.findByText('Folgeverordnung vom 18.06.2026')).toBeInTheDocument();
+      expect(screen.queryByText(/gedeckt/)).not.toBeInTheDocument();
+    });
+
+    it('fragt die Zahlen nicht ab, wo die Rolle keine Grundlage lesen darf', async () => {
+      antwortet([termin({ id: 'ohne' })], []);
+      renderWithProviders(<Terminbereich patient={patient} user={testUser(['patient'])} />);
+
+      await screen.findByText('Ohne Behandlungsgrundlage');
+      expect(fetchPatientTreatmentBasisSlots).not.toHaveBeenCalled();
+    });
   });
 
   describe('Verordnung und Termine finden einander', () => {
