@@ -438,7 +438,7 @@ von Node ersetzen. Kleine Wartung, kein eigener Loop.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Kalender (`/kalender`), Termin bearbeiten                                                     |
 | Quelle  | Jannes, Bedienung nach dem Merge von CAL-EPIC-004a                                            |
-| Status  | offen — Festlegung von Jannes: soll möglich sein, mit Hinweis                                 |
+| Status  | eingeplant in FIX-EPIC-004 (FIX-019) — Festlegung von Jannes: möglich, mit Hinweis |
 | Berührt | `create_appointment`, `update_appointment` („appointment date is in the past", seit CAL-003), `CalendarPage.tsx`, `EditAppointmentPage.tsx` |
 
 **Beobachtung.** Der Server weist jeden Tag vor dem heutigen ab — beim Anlegen
@@ -461,7 +461,7 @@ Migration und `test:db`.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Kalender, Ziehen einer Terminkachel (CAL-023)                                                 |
 | Quelle  | Jannes, Bedienung am Desktop                                                                  |
-| Status  | offen                                                                                         |
+| Status  | eingeplant in FIX-EPIC-004 (FIX-017) |
 | Berührt | `VerschiebenRueckfrage.tsx`, `CalendarPage.tsx`, `CalendarGrid.tsx`, `useTerminZiehen.ts`     |
 
 **Beobachtung.** Nach dem Loslassen springt die Seite zum Kasten über dem
@@ -484,7 +484,7 @@ bleiben: der Kasten muss auch ohne Zeiger erreichbar sein.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Kalender, Ziehen (CAL-006, UX-010)                                                            |
 | Quelle  | Jannes                                                                                        |
-| Status  | offen                                                                                         |
+| Status  | eingeplant in FIX-EPIC-004 (FIX-018) |
 | Berührt | `useTerminZiehen.ts` (ein `scroll` bricht das Ziehen ab), `CalendarPage.tsx` (Bereich, Blättern) |
 
 **Beobachtung.** Während des Ziehens lässt sich weder scrollen noch blättern:
@@ -510,7 +510,7 @@ Weg ohne Zeigegerät, den es ohnehin braucht.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Kalender, Ziehen                                                                              |
 | Quelle  | Jannes; Ursache noch nicht bestätigt                                                          |
-| Status  | offen                                                                                         |
+| Status  | eingeplant in FIX-EPIC-004 (FIX-017) |
 | Berührt | `CalendarPage.tsx` (`ziehbarErlaubt`, `ziehbar: status === 'confirmed'`)                     |
 
 **Beobachtung.** Manche Termine reagieren nicht auf Ziehen. Zwei Ursachen
@@ -535,7 +535,7 @@ mit Jannes, welche Termine betroffen waren.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Terminanlage (`/patienten/:id/termine/neu`), grundsätzlich jede Rückfrage über dem Formular    |
 | Quelle  | Jannes, zwei Bildschirmfotos (Desktop)                                                        |
-| Status  | offen — Festlegung von Jannes: Rückfragen als Fenster über dem Inhalt; zurück, wo man herkam |
+| Status  | eingeplant in FIX-EPIC-004 (FIX-016) — Festlegung von Jannes: Rückfragen als Fenster |
 | Berührt | `NewAppointmentPage.tsx`, `EditAppointmentPage.tsx`, `components/ui/Rueckfrage.tsx`, `lib/rueckweg.ts`, alle Seiten mit dem Muster „trotzdem anlegen" |
 
 **Beobachtung.** „Termin anlegen" am Ende eines langen Formulars zeigt die

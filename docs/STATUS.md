@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-18 · letzte Session: CAL-EPIC-004a Freie Länge, Rückfrage
+# Status · Stand 2026-09-18 · laufend: FIX-EPIC-004 Kalender-Bedienung
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
@@ -8,19 +8,20 @@ einträgt, hat sie damit nicht eingeplant.
 
 ## Jetzt
 
-- **CAL-EPIC-004b** — Anlegen-Menü (Spanne aufziehen), Fehlzeit und
-  Dauerfehlzeit. Aufruf: `/feature-loop CAL-EPIC-004b` · Pfad A · Vorgabe in
-  [`development/CAL-EPIC-004.md`](development/CAL-EPIC-004.md) (CAL-019,
-  CAL-021) · beginnt auf Freigabe, **nach dem Merge von CAL-EPIC-004a**
+- **FIX-EPIC-004** — Kalender-Bedienung: Rückfragen als Fenster, Rückfrage
+  beim Ziehen im Gitter, Ziehen über den Ausschnitt hinaus, Vergangenheit
+  erlaubt (BEF-012 bis BEF-016). Aufruf: `/feature-loop FIX-EPIC-004` · Pfad A ·
+  läuft seit 2026-09-18 auf Freigabe
 
-## Danach — Reihenfolge seit 2026-09-16
+## Danach — Reihenfolge seit 2026-09-18
 
-1. **UX-013** — Kopfleiste sucht Funktionen; hängt an nichts, vorziehbar
-2. **GRD-001** — Behandlungsgrundlage nach
+1. **CAL-EPIC-004b** — Anlegen-Menü, Fehlzeit und Dauerfehlzeit
+   ([`development/CAL-EPIC-004.md`](development/CAL-EPIC-004.md))
+2. **UX-013** — Kopfleiste sucht Funktionen; hängt an nichts, vorziehbar
+3. **GRD-001** — Behandlungsgrundlage nach
    [ADR-020](adr/ADR-020-treatment-basis.md) (angenommen); Migration, `test:db`
-3. **VER-EPIC-002** — Verordnung im Office-Alltag
 
-Danach unverändert: CAL-EPIC-004c · ABR-EPIC-001 (xhigh).
+Danach unverändert: VER-EPIC-002 · CAL-EPIC-004c · ABR-EPIC-001 (xhigh).
 
 ## Prüfverfahren, solange die CI steht
 
@@ -33,7 +34,6 @@ CI und `engines` meinen Node 22.
 
 ## Blocker (Jannes-seitig)
 
-- **PR zu CAL-EPIC-004a mergen**, danach lokal `db reset` (neue Migration).
 - **Abnahme CAL-018 und CAL-EPIC-004a** — Klickwege in
   [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
 - **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code
