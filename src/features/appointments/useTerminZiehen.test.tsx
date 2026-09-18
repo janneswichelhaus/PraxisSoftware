@@ -68,7 +68,7 @@ describe('useTerminZiehen: über den Ausschnitt hinaus (FIX-018)', () => {
     scrollBy = vi.fn((_x: number, y: number) => {
       window.scrollY += y;
     });
-    window.scrollBy = scrollBy as unknown as typeof window.scrollBy;
+    window.scrollBy = scrollBy;
   });
   afterEach(() => {
     vi.useRealTimers();

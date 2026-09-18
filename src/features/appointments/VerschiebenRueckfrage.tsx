@@ -19,6 +19,8 @@ export interface VerschiebenFrage {
    * wirklich außerhalb liegt, entscheidet der Server (CAL-005).
    */
   ausserhalb: boolean;
+  /** Der neue Tag liegt in der Vergangenheit (FIX-019) - derselbe Kasten. */
+  vergangenheit: boolean;
 }
 
 /**
@@ -87,6 +89,12 @@ export function VerschiebenRueckfrage({
           </>
         ) : null}
       </dl>
+      {frage.vergangenheit ? (
+        <p className="text-ink mt-3 text-sm">
+          <span aria-hidden="true">! </span>
+          Der neue Tag liegt in der Vergangenheit. Der Termin wird als nachgetragen vermerkt.
+        </p>
+      ) : null}
       {frage.ausserhalb ? (
         <p className="text-ink mt-3 text-sm">
           <span aria-hidden="true">! </span>
@@ -96,7 +104,11 @@ export function VerschiebenRueckfrage({
       <p className="text-ink-subtle mt-2 text-xs">Der Termin wurde noch nicht verschoben.</p>
       <div className="mt-3 flex flex-wrap gap-3">
         <Button ref={bestaetigenRef} type="button" disabled={laeuft} onClick={onBestaetigen}>
-          {laeuft ? 'Wird verschoben …' : frage.ausserhalb ? 'Trotzdem verschieben' : 'Verschieben'}
+          {laeuft
+            ? 'Wird verschoben …'
+            : frage.ausserhalb || frage.vergangenheit
+              ? 'Trotzdem verschieben'
+              : 'Verschieben'}
         </Button>
         <Button type="button" variant="quiet" disabled={laeuft} onClick={onAbbrechen}>
           Abbrechen

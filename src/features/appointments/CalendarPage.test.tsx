@@ -76,8 +76,13 @@ vi.mock('./api', async (importOriginal) => {
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
-    updateAppointment: (id: string, stand: string, werte: unknown, bestaetigt?: boolean) =>
-      updateAppointment(id, stand, werte, bestaetigt) as Promise<void>,
+    updateAppointment: (
+      id: string,
+      stand: string,
+      werte: unknown,
+      bestaetigt?: boolean,
+      vergangenheit?: boolean,
+    ) => updateAppointment(id, stand, werte, bestaetigt, vergangenheit) as Promise<void>,
     // Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
     todayInTimeZone: () => HEUTE,
   };
@@ -118,7 +123,7 @@ const bestand = {
 };
 
 const { CalendarPage } = await import('./CalendarPage');
-const { AusserhalbArbeitszeitError } = await import('./api');
+const { AusserhalbArbeitszeitError, VergangenheitError } = await import('./api');
 
 function rendern(pfad = '/kalender') {
   return renderWithProviders(<CalendarPage user={testUser(['office'], 'Olivia Office')} />, pfad);
@@ -626,11 +631,25 @@ describe('CalendarPage', () => {
       stand: string;
       werte: AppointmentsApi.AppointmentFormValues;
       bestaetigt: boolean | undefined;
+      vergangenheit: boolean | undefined;
     } {
       const aufruf = updateAppointment.mock.calls.at(-1) as
-        [string, string, AppointmentsApi.AppointmentFormValues, boolean | undefined] | undefined;
+        | [
+            string,
+            string,
+            AppointmentsApi.AppointmentFormValues,
+            boolean | undefined,
+            boolean | undefined,
+          ]
+        | undefined;
       if (!aufruf) throw new Error('Es wurde nichts geschrieben.');
-      return { id: aufruf[0], stand: aufruf[1], werte: aufruf[2], bestaetigt: aufruf[3] };
+      return {
+        id: aufruf[0],
+        stand: aufruf[1],
+        werte: aufruf[2],
+        bestaetigt: aufruf[3],
+        vergangenheit: aufruf[4],
+      };
     }
 
     /**
@@ -737,13 +756,40 @@ describe('CalendarPage', () => {
       spaltenVermessen();
 
       // Der Termin liegt am Mittwoch, also in der dritten Spalte (500-700).
-      // Gezogen wird in die erste Spalte: Montag, der 10.05.
+      // Gezogen wird in die erste Spalte: Montag, der 10.05. - zwei Tage vor
+      // dem heutigen Praxistag: Die Rueckfrage nennt die Vergangenheit im
+      // selben Kasten, die Bestaetigung schickt das Kennzeichen mit (FIX-019).
       ziehen(kachel, { dy: 0, startX: 550, x: 150 });
-      await bestaetigen();
+      expect(await rueckfrage()).toHaveTextContent(/liegt in der Vergangenheit/);
+      await bestaetigen('Trotzdem verschieben');
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
-      const { werte } = letzterSchreibvorgang();
+      const { werte, bestaetigt, vergangenheit } = letzterSchreibvorgang();
       expect(werte).toMatchObject({ date: '2027-05-10', staff_member_id: STAFF_ANNA });
+      expect(bestaetigt).toBe(false);
+      expect(vergangenheit).toBe(true);
+    });
+
+    it('bestaetigt die Vergangenheit nicht, wenn der neue Tag nicht davor liegt (FIX-019)', async () => {
+      const kachel = await tagesansicht();
+      ziehen(kachel, { dy: EINE_STUNDE });
+      expect(await rueckfrage()).not.toHaveTextContent(/Vergangenheit/);
+      await bestaetigen();
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      expect(letzterSchreibvorgang().vergangenheit).toBe(false);
+    });
+
+    it('kommt mit dem Vergangenheits-Hinweis wieder, wenn erst der Server ihn erkennt', async () => {
+      updateAppointment.mockRejectedValueOnce(new VergangenheitError());
+      updateAppointment.mockResolvedValue(undefined);
+      const kachel = await tagesansicht();
+      ziehen(kachel, { dy: EINE_STUNDE });
+      await bestaetigen();
+
+      expect(await rueckfrage()).toHaveTextContent(/liegt in der Vergangenheit/);
+      await bestaetigen('Trotzdem verschieben');
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(2));
+      expect(letzterSchreibvorgang().vergangenheit).toBe(true);
     });
 
     it('schreibt nichts, wenn sich nichts aendert', async () => {

@@ -17,6 +17,8 @@ import {
   fetchAssignableTherapists,
   fetchLocations,
   istAusserhalbArbeitszeit,
+  istVergangenheit,
+  liegtInVergangenheit,
   minutesOfDay,
   NEUER_TERMIN_PARAM,
   schreibeTerminVorbelegung,
@@ -250,6 +252,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     mutationFn: async (auftrag: {
       v: Verschiebung;
       bestaetigt: boolean;
+      /** Ein Tag vor dem heutigen, ausdrücklich bestätigt (FIX-019). */
+      vergangenheit: boolean;
       /** Was die Leiste danach anbietet; ohne Angabe verschwindet sie. */
       zurueck?: Verschiebung;
       /** Die Rückfrage, aus der der Auftrag stammt - fehlt beim Rückgängig. */
@@ -273,6 +277,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           location_id: termin.location_id ?? '',
         },
         auftrag.bestaetigt,
+        auftrag.vergangenheit,
       );
     },
     onSuccess: async (_ergebnis, auftrag) => {
@@ -289,11 +294,18 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       //
       // Nur, wenn diese Rückfrage noch offen ist: Wer inzwischen geblättert
       // hat, bekommt keine Frage zu einem Ausschnitt, der nicht mehr dasteht.
-      setVorschlag((aktuell) =>
-        istAusserhalbArbeitszeit(fehler) && auftrag.aus && aktuell === auftrag.aus
-          ? { ...auftrag.aus, frage: { ...auftrag.aus.frage, ausserhalb: true } }
-          : null,
-      );
+      setVorschlag((aktuell) => {
+        if (!auftrag.aus || aktuell !== auftrag.aus) return null;
+        if (istAusserhalbArbeitszeit(fehler)) {
+          return { ...auftrag.aus, frage: { ...auftrag.aus.frage, ausserhalb: true } };
+        }
+        // Dasselbe für die Vergangenheit (FIX-019): der Praxistag kann seit
+        // dem Laden gewechselt haben.
+        if (istVergangenheit(fehler)) {
+          return { ...auftrag.aus, frage: { ...auftrag.aus.frage, vergangenheit: true } };
+        }
+        return null;
+      });
     },
   });
 
@@ -482,6 +494,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             ? null
             : { von: alnamePerson(altePerson), nach: alnamePerson(person) },
         ausserhalb,
+        // Der neue Tag vor dem heutigen: gefragt wird im selben Kasten (FIX-019).
+        vergangenheit: liegtInVergangenheit(datum, heute),
       },
       v: {
         terminId: ziel.terminId,
@@ -795,7 +809,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               // `bestaetigt` steht auf true: der alte Platz war bereits in
               // Gebrauch, eine Arbeitszeit-Rückfrage dafür wäre eine Frage
               // nach etwas, das die Praxis schon so hatte.
-              verschieben.mutate({ v: rueckgaengig, bestaetigt: true })
+              // Dasselbe fuer die Vergangenheit: Der alte Platz war der alte Platz.
+              verschieben.mutate({ v: rueckgaengig, bestaetigt: true, vergangenheit: true })
             }
           >
             Rückgängig
@@ -835,6 +850,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                       // Bestätigt ist die Arbeitszeit nur, wenn die Rückfrage
                       // sie genannt hat. Sonst fragt der Server zurück (CAL-005).
                       bestaetigt: vorschlag.frage.ausserhalb,
+                      vergangenheit: vorschlag.frage.vergangenheit,
                       zurueck: vorschlag.zurueck,
                       aus: vorschlag,
                     }),

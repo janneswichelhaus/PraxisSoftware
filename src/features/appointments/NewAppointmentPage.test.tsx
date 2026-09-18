@@ -49,8 +49,20 @@ vi.mock('./api', async (importOriginal) => {
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
-    createAppointment: (patientId: string, values: unknown, bestaetigt?: boolean) =>
-      createAppointment(patientId, values, bestaetigt) as Promise<string>,
+    createAppointment: (
+      patientId: string,
+      values: unknown,
+      bestaetigt?: boolean,
+      verordnung?: string | null,
+      vergangenheit?: boolean,
+    ) =>
+      createAppointment(
+        patientId,
+        values,
+        bestaetigt,
+        verordnung,
+        vergangenheit,
+      ) as Promise<string>,
   };
 });
 
@@ -61,7 +73,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 }));
 
 const { NewAppointmentPage } = await import('./NewAppointmentPage');
-const { AusserhalbArbeitszeitError } = await import('./api');
+const { AusserhalbArbeitszeitError, VergangenheitError } = await import('./api');
 
 function rendern() {
   return renderWithProviders(
@@ -222,17 +234,60 @@ describe('NewAppointmentPage', () => {
     expect(createAppointment).not.toHaveBeenCalled();
   });
 
-  it('begrenzt das Datumsfeld auf den laufenden Praxistag', async () => {
+  it('begrenzt das Datumsfeld nicht mehr auf den laufenden Praxistag (FIX-019)', async () => {
     rendern();
     await formularAbwarten();
-    // testUser fuehrt Europe/Berlin.
-    const heute = new Intl.DateTimeFormat('en-CA', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      timeZone: 'Europe/Berlin',
-    }).format(new Date());
-    expect(screen.getByLabelText('Datum *')).toHaveAttribute('min', heute);
+    expect(screen.getByLabelText('Datum *')).not.toHaveAttribute('min');
+  });
+
+  it('fragt bei einem Tag in der Vergangenheit VOR dem Server nach und traegt bestaetigt nach', async () => {
+    createAppointment.mockResolvedValue(TERMIN_ID);
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.clear(screen.getByLabelText('Datum *'));
+    await user.type(screen.getByLabelText('Datum *'), '2020-01-06');
+    await user.type(screen.getByLabelText('Beginn *'), '09:00');
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    const fenster = await screen.findByRole('dialog', { name: 'Termin in der Vergangenheit' });
+    expect(fenster).toHaveTextContent(/nachgetragen/);
+    expect(createAppointment).not.toHaveBeenCalled();
+
+    await user.click(within(fenster).getByRole('button', { name: 'Termin trotzdem anlegen' }));
+    await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(1));
+    expect(createAppointment).toHaveBeenLastCalledWith(
+      PATIENT_ID,
+      expect.objectContaining({ date: '2020-01-06' }),
+      false,
+      null,
+      true,
+    );
+  });
+
+  it('fragt nach, wenn erst der Server die Vergangenheit erkennt', async () => {
+    createAppointment.mockRejectedValueOnce(new VergangenheitError());
+    createAppointment.mockResolvedValue(TERMIN_ID);
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await zeitenSetzen(user);
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    const fenster = await screen.findByRole('dialog', { name: 'Termin in der Vergangenheit' });
+    await user.click(within(fenster).getByRole('button', { name: 'Termin trotzdem anlegen' }));
+    await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(2));
+    expect(createAppointment).toHaveBeenLastCalledWith(
+      PATIENT_ID,
+      expect.anything(),
+      false,
+      null,
+      true,
+    );
   });
 
   it('legt einen Praxistermin mit Standort an und wechselt zur Detailansicht', async () => {
@@ -257,7 +312,9 @@ describe('NewAppointmentPage', () => {
         location_id: ORT_HAUPT,
       },
       // Der erste Versuch geht ausdruecklich OHNE Arbeitszeitbestaetigung
-      // hinaus (CAL-005).
+      // hinaus (CAL-005) - und ohne Vergangenheitsbestaetigung (FIX-019).
+      false,
+      null,
       false,
     );
     await waitFor(() =>
@@ -485,6 +542,8 @@ describe('NewAppointmentPage', () => {
           PATIENT_ID,
           expect.objectContaining({ start_time: '09:00' }),
           false,
+          null,
+          false,
         ),
       );
     });
@@ -523,6 +582,8 @@ describe('NewAppointmentPage', () => {
           PATIENT_ID,
           expect.objectContaining({ start_time: '09:00' }),
           true,
+          null,
+          false,
         ),
       );
       await waitFor(() =>
@@ -676,6 +737,8 @@ describe('NewAppointmentPage', () => {
           start_time: '09:00',
           end_time: '10:00',
         }),
+        false,
+        null,
         false,
       );
     });

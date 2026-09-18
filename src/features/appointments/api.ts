@@ -761,6 +761,27 @@ export function istAusserhalbArbeitszeit(fehler: unknown): boolean {
   return fehler instanceof AusserhalbArbeitszeitError;
 }
 
+/**
+ * Der Server hat einen Tag vor dem heutigen abgewiesen, weil die Bestätigung
+ * fehlte (FIX-019, ANN-057). Dasselbe Muster wie die Arbeitszeit: Die
+ * Oberfläche fragt nach und schickt den Vorgang bestätigt neu.
+ */
+export class VergangenheitError extends Error {
+  constructor() {
+    super('Der Tag liegt in der Vergangenheit.');
+    this.name = 'VergangenheitError';
+  }
+}
+
+export function istVergangenheit(fehler: unknown): boolean {
+  return fehler instanceof VergangenheitError;
+}
+
+/** Liegt der Kalendertag vor dem heutigen der Praxis? Reine Vorabfrage; der Server entscheidet. */
+export function liegtInVergangenheit(datum: string, heute: string): boolean {
+  return datum.length === 10 && datum < heute;
+}
+
 export async function createAppointment(
   patientId: string,
   values: AppointmentFormValues,
@@ -773,6 +794,8 @@ export async function createAppointment(
    * zu dieser Patient:in gehört (CAL-007).
    */
   prescriptionId: string | null = null,
+  /** Ein Tag vor dem heutigen, ausdrücklich bestätigt (FIX-019). */
+  confirmedPast = false,
 ): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_appointment', {
     p_patient_id: patientId,
@@ -784,10 +807,12 @@ export async function createAppointment(
     p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
     p_allow_outside_working_hours: allowOutsideWorkingHours,
     p_prescription_id: prescriptionId,
+    p_confirmed_past: confirmedPast,
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) {
     if (error.message?.includes('outside_working_hours')) throw new AusserhalbArbeitszeitError();
+    if (error.message?.includes('in the past')) throw new VergangenheitError();
     // Keine Details aus der Datenbank nach außen. Die Überschneidung ist der
     // einzige Fall, den die bedienende Person unmittelbar auflösen kann.
     if (error.message?.includes('overlaps')) {
@@ -1132,6 +1157,9 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
   if (error?.message?.includes('outside_working_hours')) {
     return new AusserhalbArbeitszeitError();
   }
+  if (error?.message?.includes('in the past')) {
+    return new VergangenheitError();
+  }
   if (error?.message?.includes('appointment length')) {
     return new Error(TERMINLAENGE_MELDUNG);
   }
@@ -1193,6 +1221,8 @@ export async function updateAppointment(
   expectedUpdatedAt: string,
   values: AppointmentFormValues,
   allowOutsideWorkingHours = false,
+  /** Ein Tag vor dem heutigen, ausdrücklich bestätigt (FIX-019). */
+  confirmedPast = false,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('update_appointment', {
     p_appointment_id: appointmentId,
@@ -1204,6 +1234,7 @@ export async function updateAppointment(
     p_end_time: values.end_time,
     p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
     p_allow_outside_working_hours: allowOutsideWorkingHours,
+    p_confirmed_past: confirmedPast,
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht geändert werden.');

@@ -387,23 +387,48 @@ export function ArbeitszeitRueckfrage({
   onAbbrechen,
   laeuft,
   beschriftung,
+  arbeitszeit = true,
+  vergangenheit = false,
 }: {
   onBestaetigen: () => void;
   /** Zurück ins Formular, ohne etwas zu schreiben; setzt den Fehler zurück. */
   onAbbrechen: () => void;
   laeuft: boolean;
   beschriftung: string;
+  /** Der Zeitraum liegt außerhalb der Arbeitszeit (CAL-005). */
+  arbeitszeit?: boolean;
+  /**
+   * Der Tag liegt in der Vergangenheit (FIX-019, ANN-057) - derselbe Kasten,
+   * damit nie zwei Fenster hintereinander kommen, wenn beides zutrifft.
+   */
+  vergangenheit?: boolean;
 }) {
+  const titel =
+    arbeitszeit && vergangenheit
+      ? 'Vergangenheit und Arbeitszeit'
+      : vergangenheit
+        ? 'Termin in der Vergangenheit'
+        : 'Außerhalb der Arbeitszeit';
   return (
-    <Dialogfenster titel="Außerhalb der Arbeitszeit" onSchliessen={onAbbrechen}>
-      <p className="text-ink text-sm">
-        Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit der behandelnden Person. Der
-        Termin wurde noch nicht gespeichert.
-      </p>
-      <p className="text-ink-subtle mt-2 text-xs leading-relaxed">
-        Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls als
-        außerhalb. Arbeitszeiten werden unter „Planung" gepflegt.
-      </p>
+    <Dialogfenster titel={titel} onSchliessen={onAbbrechen}>
+      {vergangenheit ? (
+        <p className="text-ink text-sm">
+          Der Tag liegt in der Vergangenheit. Der Termin wird nachgetragen und im Protokoll als
+          nachgetragen vermerkt.
+        </p>
+      ) : null}
+      {arbeitszeit ? (
+        <>
+          <p className={`text-ink text-sm ${vergangenheit ? 'mt-2' : ''}`}>
+            Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit der behandelnden Person.
+          </p>
+          <p className="text-ink-subtle mt-2 text-xs leading-relaxed">
+            Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls
+            als außerhalb. Arbeitszeiten werden unter „Planung" gepflegt.
+          </p>
+        </>
+      ) : null}
+      <p className="text-ink-subtle mt-2 text-xs">Der Termin wurde noch nicht gespeichert.</p>
       <div className="mt-4 flex flex-wrap gap-3">
         <Button type="button" disabled={laeuft} data-autofocus onClick={onBestaetigen}>
           {laeuft ? 'Wird gespeichert …' : beschriftung}

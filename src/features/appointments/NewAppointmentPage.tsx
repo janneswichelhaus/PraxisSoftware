@@ -20,6 +20,8 @@ import {
   fetchAssignableTherapists,
   fetchLocations,
   istAusserhalbArbeitszeit,
+  istVergangenheit,
+  liegtInVergangenheit,
   leererTermin,
   leseTerminVorbelegung,
   mitNeuemTermin,
@@ -66,15 +68,16 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
     return roh && VERORDNUNG_KENNUNG.test(roh) ? roh : null;
   })();
 
+  // Der laufende Praxistag: Vorbelegung des Datums und Vorabfrage bei einem
+  // Tag davor (FIX-019). Ohne Zeitzone bleibt beides leer.
+  const heute = user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '';
   const [werte, setWerte] = useState<Record<AppointmentFormField, string>>(() => ({
     ...leererTermin,
     // „Hausbesuch, ich, heute" ist der Regelfall dieser Praxis: sie fährt zu
     // den Menschen. Die Vorbelegung aus der Adresszeile geht vor - sie kommt
     // vom Folgetermin oder aus dem Kalender und weiß es genauer.
     appointment_type: vorbelegung.art ?? 'home_visit',
-    date:
-      vorbelegung.datum ??
-      (user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : ''),
+    date: vorbelegung.datum ?? heute,
     start_time: vorbelegung.beginn ?? '',
     // Das Ende wird abgeleitet, nicht übernommen (CAL-010a): ein neu
     // angelegter Termin ist ein angebotener Termin und damit 60 Minuten lang.
@@ -143,9 +146,26 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
     });
   }, [therapeuten.data, user.staffMemberId]);
 
+  /**
+   * Ein Tag vor dem heutigen, noch nicht abgeschickt (FIX-019): Die Frage
+   * kommt VOR dem Server, weil das Datum hier schon bekannt ist - der Server
+   * prüft es trotzdem (ANN-057).
+   */
+  const [vorfrage, setVorfrage] = useState<AppointmentFormValues | null>(null);
+
   const mutation = useMutation({
-    mutationFn: (eingabe: { werte: AppointmentFormValues; bestaetigt: boolean }) =>
-      createAppointment(patientId!, eingabe.werte, eingabe.bestaetigt, verordnungId),
+    mutationFn: (eingabe: {
+      werte: AppointmentFormValues;
+      bestaetigt: boolean;
+      vergangenheit: boolean;
+    }) =>
+      createAppointment(
+        patientId!,
+        eingabe.werte,
+        eingabe.bestaetigt,
+        verordnungId,
+        eingabe.vergangenheit,
+      ),
     onSuccess: async (appointmentId) => {
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       // Zurück, wo das Anlegen begann (BEF-016): Wer aus dem Kalender kam,
@@ -174,11 +194,20 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   }
 
   /** Wiederholt den Vorgang mit ausdrücklicher Bestätigung (CAL-005). */
-  function bestaetigen() {
+  /**
+   * Wiederholt den Vorgang mit einer weiteren Bestätigung (CAL-005, FIX-019).
+   * Was schon bestätigt war, bleibt bestätigt - so kommt nach der zweiten
+   * Frage keine dritte.
+   */
+  function bestaetigen(zusatz: { bestaetigt?: boolean; vergangenheit?: boolean }) {
     if (mutation.isPending) return;
     const ergebnis = appointmentFormSchema.safeParse(werte);
     if (!ergebnis.success) return;
-    mutation.mutate({ werte: ergebnis.data, bestaetigt: true });
+    mutation.mutate({
+      werte: ergebnis.data,
+      bestaetigt: zusatz.bestaetigt ?? mutation.variables?.bestaetigt ?? false,
+      vergangenheit: zusatz.vergangenheit ?? mutation.variables?.vergangenheit ?? false,
+    });
   }
 
   function absenden(event: FormEvent<HTMLFormElement>) {
@@ -199,7 +228,11 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
     }
 
     setFehler({});
-    mutation.mutate({ werte: ergebnis.data, bestaetigt: false });
+    if (heute && liegtInVergangenheit(ergebnis.data.date, heute)) {
+      setVorfrage(ergebnis.data);
+      return;
+    }
+    mutation.mutate({ werte: ergebnis.data, bestaetigt: false, vergangenheit: false });
   }
 
   if (patient.isPending) return <LoadingState label="Patientendaten werden geladen …" />;
@@ -217,7 +250,6 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
   const patientDaten = patient.data;
   // Begrenzt das Datumsfeld nach unten. Verbindlich prueft der Server den
   // vergangenen Kalendertag ohnehin in der Zeitzone der Organisation.
-  const praxisZeitzone = user.organizationTimeZone;
 
   return (
     <>
@@ -236,9 +268,32 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       <form onSubmit={absenden} noValidate className="max-w-xl">
         {/* Rückfrage und Fehler als Fenster über dem Formular (FIX-016): Wer am
             Seitenende abschickt, sieht sie sofort. */}
-        {istAusserhalbArbeitszeit(mutation.error) ? (
+        {vorfrage ? (
           <ArbeitszeitRueckfrage
-            onBestaetigen={bestaetigen}
+            arbeitszeit={false}
+            vergangenheit
+            onBestaetigen={() => {
+              const w = vorfrage;
+              setVorfrage(null);
+              mutation.mutate({ werte: w, bestaetigt: false, vergangenheit: true });
+            }}
+            onAbbrechen={() => setVorfrage(null)}
+            laeuft={false}
+            beschriftung="Termin trotzdem anlegen"
+          />
+        ) : istAusserhalbArbeitszeit(mutation.error) ? (
+          <ArbeitszeitRueckfrage
+            vergangenheit={mutation.variables?.vergangenheit ?? false}
+            onBestaetigen={() => bestaetigen({ bestaetigt: true })}
+            onAbbrechen={() => mutation.reset()}
+            laeuft={mutation.isPending}
+            beschriftung="Termin trotzdem anlegen"
+          />
+        ) : istVergangenheit(mutation.error) ? (
+          <ArbeitszeitRueckfrage
+            arbeitszeit={false}
+            vergangenheit
+            onBestaetigen={() => bestaetigen({ vergangenheit: true })}
             onAbbrechen={() => mutation.reset()}
             laeuft={mutation.isPending}
             beschriftung="Termin trotzdem anlegen"
@@ -263,7 +318,6 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           onChange={setzen}
           therapeuten={therapeuten.data ?? []}
           standorte={standorte.data ?? []}
-          minDatum={praxisZeitzone ? todayInTimeZone(praxisZeitzone) : undefined}
           rasterMinuten={user.appointmentGridMinutes ?? undefined}
           fensterMinuten={fensterMinuten}
           onFensterMinuten={(minuten) => {

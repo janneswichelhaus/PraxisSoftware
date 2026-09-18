@@ -145,6 +145,28 @@ describe('update_appointment: berechtigte Rollen', () => {
     expect(rows[0]?.lokal).toBe('11:00');
   });
 
+  // FIX-019, ANN-057: zurueckgelegt in die Vergangenheit nur mit Bestaetigung
+  // (zehnter Parameter), und der Auditeintrag sagt es.
+  it('legt einen Termin mit Bestaetigung in die Vergangenheit und vermerkt es im Audit', async () => {
+    const t = await anlegen({});
+    await asPostgres("delete from public.audit_log where action like 'appointment.%'");
+    await asUserCommitted(
+      users.office,
+      'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true, true) as id',
+      aendernArgs(t, { tag: tagInTagen(-7) }),
+    );
+
+    const { rows } = await asPostgres<{ tag: string; context: Record<string, unknown> }>(
+      `select (a.starts_at at time zone 'Europe/Berlin')::date::text as tag, l.context
+         from public.appointments a
+         join public.audit_log l on l.subject_id = a.id and l.action = 'appointment.rescheduled'
+        where a.id = $1`,
+      [t.id],
+    );
+    expect(rows[0]!.tag).toBe(tagInTagen(-7));
+    expect(rows[0]!.context).toMatchObject({ in_the_past: true });
+  });
+
   it('weist ein Patientenkonto ab', async () => {
     const t = await anlegen({});
     await expect(aendern(users.patientMax, t, { von: '11:00', bis: '12:00' })).rejects.toThrow(
@@ -320,6 +342,7 @@ describe('update_appointment: Vorgaenge', () => {
     await expect(aendern(users.office, t, { von: '10:00', bis: '09:00' })).rejects.toThrow(
       /end time must be after start time/,
     );
+    // Ohne Bestaetigung bleibt die Vergangenheit abgewiesen (FIX-019).
     await expect(aendern(users.office, t, { tag: tagInTagen(-1) })).rejects.toThrow(/in the past/);
     await expect(aendern(users.office, t, { staff: STAFF.olivia })).rejects.toThrow(
       /not assignable/,
@@ -686,6 +709,8 @@ describe('update_appointment: Audit', () => {
         'staff_member_id',
         'surface',
         'outside_working_hours',
+        // FIX-019: ein Kennzeichen, kein Inhalt.
+        'in_the_past',
       ].sort(),
     );
   });

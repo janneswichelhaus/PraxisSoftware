@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
@@ -58,8 +58,13 @@ vi.mock('./api', async (importOriginal) => {
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
-    updateAppointment: (id: string, stand: string, werte: unknown) =>
-      updateAppointment(id, stand, werte) as Promise<void>,
+    updateAppointment: (
+      id: string,
+      stand: string,
+      werte: unknown,
+      bestaetigt?: boolean,
+      vergangenheit?: boolean,
+    ) => updateAppointment(id, stand, werte, bestaetigt, vergangenheit) as Promise<void>,
   };
 });
 
@@ -137,14 +142,20 @@ describe('EditAppointmentPage', () => {
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
     await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
-    expect(updateAppointment).toHaveBeenCalledWith(TERMIN_ID, STAND, {
-      staff_member_id: STAFF_ANNA,
-      appointment_type: 'practice',
-      date: '2027-05-12',
-      start_time: '11:00',
-      end_time: '12:00',
-      location_id: ORT,
-    });
+    expect(updateAppointment).toHaveBeenCalledWith(
+      TERMIN_ID,
+      STAND,
+      {
+        staff_member_id: STAFF_ANNA,
+        appointment_type: 'practice',
+        date: '2027-05-12',
+        start_time: '11:00',
+        end_time: '12:00',
+        location_id: ORT,
+      },
+      false,
+      false,
+    );
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, { replace: true }),
     );
@@ -249,6 +260,31 @@ describe('EditAppointmentPage', () => {
       expect(screen.getByText('Ende: 14:30 Uhr')).toBeInTheDocument();
     });
 
+    it('fragt beim Zuruecklegen in die Vergangenheit nach und schickt das Kennzeichen (FIX-019)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.clear(screen.getByLabelText('Datum *'));
+      await user.type(screen.getByLabelText('Datum *'), '2020-01-06');
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+      const fenster = await screen.findByRole('dialog', { name: 'Termin in der Vergangenheit' });
+      expect(updateAppointment).not.toHaveBeenCalled();
+      await user.click(
+        within(fenster).getByRole('button', { name: 'Änderung trotzdem speichern' }),
+      );
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment).toHaveBeenCalledWith(
+        TERMIN_ID,
+        STAND,
+        expect.objectContaining({ date: '2020-01-06' }),
+        false,
+        true,
+      );
+    });
+
     it('bekommt eine Regellaenge erst auf ausdrueckliche Anweisung', async () => {
       fetchAppointment.mockResolvedValue(kurz);
       const user = userEvent.setup();
@@ -268,6 +304,8 @@ describe('EditAppointmentPage', () => {
         TERMIN_ID,
         STAND,
         expect.objectContaining({ start_time: '09:00', end_time: '10:00' }),
+        false,
+        false,
       );
     });
 
@@ -293,6 +331,8 @@ describe('EditAppointmentPage', () => {
         TERMIN_ID,
         STAND,
         expect.objectContaining({ start_time: '09:00', end_time: '10:30' }),
+        false,
+        false,
       );
     });
   });
