@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-16.
+Zuletzt aktualisiert: 2026-09-18.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -62,7 +62,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 29 Einträge):
+Zusatz `Prüfpaket` (heute 30 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Je Eintrag bestätigen oder eine andere Festlegung verlangen — der Änderungspfad
 sagt vorab, was eine Änderung kostet, die Prüfung muss den Code dafür nicht
@@ -796,3 +796,27 @@ Technik · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wiedervor
 **Anker.** `src/components/ui/Dialogfenster.tsx` (`Dialogfenster`, `Hinweisfenster`), `ArbeitszeitRueckfrage` in `src/features/appointments/AppointmentFormFields.tsx`, Kommentar in `src/components/ui/Rueckfrage.tsx`; Tests in `src/components/ui/Dialogfenster.test.tsx`.
 
 **Änderungspfad.** Alle Rückfragen modal: `Rueckfrage` auf `Dialogfenster` umstellen · Aufwand `mittel` (acht Aufrufer, Tests mit `role="group"`). Zurück zum Kasten im Fluss: `Dialogfenster` durch einen Kasten mit Bildlauf zum Element ersetzen · Aufwand `klein`.
+
+### ANN-059 — Serie und Vorkommen sind zwei Kennungen; serienweite Vorgänge wirken nach vorn
+
+Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes, sobald er eine Dauerfehlzeit eine Weile geführt hat — insbesondere, ob „die ganze Serie" ohne die vergangenen Vorkommen das Erwartete tut
+
+**Annahme.** Eine Dauerfehlzeit bekommt mit `appointments.event_series_id` eine **zweite** Kennung neben der Gruppenkennung aus CAL-017: Die Gruppe ist ein Vorkommen mit allen Beteiligten, die Serie sind alle Vorkommen. Serienweite Änderung und Absage wirken ausschließlich auf die **noch nicht begonnenen** Vorkommen; begonnene und bereits abgesagte bleiben unberührt und werden übersprungen. Die Tage einer Serie ändert kein serienweiter Vorgang — wer sie verschieben will, sagt die Serie ab und legt eine neue an.
+
+**Begründung.** CAL-EPIC-004 überlässt dem SPEC die Wahl, ob eine Kennung beides trägt. Sie kann es nicht: „dieses Vorkommen" ist genau die Gruppe, und eine doppelt belegte Spalte machte jede Änderung an einer Woche zu einer Änderung an allen. Der Schnitt nach vorn folgt `PROJECT_PRINCIPLES.md` §13: Ein Teammeeting, das letzte Woche stattgefunden hat, nachträglich als abgesagt zu führen, wäre eine Aussage über die Vergangenheit, die niemand getroffen hat; dieselbe Grenze zieht `update_appointment_event` schon für den Tag (CAL-003). Die Serie bleibt dabei Erzeugungsregel und kein Zustandsträger (ADR-018 Punkt 5): keine Tabelle, kein Serienstatus. Unsicher: ob die Praxis eine Serie je um Tage verschieben will statt sie neu zu legen.
+
+**Anker.** `event_series_id`, `create_event_series`, `update_event_series`, `cancel_event_series` in `supabase/migrations/20260918110000_event_series.sql`; `createEventSeries`, `updateEventSeries`, `cancelEventSeries` in `src/features/appointments/api.ts`.
+
+**Änderungspfad.** Serienweite Vorgänge auch auf begonnene Vorkommen: die `having`-Bedingung in beiden Funktionen streichen · Aufwand `klein`. Serie um Tage verschieben: ein weiterer Parameter und eine Neuberechnung der Tage in `update_event_series` · Aufwand `mittel`. Zurück zu einer Kennung: nicht ohne Verlust von „dieses Vorkommen" · Aufwand `groß`.
+
+### ANN-060 — Die Bezeichnung einer Fehlzeit ist organisatorisch, und geprüft wird das am Feld
+
+Datenschutz · offen · 2026-09-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+
+**Annahme.** Die frei benannte Bezeichnung einer Fehlzeit (CAL-021) ist eine **organisatorische** Angabe: kein Patientenname, keine Diagnose, kein klinischer Inhalt. Durchgesetzt wird das an drei Stellen und ausdrücklich **nicht** durch eine inhaltliche Prüfung des Freitexts: der Hinweis am Eingabefeld sagt die Regel, die Länge ist auf 120 Zeichen begrenzt, und der Titel erscheint weder im Auditkontext noch in einem Log noch in der Adresszeile. Er steht allein an der Zeile und als Aufschrift im Gitter.
+
+**Begründung.** Der Kalender ist für das ganze Team sichtbar; eine Fehlzeit mit Patientenbezug wäre eine Offenbarung ohne Anlass (`PROJECT_PRINCIPLES.md` §4.6, ADR-011 für die Logs). Eine automatische Inhaltsprüfung wäre die schlechtere Antwort: Sie müsste Patientennamen gegen den Bestand prüfen, dabei genau die Daten anfassen, die sie schützen soll, und ergäbe trotzdem falsche Treffer („Frau Meier" ist auch eine Kollegin). Deshalb die Regel am Feld, wo sie gelesen wird, plus die technische Zusicherung, dass der Text die Anwendung nicht verlässt. Unsicher: ob die Datenschutzprüfung eine Protokollierung der Bezeichnung bei Änderungen verlangt.
+
+**Anker.** Hinweis und Längengrenze am Feld `Bezeichnung` in `src/features/appointments/EreignisFormFields.tsx`; der Auditkontext ohne Titel in `supabase/migrations/20260913100000_event_groups.sql` (`create_appointment_event`, `update_appointment_event`).
+
+**Änderungspfad.** Bezeichnung aus einer Liste statt Freitext: ein Wertebereich in der Datenbank und eine Auswahl im Formular · Aufwand `mittel`. Prüfung gegen den Patientenbestand: eine Abfrage im Schreibpfad · Aufwand `mittel` — widerspräche der Begründung. Titel im Auditkontext: ein Feld in `jsonb_build_object` · Aufwand `klein`, aber eine neue Datenschutzentscheidung.

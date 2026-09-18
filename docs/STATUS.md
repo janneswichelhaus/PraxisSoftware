@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-18 · letzte Session: FIX-EPIC-004 Kalender-Bedienung
+# Status · Stand 2026-09-18 · letzte Session: CAL-EPIC-004b Anlegen-Menü und Fehlzeiten
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
@@ -8,14 +8,13 @@ einträgt, hat sie damit nicht eingeplant.
 
 ## Jetzt
 
-- **CAL-EPIC-004b** — Anlegen-Menü (Spanne aufziehen), Fehlzeit und
-  Dauerfehlzeit. Aufruf: `/feature-loop CAL-EPIC-004b` · Pfad A · Vorgabe in
-  [`development/CAL-EPIC-004.md`](development/CAL-EPIC-004.md) (CAL-019,
-  CAL-021) · beginnt auf Freigabe, **nach dem Merge von FIX-EPIC-004**
+Nichts läuft. CAL-EPIC-004b liegt als PR gegen `main`, Abnahme steht aus; der
+nächste Loop beginnt auf Freigabe.
 
 ## Danach — Reihenfolge seit 2026-09-18
 
-1. **UX-013** — Kopfleiste sucht Funktionen; hängt an nichts, vorziehbar
+1. **UX-013** — Kopfleiste sucht Funktionen; hängt an nichts · Pfad A · Vorgabe
+   in [`development/CAL-EPIC-004.md`](development/CAL-EPIC-004.md)
 2. **GRD-001** — Behandlungsgrundlage nach
    [ADR-020](adr/ADR-020-treatment-basis.md) (angenommen); Migration, `test:db`
 3. **VER-EPIC-002** — Verordnung im Office-Alltag
@@ -33,28 +32,29 @@ CI und `engines` meinen Node 22.
 
 ## Blocker (Jannes-seitig)
 
-- **PR zu FIX-EPIC-004 mergen**, danach lokal `db reset` (neue Migration).
-- **Abnahme CAL-018, CAL-EPIC-004a, FIX-EPIC-004** — Klickwege in
-  [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
+- **PR zu CAL-EPIC-004b mergen**, danach lokal `db reset` (neue Migration
+  `20260918110000_event_series.sql`).
+- **Abnahme CAL-018, CAL-EPIC-004a, FIX-EPIC-004, CAL-EPIC-004b** — Klickwege
+  in [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
 - **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code
   ([`development/E18-LEISTUNGSBEREICHE.md`](development/E18-LEISTUNGSBEREICHE.md))
 - Branch Protection und Secret Scanning (M0, 30.09.), Anfragen B1, B2, B4
   ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)), PTV-Free-Abo vor MAP-002 ·
   `claude/issue-42-status-fv319v` hat drei ungemergte Commits
-- Das Annahmenregister steht bei 798 von 800 Zeilen — vor ANN-059 kürzen oder
-  die Obergrenze anheben (`scripts/docs-check.mjs`).
+- **Gegenlesen:** Die Obergrenze des Annahmenregisters steht seit CAL-EPIC-004b
+  bei 1000 statt 800 Zeilen (`scripts/docs-check.mjs`, Begründung dort).
 
 ## Auf Abnahme warten
 
 CAL-EPIC-003b (mit CAL-012/013), AKTE-000 bis AKTE-005, UX-012, UI-002, FIX-EPIC-001
-(braucht Docker), FIX-EPIC-003, CAL-014 bis CAL-018, CAL-EPIC-004a, FIX-EPIC-004,
-DAT-EPIC-001, ROL-EPIC-001, FIX-015 — Schritte in [`abnahme/`](abnahme/README.md).
+(braucht Docker), FIX-EPIC-003, CAL-014 bis CAL-018, CAL-EPIC-004a und -004b,
+FIX-EPIC-004, DAT-EPIC-001, ROL-EPIC-001, FIX-015 — [`abnahme/`](abnahme/README.md).
 
 ## Letzte Session
 
-**FIX-EPIC-004 gebaut** (FIX-016 bis FIX-019, Befunde von Jannes). Rückfragen
-der Terminformulare sind Fenster über dem Inhalt, das Anlegen kehrt in den
-Kalender zurück; die Zieh-Rückfrage steht im Gitter mit Umriss und neuer Kachel;
-Ziehen scrollt und blättert; die Vergangenheit ist mit Bestätigung erlaubt.
-**ANN-057, ANN-058** neu; BEF-012 bis BEF-016 erledigt. Lokal nach dem Merge:
-`git checkout main && git pull origin main`, dann `pnpm dlx supabase@2.116.0 db reset`.
+**CAL-EPIC-004b gebaut** (CAL-019, CAL-021). Auf der freien Fläche wird eine
+Spanne aufgezogen, danach steht das Anlegen-Menü mit vier Einträgen im Gitter;
+die Fehlzeit ist ein Ereignis, die Dauerfehlzeit eine Serie mit eigener Kennung
+neben der Gruppenkennung — Ändern und Absagen gelten wahlweise für ein Vorkommen
+oder die ganze Serie. **ANN-059, ANN-060** neu. Nach dem Merge lokal:
+`git checkout main && git pull origin main`, `pnpm dlx supabase@2.116.0 db reset`.
