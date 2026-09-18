@@ -826,6 +826,44 @@ describe('CalendarPage', () => {
         expect(fetchAppointment).not.toHaveBeenCalled();
       });
 
+      it('zeichnet den alten Platz als Umriss und den neuen als Kachel im Gitter (FIX-017)', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
+        await rueckfrage();
+
+        // Der alte Platz: gestrichelt, beschriftet, noch da.
+        expect(kachel.className).toContain('border-dashed');
+        expect(kachel).toHaveTextContent(/Bisher/);
+        expect(kachel).toHaveAttribute('title', expect.stringMatching(/^Bisher/));
+        // Der neue Platz: eine Kachel mit der neuen Zeit, im Gitter.
+        const neu = screen.getByTestId('vorschlag-kachel');
+        expect(neu).toHaveTextContent('10:00–11:00');
+        expect(screen.getByRole('gridcell', { name: 'Anna Beispiel' })).toContainElement(neu);
+        // Der Kasten steht im Gitter, nicht darueber.
+        expect(screen.getByRole('grid')).toContainElement(await rueckfrage());
+      });
+
+      it('sperrt die uebrigen Kacheln nicht, solange die Rueckfrage offen ist (BEF-015)', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
+        expect(await rueckfrage()).toHaveTextContent('10:00–11:00');
+
+        // Noch einmal ziehen, weiter: die neue Geste ersetzt den Vorschlag.
+        ziehen(kachel, { dy: 2 * EINE_STUNDE });
+        expect(await rueckfrage()).toHaveTextContent('11:00–12:00');
+        expect(screen.getAllByRole('group', { name: 'Termin verschieben?' })).toHaveLength(1);
+        expect(updateAppointment).not.toHaveBeenCalled();
+      });
+
+      it('nennt am Tooltip, warum eine Kachel nicht zieht', async () => {
+        fetchAppointments.mockResolvedValue([eintrag({ status: 'completed' })]);
+        const kachel = await tagesansicht();
+        expect(kachel).toHaveAttribute(
+          'title',
+          expect.stringContaining('Nicht verschiebbar: Abgeschlossen'),
+        );
+      });
+
       it('setzt den Fokus auf die bestaetigende Schaltflaeche', async () => {
         const kachel = await tagesansicht();
         ziehen(kachel, { dy: EINE_STUNDE });

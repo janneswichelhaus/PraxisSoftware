@@ -26,7 +26,7 @@ import {
   type TerminVorbelegung,
 } from './api';
 import { CalendarGrid, type GitterEintrag, type GitterSpalte } from './CalendarGrid';
-import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
+import type { VerschiebenFrage } from './VerschiebenRueckfrage';
 import {
   arbeitszeitBaender,
   bereichFuer,
@@ -132,6 +132,8 @@ interface Vorschlag {
   v: Verschiebung;
   zurueck: Verschiebung;
   frage: VerschiebenFrage;
+  /** Die Zielspalte, in der das Gitter die neue Kachel zeichnet (FIX-017). */
+  zielSpalteId: string;
 }
 
 /**
@@ -445,6 +447,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
     // Das Loslassen schreibt nicht mehr - es fragt (CAL-023).
     setVorschlag({
+      zielSpalteId: ziel.spalteId,
       frage: {
         alteZeit,
         neueZeit,
@@ -730,27 +733,6 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         <Statusmeldung className="mt-4">Der Termin wird verschoben …</Statusmeldung>
       ) : null}
 
-      {/* Rückfrage beim Verschieben (CAL-023): immer, auch bei freier
-          Zielzeit - und der Hinweis auf die Arbeitszeit steht in ihr, nicht in
-          einem zweiten Kasten dahinter. */}
-      {vorschlag ? (
-        <VerschiebenRueckfrage
-          frage={vorschlag.frage}
-          laeuft={verschieben.isPending}
-          onBestaetigen={() =>
-            verschieben.mutate({
-              v: vorschlag.v,
-              // Bestätigt ist die Arbeitszeit nur, wenn die Rückfrage sie
-              // genannt hat. Sonst fragt der Server zurück (CAL-005).
-              bestaetigt: vorschlag.frage.ausserhalb,
-              zurueck: vorschlag.zurueck,
-              aus: vorschlag,
-            })
-          }
-          onAbbrechen={() => setVorschlag(null)}
-        />
-      ) : null}
-
       {verschieben.isError && !vorschlag ? (
         <div className="mt-4">
           <ErrorState
@@ -806,9 +788,34 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           fenster={fenster}
           raster={user.appointmentGridMinutes}
           stundenHoehe={p.zoom}
-          // Solange eine Rückfrage offen ist, wird nicht weitergezogen: Sonst
-          // stünde eine Frage da, deren Kachel schon woanders hängt (CAL-023).
-          ziehbarErlaubt={darfAendern && !verschieben.isPending && !vorschlag}
+          // Auch bei offener Rückfrage darf weitergezogen werden (BEF-015):
+          // Die nächste Geste ersetzt den Vorschlag, statt gesperrt zu sein.
+          ziehbarErlaubt={darfAendern && !verschieben.isPending}
+          // Rückfrage beim Verschieben (CAL-023, FIX-017): immer, auch bei
+          // freier Zielzeit, gezeichnet im Gitter - und der Hinweis auf die
+          // Arbeitszeit steht in ihr, nicht in einem zweiten Kasten dahinter.
+          vorschlag={
+            vorschlag
+              ? {
+                  terminId: vorschlag.v.terminId,
+                  spalteId: vorschlag.zielSpalteId,
+                  startMinute: vorschlag.v.startMinute,
+                  endeMinute: vorschlag.v.endeMinute,
+                  frage: vorschlag.frage,
+                  laeuft: verschieben.isPending,
+                  onBestaetigen: () =>
+                    verschieben.mutate({
+                      v: vorschlag.v,
+                      // Bestätigt ist die Arbeitszeit nur, wenn die Rückfrage
+                      // sie genannt hat. Sonst fragt der Server zurück (CAL-005).
+                      bestaetigt: vorschlag.frage.ausserhalb,
+                      zurueck: vorschlag.zurueck,
+                      aus: vorschlag,
+                    }),
+                  onAbbrechen: () => setVorschlag(null),
+                }
+              : null
+          }
           onVerschieben={ablegen}
           onFreieZeit={darfAendern ? freieZeit : undefined}
           beschriftung={

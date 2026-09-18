@@ -44,7 +44,7 @@ export function NewAppointmentStartPage() {
    * Kennung an; damit ist keine der Angaben verloren, die der Tap auf die
    * freie Stelle im Kalender mitgebracht hat.
    */
-  const hierher = `/termine/neu${anhang}`;
+  const hierher = mitRueckweg(`/termine/neu${anhang}`, rueckweg || null);
 
   /**
    * Zurück aus der Patientenanlage: direkt weiter ins Terminformular.
