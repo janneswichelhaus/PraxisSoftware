@@ -24,8 +24,8 @@ delete from public.appointment_notifications;
 delete from public.appointments;
 delete from public.storage_deletion_orders;
 delete from public.patient_files;
-delete from public.prescription_items;
-delete from public.prescriptions;
+delete from public.treatment_base_items;
+delete from public.treatment_bases;
 delete from public.prescribers;
 delete from public.patient_care_details;
 delete from public.patient_contact_details;
@@ -142,12 +142,13 @@ insert into public.prescribers (id, organization_id, title, given_name, family_n
   ('77777777-7777-4777-8777-000000000002', '22222222-2222-4222-8222-000000000001', null,       'Hendrik', 'Hausarzt', 'Hausarztpraxis Testdorf',                  'Allgemeinmedizin', 'Dorfstrasse', '18', '72074', 'Tuebingen', '+49 7071 0000403', null,               null);
 
 -- -----------------------------------------------------------------------------
--- Verordnungen (VER-001, VER-002)
+-- Behandlungsgrundlagen (VER-001, VER-002, GRD-001)
 -- -----------------------------------------------------------------------------
 -- Rein synthetisch. Die Diagnosen sind erfunden und stammen aus keinem realen
 -- Fall (PROJECT_PRINCIPLES.md 3.1). Zwei Jahre, damit die Gruppierung nach Jahr
--- in der Akte sichtbar wird, und eine ausgeschoepfte Verordnung als Gegenprobe.
-insert into public.prescriptions (id, organization_id, patient_id, prescriber_id, prescription_kind, issued_on, frequency_note, note, diagnosis, therapy_goal, prescriber_note, follow_up_recommendation) values
+-- in der Akte sichtbar wird, eine ausgeschoepfte Verordnung als Gegenprobe und
+-- seit GRD-001 ein Selbstzahler als zweite Bauart (ADR-020).
+insert into public.treatment_bases (id, organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on, frequency_note, note, diagnosis, therapy_goal, prescriber_note, follow_up_recommendation) values
   ('88888888-8888-4888-8888-000000000001', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '77777777-7777-4777-8777-000000000001', 'first',     '2026-02-05', '2x pro Woche', null,                          'Synthetisch: Bewegungseinschraenkung der rechten Schulter nach Sturz.', 'Schmerzfreie Beweglichkeit im Alltag.', 'Belastung langsam steigern.', null),
   ('88888888-8888-4888-8888-000000000002', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000001', '77777777-7777-4777-8777-000000000001', 'follow_up', '2026-06-18', '2x pro Woche', 'Rezept liegt im Ordner.',     'Synthetisch: Fortbestehende Bewegungseinschraenkung rechte Schulter.',  'Rueckkehr zur Gartenarbeit.',          null,                          'Synthetisch: Eine weitere Folgeverordnung waere aus meiner Sicht sinnvoll.'),
   ('88888888-8888-4888-8888-000000000003', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '77777777-7777-4777-8777-000000000002', 'first',     '2025-11-12', '1x pro Woche', null,                          'Synthetisch: Verspannung der Nackenmuskulatur.',                        null,                                   null,                          null),
@@ -155,14 +156,19 @@ insert into public.prescriptions (id, organization_id, patient_id, prescriber_id
   -- Terminserie (CAL-007). Ohne sie waere in der Abnahme keine Verordnung mit
   -- vollem Kontingent da, und eine Serie ueber zehn Termine liesse sich nur
   -- ueber das Kontingent hinaus planen.
-  ('88888888-8888-4888-8888-000000000004', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '77777777-7777-4777-8777-000000000001', 'follow_up', '2026-09-08', '2x pro Woche', null,                          'Synthetisch: Anschlussbehandlung der Nackenmuskulatur.',                'Beschwerdefreie Kopfdrehung im Alltag.', null,                        null);
+  ('88888888-8888-4888-8888-000000000004', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', '77777777-7777-4777-8777-000000000001', 'follow_up', '2026-09-08', '2x pro Woche', null,                          'Synthetisch: Anschlussbehandlung der Nackenmuskulatur.',                'Beschwerdefreie Kopfdrehung im Alltag.', null,                        null),
+  -- Der Selbstzahler (ADR-020): keine Verordner:in, keine klinischen Felder,
+  -- aber dieselbe Klammer - mit vereinbarter Anzahl, Deckung und Serienplanung.
+  -- issued_on ist hier der Tag der Vereinbarung.
+  ('88888888-8888-4888-8888-000000000005', '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000002', null,                                  'self_pay',  '2026-09-03', '1x pro Woche', 'Zahlt selbst, Rechnung je Monat.', null,                                                                   null,                                   null,                          null);
 
-insert into public.prescription_items (id, organization_id, prescription_id, sort_order, remedy, prescribed_quantity, used_quantity) values
+insert into public.treatment_base_items (id, organization_id, treatment_basis_id, sort_order, remedy, prescribed_quantity, used_quantity) values
   ('99999999-9999-4999-8999-000000000001', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000001', 1, 'Krankengymnastik',        10, 10),
   ('99999999-9999-4999-8999-000000000002', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000001', 2, 'Waermetherapie',          10, 10),
   ('99999999-9999-4999-8999-000000000003', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000002', 1, 'Krankengymnastik',        10,  7),
   ('99999999-9999-4999-8999-000000000004', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000003', 1, 'Manuelle Therapie',        6,  2),
-  ('99999999-9999-4999-8999-000000000005', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000004', 1, 'Krankengymnastik',        10,  0);
+  ('99999999-9999-4999-8999-000000000005', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000004', 1, 'Krankengymnastik',        10,  0),
+  ('99999999-9999-4999-8999-000000000006', '22222222-2222-4222-8222-000000000001', '88888888-8888-4888-8888-000000000005', 1, 'Krankengymnastik',         8,  1);
 
 -- -----------------------------------------------------------------------------
 -- Accountzuordnung

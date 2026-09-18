@@ -23,7 +23,7 @@ const patient: PatientsApi.Patient = testPatient({
 });
 
 const fetchPatient = vi.fn();
-const fetchPrescriptionSlots = vi.fn();
+const fetchTreatmentBasisSlots = vi.fn();
 const fetchAssignableTherapists = vi.fn();
 const fetchLocations = vi.fn();
 const checkAppointmentSlots = vi.fn();
@@ -39,8 +39,8 @@ vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,
-    fetchPrescriptionSlots: (id: string) =>
-      fetchPrescriptionSlots(id) as Promise<AppointmentsApi.PrescriptionSlots>,
+    fetchTreatmentBasisSlots: (id: string) =>
+      fetchTreatmentBasisSlots(id) as Promise<AppointmentsApi.TreatmentBasisSlots>,
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
@@ -54,7 +54,7 @@ vi.mock('./api', async (importOriginal) => {
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
   useNavigate: () => navigate,
-  useParams: () => ({ patientId: PATIENT_ID, prescriptionId: VERORDNUNG }),
+  useParams: () => ({ patientId: PATIENT_ID, grundlageId: VERORDNUNG }),
 }));
 
 const { AppointmentSeriesPage } = await import('./AppointmentSeriesPage');
@@ -86,7 +86,7 @@ async function vorschlagen(user: ReturnType<typeof userEvent.setup>, anzahl?: nu
 describe('AppointmentSeriesPage', () => {
   beforeEach(() => {
     fetchPatient.mockReset();
-    fetchPrescriptionSlots.mockReset();
+    fetchTreatmentBasisSlots.mockReset();
     fetchAssignableTherapists.mockReset();
     fetchLocations.mockReset();
     checkAppointmentSlots.mockReset();
@@ -94,7 +94,7 @@ describe('AppointmentSeriesPage', () => {
     navigate.mockReset();
 
     fetchPatient.mockResolvedValue(patient);
-    fetchPrescriptionSlots.mockResolvedValue({
+    fetchTreatmentBasisSlots.mockResolvedValue({
       patient_id: PATIENT_ID,
       frequency_note: '2x pro Woche',
       prescribed: 10,
@@ -341,7 +341,7 @@ describe('AppointmentSeriesPage', () => {
   });
 
   it('meldet eine nicht lesbare Verordnung, ohne etwas anzubieten', async () => {
-    fetchPrescriptionSlots.mockRejectedValue(new Error('nope'));
+    fetchTreatmentBasisSlots.mockRejectedValue(new Error('nope'));
     rendern();
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
   });

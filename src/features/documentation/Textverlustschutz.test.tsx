@@ -19,7 +19,7 @@ import { useTextverlustschutz } from './Textverlustschutz';
  * Die Prüfseite bringt ihren eigenen Weg nach draußen mit und schreibt den
  * aktuellen Pfad hin. Ein echter Seitenwechsel ist damit sichtbar, ohne
  * `useNavigate` zu unterschieben - dieselbe Begründung wie in
- * `PrescriptionFormPage.entwurf.test.tsx`.
+ * `TreatmentBasisFormPage.entwurf.test.tsx`.
  */
 
 function setzeVerbindung(online: boolean) {

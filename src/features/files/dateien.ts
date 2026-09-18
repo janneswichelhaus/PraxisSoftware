@@ -28,10 +28,8 @@ import {
  * ausgegraut und nicht gezählt. Diese Datei blendet nichts aus.
  */
 
-function dateienSchluessel(patientId: string, prescriptionId?: string | null) {
-  return prescriptionId
-    ? ['patient-files', patientId, prescriptionId]
-    : ['patient-files', patientId];
+function dateienSchluessel(patientId: string, grundlageId?: string | null) {
+  return grundlageId ? ['patient-files', patientId, grundlageId] : ['patient-files', patientId];
 }
 
 interface DateienDerAkte {
@@ -45,13 +43,13 @@ interface DateienDerAkte {
 export function useDateien(
   patientId: string,
   user: CurrentUser,
-  prescriptionId?: string | null,
+  grundlageId?: string | null,
 ): DateienDerAkte {
   const darfLesen = canReadPatientFiles(user.roles);
 
   const abfrage = useQuery({
-    queryKey: dateienSchluessel(patientId, prescriptionId),
-    queryFn: () => fetchPatientFiles(patientId, prescriptionId ?? null),
+    queryKey: dateienSchluessel(patientId, grundlageId),
+    queryFn: () => fetchPatientFiles(patientId, grundlageId ?? null),
     enabled: darfLesen,
     retry: false,
   });

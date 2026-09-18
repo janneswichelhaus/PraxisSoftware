@@ -98,7 +98,7 @@ describe('CAL-011: Terminzettel', () => {
     await anlegen({ tag: tagInTagen(50) });
     const { rows } = await lesen(users.office);
 
-    for (const verboten of ['status', 'prescription_id', 'patient_id', 'visit_city', 'notes']) {
+    for (const verboten of ['status', 'treatment_basis_id', 'patient_id', 'visit_city', 'notes']) {
       expect(Object.keys(rows[0]!)).not.toContain(verboten);
     }
   });

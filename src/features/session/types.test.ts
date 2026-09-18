@@ -10,10 +10,10 @@ import {
   canManageStaffPrivateDetails,
   canReadClinicalPatientFiles,
   canReadPatientDirectory,
-  canReadPrescriptionClinical,
+  canReadTreatmentBasisClinical,
   canReadTreatmentNote,
   canWriteClinicalPatientFiles,
-  canWritePrescriptions,
+  canWriteTreatmentBases,
   canWriteTreatmentNote,
   isStaff,
   roleKeySchema,
@@ -198,13 +198,13 @@ describe('Verordnung und Dateien (ROL-002, E15)', () => {
   it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
     'laesst %s die klinischen Verordnungsfelder und klinische Dateien lesen',
     (role) => {
-      expect(canReadPrescriptionClinical([role])).toBe(true);
+      expect(canReadTreatmentBasisClinical([role])).toBe(true);
       expect(canReadClinicalPatientFiles([role])).toBe(true);
     },
   );
 
   it('oeffnet office mit dem Leserecht kein Schreibrecht (PROJECT_PRINCIPLES.md 4.3)', () => {
-    expect(canWritePrescriptions(['office'])).toBe(false);
+    expect(canWriteTreatmentBases(['office'])).toBe(false);
     expect(canWriteClinicalPatientFiles(['office'])).toBe(false);
     expect(canCorrectPatientFileType(['office'])).toBe(false);
     expect(canConcludePatientCare(['office'])).toBe(false);
@@ -219,7 +219,7 @@ describe('Verordnung und Dateien (ROL-002, E15)', () => {
   );
 
   it('schliesst ein Patientenkonto aus (4.6)', () => {
-    expect(canReadPrescriptionClinical(['patient'])).toBe(false);
+    expect(canReadTreatmentBasisClinical(['patient'])).toBe(false);
     expect(canReadClinicalPatientFiles(['patient'])).toBe(false);
     expect(canWriteClinicalPatientFiles(['patient'])).toBe(false);
     expect(canCorrectPatientFileType(['patient'])).toBe(false);

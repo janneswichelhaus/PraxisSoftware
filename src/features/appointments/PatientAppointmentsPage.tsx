@@ -12,6 +12,7 @@ import { formatDate as formatIsoDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
+import { bauartLabels, grundlageBezeichnung, type Bauart } from '@/features/treatment-bases/api';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
 import { Laengenzeichen } from './Laengenzeichen';
 import {
@@ -44,7 +45,26 @@ import { schreibeParameter, ZOOM_STANDARD } from './calendar';
  * Liste ist der Weg dorthin.
  */
 
-/** Der Filter auf eine Verordnung reist in der Adresse (teilbar, neuladefest). */
+/**
+ * Wie der Rückweg an einem Termin heißt (ADR-020 Punkt 7).
+ *
+ * Die Bauart kommt aus `list_patient_appointments` mit; ohne sie stünde an
+ * einem Selbstzahlertermin „Verordnung vom …" — eine Auskunft, die es so nicht
+ * gibt. Ohne Datum bleibt das neutrale Oberwort, denn dann ist auch die Bauart
+ * keine verlässliche Angabe.
+ */
+function grundlagenBeschriftung(termin: {
+  treatment_basis_kind: string | null;
+  treatment_basis_issued_on: string | null;
+}): string {
+  if (!termin.treatment_basis_issued_on) return 'Zur Behandlungsgrundlage';
+  const bauart = termin.treatment_basis_kind as Bauart | null;
+  if (!bauart) return `Grundlage vom ${formatIsoDate(termin.treatment_basis_issued_on)}`;
+  const { praeposition } = grundlageBezeichnung({ treatment_basis_kind: bauart });
+  return `${bauartLabels[bauart]} ${praeposition} ${formatIsoDate(termin.treatment_basis_issued_on)}`;
+}
+
+/** Der Filter auf eine Grundlage reist in der Adresse (teilbar, neuladefest). */
 const FILTER = 'verordnung';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -91,17 +111,17 @@ function Terminzeile({
           </Badge>
         ) : null}
 
-        {/* Der Rückweg zur Verordnung: Wer einen Serientermin vor sich hat,
+        {/* Der Rückweg zur Grundlage: Wer einen Serientermin vor sich hat,
             will wissen, aus welchem Auftrag er stammt (CAL-007). Im gefilterten
-            Zustand wäre der Hinweis an jeder Zeile dieselbe Auskunft. */}
-        {mitVerordnung && termin.prescription_id ? (
+            Zustand wäre der Hinweis an jeder Zeile dieselbe Auskunft. Die
+            Beschriftung nennt die Bauart, nicht das Oberwort (ADR-020 Punkt 7):
+            „Erstverordnung vom …" oder „Selbstzahler seit …". */}
+        {mitVerordnung && termin.treatment_basis_id ? (
           <Link
-            to={`/patienten/${patientId}/verordnungen#verordnung-${termin.prescription_id}`}
+            to={`/patienten/${patientId}/verordnungen#verordnung-${termin.treatment_basis_id}`}
             className="text-accent inline-flex min-h-11 shrink-0 items-center text-sm hover:underline"
           >
-            {termin.prescription_issued_on
-              ? `Verordnung vom ${formatIsoDate(termin.prescription_issued_on)}`
-              : 'Zur Verordnung'}
+            {grundlagenBeschriftung(termin)}
           </Link>
         ) : null}
       </div>
@@ -235,13 +255,13 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
           role="status"
           className="border-line-strong bg-surface-sunken rounded-card mb-6 flex flex-wrap items-center justify-between gap-3 border px-4 py-3"
         >
-          <p className="text-ink text-sm">Nur die Termine einer Verordnung.</p>
+          <p className="text-ink text-sm">Nur die Termine einer Behandlungsgrundlage.</p>
           <div className="flex flex-wrap gap-2">
             <ButtonLink
               to={`/patienten/${patient.id}/verordnungen#verordnung-${verordnung}`}
               variant="secondary"
             >
-              Zur Verordnung
+              Zur Grundlage
             </ButtonLink>
             <Button
               type="button"

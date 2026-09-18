@@ -16,6 +16,9 @@ const VERORDNUNG = {
   maxOffen: '88888888-8888-4888-8888-000000000002',
   erikaAlt: '88888888-8888-4888-8888-000000000003',
   erikaFrisch: '88888888-8888-4888-8888-000000000004',
+  // Die zweite Bauart im Seed (GRD-001, ADR-020): dieselbe Klammer, aber ohne
+  // Verordner:in und ohne klinische Felder.
+  erikaSelbstzahler: '88888888-8888-4888-8888-000000000005',
 } as const;
 
 interface Zeile {
@@ -24,8 +27,9 @@ interface Zeile {
   appointment_type: string;
   status: string;
   notification_channels: string[];
-  prescription_id: string | null;
-  prescription_issued_on: Date | null;
+  treatment_basis_id: string | null;
+  treatment_basis_kind: string | null;
+  treatment_basis_issued_on: Date | null;
   organization_time_zone: string;
 }
 
@@ -76,7 +80,7 @@ async function termin(opts: {
   const { rows } = await asPostgres<{ id: string }>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,
-       appointment_type, status, starts_at, ends_at, prescription_id,
+       appointment_type, status, starts_at, ends_at, treatment_basis_id,
        completed_at, completed_by, cancelled_at, cancelled_by, cancellation_reason
      ) values (
        $1, $2, $3, $4,
@@ -219,13 +223,13 @@ describe('list_patient_appointments', () => {
 
     const { rows } = await lesen(users.therapist, { verordnung: VERORDNUNG.maxOffen });
     expect(rows.map((z) => z.id)).toEqual([ausSerie]);
-    expect(rows[0]!.prescription_id).toBe(VERORDNUNG.maxOffen);
-    expect(rows[0]!.prescription_issued_on).toEqual(new Date('2026-06-18T00:00:00'));
+    expect(rows[0]!.treatment_basis_id).toBe(VERORDNUNG.maxOffen);
+    expect(rows[0]!.treatment_basis_issued_on).toEqual(new Date('2026-06-18T00:00:00'));
 
     // Ohne Filter stehen beide da, der freie Termin ohne Verordnungsbezug.
     const alle = await lesen(users.therapist);
     expect(alle.rows.length).toBe(2);
-    expect(alle.rows.some((z) => z.prescription_id === null)).toBe(true);
+    expect(alle.rows.some((z) => z.treatment_basis_id === null)).toBe(true);
   });
 
   it('liefert den gueltigen Mitteilungsvermerk und keine Anschrift', async () => {
@@ -244,12 +248,13 @@ describe('list_patient_appointments', () => {
       'id',
       'notification_channels',
       'organization_time_zone',
-      'prescription_id',
-      'prescription_issued_on',
       'staff_family_name',
       'staff_given_name',
       'starts_at',
       'status',
+      'treatment_basis_id',
+      'treatment_basis_issued_on',
+      'treatment_basis_kind',
     ]);
   });
 
@@ -266,11 +271,11 @@ describe('list_patient_appointments', () => {
  * ohne es zu vermischen: Leistungseinheiten kommen aus den Positionen,
  * Termine von den Terminen. Genau das pruefen die Faelle hier.
  */
-describe('list_patient_prescription_slots', () => {
-  const SLOTS = 'select * from public.list_patient_prescription_slots($1::uuid)';
+describe('list_patient_treatment_basis_slots', () => {
+  const SLOTS = 'select * from public.list_patient_treatment_basis_slots($1::uuid)';
 
   interface SlotZeile {
-    prescription_id: string;
+    treatment_basis_id: string;
     prescribed: number;
     used: number;
     planned: number;
@@ -292,12 +297,12 @@ describe('list_patient_prescription_slots', () => {
 
   it('ist fuer anon nicht ausfuehrbar und weist ein Patientenkonto ab', async () => {
     await expect(asAnon(SLOTS, [patients.max])).rejects.toThrow(/permission denied/);
-    await expect(slots(users.patientMax)).rejects.toThrow(/not allowed to read prescriptions/);
+    await expect(slots(users.patientMax)).rejects.toThrow(/not allowed to read treatment_bases/);
   });
 
   it('liefert je Verordnung eine Zeile, neueste zuerst', async () => {
     const { rows } = await slots(users.office);
-    expect(rows.map((z) => z.prescription_id)).toEqual([
+    expect(rows.map((z) => z.treatment_basis_id)).toEqual([
       VERORDNUNG.maxOffen,
       VERORDNUNG.maxAusgeschoepft,
     ]);
@@ -314,7 +319,7 @@ describe('list_patient_prescription_slots', () => {
     await termin({ inStunden: 96 });
 
     const { rows } = await slots(users.office);
-    const offen = rows.find((z) => z.prescription_id === VERORDNUNG.maxOffen)!;
+    const offen = rows.find((z) => z.treatment_basis_id === VERORDNUNG.maxOffen)!;
 
     expect(offen.prescribed).toBe(10);
     expect(offen.used).toBe(7);
@@ -331,7 +336,7 @@ describe('list_patient_prescription_slots', () => {
     }
 
     const { rows } = await slots(users.office);
-    const offen = rows.find((z) => z.prescription_id === VERORDNUNG.maxOffen)!;
+    const offen = rows.find((z) => z.treatment_basis_id === VERORDNUNG.maxOffen)!;
     expect(offen.used).toBe(7);
     expect(offen.planned).toBe(9);
     expect(offen.remaining).toBe(1);
@@ -339,7 +344,7 @@ describe('list_patient_prescription_slots', () => {
 
   it('meldet die ausgeschoepfte Verordnung mit null offenen Einheiten', async () => {
     const { rows } = await slots(users.office);
-    const ausgeschoepft = rows.find((z) => z.prescription_id === VERORDNUNG.maxAusgeschoepft)!;
+    const ausgeschoepft = rows.find((z) => z.treatment_basis_id === VERORDNUNG.maxAusgeschoepft)!;
     expect(ausgeschoepft.prescribed).toBe(20);
     expect(ausgeschoepft.used).toBe(20);
     expect(ausgeschoepft.remaining).toBe(0);
@@ -347,8 +352,8 @@ describe('list_patient_prescription_slots', () => {
 
   it('zeigt keine Verordnung einer anderen Patientin', async () => {
     const { rows } = await slots(users.office, patients.erika);
-    expect(rows.map((z) => z.prescription_id).sort()).toEqual(
-      [VERORDNUNG.erikaFrisch, VERORDNUNG.erikaAlt].sort(),
+    expect(rows.map((z) => z.treatment_basis_id).sort()).toEqual(
+      [VERORDNUNG.erikaFrisch, VERORDNUNG.erikaAlt, VERORDNUNG.erikaSelbstzahler].sort(),
     );
   });
 });

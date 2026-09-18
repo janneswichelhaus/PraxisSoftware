@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from '@/features/patients/api';
-import type * as PrescriptionsApi from '@/features/prescriptions/api';
+import type * as TreatmentBasesApi from '@/features/treatment-bases/api';
 import type * as FilesApi from '@/features/files/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as Bausteine from '@/features/documentation/textbausteine';
@@ -44,7 +44,7 @@ vi.mock('@/features/files/api', async (importOriginal) => ({
     Promise.resolve([
       {
         id: 'd1',
-        prescription_id: null,
+        treatment_basis_id: null,
         document_type: 'befund',
         is_clinical: true,
         display_name: 'Befund Schulter.pdf',
@@ -57,11 +57,11 @@ vi.mock('@/features/files/api', async (importOriginal) => ({
     ]),
 }));
 
-vi.mock('@/features/prescriptions/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof PrescriptionsApi>()),
+vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof TreatmentBasesApi>()),
   fetchPrescribers: () => Promise.resolve([]),
-  fetchPatientPrescriptions: () => Promise.resolve([]),
-  fetchPatientPrescriptionsClinical: () => Promise.resolve([]),
+  fetchPatientTreatmentBases: () => Promise.resolve([]),
+  fetchPatientTreatmentBasesClinical: () => Promise.resolve([]),
 }));
 
 vi.mock('@/features/appointments/api', async (importOriginal) => ({
@@ -69,7 +69,7 @@ vi.mock('@/features/appointments/api', async (importOriginal) => ({
   fetchAssignableTherapists: () =>
     Promise.resolve([{ staff_member_id: 'st-1', display_name: 'Anna Beispiel' }]),
   fetchLocations: () => Promise.resolve([{ id: 'ort-1', name: 'Hauptstandort' }]),
-  fetchPrescriptionSlots: () =>
+  fetchTreatmentBasisSlots: () =>
     Promise.resolve({
       patient_id: 'pat-1',
       frequency_note: '2x pro Woche',
@@ -127,8 +127,9 @@ vi.mock('@/features/account/api', async (importOriginal) => ({
 }));
 
 const { PatientMasterDataFields } = await import('@/features/patients/PatientMasterDataFields');
-const { PrescriptionFormFields } = await import('@/features/prescriptions/PrescriptionFormFields');
-const { Verordnungsbereich } = await import('@/features/prescriptions/PatientPrescriptionsPage');
+const { TreatmentBasisFormFields } =
+  await import('@/features/treatment-bases/TreatmentBasisFormFields');
+const { Verordnungsbereich } = await import('@/features/treatment-bases/PatientTreatmentBasesPage');
 const { Dateienbereich } = await import('@/features/files/PatientFilesPage');
 const { Rueckfrage } = await import('@/components/ui/Rueckfrage');
 const { Section } = await import('@/components/ui/Section');
@@ -252,12 +253,12 @@ describe('Barrierefreiheit der Kernformulare', () => {
   it('haelt das Verordnungsformular sauber', async () => {
     const { container } = renderWithProviders(
       <main>
-        <h1>Verordnung erfassen</h1>
+        <h1>Grundlage erfassen</h1>
         <form>
-          <PrescriptionFormFields
+          <TreatmentBasisFormFields
             werte={{
               prescriber_id: '',
-              prescription_kind: 'first',
+              treatment_basis_kind: 'first',
               issued_on: '',
               frequency_note: '',
               note: '',
@@ -266,7 +267,7 @@ describe('Barrierefreiheit der Kernformulare', () => {
               prescriber_note: '',
               follow_up_recommendation: '',
             }}
-            fehler={{ issued_on: 'Ausstellungsdatum ist erforderlich.' }}
+            fehler={{ issued_on: 'Das Datum ist erforderlich.' }}
             onChange={() => {}}
             positionen={[
               { id: null, remedy: '', prescribed_quantity: '', used_quantity: '0' },
@@ -461,7 +462,7 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
       <main>
         <Routes>
           <Route
-            path="/patienten/:patientId/verordnungen/:prescriptionId/serie"
+            path="/patienten/:patientId/verordnungen/:grundlageId/serie"
             element={<AppointmentSeriesPage user={testUser(['office'])} />}
           />
         </Routes>

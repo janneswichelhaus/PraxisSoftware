@@ -121,8 +121,14 @@ Auditzeilen **niemals** umgeschrieben werden (ADR-010). Dasselbe gilt für
 
 ## Offene Folgefragen
 
-- Der **genaue Bezeichner** in Schema und Code — der SPEC von GRD-001 legt ihn
-  fest und prüft ihn gegen die bestehende Namensgebung.
+- ~~Der **genaue Bezeichner** in Schema und Code.~~ **Festgelegt am 2026-09-18
+  im SPEC von GRD-001** wie oben vorgeschlagen: `treatment_bases` mit
+  `treatment_base_items`, der Verweis darauf `treatment_basis_id` (auch an
+  `appointments` und `patient_files`), die Bauart in `treatment_basis_kind`.
+  `prescribed_quantity`, `prescribers` und `prescriber_id` behalten ihre Namen
+  (Punkt 5). Die **Adressen der Oberfläche** bleiben vorerst bei
+  `verordnungen` — Punkt 7 regelt den Bildschirm, nicht die Adresszeile
+  (ANN-062).
 - ~~Ist das „Privatrezept" eine dritte Bauart?~~ **Beantwortet am 2026-09-16
   (Jannes): nein.** Die vorhandene Verordnung **ist** das Privatrezept — die
   Praxis rechnet privat ab, und `prescription_kind` war von Anfang an bewusst
@@ -137,3 +143,4 @@ Auditzeilen **niemals** umgeschrieben werden (ADR-010). Dasselbe gilt für
 | Fassung | Datum | Änderung |
 | --- | --- | --- |
 | 1 | 2026-09-16 | Erstfassung, vorgeschlagen nach E16 (Jannes, 2026-09-16) |
+| 1.1 | 2026-09-18 | Keine Änderung an einer Entscheidung: Die erste offene Folgefrage ist mit dem SPEC von GRD-001 beantwortet und als beantwortet vermerkt. Gebaut in GRD-001 (PR gegen `main`). |

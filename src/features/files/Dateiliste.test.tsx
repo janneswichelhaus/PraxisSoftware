@@ -41,7 +41,7 @@ const PATIENT = '66666666-6666-4666-8666-000000000001';
 function datei(rest: Partial<FilesApi.PatientFile> = {}): FilesApi.PatientFile {
   return {
     id: 'd1',
-    prescription_id: null,
+    treatment_basis_id: null,
     document_type: 'befund',
     is_clinical: true,
     display_name: 'Befund Schulter.pdf',
@@ -202,7 +202,7 @@ describe('Dateiliste', () => {
       <Dateiliste
         patientId={PATIENT}
         user={testUser(['therapist'])}
-        prescriptionId="v1"
+        grundlageId="v1"
         darfHinzufuegen
         leerHinweis="Nichts da."
       />,
@@ -222,7 +222,7 @@ describe('Dateiliste', () => {
       expect(ladeDateiHoch).toHaveBeenCalledWith(
         expect.objectContaining({
           patientId: PATIENT,
-          prescriptionId: 'v1',
+          grundlageId: 'v1',
           documentType: 'verordnungsscan',
           displayName: 'Rezept.pdf',
         }),
@@ -404,13 +404,13 @@ describe('Dateiliste', () => {
     });
 
     it('bietet den Verordnungsscan nur an einer Datei mit Verordnung an', async () => {
-      fetchPatientFiles.mockResolvedValue([datei({ prescription_id: 'v1' })]);
+      fetchPatientFiles.mockResolvedValue([datei({ treatment_basis_id: 'v1' })]);
 
       renderWithProviders(
         <Dateiliste
           patientId={PATIENT}
           user={testUser(['therapist'])}
-          prescriptionId="v1"
+          grundlageId="v1"
           darfHinzufuegen={false}
           leerHinweis="Nichts da."
         />,

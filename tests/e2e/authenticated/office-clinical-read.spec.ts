@@ -30,28 +30,28 @@ test.describe('ROL-002: Verordnung und Dateien fuer office', () => {
   test('liefert office Liste und Detail und weist jedes Schreiben ab', async ({ request }) => {
     const token = await zugriffstoken(request, KONTEN.office);
 
-    const liste = await rpcAufrufen(request, token, 'list_patient_prescriptions_clinical', {
+    const liste = await rpcAufrufen(request, token, 'list_patient_treatment_bases_clinical', {
       p_patient_id: PATIENTEN.max,
     });
     expect(liste.status(), 'office liest die klinische Sicht (E15)').toBe(200);
     expect(await liste.text()).toContain('Bewegungseinschraenkung');
 
-    const detail = await rpcAufrufen(request, token, 'get_prescription', {
-      p_prescription_id: VERORDNUNG_MAX,
+    const detail = await rpcAufrufen(request, token, 'get_treatment_basis', {
+      p_treatment_basis_id: VERORDNUNG_MAX,
     });
     expect(detail.status(), 'office liest das Verordnungsdetail (E15)').toBe(200);
     expect(await detail.text()).toContain('Bewegungseinschraenkung');
 
     // Ausgeblendete Elemente sind keine Zugriffskontrolle - verbindlich ist
     // der Server (ADR-004).
-    const loeschen = await rpcAufrufen(request, token, 'delete_prescription', {
-      p_prescription_id: VERORDNUNG_MAX,
+    const loeschen = await rpcAufrufen(request, token, 'delete_treatment_basis', {
+      p_treatment_basis_id: VERORDNUNG_MAX,
     });
     expect(loeschen.status(), 'office loescht keine Verordnung (ANN-011)').toBe(403);
 
     const befund = await rpcAufrufen(request, token, 'prepare_patient_file_upload', {
       p_patient_id: PATIENTEN.max,
-      p_prescription_id: null,
+      p_treatment_basis_id: null,
       p_document_type: 'befund',
       p_display_name: 'Befund.pdf',
       p_mime_type: 'application/pdf',
@@ -63,7 +63,7 @@ test.describe('ROL-002: Verordnung und Dateien fuer office', () => {
 
   test('weist das Patientenkonto an der klinischen Sicht weiterhin ab', async ({ request }) => {
     const token = await zugriffstoken(request, 'max.mustermann@patient.invalid');
-    const antwort = await rpcAufrufen(request, token, 'list_patient_prescriptions_clinical', {
+    const antwort = await rpcAufrufen(request, token, 'list_patient_treatment_bases_clinical', {
       p_patient_id: PATIENTEN.max,
     });
     expect(antwort.status()).toBe(403);

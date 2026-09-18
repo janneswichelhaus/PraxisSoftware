@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useQueryClient } from '@tanstack/react-query';
 import type { Session } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/supabase';
-import { alleEntwuerfeVerwerfen } from '@/features/prescriptions/api';
+import { alleEntwuerfeVerwerfen } from '@/features/treatment-bases/api';
 import { SessionContext, type SessionState } from './sessionContext';
 
 /**

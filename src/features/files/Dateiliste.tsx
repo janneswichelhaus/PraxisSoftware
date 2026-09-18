@@ -73,7 +73,7 @@ function Dokumentartauswahl({
 
 interface UploadfeldProps {
   patientId: string;
-  prescriptionId: string | null;
+  grundlageId: string | null;
   /** Auswählbare Arten. Genau eine bedeutet: keine Auswahl, nur ein Hinweis. */
   arten: readonly Dokumentart[];
 }
@@ -85,7 +85,7 @@ interface UploadfeldProps {
  * einzige Wort, unter dem die Datei später wiederzufinden ist, und
  * `IMG_4711.jpg` ist keins. Im Objektschlüssel steht er nie (ADR-017 Punkt 5).
  */
-function Uploadfeld({ patientId, prescriptionId, arten }: UploadfeldProps) {
+function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
   const beschreibungId = useId();
   const [art, setArt] = useState<Dokumentart>(arten[0]!);
   const [datei, setDatei] = useState<File | null>(null);
@@ -125,7 +125,7 @@ function Uploadfeld({ patientId, prescriptionId, arten }: UploadfeldProps) {
     upload.mutate(
       {
         patientId,
-        prescriptionId,
+        grundlageId,
         documentType: art,
         displayName: name.trim() || datei.name,
         datei,
@@ -227,7 +227,7 @@ function Artkorrektur({
   // Ein Verordnungsscan braucht eine Verordnung (ADR-017 Punkt 10). Hängt die
   // Datei an keiner, steht die Art gar nicht erst zur Wahl - der Server würde
   // sie abweisen, und ein Angebot, das keins ist, ist ein Rätsel (§13).
-  const waehlbar = datei.prescription_id
+  const waehlbar = datei.treatment_basis_id
     ? arten
     : arten.filter((eintrag) => eintrag !== 'verordnungsscan');
 
@@ -388,7 +388,7 @@ interface DateilisteProps {
   patientId: string;
   user: CurrentUser;
   /** Gesetzt: nur die Dateien dieser Verordnung, und der Scan als einzige Art. */
-  prescriptionId?: string | null;
+  grundlageId?: string | null;
   /** Darf die aufrufende Person hier etwas hinzufügen? */
   darfHinzufuegen: boolean;
   leerHinweis: string;
@@ -397,11 +397,11 @@ interface DateilisteProps {
 export function Dateiliste({
   patientId,
   user,
-  prescriptionId = null,
+  grundlageId = null,
   darfHinzufuegen,
   leerHinweis,
 }: DateilisteProps) {
-  const { dateien, isPending, isError, verborgen } = useDateien(patientId, user, prescriptionId);
+  const { dateien, isPending, isError, verborgen } = useDateien(patientId, user, grundlageId);
 
   if (verborgen) return null;
 
@@ -415,7 +415,7 @@ export function Dateiliste({
   // An der Verordnung gibt es genau eine sinnvolle Art (ADR-017 Punkt 12:
   // Vorbelegung aus dem Kontext). In der Akte stehen die Arten zur Wahl, die
   // die Rolle hinzufügen darf.
-  const arten: readonly Dokumentart[] = prescriptionId
+  const arten: readonly Dokumentart[] = grundlageId
     ? (['verordnungsscan'] as const)
     : klinischSchreiben
       ? (['befund', 'arztbrief', 'klinisches_bild', 'einwilligung', 'vertrag'] as const)
@@ -470,7 +470,7 @@ export function Dateiliste({
       ) : null}
 
       {darfHinzufuegen ? (
-        <Uploadfeld patientId={patientId} prescriptionId={prescriptionId} arten={arten} />
+        <Uploadfeld patientId={patientId} grundlageId={grundlageId} arten={arten} />
       ) : null}
     </>
   );

@@ -12,19 +12,19 @@ import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './help
 const { users, patients } = SEED;
 
 const ANLEGEN = `
-  select public.create_prescription(
+  select public.create_treatment_basis(
     $1::uuid, $2::uuid, $3, $4::date, $5::jsonb, $6, $7, $8, $9, $10, $11
   ) as id`;
 
 const AENDERN = `
-  select public.update_prescription(
+  select public.update_treatment_basis(
     $1::uuid, $2::uuid, $3, $4::date, $5::jsonb, $6, $7, $8, $9, $10, $11
   ) as id`;
 
-const LOESCHEN = 'select public.delete_prescription($1::uuid)';
-const HOLEN = 'select * from public.get_prescription($1::uuid)';
-const KLINISCH = 'select * from public.list_patient_prescriptions_clinical($1::uuid)';
-const ORGANISATORISCH = 'select * from public.list_patient_prescriptions($1::uuid)';
+const LOESCHEN = 'select public.delete_treatment_basis($1::uuid)';
+const HOLEN = 'select * from public.get_treatment_basis($1::uuid)';
+const KLINISCH = 'select * from public.list_patient_treatment_bases_clinical($1::uuid)';
+const ORGANISATORISCH = 'select * from public.list_patient_treatment_bases($1::uuid)';
 
 const PROBST = '77777777-7777-4777-8777-000000000001';
 const HAUSARZT = '77777777-7777-4777-8777-000000000002';
@@ -59,10 +59,10 @@ async function anlegen(userId: string, items: string = POSITIONEN, rest: (string
   return rows[0]!.id;
 }
 
-async function positionen(prescriptionId: string): Promise<Position[]> {
+async function positionen(grundlageId: string): Promise<Position[]> {
   const { rows } = await asPostgres<{ items: Position[] }>(
-    'select app.prescription_items_json($1::uuid) as items',
-    [prescriptionId],
+    'select app.treatment_base_items_json($1::uuid) as items',
+    [grundlageId],
   );
   return rows[0]!.items;
 }
@@ -75,7 +75,7 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
   beforeEach(async () => {
     // Nur die im Test erzeugten Verordnungen entfernen; der Seed-Bestand
     // bleibt, damit die Reihenfolge-Tests etwas zum Einordnen haben.
-    await asPostgres("delete from public.audit_log where subject_type = 'prescription'");
+    await asPostgres("delete from public.audit_log where subject_type = 'treatment_basis'");
   });
 
   it('legt Kopf und Positionen in einer Transaktion an', async () => {
@@ -107,7 +107,7 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
 
     const { rows } = await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
       `select subject_id, context from public.audit_log
-        where action = 'prescription.created'`,
+        where action = 'treatment_basis.created'`,
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]?.subject_id).toBe(id);
@@ -117,10 +117,10 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
 
   it('laesst office weder anlegen noch aendern noch loeschen (ANN-011)', async () => {
     await expect(asUser(users.office, ANLEGEN, argumente())).rejects.toThrow(
-      /not allowed to write prescriptions/i,
+      /not allowed to write treatment_bases/i,
     );
     await expect(asUser(users.patientMax, ANLEGEN, argumente())).rejects.toThrow(
-      /not allowed to write prescriptions/i,
+      /not allowed to write treatment_bases/i,
     );
 
     const id = await anlegen(users.therapist);
@@ -140,15 +140,15 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
         null,
         null,
       ]),
-    ).rejects.toThrow(/not allowed to write prescriptions/i);
+    ).rejects.toThrow(/not allowed to write treatment_bases/i);
     await expect(asUser(users.office, LOESCHEN, [id])).rejects.toThrow(
-      /not allowed to write prescriptions/i,
+      /not allowed to write treatment_bases/i,
     );
   });
 
   it('verlangt mindestens eine Position', async () => {
     await expect(asUser(users.therapist, ANLEGEN, argumente('[]'))).rejects.toThrow(
-      /at least one prescription item/i,
+      /at least one treatment basis item/i,
     );
   });
 
@@ -310,12 +310,12 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     expect(nachher[1]?.remedy).toBe('Manuelle Therapie');
     expect(nachher.map((i) => i.sort_order)).toEqual([1, 2]);
 
-    const { rows } = await asPostgres<{ prescriber_id: string; prescription_kind: string }>(
-      'select prescriber_id, prescription_kind from public.prescriptions where id = $1',
+    const { rows } = await asPostgres<{ prescriber_id: string; treatment_basis_kind: string }>(
+      'select prescriber_id, treatment_basis_kind from public.treatment_bases where id = $1',
       [id],
     );
     expect(rows[0]?.prescriber_id).toBe(HAUSARZT);
-    expect(rows[0]?.prescription_kind).toBe('follow_up');
+    expect(rows[0]?.treatment_basis_kind).toBe('follow_up');
   });
 
   it('nimmt eine fremde Positions-ID nicht als Hebel auf andere Verordnungen', async () => {
@@ -353,15 +353,15 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     const { rows } = await asPostgres<{ args: string }>(`
       select pg_get_function_arguments(p.oid) as args
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname = 'update_prescription'
+      where n.nspname = 'public' and p.proname = 'update_treatment_basis'
     `);
     expect(rows[0]?.args ?? '').not.toMatch(/patient/i);
     expect(rows[0]?.args ?? '').not.toMatch(/organization/i);
   });
 
-  it('liefert get_prescription allen Praxisrollen und protokolliert je Zugriff (E15)', async () => {
+  it('liefert get_treatment_basis allen Praxisrollen und protokolliert je Zugriff (E15)', async () => {
     const id = await anlegen(users.therapist);
-    await asPostgres("delete from public.audit_log where subject_type = 'prescription'");
+    await asPostgres("delete from public.audit_log where subject_type = 'treatment_basis'");
 
     // ADR-004 Fassung 2 Punkt 3: office liest die Verordnung samt Diagnose -
     // anlegen, aendern und loeschen darf es weiterhin nicht (ANN-011, oben).
@@ -374,12 +374,12 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     }
 
     const { rows: audit } = await asPostgres<{ actor_user_id: string }>(
-      `select actor_user_id from public.audit_log where action = 'prescription.viewed'`,
+      `select actor_user_id from public.audit_log where action = 'treatment_basis.viewed'`,
     );
     expect(audit.map((a) => a.actor_user_id).sort()).toEqual([users.teamLead, users.office].sort());
 
     await expect(asUser(users.patientMax, HOLEN, [id])).rejects.toThrow(
-      /not allowed to read clinical prescription data/i,
+      /not allowed to read clinical treatment basis data/i,
     );
   });
 
@@ -388,35 +388,35 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     expect(rows).toEqual([]);
 
     const { rows: audit } = await asPostgres(
-      `select id from public.audit_log where action = 'prescription.viewed'`,
+      `select id from public.audit_log where action = 'treatment_basis.viewed'`,
     );
     expect(audit).toEqual([]);
   });
 
   it('loescht endgueltig samt Positionen und haelt den Vorgang im Auditlog fest', async () => {
     const id = await anlegen(users.therapist);
-    await asPostgres("delete from public.audit_log where subject_type = 'prescription'");
+    await asPostgres("delete from public.audit_log where subject_type = 'treatment_basis'");
 
     await asUserCommitted(users.ownerTherapist, LOESCHEN, [id]);
 
-    const { rows } = await asPostgres('select id from public.prescriptions where id = $1', [id]);
+    const { rows } = await asPostgres('select id from public.treatment_bases where id = $1', [id]);
     expect(rows).toEqual([]);
     // on delete cascade: kein verwaister Rest (ADR-008 Punkt 10).
     const { rows: reste } = await asPostgres(
-      'select id from public.prescription_items where prescription_id = $1',
+      'select id from public.treatment_base_items where treatment_basis_id = $1',
       [id],
     );
     expect(reste).toEqual([]);
 
     const { rows: audit } = await asPostgres<{ subject_id: string }>(
-      `select subject_id from public.audit_log where action = 'prescription.deleted'`,
+      `select subject_id from public.audit_log where action = 'treatment_basis.deleted'`,
     );
     expect(audit[0]?.subject_id).toBe(id);
   });
 
   it('meldet eine unbekannte Verordnung beim Loeschen und beim Aendern gleich', async () => {
     await expect(asUser(users.therapist, LOESCHEN, [FREMDE_ID])).rejects.toThrow(
-      /prescription not found/i,
+      /treatment basis not found/i,
     );
     await expect(
       asUser(users.therapist, AENDERN, [
@@ -432,7 +432,7 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
         null,
         null,
       ]),
-    ).rejects.toThrow(/prescription not found/i);
+    ).rejects.toThrow(/treatment basis not found/i);
   });
 
   it('erscheint eine neue Verordnung sofort in der Akte', async () => {
@@ -452,6 +452,225 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     );
     const gefunden = rows.find((r) => r.id === id);
     expect(gefunden?.follow_up_recommendation).toBe('Synthetisch: Empfehlung der Therapeutin.');
+  });
+
+  // ---------------------------------------------------------------------------
+  // GRD-001 / ADR-020: Die zweite Bauart.
+  //
+  // Was eine Verordnung braucht, verlangt die Datenbank weiter - aber nur von
+  // ihr (Punkt 3). Beide Richtungen werden geprueft, und zwar zweimal: einmal
+  // im Schreibpfad, einmal an der Constraint darunter. Eine Regel, die nur in
+  // der Funktion steht, faellt beim ersten anderen Schreibweg um (ADR-004,
+  // Defense-in-Depth).
+  // ---------------------------------------------------------------------------
+  describe('Die zweite Bauart: Selbstzahler (ADR-020)', () => {
+    function selbstzahlerArgumente(
+      prescriberId: string | null = null,
+      items: string = POSITIONEN,
+      rest: (string | null)[] = [null, null, null, null, null, null],
+    ) {
+      return [patients.max, prescriberId, 'self_pay', '2026-03-01', items, ...rest];
+    }
+
+    it('legt einen Selbstzahler ohne Verordner:in an', async () => {
+      const { rows } = await asUserCommitted<{ id: string }>(
+        users.therapist,
+        ANLEGEN,
+        selbstzahlerArgumente(),
+      );
+      const id = rows[0]!.id;
+
+      const { rows: zeilen } = await asPostgres<{
+        treatment_basis_kind: string;
+        prescriber_id: string | null;
+      }>('select treatment_basis_kind, prescriber_id from public.treatment_bases where id = $1', [
+        id,
+      ]);
+      expect(zeilen[0]).toEqual({ treatment_basis_kind: 'self_pay', prescriber_id: null });
+
+      // Die Klammer traegt ihr Kontingent wie jede Verordnung (ADR-020 Punkt 5).
+      expect(await positionen(id)).toHaveLength(1);
+    });
+
+    it('weist einen Selbstzahler MIT Verordner:in ab', async () => {
+      await expect(
+        asUserCommitted(users.therapist, ANLEGEN, selbstzahlerArgumente(PROBST)),
+      ).rejects.toThrow(/self_pay must not carry a prescriber/i);
+    });
+
+    it('weist eine Verordnung OHNE Verordner:in ab', async () => {
+      await expect(
+        asUserCommitted(users.therapist, ANLEGEN, [
+          patients.max,
+          null,
+          'first',
+          '2026-03-01',
+          POSITIONEN,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+        ]),
+      ).rejects.toThrow(/prescriber is required/i);
+    });
+
+    it('kennt keine dritte Bauart', async () => {
+      await expect(
+        asUserCommitted(users.therapist, ANLEGEN, [
+          patients.max,
+          null,
+          'privatrezept',
+          '2026-03-01',
+          POSITIONEN,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+        ]),
+      ).rejects.toThrow(/unknown treatment basis kind/i);
+    });
+
+    it('haelt die Constraint auch am Schreibpfad vorbei (Defense-in-Depth)', async () => {
+      // Direkt als postgres, also ohne jede Funktion: Die Regel steht in der
+      // Tabelle und nicht nur in create_treatment_basis.
+      await expect(
+        asPostgres(
+          `insert into public.treatment_bases
+             (organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on)
+           values ($1, $2, $3, 'self_pay', '2026-03-01')`,
+          [SEED.organizationId, patients.max, PROBST],
+        ),
+      ).rejects.toThrow(/treatment_bases_prescriber_matches_kind/);
+
+      await expect(
+        asPostgres(
+          `insert into public.treatment_bases
+             (organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on)
+           values ($1, $2, null, 'follow_up', '2026-03-01')`,
+          [SEED.organizationId, patients.max],
+        ),
+      ).rejects.toThrow(/treatment_bases_prescriber_matches_kind/);
+    });
+
+    it('schuetzt die Abrechnung beim Selbstzahler wie bei der Verordnung', async () => {
+      // ADR-020 Punkt 5: used_quantity <= prescribed_quantity bleibt fuer BEIDE
+      // Bauarten bestehen. Sie schuetzt die Abrechnung, nicht die Planung.
+      await expect(
+        asUserCommitted(
+          users.therapist,
+          ANLEGEN,
+          selbstzahlerArgumente(
+            null,
+            JSON.stringify([
+              { remedy: 'Krankengymnastik', prescribed_quantity: 4, used_quantity: 5 },
+            ]),
+          ),
+        ),
+      ).rejects.toThrow();
+    });
+
+    it('protokolliert ihn unter dem neuen Wert und mit dem neuen Bezugstyp', async () => {
+      const { rows } = await asUserCommitted<{ id: string }>(
+        users.therapist,
+        ANLEGEN,
+        selbstzahlerArgumente(),
+      );
+
+      const { rows: audit } = await asPostgres<{ action: string; subject_type: string }>(
+        `select action, subject_type from public.audit_log
+          where subject_id = $1 and action like 'treatment_basis%'`,
+        [rows[0]!.id],
+      );
+      expect(audit).toEqual([
+        { action: 'treatment_basis.created', subject_type: 'treatment_basis' },
+      ]);
+    });
+
+    it('laesst eine Verordnung zum Selbstzahler werden - und zurueck', async () => {
+      const id = await anlegen(users.therapist, POSITIONEN, [
+        null,
+        null,
+        'Synthetisch: Diagnose.',
+        null,
+        null,
+        null,
+      ]);
+
+      // Verordner:in mitzuschicken waere jetzt ein Widerspruch.
+      await expect(
+        asUserCommitted(users.therapist, AENDERN, [
+          id,
+          PROBST,
+          'self_pay',
+          '2026-03-01',
+          POSITIONEN,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+        ]),
+      ).rejects.toThrow(/self_pay must not carry a prescriber/i);
+
+      await asUserCommitted(users.therapist, AENDERN, [
+        id,
+        null,
+        'self_pay',
+        '2026-03-01',
+        POSITIONEN,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]);
+      const { rows: nachher } = await asPostgres<{
+        treatment_basis_kind: string;
+        prescriber_id: string | null;
+      }>('select treatment_basis_kind, prescriber_id from public.treatment_bases where id = $1', [
+        id,
+      ]);
+      expect(nachher[0]).toEqual({ treatment_basis_kind: 'self_pay', prescriber_id: null });
+
+      // Und wieder zurueck: dann ist die Verordner:in wieder Pflicht.
+      await asUserCommitted(users.therapist, AENDERN, [
+        id,
+        HAUSARZT,
+        'follow_up',
+        '2026-03-01',
+        POSITIONEN,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+      ]);
+      const { rows: zurueck } = await asPostgres<{ prescriber_id: string }>(
+        'select prescriber_id from public.treatment_bases where id = $1',
+        [id],
+      );
+      expect(zurueck[0]?.prescriber_id).toBe(HAUSARZT);
+    });
+
+    it('haelt die alten Auditwerte weiter im Wertebereich (ADR-010, ADR-020 Punkt 8)', async () => {
+      // Auditzeilen werden niemals umgeschrieben. Was vor GRD-001 entstanden
+      // ist, muss auch danach noch einfuegbar und damit lesbar sein.
+      await expect(
+        asPostgres(
+          `insert into public.audit_log
+             (organization_id, actor_user_id, action, subject_type, subject_id, outcome)
+           values ($1, $2, 'prescription.viewed', 'prescription', $3, 'success')`,
+          [SEED.organizationId, users.therapist, patients.max],
+        ),
+      ).resolves.toBeDefined();
+    });
   });
 });
 
@@ -491,14 +710,14 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
         values ('${fremderAccount}', '${fremdeOrg}', 'therapist');
       insert into public.prescribers (id, organization_id, family_name)
         values ('${fremderPrescriber}', '${fremdeOrg}', 'Fremdarzt');
-      insert into public.prescriptions (
-        id, organization_id, patient_id, prescriber_id, prescription_kind, issued_on, diagnosis
+      insert into public.treatment_bases (
+        id, organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on, diagnosis
       ) values (
         '${fremdeVerordnung}', '${fremdeOrg}', '${fremderPatient}', '${fremderPrescriber}',
         'first', '2026-01-10', 'Synthetisch: Diagnose der fremden Praxis.'
       );
-      insert into public.prescription_items (
-        organization_id, prescription_id, sort_order, remedy, prescribed_quantity
+      insert into public.treatment_base_items (
+        organization_id, treatment_basis_id, sort_order, remedy, prescribed_quantity
       ) values (
         '${fremdeOrg}', '${fremdeVerordnung}', 1, 'Krankengymnastik', 6
       );
@@ -556,13 +775,13 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
         null,
         null,
       ]),
-    ).rejects.toThrow(/prescription not found/i);
+    ).rejects.toThrow(/treatment basis not found/i);
 
     await expect(asUser(users.therapist, LOESCHEN, [fremdeVerordnung])).rejects.toThrow(
-      /prescription not found/i,
+      /treatment basis not found/i,
     );
 
-    const { rows } = await asPostgres('select id from public.prescriptions where id = $1', [
+    const { rows } = await asPostgres('select id from public.treatment_bases where id = $1', [
       fremdeVerordnung,
     ]);
     expect(rows).toHaveLength(1);
@@ -579,7 +798,7 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
   });
 
   it('endet auch fuer die klinische Sicht von office an der eigenen Praxis (E15)', async () => {
-    await asPostgres("delete from public.audit_log where action = 'prescription.viewed'");
+    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
 
     const { rows: liste } = await asUserCommitted(users.office, KLINISCH, [fremderPatient]);
     expect(liste).toEqual([]);
@@ -588,7 +807,7 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
 
     // Nichts gelesen, nichts protokolliert.
     const { rows: audit } = await asPostgres(
-      "select id from public.audit_log where action = 'prescription.viewed'",
+      "select id from public.audit_log where action = 'treatment_basis.viewed'",
     );
     expect(audit).toEqual([]);
   });

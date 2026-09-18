@@ -95,7 +95,7 @@ describe('Loeschlauf: klinische Patientenakte', () => {
       ]),
     ).toBe(0);
     expect(
-      await anzahl('select count(*) from public.prescriptions where patient_id = $1', [
+      await anzahl('select count(*) from public.treatment_bases where patient_id = $1', [
         patients.max,
       ]),
     ).toBe(0);

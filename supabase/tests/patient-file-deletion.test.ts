@@ -225,7 +225,7 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
           [datei.file_id, 'verordnungsscan'],
         ),
       );
-      expect(fehler?.message).toMatch(/prescription scan needs a prescription/);
+      expect(fehler?.message).toMatch(/prescription scan needs a treatment basis/);
     });
 
     it('weist eine unbekannte Art ab und protokolliert nichts bei gleicher Art', async () => {

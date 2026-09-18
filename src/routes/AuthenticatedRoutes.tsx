@@ -9,15 +9,18 @@ import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { AkteEinstieg, PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
-import { PatientPrescriptionsPage } from '@/features/prescriptions/PatientPrescriptionsPage';
+import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
 import { PatientFilesPage } from '@/features/files/PatientFilesPage';
 import { PatientCoursePage } from '@/features/documentation/PatientCoursePage';
-import { PrescribersListPage } from '@/features/prescriptions/PrescribersListPage';
-import { EditPrescriberPage, NewPrescriberPage } from '@/features/prescriptions/PrescriberFormPage';
+import { PrescribersListPage } from '@/features/treatment-bases/PrescribersListPage';
 import {
-  EditPrescriptionPage,
-  NewPrescriptionPage,
-} from '@/features/prescriptions/PrescriptionFormPage';
+  EditPrescriberPage,
+  NewPrescriberPage,
+} from '@/features/treatment-bases/PrescriberFormPage';
+import {
+  EditTreatmentBasisPage,
+  NewTreatmentBasisPage,
+} from '@/features/treatment-bases/TreatmentBasisFormPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { TagUmplanenPage } from '@/features/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
@@ -142,7 +145,7 @@ export function AuthenticatedRoutes({
                   {showAppointments ? (
                     <Route path="termine" element={<PatientAppointmentsPage />} />
                   ) : null}
-                  <Route path="verordnungen" element={<PatientPrescriptionsPage />} />
+                  <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
                   <Route path="verlauf" element={<PatientCoursePage />} />
                   <Route path="dateien" element={<PatientFilesPage />} />
                   <Route path="stammdaten" element={<PatientMasterDataPage />} />
@@ -160,11 +163,11 @@ export function AuthenticatedRoutes({
                   (VER-003). Wer sie schreiben darf, prueft der Server. */}
                 <Route
                   path="/patienten/:patientId/verordnungen/neu"
-                  element={<NewPrescriptionPage />}
+                  element={<NewTreatmentBasisPage />}
                 />
                 <Route
-                  path="/patienten/:patientId/verordnungen/:prescriptionId/bearbeiten"
-                  element={<EditPrescriptionPage />}
+                  path="/patienten/:patientId/verordnungen/:grundlageId/bearbeiten"
+                  element={<EditTreatmentBasisPage />}
                 />
               </>
             ) : null}
@@ -209,7 +212,7 @@ export function AuthenticatedRoutes({
                   Akte an der Verordnung, weil dort das Kontingent steht
                   (CAL-007). */}
                 <Route
-                  path="/patienten/:patientId/verordnungen/:prescriptionId/serie"
+                  path="/patienten/:patientId/verordnungen/:grundlageId/serie"
                   element={<AppointmentSeriesPage user={user} />}
                 />
                 {/* Terminzettel zum Ausdrucken - ein Blatt fuer die Patient:in

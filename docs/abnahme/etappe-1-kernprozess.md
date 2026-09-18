@@ -2421,7 +2421,7 @@ Keine Migration — ein `git pull` genügt. Schritt 5 als
    die Eingabetaste führt dorthin.
 2. Zurück, „umplanen" tippen. Erwartung: **Tag umplanen** mit dem Zusatz „Bei
    einem Ausfall die Besuche eines Tages verteilen".
-3. „rezept" tippen. Erwartung: **Verordnung erfassen** — gefunden über das
+3. „rezept" tippen. Erwartung: **Grundlage erfassen** — gefunden über das
    Wort, das die Praxis benutzt, mit dem Hinweis „Zuerst die Patient:in
    wählen".
 4. „ubersicht" ohne Umlaut tippen. Erwartung: **Übersicht** steht da.
@@ -2471,3 +2471,78 @@ Bildschirms ein, statt über der Seite zu schweben; die unterste Zeile bleibt
 **Nicht Teil dieses Loops:** Suche über Verordnungen, Termine oder
 Dokumentation (ANN-061; eigene Story, siehe ROADMAP „Bewusst nicht Teil von
 Etappe 1"), Treffer aus dem Ideenspeicher und eine Trefferhistorie.
+
+## GRD-001 — Die Behandlungsgrundlage: Verordnung und Selbstzahler
+
+Prüfschritte zu GRD-001. Grundlage: [ADR-020](../adr/ADR-020-treatment-basis.md)
+(angenommen 2026-09-16, E16), ANN-062 (Adresse bleibt `verordnungen`) und
+ANN-063 (Löschjournal wandert mit).
+
+**Diese Etappe bringt eine Migration** (`20260918120000_treatment_basis.sql`):
+vorher `git pull origin main`, dann `pnpm dlx supabase@2.116.0 db reset`. Ohne
+den Reset fehlen die neuen Namen, und die Anwendung findet keine Grundlage.
+Alle Schritte als `jannes.test@praxis.invalid` (owner), Schritt 5 zusätzlich
+als `olivia.office@praxis.invalid` (office).
+
+### 1. Beide Bauarten stehen nebeneinander
+
+1. Akte von **Erika Beispiel** öffnen, Bereich **Behandlungsgrundlagen**.
+2. Erwartung: Die Überschrift heißt **Aktuelle Behandlungsgrundlagen** — das
+   Oberwort steht nur dort, wo beide Bauarten zugleich gemeint sind.
+3. Erwartung: Eine Karte heißt **Folgeverordnung vom 08.09.2026** und nennt
+   darunter die Verordner:in. Eine zweite heißt **Selbstzahler seit
+   03.09.2026** und hat **keine** Zeile mit einer Verordner:in — auch keine
+   leere (ADR-020 Punkt 7).
+4. Erwartung: Am Selbstzahler stehen **Leistungseinheiten**, **Termine** und
+   **Noch planbar** genauso wie an der Verordnung. „Scan des Rezepts" steht
+   **nur** an der Verordnung.
+
+### 2. Die Serie funktioniert für den Selbstzahler
+
+1. Am Selbstzahler **Terminserie anlegen** wählen.
+2. Erwartung: Die Seite schlägt die Anzahl aus dem offenen Kontingent vor,
+   genau wie bei einer Verordnung — der Selbstzahler benutzt dieselbe Mechanik.
+3. Abbrechen genügt; die Serie muss nicht angelegt werden.
+
+### 3. Einen Selbstzahler erfassen
+
+1. Im Kopf der Akte **Grundlage erfassen** wählen.
+2. Erwartung: Das **erste** Feld heißt **Art** und bietet Erstverordnung,
+   Folgeverordnung und Selbstzahler an.
+3. **Selbstzahler** wählen. Erwartung: Das Feld **Verordner:in** verschwindet,
+   der ganze Abschnitt **Klinische Angaben** verschwindet, das Datum heißt
+   jetzt **Vereinbart am**, und die Position heißt **Vereinbart** statt
+   **Verordnet**. Die **Bemerkung** bleibt — sie ist organisatorisch.
+4. Datum, Heilmittel und Anzahl eintragen, **Grundlage speichern**.
+5. Erwartung: Die neue Karte steht in der Akte als „Selbstzahler seit …".
+
+### 4. Die Bauart wechseln verwirft nichts heimlich
+
+1. Eine bestehende **Verordnung** bearbeiten, die eine Diagnose trägt.
+2. Die Art auf **Selbstzahler** stellen. Erwartung: Verordner:in und Diagnose
+   sind **sichtbar** verschwunden — nicht im Hintergrund stehen geblieben.
+3. Die Art zurück auf **Folgeverordnung** stellen. Erwartung: Beide Felder
+   sind **leer**, nicht wieder gefüllt. Ohne Verordner:in weist das Speichern
+   mit „Verordner:in ist erforderlich." ab.
+4. **Abbrechen**, damit die Verordnung unverändert bleibt.
+
+### 5. Der Rollenschnitt hat sich nicht verschoben
+
+1. Als `olivia.office@praxis.invalid` dieselbe Akte öffnen.
+2. Erwartung: Der Bereich zeigt beide Bauarten samt Diagnose (E15,
+   unverändert); **Grundlage erfassen** und **Bearbeiten** stehen **nicht** da.
+
+### 6. Der Weg vom Termin zur Grundlage
+
+1. Bereich **Termine** der Akte öffnen.
+2. Erwartung: An einem Termin aus einer Serie steht die Grundlage mit ihrer
+   **Bauart** — „Folgeverordnung vom …", nicht „Verordnung vom …".
+3. Den Link wählen. Erwartung: Der Bereich Behandlungsgrundlagen öffnet sich
+   und springt an die Karte. Die Adresse endet weiter auf `/verordnungen`
+   (ANN-062) — das ist Absicht.
+
+### 7. Am Handy (~375 px)
+
+1. Fenster auf ~375 px ziehen, Akte → Behandlungsgrundlagen.
+2. Erwartung: Die Karten stehen untereinander, nichts läuft waagerecht aus dem
+   Bild, die Zahlen bleiben lesbar. Im Formular steht die Art oben.

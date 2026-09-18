@@ -7,7 +7,7 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import {
   canManageAppointments,
-  canWritePrescriptions,
+  canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
 import { formatDate } from '@/lib/datum';
@@ -24,7 +24,7 @@ import { ageInYears, fetchPatient, fullName, logPatientRecordView, type Patient 
  * Rahmen der Patientenakte (AKTE-000).
  *
  * Die Akte war eine einzige, sehr lange Seite: Stammdaten, Kontakt,
- * Versorgung, Verwaltungsaktionen, dann erst Termine, Verordnungen und der
+ * Versorgung, Verwaltungsaktionen, dann erst Termine, Grundlagen und der
  * gesamte Behandlungsverlauf. Wer wissen wollte, wann die nächste Behandlung
  * ist, scrollte an allem vorbei, was sich seit der Aufnahme nicht mehr
  * geändert hat.
@@ -40,7 +40,7 @@ import { ageInYears, fetchPatient, fullName, logPatientRecordView, type Patient 
  * Bereich weiter; ein Bereichswechsel lädt sie nicht neu und erzeugt damit
  * auch keinen zweiten Auditeintrag (ADR-010).
  *
- * Die Formulare der Akte - Termin anlegen, Verordnung erfassen, Stammdaten
+ * Die Formulare der Akte - Termin anlegen, Grundlage erfassen, Stammdaten
  * bearbeiten - liegen bewusst **außerhalb** dieses Rahmens: Wer tippt, soll
  * die Bereichsleiste nicht sehen und mit einem Tap darauf keine ungespeicherte
  * Eingabe verlieren. Aus einem Formular führt „Abbrechen" zurück, nicht die
@@ -128,7 +128,7 @@ function HausbesuchHinweise({ patient }: { patient: Patient }) {
 function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const alter = ageInYears(patient.date_of_birth);
   const darfTerminePlanen = canManageAppointments(user.roles);
-  const darfVerordnen = canWritePrescriptions(user.roles);
+  const darfVerordnen = canWriteTreatmentBases(user.roles);
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-5 sm:py-4">
@@ -176,7 +176,7 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
             to={`/patienten/${patient.id}/verordnungen/neu`}
             className={kartenAktionKlassen('secondary')}
           >
-            Verordnung erfassen
+            Grundlage erfassen
           </Link>
         ) : null}
       </div>

@@ -427,14 +427,14 @@ describe('Nichtantreffen: abhaken ohne Gebuehrenentscheidung', () => {
    */
   it('verbraucht keine Verordnungsleistung', async () => {
     const vorher = await asPostgres<{ summe: string }>(
-      'select coalesce(sum(used_quantity), 0)::text as summe from public.prescription_items',
+      'select coalesce(sum(used_quantity), 0)::text as summe from public.treatment_base_items',
     );
 
     const termin = await terminIn(2);
     await asUserCommitted(users.therapist, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
 
     const nachher = await asPostgres<{ summe: string }>(
-      'select coalesce(sum(used_quantity), 0)::text as summe from public.prescription_items',
+      'select coalesce(sum(used_quantity), 0)::text as summe from public.treatment_base_items',
     );
     expect(nachher.rows[0]?.summe).toBe(vorher.rows[0]?.summe);
   });

@@ -610,8 +610,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             schluessel: 'dauertermin',
             beschriftung: 'Dauertermin',
             hinweis: p.verordnung
-              ? 'Terminserie aus der gefilterten Verordnung'
-              : 'Terminserie – zuerst die Verordnung wählen',
+              ? 'Terminserie aus der gefilterten Grundlage'
+              : 'Terminserie – zuerst die Grundlage wählen',
             onWaehlen: () =>
               hin(
                 p.verordnung
@@ -622,7 +622,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         : {
             schluessel: 'dauertermin',
             beschriftung: 'Dauertermin',
-            hinweis: 'Gehört zu einer Verordnung – zuerst die Patient:in wählen (Suche oben).',
+            hinweis:
+              'Gehört zu einer Behandlungsgrundlage – zuerst die Patient:in wählen (Suche oben).',
             deaktiviert: true,
             onWaehlen: () => undefined,
           },
@@ -683,7 +684,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               </ButtonLink>
               {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin
                   (CAL-015b). Eigener Weg neben dem Termin: Er kennt weder
-                  Patient:in noch Verordnung, und seine Länge ist frei. Der
+                  Patient:in noch Grundlage, und seine Länge ist frei. Der
                   Rückweg ist der Kalenderstand. */}
               <ButtonLink
                 to={mitRueckweg(
@@ -697,7 +698,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               {/* Jeder Eintrag des Anlegen-Menues hat hier seine Entsprechung
                   ohne Zeigegeraet (CAL-019): Eine Spanne zieht man nicht mit
                   der Tastatur auf. „Neuer Termin" und „Fehlzeit" stehen schon
-                  daneben, „Dauertermin" beginnt an der Verordnung in der
+                  daneben, „Dauertermin" beginnt an der Grundlage in der
                   Akte (CAL-007). */}
               <ButtonLink
                 to={mitRueckweg(

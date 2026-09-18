@@ -114,7 +114,7 @@ describe('Ereignis anlegen', () => {
       title: 'Teambesprechung',
       status: 'confirmed',
       patient_id: null,
-      prescription_id: null,
+      treatment_basis_id: null,
     });
   });
 

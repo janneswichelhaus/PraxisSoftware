@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { ReactElement } from 'react';
-import type * as PrescriptionsApi from './api';
+import type * as TreatmentBasesApi from './api';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
 
 /**
@@ -14,7 +14,7 @@ import type * as SessionContextModule from '@/features/auth/sessionContext';
  * lag im TanStack-Query-Cache und konnte dort nach der Standard-`gcTime` von
  * fünf Minuten verschwinden, bevor die Person zurückkehrte.
  *
- * Anders als PrescriptionFormPage.test.tsx und PrescriberFormPage.test.tsx
+ * Anders als TreatmentBasisFormPage.test.tsx und PrescriberFormPage.test.tsx
  * mockt diese Datei weder `useNavigate` noch `useParams`: der Seitenwechsel
  * zwischen Verordnungsformular und Verordner-Anlage läuft über echte Routen
  * (`MemoryRouter` + `Routes`), damit ein Klick auf "Verordner:in anlegen" und
@@ -34,22 +34,22 @@ const BENUTZER_A = '11111111-1111-4111-8111-000000000002';
 const BENUTZER_B = '11111111-1111-4111-8111-000000000003';
 
 const fetchPrescribers = vi.fn();
-const fetchPrescription = vi.fn();
-const createPrescription = vi.fn();
-const updatePrescription = vi.fn();
+const fetchTreatmentBasis = vi.fn();
+const createTreatmentBasis = vi.fn();
+const updateTreatmentBasis = vi.fn();
 const createPrescriber = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
-  const actual = await importOriginal<typeof PrescriptionsApi>();
+  const actual = await importOriginal<typeof TreatmentBasesApi>();
   return {
     ...actual,
-    fetchPrescribers: () => fetchPrescribers() as Promise<PrescriptionsApi.Prescriber[]>,
-    fetchPrescription: (id: string) =>
-      fetchPrescription(id) as Promise<PrescriptionsApi.PrescriptionDetail | null>,
-    createPrescription: (patientId: string, values: unknown, items: unknown) =>
-      createPrescription(patientId, values, items) as Promise<string>,
-    updatePrescription: (id: string, values: unknown, items: unknown) =>
-      updatePrescription(id, values, items) as Promise<void>,
+    fetchPrescribers: () => fetchPrescribers() as Promise<TreatmentBasesApi.Prescriber[]>,
+    fetchTreatmentBasis: (id: string) =>
+      fetchTreatmentBasis(id) as Promise<TreatmentBasesApi.TreatmentBasisDetail | null>,
+    createTreatmentBasis: (patientId: string, values: unknown, items: unknown) =>
+      createTreatmentBasis(patientId, values, items) as Promise<string>,
+    updateTreatmentBasis: (id: string, values: unknown, items: unknown) =>
+      updateTreatmentBasis(id, values, items) as Promise<void>,
     createPrescriber: (values: unknown) => createPrescriber(values) as Promise<string>,
   };
 });
@@ -69,10 +69,10 @@ vi.mock('@/features/auth/sessionContext', async (importOriginal) => {
   };
 });
 
-const { EditPrescriptionPage, NewPrescriptionPage } = await import('./PrescriptionFormPage');
+const { EditTreatmentBasisPage, NewTreatmentBasisPage } = await import('./TreatmentBasisFormPage');
 const { NewPrescriberPage } = await import('./PrescriberFormPage');
 
-const verordner: PrescriptionsApi.Prescriber = {
+const verordner: TreatmentBasesApi.Prescriber = {
   id: PROBST,
   title: 'Dr. med.',
   given_name: 'Petra',
@@ -88,13 +88,13 @@ const verordner: PrescriptionsApi.Prescriber = {
   email: null,
 };
 
-const bestand: PrescriptionsApi.PrescriptionDetail = {
+const bestand: TreatmentBasesApi.TreatmentBasisDetail = {
   id: PRESCRIPTION_ID,
   patient_id: PATIENT_ID,
   prescriber_id: PROBST,
   prescriber_name: 'Dr. med. Petra Probst',
   prescriber_practice_name: 'Praxis Fiktiv',
-  prescription_kind: 'follow_up',
+  treatment_basis_kind: 'follow_up',
   issued_on: '2026-06-18',
   frequency_note: '2x pro Woche',
   note: null,
@@ -121,10 +121,13 @@ function testApp(queryClient: QueryClient, initialPath: string): ReactElement {
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route path="/patienten/:patientId/verordnungen/neu" element={<NewPrescriptionPage />} />
           <Route
-            path="/patienten/:patientId/verordnungen/:prescriptionId/bearbeiten"
-            element={<EditPrescriptionPage />}
+            path="/patienten/:patientId/verordnungen/neu"
+            element={<NewTreatmentBasisPage />}
+          />
+          <Route
+            path="/patienten/:patientId/verordnungen/:grundlageId/bearbeiten"
+            element={<EditTreatmentBasisPage />}
           />
           <Route path="/verordner/neu" element={<NewPrescriberPage />} />
           <Route path="/patienten/:patientId" element={<p>Zurück in der Akte.</p>} />
@@ -143,10 +146,10 @@ beforeEach(() => {
 
   fetchPrescribers.mockReset();
   fetchPrescribers.mockResolvedValue([verordner]);
-  fetchPrescription.mockReset();
-  fetchPrescription.mockResolvedValue(bestand);
-  createPrescription.mockReset();
-  updatePrescription.mockReset();
+  fetchTreatmentBasis.mockReset();
+  fetchTreatmentBasis.mockResolvedValue(bestand);
+  createTreatmentBasis.mockReset();
+  updateTreatmentBasis.mockReset();
   createPrescriber.mockReset();
   createPrescriber.mockResolvedValue(NEUER_VERORDNER);
 });
@@ -176,7 +179,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     // haengt das Verordnungsformular dabei aus.
     await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
-    expect(createPrescription).not.toHaveBeenCalled();
+    expect(createTreatmentBasis).not.toHaveBeenCalled();
 
     // Der eigentliche Streitpunkt: die Standard-gcTime waere hier laengst
     // abgelaufen. Die Verordner-Anlage braucht in der Praxis durchaus
@@ -193,7 +196,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
 
     // Echte Navigation zurueck - dasselbe Verordnungsformular haengt sich
     // dabei neu ein.
-    await screen.findByRole('heading', { name: 'Verordnung erfassen' });
+    await screen.findByRole('heading', { name: 'Grundlage erfassen' });
     await screen.findByRole('option', { name: /Neuarzt/ });
 
     expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveValue('2026-03-01');
@@ -207,7 +210,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
 
     // Die Verordnung selbst wurde durch all das nicht geschrieben - erst das
     // ausdrueckliche Absenden schreibt.
-    expect(createPrescription).not.toHaveBeenCalled();
+    expect(createTreatmentBasis).not.toHaveBeenCalled();
   });
 
   it('erhaelt Eingaben auch beim Abbrechen der Verordner-Anlage', async () => {
@@ -227,7 +230,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     jetzt += 6 * 60 * 1000;
 
     await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
-    await screen.findByRole('heading', { name: 'Verordnung erfassen' });
+    await screen.findByRole('heading', { name: 'Grundlage erfassen' });
     await screen.findByRole('option', { name: /Probst/ });
 
     expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveValue('2026-03-01');
@@ -236,7 +239,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     // Keine Verordner:in wurde angelegt - die Auswahl bleibt leer.
     expect(screen.getByLabelText('Verordner:in *')).toHaveValue('');
     expect(createPrescriber).not.toHaveBeenCalled();
-    expect(createPrescription).not.toHaveBeenCalled();
+    expect(createTreatmentBasis).not.toHaveBeenCalled();
   });
 
   it('erhaelt Eingaben beim Bearbeiten einer bestehenden Verordnung und waehlt die neue Verordner:in aus', async () => {
@@ -264,12 +267,12 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.type(screen.getByLabelText('Nachname *'), 'Neuarzt');
     await user.click(screen.getByRole('button', { name: 'Verordner:in anlegen' }));
 
-    await screen.findByRole('heading', { name: 'Verordnung bearbeiten' });
+    await screen.findByRole('heading', { name: 'Grundlage bearbeiten' });
     await screen.findByRole('option', { name: /Neuarzt/ });
 
     expect(screen.getByLabelText('Genutzt')).toHaveValue('8');
     expect(screen.getByLabelText('Verordner:in *')).toHaveValue(NEUER_VERORDNER);
-    expect(updatePrescription).not.toHaveBeenCalled();
+    expect(updateTreatmentBasis).not.toHaveBeenCalled();
   });
 
   it('uebernimmt nie den Entwurf einer anderen Person - Kontowechsel im selben Tab', async () => {
@@ -345,7 +348,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
     await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
 
-    await screen.findByRole('heading', { name: 'Verordnung erfassen' });
+    await screen.findByRole('heading', { name: 'Grundlage erfassen' });
     expect(screen.getByLabelText('Heilmittel *')).toHaveValue('Zweiter Versuch');
   });
 });

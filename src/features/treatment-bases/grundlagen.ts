@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  canReadPrescriptionClinical,
-  canReadPrescriptions,
+  canReadTreatmentBasisClinical,
+  canReadTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
 import {
-  fetchPatientPrescriptions,
-  fetchPatientPrescriptionsClinical,
-  fetchPatientPrescriptionSlots,
-  kontingentJeVerordnung,
-  type ClinicalPrescription,
-  type Prescription,
-  type PrescriptionKontingent,
+  fetchPatientTreatmentBases,
+  fetchPatientTreatmentBasesClinical,
+  fetchPatientTreatmentBasisSlots,
+  kontingentJeGrundlage,
+  type ClinicalTreatmentBasis,
+  type TreatmentBasis,
+  type TreatmentBasisKontingent,
 } from './api';
 
 /**
@@ -25,12 +25,12 @@ import {
  * Schlüsseln zweimal über die Leitung.
  */
 
-export type Verordnung = Prescription | ClinicalPrescription;
+export type Verordnung = TreatmentBasis | ClinicalTreatmentBasis;
 
 export interface VerordnungMitZahlen {
   verordnung: Verordnung;
   /** `null`, solange die Zahlen noch nicht geladen sind. */
-  kontingent: PrescriptionKontingent | null;
+  kontingent: TreatmentBasisKontingent | null;
   zustand: Verordnungszustand;
 }
 
@@ -58,7 +58,7 @@ export interface VerordnungMitZahlen {
  */
 type Verordnungszustand = 'offen' | 'verplant' | 'ausgeschoepft';
 
-function verordnungszustand(kontingent: PrescriptionKontingent | null): Verordnungszustand {
+function verordnungszustand(kontingent: TreatmentBasisKontingent | null): Verordnungszustand {
   if (!kontingent) return 'offen';
   if (kontingent.used >= kontingent.prescribed) return 'ausgeschoepft';
   return kontingent.remaining > 0 ? 'offen' : 'verplant';
@@ -81,32 +81,32 @@ interface VerordnungenDerAkte {
 }
 
 export function useVerordnungenDerAkte(patientId: string, user: CurrentUser): VerordnungenDerAkte {
-  const klinisch = canReadPrescriptionClinical(user.roles);
-  const darfLesen = canReadPrescriptions(user.roles);
+  const klinisch = canReadTreatmentBasisClinical(user.roles);
+  const darfLesen = canReadTreatmentBases(user.roles);
 
   // Welche Felder ankommen, entscheidet die Datenbank über zwei verschiedene
   // Serverfunktionen (ANN-011). Die Oberfläche wählt nur, welche sie fragt -
   // sie blendet nichts aus.
   const verordnungen = useQuery({
     queryKey: klinisch
-      ? ['patient-prescriptions-clinical', patientId]
-      : ['patient-prescriptions', patientId],
+      ? ['patient-treatment-bases-clinical', patientId]
+      : ['patient-treatment-bases', patientId],
     queryFn: () =>
       klinisch
-        ? fetchPatientPrescriptionsClinical(patientId)
-        : fetchPatientPrescriptions(patientId),
+        ? fetchPatientTreatmentBasesClinical(patientId)
+        : fetchPatientTreatmentBases(patientId),
     enabled: darfLesen,
     retry: false,
   });
 
   const kontingente = useQuery({
-    queryKey: ['patient-prescription-slots', patientId],
-    queryFn: () => fetchPatientPrescriptionSlots(patientId),
+    queryKey: ['patient-treatment-basis-slots', patientId],
+    queryFn: () => fetchPatientTreatmentBasisSlots(patientId),
     enabled: darfLesen,
     retry: false,
   });
 
-  const zahlen = kontingentJeVerordnung(kontingente.data ?? []);
+  const zahlen = kontingentJeGrundlage(kontingente.data ?? []);
   const eintraege: VerordnungMitZahlen[] = (verordnungen.data ?? []).map((verordnung) => {
     const kontingent = zahlen.get(verordnung.id) ?? null;
     return { verordnung, kontingent, zustand: verordnungszustand(kontingent) };

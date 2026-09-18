@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PrescriptionsApi from './api';
+import type * as TreatmentBasesApi from './api';
 import { renderWithProviders } from '@/test-utils';
 
 const fetchPrescribers = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
-  const actual = await importOriginal<typeof PrescriptionsApi>();
+  const actual = await importOriginal<typeof TreatmentBasesApi>();
   return {
     ...actual,
-    fetchPrescribers: () => fetchPrescribers() as Promise<PrescriptionsApi.Prescriber[]>,
+    fetchPrescribers: () => fetchPrescribers() as Promise<TreatmentBasesApi.Prescriber[]>,
   };
 });
 
@@ -18,8 +18,8 @@ const { PrescribersListPage } = await import('./PrescribersListPage');
 
 function verordner(
   id: string,
-  rest: Partial<PrescriptionsApi.Prescriber> = {},
-): PrescriptionsApi.Prescriber {
+  rest: Partial<TreatmentBasesApi.Prescriber> = {},
+): TreatmentBasesApi.Prescriber {
   return {
     id,
     title: null,

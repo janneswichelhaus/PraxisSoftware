@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PrescriptionsApi from './api';
+import type * as TreatmentBasesApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
 import { renderWithProviders } from '@/test-utils';
@@ -15,11 +15,11 @@ const updatePrescriber = vi.fn();
 const navigate = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
-  const actual = await importOriginal<typeof PrescriptionsApi>();
+  const actual = await importOriginal<typeof TreatmentBasesApi>();
   return {
     ...actual,
     fetchPrescriber: (id: string) =>
-      fetchPrescriber(id) as Promise<PrescriptionsApi.Prescriber | null>,
+      fetchPrescriber(id) as Promise<TreatmentBasesApi.Prescriber | null>,
     createPrescriber: (values: unknown) => createPrescriber(values) as Promise<string>,
     updatePrescriber: (id: string, values: unknown) =>
       updatePrescriber(id, values) as Promise<void>,
@@ -35,7 +35,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 // Der Entwurfsspeicher bindet an die Benutzer-ID aus der Sitzung (ANN-019) -
 // ohne diesen Mock würde useSession() außerhalb eines SessionProvider werfen.
 // Der echte Zusammenspiel-Test mit tatsächlicher Anmeldeperson lebt in
-// PrescriptionFormPage.entwurf.test.tsx.
+// TreatmentBasisFormPage.entwurf.test.tsx.
 vi.mock('@/features/auth/sessionContext', async (importOriginal) => {
   const actual = await importOriginal<typeof SessionContextModule>();
   return {
@@ -51,7 +51,7 @@ vi.mock('@/features/auth/sessionContext', async (importOriginal) => {
 const { EditPrescriberPage, NewPrescriberPage } = await import('./PrescriberFormPage');
 const { VerordnerBereitsVorhanden } = await import('./api');
 
-const bestand: PrescriptionsApi.Prescriber = {
+const bestand: TreatmentBasesApi.Prescriber = {
   id: PRESCRIBER_ID,
   title: 'Dr. med.',
   given_name: 'Petra',
@@ -157,7 +157,7 @@ describe('NewPrescriberPage', () => {
   // Das Nachtragen der neuen Verordner:in in einen vorhandenen Entwurf des
   // Verordnungsformulars (VER-003) und der Fall ohne vorhandenen Entwurf sind
   // als Store-Verhalten in api.test.ts abgedeckt (entwurfVerordnerNachtragen)
-  // und im echten Seitenwechsel in PrescriptionFormPage.entwurf.test.tsx.
+  // und im echten Seitenwechsel in TreatmentBasisFormPage.entwurf.test.tsx.
 });
 
 describe('EditPrescriberPage', () => {

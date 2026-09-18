@@ -12,13 +12,15 @@ import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from
  */
 const { users, patients } = SEED;
 
-const ORGANISATORISCH = 'select * from public.list_patient_prescriptions($1::uuid)';
-const KLINISCH = 'select * from public.list_patient_prescriptions_clinical($1::uuid)';
+const ORGANISATORISCH = 'select * from public.list_patient_treatment_bases($1::uuid)';
+const KLINISCH = 'select * from public.list_patient_treatment_bases_clinical($1::uuid)';
 
 const MAX_ERST = '88888888-8888-4888-8888-000000000001';
 const MAX_FOLGE = '88888888-8888-4888-8888-000000000002';
 const ERIKA_ERST = '88888888-8888-4888-8888-000000000003';
 const ERIKA_FOLGE = '88888888-8888-4888-8888-000000000004';
+/** Die zweite Bauart (GRD-001, ADR-020): Selbstzahler, ohne Verordner:in. */
+const ERIKA_SELBSTZAHLER = '88888888-8888-4888-8888-000000000005';
 const UNBEKANNT = '66666666-6666-4666-8666-0000000000ff';
 
 interface Item {
@@ -32,9 +34,10 @@ interface Item {
 
 interface Zeile {
   id: string;
-  prescriber_name: string;
+  // Null beim Selbstzahler (ADR-020 Punkt 3).
+  prescriber_name: string | null;
   prescriber_practice_name: string | null;
-  prescription_kind: string;
+  treatment_basis_kind: string;
   issued_on: Date;
   frequency_note: string | null;
   note: string | null;
@@ -55,7 +58,7 @@ describe('VER-002: Verordnungen in der Akte', () => {
     expect(rows.map((r) => r.id)).toEqual([MAX_FOLGE, MAX_ERST]);
     expect(rows[0]?.prescriber_name).toBe('Dr. med. Petra Probst');
     expect(rows[0]?.prescriber_practice_name).toBe('Orthopaedische Gemeinschaftspraxis Fiktiv');
-    expect(rows[0]?.prescription_kind).toBe('follow_up');
+    expect(rows[0]?.treatment_basis_kind).toBe('follow_up');
     expect(rows[0]?.frequency_note).toBe('2x pro Woche');
     expect(rows[0]?.note).toBe('Rezept liegt im Ordner.');
   });
@@ -68,7 +71,7 @@ describe('VER-002: Verordnungen in der Akte', () => {
       from pg_proc p
       join pg_namespace n on n.oid = p.pronamespace
       cross join lateral unnest(p.proargnames) as t(name)
-      where n.nspname = 'public' and p.proname = 'list_patient_prescriptions'
+      where n.nspname = 'public' and p.proname = 'list_patient_treatment_bases'
     `);
     const spalten = rows[0]?.spalten ?? [];
     for (const klinisch of [
@@ -110,7 +113,7 @@ describe('VER-002: Verordnungen in der Akte', () => {
   });
 
   it('liefert office die klinischen Felder und protokolliert je Verordnung (E15)', async () => {
-    await asPostgres("delete from public.audit_log where action = 'prescription.viewed'");
+    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
 
     const { rows } = await asUserCommitted<Zeile>(users.office, KLINISCH, [patients.max]);
     expect(rows.map((r) => r.id)).toEqual([MAX_FOLGE, MAX_ERST]);
@@ -122,7 +125,7 @@ describe('VER-002: Verordnungen in der Akte', () => {
       context: Record<string, unknown>;
     }>(
       `select subject_id, actor_user_id, context from public.audit_log
-        where action = 'prescription.viewed'`,
+        where action = 'treatment_basis.viewed'`,
     );
     expect(audit.map((a) => a.subject_id).sort()).toEqual([MAX_ERST, MAX_FOLGE].sort());
     expect(audit.every((a) => a.actor_user_id === users.office)).toBe(true);
@@ -132,16 +135,16 @@ describe('VER-002: Verordnungen in der Akte', () => {
 
   it('weist ein Patientenkonto und anon beide Sichten ab', async () => {
     await expect(asUser(users.patientMax, ORGANISATORISCH, [patients.max])).rejects.toThrow(
-      /not allowed to read prescriptions/i,
+      /not allowed to read treatment_bases/i,
     );
     await expect(asUser(users.patientMax, KLINISCH, [patients.max])).rejects.toThrow(
-      /not allowed to read clinical prescription data/i,
+      /not allowed to read clinical treatment basis data/i,
     );
     await expect(asAnon(ORGANISATORISCH, [patients.max])).rejects.toThrow(/permission denied/i);
   });
 
   it('protokolliert je gelesener Verordnung genau einen Zugriff (ADR-010)', async () => {
-    await asPostgres("delete from public.audit_log where action = 'prescription.viewed'");
+    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
     await asUserCommitted(users.therapist, KLINISCH, [patients.erika]);
 
     const { rows } = await asPostgres<{
@@ -150,10 +153,14 @@ describe('VER-002: Verordnungen in der Akte', () => {
       context: Record<string, unknown>;
     }>(
       `select subject_id, actor_user_id, context from public.audit_log
-        where action = 'prescription.viewed' and subject_type = 'prescription'`,
+        where action = 'treatment_basis.viewed' and subject_type = 'treatment_basis'`,
     );
-    // Erika hat zwei Verordnungen - genau zwei Eintraege, kein Sammeleintrag.
-    expect(rows.map((r) => r.subject_id).sort()).toEqual([ERIKA_ERST, ERIKA_FOLGE].sort());
+    // Erika hat drei Grundlagen - genau drei Eintraege, kein Sammeleintrag.
+    // Der Selbstzahler wird wie jede Verordnung protokolliert: Die Datenklasse
+    // haengt an der Tabelle, nicht an der Bauart (ADR-020 Punkt 4).
+    expect(rows.map((r) => r.subject_id).sort()).toEqual(
+      [ERIKA_ERST, ERIKA_FOLGE, ERIKA_SELBSTZAHLER].sort(),
+    );
     expect(rows.every((r) => r.actor_user_id === users.therapist)).toBe(true);
     expect(rows[0]?.context).toMatchObject({ surface: 'web', patient_id: patients.erika });
     // Keine klinischen Inhalte im Auditlog (ADR-010 Punkt 3, ADR-011).
@@ -161,11 +168,11 @@ describe('VER-002: Verordnungen in der Akte', () => {
   });
 
   it('protokolliert die organisatorische Sicht nicht', async () => {
-    await asPostgres("delete from public.audit_log where action = 'prescription.viewed'");
+    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
     await asUserCommitted(users.office, ORGANISATORISCH, [patients.max]);
 
     const { rows } = await asPostgres(
-      "select id from public.audit_log where action = 'prescription.viewed'",
+      "select id from public.audit_log where action = 'treatment_basis.viewed'",
     );
     expect(rows).toEqual([]);
   });
@@ -181,16 +188,51 @@ describe('VER-002: Verordnungen in der Akte', () => {
   });
 
   it('protokolliert nichts, wenn nichts gelesen wurde', async () => {
-    await asPostgres("delete from public.audit_log where action = 'prescription.viewed'");
+    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
     await asUserCommitted(users.therapist, KLINISCH, [UNBEKANNT]);
 
     const { rows } = await asPostgres(
-      "select id from public.audit_log where action = 'prescription.viewed'",
+      "select id from public.audit_log where action = 'treatment_basis.viewed'",
     );
     expect(rows).toEqual([]);
   });
 
-  it('gibt der Rolle authenticated auf prescriptions und prescription_items ueberhaupt kein Recht', async () => {
+  // ---------------------------------------------------------------------------
+  // GRD-001 / ADR-020: Der Selbstzahler benutzt dieselben Lesepfade. Die
+  // Datenklasse haengt an der Tabelle, nicht an der Bauart (Punkt 4) - also
+  // gelten Projektion, Rollenschnitt und Protokollpflicht unveraendert.
+  // ---------------------------------------------------------------------------
+  describe('Die zweite Bauart im Lesepfad (ADR-020)', () => {
+    it('liefert ihn in der organisatorischen Sicht ohne Verordner:in', async () => {
+      const { rows } = await asUser<Zeile>(users.office, ORGANISATORISCH, [patients.erika]);
+
+      const selbstzahler = rows.find((r) => r.id === ERIKA_SELBSTZAHLER);
+      expect(selbstzahler?.treatment_basis_kind).toBe('self_pay');
+      expect(selbstzahler?.prescriber_name).toBeNull();
+      expect(selbstzahler?.prescriber_practice_name).toBeNull();
+      // Dieselbe Klammer wie eine Verordnung: mit Positionen und Mengen.
+      expect(selbstzahler?.items).toHaveLength(1);
+    });
+
+    it('liefert ihn in der klinischen Sicht mit leeren klinischen Feldern', async () => {
+      const { rows } = await asUser<Zeile>(users.therapist, KLINISCH, [patients.erika]);
+
+      const selbstzahler = rows.find((r) => r.id === ERIKA_SELBSTZAHLER);
+      expect(selbstzahler?.diagnosis).toBeNull();
+      expect(selbstzahler?.therapy_goal).toBeNull();
+      expect(selbstzahler?.follow_up_recommendation).toBeNull();
+    });
+
+    it('weist ein Patientenkonto auch bei ihm ab', async () => {
+      // Der Rollenschnitt haengt an der Tabelle, nicht an der Bauart: Eine
+      // leere Diagnose macht eine Zeile nicht organisatorisch (ADR-020 Punkt 4).
+      await expect(asUser(users.patientMax, ORGANISATORISCH, [patients.erika])).rejects.toThrow(
+        /not allowed to read treatment_bases/i,
+      );
+    });
+  });
+
+  it('gibt der Rolle authenticated auf treatment_bases und treatment_base_items ueberhaupt kein Recht', async () => {
     // Deny-by-default ist die tragende Entscheidung dieser Story (VER-001):
     // erreichbar ausschliesslich ueber die Funktionen oben, nie ueber die
     // Tabelle direkt. Dieser Test ist der Regressionsschutz dafuer - eine
@@ -198,15 +240,15 @@ describe('VER-002: Verordnungen in der Akte', () => {
     // auf, ohne dass jemand die Migrationsdatei erneut lesen muss.
     const { rows } = await asPostgres<{ table_name: string; privilege_type: string }>(`
       select table_name, privilege_type from information_schema.role_table_grants
-      where table_schema = 'public' and table_name in ('prescriptions', 'prescription_items')
+      where table_schema = 'public' and table_name in ('treatment_bases', 'treatment_base_items')
         and grantee in ('anon', 'authenticated')
     `);
     expect(rows).toEqual([]);
 
-    await expect(asUser(users.office, 'select * from public.prescriptions')).rejects.toThrow(
+    await expect(asUser(users.office, 'select * from public.treatment_bases')).rejects.toThrow(
       /permission denied/i,
     );
-    await expect(asUser(users.office, 'select * from public.prescription_items')).rejects.toThrow(
+    await expect(asUser(users.office, 'select * from public.treatment_base_items')).rejects.toThrow(
       /permission denied/i,
     );
   });

@@ -56,11 +56,13 @@ test.describe('AKTE-000: Rahmen und Bereiche', () => {
     await expect(page.getByText('Kontakt', { exact: true })).toBeVisible();
     await expect(kopf).toBeVisible();
 
-    // Verordnungen: der Bereich liest denselben rollenabhaengigen Lesepfad
+    // Behandlungsgrundlagen: der Bereich liest denselben rollenabhaengigen Lesepfad
     // wie vorher der Abschnitt der langen Seite (VER-002).
-    await navigation.getByRole('link', { name: 'Verordnungen' }).click();
+    await navigation.getByRole('link', { name: 'Behandlungsgrundlagen' }).click();
     await expect(page).toHaveURL(`${AKTE}/verordnungen`);
-    await expect(page.getByRole('heading', { name: 'Aktuelle Verordnungen' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Aktuelle Behandlungsgrundlagen' }),
+    ).toBeVisible();
     await expect(kopf).toBeVisible();
 
     // UI-002a: Es gibt keinen Bereich "Uebersicht" mehr, und die Adresse der
@@ -138,10 +140,43 @@ test.describe('AKTE-002: Verordnung und Termine finden einander', () => {
     if ((await zuDenTerminen.count()) > 0) {
       await zuDenTerminen.click();
       await expect(page).toHaveURL(/\/termine\?verordnung=[0-9a-f-]{36}$/);
-      await expect(page.getByText('Nur die Termine einer Verordnung.')).toBeVisible();
+      await expect(page.getByText('Nur die Termine einer Behandlungsgrundlage.')).toBeVisible();
 
-      await page.getByRole('link', { name: 'Zur Verordnung' }).click();
+      await page.getByRole('link', { name: 'Zur Grundlage' }).click();
       await expect(page).toHaveURL(/\/verordnungen#verordnung-[0-9a-f-]{36}$/);
     }
+  });
+});
+
+/**
+ * GRD-001, ADR-020 Punkt 7: Die Oberfläche nennt die Bauart.
+ *
+ * Erika hat im Seed beide: eine Verordnung und einen Selbstzahler. Sie stehen
+ * unter einer gemeinsamen Überschrift, aber jede unter ihrem eigenen Namen.
+ */
+test.describe('GRD-001: beide Bauarten in der Akte', () => {
+  test('nennt Verordnung und Selbstzahler bei ihrem Namen', async ({ page }) => {
+    await anmelden(page, KONTEN.therapist);
+    await page.goto(`/patienten/${PATIENTEN.erika}/verordnungen`);
+
+    await expect(
+      page.getByRole('heading', { name: 'Aktuelle Behandlungsgrundlagen' }),
+    ).toBeVisible();
+    await expect(page.getByText('Selbstzahler seit 03.09.2026')).toBeVisible();
+    await expect(page.getByText('Folgeverordnung vom 08.09.2026')).toBeVisible();
+  });
+
+  test('fragt im Formular zuerst nach der Bauart und laesst die Verordner:in fallen', async ({
+    page,
+  }) => {
+    await anmelden(page, KONTEN.therapist);
+    await page.goto(`/patienten/${PATIENTEN.erika}/verordnungen/neu`);
+
+    await expect(page.getByLabel('Verordner:in *')).toBeVisible();
+    await page.getByLabel('Art *').selectOption('self_pay');
+
+    await expect(page.getByLabel('Verordner:in *')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Klinische Angaben' })).toHaveCount(0);
+    await expect(page.getByLabel('Vereinbart am *')).toBeVisible();
   });
 });

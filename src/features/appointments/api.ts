@@ -568,8 +568,11 @@ export async function fetchUpcomingAppointments(
 // -----------------------------------------------------------------------------
 
 const patientAppointmentSchema = upcomingAppointmentSchema.extend({
-  prescription_id: z.string().nullable(),
-  prescription_issued_on: z.string().nullable(),
+  treatment_basis_id: z.string().nullable(),
+  // Die Bauart, damit die Liste die Grundlage benennen kann, statt jede für
+  // eine Verordnung zu halten (GRD-001, ADR-020 Punkt 7).
+  treatment_basis_kind: z.string().nullable(),
+  treatment_basis_issued_on: z.string().nullable(),
 });
 
 export type PatientAppointment = z.infer<typeof patientAppointmentSchema>;
@@ -610,7 +613,7 @@ export async function fetchPatientAppointments(
     p_limit: query.limit ?? TERMINE_SEITENGROESSE,
     p_after_starts_at: query.cursor?.afterStartsAt ?? null,
     p_after_id: query.cursor?.afterId ?? null,
-    p_prescription_id: query.verordnung ?? null,
+    p_treatment_basis_id: query.verordnung ?? null,
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Termine konnten nicht geladen werden.');
@@ -811,7 +814,7 @@ export async function createAppointment(
    * der Verordnung über den Kalender ins Formular. Der Server prüft, dass sie
    * zu dieser Patient:in gehört (CAL-007).
    */
-  prescriptionId: string | null = null,
+  grundlageId: string | null = null,
   /** Ein Tag vor dem heutigen, ausdrücklich bestätigt (FIX-019). */
   confirmedPast = false,
 ): Promise<string> {
@@ -824,7 +827,7 @@ export async function createAppointment(
     p_end_time: values.end_time,
     p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
     p_allow_outside_working_hours: allowOutsideWorkingHours,
-    p_prescription_id: prescriptionId,
+    p_treatment_basis_id: grundlageId,
     p_confirmed_past: confirmedPast,
   })) as { data: unknown; error: { message?: string } | null };
 
@@ -1556,7 +1559,7 @@ export async function reopenAppointment(
 // `serie.ts` und spricht mit keinem Server (§6.2).
 // -----------------------------------------------------------------------------
 
-const prescriptionSlotsSchema = z.object({
+const treatmentBasisSlotsSchema = z.object({
   patient_id: z.string(),
   frequency_note: z.string().nullable(),
   prescribed: z.number(),
@@ -1565,7 +1568,7 @@ const prescriptionSlotsSchema = z.object({
   remaining: z.number(),
 });
 
-export type PrescriptionSlots = z.infer<typeof prescriptionSlotsSchema>;
+export type TreatmentBasisSlots = z.infer<typeof treatmentBasisSlotsSchema>;
 
 /**
  * Kontingent einer Verordnung: verordnet, genutzt, verplant und offen.
@@ -1574,13 +1577,13 @@ export type PrescriptionSlots = z.infer<typeof prescriptionSlotsSchema>;
  * bei der klinischen Sicht (ANN-011). „Verplant" zählt die nicht abgesagten
  * Termine dieser Verordnung; verplant ist nicht genutzt (ANN-012, ANN-038).
  */
-export async function fetchPrescriptionSlots(prescriptionId: string): Promise<PrescriptionSlots> {
-  const { data, error } = (await getSupabase().rpc('get_prescription_slots', {
-    p_prescription_id: prescriptionId,
+export async function fetchTreatmentBasisSlots(grundlageId: string): Promise<TreatmentBasisSlots> {
+  const { data, error } = (await getSupabase().rpc('get_treatment_basis_slots', {
+    p_treatment_basis_id: grundlageId,
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Das Kontingent der Verordnung konnte nicht geladen werden.');
-  const zeilen = z.array(prescriptionSlotsSchema).parse(data ?? []);
+  const zeilen = z.array(treatmentBasisSlotsSchema).parse(data ?? []);
   const erste = zeilen[0];
   if (!erste) throw new Error('Das Kontingent der Verordnung konnte nicht geladen werden.');
   return erste;
@@ -1657,14 +1660,14 @@ export async function checkAppointmentSlots(
  */
 export async function createAppointmentSeries(
   patientId: string,
-  prescriptionId: string,
+  grundlageId: string,
   values: AppointmentFormValues,
   slots: Serientermin[],
   allowOutsideWorkingHours = false,
 ): Promise<number> {
   const { data, error } = (await getSupabase().rpc('create_appointment_series', {
     p_patient_id: patientId,
-    p_prescription_id: prescriptionId,
+    p_treatment_basis_id: grundlageId,
     p_staff_member_id: values.staff_member_id,
     p_appointment_type: values.appointment_type,
     p_slots: slots,

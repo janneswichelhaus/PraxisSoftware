@@ -34,8 +34,9 @@ function termin(
     staff_given_name: 'Anna',
     staff_family_name: 'Beispiel',
     notification_channels: [],
-    prescription_id: null,
-    prescription_issued_on: null,
+    treatment_basis_id: null,
+    treatment_basis_kind: null,
+    treatment_basis_issued_on: null,
     organization_time_zone: 'Europe/Berlin',
     ...rest,
   };
@@ -115,8 +116,9 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
         [
           termin({
             id: 'ausSerie',
-            prescription_id: VERORDNUNG,
-            prescription_issued_on: '2026-06-18',
+            treatment_basis_id: VERORDNUNG,
+            treatment_basis_kind: 'follow_up',
+            treatment_basis_issued_on: '2026-06-18',
           }),
         ],
         [],
@@ -124,18 +126,20 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
       renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
 
       expect(
-        await screen.findByRole('link', { name: 'Verordnung vom 18.06.2026' }),
+        await screen.findByRole('link', { name: 'Folgeverordnung vom 18.06.2026' }),
       ).toHaveAttribute('href', `/patienten/${PATIENT_ID}/verordnungen#verordnung-${VERORDNUNG}`);
     });
 
     it('filtert auf eine Verordnung und sagt das', async () => {
-      antwortet([termin({ id: 'ausSerie', prescription_id: VERORDNUNG })], []);
+      antwortet([termin({ id: 'ausSerie', treatment_basis_id: VERORDNUNG })], []);
       renderWithProviders(
         <Terminbereich patient={patient} user={testUser(['office'])} />,
         `/patienten/${PATIENT_ID}/termine?verordnung=${VERORDNUNG}`,
       );
 
-      expect(await screen.findByText('Nur die Termine einer Verordnung.')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Nur die Termine einer Behandlungsgrundlage.'),
+      ).toBeInTheDocument();
       await waitFor(() =>
         expect(fetchPatientAppointments).toHaveBeenCalledWith(
           PATIENT_ID,
@@ -146,7 +150,7 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
 
     it('nimmt den Filter wieder heraus', async () => {
       const user = userEvent.setup();
-      antwortet([termin({ prescription_id: VERORDNUNG })], []);
+      antwortet([termin({ treatment_basis_id: VERORDNUNG })], []);
       renderWithProviders(
         <Terminbereich patient={patient} user={testUser(['office'])} />,
         `/patienten/${PATIENT_ID}/termine?verordnung=${VERORDNUNG}`,
@@ -155,7 +159,9 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
       await user.click(await screen.findByRole('button', { name: 'Alle Termine zeigen' }));
 
       await waitFor(() =>
-        expect(screen.queryByText('Nur die Termine einer Verordnung.')).not.toBeInTheDocument(),
+        expect(
+          screen.queryByText('Nur die Termine einer Behandlungsgrundlage.'),
+        ).not.toBeInTheDocument(),
       );
       expect(fetchPatientAppointments).toHaveBeenCalledWith(
         PATIENT_ID,
@@ -174,7 +180,9 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
         PATIENT_ID,
         expect.objectContaining({ verordnung: null }),
       );
-      expect(screen.queryByText('Nur die Termine einer Verordnung.')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Nur die Termine einer Behandlungsgrundlage.'),
+      ).not.toBeInTheDocument();
     });
   });
 
