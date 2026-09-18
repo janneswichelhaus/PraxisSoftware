@@ -50,9 +50,10 @@ Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
   Objektspeicher-Punkten aus ADR-017 und der Edge-Runtime-Prüfung aus ADR-019.
 - **Gemergt am 2026-09-15/16:** PR #41 (ROL-EPIC-001) und PR #42 (FIX-015).
   Die Abnahme beider steht noch aus.
-- **CI steht still:** Die GitHub-Actions-Minuten des Monats sind seit dem
-  2026-09-16 aufgebraucht. Bis zum Reset entsteht kein grüner Lauf und damit
-  **kein Merge** (ADR-013); entwickelt, gepusht und lokal geprüft wird weiter.
+- **CI läuft wieder (2026-09-18).** Die Actions-Minuten waren seit dem
+  2026-09-16 aufgebraucht; seit dem Lauf zu PR #48 entstehen wieder grüne
+  Läufe, und damit ist der Merge nach ADR-013 wieder möglich. Die lokalen
+  Gates bleiben die erste Prüfung, nicht die zweite.
 - **CAL-EPIC-004 eingeordnet (2026-09-16).** Jannes hat die Reihenfolge an
   diesem Punkt ausdrücklich delegiert; sie steht jetzt in Etappe 1:
   **~~CAL-018~~ (fertig 2026-09-16) → ~~CAL-EPIC-004a~~ (fertig 2026-09-18) → ~~FIX-EPIC-004~~ (fertig 2026-09-18) → ~~CAL-EPIC-004b~~ (fertig 2026-09-18) → UX-013

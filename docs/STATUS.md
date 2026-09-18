@@ -21,14 +21,14 @@ nächste Loop beginnt auf Freigabe.
 
 Danach unverändert: CAL-EPIC-004c · ABR-EPIC-001 (xhigh).
 
-## Prüfverfahren, solange die CI steht
+## Prüfverfahren
 
-Die Actions-Minuten sind aufgebraucht: ein rotes Kreuz am PR heißt **„nicht
-gelaufen"**. Alle Gates laufen lokal; `pnpm test:db` läuft unter Windows gegen
-einen Wegwerf-Container (`docker run … supabase/postgres`, Port 54329), die
-**angemeldeten E2E-Tests kann nur Jannes ausführen**. `pnpm test` ist unter
-Node 24 an rund 60 navigierenden Tests rot — auf `main` genauso (**BEF-011**);
-CI und `engines` meinen Node 22.
+**Die CI läuft wieder** (2026-09-18, PR #48: alle fünf Läufe grün) — ein rotes
+Kreuz heißt wieder „rot". Lokal weiterhin: `pnpm test:db` unter Windows gegen
+einen Wegwerf-Container (`docker run … supabase/postgres`, Port 54329); die
+**angemeldeten E2E-Tests laufen in der Cloud-Umgebung nicht** (`supabase start`
+blockiert), dort prüft sie nur die CI. `pnpm test` ist unter Node 24 an rund 60
+navigierenden Tests rot — auf `main` genauso (**BEF-011**), CI meint Node 22.
 
 ## Blocker (Jannes-seitig)
 
