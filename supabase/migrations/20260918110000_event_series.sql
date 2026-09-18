@@ -219,16 +219,24 @@ begin
   perform set_config('app.event_series_id', v_serie::text, true);
 
   for v_i in 1 .. v_anzahl loop
-    perform public.create_appointment_event(
-      p_title,
-      p_staff_member_ids,
-      p_appointment_type,
-      p_dates[v_i],
-      p_start_time,
-      p_end_time,
-      p_location_id,
-      p_allow_outside_working_hours
-    );
+    -- Die Ueberschneidung bekommt ihren Tag mit: Bei einer Serie ueber sechs
+    -- Wochen ist "jemand ist belegt" ohne das Datum keine brauchbare Auskunft.
+    begin
+      perform public.create_appointment_event(
+        p_title,
+        p_staff_member_ids,
+        p_appointment_type,
+        p_dates[v_i],
+        p_start_time,
+        p_end_time,
+        p_location_id,
+        p_allow_outside_working_hours
+      );
+    exception
+      when sqlstate '23P01' then
+        raise exception 'occurrence on % overlaps an existing appointment', p_dates[v_i]
+          using errcode = '23P01';
+    end;
   end loop;
 
   perform set_config('app.event_series_id', '', true);

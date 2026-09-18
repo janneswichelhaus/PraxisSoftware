@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import { minuteZuZeit, type StatusFilter } from './calendar';
-import type { Serientermin } from './serie';
+import { formatDate } from '@/lib/datum';
+import { SERIE_HOECHSTZAHL, type Serientermin } from './serie';
 
 /**
  * Datenzugriff auf die Terminverwaltung.
@@ -171,6 +172,14 @@ const appointmentSchema = z.object({
    * Behandlungstermin.
    */
   event_group_id: z.string().nullable(),
+  /**
+   * Die Serie, zu der dieses Ereignis gehört - eine Dauerfehlzeit (CAL-021).
+   *
+   * Neben der Gruppenkennung, nicht statt ihrer: Die Gruppe ist **dieses
+   * Vorkommen** mit allen Beteiligten, die Serie sind **alle Vorkommen**.
+   * `null` an jedem Ereignis ohne Serie und an jedem Behandlungstermin.
+   */
+  event_series_id: z.string().nullable(),
   staff_member_id: z.string(),
   location_id: z.string().nullable(),
   appointment_type: appointmentTypeSchema,
@@ -1029,6 +1038,170 @@ export async function cancelAppointmentEvent(
       );
     }
     throw new Error('Das Ereignis konnte nicht abgesagt werden.');
+  }
+
+  return z.number().parse(data);
+}
+
+// -----------------------------------------------------------------------------
+// Dauerfehlzeit: eine Serie gleichartiger Ereignisse (CAL-021)
+//
+// Eine Fehlzeit ist ein Ereignis - Teammeeting, Achtsamkeitspuffer, Kaffeezeit
+// mit Kolleg:in. Neu ist die Wiederholung: dieselbe Fehlzeit über mehrere
+// Wochen, gerechnet mit den Rhythmen der Terminserie (`serie.ts`, CAL-007).
+//
+// Die Serie ist keine Entität (ADR-018 Punkt 5). Es gibt deshalb kein
+// „Serienobjekt" zu laden, sondern nur ihre Vorkommen - und den jüngsten Stand
+// der Serie, den beide serienweiten Schreibwege erwarten.
+// -----------------------------------------------------------------------------
+
+// ANN-059: Die Serie bekommt eine eigene Kennung neben der Gruppenkennung; serienweite Vorgaenge wirken nach vorn (docs/decisions/ASSUMPTIONS.md).
+/**
+ * Legt eine Serie gleichartiger Ereignisse an - je Tag ein Vorkommen.
+ *
+ * Gibt die Serienkennung zurück. Alles oder nichts: Ist auch nur ein Tag
+ * belegt, entsteht keine einzige Zeile, und die Meldung nennt den Tag.
+ */
+export async function createEventSeries(
+  values: EreignisFormValues,
+  tage: readonly string[],
+  allowOutsideWorkingHours = false,
+): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('create_event_series', {
+    p_title: values.title.trim(),
+    p_staff_member_ids: values.staff_member_ids,
+    p_appointment_type: values.appointment_type,
+    p_dates: tage,
+    p_start_time: values.start_time,
+    p_end_time: values.end_time,
+    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) {
+    if (error.message?.includes('outside_working_hours')) throw new AusserhalbArbeitszeitError();
+    const belegt = /occurrence on (\d{4}-\d{2}-\d{2})/.exec(error.message ?? '');
+    if (belegt) {
+      throw new Error(
+        `Am ${formatDate(belegt[1]!)} hat mindestens eine beteiligte Person schon einen Termin. Es wurde nichts eingetragen.`,
+      );
+    }
+    if (error.message?.includes('not on the appointment grid')) {
+      throw new Error(
+        'Beginn und Ende müssen auf dem Praxisraster liegen. Bitte Zeiten im Raster der Praxis wählen.',
+      );
+    }
+    if (error.message?.includes('event title is required')) {
+      throw new Error('Bitte eine Bezeichnung angeben.');
+    }
+    if (error.message?.includes('at least one participant')) {
+      throw new Error('Bitte mindestens eine beteiligte Person wählen.');
+    }
+    if (error.message?.includes('limited to')) {
+      throw new Error(`Eine Serie umfasst höchstens ${SERIE_HOECHSTZAHL} Vorkommen.`);
+    }
+    if (error.message?.includes('in the past')) {
+      throw new Error('Der erste Tag liegt in der Vergangenheit.');
+    }
+    throw new Error('Die Serie konnte nicht eingetragen werden.');
+  }
+
+  return z.string().parse(data);
+}
+
+/**
+ * Ein Vorkommen einer Serie: eine Zeit, alle Beteiligten zusammengezählt.
+ *
+ * `series_updated_at` ist der jüngste Stand der **ganzen Serie** und in jeder
+ * Zeile derselbe - genau diesen Wert erwarten `updateEventSeries` und
+ * `cancelEventSeries`, wie die Gruppe ihn in `fetchEventParticipants` liefert.
+ */
+const eventSeriesOccurrenceSchema = z.object({
+  event_group_id: z.string(),
+  title: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  open_count: z.number(),
+  cancelled_count: z.number(),
+  series_updated_at: z.string(),
+});
+export type EventSeriesOccurrence = z.infer<typeof eventSeriesOccurrenceSchema>;
+
+export async function fetchEventSeries(seriesId: string): Promise<EventSeriesOccurrence[]> {
+  const { data, error } = (await getSupabase().rpc('list_event_series', {
+    p_event_series_id: seriesId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Serie konnte nicht geladen werden.');
+  return z.array(eventSeriesOccurrenceSchema).parse(data ?? []);
+}
+
+/**
+ * Ändert die ganze Serie - alle noch nicht begonnenen Vorkommen.
+ *
+ * `values.date` bleibt dabei ausdrücklich unbenutzt: Die Tage sind der
+ * Rhythmus. Wer eine Serie um Tage verschieben will, sagt sie ab und legt eine
+ * neue an; wer eine Woche anders legen will, ändert dieses Vorkommen.
+ */
+export async function updateEventSeries(
+  seriesId: string,
+  expectedUpdatedAt: string,
+  values: EreignisFormValues,
+  allowOutsideWorkingHours = false,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('update_event_series', {
+    p_event_series_id: seriesId,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_title: values.title.trim(),
+    p_appointment_type: values.appointment_type,
+    p_start_time: values.start_time,
+    p_end_time: values.end_time,
+    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) {
+    if (error.message?.includes('outside_working_hours')) throw new AusserhalbArbeitszeitError();
+    if (error.message?.includes('overlaps')) {
+      throw new Error(
+        'In diesem Zeitraum hat mindestens eine beteiligte Person schon einen Termin. Es wurde nichts geändert.',
+      );
+    }
+    if (error.message?.includes('changed meanwhile')) {
+      throw new Error(
+        'Diese Serie wurde zwischenzeitlich geändert. Bitte die Seite neu laden und noch einmal ansehen.',
+      );
+    }
+    if (error.message?.includes('not on the appointment grid')) {
+      throw new Error(
+        'Beginn und Ende müssen auf dem Praxisraster liegen. Bitte Zeiten im Raster der Praxis wählen.',
+      );
+    }
+    throw new Error('Die Serie konnte nicht geändert werden.');
+  }
+
+  return z.number().parse(data);
+}
+
+/** Sagt alle noch nicht begonnenen Vorkommen einer Serie ab (CAL-021). */
+export async function cancelEventSeries(
+  seriesId: string,
+  expectedUpdatedAt: string,
+  reason: CancellationReason,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('cancel_event_series', {
+    p_event_series_id: seriesId,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_reason: reason,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error) {
+    if (error.message?.includes('changed meanwhile')) {
+      throw new Error(
+        'Diese Serie wurde zwischenzeitlich geändert. Bitte die Seite neu laden und noch einmal ansehen.',
+      );
+    }
+    throw new Error('Die Serie konnte nicht abgesagt werden.');
   }
 
   return z.number().parse(data);

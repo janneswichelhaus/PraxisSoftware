@@ -22,6 +22,7 @@ import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { TagUmplanenPage } from '@/features/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { NewEventPage } from '@/features/appointments/NewEventPage';
+import { NewEventSeriesPage } from '@/features/appointments/NewEventSeriesPage';
 import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentStartPage';
 import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeriesPage';
 import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
@@ -181,6 +182,10 @@ export function AuthenticatedRoutes({
                   Eigener Weg, weil er weder Patient:in noch Verordnung kennt
                   (CAL-015b). */}
                 <Route path="/termine/ereignis" element={<NewEventPage user={user} />} />
+                {/* Dieselbe Fehlzeit ueber mehrere Wochen (CAL-021). Eigener
+                  Weg neben dem einzelnen Ereignis: Er fragt zusaetzlich nach
+                  Rhythmus und Anzahl und legt eine Serie an. */}
+                <Route path="/termine/dauerfehlzeit" element={<NewEventSeriesPage user={user} />} />
                 <Route
                   path="/patienten/:patientId/termine/neu"
                   element={<NewAppointmentPage user={user} />}
