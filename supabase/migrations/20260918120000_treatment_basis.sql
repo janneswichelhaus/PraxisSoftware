@@ -298,7 +298,8 @@ alter table public.audit_log add constraint audit_log_action_check
 --     Namen waere nach der Umbenennung nicht mehr anwendbar - der Journaleintrag
 --     verloere seinen Zweck. Das ist kein Umschreiben von Historie im Sinne von
 --     ADR-010: WAS geloescht wurde, bleibt unveraendert; nur der Ort traegt
---     seinen neuen Namen. Der Auditeintrag daneben bleibt unberuehrt.
+--     seinen neuen Namen. Der Auditeintrag daneben bleibt unberuehrt. Als
+--     Annahme registriert: ANN-063.
 -- -----------------------------------------------------------------------------
 update public.retention_assignments
    set table_name = 'treatment_bases',

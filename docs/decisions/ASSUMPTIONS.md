@@ -832,3 +832,27 @@ Datenschutz · entschieden (Jannes) · 2026-09-18 · Jannes · Prüfpaket · Wie
 **Anker.** `funktionskatalog` und `vorgaenge` in `src/app/funktionen.ts` (was gefunden wird), `Funktionssuche` in `src/app/Funktionssuche.tsx` (die beiden Gruppen und ihre Reihenfolge); Tests in `src/app/funktionen.test.ts` und `src/app/Funktionssuche.test.tsx`.
 
 **Änderungspfad.** Namen wieder aus der Leiste (E17 Fassung 1): die Namensgruppe in `Funktionssuche` streichen, der Treffer „Patient:in suchen" bleibt · Aufwand `klein`. Weitere Trefferart (Verordnung, Termin): eine serverseitige Suchfunktion mit Policy, eine dritte Gruppe, eine Auditentscheidung · Aufwand `mittel` bis `groß` — und eine neue Datenschutzentscheidung. Gemischte statt fester Reihenfolge: eine gemeinsame Sortierung in `Funktionssuche`, dazu ein Weg, die Auswahl über eintreffende Treffer hinweg festzuhalten · Aufwand `mittel`.
+
+### ANN-062 — Die Adresse der Akte behält `verordnungen`, die Beschriftung nicht
+
+Technik · offen · 2026-09-18 · Loop GRD-001 · Wiedervorlage: sobald ein Loop die Routen der Akte ohnehin anfasst (CAL-EPIC-004c/AKTE-006)
+
+**Annahme.** Die sichtbaren Beschriftungen folgen ADR-020 Punkt 7 — der Bereich der Akte heißt „Behandlungsgrundlagen", die einzelne Karte nennt ihre Bauart. Das **Adressfragment bleibt** `/patienten/:id/verordnungen` (samt `…/neu`, `…/:id/bearbeiten`, `…/:id/serie` und dem Filter `?verordnung=` an den Terminen), ebenso die Sprungmarke `#verordnung-<id>`.
+
+**Begründung.** ADR-020 Punkt 7 regelt, was auf dem **Bildschirm** steht; über Adressen sagt er nichts, und ADR-020 zählt die Umbenennung ausdrücklich für Tabellen, Funktionen, Policies, Auditwerte, Typen und Texte auf. Eine geänderte Adresse entwertet jedes Lesezeichen und jeden Link, den jemand aus der Anwendung kopiert hat, und bringt fachlich nichts, was die Beschriftung nicht schon leistet. Sie mitzunehmen kostet außerdem dort nichts, wo ein Loop die Routen ohnehin anfasst — CAL-EPIC-004c baut die Gruppierung der Termine je Grundlage und berührt genau diese Wege. Gegen die Annahme spricht, dass Adresse und Beschriftung vorerst auseinanderfallen; das ist sichtbar, aber folgenlos, weil in der Adresse ohnehin nie ein Name steht (ADR-011).
+
+**Anker.** Die Routen unter `/patienten/:patientId/verordnungen` in `src/routes/AuthenticatedRoutes.tsx`; der Bereichseintrag in `src/features/patients/akte.ts` trägt die Beschriftung neben demselben Pfad.
+
+**Änderungspfad.** Adressfragment mitziehen: die vier Routen in `AuthenticatedRoutes.tsx`, `zurueck`/`verordnerRueckpfad` in `TreatmentBasisFormPage.tsx`, die Links in `PatientTreatmentBasesPage.tsx` und `PatientAppointmentsPage.tsx`, der Parametername `verordnung` im Kalenderstand, dazu die angemeldeten E2E-Tests · Aufwand `klein`, aber jedes bestehende Lesezeichen läuft ins Leere; sinnvoll nur zusammen mit einem Loop, der diese Seiten ohnehin öffnet.
+
+### ANN-063 — Der Löschjournaleintrag wandert beim Umbenennen einer Tabelle mit
+
+Technik · offen · 2026-09-18 · Loop GRD-001 · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+
+**Annahme.** Wird eine Tabelle umbenannt, schreibt die Migration den **Tabellennamen** in `deletion_journal.target_table` und in `retention_assignments.table_name` auf den neuen Wert um. Alles andere am Journaleintrag — welche Zeile, welche Klasse, wann, durch welchen Lauf — bleibt unverändert, und der zugehörige Auditeintrag wird nicht angefasst.
+
+**Begründung.** Der Zweck des Löschjournals ist die **erneute Anwendung** einer Löschung nach einer Wiederherstellung (ADR-008 Punkt 9, LOE-002); `reapply_deletion_journal` löscht dafür je Eintrag aus der benannten Tabelle. Ein Eintrag, der auf `prescriptions` zeigt, findet nach GRD-001 keine Tabelle mehr — er wäre nicht mehr anwendbar und damit wertlos, und eine wiederhergestellte Sicherung behielte Zeilen, die gelöscht sein müssen. Das ist kein Umschreiben von Historie im Sinne von ADR-010: Der Auditeintrag daneben bleibt unberührt, und die Aussage des Journals („diese Zeile wurde gelöscht") ändert sich nicht — nur der Ort trägt seinen neuen Namen. Unsicher: ob die Datenschutzprüfung den Journaleintrag als Nachweis versteht, der überhaupt nicht angefasst werden darf; dann bräuchte es eine zweite Spalte mit dem historischen Namen.
+
+**Anker.** Die beiden `update`-Anweisungen in `supabase/migrations/20260918120000_treatment_basis.sql`, Abschnitt 4b.
+
+**Änderungspfad.** Historischen Namen mitführen statt umschreiben: eine Spalte `target_table_at_deletion` an `deletion_journal`, gefüllt beim Schreiben, und `reapply_deletion_journal` löst über eine Zuordnungstabelle auf · Aufwand `mittel`. Umgekehrt — gar nicht umschreiben — hieße, die Wiederanwendung für diese Einträge aufzugeben; das widerspricht ADR-008 Punkt 9.
