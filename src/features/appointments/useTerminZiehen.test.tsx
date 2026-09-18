@@ -57,6 +57,7 @@ function start(x = 100, y = 300) {
 }
 
 describe('useTerminZiehen: über den Ausschnitt hinaus (FIX-018)', () => {
+  let scrollBy = vi.fn();
   beforeEach(() => {
     Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true });
     Object.defineProperty(window, 'innerHeight', {
@@ -64,9 +65,10 @@ describe('useTerminZiehen: über den Ausschnitt hinaus (FIX-018)', () => {
       writable: true,
       configurable: true,
     });
-    window.scrollBy = vi.fn((_x: number, y: number) => {
+    scrollBy = vi.fn((_x: number, y: number) => {
       window.scrollY += y;
-    }) as unknown as typeof window.scrollBy;
+    });
+    window.scrollBy = scrollBy as unknown as typeof window.scrollBy;
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -118,7 +120,7 @@ describe('useTerminZiehen: über den Ausschnitt hinaus (FIX-018)', () => {
     act(() => {
       vi.advanceTimersByTime(16 * 6);
     });
-    expect(window.scrollBy).toHaveBeenCalled();
+    expect(scrollBy).toHaveBeenCalled();
     expect(window.scrollY).toBeGreaterThan(0);
     // Zurück in die Mitte: der Bildlauf hört auf.
     const bisher = window.scrollY;
