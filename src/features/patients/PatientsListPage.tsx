@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { SearchField } from '@/components/ui/SearchField';
+import { Patientensuche } from './Patientensuche';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ageInYears, fetchPatients, fullName, type Patient } from './api';
 
@@ -84,9 +85,20 @@ export function PatientsListPage() {
         actions={<ButtonLink to="/patienten/neu">Patient anlegen</ButtonLink>}
       />
 
+      {/* Die serverseitige Namenssuche wohnt seit UX-013 hier im Bereich
+          (E17): Sie springt aus dem gesamten Bestand in eine Akte, ohne die
+          Liste zu laden — der Weg, den die Kopfleiste ab drei Zeichen
+          ebenfalls anbietet. Das Feld darunter ist etwas anderes und heißt
+          deshalb anders: Es filtert die Liste, die hier schon steht, und kann
+          dafür auch Ort, Telefon und E-Mail. */}
+      <div className="mb-5 max-w-sm">
+        <Patientensuche labelSichtbar />
+      </div>
+
       <div className="mb-5 flex flex-wrap items-end gap-4">
         <div className="max-w-sm flex-1 basis-56">
           <SearchField
+            label="Liste filtern"
             placeholder="Name, Ort, Telefon, E-Mail"
             value={query}
             onChange={updateQuery}
