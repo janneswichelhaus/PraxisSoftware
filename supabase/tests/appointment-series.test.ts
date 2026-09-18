@@ -39,7 +39,7 @@ const VERORDNUNG = {
 const SERIE =
   'select public.create_appointment_series($1::uuid, $2::uuid, $3::uuid, $4, $5::jsonb, $6::uuid, $7::boolean) as anzahl';
 const PRUEFEN = 'select * from public.check_appointment_slots($1::uuid, $2::jsonb)';
-const KONTINGENT = 'select * from public.get_prescription_slots($1::uuid)';
+const KONTINGENT = 'select * from public.get_treatment_basis_slots($1::uuid)';
 
 /** Kalendertag weit in der Zukunft, damit kein Lauf um Mitternacht kippt. */
 interface Slot {
@@ -119,7 +119,7 @@ async function termine(verordnung: string) {
   const { rows } = await asPostgres<{ id: string; status: string; starts_at: string }>(
     `select id, status, to_char(starts_at at time zone 'Europe/Berlin', 'YYYY-MM-DD HH24:MI') as starts_at
        from public.appointments
-      where prescription_id = $1::uuid
+      where treatment_basis_id = $1::uuid
       order by starts_at`,
     [verordnung],
   );
@@ -217,16 +217,16 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
           values ('${fremderPatient}', '${fremdeOrg}', '${fremdePerson}', 'active');
         insert into public.prescribers (id, organization_id, given_name, family_name)
           values ('${fremderVerordner}', '${fremdeOrg}', 'Fremd', 'Arzt');
-        insert into public.prescriptions (id, organization_id, patient_id, prescriber_id, prescription_kind, issued_on)
+        insert into public.treatment_bases (id, organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on)
           values ('${fremdeVerordnung}', '${fremdeOrg}', '${fremderPatient}', '${fremderVerordner}', 'first', '2026-01-01');
       `);
 
       await expect(asUser(users.office, KONTINGENT, [fremdeVerordnung])).rejects.toThrow(
-        /prescription not found/,
+        /treatment basis not found/,
       );
 
       await asPostgres(`
-        delete from public.prescriptions where organization_id = '${fremdeOrg}';
+        delete from public.treatment_bases where organization_id = '${fremdeOrg}';
         delete from public.prescribers   where organization_id = '${fremdeOrg}';
         delete from public.patients      where organization_id = '${fremdeOrg}';
         delete from public.persons       where organization_id = '${fremdeOrg}';
@@ -236,7 +236,7 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
 
     it('verweigert die Auskunft einem Patientenkonto', async () => {
       await expect(asUser(users.patientMax, KONTINGENT, [VERORDNUNG.maxOffen])).rejects.toThrow(
-        /not allowed to read prescriptions/,
+        /not allowed to read treatment_bases/,
       );
     });
   });
@@ -348,7 +348,7 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
         `select distinct to_char(
                   (ends_at at time zone 'Europe/Berlin') - (starts_at at time zone 'Europe/Berlin'),
                   'HH24:MI') as fenster
-           from public.appointments where prescription_id = $1::uuid`,
+           from public.appointments where treatment_basis_id = $1::uuid`,
         [VERORDNUNG.maxOffen],
       );
       expect(rows.map((r) => r.fenster)).toEqual(['01:00']);
@@ -370,7 +370,7 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
       const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
         `select context from public.audit_log where action = 'appointment.created'`,
       );
-      expect(rows[0]?.context).toMatchObject({ prescription_id: VERORDNUNG.maxOffen });
+      expect(rows[0]?.context).toMatchObject({ treatment_basis_id: VERORDNUNG.maxOffen });
       expect(JSON.stringify(rows[0]?.context)).not.toMatch(/Schulter|Krankengymnastik/i);
     });
 
@@ -399,7 +399,7 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
     it('weist eine Verordnung einer anderen Patient:in ab', async () => {
       await expect(
         anlegen(users.office, woechentlich(1), { verordnung: VERORDNUNG.erika }),
-      ).rejects.toThrow(/prescription not found/);
+      ).rejects.toThrow(/treatment basis not found/);
       expect(await alleTermine()).toBe(0);
     });
 
@@ -414,7 +414,7 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
           null,
           true,
         ]),
-      ).rejects.toThrow(/prescription is required/);
+      ).rejects.toThrow(/treatment basis is required/);
     });
 
     it('weist eine leere Serie ab', async () => {
@@ -481,25 +481,27 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
         `select public.create_appointment($1::uuid, $2::uuid, 'video', $3::date, '09:00', '10:00', null, true) as id`,
         [patients.max, STAFF.anna, tagInTagen(40)],
       );
-      const { rows } = await asPostgres<{ prescription_id: string | null }>(
-        'select prescription_id from public.appointments',
+      const { rows } = await asPostgres<{ treatment_basis_id: string | null }>(
+        'select treatment_basis_id from public.appointments',
       );
-      expect(rows[0]?.prescription_id).toBeNull();
+      expect(rows[0]?.treatment_basis_id).toBeNull();
     });
 
     it('loest den Verweis, statt die Loeschung der Verordnung zu blockieren', async () => {
       // VER-003 laesst eine falsch erfasste Verordnung loeschen (ADR-008
       // Punkt 10). Die Termine haben trotzdem stattgefunden.
       await anlegenCommitted(users.office, woechentlich(2));
-      await asUserCommitted(users.ownerTherapist, 'select public.delete_prescription($1::uuid)', [
-        VERORDNUNG.maxOffen,
-      ]);
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.delete_treatment_basis($1::uuid)',
+        [VERORDNUNG.maxOffen],
+      );
 
-      const { rows } = await asPostgres<{ prescription_id: string | null }>(
-        'select prescription_id from public.appointments',
+      const { rows } = await asPostgres<{ treatment_basis_id: string | null }>(
+        'select treatment_basis_id from public.appointments',
       );
       expect(rows).toHaveLength(2);
-      expect(rows.every((r) => r.prescription_id === null)).toBe(true);
+      expect(rows.every((r) => r.treatment_basis_id === null)).toBe(true);
 
       // Die Loeschung ist committet und wuerde den folgenden Tests die
       // Verordnung wegnehmen.
@@ -512,7 +514,7 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
       await expect(
         asUser(
           users.office,
-          'update public.appointments set prescription_id = null where id = $1',
+          'update public.appointments set treatment_basis_id = null where id = $1',
           [termin!.id],
         ),
       ).rejects.toThrow(/permission denied/i);

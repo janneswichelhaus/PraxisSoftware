@@ -78,8 +78,8 @@ describe('Schema-Invarianten', () => {
       'treatment_notes',
       'treatment_note_versions',
       'prescribers',
-      'prescriptions',
-      'prescription_items',
+      'treatment_bases',
+      'treatment_base_items',
       'treatment_text_snippets',
       'staff_account_invitations',
       'legal_holds',
@@ -213,7 +213,7 @@ describe('Schema-Invarianten', () => {
       expect(spalten).not.toContain(verboten);
     }
   });
-  it.each(['prescriptions', 'prescription_items'])(
+  it.each(['treatment_bases', 'treatment_base_items'])(
     'haelt %s ueber den Anwendungspfad unerreichbar (VER-001, ADR-004)',
     async (tabelle) => {
       // Beide Tabellen tragen klinische und organisatorische Felder

@@ -283,6 +283,42 @@ alter table public.audit_log add constraint audit_log_action_check
   ));
 
 -- -----------------------------------------------------------------------------
+-- 4b. Wo der Tabellenname als Text steht
+--
+-- Zwei Stellen fuehren Tabellen ueber ihren NAMEN und nicht ueber eine
+-- Fremdschluesselbeziehung. Beide muessen mitwandern, sonst zeigen sie ins
+-- Leere:
+--
+--   * `retention_assignments` ordnet jeder Tabelle in `public` ihre Datenklasse
+--     zu (ADR-008, LOE-001). Eine Zuordnung auf eine Tabelle, die es nicht mehr
+--     gibt, ist genau der Fall, den `pnpm test:db` abweist - zu Recht.
+--   * `deletion_journal` haelt fest, welche Zeile welcher Tabelle geloescht
+--     wurde, damit sich eine Loeschung nach einer Wiederherstellung ERNEUT
+--     anwenden laesst (ADR-008 Punkt 9, LOE-002). Eine Zeile mit dem alten
+--     Namen waere nach der Umbenennung nicht mehr anwendbar - der Journaleintrag
+--     verloere seinen Zweck. Das ist kein Umschreiben von Historie im Sinne von
+--     ADR-010: WAS geloescht wurde, bleibt unveraendert; nur der Ort traegt
+--     seinen neuen Namen. Der Auditeintrag daneben bleibt unberuehrt.
+-- -----------------------------------------------------------------------------
+update public.retention_assignments
+   set table_name = 'treatment_bases',
+       scope_note = 'Behandlungsgrundlagen. Fallen mit der Akte; werden im Lauf vor der Patientenzeile geloescht (FK restrict).'
+ where table_name = 'prescriptions';
+
+update public.retention_assignments
+   set table_name = 'treatment_base_items',
+       scope_note = 'Positionen einer Behandlungsgrundlage. Fallen mit der Grundlage (FK on delete cascade).'
+ where table_name = 'prescription_items';
+
+update public.deletion_journal
+   set target_table = 'treatment_bases'
+ where target_table = 'prescriptions';
+
+update public.deletion_journal
+   set target_table = 'treatment_base_items'
+ where target_table = 'prescription_items';
+
+-- -----------------------------------------------------------------------------
 -- 5. Die Terminsicht
 --
 -- Beim Umbenennen einer Spalte zieht PostgreSQL die Definition einer Sicht mit,
@@ -1152,7 +1188,10 @@ begin
       p.id,
       p.patient_id,
       p.prescriber_id,
-      btrim(concat_ws(' ', v.title, v.given_name, v.family_name)),
+      -- nullif, damit beim Selbstzahler wirklich NICHTS dasteht: concat_ws
+      -- ueberspringt Nullwerte und lieferte sonst den leeren String - eine
+      -- Angabe, die es nicht gibt (GRD-001, ADR-020 Punkt 3).
+      nullif(btrim(concat_ws(' ', v.title, v.given_name, v.family_name)), ''),
       v.practice_name,
       p.treatment_basis_kind,
       p.issued_on,
@@ -1165,7 +1204,10 @@ begin
       p.prescriber_note,
       p.follow_up_recommendation
     from public.treatment_bases p
-    join public.prescribers v on v.id = p.prescriber_id
+    -- LEFT JOIN seit GRD-001: Ein Selbstzahler hat keine Verordner:in
+    -- (ADR-020 Punkt 3). Ein innerer Verbund liesse ihn aus der Projektion
+    -- fallen - die Zeile waere da, die Akte zeigte sie nicht.
+    left join public.prescribers v on v.id = p.prescriber_id
     where p.id = p_treatment_basis_id;
 end;
 $$;
@@ -1213,7 +1255,10 @@ begin
     select
       p.id,
       p.prescriber_id,
-      btrim(concat_ws(' ', v.title, v.given_name, v.family_name)),
+      -- nullif, damit beim Selbstzahler wirklich NICHTS dasteht: concat_ws
+      -- ueberspringt Nullwerte und lieferte sonst den leeren String - eine
+      -- Angabe, die es nicht gibt (GRD-001, ADR-020 Punkt 3).
+      nullif(btrim(concat_ws(' ', v.title, v.given_name, v.family_name)), ''),
       v.practice_name,
       p.treatment_basis_kind,
       p.issued_on,
@@ -1224,7 +1269,10 @@ begin
       app.treatment_base_items_json(p.id),
       p.updated_at
     from public.treatment_bases p
-    join public.prescribers v on v.id = p.prescriber_id
+    -- LEFT JOIN seit GRD-001: Ein Selbstzahler hat keine Verordner:in
+    -- (ADR-020 Punkt 3). Ein innerer Verbund liesse ihn aus der Projektion
+    -- fallen - die Zeile waere da, die Akte zeigte sie nicht.
+    left join public.prescribers v on v.id = p.prescriber_id
     where p.id = any (v_ids)
     order by p.issued_on desc, p.created_at desc, p.id desc;
 end;
@@ -1280,7 +1328,10 @@ begin
     select
       p.id,
       p.prescriber_id,
-      btrim(concat_ws(' ', v.title, v.given_name, v.family_name)),
+      -- nullif, damit beim Selbstzahler wirklich NICHTS dasteht: concat_ws
+      -- ueberspringt Nullwerte und lieferte sonst den leeren String - eine
+      -- Angabe, die es nicht gibt (GRD-001, ADR-020 Punkt 3).
+      nullif(btrim(concat_ws(' ', v.title, v.given_name, v.family_name)), ''),
       v.practice_name,
       p.treatment_basis_kind,
       p.issued_on,
@@ -1294,7 +1345,10 @@ begin
       -- ANN-014: die Empfehlung der Therapeut:in, von ihr selbst erfasst.
       p.follow_up_recommendation
     from public.treatment_bases p
-    join public.prescribers v on v.id = p.prescriber_id
+    -- LEFT JOIN seit GRD-001: Ein Selbstzahler hat keine Verordner:in
+    -- (ADR-020 Punkt 3). Ein innerer Verbund liesse ihn aus der Projektion
+    -- fallen - die Zeile waere da, die Akte zeigte sie nicht.
+    left join public.prescribers v on v.id = p.prescriber_id
     where p.id = any (v_ids)
     order by p.issued_on desc, p.created_at desc, p.id desc;
 end;
@@ -1737,7 +1791,7 @@ create or replace function public.list_patient_appointments(
   p_after_id uuid DEFAULT NULL::uuid,
   p_treatment_basis_id uuid DEFAULT NULL::uuid
 )
-returns TABLE(id uuid, starts_at timestamp with time zone, ends_at timestamp with time zone, appointment_type text, status text, staff_given_name text, staff_family_name text, notification_channels text[], treatment_basis_id uuid, treatment_basis_issued_on date, organization_time_zone text)
+returns TABLE(id uuid, starts_at timestamp with time zone, ends_at timestamp with time zone, appointment_type text, status text, staff_given_name text, staff_family_name text, notification_channels text[], treatment_basis_id uuid, treatment_basis_kind text, treatment_basis_issued_on date, organization_time_zone text)
 language plpgsql
 stable
 security definer
@@ -1786,6 +1840,10 @@ begin
       sp.family_name,
       app.appointment_notification_channels(a.id),
       a.treatment_basis_id,
+      -- GRD-001: Die Bauart kommt mit, weil die Liste die Grundlage benennen
+      -- soll und nicht raten darf, ob sie eine Verordnung ist (ADR-020 Punkt
+      -- 7). Sie ist organisatorisch - eine Diagnose steht hier nicht.
+      pr.treatment_basis_kind,
       pr.issued_on,
       o.time_zone
     from public.appointments a
@@ -1822,7 +1880,7 @@ end;
 $$;
 
 comment on function public.list_patient_appointments(uuid, boolean, integer, timestamp with time zone, uuid, uuid) is
-  'Termine einer Patient:in fuer die Akte (AKTE-001): kommend oder vergangen, alle Zustaende, mit Mitteilungsvermerk und Bezug zur Behandlungsgrundlage, geblaettert ueber einen Keyset-Cursor. Rein organisatorisch, ohne Anschrift und ohne klinische Inhalte.';
+  'Termine einer Patient:in fuer die Akte (AKTE-001): kommend oder vergangen, alle Zustaende, mit Mitteilungsvermerk und Bezug zur Behandlungsgrundlage samt ihrer Bauart, geblaettert ueber einen Keyset-Cursor. Rein organisatorisch, ohne Anschrift und ohne klinische Inhalte.';
 
 revoke all on function public.list_patient_appointments(uuid, boolean, integer, timestamp with time zone, uuid, uuid) from public, anon;
 grant execute on function public.list_patient_appointments(uuid, boolean, integer, timestamp with time zone, uuid, uuid) to authenticated;

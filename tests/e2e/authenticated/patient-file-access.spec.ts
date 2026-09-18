@@ -49,7 +49,7 @@ async function dateiAblegen(request: APIRequestContext, name: string): Promise<D
   const token = await zugriffstoken(request, KONTEN.therapist);
   const vorbereitet = await rpcAufrufen(request, token, 'prepare_patient_file_upload', {
     p_patient_id: PATIENTEN.max,
-    p_prescription_id: null,
+    p_treatment_basis_id: null,
     p_document_type: 'befund',
     p_display_name: name,
     p_mime_type: 'application/pdf',
@@ -173,7 +173,7 @@ test.describe('BEF-004: Storage-API am auditierten Weg vorbei', () => {
     // hochladen. Die Storage-API liest die Quelle beim Kopieren mit ihrer Rolle.
     const ziel = await rpcAufrufen(request, token, 'prepare_patient_file_upload', {
       p_patient_id: PATIENTEN.max,
-      p_prescription_id: null,
+      p_treatment_basis_id: null,
       p_document_type: 'befund',
       p_display_name: `BEF-004 Kopierziel ${LAUF}.pdf`,
       p_mime_type: 'application/pdf',

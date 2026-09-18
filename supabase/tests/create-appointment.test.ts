@@ -498,14 +498,14 @@ describe('create_appointment: Audit', () => {
     const rows = await eintrag();
 
     expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      // prescription_id kam mit CAL-007 dazu und ist eine ID, kein Inhalt;
+      // treatment_basis_id kam mit CAL-007 dazu und ist eine ID, kein Inhalt;
       // in_the_past mit FIX-019 - ein Kennzeichen, kein Inhalt.
       [
         'patient_id',
         'staff_member_id',
         'surface',
         'outside_working_hours',
-        'prescription_id',
+        'treatment_basis_id',
         'in_the_past',
       ].sort(),
     );

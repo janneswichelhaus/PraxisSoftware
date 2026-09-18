@@ -220,14 +220,14 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       const fehler = await abgefangen(
         vorbereiten(users.therapist, { verordnungId: null, art: 'verordnungsscan' }),
       );
-      expect(fehler?.message).toMatch(/patient_files_scan_belongs_to_prescription/);
+      expect(fehler?.message).toMatch(/patient_files_scan_belongs_to_treatment_basis/);
     });
 
     it('weist eine Verordnung ab, die einer anderen Patientin gehoert', async () => {
       const fehler = await abgefangen(
         vorbereiten(users.therapist, { verordnungId: VERORDNUNG_ERIKA }),
       );
-      expect(fehler?.message).toMatch(/prescription not accessible/);
+      expect(fehler?.message).toMatch(/treatment basis not accessible/);
     });
 
     it('weist unbekannte Dokumentarten, fremde Formate und zu grosse Dateien ab', async () => {
@@ -603,7 +603,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
 
     it('nimmt die Datei mit, wenn ihre Verordnung faellt', async () => {
       const datei = await abgelegteDatei(users.therapist);
-      await asUserCommitted(users.therapist, 'select public.delete_prescription($1::uuid)', [
+      await asUserCommitted(users.therapist, 'select public.delete_treatment_basis($1::uuid)', [
         VERORDNUNG_MAX,
       ]);
 

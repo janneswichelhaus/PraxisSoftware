@@ -72,13 +72,13 @@ interface Zeile {
   starts_at: Date;
   fee_basis: string | null;
   patient_id: string | null;
-  prescription_id: string | null;
+  treatment_basis_id: string | null;
 }
 
 async function zeilen(serieId: string): Promise<Zeile[]> {
   const { rows } = await asPostgres<Zeile>(
     `select id, event_group_id, event_series_id, title, status, starts_at,
-            fee_basis, patient_id, prescription_id
+            fee_basis, patient_id, treatment_basis_id
        from public.appointments
       where event_series_id = $1
       order by starts_at, staff_member_id`,
@@ -132,7 +132,7 @@ describe('Dauerfehlzeit anlegen', () => {
       title: 'Teammeeting',
       status: 'confirmed',
       patient_id: null,
-      prescription_id: null,
+      treatment_basis_id: null,
     });
   });
 
