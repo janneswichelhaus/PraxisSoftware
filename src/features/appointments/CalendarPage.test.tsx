@@ -633,6 +633,36 @@ describe('CalendarPage', () => {
       return { id: aufruf[0], stand: aufruf[1], werte: aufruf[2], bestaetigt: aufruf[3] };
     }
 
+    /**
+     * Beide Personen arbeiten an jedem Wochentag von 07:00 bis 18:00. Ohne
+     * hinterlegte Arbeitszeit laege jede Zielzeit ausserhalb - so rechnet auch
+     * der Server -, und jede Rueckfrage truege den Hinweis (CAL-023).
+     */
+    beforeEach(() => {
+      fetchWorkingHours.mockResolvedValue(
+        [STAFF_ANNA, STAFF_TIM].flatMap((person) =>
+          [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+            id: `w-${person}-${weekday}`,
+            staff_member_id: person,
+            weekday,
+            starts_at: '07:00',
+            ends_at: '18:00',
+          })),
+        ),
+      );
+    });
+
+    /** Die Rueckfrage nach dem Loslassen (CAL-023). */
+    function rueckfrage(): Promise<HTMLElement> {
+      return screen.findByRole('group', { name: 'Termin verschieben?' });
+    }
+
+    /** Bestaetigt die Rueckfrage - erst das schreibt. */
+    async function bestaetigen(name = 'Verschieben'): Promise<void> {
+      const kasten = await rueckfrage();
+      fireEvent.click(within(kasten).getByRole('button', { name }));
+    }
+
     async function tagesansicht() {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
@@ -644,6 +674,7 @@ describe('CalendarPage', () => {
       const kachel = await tagesansicht();
 
       ziehen(kachel, { dy: EINE_STUNDE });
+      await bestaetigen();
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       const { werte, bestaetigt } = letzterSchreibvorgang();
@@ -666,6 +697,7 @@ describe('CalendarPage', () => {
       spaltenVermessen();
 
       ziehen(kachel, { dy: 208 });
+      await bestaetigen();
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       expect(letzterSchreibvorgang().werte).toMatchObject({
@@ -679,6 +711,7 @@ describe('CalendarPage', () => {
 
       // 32 Minuten nach unten; auf einem 5er-Raster wird daraus 09:30.
       ziehen(kachel, { dy: (32 / 60) * ZOOM_STANDARD });
+      await bestaetigen();
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       const { werte } = letzterSchreibvorgang();
@@ -691,6 +724,7 @@ describe('CalendarPage', () => {
 
       // Zweite Spalte: x zwischen 300 und 500.
       ziehen(kachel, { dy: EINE_STUNDE, x: 400 });
+      await bestaetigen();
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       const { werte } = letzterSchreibvorgang();
@@ -705,6 +739,7 @@ describe('CalendarPage', () => {
       // Der Termin liegt am Mittwoch, also in der dritten Spalte (500-700).
       // Gezogen wird in die erste Spalte: Montag, der 10.05.
       ziehen(kachel, { dy: 0, startX: 550, x: 150 });
+      await bestaetigen();
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       const { werte } = letzterSchreibvorgang();
@@ -719,6 +754,7 @@ describe('CalendarPage', () => {
 
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
       expect(updateAppointment).not.toHaveBeenCalled();
+      expect(screen.queryByRole('group', { name: 'Termin verschieben?' })).toBeNull();
     });
 
     it('schreibt nichts bei einem blossen Klick', async () => {
@@ -744,6 +780,7 @@ describe('CalendarPage', () => {
       // verlorenes Update nicht (CAL-003).
       const kachel = await tagesansicht();
       ziehen(kachel, { dy: EINE_STUNDE });
+      await bestaetigen();
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
       expect(fetchAppointment).toHaveBeenCalledWith('77777777-7777-4777-8777-000000000001');
@@ -773,32 +810,130 @@ describe('CalendarPage', () => {
       expect(updateAppointment).not.toHaveBeenCalled();
     });
 
-    it('fragt bei einer Randzeit nach und verschiebt zunaechst nicht', async () => {
-      updateAppointment.mockRejectedValue(new AusserhalbArbeitszeitError());
-      const kachel = await tagesansicht();
+    describe('CAL-023: Rueckfrage beim Verschieben', () => {
+      it('schreibt beim Loslassen nicht, sondern fragt mit alter und neuer Zeit', async () => {
+        const kachel = await tagesansicht();
 
-      ziehen(kachel, { dy: EINE_STUNDE });
+        ziehen(kachel, { dy: EINE_STUNDE });
 
-      const rueckfrage = await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
-      expect(rueckfrage).toHaveTextContent(/noch nicht verschoben/);
-      expect(rueckfrage).toHaveTextContent('10:00–11:00');
-    });
+        const kasten = await rueckfrage();
+        expect(kasten).toHaveTextContent('09:00–10:00');
+        expect(kasten).toHaveTextContent('10:00–11:00');
+        expect(kasten).toHaveTextContent(/noch nicht verschoben/);
+        // Die Zielzeit ist frei und liegt in der Arbeitszeit - gefragt wird trotzdem.
+        expect(kasten).not.toHaveTextContent(/außerhalb/);
+        expect(updateAppointment).not.toHaveBeenCalled();
+        expect(fetchAppointment).not.toHaveBeenCalled();
+      });
 
-    it('verschiebt nach ausdruecklicher Bestaetigung mit Kennzeichen', async () => {
-      updateAppointment.mockRejectedValueOnce(new AusserhalbArbeitszeitError());
-      updateAppointment.mockResolvedValue(undefined);
-      const user = userEvent.setup();
-      const kachel = await tagesansicht();
+      it('setzt den Fokus auf die bestaetigende Schaltflaeche', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
 
-      ziehen(kachel, { dy: EINE_STUNDE });
-      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+        const kasten = await rueckfrage();
+        expect(within(kasten).getByRole('button', { name: 'Verschieben' })).toHaveFocus();
+      });
 
-      await user.click(screen.getByRole('button', { name: 'Trotzdem verschieben' }));
+      it('laesst beim Abbrechen alles stehen', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
 
-      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(2));
-      const { werte, bestaetigt } = letzterSchreibvorgang();
-      expect(werte).toMatchObject({ start_time: '10:00' });
-      expect(bestaetigt).toBe(true);
+        const kasten = await rueckfrage();
+        fireEvent.click(within(kasten).getByRole('button', { name: 'Abbrechen' }));
+
+        expect(screen.queryByRole('group', { name: 'Termin verschieben?' })).toBeNull();
+        expect(updateAppointment).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
+      });
+
+      it('bricht auch mit Escape ab', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
+
+        fireEvent.keyDown(await rueckfrage(), { key: 'Escape' });
+
+        expect(screen.queryByRole('group', { name: 'Termin verschieben?' })).toBeNull();
+        expect(updateAppointment).not.toHaveBeenCalled();
+      });
+
+      it('nennt die behandelnde Person nur, wenn sie wechselt', async () => {
+        const kachel = await tagesansicht();
+
+        ziehen(kachel, { dy: EINE_STUNDE });
+        expect(await rueckfrage()).not.toHaveTextContent('Behandelnde Person');
+        fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+        ziehen(kachel, { dy: EINE_STUNDE, x: 400 });
+        const kasten = await rueckfrage();
+        expect(kasten).toHaveTextContent('Behandelnde Person');
+        expect(kasten).toHaveTextContent(/Anna .*→.*Tim /);
+      });
+
+      it('zeigt nach dem Bestaetigen die Rueckgaengig-Leiste', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
+        await bestaetigen();
+
+        expect(await screen.findByRole('button', { name: 'Rückgängig' })).toBeInTheDocument();
+        expect(screen.queryByRole('group', { name: 'Termin verschieben?' })).toBeNull();
+      });
+
+      it('sagt in DERSELBEN Rueckfrage, dass die Zielzeit ausserhalb der Arbeitszeit liegt', async () => {
+        const kachel = await tagesansicht();
+
+        // 09:00 -> 18:00: eine Stunde hinter dem Ende der Arbeitszeit.
+        ziehen(kachel, { dy: 9 * EINE_STUNDE });
+
+        const kasten = await rueckfrage();
+        expect(kasten).toHaveTextContent('18:00–19:00');
+        expect(kasten).toHaveTextContent(/außerhalb der hinterlegten Arbeitszeit/);
+        expect(screen.getAllByRole('group', { name: /verschieben|Arbeitszeit/i })).toHaveLength(1);
+
+        await bestaetigen('Trotzdem verschieben');
+
+        // Ein Schreibvorgang, mit Kennzeichen - keine zweite Frage dahinter.
+        await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+        expect(letzterSchreibvorgang().bestaetigt).toBe(true);
+        expect(screen.queryByRole('group', { name: 'Termin verschieben?' })).toBeNull();
+      });
+
+      it('bestaetigt die Arbeitszeit nicht, wenn die Rueckfrage sie nicht genannt hat', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
+        await bestaetigen();
+
+        await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+        expect(letzterSchreibvorgang().bestaetigt).toBe(false);
+      });
+
+      it('kommt mit dem Hinweis wieder, wenn erst der Server die Randzeit erkennt', async () => {
+        // Die geladenen Arbeitszeiten koennen veraltet sein; verbindlich
+        // entscheidet der Server (CAL-005). Auch dann: dieselbe Rueckfrage.
+        updateAppointment.mockRejectedValueOnce(new AusserhalbArbeitszeitError());
+        updateAppointment.mockResolvedValue(undefined);
+        const kachel = await tagesansicht();
+
+        ziehen(kachel, { dy: EINE_STUNDE });
+        await bestaetigen();
+
+        const kasten = await screen.findByText(/außerhalb der hinterlegten Arbeitszeit/);
+        expect(kasten).toBeInTheDocument();
+        expect(await rueckfrage()).toHaveTextContent('10:00–11:00');
+
+        await bestaetigen('Trotzdem verschieben');
+
+        await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(2));
+        const { werte, bestaetigt } = letzterSchreibvorgang();
+        expect(werte).toMatchObject({ start_time: '10:00' });
+        expect(bestaetigt).toBe(true);
+      });
+
+      it('sagt unter dem Gitter, dass Ziehen nachfragt', async () => {
+        await tagesansicht();
+        expect(
+          screen.getByText(/fragt der Kalender mit alter und neuer Zeit nach/),
+        ).toBeInTheDocument();
+      });
     });
 
     it('meldet eine Ueberschneidung, ohne nachzufragen', async () => {
@@ -808,11 +943,10 @@ describe('CalendarPage', () => {
       const kachel = await tagesansicht();
 
       ziehen(kachel, { dy: EINE_STUNDE });
+      await bestaetigen();
 
       expect(await screen.findByText(/bereits einen Termin/)).toBeInTheDocument();
-      expect(
-        screen.queryByRole('group', { name: 'Außerhalb der Arbeitszeit' }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: 'Termin verschieben?' })).not.toBeInTheDocument();
     });
 
     it('nennt das Bearbeiten als gleichwertigen Weg', async () => {
@@ -1011,13 +1145,18 @@ describe('CalendarPage', () => {
         fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
         fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
 
+        // Am Finger wie an der Maus: Das Loslassen fragt, die Bestaetigung
+        // schreibt (CAL-023).
+        expect(updateAppointment).not.toHaveBeenCalled();
+        fireEvent.click(await screen.findByRole('button', { name: /^(Trotzdem v|V)erschieben$/ }));
+
         await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
       } finally {
         vi.useRealTimers();
       }
     });
 
-    it('verschiebt am Zeigegeraet weiterhin sofort - dort gibt es nichts zu warten', async () => {
+    it('zieht am Zeigegeraet weiterhin sofort - dort gibt es nichts zu warten', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
       spaltenVermessen();
@@ -1030,6 +1169,7 @@ describe('CalendarPage', () => {
       });
       fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
       fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
+      fireEvent.click(await screen.findByRole('button', { name: /^(Trotzdem v|V)erschieben$/ }));
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
     });
@@ -1042,6 +1182,7 @@ describe('CalendarPage', () => {
       fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
       fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
       fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
+      fireEvent.click(await screen.findByRole('button', { name: /^(Trotzdem v|V)erschieben$/ }));
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
 
@@ -1076,6 +1217,7 @@ describe('CalendarPage', () => {
       fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
       fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
       fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
+      fireEvent.click(await screen.findByRole('button', { name: /^(Trotzdem v|V)erschieben$/ }));
       await screen.findByText(/Termin verschoben\. Vorher:/);
 
       await user.click(screen.getByRole('button', { name: 'Nächster Zeitraum' }));

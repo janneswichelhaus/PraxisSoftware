@@ -131,9 +131,9 @@ export function AppointmentFormFields({
         onChange={(e) => onChange('date', e.target.value)}
       />
 
-      {/* items-end: der Rasterhinweis steht nur am Beginn - ohne Ausrichtung
-          stuenden Eingabefeld und Ableitung auf verschiedenen Hoehen. */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-end">
+      {/* items-start: Die Dauerwahl kann ein zweites Feld aufklappen (CAL-020);
+          am oberen Rand ausgerichtet bleibt der Beginn stehen, wo er war. */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-start">
         <Field
           label="Beginn *"
           type="time"

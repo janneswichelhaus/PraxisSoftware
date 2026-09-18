@@ -2168,3 +2168,73 @@ stehen untereinander, die Schaltflächen sind mit dem Daumen erreichbar.
 **Nicht Teil dieses Loops:** Betrag, Rechnung und Steuerkennzeichen der
 Ausfallgebühr (ABR-001, ABR-003) sowie Rechnungstext und Rechtsgrundlage für
 Fall 1 — die gehen mit Anfrage B4 an die Steuerberatung.
+
+## CAL-EPIC-004a — Freie Terminlänge und Rückfrage beim Ziehen
+
+Prüfschritte zu CAL-020 (freie Länge, Abweichungszeichen) und CAL-023
+(Rückfrage beim Verschieben). Grundlage: `PROJECT_PRINCIPLES.md` 0.11 §8.1,
+ANN-056, Vorgabe in
+[`../development/CAL-EPIC-004.md`](../development/CAL-EPIC-004.md).
+
+Alle Schritte als `jannes.test@praxis.invalid` (owner). Vorher
+`pnpm dlx supabase@2.116.0 db reset` — die Migration
+`20260917110000_free_appointment_length.sql` muss eingespielt sein.
+
+### 1. Eine Länge von 30 Minuten wird angenommen und gekennzeichnet
+
+1. Akte von Max Mustermann → **Termin anlegen**, Datum in der nächsten Woche,
+   Beginn 13:00.
+2. Bei **Dauer** „Andere Länge …" wählen. Erwartung: ein Feld **Länge in
+   Minuten** mit 60 erscheint, Beginn und Dauer bleiben oben ausgerichtet.
+3. 30 eintragen. Erwartung: „Ende: 13:30 Uhr", darunter der Hinweis, dass die
+   Länge von 45 und 60 Minuten abweicht und gekennzeichnet wird.
+4. **Termin anlegen**. Erwartung: kein Fehler; die Detailseite zeigt bei
+   „Zeit" das Zeichen **⟷ 30 Min.** (Vorlesetext „Länge weicht ab").
+5. Dasselbe Zeichen im Kalender (in der Zeitzeile der Kachel, Tooltip nennt
+   „Länge weicht ab: 30 Minuten"), unter **Übersicht** in „Tagesplan des
+   Teams" am jeweiligen Tag und in der Akte unter **Termine**.
+
+### 2. Das Zeichen verschwindet bei 60 Minuten; ein Ereignis trägt es nie
+
+1. Den Termin aus Schritt 1 **bearbeiten**: Dauer „60 Minuten" wählen,
+   speichern. Erwartung: kein Zeichen mehr, weder am Termin noch im Kalender.
+2. Erneut bearbeiten, „Andere Länge …", 32 eintragen. Erwartung: unter dem Feld
+   der Hinweis „Vielfaches von 5 Minuten"; beim Speichern weist der Server ab
+   („Die Länge passt nicht zum Praxisraster …").
+3. Kalender → **Ereignis eintragen** über 25 Minuten. Erwartung: kein Zeichen —
+   weder in der Kachel noch im Tagesplan.
+
+### 3. Das Ziehen fragt nach, immer
+
+1. Kalender, Tagesansicht, den Termin aus Schritt 1 mit der Maus eine Stunde
+   nach unten ziehen und loslassen.
+2. Erwartung: Die Kachel bleibt stehen. Über dem Gitter steht **„Termin
+   verschieben?"** mit „Bisher“ und „Neu“ im Klartext, der Fokus liegt auf
+   **Verschieben**; keine Zeile „Behandelnde Person“.
+3. **Abbrechen**. Erwartung: nichts geschrieben, keine Rückgängig-Leiste.
+4. Erneut ziehen, diesmal in die Spalte einer anderen Person. Erwartung: die
+   Rückfrage nennt zusätzlich „Behandelnde Person: A → **B**".
+5. **Verschieben**. Erwartung: die Kachel wandert, die Rückgängig-Leiste
+   nennt den alten Platz; **Rückgängig** holt ihn ohne weitere Frage zurück.
+
+### 4. Außerhalb der Arbeitszeit: eine Rückfrage, nicht zwei
+
+1. Den Termin hinter das Ende der Arbeitszeit ziehen (Seed: nach 18:00).
+2. Erwartung: **dieselbe** Rückfrage, zusätzlich der Satz „Die neue Zeit
+   liegt außerhalb der hinterlegten Arbeitszeit.", die Schaltfläche heißt
+   **Trotzdem verschieben**. Es gibt keinen zweiten Kasten.
+3. Bestätigen. Erwartung: verschoben, Rückgängig-Leiste, kein weiterer Dialog.
+
+### 5. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=owner /kalender?ansicht=tag
+```
+
+Am Gerät: Kachel nach langem Druck ziehen und loslassen. Erwartung: die
+Rückfrage kommt in den sichtbaren Bereich, Verschieben und Abbrechen sind mit
+dem Daumen erreichbar; das Terminformular zeigt Dauer und Minutenfeld
+untereinander ohne waagerechtes Scrollen.
+
+**Nicht Teil dieses Loops:** Anlegen-Menü und Aufziehen einer Spanne
+(CAL-019), Fehlzeiten (CAL-021), Deckungsanzeige (CAL-022).
