@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -212,6 +212,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       }),
     enabled: Boolean(zone),
     retry: false,
+    // Beim Blaettern bleibt der alte Ausschnitt stehen, bis der neue da ist:
+    // Das Gitter wird nicht abgebaut, eine laufende Zieh-Geste ueberlebt den
+    // Wechsel (FIX-018).
+    placeholderData: keepPreviousData,
   });
 
   // Arbeitszeiten als Hintergrund. Der Wochenplan ist klein und ändert sich
@@ -227,6 +231,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     queryFn: () => fetchWorkingHourExceptions(bereich.von, bereich.bis),
     enabled: Boolean(zone),
     retry: false,
+    placeholderData: keepPreviousData,
   });
 
   const eintraege = useMemo(() => termine.data ?? [], [termine.data]);
@@ -407,6 +412,24 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     ...(e.id === neuerTermin ? { neu: true } : {}),
   }));
 
+  /**
+   * Jeder je gezeigte Termin mit seinem Platz (FIX-018).
+   *
+   * Wer waehrend des Ziehens blaettert, laesst den Termin hinter sich: Er
+   * gehoert nicht mehr zum geladenen Ausschnitt. Beim Loslassen muss sein
+   * alter Platz trotzdem bekannt sein - fuer die Rueckfrage und die
+   * Rueckgaengig-Leiste. Eintraege werden ueberschrieben, nie entfernt.
+   */
+  const bekannt = useRef(new Map<string, GitterEintrag & { datum: string }>());
+  useEffect(() => {
+    for (const g of gitterEintraege) {
+      bekannt.current.set(g.eintrag.id, {
+        ...g,
+        datum: p.ansicht === 'tag' ? bereich.von : g.spalteId,
+      });
+    }
+  });
+
   const fenster = fensterMitArbeitszeit(
     tagesFenster(gitterEintraege.map((g) => ({ beginn: g.beginnMinute, ende: g.endeMinute }))),
     spaltenModell.flatMap((s) => s.baender),
@@ -414,7 +437,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
   /** Übersetzt eine Zielspalte zurück in Person und Datum. */
   function ablegen(ziel: { terminId: string; spalteId: string; startMinute: number }) {
-    const g = gitterEintraege.find((x) => x.eintrag.id === ziel.terminId);
+    // Nach dem Blaettern waehrend der Geste steht der Termin nicht mehr im
+    // gezeigten Ausschnitt; sein Ursprung kommt dann aus dem Gedaechtnis
+    // (FIX-018).
+    const g = bekannt.current.get(ziel.terminId);
     if (!g) return;
 
     const dauer = g.endeMinute - g.beginnMinute;
@@ -425,7 +451,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
     // Die Umkehrung wird VOR dem Schreiben festgehalten: danach ist der alte
     // Stand aus den geladenen Terminen nicht mehr abzulesen.
-    const altesDatum = p.ansicht === 'tag' ? bereich.von : g.spalteId;
+    const altesDatum = g.datum;
     const altePerson = alleTherapeuten.find((t) => t.staff_member_id === g.eintrag.staff_member_id);
 
     const alteZeit = `${wochentagKurz(altesDatum)} ${tagesZahl(altesDatum)}, ${minuteZuZeit(g.beginnMinute)}–${minuteZuZeit(g.endeMinute)}`;
@@ -817,6 +843,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               : null
           }
           onVerschieben={ablegen}
+          kontext={bereich.von}
+          onBlaettern={(richtung) => setze({ datum: blaettern(p.ansicht, p.datum, richtung) })}
           onFreieZeit={darfAendern ? freieZeit : undefined}
           beschriftung={
             p.ansicht === 'tag'
@@ -849,12 +877,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         {p.ansicht === 'tag'
           ? ' oder eine andere behandelnde Person'
           : ' oder einen anderen Tag'}{' '}
-        ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Nach dem
-        Loslassen fragt der Kalender mit alter und neuer Zeit nach — verschoben wird erst auf die
-        Bestätigung, und danach lässt es sich rückgängig machen. Dasselbe geht jederzeit über
-        „Bearbeiten" in der Detailansicht — das Ziehen ist eine Abkürzung, kein eigener Weg. Über
-        „+" und „−" wird das Gitter feiner oder gröber; gezeichnet wird dabei genau das Raster, auf
-        dem ein Termin einrastet.
+        ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Am Rand des
+        Fensters scrollt die Seite mit, und wer den Zeiger seitlich am Gitter hält, blättert in den
+        nächsten Ausschnitt. Nach dem Loslassen fragt der Kalender mit alter und neuer Zeit nach —
+        verschoben wird erst auf die Bestätigung, und danach lässt es sich rückgängig machen.
+        Dasselbe geht jederzeit über „Bearbeiten" in der Detailansicht — das Ziehen ist eine
+        Abkürzung, kein eigener Weg. Über „+" und „−" wird das Gitter feiner oder gröber; gezeichnet
+        wird dabei genau das Raster, auf dem ein Termin einrastet.
       </p>
 
       <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">

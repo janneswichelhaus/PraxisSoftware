@@ -135,9 +135,15 @@ export function CalendarGrid({
   rueckweg,
   beschriftung,
   vorschlag = null,
+  kontext,
+  onBlaettern,
 }: {
   /** Die offene Rückfrage zum Verschieben - im Gitter gezeichnet (FIX-017). */
   vorschlag?: GitterVorschlag | null;
+  /** Kennung des gezeigten Ausschnitts, etwa sein erster Tag (FIX-018). */
+  kontext: string;
+  /** Blättert während des Ziehens, wenn der Zeiger seitlich am Gitter verharrt (FIX-018). */
+  onBlaettern?: ((richtung: -1 | 1) => void) | undefined;
   spaltenModell: GitterSpalte[];
   eintraege: GitterEintrag[];
   fenster: { vonMinute: number; bisMinute: number };
@@ -166,6 +172,7 @@ export function CalendarGrid({
   beschriftung: string;
 }) {
   const spaltenRefs = useRef(new Map<string, HTMLElement>());
+  const gitterRef = useRef<HTMLDivElement>(null);
   const hoehe = ((fenster.bisMinute - fenster.vonMinute) / 60) * stundenHoehe;
 
   const linien = gitterlinien(stundenHoehe, raster);
@@ -196,6 +203,17 @@ export function CalendarGrid({
       }
       return null;
     },
+    kontext,
+    // Seitlich ueber dem Gitter: dort wird geblaettert (FIX-018). Ein paar
+    // Pixel Toleranz, damit die Spaltenkante selbst noch Ziel ist.
+    randAn: (clientX) => {
+      const kasten = gitterRef.current?.getBoundingClientRect();
+      if (!kasten) return 0;
+      if (clientX < kasten.left + 4) return -1;
+      if (clientX > kasten.right - 4) return 1;
+      return 0;
+    },
+    onBlaettern,
     onAblegen: (zustand: ZiehZustand) =>
       onVerschieben({
         terminId: zustand.terminId,
@@ -206,6 +224,7 @@ export function CalendarGrid({
 
   return (
     <div
+      ref={gitterRef}
       className="border-line rounded-card mt-4 overflow-x-auto border"
       // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
       // auf einer Kachel wird nicht vom Browser übernommen.
