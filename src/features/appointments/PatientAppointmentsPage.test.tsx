@@ -199,9 +199,7 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
 
       // Die Reihenfolge der Abschnitte ist die der Grundlagen; ohne Grundlage
       // steht zuletzt.
-      const ueberschriften = screen
-        .getAllByRole('heading', { level: 4 })
-        .map((h) => h.textContent);
+      const ueberschriften = screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent);
       expect(ueberschriften).toEqual([
         'Selbstzahler seit 03.09.2026',
         'Folgeverordnung vom 18.06.2026',

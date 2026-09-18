@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-18 · letzte Session: VER-EPIC-002 Office-Formular
+# Status · Stand 2026-09-18 · letzte Session: CAL-EPIC-004c Überplanen
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
@@ -8,14 +8,14 @@ einträgt, hat sie damit nicht eingeplant.
 
 ## Jetzt
 
-Nichts läuft. VER-EPIC-002 liegt als PR gegen `main`, die **Abnahme steht
-aus** — wie die von GRD-001 (PR #50, gemergt). Nächster Loop auf Freigabe.
+Nichts läuft. CAL-EPIC-004c liegt als PR gegen `main`, die **Abnahme steht
+aus** — wie die von VER-EPIC-002 (PR #51, gemergt). Nächster Loop auf Freigabe.
 
 ## Danach — Reihenfolge seit 2026-09-18
 
-1. **CAL-EPIC-004c** — überplanen, Termine je Grundlage (CAL-022, AKTE-006)
-2. **ABR-EPIC-001** — Leistungen aus durchgeführten Terminen (xhigh)
-3. **ABR-EPIC-002a** — Rechnung aus Leistungen, mit Empfänger
+1. **ABR-EPIC-001** — Leistungen aus durchgeführten Terminen (xhigh)
+2. **ABR-EPIC-002a** — Rechnung aus Leistungen, mit Empfänger
+3. **ABR-EPIC-002b** — Die Rechnung als Dokument (PDF, Storno, Erinnerung)
 
 ## Prüfverfahren
 
@@ -28,12 +28,12 @@ navigierenden Tests rot — auf `main` genauso (**BEF-011**), CI meint Node 22.
 ## Blocker (Jannes-seitig)
 
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von
-  VER-EPIC-002 (`20260918130000_appointment_count.sql`, Seed geändert).
+  CAL-EPIC-004c (`20260918140000_appointment_coverage.sql`).
 - **Abnahme CAL-018, CAL-EPIC-004a, FIX-EPIC-004, CAL-EPIC-004b, UX-013,
-  GRD-001, VER-EPIC-002** —
+  GRD-001, VER-EPIC-002, CAL-EPIC-004c** —
   [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md). Die
   **Sichtprüfung hinter der Anmeldung steht weiter aus** (`supabase start` in
-  der Cloud blockiert); VER-EPIC-002 wurde als Bauteil bei 375 und 1280 px
+  der Cloud blockiert); CAL-EPIC-004c wurde als Bauteil bei 375 und 1280 px
   geprüft.
 - **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code ([`E18`](development/E18-LEISTUNGSBEREICHE.md))
 - Branch Protection und Secret Scanning (M0, 30.09.), Anfragen B1, B2, B4
@@ -43,18 +43,18 @@ navigierenden Tests rot — auf `main` genauso (**BEF-011**), CI meint Node 22.
 ## Auf Abnahme warten
 
 CAL-EPIC-003b (mit CAL-012/013), AKTE-000 bis AKTE-005, UX-012, UI-002, FIX-EPIC-001
-(braucht Docker), FIX-EPIC-003, CAL-014 bis CAL-018, CAL-EPIC-004a und -004b,
+(braucht Docker), FIX-EPIC-003, CAL-014 bis CAL-018, CAL-EPIC-004a, -004b und -004c,
 FIX-EPIC-004, UX-013, GRD-001, VER-EPIC-002, DAT-EPIC-001, ROL-EPIC-001, FIX-015
 — [`abnahme/`](abnahme/README.md).
 
 ## Letzte Session
 
-**VER-EPIC-002 gebaut.** Das Office hakt Heilmittel an — KG, MT, beide auch als
-Doppelbehandlung, Hausbesuch — und trägt daneben die **Anzahl möglicher Termine**
-ein. Die steht jetzt an der Grundlage und ist **nicht mehr die Summe der
-Positionen**: Sechs Termine mit drei Heilmitteln boten vorher achtzehn (**ANN-064**).
-„Genutzt", „Position hinzufügen", Therapieziel und das zweite Bemerkungsfeld sind
-weg; es gibt ein Feld **„Anmerkungen"** (**ANN-065**), der Katalog ist eine Liste im
-Code (**ANN-066**). Bestandswerte bleiben sichtbar; eine **Empfehlungsanzeige** gibt
-es nicht — keine Quelle, Wiedervorlage in der Roadmap. Lokal: `git pull origin main`,
-dann **`db reset`**.
+**CAL-EPIC-004c gebaut.** Zu einer Grundlage dürfen jetzt **mehr Termine
+geplant** werden, als sie hergibt — sichtbar statt still: Gedeckt sind die
+frühesten, gerechnet statt zugeteilt (**ANN-067**); der Rest trägt „Ohne
+Deckung" an Grundlage, Termin und Liste. **Termine übertragen** ist ein eigener,
+protokollierter Vorgang auf eine andere Grundlage derselben Patient:in — alles
+oder nichts, ohne abgesagte und abgerechnete (**ANN-068**). Der Terminbereich
+der Akte gruppiert nach Grundlage, je Richtung (**ANN-069**); Termine ohne
+Grundlage bekommen einen eigenen Abschnitt. Die Termin-Detailseite bleibt
+unberührt (BEF-006). Lokal: `git pull origin main`, dann **`db reset`**.
