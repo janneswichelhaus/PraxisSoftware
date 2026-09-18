@@ -156,7 +156,7 @@ export const notificationChannelOrder: readonly NotificationChannel[] = [
 export const appointmentKindSchema = z.enum(['treatment', 'event']);
 export type AppointmentKind = z.infer<typeof appointmentKindSchema>;
 
-const appointmentSchema = z.object({
+export const appointmentSchema = z.object({
   id: z.string(),
   // Beide `null` bei einem Ereignis - dort gibt es niemanden zu behandeln.
   patient_id: z.string().nullable(),
@@ -230,8 +230,17 @@ const appointmentSchema = z.object({
 
 export type Appointment = z.infer<typeof appointmentSchema>;
 
-const SELECT =
-  'id, patient_id, staff_member_id, location_id, appointment_type, kind, title, event_group_id, status, starts_at, ends_at, updated_at, ' +
+/**
+ * Die abgefragten Spalten der Terminsicht.
+ *
+ * Exportiert, damit ein Test sie gegen `appointmentSchema` halten kann: Eine
+ * Spalte im Schema, die hier fehlt, lässt `parse` scheitern — und dann zeigt
+ * die Detailansicht „Nicht gefunden" statt eines Termins. Genau das ist mit
+ * CAL-021 passiert, und keine Komponentenprüfung konnte es sehen, weil dort
+ * der Datenzugriff gemockt ist (der angemeldete E2E-Lauf hat es gefunden).
+ */
+export const TERMIN_SPALTEN =
+  'id, patient_id, staff_member_id, location_id, appointment_type, kind, title, event_group_id, event_series_id, status, starts_at, ends_at, updated_at, ' +
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
   'cancellation_reason, cancellation_received_at, no_show_recorded_at, ' +
   'no_show_protocol_confirmed, fee_basis, ' +
@@ -242,7 +251,7 @@ const SELECT =
 export async function fetchAppointment(appointmentId: string): Promise<Appointment | null> {
   const { data, error } = await getSupabase()
     .from('appointment_directory')
-    .select(SELECT)
+    .select(TERMIN_SPALTEN)
     .eq('id', appointmentId)
     .maybeSingle();
 
