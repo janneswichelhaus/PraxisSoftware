@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { fetchPatient } from '@/features/patients/api';
 import { fetchStaffMembers } from '@/features/staff/api';
 import type { CurrentUser } from '@/features/session/types';
@@ -21,6 +22,8 @@ import {
   fetchAssignableTherapists,
   fetchLocations,
   istAusserhalbArbeitszeit,
+  istVergangenheit,
+  liegtInVergangenheit,
   leererTermin,
   patientName,
   TERMINFENSTER_MINUTEN,
@@ -124,9 +127,25 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     }
   }, [termin.data, vorbefuellt]);
 
+  /** Ein Tag vor dem heutigen, noch nicht abgeschickt (FIX-019). */
+  const [vorfrage, setVorfrage] = useState<AppointmentFormValues | null>(null);
+  const heute = user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '';
+  /** Der gespeicherte Tag des Termins - nur ein anderer Tag davor ist ein Zurücklegen. */
+  const vorbefuelltesDatum = termin.data ? appointmentToFormValues(termin.data).date : '';
+
   const mutation = useMutation({
-    mutationFn: (eingabe: { werte: AppointmentFormValues; bestaetigt: boolean }) =>
-      updateAppointment(appointmentId!, termin.data!.updated_at, eingabe.werte, eingabe.bestaetigt),
+    mutationFn: (eingabe: {
+      werte: AppointmentFormValues;
+      bestaetigt: boolean;
+      vergangenheit: boolean;
+    }) =>
+      updateAppointment(
+        appointmentId!,
+        termin.data!.updated_at,
+        eingabe.werte,
+        eingabe.bestaetigt,
+        eingabe.vergangenheit,
+      ),
     onSuccess: async () => {
       // Detailansicht und Kalender zeigen sonst weiter den alten Stand.
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] });
@@ -157,11 +176,16 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   }
 
   /** Wiederholt den Vorgang mit ausdrücklicher Bestätigung (CAL-005). */
-  function bestaetigen() {
+  /** Wiederholt den Vorgang mit einer weiteren Bestätigung (CAL-005, FIX-019). */
+  function bestaetigen(zusatz: { bestaetigt?: boolean; vergangenheit?: boolean }) {
     if (mutation.isPending) return;
     const ergebnis = appointmentFormSchema.safeParse(werte);
     if (!ergebnis.success) return;
-    mutation.mutate({ werte: ergebnis.data, bestaetigt: true });
+    mutation.mutate({
+      werte: ergebnis.data,
+      bestaetigt: zusatz.bestaetigt ?? mutation.variables?.bestaetigt ?? false,
+      vergangenheit: zusatz.vergangenheit ?? mutation.variables?.vergangenheit ?? false,
+    });
   }
 
   function absenden(event: FormEvent<HTMLFormElement>) {
@@ -180,7 +204,26 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     }
 
     setFehler({});
-    mutation.mutate({ werte: ergebnis.data, bestaetigt: false });
+    // Ein Tag vor dem heutigen: erst fragen, dann schreiben (FIX-019). Der
+    // Tag des Bestandstermins selbst zählt nicht - wer nur die Person eines
+    // vergangenen Termins ändert, hat nichts zurückgelegt.
+    if (
+      heute &&
+      liegtInVergangenheit(ergebnis.data.date, heute) &&
+      ergebnis.data.date !== vorbefuelltesDatum
+    ) {
+      setVorfrage(ergebnis.data);
+      return;
+    }
+    mutation.mutate({
+      werte: ergebnis.data,
+      bestaetigt: false,
+      // Bestandstermin in der Vergangenheit, Tag unverändert: Der Server
+      // verlangt die Bestätigung trotzdem; sie gilt dem Tag, der schon war.
+      vergangenheit:
+        ergebnis.data.date === vorbefuelltesDatum &&
+        liegtInVergangenheit(ergebnis.data.date, heute),
+    });
   }
 
   if (termin.isPending) return <LoadingState label="Termin wird geladen …" />;
@@ -238,19 +281,44 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
-        {istAusserhalbArbeitszeit(mutation.error) ? (
+        {/* Rückfrage und Fehler als Fenster über dem Formular (FIX-016). */}
+        {vorfrage ? (
           <ArbeitszeitRueckfrage
-            onBestaetigen={bestaetigen}
+            arbeitszeit={false}
+            vergangenheit
+            onBestaetigen={() => {
+              const w = vorfrage;
+              setVorfrage(null);
+              mutation.mutate({ werte: w, bestaetigt: false, vergangenheit: true });
+            }}
+            onAbbrechen={() => setVorfrage(null)}
+            laeuft={false}
+            beschriftung="Änderung trotzdem speichern"
+          />
+        ) : istAusserhalbArbeitszeit(mutation.error) ? (
+          <ArbeitszeitRueckfrage
+            vergangenheit={mutation.variables?.vergangenheit ?? false}
+            onBestaetigen={() => bestaetigen({ bestaetigt: true })}
+            onAbbrechen={() => mutation.reset()}
+            laeuft={mutation.isPending}
+            beschriftung="Änderung trotzdem speichern"
+          />
+        ) : istVergangenheit(mutation.error) ? (
+          <ArbeitszeitRueckfrage
+            arbeitszeit={false}
+            vergangenheit
+            onBestaetigen={() => bestaetigen({ vergangenheit: true })}
+            onAbbrechen={() => mutation.reset()}
             laeuft={mutation.isPending}
             beschriftung="Änderung trotzdem speichern"
           />
         ) : mutation.isError ? (
-          <div className="mb-6">
-            <ErrorState
-              title="Der Termin konnte nicht geändert werden."
-              description={mutation.error.message}
-            />
-          </div>
+          <Hinweisfenster
+            titel="Der Termin konnte nicht geändert werden."
+            onSchliessen={() => mutation.reset()}
+          >
+            {mutation.error.message}
+          </Hinweisfenster>
         ) : null}
 
         {/* Ein Ereignis hat keine Patient:in - der Kasten nennt stattdessen,
@@ -280,9 +348,6 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           // Anschrift; der Server weist ihn ab (CAL-015b).
           arten={
             istEreignis ? (['practice', 'video'] as const satisfies AppointmentType[]) : undefined
-          }
-          minDatum={
-            user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : undefined
           }
           rasterMinuten={user.appointmentGridMinutes ?? undefined}
           fensterMinuten={fensterMinuten}

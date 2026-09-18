@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -17,7 +17,10 @@ import {
   fetchAssignableTherapists,
   fetchLocations,
   istAusserhalbArbeitszeit,
+  istVergangenheit,
+  liegtInVergangenheit,
   minutesOfDay,
+  NEUER_TERMIN_PARAM,
   schreibeTerminVorbelegung,
   TERMINFENSTER_MINUTEN,
   todayInTimeZone,
@@ -25,7 +28,7 @@ import {
   type TerminVorbelegung,
 } from './api';
 import { CalendarGrid, type GitterEintrag, type GitterSpalte } from './CalendarGrid';
-import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
+import type { VerschiebenFrage } from './VerschiebenRueckfrage';
 import {
   arbeitszeitBaender,
   bereichFuer,
@@ -131,6 +134,8 @@ interface Vorschlag {
   v: Verschiebung;
   zurueck: Verschiebung;
   frage: VerschiebenFrage;
+  /** Die Zielspalte, in der das Gitter die neue Kachel zeichnet (FIX-017). */
+  zielSpalteId: string;
 }
 
 /**
@@ -163,6 +168,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // Kalenderarithmetik abstuerzen statt den Fehlerzustand zu zeigen.
   const heute = zone ? todayInTimeZone(zone) : '1970-01-01';
   const p = leseParameter(suche, heute);
+  // Der gerade angelegte Termin (FIX-016): einmal hervorgehoben, beim
+  // naechsten Blaettern faellt der Parameter weg (`schreibeParameter`).
+  const neuerTermin = suche.get(NEUER_TERMIN_PARAM);
+  // Der Kalenderstand als Rückweg - aus den gelesenen Parametern, nicht aus der
+  // Adresszeile: So reist `neu=` nicht in den nächsten Rückweg (und markiert
+  // beim zweiten Anlegen den falschen Termin).
+  const kalenderStand = `/kalender?${schreibeParameter(p).toString()}`;
   const bereich = bereichFuer(p.ansicht, p.datum);
   // Welche Linien die gewaehlte Zoomstufe traegt - dieselbe Auskunft fuer die
   // Beschriftung der Bedienung und fuer das Gitter selbst.
@@ -206,6 +218,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       }),
     enabled: Boolean(zone),
     retry: false,
+    // Beim Blaettern bleibt der alte Ausschnitt stehen, bis der neue da ist:
+    // Das Gitter wird nicht abgebaut, eine laufende Zieh-Geste ueberlebt den
+    // Wechsel (FIX-018).
+    placeholderData: keepPreviousData,
   });
 
   // Arbeitszeiten als Hintergrund. Der Wochenplan ist klein und ändert sich
@@ -221,6 +237,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     queryFn: () => fetchWorkingHourExceptions(bereich.von, bereich.bis),
     enabled: Boolean(zone),
     retry: false,
+    placeholderData: keepPreviousData,
   });
 
   const eintraege = useMemo(() => termine.data ?? [], [termine.data]);
@@ -239,6 +256,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     mutationFn: async (auftrag: {
       v: Verschiebung;
       bestaetigt: boolean;
+      /** Ein Tag vor dem heutigen, ausdrücklich bestätigt (FIX-019). */
+      vergangenheit: boolean;
       /** Was die Leiste danach anbietet; ohne Angabe verschwindet sie. */
       zurueck?: Verschiebung;
       /** Die Rückfrage, aus der der Auftrag stammt - fehlt beim Rückgängig. */
@@ -262,6 +281,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           location_id: termin.location_id ?? '',
         },
         auftrag.bestaetigt,
+        auftrag.vergangenheit,
       );
     },
     onSuccess: async (_ergebnis, auftrag) => {
@@ -278,11 +298,18 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       //
       // Nur, wenn diese Rückfrage noch offen ist: Wer inzwischen geblättert
       // hat, bekommt keine Frage zu einem Ausschnitt, der nicht mehr dasteht.
-      setVorschlag((aktuell) =>
-        istAusserhalbArbeitszeit(fehler) && auftrag.aus && aktuell === auftrag.aus
-          ? { ...auftrag.aus, frage: { ...auftrag.aus.frage, ausserhalb: true } }
-          : null,
-      );
+      setVorschlag((aktuell) => {
+        if (!auftrag.aus || aktuell !== auftrag.aus) return null;
+        if (istAusserhalbArbeitszeit(fehler)) {
+          return { ...auftrag.aus, frage: { ...auftrag.aus.frage, ausserhalb: true } };
+        }
+        // Dasselbe für die Vergangenheit (FIX-019): der Praxistag kann seit
+        // dem Laden gewechselt haben.
+        if (istVergangenheit(fehler)) {
+          return { ...auftrag.aus, frage: { ...auftrag.aus.frage, vergangenheit: true } };
+        }
+        return null;
+      });
     },
   });
 
@@ -398,7 +425,26 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     // nicht angetroffen geführter müsste erst wieder geöffnet werden, ein
     // abgesagter bleibt terminal (CAL-004, ADR-018).
     ziehbar: e.status === 'confirmed',
+    ...(e.id === neuerTermin ? { neu: true } : {}),
   }));
+
+  /**
+   * Jeder je gezeigte Termin mit seinem Platz (FIX-018).
+   *
+   * Wer waehrend des Ziehens blaettert, laesst den Termin hinter sich: Er
+   * gehoert nicht mehr zum geladenen Ausschnitt. Beim Loslassen muss sein
+   * alter Platz trotzdem bekannt sein - fuer die Rueckfrage und die
+   * Rueckgaengig-Leiste. Eintraege werden ueberschrieben, nie entfernt.
+   */
+  const bekannt = useRef(new Map<string, GitterEintrag & { datum: string }>());
+  useEffect(() => {
+    for (const g of gitterEintraege) {
+      // Der Tag kommt aus dem Termin selbst, nicht aus dem Ausschnitt: Waehrend
+      // des Blaetterns stehen kurz die alten Termine unter dem neuen Tag
+      // (keepPreviousData), und der Ursprung darf davon nichts abbekommen.
+      bekannt.current.set(g.eintrag.id, { ...g, datum: dayKey(g.eintrag.starts_at, zone) });
+    }
+  });
 
   const fenster = fensterMitArbeitszeit(
     tagesFenster(gitterEintraege.map((g) => ({ beginn: g.beginnMinute, ende: g.endeMinute }))),
@@ -407,7 +453,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
   /** Übersetzt eine Zielspalte zurück in Person und Datum. */
   function ablegen(ziel: { terminId: string; spalteId: string; startMinute: number }) {
-    const g = gitterEintraege.find((x) => x.eintrag.id === ziel.terminId);
+    // Nach dem Blaettern waehrend der Geste steht der Termin nicht mehr im
+    // gezeigten Ausschnitt; sein Ursprung kommt dann aus dem Gedaechtnis
+    // (FIX-018).
+    const g = bekannt.current.get(ziel.terminId);
     if (!g) return;
 
     const dauer = g.endeMinute - g.beginnMinute;
@@ -418,7 +467,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
     // Die Umkehrung wird VOR dem Schreiben festgehalten: danach ist der alte
     // Stand aus den geladenen Terminen nicht mehr abzulesen.
-    const altesDatum = p.ansicht === 'tag' ? bereich.von : g.spalteId;
+    const altesDatum = g.datum;
     const altePerson = alleTherapeuten.find((t) => t.staff_member_id === g.eintrag.staff_member_id);
 
     const alteZeit = `${wochentagKurz(altesDatum)} ${tagesZahl(altesDatum)}, ${minuteZuZeit(g.beginnMinute)}–${minuteZuZeit(g.endeMinute)}`;
@@ -440,6 +489,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
     // Das Loslassen schreibt nicht mehr - es fragt (CAL-023).
     setVorschlag({
+      zielSpalteId: ziel.spalteId,
       frage: {
         alteZeit,
         neueZeit,
@@ -448,6 +498,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             ? null
             : { von: alnamePerson(altePerson), nach: alnamePerson(person) },
         ausserhalb,
+        // Der neue Tag vor dem heutigen: gefragt wird im selben Kasten (FIX-019).
+        vergangenheit: liegtInVergangenheit(datum, heute),
       },
       v: {
         terminId: ziel.terminId,
@@ -500,11 +552,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       const ziel = `/patienten/${p.patient}/termine/neu${parameter}${
         p.verordnung ? `&verordnung=${p.verordnung}` : ''
       }`;
-      void navigate(mitRueckweg(ziel, `/kalender?${suche.toString()}`));
+      void navigate(mitRueckweg(ziel, kalenderStand));
       return;
     }
 
-    void navigate(`/termine/neu${parameter}`);
+    // Auch ohne Personenfilter: Der Kalenderstand ist der Rückweg, damit das
+    // Anlegen wieder hier landet - nicht in der Terminansicht (BEF-016).
+    void navigate(mitRueckweg(`/termine/neu${parameter}`, kalenderStand));
   }
 
   const laedt = termine.isPending || therapeuten.isPending;
@@ -532,12 +586,15 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                 </ButtonLink>
               ) : null}
               <ButtonLink
-                to={`/termine/neu${schreibeTerminVorbelegung({
-                  datum: p.datum,
-                  art: 'home_visit',
-                  ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
-                  ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
-                })}`}
+                to={mitRueckweg(
+                  `/termine/neu${schreibeTerminVorbelegung({
+                    datum: p.datum,
+                    art: 'home_visit',
+                    ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
+                    ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
+                  })}`,
+                  kalenderStand,
+                )}
                 variant="secondary"
               >
                 Termin anlegen
@@ -549,7 +606,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               <ButtonLink
                 to={mitRueckweg(
                   `/termine/ereignis${schreibeTerminVorbelegung({ datum: p.datum })}`,
-                  `/kalender?${suche.toString()}`,
+                  kalenderStand,
                 )}
                 variant="secondary"
               >
@@ -698,29 +755,26 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         </div>
       ) : null}
 
-      {verschieben.isPending && !vorschlag ? (
-        <Statusmeldung className="mt-4">Der Termin wird verschoben …</Statusmeldung>
+      {/* Zurück aus dem Formular (FIX-016): Der neue Termin ist im Gitter
+          hervorgehoben; die Zeile sagt es auch dem, der nicht hinsieht. */}
+      {neuerTermin && termine.isSuccess ? (
+        <Statusmeldung className="mt-4">
+          Termin angelegt.{' '}
+          {gitterEintraege.some((g) => g.eintrag.id === neuerTermin) ? (
+            <Link
+              to={mitRueckweg(`/termine/${neuerTermin}`, kalenderStand)}
+              className="text-accent hover:underline"
+            >
+              Termin öffnen
+            </Link>
+          ) : (
+            'Er liegt außerhalb des gezeigten Ausschnitts.'
+          )}
+        </Statusmeldung>
       ) : null}
 
-      {/* Rückfrage beim Verschieben (CAL-023): immer, auch bei freier
-          Zielzeit - und der Hinweis auf die Arbeitszeit steht in ihr, nicht in
-          einem zweiten Kasten dahinter. */}
-      {vorschlag ? (
-        <VerschiebenRueckfrage
-          frage={vorschlag.frage}
-          laeuft={verschieben.isPending}
-          onBestaetigen={() =>
-            verschieben.mutate({
-              v: vorschlag.v,
-              // Bestätigt ist die Arbeitszeit nur, wenn die Rückfrage sie
-              // genannt hat. Sonst fragt der Server zurück (CAL-005).
-              bestaetigt: vorschlag.frage.ausserhalb,
-              zurueck: vorschlag.zurueck,
-              aus: vorschlag,
-            })
-          }
-          onAbbrechen={() => setVorschlag(null)}
-        />
+      {verschieben.isPending && !vorschlag ? (
+        <Statusmeldung className="mt-4">Der Termin wird verschoben …</Statusmeldung>
       ) : null}
 
       {verschieben.isError && !vorschlag ? (
@@ -759,7 +813,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               // `bestaetigt` steht auf true: der alte Platz war bereits in
               // Gebrauch, eine Arbeitszeit-Rückfrage dafür wäre eine Frage
               // nach etwas, das die Praxis schon so hatte.
-              verschieben.mutate({ v: rueckgaengig, bestaetigt: true })
+              // Dasselbe fuer die Vergangenheit: Der alte Platz war der alte Platz.
+              verschieben.mutate({ v: rueckgaengig, bestaetigt: true, vergangenheit: true })
             }
           >
             Rückgängig
@@ -772,16 +827,47 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Der Rückweg ist der Kalenderstand selbst - Ansicht, Datum,
           // Zoomstufe und alle Filter (UX-012). Wer von einer Kachel in den
           // Termin springt, kommt damit genau hierher zurück.
-          rueckweg={`/kalender?${suche.toString()}`}
+          rueckweg={kalenderStand}
           spaltenModell={spaltenModell}
           eintraege={gitterEintraege}
           fenster={fenster}
           raster={user.appointmentGridMinutes}
           stundenHoehe={p.zoom}
-          // Solange eine Rückfrage offen ist, wird nicht weitergezogen: Sonst
-          // stünde eine Frage da, deren Kachel schon woanders hängt (CAL-023).
-          ziehbarErlaubt={darfAendern && !verschieben.isPending && !vorschlag}
+          // Auch bei offener Rückfrage darf weitergezogen werden (BEF-015):
+          // Die nächste Geste ersetzt den Vorschlag, statt gesperrt zu sein.
+          ziehbarErlaubt={darfAendern && !verschieben.isPending}
+          // Rückfrage beim Verschieben (CAL-023, FIX-017): immer, auch bei
+          // freier Zielzeit, gezeichnet im Gitter - und der Hinweis auf die
+          // Arbeitszeit steht in ihr, nicht in einem zweiten Kasten dahinter.
+          vorschlag={
+            vorschlag
+              ? {
+                  terminId: vorschlag.v.terminId,
+                  spalteId: vorschlag.zielSpalteId,
+                  startMinute: vorschlag.v.startMinute,
+                  endeMinute: vorschlag.v.endeMinute,
+                  frage: vorschlag.frage,
+                  laeuft: verschieben.isPending,
+                  onBestaetigen: () =>
+                    verschieben.mutate({
+                      v: vorschlag.v,
+                      // Bestätigt ist die Arbeitszeit nur, wenn die Rückfrage
+                      // sie genannt hat. Sonst fragt der Server zurück (CAL-005).
+                      bestaetigt: vorschlag.frage.ausserhalb,
+                      vergangenheit: vorschlag.frage.vergangenheit,
+                      zurueck: vorschlag.zurueck,
+                      aus: vorschlag,
+                    }),
+                  onAbbrechen: () => setVorschlag(null),
+                }
+              : null
+          }
           onVerschieben={ablegen}
+          kontext={bereich.von}
+          // Waehrend des Blaetterns stehen noch die alten Termine da: gedimmt,
+          // damit niemand auf einem Zwischenstand handelt.
+          laedtNach={termine.isPlaceholderData || ausnahmen.isPlaceholderData}
+          onBlaettern={(richtung) => setze({ datum: blaettern(p.ansicht, p.datum, richtung) })}
           onFreieZeit={darfAendern ? freieZeit : undefined}
           beschriftung={
             p.ansicht === 'tag'
@@ -814,12 +900,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         {p.ansicht === 'tag'
           ? ' oder eine andere behandelnde Person'
           : ' oder einen anderen Tag'}{' '}
-        ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Nach dem
-        Loslassen fragt der Kalender mit alter und neuer Zeit nach — verschoben wird erst auf die
-        Bestätigung, und danach lässt es sich rückgängig machen. Dasselbe geht jederzeit über
-        „Bearbeiten" in der Detailansicht — das Ziehen ist eine Abkürzung, kein eigener Weg. Über
-        „+" und „−" wird das Gitter feiner oder gröber; gezeichnet wird dabei genau das Raster, auf
-        dem ein Termin einrastet.
+        ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Am Rand des
+        Fensters scrollt die Seite mit, und wer den Zeiger seitlich am Gitter hält, blättert in den
+        nächsten Ausschnitt. Nach dem Loslassen fragt der Kalender mit alter und neuer Zeit nach —
+        verschoben wird erst auf die Bestätigung, und danach lässt es sich rückgängig machen.
+        Dasselbe geht jederzeit über „Bearbeiten" in der Detailansicht — das Ziehen ist eine
+        Abkürzung, kein eigener Weg. Über „+" und „−" wird das Gitter feiner oder gröber; gezeichnet
+        wird dabei genau das Raster, auf dem ein Termin einrastet.
       </p>
 
       <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">

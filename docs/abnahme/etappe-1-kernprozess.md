@@ -2238,3 +2238,76 @@ untereinander ohne waagerechtes Scrollen.
 
 **Nicht Teil dieses Loops:** Anlegen-Menü und Aufziehen einer Spanne
 (CAL-019), Fehlzeiten (CAL-021), Deckungsanzeige (CAL-022).
+
+## FIX-EPIC-004 — Kalender-Bedienung (BEF-012 bis BEF-016)
+
+Prüfschritte zu FIX-016 bis FIX-019. Grundlage: Festlegungen von Jannes vom
+2026-09-18, ANN-057 (Vergangenheit), ANN-058 (Fenster über dem Inhalt).
+
+Alle Schritte als `jannes.test@praxis.invalid` (owner), am Desktop; vorher
+`pnpm dlx supabase@2.116.0 db reset` (Migration
+`20260918100000_past_appointments_confirmed.sql`).
+
+### 1. Rückfragen als Fenster, Rückweg in den Kalender (FIX-016)
+
+1. Kalender, Tagesansicht → **Termin anlegen** über dem Gitter → Max
+   Mustermann → Beginn 19:00 → ganz nach unten scrollen → **Termin anlegen**.
+2. Erwartung: Ein Fenster „Außerhalb der Arbeitszeit" liegt über dem
+   Formular, ohne Scrollen sichtbar; der Fokus liegt auf „Termin trotzdem
+   anlegen". **Zurück zum Formular** schließt es, die Eingaben bleiben.
+3. Beginn 13:00, erneut **Termin anlegen**. Erwartung: zurück im Kalender an
+   diesem Tag, der neue Termin mit Rahmen hervorgehoben, darüber die Zeile
+   „Termin angelegt. Termin öffnen".
+4. Denselben Weg einmal mit einer Überschneidung (zweiter Termin auf dieselbe
+   Zeit). Erwartung: Fenster „Der Termin konnte nicht angelegt werden." mit
+   Grund und „Zurück zum Formular"; Escape schließt es ebenfalls.
+
+### 2. Die Rückfrage steht im Gitter (FIX-017)
+
+1. Den Termin mit der Maus eine Stunde nach unten ziehen, loslassen.
+2. Erwartung: kein Sprung nach oben. Am alten Platz bleibt die Kachel
+   gestrichelt und blass mit „Bisher"; am Ziel steht eine Kachel „Neu ·
+   14:00–15:00"; direkt darunter der Kasten „Termin verschieben?" mit Bisher,
+   Neu, Verschieben, Abbrechen.
+3. Ohne zu antworten eine **andere** Kachel ziehen. Erwartung: sie lässt sich
+   ziehen; die neue Geste ersetzt die alte Frage.
+4. Über eine abgeschlossene Kachel fahren. Erwartung: Tooltip nennt „Nicht
+   verschiebbar: Abgeschlossen".
+
+### 3. Ziehen über den Ausschnitt hinaus (FIX-018)
+
+1. Wochenansicht einer Person. Eine Kachel greifen, den Zeiger an den
+   unteren Fensterrand führen. Erwartung: die Seite scrollt von selbst
+   mit, die Vorschau wandert mit.
+2. Mit gehaltener Maus den Zeiger rechts **neben** das Gitter halten.
+   Erwartung: nach etwa einer Sekunde blättert der Kalender in die nächste
+   Woche und behält die Geste; zurück ins Gitter, loslassen.
+3. Erwartung: Rückfrage mit „Bisher" aus der alten Woche und „Neu" aus der
+   neuen; Bestätigen schreibt, Rückgängig holt zurück.
+4. Am Telefon: Scrollen mit dem Finger über einer Kachel scrollt weiterhin,
+   Ziehen beginnt weiter erst nach dem langen Druck.
+
+### 4. Vergangenheit mit Hinweis (FIX-019)
+
+1. Wochenansicht: den heutigen Termin auf gestern ziehen. Erwartung: derselbe
+   Kasten, zusätzlich „Der neue Tag liegt in der Vergangenheit …", Schaltfläche
+   „Trotzdem verschieben". Bestätigen schreibt; **Rückgängig** holt zurück.
+2. Termin anlegen mit Datum letzte Woche → **Termin anlegen**. Erwartung:
+   Fenster „Termin in der Vergangenheit" **vor** dem Speichern; „Termin
+   trotzdem anlegen" legt an.
+3. Einen vergangenen Termin bearbeiten und nur die Person ändern. Erwartung:
+   keine Rückfrage zur Vergangenheit.
+4. Im Auditlog (Datenbank): der Eintrag zum Vorgang trägt `in_the_past: true`.
+
+### 5. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=owner /kalender?ansicht=tag
+```
+
+Erwartung: das Fenster aus Schritt 1 liegt unten am Bildschirmrand, mit dem
+Daumen erreichbar; die Zieh-Rückfrage im Gitter passt in die Breite.
+
+**Nicht Teil dieses Loops:** Anlegen-Menü und Fehlzeiten (CAL-EPIC-004b),
+„Verschieben nach …" mit Datumsfeld (der Weg ohne Zeiger bleibt „Bearbeiten"),
+Ereignisse in der Vergangenheit (Ereignisse behalten die Sperre aus CAL-015b).

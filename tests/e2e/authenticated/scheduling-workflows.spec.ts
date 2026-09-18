@@ -175,7 +175,7 @@ test.describe('CAL-005: Rueckfrage ausserhalb der Arbeitszeit', () => {
     await terminFormular(page, { tag, von, bis });
 
     await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-    await expect(page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Außerhalb der Arbeitszeit' })).toHaveCount(0);
   });
 
   test('fragt bei einer Randzeit nach und legt zunaechst nichts an', async ({ page }) => {
@@ -184,7 +184,7 @@ test.describe('CAL-005: Rueckfrage ausserhalb der Arbeitszeit', () => {
     await anmelden(page, KONTEN.office);
     await terminFormular(page, { tag, von: '19:00', bis: '20:00' });
 
-    const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+    const rueckfrage = page.getByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
     await expect(rueckfrage).toBeVisible();
     await expect(rueckfrage).toContainText(/noch nicht gespeichert/);
     // Kein Wechsel in die Detailansicht: es wurde nichts geschrieben.
@@ -196,7 +196,7 @@ test.describe('CAL-005: Rueckfrage ausserhalb der Arbeitszeit', () => {
 
     await anmelden(page, KONTEN.office);
     await terminFormular(page, { tag, von: '19:00', bis: '20:00' });
-    await expect(page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Außerhalb der Arbeitszeit' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Termin trotzdem anlegen' }).click();
     await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
@@ -209,7 +209,7 @@ test.describe('CAL-005: Rueckfrage ausserhalb der Arbeitszeit', () => {
     await anmelden(page, KONTEN.office);
     await terminFormular(page, { tag: samstag, von: '09:00', bis: '10:00' });
 
-    await expect(page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Außerhalb der Arbeitszeit' })).toBeVisible();
   });
 
   test('umgeht mit der Bestaetigung den Ueberschneidungsschutz nicht', async ({ page }) => {

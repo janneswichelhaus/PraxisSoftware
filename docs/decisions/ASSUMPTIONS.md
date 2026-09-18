@@ -772,3 +772,27 @@ Praxisprozess · entschieden (Jannes) · 2026-09-17, bestätigt 2026-09-18 · Ja
 **Anker.** `app.is_valid_treatment_length` und die beiden Längenprüfungen in `supabase/migrations/20260917110000_free_appointment_length.sql`; `abweichendeLaengeMinuten` in `src/features/appointments/api.ts`, `Laengenzeichen.tsx`; Tests in `supabase/tests/appointment-window.test.ts` und `src/features/appointments/Laengenzeichen.test.tsx`.
 
 **Änderungspfad.** Länge ganz vom Raster lösen: `app.is_valid_treatment_length` auf „größer null" reduzieren und die Schrittweite des Minutenfelds entfernen · Aufwand `klein`, ohne Datenumzug. Kennzeichen an anderen Regellängen ausrichten: `app.appointment_window_options()` und `TERMINFENSTER_OPTIONEN` gemeinsam ändern (ein Datenbanktest hält sie gegeneinander) · Aufwand `klein`.
+
+### ANN-057 — Die Vergangenheit ist erlaubt, aber nie unbemerkt: Bestätigung und Auditkennzeichen
+
+Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wiedervorlage: ABR-EPIC-001, falls ein nachgetragener Termin abrechnungsseitig anders zu behandeln ist; Datenschutzprüfung nur, falls `in_the_past` je als Merkmal am Termin gespeichert würde
+
+**Annahme.** `create_appointment` und `update_appointment` nehmen einen Tag vor dem heutigen Praxistag nur mit `p_confirmed_past = true` an; ohne Bestätigung bleibt die Abweisung aus CAL-003. Es gibt keine Grenze nach hinten und keinen Begründungstext; der Auditeintrag trägt `in_the_past`. Die Oberfläche fragt vor dem Server, wenn sie den Tag kennt (Formular, Kalender), und nimmt den Hinweis in denselben Kasten wie den Arbeitszeit-Hinweis. Eine Ausnahme: Ein Bestandstermin, dessen Tag schon vergangen ist, lässt sich organisatorisch ändern (Person, Art, Ort, Uhrzeit am selben Tag), ohne dass gefragt wird — die Bestätigung gilt dann dem Tag, der schon war, und der Auditeintrag trägt `in_the_past` trotzdem.
+
+**Begründung.** Festlegung von Jannes (BEF-012): Nachtragen und Zurücklegen gehören zum Praxisalltag. Keine Leitplanke verlangt eine Sperre; das Muster „bestätigen statt sperren" gibt es schon für die Arbeitszeit (CAL-005). Ein Kennzeichen im Auditkontext statt eines Merkmals am Termin, weil es eine Aussage über den Vorgang ist, nicht über den Termin (ADR-010); eine Grenze nach hinten wäre eine erfundene Frist (§13). Unsicher: ob die Abrechnung nachgetragene Termine je unterscheiden muss.
+
+**Anker.** `p_confirmed_past` und `in_the_past` in `supabase/migrations/20260918100000_past_appointments_confirmed.sql`; `VergangenheitError`, `liegtInVergangenheit` in `src/features/appointments/api.ts`; Tests in `supabase/tests/create-appointment.test.ts`, `supabase/tests/change-appointment.test.ts`.
+
+**Änderungspfad.** Grenze nach hinten (etwa 90 Tage): eine Bedingung in beiden Funktionen und ein Satz in der Rückfrage · Aufwand `klein`. Begründung verlangen: ein Textparameter mit Auditvermerk nach dem Muster der Absage · Aufwand `klein` bis `mittel`. Zurück zur Sperre: `p_confirmed_past` ignorieren · Aufwand `klein`.
+
+### ANN-058 — Rückfragen, die nicht am Auslöser stehen können, sind ein Fenster über dem Inhalt
+
+Technik · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wiedervorlage: Jannes, sobald er das Muster eine Weile bedient hat; Barrierefreiheitsprüfung mit UI-002
+
+**Annahme.** Eine Rückfrage oder ein Fehler, der nicht unmittelbar neben dem auslösenden Element stehen kann — nach dem Absenden eines langen Formulars, bei einem Vorgang ohne sichtbaren Auslöser —, erscheint als modales Fenster (`Dialogfenster`: `role="dialog"`, Fokus hinein und im Kreis, Escape und Klick daneben sind Abbrechen, Fokus zurück). Eine Rückfrage, die den Auslöser an Ort und Stelle ersetzt (`Rueckfrage`), bleibt ein Kasten im Fluss; die Zieh-Rückfrage im Kalender bleibt im Gitter, weil dort der Kalender sichtbar sein muss.
+
+**Begründung.** UI-000 hatte „kein modaler Dialog" als Regel; BEF-016 zeigt die Grenze: Ein Hinweis außerhalb des Sichtfelds ist keiner. Die Festlegung von Jannes gilt „immer" für solche Warnungen; die Grenze ist der Ort, nicht die Art der Frage. Ohne Paket, weil `<dialog>` in jsdom kein `showModal` kennt und der Fokuskreis klein ist (ADR-015).
+
+**Anker.** `src/components/ui/Dialogfenster.tsx` (`Dialogfenster`, `Hinweisfenster`), `ArbeitszeitRueckfrage` in `src/features/appointments/AppointmentFormFields.tsx`, Kommentar in `src/components/ui/Rueckfrage.tsx`; Tests in `src/components/ui/Dialogfenster.test.tsx`.
+
+**Änderungspfad.** Alle Rückfragen modal: `Rueckfrage` auf `Dialogfenster` umstellen · Aufwand `mittel` (acht Aufrufer, Tests mit `role="group"`). Zurück zum Kasten im Fluss: `Dialogfenster` durch einen Kasten mit Bildlauf zum Element ersetzen · Aufwand `klein`.

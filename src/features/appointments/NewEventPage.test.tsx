@@ -246,7 +246,7 @@ describe('NewEventPage', () => {
     await user.click(screen.getByRole('button', { name: 'Ereignis eintragen' }));
 
     expect(
-      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' }),
+      await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' }),
     ).toBeInTheDocument();
 
     createAppointmentEvent.mockResolvedValueOnce(1);

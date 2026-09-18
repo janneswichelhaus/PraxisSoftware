@@ -498,13 +498,15 @@ describe('create_appointment: Audit', () => {
     const rows = await eintrag();
 
     expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      // prescription_id kam mit CAL-007 dazu und ist eine ID, kein Inhalt.
+      // prescription_id kam mit CAL-007 dazu und ist eine ID, kein Inhalt;
+      // in_the_past mit FIX-019 - ein Kennzeichen, kein Inhalt.
       [
         'patient_id',
         'staff_member_id',
         'surface',
         'outside_working_hours',
         'prescription_id',
+        'in_the_past',
       ].sort(),
     );
     expect(rows[0]!.context).toMatchObject({
@@ -625,8 +627,36 @@ describe('create_appointment: fachliche Pruefungen', () => {
     ).rejects.toThrow(/unknown appointment type/);
   });
 
-  it('weist einen vollstaendig vergangenen Kalendertag ab', async () => {
+  it('weist einen vergangenen Kalendertag ohne Bestaetigung ab', async () => {
     await expect(anlegen(users.office, { tag: tagInTagen(-1) })).rejects.toThrow(/in the past/);
+  });
+
+  // FIX-019, ANN-057: Die Vergangenheit ist erlaubt, aber nie unbemerkt. Die
+  // Bestaetigung ist der zehnte Parameter; der Auditeintrag traegt das
+  // Kennzeichen, damit ein nachgetragener Termin spaeter als solcher erkennbar
+  // bleibt (ADR-010).
+  it('nimmt einen vergangenen Kalendertag mit Bestaetigung an und vermerkt ihn im Audit', async () => {
+    await asPostgres('delete from public.audit_log');
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.office,
+      'select public.create_appointment($1::uuid, $2::uuid, $3, $4::date, $5::time, $6::time, $7::uuid, true, null, true) as id',
+      args({ tag: tagInTagen(-30) }),
+    );
+    expect(rows[0]!.id).toBeTruthy();
+
+    const audit = await asPostgres<{ context: Record<string, unknown> }>(
+      "select context from public.audit_log where action = 'appointment.created'",
+    );
+    expect(audit.rows[0]!.context).toMatchObject({ in_the_past: true });
+  });
+
+  it('vermerkt einen kuenftigen Termin nicht als vergangen', async () => {
+    await asPostgres('delete from public.audit_log');
+    await anlegenCommitted(users.office, {});
+    const audit = await asPostgres<{ context: Record<string, unknown> }>(
+      "select context from public.audit_log where action = 'appointment.created'",
+    );
+    expect(audit.rows[0]!.context).toMatchObject({ in_the_past: false });
   });
 
   it('erlaubt den laufenden Kalendertag der Praxiszeitzone', async () => {

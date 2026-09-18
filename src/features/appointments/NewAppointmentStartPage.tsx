@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Patientensuche } from '@/features/patients/Patientensuche';
-import { mitRueckweg } from '@/lib/rueckweg';
+import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { appointmentTypeLabels, leseTerminVorbelegung, schreibeTerminVorbelegung } from './api';
 
 /** Eine Kennung aus der Adresszeile, wie sie die Patientenanlage zurückgibt. */
@@ -30,6 +30,11 @@ export function NewAppointmentStartPage() {
   const [suche] = useSearchParams();
   const vorbelegung = leseTerminVorbelegung(suche);
   const anhang = schreibeTerminVorbelegung(vorbelegung);
+  // Der Rückweg des Aufrufers (der Kalender) reist mit ins Formular der
+  // gewählten Person, damit das Anlegen dort landet, wo es begann (BEF-016).
+  const rueckweg = leseRueckweg(suche, '');
+  const formular = (patientId: string) =>
+    mitRueckweg(`/patienten/${patientId}/termine/neu${anhang}`, rueckweg || null);
 
   /**
    * Der Rückweg für den Abstecher „Patient:in anlegen" (UX-012).
@@ -39,7 +44,7 @@ export function NewAppointmentStartPage() {
    * Kennung an; damit ist keine der Angaben verloren, die der Tap auf die
    * freie Stelle im Kalender mitgebracht hat.
    */
-  const hierher = `/termine/neu${anhang}`;
+  const hierher = mitRueckweg(`/termine/neu${anhang}`, rueckweg || null);
 
   /**
    * Zurück aus der Patientenanlage: direkt weiter ins Terminformular.
@@ -52,9 +57,9 @@ export function NewAppointmentStartPage() {
   const neuerPatient = suche.get('patient');
   useEffect(() => {
     if (neuerPatient && UUID.test(neuerPatient)) {
-      void navigate(`/patienten/${neuerPatient}/termine/neu${anhang}`, { replace: true });
+      void navigate(formular(neuerPatient), { replace: true });
     }
-  }, [neuerPatient, anhang, navigate]);
+  }, [neuerPatient, anhang, rueckweg, navigate]);
 
   const zeit =
     vorbelegung.beginn && vorbelegung.ende
@@ -87,7 +92,7 @@ export function NewAppointmentStartPage() {
           <Patientensuche
             label="Patient:in suchen"
             labelSichtbar
-            onAuswahl={(patientId) => void navigate(`/patienten/${patientId}/termine/neu${anhang}`)}
+            onAuswahl={(patientId) => void navigate(formular(patientId))}
           />
         </div>
         {/* Der häufigste Grund für einen leeren Treffer: Die Person ist neu.

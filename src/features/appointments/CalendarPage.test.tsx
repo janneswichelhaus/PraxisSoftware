@@ -76,8 +76,13 @@ vi.mock('./api', async (importOriginal) => {
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
-    updateAppointment: (id: string, stand: string, werte: unknown, bestaetigt?: boolean) =>
-      updateAppointment(id, stand, werte, bestaetigt) as Promise<void>,
+    updateAppointment: (
+      id: string,
+      stand: string,
+      werte: unknown,
+      bestaetigt?: boolean,
+      vergangenheit?: boolean,
+    ) => updateAppointment(id, stand, werte, bestaetigt, vergangenheit) as Promise<void>,
     // Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
     todayInTimeZone: () => HEUTE,
   };
@@ -118,7 +123,7 @@ const bestand = {
 };
 
 const { CalendarPage } = await import('./CalendarPage');
-const { AusserhalbArbeitszeitError } = await import('./api');
+const { AusserhalbArbeitszeitError, VergangenheitError } = await import('./api');
 
 function rendern(pfad = '/kalender') {
   return renderWithProviders(<CalendarPage user={testUser(['office'], 'Olivia Office')} />, pfad);
@@ -626,11 +631,25 @@ describe('CalendarPage', () => {
       stand: string;
       werte: AppointmentsApi.AppointmentFormValues;
       bestaetigt: boolean | undefined;
+      vergangenheit: boolean | undefined;
     } {
       const aufruf = updateAppointment.mock.calls.at(-1) as
-        [string, string, AppointmentsApi.AppointmentFormValues, boolean | undefined] | undefined;
+        | [
+            string,
+            string,
+            AppointmentsApi.AppointmentFormValues,
+            boolean | undefined,
+            boolean | undefined,
+          ]
+        | undefined;
       if (!aufruf) throw new Error('Es wurde nichts geschrieben.');
-      return { id: aufruf[0], stand: aufruf[1], werte: aufruf[2], bestaetigt: aufruf[3] };
+      return {
+        id: aufruf[0],
+        stand: aufruf[1],
+        werte: aufruf[2],
+        bestaetigt: aufruf[3],
+        vergangenheit: aufruf[4],
+      };
     }
 
     /**
@@ -737,13 +756,40 @@ describe('CalendarPage', () => {
       spaltenVermessen();
 
       // Der Termin liegt am Mittwoch, also in der dritten Spalte (500-700).
-      // Gezogen wird in die erste Spalte: Montag, der 10.05.
+      // Gezogen wird in die erste Spalte: Montag, der 10.05. - zwei Tage vor
+      // dem heutigen Praxistag: Die Rueckfrage nennt die Vergangenheit im
+      // selben Kasten, die Bestaetigung schickt das Kennzeichen mit (FIX-019).
       ziehen(kachel, { dy: 0, startX: 550, x: 150 });
-      await bestaetigen();
+      expect(await rueckfrage()).toHaveTextContent(/liegt in der Vergangenheit/);
+      await bestaetigen('Trotzdem verschieben');
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
-      const { werte } = letzterSchreibvorgang();
+      const { werte, bestaetigt, vergangenheit } = letzterSchreibvorgang();
       expect(werte).toMatchObject({ date: '2027-05-10', staff_member_id: STAFF_ANNA });
+      expect(bestaetigt).toBe(false);
+      expect(vergangenheit).toBe(true);
+    });
+
+    it('bestaetigt die Vergangenheit nicht, wenn der neue Tag nicht davor liegt (FIX-019)', async () => {
+      const kachel = await tagesansicht();
+      ziehen(kachel, { dy: EINE_STUNDE });
+      expect(await rueckfrage()).not.toHaveTextContent(/Vergangenheit/);
+      await bestaetigen();
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      expect(letzterSchreibvorgang().vergangenheit).toBe(false);
+    });
+
+    it('kommt mit dem Vergangenheits-Hinweis wieder, wenn erst der Server ihn erkennt', async () => {
+      updateAppointment.mockRejectedValueOnce(new VergangenheitError());
+      updateAppointment.mockResolvedValue(undefined);
+      const kachel = await tagesansicht();
+      ziehen(kachel, { dy: EINE_STUNDE });
+      await bestaetigen();
+
+      expect(await rueckfrage()).toHaveTextContent(/liegt in der Vergangenheit/);
+      await bestaetigen('Trotzdem verschieben');
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(2));
+      expect(letzterSchreibvorgang().vergangenheit).toBe(true);
     });
 
     it('schreibt nichts, wenn sich nichts aendert', async () => {
@@ -824,6 +870,60 @@ describe('CalendarPage', () => {
         expect(kasten).not.toHaveTextContent(/außerhalb/);
         expect(updateAppointment).not.toHaveBeenCalled();
         expect(fetchAppointment).not.toHaveBeenCalled();
+      });
+
+      it('zeichnet den alten Platz als Umriss und den neuen als Kachel im Gitter (FIX-017)', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
+        await rueckfrage();
+
+        // Der alte Platz: gestrichelt, beschriftet, noch da.
+        expect(kachel.className).toContain('border-dashed');
+        expect(kachel).toHaveTextContent(/Bisher/);
+        expect(kachel).toHaveAttribute('title', expect.stringMatching(/^Bisher/));
+        // Der neue Platz: eine Kachel mit der neuen Zeit, im Gitter.
+        const neu = screen.getByTestId('vorschlag-kachel');
+        expect(neu).toHaveTextContent('10:00–11:00');
+        expect(screen.getByRole('gridcell', { name: 'Anna Beispiel' })).toContainElement(neu);
+        // Der Kasten steht im Gitter, nicht darueber.
+        expect(screen.getByRole('grid')).toContainElement(await rueckfrage());
+      });
+
+      it('sperrt die uebrigen Kacheln nicht, solange die Rueckfrage offen ist (BEF-015)', async () => {
+        const kachel = await tagesansicht();
+        ziehen(kachel, { dy: EINE_STUNDE });
+        expect(await rueckfrage()).toHaveTextContent('10:00–11:00');
+
+        // Noch einmal ziehen, weiter: die neue Geste ersetzt den Vorschlag.
+        ziehen(kachel, { dy: 2 * EINE_STUNDE });
+        expect(await rueckfrage()).toHaveTextContent('11:00–12:00');
+        expect(screen.getAllByRole('group', { name: 'Termin verschieben?' })).toHaveLength(1);
+        expect(updateAppointment).not.toHaveBeenCalled();
+      });
+
+      it('nennt am Tooltip, warum eine Kachel nicht zieht', async () => {
+        fetchAppointments.mockResolvedValue([eintrag({ status: 'completed' })]);
+        const kachel = await tagesansicht();
+        expect(kachel).toHaveAttribute(
+          'title',
+          expect.stringContaining('Nicht verschiebbar: Abgeschlossen'),
+        );
+      });
+
+      it('nennt als Bisher den Tag des Termins, nicht den gezeigten Ausschnitt (FIX-018)', async () => {
+        // Tagesansicht auf dem Folgetag: Der Termin vom 12.05. steht (im Test
+        // ohne Datumsfilter) trotzdem im Gitter. Sein Ursprung muss vom Termin
+        // kommen - nach dem Blaettern waehrend der Geste zeigt der Ausschnitt
+        // einen anderen Tag als den, an dem der Termin war.
+        rendern('/kalender?ansicht=tag&datum=2027-05-13');
+        const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+        spaltenVermessen();
+
+        ziehen(kachel, { dy: EINE_STUNDE });
+
+        const kasten = await rueckfrage();
+        expect(kasten).toHaveTextContent('Mi 12.05., 09:00–10:00');
+        expect(kasten).toHaveTextContent('Do 13.05., 10:00–11:00');
       });
 
       it('setzt den Fokus auf die bestaetigende Schaltflaeche', async () => {
@@ -1010,6 +1110,27 @@ describe('CalendarPage', () => {
       // Vorbelegtes Zeitfenster von 60 Minuten (PROJECT_PRINCIPLES.md 8.1).
       expect(ziel.searchParams.get('beginn')).toBe('07:00');
       expect(ziel.searchParams.get('ende')).toBe('08:00');
+      // FIX-016: der Kalenderstand reist als Rueckweg mit, damit das Anlegen
+      // wieder hier landet.
+      expect(ziel.searchParams.get('zurueck')).toBe('/kalender?ansicht=tag&datum=2027-05-12');
+    });
+
+    it('gibt `neu` nicht in den naechsten Rueckweg weiter', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&neu=77777777-7777-4777-8777-000000000001');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const anlegen = screen.getByRole('link', { name: 'Termin anlegen' });
+      const ziel = new URL(String(anlegen.getAttribute('href')), 'http://test');
+      expect(ziel.searchParams.get('zurueck')).toBe('/kalender?ansicht=tag&datum=2027-05-12');
+    });
+
+    it('hebt den gerade angelegten Termin hervor und nennt ihn (FIX-016)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&neu=77777777-7777-4777-8777-000000000001');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      expect(kachel.className).toContain('ring-2');
+      expect(screen.getByRole('status')).toHaveTextContent(/Termin angelegt/);
+      expect(screen.getByRole('link', { name: 'Termin öffnen' })).toBeInTheDocument();
     });
 
     it('fuehrt aus der Wochenansicht mit dem Tag der Spalte in die Terminanlage', async () => {

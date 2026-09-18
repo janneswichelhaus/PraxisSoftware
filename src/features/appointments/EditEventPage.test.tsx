@@ -146,7 +146,7 @@ describe('EditEventPage', () => {
     await screen.findByLabelText('Bezeichnung *');
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
-    const rueckfrage = await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+    const rueckfrage = await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
     expect(rueckfrage).toHaveTextContent('noch nichts geschrieben');
 
     updateAppointmentEvent.mockResolvedValue(2);

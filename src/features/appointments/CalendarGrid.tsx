@@ -22,6 +22,23 @@ import {
 } from './api';
 import { Laengenzeichen } from './Laengenzeichen';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
+import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
+
+/**
+ * Eine abgelegte, noch nicht bestätigte Verschiebung, wie das Gitter sie
+ * zeigt (FIX-017, BEF-013): der alte Platz als Umriss, der neue als Kachel,
+ * der Kasten mit der Frage direkt daneben.
+ */
+export interface GitterVorschlag {
+  terminId: string;
+  spalteId: string;
+  startMinute: number;
+  endeMinute: number;
+  frage: VerschiebenFrage;
+  laeuft: boolean;
+  onBestaetigen: () => void;
+  onAbbrechen: () => void;
+}
 
 /**
  * Zeitgitter des Kalenders (CAL-006).
@@ -96,6 +113,8 @@ export interface GitterEintrag {
   farbe: string;
   /** Abgesagte und abgeschlossene Termine werden nicht gezogen. */
   ziehbar: boolean;
+  /** Gerade angelegt - beim Zurückkommen aus dem Formular hervorgehoben (FIX-016). */
+  neu?: boolean;
 }
 
 /** Kurze Einordnung: wo der Termin stattfindet. */
@@ -115,7 +134,19 @@ export function CalendarGrid({
   onFreieZeit,
   rueckweg,
   beschriftung,
+  vorschlag = null,
+  kontext,
+  onBlaettern,
+  laedtNach = false,
 }: {
+  /** Der gezeigte Stand ist der alte, der neue laedt noch (FIX-018). */
+  laedtNach?: boolean;
+  /** Die offene Rückfrage zum Verschieben - im Gitter gezeichnet (FIX-017). */
+  vorschlag?: GitterVorschlag | null;
+  /** Kennung des gezeigten Ausschnitts, etwa sein erster Tag (FIX-018). */
+  kontext: string;
+  /** Blättert während des Ziehens, wenn der Zeiger seitlich am Gitter verharrt (FIX-018). */
+  onBlaettern?: ((richtung: -1 | 1) => void) | undefined;
   spaltenModell: GitterSpalte[];
   eintraege: GitterEintrag[];
   fenster: { vonMinute: number; bisMinute: number };
@@ -144,6 +175,7 @@ export function CalendarGrid({
   beschriftung: string;
 }) {
   const spaltenRefs = useRef(new Map<string, HTMLElement>());
+  const gitterRef = useRef<HTMLDivElement>(null);
   const hoehe = ((fenster.bisMinute - fenster.vonMinute) / 60) * stundenHoehe;
 
   const linien = gitterlinien(stundenHoehe, raster);
@@ -174,6 +206,17 @@ export function CalendarGrid({
       }
       return null;
     },
+    kontext,
+    // Seitlich ueber dem Gitter: dort wird geblaettert (FIX-018). Ein paar
+    // Pixel Toleranz, damit die Spaltenkante selbst noch Ziel ist.
+    randAn: (clientX) => {
+      const kasten = gitterRef.current?.getBoundingClientRect();
+      if (!kasten) return 0;
+      if (clientX < kasten.left + 4) return -1;
+      if (clientX > kasten.right - 4) return 1;
+      return 0;
+    },
+    onBlaettern,
     onAblegen: (zustand: ZiehZustand) =>
       onVerschieben({
         terminId: zustand.terminId,
@@ -184,7 +227,9 @@ export function CalendarGrid({
 
   return (
     <div
-      className="border-line rounded-card mt-4 overflow-x-auto border"
+      ref={gitterRef}
+      aria-busy={laedtNach || undefined}
+      className={`border-line rounded-card mt-4 overflow-x-auto border ${laedtNach ? 'opacity-60' : ''}`}
       // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
       // auf einer Kachel wird nicht vom Browser übernommen.
       style={{ touchAction: 'pan-x pan-y' }}
@@ -375,6 +420,7 @@ export function CalendarGrid({
                     breite={breite}
                     stapel={spalte + 1}
                     gedimmt={wirdGezogen}
+                    bisher={vorschlag?.terminId === g.eintrag.id}
                     wartet={ziehen.wartetAuf === g.eintrag.id}
                     ziehbar={ziehbarErlaubt && g.ziehbar}
                     rueckweg={rueckweg}
@@ -392,6 +438,55 @@ export function CalendarGrid({
                   />
                 );
               })}
+
+              {/* Die Rueckfrage im Gitter (FIX-017): die neue Kachel am Ziel,
+                  der Kasten daneben. Die alte Kachel steht als Umriss weiter
+                  oben (`bisher`). Bei den rechten Spalten haengt der Kasten
+                  links an, damit er nicht aus dem Gitter laeuft. */}
+              {vorschlag && vorschlag.spalteId === s.id
+                ? (() => {
+                    const oben = minuteZuPixel(
+                      vorschlag.startMinute,
+                      fenster.vonMinute,
+                      stundenHoehe,
+                    );
+                    const kachelHoehe = Math.max(
+                      28,
+                      ((vorschlag.endeMinute - vorschlag.startMinute) / 60) * stundenHoehe,
+                    );
+                    const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
+                    const rechts =
+                      spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
+                    // Unter der Kachel, es sei denn, dort ist kein Platz mehr.
+                    const kastenOben =
+                      oben + kachelHoehe + 200 <= hoehe ? oben + kachelHoehe + 4 : undefined;
+                    return (
+                      <>
+                        <div
+                          data-testid="vorschlag-kachel"
+                          className="border-accent bg-surface text-accent rounded-button ring-accent absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold ring-2"
+                          style={{ top: `${oben}px`, height: `${kachelHoehe}px` }}
+                          aria-hidden="true"
+                        >
+                          Neu · {minuteZuZeit(vorschlag.startMinute)}–
+                          {minuteZuZeit(vorschlag.endeMinute)}
+                        </div>
+                        <VerschiebenRueckfrage
+                          frage={vorschlag.frage}
+                          laeuft={vorschlag.laeuft}
+                          onBestaetigen={vorschlag.onBestaetigen}
+                          onAbbrechen={vorschlag.onAbbrechen}
+                          className={[
+                            'absolute z-50 w-72 max-w-[calc(100vw-5rem)]',
+                            rechts ? 'right-1' : 'left-1',
+                            kastenOben === undefined ? 'bottom-1' : '',
+                          ].join(' ')}
+                          style={kastenOben === undefined ? undefined : { top: `${kastenOben}px` }}
+                        />
+                      </>
+                    );
+                  })()
+                : null}
 
               {/* Vorschau: zeigt nur, wohin es ginge. Geschrieben ist noch nichts. */}
               {ziehen.vorschau && ziehen.vorschau.spalteId === s.id ? (
@@ -422,6 +517,7 @@ function Kachel({
   breite,
   stapel,
   gedimmt,
+  bisher,
   wartet,
   ziehbar,
   rueckweg,
@@ -429,6 +525,8 @@ function Kachel({
   onClickCapture,
 }: {
   gitter: GitterEintrag;
+  /** Der alte Platz einer Verschiebung, ueber die gerade gefragt wird (FIX-017). */
+  bisher: boolean;
   fensterVon: number;
   stundenHoehe: number;
   links: number;
@@ -469,7 +567,13 @@ function Kachel({
       onPointerDown={ziehbar ? onPointerDown : undefined}
       onClickCapture={onClickCapture}
       title={[
+        bisher ? 'Bisher' : null,
         `${minuteZuZeit(beginnMinute)}–${minuteZuZeit(endeMinute)}`,
+        // Warum eine Kachel nicht zieht, steht dran - eine stumme Kachel
+        // sieht aus wie ein Fehler (BEF-015).
+        !gitter.ziehbar && eintrag.status !== 'confirmed'
+          ? `Nicht verschiebbar: ${appointmentStatusLabels[eintrag.status]}`
+          : null,
         abweichung === null ? null : abweichendeLaengeText(abweichung),
         vermerk,
         ortsHinweis(eintrag),
@@ -495,9 +599,13 @@ function Kachel({
         'border border-l-4 px-1.5 py-1 text-left transition-colors',
         eintrag.status === 'cancelled' ? 'opacity-60' : '',
         gedimmt ? 'opacity-40' : '',
+        // Der alte Platz: gestrichelt und blass, damit niemand ihn fuer den
+        // neuen haelt (FIX-017).
+        bisher ? 'border-dashed opacity-50' : '',
         // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
         // wie nichts.
         wartet ? 'ring-accent scale-[1.02] ring-2' : '',
+        gitter.neu ? 'ring-accent ring-2' : '',
         ziehbar ? 'cursor-grab' : '',
       ]
         .filter(Boolean)
@@ -508,6 +616,7 @@ function Kachel({
           (CAL-015b). Ohne das Zeichen sähe eine Teambesprechung aus wie eine
           Patient:in mit ungewöhnlichem Namen. */}
       <span className="text-ink block truncate text-xs font-medium">
+        {bisher ? <span className="text-ink-muted">Bisher · </span> : null}
         {eintrag.kind === 'event' ? '▪ ' : ''}
         {terminBezeichnung(eintrag)}
       </span>

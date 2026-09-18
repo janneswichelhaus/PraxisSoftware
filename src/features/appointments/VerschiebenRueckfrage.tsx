@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import { Button } from '@/components/ui/Button';
 
 /**
@@ -19,6 +19,8 @@ export interface VerschiebenFrage {
    * wirklich außerhalb liegt, entscheidet der Server (CAL-005).
    */
   ausserhalb: boolean;
+  /** Der neue Tag liegt in der Vergangenheit (FIX-019) - derselbe Kasten. */
+  vergangenheit: boolean;
 }
 
 /**
@@ -29,21 +31,27 @@ export interface VerschiebenFrage {
  * die Zielzeit frei ist. Bis zur Bestätigung bleibt die Kachel, wo sie war;
  * die Rückgängig-Leiste danach fängt die versehentliche Bestätigung (UX-010).
  *
- * Kein modaler Dialog, wie die übrigen Rückfragen (UI-000): Der Kasten nimmt
- * der Seite nichts weg. Der Fokus wandert beim Öffnen auf die bestätigende
- * Schaltfläche — das holt den Kasten zugleich in den sichtbaren Bereich, wenn
- * das Gitter darunter weit gescrollt war —, und Escape bricht ab.
+ * Kein Fenster über dem Inhalt (anders als die Formular-Rückfragen aus
+ * FIX-016): Hier muss der Kalender sichtbar bleiben, denn die Frage ist „dort
+ * hin?" — und die Antwort steht im Gitter. Seit FIX-017 (BEF-013) liegt der
+ * Kasten deshalb direkt neben der neuen Kachel; der alte Platz bleibt als
+ * Umriss stehen. Der Fokus wandert beim Öffnen auf die bestätigende
+ * Schaltfläche, Escape bricht ab.
  */
 export function VerschiebenRueckfrage({
   frage,
   laeuft,
   onBestaetigen,
   onAbbrechen,
+  className = '',
+  style,
 }: {
   frage: VerschiebenFrage;
   laeuft: boolean;
   onBestaetigen: () => void;
   onAbbrechen: () => void;
+  className?: string;
+  style?: CSSProperties | undefined;
 }) {
   const bestaetigenRef = useRef<HTMLButtonElement>(null);
 
@@ -57,7 +65,11 @@ export function VerschiebenRueckfrage({
     <div
       role="group"
       aria-label="Termin verschieben?"
-      className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
+      // Seit FIX-017 steht der Kasten IM GITTER neben der neuen Kachel (BEF-013);
+      // wer ihn setzt, gibt die Lage vor. Schatten und Rand heben ihn vom
+      // Hintergrund ab, auf dem er liegt.
+      className={`border-line-strong bg-surface rounded-card border-2 p-4 ${className}`}
+      style={style}
       onKeyDown={(event) => {
         if (event.key === 'Escape' && !laeuft) onAbbrechen();
       }}
@@ -77,6 +89,12 @@ export function VerschiebenRueckfrage({
           </>
         ) : null}
       </dl>
+      {frage.vergangenheit ? (
+        <p className="text-ink mt-3 text-sm">
+          <span aria-hidden="true">! </span>
+          Der neue Tag liegt in der Vergangenheit. Der Termin wird als nachgetragen vermerkt.
+        </p>
+      ) : null}
       {frage.ausserhalb ? (
         <p className="text-ink mt-3 text-sm">
           <span aria-hidden="true">! </span>
@@ -86,7 +104,11 @@ export function VerschiebenRueckfrage({
       <p className="text-ink-subtle mt-2 text-xs">Der Termin wurde noch nicht verschoben.</p>
       <div className="mt-3 flex flex-wrap gap-3">
         <Button ref={bestaetigenRef} type="button" disabled={laeuft} onClick={onBestaetigen}>
-          {laeuft ? 'Wird verschoben …' : frage.ausserhalb ? 'Trotzdem verschieben' : 'Verschieben'}
+          {laeuft
+            ? 'Wird verschoben …'
+            : frage.ausserhalb || frage.vergangenheit
+              ? 'Trotzdem verschieben'
+              : 'Verschieben'}
         </Button>
         <Button type="button" variant="quiet" disabled={laeuft} onClick={onAbbrechen}>
           Abbrechen

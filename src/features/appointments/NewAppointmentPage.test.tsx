@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
@@ -49,8 +49,20 @@ vi.mock('./api', async (importOriginal) => {
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
-    createAppointment: (patientId: string, values: unknown, bestaetigt?: boolean) =>
-      createAppointment(patientId, values, bestaetigt) as Promise<string>,
+    createAppointment: (
+      patientId: string,
+      values: unknown,
+      bestaetigt?: boolean,
+      verordnung?: string | null,
+      vergangenheit?: boolean,
+    ) =>
+      createAppointment(
+        patientId,
+        values,
+        bestaetigt,
+        verordnung,
+        vergangenheit,
+      ) as Promise<string>,
   };
 });
 
@@ -61,7 +73,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 }));
 
 const { NewAppointmentPage } = await import('./NewAppointmentPage');
-const { AusserhalbArbeitszeitError } = await import('./api');
+const { AusserhalbArbeitszeitError, VergangenheitError } = await import('./api');
 
 function rendern() {
   return renderWithProviders(
@@ -222,17 +234,60 @@ describe('NewAppointmentPage', () => {
     expect(createAppointment).not.toHaveBeenCalled();
   });
 
-  it('begrenzt das Datumsfeld auf den laufenden Praxistag', async () => {
+  it('begrenzt das Datumsfeld nicht mehr auf den laufenden Praxistag (FIX-019)', async () => {
     rendern();
     await formularAbwarten();
-    // testUser fuehrt Europe/Berlin.
-    const heute = new Intl.DateTimeFormat('en-CA', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      timeZone: 'Europe/Berlin',
-    }).format(new Date());
-    expect(screen.getByLabelText('Datum *')).toHaveAttribute('min', heute);
+    expect(screen.getByLabelText('Datum *')).not.toHaveAttribute('min');
+  });
+
+  it('fragt bei einem Tag in der Vergangenheit VOR dem Server nach und traegt bestaetigt nach', async () => {
+    createAppointment.mockResolvedValue(TERMIN_ID);
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.clear(screen.getByLabelText('Datum *'));
+    await user.type(screen.getByLabelText('Datum *'), '2020-01-06');
+    await user.type(screen.getByLabelText('Beginn *'), '09:00');
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    const fenster = await screen.findByRole('dialog', { name: 'Termin in der Vergangenheit' });
+    expect(fenster).toHaveTextContent(/nachgetragen/);
+    expect(createAppointment).not.toHaveBeenCalled();
+
+    await user.click(within(fenster).getByRole('button', { name: 'Termin trotzdem anlegen' }));
+    await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(1));
+    expect(createAppointment).toHaveBeenLastCalledWith(
+      PATIENT_ID,
+      expect.objectContaining({ date: '2020-01-06' }),
+      false,
+      null,
+      true,
+    );
+  });
+
+  it('fragt nach, wenn erst der Server die Vergangenheit erkennt', async () => {
+    createAppointment.mockRejectedValueOnce(new VergangenheitError());
+    createAppointment.mockResolvedValue(TERMIN_ID);
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await zeitenSetzen(user);
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    const fenster = await screen.findByRole('dialog', { name: 'Termin in der Vergangenheit' });
+    await user.click(within(fenster).getByRole('button', { name: 'Termin trotzdem anlegen' }));
+    await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(2));
+    expect(createAppointment).toHaveBeenLastCalledWith(
+      PATIENT_ID,
+      expect.anything(),
+      false,
+      null,
+      true,
+    );
   });
 
   it('legt einen Praxistermin mit Standort an und wechselt zur Detailansicht', async () => {
@@ -257,12 +312,48 @@ describe('NewAppointmentPage', () => {
         location_id: ORT_HAUPT,
       },
       // Der erste Versuch geht ausdruecklich OHNE Arbeitszeitbestaetigung
-      // hinaus (CAL-005).
+      // hinaus (CAL-005) - und ohne Vergangenheitsbestaetigung (FIX-019).
+      false,
+      null,
       false,
     );
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, { replace: true }),
     );
+  });
+
+  it('kehrt nach dem Anlegen dorthin zurueck, wo es begann - mit dem neuen Termin (FIX-016)', async () => {
+    // Aus dem Kalender getippt: der Rueckweg ist der Kalenderstand. Zurueck
+    // geht es dorthin, der neue Termin wird hervorgehoben (BEF-016).
+    createAppointment.mockResolvedValue(TERMIN_ID);
+    const user = userEvent.setup();
+    const kalender = '/kalender?ansicht=tag&datum=2027-05-12';
+    renderWithProviders(
+      <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+      `/patienten/${PATIENT_ID}/termine/neu?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await zeitenSetzen(user);
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`${kalender}&neu=${TERMIN_ID}`, { replace: true }),
+    );
+  });
+
+  it('bricht zum Rueckweg hin ab, nicht zur Akte', async () => {
+    const user = userEvent.setup();
+    const kalender = '/kalender?ansicht=tag&datum=2027-05-12';
+    renderWithProviders(
+      <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+      `/patienten/${PATIENT_ID}/termine/neu?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    await formularAbwarten();
+
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(navigate).toHaveBeenCalledWith(kalender);
   });
 
   it('waehlt einen einzelnen Standort vor', async () => {
@@ -451,6 +542,8 @@ describe('NewAppointmentPage', () => {
           PATIENT_ID,
           expect.objectContaining({ start_time: '09:00' }),
           false,
+          null,
+          false,
         ),
       );
     });
@@ -465,7 +558,7 @@ describe('NewAppointmentPage', () => {
       await zeitenSetzen(user);
       await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
 
-      const rueckfrage = await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+      const rueckfrage = await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
       expect(rueckfrage).toHaveTextContent(/noch nicht gespeichert/);
       expect(navigate).not.toHaveBeenCalled();
     });
@@ -480,7 +573,7 @@ describe('NewAppointmentPage', () => {
       await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
       await zeitenSetzen(user);
       await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
-      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+      await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
 
       await user.click(screen.getByRole('button', { name: 'Termin trotzdem anlegen' }));
 
@@ -489,6 +582,8 @@ describe('NewAppointmentPage', () => {
           PATIENT_ID,
           expect.objectContaining({ start_time: '09:00' }),
           true,
+          null,
+          false,
         ),
       );
       await waitFor(() =>
@@ -505,17 +600,43 @@ describe('NewAppointmentPage', () => {
       await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
       await zeitenSetzen(user);
       await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
-      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+      const fenster = await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
+      // FIX-016: ein Fenster ueber dem Formular, der Fokus liegt darin.
+      expect(
+        within(fenster).getByRole('button', { name: 'Termin trotzdem anlegen' }),
+      ).toHaveFocus();
 
-      // Die Rueckfrage galt genau dem abgewiesenen Zeitraum.
-      await user.clear(screen.getByLabelText('Beginn *'));
-      await user.type(screen.getByLabelText('Beginn *'), '14:00');
-
+      // „Zurueck zum Formular" schliesst, ohne etwas zu schreiben; die
+      // Eingaben bleiben stehen.
+      await user.click(within(fenster).getByRole('button', { name: 'Zurück zum Formular' }));
       await waitFor(() =>
         expect(
-          screen.queryByRole('group', { name: 'Außerhalb der Arbeitszeit' }),
+          screen.queryByRole('dialog', { name: 'Außerhalb der Arbeitszeit' }),
         ).not.toBeInTheDocument(),
       );
+      expect(createAppointment).toHaveBeenCalledTimes(1);
+      expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
+      expect(screen.getByRole('button', { name: 'Termin anlegen' })).toHaveFocus();
+    });
+
+    it('zeigt einen Fehler nach dem Absenden als Fenster (FIX-016)', async () => {
+      createAppointment.mockRejectedValue(
+        new Error('In diesem Zeitraum hat die behandelnde Person bereits einen Termin.'),
+      );
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+      await zeitenSetzen(user);
+      await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+      const fenster = await screen.findByRole('dialog', {
+        name: 'Der Termin konnte nicht angelegt werden.',
+      });
+      expect(fenster).toHaveTextContent(/bereits einen Termin/);
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     });
   });
 
@@ -616,6 +737,8 @@ describe('NewAppointmentPage', () => {
           start_time: '09:00',
           end_time: '10:00',
         }),
+        false,
+        null,
         false,
       );
     });

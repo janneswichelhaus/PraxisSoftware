@@ -430,3 +430,127 @@ wäre, wird übersprungen — und dann auch, wenn es einen echten Fehler hätte.
 **Richtung.** Entweder die Node-Version festnageln (`.nvmrc`, `engines` auf
 `22.x`) oder in der Testumgebung `AbortSignal`/`Request` von jsdom durch die
 von Node ersetzen. Kleine Wartung, kein eigener Loop.
+
+### BEF-012 — Ein Termin lässt sich nicht in die Vergangenheit verschieben
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-18                                                                                    |
+| Bereich | Kalender (`/kalender`), Termin bearbeiten                                                     |
+| Quelle  | Jannes, Bedienung nach dem Merge von CAL-EPIC-004a                                            |
+| Status  | erledigt in FIX-EPIC-004 (FIX-019, 2026-09-18) — ANN-057 |
+| Berührt | `create_appointment`, `update_appointment` („appointment date is in the past", seit CAL-003), `CalendarPage.tsx`, `EditAppointmentPage.tsx` |
+
+**Beobachtung.** Der Server weist jeden Tag vor dem heutigen ab — beim Anlegen
+wie beim Verschieben. Wer einen Termin nachträgt oder auf gestern zurücklegt
+(„fand doch schon statt"), kommt nicht durch.
+
+**Warum das zählt.** Keine Leitplanke verlangt die Sperre; sie stammt aus
+CAL-003 als Schutz vor Tippfehlern. Im Praxisalltag ist ein rückdatierter
+Termin ein normaler Fall, und das Nachtragen gehört zur Dokumentation.
+
+**Richtung.** Sperre durch einen Hinweis ersetzen — in derselben Rückfrage
+wie der Arbeitszeit-Hinweis (CAL-023, kein zweiter Kasten), mit dem Muster
+`bestaetigt` aus CAL-005; Grenze und Auditvermerk als Annahme festhalten.
+Migration und `test:db`.
+
+### BEF-013 — Die Rückfrage beim Ziehen reißt aus dem Kalender heraus
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-18                                                                                    |
+| Bereich | Kalender, Ziehen einer Terminkachel (CAL-023)                                                 |
+| Quelle  | Jannes, Bedienung am Desktop                                                                  |
+| Status  | erledigt in FIX-EPIC-004 (FIX-017, 2026-09-18) |
+| Berührt | `VerschiebenRueckfrage.tsx`, `CalendarPage.tsx`, `CalendarGrid.tsx`, `useTerminZiehen.ts`     |
+
+**Beobachtung.** Nach dem Loslassen springt die Seite zum Kasten über dem
+Gitter (der Fokus holt ihn heran); die Kachel selbst bleibt am alten Platz,
+und wer verschieben will, sieht das Ziel nicht mehr.
+
+**Warum das zählt.** Die Rückfrage ist richtig (BEF-008), ihr Ort nicht. Was
+verschoben wird, muss dort sichtbar sein, wo es passiert.
+
+**Richtung.** Rückfrage **im Gitter**: der alte Platz als Umriss, der neue
+als volle Kachel, beide deutlich unterscheidbar, Bestätigen und Abbrechen
+unmittelbar an der neuen Kachel; kein Sprung nach oben. Der Arbeitszeit- und
+der Vergangenheits-Hinweis (BEF-012) stehen daran. Tastatur und Vorlesen
+bleiben: der Kasten muss auch ohne Zeiger erreichbar sein.
+
+### BEF-014 — Ziehen über den sichtbaren Ausschnitt hinaus ist nicht möglich
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-18                                                                                    |
+| Bereich | Kalender, Ziehen (CAL-006, UX-010)                                                            |
+| Quelle  | Jannes                                                                                        |
+| Status  | erledigt in FIX-EPIC-004 (FIX-018, 2026-09-18); „Verschieben nach …" nicht gebaut, Bearbeiten bleibt der Weg ohne Zeiger |
+| Berührt | `useTerminZiehen.ts` (ein `scroll` bricht das Ziehen ab), `CalendarPage.tsx` (Bereich, Blättern) |
+
+**Beobachtung.** Während des Ziehens lässt sich weder scrollen noch blättern:
+Jeder Bildlauf beendet die Geste (bewusst so gebaut, damit am Finger Scrollen
+nicht verschiebt). Ein Termin kann damit nur innerhalb des sichtbaren
+Ausschnitts wandern — nicht in eine andere Woche, nicht auf einen Tag weit
+unten.
+
+**Warum das zählt.** Verschieben um Tage und Wochen ist der Regelfall
+(Urlaub, Krankheit, Serienverschiebung), nicht die Ausnahme.
+
+**Richtung.** Während des Ziehens am Rand automatisch scrollen (senkrecht
+im Gitter) und über die Blätter-Schaltflächen oder eine Randzone in die
+nächste Woche/den nächsten Tag wechseln, ohne die Geste zu verlieren; am
+Finger bleibt der lange Druck die Abgrenzung zum Scrollen. Alternativ oder
+zusätzlich: „Verschieben nach …" mit Datumsfeld aus der Kachel — das ist der
+Weg ohne Zeigegerät, den es ohnehin braucht.
+
+### BEF-015 — Einzelne Termine lassen sich nicht ziehen
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-18                                                                                    |
+| Bereich | Kalender, Ziehen                                                                              |
+| Quelle  | Jannes; Ursache noch nicht bestätigt                                                          |
+| Status  | erledigt in FIX-EPIC-004 (FIX-017, 2026-09-18) |
+| Berührt | `CalendarPage.tsx` (`ziehbarErlaubt`, `ziehbar: status === 'confirmed'`)                     |
+
+**Beobachtung.** Manche Termine reagieren nicht auf Ziehen. Zwei Ursachen
+sind im Code angelegt: (1) Solange eine Rückfrage aus CAL-023 offen ist —
+auch außerhalb des sichtbaren Bereichs —, ist das Ziehen für alle Kacheln
+gesperrt; wer nach dem Sprung nach oben zurückscrollt, ohne zu antworten,
+kann nichts mehr ziehen. (2) Abgeschlossene, nicht angetroffene und
+abgesagte Termine sind nach ADR-018 bewusst nicht ziehbar.
+
+**Warum das zählt.** Fall 1 ist ein Fehler aus CAL-023 und fällt mit BEF-013
+weg, wenn die Rückfrage an der Kachel steht. Fall 2 braucht eine sichtbare
+Erklärung statt einer stummen Kachel.
+
+**Richtung.** Mit BEF-013 beheben; für Fall 2 ein kurzer Hinweis im Tooltip
+der Kachel („Abgeschlossen — zum Verschieben erst wieder öffnen"). Zu klären
+mit Jannes, welche Termine betroffen waren.
+
+### BEF-016 — Rückfragen am Seitenanfang bleiben unsichtbar; nach dem Anlegen fehlt der Rückweg
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-18                                                                                    |
+| Bereich | Terminanlage (`/patienten/:id/termine/neu`), grundsätzlich jede Rückfrage über dem Formular    |
+| Quelle  | Jannes, zwei Bildschirmfotos (Desktop)                                                        |
+| Status  | erledigt in FIX-EPIC-004 (FIX-016, 2026-09-18) — ANN-058 |
+| Berührt | `NewAppointmentPage.tsx`, `EditAppointmentPage.tsx`, `components/ui/Rueckfrage.tsx`, `lib/rueckweg.ts`, alle Seiten mit dem Muster „trotzdem anlegen" |
+
+**Beobachtung.** „Termin anlegen" am Ende eines langen Formulars zeigt die
+Arbeitszeit-Rückfrage oben über dem Formular — außerhalb des Sichtfelds;
+scheinbar passiert nichts. Nach „Termin trotzdem anlegen" landet man in der
+Terminansicht, nicht dort, wo man herkam (hier: Tap auf freie Zeit im
+Kalender, UX-005).
+
+**Warum das zählt.** Ein Hinweis, den man nicht sieht, ist keiner (UI-000).
+Der Rückweg ist für jede Seite versprochen (UX-012), hier fehlt er nach dem
+Erfolg.
+
+**Richtung.** Festlegung von Jannes: Solche Rückfragen erscheinen **immer
+als Fenster über dem aktuellen Inhalt** (modal, mit Fokusfang, Escape und
+Rückkehr des Fokus) — das ist eine Abkehr von UI-000 („kein modaler Dialog")
+und braucht eine kurze Anpassung dort, dann gilt sie für alle Rückfragen des
+Musters. Nach dem Anlegen zurück zum Aufrufer (`zurueck`-Parameter aus
+UX-012), der neue Termin im Kalender hervorgehoben.
