@@ -408,7 +408,7 @@ Schema genau einer Funktion gehört und die zweite Sicht ihr eigenes bekommt.
 Entschieden ist das nicht; es gehört in den Loop, der das nächste Feld an ein
 geteiltes Schema hängt.
 
-### BEF-011 — Zwölf Kalendertests scheitern unter Node 24 an der Navigation in jsdom
+### BEF-011 — Rund 60 Komponententests scheitern unter Node 24 an der Navigation in jsdom
 
 |         |                                                                                               |
 | ------- | --------------------------------------------------------------------------------------------- |
@@ -416,10 +416,10 @@ geteiltes Schema hängt.
 | Bereich | Werkzeugkette: `pnpm test` unter Windows mit Node 24.20                                       |
 | Quelle  | Loop CAL-EPIC-004a, lokaler Testlauf; auf `main` genauso rot                                  |
 | Status  | offen                                                                                         |
-| Berührt | `src/features/appointments/CalendarPage.test.tsx` (alle Fälle, die `setSearchParams` auslösen) |
+| Berührt | Neun Testdateien, voran `CalendarPage.test.tsx` (12) und `AuthenticatedRoutes.test.tsx` (29) — alle Fälle, die navigieren |
 
-**Beobachtung.** Jeder Kalendertest, der die Adresszeile ändert (Blättern,
-Filter, Zoomstufe), bricht mit `RequestInit: Expected signal … to be an
+**Beobachtung.** Jeder Komponententest, der navigiert (Blättern, Filter,
+Zoomstufe, Routenwechsel), bricht mit `RequestInit: Expected signal … to be an
 instance of AbortSignal` ab — react-router 7 baut bei der Navigation ein
 `Request` mit dem `AbortSignal` von jsdom, das Node 24 nicht mehr als seines
 erkennt. `package.json` verlangt nur `node >=22`; die CI läuft mit 22.

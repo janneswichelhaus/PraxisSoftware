@@ -422,7 +422,7 @@ export const TERMINFENSTER_MINUTEN = 60;
  * Spiegel von `app.appointment_window_options()`; ein Datenbanktest hält beide
  * gegeneinander. Seit `PROJECT_PRINCIPLES.md` 0.11 §8.1 ist die Liste **keine
  * Schranke** mehr: Der Server nimmt jede Länge im Praxisraster an, und wer
- * von ihr abweicht, wird gekennzeichnet (`istAbweichendeLaenge`).
+ * von ihr abweicht, wird gekennzeichnet (`abweichendeLaengeMinuten`).
  */
 export const TERMINFENSTER_OPTIONEN = [60, 45] as const;
 
@@ -448,9 +448,15 @@ function minutenAusZeit(zeit: string): number | null {
  * Zeichenkette zurück: ein Termin über den Tageswechsel ist keiner, und das
  * Formular soll dafür kein Ende erfinden.
  */
-export function fensterEnde(beginn: string, minuten = TERMINFENSTER_MINUTEN): string {
+export function fensterEnde(
+  beginn: string,
+  minuten: number | null = TERMINFENSTER_MINUTEN,
+): string {
   const start = minutenAusZeit(beginn);
-  if (start === null) return '';
+  // `null`: die Länge ist gerade keine Zahl (leeres Minutenfeld, CAL-020).
+  // Ohne Ende weist das Formular das Speichern ab, statt mit der zuletzt
+  // gültigen Länge weiterzurechnen.
+  if (start === null || minuten === null) return '';
   const gesamt = start + minuten;
   if (gesamt >= 24 * 60) return '';
   return minuteZuZeit(gesamt);

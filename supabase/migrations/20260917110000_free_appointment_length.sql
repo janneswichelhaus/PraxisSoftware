@@ -23,7 +23,7 @@
 --   3. `app.appointment_window_options()` bleibt und heisst ab jetzt, was es
 --      ist: die REGELLAENGEN. Wer davon abweicht, wird gekennzeichnet, nicht
 --      abgewiesen; das Kennzeichen rechnet die Oberflaeche aus Beginn und
---      Ende (`istAbweichendeLaenge` in src/features/appointments/api.ts), und
+--      Ende (`abweichendeLaengeMinuten` in src/features/appointments/api.ts), und
 --      ein Datenbanktest haelt beide Listen gegeneinander.
 --   4. `app.is_valid_treatment_window(interval)` entfaellt - es gibt keine
 --      Liste zulaessiger Laengen mehr, gegen die zu pruefen waere.

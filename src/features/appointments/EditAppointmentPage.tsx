@@ -149,8 +149,8 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   }
 
   /** Wechselt die Länge ausdrücklich - danach gilt die Regel aus §8.1. */
-  function laengeWechseln(minuten: number) {
-    setFensterMinuten(minuten);
+  function laengeWechseln(minuten: number | null) {
+    if (minuten !== null) setFensterMinuten(minuten);
     setWerte((bisher) => ({ ...bisher, end_time: fensterEnde(bisher.start_time, minuten) }));
     if (fehler.end_time) setFehler(({ end_time: _entfaellt, ...rest }) => rest);
     if (mutation.isError) mutation.reset();

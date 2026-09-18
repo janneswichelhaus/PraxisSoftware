@@ -79,7 +79,7 @@ export function AppointmentFormFields({
    * Minutenfeld öffnet. Eine abweichende Länge wird nicht verhindert, sondern
    * angekündigt — der Termin trägt danach das Abweichungszeichen.
    */
-  onFensterMinuten?: ((minuten: number) => void) | undefined;
+  onFensterMinuten?: ((minuten: number | null) => void) | undefined;
   /**
    * Text unter dem abgeleiteten Ende. Ohne Angabe der Hinweis auf das
    * Terminfenster.
@@ -233,7 +233,8 @@ function Dauerwahl({
   rasterMinuten: number | undefined;
   endeHinweis: string;
   fehler: string | undefined;
-  onMinuten: (minuten: number) => void;
+  /** `null`: das Minutenfeld enthält gerade keine gültige Zahl. */
+  onMinuten: (minuten: number | null) => void;
 }) {
   const [freiGewaehlt, setFreiGewaehlt] = useState(false);
   // Der getippte Text, solange er von der gültigen Länge abweichen kann
@@ -296,9 +297,10 @@ function Dauerwahl({
             setFreiGewaehlt(true);
             setEingabe(e.target.value);
             const neu = Number(e.target.value);
-            if (e.target.value.trim().length > 0 && Number.isInteger(neu) && neu > 0) {
-              onMinuten(neu);
-            }
+            const gueltig = e.target.value.trim().length > 0 && Number.isInteger(neu) && neu > 0;
+            // Ungültig heißt: kein Ende - das Formular speichert dann nicht
+            // mit der zuletzt gültigen Länge weiter.
+            onMinuten(gueltig ? neu : null);
           }}
           onBlur={() => {
             if (istZahl) setEingabe(null);

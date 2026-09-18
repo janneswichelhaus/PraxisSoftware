@@ -206,6 +206,22 @@ describe('NewAppointmentPage', () => {
     expect(screen.getByText(/Vielfaches von 5 Minuten/)).toBeInTheDocument();
   });
 
+  it('speichert mit leerem Minutenfeld nicht die zuletzt gueltige Laenge weiter', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.type(screen.getByLabelText('Beginn *'), '10:15');
+    await user.selectOptions(screen.getByLabelText('Dauer'), 'frei');
+    await user.clear(screen.getByLabelText('Länge in Minuten'));
+
+    expect(screen.getByText(/Bitte eine Länge in ganzen Minuten/)).toBeInTheDocument();
+    expect(screen.queryByText(/Ende: 11:15 Uhr/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+    expect(createAppointment).not.toHaveBeenCalled();
+  });
+
   it('begrenzt das Datumsfeld auf den laufenden Praxistag', async () => {
     rendern();
     await formularAbwarten();

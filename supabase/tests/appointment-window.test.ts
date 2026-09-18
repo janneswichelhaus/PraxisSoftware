@@ -158,7 +158,7 @@ describe('Terminfenster (CAL-010a)', () => {
     // CAL-020, PROJECT_PRINCIPLES.md 0.11 Abschnitt 8.1: Die Laenge ist frei.
     // Diese drei Faelle waren bis dahin die abgewiesenen; sie pruefen jetzt,
     // dass der Server die abweichende Laenge ANNIMMT und unveraendert
-    // speichert - gekennzeichnet wird sie in der Anzeige (istAbweichendeLaenge).
+    // speichert - gekennzeichnet wird sie in der Anzeige (abweichendeLaengeMinuten).
     it('nimmt ein kuerzeres Zeitfenster an', async () => {
       const id = await anlegenCommitted('09:00', '09:30');
       expect(await fensterVon(id)).toBe('00:30');

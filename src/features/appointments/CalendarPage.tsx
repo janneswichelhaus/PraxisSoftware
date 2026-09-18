@@ -275,8 +275,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       // Der Server sieht die Zielzeit außerhalb der Arbeitszeit, die geladenen
       // Arbeitszeiten sahen es nicht (veraltet oder nicht geladen): DIESELBE
       // Rückfrage kommt mit dem Hinweis wieder - kein zweiter Kasten (CAL-023).
-      setVorschlag(
-        istAusserhalbArbeitszeit(fehler) && auftrag.aus
+      //
+      // Nur, wenn diese Rückfrage noch offen ist: Wer inzwischen geblättert
+      // hat, bekommt keine Frage zu einem Ausschnitt, der nicht mehr dasteht.
+      setVorschlag((aktuell) =>
+        istAusserhalbArbeitszeit(fehler) && auftrag.aus && aktuell === auftrag.aus
           ? { ...auftrag.aus, frage: { ...auftrag.aus.frage, ausserhalb: true } }
           : null,
       );
