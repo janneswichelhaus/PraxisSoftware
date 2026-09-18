@@ -2493,9 +2493,9 @@ als `olivia.office@praxis.invalid` (office).
    darunter die Verordner:in. Eine zweite heißt **Selbstzahler seit
    03.09.2026** und hat **keine** Zeile mit einer Verordner:in — auch keine
    leere (ADR-020 Punkt 7).
-4. Erwartung: Am Selbstzahler stehen **Leistungseinheiten**, **Termine** und
-   **Noch planbar** genauso wie an der Verordnung. „Scan des Rezepts" steht
-   **nur** an der Verordnung.
+4. Erwartung: Am Selbstzahler stehen **Mögliche Termine**, **Termine** und
+   **Noch planbar** genauso wie an der Verordnung (seit VER-EPIC-002 heißt die
+   erste Zeile so). „Scan des Rezepts" steht **nur** an der Verordnung.
 
 ### 2. Die Serie funktioniert für den Selbstzahler
 
@@ -2510,10 +2510,11 @@ als `olivia.office@praxis.invalid` (office).
 2. Erwartung: Das **erste** Feld heißt **Art** und bietet Erstverordnung,
    Folgeverordnung und Selbstzahler an.
 3. **Selbstzahler** wählen. Erwartung: Das Feld **Verordner:in** verschwindet,
-   der ganze Abschnitt **Klinische Angaben** verschwindet, das Datum heißt
-   jetzt **Vereinbart am**, und die Position heißt **Vereinbart** statt
-   **Verordnet**. Die **Bemerkung** bleibt — sie ist organisatorisch.
-4. Datum, Heilmittel und Anzahl eintragen, **Grundlage speichern**.
+   der ganze Abschnitt **Klinische Angaben** verschwindet, und das Datum heißt
+   jetzt **Vereinbart am**. **Anmerkungen** und **Anzahl möglicher Termine**
+   bleiben — beide gelten für beide Bauarten (seit VER-EPIC-002).
+4. Datum, ein Heilmittel anhaken und die Anzahl eintragen, **Grundlage
+   speichern**.
 5. Erwartung: Die neue Karte steht in der Akte als „Selbstzahler seit …".
 
 ### 4. Die Bauart wechseln verwirft nichts heimlich
@@ -2546,3 +2547,93 @@ als `olivia.office@praxis.invalid` (office).
 1. Fenster auf ~375 px ziehen, Akte → Behandlungsgrundlagen.
 2. Erwartung: Die Karten stehen untereinander, nichts läuft waagerecht aus dem
    Bild, die Zahlen bleiben lesbar. Im Formular steht die Art oben.
+
+## VER-EPIC-002 — Verordnung im Office-Alltag
+
+Prüfschritte zu VER-EPIC-002. Grundlage: die Feldvorgaben in
+[VER-EPIC-002.md](../development/VER-EPIC-002.md) (Jannes, 2026-09-13),
+ANN-064 (Terminzahl an der Grundlage), ANN-065 („Anmerkungen") und ANN-066
+(Heilmittelkatalog im Code).
+
+**Diese Etappe bringt eine Migration** (`20260918130000_appointment_count.sql`):
+vorher `git pull origin main`, dann `pnpm dlx supabase@2.116.0 db reset`. Ohne
+den Reset fehlt die Spalte, und das Formular lässt sich nicht speichern.
+Schritte 1 bis 5 als `jannes.test@praxis.invalid` (owner), Schritt 3
+zusätzlich als `olivia.office@praxis.invalid` (office) und
+`anna.beispiel@praxis.invalid` (therapist).
+
+### 1. Die Wunschkombination mit sechs Terminen
+
+1. Akte von **Max Mustermann** → **Behandlungsgrundlagen** → im Kopf der Akte
+   **Grundlage erfassen**.
+2. Erwartung: Unter **Heilmittel und Termine** stehen fünf Kästchen —
+   Krankengymnastik (KG), KG als Doppelbehandlung, Manuelle Therapie (MT), MT
+   als Doppelbehandlung, Hausbesuch. **Kein Dropdown**, **kein** „Genutzt",
+   **kein** „Position hinzufügen", **kein** Therapieziel, **kein** zweites
+   Bemerkungsfeld.
+3. Verordner:in und Datum eintragen. **KG als Doppelbehandlung**, **MT als
+   Doppelbehandlung** und **Hausbesuch** anhaken — alle drei zugleich müssen
+   gehen. **Anzahl möglicher Termine: 6**. Speichern.
+4. Erwartung: Die Karte in der Akte zeigt **Mögliche Termine: 6** — nicht 18.
+   Unter **Heilmittel** stehen die drei angehakten.
+5. Die Grundlage erneut **bearbeiten**. Erwartung: Genau diese drei Kästchen
+   sind angehakt, die Anzahl steht auf 6.
+
+### 2. Die Auswahl ändern, die Terminzahl bleibt eine Terminzahl
+
+1. Dieselbe Grundlage bearbeiten, **Hausbesuch** abhaken, speichern.
+2. Erwartung: **Mögliche Termine** stehen weiter auf 6.
+3. An der Grundlage **Terminserie anlegen** wählen. Erwartung: Die Seite bietet
+   **6** Termine an, nicht mehr. Abbrechen genügt.
+4. Bereich **Termine** der Akte öffnen. Erwartung: Die Zahlen an Termin, Serie
+   und Akte stimmen überein; eine abgesagte Behandlung zählt nicht als
+   verbraucht.
+
+### 3. Diagnose und Anmerkungen in allen vier Rollen
+
+1. Als owner an der Grundlage **Diagnose** und **Anmerkungen** eintragen und
+   speichern.
+2. Dieselbe Akte als `olivia.office@praxis.invalid` und als
+   `anna.beispiel@praxis.invalid` öffnen.
+3. Erwartung: Beide sehen Diagnose **und** Anmerkungen. Office sieht **kein**
+   „Bearbeiten" und **kein** „Grundlage erfassen" (ANN-011, unverändert).
+
+### 4. Eine Bestandsverordnung übersteht das Speichern
+
+1. Akte von **Erika Beispiel** → **Erstverordnung vom 12.11.2025** bearbeiten
+   (die Seed-Verordnung mit zwei Positionen unterschiedlicher Menge).
+2. Erwartung: **Manuelle Therapie (MT)** ist angehakt; **Waermetherapie** steht
+   als eigenes, angehaktes Kästchen mit dem Hinweis **„Aus dem Bestand: 1 von 3
+   genutzt."** — der Katalog kennt es nicht, verloren ist es trotzdem nicht.
+3. Erwartung: **Anzahl möglicher Termine: 6** (aus der größten Positionsmenge
+   abgeleitet, nicht aus der Summe 9).
+4. **Ohne** etwas zu ändern speichern. Erneut öffnen. Erwartung: Beide
+   Kästchen unverändert angehakt, der Bestandshinweis unverändert „1 von 3
+   genutzt", die Anzahl unverändert 6. In der Akte steht unter **Heilmittel**
+   weiter „Waermetherapie — 1 von 3 genutzt".
+5. An einer Verordnung mit Therapieziel und Verordnerhinweis (Akte Max
+   Mustermann, **Folgeverordnung vom 18.06.2026**): Erwartung: Beide Texte
+   stehen unter **Aus dem Bestand** als Anzeige, nicht als Eingabefeld, und
+   überstehen ein Speichern unverändert. Zweimal speichern verdoppelt keinen
+   Text.
+
+### 5. Keine erfundene Empfehlung
+
+1. Eine Grundlage ohne dokumentierte Empfehlung bearbeiten.
+2. Erwartung: **Kein** Feld „Empfehlung der Therapeut:in zum Verordnungsende",
+   **keine** vorgeschlagene Empfehlung, **kein** zusätzliches Pflichtfeld. Wo
+   ein Bestandstext vorhanden ist, steht er unter **Aus dem Bestand** mit
+   seiner Bezeichnung — sonst steht dort nichts.
+
+### 6. Am Handy (~375 px), mit Tastatur und mit Fehlern
+
+1. Fenster auf ~375 px ziehen, **Grundlage erfassen** öffnen.
+2. Erwartung: Nichts läuft waagerecht aus dem Bild; jedes Kästchen ist samt
+   Beschriftung antippbar und mindestens 44 px hoch.
+3. Nur mit der Tastatur bedienen: Tabulator bis zu den Kästchen, Leertaste
+   setzt und löst den Haken.
+4. Leer speichern. Erwartung: Der Kasten oben nennt **Verordner:in**,
+   **Datum**, **Heilmittel** und **Anzahl möglicher Termine**; der Eintrag
+   „Heilmittel" springt in die Auswahl, „Datum" ins Datumsfeld.
+5. Anzahl auf `501` setzen. Erwartung: **Zwischen 1 und 500.** am Feld.
+6. Denselben Ablauf auf Tablet und Desktop wiederholen.
