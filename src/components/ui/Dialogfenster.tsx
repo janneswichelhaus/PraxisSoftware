@@ -99,7 +99,7 @@ export function Dialogfenster({
         onKeyDown={tastatur}
         // Radius 14, 24 innen wie die Rueckfrage-Karte (DS-001); unten auf dem
         // Telefon, mittig auf dem Bildschirm - mit dem Daumen erreichbar.
-        className="bg-surface border-line-strong rounded-card max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto border p-6 shadow-lg"
+        className="bg-surface border-line-strong rounded-card max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto border-2 p-6"
       >
         <h2 id={titelId} className="text-ink text-base font-semibold">
           {titel}

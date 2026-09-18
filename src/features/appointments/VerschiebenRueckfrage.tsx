@@ -68,7 +68,7 @@ export function VerschiebenRueckfrage({
       // Seit FIX-017 steht der Kasten IM GITTER neben der neuen Kachel (BEF-013);
       // wer ihn setzt, gibt die Lage vor. Schatten und Rand heben ihn vom
       // Hintergrund ab, auf dem er liegt.
-      className={`border-line-strong bg-surface rounded-card border p-4 shadow-lg ${className}`}
+      className={`border-line-strong bg-surface rounded-card border-2 p-4 ${className}`}
       style={style}
       onKeyDown={(event) => {
         if (event.key === 'Escape' && !laeuft) onAbbrechen();
