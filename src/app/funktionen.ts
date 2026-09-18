@@ -3,7 +3,7 @@ import {
   canManageAppointments,
   canManageStaffMasterData,
   canReadPatientDirectory,
-  canWritePrescriptions,
+  canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
 
@@ -151,18 +151,18 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     });
   }
 
-  if (canWritePrescriptions(roles)) {
+  if (canWriteTreatmentBases(roles)) {
     eintraege.push({
-      id: 'vorgang-verordnung-erfassen',
+      id: 'vorgang-grundlage-erfassen',
       art: 'Vorgang',
-      bezeichnung: 'Verordnung erfassen',
-      // Eine Verordnung gehört an eine Akte (VER-003); eine Adresse ohne
+      bezeichnung: 'Grundlage erfassen',
+      // Eine Behandlungsgrundlage gehört an eine Akte (VER-003); eine Adresse ohne
       // Patient:in gibt es dafür nicht. Der Treffer sagt das, statt auf ein
       // Formular zu führen, das zuerst nach der Person fragen müsste.
       hinweis: 'Zuerst die Patient:in wählen',
       ziel: '/patienten',
       bereich: 'Patient:innen',
-      stichworte: ['rezept', 'heilmittel', 'neu'],
+      stichworte: ['rezept', 'verordnung', 'selbstzahler', 'heilmittel', 'neu'],
     });
   }
 

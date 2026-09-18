@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import type * as PatientsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
-import type * as VerordnungenApi from '@/features/prescriptions/api';
+import type * as VerordnungenApi from '@/features/treatment-bases/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import type { RoleKey } from '@/features/session/types';
@@ -23,9 +23,9 @@ const fetchPatient = vi.fn();
 const logPatientRecordView = vi.fn();
 const fetchUpcomingAppointments = vi.fn();
 const fetchPatientAppointments = vi.fn();
-const fetchPatientPrescriptions = vi.fn();
-const fetchPatientPrescriptionsClinical = vi.fn();
-const fetchPatientPrescriptionSlots = vi.fn();
+const fetchPatientTreatmentBases = vi.fn();
+const fetchPatientTreatmentBasesClinical = vi.fn();
+const fetchPatientTreatmentBasisSlots = vi.fn();
 const fetchPatientTreatmentNotesPage = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -48,16 +48,16 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/prescriptions/api', async (importOriginal) => {
+vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
   const actual = await importOriginal<typeof VerordnungenApi>();
   return {
     ...actual,
-    fetchPatientPrescriptions: (id: string) =>
-      fetchPatientPrescriptions(id) as Promise<VerordnungenApi.Prescription[]>,
-    fetchPatientPrescriptionsClinical: (id: string) =>
-      fetchPatientPrescriptionsClinical(id) as Promise<VerordnungenApi.ClinicalPrescription[]>,
-    fetchPatientPrescriptionSlots: (id: string) =>
-      fetchPatientPrescriptionSlots(id) as Promise<VerordnungenApi.PrescriptionKontingent[]>,
+    fetchPatientTreatmentBases: (id: string) =>
+      fetchPatientTreatmentBases(id) as Promise<VerordnungenApi.TreatmentBasis[]>,
+    fetchPatientTreatmentBasesClinical: (id: string) =>
+      fetchPatientTreatmentBasesClinical(id) as Promise<VerordnungenApi.ClinicalTreatmentBasis[]>,
+    fetchPatientTreatmentBasisSlots: (id: string) =>
+      fetchPatientTreatmentBasisSlots(id) as Promise<VerordnungenApi.TreatmentBasisKontingent[]>,
   };
 });
 
@@ -78,8 +78,8 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
 const { AkteEinstieg, PatientRecordLayout } = await import('./PatientRecordLayout');
 const { PatientMasterDataPage } = await import('./PatientMasterDataPage');
 const { PatientAppointmentsPage } = await import('@/features/appointments/PatientAppointmentsPage');
-const { PatientPrescriptionsPage } =
-  await import('@/features/prescriptions/PatientPrescriptionsPage');
+const { PatientTreatmentBasesPage } =
+  await import('@/features/treatment-bases/PatientTreatmentBasesPage');
 const { PatientCoursePage } = await import('@/features/documentation/PatientCoursePage');
 
 /**
@@ -93,7 +93,7 @@ function akteRendern(roles: RoleKey[], pfad = `/patienten/${PATIENT_ID}`) {
       <Route path="/patienten/:patientId" element={<PatientRecordLayout user={testUser(roles)} />}>
         <Route index element={<AkteEinstieg />} />
         <Route path="termine" element={<PatientAppointmentsPage />} />
-        <Route path="verordnungen" element={<PatientPrescriptionsPage />} />
+        <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
         <Route path="verlauf" element={<PatientCoursePage />} />
         <Route path="stammdaten" element={<PatientMasterDataPage />} />
       </Route>
@@ -109,9 +109,9 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       logPatientRecordView,
       fetchUpcomingAppointments,
       fetchPatientAppointments,
-      fetchPatientPrescriptions,
-      fetchPatientPrescriptionsClinical,
-      fetchPatientPrescriptionSlots,
+      fetchPatientTreatmentBases,
+      fetchPatientTreatmentBasesClinical,
+      fetchPatientTreatmentBasisSlots,
       fetchPatientTreatmentNotesPage,
     ]) {
       mock.mockReset();
@@ -120,9 +120,9 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
     logPatientRecordView.mockResolvedValue(undefined);
     fetchUpcomingAppointments.mockResolvedValue([]);
     fetchPatientAppointments.mockResolvedValue([]);
-    fetchPatientPrescriptions.mockResolvedValue([]);
-    fetchPatientPrescriptionsClinical.mockResolvedValue([]);
-    fetchPatientPrescriptionSlots.mockResolvedValue([]);
+    fetchPatientTreatmentBases.mockResolvedValue([]);
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
     fetchPatientTreatmentNotesPage.mockResolvedValue([]);
   });
 
@@ -172,7 +172,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
 
     it('bietet das Erfassen einer Verordnung nur den therapeutischen Rollen an', async () => {
       akteRendern(['therapist']);
-      expect(await screen.findByRole('link', { name: 'Verordnung erfassen' })).toHaveAttribute(
+      expect(await screen.findByRole('link', { name: 'Grundlage erfassen' })).toHaveAttribute(
         'href',
         `/patienten/${PATIENT_ID}/verordnungen/neu`,
       );
@@ -182,7 +182,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       akteRendern(['office']);
       await screen.findByRole('heading', { name: 'Max Mustermann' });
       // Im Kopf nicht - im Verordnungsbereich prueft das dessen eigener Test.
-      expect(screen.queryByRole('link', { name: 'Verordnung erfassen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Grundlage erfassen' })).not.toBeInTheDocument();
     });
   });
 
@@ -196,7 +196,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       // liegt uns vor" wird im Gespraech haeufiger gebraucht als eine Adresse.
       expect(eintraege.map((link) => link.textContent)).toEqual([
         'Termine',
-        'Verordnungen',
+        'Behandlungsgrundlagen',
         'Behandlungsverlauf',
         'Dateien',
         'Stammdaten',

@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canManageAppointments,
   canReadClinicalPatientFiles,
-  canWritePrescriptions,
+  canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
 import { formatDate } from '@/lib/datum';
@@ -17,24 +17,26 @@ import { ZOOM_STANDARD, schreibeParameter } from '@/features/appointments/calend
 import type { Patient } from '@/features/patients/api';
 import {
   nachJahr,
-  prescriptionKindLabels,
-  type ClinicalPrescription,
-  type PrescriptionKontingent,
+  grundlageBezeichnung,
+  istVerordnung,
+  type ClinicalTreatmentBasis,
+  type TreatmentBasisKontingent,
 } from './api';
 import {
   useVerordnungenDerAkte,
   zustandLabels,
   type Verordnung,
   type VerordnungMitZahlen,
-} from './verordnungen';
+} from './grundlagen';
 
 /**
- * Verordnungen in der Akte (VER-002, überarbeitet mit AKTE-002).
+ * Behandlungsgrundlagen in der Akte (VER-002, überarbeitet mit AKTE-002,
+ * seit GRD-001 beide Bauarten).
  *
  * Der Bereich beantwortet zwei verschiedene Fragen, und deshalb steht er in
  * zwei Teilen da:
  *
- *   * **Was läuft gerade?** Die offenen Verordnungen, ausführlich, mit den
+ *   * **Was läuft gerade?** Die offenen Grundlagen, ausführlich, mit den
  *     Zahlen, die für die nächste Terminplanung zählen.
  *   * **Was war?** Die ausgeschöpften, kompakt in einer Zeile und auf Wunsch
  *     aufklappbar. Vorher standen sie gleichrangig zwischen den laufenden und
@@ -59,7 +61,7 @@ function Kontingentzeilen({
   kontingent,
   terminlink,
 }: {
-  kontingent: PrescriptionKontingent | null;
+  kontingent: TreatmentBasisKontingent | null;
   terminlink: string;
 }) {
   if (!kontingent) return null;
@@ -98,22 +100,38 @@ function Kontingentzeilen({
   );
 }
 
-function klinischeFelder(verordnung: Verordnung): ClinicalPrescription | null {
+function klinischeFelder(verordnung: Verordnung): ClinicalTreatmentBasis | null {
   return 'diagnosis' in verordnung ? verordnung : null;
 }
 
+/**
+ * Die Überschrift einer Grundlage nennt ihre **Bauart** (ADR-020 Punkt 7).
+ *
+ * „Erstverordnung vom 5. Februar 2026" oder „Selbstzahler seit 3. September
+ * 2026" - das Wort Behandlungsgrundlage steht nur über dem Bereich, wo beide
+ * Bauarten zugleich gemeint sind. Die Zeile darunter bleibt beim Selbstzahler
+ * leer statt zu behaupten, es gäbe eine Verordner:in.
+ */
+function Grundlagentitel({ verordnung }: { verordnung: Verordnung }) {
+  const { bauart, praeposition } = grundlageBezeichnung(verordnung);
+  return (
+    <>
+      {bauart} {praeposition} {formatDate(verordnung.issued_on)}
+    </>
+  );
+}
+
 function Verordnungskopf({ verordnung }: { verordnung: Verordnung }) {
+  const verordner = [verordnung.prescriber_name, verordnung.prescriber_practice_name]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <div className="min-w-0">
       <p className="text-ink text-[0.9375rem] font-medium">
-        {prescriptionKindLabels[verordnung.prescription_kind]} vom{' '}
-        {formatDate(verordnung.issued_on)}
+        <Grundlagentitel verordnung={verordnung} />
       </p>
-      <p className="text-ink-muted mt-0.5 text-sm">
-        {[verordnung.prescriber_name, verordnung.prescriber_practice_name]
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
+      {verordner ? <p className="text-ink-muted mt-0.5 text-sm">{verordner}</p> : null}
     </div>
   );
 }
@@ -193,7 +211,7 @@ function Verordnungsaktionen({
 }) {
   const { verordnung, zustand } = eintrag;
   const darfPlanen = canManageAppointments(user.roles);
-  const darfSchreiben = canWritePrescriptions(user.roles);
+  const darfSchreiben = canWriteTreatmentBases(user.roles);
   const planbar = zustand === 'offen' && patient.status === 'active';
 
   /**
@@ -290,8 +308,8 @@ function Verordnungsscan({
       <Dateiliste
         patientId={patientId}
         user={user}
-        prescriptionId={verordnungId}
-        darfHinzufuegen={canWritePrescriptions(user.roles)}
+        grundlageId={verordnungId}
+        darfHinzufuegen={canWriteTreatmentBases(user.roles)}
         leerHinweis="Noch kein Scan. Ein Foto des Rezepts hält fest, was auf dem Blatt steht."
       />
     </div>
@@ -351,7 +369,9 @@ function LaufendeVerordnung({
       </div>
 
       <Verordnungsaktionen eintrag={eintrag} patient={patient} user={user} />
-      <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+      {istVerordnung(verordnung.treatment_basis_kind) ? (
+        <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+      ) : null}
     </li>
   );
 }
@@ -379,13 +399,17 @@ function AbgeschlosseneVerordnung({
       <details className="group">
         <summary className="hover:bg-surface-sunken flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
           <span className="text-ink min-w-0 text-[0.9375rem]">
-            {prescriptionKindLabels[verordnung.prescription_kind]} vom{' '}
-            {formatDate(verordnung.issued_on)}
+            <Grundlagentitel verordnung={verordnung} />
             <span className="text-ink-muted mt-0.5 block text-sm">
-              {verordnung.prescriber_name}
-              {kontingent
-                ? ` · ${kontingent.used} von ${kontingent.prescribed} Einheiten genutzt · ${kontingent.planned} Termine`
-                : ''}
+              {[
+                verordnung.prescriber_name,
+                kontingent
+                  ? `${kontingent.used} von ${kontingent.prescribed} Einheiten genutzt`
+                  : null,
+                kontingent ? `${kontingent.planned} Termine` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </span>
           </span>
           <span className="text-ink-subtle text-xs">Details</span>
@@ -405,14 +429,16 @@ function AbgeschlosseneVerordnung({
             <KlinischeAngaben verordnung={verordnung} />
           </DetailList>
           <Verordnungsaktionen eintrag={eintrag} patient={patient} user={user} />
-          <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+          {istVerordnung(verordnung.treatment_basis_kind) ? (
+            <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+          ) : null}
         </div>
       </details>
     </li>
   );
 }
 
-export function PatientPrescriptionsPage() {
+export function PatientTreatmentBasesPage() {
   const { patient, user } = usePatientRecord();
   return <Verordnungsbereich patient={patient} user={user} />;
 }
@@ -425,33 +451,33 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
 
   if (verborgen) return null;
 
-  const darfSchreiben = canWritePrescriptions(user.roles);
+  const darfSchreiben = canWriteTreatmentBases(user.roles);
 
   return (
     <>
-      {/* Bewusst ohne eigene Schaltfläche „Verordnung erfassen": Sie steht im
+      {/* Bewusst ohne eigene Schaltfläche „Grundlage erfassen": Sie steht im
           Kopf der Akte und ist dort aus jedem Bereich erreichbar. Zwei
           gleichnamige Wege auf einer Seite wären ein Rätsel, kein Angebot -
           derselbe Grund wie bei „Termin anlegen" (UX-006). */}
       <Section
-        titel="Aktuelle Verordnungen"
-        hinweis="Verordnungen, deren Leistungseinheiten noch nicht vollständig genutzt sind."
+        titel="Aktuelle Behandlungsgrundlagen"
+        hinweis="Verordnungen und Selbstzahler, deren Leistungseinheiten noch nicht vollständig genutzt sind."
       >
-        {isPending ? <LoadingState label="Verordnungen werden geladen …" /> : null}
+        {isPending ? <LoadingState label="Behandlungsgrundlagen werden geladen …" /> : null}
         {isError ? (
           <ErrorState
-            title="Die Verordnungen konnten nicht geladen werden."
+            title="Die Behandlungsgrundlagen konnten nicht geladen werden."
             description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
           />
         ) : null}
 
         {!isPending && !isError && aktuell.length === 0 ? (
           <EmptyState
-            title="Keine laufende Verordnung"
+            title="Keine laufende Behandlungsgrundlage"
             description={
               darfSchreiben
-                ? 'Die nächste Verordnung entsteht über „Verordnung erfassen".'
-                : 'Verordnungen erfassen die therapeutischen Rollen.'
+                ? 'Die nächste entsteht über „Grundlage erfassen" — als Verordnung oder als Selbstzahler.'
+                : 'Behandlungsgrundlagen erfassen die therapeutischen Rollen.'
             }
           />
         ) : null}
@@ -472,8 +498,8 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
 
       {abgeschlossen.length > 0 ? (
         <Section
-          titel="Ausgeschöpfte Verordnungen"
-          hinweis="Nach Jahr, neueste zuerst. Eine Zeile je Verordnung — aufklappen zeigt alles."
+          titel="Ausgeschöpfte Behandlungsgrundlagen"
+          hinweis="Nach Jahr, neueste zuerst. Eine Zeile je Grundlage — aufklappen zeigt alles."
         >
           {/* Nach Jahr gruppiert wie bisher (VER-002): Eine Akte über zehn
               Jahre ist sonst eine Liste ohne Anhaltspunkt; das Jahr ist das,

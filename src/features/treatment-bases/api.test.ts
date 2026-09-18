@@ -5,8 +5,8 @@ import {
   entwurfAnsehen,
   entwurfEntfernen,
   entwurfVerordnerNachtragen,
-  leereVerordnung,
-  type PrescriptionDraft,
+  leereGrundlage,
+  type TreatmentBasisDraft,
 } from './api';
 
 /**
@@ -21,8 +21,8 @@ const RUECKPFAD = '/patienten/66666666-6666-4666-8666-000000000001/verordnungen/
 const BENUTZER_A = '11111111-1111-4111-8111-000000000001';
 const BENUTZER_B = '11111111-1111-4111-8111-000000000002';
 
-const ENTWURF: PrescriptionDraft = {
-  werte: { ...leereVerordnung, frequency_note: '2x pro Woche' },
+const ENTWURF: TreatmentBasisDraft = {
+  werte: { ...leereGrundlage, frequency_note: '2x pro Woche' },
   positionen: [
     { id: null, remedy: 'Manuelle Therapie', prescribed_quantity: '6', used_quantity: '0' },
   ],

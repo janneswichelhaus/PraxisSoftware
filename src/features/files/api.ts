@@ -31,7 +31,7 @@ import { dateiAblehnungsgrund } from './dokumentarten';
 
 const patientFileSchema = z.object({
   id: z.string(),
-  prescription_id: z.string().nullable(),
+  treatment_basis_id: z.string().nullable(),
   document_type: z.string(),
   is_clinical: z.boolean(),
   display_name: z.string(),
@@ -46,11 +46,11 @@ export type PatientFile = z.infer<typeof patientFileSchema>;
 
 export async function fetchPatientFiles(
   patientId: string,
-  prescriptionId?: string | null,
+  grundlageId?: string | null,
 ): Promise<PatientFile[]> {
   const { data, error } = (await getSupabase().rpc('list_patient_files', {
     p_patient_id: patientId,
-    p_prescription_id: prescriptionId ?? null,
+    p_treatment_basis_id: grundlageId ?? null,
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Dateien konnten nicht geladen werden.');
@@ -69,7 +69,7 @@ const vorbereitetSchema = z.object({
 
 export interface UploadAuftrag {
   patientId: string;
-  prescriptionId: string | null;
+  grundlageId: string | null;
   documentType: string;
   displayName: string;
   datei: File;
@@ -111,7 +111,7 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
   // (a) Berechtigung prüfen, bevor Bytes fließen.
   const { data, error } = (await getSupabase().rpc('prepare_patient_file_upload', {
     p_patient_id: auftrag.patientId,
-    p_prescription_id: auftrag.prescriptionId,
+    p_treatment_basis_id: auftrag.grundlageId,
     p_document_type: auftrag.documentType,
     p_display_name: auftrag.displayName,
     p_mime_type: auftrag.datei.type,

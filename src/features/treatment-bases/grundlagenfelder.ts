@@ -1,19 +1,25 @@
-import type { PrescriptionFeld } from './api';
+import type { TreatmentBasisFeld } from './api';
 
 /**
  * Feste Kennung je Kopffeld (UX-012) - die Fehlerzusammenfassung springt
  * darauf. Die Positionen tragen ihre laufende Nummer schon in der
  * Beschriftung und bleiben bei der erzeugten Kennung.
  */
-export function verordnungFeldId(feld: PrescriptionFeld): string {
-  return `verordnung-${feld}`;
+export function grundlageFeldId(feld: TreatmentBasisFeld): string {
+  return `grundlage-${feld}`;
 }
 
-/** Beschriftung je Kopffeld, in der Reihenfolge des Formulars. */
-export const VERORDNUNG_BESCHRIFTUNG: Record<PrescriptionFeld, string> = {
+/**
+ * Beschriftung je Kopffeld, in der Reihenfolge des Formulars.
+ *
+ * Die Fehlerzusammenfassung nennt beide Bauarten, deshalb steht hier das
+ * neutrale „Datum"; am Feld selbst steht „Ausstellungsdatum" beziehungsweise
+ * „Vereinbart am" (ADR-020 Punkt 7, `bauartDatumsBeschriftung`).
+ */
+export const GRUNDLAGE_BESCHRIFTUNG: Record<TreatmentBasisFeld, string> = {
+  treatment_basis_kind: 'Art',
   prescriber_id: 'Verordner:in',
-  prescription_kind: 'Art',
-  issued_on: 'Ausstellungsdatum',
+  issued_on: 'Datum',
   frequency_note: 'Frequenz',
   diagnosis: 'Diagnose oder Leitsymptomatik',
   therapy_goal: 'Therapieziel',
@@ -22,4 +28,4 @@ export const VERORDNUNG_BESCHRIFTUNG: Record<PrescriptionFeld, string> = {
   note: 'Bemerkung',
 };
 
-export const VERORDNUNG_REIHENFOLGE = Object.keys(VERORDNUNG_BESCHRIFTUNG) as PrescriptionFeld[];
+export const GRUNDLAGE_REIHENFOLGE = Object.keys(GRUNDLAGE_BESCHRIFTUNG) as TreatmentBasisFeld[];

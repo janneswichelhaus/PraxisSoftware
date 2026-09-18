@@ -9,18 +9,21 @@ import {
 } from '@/lib/abstecher';
 
 /**
- * Datenzugriff auf Verordnungen und Verordner:innen (VER-EPIC-001).
+ * Datenzugriff auf Behandlungsgrundlagen und Verordner:innen (VER-EPIC-001,
+ * GRD-001).
  *
  * Zwei sehr verschiedene Dinge liegen hier nebeneinander:
  *
  * Die **Verordnerkartei** enthält berufliche Kontaktdaten Dritter und keinen
  * Patientenbezug (ANN-013). Sie wird deshalb wie die Standortliste direkt aus
- * der Tabelle gelesen; die RLS entscheidet, was sichtbar ist.
+ * der Tabelle gelesen; die RLS entscheidet, was sichtbar ist. Sie bleibt hier,
+ * obwohl der Ordner die Grundlage benennt: Eine Verordner:in gibt es nur, weil
+ * es Verordnungen gibt — eine der beiden Bauarten (ADR-020).
  *
- * Die **Verordnung** enthält Gesundheitsdaten. Sie ist über keine Tabelle
- * erreichbar, sondern ausschließlich über Serverfunktionen, die je nach Rolle
- * eine andere Projektion liefern (ADR-004). Diese Datei ruft sie auf; welche
- * Felder zurückkommen, entscheidet die Datenbank.
+ * Die **Behandlungsgrundlage** enthält Gesundheitsdaten. Sie ist über keine
+ * Tabelle erreichbar, sondern ausschließlich über Serverfunktionen, die je nach
+ * Rolle eine andere Projektion liefern (ADR-004). Diese Datei ruft sie auf;
+ * welche Felder zurückkommen, entscheidet die Datenbank.
  */
 
 // -----------------------------------------------------------------------------
@@ -228,7 +231,7 @@ export async function updatePrescriber(
 }
 
 // -----------------------------------------------------------------------------
-// Verordnungen
+// Behandlungsgrundlagen
 // -----------------------------------------------------------------------------
 
 const itemSchema = z.object({
@@ -241,14 +244,24 @@ const itemSchema = z.object({
   remaining_quantity: z.number(),
 });
 
-export type PrescriptionItem = z.infer<typeof itemSchema>;
+export type TreatmentBasisItem = z.infer<typeof itemSchema>;
 
-const prescriptionSchema = z.object({
+/**
+ * Die Bauarten einer Behandlungsgrundlage (ADR-020 Punkt 1).
+ *
+ * `first` und `follow_up` sind Verordnungen, `self_pay` ist der Selbstzahler.
+ * Weitere Bauarten sind möglich und werden **nicht** vorgebaut (ADR-014).
+ */
+export const BAUARTEN = ['first', 'follow_up', 'self_pay'] as const;
+export type Bauart = (typeof BAUARTEN)[number];
+
+const treatmentBasisSchema = z.object({
   id: z.string(),
-  prescriber_id: z.string(),
-  prescriber_name: z.string(),
+  // Null beim Selbstzahler: Er hat keine Verordner:in (ADR-020 Punkt 3).
+  prescriber_id: z.string().nullable(),
+  prescriber_name: z.string().nullable(),
   prescriber_practice_name: z.string().nullable(),
-  prescription_kind: z.enum(['first', 'follow_up']),
+  treatment_basis_kind: z.enum(BAUARTEN),
   issued_on: z.string(),
   frequency_note: z.string().nullable(),
   note: z.string().nullable(),
@@ -261,44 +274,73 @@ const prescriptionSchema = z.object({
  * deshalb optional — nicht "nullable". Wer die organisatorische Sicht liest,
  * bekommt sie gar nicht erst (ADR-004, ANN-011).
  */
-const clinicalPrescriptionSchema = prescriptionSchema.extend({
+const clinicalTreatmentBasisSchema = treatmentBasisSchema.extend({
   diagnosis: z.string().nullable(),
   therapy_goal: z.string().nullable(),
   prescriber_note: z.string().nullable(),
   follow_up_recommendation: z.string().nullable(),
 });
 
-export type Prescription = z.infer<typeof prescriptionSchema>;
-export type ClinicalPrescription = z.infer<typeof clinicalPrescriptionSchema>;
+export type TreatmentBasis = z.infer<typeof treatmentBasisSchema>;
+export type ClinicalTreatmentBasis = z.infer<typeof clinicalTreatmentBasisSchema>;
 
-export async function fetchPatientPrescriptions(patientId: string): Promise<Prescription[]> {
-  const { data, error } = (await getSupabase().rpc('list_patient_prescriptions', {
+export async function fetchPatientTreatmentBases(patientId: string): Promise<TreatmentBasis[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_treatment_bases', {
     p_patient_id: patientId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Verordnungen konnten nicht geladen werden.');
-  return z.array(prescriptionSchema).parse(data ?? []);
+  if (error) throw new Error('Die Behandlungsgrundlagen konnten nicht geladen werden.');
+  return z.array(treatmentBasisSchema).parse(data ?? []);
 }
 
-export async function fetchPatientPrescriptionsClinical(
+export async function fetchPatientTreatmentBasesClinical(
   patientId: string,
-): Promise<ClinicalPrescription[]> {
-  const { data, error } = (await getSupabase().rpc('list_patient_prescriptions_clinical', {
+): Promise<ClinicalTreatmentBasis[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_treatment_bases_clinical', {
     p_patient_id: patientId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Verordnungen konnten nicht geladen werden.');
-  return z.array(clinicalPrescriptionSchema).parse(data ?? []);
+  if (error) throw new Error('Die Behandlungsgrundlagen konnten nicht geladen werden.');
+  return z.array(clinicalTreatmentBasisSchema).parse(data ?? []);
 }
 
-export const prescriptionKindLabels: Record<Prescription['prescription_kind'], string> = {
+export const bauartLabels: Record<Bauart, string> = {
   first: 'Erstverordnung',
   follow_up: 'Folgeverordnung',
+  self_pay: 'Selbstzahler',
 };
 
+/** Verordnungen tragen ein Ausstellungsdatum, ein Selbstzahler eine Vereinbarung. */
+export const bauartDatumsBeschriftung: Record<Bauart, string> = {
+  first: 'Ausstellungsdatum',
+  follow_up: 'Ausstellungsdatum',
+  self_pay: 'Vereinbart am',
+};
+
+/** `true`, wenn diese Bauart eine Verordner:in und klinische Felder trägt. */
+export function istVerordnung(bauart: Bauart): boolean {
+  return bauart !== 'self_pay';
+}
+
+/**
+ * Wie die Oberfläche eine Grundlage nennt (ADR-020 Punkt 7).
+ *
+ * Sie nennt die **Bauart**, nicht das Oberwort: „Erstverordnung vom 3.
+ * September 2026" oder „Selbstzahler seit 3. September 2026". Das Wort
+ * Behandlungsgrundlage erscheint nur dort, wo beide Bauarten zugleich gemeint
+ * sind — in der Überschrift des Bereichs, nicht an der einzelnen Karte.
+ */
+export function grundlageBezeichnung(grundlage: Pick<TreatmentBasis, 'treatment_basis_kind'>): {
+  bauart: string;
+  praeposition: string;
+} {
+  const bauart = bauartLabels[grundlage.treatment_basis_kind];
+  return { bauart, praeposition: grundlage.treatment_basis_kind === 'self_pay' ? 'seit' : 'vom' };
+}
+
 /** Jahr der Ausstellung, für die Gruppierung in der Akte (VER-002). */
-function ausstellungsjahr(prescription: Prescription): string {
-  return prescription.issued_on.slice(0, 4);
+function ausstellungsjahr(grundlage: TreatmentBasis): string {
+  return grundlage.issued_on.slice(0, 4);
 }
 
 /**
@@ -307,11 +349,11 @@ function ausstellungsjahr(prescription: Prescription): string {
  * Die Serverfunktion liefert bereits absteigend sortiert; die Gruppierung
  * behält diese Reihenfolge bei, statt neu zu sortieren.
  */
-export function nachJahr<T extends Prescription>(
-  prescriptions: readonly T[],
+export function nachJahr<T extends TreatmentBasis>(
+  grundlagen: readonly T[],
 ): { jahr: string; verordnungen: T[] }[] {
   const gruppen: { jahr: string; verordnungen: T[] }[] = [];
-  for (const verordnung of prescriptions) {
+  for (const verordnung of grundlagen) {
     const jahr = ausstellungsjahr(verordnung);
     const letzte = gruppen.at(-1);
     if (letzte && letzte.jahr === jahr) letzte.verordnungen.push(verordnung);
@@ -325,7 +367,7 @@ export function nachJahr<T extends Prescription>(
 // -----------------------------------------------------------------------------
 
 const kontingentSchema = z.object({
-  prescription_id: z.string(),
+  treatment_basis_id: z.string(),
   /** Verordnete Leistungseinheiten aus den Positionen. */
   prescribed: z.number(),
   /** Genutzte Leistungseinheiten; bis ABR-002 von Hand gepflegt (ANN-012). */
@@ -338,7 +380,7 @@ const kontingentSchema = z.object({
   remaining: z.number(),
 });
 
-export type PrescriptionKontingent = z.infer<typeof kontingentSchema>;
+export type TreatmentBasisKontingent = z.infer<typeof kontingentSchema>;
 
 /**
  * Kontingent und Terminzahlen aller Verordnungen einer Person.
@@ -349,10 +391,10 @@ export type PrescriptionKontingent = z.infer<typeof kontingentSchema>;
  * getrennt — und `remaining` ist das, was die Serienplanung noch anbietet
  * (ANN-038).
  */
-export async function fetchPatientPrescriptionSlots(
+export async function fetchPatientTreatmentBasisSlots(
   patientId: string,
-): Promise<PrescriptionKontingent[]> {
-  const { data, error } = (await getSupabase().rpc('list_patient_prescription_slots', {
+): Promise<TreatmentBasisKontingent[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_treatment_basis_slots', {
     p_patient_id: patientId,
   })) as { data: unknown; error: unknown };
 
@@ -361,19 +403,19 @@ export async function fetchPatientPrescriptionSlots(
 }
 
 /** Die Kontingente nach Verordnung, für den Zugriff je Karte. */
-export function kontingentJeVerordnung(
-  zeilen: readonly PrescriptionKontingent[],
-): Map<string, PrescriptionKontingent> {
-  return new Map(zeilen.map((zeile) => [zeile.prescription_id, zeile]));
+export function kontingentJeGrundlage(
+  zeilen: readonly TreatmentBasisKontingent[],
+): Map<string, TreatmentBasisKontingent> {
+  return new Map(zeilen.map((zeile) => [zeile.treatment_basis_id, zeile]));
 }
 
 // -----------------------------------------------------------------------------
 // Verordnung anlegen und ändern (VER-003)
 // -----------------------------------------------------------------------------
 
-const singleClinicalSchema = clinicalPrescriptionSchema.extend({ patient_id: z.string() });
+const singleClinicalSchema = clinicalTreatmentBasisSchema.extend({ patient_id: z.string() });
 
-export type PrescriptionDetail = z.infer<typeof singleClinicalSchema>;
+export type TreatmentBasisDetail = z.infer<typeof singleClinicalSchema>;
 
 /**
  * Eine Verordnung für das Änderungsformular.
@@ -382,14 +424,14 @@ export type PrescriptionDetail = z.infer<typeof singleClinicalSchema>;
  * unbekannte ID sehen gleich aus. Der Aufruf ist auditpflichtig — er legt
  * klinischen Inhalt offen (ADR-010).
  */
-export async function fetchPrescription(
-  prescriptionId: string,
-): Promise<PrescriptionDetail | null> {
-  const { data, error } = (await getSupabase().rpc('get_prescription', {
-    p_prescription_id: prescriptionId,
+export async function fetchTreatmentBasis(
+  grundlageId: string,
+): Promise<TreatmentBasisDetail | null> {
+  const { data, error } = (await getSupabase().rpc('get_treatment_basis', {
+    p_treatment_basis_id: grundlageId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Verordnung konnte nicht geladen werden.');
+  if (error) throw new Error('Die Behandlungsgrundlage konnte nicht geladen werden.');
   const zeilen = z.array(singleClinicalSchema).parse(data ?? []);
   return zeilen[0] ?? null;
 }
@@ -434,38 +476,50 @@ export const positionSchema = z
     path: ['used_quantity'],
   });
 
-export const prescriptionFormSchema = z.object({
-  prescriber_id: z
-    .string()
-    .transform((value) => value.trim())
-    .refine((value) => value.length > 0, 'Verordner:in ist erforderlich.'),
-  prescription_kind: z.enum(['first', 'follow_up']),
-  issued_on: z
-    .string()
-    .refine((value) => value.trim().length > 0, 'Ausstellungsdatum ist erforderlich.')
-    .refine(
-      (value) => !Number.isNaN(new Date(`${value}T00:00:00`).getTime()),
-      'Kein gültiges Datum.',
-    )
-    .refine(
-      (value) => new Date(`${value}T00:00:00`) <= new Date(),
-      'Das Ausstellungsdatum darf nicht in der Zukunft liegen.',
-    ),
-  frequency_note: hoechstens(100, 'Die Frequenz ist zu lang.'),
-  note: hoechstens(2000, 'Die Bemerkung ist zu lang.'),
-  diagnosis: hoechstens(2000, 'Die Diagnose ist zu lang.'),
-  therapy_goal: hoechstens(2000, 'Das Therapieziel ist zu lang.'),
-  prescriber_note: hoechstens(2000, 'Der Hinweis ist zu lang.'),
-  follow_up_recommendation: hoechstens(2000, 'Die Empfehlung ist zu lang.'),
-});
+export const treatmentBasisFormSchema = z
+  .object({
+    // Ob sie Pflicht ist, hängt an der Bauart - siehe superRefine unten.
+    prescriber_id: optionalText,
+    treatment_basis_kind: z.enum(BAUARTEN),
+    issued_on: z
+      .string()
+      .refine((value) => value.trim().length > 0, 'Das Datum ist erforderlich.')
+      .refine(
+        (value) => !Number.isNaN(new Date(`${value}T00:00:00`).getTime()),
+        'Kein gültiges Datum.',
+      )
+      .refine(
+        (value) => new Date(`${value}T00:00:00`) <= new Date(),
+        'Das Datum darf nicht in der Zukunft liegen.',
+      ),
+    frequency_note: hoechstens(100, 'Die Frequenz ist zu lang.'),
+    note: hoechstens(2000, 'Die Bemerkung ist zu lang.'),
+    diagnosis: hoechstens(2000, 'Die Diagnose ist zu lang.'),
+    therapy_goal: hoechstens(2000, 'Das Therapieziel ist zu lang.'),
+    prescriber_note: hoechstens(2000, 'Der Hinweis ist zu lang.'),
+    follow_up_recommendation: hoechstens(2000, 'Die Empfehlung ist zu lang.'),
+  })
+  // ADR-020 Punkt 3: Was eine Verordnung braucht, verlangt auch das Formular
+  // weiter - aber nur von ihr. Verbindlich prüft das die Datenbank
+  // (app.assert_treatment_basis_input und die Constraint dahinter); hier steht
+  // es, damit der Fehler am Feld erscheint statt als Banner.
+  .superRefine((werte, ctx) => {
+    if (istVerordnung(werte.treatment_basis_kind) && werte.prescriber_id === null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Verordner:in ist erforderlich.',
+        path: ['prescriber_id'],
+      });
+    }
+  });
 
-type PrescriptionFormInput = z.input<typeof prescriptionFormSchema>;
-type PrescriptionFormValues = z.output<typeof prescriptionFormSchema>;
-export type PrescriptionFeld = keyof PrescriptionFormInput;
+type TreatmentBasisFormInput = z.input<typeof treatmentBasisFormSchema>;
+type TreatmentBasisFormValues = z.output<typeof treatmentBasisFormSchema>;
+export type TreatmentBasisFeld = keyof TreatmentBasisFormInput;
 
-export const leereVerordnung: Record<PrescriptionFeld, string> = {
+export const leereGrundlage: Record<TreatmentBasisFeld, string> = {
   prescriber_id: '',
-  prescription_kind: 'first',
+  treatment_basis_kind: 'first',
   issued_on: '',
   frequency_note: '',
   note: '',
@@ -475,24 +529,24 @@ export const leereVerordnung: Record<PrescriptionFeld, string> = {
   follow_up_recommendation: '',
 };
 
-export function prescriptionToFormValues(
-  prescription: PrescriptionDetail,
-): Record<PrescriptionFeld, string> {
+export function treatmentBasisToFormValues(
+  grundlage: TreatmentBasisDetail,
+): Record<TreatmentBasisFeld, string> {
   return {
-    prescriber_id: prescription.prescriber_id,
-    prescription_kind: prescription.prescription_kind,
-    issued_on: prescription.issued_on,
-    frequency_note: prescription.frequency_note ?? '',
-    note: prescription.note ?? '',
-    diagnosis: prescription.diagnosis ?? '',
-    therapy_goal: prescription.therapy_goal ?? '',
-    prescriber_note: prescription.prescriber_note ?? '',
-    follow_up_recommendation: prescription.follow_up_recommendation ?? '',
+    prescriber_id: grundlage.prescriber_id ?? '',
+    treatment_basis_kind: grundlage.treatment_basis_kind,
+    issued_on: grundlage.issued_on,
+    frequency_note: grundlage.frequency_note ?? '',
+    note: grundlage.note ?? '',
+    diagnosis: grundlage.diagnosis ?? '',
+    therapy_goal: grundlage.therapy_goal ?? '',
+    prescriber_note: grundlage.prescriber_note ?? '',
+    follow_up_recommendation: grundlage.follow_up_recommendation ?? '',
   };
 }
 
-export function itemsToFormValues(prescription: PrescriptionDetail): PositionEingabe[] {
-  return prescription.items.map((item) => ({
+export function itemsToFormValues(grundlage: TreatmentBasisDetail): PositionEingabe[] {
+  return grundlage.items.map((item) => ({
     id: item.id,
     remedy: item.remedy,
     prescribed_quantity: String(item.prescribed_quantity),
@@ -536,8 +590,8 @@ export function itemsToFormValues(prescription: PrescriptionDetail): PositionEin
  * Entwurf nicht unbegrenzt im Arbeitsspeicher liegt, und nicht mehr als
  * einziger Schutz gegen ein Wiederauftauchen.
  */
-export interface PrescriptionDraft {
-  werte: Record<PrescriptionFeld, string>;
+export interface TreatmentBasisDraft {
+  werte: Record<TreatmentBasisFeld, string>;
   positionen: PositionEingabe[];
   /** Von der Verordner-Anlage nachgetragen, siehe `entwurfVerordnerNachtragen`. */
   neuerVerordnerId?: string;
@@ -552,13 +606,17 @@ export interface PrescriptionDraft {
  * aus `@/lib/abstecher`.
  */
 /** Legt den Formularzustand vor dem Abstecher zur Verordner-Anlage ab (VER-003). */
-export function entwurfAblegen(vorgang: string, userId: string, entwurf: PrescriptionDraft): void {
+export function entwurfAblegen(
+  vorgang: string,
+  userId: string,
+  entwurf: TreatmentBasisDraft,
+): void {
   abstecherAblegen(vorgang, userId, entwurf);
 }
 
 /** Liest einen Entwurf, ohne ihn zu entfernen (siehe `entwurfEntfernen`). */
-export function entwurfAnsehen(vorgang: string, userId: string): PrescriptionDraft | undefined {
-  return abstecherAnsehen<PrescriptionDraft>(vorgang, userId);
+export function entwurfAnsehen(vorgang: string, userId: string): TreatmentBasisDraft | undefined {
+  return abstecherAnsehen<TreatmentBasisDraft>(vorgang, userId);
 }
 
 /** Entfernt einen Entwurf endgültig - nach dem Wiederaufbau des Formulars. */
@@ -576,7 +634,7 @@ export function entwurfVerordnerNachtragen(
   userId: string,
   verordnerId: string,
 ): void {
-  abstecherErgaenzen<PrescriptionDraft>(vorgang, userId, { neuerVerordnerId: verordnerId });
+  abstecherErgaenzen<TreatmentBasisDraft>(vorgang, userId, { neuerVerordnerId: verordnerId });
 }
 
 /** Verwirft alle Entwürfe aller Benutzer:innen - bei Abmeldung (VER-003). */
@@ -584,55 +642,66 @@ export function alleEntwuerfeVerwerfen(): void {
   alleAbstecherVerwerfen();
 }
 
-function rpcVerordnung(values: PrescriptionFormValues, items: z.output<typeof positionSchema>[]) {
+/**
+ * Die Felder für `create_treatment_basis` und `update_treatment_basis`.
+ *
+ * Beim Selbstzahler gehen Verordner:in und die klinischen Felder als `null`
+ * hinaus (ADR-020 Punkt 3 und 4). Das Formular zeigt sie dort gar nicht erst;
+ * dass sie hier trotzdem ausdrücklich geleert werden, ist die zweite Sicherung -
+ * ein Wechsel der Bauart soll nie eine Diagnose an einem Selbstzahler
+ * zurücklassen. Verbindlich prüft die Verordner:in die Datenbank.
+ */
+function rpcGrundlage(values: TreatmentBasisFormValues, items: z.output<typeof positionSchema>[]) {
+  const verordnung = istVerordnung(values.treatment_basis_kind);
+  const nurVerordnung = <T>(wert: T) => (verordnung ? wert : null);
   return {
-    p_prescriber_id: values.prescriber_id,
-    p_prescription_kind: values.prescription_kind,
+    p_prescriber_id: nurVerordnung(values.prescriber_id),
+    p_treatment_basis_kind: values.treatment_basis_kind,
     p_issued_on: values.issued_on,
     p_items: items,
     p_frequency_note: values.frequency_note,
     p_note: values.note,
-    p_diagnosis: values.diagnosis,
-    p_therapy_goal: values.therapy_goal,
-    p_prescriber_note: values.prescriber_note,
-    p_follow_up_recommendation: values.follow_up_recommendation,
+    p_diagnosis: nurVerordnung(values.diagnosis),
+    p_therapy_goal: nurVerordnung(values.therapy_goal),
+    p_prescriber_note: nurVerordnung(values.prescriber_note),
+    p_follow_up_recommendation: nurVerordnung(values.follow_up_recommendation),
   };
 }
 
-export async function createPrescription(
+export async function createTreatmentBasis(
   patientId: string,
-  values: PrescriptionFormValues,
+  values: TreatmentBasisFormValues,
   items: z.output<typeof positionSchema>[],
 ): Promise<string> {
-  const { data, error } = (await getSupabase().rpc('create_prescription', {
+  const { data, error } = (await getSupabase().rpc('create_treatment_basis', {
     p_patient_id: patientId,
-    ...rpcVerordnung(values, items),
+    ...rpcGrundlage(values, items),
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Verordnung konnte nicht gespeichert werden.');
+  if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gespeichert werden.');
   const id = z.string().uuid().safeParse(data);
-  if (!id.success) throw new Error('Die Verordnung konnte nicht gespeichert werden.');
+  if (!id.success) throw new Error('Die Behandlungsgrundlage konnte nicht gespeichert werden.');
   return id.data;
 }
 
-export async function updatePrescription(
-  prescriptionId: string,
-  values: PrescriptionFormValues,
+export async function updateTreatmentBasis(
+  grundlageId: string,
+  values: TreatmentBasisFormValues,
   items: z.output<typeof positionSchema>[],
 ): Promise<void> {
-  const { error } = await getSupabase().rpc('update_prescription', {
-    p_prescription_id: prescriptionId,
-    ...rpcVerordnung(values, items),
+  const { error } = await getSupabase().rpc('update_treatment_basis', {
+    p_treatment_basis_id: grundlageId,
+    ...rpcGrundlage(values, items),
   });
 
   // Keine Details aus der Datenbank nach außen: eine fremde und eine
   // unbekannte ID sollen auch in der Oberfläche gleich aussehen.
-  if (error) throw new Error('Die Verordnung konnte nicht gespeichert werden.');
+  if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gespeichert werden.');
 }
 
-export async function deletePrescription(prescriptionId: string): Promise<void> {
-  const { error } = await getSupabase().rpc('delete_prescription', {
-    p_prescription_id: prescriptionId,
+export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('delete_treatment_basis', {
+    p_treatment_basis_id: grundlageId,
   });
-  if (error) throw new Error('Die Verordnung konnte nicht gelöscht werden.');
+  if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gelöscht werden.');
 }

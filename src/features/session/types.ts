@@ -109,11 +109,11 @@ export function canReadTreatmentNote(roles: readonly RoleKey[]): boolean {
  *
  * Alle vier Praxisrollen: office plant Termine daraus und fordert
  * Folgeverordnungen an (PROJECT_PRINCIPLES.md 4.3). Steuert ausschliesslich
- * die Darstellung - verbindlich ist app.can_read_prescriptions() in der
+ * die Darstellung - verbindlich ist app.can_read_treatment_bases() in der
  * Datenbank, und gelesen wird ausschliesslich ueber
- * list_patient_prescriptions.
+ * list_patient_treatment_bases.
  */
-export function canReadPrescriptions(roles: readonly RoleKey[]): boolean {
+export function canReadTreatmentBases(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => directoryRoles.includes(role));
 }
 
@@ -123,9 +123,9 @@ export function canReadPrescriptions(roles: readonly RoleKey[]): boolean {
  * Deckungsgleich mit canReadTreatmentNote: alle vier Praxisrollen, seit E15
  * auch office (ROL-002, ADR-004 Fassung 2 Punkt 3). Jede gelesene Verordnung
  * wird serverseitig protokolliert. Verbindlich ist
- * app.can_read_prescription_clinical().
+ * app.can_read_treatment_basis_clinical().
  */
-export function canReadPrescriptionClinical(roles: readonly RoleKey[]): boolean {
+export function canReadTreatmentBasisClinical(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => directoryRoles.includes(role));
 }
 
@@ -134,9 +134,9 @@ export function canReadPrescriptionClinical(roles: readonly RoleKey[]): boolean 
  *
  * Ohne office (ANN-011): wer eine Verordnung erfasst, tippt die Diagnose mit
  * ab. E15 oeffnet das Lesen, nicht das Schreiben. Verbindlich ist
- * app.can_write_prescriptions().
+ * app.can_write_treatment_bases().
  */
-export function canWritePrescriptions(roles: readonly RoleKey[]): boolean {
+export function canWriteTreatmentBases(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => treatingRoles.includes(role));
 }
 

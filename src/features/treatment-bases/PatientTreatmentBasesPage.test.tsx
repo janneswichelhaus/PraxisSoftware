@@ -1,33 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PrescriptionsApi from './api';
+import type * as TreatmentBasesApi from './api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
-const fetchPatientPrescriptions = vi.fn();
-const fetchPatientPrescriptionsClinical = vi.fn();
-const fetchPatientPrescriptionSlots = vi.fn();
+const fetchPatientTreatmentBases = vi.fn();
+const fetchPatientTreatmentBasesClinical = vi.fn();
+const fetchPatientTreatmentBasisSlots = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
-  const actual = await importOriginal<typeof PrescriptionsApi>();
+  const actual = await importOriginal<typeof TreatmentBasesApi>();
   return {
     ...actual,
-    fetchPatientPrescriptions: (id: string) =>
-      fetchPatientPrescriptions(id) as Promise<PrescriptionsApi.Prescription[]>,
-    fetchPatientPrescriptionsClinical: (id: string) =>
-      fetchPatientPrescriptionsClinical(id) as Promise<PrescriptionsApi.ClinicalPrescription[]>,
-    fetchPatientPrescriptionSlots: (id: string) =>
-      fetchPatientPrescriptionSlots(id) as Promise<PrescriptionsApi.PrescriptionKontingent[]>,
+    fetchPatientTreatmentBases: (id: string) =>
+      fetchPatientTreatmentBases(id) as Promise<TreatmentBasesApi.TreatmentBasis[]>,
+    fetchPatientTreatmentBasesClinical: (id: string) =>
+      fetchPatientTreatmentBasesClinical(id) as Promise<TreatmentBasesApi.ClinicalTreatmentBasis[]>,
+    fetchPatientTreatmentBasisSlots: (id: string) =>
+      fetchPatientTreatmentBasisSlots(id) as Promise<TreatmentBasesApi.TreatmentBasisKontingent[]>,
   };
 });
 
-const { Verordnungsbereich } = await import('./PatientPrescriptionsPage');
+const { Verordnungsbereich } = await import('./PatientTreatmentBasesPage');
 
 const patient = testPatient();
 
 function position(
-  rest: Partial<PrescriptionsApi.PrescriptionItem> = {},
-): PrescriptionsApi.PrescriptionItem {
+  rest: Partial<TreatmentBasesApi.TreatmentBasisItem> = {},
+): TreatmentBasesApi.TreatmentBasisItem {
   return {
     id: 'i1',
     sort_order: 1,
@@ -40,14 +40,14 @@ function position(
 }
 
 function verordnung(
-  rest: Partial<PrescriptionsApi.ClinicalPrescription> = {},
-): PrescriptionsApi.ClinicalPrescription {
+  rest: Partial<TreatmentBasesApi.ClinicalTreatmentBasis> = {},
+): TreatmentBasesApi.ClinicalTreatmentBasis {
   return {
     id: 'v1',
     prescriber_id: 'p1',
     prescriber_name: 'Dr. med. Petra Probst',
     prescriber_practice_name: 'Praxis Fiktiv',
-    prescription_kind: 'follow_up',
+    treatment_basis_kind: 'follow_up',
     issued_on: '2026-06-18',
     frequency_note: '2x pro Woche',
     note: null,
@@ -61,12 +61,12 @@ function verordnung(
   };
 }
 
-/** Kontingent einer Verordnung, wie es `list_patient_prescription_slots` liefert. */
+/** Kontingent einer Verordnung, wie es `list_patient_treatment_basis_slots` liefert. */
 function kontingent(
-  rest: Partial<PrescriptionsApi.PrescriptionKontingent> = {},
-): PrescriptionsApi.PrescriptionKontingent {
+  rest: Partial<TreatmentBasesApi.TreatmentBasisKontingent> = {},
+): TreatmentBasesApi.TreatmentBasisKontingent {
   return {
-    prescription_id: 'v1',
+    treatment_basis_id: 'v1',
     prescribed: 10,
     used: 7,
     planned: 8,
@@ -78,36 +78,107 @@ function kontingent(
 
 describe('Verordnungsbereich der Akte', () => {
   beforeEach(() => {
-    fetchPatientPrescriptions.mockReset();
-    fetchPatientPrescriptionsClinical.mockReset();
-    fetchPatientPrescriptionSlots.mockReset();
-    fetchPatientPrescriptions.mockResolvedValue([]);
-    fetchPatientPrescriptionsClinical.mockResolvedValue([]);
-    fetchPatientPrescriptionSlots.mockResolvedValue([]);
+    fetchPatientTreatmentBases.mockReset();
+    fetchPatientTreatmentBasesClinical.mockReset();
+    fetchPatientTreatmentBasisSlots.mockReset();
+    fetchPatientTreatmentBases.mockResolvedValue([]);
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
   });
 
   it('zeigt der Therapeut:in die klinischen Felder', async () => {
-    fetchPatientPrescriptionsClinical.mockResolvedValue([
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([
       verordnung({ follow_up_recommendation: 'Synthetisch: Folgeverordnung sinnvoll.' }),
     ]);
-    fetchPatientPrescriptionSlots.mockResolvedValue([kontingent()]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
     expect(await screen.findByText('Synthetisch: Schulter rechts.')).toBeInTheDocument();
     // ANN-014: die Beschriftung nennt ausdrücklich, wessen Empfehlung das ist.
     expect(screen.getByText('Empfehlung der Therapeut:in zum Verordnungsende')).toBeInTheDocument();
-    expect(fetchPatientPrescriptions).not.toHaveBeenCalled();
+    expect(fetchPatientTreatmentBases).not.toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // GRD-001 / ADR-020 Punkt 7: Die Oberflaeche nennt die Bauart, nicht das
+  // Oberwort. Ein Selbstzahler ist keine Verordnung - und die Akte behauptet
+  // auch nicht, es gaebe eine Verordner:in oder einen Rezeptscan.
+  // ---------------------------------------------------------------------------
+  describe('Die zweite Bauart: Selbstzahler', () => {
+    const selbstzahler = () =>
+      verordnung({
+        id: 'sz1',
+        treatment_basis_kind: 'self_pay',
+        prescriber_id: null,
+        prescriber_name: null,
+        prescriber_practice_name: null,
+        issued_on: '2026-09-03',
+        diagnosis: null,
+        frequency_note: '1x pro Woche',
+      });
+
+    it('nennt ihn "Selbstzahler seit" statt "Verordnung vom"', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([selbstzahler()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent({ treatment_basis_id: 'sz1' }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(await screen.findByText('Selbstzahler seit 03.09.2026')).toBeInTheDocument();
+      expect(screen.queryByText(/Verordnung vom/)).not.toBeInTheDocument();
+    });
+
+    it('zeigt weder Verordner:in noch Rezeptscan', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([selbstzahler()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent({ treatment_basis_id: 'sz1' }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      await screen.findByText('Selbstzahler seit 03.09.2026');
+      expect(screen.queryByText('Dr. med. Petra Probst')).not.toBeInTheDocument();
+      expect(screen.queryByText('Scan des Rezepts')).not.toBeInTheDocument();
+    });
+
+    it('bekommt Kontingent und Serienplanung wie eine Verordnung', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([selbstzahler()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent({ treatment_basis_id: 'sz1', prescribed: 8, used: 1, planned: 2, remaining: 6 }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(await screen.findByText('1 von 8 genutzt · 7 offen')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Terminserie anlegen' })).toHaveAttribute(
+        'href',
+        `/patienten/${patient.id}/verordnungen/sz1/serie`,
+      );
+    });
+
+    it('steht mit der Verordnung unter einer gemeinsamen Ueberschrift', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung(), selbstzahler()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent(),
+        kontingent({ treatment_basis_id: 'sz1' }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(await screen.findByText('Folgeverordnung vom 18.06.2026')).toBeInTheDocument();
+      expect(screen.getByText('Selbstzahler seit 03.09.2026')).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: 'Aktuelle Behandlungsgrundlagen' }),
+      ).toBeInTheDocument();
+    });
   });
 
   it('ruft fuer office die klinische Sicht und zeigt die Diagnose (E15)', async () => {
-    fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
-    fetchPatientPrescriptionSlots.mockResolvedValue([kontingent()]);
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
     expect(await screen.findByText('Synthetisch: Schulter rechts.')).toBeInTheDocument();
     expect(screen.getByText('Diagnose')).toBeInTheDocument();
-    expect(fetchPatientPrescriptionsClinical).toHaveBeenCalledWith(patient.id);
-    expect(fetchPatientPrescriptions).not.toHaveBeenCalled();
+    expect(fetchPatientTreatmentBasesClinical).toHaveBeenCalledWith(patient.id);
+    expect(fetchPatientTreatmentBases).not.toHaveBeenCalled();
   });
 
   // ---------------------------------------------------------------------------
@@ -116,8 +187,8 @@ describe('Verordnungsbereich der Akte', () => {
   // ---------------------------------------------------------------------------
   describe('Einheiten und Termine getrennt', () => {
     it('benennt beide Zahlen mit ihrer Einheit', async () => {
-      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
-      fetchPatientPrescriptionSlots.mockResolvedValue([
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
         kontingent({ prescribed: 10, used: 7, planned: 8, upcoming: 2, remaining: 2 }),
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
@@ -131,8 +202,8 @@ describe('Verordnungsbereich der Akte', () => {
     });
 
     it('fuehrt von der Verordnung zu ihren Terminen', async () => {
-      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
-      fetchPatientPrescriptionSlots.mockResolvedValue([kontingent({ planned: 3 })]);
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ planned: 3 })]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
       expect(
@@ -141,8 +212,8 @@ describe('Verordnungsbereich der Akte', () => {
     });
 
     it('nennt eine Verordnung ohne Termin als solche, ohne Link', async () => {
-      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
-      fetchPatientPrescriptionSlots.mockResolvedValue([
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
         kontingent({ planned: 0, upcoming: 0, remaining: 3 }),
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
@@ -159,8 +230,8 @@ describe('Verordnungsbereich der Akte', () => {
   // ---------------------------------------------------------------------------
   describe('Aktionen passen zum Zustand', () => {
     it('bietet die Serie an, solange sich etwas planen laesst', async () => {
-      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
-      fetchPatientPrescriptionSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
       expect(await screen.findByRole('link', { name: 'Terminserie anlegen' })).toHaveAttribute(
@@ -170,8 +241,8 @@ describe('Verordnungsbereich der Akte', () => {
     });
 
     it('bietet keine Serie an, wenn jede Einheit verplant ist', async () => {
-      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
-      fetchPatientPrescriptionSlots.mockResolvedValue([
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
         kontingent({ prescribed: 10, used: 7, planned: 10, upcoming: 3, remaining: 0 }),
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
@@ -181,8 +252,8 @@ describe('Verordnungsbereich der Akte', () => {
     });
 
     it('bietet einer inaktiven Person keine Serie an', async () => {
-      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
-      fetchPatientPrescriptionSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
       renderWithProviders(
         <Verordnungsbereich
           patient={testPatient({ status: 'inactive' })}
@@ -195,8 +266,8 @@ describe('Verordnungsbereich der Akte', () => {
     });
 
     it('laesst office die Verordnung nicht bearbeiten', async () => {
-      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung()]);
-      fetchPatientPrescriptionSlots.mockResolvedValue([kontingent()]);
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
       await screen.findByText('Folgeverordnung vom 18.06.2026');
@@ -211,16 +282,16 @@ describe('Verordnungsbereich der Akte', () => {
     const ausgeschoepft = verordnung({
       id: 'v0',
       issued_on: '2025-11-12',
-      prescription_kind: 'first',
+      treatment_basis_kind: 'first',
       items: [position({ prescribed_quantity: 6, used_quantity: 6, remaining_quantity: 0 })],
     });
 
     beforeEach(() => {
-      fetchPatientPrescriptionsClinical.mockResolvedValue([verordnung(), ausgeschoepft]);
-      fetchPatientPrescriptionSlots.mockResolvedValue([
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung(), ausgeschoepft]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
         kontingent(),
         kontingent({
-          prescription_id: 'v0',
+          treatment_basis_id: 'v0',
           prescribed: 6,
           used: 6,
           planned: 6,
@@ -234,7 +305,7 @@ describe('Verordnungsbereich der Akte', () => {
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
       expect(
-        await screen.findByRole('heading', { name: 'Ausgeschöpfte Verordnungen' }),
+        await screen.findByRole('heading', { name: 'Ausgeschöpfte Behandlungsgrundlagen' }),
       ).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: '2025' })).toBeInTheDocument();
       expect(screen.getByText(/6 von 6 Einheiten genutzt · 6 Termine/)).toBeInTheDocument();
@@ -254,14 +325,14 @@ describe('Verordnungsbereich der Akte', () => {
     });
   });
 
-  it('fuehrt keinen zweiten Weg "Verordnung erfassen" neben dem der Akte', async () => {
+  it('fuehrt keinen zweiten Weg "Grundlage erfassen" neben dem der Akte', async () => {
     // Der Weg steht im Kopf der Akte und ist aus jedem Bereich erreichbar.
     // Zweimal derselbe Knopf auf einer Seite waere ein Raetsel; der
     // Rollenschnitt dahinter wird am Kopf geprueft.
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-    await screen.findByText('Keine laufende Verordnung');
-    expect(screen.queryByRole('link', { name: 'Verordnung erfassen' })).not.toBeInTheDocument();
+    await screen.findByText('Keine laufende Behandlungsgrundlage');
+    expect(screen.queryByRole('link', { name: 'Grundlage erfassen' })).not.toBeInTheDocument();
   });
 
   it('zeigt einem Patientenkonto den Abschnitt gar nicht', () => {
@@ -269,17 +340,17 @@ describe('Verordnungsbereich der Akte', () => {
       <Verordnungsbereich patient={patient} user={testUser(['patient'])} />,
     );
     expect(container).toBeEmptyDOMElement();
-    expect(fetchPatientPrescriptions).not.toHaveBeenCalled();
-    expect(fetchPatientPrescriptionsClinical).not.toHaveBeenCalled();
-    expect(fetchPatientPrescriptionSlots).not.toHaveBeenCalled();
+    expect(fetchPatientTreatmentBases).not.toHaveBeenCalled();
+    expect(fetchPatientTreatmentBasesClinical).not.toHaveBeenCalled();
+    expect(fetchPatientTreatmentBasisSlots).not.toHaveBeenCalled();
   });
 
   it('meldet einen Ladefehler ohne interne Details', async () => {
-    fetchPatientPrescriptionsClinical.mockRejectedValue(new Error('interne Ursache'));
+    fetchPatientTreatmentBasesClinical.mockRejectedValue(new Error('interne Ursache'));
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['team_lead'])} />);
 
     expect(
-      await screen.findByText('Die Verordnungen konnten nicht geladen werden.'),
+      await screen.findByText('Die Behandlungsgrundlagen konnten nicht geladen werden.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/interne Ursache/)).not.toBeInTheDocument();
   });
@@ -287,6 +358,6 @@ describe('Verordnungsbereich der Akte', () => {
   it('sagt bei leerer Akte, wo die erste Verordnung entsteht', async () => {
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-    expect(await screen.findByText('Keine laufende Verordnung')).toBeInTheDocument();
+    expect(await screen.findByText('Keine laufende Behandlungsgrundlage')).toBeInTheDocument();
   });
 });

@@ -5,28 +5,38 @@ import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import {
+  BAUARTEN,
+  bauartDatumsBeschriftung,
+  bauartLabels,
+  istVerordnung,
   prescriberLabel,
-  prescriptionKindLabels,
+  type Bauart,
   type PositionEingabe,
   type Prescriber,
-  type PrescriptionFeld,
+  type TreatmentBasisFeld,
 } from './api';
-import { verordnungFeldId } from './verordnungsfelder';
+import { grundlageFeldId } from './grundlagenfelder';
 
 export type PositionsFehler = Partial<Record<keyof PositionEingabe, string>>;
 
 /**
- * Eingabefelder einer Verordnung.
+ * Eingabefelder einer Behandlungsgrundlage.
+ *
+ * **Die Bauart steht zuerst** (GRD-001, ADR-020): Sie entscheidet, welche
+ * Felder danach überhaupt kommen. Eine Verordnung verlangt eine Verordner:in
+ * und trägt die klinischen Felder; ein Selbstzahler hat beides nicht — das
+ * Formular fragt dort nicht danach, statt leere Felder anzubieten, die niemand
+ * ausfüllen soll (ADR-020 Punkt 3 und 4).
  *
  * Die Positionen sind der eigentliche Inhalt: sie tragen das Kontingent, wegen
- * dessen eine Verordnung im Alltag überhaupt aufgeschlagen wird. „Genutzt"
+ * dessen eine Grundlage im Alltag überhaupt aufgeschlagen wird. „Genutzt"
  * pflegt die Praxis bis auf Weiteres selbst (ANN-012).
  *
  * ANN-014: Das letzte Feld heißt ausdrücklich „Empfehlung der Therapeut:in zum
  * Verordnungsende". Die Anwendung erzeugt keine Empfehlung — sie nimmt die
  * auf, die eine Therapeut:in selbst formuliert (ADR-006 Punkt 4).
  */
-export function PrescriptionFormFields({
+export function TreatmentBasisFormFields({
   werte,
   fehler,
   onChange,
@@ -39,9 +49,9 @@ export function PrescriptionFormFields({
   verordnerAnlegenZiel,
   onVerordnerAnlegenKlick,
 }: {
-  werte: Record<PrescriptionFeld, string>;
-  fehler: Partial<Record<PrescriptionFeld, string>>;
-  onChange: (feld: PrescriptionFeld, wert: string) => void;
+  werte: Record<TreatmentBasisFeld, string>;
+  fehler: Partial<Record<TreatmentBasisFeld, string>>;
+  onChange: (feld: TreatmentBasisFeld, wert: string) => void;
   positionen: PositionEingabe[];
   positionsFehler: PositionsFehler[];
   onPositionChange: (index: number, feld: keyof PositionEingabe, wert: string) => void;
@@ -52,54 +62,63 @@ export function PrescriptionFormFields({
   /** Merkt den Formularzustand, bevor die Seite zum Anlegen wechselt (VER-003). */
   onVerordnerAnlegenKlick: () => void;
 }) {
+  const bauart = werte.treatment_basis_kind as Bauart;
+  const verordnung = istVerordnung(bauart);
+
   return (
     <>
-      <Section titel="Verordnung">
+      <Section titel="Behandlungsgrundlage">
         <Feldgruppe>
           <Select
-            label="Verordner:in *"
-            name="prescriber_id"
-            feldId={verordnungFeldId('prescriber_id')}
+            label="Art *"
+            name="treatment_basis_kind"
+            feldId={grundlageFeldId('treatment_basis_kind')}
             required
-            value={werte.prescriber_id}
-            error={fehler.prescriber_id}
-            hint={
-              <>
-                Fehlt die Praxis?{' '}
-                <Link
-                  to={verordnerAnlegenZiel}
-                  onClick={onVerordnerAnlegenKlick}
-                  className="text-accent hover:underline"
-                >
-                  Verordner:in anlegen
-                </Link>
-              </>
-            }
-            onChange={(event) => onChange('prescriber_id', event.target.value)}
+            hint="Eine Verordnung liegt als Rezept vor; ein Selbstzahler vereinbart die Behandlungen mit der Praxis."
+            value={werte.treatment_basis_kind}
+            error={fehler.treatment_basis_kind}
+            onChange={(event) => onChange('treatment_basis_kind', event.target.value)}
           >
-            <option value="">Bitte auswählen</option>
-            {verordnerinnen.map((verordner) => (
-              <option key={verordner.id} value={verordner.id}>
-                {prescriberLabel(verordner)}
+            {BAUARTEN.map((wert) => (
+              <option key={wert} value={wert}>
+                {bauartLabels[wert]}
               </option>
             ))}
           </Select>
-          <Select
-            label="Art *"
-            name="prescription_kind"
-            feldId={verordnungFeldId('prescription_kind')}
-            required
-            value={werte.prescription_kind}
-            error={fehler.prescription_kind}
-            onChange={(event) => onChange('prescription_kind', event.target.value)}
-          >
-            <option value="first">{prescriptionKindLabels.first}</option>
-            <option value="follow_up">{prescriptionKindLabels.follow_up}</option>
-          </Select>
+          {verordnung ? (
+            <Select
+              label="Verordner:in *"
+              name="prescriber_id"
+              feldId={grundlageFeldId('prescriber_id')}
+              required
+              value={werte.prescriber_id}
+              error={fehler.prescriber_id}
+              hint={
+                <>
+                  Fehlt die Praxis?{' '}
+                  <Link
+                    to={verordnerAnlegenZiel}
+                    onClick={onVerordnerAnlegenKlick}
+                    className="text-accent hover:underline"
+                  >
+                    Verordner:in anlegen
+                  </Link>
+                </>
+              }
+              onChange={(event) => onChange('prescriber_id', event.target.value)}
+            >
+              <option value="">Bitte auswählen</option>
+              {verordnerinnen.map((verordner) => (
+                <option key={verordner.id} value={verordner.id}>
+                  {prescriberLabel(verordner)}
+                </option>
+              ))}
+            </Select>
+          ) : null}
           <Field
-            label="Ausstellungsdatum *"
+            label={`${bauartDatumsBeschriftung[bauart]} *`}
             name="issued_on"
-            feldId={verordnungFeldId('issued_on')}
+            feldId={grundlageFeldId('issued_on')}
             type="date"
             required
             value={werte.issued_on}
@@ -109,9 +128,13 @@ export function PrescriptionFormFields({
           <Field
             label="Frequenz"
             name="frequency_note"
-            feldId={verordnungFeldId('frequency_note')}
+            feldId={grundlageFeldId('frequency_note')}
             autoComplete="off"
-            hint={'So, wie sie auf dem Rezept steht — etwa „2x pro Woche".'}
+            hint={
+              verordnung
+                ? 'So, wie sie auf dem Rezept steht — etwa „2x pro Woche".'
+                : 'Wie vereinbart — etwa „1x pro Woche".'
+            }
             value={werte.frequency_note}
             error={fehler.frequency_note}
             onChange={(event) => onChange('frequency_note', event.target.value)}
@@ -122,7 +145,9 @@ export function PrescriptionFormFields({
       <Section
         titel="Positionen"
         hinweis={
-          'Je verordnetem Heilmittel eine Position. „Genutzt" wird derzeit von Hand gepflegt; die Restmenge ergibt sich daraus.'
+          verordnung
+            ? 'Je verordnetem Heilmittel eine Position. „Genutzt" wird derzeit von Hand gepflegt; die Restmenge ergibt sich daraus.'
+            : 'Je vereinbartem Heilmittel eine Position. „Genutzt" wird derzeit von Hand gepflegt; die Restmenge ergibt sich daraus.'
         }
       >
         <Feldgruppe>
@@ -144,7 +169,7 @@ export function PrescriptionFormFields({
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field
-                    label="Verordnet *"
+                    label={`${verordnung ? 'Verordnet' : 'Vereinbart'} *`}
                     name={`prescribed-${index}`}
                     inputMode="numeric"
                     required
@@ -187,58 +212,64 @@ export function PrescriptionFormFields({
         </Feldgruppe>
       </Section>
 
-      <Section
-        titel="Klinische Angaben"
-        hinweis="Für Praxismanagement-Zugänge nicht sichtbar. Der Behandlungsverlauf gehört in die Behandlungsdokumentation, nicht hierher."
-      >
-        <Feldgruppe>
-          <TextArea
-            label="Diagnose oder Leitsymptomatik"
-            name="diagnosis"
-            feldId={verordnungFeldId('diagnosis')}
-            rows={3}
-            value={werte.diagnosis}
-            error={fehler.diagnosis}
-            onChange={(event) => onChange('diagnosis', event.target.value)}
-          />
-          <TextArea
-            label="Therapieziel"
-            name="therapy_goal"
-            feldId={verordnungFeldId('therapy_goal')}
-            rows={2}
-            value={werte.therapy_goal}
-            error={fehler.therapy_goal}
-            onChange={(event) => onChange('therapy_goal', event.target.value)}
-          />
-          <TextArea
-            label="Hinweis der Verordner:in"
-            name="prescriber_note"
-            feldId={verordnungFeldId('prescriber_note')}
-            rows={2}
-            hint="Was auf dem Rezept steht, unverändert übernommen."
-            value={werte.prescriber_note}
-            error={fehler.prescriber_note}
-            onChange={(event) => onChange('prescriber_note', event.target.value)}
-          />
-          <TextArea
-            label="Empfehlung der Therapeut:in zum Verordnungsende"
-            name="follow_up_recommendation"
-            feldId={verordnungFeldId('follow_up_recommendation')}
-            rows={2}
-            hint="Ihre eigene Einschätzung. Die Anwendung erzeugt keine Empfehlung."
-            value={werte.follow_up_recommendation}
-            error={fehler.follow_up_recommendation}
-            onChange={(event) => onChange('follow_up_recommendation', event.target.value)}
-          />
-        </Feldgruppe>
-      </Section>
+      {/* ADR-020 Punkt 4: Die klinischen Felder bleiben klinisch - und beim
+          Selbstzahler leer. Sie werden hier nicht angeboten; was beim Wechsel
+          der Bauart schon dastand, leert das Formular sichtbar (siehe
+          TreatmentBasisFormPage). */}
+      {verordnung ? (
+        <Section
+          titel="Klinische Angaben"
+          hinweis="Für Praxismanagement-Zugänge nicht sichtbar. Der Behandlungsverlauf gehört in die Behandlungsdokumentation, nicht hierher."
+        >
+          <Feldgruppe>
+            <TextArea
+              label="Diagnose oder Leitsymptomatik"
+              name="diagnosis"
+              feldId={grundlageFeldId('diagnosis')}
+              rows={3}
+              value={werte.diagnosis}
+              error={fehler.diagnosis}
+              onChange={(event) => onChange('diagnosis', event.target.value)}
+            />
+            <TextArea
+              label="Therapieziel"
+              name="therapy_goal"
+              feldId={grundlageFeldId('therapy_goal')}
+              rows={2}
+              value={werte.therapy_goal}
+              error={fehler.therapy_goal}
+              onChange={(event) => onChange('therapy_goal', event.target.value)}
+            />
+            <TextArea
+              label="Hinweis der Verordner:in"
+              name="prescriber_note"
+              feldId={grundlageFeldId('prescriber_note')}
+              rows={2}
+              hint="Was auf dem Rezept steht, unverändert übernommen."
+              value={werte.prescriber_note}
+              error={fehler.prescriber_note}
+              onChange={(event) => onChange('prescriber_note', event.target.value)}
+            />
+            <TextArea
+              label="Empfehlung der Therapeut:in zum Verordnungsende"
+              name="follow_up_recommendation"
+              feldId={grundlageFeldId('follow_up_recommendation')}
+              rows={2}
+              hint="Ihre eigene Einschätzung. Die Anwendung erzeugt keine Empfehlung."
+              value={werte.follow_up_recommendation}
+              error={fehler.follow_up_recommendation}
+              onChange={(event) => onChange('follow_up_recommendation', event.target.value)}
+            />
+          </Feldgruppe>
+        </Section>
+      ) : null}
 
       <Section titel="Organisatorisch">
         <Feldgruppe>
           <TextArea
             label="Bemerkung"
             name="note"
-            feldId={verordnungFeldId('note')}
+            feldId={grundlageFeldId('note')}
             rows={2}
             hint={'Für alle Praxisrollen sichtbar, etwa „Rezept liegt im Ordner".'}
             value={werte.note}

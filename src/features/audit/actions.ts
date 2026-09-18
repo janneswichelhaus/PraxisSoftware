@@ -57,10 +57,16 @@ export const AUDIT_ACTIONS = [
   'treatment_note.revised',
   'treatment_note.addendum_created',
   'treatment_note.history_viewed',
+  // Bis GRD-001 geschrieben, seitdem nur noch gelesen: Auditzeilen werden
+  // niemals umgeschrieben (ADR-010, ADR-020 Punkt 8).
   'prescription.viewed',
   'prescription.created',
   'prescription.updated',
   'prescription.deleted',
+  'treatment_basis.viewed',
+  'treatment_basis.created',
+  'treatment_basis.updated',
+  'treatment_basis.deleted',
   'patient_file.uploaded',
   'patient_file.link_issued',
   'patient_file.deleted',
@@ -128,10 +134,16 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'text_snippet.created': 'Textbaustein angelegt',
   'text_snippet.updated': 'Textbaustein geändert',
   'text_snippet.deleted': 'Textbaustein gelöscht',
+  // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
+  // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
   'prescription.created': 'Verordnung erfasst',
   'prescription.updated': 'Verordnung geändert',
   'prescription.deleted': 'Verordnung gelöscht',
+  'treatment_basis.viewed': 'Behandlungsgrundlage gelesen',
+  'treatment_basis.created': 'Behandlungsgrundlage erfasst',
+  'treatment_basis.updated': 'Behandlungsgrundlage geändert',
+  'treatment_basis.deleted': 'Behandlungsgrundlage gelöscht',
   'patient_file.uploaded': 'Datei zur Akte hinzugefügt',
   'patient_file.link_issued': 'Datei zum Öffnen freigegeben',
   'patient_file.deleted': 'Datei gelöscht',
@@ -149,6 +161,7 @@ export const auditSubjectLabels: Record<string, string> = {
   staff_member: 'Mitarbeiter:in',
   treatment_note: 'Behandlungsdokumentation',
   prescription: 'Verordnung',
+  treatment_basis: 'Behandlungsgrundlage',
   patient_file: 'Datei der Akte',
   storage_deletion_order: 'Löschauftrag der Ablage',
 };

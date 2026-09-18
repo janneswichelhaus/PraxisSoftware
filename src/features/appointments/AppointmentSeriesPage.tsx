@@ -22,7 +22,7 @@ import {
   fensterEnde,
   fetchAssignableTherapists,
   fetchLocations,
-  fetchPrescriptionSlots,
+  fetchTreatmentBasisSlots,
   istAusserhalbArbeitszeit,
   leseTerminVorbelegung,
   istHinderlich,
@@ -46,14 +46,15 @@ import {
  *
  * Ohne das steht in der Oberfläche „1 Termine anlegen" und „1 von 10 Terminen
  * sind nicht planbar". Bei einer Serie ist die Eins kein Sonderfall: Genau so
- * sieht der letzte offene Platz einer Verordnung aus.
+ * sieht der letzte offene Platz einer Grundlage aus.
  */
 function termineWort(anzahl: number): string {
   return anzahl === 1 ? '1 Termin' : `${anzahl} Termine`;
 }
 
 /**
- * Terminserie aus einer Verordnung (CAL-007).
+ * Terminserie aus einer Behandlungsgrundlage (CAL-007, seit GRD-001 beide
+ * Bauarten).
  *
  * Der Vorgang hat zwei Schritte, und das ist Absicht: erst ein Vorschlag aus
  * Rhythmus und Anzahl, dann eine Liste, in der jeder Termin einzeln
@@ -65,9 +66,9 @@ function termineWort(anzahl: number): string {
  * Darstellung (ADR-004).
  */
 export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
-  const { patientId, prescriptionId } = useParams<{
+  const { patientId, grundlageId } = useParams<{
     patientId: string;
-    prescriptionId: string;
+    grundlageId: string;
   }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -116,9 +117,9 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
   });
 
   const kontingent = useQuery({
-    queryKey: ['prescription-slots', prescriptionId],
-    queryFn: () => fetchPrescriptionSlots(prescriptionId!),
-    enabled: Boolean(prescriptionId),
+    queryKey: ['treatment-basis-slots', grundlageId],
+    queryFn: () => fetchTreatmentBasisSlots(grundlageId!),
+    enabled: Boolean(grundlageId),
     retry: false,
   });
 
@@ -186,7 +187,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
       };
       return createAppointmentSeries(
         patientId!,
-        prescriptionId!,
+        grundlageId!,
         werte,
         eingabe.termine,
         eingabe.bestaetigt,
@@ -204,8 +205,10 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
       await queryClient.invalidateQueries({ queryKey: ['patient-next-appointment', patientId] });
       // Verplant ist nicht genutzt, aber verplant zählt gegen das offene
       // Kontingent (ANN-038) - beide Zählungen sind jetzt veraltet.
-      await queryClient.invalidateQueries({ queryKey: ['patient-prescription-slots', patientId] });
-      await queryClient.invalidateQueries({ queryKey: ['prescription-slots', prescriptionId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['patient-treatment-basis-slots', patientId],
+      });
+      await queryClient.invalidateQueries({ queryKey: ['treatment-basis-slots', grundlageId] });
       void navigate(`/patienten/${patientId}/termine`, { replace: true });
     },
   });
@@ -252,13 +255,13 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
   }
 
   if (patient.isPending || kontingent.isPending) {
-    return <LoadingState label="Verordnung wird geladen …" />;
+    return <LoadingState label="Behandlungsgrundlage wird geladen …" />;
   }
   if (patient.isError || !patient.data || kontingent.isError || !kontingent.data) {
     return (
       <ErrorState
         title="Nicht gefunden"
-        description="Diese Verordnung existiert nicht oder ist für Ihren Zugang nicht freigegeben."
+        description="Diese Behandlungsgrundlage existiert nicht oder ist für Ihren Zugang nicht freigegeben."
       />
     );
   }
@@ -287,7 +290,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
         description={`Für ${fullName(patientDaten)}. Die Serie entsteht in einem Vorgang — entweder alle Termine oder keiner.`}
       />
 
-      <Section titel="Kontingent der Verordnung">
+      <Section titel="Kontingent der Grundlage">
         <DetailList>
           <DetailRow label="Verordnet">{zahlen.prescribed} Behandlungen</DetailRow>
           <DetailRow label="Genutzt">{zahlen.used}</DetailRow>
@@ -299,7 +302,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
             </span>
           </DetailRow>
           {zahlen.frequency_note ? (
-            <DetailRow label="Frequenz laut Verordnung">{zahlen.frequency_note}</DetailRow>
+            <DetailRow label="Frequenz laut Grundlage">{zahlen.frequency_note}</DetailRow>
           ) : null}
         </DetailList>
       </Section>
@@ -409,7 +412,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
               <Statusmeldung ton="warnung">
                 Geplant {anzahl === 1 ? 'ist' : 'sind'} {termineWort(anzahl)}, offen{' '}
                 {zahlen.remaining === 1 ? 'ist' : 'sind'} {zahlen.remaining}. Das ist zulässig — die
-                Verordnung deckt dann nicht alle Termine ab.
+                Grundlage deckt dann nicht alle Termine ab.
               </Statusmeldung>
             ) : null}
 

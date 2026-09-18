@@ -54,7 +54,7 @@ describe('funktionskatalog', () => {
     const namen = bezeichnungen(katalog);
     expect(namen).not.toContain('Termin anlegen');
     expect(namen).not.toContain('Patient:in suchen');
-    expect(namen).not.toContain('Verordnung erfassen');
+    expect(namen).not.toContain('Grundlage erfassen');
     // Das eigene Konto steht jeder angemeldeten Rolle offen (STAFF-004).
     expect(namen).toContain('Mein Konto');
   });
@@ -65,13 +65,13 @@ describe('funktionskatalog', () => {
     expect(namen).toContain('Patient:in anlegen');
     expect(namen).toContain('Mitarbeitende:n anlegen');
     // Wer eine Verordnung erfasst, tippt die Diagnose mit ab - ohne office
-    // (ANN-011, canWritePrescriptions).
-    expect(namen).not.toContain('Verordnung erfassen');
+    // (ANN-011, canWriteTreatmentBases).
+    expect(namen).not.toContain('Grundlage erfassen');
   });
 
   it('bietet der Therapeutin das Verordnen, aber keine Personalakte', () => {
     const namen = bezeichnungen(funktionskatalog(testUser(['therapist'])));
-    expect(namen).toContain('Verordnung erfassen');
+    expect(namen).toContain('Grundlage erfassen');
     expect(namen).not.toContain('Mitarbeitende:n anlegen');
     expect(namen).not.toContain('Abrechnung');
   });
@@ -115,7 +115,7 @@ describe('sucheFunktionen', () => {
   });
 
   it('findet einen Vorgang unter dem Wort, das die Praxis dafür benutzt', () => {
-    expect(bezeichnungen(sucheFunktionen(katalog, 'rezept'))).toContain('Verordnung erfassen');
+    expect(bezeichnungen(sucheFunktionen(katalog, 'rezept'))).toContain('Grundlage erfassen');
     expect(bezeichnungen(sucheFunktionen(katalog, 'passwort'))).toContain('Mein Konto');
     expect(bezeichnungen(sucheFunktionen(katalog, 'ausfall'))).toContain('Tag umplanen');
     // Die Kurzform aus der Tableiste ist der zweite Name derselben Sache.

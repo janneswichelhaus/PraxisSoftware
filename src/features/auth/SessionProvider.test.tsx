@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({ auth: { getSession, onAuthStateChange, signOut } }),
 }));
 
-vi.mock('@/features/prescriptions/api', () => ({ alleEntwuerfeVerwerfen }));
+vi.mock('@/features/treatment-bases/api', () => ({ alleEntwuerfeVerwerfen }));
 
 const { SessionProvider } = await import('./SessionProvider');
 const { useSession } = await import('./sessionContext');

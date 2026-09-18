@@ -2,7 +2,7 @@ import { useOutletContext } from 'react-router-dom';
 import {
   canManageAppointments,
   canReadPatientFiles,
-  canReadPrescriptions,
+  canReadTreatmentBases,
   canReadTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
@@ -41,7 +41,7 @@ interface Aktenbereich {
  * Aufnahme braucht (§13: das Häufige zuerst).
  *
  * **Einen Bereich „Übersicht" gibt es nicht mehr** (UI-002a). Er war ein
- * Auszug aus den vier anderen - nächste Termine, laufende Verordnungen,
+ * Auszug aus den vier anderen - nächste Termine, laufende Grundlagen,
  * letzter Behandlungsstand - und kostete bei jedem Aufruf der Akte einen Tap,
  * bevor irgendetwas zu tun war. Wer die Akte öffnet, landet jetzt dort, wo
  * gearbeitet wird. Die beiden Angaben, die vor einem Hausbesuch zählen und
@@ -58,8 +58,10 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
   if (canManageAppointments(user.roles)) {
     bereiche.push({ to: `${basis}/termine`, label: 'Termine' });
   }
-  if (canReadPrescriptions(user.roles)) {
-    bereiche.push({ to: `${basis}/verordnungen`, label: 'Verordnungen' });
+  if (canReadTreatmentBases(user.roles)) {
+    // Der Bereich zeigt beide Bauarten, deshalb steht hier das Oberwort
+    // (ADR-020 Punkt 7). Das Adressfragment bleibt `verordnungen` (ANN-062).
+    bereiche.push({ to: `${basis}/verordnungen`, label: 'Behandlungsgrundlagen' });
   }
   // Seit E15 steht hier für alle vier Praxisrollen dieselbe klinische Sicht,
   // office eingeschlossen (ROL-001); jeder gelesene Eintrag wird protokolliert.

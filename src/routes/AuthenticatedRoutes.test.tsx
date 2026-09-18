@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import type * as PatientsApiModule from '@/features/patients/api';
 import type * as AppointmentsApiModule from '@/features/appointments/api';
 import type * as DokumentationApiModule from '@/features/documentation/api';
-import type * as PrescriptionsApiModule from '@/features/prescriptions/api';
+import type * as TreatmentBasesApiModule from '@/features/treatment-bases/api';
 import type * as RetentionApiModule from '@/features/retention/api';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
@@ -48,13 +48,13 @@ vi.mock('@/features/documentation/api', async (importOriginal) => ({
   fetchTreatmentDocumentation: () => Promise.resolve({ primary: null, addenda: [] }),
   fetchTreatmentNoteVersions: () => Promise.resolve([]),
 }));
-vi.mock('@/features/prescriptions/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof PrescriptionsApiModule>()),
+vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof TreatmentBasesApiModule>()),
   fetchPrescribers: () => Promise.resolve([]),
   fetchPrescriber: () => Promise.resolve(null),
-  fetchPrescription: () => Promise.resolve(null),
-  fetchPatientPrescriptions: () => Promise.resolve([]),
-  fetchPatientPrescriptionsClinical: () => Promise.resolve([]),
+  fetchTreatmentBasis: () => Promise.resolve(null),
+  fetchPatientTreatmentBases: () => Promise.resolve([]),
+  fetchPatientTreatmentBasesClinical: () => Promise.resolve([]),
 }));
 vi.mock('@/features/patients/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApiModule>()),
@@ -375,12 +375,12 @@ describe('AuthenticatedRoutes', () => {
         VERORDNUNG_NEU,
       );
       expect(
-        await screen.findByRole('heading', { name: 'Verordnung erfassen' }),
+        await screen.findByRole('heading', { name: 'Grundlage erfassen' }),
       ).toBeInTheDocument();
     });
 
     it('mountet das Aenderungsformular einer Verordnung', async () => {
-      // fetchPrescription ist gemockt und liefert null - entscheidend ist hier
+      // fetchTreatmentBasis ist gemockt und liefert null - entscheidend ist hier
       // allein, dass die Route ueberhaupt gemountet wird.
       renderWithProviders(
         <AuthenticatedRoutes user={testUser(['therapist'])} onSignOut={vi.fn()} />,
