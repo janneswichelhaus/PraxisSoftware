@@ -438,7 +438,7 @@ von Node ersetzen. Kleine Wartung, kein eigener Loop.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Kalender (`/kalender`), Termin bearbeiten                                                     |
 | Quelle  | Jannes, Bedienung nach dem Merge von CAL-EPIC-004a                                            |
-| Status  | eingeplant in FIX-EPIC-004 (FIX-019) — Festlegung von Jannes: möglich, mit Hinweis |
+| Status  | erledigt in FIX-EPIC-004 (FIX-019, 2026-09-18) — ANN-057 |
 | Berührt | `create_appointment`, `update_appointment` („appointment date is in the past", seit CAL-003), `CalendarPage.tsx`, `EditAppointmentPage.tsx` |
 
 **Beobachtung.** Der Server weist jeden Tag vor dem heutigen ab — beim Anlegen
@@ -461,7 +461,7 @@ Migration und `test:db`.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Kalender, Ziehen einer Terminkachel (CAL-023)                                                 |
 | Quelle  | Jannes, Bedienung am Desktop                                                                  |
-| Status  | eingeplant in FIX-EPIC-004 (FIX-017) |
+| Status  | erledigt in FIX-EPIC-004 (FIX-017, 2026-09-18) |
 | Berührt | `VerschiebenRueckfrage.tsx`, `CalendarPage.tsx`, `CalendarGrid.tsx`, `useTerminZiehen.ts`     |
 
 **Beobachtung.** Nach dem Loslassen springt die Seite zum Kasten über dem
@@ -484,7 +484,7 @@ bleiben: der Kasten muss auch ohne Zeiger erreichbar sein.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Kalender, Ziehen (CAL-006, UX-010)                                                            |
 | Quelle  | Jannes                                                                                        |
-| Status  | eingeplant in FIX-EPIC-004 (FIX-018) |
+| Status  | erledigt in FIX-EPIC-004 (FIX-018, 2026-09-18); „Verschieben nach …" nicht gebaut, Bearbeiten bleibt der Weg ohne Zeiger |
 | Berührt | `useTerminZiehen.ts` (ein `scroll` bricht das Ziehen ab), `CalendarPage.tsx` (Bereich, Blättern) |
 
 **Beobachtung.** Während des Ziehens lässt sich weder scrollen noch blättern:
@@ -510,7 +510,7 @@ Weg ohne Zeigegerät, den es ohnehin braucht.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Kalender, Ziehen                                                                              |
 | Quelle  | Jannes; Ursache noch nicht bestätigt                                                          |
-| Status  | eingeplant in FIX-EPIC-004 (FIX-017) |
+| Status  | erledigt in FIX-EPIC-004 (FIX-017, 2026-09-18) |
 | Berührt | `CalendarPage.tsx` (`ziehbarErlaubt`, `ziehbar: status === 'confirmed'`)                     |
 
 **Beobachtung.** Manche Termine reagieren nicht auf Ziehen. Zwei Ursachen
@@ -535,7 +535,7 @@ mit Jannes, welche Termine betroffen waren.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Terminanlage (`/patienten/:id/termine/neu`), grundsätzlich jede Rückfrage über dem Formular    |
 | Quelle  | Jannes, zwei Bildschirmfotos (Desktop)                                                        |
-| Status  | eingeplant in FIX-EPIC-004 (FIX-016) — Festlegung von Jannes: Rückfragen als Fenster |
+| Status  | erledigt in FIX-EPIC-004 (FIX-016, 2026-09-18) — ANN-058 |
 | Berührt | `NewAppointmentPage.tsx`, `EditAppointmentPage.tsx`, `components/ui/Rueckfrage.tsx`, `lib/rueckweg.ts`, alle Seiten mit dem Muster „trotzdem anlegen" |
 
 **Beobachtung.** „Termin anlegen" am Ende eines langen Formulars zeigt die
