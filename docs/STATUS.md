@@ -8,8 +8,8 @@ einträgt, hat sie damit nicht eingeplant.
 
 ## Jetzt
 
-Nichts läuft. CAL-EPIC-004b liegt als PR gegen `main`, Abnahme steht aus; der
-nächste Loop beginnt auf Freigabe.
+Nichts läuft. CAL-EPIC-004b ist gemergt (PR #48, CI grün); die **Abnahme steht
+aus**. Der nächste Loop beginnt auf Freigabe.
 
 ## Danach — Reihenfolge seit 2026-09-18
 
@@ -32,8 +32,8 @@ navigierenden Tests rot — auf `main` genauso (**BEF-011**), CI meint Node 22.
 
 ## Blocker (Jannes-seitig)
 
-- **PR zu CAL-EPIC-004b mergen**, danach lokal `db reset` (neue Migration
-  `20260918110000_event_series.sql`).
+- **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von
+  CAL-EPIC-004b (neue Migration `20260918110000_event_series.sql`).
 - **Abnahme CAL-018, CAL-EPIC-004a, FIX-EPIC-004, CAL-EPIC-004b** — Klickwege
   in [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
 - **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code
