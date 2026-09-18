@@ -3,8 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { SubNav } from '@/components/ui/SubNav';
 import { Wortmarke } from '@/components/ui/Wortmarke';
-import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
-import { Patientensuche } from '@/features/patients/Patientensuche';
+import { type CurrentUser } from '@/features/session/types';
+import { Funktionssuche } from './Funktionssuche';
 import { useAbmeldeanfrage } from './abmeldeschutz';
 import { aktiverBereich, arbeitsbereiche, mehrSymbol, tableiste } from './navigation';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
@@ -64,10 +64,6 @@ export function AppShell({
   const bereiche = arbeitsbereiche(user);
   const aktuell = aktiverBereich(bereiche, pathname);
   const { sichtbar, weitere } = tableiste(bereiche);
-
-  // Die ausgeblendete Suche ist keine Zugriffskontrolle: `search_patients`
-  // prueft die Rolle selbst und liefert einem Patientenkonto nichts (ADR-004).
-  const darfSuchen = canReadPatientDirectory(user.roles);
 
   return (
     <div className="min-h-dvh sm:flex">
@@ -133,7 +129,13 @@ export function AppShell({
         </div>
 
         <header className="border-line bg-surface sticky top-0 z-30 border-b">
-          <div className="flex min-h-14 w-full items-center justify-between gap-3 px-5">
+          {/* Ab sm eine Zeile, auf dem Telefon zwei — durch Umbruch, nicht
+              durch ein zweites Suchfeld. Bis UX-013 stand die Suche zweimal
+              im Baum, einmal je Breite; mit Tastenkürzel und Trefferliste
+              wäre das zweimal dasselbe Feld, von dem nur eines zu sehen ist.
+              Das Konto steht deshalb auf dem Telefon in der ersten Zeile
+              neben der Marke, die Suche bricht darunter um. */}
+          <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 px-5 py-2 sm:min-h-14 sm:flex-nowrap sm:py-0">
             {/* Die Marke steht überall statt des Organisationsnamens. Nach
               ADR-003 ist Mandantenfähigkeit ausdrücklich keine
               Produktfunktion — es gibt genau eine Praxis, und die heißt Own
@@ -148,7 +150,7 @@ export function AppShell({
               Der Link auf die Übersicht ist die Erwartung an ein Logo oben
               links; das Ziel steht zusätzlich im zugänglichen Namen, sonst
               hieße der Link für eine Vorlesehilfe bloß „Own Motion". */}
-            <div className="flex min-w-0 items-center gap-3 sm:hidden">
+            <div className="order-1 flex min-w-0 flex-1 items-center gap-3 sm:hidden">
               <Link
                 to="/"
                 aria-label="Own Motion, zur Startseite"
@@ -158,16 +160,16 @@ export function AppShell({
               </Link>
               {aktuell ? <p className="text-ink-subtle truncate text-xs">{aktuell.label}</p> : null}
             </div>
-            {/* Ab sm hat die Kopfleiste Platz für das Suchfeld in derselben
-              Zeile; darunter bekommt es eine eigene (siehe unten). */}
-            {darfSuchen ? (
-              <div className="hidden min-w-0 flex-1 justify-center sm:flex">
-                <div className="w-full max-w-sm">
-                  <Patientensuche />
-                </div>
+            {/* Die Suche steht jeder angemeldeten Rolle offen: Sie sucht
+              zuerst Funktionen und Bereiche, und die hat auch ein
+              Patientenkonto. Ob Namen dazukommen, entscheidet die Suche
+              selbst — und verbindlich der Server (UX-013, ADR-004). */}
+            <div className="order-3 w-full min-w-0 sm:order-2 sm:flex sm:w-auto sm:flex-1 sm:justify-center">
+              <div className="w-full sm:max-w-sm">
+                <Funktionssuche user={user} />
               </div>
-            ) : null}
-            <div className="flex items-center gap-2">
+            </div>
+            <div className="order-2 flex items-center gap-2 sm:order-3">
               {/* Der Name ist zugleich der Weg zum eigenen Konto: Kennwort,
                 zweiter Faktor, Sitzungen (STAFF-004). Auf dem Telefon bleibt
                 der Text weg, der Weg aber erhalten. */}
@@ -194,15 +196,6 @@ export function AppShell({
               </Button>
             </div>
           </div>
-
-          {/* Auf dem Telefon eine eigene Zeile: das Suchfeld ist der einzige Weg
-            von Kalender und Übersicht in eine Akte, und dafür muss es ohne
-            Aufklappen erreichbar sein (UX-004). */}
-          {darfSuchen ? (
-            <div className="w-full px-5 pb-2 sm:hidden">
-              <Patientensuche />
-            </div>
-          ) : null}
         </header>
 
         {/* Der Inhalt hält 1200 px und steht mittig in der Fläche neben der
