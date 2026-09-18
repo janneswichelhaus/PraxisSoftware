@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   appointmentFormSchema,
+  appointmentSchema,
+  TERMIN_SPALTEN,
   folgeterminVorbelegung,
   formatLocalDate,
   formatLocalTime,
@@ -219,5 +221,21 @@ describe('folgeterminVorbelegung', () => {
       ends_at: '2027-05-28T08:00:00.000Z',
     };
     expect(folgeterminVorbelegung(ende).datum).toBe('2027-06-04');
+  });
+});
+
+/**
+ * Die Spaltenliste der Abfrage gegen das Schema (CAL-021).
+ *
+ * Eine Spalte im Schema, die die Abfrage nicht holt, lässt `parse` scheitern —
+ * und die Detailansicht zeigt dann „Nicht gefunden" statt des Termins. Das ist
+ * mit `event_series_id` genau so passiert: Die Komponententests mocken den
+ * Datenzugriff und konnten es nicht sehen, der angemeldete E2E-Lauf schon.
+ */
+describe('Terminsicht: Abfrage und Schema passen zueinander', () => {
+  it('fragt jede Spalte ab, die das Terminschema verlangt', () => {
+    const abgefragt = new Set(TERMIN_SPALTEN.split(',').map((s) => s.trim()));
+    const fehlend = Object.keys(appointmentSchema.shape).filter((feld) => !abgefragt.has(feld));
+    expect(fehlend).toEqual([]);
   });
 });

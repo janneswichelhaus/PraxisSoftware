@@ -78,6 +78,7 @@ export const TAGESFENSTER = {
   // Nahfenster (siehe unten) und braucht kein eigenes Tagesfenster mehr.
   patientRecordWorkspace: 13,
   appointmentEvents: 14,
+  eventSeries: 15,
 } as const;
 
 /**

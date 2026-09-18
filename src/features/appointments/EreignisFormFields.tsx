@@ -27,6 +27,7 @@ export function EreignisFormFields({
   zeitzone,
   rasterMinuten,
   beteiligte,
+  datumBeschriftung = 'Datum *',
 }: {
   werte: EreignisFormValues;
   fehler: Partial<Record<EreignisFeld, string>>;
@@ -37,6 +38,12 @@ export function EreignisFormFields({
   rasterMinuten?: number | null | undefined;
   /** Die Frage nach den Beteiligten - je nach Vorgang verschieden. */
   beteiligte: ReactNode;
+  /**
+   * Beschriftung des Tages. Bei einer Serie ist es der **erste** Tag, und das
+   * muss dranstehen - sonst behauptet das Formular einen einzelnen Termin
+   * (CAL-021).
+   */
+  datumBeschriftung?: string;
 }) {
   return (
     <div className="flex flex-col gap-5">
@@ -45,7 +52,10 @@ export function EreignisFormFields({
         value={werte.title}
         error={fehler.title}
         maxLength={120}
-        hint="Steht so im Kalender. Keine Angaben über Patient:innen."
+        // ANN-060: Die Bezeichnung ist organisatorisch - sie steht als Aufschrift
+        // im Kalender und ist damit für alle sichtbar, die den Kalender sehen.
+        // Klinisches gehört in die Dokumentation der Akte, nicht hierher.
+        hint="Steht als Aufschrift im Kalender. Organisatorisch benennen – kein Patientenname, keine Diagnose, kein klinischer Inhalt."
         onChange={(e) => onChange('title', e.target.value)}
       />
 
@@ -79,7 +89,7 @@ export function EreignisFormFields({
       ) : null}
 
       <Field
-        label="Datum *"
+        label={datumBeschriftung}
         type="date"
         value={werte.date}
         error={fehler.date}

@@ -22,6 +22,8 @@ import {
 } from './api';
 import { Laengenzeichen } from './Laengenzeichen';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
+import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
+import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
 import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
 
 /**
@@ -38,6 +40,19 @@ export interface GitterVorschlag {
   laeuft: boolean;
   onBestaetigen: () => void;
   onAbbrechen: () => void;
+}
+
+/**
+ * Das offene Anlegen-Menü an einer Auswahl (CAL-019).
+ *
+ * Das Gitter zeichnet die Auswahl und das Menü daneben; **was** die Einträge
+ * bedeuten, weiß allein die aufrufende Seite - sie kennt Person, Datum,
+ * Patientenfilter und Rückweg. Dasselbe Verhältnis wie bei der
+ * Zieh-Rückfrage (FIX-017).
+ */
+export interface GitterAuswahl extends Spanne {
+  eintraege: AnlegenEintrag[];
+  onSchliessen: () => void;
 }
 
 /**
@@ -131,7 +146,8 @@ export function CalendarGrid({
   stundenHoehe,
   ziehbarErlaubt,
   onVerschieben,
-  onFreieZeit,
+  onAuswahl,
+  auswahl = null,
   rueckweg,
   beschriftung,
   vorschlag = null,
@@ -157,13 +173,16 @@ export function CalendarGrid({
   ziehbarErlaubt: boolean;
   onVerschieben: (ziel: { terminId: string; spalteId: string; startMinute: number }) => void;
   /**
-   * Tippen auf eine freie Stelle einer Spalte (UX-005).
+   * Eine Auswahl auf der freien Fläche einer Spalte (UX-005, CAL-019).
    *
-   * Ohne Angabe passiert nichts - die freie Fläche bleibt dann schlicht
-   * Hintergrund. Der Tap ist eine Abkürzung für Zeigegeräte; der Weg über die
-   * Tastatur ist die Schaltfläche „Termin anlegen" über dem Gitter.
+   * Aufgezogen als Spanne oder angetippt als Rasterpunkt - dann sind beide
+   * Enden gleich. Ohne Angabe passiert nichts; die freie Fläche bleibt dann
+   * schlicht Hintergrund. Beides ist eine Abkürzung für Zeigegeräte; der Weg
+   * über die Tastatur sind die Schaltflächen über dem Gitter.
    */
-  onFreieZeit?: ((ziel: { spalteId: string; startMinute: number }) => void) | undefined;
+  onAuswahl?: ((spanne: Spanne) => void) | undefined;
+  /** Das offene Anlegen-Menü, von der aufrufenden Seite gefüllt (CAL-019). */
+  auswahl?: GitterAuswahl | null;
   /**
    * Der Weg zurück in genau diesen Kalenderstand (UX-012).
    *
@@ -223,6 +242,27 @@ export function CalendarGrid({
         spalteId: zustand.spalteId,
         startMinute: zustand.startMinute,
       }),
+  });
+
+  // Die Spanne auf der freien Flaeche (CAL-019). Der obere Rand kommt aus
+  // irgendeiner Spalte: Alle beginnen auf derselben Hoehe.
+  const spanne = useSpanneAufziehen({
+    fensterVon: fenster.vonMinute,
+    fensterBis: fenster.bisMinute,
+    raster,
+    stundenHoehe,
+    spalteAn: (clientX) => {
+      for (const [id, element] of spaltenRefs.current) {
+        const kasten = element.getBoundingClientRect();
+        if (clientX >= kasten.left && clientX <= kasten.right) return id;
+      }
+      return null;
+    },
+    obenAn: () => {
+      const erste = spaltenRefs.current.values().next().value;
+      return erste ? erste.getBoundingClientRect().top : null;
+    },
+    onAuswahl: (gewaehlt) => onAuswahl?.(gewaehlt),
   });
 
   return (
@@ -337,19 +377,30 @@ export function CalendarGrid({
                 if (el) spaltenRefs.current.set(s.id, el);
                 else spaltenRefs.current.delete(s.id);
               }}
-              className={`border-line relative border-l ${onFreieZeit ? 'cursor-copy' : ''}`}
+              className={`border-line relative border-l ${onAuswahl ? 'cursor-copy' : ''}`}
               style={{ height: `${hoehe}px` }}
               role="gridcell"
               aria-label={s.titel}
-              // Nur die freie Fläche: eine Kachel liegt darüber und fängt ihren
-              // eigenen Klick ab. Der Hintergrund (Arbeitszeitbänder,
+              // Nur die freie Fläche: eine Kachel liegt darüber und fängt ihre
+              // eigene Geste ab. Der Hintergrund (Arbeitszeitbänder,
               // Stundenlinien) ist `pointer-events-none`, damit ein Tipp
               // darauf hier ankommt und nicht ins Leere geht.
+              onPointerDown={
+                onAuswahl
+                  ? (event) => {
+                      if (event.target !== event.currentTarget) return;
+                      spanne.beginnen(event, s.id);
+                    }
+                  : undefined
+              }
               onClick={
-                onFreieZeit
+                onAuswahl
                   ? (event) => {
                       if (event.target !== event.currentTarget) return;
                       if (ziehen.klickUnterdruecken()) return;
+                      // Ein aufgezogener Bereich hat sein Ergebnis schon
+                      // gemeldet; der folgende Klick wäre ein zweites.
+                      if (spanne.klickUnterdruecken()) return;
                       const kasten = event.currentTarget.getBoundingClientRect();
                       const roh = pixelZuMinute(
                         event.clientY - kasten.top,
@@ -360,7 +411,9 @@ export function CalendarGrid({
                         fenster.vonMinute,
                         Math.min(fenster.bisMinute, aufRaster(roh, raster)),
                       );
-                      onFreieZeit({ spalteId: s.id, startMinute: minute });
+                      // Ein Tap ohne Ziehen ist ein Rasterpunkt, keine Spanne
+                      // (CAL-019): beide Enden gleich.
+                      onAuswahl({ spalteId: s.id, vonMinute: minute, bisMinute: minute });
                     }
                   : undefined
               }
@@ -478,6 +531,68 @@ export function CalendarGrid({
                           onAbbrechen={vorschlag.onAbbrechen}
                           className={[
                             'absolute z-50 w-72 max-w-[calc(100vw-5rem)]',
+                            rechts ? 'right-1' : 'left-1',
+                            kastenOben === undefined ? 'bottom-1' : '',
+                          ].join(' ')}
+                          style={kastenOben === undefined ? undefined : { top: `${kastenOben}px` }}
+                        />
+                      </>
+                    );
+                  })()
+                : null}
+
+              {/* Die aufgezogene Spanne (CAL-019): Sie zeigt beide Enden,
+                  solange der Zeiger unten ist. Geschrieben ist nichts - das
+                  Menü fragt erst, was daraus werden soll. */}
+              {spanne.vorschau && spanne.vorschau.spalteId === s.id ? (
+                <div
+                  data-testid="spanne-vorschau"
+                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 border-2 border-dashed px-2 py-1 text-xs font-medium"
+                  style={{
+                    top: `${minuteZuPixel(spanne.vorschau.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                    height: `${Math.max(16, ((spanne.vorschau.bisMinute - spanne.vorschau.vonMinute) / 60) * stundenHoehe)}px`,
+                  }}
+                  aria-hidden="true"
+                >
+                  {minuteZuZeit(spanne.vorschau.vonMinute)}
+                  {spanne.vorschau.bisMinute > spanne.vorschau.vonMinute
+                    ? `–${minuteZuZeit(spanne.vorschau.bisMinute)}`
+                    : ''}
+                </div>
+              ) : null}
+
+              {/* Das Anlegen-Menü an der Auswahl (CAL-019). Es steht im
+                  Gitter und nicht als Fenster darüber: Die gewählte Zeit muss
+                  sichtbar bleiben, während man die Art wählt (ANN-058). */}
+              {auswahl && auswahl.spalteId === s.id
+                ? (() => {
+                    const oben = minuteZuPixel(auswahl.vonMinute, fenster.vonMinute, stundenHoehe);
+                    const auswahlHoehe = Math.max(
+                      16,
+                      ((auswahl.bisMinute - auswahl.vonMinute) / 60) * stundenHoehe,
+                    );
+                    const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
+                    const rechts =
+                      spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
+                    const kastenOben =
+                      oben + auswahlHoehe + 240 <= hoehe ? oben + auswahlHoehe + 4 : undefined;
+                    return (
+                      <>
+                        <div
+                          data-testid="auswahl-flaeche"
+                          className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold"
+                          style={{ top: `${oben}px`, height: `${auswahlHoehe}px` }}
+                          aria-hidden="true"
+                        >
+                          {minuteZuZeit(auswahl.vonMinute)}
+                          {auswahl.bisMinute > auswahl.vonMinute
+                            ? `–${minuteZuZeit(auswahl.bisMinute)}`
+                            : ''}
+                        </div>
+                        <AnlegenMenue
+                          auswahl={auswahl}
+                          className={[
+                            'absolute z-50 w-64 max-w-[calc(100vw-5rem)]',
                             rechts ? 'right-1' : 'left-1',
                             kastenOben === undefined ? 'bottom-1' : '',
                           ].join(' ')}

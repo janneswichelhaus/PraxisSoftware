@@ -4,15 +4,19 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Field } from '@/components/ui/Field';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
+import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { formatDate } from '@/lib/datum';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
 import { fetchStaffMembers } from '@/features/staff/api';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
-  createAppointmentEvent,
+  createEventSeries,
   ereignisFormSchema,
   fetchLocations,
   istAusserhalbArbeitszeit,
@@ -20,23 +24,25 @@ import {
   todayInTimeZone,
   type EreignisFormValues,
 } from './api';
+import { SERIE_HOECHSTZAHL, rhythmen, serienTermine, type Rhythmus } from './serie';
 
 /**
- * Ein Ereignis des Praxisbetriebs eintragen (CAL-015b, CAL-015c).
+ * Dauerfehlzeit eintragen (CAL-021).
  *
- * Besprechung, Teamtermin, alles, was Zeit im Kalender belegt und **keine
- * Behandlung** ist. `PROJECT_PRINCIPLES.md` 0.9 §8.1: weder Patient:in noch
- * Verordnung, Beginn und Ende frei im Praxisraster, keine abrechenbare
- * Leistung.
+ * Eine Fehlzeit ist ein Ereignis: Teammeeting, Achtsamkeitspuffer, Kaffeezeit
+ * mit Kolleg:in. Sie belegt Zeit im Kalender, sie ist ausdrücklich **keine
+ * Behandlung** (`PROJECT_PRINCIPLES.md` §8.1) und erzeugt nie eine
+ * abrechenbare Leistung (§19). Die Dauerfehlzeit ist dieselbe Fehlzeit über
+ * mehrere Wochen.
  *
- * Bewusst ein eigenes Formular neben der Terminanlage. Die beiden Vorgänge
- * fragen Verschiedenes: Der eine eine Patient:in und eine feste Länge, der
- * andere eine Bezeichnung und einen Kreis von Beteiligten. Ein gemeinsames
- * Formular mit der Hälfte ausgeblendeter Felder wäre für beide schlechter.
+ * Bewusst dasselbe Formular wie beim einzelnen Ereignis, ergänzt um Rhythmus
+ * und Anzahl: Es fragt dieselben Dinge, und ein zweites Ereignisformular
+ * daneben wäre eine zweite Wahrheit über dieselbe Sache.
  *
- * **Mehrere Beteiligte, ein Vorgang:** Der Server legt je Person einen Termin
- * an — alles oder nichts. Eine Besprechung, die nur in einem Kalender steht,
- * sagt den übrigen nicht, dass ihre Zeit belegt ist.
+ * Die Tage rechnet `serienTermine` - dieselbe deterministische Rechnung und
+ * dieselben drei Rhythmen wie bei der Terminserie (CAL-007, §6.2). Was daraus
+ * wird, entscheidet `create_event_series`: alles oder nichts, mit derselben
+ * Prüfung auf Raster, Arbeitszeit und Überschneidung wie bei jedem Termin.
  */
 type Feld = keyof EreignisFormValues;
 
@@ -50,14 +56,19 @@ const leer: EreignisFormValues = {
   location_id: '',
 };
 
-export function NewEventPage({ user }: { user: CurrentUser }) {
+/** „1 Fehlzeit" gegen „6 Fehlzeiten" - an einer Stelle statt in jeder Meldung. */
+function fehlzeitenWort(anzahl: number): string {
+  return anzahl === 1 ? '1 Fehlzeit' : `${anzahl} Fehlzeiten`;
+}
+
+export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [suche] = useSearchParams();
   const zurueck = leseRueckweg(suche, '/kalender');
 
-  // Zeit und Tag kommen aus der angetippten Stelle im Kalender, wenn der Weg
-  // von dort kam (UX-005). Die Länge nicht: Ein Ereignis hat keine.
+  // Tag und Zeiten kommen aus der aufgezogenen Spanne im Kalender, wenn der
+  // Weg von dort kam (CAL-019). Der Tag ist dann der erste der Serie.
   const [vorbelegung] = useState(() => leseTerminVorbelegung(suche));
 
   const [werte, setWerte] = useState<EreignisFormValues>(() => ({
@@ -75,6 +86,8 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
         ? [user.staffMemberId]
         : [],
   }));
+  const [rhythmus, setRhythmus] = useState<Rhythmus>('woechentlich');
+  const [anzahl, setAnzahl] = useState(6);
   const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
 
   const personen = useQuery({
@@ -85,10 +98,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
   const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
 
   // Bei genau einem verfügbaren Standort darf vorausgewählt werden - eine
-  // Auswahl ohne Alternative ist keine Entscheidung. Dieselbe Regel und
-  // dieselbe Begründung wie in `NewAppointmentPage`; hier fehlte sie, und das
-  // Formular verlangte ein Pflichtfeld, für das es nur eine Antwort gab
-  // (FIX-013).
+  // Auswahl ohne Alternative ist keine Entscheidung (FIX-013).
   useEffect(() => {
     const nurEiner = standorte.data?.length === 1 ? standorte.data[0] : undefined;
     if (nurEiner) {
@@ -98,11 +108,13 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
     }
   }, [standorte.data]);
 
+  const tage = serienTermine(werte.date, werte.start_time, rhythmus, anzahl).map((t) => t.datum);
+
   const mutation = useMutation({
-    mutationFn: (eingabe: { werte: EreignisFormValues; bestaetigt: boolean }) =>
-      createAppointmentEvent(eingabe.werte, eingabe.bestaetigt),
+    mutationFn: (eingabe: { werte: EreignisFormValues; tage: string[]; bestaetigt: boolean }) =>
+      createEventSeries(eingabe.werte, eingabe.tage, eingabe.bestaetigt),
     onSuccess: async () => {
-      // Kalender und Tagesplan führen den Zeitraum sonst weiter als frei.
+      // Kalender und Tagesplan führen die Zeiträume sonst weiter als frei.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
       void navigate(zurueck, { replace: true });
@@ -131,7 +143,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
     }
 
     setFehler({});
-    mutation.mutate({ werte: ergebnis.data, bestaetigt: false });
+    mutation.mutate({ werte: ergebnis.data, tage, bestaetigt: false });
   }
 
   if (!canManageAppointments(user.roles)) {
@@ -155,8 +167,8 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
       <Rueckweg standard="/kalender" />
 
       <PageHeader
-        title="Ereignis eintragen"
-        description="Besprechung, Teamtermin oder anderes. Ohne Patient:in und ohne Verordnung – es entsteht keine Behandlungsleistung."
+        title="Dauerfehlzeit eintragen"
+        description="Dieselbe Fehlzeit über mehrere Wochen – Teammeeting, Puffer, Pause. Ohne Patient:in und ohne Verordnung; es entsteht keine Behandlungsleistung."
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
@@ -167,11 +179,12 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
           standorte={standorte.data ?? []}
           zeitzone={user.organizationTimeZone}
           rasterMinuten={user.appointmentGridMinutes}
+          datumBeschriftung="Erste Fehlzeit am *"
           beteiligte={
             <fieldset>
               <legend className="text-ink text-sm font-medium">Beteiligte Personen *</legend>
               <p className="text-ink-muted mt-1 text-sm">
-                Das Ereignis belegt den Zeitraum in jedem gewählten Kalender.
+                Die Fehlzeit belegt den Zeitraum in jedem gewählten Kalender.
               </p>
               <div className="mt-3 flex flex-col gap-2">
                 {aktive.map((person) => (
@@ -197,6 +210,51 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
           }
         />
 
+        <Section titel="Wiederholung" ebene={3}>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-end">
+            <Select
+              label="Rhythmus *"
+              value={rhythmus}
+              onChange={(e) => setRhythmus(e.target.value as Rhythmus)}
+            >
+              {(Object.keys(rhythmen) as Rhythmus[]).map((key) => (
+                <option key={key} value={key}>
+                  {rhythmen[key].label}
+                </option>
+              ))}
+            </Select>
+            <Field
+              label="Anzahl Fehlzeiten *"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={SERIE_HOECHSTZAHL}
+              value={String(anzahl)}
+              hint={`Höchstens ${SERIE_HOECHSTZAHL} je Vorgang.`}
+              onChange={(e) => setAnzahl(Number(e.target.value))}
+            />
+          </div>
+
+          {/* Die Tage stehen vor dem Eintragen da: Die Serie ist serverseitig
+              alles oder nichts, und ohne diese Liste hieße ein Feiertag in
+              Woche drei „Meldung lesen und raten" (wie bei CAL-007). */}
+          {tage.length > 0 ? (
+            <div className="mt-5">
+              <p className="text-ink text-sm font-medium">
+                {fehlzeitenWort(tage.length)}
+                {werte.start_time && werte.end_time
+                  ? `, jeweils ${werte.start_time}–${werte.end_time} Uhr`
+                  : ''}
+              </p>
+              <ul className="text-ink-muted mt-2 flex flex-col gap-1 text-sm">
+                {tage.map((tag) => (
+                  <li key={tag}>{formatDate(tag)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </Section>
+
         {ausserhalb ? (
           <EreignisArbeitszeitRueckfrage
             beschriftung="Trotzdem eintragen"
@@ -204,7 +262,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
             onBestaetigen={() => {
               const ergebnis = ereignisFormSchema.safeParse(werte);
               if (!ergebnis.success) return;
-              mutation.mutate({ werte: ergebnis.data, bestaetigt: true });
+              mutation.mutate({ werte: ergebnis.data, tage, bestaetigt: true });
             }}
             onAbbrechen={() => mutation.reset()}
           />
@@ -218,7 +276,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Wird eingetragen …' : 'Ereignis eintragen'}
+            {mutation.isPending ? 'Wird eingetragen …' : `${fehlzeitenWort(tage.length)} eintragen`}
           </Button>
           <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
             Abbrechen

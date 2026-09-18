@@ -27,7 +27,13 @@ import {
   updateAppointment,
   type TerminVorbelegung,
 } from './api';
-import { CalendarGrid, type GitterEintrag, type GitterSpalte } from './CalendarGrid';
+import {
+  CalendarGrid,
+  type GitterAuswahl,
+  type GitterEintrag,
+  type GitterSpalte,
+} from './CalendarGrid';
+import type { Spanne } from './useSpanneAufziehen';
 import type { VerschiebenFrage } from './VerschiebenRueckfrage';
 import {
   arbeitszeitBaender,
@@ -197,6 +203,15 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
    * noch da?").
    */
   const [rueckgaengig, setRueckgaengig] = useState<Verschiebung | null>(null);
+  /**
+   * Die Auswahl auf der freien Fläche, über der das Anlegen-Menü steht
+   * (CAL-019).
+   *
+   * Aufgezogen oder angetippt - beides landet hier, und erst die Wahl im Menü
+   * führt irgendwohin. Ein Tap führte bis CAL-019 unmittelbar in die
+   * Terminanlage; das ging, solange es nur einen Weg gab.
+   */
+  const [auswahl, setAuswahl] = useState<Spanne | null>(null);
 
   const therapeuten = useQuery({
     queryKey: ['assignable-therapists'],
@@ -318,9 +333,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     // gelassen - eine Leiste, die dabei stehen bliebe, boete das Rueckgaengig
     // fuer etwas an, das gar nicht mehr zu sehen ist.
     setRueckgaengig(null);
-    // Dasselbe gilt fuer eine offene Rueckfrage: Sie nennt Zeiten aus einem
-    // Ausschnitt, der gleich nicht mehr dasteht.
+    // Dasselbe gilt fuer eine offene Rueckfrage und fuer ein offenes
+    // Anlegen-Menue: Beide nennen Zeiten aus einem Ausschnitt, der gleich
+    // nicht mehr dasteht.
     setVorschlag(null);
+    setAuswahl(null);
     setSuche(schreibeParameter({ ...p, ...teil }), { replace: false });
   }
 
@@ -521,44 +538,109 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   }
 
   /**
-   * Tippen auf eine freie Stelle: Zeit und Person stehen damit fest, die
-   * Patient:in noch nicht (UX-005). Die Auswahl passiert auf der naechsten
-   * Seite; hier wird nur uebersetzt, was die Spalte bedeutet.
+   * Was die Auswahl auf der freien Fläche bedeutet (CAL-019).
    *
-   * Das Ende ergibt sich aus dem Terminfenster (PROJECT_PRINCIPLES.md 8.1).
-   * Durchgesetzt wird es serverseitig in create_appointment (CAL-010a); hier
-   * steht nur die Vorbelegung, die das Formular ohnehin selbst ableitet.
+   * Person und Tag stehen mit der Spalte fest, Beginn und Ende mit der
+   * Spanne. Was daraus wird, fragt das Menü — und je Eintrag steht hier, wohin
+   * der Weg führt. Ein angetippter Rasterpunkt hat keine Länge; dann kommt sie
+   * aus der Vorbelegung der jeweiligen Art: beim Behandlungstermin das
+   * Terminfenster (PROJECT_PRINCIPLES.md 8.1), bei der Fehlzeit gar keine —
+   * ein Ereignis hat keine feste Länge, und das Formular fragt danach.
+   *
+   * Durchgesetzt wird beides serverseitig (CAL-010a, CAL-020); hier steht nur
+   * die Vorbelegung.
    */
-  function freieZeit(ziel: { spalteId: string; startMinute: number }) {
-    const staffMemberId = p.ansicht === 'tag' ? ziel.spalteId : wochenPerson;
-    const datum = p.ansicht === 'tag' ? bereich.von : ziel.spalteId;
+  function anlegenMenue(gewaehlt: Spanne): GitterAuswahl {
+    const staffMemberId = p.ansicht === 'tag' ? gewaehlt.spalteId : wochenPerson;
+    const datum = p.ansicht === 'tag' ? bereich.von : gewaehlt.spalteId;
+    const spanne = gewaehlt.bisMinute > gewaehlt.vonMinute;
+    const beginn = minuteZuZeit(gewaehlt.vonMinute);
+    const ende = spanne ? minuteZuZeit(gewaehlt.bisMinute) : undefined;
 
-    const vorbelegung: TerminVorbelegung = {
-      datum,
-      beginn: minuteZuZeit(ziel.startMinute),
-      ende: minuteZuZeit(ziel.startMinute + TERMINFENSTER_MINUTEN),
-      art: 'home_visit',
-      ...(staffMemberId ? { person: staffMemberId } : {}),
-    };
-
-    const parameter = schreibeTerminVorbelegung(vorbelegung);
-
-    // Ist der Kalender auf eine Person gefiltert, ist die Frage „für wen?"
-    // längst beantwortet (CAL-015c). Dann führt die freie Stelle direkt ins
-    // Formular dieser Person - samt Verordnung, wenn der Weg von dort kam -
-    // statt noch einmal durch die Suche. Der Rückweg ist der Kalenderstand,
-    // damit „Abbrechen" wieder an derselben Stelle landet.
-    if (p.patient) {
-      const ziel = `/patienten/${p.patient}/termine/neu${parameter}${
-        p.verordnung ? `&verordnung=${p.verordnung}` : ''
-      }`;
+    const person = staffMemberId ? { person: staffMemberId } : {};
+    /** Der Weg mit Rückweg in genau diesen Kalenderstand (BEF-016). */
+    function hin(ziel: string) {
+      setAuswahl(null);
       void navigate(mitRueckweg(ziel, kalenderStand));
-      return;
     }
 
-    // Auch ohne Personenfilter: Der Kalenderstand ist der Rückweg, damit das
-    // Anlegen wieder hier landet - nicht in der Terminansicht (BEF-016).
-    void navigate(mitRueckweg(`/termine/neu${parameter}`, kalenderStand));
+    // Behandlungstermin: ohne aufgezogene Spanne das Terminfenster.
+    const terminVorbelegung: TerminVorbelegung = {
+      datum,
+      beginn,
+      ende: ende ?? minuteZuZeit(gewaehlt.vonMinute + TERMINFENSTER_MINUTEN),
+      art: 'home_visit',
+      ...person,
+    };
+    const terminParameter = schreibeTerminVorbelegung(terminVorbelegung);
+
+    // Ist der Kalender auf eine Patient:in gefiltert, ist die Frage „für wen?"
+    // längst beantwortet (CAL-015c) - dann geht es ohne zweite Suche direkt ins
+    // Formular, samt Verordnung, wenn der Weg von dort kam.
+    const terminZiel = p.patient
+      ? `/patienten/${p.patient}/termine/neu${terminParameter}${
+          p.verordnung ? `&verordnung=${p.verordnung}` : ''
+        }`
+      : `/termine/neu${terminParameter}`;
+
+    // Fehlzeit und Dauerfehlzeit sind Ereignisse: Bezeichnung statt
+    // Patient:in, freie Länge (CAL-021). Ohne Spanne bleibt das Ende offen.
+    const ereignisParameter = schreibeTerminVorbelegung({
+      datum,
+      beginn,
+      ...(ende ? { ende } : {}),
+      ...person,
+    });
+
+    const eintraege: GitterAuswahl['eintraege'] = [
+      {
+        schluessel: 'termin',
+        beschriftung: 'Neuer Termin',
+        hinweis: spanne
+          ? `${beginn}–${ende!} Uhr`
+          : `${beginn} Uhr, ${TERMINFENSTER_MINUTEN} Minuten`,
+        onWaehlen: () => hin(terminZiel),
+      },
+      // Ein Dauertermin ist eine Terminserie und gehört damit zu einer
+      // Verordnung: Ihr offenes Kontingent gibt die Anzahl vor (CAL-007).
+      // Ohne Patient:in im Kalenderstand fehlt dafür die Voraussetzung - dann
+      // sagt der Eintrag, was zuerst zu tun ist, statt ins Leere zu führen.
+      p.patient
+        ? {
+            schluessel: 'dauertermin',
+            beschriftung: 'Dauertermin',
+            hinweis: p.verordnung
+              ? 'Terminserie aus der gefilterten Verordnung'
+              : 'Terminserie – zuerst die Verordnung wählen',
+            onWaehlen: () =>
+              hin(
+                p.verordnung
+                  ? `/patienten/${p.patient}/verordnungen/${p.verordnung}/serie?datum=${datum}&beginn=${beginn}`
+                  : `/patienten/${p.patient}/verordnungen`,
+              ),
+          }
+        : {
+            schluessel: 'dauertermin',
+            beschriftung: 'Dauertermin',
+            hinweis: 'Gehört zu einer Verordnung – zuerst die Patient:in wählen (Suche oben).',
+            deaktiviert: true,
+            onWaehlen: () => undefined,
+          },
+      {
+        schluessel: 'fehlzeit',
+        beschriftung: 'Fehlzeit',
+        hinweis: 'Teammeeting, Puffer, Pause – keine Behandlung',
+        onWaehlen: () => hin(`/termine/ereignis${ereignisParameter}`),
+      },
+      {
+        schluessel: 'dauerfehlzeit',
+        beschriftung: 'Dauerfehlzeit',
+        hinweis: 'Dieselbe Fehlzeit über mehrere Wochen',
+        onWaehlen: () => hin(`/termine/dauerfehlzeit${ereignisParameter}`),
+      },
+    ];
+
+    return { ...gewaehlt, eintraege, onSchliessen: () => setAuswahl(null) };
   }
 
   const laedt = termine.isPending || therapeuten.isPending;
@@ -611,6 +693,20 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                 variant="secondary"
               >
                 Ereignis eintragen
+              </ButtonLink>
+              {/* Jeder Eintrag des Anlegen-Menues hat hier seine Entsprechung
+                  ohne Zeigegeraet (CAL-019): Eine Spanne zieht man nicht mit
+                  der Tastatur auf. „Neuer Termin" und „Fehlzeit" stehen schon
+                  daneben, „Dauertermin" beginnt an der Verordnung in der
+                  Akte (CAL-007). */}
+              <ButtonLink
+                to={mitRueckweg(
+                  `/termine/dauerfehlzeit${schreibeTerminVorbelegung({ datum: p.datum })}`,
+                  kalenderStand,
+                )}
+                variant="secondary"
+              >
+                Dauerfehlzeit eintragen
               </ButtonLink>
             </div>
           ) : null
@@ -868,7 +964,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // damit niemand auf einem Zwischenstand handelt.
           laedtNach={termine.isPlaceholderData || ausnahmen.isPlaceholderData}
           onBlaettern={(richtung) => setze({ datum: blaettern(p.ansicht, p.datum, richtung) })}
-          onFreieZeit={darfAendern ? freieZeit : undefined}
+          onAuswahl={darfAendern ? setAuswahl : undefined}
+          auswahl={auswahl ? anlegenMenue(auswahl) : null}
           beschriftung={
             p.ansicht === 'tag'
               ? 'Tagesansicht nach behandelnder Person'

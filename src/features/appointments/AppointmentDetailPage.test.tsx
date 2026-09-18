@@ -23,6 +23,8 @@ const reopenAppointment = vi.fn();
 const recordNoShow = vi.fn();
 const fetchEventParticipants = vi.fn();
 const cancelAppointmentEvent = vi.fn();
+const fetchEventSeries = vi.fn();
+const cancelEventSeries = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -50,6 +52,13 @@ vi.mock('./api', async (importOriginal) => {
       erwartet: string,
       grund: AppointmentsApi.CancellationReason,
     ) => cancelAppointmentEvent(gruppe, erwartet, grund) as Promise<number>,
+    fetchEventSeries: (serie: string) =>
+      fetchEventSeries(serie) as Promise<AppointmentsApi.EventSeriesOccurrence[]>,
+    cancelEventSeries: (
+      serie: string,
+      erwartet: string,
+      grund: AppointmentsApi.CancellationReason,
+    ) => cancelEventSeries(serie, erwartet, grund) as Promise<number>,
   };
 });
 
@@ -104,6 +113,10 @@ describe('AppointmentDetailPage', () => {
     fetchEventParticipants.mockResolvedValue([]);
     cancelAppointmentEvent.mockReset();
     cancelAppointmentEvent.mockResolvedValue(2);
+    fetchEventSeries.mockReset();
+    fetchEventSeries.mockResolvedValue([]);
+    cancelEventSeries.mockReset();
+    cancelEventSeries.mockResolvedValue(3);
     fetchTreatmentDocumentation.mockReset();
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
   });
@@ -1113,6 +1126,101 @@ describe('AppointmentDetailPage', () => {
       rendern(['patient']);
       await screen.findByText('Beispielstrasse 12, 72070 Tuebingen');
       expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).toBeNull();
+    });
+  });
+  /**
+   * Dauerfehlzeit (CAL-021).
+   *
+   * Die dritte Absage neben „Nur diese Teilnahme" und „Ereignis absagen" -
+   * und die Zeile, die überhaupt erst erklärt, warum sie da ist.
+   */
+  describe('CAL-021: Vorkommen einer Dauerfehlzeit', () => {
+    const GRUPPE = '88888888-8888-4888-8888-000000000001';
+    const SERIE = '99999999-9999-4999-8999-000000000001';
+
+    const fehlzeit: AppointmentsApi.Appointment = {
+      ...praxistermin,
+      kind: 'event',
+      title: 'Teammeeting',
+      event_group_id: GRUPPE,
+      event_series_id: SERIE,
+      patient_id: null,
+      patient_given_name: null,
+      patient_family_name: null,
+    };
+
+    const vorkommen: AppointmentsApi.EventSeriesOccurrence[] = [
+      {
+        event_group_id: GRUPPE,
+        title: 'Teammeeting',
+        starts_at: praxistermin.starts_at,
+        ends_at: praxistermin.ends_at,
+        open_count: 1,
+        cancelled_count: 0,
+        series_updated_at: praxistermin.updated_at,
+      },
+      {
+        event_group_id: '88888888-8888-4888-8888-000000000002',
+        title: 'Teammeeting',
+        starts_at: '2027-05-19T07:00:00.000Z',
+        ends_at: '2027-05-19T08:00:00.000Z',
+        open_count: 1,
+        cancelled_count: 0,
+        series_updated_at: praxistermin.updated_at,
+      },
+    ];
+
+    it('sagt, dass dieses Vorkommen eines von mehreren ist', async () => {
+      fetchAppointment.mockResolvedValue(fehlzeit);
+      fetchEventSeries.mockResolvedValue(vorkommen);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teammeeting/ });
+      expect(await screen.findByText('Dauerfehlzeit')).toBeInTheDocument();
+      expect(zeile('Dauerfehlzeit')).toContain('Vorkommen 1 von 2');
+    });
+
+    it('sagt die ganze Serie auf dem Stand der SERIE ab', async () => {
+      const user = userEvent.setup();
+      fetchAppointment.mockResolvedValue(fehlzeit);
+      fetchEventSeries.mockResolvedValue(vorkommen);
+      rendern();
+
+      await user.click(await screen.findByRole('button', { name: 'Ganze Serie absagen' }));
+      await user.selectOptions(await screen.findByLabelText('Absagegrund'), 'practice_request');
+      await user.click(screen.getByRole('button', { name: 'Ja, ganze Serie absagen' }));
+
+      await waitFor(() =>
+        expect(cancelEventSeries).toHaveBeenCalledWith(
+          SERIE,
+          praxistermin.updated_at,
+          'practice_request',
+        ),
+      );
+      // Die Absage dieses einen Vorkommens bleibt davon unberührt.
+      expect(cancelAppointmentEvent).not.toHaveBeenCalled();
+    });
+
+    it('bietet die Serienabsage ohne Serie nicht an', async () => {
+      fetchAppointment.mockResolvedValue({ ...fehlzeit, event_series_id: null });
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teammeeting/ });
+      await screen.findByRole('button', { name: 'Nur diese Teilnahme absagen' });
+      expect(screen.queryByRole('button', { name: 'Ganze Serie absagen' })).not.toBeInTheDocument();
+      expect(screen.queryByText('Dauerfehlzeit')).not.toBeInTheDocument();
+    });
+
+    it('bietet die Serienabsage nicht an, wenn nichts mehr kommt', async () => {
+      fetchAppointment.mockResolvedValue(fehlzeit);
+      fetchEventSeries.mockResolvedValue(
+        vorkommen.map((v) => ({ ...v, open_count: 0, cancelled_count: 1 })),
+      );
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teammeeting/ });
+      await screen.findByText('Dauerfehlzeit');
+      expect(screen.queryByRole('button', { name: 'Ganze Serie absagen' })).not.toBeInTheDocument();
     });
   });
 });

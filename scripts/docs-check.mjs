@@ -22,11 +22,23 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join, normalize } from 'node:path';
 
-/** Obergrenzen in Zeilen, `wc -l`-Semantik (Zeilenumbrueche, nicht Zeilen). */
+/**
+ * Obergrenzen in Zeilen, `wc -l`-Semantik (Zeilenumbrueche, nicht Zeilen).
+ *
+ * Das Annahmenregister ist der eine Sonderfall: Es waechst nach 15.1 mit
+ * jeder getroffenen Annahme und wird ausdruecklich NICHT als Ganzes gelesen -
+ * gearbeitet wird mit dem Pruefpaket, also mit einem `grep` ueber die
+ * Statuszeilen. Seine Grenze beschraenkt deshalb nicht die Lesbarkeit,
+ * sondern haelt den Wildwuchs je Eintrag im Rahmen (rund 14 Zeilen). Sie
+ * wurde am 2026-09-18 mit CAL-EPIC-004b von 800 auf 1000 angehoben, weil
+ * ANN-059 und ANN-060 sonst nur durch Kuerzen bestehender Eintraege Platz
+ * gefunden haetten - und das Register sagt selbst, dass kein Eintrag
+ * verschwindet (docs/STATUS.md nannte beide Wege).
+ */
 const OBERGRENZEN = {
   'CLAUDE.md': 150,
   'docs/STATUS.md': 60,
-  'docs/decisions/ASSUMPTIONS.md': 800,
+  'docs/decisions/ASSUMPTIONS.md': 1000,
   'docs/decisions/OPEN_DECISIONS.md': 400,
 };
 

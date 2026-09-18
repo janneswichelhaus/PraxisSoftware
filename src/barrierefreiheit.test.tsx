@@ -469,6 +469,7 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
             kind: 'treatment',
             title: null,
             event_group_id: null,
+            event_series_id: null,
             staff_member_id: 'st-1',
             location_id: null,
             appointment_type: 'home_visit',

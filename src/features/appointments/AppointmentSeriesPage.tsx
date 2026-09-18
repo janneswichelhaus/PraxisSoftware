@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
@@ -24,6 +24,7 @@ import {
   fetchLocations,
   fetchPrescriptionSlots,
   istAusserhalbArbeitszeit,
+  leseTerminVorbelegung,
   istHinderlich,
   slotConflictLabels,
   TERMINFENSTER_MINUTEN,
@@ -74,11 +75,17 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
   const praxisZeitzone = user.organizationTimeZone;
   const heute = praxisZeitzone ? todayInTimeZone(praxisZeitzone) : '';
 
+  // Tag und Beginn kommen aus der aufgezogenen Spanne im Kalender, wenn der
+  // Weg von dort kam (CAL-019). Die Länge nicht: Sie steht beim
+  // Behandlungstermin ohnehin im Terminfenster.
+  const [suche] = useSearchParams();
+  const [vorbelegung] = useState(() => leseTerminVorbelegung(suche));
+
   const [staffMemberId, setStaffMemberId] = useState('');
   const [art, setArt] = useState<AppointmentType>('home_visit');
   const [locationId, setLocationId] = useState('');
-  const [ersterTag, setErsterTag] = useState(heute);
-  const [beginn, setBeginn] = useState('');
+  const [ersterTag, setErsterTag] = useState(vorbelegung.datum ?? heute);
+  const [beginn, setBeginn] = useState(vorbelegung.beginn ?? '');
   const [rhythmus, setRhythmus] = useState<Rhythmus>('woechentlich');
   const [anzahl, setAnzahl] = useState(1);
 

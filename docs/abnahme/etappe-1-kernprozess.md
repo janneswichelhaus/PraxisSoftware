@@ -2311,3 +2311,87 @@ Daumen erreichbar; die Zieh-Rückfrage im Gitter passt in die Breite.
 **Nicht Teil dieses Loops:** Anlegen-Menü und Fehlzeiten (CAL-EPIC-004b),
 „Verschieben nach …" mit Datumsfeld (der Weg ohne Zeiger bleibt „Bearbeiten"),
 Ereignisse in der Vergangenheit (Ereignisse behalten die Sperre aus CAL-015b).
+
+## CAL-EPIC-004b — Anlegen-Menü, Fehlzeit und Dauerfehlzeit
+
+Prüfschritte zu CAL-019 und CAL-021. Grundlage:
+[`../development/CAL-EPIC-004.md`](../development/CAL-EPIC-004.md), ANN-059
+(zwei Kennungen, Wirkung nach vorn), ANN-060 (organisatorische Bezeichnung).
+
+Alle Schritte als `jannes.test@praxis.invalid` (owner); vorher
+`pnpm dlx supabase@2.116.0 db reset` (Migration
+`20260918110000_event_series.sql`).
+
+### 1. Eine Spanne aufziehen und das Menü bekommen (CAL-019)
+
+1. Kalender, Tagesansicht, ein Tag ohne Termine. Auf der freien Fläche einer
+   Spalte von 09:00 bis 10:30 ziehen und loslassen.
+2. Erwartung: Die Spanne steht während des Ziehens gestrichelt im Gitter und
+   nennt „09:00–10:30"; sie rastet auf dem Praxisraster ein. Nach dem
+   Loslassen bleibt sie als Fläche stehen, daneben das Menü **„Was soll hier
+   entstehen?"** mit vier Einträgen. Geschrieben ist nichts.
+3. **Escape** schließt das Menü, ebenso **Abbrechen**. Ein Tab führt durch die
+   vier Einträge; der Fokus liegt beim Öffnen auf „Neuer Termin".
+4. Einmal nur **tippen**, ohne zu ziehen. Erwartung: dasselbe Menü an einem
+   Rasterpunkt, „Neuer Termin" nennt darunter 60 Minuten.
+5. **Neuer Termin** wählen. Erwartung: Terminanlage mit Tag, Person, Beginn
+   und Ende aus der Auswahl; „Abbrechen" kehrt an dieselbe Stelle im Kalender
+   zurück.
+6. Ohne Patientenfilter ist **Dauertermin** nicht wählbar und sagt, was fehlt.
+   Mit `?patient=…&verordnung=…` (aus der Akte über „Im Kalender einen Platz
+   suchen") führt er in die Serienanlage dieser Verordnung, mit Tag und Beginn
+   aus der Auswahl.
+
+### 2. Eine Fehlzeit über 90 Minuten (CAL-021)
+
+1. Aus dem Menü **Fehlzeit** wählen. Erwartung: Ereignisanlage, Tag und Beginn
+   vorbelegt, die Person der Spalte ist angekreuzt; das Ende steht bei einer
+   aufgezogenen Spanne da und bleibt bei einem Tap leer.
+2. Bezeichnung „Teammeeting", Ende 90 Minuten nach dem Beginn, eintragen.
+3. Erwartung: zurück im Kalender, die Fläche trägt die Aufschrift. Am Feld
+   „Bezeichnung" stand „kein Patientenname, keine Diagnose, kein klinischer
+   Inhalt" (ANN-060).
+4. Die Fläche öffnen. Erwartung: kein „Abschließen", kein „Dokumentieren",
+   kein „Nicht angetroffen" — eine Fehlzeit ist keine Behandlung (§19).
+
+### 3. Dauerfehlzeit: sechs Flächen, eine Serie
+
+1. Über dem Gitter **Dauerfehlzeit eintragen** (der Weg ohne Zeigegerät) oder
+   aus dem Menü. Bezeichnung „Teammeeting", Beginn und Ende wie oben,
+   Rhythmus „Einmal pro Woche", Anzahl 6.
+2. Erwartung: Vor dem Eintragen stehen die sechs Tage untereinander da, die
+   Schaltfläche heißt „6 Fehlzeiten eintragen".
+3. Eintragen. Erwartung: sechs Flächen in sechs Wochen, je eine je Tag.
+4. Eine davon öffnen. Erwartung: Zeile **„Dauerfehlzeit — Vorkommen n von 6"**
+   und der Satz, dass Ändern und Absagen wahlweise gelten.
+
+### 4. Dieses Vorkommen gegen die ganze Serie
+
+1. Am geöffneten Vorkommen **Ereignis bearbeiten**. Erwartung: der Kopf heißt
+   „Fehlzeit bearbeiten", und unten steht **„Umfang der Änderung"** mit „Nur
+   diese Fehlzeit" (vorbelegt) und „Die ganze Serie".
+2. Mit „Nur diese Fehlzeit" die Uhrzeit ändern. Erwartung: nur dieses
+   Vorkommen wandert, die übrigen fünf stehen unverändert.
+3. Noch einmal bearbeiten, diesmal **„Die ganze Serie"**, Bezeichnung ändern.
+   Erwartung: Die Schaltfläche heißt „Ganze Serie ändern"; danach tragen alle
+   noch kommenden Vorkommen die neue Bezeichnung, die Tage bleiben.
+4. Am Vorkommen **Ganze Serie absagen** → Grund „Praxis hat abgesagt" → „Ja,
+   ganze Serie absagen". Erwartung: Alle noch kommenden Vorkommen sind
+   abgesagt und geben ihre Zeit frei; **kein** Gebührenanlass steht daran.
+   „Nur diese Teilnahme absagen" bleibt daneben und trifft weiter nur die eine
+   Zeile.
+
+### 5. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=owner /kalender?ansicht=tag
+```
+
+Erwartung: Das Menü passt in die Breite und verdeckt die gewählte Zeit nicht;
+mit dem Finger beginnt das Aufziehen erst nach einem langen Druck — ein
+kurzer Wisch über die freie Fläche scrollt weiterhin.
+
+**Nicht Teil dieses Loops:** Gruppentermine (Festlegung von Jannes,
+2026-09-16), das Ende einer Serie als Datum, das Einfügen weiterer Vorkommen
+in eine bestehende Serie, „über das Kontingent hinaus planen" (CAL-022) und
+die Kopfleistensuche (UX-013).
