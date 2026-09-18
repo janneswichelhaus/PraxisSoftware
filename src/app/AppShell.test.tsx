@@ -130,6 +130,34 @@ describe('AppShell', () => {
     expect(rahmen('/kalender')).toContain('max-w-inhalt');
   });
 
+  it('fuehrt die Suche genau einmal - auf jeder Breite dasselbe Feld (UX-013)', () => {
+    // Bis UX-013 stand das Suchfeld zweimal im Baum, einmal je Breite. Mit
+    // Tastenkuerzel und Trefferliste waere das zweimal dasselbe Feld, von dem
+    // nur eines zu sehen ist; die Zeile bricht jetzt um, statt sich zu
+    // verdoppeln.
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    expect(
+      screen.getAllByRole('combobox', { name: 'Funktion, Bereich oder Name suchen' }),
+    ).toHaveLength(1);
+  });
+
+  it('gibt auch einem Patientenkonto die Suche - sie sucht zuerst Funktionen', () => {
+    // Sie ist kein Zugang zur Kartei: Namen liefert nur `search_patients`,
+    // und das prueft die Rolle selbst (ADR-004).
+    renderWithProviders(
+      <AppShell user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    expect(
+      screen.getByRole('combobox', { name: 'Funktion, Bereich oder Name suchen' }),
+    ).toBeInTheDocument();
+  });
+
   it('enthaelt einen Sprunglink zum Inhalt', () => {
     renderWithProviders(
       <AppShell user={testUser(['office'])} onSignOut={vi.fn()}>

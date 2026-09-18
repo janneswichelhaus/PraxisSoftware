@@ -136,6 +136,7 @@ const { DetailList, DetailRow } = await import('@/components/ui/DetailList');
 const { SearchField } = await import('@/components/ui/SearchField');
 const { Verbindungsanzeige } = await import('@/app/Verbindungsanzeige');
 const { SearchCombobox } = await import('@/components/ui/SearchCombobox');
+const { Funktionssuche } = await import('@/app/Funktionssuche');
 const { Tageskarte } = await import('@/features/today/Tagesliste');
 const { NavigationZumTermin } = await import('@/features/appointments/NavigationStarten');
 const { TextbausteinLeiste } = await import('@/features/documentation/TextbausteinLeiste');
@@ -369,6 +370,28 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
     // geprueft werden soll.
     await user.click(screen.getByRole('combobox', { name: 'Patient:in suchen' }));
     expect(screen.getAllByRole('option')).toHaveLength(2);
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('haelt die Kopfleistensuche mit beiden Gruppen sauber', async () => {
+    // Zwei Gruppen in einer Liste plus ein Zustandssatz - der Aufbau, den
+    // UX-013 neu einfuehrt. Zwei Zeichen: Die Funktionstreffer stehen schon
+    // da, die Namensgruppe sagt noch, dass sie ab drei anfaengt, und der
+    // Server wird dafuer nicht gefragt.
+    const user = userEvent.setup();
+    const { container } = renderWithProviders(
+      <main>
+        <h1>Kalender</h1>
+        <Funktionssuche user={testUser(['owner'])} />
+      </main>,
+    );
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Funktion, Bereich oder Name suchen' }),
+      'ka',
+    );
+    expect(screen.getAllByRole('option').length).toBeGreaterThan(0);
+    await screen.findByText('Namen ab 3 Zeichen.');
     await pruefeBarrierefreiheit(container);
   });
 

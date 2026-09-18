@@ -64,7 +64,7 @@ describe('PatientsListPage', () => {
     renderWithProviders(<PatientsListPage />);
     await screen.findByRole('link', { name: /Max Mustermann/ });
 
-    await user.type(screen.getByLabelText('Suche'), 'erika');
+    await user.type(screen.getByLabelText('Liste filtern'), 'erika');
 
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
@@ -106,14 +106,14 @@ describe('PatientsListPage', () => {
     renderWithProviders(<PatientsListPage />);
     await screen.findByRole('link', { name: /Max Mustermann/ });
 
-    await user.type(screen.getByLabelText('Suche'), '555123');
+    await user.type(screen.getByLabelText('Liste filtern'), '555123');
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
     });
     expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText('Suche'));
-    await user.type(screen.getByLabelText('Suche'), 'hamburg');
+    await user.clear(screen.getByLabelText('Liste filtern'));
+    await user.type(screen.getByLabelText('Liste filtern'), 'hamburg');
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
     });
@@ -173,7 +173,7 @@ describe('PatientsListPage', () => {
     await screen.findByRole('link', { name: /Max Mustermann/ });
     expect(screen.getByTestId('search-params')).toHaveTextContent('');
 
-    await user.type(screen.getByLabelText('Suche'), 'erika');
+    await user.type(screen.getByLabelText('Liste filtern'), 'erika');
     await waitFor(() => {
       expect(screen.getByTestId('search-params')).toHaveTextContent('q=erika');
     });
@@ -203,7 +203,7 @@ describe('PatientsListPage', () => {
 
     expect(await screen.findByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
-    expect(screen.getByLabelText('Suche')).toHaveValue('erika');
+    expect(screen.getByLabelText('Liste filtern')).toHaveValue('erika');
     expect(screen.getByLabelText('Status')).toHaveValue('inactive');
   });
 
@@ -218,5 +218,16 @@ describe('PatientsListPage', () => {
     expect(await screen.findByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
     expect(screen.getByLabelText('Status')).toHaveValue('all');
+  });
+
+  it('beherbergt die serverseitige Namenssuche des Bereichs (UX-013, E17)', async () => {
+    // Die Suche aus der Kopfleiste wohnt seit UX-013 auch hier: Sie springt
+    // aus dem gesamten Bestand in eine Akte. Der Filter darunter ist etwas
+    // anderes - er engt die Liste ein, die schon geladen ist.
+    fetchPatients.mockResolvedValue([patient('1', 'Max', 'Mustermann', 'active')]);
+    renderWithProviders(<PatientsListPage />);
+
+    expect(await screen.findByRole('combobox', { name: 'Patient:in suchen' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Liste filtern')).toBeInTheDocument();
   });
 });
