@@ -79,17 +79,21 @@ async function ziehen(page: Page, kasten: Kasten, ziel: { x: number; y: number }
   await page.mouse.up();
 }
 
+/** Die Rückfrage nach dem Loslassen (CAL-023) - sie kommt immer. */
+function rueckfrage(page: Page): Locator {
+  return page.getByRole('group', { name: 'Termin verschieben?' });
+}
+
 /**
- * Bestätigt die Rückfrage des Kalenders, falls das Ziel außerhalb der
- * Arbeitszeit liegt. Die Rückfrage selbst hat eigene Tests weiter unten.
+ * Bestätigt die Rückfrage des Kalenders (CAL-023). Liegt das Ziel außerhalb
+ * der Arbeitszeit, heißt die Schaltfläche „Trotzdem verschieben" - derselbe
+ * Kasten. Die Rückfrage selbst hat eigene Tests weiter unten.
  */
 async function verschiebenBestaetigen(page: Page) {
-  const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });
-  await rueckfrage.waitFor({ state: 'visible', timeout: 3_000 }).catch(() => undefined);
-  if (await rueckfrage.isVisible().catch(() => false)) {
-    await page.getByRole('button', { name: 'Trotzdem verschieben' }).click();
-  }
-  await expect(page.getByText('Der Termin wird verschoben …')).toHaveCount(0);
+  const kasten = rueckfrage(page);
+  await expect(kasten).toBeVisible();
+  await kasten.getByRole('button', { name: /^(Trotzdem v|V)erschieben$/ }).click();
+  await expect(kasten).toHaveCount(0);
 }
 
 test.describe('CAL-006: Darstellung', () => {
@@ -255,11 +259,51 @@ test.describe('CAL-006: Verschieben', () => {
       y: gitterKasten!.y + gitterKasten!.height - 4,
     });
 
-    const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });
-    await expect(rueckfrage).toBeVisible();
-    await expect(rueckfrage).toContainText(/noch nicht verschoben/);
+    // CAL-023: dieselbe Rueckfrage wie sonst, mit dem Hinweis darin - kein
+    // zweiter Kasten.
+    const kasten = rueckfrage(page);
+    await expect(kasten).toBeVisible();
+    await expect(kasten).toContainText(/außerhalb der hinterlegten Arbeitszeit/);
+    await expect(kasten).toContainText(/noch nicht verschoben/);
+    await expect(kasten.getByRole('button', { name: 'Trotzdem verschieben' })).toBeVisible();
+    await expect(page.getByRole('group', { name: /verschieben|Arbeitszeit/ })).toHaveCount(1);
 
     // Ohne Bestaetigung bleibt der Termin, wo er war.
+    await page.goto(`/termine/${terminId}`);
+    await expect(detailWert(page, 'Zeit')).toContainText(`${von}–${bis}`);
+  });
+
+  test('fragt auch bei freier Zielzeit nach und laesst beim Abbrechen alles stehen (CAL-023)', async ({
+    page,
+  }) => {
+    const tag = mittwoch(5);
+    const von = stunde();
+    const bis = `${String(Number(von.slice(0, 2)) + 1).padStart(2, '0')}:00`;
+
+    await anmelden(page, KONTEN.office);
+    const terminId = await terminAnlegen(page, { tag, von, bis });
+
+    await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
+    const kachel = terminKachel(page, terminId);
+    await expect(kachel).toBeVisible();
+
+    // Eine Stunde nach unten, in derselben Spalte - mitten in der Arbeitszeit.
+    const kachelKasten = await sichtbarerKasten(kachel);
+    await ziehen(page, kachelKasten, {
+      x: kachelKasten.x + kachelKasten.width / 2,
+      y: kachelKasten.y + kachelKasten.height + 8,
+    });
+
+    const kasten = rueckfrage(page);
+    await expect(kasten).toBeVisible();
+    await expect(kasten).toContainText(`${von}–${bis}`);
+    await expect(kasten).not.toContainText(/außerhalb/);
+    await expect(kasten.getByRole('button', { name: 'Verschieben' })).toBeFocused();
+
+    await kasten.getByRole('button', { name: 'Abbrechen' }).click();
+    await expect(kasten).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Rückgängig' })).toHaveCount(0);
+
     await page.goto(`/termine/${terminId}`);
     await expect(detailWert(page, 'Zeit')).toContainText(`${von}–${bis}`);
   });

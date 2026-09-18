@@ -93,16 +93,26 @@ test.describe('CAL-005: Praxisraster', () => {
     await page.getByLabel('Beginn *').fill('09:05');
     await expect(page.getByText('Ende: 10:05 Uhr')).toBeVisible();
 
-    // Seit CAL-015b kennt 8.1 ZWEI Laengen. Aus der Ableitung ist damit eine
-    // Auswahl mit genau zwei Antworten geworden - 60 vorbelegt, 45 daneben -,
-    // und das Ende steht als Hinweis daran. Ein drittes Angebot gibt es nicht:
-    // Der Server wiese es ab.
+    // Die Regellaengen 60 (vorbelegt) und 45 bleiben der kurze Weg; seit
+    // CAL-020 (8.1 in der Fassung 0.11) oeffnet "Andere Laenge" ein Minutenfeld
+    // in der Schrittweite des Rasters. Das Ende steht als Hinweis daran.
     const dauer = page.getByLabel('Dauer');
     await expect(dauer).toHaveValue('60');
-    await expect(dauer.getByRole('option')).toHaveText(['60 Minuten', '45 Minuten']);
+    await expect(dauer.getByRole('option')).toHaveText([
+      '60 Minuten',
+      '45 Minuten',
+      'Andere Länge …',
+    ]);
 
     await dauer.selectOption('45');
     await expect(page.getByText('Ende: 09:50 Uhr')).toBeVisible();
+
+    await dauer.selectOption('frei');
+    const laenge = page.getByLabel('Länge in Minuten');
+    await expect(laenge).toHaveAttribute('step', '5');
+    await laenge.fill('30');
+    await expect(page.getByText('Ende: 09:35 Uhr')).toBeVisible();
+    await expect(page.getByText(/Weicht von 45 und 60 Minuten ab/)).toBeVisible();
   });
 });
 
