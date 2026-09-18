@@ -215,7 +215,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-13 · Jannes · Prüfpaket · Wie
 
 Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wiedervorlage: ABR-002 (genutzte Menge aus der Abrechnung)
 
-**Ablösung.** abgelöst durch ANN-038 und ANN-042 in der Zählweise („verplant ist nicht genutzt", „ausgeschöpft")
+**Ablösung.** abgelöst durch ANN-038 und ANN-042 in der Zählweise („verplant ist nicht genutzt", „ausgeschöpft") · vollständig abgelöst durch **ANN-064**: Seit VER-EPIC-002 ist die genutzte Menge keine Eingabe des Formulars mehr
 
 **Annahme.** Jede Verordnungsposition führt eine genutzte Menge, die die Praxis im Verordnungsformular selbst pflegt. Die verbleibende Menge wird daraus gerechnet und nirgends gespeichert; eine Constraint verhindert, dass die genutzte Menge die verordnete übersteigt.
 
@@ -533,7 +533,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-12 · Jannes · erledigt · Wie
 
 Praxisprozess · entschieden (Jannes) · 2026-09-12 · Jannes · erledigt · Wiedervorlage: nur noch mit ABR-002: dort entscheidet sich, ob die genutzte Menge automatisch fortgeschrieben wird
 
-**Ablösung.** ersetzt ANN-012 in der Zählweise („verplant ist nicht genutzt")
+**Ablösung.** ersetzt ANN-012 in der Zählweise („verplant ist nicht genutzt") · **ANN-064** ersetzt die Bezugsgröße: `verordnet` ist seit VER-EPIC-002 die Anzahl möglicher **Termine**, nicht die Summe der Leistungsmengen. Die Formel `offen = verordnet − max(genutzt, verplant)` bleibt unverändert
 
 **Annahme.** Drei Festlegungen: Verplant ist nicht genutzt — ein aus einer Verordnung geplanter Termin trägt deren Kennung, offen ist `verordnet − max(genutzt, verplant)`, abgesagte Termine zählen nicht als verplant, „nicht angetroffen" zählt mit, und die genutzte Menge pflegt die Praxis weiter von Hand (ANN-012). Das Kontingent begrenzt die Serie nicht: Die Oberfläche schlägt das offene Kontingent vor und weist auf eine Überschreitung hin, der Server lässt sie zu. Drei Rhythmen (wöchentlich, zweimal pro Woche als 3/4-Wechsel, zweiwöchentlich), höchstens 30 Termine je Vorgang.
 
@@ -587,13 +587,13 @@ Datenschutz · offen · 2026-09-12 · — · Prüfpaket · Wiedervorlage: Datens
 
 Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach den ersten Praxiswochen; erneut mit ABR-002, sobald die genutzte Menge aus der Abrechnung kommt
 
-**Ablösung.** ersetzt ANN-012 in der Frage, wann eine Verordnung ausgeschöpft ist
+**Ablösung.** ersetzt ANN-012 in der Frage, wann eine Verordnung ausgeschöpft ist · **ANN-064** ersetzt die Bezugsgröße: gezählt werden seit VER-EPIC-002 Termine
 
-**Annahme.** Eine Verordnung gilt als ausgeschöpft, sobald ihre genutzten Leistungseinheiten die verordneten erreichen (`used >= prescribed`, summiert über die Positionen). Solange Einheiten offen sind, gilt sie als laufend und zerfällt in „offen" (`remaining > 0`, es lässt sich noch etwas planen) und „vollständig verplant" (Einheiten offen, aber für jede steht ein Termin). Ein Ablauf nach Zeit kommt nicht vor.
+**Annahme.** Eine Verordnung gilt als ausgeschöpft, sobald ihre genutzten die möglichen Termine erreichen (`used >= prescribed`). Solange Termine offen sind, gilt sie als laufend und zerfällt in „offen" (`remaining > 0`, es lässt sich noch etwas planen) und „vollständig verplant" (Termine offen, aber für jeden steht ein Eintrag im Kalender). Ein Ablauf nach Zeit kommt nicht vor.
 
-**Begründung.** Die Praxis rechnet privat ab; die Fristen des Heilmittelkatalogs sind GKV-Regeln und gelten für eine Privatverordnung nicht unmittelbar, und welche Frist ein privater Kostenträger ansetzt, steht in seinem Tarif. Eine erfundene Frist zeigte eine Verordnung als erledigt, die es nicht ist — genau davor warnt §13. Gezählt werden Einheiten und nicht Termine: Ein Termin kann abgesagt werden und gibt seinen Platz zurück, eine genutzte Einheit bleibt genutzt (ANN-038).
+**Begründung.** Die Praxis rechnet privat ab; die Fristen des Heilmittelkatalogs sind GKV-Regeln und gelten für eine Privatverordnung nicht unmittelbar, und welche Frist ein privater Kostenträger ansetzt, steht in seinem Tarif. Eine erfundene Frist zeigte eine Verordnung als erledigt, die es nicht ist — genau davor warnt §13. Gezählt wurden bis VER-EPIC-002 Leistungseinheiten, weil ein Termin abgesagt werden kann und seinen Platz zurückgibt, eine genutzte Einheit aber genutzt bleibt; seit ANN-064 steht dieselbe Überlegung an der genutzten **Terminzahl**, die aus derselben Spalte kommt und ebenso wenig zurückfällt.
 
-**Anker.** `verordnungszustand()` in `src/features/prescriptions/verordnungen.ts` — die eine Stelle, an der die Regel steht; Tests in `src/features/prescriptions/PatientPrescriptionsPage.test.tsx`.
+**Anker.** `verordnungszustand()` in `src/features/treatment-bases/grundlagen.ts` — die eine Stelle, an der die Regel steht; Tests in `src/features/treatment-bases/PatientTreatmentBasesPage.test.tsx`.
 
 **Änderungspfad.** Schwelle ändern (etwa „ausgeschöpft erst, wenn jeder Termin stattgefunden hat"): `verordnungszustand()` · Aufwand `klein`. Ablauf nach Zeit ergänzen: Feld `valid_until` an `prescriptions`, im Formular und in `create/update_prescription` gepflegt · Aufwand `mittel`, mit Migration.
 
@@ -856,3 +856,41 @@ Technik · offen · 2026-09-18 · Loop GRD-001 · Wiedervorlage: Datenschutzprü
 **Anker.** Die beiden `update`-Anweisungen in `supabase/migrations/20260918120000_treatment_basis.sql`, Abschnitt 4b.
 
 **Änderungspfad.** Historischen Namen mitführen statt umschreiben: eine Spalte `target_table_at_deletion` an `deletion_journal`, gefüllt beim Schreiben, und `reapply_deletion_journal` löst über eine Zuordnungstabelle auf · Aufwand `mittel`. Umgekehrt — gar nicht umschreiben — hieße, die Wiederanwendung für diese Einträge aufzugeben; das widerspricht ADR-008 Punkt 9.
+
+### ANN-064 — Die Terminzahl steht an der Grundlage, die Leistungsmenge an der Position
+
+Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · Prüfpaket · Wiedervorlage: ABR-002 (dort wird die genutzte Menge fortgeschrieben); Jannes nach den ersten Praxiswochen
+
+**Ablösung.** löst ANN-012 vollständig ab; ersetzt in ANN-038 und ANN-042 die Bezugsgröße (Termine statt Leistungseinheiten)
+
+**Annahme.** Eine Behandlungsgrundlage trägt in `treatment_bases.appointment_count` die **Anzahl möglicher Termine** — verordnet beim Rezept, vereinbart beim Selbstzahler (ADR-020 Punkt 5). Gegen diese Zahl plant die Anwendung; mehrere Heilmittel erzeugen keine zusätzlichen Termine. Die **Leistungsmenge** je Heilmittel bleibt an `treatment_base_items.prescribed_quantity`, ebenso die genutzte Menge. Das Formular schickt Positionen nur noch als Auswahl: Eine vorhandene Position behält ihre Mengen unverändert, eine neu angehakte erbt die Terminzahl als Leistungsmenge, und „Genutzt" ist keine Eingabe mehr — fortgeschrieben wird sie mit ABR-002. Genutzte **Termine** sind die größte genutzte Positionsmenge, nicht deren Summe. Bestandszeilen haben ihre Terminzahl aus der **größten** Positionsmenge geerbt, nie aus deren Summe.
+
+**Begründung.** Das Kontingent war bis VER-EPIC-002 die Summe der Positionen: Eine Verordnung über sechs Termine mit KG-Doppelbehandlung, MT-Doppelbehandlung und Hausbesuch bot achtzehn Termine an — die Serienplanung hätte dreimal so viele Termine vergeben, wie das Rezept hergibt (§13). Jannes' Vorgabe trennt die beiden Größen ausdrücklich („Die Terminzahl zählt Behandlungstermine, keine Summe von Heilmitteln"); eine eigene Spalte ist die einzige Abbildung, die sie nicht wieder vermischt — ein abgeleiteter Wert (Summe, Maximum) wäre genau die Vermischung, die der Befund meint. Die Leistungsmenge bleibt, weil ABR-EPIC-001 sie braucht und §11 verbietet, sie vorsorglich wegzuwerfen. Dass das Formular keine Mengen mehr schreibt, ist der Preis dafür, dass es sie auch nicht mehr überschreiben kann: Eine Bestandsverordnung mit sieben genutzten von zehn Einheiten geht durch das vereinfachte Formular unverändert hindurch. Die Ableitung für den Bestand nimmt das Maximum, weil es nie über der alten Summe liegt — die Serienplanung kann dadurch nur weniger anbieten als vorher, nie mehr. Unsicher: ob die Praxis Leistungsmengen je Heilmittel später doch abweichend von der Terminzahl pflegen will; dann braucht ABR-001 dafür einen eigenen Weg.
+
+**Anker.** Spalte `appointment_count` samt Kommentar und die Ableitung für den Bestand in `supabase/migrations/20260918130000_appointment_count.sql`; dort auch `app.treatment_basis_slot_counts` (die drei Zahlen) und `app.write_treatment_base_items` (Mengen bleiben stehen). In der Oberfläche `treatmentBasisFormSchema` und `rpcPositionen` in `src/features/treatment-bases/api.ts`.
+
+**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Genutzte Termine aus der Abrechnung: in ABR-002 schreiben, `used` bleibt, wo es steht · Aufwand `mittel`.
+
+### ANN-065 — „Anmerkungen" ist das organisatorische Feld, der Verordnerhinweis bleibt Bestand
+
+Datenschutz · offen · 2026-09-18 · Loop VER-EPIC-002 · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Jannes, sobald er eine Weile Verordnungen erfasst hat
+
+**Annahme.** Das eine Textfeld „Anmerkungen" schreibt in die **organisatorische** Spalte `treatment_bases.note` — für beide Bauarten, in beiden Projektionen, für alle vier Praxisrollen sichtbar. Der klinische `prescriber_note` („Hinweis der Verordner:in") nimmt **keine neue Eingabe** mehr entgegen; ein vorhandener Text bleibt stehen, wird mit seiner Herkunft angezeigt und niemals zusammengeführt, überschrieben oder vervielfacht. Dasselbe gilt für `therapy_goal` und `follow_up_recommendation`.
+
+**Begründung.** Die Feldvorgabe verlangt ein gemeinsames Feld „Anmerkungen" und nennt es die Nachfolge des Verordnerhinweises. Auf `prescriber_note` abgebildet hätte ein **Selbstzahler gar kein Anmerkungsfeld** mehr: ADR-020 Punkt 4 hält die klinischen Felder dort leer, und seit VER-EPIC-002 erzwingt das eine Constraint. `note` ist das einzige Feld, das beide Bauarten tragen und das die Vorgabe „allen vier Praxisrollen anzeigen" ohne das klinische Leserecht erfüllt — der Loop öffnet damit keine Sicht, die es nicht schon gab (§4.3, E15). Die Grenze zwischen organisatorischer und klinischer Projektion bleibt unangetastet: Diagnose, Therapieziel, Verordnerhinweis und Empfehlung stehen weiter ausschließlich in der klinischen Sicht. Zusammengeführt wird nichts, weil jede Zusammenführung beim zweiten Speichern denselben Text ein zweites Mal anhängen könnte. Unsicher: ob die Datenschutzprüfung Text, den das Office vom Rezept abschreibt, in der organisatorischen Spalte beanstandet — dann zieht der Hinweistext am Feld nach, oder das Feld wandert auf `prescriber_note` und der Selbstzahler bekommt ein eigenes.
+
+**Anker.** Das Feld „Anmerkungen" auf `note` in `src/features/treatment-bases/TreatmentBasisFormFields.tsx`, die Beschriftung in `src/features/treatment-bases/grundlagenfelder.ts`; die Bestandstexte liefert `bestandstexte()` in `src/features/treatment-bases/api.ts`, und `public.update_treatment_basis` in `supabase/migrations/20260918130000_appointment_count.sql` fasst die drei Spalten nicht an.
+
+**Änderungspfad.** „Anmerkungen" auf `prescriber_note` legen: das Feld im Formular umhängen, den Parameter in beiden Schreibpfaden wieder aufnehmen, ein zweites Feld für den Selbstzahler vorsehen · Aufwand `klein` bis `mittel`. Bestandstexte ganz entfernen: `bestandstexte()` streichen und die drei Spalten in einer Migration leeren · Aufwand `klein`, aber ein Textverlust ohne Weg zurück.
+
+### ANN-066 — Der Heilmittelkatalog ist eine Liste im Code, kein gepflegter Stammdatensatz
+
+Technik · offen · 2026-09-18 · Loop VER-EPIC-002 · Wiedervorlage: ABR-001 (Leistungskatalog mit Preisen und Steuerkennzeichen)
+
+**Annahme.** Die vordefinierte Heilmittelauswahl steht als fünf Einträge in `src/features/treatment-bases/heilmittel.ts`: Krankengymnastik, KG als Doppelbehandlung, Manuelle Therapie, MT als Doppelbehandlung, Hausbesuch. Jeder Eintrag ist ein eigenes Kästchen und schließt keinen anderen aus. Die **Datenbank prüft den Wert nicht**: Ein Heilmittel außerhalb der Liste bleibt gültig, wird im Formular als angehakter Bestandseintrag mit seiner Menge angezeigt und verschwindet nur, wenn jemand es ausdrücklich abhakt.
+
+**Begründung.** Die Vorgabe verlangt eine vordefinierte Auswahl und schließt eine freie Katalogverwaltung ausdrücklich aus; Preise kommen mit ABR-001. Eine Tabelle mit Pflegeoberfläche wäre ein Zukunftsfeature auf Vorrat (ADR-014 §11) und teurer zurückzunehmen als fünf Zeilen. Dass die Datenbank den Wert nicht prüft, ist der Punkt: Eine Prüfung wiese eine Bestandsposition („Wärmetherapie") beim nächsten Speichern ab — das Gegenteil von „Bestandswerte bleiben erhalten". Die Doppelbehandlung ist ein eigener Eintrag und kein Zusatzhaken, weil sie eine andere Leistung ist; nur so ist die Kombination KG-Doppelbehandlung + MT-Doppelbehandlung + Hausbesuch vollständig möglich. Die gespeicherten Bezeichnungen „Krankengymnastik" und „Manuelle Therapie" sind unverändert die aus VER-EPIC-001, damit eine Bestandsverordnung ihr Kästchen wiederfindet. Unsicher: ob die Praxis weitere Heilmittel braucht, bevor ABR-001 den Leistungskatalog bringt — dann kommt ein Eintrag dazu, nicht eine Verwaltungsoberfläche.
+
+**Anker.** `HEILMITTEL` und `istBestand()` in `src/features/treatment-bases/heilmittel.ts`.
+
+**Änderungspfad.** Weiteres Heilmittel: eine Zeile in `heilmittel.ts` · Aufwand `klein`. Eintrag entfernen: dieselbe Zeile streichen — vorhandene Positionen bleiben als Bestand stehen · Aufwand `klein`. Echte Katalogtabelle mit Preisen: gehört zu ABR-001, dort mit Versionierung und Steuerkennzeichen (ADR-009) · Aufwand `groß`.

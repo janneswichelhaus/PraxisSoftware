@@ -260,23 +260,20 @@ describe('Barrierefreiheit der Kernformulare', () => {
               prescriber_id: '',
               treatment_basis_kind: 'first',
               issued_on: '',
+              appointment_count: '',
               frequency_note: '',
               note: '',
               diagnosis: '',
-              therapy_goal: '',
-              prescriber_note: '',
-              follow_up_recommendation: '',
             }}
             fehler={{ issued_on: 'Das Datum ist erforderlich.' }}
             onChange={() => {}}
             positionen={[
-              { id: null, remedy: '', prescribed_quantity: '', used_quantity: '0' },
-              { id: null, remedy: '', prescribed_quantity: '', used_quantity: '0' },
+              { id: 'p1', remedy: 'Krankengymnastik', bestand: { verordnet: 6, genutzt: 2 } },
+              { id: 'p2', remedy: 'Waermetherapie', bestand: { verordnet: 3, genutzt: 0 } },
             ]}
-            positionsFehler={[{}, { remedy: 'Heilmittel ist erforderlich.' }]}
-            onPositionChange={() => {}}
-            onPositionHinzufuegen={() => {}}
-            onPositionEntfernen={() => {}}
+            positionsFehler="Bitte mindestens ein Heilmittel auswählen."
+            onHeilmittelWechsel={() => {}}
+            bestandstexte={[{ feld: 'Therapieziel', text: 'Synthetisch: Ziel.' }]}
             verordnerinnen={[]}
             verordnerAnlegenZiel="/verordner/neu"
             onVerordnerAnlegenKlick={() => {}}

@@ -12,13 +12,21 @@ export function Checkbox({
   label,
   hint,
   error,
+  feldId,
   ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'type'> & {
   label: ReactNode;
   hint?: ReactNode;
   error?: string | undefined;
+  /**
+   * Feste Kennung statt der erzeugten - wie bei `Field` (UX-012). Die
+   * Fehlerzusammenfassung eines Formulars springt darauf; eine mit `useId`
+   * erzeugte Kennung ist von außen nicht bekannt.
+   */
+  feldId?: string | undefined;
 }) {
-  const id = useId();
+  const erzeugt = useId();
+  const id = feldId ?? erzeugt;
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;

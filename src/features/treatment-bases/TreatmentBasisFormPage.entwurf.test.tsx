@@ -96,6 +96,7 @@ const bestand: TreatmentBasesApi.TreatmentBasisDetail = {
   prescriber_practice_name: 'Praxis Fiktiv',
   treatment_basis_kind: 'follow_up',
   issued_on: '2026-06-18',
+  appointment_count: 10,
   frequency_note: '2x pro Woche',
   note: null,
   items: [
@@ -168,8 +169,8 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
 
     await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
     await user.type(screen.getByLabelText('Frequenz'), '2x pro Woche');
-    await user.type(screen.getByLabelText('Heilmittel *'), 'Manuelle Therapie');
-    await user.type(screen.getByLabelText('Verordnet *'), '6');
+    await user.click(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' }));
+    await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
     await user.type(
       screen.getByLabelText('Diagnose oder Leitsymptomatik'),
       'Synthetisch: Testdiagnose.',
@@ -201,8 +202,8 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
 
     expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveValue('2026-03-01');
     expect(screen.getByLabelText('Frequenz')).toHaveValue('2x pro Woche');
-    expect(screen.getByLabelText('Heilmittel *')).toHaveValue('Manuelle Therapie');
-    expect(screen.getByLabelText('Verordnet *')).toHaveValue('6');
+    expect(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' })).toBeChecked();
+    expect(screen.getByLabelText('Anzahl möglicher Termine *')).toHaveValue('6');
     expect(screen.getByLabelText('Diagnose oder Leitsymptomatik')).toHaveValue(
       'Synthetisch: Testdiagnose.',
     );
@@ -221,8 +222,8 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await screen.findByRole('option', { name: /Probst/ });
 
     await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
-    await user.type(screen.getByLabelText('Heilmittel *'), 'Manuelle Therapie');
-    await user.type(screen.getByLabelText('Verordnet *'), '6');
+    await user.click(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' }));
+    await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
 
     await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
@@ -234,8 +235,8 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await screen.findByRole('option', { name: /Probst/ });
 
     expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveValue('2026-03-01');
-    expect(screen.getByLabelText('Heilmittel *')).toHaveValue('Manuelle Therapie');
-    expect(screen.getByLabelText('Verordnet *')).toHaveValue('6');
+    expect(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' })).toBeChecked();
+    expect(screen.getByLabelText('Anzahl möglicher Termine *')).toHaveValue('6');
     // Keine Verordner:in wurde angelegt - die Auswahl bleibt leer.
     expect(screen.getByLabelText('Verordner:in *')).toHaveValue('');
     expect(createPrescriber).not.toHaveBeenCalled();
@@ -251,8 +252,8 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     );
     await screen.findByRole('option', { name: /Probst/ });
 
-    await user.clear(screen.getByLabelText('Genutzt'));
-    await user.type(screen.getByLabelText('Genutzt'), '8');
+    await user.clear(screen.getByLabelText('Anzahl möglicher Termine *'));
+    await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '8');
 
     await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
@@ -270,7 +271,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await screen.findByRole('heading', { name: 'Grundlage bearbeiten' });
     await screen.findByRole('option', { name: /Neuarzt/ });
 
-    expect(screen.getByLabelText('Genutzt')).toHaveValue('8');
+    expect(screen.getByLabelText('Anzahl möglicher Termine *')).toHaveValue('8');
     expect(screen.getByLabelText('Verordner:in *')).toHaveValue(NEUER_VERORDNER);
     expect(updateTreatmentBasis).not.toHaveBeenCalled();
   });
@@ -283,7 +284,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     const erste = render(testApp(queryClient, rueckpfad));
     await screen.findByRole('option', { name: /Probst/ });
 
-    await user.type(screen.getByLabelText('Heilmittel *'), 'Manuelle Therapie');
+    await user.click(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' }));
     await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
 
@@ -296,7 +297,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     render(testApp(new QueryClient(), rueckpfad));
     await screen.findByRole('option', { name: /Probst/ });
 
-    expect(screen.getByLabelText('Heilmittel *')).toHaveValue('');
+    expect(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' })).not.toBeChecked();
   });
 
   it('taucht bei einem unabhaengigen neuen Versuch nicht wieder auf (UX-009, Restpunkt aus ANN-019)', async () => {
@@ -307,8 +308,8 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await screen.findByRole('option', { name: /Probst/ });
 
     await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
-    await user.type(screen.getByLabelText('Heilmittel *'), 'Aufgegebener Versuch');
-    await user.type(screen.getByLabelText('Verordnet *'), '6');
+    await user.click(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' }));
+    await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
 
     await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
@@ -325,7 +326,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
     await screen.findByRole('option', { name: /Probst/ });
 
-    expect(screen.getByLabelText('Heilmittel *')).toHaveValue('');
+    expect(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' })).not.toBeChecked();
     expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveValue('');
   });
 
@@ -334,7 +335,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
 
     const erster = render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
     await screen.findByRole('option', { name: /Probst/ });
-    await user.type(screen.getByLabelText('Heilmittel *'), 'Erster Versuch');
+    await user.type(screen.getByLabelText('Frequenz'), 'Erster Versuch');
     await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
     erster.unmount();
@@ -343,12 +344,12 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     // der des ZWEITEN Abstechers.
     render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
     await screen.findByRole('option', { name: /Probst/ });
-    await user.type(screen.getByLabelText('Heilmittel *'), 'Zweiter Versuch');
+    await user.type(screen.getByLabelText('Frequenz'), 'Zweiter Versuch');
     await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
     await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
 
     await screen.findByRole('heading', { name: 'Grundlage erfassen' });
-    expect(screen.getByLabelText('Heilmittel *')).toHaveValue('Zweiter Versuch');
+    expect(screen.getByLabelText('Frequenz')).toHaveValue('Zweiter Versuch');
   });
 });

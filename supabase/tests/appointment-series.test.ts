@@ -217,8 +217,8 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
           values ('${fremderPatient}', '${fremdeOrg}', '${fremdePerson}', 'active');
         insert into public.prescribers (id, organization_id, given_name, family_name)
           values ('${fremderVerordner}', '${fremdeOrg}', 'Fremd', 'Arzt');
-        insert into public.treatment_bases (id, organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on)
-          values ('${fremdeVerordnung}', '${fremdeOrg}', '${fremderPatient}', '${fremderVerordner}', 'first', '2026-01-01');
+        insert into public.treatment_bases (id, organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on, appointment_count)
+          values ('${fremdeVerordnung}', '${fremdeOrg}', '${fremderPatient}', '${fremderVerordner}', 'first', '2026-01-01', 6);
       `);
 
       await expect(asUser(users.office, KONTINGENT, [fremdeVerordnung])).rejects.toThrow(

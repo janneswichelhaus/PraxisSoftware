@@ -1,7 +1,9 @@
 # VER-EPIC-002 — Verordnung im Office-Alltag
 
 Stand 2026-09-13 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt des Loops,
-kein eigener Rang · Umsetzung noch nicht begonnen
+kein eigener Rang · **umgesetzt am 2026-09-18**, Abnahme steht aus
+([Prüfschritte](../abnahme/etappe-1-kernprozess.md)); die Abbildung der
+Vorgaben steht in ANN-064, ANN-065 und ANN-066
 
 Quelle sind Jannes' Korrekturen an „Verordnung bearbeiten" vom 2026-09-13
 (Planentwurf aus PR #37, am selben Tag auf `main` übernommen). Die

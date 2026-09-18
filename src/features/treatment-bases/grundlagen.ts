@@ -38,19 +38,20 @@ export interface VerordnungMitZahlen {
  * Der Zustand einer Verordnung - und damit, welche Aktion überhaupt passt.
  *
  * **ANN-042 ist hier verankert**: Ausgeschöpft ist eine Verordnung, wenn ihre
- * Leistungseinheiten genutzt sind - nicht nach Ablauf einer Frist. Das
+ * möglichen Termine genutzt sind - nicht nach Ablauf einer Frist. Das
  * Datenmodell kennt kein Ablaufdatum, und die Fristen des Heilmittelkatalogs
  * sind Regeln des GKV-Systems; die Praxis rechnet privat ab. Wer die Regel
  * ändern will, ändert sie hier.
  *
  * Die Unterscheidung läuft über zwei verschiedene Zahlen, und genau das ist
- * der Punkt (ANN-038):
+ * der Punkt (ANN-038, seit VER-EPIC-002 beide in Terminen — ANN-064):
  *
- *   * `ausgeschoepft` - die verordneten **Leistungseinheiten** sind genutzt.
- *     Die Verordnung ist Geschichte; sie steht in der Akte, damit nachvoll-
- *     ziehbar bleibt, was behandelt wurde.
- *   * `verplant` - es sind noch Einheiten offen, aber für jede steht schon ein
- *     **Termin**. Hier ist nichts mehr zu planen, wohl aber zu behandeln.
+ *   * `ausgeschoepft` - die möglichen **Termine** sind genutzt. Die Verordnung
+ *     ist Geschichte; sie steht in der Akte, damit nachvollziehbar bleibt, was
+ *     behandelt wurde.
+ *   * `verplant` - es sind noch Termine offen, aber für jeden steht schon ein
+ *     **Eintrag im Kalender**. Hier ist nichts mehr zu planen, wohl aber zu
+ *     behandeln.
  *   * `offen` - es lässt sich noch etwas planen.
  *
  * Ohne geladene Zahlen gilt `offen`: Die Akte soll keine Aktion verstecken,

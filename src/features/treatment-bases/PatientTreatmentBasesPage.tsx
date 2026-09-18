@@ -47,15 +47,13 @@ import {
  */
 
 /**
- * Die Zahlen einer Verordnung - **getrennt** nach Einheiten und Terminen.
+ * Die Zahlen einer Grundlage — seit VER-EPIC-002 alle drei in **Terminen**.
  *
- * Vorher stand über beidem dasselbe Wort „Kontingent": die Akte zeigte „noch 3
- * von 10" aus den Positionen, die Serienseite unter demselben Namen die um die
- * verplanten Termine verminderte Zahl. Zwei Zahlen, ein Wort - und im Zweifel
- * ein Termin zu viel.
- *
- * Jetzt trägt jede Zeile ihre Einheit im Namen: Leistungseinheiten kommen von
- * den Positionen der Verordnung, Termine von den Terminen (ANN-012, ANN-038).
+ * Vorher stand über zwei verschiedenen Größen dasselbe Wort „Kontingent", und
+ * die obere Zahl war die Summe der Positionen: eine Verordnung über sechs
+ * Termine mit drei Heilmitteln zeigte achtzehn. Jetzt zählt jede Zeile
+ * Behandlungstermine — möglich, genutzt, verplant, noch planbar (ANN-064,
+ * ANN-038). Die Leistungsmenge je Heilmittel steht getrennt darunter.
  */
 function Kontingentzeilen({
   kontingent,
@@ -65,13 +63,15 @@ function Kontingentzeilen({
   terminlink: string;
 }) {
   if (!kontingent) return null;
-  const offeneEinheiten = Math.max(kontingent.prescribed - kontingent.used, 0);
 
   return (
     <>
-      <DetailRow label="Leistungseinheiten">
-        {kontingent.used} von {kontingent.prescribed} genutzt
-        {offeneEinheiten > 0 ? ` · ${offeneEinheiten} offen` : ''}
+      <DetailRow label="Mögliche Termine">
+        {kontingent.prescribed}
+        {/* „Genutzt" pflegt bis ABR-002 niemand mehr von Hand (ANN-064). Die
+            Zeile steht deshalb nur da, wo tatsächlich etwas verbraucht ist -
+            ein dauerhaftes „0 von 6 genutzt" wäre eine Zahl ohne Aussage. */}
+        {kontingent.used > 0 ? ` · ${kontingent.used} genutzt` : ''}
       </DetailRow>
       <DetailRow label="Termine">
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -88,12 +88,12 @@ function Kontingentzeilen({
         </span>
       </DetailRow>
       {/* Die dritte Zahl ist keine der beiden ersten: Sie sagt, wie viele
-          Termine sich noch anlegen lassen - verordnet abzüglich des größeren
+          Termine sich noch anlegen lassen - möglich abzüglich des größeren
           Werts aus genutzt und verplant (ANN-038). Genau diese Zahl schlägt
           die Serienplanung vor. */}
       <DetailRow label="Noch planbar">
         {kontingent.remaining === 0
-          ? 'Nichts mehr — jede verordnete Einheit ist genutzt oder verplant'
+          ? 'Nichts mehr — jeder mögliche Termin ist genutzt oder verplant'
           : `${kontingent.remaining} ${kontingent.remaining === 1 ? 'Behandlung' : 'Behandlungen'}`}
       </DetailRow>
     </>
@@ -137,19 +137,39 @@ function Verordnungskopf({ verordnung }: { verordnung: Verordnung }) {
 }
 
 /**
- * Die Positionen als Wert einer Zeile, nicht als eigene Tabelle.
+ * Die Heilmittel als Wert einer Zeile, nicht als eigene Tabelle.
  *
- * Sie sagen dasselbe wie die Summe darüber, nur je Heilmittel. Als eigener
- * Block mit Rahmen wirkten sie wie eine zweite, widersprechende Zahl.
+ * Seit VER-EPIC-002 sagen sie etwas anderes als die Zahl darüber: Die
+ * Terminzahl steht an der Grundlage, die **Leistungsmenge** an der Position
+ * (ANN-064). Die Menge steht deshalb nur dort, wo sie von der Terminzahl
+ * abweicht oder schon etwas verbraucht ist — sonst wiederholte sie die Zeile
+ * darüber und sähe aus wie eine zweite, widersprechende Zahl.
  */
-function Positionen({ verordnung }: { verordnung: Verordnung }) {
+function Heilmittel({
+  verordnung,
+  moeglicheTermine,
+}: {
+  verordnung: Verordnung;
+  moeglicheTermine: number | null;
+}) {
   return (
     <ul>
-      {verordnung.items.map((item) => (
-        <li key={item.id}>
-          {item.remedy}: {item.used_quantity} von {item.prescribed_quantity} genutzt
-        </li>
-      ))}
+      {verordnung.items.map((item) => {
+        const abweichend =
+          moeglicheTermine !== null && item.prescribed_quantity !== moeglicheTermine;
+        let menge = '';
+        if (item.used_quantity > 0) {
+          menge = ` — ${item.used_quantity} von ${item.prescribed_quantity} genutzt`;
+        } else if (abweichend) {
+          menge = ` — ${item.prescribed_quantity} verordnet`;
+        }
+        return (
+          <li key={item.id}>
+            {item.remedy}
+            {menge}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -178,6 +198,9 @@ function KlinischeAngaben({ verordnung }: { verordnung: Verordnung }) {
       {klinisch?.therapy_goal ? (
         <DetailRow label="Therapieziel">{klinisch.therapy_goal}</DetailRow>
       ) : null}
+      {/* Zwei Bestandsfelder aus der Zeit vor VER-EPIC-002: Sie werden nicht
+          mehr erfasst, aber weiter angezeigt, solange etwas darin steht.
+          ANN-014 bleibt gültig — die Anwendung erzeugt keine Empfehlung. */}
       {klinisch?.prescriber_note ? (
         <DetailRow label="Hinweis der Verordner:in">{klinisch.prescriber_note}</DetailRow>
       ) : null}
@@ -186,7 +209,7 @@ function KlinischeAngaben({ verordnung }: { verordnung: Verordnung }) {
           {klinisch.follow_up_recommendation}
         </DetailRow>
       ) : null}
-      {verordnung.note ? <DetailRow label="Bemerkung">{verordnung.note}</DetailRow> : null}
+      {verordnung.note ? <DetailRow label="Anmerkungen">{verordnung.note}</DetailRow> : null}
     </>
   );
 }
@@ -351,12 +374,14 @@ function LaufendeVerordnung({
             kontingent={kontingent}
             terminlink={terminlink(patient.id, verordnung.id)}
           />
-          {/* Mehr als eine Position ist der Regelfall bei Kombinationen; bei
-              einer einzigen sagt die Positionsliste nichts, was oben nicht
-              steht. */}
-          {verordnung.items.length > 1 ? (
-            <DetailRow label="Positionen">
-              <Positionen verordnung={verordnung} />
+          {/* Seit VER-EPIC-002 immer: Welche Heilmittel die Grundlage trägt,
+              steht in keiner Zahl darüber - auch nicht bei einem einzigen. */}
+          {verordnung.items.length > 0 ? (
+            <DetailRow label="Heilmittel">
+              <Heilmittel
+                verordnung={verordnung}
+                moeglicheTermine={kontingent?.prescribed ?? null}
+              />
             </DetailRow>
           ) : null}
         </DetailList>
@@ -404,9 +429,9 @@ function AbgeschlosseneVerordnung({
               {[
                 verordnung.prescriber_name,
                 kontingent
-                  ? `${kontingent.used} von ${kontingent.prescribed} Einheiten genutzt`
+                  ? `${kontingent.used} von ${kontingent.prescribed} Terminen genutzt`
                   : null,
-                kontingent ? `${kontingent.planned} Termine` : null,
+                kontingent ? `${kontingent.planned} geplant` : null,
               ]
                 .filter(Boolean)
                 .join(' · ')}
@@ -421,9 +446,12 @@ function AbgeschlosseneVerordnung({
               kontingent={kontingent}
               terminlink={terminlink(patient.id, verordnung.id)}
             />
-            {verordnung.items.length > 1 ? (
-              <DetailRow label="Positionen">
-                <Positionen verordnung={verordnung} />
+            {verordnung.items.length > 0 ? (
+              <DetailRow label="Heilmittel">
+                <Heilmittel
+                  verordnung={verordnung}
+                  moeglicheTermine={kontingent?.prescribed ?? null}
+                />
               </DetailRow>
             ) : null}
             <KlinischeAngaben verordnung={verordnung} />
@@ -461,7 +489,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
           derselbe Grund wie bei „Termin anlegen" (UX-006). */}
       <Section
         titel="Aktuelle Behandlungsgrundlagen"
-        hinweis="Verordnungen und Selbstzahler, deren Leistungseinheiten noch nicht vollständig genutzt sind."
+        hinweis="Verordnungen und Selbstzahler, deren mögliche Termine noch nicht vollständig genutzt sind."
       >
         {isPending ? <LoadingState label="Behandlungsgrundlagen werden geladen …" /> : null}
         {isError ? (

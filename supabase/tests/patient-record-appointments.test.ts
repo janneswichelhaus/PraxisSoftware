@@ -342,11 +342,14 @@ describe('list_patient_treatment_basis_slots', () => {
     expect(offen.remaining).toBe(1);
   });
 
-  it('meldet die ausgeschoepfte Verordnung mit null offenen Einheiten', async () => {
+  it('meldet die ausgeschoepfte Verordnung mit null offenen Terminen', async () => {
+    // Seit VER-EPIC-002 zaehlen alle drei Zahlen **Termine** (ANN-064): Die
+    // Verordnung hat zehn moegliche Termine mit zwei Heilmitteln - nicht
+    // zwanzig, weil zwei Positionen darunter haengen.
     const { rows } = await slots(users.office);
     const ausgeschoepft = rows.find((z) => z.treatment_basis_id === VERORDNUNG.maxAusgeschoepft)!;
-    expect(ausgeschoepft.prescribed).toBe(20);
-    expect(ausgeschoepft.used).toBe(20);
+    expect(ausgeschoepft.prescribed).toBe(10);
+    expect(ausgeschoepft.used).toBe(10);
     expect(ausgeschoepft.remaining).toBe(0);
   });
 

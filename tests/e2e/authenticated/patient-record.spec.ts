@@ -131,9 +131,14 @@ test.describe('AKTE-002: Verordnung und Termine finden einander', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/patienten/${PATIENTEN.erika}/verordnungen`);
 
-    // Die Zahlen stehen getrennt da: Einheiten aus den Positionen, Termine
-    // von den Terminen (ANN-038).
-    await expect(page.getByText('Leistungseinheiten').first()).toBeVisible();
+    // Die Zahlen stehen getrennt da und zählen seit VER-EPIC-002 durchgehend
+    // Termine: mögliche aus der Grundlage, verplante von den Terminen, planbare
+    // als Differenz (ANN-038, ANN-064). Die Leistungsmenge je Heilmittel steht
+    // getrennt darunter.
+    // `exact`, damit nicht der Abschnittshinweis („deren mögliche Termine …")
+    // die Zusicherung erfüllt — geprüft ist die Zeile an der Karte.
+    await expect(page.getByText('Mögliche Termine', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Heilmittel', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Noch planbar').first()).toBeVisible();
 
     const zuDenTerminen = page.getByRole('link', { name: 'Termine dieser Verordnung' }).first();
@@ -178,5 +183,46 @@ test.describe('GRD-001: beide Bauarten in der Akte', () => {
     await expect(page.getByLabel('Verordner:in *')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Klinische Angaben' })).toHaveCount(0);
     await expect(page.getByLabel('Vereinbart am *')).toBeVisible();
+    // Die Terminzahl gilt für beide Bauarten (ADR-020 Punkt 5), „Anmerkungen"
+    // ebenso (ANN-065).
+    await expect(page.getByLabel('Anzahl möglicher Termine *')).toBeVisible();
+    await expect(page.getByLabel('Anmerkungen')).toBeVisible();
+  });
+
+  /**
+   * VER-EPIC-002: Die Heilmittelauswahl im angemeldeten Formular.
+   *
+   * Lesend — der Seed bleibt unberührt, damit die Zahlen der anderen Prüfungen
+   * stimmen. Geprüft wird, was die Feldvorgabe nennt: fünf Kästchen, kein
+   * Dropdown, keine Mengeneingabe, keine zweite Positionsliste.
+   */
+  test('bietet die Heilmittel als Kaestchen an, ohne Mengen und ohne Positionsliste', async ({
+    page,
+  }) => {
+    await anmelden(page, KONTEN.therapist);
+    await page.goto(`/patienten/${PATIENTEN.erika}/verordnungen/neu`);
+
+    for (const beschriftung of [
+      'Krankengymnastik (KG)',
+      'KG als Doppelbehandlung',
+      'Manuelle Therapie (MT)',
+      'MT als Doppelbehandlung',
+      'Hausbesuch',
+    ]) {
+      await expect(page.getByRole('checkbox', { name: beschriftung })).toBeVisible();
+    }
+
+    // Die Wunschkombination schließt sich nicht gegenseitig aus.
+    await page.getByRole('checkbox', { name: 'KG als Doppelbehandlung' }).check();
+    await page.getByRole('checkbox', { name: 'MT als Doppelbehandlung' }).check();
+    await page.getByRole('checkbox', { name: 'Hausbesuch' }).check();
+    await expect(page.getByRole('checkbox', { name: 'KG als Doppelbehandlung' })).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'MT als Doppelbehandlung' })).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Hausbesuch' })).toBeChecked();
+
+    await expect(page.getByRole('button', { name: 'Position hinzufügen' })).toHaveCount(0);
+    await expect(page.getByLabel('Genutzt')).toHaveCount(0);
+    await expect(page.getByLabel('Verordnet *')).toHaveCount(0);
+    await expect(page.getByLabel('Therapieziel')).toHaveCount(0);
   });
 });
