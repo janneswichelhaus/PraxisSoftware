@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
@@ -265,6 +265,40 @@ describe('NewAppointmentPage', () => {
     );
   });
 
+  it('kehrt nach dem Anlegen dorthin zurueck, wo es begann - mit dem neuen Termin (FIX-016)', async () => {
+    // Aus dem Kalender getippt: der Rueckweg ist der Kalenderstand. Zurueck
+    // geht es dorthin, der neue Termin wird hervorgehoben (BEF-016).
+    createAppointment.mockResolvedValue(TERMIN_ID);
+    const user = userEvent.setup();
+    const kalender = '/kalender?ansicht=tag&datum=2027-05-12';
+    renderWithProviders(
+      <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+      `/patienten/${PATIENT_ID}/termine/neu?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await zeitenSetzen(user);
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`${kalender}&neu=${TERMIN_ID}`, { replace: true }),
+    );
+  });
+
+  it('bricht zum Rueckweg hin ab, nicht zur Akte', async () => {
+    const user = userEvent.setup();
+    const kalender = '/kalender?ansicht=tag&datum=2027-05-12';
+    renderWithProviders(
+      <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+      `/patienten/${PATIENT_ID}/termine/neu?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    await formularAbwarten();
+
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(navigate).toHaveBeenCalledWith(kalender);
+  });
+
   it('waehlt einen einzelnen Standort vor', async () => {
     const user = userEvent.setup();
     rendern();
@@ -465,7 +499,7 @@ describe('NewAppointmentPage', () => {
       await zeitenSetzen(user);
       await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
 
-      const rueckfrage = await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+      const rueckfrage = await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
       expect(rueckfrage).toHaveTextContent(/noch nicht gespeichert/);
       expect(navigate).not.toHaveBeenCalled();
     });
@@ -480,7 +514,7 @@ describe('NewAppointmentPage', () => {
       await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
       await zeitenSetzen(user);
       await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
-      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+      await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
 
       await user.click(screen.getByRole('button', { name: 'Termin trotzdem anlegen' }));
 
@@ -505,17 +539,43 @@ describe('NewAppointmentPage', () => {
       await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
       await zeitenSetzen(user);
       await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
-      await screen.findByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+      const fenster = await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
+      // FIX-016: ein Fenster ueber dem Formular, der Fokus liegt darin.
+      expect(
+        within(fenster).getByRole('button', { name: 'Termin trotzdem anlegen' }),
+      ).toHaveFocus();
 
-      // Die Rueckfrage galt genau dem abgewiesenen Zeitraum.
-      await user.clear(screen.getByLabelText('Beginn *'));
-      await user.type(screen.getByLabelText('Beginn *'), '14:00');
-
+      // „Zurueck zum Formular" schliesst, ohne etwas zu schreiben; die
+      // Eingaben bleiben stehen.
+      await user.click(within(fenster).getByRole('button', { name: 'Zurück zum Formular' }));
       await waitFor(() =>
         expect(
-          screen.queryByRole('group', { name: 'Außerhalb der Arbeitszeit' }),
+          screen.queryByRole('dialog', { name: 'Außerhalb der Arbeitszeit' }),
         ).not.toBeInTheDocument(),
       );
+      expect(createAppointment).toHaveBeenCalledTimes(1);
+      expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
+      expect(screen.getByRole('button', { name: 'Termin anlegen' })).toHaveFocus();
+    });
+
+    it('zeigt einen Fehler nach dem Absenden als Fenster (FIX-016)', async () => {
+      createAppointment.mockRejectedValue(
+        new Error('In diesem Zeitraum hat die behandelnde Person bereits einen Termin.'),
+      );
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+      await zeitenSetzen(user);
+      await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+      const fenster = await screen.findByRole('dialog', {
+        name: 'Der Termin konnte nicht angelegt werden.',
+      });
+      expect(fenster).toHaveTextContent(/bereits einen Termin/);
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     });
   });
 

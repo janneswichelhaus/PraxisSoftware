@@ -235,7 +235,7 @@ export async function arbeitszeitBestaetigen(
     | 'Trotzdem eintragen',
   weiter: RegExp,
 ): Promise<void> {
-  const rueckfrage = page.getByRole('group', { name: 'Außerhalb der Arbeitszeit' });
+  const rueckfrage = page.getByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
 
   // Kurzes Fenster: die Antwort des Servers kommt lokal in Millisekunden.
   // Tritt weder der Folgezustand noch die Rueckfrage ein, ist der Vorgang aus

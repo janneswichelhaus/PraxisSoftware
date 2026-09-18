@@ -4,9 +4,10 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
-import { mitRueckweg } from '@/lib/rueckweg';
+import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   AppointmentFormFields,
   ArbeitszeitRueckfrage,
@@ -21,6 +22,7 @@ import {
   istAusserhalbArbeitszeit,
   leererTermin,
   leseTerminVorbelegung,
+  mitNeuemTermin,
   schreibeTerminVorbelegung,
   TERMINFENSTER_MINUTEN,
   todayInTimeZone,
@@ -146,7 +148,16 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       createAppointment(patientId!, eingabe.werte, eingabe.bestaetigt, verordnungId),
     onSuccess: async (appointmentId) => {
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      void navigate(`/termine/${appointmentId}`, { replace: true });
+      // Zurück, wo das Anlegen begann (BEF-016): Wer aus dem Kalender kam,
+      // landet wieder im Kalender, mit dem neuen Termin hervorgehoben. Ohne
+      // Rückweg bleibt es die Terminansicht.
+      const rueckweg = leseRueckweg(suche, '');
+      void navigate(
+        rueckweg ? mitNeuemTermin(rueckweg, appointmentId) : `/termine/${appointmentId}`,
+        {
+          replace: true,
+        },
+      );
     },
   });
 
@@ -223,19 +234,22 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
+        {/* Rückfrage und Fehler als Fenster über dem Formular (FIX-016): Wer am
+            Seitenende abschickt, sieht sie sofort. */}
         {istAusserhalbArbeitszeit(mutation.error) ? (
           <ArbeitszeitRueckfrage
             onBestaetigen={bestaetigen}
+            onAbbrechen={() => mutation.reset()}
             laeuft={mutation.isPending}
             beschriftung="Termin trotzdem anlegen"
           />
         ) : mutation.isError ? (
-          <div className="mb-6">
-            <ErrorState
-              title="Der Termin konnte nicht angelegt werden."
-              description={mutation.error.message}
-            />
-          </div>
+          <Hinweisfenster
+            titel="Der Termin konnte nicht angelegt werden."
+            onSchliessen={() => mutation.reset()}
+          >
+            {mutation.error.message}
+          </Hinweisfenster>
         ) : null}
 
         <div className="border-line bg-surface-sunken rounded-card mb-5 border p-4">
@@ -287,7 +301,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => void navigate(`/patienten/${patientDaten.id}`)}
+            onClick={() => void navigate(leseRueckweg(suche, `/patienten/${patientDaten.id}`))}
           >
             Abbrechen
           </Button>

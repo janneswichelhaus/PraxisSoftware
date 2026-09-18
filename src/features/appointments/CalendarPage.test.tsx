@@ -1010,6 +1010,18 @@ describe('CalendarPage', () => {
       // Vorbelegtes Zeitfenster von 60 Minuten (PROJECT_PRINCIPLES.md 8.1).
       expect(ziel.searchParams.get('beginn')).toBe('07:00');
       expect(ziel.searchParams.get('ende')).toBe('08:00');
+      // FIX-016: der Kalenderstand reist als Rueckweg mit, damit das Anlegen
+      // wieder hier landet.
+      expect(ziel.searchParams.get('zurueck')).toBe('/kalender?ansicht=tag&datum=2027-05-12');
+    });
+
+    it('hebt den gerade angelegten Termin hervor und nennt ihn (FIX-016)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&neu=77777777-7777-4777-8777-000000000001');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      expect(kachel.className).toContain('ring-2');
+      expect(screen.getByRole('status')).toHaveTextContent(/Termin angelegt/);
+      expect(screen.getByRole('link', { name: 'Termin öffnen' })).toBeInTheDocument();
     });
 
     it('fuehrt aus der Wochenansicht mit dem Tag der Spalte in die Terminanlage', async () => {

@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { fetchPatient } from '@/features/patients/api';
 import { fetchStaffMembers } from '@/features/staff/api';
 import type { CurrentUser } from '@/features/session/types';
@@ -238,19 +239,21 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
+        {/* Rückfrage und Fehler als Fenster über dem Formular (FIX-016). */}
         {istAusserhalbArbeitszeit(mutation.error) ? (
           <ArbeitszeitRueckfrage
             onBestaetigen={bestaetigen}
+            onAbbrechen={() => mutation.reset()}
             laeuft={mutation.isPending}
             beschriftung="Änderung trotzdem speichern"
           />
         ) : mutation.isError ? (
-          <div className="mb-6">
-            <ErrorState
-              title="Der Termin konnte nicht geändert werden."
-              description={mutation.error.message}
-            />
-          </div>
+          <Hinweisfenster
+            titel="Der Termin konnte nicht geändert werden."
+            onSchliessen={() => mutation.reset()}
+          >
+            {mutation.error.message}
+          </Hinweisfenster>
         ) : null}
 
         {/* Ein Ereignis hat keine Patient:in - der Kasten nennt stattdessen,

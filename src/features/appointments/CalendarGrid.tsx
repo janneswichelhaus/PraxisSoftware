@@ -96,6 +96,8 @@ export interface GitterEintrag {
   farbe: string;
   /** Abgesagte und abgeschlossene Termine werden nicht gezogen. */
   ziehbar: boolean;
+  /** Gerade angelegt - beim Zurückkommen aus dem Formular hervorgehoben (FIX-016). */
+  neu?: boolean;
 }
 
 /** Kurze Einordnung: wo der Termin stattfindet. */
@@ -498,6 +500,7 @@ function Kachel({
         // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
         // wie nichts.
         wartet ? 'ring-accent scale-[1.02] ring-2' : '',
+        gitter.neu ? 'ring-accent ring-2' : '',
         ziehbar ? 'cursor-grab' : '',
       ]
         .filter(Boolean)

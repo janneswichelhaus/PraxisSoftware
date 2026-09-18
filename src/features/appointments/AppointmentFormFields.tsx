@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import {
   TERMINFENSTER_OPTIONEN,
   appointmentTypeLabels,
@@ -377,23 +378,24 @@ export function UebernommeneAdresse({
  * wird ausschließlich die Arbeitszeit.
  *
  * Bewusst keine Warnung, die sich wegklicken lässt: ohne ausdrückliche
- * Bestätigung passiert nichts.
+ * Bestätigung passiert nichts. Seit FIX-016 ein Fenster über dem Formular
+ * (BEF-016): Wer am Ende der Seite abschickt, sieht die Frage sofort - und
+ * „Zurück zum Formular" lässt die Eingaben stehen.
  */
 export function ArbeitszeitRueckfrage({
   onBestaetigen,
+  onAbbrechen,
   laeuft,
   beschriftung,
 }: {
   onBestaetigen: () => void;
+  /** Zurück ins Formular, ohne etwas zu schreiben; setzt den Fehler zurück. */
+  onAbbrechen: () => void;
   laeuft: boolean;
   beschriftung: string;
 }) {
   return (
-    <div
-      role="group"
-      aria-label="Außerhalb der Arbeitszeit"
-      className="border-line-strong bg-surface-sunken rounded-card mb-6 border p-4"
-    >
+    <Dialogfenster titel="Außerhalb der Arbeitszeit" onSchliessen={onAbbrechen}>
       <p className="text-ink text-sm">
         Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit der behandelnden Person. Der
         Termin wurde noch nicht gespeichert.
@@ -402,11 +404,14 @@ export function ArbeitszeitRueckfrage({
         Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls als
         außerhalb. Arbeitszeiten werden unter „Planung" gepflegt.
       </p>
-      <div className="mt-3">
-        <Button type="button" disabled={laeuft} onClick={onBestaetigen}>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button type="button" disabled={laeuft} data-autofocus onClick={onBestaetigen}>
           {laeuft ? 'Wird gespeichert …' : beschriftung}
         </Button>
+        <Button type="button" variant="quiet" disabled={laeuft} onClick={onAbbrechen}>
+          Zurück zum Formular
+        </Button>
       </div>
-    </div>
+    </Dialogfenster>
   );
 }

@@ -643,6 +643,25 @@ const UHRZEIT = /^([01]\d|2[0-3]):[0-5]\d$/;
 const UUID_MUSTER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_TAG = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * Parameter, mit dem der Kalender einen gerade angelegten Termin hervorhebt.
+ *
+ * Nur eine Kennung, kein Name (ADR-011). Der Kalender liest ihn einmal und
+ * schreibt ihn beim nächsten Blättern nicht zurück - die Hervorhebung gilt
+ * dem Moment der Rückkehr, nicht dem Stand.
+ */
+export const NEUER_TERMIN_PARAM = 'neu';
+
+/**
+ * Hängt die Kennung eines neuen Termins an einen Rückweg in den Kalender
+ * (FIX-016). Andere Rückwege bleiben, wie sie sind.
+ */
+export function mitNeuemTermin(rueckweg: string, appointmentId: string): string {
+  if (!rueckweg.startsWith('/kalender')) return rueckweg;
+  const trenner = rueckweg.includes('?') ? '&' : '?';
+  return `${rueckweg}${trenner}${NEUER_TERMIN_PARAM}=${encodeURIComponent(appointmentId)}`;
+}
+
 export function leseTerminVorbelegung(suche: URLSearchParams): TerminVorbelegung {
   const datum = suche.get('datum');
   const beginn = suche.get('beginn');

@@ -18,9 +18,12 @@ import { Statusmeldung } from './Statusmeldung';
  * auslösende Schaltfläche nicht im Dokument, ihre Referenz zeigt also auf ein
  * bereits entferntes Element.
  *
- * Der Kasten ist ausdrücklich kein modaler Dialog. Er nimmt der Seite nichts
- * weg und fängt keinen Fokus ein — für eine Rückfrage mit zwei Antworten wäre
- * das mehr Sperre als Hilfe.
+ * Der Kasten ist kein modaler Dialog: Er erscheint **an der Stelle des
+ * Klicks** und ist damit immer im Blick. Rückfragen, die woanders als am
+ * Klick entstehen — die Arbeitszeit-Rückfrage nach dem Absenden eines langen
+ * Formulars etwa —, sind seit FIX-016 ein Fenster über dem Inhalt
+ * (`Dialogfenster`, ANN-058). Die Grenze ist der Ort: Was neben dem Auslöser
+ * stehen kann, steht dort; was sonst aus dem Sichtfeld fiele, kommt darüber.
  */
 export function Rueckfrage({
   ausloeser,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -18,6 +18,7 @@ import {
   fetchLocations,
   istAusserhalbArbeitszeit,
   minutesOfDay,
+  NEUER_TERMIN_PARAM,
   schreibeTerminVorbelegung,
   TERMINFENSTER_MINUTEN,
   todayInTimeZone,
@@ -163,6 +164,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // Kalenderarithmetik abstuerzen statt den Fehlerzustand zu zeigen.
   const heute = zone ? todayInTimeZone(zone) : '1970-01-01';
   const p = leseParameter(suche, heute);
+  // Der gerade angelegte Termin (FIX-016): einmal hervorgehoben, beim
+  // naechsten Blaettern faellt der Parameter weg (`schreibeParameter`).
+  const neuerTermin = suche.get(NEUER_TERMIN_PARAM);
   const bereich = bereichFuer(p.ansicht, p.datum);
   // Welche Linien die gewaehlte Zoomstufe traegt - dieselbe Auskunft fuer die
   // Beschriftung der Bedienung und fuer das Gitter selbst.
@@ -398,6 +402,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     // nicht angetroffen geführter müsste erst wieder geöffnet werden, ein
     // abgesagter bleibt terminal (CAL-004, ADR-018).
     ziehbar: e.status === 'confirmed',
+    ...(e.id === neuerTermin ? { neu: true } : {}),
   }));
 
   const fenster = fensterMitArbeitszeit(
@@ -504,7 +509,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       return;
     }
 
-    void navigate(`/termine/neu${parameter}`);
+    // Auch ohne Personenfilter: Der Kalenderstand ist der Rückweg, damit das
+    // Anlegen wieder hier landet - nicht in der Terminansicht (BEF-016).
+    void navigate(mitRueckweg(`/termine/neu${parameter}`, `/kalender?${suche.toString()}`));
   }
 
   const laedt = termine.isPending || therapeuten.isPending;
@@ -532,12 +539,15 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                 </ButtonLink>
               ) : null}
               <ButtonLink
-                to={`/termine/neu${schreibeTerminVorbelegung({
-                  datum: p.datum,
-                  art: 'home_visit',
-                  ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
-                  ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
-                })}`}
+                to={mitRueckweg(
+                  `/termine/neu${schreibeTerminVorbelegung({
+                    datum: p.datum,
+                    art: 'home_visit',
+                    ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
+                    ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
+                  })}`,
+                  `/kalender?${suche.toString()}`,
+                )}
                 variant="secondary"
               >
                 Termin anlegen
@@ -696,6 +706,24 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             </Button>
           </div>
         </div>
+      ) : null}
+
+      {/* Zurück aus dem Formular (FIX-016): Der neue Termin ist im Gitter
+          hervorgehoben; die Zeile sagt es auch dem, der nicht hinsieht. */}
+      {neuerTermin && termine.isSuccess ? (
+        <Statusmeldung className="mt-4">
+          Termin angelegt.{' '}
+          {gitterEintraege.some((g) => g.eintrag.id === neuerTermin) ? (
+            <Link
+              to={mitRueckweg(`/termine/${neuerTermin}`, `/kalender?${suche.toString()}`)}
+              className="text-accent hover:underline"
+            >
+              Termin öffnen
+            </Link>
+          ) : (
+            'Er liegt außerhalb des gezeigten Ausschnitts.'
+          )}
+        </Statusmeldung>
       ) : null}
 
       {verschieben.isPending && !vorschlag ? (

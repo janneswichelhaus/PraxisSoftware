@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
@@ -513,17 +514,21 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 </Statusmeldung>
               )}
 
+              {/* Rückfrage und Fehler als Fenster (FIX-016). */}
               {istAusserhalbArbeitszeit(anlegen.error) ? (
                 <ArbeitszeitRueckfrage
                   onBestaetigen={() => absenden(true)}
+                  onAbbrechen={() => anlegen.reset()}
                   laeuft={anlegen.isPending}
                   beschriftung="Serie trotzdem anlegen"
                 />
               ) : anlegen.isError ? (
-                <ErrorState
-                  title="Die Terminserie konnte nicht angelegt werden."
-                  description={anlegen.error.message}
-                />
+                <Hinweisfenster
+                  titel="Die Terminserie konnte nicht angelegt werden."
+                  onSchliessen={() => anlegen.reset()}
+                >
+                  {anlegen.error.message}
+                </Hinweisfenster>
               ) : null}
 
               <div className="flex flex-wrap gap-3">

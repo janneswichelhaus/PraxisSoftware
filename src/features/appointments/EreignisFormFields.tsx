@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { todayInTimeZone, type EreignisFormValues, type Location } from './api';
 
 /**
@@ -131,24 +132,22 @@ export function EreignisArbeitszeitRueckfrage({
   onBestaetigen: () => void;
   onAbbrechen: () => void;
 }) {
+  // Seit FIX-016 ein Fenster ueber dem Formular (BEF-016), wie beim
+  // Behandlungstermin.
   return (
-    <div
-      role="group"
-      aria-label="Außerhalb der Arbeitszeit"
-      className="border-line-strong bg-surface-sunken rounded-card mt-5 border p-4"
-    >
+    <Dialogfenster titel="Außerhalb der Arbeitszeit" onSchliessen={onAbbrechen}>
       <p className="text-ink text-sm">
         Mindestens eine beteiligte Person hat zu dieser Zeit keine hinterlegte Arbeitszeit. Es wurde
         noch nichts geschrieben.
       </p>
-      <div className="mt-3 flex flex-wrap gap-3">
-        <Button type="button" disabled={laeuft} onClick={onBestaetigen}>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button type="button" disabled={laeuft} data-autofocus onClick={onBestaetigen}>
           {beschriftung}
         </Button>
-        <Button type="button" variant="quiet" onClick={onAbbrechen}>
-          Abbrechen
+        <Button type="button" variant="quiet" disabled={laeuft} onClick={onAbbrechen}>
+          Zurück zum Formular
         </Button>
       </div>
-    </div>
+    </Dialogfenster>
   );
 }
