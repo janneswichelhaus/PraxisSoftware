@@ -36,8 +36,6 @@ CI und `engines` meinen Node 22.
 - **PR zu CAL-EPIC-004a mergen**, danach lokal `db reset` (neue Migration).
 - **Abnahme CAL-018 und CAL-EPIC-004a** — Klickwege in
   [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
-- **ANN-056 bestätigen:** Die freie Länge muss ein Vielfaches des Praxisrasters
-  sein (5/10/15 Minuten). Reicht das, oder braucht die Praxis Längen dazwischen?
 - **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code
   ([`development/E18-LEISTUNGSBEREICHE.md`](development/E18-LEISTUNGSBEREICHE.md))
 - Branch Protection und Secret Scanning (M0, 30.09.), Anfragen B1, B2, B4
@@ -56,5 +54,5 @@ ROL-EPIC-001, FIX-015 — Schritte in [`abnahme/`](abnahme/README.md).
 Praxisraster an; wer weder 45 noch 60 Minuten dauert, trägt in Kalender und allen
 Terminlisten ein Zeichen mit Vorlesetext. Das Ziehen fragt beim Loslassen immer nach,
 der Arbeitszeit-Hinweis steht im selben Kasten, die Rückgängig-Leiste bleibt. **ANN-056**
-ersetzt ANN-037; BEF-008 erledigt, BEF-011 neu. Lokal nach dem Merge:
+(von Jannes bestätigt: nur 5-Minuten-Schritte) ersetzt ANN-037; BEF-008 erledigt, BEF-011 neu. Lokal nach dem Merge:
 `git checkout main && git pull origin main`, dann `pnpm dlx supabase@2.116.0 db reset`.
