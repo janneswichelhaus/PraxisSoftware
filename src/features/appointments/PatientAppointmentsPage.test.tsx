@@ -37,6 +37,7 @@ function termin(
     treatment_basis_id: null,
     treatment_basis_kind: null,
     treatment_basis_issued_on: null,
+    treatment_basis_covered: null,
     organization_time_zone: 'Europe/Berlin',
     ...rest,
   };
@@ -82,6 +83,24 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
     renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
 
     expect(await screen.findByText('Abgesagt')).toBeInTheDocument();
+  });
+
+  // CAL-022: Eine stille Ueberplanung waere der Abrechnungsfehler, den
+  // PROJECT_PRINCIPLES.md 13 ausschliesst - deshalb steht das Zeichen auch
+  // hier und nicht nur an der Grundlage.
+  it('kennzeichnet einen ungedeckten Termin', async () => {
+    antwortet([termin({ id: 'ungedeckt', treatment_basis_covered: false })], []);
+    renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
+
+    expect(await screen.findByText('Ohne Deckung')).toBeInTheDocument();
+  });
+
+  it('kennzeichnet einen gedeckten Termin nicht', async () => {
+    antwortet([termin({ id: 'gedeckt', treatment_basis_covered: true })], []);
+    renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
+
+    await screen.findByRole('link', { name: /Mai 2027/ });
+    expect(screen.queryByText('Ohne Deckung')).not.toBeInTheDocument();
   });
 
   it('sagt es als Text, wenn es nichts gibt', async () => {

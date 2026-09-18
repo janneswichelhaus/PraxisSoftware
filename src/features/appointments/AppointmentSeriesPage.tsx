@@ -146,7 +146,9 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
   }, [standorte.data]);
 
   // Das offene Kontingent ist der Vorschlag für die Anzahl — genau dafür schlägt
-  // man eine Verordnung im Alltag auf.
+  // man eine Verordnung im Alltag auf. Ist nichts mehr offen, bleibt es bei
+  // einem Termin: Seit CAL-022 darf auch über das Kontingent hinaus geplant
+  // werden, und die Seite sagt daneben, was dabei ungedeckt bleibt.
   const offen = kontingent.data?.remaining ?? 0;
   useEffect(() => {
     if (offen > 0) setAnzahl(Math.min(offen, SERIE_HOECHSTZAHL));
@@ -301,6 +303,16 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
               {zahlen.remaining === 0 ? <Badge ton="neutral">Kontingent ausgeschöpft</Badge> : null}
             </span>
           </DetailRow>
+          {/* CAL-022: Was schon jetzt über das Kontingent hinausgeht, steht
+              hier - sonst plant jemand weiter, ohne es zu wissen. */}
+          {zahlen.uncovered > 0 ? (
+            <DetailRow label="Ohne Deckung">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-ink text-[0.9375rem]">{zahlen.uncovered}</span>
+                <Badge ton="warnung">Grundlage deckt nicht alle Termine</Badge>
+              </span>
+            </DetailRow>
+          ) : null}
           {zahlen.frequency_note ? (
             <DetailRow label="Frequenz laut Grundlage">{zahlen.frequency_note}</DetailRow>
           ) : null}

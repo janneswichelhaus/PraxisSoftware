@@ -206,6 +206,26 @@ describe('AppointmentDetailPage', () => {
     expect(zeile('Absagegrund')).toBe('Nicht erfasst');
   });
 
+  // CAL-022: Ungedeckt heisst sichtbar - an der Grundlage, in der Liste und
+  // hier. Der Termin gilt trotzdem; er erzeugt nur keine Leistung gegen diese
+  // Grundlage (Paragraf 19, ADR-009).
+  it('nennt einen ungedeckten Termin an seinem Termin', async () => {
+    fetchAppointment.mockResolvedValue({ ...praxistermin, treatment_basis_covered: false });
+    rendern();
+
+    await screen.findByText('Anna Beispiel');
+    expect(screen.getByText('Ohne Deckung')).toBeInTheDocument();
+    expect(zeile('Deckung')).toMatch(/deckt diesen Termin nicht/);
+  });
+
+  it('schweigt an einem gedeckten Termin', async () => {
+    fetchAppointment.mockResolvedValue({ ...praxistermin, treatment_basis_covered: true });
+    rendern();
+
+    await screen.findByText('Anna Beispiel');
+    expect(screen.queryByText('Ohne Deckung')).not.toBeInTheDocument();
+  });
+
   describe('Aktionen (CAL-003)', () => {
     it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
       'bietet %s Bearbeiten und Absagen an',

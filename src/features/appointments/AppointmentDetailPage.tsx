@@ -11,6 +11,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { MitteilungVermerken } from './MitteilungVermerken';
+import { Deckungszeichen } from './Deckungszeichen';
 import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -919,6 +920,21 @@ function AppointmentDetail({
           ) : null}
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
+          {/* CAL-022: Dieser Termin geht über das Kontingent seiner
+              Behandlungsgrundlage hinaus. Er ist geplant und gilt — aber er
+              erzeugt keine Leistung gegen diese Grundlage (§19, ADR-009), und
+              das gehört an den Termin selbst, nicht nur in die Akte. */}
+          {appointment.treatment_basis_covered === false ? (
+            <DetailRow label="Deckung">
+              <span className="flex flex-wrap items-center gap-2">
+                <Deckungszeichen gedeckt={appointment.treatment_basis_covered} />
+                <span className="text-ink-muted text-sm">
+                  Die Behandlungsgrundlage deckt diesen Termin nicht. In der Akte lässt er sich auf
+                  eine andere übertragen.
+                </span>
+              </span>
+            </DetailRow>
+          ) : null}
           <DetailRow label="Datum">{formatLocalDate(appointment.starts_at, zone)}</DetailRow>
           <DetailRow label="Zeit">
             {formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}{' '}

@@ -184,6 +184,8 @@ export function testAppointment(overrides: Partial<Appointment> = {}): Appointme
     staff_family_name: 'Beispiel',
     location_name: 'Hauptstandort Tuebingen',
     notification_channels: [],
+    // Gedeckt: der Regelfall, an dem kein Zeichen steht (CAL-022).
+    treatment_basis_covered: true,
     organization_time_zone: 'Europe/Berlin',
     ...overrides,
   };

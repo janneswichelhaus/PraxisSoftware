@@ -108,10 +108,10 @@ async function termin(opts: {
 }
 
 /** Legt `anzahl` kuenftige Termine an einer Grundlage an, Stunde fuer Stunde. */
-async function termine(anzahl: number, grundlage: string, patient?: string): Promise<string[]> {
+async function termine(anzahl: number, grundlage: string): Promise<string[]> {
   const ids: string[] = [];
   for (let i = 0; i < anzahl; i += 1) {
-    ids.push(await termin({ inStunden: 24 + i, grundlage, patient }));
+    ids.push(await termin({ inStunden: 24 + i, grundlage }));
   }
   return ids;
 }
@@ -267,8 +267,9 @@ describe('transfer_appointments_to_treatment_basis', () => {
 
   it('weist ein Patientenkonto ab', async () => {
     const ids = await termine(1, GRUNDLAGE.erikaAlt);
-    await expect(asUser(users.patientErika, UEBERTRAGEN, [GRUNDLAGE.erikaFrisch, ids])).rejects
-      .toThrow(/not allowed to update appointments/);
+    await expect(
+      asUser(users.patientErika, UEBERTRAGEN, [GRUNDLAGE.erikaFrisch, ids]),
+    ).rejects.toThrow(/not allowed to update appointments/);
   });
 
   it('uebertraegt die ungedeckten Termine vollstaendig und protokolliert einmal', async () => {
@@ -370,10 +371,7 @@ describe('transfer_appointments_to_treatment_basis', () => {
   it('weist eine unbekannte Zielgrundlage ab', async () => {
     const ids = await termine(1, GRUNDLAGE.erikaAlt);
     await expect(
-      asUser(users.ownerTherapist, UEBERTRAGEN, [
-        '88888888-8888-4888-8888-0000000000ff',
-        ids,
-      ]),
+      asUser(users.ownerTherapist, UEBERTRAGEN, ['88888888-8888-4888-8888-0000000000ff', ids]),
     ).rejects.toThrow(/treatment basis not found/);
   });
 

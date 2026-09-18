@@ -14,6 +14,7 @@ import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { bauartLabels, grundlageBezeichnung, type Bauart } from '@/features/treatment-bases/api';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
+import { Deckungszeichen } from './Deckungszeichen';
 import { Laengenzeichen } from './Laengenzeichen';
 import {
   appointmentStatusLabels,
@@ -104,6 +105,10 @@ function Terminzeile({
         {/* §8.1: weder 45 noch 60 Minuten - gekennzeichnet, nicht verboten
             (CAL-020). Die Akte führt nur Behandlungstermine. */}
         <Laengenzeichen termin={termin} />
+        {/* CAL-022: Über dem Kontingent geplant — sichtbar an der Grundlage,
+            am Termin und hier. Eine stille Überplanung wäre der
+            Abrechnungsfehler, den §13 ausschließt. */}
+        <Deckungszeichen gedeckt={termin.treatment_basis_covered} />
         <Mitteilungszeichen kanaele={termin.notification_channels} />
         {termin.status !== 'confirmed' ? (
           <Badge ton={appointmentStatusTon[termin.status]}>

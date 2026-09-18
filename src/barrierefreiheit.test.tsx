@@ -514,6 +514,7 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
             staff_family_name: 'Beispiel',
             location_name: null,
             notification_channels: ['phone'],
+            treatment_basis_covered: true,
             organization_time_zone: 'Europe/Berlin',
           }}
         />
