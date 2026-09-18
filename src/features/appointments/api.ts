@@ -153,6 +153,7 @@ export const notificationChannelOrder: readonly NotificationChannel[] = [
  * abrechenbare Leistung (§19).
  */
 export const appointmentKindSchema = z.enum(['treatment', 'event']);
+export type AppointmentKind = z.infer<typeof appointmentKindSchema>;
 
 const appointmentSchema = z.object({
   id: z.string(),
@@ -405,8 +406,8 @@ export const leererTermin: Record<AppointmentFormField, string> = {
 /**
  * Vorbelegte Länge eines angebotenen Terminfensters in Minuten (CAL-010a).
  *
- * `PROJECT_PRINCIPLES.md` 0.9 §8.1: Ein angebotener Behandlungstermin hat 60
- * oder 45 Minuten, die Dokumentation eingeschlossen. 60 ist die Vorbelegung.
+ * `PROJECT_PRINCIPLES.md` 0.11 §8.1: Die Länge eines Behandlungstermins ist
+ * frei wählbar, die Dokumentation eingeschlossen. 60 bleibt die Vorbelegung.
  *
  * Diese Konstante steuert die Oberfläche. Verbindlich ist sie **nicht**:
  * `app.appointment_window_minutes()` führt dieselbe Vorbelegung serverseitig
@@ -416,13 +417,19 @@ export const leererTermin: Record<AppointmentFormField, string> = {
 export const TERMINFENSTER_MINUTEN = 60;
 
 /**
- * Die zulässigen Längen, in der Reihenfolge der Auswahl (CAL-015b).
+ * Die Regellängen, in der Reihenfolge der Auswahl (CAL-015b, CAL-020).
  *
- * Spiegel von `app.appointment_window_options()`; durchgesetzt wird die Liste
- * serverseitig. Für **Ereignisse** gilt sie nicht — deren Länge ist frei im
- * Praxisraster.
+ * Spiegel von `app.appointment_window_options()`; ein Datenbanktest hält beide
+ * gegeneinander. Seit `PROJECT_PRINCIPLES.md` 0.11 §8.1 ist die Liste **keine
+ * Schranke** mehr: Der Server nimmt jede Länge im Praxisraster an, und wer
+ * von ihr abweicht, wird gekennzeichnet (`abweichendeLaengeMinuten`).
  */
 export const TERMINFENSTER_OPTIONEN = [60, 45] as const;
+
+/** Ist das eine der Regellängen aus §8.1? */
+export function istRegellaenge(minuten: number): boolean {
+  return (TERMINFENSTER_OPTIONEN as readonly number[]).includes(minuten);
+}
 
 const UHRZEIT_ZERLEGT = /^([01]\d|2[0-3]):([0-5]\d)/;
 
@@ -441,9 +448,15 @@ function minutenAusZeit(zeit: string): number | null {
  * Zeichenkette zurück: ein Termin über den Tageswechsel ist keiner, und das
  * Formular soll dafür kein Ende erfinden.
  */
-export function fensterEnde(beginn: string, minuten = TERMINFENSTER_MINUTEN): string {
+export function fensterEnde(
+  beginn: string,
+  minuten: number | null = TERMINFENSTER_MINUTEN,
+): string {
   const start = minutenAusZeit(beginn);
-  if (start === null) return '';
+  // `null`: die Länge ist gerade keine Zahl (leeres Minutenfeld, CAL-020).
+  // Ohne Ende weist das Formular das Speichern ab, statt mit der zuletzt
+  // gültigen Länge weiterzurechnen.
+  if (start === null || minuten === null) return '';
   const gesamt = start + minuten;
   if (gesamt >= 24 * 60) return '';
   return minuteZuZeit(gesamt);
@@ -452,9 +465,9 @@ export function fensterEnde(beginn: string, minuten = TERMINFENSTER_MINUTEN): st
 /**
  * Länge eines gespeicherten Termins in Minuten.
  *
- * Bestandstermine aus der Zeit vor §8.1 dürfen davon abweichen und bleiben
- * gültig. Das Bearbeitungsformular rechnet deshalb mit **dieser** Länge weiter,
- * solange niemand sie ausdrücklich auf das Terminfenster setzt (ANN-037).
+ * Das Bearbeitungsformular rechnet mit **dieser** Länge weiter, solange
+ * niemand sie ausdrücklich ändert — ein Termin wird nicht allein durch Öffnen
+ * des Formulars verlängert oder verkürzt (§8.1, ANN-056).
  */
 export function terminLaengeMinuten(appointment: Appointment): number {
   const werte = appointmentToFormValues(appointment);
@@ -462,6 +475,36 @@ export function terminLaengeMinuten(appointment: Appointment): number {
   const ende = minutenAusZeit(werte.end_time);
   if (beginn === null || ende === null) return TERMINFENSTER_MINUTEN;
   return ende - beginn;
+}
+
+/**
+ * Länge in Minuten, wenn sie gekennzeichnet werden muss — sonst `null`.
+ *
+ * `PROJECT_PRINCIPLES.md` 0.11 §8.1: Ein **Behandlungstermin**, dessen Länge
+ * weder 45 noch 60 Minuten beträgt, MUSS in Kalender und Terminlisten als
+ * abweichend gekennzeichnet werden. Das Kennzeichen meldet, es verbietet
+ * nicht; Termine ohne Patient:in tragen es nie (CAL-020).
+ *
+ * Gerechnet wird auf den gespeicherten Zeitpunkten, nicht auf Ortszeiten: Die
+ * Funktion braucht so keine Zeitzone und gilt für jede Liste gleich. Wer
+ * `kind` nicht mitliefert, liefert nur Behandlungen (die Terminlisten der
+ * Akte).
+ */
+export function abweichendeLaengeMinuten(termin: {
+  kind?: AppointmentKind | undefined;
+  starts_at: string;
+  ends_at: string;
+}): number | null {
+  if (termin.kind === 'event') return null;
+  const dauerMs = Date.parse(termin.ends_at) - Date.parse(termin.starts_at);
+  if (!Number.isFinite(dauerMs)) return null;
+  const minuten = Math.round(dauerMs / 60_000);
+  return istRegellaenge(minuten) ? null : minuten;
+}
+
+/** Textfassung des Kennzeichens, auch für Vorlesewerkzeuge (§8.1). */
+export function abweichendeLaengeText(minuten: number): string {
+  return `Länge weicht ab: ${minuten} Minuten`;
 }
 
 // -----------------------------------------------------------------------------
@@ -733,13 +776,14 @@ export async function createAppointment(
         'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
       );
     }
+    // Vor der Rastermeldung des Beginns: beide Texte enthalten dasselbe Ende.
+    if (error.message?.includes('appointment length')) {
+      throw new Error(TERMINLAENGE_MELDUNG);
+    }
     if (error.message?.includes('not on the appointment grid')) {
       throw new Error(
         'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
       );
-    }
-    if (error.message?.includes('appointment window')) {
-      throw new Error(TERMINFENSTER_MELDUNG);
     }
     throw new Error('Der Termin konnte nicht angelegt werden.');
   }
@@ -1056,21 +1100,21 @@ export function appointmentToFormValues(
 }
 
 /**
- * Meldung zum Terminfenster (CAL-010a).
+ * Meldung zur Terminlänge (CAL-020).
  *
  * An einer Stelle, weil beide Schreibpfade sie brauchen. Sie nennt die Regel
- * und den Ausweg, ohne interne Details preiszugeben.
+ * und den Ausweg, ohne interne Details preiszugeben. Seit 0.11 §8.1 ist die
+ * Länge frei — abgewiesen wird nur noch, was nicht ins Praxisraster passt.
  */
-const TERMINFENSTER_MELDUNG =
-  `Ein Terminfenster ist ${TERMINFENSTER_MINUTEN} Minuten lang, die Dokumentation eingeschlossen. ` +
-  'Bitte den Beginn wählen; das Ende ergibt sich daraus.';
+const TERMINLAENGE_MELDUNG =
+  'Die Länge passt nicht zum Praxisraster. Bitte eine Länge wählen, die ein Vielfaches des Rasters ist.';
 
 function schreibfehler(error: { message?: string } | null, standard: string): Error {
   if (error?.message?.includes('outside_working_hours')) {
     return new AusserhalbArbeitszeitError();
   }
-  if (error?.message?.includes('appointment window')) {
-    return new Error(TERMINFENSTER_MELDUNG);
+  if (error?.message?.includes('appointment length')) {
+    return new Error(TERMINLAENGE_MELDUNG);
   }
   if (error?.message?.includes('not on the appointment grid')) {
     return new Error(

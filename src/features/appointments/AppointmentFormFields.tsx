@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/Select';
 import {
   TERMINFENSTER_OPTIONEN,
   appointmentTypeLabels,
+  istRegellaenge,
   type AppointmentFormField,
   type AppointmentType,
   type AssignableTherapist,
@@ -64,21 +65,21 @@ export function AppointmentFormFields({
   /**
    * Länge des Zeitfensters in Minuten, aus der sich das Ende ergibt (CAL-010a).
    *
-   * Kein Eingabefeld: §8.1 legt die Länge fest, und ein frei beschreibbares
-   * Ende wäre eine Falle - der Server wiese es ab. Beim Bearbeiten reicht die
-   * Seite die Länge des Bestandstermins herein, damit ein Termin aus der Zeit
-   * vor §8.1 nicht allein durch Öffnen des Formulars verlängert wird.
+   * Gewählt wird die Länge, nicht der Endzeitpunkt. Beim Bearbeiten reicht die
+   * Seite die Länge des gespeicherten Termins herein, damit er nicht allein
+   * durch Öffnen des Formulars verlängert oder verkürzt wird (§8.1, ANN-056).
    */
   fensterMinuten: number;
   /**
-   * Wechselt die Länge (CAL-015b). Fehlt sie, steht die Länge als Text da.
+   * Wechselt die Länge (CAL-015b, CAL-020). Fehlt sie, steht die Länge als
+   * Text da.
    *
-   * §8.1 kennt seit dem 2026-09-12 **zwei** zulässige Längen. Damit wird aus
-   * der Ableitung eine Wahl mit zwei Antworten — aber kein frei beschreibbares
-   * Ende: Eine dritte Länge wiese der Server ab, und ein Feld, das man
-   * ausfüllen kann und das dann scheitert, wäre eine Falle.
+   * Seit `PROJECT_PRINCIPLES.md` 0.11 §8.1 ist die Länge frei: Die Auswahl
+   * führt die beiden Regellängen und den Eintrag „Andere Länge …", der ein
+   * Minutenfeld öffnet. Eine abweichende Länge wird nicht verhindert, sondern
+   * angekündigt — der Termin trägt danach das Abweichungszeichen.
    */
-  onFensterMinuten?: ((minuten: number) => void) | undefined;
+  onFensterMinuten?: ((minuten: number | null) => void) | undefined;
   /**
    * Text unter dem abgeleiteten Ende. Ohne Angabe der Hinweis auf das
    * Terminfenster.
@@ -130,9 +131,9 @@ export function AppointmentFormFields({
         onChange={(e) => onChange('date', e.target.value)}
       />
 
-      {/* items-end: der Rasterhinweis steht nur am Beginn - ohne Ausrichtung
-          stuenden Eingabefeld und Ableitung auf verschiedenen Hoehen. */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-end">
+      {/* items-start: Die Dauerwahl kann ein zweites Feld aufklappen (CAL-020);
+          am oberen Rand ausgerichtet bleibt der Beginn stehen, wo er war. */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-start">
         <Field
           label="Beginn *"
           type="time"
@@ -150,27 +151,15 @@ export function AppointmentFormFields({
             sichtbar: der Server prüft die Länge erneut. */}
         <div>
           {onFensterMinuten ? (
-            <Select
-              label="Dauer"
-              value={String(fensterMinuten)}
-              hint={werte.end_time ? `Ende: ${werte.end_time} Uhr` : 'Dokumentation eingeschlossen'}
-              error={fehler.end_time}
-              onChange={(e) => onFensterMinuten(Number(e.target.value))}
-            >
-              {/* Ein Bestandstermin mit abweichender Länge steht mit in der
-                  Auswahl - sonst könnte man ihn nicht bearbeiten, ohne ihn zu
-                  verlängern (ANN-037). */}
-              {(TERMINFENSTER_OPTIONEN as readonly number[]).includes(fensterMinuten) ? null : (
-                <option value={String(fensterMinuten)}>
-                  {fensterMinuten} Minuten (unverändert)
-                </option>
-              )}
-              {TERMINFENSTER_OPTIONEN.map((minuten) => (
-                <option key={minuten} value={String(minuten)}>
-                  {minuten} Minuten
-                </option>
-              ))}
-            </Select>
+            <Dauerwahl
+              minuten={fensterMinuten}
+              rasterMinuten={rasterMinuten}
+              endeHinweis={
+                werte.end_time ? `Ende: ${werte.end_time} Uhr` : 'Dokumentation eingeschlossen'
+              }
+              fehler={fehler.end_time}
+              onMinuten={onFensterMinuten}
+            />
           ) : (
             <>
               <p className="text-ink-muted text-sm">Ende</p>
@@ -213,6 +202,110 @@ export function AppointmentFormFields({
             Für Videotermine wird in diesem Stand noch kein Videolink erzeugt.
           </p>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Wert des Eintrags „Andere Länge …" - keine Zahl, damit er mit keiner Länge kollidiert. */
+const FREIE_LAENGE = 'frei';
+
+/**
+ * Dauer eines Behandlungstermins: Auswahl mit freier Eingabe (CAL-020).
+ *
+ * Die beiden Regellängen bleiben der kurze Weg - 60 ist vorbelegt, 45 einen
+ * Schritt entfernt. „Andere Länge …" öffnet ein Minutenfeld in der Schrittweite
+ * des Praxisrasters. Ein gespeicherter Termin mit abweichender Länge öffnet
+ * sich gleich in dieser Fassung, mit seiner Länge im Feld: Er wird durch das
+ * Öffnen weder verlängert noch verkürzt (§8.1, ANN-056).
+ *
+ * Die Prüfung hier ist Bedienkomfort; ob die Länge ins Raster passt,
+ * entscheidet `app.is_valid_treatment_length` (ADR-004).
+ */
+function Dauerwahl({
+  minuten,
+  rasterMinuten,
+  endeHinweis,
+  fehler,
+  onMinuten,
+}: {
+  minuten: number;
+  rasterMinuten: number | undefined;
+  endeHinweis: string;
+  fehler: string | undefined;
+  /** `null`: das Minutenfeld enthält gerade keine gültige Zahl. */
+  onMinuten: (minuten: number | null) => void;
+}) {
+  const [freiGewaehlt, setFreiGewaehlt] = useState(false);
+  // Der getippte Text, solange er von der gültigen Länge abweichen kann
+  // (leeres Feld, halbe Eingabe). `null`: das Feld zeigt die gültige Länge.
+  const [eingabe, setEingabe] = useState<string | null>(null);
+
+  const frei = freiGewaehlt || !istRegellaenge(minuten);
+  const text = eingabe ?? String(minuten);
+  const zahl = Number(text);
+  const istZahl = text.trim().length > 0 && Number.isInteger(zahl) && zahl > 0;
+
+  let eingabeFehler: string | undefined;
+  if (!istZahl) eingabeFehler = 'Bitte eine Länge in ganzen Minuten eingeben.';
+  else if (rasterMinuten && zahl % rasterMinuten !== 0) {
+    eingabeFehler = `Bitte ein Vielfaches von ${rasterMinuten} Minuten wählen (Praxisraster).`;
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Select
+        label="Dauer"
+        value={frei ? FREIE_LAENGE : String(minuten)}
+        hint={endeHinweis}
+        error={fehler}
+        onChange={(e) => {
+          setEingabe(null);
+          if (e.target.value === FREIE_LAENGE) {
+            setFreiGewaehlt(true);
+            return;
+          }
+          setFreiGewaehlt(false);
+          onMinuten(Number(e.target.value));
+        }}
+      >
+        {TERMINFENSTER_OPTIONEN.map((option) => (
+          <option key={option} value={String(option)}>
+            {option} Minuten
+          </option>
+        ))}
+        <option value={FREIE_LAENGE}>Andere Länge …</option>
+      </Select>
+
+      {frei ? (
+        <Field
+          label="Länge in Minuten"
+          type="number"
+          inputMode="numeric"
+          min={rasterMinuten ?? 1}
+          step={rasterMinuten ?? 1}
+          value={text}
+          error={eingabeFehler}
+          hint={
+            istRegellaenge(minuten)
+              ? undefined
+              : 'Weicht von 45 und 60 Minuten ab. Der Termin wird im Kalender und in den Terminlisten gekennzeichnet.'
+          }
+          onChange={(e) => {
+            // Wer hier 60 tippt, bleibt im Feld - sonst verschwände es unter
+            // den Fingern, sobald die Eingabe eine Regellänge ergibt.
+            setFreiGewaehlt(true);
+            setEingabe(e.target.value);
+            const neu = Number(e.target.value);
+            const gueltig = e.target.value.trim().length > 0 && Number.isInteger(neu) && neu > 0;
+            // Ungültig heißt: kein Ende - das Formular speichert dann nicht
+            // mit der zuletzt gültigen Länge weiter.
+            onMinuten(gueltig ? neu : null);
+          }}
+          onBlur={() => {
+            if (istZahl) setEingabe(null);
+          }}
+        />
       ) : null}
     </div>
   );

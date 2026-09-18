@@ -253,7 +253,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           rasterMinuten={user.appointmentGridMinutes ?? undefined}
           fensterMinuten={fensterMinuten}
           onFensterMinuten={(minuten) => {
-            setFensterMinuten(minuten);
+            if (minuten !== null) setFensterMinuten(minuten);
             setWerte((bisher) => ({
               ...bisher,
               end_time: fensterEnde(bisher.start_time, minuten),

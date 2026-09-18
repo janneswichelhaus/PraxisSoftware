@@ -25,6 +25,7 @@ import {
   type TerminVorbelegung,
 } from './api';
 import { CalendarGrid, type GitterEintrag, type GitterSpalte } from './CalendarGrid';
+import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
 import {
   arbeitszeitBaender,
   bereichFuer,
@@ -41,6 +42,7 @@ import {
   type KalenderAnsicht,
   type KalenderParameter,
   type StatusFilter,
+  type Zeitband,
 } from './calendar';
 
 /**
@@ -109,12 +111,12 @@ function rasterBeschriftung(fein: number | null, halbeStunde: boolean): string {
   return 'Stundenraster';
 }
 
-/** Was beim Verschieben an den Server geht, samt Beschreibung für die Rückfrage. */
 /** Anzeigename einer behandelnden Person, auch wenn die Liste sie nicht kennt. */
 function alnamePerson(person: { display_name: string } | undefined): string {
   return person?.display_name ?? 'Behandelnde Person';
 }
 
+/** Was beim Verschieben an den Server geht, samt Beschreibung für die Rückgängig-Leiste. */
 interface Verschiebung {
   terminId: string;
   staffMemberId: string;
@@ -122,6 +124,30 @@ interface Verschiebung {
   startMinute: number;
   endeMinute: number;
   beschreibung: string;
+}
+
+/** Eine abgelegte, noch nicht bestätigte Verschiebung (CAL-023). */
+interface Vorschlag {
+  v: Verschiebung;
+  zurueck: Verschiebung;
+  frage: VerschiebenFrage;
+}
+
+/**
+ * Ist die Spanne vollständig von Arbeitszeit gedeckt? Reine Darstellung.
+ *
+ * Aneinanderstoßende Bänder zählen zusammen (09–12 und 12–15 decken
+ * 11:30–12:30) - so rechnet auch `app.is_within_working_hours` mit
+ * `range_agg`. Die Bänder kommen sortiert aus `arbeitszeitBaender`.
+ */
+function inArbeitszeit(baender: readonly Zeitband[], von: number, bis: number): boolean {
+  let gedecktBis = von;
+  for (const band of baender) {
+    if (band.vonMinute > gedecktBis) break;
+    if (band.bisMinute > gedecktBis) gedecktBis = band.bisMinute;
+    if (gedecktBis >= bis) return true;
+  }
+  return false;
 }
 
 export function CalendarPage({ user }: { user: CurrentUser }) {
@@ -142,7 +168,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // Beschriftung der Bedienung und fuer das Gitter selbst.
   const linien = gitterlinien(p.zoom, user.appointmentGridMinutes);
 
-  const [offen, setOffen] = useState<Verschiebung | null>(null);
+  /**
+   * Die Verschiebung, nach der gerade gefragt wird (CAL-023).
+   *
+   * Das Loslassen einer Kachel schreibt nicht; es legt nur diesen Vorschlag
+   * ab. Geschrieben wird erst auf die Bestätigung der Rückfrage.
+   */
+  const [vorschlag, setVorschlag] = useState<Vorschlag | null>(null);
   /**
    * Die Umkehrung der zuletzt ausgefuehrten Verschiebung (UX-010).
    *
@@ -209,6 +241,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       bestaetigt: boolean;
       /** Was die Leiste danach anbietet; ohne Angabe verschwindet sie. */
       zurueck?: Verschiebung;
+      /** Die Rückfrage, aus der der Auftrag stammt - fehlt beim Rückgängig. */
+      aus?: Vorschlag;
     }) => {
       // Der aktuelle Stand wird unmittelbar vor dem Schreiben gelesen: der
       // Kalender kennt updated_at nicht, und ohne ihn griffe der Schutz gegen
@@ -231,14 +265,24 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       );
     },
     onSuccess: async (_ergebnis, auftrag) => {
-      setOffen(null);
+      setVorschlag(null);
       setRueckgaengig(auftrag.zurueck ?? null);
       // Erst jetzt wandert die Kachel - vorher hat der Server nichts zugesagt.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
     },
     onError: (fehler, auftrag) => {
-      setOffen(istAusserhalbArbeitszeit(fehler) ? auftrag.v : null);
+      // Der Server sieht die Zielzeit außerhalb der Arbeitszeit, die geladenen
+      // Arbeitszeiten sahen es nicht (veraltet oder nicht geladen): DIESELBE
+      // Rückfrage kommt mit dem Hinweis wieder - kein zweiter Kasten (CAL-023).
+      //
+      // Nur, wenn diese Rückfrage noch offen ist: Wer inzwischen geblättert
+      // hat, bekommt keine Frage zu einem Ausschnitt, der nicht mehr dasteht.
+      setVorschlag((aktuell) =>
+        istAusserhalbArbeitszeit(fehler) && auftrag.aus && aktuell === auftrag.aus
+          ? { ...auftrag.aus, frage: { ...auftrag.aus.frage, ausserhalb: true } }
+          : null,
+      );
     },
   });
 
@@ -247,6 +291,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     // gelassen - eine Leiste, die dabei stehen bliebe, boete das Rueckgaengig
     // fuer etwas an, das gar nicht mehr zu sehen ist.
     setRueckgaengig(null);
+    // Dasselbe gilt fuer eine offene Rueckfrage: Sie nennt Zeiten aus einem
+    // Ausschnitt, der gleich nicht mehr dasteht.
+    setVorschlag(null);
     setSuche(schreibeParameter({ ...p, ...teil }), { replace: false });
   }
 
@@ -374,17 +421,42 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     const altesDatum = p.ansicht === 'tag' ? bereich.von : g.spalteId;
     const altePerson = alleTherapeuten.find((t) => t.staff_member_id === g.eintrag.staff_member_id);
 
-    setOffen(null);
-    verschieben.mutate({
+    const alteZeit = `${wochentagKurz(altesDatum)} ${tagesZahl(altesDatum)}, ${minuteZuZeit(g.beginnMinute)}–${minuteZuZeit(g.endeMinute)}`;
+    const neueZeit = `${wochentagKurz(datum)} ${tagesZahl(datum)}, ${minuteZuZeit(ziel.startMinute)}–${minuteZuZeit(ende)}`;
+
+    // Der Hinweis auf die Arbeitszeit gehört in DIESELBE Rückfrage (CAL-023).
+    // Er stammt aus den geladenen Bändern der Zielspalte und ist nur dann
+    // belastbar, wenn sie geladen sind; verbindlich entscheidet der Server, und
+    // widerspricht er, kommt die Rückfrage mit dem Hinweis wieder.
+    const zielSpalte = spaltenModell.find((s) => s.id === ziel.spalteId);
+    const ausserhalb =
+      wochenplan.isSuccess &&
+      ausnahmen.isSuccess &&
+      zielSpalte !== undefined &&
+      !inArbeitszeit(zielSpalte.baender, ziel.startMinute, ende);
+
+    // Ein Fehler der vorigen Verschiebung ist mit der neuen Geste erledigt.
+    if (verschieben.isError) verschieben.reset();
+
+    // Das Loslassen schreibt nicht mehr - es fragt (CAL-023).
+    setVorschlag({
+      frage: {
+        alteZeit,
+        neueZeit,
+        personWechsel:
+          staffMemberId === g.eintrag.staff_member_id
+            ? null
+            : { von: alnamePerson(altePerson), nach: alnamePerson(person) },
+        ausserhalb,
+      },
       v: {
         terminId: ziel.terminId,
         staffMemberId,
         datum,
         startMinute: ziel.startMinute,
         endeMinute: ende,
-        beschreibung: `${person?.display_name ?? 'Behandelnde Person'}, ${wochentagKurz(datum)} ${tagesZahl(datum)}, ${minuteZuZeit(ziel.startMinute)}–${minuteZuZeit(ende)}`,
+        beschreibung: `${alnamePerson(person)}, ${neueZeit}`,
       },
-      bestaetigt: false,
       zurueck: {
         terminId: ziel.terminId,
         staffMemberId: g.eintrag.staff_member_id,
@@ -626,36 +698,32 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         </div>
       ) : null}
 
-      {verschieben.isPending ? (
+      {verschieben.isPending && !vorschlag ? (
         <Statusmeldung className="mt-4">Der Termin wird verschoben …</Statusmeldung>
       ) : null}
 
-      {offen ? (
-        <div
-          role="group"
-          aria-label="Außerhalb der Arbeitszeit"
-          className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
-        >
-          <p className="text-ink text-sm">
-            {offen.beschreibung} liegt außerhalb der hinterlegten Arbeitszeit. Der Termin wurde noch
-            nicht verschoben.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <Button
-              type="button"
-              disabled={verschieben.isPending}
-              onClick={() => verschieben.mutate({ v: offen, bestaetigt: true })}
-            >
-              Trotzdem verschieben
-            </Button>
-            <Button type="button" variant="quiet" onClick={() => setOffen(null)}>
-              Abbrechen
-            </Button>
-          </div>
-        </div>
+      {/* Rückfrage beim Verschieben (CAL-023): immer, auch bei freier
+          Zielzeit - und der Hinweis auf die Arbeitszeit steht in ihr, nicht in
+          einem zweiten Kasten dahinter. */}
+      {vorschlag ? (
+        <VerschiebenRueckfrage
+          frage={vorschlag.frage}
+          laeuft={verschieben.isPending}
+          onBestaetigen={() =>
+            verschieben.mutate({
+              v: vorschlag.v,
+              // Bestätigt ist die Arbeitszeit nur, wenn die Rückfrage sie
+              // genannt hat. Sonst fragt der Server zurück (CAL-005).
+              bestaetigt: vorschlag.frage.ausserhalb,
+              zurueck: vorschlag.zurueck,
+              aus: vorschlag,
+            })
+          }
+          onAbbrechen={() => setVorschlag(null)}
+        />
       ) : null}
 
-      {verschieben.isError && !offen ? (
+      {verschieben.isError && !vorschlag ? (
         <div className="mt-4">
           <ErrorState
             title="Der Termin konnte nicht verschoben werden."
@@ -673,7 +741,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           serverseitigen Prüfungen, ein eigener Auditeintrag. Ist der alte
           Platz inzwischen belegt, sagt der Server das - und der Termin bleibt,
           wo er ist. */}
-      {rueckgaengig && !verschieben.isPending ? (
+      {/* Solange eine Rueckfrage offen ist, tritt die Leiste zurueck: zwei
+          Kaesten zu zwei verschiedenen Verschiebungen waeren eine Frage zu
+          viel. Nach dem Abbrechen steht sie wieder da (CAL-023). */}
+      {rueckgaengig && !verschieben.isPending && !vorschlag ? (
         <div
           role="status"
           className="border-line-strong bg-surface-sunken nicht-drucken rounded-card mt-4 flex flex-wrap items-center justify-between gap-3 border px-4 py-3"
@@ -707,7 +778,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           fenster={fenster}
           raster={user.appointmentGridMinutes}
           stundenHoehe={p.zoom}
-          ziehbarErlaubt={darfAendern && !verschieben.isPending}
+          // Solange eine Rückfrage offen ist, wird nicht weitergezogen: Sonst
+          // stünde eine Frage da, deren Kachel schon woanders hängt (CAL-023).
+          ziehbarErlaubt={darfAendern && !verschieben.isPending && !vorschlag}
           onVerschieben={ablegen}
           onFreieZeit={darfAendern ? freieZeit : undefined}
           beschriftung={
@@ -741,10 +814,12 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         {p.ansicht === 'tag'
           ? ' oder eine andere behandelnde Person'
           : ' oder einen anderen Tag'}{' '}
-        ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Dasselbe geht
-        jederzeit über „Bearbeiten" in der Detailansicht — das Ziehen ist eine Abkürzung, kein
-        eigener Weg. Über „+" und „−" wird das Gitter feiner oder gröber; gezeichnet wird dabei
-        genau das Raster, auf dem ein Termin einrastet.
+        ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Nach dem
+        Loslassen fragt der Kalender mit alter und neuer Zeit nach — verschoben wird erst auf die
+        Bestätigung, und danach lässt es sich rückgängig machen. Dasselbe geht jederzeit über
+        „Bearbeiten" in der Detailansicht — das Ziehen ist eine Abkürzung, kein eigener Weg. Über
+        „+" und „−" wird das Gitter feiner oder gröber; gezeichnet wird dabei genau das Raster, auf
+        dem ein Termin einrastet.
       </p>
 
       <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">

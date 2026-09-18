@@ -11,6 +11,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { MitteilungVermerken } from './MitteilungVermerken';
+import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -786,7 +787,8 @@ function AppointmentDetail({
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
           <DetailRow label="Datum">{formatLocalDate(appointment.starts_at, zone)}</DetailRow>
           <DetailRow label="Zeit">
-            {formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}
+            {formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}{' '}
+            <Laengenzeichen termin={appointment} />
           </DetailRow>
           <DetailRow label={ortsBeschriftung(appointment.appointment_type)}>
             {locationSummary(appointment)}

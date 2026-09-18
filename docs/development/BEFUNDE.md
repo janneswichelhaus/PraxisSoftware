@@ -332,7 +332,7 @@ Hand, genau dort, wo die Deckung entscheidet, ob ein Termin abrechenbar ist.
 | Datum   | 2026-09-16                                                                                    |
 | Bereich | Kalender (`/kalender`), Ziehen einer Terminkachel                                              |
 | Quelle  | Jannes, 2026-09-16                                                                            |
-| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](CAL-EPIC-004.md), CAL-023                               |
+| Status  | erledigt in CAL-EPIC-004a (CAL-023, 2026-09-18)                                                |
 | Berührt | CAL-006, UX-010, CAL-003; `CalendarPage.tsx` (`ablegen`), `useTerminZiehen.ts`                 |
 
 **Beobachtung.** Das Loslassen schreibt sofort. Eine Rückfrage erscheint nur,
@@ -407,3 +407,26 @@ die Schlüssel der Rückgabe gegen eine Liste hält, oder als Regel, dass ein
 Schema genau einer Funktion gehört und die zweite Sicht ihr eigenes bekommt.
 Entschieden ist das nicht; es gehört in den Loop, der das nächste Feld an ein
 geteiltes Schema hängt.
+
+### BEF-011 — Rund 60 Komponententests scheitern unter Node 24 an der Navigation in jsdom
+
+|         |                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-18                                                                                    |
+| Bereich | Werkzeugkette: `pnpm test` unter Windows mit Node 24.20                                       |
+| Quelle  | Loop CAL-EPIC-004a, lokaler Testlauf; auf `main` genauso rot                                  |
+| Status  | offen                                                                                         |
+| Berührt | Neun Testdateien, voran `CalendarPage.test.tsx` (12) und `AuthenticatedRoutes.test.tsx` (29) — alle Fälle, die navigieren |
+
+**Beobachtung.** Jeder Komponententest, der navigiert (Blättern, Filter,
+Zoomstufe, Routenwechsel), bricht mit `RequestInit: Expected signal … to be an
+instance of AbortSignal` ab — react-router 7 baut bei der Navigation ein
+`Request` mit dem `AbortSignal` von jsdom, das Node 24 nicht mehr als seines
+erkennt. `package.json` verlangt nur `node >=22`; die CI läuft mit 22.
+
+**Warum das zählt.** Ein Gate, das lokal rot ist, ohne dass Code betroffen
+wäre, wird übersprungen — und dann auch, wenn es einen echten Fehler hätte.
+
+**Richtung.** Entweder die Node-Version festnageln (`.nvmrc`, `engines` auf
+`22.x`) oder in der Testumgebung `AbortSignal`/`Request` von jsdom durch die
+von Node ersetzen. Kleine Wartung, kein eigener Loop.

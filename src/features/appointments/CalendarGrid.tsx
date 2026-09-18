@@ -13,11 +13,14 @@ import {
 } from './calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
+  abweichendeLaengeMinuten,
+  abweichendeLaengeText,
   appointmentStatusLabels,
   appointmentTypeLabels,
   terminBezeichnung,
   type CalendarEntry,
 } from './api';
+import { Laengenzeichen } from './Laengenzeichen';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 
 /**
@@ -447,6 +450,9 @@ function Kachel({
   // greift die Mindesthöhe ohnehin nicht mehr.
   const hoehe = Math.max(28, ((endeMinute - beginnMinute) / 60) * stundenHoehe);
   const vermerk = eintrag.status === 'confirmed' ? null : appointmentStatusLabels[eintrag.status];
+  // §8.1: Eine abweichende Länge wird gekennzeichnet - als Bild in der
+  // Zeitzeile, als Satz für Vorlesewerkzeuge und im Tooltip (CAL-020).
+  const abweichung = abweichendeLaengeMinuten(eintrag);
   // Der Ort steht als dritte Zeile und zusätzlich im Tooltip: bei einem kurzen
   // Termin ist die Kachel zu niedrig für drei Zeilen. Ein abweichender Status
   // gehört deshalb in die zweite Zeile - er ist die wichtigere Auskunft und
@@ -464,6 +470,7 @@ function Kachel({
       onClickCapture={onClickCapture}
       title={[
         `${minuteZuZeit(beginnMinute)}–${minuteZuZeit(endeMinute)}`,
+        abweichung === null ? null : abweichendeLaengeText(abweichung),
         vermerk,
         ortsHinweis(eintrag),
       ]
@@ -505,7 +512,8 @@ function Kachel({
         {terminBezeichnung(eintrag)}
       </span>
       <span className="text-ink-muted block truncate text-[0.6875rem]">
-        {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}
+        {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
+        <Laengenzeichen termin={eintrag} knapp />
         {vermerk ? ` · ${vermerk}` : ''}
       </span>
       <span className="text-ink-subtle block truncate text-[0.6875rem]">
