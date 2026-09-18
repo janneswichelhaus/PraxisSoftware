@@ -78,7 +78,13 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
       (user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : ''),
     start_time: vorbelegung.beginn ?? '',
     end_time: vorbelegung.ende ?? '',
-    staff_member_ids: user.staffMemberId ? [user.staffMemberId] : [],
+    // Die Person aus der angetippten Spalte, sonst die eigene: Wer im
+    // Kalender von Anna eine Spanne aufzieht, meint Anna (CAL-019).
+    staff_member_ids: vorbelegung.person
+      ? [vorbelegung.person]
+      : user.staffMemberId
+        ? [user.staffMemberId]
+        : [],
   }));
   const [rhythmus, setRhythmus] = useState<Rhythmus>('woechentlich');
   const [anzahl, setAnzahl] = useState(6);

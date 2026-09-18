@@ -1095,12 +1095,29 @@ describe('CalendarPage', () => {
     });
   });
 
-  describe('UX-005: Tap auf freie Zeit', () => {
+  describe('UX-005 und CAL-019: Auswahl auf freier Zeit', () => {
+    /**
+     * Seit CAL-019 fuehrt der Tap nicht mehr unmittelbar in die Terminanlage,
+     * sondern oeffnet das Anlegen-Menue an der Auswahl. Der Weg dahin ist
+     * derselbe geblieben - er hat nur einen Schritt mehr.
+     */
+    function menueWaehlen(name: string): void {
+      const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
+      // Die Beschriftung genau, nicht als Teiltext: „Fehlzeit" trifft sonst
+      // auch „Dauerfehlzeit".
+      const eintrag = within(menue)
+        .getAllByRole('button')
+        .find((b) => b.firstElementChild?.textContent === name);
+      if (!eintrag) throw new Error(`Menueeintrag "${name}" nicht gefunden.`);
+      fireEvent.click(eintrag);
+    }
+
     it('fuehrt aus der Tagesansicht mit Person, Tag und Uhrzeit in die Terminanlage', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
       fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      menueWaehlen('Neuer Termin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
       expect(ziel.pathname).toBe('/termine/neu');
@@ -1139,6 +1156,7 @@ describe('CalendarPage', () => {
 
       // Spalten sind hier Wochentage; die Beschriftung ist der Kurzname.
       fireEvent.click(screen.getAllByRole('gridcell')[0]!);
+      menueWaehlen('Neuer Termin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
       expect(ziel.searchParams.get('datum')).toBe('2027-05-10');
@@ -1155,6 +1173,7 @@ describe('CalendarPage', () => {
       await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
 
       fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      menueWaehlen('Neuer Termin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
       expect(ziel.pathname).toBe(`/patienten/${PATIENT}/termine/neu`);
@@ -1169,6 +1188,7 @@ describe('CalendarPage', () => {
       await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
 
       fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      menueWaehlen('Neuer Termin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
       expect(ziel.pathname).toBe(`/patienten/${PATIENT}/termine/neu`);
@@ -1201,6 +1221,88 @@ describe('CalendarPage', () => {
       await waitFor(() =>
         expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull(),
       );
+    });
+
+    /**
+     * CAL-019: Vier Eintraege, und der Tap schreibt nichts mehr - er fragt.
+     */
+    it('oeffnet das Anlegen-Menue mit vier Eintraegen statt sofort zu navigieren', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+
+      const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
+      expect(within(menue).getByRole('button', { name: /^Neuer Termin/ })).toBeInTheDocument();
+      expect(within(menue).getByRole('button', { name: /^Dauertermin/ })).toBeInTheDocument();
+      expect(within(menue).getByRole('button', { name: /^Fehlzeit/ })).toBeInTheDocument();
+      expect(within(menue).getByRole('button', { name: /^Dauerfehlzeit/ })).toBeInTheDocument();
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('fuehrt aus dem Menue in die Fehlzeit und in die Dauerfehlzeit', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      menueWaehlen('Fehlzeit');
+
+      const fehlzeit = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(fehlzeit.pathname).toBe('/termine/ereignis');
+      expect(fehlzeit.searchParams.get('beginn')).toBe('07:00');
+      // Ein angetippter Rasterpunkt hat keine Laenge - ein Ereignis auch
+      // nicht, das Formular fragt danach (CAL-019).
+      expect(fehlzeit.searchParams.has('ende')).toBe(false);
+      expect(fehlzeit.searchParams.get('person')).toBe(STAFF_ANNA);
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      menueWaehlen('Dauerfehlzeit');
+      expect(String(navigate.mock.calls.at(-1)?.[0])).toContain('/termine/dauerfehlzeit');
+    });
+
+    it('bietet den Dauertermin ohne Patient:in nicht an', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+
+      expect(screen.getByRole('button', { name: /^Dauertermin/ })).toBeDisabled();
+      expect(screen.getByText(/zuerst die Patient:in wählen/i)).toBeInTheDocument();
+    });
+
+    it('fuehrt den Dauertermin mit Verordnung in die Serienanlage', async () => {
+      const verordnung = '99999999-9999-4999-8999-000000000001';
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}&verordnung=${verordnung}`);
+      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      menueWaehlen('Dauertermin');
+
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.pathname).toBe(`/patienten/${PATIENT}/verordnungen/${verordnung}/serie`);
+      expect(ziel.searchParams.get('beginn')).toBe('07:00');
+    });
+
+    it('schliesst das Menue mit Abbrechen', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+      expect(
+        screen.queryByRole('group', { name: 'Was soll hier entstehen?' }),
+      ).not.toBeInTheDocument();
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('bietet die Dauerfehlzeit auch als Schaltflaeche ueber dem Gitter an', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const link = await screen.findByRole('link', { name: 'Dauerfehlzeit eintragen' });
+
+      const ziel = new URL(link.getAttribute('href')!, 'http://test');
+      expect(ziel.pathname).toBe('/termine/dauerfehlzeit');
+      expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
     });
   });
 
