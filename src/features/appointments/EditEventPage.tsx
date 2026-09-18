@@ -15,11 +15,14 @@ import {
   ereignisFormSchema,
   fetchAppointment,
   fetchEventParticipants,
+  fetchEventSeries,
   fetchLocations,
   istAusserhalbArbeitszeit,
   updateAppointmentEvent,
+  updateEventSeries,
   type EreignisFormValues,
 } from './api';
+import { formatDate } from '@/lib/datum';
 
 /**
  * Das ganze Ereignis bearbeiten (CAL-017).
@@ -34,6 +37,11 @@ import {
  * kein Ereignis, und die Unterscheidung soll sichtbar bleiben. Wer eine
  * Teilnahme austauschen oder absagen will, tut das am einzelnen Termin; die
  * Liste unten führt den Weg dorthin.
+ *
+ * **Gehört das Ereignis zu einer Dauerfehlzeit (CAL-021)**, kommt eine dritte
+ * Unterscheidung dazu, und sie steht ausdrücklich zur Wahl: dieses Vorkommen
+ * oder die ganze Serie. Vorbelegt ist das Vorkommen — die kleinere Wirkung
+ * ist die, die man versehentlich auslösen darf.
  */
 type Feld = keyof EreignisFormValues;
 
@@ -46,6 +54,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
 
   const [werte, setWerte] = useState<EreignisFormValues | null>(null);
   const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
+  const [umfang, setUmfang] = useState<'vorkommen' | 'serie'>('vorkommen');
 
   const termin = useQuery({
     queryKey: ['appointment', appointmentId],
@@ -60,6 +69,15 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
     queryKey: ['event-participants', gruppeId],
     queryFn: () => fetchEventParticipants(gruppeId!),
     enabled: Boolean(gruppeId),
+    retry: false,
+  });
+
+  const serieId = termin.data?.event_series_id ?? null;
+
+  const serie = useQuery({
+    queryKey: ['event-series', serieId],
+    queryFn: () => fetchEventSeries(serieId!),
+    enabled: Boolean(serieId),
     retry: false,
   });
 
@@ -86,17 +104,25 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
 
   const mutation = useMutation({
     mutationFn: (eingabe: { werte: EreignisFormValues; bestaetigt: boolean }) =>
-      updateAppointmentEvent(
-        gruppeId!,
-        beteiligte.data?.[0]?.group_updated_at ?? '',
-        eingabe.werte,
-        eingabe.bestaetigt,
-      ),
+      umfang === 'serie'
+        ? updateEventSeries(
+            serieId!,
+            serie.data?.[0]?.series_updated_at ?? '',
+            eingabe.werte,
+            eingabe.bestaetigt,
+          )
+        : updateAppointmentEvent(
+            gruppeId!,
+            beteiligte.data?.[0]?.group_updated_at ?? '',
+            eingabe.werte,
+            eingabe.bestaetigt,
+          ),
     onSuccess: async () => {
       // Alle Zeilen sind gewandert - Kalender, Tagesplan und jede einzelne
       // Detailansicht zeigen sonst weiter den alten Stand.
       await queryClient.invalidateQueries({ queryKey: ['appointment'] });
       await queryClient.invalidateQueries({ queryKey: ['event-participants'] });
+      await queryClient.invalidateQueries({ queryKey: ['event-series'] });
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
       void navigate(mitRueckweg(`/termine/${appointmentId}`, rueckweg), { replace: true });
@@ -192,6 +218,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
   }
 
   const ausserhalb = mutation.isError && istAusserhalbArbeitszeit(mutation.error);
+  const serienVorkommen = serie.data ?? [];
 
   return (
     <>
@@ -203,8 +230,12 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
       </Link>
 
       <PageHeader
-        title="Ereignis bearbeiten"
-        description="Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Mit * markierte Felder sind erforderlich."
+        title={serieId ? 'Fehlzeit bearbeiten' : 'Ereignis bearbeiten'}
+        description={
+          serieId
+            ? 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Diese Fehlzeit gehört zu einer Dauerfehlzeit – der Umfang der Änderung steht unten zur Wahl.'
+            : 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Mit * markierte Felder sind erforderlich.'
+        }
       />
 
       {werte ? (
@@ -256,6 +287,49 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
             }
           />
 
+          {/* Dieses Vorkommen oder die ganze Serie (CAL-021) - ausdrücklich
+              beschriftet, wie schon „Ereignis bearbeiten" gegen „Teilnahme
+              ändern". Vorbelegt ist das Vorkommen. */}
+          {serieId && serienVorkommen.length > 0 ? (
+            <fieldset className="border-line bg-surface-sunken rounded-card mt-6 border p-4">
+              <legend className="text-ink px-1 text-sm font-medium">Umfang der Änderung</legend>
+              <div className="mt-2 flex flex-col gap-3">
+                <label className="flex cursor-pointer gap-3 text-[0.9375rem]">
+                  <input
+                    type="radio"
+                    name="umfang"
+                    className="mt-1"
+                    checked={umfang === 'vorkommen'}
+                    onChange={() => setUmfang('vorkommen')}
+                  />
+                  <span>
+                    <span className="text-ink block font-medium">Nur diese Fehlzeit</span>
+                    <span className="text-ink-muted block text-sm">
+                      Am {formatDate(werte.date)}. Die übrigen Vorkommen der Serie bleiben, wie sie
+                      sind.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer gap-3 text-[0.9375rem]">
+                  <input
+                    type="radio"
+                    name="umfang"
+                    className="mt-1"
+                    checked={umfang === 'serie'}
+                    onChange={() => setUmfang('serie')}
+                  />
+                  <span>
+                    <span className="text-ink block font-medium">Die ganze Serie</span>
+                    <span className="text-ink-muted block text-sm">
+                      Alle noch nicht begonnenen Vorkommen (von {serienVorkommen.length}). Die Tage
+                      bleiben – geändert werden Bezeichnung, Uhrzeit, Länge, Art und Ort.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+          ) : null}
+
           {ausserhalb ? (
             <EreignisArbeitszeitRueckfrage
               beschriftung="Trotzdem ändern"
@@ -278,7 +352,11 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Wird geändert …' : 'Änderungen speichern'}
+              {mutation.isPending
+                ? 'Wird geändert …'
+                : umfang === 'serie'
+                  ? 'Ganze Serie ändern'
+                  : 'Änderungen speichern'}
             </Button>
             <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
               Abbrechen

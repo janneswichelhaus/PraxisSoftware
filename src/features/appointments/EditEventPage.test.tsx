@@ -48,9 +48,44 @@ const beteiligte: AppointmentsApi.EventParticipant[] = [
   },
 ];
 
+const SERIE = '99999999-9999-4999-8999-000000000001';
+
 const fetchAppointment = vi.fn();
 const fetchEventParticipants = vi.fn();
+const fetchEventSeries = vi.fn();
 const updateAppointmentEvent = vi.fn();
+const updateEventSeries = vi.fn();
+
+/** Drei Vorkommen einer Dauerfehlzeit; das erste ist das gezeigte (CAL-021). */
+const serienVorkommen: AppointmentsApi.EventSeriesOccurrence[] = [
+  {
+    event_group_id: GRUPPE,
+    title: 'Teambesprechung',
+    starts_at: ereignis.starts_at,
+    ends_at: ereignis.ends_at,
+    open_count: 2,
+    cancelled_count: 0,
+    series_updated_at: ereignis.updated_at,
+  },
+  {
+    event_group_id: '88888888-8888-4888-8888-000000000002',
+    title: 'Teambesprechung',
+    starts_at: '2027-05-19T07:00:00.000Z',
+    ends_at: '2027-05-19T07:25:00.000Z',
+    open_count: 2,
+    cancelled_count: 0,
+    series_updated_at: ereignis.updated_at,
+  },
+  {
+    event_group_id: '88888888-8888-4888-8888-000000000003',
+    title: 'Teambesprechung',
+    starts_at: '2027-05-26T07:00:00.000Z',
+    ends_at: '2027-05-26T07:25:00.000Z',
+    open_count: 2,
+    cancelled_count: 0,
+    series_updated_at: ereignis.updated_at,
+  },
+];
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -60,6 +95,8 @@ vi.mock('./api', async (importOriginal) => {
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
     fetchEventParticipants: (gruppe: string) =>
       fetchEventParticipants(gruppe) as Promise<AppointmentsApi.EventParticipant[]>,
+    fetchEventSeries: (serie: string) =>
+      fetchEventSeries(serie) as Promise<AppointmentsApi.EventSeriesOccurrence[]>,
     fetchLocations: () => Promise.resolve([{ id: ORT, name: 'Hauptstandort Tuebingen' }]),
     updateAppointmentEvent: (
       gruppe: string,
@@ -67,6 +104,12 @@ vi.mock('./api', async (importOriginal) => {
       werte: AppointmentsApi.EreignisFormValues,
       bestaetigt: boolean,
     ) => updateAppointmentEvent(gruppe, erwartet, werte, bestaetigt) as Promise<number>,
+    updateEventSeries: (
+      serie: string,
+      erwartet: string,
+      werte: AppointmentsApi.EreignisFormValues,
+      bestaetigt: boolean,
+    ) => updateEventSeries(serie, erwartet, werte, bestaetigt) as Promise<number>,
   };
 });
 
@@ -88,7 +131,9 @@ describe('EditEventPage', () => {
   beforeEach(() => {
     fetchAppointment.mockReset().mockResolvedValue(ereignis);
     fetchEventParticipants.mockReset().mockResolvedValue(beteiligte);
+    fetchEventSeries.mockReset().mockResolvedValue(serienVorkommen);
     updateAppointmentEvent.mockReset().mockResolvedValue(2);
+    updateEventSeries.mockReset().mockResolvedValue(3);
   });
 
   it('belegt Bezeichnung, Tag und beide Enden aus dem Bestand vor', async () => {
@@ -180,5 +225,62 @@ describe('EditEventPage', () => {
   it('bietet einem Patientenkonto kein Formular an', async () => {
     rendern(['patient']);
     expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();
+  });
+  /**
+   * Dauerfehlzeit (CAL-021): Ohne Serie gibt es nichts zu wählen - die Frage
+   * steht dann auch nicht da.
+   */
+  it('fragt ohne Serie nicht nach dem Umfang', async () => {
+    rendern();
+
+    await screen.findByLabelText('Bezeichnung *');
+    expect(screen.queryByText('Umfang der Änderung')).not.toBeInTheDocument();
+    expect(fetchEventSeries).not.toHaveBeenCalled();
+  });
+
+  it('stellt bei einer Serie dieses Vorkommen und die ganze Serie zur Wahl', async () => {
+    fetchAppointment.mockResolvedValue({ ...ereignis, event_series_id: SERIE });
+    rendern();
+
+    await screen.findByLabelText('Bezeichnung *');
+    expect(await screen.findByText('Umfang der Änderung')).toBeInTheDocument();
+    // Vorbelegt ist die kleinere Wirkung.
+    expect(screen.getByRole('radio', { name: /Nur diese Fehlzeit/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /Die ganze Serie/ })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Änderungen speichern' })).toBeInTheDocument();
+  });
+
+  it('schreibt die serienweite Aenderung auf dem Stand der SERIE', async () => {
+    fetchAppointment.mockResolvedValue({ ...ereignis, event_series_id: SERIE });
+    const user = userEvent.setup();
+    rendern();
+
+    const bezeichnung = await screen.findByLabelText('Bezeichnung *');
+    await user.clear(bezeichnung);
+    await user.type(bezeichnung, 'Teammeeting');
+    await user.click(await screen.findByRole('radio', { name: /Die ganze Serie/ }));
+    await user.click(screen.getByRole('button', { name: 'Ganze Serie ändern' }));
+
+    await waitFor(() => expect(updateEventSeries).toHaveBeenCalledTimes(1));
+    expect(updateEventSeries).toHaveBeenCalledWith(
+      SERIE,
+      ereignis.updated_at,
+      expect.objectContaining({ title: 'Teammeeting' }),
+      false,
+    );
+    expect(updateAppointmentEvent).not.toHaveBeenCalled();
+  });
+
+  it('aendert bei gewaehltem Vorkommen weiter nur dieses eine', async () => {
+    fetchAppointment.mockResolvedValue({ ...ereignis, event_series_id: SERIE });
+    const user = userEvent.setup();
+    rendern();
+
+    await screen.findByLabelText('Bezeichnung *');
+    await screen.findByText('Umfang der Änderung');
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+    await waitFor(() => expect(updateAppointmentEvent).toHaveBeenCalledTimes(1));
+    expect(updateEventSeries).not.toHaveBeenCalled();
   });
 });

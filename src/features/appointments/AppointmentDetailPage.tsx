@@ -27,6 +27,8 @@ import {
   appointmentStatusLabels,
   cancelAppointment,
   cancelAppointmentEvent,
+  cancelEventSeries,
+  fetchEventSeries,
   cancellationReasonLabels,
   cancellationReasonSchema,
   appointmentTypeLabels,
@@ -368,6 +370,108 @@ function EreignisAbsageAktion({
 }
 
 /**
+ * Die ganze Dauerfehlzeit absagen (CAL-021).
+ *
+ * Die dritte Absage neben „Nur diese Teilnahme" und „Ereignis absagen", und
+ * wieder ausdrücklich davon getrennt: Diese hier trifft **alle noch kommenden
+ * Vorkommen** der Serie. Was schon stattgefunden hat, bleibt stehen — ein
+ * Teammeeting von letzter Woche wird nicht nachträglich zu einem abgesagten
+ * (ANN-059).
+ */
+function SerieAbsageAktion({ appointment }: { appointment: Appointment }) {
+  const queryClient = useQueryClient();
+  const [grund, setGrund] = useState('');
+  const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
+
+  const serie = useQuery({
+    queryKey: ['event-series', appointment.event_series_id],
+    queryFn: () => fetchEventSeries(appointment.event_series_id!),
+    enabled: Boolean(appointment.event_series_id),
+    retry: false,
+  });
+
+  const vorkommen = serie.data ?? [];
+  const stand = vorkommen[0]?.series_updated_at ?? '';
+  // Dieselbe Grenze wie serverseitig: noch nicht begonnen und noch nicht
+  // abgesagt. Verbindlich entscheidet sie der Server (ADR-004).
+  const kommende = vorkommen.filter(
+    (v) => v.open_count > 0 && new Date(v.starts_at).getTime() > Date.now(),
+  );
+
+  const mutation = useMutation({
+    mutationFn: (gewaehlt: CancellationReason) =>
+      cancelEventSeries(appointment.event_series_id!, stand, gewaehlt),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['appointment'] });
+      await queryClient.invalidateQueries({ queryKey: ['event-participants'] });
+      await queryClient.invalidateQueries({ queryKey: ['event-series'] });
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+    },
+  });
+
+  async function absagen() {
+    const gewaehlt = cancellationReasonSchema.safeParse(grund);
+    if (!gewaehlt.success) {
+      setGrundFehler('Bitte einen Absagegrund auswählen.');
+      throw new Error('Absagegrund fehlt');
+    }
+    setGrundFehler(undefined);
+    await mutation.mutateAsync(gewaehlt.data);
+  }
+
+  // Ohne kommendes Vorkommen gibt es nichts abzusagen - dann steht der Weg
+  // auch nicht da.
+  if (kommende.length === 0) return null;
+
+  return (
+    <Rueckfrage
+      ausloeser="Ganze Serie absagen"
+      bezeichnung="Dauerfehlzeit absagen"
+      bestaetigen="Ja, ganze Serie absagen"
+      bestaetigenLaeuft="Wird abgesagt …"
+      fehler={mutation.isError ? mutation.error.message : undefined}
+      laeuft={mutation.isPending}
+      onAbbrechen={() => setGrundFehler(undefined)}
+      onBestaetigen={absagen}
+    >
+      <p>
+        {`Die Dauerfehlzeit „${appointment.title ?? ''}" `}
+        wird mit {kommende.length === 1 ? 'ihrem einen noch' : `allen ${kommende.length}`} kommenden
+        Vorkommen als abgesagt geführt – {kommende.length === 1 ? 'es' : 'das erste'} am{' '}
+        {formatLocalDate(kommende[0]!.starts_at, appointment.organization_time_zone)}. Bereits
+        stattgefundene Vorkommen bleiben unverändert stehen. Eine Absage lässt sich nicht
+        zurücknehmen.
+      </p>
+      <div className="mt-3 max-w-xs">
+        <Select
+          label="Absagegrund"
+          value={grund}
+          error={grundFehler}
+          onChange={(e) => {
+            setGrund(e.target.value);
+            setGrundFehler(undefined);
+          }}
+        >
+          <option value="">Bitte wählen</option>
+          {Object.entries(cancellationReasonLabels)
+            .filter(([wert]) => wert !== 'patient_request')
+            .map(([wert, beschriftung]) => (
+              <option key={wert} value={wert}>
+                {beschriftung}
+              </option>
+            ))}
+        </Select>
+      </div>
+      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+        Eine Fehlzeit des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
+        die absagen könnte.
+      </p>
+    </Rueckfrage>
+  );
+}
+
+/**
  * Das Protokoll aus Hausbesuch-Szenario 2 (CAL-018, ADR-018 Fassung 3
  * Punkt 9).
  *
@@ -697,8 +801,23 @@ function AppointmentDetail({
     retry: false,
   });
 
+  /**
+   * Die Serie, zu der dieses Ereignis gehört - eine Dauerfehlzeit (CAL-021).
+   *
+   * Sie steht hier, damit der Termin sagen kann, dass er einer von mehreren
+   * ist. Ohne das stünde weiter unten ein „Ganze Serie absagen" ohne
+   * erkennbaren Anlass.
+   */
+  const serie = useQuery({
+    queryKey: ['event-series', appointment.event_series_id],
+    queryFn: () => fetchEventSeries(appointment.event_series_id!),
+    enabled: istEreignis && Boolean(appointment.event_series_id),
+    retry: false,
+  });
+
   const beteiligteListe = beteiligte.data ?? [];
   const offeneTeilnahmen = beteiligteListe.filter((b) => b.status === 'confirmed');
+  const serienVorkommen = serie.data ?? [];
 
   return (
     <>
@@ -780,6 +899,21 @@ function AppointmentDetail({
               </span>
               <span className="text-ink-muted mt-1 block text-sm">
                 Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
+              </span>
+            </DetailRow>
+          ) : null}
+          {/* Dieses Vorkommen ist eines von mehreren (CAL-021). Die Zeile
+              sagt es, bevor weiter unten „Ganze Serie absagen" steht. */}
+          {istEreignis && appointment.event_series_id && serienVorkommen.length > 0 ? (
+            <DetailRow label="Dauerfehlzeit">
+              <span>
+                Vorkommen{' '}
+                {serienVorkommen.findIndex((v) => v.event_group_id === appointment.event_group_id) +
+                  1}{' '}
+                von {serienVorkommen.length}
+              </span>
+              <span className="text-ink-muted mt-1 block text-sm">
+                Ändern und Absagen gelten wahlweise für dieses Vorkommen oder für die ganze Serie.
               </span>
             </DetailRow>
           ) : null}
@@ -915,6 +1049,12 @@ function AppointmentDetail({
               zweite steht daneben, weil sie der seltenere Fall ist. */}
           {istEreignis && offeneTeilnahmen.length > 1 ? (
             <EreignisAbsageAktion appointment={appointment} beteiligte={beteiligteListe} />
+          ) : null}
+          {/* Und die dritte Absage, wenn dieses Ereignis zu einer
+              Dauerfehlzeit gehoert (CAL-021): Sie trifft alle noch kommenden
+              Vorkommen der Serie. */}
+          {istEreignis && appointment.event_series_id ? (
+            <SerieAbsageAktion appointment={appointment} />
           ) : null}
           <AbsageAktion appointment={appointment} />
         </div>
