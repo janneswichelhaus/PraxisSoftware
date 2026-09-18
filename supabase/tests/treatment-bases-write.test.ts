@@ -13,12 +13,12 @@ const { users, patients } = SEED;
 
 const ANLEGEN = `
   select public.create_treatment_basis(
-    $1::uuid, $2::uuid, $3, $4::date, $5::jsonb, $6, $7, $8, $9, $10, $11
+    $1::uuid, $2::uuid, $3, $4::date, $5::integer, $6::jsonb, $7, $8, $9
   ) as id`;
 
 const AENDERN = `
   select public.update_treatment_basis(
-    $1::uuid, $2::uuid, $3, $4::date, $5::jsonb, $6, $7, $8, $9, $10, $11
+    $1::uuid, $2::uuid, $3, $4::date, $5::integer, $6::jsonb, $7, $8, $9
   ) as id`;
 
 const LOESCHEN = 'select public.delete_treatment_basis($1::uuid)';
@@ -34,6 +34,11 @@ const POSITIONEN = JSON.stringify([
   { remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: 0 },
 ]);
 
+/** Die Auswahl, wie sie das Formular seit VER-EPIC-002 schickt: ohne Mengen. */
+const AUSWAHL = JSON.stringify([{ remedy: 'Krankengymnastik' }]);
+
+const TERMINZAHL = 10;
+
 interface Position {
   id: string;
   sort_order: number;
@@ -43,19 +48,48 @@ interface Position {
   remaining_quantity: number;
 }
 
-function argumente(items: string = POSITIONEN, rest: (string | null)[] = []) {
+/**
+ * Die Argumente der beiden Schreibpfade als benanntes Objekt.
+ *
+ * Seit VER-EPIC-002 steht die **Anzahl moeglicher Termine** in der Signatur,
+ * und Therapieziel, Verordnerhinweis und Empfehlung stehen nicht mehr darin
+ * (ANN-064). Neun Stellen in einer Reihe von Nullwerten waren schon vorher
+ * schwer zu lesen; als Objekt nennt jeder Test nur noch das, worum es ihm geht.
+ */
+interface Felder {
+  prescriber?: string | null;
+  kind?: string;
+  issuedOn?: string;
+  terminzahl?: number | null;
+  items?: string;
+  frequenz?: string | null;
+  anmerkungen?: string | null;
+  diagnose?: string | null;
+}
+
+function felder(f: Felder): unknown[] {
   return [
-    patients.max,
-    PROBST,
-    'first',
-    '2026-03-01',
-    items,
-    ...(rest.length > 0 ? rest : [null, null, null, null, null, null]),
+    'prescriber' in f ? f.prescriber : PROBST,
+    f.kind ?? 'first',
+    f.issuedOn ?? '2026-03-01',
+    f.terminzahl === undefined ? TERMINZAHL : f.terminzahl,
+    f.items ?? POSITIONEN,
+    f.frequenz ?? null,
+    f.anmerkungen ?? null,
+    f.diagnose ?? null,
   ];
 }
 
-async function anlegen(userId: string, items: string = POSITIONEN, rest: (string | null)[] = []) {
-  const { rows } = await asUserCommitted<{ id: string }>(userId, ANLEGEN, argumente(items, rest));
+function argumente(f: Felder = {}, patientId: string = patients.max): unknown[] {
+  return [patientId, ...felder(f)];
+}
+
+function aendernArgumente(grundlageId: string, f: Felder = {}): unknown[] {
+  return [grundlageId, ...felder(f)];
+}
+
+async function anlegen(userId: string, f: Felder = {}) {
+  const { rows } = await asUserCommitted<{ id: string }>(userId, ANLEGEN, argumente(f));
   return rows[0]!.id;
 }
 
@@ -79,14 +113,15 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
   });
 
   it('legt Kopf und Positionen in einer Transaktion an', async () => {
-    const id = await anlegen(
-      users.therapist,
-      JSON.stringify([
+    const id = await anlegen(users.therapist, {
+      items: JSON.stringify([
         { remedy: 'Manuelle Therapie', prescribed_quantity: 6, used_quantity: 2 },
         { remedy: 'Waermetherapie', prescribed_quantity: 6, used_quantity: 0 },
       ]),
-      ['1x pro Woche', 'Synthetisch: Bemerkung.', 'Synthetisch: Diagnose.', null, null, null],
-    );
+      frequenz: '1x pro Woche',
+      anmerkungen: 'Synthetisch: Anmerkung.',
+      diagnose: 'Synthetisch: Diagnose.',
+    });
 
     const items = await positionen(id);
     expect(items.map((i) => [i.sort_order, i.remedy, i.remaining_quantity])).toEqual([
@@ -96,14 +131,7 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
   });
 
   it('protokolliert das Anlegen ohne klinische Inhalte (ADR-010)', async () => {
-    const id = await anlegen(users.therapist, POSITIONEN, [
-      null,
-      null,
-      'Synthetisch: Diagnose Schulter.',
-      null,
-      null,
-      null,
-    ]);
+    const id = await anlegen(users.therapist, { diagnose: 'Synthetisch: Diagnose Schulter.' });
 
     const { rows } = await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
       `select subject_id, context from public.audit_log
@@ -126,28 +154,16 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     const id = await anlegen(users.therapist);
     // E15 oeffnet office das Lesen der Verordnung samt Diagnose - Aendern und
     // Loeschen bleiben zu (ADR-004 Fassung 2 Punkt 3, ANN-011).
-    await expect(
-      asUser(users.office, AENDERN, [
-        id,
-        PROBST,
-        'first',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]),
-    ).rejects.toThrow(/not allowed to write treatment_bases/i);
+    await expect(asUser(users.office, AENDERN, aendernArgumente(id))).rejects.toThrow(
+      /not allowed to write treatment_bases/i,
+    );
     await expect(asUser(users.office, LOESCHEN, [id])).rejects.toThrow(
       /not allowed to write treatment_bases/i,
     );
   });
 
   it('verlangt mindestens eine Position', async () => {
-    await expect(asUser(users.therapist, ANLEGEN, argumente('[]'))).rejects.toThrow(
+    await expect(asUser(users.therapist, ANLEGEN, argumente({ items: '[]' }))).rejects.toThrow(
       /at least one treatment basis item/i,
     );
   });
@@ -157,11 +173,11 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       asUser(
         users.therapist,
         ANLEGEN,
-        argumente(
-          JSON.stringify([
+        argumente({
+          items: JSON.stringify([
             { remedy: 'Krankengymnastik', prescribed_quantity: 6, used_quantity: 7 },
           ]),
-        ),
+        }),
       ),
     ).rejects.toThrow(/used quantity out of range/i);
   });
@@ -171,7 +187,7 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       asUser(
         users.therapist,
         ANLEGEN,
-        argumente(JSON.stringify([{ remedy: '   ', prescribed_quantity: 6 }])),
+        argumente({ items: JSON.stringify([{ remedy: '   ', prescribed_quantity: 6 }]) }),
       ),
     ).rejects.toThrow(/remedy is required/i);
 
@@ -179,7 +195,9 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       asUser(
         users.therapist,
         ANLEGEN,
-        argumente(JSON.stringify([{ remedy: 'Krankengymnastik', prescribed_quantity: 0 }])),
+        argumente({
+          items: JSON.stringify([{ remedy: 'Krankengymnastik', prescribed_quantity: 0 }]),
+        }),
       ),
     ).rejects.toThrow(/prescribed quantity out of range/i);
 
@@ -187,7 +205,9 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       asUser(
         users.therapist,
         ANLEGEN,
-        argumente(JSON.stringify([{ remedy: 'Krankengymnastik', prescribed_quantity: 'viele' }])),
+        argumente({
+          items: JSON.stringify([{ remedy: 'Krankengymnastik', prescribed_quantity: 'viele' }]),
+        }),
       ),
     ).rejects.toThrow(/quantities must be numbers/i);
 
@@ -199,7 +219,9 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       asUser(
         users.therapist,
         ANLEGEN,
-        argumente(JSON.stringify([{ remedy: 'Krankengymnastik', prescribed_quantity: 6.5 }])),
+        argumente({
+          items: JSON.stringify([{ remedy: 'Krankengymnastik', prescribed_quantity: 6.5 }]),
+        }),
       ),
     ).rejects.toThrow(/quantities must be whole numbers/i);
 
@@ -207,11 +229,11 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       asUser(
         users.therapist,
         ANLEGEN,
-        argumente(
-          JSON.stringify([
+        argumente({
+          items: JSON.stringify([
             { remedy: 'Krankengymnastik', prescribed_quantity: 6, used_quantity: 2.5 },
           ]),
-        ),
+        }),
       ),
     ).rejects.toThrow(/quantities must be whole numbers/i);
   });
@@ -219,88 +241,48 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
   it('weist ein Ausstellungsdatum in der Zukunft ab', async () => {
     const morgen = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
     await expect(
-      asUser(users.therapist, ANLEGEN, [
-        patients.max,
-        PROBST,
-        'first',
-        morgen,
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]),
+      asUser(users.therapist, ANLEGEN, argumente({ issuedOn: morgen })),
     ).rejects.toThrow(/issued_on must not be in the future/i);
   });
 
   it('unterscheidet fremde nicht von unbekannten IDs', async () => {
     await expect(
-      asUser(users.therapist, ANLEGEN, [
-        patients.max,
-        FREMDE_ID,
-        'first',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]),
+      asUser(users.therapist, ANLEGEN, argumente({ prescriber: FREMDE_ID })),
     ).rejects.toThrow(/prescriber not found/i);
 
-    await expect(
-      asUser(users.therapist, ANLEGEN, [
-        FREMDE_ID,
-        PROBST,
-        'first',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]),
-    ).rejects.toThrow(/patient not found/i);
+    await expect(asUser(users.therapist, ANLEGEN, argumente({}, FREMDE_ID))).rejects.toThrow(
+      /patient not found/i,
+    );
   });
 
   it('behaelt bestehende Positionen beim Aendern und entfernt weggefallene', async () => {
-    const id = await anlegen(
-      users.therapist,
-      JSON.stringify([
+    const id = await anlegen(users.therapist, {
+      items: JSON.stringify([
         { remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: 3 },
         { remedy: 'Waermetherapie', prescribed_quantity: 10, used_quantity: 1 },
       ]),
-    );
+    });
     const vorher = await positionen(id);
 
     // Erste Position behalten (mit id), zweite weglassen, dritte neu.
-    await asUserCommitted(users.therapist, AENDERN, [
-      id,
-      HAUSARZT,
-      'follow_up',
-      '2026-04-02',
-      JSON.stringify([
-        {
-          id: vorher[0]!.id,
-          remedy: 'Krankengymnastik',
-          prescribed_quantity: 12,
-          used_quantity: 3,
-        },
-        { remedy: 'Manuelle Therapie', prescribed_quantity: 4, used_quantity: 0 },
-      ]),
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-    ]);
+    await asUserCommitted(
+      users.therapist,
+      AENDERN,
+      aendernArgumente(id, {
+        prescriber: HAUSARZT,
+        kind: 'follow_up',
+        issuedOn: '2026-04-02',
+        items: JSON.stringify([
+          {
+            id: vorher[0]!.id,
+            remedy: 'Krankengymnastik',
+            prescribed_quantity: 12,
+            used_quantity: 3,
+          },
+          { remedy: 'Manuelle Therapie', prescribed_quantity: 4, used_quantity: 0 },
+        ]),
+      }),
+    );
 
     const nachher = await positionen(id);
     expect(nachher).toHaveLength(2);
@@ -323,21 +305,20 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     const andere = await anlegen(users.therapist);
     const fremdePosition = (await positionen(andere))[0]!;
 
-    await asUserCommitted(users.therapist, AENDERN, [
-      eine,
-      PROBST,
-      'first',
-      '2026-03-01',
-      JSON.stringify([
-        { id: fremdePosition.id, remedy: 'Uebernommen', prescribed_quantity: 3, used_quantity: 0 },
-      ]),
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-    ]);
+    await asUserCommitted(
+      users.therapist,
+      AENDERN,
+      aendernArgumente(eine, {
+        items: JSON.stringify([
+          {
+            id: fremdePosition.id,
+            remedy: 'Uebernommen',
+            prescribed_quantity: 3,
+            used_quantity: 0,
+          },
+        ]),
+      }),
+    );
 
     // Die fremde Position ist unveraendert; bei "eine" ist eine neue entstanden.
     const unveraendert = (await positionen(andere))[0]!;
@@ -418,40 +399,207 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     await expect(asUser(users.therapist, LOESCHEN, [FREMDE_ID])).rejects.toThrow(
       /treatment basis not found/i,
     );
-    await expect(
-      asUser(users.therapist, AENDERN, [
-        FREMDE_ID,
-        PROBST,
-        'first',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]),
-    ).rejects.toThrow(/treatment basis not found/i);
+    await expect(asUser(users.therapist, AENDERN, aendernArgumente(FREMDE_ID))).rejects.toThrow(
+      /treatment basis not found/i,
+    );
   });
 
   it('erscheint eine neue Verordnung sofort in der Akte', async () => {
-    const id = await anlegen(users.therapist, POSITIONEN, [
-      null,
-      null,
-      null,
-      null,
-      null,
-      'Synthetisch: Empfehlung der Therapeutin.',
-    ]);
+    const id = await anlegen(users.therapist, { diagnose: 'Synthetisch: Diagnose Nacken.' });
 
-    const { rows } = await asUserCommitted<{ id: string; follow_up_recommendation: string }>(
+    const { rows } = await asUserCommitted<{ id: string; diagnosis: string }>(
       users.therapist,
       KLINISCH,
       [patients.max],
     );
     const gefunden = rows.find((r) => r.id === id);
-    expect(gefunden?.follow_up_recommendation).toBe('Synthetisch: Empfehlung der Therapeutin.');
+    expect(gefunden?.diagnosis).toBe('Synthetisch: Diagnose Nacken.');
+  });
+
+  // ---------------------------------------------------------------------------
+  // VER-EPIC-002: Die Terminzahl steht an der Grundlage, die Leistungsmenge an
+  // der Position (ANN-064). Geprueft wird beides zugleich - eine Zahl, die
+  // stimmt, und ein Bestand, der stehen bleibt.
+  // ---------------------------------------------------------------------------
+  describe('Anzahl moeglicher Termine (VER-EPIC-002)', () => {
+    const KOMBINATION = JSON.stringify([
+      { remedy: 'KG als Doppelbehandlung' },
+      { remedy: 'MT als Doppelbehandlung' },
+      { remedy: 'Hausbesuch' },
+    ]);
+
+    async function zahlen(grundlageId: string) {
+      const { rows } = await asUserCommitted<{
+        prescribed: number;
+        used: number;
+        planned: number;
+        remaining: number;
+      }>(users.therapist, 'select * from public.get_treatment_basis_slots($1::uuid)', [
+        grundlageId,
+      ]);
+      return rows[0]!;
+    }
+
+    it('zaehlt Behandlungstermine und nicht die Summe der Heilmittel', async () => {
+      // Das Abnahmebeispiel aus VER-EPIC-002: sechs moegliche Termine mit KG
+      // Doppelbehandlung, MT Doppelbehandlung und Hausbesuch bieten sechs
+      // Termine - weder zwoelf noch achtzehn.
+      const id = await anlegen(users.therapist, { terminzahl: 6, items: KOMBINATION });
+
+      expect(await zahlen(id)).toMatchObject({ prescribed: 6, used: 0, remaining: 6 });
+    });
+
+    it('gibt einer neuen Position die Terminzahl als Leistungsmenge', async () => {
+      const id = await anlegen(users.therapist, { terminzahl: 6, items: KOMBINATION });
+
+      const items = await positionen(id);
+      expect(items.map((i) => [i.remedy, i.prescribed_quantity, i.used_quantity])).toEqual([
+        ['KG als Doppelbehandlung', 6, 0],
+        ['MT als Doppelbehandlung', 6, 0],
+        ['Hausbesuch', 6, 0],
+      ]);
+    });
+
+    it('laesst Bestandsmengen beim Speichern ohne Mengen unberuehrt', async () => {
+      // Der Bestandsfall aus Abnahmefall 4: verschiedene Leistungsmengen, eine
+      // davon teilweise genutzt. Das vereinfachte Formular schickt nur noch die
+      // Auswahl - es darf dabei nichts umdeuten und nichts auf null setzen.
+      const id = await anlegen(users.therapist, {
+        terminzahl: 10,
+        items: JSON.stringify([
+          { remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: 4 },
+          { remedy: 'Waermetherapie', prescribed_quantity: 3, used_quantity: 1 },
+        ]),
+      });
+      const vorher = await positionen(id);
+
+      await asUserCommitted(
+        users.therapist,
+        AENDERN,
+        aendernArgumente(id, {
+          terminzahl: 4,
+          items: JSON.stringify([
+            { id: vorher[0]!.id, remedy: 'Krankengymnastik' },
+            { id: vorher[1]!.id, remedy: 'Waermetherapie' },
+          ]),
+        }),
+      );
+
+      const nachher = await positionen(id);
+      expect(nachher.map((i) => [i.remedy, i.prescribed_quantity, i.used_quantity])).toEqual([
+        ['Krankengymnastik', 10, 4],
+        ['Waermetherapie', 3, 1],
+      ]);
+      // Die Terminzahl folgt der Eingabe, die genutzte Menge der groessten
+      // Position - beides bleibt unterscheidbar.
+      expect(await zahlen(id)).toMatchObject({ prescribed: 4, used: 4, remaining: 0 });
+    });
+
+    it('verlangt eine Terminzahl zwischen 1 und 500', async () => {
+      for (const terminzahl of [0, 501]) {
+        await expect(asUser(users.therapist, ANLEGEN, argumente({ terminzahl }))).rejects.toThrow(
+          /appointment count out of range/i,
+        );
+      }
+      await expect(
+        asUser(users.therapist, ANLEGEN, argumente({ terminzahl: null })),
+      ).rejects.toThrow(/appointment count is required/i);
+    });
+
+    it('haelt die Grenze auch am Schreibpfad vorbei (Defense-in-Depth)', async () => {
+      await expect(
+        asPostgres(
+          `insert into public.treatment_bases
+             (organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on, appointment_count)
+           values ($1, $2, $3, 'first', '2026-03-01', 0)`,
+          [SEED.organizationId, patients.max, PROBST],
+        ),
+      ).rejects.toThrow(/treatment_bases_appointment_count_check/);
+    });
+
+    it('laesst Therapieziel, Verordnerhinweis und Empfehlung beim Speichern stehen', async () => {
+      // Die drei Felder haben das Formular verlassen (VER-EPIC-002). Sie duerfen
+      // dadurch nicht verschwinden: Der Schreibpfad nimmt sie nicht entgegen und
+      // ruehrt die Spalten deshalb nicht an.
+      const id = await anlegen(users.therapist, { diagnose: 'Synthetisch: Diagnose.' });
+      await asPostgres(
+        `update public.treatment_bases
+            set therapy_goal = 'Synthetisch: Ziel.',
+                prescriber_note = 'Synthetisch: Hinweis vom Rezept.',
+                follow_up_recommendation = 'Synthetisch: Empfehlung.'
+          where id = $1`,
+        [id],
+      );
+
+      await asUserCommitted(
+        users.therapist,
+        AENDERN,
+        aendernArgumente(id, { diagnose: 'Synthetisch: Diagnose, korrigiert.' }),
+      );
+
+      const { rows } = await asPostgres<{
+        diagnosis: string;
+        therapy_goal: string;
+        prescriber_note: string;
+        follow_up_recommendation: string;
+      }>(
+        `select diagnosis, therapy_goal, prescriber_note, follow_up_recommendation
+           from public.treatment_bases where id = $1`,
+        [id],
+      );
+      expect(rows[0]).toEqual({
+        diagnosis: 'Synthetisch: Diagnose, korrigiert.',
+        therapy_goal: 'Synthetisch: Ziel.',
+        prescriber_note: 'Synthetisch: Hinweis vom Rezept.',
+        follow_up_recommendation: 'Synthetisch: Empfehlung.',
+      });
+    });
+
+    it('raeumt die klinischen Felder beim Wechsel auf Selbstzahler ab (ADR-020 Punkt 4)', async () => {
+      const id = await anlegen(users.therapist, { diagnose: 'Synthetisch: Diagnose.' });
+      await asPostgres(
+        `update public.treatment_bases
+            set therapy_goal = 'Synthetisch: Ziel.',
+                prescriber_note = 'Synthetisch: Hinweis.',
+                follow_up_recommendation = 'Synthetisch: Empfehlung.'
+          where id = $1`,
+        [id],
+      );
+
+      // Der Aufrufer schickt die drei Felder gar nicht mehr mit - dass sie
+      // trotzdem fallen, entscheidet der Server.
+      await asUserCommitted(
+        users.therapist,
+        AENDERN,
+        aendernArgumente(id, {
+          prescriber: null,
+          kind: 'self_pay',
+          diagnose: 'Synthetisch: Diagnose.',
+        }),
+      );
+
+      const { rows } = await asPostgres<Record<string, string | null>>(
+        `select diagnosis, therapy_goal, prescriber_note, follow_up_recommendation
+           from public.treatment_bases where id = $1`,
+        [id],
+      );
+      expect(rows[0]).toEqual({
+        diagnosis: null,
+        therapy_goal: null,
+        prescriber_note: null,
+        follow_up_recommendation: null,
+      });
+    });
+
+    it('nennt die Terminzahl in der Lesesicht des Formulars', async () => {
+      const id = await anlegen(users.therapist, { terminzahl: 7 });
+      const { rows } = await asUserCommitted<{ appointment_count: number }>(
+        users.therapist,
+        HOLEN,
+        [id],
+      );
+      expect(rows[0]?.appointment_count).toBe(7);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -464,12 +612,8 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
   // Defense-in-Depth).
   // ---------------------------------------------------------------------------
   describe('Die zweite Bauart: Selbstzahler (ADR-020)', () => {
-    function selbstzahlerArgumente(
-      prescriberId: string | null = null,
-      items: string = POSITIONEN,
-      rest: (string | null)[] = [null, null, null, null, null, null],
-    ) {
-      return [patients.max, prescriberId, 'self_pay', '2026-03-01', items, ...rest];
+    function selbstzahlerArgumente(prescriberId: string | null = null, f: Felder = {}) {
+      return argumente({ ...f, prescriber: prescriberId, kind: 'self_pay' });
     }
 
     it('legt einen Selbstzahler ohne Verordner:in an', async () => {
@@ -500,37 +644,17 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
 
     it('weist eine Verordnung OHNE Verordner:in ab', async () => {
       await expect(
-        asUserCommitted(users.therapist, ANLEGEN, [
-          patients.max,
-          null,
-          'first',
-          '2026-03-01',
-          POSITIONEN,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-        ]),
+        asUserCommitted(users.therapist, ANLEGEN, argumente({ prescriber: null })),
       ).rejects.toThrow(/prescriber is required/i);
     });
 
     it('kennt keine dritte Bauart', async () => {
       await expect(
-        asUserCommitted(users.therapist, ANLEGEN, [
-          patients.max,
-          null,
-          'privatrezept',
-          '2026-03-01',
-          POSITIONEN,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-        ]),
+        asUserCommitted(
+          users.therapist,
+          ANLEGEN,
+          argumente({ prescriber: null, kind: 'privatrezept' }),
+        ),
       ).rejects.toThrow(/unknown treatment basis kind/i);
     });
 
@@ -540,8 +664,8 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       await expect(
         asPostgres(
           `insert into public.treatment_bases
-             (organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on)
-           values ($1, $2, $3, 'self_pay', '2026-03-01')`,
+             (organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on, appointment_count)
+           values ($1, $2, $3, 'self_pay', '2026-03-01', 6)`,
           [SEED.organizationId, patients.max, PROBST],
         ),
       ).rejects.toThrow(/treatment_bases_prescriber_matches_kind/);
@@ -549,11 +673,22 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       await expect(
         asPostgres(
           `insert into public.treatment_bases
-             (organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on)
-           values ($1, $2, null, 'follow_up', '2026-03-01')`,
+             (organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on, appointment_count)
+           values ($1, $2, null, 'follow_up', '2026-03-01', 6)`,
           [SEED.organizationId, patients.max],
         ),
       ).rejects.toThrow(/treatment_bases_prescriber_matches_kind/);
+
+      // ADR-020 Punkt 4, seit VER-EPIC-002 ebenfalls in der Tabelle: Ein
+      // Selbstzahler traegt keine klinischen Felder - auf keinem Schreibweg.
+      await expect(
+        asPostgres(
+          `insert into public.treatment_bases
+             (organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on, appointment_count, diagnosis)
+           values ($1, $2, null, 'self_pay', '2026-03-01', 6, 'Synthetisch: Diagnose.')`,
+          [SEED.organizationId, patients.max],
+        ),
+      ).rejects.toThrow(/treatment_bases_clinical_only_for_prescription/);
     });
 
     it('schuetzt die Abrechnung beim Selbstzahler wie bei der Verordnung', async () => {
@@ -563,12 +698,11 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
         asUserCommitted(
           users.therapist,
           ANLEGEN,
-          selbstzahlerArgumente(
-            null,
-            JSON.stringify([
+          selbstzahlerArgumente(null, {
+            items: JSON.stringify([
               { remedy: 'Krankengymnastik', prescribed_quantity: 4, used_quantity: 5 },
             ]),
-          ),
+          }),
         ),
       ).rejects.toThrow();
     });
@@ -591,45 +725,22 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     });
 
     it('laesst eine Verordnung zum Selbstzahler werden - und zurueck', async () => {
-      const id = await anlegen(users.therapist, POSITIONEN, [
-        null,
-        null,
-        'Synthetisch: Diagnose.',
-        null,
-        null,
-        null,
-      ]);
+      const id = await anlegen(users.therapist, { diagnose: 'Synthetisch: Diagnose.' });
 
       // Verordner:in mitzuschicken waere jetzt ein Widerspruch.
       await expect(
-        asUserCommitted(users.therapist, AENDERN, [
-          id,
-          PROBST,
-          'self_pay',
-          '2026-03-01',
-          POSITIONEN,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-        ]),
+        asUserCommitted(
+          users.therapist,
+          AENDERN,
+          aendernArgumente(id, { prescriber: PROBST, kind: 'self_pay' }),
+        ),
       ).rejects.toThrow(/self_pay must not carry a prescriber/i);
 
-      await asUserCommitted(users.therapist, AENDERN, [
-        id,
-        null,
-        'self_pay',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]);
+      await asUserCommitted(
+        users.therapist,
+        AENDERN,
+        aendernArgumente(id, { prescriber: null, kind: 'self_pay' }),
+      );
       const { rows: nachher } = await asPostgres<{
         treatment_basis_kind: string;
         prescriber_id: string | null;
@@ -639,19 +750,11 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       expect(nachher[0]).toEqual({ treatment_basis_kind: 'self_pay', prescriber_id: null });
 
       // Und wieder zurueck: dann ist die Verordner:in wieder Pflicht.
-      await asUserCommitted(users.therapist, AENDERN, [
-        id,
-        HAUSARZT,
-        'follow_up',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]);
+      await asUserCommitted(
+        users.therapist,
+        AENDERN,
+        aendernArgumente(id, { prescriber: HAUSARZT, kind: 'follow_up' }),
+      );
       const { rows: zurueck } = await asPostgres<{ prescriber_id: string }>(
         'select prescriber_id from public.treatment_bases where id = $1',
         [id],
@@ -711,10 +814,11 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
       insert into public.prescribers (id, organization_id, family_name)
         values ('${fremderPrescriber}', '${fremdeOrg}', 'Fremdarzt');
       insert into public.treatment_bases (
-        id, organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on, diagnosis
+        id, organization_id, patient_id, prescriber_id, treatment_basis_kind, issued_on,
+        appointment_count, diagnosis
       ) values (
         '${fremdeVerordnung}', '${fremdeOrg}', '${fremderPatient}', '${fremderPrescriber}',
-        'first', '2026-01-10', 'Synthetisch: Diagnose der fremden Praxis.'
+        'first', '2026-01-10', 6, 'Synthetisch: Diagnose der fremden Praxis.'
       );
       insert into public.treatment_base_items (
         organization_id, treatment_basis_id, sort_order, remedy, prescribed_quantity
@@ -726,55 +830,19 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
 
   it('weist eine echte Verordner:in einer fremden Organisation ab wie eine unbekannte', async () => {
     await expect(
-      asUser(users.therapist, ANLEGEN, [
-        patients.max,
-        fremderPrescriber,
-        'first',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]),
+      asUser(users.therapist, ANLEGEN, argumente({ prescriber: fremderPrescriber })),
     ).rejects.toThrow(/prescriber not found/i);
   });
 
   it('weist eine echte Patientin einer fremden Organisation ab wie eine unbekannte', async () => {
-    await expect(
-      asUser(users.therapist, ANLEGEN, [
-        fremderPatient,
-        PROBST,
-        'first',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]),
-    ).rejects.toThrow(/patient not found/i);
+    await expect(asUser(users.therapist, ANLEGEN, argumente({}, fremderPatient))).rejects.toThrow(
+      /patient not found/i,
+    );
   });
 
   it('aendert und loescht eine echte Verordnung einer fremden Organisation nicht', async () => {
     await expect(
-      asUser(users.therapist, AENDERN, [
-        fremdeVerordnung,
-        PROBST,
-        'first',
-        '2026-03-01',
-        POSITIONEN,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]),
+      asUser(users.therapist, AENDERN, aendernArgumente(fremdeVerordnung)),
     ).rejects.toThrow(/treatment basis not found/i);
 
     await expect(asUser(users.therapist, LOESCHEN, [fremdeVerordnung])).rejects.toThrow(
