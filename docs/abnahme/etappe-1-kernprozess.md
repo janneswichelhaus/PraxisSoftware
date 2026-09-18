@@ -2395,3 +2395,79 @@ kurzer Wisch über die freie Fläche scrollt weiterhin.
 2026-09-16), das Ende einer Serie als Datum, das Einfügen weiterer Vorkommen
 in eine bestehende Serie, „über das Kontingent hinaus planen" (CAL-022) und
 die Kopfleistensuche (UX-013).
+
+## UX-013 — Die Kopfleiste sucht Funktionen, Bereiche und Namen
+
+Prüfschritte zu UX-013. Grundlage:
+[`../development/CAL-EPIC-004.md`](../development/CAL-EPIC-004.md) (UX-013),
+E17 **Fassung 2** (Jannes, 2026-09-18: Namen bleiben zusätzlich in der Leiste)
+und ANN-061 (Funktionen und Namen, keine klinischen Inhalte).
+
+Keine Migration — ein `git pull` genügt. Schritt 5 als
+`olivia.office@praxis.invalid` (office), sonst `jannes.test@praxis.invalid`
+(owner).
+
+### 1. Öffnen und sehen, was es gibt
+
+1. Irgendeine Seite öffnen, **Strg + K** drücken (am Mac ⌘ + K). Erwartung:
+   Der Fokus steht im Suchfeld, darunter stehen die sechs Arbeitsbereiche mit
+   ihrer Leitfrage. Nichts ist hervorgehoben — die Eingabetaste führt jetzt
+   nirgendwohin.
+2. **Escape**. Erwartung: Die Liste schließt, die Eingabe bleibt stehen.
+
+### 2. Einen Bereich und einen Vorgang finden
+
+1. „kal" tippen. Erwartung: **Kalender** steht oben und ist hervorgehoben;
+   die Eingabetaste führt dorthin.
+2. Zurück, „umplanen" tippen. Erwartung: **Tag umplanen** mit dem Zusatz „Bei
+   einem Ausfall die Besuche eines Tages verteilen".
+3. „rezept" tippen. Erwartung: **Verordnung erfassen** — gefunden über das
+   Wort, das die Praxis benutzt, mit dem Hinweis „Zuerst die Patient:in
+   wählen".
+4. „ubersicht" ohne Umlaut tippen. Erwartung: **Übersicht** steht da.
+
+### 3. Der Rückweg aus einem Vorgang
+
+1. In den Kalender gehen, Tagesansicht, ein Datum einstellen.
+2. Suche öffnen, „fehlzeit" tippen, **Fehlzeit eintragen** wählen.
+3. Erwartung: Das Ereignisformular steht da; **Abbrechen** kehrt in den
+   Kalender zurück — mit derselben Ansicht und demselben Datum. In der
+   Adresszeile steht der Rückweg als Pfad, kein Name (ADR-011).
+
+### 4. Namen in der zweiten Gruppe
+
+1. „mu" tippen. Erwartung: unter den Funktionstreffern die Gruppe
+   **Patient:innen** mit dem Satz „Namen ab 3 Zeichen." — gefragt wird der
+   Server dafür nicht.
+2. „mus" tippen. Erwartung: **Max Mustermann** mit Geburtsdatum erscheint
+   darunter; die Funktionstreffer darüber bleiben, wo sie waren.
+3. Vorher einmal mit der Pfeiltaste nach unten wählen und dabei zusehen, wie
+   die Namen nachrücken. Erwartung: Die gewählte Zeile bleibt dieselbe.
+4. Den Namen wählen. Erwartung: die Akte; in der Adresse steht die Kennung,
+   nie der Name.
+
+### 5. Was die Rolle nicht aufruft, steht nicht da
+
+1. Als **office** anmelden, „verordnung" tippen. Erwartung: **Verordnung
+   erfassen** fehlt (wer eine Verordnung erfasst, tippt die Diagnose mit ab,
+   ANN-011) — Verordnungen in der Akte bleiben sichtbar.
+2. „mitarbeitende" tippen. Erwartung: **Mitarbeitende:n anlegen** steht da
+   (seit E10 auch für office).
+3. Gegenprobe zur Grenze: `/abrechnung` von Hand in die Adresszeile tippen.
+   Erwartung: Die Seite bleibt erreichbar, aber ohne Daten — die Suche ist
+   Relevanz, die Kontrolle liegt beim Server (§4.7, ADR-004).
+
+### 6. Am Handy (~375 px)
+
+```bash
+pnpm screenshots --breite=375 --konto=owner /kalender?ansicht=tag
+```
+
+Erwartung: Das Suchfeld steht in einer eigenen Zeile unter Marke und Konto —
+**einmal**, nicht zweimal. Beim Tippen nimmt die Trefferliste den Rest des
+Bildschirms ein, statt über der Seite zu schweben; die unterste Zeile bleibt
+über der Tableiste erreichbar. Nichts scrollt waagerecht.
+
+**Nicht Teil dieses Loops:** Suche über Verordnungen, Termine oder
+Dokumentation (ANN-061; eigene Story, siehe ROADMAP „Bewusst nicht Teil von
+Etappe 1"), Treffer aus dem Ideenspeicher und eine Trefferhistorie.

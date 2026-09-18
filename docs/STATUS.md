@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-18 · letzte Session: CAL-EPIC-004b Anlegen-Menü und Fehlzeiten
+# Status · Stand 2026-09-18 · letzte Session: UX-013 Kopfleistensuche
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
@@ -8,34 +8,33 @@ einträgt, hat sie damit nicht eingeplant.
 
 ## Jetzt
 
-Nichts läuft. CAL-EPIC-004b ist gemergt (PR #48, CI grün); die **Abnahme steht
-aus**. Der nächste Loop beginnt auf Freigabe.
+Nichts läuft. UX-013 liegt als PR gegen `main`, die **Abnahme steht aus** —
+wie die von CAL-EPIC-004b (PR #48, gemergt). Nächster Loop auf Freigabe.
 
 ## Danach — Reihenfolge seit 2026-09-18
 
-1. **UX-013** — Kopfleiste sucht Funktionen; hängt an nichts · Pfad A · Vorgabe
-   in [`development/CAL-EPIC-004.md`](development/CAL-EPIC-004.md)
-2. **GRD-001** — Behandlungsgrundlage nach
+1. **GRD-001** — Behandlungsgrundlage nach
    [ADR-020](adr/ADR-020-treatment-basis.md) (angenommen); Migration, `test:db`
-3. **VER-EPIC-002** — Verordnung im Office-Alltag
+2. **VER-EPIC-002** — Verordnung im Office-Alltag
+3. **CAL-EPIC-004c** — überplanen, Termine je Verordnung (nach beiden oben)
 
-Danach unverändert: CAL-EPIC-004c · ABR-EPIC-001 (xhigh).
+Danach unverändert: ABR-EPIC-001 (xhigh).
 
 ## Prüfverfahren
 
 **Die CI läuft wieder** (2026-09-18, PR #48: alle fünf Läufe grün) — ein rotes
-Kreuz heißt wieder „rot". Lokal weiterhin: `pnpm test:db` unter Windows gegen
-einen Wegwerf-Container (`docker run … supabase/postgres`, Port 54329); die
-**angemeldeten E2E-Tests laufen in der Cloud-Umgebung nicht** (`supabase start`
-blockiert), dort prüft sie nur die CI. `pnpm test` ist unter Node 24 an rund 60
-navigierenden Tests rot — auf `main` genauso (**BEF-011**), CI meint Node 22.
+Kreuz heißt wieder „rot". Lokal: `pnpm test:db` unter Windows gegen einen
+Wegwerf-Container (`docker run … supabase/postgres`, Port 54329); die
+**angemeldeten E2E-Tests laufen in der Cloud nicht** (`supabase start` blockiert),
+dort prüft sie nur die CI. `pnpm test` ist unter Node 24 an rund 60 navigierenden
+Tests rot — auf `main` genauso (**BEF-011**), CI meint Node 22.
 
 ## Blocker (Jannes-seitig)
 
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von
-  CAL-EPIC-004b (neue Migration `20260918110000_event_series.sql`).
-- **Abnahme CAL-018, CAL-EPIC-004a, FIX-EPIC-004, CAL-EPIC-004b** — Klickwege
-  in [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
+  CAL-EPIC-004b (`20260918110000_event_series.sql`); UX-013 bringt keine mit.
+- **Abnahme CAL-018, CAL-EPIC-004a, FIX-EPIC-004, CAL-EPIC-004b, UX-013** —
+  [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)
 - **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code
   ([`development/E18-LEISTUNGSBEREICHE.md`](development/E18-LEISTUNGSBEREICHE.md))
 - Branch Protection und Secret Scanning (M0, 30.09.), Anfragen B1, B2, B4
@@ -48,13 +47,14 @@ navigierenden Tests rot — auf `main` genauso (**BEF-011**), CI meint Node 22.
 
 CAL-EPIC-003b (mit CAL-012/013), AKTE-000 bis AKTE-005, UX-012, UI-002, FIX-EPIC-001
 (braucht Docker), FIX-EPIC-003, CAL-014 bis CAL-018, CAL-EPIC-004a und -004b,
-FIX-EPIC-004, DAT-EPIC-001, ROL-EPIC-001, FIX-015 — [`abnahme/`](abnahme/README.md).
+FIX-EPIC-004, UX-013, DAT-EPIC-001, ROL-EPIC-001, FIX-015 — [`abnahme/`](abnahme/README.md).
 
 ## Letzte Session
 
-**CAL-EPIC-004b gebaut** (CAL-019, CAL-021). Auf der freien Fläche wird eine
-Spanne aufgezogen, danach steht das Anlegen-Menü mit vier Einträgen im Gitter;
-die Fehlzeit ist ein Ereignis, die Dauerfehlzeit eine Serie mit eigener Kennung
-neben der Gruppenkennung — Ändern und Absagen gelten wahlweise für ein Vorkommen
-oder die ganze Serie. **ANN-059, ANN-060** neu. Nach dem Merge lokal:
-`git checkout main && git pull origin main`, `pnpm dlx supabase@2.116.0 db reset`.
+**UX-013 gebaut.** Die Kopfleiste sucht Funktionen, Bereiche und Vorgänge — aus der
+Navigation abgeleitet, auf die Rolle gefiltert (Relevanz, keine Zugriffskontrolle) —
+und darunter, in einer zweiten Gruppe, weiterhin **Namen**: **E17 hat auf deine Frage
+eine Fassung 2 bekommen**, der Schritt mehr aus einem Termin heraus entfällt wieder.
+Strg/Cmd + K, Pfeiltasten, Eingabetaste; bei ~375 px bildschirmfüllend. Die
+Patientensuche steht zusätzlich im Bereich „Patient:innen". **ANN-061** neu; eine
+Verordnungssuche wäre eine eigene Story (ROADMAP). Lokal: `git pull origin main`.
