@@ -137,7 +137,10 @@ export function CalendarGrid({
   vorschlag = null,
   kontext,
   onBlaettern,
+  laedtNach = false,
 }: {
+  /** Der gezeigte Stand ist der alte, der neue laedt noch (FIX-018). */
+  laedtNach?: boolean;
   /** Die offene Rückfrage zum Verschieben - im Gitter gezeichnet (FIX-017). */
   vorschlag?: GitterVorschlag | null;
   /** Kennung des gezeigten Ausschnitts, etwa sein erster Tag (FIX-018). */
@@ -225,7 +228,8 @@ export function CalendarGrid({
   return (
     <div
       ref={gitterRef}
-      className="border-line rounded-card mt-4 overflow-x-auto border"
+      aria-busy={laedtNach || undefined}
+      className={`border-line rounded-card mt-4 overflow-x-auto border ${laedtNach ? 'opacity-60' : ''}`}
       // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
       // auf einer Kachel wird nicht vom Browser übernommen.
       style={{ touchAction: 'pan-x pan-y' }}

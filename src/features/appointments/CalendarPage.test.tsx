@@ -910,6 +910,22 @@ describe('CalendarPage', () => {
         );
       });
 
+      it('nennt als Bisher den Tag des Termins, nicht den gezeigten Ausschnitt (FIX-018)', async () => {
+        // Tagesansicht auf dem Folgetag: Der Termin vom 12.05. steht (im Test
+        // ohne Datumsfilter) trotzdem im Gitter. Sein Ursprung muss vom Termin
+        // kommen - nach dem Blaettern waehrend der Geste zeigt der Ausschnitt
+        // einen anderen Tag als den, an dem der Termin war.
+        rendern('/kalender?ansicht=tag&datum=2027-05-13');
+        const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+        spaltenVermessen();
+
+        ziehen(kachel, { dy: EINE_STUNDE });
+
+        const kasten = await rueckfrage();
+        expect(kasten).toHaveTextContent('Mi 12.05., 09:00–10:00');
+        expect(kasten).toHaveTextContent('Do 13.05., 10:00–11:00');
+      });
+
       it('setzt den Fokus auf die bestaetigende Schaltflaeche', async () => {
         const kachel = await tagesansicht();
         ziehen(kachel, { dy: EINE_STUNDE });
@@ -1096,6 +1112,15 @@ describe('CalendarPage', () => {
       expect(ziel.searchParams.get('ende')).toBe('08:00');
       // FIX-016: der Kalenderstand reist als Rueckweg mit, damit das Anlegen
       // wieder hier landet.
+      expect(ziel.searchParams.get('zurueck')).toBe('/kalender?ansicht=tag&datum=2027-05-12');
+    });
+
+    it('gibt `neu` nicht in den naechsten Rueckweg weiter', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&neu=77777777-7777-4777-8777-000000000001');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const anlegen = screen.getByRole('link', { name: 'Termin anlegen' });
+      const ziel = new URL(String(anlegen.getAttribute('href')), 'http://test');
       expect(ziel.searchParams.get('zurueck')).toBe('/kalender?ansicht=tag&datum=2027-05-12');
     });
 

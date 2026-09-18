@@ -171,6 +171,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // Der gerade angelegte Termin (FIX-016): einmal hervorgehoben, beim
   // naechsten Blaettern faellt der Parameter weg (`schreibeParameter`).
   const neuerTermin = suche.get(NEUER_TERMIN_PARAM);
+  // Der Kalenderstand als Rückweg - aus den gelesenen Parametern, nicht aus der
+  // Adresszeile: So reist `neu=` nicht in den nächsten Rückweg (und markiert
+  // beim zweiten Anlegen den falschen Termin).
+  const kalenderStand = `/kalender?${schreibeParameter(p).toString()}`;
   const bereich = bereichFuer(p.ansicht, p.datum);
   // Welche Linien die gewaehlte Zoomstufe traegt - dieselbe Auskunft fuer die
   // Beschriftung der Bedienung und fuer das Gitter selbst.
@@ -435,10 +439,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const bekannt = useRef(new Map<string, GitterEintrag & { datum: string }>());
   useEffect(() => {
     for (const g of gitterEintraege) {
-      bekannt.current.set(g.eintrag.id, {
-        ...g,
-        datum: p.ansicht === 'tag' ? bereich.von : g.spalteId,
-      });
+      // Der Tag kommt aus dem Termin selbst, nicht aus dem Ausschnitt: Waehrend
+      // des Blaetterns stehen kurz die alten Termine unter dem neuen Tag
+      // (keepPreviousData), und der Ursprung darf davon nichts abbekommen.
+      bekannt.current.set(g.eintrag.id, { ...g, datum: dayKey(g.eintrag.starts_at, zone) });
     }
   });
 
@@ -548,13 +552,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       const ziel = `/patienten/${p.patient}/termine/neu${parameter}${
         p.verordnung ? `&verordnung=${p.verordnung}` : ''
       }`;
-      void navigate(mitRueckweg(ziel, `/kalender?${suche.toString()}`));
+      void navigate(mitRueckweg(ziel, kalenderStand));
       return;
     }
 
     // Auch ohne Personenfilter: Der Kalenderstand ist der Rückweg, damit das
     // Anlegen wieder hier landet - nicht in der Terminansicht (BEF-016).
-    void navigate(mitRueckweg(`/termine/neu${parameter}`, `/kalender?${suche.toString()}`));
+    void navigate(mitRueckweg(`/termine/neu${parameter}`, kalenderStand));
   }
 
   const laedt = termine.isPending || therapeuten.isPending;
@@ -589,7 +593,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                     ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
                     ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
                   })}`,
-                  `/kalender?${suche.toString()}`,
+                  kalenderStand,
                 )}
                 variant="secondary"
               >
@@ -602,7 +606,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               <ButtonLink
                 to={mitRueckweg(
                   `/termine/ereignis${schreibeTerminVorbelegung({ datum: p.datum })}`,
-                  `/kalender?${suche.toString()}`,
+                  kalenderStand,
                 )}
                 variant="secondary"
               >
@@ -758,7 +762,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           Termin angelegt.{' '}
           {gitterEintraege.some((g) => g.eintrag.id === neuerTermin) ? (
             <Link
-              to={mitRueckweg(`/termine/${neuerTermin}`, `/kalender?${suche.toString()}`)}
+              to={mitRueckweg(`/termine/${neuerTermin}`, kalenderStand)}
               className="text-accent hover:underline"
             >
               Termin öffnen
@@ -823,7 +827,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Der Rückweg ist der Kalenderstand selbst - Ansicht, Datum,
           // Zoomstufe und alle Filter (UX-012). Wer von einer Kachel in den
           // Termin springt, kommt damit genau hierher zurück.
-          rueckweg={`/kalender?${suche.toString()}`}
+          rueckweg={kalenderStand}
           spaltenModell={spaltenModell}
           eintraege={gitterEintraege}
           fenster={fenster}
@@ -860,6 +864,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           }
           onVerschieben={ablegen}
           kontext={bereich.von}
+          // Waehrend des Blaetterns stehen noch die alten Termine da: gedimmt,
+          // damit niemand auf einem Zwischenstand handelt.
+          laedtNach={termine.isPlaceholderData || ausnahmen.isPlaceholderData}
           onBlaettern={(richtung) => setze({ datum: blaettern(p.ansicht, p.datum, richtung) })}
           onFreieZeit={darfAendern ? freieZeit : undefined}
           beschriftung={

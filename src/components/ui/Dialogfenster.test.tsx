@@ -47,6 +47,24 @@ describe('Dialogfenster', () => {
     expect(screen.getByRole('button', { name: 'Nein' })).toHaveFocus();
   });
 
+  it('behaelt Fokus und Escape auch nach einem Klick auf Text im Fenster', async () => {
+    const onSchliessen = vi.fn();
+    const user = userEvent.setup();
+    render(<Seite onSchliessen={onSchliessen} />);
+
+    await user.click(screen.getByText('Text'));
+    // Der Fokus liegt auf dem Fenster, nicht auf der Seite darunter.
+    expect(screen.getByRole('dialog')).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Ja' })).toHaveFocus();
+    await user.click(screen.getByText('Text'));
+    await user.tab({ shift: true });
+    expect(screen.getByRole('button', { name: 'Nein' })).toHaveFocus();
+    await user.click(screen.getByText('Text'));
+    await user.keyboard('{Escape}');
+    expect(onSchliessen).toHaveBeenCalledTimes(1);
+  });
+
   it('schliesst mit Escape - das ist Abbrechen, nie Bestaetigen', async () => {
     const onSchliessen = vi.fn();
     const user = userEvent.setup();

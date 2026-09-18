@@ -392,12 +392,18 @@ export function useTerminZiehen(optionen: ZiehOptionen): TerminZiehen {
     window.addEventListener('pointercancel', beenden);
     window.addEventListener('scroll', bildlauf, true);
     window.addEventListener('keydown', abbrechen);
+    // Fenster verloren (Alt-Tab, Zeiger draussen losgelassen): kein Ziehen
+    // mehr - sonst liefe der Randbildlauf weiter.
+    window.addEventListener('blur', beenden);
     return () => {
       window.removeEventListener('pointermove', bewegen);
       window.removeEventListener('pointerup', loslassen);
       window.removeEventListener('pointercancel', beenden);
       window.removeEventListener('scroll', bildlauf, true);
       window.removeEventListener('keydown', abbrechen);
+      window.removeEventListener('blur', beenden);
+      // Beim Abbau laufen weder Intervall noch Blaettern weiter.
+      beenden();
     };
   }, [beenden, langenDruckAbbrechen, randScrollStoppen, blaetternStoppen]);
 

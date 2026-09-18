@@ -63,6 +63,13 @@ export function Dialogfenster({
     if (elemente.length === 0) return;
     const erstes = elemente[0]!;
     const letztes = elemente[elemente.length - 1]!;
+    // Vom Fenster selbst aus (nach einem Klick auf Text) geht es nach vorn
+    // zum ersten, rueckwaerts zum letzten Element - nie auf die Seite darunter.
+    if (document.activeElement === fensterRef.current) {
+      event.preventDefault();
+      (event.shiftKey ? letztes : erstes).focus();
+      return;
+    }
     if (event.shiftKey && document.activeElement === erstes) {
       event.preventDefault();
       letztes.focus();
@@ -85,6 +92,10 @@ export function Dialogfenster({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titelId}
+        // Fokussierbar, damit ein Klick auf Text im Fenster den Fokus nicht
+        // auf die Seite darunter fallen laesst - Escape und der Fokuskreis
+        // haengen an diesem Element.
+        tabIndex={-1}
         onKeyDown={tastatur}
         // Radius 14, 24 innen wie die Rueckfrage-Karte (DS-001); unten auf dem
         // Telefon, mittig auf dem Bildschirm - mit dem Daumen erreichbar.
