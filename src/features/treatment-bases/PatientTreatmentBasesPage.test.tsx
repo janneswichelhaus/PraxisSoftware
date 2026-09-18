@@ -147,7 +147,7 @@ describe('Verordnungsbereich der Akte', () => {
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-      expect(await screen.findByText('1 von 8 genutzt · 7 offen')).toBeInTheDocument();
+      expect(await screen.findByText('8 · 1 genutzt')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Terminserie anlegen' })).toHaveAttribute(
         'href',
         `/patienten/${patient.id}/verordnungen/sz1/serie`,
@@ -182,23 +182,39 @@ describe('Verordnungsbereich der Akte', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // AKTE-002: Leistungseinheiten und Termine sind zwei verschiedene Zahlen.
-  // Vorher stand über beiden dasselbe Wort "Kontingent".
+  // AKTE-002: Mögliche, genutzte, verplante und planbare Termine sind
+  // verschiedene Zahlen. Vorher stand über allen dasselbe Wort "Kontingent",
+  // und die obere war die Summe der Heilmittel (VER-EPIC-002, ANN-064).
   // ---------------------------------------------------------------------------
-  describe('Einheiten und Termine getrennt', () => {
-    it('benennt beide Zahlen mit ihrer Einheit', async () => {
+  describe('Terminzahlen getrennt', () => {
+    it('benennt jede Zahl und zählt durchgehend Termine', async () => {
       fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
       fetchPatientTreatmentBasisSlots.mockResolvedValue([
         kontingent({ prescribed: 10, used: 7, planned: 8, upcoming: 2, remaining: 2 }),
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-      expect(await screen.findByText('7 von 10 genutzt · 3 offen')).toBeInTheDocument();
+      expect(await screen.findByText('10 · 7 genutzt')).toBeInTheDocument();
       expect(screen.getByText('8 zugeordnet · 2 bevorstehend')).toBeInTheDocument();
       expect(screen.getByText('2 Behandlungen')).toBeInTheDocument();
-      expect(screen.getByText('Leistungseinheiten')).toBeInTheDocument();
+      expect(screen.getByText('Mögliche Termine')).toBeInTheDocument();
       expect(screen.getByText('Termine')).toBeInTheDocument();
       expect(screen.getByText('Noch planbar')).toBeInTheDocument();
+      // Die alte Bezeichnung ist weg - sie stand über einer Summe.
+      expect(screen.queryByText('Leistungseinheiten')).not.toBeInTheDocument();
+    });
+
+    it('nennt eine ungenutzte Grundlage ohne die Null', async () => {
+      // "0 von 6 genutzt" waere seit VER-EPIC-002 eine Zahl ohne Aussage:
+      // Genutzt pflegt bis ABR-002 niemand mehr von Hand (ANN-064).
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent({ prescribed: 6, used: 0, planned: 0, upcoming: 0, remaining: 6 }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(await screen.findByText('6')).toBeInTheDocument();
+      expect(screen.queryByText('6 · 0 genutzt')).not.toBeInTheDocument();
     });
 
     it('fuehrt von der Verordnung zu ihren Terminen', async () => {
@@ -308,7 +324,7 @@ describe('Verordnungsbereich der Akte', () => {
         await screen.findByRole('heading', { name: 'Ausgeschöpfte Behandlungsgrundlagen' }),
       ).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: '2025' })).toBeInTheDocument();
-      expect(screen.getByText(/6 von 6 Einheiten genutzt · 6 Termine/)).toBeInTheDocument();
+      expect(screen.getByText(/6 von 6 Terminen genutzt · 6 geplant/)).toBeInTheDocument();
     });
 
     it('haelt ihre Einzelheiten bis zum Aufklappen zurueck', async () => {

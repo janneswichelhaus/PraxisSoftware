@@ -12,9 +12,10 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { useSession } from '@/features/auth/sessionContext';
 import { fetchPatient, fullName } from '@/features/patients/api';
-import { TreatmentBasisFormFields, type PositionsFehler } from './TreatmentBasisFormFields';
+import { TreatmentBasisFormFields } from './TreatmentBasisFormFields';
 import { GRUNDLAGE_BESCHRIFTUNG, GRUNDLAGE_REIHENFOLGE, grundlageFeldId } from './grundlagenfelder';
 import {
+  bestandstexte,
   createTreatmentBasis,
   deleteTreatmentBasis,
   istVerordnung,
@@ -24,19 +25,16 @@ import {
   fetchPrescribers,
   fetchTreatmentBasis,
   itemsToFormValues,
-  leerePosition,
   leereGrundlage,
-  positionSchema,
   treatmentBasisFormSchema,
   treatmentBasisToFormValues,
   updateTreatmentBasis,
   type Bauart,
-  type PositionEingabe,
+  type GrundlageFehlerfeld,
+  type Heilmittelposition,
   type TreatmentBasisDetail,
   type TreatmentBasisFeld,
 } from './api';
-
-type Positionen = z.output<typeof positionSchema>[];
 
 /**
  * Formular für das Anlegen und Ändern einer Behandlungsgrundlage (VER-003,
@@ -97,11 +95,10 @@ function GrundlagenFormular({
       ? { ...basis, prescriber_id: entwurf.neuerVerordnerId }
       : basis;
   });
-  const [positionen, setPositionen] = useState<PositionEingabe[]>(
-    () => entwurf?.positionen ?? (bestand ? itemsToFormValues(bestand) : [{ ...leerePosition }]),
+  const [positionen, setPositionen] = useState<Heilmittelposition[]>(
+    () => entwurf?.positionen ?? (bestand ? itemsToFormValues(bestand) : []),
   );
-  const [fehler, setFehler] = useState<Partial<Record<TreatmentBasisFeld, string>>>({});
-  const [positionsFehler, setPositionsFehler] = useState<PositionsFehler[]>([]);
+  const [fehler, setFehler] = useState<Partial<Record<GrundlageFehlerfeld, string>>>({});
 
   const verordner = useQuery({
     queryKey: ['prescribers'],
@@ -135,18 +132,12 @@ function GrundlagenFormular({
   }
 
   const speichern = useMutation({
-    mutationFn: async ({
-      values,
-      items,
-    }: {
-      values: z.output<typeof treatmentBasisFormSchema>;
-      items: Positionen;
-    }) => {
+    mutationFn: async (values: z.output<typeof treatmentBasisFormSchema>) => {
       if (bestand) {
-        await updateTreatmentBasis(bestand.id, values, items);
+        await updateTreatmentBasis(bestand.id, values, positionen);
         return bestand.id;
       }
-      return createTreatmentBasis(patientId, values, items);
+      return createTreatmentBasis(patientId, values, positionen);
     },
     onSuccess: async (id) => {
       await akteAuffrischen();
@@ -164,21 +155,19 @@ function GrundlagenFormular({
   });
 
   /**
-   * Beim Wechsel auf „Selbstzahler" fallen Verordner:in und die klinischen
-   * Felder (ADR-020 Punkt 3 und 4).
+   * Beim Wechsel auf „Selbstzahler" fallen Verordner:in und Diagnose
+   * (ADR-020 Punkt 3 und 4).
    *
    * Sie werden **sichtbar geleert**, nicht stillschweigend beim Absenden
    * weggelassen: Wer die Bauart wechselt, sieht, was er damit aufgibt, und
    * findet beim Zurückwechseln ein leeres Feld statt eines Werts, den er nicht
    * mehr erwartet hat. Die Felder selbst blendet das Formular danach aus.
+   *
+   * Die drei Bestandstexte stehen hier nicht mehr: Sie sind keine Eingabe mehr
+   * (VER-EPIC-002). Beim Wechsel auf „Selbstzahler" räumt sie der Server ab,
+   * nicht das Formular — dieselbe Regel, eine Stelle tiefer (ADR-020 Punkt 4).
    */
-  const NUR_VERORDNUNG: TreatmentBasisFeld[] = [
-    'prescriber_id',
-    'diagnosis',
-    'therapy_goal',
-    'prescriber_note',
-    'follow_up_recommendation',
-  ];
+  const NUR_VERORDNUNG: TreatmentBasisFeld[] = ['prescriber_id', 'diagnosis'];
 
   function setzen(feld: TreatmentBasisFeld, wert: string) {
     setWerte((bisher) => {
@@ -198,13 +187,27 @@ function GrundlagenFormular({
     }
   }
 
-  function positionSetzen(index: number, feld: keyof PositionEingabe, wert: string) {
+  /**
+   * Ein Heilmittel an- oder abhaken (VER-EPIC-002).
+   *
+   * Abhaken entfernt **alle** Positionen mit diesem Heilmittel: Ein
+   * Bestandsdatensatz kann dieselbe Bezeichnung zweimal tragen, und eine davon
+   * stehen zu lassen wäre ein Rest, den niemand sieht. Anhaken legt eine neue
+   * Position ohne Menge an — die vergibt der Server aus der Terminzahl.
+   */
+  function heilmittelWechsel(remedy: string, gewaehlt: boolean) {
     setPositionen((bisher) =>
-      bisher.map((position, i) => (i === index ? { ...position, [feld]: wert } : position)),
+      gewaehlt
+        ? [...bisher, { id: null, remedy, bestand: null }]
+        : bisher.filter((position) => position.remedy !== remedy),
     );
-    setPositionsFehler((bisher) =>
-      bisher.map((eintrag, i) => (i === index ? { ...eintrag, [feld]: undefined } : eintrag)),
-    );
+    if (gewaehlt && fehler.items) {
+      setFehler((bisher) => {
+        const naechste = { ...bisher };
+        delete naechste.items;
+        return naechste;
+      });
+    }
   }
 
   // Läuft beim Klick auf "Verordner:in anlegen" - vor dem eigentlichen
@@ -227,7 +230,7 @@ function GrundlagenFormular({
     if (speichern.isPending) return;
 
     const kopf = treatmentBasisFormSchema.safeParse(werte);
-    const gefunden: Partial<Record<TreatmentBasisFeld, string>> = {};
+    const gefunden: Partial<Record<GrundlageFehlerfeld, string>> = {};
     if (!kopf.success) {
       for (const problem of kopf.error.issues) {
         const feld = problem.path[0] as TreatmentBasisFeld | undefined;
@@ -235,29 +238,16 @@ function GrundlagenFormular({
       }
     }
 
-    const geprueft: Positionen = [];
-    const positionsProbleme: PositionsFehler[] = positionen.map(() => ({}));
-    positionen.forEach((position, index) => {
-      const ergebnis = positionSchema.safeParse(position);
-      if (ergebnis.success) geprueft.push(ergebnis.data);
-      else {
-        for (const problem of ergebnis.error.issues) {
-          const feld = problem.path[0] as keyof PositionEingabe | undefined;
-          if (feld && !positionsProbleme[index]![feld]) {
-            positionsProbleme[index]![feld] = problem.message;
-          }
-        }
-      }
-    });
+    // Die Auswahl ist Pflicht: Eine Grundlage ohne Heilmittel weist auch der
+    // Server ab - hier steht es, damit der Hinweis an der Gruppe erscheint.
+    if (positionen.length === 0) {
+      gefunden.items = 'Bitte mindestens ein Heilmittel auswählen.';
+    }
 
     setFehler(gefunden);
-    setPositionsFehler(positionsProbleme);
+    if (Object.keys(gefunden).length > 0 || !kopf.success) return;
 
-    const alleFelderOk = Object.keys(gefunden).length === 0;
-    const allePositionenOk = positionsProbleme.every((p) => Object.keys(p).length === 0);
-    if (!alleFelderOk || !allePositionenOk || !kopf.success) return;
-
-    speichern.mutate({ values: kopf.data, items: geprueft });
+    speichern.mutate(kopf.data);
   }
 
   return (
@@ -302,12 +292,9 @@ function GrundlagenFormular({
           fehler={fehler}
           onChange={setzen}
           positionen={positionen}
-          positionsFehler={positionsFehler}
-          onPositionChange={positionSetzen}
-          onPositionHinzufuegen={() => setPositionen((bisher) => [...bisher, { ...leerePosition }])}
-          onPositionEntfernen={(index) =>
-            setPositionen((bisher) => bisher.filter((_, i) => i !== index))
-          }
+          positionsFehler={fehler.items}
+          onHeilmittelWechsel={heilmittelWechsel}
+          bestandstexte={bestand ? bestandstexte(bestand) : []}
           verordnerinnen={verordner.data ?? []}
           verordnerAnlegenZiel={`/verordner/neu?zurueck=${encodeURIComponent(
             `${verordnerRueckpfad}?vorgang=${naechsterVorgang}`,

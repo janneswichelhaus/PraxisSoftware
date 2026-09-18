@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
@@ -11,30 +11,33 @@ import {
   istVerordnung,
   prescriberLabel,
   type Bauart,
-  type PositionEingabe,
+  type Heilmittelposition,
   type Prescriber,
   type TreatmentBasisFeld,
 } from './api';
+import { HEILMITTEL, istBestand } from './heilmittel';
 import { grundlageFeldId } from './grundlagenfelder';
-
-export type PositionsFehler = Partial<Record<keyof PositionEingabe, string>>;
 
 /**
  * Eingabefelder einer Behandlungsgrundlage.
  *
  * **Die Bauart steht zuerst** (GRD-001, ADR-020): Sie entscheidet, welche
  * Felder danach überhaupt kommen. Eine Verordnung verlangt eine Verordner:in
- * und trägt die klinischen Felder; ein Selbstzahler hat beides nicht — das
- * Formular fragt dort nicht danach, statt leere Felder anzubieten, die niemand
- * ausfüllen soll (ADR-020 Punkt 3 und 4).
+ * und trägt die Diagnose; ein Selbstzahler hat beides nicht — das Formular
+ * fragt dort nicht danach, statt leere Felder anzubieten, die niemand ausfüllen
+ * soll (ADR-020 Punkt 3 und 4).
  *
- * Die Positionen sind der eigentliche Inhalt: sie tragen das Kontingent, wegen
- * dessen eine Grundlage im Alltag überhaupt aufgeschlagen wird. „Genutzt"
- * pflegt die Praxis bis auf Weiteres selbst (ANN-012).
+ * **Seit VER-EPIC-002 ist der Rest ein kurzer Weg** (Vorgaben in
+ * `docs/development/VER-EPIC-002.md`): Heilmittel als beschriftete Kästchen
+ * statt Dropdown und freier Positionsliste, daneben die **Anzahl möglicher
+ * Termine** als eigenes Feld, danach Diagnose und Anmerkungen. „Genutzt",
+ * „Position hinzufügen", Therapieziel und das zweite Bemerkungsfeld sind
+ * weggefallen; die Empfehlung gibt es nicht als manuelle Eingabe
+ * (ANN-064, ANN-065, ANN-066 — ANN-014 bleibt für den Bestandstext gültig).
  *
- * ANN-014: Das letzte Feld heißt ausdrücklich „Empfehlung der Therapeut:in zum
- * Verordnungsende". Die Anwendung erzeugt keine Empfehlung — sie nimmt die
- * auf, die eine Therapeut:in selbst formuliert (ADR-006 Punkt 4).
+ * Was ein Bestandsdatensatz mitbringt, verschwindet dadurch nicht: Ein
+ * Heilmittel außerhalb des Katalogs steht als eigenes, angehaktes Kästchen
+ * darunter, mit seiner Menge daneben.
  */
 export function TreatmentBasisFormFields({
   werte,
@@ -42,28 +45,31 @@ export function TreatmentBasisFormFields({
   onChange,
   positionen,
   positionsFehler,
-  onPositionChange,
-  onPositionHinzufuegen,
-  onPositionEntfernen,
+  onHeilmittelWechsel,
   verordnerinnen,
   verordnerAnlegenZiel,
   onVerordnerAnlegenKlick,
+  bestandstexte,
 }: {
   werte: Record<TreatmentBasisFeld, string>;
   fehler: Partial<Record<TreatmentBasisFeld, string>>;
   onChange: (feld: TreatmentBasisFeld, wert: string) => void;
-  positionen: PositionEingabe[];
-  positionsFehler: PositionsFehler[];
-  onPositionChange: (index: number, feld: keyof PositionEingabe, wert: string) => void;
-  onPositionHinzufuegen: () => void;
-  onPositionEntfernen: (index: number) => void;
+  positionen: Heilmittelposition[];
+  /** Fehler der Auswahl als Ganzes — „mindestens ein Heilmittel". */
+  positionsFehler: string | undefined;
+  onHeilmittelWechsel: (remedy: string, gewaehlt: boolean) => void;
   verordnerinnen: Prescriber[];
   verordnerAnlegenZiel: string;
   /** Merkt den Formularzustand, bevor die Seite zum Anlegen wechselt (VER-003). */
   onVerordnerAnlegenKlick: () => void;
+  /** Texte aus der Zeit vor VER-EPIC-002 — nur Anzeige, nie überschrieben. */
+  bestandstexte: { feld: string; text: string }[];
 }) {
   const bauart = werte.treatment_basis_kind as Bauart;
   const verordnung = istVerordnung(bauart);
+
+  const gewaehlt = (remedy: string) => positionen.some((position) => position.remedy === remedy);
+  const bestandspositionen = positionen.filter((position) => istBestand(position.remedy));
 
   return (
     <>
@@ -142,84 +148,83 @@ export function TreatmentBasisFormFields({
         </Feldgruppe>
       </Section>
 
+      {/* Heilmittel und Terminzahl stehen zusammen und oben: Sie sind das,
+          was die Praxis vom Rezept abschreibt. Beide beantworten verschiedene
+          Fragen - was wird behandelt, und wie oft (ANN-064). */}
       <Section
-        titel="Positionen"
+        titel="Heilmittel und Termine"
         hinweis={
           verordnung
-            ? 'Je verordnetem Heilmittel eine Position. „Genutzt" wird derzeit von Hand gepflegt; die Restmenge ergibt sich daraus.'
-            : 'Je vereinbartem Heilmittel eine Position. „Genutzt" wird derzeit von Hand gepflegt; die Restmenge ergibt sich daraus.'
+            ? 'Anhaken, was auf dem Rezept steht. Mehrere zugleich sind möglich.'
+            : 'Anhaken, was vereinbart ist. Mehrere zugleich sind möglich.'
         }
       >
         <Feldgruppe>
-          {positionen.map((position, index) => (
-            <fieldset
-              key={position.id ?? `neu-${index}`}
-              className="border-line rounded-card border p-4"
-            >
-              <legend className="text-ink-muted px-1 text-sm">Position {index + 1}</legend>
-              <div className="flex flex-col gap-4">
-                <Field
-                  label="Heilmittel *"
-                  name={`remedy-${index}`}
-                  autoComplete="off"
-                  required
-                  value={position.remedy}
-                  error={positionsFehler[index]?.remedy}
-                  onChange={(event) => onPositionChange(index, 'remedy', event.target.value)}
+          <fieldset>
+            <legend className="text-ink text-sm font-medium">Heilmittel *</legend>
+            <div className="mt-2 flex flex-col gap-1">
+              {HEILMITTEL.map((heilmittel, index) => (
+                <Checkbox
+                  key={heilmittel.remedy}
+                  // Nur das erste Kästchen trägt die feste Kennung: Die
+                  // Fehlerzusammenfassung springt an den Anfang der Gruppe.
+                  feldId={index === 0 ? grundlageFeldId('items') : undefined}
+                  name={`heilmittel-${index}`}
+                  label={heilmittel.beschriftung}
+                  checked={gewaehlt(heilmittel.remedy)}
+                  onChange={(event) => onHeilmittelWechsel(heilmittel.remedy, event.target.checked)}
                 />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field
-                    label={`${verordnung ? 'Verordnet' : 'Vereinbart'} *`}
-                    name={`prescribed-${index}`}
-                    inputMode="numeric"
-                    required
-                    value={position.prescribed_quantity}
-                    error={positionsFehler[index]?.prescribed_quantity}
-                    onChange={(event) =>
-                      onPositionChange(index, 'prescribed_quantity', event.target.value)
-                    }
-                  />
-                  <Field
-                    label="Genutzt"
-                    name={`used-${index}`}
-                    inputMode="numeric"
-                    value={position.used_quantity}
-                    error={positionsFehler[index]?.used_quantity}
-                    onChange={(event) =>
-                      onPositionChange(index, 'used_quantity', event.target.value)
-                    }
-                  />
-                </div>
-                {positionen.length > 1 ? (
-                  <div className="flex">
-                    <Button
-                      type="button"
-                      variant="quiet"
-                      onClick={() => onPositionEntfernen(index)}
-                    >
-                      Position {index + 1} entfernen
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
-            </fieldset>
-          ))}
-          <div className="flex">
-            <Button type="button" variant="secondary" onClick={onPositionHinzufuegen}>
-              Position hinzufügen
-            </Button>
-          </div>
+              ))}
+              {/* Was ein Bestandsdatensatz mitbringt und der Katalog nicht
+                  kennt: sichtbar, angehakt und mit seiner Menge. Abhaken
+                  entfernt es - still umgedeutet wird es nie. */}
+              {bestandspositionen.map((position) => (
+                <Checkbox
+                  key={position.id ?? position.remedy}
+                  name={`heilmittel-bestand-${position.remedy}`}
+                  label={position.remedy}
+                  hint={
+                    position.bestand
+                      ? `Aus dem Bestand: ${position.bestand.genutzt} von ${position.bestand.verordnet} genutzt.`
+                      : 'Aus dem Bestand.'
+                  }
+                  checked
+                  onChange={(event) => onHeilmittelWechsel(position.remedy, event.target.checked)}
+                />
+              ))}
+            </div>
+            {/* Ohne `role="alert"` wie bei `Field` und `Select`: Die
+                Fehlerzusammenfassung über dem Formular ist die eine Meldung,
+                die Vorlesesoftware ansagen soll (UX-012). Zwei zugleich
+                verdrängen einander. */}
+            {positionsFehler ? <p className="text-danger mt-1 text-sm">{positionsFehler}</p> : null}
+          </fieldset>
+
+          <Field
+            label="Anzahl möglicher Termine *"
+            name="appointment_count"
+            feldId={grundlageFeldId('appointment_count')}
+            inputMode="numeric"
+            required
+            hint={
+              verordnung
+                ? 'Wie viele Behandlungstermine das Rezept hergibt. Mehrere Heilmittel erzeugen keine zusätzlichen Termine.'
+                : 'Wie viele Behandlungstermine vereinbart sind. Mehrere Heilmittel erzeugen keine zusätzlichen Termine.'
+            }
+            value={werte.appointment_count}
+            error={fehler.appointment_count}
+            onChange={(event) => onChange('appointment_count', event.target.value)}
+          />
         </Feldgruppe>
       </Section>
 
-      {/* ADR-020 Punkt 4: Die klinischen Felder bleiben klinisch - und beim
-          Selbstzahler leer. Sie werden hier nicht angeboten; was beim Wechsel
-          der Bauart schon dastand, leert das Formular sichtbar (siehe
-          TreatmentBasisFormPage). */}
+      {/* ADR-020 Punkt 4: Die Diagnose bleibt klinisch - und beim Selbstzahler
+          leer. Sie wird hier nicht angeboten; was beim Wechsel der Bauart schon
+          dastand, leert das Formular sichtbar (siehe TreatmentBasisFormPage). */}
       {verordnung ? (
         <Section
           titel="Klinische Angaben"
-          hinweis="Für Praxismanagement-Zugänge nicht sichtbar. Der Behandlungsverlauf gehört in die Behandlungsdokumentation, nicht hierher."
+          hinweis="Der Behandlungsverlauf gehört in die Behandlungsdokumentation, nicht hierher."
         >
           <Feldgruppe>
             <TextArea
@@ -231,51 +236,47 @@ export function TreatmentBasisFormFields({
               error={fehler.diagnosis}
               onChange={(event) => onChange('diagnosis', event.target.value)}
             />
-            <TextArea
-              label="Therapieziel"
-              name="therapy_goal"
-              feldId={grundlageFeldId('therapy_goal')}
-              rows={2}
-              value={werte.therapy_goal}
-              error={fehler.therapy_goal}
-              onChange={(event) => onChange('therapy_goal', event.target.value)}
-            />
-            <TextArea
-              label="Hinweis der Verordner:in"
-              name="prescriber_note"
-              feldId={grundlageFeldId('prescriber_note')}
-              rows={2}
-              hint="Was auf dem Rezept steht, unverändert übernommen."
-              value={werte.prescriber_note}
-              error={fehler.prescriber_note}
-              onChange={(event) => onChange('prescriber_note', event.target.value)}
-            />
-            <TextArea
-              label="Empfehlung der Therapeut:in zum Verordnungsende"
-              name="follow_up_recommendation"
-              feldId={grundlageFeldId('follow_up_recommendation')}
-              rows={2}
-              hint="Ihre eigene Einschätzung. Die Anwendung erzeugt keine Empfehlung."
-              value={werte.follow_up_recommendation}
-              error={fehler.follow_up_recommendation}
-              onChange={(event) => onChange('follow_up_recommendation', event.target.value)}
-            />
           </Feldgruppe>
         </Section>
       ) : null}
 
-      <Section titel="Organisatorisch">
+      <Section titel="Anmerkungen">
         <Feldgruppe>
           <TextArea
-            label="Bemerkung"
+            label="Anmerkungen"
             name="note"
             feldId={grundlageFeldId('note')}
-            rows={2}
-            hint={'Für alle Praxisrollen sichtbar, etwa „Rezept liegt im Ordner".'}
+            rows={3}
+            hint={
+              verordnung
+                ? 'Ein Feld für alles, was zur Verordnung zu sagen ist — der Hinweis vom Rezept ebenso wie „Rezept liegt im Ordner". Für alle Praxisrollen sichtbar.'
+                : 'Ein Feld für alles, was zur Vereinbarung zu sagen ist. Für alle Praxisrollen sichtbar.'
+            }
             value={werte.note}
             error={fehler.note}
             onChange={(event) => onChange('note', event.target.value)}
           />
+
+          {/* ANN-014 bleibt gültig: Die Anwendung erzeugt keine Empfehlung. Sie
+              zeigt nur, was vor VER-EPIC-002 jemand selbst geschrieben hat -
+              und nimmt dafür keine neue Eingabe mehr entgegen. */}
+          {bestandstexte.length > 0 ? (
+            <div className="border-line rounded-card border p-4">
+              <p className="text-ink text-sm font-medium">Aus dem Bestand</p>
+              <p className="text-ink-subtle mt-1 text-sm">
+                Diese Angaben stammen aus der Zeit vor der Umstellung. Sie werden nicht mehr erfasst
+                und bleiben beim Speichern unverändert stehen.
+              </p>
+              <dl className="mt-3 flex flex-col gap-2">
+                {bestandstexte.map((eintrag) => (
+                  <div key={eintrag.feld}>
+                    <dt className="text-ink-muted text-sm">{eintrag.feld}</dt>
+                    <dd className="text-ink text-sm whitespace-pre-line">{eintrag.text}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
         </Feldgruppe>
       </Section>
     </>

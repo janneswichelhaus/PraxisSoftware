@@ -23,9 +23,7 @@ const BENUTZER_B = '11111111-1111-4111-8111-000000000002';
 
 const ENTWURF: TreatmentBasisDraft = {
   werte: { ...leereGrundlage, frequency_note: '2x pro Woche' },
-  positionen: [
-    { id: null, remedy: 'Manuelle Therapie', prescribed_quantity: '6', used_quantity: '0' },
-  ],
+  positionen: [{ id: null, remedy: 'Manuelle Therapie', bestand: null }],
 };
 
 beforeEach(() => {

@@ -270,6 +270,14 @@ const treatmentBasisSchema = z.object({
 });
 
 /**
+ * Die Anzahl möglicher Termine kommt nur aus der Detailsicht (VER-EPIC-002).
+ *
+ * Die beiden Listenprojektionen liefern sie nicht: Die Akte zeigt dieselbe Zahl
+ * schon über `list_patient_treatment_basis_slots` als `prescribed`, und zwei
+ * Wege zu einer Zahl sind einer zu viel.
+ */
+
+/**
  * Die klinischen Felder kommen aus einer anderen Serverfunktion und sind
  * deshalb optional — nicht "nullable". Wer die organisatorische Sicht liest,
  * bekommt sie gar nicht erst (ADR-004, ANN-011).
@@ -363,33 +371,33 @@ export function nachJahr<T extends TreatmentBasis>(
 }
 
 // -----------------------------------------------------------------------------
-// Einheiten und Termine je Verordnung (AKTE-002)
+// Termine je Verordnung (AKTE-002, VER-EPIC-002)
 // -----------------------------------------------------------------------------
 
 const kontingentSchema = z.object({
   treatment_basis_id: z.string(),
-  /** Verordnete Leistungseinheiten aus den Positionen. */
+  /** Mögliche Termine aus `appointment_count` (ANN-064). */
   prescribed: z.number(),
-  /** Genutzte Leistungseinheiten; bis ABR-002 von Hand gepflegt (ANN-012). */
+  /** Genutzte Termine aus der größten Positionsmenge; fortgeschrieben ab ABR-002. */
   used: z.number(),
-  /** Zugeordnete Termine ohne abgesagte - eine Terminzahl, keine Einheit. */
+  /** Zugeordnete Termine ohne abgesagte. */
   planned: z.number(),
   /** Davon noch bevorstehend. */
   upcoming: z.number(),
-  /** Was sich noch planen lässt: verordnet minus dem größeren Wert (ANN-038). */
+  /** Was sich noch planen lässt: möglich minus dem größeren Wert (ANN-038). */
   remaining: z.number(),
 });
 
 export type TreatmentBasisKontingent = z.infer<typeof kontingentSchema>;
 
 /**
- * Kontingent und Terminzahlen aller Verordnungen einer Person.
+ * Die Terminzahlen aller Behandlungsgrundlagen einer Person.
  *
- * Der Grund für diesen Lesepfad ist die Trennung zweier Zahlen, die vorher
- * beide „Kontingent" hießen: **Leistungseinheiten** stehen an den Positionen
- * der Verordnung, **Termine** an den Terminen. Die Akte nennt sie deshalb
- * getrennt — und `remaining` ist das, was die Serienplanung noch anbietet
- * (ANN-038).
+ * Seit VER-EPIC-002 zählen alle vier Zahlen dasselbe: **Behandlungstermine**
+ * (ANN-064). Vorher war `prescribed` die Summe der Leistungsmengen und damit
+ * bei jeder Kombination aus mehreren Heilmitteln zu groß. Die Leistungsmenge
+ * je Heilmittel steht weiter an der Position — `remaining` ist das, was die
+ * Serienplanung noch anbietet (ANN-038).
  */
 export async function fetchPatientTreatmentBasisSlots(
   patientId: string,
@@ -413,7 +421,10 @@ export function kontingentJeGrundlage(
 // Verordnung anlegen und ändern (VER-003)
 // -----------------------------------------------------------------------------
 
-const singleClinicalSchema = clinicalTreatmentBasisSchema.extend({ patient_id: z.string() });
+const singleClinicalSchema = clinicalTreatmentBasisSchema.extend({
+  patient_id: z.string(),
+  appointment_count: z.number(),
+});
 
 export type TreatmentBasisDetail = z.infer<typeof singleClinicalSchema>;
 
@@ -436,45 +447,28 @@ export async function fetchTreatmentBasis(
   return zeilen[0] ?? null;
 }
 
-/** Eine Position im Formular. Mengen bleiben Text, bis der Server sie prüft. */
-export interface PositionEingabe {
+/**
+ * Ein ausgewähltes Heilmittel im Formular (VER-EPIC-002).
+ *
+ * Das Formular erfasst seit VER-EPIC-002 nur noch die **Auswahl**: angehakt
+ * oder nicht. Mengen stehen hier ausschließlich zur Anzeige — geschrieben
+ * werden sie nicht, und genau das hält eine Bestandsmenge unangetastet
+ * (ANN-064). Die verordnete Menge einer neu angehakten Position vergibt der
+ * Server aus der Terminzahl.
+ */
+export interface Heilmittelposition {
+  /** Vorhandene Position, oder `null` bei einer neu angehakten. */
   id: string | null;
   remedy: string;
-  prescribed_quantity: string;
-  used_quantity: string;
+  /** Mengen einer vorhandenen Position — nur Anzeige. */
+  bestand: { verordnet: number; genutzt: number } | null;
 }
-
-export const leerePosition: PositionEingabe = {
-  id: null,
-  remedy: '',
-  prescribed_quantity: '',
-  used_quantity: '0',
-};
 
 const ganzeZahl = z
   .string()
   .transform((value) => value.trim())
   .refine((value) => /^\d+$/.test(value), 'Bitte eine ganze Zahl eingeben.')
   .transform((value) => Number(value));
-
-export const positionSchema = z
-  .object({
-    id: z.string().nullable(),
-    remedy: z
-      .string()
-      .transform((value) => value.trim())
-      .refine((value) => value.length > 0, 'Heilmittel ist erforderlich.')
-      .refine((value) => value.length <= 200, 'Das Heilmittel ist zu lang.'),
-    prescribed_quantity: ganzeZahl.refine(
-      (value) => value >= 1 && value <= 500,
-      'Zwischen 1 und 500.',
-    ),
-    used_quantity: ganzeZahl.refine((value) => value <= 500, 'Zwischen 0 und 500.'),
-  })
-  .refine((position) => position.used_quantity <= position.prescribed_quantity, {
-    message: 'Genutzt kann nicht größer sein als verordnet.',
-    path: ['used_quantity'],
-  });
 
 export const treatmentBasisFormSchema = z
   .object({
@@ -492,12 +486,17 @@ export const treatmentBasisFormSchema = z
         (value) => new Date(`${value}T00:00:00`) <= new Date(),
         'Das Datum darf nicht in der Zukunft liegen.',
       ),
+    /**
+     * Die Anzahl möglicher Termine — die Zahl, gegen die geplant wird.
+     * Ausdrücklich **keine** Summe von Heilmitteln (ANN-064).
+     */
+    appointment_count: ganzeZahl.refine(
+      (value) => value >= 1 && value <= 500,
+      'Zwischen 1 und 500.',
+    ),
     frequency_note: hoechstens(100, 'Die Frequenz ist zu lang.'),
-    note: hoechstens(2000, 'Die Bemerkung ist zu lang.'),
+    note: hoechstens(2000, 'Die Anmerkungen sind zu lang.'),
     diagnosis: hoechstens(2000, 'Die Diagnose ist zu lang.'),
-    therapy_goal: hoechstens(2000, 'Das Therapieziel ist zu lang.'),
-    prescriber_note: hoechstens(2000, 'Der Hinweis ist zu lang.'),
-    follow_up_recommendation: hoechstens(2000, 'Die Empfehlung ist zu lang.'),
   })
   // ADR-020 Punkt 3: Was eine Verordnung braucht, verlangt auch das Formular
   // weiter - aber nur von ihr. Verbindlich prüft das die Datenbank
@@ -517,16 +516,21 @@ type TreatmentBasisFormInput = z.input<typeof treatmentBasisFormSchema>;
 type TreatmentBasisFormValues = z.output<typeof treatmentBasisFormSchema>;
 export type TreatmentBasisFeld = keyof TreatmentBasisFormInput;
 
+/**
+ * Die Heilmittelauswahl ist kein Kopffeld, hat aber einen Fehler: „mindestens
+ * eines". Damit die Fehlerzusammenfassung darauf springen kann, bekommt sie
+ * eine eigene Kennung neben den Kopffeldern (UX-012).
+ */
+export type GrundlageFehlerfeld = TreatmentBasisFeld | 'items';
+
 export const leereGrundlage: Record<TreatmentBasisFeld, string> = {
   prescriber_id: '',
   treatment_basis_kind: 'first',
   issued_on: '',
+  appointment_count: '',
   frequency_note: '',
   note: '',
   diagnosis: '',
-  therapy_goal: '',
-  prescriber_note: '',
-  follow_up_recommendation: '',
 };
 
 export function treatmentBasisToFormValues(
@@ -536,22 +540,38 @@ export function treatmentBasisToFormValues(
     prescriber_id: grundlage.prescriber_id ?? '',
     treatment_basis_kind: grundlage.treatment_basis_kind,
     issued_on: grundlage.issued_on,
+    appointment_count: String(grundlage.appointment_count),
     frequency_note: grundlage.frequency_note ?? '',
     note: grundlage.note ?? '',
     diagnosis: grundlage.diagnosis ?? '',
-    therapy_goal: grundlage.therapy_goal ?? '',
-    prescriber_note: grundlage.prescriber_note ?? '',
-    follow_up_recommendation: grundlage.follow_up_recommendation ?? '',
   };
 }
 
-export function itemsToFormValues(grundlage: TreatmentBasisDetail): PositionEingabe[] {
+export function itemsToFormValues(grundlage: TreatmentBasisDetail): Heilmittelposition[] {
   return grundlage.items.map((item) => ({
     id: item.id,
     remedy: item.remedy,
-    prescribed_quantity: String(item.prescribed_quantity),
-    used_quantity: String(item.used_quantity),
+    bestand: { verordnet: item.prescribed_quantity, genutzt: item.used_quantity },
   }));
+}
+
+/**
+ * Drei Texte, die das Formular seit VER-EPIC-002 nicht mehr zur Eingabe
+ * anbietet (Therapieziel, Hinweis der Verordner:in, Empfehlung).
+ *
+ * Sie werden weiter **angezeigt**, solange etwas darin steht: Ein Text, den
+ * niemand mehr sieht, ist verloren, auch wenn die Spalte ihn noch trägt. Der
+ * Schreibpfad nimmt sie nicht entgegen und rührt sie deshalb nicht an.
+ */
+export function bestandstexte(grundlage: TreatmentBasisDetail): { feld: string; text: string }[] {
+  return [
+    { feld: 'Therapieziel', text: grundlage.therapy_goal ?? '' },
+    { feld: 'Hinweis der Verordner:in', text: grundlage.prescriber_note ?? '' },
+    {
+      feld: 'Empfehlung der Therapeut:in zum Verordnungsende',
+      text: grundlage.follow_up_recommendation ?? '',
+    },
+  ].filter((eintrag) => eintrag.text.length > 0);
 }
 
 /**
@@ -592,7 +612,7 @@ export function itemsToFormValues(grundlage: TreatmentBasisDetail): PositionEing
  */
 export interface TreatmentBasisDraft {
   werte: Record<TreatmentBasisFeld, string>;
-  positionen: PositionEingabe[];
+  positionen: Heilmittelposition[];
   /** Von der Verordner-Anlage nachgetragen, siehe `entwurfVerordnerNachtragen`. */
   neuerVerordnerId?: string;
 }
@@ -643,39 +663,51 @@ export function alleEntwuerfeVerwerfen(): void {
 }
 
 /**
+ * Die Positionen so, wie der Schreibpfad sie erwartet: die reine Auswahl.
+ *
+ * Ohne Mengen — der Server behält die einer vorhandenen Position und vergibt
+ * einer neuen die Terminzahl (ANN-064). Eine Bestandsmenge kann dadurch weder
+ * verloren gehen noch stillschweigend umgedeutet werden.
+ */
+function rpcPositionen(positionen: readonly Heilmittelposition[]) {
+  return positionen.map((position) =>
+    position.id ? { id: position.id, remedy: position.remedy } : { remedy: position.remedy },
+  );
+}
+
+/**
  * Die Felder für `create_treatment_basis` und `update_treatment_basis`.
  *
- * Beim Selbstzahler gehen Verordner:in und die klinischen Felder als `null`
- * hinaus (ADR-020 Punkt 3 und 4). Das Formular zeigt sie dort gar nicht erst;
- * dass sie hier trotzdem ausdrücklich geleert werden, ist die zweite Sicherung -
- * ein Wechsel der Bauart soll nie eine Diagnose an einem Selbstzahler
- * zurücklassen. Verbindlich prüft die Verordner:in die Datenbank.
+ * Beim Selbstzahler gehen Verordner:in und Diagnose als `null` hinaus (ADR-020
+ * Punkt 3 und 4). Das Formular zeigt sie dort gar nicht erst; dass sie hier
+ * trotzdem ausdrücklich geleert werden, ist die zweite Sicherung — ein Wechsel
+ * der Bauart soll nie eine Diagnose an einem Selbstzahler zurücklassen. Die
+ * dritte ist die Datenbank: Sie leert die klinischen Felder selbst und weist
+ * eine Verordner:in am Selbstzahler ab.
  */
-function rpcGrundlage(values: TreatmentBasisFormValues, items: z.output<typeof positionSchema>[]) {
+function rpcGrundlage(values: TreatmentBasisFormValues, positionen: readonly Heilmittelposition[]) {
   const verordnung = istVerordnung(values.treatment_basis_kind);
   const nurVerordnung = <T>(wert: T) => (verordnung ? wert : null);
   return {
     p_prescriber_id: nurVerordnung(values.prescriber_id),
     p_treatment_basis_kind: values.treatment_basis_kind,
     p_issued_on: values.issued_on,
-    p_items: items,
+    p_appointment_count: values.appointment_count,
+    p_items: rpcPositionen(positionen),
     p_frequency_note: values.frequency_note,
     p_note: values.note,
     p_diagnosis: nurVerordnung(values.diagnosis),
-    p_therapy_goal: nurVerordnung(values.therapy_goal),
-    p_prescriber_note: nurVerordnung(values.prescriber_note),
-    p_follow_up_recommendation: nurVerordnung(values.follow_up_recommendation),
   };
 }
 
 export async function createTreatmentBasis(
   patientId: string,
   values: TreatmentBasisFormValues,
-  items: z.output<typeof positionSchema>[],
+  positionen: readonly Heilmittelposition[],
 ): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_treatment_basis', {
     p_patient_id: patientId,
-    ...rpcGrundlage(values, items),
+    ...rpcGrundlage(values, positionen),
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gespeichert werden.');
@@ -687,11 +719,11 @@ export async function createTreatmentBasis(
 export async function updateTreatmentBasis(
   grundlageId: string,
   values: TreatmentBasisFormValues,
-  items: z.output<typeof positionSchema>[],
+  positionen: readonly Heilmittelposition[],
 ): Promise<void> {
   const { error } = await getSupabase().rpc('update_treatment_basis', {
     p_treatment_basis_id: grundlageId,
-    ...rpcGrundlage(values, items),
+    ...rpcGrundlage(values, positionen),
   });
 
   // Keine Details aus der Datenbank nach außen: eine fremde und eine

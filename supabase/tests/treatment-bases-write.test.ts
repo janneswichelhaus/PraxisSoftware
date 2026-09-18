@@ -34,9 +34,6 @@ const POSITIONEN = JSON.stringify([
   { remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: 0 },
 ]);
 
-/** Die Auswahl, wie sie das Formular seit VER-EPIC-002 schickt: ohne Mengen. */
-const AUSWAHL = JSON.stringify([{ remedy: 'Krankengymnastik' }]);
-
 const TERMINZAHL = 10;
 
 interface Position {
@@ -240,9 +237,9 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
 
   it('weist ein Ausstellungsdatum in der Zukunft ab', async () => {
     const morgen = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
-    await expect(
-      asUser(users.therapist, ANLEGEN, argumente({ issuedOn: morgen })),
-    ).rejects.toThrow(/issued_on must not be in the future/i);
+    await expect(asUser(users.therapist, ANLEGEN, argumente({ issuedOn: morgen }))).rejects.toThrow(
+      /issued_on must not be in the future/i,
+    );
   });
 
   it('unterscheidet fremde nicht von unbekannten IDs', async () => {
