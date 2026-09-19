@@ -24,8 +24,7 @@ const KATALOG = {
   entwurf: 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002',
 } as const;
 
-const ANLEGEN =
-  'select public.create_service_catalog_version($1::text, $2::date, $3::uuid) as id';
+const ANLEGEN = 'select public.create_service_catalog_version($1::text, $2::date, $3::uuid) as id';
 const POSITIONEN = 'select public.write_service_catalog_items($1::uuid, $2::jsonb) as anzahl';
 const VEROEFFENTLICHEN = 'select public.publish_service_catalog_version($1::uuid) as id';
 const VERWERFEN = 'select public.delete_service_catalog_version($1::uuid)';
@@ -81,9 +80,10 @@ describe('Leistungskatalog', () => {
     await asPostgres(
       'alter table public.service_catalog_versions disable trigger service_catalog_versions_frozen',
     );
-    await asPostgres('delete from public.service_catalog_items    where catalog_version_id <> all($1::uuid[])', [
-      [KATALOG.veroeffentlicht, KATALOG.entwurf],
-    ]);
+    await asPostgres(
+      'delete from public.service_catalog_items    where catalog_version_id <> all($1::uuid[])',
+      [[KATALOG.veroeffentlicht, KATALOG.entwurf]],
+    );
     await asPostgres('delete from public.service_catalog_versions where id <> all($1::uuid[])', [
       [KATALOG.veroeffentlicht, KATALOG.entwurf],
     ]);
@@ -108,7 +108,10 @@ describe('Leistungskatalog', () => {
     });
 
     it('zeigt einem Patientenkonto nichts', async () => {
-      const { rows } = await asUser(users.patientMax, 'select id from public.service_catalog_items');
+      const { rows } = await asUser(
+        users.patientMax,
+        'select id from public.service_catalog_items',
+      );
       expect(rows).toHaveLength(0);
     });
 
@@ -190,20 +193,16 @@ describe('Leistungskatalog', () => {
         id,
         JSON.stringify([...EINE_POSITION, { ...EINE_POSITION[0]!, code: 'MT', remedy: null }]),
       ]);
-      const { rows } = await asUserCommitted<{ anzahl: number }>(
-        users.ownerTherapist,
-        POSITIONEN,
-        [id, JSON.stringify(EINE_POSITION)],
-      );
+      const { rows } = await asUserCommitted<{ anzahl: number }>(users.ownerTherapist, POSITIONEN, [
+        id,
+        JSON.stringify(EINE_POSITION),
+      ]);
       expect(Number(rows[0]!.anzahl)).toBe(1);
     });
 
     it('verwirft einen Entwurf samt Positionen', async () => {
       const id = await entwurfAnlegen();
-      await asUserCommitted(users.ownerTherapist, POSITIONEN, [
-        id,
-        JSON.stringify(EINE_POSITION),
-      ]);
+      await asUserCommitted(users.ownerTherapist, POSITIONEN, [id, JSON.stringify(EINE_POSITION)]);
       await asUserCommitted(users.ownerTherapist, VERWERFEN, [id]);
 
       const { rows } = await asUser(
@@ -239,9 +238,10 @@ describe('Leistungskatalog', () => {
 
     it('weist auch den direkten Zugriff ab - die Sperre sitzt am Trigger', async () => {
       await expect(
-        asPostgres('update public.service_catalog_items set unit_price_cents = 1 where catalog_version_id = $1', [
-          KATALOG.veroeffentlicht,
-        ]),
+        asPostgres(
+          'update public.service_catalog_items set unit_price_cents = 1 where catalog_version_id = $1',
+          [KATALOG.veroeffentlicht],
+        ),
       ).rejects.toThrow(/immutable/);
 
       await expect(
@@ -260,10 +260,7 @@ describe('Leistungskatalog', () => {
 
     it('laesst den einen Uebergang zu, der das Einfrieren selbst ist', async () => {
       const id = await entwurfAnlegen();
-      await asUserCommitted(users.ownerTherapist, POSITIONEN, [
-        id,
-        JSON.stringify(EINE_POSITION),
-      ]);
+      await asUserCommitted(users.ownerTherapist, POSITIONEN, [id, JSON.stringify(EINE_POSITION)]);
       await expect(
         asUserCommitted(users.ownerTherapist, VEROEFFENTLICHEN, [id]),
       ).resolves.toBeDefined();
@@ -289,7 +286,9 @@ describe('Leistungskatalog', () => {
       await expect(
         asUser(users.ownerTherapist, POSITIONEN, [
           id,
-          JSON.stringify([{ ...EINE_POSITION[0]!, tax_treatment: 'taxable', tax_rate_permille: 0 }]),
+          JSON.stringify([
+            { ...EINE_POSITION[0]!, tax_treatment: 'taxable', tax_rate_permille: 0 },
+          ]),
         ]),
       ).rejects.toThrow(/tax_rate_matches_treatment/);
     });
@@ -343,10 +342,7 @@ describe('Leistungskatalog', () => {
   describe('Auditspur', () => {
     it('protokolliert Anlegen, Befuellen, Veroeffentlichen und Verwerfen', async () => {
       const id = await entwurfAnlegen();
-      await asUserCommitted(users.ownerTherapist, POSITIONEN, [
-        id,
-        JSON.stringify(EINE_POSITION),
-      ]);
+      await asUserCommitted(users.ownerTherapist, POSITIONEN, [id, JSON.stringify(EINE_POSITION)]);
       await asUserCommitted(users.ownerTherapist, VEROEFFENTLICHEN, [id]);
 
       const zweite = await entwurfAnlegen('Zum Verwerfen', '2032-01-01');

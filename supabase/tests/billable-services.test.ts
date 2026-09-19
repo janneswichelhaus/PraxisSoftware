@@ -357,9 +357,7 @@ describe('Leistungserfassung', () => {
             JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 1 }]),
           ]),
         ).rejects.toThrow(/not allowed to record billable services/);
-        await expect(asUser(konto, LISTE)).rejects.toThrow(
-          /not allowed to read billable services/,
-        );
+        await expect(asUser(konto, LISTE)).rejects.toThrow(/not allowed to read billable services/);
       }
     });
 
@@ -385,9 +383,9 @@ describe('Leistungserfassung', () => {
         OFFEN,
       );
       expect(vorher.rows.map((zeile) => zeile.appointment_id)).toContain(id);
-      expect(Number(vorher.rows.find((zeile) => zeile.appointment_id === id)!.suggestion_count)).toBe(
-        1,
-      );
+      expect(
+        Number(vorher.rows.find((zeile) => zeile.appointment_id === id)!.suggestion_count),
+      ).toBe(1);
 
       await asUserCommitted(users.office, ERFASSEN, [
         id,

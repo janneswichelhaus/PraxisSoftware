@@ -263,6 +263,29 @@ export function canManageStaffAccounts(roles: readonly RoleKey[]): boolean {
   return roles.includes('owner');
 }
 
+/**
+ * Rollen, die den Leistungskatalog pflegen duerfen (ABR-001, ANN-071).
+ *
+ * Nur owner: Ein Preis ist eine Unternehmensentscheidung und steht in 4.1 bei
+ * den Praxiseinstellungen; 4.3 gibt dem Office Rechnungen und Zahlungsstatus,
+ * nicht die Preisbildung. Steuert ausschliesslich die Darstellung -
+ * verbindlich ist app.can_manage_service_catalog().
+ */
+export function canManageServiceCatalog(roles: readonly RoleKey[]): boolean {
+  return roles.includes('owner');
+}
+
+/**
+ * Rollen, die Leistungen erfassen und wieder entfernen duerfen (ABR-002).
+ *
+ * owner und office: Die Erfassung ist der erste Schritt der Abrechnung
+ * (PROJECT_PRINCIPLES.md 4.3). Verbindlich ist
+ * app.can_record_billable_services().
+ */
+export function canRecordBillableServices(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => role === 'owner' || role === 'office');
+}
+
 /** Administrative Praxisberechtigung (PROJECT_PRINCIPLES.md 4.1). */
 export function isOwner(roles: readonly RoleKey[]): boolean {
   return roles.includes('owner');

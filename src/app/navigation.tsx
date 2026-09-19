@@ -280,8 +280,8 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       icon: symbole.abrechnung,
       unterpunkte: [
         { to: '/abrechnung', label: 'Rechnungen', vorschau: true },
-        { to: '/abrechnung/leistungen', label: 'Leistungen', vorschau: true },
-        { to: '/abrechnung/katalog', label: 'Katalog', vorschau: true },
+        { to: '/abrechnung/leistungen', label: 'Leistungen' },
+        { to: '/abrechnung/katalog', label: 'Katalog' },
         { to: '/abrechnung/zahlungen', label: 'Zahlungen', vorschau: true },
       ],
     });

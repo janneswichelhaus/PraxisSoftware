@@ -60,12 +60,9 @@ import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { ToursPage } from '@/features/tours/ToursPage';
-import {
-  CatalogPage,
-  InvoicesPage,
-  PaymentsPage,
-  ServicesPage,
-} from '@/features/billing/BillingPage';
+import { InvoicesPage, PaymentsPage } from '@/features/billing/BillingPage';
+import { CatalogPage } from '@/features/billing/CatalogPage';
+import { ServicesPage } from '@/features/billing/ServicesPage';
 import {
   canManageAppointments,
   canManageStaffMasterData,
@@ -304,7 +301,7 @@ export function AuthenticatedRoutes({
               <>
                 <Route path="/abrechnung" element={<InvoicesPage />} />
                 <Route path="/abrechnung/leistungen" element={<ServicesPage />} />
-                <Route path="/abrechnung/katalog" element={<CatalogPage />} />
+                <Route path="/abrechnung/katalog" element={<CatalogPage user={user} />} />
                 <Route path="/abrechnung/zahlungen" element={<PaymentsPage />} />
               </>
             ) : null}

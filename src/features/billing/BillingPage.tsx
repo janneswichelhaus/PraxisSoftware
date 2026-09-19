@@ -2,33 +2,29 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge, type Ton } from '@/components/ui/Badge';
 import { Card, CardGrid, DataList, DataRow } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/Feedback';
-import { mitarbeiterName, useVorschau } from '@/features/preview/vorschauContext';
+import { useVorschau } from '@/features/preview/vorschauContext';
 import { OffeneEntscheidung, VorschauBanner } from '@/features/preview/ui';
 import { formatDatum, formatEuro } from '@/features/preview/format';
-import {
-  rechnungsstandLabels,
-  type Leistungsstand,
-  type Rechnungsstand,
-} from '@/features/preview/types';
+import { rechnungsstandLabels, type Rechnungsstand } from '@/features/preview/types';
 
 /**
  * Abrechnung.
  *
- * Vier Ansichten auf denselben Vorgang, wie in ADR-009 und
+ * Zwei Vorschauen auf denselben Vorgang, wie in ADR-009 und
  * PROJECT_PRINCIPLES.md 19 beschrieben:
  *
- *   Leistungen  entstehen aus durchgeführten Terminen und existieren
- *               unabhängig von einer Rechnung
- *   Katalog     versionierte Leistungsarten und Preise
  *   Rechnungen  Zustände von Entwurf bis Storno; die Nummer wird erst beim
  *               Ausstellen vergeben
  *   Zahlungen   eigene Transaktionen, Teilzahlungen möglich
  *
- * Alle vier sind Vorschau. Sichtbar ist vor allem die Abhängigkeit, die die
- * echte Anbindung bestimmt: Ohne finalisierte Dokumentation gibt es keine
- * endgültige Fakturierung. Die Finalisierung selbst ist seit ADR-016 und
- * DOK-002/DOK-004 entschieden und gebaut; offen ist nur noch die Kopplung an
- * die Leistungserfassung (ABR-002).
+ * Diese beiden sind Vorschau und bleiben es bis ABR-EPIC-002a und -003.
+ *
+ * **Leistungen und Katalog sind es seit ABR-EPIC-001 nicht mehr**: Sie stehen
+ * in `ServicesPage.tsx` und `CatalogPage.tsx`, mit echter Datenbank, RLS und
+ * Auditspur. Die Abhängigkeit, die die Vorschau sichtbar machen sollte, ist
+ * dort umgesetzt statt beschrieben — ohne dokumentierten Termin oder
+ * Gebührenanlass entsteht keine Leistung, und einen Override gibt es nicht
+ * (PROJECT_PRINCIPLES.md 19).
  */
 
 const rechnungTon: Record<Rechnungsstand, Ton> = {
@@ -36,18 +32,6 @@ const rechnungTon: Record<Rechnungsstand, Ton> = {
   ausgestellt: 'warnung',
   bezahlt: 'positiv',
   storniert: 'kritisch',
-};
-
-const leistungLabels: Record<Leistungsstand, string> = {
-  offen: 'Offen',
-  abrechenbar: 'Abrechenbar',
-  abgerechnet: 'Abgerechnet',
-};
-
-const leistungTon: Record<Leistungsstand, Ton> = {
-  offen: 'warnung',
-  abrechenbar: 'akzent',
-  abgerechnet: 'positiv',
 };
 
 export function InvoicesPage() {
@@ -99,107 +83,6 @@ export function InvoicesPage() {
         Beide werden als eigene Entitäten geführt – eine Rechnung kann an Eltern, Betreuung oder
         eine Beihilfestelle gehen. Beim Ausstellen werden Stammdaten, Preise und Steuerinformationen
         als historischer Snapshot festgehalten (ADR-009). Nichts davon ist hier umgesetzt.
-      </OffeneEntscheidung>
-    </>
-  );
-}
-
-export function ServicesPage() {
-  const { zustand } = useVorschau();
-  const nichtFinalisiert = zustand.leistungen.filter(
-    (leistung) => !leistung.dokumentationFinalisiert,
-  ).length;
-
-  return (
-    <>
-      <PageHeader
-        title="Leistungen"
-        description="Erbrachte Leistungen aus durchgeführten Terminen."
-      />
-      <VorschauBanner bereich="Abrechnung" />
-
-      {nichtFinalisiert > 0 ? (
-        <p className="rounded-card border-warnung/30 bg-warnung-soft text-warnung mb-5 border px-4 py-3 text-sm">
-          {nichtFinalisiert} Leistung{nichtFinalisiert === 1 ? '' : 'en'} ohne finalisierte
-          Dokumentation. Therapeutische Leistungen sollen erst dann endgültig fakturiert werden;
-          berechtigte Ausnahmen müssen begründet und protokolliert werden (PROJECT_PRINCIPLES.md
-          19).
-        </p>
-      ) : null}
-
-      {zustand.leistungen.length === 0 ? <EmptyState title="Keine Leistungen" /> : null}
-
-      <ul className="divide-line border-line divide-y border-y">
-        {zustand.leistungen.map((leistung) => {
-          const katalog = zustand.katalog.find((eintrag) => eintrag.id === leistung.leistungId);
-          return (
-            <li key={leistung.id} className="flex flex-wrap items-center gap-3 py-3">
-              <span className="text-ink w-28 shrink-0 text-sm tabular-nums">
-                {formatDatum(leistung.datum)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="text-ink block truncate text-[0.9375rem] font-medium">
-                  {katalog?.bezeichnung ?? 'Unbekannte Leistung'}
-                </span>
-                <span className="text-ink-muted mt-0.5 block text-sm">
-                  {leistung.patient} · {mitarbeiterName(zustand, leistung.mitarbeiterId)}
-                  {katalog ? ` · ${formatEuro(katalog.preisCent)}` : ''}
-                </span>
-              </span>
-              {!leistung.dokumentationFinalisiert ? (
-                <Badge ton="warnung">Dokumentation offen</Badge>
-              ) : null}
-              <Badge ton={leistungTon[leistung.stand]}>{leistungLabels[leistung.stand]}</Badge>
-            </li>
-          );
-        })}
-      </ul>
-
-      <OffeneEntscheidung titel="Dokumentation vor Fakturierung">
-        Die Finalisierung der Dokumentation ist entschieden und gebaut (ADR-016, DOK-002 und
-        DOK-004). Offen ist die Kopplung an die Leistungserfassung: welche Leistung als abrechenbar
-        gilt, solange die Dokumentation zum Termin nicht finalisiert ist, und wie ein begründeter
-        Override protokolliert wird (PROJECT_PRINCIPLES.md 19). Eine Leistung darf außerdem nicht
-        unbeabsichtigt mehrfach abgerechnet werden – dafür braucht es die echte Anbindung (ABR-002).
-      </OffeneEntscheidung>
-    </>
-  );
-}
-
-export function CatalogPage() {
-  const { zustand } = useVorschau();
-
-  return (
-    <>
-      <PageHeader
-        title="Leistungskatalog"
-        description="Private Leistungen mit versionierten Preisen."
-      />
-      <VorschauBanner bereich="Abrechnung" />
-
-      <CardGrid>
-        {zustand.katalog.map((leistung) => (
-          <Card key={leistung.id}>
-            <p className="text-ink text-[0.9375rem] font-semibold">{leistung.bezeichnung}</p>
-            <DataList>
-              <DataRow label="Preis">{formatEuro(leistung.preisCent)}</DataRow>
-              <DataRow label="Dauer">
-                {leistung.dauerMinuten > 0 ? `${leistung.dauerMinuten} min` : '–'}
-              </DataRow>
-              <DataRow label="Version">
-                {leistung.version} · gültig ab {formatDatum(leistung.gueltigAb)}
-              </DataRow>
-            </DataList>
-            <p className="text-ink-subtle mt-2 text-sm">{leistung.steuerhinweis}</p>
-          </Card>
-        ))}
-      </CardGrid>
-
-      <OffeneEntscheidung titel="Historische Leistungen ändern sich nicht mit">
-        Katalog und Preisvereinbarungen werden versioniert. Eine spätere Preisänderung darf bereits
-        erbrachte Leistungen und ausgestellte Rechnungen nicht verändern. Steuerliche Eigenschaften
-        werden ausdrücklich je Leistungsversion gespeichert und niemals von einem Sprachmodell
-        bestimmt (PROJECT_PRINCIPLES.md 6.2, 19).
       </OffeneEntscheidung>
     </>
   );
