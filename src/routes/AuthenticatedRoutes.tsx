@@ -60,7 +60,7 @@ import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { ToursPage } from '@/features/tours/ToursPage';
-import { PaymentsPage } from '@/features/billing/BillingPage';
+import { PaymentsPage } from '@/features/billing/PaymentsPage';
 import { CatalogPage } from '@/features/billing/CatalogPage';
 import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
@@ -313,7 +313,7 @@ export function AuthenticatedRoutes({
                   path="/abrechnung/stammdaten"
                   element={<PracticeProfilePage user={user} />}
                 />
-                <Route path="/abrechnung/zahlungen" element={<PaymentsPage />} />
+                <Route path="/abrechnung/zahlungen" element={<PaymentsPage user={user} />} />
               </>
             ) : null}
 

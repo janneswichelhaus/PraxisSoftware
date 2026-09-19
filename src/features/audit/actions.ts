@@ -99,6 +99,10 @@ export const AUDIT_ACTIONS = [
   'invoice.draft_deleted',
   'invoice.recipient_changed',
   'invoice.issued',
+  // ABR-004: Eine Zahlung wird erfasst oder storniert — geändert oder
+  // gelöscht wird sie nie (ADR-009 Punkt 12).
+  'payment.recorded',
+  'payment.voided',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -171,6 +175,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'invoice.draft_deleted': 'Rechnungsentwurf verworfen',
   'invoice.recipient_changed': 'Empfänger des Entwurfs gewählt',
   'invoice.issued': 'Rechnung ausgestellt',
+  'payment.recorded': 'Zahlung erfasst',
+  'payment.voided': 'Zahlung storniert',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -205,6 +211,7 @@ export const auditSubjectLabels: Record<string, string> = {
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',
   invoice: 'Rechnung',
+  payment: 'Zahlung',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {

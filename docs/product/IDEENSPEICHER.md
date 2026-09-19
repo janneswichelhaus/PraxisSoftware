@@ -193,6 +193,15 @@ einem Verwurf. Neue Einträge hängen hinten an.
   `IDEA-PRX-038` und `-040` stehen als BEF-001 und BEF-002 in
   `../development/BEFUNDE.md`.
 
+- **2026-09-19** — Aus der Entscheidungsrunde zu ABR-EPIC-003 kommen zwei
+  Funktionsideen von Jannes hierher statt in den Code: `IDEA-OUT-009` (ein
+  Bild ruft die Durchführung eines Tests in Erinnerung) und `IDEA-PRX-043`
+  (die vorhandenen Textbausteine stehen auch im Befund zur Verfügung). Dazu
+  eine Stand-Zeile an `IDEA-OUT-001`: Jannes hat erklärt, die Praxis dürfe den
+  DIGOTOR-Bogen verwenden, und weitere Bögen angekündigt — der schriftliche
+  Beleg des Lizenzgebers bleibt offen (B8), das Lizenzfeld damit erst recht.
+  **Keine der drei ist ein Auftrag**; gebaut wird, was die Roadmap aufruft.
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |

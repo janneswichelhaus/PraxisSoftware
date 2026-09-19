@@ -298,6 +298,22 @@ export async function fetchKandidaten(): Promise<Kandidat[]> {
   return z.array(kandidatSchema).parse(data ?? []);
 }
 
+/**
+ * Der Zahlungsstand einer Rechnung.
+ *
+ * Er kommt gerechnet vom Server und steht an keiner Spalte (ADR-009 Punkt 12:
+ * „Der Zahlungsstatus ist damit abgeleitet, nicht gesetzt"). Diese Datei
+ * rechnet ihn deshalb auch nicht nach — sie zeigt ihn an.
+ */
+export const zahlungsstandLabels = {
+  unpaid: 'Offen',
+  partially_paid: 'Teilweise bezahlt',
+  paid: 'Bezahlt',
+  overpaid: 'Überzahlt',
+} as const;
+
+export type Zahlungsstand = keyof typeof zahlungsstandLabels;
+
 const rechnungSchema = z.object({
   id: z.string(),
   status: z.enum(['draft', 'issued']),
@@ -312,6 +328,10 @@ const rechnungSchema = z.object({
   total_cents: z.number(),
   currency: z.string(),
   item_count: z.number(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  overdue: z.boolean(),
 });
 
 export type Rechnung = z.infer<typeof rechnungSchema>;
@@ -414,6 +434,12 @@ const rechnungsansichtSchema = z.object({
   invoice_number: z.string().nullable(),
   issued_on: z.string().nullable(),
   due_on: z.string().nullable(),
+  // Der Zahlungsstand kommt gerechnet vom Server (ABR-004). Am Entwurf steht
+  // er auf null-Werten — an ihm kann niemand zahlen.
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  overdue: z.boolean(),
   document: dokumentSchema,
 });
 
@@ -474,6 +500,131 @@ export async function stelleRechnungAus(invoiceId: string): Promise<string> {
   const nummer = z.string().safeParse(data);
   if (!nummer.success) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
   return nummer.data;
+}
+
+// -----------------------------------------------------------------------------
+// Zahlungen und offene Posten (ABR-004)
+// -----------------------------------------------------------------------------
+
+export const zahlungswegLabels: Record<string, string> = {
+  bank_transfer: 'Überweisung',
+  other: 'Anderer Weg',
+};
+
+export const richtungLabels: Record<string, string> = {
+  incoming: 'Eingang',
+  refund: 'Rückzahlung',
+};
+
+const offenerPostenSchema = z.object({
+  id: z.string(),
+  invoice_number: z.string(),
+  patient_id: z.string(),
+  patient_name: z.string(),
+  recipient_name: z.string(),
+  period_month: z.string(),
+  issued_on: z.string(),
+  due_on: z.string(),
+  total_cents: z.number(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  currency: z.string(),
+  overdue: z.boolean(),
+  /**
+   * Die Summe über **alle** offenen Posten, nicht nur über die gelieferten
+   * Zeilen — der Server rechnet sie vor dem Kürzen der Liste. Deshalb steht
+   * sie an jeder Zeile und wird hier nicht aufaddiert.
+   */
+  open_total_cents: z.number(),
+});
+
+export type OffenerPosten = z.infer<typeof offenerPostenSchema>;
+
+export async function fetchOffenePosten(): Promise<OffenerPosten[]> {
+  const { data, error } = (await getSupabase().rpc('list_open_items', { p_limit: 100 })) as {
+    data: unknown;
+    error: unknown;
+  };
+
+  if (error) throw new Error('Die offenen Posten konnten nicht geladen werden.');
+  return z.array(offenerPostenSchema).parse(data ?? []);
+}
+
+const zahlungSchema = z.object({
+  id: z.string(),
+  direction: z.enum(['incoming', 'refund']),
+  amount_cents: z.number(),
+  currency: z.string(),
+  paid_on: z.string(),
+  method: z.string(),
+  note: z.string().nullable(),
+  voided_at: z.string().nullable(),
+  void_reason: z.string().nullable(),
+});
+
+export type Zahlung = z.infer<typeof zahlungSchema>;
+
+const zahlungMitRechnungSchema = zahlungSchema.extend({
+  invoice_id: z.string(),
+  invoice_number: z.string().nullable(),
+  patient_name: z.string(),
+  recipient_name: z.string(),
+});
+
+export type ZahlungMitRechnung = z.infer<typeof zahlungMitRechnungSchema>;
+
+export async function fetchZahlungen(): Promise<ZahlungMitRechnung[]> {
+  const { data, error } = (await getSupabase().rpc('list_payments', { p_limit: 100 })) as {
+    data: unknown;
+    error: unknown;
+  };
+
+  if (error) throw new Error('Die Zahlungen konnten nicht geladen werden.');
+  return z.array(zahlungMitRechnungSchema).parse(data ?? []);
+}
+
+export async function fetchRechnungszahlungen(invoiceId: string): Promise<Zahlung[]> {
+  const { data, error } = (await getSupabase().rpc('list_invoice_payments', {
+    p_invoice_id: invoiceId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Zahlungen konnten nicht geladen werden.');
+  return z.array(zahlungSchema).parse(data ?? []);
+}
+
+/** Eine Rückzahlung über dem Eingang — der eine Fehler mit eigener Antwort. */
+export class RueckzahlungZuHoch extends Error {}
+
+export async function bucheZahlung(eingabe: {
+  invoiceId: string;
+  betragCent: number;
+  tag: string;
+  weg: string;
+  richtung: 'incoming' | 'refund';
+  notiz: string | null;
+}): Promise<void> {
+  const { error } = (await getSupabase().rpc('record_payment', {
+    p_invoice_id: eingabe.invoiceId,
+    p_amount_cents: eingabe.betragCent,
+    p_paid_on: eingabe.tag,
+    p_method: eingabe.weg,
+    p_direction: eingabe.richtung,
+    p_note: eingabe.notiz,
+  })) as { error: { message?: string } | null };
+
+  if (error?.message?.includes('refund cannot exceed')) throw new RueckzahlungZuHoch();
+  if (error?.message?.includes('dated in the future'))
+    throw new Error('Eine Zahlung lässt sich nicht für die Zukunft erfassen.');
+  if (error) throw new Error('Die Zahlung konnte nicht erfasst werden.');
+}
+
+export async function storniereZahlung(paymentId: string, grund: string): Promise<void> {
+  const { error } = await getSupabase().rpc('void_payment', {
+    p_payment_id: paymentId,
+    p_reason: grund,
+  });
+
+  if (error) throw new Error('Die Zahlung konnte nicht storniert werden.');
 }
 
 // -----------------------------------------------------------------------------

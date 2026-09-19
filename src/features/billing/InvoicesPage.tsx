@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -14,10 +15,14 @@ import {
   createEntwurf,
   empfaengerartLabels,
   fetchKandidaten,
+  fetchOffenePosten,
   fetchRechnungen,
+  zahlungsstandLabels,
   type Kandidat,
+  type OffenerPosten,
   type Rechnung,
 } from './api';
+import { Zahlungsformular } from './Zahlungsformular';
 
 /**
  * Rechnungen (ABR-003).
@@ -35,6 +40,11 @@ import {
  * folgenlos verwerfen; eine ausgestellte Rechnung ist unveränderlich, und
  * ihre Korrektur läuft über Storno und Neuausstellung — die baut
  * ABR-EPIC-002b.
+ *
+ * **Seit ABR-004 stehen die offenen Posten ganz oben**, vor allem anderen und
+ * ohne einen einzigen Tap (`OPTIMIERUNG.md`: „Offene Posten sehen: 0 Taps auf
+ * der Einstiegsseite"). Gebucht wird an derselben Zeile — die Rechnung, um
+ * die es geht, steht dabei im Blick.
  */
 
 const standTon: Record<Rechnung['status'], Ton> = {
@@ -45,6 +55,20 @@ const standTon: Record<Rechnung['status'], Ton> = {
 const standLabels: Record<Rechnung['status'], string> = {
   draft: 'Entwurf',
   issued: 'Ausgestellt',
+};
+
+/**
+ * Der Zahlungsstand als Farbe.
+ *
+ * „Bezahlt" ist der ruhige Fall und bekommt deshalb keinen auffälligen Ton;
+ * die Überzahlung schon — sie verlangt eine Entscheidung (zurückzahlen oder
+ * stehen lassen) und darf nicht wie ein erledigter Vorgang aussehen.
+ */
+const zahlungsTon: Record<Rechnung['payment_state'], Ton> = {
+  unpaid: 'neutral',
+  partially_paid: 'warnung',
+  paid: 'positiv',
+  overpaid: 'warnung',
 };
 
 /** „2026-08-01" als „August 2026". */
@@ -71,6 +95,12 @@ function monatsname(iso: string): string {
 export function InvoicesPage({ user }: { user: CurrentUser }) {
   const darfAusstellen = canManageInvoicing(user.roles);
 
+  const posten = useQuery({
+    queryKey: ['offene-posten'],
+    queryFn: fetchOffenePosten,
+    retry: false,
+  });
+
   const kandidaten = useQuery({
     queryKey: ['rechnungs-kandidaten'],
     queryFn: fetchKandidaten,
@@ -89,6 +119,44 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
         title="Rechnungen"
         description="Privatrechnungen aus erfassten Leistungen, je Person und Monat."
       />
+
+      <Section
+        titel="Offene Posten"
+        hinweis={
+          // Die Summe kommt vom Server und steht an jeder Zeile: Sie gilt für
+          // alle offenen Posten, auch wenn die Liste gekürzt ist. Hier wird
+          // deshalb nichts aufaddiert.
+          posten.data && posten.data.length > 0
+            ? `${posten.data.length === 1 ? 'Eine Rechnung' : `${posten.data.length} Rechnungen`} · ${formatEuro(
+                posten.data[0]!.open_total_cents,
+                posten.data[0]!.currency,
+              )} offen`
+            : 'Ausgestellte Rechnungen, auf die noch Geld fehlt.'
+        }
+      >
+        {posten.isPending ? <LoadingState label="Offene Posten werden geladen …" /> : null}
+        {posten.isError ? (
+          <ErrorState
+            title="Die offenen Posten konnten nicht geladen werden."
+            description="Bitte später erneut versuchen."
+          />
+        ) : null}
+        {posten.data && posten.data.length === 0 ? (
+          <EmptyState title="Nichts offen" description="Jede ausgestellte Rechnung ist bezahlt." />
+        ) : null}
+
+        <ul className="flex flex-col gap-3">
+          {(posten.data ?? []).map((eintrag) => (
+            <li key={eintrag.id}>
+              <PostenKarte
+                posten={eintrag}
+                darfBuchen={darfAusstellen}
+                zeitzone={user.organizationTimeZone}
+              />
+            </li>
+          ))}
+        </ul>
+      </Section>
 
       <Section
         titel="Abzurechnen"
@@ -154,6 +222,24 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                 {rechnung.due_on ? ` · zahlbar bis ${formatDate(rechnung.due_on)}` : null}
               </p>
 
+              {rechnung.status === 'issued' ? (
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                  <Badge ton={zahlungsTon[rechnung.payment_state]}>
+                    {zahlungsstandLabels[rechnung.payment_state]}
+                  </Badge>
+                  {rechnung.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
+                  <span className="text-ink-muted tabular-nums">
+                    {formatEuro(rechnung.paid_cents, rechnung.currency)} bezahlt
+                    {rechnung.outstanding_cents > 0
+                      ? ` · ${formatEuro(rechnung.outstanding_cents, rechnung.currency)} offen`
+                      : ''}
+                    {rechnung.outstanding_cents < 0
+                      ? ` · ${formatEuro(-rechnung.outstanding_cents, rechnung.currency)} zu viel`
+                      : ''}
+                  </span>
+                </p>
+              ) : null}
+
               <div className="mt-2">
                 <ButtonLink to={`/abrechnung/rechnungen/${rechnung.id}`} variant="secondary">
                   {rechnung.status === 'draft' ? 'Entwurf öffnen' : 'Rechnung ansehen'}
@@ -164,6 +250,70 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
         </ul>
       </Section>
     </>
+  );
+}
+
+/**
+ * Ein offener Posten mit dem Weg, ihn zu schließen.
+ *
+ * Das Formular klappt an der Zeile auf, nicht auf einer eigenen Seite: Damit
+ * ist die Buchung drei Taps entfernt — aufklappen, Betrag stehen lassen oder
+ * ändern, buchen — und die Rechnung, um die es geht, bleibt dabei im Blick
+ * (`OPTIMIERUNG.md`, „Zahlung buchen: ≤ 3 Taps, Teilzahlung ohne Sonderweg").
+ */
+function PostenKarte({
+  posten,
+  darfBuchen,
+  zeitzone,
+}: {
+  posten: OffenerPosten;
+  darfBuchen: boolean;
+  zeitzone: string | null;
+}) {
+  const [offen, setOffen] = useState(false);
+
+  return (
+    <div className="border-line rounded-card border p-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-ink text-[0.9375rem] font-medium">{posten.invoice_number}</span>
+        {posten.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
+        <span className="text-ink-muted text-sm">{posten.recipient_name}</span>
+        <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
+          {formatEuro(posten.outstanding_cents, posten.currency)}
+        </span>
+      </div>
+
+      <p className="text-ink-muted mt-1 text-sm">
+        {monatsname(posten.period_month)} · zahlbar bis {formatDate(posten.due_on)}
+        {posten.paid_cents > 0
+          ? ` · ${formatEuro(posten.paid_cents, posten.currency)} von ${formatEuro(
+              posten.total_cents,
+              posten.currency,
+            )} bezahlt`
+          : ''}
+      </p>
+
+      <div className="mt-2 flex flex-wrap gap-2">
+        <ButtonLink to={`/abrechnung/rechnungen/${posten.id}`} variant="secondary">
+          Rechnung ansehen
+        </ButtonLink>
+        {darfBuchen && zeitzone !== null ? (
+          <Button type="button" variant="secondary" onClick={() => setOffen((wert) => !wert)}>
+            {offen ? 'Abbrechen' : 'Zahlung buchen'}
+          </Button>
+        ) : null}
+      </div>
+
+      {offen && zeitzone !== null ? (
+        <Zahlungsformular
+          invoiceId={posten.id}
+          offenCent={posten.outstanding_cents}
+          waehrung={posten.currency}
+          zeitzone={zeitzone}
+          onFertig={() => setOffen(false)}
+        />
+      ) : null}
+    </div>
   );
 }
 
