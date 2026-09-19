@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-18.
+Zuletzt aktualisiert: 2026-09-19.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -930,3 +930,53 @@ Technik · offen · 2026-09-18 · Loop CAL-EPIC-004c · Wiedervorlage: Jannes, s
 **Anker.** `gruppiere()` und `Gruppenkopf` in `src/features/appointments/PatientAppointmentsPage.tsx`.
 
 **Änderungspfad.** Grundlage als oberste Ebene: `Terminliste` je Gruppe zweimal aufrufen, Cursor je Gruppe und Richtung · Aufwand `mittel`. Gruppierung ganz zurücknehmen: `gruppiere()` streichen, die flache Liste mit dem Grundlagenlink je Zeile steht in der Historie · Aufwand `klein`.
+
+### ANN-070 — Die Katalogversion ist eine eingefrorene Preisliste, die Leistung verweist auf ihre Position
+
+Technik · offen · 2026-09-19 · — · — · Wiedervorlage: mit ABR-003, wenn der Rechnungssnapshot nach ADR-009 Punkt 10 entsteht
+
+**Annahme.** Eine Katalogversion ist eine vollständige Preisliste mit Gültigkeitsbeginn. Als Entwurf beliebig änderbar, mit dem Veröffentlichen unveränderlich — Positionen, Preise, Steuerkennzeichen und der Beginn; eine Preisänderung ist deshalb immer eine neue Version. Welche Liste an einem Tag gilt, ist die veröffentlichte mit dem größten Beginn bis zu diesem Tag, und maßgeblich ist der **Leistungstag**, nicht der Tag der Erfassung. Eine Leistung kopiert daher **keinen** Preis, sondern verweist auf die Position. Die steuerliche Einordnung steht je Position in drei Werten: `exempt_healthcare` (Heilbehandlung, § 4 Nr. 14 UStG), `taxable` (etwa Prävention oder Training) und `not_taxable` (kein Leistungsaustausch — der Fall des Ausfallhonorars); welcher Wert im Einzelfall gilt, entscheidet die Praxis mit ihrer Steuerberatung.
+
+**Begründung.** ADR-009 Punkt 5 verlangt, dass spätere Preisänderungen historische Leistungen nicht verändern, und beschreibt selbst den Verweis auf eine Katalogversion statt auf einen aktuellen Preis. Eine Preiskopie an der Leistung wäre ein zweiter Wert für denselben Sachverhalt und damit die Abweichung, die §13 an der Abrechnung ausschließt; den Snapshot verlangt ADR-009 Punkt 10 erst beim Ausstellen der Rechnung. Die Sperre sitzt am Trigger und nicht im Schreibpfad, damit sie für jeden Weg in die Tabelle gilt. Die drei Steuerwerte sind nicht erfunden: Ohne `not_taxable` müsste ein Ausfallhonorar als steuerfrei oder steuerpflichtig geführt werden, und beides wäre falsch. Unsicher: ob die Praxis je einen anderen Steuersatz als 19 Prozent braucht — die Spalte trägt Promille und kann es, das Formular bietet es noch nicht an.
+
+**Anker.** Tabellen `service_catalog_versions` und `service_catalog_items`, die Trigger `service_catalog_versions_frozen` und `service_catalog_items_frozen` sowie `app.active_service_catalog_version()` in `supabase/migrations/20260919100000_service_catalog.sql`.
+
+**Änderungspfad.** Preis doch an der Leistung festhalten: Spalten an `billable_services` und ihre Belegung in `record_billable_services` · Aufwand `mittel`, mit Migration. Einen weiteren Steuersatz zulassen: ein Zahlenfeld neben der Auswahl in `CatalogPage.tsx`, die Spalte nimmt ihn bereits · Aufwand `klein`. Eine veröffentlichte Liste doch korrigierbar machen: die beiden Trigger · Aufwand `klein` — widerspräche ADR-009 Punkt 5.
+
+### ANN-071 — Preise pflegt die Inhaberin, Leistungen erfassen Inhaberin und Office
+
+Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Jannes nach den ersten Praxiswochen — insbesondere, ob eine Therapeutin am Termin selbst erfassen soll
+
+**Annahme.** Den Leistungskatalog **lesen** alle vier Praxisrollen, **pflegen** darf ihn allein `owner`. Leistungen **erfassen und zurücknehmen** dürfen `owner` und `office`; die therapeutischen Rollen tun es nicht, und die Erfassung findet im Abrechnungsbereich statt, nicht am Termin. Die Termin-Detailseite bleibt unberührt.
+
+**Begründung.** §4.1 zählt Praxiseinstellungen zur Inhaberrolle, §4.3 gibt dem Office Rechnungen und Zahlungsstatus — nicht die Preisbildung. Lesen muss der Katalog für alle offen sein, sonst sähe die Erfassung ihre eigenen Preise nicht. Die Erfassung auf zwei Rollen zu beschränken hält den Bedienweg an einer Stelle: Eine zweite Oberfläche am Termin wäre eine zweite Implementierung derselben Regel, und die Regel selbst ist ohnehin serverseitig. Unsicher: ob das im Alltag trägt — bei einer Praxis, in der Jannes beide Rollen hat, fällt der Unterschied nicht auf, bei einer angestellten Therapeutin schon.
+
+**Anker.** `app.can_read_service_catalog()` und `app.can_manage_service_catalog()` in `supabase/migrations/20260919100000_service_catalog.sql`; `app.can_read_billable_services()` und `app.can_record_billable_services()` in `supabase/migrations/20260919110000_billable_services.sql`; die Anzeigeweiche `canManageServiceCatalog` und `canRecordBillableServices` in `src/features/session/types.ts`.
+
+**Änderungspfad.** Therapeut:innen erfassen lassen: die beiden `can_*_billable_services()` um `therapist` und `team_lead` erweitern, dazu `canRecordBillableServices` · Aufwand `klein`; ein Einstieg am Termin käme als eigene Aufgabe dazu · Aufwand `mittel`. Office Preise pflegen lassen: `app.can_manage_service_catalog()` · Aufwand `klein`.
+
+### ANN-072 — Eine Leistung entsteht nur aus „dokumentiert" oder aus einem Gebührenanlass, ohne Override
+
+Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob der fehlende Override im Alltag stört
+
+**Annahme.** `record_billable_services` nimmt einen Termin nur an, wenn er im Zustand `documented` steht **oder** einen Gebührenanlass trägt (`fee_basis`, ADR-018 Fassung 2). Es gibt keinen Weg daran vorbei und keinen begründeten Override. Aus einem dokumentierten Termin entstehen ausschließlich Positionen der Art `treatment`, aus einem Gebührenanlass ausschließlich `absence_fee`; beides rutscht nie ineinander. Ein Ereignis ohne Patient:in erzeugt keine Leistung.
+
+**Begründung.** `PROJECT_PRINCIPLES.md` §19 sagt das abschließend: „In V1 gibt es keinen Override: Fakturiert wird ausschließlich aus ‚dokumentiert' oder aus einem Vorgang mit Gebührenanlass (ADR-018)." Der Eintrag zu ABR-EPIC-001 in `ROADMAP.md` nennt dagegen „Kopplung an finalisierte Dokumentation mit protokolliertem Override (C1, ANN-006)" — die Roadmap hat keinen Rang, §21 gibt den Prinzipien den ersten, also gilt der Satz ohne Override. Die Trennung von Behandlung und Ausfallhonorar folgt daraus, dass an einem nicht angetroffenen Termin keine Behandlung stattgefunden hat; sie in einem Feld zu vermischen wäre genau die Falschzuordnung aus §13.
+
+**Anker.** Die Zustandsprüfung und `v_erwartet` in `public.record_billable_services` in `supabase/migrations/20260919110000_billable_services.sql`.
+
+**Änderungspfad.** Einen Override einführen: Er wäre eine Änderung an §19 und damit kein Fall für eine Annahme — erst Prinzipien, dann Spalten für Grund und Protokoll an `billable_services` · Aufwand `mittel`. Weitere abrechenbare Ereignisse neben dem Termin: eine eigene Quelle an der Leistung · Aufwand `groß`.
+
+### ANN-073 — Die genutzte Menge der Grundlage schreibt die Leistungserfassung fort
+
+Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 · löst die Wiedervorlage von ANN-012, ANN-038 und ANN-064 ein
+
+**Ablösung.** löst die Wiedervorlage „automatischer Verbrauch mit ABR-002" aus ANN-012, ANN-038 und ANN-064 ein; die dort beschriebene Handpflege entfällt
+
+**Annahme.** Erfasst die Praxis eine Leistung, deren Katalogposition ein Heilmittel der Behandlungsgrundlage des Termins nennt, erhöht sich `treatment_base_items.used_quantity` dieser Position um die erfasste Menge; das Zurücknehmen senkt sie um denselben Betrag. Welche Position betroffen war, hält die Leistung selbst fest — nicht die Grundlage des Termins, die sich durch eine Übertragung ändern kann (CAL-022). Die Constraint `used_quantity <= prescribed_quantity` bleibt und weist eine Erfassung ab, die darüber hinausginge; die Oberfläche nennt den Grund.
+
+**Begründung.** ANN-064 hat die Fortschreibung ausdrücklich auf ABR-002 vertagt, ANN-038 und ANN-012 ebenso; ohne sie bliebe die Zahl für immer stehen, und „noch planbar" wäre eine Erfindung. Die Wirkung an der Leistung festzuhalten statt sie aus der Grundlage zurückzurechnen ist der einzige Weg, der auch nach einer Terminübertragung genau das zurücknimmt, was gesetzt wurde. Die Constraint bleibt, weil ADR-020 Punkt 5 sie ausdrücklich der Abrechnung zuordnet und nicht der Planung — über das Kontingent hinaus **planen** bleibt erlaubt, darüber hinaus **abrechnen** nicht.
+
+**Anker.** Spalte `billable_services.treatment_base_item_id` sowie die beiden `update public.treatment_base_items`-Blöcke in `record_billable_services` und `delete_billable_services` in `supabase/migrations/20260919110000_billable_services.sql`.
+
+**Änderungspfad.** Fortschreibung zurücknehmen: die beiden Blöcke streichen, die Spalte bleibt als Nachweis · Aufwand `klein`. Über das Kontingent hinaus abrechnen zulassen: die Constraint `treatment_base_items_used_within_prescribed` · Aufwand `klein` — widerspräche ADR-020 Punkt 5.

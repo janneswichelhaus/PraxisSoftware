@@ -1,60 +1,60 @@
-# Status · Stand 2026-09-18 · letzte Session: CAL-EPIC-004c Überplanen
+# Status · Stand 2026-09-19 · letzte Session: ABR-EPIC-001 Leistungen
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
 [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
-[`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md). Wer hier eine Aufgabe
-einträgt, hat sie damit nicht eingeplant.
+[`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md); ein Eintrag hier ist keine Einplanung.
 
 ## Jetzt
 
-Nichts läuft. CAL-EPIC-004c liegt als PR gegen `main`, die **Abnahme steht
-aus** — wie die von VER-EPIC-002 (PR #51, gemergt). Nächster Loop auf Freigabe.
+Nichts läuft. ABR-EPIC-001 liegt als PR gegen `main`, die **Abnahme steht
+aus** — wie die von CAL-EPIC-004c (PR #52, gemergt). Nächster Loop auf Freigabe.
 
-## Danach — Reihenfolge seit 2026-09-18
+## Danach — Reihenfolge seit 2026-09-19
 
-1. **ABR-EPIC-001** — Leistungen aus durchgeführten Terminen (xhigh)
-2. **ABR-EPIC-002a** — Rechnung aus Leistungen, mit Empfänger
-3. **ABR-EPIC-002b** — Die Rechnung als Dokument (PDF, Storno, Erinnerung)
+1. **ABR-EPIC-002a** — Rechnung aus Leistungen, mit Empfänger; **mit ABR-000**
+   (Praxisstammdaten), aus ABR-EPIC-001 hierher gewandert
+2. **ABR-EPIC-002b** — Die Rechnung als Dokument (PDF, Storno, Erinnerung)
+3. **ABR-EPIC-003** — Zahlungen und offene Posten
 
 ## Prüfverfahren
 
-**Die CI läuft wieder** (2026-09-18, PR #48: alle fünf Läufe grün) — ein rotes Kreuz
-heißt wieder „rot". Lokal: `pnpm test:db` unter Windows gegen einen Wegwerf-Container
-(`docker run … supabase/postgres`, Port 54329); die **angemeldeten E2E-Tests laufen in
-der Cloud nicht**, dort prüft sie nur die CI. `pnpm test` ist unter Node 24 an rund 60
-navigierenden Tests rot — auf `main` genauso (**BEF-011**), CI meint Node 22.
+**Die CI läuft wieder** (seit PR #48) — ein rotes Kreuz heißt wieder „rot".
+Lokal: `pnpm test:db` gegen einen Wegwerf-Container (Port 54329); die
+**angemeldeten E2E-Tests laufen in der Cloud nicht**. `pnpm test` ist unter
+Node 24 an rund 60 navigierenden Tests rot — auf `main` genauso (**BEF-011**).
 
 ## Blocker (Jannes-seitig)
 
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von
-  CAL-EPIC-004c (`20260918140000_appointment_coverage.sql`).
-- **Abnahme CAL-018, CAL-EPIC-004a, FIX-EPIC-004, CAL-EPIC-004b, UX-013,
-  GRD-001, VER-EPIC-002, CAL-EPIC-004c** —
+  ABR-EPIC-001 (drei Migrationen, geänderter Seed).
+- **Echter Leistungskatalog mit Preisen** und die steuerliche Einordnung je
+  Position (G13, B4) — der Seed trägt **erfundene** Preise; für ABR-EPIC-002a
+  dazu die Praxisstammdaten (Anschrift, Bank, Steuernummer, USt-Status).
+- **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code
+  ([`E18`](development/E18-LEISTUNGSBEREICHE.md))
+- **Abnahme CAL-018, CAL-EPIC-004a/b/c, FIX-EPIC-004, UX-013, GRD-001,
+  VER-EPIC-002, ABR-EPIC-001** in
   [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md). Die
-  **Sichtprüfung hinter der Anmeldung steht weiter aus** (`supabase start` in
-  der Cloud blockiert); CAL-EPIC-004c wurde als Bauteil bei 375 und 1280 px
-  geprüft.
-- **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code ([`E18`](development/E18-LEISTUNGSBEREICHE.md))
+  **Sichtprüfung hinter der Anmeldung steht aus** (`supabase start` blockiert);
+  ABR-EPIC-001 ist als Bauteil bei 375 und 1280 px geprüft.
 - Branch Protection und Secret Scanning (M0, 30.09.), Anfragen B1, B2, B4
   ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)), PTV-Free-Abo vor MAP-002 ·
   `claude/issue-42-status-fv319v` hat drei ungemergte Commits
 
 ## Auf Abnahme warten
 
-CAL-EPIC-003b (mit CAL-012/013), AKTE-000 bis AKTE-005, UX-012, UI-002, FIX-EPIC-001
-(braucht Docker), FIX-EPIC-003, CAL-014 bis CAL-018, CAL-EPIC-004a, -004b und -004c,
-FIX-EPIC-004, UX-013, GRD-001, VER-EPIC-002, DAT-EPIC-001, ROL-EPIC-001, FIX-015
-— [`abnahme/`](abnahme/README.md).
+Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001 und
+FIX-015; FIX-EPIC-001 braucht Docker. Die Liste führt
+[`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**CAL-EPIC-004c gebaut.** Zu einer Grundlage dürfen jetzt **mehr Termine
-geplant** werden, als sie hergibt — sichtbar statt still: Gedeckt sind die
-frühesten, gerechnet statt zugeteilt (**ANN-067**); der Rest trägt „Ohne
-Deckung" an Grundlage, Termin und Liste. **Termine übertragen** ist ein eigener,
-protokollierter Vorgang auf eine andere Grundlage derselben Patient:in — alles
-oder nichts, ohne abgesagte und abgerechnete (**ANN-068**). Der Terminbereich
-der Akte gruppiert nach Grundlage, je Richtung (**ANN-069**); Termine ohne
-Grundlage bekommen einen eigenen Abschnitt. Die Termin-Detailseite bleibt
-unberührt (BEF-006). Lokal: `git pull origin main`, dann **`db reset`**.
+**ABR-EPIC-001 gebaut, ohne ABR-000.** Der **Katalog** ist eine eingefrorene
+Preisliste: Entwurf änderbar, in Kraft unveränderlich, Sperre am Trigger
+(**ANN-070**); Preise in ganzen Cent, Steuerkennzeichen je Position, pflegen
+darf nur `owner` (**ANN-071**). **Leistungen** entstehen nur aus „dokumentiert"
+oder aus einem Gebührenanlass — **ohne Override**, denn §19 schlägt den älteren
+Roadmap-Text (**ANN-072**) —, je Termin und Position höchstens einmal, und sie
+schreiben die genutzte Menge der Grundlage fort (**ANN-073**). Neue Datenklasse
+Abrechnungsdaten (§ 147 AO). Lokal: `git pull`, dann **`db reset`**.
