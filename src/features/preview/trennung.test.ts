@@ -39,17 +39,21 @@ const VORSCHAUBEREICHE = [
 /**
  * Dateien in einem Vorschauverzeichnis, die keine Vorschau mehr sind.
  *
- * `src/features/billing` ist seit ABR-EPIC-001 gemischt: Rechnungen und
- * Zahlungen sind weiter Vorschau, Leistungen und Katalog sind echt angebunden
- * und MÜSSEN mit dem Server sprechen. Das ganze Verzeichnis hier zu streichen
- * hieße, die Zusicherung für die verbliebenen Vorschauseiten aufzugeben — und
- * genau die sind die, an denen eine vorgetäuschte Buchung am meisten Schaden
- * anrichtete. Die Ausnahme steht deshalb je Datei und namentlich.
+ * `src/features/billing` ist seit ABR-EPIC-001 gemischt: Leistungen und
+ * Katalog sind echt angebunden und MÜSSEN mit dem Server sprechen. Seit
+ * ABR-EPIC-002a gilt dasselbe für Rechnungen, Rechnungsempfänger und die
+ * Praxis-Stammdaten; als Vorschau bleiben allein die Zahlungen. Das ganze
+ * Verzeichnis hier zu streichen hieße, die Zusicherung für sie aufzugeben —
+ * und die Zahlung ist die Seite, an der eine vorgetäuschte Buchung am meisten
+ * Schaden anrichtete. Die Ausnahme steht deshalb je Datei und namentlich.
  */
 const KEINE_VORSCHAU = [
   'src/features/billing/api.ts',
   'src/features/billing/CatalogPage.tsx',
   'src/features/billing/ServicesPage.tsx',
+  'src/features/billing/InvoicesPage.tsx',
+  'src/features/billing/InvoiceDetailPage.tsx',
+  'src/features/billing/PracticeProfilePage.tsx',
 ];
 
 /** Aufrufe, die die Sitzung verlassen oder etwas dauerhaft ablegen würden. */
