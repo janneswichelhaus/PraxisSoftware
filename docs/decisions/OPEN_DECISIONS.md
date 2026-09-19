@@ -49,13 +49,13 @@ Feature, **P3** später.
 | B5 | Patientenidentität, Vertretung | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | vor Etappe 4; Volltext: `ANFRAGEN.md` § B5 |
 | B6 | Beschäftigtendaten: Touren, Leistungskontrolle | **vorläufig entschieden 2026-09-08: nein** | vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit |
 | B7 | Adressdaten an den Kartendienst | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); **E-20 erledigt 2026-09-13** (Fassung 2 angenommen), Gate **offen** | ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12); überholte Stände im Archiv |
-| B8 | Lizenzen für Fragebögen und PROMs | Auskunft des Lizenzgebers **offen**; Rückfall entschieden 2026-09-08 | vor FRB-003 |
+| B8 | Lizenzen für Fragebögen und PROMs | Nutzung **bestätigt durch Jannes 2026-09-19**; schriftlicher Beleg des Lizenzgebers bleibt offen (M3) | vor FRB-003 |
 | B9 | Betreuung ohne und nach Heilbehandlung (Personal Training) | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08) | vor Etappe 8; Steuerteil mit B4; Volltext: `ANFRAGEN.md` § B9 |
 | B10 | Automatisierte Progression: MDR-Grenze | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1 | vor Etappe 9; Volltext: `ANFRAGEN.md` § B10 |
 | B11 | Paketpreise, Vorauszahlung, Anreize | **vorläufig entschieden 2026-09-08**: vorerst nicht anbieten | vor Etappe 8; Volltext: `ANFRAGEN.md` § B11 |
 | B12 | Stichtag der Umstellung und Rechnungsnummernkreis | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4 | — |
 | B13 | E-Mail-Versand aus der Plattform (Einladung, Passwort) | **entschieden 2026-09-06** durch Jannes (Option a); Auth-Mails Teil von OPS-001 (A2) | Roadmap G2, G3 |
-| B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen**, Optionen liegen seit 2026-09-19 vor (P1 für ABR-EPIC-002b) | unten; [`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md) |
+| B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **entschieden 2026-09-19**: Weg 1 jetzt, Weg 3 nach OPS-001 | unten; [`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md) |
 | B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten |
 | C1 | Leistungsziffern und Office | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15 |
 | C2 | Klinische Inhalte in organisatorischer Kommunikation | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15 |
@@ -176,12 +176,12 @@ Annahmen: ANN-016, ANN-017, ANN-018. Blockiert nur MAP-006 (echte Adressen).
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 
-Auskunft des Lizenzgebers offen · Rückfall entschieden · 2026-09-08 · Jannes · P2
+Nutzung bestätigt (Jannes) · 2026-09-19 · schriftlicher Beleg offen · P2
 
-Ob die digitale Einbettung des DIGOTOR-Anamnesebogens lizenzrechtlich abgedeckt
-ist, entscheidet der Lizenzgeber — eine Auskunft, keine Entscheidung. Bis dahin
-nur lizenzfreie Instrumente (NRS, patientenspezifische Funktionsskala, globale
-Veränderungsfrage). Wo: §7; Roadmap FRB-003. Nicht blockiert: FRB-001 und FRB-002.
+**Jannes hat am 2026-09-19 erklärt, die Praxis dürfe den DIGOTOR-Anamnesebogen
+verwenden**; weitere Bögen sollen folgen (`IDEA-OUT-001`). Der **schriftliche
+Beleg des Lizenzgebers** bleibt für M3 offen — bis dahin trägt jedes Instrument
+seinen Lizenzstatus als Feld. Wo: §7; Roadmap FRB-003. Frei: FRB-001/002.
 
 ### B9 — Betreuung ohne und nach Heilbehandlung: Rechtsrahmen und Datentrennung
 
@@ -218,15 +218,15 @@ Volltext: Git-Historie bis `7160fd5`. Annahmen: ANN-025, ANN-043.
 
 ### B14 — PDF-Erzeugung
 
-Druckansichten entschieden · 2026-09-06 · Jannes; Rechnungs-PDF offen · P1
+Druckansichten entschieden · 2026-09-06 · Rechnungs-PDF entschieden · 2026-09-19 · Jannes
 
 Druckansichten mit `@media print` sind gebaut — keine Abhängigkeit, kein neuer
-Ausführungsort. **Die Optionen für die unveränderbare Rechnung liegen seit
-2026-09-19 vor** ([`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md)):
-Browser-Druck, Bibliothek im Browser, serverseitige Funktion — mit Aufwand,
-Preis und Empfehlung (serverseitig, bis dahin Browser-Druck). Ein neuer
-Ausführungsort ist nach §15.1 ein Stopp; Jannes entscheidet vor ABR-EPIC-002b.
-Wo: ADR-009 Punkt 14, ADR-017. Blockiert ABR-003b.
+Ausführungsort. **Entschieden am 2026-09-19** nach der Vorlage
+([`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md)): **Weg 1
+(Browser-Druck) jetzt, Weg 3 (serverseitig) nach OPS-001**; Weg 2 entfällt.
+Weg 1 legt nichts an, was später im Weg stünde — er erfüllt ADR-009 Punkt 11
+aber **nicht**: Aufbewahrt wird bis Weg 3 der Snapshot, nicht das verschickte
+Dokument. Wo: ADR-009 Punkt 14, ADR-017. ABR-003b ist frei.
 
 ### B15 — Terminerinnerung und Online-Terminbuchung
 

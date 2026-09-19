@@ -16,6 +16,11 @@ und die dichteste Häufung von MDR-Grenzfällen.
 | Quelle | Claude, 2026-09-01 |
 | Berührt | B8, `PROJECT_PRINCIPLES.md` §7, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
 
+**Stand.** Jannes hat am 2026-09-19 erklärt, die Praxis dürfe den
+DIGOTOR-Bogen verwenden, und weitere Bögen angekündigt (B8). Der schriftliche
+Beleg des Lizenzgebers fehlt weiter — das Lizenzfeld bleibt deshalb Teil des
+Entwurfs, nicht weniger wichtig, sondern jetzt erst recht gefüllt.
+
 **Idee.** Ein Instrument (Fragebogen, Test) ist ein versioniertes Objekt mit:
 Quelle, Fassung, Sprache, **Lizenzstatus**, Rechenvorschrift, Wertebereich,
 veröffentlichten Referenzwerten, Erhebungsbedingungen. Ohne geklärten
@@ -193,3 +198,36 @@ liest jeden Zacken als Rückschlag.
 **Vorsicht.** Zwei Darstellungen dürfen nicht zwei Wahrheiten werden. Die
 Patientensicht darf reduzieren, nicht beschönigen — und muss vollständigen
 Zugang auf Wunsch zulassen (§630g BGB, B5).
+
+---
+
+### IDEA-OUT-009 — Ein Bild ruft den Test in Erinnerung
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-19 |
+| Berührt | B8, IDEA-OUT-001, IDEA-OUT-007, [ADR-006](../../adr/ADR-006-medical-device-boundary.md), [ADR-017](../../adr/ADR-017-file-storage.md) |
+
+**Idee.** Zu einem Test gehört ein Bild, das der Therapeutin die Durchführung
+kurz ins Gedächtnis ruft — Ausgangsstellung, Griff, Messpunkt. Es steht am
+Instrument der Bibliothek, nicht an der Messung, und wird beim Erheben
+angezeigt.
+
+**Warum.** Eine Testbatterie hat Dutzende Positionen, die eine Praxis
+unterschiedlich oft braucht. Wer den Test dreimal im Jahr durchführt, schlägt
+sonst nach oder führt ihn abweichend durch — und ein abweichend erhobener Wert
+ist im Verlauf schlimmer als kein Wert, weil er Vergleichbarkeit behauptet.
+Das Bild ist Gedächtnisstütze für Fachpersonal, keine Anleitung für
+Patient:innen.
+
+**Vorsicht.** Das Bild ist **Inhalt des Instruments** und fällt damit unter
+dessen Lizenz (B8) — eine Abbildung aus einem geschützten Bogen ist nicht
+freier als sein Text. Eigene Fotos zeigen eine Person; sind es Mitarbeitende,
+gilt §20 und eine Einwilligung, sind es Patient:innen, ist es ausgeschlossen.
+Eine gezeichnete Darstellung umgeht beides. Ablage nach ADR-017, kein
+Patientenbezug. Keine Bewertung im Bild und keine Grenzwerte — das wäre die
+Grenze aus ADR-006.
+
+**Offen.** Woher die Bilder kommen (lizenziert, eigene Zeichnung, eigenes
+Foto) und ob sie je Instrument oder je Testschritt hängen.

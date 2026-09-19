@@ -970,3 +970,37 @@ muss, ob zwei Termine erreichbar sind, verlangt bereits §9; sichtbar zu machen,
 eine Markierung je freier Lücke oder eine Abstufung (erreichbar / knapp /
 nicht)? Das entscheidet sich am besten an echten Wegen, also nach MAP-004.
 
+
+---
+
+### IDEA-PRX-043 — Textbausteine auch im Befund
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-19 |
+| Berührt | UX-008, ANN-020, [ADR-016](../../adr/ADR-016-clinical-documentation-record.md), [ADR-005](../../adr/ADR-005-provider-independent-ai.md) |
+
+**Stand.** Textbausteine gibt es seit UX-008 — persönlich oder praxisweit, ohne
+Patientenbezug, ohne Platzhalter, ohne Sprachmodell (ANN-020). Sie stehen
+heute an den Dokumentationsformularen. Der Befund selbst ist noch nicht
+gebaut; er kommt mit den FRB-Loops.
+
+**Idee.** Dieselben Textbausteine stehen auch im Befund zur Verfügung — kein
+zweiter Vorrat, kein zweites Pflegeformular, dieselbe Liste an einer weiteren
+Stelle.
+
+**Warum.** Ein Erstbefund ist das längste Formular der Praxis und das mit den
+meisten wiederkehrenden Formulierungen. Wer die Bausteine dort nicht hat,
+tippt sie neu oder pflegt sie ein zweites Mal woanders — und ein zweiter
+Vorrat für denselben Zweck ist genau der zweite Wert, den §13 ausschließt.
+
+**Vorsicht.** Die drei Grenzen aus ANN-020 bleiben: kein Patientenbezug im
+Baustein, keine Platzhalter, die beim Einfügen gefüllt werden, und kein
+Sprachmodell, das Bausteine vorschlägt. Ein Baustein ist Text, den ein Mensch
+geschrieben hat und ein Mensch einsetzt; alles andere wäre eine andere
+Entscheidung (ADR-005, ADR-006 Punkt 4).
+
+**Offen.** Ob der Befund eigene Kategorien braucht (Anamnese, Inspektion,
+Palpation, Test) oder ob eine flache Liste reicht — das entscheidet sich am
+fertigen Befundformular, nicht vorher.
