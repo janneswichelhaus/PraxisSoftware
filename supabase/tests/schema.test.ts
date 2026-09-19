@@ -89,6 +89,7 @@ describe('Schema-Invarianten', () => {
       'patient_file_access_grants',
       'service_catalog_versions',
       'service_catalog_items',
+      'billable_services',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

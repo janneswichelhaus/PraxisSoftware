@@ -84,6 +84,9 @@ export const AUDIT_ACTIONS = [
   'service_catalog.version_updated',
   'service_catalog.version_published',
   'service_catalog.version_deleted',
+  // ABR-002: ein Ereignis je Vorgang, nicht je Leistung.
+  'billable_service.recorded',
+  'billable_service.removed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -146,6 +149,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'service_catalog.version_updated': 'Preisliste geändert',
   'service_catalog.version_published': 'Preisliste in Kraft gesetzt',
   'service_catalog.version_deleted': 'Preislistenentwurf verworfen',
+  'billable_service.recorded': 'Leistungen zum Termin erfasst',
+  'billable_service.removed': 'Leistungen zum Termin entfernt',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
