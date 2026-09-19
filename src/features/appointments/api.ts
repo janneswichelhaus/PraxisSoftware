@@ -218,6 +218,11 @@ export const appointmentSchema = z.object({
   // Leer heißt „noch nicht mitgeteilt" ODER „seit der Mitteilung geändert" -
   // beides ist derselbe Handlungsbedarf.
   notification_channels: z.array(notificationChannelSchema),
+  // Trägt die Behandlungsgrundlage diesen Termin? (CAL-022) `null` heißt:
+  // keine Grundlage oder abgesagt — dann gibt es keine Aussage. Die Kennung
+  // der Grundlage steht bewusst nicht dabei: Die Detailansicht nennt sie
+  // heute nicht, und der Weg dorthin führt über die Akte.
+  treatment_basis_covered: z.boolean().nullable(),
   patient_given_name: z.string().nullable(),
   patient_family_name: z.string().nullable(),
   staff_given_name: z.string(),
@@ -244,7 +249,7 @@ export const TERMIN_SPALTEN =
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
   'cancellation_reason, cancellation_received_at, no_show_recorded_at, ' +
   'no_show_protocol_confirmed, fee_basis, ' +
-  'notification_channels, ' +
+  'notification_channels, treatment_basis_covered, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -573,6 +578,9 @@ const patientAppointmentSchema = upcomingAppointmentSchema.extend({
   // eine Verordnung zu halten (GRD-001, ADR-020 Punkt 7).
   treatment_basis_kind: z.string().nullable(),
   treatment_basis_issued_on: z.string().nullable(),
+  // Trägt die Grundlage diesen Termin? `null` heißt: keine Grundlage oder
+  // abgesagt — dann gibt es keine Aussage, kein Kennzeichen (CAL-022).
+  treatment_basis_covered: z.boolean().nullable(),
 });
 
 export type PatientAppointment = z.infer<typeof patientAppointmentSchema>;
@@ -1566,6 +1574,10 @@ const treatmentBasisSlotsSchema = z.object({
   used: z.number(),
   planned: z.number(),
   remaining: z.number(),
+  /** Zugeordnete Termine, die die Grundlage trägt (CAL-022). */
+  covered: z.number(),
+  /** Der Überhang: geplant, aber von dieser Grundlage nicht gedeckt. */
+  uncovered: z.number(),
 });
 
 export type TreatmentBasisSlots = z.infer<typeof treatmentBasisSlotsSchema>;

@@ -252,6 +252,9 @@ describe('list_patient_appointments', () => {
       'staff_given_name',
       'starts_at',
       'status',
+      // CAL-022: die Deckung ist ein Wahrheitswert, kein Inhalt - die Liste
+      // bleibt rein organisatorisch.
+      'treatment_basis_covered',
       'treatment_basis_id',
       'treatment_basis_issued_on',
       'treatment_basis_kind',

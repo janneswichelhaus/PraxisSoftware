@@ -226,3 +226,46 @@ test.describe('GRD-001: beide Bauarten in der Akte', () => {
     await expect(page.getByLabel('Therapieziel')).toHaveCount(0);
   });
 });
+
+/**
+ * CAL-022 und AKTE-006 hinter der Anmeldung.
+ *
+ * Geprueft wird, was unabhaengig von der Reihenfolge der Spezifikationen gilt:
+ * Die Termine des Seeds haengen an keiner Behandlungsgrundlage, und genau das
+ * verschluckt AKTE-006 nicht - sie bekommen einen eigenen, benannten
+ * Abschnitt. Die Uebertragungsseite wird ueber ihr Geruest geprueft (Ziele aus
+ * den Grundlagen dieser Patient:in); WIE VIELE Termine sie anbietet, haengt
+ * davon ab, was andere Spezifikationen vorher geplant haben.
+ *
+ * Bewusst lesend: Ein angelegter Termin laesst sich fachlich nicht entfernen,
+ * und die Zahlen der uebrigen Spezifikationen sollen stehen bleiben.
+ */
+test.describe('CAL-022 / AKTE-006: Gruppierung und Uebertragung', () => {
+  test('gruppiert die Termine der Akte und benennt die ohne Grundlage', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    await page.goto(`/patienten/${PATIENTEN.erika}/termine`);
+
+    await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Ohne Behandlungsgrundlage' }).first(),
+    ).toBeVisible();
+  });
+
+  test('bietet die Uebertragung mit den Grundlagen dieser Patient:in als Ziel an', async ({
+    page,
+  }) => {
+    await anmelden(page, KONTEN.office);
+    await page.goto(`/patienten/${PATIENTEN.erika}/termine-uebertragen`);
+
+    await expect(page.getByRole('heading', { name: 'Termine übertragen' })).toBeVisible();
+
+    // Die Ziele sind die Grundlagen dieser Patient:in - Erika hat im Seed
+    // beide Bauarten (GRD-001).
+    const ziel = page.getByLabel('Auf welche Behandlungsgrundlage? *');
+    await expect(ziel).toBeVisible();
+    await expect(ziel.getByRole('option', { name: /Selbstzahler seit 03.09.2026/ })).toHaveCount(1);
+    await expect(ziel.getByRole('option', { name: /Folgeverordnung vom 08.09.2026/ })).toHaveCount(
+      1,
+    );
+  });
+});

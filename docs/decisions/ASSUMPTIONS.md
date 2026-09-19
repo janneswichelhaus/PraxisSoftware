@@ -894,3 +894,39 @@ Technik · offen · 2026-09-18 · Loop VER-EPIC-002 · Wiedervorlage: ABR-001 (L
 **Anker.** `HEILMITTEL` und `istBestand()` in `src/features/treatment-bases/heilmittel.ts`.
 
 **Änderungspfad.** Weiteres Heilmittel: eine Zeile in `heilmittel.ts` · Aufwand `klein`. Eintrag entfernen: dieselbe Zeile streichen — vorhandene Positionen bleiben als Bestand stehen · Aufwand `klein`. Echte Katalogtabelle mit Preisen: gehört zu ABR-001, dort mit Versionierung und Steuerkennzeichen (ADR-009) · Aufwand `groß`.
+
+### ANN-067 — Gedeckt sind die frühesten Termine einer Grundlage, gezählt statt zugeteilt
+
+Praxisprozess · offen · 2026-09-18 · Loop CAL-EPIC-004c · Wiedervorlage: ABR-002 (dort entsteht die Leistung, die eine Deckung braucht); Jannes nach den ersten Wochen mit Dauerterminen
+
+**Annahme.** Ob eine Behandlungsgrundlage einen Termin trägt, ist **gerechnet und nicht gespeichert**: Die nicht abgesagten Termine einer Grundlage werden nach Beginn geordnet (bei gleichem Beginn nach Kennung), die ersten `appointment_count` gelten als gedeckt, jeder weitere als geplant, aber ungedeckt. Ein abgesagter Termin macht keine Aussage — er verbraucht nichts, und sein Platz rückt an den nächsten weiter. Ein Termin ohne Grundlage ist nicht ungedeckt, sondern ungebunden. Die Zahlen `covered` und `uncovered` an der Grundlage sind dieselbe Rechnung als Summe.
+
+**Begründung.** CAL-022 verlangt, dass Überplanung sichtbar wird, und lässt offen, **welcher** Termin ungedeckt ist. Eine gespeicherte Zuteilung („dieser Termin verbraucht Einheit 7") wäre eine zweite Wahrheit neben dem Kalender: Jede Absage, jede Verschiebung und jede Übertragung müsste sie nachziehen, und liefe sie einmal auseinander, zeigte die Akte eine Deckung, die es nicht gibt (§13). Gerechnet kann sie nicht auseinanderlaufen. Die Reihenfolge nach Beginn bildet ab, wie die Praxis denkt: Die Verordnung trägt, was zuerst stattfindet; was danach kommt, gehört auf die Folgeverordnung. Deterministisch muss sie sein, weil Kalender, Akte und Terminliste sonst verschiedene Antworten gäben — daher die Kennung als zweites Ordnungsmerkmal. Dass Abgesagtes nicht zählt, folgt derselben Linie wie „verplant" (ANN-038): Eine Absage gibt den Platz zurück. Unsicher: ob die Praxis einen einzelnen Termin ausdrücklich als ungedeckt kennzeichnen will, obwohl ein früherer noch offen ist — das wäre eine Zuteilung und bräuchte eine Spalte.
+
+**Anker.** `app.appointment_is_covered` und die beiden Ausgaben `covered`/`uncovered` in `app.treatment_basis_slot_counts`, beide in `supabase/migrations/20260918140000_appointment_coverage.sql`.
+
+**Änderungspfad.** Andere Reihenfolge (etwa Anlagedatum statt Beginn): die `order by`-Entsprechung in `app.appointment_is_covered` ändern · Aufwand `klein`. Echte Zuteilung je Termin: eine Spalte an `appointments`, Pflege in jedem Schreibpfad samt Absage und Übertragung · Aufwand `groß`. Abgesagte mitzählen: die Bedingung `status <> 'cancelled'` an beiden Stellen streichen · Aufwand `klein`, widerspricht aber ANN-038.
+
+### ANN-068 — Übertragen wird jeder Termin derselben Patient:in außer abgesagt und abgerechnet
+
+Praxisprozess · offen · 2026-09-18 · Loop CAL-EPIC-004c · Wiedervorlage: ABR-002/ABR-003 (dann steht die Leistung als eigene Zeile, nicht nur der Terminzustand)
+
+**Annahme.** `transfer_appointments_to_treatment_basis` nimmt jeden Termin an, der zur Patient:in der **Zielgrundlage** gehört und weder `cancelled` noch `invoiced` ist — auch einen vergangenen oder bereits durchgeführten. Die Patient:in kommt aus der Zielgrundlage und nicht vom Aufrufer. Das **Kontingent des Ziels wird nicht geprüft**: Die Übertragung darf es überschreiten, und was dann nicht mehr gedeckt ist, zeigt die Akte (ANN-067). Alles oder nichts; ein einziger unzulässiger Termin lässt den ganzen Vorgang scheitern. Die Oberfläche bietet davon nur die **ungedeckten künftigen** Termine an. `updated_at` bleibt unberührt, der Mitteilungsvermerk gilt weiter.
+
+**Begründung.** Die Vorgabe nennt eine einzige Grenze ausdrücklich: „nie mit abgerechneter Leistung". Leistungen gibt es noch nicht (ABR-EPIC-001), und der einzige objektive Marker dafür ist heute der Terminzustand `invoiced` — er ist deshalb die Grenze, die die Datenbank zieht. Ein abgesagter Termin kommt dazu, weil er nichts mehr plant: Ihn umzuhängen änderte rückwirkend die Zahlen zweier Grundlagen, ohne dass ihm etwas folgt. Ein durchgeführter Termin bleibt dagegen übertragbar — genau dann fällt im Alltag auf, dass die Behandlung schon zur Folgeverordnung gehörte. Das Kontingent des Ziels zu prüfen wäre widersprüchlich: Denselben Termin dort neu anzulegen ist erlaubt (CAL-022), ihn dorthin zu übertragen also zu verbieten, wäre eine Regel, die nur den bequemeren Weg trifft. Dass `updated_at` stehen bleibt, folgt aus CAL-012: Mitgeteilt wurde ein Zeitpunkt, und der ändert sich nicht. Unsicher: ob die Praxis einen bereits durchgeführten Termin überhaupt übertragen will — dann kommt `completed`/`documented` zur Ausschlussliste.
+
+**Anker.** Die Bedingung `status not in ('cancelled', 'invoiced')` in `public.transfer_appointments_to_treatment_basis`, `supabase/migrations/20260918140000_appointment_coverage.sql`; das Angebot der Oberfläche in `angebot` in `src/features/treatment-bases/TermineUebertragenPage.tsx`.
+
+**Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Echte Leistungsprüfung statt Terminzustand: gehört zu ABR-002, dort über die Leistungszeile · Aufwand `mittel`.
+
+### ANN-069 — Die Akte gruppiert Termine je Richtung, nicht über beide hinweg
+
+Technik · offen · 2026-09-18 · Loop CAL-EPIC-004c · Wiedervorlage: Jannes, sobald er die Akte einer Person mit mehreren Verordnungen im Alltag benutzt
+
+**Annahme.** Der Terminbereich der Akte behält die beiden Abschnitte „Kommende Termine" und „Vergangene Termine" und gruppiert **innerhalb** jedes Abschnitts nach Behandlungsgrundlage: je Grundlage eine Überschrift mit Bauart und Ausstellungsdatum, daneben ihre Deckung, darunter ihre Termine. Termine ohne Grundlage stehen in einem eigenen, so benannten Abschnitt am Ende. Die Reihenfolge der Gruppen ist die des Bereichs „Behandlungsgrundlagen" (neueste zuerst). Gruppiert wird, was geladen ist; die Deckungszahlen kommen vom Server und zählen immer alle Termine der Grundlage.
+
+**Begründung.** AKTE-006 verlangt „je Verordnung ein Abschnitt … und die Termine darunter" und sagt nichts darüber, ob die Trennung in kommend und vergangen dabei fällt. Sie fallen zu lassen hieße, die Frage aufzugeben, für die der Bereich gebaut wurde (AKTE-003: „was steht an, und was war"). Beide Listen blättern über einen eigenen Keyset-Cursor; eine Gruppe je Grundlage über beide Richtungen bräuchte je Grundlage zwei davon — bei fünf Grundlagen zehn Abfragen beim Öffnen — und zeigte in einer Akte über zehn Jahre zwanzig Abschnitte, von denen zwei Arbeitsvorrat sind. Dass nur das Geladene gruppiert wird, ist der Preis des Blätterns; die Deckung daneben ist davon unabhängig und ändert sich beim Weiterblättern nicht. Unsicher: ob Jannes die Grundlage als oberste Ebene erwartet und die Trennung kommend/vergangen darunter — dann tauschen die beiden Ebenen die Plätze, und jede Gruppe bekommt zwei Listen.
+
+**Anker.** `gruppiere()` und `Gruppenkopf` in `src/features/appointments/PatientAppointmentsPage.tsx`.
+
+**Änderungspfad.** Grundlage als oberste Ebene: `Terminliste` je Gruppe zweimal aufrufen, Cursor je Gruppe und Richtung · Aufwand `mittel`. Gruppierung ganz zurücknehmen: `gruppiere()` streichen, die flache Liste mit dem Grundlagenlink je Zeile steht in der Historie · Aufwand `klein`.

@@ -124,3 +124,21 @@ export function useVerordnungenDerAkte(patientId: string, user: CurrentUser): Ve
     verborgen: !darfLesen,
   };
 }
+
+/**
+ * Was die Deckung einer Grundlage in einem Satz sagt (CAL-022).
+ *
+ * Eine Zahl allein („4") beantwortet die Frage nicht, die im Alltag gestellt
+ * wird: Reicht diese Grundlage für die Termine, die stehen? Deshalb nennt der
+ * Satz beide Seiten — was gedeckt ist und was darüber hinausgeht.
+ */
+export function deckungstext(kontingent: TreatmentBasisKontingent): string {
+  if (kontingent.planned === 0) return 'Noch kein Termin zugeordnet';
+  if (kontingent.uncovered === 0) {
+    return `Alle ${kontingent.planned} zugeordneten Termine sind gedeckt`;
+  }
+  return (
+    `${kontingent.covered} von ${kontingent.planned} zugeordneten Terminen gedeckt · ` +
+    `${kontingent.uncovered} ohne Deckung`
+  );
+}

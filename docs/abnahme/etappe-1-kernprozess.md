@@ -2637,3 +2637,92 @@ zusätzlich als `olivia.office@praxis.invalid` (office) und
    „Heilmittel" springt in die Auswahl, „Datum" ins Datumsfeld.
 5. Anzahl auf `501` setzen. Erwartung: **Zwischen 1 und 500.** am Feld.
 6. Denselben Ablauf auf Tablet und Desktop wiederholen.
+
+## CAL-EPIC-004c — Überplanen und Termine je Grundlage
+
+Prüfschritte zu CAL-022 und AKTE-006. Grundlage: die Vorgabe in
+[CAL-EPIC-004.md](../development/CAL-EPIC-004.md), ANN-067 (welcher Termin
+gedeckt ist), ANN-068 (was sich übertragen lässt) und ANN-069 (wie die Akte
+gruppiert).
+
+**Diese Etappe bringt eine Migration**
+(`20260918140000_appointment_coverage.sql`): vorher `git pull origin main`,
+dann `pnpm dlx supabase@2.116.0 db reset`. Ohne den Reset fehlen die
+Deckungszahlen, und die Akte meldet einen Ladefehler. Alle Schritte als
+`olivia.office@praxis.invalid` (office); Schritt 5 zusätzlich als
+`anna.beispiel@praxis.invalid` (therapist).
+
+### 1. Über das Kontingent hinaus planen
+
+1. Akte von **Erika Beispiel** → **Behandlungsgrundlagen** → an der
+   **Erstverordnung vom 12.11.2025** (sechs mögliche Termine)
+   **Terminserie anlegen**.
+2. Anzahl auf `10` setzen. Erwartung: Ein Hinweis sagt, dass zehn geplant und
+   weniger offen sind und dass das **zulässig** ist. Die Serie lässt sich
+   anlegen.
+3. Zurück in **Behandlungsgrundlagen**. Erwartung: An der Verordnung steht
+   eine Zeile **Deckung** — „6 von 10 zugeordneten Terminen gedeckt · 4 ohne
+   Deckung" — und daneben das Zeichen **Ohne Deckung**.
+4. Erwartung: **Mögliche Termine** steht unverändert auf `6`, und unter
+   **Heilmittel** ist keine genutzte Menge gestiegen. Planen ist nicht
+   Verbrauchen.
+
+### 2. Ungedeckt heißt sichtbar — an drei Stellen
+
+1. An derselben Verordnung **Termine dieser Verordnung** anklicken.
+2. Erwartung: Die vier spätesten der zehn Termine tragen das Zeichen **Ohne
+   Deckung**, die sechs früheren nicht.
+3. Einen gekennzeichneten Termin öffnen. Erwartung: Die Zeile **Deckung**
+   sagt, dass die Behandlungsgrundlage diesen Termin nicht deckt.
+4. Einen der sechs früheren öffnen. Erwartung: **keine** solche Zeile.
+
+### 3. Die Termine wandern auf die Folgeverordnung
+
+1. Akte → **Behandlungsgrundlagen** → an der **Folgeverordnung vom
+   08.09.2026** **Termine übernehmen**.
+2. Erwartung: Das Ziel steht schon in der Auswahl, und die vier ungedeckten
+   Termine sind angehakt. Einen davon abwählen, dann **3 Termine übertragen**.
+3. Erwartung: Zurück in der Akte zeigt die Erstverordnung noch **einen**
+   ungedeckten Termin, die Folgeverordnung drei zugeordnete.
+4. Den letzten ungedeckten über **Termine übertragen** an der Erstverordnung
+   nachziehen — hier wird das Ziel erst gewählt. Erwartung: Danach steht an
+   keiner der beiden Grundlagen mehr eine Zeile **Deckung**.
+5. Als `jannes.test@praxis.invalid` (owner) das Zugriffsprotokoll öffnen
+   (`/praxis/sicherheit/audit`). Erwartung: Zwei Einträge **Termine auf diese
+   Grundlage übertragen**, je einer pro Vorgang — nicht je Termin, und ohne
+   Diagnose oder Namen.
+
+### 4. Was nicht wandert
+
+1. Akte von **Max Mustermann** → **Behandlungsgrundlagen** → an einer seiner
+   Verordnungen **Termine übernehmen**.
+2. Erwartung: Angeboten werden ausschließlich **seine** Termine. Die Termine
+   von Erika stehen nicht zur Wahl — auch nicht, wenn zuvor ihre Akte offen
+   war.
+3. Einen Termin **absagen** und dieselbe Seite erneut öffnen. Erwartung: Der
+   abgesagte Termin steht nicht mehr im Angebot.
+
+### 5. Die Akte gruppiert nach Grundlage
+
+1. Akte von **Erika Beispiel** → **Termine**.
+2. Erwartung: Unter **Kommende Termine** steht je Behandlungsgrundlage eine
+   Überschrift mit Bauart und Ausstellungsdatum, darunter ihre Termine. Die
+   Überschrift führt in die Grundlage.
+3. Erwartung: Ein Termin ohne Behandlungsgrundlage — im Seed der Termin von
+   heute — steht in einem eigenen Abschnitt **Ohne Behandlungsgrundlage**, und
+   zwar zuletzt.
+4. Erwartung: Ein Aufruf der Akte, **ein** Eintrag im Zugriffsprotokoll für
+   den Aktenzugriff.
+5. Aus dem Kalender an einem Serientermin **Zur Grundlage** → **Termine dieser
+   Verordnung**. Erwartung: Die Adresse trägt `?verordnung=…`, der Hinweis
+   „Nur die Termine einer Behandlungsgrundlage." steht oben, und **Alle
+   Termine zeigen** nimmt ihn wieder heraus.
+
+### 6. Am Handy (~375 px)
+
+1. Fenster auf ~375 px ziehen, **Termine** und **Termine übertragen** öffnen.
+2. Erwartung: Nichts läuft waagerecht aus dem Bild; jedes Kästchen ist samt
+   Beschriftung antippbar und mindestens 44 px hoch.
+3. Nur mit der Tastatur: Tabulator bis zur Auswahl, Leertaste setzt und löst
+   den Haken, Eingabetaste überträgt.
+4. Denselben Ablauf auf Tablet und Desktop wiederholen.

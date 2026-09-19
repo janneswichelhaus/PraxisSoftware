@@ -72,6 +72,8 @@ function kontingent(
     planned: 8,
     upcoming: 1,
     remaining: 2,
+    covered: 8,
+    uncovered: 0,
     ...rest,
   };
 }
@@ -256,15 +258,27 @@ describe('Verordnungsbereich der Akte', () => {
       );
     });
 
-    it('bietet keine Serie an, wenn jede Einheit verplant ist', async () => {
+    // Bis CAL-022 fehlte die Serie hier: An einer vollstaendig verplanten
+    // Grundlage waere sie ein Angebot ueber null Termine gewesen. Seit CAL-022
+    // ist sie eines ueber weitere - ueber das Kontingent hinaus zu planen ist
+    // zulaessig, und die Serienseite sagt, was dabei ungedeckt bleibt.
+    it('bietet die Serie auch an, wenn jede Einheit verplant ist', async () => {
       fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
       fetchPatientTreatmentBasisSlots.mockResolvedValue([
-        kontingent({ prescribed: 10, used: 7, planned: 10, upcoming: 3, remaining: 0 }),
+        kontingent({
+          prescribed: 10,
+          used: 7,
+          planned: 10,
+          upcoming: 3,
+          remaining: 0,
+          covered: 10,
+          uncovered: 0,
+        }),
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
       expect(await screen.findByText('Vollständig verplant')).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Terminserie anlegen' })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Terminserie anlegen' })).toBeInTheDocument();
     });
 
     it('bietet einer inaktiven Person keine Serie an', async () => {
@@ -288,6 +302,73 @@ describe('Verordnungsbereich der Akte', () => {
 
       await screen.findByText('Folgeverordnung vom 18.06.2026');
       expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // CAL-022: Ungedeckte Termine sind sichtbar, und sie lassen sich uebertragen.
+  // ---------------------------------------------------------------------------
+  describe('Deckung', () => {
+    it('nennt die ungedeckten Termine an der Grundlage', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent({ prescribed: 6, used: 2, planned: 10, upcoming: 8, covered: 6, uncovered: 4 }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByText('6 von 10 zugeordneten Terminen gedeckt · 4 ohne Deckung'),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('deckungszeichen')).toHaveTextContent('Ohne Deckung');
+    });
+
+    it('schweigt, solange die Grundlage jeden Termin traegt', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent({ planned: 8, covered: 8, uncovered: 0 }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      await screen.findByText('Folgeverordnung vom 18.06.2026');
+      expect(screen.queryByText('Deckung')).not.toBeInTheDocument();
+    });
+
+    it('bietet der ueberplanten Grundlage den Weg zum Uebertragen', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ uncovered: 4 })]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+      expect(await screen.findByRole('link', { name: 'Termine übertragen' })).toHaveAttribute(
+        'href',
+        `/patienten/${patient.id}/termine-uebertragen`,
+      );
+      // Auf sich selbst uebernimmt eine Grundlage nichts.
+      expect(screen.queryByRole('link', { name: 'Termine übernehmen' })).not.toBeInTheDocument();
+    });
+
+    it('bietet der zweiten Grundlage das Uebernehmen mit sich als Ziel', async () => {
+      const zweite = verordnung({ id: 'v2', issued_on: '2026-09-08' });
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung(), zweite]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent({ uncovered: 4 }),
+        kontingent({ treatment_basis_id: 'v2', planned: 0, upcoming: 0, covered: 0, uncovered: 0 }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+      expect(await screen.findByRole('link', { name: 'Termine übernehmen' })).toHaveAttribute(
+        'href',
+        `/patienten/${patient.id}/termine-uebertragen?ziel=v2`,
+      );
+    });
+
+    it('bietet das Uebernehmen nicht an, wenn nichts ungedeckt ist', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ uncovered: 0 })]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+      await screen.findByText('Folgeverordnung vom 18.06.2026');
+      expect(screen.queryByRole('link', { name: 'Termine übernehmen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Termine übertragen' })).not.toBeInTheDocument();
     });
   });
 

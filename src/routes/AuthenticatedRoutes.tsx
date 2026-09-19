@@ -21,6 +21,7 @@ import {
   EditTreatmentBasisPage,
   NewTreatmentBasisPage,
 } from '@/features/treatment-bases/TreatmentBasisFormPage';
+import { TermineUebertragenPage } from '@/features/treatment-bases/TermineUebertragenPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { TagUmplanenPage } from '@/features/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
@@ -214,6 +215,14 @@ export function AuthenticatedRoutes({
                 <Route
                   path="/patienten/:patientId/verordnungen/:grundlageId/serie"
                   element={<AppointmentSeriesPage user={user} />}
+                />
+                {/* Ungedeckte Termine auf eine andere Grundlage uebertragen
+                  (CAL-022). Eine Seite fuer beide Einstiege aus der Akte: Das
+                  Ziel steht in `?ziel=` oder wird hier gewaehlt - deshalb
+                  haengt die Adresse an der Akte und nicht an einer Grundlage. */}
+                <Route
+                  path="/patienten/:patientId/termine-uebertragen"
+                  element={<TermineUebertragenPage user={user} />}
                 />
                 {/* Terminzettel zum Ausdrucken - ein Blatt fuer die Patient:in
                   (CAL-011, IDEA-PRX-006). */}

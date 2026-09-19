@@ -386,6 +386,10 @@ const kontingentSchema = z.object({
   upcoming: z.number(),
   /** Was sich noch planen lässt: möglich minus dem größeren Wert (ANN-038). */
   remaining: z.number(),
+  /** Zugeordnete Termine, die die Grundlage trägt: `min(möglich, zugeordnet)`. */
+  covered: z.number(),
+  /** Der Überhang: geplant, aber von dieser Grundlage nicht gedeckt (CAL-022). */
+  uncovered: z.number(),
 });
 
 export type TreatmentBasisKontingent = z.infer<typeof kontingentSchema>;
@@ -736,4 +740,29 @@ export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {
     p_treatment_basis_id: grundlageId,
   });
   if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gelöscht werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Termine übertragen (CAL-022)
+// -----------------------------------------------------------------------------
+
+/**
+ * Überträgt Termine auf eine andere Behandlungsgrundlage derselben Patient:in.
+ *
+ * Alles oder nichts, und die Prüfungen stehen serverseitig: Die Patient:in
+ * kommt aus der Zielgrundlage, ein abgesagter oder abgerechneter Termin wird
+ * nicht übertragen, und der Vorgang wird protokolliert (ANN-068). Diese
+ * Funktion reicht nur durch — sie entscheidet nichts.
+ */
+export async function transferAppointmentsToTreatmentBasis(
+  zielGrundlageId: string,
+  terminIds: readonly string[],
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('transfer_appointments_to_treatment_basis', {
+    p_treatment_basis_id: zielGrundlageId,
+    p_appointment_ids: [...terminIds],
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Termine konnten nicht übertragen werden.');
+  return z.number().catch(terminIds.length).parse(data);
 }

@@ -13,6 +13,7 @@ import { formatDate } from '@/lib/datum';
 import { Dateiliste } from '@/features/files/Dateiliste';
 import { usePatientRecord } from '@/features/patients/akte';
 import { todayInTimeZone } from '@/features/appointments/api';
+import { Deckungszeichen } from '@/features/appointments/Deckungszeichen';
 import { ZOOM_STANDARD, schreibeParameter } from '@/features/appointments/calendar';
 import type { Patient } from '@/features/patients/api';
 import {
@@ -23,6 +24,7 @@ import {
   type TreatmentBasisKontingent,
 } from './api';
 import {
+  deckungstext,
   useVerordnungenDerAkte,
   zustandLabels,
   type Verordnung,
@@ -87,6 +89,19 @@ function Kontingentzeilen({
           ) : null}
         </span>
       </DetailRow>
+      {/* CAL-022: Ueber das Kontingent hinaus zu planen ist zulaessig - still
+          bleiben darf es nicht. Die Zeile steht nur da, wo etwas ungedeckt
+          ist; ein „alles gedeckt" an jeder Grundlage waere Rauschen. */}
+      {kontingent.uncovered > 0 ? (
+        <DetailRow label="Deckung">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>{deckungstext(kontingent)}</span>
+            {/* Dasselbe Zeichen wie am einzelnen Termin - die Zahl steht schon
+                im Satz daneben und wird hier nicht wiederholt. */}
+            <Deckungszeichen gedeckt={false} />
+          </span>
+        </DetailRow>
+      ) : null}
       {/* Die dritte Zahl ist keine der beiden ersten: Sie sagt, wie viele
           Termine sich noch anlegen lassen - möglich abzüglich des größeren
           Werts aus genutzt und verplant (ANN-038). Genau diese Zahl schlägt
@@ -217,25 +232,41 @@ function KlinischeAngaben({ verordnung }: { verordnung: Verordnung }) {
 /**
  * Die Aktionen einer Verordnung - passend zu ihrem Zustand.
  *
- * „Terminserie anlegen" steht nur dort, wo sich noch etwas planen lässt. An
- * einer ausgeschöpften Verordnung führte der Knopf bisher auf eine Seite, die
- * „0 Termine" vorschlug: ein Angebot, das keins war (PROJECT_PRINCIPLES.md 13).
- * Wer eine Verordnung schreiben darf, kann sie dagegen in jedem Zustand
- * korrigieren - auch ein Tippfehler in einer alten Verordnung gehört behoben.
+ * „Terminserie anlegen" stand bis CAL-022 nur an einer Grundlage, an der sich
+ * noch etwas planen ließ: An einer ausgeschöpften führte der Knopf auf eine
+ * Seite, die „0 Termine" vorschlug — ein Angebot, das keins war
+ * (PROJECT_PRINCIPLES.md 13). Seit CAL-022 **ist** es eines: Über das
+ * Kontingent hinaus zu planen ist zulässig, die Serienseite sagt, was dabei
+ * ungedeckt bleibt. Der Knopf steht deshalb an jeder Grundlage einer aktiven
+ * Patient:in.
+ *
+ * Dazu der Weg zur Übertragung — mit zwei Beschriftungen für denselben
+ * Vorgang, weil er von zwei Seiten aus gedacht wird (CAL-022): Die überplante
+ * Grundlage gibt ab („Termine übertragen"), die andere nimmt auf („Termine
+ * übernehmen"). Wer eine Verordnung schreiben darf, kann sie unverändert in
+ * jedem Zustand korrigieren.
  */
 function Verordnungsaktionen({
   eintrag,
   patient,
   user,
+  ungedecktInDerAkte,
 }: {
   eintrag: VerordnungMitZahlen;
   patient: Patient;
   user: CurrentUser;
+  /** Ungedeckte Termine der ganzen Akte - sonst führte „übernehmen" ins Leere. */
+  ungedecktInDerAkte: number;
 }) {
-  const { verordnung, zustand } = eintrag;
+  const { verordnung, kontingent } = eintrag;
   const darfPlanen = canManageAppointments(user.roles);
   const darfSchreiben = canWriteTreatmentBases(user.roles);
-  const planbar = zustand === 'offen' && patient.status === 'active';
+  const planbar = patient.status === 'active';
+  const ungedeckt = kontingent?.uncovered ?? 0;
+  // Übernehmen lohnt nur, wenn anderswo etwas ungedeckt steht. Die eigene Zahl
+  // zählt dabei nicht mit: Sie wandert nicht auf sich selbst.
+  const uebernehmbar = ungedecktInDerAkte - ungedeckt > 0;
+  const uebertragen = `/patienten/${patient.id}/termine-uebertragen`;
 
   /**
    * Der Weg in den vollständigen Kalender, mit Patient:in und Verordnung als
@@ -283,6 +314,24 @@ function Verordnungsaktionen({
           className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
         >
           Im Kalender einen Platz suchen
+        </Link>
+      ) : null}
+      {/* Derselbe Vorgang, zwei Richtungen (CAL-022). Ohne Ziel in der Adresse
+          fragt die Seite danach; mit Ziel steht diese Grundlage schon da. */}
+      {darfPlanen && ungedeckt > 0 ? (
+        <Link
+          to={uebertragen}
+          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+        >
+          Termine übertragen
+        </Link>
+      ) : null}
+      {darfPlanen && planbar && ungedeckt === 0 && uebernehmbar ? (
+        <Link
+          to={`${uebertragen}?ziel=${verordnung.id}`}
+          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+        >
+          Termine übernehmen
         </Link>
       ) : null}
       {darfSchreiben ? (
@@ -344,10 +393,12 @@ function LaufendeVerordnung({
   eintrag,
   patient,
   user,
+  ungedecktInDerAkte,
 }: {
   eintrag: VerordnungMitZahlen;
   patient: Patient;
   user: CurrentUser;
+  ungedecktInDerAkte: number;
 }) {
   const { verordnung, kontingent, zustand } = eintrag;
   const weitereAngaben = hatWeitereAngaben(verordnung);
@@ -393,7 +444,12 @@ function LaufendeVerordnung({
         ) : null}
       </div>
 
-      <Verordnungsaktionen eintrag={eintrag} patient={patient} user={user} />
+      <Verordnungsaktionen
+        eintrag={eintrag}
+        patient={patient}
+        user={user}
+        ungedecktInDerAkte={ungedecktInDerAkte}
+      />
       {istVerordnung(verordnung.treatment_basis_kind) ? (
         <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
       ) : null}
@@ -412,10 +468,12 @@ function AbgeschlosseneVerordnung({
   eintrag,
   patient,
   user,
+  ungedecktInDerAkte,
 }: {
   eintrag: VerordnungMitZahlen;
   patient: Patient;
   user: CurrentUser;
+  ungedecktInDerAkte: number;
 }) {
   const { verordnung, kontingent } = eintrag;
 
@@ -456,7 +514,12 @@ function AbgeschlosseneVerordnung({
             ) : null}
             <KlinischeAngaben verordnung={verordnung} />
           </DetailList>
-          <Verordnungsaktionen eintrag={eintrag} patient={patient} user={user} />
+          <Verordnungsaktionen
+            eintrag={eintrag}
+            patient={patient}
+            user={user}
+            ungedecktInDerAkte={ungedecktInDerAkte}
+          />
           {istVerordnung(verordnung.treatment_basis_kind) ? (
             <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
           ) : null}
@@ -472,14 +535,18 @@ export function PatientTreatmentBasesPage() {
 }
 
 export function Verordnungsbereich({ patient, user }: { patient: Patient; user: CurrentUser }) {
-  const { aktuell, abgeschlossen, isPending, isError, verborgen } = useVerordnungenDerAkte(
-    patient.id,
-    user,
-  );
+  const { eintraege, aktuell, abgeschlossen, isPending, isError, verborgen } =
+    useVerordnungenDerAkte(patient.id, user);
 
   if (verborgen) return null;
 
   const darfSchreiben = canWriteTreatmentBases(user.roles);
+  // Über die ganze Akte, nicht je Karte: „Termine übernehmen" führt sonst auf
+  // eine Seite ohne Angebot (CAL-022).
+  const ungedecktInDerAkte = eintraege.reduce(
+    (summe, eintrag) => summe + (eintrag.kontingent?.uncovered ?? 0),
+    0,
+  );
 
   return (
     <>
@@ -518,6 +585,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
                 eintrag={eintrag}
                 patient={patient}
                 user={user}
+                ungedecktInDerAkte={ungedecktInDerAkte}
               />
             ))}
           </ul>
@@ -544,6 +612,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
                         eintrag={eintrag}
                         patient={patient}
                         user={user}
+                        ungedecktInDerAkte={ungedecktInDerAkte}
                       />
                     );
                   })}

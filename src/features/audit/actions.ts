@@ -67,6 +67,8 @@ export const AUDIT_ACTIONS = [
   'treatment_basis.created',
   'treatment_basis.updated',
   'treatment_basis.deleted',
+  // CAL-022: ein Ereignis je Uebertragung, nicht je Termin.
+  'treatment_basis.appointments_transferred',
   'patient_file.uploaded',
   'patient_file.link_issued',
   'patient_file.deleted',
@@ -144,6 +146,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'treatment_basis.created': 'Behandlungsgrundlage erfasst',
   'treatment_basis.updated': 'Behandlungsgrundlage geändert',
   'treatment_basis.deleted': 'Behandlungsgrundlage gelöscht',
+  'treatment_basis.appointments_transferred': 'Termine auf diese Grundlage übertragen',
   'patient_file.uploaded': 'Datei zur Akte hinzugefügt',
   'patient_file.link_issued': 'Datei zum Öffnen freigegeben',
   'patient_file.deleted': 'Datei gelöscht',
