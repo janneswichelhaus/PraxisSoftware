@@ -573,6 +573,80 @@ export async function erstelleKorrektur(invoiceId: string): Promise<string> {
 }
 
 // -----------------------------------------------------------------------------
+// Zahlungserinnerung (ABR-003d, IDEA-PRX-012)
+// -----------------------------------------------------------------------------
+
+const erinnerungSchema = z.object({
+  id: z.string(),
+  reminder_on: z.string(),
+  due_on: z.string(),
+  // Der offene Betrag am Tag der Erinnerung, festgeschrieben (ANN-080). Nicht
+  // der heutige — der steht an der Rechnung und wird dort gerechnet.
+  outstanding_cents: z.number(),
+  currency: z.string(),
+});
+
+export type Erinnerung = z.infer<typeof erinnerungSchema>;
+
+const erinnerungsdokumentSchema = erinnerungSchema.extend({
+  invoice_id: z.string(),
+  invoice_number: z.string(),
+  issued_on: z.string(),
+  invoice_due_on: z.string(),
+  document: dokumentSchema,
+});
+
+export type Erinnerungsdokument = z.infer<typeof erinnerungsdokumentSchema>;
+
+export async function fetchErinnerungen(invoiceId: string): Promise<Erinnerung[]> {
+  const { data, error } = (await getSupabase().rpc('list_invoice_reminders', {
+    p_invoice_id: invoiceId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Zahlungserinnerungen konnten nicht geladen werden.');
+  return z.array(erinnerungSchema).parse(data ?? []);
+}
+
+export async function fetchErinnerung(reminderId: string): Promise<Erinnerungsdokument> {
+  const { data, error } = (await getSupabase().rpc('get_payment_reminder', {
+    p_reminder_id: reminderId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Zahlungserinnerung konnte nicht geladen werden.');
+  return erinnerungsdokumentSchema.parse(data);
+}
+
+/**
+ * Eine Zahlungserinnerung ausstellen (ABR-003d).
+ *
+ * Ohne Stufe, ohne Gebühr, ohne Automatik — und erst ab Fälligkeit. Die
+ * Meldungen nennen deshalb den Grund, aus dem es gerade keine gibt; die
+ * Oberfläche muss ihn nicht raten.
+ */
+export async function erstelleErinnerung(invoiceId: string): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('create_payment_reminder', {
+    p_invoice_id: invoiceId,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error?.message?.includes('not overdue yet')) {
+    throw new Error('Die Rechnung ist noch nicht fällig — vorher gibt es nichts zu erinnern.');
+  }
+  if (error?.message?.includes('nothing outstanding')) {
+    throw new Error('Diese Rechnung ist ausgeglichen.');
+  }
+  if (error?.message?.includes('already written today')) {
+    throw new Error('Für heute steht bereits eine Erinnerung zu dieser Rechnung.');
+  }
+  if (error?.message?.includes('cancelled invoice')) {
+    throw new Error('Eine stornierte Rechnung ist keine Forderung mehr.');
+  }
+  if (error) throw new Error('Die Zahlungserinnerung konnte nicht ausgestellt werden.');
+  const id = z.string().uuid().safeParse(data);
+  if (!id.success) throw new Error('Die Zahlungserinnerung konnte nicht ausgestellt werden.');
+  return id.data;
+}
+
+// -----------------------------------------------------------------------------
 // Zahlungen und offene Posten (ABR-004)
 // -----------------------------------------------------------------------------
 

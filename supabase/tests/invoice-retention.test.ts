@@ -159,6 +159,33 @@ describe('Aufbewahrung der Rechnungen', () => {
     expect(Number(rows[0]?.anzahl)).toBe(0);
   });
 
+  it('loescht die Zahlungserinnerung mit und journalisiert sie (ABR-003d)', async () => {
+    const rechnung = await rechnungVor(patients.max, 9);
+    await asPostgres(
+      `insert into public.invoice_payment_reminders
+         (organization_id, invoice_id, reminder_on, due_on, outstanding_cents, currency, created_by)
+       values ($1, $2, current_date - 20, current_date - 6, 4500, 'EUR', $3)`,
+      [organizationId, rechnung, users.office],
+    );
+    await abgeschlossenVor(patients.max, 11);
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.invoice_payment_reminders')).toBe(0);
+    expect(
+      await anzahl(
+        `select count(*) from public.deletion_journal
+          where target_table = 'invoice_payment_reminders'
+            and retention_class = 'abrechnungsdaten'`,
+      ),
+    ).toBe(1);
+
+    const { rows } = await asPostgres<{ anzahl: number }>(
+      'select public.reapply_deletion_journal() as anzahl',
+    );
+    expect(Number(rows[0]?.anzahl)).toBe(0);
+  });
+
   it('haelt eine faellige Akte zurueck, solange die Frist einer Rechnung laeuft', async () => {
     await rechnungVor(patients.max, 2);
     await abgeschlossenVor(patients.max, 11);

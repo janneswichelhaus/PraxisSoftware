@@ -65,6 +65,7 @@ import { CatalogPage } from '@/features/billing/CatalogPage';
 import { CancellationPrintPage } from '@/features/billing/CancellationPrintPage';
 import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
 import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
+import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
@@ -322,6 +323,13 @@ export function AuthenticatedRoutes({
                 <Route
                   path="/abrechnung/rechnungen/:invoiceId/storno"
                   element={<CancellationPrintPage />}
+                />
+                {/* Die Zahlungserinnerung haengt an ihrer eigenen Kennung und
+                  nicht an der Rechnung: Es kann mehrere geben, und jede haelt
+                  den Betrag ihres Tages fest (ABR-003d, ANN-080). */}
+                <Route
+                  path="/abrechnung/erinnerungen/:reminderId"
+                  element={<ReminderPrintPage />}
                 />
                 <Route path="/abrechnung/leistungen" element={<ServicesPage />} />
                 <Route path="/abrechnung/katalog" element={<CatalogPage user={user} />} />

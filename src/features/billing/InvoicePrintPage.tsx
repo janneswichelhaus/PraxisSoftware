@@ -203,58 +203,64 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
           Rechnung:
         </p>
 
-        <table className="mt-4 w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-line-strong border-b text-left">
-              <th scope="col" className="py-1 pr-3 font-medium">
-                Datum
-              </th>
-              <th scope="col" className="py-1 pr-3 font-medium">
-                Leistung
-              </th>
-              <th scope="col" className="py-1 pr-3 text-right font-medium">
-                Menge
-              </th>
-              <th scope="col" className="py-1 pr-3 text-right font-medium">
-                Einzelpreis
-              </th>
-              <th scope="col" className="py-1 text-right font-medium">
-                Betrag
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {dokument.items.map((zeile, index) => (
-              <tr
-                key={`${zeile.performed_on}-${zeile.code}-${index}`}
-                className="border-line border-b"
-              >
-                <td className="py-1 pr-3 tabular-nums">{formatDate(zeile.performed_on)}</td>
-                <td className="py-1 pr-3">
-                  {zeile.label} ({zeile.code})
-                  {zeile.item_kind === 'absence_fee' ? ' · Ausfallhonorar' : ''}
-                </td>
-                <td className="py-1 pr-3 text-right tabular-nums">{zeile.quantity}</td>
-                <td className="py-1 pr-3 text-right tabular-nums">
-                  {formatEuro(zeile.unit_price_cents, zeile.currency)}
-                </td>
-                <td className="py-1 text-right tabular-nums">
-                  {formatEuro(zeile.line_total_cents, zeile.currency)}
+        {/* Die Leistungstabelle hat fünf Spalten und passt damit auf A4, aber
+            nicht auf ein Telefon. Sie rollt deshalb in ihrem eigenen Rahmen
+            statt die ganze Seite quer zu schieben; auf Papier gibt es nichts
+            zu rollen, dort steht sie vollständig. */}
+        <div className="mt-4 overflow-x-auto print:overflow-visible">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-line-strong border-b text-left">
+                <th scope="col" className="py-1 pr-3 font-medium">
+                  Datum
+                </th>
+                <th scope="col" className="py-1 pr-3 font-medium">
+                  Leistung
+                </th>
+                <th scope="col" className="py-1 pr-3 text-right font-medium">
+                  Menge
+                </th>
+                <th scope="col" className="py-1 pr-3 text-right font-medium">
+                  Einzelpreis
+                </th>
+                <th scope="col" className="py-1 text-right font-medium">
+                  Betrag
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {dokument.items.map((zeile, index) => (
+                <tr
+                  key={`${zeile.performed_on}-${zeile.code}-${index}`}
+                  className="border-line border-b"
+                >
+                  <td className="py-1 pr-3 tabular-nums">{formatDate(zeile.performed_on)}</td>
+                  <td className="py-1 pr-3">
+                    {zeile.label} ({zeile.code})
+                    {zeile.item_kind === 'absence_fee' ? ' · Ausfallhonorar' : ''}
+                  </td>
+                  <td className="py-1 pr-3 text-right tabular-nums">{zeile.quantity}</td>
+                  <td className="py-1 pr-3 text-right tabular-nums">
+                    {formatEuro(zeile.unit_price_cents, zeile.currency)}
+                  </td>
+                  <td className="py-1 text-right tabular-nums">
+                    {formatEuro(zeile.line_total_cents, zeile.currency)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row" colSpan={4} className="py-2 pr-3 text-right font-semibold">
+                  Gesamtbetrag
+                </th>
+                <td className="py-2 text-right font-semibold tabular-nums">
+                  {formatEuro(dokument.totals.total_cents, dokument.currency)}
                 </td>
               </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <th scope="row" colSpan={4} className="py-2 pr-3 text-right font-semibold">
-                Gesamtbetrag
-              </th>
-              <td className="py-2 text-right font-semibold tabular-nums">
-                {formatEuro(dokument.totals.total_cents, dokument.currency)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+            </tfoot>
+          </table>
+        </div>
 
         {/* Der Katalogpreis ist der Endpreis; eine enthaltene Umsatzsteuer
             wird je Satz herausgerechnet (ANN-074). Unter Paragraf 19 UStG

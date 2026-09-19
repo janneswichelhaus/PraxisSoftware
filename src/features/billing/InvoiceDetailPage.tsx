@@ -20,8 +20,10 @@ import {
   ZahlungStehtNoch,
   deleteEntwurf,
   empfaengerartLabels,
+  erstelleErinnerung,
   erstelleKorrektur,
   fetchEmpfaenger,
+  fetchErinnerungen,
   fetchRechnung,
   fetchRechnungszahlungen,
   richtungLabels,
@@ -278,6 +280,7 @@ function Rechnungsbild({
             zeitzone={zeitzone}
             waehrung={dokument.currency}
           />
+          <Zahlungserinnerungen ansicht={ansicht} darfErinnern={darfAusstellen} />
           <Stornokette ansicht={ansicht} darfStornieren={darfAusstellen} />
         </>
       ) : null}
@@ -378,6 +381,102 @@ function Zahlungen({
           waehrung={waehrung}
           zeitzone={zeitzone}
         />
+      ) : null}
+    </Section>
+  );
+}
+
+/**
+ * Die Zahlungserinnerungen einer Rechnung (ABR-003d, `IDEA-PRX-012`).
+ *
+ * **Ohne Stufen, ohne Gebühren, ohne Automatik.** Es gibt genau einen Knopf,
+ * und er heißt, was er tut. Eine zweite Erinnerung ist keine zweite Mahnstufe
+ * — Mahnstufen entscheidet ABR-005 nach Praxiserfahrung (ADR-009 nennt das
+ * Mahnwesen ausdrücklich als nicht entschieden).
+ *
+ * Die Liste zeigt jede ausgestellte Erinnerung mit **ihrem** offenen Betrag:
+ * dem vom Tag der Ausstellung (ANN-080). Der heutige steht darüber bei den
+ * Zahlungen und wird dort gerechnet.
+ */
+function Zahlungserinnerungen({
+  ansicht,
+  darfErinnern,
+}: {
+  ansicht: Rechnungsansicht;
+  darfErinnern: boolean;
+}) {
+  const queryClient = useQueryClient();
+
+  const erinnerungen = useQuery({
+    queryKey: ['zahlungserinnerungen', ansicht.id],
+    queryFn: () => fetchErinnerungen(ansicht.id),
+    retry: false,
+  });
+
+  const erstellen = useMutation({
+    mutationFn: () => erstelleErinnerung(ansicht.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['zahlungserinnerungen', ansicht.id] });
+    },
+  });
+
+  // An einer stornierten Rechnung gibt es nichts zu erinnern: Sie ist keine
+  // Forderung mehr (ABR-003c).
+  if (ansicht.cancellation) return null;
+
+  const bezahlt = ansicht.outstanding_cents <= 0;
+  const eintraege = erinnerungen.data ?? [];
+
+  return (
+    <Section titel="Zahlungserinnerung" rahmen>
+      {eintraege.length === 0 ? (
+        <p className="text-ink-muted text-sm">Noch keine Erinnerung ausgestellt.</p>
+      ) : (
+        <ul className="divide-line divide-y">
+          {eintraege.map((eintrag) => (
+            <li key={eintrag.id} className="flex flex-wrap items-baseline gap-x-3 py-2">
+              <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
+                {formatDate(eintrag.reminder_on)}
+              </span>
+              <span className="text-ink min-w-0 flex-1 text-[0.9375rem]">
+                Frist bis {formatDate(eintrag.due_on)} ·{' '}
+                {formatEuro(eintrag.outstanding_cents, eintrag.currency)} offen
+              </span>
+              <Link
+                className="text-ink-muted hover:text-ink text-sm underline"
+                to={`/abrechnung/erinnerungen/${eintrag.id}`}
+              >
+                Blatt öffnen
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {darfErinnern && !bezahlt ? (
+        <div className="mt-3">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={erstellen.isPending || !ansicht.overdue}
+            onClick={() => erstellen.mutate()}
+          >
+            {erstellen.isPending ? 'Wird ausgestellt …' : 'Zahlungserinnerung ausstellen'}
+          </Button>
+          <p className="text-ink-subtle mt-2 max-w-prose text-sm">
+            {ansicht.overdue
+              ? 'Keine Mahnung und keine Stufe: ein Blatt, das an die fällige Rechnung erinnert, mit einer neuen Frist von vierzehn Tagen. Ohne Gebühr und ohne Zinsen.'
+              : `Die Rechnung ist noch nicht fällig${
+                  ansicht.due_on ? ` — sie läuft bis zum ${formatDate(ansicht.due_on)}` : ''
+                }. Vorher gibt es nichts zu erinnern.`}
+          </p>
+        </div>
+      ) : null}
+
+      {erstellen.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {erstellen.error.message}
+        </Statusmeldung>
       ) : null}
     </Section>
   );
