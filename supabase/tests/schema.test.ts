@@ -90,6 +90,7 @@ describe('Schema-Invarianten', () => {
       'service_catalog_versions',
       'service_catalog_items',
       'billable_services',
+      'practice_billing_profiles',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

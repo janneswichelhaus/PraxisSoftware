@@ -17,6 +17,8 @@
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
 delete from public.audit_log;
+delete from public.practice_billing_profiles;
+delete from public.billable_services;
 delete from public.treatment_text_snippets;
 delete from public.staff_working_hour_exceptions;
 delete from public.staff_working_hours;
@@ -227,6 +229,34 @@ update public.service_catalog_versions
    set published_at = timestamptz '2025-12-20 09:00:00+01',
        published_by = '11111111-1111-4111-8111-000000000001'
  where id = 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001';
+
+-- -----------------------------------------------------------------------------
+-- Praxis-Stammdaten fuer Rechnungen (ABR-000)
+--
+-- Vollstaendig erfunden: Anschrift, Steuernummer und Bankverbindung existieren
+-- nicht. Die IBAN ist eine seit Jahren veroeffentlichte Test-IBAN und gehoert
+-- zu keinem Konto. Die echten Angaben traegt die Praxis in ihrer eigenen
+-- Umgebung ein - im Repository haben sie nichts verloren
+-- (PROJECT_PRINCIPLES.md 3.1 und 3.3).
+--
+-- `small_business = false` ist eine Setzung fuer die Demonstration, keine
+-- Aussage ueber die Praxis: Nur unter der Regelbesteuerung ist die
+-- Steueraufteilung auf der Rechnung ueberhaupt zu sehen. Welcher Status
+-- tatsaechlich gilt, beantwortet G13 mit der Steuerberatung (ANN-074).
+-- -----------------------------------------------------------------------------
+insert into public.practice_billing_profiles (
+  organization_id, legal_name, street, house_number, postal_code, city,
+  phone, email, tax_number, vat_id, small_business,
+  bank_name, account_holder, iban, bic, invoice_number_prefix, payment_term_days
+) values (
+  '22222222-2222-4222-8222-000000000001',
+  'Test Praxis Tuebingen', 'Musterallee', '1', '72070', 'Tuebingen',
+  '+49 7071 0000000', 'rechnung@praxis.invalid',
+  '86123/45678', null, false,
+  'Testbank Tuebingen', 'Test Praxis Tuebingen',
+  'DE02120300000000202051', 'TESTDEFFXXX', 'RG', 14
+);
+
 
 -- -----------------------------------------------------------------------------
 -- Accountzuordnung
