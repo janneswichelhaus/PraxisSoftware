@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Section } from '@/components/ui/Section';
@@ -16,9 +17,13 @@ import { formatEuro } from '@/lib/geld';
 import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
 import {
   KeineStammdaten,
+  ZahlungStehtNoch,
   deleteEntwurf,
   empfaengerartLabels,
+  erstelleErinnerung,
+  erstelleKorrektur,
   fetchEmpfaenger,
+  fetchErinnerungen,
   fetchRechnung,
   fetchRechnungszahlungen,
   richtungLabels,
@@ -26,6 +31,7 @@ import {
   setzeEmpfaenger,
   steuerLabels,
   stelleRechnungAus,
+  storniereRechnung,
   zahlungswegLabels,
   type Empfaenger,
   type Rechnungsansicht,
@@ -69,9 +75,11 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title={rechnung.data?.invoice_number ?? 'Rechnungsentwurf'}
         description={
-          rechnung.data?.status === 'issued'
-            ? 'Ausgestellt und unveränderlich. Eine Korrektur läuft über Storno und Neuausstellung.'
-            : 'Noch ohne Nummer. Die Nummer entsteht beim Ausstellen.'
+          rechnung.data?.cancellation
+            ? 'Storniert. Das Stornodokument steht daneben; die Rechnung selbst bleibt unverändert.'
+            : rechnung.data?.status === 'issued'
+              ? 'Ausgestellt und unveränderlich. Eine Korrektur läuft über Storno und Neuausstellung.'
+              : 'Noch ohne Nummer. Die Nummer entsteht beim Ausstellen.'
         }
       />
 
@@ -114,6 +122,18 @@ function Rechnungsbild({
 
   return (
     <>
+      {/* Die Kette rückwärts (ABR-003c): Wer diese Rechnung ansieht, soll
+          sehen, dass sie eine andere ersetzt — und dorthin kommen. */}
+      {ansicht.replaces_invoice_id ? (
+        <Statusmeldung className="mb-4">
+          Korrekturrechnung zur stornierten Rechnung{' '}
+          <Link className="underline" to={`/abrechnung/rechnungen/${ansicht.replaces_invoice_id}`}>
+            {ansicht.replaces_invoice_number ?? 'ohne Nummer'}
+          </Link>
+          .
+        </Statusmeldung>
+      ) : null}
+
       <Section titel="Empfänger" rahmen>
         <p className="text-ink text-[0.9375rem] font-medium">{dokument.recipient.name}</p>
         <p className="text-ink-muted text-sm">
@@ -234,6 +254,22 @@ function Rechnungsbild({
         )}
       </Section>
 
+      {/* Das Blatt zum Verschicken steht als eigene Seite daneben (ABR-003b):
+          Ein Brief ist kein Bedienbildschirm, und der Entwurf lässt sich
+          darauf ansehen, bevor er eine Nummer bekommt. */}
+      <Section titel="Rechnungsblatt" ebene={2}>
+        <p className="text-ink-muted text-sm">
+          {entwurf
+            ? 'Der Entwurf lässt sich als Blatt ansehen und ausdrucken — mit einem Vermerk darauf, dass er keine Rechnung ist.'
+            : 'Das Blatt zum Verschicken: über den Druckdialog des Browsers auf Papier oder in eine PDF-Datei.'}
+        </p>
+        <div className="mt-3">
+          <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/druck`} variant="secondary">
+            Rechnungsblatt öffnen
+          </ButtonLink>
+        </div>
+      </Section>
+
       {entwurf && darfAusstellen ? <Entwurfsaktionen ansicht={ansicht} /> : null}
 
       {!entwurf ? (
@@ -244,10 +280,8 @@ function Rechnungsbild({
             zeitzone={zeitzone}
             waehrung={dokument.currency}
           />
-          <Statusmeldung className="mt-4">
-            Diese Rechnung ist ausgestellt und damit unveränderlich. Das Dokument zum Versenden, das
-            Storno der Rechnung und die Zahlungserinnerung kommen mit dem nächsten Schritt.
-          </Statusmeldung>
+          <Zahlungserinnerungen ansicht={ansicht} darfErinnern={darfAusstellen} />
+          <Stornokette ansicht={ansicht} darfStornieren={darfAusstellen} />
         </>
       ) : null}
     </>
@@ -348,6 +382,247 @@ function Zahlungen({
           zeitzone={zeitzone}
         />
       ) : null}
+    </Section>
+  );
+}
+
+/**
+ * Die Zahlungserinnerungen einer Rechnung (ABR-003d, `IDEA-PRX-012`).
+ *
+ * **Ohne Stufen, ohne Gebühren, ohne Automatik.** Es gibt genau einen Knopf,
+ * und er heißt, was er tut. Eine zweite Erinnerung ist keine zweite Mahnstufe
+ * — Mahnstufen entscheidet ABR-005 nach Praxiserfahrung (ADR-009 nennt das
+ * Mahnwesen ausdrücklich als nicht entschieden).
+ *
+ * Die Liste zeigt jede ausgestellte Erinnerung mit **ihrem** offenen Betrag:
+ * dem vom Tag der Ausstellung (ANN-080). Der heutige steht darüber bei den
+ * Zahlungen und wird dort gerechnet.
+ */
+function Zahlungserinnerungen({
+  ansicht,
+  darfErinnern,
+}: {
+  ansicht: Rechnungsansicht;
+  darfErinnern: boolean;
+}) {
+  const queryClient = useQueryClient();
+
+  const erinnerungen = useQuery({
+    queryKey: ['zahlungserinnerungen', ansicht.id],
+    queryFn: () => fetchErinnerungen(ansicht.id),
+    retry: false,
+  });
+
+  const erstellen = useMutation({
+    mutationFn: () => erstelleErinnerung(ansicht.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['zahlungserinnerungen', ansicht.id] });
+    },
+  });
+
+  // An einer stornierten Rechnung gibt es nichts zu erinnern: Sie ist keine
+  // Forderung mehr (ABR-003c).
+  if (ansicht.cancellation) return null;
+
+  const bezahlt = ansicht.outstanding_cents <= 0;
+  const eintraege = erinnerungen.data ?? [];
+
+  return (
+    <Section titel="Zahlungserinnerung" rahmen>
+      {eintraege.length === 0 ? (
+        <p className="text-ink-muted text-sm">Noch keine Erinnerung ausgestellt.</p>
+      ) : (
+        <ul className="divide-line divide-y">
+          {eintraege.map((eintrag) => (
+            <li key={eintrag.id} className="flex flex-wrap items-baseline gap-x-3 py-2">
+              <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
+                {formatDate(eintrag.reminder_on)}
+              </span>
+              <span className="text-ink min-w-0 flex-1 text-[0.9375rem]">
+                Frist bis {formatDate(eintrag.due_on)} ·{' '}
+                {formatEuro(eintrag.outstanding_cents, eintrag.currency)} offen
+              </span>
+              <Link
+                className="text-ink-muted hover:text-ink text-sm underline"
+                to={`/abrechnung/erinnerungen/${eintrag.id}`}
+              >
+                Blatt öffnen
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {darfErinnern && !bezahlt ? (
+        <div className="mt-3">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={erstellen.isPending || !ansicht.overdue}
+            onClick={() => erstellen.mutate()}
+          >
+            {erstellen.isPending ? 'Wird ausgestellt …' : 'Zahlungserinnerung ausstellen'}
+          </Button>
+          <p className="text-ink-subtle mt-2 max-w-prose text-sm">
+            {ansicht.overdue
+              ? 'Keine Mahnung und keine Stufe: ein Blatt, das an die fällige Rechnung erinnert, mit einer neuen Frist von vierzehn Tagen. Ohne Gebühr und ohne Zinsen.'
+              : `Die Rechnung ist noch nicht fällig${
+                  ansicht.due_on ? ` — sie läuft bis zum ${formatDate(ansicht.due_on)}` : ''
+                }. Vorher gibt es nichts zu erinnern.`}
+          </p>
+        </div>
+      ) : null}
+
+      {erstellen.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {erstellen.error.message}
+        </Statusmeldung>
+      ) : null}
+    </Section>
+  );
+}
+
+/**
+ * Storno und Korrektur einer ausgestellten Rechnung (ABR-003c).
+ *
+ * ADR-009 Punkt 9: Eine ausgestellte Rechnung ist unveränderbar; korrigiert
+ * wird über ein **eigenes Dokument**. Deshalb steht hier kein „Bearbeiten"
+ * und kein „Löschen", sondern zwei Schritte: das Storno mit Grund und — wenn
+ * die Praxis sie braucht — die Korrekturrechnung.
+ *
+ * „Storniert" ist ein abgeleiteter Zustand (ANN-079): Es gibt ein
+ * Stornodokument zu dieser Rechnung. Die Rechnung selbst ändert sich nicht,
+ * und an ihr steht dazu keine Spalte.
+ */
+function Stornokette({
+  ansicht,
+  darfStornieren,
+}: {
+  ansicht: Rechnungsansicht;
+  darfStornieren: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [grund, setGrund] = useState('');
+  const [fehler, setFehler] = useState<string | undefined>(undefined);
+
+  const stornieren = useMutation({
+    mutationFn: () => storniereRechnung(ansicht.id, grund.trim()),
+    onSuccess: async () => {
+      setGrund('');
+      await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
+      await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
+      await queryClient.invalidateQueries({ queryKey: ['offene-posten'] });
+      await queryClient.invalidateQueries({ queryKey: ['rechnungs-kandidaten'] });
+    },
+  });
+
+  const korrigieren = useMutation({
+    mutationFn: () => erstelleKorrektur(ansicht.id),
+    onSuccess: async (id) => {
+      await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
+      await queryClient.invalidateQueries({ queryKey: ['rechnungs-kandidaten'] });
+      await navigate(`/abrechnung/rechnungen/${id}`);
+    },
+  });
+
+  if (ansicht.cancellation) {
+    const storno = ansicht.cancellation;
+    return (
+      <Section titel="Storniert" rahmen>
+        <p className="text-ink text-[0.9375rem]">
+          Stornodokument {storno.cancellation_number} vom {formatDate(storno.cancelled_on)}
+        </p>
+        <p className="text-ink-muted mt-1 text-sm">Grund: {storno.reason}</p>
+        <p className="text-ink-subtle mt-2 text-sm">
+          Die Rechnung bleibt unverändert stehen — sie ist ausgestellt gewesen, und das lässt sich
+          nicht zurücknehmen. Sie steht in keinem offenen Posten mehr, und ihre Leistungen sind
+          wieder abzurechnen.
+        </p>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/storno`} variant="secondary">
+            Stornodokument öffnen
+          </ButtonLink>
+
+          {ansicht.correction_invoice_id ? (
+            <ButtonLink
+              to={`/abrechnung/rechnungen/${ansicht.correction_invoice_id}`}
+              variant="secondary"
+            >
+              {ansicht.correction_invoice_number
+                ? `Korrekturrechnung ${ansicht.correction_invoice_number} öffnen`
+                : 'Korrekturentwurf öffnen'}
+            </ButtonLink>
+          ) : darfStornieren ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={korrigieren.isPending}
+              onClick={() => korrigieren.mutate()}
+            >
+              {korrigieren.isPending ? 'Wird angelegt …' : 'Korrekturrechnung erstellen'}
+            </Button>
+          ) : null}
+        </div>
+
+        {korrigieren.isError ? (
+          <Statusmeldung ton="fehler" className="mt-2">
+            {korrigieren.error.message}
+          </Statusmeldung>
+        ) : null}
+      </Section>
+    );
+  }
+
+  if (!darfStornieren) return null;
+
+  return (
+    <Section titel="Storno" ebene={2}>
+      <p className="text-ink-muted text-sm">
+        Eine ausgestellte Rechnung wird nicht geändert und nicht gelöscht. Das Storno ist ein
+        eigenes Dokument mit eigener Nummer; danach sind die Leistungen wieder abzurechnen, und eine
+        Korrekturrechnung lässt sich aus ihnen erstellen.
+      </p>
+
+      <div className="mt-3">
+        <Rueckfrage
+          ausloeser="Rechnung stornieren"
+          bestaetigen="Storno ausstellen"
+          bestaetigenLaeuft="Wird storniert …"
+          laeuft={stornieren.isPending}
+          fehler={
+            fehler ??
+            (stornieren.error instanceof ZahlungStehtNoch
+              ? 'Zu dieser Rechnung ist eine Zahlung gebucht. Erst die Zahlung stornieren, dann die Rechnung — sonst bliebe ein Geldeingang ohne Forderung.'
+              : stornieren.isError
+                ? stornieren.error.message
+                : undefined)
+          }
+          onBestaetigen={() => {
+            if (grund.trim().length < 3) {
+              setFehler('Bitte einen Grund angeben — er steht auf dem Stornodokument.');
+              // Abgewiesen, nicht ausgeführt: Der Kasten bleibt offen, damit
+              // der Hinweis am Feld steht, in dem er gilt.
+              return Promise.reject(new Error('Grund fehlt'));
+            }
+            setFehler(undefined);
+            return stornieren.mutateAsync();
+          }}
+          onAbbrechen={() => {
+            setGrund('');
+            setFehler(undefined);
+          }}
+        >
+          <p className="text-ink-muted text-sm">
+            Das Storno bleibt dauerhaft sichtbar und trägt seine eigene Nummer aus dem
+            Rechnungskreis. Rückgängig machen lässt es sich nicht.
+          </p>
+          <div className="mt-2">
+            <Field label="Grund" value={grund} onChange={(e) => setGrund(e.target.value)} />
+          </div>
+        </Rueckfrage>
+      </div>
     </Section>
   );
 }

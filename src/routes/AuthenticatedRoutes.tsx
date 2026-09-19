@@ -62,7 +62,10 @@ import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { ToursPage } from '@/features/tours/ToursPage';
 import { PaymentsPage } from '@/features/billing/PaymentsPage';
 import { CatalogPage } from '@/features/billing/CatalogPage';
+import { CancellationPrintPage } from '@/features/billing/CancellationPrintPage';
 import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
+import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
+import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
@@ -306,6 +309,27 @@ export function AuthenticatedRoutes({
                 <Route
                   path="/abrechnung/rechnungen/:invoiceId"
                   element={<InvoiceDetailPage user={user} />}
+                />
+                {/* Das Rechnungsblatt zum Verschicken - eine eigene Seite,
+                  weil ein Brief kein Bedienbildschirm ist (ABR-003b, B14
+                  Weg 1). */}
+                <Route
+                  path="/abrechnung/rechnungen/:invoiceId/druck"
+                  element={<InvoicePrintPage />}
+                />
+                {/* Das Stornodokument zu einer Rechnung - ein eigenes Blatt
+                  mit eigener Nummer, das an denselben Empfaenger geht
+                  (ABR-003c, ADR-009 Punkt 9). */}
+                <Route
+                  path="/abrechnung/rechnungen/:invoiceId/storno"
+                  element={<CancellationPrintPage />}
+                />
+                {/* Die Zahlungserinnerung haengt an ihrer eigenen Kennung und
+                  nicht an der Rechnung: Es kann mehrere geben, und jede haelt
+                  den Betrag ihres Tages fest (ABR-003d, ANN-080). */}
+                <Route
+                  path="/abrechnung/erinnerungen/:reminderId"
+                  element={<ReminderPrintPage />}
                 />
                 <Route path="/abrechnung/leistungen" element={<ServicesPage />} />
                 <Route path="/abrechnung/katalog" element={<CatalogPage user={user} />} />

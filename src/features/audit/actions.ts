@@ -99,6 +99,12 @@ export const AUDIT_ACTIONS = [
   'invoice.draft_deleted',
   'invoice.recipient_changed',
   'invoice.issued',
+  // ABR-003c: Das Storno ist ein eigenes Dokument; die Rechnung selbst bleibt
+  // unverändert (ADR-009 Punkt 9).
+  'invoice.cancelled',
+  // ABR-003d: Die Zahlungserinnerung ist ein Dokument ohne Stufe und ohne
+  // Gebühr (IDEA-PRX-012).
+  'invoice.reminder_created',
   // ABR-004: Eine Zahlung wird erfasst oder storniert — geändert oder
   // gelöscht wird sie nie (ADR-009 Punkt 12).
   'payment.recorded',
@@ -175,6 +181,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'invoice.draft_deleted': 'Rechnungsentwurf verworfen',
   'invoice.recipient_changed': 'Empfänger des Entwurfs gewählt',
   'invoice.issued': 'Rechnung ausgestellt',
+  'invoice.cancelled': 'Rechnung storniert',
+  'invoice.reminder_created': 'Zahlungserinnerung ausgestellt',
   'payment.recorded': 'Zahlung erfasst',
   'payment.voided': 'Zahlung storniert',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die

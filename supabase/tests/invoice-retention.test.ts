@@ -120,6 +120,72 @@ describe('Aufbewahrung der Rechnungen', () => {
     ).toBe(5);
   });
 
+  it('fuehrt auch das Stornodokument im Retention Schedule (ABR-003c)', async () => {
+    expect(
+      await anzahl(
+        `select count(*) from public.retention_assignments
+          where class_key = 'abrechnungsdaten' and table_name = 'invoice_cancellations'`,
+      ),
+    ).toBe(1);
+  });
+
+  it('loescht das Stornodokument mit und journalisiert es', async () => {
+    // Es zeigt mit RESTRICT auf die Rechnung: Ohne eigenen Schritt im Lauf
+    // scheiterte die Loeschung der ganzen Akte (ADR-008 Punkt 8).
+    const rechnung = await rechnungVor(patients.max, 9);
+    await asPostgres(
+      `insert into public.invoice_cancellations
+         (organization_id, invoice_id, cancellation_number, reason, cancelled_on, created_by)
+       values ($1, $2, 'RG-TEST-STORNO', 'Testgrund', current_date, $3)`,
+      [organizationId, rechnung, users.office],
+    );
+    await abgeschlossenVor(patients.max, 11);
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.invoice_cancellations')).toBe(0);
+    expect(
+      await anzahl(
+        `select count(*) from public.deletion_journal
+          where target_table = 'invoice_cancellations' and retention_class = 'abrechnungsdaten'`,
+      ),
+    ).toBe(1);
+
+    // Die Wiederanwendung kennt die Tabelle - sonst scheiterte sie mit
+    // "references tables without a reapply order".
+    const { rows } = await asPostgres<{ anzahl: number }>(
+      'select public.reapply_deletion_journal() as anzahl',
+    );
+    expect(Number(rows[0]?.anzahl)).toBe(0);
+  });
+
+  it('loescht die Zahlungserinnerung mit und journalisiert sie (ABR-003d)', async () => {
+    const rechnung = await rechnungVor(patients.max, 9);
+    await asPostgres(
+      `insert into public.invoice_payment_reminders
+         (organization_id, invoice_id, reminder_on, due_on, outstanding_cents, currency, created_by)
+       values ($1, $2, current_date - 20, current_date - 6, 4500, 'EUR', $3)`,
+      [organizationId, rechnung, users.office],
+    );
+    await abgeschlossenVor(patients.max, 11);
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.invoice_payment_reminders')).toBe(0);
+    expect(
+      await anzahl(
+        `select count(*) from public.deletion_journal
+          where target_table = 'invoice_payment_reminders'
+            and retention_class = 'abrechnungsdaten'`,
+      ),
+    ).toBe(1);
+
+    const { rows } = await asPostgres<{ anzahl: number }>(
+      'select public.reapply_deletion_journal() as anzahl',
+    );
+    expect(Number(rows[0]?.anzahl)).toBe(0);
+  });
+
   it('haelt eine faellige Akte zurueck, solange die Frist einer Rechnung laeuft', async () => {
     await rechnungVor(patients.max, 2);
     await abgeschlossenVor(patients.max, 11);
