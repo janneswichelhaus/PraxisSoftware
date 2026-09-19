@@ -268,6 +268,21 @@ describe('Zahlung', () => {
       );
     });
 
+    it('traegt den Zahlungsstand auch an der einzelnen Rechnung', async () => {
+      // Die Rechnungsansicht rechnet nichts im Browser nach: Sie bekommt den
+      // Stand von derselben Funktion, die auch die Listen speist.
+      const { id, betrag } = await ausgestellteRechnung();
+      await buche(id, 2000);
+
+      const { rows } = await asUser<{
+        rechnung: { paid_cents: number; outstanding_cents: number; payment_state: string };
+      }>(users.office, 'select public.get_invoice($1::uuid) as rechnung', [id]);
+
+      expect(rows[0]?.rechnung.paid_cents).toBe(2000);
+      expect(rows[0]?.rechnung.outstanding_cents).toBe(betrag - 2000);
+      expect(rows[0]?.rechnung.payment_state).toBe('partially_paid');
+    });
+
     it('uebernimmt die Waehrung der Rechnung statt sie entgegenzunehmen', async () => {
       const { id } = await ausgestellteRechnung();
       const zahlung = await buche(id, 1000);

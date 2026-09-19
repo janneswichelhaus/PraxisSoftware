@@ -20,13 +20,17 @@ import {
   empfaengerartLabels,
   fetchEmpfaenger,
   fetchRechnung,
+  fetchRechnungszahlungen,
+  richtungLabels,
   saveEmpfaenger,
   setzeEmpfaenger,
   steuerLabels,
   stelleRechnungAus,
+  zahlungswegLabels,
   type Empfaenger,
   type Rechnungsansicht,
 } from './api';
+import { Zahlungsformular } from './Zahlungsformular';
 
 /**
  * Eine Rechnung (ABR-003).
@@ -86,7 +90,11 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       {rechnung.data ? (
-        <Rechnungsbild ansicht={rechnung.data} darfAusstellen={darfAusstellen} />
+        <Rechnungsbild
+          ansicht={rechnung.data}
+          darfAusstellen={darfAusstellen}
+          zeitzone={user.organizationTimeZone}
+        />
       ) : null}
     </>
   );
@@ -95,9 +103,11 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
 function Rechnungsbild({
   ansicht,
   darfAusstellen,
+  zeitzone,
 }: {
   ansicht: Rechnungsansicht;
   darfAusstellen: boolean;
+  zeitzone: string | null;
 }) {
   const dokument = ansicht.document;
   const entwurf = ansicht.status === 'draft';
@@ -227,12 +237,118 @@ function Rechnungsbild({
       {entwurf && darfAusstellen ? <Entwurfsaktionen ansicht={ansicht} /> : null}
 
       {!entwurf ? (
-        <Statusmeldung className="mt-4">
-          Diese Rechnung ist ausgestellt und damit unveränderlich. Das Dokument zum Versenden, das
-          Storno und die Zahlungserinnerung kommen mit dem nächsten Schritt.
-        </Statusmeldung>
+        <>
+          <Zahlungen
+            ansicht={ansicht}
+            darfBuchen={darfAusstellen}
+            zeitzone={zeitzone}
+            waehrung={dokument.currency}
+          />
+          <Statusmeldung className="mt-4">
+            Diese Rechnung ist ausgestellt und damit unveränderlich. Das Dokument zum Versenden, das
+            Storno der Rechnung und die Zahlungserinnerung kommen mit dem nächsten Schritt.
+          </Statusmeldung>
+        </>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Die Zahlungen einer ausgestellten Rechnung (ABR-004).
+ *
+ * Der offene Betrag wird **nicht hier gerechnet**: Er kommt aus derselben
+ * Serverfunktion, die auch die Liste und die offenen Posten speist (ADR-009
+ * Punkt 12). Eine zweite Rechnung im Browser wäre eine zweite Wahrheit.
+ *
+ * Stornierte Buchungen bleiben mit ihrem Grund stehen. Sie fallen aus der
+ * Summe, nicht aus der Ansicht.
+ */
+function Zahlungen({
+  ansicht,
+  darfBuchen,
+  zeitzone,
+  waehrung,
+}: {
+  ansicht: Rechnungsansicht;
+  darfBuchen: boolean;
+  zeitzone: string | null;
+  waehrung: string;
+}) {
+  const zahlungen = useQuery({
+    queryKey: ['rechnungszahlungen', ansicht.id],
+    queryFn: () => fetchRechnungszahlungen(ansicht.id),
+    retry: false,
+  });
+
+  const offen = ansicht.outstanding_cents;
+
+  return (
+    <Section titel="Zahlungen" rahmen>
+      {zahlungen.isError ? (
+        <ErrorState
+          title="Die Zahlungen konnten nicht geladen werden."
+          description="Bitte später erneut versuchen."
+        />
+      ) : null}
+
+      {zahlungen.data && zahlungen.data.length === 0 ? (
+        <p className="text-ink-muted text-sm">Noch keine Zahlung erfasst.</p>
+      ) : null}
+
+      <ul className="divide-line divide-y">
+        {(zahlungen.data ?? []).map((zahlung) => (
+          <li key={zahlung.id} className="flex flex-wrap items-baseline gap-x-3 py-2">
+            <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
+              {formatDate(zahlung.paid_on)}
+            </span>
+            <span className="text-ink min-w-0 flex-1 text-[0.9375rem]">
+              {richtungLabels[zahlung.direction]} ·{' '}
+              {zahlungswegLabels[zahlung.method] ?? zahlung.method}
+              {zahlung.voided_at !== null ? (
+                <span className="ml-2">
+                  <Badge ton="neutral">Storniert</Badge>
+                </span>
+              ) : null}
+              {zahlung.note ? (
+                <span className="text-ink-muted block text-sm">{zahlung.note}</span>
+              ) : null}
+              {zahlung.void_reason ? (
+                <span className="text-ink-muted block text-sm">
+                  Storniert: {zahlung.void_reason}
+                </span>
+              ) : null}
+            </span>
+            <span
+              className={`text-[0.9375rem] tabular-nums ${
+                zahlung.voided_at !== null ? 'text-ink-subtle line-through' : 'text-ink'
+              }`}
+            >
+              {zahlung.direction === 'refund' ? '−' : ''}
+              {formatEuro(zahlung.amount_cents, zahlung.currency)}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="border-line mt-3 flex justify-between border-t pt-3">
+        <span className="text-ink text-[0.9375rem] font-semibold">
+          {offen > 0 ? 'Noch offen' : offen < 0 ? 'Zu viel gezahlt' : 'Bezahlt'}
+        </span>
+        <span className="text-ink text-[0.9375rem] font-semibold tabular-nums">
+          {formatEuro(Math.abs(offen), waehrung)}
+        </span>
+      </div>
+
+      {darfBuchen && zeitzone !== null ? (
+        <Zahlungsformular
+          invoiceId={ansicht.id}
+          offenCent={offen}
+          waehrung={waehrung}
+          zeitzone={zeitzone}
+        />
+      ) : null}
+    </Section>
   );
 }
 

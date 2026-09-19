@@ -854,7 +854,82 @@ revoke all on function public.list_invoices(integer) from public, anon;
 grant execute on function public.list_invoices(integer) to authenticated;
 
 -- -----------------------------------------------------------------------------
--- 11. Der Loeschlauf der Akte nimmt Zahlungen mit
+-- 11. Auch die einzelne Rechnung kennt ihren Zahlungsstand
+--
+-- Der Rueckgabetyp ist `jsonb` und aendert sich nicht; die Ansicht bekommt
+-- vier zusaetzliche Felder. Sie stehen hier und nicht im Browser, weil eine
+-- im Browser nachgerechnete Summe eine zweite Wahrheit waere - und die
+-- weicht irgendwann ab.
+-- -----------------------------------------------------------------------------
+create or replace function public.get_invoice(p_invoice_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_org      uuid;
+  v_invoice  record;
+  v_zeitzone text;
+  v_heute    date;
+  v_bezahlt  integer;
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  if not app.can_read_invoicing() then
+    raise exception 'not allowed to read invoices' using errcode = '42501';
+  end if;
+
+  v_org := app.current_organization_id();
+
+  select i.* into v_invoice
+  from public.invoices i
+  where i.id = p_invoice_id and i.organization_id = v_org;
+
+  if not found then
+    raise exception 'invoice not found' using errcode = '42501';
+  end if;
+
+  select o.time_zone into v_zeitzone from public.organizations o where o.id = v_org;
+  v_heute := (now() at time zone v_zeitzone)::date;
+
+  -- Am Entwurf gibt es keinen Zahlungsstand: An ihm kann niemand zahlen.
+  v_bezahlt := case when v_invoice.status = 'issued'
+                    then app.invoice_paid_cents(p_invoice_id) else 0 end;
+
+  -- Die ausgestellte Rechnung zeigt ihren Snapshot und nicht die heutigen
+  -- Stammdaten: Genau dafuer gibt es ihn (ADR-009 Punkt 10).
+  return jsonb_build_object(
+    'id', v_invoice.id,
+    'status', v_invoice.status,
+    'patient_id', v_invoice.patient_id,
+    'recipient_id', v_invoice.recipient_id,
+    'invoice_number', v_invoice.invoice_number,
+    'issued_on', v_invoice.issued_on,
+    'due_on', v_invoice.due_on,
+    'paid_cents', v_bezahlt,
+    'outstanding_cents', coalesce(v_invoice.total_cents, 0) - v_bezahlt,
+    'payment_state', case when v_invoice.status = 'issued'
+                          then app.invoice_payment_state(v_invoice.total_cents, v_bezahlt)
+                          else 'unpaid' end,
+    'overdue', (v_invoice.status = 'issued' and v_invoice.due_on < v_heute
+                and v_bezahlt < v_invoice.total_cents),
+    'document', coalesce(v_invoice.snapshot, app.build_invoice_document(p_invoice_id))
+  );
+end;
+$$;
+
+comment on function public.get_invoice(uuid) is
+  'Eine Rechnung als Dokument, mit ihrem abgeleiteten Zahlungsstand (ABR-003, ABR-004). Ein Entwurf wird aus den heutigen Stammdaten gebaut, eine ausgestellte Rechnung kommt aus ihrem Snapshot (ADR-009 Punkt 10).';
+
+revoke all on function public.get_invoice(uuid) from public, anon;
+grant execute on function public.get_invoice(uuid) to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 12. Der Loeschlauf der Akte nimmt Zahlungen mit
 --
 -- Unveraendert aus 20260919150000_invoices.sql uebernommen bis auf den einen
 -- neuen Block ganz vorn: Zahlungen fallen vor Rechnungszeilen und Rechnungen,
@@ -1046,7 +1121,7 @@ revoke all on function app.delete_patient_record(uuid, uuid, timestamp with time
   from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
--- 12. Die Wiederanwendung kennt die Zahlung
+-- 13. Die Wiederanwendung kennt die Zahlung
 --
 -- Unveraendert bis auf einen Eintrag in der Reihenfolge: Was zuerst geloescht
 -- wurde, wird nach einer Wiederherstellung zuerst wieder geloescht (ADR-008

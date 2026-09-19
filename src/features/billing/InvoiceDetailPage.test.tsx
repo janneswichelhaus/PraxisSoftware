@@ -9,6 +9,8 @@ const fetchEmpfaenger = vi.fn();
 const setzeEmpfaenger = vi.fn();
 const stelleRechnungAus = vi.fn();
 const deleteEntwurf = vi.fn();
+const fetchRechnungszahlungen = vi.fn();
+const bucheZahlung = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof BillingApi>();
@@ -19,6 +21,9 @@ vi.mock('./api', async (importOriginal) => {
     setzeEmpfaenger: (...args: unknown[]) => setzeEmpfaenger(...args) as Promise<void>,
     stelleRechnungAus: (id: string) => stelleRechnungAus(id) as Promise<string>,
     deleteEntwurf: (id: string) => deleteEntwurf(id) as Promise<void>,
+    fetchRechnungszahlungen: (id: string) =>
+      fetchRechnungszahlungen(id) as Promise<BillingApi.Zahlung[]>,
+    bucheZahlung: (...args: unknown[]) => bucheZahlung(...args) as Promise<void>,
   };
 });
 
@@ -36,6 +41,10 @@ function ansicht(
     invoice_number: null,
     issued_on: null,
     due_on: null,
+    paid_cents: 0,
+    outstanding_cents: 0,
+    payment_state: 'unpaid',
+    overdue: false,
     ...rest,
     document: {
       schema_version: 1,
@@ -107,9 +116,13 @@ describe('InvoiceDetailPage', () => {
     setzeEmpfaenger.mockReset();
     stelleRechnungAus.mockReset();
     deleteEntwurf.mockReset();
+    fetchRechnungszahlungen.mockReset();
+    bucheZahlung.mockReset();
     fetchEmpfaenger.mockResolvedValue([]);
     setzeEmpfaenger.mockResolvedValue(undefined);
     stelleRechnungAus.mockResolvedValue('RG-2026-0001');
+    fetchRechnungszahlungen.mockResolvedValue([]);
+    bucheZahlung.mockResolvedValue(undefined);
   });
 
   it('nennt den Entwurf ohne Nummer und sagt, wann sie entsteht', async () => {
@@ -286,5 +299,115 @@ describe('InvoiceDetailPage', () => {
     );
 
     expect(await screen.findByText(/noch keine Praxis-Stammdaten erfasst/)).toBeInTheDocument();
+  });
+
+  describe('Zahlungen (ABR-004)', () => {
+    const ausgestellt = () =>
+      ansicht({
+        status: 'issued',
+        invoice_number: 'RG-2026-0001',
+        issued_on: '2026-09-01',
+        due_on: '2026-09-15',
+        paid_cents: 2000,
+        outstanding_cents: 2500,
+        payment_state: 'partially_paid',
+      });
+
+    it('stehen am Entwurf gar nicht - an ihm kann niemand zahlen', async () => {
+      fetchRechnung.mockResolvedValue(ansicht());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText(/1 × Krankengymnastik/)).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Zahlungen' })).not.toBeInTheDocument();
+    });
+
+    it('nehmen den offenen Betrag vom Server und rechnen ihn nicht nach', async () => {
+      // Der Server ist die eine Quelle (ADR-009 Punkt 12). Die Zahlungsliste
+      // widerspricht hier absichtlich dem gemeldeten Stand: Angezeigt wird,
+      // was der Server sagt.
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      fetchRechnungszahlungen.mockResolvedValue([
+        {
+          id: 'z1',
+          direction: 'incoming',
+          amount_cents: 9999,
+          currency: 'EUR',
+          paid_on: '2026-09-05',
+          method: 'bank_transfer',
+          note: null,
+          voided_at: null,
+          void_reason: null,
+        },
+      ]);
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText('Noch offen')).toBeInTheDocument();
+      expect(screen.getByText('25,00 €')).toBeInTheDocument();
+    });
+
+    it('lassen eine stornierte Buchung mit ihrem Grund stehen', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      fetchRechnungszahlungen.mockResolvedValue([
+        {
+          id: 'z1',
+          direction: 'incoming',
+          amount_cents: 2000,
+          currency: 'EUR',
+          paid_on: '2026-09-05',
+          method: 'bank_transfer',
+          note: null,
+          voided_at: '2026-09-06T10:00:00Z',
+          void_reason: 'Doppelt erfasst',
+        },
+      ]);
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText('Storniert')).toBeInTheDocument();
+      expect(screen.getByText(/Storniert: Doppelt erfasst/)).toBeInTheDocument();
+    });
+
+    it('buchen eine Rueckzahlung als eigene Richtung', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(ausgestellt());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await nutzer.selectOptions(
+        await screen.findByLabelText('Art'),
+        'Rückzahlung an den Empfänger',
+      );
+      await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
+
+      expect(bucheZahlung).toHaveBeenCalledWith(
+        expect.objectContaining({ richtung: 'refund', betragCent: 2500 }),
+      );
+    });
+
+    it('bietet der Therapeutin kein Formular an (ANN-076)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['therapist'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText('Noch offen')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Zahlung buchen' })).not.toBeInTheDocument();
+    });
   });
 });

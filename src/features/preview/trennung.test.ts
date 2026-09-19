@@ -23,6 +23,13 @@ import { standortvorlageKoeln } from './standortvorlage';
  * Server sprechen. Das Verzeichnis hier zu lassen, hieße die eigene Zusicherung
  * zu verwässern — geprüft wird, dass **Vorschaubereiche** keinen Server
  * berühren, nicht dass irgendein Verzeichnis es nicht tut.
+ *
+ * `src/features/billing` ist aus demselben Grund mit **ABR-EPIC-003**
+ * entfallen. Es stand hier ab ABR-EPIC-001 nur noch als gemischtes
+ * Verzeichnis mit einer namentlichen Ausnahme je echter Datei; die letzte
+ * Vorschau war die Zahlungsseite. Seit sie echt gebucht wird, gibt es im
+ * Bereich keine Vorschau mehr, die zu schützen wäre — und ein Verzeichnis, in
+ * dem jede Datei eine Ausnahme ist, prüft nichts.
  */
 
 const VORSCHAUBEREICHE = [
@@ -33,28 +40,17 @@ const VORSCHAUBEREICHE = [
   'src/features/reimbursements',
   'src/features/teamchat',
   'src/features/tours',
-  'src/features/billing',
 ];
 
 /**
  * Dateien in einem Vorschauverzeichnis, die keine Vorschau mehr sind.
  *
- * `src/features/billing` ist seit ABR-EPIC-001 gemischt: Leistungen und
- * Katalog sind echt angebunden und MÜSSEN mit dem Server sprechen. Seit
- * ABR-EPIC-002a gilt dasselbe für Rechnungen, Rechnungsempfänger und die
- * Praxis-Stammdaten; als Vorschau bleiben allein die Zahlungen. Das ganze
- * Verzeichnis hier zu streichen hieße, die Zusicherung für sie aufzugeben —
- * und die Zahlung ist die Seite, an der eine vorgetäuschte Buchung am meisten
- * Schaden anrichtete. Die Ausnahme steht deshalb je Datei und namentlich.
+ * Zurzeit leer: Die Liste trug bis ABR-EPIC-003 die echt angebundenen Dateien
+ * von `src/features/billing`, und mit dem Verzeichnis ist auch sie entfallen.
+ * Sie bleibt als Mechanismus stehen — der nächste Bereich, der Stück für
+ * Stück echt wird, braucht sie wieder.
  */
-const KEINE_VORSCHAU = [
-  'src/features/billing/api.ts',
-  'src/features/billing/CatalogPage.tsx',
-  'src/features/billing/ServicesPage.tsx',
-  'src/features/billing/InvoicesPage.tsx',
-  'src/features/billing/InvoiceDetailPage.tsx',
-  'src/features/billing/PracticeProfilePage.tsx',
-];
+const KEINE_VORSCHAU: string[] = [];
 
 /** Aufrufe, die die Sitzung verlassen oder etwas dauerhaft ablegen würden. */
 const VERBOTEN: { muster: RegExp; grund: string }[] = [
