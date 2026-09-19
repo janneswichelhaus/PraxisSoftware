@@ -2961,3 +2961,93 @@ Schritte 1 bis 5 als `olivia.office@praxis.invalid` (office), Schritt 6 als
 3. Nur mit der Tastatur: Tabulator durch das Formular der Stammdaten, Auswahl
    des Empfängers mit den Pfeiltasten, Eingabetaste stellt aus.
 4. Denselben Ablauf auf Tablet und Desktop wiederholen.
+
+---
+
+## ABR-EPIC-003 — Zahlungen und offene Posten
+
+Prüfschritte zu ABR-004. Grundlage: ADR-009 Punkt 12 mit seiner Konsequenz
+(„Der Zahlungsstatus ist damit abgeleitet, nicht gesetzt") und **ANN-078**.
+
+**Diese Etappe bringt eine Migration** (`20260919160000_payments.sql`) und
+**keinen geänderten Seed**: vorher `git pull origin main`, dann
+`pnpm dlx supabase@2.116.0 db reset`. Ohne den Reset fehlt die Tabelle
+`payments`, und `/abrechnung` meldet einen Ladefehler.
+
+Der Seed bringt **keine** Zahlungen mit. Die Schritte bauen sich ihre Lage
+selbst: erst eine Rechnung ausstellen (ABR-EPIC-002a, Schritt 4), dann hier
+weiter. Alle Schritte als `olivia.office@praxis.invalid` (office), Schritt 6
+zusätzlich als `anna.beispiel@praxis.invalid` (therapist).
+
+### 1. Der offene Posten steht ohne einen Tap da
+
+1. **Abrechnung** öffnen. Erwartung: **ganz oben** der Abschnitt „Offene
+   Posten" mit der eben ausgestellten Rechnung — Nummer, Empfänger, offener
+   Betrag —, und in der Überschriftzeile die Zahl der Rechnungen und die
+   Summe. Kein Klick, kein Aufklappen, kein Wechsel der Seite.
+2. Erwartung: Solange die Rechnung noch nicht fällig ist, trägt sie **kein**
+   Kennzeichen „Überfällig".
+
+### 2. Eine Teilzahlung buchen
+
+1. Am offenen Posten **„Zahlung buchen"**. Erwartung: Das Formular klappt an
+   der Zeile auf; im Feld „Betrag" steht der **offene Betrag**, im Feld „Am"
+   steht **heute**.
+2. Den Betrag auf die Hälfte ändern und buchen. Erwartung: Der offene Posten
+   bleibt stehen, jetzt mit dem halben Betrag; unter „Rechnungen" trägt die
+   Rechnung „Teilweise bezahlt" und darunter „… bezahlt · … offen".
+3. Erwartung: Der Zustand der Rechnung selbst steht unverändert auf
+   **Ausgestellt**. Der Zahlungsstand ist ein eigener Wert, kein Rechnungs-
+   zustand (ANN-078).
+
+### 3. Restzahlung, Überzahlung, Rückzahlung
+
+1. Den Rest buchen. Erwartung: Der offene Posten **verschwindet** aus dem
+   Abschnitt; unter „Rechnungen" steht „Bezahlt".
+2. Die Rechnung öffnen (**Rechnungen → Rechnung ansehen**) und dort weitere
+   10,00 € buchen. Erwartung: „Zu viel gezahlt" mit dem Überschussbetrag, in
+   der Liste „Überzahlt". Die Buchung wird **nicht** abgewiesen.
+3. An derselben Stelle unter „Art" **Rückzahlung an den Empfänger** wählen und
+   10,00 € buchen. Erwartung: Der Stand steht wieder auf „Bezahlt"; in der
+   Zahlungsliste steht die Rückzahlung mit einem Minuszeichen.
+4. Eine Rückzahlung über den bisher eingegangenen Betrag versuchen.
+   Erwartung: Abgewiesen mit dem Hinweis, dass höchstens zurückgezahlt werden
+   kann, was eingegangen ist.
+
+### 4. Gebucht ist gebucht
+
+1. **Abrechnung → Zahlungen**. Erwartung: Alle Buchungen mit Datum,
+   Rechnungsnummer, Empfänger, Weg und Betrag; jüngste zuerst.
+2. Bei einer Buchung **„Stornieren"** wählen und ohne Grund bestätigen.
+   Erwartung: Abgewiesen, das Feld verlangt einen Grund.
+3. Mit Grund stornieren. Erwartung: Die Zeile **bleibt stehen**, durch-
+   gestrichen, mit „Storniert" und dem Grund; der offene Betrag der Rechnung
+   steigt entsprechend wieder. Es gibt **keine** Schaltfläche zum Löschen.
+4. Erwartung: An der stornierten Zeile gibt es kein zweites „Stornieren".
+
+### 5. Was die Oberfläche nicht anbietet
+
+1. Erwartung: An einem **Rechnungsentwurf** gibt es keinen Abschnitt
+   „Zahlungen" und keine Möglichkeit zu buchen — an einem Entwurf kann
+   niemand zahlen.
+2. Erwartung: Unter „Weg" stehen **Überweisung** und **anderer Weg**; Bargeld
+   und Karte stehen nicht zur Wahl (ANN-078, Festlegung von Jannes am
+   2026-09-19).
+3. Erwartung: Ein Datum in der Zukunft wird abgewiesen.
+
+### 6. Wer darf was
+
+1. Als **therapist**: Erwartung: Der Bereich **Abrechnung** fehlt in der
+   Navigation; `/abrechnung/zahlungen` direkt aufzurufen zeigt keine
+   Zahlungen.
+2. Als **office**: Erwartung: Buchen und Stornieren sind möglich — Rechnungen
+   und Zahlungsstatus liegen bei `owner` und `office` (ANN-076).
+
+### 7. Am Handy (~375 px)
+
+1. Fenster auf ~375 px ziehen und **Abrechnung** sowie **Zahlungen** ansehen,
+   das Buchungsformular und die Storno-Rückfrage einmal aufklappen.
+2. Erwartung: Nichts läuft waagerecht aus dem Bild, keine Rechnungsnummer
+   bricht mitten im Wort um, kein Betrag ist abgeschnitten.
+3. Nur mit der Tastatur: Tabulator bis „Zahlung buchen", Formular ausfüllen,
+   Eingabetaste bucht.

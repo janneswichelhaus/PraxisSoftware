@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-19 · letzte Session: ABR-EPIC-002a Rechnung
+# Status · Stand 2026-09-19 · letzte Session: ABR-EPIC-003 Zahlungen
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
@@ -7,14 +7,14 @@ Livestand, sonst nichts. Die **Reihenfolge** legt
 
 ## Jetzt
 
-Nichts läuft. ABR-EPIC-002a liegt als PR gegen `main`, die **Abnahme steht
-aus** — wie die von ABR-EPIC-001 (PR #53, gemergt). Nächster Loop auf Freigabe.
+Nichts läuft. ABR-EPIC-003 liegt als PR gegen `main`, die **Abnahme steht
+aus** — wie die von ABR-EPIC-002a (PR #54, gemergt). Nächster Loop auf Freigabe.
 
 ## Danach — Reihenfolge seit 2026-09-19
 
-1. **ABR-EPIC-002b** — Die Rechnung als Dokument (PDF, Storno, Erinnerung);
-   braucht vorher die Entscheidung zu **B14** (Optionen liegen vor)
-2. **ABR-EPIC-003** — Zahlungen und offene Posten
+1. **ABR-EPIC-002b** — Die Rechnung als Dokument; **B14 ist entschieden**
+   (Weg 1 Browser-Druck jetzt, Weg 3 serverseitig nach OPS-001), also frei
+2. **ADR-021** — Leistungsbereiche aus E18; Entscheidungsarbeit, kein Loop
 3. **MAP-002** — Fahrzeiten und Navigations-Handoff; braucht das PTV-Free-Abo
 
 ## Prüfverfahren
@@ -26,35 +26,35 @@ nicht**. `pnpm test` war unter Node 24 rot (**BEF-011**), lief hier grün.
 ## Blocker (Jannes-seitig)
 
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von
-  ABR-EPIC-002a (drei Migrationen, geänderter Seed).
-- **B14 entscheiden** — Weg für das Rechnungs-PDF, Vorlage in
-  [`decisions/rechnungs-pdf-optionen.md`](decisions/rechnungs-pdf-optionen.md);
-  ABR-EPIC-002b beginnt nicht ohne sie.
+  ABR-EPIC-003 (eine Migration, Seed unverändert).
 - **G13 ist überfällig:** Nummernformat und Umsatzsteuer-Status stehen als
   Annahme (ANN-074, ANN-075); dazu **echte Preise und Praxisstammdaten** — der
-  Seed trägt erfundene.
-- **E18 überführen:** nächster Schritt ist **ADR-021**, nicht Code
-  ([`E18`](development/E18-LEISTUNGSBEREICHE.md))
+  Seed trägt erfundene. Bis zur Antwort wird mit Platzhaltern gearbeitet.
+- **M0 am 30.09.:** Anfragen B1, B2, B4 ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md))
+  · **prüfen, ob Secret Scanning und Push Protection an sind** (`main` ist als
+  geschützt bestätigt, beides ist von hier nicht lesbar) · Kartendienst ablegen.
 - **Abnahme CAL-018, CAL-EPIC-004a/b/c, FIX-EPIC-004, UX-013, GRD-001,
-  VER-EPIC-002, ABR-EPIC-001, ABR-EPIC-002a** in
+  VER-EPIC-002, ABR-EPIC-001, ABR-EPIC-002a, ABR-EPIC-003** in
   [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md); die
-  **Sichtprüfung hinter der Anmeldung steht aus** (`supabase start` blockiert).
-- Branch Protection und Secret Scanning (M0, 30.09.), Anfragen B1, B2, B4
-  ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)), PTV-Free-Abo vor MAP-002 ·
+  **Sichtprüfung hinter der Anmeldung wartet auf die Test-Umgebung aus OPS-002**
+  (entschieden 2026-09-19), bis dahin auf Tests und Screenshots.
+- **B8:** schriftlichen Beleg des Lizenzgebers nachreichen (Nutzung bestätigt) ·
+  PTV-Free-Abo vor MAP-002, es trägt **nur** den Prototyp, nicht den Betrieb ·
   `claude/issue-42-status-fv319v` hat drei ungemergte Commits
 
 ## Auf Abnahme warten
 
 Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001 und
-FIX-015; FIX-EPIC-001 braucht Docker. Die Liste führt
-[`abnahme/README.md`](abnahme/README.md).
+FIX-015; FIX-EPIC-001 braucht Docker. Liste: [`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**ABR-EPIC-002a gebaut, mit ABR-000.** Die Praxis hat einen
-**Rechnungsabsender**; sein Umsatzsteuerstatus ist **nicht vorbelegt**
-(**ANN-074**). **Empfänger** sind eigene Zeilen, die Patientin selbst bekommt
-keine — sie ist die Vorgabe (**ANN-076**). Die **Rechnung** kennt zwei Zustände,
-die **Nummer** entsteht lückenlos beim Ausstellen (**ANN-075**), der **Snapshot**
-ist ein versioniertes Dokument ohne klinische Inhalte, je Person und Monat
-(**ANN-077**). Lokal: `git pull`, dann **`db reset`**.
+**ABR-EPIC-003 gebaut** — vorgezogen, weil ABR-EPIC-002b auf B14 wartete.
+Zahlungen sind **eigene Transaktionen** mit Richtung statt Vorzeichen; der
+Zahlungsstand wird **gerechnet und nirgends gespeichert** (**ANN-078**).
+Überzahlung ist erlaubt, eine Rückzahlung über dem Eingang nicht. **Gebucht
+ist gebucht:** Storno mit Grund statt Löschen. Die **offenen Posten** stehen
+ohne einen Tap auf der Einstiegsseite, gebucht wird in drei Taps. Kein
+Bargeld. Die Abrechnung ist damit **kein Vorschaubereich mehr**. Dazu
+entschieden: **B14**, **B8**, Abnahmeweg, E18-Reihenfolge. Lokal: `git pull`,
+dann **`db reset`**.

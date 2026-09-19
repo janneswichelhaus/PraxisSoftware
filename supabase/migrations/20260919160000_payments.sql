@@ -5,7 +5,7 @@
 -- und spaeterer Rueckzahlung; die Konsequenz dazu sagt den entscheidenden
 -- Satz: "Der Zahlungsstatus ist damit abgeleitet, nicht gesetzt."
 --
--- Vier Festlegungen tragen diese Migration:
+-- Vier Festlegungen tragen diese Migration (**ANN-078**):
 --
 --   1. **Der Zahlungsstand ist eine Rechnung, kein Feld.** `invoices` bekommt
 --      keine Spalte `paid_cents` und keinen neuen Wert in `status`. Was bezahlt

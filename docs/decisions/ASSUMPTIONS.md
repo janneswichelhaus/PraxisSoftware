@@ -1028,3 +1028,15 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 **Anker.** `public.create_invoice_draft`, der Teilindex `invoices_draft_period_key`, der `check` an `invoices.status` und `app.build_invoice_document` in `supabase/migrations/20260919150000_invoices.sql`.
 
 **Änderungspfad.** Andere Klammer als der Monat (je Verordnung, je Termin): `create_invoice_draft` und der Teilindex · Aufwand `mittel`. Einzelne Zeilen abwählen: eine Auswahl an `create_invoice_draft`, dazu eine sichtbare Anzeige des Rests · Aufwand `mittel` — widerspräche der Begründung oben. Diagnose in den Snapshot: der Block `treatment_bases` in `app.build_invoice_document` · Aufwand `klein`, aber eine Datenschutzentscheidung.
+
+### ANN-078 — Zahlungen sind Transaktionen mit Richtung, der Zahlungsstand wird gerechnet
+
+Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob Überweisung als einziger Weg trägt
+
+**Annahme.** Eine Zahlung ist eine eigene Zeile an einer **ausgestellten** Rechnung: Richtung (Eingang oder Rückzahlung), Betrag in ganzen Cent und immer positiv, Tag, Weg (Überweisung oder „anderer Weg" — **kein Bargeld**, Jannes am 2026-09-19) und eine freiwillige Notiz. Der Zahlungsstand der Rechnung (offen, teilweise bezahlt, bezahlt, überzahlt) und die Überfälligkeit werden aus diesen Zeilen **gerechnet** und nirgends gespeichert. Überzahlung ist erlaubt; zurückgezahlt werden kann höchstens, was eingegangen ist. Eine gebuchte Zahlung lässt sich **nur stornieren, mit Grund** — nicht ändern und nicht löschen; die stornierte Zeile bleibt sichtbar und fällt aus jeder Summe.
+
+**Begründung.** ADR-009 Punkt 12 verlangt eigene Transaktionen mit Teilzahlung und Rückzahlung, und die Konsequenz dazu sagt ausdrücklich: „Der Zahlungsstatus ist damit abgeleitet, nicht gesetzt" — eine gepflegte Spalte könnte von den Transaktionen abweichen, eine gerechnete Summe nicht. Deshalb bleibt `invoices.status` bei zwei Werten (ANN-077); „teilweise bezahlt" und „bezahlt" aus Punkt 7 entstehen als abgeleitete Werte. Die Richtung statt eines negativen Betrags hält die Spalte eindeutig. Das Storno statt des Löschens folgt demselben Gedanken wie die unveränderliche Rechnung (Punkt 9): Ein Zahlungsvorgang muss auch Jahre später erklärbar sein. Bargeld ist ausgeschlossen, weil es die Kassenbuchpflicht auslöst und Kassenbuch, TSE und Kartenzahlung laut Roadmap ausdrücklich nicht Teil von Etappe 1 sind. Unsicher: ob eine Praxis ohne Bargeld auskommt — die Probewoche sagt es.
+
+**Anker.** Tabelle `payments` mit dem `check` an `method`, `app.invoice_payment_state`, `app.invoice_paid_cents` und `app.payments_frozen` in `supabase/migrations/20260919160000_payments.sql`.
+
+**Änderungspfad.** Weiterer Zahlungsweg: der `check` an `payments.method` und die Beschriftungen in `src/features/billing/api.ts` · Aufwand `klein`. Bargeld annehmen: derselbe `check`, aber dann mit Kassenbuch, TSE und einer Frage an die Steuerberatung (B4) · Aufwand `groß`. Mahnstufen: eine eigene Aufgabe, ADR-009 nennt das Mahnwesen ausdrücklich als nicht entschieden.
