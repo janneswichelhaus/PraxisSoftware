@@ -175,4 +175,41 @@ describe('Rechnungsblatt', () => {
 
     expect(await screen.findByText(/keine Praxis-Stammdaten/)).toBeInTheDocument();
   });
+
+  it('stempelt eine stornierte Rechnung — auch auf Papier', async () => {
+    // Ein Nachdruck darf nicht wie eine gültige Forderung aussehen
+    // (ABR-003c). Das Stornodokument selbst ist ein eigenes Blatt.
+    fetchRechnung.mockResolvedValue(
+      rechnungsansicht({
+        status: 'issued',
+        invoice_number: 'RG-2026-0001',
+        cancellation: {
+          cancellation_number: 'RG-2026-0002',
+          reason: 'Falscher Empfänger',
+          cancelled_on: '2026-09-18',
+        },
+      }),
+    );
+    zeige();
+
+    const stempel = await screen.findByText(/Storniert am 18.09.2026/);
+    expect(stempel).toBeInTheDocument();
+    expect(stempel.closest('.nicht-drucken')).toBeNull();
+  });
+
+  it('nennt auf der Korrekturrechnung die Rechnung, die sie ersetzt', async () => {
+    fetchRechnung.mockResolvedValue(
+      rechnungsansicht({
+        status: 'issued',
+        invoice_number: 'RG-2026-0003',
+        replaces_invoice_id: 'r0',
+        replaces_invoice_number: 'RG-2026-0001',
+      }),
+    );
+    zeige();
+
+    expect(
+      await screen.findByText(/Korrekturrechnung zur stornierten Rechnung RG-2026-0001/),
+    ).toBeInTheDocument();
+  });
 });

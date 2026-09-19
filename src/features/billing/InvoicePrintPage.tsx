@@ -115,6 +115,16 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
           </p>
         ) : null}
 
+        {/* Druckt ebenfalls mit (ABR-003c): Ein Nachdruck einer stornierten
+            Rechnung darf nicht wie eine gültige Forderung aussehen. Das
+            Stornodokument selbst ist ein eigenes Blatt. */}
+        {ansicht.cancellation ? (
+          <p className="border-line-strong text-ink mt-8 border-2 px-3 py-2 text-sm font-semibold">
+            Storniert am {formatDate(ansicht.cancellation.cancelled_on)} mit Stornodokument{' '}
+            {ansicht.cancellation.cancellation_number}. Diese Rechnung ist gegenstandslos.
+          </p>
+        ) : null}
+
         <div className="mt-10 flex flex-wrap justify-between gap-8">
           <div className="min-w-[70mm]">
             {/* Die Absenderzeile über dem Anschriftenfeld: klein, einzeilig,
@@ -180,6 +190,14 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
         <h1 className="mt-10 text-lg font-semibold">
           {ansicht.invoice_number ? `Rechnung ${ansicht.invoice_number}` : 'Rechnungsentwurf'}
         </h1>
+        {/* Eine Korrekturrechnung sagt auf dem Papier, welche Rechnung sie
+            ersetzt - sonst stuenden beim Empfaenger zwei Rechnungen ueber
+            dieselben Leistungen nebeneinander (ADR-009 Punkt 9). */}
+        {ansicht.replaces_invoice_number ? (
+          <p className="text-ink mt-1 text-sm">
+            Korrekturrechnung zur stornierten Rechnung {ansicht.replaces_invoice_number}.
+          </p>
+        ) : null}
         <p className="text-ink-muted mt-1 text-sm">
           Für die folgenden Leistungen im {monatsname(dokument.period_month)} stellen wir in
           Rechnung:

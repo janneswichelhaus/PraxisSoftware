@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge, type Ton } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -205,6 +205,10 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                   {rechnung.invoice_number ?? 'Ohne Nummer'}
                 </span>
                 <Badge ton={standTon[rechnung.status]}>{standLabels[rechnung.status]}</Badge>
+                {/* Storniert steht neben dem Zustand, nicht an seiner Stelle:
+                    Die Rechnung ist ausgestellt gewesen, und das bleibt sie
+                    (ABR-003c, ANN-079). */}
+                {rechnung.cancelled ? <Badge ton="neutral">Storniert</Badge> : null}
                 <span className="text-ink-muted text-sm">
                   {monatsname(rechnung.period_month)} · {rechnung.patient_name}
                 </span>
@@ -222,7 +226,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                 {rechnung.due_on ? ` · zahlbar bis ${formatDate(rechnung.due_on)}` : null}
               </p>
 
-              {rechnung.status === 'issued' ? (
+              {rechnung.status === 'issued' && !rechnung.cancelled ? (
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                   <Badge ton={zahlungsTon[rechnung.payment_state]}>
                     {zahlungsstandLabels[rechnung.payment_state]}
@@ -358,6 +362,18 @@ function KandidatenKarte({
         <Statusmeldung className="mt-2">
           Für diesen Monat steht bereits ein Entwurf. Diese Leistungen sind später erfasst worden;
           sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder verworfen ist.
+          {/* BEF-018: Der Hinweis führt jetzt dorthin. Vorher war der Entwurf
+              in der Liste darunter zu suchen — der einzige Ort, an dem die
+              Seite auf etwas verwies, das sie nicht anbot. */}
+          {kandidat.draft_id ? (
+            <>
+              {' '}
+              <Link className="underline" to={`/abrechnung/rechnungen/${kandidat.draft_id}`}>
+                Zum Entwurf
+              </Link>
+              .
+            </>
+          ) : null}
         </Statusmeldung>
       ) : null}
 

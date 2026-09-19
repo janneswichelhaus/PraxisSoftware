@@ -285,6 +285,9 @@ const kandidatSchema = z.object({
   total_cents: z.number(),
   currency: z.string(),
   has_draft: z.boolean(),
+  // BEF-018: Die Zeile sagt nicht nur, dass ein Entwurf steht — sie führt
+  // auch hin. Ohne die Kennung war er in der Liste darunter zu suchen.
+  draft_id: z.string().nullable(),
 });
 
 export type Kandidat = z.infer<typeof kandidatSchema>;
@@ -332,6 +335,9 @@ const rechnungSchema = z.object({
   outstanding_cents: z.number(),
   payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
   overdue: z.boolean(),
+  // Storniert ist ein abgeleiteter Zustand: Es gibt ein Stornodokument zu
+  // dieser Rechnung (ABR-003c, ANN-079). An der Rechnung steht dazu nichts.
+  cancelled: z.boolean(),
 });
 
 export type Rechnung = z.infer<typeof rechnungSchema>;
@@ -440,6 +446,21 @@ const rechnungsansichtSchema = z.object({
   outstanding_cents: z.number(),
   payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
   overdue: z.boolean(),
+  // Die Storno- und Korrekturkette (ABR-003c). `cancellation` ist das
+  // Stornodokument zu dieser Rechnung; `replaces_*` zeigt zurück auf die
+  // Rechnung, die diese hier ersetzt, `correction_*` nach vorn auf die
+  // Korrektur, die sie ersetzt hat.
+  cancellation: z
+    .object({
+      cancellation_number: z.string(),
+      reason: z.string(),
+      cancelled_on: z.string(),
+    })
+    .nullable(),
+  replaces_invoice_id: z.string().nullable(),
+  replaces_invoice_number: z.string().nullable(),
+  correction_invoice_id: z.string().nullable(),
+  correction_invoice_number: z.string().nullable(),
   document: dokumentSchema,
 });
 
@@ -500,6 +521,55 @@ export async function stelleRechnungAus(invoiceId: string): Promise<string> {
   const nummer = z.string().safeParse(data);
   if (!nummer.success) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
   return nummer.data;
+}
+
+/**
+ * Eine ausgestellte Rechnung stornieren (ABR-003c).
+ *
+ * Gibt die Nummer des Stornodokuments zurück — es ist ein eigenes Dokument
+ * mit eigener Nummer aus demselben Nummernkreis (ADR-009 Punkt 9, ANN-079).
+ * Die Rechnung selbst bleibt unverändert; „storniert" ist der Zustand, der
+ * sich aus der Existenz dieses Dokuments ergibt.
+ */
+export async function storniereRechnung(invoiceId: string, grund: string): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('cancel_invoice', {
+    p_invoice_id: invoiceId,
+    p_reason: grund,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  // Der eine Fall, der eine eigene Antwort verdient: Erst das Geld, dann das
+  // Dokument. Alles andere wäre ein Eingang ohne Forderung.
+  if (error?.message?.includes('void the payments of this invoice first')) {
+    throw new ZahlungStehtNoch();
+  }
+  if (error) throw new Error('Die Rechnung konnte nicht storniert werden.');
+  const nummer = z.string().safeParse(data);
+  if (!nummer.success) throw new Error('Die Rechnung konnte nicht storniert werden.');
+  return nummer.data;
+}
+
+export class ZahlungStehtNoch extends Error {}
+
+/** Der Entwurf der Korrekturrechnung zu einer stornierten Rechnung (ABR-003c). */
+export async function erstelleKorrektur(invoiceId: string): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('create_correction_draft', {
+    p_invoice_id: invoiceId,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error?.message?.includes('already exists')) {
+    throw new Error(
+      'Für diese Patientin und diesen Monat steht bereits ein Entwurf. Er ist die Korrektur.',
+    );
+  }
+  if (error?.message?.includes('no billable services')) {
+    throw new Error(
+      'Es gibt keine offenen Leistungen mehr für diesen Monat — die Korrektur hätte keine Zeile.',
+    );
+  }
+  if (error) throw new Error('Die Korrekturrechnung konnte nicht angelegt werden.');
+  const id = z.string().uuid().safeParse(data);
+  if (!id.success) throw new Error('Die Korrekturrechnung konnte nicht angelegt werden.');
+  return id.data;
 }
 
 // -----------------------------------------------------------------------------

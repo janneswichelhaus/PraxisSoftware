@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { rechnungsansicht } from './testdaten';
+import { ZahlungStehtNoch } from './api';
 
 const fetchRechnung = vi.fn();
 const fetchEmpfaenger = vi.fn();
@@ -12,6 +13,8 @@ const stelleRechnungAus = vi.fn();
 const deleteEntwurf = vi.fn();
 const fetchRechnungszahlungen = vi.fn();
 const bucheZahlung = vi.fn();
+const storniereRechnung = vi.fn();
+const erstelleKorrektur = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof BillingApi>();
@@ -25,6 +28,8 @@ vi.mock('./api', async (importOriginal) => {
     fetchRechnungszahlungen: (id: string) =>
       fetchRechnungszahlungen(id) as Promise<BillingApi.Zahlung[]>,
     bucheZahlung: (...args: unknown[]) => bucheZahlung(...args) as Promise<void>,
+    storniereRechnung: (...args: unknown[]) => storniereRechnung(...args) as Promise<string>,
+    erstelleKorrektur: (id: string) => erstelleKorrektur(id) as Promise<string>,
   };
 });
 
@@ -45,11 +50,15 @@ describe('InvoiceDetailPage', () => {
     deleteEntwurf.mockReset();
     fetchRechnungszahlungen.mockReset();
     bucheZahlung.mockReset();
+    storniereRechnung.mockReset();
+    erstelleKorrektur.mockReset();
     fetchEmpfaenger.mockResolvedValue([]);
     setzeEmpfaenger.mockResolvedValue(undefined);
     stelleRechnungAus.mockResolvedValue('RG-2026-0001');
     fetchRechnungszahlungen.mockResolvedValue([]);
     bucheZahlung.mockResolvedValue(undefined);
+    storniereRechnung.mockResolvedValue('RG-2026-0002');
+    erstelleKorrektur.mockResolvedValue('r2');
   });
 
   it('nennt den Entwurf ohne Nummer und sagt, wann sie entsteht', async () => {
@@ -335,6 +344,140 @@ describe('InvoiceDetailPage', () => {
 
       expect(await screen.findByText('Noch offen')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Zahlung buchen' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Storno und Korrektur (ABR-003c)', () => {
+    const ausgestellt = () =>
+      ansicht({
+        status: 'issued',
+        invoice_number: 'RG-2026-0001',
+        issued_on: '2026-09-01',
+        due_on: '2026-09-15',
+      });
+
+    it('verlangt einen Grund, bevor es storniert', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Rechnung stornieren' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Storno ausstellen' }));
+
+      expect(await screen.findByText(/Bitte einen Grund angeben/)).toBeInTheDocument();
+      expect(storniereRechnung).not.toHaveBeenCalled();
+    });
+
+    it('storniert mit Grund', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Rechnung stornieren' }));
+      await userEvent.type(screen.getByLabelText('Grund'), 'Falscher Empfänger');
+      await userEvent.click(screen.getByRole('button', { name: 'Storno ausstellen' }));
+
+      expect(storniereRechnung).toHaveBeenCalledWith('r1', 'Falscher Empfänger');
+    });
+
+    it('sagt bei einer gebuchten Zahlung, was zuerst zu tun ist', async () => {
+      // Erst das Geld, dann das Dokument - sonst bliebe ein Eingang ohne
+      // Forderung stehen.
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      storniereRechnung.mockRejectedValue(new ZahlungStehtNoch());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Rechnung stornieren' }));
+      await userEvent.type(screen.getByLabelText('Grund'), 'Doppelt erfasst');
+      await userEvent.click(screen.getByRole('button', { name: 'Storno ausstellen' }));
+
+      expect(await screen.findByText(/Erst die Zahlung stornieren/)).toBeInTheDocument();
+    });
+
+    it('zeigt an der stornierten Rechnung Nummer, Grund und den Weg zum Dokument', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht({
+          status: 'issued',
+          invoice_number: 'RG-2026-0001',
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Leistung doppelt erfasst',
+            cancelled_on: '2026-09-18',
+          },
+        }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText(/Stornodokument RG-2026-0002 vom 18.09.2026/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Grund: Leistung doppelt erfasst/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Stornodokument öffnen' })).toHaveAttribute(
+        'href',
+        '/abrechnung/rechnungen/r1/storno',
+      );
+      // Storniert heisst: kein Storno mehr anbieten.
+      expect(screen.queryByRole('button', { name: 'Rechnung stornieren' })).toBeNull();
+    });
+
+    it('legt die Korrekturrechnung an', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht({
+          status: 'issued',
+          invoice_number: 'RG-2026-0001',
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Falscher Empfänger',
+            cancelled_on: '2026-09-18',
+          },
+        }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Korrekturrechnung erstellen' }),
+      );
+      expect(erstelleKorrektur).toHaveBeenCalledWith('r1');
+    });
+
+    it('führt von der Korrektur zurück zur ersetzten Rechnung', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht({ replaces_invoice_id: 'r0', replaces_invoice_number: 'RG-2026-0001' }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByRole('link', { name: 'RG-2026-0001' })).toHaveAttribute(
+        'href',
+        '/abrechnung/rechnungen/r0',
+      );
+    });
+
+    it('bietet der Therapeutin kein Storno an', async () => {
+      // Die Oberfläche blendet aus, der Server weist ab (ANN-076, ADR-004).
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['therapist'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await screen.findByRole('heading', { name: 'RG-2026-0001' });
+      expect(screen.queryByRole('button', { name: 'Rechnung stornieren' })).toBeNull();
     });
   });
 });

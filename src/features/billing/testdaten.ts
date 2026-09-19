@@ -28,6 +28,11 @@ export function rechnungsansicht(
     outstanding_cents: 0,
     payment_state: 'unpaid',
     overdue: false,
+    cancellation: null,
+    replaces_invoice_id: null,
+    replaces_invoice_number: null,
+    correction_invoice_id: null,
+    correction_invoice_number: null,
     ...rest,
     document: {
       schema_version: 1,

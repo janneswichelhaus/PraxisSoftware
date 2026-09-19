@@ -62,6 +62,7 @@ import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { ToursPage } from '@/features/tours/ToursPage';
 import { PaymentsPage } from '@/features/billing/PaymentsPage';
 import { CatalogPage } from '@/features/billing/CatalogPage';
+import { CancellationPrintPage } from '@/features/billing/CancellationPrintPage';
 import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
 import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
@@ -314,6 +315,13 @@ export function AuthenticatedRoutes({
                 <Route
                   path="/abrechnung/rechnungen/:invoiceId/druck"
                   element={<InvoicePrintPage />}
+                />
+                {/* Das Stornodokument zu einer Rechnung - ein eigenes Blatt
+                  mit eigener Nummer, das an denselben Empfaenger geht
+                  (ABR-003c, ADR-009 Punkt 9). */}
+                <Route
+                  path="/abrechnung/rechnungen/:invoiceId/storno"
+                  element={<CancellationPrintPage />}
                 />
                 <Route path="/abrechnung/leistungen" element={<ServicesPage />} />
                 <Route path="/abrechnung/katalog" element={<CatalogPage user={user} />} />
