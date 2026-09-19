@@ -72,7 +72,7 @@ export function ServicesPage() {
 
       <Section
         titel="Zu erfassen"
-        hinweis="Dokumentierte Termine und Vorgänge mit Gebührenanlass. Andere stehen hier nicht — ohne finalisierte Dokumentation wird nicht fakturiert (PROJECT_PRINCIPLES.md 19)."
+        hinweis="Dokumentierte Termine und Vorgänge mit Gebührenanlass. Andere stehen hier nicht: Ohne finalisierte Dokumentation wird nicht fakturiert, und einen Weg daran vorbei gibt es nicht."
       >
         {offene.isPending ? <LoadingState label="Termine werden geladen …" /> : null}
         {offene.isError ? (

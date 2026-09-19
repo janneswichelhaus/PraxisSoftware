@@ -90,7 +90,7 @@ describe('ServicesPage', () => {
     renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
 
     expect(
-      await screen.findByText(/ohne finalisierte Dokumentation wird nicht fakturiert/),
+      await screen.findByText(/Ohne finalisierte Dokumentation wird nicht fakturiert/),
     ).toBeInTheDocument();
   });
 

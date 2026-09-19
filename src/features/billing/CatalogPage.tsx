@@ -330,7 +330,7 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
                 {position.code}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="text-ink block truncate text-[0.9375rem]">{position.label}</span>
+                <span className="text-ink block text-[0.9375rem]">{position.label}</span>
                 <span className="text-ink-muted mt-0.5 block text-sm">
                   {artLabels[position.item_kind]} · {steuerLabels[position.tax_treatment]}
                   {position.tax_treatment === 'taxable'
