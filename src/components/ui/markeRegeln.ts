@@ -22,6 +22,17 @@ export const MARKE_SEITENVERHAELTNIS = 5330.93 / 2035.73;
 export const MARKE_MINDESTHOEHE = 24;
 
 /**
+ * Höhe der Marke im Rechnungskopf, in Pixeln.
+ *
+ * `marke/README.md`, Abschnitt „Anwendungsfälle": „Rechnungskopf —
+ * schwarzweiß, A4-Kopf, Marke **14 mm** hoch". CSS rechnet beim Druck mit
+ * 96 dpi, ein Millimeter sind also 96/25,4 = 3,7795 px; 14 mm ergeben
+ * gerundet 53 px. Die Zahl steht hier und nicht im Rechnungsblatt, weil sie
+ * aus der Markenregel stammt und nicht aus dem Layout.
+ */
+export const MARKE_RECHNUNGSHOEHE = 53;
+
+/**
  * Schutzraum in Pixeln, den die Marke bei dieser Höhe rundum braucht.
  *
  * `marke/README.md`: „Rundum mindestens die Höhe der MOTION-Zeile." Die zweite

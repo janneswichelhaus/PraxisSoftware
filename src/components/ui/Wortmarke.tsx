@@ -14,10 +14,11 @@ import { MARKE_MINDESTHOEHE, MARKE_SEITENVERHAELTNIS } from './markeRegeln';
  *    ein Inline-SVG mit `currentColor` würde die Marke jede beliebige
  *    Textfarbe annehmen lassen — genau das Verbot.
  *
- * Der Preis dafür: die Marke erscheint nicht im Ausdruck, weil die Druckregeln
- * in `src/index.css` `header` ohnehin ausblenden und ein Bild nicht von
- * `currentColor` lebt. Für Papier ist die schwarze Fassung vorgesehen; sie
- * kommt mit der Rechnung (ABR-000).
+ * Im gewöhnlichen Ausdruck erscheint die Marke nicht: Die Druckregeln in
+ * `src/index.css` blenden `header` aus, und dort steht sie. Das
+ * Rechnungsblatt (ABR-003b) setzt sie deshalb selbst — in der schwarzen
+ * Fassung, die `marke/README.md` genau für Rechnung und Fax vorsieht, und
+ * außerhalb der Kopfzeile.
  *
  * Maße und Regeln stehen in `markeRegeln.ts`.
  */
@@ -25,14 +26,15 @@ import { MARKE_MINDESTHOEHE, MARKE_SEITENVERHAELTNIS } from './markeRegeln';
  * Fassungen der Marke nach `marke/README.md`, Abschnitt „Dateien".
  *
  * `farbig` steht auf Papier oder heller Fläche, `papier` auf Tiefgrün oder
- * der Hauptfarbe. Umgefärbt wird nie — deshalb zwei Dateien statt einer mit
- * `currentColor`.
+ * der Hauptfarbe, `schwarz` ausschließlich auf Rechnung und Fax. Umgefärbt
+ * wird nie — deshalb drei Dateien statt einer mit `currentColor`.
  */
-type Markenfassung = 'farbig' | 'papier';
+type Markenfassung = 'farbig' | 'papier' | 'schwarz';
 
 const DATEI: Record<Markenfassung, string> = {
   farbig: '/marke/own-motion-block-farbig.svg',
   papier: '/marke/own-motion-block-papier.svg',
+  schwarz: '/marke/own-motion-block-schwarz.svg',
 };
 
 export function Wortmarke({

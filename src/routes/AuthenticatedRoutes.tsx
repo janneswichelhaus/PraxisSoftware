@@ -63,6 +63,7 @@ import { ToursPage } from '@/features/tours/ToursPage';
 import { PaymentsPage } from '@/features/billing/PaymentsPage';
 import { CatalogPage } from '@/features/billing/CatalogPage';
 import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
+import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
@@ -306,6 +307,13 @@ export function AuthenticatedRoutes({
                 <Route
                   path="/abrechnung/rechnungen/:invoiceId"
                   element={<InvoiceDetailPage user={user} />}
+                />
+                {/* Das Rechnungsblatt zum Verschicken - eine eigene Seite,
+                  weil ein Brief kein Bedienbildschirm ist (ABR-003b, B14
+                  Weg 1). */}
+                <Route
+                  path="/abrechnung/rechnungen/:invoiceId/druck"
+                  element={<InvoicePrintPage />}
                 />
                 <Route path="/abrechnung/leistungen" element={<ServicesPage />} />
                 <Route path="/abrechnung/katalog" element={<CatalogPage user={user} />} />

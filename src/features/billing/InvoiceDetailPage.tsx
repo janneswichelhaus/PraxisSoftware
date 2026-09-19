@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Section } from '@/components/ui/Section';
@@ -234,6 +235,22 @@ function Rechnungsbild({
         )}
       </Section>
 
+      {/* Das Blatt zum Verschicken steht als eigene Seite daneben (ABR-003b):
+          Ein Brief ist kein Bedienbildschirm, und der Entwurf lässt sich
+          darauf ansehen, bevor er eine Nummer bekommt. */}
+      <Section titel="Rechnungsblatt" ebene={2}>
+        <p className="text-ink-muted text-sm">
+          {entwurf
+            ? 'Der Entwurf lässt sich als Blatt ansehen und ausdrucken — mit einem Vermerk darauf, dass er keine Rechnung ist.'
+            : 'Das Blatt zum Verschicken: über den Druckdialog des Browsers auf Papier oder in eine PDF-Datei.'}
+        </p>
+        <div className="mt-3">
+          <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/druck`} variant="secondary">
+            Rechnungsblatt öffnen
+          </ButtonLink>
+        </div>
+      </Section>
+
       {entwurf && darfAusstellen ? <Entwurfsaktionen ansicht={ansicht} /> : null}
 
       {!entwurf ? (
@@ -245,8 +262,8 @@ function Rechnungsbild({
             waehrung={dokument.currency}
           />
           <Statusmeldung className="mt-4">
-            Diese Rechnung ist ausgestellt und damit unveränderlich. Das Dokument zum Versenden, das
-            Storno der Rechnung und die Zahlungserinnerung kommen mit dem nächsten Schritt.
+            Diese Rechnung ist ausgestellt und damit unveränderlich. Das Storno der Rechnung und die
+            Zahlungserinnerung kommen mit dem nächsten Schritt.
           </Statusmeldung>
         </>
       ) : null}
