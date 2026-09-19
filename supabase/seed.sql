@@ -17,6 +17,7 @@
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
 delete from public.audit_log;
+delete from public.invoice_recipients;
 delete from public.practice_billing_profiles;
 delete from public.billable_services;
 delete from public.treatment_text_snippets;
@@ -257,6 +258,22 @@ insert into public.practice_billing_profiles (
   'DE02120300000000202051', 'TESTDEFFXXX', 'RG', 14
 );
 
+
+-- -----------------------------------------------------------------------------
+-- Rechnungsempfaenger (ABR-003a)
+--
+-- Ein Fall, den ADR-009 Punkt 2 ausdruecklich nennt: Die Rechnung von Frau
+-- Fiktiv geht an ihre Betreuung, nicht an sie selbst. Ohne eine solche Zeile
+-- waere im Seed nie zu sehen, dass Patientin und Empfaenger zwei Dinge sind.
+-- -----------------------------------------------------------------------------
+insert into public.invoice_recipients (
+  id, organization_id, patient_id, recipient_kind, name,
+  street, house_number, postal_code, city, reference, is_default
+) values (
+  'dddddddd-dddd-4ddd-8ddd-000000000001', '22222222-2222-4222-8222-000000000001',
+  '66666666-6666-4666-8666-000000000003', 'guardian', 'Betreuungsbuero Fiktiv GmbH',
+  'Verwaltungsweg', '3', '72074', 'Tuebingen', 'BT-2026-0042', true
+);
 
 -- -----------------------------------------------------------------------------
 -- Accountzuordnung

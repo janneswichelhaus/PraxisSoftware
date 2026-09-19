@@ -89,6 +89,10 @@ export const AUDIT_ACTIONS = [
   'billable_service.removed',
   // ABR-000: der Absender der Rechnung.
   'organization.billing_profile_changed',
+  // ABR-003a: der Empfänger ist eine eigene Entität (ADR-009 Punkt 2).
+  'invoice_recipient.created',
+  'invoice_recipient.updated',
+  'invoice_recipient.deleted',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -154,6 +158,9 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'billable_service.recorded': 'Leistungen zum Termin erfasst',
   'billable_service.removed': 'Leistungen zum Termin entfernt',
   'organization.billing_profile_changed': 'Praxis-Stammdaten für Rechnungen geändert',
+  'invoice_recipient.created': 'Rechnungsempfänger angelegt',
+  'invoice_recipient.updated': 'Rechnungsempfänger geändert',
+  'invoice_recipient.deleted': 'Rechnungsempfänger entfernt',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -186,6 +193,7 @@ export const auditSubjectLabels: Record<string, string> = {
   patient_file: 'Datei der Akte',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
+  invoice_recipient: 'Rechnungsempfänger',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {
