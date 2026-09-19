@@ -78,6 +78,12 @@ export const AUDIT_ACTIONS = [
   'text_snippet.created',
   'text_snippet.updated',
   'text_snippet.deleted',
+  // ABR-001: Ein Preis entscheidet über eine Forderung; das Veröffentlichen
+  // macht ihn unveränderlich.
+  'service_catalog.version_created',
+  'service_catalog.version_updated',
+  'service_catalog.version_published',
+  'service_catalog.version_deleted',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -136,6 +142,10 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'text_snippet.created': 'Textbaustein angelegt',
   'text_snippet.updated': 'Textbaustein geändert',
   'text_snippet.deleted': 'Textbaustein gelöscht',
+  'service_catalog.version_created': 'Preisliste angelegt',
+  'service_catalog.version_updated': 'Preisliste geändert',
+  'service_catalog.version_published': 'Preisliste in Kraft gesetzt',
+  'service_catalog.version_deleted': 'Preislistenentwurf verworfen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -167,6 +177,7 @@ export const auditSubjectLabels: Record<string, string> = {
   treatment_basis: 'Behandlungsgrundlage',
   patient_file: 'Datei der Akte',
   storage_deletion_order: 'Löschauftrag der Ablage',
+  service_catalog_version: 'Preisliste',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {
