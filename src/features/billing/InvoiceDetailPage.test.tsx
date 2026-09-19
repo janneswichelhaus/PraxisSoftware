@@ -3,6 +3,8 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
+import { rechnungsansicht } from './testdaten';
+import { ZahlungStehtNoch } from './api';
 
 const fetchRechnung = vi.fn();
 const fetchEmpfaenger = vi.fn();
@@ -11,6 +13,10 @@ const stelleRechnungAus = vi.fn();
 const deleteEntwurf = vi.fn();
 const fetchRechnungszahlungen = vi.fn();
 const bucheZahlung = vi.fn();
+const storniereRechnung = vi.fn();
+const erstelleKorrektur = vi.fn();
+const fetchErinnerungen = vi.fn();
+const erstelleErinnerung = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof BillingApi>();
@@ -24,90 +30,20 @@ vi.mock('./api', async (importOriginal) => {
     fetchRechnungszahlungen: (id: string) =>
       fetchRechnungszahlungen(id) as Promise<BillingApi.Zahlung[]>,
     bucheZahlung: (...args: unknown[]) => bucheZahlung(...args) as Promise<void>,
+    storniereRechnung: (...args: unknown[]) => storniereRechnung(...args) as Promise<string>,
+    erstelleKorrektur: (id: string) => erstelleKorrektur(id) as Promise<string>,
+    fetchErinnerungen: (id: string) => fetchErinnerungen(id) as Promise<BillingApi.Erinnerung[]>,
+    erstelleErinnerung: (id: string) => erstelleErinnerung(id) as Promise<string>,
   };
 });
 
 const { InvoiceDetailPage } = await import('./InvoiceDetailPage');
 
-function ansicht(
-  rest: Partial<BillingApi.Rechnungsansicht> = {},
-  dokument: Partial<BillingApi.Rechnungsdokument> = {},
-): BillingApi.Rechnungsansicht {
-  return {
-    id: 'r1',
-    status: 'draft',
-    patient_id: 'p1',
-    recipient_id: null,
-    invoice_number: null,
-    issued_on: null,
-    due_on: null,
-    paid_cents: 0,
-    outstanding_cents: 0,
-    payment_state: 'unpaid',
-    overdue: false,
-    ...rest,
-    document: {
-      schema_version: 1,
-      period_month: '2026-08-01',
-      currency: 'EUR',
-      issuer: {
-        legal_name: 'Test Praxis Tuebingen',
-        street: 'Musterallee',
-        house_number: '1',
-        postal_code: '72070',
-        city: 'Tuebingen',
-        phone: null,
-        email: null,
-        tax_number: '86123/45678',
-        vat_id: null,
-        small_business: false,
-        bank_name: null,
-        account_holder: null,
-        iban: 'DE02120300000000202051',
-        bic: null,
-        payment_term_days: 14,
-      },
-      recipient: {
-        kind: 'self',
-        name: 'Erika Beispiel',
-        street: 'Testweg',
-        house_number: '7',
-        postal_code: '72072',
-        city: 'Tuebingen',
-        reference: null,
-      },
-      patient: { name: 'Erika Beispiel', date_of_birth: '1963-09-17' },
-      treatment_bases: [
-        { kind: 'first', issued_on: '2026-07-01', prescriber: 'Dr. Fiktiv Beispiel' },
-      ],
-      items: [
-        {
-          performed_on: '2026-08-03',
-          code: 'KG',
-          label: 'Krankengymnastik',
-          item_kind: 'treatment',
-          quantity: 1,
-          unit_price_cents: 4500,
-          line_total_cents: 4500,
-          currency: 'EUR',
-          tax_treatment: 'exempt_healthcare',
-          tax_rate_permille: 0,
-        },
-      ],
-      tax_groups: [
-        {
-          tax_treatment: 'exempt_healthcare',
-          tax_rate_permille: 0,
-          gross_cents: 4500,
-          tax_cents: 0,
-          net_cents: 4500,
-        },
-      ],
-      totals: { total_cents: 4500, tax_total_cents: 0 },
-      ...dokument,
-    },
-  };
-}
+/**
+ * Der Ausgangswert steht in `testdaten.ts`: Rechnungsseite und
+ * Rechnungsblatt zeigen dasselbe Dokument (ABR-003b).
+ */
+const ansicht = rechnungsansicht;
 
 describe('InvoiceDetailPage', () => {
   beforeEach(() => {
@@ -118,11 +54,19 @@ describe('InvoiceDetailPage', () => {
     deleteEntwurf.mockReset();
     fetchRechnungszahlungen.mockReset();
     bucheZahlung.mockReset();
+    storniereRechnung.mockReset();
+    erstelleKorrektur.mockReset();
+    fetchErinnerungen.mockReset();
+    erstelleErinnerung.mockReset();
     fetchEmpfaenger.mockResolvedValue([]);
     setzeEmpfaenger.mockResolvedValue(undefined);
     stelleRechnungAus.mockResolvedValue('RG-2026-0001');
     fetchRechnungszahlungen.mockResolvedValue([]);
     bucheZahlung.mockResolvedValue(undefined);
+    storniereRechnung.mockResolvedValue('RG-2026-0002');
+    erstelleKorrektur.mockResolvedValue('r2');
+    fetchErinnerungen.mockResolvedValue([]);
+    erstelleErinnerung.mockResolvedValue('e1');
   });
 
   it('nennt den Entwurf ohne Nummer und sagt, wann sie entsteht', async () => {
@@ -408,6 +352,230 @@ describe('InvoiceDetailPage', () => {
 
       expect(await screen.findByText('Noch offen')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Zahlung buchen' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Storno und Korrektur (ABR-003c)', () => {
+    const ausgestellt = () =>
+      ansicht({
+        status: 'issued',
+        invoice_number: 'RG-2026-0001',
+        issued_on: '2026-09-01',
+        due_on: '2026-09-15',
+      });
+
+    it('verlangt einen Grund, bevor es storniert', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Rechnung stornieren' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Storno ausstellen' }));
+
+      expect(await screen.findByText(/Bitte einen Grund angeben/)).toBeInTheDocument();
+      expect(storniereRechnung).not.toHaveBeenCalled();
+    });
+
+    it('storniert mit Grund', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Rechnung stornieren' }));
+      await userEvent.type(screen.getByLabelText('Grund'), 'Falscher Empfänger');
+      await userEvent.click(screen.getByRole('button', { name: 'Storno ausstellen' }));
+
+      expect(storniereRechnung).toHaveBeenCalledWith('r1', 'Falscher Empfänger');
+    });
+
+    it('sagt bei einer gebuchten Zahlung, was zuerst zu tun ist', async () => {
+      // Erst das Geld, dann das Dokument - sonst bliebe ein Eingang ohne
+      // Forderung stehen.
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      storniereRechnung.mockRejectedValue(new ZahlungStehtNoch());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Rechnung stornieren' }));
+      await userEvent.type(screen.getByLabelText('Grund'), 'Doppelt erfasst');
+      await userEvent.click(screen.getByRole('button', { name: 'Storno ausstellen' }));
+
+      expect(await screen.findByText(/Erst die Zahlung stornieren/)).toBeInTheDocument();
+    });
+
+    it('zeigt an der stornierten Rechnung Nummer, Grund und den Weg zum Dokument', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht({
+          status: 'issued',
+          invoice_number: 'RG-2026-0001',
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Leistung doppelt erfasst',
+            cancelled_on: '2026-09-18',
+          },
+        }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText(/Stornodokument RG-2026-0002 vom 18.09.2026/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Grund: Leistung doppelt erfasst/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Stornodokument öffnen' })).toHaveAttribute(
+        'href',
+        '/abrechnung/rechnungen/r1/storno',
+      );
+      // Storniert heisst: kein Storno mehr anbieten.
+      expect(screen.queryByRole('button', { name: 'Rechnung stornieren' })).toBeNull();
+    });
+
+    it('legt die Korrekturrechnung an', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht({
+          status: 'issued',
+          invoice_number: 'RG-2026-0001',
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Falscher Empfänger',
+            cancelled_on: '2026-09-18',
+          },
+        }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Korrekturrechnung erstellen' }),
+      );
+      expect(erstelleKorrektur).toHaveBeenCalledWith('r1');
+    });
+
+    it('führt von der Korrektur zurück zur ersetzten Rechnung', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht({ replaces_invoice_id: 'r0', replaces_invoice_number: 'RG-2026-0001' }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByRole('link', { name: 'RG-2026-0001' })).toHaveAttribute(
+        'href',
+        '/abrechnung/rechnungen/r0',
+      );
+    });
+
+    it('bietet der Therapeutin kein Storno an', async () => {
+      // Die Oberfläche blendet aus, der Server weist ab (ANN-076, ADR-004).
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['therapist'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await screen.findByRole('heading', { name: 'RG-2026-0001' });
+      expect(screen.queryByRole('button', { name: 'Rechnung stornieren' })).toBeNull();
+    });
+  });
+
+  describe('Zahlungserinnerung (ABR-003d)', () => {
+    const faellig = (rest: Partial<BillingApi.Rechnungsansicht> = {}) =>
+      ansicht({
+        status: 'issued',
+        invoice_number: 'RG-2026-0001',
+        issued_on: '2026-08-20',
+        due_on: '2026-09-03',
+        outstanding_cents: 4500,
+        overdue: true,
+        ...rest,
+      });
+
+    it('stellt eine Erinnerung aus, sobald die Rechnung fällig ist', async () => {
+      fetchRechnung.mockResolvedValue(faellig());
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Zahlungserinnerung ausstellen' }),
+      );
+      expect(erstelleErinnerung).toHaveBeenCalledWith('r1');
+    });
+
+    it('bietet vor der Fälligkeit keine an und sagt warum', async () => {
+      fetchRechnung.mockResolvedValue(faellig({ overdue: false }));
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText(/noch nicht fällig/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Zahlungserinnerung ausstellen' })).toBeDisabled();
+    });
+
+    it('führt jede ausgestellte Erinnerung mit ihrem eigenen Betrag', async () => {
+      // Keine Stufen: zwei Erinnerungen sind zwei Erinnerungen, jede mit dem
+      // offenen Betrag ihres Tages (ANN-080).
+      fetchRechnung.mockResolvedValue(faellig());
+      fetchErinnerungen.mockResolvedValue([
+        {
+          id: 'e2',
+          reminder_on: '2026-09-20',
+          due_on: '2026-10-04',
+          outstanding_cents: 2500,
+          currency: 'EUR',
+        },
+        {
+          id: 'e1',
+          reminder_on: '2026-09-10',
+          due_on: '2026-09-24',
+          outstanding_cents: 4500,
+          currency: 'EUR',
+        },
+      ]);
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText(/Frist bis 04.10.2026 · 25,00 € offen/)).toBeInTheDocument();
+      expect(screen.getByText(/Frist bis 24.09.2026 · 45,00 € offen/)).toBeInTheDocument();
+      expect(screen.getAllByRole('link', { name: 'Blatt öffnen' })[0]).toHaveAttribute(
+        'href',
+        '/abrechnung/erinnerungen/e2',
+      );
+      expect(screen.queryByText(/Mahnstufe/)).toBeNull();
+    });
+
+    it('erinnert an eine stornierte Rechnung gar nicht', async () => {
+      fetchRechnung.mockResolvedValue(
+        faellig({
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Falscher Empfänger',
+            cancelled_on: '2026-09-18',
+          },
+        }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await screen.findByText(/Stornodokument RG-2026-0002/);
+      expect(screen.queryByText('Zahlungserinnerung')).toBeNull();
     });
   });
 });

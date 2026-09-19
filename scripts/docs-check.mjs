@@ -35,13 +35,17 @@ import { dirname, join, normalize } from 'node:path';
  * gefunden haetten - und das Register sagt selbst, dass kein Eintrag
  * verschwindet (docs/STATUS.md nannte beide Wege). Am 2026-09-19 mit
  * ABR-EPIC-002a aus demselben Grund von 1000 auf 1050: Die vier Annahmen
- * ANN-074 bis ANN-077 brauchten 48 Zeilen, frei waren 18. Die drei anderen
- * Grenzen bleiben unveraendert - sie sind die, die Lesbarkeit schuetzen.
+ * ANN-074 bis ANN-077 brauchten 48 Zeilen, frei waren 18. Am 2026-09-19 mit
+ * ABR-EPIC-002b ein drittes Mal, von 1050 auf 1075: ANN-079 und ANN-080
+ * brauchten 24 Zeilen, frei waren 8. Die Grenze wandert damit weiter mit der
+ * Zahl der Eintraege, nicht mit ihrer Laenge - zwoelf Zeilen je Eintrag sind
+ * dieselbe Disziplin wie vorher. Die drei anderen Grenzen bleiben
+ * unveraendert - sie sind die, die Lesbarkeit schuetzen.
  */
 const OBERGRENZEN = {
   'CLAUDE.md': 150,
   'docs/STATUS.md': 60,
-  'docs/decisions/ASSUMPTIONS.md': 1050,
+  'docs/decisions/ASSUMPTIONS.md': 1075,
   'docs/decisions/OPEN_DECISIONS.md': 400,
 };
 

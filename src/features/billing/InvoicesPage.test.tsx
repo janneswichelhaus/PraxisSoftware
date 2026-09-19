@@ -33,6 +33,7 @@ function kandidat(rest: Partial<BillingApi.Kandidat> = {}): BillingApi.Kandidat 
     total_cents: 13_500,
     currency: 'EUR',
     has_draft: false,
+    draft_id: null,
     ...rest,
   };
 }
@@ -56,6 +57,7 @@ function rechnung(rest: Partial<BillingApi.Rechnung> = {}): BillingApi.Rechnung 
     outstanding_cents: 13_500,
     payment_state: 'unpaid',
     overdue: false,
+    cancelled: false,
     ...rest,
   };
 }
@@ -242,5 +244,28 @@ describe('InvoicesPage', () => {
       expect(await screen.findByText('RG-2026-0001')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Zahlung buchen' })).not.toBeInTheDocument();
     });
+  });
+
+  it('kennzeichnet eine stornierte Rechnung und nennt keinen Zahlungsstand mehr', async () => {
+    // Storniert steht neben dem Zustand, nicht an seiner Stelle: ausgestellt
+    // ist sie gewesen (ABR-003c, ANN-079).
+    fetchKandidaten.mockResolvedValue([]);
+    fetchRechnungen.mockResolvedValue([rechnung({ cancelled: true })]);
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(await screen.findByText('Storniert')).toBeInTheDocument();
+    expect(screen.getByText('Ausgestellt')).toBeInTheDocument();
+    expect(screen.queryByText('Offen')).toBeNull();
+  });
+
+  it('führt vom Monat mit Entwurf zu diesem Entwurf (BEF-018)', async () => {
+    fetchKandidaten.mockResolvedValue([kandidat({ has_draft: true, draft_id: 'r7' })]);
+    fetchRechnungen.mockResolvedValue([]);
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(await screen.findByRole('link', { name: 'Zum Entwurf' })).toHaveAttribute(
+      'href',
+      '/abrechnung/rechnungen/r7',
+    );
   });
 });
