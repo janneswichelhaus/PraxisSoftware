@@ -6,7 +6,6 @@ import { CheckupPage } from '@/features/fleet/CheckupPage';
 import { KeyPage } from '@/features/fleet/KeyPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { ToursPage } from '@/features/tours/ToursPage';
-import { ServicesPage } from '@/features/billing/BillingPage';
 
 /**
  * Eine Vorschau darf nie einen Erfolg zeigen, den es nicht gibt.
@@ -14,7 +13,8 @@ import { ServicesPage } from '@/features/billing/BillingPage';
  * Diese Datei prüft genau das an den Stellen, an denen eine vorgetäuschte
  * Erfolgsmeldung am meisten Schaden anrichten würde: Check-Up (Meldung an die
  * Werkstatt), Schlüssel (Zugang), Chat (Nachricht ans Team), Touren
- * (berechnete Fahrzeit) und Abrechnung (fakturierbare Leistung).
+ * (berechnete Fahrzeit). Die Abrechnung stand hier bis ABR-EPIC-001; seitdem
+ * ist sie echt und wird am Server geprueft (siehe unten).
  */
 
 const nutzerRolle = ['therapist'] as const;
@@ -142,13 +142,14 @@ describe('Touren', () => {
   });
 });
 
-describe('Abrechnung', () => {
-  it('macht die Abhaengigkeit von der Dokumentation sichtbar', () => {
-    renderMitVorschau(<ServicesPage />, '/abrechnung/leistungen');
-    expect(screen.getByText(/ohne finalisierte Dokumentation/)).toBeInTheDocument();
-    expect(screen.getAllByText('Dokumentation offen').length).toBeGreaterThan(0);
-  });
-});
+// Leistungen und Katalog waren hier als Vorschau vertreten. Beide sind mit
+// ABR-EPIC-001 echt geworden: Die Abhaengigkeit von der Dokumentation ist
+// nicht mehr ein Hinweis auf dem Bildschirm, sondern eine Bedingung im
+// Schreibpfad - aus einem Termin ohne finalisierte Dokumentation entsteht
+// keine Leistung, und einen Override gibt es nicht (PROJECT_PRINCIPLES.md 19).
+// Geprueft wird das jetzt in `src/features/billing/*.test.tsx` und in
+// `supabase/tests/billable-services.test.ts`, also am Server statt an einer
+// Attrappe.
 
 // Teamverzeichnis und Personalakte hatte dieser Umbau als Vorschau mitgebracht.
 // Beide sind beim Zusammenfuehren mit main entfallen: STAFF-001 liefert die

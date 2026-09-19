@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-17
+Stand: 2026-09-19
 
 ## Zweck
 
@@ -554,3 +554,26 @@ Rückkehr des Fokus) — das ist eine Abkehr von UI-000 („kein modaler Dialog"
 und braucht eine kurze Anpassung dort, dann gilt sie für alle Rückfragen des
 Musters. Nach dem Anlegen zurück zum Aufrufer (`zurueck`-Parameter aus
 UX-012), der neue Termin im Kalender hervorgehoben.
+
+### BEF-017 — Vier fertige Loops fehlen im Fortschrittsmodell
+
+|         |                                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-19                                                                                          |
+| Bereich | Werkzeugkette: `docs/development/fortschritt.json`, `pnpm fortschritt`                              |
+| Quelle  | Loop ABR-EPIC-001, beim Nachstellen des Modells                                                     |
+| Status  | offen                                                                                               |
+| Berührt | Block A; die Tabelle der fertigen Loops in `ROADMAP.md` nennt sie, das Modell nicht                 |
+
+**Beobachtung.** `fortschritt.json` führt in Block A keine Posten für
+**CAL-EPIC-004b**, **CAL-EPIC-004c**, **UX-013** und **GRD-001**, obwohl alle
+vier in der Tabelle der fertigen Loops stehen. Der Block zählt sie deshalb
+nicht mit.
+
+**Warum das zählt.** Der Stand ist damit zu niedrig, nicht zu hoch — das ist
+die harmlosere Richtung, aber es macht die Zahl unbrauchbar: Wer sie mit der
+Tabelle vergleicht, findet eine Abweichung und weiß nicht, welche Seite stimmt.
+
+**Richtung.** Vier Posten mit Gewicht ergänzen. Das ist eine Roadmap-Frage
+(Gewichte sind Planung, nicht Code) und gehört deshalb in eine Docs-Session
+oder an den Anfang des nächsten Loops, nicht in einen Feature-Loop.

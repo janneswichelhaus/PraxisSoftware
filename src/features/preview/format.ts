@@ -6,10 +6,7 @@
  * ihrem eigenen Vokabular.
  */
 export { formatDate as formatDatum } from '@/lib/datum';
-
-export function formatEuro(cent: number): string {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cent / 100);
-}
+export { formatEuro } from '@/lib/geld';
 
 export function formatZeitpunkt(iso: string): string {
   if (!iso) return '–';

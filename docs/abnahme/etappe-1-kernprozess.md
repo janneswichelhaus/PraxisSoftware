@@ -2726,3 +2726,120 @@ Deckungszahlen, und die Akte meldet einen Ladefehler. Alle Schritte als
 3. Nur mit der Tastatur: Tabulator bis zur Auswahl, Leertaste setzt und löst
    den Haken, Eingabetaste überträgt.
 4. Denselben Ablauf auf Tablet und Desktop wiederholen.
+
+## ABR-EPIC-001 — Leistungskatalog und Leistungserfassung
+
+Prüfschritte zu ABR-001 und ABR-002. Grundlage: ADR-009 (Punkte 3 bis 6),
+`PROJECT_PRINCIPLES.md` §19, ANN-070 (eingefrorene Preisliste), ANN-071 (wer
+pflegt und wer erfasst), ANN-072 (woraus eine Leistung entsteht) und ANN-073
+(die genutzte Menge der Grundlage).
+
+**Diese Etappe bringt drei Migrationen**
+(`20260919100000_service_catalog.sql`, `20260919110000_billable_services.sql`,
+`20260919120000_billing_retention.sql`) **und einen geänderten Seed**: vorher
+`git pull origin main`, dann `pnpm dlx supabase@2.116.0 db reset`. Ohne den
+Reset fehlen Preisliste und Leistungen, und `/abrechnung/katalog` meldet einen
+Ladefehler. Die Preise im Seed sind **erfunden** — sie sind eine Rechengröße
+für diese Abnahme, keine Preisempfehlung.
+
+Schritte 1 bis 3 als `jannes.test@praxis.invalid` (owner), Schritt 4 als
+`olivia.office@praxis.invalid` (office), Schritt 5 zusätzlich als
+`anna.beispiel@praxis.invalid` (therapist).
+
+### 1. Die geltende Preisliste ist unveränderlich
+
+1. **Abrechnung → Katalog**. Erwartung: Zwei Preislisten — „Preisliste 2026"
+   mit dem Zeichen **In Kraft**, „Preisliste 2027 (Entwurf)" mit **Entwurf**.
+2. „Preisliste 2026" anklicken. Erwartung: Acht Positionen mit Kürzel,
+   Bezeichnung, Preis und steuerlicher Einordnung; **Hausbesuchspauschale**
+   (18,00 €) und **Ausfallhonorar** (45,00 €) sind darunter. Das
+   Ausfallhonorar steht als **Nicht steuerbar**, die Trainingseinheit als
+   **Umsatzsteuerpflichtig (19 %)**, alles übrige als **Heilbehandlung,
+   umsatzsteuerfrei**.
+3. Erwartung: An dieser Liste gibt es **keine** Schaltfläche zum Ändern, zum
+   Speichern oder zum Verwerfen — nur den Satz, dass eine Preisänderung eine
+   neue Preisliste ist.
+
+### 2. Eine neue Preisliste entsteht als Kopie
+
+1. **Neue Preisliste** → Bezeichnung „Preisliste 2028", Gültig ab `01.01.2028`,
+   Haken bei **Positionen aus „Preisliste 2026" übernehmen** → **Entwurf
+   anlegen**.
+2. Erwartung: Der Entwurf steht in der Liste und ist ausgewählt; seine acht
+   Positionen stehen als Eingabefelder da.
+3. Den Preis der Krankengymnastik auf `47,50` ändern, **Entwurf speichern**.
+   Erwartung: „Entwurf gespeichert."
+4. In der Liste zurück auf **Preisliste 2026**. Erwartung: Dort steht
+   weiterhin **45,00 €**. Die Änderung hat die geltende Liste nicht berührt.
+5. Zurück in den Entwurf 2028, eine Position auf **Ausfallhonorar** stellen
+   und ein Heilmittel auswählen. Erwartung: Das Heilmittelfeld lässt sich bei
+   „Ausfallhonorar" gar nicht bedienen — ein Ausfallhonorar hängt an keinem
+   Heilmittel.
+6. Preis einer Position leeren. Erwartung: „Preis ist keine gültige Zahl.",
+   und **Entwurf speichern** ist nicht bedienbar.
+7. **Entwurf verwerfen** → bestätigen. Erwartung: Der Entwurf 2028 ist weg,
+   die beiden übrigen Listen stehen unverändert.
+
+### 3. Leistungen aus einem dokumentierten Termin
+
+1. Einen vergangenen Termin von **Erika Beispiel** an der **Folgeverordnung
+   vom 08.09.2026** über **Behandlung abschließen** dokumentieren und
+   finalisieren.
+2. **Abrechnung → Leistungen**. Erwartung: Der Termin steht unter **Zu
+   erfassen** mit dem Zeichen **Dokumentiert**.
+3. **Leistungen erfassen**. Erwartung: Die ganze Preisliste steht zur Wahl —
+   **ohne** das Ausfallhonorar —, und **Krankengymnastik** ist bereits
+   angehakt und mit **Aus der Grundlage** gekennzeichnet; die übrigen nicht.
+4. Zusätzlich **Hausbesuchspauschale** anhaken, Menge der Krankengymnastik auf
+   `2` stellen → **2 Leistungen erfassen**.
+5. Erwartung: Der Termin verschwindet aus **Zu erfassen** und steht unter
+   **Erfasst** mit beiden Zeilen und der Summe **108,00 €**.
+6. Akte von Erika Beispiel → **Behandlungsgrundlagen** → Folgeverordnung.
+   Erwartung: Unter **Heilmittel** steht bei Krankengymnastik jetzt **2**
+   genutzt. Die Erfassung hat die Zahl fortgeschrieben, nicht die Hand.
+7. Zurück in **Abrechnung → Leistungen** → **Erfassung zurücknehmen** →
+   bestätigen. Erwartung: Der Termin steht wieder unter **Zu erfassen**, und in
+   der Akte steht die genutzte Menge wieder auf **0**.
+
+### 4. Was keine Leistung erzeugt — und was doch
+
+1. Als **office**: Einen künftigen Termin absagen, Grund **Patient:in**,
+   Eingang **gerade eben** (innerhalb von 24 Stunden vor Beginn). Erwartung:
+   Am Termin steht ein **Gebührenanlass**.
+2. **Abrechnung → Leistungen**. Erwartung: Dieser Termin steht unter **Zu
+   erfassen** mit dem Zeichen **Absage innerhalb der Frist**.
+3. **Leistungen erfassen**. Erwartung: Zur Wahl steht **ausschließlich** das
+   **Ausfallhonorar** — keine Behandlung. Erfassen, Summe **45,00 €**.
+4. Einen vergangenen Termin **nur abschließen**, ohne zu dokumentieren.
+   Erwartung: Er steht **nicht** unter „Zu erfassen", und es gibt keine
+   Schaltfläche, die ihn dorthin bringt. Ohne finalisierte Dokumentation wird
+   nicht fakturiert, und einen Weg daran vorbei gibt es nicht.
+5. Einen Termin absagen **ohne** Gebührenanlass (Eingang lange vor Beginn).
+   Erwartung: Er steht ebenfalls nicht unter „Zu erfassen".
+6. Die **Erstverordnung vom 05.02.2026** bei **Max Mustermann** ist
+   ausgeschöpft (Krankengymnastik 10 von 10 genutzt). An ihr einen Termin in
+   der Vergangenheit anlegen, dokumentieren und finalisieren, dann in
+   **Abrechnung → Leistungen** die **Krankengymnastik** erfassen.
+   Erwartung: Die Erfassung wird abgewiesen mit dem Hinweis, dass die
+   Leistungsmenge der Behandlungsgrundlage ausgeschöpft ist — und es ist
+   **keine** Leistung entstanden.
+
+### 5. Wer darf was
+
+1. Als **office**: **Abrechnung → Katalog**. Erwartung: Die Preislisten sind
+   lesbar; es gibt **keine** Schaltfläche „Neue Preisliste" und keine zum
+   Speichern.
+2. Als **therapist**: Erwartung: In der Navigation gibt es den Bereich
+   **Abrechnung** gar nicht. `/abrechnung/leistungen` direkt aufzurufen zeigt
+   keine Leistungen.
+
+### 6. Am Handy (~375 px)
+
+1. Fenster auf ~375 px ziehen, **Katalog**, den Katalogentwurf und
+   **Leistungen** samt geöffnetem Erfassungsformular ansehen.
+2. Erwartung: Nichts läuft waagerecht aus dem Bild, keine Bezeichnung ist
+   abgeschnitten, jedes Kästchen ist samt Beschriftung antippbar und
+   mindestens 44 px hoch.
+3. Nur mit der Tastatur: Tabulator bis zu den Kästchen, Leertaste setzt und
+   löst den Haken, Eingabetaste erfasst.
+4. Denselben Ablauf auf Tablet und Desktop wiederholen.

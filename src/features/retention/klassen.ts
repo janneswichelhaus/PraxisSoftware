@@ -49,6 +49,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     label: 'Zugangsdaten',
     beschreibung: 'Konto und Rollen. Getrennt von den aufbewahrungspflichtigen Fachdaten.',
   },
+  abrechnungsdaten: {
+    label: 'Abrechnungsdaten',
+    beschreibung:
+      'Erfasste Leistungen und der Leistungskatalog. Folgen der steuerlichen Frist, nicht der Frist der Akte.',
+  },
   verordnerkartei: {
     label: 'Verordner:innen',
     beschreibung: 'Berufliche Kontaktdaten verordnender Ärzt:innen, ohne Patientenbezug.',

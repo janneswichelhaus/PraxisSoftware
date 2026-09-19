@@ -70,6 +70,25 @@ async function dokumentationAnlegen(patientId: string) {
   );
 }
 
+/**
+ * Erfasst eine Leistung an einem bestehenden Termin der Akte (ABR-002).
+ * Die Katalogposition kommt aus der synthetischen Preisliste des Seeds.
+ */
+async function leistungAnlegen(patientId: string) {
+  await asPostgres(
+    `insert into public.billable_services
+       (organization_id, patient_id, appointment_id, catalog_item_id, performed_on, created_by)
+     select a.organization_id, a.patient_id, a.id,
+            'cccccccc-cccc-4ccc-8ccc-000000000001'::uuid,
+            (a.starts_at at time zone 'Europe/Berlin')::date, $2::uuid
+     from public.appointments a
+     where a.patient_id = $1::uuid
+     order by a.starts_at
+     limit 1`,
+    [patientId, users.office],
+  );
+}
+
 describe('Loeschlauf: klinische Patientenakte', () => {
   beforeEach(async () => {
     await resetDatabase();
@@ -109,6 +128,33 @@ describe('Loeschlauf: klinische Patientenakte', () => {
         patients.max,
       ]),
     ).toBe(0);
+  });
+
+  it('loescht die erfassten Leistungen mit der Akte und journalisiert sie als Abrechnungsdaten', async () => {
+    // Eine Leistung zeigt mit RESTRICT auf Termin und Patientenzeile: Ohne
+    // eigenen Loeschschritt scheiterte der ganze Lauf (ABR-002, ADR-008).
+    await leistungAnlegen(patients.max);
+    await abgeschlossenVor(patients.max, 11);
+
+    expect(
+      await anzahl('select count(*) from public.billable_services where patient_id = $1', [
+        patients.max,
+      ]),
+    ).toBe(1);
+
+    await lauf();
+
+    expect(
+      await anzahl('select count(*) from public.billable_services where patient_id = $1', [
+        patients.max,
+      ]),
+    ).toBe(0);
+    expect(
+      await anzahl(
+        `select count(*) from public.deletion_journal
+          where target_table = 'billable_services' and retention_class = 'abrechnungsdaten'`,
+      ),
+    ).toBe(1);
   });
 
   it('loescht die Dokumentation der Akte samt ihrer festgeschriebenen Versionen', async () => {

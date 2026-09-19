@@ -36,6 +36,22 @@ const VORSCHAUBEREICHE = [
   'src/features/billing',
 ];
 
+/**
+ * Dateien in einem Vorschauverzeichnis, die keine Vorschau mehr sind.
+ *
+ * `src/features/billing` ist seit ABR-EPIC-001 gemischt: Rechnungen und
+ * Zahlungen sind weiter Vorschau, Leistungen und Katalog sind echt angebunden
+ * und MÜSSEN mit dem Server sprechen. Das ganze Verzeichnis hier zu streichen
+ * hieße, die Zusicherung für die verbliebenen Vorschauseiten aufzugeben — und
+ * genau die sind die, an denen eine vorgetäuschte Buchung am meisten Schaden
+ * anrichtete. Die Ausnahme steht deshalb je Datei und namentlich.
+ */
+const KEINE_VORSCHAU = [
+  'src/features/billing/api.ts',
+  'src/features/billing/CatalogPage.tsx',
+  'src/features/billing/ServicesPage.tsx',
+];
+
 /** Aufrufe, die die Sitzung verlassen oder etwas dauerhaft ablegen würden. */
 const VERBOTEN: { muster: RegExp; grund: string }[] = [
   { muster: /getSupabase/, grund: 'Datenbankzugriff' },
@@ -195,7 +211,17 @@ function unerlaubteImporte(pfad: string, quelltext: string): string[] {
 }
 
 describe('Trennung von Vorschau und echten Vorgängen', () => {
-  const dateien = VORSCHAUBEREICHE.flatMap(quelldateien);
+  const dateien = VORSCHAUBEREICHE.flatMap(quelldateien).filter(
+    (pfad) => !KEINE_VORSCHAU.includes(pfad),
+  );
+
+  it('nennt nur Dateien als Ausnahme, die es auch gibt', () => {
+    // Sonst bliebe eine Ausnahme stehen, wenn die Datei umbenannt wird - und
+    // die Ausnahme deckte am Ende eine andere Datei als gemeint.
+    for (const pfad of KEINE_VORSCHAU) {
+      expect(statSync(pfad).isFile()).toBe(true);
+    }
+  });
 
   it('findet die Vorschaubereiche ueberhaupt', () => {
     expect(dateien.length).toBeGreaterThan(15);
