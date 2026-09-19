@@ -1,11 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import {
-  SEED,
-  asPostgres,
-  asUser,
-  asUserCommitted,
-  resetDatabaseOhneTermine,
-} from './helpers/db';
+import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
 
 /**
  * Die Rechnung entsteht aus Leistungen (ABR-003).
@@ -160,11 +154,10 @@ describe('Rechnung', () => {
 
     it('zeigt eine abgerechnete Leistung nicht mehr', async () => {
       await leistung(KATALOG.kg, { vorStunden: 30 });
-      const { rows: entwurf } = await asUserCommitted<{ id: string }>(
-        users.office,
-        ENTWURF,
-        [patients.erika, await monat()],
-      );
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
       await asUserCommitted(users.office, AUSSTELLEN, [entwurf[0]!.id]);
 
       const { rows } = await asUser(users.office, KANDIDATEN);
@@ -303,7 +296,7 @@ describe('Rechnung', () => {
   });
 
   describe('Ausstellen', () => {
-    async function ausgestellt(position = KATALOG.kg): Promise<Dokument> {
+    async function ausgestellt(position: string = KATALOG.kg): Promise<Dokument> {
       await leistung(position, { vorStunden: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,

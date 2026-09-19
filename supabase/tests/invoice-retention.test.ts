@@ -18,7 +18,9 @@ import { SEED, asPostgres, resetDatabase } from './helpers/db';
 const { users, patients, organizationId } = SEED;
 
 async function lauf(): Promise<number> {
-  const { rows } = await asPostgres<{ anzahl: number }>('select public.apply_retention() as anzahl');
+  const { rows } = await asPostgres<{ anzahl: number }>(
+    'select public.apply_retention() as anzahl',
+  );
   return Number(rows[0]?.anzahl ?? 0);
 }
 
@@ -94,9 +96,10 @@ async function rechnungVor(patientId: string, jahre: number): Promise<string> {
     [id, jahre],
   );
 
-  await asPostgres("update public.billable_services set status = 'invoiced' where patient_id = $1", [
-    patientId,
-  ]);
+  await asPostgres(
+    "update public.billable_services set status = 'invoiced' where patient_id = $1",
+    [patientId],
+  );
 
   return id;
 }

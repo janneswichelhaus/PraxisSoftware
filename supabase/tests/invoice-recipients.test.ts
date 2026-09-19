@@ -129,7 +129,11 @@ describe('Rechnungsempfaenger', () => {
       await asUserCommitted(
         users.office,
         SPEICHERN,
-        empfaenger({ name: 'Testversicherung AG', recipient_kind: 'private_insurer', is_default: true }),
+        empfaenger({
+          name: 'Testversicherung AG',
+          recipient_kind: 'private_insurer',
+          is_default: true,
+        }),
       );
 
       const { rows } = await asUser<{ name: string; is_default: boolean }>(users.office, LISTE, [
