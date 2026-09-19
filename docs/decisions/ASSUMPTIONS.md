@@ -1040,3 +1040,27 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 **Anker.** Tabelle `payments` mit dem `check` an `method`, `app.invoice_payment_state`, `app.invoice_paid_cents` und `app.payments_frozen` in `supabase/migrations/20260919160000_payments.sql`.
 
 **Änderungspfad.** Weiterer Zahlungsweg: der `check` an `payments.method` und die Beschriftungen in `src/features/billing/api.ts` · Aufwand `klein`. Bargeld annehmen: derselbe `check`, aber dann mit Kassenbuch, TSE und einer Frage an die Steuerberatung (B4) · Aufwand `groß`. Mahnstufen: eine eigene Aufgabe, ADR-009 nennt das Mahnwesen ausdrücklich als nicht entschieden.
+
+### ANN-079 — Storno ist ein eigenes Dokument; „storniert" wird abgeleitet, nicht gesetzt
+
+Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob die Praxis die Korrekturrechnung so findet
+
+**Annahme.** Eine ausgestellte Rechnung wird nie geändert. Storniert wird sie durch ein **eigenes Dokument** mit Pflichtgrund, das eine eigene Nummer aus **demselben lückenlosen Rechnungskreis** trägt und an denselben Empfänger geht. „Storniert" ist deshalb kein dritter Wert in `invoices.status`, sondern die Existenz dieser Zeile. Das Storno gibt die Leistungen wieder frei, ohne eine Rechnungszeile zu löschen (`released_at`), und die Korrekturrechnung merkt sich in `replaces_invoice_id`, welche Rechnung sie ersetzt. Eine Rechnung mit **stehender Zahlung** lässt sich nicht stornieren — erst die Zahlung stornieren, dann die Rechnung.
+
+**Begründung.** ADR-009 Punkt 9 verlangt Korrektur durch „nachvollziehbare Korrektur-/Stornodokumente und gegebenenfalls eine neue Rechnung"; Punkt 8 verlangt eindeutige, nie wiederverwendete Nummern. Ein Storno geht an den Empfänger und ist damit selbst ein ausgehendes Dokument — eine zweite Zählung daneben hätte eigene Lücken. Der abgeleitete Zustand folgt ANN-078: Was gerechnet wird, kann nicht abweichen. Die Freigabe statt des Löschens hält die Frage „welche Leistung stand auf welcher Rechnung" beantwortbar, ohne die Invariante gegen Doppelabrechnung (Punkt 4) aufzugeben. Die Kette über `replaces_invoice_id` beantwortet die offene Folgefrage des ADR zur mehrfachen Korrektur: Jede Korrektur zeigt auf genau ihre Vorgängerin. Unsicher: ob die Praxis die eigene Nummer für das Storno erwartet — die Steuerberatung (B4) kann es bestätigen.
+
+**Anker.** Tabelle `invoice_cancellations`, `public.cancel_invoice`, `public.create_correction_draft` und `app.invoice_items_frozen` in `supabase/migrations/20260919170000_invoice_cancellations.sql`.
+
+**Änderungspfad.** Eigener Nummernkreis fürs Storno: `cancel_invoice` und eine zweite Zeile je Organisation im Nummernkreis · Aufwand `mittel`. Teilstorno einzelner Zeilen: widerspricht ANN-077 und wäre eine eigene Aufgabe · Aufwand `groß`. Storno trotz Zahlung: die Prüfung in `cancel_invoice`, dann aber mit einem Weg für den Geldeingang · Aufwand `mittel`.
+
+### ANN-080 — Zahlungserinnerung ohne Stufen, mit festgeschriebenem Betrag
+
+Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob vierzehn Tage Frist taugen
+
+**Annahme.** Aus einer **überfälligen** Rechnung entsteht eine Zahlungserinnerung als Dokument: Tag, offener Betrag und eine neue Frist von **vierzehn Tagen**. Keine Stufen, keine Gebühren, keine Verzugszinsen, keine Automatik und **keine eigene Nummer** — sie verweist auf die Rechnungsnummer. Der offene Betrag wird im Dokument **festgeschrieben**; eine spätere Zahlung ändert das Blatt nicht mehr. Mehrere Erinnerungen sind erlaubt und gleichrangig, höchstens eine je Rechnung und Tag; an einer bezahlten oder stornierten Rechnung gibt es keine.
+
+**Begründung.** `IDEA-PRX-012` ist am 2026-09-06 genau so bestätigt worden, und ADR-009 führt das Mahnwesen ausdrücklich als nicht entschieden — Stufen und Gebühren sind eine Rechtsfolge mit eigenen Voraussetzungen und kommen mit ABR-005 nach Praxiserfahrung. Vierzehn Tage sind die im Schriftverkehr übliche Nachfrist und entsprechen dem Zahlungsziel der Rechnung; sie sind eine Angabe auf dem Blatt, keine Rechtsfolge. Der festgeschriebene Betrag folgt der Logik des Rechnungs-Snapshots (ADR-009 Punkt 10): Ein Beleg, dessen Zahl sich nachträglich ändert, ist keiner — der heutige Stand wird weiter an der Rechnung gerechnet (ANN-078). Unsicher: ob vierzehn Tage in der Praxis passen und ob die Erinnerung ohne Stufen reicht.
+
+**Anker.** Tabelle `invoice_payment_reminders` und die Konstante `c_frist_tage` in `public.create_payment_reminder` in `supabase/migrations/20260919180000_payment_reminders.sql`.
+
+**Änderungspfad.** Andere Frist: die Konstante `c_frist_tage` · Aufwand `klein`. Mahnstufen und Gebühren: eine eigene Aufgabe mit eigener Rechtsprüfung (ABR-005) · Aufwand `groß`. Erinnerung vor Fälligkeit: die Prüfung in `create_payment_reminder` · Aufwand `klein`.

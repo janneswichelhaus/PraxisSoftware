@@ -3051,3 +3051,117 @@ zusätzlich als `anna.beispiel@praxis.invalid` (therapist).
    bricht mitten im Wort um, kein Betrag ist abgeschnitten.
 3. Nur mit der Tastatur: Tabulator bis „Zahlung buchen", Formular ausfüllen,
    Eingabetaste bucht.
+
+## ABR-EPIC-002b — Die Rechnung ist ein Dokument, das bleibt
+
+Prüfschritte zu ABR-003b (Rechnungsblatt), ABR-003c (Storno und Korrektur)
+und ABR-003d (Zahlungserinnerung). Grundlage: ADR-009 Punkte 8 bis 11, B14
+(Weg 1, entschieden 2026-09-19), `IDEA-PRX-012`, **ANN-079** und **ANN-080**.
+
+**Diese Etappe bringt zwei Migrationen**
+(`20260919170000_invoice_cancellations.sql`,
+`20260919180000_payment_reminders.sql`) und **keinen geänderten Seed**:
+vorher `git pull origin main`, dann `pnpm dlx supabase@2.116.0 db reset`.
+
+Alle Schritte als `olivia.office@praxis.invalid` (office), Schritt 6
+zusätzlich als `anna.beispiel@praxis.invalid` (therapist). Ausgangslage: eine
+ausgestellte Rechnung (ABR-EPIC-002a, Schritt 4).
+
+### 1. Das Rechnungsblatt
+
+1. Die Rechnung öffnen, dann **„Rechnungsblatt öffnen"**. Erwartung: ein
+   Brief — schwarze Wortmarke oben, Absender mit Anschrift, Absenderzeile über
+   dem Anschriftenfeld, rechts Nummer, Rechnungsdatum, behandelte Person und
+   Steuernummer.
+2. Erwartung: Die Leistungen stehen mit Tag, Bezeichnung, Menge, Einzelpreis
+   und Betrag; darunter der Gesamtbetrag, die steuerliche Einordnung und —
+   bei Kleinunternehmerregelung — der Hinweis nach § 19 UStG.
+3. Erwartung: Die Behandlungsgrundlage steht als Bauart, Datum und
+   Verordner:in da — **ohne Diagnose**.
+4. Erwartung: Der Zahlungshinweis nennt Frist, Bankverbindung und die
+   Rechnungsnummer als Verwendungszweck.
+5. **„Rechnung drucken"**, im Druckdialog die Vorschau ansehen. Erwartung:
+   Kopfzeile, Navigation und alle Schaltflächen fehlen auf dem Papier; das
+   Blatt beginnt mit der Wortmarke.
+6. Erwartung: Unter dem Knopf steht, dass die Datei auf diesem Gerät entsteht
+   und die Anwendung sie **nicht ablegt** (B14 Weg 1; ADR-009 Punkt 11 ist
+   erst mit dem serverseitigen Weg erfüllt).
+7. Einen **Entwurf** öffnen und sein Blatt ansehen. Erwartung: ein
+   umrandeter Vermerk „Entwurf — keine Rechnung", der **mitgedruckt** wird.
+
+### 2. Storno mit Grund
+
+1. An der ausgestellten Rechnung **„Rechnung stornieren"**, ohne Grund
+   bestätigen. Erwartung: Abgewiesen, das Feld verlangt einen Grund.
+2. Mit Grund bestätigen. Erwartung: Die Seite nennt Stornonummer, Tag und
+   Grund; die Stornonummer ist die **nächste Nummer** des Rechnungskreises.
+3. Erwartung: Der Zustand der Rechnung steht unverändert auf **Ausgestellt**,
+   daneben „Storniert" (ANN-079). Es gibt kein zweites „Stornieren".
+4. **Abrechnung** öffnen. Erwartung: Die Rechnung steht in **keinem offenen
+   Posten** mehr und trägt kein „Überfällig"; in der Liste steht neben
+   „Ausgestellt" das Kennzeichen „Storniert" und kein Zahlungsstand.
+5. **„Stornodokument öffnen"**. Erwartung: ein eigenes Blatt mit Stornonummer,
+   Datum, der aufgehobenen Rechnung samt Betrag und dem Grund.
+6. Ist zu der Rechnung eine Zahlung gebucht, das Storno versuchen. Erwartung:
+   Abgewiesen mit dem Hinweis, erst die Zahlung zu stornieren.
+
+### 3. Die Korrekturrechnung
+
+1. An der stornierten Rechnung **„Korrekturrechnung erstellen"**. Erwartung:
+   Ein Entwurf entsteht und öffnet sich; oben steht „Korrekturrechnung zur
+   stornierten Rechnung …" mit einem Weg dorthin.
+2. Erwartung: Der Entwurf enthält **dieselben Leistungen** wie die stornierte
+   Rechnung — sie sind mit dem Storno wieder frei geworden.
+3. **Abrechnung** öffnen. Erwartung: Unter „Abzurechnen" steht der Monat
+   wieder; die Zeile führt mit **„Zum Entwurf"** direkt zum Entwurf (BEF-018).
+4. Den Entwurf ausstellen und sein Blatt öffnen. Erwartung: Auf dem Papier
+   steht „Korrekturrechnung zur stornierten Rechnung …".
+5. Zurück zur stornierten Rechnung. Erwartung: Sie führt jetzt zur
+   Korrekturrechnung; ein zweites „Korrekturrechnung erstellen" gibt es nicht.
+
+### 4. Die Zahlungserinnerung
+
+1. An einer ausgestellten, **noch nicht fälligen** Rechnung den Abschnitt
+   „Zahlungserinnerung" ansehen. Erwartung: Der Knopf ist deaktiviert, und
+   der Text nennt den Grund samt Datum der Fälligkeit.
+2. An einer **überfälligen** Rechnung **„Zahlungserinnerung ausstellen"**.
+   Erwartung: Die Erinnerung erscheint in der Liste mit Tag, Frist und
+   offenem Betrag.
+3. **„Blatt öffnen"**. Erwartung: ein Brief mit der Überschrift
+   „Zahlungserinnerung" — **keine** „1. Mahnung", keine Gebühr, keine Zinsen.
+   Er nennt Rechnungsnummer, altes Fälligkeitsdatum, offenen Betrag, die neue
+   Frist (14 Tage) und den Satz zur gekreuzten Zahlung.
+4. Eine Teilzahlung buchen und das Blatt erneut öffnen. Erwartung: Der Betrag
+   auf dem Blatt ist **unverändert** — er gilt für den Tag der Ausstellung
+   (ANN-080); der aktuelle Stand steht an der Rechnung.
+5. Am selben Tag eine zweite Erinnerung versuchen. Erwartung: Abgewiesen mit
+   dem Hinweis, dass für heute bereits eine steht.
+6. Erwartung: An einer stornierten Rechnung gibt es den Abschnitt
+   „Zahlungserinnerung" **nicht**.
+
+### 5. Was die Oberfläche nicht anbietet
+
+1. Erwartung: An einer ausgestellten Rechnung gibt es **kein** „Bearbeiten"
+   und **kein** „Löschen" — nur Storno (ADR-009 Punkt 9).
+2. Erwartung: Nirgends stehen Mahnstufen, Mahngebühren oder Verzugszinsen
+   (ABR-005, nach Praxiserfahrung).
+3. Erwartung: Weder Rechnungsblatt noch Storno noch Erinnerung bieten einen
+   Versandweg aus der Anwendung an (ADR-017 Punkt 30).
+
+### 6. Wer darf was
+
+1. Als **therapist**: Erwartung: Der Bereich Abrechnung fehlt in der
+   Navigation; `/abrechnung/rechnungen/<id>` direkt aufzurufen zeigt keine
+   Rechnung.
+2. Als **office**: Erwartung: Stornieren, Korrektur und Erinnerung sind
+   möglich (ANN-076).
+
+### 7. Am Handy (~375 px)
+
+1. Fenster auf ~375 px ziehen und Rechnungsblatt, Stornodokument und
+   Erinnerung ansehen.
+2. Erwartung: Die Seite läuft **nicht** waagerecht aus dem Bild. Die
+   Leistungstabelle rollt in ihrem eigenen Rahmen; auf Papier steht sie
+   vollständig.
+3. Nur mit der Tastatur: Tabulator bis „Rechnung stornieren", Grund
+   eingeben, Eingabetaste bestätigt.

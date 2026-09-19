@@ -585,7 +585,7 @@ oder an den Anfang des nächsten Loops, nicht in einen Feature-Loop.
 | Datum   | 2026-09-19                                                                                          |
 | Bereich | Abrechnung: `/abrechnung`, Abschnitt „Abzurechnen"                                                   |
 | Quelle  | Loop ABR-EPIC-002a, Sichtprüfung bei 375 und 1280 px                                                 |
-| Status  | offen                                                                                               |
+| Status  | erledigt in ABR-EPIC-002b (ABR-003c, 2026-09-19)                                                    |
 | Berührt | `list_invoice_candidates` (liefert `has_draft`, aber keine Kennung), `InvoicesPage.tsx`             |
 
 **Beobachtung.** Sind zu einer Person und einem Monat später weitere
@@ -601,3 +601,8 @@ jetzt mit den nachgereichten Leistungen?".
 **Richtung.** `list_invoice_candidates` gibt die Kennung des Entwurfs mit
 zurück, die Zeile verlinkt darauf. Kleiner Eingriff, gehört in den Loop, der
 den Bereich das nächste Mal anfasst (ABR-EPIC-002b).
+
+**So gebaut (2026-09-19).** Die Funktion bündelt jetzt erst und sucht den
+Entwurf danach in einem eigenen Schritt; `has_draft` und `draft_id` kommen
+damit aus derselben Abfrage und können nicht auseinanderlaufen. Die Zeile
+trägt den Weg „Zum Entwurf".
