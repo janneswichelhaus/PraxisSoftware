@@ -577,3 +577,27 @@ Tabelle vergleicht, findet eine Abweichung und weiß nicht, welche Seite stimmt.
 **Richtung.** Vier Posten mit Gewicht ergänzen. Das ist eine Roadmap-Frage
 (Gewichte sind Planung, nicht Code) und gehört deshalb in eine Docs-Session
 oder an den Anfang des nächsten Loops, nicht in einen Feature-Loop.
+
+### BEF-018 — Ein Monat mit Entwurf führt nicht zu seinem Entwurf
+
+|         |                                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-19                                                                                          |
+| Bereich | Abrechnung: `/abrechnung`, Abschnitt „Abzurechnen"                                                   |
+| Quelle  | Loop ABR-EPIC-002a, Sichtprüfung bei 375 und 1280 px                                                 |
+| Status  | offen                                                                                               |
+| Berührt | `list_invoice_candidates` (liefert `has_draft`, aber keine Kennung), `InvoicesPage.tsx`             |
+
+**Beobachtung.** Sind zu einer Person und einem Monat später weitere
+Leistungen erfasst worden, während schon ein Entwurf steht, sagt die Zeile das
+richtig — aber sie führt nicht zu diesem Entwurf. Wer ihn öffnen will, sucht
+ihn in der Liste darunter.
+
+**Warum das zählt.** Es ist der einzige Fall, in dem die Seite auf etwas
+verweist, das sie nicht anbietet. Der Weg ist kurz, aber er ist ein Suchen
+statt eines Klicks — und genau an dieser Stelle steht die Frage „und was ist
+jetzt mit den nachgereichten Leistungen?".
+
+**Richtung.** `list_invoice_candidates` gibt die Kennung des Entwurfs mit
+zurück, die Zeile verlinkt darauf. Kleiner Eingriff, gehört in den Loop, der
+den Bereich das nächste Mal anfasst (ABR-EPIC-002b).

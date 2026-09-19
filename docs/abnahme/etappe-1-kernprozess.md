@@ -2843,3 +2843,121 @@ Schritte 1 bis 3 als `jannes.test@praxis.invalid` (owner), Schritt 4 als
 3. Nur mit der Tastatur: Tabulator bis zu den Kästchen, Leertaste setzt und
    löst den Haken, Eingabetaste erfasst.
 4. Denselben Ablauf auf Tablet und Desktop wiederholen.
+
+## ABR-EPIC-002a — Rechnung aus Leistungen, mit dem richtigen Empfänger
+
+Prüfschritte zu ABR-000, ABR-003a und ABR-003. Grundlage: ADR-009 (Punkte 2,
+7 bis 11 und 14), ANN-074 (Praxis-Stammdaten und Umsatzsteuer), ANN-075
+(Rechnungsnummer), ANN-076 (Rechnungsempfänger) und ANN-077 (Sammelrechnung
+und Snapshot).
+
+**Diese Etappe bringt drei Migrationen**
+(`20260919130000_practice_billing_profile.sql`,
+`20260919140000_invoice_recipients.sql`, `20260919150000_invoices.sql`) **und
+einen geänderten Seed**: vorher `git pull origin main`, dann
+`pnpm dlx supabase@2.116.0 db reset`. Ohne den Reset fehlen Praxis-Stammdaten
+und Rechnungsempfänger, und `/abrechnung` meldet einen Ladefehler.
+
+Die Stammdaten im Seed sind **erfunden** — Anschrift, Steuernummer und IBAN
+gehören zu niemandem, und `small_business = false` ist eine Setzung für die
+Demonstration, damit die Steueraufteilung überhaupt sichtbar wird. **Welcher
+Status wirklich gilt, ist die Frage aus G13** und vor dem ersten echten
+Rechnungslauf zu beantworten.
+
+Schritte 1 bis 5 als `olivia.office@praxis.invalid` (office), Schritt 6 als
+`jannes.test@praxis.invalid` (owner), Schritt 7 zusätzlich als
+`anna.beispiel@praxis.invalid` (therapist).
+
+### 1. Vorbereitung: eine Leistung, die abzurechnen ist
+
+1. **Abrechnung → Leistungen**. Zu einem Termin unter „Zu erfassen"
+   Leistungen erfassen (siehe ABR-EPIC-001, Schritt 3).
+2. **Abrechnung → Rechnungen**. Erwartung: Unter „Abzurechnen" steht eine
+   Zeile mit Name, Monat, Anzahl und Summe — und eine Schaltfläche
+   „Entwurf anlegen".
+
+### 2. Der Entwurf nimmt den ganzen Monat
+
+1. „Entwurf anlegen". Erwartung: Die Seite wechselt auf den Entwurf. Er heißt
+   **Rechnungsentwurf**, trägt **keine Nummer**, und darunter steht, dass die
+   Nummer beim Ausstellen entsteht.
+2. Erwartung: Unter „Leistungen" stehen **alle** Leistungen dieses Monats mit
+   Datum, Menge, Bezeichnung und Betrag, darunter der Gesamtbetrag und je
+   Steuerkennzeichen eine Zeile. Bei einer steuerpflichtigen Position (etwa
+   „Trainingseinheit") steht die **darin enthaltene Umsatzsteuer**.
+3. Erwartung: Unter „Behandlungsgrundlage" stehen Bauart, Ausstellungsdatum
+   und Verordner:in — und **keine Diagnose**. Das ist Absicht: Die Rechnung
+   geht regelmäßig an Dritte.
+4. Zurück auf **Abrechnung → Rechnungen**. Erwartung: Die Zeile unter
+   „Abzurechnen" ist verschwunden, der Entwurf steht unten mit **Ohne
+   Nummer**.
+
+### 3. Der Empfänger ist nicht die Patientin
+
+1. Im Entwurf einer Patientin **ohne** hinterlegten Empfänger: Erwartung: Oben
+   steht ihr eigener Name, und die Auswahl „Rechnung geht an" steht auf
+   **Patient:in selbst**.
+2. „Empfänger hinterlegen", Art **Beihilfestelle**, Name und Anschrift
+   eintragen, Aktenzeichen setzen, speichern. Dann in der Auswahl die
+   Beihilfestelle wählen. Erwartung: Oben stehen jetzt Name, Anschrift und
+   Aktenzeichen der Stelle — und darunter weiter „Behandelt: …" mit der
+   Patientin.
+3. **Petra Platzhalter** hat im Seed eine Betreuung als Vorgabe. Einen
+   Entwurf für sie anlegen. Erwartung: Der Empfänger ist ohne Zutun das
+   **Betreuungsbüro**.
+
+### 4. Ausstellen ist endgültig
+
+1. Im Entwurf „Rechnung ausstellen". Erwartung: Die Seite trägt jetzt eine
+   Nummer der Form **RG-2026-0001**, ein Ausstellungsdatum und ein
+   Fälligkeitsdatum 14 Tage später.
+2. Erwartung: Es gibt **keine** Schaltfläche mehr zum Ausstellen, keine zum
+   Verwerfen und keine Empfängerauswahl. Stattdessen steht da, dass eine
+   Korrektur über Storno und Neuausstellung läuft.
+3. **Abrechnung → Leistungen**. Erwartung: Die Leistungen dieses Termins
+   tragen „Bereits abgerechnet"; „Erfassung zurücknehmen" gibt es nicht mehr.
+4. Eine zweite Rechnung ausstellen. Erwartung: Ihre Nummer ist
+   **RG-2026-0002** — lückenlos, ohne Sprung.
+
+### 5. Der Entwurf lässt sich folgenlos verwerfen
+
+1. Einen neuen Entwurf anlegen und „Entwurf verwerfen" wählen. Erwartung: Die
+   Rückfrage sagt, dass keine Nummer vergeben wurde und deshalb keine Lücke
+   entsteht.
+2. Bestätigen. Erwartung: Die Leistungen stehen wieder unter „Abzurechnen",
+   und die Nummer der nächsten Rechnung ist trotzdem **RG-2026-0003** — der
+   Entwurf hat keine verbraucht.
+
+### 6. Die Praxis-Stammdaten
+
+1. Als **owner**: **Abrechnung → Praxisstammdaten**. Erwartung: Die Angaben
+   aus dem Seed stehen im Formular; der umsatzsteuerliche Status steht auf
+   **Regelbesteuerung**.
+2. Den Namen der Praxis ändern und speichern. Erwartung: Ein Hinweis sagt,
+   dass ausgestellte Rechnungen unberührt bleiben.
+3. Die zuvor ausgestellte Rechnung öffnen. Erwartung: Unter „Absender" steht
+   weiter der **alte** Name. Das ist der Snapshot (ADR-009 Punkt 10).
+4. Den Status auf **Kleinunternehmerin** stellen, speichern und einen **neuen**
+   Entwurf mit einer steuerpflichtigen Position anlegen. Erwartung: Keine
+   Umsatzsteuer mehr ausgewiesen, stattdessen der Hinweis nach § 19 UStG.
+   Danach zurückstellen.
+
+### 7. Wer darf was
+
+1. Als **office**: **Abrechnung → Praxisstammdaten**. Erwartung: Die Angaben
+   sind als Auskunft lesbar; es gibt **kein** Formular und keine Schaltfläche
+   zum Speichern.
+2. Als **therapist**: Erwartung: In der Navigation gibt es den Bereich
+   **Abrechnung** gar nicht. `/abrechnung` direkt aufzurufen zeigt keine
+   Rechnungen.
+
+### 8. Am Handy (~375 px)
+
+1. Fenster auf ~375 px ziehen, **Rechnungen**, einen Entwurf und eine
+   ausgestellte Rechnung sowie **Praxisstammdaten** ansehen.
+2. Erwartung: Nichts läuft waagerecht aus dem Bild, kein Betrag und keine
+   Bezeichnung ist abgeschnitten, die Steuerzeilen unter dem Gesamtbetrag
+   sind vollständig lesbar.
+3. Nur mit der Tastatur: Tabulator durch das Formular der Stammdaten, Auswahl
+   des Empfängers mit den Pfeiltasten, Eingabetaste stellt aus.
+4. Denselben Ablauf auf Tablet und Desktop wiederholen.

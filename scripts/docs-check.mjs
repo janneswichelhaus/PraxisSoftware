@@ -33,12 +33,15 @@ import { dirname, join, normalize } from 'node:path';
  * wurde am 2026-09-18 mit CAL-EPIC-004b von 800 auf 1000 angehoben, weil
  * ANN-059 und ANN-060 sonst nur durch Kuerzen bestehender Eintraege Platz
  * gefunden haetten - und das Register sagt selbst, dass kein Eintrag
- * verschwindet (docs/STATUS.md nannte beide Wege).
+ * verschwindet (docs/STATUS.md nannte beide Wege). Am 2026-09-19 mit
+ * ABR-EPIC-002a aus demselben Grund von 1000 auf 1050: Die vier Annahmen
+ * ANN-074 bis ANN-077 brauchten 48 Zeilen, frei waren 18. Die drei anderen
+ * Grenzen bleiben unveraendert - sie sind die, die Lesbarkeit schuetzen.
  */
 const OBERGRENZEN = {
   'CLAUDE.md': 150,
   'docs/STATUS.md': 60,
-  'docs/decisions/ASSUMPTIONS.md': 1000,
+  'docs/decisions/ASSUMPTIONS.md': 1050,
   'docs/decisions/OPEN_DECISIONS.md': 400,
 };
 
