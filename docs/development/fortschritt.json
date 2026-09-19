@@ -48,7 +48,7 @@
         { "id": "fix-epic-004", "name": "FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016)", "gewicht": 1, "status": "fertig" },
         { "id": "ver-epic-002", "name": "VER-EPIC-002 Verordnung im Office-Alltag", "gewicht": 2, "status": "fertig" },
         { "id": "abr-epic-001", "name": "ABR-EPIC-001 Leistungen und Katalog", "gewicht": 3, "status": "fertig" },
-        { "id": "abr-epic-002a", "name": "ABR-EPIC-002a Rechnung entsteht", "gewicht": 2, "status": "offen" },
+        { "id": "abr-epic-002a", "name": "ABR-EPIC-002a Rechnung entsteht", "gewicht": 2, "status": "fertig" },
         { "id": "abr-epic-002b", "name": "ABR-EPIC-002b Rechnung als Dokument", "gewicht": 2, "status": "offen" },
         { "id": "abr-epic-003", "name": "ABR-EPIC-003 Zahlungen und offene Posten", "gewicht": 1, "status": "offen" },
         { "id": "pat-006", "name": "PAT-006 Datenschutzinformation und Einwilligungen (G8)", "gewicht": 1, "status": "offen" },

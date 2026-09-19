@@ -279,9 +279,10 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       pfade: ['/abrechnung'],
       icon: symbole.abrechnung,
       unterpunkte: [
-        { to: '/abrechnung', label: 'Rechnungen', vorschau: true },
+        { to: '/abrechnung', label: 'Rechnungen' },
         { to: '/abrechnung/leistungen', label: 'Leistungen' },
         { to: '/abrechnung/katalog', label: 'Katalog' },
+        { to: '/abrechnung/stammdaten', label: 'Praxisstammdaten' },
         { to: '/abrechnung/zahlungen', label: 'Zahlungen', vorschau: true },
       ],
     });

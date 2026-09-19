@@ -149,6 +149,334 @@ export async function deleteKatalogVersion(versionId: string): Promise<void> {
 }
 
 // -----------------------------------------------------------------------------
+// Praxis-Stammdaten für Rechnungen (ABR-000)
+// -----------------------------------------------------------------------------
+
+export const praxisStammdatenSchema = z.object({
+  legal_name: z.string(),
+  street: z.string(),
+  house_number: z.string().nullable(),
+  postal_code: z.string(),
+  city: z.string(),
+  phone: z.string().nullable(),
+  email: z.string().nullable(),
+  tax_number: z.string(),
+  vat_id: z.string().nullable(),
+  small_business: z.boolean(),
+  bank_name: z.string().nullable(),
+  account_holder: z.string().nullable(),
+  iban: z.string(),
+  bic: z.string().nullable(),
+  invoice_number_prefix: z.string(),
+  payment_term_days: z.number(),
+});
+
+export type PraxisStammdaten = z.infer<typeof praxisStammdatenSchema>;
+
+/** `null` heißt: noch nie erfasst — nicht „nicht lesbar". */
+export async function fetchPraxisStammdaten(): Promise<PraxisStammdaten | null> {
+  const { data, error } = await getSupabase()
+    .from('practice_billing_profiles')
+    .select(
+      'legal_name, street, house_number, postal_code, city, phone, email, tax_number, vat_id, small_business, bank_name, account_holder, iban, bic, invoice_number_prefix, payment_term_days',
+    )
+    .maybeSingle();
+
+  if (error) throw new Error('Die Praxis-Stammdaten konnten nicht geladen werden.');
+  return data === null ? null : praxisStammdatenSchema.parse(data);
+}
+
+export async function savePraxisStammdaten(eingabe: PraxisStammdaten): Promise<void> {
+  const { error } = await getSupabase().rpc('save_practice_billing_profile', {
+    p_legal_name: eingabe.legal_name,
+    p_street: eingabe.street,
+    p_house_number: eingabe.house_number,
+    p_postal_code: eingabe.postal_code,
+    p_city: eingabe.city,
+    p_phone: eingabe.phone,
+    p_email: eingabe.email,
+    p_tax_number: eingabe.tax_number,
+    p_vat_id: eingabe.vat_id,
+    p_small_business: eingabe.small_business,
+    p_bank_name: eingabe.bank_name,
+    p_account_holder: eingabe.account_holder,
+    p_iban: eingabe.iban,
+    p_bic: eingabe.bic,
+    p_invoice_number_prefix: eingabe.invoice_number_prefix,
+    p_payment_term_days: eingabe.payment_term_days,
+  });
+
+  if (error) throw new Error('Die Praxis-Stammdaten konnten nicht gespeichert werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Rechnungsempfänger (ABR-003a)
+// -----------------------------------------------------------------------------
+
+export const empfaengerartLabels: Record<string, string> = {
+  self: 'Patient:in selbst',
+  legal_representative: 'Sorgeberechtigte',
+  guardian: 'Betreuung',
+  aid_authority: 'Beihilfestelle',
+  private_insurer: 'Private Krankenversicherung',
+  other: 'Sonstiger Kostenträger',
+};
+
+const empfaengerSchema = z.object({
+  id: z.string(),
+  recipient_kind: z.string(),
+  name: z.string(),
+  street: z.string().nullable(),
+  house_number: z.string().nullable(),
+  postal_code: z.string().nullable(),
+  city: z.string().nullable(),
+  reference: z.string().nullable(),
+  is_default: z.boolean(),
+});
+
+export type Empfaenger = z.infer<typeof empfaengerSchema>;
+
+export async function fetchEmpfaenger(patientId: string): Promise<Empfaenger[]> {
+  const { data, error } = (await getSupabase().rpc('list_invoice_recipients', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Rechnungsempfänger konnten nicht geladen werden.');
+  return z.array(empfaengerSchema).parse(data ?? []);
+}
+
+export async function saveEmpfaenger(eingabe: {
+  id: string | null;
+  patientId: string;
+  recipient_kind: string;
+  name: string;
+  street: string | null;
+  house_number: string | null;
+  postal_code: string | null;
+  city: string | null;
+  reference: string | null;
+  is_default: boolean;
+}): Promise<void> {
+  const { error } = await getSupabase().rpc('save_invoice_recipient', {
+    p_id: eingabe.id,
+    p_patient_id: eingabe.patientId,
+    p_recipient_kind: eingabe.recipient_kind,
+    p_name: eingabe.name,
+    p_street: eingabe.street,
+    p_house_number: eingabe.house_number,
+    p_postal_code: eingabe.postal_code,
+    p_city: eingabe.city,
+    p_reference: eingabe.reference,
+    p_is_default: eingabe.is_default,
+  });
+
+  if (error) throw new Error('Der Rechnungsempfänger konnte nicht gespeichert werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Rechnungen (ABR-003)
+// -----------------------------------------------------------------------------
+
+const kandidatSchema = z.object({
+  patient_id: z.string(),
+  patient_name: z.string(),
+  period_month: z.string(),
+  service_count: z.number(),
+  total_cents: z.number(),
+  currency: z.string(),
+  has_draft: z.boolean(),
+});
+
+export type Kandidat = z.infer<typeof kandidatSchema>;
+
+export async function fetchKandidaten(): Promise<Kandidat[]> {
+  const { data, error } = (await getSupabase().rpc('list_invoice_candidates', {
+    p_limit: 100,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die abzurechnenden Leistungen konnten nicht geladen werden.');
+  return z.array(kandidatSchema).parse(data ?? []);
+}
+
+const rechnungSchema = z.object({
+  id: z.string(),
+  status: z.enum(['draft', 'issued']),
+  invoice_number: z.string().nullable(),
+  period_month: z.string(),
+  issued_on: z.string().nullable(),
+  due_on: z.string().nullable(),
+  patient_id: z.string(),
+  patient_name: z.string(),
+  recipient_name: z.string(),
+  recipient_kind: z.string(),
+  total_cents: z.number(),
+  currency: z.string(),
+  item_count: z.number(),
+});
+
+export type Rechnung = z.infer<typeof rechnungSchema>;
+
+export async function fetchRechnungen(): Promise<Rechnung[]> {
+  const { data, error } = (await getSupabase().rpc('list_invoices', { p_limit: 100 })) as {
+    data: unknown;
+    error: unknown;
+  };
+
+  if (error) throw new Error('Die Rechnungen konnten nicht geladen werden.');
+  return z.array(rechnungSchema).parse(data ?? []);
+}
+
+/**
+ * Das Rechnungsdokument, wie der Server es liefert.
+ *
+ * Ein Entwurf wird aus den heutigen Stammdaten gebaut, eine ausgestellte
+ * Rechnung kommt aus ihrem Snapshot (ADR-009 Punkt 10). Dieselbe Form für
+ * beides — die Seite kennt deshalb nur eine Darstellung.
+ */
+const dokumentSchema = z.object({
+  schema_version: z.number(),
+  period_month: z.string(),
+  currency: z.string(),
+  invoice_number: z.string().optional(),
+  issued_on: z.string().optional(),
+  due_on: z.string().optional(),
+  issuer: z.object({
+    legal_name: z.string(),
+    street: z.string(),
+    house_number: z.string().nullable(),
+    postal_code: z.string(),
+    city: z.string(),
+    phone: z.string().nullable(),
+    email: z.string().nullable(),
+    tax_number: z.string(),
+    vat_id: z.string().nullable(),
+    small_business: z.boolean(),
+    bank_name: z.string().nullable(),
+    account_holder: z.string().nullable(),
+    iban: z.string(),
+    bic: z.string().nullable(),
+    payment_term_days: z.number(),
+  }),
+  recipient: z.object({
+    kind: z.string(),
+    name: z.string(),
+    street: z.string().nullable(),
+    house_number: z.string().nullable(),
+    postal_code: z.string().nullable(),
+    city: z.string().nullable(),
+    reference: z.string().nullable(),
+  }),
+  patient: z.object({
+    name: z.string(),
+    date_of_birth: z.string().nullable(),
+  }),
+  treatment_bases: z.array(
+    z.object({
+      kind: z.string(),
+      issued_on: z.string(),
+      prescriber: z.string().nullable(),
+    }),
+  ),
+  items: z.array(
+    z.object({
+      performed_on: z.string(),
+      code: z.string(),
+      label: z.string(),
+      item_kind: z.enum(['treatment', 'absence_fee']),
+      quantity: z.number(),
+      unit_price_cents: z.number(),
+      line_total_cents: z.number(),
+      currency: z.string(),
+      tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
+      tax_rate_permille: z.number(),
+    }),
+  ),
+  tax_groups: z.array(
+    z.object({
+      tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
+      tax_rate_permille: z.number(),
+      gross_cents: z.number(),
+      tax_cents: z.number(),
+      net_cents: z.number(),
+    }),
+  ),
+  totals: z.object({
+    total_cents: z.number(),
+    tax_total_cents: z.number(),
+  }),
+});
+
+const rechnungsansichtSchema = z.object({
+  id: z.string(),
+  status: z.enum(['draft', 'issued']),
+  patient_id: z.string(),
+  recipient_id: z.string().nullable(),
+  invoice_number: z.string().nullable(),
+  issued_on: z.string().nullable(),
+  due_on: z.string().nullable(),
+  document: dokumentSchema,
+});
+
+export type Rechnungsansicht = z.infer<typeof rechnungsansichtSchema>;
+export type Rechnungsdokument = z.infer<typeof dokumentSchema>;
+
+export class KeineStammdaten extends Error {}
+
+export async function fetchRechnung(invoiceId: string): Promise<Rechnungsansicht> {
+  const { data, error } = (await getSupabase().rpc('get_invoice', {
+    p_invoice_id: invoiceId,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  // Der eine Fehler, der eine eigene Antwort verdient: Ohne Absender lässt
+  // sich kein Rechnungsbild bauen. Das ist keine Störung, sondern eine
+  // fehlende Angabe — und die Seite sagt, welche.
+  if (error?.message?.includes('practice billing profile missing')) throw new KeineStammdaten();
+  if (error) throw new Error('Die Rechnung konnte nicht geladen werden.');
+  return rechnungsansichtSchema.parse(data);
+}
+
+export async function createEntwurf(patientId: string, monat: string): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('create_invoice_draft', {
+    p_patient_id: patientId,
+    p_period_month: monat,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
+  const id = z.string().uuid().safeParse(data);
+  if (!id.success) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
+  return id.data;
+}
+
+export async function deleteEntwurf(invoiceId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('delete_invoice_draft', { p_invoice_id: invoiceId });
+  if (error) throw new Error('Der Entwurf konnte nicht verworfen werden.');
+}
+
+export async function setzeEmpfaenger(
+  invoiceId: string,
+  recipientId: string | null,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('set_invoice_recipient', {
+    p_invoice_id: invoiceId,
+    p_recipient_id: recipientId,
+  });
+
+  if (error) throw new Error('Der Empfänger konnte nicht gesetzt werden.');
+}
+
+export async function stelleRechnungAus(invoiceId: string): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('issue_invoice', {
+    p_invoice_id: invoiceId,
+  })) as { data: unknown; error: { message?: string } | null };
+
+  if (error?.message?.includes('practice billing profile missing')) throw new KeineStammdaten();
+  if (error) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
+  const nummer = z.string().safeParse(data);
+  if (!nummer.success) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
+  return nummer.data;
+}
+
+// -----------------------------------------------------------------------------
 // Leistungen
 // -----------------------------------------------------------------------------
 

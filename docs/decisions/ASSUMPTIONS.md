@@ -980,3 +980,51 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 **Anker.** Spalte `billable_services.treatment_base_item_id` sowie die beiden `update public.treatment_base_items`-Blöcke in `record_billable_services` und `delete_billable_services` in `supabase/migrations/20260919110000_billable_services.sql`.
 
 **Änderungspfad.** Fortschreibung zurücknehmen: die beiden Blöcke streichen, die Spalte bleibt als Nachweis · Aufwand `klein`. Über das Kontingent hinaus abrechnen zulassen: die Constraint `treatment_base_items_used_within_prescribed` · Aufwand `klein` — widerspräche ADR-020 Punkt 5.
+
+### ANN-074 — Die Praxis-Stammdaten sind Pflichtangaben, der Umsatzsteuerstatus wird nicht geraten
+
+Recht · offen · 2026-09-19 · — · — · Wiedervorlage: mit der Antwort aus G13 (Steuerberatung), spätestens vor dem ersten echten Rechnungslauf
+
+**Annahme.** Eine Praxis hat genau einen Rechnungsabsender, und ohne Name, Anschrift, Steuernummer und IBAN entsteht keine Zeile — diese vier sind Pflichtspalten. Der umsatzsteuerliche Status (`small_business`, Kleinunternehmerregelung nach § 19 UStG) hat **keinen Vorgabewert**; die Praxis muss ihn setzen, bevor sie eine Rechnung ausstellt. Der Preis einer Katalogposition ist der **Endpreis**: Eine enthaltene Umsatzsteuer wird je Steuersatz herausgerechnet und getrennt ausgewiesen, unter der Kleinunternehmerregelung entfällt der Ausweis und die Rechnung trägt den Hinweis. Das Zahlungsziel steht bei den Stammdaten (Vorgabe 14 Tage) und bestimmt das Fälligkeitsdatum.
+
+**Begründung.** ADR-009 Punkt 10 verlangt beim Ausstellen einen Snapshot über „alle rechnungsrelevanten Stammdaten"; ohne Absender gibt es nichts zu snapshotten, und eine halb gefüllte Zeile verschöbe die Prüfung in den Schreibpfad. Der Status ist der eine Wert, den die Software nicht schätzen darf: Er steht auf jeder Rechnung, und beide Möglichkeiten kommen in einer Physiotherapiepraxis vor — Heilbehandlungen sind nach § 4 Nr. 14 UStG ohnehin befreit, Prävention und Training nicht. G13 beantwortet ihn mit der Steuerberatung. Der Endpreis ist der Betrag, den die Praxis nennt; aus ihm die enthaltene Steuer zu rechnen ist für beide Status richtig, während ein Nettopreis unter der Kleinunternehmerregelung eine Zahl wäre, die auf keiner Rechnung steht. Unsicher: ob die Regelbesteuerung eine Netto-Spalte je Zeile braucht — heute steht sie nur je Steuergruppe.
+
+**Anker.** Tabelle `practice_billing_profiles` und `public.save_practice_billing_profile` in `supabase/migrations/20260919130000_practice_billing_profile.sql`; die Steuergruppen in `app.build_invoice_document` in `supabase/migrations/20260919150000_invoices.sql`; die Auswahl ohne Vorbelegung in `src/features/billing/PracticeProfilePage.tsx`.
+
+**Änderungspfad.** Netto je Zeile ausweisen: die Zeilen in `app.build_invoice_document` um Netto und Steuer ergänzen, der Snapshot trägt sie ab dann · Aufwand `klein` — ältere Rechnungen behalten ihre Form, das ist ihr Zweck. Preis als Nettobetrag führen: `unit_price_cents` bekäme eine zweite Bedeutung, also besser eine neue Katalogversion mit anderer Auslegung · Aufwand `groß`.
+
+### ANN-075 — Die Rechnungsnummer ist lückenlos je Kalenderjahr und entsteht beim Ausstellen
+
+Recht · offen · 2026-09-19 · — · — · Wiedervorlage: mit der Antwort aus G13 (Format und Nummernkreis)
+
+**Annahme.** Eine Rechnungsnummer hat die Form `Kürzel-Jahr-vierstellig`, etwa `RG-2026-0001`. Das Kürzel wählt die Praxis in den Stammdaten, das Jahr ist das Kalenderjahr der Ausstellung in der Zeitzone der Praxis, die laufende Zahl beginnt in jedem Jahr wieder bei 1 und wird **lückenlos** vergeben. Vergeben wird sie erst beim Ausstellen, aus einer eigenen Zeile je Organisation und Jahr; unter gleichzeitigen Zugriffen bekommt genau eine Ausstellung die nächste Nummer. Ein Entwurf trägt keine Nummer und lässt sich folgenlos verwerfen.
+
+**Begründung.** ADR-009 Punkt 8 verlangt Vergabe erst bei Ausstellung, Eindeutigkeit und Nichtwiederverwendung; „wie wird ein Nummernkreis geführt — pro Organisation, pro Jahr, fortlaufend?" steht dort als offene Folgefrage. Das Kalenderjahr ist die Antwort, die zur steuerlichen Aufbewahrung passt, die ebenfalls am Jahresende ansetzt. Eine Datenbanksequenz wäre der naheliegende Weg und der falsche: Sie ist transaktionsfrei und ließe bei jedem fehlgeschlagenen Ausstellungsvorgang eine Lücke — und eine Lücke ist bei Rechnungsnummern genau das, was eine Betriebsprüfung erklärt haben will. Die Zeile mit `for update` kostet dafür Nebenläufigkeit, die eine Praxis dieser Größe nicht braucht. Unsicher: ob die Steuerberatung ein anderes Format erwartet; es steckt an einer Stelle.
+
+**Anker.** Tabelle `invoice_number_series` und `app.next_invoice_number` in `supabase/migrations/20260919150000_invoices.sql`.
+
+**Änderungspfad.** Anderes Format: die `return`-Zeile in `app.next_invoice_number` · Aufwand `klein`. Durchlaufende Nummer über Jahresgrenzen: dieselbe Funktion ohne Jahresanteil, die Tabelle trägt das Jahr weiter · Aufwand `klein`. Bereits vergebene Nummern sind davon nie betroffen — sie stehen im Snapshot.
+
+### ANN-076 — Der Rechnungsempfänger ist eine eigene Zeile, die Vorgabe ist die Patientin selbst
+
+Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob Beihilfe und Versicherung je geteilt abgerechnet werden müssen
+
+**Annahme.** Ein Rechnungsempfänger ist eine eigene Zeile je Patientin mit einer von fünf Arten: Sorgeberechtigte, Betreuung, Beihilfestelle, private Krankenversicherung, sonstiger Kostenträger. **Die Patientin selbst bekommt keine Zeile**: Ist keine hinterlegte Empfängerin als Vorgabe markiert, geht die Rechnung an sie. Je Patientin sind beliebig viele Empfänger möglich, höchstens einer trägt die Vorgabe; eine Rechnung hat genau einen Empfänger. Pflegen und Rechnungen ausstellen dürfen `owner` und `office`.
+
+**Begründung.** ADR-009 Punkt 2 verlangt die Trennung und nennt die Fälle; die offene Folgefrage „benötigt das eigene Empfängertypen?" ist damit beantwortet — die Art entscheidet über Anrede und Aktenzeichen, nicht über Berechtigungen (der Empfänger ist kein Zugang zur Akte, B5 bleibt unberührt). Eine Zeile „die Patientin selbst" wäre eine Kopie ihrer Anschrift und damit ein zweiter Wert für denselben Sachverhalt, der still veraltet — genau das schließt §13 aus. Die Aufteilung einer Rechnung auf Beihilfe und Versicherung nach Quote ist bewusst nicht gebaut und nicht vorbereitet (ADR-014): Sie käme als eigene Aufgabe mit eigener Summenlogik. Unsicher: ob die Praxis sie braucht; bei privat abrechnenden Praxen reicht regelmäßig eine Rechnung, die der Patient selbst einreicht.
+
+**Anker.** Tabelle `invoice_recipients`, `app.can_read_invoicing()` und `app.can_manage_invoicing()` in `supabase/migrations/20260919140000_invoice_recipients.sql`; die Anzeigeweiche `canManageInvoicing` in `src/features/session/types.ts`.
+
+**Änderungspfad.** Weitere Art: der `check` an `recipient_kind` und die Beschriftungen in `src/features/billing/api.ts` · Aufwand `klein`. Rechnung auf zwei Empfänger aufteilen: eigene Quotenzeilen an der Rechnung, zwei Dokumente je Ausstellung · Aufwand `groß`.
+
+### ANN-077 — Eine Rechnung fasst Person und Kalendermonat zusammen und kennt zwei Zustände
+
+Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob der Monat die richtige Klammer ist
+
+**Annahme.** Ein Rechnungsentwurf nimmt **alle** noch nicht abgerechneten Leistungen einer Patientin aus einem Kalendermonat auf; einzelne Zeilen lassen sich nicht abwählen. Je Patientin und Monat gibt es höchstens einen Entwurf; eine nachgereichte Leistung ergibt nach dem Ausstellen eine zweite Rechnung für denselben Monat. Gebaut sind zwei Zustände, `Entwurf` und `ausgestellt`; die übrigen fünf aus ADR-009 Punkt 7 hängen an Versand, Zahlungen und Storno und entstehen mit ABR-EPIC-002b und -003. Der Snapshot ist ein Dokument mit eigener `schema_version` und enthält keine klinischen Inhalte — der Verordnungsbezug steht als Bauart, Ausstellungsdatum und Verordner:in da, ohne Diagnose.
+
+**Begründung.** Die Roadmap nennt die Sammelrechnung je Person und Monat mit Behandlungsnachweis (`IDEA-PRX-013`); die Auswahl einzelner Zeilen wäre die Gelegenheit, eine Leistung zu übersehen, und ADR-009 Punkt 4 verlangt das Gegenteil. Einen Zustand zu führen, den kein Schreibpfad setzen kann, wäre der Vorgriff aus ADR-014 — die fünf fehlenden kommen mit ihrer Funktion. Der Snapshot als `jsonb` mit eigener Version beantwortet die offene Folgefrage des ADR („wie wird er gegen spätere Schemaänderungen robust gehalten?"): Er ist von der Tabellenform unabhängig. Die Diagnose bleibt draußen, weil die Rechnung regelmäßig an Dritte geht (ADR-004 Fassung 2, Datensparsamkeit). Unsicher: ob eine Beihilfestelle die Diagnose verlangt — dann ist das eine eigene, begründete Entscheidung und keine stille Erweiterung des Dokuments.
+
+**Anker.** `public.create_invoice_draft`, der Teilindex `invoices_draft_period_key`, der `check` an `invoices.status` und `app.build_invoice_document` in `supabase/migrations/20260919150000_invoices.sql`.
+
+**Änderungspfad.** Andere Klammer als der Monat (je Verordnung, je Termin): `create_invoice_draft` und der Teilindex · Aufwand `mittel`. Einzelne Zeilen abwählen: eine Auswahl an `create_invoice_draft`, dazu eine sichtbare Anzeige des Rests · Aufwand `mittel` — widerspräche der Begründung oben. Diagnose in den Snapshot: der Block `treatment_bases` in `app.build_invoice_document` · Aufwand `klein`, aber eine Datenschutzentscheidung.

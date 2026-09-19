@@ -55,7 +55,7 @@ Feature, **P3** später.
 | B11 | Paketpreise, Vorauszahlung, Anreize | **vorläufig entschieden 2026-09-08**: vorerst nicht anbieten | vor Etappe 8; Volltext: `ANFRAGEN.md` § B11 |
 | B12 | Stichtag der Umstellung und Rechnungsnummernkreis | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4 | — |
 | B13 | E-Mail-Versand aus der Plattform (Einladung, Passwort) | **entschieden 2026-09-06** durch Jannes (Option a); Auth-Mails Teil von OPS-001 (A2) | Roadmap G2, G3 |
-| B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen** (P1 für ABR-EPIC-002b) | Roadmap ABR-EPIC-002a, Nov 2026 |
+| B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **offen**, Optionen liegen seit 2026-09-19 vor (P1 für ABR-EPIC-002b) | unten; [`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md) |
 | B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten |
 | C1 | Leistungsziffern und Office | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15 |
 | C2 | Klinische Inhalte in organisatorischer Kommunikation | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15 |
@@ -220,13 +220,13 @@ Volltext: Git-Historie bis `7160fd5`. Annahmen: ANN-025, ANN-043.
 
 Druckansichten entschieden · 2026-09-06 · Jannes; Rechnungs-PDF offen · P1
 
-Druckansichten mit `@media print` für Tagesplan, Terminzettel und Tourenliste
-sind gebaut — keine Abhängigkeit, kein neuer Ausführungsort. Für die
-unveränderbare Rechnung legt ABR-EPIC-002a im November 2026 die Optionen vor;
-vermerkte Tendenz: serverseitige Funktion, weil ein Browser-Druck eine Datei beim
-Nutzer erzeugt, die die Anwendung nie sieht. Eine wesentliche Abhängigkeit oder
-ein neuer Ausführungsort ist nach §15.1 ein Stopp. Wo: ADR-009 Punkt 14,
-ADR-017; Roadmap ABR-EPIC-002a. Blockiert ABR-003b.
+Druckansichten mit `@media print` sind gebaut — keine Abhängigkeit, kein neuer
+Ausführungsort. **Die Optionen für die unveränderbare Rechnung liegen seit
+2026-09-19 vor** ([`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md)):
+Browser-Druck, Bibliothek im Browser, serverseitige Funktion — mit Aufwand,
+Preis und Empfehlung (serverseitig, bis dahin Browser-Druck). Ein neuer
+Ausführungsort ist nach §15.1 ein Stopp; Jannes entscheidet vor ABR-EPIC-002b.
+Wo: ADR-009 Punkt 14, ADR-017. Blockiert ABR-003b.
 
 ### B15 — Terminerinnerung und Online-Terminbuchung
 

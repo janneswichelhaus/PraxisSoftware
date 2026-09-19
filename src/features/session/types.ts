@@ -286,6 +286,30 @@ export function canRecordBillableServices(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => role === 'owner' || role === 'office');
 }
 
+/**
+ * Rollen, die die Praxis-Stammdaten fuer Rechnungen pflegen duerfen
+ * (ABR-000, ANN-074).
+ *
+ * Nur owner: Anschrift, Bankverbindung und Steuernummer sind
+ * Praxiseinstellungen (PROJECT_PRINCIPLES.md 4.1). Lesen darf das Office sie,
+ * pflegen nicht. Steuert ausschliesslich die Darstellung - verbindlich ist
+ * app.can_manage_billing_profile().
+ */
+export function canManageBillingProfile(roles: readonly RoleKey[]): boolean {
+  return roles.includes('owner');
+}
+
+/**
+ * Rollen, die Rechnungsempfaenger pflegen und Rechnungen ausstellen duerfen
+ * (ABR-003a, ABR-003, ANN-076).
+ *
+ * owner und office - dieselbe Reihe wie die Leistungserfassung
+ * (PROJECT_PRINCIPLES.md 4.3). Verbindlich ist app.can_manage_invoicing().
+ */
+export function canManageInvoicing(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => role === 'owner' || role === 'office');
+}
+
 /** Administrative Praxisberechtigung (PROJECT_PRINCIPLES.md 4.1). */
 export function isOwner(roles: readonly RoleKey[]): boolean {
   return roles.includes('owner');
