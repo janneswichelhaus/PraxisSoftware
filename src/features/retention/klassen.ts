@@ -52,7 +52,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   abrechnungsdaten: {
     label: 'Abrechnungsdaten',
     beschreibung:
-      'Erfasste Leistungen und der Leistungskatalog. Folgen der steuerlichen Frist, nicht der Frist der Akte.',
+      'Rechnungen, erfasste Leistungen und der Leistungskatalog. Folgen der steuerlichen Frist, nicht der Frist der Akte — eine ausgestellte Rechnung hält die Akte so lange fest.',
   },
   verordnerkartei: {
     label: 'Verordner:innen',

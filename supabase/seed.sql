@@ -17,7 +17,10 @@
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
 delete from public.audit_log;
+delete from public.invoice_items;
+delete from public.invoices;
 delete from public.invoice_recipients;
+delete from public.invoice_number_series;
 delete from public.practice_billing_profiles;
 delete from public.billable_services;
 delete from public.treatment_text_snippets;
