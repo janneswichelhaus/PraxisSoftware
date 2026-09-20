@@ -42,6 +42,7 @@ const AUSSTELLEN = 'select public.issue_invoice($1::uuid) as nummer';
 const BUCHEN =
   'select public.record_payment($1::uuid, $2::int, $3::date, $4::text, $5::text, $6::text) as id';
 const STORNIEREN = 'select public.void_payment($1::uuid, $2::text)';
+const RECHNUNG_STORNIEREN = 'select public.cancel_invoice($1::uuid, $2::text) as nummer';
 const LISTE = 'select * from public.list_invoices(100)';
 const POSTEN = 'select * from public.list_open_items(100)';
 const ZAHLUNGEN = 'select * from public.list_payments(100)';
@@ -174,6 +175,7 @@ describe('Zahlung', () => {
 
   beforeEach(async () => {
     await asPostgres('delete from public.payments');
+    await asPostgres('delete from public.invoice_cancellations');
     await asPostgres('delete from public.invoice_items');
     await asPostgres('delete from public.invoices');
     await asPostgres('delete from public.invoice_number_series');
@@ -247,6 +249,38 @@ describe('Zahlung', () => {
       await expect(buche(rows[0]!.id, 1000)).rejects.toThrow(
         /a payment belongs to an issued invoice/,
       );
+    });
+
+    it('weist eine Zahlung an einer stornierten Rechnung ab - auch am Schreibweg vorbei', async () => {
+      // Eine stornierte Rechnung ist keine Forderung mehr. Ein Eingang darauf
+      // waere Geld ohne Grund, und die Ansicht wuerde die stornierte Rechnung
+      // anschliessend als bezahlt fuehren. Der Zustand "storniert" steht am
+      // Stornodokument und nicht an invoices.status - deshalb reicht die
+      // Pruefung auf 'issued' hier nicht.
+      const { id, betrag } = await ausgestellteRechnung();
+      await asUserCommitted(users.office, RECHNUNG_STORNIEREN, [
+        id,
+        'Falsche Leistung abgerechnet',
+      ]);
+
+      await expect(buche(id, betrag)).rejects.toThrow(/a cancelled invoice takes no payment/);
+
+      // Dieselbe Zusage am Trigger, damit sie fuer jeden Weg in die Tabelle
+      // gilt - dieselbe Bauart wie 'a payment belongs to an issued invoice'.
+      await expect(
+        asPostgres(
+          `insert into public.payments (
+             organization_id, invoice_id, direction, amount_cents, currency, paid_on, method
+           ) values ($1, $2, 'incoming', $3, 'EUR', current_date, 'bank_transfer')`,
+          [organizationId, id, betrag],
+        ),
+      ).rejects.toThrow(/a cancelled invoice takes no payment/);
+
+      const { rows } = await asPostgres<{ bezahlt: number }>(
+        'select app.invoice_paid_cents($1::uuid) as bezahlt',
+        [id],
+      );
+      expect(rows[0]!.bezahlt).toBe(0);
     });
 
     it('weist Betrag null, negativen Betrag und unbekannten Weg ab', async () => {

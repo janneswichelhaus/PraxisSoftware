@@ -342,6 +342,28 @@ describe('InvoiceDetailPage', () => {
       );
     });
 
+    it('bietet an einer stornierten Rechnung kein Formular an (R3-004)', async () => {
+      // Der Server weist die Buchung ab ('a cancelled invoice takes no
+      // payment'). Ein Formular, das nur noch Fehlermeldungen erzeugt, ist
+      // kein Angebot - die gebuchten Zahlungen bleiben aber sichtbar.
+      fetchRechnung.mockResolvedValue({
+        ...ausgestellt(),
+        cancellation: {
+          cancellation_number: 'RG-2026-0002',
+          reason: 'Leistung doppelt erfasst',
+          cancelled_on: '2026-09-18',
+        },
+      });
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText('Noch offen')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Zahlung buchen' })).not.toBeInTheDocument();
+    });
+
     it('bietet der Therapeutin kein Formular an (ANN-076)', async () => {
       fetchRechnung.mockResolvedValue(ausgestellt());
 
