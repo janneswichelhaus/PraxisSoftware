@@ -133,6 +133,26 @@ describe('CatalogPage', () => {
     expect(screen.queryByRole('button', { name: 'Entwurf speichern' })).not.toBeInTheDocument();
   });
 
+  it('belegt „Gültig ab" mit dem Praxistag, nicht mit dem UTC-Tag (R3-006)', async () => {
+    // Zwischen Mitternacht und 01:00/02:00 Praxiszeit ist in UTC noch der
+    // Vortag. Vorbelegt wurde bisher der UTC-Tag - und genau so gespeichert,
+    // weil niemand das Feld anfasst, wenn es schon gefüllt aussieht.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-06-15T22:30:00Z')); // Berlin: 16.06., 00:30
+    try {
+      const nutzer = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      fetchKatalogVersionen.mockResolvedValue([version('v1')]);
+
+      renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Neue Preisliste' }));
+
+      expect(screen.getByLabelText(/Gültig ab/)).toHaveValue('2026-06-16');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('legt eine neue Preisliste als Kopie der geltenden an', async () => {
     const nutzer = userEvent.setup();
     fetchKatalogVersionen.mockResolvedValue([version('v1')]);

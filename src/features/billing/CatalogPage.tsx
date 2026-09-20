@@ -14,6 +14,7 @@ import { formatDate } from '@/lib/datum';
 import { centZuEingabe, formatEuro, parseEuroZuCent } from '@/lib/geld';
 import { HEILMITTEL } from '@/features/treatment-bases/heilmittel';
 import { canManageServiceCatalog, type CurrentUser } from '@/features/session/types';
+import { todayInTimeZone } from '@/features/appointments/api';
 import {
   artLabels,
   createKatalogVersion,
@@ -77,10 +78,6 @@ function pruefe(zeile: PositionsEingabe): string | undefined {
   if (zeile.item_kind === 'absence_fee' && zeile.remedy !== '')
     return 'Ein Ausfallhonorar hängt an keinem Heilmittel.';
   return undefined;
-}
-
-function heute(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function CatalogPage({ user }: { user: CurrentUser }) {
@@ -151,6 +148,7 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
       {darfPflegen ? (
         <NeuePreisliste
           vorlage={versionen.data?.find((version) => version.published_at) ?? null}
+          zeitzone={user.organizationTimeZone}
           onAngelegt={async (id) => {
             await queryClient.invalidateQueries({ queryKey: ['katalog-versionen'] });
             setGewaehlt(id);
@@ -167,14 +165,18 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
 
 function NeuePreisliste({
   vorlage,
+  zeitzone,
   onAngelegt,
 }: {
   vorlage: KatalogVersion | null;
+  zeitzone: string | null;
   onAngelegt: (id: string) => void | Promise<void>;
 }) {
   const [offen, setOffen] = useState(false);
   const [label, setLabel] = useState('');
-  const [gueltigAb, setGueltigAb] = useState(heute());
+  // Der Praxistag, nicht der UTC-Tag: Zwischen Mitternacht und 01:00/02:00
+  // Ortszeit wäre das sonst der Vortag — und genau so gespeichert (R3-006).
+  const [gueltigAb, setGueltigAb] = useState(zeitzone ? todayInTimeZone(zeitzone) : '');
   const [kopieren, setKopieren] = useState(true);
 
   const anlegen = useMutation({
