@@ -1368,8 +1368,8 @@ Behandlung wie Training gilt **ein** Schutzniveau, das höhere — genau das sag
 **Nicht Gegenstand dieser Version:** der Nachzug an §1, §4 und §14
 einschließlich der Trainingsrolle und des Gegenstücks zu §4.6. Er ist
 Schritt 5 aus E18 und kommt, wenn ADR-022, ADR-006 und ADR-009 darunter
-stehen. Bis dahin ist die zweite harte Regel in den Policies eine Grenze ohne
-Rolle, die sie besetzt (ADR-021, Konsequenzen).
+stehen. Bis dahin bleibt die zweite harte Regel eine Grenze, die keine Rolle
+besetzt (ADR-021, Konsequenzen).
 
 ### Änderungsvermerk 0.12
 
