@@ -30,6 +30,18 @@ const HINTER_ANMELDUNG = '**/authenticated/**/*.spec.ts';
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
+  /**
+   * Der angemeldete Lauf läuft seriell (BEF-009, R3-027).
+   *
+   * `fullyParallel: false` am Projekt ordnet nur die Tests **innerhalb** einer
+   * Datei; die Dateien laufen weiter nebeneinander. Genau daran scheiterte der
+   * Lauf: `staff-workflows` deaktiviert Anna Beispiel, während andere Dateien
+   * sie im Terminformular auswählen wollen („did not find some options").
+   * Playwright kennt `workers` nur oben, nicht je Projekt — gesetzt wird es
+   * deshalb genau dann, wenn der Stack vorhanden ist, und das ist der Lauf
+   * `--project authenticated`. Der nicht angemeldete Lauf bleibt parallel.
+   */
+  ...(mitSupabase ? { workers: 1 } : {}),
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],

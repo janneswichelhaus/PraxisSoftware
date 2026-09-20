@@ -356,7 +356,7 @@ Rückgängig-Leiste bleibt (Festlegung von Jannes).
 | Datum   | 2026-09-17                                                                                    |
 | Bereich | Testbestand, `tests/e2e/authenticated/`                                                        |
 | Quelle  | Jannes, angemeldeter E2E-Lauf zu CAL-018 (der erste, den die Cloud-Umgebung nicht leisten kann) |
-| Status  | offen                                                                                          |
+| Status  | erledigt in R3 G3 (R3-027, 2026-09-20) — der angemeldete Lauf ist seriell                      |
 | Berührt | `staff-workflows.spec.ts` (`annaReaktivieren`), `helpers.ts` (`terminUeberOberflaeche`), jede Datei, die ein Terminformular ausfüllt |
 
 **Beobachtung.** Im parallelen Lauf scheiterten `scheduling-workflows` und
@@ -376,6 +376,14 @@ zweimal in die falsche Richtung geschickt. In der CI fällt es kaum auf, weil
 der geseedeten Anna — dieselbe Trennung, die die Tagesfenster für Termine
 schon leisten. Zweite Möglichkeit: das Deaktivieren in eine eigene, seriell
 laufende Projektgruppe legen. Der erste Weg ist billiger und robuster.
+
+**Erledigt (R3-027, 2026-09-20).** Vorerst der zweite Weg, weil er ohne
+Supabase-Stack belegbar ist: `workers: 1`, sobald `E2E_SUPABASE_*` gesetzt
+sind — also genau im Lauf `--project authenticated`. `fullyParallel: false`
+am Projekt reichte nicht, es ordnet nur die Tests innerhalb einer Datei. Der
+nicht angemeldete Lauf bleibt parallel. Die eigene Mitarbeiterin bleibt der
+bessere Weg und wäre eine eigene, kleine Aufgabe; sie würde `workers: 1`
+wieder entbehrlich machen.
 
 ### BEF-010 — Ein gemeinsames Schema über zwei Lesepfade fällt keinem lokalen Gate auf
 
