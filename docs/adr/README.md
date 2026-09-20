@@ -99,7 +99,7 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-003](ADR-003-organization-location-model.md) | organization_id und location_id im Datenmodell | Angenommen |
 | [ADR-004](ADR-004-authorization-model.md) | Berechtigungsmodell | Angenommen, **Fassung 2 (2026-09-13)**: Office liest klinische Inhalte (E15, Umkehr von Punkt 3) |
 | [ADR-005](ADR-005-provider-independent-ai.md) | Providerunabhängige KI-Anbindung | Angenommen, Fassung 2 (2026-09-08) |
-| [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | Angenommen, Fassung 2 (2026-09-08) |
+| [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | **Angenommen, Fassung 3 (2026-09-20, E18 Schritt 3)** — Zweckbestimmung über beide Leistungsbereiche, dazu die drei Feature-Verbote als Ausschlusskriterien (keine Übungsauswahl aus Diagnose oder Befund, keine automatisierte Verlaufsauswertung mit Handlungsempfehlung, kein Screening-Fragebogen mit Trainingsfreigabe); Ausgabeverbote, keine Datenverbote; kein Code, keine Migration |
 | [ADR-007](ADR-007-data-protection-impact-assessment.md) | Datenschutz-Folgenabschätzung und Datenschutzprozess | Angenommen |
 | [ADR-008](ADR-008-data-retention-and-deletion.md) | Aufbewahrung und Löschung personenbezogener Daten | Angenommen |
 | [ADR-009](ADR-009-private-billing-model.md) | Privatabrechnung | Angenommen |

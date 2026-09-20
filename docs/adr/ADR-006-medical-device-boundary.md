@@ -2,7 +2,10 @@
 
 ## Status
 
-Angenommen — **Fassung 2** (2026-09-08). **Fassung 3 vorgeschlagen** (2026-09-20).
+**Angenommen — Fassung 3** (vom Projektinhaber am 2026-09-20 angenommen, alle
+fünf neuen Punkte wie vorgeschlagen; fachlich entschieden hatte er sie am
+2026-09-17, E18). Fassung 1 ist am 2026-08-28 angenommen, Fassung 2 am
+2026-09-08.
 
 Fassung 2 ergänzt Punkt 8 und präzisiert damit Punkt 5 für den Sonderfall der
 Sprachdokumentation. Die Punkte 1 bis 7 sind unverändert; Einzelheiten unten in
@@ -17,11 +20,14 @@ Abschnitt 4) und setzt
 [ADR-022](ADR-022-appointment-context-and-training-basis.md) fort. Die Punkte 1
 bis 8 sind unverändert; die neuen Punkte fassen sie **enger**, nie lockerer.
 
-**Bis zur Annahme durch den Projektinhaber gilt Fassung 2.** Der ADR steht
-bereits im Index in `CLAUDE.md`, in der Tabelle in [`README.md`](README.md) und
-in der Tabelle in `PROJECT_PRINCIPLES.md` §21; die dort genannte Fassung bleibt
-**2**, bis Jannes Fassung 3 annimmt. Bis dahin beginnt Schritt 4 (ADR-009 neue
-Fassung) nicht.
+Die geltende Fassung steht mit der Annahme auf **3** in der Tabelle in
+[`README.md`](README.md) — der einzigen Stelle, die Fassung und Status führt
+(`PROJECT_PRINCIPLES.md` §21). Weder §21 noch der Index in `CLAUDE.md` nennen
+eine Fassung; beide bleiben unverändert, und die Paragraphen, die dieser ADR
+trägt (§7.1, §17, §6.3), ändern sich nicht — der Nachzug an §1, §4 und §14
+ist **Schritt 5** aus E18. Mit der Annahme ist **Schritt 4 (ADR-009 neue
+Fassung, Steuerkennzeichen und getrennte Nummernkreise) frei**; ein Loop, der
+Code baut, beginnt weiterhin erst, wenn der ADR über ihm steht.
 
 ## Datum
 
@@ -291,4 +297,4 @@ Funktionen, an denen sie in diesem Produkt konkret entstehen würde.
 | ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1       | 2026-08-28 | Erstfassung, angenommen.                                                                                                                                                                                                                          |
 | 2       | 2026-09-08 | **Punkt 8 ergänzt:** Sprachdokumentation fällt unter Punkt 5, dort aber enger — kein Verdichten, keine inhaltliche Auslassung, Kennzeichnung unverständlicher Stellen; eine diktierte Einschätzung ist keine hinzugefügte Interpretation. Dazu eine offene Folgefrage zur Prüfbarkeit und eine Klarstellung zu `PROJECT_PRINCIPLES.md` §6.3. Anlass: Entscheidung von Jannes zur Sprachdokumentation (Version 0.5). Die Punkte 1 bis 7 sind unverändert. |
-| 3       | 2026-09-20 | **Punkte 9 bis 13 ergänzt, vorgeschlagen:** Die Zweckbestimmung gilt in beiden Leistungsbereichen (Punkt 9, nach ADR-021 und ADR-022), dazu die drei Feature-Verbote aus E18 Abschnitt 4 — keine automatische Übungsauswahl aus Diagnose oder Befund (Punkt 10), keine automatisierte Auswertung von Schmerzskala oder Verlauf mit Handlungsempfehlung (Punkt 11), kein Screening-Fragebogen, der selbst eine Trainingsfreigabe oder einen Abbruch ausspricht (Punkt 12). Punkt 13 macht sie zu Ausschlusskriterien: Ein Feature-Flag ersetzt die Prüfung nicht, und KI-Analyse, Assessments und Ernährung werden nicht zuerst geschnitten. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18), Schritt 3 von sieben. Die Punkte 1 bis 8 sind unverändert und werden nur enger gefasst. |
+| 3       | 2026-09-20 | **Punkte 9 bis 13 ergänzt, angenommen:** Die Zweckbestimmung gilt in beiden Leistungsbereichen (Punkt 9, nach ADR-021 und ADR-022), dazu die drei Feature-Verbote aus E18 Abschnitt 4 — keine automatische Übungsauswahl aus Diagnose oder Befund (Punkt 10), keine automatisierte Auswertung von Schmerzskala oder Verlauf mit Handlungsempfehlung (Punkt 11), kein Screening-Fragebogen, der selbst eine Trainingsfreigabe oder einen Abbruch ausspricht (Punkt 12). Punkt 13 macht sie zu Ausschlusskriterien: Ein Feature-Flag ersetzt die Prüfung nicht, und KI-Analyse, Assessments und Ernährung werden nicht zuerst geschnitten. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18), Schritt 3 von sieben. Die Punkte 1 bis 8 sind unverändert und werden nur enger gefasst. |
