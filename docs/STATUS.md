@@ -17,7 +17,7 @@ Abnahme steht aus.
 ## Danach — Reihenfolge seit 2026-09-20
 
 1. **Roadmap neu schneiden** (E18, Schritt 6) — Datenmodell, Termin, Abrechnung, **BEF-019**
-2. **MAP-002** — In-App-Kartenprototyp; parallel startbar, sobald das PTV-Free-Abo vorliegt
+2. **MAP-002** — In-App-Kartenprototyp; **startbar**, der PTV-Free-Schlüssel liegt seit 2026-09-20 vor
 3. **`MDR_REVIEW_REQUIRED` verorten** — eigene Sitzung, seit Schritt 5 möglich; kein Loop wartet
 
 ## Prüfverfahren
@@ -28,8 +28,8 @@ Abnahme steht aus.
 
 ## Blocker (Jannes-seitig)
 
-- **PTV-Free-Abo vor MAP-002** — ohne Schlüssel läuft der Prototyp nur gegen
-  den Mock-Adapter (ADR-019); nur synthetische Koordinaten.
+- **PTV-Schlüssel nur lokal** (Abo seit 2026-09-20): `.env.local`, nie ins
+  Repository, synthetische Koordinaten; offen: **Domainbindung** (ADR-019).
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von R3 (eine
   Migration aus G2); Seed unverändert. **Node 22** (`.nvmrc`), sonst rot.
 - **G13 ist überfällig:** Nummernformat und Umsatzsteuer-Status stehen als
