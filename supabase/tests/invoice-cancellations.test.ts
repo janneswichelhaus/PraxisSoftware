@@ -1,5 +1,13 @@
+import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneTermine,
+  testDatabaseUrl,
+} from './helpers/db';
 
 /**
  * Storno und Korrektur sind eigene Dokumente (ABR-003c).
@@ -153,6 +161,21 @@ async function ausgestellteRechnung(
 async function storniere(id: string, grund = 'Falscher Empfaenger'): Promise<string> {
   const { rows } = await asUserCommitted<{ nummer: string }>(users.office, STORNIEREN, [id, grund]);
   return rows[0]!.nummer;
+}
+
+/**
+ * Oeffnet auf einer eigenen Verbindung eine Transaktion als office.
+ *
+ * Nur fuer die Tests, die zwei Vorgaenge wirklich gleichzeitig brauchen: Die
+ * Helfer aus helpers/db schliessen ihre Transaktion selbst und koennen keine
+ * Sperre halten.
+ */
+async function alsOffice(client: Client): Promise<void> {
+  await client.query('begin');
+  await client.query("select set_config('role', 'authenticated', true)");
+  await client.query("select set_config('request.jwt.claims', $1, true)", [
+    JSON.stringify({ sub: users.office, role: 'authenticated' }),
+  ]);
 }
 
 async function rechnungszeile(id: string): Promise<Rechnungszeile> {
@@ -442,6 +465,43 @@ describe('Storno und Korrektur', () => {
   });
 
   describe('Die Korrekturrechnung', () => {
+    it('nennt auch bei zwei gleichzeitigen Aufrufen den Grund (R3-009)', async () => {
+      // Ohne Sperre liefen beide Aufrufe an der Entwurfspruefung vorbei und
+      // endeten erst im Teilindex invoices_draft_period_key - mit einer
+      // technischen Meldung statt mit dem Satz, der sagt, was los ist.
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+
+      const erste = new Client({ connectionString: testDatabaseUrl() });
+      const zweite = new Client({ connectionString: testDatabaseUrl() });
+      await erste.connect();
+      await zweite.connect();
+
+      try {
+        await alsOffice(erste);
+        await alsOffice(zweite);
+
+        await erste.query(KORREKTUR, [id]);
+
+        const laeuft = zweite
+          .query(KORREKTUR, [id])
+          .then(() => null)
+          .catch((fehler: unknown) => fehler as Error);
+
+        await new Promise((fertig) => setTimeout(fertig, 200));
+        await erste.query('commit');
+
+        const fehler = await laeuft;
+        await zweite.query(fehler === null ? 'commit' : 'rollback');
+
+        expect(fehler?.message).toMatch(/a draft for this patient and month already exists/);
+      } finally {
+        await erste.query('rollback').catch(() => undefined);
+        await erste.end();
+        await zweite.end();
+      }
+    });
+
     it('entsteht aus der stornierten Rechnung und zeigt auf sie', async () => {
       const { id } = await ausgestellteRechnung();
       await storniere(id);

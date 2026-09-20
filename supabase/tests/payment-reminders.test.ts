@@ -1,5 +1,13 @@
+import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneTermine,
+  testDatabaseUrl,
+} from './helpers/db';
 
 /**
  * Die Zahlungserinnerung ist ein Dokument, kein Mahnlauf (ABR-003d).
@@ -116,6 +124,21 @@ async function faelligSeit(id: string, tage: number): Promise<void> {
     [id, tage],
   );
   await asPostgres('alter table public.invoices enable trigger invoices_frozen');
+}
+
+/**
+ * Oeffnet auf einer eigenen Verbindung eine Transaktion als office.
+ *
+ * Nur fuer die Tests, die zwei Vorgaenge wirklich gleichzeitig brauchen: Die
+ * Helfer aus helpers/db schliessen ihre Transaktion selbst und koennen keine
+ * Sperre halten.
+ */
+async function alsOffice(client: Client): Promise<void> {
+  await client.query('begin');
+  await client.query("select set_config('role', 'authenticated', true)");
+  await client.query("select set_config('request.jwt.claims', $1, true)", [
+    JSON.stringify({ sub: users.office, role: 'authenticated' }),
+  ]);
 }
 
 async function erinnere(id: string): Promise<string> {
@@ -247,6 +270,89 @@ describe('Zahlungserinnerung', () => {
       await erinnere(id);
 
       await expect(erinnere(id)).rejects.toThrow(/already written today/);
+    });
+
+    it('schreibt den Betrag nicht an einer gleichzeitigen Zahlung vorbei (R3-009)', async () => {
+      // Der offene Betrag geht auf ein Blatt und steht damit fest (ANN-080).
+      // Ohne Sperre las die Erinnerung den Stand, waehrend nebenan die
+      // Zahlung lief - und schrieb eine Forderung fest, die es nicht mehr
+      // gab.
+      const { id, betrag } = await ausgestellteRechnung();
+      await faelligSeit(id, 5);
+
+      const zahlung = new Client({ connectionString: testDatabaseUrl() });
+      const erinnerung = new Client({ connectionString: testDatabaseUrl() });
+      await zahlung.connect();
+      await erinnerung.connect();
+
+      try {
+        await alsOffice(zahlung);
+        await alsOffice(erinnerung);
+
+        // Die Zahlung sperrt die Rechnung und bucht den vollen Betrag,
+        // bestaetigt aber noch nicht.
+        await zahlung.query(BUCHEN, [id, betrag, await heute(), 'bank_transfer', 'incoming', null]);
+
+        const laeuft = erinnerung
+          .query(ERINNERN, [id])
+          .then(() => null)
+          .catch((fehler: unknown) => fehler as Error);
+
+        await new Promise((fertig) => setTimeout(fertig, 200));
+        await zahlung.query('commit');
+
+        const fehler = await laeuft;
+        await erinnerung.query(fehler === null ? 'commit' : 'rollback');
+
+        expect(fehler?.message).toMatch(/this invoice has nothing outstanding/);
+
+        const { rows } = await asPostgres<{ anzahl: number }>(
+          'select count(*)::int as anzahl from public.invoice_payment_reminders where invoice_id = $1',
+          [id],
+        );
+        expect(rows[0]!.anzahl).toBe(0);
+      } finally {
+        await zahlung.query('rollback').catch(() => undefined);
+        await zahlung.end();
+        await erinnerung.end();
+      }
+    });
+
+    it('nennt auch bei zwei gleichzeitigen Erinnerungen den Grund (R3-009)', async () => {
+      // Zwei Klicks im selben Moment liefen bisher in den Unique-Index und
+      // endeten mit einer technischen Meldung statt mit dem Satz, der sagt,
+      // was los ist.
+      const { id } = await ausgestellteRechnung();
+      await faelligSeit(id, 5);
+
+      const erste = new Client({ connectionString: testDatabaseUrl() });
+      const zweite = new Client({ connectionString: testDatabaseUrl() });
+      await erste.connect();
+      await zweite.connect();
+
+      try {
+        await alsOffice(erste);
+        await alsOffice(zweite);
+
+        await erste.query(ERINNERN, [id]);
+
+        const laeuft = zweite
+          .query(ERINNERN, [id])
+          .then(() => null)
+          .catch((fehler: unknown) => fehler as Error);
+
+        await new Promise((fertig) => setTimeout(fertig, 200));
+        await erste.query('commit');
+
+        const fehler = await laeuft;
+        await zweite.query(fehler === null ? 'commit' : 'rollback');
+
+        expect(fehler?.message).toMatch(/already written today/);
+      } finally {
+        await erste.query('rollback').catch(() => undefined);
+        await erste.end();
+        await zweite.end();
+      }
     });
   });
 
