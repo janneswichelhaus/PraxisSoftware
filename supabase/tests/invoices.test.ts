@@ -1,5 +1,12 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 /**
  * Die Rechnung entsteht aus Leistungen (ABR-003).
@@ -409,6 +416,33 @@ describe('Rechnung', () => {
       expect(rechnung.document.tax_groups[0]?.net_cents).toBe(5042);
     });
 
+    it('trennt zwei Steuergruppen auf einer Rechnung (R3-025)', async () => {
+      // Der Fall, den es im Betrieb wirklich gibt: Behandlung steuerfrei,
+      // Trainingseinheit steuerpflichtig - auf einem Blatt.
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      await leistung(KATALOG.training, { stundeImMonat: 34 });
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+      const { rows: dok } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        rows[0]!.id,
+      ]);
+      const rechnung = dok[0]!.rechnung;
+
+      // Krankengymnastik 45,00 steuerfrei + Training 60,00 mit 9,58 Steuer.
+      expect(rechnung.document.tax_groups).toHaveLength(2);
+      expect(rechnung.document.totals.total_cents).toBe(10_500);
+      expect(rechnung.document.totals.tax_total_cents).toBe(958);
+
+      const steuerfrei = rechnung.document.tax_groups.find(
+        (gruppe) => gruppe.tax_treatment === 'exempt_healthcare',
+      );
+      expect(steuerfrei?.tax_cents).toBe(0);
+      expect(steuerfrei?.net_cents).toBe(4500);
+    });
+
     it('weist bei einer Heilbehandlung keine Umsatzsteuer aus', async () => {
       const rechnung = await ausgestellt(KATALOG.kg);
       expect(rechnung.document.totals.tax_total_cents).toBe(0);
@@ -563,6 +597,27 @@ describe('Rechnung', () => {
 
     it('weist die Therapeutin ab', async () => {
       await expect(asUser(users.therapist, LISTE)).rejects.toThrow(/not allowed to read invoices/);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mandantengrenze (ADR-003, R3-025)
+  // ---------------------------------------------------------------------------
+  describe('Fremde Organisation', () => {
+    it('sieht keine Rechnung der Testpraxis und stellt keine aus', async () => {
+      const fremd = await fremdeOrganisation();
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+
+      expect((await asUser(fremd.owner, LISTE)).rows).toEqual([]);
+      expect((await asUser(fremd.owner, KANDIDATEN)).rows).toEqual([]);
+      await expect(asUser(fremd.owner, AUSSTELLEN, [entwurf[0]!.id])).rejects.toThrow(
+        /invoice not found/,
+      );
+      await expect(asUser(fremd.owner, ENTWURF, [patients.erika, await monat()])).rejects.toThrow();
     });
   });
 });

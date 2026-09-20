@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Rechnungsempfaenger sind eigene Stammdaten (ABR-003a, ADR-009 Punkt 2).
@@ -178,6 +185,26 @@ describe('Rechnungsempfaenger', () => {
     it('weist die Teamleitung ab', async () => {
       await expect(asUser(users.teamLead, ENTFERNEN, [BETREUUNG])).rejects.toThrow(
         /not allowed to manage invoice recipients/,
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mandantengrenze (ADR-003, R3-025)
+  // ---------------------------------------------------------------------------
+  describe('Fremde Organisation', () => {
+    it('sieht keine Empfaengerin der Testpraxis und entfernt keine', async () => {
+      const fremd = await fremdeOrganisation();
+
+      // Die Liste antwortet leer statt zu werfen - eine Fehlermeldung waere
+      // selbst eine Auskunft darueber, dass es die Patientin gibt.
+      expect((await asUser(fremd.owner, LISTE, [patients.petra])).rows).toEqual([]);
+      await expect(asUser(fremd.owner, ENTFERNEN, [BETREUUNG])).rejects.toThrow();
+
+      // Die Tabelle traegt ueberhaupt kein Leserecht - auch nicht fuer die
+      // eigene Praxis; gelesen wird nur ueber die Funktion (ADR-004).
+      await expect(asUser(fremd.owner, 'select * from public.invoice_recipients')).rejects.toThrow(
+        /permission denied/,
       );
     });
   });

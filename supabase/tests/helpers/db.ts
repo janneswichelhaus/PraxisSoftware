@@ -265,3 +265,50 @@ export function tagInTagen(tage: number): string {
   d.setUTCDate(d.getUTCDate() + tage);
   return d.toISOString().slice(0, 10);
 }
+
+/** Kennungen der zweiten, rein synthetischen Praxis aus `fremdeOrganisation()`. */
+export const FREMDE_ORGANISATION = {
+  organizationId: '22222222-2222-4222-8222-0000000000ab',
+  owner: '11111111-1111-4111-8111-0000000000ab',
+  personOwner: '44444444-4444-4444-8444-0000000000ab',
+  personPatient: '44444444-4444-4444-8444-0000000000ac',
+  patient: '66666666-6666-4666-8666-0000000000ab',
+  staffMember: '55555555-5555-4555-8555-0000000000ab',
+} as const;
+
+/**
+ * Legt eine zweite Praxis mit eigenem owner, eigenem Patienten und eigener
+ * Mitarbeiterin an — die Gegenseite jeder Mandantengrenze (ADR-003).
+ *
+ * Dreizehn Testdateien bauen diese Fixture bisher selbst; die neun
+ * Abrechnungsdateien hatten sie gar nicht (R3-025). Hier steht sie einmal.
+ * Mehrfaches Aufrufen ist gutartig: Was schon da ist, bleibt.
+ */
+export async function fremdeOrganisation(): Promise<typeof FREMDE_ORGANISATION> {
+  const f = FREMDE_ORGANISATION;
+  await asPostgres(`
+    insert into auth.users (id, email, aud, role)
+      values ('${f.owner}', 'frida.fremd@praxis.invalid', 'authenticated', 'authenticated')
+      on conflict (id) do nothing;
+    insert into public.organizations (id, name, time_zone)
+      values ('${f.organizationId}', 'Test Praxis Woanders', 'Europe/Berlin')
+      on conflict (id) do nothing;
+    insert into public.persons (id, organization_id, given_name, family_name) values
+      ('${f.personOwner}',   '${f.organizationId}', 'Frida', 'Fremd'),
+      ('${f.personPatient}', '${f.organizationId}', 'Peter', 'Fremdpatient')
+      on conflict (id) do nothing;
+    insert into public.patients (id, organization_id, person_id)
+      values ('${f.patient}', '${f.organizationId}', '${f.personPatient}')
+      on conflict (id) do nothing;
+    insert into public.staff_members (id, organization_id, person_id)
+      values ('${f.staffMember}', '${f.organizationId}', '${f.personOwner}')
+      on conflict (id) do nothing;
+    insert into public.user_profiles (id, organization_id, person_id, display_name)
+      values ('${f.owner}', '${f.organizationId}', '${f.personOwner}', 'Frida Fremd')
+      on conflict (id) do nothing;
+    insert into public.user_roles (user_id, organization_id, role_key)
+      values ('${f.owner}', '${f.organizationId}', 'owner')
+      on conflict do nothing;
+  `);
+  return f;
+}

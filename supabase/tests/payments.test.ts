@@ -5,6 +5,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabaseOhneTermine,
   testDatabaseUrl,
 } from './helpers/db';
@@ -639,37 +640,54 @@ describe('Zahlung', () => {
    * anderen Tests ihre Termine anlegen. `beforeEach` stellt sie nicht wieder
    * her - das tut nur der Seed.
    */
-  describe('Aufbewahrung (ADR-008)', () => {
-    it('ordnet die Zahlung den Abrechnungsdaten zu', async () => {
-      const { rows } = await asPostgres<{ class_key: string; deletion_mode: string }>(
-        `select class_key, deletion_mode from public.retention_assignments
-          where table_name = 'payments'`,
-      );
-      expect(rows[0]?.class_key).toBe('abrechnungsdaten');
-      expect(rows[0]?.deletion_mode).toBe('ueber_elterndatensatz');
+  // ---------------------------------------------------------------------------
+  // Mandantengrenze (ADR-003, R3-025)
+  // ---------------------------------------------------------------------------
+  describe('Fremde Organisation', () => {
+    it('bucht nicht an einer fremden Rechnung und sieht keine Zahlung', async () => {
+      const fremd = await fremdeOrganisation();
+      const { id, betrag } = await ausgestellteRechnung();
+      await buche(id, 1000);
+
+      await expect(
+        asUser(fremd.owner, BUCHEN, [id, betrag, await heute(), 'bank_transfer', 'incoming', null]),
+      ).rejects.toThrow(/invoice not found/);
+      expect((await asUser(fremd.owner, ZAHLUNGEN)).rows).toEqual([]);
+      expect((await asUser(fremd.owner, POSTEN)).rows).toEqual([]);
     });
 
-    it('nimmt die Zahlung mit der Akte mit und schreibt sie ins Journal', async () => {
-      const { id } = await ausgestellteRechnung();
-      const zahlung = await buche(id, 1000);
+    describe('Aufbewahrung (ADR-008)', () => {
+      it('ordnet die Zahlung den Abrechnungsdaten zu', async () => {
+        const { rows } = await asPostgres<{ class_key: string; deletion_mode: string }>(
+          `select class_key, deletion_mode from public.retention_assignments
+          where table_name = 'payments'`,
+        );
+        expect(rows[0]?.class_key).toBe('abrechnungsdaten');
+        expect(rows[0]?.deletion_mode).toBe('ueber_elterndatensatz');
+      });
 
-      const { rows } = await asPostgres<{ anzahl: number }>(
-        'select app.delete_patient_record($1::uuid, $2::uuid, now()) as anzahl',
-        [patients.erika, '99999999-9999-4999-8999-000000000099'],
-      );
-      expect(Number(rows[0]!.anzahl)).toBeGreaterThan(0);
+      it('nimmt die Zahlung mit der Akte mit und schreibt sie ins Journal', async () => {
+        const { id } = await ausgestellteRechnung();
+        const zahlung = await buche(id, 1000);
 
-      const { rows: uebrig } = await asPostgres('select id from public.payments where id = $1', [
-        zahlung,
-      ]);
-      expect(uebrig).toHaveLength(0);
+        const { rows } = await asPostgres<{ anzahl: number }>(
+          'select app.delete_patient_record($1::uuid, $2::uuid, now()) as anzahl',
+          [patients.erika, '99999999-9999-4999-8999-000000000099'],
+        );
+        expect(Number(rows[0]!.anzahl)).toBeGreaterThan(0);
 
-      const { rows: journal } = await asPostgres<{ retention_class: string }>(
-        `select retention_class from public.deletion_journal
+        const { rows: uebrig } = await asPostgres('select id from public.payments where id = $1', [
+          zahlung,
+        ]);
+        expect(uebrig).toHaveLength(0);
+
+        const { rows: journal } = await asPostgres<{ retention_class: string }>(
+          `select retention_class from public.deletion_journal
           where target_table = 'payments' and target_id = $1`,
-        [zahlung],
-      );
-      expect(journal[0]?.retention_class).toBe('abrechnungsdaten');
+          [zahlung],
+        );
+        expect(journal[0]?.retention_class).toBe('abrechnungsdaten');
+      });
     });
   });
 });

@@ -5,6 +5,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabaseOhneTermine,
   testDatabaseUrl,
 } from './helpers/db';
@@ -498,6 +499,21 @@ describe('Zahlungserinnerung', () => {
       await expect(asUser(users.therapist, DOKUMENT, [erinnerung])).rejects.toThrow(
         /not allowed to read invoices/,
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mandantengrenze (ADR-003, R3-025)
+  // ---------------------------------------------------------------------------
+  describe('Fremde Organisation', () => {
+    it('erinnert nicht an eine fremde Rechnung und liest keine Erinnerung', async () => {
+      const fremd = await fremdeOrganisation();
+      const { id } = await ausgestellteRechnung();
+      await faelligSeit(id, 5);
+      await erinnere(id);
+
+      await expect(asUser(fremd.owner, ERINNERN, [id])).rejects.toThrow(/invoice not found/);
+      expect((await asUser(fremd.owner, ERINNERUNGEN, [id])).rows).toEqual([]);
     });
   });
 });
