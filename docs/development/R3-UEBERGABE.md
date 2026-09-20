@@ -3,7 +3,8 @@
 Einzige Datei dieser Runde vor der Freigabe. Sie liegt nur auf `claude/r3-analyse` (wird nie gemergt);
 Umsetzungs-Sessions lesen sie per
 `git show origin/claude/r3-analyse:docs/development/R3-UEBERGABE.md`. Stand: Knoten 1 (Inventur) und
-Knoten 2 (Auflösung & Plan) abgeschlossen; **G1 ist umgesetzt (PR #57), G2 und G3 stehen aus**. Die Umsetzungs-Session
+Knoten 2 (Auflösung & Plan) abgeschlossen; **G1 gemergt (PR #57), G2 umgesetzt (PR #58), G3 steht
+aus**. Die Umsetzungs-Session
 liest „Harte Regeln", „Knoten 2 — Auflösung & Plan" (ihre Gruppe) und „Knoten 3"; die Befundtabellen
 und die Details darüber sind das Nachschlagewerk dazu.
 
@@ -644,7 +645,17 @@ Fristen, dann Zustände, zuletzt Liste und Testfixtures.
 Gate nach G1: volle Prüfkette **plus `pnpm test:db`**. Acht neue Migrationen, fortlaufende
 Zeitstempel ab `20260920…`.
 
-### G2 — Oberfläche, Datenschutz und Datenzugriff (8 Befunde)
+### G2 — Oberfläche, Datenschutz und Datenzugriff (8 Befunde) — **erledigt 2026-09-20**
+
+Umgesetzt als PR #58, ein Commit je Befund, alle acht mit rotem Test davor. Eine neue additive
+Migration (`20260920110000_patient_list_entries.sql`), ANN-053 in der Begründung korrigiert
+(`metadata.mimetype` ist keine zweite Quelle). Abweichungen vom Plan: R3-034 hing nicht an
+Jannes — die WOFF2-Datei ließ sich in der Cloud doch erzeugen (fontTools in einer
+Wegwerf-Umgebung, Vergleich gegen das Original im Commit); R3-023 bekam den Helfer als eigenes
+Modul `src/lib/antwort.ts`; der E2E-Test „kein Konto-Orakel" stellt seine beiden Fälle jetzt
+selbst her, statt sich auf den fehlenden Anmeldedienst zu verlassen. Gates: `test` 1751 (vor G2
+1730), `test:db` 1607 (1604), E2E ohne Anmeldung 36 (34), Sichtprüfung der Anmeldeseite bei
+375 px gelaufen; die Seiten hinter der Anmeldung weiterhin nicht prüfbar.
 
 | # | Kennung | Schwere/Aufwand | Fix (kleinstmöglich) | Beleg vorher | Dateien |
 | --- | --- | --- | --- | --- | --- |
