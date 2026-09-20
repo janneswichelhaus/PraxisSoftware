@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.12.2** |
+| **Dokumentversion** | **0.13** |
 | **Änderungsdatum** | **2026-09-20** |
-| Vorversion | 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Vorversion | 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -94,6 +94,46 @@ Datenschutzniveaus in einer Anwendung DÜRFEN NICHT entstehen.
 Unberührt bleiben: die Datenminimierung gegenüber externen Diensten (§6.1,
 §9), die Trennung von Entwicklungs- und Produktionsdaten (§3.1, §3.2) und die
 Pseudonymisierung in Auswertungen, wo sie fachlich ohnehin geboten ist (§20).
+
+### 1.2 Zwei Leistungsbereiche
+
+Festgelegt vom Projektinhaber am 2026-09-17 (E18,
+`docs/development/E18-LEISTUNGSBEREICHE.md`), unterlegt durch
+[ADR-021](docs/adr/ADR-021-service-areas-and-legal-relationships.md),
+[ADR-022](docs/adr/ADR-022-appointment-context-and-training-basis.md),
+[ADR-006](docs/adr/ADR-006-medical-device-boundary.md) Fassung 3 und
+[ADR-009](docs/adr/ADR-009-private-billing-model.md) Fassung 2.
+
+Die Software deckt **zwei Leistungsbereiche** ab: die **Heilbehandlung** mit
+therapeutischem Zweck und **Leistungen ohne Heilbehandlungszweck** — Personal
+Training und Online Coaching. Im Code und im Datenmodell heißen die beiden
+Bereiche `therapy` und `training`.
+
+**Getrennt wird nach Rechtsverhältnis, nicht nach Person.** Eine Person KANN
+gleichzeitig einen Behandlungsvertrag (§ 630a BGB) und einen Dienstvertrag über
+Training (§ 611 BGB) haben. Rechtsgrundlage, Datenklasse, Aufbewahrungsfrist,
+Dokumentationspflicht und steuerliche Behandlung hängen am **Verhältnis**; sie
+DÜRFEN NICHT an der Person festgemacht werden. Das Datenmodell MUSS diese
+Trennung erzwingen — sie abzubilden genügt nicht (ADR-021 Punkte 1 bis 3).
+
+**Im Zweifel gilt das strengere Behandlungsregime.** Ist nicht eindeutig, zu
+welchem Bereich ein Datum, ein Termin oder eine Akte gehört, MUSS der Bereich
+mit dem höheren Schutz und der längeren Frist gelten. Das ist dieselbe Richtung
+wie §16 und schützt die Zweckbindung, nicht die Bequemlichkeit.
+
+Diese Zweifelsregel gilt für Schutzniveau, Zugriff, Dokumentation und
+Aufbewahrung. Sie gilt **nicht** für die steuerliche Einordnung: Das
+Steuerkennzeichen hängt nach ADR-009 Punkt 15 am **Posten** und folgt der
+erbrachten Leistung. Ein im Zweifel gewähltes „steuerfrei" wäre dort keine
+Vorsicht, sondern eine falsche Angabe.
+
+Sprachregelung, verbindlich für alle Dokumente dieses Projekts: „PT" wird NICHT
+als Abkürzung benutzt. Es heißt **Physiotherapie** oder **Personal Training**,
+ausgeschrieben (ADR-021 Punkt 9).
+
+Was vom zweiten Bereich freigegeben ist, begrenzt §14; wie der Zugriff ihm
+folgt, steht in §4.8; die Zweckbestimmung gilt in beiden Bereichen unverändert
+(§17).
 
 
 ## 2. Produktprinzipien
@@ -469,6 +509,10 @@ Für das Patientenportal sind vorgesehen:
 Patienten erhalten nicht automatisch Zugriff auf sämtliche internen klinischen
 oder organisatorischen Notizen.
 
+Der hier genannte Therapie-/Trainingsplan gehört zur **Behandlung** — es sind
+die Heimübungen zwischen zwei Terminen. Das Trainingsverhältnis nach §1.2 ist
+etwas anderes; sein Gegenstück zu dieser Ziffer steht in §4.10.
+
 Identitätsprüfung von Patienten sowie Vertretungs- und Angehörigenzugriff sind
 noch nicht entschieden und in `docs/decisions/OPEN_DECISIONS.md` als offener
 Punkt geführt.
@@ -485,6 +529,108 @@ Antworten der Anwendung MÜSSEN rollenabhängige Projektionen sein. Geschützte
 Inhalte DÜRFEN NICHT ausgeliefert und erst im Client ausgeblendet werden.
 
 Einzelheiten: [ADR-004](docs/adr/ADR-004-authorization-model.md).
+
+### 4.8 Zugriff folgt dem Verhältnis, nicht der Person
+
+Wortlaut der Festlegung vom 2026-09-17 (E18). Diese Ziffer gilt **über alle
+Rollen hinweg** und gehört deshalb in keine einzelne.
+
+> Zugriff folgt dem Verhältnis, nicht der Person. Aus einer Rolle im
+> Trainingsverhältnis folgt kein Zugriff auf Daten des
+> Behandlungsverhältnisses derselben Person, und umgekehrt. Datenübernahme
+> zwischen beiden erfolgt ausschließlich als dokumentierte Kopie auf Grundlage
+> einer Einwilligung.
+
+Daraus folgt verbindlich:
+
+- Jede Rolle MUSS benennen, in welchem Leistungsbereich nach §1.2 sie gilt.
+- Aus einer Rolle des einen Bereichs DARF NICHT auf Daten des anderen
+  geschlossen werden — auch nicht mittelbar über die gemeinsame Identität.
+- Die Trennung MUSS in den Policies und in der Datenbank-RLS durchgesetzt
+  werden, nicht in der Oberfläche (§4.7, ADR-021 Punkt 6).
+- Eine Übernahme von Daten aus der Behandlung in das Training MUSS eine
+  dokumentierte Kopie mit Einwilligung sein und DARF NICHT als Referenz
+  entstehen (ADR-021 Punkt 7).
+- Lesende Zugriffe auf Trainingsdaten sind **auditpflichtig wie die auf die
+  Akte** (§4.2, ADR-010). Für beide Bereiche gilt einheitlich das strengere
+  § 203-Niveau (ADR-021 Punkt 8).
+
+Das Rollenprinzip aus der Einleitung dieses Abschnitts bleibt unberührt: Wer
+beide Rollen hat, sieht beides. Verboten ist der **Schluss** von einer Rolle
+auf den jeweils anderen Bereich, nicht die Häufung zweier Rollen an einer
+Person.
+
+Eine Ausnahme ist bewusst bezahlt: die **Belegung** im gemeinsamen Kalender.
+Dass ein Zeitraum belegt ist, bleibt über alle Kontexte hinweg sichtbar — sonst
+sind Doppelbuchungen nicht zu verhindern, und es entstünden zwei Kalender
+(ADR-022). Sichtbar ist die Belegung, nicht der Inhalt des Termins.
+
+Für die vorhandenen Rollen gilt damit:
+
+| Rolle | gilt im Bereich | Anmerkung |
+|---|---|---|
+| §4.1 Praxisinhaber | `therapy` und `training` | Vertragspartner beider Verhältnisse; die einzige Rolle, die beide Bereiche aus sich heraus trägt |
+| §4.2 Therapeut | `therapy` | Der offene Zugriff auf alle Patientenakten gilt **innerhalb** der Behandlung und begründet keinen Zugriff auf Trainingsdaten |
+| §4.3 Office | `therapy`; im `training` nur organisatorisch | Termin, Vertragsstatus, erbrachte Leistung, Rechnung, Zahlung. Screening- und Gesundheitsangaben des Trainings sind für Office **gesperrt**, bis die DSFA sie bewertet (Anfrage B2, ADR-007) — §16: im Zweifel restriktiver, später zu öffnen ist billig |
+| §4.5 Teamleitung | wie §4.2, dazu die organisatorischen Zusatzrechte | keine Trainingsdaten, solange ihr nicht zusätzlich §4.9 zugewiesen ist |
+| §4.6 Patient | `therapy` | eigene Daten des Behandlungsverhältnisses |
+| §4.9 Trainingsbetreuung | `training` | die Rolle, die diese Ziffer auf der Trainingsseite besetzt |
+| §4.10 Trainingskund:in | `training` | eigene Daten des Trainingsverhältnisses |
+
+### 4.9 Trainingsbetreuung
+
+Diese Rolle betreut Trainingsverhältnisse. Ohne sie bliebe §4.8 eine Grenze,
+hinter der niemand steht (ADR-021, Konsequenzen).
+
+Trainingsbetreuung DARF:
+
+- Trainingsverhältnisse anlegen, ändern und beenden
+- Termine im Kontext `training` planen und bearbeiten (ADR-022)
+- Trainingsgrundlage und Trainingsprotokoll führen
+- Screening- und Gesundheitsangaben des Trainings erheben und einsehen, soweit
+  eine ausdrückliche Einwilligung vorliegt (Art. 9 Abs. 2 lit. a DSGVO)
+- mit Kund:innen des Trainings kommunizieren
+
+Trainingsbetreuung DARF NICHT:
+
+- Patientenakten, Befunde, Behandlungsdokumentation oder Verordnungen einsehen
+- Behandlungstermine bearbeiten oder Behandlungsdokumentation erzeugen
+- eine Trainingsfreigabe, eine Kontraindikation oder einen Abbruch von der
+  Software ableiten lassen (§17) — diese Entscheidung trifft der Mensch und
+  wird als seine dokumentiert
+
+Ein individuelles Benutzerkonto ist Pflicht; Trainingsbetreuung ist keine
+technische Administratorrolle. Den **Bezeichner** der Rolle im Code entscheidet
+der SPEC des Loops, der sie baut ([ADR-014](docs/adr/ADR-014-foundational-data-model.md));
+dieses Dokument legt ihren Schnitt fest, nicht ihren Schlüssel.
+
+### 4.10 Trainingskund:in
+
+Das Gegenstück zu §4.6 für den zweiten Leistungsbereich.
+
+Kund:innen des Trainings DÜRFEN ausschließlich ihre **eigenen** Daten des
+Trainingsverhältnisses sehen.
+
+**Konto und Verhältnis sind getrennte Konzepte**, wie in §4.6: Ein
+Benutzerkonto ist ein Zugangsmittel; das Trainingsverhältnis ist ein
+fachlicher Datenbestand mit eigener Frist — drei Jahre ab Vertragsende,
+Screening früher (ADR-021 Punkt 4, §18). Das Löschen oder Sperren eines Kontos
+DARF das Verhältnis nicht löschen, und das Bestehen eines Verhältnisses setzt
+kein Konto voraus.
+
+Vorgesehen sind:
+
+- eigene Trainingstermine, Terminanfragen und Änderungswünsche
+- eigener Trainingsplan und eigene Übungen
+- eigenes Trainingsprotokoll, soweit freigegeben
+- eigene Rechnungen der Trainingsleistung
+- sichere Kommunikation mit der Praxis
+- Erteilen und Widerrufen der Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO
+
+Hat eine Person beide Verhältnisse, bleiben die Bereiche auch in ihrer eigenen
+Sicht getrennt; ein gemeinsamer Bestand entsteht nicht (§4.8). Die
+Identitätsprüfung und der Vertretungszugriff sind wie in §4.6 nicht
+entschieden und in `docs/decisions/OPEN_DECISIONS.md` geführt.
 
 
 ## 5. Klinische Dokumentation
@@ -1034,6 +1180,20 @@ Das Datenmodell SOLLTE spätere Erweiterungen nicht unnötig verhindern:
 Diese Funktionen DÜRFEN NICHT ohne konkreten Auftrag vorzeitig implementiert
 werden.
 
+**Eng gefasste Aufhebung für Online Coaching (2026-09-17, E18).** Online
+Coaching ist aus dieser Liste **freigegeben, begrenzt auf Terminkontext,
+Trainingsverhältnis und die Abrechnung der Trainingsleistung** (§1.2, ADR-021,
+ADR-022, ADR-009 Fassung 2). Alle übrigen Einträge dieser Liste bleiben
+gesperrt — insbesondere Abonnements, Wearables und die spätere Vermarktung der
+Software. Die Enge ist der Punkt: Die Freigabe eines Eintrags reißt die Liste
+nicht auf.
+
+Auch das Freigegebene entsteht nur mit konkretem Auftrag; die Reihenfolge legt
+`docs/development/ROADMAP.md` fest. Der **Trainingsbereich selbst** — Übersicht,
+Check-ins, Fortschritt, Trainingspläne, Assessments, Ernährung, KI-Analyse — ist
+damit **nicht** freigegeben. Personal Training stand nie auf dieser Liste; es
+ist seit §1.2 ein Leistungsbereich und keine spätere Erweiterung.
+
 Umgesetzt wird davon ausschließlich die strukturelle Vorbereitung, die
 [ADR-014](docs/adr/ADR-014-foundational-data-model.md) abschließend auflistet —
 darunter `organization_id` und, wo fachlich sinnvoll, `location_id` ab der
@@ -1159,6 +1319,42 @@ regulatorischen Prüfung nicht produktiv aktiviert werden.
 Vor Produktivstart MÜSSEN Zweckbestimmung und Abgrenzung gegenüber Medical
 Device Software anhand der dann aktuellen MDR-/MDCG-Regeln extern überprüft
 werden.
+
+**Als eigener Satz, über beide Leistungsbereiche (2026-09-17, E18):** Die
+Software trifft keine diagnostischen oder therapeutischen Entscheidungen und
+schlägt keine vor.
+
+Dieser Abschnitt gilt unverändert im Trainingsverhältnis und an Terminen im
+Kontext `training` (§1.2, ADR-006 Fassung 3 Punkt 9). Dass Training keine
+Heilbehandlung ist, macht die Grenze nicht weiter — erhoben werden auch dort
+Gesundheitsangaben; es ändert sich die Rechtsgrundlage, nicht die
+Zweckbestimmung.
+
+Daraus folgen drei Verbote. Sie sind in V1 **Ausschlusskriterien**, nicht nur
+ein Prüfanlass:
+
+1. Die Anwendung DARF NICHT Übungen, Dosierung, Intensität oder Progression aus
+   Diagnose, Befund, Screening-Antwort oder Verlauf vorschlagen, vorsortieren,
+   vorfiltern oder vorbelegen.
+2. Die Anwendung DARF NICHT aus Schmerzskala oder Verlauf eine Bewertung mit
+   Handlungsempfehlung ableiten — kein eigener Score, keine Risikoklasse, keine
+   Ampel, kein Schwellenwertalarm.
+3. Ein Screening-Fragebogen DARF NICHT selbst eine Trainingsfreigabe, eine
+   Kontraindikation, einen Abbruch oder eine Empfehlung zum Arztbesuch
+   aussprechen.
+
+Eine Funktion, die eines dieser Verbote berührt, entsteht in V1 nicht. Sie ist
+zugleich nach der Regel oben `MDR_REVIEW_REQUIRED` und DARF auch hinter einem
+Schalter nicht produktiv erreichbar sein; **ein Feature-Flag ersetzt die
+Prüfung nicht.**
+
+Die Verbote sind **Ausgabeverbote, keine Datenverbote**: Erhoben, gespeichert
+und angezeigt wird, was fachlich gebraucht wird — es entsteht nur die
+abgeleitete Aussage nicht. Die Hervorhebung nach §7.1 bleibt unberührt; der
+Unterschied ist der zwischen „NRS 8, Angabe vom 12.03." und „Schmerz
+verschlechtert". Wo genau die Kante jedes Verbots verläuft, steht in ADR-006
+Fassung 3, Punkte 10 bis 12 — dieses Dokument nennt das Verbot, nicht seine
+Auslegung.
 
 Einzelheiten: [ADR-006](docs/adr/ADR-006-medical-device-boundary.md).
 
@@ -1328,8 +1524,8 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-018 | Zustandsautomat des Termins | §8, §19 |
 | ADR-019 | Kartendienst: Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | §8.1, §9, §20 |
 | ADR-020 | Behandlungsgrundlage: Verordnung und Selbstzahler unter einer Klammer | §14, §19 |
-| ADR-021 | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | §1.1, §4, §14, §18 |
-| ADR-022 | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | §4, §5, §8, §18 |
+| ADR-021 | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | §1.1, §1.2, §4, §14, §18 |
+| ADR-022 | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | §1.2, §4, §5, §8, §18 |
 
 Die Tabelle nennt, **welcher ADR welchen Paragraphen trägt** — sonst nichts.
 Welche Fassung gilt, welchen Status ein ADR hat und woran eine produktive
@@ -1346,13 +1542,77 @@ des Projektinhabers fest. Was daran technisch zu entscheiden war, steht in
 ADR-005, ADR-006 und ADR-016; was daran offen geblieben ist, in
 `docs/decisions/OPEN_DECISIONS.md` E12 und E13. Die Hausbesuch-Szenarien in
 §8 und der Rollenschnitt in §4.3 sind ebenfalls Produktentscheidungen; ihr
-technischer Teil steht in ADR-018 Fassung 3 und ADR-004 Fassung 2.
+technischer Teil steht in ADR-018 Fassung 3 und ADR-004 Fassung 2. Dasselbe
+gilt für den Rollenschnitt des zweiten Leistungsbereichs in §4.8 bis §4.10:
+Die Trennung entscheidet ADR-021, die Durchsetzung ADR-004; wer im Training
+was sieht, ist eine Produktentscheidung und steht hier.
 
 
 ## Änderungsvermerke
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.13
+
+Der **Nachzug an Rang 1** aus E18 — Schritt 5 von sieben, fachlich entschieden
+vom Projektinhaber am 2026-09-17, jetzt fällig, weil die vier ADRs darunter
+seit dem 2026-09-20 stehen (ADR-021, ADR-022, ADR-006 Fassung 3, ADR-009
+Fassung 2). Die Version fügt MUSS- und DARF-NICHT-Aussagen in §1, §4, §14 und
+§17 hinzu und ist deshalb keine Korrekturversion (§21).
+
+- **§1.2 neu — zwei Leistungsbereiche.** Die Software deckt Heilbehandlung und
+  Leistungen ohne Heilbehandlungszweck ab; getrennt wird nach
+  **Rechtsverhältnis, nicht nach Person**, und das Datenmodell MUSS die
+  Trennung erzwingen. Im Zweifel gilt das strengere Behandlungsregime — für
+  Schutz, Zugriff, Dokumentation und Frist. **Ausdrücklich nicht** für die
+  steuerliche Einordnung: Dort hängt das Kennzeichen am Posten (ADR-009
+  Punkt 15), und ein im Zweifel gewähltes „steuerfrei" wäre eine falsche
+  Angabe, keine Vorsicht.
+- **§4.8 neu — „Zugriff folgt dem Verhältnis, nicht der Person."** Der Satz im
+  Wortlaut vom 2026-09-17, normativ gefasst: Jede Rolle benennt ihren Bereich,
+  aus einer Rolle des einen folgt kein Zugriff auf den anderen, durchgesetzt in
+  den Policies und in der RLS statt in der Oberfläche, Übernahme nur als
+  dokumentierte Kopie, Auditpflicht beidseitig. Die Ziffer steht **über** allen
+  Rollen und in keiner. Die Tabelle dort ordnet jede vorhandene Rolle einem
+  Bereich zu; dabei ist eine Lücke geschlossen worden, die bisher niemand
+  beantwortet hatte: **Office sieht im Training nur Organisatorisches**
+  (Termin, Vertragsstatus, Leistung, Rechnung, Zahlung) — Screening- und
+  Gesundheitsangaben bleiben gesperrt, bis die DSFA sie bewertet (B2, §16).
+- **§4.9 neu — Trainingsbetreuung.** Die Rolle, ohne die „kein Durchgriff" eine
+  unbesetzte Grenze blieb (ADR-021, Konsequenzen). Sie führt Verhältnis,
+  Termin, Trainingsgrundlage und Protokoll und sieht **keine** Akte, keinen
+  Befund, keine Verordnung. Ihr Bezeichner im Code bleibt Sache des SPEC
+  (ADR-014); dieses Dokument legt den Schnitt fest, nicht den Schlüssel.
+- **§4.10 neu — Trainingskund:in**, das Gegenstück zu §4.6: eigene Daten des
+  Trainingsverhältnisses, Konto und Verhältnis getrennt wie dort, eigene Frist
+  nach ADR-021 Punkt 4. Bei einer Person mit beiden Verhältnissen bleiben die
+  Bereiche auch in ihrer eigenen Sicht getrennt. §4.6 sagt jetzt außerdem, dass
+  der dort genannte Trainingsplan die **Heimübungen der Behandlung** meint und
+  nicht das Trainingsverhältnis.
+- **§14 — eng gefasste Aufhebung.** Online Coaching ist aus der Sperrliste
+  freigegeben, **begrenzt auf Terminkontext, Trainingsverhältnis und die
+  Abrechnung der Trainingsleistung**. Alle übrigen Einträge bleiben gesperrt,
+  der Trainingsbereich selbst ist nicht freigegeben, und auch das Freigegebene
+  entsteht nur mit konkretem Auftrag. Die Enge ist der Punkt — sonst reißt eine
+  Freigabe die ganze Liste auf.
+- **§17 — Zweckbestimmung als eigener Satz** und über beide Bereiche: Die
+  Software trifft keine diagnostischen oder therapeutischen Entscheidungen und
+  schlägt keine vor. Die drei Feature-Verbote aus ADR-006 Fassung 3 stehen
+  jetzt als DARF-NICHT-Aussagen an Rang 1 und sind Ausschlusskriterien; ein
+  Feature-Flag ersetzt die Prüfung nicht. Die **Auslegung** — wo die Kante
+  jedes Verbots verläuft — bleibt in ADR-006, damit nicht zwei Texte dasselbe
+  behaupten und auseinanderdriften.
+- **§21:** ADR-021 und ADR-022 tragen zusätzlich §1.2; der Rollenschnitt des
+  zweiten Bereichs ist als Produktentscheidung benannt, wie schon der in §4.3.
+
+**Nicht Gegenstand dieser Version:** kein Code, kein Schema, keine Migration,
+kein Test. Die zweite Verhältnistabelle, der Terminkontext, der Rollenschlüssel
+im Code, die getrennten Nummernkreise und der § 14c-Riegel entstehen erst in
+den Loops, die sie bauen — Schritt 6 schneidet sie. Ebenfalls offen: der
+Trainingsbereich selbst (Schritt 7), **BEF-019** und die Frage, wo
+`MDR_REVIEW_REQUIRED` im Code geführt wird. Extern zu bestätigen bleiben B2
+(Trennung, Einwilligung, Screening-Frist, Office-Sicht im Training), B4 und B9.
 
 ### Änderungsvermerk 0.12.2
 

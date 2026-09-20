@@ -302,6 +302,18 @@ Fragen:**
 datenschutzrechtliche Bestätigung, insbesondere von Punkt 4 und Punkt 5 (mit
 B2).
 
+**Dazugekommen am 2026-09-20 (mit B2):** Darf das **Praxismanagement/Office**
+die Screening- und Gesundheitsangaben des Trainings lesen? Für die
+Behandlungsakte ist das seit E15 bejaht (§4.3, Need-to-know-Bewertung offen);
+für das Training ist es **vorerst verneint** — Office sieht dort nur
+Organisatorisches (Termin, Vertragsstatus, erbrachte Leistung, Rechnung,
+Zahlung), `PROJECT_PRINCIPLES.md` §4.8 seit Version 0.13. Gewählt ist die
+restriktive Seite nach §16, weil die Angaben auf einer **Einwilligung** ruhen
+(Punkt 4) und nicht auf lit. h; eine Öffnung wäre eine Zweckerweiterung. Zu
+bestätigen ist, ob das so bleibt oder ob die Abrechnung sie fallweise braucht.
+Rücknahme `klein` in der Software (eine Policy, eine Korrekturversion an
+Rang 1), aber nicht rückwirkend in der Bewertung.
+
 **Blockiert:** Etappe 8 vollständig und das Datenmodell der Betreuungsepisode
 (`IDEA-LZK-002`, `IDEA-LZK-003`, `IDEA-LZK-008`); die automatische
 Klassifizierung aus `IDEA-LZK-007`; jede Funktion für Kund:innen ohne

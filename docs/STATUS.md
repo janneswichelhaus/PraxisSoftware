@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-20 · letzte Session: ADR-009 Fassung 2 angenommen (E18, Schritt 4 fertig)
+# Status · Stand 2026-09-20 · letzte Session: `PROJECT_PRINCIPLES.md` 0.13 (E18, Schritt 5 fertig)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,20 +6,19 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**ADR-009 Fassung 2 ist angenommen** (2026-09-20, E18 Schritt 4): Steuerkennzeichen am **Posten**
-statt am Kunden, **ein Leistungsbereich je Rechnung**, getrennte Nummernkreise, der **§ 14c-Riegel**,
-die Auswertung „Einnahmen je Leistungsart"; Punkte 1 bis 14 unverändert. Damit sind **die Schritte 1
-bis 4 aus E18 abgeschlossen** (ADR-021, ADR-022, ADR-006 Fassung 3, ADR-009 Fassung 2; §21 **0.12.2**)
-und **Schritt 5 ist frei** — **gebaut ist von E18 nichts**. **R3 ist vollständig gemergt** (PR #57,
-#58, #59), `R3-UEBERGABE.md` weiter nur auf `claude/r3-analyse`; **Etappe 1 der Abrechnung ist
-gebaut**, Abnahme steht aus.
+**`PROJECT_PRINCIPLES.md` steht auf 0.13** (2026-09-20, E18 Schritt 5): **§1.2** zwei
+Leistungsbereiche, **§4.8** „Zugriff folgt dem Verhältnis" mit Bereichszuordnung je Rolle,
+**§4.9** Trainingsbetreuung, **§4.10** Trainingskund:in, **§14** eng aufgehoben, **§17**
+Zweckbestimmung und die drei Verbote. Damit sind **die Schritte 1 bis 5 aus E18 abgeschlossen** und
+**Schritt 6 ist frei** — **gebaut ist von E18 nichts**. **R3 ist vollständig gemergt** (PR #57,
+#58, #59), `R3-UEBERGABE.md` nur auf `claude/r3-analyse`; **Etappe 1 der Abrechnung ist gebaut**,
+Abnahme steht aus.
 
 ## Danach — Reihenfolge seit 2026-09-20
 
-1. **`PROJECT_PRINCIPLES.md` neue Version** — §1, §4, Zweckbestimmung und §14 nachziehen
-   (E18, Schritt 5); Rang 1, Entscheidungsarbeit, kein Code
-2. **Roadmap neu schneiden** (E18, Schritt 6) — dort landet, was aus ADR-009 Fassung 2 zu bauen ist, samt **BEF-019**
-3. **MAP-002** — In-App-Kartenprototyp; parallel startbar, sobald das PTV-Free-Abo vorliegt
+1. **Roadmap neu schneiden** (E18, Schritt 6) — Datenmodell, Termin, Abrechnung, **BEF-019**
+2. **MAP-002** — In-App-Kartenprototyp; parallel startbar, sobald das PTV-Free-Abo vorliegt
+3. **`MDR_REVIEW_REQUIRED` verorten** — eigene Sitzung, seit Schritt 5 möglich; kein Loop wartet
 
 ## Prüfverfahren
 
@@ -37,8 +36,9 @@ gebaut**, Abnahme steht aus.
   Annahme (ANN-074, ANN-075); dazu **echte Preise und Praxisstammdaten** — der
   Seed trägt erfundene. **Schritt 4 gilt jetzt** (getrennte Kreise je Bereich).
 - **M0 am 30.09.:** B1, B2, B4 ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md))
-  — **B2 trägt** die Trennung aus ADR-021 und die Einwilligung im Training ·
-  **Secret Scanning und Push Protection prüfen** · Kartendienst ablegen.
+  — **B2 trägt** die Trennung aus ADR-021, die Einwilligung im Training und
+  neu die Office-Sicht im Training (§4.8) · **Secret Scanning und Push
+  Protection prüfen** · Kartendienst ablegen.
 - **Abnahme R3** (25 Befunde umgesetzt, 26 bleiben Backlog) und **CAL-018,
   CAL-EPIC-004a/b/c, FIX-EPIC-004, UX-013, GRD-001, VER-EPIC-002, ABR-EPIC-001,
   ABR-EPIC-002a/b, ABR-EPIC-003** in [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md);
@@ -53,8 +53,8 @@ FIX-EPIC-001 braucht Docker. Liste: [`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**ADR-009 Fassung 2 angenommen** — kein Code, keine Migration, kein Test; alle sechs neuen Punkte wie
-vorgeschlagen. Nachgezogen: Status, Datum und Änderungshistorie im ADR, die Fassung in
-[`adr/README.md`](adr/README.md) — der einzigen Stelle, die Fassung und Status führt —, Schritt 4 in E18
-und in der Roadmap (Vermerk 5.24). §21 und der Index in `CLAUDE.md` nennen für ADR-009 keine Fassung und
-blieben unberührt. **BEF-019 bleibt offen**, mit Punkt 18 jetzt verbindlich. Lokal: `git pull origin main`.
+**Rang 1 nachgezogen, 0.12.2 → 0.13** — kein Code, keine Migration, kein Test. Über die Vorgabe
+hinaus gingen zwei Stellen, weil der Satz aus §4 sonst ins Leere liefe: die Tabelle in §4.8, die
+**jede** Rolle einem Bereich zuordnet, und die Trainingsbetreuung als §4.9. Restriktiv: **Office
+sieht im Training nur Organisatorisches** (Screening bis B2 gesperrt, §16). Nachgezogen: E18,
+Roadmap (5.25). Lokal: `git pull origin main`.
