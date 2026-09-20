@@ -533,6 +533,14 @@ danach.
 | FRB-EPIC-002 | **FRB-003** Anamnesebogen nach §7, in der Praxis ausfüllbar · **FRB-004** Verlaufsdarstellung mit Ereignismarkierungen, ohne Bewertung (`IDEA-OUT-005`) · Körperschema als Teil des Befunds (`IDEA-PRX-027`) | FRB-EPIC-001, **B8** |
 | DOK-005      | Therapiebericht an die Verordner:in aus Befund und Verlauf (`PROJECT_PRINCIPLES.md` §4.2) — nach der Eröffnung                                                                                                | FRB-EPIC-002         |
 
+**Inhalt liegt seit 2026-09-21 vor, Einplanung nicht.** Jannes hat 18 Scores
+(darunter der Anamnesebogen für FRB-003) und die MT-Untersuchungsbausteine
+übergeben; das Material liegt in [`../../quellen/README.md`](../../quellen/README.md),
+der Plan mit Phasen, Abnahmekriterien und sechs Vorentscheidungen in
+[FRB-BAUSTEINE-UND-SCORES.md](FRB-BAUSTEINE-UND-SCORES.md). Die
+**Untersuchungsbausteine haben hier noch keine Zeile** — sie sind neuer Umfang
+und brauchen eine Einplanung durch Jannes, keine Ableitung aus diesem Vermerk.
+
 ### Etappe 3 — Übungspläne innerhalb der Therapie (Stufe 2, nach der Eröffnung)
 
 Ein Heimprogramm, das die Therapeutin zusammenstellt und die Software nur
@@ -749,7 +757,7 @@ Punkt 7 — MUSS; der Inhalt der Zweckbestimmung dagegen schon).
 | **B1**                       | Zweckbestimmung, MDR-Abgrenzung, EU AI Act                                                                                                         | externe Prüfstelle                  | M3                           | Anfrage Sep, Ergebnis Feb           | Zweckbestimmung steht 2026-09-08; Anfrage Sep |
 | **B3**                       | Validierung der internen Fristen (ANN-001), Belegarten                                                                                             | im DSFA-Prozess                     | M3                           | Feb 2027                            | gilt wie ANN-001; Prüfung Feb |
 | **E2**                       | Ausfallkonzept als Praxisprozess — zugleich Rückfallplan der Eröffnung                                                                             | Jannes mit Claude                   | M3                           | Jan 2027                            | Kern entschieden 2026-09-08 |
-| **B8**                       | Lizenzstatus DIGOTOR-Bogen und weiterer Instrumente — **keine Entscheidung, eine Auskunft des Lizenzgebers**; **Jannes hat die Nutzung am 2026-09-19 bestätigt**, der schriftliche Beleg fehlt noch | Jannes, Lizenzgeber                 | FRB-003                      | vor FRB-EPIC-002, spätestens Apr 2027 | Nutzung bestätigt (Jannes); Beleg für M3 offen |
+| **B8**                       | Lizenzstatus DIGOTOR-Bogen und weiterer Instrumente — **keine Entscheidung, eine Auskunft des Lizenzgebers**; **Jannes hat die Nutzung am 2026-09-19 bestätigt** und am **2026-09-21** erklärt, es gebe keine Lizenzierung und alle Inhalte dürften ausnahmslos integriert werden; der schriftliche Beleg fehlt weiter. **Die Weiterveröffentlichung über das öffentliche Repository ist davon nicht ausdrücklich erfasst** — siehe D1 in [FRB-BAUSTEINE-UND-SCORES.md](FRB-BAUSTEINE-UND-SCORES.md) | Jannes, Lizenzgeber                 | FRB-003                      | vor FRB-EPIC-002, spätestens Apr 2027 | Nutzung bestätigt (Jannes, zuletzt 2026-09-21); Beleg für M3 offen; **D1 vorgezogen** |
 | **B15 Terminerinnerung**     | Kanal (SMS, E-Mail, Messenger), Anbieter, Einwilligung; Online-Anfrage — oder Anrufliste bleibt der Weg                                            | Jannes, Prüfung nach ADR-002        | Stufe 2 nach der Eröffnung   | Anfrage mit B2, Entscheidung bis M6 | entschieden 2026-09-08: keine |
 | **B6**                       | Beschäftigtendaten: aggregierte Auswertungen (§20)                                                                                                 | Jannes, ggf. Beratung               | ZK-001, MAP-006              | Stufe 2                             | entschieden 2026-09-08: nein |
 | **B5**                       | Patientenidentität, Vertretung, §630g                                                                                                              | Jannes, ggf. Beratung               | Etappe 4                     | Stufe 3                             | Rahmen entschieden 2026-09-08 |

@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-20 · letzte Session: LEI-EPIC-001 (Etappe L, Loop 2 von 5)
+# Status · Stand 2026-09-21 · letzte Session: Quellen für Bausteine und Scores abgelegt, Plan geschrieben
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -55,6 +55,6 @@ FIX-EPIC-001 braucht Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.m
 
 ## Letzte Session
 
-**LEI-EPIC-001 — drei Stories, drei Migrationen, 21 neue Datenbanktests.** Über die Vorgabe hinaus
-ging nichts: **keine Oberfläche**, keine Schreibwege, die Rolle noch nicht zuweisbar — deshalb auch
-keine Sichtprüfung. Lokal: `git pull origin main`, dann `db reset` (der Seed hat sich geändert).
+**Quellen abgelegt, kein Feature.** 18 Scores und die MT-Bausteine liegen mit Prüfsummenregister in
+[`../quellen/README.md`](../quellen/README.md), Phasen und MDR-Grenze in [`development/FRB-BAUSTEINE-UND-SCORES.md`](development/FRB-BAUSTEINE-UND-SCORES.md).
+**Die 18 PDFs bleiben aus dem öffentlichen Repository heraus** — D1 entscheidet, ob das so bleibt.
