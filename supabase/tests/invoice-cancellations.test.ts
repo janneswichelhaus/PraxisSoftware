@@ -83,8 +83,16 @@ interface Ansicht {
   overdue: boolean;
 }
 
-/** Legt einen dokumentierten Termin an; `vorStunden` zaehlt rueckwaerts. */
-async function termin(vorStunden: number): Promise<string> {
+/**
+ * Legt einen dokumentierten Termin an.
+ *
+ * `stundeImMonat` zaehlt vom **Monatsanfang** der Praxiszeitzone vorwaerts:
+ * 30 ist der 2. des Monats, 06:00. So liegt jeder Termin in seinem eigenen
+ * Zeitfenster - und immer in dem Monat, den der Entwurf verlangt (R3-005).
+ * Relativ zu now() gerechnet fiel er am Monatsersten in den Vormonat, und
+ * create_invoice_draft brach ab.
+ */
+async function termin(stundeImMonat: number): Promise<string> {
   const { rows } = await asPostgres<{ id: string }>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,
@@ -92,8 +100,10 @@ async function termin(vorStunden: number): Promise<string> {
        completed_at, completed_by
      ) values (
        $1, $2, $3, $4, 'practice', 'documented',
-       date_trunc('hour', now()) - make_interval(hours => $5::int),
-       date_trunc('hour', now()) - make_interval(hours => $5::int - 1),
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int)) at time zone 'Europe/Berlin',
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int + 1)) at time zone 'Europe/Berlin',
        $6, now(), $7
      ) returning id`,
     [
@@ -101,7 +111,7 @@ async function termin(vorStunden: number): Promise<string> {
       patients.erika,
       STAFF_ANNA,
       LOCATION,
-      vorStunden,
+      stundeImMonat,
       GRUNDLAGE_FRISCH,
       users.ownerTherapist,
     ],
@@ -110,8 +120,8 @@ async function termin(vorStunden: number): Promise<string> {
 }
 
 /** Erfasst eine Leistung an einem frischen Termin und liefert die Terminkennung. */
-async function leistung(position: string, vorStunden: number): Promise<string> {
-  const id = await termin(vorStunden);
+async function leistung(position: string, stundeImMonat: number): Promise<string> {
+  const id = await termin(stundeImMonat);
   await asUserCommitted(
     users.ownerTherapist,
     'select public.record_billable_services($1::uuid, $2::jsonb)',
@@ -139,9 +149,9 @@ async function heute(): Promise<string> {
 /** Eine ausgestellte Rechnung ueber genau eine Leistung. */
 async function ausgestellteRechnung(
   position: string = KATALOG.kg,
-  vorStunden = 30,
+  stundeImMonat = 30,
 ): Promise<{ id: string; nummer: string; betrag: number }> {
-  await leistung(position, vorStunden);
+  await leistung(position, stundeImMonat);
   const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
     patients.erika,
     await monat(),

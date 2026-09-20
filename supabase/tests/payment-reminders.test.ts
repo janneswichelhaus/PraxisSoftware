@@ -73,7 +73,13 @@ async function monat(): Promise<string> {
   return rows[0]!.monat;
 }
 
-/** Eine ausgestellte Rechnung ueber eine Leistung. */
+/**
+ * Eine ausgestellte Rechnung ueber eine Leistung.
+ *
+ * Der Termin liegt in der 30. Stunde des laufenden Monats (2., 06:00) statt
+ * 30 Stunden vor jetzt: So liegt die Leistung immer in dem Monat, den der
+ * Entwurf verlangt - auch am Monatsersten (R3-005).
+ */
 async function ausgestellteRechnung(): Promise<{ id: string; nummer: string; betrag: number }> {
   const { rows: termin } = await asPostgres<{ id: string }>(
     `insert into public.appointments (
@@ -82,8 +88,10 @@ async function ausgestellteRechnung(): Promise<{ id: string; nummer: string; bet
        completed_at, completed_by
      ) values (
        $1, $2, $3, $4, 'practice', 'documented',
-       date_trunc('hour', now()) - interval '30 hours',
-       date_trunc('hour', now()) - interval '29 hours',
+       (date_trunc('month', now() at time zone 'Europe/Berlin') + interval '30 hours')
+         at time zone 'Europe/Berlin',
+       (date_trunc('month', now() at time zone 'Europe/Berlin') + interval '31 hours')
+         at time zone 'Europe/Berlin',
        $5, now(), $6
      ) returning id`,
     [organizationId, patients.erika, STAFF_ANNA, LOCATION, GRUNDLAGE_FRISCH, users.ownerTherapist],
@@ -398,8 +406,10 @@ describe('Zahlungserinnerung', () => {
            completed_at, completed_by
          ) values (
            $1, $2, $3, $4, 'practice', 'documented',
-           date_trunc('hour', now()) - interval '30 hours',
-           date_trunc('hour', now()) - interval '29 hours',
+           (date_trunc('month', now() at time zone 'Europe/Berlin') + interval '30 hours')
+             at time zone 'Europe/Berlin',
+           (date_trunc('month', now() at time zone 'Europe/Berlin') + interval '31 hours')
+             at time zone 'Europe/Berlin',
            $5, now(), $6
          ) returning id`,
         [

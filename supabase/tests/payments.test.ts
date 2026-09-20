@@ -75,8 +75,16 @@ interface Posten {
   open_total_cents: number;
 }
 
-/** Legt einen dokumentierten Termin an; `stunden` zaehlt rueckwaerts. */
-async function termin(vorStunden: number, patient?: string): Promise<string> {
+/**
+ * Legt einen dokumentierten Termin an.
+ *
+ * `stundeImMonat` zaehlt vom **Monatsanfang** der Praxiszeitzone vorwaerts:
+ * 30 ist der 2. des Monats, 06:00. So liegt jeder Termin in seinem eigenen
+ * Zeitfenster - und immer in dem Monat, den der Entwurf verlangt (R3-005).
+ * Relativ zu now() gerechnet fiel er am Monatsersten in den Vormonat, und
+ * create_invoice_draft brach ab.
+ */
+async function termin(stundeImMonat: number, patient?: string): Promise<string> {
   const { rows } = await asPostgres<{ id: string }>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,
@@ -84,8 +92,10 @@ async function termin(vorStunden: number, patient?: string): Promise<string> {
        completed_at, completed_by
      ) values (
        $1, $2, $3, $4, 'practice', 'documented',
-       date_trunc('hour', now()) - make_interval(hours => $5::int),
-       date_trunc('hour', now()) - make_interval(hours => $5::int - 1),
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int)) at time zone 'Europe/Berlin',
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int + 1)) at time zone 'Europe/Berlin',
        $6, now(), $7
      ) returning id`,
     [
@@ -93,7 +103,7 @@ async function termin(vorStunden: number, patient?: string): Promise<string> {
       patient ?? patients.erika,
       STAFF_ANNA,
       LOCATION,
-      vorStunden,
+      stundeImMonat,
       patient === undefined ? GRUNDLAGE_FRISCH : null,
       users.ownerTherapist,
     ],
@@ -102,8 +112,8 @@ async function termin(vorStunden: number, patient?: string): Promise<string> {
 }
 
 /** Erfasst eine Leistung an einem frischen Termin. */
-async function leistung(position: string, vorStunden: number, patient?: string): Promise<void> {
-  const id = await termin(vorStunden, patient);
+async function leistung(position: string, stundeImMonat: number, patient?: string): Promise<void> {
+  const id = await termin(stundeImMonat, patient);
   await asUserCommitted(
     users.ownerTherapist,
     'select public.record_billable_services($1::uuid, $2::jsonb)',
@@ -136,9 +146,9 @@ async function heute(): Promise<string> {
  */
 async function ausgestellteRechnung(
   position: string = KATALOG.kg,
-  vorStunden = 30,
+  stundeImMonat = 30,
 ): Promise<{ id: string; betrag: number }> {
-  await leistung(position, vorStunden);
+  await leistung(position, stundeImMonat);
   const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
     patients.erika,
     await monat(),
