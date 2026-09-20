@@ -19,7 +19,7 @@ Nenner wächst, gebaut ist nichts weniger. **R3 gemergt** (PR #57–#59); Abrech
 2. **LEI-EPIC-001** — Trainingsverhältnis: Tabelle, Datenklasse, Löschlauf, Trainingsbetreuung
 3. **CAL-EPIC-005** — Terminkontext und Trainingsgrundlage; braucht LEI-EPIC-001
 
-Daneben unverändert: **MAP-002** parallel startbar, sobald das PTV-Free-Abo vorliegt · **E18
+Daneben: **MAP-002** ist **startbar**, der PTV-Free-Schlüssel liegt seit 2026-09-20 vor · **E18
 Schritt 7** und **`MDR_REVIEW_REQUIRED` verorten** als eigene Sitzungen; kein Loop wartet darauf.
 
 ## Prüfverfahren
@@ -29,8 +29,8 @@ Schritt 7** und **`MDR_REVIEW_REQUIRED` verorten** als eigene Sitzungen; kein Lo
 
 ## Blocker (Jannes-seitig)
 
-- **PTV-Free-Abo vor MAP-002** — ohne Schlüssel läuft der Prototyp nur gegen
-  den Mock-Adapter (ADR-019); nur synthetische Koordinaten.
+- **PTV-Schlüssel nur lokal** (Abo seit 2026-09-20): `.env.local`, nie ins
+  Repository, synthetische Koordinaten; offen: **Domainbindung** (ADR-019).
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von R3 (eine
   Migration aus G2); Seed unverändert. **Node 22** (`.nvmrc`), sonst rot.
 - **G13 ist überfällig:** Nummernformat (jetzt **je Nummernkreis**, ABR-EPIC-005)

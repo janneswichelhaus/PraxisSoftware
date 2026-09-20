@@ -43,7 +43,7 @@ Fortschrittstabelle, [`../STATUS.md`](../STATUS.md) und den Abschnitt
 [`../STATUS.md`](../STATUS.md)** — dort, und nur dort, mit Aufruf, Pfad und
 Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
 
-- **Parallel startbar, sobald der PTV-Schlüssel vorliegt:**
+- **Parallel startbar — der PTV-Free-Schlüssel liegt seit dem 2026-09-20 vor:**
   `/feature-loop MAP-002 In-App-Kartenprototyp nach docs/development/MAP-LOOPS.md`
   — nur synthetische Daten (ADR-019 angenommen am 2026-09-13, E-20).
 - **Docs-Session offen:** `OPS-001 Providerprüfung` — mit den fünf
@@ -87,7 +87,7 @@ Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
   **E15** (Office liest klinische Inhalte) und den prüfpflichtigen Annahmen des
   Registers; B4 mit den Steuerfragen und **E14 Fall 1** (Vergütung ohne
   erbrachte Behandlung) · Genehmigung des Kartendienstes schriftlich ablegen
-  (G14) · vor MAP-002 das PTV-Free-Abo, vor MAP-006 die PTV-Vertragsdokumente
+  (G14) · PTV-Free-Abo liegt seit dem 2026-09-20 vor, vor MAP-006 die PTV-Vertragsdokumente
   (`providerpruefung-kartendienst.md`) · Prompt der Wochenupdate-Routine
   nachziehen (`docs/DEVELOPMENT.md`, „Manuelle Schritte").
 - **Das PTV-Free-Abo trägt nur den Prototyp.** Jannes hat am 2026-09-19
@@ -271,7 +271,7 @@ hinweg ist das Verbindliche (E-15).
 | Monat       | Kap. | Code-Loops (Last)                                                                                   | Docs-Sessions                                                                          | Jannes liefert / entscheidet                                                                                                                              | Extern                           | MS     |
 | ----------- | ---- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------ |
 | Sep 2026    | 7    | **erledigt (13 Code-Loops):** VER-EPIC-001 · UI-000 · UX-EPIC-001 · STAFF-EPIC-002 · LOE-EPIC-001 · CAL-EPIC-003a/b · DAT-EPIC-001 · MARKE-001, AKTE, UX-012, UI-002, FIX-EPIC-001/003, CAL-012 bis CAL-017 | ADR-017 · ADR-018 · ADR-019 (alle angenommen) · Dokumentations-Audit 2026-09-13 · **OPS-001 Providerprüfung offen** | Branch Protection, Secret Scanning · B1/B2/B4 anfragen · Genehmigung Kartendienst schriftlich ablegen · Abnahmen der Loops seit dem 12.09. | —                                | M0     |
-| Okt 2026    | 9    | ROL-EPIC-001 · CAL-018 · VER-EPIC-002 · ABR-EPIC-001 · **ABR-EPIC-004** · **LEI-EPIC-001** · **CAL-EPIC-005** (7) | OPS-001 abschließen · VVT- und TOM-Entwurf · **E18 Schritt 7** (Trainingsbereich zuschneiden)                                             | Test-Cloudprojekt anlegen (nach OPS-001) · Leistungskatalog mit Preisen · Praxisstammdaten, Logo, Bank · PTV-Free-Abo · Urlaub eintragen                   | —                                | —      |
+| Okt 2026    | 9    | ROL-EPIC-001 · CAL-018 · VER-EPIC-002 · ABR-EPIC-001 · **ABR-EPIC-004** · **LEI-EPIC-001** · **CAL-EPIC-005** (7) | OPS-001 abschließen · VVT- und TOM-Entwurf · **E18 Schritt 7** (Trainingsbereich zuschneiden)                                             | Test-Cloudprojekt anlegen (nach OPS-001) · Leistungskatalog mit Preisen · Praxisstammdaten, Logo, Bank · ~~PTV-Free-Abo~~ (liegt vor) · Urlaub eintragen                   | —                                | —      |
 | Nov 2026    | 8    | ABR-EPIC-002a Rechnung · ABR-EPIC-003 Zahlungen · ABR-EPIC-002b Dokument/Storno · MAP-002 · **ABR-EPIC-005** · **ABR-EPIC-006** (6) | Löschkonzept, Breach-Prozess, Subprozessoren                                            | B4-Termin · steuerliche Grundeinstellungen (G13); PDF-Weg (B14) am 2026-09-19 entschieden                                                                  | B4 Ergebnis                      | —      |
 | Dez 2026    | 6    | E2-Funktion Tagesplan · PAT-006 · MAP-003 · Befunde (4)                                              | DSFA-Entwurf an die Prüfung (15.12.)                                                   | Ende-zu-Ende-Abnahme · Feldtag 1                                                                                                                          | B2 Ergebnis                      | M1     |
 | Jan 2027    | 8    | OPS-003 Backup/Restore · OPS-004 Logging (mit OPS-005 minimal) · OPS-006 minimal · OPS-007 Bootstrap · MAP-004 · MAP-005 · Befunde (7) | Betriebsdokumentation · BETRIEB-001                                                     | Restore-Test mitführen · Notfallzugang verwahren · Endgeräte-Richtlinie                                                                                    | DSFA-Rückfragen                  | —      |
