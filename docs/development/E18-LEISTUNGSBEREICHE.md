@@ -2,7 +2,8 @@
 
 Stand 2026-09-17 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt, kein
 eigener Rang · Umsetzung: **Schritte 1 und 2 abgeschlossen** (ADR-021 und
-ADR-022, angenommen am 2026-09-20), Schritte 3 bis 7 offen · **kein Code**
+ADR-022, angenommen am 2026-09-20), **Schritt 3 geschrieben und vorgeschlagen**
+(ADR-006 Fassung 3, 2026-09-20), Schritte 4 bis 7 offen · **kein Code**
 
 Quelle sind die Festlegungen des Projektinhabers vom 2026-09-17 (E18). Sie
 beantworten die fünf Fragen, die der Roadmap-Vermerk 5.7 bei Stufe 3 gestellt
@@ -130,7 +131,10 @@ Software Informationen zur Unterstützung diagnostischer oder therapeutischer
 Entscheidungen liefert, greift Regel 11 — Klasse IIa mit Benannter Stelle.
 
 Daraus drei **Feature-Verbote**, die in die Zweckbestimmung gehören
-([ADR-006](../adr/ADR-006-medical-device-boundary.md)):
+([ADR-006](../adr/ADR-006-medical-device-boundary.md)) — seit dem 2026-09-20
+stehen sie dort als Punkte 10 bis 12 der **Fassung 3** (vorgeschlagen), Punkt 9
+zieht die Zweckbestimmung über beide Leistungsbereiche und Punkt 13 macht die
+drei zu Ausschlusskriterien:
 
 1. **Keine automatische Übungsauswahl** auf Basis von Diagnose oder Befund.
    Vorlagen ja — die Auswahl trifft die behandelnde Person.
@@ -267,7 +271,7 @@ an ihren Platz, dann Code.** Kein Loop beginnt, bevor der ADR über ihm steht.
 | ------- | ----------------------------------------------------------------------------------------------------- | ---- |
 | 1       | **[ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md)** Leistungsbereiche und Rechtsverhältnisse: Abschnitt 1, die drei harten Regeln, § 203-Niveau — **angenommen am 2026-09-20** (`PROJECT_PRINCIPLES.md` 0.12.1 §21) | 2    |
 | 2       | **[ADR-022](../adr/ADR-022-appointment-context-and-training-basis.md)** Terminkontext und Trainingsgrundlage: Abschnitt 2, Abgrenzung zu ADR-020 — **angenommen am 2026-09-20** (`PROJECT_PRINCIPLES.md` 0.12.2 §21); `internal` ist `kind = 'event'` und bekommt kein zweites Feld | 2    |
-| 3       | **ADR-006 neue Fassung**: die drei Feature-Verbote in der Zweckbestimmung                              | 2    |
+| 3       | **[ADR-006](../adr/ADR-006-medical-device-boundary.md) Fassung 3** Abgrenzung gegenüber Medical Device Software: die drei Feature-Verbote aus Abschnitt 4 in der Zweckbestimmung, dazu ihre Geltung über beide Leistungsbereiche — **geschrieben am 2026-09-20, Status vorgeschlagen**; bis zur Annahme durch Jannes gilt Fassung 2 und beginnt Schritt 4 nicht | 2    |
 | 4       | **ADR-009 neue Fassung**: Steuerkennzeichen am Posten, getrennte Nummernkreise, § 14c-Riegel, Report   | 2    |
 | 5       | **`PROJECT_PRINCIPLES.md` neue Version**: § 1, § 4, Zweckbestimmung, § 14 bereinigt (§ 21)             | 1    |
 | 6       | **Roadmap neu schneiden**: Loops für Datenmodell, Termin, Abrechnung; Etappe 1 bis dahin unverändert   | —    |
