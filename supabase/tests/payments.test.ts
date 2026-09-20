@@ -1,5 +1,13 @@
+import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneTermine,
+  testDatabaseUrl,
+} from './helpers/db';
 
 /**
  * Zahlungen sind eigene Transaktionen (ABR-004).
@@ -159,6 +167,21 @@ async function buche(
     opts.notiz ?? null,
   ]);
   return rows[0]!.id;
+}
+
+/**
+ * Oeffnet auf einer eigenen Verbindung eine Transaktion als office.
+ *
+ * Nur fuer die Tests, die zwei Vorgaenge wirklich gleichzeitig brauchen: Die
+ * Helfer aus helpers/db schliessen ihre Transaktion selbst und koennen keine
+ * Sperre halten.
+ */
+async function alsOffice(client: Client): Promise<void> {
+  await client.query('begin');
+  await client.query("select set_config('role', 'authenticated', true)");
+  await client.query("select set_config('request.jwt.claims', $1, true)", [
+    JSON.stringify({ sub: users.office, role: 'authenticated' }),
+  ]);
 }
 
 async function rechnungszeile(id: string): Promise<Rechnungszeile> {
@@ -404,6 +427,55 @@ describe('Zahlung', () => {
       await expect(
         asUserCommitted(users.office, STORNIEREN, [eingang, 'Eingang war falsch']),
       ).rejects.toThrow(/refunds without payments received/);
+    });
+
+    it('laeuft nicht an einer gleichzeitigen Buchung vorbei (R3-015)', async () => {
+      // Zwei Vorgaenge an derselben Rechnung, wie zwei Personen an einem
+      // Vormittag: eine storniert den Eingang, die andere bucht die
+      // Rueckzahlung. record_payment sperrt die Rechnung, void_payment tat es
+      // nicht - also pruefte jeder Vorgang eine Summe, die der andere gerade
+      // aenderte, und am Ende stand mehr ausgezahlt als eingegangen.
+      const { id, betrag } = await ausgestellteRechnung();
+      const eingang = await buche(id, betrag);
+
+      const storno = new Client({ connectionString: testDatabaseUrl() });
+      const rueckzahlung = new Client({ connectionString: testDatabaseUrl() });
+      await storno.connect();
+      await rueckzahlung.connect();
+
+      try {
+        await alsOffice(storno);
+        await alsOffice(rueckzahlung);
+
+        // Die erste Verbindung storniert und laesst die Transaktion offen.
+        await storno.query(STORNIEREN, [eingang, 'Eingang war falsch']);
+
+        // Die zweite bucht gleichzeitig die volle Rueckzahlung. Mit der
+        // Sperre wartet sie, bis der Storno steht - und sieht dann keinen
+        // Eingang mehr, den sie zurueckzahlen koennte.
+        const laeuft = rueckzahlung
+          .query(BUCHEN, [id, betrag, await heute(), 'bank_transfer', 'refund', null])
+          .then(() => null)
+          .catch((fehler: unknown) => fehler as Error);
+
+        await new Promise((fertig) => setTimeout(fertig, 200));
+        await storno.query('commit');
+
+        const fehler = await laeuft;
+        await rueckzahlung.query(fehler === null ? 'commit' : 'rollback');
+
+        expect(fehler?.message).toMatch(/a refund cannot exceed the payments received/);
+
+        const { rows } = await asPostgres<{ bezahlt: number }>(
+          'select app.invoice_paid_cents($1::uuid) as bezahlt',
+          [id],
+        );
+        expect(rows[0]!.bezahlt).toBe(0);
+      } finally {
+        await storno.query('rollback').catch(() => undefined);
+        await storno.end();
+        await rueckzahlung.end();
+      }
     });
 
     it('haelt die Zahlung sonst unveraenderlich - auch am Schreibweg vorbei', async () => {
