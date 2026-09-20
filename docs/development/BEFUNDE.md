@@ -631,7 +631,7 @@ trägt den Weg „Zum Entwurf".
 | Bereich | Abrechnung: Rechnungsdokument (`/abrechnung/rechnungen/:id`, Druckbild)                             |
 | Quelle  | Codebefund Claude, 2026-09-20, bei der Entscheidungsarbeit zu ADR-009 Fassung 2 (E18 Schritt 4)     |
 | Status  | offen                                                                                               |
-| Berührt | `app.build_invoice_document` in `20260919150000_invoices.sql`, `InvoicePrintPage.tsx`; ADR-009 Punkt 18 (Fassung 2, vorgeschlagen); ANN-074 |
+| Berührt | `app.build_invoice_document` in `20260919150000_invoices.sql`, `InvoicePrintPage.tsx`; ADR-009 Punkt 18 (Fassung 2, angenommen am 2026-09-20); ANN-074 |
 
 **Beobachtung.** Das Rechnungsdokument weist steuerfreie Posten als eigene
 Steuergruppe aus und rechnet an ihnen richtig **keine** Umsatzsteuer heraus.
