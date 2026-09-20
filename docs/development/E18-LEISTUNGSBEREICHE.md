@@ -1,9 +1,10 @@
 # E18 — Zwei Leistungsbereiche: Heilbehandlung und Training
 
 Stand 2026-09-17 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt, kein
-eigener Rang · Umsetzung: **Schritte 1 bis 4 abgeschlossen** (ADR-021, ADR-022,
-ADR-006 Fassung 3 und ADR-009 Fassung 2, alle angenommen am 2026-09-20),
-Schritte 5 bis 7 offen · **kein Code**
+eigener Rang · Umsetzung: **Schritte 1 bis 5 abgeschlossen** (ADR-021, ADR-022,
+ADR-006 Fassung 3 und ADR-009 Fassung 2, alle angenommen am 2026-09-20; der
+Nachzug an Rang 1 als `PROJECT_PRINCIPLES.md` **0.13** vom 2026-09-20),
+Schritte 6 und 7 offen · **kein Code**
 
 Quelle sind die Festlegungen des Projektinhabers vom 2026-09-17 (E18). Sie
 beantworten die fünf Fragen, die der Roadmap-Vermerk 5.7 bei Stufe 3 gestellt
@@ -184,6 +185,18 @@ Das ist eine Änderung an MUSS-Anforderungen in § 1, § 4 und § 14 und braucht
 nach § 21 eine **neue Version mit Änderungsvermerk**. Ein Migrationshinweis
 entfällt: Die Änderung am Datenmodell ist additiv (oben).
 
+**Erledigt am 2026-09-20 als Version 0.13** (Schritt 5). Alle vier Sätze
+stehen: § 1.2 trägt die zwei Leistungsbereiche und die Zweifelsregel, § 4.8 den
+Wortlaut vom 2026-09-17 mit einer Tabelle, die **jede** vorhandene Rolle einem
+Bereich zuordnet, § 14 die eng gefasste Aufhebung, § 17 die Zweckbestimmung als
+eigenen Satz samt den drei Verboten als Ausschlusskriterien. Zwei Stellen
+gingen über die Vorgabe hinaus, weil der Satz aus § 4 sonst ins Leere gelaufen
+wäre: die **Trainingsbetreuung** als § 4.9 (die Rolle, die die zweite harte
+Regel besetzt) und das Gegenstück zu § 4.6 als **§ 4.10**. Offen geblieben und
+bewusst restriktiv entschieden ist die Sicht des **Office** auf das Training —
+organisatorisch ja, Screening- und Gesundheitsangaben nein, bis **B2** sie
+bewertet (§ 16).
+
 ## Zwei Richtigstellungen — erledigt am 2026-09-17
 
 Die erste Fassung dieser Vorgabe nannte zwei Dinge, die in **diesem**
@@ -279,7 +292,7 @@ an ihren Platz, dann Code.** Kein Loop beginnt, bevor der ADR über ihm steht.
 | 2       | **[ADR-022](../adr/ADR-022-appointment-context-and-training-basis.md)** Terminkontext und Trainingsgrundlage: Abschnitt 2, Abgrenzung zu ADR-020 — **angenommen am 2026-09-20** (`PROJECT_PRINCIPLES.md` 0.12.2 §21); `internal` ist `kind = 'event'` und bekommt kein zweites Feld | 2    |
 | 3       | **[ADR-006](../adr/ADR-006-medical-device-boundary.md) Fassung 3** Abgrenzung gegenüber Medical Device Software: die drei Feature-Verbote aus Abschnitt 4 in der Zweckbestimmung, dazu ihre Geltung über beide Leistungsbereiche — **angenommen am 2026-09-20** (Fassung und Status in [`../adr/README.md`](../adr/README.md); §21 nennt keine Fassung und bleibt unberührt); die drei Verbote sind Ausschlusskriterien, technisch nicht erzwingbar — sie wirken im Zuschnitt und im Zweitreview | 2    |
 | 4       | **[ADR-009](../adr/ADR-009-private-billing-model.md) Fassung 2** Privatabrechnung: Steuerkennzeichen am Posten, ein Leistungsbereich je Rechnung, getrennte Nummernkreise, § 14c-Riegel, Auswertung „Einnahmen je Leistungsart" — **angenommen am 2026-09-20** (Fassung und Status in [`../adr/README.md`](../adr/README.md); §21 nennt keine Fassung und bleibt unberührt); die drei Kennzeichen sind Werte des vorhandenen Paars an der Katalogposition und brauchen kein neues Feld; was daraus zu bauen ist, schneidet Schritt 6 | 2    |
-| 5       | **`PROJECT_PRINCIPLES.md` neue Version**: § 1, § 4, Zweckbestimmung, § 14 bereinigt (§ 21)             | 1    |
+| 5       | **`PROJECT_PRINCIPLES.md` neue Version**: § 1, § 4, Zweckbestimmung, § 14 bereinigt (§ 21) — **erledigt am 2026-09-20 mit Version 0.13**: § 1.2 (zwei Leistungsbereiche), § 4.8 (Zugriff folgt dem Verhältnis, mit Bereichszuordnung je Rolle), § 4.9 (Trainingsbetreuung), § 4.10 (Trainingskund:in), § 14 eng aufgehoben, § 17 mit Zweckbestimmung und den drei Verboten | 1    |
 | 6       | **Roadmap neu schneiden**: Loops für Datenmodell, Termin, Abrechnung; Etappe 1 bis dahin unverändert   | —    |
 | 7       | **Trainingsbereich zuschneiden** (Abschnitt 6): vierzehn Bereiche einzeln, Nutzen zuerst, MDR-nahe zuletzt | —    |
 
