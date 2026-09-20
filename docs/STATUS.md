@@ -7,8 +7,8 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 ## Jetzt
 
 **ADR-022 ist geschrieben und wartet auf die Annahme** (E18, Schritt 2): ein Kalender, ein Kontext
-je Termin — `internal` ist nicht neu, es heißt heute `kind = 'event'`. Der Stand liegt als Pull
-Request gegen `main`, ungemergt. **ADR-021 ist gemergt** (PR #61) und steht an allen drei Stellen:
+je Termin — `internal` ist nicht neu, es heißt heute `kind = 'event'`. Der Stand liegt als **PR #62**
+gegen `main`, ungemergt. **ADR-021 ist gemergt** (PR #61) und steht an allen drei Stellen:
 Index in [`../CLAUDE.md`](../CLAUDE.md), [`adr/README.md`](adr/README.md), §21 (**0.12.1**).
 **R3 ist vollständig gemergt** (PR #57, #58, #59), `R3-UEBERGABE.md` weiter nur auf
 `claude/r3-analyse`; **Etappe 1 der Abrechnung ist gebaut**, Abnahme steht aus.
@@ -29,7 +29,7 @@ Index in [`../CLAUDE.md`](../CLAUDE.md), [`adr/README.md`](adr/README.md), §21 
 
 ## Blocker (Jannes-seitig)
 
-- **ADR-022 annehmen oder zurückweisen** — E18 Schritt 3 beginnt erst danach.
+- **ADR-022 annehmen oder zurückweisen** (PR #62) — E18 Schritt 3 beginnt erst danach.
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von R3 (eine
   Migration aus G2); Seed unverändert. **Node 22** (`.nvmrc`), sonst rot.
 - **G13 ist überfällig:** Nummernformat und Umsatzsteuer-Status stehen als
