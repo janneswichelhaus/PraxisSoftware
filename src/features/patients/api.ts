@@ -46,6 +46,34 @@ const patientSchema = z.object({
 
 export type Patient = z.infer<typeof patientSchema>;
 
+/**
+ * Die Liste liest eine eigene, schlanke Sicht (R3-012).
+ *
+ * `patient_list_entries` trägt genau das, was die Liste zeigt und wonach sie
+ * sucht. Die Auswahl trifft die Datenbank (ADR-004, „Projektionen"): Eine
+ * kürzere Spaltenliste an dieser Stelle wäre dieselbe Entscheidung im Client
+ * — und die nächste Erweiterung hätte sie still wieder aufgehoben.
+ */
+const patientListenzeileSchema = z.object({
+  id: z.string(),
+  status: z.enum(['active', 'inactive']),
+  given_name: z.string(),
+  family_name: z.string(),
+  date_of_birth: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  postal_code: z.string().nullable(),
+  city: z.string().nullable(),
+});
+
+export type PatientListenzeile = z.infer<typeof patientListenzeileSchema>;
+
+const LISTEN_SELECT = [
+  'id, status',
+  'given_name, family_name, date_of_birth',
+  'email, phone, postal_code, city',
+].join(', ');
+
 const SELECT = [
   'id, status, care_started_on, care_concluded_on',
   'given_name, family_name, date_of_birth',
@@ -55,14 +83,14 @@ const SELECT = [
   'home_visit_access_note, special_note, remark',
 ].join(', ');
 
-export async function fetchPatients(): Promise<Patient[]> {
+export async function fetchPatients(): Promise<PatientListenzeile[]> {
   const { data, error } = await getSupabase()
-    .from('patient_directory')
-    .select(SELECT)
+    .from('patient_list_entries')
+    .select(LISTEN_SELECT)
     .order('family_name', { ascending: true });
 
   if (error) throw new Error('Die Patientenliste konnte nicht geladen werden.');
-  return z.array(patientSchema).parse(data ?? []);
+  return z.array(patientListenzeileSchema).parse(data ?? []);
 }
 
 export async function fetchPatient(patientId: string): Promise<Patient | null> {

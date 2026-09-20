@@ -6,7 +6,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { SearchField } from '@/components/ui/SearchField';
 import { Patientensuche } from './Patientensuche';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { ageInYears, fetchPatients, fullName, type Patient } from './api';
+import { ageInYears, fetchPatients, fullName, type PatientListenzeile } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 
@@ -29,7 +29,7 @@ function toSearchParams(query: string, status: StatusFilter): URLSearchParams {
   return next;
 }
 
-function matches(patient: Patient, query: string): boolean {
+function matches(patient: PatientListenzeile, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
   const haystack = [
@@ -45,7 +45,7 @@ function matches(patient: Patient, query: string): boolean {
   return haystack.includes(needle);
 }
 
-function matchesStatus(patient: Patient, status: StatusFilter): boolean {
+function matchesStatus(patient: PatientListenzeile, status: StatusFilter): boolean {
   if (status === 'all') return true;
   return patient.status === status;
 }

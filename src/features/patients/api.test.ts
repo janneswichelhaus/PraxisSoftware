@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { ageInYears, fullName } from './api';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const from = vi.fn();
+
+vi.mock('@/lib/supabase', () => ({
+  getSupabase: () => ({ from }),
+}));
+
+const { ageInYears, fetchPatients, fullName } = await import('./api');
 
 describe('ageInYears', () => {
   const heute = new Date('2026-08-28T12:00:00');
@@ -29,5 +36,44 @@ describe('fullName', () => {
 
   it('gilt auch fuer einen Mitarbeiterdatensatz', () => {
     expect(fullName({ given_name: 'Anna', family_name: 'Beispiel' })).toBe('Anna Beispiel');
+  });
+});
+
+describe('fetchPatients (R3-012)', () => {
+  beforeEach(() => {
+    from.mockReset();
+  });
+
+  it('liest die schlanke Listensicht und fragt keine Versorgungsangaben ab', async () => {
+    // Die Liste zeigt Name, Alter, Ort und Status und sucht ueber Name, Ort,
+    // Postleitzahl, Telefon und E-Mail. Alles andere - Versorgungsvermerk,
+    // Hausbesuchszugang, Bemerkung, Strasse - hat im Browser nichts zu
+    // suchen, schon gar nicht fuer jede Patientin der Praxis auf einmal.
+    const order = vi.fn().mockResolvedValue({ data: [], error: null });
+    const select = vi.fn(() => ({ order }));
+    from.mockReturnValue({ select });
+
+    await fetchPatients();
+
+    expect(from).toHaveBeenCalledWith('patient_list_entries');
+
+    const spalten = String(select.mock.calls[0]?.[0]);
+    for (const feld of [
+      'special_note',
+      'home_visit_access_note',
+      'remark',
+      'street',
+      'house_number',
+      'primary_therapist',
+      'institution',
+      'fax',
+    ]) {
+      expect(spalten).not.toContain(feld);
+    }
+
+    // Was die Liste wirklich braucht, ist dabei.
+    for (const feld of ['given_name', 'family_name', 'date_of_birth', 'postal_code', 'city']) {
+      expect(spalten).toContain(feld);
+    }
   });
 });
