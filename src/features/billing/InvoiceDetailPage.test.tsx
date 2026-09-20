@@ -139,6 +139,21 @@ describe('InvoiceDetailPage', () => {
     expect(await screen.findByText(/§ 19 UStG/)).toBeInTheDocument();
   });
 
+  it('nennt den Grund der Steuerbefreiung an der steuerfreien Gruppe (BEF-019)', async () => {
+    // Dieselbe Angabe wie auf dem Blatt, weil beide dasselbe Dokument zeigen:
+    // Pflichtangabe nach § 14 Abs. 4 Nr. 8 UStG (ADR-009 Punkt 18).
+    fetchRechnung.mockResolvedValue(ansicht());
+
+    renderWithProviders(
+      <InvoiceDetailPage user={testUser(['office'])} />,
+      '/abrechnung/rechnungen/r1',
+    );
+
+    expect(
+      await screen.findByText(/Steuerfreie Heilbehandlung nach § 4 Nr. 14 Buchstabe a UStG/),
+    ).toBeInTheDocument();
+  });
+
   it('stellt den Entwurf auf Wunsch aus', async () => {
     const nutzer = userEvent.setup();
     fetchRechnung.mockResolvedValue(ansicht());

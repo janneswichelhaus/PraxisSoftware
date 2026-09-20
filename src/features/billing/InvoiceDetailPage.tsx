@@ -203,6 +203,10 @@ function Rechnungsbild({
                       gruppe.tax_rate_permille / 10
                     } %)`
                   : ''}
+                {/* Pflichtangabe nach § 14 Abs. 4 Nr. 8 UStG (ABR-006): Die
+                    Ansicht zeigt denselben Satz wie das Blatt, weil beide aus
+                    demselben Dokument kommen. */}
+                {gruppe.exemption_reason ? ` · ${gruppe.exemption_reason}` : ''}
               </span>
             </li>
           ))}

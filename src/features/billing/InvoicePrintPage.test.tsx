@@ -137,6 +137,44 @@ describe('Rechnungsblatt', () => {
     expect(await screen.findByText(/§ 19 UStG/)).toBeInTheDocument();
   });
 
+  it('nennt den Grund der Steuerbefreiung an der steuerfreien Gruppe (BEF-019)', async () => {
+    // Pflichtangabe nach § 14 Abs. 4 Nr. 8 UStG (ADR-009 Punkt 18): Sie fehlte
+    // bis ABR-006 auf jeder Rechnung mit einer Heilbehandlung. Der Satz kommt
+    // aus dem Dokument — erzeugte ihn die Seite, stünde er nicht im Snapshot.
+    fetchRechnung.mockResolvedValue(ausgestellt());
+    zeige();
+
+    expect(
+      await screen.findByText(/Steuerfreie Heilbehandlung nach § 4 Nr. 14 Buchstabe a UStG/),
+    ).toBeInTheDocument();
+  });
+
+  it('nennt an einer steuerpflichtigen Gruppe keinen Befreiungsgrund', async () => {
+    // Dort steht die Steuer selbst; ein Befreiungsgrund daneben wäre falsch.
+    fetchRechnung.mockResolvedValue(
+      rechnungsansicht(
+        { status: 'issued', invoice_number: 'RG-2026-0004', issued_on: '2026-09-01' },
+        {
+          tax_groups: [
+            {
+              tax_treatment: 'taxable',
+              tax_rate_permille: 190,
+              exemption_reason: null,
+              gross_cents: 6000,
+              tax_cents: 958,
+              net_cents: 5042,
+            },
+          ],
+          totals: { total_cents: 6000, tax_total_cents: 958 },
+        },
+      ),
+    );
+    zeige();
+
+    expect(await screen.findByText(/darin enthaltene Umsatzsteuer/)).toBeInTheDocument();
+    expect(screen.queryByText(/Buchstabe a UStG/)).not.toBeInTheDocument();
+  });
+
   it('stempelt den Entwurf als Entwurf — auch auf Papier', async () => {
     // Ein ausgedruckter Entwurf darf nicht wie eine Rechnung aussehen. Der
     // Vermerk steht deshalb im Blatt und nicht in `.nicht-drucken`.

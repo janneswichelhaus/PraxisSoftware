@@ -421,6 +421,12 @@ const dokumentSchema = z.object({
     z.object({
       tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
       tax_rate_permille: z.number(),
+      // Der Grund der Steuerbefreiung als Pflichtangabe (§ 14 Abs. 4 Nr. 8
+      // UStG, ADR-009 Punkt 18, ABR-006). Er kommt aus dem Dokument und wird
+      // hier nicht erzeugt — sonst stünde er in der Darstellung und nicht im
+      // Snapshot. `optional`, weil Snapshots mit `schema_version` 1 ihn noch
+      // nicht tragen; steuerpflichtige Gruppen tragen ihn nie.
+      exemption_reason: z.string().nullable().optional(),
       gross_cents: z.number(),
       tax_cents: z.number(),
       net_cents: z.number(),

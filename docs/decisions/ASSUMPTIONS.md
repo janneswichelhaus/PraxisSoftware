@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-19.
+Zuletzt aktualisiert: 2026-09-20.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1076,3 +1076,15 @@ Technik · offen · 2026-09-20 · — · — · Wiedervorlage: mit der Folgestor
 **Anker.** Die Bedingung `not exists (… billable_services … status = 'invoiced')` in `public.transfer_appointments_to_treatment_basis` in `supabase/migrations/20260920106000_transfer_guard_billable_services.sql`.
 
 **Änderungspfad.** ADR-018 Punkt 2 vollständig umsetzen: Statuswechsel in `issue_invoice` und Rückweg in `cancel_invoice` samt gemerktem Vorzustand und Auditereignis `appointment.invoiced`; die Bedingung hier fällt dann ersatzlos weg · Aufwand `mittel`.
+
+### ANN-082 — Der Befreiungsgrund ist ein fester Text je Steuerkennzeichen
+
+Recht · offen · 2026-09-20 · — · — · Wiedervorlage: mit der Antwort aus B4 (Steuerberatung, G13), spätestens vor dem ersten echten Rechnungslauf
+
+**Annahme.** Der Grund der Steuerbefreiung entsteht als **fester Text je Steuerkennzeichen** und nicht als Feld an der Katalogposition: `exempt_healthcare` trägt „Steuerfreie Heilbehandlung nach § 4 Nr. 14 Buchstabe a UStG", `not_taxable` trägt „Nicht steuerbar, kein Leistungsaustausch (§ 1 Abs. 1 Nr. 1 UStG)", `taxable` trägt keinen. Er steht an der **Steuergruppe** des Dokuments, nicht an der Zeile, und damit im Snapshot (`schema_version` 2). Ohne ihn lässt sich eine Rechnung mit steuerfreiem Posten nicht ausstellen.
+
+**Begründung.** § 14 Abs. 4 Nr. 8 UStG verlangt den Hinweis als Pflichtangabe; ADR-009 Fassung 2 Punkt 18 legt ihn in den Snapshot und führt die Frage „fester Text oder Feld an der Position" ausdrücklich als offene Folgefrage. Ein Feld erlaubte verschiedene Befreiungstatbestände — diese Praxis führt genau einen, und ein Freitext an der Position wäre eine zweite Wahrheit neben `tax_treatment` (ARBEITSBEREICHE.md). Der nicht steuerbare Posten braucht die Angabe rechtlich nicht, bekommt sie aber aus demselben Grund: Ein Betrag ohne Steuer und ohne Erklärung sieht auf dem Papier wie ein Fehler aus. Unsicher bleibt allein der **Wortlaut** — ob die Steuerberatung „§ 4 Nr. 14 Buchstabe a" oder „§ 4 Nr. 14a" schreibt und ob sie beim Ausfallhonorar eine andere Formulierung will (B4).
+
+**Anker.** `app.tax_exemption_reason` in `supabase/migrations/20260920120000_invoice_tax_exemption_reason.sql`; die Pflichtprüfung dazu in `app.assert_invoice_tax_lawful` in `supabase/migrations/20260920121000_invoice_tax_lock.sql`.
+
+**Änderungspfad.** Anderer Wortlaut: die Funktion, eine Zeile je Kennzeichen · Aufwand `klein` — ausgestellte Rechnungen behalten ihren Satz, das ist der Zweck des Snapshots. Grund je Katalogposition (mehrere Befreiungstatbestände): neue Spalte an `service_catalog_items`, neue Katalogversion, die Funktion fällt weg · Aufwand `mittel`.

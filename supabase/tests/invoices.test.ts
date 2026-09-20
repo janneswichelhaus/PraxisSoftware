@@ -62,7 +62,12 @@ interface Dokument {
     recipient: Record<string, unknown>;
     patient: Record<string, unknown>;
     items: Record<string, unknown>[];
-    tax_groups: { tax_treatment: string; tax_cents: number; net_cents: number }[];
+    tax_groups: {
+      tax_treatment: string;
+      tax_cents: number;
+      net_cents: number;
+      exemption_reason: string | null;
+    }[];
     totals: { total_cents: number; tax_total_cents: number };
     treatment_bases: Record<string, unknown>[];
     invoice_number?: string;
@@ -567,6 +572,220 @@ describe('Rechnung', () => {
           [organizationId, rows[0]!.id, dienst[0]!.id],
         ),
       ).rejects.toThrow();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Befreiungsgrund und Par. 14c-Riegel (ADR-009 Punkt 18, ABR-006/ABR-007)
+  //
+  // Der Testfall ist nach Punkt 18 **verbindlich**: Wer an einem steuerfreien
+  // Posten Umsatzsteuer ausweist, schuldet sie nach Par. 14c UStG - unabhaengig
+  // davon, ob sie je gezahlt wurde und ob der Ausweis ein Versehen war. Und wer
+  // den Grund der Befreiung nicht nennt, stellt eine unvollstaendige Rechnung
+  // aus (Par. 14 Abs. 4 Nr. 8 UStG, BEF-019). Beides laesst sich nach dem
+  // Ausstellen nicht mehr heilen, sondern nur stornieren (Punkt 9).
+  // ---------------------------------------------------------------------------
+  describe('Befreiungsgrund und Par. 14c-Riegel', () => {
+    const RIEGEL = 'select app.assert_invoice_tax_lawful($1::jsonb)';
+    const HEILBEHANDLUNG = 'Steuerfreie Heilbehandlung nach § 4 Nr. 14 Buchstabe a UStG';
+
+    /**
+     * Ein Dokument in der Hand des Tests.
+     *
+     * Der Riegel ist eine reine Funktion ueber sein Argument - er laesst sich
+     * deshalb mit einem gebauten Dokument pruefen, ohne eine Rechnung dafuer
+     * anzulegen. Genau das ist der Fall, den es im Betrieb nicht geben darf:
+     * ein Dokument, das `build_invoice_document` so nie liefern wuerde.
+     */
+    function dokument(
+      gruppen: Record<string, unknown>[],
+      opts: {
+        kleinunternehmer?: boolean;
+        zeilen?: Record<string, unknown>[];
+        steuersumme?: number;
+      } = {},
+    ): string {
+      const summe =
+        opts.steuersumme ??
+        gruppen.reduce((stand, gruppe) => stand + Number(gruppe.tax_cents ?? 0), 0);
+      return JSON.stringify({
+        issuer: { small_business: opts.kleinunternehmer ?? false },
+        items: opts.zeilen ?? [],
+        tax_groups: gruppen,
+        totals: { total_cents: 10_000, tax_total_cents: summe },
+      });
+    }
+
+    const STEUERFREI_SAUBER = {
+      tax_treatment: 'exempt_healthcare',
+      tax_rate_permille: 0,
+      exemption_reason: HEILBEHANDLUNG,
+      gross_cents: 4500,
+      tax_cents: 0,
+      net_cents: 4500,
+    };
+
+    it('laesst ein sauberes Dokument durch', async () => {
+      await expect(asPostgres(RIEGEL, [dokument([STEUERFREI_SAUBER])])).resolves.toBeDefined();
+    });
+
+    it('weist Steuer an einer steuerfreien Steuergruppe ab', async () => {
+      await expect(
+        asPostgres(RIEGEL, [dokument([{ ...STEUERFREI_SAUBER, tax_cents: 958 }])]),
+      ).rejects.toThrow(/Par\. 14c UStG/);
+    });
+
+    it('weist Steuer an einer nicht steuerbaren Steuergruppe ab (Ausfallhonorar)', async () => {
+      await expect(
+        asPostgres(RIEGEL, [
+          dokument([
+            {
+              tax_treatment: 'not_taxable',
+              tax_rate_permille: 0,
+              exemption_reason: 'Nicht steuerbar, kein Leistungsaustausch (§ 1 Abs. 1 Nr. 1 UStG)',
+              gross_cents: 4500,
+              tax_cents: 718,
+              net_cents: 3782,
+            },
+          ]),
+        ]),
+      ).rejects.toThrow(/Par\. 14c UStG/);
+    });
+
+    it('weist Steuer an einer steuerfreien Zeile ab', async () => {
+      // Zeilen fuehren heute keinen Steuerbetrag mit. Der Riegel haelt das
+      // fest, statt sich darauf zu verlassen - "nicht an der Zeile" steht so
+      // in Punkt 18.
+      await expect(
+        asPostgres(RIEGEL, [
+          dokument([STEUERFREI_SAUBER], {
+            zeilen: [{ tax_treatment: 'exempt_healthcare', tax_rate_permille: 0, tax_cents: 958 }],
+          }),
+        ]),
+      ).rejects.toThrow(/Par\. 14c UStG/);
+    });
+
+    it('weist einen Steuersatz an einer steuerfreien Zeile ab', async () => {
+      await expect(
+        asPostgres(RIEGEL, [
+          dokument([STEUERFREI_SAUBER], {
+            zeilen: [{ tax_treatment: 'exempt_healthcare', tax_rate_permille: 190 }],
+          }),
+        ]),
+      ).rejects.toThrow(/Par\. 14c UStG/);
+    });
+
+    it('weist eine Summe ab, die nicht zu den Steuergruppen passt', async () => {
+      await expect(
+        asPostgres(RIEGEL, [dokument([STEUERFREI_SAUBER], { steuersumme: 958 })]),
+      ).rejects.toThrow(/tax total does not match/);
+    });
+
+    it('weist unter Par. 19 UStG jeden Steuerbetrag ab - auch am steuerpflichtigen Posten', async () => {
+      await expect(
+        asPostgres(RIEGEL, [
+          dokument(
+            [
+              {
+                tax_treatment: 'taxable',
+                tax_rate_permille: 190,
+                exemption_reason: null,
+                gross_cents: 6000,
+                tax_cents: 958,
+                net_cents: 5042,
+              },
+            ],
+            { kleinunternehmer: true },
+          ),
+        ]),
+      ).rejects.toThrow(/Par\. 19 UStG/);
+    });
+
+    it('verlangt den Grund der Steuerbefreiung als Pflichtangabe (BEF-019)', async () => {
+      await expect(
+        asPostgres(RIEGEL, [dokument([{ ...STEUERFREI_SAUBER, exemption_reason: null }])]),
+      ).rejects.toThrow(/Par\. 14 Abs\. 4 Nr\. 8 UStG/);
+    });
+
+    it('nennt den Grund im Snapshot und nicht erst in der Darstellung', async () => {
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+
+      const { rows: gespeichert } = await asPostgres<{ grund: string | null }>(
+        `select i.snapshot -> 'tax_groups' -> 0 ->> 'exemption_reason' as grund
+           from public.invoices i where i.id = $1`,
+        [rows[0]!.id],
+      );
+      expect(gespeichert[0]?.grund).toBe(HEILBEHANDLUNG);
+
+      const { rows: dok } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        rows[0]!.id,
+      ]);
+      expect(dok[0]?.rechnung.document.tax_groups[0]?.exemption_reason).toBe(HEILBEHANDLUNG);
+    });
+
+    it('laesst die steuerpflichtige Gruppe ohne Grund - dort steht die Steuer', async () => {
+      await leistung(KATALOG.training, { stundeImMonat: 30 });
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+
+      const { rows: dok } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        rows[0]!.id,
+      ]);
+      expect(dok[0]?.rechnung.document.tax_groups[0]?.exemption_reason).toBeNull();
+      expect(dok[0]?.rechnung.document.tax_groups[0]?.tax_cents).toBe(958);
+    });
+
+    it('sperrt die Ausstellung, wenn das Dokument unzulaessig Steuer ausweist', async () => {
+      // Der Beweis, dass die Sperre im Ausstellungsweg haengt und nicht nur
+      // als Funktion danebensteht (Punkt 18: "vor der Ausstellung",
+      // "serverseitig"). Dafuer liefert `build_invoice_document` fuer die
+      // Dauer dieses Falls ein Dokument mit Steuer an der steuerfreien
+      // Gruppe; das Original wird umbenannt und danach wortgleich
+      // zurueckgeholt - kein zweiter Funktionskoerper im Test.
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+
+      await asPostgres(
+        `alter function app.build_invoice_document(uuid) rename to build_invoice_document_echt`,
+      );
+      try {
+        await asPostgres(
+          `create function app.build_invoice_document(p_invoice_id uuid)
+             returns jsonb language sql stable security definer set search_path = '' as $$
+               select jsonb_set(d, '{tax_groups,0,tax_cents}', '958'::jsonb)
+                 from app.build_invoice_document_echt(p_invoice_id) d
+             $$`,
+        );
+
+        await expect(asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id])).rejects.toThrow(
+          /Par\. 14c UStG/,
+        );
+      } finally {
+        await asPostgres('drop function if exists app.build_invoice_document(uuid)');
+        await asPostgres(
+          `alter function app.build_invoice_document_echt(uuid) rename to build_invoice_document`,
+        );
+      }
+
+      // Die Rechnung ist Entwurf geblieben, und keine Nummer ist verbraucht.
+      const { rows: stand } = await asPostgres<{ status: string; invoice_number: string | null }>(
+        'select status, invoice_number from public.invoices where id = $1',
+        [rows[0]!.id],
+      );
+      expect(stand[0]?.status).toBe('draft');
+      expect(stand[0]?.invoice_number).toBeNull();
+      expect((await asPostgres('select * from public.invoice_number_series')).rows).toEqual([]);
     });
   });
 

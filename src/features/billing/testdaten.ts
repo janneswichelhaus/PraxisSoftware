@@ -35,7 +35,7 @@ export function rechnungsansicht(
     correction_invoice_number: null,
     ...rest,
     document: {
-      schema_version: 1,
+      schema_version: 2,
       period_month: '2026-08-01',
       currency: 'EUR',
       issuer: {
@@ -86,6 +86,9 @@ export function rechnungsansicht(
         {
           tax_treatment: 'exempt_healthcare',
           tax_rate_permille: 0,
+          // Pflichtangabe nach § 14 Abs. 4 Nr. 8 UStG, im Dokument und nicht
+          // in der Darstellung erzeugt (ABR-006, ANN-082).
+          exemption_reason: 'Steuerfreie Heilbehandlung nach § 4 Nr. 14 Buchstabe a UStG',
           gross_cents: 4500,
           tax_cents: 0,
           net_cents: 4500,

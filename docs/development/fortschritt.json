@@ -53,7 +53,7 @@
         { "id": "abr-epic-003", "name": "ABR-EPIC-003 Zahlungen und offene Posten", "gewicht": 1, "status": "fertig" },
         { "id": "pat-006", "name": "PAT-006 Datenschutzinformation und Einwilligungen (G8)", "gewicht": 1, "status": "offen" },
         { "id": "e2-tagesplan", "name": "E2 Tagesplan druck- und exportierbar (G10, Funktionsteil)", "gewicht": 1, "status": "offen" },
-        { "id": "abr-epic-004", "name": "ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L)", "gewicht": 1, "status": "offen" },
+        { "id": "abr-epic-004", "name": "ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L)", "gewicht": 1, "status": "fertig" },
         { "id": "lei-epic-001", "name": "LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L)", "gewicht": 2, "status": "offen" },
         { "id": "cal-epic-005", "name": "CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L)", "gewicht": 2, "status": "offen" },
         { "id": "abr-epic-005", "name": "ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L)", "gewicht": 2, "status": "offen" },
