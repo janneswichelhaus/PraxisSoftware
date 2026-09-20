@@ -63,6 +63,11 @@ Zuschnitt entscheidet. Maßgeblich ist
 | Cut-off, Risikoklasse, MCID oder „Verschlechterung" **anzeigen**            | **nein** — Punkt 11, bis B1 entschieden ist                    |
 | Aus Red Flags oder Screening eine Empfehlung ableiten                       | **nein** — Punkt 12, Ausschlusskriterium nach Punkt 13         |
 
+Abschnitt 3 ist zugleich Material für die Sitzung „**`MDR_REVIEW_REQUIRED`
+verorten**", die [`../STATUS.md`](../STATUS.md) als eigene Aufgabe führt: Die
+Anzeige von Cut-off und MCID ist ein konkreter Kandidat, und die drei Verbote
+aus ADR-006 Fassung 3 treffen hier zum ersten Mal auf ein Feature mit Inhalt.
+
 Daraus vier Festlegungen für den Zuschnitt:
 
 - **Speichern ja, anzeigen später.** `cutoffs`, `mcid` und `mdc` gehören in die
@@ -127,11 +132,15 @@ Drei Dinge, die dabei niemand übersehen darf:
   [ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md) eine
   **andere Löschfrist** als derselbe Fragebogen einer Patientin (lit. h, zehn
   Jahre). Die Ergebniszeile trägt den Kontext nach
-  [ADR-022](../adr/ADR-022-appointment-context-and-training-basis.md); der
-  Retention Schedule nach
-  [ADR-008](../adr/ADR-008-data-retention-and-deletion.md) bekommt eine
-  Zuordnung je Bereich. Ein gemeinsamer Fremdschlüssel auf `patients` wäre der
-  Fehler, der die Trennung aus E18 wieder einreißt.
+  [ADR-022](../adr/ADR-022-appointment-context-and-training-basis.md). Die
+  Struktur dafür steht seit **LEI-EPIC-001** (Roadmap 5.28): `patients` und
+  `training_relationships` stehen nebeneinander, verbunden allein über
+  `person_id`, und `retention_classes` führt `patientenakte` und
+  `trainingsverhaeltnis` als getrennte Klassen. Ein gemeinsamer Fremdschlüssel
+  auf `patients` wäre der Fehler, der diese Trennung wieder einreißt.
+  **Die Frist für Gesundheitsangaben im Training ist offen** — LEI-EPIC-001 hat
+  sie bewusst offengelassen und B2 beantwortet sie. P6 braucht sie und erfindet
+  sie nicht ([ADR-008](../adr/ADR-008-data-retention-and-deletion.md)).
 - **Der bearbeitete Text darf nicht überschrieben werden.** Der erzeugte
   Dokumentationstext ist ein Vorschlag; sobald die Therapeutin ihn übernimmt,
   ist er ein Eintrag nach
