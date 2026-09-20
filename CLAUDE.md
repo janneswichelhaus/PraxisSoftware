@@ -57,6 +57,7 @@ Kontextwechsel beantwortbar — und alles, was nicht davon abhängt, vorher fert
 | 018 | Terminzustände, Übergänge, Ausfallhonorar-Kennzeichen, Terminserie          |
 | 019 | Kartendienst, Navigations-Handoff, Fahrzeiten, Vertrags-/§203-Gate          |
 | 020 | Behandlungsgrundlage: Verordnung und Selbstzahler, Kontingent, Gruppierung  |
+| 021 | Behandlung und Training getrennt, Rechtsverhältnis, Trainingsdaten, §203    |
 
 ## Repository
 
