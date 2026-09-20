@@ -338,6 +338,7 @@ export const SEED = {
     teamLead: '11111111-1111-4111-8111-000000000004', // Tim Teamleitung
     patientMax: '11111111-1111-4111-8111-000000000005', // Max Mustermann
     patientErika: '11111111-1111-4111-8111-000000000006', // Erika Beispiel
+    trainer: '11111111-1111-4111-8111-000000000007', // Tom Trainingsbetreuung
   },
   patients: {
     max: '66666666-6666-4666-8666-000000000001',

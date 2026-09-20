@@ -78,7 +78,8 @@ values
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000003', 'authenticated', 'authenticated', 'olivia.office@praxis.invalid',    extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000004', 'authenticated', 'authenticated', 'tim.teamleitung@praxis.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000005', 'authenticated', 'authenticated', 'max.mustermann@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000006', 'authenticated', 'authenticated', 'erika.beispiel@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000006', 'authenticated', 'authenticated', 'erika.beispiel@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000007', 'authenticated', 'authenticated', 'tom.training@praxis.invalid',     extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
 
 -- -----------------------------------------------------------------------------
 -- Organisation und Standort
@@ -107,7 +108,10 @@ insert into public.persons (id, organization_id, given_name, family_name) values
   ('44444444-4444-4444-8444-000000000008', '22222222-2222-4222-8222-000000000001', 'Nina',   'Neu'),
   -- Nur Training, keine Behandlung (LEI-001). Sie belegt den Regelfall des
   -- zweiten Leistungsbereichs: eine Person ohne Patientenakte.
-  ('44444444-4444-4444-8444-000000000009', '22222222-2222-4222-8222-000000000001', 'Tina',   'Trainingskundin');
+  ('44444444-4444-4444-8444-000000000009', '22222222-2222-4222-8222-000000000001', 'Tina',   'Trainingskundin'),
+  -- Trainingsbetreuung (PROJECT_PRINCIPLES.md 4.9, LEI-003). Sie besetzt
+  -- die andere Seite der Grenze aus ADR-021 Punkt 6.
+  ('44444444-4444-4444-8444-000000000010', '22222222-2222-4222-8222-000000000001', 'Tom',    'Trainingsbetreuung');
 
 -- -----------------------------------------------------------------------------
 -- Mitarbeiter
@@ -120,7 +124,8 @@ insert into public.staff_members (id, organization_id, person_id, primary_locati
   -- Ohne Zugang und damit ohne Rollen: die Ausgangslage, in der die Abnahme
   -- eine Einladung aussprechen kann (STAFF-002b). Sie ist aus demselben Grund
   -- nicht fuer Termine zuordenbar (E11).
-  ('55555555-5555-4555-8555-000000000005', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000008', '33333333-3333-4333-8333-000000000001', 'nina.neu@praxis.invalid',       '+49 7071 0000105');
+  ('55555555-5555-4555-8555-000000000005', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000008', '33333333-3333-4333-8333-000000000001', 'nina.neu@praxis.invalid',       '+49 7071 0000105'),
+  ('55555555-5555-4555-8555-000000000006', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000010', '33333333-3333-4333-8333-000000000001', 'tom.training@praxis.invalid',   '+49 7071 0000106');
 
 -- Privatdaten der Mitarbeitenden. Bewusst getrennt: nur owner und die
 -- betroffene Person selbst duerfen sie lesen.
@@ -307,7 +312,8 @@ insert into public.user_profiles (id, organization_id, person_id, display_name) 
   ('11111111-1111-4111-8111-000000000003', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000003', 'Olivia Office'),
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000004', 'Tim Teamleitung'),
   ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000005', 'Max Mustermann'),
-  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'Erika Beispiel');
+  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'Erika Beispiel'),
+  ('11111111-1111-4111-8111-000000000007', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000010', 'Tom Trainingsbetreuung');
 
 -- -----------------------------------------------------------------------------
 -- Rollen. Jannes hat bewusst zwei Rollen (ADR-004: Mehrfachrollen).
@@ -320,7 +326,11 @@ insert into public.user_roles (user_id, organization_id, role_key) values
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'therapist'),
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'team_lead'),
   ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', 'patient'),
-  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient');
+  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient'),
+  -- Ausschliesslich Trainingsbetreuung: nur so laesst sich pruefen, dass
+  -- aus dieser Rolle kein Zugriff auf die Behandlungsseite folgt (ADR-021
+  -- Punkt 6, PROJECT_PRINCIPLES.md 4.8).
+  ('11111111-1111-4111-8111-000000000007', '22222222-2222-4222-8222-000000000001', 'trainer');
 
 -- -----------------------------------------------------------------------------
 -- Ein Hausbesuchstag fuer heute (UX-001)

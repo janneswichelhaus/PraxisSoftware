@@ -127,10 +127,100 @@ describe('Trainingsverhaeltnis', () => {
       /permission denied/i,
     );
 
+    // Erika hat beide Verhaeltnisse. Ihr Patientenkonto traegt die Rolle aus
+    // §4.6 - und die gilt im Bereich `therapy`. Die eigene Sicht auf das
+    // Training gehoert zu §4.10 und damit zu einer Rolle, die es noch nicht
+    // gibt; auch in der eigenen Sicht bleiben die Bereiche getrennt (§4.8).
     const { rows } = await asUser(
       SEED.users.patientErika,
       'select id from public.training_relationships',
     );
     expect(rows).toEqual([]);
+  });
+});
+
+/**
+ * Kein Durchgriff, in beide Richtungen (ADR-021 Punkt 6, §4.8).
+ *
+ * Durchgesetzt wird die Grenze in den Policies, nicht in der Oberflaeche.
+ * Diese Tests laufen deshalb gegen die Datenbank und nicht gegen die
+ * Anwendung: Ausgeblendete Elemente sind keine Zugriffskontrolle (ADR-004
+ * Punkt 5).
+ */
+describe('Kein Durchgriff zwischen Behandlung und Training', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('zeigt der Trainingsbetreuung die Trainingsverhaeltnisse ihrer Organisation', async () => {
+    const { rows } = await asUser<{ id: string }>(
+      SEED.users.trainer,
+      'select id from public.training_relationships order by id',
+    );
+    expect(rows.map((r) => r.id)).toEqual([
+      SEED.trainingRelationships.tina,
+      SEED.trainingRelationships.erika,
+    ]);
+  });
+
+  it.each([
+    ['owner', SEED.users.ownerTherapist],
+    ['office', SEED.users.office],
+  ])('laesst %s beide Bereiche sehen - beides ist ihre Rolle (§4.8)', async (_rolle, user) => {
+    const { rows } = await asUser(user, 'select id from public.training_relationships');
+    expect(rows).toHaveLength(2);
+  });
+
+  it.each([
+    ['therapist', SEED.users.therapist],
+    ['team_lead', SEED.users.teamLead],
+  ])('verbirgt Trainingsverhaeltnisse vor %s', async (_rolle, user) => {
+    // Der offene Zugriff aller Therapeut:innen auf alle Akten (§4.2) gilt
+    // INNERHALB der Behandlung. Teamleitung bekommt Trainingsdaten erst,
+    // wenn ihr §4.9 zusaetzlich zugewiesen ist.
+    const { rows } = await asUser(user, 'select id from public.training_relationships');
+    expect(rows).toEqual([]);
+  });
+
+  it('verbirgt die Patientenkartei und die Akte vor der Trainingsbetreuung', async () => {
+    for (const tabelle of ['patients', 'patient_contact_details', 'patient_care_details']) {
+      const { rows } = await asUser(SEED.users.trainer, `select 1 as x from public.${tabelle}`);
+      expect({ tabelle, rows }).toEqual({ tabelle, rows: [] });
+    }
+
+    // Klinischer Freitext und Behandlungsgrundlagen sind ueber den
+    // Anwendungspfad ueberhaupt nicht erreichbar; fuer die Trainingsbetreuung
+    // erst recht.
+    for (const tabelle of ['treatment_notes', 'treatment_bases']) {
+      await expect(asUser(SEED.users.trainer, `select id from public.${tabelle}`)).rejects.toThrow(
+        /permission denied/i,
+      );
+    }
+  });
+
+  it('gibt der Trainingsbetreuung nur die Personen ihres Bereichs (§4.8)', async () => {
+    // Weder mittelbar ueber die gemeinsame Identitaet: Max ist ausschliesslich
+    // Patient. Waere er hier sichtbar, liesse sich aus der Trainingsrolle auf
+    // den Bestand der Behandlung schliessen.
+    const { rows } = await asUser<{ id: string }>(
+      SEED.users.trainer,
+      'select id from public.persons order by id',
+    );
+    const sichtbar = rows.map((r) => r.id);
+    expect(sichtbar).toContain(SEED.persons.tina);
+    expect(sichtbar).toContain(SEED.persons.erika);
+    expect(sichtbar).not.toContain(SEED.persons.max);
+  });
+
+  it('macht aus der Trainingsrolle keine Praxisrolle', async () => {
+    // app.is_staff() traegt die vier Behandlungsrollen. Die Gegenprobe zu den
+    // Tabellen oben: Die Trainingsbetreuung faellt nicht still in einen
+    // Sammelbegriff, an dem andere Policies haengen.
+    const { rows } = await asUser<{ staff: boolean; training: boolean }>(
+      SEED.users.trainer,
+      'select app.is_staff() as staff, app.can_read_training_relationships() as training',
+    );
+    expect(rows[0]?.staff).toBe(false);
+    expect(rows[0]?.training).toBe(true);
   });
 });
