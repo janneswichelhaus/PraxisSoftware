@@ -17,7 +17,7 @@ bauen, woran sie gemessen werden und was vorher entschieden sein muss.
 | Inhalt                        | Umfang                                                                         | Quelle                                                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | MT-Untersuchungsbausteine     | 9 Regionen, Basis- und weiterführende Untersuchung, Spezialblöcke, Therapie     | [`bausteine/mt-untersuchung-quelldaten.md`](../../quellen/bausteine/mt-untersuchung-quelldaten.md)         |
-| Scores (PROMs)                | 18 Instrumente, 311 bezifferte Items, davon 14 Priorität A                      | [`scores/score-inventar.md`](../../quellen/scores/score-inventar.md), 18 PDFs lokal                        |
+| Scores (PROMs)                | 18 Instrumente (14 davon Priorität A), zusammen 311 bezifferte Items          | [`scores/score-inventar.md`](../../quellen/scores/score-inventar.md), 18 PDFs lokal                        |
 | Eckdaten und Rechenvorschrift | je Score: Items, Antwortformat, Wertebereich, Richtung, Subskalen, MCID/MDC      | Blätter **Inventar** und **Scoring** der Tabelle                                                          |
 | Itemtexte                     | **nur in den PDFs**                                                             | `quellen/scores/pdf/`, nicht im Repository (siehe D1)                                                      |
 
