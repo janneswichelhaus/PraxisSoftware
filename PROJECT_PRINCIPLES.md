@@ -560,6 +560,11 @@ beide Rollen hat, sieht beides. Verboten ist der **Schluss** von einer Rolle
 auf den jeweils anderen Bereich, nicht die Häufung zweier Rollen an einer
 Person.
 
+Eine Ausnahme ist bewusst bezahlt: die **Belegung** im gemeinsamen Kalender.
+Dass ein Zeitraum belegt ist, bleibt über alle Kontexte hinweg sichtbar — sonst
+sind Doppelbuchungen nicht zu verhindern, und es entstünden zwei Kalender
+(ADR-022). Sichtbar ist die Belegung, nicht der Inhalt des Termins.
+
 Für die vorhandenen Rollen gilt damit:
 
 | Rolle | gilt im Bereich | Anmerkung |
