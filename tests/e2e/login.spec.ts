@@ -88,15 +88,41 @@ test.describe('Kennwort vergessen', () => {
   });
 
   test('bestaetigt fuer jede Adresse gleich (kein Konto-Orakel)', async ({ page }) => {
+    // Der Anmeldedienst antwortet - und zwar ablehnend, weil es die Adresse
+    // nicht gibt. Genau dann darf die Bestaetigung nichts anderes sagen.
+    // Die Antwort wird hier gesetzt statt dem fehlenden Dienst ueberlassen:
+    // Seit R3-008 unterscheidet die Seite "abgelehnt" von "nicht erreichbar",
+    // und der Test soll sagen, welchen Fall er prueft.
+    await page.route('**/auth/v1/recover**', (route) =>
+      route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 'user_not_found', message: 'User not found' }),
+      }),
+    );
+
     await page.goto('/');
     await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
     await page.getByLabel('E-Mail-Adresse des Zugangs').fill('gibt.es.nicht@praxis.invalid');
     await page.getByRole('button', { name: 'Link anfordern' }).click();
 
-    // Ohne laufenden Anmeldedienst scheitert der Aufruf - und genau deshalb
-    // ist dieser Test aussagekraeftig: Die Bestaetigung darf auch dann nichts
-    // anderes sagen.
     await expect(page.getByText(/Falls für diese Adresse ein Zugang besteht/)).toBeVisible();
+    await expect(page.getByText(/unbekannt|nicht gefunden|existiert/i)).toHaveCount(0);
+  });
+
+  test('nennt den nicht erreichbaren Dienst, ohne etwas zu verraten (R3-008)', async ({ page }) => {
+    // Der andere Fall: Die Anfrage kommt gar nicht an. Dann ist die
+    // Bestaetigung "eine Mail ist unterwegs" schlicht falsch - jemand wartet
+    // auf Post, die nie kommt. Ueber das Konto wird trotzdem nichts gesagt.
+    await page.route('**/auth/v1/recover**', (route) => route.abort('failed'));
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
+    await page.getByLabel('E-Mail-Adresse des Zugangs').fill('anna.beispiel@praxis.invalid');
+    await page.getByRole('button', { name: 'Link anfordern' }).click();
+
+    await expect(page.getByText(/nicht erreichbar/)).toBeVisible();
+    await expect(page.getByText(/Falls für diese Adresse ein Zugang besteht/)).toHaveCount(0);
     await expect(page.getByText(/unbekannt|nicht gefunden|existiert/i)).toHaveCount(0);
   });
 
