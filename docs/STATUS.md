@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-20 · letzte Session: R3 Gruppe G2 (Oberfläche härten)
+# Status · Stand 2026-09-20 · letzte Session: R3 Gruppe G3 (Tests und Gates)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt
 [`development/ROADMAP.md`](development/ROADMAP.md) fest, Befunde sammelt
@@ -7,14 +7,14 @@ Livestand, sonst nichts. Die **Reihenfolge** legt
 
 ## Jetzt
 
-**R3 läuft** — Härtung in drei Gruppen. **G1 ist gemergt** (PR #57), **G2
-liegt als PR** (Oberfläche und Datenzugriff), **G3 steht aus**; Plan und
-Befunde in `docs/development/R3-UEBERGABE.md` auf `claude/r3-analyse` (nie
-gemergt). **Etappe 1 der Abrechnung ist gebaut**, ihre Abnahme steht aus.
+**R3 ist gebaut** — alle drei Gruppen. **G1 ist gemergt** (PR #57), **G2 und
+G3 liegen als PR** (#58 Oberfläche, #59 Tests und Gates, auf #58 gestapelt);
+Plan und Befunde in `docs/development/R3-UEBERGABE.md` auf `claude/r3-analyse`
+(nie gemergt). **Etappe 1 der Abrechnung ist gebaut**, ihre Abnahme steht aus.
 
 ## Danach — Reihenfolge seit 2026-09-19
 
-1. **R3 G3** — Tests, Gates und Werkzeuge, die letzte Härtungsgruppe
+1. **R3 abnehmen** — 25 Befunde umgesetzt, 26 bleiben als Backlog stehen
 2. **ADR-021** — Leistungsbereiche aus E18; Entscheidungsarbeit, kein Loop
 3. **MAP-002** — Fahrzeiten und Navigations-Handoff; braucht das PTV-Free-Abo
 4. **OPS-001** — Providerprüfung; vor Weg 3 des PDF und vor jeder Datei (ADR-017)
@@ -22,14 +22,14 @@ gemergt). **Etappe 1 der Abrechnung ist gebaut**, ihre Abnahme steht aus.
 ## Prüfverfahren
 
 **Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen
-Wegwerf-Container (Port 54329); **angemeldete E2E-Tests laufen in der Cloud
-nicht**, die übrigen brauchen dort `.env.local` aus `.env.example`. `pnpm test`
-war unter Node 24 rot (**BEF-011**), lief hier grün.
+Wegwerf-Container (Port 54329), seit R3 in der halben Zeit; **angemeldete
+E2E-Tests laufen in der Cloud nicht**, die übrigen brauchen dort `.env.local`
+aus `.env.example`. **BEF-009 und BEF-011 sind erledigt.**
 
 ## Blocker (Jannes-seitig)
 
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von G2 (eine
-  Migration); Seed unverändert.
+  Migration); Seed unverändert. **Node 22 verwenden** (`.nvmrc`), sonst rot.
 - **G13 ist überfällig:** Nummernformat und Umsatzsteuer-Status stehen als
   Annahme (ANN-074, ANN-075); dazu **echte Preise und Praxisstammdaten** — der
   Seed trägt erfundene, bis zur Antwort wird mit Platzhaltern gearbeitet.
@@ -50,11 +50,10 @@ FIX-EPIC-001 braucht Docker. Liste: [`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**R3 Gruppe G2** — acht Befunde, je ein Commit mit rotem Test davor: die
-**Patientenliste** bekommt eine schlanke Sicht ohne Versorgungsangaben und
-Anschrift (ADR-004); die **Kennwortlänge** gilt auch im Anmeldedienst; der
-**Dateiinhalt** wird gegen sein Format geprüft (ANN-053 nachgezogen); „Gültig
-ab" nimmt den **Praxistag**; kein **Inkraftsetzen** mit ungespeicherten Zeilen;
-ein nicht erreichbarer **Anmeldedienst** heißt nicht mehr Erfolg oder „kein
-Konto"; **deutsche Sätze** statt ZodError-Text; die **Schrift** als WOFF2
-(144 → 61 kB) mit Preload. Lokal: `git pull`, dann **`db reset`**.
+**R3 Gruppe G3** — acht Befunde: **Node 22** festgenagelt (BEF-011), das
+**Lint-Gate** wird bei jeder Warnung rot, die **Geburtsdatum-Tests** rechnen in
+Ortszeit, **`geld.ts`** hat Tests und der Vorschaubereich keinen zweiten
+Parser mehr, die **Standort-Policy** und sieben weitere haben ihren
+Fremd-Org-Fall, die **neun Abrechnungsdateien** kennen die Mandantengrenze,
+der angemeldete **E2E-Lauf** ist seriell (BEF-009), und das **DB-Gate** fällt
+von 8:16 auf 4:02 Minuten. Lokal: `git pull`.

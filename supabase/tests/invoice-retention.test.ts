@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, resetDatabase } from './helpers/db';
+import { SEED, asPostgres, asUser, fremdeOrganisation, resetDatabase } from './helpers/db';
 
 /**
  * Aufbewahrung der Rechnungen (ABR-003, ADR-008).
@@ -318,5 +318,31 @@ describe('Aufbewahrung der Rechnungen', () => {
       'select public.reapply_deletion_journal() as anzahl',
     );
     expect(Number(rows[0]?.anzahl)).toBe(0);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mandantengrenze (ADR-003, R3-025)
+  // ---------------------------------------------------------------------------
+  describe('Fremde Organisation', () => {
+    it('schreibt das Loeschjournal auf die eigene Praxis und zeigt es keiner anderen', async () => {
+      const fremd = await fremdeOrganisation();
+      await rechnungVor(patients.max, 9);
+      await abgeschlossenVor(patients.max, 11);
+
+      await lauf();
+
+      const { rows } = await asPostgres<{ organization_id: string; anzahl: number }>(
+        `select organization_id, count(*)::int as anzahl from public.deletion_journal
+          group by organization_id`,
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.organization_id).toBe(organizationId);
+
+      // Das Journal traegt kein Leserecht fuer angemeldete Rollen (ADR-010);
+      // gelesen wird es ueber den Auditpfad, nicht ueber die Tabelle.
+      await expect(asUser(fremd.owner, 'select * from public.deletion_journal')).rejects.toThrow(
+        /permission denied/,
+      );
+    });
   });
 });

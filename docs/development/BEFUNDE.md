@@ -356,7 +356,7 @@ Rückgängig-Leiste bleibt (Festlegung von Jannes).
 | Datum   | 2026-09-17                                                                                    |
 | Bereich | Testbestand, `tests/e2e/authenticated/`                                                        |
 | Quelle  | Jannes, angemeldeter E2E-Lauf zu CAL-018 (der erste, den die Cloud-Umgebung nicht leisten kann) |
-| Status  | offen                                                                                          |
+| Status  | erledigt in R3 G3 (R3-027, 2026-09-20) — der angemeldete Lauf ist seriell                      |
 | Berührt | `staff-workflows.spec.ts` (`annaReaktivieren`), `helpers.ts` (`terminUeberOberflaeche`), jede Datei, die ein Terminformular ausfüllt |
 
 **Beobachtung.** Im parallelen Lauf scheiterten `scheduling-workflows` und
@@ -376,6 +376,14 @@ zweimal in die falsche Richtung geschickt. In der CI fällt es kaum auf, weil
 der geseedeten Anna — dieselbe Trennung, die die Tagesfenster für Termine
 schon leisten. Zweite Möglichkeit: das Deaktivieren in eine eigene, seriell
 laufende Projektgruppe legen. Der erste Weg ist billiger und robuster.
+
+**Erledigt (R3-027, 2026-09-20).** Vorerst der zweite Weg, weil er ohne
+Supabase-Stack belegbar ist: `workers: 1`, sobald `E2E_SUPABASE_*` gesetzt
+sind — also genau im Lauf `--project authenticated`. `fullyParallel: false`
+am Projekt reichte nicht, es ordnet nur die Tests innerhalb einer Datei. Der
+nicht angemeldete Lauf bleibt parallel. Die eigene Mitarbeiterin bleibt der
+bessere Weg und wäre eine eigene, kleine Aufgabe; sie würde `workers: 1`
+wieder entbehrlich machen.
 
 ### BEF-010 — Ein gemeinsames Schema über zwei Lesepfade fällt keinem lokalen Gate auf
 
@@ -415,14 +423,14 @@ geteiltes Schema hängt.
 | Datum   | 2026-09-18                                                                                    |
 | Bereich | Werkzeugkette: `pnpm test` unter Windows mit Node 24.20                                       |
 | Quelle  | Loop CAL-EPIC-004a, lokaler Testlauf; auf `main` genauso rot                                  |
-| Status  | offen                                                                                         |
+| Status  | erledigt in R3 G3 (R3-049, 2026-09-20) — Node 22 ist festgenagelt                             |
 | Berührt | Neun Testdateien, voran `CalendarPage.test.tsx` (12) und `AuthenticatedRoutes.test.tsx` (29) — alle Fälle, die navigieren |
 
 **Beobachtung.** Jeder Komponententest, der navigiert (Blättern, Filter,
 Zoomstufe, Routenwechsel), bricht mit `RequestInit: Expected signal … to be an
 instance of AbortSignal` ab — react-router 7 baut bei der Navigation ein
 `Request` mit dem `AbortSignal` von jsdom, das Node 24 nicht mehr als seines
-erkennt. `package.json` verlangt nur `node >=22`; die CI läuft mit 22.
+erkennt. `package.json` verlangte nur `node >=22`; die CI läuft mit 22.
 
 **Warum das zählt.** Ein Gate, das lokal rot ist, ohne dass Code betroffen
 wäre, wird übersprungen — und dann auch, wenn es einen echten Fehler hätte.
@@ -430,6 +438,12 @@ wäre, wird übersprungen — und dann auch, wenn es einen echten Fehler hätte.
 **Richtung.** Entweder die Node-Version festnageln (`.nvmrc`, `engines` auf
 `22.x`) oder in der Testumgebung `AbortSignal`/`Request` von jsdom durch die
 von Node ersetzen. Kleine Wartung, kein eigener Loop.
+
+**Erledigt (R3-049, 2026-09-20).** Der erste Weg: `engines` steht auf `22.x`,
+`.nvmrc` nennt `22`, und `src/werkzeugkette.test.ts` hält beides mit
+`NODE_VERSION` aus der CI zusammen. Unter Node 24 meldet `pnpm install` jetzt
+die falsche Fassung, statt sie stillschweigend zu benutzen; die Ursache in
+jsdom bleibt unberührt.
 
 ### BEF-012 — Ein Termin lässt sich nicht in die Vergangenheit verschieben
 

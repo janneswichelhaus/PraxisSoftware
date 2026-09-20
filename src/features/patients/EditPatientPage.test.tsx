@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as RouterModul from 'react-router-dom';
-import { renderWithProviders, testPatient } from '@/test-utils';
+import { morgenOrtszeit, renderWithProviders, testPatient } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
@@ -138,7 +138,7 @@ describe('EditPatientPage', () => {
 
   it('lehnt ein Geburtsdatum in der Zukunft ab', async () => {
     const user = userEvent.setup();
-    const morgen = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    const morgen = morgenOrtszeit();
     renderWithProviders(<EditPatientPage />);
     await formularAbwarten();
 

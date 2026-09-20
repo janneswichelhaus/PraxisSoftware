@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Der Leistungskatalog (ABR-001).
@@ -363,6 +371,24 @@ describe('Leistungskatalog', () => {
       expect(new Set(rows.map((zeile) => zeile.subject_type))).toEqual(
         new Set(['service_catalog_version']),
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mandantengrenze (ADR-003, R3-025)
+  // ---------------------------------------------------------------------------
+  describe('Fremde Organisation', () => {
+    it('sieht die Preisliste der Testpraxis nicht und veroeffentlicht sie nicht', async () => {
+      const fremd = await fremdeOrganisation();
+
+      expect(
+        (await asUser(fremd.owner, 'select * from public.service_catalog_versions')).rows,
+      ).toEqual([]);
+      expect(
+        (await asUser(fremd.owner, 'select * from public.service_catalog_items')).rows,
+      ).toEqual([]);
+      await expect(asUser(fremd.owner, VEROEFFENTLICHEN, [KATALOG.entwurf])).rejects.toThrow();
+      await expect(asUser(fremd.owner, VERWERFEN, [KATALOG.entwurf])).rejects.toThrow();
     });
   });
 });

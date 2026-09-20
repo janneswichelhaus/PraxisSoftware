@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Client } from 'pg';
@@ -9,7 +9,29 @@ const MIGRATIONS_DIR = path.join(SUPABASE_DIR, 'migrations');
 const SEED_FILE = path.join(SUPABASE_DIR, 'seed.sql');
 const SHIM_FILE = path.join(HERE, 'supabase-shim.sql');
 
-export function testDatabaseUrl(): string {
+/**
+ * Das Schema entsteht einmal je Lauf, nicht einmal je Test (R3-019).
+ *
+ * Der Aufbau aus Shim, achtzig Migrationen und Seed dauert rund anderthalb
+ * Sekunden; 27 Dateien setzen die Datenbank vor **jedem** Test zurück, das
+ * sind rund 540 Aufbauten je Lauf. PostgreSQL kann eine Datenbank aber aus
+ * einer Vorlage klonen — dasselbe Ergebnis in einem Bruchteil der Zeit.
+ *
+ * `praxis_vorlage` trägt den fertigen Stand, `praxis_test` ist die Datenbank,
+ * in der die Tests arbeiten; sie wird je Reset verworfen und neu geklont.
+ * Fehlt das Recht, Datenbanken anzulegen, fällt der Helfer auf den bisherigen
+ * Weg zurück — dann läuft alles wie vorher, nur langsamer.
+ */
+const VORLAGE = 'praxis_vorlage';
+const ARBEIT = 'praxis_test';
+
+/** Signatur des Schemas: Wenn sie sich ändert, entsteht die Vorlage neu. */
+let vorlageSignatur: string | null = null;
+/** Null heißt: Es wird direkt in der konfigurierten Datenbank gearbeitet. */
+let arbeitsUrl: string | null = null;
+let klonenMoeglich = true;
+
+function konfigurierteUrl(): string {
   const url = process.env.TEST_DATABASE_URL;
   if (!url) {
     throw new Error(
@@ -19,10 +41,108 @@ export function testDatabaseUrl(): string {
   return url;
 }
 
+/** Dieselbe Verbindung, aber auf eine andere Datenbank desselben Servers. */
+function urlFuer(datenbank: string): string {
+  const url = new URL(konfigurierteUrl());
+  url.pathname = `/${datenbank}`;
+  return url.toString();
+}
+
+/**
+ * Die Datenbank, in der die Tests arbeiten.
+ *
+ * Vor dem ersten Reset ist das die konfigurierte; danach der Klon. Tests, die
+ * eigene Verbindungen aufmachen (Nebenläufigkeit), kommen über diese Funktion
+ * an dieselbe Datenbank wie die Helfer.
+ */
+export function testDatabaseUrl(): string {
+  return arbeitsUrl ?? konfigurierteUrl();
+}
+
 async function connect(): Promise<Client> {
   const client = new Client({ connectionString: testDatabaseUrl() });
   await client.connect();
   return client;
+}
+
+/** Eine Verbindung zur konfigurierten Datenbank - für `create database`. */
+async function verwaltung(): Promise<Client> {
+  const client = new Client({ connectionString: konfigurierteUrl() });
+  await client.connect();
+  return client;
+}
+
+/**
+ * Woran sich erkennen lässt, dass die Vorlage veraltet ist: die Namen und
+ * Änderungszeiten von Shim, Migrationen und Seed. Im Watch-Betrieb entsteht
+ * sie damit nach einer geänderten Migration neu.
+ */
+async function schemaSignatur(dateien: string[]): Promise<string> {
+  const teile: string[] = [];
+  for (const datei of [SHIM_FILE, SEED_FILE, ...dateien.map((f) => path.join(MIGRATIONS_DIR, f))]) {
+    const info = await stat(datei);
+    teile.push(`${path.basename(datei)}:${info.mtimeMs}:${info.size}`);
+  }
+  return teile.join('|');
+}
+
+/** Baut Shim, Migrationen und Seed in die Datenbank hinter `client`. */
+async function baueSchema(client: Client, dateien: string[]): Promise<void> {
+  await client.query(`
+    drop schema if exists public cascade;
+    drop schema if exists app cascade;
+    drop schema if exists auth cascade;
+    drop schema if exists storage cascade;
+    drop schema if exists extensions cascade;
+    create schema public;
+  `);
+
+  await client.query(await readFile(SHIM_FILE, 'utf8'));
+
+  for (const file of dateien) {
+    const sql = await readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
+    try {
+      await client.query(sql);
+    } catch (cause) {
+      throw new Error(`Migration ${file} fehlgeschlagen: ${(cause as Error).message}`);
+    }
+  }
+
+  await client.query(await readFile(SEED_FILE, 'utf8'));
+}
+
+/**
+ * Legt die Vorlage an, falls sie fehlt oder veraltet ist.
+ *
+ * Liefert `false`, wenn der Server das Anlegen von Datenbanken nicht erlaubt -
+ * dann bleibt es beim bisherigen Weg.
+ */
+async function vorlageBereitstellen(dateien: string[]): Promise<boolean> {
+  const signatur = await schemaSignatur(dateien);
+  if (vorlageSignatur === signatur) return true;
+
+  const leitung = await verwaltung();
+  try {
+    await leitung.query(`drop database if exists ${ARBEIT} with (force)`);
+    await leitung.query(`drop database if exists ${VORLAGE} with (force)`);
+    await leitung.query(`create database ${VORLAGE}`);
+  } catch {
+    klonenMoeglich = false;
+    return false;
+  } finally {
+    await leitung.end();
+  }
+
+  const vorlage = new Client({ connectionString: urlFuer(VORLAGE) });
+  await vorlage.connect();
+  try {
+    await baueSchema(vorlage, dateien);
+  } finally {
+    await vorlage.end();
+  }
+
+  vorlageSignatur = signatur;
+  return true;
 }
 
 /**
@@ -33,32 +153,28 @@ async function connect(): Promise<Client> {
  * keinen manuell gepflegten Zwischenzustand.
  */
 export async function resetDatabase(): Promise<void> {
+  const dateien = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort();
+  if (dateien.length === 0) throw new Error('Keine Migrationen gefunden.');
+
+  if (klonenMoeglich && (await vorlageBereitstellen(dateien))) {
+    const leitung = await verwaltung();
+    try {
+      await leitung.query(`drop database if exists ${ARBEIT} with (force)`);
+      await leitung.query(`create database ${ARBEIT} template ${VORLAGE}`);
+      arbeitsUrl = urlFuer(ARBEIT);
+      return;
+    } catch {
+      // Klonen ging nicht - ab hier wieder der bisherige Weg.
+      klonenMoeglich = false;
+      arbeitsUrl = null;
+    } finally {
+      await leitung.end();
+    }
+  }
+
   const client = await connect();
   try {
-    await client.query(`
-      drop schema if exists public cascade;
-      drop schema if exists app cascade;
-      drop schema if exists auth cascade;
-      drop schema if exists storage cascade;
-      drop schema if exists extensions cascade;
-      create schema public;
-    `);
-
-    await client.query(await readFile(SHIM_FILE, 'utf8'));
-
-    const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort();
-    if (files.length === 0) throw new Error('Keine Migrationen gefunden.');
-    for (const file of files) {
-      // Pfad stammt aus dem festen Migrationsverzeichnis des Repositories.
-      const sql = await readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
-      try {
-        await client.query(sql);
-      } catch (cause) {
-        throw new Error(`Migration ${file} fehlgeschlagen: ${(cause as Error).message}`);
-      }
-    }
-
-    await client.query(await readFile(SEED_FILE, 'utf8'));
+    await baueSchema(client, dateien);
   } finally {
     await client.end();
   }
@@ -264,4 +380,51 @@ export function tagInTagen(tage: number): string {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() + tage);
   return d.toISOString().slice(0, 10);
+}
+
+/** Kennungen der zweiten, rein synthetischen Praxis aus `fremdeOrganisation()`. */
+export const FREMDE_ORGANISATION = {
+  organizationId: '22222222-2222-4222-8222-0000000000ab',
+  owner: '11111111-1111-4111-8111-0000000000ab',
+  personOwner: '44444444-4444-4444-8444-0000000000ab',
+  personPatient: '44444444-4444-4444-8444-0000000000ac',
+  patient: '66666666-6666-4666-8666-0000000000ab',
+  staffMember: '55555555-5555-4555-8555-0000000000ab',
+} as const;
+
+/**
+ * Legt eine zweite Praxis mit eigenem owner, eigenem Patienten und eigener
+ * Mitarbeiterin an — die Gegenseite jeder Mandantengrenze (ADR-003).
+ *
+ * Dreizehn Testdateien bauen diese Fixture bisher selbst; die neun
+ * Abrechnungsdateien hatten sie gar nicht (R3-025). Hier steht sie einmal.
+ * Mehrfaches Aufrufen ist gutartig: Was schon da ist, bleibt.
+ */
+export async function fremdeOrganisation(): Promise<typeof FREMDE_ORGANISATION> {
+  const f = FREMDE_ORGANISATION;
+  await asPostgres(`
+    insert into auth.users (id, email, aud, role)
+      values ('${f.owner}', 'frida.fremd@praxis.invalid', 'authenticated', 'authenticated')
+      on conflict (id) do nothing;
+    insert into public.organizations (id, name, time_zone)
+      values ('${f.organizationId}', 'Test Praxis Woanders', 'Europe/Berlin')
+      on conflict (id) do nothing;
+    insert into public.persons (id, organization_id, given_name, family_name) values
+      ('${f.personOwner}',   '${f.organizationId}', 'Frida', 'Fremd'),
+      ('${f.personPatient}', '${f.organizationId}', 'Peter', 'Fremdpatient')
+      on conflict (id) do nothing;
+    insert into public.patients (id, organization_id, person_id)
+      values ('${f.patient}', '${f.organizationId}', '${f.personPatient}')
+      on conflict (id) do nothing;
+    insert into public.staff_members (id, organization_id, person_id)
+      values ('${f.staffMember}', '${f.organizationId}', '${f.personOwner}')
+      on conflict (id) do nothing;
+    insert into public.user_profiles (id, organization_id, person_id, display_name)
+      values ('${f.owner}', '${f.organizationId}', '${f.personOwner}', 'Frida Fremd')
+      on conflict (id) do nothing;
+    insert into public.user_roles (user_id, organization_id, role_key)
+      values ('${f.owner}', '${f.organizationId}', 'owner')
+      on conflict do nothing;
+  `);
+  return f;
 }

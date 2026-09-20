@@ -5,6 +5,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabaseOhneTermine,
   testDatabaseUrl,
 } from './helpers/db';
@@ -599,6 +600,23 @@ describe('Storno und Korrektur', () => {
       const { rows } = await asUser<Kandidat>(users.office, KANDIDATEN);
       expect(rows[0]!.has_draft).toBe(false);
       expect(rows[0]!.draft_id).toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mandantengrenze (ADR-003, R3-025)
+  // ---------------------------------------------------------------------------
+  describe('Fremde Organisation', () => {
+    it('storniert keine fremde Rechnung und legt keine Korrektur an', async () => {
+      const fremd = await fremdeOrganisation();
+      const { id } = await ausgestellteRechnung();
+
+      await expect(asUser(fremd.owner, STORNIEREN, [id, 'Nicht meine Praxis'])).rejects.toThrow(
+        /invoice not found/,
+      );
+      await storniere(id);
+      await expect(asUser(fremd.owner, KORREKTUR, [id])).rejects.toThrow(/invoice not found/);
+      expect((await asUser(fremd.owner, LISTE)).rows).toEqual([]);
     });
   });
 });

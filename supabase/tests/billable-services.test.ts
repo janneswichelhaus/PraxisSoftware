@@ -1,5 +1,12 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 /**
  * Leistungen aus durchgefuehrten Terminen (ABR-002).
@@ -310,6 +317,28 @@ describe('Leistungserfassung', () => {
       expect(rows).toHaveLength(0);
     });
 
+    it.each([[0], [-1], [11]])('weist die Menge %i ab (R3-025)', async (menge) => {
+      // Die Tabelle laesst 1 bis 10 zu. Null ist keine Leistung, negativ ist
+      // keine Menge, und elf waere eine Abrechnung ohne Deckung.
+      const id = await termin({ vorStunden: 60 + Math.abs(menge) });
+      await expect(
+        asUser(users.office, ERFASSEN, [
+          id,
+          JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: menge }]),
+        ]),
+      ).rejects.toThrow();
+    });
+
+    it('weist eine gebrochene Menge ab (R3-025)', async () => {
+      const id = await termin({ vorStunden: 72 });
+      await expect(
+        asUser(users.office, ERFASSEN, [
+          id,
+          JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 2.5 }]),
+        ]),
+      ).rejects.toThrow();
+    });
+
     it('laesst den Termin nicht wieder oeffnen, solange eine Leistung erfasst ist (R3-002)', async () => {
       // Sonst steht der Termin wieder auf 'confirmed' und ohne
       // Gebuehrenanlass da, waehrend das Ausfallhonorar unveraendert unter
@@ -526,6 +555,29 @@ describe('Leistungserfassung', () => {
       expect(rows[0]!.subject_type).toBe('appointment');
       expect(rows[0]!.subject_id).toBe(id);
       expect(rows[0]!.context.item_count).toBe(2);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Mandantengrenze (ADR-003, R3-025)
+  // ---------------------------------------------------------------------------
+  describe('Fremde Organisation', () => {
+    it('erfasst nichts an einem fremden Termin und sieht keine Leistung', async () => {
+      const fremd = await fremdeOrganisation();
+      const id = await termin({ vorStunden: 58 });
+      await asUserCommitted(users.office, ERFASSEN, [
+        id,
+        JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 1 }]),
+      ]);
+
+      await expect(
+        asUser(fremd.owner, ERFASSEN, [
+          id,
+          JSON.stringify([{ catalog_item_id: KATALOG.mt, quantity: 1 }]),
+        ]),
+      ).rejects.toThrow(/appointment not found/);
+      expect((await asUser(fremd.owner, LISTE)).rows).toEqual([]);
+      expect((await asUser(fremd.owner, OFFEN)).rows).toEqual([]);
     });
   });
 });

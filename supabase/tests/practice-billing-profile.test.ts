@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Praxis-Stammdaten fuer Rechnungen (ABR-000).
@@ -200,6 +208,23 @@ describe('Praxis-Stammdaten fuer Rechnungen', () => {
           [organizationId],
         ),
       ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  describe('Fremde Organisation (ADR-003, R3-025)', () => {
+    it('sieht die Stammdaten der Testpraxis nicht und ueberschreibt sie nicht', async () => {
+      const fremd = await fremdeOrganisation();
+
+      expect((await asUser(fremd.owner, LESEN)).rows).toEqual([]);
+
+      await asUserCommitted(fremd.owner, SPEICHERN, stammdaten({ legal_name: 'Praxis Woanders' }));
+
+      const { rows } = await asPostgres<{ legal_name: string; organization_id: string }>(
+        'select legal_name, organization_id from public.practice_billing_profiles order by legal_name',
+      );
+      expect(rows).toHaveLength(2);
+      const eigene = rows.find((r) => r.organization_id === organizationId);
+      expect(eigene?.legal_name).not.toBe('Praxis Woanders');
     });
   });
 });
