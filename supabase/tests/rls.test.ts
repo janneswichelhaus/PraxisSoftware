@@ -70,14 +70,30 @@ describe('RLS: Personen und Mitarbeiter', () => {
     await resetDatabase();
   }, 120_000);
 
-  it('zeigt Praxisrollen alle Personen der Organisation', async () => {
+  it('zeigt Praxisrollen die Personen ihres Bereichs', async () => {
     const { rows } = await asUser<{ n: string }>(
       users.therapist,
       'select count(*)::text as n from public.persons',
     );
-    // Vier Mitarbeitende mit Zugang, Nina Neu ohne Zugang (STAFF-002b), zwei
-    // Patient:innen mit Konto und Petra Platzhalter ohne.
-    expect(rows[0]?.n).toBe('8');
+    // Fuenf Mitarbeitende mit Zugang (seit LEI-003 auch Tom
+    // Trainingsbetreuung), Nina Neu ohne Zugang (STAFF-002b), zwei
+    // Patient:innen mit Konto und Petra Platzhalter ohne. NICHT dabei: Tina
+    // Trainingskundin - sie hat kein Behandlungsverhaeltnis (LEI-001, §4.8).
+    expect(rows[0]?.n).toBe('9');
+  });
+
+  it('verbirgt eine Person ohne Behandlungsverhaeltnis vor der Behandlungsseite (§4.8)', async () => {
+    // Der Name allein waere schon der verbotene Schluss: Wer in der
+    // Personenliste steht und keine Akte hat, trainiert. ADR-021 Punkt 3
+    // laesst die Identitaet geteilt sein, §4.8 den Schluss ueber sie nicht.
+    // Nur die rein therapeutischen Rollen: owner traegt beide Bereiche, und
+    // office ist im Training organisatorisch zustaendig (§4.8, Tabelle).
+    for (const rolle of [users.therapist, users.teamLead]) {
+      const { rows } = await asUser(rolle, 'select id from public.persons where id = $1', [
+        SEED.persons.tina,
+      ]);
+      expect(rows).toEqual([]);
+    }
   });
 
   it('zeigt einem Patienten ausschliesslich die eigene Person', async () => {
@@ -95,8 +111,9 @@ describe('RLS: Personen und Mitarbeiter', () => {
 
   it('zeigt Praxisrollen die Mitarbeiterdatensaetze der Organisation', async () => {
     const { rows } = await asUser(users.office, 'select id from public.staff_members');
-    // Vier mit Zugang plus Nina Neu ohne Zugang (STAFF-002b).
-    expect(rows).toHaveLength(5);
+    // Fuenf mit Zugang (seit LEI-003 auch Tom Trainingsbetreuung) plus Nina
+    // Neu ohne Zugang (STAFF-002b).
+    expect(rows).toHaveLength(6);
   });
 });
 
@@ -115,7 +132,8 @@ describe('RLS: Accounts und Rollen', () => {
 
   it('zeigt owner die Profile der Organisation (4.1)', async () => {
     const { rows } = await asUser(users.ownerTherapist, 'select id from public.user_profiles');
-    expect(rows).toHaveLength(6);
+    // Sechs aus Etappe 1, dazu seit LEI-003 die Trainingsbetreuung.
+    expect(rows).toHaveLength(7);
   });
 
   it('zeigt jedem Account nur die eigenen Rollen, owner alle', async () => {
@@ -126,7 +144,7 @@ describe('RLS: Accounts und Rollen', () => {
     expect(eigene.rows.map((r) => r.role_key)).toEqual(['office']);
 
     const alle = await asUser(users.ownerTherapist, 'select id from public.user_roles');
-    expect(alle.rows).toHaveLength(8);
+    expect(alle.rows).toHaveLength(9);
   });
 
   it('unterstuetzt mehrere Rollen pro Benutzer (ADR-004, ADR-014)', async () => {

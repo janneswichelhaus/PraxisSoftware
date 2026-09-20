@@ -22,6 +22,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Dokumentation, Verordnungen, Termine mit Behandlungsnachweis und die Stammdaten der Patientin.',
   },
+  trainingsverhaeltnis: {
+    label: 'Trainingsverhältnis',
+    beschreibung:
+      'Vertragsdaten des Trainings. Eigene Frist neben der Patientenakte: Training ist keine Heilbehandlung (ADR-021).',
+  },
   termin_ohne_nachweis: {
     label: 'Abgesagte Termine ohne Nachweis',
     beschreibung:
@@ -80,6 +85,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
 /** Ab wann die Frist läuft. */
 export const ANKER_TEXTE: Record<string, string> = {
   care_concluded: 'ab Abschluss der Versorgung',
+  contract_ended: 'ab Ende des Vertrages',
   calendar_year_end: 'ab Ende des Kalenderjahres',
   event_time: 'ab dem Ereignis',
   case_closed: 'ab Abschluss des Vorgangs',

@@ -6,6 +6,7 @@ export const roleLabels: Record<RoleKey, string> = {
   therapist: 'Therapeut:in',
   team_lead: 'Teamleitung',
   office: 'Praxismanagement',
+  trainer: 'Trainingsbetreuung',
   patient: 'Patient:in',
 };
 

@@ -66,3 +66,42 @@ Katalogposition, „ein Bereich je Rechnung" und die Auswertung „Einnahmen je
 Leistungsart" — das sind **ABR-EPIC-005** und **ABR-EPIC-006**. Der
 **Wortlaut** des Befreiungshinweises steht als Annahme (**ANN-082**) und
 wartet auf die Steuerberatung (B4, G13).
+
+## LEI-EPIC-001 — Trainingsverhältnis, eigene Frist, Trainingsbetreuung
+
+Prüfschritte zu **LEI-001** bis **LEI-003**. Grundlage: ADR-021 (Punkte 1 bis 6),
+`PROJECT_PRINCIPLES.md` §4.8 und §4.9, ADR-008.
+
+**Dieser Loop bringt drei Migrationen**
+(`20260920130000_training_relationships.sql`,
+`20260920131000_training_retention.sql`, `20260920132000_training_role.sql`)
+**und einen geänderten Seed**: vorher `git pull origin main`, dann
+`pnpm dlx supabase@2.116.0 db reset`.
+
+### 1. Es gibt nichts zu klicken — und das ist die Zusage
+
+Dieser Loop legt das Fundament, nicht die Oberfläche. Es entsteht keine neue
+Seite, kein neuer Knopf und kein neuer Menüpunkt; der Trainingsbereich selbst
+ist E18 Schritt 7. Die Abnahme am Bildschirm besteht deshalb aus einer
+**Gegenprobe**: Melde dich als `anna.beispiel@praxis.invalid` (therapist) an
+und sieh nach, dass sich nichts geändert hat — Kartei, Kalender, Akte,
+Abrechnung wie vorher, und **Tina Trainingskundin taucht nirgends auf**, weder
+in der Patientensuche noch in der Funktionssuche (Strg/Cmd + K).
+
+### 2. Die Trennung selbst — serverseitig geprüft
+
+Sie hängt an den Policies und nicht an der Oberfläche; ausgeblendete Elemente
+wären keine Zugriffskontrolle (ADR-004 Punkt 5). Nachgewiesen ist sie in
+`pnpm test:db`: 21 Fälle, davon acht zu „kein Durchgriff" in **beide**
+Richtungen — die Trainingsbetreuung sieht weder Kartei noch Dokumentation noch
+Behandlungsgrundlagen, die therapeutischen Rollen sehen kein
+Trainingsverhältnis, und eine Person ohne Akte bleibt der Behandlungsseite auch
+als Name verborgen.
+
+### 3. Was dieser Loop nicht bringt
+
+Keine Trainingsoberfläche und keine Schreibwege für das Verhältnis; die Rolle
+**Trainingsbetreuung** ist deshalb über **Team → Zugang** noch nicht zuweisbar.
+Keine Screening- oder Gesundheitsangaben und damit auch keine Frist für sie —
+sie bleibt bei **B2**. Keine Verknüpfung von Terminen mit dem
+Trainingsverhältnis: Das ist **CAL-EPIC-005**.

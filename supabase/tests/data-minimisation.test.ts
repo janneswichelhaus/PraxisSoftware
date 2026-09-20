@@ -139,7 +139,8 @@ describe('Dienstliche Erreichbarkeit', () => {
       users.office,
       'select work_email from public.staff_members order by work_email',
     );
-    expect(rows).toHaveLength(5);
+    // Fuenf aus Etappe 1, dazu seit LEI-003 Tom Trainingsbetreuung.
+    expect(rows).toHaveLength(6);
     expect(rows[0]?.work_email).toBe('anna.beispiel@praxis.invalid');
   });
 

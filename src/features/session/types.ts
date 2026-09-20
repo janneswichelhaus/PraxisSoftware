@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-export const roleKeySchema = z.enum(['owner', 'therapist', 'team_lead', 'office', 'patient']);
+export const roleKeySchema = z.enum([
+  'owner',
+  'therapist',
+  'team_lead',
+  'office',
+  'trainer',
+  'patient',
+]);
 export type RoleKey = z.infer<typeof roleKeySchema>;
 
 export const userProfileSchema = z.object({

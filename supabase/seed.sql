@@ -50,6 +50,7 @@ delete from public.staff_private_details;
 delete from public.user_roles;
 delete from public.user_profiles;
 delete from public.patients;
+delete from public.training_relationships;
 delete from public.staff_members;
 delete from public.persons;
 delete from public.locations;
@@ -77,7 +78,8 @@ values
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000003', 'authenticated', 'authenticated', 'olivia.office@praxis.invalid',    extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000004', 'authenticated', 'authenticated', 'tim.teamleitung@praxis.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000005', 'authenticated', 'authenticated', 'max.mustermann@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000006', 'authenticated', 'authenticated', 'erika.beispiel@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000006', 'authenticated', 'authenticated', 'erika.beispiel@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000007', 'authenticated', 'authenticated', 'tom.training@praxis.invalid',     extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
 
 -- -----------------------------------------------------------------------------
 -- Organisation und Standort
@@ -103,7 +105,13 @@ insert into public.persons (id, organization_id, given_name, family_name) values
   -- Person ohne Account, um zu pruefen, dass die Kartei nicht am Account haengt.
   ('44444444-4444-4444-8444-000000000007', '22222222-2222-4222-8222-000000000001', 'Petra',  'Platzhalter'),
   -- Mitarbeiterin ohne Zugang - Ausgangslage fuer die Einladung (STAFF-002b).
-  ('44444444-4444-4444-8444-000000000008', '22222222-2222-4222-8222-000000000001', 'Nina',   'Neu');
+  ('44444444-4444-4444-8444-000000000008', '22222222-2222-4222-8222-000000000001', 'Nina',   'Neu'),
+  -- Nur Training, keine Behandlung (LEI-001). Sie belegt den Regelfall des
+  -- zweiten Leistungsbereichs: eine Person ohne Patientenakte.
+  ('44444444-4444-4444-8444-000000000009', '22222222-2222-4222-8222-000000000001', 'Tina',   'Trainingskundin'),
+  -- Trainingsbetreuung (PROJECT_PRINCIPLES.md 4.9, LEI-003). Sie besetzt
+  -- die andere Seite der Grenze aus ADR-021 Punkt 6.
+  ('44444444-4444-4444-8444-000000000010', '22222222-2222-4222-8222-000000000001', 'Tom',    'Trainingsbetreuung');
 
 -- -----------------------------------------------------------------------------
 -- Mitarbeiter
@@ -116,7 +124,8 @@ insert into public.staff_members (id, organization_id, person_id, primary_locati
   -- Ohne Zugang und damit ohne Rollen: die Ausgangslage, in der die Abnahme
   -- eine Einladung aussprechen kann (STAFF-002b). Sie ist aus demselben Grund
   -- nicht fuer Termine zuordenbar (E11).
-  ('55555555-5555-4555-8555-000000000005', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000008', '33333333-3333-4333-8333-000000000001', 'nina.neu@praxis.invalid',       '+49 7071 0000105');
+  ('55555555-5555-4555-8555-000000000005', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000008', '33333333-3333-4333-8333-000000000001', 'nina.neu@praxis.invalid',       '+49 7071 0000105'),
+  ('55555555-5555-4555-8555-000000000006', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000010', '33333333-3333-4333-8333-000000000001', 'tom.training@praxis.invalid',   '+49 7071 0000106');
 
 -- Privatdaten der Mitarbeitenden. Bewusst getrennt: nur owner und die
 -- betroffene Person selbst duerfen sie lesen.
@@ -133,6 +142,22 @@ insert into public.patients (id, organization_id, person_id, status, care_starte
   ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000005', 'active',   '2026-02-10'),
   ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'active',   '2026-05-21'),
   ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000007', 'inactive', '2025-11-03');
+
+-- -----------------------------------------------------------------------------
+-- Trainingsverhaeltnisse (LEI-001)
+--
+-- Zwei Zeilen, und beide sagen etwas: Tina hat ausschliesslich ein
+-- Trainingsverhaeltnis - fuer sie gibt es keine Akte und darf es keine geben.
+-- Erika hat beides zugleich; genau daran scheitert die Trennung nach Person,
+-- und genau deshalb trennt ADR-021 nach Rechtsverhaeltnis (Punkt 1).
+--
+-- Keine Screening- oder Gesundheitsangaben: die Tabelle traegt das
+-- Verhaeltnis und sonst nichts.
+-- -----------------------------------------------------------------------------
+insert into public.training_relationships
+  (id, organization_id, person_id, status, contract_started_on, contract_ended_on) values
+  ('eeeeeeee-eeee-4eee-8eee-000000000001', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000009', 'active', '2026-03-02', null),
+  ('eeeeeeee-eeee-4eee-8eee-000000000002', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'active', '2026-06-15', null);
 
 -- Strasse und Hausnummer getrennt: ein Hausbesuch uebernimmt beide Felder
 -- einzeln in den Adress-Snapshot des Termins (CAL-001).
@@ -287,7 +312,8 @@ insert into public.user_profiles (id, organization_id, person_id, display_name) 
   ('11111111-1111-4111-8111-000000000003', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000003', 'Olivia Office'),
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000004', 'Tim Teamleitung'),
   ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000005', 'Max Mustermann'),
-  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'Erika Beispiel');
+  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'Erika Beispiel'),
+  ('11111111-1111-4111-8111-000000000007', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000010', 'Tom Trainingsbetreuung');
 
 -- -----------------------------------------------------------------------------
 -- Rollen. Jannes hat bewusst zwei Rollen (ADR-004: Mehrfachrollen).
@@ -300,7 +326,11 @@ insert into public.user_roles (user_id, organization_id, role_key) values
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'therapist'),
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'team_lead'),
   ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', 'patient'),
-  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient');
+  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient'),
+  -- Ausschliesslich Trainingsbetreuung: nur so laesst sich pruefen, dass
+  -- aus dieser Rolle kein Zugriff auf die Behandlungsseite folgt (ADR-021
+  -- Punkt 6, PROJECT_PRINCIPLES.md 4.8).
+  ('11111111-1111-4111-8111-000000000007', '22222222-2222-4222-8222-000000000001', 'trainer');
 
 -- -----------------------------------------------------------------------------
 -- Ein Hausbesuchstag fuer heute (UX-001)

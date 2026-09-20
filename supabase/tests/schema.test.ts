@@ -66,6 +66,7 @@ describe('Schema-Invarianten', () => {
       'staff_members',
       'staff_private_details',
       'patients',
+      'training_relationships',
       'patient_contact_details',
       'patient_care_details',
       'user_profiles',
@@ -201,15 +202,19 @@ describe('Schema-Invarianten', () => {
     expect(grants).toEqual([]);
   });
 
-  it('enthaelt die fuenf Rollen aus PROJECT_PRINCIPLES.md 4', async () => {
+  it('enthaelt die Rollen aus PROJECT_PRINCIPLES.md 4', async () => {
     const { rows } = await asPostgres<{ key: string }>(
       'select key from public.roles order by sort_order',
     );
+    // Seit LEI-003 sechs: §4.9 Trainingsbetreuung besetzt die Trainingsseite
+    // der Grenze aus §4.8. §4.10 Trainingskund:in fehlt noch - sie kommt mit
+    // dem Trainingsbereich, so wie §4.6 mit dem Patientenportal.
     expect(rows.map((r) => r.key)).toEqual([
       'owner',
       'therapist',
       'team_lead',
       'office',
+      'trainer',
       'patient',
     ]);
   });
