@@ -43,3 +43,10 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Fremdquellen im Original -- siehe quellen/README.md
+# Die 18 Score-PDFs und ihre Textextrakte liegen lokal, aber nicht im
+# Repository: es ist oeffentlich, und die Boegen sind Werke Dritter.
+# Nachweis und Wiederbeschaffung laufen ueber das Register in quellen/README.md.
+quellen/scores/pdf/
+quellen/scores/pdf-text/
