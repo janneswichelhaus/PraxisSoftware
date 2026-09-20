@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-20 · letzte Session: ADR-022 vorgeschlagen (E18, Schritt 2)
+# Status · Stand 2026-09-20 · letzte Session: ADR-022 angenommen (E18, Schritt 2)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,20 +6,18 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**ADR-022 ist geschrieben und wartet auf die Annahme** (E18, Schritt 2): ein Kalender, ein Kontext
-je Termin — `internal` ist nicht neu, es heißt heute `kind = 'event'`. Der Stand liegt als **PR #62**
-gegen `main`, ungemergt. **ADR-021 ist gemergt** (PR #61) und steht an allen drei Stellen:
-Index in [`../CLAUDE.md`](../CLAUDE.md), [`adr/README.md`](adr/README.md), §21 (**0.12.1**).
+**ADR-022 ist angenommen** (E18, Schritt 2) und steht an allen drei Stellen: Index in
+[`../CLAUDE.md`](../CLAUDE.md), [`adr/README.md`](adr/README.md), §21 (**0.12.2**). Ein Kalender,
+ein Kontext je Termin — `internal` ist kein neues Feld, es heißt `kind = 'event'`. **Gebaut ist
+davon nichts:** kein Schema, keine Migration, keine Spalte. Damit ist **Schritt 3 frei**.
 **R3 ist vollständig gemergt** (PR #57, #58, #59), `R3-UEBERGABE.md` weiter nur auf
 `claude/r3-analyse`; **Etappe 1 der Abrechnung ist gebaut**, Abnahme steht aus.
 
 ## Danach — Reihenfolge seit 2026-09-20
 
-1. **MAP-002** — Fahrzeiten und Navigations-Handoff; braucht das PTV-Free-Abo
-2. **ADR-006 neue Fassung** — die drei Feature-Verbote an der MDR-Grenze (E18,
-   Schritt 3); beginnt erst nach der Annahme von ADR-022
-3. **ADR-009 neue Fassung** — Steuerkennzeichen am Posten, getrennte
-   Nummernkreise (E18, Schritt 4)
+1. **ADR-006 neue Fassung** — die drei Feature-Verbote an der MDR-Grenze (E18, Schritt 3)
+2. **ADR-009 neue Fassung** — Steuerkennzeichen am Posten, getrennte Nummernkreise (E18, Schritt 4)
+3. **MAP-002** — In-App-Kartenprototyp; parallel startbar, sobald das PTV-Free-Abo vorliegt
 
 ## Prüfverfahren
 
@@ -29,7 +27,8 @@ Index in [`../CLAUDE.md`](../CLAUDE.md), [`adr/README.md`](adr/README.md), §21 
 
 ## Blocker (Jannes-seitig)
 
-- **ADR-022 annehmen oder zurückweisen** (PR #62) — E18 Schritt 3 beginnt erst danach.
+- **PTV-Free-Abo vor MAP-002** — ohne Schlüssel läuft der Prototyp nur gegen
+  den Mock-Adapter (ADR-019); nur synthetische Koordinaten.
 - **Lokal `pnpm dlx supabase@2.116.0 db reset`** nach dem Merge von R3 (eine
   Migration aus G2); Seed unverändert. **Node 22** (`.nvmrc`), sonst rot.
 - **G13 ist überfällig:** Nummernformat und Umsatzsteuer-Status stehen als
@@ -42,8 +41,8 @@ Index in [`../CLAUDE.md`](../CLAUDE.md), [`adr/README.md`](adr/README.md), §21 
   CAL-EPIC-004a/b/c, FIX-EPIC-004, UX-013, GRD-001, VER-EPIC-002, ABR-EPIC-001,
   ABR-EPIC-002a/b, ABR-EPIC-003** in [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md);
   **Sichtprüfung hinter der Anmeldung wartet auf OPS-002**.
-- **B8:** Lizenzbeleg · PTV-Free-Abo vor MAP-002 (nur Prototyp) · **OPS-001**
-  offen · `claude/issue-42-status-fv319v` ungemergt.
+- **B8:** Lizenzbeleg · **OPS-001** offen · `claude/issue-42-status-fv319v`
+  ungemergt.
 
 ## Auf Abnahme warten
 
@@ -52,9 +51,9 @@ FIX-EPIC-001 braucht Docker. Liste: [`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**ADR-022 vorgeschlagen** — kein Code, kein Schema, keine Migration. Der Terminkontext ist keine
-neue Spalte: Die Terminart führt seit CAL-015b `treatment` und `event`, `internal` **ist** `event`
-(ANN-049). Entschieden sind eine Spalte mit drei Kontexten, je Kontext genau ein
-Verhältnis-Fremdschlüssel, die eigene Trainingsgrundlage neben ADR-020 und der Riegel gegen eine
-Behandlungsdokumentation am Trainingstermin. Teuerste Folge: zwei Aufbewahrungsfristen in einer
-Tabelle. Lokal: `git pull`.
+**ADR-022 angenommen** — kein Code, kein Schema, keine Migration. Vollzogen sind Status im ADR,
+Index in `CLAUDE.md`, Tabelle in `adr/README.md` und die Zeile in §21; die Korrekturversion
+**0.12.2** ändert keine Leitplanke, sie zieht in §4, §5, §8 und §18 eine Grenze. Mit angenommen ist
+die eine Abweichung von der Vorgabe: `internal` bekommt kein zweites Feld. Teuerste Folge bleibt,
+was der ADR nennt — zwei Aufbewahrungsfristen in einer Tabelle, gelöscht wird je Zeile am Kontext.
+Lokal: `git pull origin main`.

@@ -4,10 +4,10 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.12.1** |
+| **Dokumentversion** | **0.12.2** |
 | **Änderungsdatum** | **2026-09-20** |
-| Vorversion | 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-021, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
+| Vorversion | 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
 
@@ -1329,6 +1329,7 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-019 | Kartendienst: Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | §8.1, §9, §20 |
 | ADR-020 | Behandlungsgrundlage: Verordnung und Selbstzahler unter einer Klammer | §14, §19 |
 | ADR-021 | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | §1.1, §4, §14, §18 |
+| ADR-022 | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | §4, §5, §8, §18 |
 
 Die Tabelle nennt, **welcher ADR welchen Paragraphen trägt** — sonst nichts.
 Welche Fassung gilt, welchen Status ein ADR hat und woran eine produktive
@@ -1352,6 +1353,26 @@ technischer Teil steht in ADR-018 Fassung 3 und ADR-004 Fassung 2.
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.12.2
+
+Korrekturversion, ändert keine Leitplanke. **ADR-022** (Terminkontext und
+Trainingsgrundlage: ein Kalender, ein Kontext je Termin) ist am 2026-09-20 vom
+Projektinhaber angenommen und steht deshalb in der Tabelle in §21. Der ADR
+ändert keine Aussage dieses Dokuments, er zieht in vier Paragraphen eine
+Grenze: Der Kalender aus §8 trägt künftig drei Kontexte statt zwei, und der
+Zustandsautomat gilt unverändert, wird aber je Kontext gelesen; die
+Dokumentationspflicht aus §5 gilt allein am Behandlungstermin, und ein
+Trainingstermin kann keinen Eintrag erzeugen — durchgesetzt in der Datenbank,
+nicht in der Oberfläche (§4.7); die Policies auf dem Kalender filtern nach
+Kontext (§4); und die Löschung nach §18 trifft künftig zwei Fristen in einer
+Tabelle und muss deshalb **je Zeile am Kontext** greifen, nicht je Tabelle.
+
+**Nicht Gegenstand dieser Version:** das konkrete Schema, der Trainingsbereich,
+das Trainingsprotokoll als Funktion, die Trainingsrolle und der Nachzug an §1,
+§4 und §14 — Schritt 5 aus E18, unverändert offen. Die Grenze aus §4 ist damit
+weiter gezogen, ohne dass jemand auf der anderen Seite steht (ADR-022,
+Konsequenzen).
 
 ### Änderungsvermerk 0.12.1
 

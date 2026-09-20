@@ -1,8 +1,8 @@
 # E18 — Zwei Leistungsbereiche: Heilbehandlung und Training
 
 Stand 2026-09-17 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt, kein
-eigener Rang · Umsetzung: **Schritt 1 abgeschlossen** (ADR-021, angenommen am
-2026-09-20), Schritte 2 bis 7 offen · **kein Code**
+eigener Rang · Umsetzung: **Schritte 1 und 2 abgeschlossen** (ADR-021 und
+ADR-022, angenommen am 2026-09-20), Schritte 3 bis 7 offen · **kein Code**
 
 Quelle sind die Festlegungen des Projektinhabers vom 2026-09-17 (E18). Sie
 beantworten die fünf Fragen, die der Roadmap-Vermerk 5.7 bei Stufe 3 gestellt
@@ -266,7 +266,7 @@ an ihren Platz, dann Code.** Kein Loop beginnt, bevor der ADR über ihm steht.
 | Schritt | Ergebnis                                                                                              | Rang |
 | ------- | ----------------------------------------------------------------------------------------------------- | ---- |
 | 1       | **[ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md)** Leistungsbereiche und Rechtsverhältnisse: Abschnitt 1, die drei harten Regeln, § 203-Niveau — **angenommen am 2026-09-20** (`PROJECT_PRINCIPLES.md` 0.12.1 §21) | 2    |
-| 2       | **ADR-022** Terminkontext und Trainingsgrundlage: Abschnitt 2, Abgrenzung zu ADR-020                   | 2    |
+| 2       | **[ADR-022](../adr/ADR-022-appointment-context-and-training-basis.md)** Terminkontext und Trainingsgrundlage: Abschnitt 2, Abgrenzung zu ADR-020 — **angenommen am 2026-09-20** (`PROJECT_PRINCIPLES.md` 0.12.2 §21); `internal` ist `kind = 'event'` und bekommt kein zweites Feld | 2    |
 | 3       | **ADR-006 neue Fassung**: die drei Feature-Verbote in der Zweckbestimmung                              | 2    |
 | 4       | **ADR-009 neue Fassung**: Steuerkennzeichen am Posten, getrennte Nummernkreise, § 14c-Riegel, Report   | 2    |
 | 5       | **`PROJECT_PRINCIPLES.md` neue Version**: § 1, § 4, Zweckbestimmung, § 14 bereinigt (§ 21)             | 1    |
