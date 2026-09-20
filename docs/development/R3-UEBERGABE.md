@@ -3,8 +3,9 @@
 Einzige Datei dieser Runde vor der Freigabe. Sie liegt nur auf `claude/r3-analyse` (wird nie gemergt);
 Umsetzungs-Sessions lesen sie per
 `git show origin/claude/r3-analyse:docs/development/R3-UEBERGABE.md`. Stand: Knoten 1 (Inventur) und
-Knoten 2 (Auflösung & Plan) abgeschlossen; **G1 gemergt (PR #57), G2 umgesetzt (PR #58), G3 steht
-aus**. Die Umsetzungs-Session
+Knoten 2 (Auflösung & Plan) abgeschlossen; **G1 und G2 gemergt (PR #57, #58), G3 liegt als PR #59**.
+Damit ist die Runde gebaut: 25 Befunde umgesetzt, 26 bleiben als Backlog in diesem Dokument.
+Dieser Branch kann nach der Abnahme von PR #59 gelöscht werden. Die Umsetzungs-Session
 liest „Harte Regeln", „Knoten 2 — Auflösung & Plan" (ihre Gruppe) und „Knoten 3"; die Befundtabellen
 und die Details darüber sind das Nachschlagewerk dazu.
 
@@ -396,6 +397,12 @@ Rohkennungen in Klammern; „‖" trennt die Details mehrerer Quellen. Bei gegen
 - **R3-050** (L6-10): L6-10: Flaky-Prüfung insgesamt: 3 Läufe identisch (1728/1728); Shuffle-Lauf (--sequence.shuffle, Seeds 7/42/1234) über die 10 Dateien mit vi.fn() ohne mockReset: 150/150 grün – keine Reihenfolgeabhängigkeit belegt. Kein it ohne Prüfung (17 expect-freie Blöcke nutzen den werfenden Helfer pruefeBarrierefreiheit), 16 try-Blöcke sind alle try/finally-Aufräumen, keine Tautologie, kein userEvent ohne await, kein leeres waitFor, QueryClient je Render neu.
 - **R3-051** (L6-11): L6-11: BEF-Verweis: BEF-010. Heute kein Schaden; der Abgleich ist nur per Skript dieser Runde geführt und hält bei der nächsten Migration nicht von selbst. Betrifft empfaenger-, kandidat-, rechnung-, erinnerung-, offenerPosten-, zahlung-, offenerTermin-, vorschlag-, leistung- und dokumentSchema.
 
+### Während der Umsetzung gefunden (nicht behoben)
+
+| Kennung | Datei:Zeile | Befund | Nachweis | Schwere |
+| --- | --- | --- | --- | --- |
+| R3-052 | supabase/migrations/20260828100100_authorization.sql:141 | `locations_select_own_org` filtert nur nach Organisation und verlangt keine Praxisrolle: Ein Patientenkonto sieht den Standort seiner Praxis mit Name und Anschrift. Die übrigen org-gefilterten Tabellen verlangen zusätzlich `app.is_staff()`. Ob das so gewollt ist, ist eine Entscheidung — die Praxisanschrift steht auf jeder Rechnung, die Verknüpfung „dieses Patientenkonto gehört zu dieser Praxis" ist aber eine eigene Aussage. | In G3 beim Schreiben der Tests zu R3-026 aufgefallen und dort als geltendes Verhalten festgehalten (`supabase/tests/rls.test.ts`, „zeigt jedem angemeldeten Konto der Praxis ihren Standort") | S4 |
+
 ### Verworfen (0)
 
 _keine_
@@ -671,7 +678,15 @@ selbst her, statt sich auf den fehlenden Anmeldedienst zu verlassen. Gates: `tes
 Gate nach G2: volle Prüfkette **plus `pnpm test:db`** (wegen R3-012), Sichtprüfung im Browser
 soweit ohne Anmeldung möglich, auch bei ~375 px.
 
-### G3 — Tests, Gates und Werkzeuge (8 Befunde)
+### G3 — Tests, Gates und Werkzeuge (8 Befunde) — **erledigt 2026-09-20**
+
+Umgesetzt als PR #59, ein Commit je Befund (R3-019 zwei: der Fix und das Entfernen zweier
+ueberfluessiger eslint-disable-Zeilen, die erst das schaerfere Gate aus R3-022 sichtbar machte).
+Keine Migration. BEF-009 und BEF-011 sind erledigt und im Register vermerkt. R3-019 lief als
+freigegebene Ausnahme zuletzt und blieb im geplanten Rahmen: nur `helpers/db.ts`, Testanzahl
+unveraendert, mit Rueckfallweg, wenn der Server keine Datenbanken anlegen laesst. Messungen:
+`test:db` 495,5 -> 241,4 s bei 1631 Tests; drei Reset-Dateien 27,96 -> 8,68 s. Gates: `test`
+1785 (vor G3 1751), `test:db` 1631, E2E ohne Anmeldung 36, lint jetzt mit `--max-warnings 0`.
 
 | # | Kennung | Schwere/Aufwand | Fix (kleinstmöglich) | Beleg vorher | Dateien |
 | --- | --- | --- | --- | --- | --- |
