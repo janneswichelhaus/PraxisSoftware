@@ -107,6 +107,28 @@ describe('Erstattungen', () => {
     expect(screen.getByText(/Gesamt:/).textContent).toContain('12,50');
   });
 
+  it('rechnet Betraege wie der Rest der Anwendung (R3-018)', async () => {
+    // Der Vorschaubereich hatte einen eigenen Geldparser mit abweichender
+    // Semantik: '1e3' wurde als 1000 Euro gelesen und '1,005' auf 1,00
+    // abgerundet statt auf 1,01. Gerechnet wird jetzt mit parseEuroZuCent -
+    // derselben Funktion wie in der Abrechnung.
+    const nutzer = userEvent.setup();
+    oeffne(['therapist']);
+    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
+    await nutzer.click(screen.getByRole('radio', { name: 'Einkauf' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Position hinzufügen' }));
+
+    const betrag = screen.getByRole('textbox', { name: 'Betrag in €' });
+
+    await nutzer.clear(betrag);
+    await nutzer.type(betrag, '1e3');
+    expect(screen.getByText(/Gesamt:/).textContent).not.toContain('1.000,00');
+
+    await nutzer.clear(betrag);
+    await nutzer.type(betrag, '1,005');
+    expect(screen.getByText(/Gesamt:/).textContent).toContain('0,00');
+  });
+
   it('behauptet beim Einreichen weder PDF noch Versand', async () => {
     const nutzer = userEvent.setup();
     oeffne(['therapist']);

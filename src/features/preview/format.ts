@@ -6,7 +6,10 @@
  * ihrem eigenen Vokabular.
  */
 export { formatDate as formatDatum } from '@/lib/datum';
-export { formatEuro } from '@/lib/geld';
+// parseEuroZuCent kam mit R3-018 dazu: Der Vorschaubereich hatte einen
+// eigenen Geldparser mit abweichender Semantik ('1e3' als tausend Euro,
+// '1,005' auf 1,00 abgerundet). Gerechnet wird ueberall dieselbe Funktion.
+export { formatEuro, parseEuroZuCent } from '@/lib/geld';
 
 export function formatZeitpunkt(iso: string): string {
   if (!iso) return '–';
