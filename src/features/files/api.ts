@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
-import { dateiAblehnungsgrund } from './dokumentarten';
+import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from './dokumentarten';
 
 /**
  * Datenzugriff auf die Dateiablage der Patientenakte (DAT-001, ADR-017).
@@ -105,6 +105,13 @@ async function pruefsumme(datei: Blob): Promise<string> {
 export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
   const grund = dateiAblehnungsgrund(auftrag.datei);
   if (grund) throw new Error(grund);
+
+  // Noch vor (a): Passt der Inhalt zum angekündigten Format? Der Typ kommt
+  // sonst allein aus der Dateiendung, und Phase (c) vergleicht ihn gegen
+  // `metadata.mimetype` — also gegen denselben Wert aus demselben Upload
+  // (R3-014). Eine umbenannte Fremddatei fällt erst hier auf.
+  const inhaltsGrund = await dateiInhaltAblehnungsgrund(auftrag.datei);
+  if (inhaltsGrund) throw new Error(inhaltsGrund);
 
   const summe = await pruefsumme(auftrag.datei);
 

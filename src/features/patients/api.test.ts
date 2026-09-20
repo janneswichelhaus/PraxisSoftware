@@ -50,7 +50,7 @@ describe('fetchPatients (R3-012)', () => {
     // Hausbesuchszugang, Bemerkung, Strasse - hat im Browser nichts zu
     // suchen, schon gar nicht fuer jede Patientin der Praxis auf einmal.
     const order = vi.fn().mockResolvedValue({ data: [], error: null });
-    const select = vi.fn(() => ({ order }));
+    const select = vi.fn((_spalten: string) => ({ order }));
     from.mockReturnValue({ select });
 
     await fetchPatients();
