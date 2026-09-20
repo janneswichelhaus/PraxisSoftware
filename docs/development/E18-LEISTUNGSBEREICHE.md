@@ -1,7 +1,7 @@
 # E18 — Zwei Leistungsbereiche: Heilbehandlung und Training
 
 Stand 2026-09-17 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt, kein
-eigener Rang · Umsetzung: **Schritt 1 geschrieben** (ADR-021, vorgeschlagen am
+eigener Rang · Umsetzung: **Schritt 1 abgeschlossen** (ADR-021, angenommen am
 2026-09-20), Schritte 2 bis 7 offen · **kein Code**
 
 Quelle sind die Festlegungen des Projektinhabers vom 2026-09-17 (E18). Sie
@@ -265,7 +265,7 @@ an ihren Platz, dann Code.** Kein Loop beginnt, bevor der ADR über ihm steht.
 
 | Schritt | Ergebnis                                                                                              | Rang |
 | ------- | ----------------------------------------------------------------------------------------------------- | ---- |
-| 1       | **[ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md)** Leistungsbereiche und Rechtsverhältnisse: Abschnitt 1, die drei harten Regeln, § 203-Niveau — **geschrieben am 2026-09-20, Status vorgeschlagen** | 2    |
+| 1       | **[ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md)** Leistungsbereiche und Rechtsverhältnisse: Abschnitt 1, die drei harten Regeln, § 203-Niveau — **angenommen am 2026-09-20** (`PROJECT_PRINCIPLES.md` 0.12.1 §21) | 2    |
 | 2       | **ADR-022** Terminkontext und Trainingsgrundlage: Abschnitt 2, Abgrenzung zu ADR-020                   | 2    |
 | 3       | **ADR-006 neue Fassung**: die drei Feature-Verbote in der Zweckbestimmung                              | 2    |
 | 4       | **ADR-009 neue Fassung**: Steuerkennzeichen am Posten, getrennte Nummernkreise, § 14c-Riegel, Report   | 2    |
