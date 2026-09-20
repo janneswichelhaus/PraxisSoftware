@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-19
+Stand: 2026-09-20
 
 ## Zweck
 
@@ -620,3 +620,40 @@ den Bereich das nächste Mal anfasst (ABR-EPIC-002b).
 Entwurf danach in einem eigenen Schritt; `has_draft` und `draft_id` kommen
 damit aus derselben Abfrage und können nicht auseinanderlaufen. Die Zeile
 trägt den Weg „Zum Entwurf".
+
+---
+
+### BEF-019 — Auf der Rechnung fehlt der Grund der Steuerbefreiung
+
+|         |                                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-20                                                                                          |
+| Bereich | Abrechnung: Rechnungsdokument (`/abrechnung/rechnungen/:id`, Druckbild)                             |
+| Quelle  | Codebefund Claude, 2026-09-20, bei der Entscheidungsarbeit zu ADR-009 Fassung 2 (E18 Schritt 4)     |
+| Status  | offen                                                                                               |
+| Berührt | `app.build_invoice_document` in `20260919150000_invoices.sql`, `InvoicePrintPage.tsx`; ADR-009 Punkt 18 (Fassung 2, vorgeschlagen); ANN-074 |
+
+**Beobachtung.** Das Rechnungsdokument weist steuerfreie Posten als eigene
+Steuergruppe aus und rechnet an ihnen richtig **keine** Umsatzsteuer heraus.
+Den **Grund** der Steuerbefreiung nennt es nicht — weder im Snapshot noch im
+Ausdruck. Für die Kleinunternehmerregelung steht der Hinweis auf § 19 UStG
+da; für die steuerfreie Heilbehandlung nach § 4 Nr. 14 lit. a UStG steht
+nichts.
+
+**Warum das zählt.** Es ist keine Schönheitsfrage, sondern eine
+**Pflichtangabe**: § 14 Abs. 4 Nr. 8 UStG verlangt bei einer steuerfreien
+Leistung den Hinweis auf die Steuerbefreiung. Sie fehlt damit auf jeder
+Rechnung, die eine Heilbehandlung enthält — also auf praktisch jeder. Weil
+eine ausgestellte Rechnung unveränderbar ist (ADR-009 Punkt 9), lässt sich
+das später nicht nachtragen: Jede so ausgestellte Rechnung müsste storniert
+und neu ausgestellt werden. Produktiv ist noch keine ausgestellt (B12), der
+Befund ist deshalb heute billig und nach dem ersten echten Rechnungslauf
+teuer.
+
+**Richtung.** Der Hinweis gehört an dieselbe Stelle wie der Satz zu § 19
+UStG: in das Dokument aus `app.build_invoice_document`, damit er im Snapshot
+steht und nicht nur in der Darstellung. Offen ist, ob er als fester Text je
+Kennzeichen entsteht oder als Feld an der Katalogposition — das Zweite
+erlaubt verschiedene Befreiungstatbestände, das Erste verhindert einen
+falschen; ADR-009 Fassung 2 führt die Frage als offene Folgefrage. Gehört in
+den Loop, der den § 14c-Riegel baut (Punkt 18), und wird mit ihm getestet.

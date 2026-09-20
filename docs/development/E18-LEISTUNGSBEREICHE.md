@@ -2,8 +2,9 @@
 
 Stand 2026-09-17 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt, kein
 eigener Rang · Umsetzung: **Schritte 1 bis 3 abgeschlossen** (ADR-021, ADR-022
-und ADR-006 Fassung 3, alle angenommen am 2026-09-20), **Schritt 4 frei**
-(ADR-009 neue Fassung), Schritte 5 bis 7 offen · **kein Code**
+und ADR-006 Fassung 3, alle angenommen am 2026-09-20), **Schritt 4 geschrieben
+und vorgeschlagen** (ADR-009 Fassung 2, 2026-09-20), Schritte 5 bis 7 offen ·
+**kein Code**
 
 Quelle sind die Festlegungen des Projektinhabers vom 2026-09-17 (E18). Sie
 beantworten die fünf Fragen, die der Roadmap-Vermerk 5.7 bei Stufe 3 gestellt
@@ -82,7 +83,13 @@ der ADR-020 nicht ablöst, sondern danebensteht und die Abgrenzung definiert.
 
 ## 3. Abrechnung — Steuerkennzeichen am Posten, nicht am Kunden
 
-Der Betrieb ist **regelbesteuert**.
+Der Betrieb ist **regelbesteuert**. Seit dem 2026-09-20 stehen die
+Festlegungen dieses Abschnitts als Punkte 15 bis 20 der **Fassung 2**
+(vorgeschlagen) in
+[ADR-009](../adr/ADR-009-private-billing-model.md): Kennzeichen am Posten
+(15), ein Leistungsbereich je Rechnung (16), getrennte Nummernkreise (17),
+der § 14c-Riegel (18), die Auswertung (19) und der Verzicht auf die
+Kleinbetragsrechnung (20).
 
 | Kennzeichen        | Anwendung                                                      | Satz                                      |
 | ------------------ | -------------------------------------------------------------- | ----------------------------------------- |
@@ -272,7 +279,7 @@ an ihren Platz, dann Code.** Kein Loop beginnt, bevor der ADR über ihm steht.
 | 1       | **[ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md)** Leistungsbereiche und Rechtsverhältnisse: Abschnitt 1, die drei harten Regeln, § 203-Niveau — **angenommen am 2026-09-20** (`PROJECT_PRINCIPLES.md` 0.12.1 §21) | 2    |
 | 2       | **[ADR-022](../adr/ADR-022-appointment-context-and-training-basis.md)** Terminkontext und Trainingsgrundlage: Abschnitt 2, Abgrenzung zu ADR-020 — **angenommen am 2026-09-20** (`PROJECT_PRINCIPLES.md` 0.12.2 §21); `internal` ist `kind = 'event'` und bekommt kein zweites Feld | 2    |
 | 3       | **[ADR-006](../adr/ADR-006-medical-device-boundary.md) Fassung 3** Abgrenzung gegenüber Medical Device Software: die drei Feature-Verbote aus Abschnitt 4 in der Zweckbestimmung, dazu ihre Geltung über beide Leistungsbereiche — **angenommen am 2026-09-20** (Fassung und Status in [`../adr/README.md`](../adr/README.md); §21 nennt keine Fassung und bleibt unberührt); die drei Verbote sind Ausschlusskriterien, technisch nicht erzwingbar — sie wirken im Zuschnitt und im Zweitreview | 2    |
-| 4       | **ADR-009 neue Fassung**: Steuerkennzeichen am Posten, getrennte Nummernkreise, § 14c-Riegel, Report — **frei seit dem 2026-09-20** | 2    |
+| 4       | **[ADR-009](../adr/ADR-009-private-billing-model.md) Fassung 2** Privatabrechnung: Steuerkennzeichen am Posten, ein Leistungsbereich je Rechnung, getrennte Nummernkreise, § 14c-Riegel, Auswertung „Einnahmen je Leistungsart" — **geschrieben am 2026-09-20, Status vorgeschlagen**; die drei Kennzeichen sind Werte des vorhandenen Paars an der Katalogposition und brauchen kein neues Feld; bis zur Annahme durch Jannes gilt Fassung 1 und beginnt Schritt 5 nicht | 2    |
 | 5       | **`PROJECT_PRINCIPLES.md` neue Version**: § 1, § 4, Zweckbestimmung, § 14 bereinigt (§ 21)             | 1    |
 | 6       | **Roadmap neu schneiden**: Loops für Datenmodell, Termin, Abrechnung; Etappe 1 bis dahin unverändert   | —    |
 | 7       | **Trainingsbereich zuschneiden** (Abschnitt 6): vierzehn Bereiche einzeln, Nutzen zuerst, MDR-nahe zuletzt | —    |
