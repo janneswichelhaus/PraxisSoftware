@@ -630,7 +630,7 @@ trägt den Weg „Zum Entwurf".
 | Datum   | 2026-09-20                                                                                          |
 | Bereich | Abrechnung: Rechnungsdokument (`/abrechnung/rechnungen/:id`, Druckbild)                             |
 | Quelle  | Codebefund Claude, 2026-09-20, bei der Entscheidungsarbeit zu ADR-009 Fassung 2 (E18 Schritt 4)     |
-| Status  | offen                                                                                               |
+| Status  | eingeplant in **ABR-EPIC-004** (Roadmap 5.26, Etappe L; erster Loop der Etappe)                      |
 | Berührt | `app.build_invoice_document` in `20260919150000_invoices.sql`, `InvoicePrintPage.tsx`; ADR-009 Punkt 18 (Fassung 2, angenommen am 2026-09-20); ANN-074 |
 
 **Beobachtung.** Das Rechnungsdokument weist steuerfreie Posten als eigene
