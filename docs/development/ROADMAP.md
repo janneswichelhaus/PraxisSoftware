@@ -102,9 +102,9 @@ Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
   November)**; bis dahin nimmt Jannes auf Tests, Screenshots und die
   Abnahmeschritte ab. Kein Epic wartet deshalb, und Docker wird dafür nicht
   eingerichtet.
-- **E18 kommt nach ABR-EPIC-003 (entschieden 2026-09-19).** Der nächste
-  Schritt ist **ADR-022**, nicht Code (`E18-LEISTUNGSBEREICHE.md`, Schritte 1
-  bis 5 — je eine eigene Sitzung). Die Reihe steht bewusst nach den
+- **E18 kommt nach ABR-EPIC-003 (entschieden 2026-09-19).** Die Schritte 1
+  bis 5 sind Entscheidungsarbeit, kein Code (`E18-LEISTUNGSBEREICHE.md` —
+  je eine eigene Sitzung). Die Reihe steht bewusst nach den
   Abrechnungs-Epics: ADR-009 Fassung 2 fasst die Abrechnung ohnehin an
   (Steuerkennzeichen am Posten, getrennte Nummernkreise), und dieselbe Stelle
   zweimal umzubauen ist teurer als einmal. **Schritt 1 ist am 2026-09-20
