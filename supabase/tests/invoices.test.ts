@@ -62,7 +62,12 @@ interface Dokument {
     recipient: Record<string, unknown>;
     patient: Record<string, unknown>;
     items: Record<string, unknown>[];
-    tax_groups: { tax_treatment: string; tax_cents: number; net_cents: number }[];
+    tax_groups: {
+      tax_treatment: string;
+      tax_cents: number;
+      net_cents: number;
+      exemption_reason: string | null;
+    }[];
     totals: { total_cents: number; tax_total_cents: number };
     treatment_bases: Record<string, unknown>[];
     invoice_number?: string;
@@ -567,6 +572,54 @@ describe('Rechnung', () => {
           [organizationId, rows[0]!.id, dienst[0]!.id],
         ),
       ).rejects.toThrow();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Grund der Steuerbefreiung (ADR-009 Punkt 18, ABR-006, BEF-019)
+  //
+  // Par. 14 Abs. 4 Nr. 8 UStG verlangt bei einer steuerfreien Leistung den
+  // Hinweis auf die Steuerbefreiung. Er gehoert in den Snapshot nach Punkt 10
+  // und nicht nur in die Darstellung - eine ausgestellte Rechnung ist
+  // unveraenderlich, und was dort fehlt, kostet ein Storno (Punkt 9).
+  // ---------------------------------------------------------------------------
+  describe('Grund der Steuerbefreiung', () => {
+    const HEILBEHANDLUNG = 'Steuerfreie Heilbehandlung nach § 4 Nr. 14 Buchstabe a UStG';
+
+    it('nennt den Grund im Snapshot und nicht erst in der Darstellung', async () => {
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+
+      const { rows: gespeichert } = await asPostgres<{ grund: string | null }>(
+        `select i.snapshot -> 'tax_groups' -> 0 ->> 'exemption_reason' as grund
+           from public.invoices i where i.id = $1`,
+        [rows[0]!.id],
+      );
+      expect(gespeichert[0]?.grund).toBe(HEILBEHANDLUNG);
+
+      const { rows: dok } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        rows[0]!.id,
+      ]);
+      expect(dok[0]?.rechnung.document.tax_groups[0]?.exemption_reason).toBe(HEILBEHANDLUNG);
+    });
+
+    it('laesst die steuerpflichtige Gruppe ohne Grund - dort steht die Steuer', async () => {
+      await leistung(KATALOG.training, { stundeImMonat: 30 });
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+
+      const { rows: dok } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        rows[0]!.id,
+      ]);
+      expect(dok[0]?.rechnung.document.tax_groups[0]?.exemption_reason).toBeNull();
+      expect(dok[0]?.rechnung.document.tax_groups[0]?.tax_cents).toBe(958);
     });
   });
 

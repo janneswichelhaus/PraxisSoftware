@@ -264,7 +264,10 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
 
         {/* Der Katalogpreis ist der Endpreis; eine enthaltene Umsatzsteuer
             wird je Satz herausgerechnet (ANN-074). Unter Paragraf 19 UStG
-            entfällt der Ausweis und der Hinweis tritt an seine Stelle. */}
+            entfällt der Ausweis und der Hinweis tritt an seine Stelle.
+            Der Grund der Steuerbefreiung steht an der Gruppe, die ihn
+            betrifft — er ist Pflichtangabe nach § 14 Abs. 4 Nr. 8 UStG
+            (ABR-006, BEF-019) und kommt aus dem Dokument, nicht von hier. */}
         <ul className="text-ink-muted mt-2 text-sm">
           {dokument.tax_groups.map((gruppe) => (
             <li key={`${gruppe.tax_treatment}-${gruppe.tax_rate_permille}`}>
@@ -274,6 +277,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
                     gruppe.tax_rate_permille / 10
                   } %)`
                 : ''}
+              {gruppe.exemption_reason ? ` · ${gruppe.exemption_reason}` : ''}
             </li>
           ))}
         </ul>
