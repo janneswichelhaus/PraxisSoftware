@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "tsc --build --force && vite build",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --build --force",

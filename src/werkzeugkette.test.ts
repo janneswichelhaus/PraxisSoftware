@@ -18,6 +18,19 @@ import { describe, expect, it } from 'vitest';
 
 const stamm = process.cwd();
 
+describe('Lint-Gate', () => {
+  it('macht jede Warnung rot, nicht nur jeden Fehler (R3-022)', () => {
+    // Die statische Sicherheitsanalyse (eslint-plugin-security) meldet ihre
+    // 14 Regeln als `warn`. Ohne `--max-warnings 0` liefert `pnpm lint` dann
+    // Exit 0 - das CI-Gate "Lint (inkl. statischer Sicherheitsanalyse)" waere
+    // bei keinem einzigen Sicherheitsbefund rot geworden.
+    const paket = JSON.parse(readFileSync(join(stamm, 'package.json'), 'utf8')) as {
+      scripts?: Record<string, string>;
+    };
+    expect(paket.scripts?.lint).toContain('--max-warnings 0');
+  });
+});
+
 describe('Node-Fassung', () => {
   const paket = JSON.parse(readFileSync(join(stamm, 'package.json'), 'utf8')) as {
     engines?: { node?: string };
