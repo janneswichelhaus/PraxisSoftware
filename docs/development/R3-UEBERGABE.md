@@ -2,8 +2,10 @@
 
 Einzige Datei dieser Runde vor der Freigabe. Sie liegt nur auf `claude/r3-analyse` (wird nie gemergt);
 Umsetzungs-Sessions lesen sie per
-`git show origin/claude/r3-analyse:docs/development/R3-UEBERGABE.md`. Stand: Knoten 1 (Inventur)
-abgeschlossen, Knoten 2 (Auflösung & Plan) wartet auf die Antworten von Jannes.
+`git show origin/claude/r3-analyse:docs/development/R3-UEBERGABE.md`. Stand: Knoten 1 (Inventur) und
+Knoten 2 (Auflösung & Plan) abgeschlossen; **G1 wartet auf den Startschuss**. Die Umsetzungs-Session
+liest „Harte Regeln", „Knoten 2 — Auflösung & Plan" (ihre Gruppe) und „Knoten 3"; die Befundtabellen
+und die Details darüber sind das Nachschlagewerk dazu.
 
 Auftrag der Runde: Fehler im Code finden und beheben, belegbares Optimierungspotenzial heben. Einziger
 Maßstab ist der Nachweis — jeder Befund hat einen reproduzierbaren Beleg (roter Test, Messwert oder
@@ -453,6 +455,9 @@ Nur dort, wo das Soll-Verhalten oder der Zuschnitt der Runde unklar ist. Antwort
 
 Hinweis ohne Frage: Diese Befunde brauchen je eine neue, additive Migration (Neufassung einer Funktion, neue View, Index oder Constraint) — die Freigabe des Befunds gilt als Freigabe der Migration: R3-004, R3-002, R3-009, R3-010, R3-003, R3-012, R3-015, R3-016, R3-030, R3-031.
 
+**Alle sieben am 2026-09-20 beantwortet** — die Antworten und was sie für den Zuschnitt bedeuten,
+stehen in „Knoten 2 — Auflösung & Plan".
+
 ## Linsen: Kennzahlen, Geprüftes, bewusst nicht Erfasstes
 
 ### L1 Korrektheit — 10 Rohbefunde
@@ -577,6 +582,125 @@ Hinweis ohne Frage: Diese Befunde brauchen je eine neue, additive Migration (Neu
 9. **Sicherheitsbefunde defensiv:** Stelle, Auswirkung, Fix, Regressionstest. Keine Angriffs- oder Exploit-Ausarbeitung.
 10. **Umfang:** höchstens 25 umgesetzte Befunde in dieser Runde. Priorität schlägt Vollständigkeit; der Rest wird Backlog oder verworfen.
 11. **Ehrlichkeit:** Jede gemeldete Prüfung ist tatsächlich gelaufen. Was nicht lief, heißt „nicht gelaufen" mit Grund.
+
+## Knoten 2 — Auflösung & Plan (2026-09-20)
+
+### Antworten von Jannes
+
+`R3-F01: B · R3-F02: C · R3-F03: A · R3-F04: A · R3-F05: A · R3-F06: A · R3-F07: B` — alle sieben
+wie empfohlen, kein Befund gestrichen.
+
+| Frage | Antwort | Folge für den Plan |
+| --- | --- | --- |
+| F01 | B | R3-001 schrumpft auf den kleinsten Fix: der Transfer-Guard prüft zusätzlich `billable_services.status = 'invoiced'` (XS statt M). Die Abweichung von ADR-018 wird als Annahme registriert und dort verankert; die Vollumsetzung des Terminzustands `invoiced` wird eine eigene ABR-Story nach R3. |
+| F02 | C | R3-040 bleibt unverändert im Backlog; kein Platz verbraucht, keine Ausnahme von Regel 5 nötig. |
+| F03 | A | R3-027 ist `workers: 1` für das Projekt `authenticated`. Im Bericht ausdrücklich: **Beleg nur aus dem CI-Lauf des PR**, hier nicht ausführbar. |
+| F04 | A | R3-049 ist `engines: 22.x` plus `.nvmrc`; schließt BEF-011, ohne Code anzufassen. |
+| F05 | A | R3-034 ist eingeplant, **hängt aber an einer Datei von Jannes** (siehe „Vorbedingungen"). |
+| F06 | A | R3-019 kommt als ausdrückliche Ausnahme von der Auswahlregel in G3, als **letzter** Befund der Gruppe, damit die Abbruchregel den Rest nicht mitreißt. |
+| F07 | B | R3-020 (Code-Splitting) bleibt Backlog; das Ladeverhalten ändert sich für jede Seite und die Sichtprüfung hinter der Anmeldung ist hier nicht möglich. |
+
+### Auswahl: 25 von 51
+
+Angewandte Auswahlregel (aus dem Auftrag, hier festgehalten, weil der ganze Plan darauf steht):
+**S1 und S2 immer; S3 und S4 nur bei Aufwand ≤ S und Fix-Risiko niedrig; höchstens 25 Befunde;
+Priorität schlägt Vollständigkeit.**
+
+Rechnung: 5 S2 + 17 regelkonforme S3 + R3-019 (Ausnahme F06) + R3-034 (F05) + R3-049 (F04) = **25**.
+
+**Die Grenze ist damit erreicht** — kein weiterer S4-Befund passt hinein, auch kein billiger. Knapp
+draußen, jeder XS und sofort umsetzbar: **R3-032** (CI führt `tsc --build --force` zweimal aus,
+≈ 26 s je Lauf), **R3-048** (zwei fehlende ADR-018-Übergangstests), **R3-029**, **R3-030**. Wer einen
+davon drin haben will, nennt den Tausch (etwa „R3-007 raus, R3-032 rein"); von sich aus tauscht keine
+Umsetzungs-Session.
+
+### G1 — Abrechnung: Geldfluss und Zustände (9 Befunde)
+
+Gemeinsamer Nenner: SECURITY-DEFINER-Funktionen der neuen Abrechnung, je eine neue additive
+Migration, Pflichtgate `pnpm test:db`. Reihenfolge: erst die Sperren am Geldfluss, dann Beträge und
+Fristen, dann Zustände, zuletzt Liste und Testfixtures.
+
+| # | Kennung | Schwere/Aufwand | Fix (kleinstmöglich) | Beleg vorher | Dateien |
+| --- | --- | --- | --- | --- | --- |
+| 1 | R3-004 | S2/S | `record_payment` und der Trigger `payments_need_issued_invoice` verlangen zusätzlich, dass kein Stornodokument existiert (Abweisung mit 23514); das Zahlungsformular verschwindet bei `ansicht.cancellation`. | DB-Test: `issue_invoice` → `cancel_invoice` → `record_payment(4500)` wird angenommen | neue Migration · `src/features/billing/InvoiceDetailPage.tsx` · `supabase/tests/payments.test.ts` |
+| 2 | R3-015 | S3/XS | `void_payment` sperrt vor der Summenprüfung die Rechnung (`perform 1 from public.invoices … for update`). | DB-Test mit zwei pg-Clients: `app.invoice_paid_cents` = −4500 | neue Migration · `supabase/tests/payments.test.ts` |
+| 3 | R3-009 | S3/XS | `create_payment_reminder` (und `create_correction_draft`) lesen die Rechnung `for update` wie `record_payment` und `cancel_invoice`. | DB-Test: parallele Zahlung macht den festgeschriebenen offenen Betrag falsch | neue Migration · `supabase/tests/payment-reminders.test.ts` |
+| 4 | R3-010 | S3/XS | mod-97-Prüfung der Praxis-IBAN als `app.`-Funktion plus Check-Constraint, dieselbe Prüfung in `pruefe()` der Profilseite. | DB-Test T3-Muster: `DE00123456780000000000` wird gespeichert | neue Migration · `src/features/billing/PracticeProfilePage.tsx` · `supabase/tests/practice-billing-profile.test.ts` |
+| 5 | R3-003 | S2/XS | `app.billing_retention_due_at` bildet das `max()` zusätzlich über `invoice_cancellations.cancelled_on`, `invoice_payment_reminders.reminder_on` und `payments.paid_on` der Akte. | DB-Test: Storno vom 2027-01-10 verfällt mit der Akte 2035-01-01 statt 2036-01-01 | neue Migration · `supabase/tests/invoice-retention.test.ts` |
+| 6 | R3-002 | S2/S | `reopen_appointment` weist ab, solange `billable_services` zum Termin existieren (`billable services recorded, remove them first`). | DB-Test: No-show mit Ausfallhonorar wird `confirmed`, die Leistung bleibt `billable` | neue Migration · `supabase/tests/home-visit-scenarios.test.ts` |
+| 7 | R3-001 | S2/XS (Fassung B) | Der Guard in `transfer_appointments_to_treatment_basis` prüft zusätzlich `billable_services.status = 'invoiced'`; neue Annahme (ANN-081) mit Anker in derselben Migration. | DB-Test: Transfer einer abgerechneten Leistung liefert `anzahl = 1` statt `appointments are not transferable` | neue Migration · `supabase/tests/appointment-coverage.test.ts` · `docs/decisions/ASSUMPTIONS.md` |
+| 8 | R3-016 | S3/S | Zahlungssumme je Rechnung einmal per gruppiertem Subselect bzw. `left join lateral` und in `list_open_items`/`list_invoices` wiederverwenden; `app.invoice_paid_cents` bleibt für Einzelaufrufe. | Messung: 20 002 Rechnungen → `list_open_items` 498 ms, Join-Fassung 39 ms | neue Migration · Messskript im Scratchpad (nicht committen) |
+| 9 | R3-005 | S2/S | Fixture-Termine auf einen festen Tag im laufenden Berliner Monat legen und `monat()` aus demselben Anker ableiten. | DB-Test mit `stunden = 458`: `no billable services for this patient and month` | `supabase/tests/{invoices,payments,invoice-cancellations,payment-reminders}.test.ts` |
+
+Gate nach G1: volle Prüfkette **plus `pnpm test:db`**. Acht neue Migrationen, fortlaufende
+Zeitstempel ab `20260920…`.
+
+### G2 — Oberfläche, Datenschutz und Datenzugriff (8 Befunde)
+
+| # | Kennung | Schwere/Aufwand | Fix (kleinstmöglich) | Beleg vorher | Dateien |
+| --- | --- | --- | --- | --- | --- |
+| 1 | R3-012 | S3/S | Schlanke Listenprojektion ohne Care-Felder und Anschrift (View oder RPC); die Patientenliste liest nur noch diese, die Vollprojektion bleibt der Detailseite. | Codepfad `patients/api.ts:49` → gerendert werden nur Name, Alter, Status, Telefon, E-Mail | neue Migration · `src/features/patients/api.ts` · `PatientsListPage.tsx` · DB-Test |
+| 2 | R3-013 | S3/XS | `minimum_password_length = 12` unter `[auth]` in `supabase/config.toml`; den falschen Kommentar in `account/api.ts` korrigieren; OPS-001 um die Einstellung fürs Cloudprojekt ergänzen. | `grep -i password supabase/config.toml` findet nur einen Kommentar | `supabase/config.toml` · `src/features/account/api.ts` · `docs/` (nur der OPS-001-Satz) |
+| 3 | R3-014 | S3/S | Vor Phase (a) die ersten Bytes clientseitig gegen `%PDF-`, `FFD8FF`, `89504E47` prüfen; ANN-053 präzisieren, dass `metadata.mimetype` vom Client-Header stammt. | Pfad: `datei.type` wird in allen drei Phasen gegen sich selbst geprüft | `src/features/files/dokumentarten.ts` · `api.ts` · Unit-Test |
+| 4 | R3-006 | S3/XS | `todayInTimeZone(user.organizationTimeZone)` statt der lokalen `heute()`; die lokale Funktion entfernen. | Messwert: `2026-06-15T22:30:00Z` → UTC 2026-06-15, Berlin 2026-06-16 | `src/features/billing/CatalogPage.tsx` · `CatalogPage.test.tsx` |
+| 5 | R3-007 | S3/S | „In Kraft setzen" sperren oder rückfragen, solange die Zeilen vom geladenen Stand abweichen. | `inKraft.mutationFn` ruft nur `publishKatalogVersion`, ohne Vergleich mit `positionen.data` | `src/features/billing/CatalogPage.tsx` · `CatalogPage.test.tsx` |
+| 6 | R3-008 | S3/S | `AuthRetryableFetchError` unterscheiden: eigene Meldung „Anmeldedienst nicht erreichbar" ohne Auskunft darüber, ob ein Konto existiert. | Netzfehler wird als „Link angefordert" bzw. „kein Konto" gemeldet | `src/features/auth/LoginPage.tsx` · `account/api.ts` · `staff/konto-api.ts` · Unit-Tests |
+| 7 | R3-023 | S3/S | Helfer `antwort(schema, data, satz)` in `src/lib`; die 14 Stellen in `appointments/api.ts` und den Seiten darauf umstellen (Muster `billing/api.ts`). | Wegwerftest: Meldung beginnt mit `[ { "expected": "number" …` | `src/lib/…` · `src/features/appointments/api.ts` · Unit-Test je Modul |
+| 8 | R3-034 | S4/XS | `src: url(…woff2) format('woff2'), url(…ttf) format('truetype')` und `<link rel="preload" as="font">`. | `stat`: 144 016 B TTF auf dem kritischen Pfad | `src/index.css` · `index.html` · `src/marke.test.ts` prüfen |
+
+Gate nach G2: volle Prüfkette **plus `pnpm test:db`** (wegen R3-012), Sichtprüfung im Browser
+soweit ohne Anmeldung möglich, auch bei ~375 px.
+
+### G3 — Tests, Gates und Werkzeuge (8 Befunde)
+
+| # | Kennung | Schwere/Aufwand | Fix (kleinstmöglich) | Beleg vorher | Dateien |
+| --- | --- | --- | --- | --- | --- |
+| 1 | R3-049 | S4/XS | `engines: 22.x` und `.nvmrc`. | BEF-011: unter Node 24 rund 60 Komponententests rot | `package.json` · `.nvmrc` |
+| 2 | R3-022 | S3/XS | `"lint": "eslint . --max-warnings 0"` (oder die 14 security-Regeln auf `error`). | Wegwerfdatei mit zwei `unsafe-regex`-Treffern: „2 warnings", Exit 0 | `package.json` · ggf. `eslint.config.js` |
+| 3 | R3-024 | S3/XS | „morgen" in Ortszeit bilden oder die Uhr mit `vi.setSystemTime` festsetzen. | Test mit `TZ=Europe/Berlin` und 22:30 Z rot | `src/features/patients/{NewPatientPage,EditPatientPage}.test.tsx` |
+| 4 | R3-018 | S3/XS | `src/lib/geld.test.ts` mit den 19 Charakterisierungsfällen; `centAus()` im Vorschaubereich durch `parseEuroZuCent` ersetzen. | `ls src/lib/geld*` zeigt keine Testdatei; `centAus('1,005')` → 100 statt 101 | `src/lib/geld.test.ts` (neu) · `src/features/reimbursements/ReimbursementsPage.tsx` |
+| 5 | R3-026 | S3/S | `rls.test.ts` um `locations` (eigene und fremde Organisation, anon, Patientenkonto) ergänzen und den sieben org-gefilterten Policies je einen Fremd-Org-Fall geben. | `grep 'from public.locations' supabase/tests` = 0 Dateien | `supabase/tests/rls.test.ts` |
+| 6 | R3-025 | S3/S | Fremd-Org-Fixture als Helfer in `helpers/db.ts`; je Abrechnungsdatei ein `describe 'Fremde Organisation'`; dazu die Mengen 0/−1/11/2,5 und eine Rechnung mit zwei Steuergruppen. | `grep 'into public.organizations'` in den neun Dateien = 0 Treffer | `supabase/tests/helpers/db.ts` · die neun Abrechnungs-Testdateien |
+| 7 | R3-027 | S3/S | `workers: 1` für das Projekt `authenticated`. | BEF-009: seriell grün, parallel „did not find some options" | `playwright.config.ts` |
+| 8 | R3-019 | S3/M, **Ausnahme** | Schema einmal je Lauf in eine Vorlagendatenbank bauen, je Test per `create database … template` klonen. Nur `supabase/tests/helpers/db.ts`, Testanzahl unverändert, Messung vorher/nachher. | Messung: Reset 1,57–1,77 s gegen 0,23 s je Klon, ≈ 540 Resets je Lauf | `supabase/tests/helpers/db.ts` |
+
+Gate nach G3: volle Prüfkette, `pnpm test:db`, `pnpm test:e2e` ohne Anmeldung, `pnpm scan:secrets`.
+
+### Reihenfolge, Abhängigkeiten, Vorbedingungen
+
+- **G1 vor G3.** R3-025 baut auf den vier Testdateien auf, die R3-005 begradigt; in umgekehrter
+  Reihenfolge entsteht ein Konflikt in denselben Zeilen.
+- **R3-019 zuletzt.** Es fasst den Reset-Helfer an, von dem jeder DB-Test abhängt. Erst müssen die
+  neuen Tests aus R3-025 und R3-026 im bekannten Reset grün gewesen sein.
+- **R3-022 nach G1 und G2.** Das Lint-Gate wird schärfer (`--max-warnings 0`); Baseline ist
+  0 Warnungen, die Verschärfung darf keinen Bestand rot machen. Liegt sie zuletzt, prüft sie den
+  Stand nach allen Codeänderungen der Runde.
+- **Vorbedingung G2 · R3-034:** Die WOFF2-Datei muss vor dem Start von G2 im Repo liegen
+  (`public/schrift/`, aus der vorhandenen TTF, Lizenz OFL). Fehlt sie, fällt R3-034 nach der
+  Abbruchregel aus der Gruppe und wird Backlog — G2 läuft dann mit sieben Befunden weiter.
+- **Vorbedingung G1 · R3-001:** Der Registereintrag ANN-081 sprengt die Obergrenze von
+  `docs/decisions/ASSUMPTIONS.md` (Stand 1066 Zeilen, erlaubt 1075, ein Eintrag braucht ~12). Die
+  Grenze wandert dann wie schon dreimal zuvor mit Begründung im Kopf von `scripts/docs-check.mjs`
+  mit — das ist die dort vorgesehene Pflege, keine Abschwächung eines Gates, und wird im Commit
+  ausgewiesen.
+- **Je Gruppe ein eigener Branch und ein eigener PR** gegen `main`; ein Commit je Befund.
+- **Nach dem Merge von G1 und G2 lokal `pnpm dlx supabase@2.116.0 db reset`** — neun neue
+  Migrationen.
+
+### Nicht umgesetzt (26 Befunde)
+
+- **Auswahlregel (Aufwand M oder Risiko mittel):** R3-011 (Akte ohne Auditeintrag, M/mittel —
+  fachlich der stärkste Backlog-Posten), R3-017 (kein Blättern in den Abrechnungslisten, M),
+  R3-021 (Kalender rendert beim Ziehen alles neu, M/mittel), R3-035 (vier Startanfragen, M),
+  R3-042 (Druckseiten kopieren den Briefkopf, M), R3-044 (Zeitzonen-Block 35× kopiert, M/mittel),
+  R3-045 (Formularrahmen zehnmal kopiert, M), R3-047 (`create or replace` mit 75 % unverändertem
+  Text, M/mittel), R3-051 (kein Vertragstest zod ↔ SQL, M).
+- **Entscheidung:** R3-020 (Code-Splitting, F07 = B), R3-040 (ungenutzte RPCs, F02 = C).
+- **Obergrenze 25 erreicht:** R3-028, R3-029, R3-030, R3-031, R3-032, R3-033, R3-036, R3-037,
+  R3-038, R3-039, R3-041, R3-043, R3-046, R3-048, R3-050.
+
+Alle 26 bleiben mit Beleg in diesem Dokument stehen; sie sind die Vorlage für die nächste Runde,
+nicht verworfen. Keiner davon ist S1 oder S2.
 
 ## Knoten 3 — Umsetzung (Opus 5; G1 mit Effort xhigh)
 
