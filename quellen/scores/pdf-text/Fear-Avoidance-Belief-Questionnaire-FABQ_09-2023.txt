@@ -1,0 +1,106 @@
+         Fear Avoidance Belief Questionnaire (FABQ)
+
+                                 (deutsche Version)
+
+Name:                                       Datum:
+Geburtsdatum:                               Untersucher:
+
+Hier sind ein paar Aussagen anderer Patienten über ihren Schmerz. Bitte kreuzen Sie für jede Aus-
+sage eine Nummer zwischen 0 und 6 an. Bitte beurteilen Sie, inwieweit körperliche Betätigungen
+wie z.B. Vorneigen, Heben, Gehen oder Fahren ihren Rückenschmerz beeinflussen oder beeinflussen
+würden. Die Wertung „6“ entspricht einer vollen Zustimmung. Werten Sie mit „0“, dann stimmen Sie
+definitiv nicht zu. Die Zahlen im mittleren Bereich sind mit einer unentschiedenen Haltung gleichzu-
+setzen.
+
+Bitte beantworten Sie alle Fragen gemäß Ihrem aktuellen Zustand. Sollten Sie momentan keine Be-
+schwerden haben, dann bewerten Sie die Fragen entsprechend Ihrem Zustand in der vergangenen
+Woche.
+
+Aussage                                                              Wertung
+1. Mein Schmerz wurde durch körperliche Betätigung verursacht.       0123456
+                                                                     0123456
+2. Körperliche Betätigung verschlimmert meinen Schmerz.              0123456
+                                                                     0123456
+3. Körperliche Betätigung könnte meinem Rücken schaden.              0123456
+
+4. Ich sollte keine körperlichen Tätigkeiten verrichten, die meinen
+   Schmerz verstärken (könnten).
+
+5. Ich kann keine körperlichen Tätigkeiten verrichten, die meinen
+   Schmerz verstärken (könnten).
+
+Die folgenden Aussagen beziehen sich darauf, wie sich Ihre normale Arbeit auf Ihren Rücken auswirkt
+oder auswirken könnte.
+
+Aussage                                                              Wertung
+
+6. Mein Schmerz wurde durch meine Arbeit oder durch einen Unfall bei meiner Arbeit verursacht. 0 1 2 3 4 5 6
+
+7. Meine Arbeit verstärkte meinen Schmerz.                           0123456
+
+8. Ich habe eine Forderung nach Schadensersatz bezüglich meines      0123456
+   Schmerzes gestellt.
+9. Meine Arbeit ist für mich zu schwer.                             0123456
+                                                                    0123456
+10. Meine Arbeit verstärkt (oder könnte) meine Schmerzen (verstär-  0123456
+ken).                                                               0123456
+11. Meine Arbeit schadet meinem Rücken.                             0123456
+                                                                    0123456
+12. Ich sollte meiner regulären Arbeit nicht mit meinen momentanen  0123456
+     Schmerzen nachgehen.                                           0123456
+
+13. Ich kann meine normale Arbeit nicht mit meinen momentanen
+     Schmerzen ausführen.
+
+14. Ich kann meine normale Arbeit nicht wieder aufnehmen, bis mein
+     Schmerz behandelt wurde.
+
+15. Ich denke nicht, dass ich innerhalb von 3 Monaten zu meiner
+     normalen Arbeit zurückkehren kann.
+
+16. Ich denke nicht, dass ich jemals wieder werde arbeiten können.
+Auswertung:
+
+       • Dieser Fragebogen dient der Erfassung einer angstbedingten Vermeidungshaltung.
+
+       • Die Fragen 1 – 5 beziehen sich auf körperliche Aktivitäten, die Fragen 6 – 16 auf die Arbeit.
+
+       • Körperliche Aktivität (FABQ – PA) = Items 2, 3, 4, 5
+                   - Dabei ergibt sich eine maximale Punktzahl von 24 Punkten. Ein hoher Wert und
+                    damit ein höheres Chronifizierungsrisiko besteht bei > 15.
+                   - Die minimal messbare Veränderung beträgt 5,4 Punkte (Georg 2010).
+
+       • Arbeitsbelastung (FABQ – W) = Items 6, 7, 9, 10, 11, 12, 15
+                   - Hier können maximal 42 Punkte erreicht werden. Das erhöhte Chronifizierungsrisiko
+                    besteht bei > 34 Punkten.
+                   - Die minimal messbare Veränderung beträgt 6,8 Punkte (Georg 2010).
+
+       • Die Fragen 1, 8, 13, 14 und 16 können zu Verzerrungen in der Aussage führen und werden
+          nicht ausgewertet.
+Quellen:
+
+Chaory K, Fayad F, Rannou F, Lefèvre-Colau MM, Fermanian J, Revel M, Poiraudeau S. Validation of the
+french version of the fear-avoidance beliefs questionnaire. Spine. 2004; 29: 908-913.
+Pfingsten M, Kroner-Herwig B, Leibing E, Kronshage U, Hildebrandt J. Validation of the German version
+of the Fear-Avoidance Beliefs Questionnaire (FABQ). European Journal of Pain. 2000; 4: 259-266.
+Pfingsten M. Vermeidungsverhalten und Rückenschmerzen – Ansätze für neue therapeutische Wege?
+Phys. Med. Rehab. Kuror. 2003; 13: 276-282.
+Staerkle R, Mannion AF, Elfering A, Junge A, Semmer NK, Jacobshagen N, Grob D, Dvorak J, Boos N.
+Longitudinal validation of the fear-avoidance beliefs questionnaire (FABQ) in a Swiss-German sample
+of low-back pain patients. European Spine Journal. 2004; 13: 332-340.
+Waddell G, Newton M, Henderson I, Somerville D, Main CJ.A Fear-Avoidance Beliefs Questionnaire
+(FABQ) and the role of fear-avoidance beliefs in chronic low-back pain. Pain. 1993; 52: 157-168.
+George SZ, Valencia C, Beneciuk JM.A psychometric investigation of fear-avoidance model measures
+in patients with chronic low back pain. Journal of Orthopaedic & Sports Physical Therapy. 2010; 40:
+197.Ut la dolore dolum quo int reperi doluptati sam eaquos delitia cus.
+Omnis dempor modistintest que quos a volupit atatect isquunt re reius expelestium harum andigen-
+dae sitassimint quia am, core aut ratur, omnima adi ipsapientur aut rati te comnimus, untecatur aut
+ommodio
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

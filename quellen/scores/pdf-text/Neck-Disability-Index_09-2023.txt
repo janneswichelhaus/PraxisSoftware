@@ -1,0 +1,155 @@
+                       Neck Disability Index
+
+               validierte deutsche Version (Cramer 2014)
+
+Name:                Datum:
+Geburtsdatum:        Untersucher:
+
+Der folgende Fragebogen dient der Erfassung von Beschwerden und Problemen bei alltäglichen Aktivi-
+täten, die durch Ihre Halswirbelsäule verursacht werden.
+
+Bitte beantworten Sie alle Fragen gemäß Ihrem aktuellen Zustand. Sollten Sie momentan keine Be-
+schwerden haben, dann bewerten Sie die Fragen entsprechend Ihrem Zustand in der vergangenen
+Woche.
+
+Sollten zwei Aussagen auf Ihren aktuellen Zustand zu treffen, kreuzen Sie bitte nur die Aussage an,
+die am ehesten zu trifft.
+
+Nr. Frage                                                                           A
+
+1 Schmerzintensität
+
+Momentan habe ich keine Schmerzen.
+Ich habe im Moment sehr geringe Schmerzen.
+Ich habe im Moment mäßige Schmerzen.
+Ich habe im Moment ziemlich starke Schmerzen.
+Ich habe im Moment sehr starke Schmerzen.
+Ich habe im Moment die stärksten Schmerzen, die ich mir vorstellen kann.
+
+2 Persönliche Körperpflege (z.B. Waschen, Anziehen)
+
+Ich kann meine Körperpflege erledigen, ohne dass dies zusätzliche Schmerzen ver-
+ursacht.
+
+Ich kann meine Körperpflege erledigen, aber es verursacht mir zusätzliche Schmer-
+zen.
+
+Das Erledigen der Körperpflege ist schmerzhaft und ich bin dabei langsam und vor-
+sichtig.
+
+Ich brauche etwas Hilfe, aber ich kann den größten Teil meiner Körperpflege selbst
+besorgen.
+
+Ich brauche täglich Hilfe bei den meisten Verrichtungen meiner Körperpflege.
+
+Ich ziehe mich nicht an, wasche mich nur mit Mühe und bleibe im Bett.
+3 Heben
+
+      Ich kann schwere Gegenstände ohne zusätzliche Schmerzen heben.
+      Ich kann schwere Gegenstände heben, aber dies verursacht zusätzliche Schmerzen.
+      Meine Schmerzen hindern mich daran, schwere Gegenstände vom Boden aufzuhe-
+      ben. Aber ich kann schwere Gegenstände heben, wenn sie günstig positioniert sind
+      (z.B. auf dem Tisch).
+      Meine Schmerzen hindern mich daran, schwere Gegenstände vom Boden aufzuhe-
+      ben. Aber ich kann mittelschwere Gegenstände heben, wenn sie günstig positioniert
+      sind.
+      Ich kann nur sehr leichte Gegenstände heben.
+      Ich kann überhaupt nichts heben oder tragen.
+4 Lesen
+      Ich kann lesen soviel ich will, ohne Nackenschmerzen zu bekommen.
+      Ich kann lesen soviel ich will, aber ich bekomme davon leichte Nackenschmerzen.
+      Ich kann lesen soviel ich will, aber ich bekomme davon mäßige Nackenschmerzen.
+      Ich kann wegen mäßiger Nackenschmerzen nicht soviel lesen, wie ich will.
+      Ich kann wegen starker Nackenschmerzen kaum lesen.
+      Ich kann überhaupt nicht mehr lesen.
+5 Kopfschmerzen
+      Ich habe überhaupt keine Kopfschmerzen.
+      Ich habe leichte Kopfschmerzen, die unregelmäßig auftreten.
+      Ich habe mäßige Kopfschmerzen, die unregelmäßig auftreten.
+      Ich habe mäßige Kopfschmerzen, die regelmäßig auftreten.
+      Ich habe starke Kopfschmerzen, die regelmäßig auftreten.
+      Ich habe die meiste Zeit Kopfschmerzen.
+6 Konzentration
+      Ich kann mich, wenn ich will, ohne Schwierigkeiten voll konzentrieren.
+      Ich kann mich, wenn ich will, mit leichten Schwierigkeiten voll konzentrieren.
+      Ich habe ziemliche Schwierigkeiten, mich zu konzentrieren, wenn ich es will.
+      Ich habe große Schwierigkeiten, mich zu konzentrieren, wenn ich es will.
+      Ich habe sehr große Schwierigkeiten, mich zu konzentrieren, wenn ich es will.
+      Ich kann mich überhaupt nicht konzentrieren.
+7 Arbeit
+      Ich kann soviel Arbeit erledigen, wie ich möchte.
+      Ich kann nur meine übliche Arbeit erledigen, aber nicht mehr.
+      Ich kann den größten Teil meiner üblichen Arbeit verrichten, aber nicht mehr.
+      Ich kann meine übliche Arbeit nicht erledigen.
+      Ich kann kaum eine Arbeit erledigen.
+      Ich kann überhaupt keine Arbeit erledigen.
+8 Auto fahren
+
+       Ich kann Auto fahren, ohne Nackenschmerzen zu bekommen.
+       Ich kann Auto fahren, so lange ich will, mit leichten Nackenschmerzen.
+       Ich kann Auto fahren, so lange ich will, mit mäßigen Nackenschmerzen.
+       Ich kann wegen mäßiger Nackenschmerzen nicht Auto fahren, so lange ich will.
+       Ich kann wegen starker Nackenschmerzen kaum Auto fahren.
+       Ich kann überhaupt nicht Auto fahren.
+9 Schlafen
+       Ich habe keine Schlafprobleme.
+       Mein Schlaf ist kaum gestört (weniger als 1 Stunde schlaflos).
+       Mein Schlaf ist leicht gestört (1-2 Stunden schlaflos).
+       Mein Schlaf ist mäßig gestört (2-3 Stunden schlaflos).
+       Mein Schlaf ist stark gestört (3-5 Stunden schlaflos).
+       Mein Schlaf ist komplett gestört (5-7 Stunden schlaflos).
+10 Freizeitaktivität (FA) - Erholung
+       Ich kann alle meine Freizeitaktivitäten ohne Nackenschmerzen ausüben.
+       Ich kann, wenn auch mit einigen Nackenschmerzen, alle meine Freizeitaktivitäten
+       ausüben.
+       Wegen Nackenschmerzen kann ich die meisten, aber nicht alle meiner täglichen Frei-
+       zeitaktivitäten ausüben.
+       Ich kann wegen meiner Nackenschmerzen nur einige meiner Freizeitaktivitäten aus-
+       üben.
+       Ich kann wegen meiner Nackenschmerzen kaum irgendwelche Freizeitaktivitäten aus-
+       üben.
+       Ich kann überhaupt keine Freizeitaktivitäten ausüben.
+Auswertung:
+
+       • Geringe Beschwerden werden mit 0, die stärksten Beschwerden mit maximal 5 Punkten be-
+          wertet. Die Maximalpunktzahl beträgt somit 50 Punkte.
+
+       • Die erreichte Punktzahl wird zunächst durch die mögliche Gesamtpunktzahl geteilt. Dieser
+          Wert wird mit 100% multipliziert und ergibt den Score
+                  - (Aktuelle Einschränkung : 50) X 100% = Score im NDI
+
+       • Der NDI kann sowohl in der Erstbefundung als auch in der Verlaufskontrolle verwendet wer-
+          den.
+
+       • Ein Score von <=8% kennzeichnet Patienten mit einer geringen Symptomatik. Ein Score von
+          >40 kennzeichnet Patienten mit einer sehr schweren Symptomatik, der auch eine Chronifizie-
+          rung begünstigt (zum Beispiel bei Patienten mit einem Beschleunigstrauma
+
+       • Die minimal messbare Veränderung beträgt 5 Punkte oder 10% der Gesamtpunktzahl (Ver-
+          non et al. 1991). Die minimal klinisch relevante Veränderung wird in Studien mit unterschied-
+          lichen Werten angegeben und liegt zwischen 3,5-9,5 (Schellingerhout et al. 2012). Nach
+          Jorritsma et al. (2012) sollte die Veränderung 8,4 Punkte für ein klinisch relevantes Ergebnis
+          betragen.
+
+       • Die Nutzungsbedingungen sind unter http://creativecommons.org/licenses/by/4.0/ einzu-
+          sehen.
+Quellen:
+
+Cramer H, Lauche R , Langhorst J et al. Validation of the German version of the Neck Disability Index
+(NDI). BMC Muskuloskeletal Disorders. 2014; 15: 91.
+Jorritsma W, Dijkstra PU, de Vries GE et al. Detecting relevant changes and responsiveness of Neck
+Pain and Disability Scale and Neck Disability Index. European Spine Journal. 2012; 21: 2550.
+Schellingerhout JM, Verhagen JM, Heymans HM et al. Measurement properties of disease-specific
+questionnaires in patients with neck pain: a systematic review. Qual Life Res. 2012; 21: 659.
+Vernon, H., & Mior, S., The Neck Disability Index: a study of reliability and validity. Journal of Manipu-
+lative and Physiological Therapeutics. 1991; 14: 409.
+Ritchie C, Hendrikz J, Kenardy J et al. Derivation of a clinical prediction rule to identify with chronic
+moderate/severe disability and full recovery following whiplash injury. Pain. 2013; 154: 2198.
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

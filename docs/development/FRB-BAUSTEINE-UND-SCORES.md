@@ -17,9 +17,9 @@ bauen, woran sie gemessen werden und was vorher entschieden sein muss.
 | Inhalt                        | Umfang                                                                         | Quelle                                                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | MT-Untersuchungsbausteine     | 9 Regionen, Basis- und weiterführende Untersuchung, Spezialblöcke, Therapie     | [`bausteine/mt-untersuchung-quelldaten.md`](../../quellen/bausteine/mt-untersuchung-quelldaten.md)         |
-| Scores (PROMs)                | 18 Instrumente (14 davon Priorität A), zusammen 311 bezifferte Items          | [`scores/score-inventar.md`](../../quellen/scores/score-inventar.md), 18 PDFs lokal                        |
+| Scores (PROMs)                | 18 Instrumente (14 davon Priorität A), zusammen 311 bezifferte Items          | [`scores/score-inventar.md`](../../quellen/scores/score-inventar.md), 18 PDFs im Repository                |
 | Eckdaten und Rechenvorschrift | je Score: Items, Antwortformat, Wertebereich, Richtung, Subskalen, MCID/MDC      | Blätter **Inventar** und **Scoring** der Tabelle                                                          |
-| Itemtexte                     | **nur in den PDFs**                                                             | `quellen/scores/pdf/`, nicht im Repository (siehe D1)                                                      |
+| Itemtexte                     | **nur in den PDFs**                                                             | `quellen/scores/pdf/`, dazu die Extrakte in `quellen/scores/pdf-text/`                                     |
 
 Die MT-Bausteine haben in der Roadmap **noch keine Zeile**; sie sind neuer
 Umfang aus dem Arbeitsauftrag. Die 18 Scores füllen **FRB-001**
@@ -192,7 +192,7 @@ liefert Itemtexte, die sich übernehmen lassen — die Extrakte liegen in
 
 | ID     | Frage                                                                                                                                                              | Wer      | Blockiert   |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ----------- |
-| **D1** | Dürfen die 18 PDFs und die **Itemtexte** in ein **öffentliches** Repository? Wenn nein: Repository privat stellen, oder Itemtexte aus den Definitionen heraushalten | Jannes   | **P4**, P5  |
+| ~~**D1**~~ | ~~Dürfen die 18 PDFs und die **Itemtexte** in ein **öffentliches** Repository?~~ **Entschieden am 2026-09-21: ja.** Jannes hat die Frage samt dem Unterschied zwischen Nutzung und Weiterveröffentlichung vorgelegt bekommen und sie so entschieden. PDFs und Extrakte liegen seit demselben Tag im Repository; die Definitionen dürfen ihre Itemtexte tragen. Begründung und die Folge — eine Rücknahme braucht einen Umbau der Historie — in [`../../quellen/README.md`](../../quellen/README.md) | Jannes   | nichts mehr |
 | **D2** | Vier unvollständige Blöcke der MT-Vorlage — offen lassen (Vorschlag) oder nachliefern: Schulter „Untersuchung ACG", LWS „Untersuchung SIG", LWS „Behandlung", HWS „Therapie Hochzervikal" | Jannes   | P2 (nicht blockierend: sie werden als offen angelegt) |
 | **D3** | Tippfehler der Vorlage stehen lassen (Vorschlag) oder korrigieren: „Relocation Tet", „Supinatin", „Lachmann", „Painfull Arc Sign", „Traininigs"                     | Jannes   | P2          |
 | **D4** | HOOS: 39 Items laut PDF oder 40 laut Original                                                                                                                      | Jannes   | P5          |
@@ -201,11 +201,12 @@ liefert Itemtexte, die sich übernehmen lassen — die Extrakte liegen in
 | **B1** | Darf ein **veröffentlichter** Cut-off oder MCID neben dem eigenen Wert stehen? Gehört in die externe Prüfung nach ADR-006 Punkt 7, nicht in einen Loop             | extern   | nur die Anzeige, keine Phase |
 | **B8** | Lizenzbeleg. Jannes hat am 2026-09-21 erklärt, es gebe keine Lizenzierung und alle Inhalte dürften integriert werden; der schriftliche Beleg des Lizenzgebers fehlt weiter | Jannes, Lizenzgeber | nichts vor M3 |
 
-D2 bis D6 **blockieren nicht**: Nach `PROJECT_PRINCIPLES.md` §15.1 wird jede
-davon im Loop als Annahme entschieden, reversibel an genau einer Stelle
-verankert und als `ANN-NNN` registriert — der Vorschlag steht jeweils schon in
-der Spalte. Vorgezogen wird nur **D1**, weil ein gepushter Blob und ein
-veröffentlichter Itemtext nicht zurückzunehmen sind.
+**Damit blockiert keine Entscheidung mehr.** D1 war die einzige, die
+vorgezogen werden musste, weil ein gepushter Blob und ein veröffentlichter
+Itemtext nicht zurückzunehmen sind; sie ist entschieden. D2 bis D6 werden nach
+`PROJECT_PRINCIPLES.md` §15.1 im jeweiligen Loop als Annahme entschieden,
+reversibel an genau einer Stelle verankert und als `ANN-NNN` registriert — der
+Vorschlag steht jeweils schon in der Spalte.
 
 **In dieser Session wurde keine Annahme registriert.** `pnpm docs:check`
 verlangt für jeden `ANN-NNN` einen Anker in `src/`, `supabase/migrations/` oder

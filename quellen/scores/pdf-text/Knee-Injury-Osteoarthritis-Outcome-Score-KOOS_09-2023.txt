@@ -1,0 +1,346 @@
+       Knee Injury Osteoarthritis Outcome Score (KOOS)
+
+                        deutsche Version (Kessler et al. 2003)
+
+Name:                                            Datum:
+Geburtsdatum:                                    Untersucher:
+
+Der folgende Fragebogen dient der Erfassung von Beschwerden und Problemen, die durch Ihr Knie-
+gelenk verursacht werden.
+
+Die dadurch gewonnenen Informationen werden uns helfen einzuschätzen, wie es Ihnen mit Ihrem
+Knie geht und wie gut Sie in der Lage sind, Ihre üblichen Aktivitäten zu verrichten.
+
+Beantworten Sie bitte jede Frage durch Ankreuzen des zugehörigen Kästchens.
+
+Bitte nur ein Kästchen pro Frage Ankreuzen. Wenn Sie sich unsicher sind, wie Sie die Frage beant-
+worten sollen, wählen Sie die Antwort aus, die Ihnen am zutreffendsten erscheint.
+
+Bitte beantworten Sie alle Fragen gemäß Ihrem aktuellen Zustand. Sollten Sie momentan keine Be-
+schwerden haben, dann bewerten Sie die Fragen entsprechend Ihrem Zustand in der vergangenen
+Woche.
+
+Subskala Schmerz
+
+1. Wie oft tut Ihnen Ihr Knie weh?
+
+niemals             monatlich       wöchentlich  täglich       immer
+
+2. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: sich im
+
+Knie drehten?
+
+keine               schwach         mäßig        stark         sehr stark
+
+3. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: Ihr Knie
+
+ganz ausstreckten?
+
+keine               schwach         mäßig        stark         sehr stark
+
+4. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: Ihr Knie
+
+ganz beugten?
+
+keine               schwach         mäßig        stark         sehr stark
+
+5. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: auf ebenem
+
+Boden gingen?
+
+keine               schwach         mäßig        stark         sehr stark
+6. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: Treppen he-
+
+rauf oder herunter gingen?
+
+keine             schwach             mäßig     stark                         sehr stark
+
+7. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: sich nachts
+
+im Bett drehten?
+
+keine             schwach             mäßig     stark                         sehr stark
+
+8. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: saßen oder
+
+lagen, z.B. auf der Couch?
+
+keine             schwach             mäßig     stark                         sehr stark
+
+9. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: aufrecht
+
+standen?
+
+keine             schwach             mäßig     stark                         sehr stark
+
+Gesamtscore Subskala Schmerz
+
+Subskala Symptome
+
+10. Haben Sie Schwellungen an Ihrem Knie?
+
+niemals           selten              manchmal  oft                           immer
+
+11. Fühlen Sie manchmal ein Mahlen, hören Sie manchmal ein Klicken oder irgendein Geräusch,
+
+wenn Sie Ihr Knie bewegen?
+
+niemals           selten              manchmal  oft                           immer
+
+12. Bleibt Ihr Knie manchmal hängen, oder blockiert es, wenn Sie es bewegen?
+
+niemals           selten              manchmal  oft                           immer
+
+13. Können Sie Ihr Knie ganz ausstrecken?
+
+immer             oft                 manchmal  selten                        niemals
+
+14. Können Sie Ihr Knie ganz beugen?
+
+immer             oft                 manchmal  selten                        niemals
+
+15. Wie stark ist Ihre Kniesteifigkeit morgens direkt nach dem Aufstehen?
+
+keine             schwach             mäßig     stark                         sehr stark
+
+16. Wie stark ist Ihre Kniesteifigkeit, nachdem Sie saßen, lagen, oder sich ausruhten im Verlauf
+des Tages?
+
+keine             schwach             mäßig     stark                         sehr stark
+
+Gesamtscore Subskala Symptome
+Die nachfolgenden Fragen beziehen sich auf Ihre körperliche Leistungsfähigkeit.
+
+Hierunter verstehen wir Ihre Fähigkeit, sich selbständig zu bewegen bzw. sich selbst zu versorgen.
+
+Für jede der nachfolgenden Aktivitäten sollen Sie das Ausmaß der Schwierigkeiten angeben, welche
+Sie durch Ihr Kniegelenk innerhalb der letzten Woche erfahren haben.
+
+Subskala Aktivitäten des alltäglichen Lebens
+
+17. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: Treppen herunterstiegen?
+
+keine            wenig  einige                große                         sehr große
+
+18. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: Treppen heraufstiegen?
+
+keine            wenig  einige                große                         sehr große
+
+19. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: vom Sitzen aufstanden?
+
+keine            wenig  einige                große                         sehr große
+
+20. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: standen?
+
+keine            wenig  einige                große                         sehr große
+
+21. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: sich bückten, um etwas vom Bo-
+
+den aufzuheben?
+
+keine            wenig  einige                große                         sehr große
+
+22. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: auf ebenem Boden gingen?
+
+keine            wenig  einige                große                         sehr große
+
+23. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: ins Auto ein- oder ausstiegen?
+
+keine            wenig  einige                große                         sehr große
+
+24. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: einkaufen gingen?
+
+keine            wenig  einige                große                         Sehr große
+
+25. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: Strümpfe oder Socken anzo-
+
+gen?
+
+keine            wenig  einige                große                         sehr große
+
+26. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: vom Bett aufstanden?
+
+keine            wenig  einge                 große                         sehr große
+
+27. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: Strümpfe – Socken auszogen?
+
+keine            wenig  einge                 große                         sehr große
+28. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: im Bett lagen und sich drehten,
+
+ohne das Knie dabei zu beugen?
+
+keine              wenig        einige    große                             sehr große
+
+29. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: in die oder aus der Badewanne
+
+kamen?
+
+keine              wenig        einige    große                             sehr große
+
+30. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: saßen?
+
+keine              wenig        einige    große                             sehr große
+
+31. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: sich auf die Toilette setzten
+
+oder aufstanden?
+
+keine              wenig        einige    große                             sehr große
+
+32. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: schwere Hausarbeit verrichteten
+
+(Gartenarbeit…)?
+
+keine              wenig        einige    große                             sehr große
+
+33. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: leichte Hausarbeit verrichteten
+
+(Staub wischen…)?
+
+keine              wenig        einige    große                             sehr große
+
+Gesamtscore Subskala Aktivitäten des alltäglichen Lebens
+
+Die nachfolgenden Fragen beziehen sich auf Ihre körperliche Belastbarkeit im Rahmen eher sport-
+licher Aktivitäten.
+
+Subskala sportliche Aktivitäten/Freizeit
+
+34. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: in die Hocke gingen?
+
+keine              wenig        einige    große                             sehr große
+
+35. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: rannten?
+
+keine              wenig        einige    große                             sehr große
+36. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: hüpften?
+
+keine       wenig        einge               große                          sehr große
+
+37. Wie ausgeprägt waren Ihre Schmerzen in der vergangenen Woche, als Sie z.B.: sich auf ihrem
+
+kranken Knie umdrehten?
+
+keine       wenig        einige              große                          sehr große
+
+38. Welche Schwierigkeiten hatten Sie letzte Woche, als Sie z.B.: sich hinknieten?
+
+keine       wenig        einige              große                          sehr große
+
+Gesamtscore Subscala sportliche Aktivitäten/Freizeit
+
+Subskala Lebensqualität
+
+39. Wie oft spüren Sie Ihr erkranktes Knie?
+
+nie         monatlich    wöchentlich         täglich                        immer
+
+40. Haben Sie Ihre Lebensweise verändert, um eventuell Ihrem Knie schadende Tätigkeiten zu
+
+vermeiden?
+
+nicht       wenig        etwas               stark                          vollständig
+
+41. Wie sehr macht es Ihnen zu schaffen, daß Ihr Knie nicht stabil ist?
+
+Gar nicht   wenig        einiges             schlimm                        sehr schlimm
+
+42. Wie würden Sie insgesamt die Schwierigkeiten bewerten, die Sie durch das Knie haben?
+
+keine       wenig        einige              große                          sehr große
+
+Gesamtscore Subskala Lebensqualität
+Auswertung:
+
+    • Der KOOS ist ein Fragebogen, der bei annähernd allen Kniepathologien unabhängig vom Leis-
+         tungsniveau verwendet werden kann. Er wurde bis dato insbesondere in der Kreuzbandre-
+         habilitation, bei anderen ligamentären Läsionen, nach einer Prothesenversorgung oder Um-
+         stellungsosteomien, nach reparativen Knorpeloperationen, bei Kniearthrosen und auch in
+         pharmakologischen Studien eingesetzt. Der Fragebogen besitzt 5 Subskalen:
+
+                  - Schmerz
+
+                  - Symptome
+
+                  - Alltägliche Aktivitäten
+
+                  - Sportliche Aktivitäten
+
+                  - Lebensqualität
+
+    • Der Fragebogen kann vom Patient selbst ausgeführt werden. Die benötigte Zeit beträgt ca. 10
+         Minuten.
+
+    • Die Auswertung erfolgt durch eine Punktevergabe für jedes Item. Geringe Symptome bzw. Ein-
+         schränkungen werden mit 0, hohe Symptome bzw. Einschränkungen mit 4 Punkten bewertet.
+         Für die Berechnung sollte folgende Formel verwendet werden:
+
+1. PAIN  100 − Mean Score (P1−P9) × 100         = KOOS Pain
+
+                                       4
+
+2. SYMPTOMS 100 − Mean Score (S1−S7) × 100 = KOOS Symptoms
+
+                                                         4
+
+3. ADL   100 − Mean Score (A1−A17) × 100 = KOOS ADL
+
+                                        4
+
+4. SPORT/REC 100 −  Mean Score (SP1−SP5) × 100  = KOOS Sport/Rec
+
+                    4
+
+5. QOL   100 − Mean Score (Q1−Q4) × 100 = KOOS QOL
+
+                                       4
+
+• Sollte der Patient manche Aktivitäten nicht ausführen, weil die Probleme ihn daran hindern,
+    sollte mit der schlechtesten Punktzahl gewertet werden (0 Punkte).
+
+• Sollte der Patient nicht sportlich aktiv sein, so sollte die entsprechende Subskala aus-
+    gelassen werden. Bei eher aktiven Patienten sollte die Subskala alltägliche Aktivitä-
+    ten ausgelassen werden. Sie hat mit 17 Items einen zu großen Einfluss auf das Ergeb-
+    nis einer Patientengruppe, die bei diesen Aktivitäten keine oder nur geringe Probleme hat.
+    Es ist also nicht erwünscht, dass grundsätzlich immer alle Subskalen benützt werden.
+    Vielmehr sollte die Subskala ausgewählt werden, welche die höchste Wertigkeit für den Patien-
+    ten besitzt. Bei der Auswertung der einzelnen Subskalen werden die Werte separat in einen
+    prozentualen Wert umgewandelt (0-100%).
+    • Die minimal messbare Veränderung beträgt für die einzelnen Subskalen nach Knieverletzun-
+         gen (Collins et al. 2011):
+                  - Schmerz: 6-6,1
+                  - Symptome: 5-8,5
+                  - Alltägliche Aktivitäten: 7-8
+                  - Sportliche Aktivitäten: 5,8-12
+                  - Lebensqualität: 7,2
+
+    • Bei Patienten mit einer Kniearthrose liegen die Werte für die minimal messbare Veränderung
+         höher (Collins et al. 2011).
+
+    • Die minimal klinisch relevante Veränderung sollte über 8-10 Punkte insgesamt betragen (Col-
+         lins et al. 2011).
+
+Quellen:
+
+Collins, N. J., D. Misra, et al. „Measures of knee function: International Knee Documentation Commit-
+tee (IKDC) Subjective Knee Evaluation Form, Knee Injury and Osteoarthritis Outcome Score (KOOS),
+Knee Injury and Osteoarthritis Outcome Score Physical Function Short Form (KOOS-PS), Knee Outco-
+me Survey Activities of Daily Living Scale (KOS-ADL), Lysholm Knee Scoring Scale, Oxford Knee Score
+(OKS), Western Ontario and McMaster Universities Osteoarthritis Index (WOMAC), Activity Rating Sca-
+le (ARS), and Tegner Activity Score (TAS).“ Arthritis care & research. 2011; 63 Suppl 11: S208-228.
+de Vet, H. C., R. W. Ostelo, et al. (2007). „Minimally important change determined by a visual method
+integrating an anchor-based and a distribution-based approach.“ Quality of life research : an inter-
+national journal of quality of life aspects of treatment, care and rehabilitation. 2011; 16: 131-142.
+Kessler S, Lang S, Puhl W. The Knee Injury and Osteoarthritis Outcome Score-a multifunctional ques-
+tionnaire to measure outcome in knee arthroplasty. Zeitschrift für Orthopädie und Ihre Grenzgebiete.
+2003 May-Jun;141(3):277-82.
+Roos, E., L. Engelhart, et al. (2011). „ICRS Recommendation Document: Patient-reported outcome
+instruments for use in patients with articular cartilage defects.“ Cartilage. 2011; 2: 122-136.
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

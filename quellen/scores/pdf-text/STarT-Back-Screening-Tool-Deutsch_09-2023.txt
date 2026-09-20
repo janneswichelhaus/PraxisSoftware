@@ -1,0 +1,80 @@
+                       STarT Back Screening Tool
+
+                  Validierte deutsche Version (Aebischer et al. 2015)
+
+Name:                                Datum:
+Geburtsdatum:                        Untersucher:
+
+Mit den nachfolgenden Fragen möchten wir untersuchen, wie stark Ihr Rückenschmerz Sie
+beeinträchtigt.
+
+Bitte lesen Sie die nachfolgende Aufstellung durch und beantworten Sie die folgenden Fragen über
+ihre Rückenschmerzen. Es sind nur die zwei letzten Wochen relevant.
+
+     Frage/Antwort                                                       Nein (0)  Ja (1)
+
+1 Mein Schmerz hat während der letzten 2 Wochen zeitweise in die Beine
+     ausgestrahlt.
+
+2 Zusätzlich zum Hauptschmerz hatte ich in den letzten 2 Wochen auch
+     noch an anderen Stellen des Rückens Schmerzen.
+
+3 In den letzten 2 Wochen bin ich wegen meiner Schmerzen nur kurze
+     Strecken gegangen.
+
+4 In den letzten 2 Wochen habe ich mich wegen meiner Schmerzen lang-
+     samer als gewöhnlich angezogen.
+
+5 Körperliche Aktivitäten sind für Menschen in meinem Zustand eventuell
+     gefährlich.
+
+6 In den letzten 2 Wochen hatte ich viele Sorgen.
+
+7 Mein Schmerz ist sehr schlimm und ich habe das Gefühl, dass er sich
+     wahrscheinlich nie mehr bessern wird.
+
+8 In den letzten 2 Wochen hatte ich ganz allgemein nicht mehr so viel
+     Freude an den Dingen, die mir sonst Freude bereiten.
+
+Wie störend war Ihr Schmerz in den letzten 2 Wochen?
+
+9 überhaupt nicht (0) ein wenig (0)  mäßig (0)        sehr (1)           extrem (1)
+
+Gesamtpunktzahl:                     Teilsumme (Fragen 5-9):
+Auswertung
+
+• Eine Gesamtpunktzahl von <=3 ist mit einem geringen Chronifizierungsrisiko verbunden. Darü-
+    ber hinaus ist die Notwendigkeit einer physiotherapeutischen Behandlung in dieser Patienten-
+    gruppe gering (Hill et al. 2011).
+
+• Bei Werten >/=4 wird der Teilscore der Fragen 5-9 genauer betrachtet.
+    Hat der Patient hier 3 oder weniger Fragen mit Ja beantwortet, besteht ein mittleres
+    Chronifizierungsrisiko.
+
+• Bei 4 oder 5 positiv bewerteten Fragen wird der Patient der Gruppe mit hoher Chronifizierungs-
+    gefahr zugeordnet. Solche Patienten profitieren von einem multidisziplinären Therapieansatz,
+    indem auch verhaltenstherapeutische Maßnahmen im Vordergrund stehen.
+Quellen
+
+• Aebischer B, Hill JC, Hilfiker R et al. German translation and cross-cultural adaption of the STarT
+    Back Screening Tool. PlosOne. 2015; DOI: 10.1371/journal.pone.0132068.
+
+• Hill JC, Whitehurst DGT, Lewis M et al. Comparison of stratified primary care management for
+    low back pain with current best practice (STarT Back): a randomized trial. Lancet. 2011; 378:
+    1560.
+
+• Beneciuk JM, Robinson ME, George SZ. Subgrouping for patients with lower back pain: a mul-
+    tidimensional approach incorporating cluster analysis and the StarT Back Screening Tool. The
+    Journal of Pain. 2015; 16: 19.
+
+• Page I, Abboud J, O`Shaughnessy J et al. Chronic low back pain clinical outcomes present
+    higher associations with the STarT Back Screening Tool than with physiologic measures: a 12
+    month cohort study. BMC Musculoskeletal Disorders. 2015; 16: 201.
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

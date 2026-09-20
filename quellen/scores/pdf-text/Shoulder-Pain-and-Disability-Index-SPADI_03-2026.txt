@@ -1,0 +1,127 @@
+Shoulder Pain and Disability Index (SPADI) -
+
+      Fragebogen zu Schulterschmerzen
+
+         (validierte deutsche Version (Angst et al. 2007))
+
+Name:                                                    Datum:
+Geburtsdatum:                                            Untersucher:
+
+A SCHMERZFRAGEN
+
+Die folgenden Fragen beziehen sich auf die Stärke der Schmerzen, die Sie in Ihrer Schulter haben.
+Bitte geben Sie für jede Frage die Stärke der Schmerzen an. (Bitte kreuzen Sie die zutreffenden Käst-
+chen an.)
+
+Wie stark sind Ihre Schmerzen,
+
+1. wenn sie am stärksten sind?                           Schlimmste Schmerzen
+     Keine Schmerzen
+
+2. wenn Sie auf der betroffenen Seite liegen?            Schlimmste Schmerzen
+     Keine Schmerzen
+
+3. wenn Sie nach etwas auf einem hohen Gestell greifen?  Schlimmste Schmerzen
+     Keine Schmerzen
+
+4. wenn Sie Ihren Nacken berühren?                       Schlimmste Schmerzen
+     Keine Schmerzen
+
+5. wenn Sie mit dem betroffenen Arm etwas stoßen/gegen etwas drücken?
+
+Keine Schmerzen                                          Schlimmste Schmerzen
+B FRAGEN ZUR KÖRPERLICHEN TÄTIGKEIT
+
+Die folgenden Fragen beziehen sich auf Ihre körperliche Tätigkeit. Damit ist Ihre Fähigkeit gemeint,
+sich im Alltag, um sich selbst zu kümmern. Bitte geben Sie für jede der folgenden Aktivitäten den
+Schwierigkeitsgrad an. (Bitte kreuzen Sie die zutreffenden Kästchen an)
+
+Wie viele Schwierigkeiten haben Sie,
+
+1. wenn Sie sich die Haare waschen?                           Tätigkeit nicht ausführbar
+    Keine Schwierigkeiten
+
+2. wenn Sie sich Ihren Rücken waschen?                        Tätigkeit nicht ausführbar
+    Keine Schwierigkeiten
+
+3. wenn Sie ein Unterhemd oder einen Pullover anziehen?       Tätigkeit nicht ausführbar
+    Keine Schwierigkeiten
+
+4. wenn Sie sich ein Hemd oder eine Bluse anziehen, die vorne zugeknöpft wird?
+
+Keine Schwierigkeiten                                         Tätigkeit nicht ausführbar
+
+5. wenn Sie Ihre Hosen anziehen?                              Tätigkeit nicht ausführbar
+    Keine Schwierigkeiten
+
+6. wenn Sie einen Gegenstand auf ein hohes Gestell legen?     Tätigkeit nicht ausführbar
+    Keine Schwierigkeiten
+
+7. wenn Sie einen Gegenstand von etwa 5kg tragen?             Tätigkeit nicht ausführbar
+    Keine Schwierigkeiten
+
+8. wenn Sie etwas aus Ihrer hinteren (Hosen-) Tasche nehmen?  Tätigkeit nicht ausführbar
+    Keine Schwierigkeiten
+Auswertung:
+
+Der SPADI wurde 1990 entwickelt, um Schmerz und Funktion in Zusammenhang mit Schulterpathologien zu
+messen. Es soll den jetzigen Status und die Veränderung über eine bestimmte Zeit messen (Roach et al.
+1991).
+Es ist ein PRO Assessment und besteht aus 13 Fragen mit zwei Subskalen. Fünf Fragen beziehen sich auf
+Schmerz, acht auf Funktion und werden mit 0 = kein Schmerz bis 10 = schlimmster Schmerz bzw. für die Funk-
+tion mit 0 = nicht schwierig bis 10 = brauche Hilfe bewertet.
+Die Auswertung erfolgt mit dem Zusammenzählen der Punkte. 0 ist das bestmögliche, 130 das schlechteste
+Ergebnis.
+Eine deutsche kulturelle Validierung ist vorhanden (Angst et al. 2007). Sie beschreiben die interne Konsistenz
+mit Cronbachs Alpha von 0.95, die Reliabilität mit r = 0.94, der MDC wird mit 18 Punkten angegeben. Es be-
+stehen leichte Boden und Deckeneffekte. Die Dauer des Ausfüllens und Auswertens wird mit 5 – 10 Minuten
+angegeben (Roach et al. 1991), Angst et al. (2007) geben 2 Minuten + Auswertung an. Der Fragebogen ist im
+Internet frei erhältlich.
+
+Der Patient gibt sich selbst Punkte zwischen 0 (keine Schmerzen/keine Schwierigkeiten) und 10 (schlimmste
+Schmerzen/Tätigkeit nicht ausführbar).
+
+Keine Schmerzen/                                                                               Schlimmste Schmerzen/
+Keine Schwierigkeiten                                                                          Tätigkeit nicht ausführbar
+                       0 1 2 3 4 5 6 7 8 9 10
+
+Zusammensetzung der Gesamtpunktzahl:                                                  Achtung:
+                                                                                    Alle Fragen
+                                                                maximal
+                                                              erreichbare             müssen
+                                                          Antwortpunktzahl          beantwortet
+
+                                                                 130 Punkte           werden!
+
+                       1. Teil: A                        2. Teil: B
+                       Schmerzen                   Körperliche Aktivität
+
+                               50 Punkte                         80 Punkte
+
+Total Score:
+
+                       =  Summe der Antwortpunkte                            x 100
+
+                                          130
+
+Total SPADI:
+Maximal erreichbare Punkte/Prozentzahl:
+100 Punkte = maximale Schmerzen, keine der Tätigkeiten ist durchführbar
+
+Niedrigste Punktzahl/Prozentzahl:
+0 Punkte = keine Schmerzen, keine Schwierigkeiten
+Quelle:
+
+Angst F, Goldhahn J, Pap G, Mannion AF, Roach KE, Siebertz D, Drerup S, Schwyzer HK, Simmen BR.
+Cross-cultural adaptation, reliability and validity of the German Shoulder Pain and Disability Index
+(SPADI). Rheumatology (Oxford). 2007; 46(1): 87-92.
+Roach KE, Budiman-Mak E, Songsiridej N, Lertratanakul Y. Development of a shoulder pain and disa-
+bility index. Arthritis Care Res. 1991; 4(4): 143-9.
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

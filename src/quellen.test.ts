@@ -14,32 +14,35 @@ import { describe, expect, it } from 'vitest';
  * Ein Register mit Prüfsummen, das niemand prüft, ist eine Behauptung. Dieser
  * Test macht daraus eine Zusicherung, in drei Richtungen:
  *
- *   1. Was das Register nennt, liegt da und ist unverändert.
+ *   1. Was das Register nennt, liegt da und ist unverändert — auch die 18
+ *      Original-PDFs, die seit der Entscheidung von Jannes am 2026-09-21 im
+ *      Repository liegen (D1, `quellen/README.md`).
  *   2. Was in `quellen/` liegt, steht im Register — keine stille zweite Quelle.
- *   3. Die 18 Original-PDFs liegen nicht im Repository (es ist öffentlich,
- *      siehe `quellen/README.md`). Sind sie lokal da, werden sie mitgeprüft;
- *      fehlt das Verzeichnis ganz, wird der Teil übersprungen.
+ *   3. Zu jeder PDF gehört ein Textextrakt und umgekehrt. Ein Extrakt ohne PDF
+ *      wäre eine Quelle ohne Herkunft, eine PDF ohne Extrakt eine, mit der
+ *      niemand arbeiten kann.
  *
- * Punkt 3 ist bewusst hart, sobald das Verzeichnis existiert: ein halb
- * gefülltes Quellenverzeichnis ist genau der stille Verlust, gegen den das
- * Register angelegt wurde.
+ * Die Extrakte selbst tragen keine Prüfsumme: sie sind aus den PDFs gewonnen,
+ * und die PDF hat eine. Wer sie neu erzeugt, soll dafür nicht das Register
+ * anfassen müssen.
  */
 
 const stamm = process.cwd();
 const QUELLEN = join(stamm, 'quellen');
 const REGISTER = join(QUELLEN, 'README.md');
 const PDF_VERZEICHNIS = join(QUELLEN, 'scores/pdf');
+const EXTRAKT_VERZEICHNIS = join(QUELLEN, 'scores/pdf-text');
 
 /**
- * Dateien, die kein Registereintrag brauchen: das Register selbst und die
- * lesbare Wiedergabe der Tabelle. Die Wiedergabe wird beim Nachziehen einer
- * Zeile mit geändert; eine Prüfsumme darauf würde bei jeder Korrektur reißen,
- * ohne etwas zu schützen.
+ * Dateien, die kein Registereintrag brauchen, weil sie aus den Quellen gewonnen
+ * sind: das Register selbst, die lesbare Wiedergabe der Tabelle und die
+ * Textextrakte der PDFs. Eine Prüfsumme darauf würde bei jeder Korrektur und
+ * bei jeder Neuerzeugung reißen, ohne etwas zu schützen.
  */
-const OHNE_PRUEFSUMME = ['README.md', 'scores/score-inventar.md'];
-
-/** Nicht im Repository, siehe `.gitignore` und `quellen/README.md`. */
-const NICHT_VERSIONIERT = ['scores/pdf', 'scores/pdf-text'];
+const OHNE_PRUEFSUMME = (datei: string): boolean =>
+  datei === 'README.md' ||
+  datei === 'scores/score-inventar.md' ||
+  datei.startsWith('scores/pdf-text/');
 
 const registertext = readFileSync(REGISTER, 'utf8');
 
@@ -73,32 +76,29 @@ function pruefsumme(pfad: string): string {
   return createHash('sha256').update(readFileSync(pfad)).digest('hex');
 }
 
-/** Alle Dateien unter `quellen/`, ohne die nicht versionierten Verzeichnisse. */
-function versionierteDateien(verzeichnis = QUELLEN): string[] {
+/** Alle Dateien unter `quellen/`, Pfade relativ und mit Schrägstrich. */
+function alleDateien(verzeichnis = QUELLEN): string[] {
   const gefunden: string[] = [];
   for (const eintrag of readdirSync(verzeichnis)) {
     const pfad = join(verzeichnis, eintrag);
-    const relativ = relative(QUELLEN, pfad).split('\\').join('/');
-    if (NICHT_VERSIONIERT.includes(relativ)) continue;
-    if (statSync(pfad).isDirectory()) gefunden.push(...versionierteDateien(pfad));
-    else gefunden.push(relativ);
+    if (statSync(pfad).isDirectory()) gefunden.push(...alleDateien(pfad));
+    else gefunden.push(relative(QUELLEN, pfad).split('\\').join('/'));
   }
   return gefunden;
 }
 
-const imRepository = registerBlock('### Im Repository');
-const lokal = registerBlock('### Lokal, nicht im Repository');
+const register = registerBlock('### Quellen mit Prüfsumme');
 
 describe('Register der Quellen', () => {
-  it.each([...imRepository.keys()])('%s liegt im Repository und ist unverändert', (datei) => {
+  it.each([...register.keys()])('%s liegt im Repository und ist unverändert', (datei) => {
     const pfad = join(QUELLEN, datei);
     expect(existsSync(pfad), `quellen/${datei} fehlt, steht aber im Register.`).toBe(true);
-    expect(pruefsumme(pfad)).toBe(imRepository.get(datei));
+    expect(pruefsumme(pfad)).toBe(register.get(datei));
   });
 
-  it('nennt jede versionierte Quelle', () => {
-    const ohneEintrag = versionierteDateien().filter(
-      (datei) => !OHNE_PRUEFSUMME.includes(datei) && !imRepository.has(datei),
+  it('nennt jede Quelle, die nicht abgeleitet ist', () => {
+    const ohneEintrag = alleDateien().filter(
+      (datei) => !OHNE_PRUEFSUMME(datei) && !register.has(datei),
     );
     expect(
       ohneEintrag,
@@ -106,30 +106,29 @@ describe('Register der Quellen', () => {
     ).toEqual([]);
   });
 
-  it('haelt die 18 Fragebogen-PDFs aus dem oeffentlichen Repository heraus', () => {
-    // Ein versehentlich mitversioniertes PDF waere nach dem Push nicht mehr
-    // zurueckzunehmen (quellen/README.md, "Warum die PDFs nicht im
-    // Repository liegen"). Deshalb steht die Zusicherung hier, nicht nur in
-    // der .gitignore.
-    expect(lokal.size).toBe(18);
-    for (const datei of lokal.keys()) {
-      expect(imRepository.has(`scores/pdf/${datei}`)).toBe(false);
-    }
+  it('fuehrt alle 18 Fragebogen als PDF', () => {
+    // Die Zahl steht im Inventar und im Arbeitsauftrag. Faellt eine Datei
+    // still weg, sagt diese Zeile es, bevor eine Score-Definition ohne Quelle
+    // entsteht.
+    const pdfs = [...register.keys()].filter((datei) => datei.startsWith('scores/pdf/'));
+    expect(pdfs).toHaveLength(18);
   });
 });
 
-describe.skipIf(!existsSync(PDF_VERZEICHNIS))('Lokale Original-PDFs', () => {
-  it.each([...lokal.keys()])('%s ist vorhanden und unverändert', (datei) => {
-    const pfad = join(PDF_VERZEICHNIS, datei);
+describe('Textextrakte der PDFs', () => {
+  const pdfs = readdirSync(PDF_VERZEICHNIS).map((datei) => datei.replace(/\.pdf$/, ''));
+  const extrakte = readdirSync(EXTRAKT_VERZEICHNIS).map((datei) => datei.replace(/\.txt$/, ''));
+
+  it.each(pdfs)('%s hat ein Extrakt', (name) => {
     expect(
-      existsSync(pfad),
-      `quellen/scores/pdf/${datei} fehlt. Direktlink siehe quellen/scores/score-inventar.md.`,
-    ).toBe(true);
-    expect(pruefsumme(pfad)).toBe(lokal.get(datei));
+      extrakte,
+      `Extrakt fehlt. Neu erzeugen: siehe quellen/README.md, "Wiederbeschaffung und Neuerzeugung".`,
+    ).toContain(name);
   });
 
-  it('enthaelt keine Datei, die das Register nicht kennt', () => {
-    const unbekannt = readdirSync(PDF_VERZEICHNIS).filter((datei) => !lokal.has(datei));
-    expect(unbekannt, 'Nicht registrierte Quelle in quellen/scores/pdf/.').toEqual([]);
+  it('enthaelt kein Extrakt ohne PDF', () => {
+    // Ein Extrakt ohne Herkunft ist schlimmer als keins: es sieht aus wie eine
+    // Quelle, und niemand kann seinen Wortlaut gegen etwas halten.
+    expect(extrakte.filter((name) => !pdfs.includes(name))).toEqual([]);
   });
 });

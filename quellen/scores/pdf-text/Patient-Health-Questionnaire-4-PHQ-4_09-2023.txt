@@ -1,0 +1,55 @@
+Patient Health Questionnaire 4 (PHQ-4)
+
+Name:                                                      Datum:
+Geburtsdatum:                                              Untersucher:
+
+ Wie oft fühlten Sie sich im Verlauf der letzten 2         Überhaupt         An      An mehr    Beinahe
+ Wochen durch die folgenden Beschwerden                       nicht      einzelnen   als der    jeden Tag
+ beeinträchtigt?                                                                    Hälfte der
+                                                                0          Tagen                    3
+  1 Wenig Interesse oder Freude an Ihren Tätigkeiten                                   Tage
+                                                                             1
+                                                                                         2
+
+                                                           o             o          o           o
+
+2 Niedergeschlagenheit, Schwermut oder Hoffnungslosigkeit  o             o          o           o
+
+3 Nervosität, Ängstlichkeit oder Anspannung                o             o          o           o
+
+4 lieren. Nicht in der Lage sein, Sorgen zu stoppen oder zu kontrol- o o o o
+
+                                                                            Summenwert: ________
+Auswertung:
+
+PHQ-4 Gesamtscore 0 bis 12, wobei der psychologische Disstress in folgende Kategorien eingeteilt
+wird:
+
+• Keiner             0-2
+• Gering             3-5
+• Moderat            6-8
+• Stark              9-12
+
+Depression Subskala        = Summe der Items 1 und 2  (Score range, 0 bis 6)
+Angst Subskala             = Summe der Items 3 and 4  (Score range, 0 bis 6)
+
+Auf jeder Subskala entspricht ein Score von 3 oder größer einem positiven Screeningergebnis.
+
+Quellen:
+
+Löwe B, Wahl I, Rose M, Spitzer C, Glaesmer H, Wingenfeld K, Schneider A, Brähler E. A 4-item mea-
+sure of depression and anxiety: validation and standardization of the Patient Health Questionnaire-4
+(PHQ-4) in the general population. Journal of Affective Disorders. 2010; 122: 86-95.
+
+Kroenke K, Spitzer RL, Williams JBW, Löwe B. An ultra-brief screening scale for anxiety and depres-
+sion: the PHQ-4 Psychosomatics. 2009; 50:613-621.
+
+                                                                   DIGOTOR GbR
+
+                           Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+
+                                                             Austraße 30 • D-74336 Brackenheim
+
+                                                                                  ininfo@digotor.info
+                                                                                    www.digotor.info
+

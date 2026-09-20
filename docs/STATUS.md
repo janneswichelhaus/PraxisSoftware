@@ -57,4 +57,4 @@ FIX-EPIC-001 braucht Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.m
 
 **Quellen abgelegt, kein Feature.** 18 Scores und die MT-Bausteine liegen mit Prüfsummenregister in
 [`../quellen/README.md`](../quellen/README.md), Phasen und MDR-Grenze in [`development/FRB-BAUSTEINE-UND-SCORES.md`](development/FRB-BAUSTEINE-UND-SCORES.md).
-**Die 18 PDFs bleiben aus dem öffentlichen Repository heraus** — D1 entscheidet, ob das so bleibt.
+**D1 ist entschieden:** PDFs und Itemtexte liegen im Repository, auch im öffentlichen (B8).
