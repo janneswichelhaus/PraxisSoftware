@@ -14,6 +14,7 @@ import { formatDate } from '@/lib/datum';
 import { centZuEingabe, formatEuro, parseEuroZuCent } from '@/lib/geld';
 import { HEILMITTEL } from '@/features/treatment-bases/heilmittel';
 import { canManageServiceCatalog, type CurrentUser } from '@/features/session/types';
+import { todayInTimeZone } from '@/features/appointments/api';
 import {
   artLabels,
   createKatalogVersion,
@@ -77,10 +78,6 @@ function pruefe(zeile: PositionsEingabe): string | undefined {
   if (zeile.item_kind === 'absence_fee' && zeile.remedy !== '')
     return 'Ein Ausfallhonorar hängt an keinem Heilmittel.';
   return undefined;
-}
-
-function heute(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function CatalogPage({ user }: { user: CurrentUser }) {
@@ -151,6 +148,7 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
       {darfPflegen ? (
         <NeuePreisliste
           vorlage={versionen.data?.find((version) => version.published_at) ?? null}
+          zeitzone={user.organizationTimeZone}
           onAngelegt={async (id) => {
             await queryClient.invalidateQueries({ queryKey: ['katalog-versionen'] });
             setGewaehlt(id);
@@ -167,14 +165,18 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
 
 function NeuePreisliste({
   vorlage,
+  zeitzone,
   onAngelegt,
 }: {
   vorlage: KatalogVersion | null;
+  zeitzone: string | null;
   onAngelegt: (id: string) => void | Promise<void>;
 }) {
   const [offen, setOffen] = useState(false);
   const [label, setLabel] = useState('');
-  const [gueltigAb, setGueltigAb] = useState(heute());
+  // Der Praxistag, nicht der UTC-Tag: Zwischen Mitternacht und 01:00/02:00
+  // Ortszeit wäre das sonst der Vortag — und genau so gespeichert (R3-006).
+  const [gueltigAb, setGueltigAb] = useState(zeitzone ? todayInTimeZone(zeitzone) : '');
   const [kopieren, setKopieren] = useState(true);
 
   const anlegen = useMutation({
@@ -261,6 +263,15 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
   const fehler = (zeilen ?? []).map(pruefe);
   const vollstaendig =
     (zeilen ?? []).length > 0 && fehler.every((eintrag) => eintrag === undefined);
+
+  // In Kraft gesetzt wird der **Serverstand**. Weicht das Formular davon ab,
+  // gingen die Änderungen still verloren — und die Liste wäre danach
+  // unveränderlich (R3-007). Verglichen wird gegen denselben Stand, aus dem
+  // die Zeilen entstanden sind.
+  const ungespeichert =
+    zeilen !== null &&
+    positionen.data !== undefined &&
+    JSON.stringify(zeilen) !== JSON.stringify(positionen.data.map(alsEingabe));
 
   const speichern = useMutation({
     mutationFn: () =>
@@ -384,22 +395,38 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
             <Statusmeldung>Entwurf gespeichert.</Statusmeldung>
           ) : null}
 
+          {ungespeichert ? (
+            <Statusmeldung ton="warnung">
+              Es gibt ungespeicherte Änderungen. Bitte zuerst den Entwurf speichern — in Kraft
+              gesetzt wird der gespeicherte Stand.
+            </Statusmeldung>
+          ) : null}
+
           <div className="border-line flex flex-wrap gap-3 border-t pt-4">
-            <Rueckfrage
-              ausloeser="In Kraft setzen"
-              ausloeserVariante="primary"
-              bestaetigen="In Kraft setzen"
-              bestaetigenLaeuft="Wird in Kraft gesetzt …"
-              laeuft={inKraft.isPending}
-              fehler={inKraft.isError ? inKraft.error.message : undefined}
-              onBestaetigen={() => inKraft.mutate()}
-            >
-              <p>
-                „{version.label}" gilt ab {formatDate(version.valid_from)} und ist danach
-                <strong> unveränderlich</strong>. Eine spätere Preisänderung ist eine neue
-                Preisliste.
-              </p>
-            </Rueckfrage>
+            {ungespeichert ? (
+              // Gesperrt statt Rückfrage: Die Rückfrage erklärt, was
+              // unumkehrbar wird — sie ist nicht der Ort, an dem man erfährt,
+              // dass die eigene Änderung gar nicht mitginge (R3-007).
+              <Button type="button" disabled>
+                In Kraft setzen
+              </Button>
+            ) : (
+              <Rueckfrage
+                ausloeser="In Kraft setzen"
+                ausloeserVariante="primary"
+                bestaetigen="In Kraft setzen"
+                bestaetigenLaeuft="Wird in Kraft gesetzt …"
+                laeuft={inKraft.isPending}
+                fehler={inKraft.isError ? inKraft.error.message : undefined}
+                onBestaetigen={() => inKraft.mutate()}
+              >
+                <p>
+                  „{version.label}" gilt ab {formatDate(version.valid_from)} und ist danach
+                  <strong> unveränderlich</strong>. Eine spätere Preisänderung ist eine neue
+                  Preisliste.
+                </p>
+              </Rueckfrage>
+            )}
             <Rueckfrage
               ausloeser="Entwurf verwerfen"
               bestaetigen="Verwerfen"

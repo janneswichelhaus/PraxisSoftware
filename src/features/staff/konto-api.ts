@@ -117,7 +117,7 @@ function einladungsProblem(meldung: string): EinladungsProblem {
  * Fehler: Zu der Adresse gibt es beim Anmeldedienst noch kein Konto, und diese
  * Anwendung legt keines an (siehe `sendeZugangsMail`).
  */
-export type Zustellung = 'gesendet' | 'kein_konto';
+export type Zustellung = 'gesendet' | 'kein_konto' | 'dienst_nicht_erreichbar';
 
 /**
  * Lässt den Anmeldedienst seine Mail an ein **bestehendes** Konto schicken.
@@ -135,6 +135,12 @@ export type Zustellung = 'gesendet' | 'kein_konto';
  *
  * Ein misslungener Versand darf die bereits angelegte Berechtigung nie
  * entwerten — deshalb wirft diese Funktion nicht, sondern berichtet.
+ *
+ * **Drei Fälle, nicht zwei** (R3-008): Ein Netzfehler ist kein fehlendes
+ * Konto. Bisher wurde jeder Fehler auf `kein_konto` abgebildet — und damit
+ * jemand losgeschickt, ein Konto anzulegen, das längst existiert. Geprüft
+ * wird der Name wie in `linkEinloesen.ts`: `AuthRetryableFetchError` steht
+ * für einen fehlgeschlagenen Netzzugriff, nicht für eine Antwort des Dienstes.
  */
 export async function sendeZugangsMail(email: string): Promise<Zustellung> {
   const { error } = await getSupabase().auth.signInWithOtp({
@@ -147,7 +153,8 @@ export async function sendeZugangsMail(email: string): Promise<Zustellung> {
       emailRedirectTo: `${window.location.origin}${ZUGANG_PFAD}`,
     },
   });
-  return error ? 'kein_konto' : 'gesendet';
+  if (!error) return 'gesendet';
+  return error.name === 'AuthRetryableFetchError' ? 'dienst_nicht_erreichbar' : 'kein_konto';
 }
 
 export async function ladeZugangEin(

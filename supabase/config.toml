@@ -63,6 +63,15 @@ refresh_token_reuse_interval = 10
 # aber nicht selbst vergeben).
 enable_signup = false
 enable_anonymous_sign_ins = false
+# Mindestlaenge des Kennworts (ANN-027, R3-013). Ohne diesen Eintrag gilt der
+# GoTrue-Standard von sechs Zeichen, und die Zwoelf aus dem Formular haetten
+# nur auf dem Weg durch genau dieses Formular gegolten - nicht beim
+# Wiederherstellungslink und nicht an der API vorbei. Laenge statt
+# Zeichenklassen: das ist die Empfehlung von BSI und NIST, deshalb bleibt
+# password_requirements ungesetzt.
+# ACHTUNG: Dieselbe Zahl muss im spaeteren Cloudprojekt unter Authentication >
+# Policies stehen, sonst laufen lokal und produktiv auseinander (OPS-001).
+minimum_password_length = 12
 
 [auth.email]
 # ACHTUNG: In aktuellen Supabase-CLI-Versionen schaltet dieses Feld nicht

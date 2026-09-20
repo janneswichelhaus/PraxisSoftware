@@ -1,5 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
-import { WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEinloesen';
+import { VerbindungError, WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEinloesen';
 
 /**
  * Das eigene Konto (STAFF-004).
@@ -70,8 +70,11 @@ async function meldeVorab(ereignis: Sicherheitsereignis): Promise<void> {
  *
  * Länge statt Zeichenklassen: Das BSI und das NIST empfehlen seit Jahren
  * Passphrasen und raten von erzwungener Komplexität und regelmäßigem Wechsel
- * ab. Verbindlich durchgesetzt wird die Regel vom Anmeldedienst; hier steht
- * sie, damit das Formular nicht erst der Server abweist.
+ * ab. Durchgesetzt wird die Regel vom Anmeldedienst — aber nur, weil
+ * `supabase/config.toml` unter `[auth]` dieselbe Zahl setzt; ohne sie gälte
+ * dort der Standard von sechs Zeichen (R3-013). Hier steht sie, damit das
+ * Formular nicht erst der Server abweist; ein Test hält beide Stellen
+ * zusammen.
  */
 export const KENNWORT_MINDESTLAENGE = 12;
 
@@ -130,9 +133,16 @@ export async function beendeAlleSitzungen(): Promise<void> {
  * die öffentliche Seite, die den Link auch einlösen kann.
  */
 export async function fordereKennwortMailAn(email: string): Promise<void> {
-  await getSupabase().auth.resetPasswordForEmail(email.trim(), {
+  const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim(), {
     redirectTo: `${window.location.origin}${WIEDERHERSTELLUNG_PFAD}`,
   });
+
+  // Dass es zu einer Adresse kein Konto gibt, bleibt unbeantwortet — das ist
+  // die Zusage „kein Konto-Orakel". Ein **Netzfehler** ist aber keine Auskunft
+  // über ein Konto, sondern über den Dienst; ihn als Erfolg zu melden lässt
+  // jemanden auf eine Mail warten, die nie kommt (R3-008). Geprüft wird der
+  // Name wie in `linkEinloesen.ts`.
+  if (error?.name === 'AuthRetryableFetchError') throw new VerbindungError();
 }
 
 // -----------------------------------------------------------------------------

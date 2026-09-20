@@ -66,6 +66,27 @@ describe('LoginPage', () => {
     expect(resetPasswordForEmail.mock.calls[0]?.[0]).toBe('anna@praxis.invalid');
   });
 
+  it('sagt, wenn der Anmeldedienst nicht erreichbar war (R3-008)', async () => {
+    // Ein Netzfehler ist keine Auskunft ueber ein Konto - aber auch kein
+    // Erfolg. Bisher stand hier "Falls fuer diese Adresse ein Zugang
+    // besteht ...", und die Person wartete auf eine Mail, die nie kam.
+    resetPasswordForEmail.mockResolvedValue({
+      error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch' },
+    });
+    const user = userEvent.setup();
+
+    render(<LoginPage />);
+    await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
+    await user.type(screen.getByLabelText('E-Mail-Adresse des Zugangs'), 'anna@praxis.invalid');
+    await user.click(screen.getByRole('button', { name: 'Link anfordern' }));
+
+    expect(await screen.findByText(/nicht erreichbar/)).toBeInTheDocument();
+    expect(screen.queryByText(/Falls für diese Adresse ein Zugang besteht/)).toBeNull();
+    // Und weiterhin kein Wort darueber, ob es das Konto gibt.
+    expect(document.body.textContent).not.toMatch(/Failed to fetch/);
+    expect(document.body.textContent).not.toMatch(/unbekannt|existiert/i);
+  });
+
   it('bestaetigt gleich, ob es die Adresse gibt oder nicht (kein Konto-Orakel)', async () => {
     // Auch ein Fehler des Anmeldedienstes darf nichts verraten.
     resetPasswordForEmail.mockResolvedValue({ error: { message: 'User not found' } });

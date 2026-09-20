@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -21,7 +23,7 @@ vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({ rpc, auth: { signOut, updateUser } }),
 }));
 
-const { aendereKennwort, beendeAlleSitzungen } = await import('./api');
+const { KENNWORT_MINDESTLAENGE, aendereKennwort, beendeAlleSitzungen } = await import('./api');
 
 /** Hält fest, in welcher Reihenfolge die beiden Aufrufe tatsächlich fielen. */
 let ablauf: string[] = [];
@@ -99,5 +101,20 @@ describe('aendereKennwort', () => {
 
     await expect(aendereKennwort('kurz')).rejects.toThrow();
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe('Kennwort-Mindestlänge (ANN-027, R3-013)', () => {
+  it('steht auch im Anmeldedienst, nicht nur im Formular', () => {
+    // Das Formular prüft die Länge, damit die Person es früh erfährt —
+    // durchsetzen muss sie der Anmeldedienst. Ohne diesen Eintrag gilt dort
+    // der GoTrue-Standard von sechs Zeichen, und jeder Weg an diesem Formular
+    // vorbei (Wiederherstellungslink, API, ein zweiter Client) setzt ein
+    // kürzeres Kennwort durch.
+    const toml = readFileSync(join(process.cwd(), 'supabase/config.toml'), 'utf8');
+    const treffer = /^\s*minimum_password_length\s*=\s*(\d+)\s*$/m.exec(toml);
+
+    expect(treffer).not.toBeNull();
+    expect(Number(treffer?.[1])).toBe(KENNWORT_MINDESTLAENGE);
   });
 });

@@ -371,6 +371,19 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
     ).toBeInTheDocument();
   });
 
+  it('unterscheidet den nicht erreichbaren Dienst vom fehlenden Konto (R3-008)', async () => {
+    // Ein Netzfehler hiess bisher "zu dieser Adresse gibt es kein Konto" -
+    // und schickte jemanden los, eines anzulegen, das laengst existiert.
+    const user = userEvent.setup();
+    sendeZugangsMail.mockResolvedValue('dienst_nicht_erreichbar');
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Anmeldemail senden' }));
+
+    expect(await screen.findByText(/Anmeldedienst war nicht erreichbar/)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/noch kein Konto/);
+  });
+
   it('erklärt ein fehlendes Konto, statt einen Fehler zu melden', async () => {
     const user = userEvent.setup();
     sendeZugangsMail.mockResolvedValue('kein_konto');

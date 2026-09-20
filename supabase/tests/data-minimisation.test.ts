@@ -271,3 +271,76 @@ describe('Mandantentrennung der Detaildaten (ADR-003)', () => {
     expect(rows.map((r) => r.id)).toEqual([fremderPatient]);
   });
 });
+
+/**
+ * Die Liste bekommt ihre eigene, schlanke Sicht (ADR-004, Konsequenz
+ * "Projektionen"; R3-012).
+ *
+ * Die Kartei `patient_directory` traegt alles, was die Akte braucht - auch
+ * Versorgungsvermerk, Hausbesuchszugang und Anschrift. Die Patientenliste
+ * zeigt davon nichts; sie fuehrt Name, Alter, Ort, Status, Telefon und
+ * E-Mail. Was sie nicht zeigt, soll sie auch nicht bekommen: Die Auswahl
+ * trifft die Datenbank, nicht die Spaltenliste im Client.
+ */
+describe('Listensicht patient_list_entries (ADR-004)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('fuehrt genau die Spalten der Liste - ohne Versorgungsangaben und Anschrift', async () => {
+    const { rows } = await asPostgres<{ column_name: string }>(
+      `select column_name from information_schema.columns
+        where table_schema = 'public' and table_name = 'patient_list_entries'
+        order by column_name`,
+    );
+    const spalten = rows.map((r) => r.column_name);
+
+    expect(spalten).toEqual([
+      'city',
+      'date_of_birth',
+      'email',
+      'family_name',
+      'given_name',
+      'id',
+      'organization_id',
+      'phone',
+      'postal_code',
+      'status',
+    ]);
+
+    // Ausdruecklich genannt, damit ein spaeterer Zusatz hier auffaellt und
+    // nicht still in den Browser wandert.
+    for (const feld of [
+      'special_note',
+      'home_visit_access_note',
+      'remark',
+      'street',
+      'house_number',
+      'primary_therapist_staff_member_id',
+      'primary_therapist_name',
+    ]) {
+      expect(spalten).not.toContain(feld);
+    }
+  });
+
+  it('zeigt der Buerokraft die Kartei und einem Patientenkonto nur sich selbst', async () => {
+    const { rows } = await asUser<{ id: string }>(
+      users.office,
+      'select id from public.patient_list_entries order by family_name',
+    );
+    expect(rows.length).toBeGreaterThan(1);
+
+    const { rows: eigene } = await asUser<{ id: string }>(
+      users.patientErika,
+      'select id from public.patient_list_entries',
+    );
+    expect(eigene.map((r) => r.id)).toEqual([patients.erika]);
+  });
+
+  it('erweitert die Rechte der Basistabellen nicht', async () => {
+    expect((await asUser(null, 'select id from public.patient_list_entries')).rows).toEqual([]);
+    await expect(asAnon('select id from public.patient_list_entries')).rejects.toThrow(
+      /permission denied/i,
+    );
+  });
+});

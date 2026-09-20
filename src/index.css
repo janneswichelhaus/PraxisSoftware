@@ -35,7 +35,13 @@
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url('/schrift/HankenGrotesk-Variable.ttf') format('truetype');
+  /* WOFF2 zuerst: dieselbe Schrift, 60 statt 144 kB (R3-034). Die Kompression
+     steckt im Format selbst und wirkt damit auch dort, wo der Hoster font/ttf
+     nicht komprimiert. Der Browser laedt nur die erste Quelle, die er kann;
+     die TTF bleibt als Rueckfall fuer sehr alte Browser stehen. */
+  src:
+    url('/schrift/HankenGrotesk-Variable.woff2') format('woff2'),
+    url('/schrift/HankenGrotesk-Variable.ttf') format('truetype');
 }
 
 @theme {

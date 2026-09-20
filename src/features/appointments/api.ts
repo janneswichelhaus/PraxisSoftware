@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { minuteZuZeit, type StatusFilter } from './calendar';
 import { formatDate } from '@/lib/datum';
@@ -262,7 +263,7 @@ export async function fetchAppointment(appointmentId: string): Promise<Appointme
 
   if (error) throw new Error('Der Termin konnte nicht geladen werden.');
   if (!data) return null;
-  return appointmentSchema.parse(data);
+  return antwort(appointmentSchema, data, 'Der Termin konnte nicht geladen werden.');
 }
 
 const therapistSchema = z.object({
@@ -951,7 +952,7 @@ export async function createAppointmentEvent(
     throw new Error('Das Ereignis konnte nicht eingetragen werden.');
   }
 
-  return z.number().parse(data);
+  return antwort(z.number(), data, 'Das Ereignis konnte nicht eingetragen werden.');
 }
 
 /**
@@ -1036,7 +1037,7 @@ export async function updateAppointmentEvent(
     throw new Error('Das Ereignis konnte nicht geändert werden.');
   }
 
-  return z.number().parse(data);
+  return antwort(z.number(), data, 'Das Ereignis konnte nicht geändert werden.');
 }
 
 /** Sagt alle noch bestätigten Zeilen eines Ereignisses ab (CAL-017). */
@@ -1060,7 +1061,7 @@ export async function cancelAppointmentEvent(
     throw new Error('Das Ereignis konnte nicht abgesagt werden.');
   }
 
-  return z.number().parse(data);
+  return antwort(z.number(), data, 'Das Ereignis konnte nicht abgesagt werden.');
 }
 
 // -----------------------------------------------------------------------------
@@ -1126,7 +1127,7 @@ export async function createEventSeries(
     throw new Error('Die Serie konnte nicht eingetragen werden.');
   }
 
-  return z.string().parse(data);
+  return antwort(z.string(), data, 'Die Serie konnte nicht eingetragen werden.');
 }
 
 /**
@@ -1200,7 +1201,7 @@ export async function updateEventSeries(
     throw new Error('Die Serie konnte nicht geändert werden.');
   }
 
-  return z.number().parse(data);
+  return antwort(z.number(), data, 'Die Serie konnte nicht geändert werden.');
 }
 
 /** Sagt alle noch nicht begonnenen Vorkommen einer Serie ab (CAL-021). */
@@ -1224,7 +1225,7 @@ export async function cancelEventSeries(
     throw new Error('Die Serie konnte nicht abgesagt werden.');
   }
 
-  return z.number().parse(data);
+  return antwort(z.number(), data, 'Die Serie konnte nicht abgesagt werden.');
 }
 
 // -----------------------------------------------------------------------------
@@ -1509,7 +1510,7 @@ export async function cancelStaffDay(
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Tag konnte nicht umgeplant werden.');
-  return z.number().parse(data);
+  return antwort(z.number(), data, 'Der Tag konnte nicht umgeplant werden.');
 }
 
 /**
@@ -1688,7 +1689,7 @@ export async function createAppointmentSeries(
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Die Terminserie konnte nicht angelegt werden.');
-  return z.number().parse(data);
+  return antwort(z.number(), data, 'Die Terminserie konnte nicht angelegt werden.');
 }
 
 // -----------------------------------------------------------------------------
@@ -1783,5 +1784,5 @@ export async function addAppointmentNotification(
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Vermerk konnte nicht gespeichert werden.');
-  return z.number().parse(data);
+  return antwort(z.number(), data, 'Der Vermerk konnte nicht gespeichert werden.');
 }
