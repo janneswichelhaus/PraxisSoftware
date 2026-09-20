@@ -80,7 +80,6 @@ async function verwaltung(): Promise<Client> {
 async function schemaSignatur(dateien: string[]): Promise<string> {
   const teile: string[] = [];
   for (const datei of [SHIM_FILE, SEED_FILE, ...dateien.map((f) => path.join(MIGRATIONS_DIR, f))]) {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade aus dem Repository, nicht aus Eingaben.
     const info = await stat(datei);
     teile.push(`${path.basename(datei)}:${info.mtimeMs}:${info.size}`);
   }
@@ -101,7 +100,6 @@ async function baueSchema(client: Client, dateien: string[]): Promise<void> {
   await client.query(await readFile(SHIM_FILE, 'utf8'));
 
   for (const file of dateien) {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfad aus dem festen Migrationsverzeichnis.
     const sql = await readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
     try {
       await client.query(sql);
