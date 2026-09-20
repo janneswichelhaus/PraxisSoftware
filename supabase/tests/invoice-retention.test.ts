@@ -133,10 +133,13 @@ describe('Aufbewahrung der Rechnungen', () => {
     // Es zeigt mit RESTRICT auf die Rechnung: Ohne eigenen Schritt im Lauf
     // scheiterte die Loeschung der ganzen Akte (ADR-008 Punkt 8).
     const rechnung = await rechnungVor(patients.max, 9);
+    // Der Beleg stammt aus dem Jahr seiner Rechnung: Seine eigene Frist
+    // laeuft damit gleich lang und haelt die Akte nicht zurueck (R3-003).
     await asPostgres(
       `insert into public.invoice_cancellations
          (organization_id, invoice_id, cancellation_number, reason, cancelled_on, created_by)
-       values ($1, $2, 'RG-TEST-STORNO', 'Testgrund', current_date, $3)`,
+       values ($1, $2, 'RG-TEST-STORNO', 'Testgrund',
+               (current_date - interval '9 years')::date, $3)`,
       [organizationId, rechnung, users.office],
     );
     await abgeschlossenVor(patients.max, 11);
@@ -162,9 +165,11 @@ describe('Aufbewahrung der Rechnungen', () => {
   it('loescht die Zahlungserinnerung mit und journalisiert sie (ABR-003d)', async () => {
     const rechnung = await rechnungVor(patients.max, 9);
     await asPostgres(
+      // Aus dem Jahr ihrer Rechnung, wie beim Stornodokument (R3-003).
       `insert into public.invoice_payment_reminders
          (organization_id, invoice_id, reminder_on, due_on, outstanding_cents, currency, created_by)
-       values ($1, $2, current_date - 20, current_date - 6, 4500, 'EUR', $3)`,
+       values ($1, $2, (current_date - interval '9 years')::date - 20,
+               (current_date - interval '9 years')::date - 6, 4500, 'EUR', $3)`,
       [organizationId, rechnung, users.office],
     );
     await abgeschlossenVor(patients.max, 11);
@@ -185,6 +190,50 @@ describe('Aufbewahrung der Rechnungen', () => {
     );
     expect(Number(rows[0]?.anzahl)).toBe(0);
   });
+
+  it.each([
+    [
+      'Stornodokument',
+      `insert into public.invoice_cancellations
+         (organization_id, invoice_id, cancellation_number, reason, cancelled_on, created_by)
+       values ($1, $2, 'RG-TEST-STORNO', 'Testgrund', (current_date - interval '8 years')::date, $3)`,
+      'select count(*) from public.invoice_cancellations',
+    ],
+    [
+      'Zahlungserinnerung',
+      `insert into public.invoice_payment_reminders
+         (organization_id, invoice_id, reminder_on, due_on, outstanding_cents, currency, created_by)
+       values ($1, $2, (current_date - interval '8 years')::date,
+               (current_date - interval '8 years')::date + 14, 4500, 'EUR', $3)`,
+      'select count(*) from public.invoice_payment_reminders',
+    ],
+    [
+      'Zahlung',
+      `insert into public.payments
+         (organization_id, invoice_id, direction, amount_cents, currency, paid_on, method, created_by)
+       values ($1, $2, 'incoming', 4500, 'EUR', (current_date - interval '8 years')::date,
+               'bank_transfer', $3)`,
+      'select count(*) from public.payments',
+    ],
+  ])(
+    'haelt die Akte zurueck, solange die Frist eines %s aus einem spaeteren Jahr laeuft (R3-003)',
+    async (_name, einfuegen, zaehlen) => {
+      // Die Frist der Rechnung ist abgelaufen (ausgestellt vor neun Jahren),
+      // die des Belegs aus dem Jahr darauf laeuft noch bis zum Ende des
+      // naechsten Jahres. Wer nur die Rechnung fragt, loescht den Beleg bis
+      // zu ein Jahr zu frueh - und damit gegen Par. 147 AO.
+      const rechnung = await rechnungVor(patients.max, 9);
+      await asPostgres(einfuegen, [organizationId, rechnung, users.office]);
+      await abgeschlossenVor(patients.max, 11);
+
+      await lauf();
+
+      expect(
+        await anzahl('select count(*) from public.patients where id = $1', [patients.max]),
+      ).toBe(1);
+      expect(await anzahl(zaehlen)).toBe(1);
+    },
+  );
 
   it('haelt eine faellige Akte zurueck, solange die Frist einer Rechnung laeuft', async () => {
     await rechnungVor(patients.max, 2);

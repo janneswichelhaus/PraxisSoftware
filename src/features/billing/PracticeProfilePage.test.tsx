@@ -119,6 +119,27 @@ describe('PracticeProfilePage', () => {
     expect(savePraxisStammdaten).not.toHaveBeenCalled();
   });
 
+  it('weist eine IBAN mit falscher Pruefziffer ab (R3-010)', async () => {
+    // Vollständig, aber vertippt: Die Form stimmt, die Prüfziffer nicht. Der
+    // Server weist dasselbe ab — hier fällt es auf, bevor die Nummer in den
+    // Snapshot der nächsten Rechnung wandert.
+    const nutzer = userEvent.setup();
+    fetchPraxisStammdaten.mockResolvedValue(stammdaten());
+
+    renderWithProviders(
+      <PracticeProfilePage user={testUser(['owner'])} />,
+      '/abrechnung/stammdaten',
+    );
+
+    const iban = await screen.findByLabelText('IBAN');
+    await nutzer.clear(iban);
+    await nutzer.type(iban, 'DE00123456780000000000');
+    await nutzer.click(screen.getByRole('button', { name: 'Speichern' }));
+
+    expect(screen.getByText('Die IBAN stimmt nicht — bitte Ziffern prüfen.')).toBeInTheDocument();
+    expect(savePraxisStammdaten).not.toHaveBeenCalled();
+  });
+
   it('speichert die Angaben und sagt, dass ausgestellte Rechnungen unberuehrt bleiben', async () => {
     const nutzer = userEvent.setup();
     fetchPraxisStammdaten.mockResolvedValue(stammdaten({ small_business: true }));

@@ -63,11 +63,16 @@ interface Dokument {
 }
 
 /**
- * Legt einen dokumentierten Termin an. `stunden` zaehlt rueckwaerts, damit
- * jeder Termin in seinem eigenen Zeitfenster liegt.
+ * Legt einen dokumentierten Termin an.
+ *
+ * `stundeImMonat` zaehlt vom **Monatsanfang** der Praxiszeitzone vorwaerts:
+ * 30 ist der 2. des Monats, 06:00. So liegt jeder Termin in seinem eigenen
+ * Zeitfenster - und immer in dem Monat, den der Entwurf verlangt (R3-005).
+ * Relativ zu now() gerechnet fiel er am Monatsersten in den Vormonat, und
+ * create_invoice_draft brach ab.
  */
 async function termin(opts: {
-  vorStunden: number;
+  stundeImMonat: number;
   patient?: string;
   grundlage?: string | null;
 }): Promise<string> {
@@ -78,8 +83,10 @@ async function termin(opts: {
        completed_at, completed_by
      ) values (
        $1, $2, $3, $4, 'practice', 'documented',
-       date_trunc('hour', now()) - make_interval(hours => $5::int),
-       date_trunc('hour', now()) - make_interval(hours => $5::int - 1),
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int)) at time zone 'Europe/Berlin',
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int + 1)) at time zone 'Europe/Berlin',
        $6, now(), $7
      ) returning id`,
     [
@@ -87,7 +94,7 @@ async function termin(opts: {
       opts.patient ?? patients.erika,
       STAFF_ANNA,
       LOCATION,
-      opts.vorStunden,
+      opts.stundeImMonat,
       opts.grundlage === undefined ? GRUNDLAGE_FRISCH : opts.grundlage,
       users.ownerTherapist,
     ],
@@ -98,7 +105,7 @@ async function termin(opts: {
 /** Erfasst Leistungen an einem frischen Termin und liefert dessen Kennung. */
 async function leistung(
   position: string,
-  opts: { vorStunden: number; patient?: string; grundlage?: string | null },
+  opts: { stundeImMonat: number; patient?: string; grundlage?: string | null },
 ): Promise<string> {
   const id = await termin(opts);
   await asUserCommitted(
@@ -134,8 +141,8 @@ describe('Rechnung', () => {
 
   describe('Arbeitsliste', () => {
     it('buendelt offene Leistungen nach Person und Monat', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
-      await leistung(KATALOG.mt, { vorStunden: 28 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      await leistung(KATALOG.mt, { stundeImMonat: 28 });
 
       const { rows } = await asUser<{
         patient_id: string;
@@ -153,7 +160,7 @@ describe('Rechnung', () => {
     });
 
     it('zeigt eine abgerechnete Leistung nicht mehr', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -172,9 +179,30 @@ describe('Rechnung', () => {
   });
 
   describe('Entwurf', () => {
+    it('liegt bei jedem Versatz im Monat, den der Entwurf verlangt (R3-005)', async () => {
+      // Die Fixture-Termine lagen relativ zu now(), der Entwurf verlangte
+      // aber den laufenden Kalendermonat. Am Monatsersten - und bei grossem
+      // Versatz an jedem Tag - fiel die Leistung damit in den Vormonat, und
+      // create_invoice_draft brach mit 'no billable services for this
+      // patient and month' ab. Das Pflichtgate pnpm test:db war an diesen
+      // Tagen rot, ohne dass sich am Code etwas geaendert haette.
+      //
+      // 600 Stunden sind 25 Tage: Der groesste Versatz muss auch im
+      // kuerzesten Monat noch hineinpassen.
+      for (const stundeImMonat of [10, 30, 200, 600]) {
+        const id = await termin({ stundeImMonat });
+
+        const { rows } = await asPostgres<{ monat: string }>(
+          `select to_char(date_trunc('month', app.appointment_performed_on($1::uuid)), 'YYYY-MM-DD') as monat`,
+          [id],
+        );
+        expect(rows[0]!.monat).toBe(await monat());
+      }
+    });
+
     it('nimmt alle offenen Leistungen des Monats auf', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
-      await leistung(KATALOG.mt, { vorStunden: 28 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      await leistung(KATALOG.mt, { stundeImMonat: 28 });
 
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
@@ -189,7 +217,7 @@ describe('Rechnung', () => {
     });
 
     it('bleibt ohne Nummer - die gibt es erst beim Ausstellen (ADR-009 Punkt 8)', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -203,11 +231,11 @@ describe('Rechnung', () => {
     });
 
     it('entsteht nicht zweimal fuer denselben Monat', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const m = await monat();
       await asUserCommitted(users.office, ENTWURF, [patients.erika, m]);
 
-      await leistung(KATALOG.mt, { vorStunden: 28 });
+      await leistung(KATALOG.mt, { stundeImMonat: 28 });
       await expect(asUser(users.office, ENTWURF, [patients.erika, m])).rejects.toThrow();
     });
 
@@ -218,7 +246,7 @@ describe('Rechnung', () => {
     });
 
     it('laesst sich verwerfen und gibt die Leistungen wieder frei', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -233,7 +261,7 @@ describe('Rechnung', () => {
     });
 
     it('haelt die Leistungen fest, solange er steht', async () => {
-      const terminId = await leistung(KATALOG.kg, { vorStunden: 30 });
+      const terminId = await leistung(KATALOG.kg, { stundeImMonat: 30 });
       await asUserCommitted(users.office, ENTWURF, [patients.erika, await monat()]);
 
       await expect(
@@ -242,7 +270,7 @@ describe('Rechnung', () => {
     });
 
     it('uebernimmt den hinterlegten Empfaenger als Vorgabe (ANN-076)', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30, patient: patients.petra, grundlage: null });
+      await leistung(KATALOG.kg, { stundeImMonat: 30, patient: patients.petra, grundlage: null });
 
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.petra,
@@ -257,7 +285,7 @@ describe('Rechnung', () => {
     });
 
     it('geht ohne hinterlegten Empfaenger an die Patientin selbst', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -271,7 +299,7 @@ describe('Rechnung', () => {
     });
 
     it('haelt den gewaehlten Empfaenger fest - er ist Teil des Belegs (ABR-003a)', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30, patient: patients.petra, grundlage: null });
+      await leistung(KATALOG.kg, { stundeImMonat: 30, patient: patients.petra, grundlage: null });
       await asUserCommitted(users.office, ENTWURF, [patients.petra, await monat()]);
 
       await expect(
@@ -280,7 +308,7 @@ describe('Rechnung', () => {
     });
 
     it('weist einen Empfaenger einer anderen Patientin ab (PROJECT_PRINCIPLES.md 13)', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -297,7 +325,7 @@ describe('Rechnung', () => {
 
   describe('Ausstellen', () => {
     async function ausgestellt(position: string = KATALOG.kg): Promise<Dokument> {
-      await leistung(position, { vorStunden: 30 });
+      await leistung(position, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -318,7 +346,7 @@ describe('Rechnung', () => {
     it('vergibt die naechste Nummer lueckenlos', async () => {
       await ausgestellt();
 
-      await leistung(KATALOG.mt, { vorStunden: 200, patient: patients.max, grundlage: null });
+      await leistung(KATALOG.mt, { stundeImMonat: 200, patient: patients.max, grundlage: null });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.max,
         await monat(),
@@ -398,7 +426,7 @@ describe('Rechnung', () => {
 
     it('scheitert ohne Praxis-Stammdaten und sagt, was fehlt', async () => {
       await asPostgres('delete from public.practice_billing_profiles');
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -431,7 +459,7 @@ describe('Rechnung', () => {
 
   describe('Unveraenderlichkeit (ADR-009 Punkt 9)', () => {
     async function ausgestellteId(): Promise<string> {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -461,7 +489,7 @@ describe('Rechnung', () => {
 
     it('nimmt keine weitere Zeile an', async () => {
       const id = await ausgestellteId();
-      const terminId = await leistung(KATALOG.mt, { vorStunden: 28 });
+      const terminId = await leistung(KATALOG.mt, { stundeImMonat: 28 });
       const { rows } = await asPostgres<{ id: string }>(
         'select id from public.billable_services where appointment_id = $1',
         [terminId],
@@ -486,7 +514,7 @@ describe('Rechnung', () => {
 
   describe('Keine Doppelabrechnung (ADR-009 Punkt 4)', () => {
     it('nimmt dieselbe Leistung kein zweites Mal auf', async () => {
-      const terminId = await leistung(KATALOG.kg, { vorStunden: 30 });
+      const terminId = await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows: dienst } = await asPostgres<{ id: string }>(
         'select id from public.billable_services where appointment_id = $1',
         [terminId],
@@ -510,7 +538,7 @@ describe('Rechnung', () => {
 
   describe('Liste', () => {
     it('zeigt Entwurf und ausgestellte Rechnung mit Betrag', async () => {
-      await leistung(KATALOG.kg, { vorStunden: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),

@@ -1064,3 +1064,15 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 **Anker.** Tabelle `invoice_payment_reminders` und die Konstante `c_frist_tage` in `public.create_payment_reminder` in `supabase/migrations/20260919180000_payment_reminders.sql`.
 
 **Änderungspfad.** Andere Frist: die Konstante `c_frist_tage` · Aufwand `klein`. Mahnstufen und Gebühren: eine eigene Aufgabe mit eigener Rechtsprüfung (ABR-005) · Aufwand `groß`. Erinnerung vor Fälligkeit: die Prüfung in `create_payment_reminder` · Aufwand `klein`.
+
+### ANN-081 — Abgerechnet ist die Leistung, nicht der Termin
+
+Technik · offen · 2026-09-20 · — · — · Wiedervorlage: mit der Folgestory zu ADR-018 Punkt 2
+
+**Annahme.** Der Terminzustand `invoiced` aus ADR-018 bleibt vorerst **unbesetzt**: `issue_invoice` hebt `billable_services.status` auf `invoiced` und lässt den Termin, wo er ist. Wer wissen will, ob ein Termin abgerechnet ist, fragt die Leistung. Jede Stelle, die „abgerechnet" als Grenze braucht — heute der Transfer-Guard aus ANN-068 —, prüft deshalb `billable_services.status`.
+
+**Begründung.** ADR-018 Punkt 2 sieht den Übergang vor, die Abrechnung aus ABR-003 setzt ihn nicht um; die Abweichung besteht seit PR #53 und ist in R3 als Befund R3-001 belegt worden. Der Übergang nachzuziehen ist Feature-Arbeit mit einer Datenmodell-Entscheidung — der Weg zurück aus `invoiced` beim Rechnungsstorno braucht den gemerkten Vorzustand (`documented`, `no_show` oder `cancelled`), also eine neue Spalte oder eine Ableitung. Bis dahin wäre die **stillschweigend wirkungslose** Grenze der größere Schaden: Sie sah aus, als schütze sie, und tat es nicht. Unsicher bleibt nur der Zeitpunkt der Vollumsetzung, nicht ihre Richtung.
+
+**Anker.** Die Bedingung `not exists (… billable_services … status = 'invoiced')` in `public.transfer_appointments_to_treatment_basis` in `supabase/migrations/20260920106000_transfer_guard_billable_services.sql`.
+
+**Änderungspfad.** ADR-018 Punkt 2 vollständig umsetzen: Statuswechsel in `issue_invoice` und Rückweg in `cancel_invoice` samt gemerktem Vorzustand und Auditereignis `appointment.invoiced`; die Bedingung hier fällt dann ersatzlos weg · Aufwand `mittel`.

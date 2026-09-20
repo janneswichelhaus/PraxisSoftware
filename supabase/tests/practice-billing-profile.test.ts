@@ -124,6 +124,35 @@ describe('Praxis-Stammdaten fuer Rechnungen', () => {
       expect(rows[0]?.iban).toBe('DE02120300000000202051');
     });
 
+    it('weist eine IBAN mit falscher Pruefziffer ab (R3-010)', async () => {
+      // Die IBAN geht in den Snapshot jeder Rechnung, die danach ausgestellt
+      // wird (ADR-009 Punkt 10). Ein Zahlendreher faellt sonst erst auf,
+      // wenn das Geld nicht ankommt - und steht bis dahin auf jedem Blatt.
+      await expect(
+        asUser(users.ownerTherapist, SPEICHERN, stammdaten({ iban: 'DE00123456780000000000' })),
+      ).rejects.toThrow(/iban checksum/);
+
+      // Auch die Form ohne Leerzeichen und in Kleinbuchstaben wird geprueft,
+      // nicht nur die Schreibweise.
+      await expect(
+        asUser(
+          users.ownerTherapist,
+          SPEICHERN,
+          stammdaten({ iban: 'de02 1203 0000 0000 2020 52' }),
+        ),
+      ).rejects.toThrow(/iban checksum/);
+    });
+
+    it('haelt die Pruefziffer auch an der Tabelle fest - auch fuer postgres (R3-010)', async () => {
+      await asUserCommitted(users.ownerTherapist, SPEICHERN, stammdaten());
+
+      await expect(
+        asPostgres('update public.practice_billing_profiles set iban = $1', [
+          'DE00123456780000000000',
+        ]),
+      ).rejects.toThrow(/iban/);
+    });
+
     it.each([
       ['Office', users.office],
       ['Therapeutin', users.therapist],

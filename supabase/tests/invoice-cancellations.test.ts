@@ -1,5 +1,13 @@
+import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneTermine,
+  testDatabaseUrl,
+} from './helpers/db';
 
 /**
  * Storno und Korrektur sind eigene Dokumente (ABR-003c).
@@ -75,8 +83,16 @@ interface Ansicht {
   overdue: boolean;
 }
 
-/** Legt einen dokumentierten Termin an; `vorStunden` zaehlt rueckwaerts. */
-async function termin(vorStunden: number): Promise<string> {
+/**
+ * Legt einen dokumentierten Termin an.
+ *
+ * `stundeImMonat` zaehlt vom **Monatsanfang** der Praxiszeitzone vorwaerts:
+ * 30 ist der 2. des Monats, 06:00. So liegt jeder Termin in seinem eigenen
+ * Zeitfenster - und immer in dem Monat, den der Entwurf verlangt (R3-005).
+ * Relativ zu now() gerechnet fiel er am Monatsersten in den Vormonat, und
+ * create_invoice_draft brach ab.
+ */
+async function termin(stundeImMonat: number): Promise<string> {
   const { rows } = await asPostgres<{ id: string }>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,
@@ -84,8 +100,10 @@ async function termin(vorStunden: number): Promise<string> {
        completed_at, completed_by
      ) values (
        $1, $2, $3, $4, 'practice', 'documented',
-       date_trunc('hour', now()) - make_interval(hours => $5::int),
-       date_trunc('hour', now()) - make_interval(hours => $5::int - 1),
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int)) at time zone 'Europe/Berlin',
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int + 1)) at time zone 'Europe/Berlin',
        $6, now(), $7
      ) returning id`,
     [
@@ -93,7 +111,7 @@ async function termin(vorStunden: number): Promise<string> {
       patients.erika,
       STAFF_ANNA,
       LOCATION,
-      vorStunden,
+      stundeImMonat,
       GRUNDLAGE_FRISCH,
       users.ownerTherapist,
     ],
@@ -102,8 +120,8 @@ async function termin(vorStunden: number): Promise<string> {
 }
 
 /** Erfasst eine Leistung an einem frischen Termin und liefert die Terminkennung. */
-async function leistung(position: string, vorStunden: number): Promise<string> {
-  const id = await termin(vorStunden);
+async function leistung(position: string, stundeImMonat: number): Promise<string> {
+  const id = await termin(stundeImMonat);
   await asUserCommitted(
     users.ownerTherapist,
     'select public.record_billable_services($1::uuid, $2::jsonb)',
@@ -131,9 +149,9 @@ async function heute(): Promise<string> {
 /** Eine ausgestellte Rechnung ueber genau eine Leistung. */
 async function ausgestellteRechnung(
   position: string = KATALOG.kg,
-  vorStunden = 30,
+  stundeImMonat = 30,
 ): Promise<{ id: string; nummer: string; betrag: number }> {
-  await leistung(position, vorStunden);
+  await leistung(position, stundeImMonat);
   const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
     patients.erika,
     await monat(),
@@ -153,6 +171,21 @@ async function ausgestellteRechnung(
 async function storniere(id: string, grund = 'Falscher Empfaenger'): Promise<string> {
   const { rows } = await asUserCommitted<{ nummer: string }>(users.office, STORNIEREN, [id, grund]);
   return rows[0]!.nummer;
+}
+
+/**
+ * Oeffnet auf einer eigenen Verbindung eine Transaktion als office.
+ *
+ * Nur fuer die Tests, die zwei Vorgaenge wirklich gleichzeitig brauchen: Die
+ * Helfer aus helpers/db schliessen ihre Transaktion selbst und koennen keine
+ * Sperre halten.
+ */
+async function alsOffice(client: Client): Promise<void> {
+  await client.query('begin');
+  await client.query("select set_config('role', 'authenticated', true)");
+  await client.query("select set_config('request.jwt.claims', $1, true)", [
+    JSON.stringify({ sub: users.office, role: 'authenticated' }),
+  ]);
 }
 
 async function rechnungszeile(id: string): Promise<Rechnungszeile> {
@@ -442,6 +475,43 @@ describe('Storno und Korrektur', () => {
   });
 
   describe('Die Korrekturrechnung', () => {
+    it('nennt auch bei zwei gleichzeitigen Aufrufen den Grund (R3-009)', async () => {
+      // Ohne Sperre liefen beide Aufrufe an der Entwurfspruefung vorbei und
+      // endeten erst im Teilindex invoices_draft_period_key - mit einer
+      // technischen Meldung statt mit dem Satz, der sagt, was los ist.
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+
+      const erste = new Client({ connectionString: testDatabaseUrl() });
+      const zweite = new Client({ connectionString: testDatabaseUrl() });
+      await erste.connect();
+      await zweite.connect();
+
+      try {
+        await alsOffice(erste);
+        await alsOffice(zweite);
+
+        await erste.query(KORREKTUR, [id]);
+
+        const laeuft = zweite
+          .query(KORREKTUR, [id])
+          .then(() => null)
+          .catch((fehler: unknown) => fehler as Error);
+
+        await new Promise((fertig) => setTimeout(fertig, 200));
+        await erste.query('commit');
+
+        const fehler = await laeuft;
+        await zweite.query(fehler === null ? 'commit' : 'rollback');
+
+        expect(fehler?.message).toMatch(/a draft for this patient and month already exists/);
+      } finally {
+        await erste.query('rollback').catch(() => undefined);
+        await erste.end();
+        await zweite.end();
+      }
+    });
+
     it('entsteht aus der stornierten Rechnung und zeigt auf sie', async () => {
       const { id } = await ausgestellteRechnung();
       await storniere(id);

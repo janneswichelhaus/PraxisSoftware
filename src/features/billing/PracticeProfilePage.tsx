@@ -50,6 +50,33 @@ const LEER: PraxisStammdaten = {
   payment_term_days: 14,
 };
 
+/**
+ * Die Prüfziffer der IBAN nach ISO 13616 (mod 97 == 1).
+ *
+ * Dieselbe Rechnung führt `app.iban_checksum_ok` in der Datenbank (R3-010);
+ * verbindlich ist die dort, weil sie an der Tabelle hängt. Hier steht sie,
+ * damit ein Zahlendreher auffällt, bevor er in den Snapshot der nächsten
+ * Rechnung wandert.
+ */
+function pruefzifferStimmt(iban: string): boolean {
+  const geputzt = iban.replace(/\s/g, '').toUpperCase();
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{10,30}$/.test(geputzt)) return false;
+
+  const umgestellt = geputzt.slice(4) + geputzt.slice(0, 4);
+
+  // Stellenweise gerechnet: Die umgestellte IBAN hat als Zahl mehr Stellen,
+  // als eine Gleitkommazahl genau trägt.
+  let rest = 0;
+  for (const zeichen of umgestellt) {
+    if (zeichen >= '0' && zeichen <= '9') {
+      rest = (rest * 10 + Number(zeichen)) % 97;
+    } else {
+      rest = (rest * 100 + (zeichen.charCodeAt(0) - 55)) % 97;
+    }
+  }
+  return rest === 1;
+}
+
 /** Was fehlt — leer heißt: die Angaben reichen für eine Rechnung. */
 function pruefe(eingabe: PraxisStammdaten, steuerstatus: string): string | undefined {
   if (eingabe.legal_name.trim() === '') return 'Der Name der Praxis fehlt.';
@@ -59,6 +86,7 @@ function pruefe(eingabe: PraxisStammdaten, steuerstatus: string): string | undef
   if (eingabe.tax_number.trim() === '') return 'Die Steuernummer fehlt.';
   if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{10,30}$/.test(eingabe.iban.replace(/\s/g, '').toUpperCase()))
     return 'Die IBAN ist unvollständig.';
+  if (!pruefzifferStimmt(eingabe.iban)) return 'Die IBAN stimmt nicht — bitte Ziffern prüfen.';
   if (steuerstatus === '') return 'Der umsatzsteuerliche Status fehlt.';
   return undefined;
 }

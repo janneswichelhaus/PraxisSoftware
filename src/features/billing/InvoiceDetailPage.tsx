@@ -374,7 +374,12 @@ function Zahlungen({
         </span>
       </div>
 
-      {darfBuchen && zeitzone !== null ? (
+      {/* An einer stornierten Rechnung wird nicht mehr gebucht: Der Server
+          weist die Zahlung ab (R3-004), und ein Formular, das nur noch
+          Fehlermeldungen erzeugt, ist kein Angebot. Die bereits gebuchten
+          Zahlungen bleiben darüber stehen — dieselbe Linie wie bei der
+          Zahlungserinnerung. */}
+      {darfBuchen && zeitzone !== null && !ansicht.cancellation ? (
         <Zahlungsformular
           invoiceId={ansicht.id}
           offenCent={offen}

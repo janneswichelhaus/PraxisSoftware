@@ -1,5 +1,13 @@
+import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneTermine,
+  testDatabaseUrl,
+} from './helpers/db';
 
 /**
  * Zahlungen sind eigene Transaktionen (ABR-004).
@@ -42,6 +50,7 @@ const AUSSTELLEN = 'select public.issue_invoice($1::uuid) as nummer';
 const BUCHEN =
   'select public.record_payment($1::uuid, $2::int, $3::date, $4::text, $5::text, $6::text) as id';
 const STORNIEREN = 'select public.void_payment($1::uuid, $2::text)';
+const RECHNUNG_STORNIEREN = 'select public.cancel_invoice($1::uuid, $2::text) as nummer';
 const LISTE = 'select * from public.list_invoices(100)';
 const POSTEN = 'select * from public.list_open_items(100)';
 const ZAHLUNGEN = 'select * from public.list_payments(100)';
@@ -66,8 +75,16 @@ interface Posten {
   open_total_cents: number;
 }
 
-/** Legt einen dokumentierten Termin an; `stunden` zaehlt rueckwaerts. */
-async function termin(vorStunden: number, patient?: string): Promise<string> {
+/**
+ * Legt einen dokumentierten Termin an.
+ *
+ * `stundeImMonat` zaehlt vom **Monatsanfang** der Praxiszeitzone vorwaerts:
+ * 30 ist der 2. des Monats, 06:00. So liegt jeder Termin in seinem eigenen
+ * Zeitfenster - und immer in dem Monat, den der Entwurf verlangt (R3-005).
+ * Relativ zu now() gerechnet fiel er am Monatsersten in den Vormonat, und
+ * create_invoice_draft brach ab.
+ */
+async function termin(stundeImMonat: number, patient?: string): Promise<string> {
   const { rows } = await asPostgres<{ id: string }>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,
@@ -75,8 +92,10 @@ async function termin(vorStunden: number, patient?: string): Promise<string> {
        completed_at, completed_by
      ) values (
        $1, $2, $3, $4, 'practice', 'documented',
-       date_trunc('hour', now()) - make_interval(hours => $5::int),
-       date_trunc('hour', now()) - make_interval(hours => $5::int - 1),
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int)) at time zone 'Europe/Berlin',
+       (date_trunc('month', now() at time zone 'Europe/Berlin')
+          + make_interval(hours => $5::int + 1)) at time zone 'Europe/Berlin',
        $6, now(), $7
      ) returning id`,
     [
@@ -84,7 +103,7 @@ async function termin(vorStunden: number, patient?: string): Promise<string> {
       patient ?? patients.erika,
       STAFF_ANNA,
       LOCATION,
-      vorStunden,
+      stundeImMonat,
       patient === undefined ? GRUNDLAGE_FRISCH : null,
       users.ownerTherapist,
     ],
@@ -93,8 +112,8 @@ async function termin(vorStunden: number, patient?: string): Promise<string> {
 }
 
 /** Erfasst eine Leistung an einem frischen Termin. */
-async function leistung(position: string, vorStunden: number, patient?: string): Promise<void> {
-  const id = await termin(vorStunden, patient);
+async function leistung(position: string, stundeImMonat: number, patient?: string): Promise<void> {
+  const id = await termin(stundeImMonat, patient);
   await asUserCommitted(
     users.ownerTherapist,
     'select public.record_billable_services($1::uuid, $2::jsonb)',
@@ -127,9 +146,9 @@ async function heute(): Promise<string> {
  */
 async function ausgestellteRechnung(
   position: string = KATALOG.kg,
-  vorStunden = 30,
+  stundeImMonat = 30,
 ): Promise<{ id: string; betrag: number }> {
-  await leistung(position, vorStunden);
+  await leistung(position, stundeImMonat);
   const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
     patients.erika,
     await monat(),
@@ -160,6 +179,21 @@ async function buche(
   return rows[0]!.id;
 }
 
+/**
+ * Oeffnet auf einer eigenen Verbindung eine Transaktion als office.
+ *
+ * Nur fuer die Tests, die zwei Vorgaenge wirklich gleichzeitig brauchen: Die
+ * Helfer aus helpers/db schliessen ihre Transaktion selbst und koennen keine
+ * Sperre halten.
+ */
+async function alsOffice(client: Client): Promise<void> {
+  await client.query('begin');
+  await client.query("select set_config('role', 'authenticated', true)");
+  await client.query("select set_config('request.jwt.claims', $1, true)", [
+    JSON.stringify({ sub: users.office, role: 'authenticated' }),
+  ]);
+}
+
 async function rechnungszeile(id: string): Promise<Rechnungszeile> {
   const { rows } = await asUser<Rechnungszeile>(users.office, LISTE);
   const zeile = rows.find((r) => r.id === id);
@@ -174,6 +208,7 @@ describe('Zahlung', () => {
 
   beforeEach(async () => {
     await asPostgres('delete from public.payments');
+    await asPostgres('delete from public.invoice_cancellations');
     await asPostgres('delete from public.invoice_items');
     await asPostgres('delete from public.invoices');
     await asPostgres('delete from public.invoice_number_series');
@@ -247,6 +282,38 @@ describe('Zahlung', () => {
       await expect(buche(rows[0]!.id, 1000)).rejects.toThrow(
         /a payment belongs to an issued invoice/,
       );
+    });
+
+    it('weist eine Zahlung an einer stornierten Rechnung ab - auch am Schreibweg vorbei', async () => {
+      // Eine stornierte Rechnung ist keine Forderung mehr. Ein Eingang darauf
+      // waere Geld ohne Grund, und die Ansicht wuerde die stornierte Rechnung
+      // anschliessend als bezahlt fuehren. Der Zustand "storniert" steht am
+      // Stornodokument und nicht an invoices.status - deshalb reicht die
+      // Pruefung auf 'issued' hier nicht.
+      const { id, betrag } = await ausgestellteRechnung();
+      await asUserCommitted(users.office, RECHNUNG_STORNIEREN, [
+        id,
+        'Falsche Leistung abgerechnet',
+      ]);
+
+      await expect(buche(id, betrag)).rejects.toThrow(/a cancelled invoice takes no payment/);
+
+      // Dieselbe Zusage am Trigger, damit sie fuer jeden Weg in die Tabelle
+      // gilt - dieselbe Bauart wie 'a payment belongs to an issued invoice'.
+      await expect(
+        asPostgres(
+          `insert into public.payments (
+             organization_id, invoice_id, direction, amount_cents, currency, paid_on, method
+           ) values ($1, $2, 'incoming', $3, 'EUR', current_date, 'bank_transfer')`,
+          [organizationId, id, betrag],
+        ),
+      ).rejects.toThrow(/a cancelled invoice takes no payment/);
+
+      const { rows } = await asPostgres<{ bezahlt: number }>(
+        'select app.invoice_paid_cents($1::uuid) as bezahlt',
+        [id],
+      );
+      expect(rows[0]!.bezahlt).toBe(0);
     });
 
     it('weist Betrag null, negativen Betrag und unbekannten Weg ab', async () => {
@@ -370,6 +437,55 @@ describe('Zahlung', () => {
       await expect(
         asUserCommitted(users.office, STORNIEREN, [eingang, 'Eingang war falsch']),
       ).rejects.toThrow(/refunds without payments received/);
+    });
+
+    it('laeuft nicht an einer gleichzeitigen Buchung vorbei (R3-015)', async () => {
+      // Zwei Vorgaenge an derselben Rechnung, wie zwei Personen an einem
+      // Vormittag: eine storniert den Eingang, die andere bucht die
+      // Rueckzahlung. record_payment sperrt die Rechnung, void_payment tat es
+      // nicht - also pruefte jeder Vorgang eine Summe, die der andere gerade
+      // aenderte, und am Ende stand mehr ausgezahlt als eingegangen.
+      const { id, betrag } = await ausgestellteRechnung();
+      const eingang = await buche(id, betrag);
+
+      const storno = new Client({ connectionString: testDatabaseUrl() });
+      const rueckzahlung = new Client({ connectionString: testDatabaseUrl() });
+      await storno.connect();
+      await rueckzahlung.connect();
+
+      try {
+        await alsOffice(storno);
+        await alsOffice(rueckzahlung);
+
+        // Die erste Verbindung storniert und laesst die Transaktion offen.
+        await storno.query(STORNIEREN, [eingang, 'Eingang war falsch']);
+
+        // Die zweite bucht gleichzeitig die volle Rueckzahlung. Mit der
+        // Sperre wartet sie, bis der Storno steht - und sieht dann keinen
+        // Eingang mehr, den sie zurueckzahlen koennte.
+        const laeuft = rueckzahlung
+          .query(BUCHEN, [id, betrag, await heute(), 'bank_transfer', 'refund', null])
+          .then(() => null)
+          .catch((fehler: unknown) => fehler as Error);
+
+        await new Promise((fertig) => setTimeout(fertig, 200));
+        await storno.query('commit');
+
+        const fehler = await laeuft;
+        await rueckzahlung.query(fehler === null ? 'commit' : 'rollback');
+
+        expect(fehler?.message).toMatch(/a refund cannot exceed the payments received/);
+
+        const { rows } = await asPostgres<{ bezahlt: number }>(
+          'select app.invoice_paid_cents($1::uuid) as bezahlt',
+          [id],
+        );
+        expect(rows[0]!.bezahlt).toBe(0);
+      } finally {
+        await storno.query('rollback').catch(() => undefined);
+        await storno.end();
+        await rueckzahlung.end();
+      }
     });
 
     it('haelt die Zahlung sonst unveraenderlich - auch am Schreibweg vorbei', async () => {
