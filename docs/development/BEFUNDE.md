@@ -630,7 +630,7 @@ trägt den Weg „Zum Entwurf".
 | Datum   | 2026-09-20                                                                                          |
 | Bereich | Abrechnung: Rechnungsdokument (`/abrechnung/rechnungen/:id`, Druckbild)                             |
 | Quelle  | Codebefund Claude, 2026-09-20, bei der Entscheidungsarbeit zu ADR-009 Fassung 2 (E18 Schritt 4)     |
-| Status  | eingeplant in **ABR-EPIC-004** (Roadmap 5.26, Etappe L; erster Loop der Etappe)                      |
+| Status  | erledigt in ABR-EPIC-004 (ABR-006/ABR-007, 2026-09-20)                                              |
 | Berührt | `app.build_invoice_document` in `20260919150000_invoices.sql`, `InvoicePrintPage.tsx`; ADR-009 Punkt 18 (Fassung 2, angenommen am 2026-09-20); ANN-074 |
 
 **Beobachtung.** Das Rechnungsdokument weist steuerfreie Posten als eigene
@@ -657,3 +657,13 @@ Kennzeichen entsteht oder als Feld an der Katalogposition — das Zweite
 erlaubt verschiedene Befreiungstatbestände, das Erste verhindert einen
 falschen; ADR-009 Fassung 2 führt die Frage als offene Folgefrage. Gehört in
 den Loop, der den § 14c-Riegel baut (Punkt 18), und wird mit ihm getestet.
+
+**So gebaut (2026-09-20).** Als **fester Text je Kennzeichen**
+(`app.tax_exemption_reason`, **ANN-082**): Ein Feld an der Katalogposition
+wäre eine zweite Wahrheit neben `tax_treatment`, und diese Praxis führt genau
+einen Befreiungstatbestand. Der Satz entsteht in
+`app.build_invoice_document`, steht damit im Snapshot (`schema_version` 2)
+und wird auf Blatt und Rechnungsansicht nur angezeigt. Der § 14c-Riegel aus
+ABR-007 erzwingt ihn: Ohne Grund lässt sich eine Rechnung mit steuerfreiem
+Posten nicht ausstellen. Offen bleibt allein der **Wortlaut** — er hängt an
+einer Funktion und ändert sich mit der Antwort aus B4 an genau dieser Stelle.
