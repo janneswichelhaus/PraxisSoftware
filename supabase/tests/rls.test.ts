@@ -165,6 +165,16 @@ describe('Mandantentrennung (ADR-003)', () => {
       insert into public.user_roles (user_id, organization_id, role_key)
         values ('${fremderAccount}', '${fremdeOrg}', 'therapist');
     `);
+
+    // Eine offene Einladung der Testpraxis: Ohne sie waere
+    // staff_account_invitations leer, und der Test unten pruefte nichts.
+    await asPostgres(
+      `insert into public.staff_account_invitations
+         (organization_id, staff_member_id, email, role_keys, expires_at, invited_by)
+       values ($1, '55555555-5555-4555-8555-000000000002', 'einladung@praxis.invalid',
+               array['therapist']::text[], now() + interval '7 days', $2)`,
+      [organizationId, users.ownerTherapist],
+    );
   }, 120_000);
 
   it('zeigt einer fremden Organisation keine Patienten der Testpraxis', async () => {
@@ -183,6 +193,83 @@ describe('Mandantentrennung (ADR-003)', () => {
       'select id from public.organizations',
     );
     expect(rows.map((r) => r.id)).toEqual([organizationId]);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Standorte (R3-026)
+  //
+  // `locations_select_own_org` hatte keinen einzigen Test, obwohl der Client
+  // die Tabelle direkt liest. Sie filtert nur nach Organisation und verlangt
+  // keine Praxisrolle - ein Patientenkonto sieht den Standort seiner Praxis
+  // deshalb mit. Das ist hier festgehalten, nicht geaendert: Die Anschrift
+  // der Praxis steht auf jeder Rechnung.
+  // ---------------------------------------------------------------------------
+  it('zeigt jedem angemeldeten Konto der Praxis ihren Standort', async () => {
+    for (const konto of [users.ownerTherapist, users.office, users.therapist, users.patientMax]) {
+      const { rows } = await asUser<{ organization_id: string }>(
+        konto,
+        'select organization_id from public.locations',
+      );
+      expect(rows.map((r) => r.organization_id)).toEqual([organizationId]);
+    }
+  });
+
+  it('zeigt der fremden Organisation keinen Standort der Testpraxis', async () => {
+    const { rows } = await asUser(fremderAccount, 'select id from public.locations');
+    expect(rows).toEqual([]);
+  });
+
+  it('zeigt ohne Anmeldung keinen Standort', async () => {
+    expect((await asUser(null, 'select id from public.locations')).rows).toEqual([]);
+    await expect(asAnon('select id from public.locations')).rejects.toThrow(/permission denied/i);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Die uebrigen org-gefilterten Sichten (R3-026)
+  //
+  // Jede dieser Tabellen traegt Zeilen der Testpraxis; die fremde Praxis darf
+  // keine davon sehen. Ohne diesen Fall pruefte die Policy nur noch die Rolle -
+  // und eine vergessene Organisationsbedingung faellt erst im Betrieb auf.
+  // ---------------------------------------------------------------------------
+  it.each([
+    ['staff_account_invitations'],
+    ['appointment_notifications'],
+    ['treatment_text_snippets'],
+    ['practice_billing_profiles'],
+    ['service_catalog_items'],
+    ['service_catalog_versions'],
+  ])('zeigt der fremden Organisation nichts aus %s', async (tabelle) => {
+    const { rows: bestand } = await asPostgres<{ n: number }>(
+      `select count(*)::int as n from public.${tabelle} where organization_id = $1`,
+      [organizationId],
+    );
+    // Sonst prüfte der Test nichts: ohne Zeilen der Testpraxis wäre auch eine
+    // kaputte Policy leer.
+    expect(bestand[0]!.n).toBeGreaterThan(0);
+
+    const { rows } = await asUser(fremderAccount, `select * from public.${tabelle}`);
+    expect(rows).toEqual([]);
+  });
+
+  it('haelt das Loeschregister praxisunabhaengig lesbar, aber nicht oeffentlich', async () => {
+    // retention_assignments traegt keine organization_id: Es ist der Katalog
+    // der Aufbewahrungsfristen, keine Praxisdaten. Jede Praxisrolle liest ihn,
+    // anon nicht.
+    const { rows: fremd } = await asUser(
+      fremderAccount,
+      'select * from public.retention_assignments',
+    );
+    expect(fremd.length).toBeGreaterThan(0);
+
+    const { rows: patient } = await asUser(
+      users.patientMax,
+      'select * from public.retention_assignments',
+    );
+    expect(patient).toEqual([]);
+
+    await expect(asAnon('select * from public.retention_assignments')).rejects.toThrow(
+      /permission denied/i,
+    );
   });
 });
 
