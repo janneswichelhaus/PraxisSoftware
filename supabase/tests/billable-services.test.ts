@@ -41,6 +41,7 @@ const ERFASSEN = 'select public.record_billable_services($1::uuid, $2::jsonb) as
 const ENTFERNEN = 'select public.delete_billable_services($1::uuid) as anzahl';
 const OFFEN = 'select * from public.list_open_billable_appointments(100)';
 const LISTE = 'select * from public.list_billable_services(null, null, 200)';
+const OEFFNEN = 'select public.reopen_appointment($1::uuid, $2::timestamptz) as id';
 
 interface Vorschlagszeile {
   catalog_item_id: string;
@@ -99,6 +100,21 @@ async function termin(opts: {
     ],
   );
   return rows[0]!.id;
+}
+
+/**
+ * `updated_at` des Termins als Zeichenkette mit Mikrosekunden - so, wie
+ * PostgREST sie liefert. Ueber den pg-Treiber kaeme ein Date, das die
+ * Mikrosekunden verliert, und die Sperre gegen gleichzeitige Aenderungen
+ * schluege dann immer an.
+ */
+async function terminstand(id: string): Promise<string> {
+  const { rows } = await asPostgres<{ updated_at: string }>(
+    `select to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"+00"') as updated_at
+       from public.appointments where id = $1`,
+    [id],
+  );
+  return rows[0]!.updated_at;
 }
 
 async function genutzt(positionId = POSITION_FRISCH): Promise<number> {
@@ -292,6 +308,62 @@ describe('Leistungserfassung', () => {
 
       const { rows } = await asPostgres('select id from public.billable_services');
       expect(rows).toHaveLength(0);
+    });
+
+    it('laesst den Termin nicht wieder oeffnen, solange eine Leistung erfasst ist (R3-002)', async () => {
+      // Sonst steht der Termin wieder auf 'confirmed' und ohne
+      // Gebuehrenanlass da, waehrend das Ausfallhonorar unveraendert unter
+      // "Abzurechnen" wartet - und spaeter zu einem Termin abgerechnet wird,
+      // den es so nie gegeben hat.
+      const id = await termin({
+        vorStunden: 54,
+        status: 'no_show',
+        grundlage: null,
+        gebuehrenanlass: 'no_show',
+      });
+      await asUserCommitted(users.office, ERFASSEN, [
+        id,
+        JSON.stringify([{ catalog_item_id: KATALOG.ausfall, quantity: 1 }]),
+      ]);
+
+      const stand = await terminstand(id);
+
+      await expect(asUser(users.ownerTherapist, OEFFNEN, [id, stand])).rejects.toThrow(
+        /billable services recorded/,
+      );
+
+      // Der Termin bleibt, was er war; die Gebuehr bleibt abrechenbar.
+      const { rows: danach } = await asPostgres<{ status: string; fee_basis: string | null }>(
+        'select status, fee_basis from public.appointments where id = $1',
+        [id],
+      );
+      expect(danach[0]!.status).toBe('no_show');
+      expect(danach[0]!.fee_basis).toBe('no_show');
+    });
+
+    it('laesst ihn wieder oeffnen, sobald die Leistung entfernt ist (R3-002)', async () => {
+      // Der Weg zurueck bleibt offen - er fuehrt nur ueber das Entfernen der
+      // Leistung, nicht daran vorbei.
+      const id = await termin({
+        vorStunden: 56,
+        status: 'no_show',
+        grundlage: null,
+        gebuehrenanlass: 'no_show',
+      });
+      await asUserCommitted(users.office, ERFASSEN, [
+        id,
+        JSON.stringify([{ catalog_item_id: KATALOG.ausfall, quantity: 1 }]),
+      ]);
+      await asUserCommitted(users.office, ENTFERNEN, [id]);
+
+      const stand = await terminstand(id);
+      await asUserCommitted(users.ownerTherapist, OEFFNEN, [id, stand]);
+
+      const { rows: danach } = await asPostgres<{ status: string }>(
+        'select status from public.appointments where id = $1',
+        [id],
+      );
+      expect(danach[0]!.status).toBe('confirmed');
     });
   });
 
