@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as RouterModul from 'react-router-dom';
-import { renderWithProviders } from '@/test-utils';
+import { morgenOrtszeit, renderWithProviders } from '@/test-utils';
 
 const createPatient = vi.fn();
 const navigate = vi.fn();
@@ -94,7 +94,7 @@ describe('NewPatientPage', () => {
 
   it('lehnt ein Geburtsdatum in der Zukunft ab', async () => {
     const user = userEvent.setup();
-    const morgen = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    const morgen = morgenOrtszeit();
     renderWithProviders(<NewPatientPage />);
 
     await user.type(screen.getByLabelText('Vorname *'), 'Nora');

@@ -218,3 +218,21 @@ export function testStaffMember(overrides: Partial<StaffMember> = {}): StaffMemb
     ...overrides,
   };
 }
+
+/**
+ * Der morgige Tag in der **Ortszeit** des Rechners, auf dem der Test läuft.
+ *
+ * `new Date(Date.now() + 86_400_000).toISOString()` liefert den UTC-Tag — und
+ * der ist westlich von UTC noch der heutige, östlich schon der übernächste.
+ * Die Formulare prüfen mit `new Date('YYYY-MM-DDT00:00:00')`, also in
+ * Ortszeit; zwischen Mitternacht und 01:00 oder 02:00 Berliner Zeit lief
+ * beides auseinander und die Tests waren rot, ohne dass Code betroffen war
+ * (R3-024).
+ */
+export function morgenOrtszeit(): string {
+  const jetzt = new Date();
+  const morgen = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate() + 1);
+  const monat = String(morgen.getMonth() + 1).padStart(2, '0');
+  const tag = String(morgen.getDate()).padStart(2, '0');
+  return `${morgen.getFullYear()}-${monat}-${tag}`;
+}
