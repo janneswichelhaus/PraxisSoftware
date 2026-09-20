@@ -9,7 +9,7 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 **ADR-021 ist angenommen** (2026-09-20) und steht an allen drei Stellen: Index
 in [`../CLAUDE.md`](../CLAUDE.md), Tabelle in [`adr/README.md`](adr/README.md),
 Tabelle in §21 (Prinzipien **0.12.1**). **E18, Schritt 2 ist damit frei.**
-Dieser Stand liegt als **offener Pull Request** gegen `main`. **R3 ist
+Dieser Stand liegt als **PR #61** gegen `main`, ungemergt. **R3 ist
 vollständig gemergt** (PR #57, #58, #59), `R3-UEBERGABE.md` weiter nur auf
 `claude/r3-analyse`; **Etappe 1 der Abrechnung ist gebaut**, Abnahme steht aus.
 
