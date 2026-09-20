@@ -3,7 +3,7 @@
 Einzige Datei dieser Runde vor der Freigabe. Sie liegt nur auf `claude/r3-analyse` (wird nie gemergt);
 Umsetzungs-Sessions lesen sie per
 `git show origin/claude/r3-analyse:docs/development/R3-UEBERGABE.md`. Stand: Knoten 1 (Inventur) und
-Knoten 2 (Auflösung & Plan) abgeschlossen; **G1 wartet auf den Startschuss**. Die Umsetzungs-Session
+Knoten 2 (Auflösung & Plan) abgeschlossen; **G1 ist umgesetzt (PR #57), G2 und G3 stehen aus**. Die Umsetzungs-Session
 liest „Harte Regeln", „Knoten 2 — Auflösung & Plan" (ihre Gruppe) und „Knoten 3"; die Befundtabellen
 und die Details darüber sind das Nachschlagewerk dazu.
 
@@ -614,7 +614,16 @@ draußen, jeder XS und sofort umsetzbar: **R3-032** (CI führt `tsc --build --fo
 davon drin haben will, nennt den Tausch (etwa „R3-007 raus, R3-032 rein"); von sich aus tauscht keine
 Umsetzungs-Session.
 
-### G1 — Abrechnung: Geldfluss und Zustände (9 Befunde)
+### G1 — Abrechnung: Geldfluss und Zustände (9 Befunde) — **erledigt 2026-09-20**
+
+Umgesetzt als PR #57 auf `claude/happy-heisenberg-xogjul`, ein Commit je Befund, alle neun mit
+rotem Test davor. Acht neue additive Migrationen (`20260920100000` bis `20260920107000`), neue
+Annahme **ANN-081**. Abweichungen vom Plan: R3-009 hat zusätzlich `create_correction_draft`
+mitgenommen (der Befund nennt sie ausdrücklich) und dafür einen zweiten roten Test in
+`invoice-cancellations.test.ts`; R3-016 hat für `list_invoices` **nicht** den gruppierten Join
+bekommen — gemessen war er dort langsamer als der Bestand (631 ms), die Liste begrenzt jetzt
+zuerst und reichert danach an. Gates: `test` 1730 (Baseline 1728), `test:db` 1604 (1590),
+E2E ohne Anmeldung 34; hinter der Anmeldung und im Browser nicht prüfbar.
 
 Gemeinsamer Nenner: SECURITY-DEFINER-Funktionen der neuen Abrechnung, je eine neue additive
 Migration, Pflichtgate `pnpm test:db`. Reihenfolge: erst die Sperren am Geldfluss, dann Beträge und
