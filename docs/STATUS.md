@@ -9,7 +9,7 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 **ADR-006 Fassung 3 ist geschrieben und wartet auf die Annahme** (E18, Schritt 3): die drei
 Feature-Verbote an der MDR-Grenze, dazu die Zweckbestimmung über **beide** Leistungsbereiche. Die
 Punkte 1 bis 8 sind unverändert, **bis dahin gilt Fassung 2**, Schritt 4 beginnt erst danach; der
-Stand liegt als Pull Request gegen `main`. **ADR-021 und ADR-022 sind angenommen** (§21 **0.12.2**),
+Stand liegt als **PR #64** gegen `main`. **ADR-021 und ADR-022 sind angenommen** (§21 **0.12.2**),
 **gebaut ist davon nichts**. **R3 ist vollständig gemergt** (PR #57, #58, #59), `R3-UEBERGABE.md`
 weiter nur auf `claude/r3-analyse`; **Etappe 1 der Abrechnung ist gebaut**, Abnahme steht aus.
 
