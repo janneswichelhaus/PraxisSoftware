@@ -2,16 +2,19 @@
 
 ## Status
 
-**Vorgeschlagen** — Entscheidungsarbeit nach den Festlegungen des Projektinhabers vom 2026-09-17
-(E18, Abschnitt 2 in
-[`../development/E18-LEISTUNGSBEREICHE.md`](../development/E18-LEISTUNGSBEREICHE.md)).
+**Angenommen** — vom Projektinhaber am 2026-09-20 angenommen, alle elf Punkte wie vorgeschlagen;
+Entscheidungsarbeit nach seinen Festlegungen vom 2026-09-17 (E18, Abschnitt 2 in
+[`../development/E18-LEISTUNGSBEREICHE.md`](../development/E18-LEISTUNGSBEREICHE.md)). Die
+Abweichung von der Vorgabe steht in Punkt 2 und ist mit angenommen: `internal` bekommt kein eigenes
+Feld, weil es als `kind = 'event'` bereits existiert.
 
 Dieser ADR ist **Schritt 2 von sieben** aus E18 und setzt
 [ADR-021](ADR-021-service-areas-and-legal-relationships.md) fort. Er **löst
 [ADR-020](ADR-020-treatment-basis.md) nicht ab** und ändert keinen seiner acht Punkte: Er steht
-daneben und zieht die Grenze. Mit der Annahme durch den Projektinhaber wandert er in den Index in
-`CLAUDE.md`, in die Tabelle in [`README.md`](README.md) und in die Tabelle in
-`PROJECT_PRINCIPLES.md` §21; bis dahin beginnt Schritt 3 nicht.
+daneben und zieht die Grenze. Er steht damit im Index in `CLAUDE.md`, in der Tabelle in
+[`README.md`](README.md) und in der Tabelle in `PROJECT_PRINCIPLES.md` §21 (Fassung 0.12.2); mit
+der Annahme ist **Schritt 3 (ADR-006 neue Fassung) frei**. Ein Loop, der Code baut, beginnt
+weiterhin erst, wenn der ADR über ihm steht.
 
 ## Datum
 
