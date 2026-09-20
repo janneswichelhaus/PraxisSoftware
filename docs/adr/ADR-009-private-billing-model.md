@@ -2,8 +2,9 @@
 
 ## Status
 
-Angenommen — **Fassung 1** (2026-08-28). **Fassung 2 vorgeschlagen**
-(2026-09-20).
+**Angenommen — Fassung 2** (vom Projektinhaber am 2026-09-20 angenommen, alle
+sechs neuen Punkte wie vorgeschlagen; fachlich entschieden hatte er die zwei
+Leistungsbereiche am 2026-09-17, E18). Fassung 1 ist am 2026-08-28 angenommen.
 
 Fassung 2 ergänzt die Punkte 15 bis 20: das Steuerkennzeichen am **Posten**,
 die Rechnung mit **genau einem Leistungsbereich**, **getrennte Nummernkreise**,
@@ -18,18 +19,22 @@ bis 14 sind unverändert**; die neuen Punkte machen Punkt 6 und Punkt 8 an
 genau den Stellen konkret, an denen zwei Leistungsbereiche sie mehrdeutig
 lassen — sie fassen sie **enger**, nie lockerer.
 
-**Bis zur Annahme durch den Projektinhaber gilt Fassung 1.** Der ADR steht
-bereits im Index in `CLAUDE.md` und in der Tabelle in
+Die geltende Fassung steht mit der Annahme auf **2** in der Tabelle in
 [`README.md`](README.md) — der einzigen Stelle, die Fassung und Status führt
-(`PROJECT_PRINCIPLES.md` §21). Die dortige Zeile nennt bis zur Annahme keine
-Fassung und bleibt unberührt; §21 nennt ohnehin keine und ändert sich nicht.
-Bis dahin beginnt **Schritt 5** (`PROJECT_PRINCIPLES.md` neue Version) nicht,
-und ein Loop, der Code baut, beginnt weiterhin erst, wenn der ADR über ihm
-steht.
+(`PROJECT_PRINCIPLES.md` §21). Weder §21 noch der Index in `CLAUDE.md` nennen
+eine Fassung; beide bleiben unverändert. Mit der Annahme ist **Schritt 5**
+(`PROJECT_PRINCIPLES.md` neue Version: §1, §4, Zweckbestimmung, §14) frei; ein
+Loop, der Code baut, beginnt weiterhin erst, wenn der ADR über ihm steht. Was
+aus dieser Fassung zu bauen ist, schneidet **Schritt 6** zu — die Reihenfolge
+der Etappe 1 bleibt bis dahin unverändert
+([`../development/ROADMAP.md`](../development/ROADMAP.md)). Der einzige Punkt,
+der schon Gebautes korrigiert, ist der fehlende Befreiungsgrund auf der
+Rechnung: **BEF-019** in
+[`../development/BEFUNDE.md`](../development/BEFUNDE.md).
 
 ## Datum
 
-2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2, vorgeschlagen)
+2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2, angenommen)
 
 ## Kontext
 
@@ -374,4 +379,4 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 | Fassung | Datum      | Änderung |
 | ------- | ---------- | -------- |
 | 1       | 2026-08-28 | Erstfassung, angenommen. Punkte 1 bis 14. |
-| 2       | 2026-09-20 | **Punkte 15 bis 20 ergänzt, Status vorgeschlagen:** Das Steuerkennzeichen hängt am **Posten**, nie am Kunden, am Rechtsverhältnis oder am Terminkontext (Punkt 15, drei Kennzeichen; das ermäßigte bleibt bis B4 inaktiv). Eine Rechnung trägt **genau einen Leistungsbereich**, gemischte sind ausgeschlossen (Punkt 16). Daraus folgen **getrennte Nummernkreise** je Bereich und Kalenderjahr, lückenlos je Kreis und einmalig über alle (Punkt 17, § 14 Abs. 4 Nr. 4 UStG) — das beantwortet die offene Folgefrage aus Fassung 1 zur Führung des Nummernkreises. Punkt 18 ist der **§ 14c-Riegel**: kein Steuerausweis am steuerfreien Posten, der Befreiungsgrund als Pflichtangabe im Snapshot, die Sperre serverseitig und als verbindlicher Testfall in `pnpm test:db`. Punkt 19 führt die Auswertung **„Einnahmen je Leistungsart"** für die getrennte Gewinnermittlung ein; sie benennt ihre Grundlage, statt sie zu wählen. Punkt 20 verzichtet in V1 auf die **Kleinbetragsrechnung** nach § 33 UStDV. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18 Abschnitt 3), **Schritt 4 von sieben**. Die Punkte 1 bis 14 sind unverändert und werden nur enger gefasst; kein Code, kein Schema, keine Migration. |
+| 2       | 2026-09-20 | **Punkte 15 bis 20 ergänzt, angenommen:** Das Steuerkennzeichen hängt am **Posten**, nie am Kunden, am Rechtsverhältnis oder am Terminkontext (Punkt 15, drei Kennzeichen; das ermäßigte bleibt bis B4 inaktiv). Eine Rechnung trägt **genau einen Leistungsbereich**, gemischte sind ausgeschlossen (Punkt 16). Daraus folgen **getrennte Nummernkreise** je Bereich und Kalenderjahr, lückenlos je Kreis und einmalig über alle (Punkt 17, § 14 Abs. 4 Nr. 4 UStG) — das beantwortet die offene Folgefrage aus Fassung 1 zur Führung des Nummernkreises. Punkt 18 ist der **§ 14c-Riegel**: kein Steuerausweis am steuerfreien Posten, der Befreiungsgrund als Pflichtangabe im Snapshot, die Sperre serverseitig und als verbindlicher Testfall in `pnpm test:db`. Punkt 19 führt die Auswertung **„Einnahmen je Leistungsart"** für die getrennte Gewinnermittlung ein; sie benennt ihre Grundlage, statt sie zu wählen. Punkt 20 verzichtet in V1 auf die **Kleinbetragsrechnung** nach § 33 UStDV. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18 Abschnitt 3), **Schritt 4 von sieben**. Die Punkte 1 bis 14 sind unverändert und werden nur enger gefasst; kein Code, kein Schema, keine Migration. |
