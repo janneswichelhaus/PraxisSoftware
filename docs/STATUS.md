@@ -9,7 +9,7 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 **ADR-009 Fassung 2 ist geschrieben und wartet auf die Annahme** (E18, Schritt 4): Steuerkennzeichen
 am **Posten** statt am Kunden, **ein Leistungsbereich je Rechnung**, getrennte Nummernkreise, der
 **§ 14c-Riegel**, die Auswertung „Einnahmen je Leistungsart". Punkte 1 bis 14 unverändert, **bis
-dahin gilt Fassung 1**, Schritt 5 beginnt erst danach; der Stand liegt als PR gegen `main`.
+dahin gilt Fassung 1**, Schritt 5 beginnt erst danach; der Stand liegt als **PR #66** gegen `main`.
 **ADR-021, ADR-022 und ADR-006 Fassung 3 sind angenommen** (§21 **0.12.2**), **gebaut ist von E18
 nichts**. **R3 ist vollständig gemergt** (PR #57, #58, #59), `R3-UEBERGABE.md` weiter nur auf
 `claude/r3-analyse`; **Etappe 1 der Abrechnung ist gebaut**, Abnahme steht aus.
