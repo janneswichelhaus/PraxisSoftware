@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asPostgres, asUser, resetDatabase } from './helpers/db';
 
-const { users, patients, organizationId } = SEED;
+const { users, patients, organizationId, persons, trainingRelationships } = SEED;
 
 const LAUF = 'select public.apply_retention() as anzahl';
 const NACHZIEHEN = 'select public.reapply_deletion_journal() as anzahl';
@@ -611,8 +611,161 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       'auditlog',
       'patientenakte',
       'termin_ohne_nachweis',
+      'trainingsverhaeltnis',
       'zugangseinladung',
     ]);
+  });
+});
+
+describe('Loeschlauf: Trainingsverhaeltnis', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  /** Setzt das Vertragsende auf „vor N Jahren" (LEI-001). */
+  async function beendetVor(relationshipId: string, jahre: number) {
+    await asPostgres(
+      `update public.training_relationships
+          set contract_started_on = (current_date - ($2::int + 1) * interval '1 year')::date,
+              contract_ended_on   = (current_date - $2::int * interval '1 year')::date,
+              status              = 'inactive'
+        where id = $1`,
+      [relationshipId, jahre],
+    );
+  }
+
+  it('loescht ein Trainingsverhaeltnis drei Jahre nach Vertragsende', async () => {
+    await beendetVor(trainingRelationships.tina, 4);
+
+    await lauf();
+
+    expect(
+      await anzahl('select count(*) from public.training_relationships where id = $1', [
+        trainingRelationships.tina,
+      ]),
+    ).toBe(0);
+    expect(
+      await anzahl(
+        `select count(*) from public.deletion_journal
+          where target_table = 'training_relationships'
+            and retention_class = 'trainingsverhaeltnis'`,
+      ),
+    ).toBe(1);
+    // Tina hat kein zweites Verhaeltnis - mit dem Vertrag faellt auch ihre
+    // Identitaet (ADR-008 Punkt 9).
+    expect(await anzahl('select count(*) from public.persons where id = $1', [persons.tina])).toBe(
+      0,
+    );
+  });
+
+  it('laesst ein laufendes und ein noch nicht faelliges Verhaeltnis stehen', async () => {
+    // Ohne Vertragsende laeuft keine Frist - genau wie ohne Abschluss der
+    // Versorgung in der Akte.
+    await beendetVor(trainingRelationships.erika, 2);
+
+    await lauf();
+
+    expect(
+      await anzahl('select count(*) from public.training_relationships where id = $1', [
+        trainingRelationships.tina,
+      ]),
+    ).toBe(1);
+    expect(
+      await anzahl('select count(*) from public.training_relationships where id = $1', [
+        trainingRelationships.erika,
+      ]),
+    ).toBe(1);
+  });
+
+  it('laesst die Person stehen, solange ihre Akte besteht', async () => {
+    // Erika hat beide Verhaeltnisse. Das Ende des einen beendet das andere
+    // nicht (ADR-021, Konsequenzen).
+    await beendetVor(trainingRelationships.erika, 4);
+
+    await lauf();
+
+    expect(
+      await anzahl('select count(*) from public.training_relationships where id = $1', [
+        trainingRelationships.erika,
+      ]),
+    ).toBe(0);
+    expect(await anzahl('select count(*) from public.persons where id = $1', [persons.erika])).toBe(
+      1,
+    );
+    expect(
+      await anzahl('select count(*) from public.patients where id = $1', [patients.erika]),
+    ).toBe(1);
+  });
+
+  it('haelt die Person, solange jemand trainiert - auch wenn die Akte faellig ist', async () => {
+    // Die vierte Pruefung in app.delete_patient_record. Ohne sie braeche der
+    // Lauf am Fremdschluessel ab oder naehme einer laufenden
+    // Trainingsbetreuung ihre Stammdaten (ADR-021, Konsequenzen).
+    await abgeschlossenVor(patients.erika, 11);
+
+    await lauf();
+
+    expect(
+      await anzahl('select count(*) from public.patients where id = $1', [patients.erika]),
+    ).toBe(0);
+    expect(await anzahl('select count(*) from public.persons where id = $1', [persons.erika])).toBe(
+      1,
+    );
+    expect(
+      await anzahl('select count(*) from public.training_relationships where id = $1', [
+        trainingRelationships.erika,
+      ]),
+    ).toBe(1);
+  });
+
+  it('nennt die geloeschten Verhaeltnisse im Auditereignis, ohne Kennungen (ADR-010)', async () => {
+    await beendetVor(trainingRelationships.tina, 4);
+
+    await lauf();
+
+    const { rows } = await asPostgres<{ anzahl: string; kontext: Record<string, unknown> }>(
+      `select context ->> 'trainingsverhaeltnis' as anzahl, context as kontext
+         from public.audit_log
+        where action = 'retention.applied'
+        order by occurred_at desc
+        limit 1`,
+    );
+    // Gezaehlt werden Zeilen, nicht Verhaeltnisse - wie bei der Akte: das
+    // Verhaeltnis und die Person, die mit ihm faellt.
+    expect(rows[0]?.anzahl).toBe('2');
+    // Welche Datensaetze es traf, steht im Journal und nicht im Auditlog
+    // (ADR-010 Punkt 3).
+    expect(JSON.stringify(rows[0]?.kontext)).not.toContain(trainingRelationships.tina);
+  });
+
+  it('loescht nach einer Wiederherstellung erneut', async () => {
+    await beendetVor(trainingRelationships.tina, 4);
+    await lauf();
+
+    // Restore: Verhaeltnis und Person sind wieder da.
+    await asPostgres(
+      `insert into public.persons (id, organization_id, given_name, family_name)
+       values ($1::uuid, $2::uuid, 'Tina', 'Trainingskundin')`,
+      [persons.tina, organizationId],
+    );
+    await asPostgres(
+      `insert into public.training_relationships
+         (id, organization_id, person_id, status, contract_started_on, contract_ended_on)
+       values ($1::uuid, $2::uuid, $3::uuid, 'inactive',
+               current_date - interval '5 years', current_date - interval '4 years')`,
+      [trainingRelationships.tina, organizationId, persons.tina],
+    );
+
+    expect(await nachziehen()).toBeGreaterThan(0);
+
+    expect(
+      await anzahl('select count(*) from public.training_relationships where id = $1', [
+        trainingRelationships.tina,
+      ]),
+    ).toBe(0);
+    expect(await anzahl('select count(*) from public.persons where id = $1', [persons.tina])).toBe(
+      0,
+    );
   });
 });
 

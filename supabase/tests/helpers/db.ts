@@ -347,6 +347,13 @@ export const SEED = {
   persons: {
     max: '44444444-4444-4444-8444-000000000005',
     erika: '44444444-4444-4444-8444-000000000006',
+    tina: '44444444-4444-4444-8444-000000000009',
+  },
+  trainingRelationships: {
+    /** Nur Training, keine Akte. */
+    tina: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+    /** Dieselbe Person hat zugleich ein Behandlungsverhaeltnis (ADR-021 Punkt 1). */
+    erika: 'eeeeeeee-eeee-4eee-8eee-000000000002',
   },
 } as const;
 

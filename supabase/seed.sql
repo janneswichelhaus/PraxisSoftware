@@ -50,6 +50,7 @@ delete from public.staff_private_details;
 delete from public.user_roles;
 delete from public.user_profiles;
 delete from public.patients;
+delete from public.training_relationships;
 delete from public.staff_members;
 delete from public.persons;
 delete from public.locations;
@@ -103,7 +104,10 @@ insert into public.persons (id, organization_id, given_name, family_name) values
   -- Person ohne Account, um zu pruefen, dass die Kartei nicht am Account haengt.
   ('44444444-4444-4444-8444-000000000007', '22222222-2222-4222-8222-000000000001', 'Petra',  'Platzhalter'),
   -- Mitarbeiterin ohne Zugang - Ausgangslage fuer die Einladung (STAFF-002b).
-  ('44444444-4444-4444-8444-000000000008', '22222222-2222-4222-8222-000000000001', 'Nina',   'Neu');
+  ('44444444-4444-4444-8444-000000000008', '22222222-2222-4222-8222-000000000001', 'Nina',   'Neu'),
+  -- Nur Training, keine Behandlung (LEI-001). Sie belegt den Regelfall des
+  -- zweiten Leistungsbereichs: eine Person ohne Patientenakte.
+  ('44444444-4444-4444-8444-000000000009', '22222222-2222-4222-8222-000000000001', 'Tina',   'Trainingskundin');
 
 -- -----------------------------------------------------------------------------
 -- Mitarbeiter
@@ -133,6 +137,22 @@ insert into public.patients (id, organization_id, person_id, status, care_starte
   ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000005', 'active',   '2026-02-10'),
   ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'active',   '2026-05-21'),
   ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000007', 'inactive', '2025-11-03');
+
+-- -----------------------------------------------------------------------------
+-- Trainingsverhaeltnisse (LEI-001)
+--
+-- Zwei Zeilen, und beide sagen etwas: Tina hat ausschliesslich ein
+-- Trainingsverhaeltnis - fuer sie gibt es keine Akte und darf es keine geben.
+-- Erika hat beides zugleich; genau daran scheitert die Trennung nach Person,
+-- und genau deshalb trennt ADR-021 nach Rechtsverhaeltnis (Punkt 1).
+--
+-- Keine Screening- oder Gesundheitsangaben: die Tabelle traegt das
+-- Verhaeltnis und sonst nichts.
+-- -----------------------------------------------------------------------------
+insert into public.training_relationships
+  (id, organization_id, person_id, status, contract_started_on, contract_ended_on) values
+  ('eeeeeeee-eeee-4eee-8eee-000000000001', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000009', 'active', '2026-03-02', null),
+  ('eeeeeeee-eeee-4eee-8eee-000000000002', '22222222-2222-4222-8222-000000000001', '44444444-4444-4444-8444-000000000006', 'active', '2026-06-15', null);
 
 -- Strasse und Hausnummer getrennt: ein Hausbesuch uebernimmt beide Felder
 -- einzeln in den Adress-Snapshot des Termins (CAL-001).

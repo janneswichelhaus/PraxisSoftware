@@ -70,14 +70,27 @@ describe('RLS: Personen und Mitarbeiter', () => {
     await resetDatabase();
   }, 120_000);
 
-  it('zeigt Praxisrollen alle Personen der Organisation', async () => {
+  it('zeigt Praxisrollen die Personen ihres Bereichs', async () => {
     const { rows } = await asUser<{ n: string }>(
       users.therapist,
       'select count(*)::text as n from public.persons',
     );
     // Vier Mitarbeitende mit Zugang, Nina Neu ohne Zugang (STAFF-002b), zwei
-    // Patient:innen mit Konto und Petra Platzhalter ohne.
+    // Patient:innen mit Konto und Petra Platzhalter ohne. NICHT dabei: Tina
+    // Trainingskundin - sie hat kein Behandlungsverhaeltnis (LEI-001, §4.8).
     expect(rows[0]?.n).toBe('8');
+  });
+
+  it('verbirgt eine Person ohne Behandlungsverhaeltnis vor der Behandlungsseite (§4.8)', async () => {
+    // Der Name allein waere schon der verbotene Schluss: Wer in der
+    // Personenliste steht und keine Akte hat, trainiert. ADR-021 Punkt 3
+    // laesst die Identitaet geteilt sein, §4.8 den Schluss ueber sie nicht.
+    for (const rolle of [users.therapist, users.office, users.teamLead]) {
+      const { rows } = await asUser(rolle, 'select id from public.persons where id = $1', [
+        SEED.persons.tina,
+      ]);
+      expect(rows).toEqual([]);
+    }
   });
 
   it('zeigt einem Patienten ausschliesslich die eigene Person', async () => {

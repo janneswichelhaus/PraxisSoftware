@@ -66,6 +66,7 @@ describe('Schema-Invarianten', () => {
       'staff_members',
       'staff_private_details',
       'patients',
+      'training_relationships',
       'patient_contact_details',
       'patient_care_details',
       'user_profiles',
