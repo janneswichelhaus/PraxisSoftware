@@ -44,6 +44,30 @@ describe('Schrift', () => {
     );
   });
 
+  it('liefert sie zuerst als WOFF2 und laedt sie vor (R3-034)', () => {
+    // 144 kB TTF auf dem kritischen Pfad jedes ersten Aufrufs. WOFF2 bringt
+    // die Kompression in der Datei mit und wirkt damit auch dort, wo der
+    // Hoster font/ttf nicht komprimiert. Die TTF bleibt als Rueckfall.
+    expect(css).toMatch(/url\('\/schrift\/HankenGrotesk-Variable\.woff2'\) format\('woff2'\)/);
+
+    const reihenfolge = /src:\s*([^;]+);/.exec(css)?.[1] ?? '';
+    expect(reihenfolge.indexOf('woff2')).toBeGreaterThanOrEqual(0);
+    expect(reihenfolge.indexOf('woff2')).toBeLessThan(reihenfolge.indexOf('truetype'));
+
+    const woff2 = statSync(join(stamm, 'public/schrift/HankenGrotesk-Variable.woff2')).size;
+    const ttf = statSync(join(stamm, 'public/schrift/HankenGrotesk-Variable.ttf')).size;
+    expect(woff2).toBeGreaterThan(10_000);
+    expect(woff2).toBeLessThan(ttf);
+
+    // Ohne Preload fragt der Browser die Schrift erst an, wenn er das CSS
+    // gelesen hat - eine Stufe spaeter als noetig.
+    const html = readFileSync(join(stamm, 'index.html'), 'utf8');
+    expect(html).toMatch(
+      /<link[^>]+rel="preload"[^>]+href="\/schrift\/HankenGrotesk-Variable\.woff2"/,
+    );
+    expect(html).toMatch(/<link[^>]+as="font"[^>]+crossorigin/);
+  });
+
   it('fuehrt Hanken Grotesk als erste Schrift der Anwendung', () => {
     const zeile = /--font-sans:\s*([^;]+);/.exec(css)?.[1] ?? '';
     expect(zeile.trim().startsWith("'Hanken Grotesk'")).toBe(true);
