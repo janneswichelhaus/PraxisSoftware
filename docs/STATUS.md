@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-20 · letzte Session: ADR-022 angenommen (E18, Schritt 2)
+# Status · Stand 2026-09-20 · letzte Session: ADR-006 Fassung 3 vorgeschlagen (E18, Schritt 3)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,17 +6,18 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**ADR-022 ist angenommen** (E18, Schritt 2) und steht an allen drei Stellen: Index in
-[`../CLAUDE.md`](../CLAUDE.md), [`adr/README.md`](adr/README.md), §21 (**0.12.2**). Ein Kalender,
-ein Kontext je Termin — `internal` ist kein neues Feld, es heißt `kind = 'event'`. **Gebaut ist
-davon nichts:** kein Schema, keine Migration, keine Spalte. Damit ist **Schritt 3 frei**.
-**R3 ist vollständig gemergt** (PR #57, #58, #59), `R3-UEBERGABE.md` weiter nur auf
-`claude/r3-analyse`; **Etappe 1 der Abrechnung ist gebaut**, Abnahme steht aus.
+**ADR-006 Fassung 3 ist geschrieben und wartet auf die Annahme** (E18, Schritt 3): die drei
+Feature-Verbote an der MDR-Grenze, dazu die Zweckbestimmung über **beide** Leistungsbereiche. Die
+Punkte 1 bis 8 sind unverändert, **bis dahin gilt Fassung 2**, Schritt 4 beginnt erst danach; der
+Stand liegt als **PR #64** gegen `main`. **ADR-021 und ADR-022 sind angenommen** (§21 **0.12.2**),
+**gebaut ist davon nichts**. **R3 ist vollständig gemergt** (PR #57, #58, #59), `R3-UEBERGABE.md`
+weiter nur auf `claude/r3-analyse`; **Etappe 1 der Abrechnung ist gebaut**, Abnahme steht aus.
 
 ## Danach — Reihenfolge seit 2026-09-20
 
-1. **ADR-006 neue Fassung** — die drei Feature-Verbote an der MDR-Grenze (E18, Schritt 3)
-2. **ADR-009 neue Fassung** — Steuerkennzeichen am Posten, getrennte Nummernkreise (E18, Schritt 4)
+1. **ADR-006 Fassung 3 annehmen** — Entscheidung von Jannes; danach Status im ADR,
+   [`adr/README.md`](adr/README.md) und §21 (E18, Schritt 3 abgeschlossen)
+2. **ADR-009 neue Fassung** — Steuerkennzeichen und getrennte Nummernkreise (E18, Schritt 4)
 3. **MAP-002** — In-App-Kartenprototyp; parallel startbar, sobald das PTV-Free-Abo vorliegt
 
 ## Prüfverfahren
@@ -51,9 +52,9 @@ FIX-EPIC-001 braucht Docker. Liste: [`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**ADR-022 angenommen** — kein Code, kein Schema, keine Migration. Vollzogen sind Status im ADR,
-Index in `CLAUDE.md`, Tabelle in `adr/README.md` und die Zeile in §21; die Korrekturversion
-**0.12.2** ändert keine Leitplanke, sie zieht in §4, §5, §8 und §18 eine Grenze. Mit angenommen ist
-die eine Abweichung von der Vorgabe: `internal` bekommt kein zweites Feld. Teuerste Folge bleibt,
-was der ADR nennt — zwei Aufbewahrungsfristen in einer Tabelle, gelöscht wird je Zeile am Kontext.
-Lokal: `git pull origin main`.
+**ADR-006 Fassung 3 vorgeschlagen** — kein Code, kein Schema, keine Migration. Die drei Verbote
+sind **Ausgabeverbote, keine Datenverbote**: keine Übungsauswahl aus Diagnose oder Befund, keine
+Bewertung eines Verlaufs, keine Trainingsfreigabe aus einem Fragebogen — erhoben und angezeigt wird
+weiter alles. Die Kante zu Rang 1 ist beschrieben, nicht verschoben: §7.1 darf hervorheben, solange
+nichts über die Bedeutung gesagt wird. Erzwungen wird nichts; ein Verbot, etwas **nicht** zu bauen,
+wirkt im Zuschnitt und im Zweitreview. Lokal: `git pull origin main`.
