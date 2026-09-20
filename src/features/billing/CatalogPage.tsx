@@ -264,6 +264,15 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
   const vollstaendig =
     (zeilen ?? []).length > 0 && fehler.every((eintrag) => eintrag === undefined);
 
+  // In Kraft gesetzt wird der **Serverstand**. Weicht das Formular davon ab,
+  // gingen die Änderungen still verloren — und die Liste wäre danach
+  // unveränderlich (R3-007). Verglichen wird gegen denselben Stand, aus dem
+  // die Zeilen entstanden sind.
+  const ungespeichert =
+    zeilen !== null &&
+    positionen.data !== undefined &&
+    JSON.stringify(zeilen) !== JSON.stringify(positionen.data.map(alsEingabe));
+
   const speichern = useMutation({
     mutationFn: () =>
       writeKatalogPositionen(
@@ -386,22 +395,38 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
             <Statusmeldung>Entwurf gespeichert.</Statusmeldung>
           ) : null}
 
+          {ungespeichert ? (
+            <Statusmeldung ton="warnung">
+              Es gibt ungespeicherte Änderungen. Bitte zuerst den Entwurf speichern — in Kraft
+              gesetzt wird der gespeicherte Stand.
+            </Statusmeldung>
+          ) : null}
+
           <div className="border-line flex flex-wrap gap-3 border-t pt-4">
-            <Rueckfrage
-              ausloeser="In Kraft setzen"
-              ausloeserVariante="primary"
-              bestaetigen="In Kraft setzen"
-              bestaetigenLaeuft="Wird in Kraft gesetzt …"
-              laeuft={inKraft.isPending}
-              fehler={inKraft.isError ? inKraft.error.message : undefined}
-              onBestaetigen={() => inKraft.mutate()}
-            >
-              <p>
-                „{version.label}" gilt ab {formatDate(version.valid_from)} und ist danach
-                <strong> unveränderlich</strong>. Eine spätere Preisänderung ist eine neue
-                Preisliste.
-              </p>
-            </Rueckfrage>
+            {ungespeichert ? (
+              // Gesperrt statt Rückfrage: Die Rückfrage erklärt, was
+              // unumkehrbar wird — sie ist nicht der Ort, an dem man erfährt,
+              // dass die eigene Änderung gar nicht mitginge (R3-007).
+              <Button type="button" disabled>
+                In Kraft setzen
+              </Button>
+            ) : (
+              <Rueckfrage
+                ausloeser="In Kraft setzen"
+                ausloeserVariante="primary"
+                bestaetigen="In Kraft setzen"
+                bestaetigenLaeuft="Wird in Kraft gesetzt …"
+                laeuft={inKraft.isPending}
+                fehler={inKraft.isError ? inKraft.error.message : undefined}
+                onBestaetigen={() => inKraft.mutate()}
+              >
+                <p>
+                  „{version.label}" gilt ab {formatDate(version.valid_from)} und ist danach
+                  <strong> unveränderlich</strong>. Eine spätere Preisänderung ist eine neue
+                  Preisliste.
+                </p>
+              </Rueckfrage>
+            )}
             <Rueckfrage
               ausloeser="Entwurf verwerfen"
               bestaetigen="Verwerfen"
