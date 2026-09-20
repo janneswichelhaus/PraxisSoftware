@@ -47,6 +47,9 @@ const LISTE =
 const UEBERTRAGEN =
   'select public.transfer_appointments_to_treatment_basis($1::uuid, $2::uuid[]) as anzahl';
 
+/** Krankengymnastik aus der geltenden Preisliste (supabase/seed.sql). */
+const KATALOG_KG = 'cccccccc-cccc-4ccc-8ccc-000000000001';
+
 interface Kontingent {
   prescribed: number;
   used: number;
@@ -253,6 +256,10 @@ describe('transfer_appointments_to_treatment_basis', () => {
   }, 120_000);
 
   beforeEach(async () => {
+    await asPostgres('delete from public.invoice_items');
+    await asPostgres('delete from public.invoices');
+    await asPostgres('delete from public.invoice_number_series');
+    await asPostgres('delete from public.billable_services');
     await asPostgres('delete from public.appointments');
     await asPostgres(
       "delete from public.audit_log where action = 'treatment_basis.appointments_transferred'",
@@ -341,6 +348,47 @@ describe('transfer_appointments_to_treatment_basis', () => {
       grundlage: GRUNDLAGE.erikaAlt,
       status: 'invoiced',
     });
+
+    await expect(
+      asUserCommitted(users.ownerTherapist, UEBERTRAGEN, [
+        GRUNDLAGE.erikaFrisch,
+        [offen, abgerechnet],
+      ]),
+    ).rejects.toThrow(/appointments are not transferable/);
+
+    const geblieben = await asPostgres<{ anzahl: string }>(
+      'select count(*) as anzahl from public.appointments where treatment_basis_id = $1',
+      [GRUNDLAGE.erikaAlt],
+    );
+    expect(Number(geblieben.rows[0]!.anzahl)).toBe(2);
+  });
+
+  it('uebertraegt keinen Termin, dessen Leistung abgerechnet ist (R3-001)', async () => {
+    // Der Zustand 'invoiced' am Termin entsteht im Betrieb nicht: Abgerechnet
+    // ist die Leistung, nicht der Termin (ANN-081). Geprueft wird deshalb der
+    // Weg, den die Anwendung wirklich geht - Leistung erfassen, Entwurf,
+    // ausstellen.
+    const offen = await termin({ inStunden: 24, grundlage: GRUNDLAGE.erikaAlt });
+    const abgerechnet = await termin({
+      inStunden: -26,
+      grundlage: GRUNDLAGE.erikaAlt,
+      status: 'documented',
+    });
+
+    await asUserCommitted(
+      users.office,
+      'select public.record_billable_services($1::uuid, $2::jsonb)',
+      [abgerechnet, JSON.stringify([{ catalog_item_id: KATALOG_KG, quantity: 1 }])],
+    );
+    const { rows: monat } = await asPostgres<{ monat: string }>(
+      `select to_char(date_trunc('month', (now() at time zone 'Europe/Berlin')::date), 'YYYY-MM-DD') as monat`,
+    );
+    const { rows: entwurf } = await asUserCommitted<{ id: string }>(
+      users.office,
+      'select public.create_invoice_draft($1::uuid, $2::date) as id',
+      [patients.erika, monat[0]!.monat],
+    );
+    await asUserCommitted(users.office, 'select public.issue_invoice($1::uuid)', [entwurf[0]!.id]);
 
     await expect(
       asUserCommitted(users.ownerTherapist, UEBERTRAGEN, [
