@@ -248,6 +248,12 @@ function OffeneEinladung({
           angelegt werden; die Einladung bleibt so lange offen.
         </Statusmeldung>
       ) : null}
+      {erneutSenden.data === 'dienst_nicht_erreichbar' ? (
+        <Statusmeldung ton="fehler" className="mt-3">
+          Der Anmeldedienst war nicht erreichbar. Die Einladung bleibt offen — bitte später erneut
+          senden.
+        </Statusmeldung>
+      ) : null}
       {erneutSenden.isError ? (
         <Statusmeldung ton="fehler" className="mt-3">
           Der Anmeldedienst war nicht erreichbar.

@@ -6,6 +6,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { getSupabase } from '@/lib/supabase';
 import { fordereKennwortMailAn } from '@/features/account/api';
+import { VerbindungError } from '@/features/auth/linkEinloesen';
 
 /**
  * Kennwort vergessen (STAFF-004a).
@@ -20,6 +21,7 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
   const [offen, setOffen] = useState(false);
   const [email, setEmail] = useState('');
   const [gesendet, setGesendet] = useState(false);
+  const [nichtErreichbar, setNichtErreichbar] = useState(false);
   const [pending, setPending] = useState(false);
 
   if (gesendet) {
@@ -37,6 +39,7 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
         type="button"
         onClick={() => {
           setEmail(voreingestellteAdresse);
+          setNichtErreichbar(false);
           setOffen(true);
         }}
         className="text-ink-muted hover:text-ink mt-4 inline-flex min-h-11 items-center self-start text-sm underline underline-offset-4"
@@ -50,13 +53,18 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
     event.preventDefault();
     if (pending) return;
     setPending(true);
+    setNichtErreichbar(false);
     try {
       await fordereKennwortMailAn(email);
-    } catch {
-      // Bewusst ohne eigene Meldung - siehe oben.
+      setGesendet(true);
+    } catch (fehler) {
+      // Ein nicht erreichbarer Dienst wird benannt: Sonst wartet jemand auf
+      // eine Mail, die nie kommt (R3-008). Jeder andere Fehlschlag bleibt
+      // ohne eigene Meldung - er könnte verraten, ob es das Konto gibt.
+      if (fehler instanceof VerbindungError) setNichtErreichbar(true);
+      else setGesendet(true);
     } finally {
       setPending(false);
-      setGesendet(true);
     }
   }
 
@@ -91,6 +99,12 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
           Abbrechen
         </Button>
       </div>
+
+      {nichtErreichbar ? (
+        <Statusmeldung ton="fehler">
+          Der Anmeldedienst ist gerade nicht erreichbar. Bitte später erneut versuchen.
+        </Statusmeldung>
+      ) : null}
     </form>
   );
 }
