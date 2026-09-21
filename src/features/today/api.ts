@@ -112,7 +112,12 @@ export function istOffen(termin: DayPlanEntry, darfDokumentieren: boolean): bool
   // Ein Ereignis verlangt nichts: Es wird weder abgeschlossen noch
   // dokumentiert, und eine Aufgabe, die niemand erledigen kann, wäre eine
   // falsche Zahl über der Liste (CAL-016).
-  if (termin.kind === 'event') return false;
+  //
+  // Für den Trainingstermin gilt dasselbe, und zwar dauerhaft: Er erzeugt
+  // keine Behandlungsdokumentation (ADR-022 Punkt 6), also steht an ihm auch
+  // nichts offen. Er erreicht diese Liste nur bei einer Rolle, die beide
+  // Bereiche trägt (owner, office).
+  if (termin.kind !== 'treatment') return false;
   if (termin.status === 'confirmed') return true;
   if (termin.status !== 'completed') return false;
   if (!darfDokumentieren) return false;

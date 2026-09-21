@@ -97,10 +97,15 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
           </span>
           <span className="text-ink-muted block">
             {/* Ein Ereignis des Praxisbetriebs steht mit seinem Titel da
-                (CAL-015b) - es hängt an dieser Person genauso. */}
+                (CAL-015b) - es hängt an dieser Person genauso. Ein
+                Trainingstermin steht nur als Belegung da: Der Kontext ist ein
+                Metadatum, kein Inhalt (ADR-022 Punkt 11); Person und Grundlage
+                gehören nicht in diese Liste und stehen auch nicht darin. */}
             {termin.kind === 'event'
               ? (termin.title ?? 'Ereignis')
-              : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}{' '}
+              : termin.kind === 'training'
+                ? 'Trainingstermin'
+                : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}{' '}
             · {appointmentTypeLabels[termin.appointment_type]}
             {termin.location_name ? ` · ${termin.location_name}` : ''}
           </span>

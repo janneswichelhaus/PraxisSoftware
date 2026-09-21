@@ -220,8 +220,11 @@ const futureAppointmentSchema = z.object({
   appointment_type: z.enum(['home_visit', 'practice', 'video']),
   // Seit CAL-015b stehen hier auch Ereignisse des Praxisbetriebs: Sie hängen
   // an dieser Person genauso wie eine Behandlung, und wer sie deaktivieren
-  // will, muss sie sehen.
-  kind: z.enum(['treatment', 'event']),
+  // will, muss sie sehen. Seit CAL-024 gilt dasselbe für den Trainingstermin —
+  // ausgeblendet bliebe er beim Deaktivieren unbemerkt stehen. Er zeigt dabei
+  // nur die Belegung: Personenfelder und Titel sind an ihm leer (ADR-022
+  // Punkt 11).
+  kind: z.enum(['treatment', 'event', 'training']),
   title: z.string().nullable(),
   patient_id: z.string().nullable(),
   patient_given_name: z.string().nullable(),

@@ -105,3 +105,60 @@ Keine Trainingsoberfläche und keine Schreibwege für das Verhältnis; die Rolle
 Keine Screening- oder Gesundheitsangaben und damit auch keine Frist für sie —
 sie bleibt bei **B2**. Keine Verknüpfung von Terminen mit dem
 Trainingsverhältnis: Das ist **CAL-EPIC-005**.
+
+## CAL-EPIC-005 — Terminkontext, Trainingsgrundlage, kein Durchgriff
+
+Prüfschritte zu **CAL-024** bis **CAL-026**. Grundlage: ADR-022 (alle elf
+Punkte), ADR-020 (unverändert), ADR-021 Punkt 6, ADR-008.
+
+**Dieser Loop bringt drei Migrationen**
+(`20260921100000_appointment_context.sql`,
+`20260921110000_training_basis.sql`,
+`20260921120000_appointment_context_guards.sql`) **und keinen geänderten
+Seed**: vorher `git pull origin main`, dann
+`pnpm dlx supabase@2.116.0 db reset`.
+
+### 1. Auch hier gibt es nichts zu klicken — und auch das ist die Zusage
+
+Es entsteht keine Seite für Trainingstermine; sie anzulegen ist erst mit dem
+Trainingsbereich möglich (E18 Schritt 7). Die Abnahme am Bildschirm ist wieder
+eine **Gegenprobe**: als `anna.beispiel@praxis.invalid` (therapist) anmelden
+und nachsehen, dass Kalender, Tagesliste, Akte und Abrechnung unverändert sind.
+Der Kalender zeigt weiterhin genau Behandlungstermine und Ereignisse — und
+nichts Drittes, auch dann nicht, wenn in der Datenbank Trainingstermine
+stehen.
+
+### 2. Der Kontext und seine drei Grenzen — serverseitig geprüft
+
+Sie hängen an Constraints, Policies und Triggern, nicht an der Oberfläche.
+Nachgewiesen in `pnpm test:db`, 42 Fälle:
+
+- **Ein Verhältnis je Termin oder keines** — ein Behandlungstermin ohne
+  Patient:in, ein Trainingstermin mit Patient:in, ein Termin mit **beiden**
+  Verhältnissen und ein interner Termin mit Gegenüber sind schemaseitig
+  unmöglich. Ebenso ein Trainingstermin an der Behandlungsgrundlage: Training
+  kommt damit nicht in die Patientenakte.
+- **Lesen filtert nach Kontext** — die Trainingsbetreuung liest keinen
+  Behandlungstermin, die therapeutischen Rollen lesen keinen Trainingstermin,
+  und `owner` und `office` lesen beides, weil sie in beiden Bereichen stehen.
+  Der Kalender und die Tagesliste ziehen nach; die Policy allein genügte nicht.
+- **Die Belegung bleibt gemeinsam** — fällt ein Behandlungstermin auf einen
+  Trainingstermin, meldet der Server „belegt" und nennt weder Person noch
+  Kontext noch eine Kennung. Das ist der bewusst bezahlte Preis des einen
+  Kalenders (ADR-022 Punkt 11).
+- **Dokumentiert wird nur die Behandlung** — der Riegel sitzt an
+  `treatment_notes` und gilt damit auch für Schreibwege, die es noch nicht
+  gibt; die automatische Finalisierung erreicht einen Trainingstermin nicht.
+- **Gelöscht wird je Zeile am Kontext** — ein Trainingstermin fällt mit seinem
+  Verhältnis nach dessen Frist, nicht nach der Frist für Termine ohne Nachweis.
+
+### 3. Was dieser Loop nicht bringt
+
+Keine Oberfläche und keine Schreibwege für Trainingstermine oder
+Trainingsgrundlagen. Kein Trainingsprotokoll — und damit ist der Zustand
+`documented` an einem Trainingstermin nicht erreichbar (ADR-022 Punkt 8; ein
+Zustand, den niemand setzen kann, wird nicht vorgebaut). Kein Gebührenanlass
+im Training: ob die Absage unter 24 Stunden auch im Dienstvertrag über Training
+einen Anspruch begründet, ist **deine** Vertrags- und AGB-Frage; bis zur
+Antwort gilt ADR-018 Punkt 8 nur für die Behandlung. Und keine Umbenennung der
+Bestandswerte `treatment` und `event` — sie ist als **CAL-027** abgetrennt.
