@@ -281,6 +281,13 @@ export const wertebereichSchema = z
  * `nummer` ist die gedruckte Nummer der Vorlage. Sie ist der einzige Weg, eine
  * Übertragung gegen das PDF zu halten — das Inventar benennt Subskalen über
  * Nummern („FABQ-W: Items 6,7,9,10,11,12,15").
+ *
+ * **Kein `skip_logic` (ANN-087).** Der Arbeitsauftrag §3 nennt das Feld in
+ * seiner Skizze, aber keines der 18 Instrumente braucht es: Was das Inventar an
+ * Auslassungen kennt, betrifft ganze Subskalen (KOOS: „Nicht-Sportler:
+ * Sport-Subskala auslassen") und steht dort in der Missing-Value-Regel. Ein
+ * Feld ohne Fall wäre ein Zukunftsfeature — und lädt dazu ein, falsch benutzt
+ * zu werden, bevor jemand weiß, was es bedeuten soll.
  */
 export const scoreItemSchema = z
   .object({
