@@ -86,3 +86,99 @@ Alles als `anna.beispiel@praxis.invalid` (therapist) oder
 Rechtslage. Echte Adressen erreichen den Kartendienst erst nach dem Gate aus
 ADR-019 Punkt 9 (Vertrag, § 203 StGB, DSFA) — bis dahin bleibt es bei
 erfundenen Koordinaten.
+
+## MAP-003 — Fahrradrouting-Prototyp
+
+Prüfschritte zu **MAP-003a/b/c**. Grundlage: ADR-019 Fassung 2, Punkt 7, 13,
+15, 16, 18 und 24; ANN-017 und ANN-090.
+
+**Dieser Loop bringt keine Migration, keinen geänderten Seed und keine neue
+Abhängigkeit**: `git pull origin main` genügt.
+
+**Drei Schritte, die nur bei Jannes gehen** — in der Cloud-Umgebung läuft
+weder Docker noch die Deno-Laufzeit:
+
+1. In `supabase/config.toml` für diesen Lauf `[edge_runtime] enabled = true`
+   setzen. **Die Zeile bleibt im Repository auf `false`**: Die Laufzeit ist
+   nach ADR-015 Punkt 20 nicht freigegeben, und was hier läuft, läuft mit
+   synthetischen Koordinaten (ADR-019 Punkt 15). Nach der Abnahme
+   zurückstellen.
+2. Eine ungetrackte `supabase/functions/.env.local` anlegen — `.env.*` ist in
+   `.gitignore`:
+
+   ```
+   LOCATION_PROVIDER=ptv
+   PTV_API_KEY=<derselbe Schlüssel wie für die Kacheln, Entscheidung 2026-09-21>
+   ```
+
+3. `pnpm dlx supabase@2.116.0 start`, dann in einem zweiten Terminal
+   `pnpm dlx supabase@2.116.0 functions serve --env-file supabase/functions/.env.local`.
+
+Alles als `anna.beispiel@praxis.invalid` (therapist) oder
+`jannes.test@praxis.invalid` (owner).
+
+### 1. Die Route liegt auf der Karte
+
+1. **Kalender → Touren → „Kartenprototyp mit Teststopps öffnen"**. Erwartung:
+   unter der Karte der Abschnitt **„Die Route"**, zuerst „Route wird berechnet
+   …", dann Strecke und Fahrzeit.
+2. Erwartung: eine durchgehende dunkelgrüne Linie zwischen den acht Markern,
+   und zwar **auf Straßen** — nicht quer über Häuser. Genau das unterscheidet
+   die echte Antwort von der Nachbildung.
+3. Erwartung: „Je Abschnitt" listet sieben Zeilen (1 → 2 bis 7 → 8), die
+   Summe der Abschnitte passt ungefähr zur Gesamtangabe.
+4. Mit `LOCATION_PROVIDER=mock` erneut: Erwartung: Luftlinien statt Straßen
+   **und** der Hinweis „Nachbildung ohne Kartendienst" darüber. **Fehlt der
+   Hinweis, ist die Abnahme nicht bestanden.**
+
+### 2. Die Zustände, die eine Praxis unterscheiden muss
+
+1. `LOCATION_PROVIDER` aus der Datei nehmen, `functions serve` neu starten,
+   Seite neu laden. Erwartung: „Kein Kartendienst eingerichtet" mit den zwei
+   Secret-Namen — **keine** Meldung über einen Ausfall des Anbieters
+   (ANN-090).
+2. `functions serve` beenden, Seite neu laden. Erwartung: „Kartendienst nicht
+   erreichbar", die Stopps stehen weiter auf Karte und Liste.
+3. In beiden Fällen: **„Erneut versuchen"** anklicken. Erwartung: Der Versuch
+   läuft erkennbar neu; nach dem Start der Function kommt die Route.
+4. Einen falschen `PTV_API_KEY` eintragen. Erwartung: „Kartendienst weist den
+   Serverschlüssel ab" — nicht „abgemeldet", nicht die Anmeldemaske.
+
+### 3. Was zum Anbieter geht (die eigentliche Prüfung)
+
+1. Entwicklerwerkzeuge → **Netzwerk**, Seite neu laden, Filter `myptv`.
+   Erwartung: **nur Kachel-, Style-, Sprite- und Glyphenanfragen**. Eine
+   Routing-Anfrage aus dem Browser an `api.myptv.com/routing/…` wäre ein
+   Fehler — sie muss vom Server kommen.
+2. Filter auf `functions/v1`. Erwartung: **ein** `POST` auf
+   `…/functions/v1/location-provider` je Profil, im Rumpf ausschließlich
+   `waypoints` und `profile`. Kein Name, keine Terminkennung, keine Uhrzeit.
+3. Die Antwort ansehen. Erwartung: Kopfzeile `Cache-Control: no-store`.
+4. Im Terminal von `functions serve`: Erwartung: Bei einem Fehler **eine**
+   Zeile mit Anbieterkennung, Fehlerklasse und Dauer — **keine Koordinate**,
+   keine Adresse, kein Schlüssel (ADR-011, ADR-019 Punkt 18).
+5. Abmelden, dann `…/functions/v1/location-provider` ohne Sitzung aufrufen
+   (zweites Browserfenster oder `curl -X POST`). Erwartung: **401**, und im
+   Terminal keine Anbieteranfrage.
+
+### 4. Die Profilfrage (MAP-003c, Entscheidung von Jannes)
+
+1. Erwartung: Unter der Gesamtangabe steht eine zweite Zeile mit dem
+   **Lastenradprofil** und dem Unterschied.
+2. **Beide Zahlenpaare notieren** und an den nächsten Loop geben: Sie
+   beantworten, welches Profil `cargo_bicycle` im Vertrag abbilden soll. Eine
+   Einstellung dafür gibt es bewusst nicht.
+
+### 5. Telefon und Rest der Anwendung
+
+1. Fenster auf **375 px**. Erwartung: Linie sichtbar, Abschnittsliste lesbar,
+   kein waagerechtes Scrollen, „Erneut versuchen" mit dem Daumen zu treffen.
+2. Kalender, Akte, Abrechnung öffnen. Erwartung: unverändert, keine Anfrage
+   an `functions/v1`.
+
+**Bekannte Grenze dieser Abnahme:** Die Schreibweise der Abfrageparameter der
+Routing-API ist aus den Clients des Anbieters abgeleitet, nicht aus seiner
+Dokumentation belegt (BEF-023). Antwortet PTV mit 400 oder ohne GeoJSON, ist
+das kein Fehler der Anwendung, sondern genau der Punkt, den dieser erste Lauf
+klärt — korrigiert wird dann `supabase/functions/location-provider/ptv.ts`
+und sonst nichts.

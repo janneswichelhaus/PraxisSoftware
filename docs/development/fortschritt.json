@@ -213,7 +213,7 @@
           "id": "map-003",
           "name": "MAP-003 Fahrradroute als Linie",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig"
         },
         {
           "id": "map-004",
