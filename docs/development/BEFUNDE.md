@@ -667,3 +667,28 @@ und wird auf Blatt und Rechnungsansicht nur angezeigt. Der § 14c-Riegel aus
 ABR-007 erzwingt ihn: Ohne Grund lässt sich eine Rechnung mit steuerfreiem
 Posten nicht ausstellen. Offen bleibt allein der **Wortlaut** — er hängt an
 einer Funktion und ändert sich mit der Antwort aus B4 an genau dieser Stelle.
+
+### BEF-020 — Zwei fertige Loops fehlen in der Tabelle der fertigen Loops
+
+|         |                                                                                     |
+| ------- | ----------------------------------------------------------------------------------- |
+| Datum   | 2026-09-21                                                                          |
+| Bereich | Werkzeugkette: Abschnitt „Fortschritt" in `docs/development/ROADMAP.md`             |
+| Quelle  | Loop CAL-EPIC-005, beim Nachtragen der eigenen Zeile                                |
+| Status  | offen                                                                               |
+| Berührt | Die Tabelle; `fortschritt.json` führt beide Posten korrekt                          |
+
+**Beobachtung.** **LEI-EPIC-001** (fertig 2026-09-20) und **FRB-EPIC-000**
+(fertig 2026-09-21) haben keine Zeile in der Tabelle der fertigen Loops. In
+`fortschritt.json` stehen beide.
+
+**Warum das zählt.** Das ist die Gegenrichtung zu **BEF-017**, und zusammen
+machen die beiden die Probe unmöglich: Modell und Tabelle weichen in beide
+Richtungen voneinander ab, und wer sie vergleicht, weiß bei keiner Abweichung
+mehr, welche Seite stimmt. Einzeln ist jede Lücke harmlos, gemeinsam sind sie
+der Grund, die Zahl nicht mehr zu glauben.
+
+**Richtung.** Zwei Zeilen nachtragen, zusammen mit den vier Posten aus
+BEF-017 — eine Docs-Session, kein Feature-Loop. Dass beide Befunde dieselbe
+Sitzung brauchen, ist der eigentliche Hinweis: Skill-Schritt I pflegt heute
+zwei Orte, die nichts gegeneinander prüft.
