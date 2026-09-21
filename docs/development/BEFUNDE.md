@@ -812,3 +812,55 @@ Profil `BICYCLE` klaglos — und rechnet auf HERE-Daten. Der falsche Pfad wäre
 also nicht aufgefallen, sondern hätte funktioniert und dabei einen zweiten
 Datenlieferanten in den Datenweg geholt, den ADR-019 Punkt 7 ausschließt. Ein
 Test hält die Adresse deshalb jetzt fest.
+
+### BEF-024 — Der Terminkontext steht in zwei Schemata
+
+|         |                                                                                  |
+| ------- | -------------------------------------------------------------------------------- |
+| Datum   | 2026-09-21                                                                       |
+| Bereich | Oberfläche: `src/features/appointments/api.ts`, `src/features/staff/api.ts`      |
+| Quelle  | Loop CAL-027, beim Umbenennen der Bestandswerte                                  |
+| Status  | offen                                                                            |
+| Berührt | `futureAppointmentSchema`; nichts an der Datenbank                               |
+
+**Beobachtung.** `appointmentKindSchema` ist als eine Quelle angelegt und wird
+von den Terminschemata benutzt. `futureAppointmentSchema` in `features/staff`
+zählt dieselben drei Werte stattdessen ein zweites Mal auf, statt sie zu
+importieren.
+
+**Warum das zählt.** CAL-027 hat beide Stellen anfassen müssen, und die zweite
+fiel nur auf, weil ein `grep` sie fand — kein Gate hätte sie gemeldet. Ein
+vierter Kontext (oder eine weitere Umbenennung) trifft dieselbe Lücke, und
+dann steht in der Verwaltung der Zugänge ein Schema, das den neuen Wert
+verwirft, während der Kalender ihn kennt: eine Zod-Ausnahme in einer Liste,
+die mit dem Kontext gar nichts vorhat.
+
+**Richtung.** `appointmentKindSchema` importieren statt aufzählen — eine
+Zeile, gehört in den nächsten Loop, der `features/staff` ohnehin anfasst. Als
+eigener Auftrag lohnt sie nicht.
+
+### BEF-025 — MAP-003 fehlt im Änderungsvermerk
+
+|         |                                                                                     |
+| ------- | ----------------------------------------------------------------------------------- |
+| Datum   | 2026-09-21                                                                          |
+| Bereich | Werkzeugkette: Abschnitt „Änderungsvermerk" in `docs/development/ROADMAP.md`        |
+| Quelle  | Loop CAL-027, beim Eintragen der eigenen Zeile                                      |
+| Status  | offen                                                                               |
+| Berührt | Den Vermerk; Fortschrittstabelle und `fortschritt.json` führen MAP-003 korrekt       |
+
+**Beobachtung.** **MAP-003** (fertig 2026-09-21) hat eine Zeile in der Tabelle
+der fertigen Loops, aber **keine** im Änderungsvermerk: Die Zählung springt von
+5.38 (`MDR_REVIEW_REQUIRED`) zur nächsten Sitzung, MAP-002 steht als 5.33 da.
+
+**Warum das zählt.** Das ist dieselbe Drift wie **BEF-017** und **BEF-020**,
+nur an der dritten Stelle. Skill-Schritt I pflegt inzwischen drei Orte —
+Fortschrittstabelle, `fortschritt.json` und Änderungsvermerk —, und nichts
+prüft sie gegeneinander. Der Vermerk ist dabei der einzige Ort, an dem steht,
+**warum** ein Loop so ausgegangen ist; wer ihn später liest, findet zu MAP-003
+nur das Ergebnis und nicht die Begründung.
+
+**Richtung.** Mit BEF-017 und BEF-020 in derselben Docs-Session nachtragen.
+Die eigentliche Antwort ist aber nicht das Nachtragen, sondern ein Gate: Ein
+Loop in der Fortschrittstabelle ohne Zeile im Vermerk (und umgekehrt) ist
+maschinell prüfbar und gehörte in `pnpm docs:check`.

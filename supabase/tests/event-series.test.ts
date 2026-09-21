@@ -160,7 +160,7 @@ describe('Dauerfehlzeit anlegen', () => {
     await expect(serie()).rejects.toThrow(/overlaps/);
 
     const { rows } = await asPostgres<{ anzahl: string }>(
-      "select count(*) as anzahl from public.appointments where kind = 'event' and title = 'Teammeeting'",
+      "select count(*) as anzahl from public.appointments where kind = 'internal' and title = 'Teammeeting'",
     );
     expect(rows[0]!.anzahl).toBe('0');
   });

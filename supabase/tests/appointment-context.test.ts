@@ -60,7 +60,7 @@ async function termin(felder: TerminFelder = {}): Promise<string> {
     // Ein Ereignis traegt seit CAL-017 immer eine Gruppenkennung; ohne sie
     // spraeche `appointments_event_group` zuerst und verdeckte, was der Test
     // eigentlich prueft.
-    gruppe = kind === 'event' ? '77777777-7777-4777-8777-0000000000e1' : null,
+    gruppe = kind === 'internal' ? '77777777-7777-4777-8777-0000000000e1' : null,
     mitarbeiter = TOM,
     beginn = '09:00',
     ende = '10:00',
@@ -118,8 +118,8 @@ describe('Terminkontext', () => {
           where conrelid = 'public.appointments'::regclass
             and conname  = 'appointments_kind_values'`,
       );
-      expect(rows[0]?.definition).toContain("'treatment'");
-      expect(rows[0]?.definition).toContain("'event'");
+      expect(rows[0]?.definition).toContain("'therapy'");
+      expect(rows[0]?.definition).toContain("'internal'");
       expect(rows[0]?.definition).toContain("'training'");
 
       // Einen vierten Wert nimmt die Tabelle nicht an. Welche der beiden
@@ -139,6 +139,53 @@ describe('Terminkontext', () => {
             and column_name in ('context', 'appointment_context', 'service_area')`,
       );
       expect(rows).toEqual([]);
+    });
+  });
+
+  describe('Die Bestandswerte heissen wie die Bereiche (CAL-027)', () => {
+    it('nimmt die alten Werte nicht mehr an', async () => {
+      // Die Umbenennung ist nur dann durch, wenn der alte Wert nirgends mehr
+      // ankommt. Beides faellt an `appointments_kind_values` oder an
+      // `kind_fields`, das die drei Zweige ebenfalls aufzaehlt.
+      await expect(termin({ kind: 'treatment', patient: patients.erika })).rejects.toThrow(
+        /appointments_kind_(values|fields)/,
+      );
+      await expect(termin({ kind: 'event', titel: 'Teambesprechung' })).rejects.toThrow(
+        /appointments_kind_(values|fields)/,
+      );
+    });
+
+    it('legt einen Termin ohne ausdrueckliche Terminart als therapy an', async () => {
+      // Die Spaltenvorgabe aus CAL-015b traegt seit CAL-027 den neuen Wert;
+      // stuende dort noch `treatment`, scheiterte schon dieses Insert.
+      const { rows } = await asPostgres<{ kind: string }>(
+        `insert into public.appointments (
+           organization_id, patient_id, staff_member_id, location_id,
+           appointment_type, starts_at, ends_at
+         ) values (
+           $1, $2, $3, $4, 'practice',
+           ($5::date + time '11:00') at time zone 'Europe/Berlin',
+           ($5::date + time '12:00') at time zone 'Europe/Berlin'
+         ) returning kind`,
+        [organizationId, patients.erika, TOM, STANDORT, TAG],
+      );
+      expect(rows[0]?.kind).toBe('therapy');
+    });
+
+    it('kennt den alten Wert in keiner Funktion mehr', async () => {
+      // Der eigentliche Umfang von CAL-027 waren achtzehn Funktionsruempfe.
+      // Eine vergessene Stelle faende still kein Ergebnis mehr, statt laut zu
+      // scheitern - deshalb zaehlt der Katalog selbst nach. Gesucht wird
+      // ausschliesslich der Vergleich an `kind`; `item_kind` aus ADR-009 ist
+      // eine andere Spalte und bleibt ausdruecklich unberuehrt.
+      const { rows } = await asPostgres<{ name: string }>(
+        `select n.nspname || '.' || p.proname as name
+           from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname in ('public', 'app')
+            and p.prosrc ~ '(^|[^_[:alnum:]])kind[[:space:]]*(=|<>|!=|is distinct from)[[:space:]]*''(treatment|event)'''
+          order by 1`,
+      );
+      expect(rows.map((zeile) => zeile.name)).toEqual([]);
     });
   });
 
@@ -177,7 +224,7 @@ describe('Terminkontext', () => {
     it('verweigert einen Behandlungstermin am Trainingsverhaeltnis', async () => {
       await expect(
         termin({
-          kind: 'treatment',
+          kind: 'therapy',
           patient: patients.erika,
           verhaeltnis: trainingRelationships.erika,
           mitarbeiter: ANNA,
@@ -188,7 +235,7 @@ describe('Terminkontext', () => {
     it('verweigert einem internen Termin jedes Gegenueber', async () => {
       await expect(
         termin({
-          kind: 'event',
+          kind: 'internal',
           titel: 'Teambesprechung',
           verhaeltnis: trainingRelationships.tina,
         }),
@@ -250,7 +297,7 @@ describe('Terminkontext', () => {
 
     it('laesst dem internen Termin weiterhin keinen Hausbesuch', async () => {
       await expect(
-        termin({ kind: 'event', titel: 'Teambesprechung', art: 'home_visit' }),
+        termin({ kind: 'internal', titel: 'Teambesprechung', art: 'home_visit' }),
       ).rejects.toThrow(/appointments_event_type/);
     });
   });
@@ -259,7 +306,7 @@ describe('Terminkontext', () => {
     it('laesst den Kontext nicht wechseln', async () => {
       const id = await termin();
       await expect(
-        asPostgres(`update public.appointments set kind = 'treatment' where id = $1`, [id]),
+        asPostgres(`update public.appointments set kind = 'therapy' where id = $1`, [id]),
       ).rejects.toThrow(/appointment context cannot be changed/);
     });
 

@@ -181,7 +181,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
   const daten = termin.data;
   const zurueck = mitRueckweg(`/termine/${daten.id}`, rueckweg);
 
-  if (daten.kind !== 'event' || !gruppeId) {
+  if (daten.kind !== 'internal' || !gruppeId) {
     return (
       <>
         <Link

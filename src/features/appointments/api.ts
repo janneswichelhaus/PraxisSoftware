@@ -149,10 +149,11 @@ export const notificationChannelOrder: readonly NotificationChannel[] = [
 /**
  * Kontext des Termins (CAL-015b, CAL-024; ADR-022 Punkt 2).
  *
- * `treatment` ist der Behandlungstermin mit Patient:in; `event` ein Ereignis
+ * `therapy` ist der Behandlungstermin mit Patient:in; `internal` ein Ereignis
  * des Praxisbetriebs — Besprechung, Teamtermin — ohne Patient:in, ohne
  * Verordnung und ohne Längenregel. Ein Ereignis erzeugt ausdrücklich **keine**
- * abrechenbare Leistung (§19).
+ * abrechenbare Leistung (§19). Beide hießen bis CAL-027 `treatment` und
+ * `event`; sie heißen jetzt wie die Bereiche (ADR-021 Punkt 9).
  *
  * `training` ist der Trainingstermin am Trainingsverhältnis (ADR-021). Die
  * Praxisoberfläche zeigt ihn **nicht**: Die Policy auf dem Kalender und die
@@ -162,7 +163,7 @@ export const notificationChannelOrder: readonly NotificationChannel[] = [
  * wegzulassen, und die Verwaltung der Zugänge liest den Kalender bewusst über
  * alle Kontexte (`fetchStaffFutureAppointments`).
  */
-export const appointmentKindSchema = z.enum(['treatment', 'event', 'training']);
+export const appointmentKindSchema = z.enum(['therapy', 'internal', 'training']);
 export type AppointmentKind = z.infer<typeof appointmentKindSchema>;
 
 export const appointmentSchema = z.object({
@@ -386,7 +387,7 @@ export function patientName(
 export function terminBezeichnung(
   appointment: Pick<Appointment, 'kind' | 'title' | 'patient_given_name' | 'patient_family_name'>,
 ): string {
-  if (appointment.kind === 'event') return appointment.title ?? 'Ereignis';
+  if (appointment.kind === 'internal') return appointment.title ?? 'Ereignis';
   // Ein Trainingstermin hat weder Titel noch Patientennamen und erreicht die
   // Praxisoberfläche nicht (ADR-022 Punkt 11). Wo er doch steht — in der
   // Terminliste vor dem Deaktivieren eines Zugangs —, ist er die Belegung und
@@ -533,7 +534,7 @@ export function abweichendeLaengeMinuten(termin: {
 }): number | null {
   // Die Längenregel gilt dem Behandlungstermin: Ereignis und Trainingstermin
   // haben keine Patient:in und damit auch keine Regellänge (CAL-020).
-  if (termin.kind !== undefined && termin.kind !== 'treatment') return null;
+  if (termin.kind !== undefined && termin.kind !== 'therapy') return null;
   const dauerMs = Date.parse(termin.ends_at) - Date.parse(termin.starts_at);
   if (!Number.isFinite(dauerMs)) return null;
   const minuten = Math.round(dauerMs / 60_000);

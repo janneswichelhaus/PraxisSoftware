@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-21 · letzte Session: MAP-003 Fahrradrouting
+# Status · Stand 2026-09-21 · letzte Session: CAL-027 Bestandswerte
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,38 +6,37 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**Die Fahrradroute liegt auf der Karte** — MAP-003 ist gebaut. Die Edge Function
-`location-provider` rechnet sie **serverseitig** bei PTV (ANN-017) oder liefert eine **erkennbare**
-Nachbildung; ohne Sitzung antwortet sie 401, speichert nichts, protokolliert keine Koordinate.
-`/touren/karte` zeigt Linie, Strecke und Fahrzeit je Abschnitt, benennt jeden Fehlerzustand und
-stellt beide Profile nebeneinander (MAP-003c). **ANN-090**: „nicht eingerichtet" ist eine eigene
-Klasse, nie still die Nachbildung. **109 neue Tests. 41,9 %.**
+**Der Terminkontext heißt im Schema, wie er heißt** — CAL-027 ist gebaut. `appointments.kind` trägt
+`therapy`, `internal` und `training`; die offene Folgefrage aus ADR-022 ist beantwortet. Eine
+Vorwärtsmigration: **sechs** Constraints (geschätzt waren zwei), ein Teilindex, die Spaltenvorgabe
+und **18** Funktionsrümpfe aus acht Migrationen, vor dem Übernehmen gegen die laufende Datenbank
+geprüft. Nicht umbenannt: Bezeichner, Ausnahmetexte, `item_kind`, Auditzeilen. **Keine neue
+Fähigkeit, deshalb kein Fortschritt: weiter 41,9 %.**
 
 ## Danach — Reihenfolge seit 2026-09-21
 
-1. **CAL-027** — Bestandswerte umbenennen, mechanisch, blockiert nichts
-2. **OPS-001** — Providerprüfung Supabase als Docs-Session, ohne Code; sie entscheidet auch über
+1. **OPS-001** — Providerprüfung Supabase als Docs-Session, ohne Code; sie entscheidet auch über
    die Edge Runtime (ADR-015 Punkt 20), an der jeder weitere Kartenloop hängt
-3. **MAP-004** — Fahrzeitmatrix auf derselben Function; Lauf und Abnahme wieder nur lokal
+2. **MAP-004** — Fahrzeitmatrix auf derselben Function; Lauf und Abnahme wieder nur lokal
+3. **MAP-005** — Navigations-Handoff mit einem Tap (ANN-018); braucht den Handoff aus **B2**
 
 ## Prüfverfahren
 
 **Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329);
-**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht** — die Function ist dort
-mit 65 Unit-Tests geprüft, die Linie mit zwei Browserprüfungen. `ASSUMPTIONS.md`: **1186** Zeilen.
+**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute:
+`test:db` **1769** Tests, `test` **2117**. `ASSUMPTIONS.md`: **1186** Zeilen, unverändert.
 
 ## Blocker (Jannes-seitig)
 
 - **MAP-003 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)):
   nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`),
-  `supabase/functions/.env.local`, `functions serve`. **BEF-023 ist erledigt** (Abfrage am
-  2026-09-21 mit Schlüssel geprüft und korrigiert). Offen: die **Profilfrage aus MAP-003c** — eine
-  erste Messung liegt vor, entschieden ist nichts.
+  `supabase/functions/.env.local`, `functions serve`. **BEF-023 ist erledigt**; offen bleibt die
+  **Profilfrage aus MAP-003c** — eine erste Messung liegt vor, entschieden ist nichts.
 - **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue
   Version nach §21 beginnt dort kein Loop. Gebraucht wird sie, wenn Etappe TR an der Reihe ist.
 - **PTV:** Karte läuft, der Schlüssel trägt auch serverseitig (2026-09-21 geprüft; BEF-021,
   BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19); nur synthetische Koordinaten.
-- **Lokal:** `git pull`. **Keine neue Abhängigkeit, keine Migration, kein `db reset`.** **Node 22** (`.nvmrc`), sonst rot.
+- **Lokal:** `git pull`, dann **`db reset`** (CAL-027 bringt eine Migration mit). Keine neue Abhängigkeit. **Node 22** (`.nvmrc`), sonst rot.
 - **G13 fehlt:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises** und die **Kürzel
   der beiden Nummernkreise** (`RG`/`TR` als Festlegung) — ANN-074/075/082; dazu echte Preise. **B4**
   entscheidet zusätzlich über den **ermäßigten Satz**; bis dahin weist eine Constraint ihn ab.
@@ -52,9 +51,10 @@ mit 65 Unit-Tests geprüft, die Linie mit zwei Browserprüfungen. `ASSUMPTIONS.m
 
 ## Auf Abnahme warten
 
-Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001 und MAP-003 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md).
+Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005 samt CAL-027, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001 und MAP-003 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**Was bisher nur als Vertrag dastand, rechnet jetzt** — und die Abfrage stimmt: Pfad, `results` und
-Polylinienformat waren falsch, alle drei behoben (BEF-023). Lokal: `git pull origin main`.
+**Ein Name, kein Verhalten** — CAL-027 schreibt zwei Werte um und sonst nichts; ein Test lässt den
+Katalog nachzählen, dass der alte nirgends mehr an `kind` hängt. Neu als Befund: **BEF-024**, **BEF-025**.
+Parallel geprüft und korrigiert: die Routing-Abfrage aus MAP-003 (**BEF-023**).

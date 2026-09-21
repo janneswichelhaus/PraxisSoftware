@@ -224,7 +224,7 @@ const futureAppointmentSchema = z.object({
   // ausgeblendet bliebe er beim Deaktivieren unbemerkt stehen. Er zeigt dabei
   // nur die Belegung: Personenfelder und Titel sind an ihm leer (ADR-022
   // Punkt 11).
-  kind: z.enum(['treatment', 'event', 'training']),
+  kind: z.enum(['therapy', 'internal', 'training']),
   title: z.string().nullable(),
   patient_id: z.string().nullable(),
   patient_given_name: z.string().nullable(),

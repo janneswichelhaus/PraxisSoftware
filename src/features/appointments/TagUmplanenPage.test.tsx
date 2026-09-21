@@ -24,7 +24,7 @@ function eintrag(teil: Partial<TodayApi.DayPlanEntry>): TodayApi.DayPlanEntry {
     patient_id: 'p1',
     staff_member_id: ANNA,
     appointment_type: 'home_visit',
-    kind: 'treatment',
+    kind: 'therapy',
     title: null,
     status: 'confirmed',
     starts_at: `${DATUM}T07:00:00.000Z`,
@@ -126,7 +126,7 @@ describe('TagUmplanenPage', () => {
       eintrag({}),
       eintrag({
         id: 'ereignis-1',
-        kind: 'event',
+        kind: 'internal',
         title: 'Teambesprechung',
         patient_id: null,
         patient_given_name: null,

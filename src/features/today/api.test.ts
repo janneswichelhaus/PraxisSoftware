@@ -15,7 +15,7 @@ function eintrag(teil: Partial<DayPlanEntry> = {}): DayPlanEntry {
     patient_id: 'p1',
     staff_member_id: 's1',
     appointment_type: 'home_visit',
-    kind: 'treatment',
+    kind: 'therapy',
     title: null,
     status: 'confirmed',
     starts_at: '2026-09-10T07:00:00.000Z',
@@ -79,7 +79,7 @@ describe('istOffen', () => {
    */
   it('fuehrt ein Ereignis des Praxisbetriebs nie als offen', () => {
     const ereignis = eintrag({
-      kind: 'event',
+      kind: 'internal',
       title: 'Teambesprechung',
       patient_id: null,
       patient_given_name: null,

@@ -84,7 +84,7 @@ async function ereignis(
 async function zeilen(): Promise<Record<string, unknown>[]> {
   const { rows } = await asPostgres<Record<string, unknown>>(
     `select * from public.appointments
-      where kind = 'event'
+      where kind = 'internal'
         and (starts_at at time zone 'Europe/Berlin')::date = $1::date
       order by staff_member_id`,
     [TAG],
@@ -110,7 +110,7 @@ describe('Ereignis anlegen', () => {
     const rows = await zeilen();
     expect(rows).toHaveLength(3);
     expect(rows[0]).toMatchObject({
-      kind: 'event',
+      kind: 'internal',
       title: 'Teambesprechung',
       status: 'confirmed',
       patient_id: null,
@@ -222,7 +222,7 @@ describe('Ereignis anlegen', () => {
 
     const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
       `select context from public.audit_log
-        where action = 'appointment.created' and context->>'kind' = 'event'`,
+        where action = 'appointment.created' and context->>'kind' = 'internal'`,
     );
     expect(rows).toHaveLength(2);
     // Kein Personenbezug ueber die Beteiligten hinaus, kein Titel im Log.
@@ -379,7 +379,7 @@ describe('Ereignis: absagen ohne Gebuehrenanlass (CAL-016)', () => {
          kind, title, event_group_id, status, starts_at, ends_at
        )
        values ($1::uuid, null, $2::uuid, 'video',
-               'event', 'Teambesprechung', gen_random_uuid(), 'confirmed',
+               'internal', 'Teambesprechung', gen_random_uuid(), 'confirmed',
                now() + interval '2 hours', now() + interval '2 hours 30 minutes')
        returning id::text as id`,
       [organizationId, TIM],
@@ -596,9 +596,9 @@ describe('Ereignis im Lesepfad des Kalenders', () => {
       tagInTagen(96),
     ]);
 
-    const gefunden = rows.find((r) => r.kind === 'event');
+    const gefunden = rows.find((r) => r.kind === 'internal');
     expect(gefunden).toMatchObject({
-      kind: 'event',
+      kind: 'internal',
       title: 'Teambesprechung',
       patient_id: null,
       patient_given_name: null,
@@ -617,7 +617,7 @@ describe('Ereignis im Lesepfad des Kalenders', () => {
       [ANNA],
     );
 
-    expect(rows.some((r) => r.kind === 'event' && r.title === 'Teambesprechung')).toBe(true);
+    expect(rows.some((r) => r.kind === 'internal' && r.title === 'Teambesprechung')).toBe(true);
   });
 
   it('steht in der Terminsicht der Anwendung', async () => {
@@ -626,11 +626,11 @@ describe('Ereignis im Lesepfad des Kalenders', () => {
     const { rows } = await asUser<Record<string, unknown>>(
       users.office,
       `select id, kind, title, patient_id from public.appointment_directory
-        where kind = 'event' and (starts_at at time zone 'Europe/Berlin')::date = $1::date`,
+        where kind = 'internal' and (starts_at at time zone 'Europe/Berlin')::date = $1::date`,
       [TAG],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ kind: 'event', title: 'Teambesprechung', patient_id: null });
+    expect(rows[0]).toMatchObject({ kind: 'internal', title: 'Teambesprechung', patient_id: null });
   });
 });
 
@@ -730,7 +730,7 @@ describe('Ereignis als ein Vorgang (CAL-017)', () => {
       `select event_group_id::text as id,
               to_char(max(updated_at) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"+00"') as stand
          from public.appointments
-        where kind = 'event'
+        where kind = 'internal'
           and (starts_at at time zone 'Europe/Berlin')::date = $1::date
         group by event_group_id`,
       [TAG],
@@ -742,7 +742,7 @@ describe('Ereignis als ein Vorgang (CAL-017)', () => {
     const { rows } = await asPostgres<{ beginn: string }>(
       `select to_char(starts_at at time zone 'Europe/Berlin', 'HH24:MI') as beginn
          from public.appointments
-        where kind = 'event'
+        where kind = 'internal'
           and (starts_at at time zone 'Europe/Berlin')::date = $1::date
         order by staff_member_id`,
       [TAG],
@@ -822,7 +822,7 @@ describe('Ereignis als ein Vorgang (CAL-017)', () => {
     const { rows } = await asPostgres<{ ende: string }>(
       `select distinct to_char(ends_at at time zone 'Europe/Berlin', 'HH24:MI') as ende
          from public.appointments
-        where kind = 'event' and event_group_id = $1::uuid`,
+        where kind = 'internal' and event_group_id = $1::uuid`,
       [g.id],
     );
     expect(rows.map((r) => r.ende)).toEqual(['08:55']);
@@ -989,7 +989,7 @@ describe('Ereignis als ein Vorgang (CAL-017)', () => {
     const { rows } = await asPostgres<{ anzahl: string }>(
       `select count(distinct event_group_id)::text as anzahl
          from public.appointments
-        where kind = 'event' and title = 'Teambesprechung'
+        where kind = 'internal' and title = 'Teambesprechung'
           and (starts_at at time zone 'Europe/Berlin')::date = current_date`,
     );
     // Der Seed legt die beiden Zeilen ausdruecklich als EINEN Vorgang an; eine
