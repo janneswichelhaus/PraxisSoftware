@@ -52,6 +52,6 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Kein Code, ein Dokument** — 285 Zeilen mit ausgewiesener Belegtiefe je Punkt. Neu: **BEF-026**
+**Kein Code, ein Dokument** — 297 Zeilen mit ausgewiesener Belegtiefe je Punkt. Neu: **BEF-026**
 (B13 ist im Produktivbetrieb nicht einlösbar) und **R14** (Logfrist und RPO halten beim Anbieter
 nicht). Entschärft: `pg_cron` (R9). Keine neue Annahme — ein Prüfdokument legt nichts fest.

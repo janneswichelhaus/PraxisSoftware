@@ -130,6 +130,16 @@ Entscheidung gehört zur Vorlage von B13, nicht in dieses Dokument.
 **Zuerst zu verifizieren ist der Empfängerkreis** — an ihm allein hängt, ob
 überhaupt etwas zu entscheiden ist.
 
+**Die Wiedervorlage aus ANN-025 ist damit beantwortet.** Der Registereintrag
+legt sie auf OPS-001 und fragt, ob eine Edge Function mit dem
+`service_role`-Schlüssel den Versand übernimmt. **Nein, und aus zwei
+voneinander unabhängigen Gründen:** Die Edge Runtime ist nicht freigegeben
+(Teil 4), und selbst wenn sie es wäre, verschickt sie die Mail über denselben
+eingebauten Dienst mit demselben Empfängerkreis. Ein Konto über die
+Admin-Schnittstelle anzulegen löst das Zustellproblem nicht. Die Annahme
+bleibt in Kraft, ihr Änderungspfad unverändert; die nächste Wiedervorlage ist
+die Entscheidung zu B13.
+
 ## Teil 4 — Edge Runtime (ADR-015 Punkt 20, Gate-Punkt 8 des Kartendienstes)
 
 ADR-015 Punkt 20 hat die Edge Functions ausdrücklich **nicht** für produktive
@@ -205,8 +215,10 @@ negativen Fall ausdrücklich eine Alternative. Was ein Wechsel kostet, hängt an
 drei Nähten — sie zu benennen ist Teil dieser Prüfung, die Auswahl ist es nicht:
 
 - **Mitnehmbar ist der größte Teil:** Schema, Migrationen, RLS-Policies,
-  Trigger und Funktionen sind gewöhnliches PostgreSQL. Sie laufen im Gate
-  `pnpm test:db` bereits gegen ein nacktes PostgreSQL ohne Supabase.
+  Trigger und Funktionen sind gewöhnliches PostgreSQL. Das Gate `pnpm test:db`
+  fährt sie täglich gegen ein reines PostgreSQL — was dort fehlt, steht als
+  Nachbildung in `supabase/tests/helpers/supabase-shim.sql`, und diese Datei
+  ist zugleich die Liste dessen, was ein Wechsel ersetzen müsste.
 - **Nicht mitnehmbar ist die Anmeldung:** Supabase Auth prägt Sitzungsmodell,
   `auth.uid()` und damit jede Policy. Der Ersatz ist ein eigenes Epic.
 - **Nicht mitnehmbar ist die Dateiablage:** Objektschlüssel, signierte Verweise

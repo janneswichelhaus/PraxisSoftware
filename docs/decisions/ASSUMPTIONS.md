@@ -373,7 +373,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 ### ANN-025 — Die Anwendung legt keine Authentifizierungskonten an
 
-Datenschutz · offen · 2026-09-11 · — · Prüfpaket · Wiedervorlage: **OPS-001** (Providerprüfung, Auth-Mails) — dort entscheidet sich, ob eine Edge Function mit `service_role` den Versand übernimmt; Datenschutzprüfung
+Datenschutz · offen · 2026-09-11 · — · Prüfpaket · Wiedervorlage **OPS-001 am 2026-09-21 geführt, Antwort: nein** — die Edge Runtime ist nicht freigegeben, und der eingebaute Versand stellt nur an Adressen des Projektteams zu (`providerpruefung-supabase.md`, Teil 3 und 4; BEF-026). Die Annahme bleibt; nächste Wiedervorlage: Entscheidung zu B13
 
 **Annahme.** Die Anwendung erzeugt kein Konto beim Anmeldedienst, sondern verwaltet nur die Berechtigung: `invite_staff_account` legt die Einladung an, `claim_staff_invitation` bindet ein vorhandenes Konto daran. Das Konto entsteht einmalig je Person auf der Oberfläche des Anmeldedienstes; die Anwendung fordert die Anmeldemail nur für ein bestehendes Konto an (`signInWithOtp` mit `shouldCreateUser: false`).
 
