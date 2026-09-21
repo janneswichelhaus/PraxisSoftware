@@ -257,6 +257,12 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
   ('cccccccc-cccc-4ccc-8ccc-000000000007', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 7, 'SZL',   'Selbstzahlerleistung ohne Heilbehandlungszweck', 'treatment', null,                           6000, 'taxable',           190, 'therapy'),
   -- Ausfallhonorar: kein Leistungsaustausch, deshalb nicht steuerbar.
   ('cccccccc-cccc-4ccc-8ccc-000000000008', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 8, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4500, 'not_taxable',         0, 'therapy'),
+  -- Die einzige Position im Trainingsbereich (ABR-009). Sie laesst sich
+  -- anlegen und an keinem Termin erfassen: Ein Trainingstermin hat keine
+  -- Patientin, und `billable_services` ist patientengebunden - der
+  -- Schreibweg des Trainings kommt mit E18 Schritt 7. Genau das haelt ein
+  -- Test fest, statt es zu behaupten.
+  ('cccccccc-cccc-4ccc-8ccc-000000000009', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 9, 'PT',    'Personal Training (Einzelstunde)',    'treatment',   null,                                      7500, 'taxable',           190, 'training'),
   ('cccccccc-cccc-4ccc-8ccc-000000000011', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4800, 'exempt_healthcare',   0, 'therapy'),
   ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4800, 'not_taxable',         0, 'therapy');
 

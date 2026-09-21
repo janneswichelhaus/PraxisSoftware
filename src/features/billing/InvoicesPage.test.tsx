@@ -29,6 +29,7 @@ function kandidat(rest: Partial<BillingApi.Kandidat> = {}): BillingApi.Kandidat 
     patient_id: 'p1',
     patient_name: 'Erika Beispiel',
     period_month: '2026-08-01',
+    service_area: 'therapy',
     service_count: 3,
     total_cents: 13_500,
     currency: 'EUR',
@@ -103,9 +104,32 @@ describe('InvoicesPage', () => {
     expect(await screen.findByText('Erika Beispiel')).toBeInTheDocument();
     expect(screen.getByText('August 2026')).toBeInTheDocument();
     expect(screen.getByText(/3 Leistungen · 135,00 €/)).toBeInTheDocument();
+    // ABR-009: Der Bereich ist der dritte Schlüssel der Klammer.
+    expect(screen.getByText('Behandlung')).toBeInTheDocument();
   });
 
-  it('legt einen Entwurf fuer genau diesen Monat an', async () => {
+  it('fuehrt beide Bereiche derselben Person als getrennte Zeilen (ABR-009)', async () => {
+    const nutzer = userEvent.setup();
+    fetchKandidaten.mockResolvedValue([
+      kandidat(),
+      kandidat({ service_area: 'training', service_count: 1, total_cents: 7_500 }),
+    ]);
+    createEntwurf.mockResolvedValue('neu-2');
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(await screen.findByText('Behandlung')).toBeInTheDocument();
+    expect(screen.getByText('Training')).toBeInTheDocument();
+
+    // Zwei Zeilen, zwei Entwürfe: Eine Person mit beiden Verhältnissen bekommt
+    // in einem Monat zwei Rechnungen (ADR-009, Konsequenz zu Punkt 16).
+    const knoepfe = screen.getAllByRole('button', { name: 'Entwurf anlegen' });
+    expect(knoepfe).toHaveLength(2);
+    await nutzer.click(knoepfe[1]!);
+    expect(createEntwurf).toHaveBeenCalledWith('p1', '2026-08-01', 'training');
+  });
+
+  it('legt einen Entwurf fuer genau diesen Monat und Bereich an', async () => {
     const nutzer = userEvent.setup();
     fetchKandidaten.mockResolvedValue([kandidat()]);
     createEntwurf.mockResolvedValue('neu-1');
@@ -114,7 +138,7 @@ describe('InvoicesPage', () => {
 
     await nutzer.click(await screen.findByRole('button', { name: 'Entwurf anlegen' }));
 
-    expect(createEntwurf).toHaveBeenCalledWith('p1', '2026-08-01');
+    expect(createEntwurf).toHaveBeenCalledWith('p1', '2026-08-01', 'therapy');
   });
 
   it('bietet keinen zweiten Entwurf fuer denselben Monat an', async () => {

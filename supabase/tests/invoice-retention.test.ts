@@ -65,9 +65,9 @@ async function rechnungVor(patientId: string, jahre: number): Promise<string> {
      ),
      rechnung as (
        insert into public.invoices
-         (organization_id, patient_id, period_month, created_by)
+         (organization_id, patient_id, period_month, service_area, created_by)
        select d.organization_id, $1::uuid,
-              date_trunc('month', d.performed_on)::date, $2::uuid
+              date_trunc('month', d.performed_on)::date, 'therapy', $2::uuid
        from dienst d
        returning id
      )

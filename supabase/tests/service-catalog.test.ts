@@ -182,7 +182,9 @@ describe('Leistungskatalog', () => {
         'select count(*) as anzahl from public.service_catalog_items where catalog_version_id = $1',
         [id],
       );
-      expect(Number(rows[0]!.anzahl)).toBe(8);
+      // Neun Positionen seit ABR-009: acht im Behandlungsbereich, eine im
+      // Training. Die Kopie nimmt den Bereich mit.
+      expect(Number(rows[0]!.anzahl)).toBe(9);
     });
 
     it('legt keine leere Preisliste an, wenn die Vorlage nicht existiert', async () => {

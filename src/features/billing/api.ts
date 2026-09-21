@@ -292,6 +292,9 @@ const kandidatSchema = z.object({
   patient_id: z.string(),
   patient_name: z.string(),
   period_month: z.string(),
+  // ABR-009: der dritte Schlüssel der Klammer (ANN-077). Eine Person mit
+  // beiden Verhältnissen steht in einem Monat mit zwei Zeilen hier.
+  service_area: z.enum(['therapy', 'training']),
   service_count: z.number(),
   total_cents: z.number(),
   currency: z.string(),
@@ -499,10 +502,15 @@ export async function fetchRechnung(invoiceId: string): Promise<Rechnungsansicht
   return rechnungsansichtSchema.parse(data);
 }
 
-export async function createEntwurf(patientId: string, monat: string): Promise<string> {
+export async function createEntwurf(
+  patientId: string,
+  monat: string,
+  bereich: Leistungsbereich,
+): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_invoice_draft', {
     p_patient_id: patientId,
     p_period_month: monat,
+    p_service_area: bereich,
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
@@ -824,6 +832,7 @@ const vorschlagSchema = z.object({
   currency: z.string(),
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
   tax_rate_permille: z.number(),
+  service_area: z.enum(['therapy', 'training']),
   suggested: z.boolean(),
 });
 

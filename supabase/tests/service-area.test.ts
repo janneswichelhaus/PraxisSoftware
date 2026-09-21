@@ -93,11 +93,15 @@ describe('Leistungsbereich', () => {
   }, 120_000);
 
   describe('an der Katalogposition', () => {
-    it('traegt jede Bestandsposition den Behandlungsbereich', async () => {
+    it('traegt jede Bestandsposition einen Bereich', async () => {
       const { rows } = await asPostgres<{ service_area: string; anzahl: string }>(
-        'select service_area, count(*) as anzahl from public.service_catalog_items group by service_area',
+        `select service_area, count(*) as anzahl from public.service_catalog_items
+          group by service_area order by service_area`,
       );
-      expect(rows).toEqual([{ service_area: 'therapy', anzahl: '10' }]);
+      expect(rows).toEqual([
+        { service_area: 'therapy', anzahl: '10' },
+        { service_area: 'training', anzahl: '1' },
+      ]);
     });
 
     it('ist eine Trainingsposition nie eine steuerfreie Heilbehandlung', async () => {
@@ -291,13 +295,25 @@ describe('Leistungsbereich', () => {
       );
 
       // Der zusammengesetzte Fremdschluessel, nicht der Trigger: Er prueft auch
-      // das Aendern und damit jeden Schreibweg, auch den kuenftigen.
-      await expect(
-        asPostgres(
-          "update public.billable_services set service_area = 'training' where appointment_id = $1",
-          [termin],
-        ),
-      ).rejects.toThrow(/billable_services_catalog_item_area_fkey/);
+      // das Aendern und damit jeden Schreibweg, auch den kuenftigen. Der
+      // Kontextriegel aus ABR-009 wuerde hier vorher abweisen - fuer diesen
+      // einen Satz steht er still, damit der Fremdschluessel fuer sich
+      // einsteht.
+      await asPostgres(
+        'alter table public.billable_services disable trigger billable_services_area_matches_context',
+      );
+      try {
+        await expect(
+          asPostgres(
+            "update public.billable_services set service_area = 'training' where appointment_id = $1",
+            [termin],
+          ),
+        ).rejects.toThrow(/billable_services_catalog_item_area_fkey/);
+      } finally {
+        await asPostgres(
+          'alter table public.billable_services enable trigger billable_services_area_matches_context',
+        );
+      }
     });
   });
 });
