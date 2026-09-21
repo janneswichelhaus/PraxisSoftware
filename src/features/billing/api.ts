@@ -46,9 +46,18 @@ export const katalogPositionSchema = z.object({
   currency: z.string(),
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
   tax_rate_permille: z.number(),
+  service_area: z.enum(['therapy', 'training']),
 });
 
 export type KatalogPosition = z.infer<typeof katalogPositionSchema>;
+
+/** Leistungsbereich (ADR-021 Punkt 2). Die Bezeichner stehen im Datenmodell. */
+export type Leistungsbereich = KatalogPosition['service_area'];
+
+export const bereichLabels: Record<Leistungsbereich, string> = {
+  therapy: 'Behandlung',
+  training: 'Training',
+};
 
 export const steuerLabels: Record<KatalogPosition['tax_treatment'], string> = {
   exempt_healthcare: 'Heilbehandlung, umsatzsteuerfrei',
@@ -75,7 +84,7 @@ export async function fetchKatalogPositionen(versionId: string): Promise<Katalog
   const { data, error } = await getSupabase()
     .from('service_catalog_items')
     .select(
-      'id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, currency, tax_treatment, tax_rate_permille',
+      'id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, currency, tax_treatment, tax_rate_permille, service_area',
     )
     .eq('catalog_version_id', versionId)
     .order('sort_order', { ascending: true });
@@ -93,6 +102,7 @@ export interface PositionsEingabe {
   preis: string;
   tax_treatment: KatalogPosition['tax_treatment'];
   tax_rate_permille: number;
+  service_area: Leistungsbereich;
 }
 
 export async function createKatalogVersion(
@@ -122,6 +132,7 @@ export async function writeKatalogPositionen(
     unit_price_cents: number;
     tax_treatment: string;
     tax_rate_permille: number;
+    service_area: string;
   }[],
 ): Promise<void> {
   const { error } = await getSupabase().rpc('write_service_catalog_items', {

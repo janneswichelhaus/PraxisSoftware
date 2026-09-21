@@ -38,8 +38,10 @@ const GRUNDLAGE_FRISCH = '88888888-8888-4888-8888-000000000004';
 const KATALOG = {
   kg: 'cccccccc-cccc-4ccc-8ccc-000000000001',
   mt: 'cccccccc-cccc-4ccc-8ccc-000000000003',
-  /** Steuerpflichtig mit 19 Prozent - der Fall, an dem sich Steuer zeigt. */
-  training: 'cccccccc-cccc-4ccc-8ccc-000000000007',
+  /** Steuerpflichtig mit 19 Prozent - der Fall, an dem sich Steuer zeigt.
+   *  Seit ABR-008 ausdruecklich im Bereich `therapy`: eine Selbstzahlerleistung
+   *  an eine Patientin, keine Trainingsleistung (ADR-021 Punkt 2). */
+  selbstzahler: 'cccccccc-cccc-4ccc-8ccc-000000000007',
 } as const;
 
 /** Rechnungsempfaenger aus supabase/seed.sql: Betreuung von Petra. */
@@ -413,7 +415,7 @@ describe('Rechnung', () => {
     });
 
     it('rechnet die enthaltene Umsatzsteuer aus dem Endpreis heraus (ANN-074)', async () => {
-      const rechnung = await ausgestellt(KATALOG.training);
+      const rechnung = await ausgestellt(KATALOG.selbstzahler);
 
       // Trainingseinheit 60,00 brutto, 19 Prozent enthalten: 9,58 Steuer.
       expect(rechnung.document.totals.total_cents).toBe(6000);
@@ -425,7 +427,7 @@ describe('Rechnung', () => {
       // Der Fall, den es im Betrieb wirklich gibt: Behandlung steuerfrei,
       // Trainingseinheit steuerpflichtig - auf einem Blatt.
       await leistung(KATALOG.kg, { stundeImMonat: 30 });
-      await leistung(KATALOG.training, { stundeImMonat: 34 });
+      await leistung(KATALOG.selbstzahler, { stundeImMonat: 34 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
@@ -456,7 +458,7 @@ describe('Rechnung', () => {
 
     it('weist unter der Kleinunternehmerregelung keine Umsatzsteuer aus (Par. 19 UStG)', async () => {
       await asPostgres('update public.practice_billing_profiles set small_business = true');
-      const rechnung = await ausgestellt(KATALOG.training);
+      const rechnung = await ausgestellt(KATALOG.selbstzahler);
 
       expect(rechnung.document.totals.tax_total_cents).toBe(0);
       expect(rechnung.document.issuer.small_business).toBe(true);
@@ -729,7 +731,7 @@ describe('Rechnung', () => {
     });
 
     it('laesst die steuerpflichtige Gruppe ohne Grund - dort steht die Steuer', async () => {
-      await leistung(KATALOG.training, { stundeImMonat: 30 });
+      await leistung(KATALOG.selbstzahler, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
         patients.erika,
         await monat(),
