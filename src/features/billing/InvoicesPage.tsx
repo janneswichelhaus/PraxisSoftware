@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
 import {
+  bereichLabels,
   createEntwurf,
   empfaengerartLabels,
   fetchKandidaten,
@@ -178,7 +179,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
 
         <ul className="flex flex-col gap-3">
           {(kandidaten.data ?? []).map((kandidat) => (
-            <li key={`${kandidat.patient_id}-${kandidat.period_month}`}>
+            <li key={`${kandidat.patient_id}-${kandidat.period_month}-${kandidat.service_area}`}>
               <KandidatenKarte kandidat={kandidat} darfAusstellen={darfAusstellen} />
             </li>
           ))}
@@ -210,7 +211,8 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                     (ABR-003c, ANN-079). */}
                 {rechnung.cancelled ? <Badge ton="neutral">Storniert</Badge> : null}
                 <span className="text-ink-muted text-sm">
-                  {monatsname(rechnung.period_month)} · {rechnung.patient_name}
+                  {monatsname(rechnung.period_month)} · {bereichLabels[rechnung.service_area]} ·{' '}
+                  {rechnung.patient_name}
                 </span>
                 <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
                   {formatEuro(rechnung.total_cents, rechnung.currency)}
@@ -332,7 +334,8 @@ function KandidatenKarte({
   const navigate = useNavigate();
 
   const anlegen = useMutation({
-    mutationFn: () => createEntwurf(kandidat.patient_id, kandidat.period_month),
+    mutationFn: () =>
+      createEntwurf(kandidat.patient_id, kandidat.period_month, kandidat.service_area),
     onSuccess: async (id) => {
       await queryClient.invalidateQueries({ queryKey: ['rechnungs-kandidaten'] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
@@ -345,6 +348,9 @@ function KandidatenKarte({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-ink text-[0.9375rem] font-medium">{kandidat.patient_name}</span>
         <span className="text-ink-muted text-sm">{monatsname(kandidat.period_month)}</span>
+        {/* ABR-009: Eine Rechnung trägt genau einen Bereich; die Zeile sagt,
+            welchen sie meint (ADR-009 Punkt 16). */}
+        <span className="text-ink-muted text-sm">{bereichLabels[kandidat.service_area]}</span>
         <span className="text-ink-muted text-sm tabular-nums">
           {kandidat.service_count} {kandidat.service_count === 1 ? 'Leistung' : 'Leistungen'} ·{' '}
           {formatEuro(kandidat.total_cents, kandidat.currency)}
@@ -360,8 +366,9 @@ function KandidatenKarte({
 
       {kandidat.has_draft ? (
         <Statusmeldung className="mt-2">
-          Für diesen Monat steht bereits ein Entwurf. Diese Leistungen sind später erfasst worden;
-          sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder verworfen ist.
+          Für diesen Monat und Bereich steht bereits ein Entwurf. Diese Leistungen sind später
+          erfasst worden; sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder
+          verworfen ist.
           {/* BEF-018: Der Hinweis führt jetzt dorthin. Vorher war der Entwurf
               in der Liste darunter zu suchen — der einzige Ort, an dem die
               Seite auf etwas verwies, das sie nicht anbot. */}

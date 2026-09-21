@@ -36,6 +36,7 @@ function stammdaten(rest: Partial<BillingApi.PraxisStammdaten> = {}): BillingApi
     iban: 'DE02120300000000202051',
     bic: null,
     invoice_number_prefix: 'RG',
+    training_invoice_number_prefix: 'TR',
     payment_term_days: 14,
     ...rest,
   };
@@ -137,6 +138,29 @@ describe('PracticeProfilePage', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Speichern' }));
 
     expect(screen.getByText('Die IBAN stimmt nicht — bitte Ziffern prüfen.')).toBeInTheDocument();
+    expect(savePraxisStammdaten).not.toHaveBeenCalled();
+  });
+
+  it('weist zwei gleiche Kuerzel der Rechnungsnummer ab (ABR-010)', async () => {
+    // Zwei lückenlose Kreise mit demselben Kürzel ergäben dieselbe Nummer
+    // zweimal (ADR-009 Punkt 17). Der Server weist dasselbe ab; hier fällt es
+    // auf, bevor abgeschickt wird.
+    const nutzer = userEvent.setup();
+    fetchPraxisStammdaten.mockResolvedValue(stammdaten());
+
+    renderWithProviders(
+      <PracticeProfilePage user={testUser(['owner'])} />,
+      '/abrechnung/stammdaten',
+    );
+
+    const training = await screen.findByLabelText(/Kürzel der Rechnungsnummer \(Training\)/);
+    await nutzer.clear(training);
+    await nutzer.type(training, 'RG');
+    await nutzer.click(screen.getByRole('button', { name: 'Speichern' }));
+
+    expect(
+      screen.getByText('Die beiden Kürzel der Rechnungsnummer müssen sich unterscheiden.'),
+    ).toBeInTheDocument();
     expect(savePraxisStammdaten).not.toHaveBeenCalled();
   });
 

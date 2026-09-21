@@ -235,24 +235,36 @@ insert into public.service_catalog_versions (id, organization_id, label, valid_f
   ('bbbbbbbb-bbbb-4bbb-8bbb-000000000001', '22222222-2222-4222-8222-000000000001', 'Preisliste 2026', '2026-01-01'),
   ('bbbbbbbb-bbbb-4bbb-8bbb-000000000002', '22222222-2222-4222-8222-000000000001', 'Preisliste 2027 (Entwurf)', '2027-01-01');
 
-insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille) values
-  ('cccccccc-cccc-4ccc-8ccc-000000000001', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4500, 'exempt_healthcare',   0),
-  ('cccccccc-cccc-4ccc-8ccc-000000000002', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 2, 'KG-D',  'Krankengymnastik als Doppelbehandlung', 'treatment', 'Krankengymnastik als Doppelbehandlung',   8500, 'exempt_healthcare',   0),
-  ('cccccccc-cccc-4ccc-8ccc-000000000003', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 3, 'MT',    'Manuelle Therapie',                   'treatment',   'Manuelle Therapie',                       5500, 'exempt_healthcare',   0),
-  ('cccccccc-cccc-4ccc-8ccc-000000000004', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 4, 'MT-D',  'Manuelle Therapie als Doppelbehandlung', 'treatment', 'Manuelle Therapie als Doppelbehandlung', 10000, 'exempt_healthcare',   0),
+-- Seit ABR-008 traegt jede Position ihren Leistungsbereich (ADR-009 Punkt 16,
+-- ADR-021 Punkt 2). Der Bestand ist durchweg Behandlung; die eine
+-- steuerpflichtige Position steht ebenfalls im Behandlungsverhaeltnis - eine
+-- Leistung ohne Heilbehandlungszweck an eine Patientin ist keine
+-- Trainingsleistung, sondern eine Selbstzahlerleistung derselben Klammer.
+insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille, service_area) values
+  ('cccccccc-cccc-4ccc-8ccc-000000000001', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4500, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000002', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 2, 'KG-D',  'Krankengymnastik als Doppelbehandlung', 'treatment', 'Krankengymnastik als Doppelbehandlung',   8500, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000003', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 3, 'MT',    'Manuelle Therapie',                   'treatment',   'Manuelle Therapie',                       5500, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000004', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 4, 'MT-D',  'Manuelle Therapie als Doppelbehandlung', 'treatment', 'Manuelle Therapie als Doppelbehandlung', 10000, 'exempt_healthcare',   0, 'therapy'),
   -- Die Hausbesuchspauschale ist die Position zum Heilmittel "Hausbesuch" und
   -- braucht keinen eigenen Wert in item_kind.
-  ('cccccccc-cccc-4ccc-8ccc-000000000005', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 5, 'HB',    'Hausbesuchspauschale',                'treatment',   'Hausbesuch',                              1800, 'exempt_healthcare',   0),
+  ('cccccccc-cccc-4ccc-8ccc-000000000005', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 5, 'HB',    'Hausbesuchspauschale',                'treatment',   'Hausbesuch',                              1800, 'exempt_healthcare',   0, 'therapy'),
   -- Bestandsheilmittel aus den Seed-Grundlagen: ohne Position bliebe die
   -- Vorbelegung dort leer.
-  ('cccccccc-cccc-4ccc-8ccc-000000000006', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 6, 'WT',    'Waermetherapie',                      'treatment',   'Waermetherapie',                          1200, 'exempt_healthcare',   0),
+  ('cccccccc-cccc-4ccc-8ccc-000000000006', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 6, 'WT',    'Waermetherapie',                      'treatment',   'Waermetherapie',                          1200, 'exempt_healthcare',   0, 'therapy'),
   -- Steuerpflichtig, weil keine Heilbehandlung: der Fall, den ADR-009 Punkt 6
-  -- ausdruecklich neben der Heilbehandlung vorsieht.
-  ('cccccccc-cccc-4ccc-8ccc-000000000007', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 7, 'TRA',   'Trainingseinheit (Selbstzahler)',     'treatment',   null,                                      6000, 'taxable',           190),
+  -- ausdruecklich neben der Heilbehandlung vorsieht - und der einzige Posten
+  -- im Seed, an dem sich ein Steuerausweis ueberhaupt zeigt.
+  ('cccccccc-cccc-4ccc-8ccc-000000000007', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 7, 'SZL',   'Selbstzahlerleistung ohne Heilbehandlungszweck', 'treatment', null,                           6000, 'taxable',           190, 'therapy'),
   -- Ausfallhonorar: kein Leistungsaustausch, deshalb nicht steuerbar.
-  ('cccccccc-cccc-4ccc-8ccc-000000000008', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 8, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4500, 'not_taxable',         0),
-  ('cccccccc-cccc-4ccc-8ccc-000000000011', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4800, 'exempt_healthcare',   0),
-  ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4800, 'not_taxable',         0);
+  ('cccccccc-cccc-4ccc-8ccc-000000000008', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 8, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4500, 'not_taxable',         0, 'therapy'),
+  -- Die einzige Position im Trainingsbereich (ABR-009). Sie laesst sich
+  -- anlegen und an keinem Termin erfassen: Ein Trainingstermin hat keine
+  -- Patientin, und `billable_services` ist patientengebunden - der
+  -- Schreibweg des Trainings kommt mit E18 Schritt 7. Genau das haelt ein
+  -- Test fest, statt es zu behaupten.
+  ('cccccccc-cccc-4ccc-8ccc-000000000009', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 9, 'PT',    'Personal Training (Einzelstunde)',    'treatment',   null,                                      7500, 'taxable',           190, 'training'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000011', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4800, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4800, 'not_taxable',         0, 'therapy');
 
 update public.service_catalog_versions
    set published_at = timestamptz '2025-12-20 09:00:00+01',

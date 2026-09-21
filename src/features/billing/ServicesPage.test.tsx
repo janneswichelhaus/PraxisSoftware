@@ -48,6 +48,7 @@ function vorschlag(rest: Partial<BillingApi.Vorschlag> = {}): BillingApi.Vorschl
     item_kind: 'treatment',
     unit_price_cents: 4500,
     currency: 'EUR',
+    service_area: 'therapy',
     tax_treatment: 'exempt_healthcare',
     tax_rate_permille: 0,
     suggested: true,

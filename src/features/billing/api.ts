@@ -46,9 +46,18 @@ export const katalogPositionSchema = z.object({
   currency: z.string(),
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
   tax_rate_permille: z.number(),
+  service_area: z.enum(['therapy', 'training']),
 });
 
 export type KatalogPosition = z.infer<typeof katalogPositionSchema>;
+
+/** Leistungsbereich (ADR-021 Punkt 2). Die Bezeichner stehen im Datenmodell. */
+export type Leistungsbereich = KatalogPosition['service_area'];
+
+export const bereichLabels: Record<Leistungsbereich, string> = {
+  therapy: 'Behandlung',
+  training: 'Training',
+};
 
 export const steuerLabels: Record<KatalogPosition['tax_treatment'], string> = {
   exempt_healthcare: 'Heilbehandlung, umsatzsteuerfrei',
@@ -75,7 +84,7 @@ export async function fetchKatalogPositionen(versionId: string): Promise<Katalog
   const { data, error } = await getSupabase()
     .from('service_catalog_items')
     .select(
-      'id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, currency, tax_treatment, tax_rate_permille',
+      'id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, currency, tax_treatment, tax_rate_permille, service_area',
     )
     .eq('catalog_version_id', versionId)
     .order('sort_order', { ascending: true });
@@ -93,6 +102,7 @@ export interface PositionsEingabe {
   preis: string;
   tax_treatment: KatalogPosition['tax_treatment'];
   tax_rate_permille: number;
+  service_area: Leistungsbereich;
 }
 
 export async function createKatalogVersion(
@@ -122,6 +132,7 @@ export async function writeKatalogPositionen(
     unit_price_cents: number;
     tax_treatment: string;
     tax_rate_permille: number;
+    service_area: string;
   }[],
 ): Promise<void> {
   const { error } = await getSupabase().rpc('write_service_catalog_items', {
@@ -168,6 +179,9 @@ export const praxisStammdatenSchema = z.object({
   iban: z.string(),
   bic: z.string().nullable(),
   invoice_number_prefix: z.string(),
+  // ABR-010: ein Kürzel je Nummernkreis (ADR-009 Punkt 17). Beide müssen sich
+  // unterscheiden — sonst gäbe es dieselbe Nummer zweimal.
+  training_invoice_number_prefix: z.string(),
   payment_term_days: z.number(),
 });
 
@@ -178,7 +192,7 @@ export async function fetchPraxisStammdaten(): Promise<PraxisStammdaten | null> 
   const { data, error } = await getSupabase()
     .from('practice_billing_profiles')
     .select(
-      'legal_name, street, house_number, postal_code, city, phone, email, tax_number, vat_id, small_business, bank_name, account_holder, iban, bic, invoice_number_prefix, payment_term_days',
+      'legal_name, street, house_number, postal_code, city, phone, email, tax_number, vat_id, small_business, bank_name, account_holder, iban, bic, invoice_number_prefix, training_invoice_number_prefix, payment_term_days',
     )
     .maybeSingle();
 
@@ -203,6 +217,7 @@ export async function savePraxisStammdaten(eingabe: PraxisStammdaten): Promise<v
     p_iban: eingabe.iban,
     p_bic: eingabe.bic,
     p_invoice_number_prefix: eingabe.invoice_number_prefix,
+    p_training_invoice_number_prefix: eingabe.training_invoice_number_prefix,
     p_payment_term_days: eingabe.payment_term_days,
   });
 
@@ -281,6 +296,9 @@ const kandidatSchema = z.object({
   patient_id: z.string(),
   patient_name: z.string(),
   period_month: z.string(),
+  // ABR-009: der dritte Schlüssel der Klammer (ANN-077). Eine Person mit
+  // beiden Verhältnissen steht in einem Monat mit zwei Zeilen hier.
+  service_area: z.enum(['therapy', 'training']),
   service_count: z.number(),
   total_cents: z.number(),
   currency: z.string(),
@@ -322,6 +340,7 @@ const rechnungSchema = z.object({
   status: z.enum(['draft', 'issued']),
   invoice_number: z.string().nullable(),
   period_month: z.string(),
+  service_area: z.enum(['therapy', 'training']),
   issued_on: z.string().nullable(),
   due_on: z.string().nullable(),
   patient_id: z.string(),
@@ -362,6 +381,9 @@ export async function fetchRechnungen(): Promise<Rechnung[]> {
 const dokumentSchema = z.object({
   schema_version: z.number(),
   period_month: z.string(),
+  // ABR-010: der Leistungsbereich im Snapshot (ADR-009 Punkt 17). `optional`,
+  // weil Snapshots mit `schema_version` 1 und 2 ihn noch nicht tragen.
+  service_area: z.enum(['therapy', 'training']).optional(),
   currency: z.string(),
   invoice_number: z.string().optional(),
   issued_on: z.string().optional(),
@@ -488,10 +510,15 @@ export async function fetchRechnung(invoiceId: string): Promise<Rechnungsansicht
   return rechnungsansichtSchema.parse(data);
 }
 
-export async function createEntwurf(patientId: string, monat: string): Promise<string> {
+export async function createEntwurf(
+  patientId: string,
+  monat: string,
+  bereich: Leistungsbereich,
+): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_invoice_draft', {
     p_patient_id: patientId,
     p_period_month: monat,
+    p_service_area: bereich,
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
@@ -813,6 +840,7 @@ const vorschlagSchema = z.object({
   currency: z.string(),
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
   tax_rate_permille: z.number(),
+  service_area: z.enum(['therapy', 'training']),
   suggested: z.boolean(),
 });
 

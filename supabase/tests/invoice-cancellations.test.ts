@@ -505,7 +505,9 @@ describe('Storno und Korrektur', () => {
         const fehler = await laeuft;
         await zweite.query(fehler === null ? 'commit' : 'rollback');
 
-        expect(fehler?.message).toMatch(/a draft for this patient and month already exists/);
+        expect(fehler?.message).toMatch(
+          /a draft for this patient, month and service area already exists/,
+        );
       } finally {
         await erste.query('rollback').catch(() => undefined);
         await erste.end();
@@ -563,7 +565,7 @@ describe('Storno und Korrektur', () => {
       await asUserCommitted(users.office, KORREKTUR, [id]);
 
       await expect(asUserCommitted(users.office, KORREKTUR, [id])).rejects.toThrow(
-        /a draft for this patient and month already exists/,
+        /a draft for this patient, month and service area already exists/,
       );
     });
 

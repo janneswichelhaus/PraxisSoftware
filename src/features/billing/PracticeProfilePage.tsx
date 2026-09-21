@@ -47,6 +47,7 @@ const LEER: PraxisStammdaten = {
   iban: '',
   bic: null,
   invoice_number_prefix: 'RG',
+  training_invoice_number_prefix: 'TR',
   payment_term_days: 14,
 };
 
@@ -88,6 +89,14 @@ function pruefe(eingabe: PraxisStammdaten, steuerstatus: string): string | undef
     return 'Die IBAN ist unvollständig.';
   if (!pruefzifferStimmt(eingabe.iban)) return 'Die IBAN stimmt nicht — bitte Ziffern prüfen.';
   if (steuerstatus === '') return 'Der umsatzsteuerliche Status fehlt.';
+  // ADR-009 Punkt 17: lückenlos je Kreis, einmalig über alle. Zwei Kreise mit
+  // demselben Kürzel gäben dieselbe Nummer zweimal. Verbindlich ist die
+  // Prüfung im Schreibpfad; hier steht sie, bevor das Formular abschickt.
+  if (
+    eingabe.invoice_number_prefix.trim().toUpperCase() ===
+    eingabe.training_invoice_number_prefix.trim().toUpperCase()
+  )
+    return 'Die beiden Kürzel der Rechnungsnummer müssen sich unterscheiden.';
   return undefined;
 }
 
@@ -154,6 +163,10 @@ function Auskunft({ stammdaten }: { stammdaten: PraxisStammdaten | null }) {
           {stammdaten.small_business ? 'Kleinunternehmerin (§ 19 UStG)' : 'Regelbesteuerung'}
         </DetailRow>
         <DetailRow label="IBAN">{stammdaten.iban}</DetailRow>
+        {/* ABR-010: ein Nummernkreis je Leistungsbereich (ADR-009 Punkt 17). */}
+        <DetailRow label="Nummernkreise">
+          {`Behandlung ${stammdaten.invoice_number_prefix} · Training ${stammdaten.training_invoice_number_prefix}`}
+        </DetailRow>
         <DetailRow label="Zahlungsziel">{stammdaten.payment_term_days} Tage</DetailRow>
       </DetailList>
     </Section>
@@ -305,10 +318,16 @@ function Formular({
       <Section titel="Rechnungen" ebene={2}>
         <div className="flex flex-col gap-3">
           <Field
-            label="Kürzel der Rechnungsnummer"
+            label="Kürzel der Rechnungsnummer (Behandlung)"
             hint="Die Nummer entsteht daraus als Kürzel-Jahr-laufende Zahl, etwa RG-2026-0001."
             value={eingabe.invoice_number_prefix}
             onChange={(e) => setzen('invoice_number_prefix', e.target.value.toUpperCase())}
+          />
+          <Field
+            label="Kürzel der Rechnungsnummer (Training)"
+            hint="Jeder Bereich führt seinen eigenen, lückenlosen Kreis. Die beiden Kürzel müssen sich unterscheiden — sonst gäbe es dieselbe Nummer zweimal."
+            value={eingabe.training_invoice_number_prefix}
+            onChange={(e) => setzen('training_invoice_number_prefix', e.target.value.toUpperCase())}
           />
           <Field
             label="Zahlungsziel in Tagen"

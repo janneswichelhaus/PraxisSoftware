@@ -55,6 +55,7 @@ function position(
     currency: 'EUR',
     tax_treatment: 'exempt_healthcare',
     tax_rate_permille: 0,
+    service_area: 'therapy',
     ...rest,
   };
 }
@@ -76,6 +77,8 @@ describe('CatalogPage', () => {
 
     expect(await screen.findByText('45,00 €')).toBeInTheDocument();
     expect(screen.getByText(/Heilbehandlung, umsatzsteuerfrei/)).toBeInTheDocument();
+    // Seit ABR-008 steht der Leistungsbereich an der Position (ADR-009 Punkt 16).
+    expect(screen.getByText(/^Behandlung ·/)).toBeInTheDocument();
   });
 
   it('zeigt eine in Kraft gesetzte Preisliste ohne jede Schaltflaeche zum Aendern', async () => {
@@ -144,6 +147,26 @@ describe('CatalogPage', () => {
 
     expect(await screen.findByText('Entwurf gespeichert.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'In Kraft setzen' })).toBeEnabled();
+  });
+
+  it('speichert den Leistungsbereich mit der Position (ABR-008)', async () => {
+    const nutzer = userEvent.setup();
+    fetchKatalogVersionen.mockResolvedValue([version('v2', { published_at: null })]);
+    writeKatalogPositionen.mockResolvedValue(undefined);
+
+    renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
+
+    await nutzer.selectOptions(await screen.findByLabelText(/Bereich/), 'training');
+    // Training ist keine Heilbehandlung (ADR-021); die Zeile sagt es, bevor
+    // der Server sie abweist.
+    expect(screen.getByText(/nicht umsatzsteuerfrei/)).toBeInTheDocument();
+
+    await nutzer.selectOptions(screen.getByLabelText(/Steuer/), 'taxable');
+    await nutzer.click(screen.getByRole('button', { name: 'Entwurf speichern' }));
+
+    expect(writeKatalogPositionen).toHaveBeenCalledWith('v2', [
+      expect.objectContaining({ service_area: 'training', tax_treatment: 'taxable' }),
+    ]);
   });
 
   it('weist eine Position ohne gueltigen Preis zurueck, bevor gespeichert wird', async () => {

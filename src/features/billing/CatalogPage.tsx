@@ -17,6 +17,7 @@ import { canManageServiceCatalog, type CurrentUser } from '@/features/session/ty
 import { todayInTimeZone } from '@/features/appointments/api';
 import {
   artLabels,
+  bereichLabels,
   createKatalogVersion,
   deleteKatalogVersion,
   fetchKatalogPositionen,
@@ -55,6 +56,7 @@ function leereZeile(): PositionsEingabe {
     preis: '',
     tax_treatment: 'exempt_healthcare',
     tax_rate_permille: 0,
+    service_area: 'therapy',
   };
 }
 
@@ -67,6 +69,7 @@ function alsEingabe(position: KatalogPosition): PositionsEingabe {
     preis: centZuEingabe(position.unit_price_cents),
     tax_treatment: position.tax_treatment,
     tax_rate_permille: position.tax_rate_permille,
+    service_area: position.service_area,
   };
 }
 
@@ -77,6 +80,10 @@ function pruefe(zeile: PositionsEingabe): string | undefined {
   if (parseEuroZuCent(zeile.preis) === null) return 'Preis ist keine gültige Zahl.';
   if (zeile.item_kind === 'absence_fee' && zeile.remedy !== '')
     return 'Ein Ausfallhonorar hängt an keinem Heilmittel.';
+  // ADR-021: Training ist keine Heilbehandlung. Verbindlich ist die Constraint
+  // in der Datenbank; diese Zeile nennt den Grund, bevor der Server abweist.
+  if (zeile.service_area === 'training' && zeile.tax_treatment === 'exempt_healthcare')
+    return 'Training ist keine Heilbehandlung und damit nicht umsatzsteuerfrei.';
   return undefined;
 }
 
@@ -285,6 +292,7 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
           unit_price_cents: parseEuroZuCent(zeile.preis) ?? 0,
           tax_treatment: zeile.tax_treatment,
           tax_rate_permille: zeile.tax_rate_permille,
+          service_area: zeile.service_area,
         })),
       ),
     onSuccess: async () => {
@@ -343,7 +351,8 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
               <span className="min-w-0 flex-1">
                 <span className="text-ink block text-[0.9375rem]">{position.label}</span>
                 <span className="text-ink-muted mt-0.5 block text-sm">
-                  {artLabels[position.item_kind]} · {steuerLabels[position.tax_treatment]}
+                  {bereichLabels[position.service_area]} · {artLabels[position.item_kind]} ·{' '}
+                  {steuerLabels[position.tax_treatment]}
                   {position.tax_treatment === 'taxable'
                     ? ` (${position.tax_rate_permille / 10} %)`
                     : ''}
@@ -490,7 +499,23 @@ function Positionszeile({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <div className="sm:w-44">
+          <Select
+            label="Bereich"
+            value={zeile.service_area}
+            onChange={(event) =>
+              onChange({
+                ...zeile,
+                service_area: event.target.value as PositionsEingabe['service_area'],
+              })
+            }
+            hint="Die Rechnung trägt genau einen."
+          >
+            <option value="therapy">{bereichLabels.therapy}</option>
+            <option value="training">{bereichLabels.training}</option>
+          </Select>
+        </div>
         <div className="sm:w-44">
           <Select
             label="Art"

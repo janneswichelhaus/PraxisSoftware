@@ -245,7 +245,7 @@ describe('Leistungserfassung', () => {
         'MT-D',
         'HB',
         'WT',
-        'TRA',
+        'SZL',
       ]);
     });
 
