@@ -87,6 +87,55 @@ const TERMIN_NACHTRAG = `${TERMIN_DOKUMENTATION}/${DOKU_ID}/nachtrag`;
 const TERMIN_VERLAUF = `${TERMIN_DOKUMENTATION}/${DOKU_ID}/verlauf`;
 const FLOTTE = '/betrieb/flotte';
 
+/**
+ * Der MDR-Riegel vor der Routentabelle (ANN-089, ADR-006 Punkt 6 und 13).
+ *
+ * Er steht hier und nicht in einer eigenen Testdatei: Die Zusicherung ist
+ * genau, dass **diese** Routentabelle eine klassifizierte Adresse nicht
+ * ausliefert — mit denselben Rollen und denselben Mocks wie jede andere Route
+ * daneben.
+ */
+describe('MDR-Riegel (ANN-089)', () => {
+  const GESPERRT = '/training/ki-analyse';
+
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office'], ['trainer'], ['patient']] as const)(
+    'zeigt %s an einer klassifizierten Adresse die Sperre statt einer Funktion',
+    async (role) => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+        GESPERRT,
+      );
+      expect(
+        await screen.findByRole('heading', { name: 'KI-Analyse im Trainingsbereich' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/MDR_REVIEW_REQUIRED/)).toBeInTheDocument();
+      // Nicht die stille Weiterleitung der Auffangroute: Wer die Adresse
+      // aufruft, soll erfahren, dass hier gesperrt ist, statt einen Tippfehler
+      // zu vermuten.
+      expect(screen.queryByRole('heading', { name: /Guten/ })).toBeNull();
+    },
+  );
+
+  it('sperrt auch alles unterhalb der Adresse', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
+      `${GESPERRT}/verlauf`,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'KI-Analyse im Trainingsbereich' }),
+    ).toBeInTheDocument();
+  });
+
+  it('laesst eine nicht klassifizierte Adresse in die Routentabelle', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
+      '/bereiche',
+    );
+    expect(await screen.findByRole('heading', { name: 'Alle Bereiche' })).toBeInTheDocument();
+    expect(screen.queryByText(/MDR_REVIEW_REQUIRED/)).toBeNull();
+  });
+});
+
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
     renderWithProviders(

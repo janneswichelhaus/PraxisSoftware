@@ -262,9 +262,15 @@ Funktionen, an denen sie in diesem Produkt konkret entstehen würde.
 
 - Wer verfasst und pflegt die Zweckbestimmung, und in welchem Dokument?
 - Wer entscheidet, dass ein Feature `MDR_REVIEW_REQUIRED` ist, und wo wird
-  diese Klassifikation geführt?
+  diese Klassifikation geführt? *Vermerk 2026-09-21: Das **Wo** ist
+  beantwortet — `src/app/mdr.ts` (ANN-089). Das **Wer** bleibt offen.*
 - Wie wird technisch sichergestellt und überprüfbar gemacht, dass ein so
-  markiertes Feature produktiv nicht erreichbar ist?
+  markiertes Feature produktiv nicht erreichbar ist? *Vermerk 2026-09-21: Für
+  einen Eintrag mit eigener Adresse durch einen Riegel über der Routentabelle,
+  geprüft in `src/app/mdr.test.ts` und
+  `src/routes/AuthenticatedRoutes.test.tsx` (ANN-089). Für ein Ausgabeverbot
+  ohne Adresse bleibt es beim Zuschnitt und beim Zweitreview, wie unten
+  festgehalten.*
 - Gilt die Anzeige eines veröffentlichten Cutoffs zu einem validierten
   Instrument bereits als Klassifikation im Sinne von Punkt 4?
 - Wie wird verhindert und getestet, dass generative KI eine klinische
@@ -289,7 +295,13 @@ Funktionen, an denen sie in diesem Produkt konkret entstehen würde.
 - `MDR_REVIEW_REQUIRED` existiert bisher an keiner Codestelle, sondern nur in
   der Dokumentation. Mit drei benannten Verboten und drei benannten Bereichen
   wird die Frage aus Fassung 1 dringlicher: Wo wird die Klassifikation
-  geführt, und wie wird sie technisch wirksam?
+  geführt, und wie wird sie technisch wirksam? *Vermerk 2026-09-21: Erledigt.
+  Geführt wird sie in `src/app/mdr.ts` — sieben Einträge, jeder mit
+  Fundstelle und dem Satz, welche Ausgabe nicht entsteht. Wirksam ist sie für
+  die Einträge mit eigener Adresse: Sie ist reserviert und gesperrt, und es
+  gibt keinen Schalter, der sie öffnet (ANN-089). Dieser Vermerk hält einen
+  Stand fest und ändert keine Entscheidung; die Punkte 1 bis 13 bleiben
+  unberührt.*
 
 ## Änderungshistorie
 

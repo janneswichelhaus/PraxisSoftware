@@ -381,6 +381,10 @@ export const scoringSchema = z.object({
  * gehört in die externe Prüfung B1 — bis dahin entsteht keine Darstellung, auch
  * keine hinter einem Schalter (Punkt 13).
  *
+ * Geführt wird die Klassifikation seit ANN-089 an einer Stelle: als
+ * `cutoff-anzeige` in `src/app/mdr.ts`. Dieser Kommentar sagt, **was** hier
+ * gespeichert wird; der Eintrag dort sagt, was daraus nicht entsteht.
+ *
  * Die Werte bleiben **Zeichenketten im Wortlaut der Quelle**. Das Inventar
  * nennt Bereiche mit Zitat („MDC95: 9 (Mannion 2006) / 11,75 (Johnsen 2013)");
  * daraus eine Zahl zu machen hieße, eine Struktur zu erfinden, die die Quelle

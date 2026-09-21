@@ -1160,3 +1160,15 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit B9, wenn die 
 **Anker.** Die Schritte `abgerundet` und `verteilt` in `public.list_revenue_by_service_area` (`supabase/migrations/20260921160000_revenue_by_service_area.sql`).
 
 **Änderungspfad.** Eine andere Zuordnung — Tilgungsbestimmung am Zahlungsbeleg oder eine feste Reihenfolge der Kennzeichen: die beiden Schritte und ein Testfall je Regel · Aufwand `klein`, solange die Auswertung nichts speichert — sie rechnet bei jedem Aufruf aus Dokumenten neu.
+
+### ANN-089 — `MDR_REVIEW_REQUIRED` wird als Register mit gesperrten Adressen geführt
+
+Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit B1, wenn die externe regulatorische Prüfung vorliegt
+
+**Annahme.** Die Klassifikation nach ADR-006 Punkt 6 wird an genau einer Codestelle geführt: `src/app/mdr.ts`. Ein Eintrag mit reservierter Adresse ist gesperrt — ein Riegel über der Routentabelle fängt sie ab, bevor eine Route greift; ein Eintrag ohne Adresse ist ein Ausgabeverbot und wirkt im Zuschnitt und im Zweitreview. Einen Schalter gibt es nicht: Geöffnet wird eine Funktion nur, indem ihr Eintrag entfernt wird.
+
+**Begründung.** ADR-006 verlangt in den „Konsequenzen" ausdrücklich mehr als eine Liste — geführt, sichtbar und technisch wirksam —, und Punkt 13 schließt das Feature-Flag als Weg aus; seit 0.13 steht dieselbe Pflicht in `PROJECT_PRINCIPLES.md` §17 an Rang 1. Wo das geschieht, sagt keines der Dokumente; die offene Folgefrage steht seit Fassung 1. Die Reservierung einer Adresse ist der einzige Riegel, der heute schon wirkt, weil die klassifizierten Funktionen noch nicht gebaut sind: Sie sperrt, ohne etwas zu bauen. Für die drei Ausgabeverbote wäre ein Riegel dagegen eine Behauptung — ADR-006 nimmt ihre technische Durchsetzung ausdrücklich aus, weil sich nicht erzwingen lässt, etwas **nicht** zu bauen.
+
+**Anker.** `MDR_REVIEW_REQUIRED`, `REGULATORISCHE_PRUEFUNG` und `mdrSperre` in `src/app/mdr.ts`; der Riegel darüber in `src/routes/AuthenticatedRoutes.tsx`.
+
+**Änderungspfad.** Andere Adresse für eine klassifizierte Funktion: das Feld `pfade` des Eintrags · Aufwand `klein`. Klassifikation aufheben, nachdem die Prüfung vorliegt: Eintrag entfernen, `REGULATORISCHE_PRUEFUNG` mit der Fundstelle belegen, Test nachziehen · Aufwand `klein`, aber nie ohne die dokumentierte Prüfung — das ist die Entscheidung, nicht ihre Umsetzung.
