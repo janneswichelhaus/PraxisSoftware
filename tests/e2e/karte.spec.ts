@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * Der Kartenprototyp in einem echten Browser (MAP-002).
@@ -19,6 +19,58 @@ import { expect, test } from '@playwright/test';
 
 const PRUEFSEITE = '/tests/e2e/fixtures/karte.html';
 const STOPPS = 8;
+
+/** `--color-accent` in sRGB - die Farbe der Marker und der Route. */
+const ACCENT: readonly [number, number, number] = [0x00, 0x44, 0x29];
+
+/**
+ * Wie viele Bildpunkte im Kartenbild die Routenfarbe tragen.
+ *
+ * Eine Ebene in MapLibre steht in keinem DOM-Knoten: Ob gezeichnet wurde,
+ * beantwortet nur das Bild. Gezählt wird deshalb im Bild selbst — der
+ * Browser entschlüsselt die Aufnahme und vergleicht Punkt für Punkt.
+ *
+ * Die Marker liegen über der Leinwand und stehen in derselben Aufnahme; sie
+ * tragen dieselbe Farbe und werden mitgezählt. Deshalb vergleicht die Prüfung
+ * unten zwei Zählungen gegeneinander, statt eine gegen null: Der Unterschied
+ * ist die Linie.
+ */
+async function routenpunkte(page: Page): Promise<number> {
+  const leinwand = page.locator('canvas.maplibregl-canvas');
+  await expect(leinwand).toBeVisible();
+  const aufnahme = (await leinwand.screenshot()).toString('base64');
+
+  return page.evaluate(
+    async ([base64, farbe]) => {
+      const zeichen = atob(base64);
+      const rohdaten = Uint8Array.from(zeichen, (einer) => einer.charCodeAt(0));
+      const bild = await createImageBitmap(new Blob([rohdaten], { type: 'image/png' }));
+      const flaeche = new OffscreenCanvas(bild.width, bild.height);
+      const stift = flaeche.getContext('2d');
+      if (stift === null) throw new Error('Kein 2D-Kontext für die Auswertung.');
+      stift.drawImage(bild, 0, 0);
+
+      const punkte = stift.getImageData(0, 0, bild.width, bild.height).data;
+      const [r, g, b] = farbe as [number, number, number];
+      let treffer = 0;
+      for (let i = 0; i < punkte.length; i += 4) {
+        // Die Linie liegt mit 85 % Deckkraft auf dem Hintergrund und kommt
+        // deshalb aufgehellt an (gemessen: 34,93,69 statt 0,68,41); dazu
+        // kommt die Kantenglättung. 48 Stufen Abstand fassen beides und
+        // bleiben weit vom Hintergrund (230,236,228) entfernt.
+        if (
+          Math.abs(punkte[i]! - r) < 48 &&
+          Math.abs(punkte[i + 1]! - g) < 48 &&
+          Math.abs(punkte[i + 2]! - b) < 48
+        ) {
+          treffer += 1;
+        }
+      }
+      return treffer;
+    },
+    [aufnahme, ACCENT] as const,
+  );
+}
 
 test.describe('Kartenprototyp', () => {
   test('zeichnet die Karte und stellt jeden Stopp ins Bild', async ({ page }) => {
@@ -103,6 +155,44 @@ test.describe('Kartenprototyp', () => {
     // Gewartet wird auf das Ergebnis, nicht auf die Uhr: Die Bewegung dauert
     // auf einem langsamen Rechner laenger als auf einem schnellen.
     await expect.poll(abstand, { timeout: 5_000 }).toBeGreaterThan(vorher);
+  });
+
+  test('zeichnet die Route sichtbar auf die Karte (MAP-003b)', async ({ page }) => {
+    // Erst die Gegenprobe ohne Route: Was hier in der Routenfarbe liegt,
+    // sind die acht Marker. Ohne diese Haelfte bewiese die zweite nur, dass
+    // ueberhaupt etwas gezeichnet wird.
+    await page.goto(PRUEFSEITE);
+    const ohneRoute = await routenpunkte(page);
+    expect(ohneRoute, 'die Marker stehen im Bild').toBeGreaterThan(0);
+
+    await page.goto(`${PRUEFSEITE}?route=1`);
+    // Acht Stopps quer durch die Stadt, vier Punkte breit: Das sind Tausende
+    // von Punkten, keine Handvoll aus der Kantenglaettung.
+    await expect
+      .poll(() => routenpunkte(page), { timeout: 10_000 })
+      .toBeGreaterThan(ohneRoute + 1_000);
+
+    // Die Stopps stehen weiterhin darauf - die Linie verdeckt sie nicht.
+    for (let nummer = 1; nummer <= STOPPS; nummer += 1) {
+      await expect(page.getByText(String(nummer), { exact: true })).toBeVisible();
+    }
+  });
+
+  test('zeigt die Route auch bei 375 px (MAP-003b)', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+
+    await page.goto(PRUEFSEITE);
+    const ohneRoute = await routenpunkte(page);
+
+    await page.goto(`${PRUEFSEITE}?route=1`);
+    await expect
+      .poll(() => routenpunkte(page), { timeout: 10_000 })
+      .toBeGreaterThan(ohneRoute + 500);
+
+    const ueberlauf = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(ueberlauf).toBe(false);
   });
 
   test('nennt die Quelle genau einmal (BEF-022)', async ({ page }) => {

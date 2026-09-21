@@ -102,8 +102,21 @@ content_path = "./supabase/templates/magic_link.html"
 
 # Edge Functions sind NICHT fuer produktive Gesundheitsdaten freigegeben
 # (ADR-015). Lokal deaktiviert, damit nichts unbemerkt entsteht.
+#
+# Das bleibt auch mit MAP-003 so: Der Routing-Adapter (location-provider) ist
+# gebaut, aber die Laufzeit startet nicht von allein mit. Wer den Prototyp
+# lokal fahren will, schaltet sie fuer den Lauf bewusst ein - der Weg steht in
+# docs/abnahme/etappe-t-kartendienst.md. Freigegeben ist damit nichts: ADR-019
+# Punkt 15 laesst den Datenweg nur mit synthetischen Koordinaten laufen, bis
+# die Pruefung der Edge Runtime aus OPS-001 vorliegt.
 [edge_runtime]
 enabled = false
+
+# Der Routing-Adapter aus MAP-003a. `verify_jwt` ist der Riegel der Plattform;
+# die Function prueft die Sitzung zusaetzlich selbst (sitzung.ts). Zwei
+# Riegel, nicht einer statt des anderen.
+[functions.location-provider]
+verify_jwt = true
 
 [analytics]
 enabled = false

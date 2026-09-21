@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
+import {
+  AttributionControl,
+  Map as MapLibreMap,
+  Marker,
+  NavigationControl,
+  type GeoJSONSource,
+} from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 // Nach der CSS des Renderers: Sie bringt die Bedienelemente auf Tippgröße und
 // ersetzt deren Schatten durch eine Linie.
 import './karte.css';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import type { MapDisplayConfig, MapOverlayStop } from '@/lib/location/contract';
+import type { Coordinate, MapDisplayConfig, MapOverlayStop } from '@/lib/location/contract';
 
 /**
  * Eine Karte mit eigenen, nummerierten Stopps (MAP-002, ADR-019).
@@ -26,17 +32,47 @@ import type { MapDisplayConfig, MapOverlayStop } from '@/lib/location/contract';
  * Ohne Konfiguration wird **keine** Karte erzeugt und keine Anfrage gestellt.
  */
 
+/** Kennungen der Routenebene. Sie stehen einmal hier und sonst nirgends. */
+const ROUTE_QUELLE = 'route';
+const ROUTE_EBENE = 'route-linie';
+
+/**
+ * Die Farbe der Route: `--color-accent` aus `src/index.css`, in sRGB.
+ *
+ * MapLibre zeichnet in WebGL und liest keine CSS-Variable; sein Farbparser
+ * kennt `oklch()` nicht, in dem das Entwurfssystem seine Farben führt. Der
+ * Wert steht deshalb hier ein zweites Mal - und ein Test hält beide Fassungen
+ * zusammen, damit die Linie nicht irgendwann eine andere Farbe hat als die
+ * Marker.
+ */
+const ROUTENFARBE = '#004429';
+
 interface KarteProps {
   /** `null`, solange kein Kachelschlüssel konfiguriert ist. */
   readonly config: MapDisplayConfig | null;
   readonly stopps: readonly MapOverlayStop[];
   /** Zugänglicher Name der Karte, zum Beispiel „Karte mit acht Teststopps". */
   readonly beschriftung: string;
+  /**
+   * Der Linienzug der Route in Fahrtreihenfolge, oder nichts (MAP-003b).
+   *
+   * Die Komponente rechnet nichts und fragt niemanden: Sie zeichnet, was sie
+   * bekommt. Woher die Linie stammt — Anbieter oder Nachbildung —, entscheidet
+   * und sagt die Seite.
+   */
+  readonly route?: readonly Coordinate[] | undefined;
 }
 
-export function Karte({ config, stopps, beschriftung }: KarteProps) {
+export function Karte({ config, stopps, beschriftung, route }: KarteProps) {
   if (config === null) return <OhneKartenmaterial />;
-  return <Kartenflaeche config={config} stopps={stopps} beschriftung={beschriftung} />;
+  return (
+    <Kartenflaeche
+      config={config}
+      stopps={stopps}
+      beschriftung={beschriftung}
+      route={route ?? []}
+    />
+  );
 }
 
 /**
@@ -63,7 +99,8 @@ function Kartenflaeche({
   config,
   stopps,
   beschriftung,
-}: KarteProps & { config: MapDisplayConfig }) {
+  route,
+}: KarteProps & { config: MapDisplayConfig; route: readonly Coordinate[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [karte, setKarte] = useState<MapLibreMap | null>(null);
 
@@ -199,6 +236,63 @@ function Kartenflaeche({
       for (const einer of angehaengt) einer.remove();
     };
   }, [karte, marker]);
+
+  /**
+   * Die Route als eigene Ebene auf derselben Karte (MAP-003b).
+   *
+   * Sie entsteht erst, wenn der Style geladen ist: Eine Ebene auf einer Karte
+   * ohne Style nimmt MapLibre nicht an. Bleibt das Kartenmaterial aus, bleibt
+   * auch die Linie weg — Marker und Liste stehen trotzdem, und der Hinweis
+   * oben sagt, was fehlt.
+   */
+  useEffect(() => {
+    if (karte === null) return;
+
+    const zeichne = () => {
+      const linie = {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: route.map(({ lat, lon }) => [lon, lat]),
+        },
+      };
+
+      const quelle = karte.getSource(ROUTE_QUELLE);
+      if (quelle === undefined) {
+        if (route.length < 2) return;
+        karte.addSource(ROUTE_QUELLE, { type: 'geojson', data: linie });
+        karte.addLayer({
+          id: ROUTE_EBENE,
+          type: 'line',
+          source: ROUTE_QUELLE,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': ROUTENFARBE, 'line-width': 4, 'line-opacity': 0.85 },
+        });
+        return;
+      }
+      // `void`: MapLibre nimmt die Daten sofort an und meldet einen Fehler
+      // beim Verarbeiten ueber das `error`-Ereignis der Karte - auf das die
+      // Komponente oben schon hoert. Ein zweiter Weg dafuer waere einer zu
+      // viel.
+      void (quelle as GeoJSONSource).setData(linie);
+    };
+
+    if (karte.isStyleLoaded()) zeichne();
+    else karte.on('load', zeichne);
+
+    return () => {
+      karte.off('load', zeichne);
+      try {
+        if (karte.getLayer(ROUTE_EBENE) !== undefined) karte.removeLayer(ROUTE_EBENE);
+        if (karte.getSource(ROUTE_QUELLE) !== undefined) karte.removeSource(ROUTE_QUELLE);
+      } catch {
+        // Ist die Karte schon abgeräumt (der Effekt darüber räumt zuerst auf),
+        // gibt es hier nichts mehr zu entfernen - MapLibre wirft dann beim
+        // blossen Nachfragen.
+      }
+    };
+  }, [karte, route]);
 
   return (
     <div className="rounded-card border-line overflow-hidden border">

@@ -121,7 +121,7 @@ Sitzung simuliert wurde, steht unter `/vorschau/protokoll`.
 | Erstattungen             | `/betrieb/erstattungen`       | Strom und Einkauf, IBAN, Zeitraum, Arbeitstage mit Berechnung, Positionen mit Summe, Belege, Erklärung, Unterschrift, Historie je Person                      |
 | Kommunikation            | `/team`                       | eigene Anforderung: Kanäle, Direktnachrichten, Threads, Erwähnungen, Ungelesenes, Suche                                                                       |
 | Touren                   | `/touren`                     | eigene Anforderung: Besuchsfolge mit unterscheidbarer Behandlungs- und Wegzeit                                                                                |
-| Karte                    | `/touren/karte`               | Kartenprototyp aus MAP-002: acht erfundene Koordinaten in Tübingen mit eigenen Nummern-Markern, keine Route, keine Fahrzeit, kein Termin, kein Patientenbezug |
+| Karte                    | `/touren/karte`               | Kartenprototyp aus MAP-002 und MAP-003: acht erfundene Koordinaten in Tübingen mit eigenen Nummern-Markern, dazu die Fahrradroute mit Distanz und Fahrzeit je Abschnitt; kein Termin, kein Patientenbezug, nichts gespeichert |
 
 ### Sandbox-Prototypen (Pfad S)
 
@@ -162,15 +162,25 @@ keine Persistenz. Das ist nicht nur Absicht, sondern geprüft:
 `src/features/preview/ehrlichkeit.test.tsx` prüft an den heikelsten Stellen,
 dass keine Erfolgsmeldung behauptet wird, die es nicht gibt.
 
-**Eine Ausnahme, benannt statt verschwiegen** (seit MAP-002): Die Karte unter
-`/touren/karte` lädt Kartenkacheln beim Kartendienst, sobald ein
-Kachelschlüssel konfiguriert ist — der einzige direkte Anbieterkontakt, den
-ADR-019 dem Browser erlaubt (Punkt 15). Hinaus gehen Kachelausschnitt und
-Zoom, nie ein Stopp, ein Name oder ein Termin; ohne Schlüssel geht gar nichts
-hinaus. Die Ausnahme hängt in `trennung.test.ts` am Verzeichnis
-`src/features/tours/karte` und gilt in keinem anderen Vorschaubereich — mit
-eigener Gegenprobe. Datenbank, Persistenz und Serveraufrufe bleiben auch dort
-ausgeschlossen.
+**Zwei Ausnahmen, benannt statt verschwiegen**, beide allein für die Karte
+unter `/touren/karte` und beide in `trennung.test.ts` an das Verzeichnis
+`src/features/tours/karte` gebunden — mit eigener Gegenprobe, dass sie dort
+enden:
+
+1. **Kartenkacheln** (seit MAP-002): Die Seite lädt sie beim Kartendienst,
+   sobald ein Kachelschlüssel konfiguriert ist — der einzige direkte
+   Anbieterkontakt, den ADR-019 dem Browser erlaubt (Punkt 15). Hinaus gehen
+   Kachelausschnitt und Zoom, nie ein Stopp, ein Name oder ein Termin; ohne
+   Schlüssel geht gar nichts hinaus.
+2. **Der Routenabruf** (seit MAP-003): Die Seite ruft die eigene Edge
+   Function `location-provider` auf, die die Route serverseitig beim Anbieter
+   rechnet — serverseitig, weil ADR-019 Punkt 15 es so verlangt. Übergeben
+   werden Koordinaten und ein Fahrprofil, sonst nichts; gespeichert wird
+   nichts (Punkt 16). Der Aufruf selbst steht in `@/lib/location/route.ts`,
+   das **nur** dieser Prototyp importieren darf.
+
+Alles Übrige bleibt auch dort ausgeschlossen: kein `fetch(` im eigenen
+Quelltext, kein `getSupabase`, keine Datenbank, keine Persistenz.
 
 ## 3. Offen
 

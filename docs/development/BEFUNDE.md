@@ -766,3 +766,31 @@ keine Ebene verweist, überhaupt nicht an — eine solche Quelle als Beleg zu
 werten hätte die eigene Angabe stillgelegt und die Karte ohne Quelle
 hinterlassen. Vier Tests halten beide Richtungen fest, einer davon im
 Browser gegen einen Style, der seine Quelle selbst nennt.
+
+### BEF-023 — Die Abfrageparameter der Routing-API sind abgeleitet, nicht belegt
+
+|         |                                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-21                                                                                          |
+| Bereich | Kalender: Kartenprototyp (`/touren/karte`, Vorschau), Edge Function `location-provider`              |
+| Quelle  | MAP-003a, Bau des PTV-Adapters                                                                       |
+| Status  | offen — klärt sich beim ersten lokalen Lauf mit Schlüssel (Abnahme Etappe T, MAP-003)                |
+| Berührt | `supabase/functions/location-provider/ptv.ts`; ADR-019 Punkt 7; `providerpruefung-kartendienst.md`   |
+
+**Beobachtung.** Profilnamen (`OSM_BICYCLE`, `OSM_CARGO_BICYCLE`) und
+Antwortfelder (`distance`, `travelTime`, `legs`, `polyline`) sind aus den
+offiziellen Clients des Anbieters belegt. Die **Schreibweise der
+Abfrageparameter** — `waypoints` je Punkt, `results`, `polylineFormat` — ist
+daraus abgeleitet: Die Webhosts des Anbieters sind aus der
+Cloud-Entwicklungsumgebung gesperrt, die Dokumentation also nicht einsehbar.
+
+**Warum das zählt.** Ein falscher Parametername kostet keine Daten und keine
+Sicherheit, aber den ersten Lauf: Der Anbieter antwortet mit 400 oder mit
+einer Antwort ohne GeoJSON, und wer das nicht erwartet, sucht den Fehler in
+der eigenen Kette. Dieselbe Erfahrung steht hinter BEF-021 bei den Kacheln.
+
+**Was dagegen steht.** Der Adapter meldet genau diese Fälle als eigene
+Fehlerklasse mit lesbarer Meldung (`ptv: HTTP 400`, `ptv: Antwort ohne
+GeoJSON-Polylinie`) statt eine halbe Route zu zeichnen, und die ganze
+Schreibweise steht in **einer** Funktion. Der erste Lauf mit Schlüssel
+entscheidet; korrigiert wird dort und sonst nirgends.
