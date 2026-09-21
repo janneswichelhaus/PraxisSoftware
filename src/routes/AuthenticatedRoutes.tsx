@@ -1,4 +1,6 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { LoadingState } from '@/components/ui/Feedback';
 import { AppShell } from '@/app/AppShell';
 import { BereichePage } from '@/app/BereichePage';
 import { canSeeBilling } from '@/app/navigation';
@@ -80,6 +82,19 @@ import {
   isStaff,
   type CurrentUser,
 } from '@/features/session/types';
+
+/**
+ * Die einzige nachgeladene Seite der Anwendung (MAP-002c).
+ *
+ * MapLibre GL JS ist ein Renderer mit eigener Worker-Datei und wiegt ein
+ * Vielfaches des übrigen Anwendungscodes. Fest eingebunden zahlte jeder
+ * Seitenaufruf dafür - auch die Anmeldung, die Dokumentation und der Kalender,
+ * die keine Karte zeigen. Als eigener Abschnitt lädt er erst, wenn jemand die
+ * Karte öffnet.
+ */
+const KartePage = lazy(() =>
+  import('@/features/tours/karte/KartePage').then((modul) => ({ default: modul.KartePage })),
+);
 
 /**
  * Routen des angemeldeten Bereichs.
@@ -235,6 +250,15 @@ export function AuthenticatedRoutes({
                   element={<AppointmentSlipPage />}
                 />
                 <Route path="/touren" element={<ToursPage user={user} />} />
+                {/* Kartenprototyp, noch ohne Anbindung an Termine (MAP-002). */}
+                <Route
+                  path="/touren/karte"
+                  element={
+                    <Suspense fallback={<LoadingState label="Karte wird geladen …" />}>
+                      <KartePage />
+                    </Suspense>
+                  }
+                />
                 <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
               </>
             ) : null}

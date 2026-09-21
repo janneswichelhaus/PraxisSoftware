@@ -121,6 +121,7 @@ Sitzung simuliert wurde, steht unter `/vorschau/protokoll`.
 | Erstattungen             | `/betrieb/erstattungen`       | Strom und Einkauf, IBAN, Zeitraum, Arbeitstage mit Berechnung, Positionen mit Summe, Belege, Erklärung, Unterschrift, Historie je Person                      |
 | Kommunikation            | `/team`                       | eigene Anforderung: Kanäle, Direktnachrichten, Threads, Erwähnungen, Ungelesenes, Suche                                                                       |
 | Touren                   | `/touren`                     | eigene Anforderung: Besuchsfolge mit unterscheidbarer Behandlungs- und Wegzeit                                                                                |
+| Karte                    | `/touren/karte`               | Kartenprototyp aus MAP-002: acht erfundene Koordinaten in Tübingen mit eigenen Nummern-Markern, keine Route, keine Fahrzeit, kein Termin, kein Patientenbezug |
 
 ### Sandbox-Prototypen (Pfad S)
 
@@ -160,6 +161,16 @@ keine Persistenz. Das ist nicht nur Absicht, sondern geprüft:
 `getSupabase`, `fetch`, `localStorage` und Vergleichbares.
 `src/features/preview/ehrlichkeit.test.tsx` prüft an den heikelsten Stellen,
 dass keine Erfolgsmeldung behauptet wird, die es nicht gibt.
+
+**Eine Ausnahme, benannt statt verschwiegen** (seit MAP-002): Die Karte unter
+`/touren/karte` lädt Kartenkacheln beim Kartendienst, sobald ein
+Kachelschlüssel konfiguriert ist — der einzige direkte Anbieterkontakt, den
+ADR-019 dem Browser erlaubt (Punkt 15). Hinaus gehen Kachelausschnitt und
+Zoom, nie ein Stopp, ein Name oder ein Termin; ohne Schlüssel geht gar nichts
+hinaus. Die Ausnahme hängt in `trennung.test.ts` am Verzeichnis
+`src/features/tours/karte` und gilt in keinem anderen Vorschaubereich — mit
+eigener Gegenprobe. Datenbank, Persistenz und Serveraufrufe bleiben auch dort
+ausgeschlossen.
 
 ## 3. Offen
 

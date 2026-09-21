@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+// Nach der CSS des Renderers: Sie bringt die Bedienelemente auf Tippgröße und
+// ersetzt deren Schatten durch eine Linie.
+import './karte.css';
 import type { MapDisplayConfig, MapOverlayStop } from '@/lib/location/contract';
 
 /**
@@ -145,7 +148,10 @@ function Kartenflaeche({
       />
       {marker.map(({ stopp, knoten }) =>
         createPortal(
-          <span className="bg-accent rounded-pill flex h-7 min-w-7 items-center justify-center px-1.5 text-sm font-semibold text-white shadow ring-2 ring-white">
+          // Der weisse Rand hebt den Marker von der Karte ab - eine Linie,
+          // kein Schatten und kein `ring-*` (das Tailwind als `box-shadow`
+          // setzt): Ebenen entstehen in diesem System aus Fläche oder Linie.
+          <span className="bg-accent rounded-pill flex h-7 min-w-7 items-center justify-center border-2 border-white px-1.5 text-sm font-semibold text-white">
             {stopp.label}
           </span>,
           knoten,
