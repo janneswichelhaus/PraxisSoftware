@@ -230,3 +230,78 @@ keinem Termin erfassen; das ist der gewollte Zwischenstand. Kein ermäßigter
 Steuersatz: Er ist angelegt und **nicht aktiviert**, bis die Steuerberatung
 ihn freigibt (**B4**) — eine Position mit 7 % weist die Datenbank ab. Und
 keine Auswertung „Einnahmen je Leistungsart" — das ist **ABR-EPIC-006**.
+
+---
+
+## ABR-EPIC-006 — Einnahmen je Leistungsart
+
+Prüfschritte zu **ABR-011**. Grundlage: ADR-009 Fassung 2 Punkt 19.
+
+**Dieser Loop bringt eine Migration**
+(`20260921160000_revenue_by_service_area.sql`) **und keinen geänderten Seed**:
+vorher `git pull origin main`, dann `pnpm dlx supabase@2.116.0 db reset`. Die
+Migration ändert keine Tabelle und legt keinen Schreibweg an — sie fügt zwei
+lesende Funktionen hinzu.
+
+Vorbereitung für die Schritte 2 und 3: eine Rechnung mit **zwei**
+Steuergruppen. Also einen dokumentierten Termin mit **Krankengymnastik**
+(steuerfrei) und einen zweiten mit **Selbstzahlerleistung ohne
+Heilbehandlungszweck** (19 %) im selben Monat erfassen, daraus einen Entwurf
+bauen und ihn **ausstellen**.
+
+### 1. Ohne Grundlage keine Zahl
+
+1. Als `olivia.office@praxis.invalid` (office) **Abrechnung → Auswertung**
+   öffnen. Erwartung: „Grundlage" steht auf **„Bitte wählen …"**, und unter
+   „Ergebnis" steht **keine Zahl**, sondern „Noch keine Grundlage gewählt".
+   Das ist kein fehlender Ladezustand: Zufluss und Rechnungsstellung ergeben
+   verschiedene Zahlen, und welche gilt, entscheidet die Steuerberatung (B9).
+2. Als `anna.beispiel@praxis.invalid` (Therapie) anmelden. Erwartung: Der
+   Bereich Abrechnung fehlt in der Navigation — und `/abrechnung/auswertung`
+   direkt aufgerufen liefert kein Ergebnis. Die Sperre sitzt an der
+   Serverfunktion, nicht an der ausgeblendeten Zeile.
+
+### 2. Rechnungsstellung und Zufluss sagen verschiedenes
+
+1. Als office auf der Auswertung **Grundlage → Rechnungsstellung**. Erwartung:
+   Unter „Behandlung" stehen **zwei** Zeilen — „Heilbehandlung,
+   umsatzsteuerfrei" mit 45,00 € und „Umsatzsteuerpflichtig · 19 %" mit
+   60,00 €, dazu „enthaltene Umsatzsteuer 9,58 € · netto 50,42 €". Die Summe
+   darunter heißt **„Summe Behandlung · Rechnungsstellung"**.
+2. **Grundlage → Zufluss**, ohne sonst etwas zu ändern. Erwartung: Die
+   Auswertung sagt „Keine Zahlen in diesem Jahr" — die Rechnung ist
+   ausgestellt, aber nicht bezahlt. Dass dieselbe Rechnung auf zwei Grundlagen
+   zwei verschiedene Antworten gibt, ist der Zweck der Trennung.
+3. Die Rechnung **vollständig** bezahlen (Abrechnung → offener Posten →
+   Buchen), dann zurück auf die Auswertung, Grundlage **Zufluss**. Erwartung:
+   Dieselben zwei Zeilen und dieselben Beträge wie in Schritt 1.
+
+### 3. Das Storno kehrt um, die Teilzahlung wird verteilt
+
+1. Erst die **Zahlung** aus Schritt 2 stornieren (Abrechnung → Zahlungen →
+   Stornieren, Grund „Abnahme"), dann die **Rechnung** (Grund „Abnahme") — in
+   dieser Reihenfolge, weil eine Rechnung mit stehender Zahlung sich nicht
+   stornieren lässt. Erwartung auf der Grundlage **Rechnungsstellung**: Beide
+   Zeilen stehen auf **0,00 €** und nennen **„2 Dokumente"**. Sie verschwinden
+   nicht: Ausgestellt und wieder zurückgenommen ist etwas anderes als „nichts
+   passiert".
+2. Aus den wieder freien Leistungen eine neue Rechnung bauen und **ausstellen**.
+   Erwartung: Dieselben Zeilen stehen wieder bei 45,00 € und 60,00 €, jetzt mit
+   **„3 Dokumente"** — Rechnung, Storno, Korrekturrechnung.
+3. Auf die neue Rechnung **50,00 €** buchen, dann Grundlage **Zufluss**.
+   Erwartung: „Heilbehandlung, umsatzsteuerfrei" 21,43 €,
+   „Umsatzsteuerpflichtig · 19 %" 28,57 € — zusammen **genau 50,00 €**. Die
+   Zahlung gilt keinem einzelnen Posten; sie wird anteilig nach Bruttoanteil
+   verteilt (**ANN-088**), und kein Cent verschwindet. Die stornierte Zahlung
+   aus Schritt 1 steht in keiner Summe mehr.
+
+### 4. Was dieser Loop nicht bringt
+
+Keine Gewinnermittlung, keinen steuerlichen Abschluss und keine Bewertung: Die
+Seite fasst zusammen, was in ausgestellten Dokumenten und gebuchten Zahlungen
+steht — der Schlusssatz unter der Auswertung sagt das auch dort. Keinen Export
+für die Steuerberatung (`IDEA-PRX-026`, wartet auf **B4**) und keine
+Kennzahlen (`IDEA-PRX-025`). Keine Zahl über beide Bereiche — die gibt es
+bewusst nicht. Und keine Trainingszeile, solange es für Training keinen
+Schreibweg gibt (E18 Schritt 7): Der Bereich erscheint erst, wenn eine
+Trainingsrechnung existiert.

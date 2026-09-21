@@ -1148,3 +1148,15 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P5, wenn alle
 **Anker.** Der Kommentar an `scoreItemSchema` in `src/features/assessments/schema.ts`, der die Auslassung samt Grund festhält.
 
 **Änderungspfad.** Ein Instrument mit echter Sprungregel: Feld am Item, Prüfung gegen bekannte Item-Kennungen, ein Testfall · Aufwand `klein`.
+
+### ANN-088 — Eine Teilzahlung verteilt sich anteilig auf die Steuergruppen ihrer Rechnung
+
+Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit B9, wenn die Steuerberatung die Grundlage der Gewinnermittlung benennt
+
+**Annahme.** Auf der Grundlage **Zufluss** wird eine gebuchte Zahlung auf die Steuergruppen ihrer Rechnung verteilt: anteilig nach deren Bruttoanteil am Rechnungsbetrag, in ganzen Cent, der verbleibende Rest an die größten Bruchteile und bei Gleichstand in fester Reihenfolge. Eine Vollzahlung ergibt damit genau die Gruppen des Dokuments, eine Rückzahlung hebt ihren Eingang centgenau auf, und keine Summe verliert einen Cent.
+
+**Begründung.** ADR-009 Punkt 19 verlangt die Aufschlüsselung je Kennzeichen und Satz auf **beiden** Grundlagen, sagt aber nicht, welchem Posten eine Teilzahlung gilt — die Rechnung nennt keinen, und der Zahlende nennt ihn im Regelfall auch nicht. Die anteilige Verteilung ist die Antwort ohne Bewertung: Sie bevorzugt keine Gruppe und entspricht der Aufteilung, mit der die Istversteuerung nach § 20 UStG rechnet. Die Aufschlüsselung auf dieser Grundlage wegzulassen verstieße gegen Punkt 19; zuerst die steuerpflichtigen Posten als bezahlt zu behandeln wäre eine Tilgungsbestimmung — die trifft der Zahlende (§ 366 BGB) und nicht die Software.
+
+**Anker.** Die Schritte `abgerundet` und `verteilt` in `public.list_revenue_by_service_area` (`supabase/migrations/20260921160000_revenue_by_service_area.sql`).
+
+**Änderungspfad.** Eine andere Zuordnung — Tilgungsbestimmung am Zahlungsbeleg oder eine feste Reihenfolge der Kennzeichen: die beiden Schritte und ein Testfall je Regel · Aufwand `klein`, solange die Auswertung nichts speichert — sie rechnet bei jedem Aufruf aus Dokumenten neu.
