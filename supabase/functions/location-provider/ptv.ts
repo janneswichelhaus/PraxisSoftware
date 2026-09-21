@@ -10,14 +10,23 @@
  * TomTom aus dem Datenweg (ADR-019 Punkt 7). Übergeben werden Koordinaten und
  * ein Profil, nie eine Adresse, nie ein Name, nie eine Uhrzeit (Punkt 12, 13).
  *
- * **Belegtiefe.** Profilnamen und Antwortfelder sind aus PTVs offiziellen
- * Clients belegt (`docs/decisions/providerpruefung-kartendienst.md`, Teil 1
- * Zeile 3). Die Schreibweise der Abfrageparameter stammt aus denselben
- * Clients, ist aber aus dieser Umgebung nicht gegen die Dokumentation
- * prüfbar — die Webhosts des Anbieters sind gesperrt. Sie bestätigt sich beim
- * ersten lokalen Lauf mit Schlüssel: Kommt eine Route, stimmt sie; kommt ein
- * 400er oder eine Antwort ohne GeoJSON, wird genau dieser Block korrigiert.
- * Dieselbe Erfahrung steht hinter BEF-021 bei den Kacheln.
+ * **Belegtiefe.** Am 2026-09-21 mit dem Schlüssel gegen die echte API geprüft
+ * (BEF-023); vorher war die Schreibweise der Abfrageparameter nur aus PTVs
+ * Clients abgeleitet, und sie war an drei Stellen falsch:
+ *
+ *   * Die OSM-Welt hat einen **eigenen Pfad** — `routing-osm/v1`, so wie die
+ *     Kacheln unter `maps-osm/v1`. Auf `routing/v1` ist `OSM_BICYCLE`
+ *     schlicht unbekannt (`ROUTING_PROFILE_NOT_FOUND`).
+ *   * `results` darf **nicht doppelt** vorkommen
+ *     (`GENERAL_DUPLICATE_PARAMETER`), es ist eine Liste.
+ *   * `polylineFormat` gibt es nicht (`GENERAL_UNRECOGNIZED_PARAMETER`).
+ *     GeoJSON ist der Vorgabewert — aber als **Zeichenkette**, nicht als
+ *     Objekt.
+ *
+ * Der Pfad ist dabei mehr als eine Formalie: `routing/v1` antwortet mit dem
+ * Profil `BICYCLE` klaglos und rechnet dabei auf HERE-Daten. Er hätte
+ * funktioniert und dabei einen zweiten Datenlieferanten in den Datenweg
+ * geholt — genau das schließt ADR-019 Punkt 7 aus.
  */
 
 import {
@@ -31,17 +40,22 @@ import {
   type TravelProfile,
 } from './typen.ts';
 
-/** Routing OSM API. `routing/v1` ohne `-osm` im Pfad; die OSM-Wahl trägt das Profil. */
-const ROUTING_URL = 'https://api.myptv.com/routing/v1/routes';
+/** Routing OSM API. Der Pfad trägt die OSM-Wahl, nicht erst das Profil (2026-09-21 geprüft). */
+const ROUTING_URL = 'https://api.myptv.com/routing-osm/v1/routes';
 
 /**
  * Die Fahrprofile des Anbieters.
  *
- * `cargo_bicycle` bildet `OSM_CARGO_BICYCLE` ab. Beide Profile sind belegt;
- * **welches** die Räder der Praxis besser trifft, beantwortet erst der
- * Vergleich auf denselben Stopps (MAP-003c) — das ist eine Frage an Jannes und
- * keine, die hier entschieden wird. Eine Einstellung dafür gibt es bewusst
- * nicht (ADR-019, „bewusst nicht Bestandteil").
+ * `cargo_bicycle` bildet `OSM_CARGO_BICYCLE` ab. Beide Namen sind am
+ * 2026-09-21 gegen die echte API geprüft; beide liefern eine Route.
+ *
+ * **Welches** die Räder der Praxis trifft, ist damit nicht beantwortet — und
+ * die erste Messung geht gegen die Erwartung: Auf derselben 1,7-km-Strecke
+ * war das Lastenradprofil das **schnellere** (1771 m in 290 s gegen 1731 m in
+ * 312 s). Beide rechnen um die 20 km/h, also eher flach als geländekundig.
+ * Eine Strecke ist keine Bewertung; die Entscheidung trifft Jannes nach der
+ * Abnahme (MAP-003c), und eine Einstellung dafür gibt es bewusst nicht
+ * (ADR-019, „bewusst nicht Bestandteil").
  */
 const PROFILE: Readonly<Record<TravelProfile, string>> = {
   bicycle: 'OSM_BICYCLE',
@@ -110,17 +124,17 @@ export function erstellePtvAdapter({
 /**
  * Die Abfrage — und damit alles, was den Anbieter erreicht.
  *
- * Wegpunkte in Fahrtreihenfolge als `lat,lon`, das Profil, die beiden
- * benötigten Ergebnisteile und das Polylinienformat. Mehr steht nicht darin:
- * kein Zeitpunkt, keine Kennung, kein Zähler.
+ * Wegpunkte in Fahrtreihenfolge als `lat,lon`, das Profil und die beiden
+ * benötigten Ergebnisteile. Mehr steht nicht darin: kein Zeitpunkt, keine
+ * Kennung, kein Zähler.
  */
 function adresse(request: RouteRequest): string {
   const abfrage = new URLSearchParams();
+  // Wegpunkte einzeln, Ergebnisse als **eine** Liste: Ein zweites `results`
+  // lehnt die API als doppelten Parameter ab (2026-09-21 geprüft).
   for (const punkt of request.waypoints) abfrage.append('waypoints', `${punkt.lat},${punkt.lon}`);
   abfrage.append('profile', PROFILE[request.profile]);
-  abfrage.append('results', 'POLYLINE');
-  abfrage.append('results', 'LEGS');
-  abfrage.append('polylineFormat', 'GEO_JSON');
+  abfrage.append('results', 'POLYLINE,LEGS');
   return `${ROUTING_URL}?${abfrage.toString()}`;
 }
 
@@ -174,13 +188,20 @@ function legs(wert: unknown): readonly RouteLeg[] | null {
 /**
  * GeoJSON-Linienzug in Koordinaten des Vertrags.
  *
+ * Der Anbieter liefert das GeoJSON als **Zeichenkette** im Feld `polyline`,
+ * nicht als Objekt (2026-09-21 geprüft, BEF-023) — es wird hier ein zweites
+ * Mal gelesen. Ein Objekt nimmt diese Funktion ebenfalls an: Beides ist
+ * dasselbe GeoJSON, und ein Formatwechsel des Anbieters soll nicht die ganze
+ * Karte kosten.
+ *
  * GeoJSON schreibt `[lon, lat]`, der Vertrag `{ lat, lon }` — die Drehung
  * geschieht genau hier. Eine vertauschte Reihenfolge fiele auf der Karte als
  * Linie im Indischen Ozean auf; ein Test hält sie fest.
  */
 function geometrie(wert: unknown): readonly Coordinate[] | null {
-  if (typeof wert !== 'object' || wert === null) return null;
-  const paare = (wert as Record<string, unknown>)['coordinates'];
+  const linie = typeof wert === 'string' ? gelesen(wert) : wert;
+  if (typeof linie !== 'object' || linie === null) return null;
+  const paare = (linie as Record<string, unknown>)['coordinates'];
   if (!Array.isArray(paare)) return null;
 
   const punkte: Coordinate[] = [];
@@ -192,6 +213,15 @@ function geometrie(wert: unknown): readonly Coordinate[] | null {
     punkte.push({ lat, lon });
   }
   return punkte.length >= 2 ? punkte : null;
+}
+
+/** JSON aus einer Zeichenkette — oder `null`, wenn es keines ist. Wirft nie. */
+function gelesen(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 function zahl(wert: unknown): number | null {

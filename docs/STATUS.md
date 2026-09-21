@@ -30,13 +30,13 @@ mit 65 Unit-Tests geprüft, die Linie mit zwei Browserprüfungen. `ASSUMPTIONS.m
 
 - **MAP-003 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)):
   nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`),
-  `supabase/functions/.env.local`, `functions serve`. Dabei fällt die Antwort auf **BEF-023**
-  (Schreibweise der Abfrageparameter) und die **Profilfrage aus MAP-003c**.
+  `supabase/functions/.env.local`, `functions serve`. **BEF-023 ist erledigt** (Abfrage am
+  2026-09-21 mit Schlüssel geprüft und korrigiert). Offen: die **Profilfrage aus MAP-003c** — eine
+  erste Messung liegt vor, entschieden ist nichts.
 - **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue
   Version nach §21 beginnt dort kein Loop. Gebraucht wird sie, wenn Etappe TR an der Reihe ist.
-- **PTV:** Karte läuft (Sichtprüfung 2026-09-21, dabei BEF-021 und BEF-022). Offen:
-  **Domainbindung** (ADR-019 Punkt 19). Serverseitig gilt vorerst **derselbe Schlüssel** —
-  Entscheidung 2026-09-21, nur synthetische Koordinaten.
+- **PTV:** Karte läuft, der Schlüssel trägt auch serverseitig (2026-09-21 geprüft; BEF-021,
+  BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19); nur synthetische Koordinaten.
 - **Lokal:** `git pull`. **Keine neue Abhängigkeit, keine Migration, kein `db reset`.** **Node 22** (`.nvmrc`), sonst rot.
 - **G13 fehlt:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises** und die **Kürzel
   der beiden Nummernkreise** (`RG`/`TR` als Festlegung) — ANN-074/075/082; dazu echte Preise. **B4**
@@ -56,5 +56,5 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Was bisher nur als Vertrag dastand, rechnet jetzt** — und der Browser spricht dafür weiter nur
-mit der eigenen Anwendung. Lokal: `git pull origin main`, sonst nichts; dann die Abnahme oben.
+**Was bisher nur als Vertrag dastand, rechnet jetzt** — und die Abfrage stimmt: Pfad, `results` und
+Polylinienformat waren falsch, alle drei behoben (BEF-023). Lokal: `git pull origin main`.
