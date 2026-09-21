@@ -1,7 +1,9 @@
 import { createRoot } from 'react-dom/client';
 import { Karte } from '@/features/tours/karte/Karte';
+import { Routenangaben } from '@/features/tours/karte/Routenangaben';
 import { TESTSTOPPS } from '@/features/tours/karte/teststopps';
 import type { MapDisplayConfig } from '@/lib/location/contract';
+import type { Routenergebnis } from '@/lib/location/route';
 import '@/index.css';
 
 /**
@@ -76,13 +78,58 @@ const config: MapDisplayConfig = {
   maxZoom: 17,
 };
 
+/**
+ * Mit `?route=1` liegt zusätzlich eine Linie auf der Karte (MAP-003b).
+ *
+ * Der Linienzug sind die Stopps selbst: Ohne Anbieter gibt es hier keine
+ * gefahrene Strecke, und eine erfundene Kurve wäre für die Prüffrage nichts
+ * wert. Gefragt ist, ob MapLibre die Ebene annimmt und zeichnet — nicht, ob
+ * der Weg durch die Stadt stimmt.
+ */
+const route = parameter.has('route') ? TESTSTOPPS.map((stopp) => stopp.position) : undefined;
+
+/**
+ * Die Angaben zur Route, wie sie die Nachbildung liefert.
+ *
+ * Auch das ist eine Prüffrage im Browser: `/touren/karte` liegt hinter der
+ * Anmeldung, und in der Cloud-Entwicklungsumgebung läuft kein GoTrue. Ohne
+ * diesen Block ließe sich die neue Anzeige nirgends in einem echten Browser
+ * ansehen — schon gar nicht bei 375 px.
+ */
+const angaben: Routenergebnis = {
+  ok: true,
+  value: {
+    quelle: 'nachbildung',
+    route: {
+      distanceMeters: 12_449,
+      durationSeconds: 2988,
+      legs: TESTSTOPPS.slice(1).map((_, nummer) => ({
+        distanceMeters: 1500 + nummer * 120,
+        durationSeconds: 360 + nummer * 30,
+      })),
+      geometry: route ?? [],
+    },
+  },
+};
+
 const wurzel = document.getElementById('wurzel');
 if (!wurzel) throw new Error('Wurzelelement der Prüfseite fehlt.');
 
 createRoot(wurzel).render(
-  <Karte
-    config={config}
-    stopps={TESTSTOPPS}
-    beschriftung={`Karte mit ${TESTSTOPPS.length} synthetischen Teststopps in Tübingen`}
-  />,
+  <>
+    <Karte
+      config={config}
+      stopps={TESTSTOPPS}
+      beschriftung={`Karte mit ${TESTSTOPPS.length} synthetischen Teststopps in Tübingen`}
+      route={route}
+    />
+    {route === undefined ? null : (
+      <Routenangaben
+        laedt={false}
+        ergebnis={angaben}
+        lastenrad={undefined}
+        erneutVersuchen={() => {}}
+      />
+    )}
+  </>,
 );

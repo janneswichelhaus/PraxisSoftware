@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import type { MapDisplayConfig, MapOverlayStop } from '@/lib/location/contract';
@@ -44,6 +45,11 @@ class FakeKarte {
   readonly melder = new Map<string, (() => void)[]>();
   ausschnitt: [[number, number], [number, number]] | null = null;
   entfernt = false;
+  /** Ob der Style steht. MapLibre nimmt vorher keine Ebene an. */
+  styleGeladen = false;
+  /** Was die Komponente selbst angelegt hat - die Routenebene aus MAP-003b. */
+  readonly eigeneQuellen = new Map<string, FakeQuelle>();
+  readonly eigeneEbenen = new Map<string, FakeEbene>();
 
   constructor(optionen: KartenOptionen) {
     this.optionen = optionen;
@@ -58,6 +64,37 @@ class FakeKarte {
     this.melder.set(ereignis, [...(this.melder.get(ereignis) ?? []), melder]);
   }
 
+  off(ereignis: string, melder: () => void) {
+    this.melder.set(
+      ereignis,
+      (this.melder.get(ereignis) ?? []).filter((einer) => einer !== melder),
+    );
+  }
+
+  isStyleLoaded() {
+    return this.styleGeladen;
+  }
+
+  addSource(kennung: string, spezifikation: { data: unknown }) {
+    this.eigeneQuellen.set(kennung, new FakeQuelle(spezifikation.data));
+  }
+
+  addLayer(ebene: FakeEbene) {
+    this.eigeneEbenen.set(ebene.id, ebene);
+  }
+
+  getLayer(kennung: string) {
+    return this.eigeneEbenen.get(kennung);
+  }
+
+  removeLayer(kennung: string) {
+    this.eigeneEbenen.delete(kennung);
+  }
+
+  removeSource(kennung: string) {
+    this.eigeneQuellen.delete(kennung);
+  }
+
   /** Nur im Test: loest aus, was MapLibre im Browser meldet. */
   ausloesen(ereignis: string) {
     act(() => {
@@ -70,7 +107,7 @@ class FakeKarte {
   }
 
   getSource(kennung: string) {
-    return this.geladeneQuellen[kennung];
+    return this.eigeneQuellen.get(kennung) ?? this.geladeneQuellen[kennung];
   }
 
   /** Die Quellenangabe, die nach dem Laden dazugekommen ist. */
@@ -87,6 +124,27 @@ class FakeKarte {
   remove() {
     this.entfernt = true;
   }
+}
+
+/** Eine GeoJSON-Quelle, so weit die Komponente sie braucht. */
+class FakeQuelle {
+  daten: unknown;
+
+  constructor(daten: unknown) {
+    this.daten = daten;
+  }
+
+  setData(daten: unknown) {
+    this.daten = daten;
+  }
+}
+
+interface FakeEbene {
+  id: string;
+  type: string;
+  source: string;
+  paint?: Record<string, unknown>;
+  layout?: Record<string, unknown>;
 }
 
 class FakeMarker {
@@ -357,5 +415,124 @@ describe('Karte', () => {
 
     expect(karten[0]?.entfernt).toBe(true);
     expect(screen.queryByText('1')).not.toBeInTheDocument();
+  });
+});
+
+describe('Route auf der Karte (MAP-003b)', () => {
+  const LINIE = [
+    { lat: 48.52, lon: 9.05 },
+    { lat: 48.525, lon: 9.055 },
+    { lat: 48.53, lon: 9.06 },
+  ];
+
+  beforeEach(() => {
+    karten.length = 0;
+    marker.length = 0;
+  });
+
+  /** Die Routenebene, wie die Komponente sie angelegt hat. */
+  function routenebene(karte: FakeKarte) {
+    return karte.eigeneEbenen.get('route-linie');
+  }
+
+  function routenquelle(karte: FakeKarte) {
+    return karte.eigeneQuellen.get('route');
+  }
+
+  it('zeichnet die Linie erst, wenn der Style steht', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />);
+    const karte = angelegteKarte();
+
+    // Vorher nimmt MapLibre keine Ebene an - eine Karte ohne Style hat keine.
+    expect(routenebene(karte)).toBeUndefined();
+
+    karte.styleGeladen = true;
+    karte.ausloesen('load');
+
+    expect(routenebene(karte)?.type).toBe('line');
+  });
+
+  it('legt die Linie als GeoJSON in Laenge-vor-Breite ab', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />);
+    const karte = angelegteKarte();
+    karte.ausloesen('load');
+
+    expect(routenquelle(karte)?.daten).toEqual({
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'LineString',
+        // Wie bei den Markern: [lon, lat]. Vertauscht laege die Route im
+        // Indischen Ozean.
+        coordinates: [
+          [9.05, 48.52],
+          [9.055, 48.525],
+          [9.06, 48.53],
+        ],
+      },
+    });
+  });
+
+  it('zeichnet in der Farbe der Marker und nicht in irgendeiner', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />);
+    const karte = angelegteKarte();
+    karte.ausloesen('load');
+
+    expect(routenebene(karte)?.paint?.['line-color']).toBe('#004429');
+  });
+
+  it('haelt die Farbe mit dem Entwurfssystem zusammen', () => {
+    // MapLibre liest keine CSS-Variable und kennt kein `oklch()`; die Farbe
+    // steht deshalb zweimal im Baum. Aendert jemand das Token, faellt diese
+    // Pruefung - und nicht erst jemandem im Browser auf, dass die Linie eine
+    // andere Farbe hat als die Marker.
+    const stile = readFileSync('src/index.css', 'utf8');
+    expect(stile).toContain('--color-accent: oklch(34.1% 0.0781 159.2)');
+  });
+
+  it('legt ohne Route keine Ebene an', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+    const karte = angelegteKarte();
+    karte.ausloesen('load');
+
+    expect(routenebene(karte)).toBeUndefined();
+    expect(routenquelle(karte)).toBeUndefined();
+  });
+
+  it('ersetzt die Linie, statt eine zweite Ebene anzulegen', () => {
+    const { rerender } = render(
+      <Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />,
+    );
+    const karte = angelegteKarte();
+    karte.styleGeladen = true;
+    karte.ausloesen('load');
+
+    rerender(
+      <Karte
+        config={KONFIGURATION}
+        stopps={stopps(3)}
+        beschriftung="Karte"
+        route={[...LINIE, { lat: 48.54, lon: 9.07 }]}
+      />,
+    );
+
+    expect(karte.eigeneEbenen.size).toBe(1);
+    const daten = routenquelle(karte)?.daten as { geometry: { coordinates: number[][] } };
+    expect(daten.geometry.coordinates).toHaveLength(4);
+  });
+
+  it('raeumt die Routenebene beim Verlassen der Seite ab', () => {
+    const { unmount } = render(
+      <Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />,
+    );
+    const karte = angelegteKarte();
+    karte.styleGeladen = true;
+    karte.ausloesen('load');
+    expect(routenebene(karte)).toBeDefined();
+
+    unmount();
+
+    expect(routenebene(karte)).toBeUndefined();
+    expect(routenquelle(karte)).toBeUndefined();
   });
 });
