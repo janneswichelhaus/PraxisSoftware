@@ -149,6 +149,25 @@ const KARTENPROTOTYP = 'src/features/tours/karte';
  */
 const ERLAUBTE_MODULE_KARTE = [/^react-dom$/, /^maplibre-gl(\/|$)/];
 
+/**
+ * Module aus `@/lib`, die **nur** der Kartenprototyp haben darf.
+ *
+ * Eine Einschränkung, keine Erlaubnis: `@/lib/...` steht in der Positivliste,
+ * weil dort die anbieterfreien Hilfsmittel liegen. Mit MAP-003 liegt dort
+ * erstmals eines, das mit einem Server spricht — `route.ts` ruft die eigene
+ * Edge Function auf, weil die Routenberechnung nach ADR-019 Punkt 15
+ * serverseitig laufen MUSS. Ohne diese Zeile wäre der Aufruf über einen
+ * Import in jedem Vorschaubereich zu haben, und die Zusicherung dieses Tests
+ * hinge an einem Verzeichnisnamen in `src/lib`.
+ *
+ * Was auch hier gilt: kein `fetch(`, kein `getSupabase`, kein
+ * `localStorage` im Quelltext des Vorschaubereichs selbst — die Prüfungen
+ * oben laufen unverändert über diese Dateien. Und was hinausgeht, sind
+ * Koordinaten und ein Fahrprofil, nie eine Adresse, ein Name oder ein Termin
+ * (ADR-019 Punkt 12, 13, 24).
+ */
+const NUR_KARTE = [/^@\/lib\/location\/route$/];
+
 /** `@/features/<bereich>/api` - ohne `preview`, das ist der eigene Bereich. */
 const API_MODUL = /^@\/features\/([^/]+)\/api$/;
 
@@ -223,6 +242,10 @@ function unerlaubteImporte(pfad: string, quelltext: string): string[] {
       for (const name of namen) {
         if (!ERLAUBTE_API_IMPORTE.has(name)) treffer.push(`${name} aus ${modul}`);
       }
+      continue;
+    }
+    if (NUR_KARTE.some((muster) => muster.test(modul)) && !pfad.startsWith(KARTENPROTOTYP)) {
+      treffer.push(`${modul} (nur im Kartenprototyp)`);
       continue;
     }
     const erlaubt = pfad.startsWith(KARTENPROTOTYP)
@@ -326,6 +349,31 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     expect(unerlaubteImporte(`${KARTENPROTOTYP}/Karte.tsx`, "import { z } from 'zod';")).toEqual([
       'zod (nicht in der Positivliste)',
     ]);
+  });
+
+  it('erlaubt den Routenabruf nur im Kartenprototyp', () => {
+    // Die zweite Ausnahme, seit MAP-003: Die Route kommt aus der eigenen Edge
+    // Function, weil ADR-019 Punkt 15 die Berechnung serverseitig verlangt.
+    // Ohne diese Gegenprobe waere nicht geprueft, dass sie am Verzeichnis
+    // endet - ein Serveraufruf gehoert in keinen anderen Vorschaubereich.
+    const routenabruf = "import { useRoute } from '@/lib/location/route';";
+
+    expect(unerlaubteImporte(`${KARTENPROTOTYP}/KartePage.tsx`, routenabruf)).toEqual([]);
+    expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', routenabruf)).toEqual([
+      '@/lib/location/route (nur im Kartenprototyp)',
+    ]);
+    expect(unerlaubteImporte('src/features/teamchat/Beispiel.tsx', routenabruf)).toEqual([
+      '@/lib/location/route (nur im Kartenprototyp)',
+    ]);
+
+    // Die uebrigen Hilfsmittel aus @/lib bleiben ueberall erlaubt: Die
+    // Einschraenkung gilt dem einen Modul, das mit einem Server spricht.
+    expect(
+      unerlaubteImporte(
+        'src/features/fleet/Beispiel.tsx',
+        "import type { Coordinate } from '@/lib/location/contract';",
+      ),
+    ).toEqual([]);
   });
 
   it('wuerde einen Serveraufruf tatsaechlich finden', () => {
