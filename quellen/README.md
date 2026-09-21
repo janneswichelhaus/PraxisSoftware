@@ -167,6 +167,11 @@ Prüfsumme darauf würde bei jeder Korrektur reißen, ohne etwas zu schützen:
 - `scores/pdf-text/*.txt` — Arbeitsfassung der PDFs. Der Test besteht nur
   darauf, dass zu **jeder** PDF ein Extrakt gehört und umgekehrt; über den
   Inhalt entscheidet die PDF, und die hat eine Prüfsumme.
+- `bausteine/pdf-text/*.txt` — dasselbe für die Lernübersichten, aber
+  **freiwillig**: Die maßgebliche Übertragung ist
+  [`bausteine/mt-untersuchung-quelldaten.md`](bausteine/mt-untersuchung-quelldaten.md),
+  und in der Cloud gibt es kein `pdftotext`. Das Verzeichnis darf fehlen. Eine
+  Richtung bleibt hart: ein Extrakt ohne zugehörige PDF ist ein Fehler.
 
 ## Wiederbeschaffung und Neuerzeugung
 
@@ -183,6 +188,17 @@ Die Textextrakte entstehen neu mit:
 ```bash
 cd quellen/scores && for f in pdf/*.pdf; do pdftotext -layout -enc UTF-8 "$f" "pdf-text/$(basename "${f%.pdf}").txt"; done
 ```
+
+Für die neun Lernübersichten dasselbe, nur muss das Zielverzeichnis zuerst
+entstehen — es ist bewusst nicht im Repository, weil leere Verzeichnisse dort
+nicht existieren:
+
+```bash
+cd quellen/bausteine && mkdir -p pdf-text && for f in pdf/*.pdf; do pdftotext -layout -enc UTF-8 "$f" "pdf-text/$(basename "${f%.pdf}").txt"; done
+```
+
+Findet die Schleife nichts und `pdftotext` meldet `Couldn't open file
+'pdf/*.pdf'`, steht die Arbeitskopie auf einem Branch ohne diese Dateien.
 
 `-enc UTF-8` ist nicht optional: ohne die Angabe schreibt `pdftotext` hier
 ISO-8859-1, und jedes „ö" im Itemtext wird zu einem Fehler, der erst in der
