@@ -85,20 +85,24 @@ test.describe('Kartenprototyp', () => {
     await page.goto(PRUEFSEITE);
     await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Hineinzoomen' }).focus();
-    await expect(page.getByRole('button', { name: 'Hineinzoomen' })).toBeFocused();
-    await page.keyboard.press('Enter');
-
     // Nach dem Hineinzoomen liegen die Stopps weiter auseinander; dass der
-    // Knopf wirkt, zeigt der Abstand zweier Marker.
+    // Knopf wirkt, zeigt der Abstand zweier Marker. Gemessen wird **vor** dem
+    // Tastendruck: Wer danach misst, hat womoeglich schon die fertige
+    // Bewegung in der Hand und vergleicht sie mit sich selbst.
     const abstand = async () => {
       const eins = await page.getByText('1', { exact: true }).boundingBox();
       const acht = await page.getByText('8', { exact: true }).boundingBox();
       return Math.hypot((eins?.x ?? 0) - (acht?.x ?? 0), (eins?.y ?? 0) - (acht?.y ?? 0));
     };
     const vorher = await abstand();
-    await page.waitForTimeout(700);
-    expect(await abstand()).toBeGreaterThan(vorher);
+
+    await page.getByRole('button', { name: 'Hineinzoomen' }).focus();
+    await expect(page.getByRole('button', { name: 'Hineinzoomen' })).toBeFocused();
+    await page.keyboard.press('Enter');
+
+    // Gewartet wird auf das Ergebnis, nicht auf die Uhr: Die Bewegung dauert
+    // auf einem langsamen Rechner laenger als auf einem schnellen.
+    await expect.poll(abstand, { timeout: 5_000 }).toBeGreaterThan(vorher);
   });
 
   test('fragt waehrend des ganzen Laufs keinen fremden Host', async ({ page }) => {
