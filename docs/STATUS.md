@@ -15,8 +15,8 @@ keine Karte und keine Anfrage**. 19 Tests, 4 Browserprüfungen, **keine** neue A
 
 1. **E18 Schritt 7** — die vierzehn Trainingsbereiche zuschneiden (eigene Sitzung)
 2. **`MDR_REVIEW_REQUIRED` verorten** (eigene Sitzung, seit 0.13 §17 an Rang 1)
-3. **MAP-003** — Fahrradrouting; anders als MAP-002 **nicht** frei startbar (Edge Function nur
-   gegen `mock` bis OPS-001, ADR-019 Punkt 15; Server-Schlüssel bei Jannes)
+3. **MAP-003** — Fahrradrouting, **startbar** mit synthetischen Koordinaten (ADR-019 Punkt 15;
+   echte Adressen erst nach dem Gate). Edge Function braucht Docker — Lauf und Abnahme nur lokal.
 
 Daneben: **CAL-027** (Bestandswerte umbenennen, mechanisch) · **OPS-001** (Docs-Session).
 
@@ -28,9 +28,9 @@ immerhin den Kartenrenderer. `ASSUMPTIONS.md` unverändert bei **1162** Zeilen, 
 
 ## Blocker (Jannes-seitig)
 
-- **PTV-Kachelschlüssel in `.env.local`** — sonst zeigt `/touren/karte` nur den Hinweis; die
-  Sichtprüfung mit echten Kacheln kannst nur du gehen ([`Etappe T`](abnahme/etappe-t-kartendienst.md)).
-  Offen: **Domainbindung** (ADR-019 Punkt 19) und der **Server-Schlüssel** für MAP-003.
+- **PTV: Die Karte läuft** (Schlüssel liegt lokal, Sichtprüfung 2026-09-21, dabei BEF-021 und
+  BEF-022 gefunden). Offen: **Domainbindung** (ADR-019 Punkt 19). Für MAP-003 gilt vorerst
+  **derselbe Schlüssel** serverseitig — Entscheidung 2026-09-21, nur synthetische Koordinaten.
 - **Lokal `pnpm install`** nach dem Merge (neu: `maplibre-gl`); **keine Migration, kein `db reset`**.
   **Node 22** (`.nvmrc`), sonst rot.
 - **G13 ist überfällig:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises** und die **Kürzel
@@ -57,4 +57,4 @@ LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L
 
 ## Letzte Session
 
-**Die Karte kennt den Anbieter nicht, und ohne Schlüssel fragt sie niemanden.** Neu ist `/touren/karte`; MapLibre lädt erst dort. Lokal: `git pull origin claude/erste-aufgabe-status-40oz7g`, dann `pnpm install`.
+**Die Karte kennt den Anbieter nicht, und ohne Schlüssel fragt sie niemanden.** Neu ist `/touren/karte`; zwei Befunde aus der Abnahme sind behoben. Lokal: `git pull origin main`, dann `pnpm install`.
