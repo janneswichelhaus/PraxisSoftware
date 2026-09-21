@@ -166,9 +166,7 @@ async function ausfalltermin(stundeImMonat: number): Promise<string> {
 /** Erfasst eine Leistung an einem frischen Termin. */
 async function leistung(position: string, stundeImMonat: number): Promise<void> {
   const id =
-    position === KATALOG.ausfall
-      ? await ausfalltermin(stundeImMonat)
-      : await termin(stundeImMonat);
+    position === KATALOG.ausfall ? await ausfalltermin(stundeImMonat) : await termin(stundeImMonat);
   await asUserCommitted(
     users.ownerTherapist,
     'select public.record_billable_services($1::uuid, $2::jsonb)',
@@ -324,9 +322,10 @@ describe('Einnahmen je Leistungsart', () => {
       // (ADR-009 Punkt 5 und 10). Am Schreibweg vorbei gesetzt, weil die
       // veroeffentlichte Preisliste unveraenderlich ist.
       await asPostgres('alter table public.service_catalog_items disable trigger all');
-      await asPostgres('update public.service_catalog_items set unit_price_cents = 9900 where id = $1', [
-        KATALOG.kg,
-      ]);
+      await asPostgres(
+        'update public.service_catalog_items set unit_price_cents = 9900 where id = $1',
+        [KATALOG.kg],
+      );
       await asPostgres('alter table public.service_catalog_items enable trigger all');
 
       expect(summe(await auswertung('accrual'))).toBe(betrag);
@@ -478,9 +477,9 @@ describe('Einnahmen je Leistungsart', () => {
       expect(summe(training)).toBe(8000);
       // Keine Zeile traegt beides: Bereich, Kennzeichen und Satz sind der
       // Schluessel, und die Summe steht nie darueber.
-      expect(zeilen.every((z) => z.service_area === 'therapy' || z.service_area === 'training')).toBe(
-        true,
-      );
+      expect(
+        zeilen.every((z) => z.service_area === 'therapy' || z.service_area === 'training'),
+      ).toBe(true);
     });
   });
 
