@@ -153,6 +153,17 @@ Freikontingent immerhin eine belastbare Hälfte. Die offenen Fragen gehen mit
 der Nachfassanfrage an den Support und, soweit rechtlich, mit **B2** an die
 Datenschutzberatung.
 
+**Entscheidung von Jannes (2026-09-21) zum Schlüsselmodell.** Solange PTV
+keinen zweiten Schlüssel bestätigt hat, benutzt **MAP-003 denselben Schlüssel**
+wie die Kacheln, auch serverseitig. Das weicht von ADR-019 Punkt 19 ab, der
+für die Kacheln einen eigenen Schlüssel verlangt — bewusst und befristet: Der
+Prototyp verarbeitet ausschließlich synthetische Koordinaten, ein Missbrauch
+des im Browser sichtbaren Schlüssels kostet damit Kontingent und keine Daten
+(50 000 Transaktionen sind frei). **Die Trennung ist Vorbedingung des
+produktiven Betriebs** und gehört zu Punkt 7 der Gate-Liste; der Loop, der die
+Edge Function baut, verankert die Befristung an einer Codestelle und meldet
+sie als Annahme.
+
 **Technisch selbst geprüft (2026-09-21, im Browser):** Der Kopf `ApiKey`
 funktioniert am Kachelendpunkt `api.myptv.com`; `vectormaps-resources.myptv.com`
 liefert Style, Sprites und Glyphen ohne Schlüssel aus und beantwortet keine
