@@ -189,13 +189,26 @@ Die Textextrakte entstehen neu mit:
 cd quellen/scores && for f in pdf/*.pdf; do pdftotext -layout -enc UTF-8 "$f" "pdf-text/$(basename "${f%.pdf}").txt"; done
 ```
 
-Für die neun Lernübersichten dasselbe, nur muss das Zielverzeichnis zuerst
-entstehen — es ist bewusst nicht im Repository, weil leere Verzeichnisse dort
-nicht existieren:
+Die Extrakte der neun Lernübersichten in
+[`bausteine/pdf-text/`](bausteine/pdf-text/) sind **anders entstanden**, und
+zwar am 2026-09-21 mit `pypdf` 6.19.0 statt mit `pdftotext`:
 
 ```bash
-cd quellen/bausteine && mkdir -p pdf-text && for f in pdf/*.pdf; do pdftotext -layout -enc UTF-8 "$f" "pdf-text/$(basename "${f%.pdf}").txt"; done
+python3 -m pip install pypdf
+cd quellen/bausteine && mkdir -p pdf-text && python3 -c "
+import pathlib, pypdf
+for p in sorted(pathlib.Path('pdf').glob('*.pdf')):
+    t = '\n'.join(s.extract_text() or '' for s in pypdf.PdfReader(str(p)).pages)
+    t = '\n'.join(z.rstrip() for z in t.replace('\xa0', ' ').split('\n')).strip()
+    pathlib.Path('pdf-text', p.stem + '.txt').write_text(t + '\n', encoding='utf-8')
+"
 ```
+
+Der Grund ist banal: In der Cloud-Sitzung gibt es kein Poppler und damit kein
+`pdftotext`. Wer sie mit `pdftotext -layout` neu erzeugt, bekommt eine andere
+Einrückung und damit einen großen Diff — das ist erlaubt, die Extrakte tragen
+keine Prüfsumme. Nur sollte dann diese Stelle mitwandern, damit nicht zwei
+Erzeuger nebeneinander behauptet werden.
 
 Findet die Schleife nichts und `pdftotext` meldet `Couldn't open file
 'pdf/*.pdf'`, steht die Arbeitskopie auf einem Branch ohne diese Dateien.
