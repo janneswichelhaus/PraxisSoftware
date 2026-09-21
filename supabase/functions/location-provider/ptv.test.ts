@@ -18,19 +18,26 @@ const STOPPS: RouteRequest = {
   profile: 'bicycle',
 };
 
-/** Eine Antwort in der Form, die die Clients des Anbieters belegen. */
+/**
+ * Eine Antwort in der Form, die der Anbieter tatsaechlich liefert.
+ *
+ * `polyline` ist eine **Zeichenkette** mit GeoJSON darin, kein Objekt - am
+ * 2026-09-21 gegen die echte API geprueft (BEF-023).
+ */
+const LINIE = {
+  type: 'LineString',
+  coordinates: [
+    [9.0576, 48.5216],
+    [9.0521, 48.5268],
+    [9.049, 48.5305],
+  ],
+};
+
 const ANTWORT = {
   distance: 3150,
   travelTime: 762,
   legs: [{ distance: 3150, travelTime: 762 }],
-  polyline: {
-    type: 'LineString',
-    coordinates: [
-      [9.0576, 48.5216],
-      [9.0521, 48.5268],
-      [9.049, 48.5305],
-    ],
-  },
+  polyline: JSON.stringify(LINIE),
 };
 
 function antwortMit(koerper: unknown, status = 200) {
@@ -53,16 +60,18 @@ describe('PTV-Routing-Adapter', () => {
 
     const [ziel, optionen] = abrufen.mock.calls[0]!;
     const url = alsUrl(ziel);
-    expect(url.origin + url.pathname).toBe('https://api.myptv.com/routing/v1/routes');
+    // `routing-osm`, nicht `routing`: Der Pfad traegt die OSM-Wahl. Auf dem
+    // anderen rechnet PTV auf HERE-Daten - er antwortet, und genau deshalb
+    // haengt diese Zeile an einem Test (ADR-019 Punkt 7, BEF-023).
+    expect(url.origin + url.pathname).toBe('https://api.myptv.com/routing-osm/v1/routes');
     expect(url.searchParams.getAll('waypoints')).toEqual(['48.5216,9.0576', '48.5305,9.049']);
     expect(url.searchParams.get('profile')).toBe('OSM_BICYCLE');
-    expect(url.searchParams.getAll('results')).toEqual(['POLYLINE', 'LEGS']);
-    expect(url.searchParams.get('polylineFormat')).toBe('GEO_JSON');
+    // Eine Liste, kein zweimaliges `results` - sonst: doppelter Parameter.
+    expect(url.searchParams.getAll('results')).toEqual(['POLYLINE,LEGS']);
 
-    // Die Feldliste: mehr als diese vier Angaben geht nicht hinaus - kein
+    // Die Feldliste: mehr als diese drei Angaben geht nicht hinaus - kein
     // Zeitpunkt, keine Kennung, kein Name (ADR-019 Punkt 12).
     expect([...new Set(url.searchParams.keys())].sort()).toEqual([
-      'polylineFormat',
       'profile',
       'results',
       'waypoints',
@@ -160,10 +169,22 @@ describe('PTV-Routing-Adapter', () => {
     expect(abrufen).not.toHaveBeenCalled();
   });
 
+  it('nimmt die Polylinie auch als Objekt an', async () => {
+    // Beobachtet ist die Zeichenkette. Ein Objekt ist dasselbe GeoJSON, und
+    // ein Formatwechsel des Anbieters soll nicht die ganze Karte kosten.
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({ ...ANTWORT, polyline: LINIE }),
+    }).route(STOPPS);
+
+    expect(ergebnis.ok && ergebnis.value.geometry).toHaveLength(3);
+  });
+
   it.each([
     ['ohne Fahrzeit', { ...ANTWORT, travelTime: undefined }],
     ['ohne Polylinie', { ...ANTWORT, polyline: undefined }],
-    ['mit Polylinie als Zeichenkette', { ...ANTWORT, polyline: 'gfo}Hovq_A' }],
+    ['mit unlesbarer Polylinie', { ...ANTWORT, polyline: 'gfo}Hovq_A' }],
+    ['mit Polylinie ohne Koordinaten', { ...ANTWORT, polyline: '{"type":"LineString"}' }],
     ['ohne Abschnitte', { ...ANTWORT, legs: undefined }],
     ['gar keine', 'kein Objekt'],
   ])(

@@ -774,7 +774,7 @@ Browser gegen einen Style, der seine Quelle selbst nennt.
 | Datum   | 2026-09-21                                                                                          |
 | Bereich | Kalender: Kartenprototyp (`/touren/karte`, Vorschau), Edge Function `location-provider`              |
 | Quelle  | MAP-003a, Bau des PTV-Adapters                                                                       |
-| Status  | offen — klärt sich beim ersten lokalen Lauf mit Schlüssel (Abnahme Etappe T, MAP-003)                |
+| Status  | erledigt (2026-09-21, gegen die echte API geprüft)                                                    |
 | Berührt | `supabase/functions/location-provider/ptv.ts`; ADR-019 Punkt 7; `providerpruefung-kartendienst.md`   |
 
 **Beobachtung.** Profilnamen (`OSM_BICYCLE`, `OSM_CARGO_BICYCLE`) und
@@ -789,11 +789,29 @@ Sicherheit, aber den ersten Lauf: Der Anbieter antwortet mit 400 oder mit
 einer Antwort ohne GeoJSON, und wer das nicht erwartet, sucht den Fehler in
 der eigenen Kette. Dieselbe Erfahrung steht hinter BEF-021 bei den Kacheln.
 
-**Was dagegen steht.** Der Adapter meldet genau diese Fälle als eigene
+**Was dagegen stand.** Der Adapter meldet genau diese Fälle als eigene
 Fehlerklasse mit lesbarer Meldung (`ptv: HTTP 400`, `ptv: Antwort ohne
 GeoJSON-Polylinie`) statt eine halbe Route zu zeichnen, und die ganze
-Schreibweise steht in **einer** Funktion. Der erste Lauf mit Schlüssel
-entscheidet; korrigiert wird dort und sonst nirgends.
+Schreibweise steht in **einer** Funktion.
+
+**So behoben (2026-09-21).** Jannes hat die Anfrage mit seinem Schlüssel
+gegen die echte API laufen lassen. Sie war an drei Stellen falsch, und alle
+drei sagte der Anbieter selbst:
+
+1. **Der Pfad.** `OSM_BICYCLE` gibt es auf `routing/v1` nicht
+   (`ROUTING_PROFILE_NOT_FOUND`); die OSM-Welt liegt unter
+   **`routing-osm/v1`**, so wie die Kacheln unter `maps-osm/v1`.
+2. **`results`** darf nicht zweimal vorkommen (`GENERAL_DUPLICATE_PARAMETER`),
+   sondern ist eine Liste: `results=POLYLINE,LEGS`.
+3. **`polylineFormat`** kennt die API nicht (`GENERAL_UNRECOGNIZED_PARAMETER`).
+   GeoJSON ist der Vorgabewert — aber als **Zeichenkette** im Feld `polyline`,
+   nicht als Objekt; der Adapter liest sie jetzt ein zweites Mal.
+
+**Der Pfad ist dabei die eigentliche Lehre.** `routing/v1` antwortet mit dem
+Profil `BICYCLE` klaglos — und rechnet auf HERE-Daten. Der falsche Pfad wäre
+also nicht aufgefallen, sondern hätte funktioniert und dabei einen zweiten
+Datenlieferanten in den Datenweg geholt, den ADR-019 Punkt 7 ausschließt. Ein
+Test hält die Adresse deshalb jetzt fest.
 
 ### BEF-024 — Der Terminkontext steht in zwei Schemata
 

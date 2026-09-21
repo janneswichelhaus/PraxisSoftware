@@ -176,9 +176,11 @@ Alles als `anna.beispiel@praxis.invalid` (therapist) oder
 2. Kalender, Akte, Abrechnung öffnen. Erwartung: unverändert, keine Anfrage
    an `functions/v1`.
 
-**Bekannte Grenze dieser Abnahme:** Die Schreibweise der Abfrageparameter der
-Routing-API ist aus den Clients des Anbieters abgeleitet, nicht aus seiner
-Dokumentation belegt (BEF-023). Antwortet PTV mit 400 oder ohne GeoJSON, ist
-das kein Fehler der Anwendung, sondern genau der Punkt, den dieser erste Lauf
-klärt — korrigiert wird dann `supabase/functions/location-provider/ptv.ts`
-und sonst nichts.
+**Zur Schreibweise der Abfrage (BEF-023, erledigt am 2026-09-21):** Sie ist
+inzwischen mit dem Schlüssel gegen die echte API geprüft und korrigiert —
+Pfad `routing-osm/v1/routes`, `results=POLYLINE,LEGS` als Liste, kein
+`polylineFormat`, und die Polylinie kommt als Zeichenkette. Antwortet PTV
+trotzdem mit 400, steht die Ursache im Antwortkörper unter `causes`; sie
+gehört dann hierher und in
+[`../development/BEFUNDE.md`](../development/BEFUNDE.md). Korrigiert wird
+`supabase/functions/location-provider/ptv.ts` und sonst nichts.
