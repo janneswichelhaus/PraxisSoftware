@@ -81,7 +81,7 @@ nicht), **Komfort** (Roadmap-Kategorie neben Kern), **—** (nichts davon).
 | Interne Notiz getrennt von der Dokumentation; Besonderheiten; Patientenstatus | appointmed, thevea, iPrax | — |
 | Akte als Gesamtübersicht: Stammdaten, Verordnungen, Termine, Rechnungen, Doku, Dateien, gesendete Nachrichten | thevea ([Patientenverwaltung](https://support.thevea.de/hc/de/articles/30365867196829-Patientenverwaltung-in-thevea-Alles-was-du-wissen-musst)), iPrax (fünf Bereiche) | Idee `IDEA-QSN-001` (Zeitstrahl) |
 | Dublettenprüfung und Zusammenführen | thevea ([Zusammenführen](https://support.thevea.de/hc/de/articles/19361932692125-Wie-kann-ich-Patienten-zusammenf%C3%BChren)) | Idee `IDEA-PRX-018` |
-| Lesbare Patientennummer je Person | iPrax (Beobachtung Jannes, 2026-09-21) | Idee `IDEA-QSN-011` (mit Bedenken) |
+| Lesbare Patientennummer je Person | iPrax (Beobachtung Jannes, 2026-09-21) | verworfen (`IDEA-QSN-011`) |
 | Patient:innen löschen oder inaktiv setzen | thevea | Vorsprung |
 | Import bestehender Stammdaten aus CSV/XLS; Wechselservice | iPrax ([FAQ](https://www.iprax-systems.com/praxissoftware/iprax_faq.html)), thevea, Optica | — |
 | Anmeldeformular zur Selbsteingabe per Link, SMS, QR-Code oder Tablet | appointmed ([Anmeldeformular](https://intercom.help/appointmed/de/articles/10751938-anmeldeformular-datenaktualisierung-fur-patienten)) | — |

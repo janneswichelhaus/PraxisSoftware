@@ -252,13 +252,18 @@ Mitarbeiterverwaltung gehören oder erst mit einem Urlaubsmodul entstehen.
 
 | | |
 |---|---|
-| Status | notiert · Bedenken |
+| Status | verworfen |
 | Quelle | Jannes, 2026-09-21 (Beobachtung an iPrax) |
 | Berührt | `PROJECT_PRINCIPLES.md` §1.1, [ADR-014](../../adr/ADR-014-foundational-data-model.md), [ADR-021](../../adr/ADR-021-service-areas-and-legal-relationships.md), [ADR-011](../../adr/ADR-011-logging-and-observability.md), [ADR-017](../../adr/ADR-017-file-storage.md), [ADR-009](../../adr/ADR-009-private-billing-model.md) |
 
+**Stand.** Am 2026-09-21 von Jannes verworfen, am selben Tag, an dem er sie
+eingebracht hat — nach der Prüfung unten. Der Eintrag bleibt als Antwort
+stehen, damit die Frage nicht ein zweites Mal von vorn beginnt.
+
 **Idee.** Jede Person bekommt zusätzlich zum technischen Schlüssel eine kurze,
 sprechbare Nummer — sichtbar in Kartei, Akte und auf Dokumenten, so wie iPrax
-es tut.
+es tut. Anlass war die Vermutung, dass sich darüber Datenschutzfragen lösen
+lassen.
 
 **Warum.** Eine Nummer lässt sich am Telefon nennen, auf einen Zettel
 schreiben und in eine Zeile schreiben, in der ein Name nicht stehen soll. Bei
@@ -266,32 +271,41 @@ Namensgleichheit ist sie eindeutig, wo heute Name und Geburtsdatum
 unterschieden werden müssen (`app.search_patients`,
 `supabase/migrations/20260910110000_patient_search.sql`).
 
-**Vorsicht — als Datenschutzmaßnahme trägt sie nicht.** Solange die Zuordnung
-in derselben Datenbank auflösbar ist, bleiben die Daten personenbezogen
+**Entscheidung (2026-09-21).** Verworfen. Drei Gründe, von denen jeder für
+sich trägt.
+
+**Als Datenschutzmaßnahme trägt sie nicht.** Solange die Zuordnung in
+derselben Datenbank auflösbar ist, bleiben die Daten personenbezogen
 (Erwägungsgrund 26 DSGVO); die Nummer ist dann ein **zusätzliches**
 personenbezogenes Datum, keines weniger. `PROJECT_PRINCIPLES.md` §1.1 (Rang 1,
 Projektinhaber, 2026-09-17) hat gegen eine pseudonymisierende Codearchitektur
 entschieden; das Schutzniveau liefern Zugriffskontrolle, Audit und
-Verschlüsselung. Die Stellen, an denen ein namensfreier Bezeichner gebraucht
-wird, sind bereits so gebaut: Objektschlüssel tragen nur Kennungen
-(ADR-017 Punkt 5, `patient_files.object_key`), Betriebslogs korrelieren über
-interne Objekt-IDs (ADR-011 Punkt 3), der Navigations-Handoff trägt weder Name
-noch Kennung (`ANN-016`). Eine gedruckte und gesprochene Nummer wäre dort ein
+Verschlüsselung.
+
+**Die Stellen, die einen namensfreien Bezeichner brauchen, haben ihn schon.**
+Objektschlüssel tragen nur Kennungen (ADR-017 Punkt 5,
+`patient_files.object_key`), Betriebslogs korrelieren über interne Objekt-IDs
+(ADR-011 Punkt 3), der Navigations-Handoff trägt weder Name noch Kennung
+(`ANN-016`). Eine gedruckte und gesprochene Nummer wäre dort ein
 **schwächerer** Bezeichner als die UUID, weil sie außerhalb des Systems
 kursiert — das trüge auch `ANN-031` nicht mehr („Schlüssel ohne Schloss").
 
-**Vorsicht — der strukturelle Haken.** ADR-021 Punkt 3 lässt zwischen
-Behandlungs- und Trainingsverhältnis **nur `person_id`** als Verbindung. Eine
-Nummer an `persons` wäre ein zweiter, auf Papier sichtbarer Querverweis
-zwischen beiden Bereichen; eine Nummer je Verhältnis gäbe derselben Person
-zwei Nummern — und genau die eine Nummer, die iPrax zeigt, entstünde nicht.
-Dazu: `patients.id` erfüllt die Aufgabe seit der Gründungsmigration, eine
-Nummer müsste je Organisation vergeben werden (ADR-003) und dürfte nie in eine
-Adresse wandern, weil eine fortlaufende Nummer aufzählbar ist. Auf der
-Rechnung ersetzt sie nichts: ADR-009 Punkt 20 verlangt den vollen Satz der
-Pflichtangaben nach § 14 Abs. 4 UStG einschließlich des Leistungsempfängers.
+**Der strukturelle Haken.** ADR-021 Punkt 3 lässt zwischen Behandlungs- und
+Trainingsverhältnis **nur `person_id`** als Verbindung. Eine Nummer an
+`persons` wäre ein zweiter, auf Papier sichtbarer Querverweis zwischen beiden
+Bereichen; eine Nummer je Verhältnis gäbe derselben Person zwei Nummern — und
+genau die eine Nummer, die iPrax zeigt, entstünde nicht. Eine dritte
+Möglichkeit gibt es nicht. Dazu: `patients.id` erfüllt die Aufgabe seit der
+Gründungsmigration, eine Nummer müsste je Organisation vergeben werden
+(ADR-003) und dürfte nie in eine Adresse wandern, weil eine fortlaufende
+Nummer aufzählbar ist. Auf der Rechnung ersetzt sie nichts: ADR-009 Punkt 20
+verlangt den vollen Satz der Pflichtangaben nach § 14 Abs. 4 UStG
+einschließlich des Leistungsempfängers.
 
-**Offen.** Ob im Praxisalltag überhaupt ein Fall auftritt, den Name und
-Geburtsdatum nicht lösen — bis dahin ist der Nutzen eine Vermutung und die
-Kosten sind es nicht. Ein Zusammenführen von Dubletten (`IDEA-PRX-018`) würde
-zusätzlich entscheiden müssen, welche Nummer überlebt.
+**Was den Verwurf umkehren würde.** Ein Fall aus dem Praxisalltag, den Name
+und Geburtsdatum nicht lösen. Der gehört dann als Befund in
+`../../development/BEFUNDE.md`, nicht als Wiederbelebung hierher — und die
+Frage aus ADR-021 Punkt 3 wäre vor jedem Zuschnitt zu beantworten. Für
+Verwechslungen beim Anlegen ist `IDEA-PRX-018` (Dublettenprüfung) der
+nähere Weg; eine Nummer machte das Zusammenführen zusätzlich schwerer, weil
+zu entscheiden wäre, welche überlebt.
