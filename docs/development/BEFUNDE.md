@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-20
+Stand: 2026-09-21
 
 ## Zweck
 
@@ -864,3 +864,37 @@ nur das Ergebnis und nicht die Begründung.
 Die eigentliche Antwort ist aber nicht das Nachtragen, sondern ein Gate: Ein
 Loop in der Fortschrittstabelle ohne Zeile im Vermerk (und umgekehrt) ist
 maschinell prüfbar und gehörte in `pnpm docs:check`.
+
+### BEF-026 — B13 ist mit dem eingebauten Mailversand nicht einlösbar
+
+|         |                                                                                       |
+| ------- | ------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-21                                                                            |
+| Bereich | Zugänge und Rollen (`/team…`), Passwort vergessen · STAFF-004, Roadmap G2             |
+| Quelle  | Loop OPS-001, Providerprüfung ([`../decisions/providerpruefung-supabase.md`](../decisions/providerpruefung-supabase.md), Teil 3) |
+| Status  | offen                                                                                 |
+| Berührt | B13 · STAFF-004 · `ANN-025` · Roadmap G2 und G3 · Gate-Punkt 11 der Providerprüfung   |
+
+**Beobachtung.** B13 ist am 2026-09-06 entschieden: nur die Auth-Mails des
+Providers, kein zweiter Dienst. Die Providerprüfung findet dazu drei Auszüge,
+die zusammen etwas anderes sagen als die Entscheidung: Der eingebaute
+SMTP-Server ist „not meant for production use", er sendet **2 Mails je
+Stunde**, und ohne eigenen SMTP-Server stellt Supabase Auth **nur an
+vorautorisierte Adressen** zu — an das Team des Projekts. Eine angestellte
+Person, die kein Mitglied des Supabase-Projekts ist, bekäme danach weder eine
+Einladung noch eine Mail zum Zurücksetzen des Passworts.
+
+**Warum das zählt.** STAFF-004 („Passwort vergessen als Selbstbedienung")
+steht in Roadmap G2 und setzt genau diesen Versandweg voraus. Trifft der
+Auszug zu, gibt es zwei Wege und keinen dritten: ein eigener SMTP-Anbieter —
+dann ein zweiter Auftragsverarbeiter mit eigener Prüfung, eigenem ADR und
+Rücknahme von B13 — oder kein Mailversand, also der Handgriff in der Praxis,
+den `ANN-025` für die Anlage von Konten schon beschreibt. Beides ist eine
+Entscheidung von Jannes, keine des Loops.
+
+**Richtung.** Zuerst den **Empfängerkreis verifizieren**
+(`supabase.com/docs/guides/auth/auth-smtp`, von einem ungeproxten Rechner) —
+an ihm allein hängt, ob überhaupt etwas zu entscheiden ist. Fällt er so aus,
+geht B13 als Vorlage mit zwei Optionen zurück an Jannes, zusammen mit den
+übrigen Punkten der Providerprüfung. Vor dieser Klärung baut niemand an
+STAFF-004.
