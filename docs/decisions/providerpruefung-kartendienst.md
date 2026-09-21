@@ -127,6 +127,38 @@ einigen tausend Kachelabrufen — deutlich unterhalb jedes genannten
 Freikontingents. Ob PTVs Standard Plan dafür wirtschaftlich ist, lässt sich
 ohne Preisliste nicht sagen.
 
+## Teil 4a — Rückmeldung des Anbieters vom 2026-09-21
+
+Erster direkter Kontakt, **nicht** aus einer Recherche: PTV Logistics
+(Vertrieb) auf eine Anfrage von Jannes. Der Testzugang war zuvor deaktiviert
+worden, weil sich die Registrierung „keiner unternehmerischen Tätigkeit"
+zuordnen ließ; nach der Erläuterung (Physiotherapie als Katalogberuf nach
+§ 18 Abs. 1 Nr. 1 EStG, § 14 BGB erfasst auch die selbständige berufliche
+Tätigkeit) wurde er **wieder aktiviert**.
+
+| Punkt                                | Antwort des Anbieters                                                                                                                                                    | Belegtiefe                       |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| Produktiver Betrieb                  | Erfordert den **Standard Plan**. Innerhalb des enthaltenen Freikontingents von **50 000 Transaktionen je Account** bleibt die Nutzung kostenfrei, die Kreditkarte wird nicht belastet. | **belegt** (E-Mail 2026-09-21)   |
+| Datenschutzunterlagen                | Verwiesen auf zwei Dokumente: „Bedingungen für die Registrierung und Nutzung einer MyPTV-ID" und „Datenschutzerklärung PTV Cloud Dienste". **Kein AVV nach Art. 28 DSGVO** und keine Stelle, die ihn zeichnet. | **belegt** (E-Mail 2026-09-21)   |
+| Domain-/Referrerbindung des Schlüssels | **Nicht beantwortet.**                                                                                                                                                   | offen                            |
+| Relationen je Matrix-Anfrage         | **Nicht beantwortet.**                                                                                                                                                   | offen                            |
+| Rate-Limits der OSM-APIs (Free Plan) | **Nicht beantwortet.**                                                                                                                                                   | offen                            |
+| § 203 StGB, Subprozessoren, Retention, EU-Region | **Nicht beantwortet**; verwiesen auf Produktseite, Tutorials, FAQ und Support-Portal.                                                                         | offen                            |
+
+**Einordnung.** Eine Datenschutzerklärung ist eine Information, kein
+Auftragsverarbeitungsvertrag: Sie trägt weder die Weisungsbindung noch § 203,
+weder Subunternehmerliste noch Löschfristen. Von der Gate-Liste in Teil 5 ist
+damit **kein Punkt** erledigt; Punkt 7 hat mit dem Standard Plan und dem
+Freikontingent immerhin eine belastbare Hälfte. Die offenen Fragen gehen mit
+der Nachfassanfrage an den Support und, soweit rechtlich, mit **B2** an die
+Datenschutzberatung.
+
+**Technisch selbst geprüft (2026-09-21, im Browser):** Der Kopf `ApiKey`
+funktioniert am Kachelendpunkt `api.myptv.com`; `vectormaps-resources.myptv.com`
+liefert Style, Sprites und Glyphen ohne Schlüssel aus und beantwortet keine
+CORS-Vorabanfrage (BEF-021). Der Style dieses Hosts bringt seine eigene
+Quellenangabe mit (BEF-022).
+
 ## Teil 5 — Was vor Echtdaten offen bleibt (Gate-Liste)
 
 Diese Punkte sind das **Provider-/§203-/DSFA-Gate** aus ADR-019. Keiner

@@ -13,7 +13,7 @@ import type { MapDisplayConfig, MapOverlayStop } from '@/lib/location/contract';
 interface KartenOptionen {
   container: HTMLElement;
   style: string;
-  attributionControl?: { customAttribution?: string };
+  attributionControl?: false | { customAttribution?: string };
   transformRequest?: (url: string) => { url: string; headers?: Record<string, string> };
   minZoom?: number;
   maxZoom?: number;
@@ -23,9 +23,23 @@ interface KartenOptionen {
 const karten: FakeKarte[] = [];
 const marker: FakeMarker[] = [];
 
+/** Die Quellenangabe von MapLibre, so weit die Komponente sie braucht. */
+class FakeQuellenangabe {
+  readonly optionen: { customAttribution?: string };
+
+  constructor(optionen: { customAttribution?: string } = {}) {
+    this.optionen = optionen;
+  }
+}
+
 class FakeKarte {
   readonly optionen: KartenOptionen;
   readonly bedienelemente: unknown[] = [];
+  /** Was der Style ueber seine Quellen sagt, und was die geladene Quelle sagt. */
+  styleQuellen: Record<string, { attribution?: string }> = {};
+  geladeneQuellen: Record<string, { attribution?: string }> = {};
+  /** Welche Ebenen welche Quelle benutzen - danach richtet sich die Anzeige. */
+  styleEbenen: { id: string; source?: string }[] = [];
   /** Wie bei MapLibre: Die Komponente meldet sich fuer Ereignisse an. */
   readonly melder = new Map<string, (() => void)[]>();
   ausschnitt: [[number, number], [number, number]] | null = null;
@@ -49,6 +63,21 @@ class FakeKarte {
     act(() => {
       for (const melder of this.melder.get(ereignis) ?? []) melder();
     });
+  }
+
+  getStyle() {
+    return { sources: this.styleQuellen, layers: this.styleEbenen };
+  }
+
+  getSource(kennung: string) {
+    return this.geladeneQuellen[kennung];
+  }
+
+  /** Die Quellenangabe, die nach dem Laden dazugekommen ist. */
+  quellenangabe(): FakeQuellenangabe | undefined {
+    return this.bedienelemente.find(
+      (eines): eines is FakeQuellenangabe => eines instanceof FakeQuellenangabe,
+    );
   }
 
   fitBounds(ausschnitt: [[number, number], [number, number]]) {
@@ -89,6 +118,7 @@ vi.mock('maplibre-gl', () => ({
   Map: FakeKarte,
   Marker: FakeMarker,
   NavigationControl: class {},
+  AttributionControl: FakeQuellenangabe,
 }));
 
 const { Karte } = await import('./Karte');
@@ -126,6 +156,13 @@ function stopps(anzahl: number): MapOverlayStop[] {
 }
 
 const anfragen: string[] = [];
+
+/** Die eine Karte, die entstanden sein muss - sonst prueft der Test nichts. */
+function angelegteKarte(): FakeKarte {
+  const karte = karten[0];
+  if (karte === undefined) throw new Error('Es wurde keine Karte angelegt.');
+  return karte;
+}
 
 describe('Karte', () => {
   beforeEach(() => {
@@ -186,15 +223,68 @@ describe('Karte', () => {
     ]);
   });
 
-  it('uebernimmt Style, Quellenangabe und Zoomgrenzen aus der Konfiguration', () => {
+  it('uebernimmt Style und Zoomgrenzen aus der Konfiguration', () => {
     render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
 
     const optionen = karten[0]?.optionen;
     expect(optionen?.style).toBe(KONFIGURATION.styleUrl);
-    expect(optionen?.attributionControl?.customAttribution).toBe(KONFIGURATION.attribution);
     expect(optionen?.minZoom).toBe(0);
     expect(optionen?.maxZoom).toBe(17);
     expect(optionen?.locale?.['Map.Title']).toBe('Karte');
+  });
+
+  it('zeigt die eigene Quellenangabe, wenn der Style keine nennt (BEF-022)', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+
+    // Vor dem Laden steht nichts - die Frage laesst sich erst danach
+    // beantworten.
+    expect(karten[0]?.optionen.attributionControl).toBe(false);
+    expect(karten[0]?.quellenangabe()).toBeUndefined();
+
+    karten[0]?.ausloesen('load');
+
+    expect(karten[0]?.quellenangabe()?.optionen.customAttribution).toBe(KONFIGURATION.attribution);
+  });
+
+  it('haelt sich zurueck, wenn der Style seine Quelle selbst nennt (BEF-022)', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    const karte = angelegteKarte();
+
+    // Genau der Fall des Anbieters: Die geladene Quelle bringt ihre Angabe
+    // mit. Eine zweite danebenzusetzen ergaebe dieselbe Aussage zweimal.
+    karte.styleQuellen = { basis: {} };
+    karte.geladeneQuellen = { basis: { attribution: '© Quelle aus dem Style' } };
+    karte.styleEbenen = [{ id: 'strassen', source: 'basis' }];
+    karte.ausloesen('load');
+
+    expect(karte.quellenangabe()).toBeDefined();
+    expect(karte.quellenangabe()?.optionen.customAttribution).toBeUndefined();
+  });
+
+  it('erkennt die Quelle auch, wenn erst der Style sie beschreibt (BEF-022)', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    const karte = angelegteKarte();
+
+    // Manche Styles tragen die Angabe direkt bei der Quelle, ohne TileJSON.
+    karte.styleQuellen = { basis: { attribution: '© Quelle aus dem Style' } };
+    karte.styleEbenen = [{ id: 'strassen', source: 'basis' }];
+    karte.ausloesen('load');
+
+    expect(karte.quellenangabe()?.optionen.customAttribution).toBeUndefined();
+  });
+
+  it('springt ein, wenn keine Ebene die Quelle mit der Angabe benutzt (BEF-022)', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    const karte = angelegteKarte();
+
+    // MapLibre zeigt die Angabe einer Quelle nur, wenn eine Ebene sie
+    // benutzt. Wer hier blosses Vorhandensein genuegen liesse, legte die
+    // eigene Angabe still - und die Karte stuende ganz ohne Quelle da.
+    karte.styleQuellen = { ungenutzt: { attribution: '© Niemand sieht mich' } };
+    karte.styleEbenen = [{ id: 'hintergrund' }];
+    karte.ausloesen('load');
+
+    expect(karte.quellenangabe()?.optionen.customAttribution).toBe(KONFIGURATION.attribution);
   });
 
   it('reicht die Autorisierung des Adapters durch und kennt selbst keinen Schluessel', () => {
