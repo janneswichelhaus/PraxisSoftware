@@ -41,7 +41,9 @@ import { dirname, join, normalize } from 'node:path';
  * viertes Mal, von 1075 auf 1090: ANN-081 brauchte 13 Zeilen, frei waren 9.
  * Am 2026-09-21 mit FRB-EPIC-000 ein fuenftes Mal, von 1090 auf 1150: die
  * fuenf Annahmen ANN-083 bis ANN-087 brauchten 60 Zeilen, frei war nichts -
- * das Register stand genau auf seiner Grenze.
+ * das Register stand genau auf seiner Grenze. Am 2026-09-21 mit ABR-EPIC-006
+ * ein sechstes Mal, von 1150 auf 1162: ANN-088 brauchte 12 Zeilen, frei war
+ * weiterhin nichts.
  * Die Grenze wandert damit weiter mit der Zahl der Eintraege, nicht mit ihrer
  * Laenge - zwoelf Zeilen je Eintrag sind dieselbe Disziplin wie vorher. Die
  * drei anderen Grenzen bleiben unveraendert - sie sind die, die Lesbarkeit
@@ -50,7 +52,7 @@ import { dirname, join, normalize } from 'node:path';
 const OBERGRENZEN = {
   'CLAUDE.md': 150,
   'docs/STATUS.md': 60,
-  'docs/decisions/ASSUMPTIONS.md': 1150,
+  'docs/decisions/ASSUMPTIONS.md': 1162,
   'docs/decisions/OPEN_DECISIONS.md': 400,
 };
 

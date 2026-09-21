@@ -952,3 +952,123 @@ export function nachTerminen(leistungen: Leistung[]): Terminleistungen[] {
 
   return [...gruppen.values()];
 }
+
+// -----------------------------------------------------------------------------
+// Einnahmen je Leistungsart (ABR-011, ADR-009 Punkt 19)
+// -----------------------------------------------------------------------------
+
+/**
+ * Die Grundlage der Auswertung.
+ *
+ * Zufluss oder Rechnungsstellung — welche die Gewinnermittlung verlangt,
+ * entscheidet die Steuerberatung (B9) und nicht die Software. Es gibt deshalb
+ * **keine Vorgabe**: Der Server verlangt die Grundlage als Pflichtargument und
+ * weist einen Aufruf ohne sie ab.
+ */
+export type Einnahmengrundlage = 'accrual' | 'cash';
+
+export const grundlageLabels: Record<Einnahmengrundlage, string> = {
+  accrual: 'Rechnungsstellung',
+  cash: 'Zufluss',
+};
+
+/** Was die Grundlage zählt — die Zahl allein sagt es nicht. */
+export const grundlageErklaerung: Record<Einnahmengrundlage, string> = {
+  accrual:
+    'Ausgestellte Rechnungen am Tag ihrer Ausstellung, Stornodokumente am Tag des Stornos. Ob bezahlt wurde, spielt keine Rolle.',
+  cash: 'Gebuchte Zahlungen am Tag ihres Eingangs, Rückzahlungen abgezogen. Ob eine Rechnung offen ist, spielt keine Rolle.',
+};
+
+const einnahmenzeileSchema = z.object({
+  basis: z.enum(['accrual', 'cash']),
+  year: z.number(),
+  service_area: z.enum(['therapy', 'training']),
+  tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
+  tax_rate_permille: z.number(),
+  currency: z.string(),
+  // `bigint` aus der Datenbank: PostgREST liefert es je nach Größe als Zahl
+  // oder als Zeichenkette. Cent-Beträge bleiben weit unter der Grenze, an der
+  // eine Zahl ungenau wird.
+  gross_cents: z.coerce.number(),
+  tax_cents: z.coerce.number(),
+  net_cents: z.coerce.number(),
+  document_count: z.number(),
+});
+
+export type Einnahmenzeile = z.infer<typeof einnahmenzeileSchema>;
+
+/**
+ * Einnahmen je Leistungsart für ein Kalenderjahr.
+ *
+ * Die Grundlage ist ein Pflichtargument, und sie steht an jeder gelieferten
+ * Zeile: Eine Zahl ohne ihre Grundlage gibt es nicht. `jahr` darf `null`
+ * bleiben — dann rechnet der Server das laufende Jahr in der Zeitzone der
+ * Praxis und nicht in der des Browsers.
+ */
+export async function fetchEinnahmen(
+  grundlage: Einnahmengrundlage,
+  jahr: number | null,
+): Promise<Einnahmenzeile[]> {
+  const { data, error } = (await getSupabase().rpc('list_revenue_by_service_area', {
+    p_basis: grundlage,
+    p_year: jahr,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Auswertung konnte nicht geladen werden.');
+  return z.array(einnahmenzeileSchema).parse(data ?? []);
+}
+
+/** Die Jahre, in denen überhaupt ein Dokument oder eine Zahlung liegt. */
+export async function fetchEinnahmenjahre(): Promise<number[]> {
+  const { data, error } = (await getSupabase().rpc('list_revenue_years')) as {
+    data: unknown;
+    error: unknown;
+  };
+
+  if (error) throw new Error('Die Jahre konnten nicht geladen werden.');
+  return z
+    .array(z.object({ year: z.number() }))
+    .parse(data ?? [])
+    .map((zeile) => zeile.year);
+}
+
+/**
+ * Die Zeilen eines Bereichs mit ihrer Summe.
+ *
+ * Gerechnet wird über **alle** gelieferten Zeilen, und die Auswertung liefert
+ * alle: Ihre Zeilenzahl ist das Produkt aus Bereich, Kennzeichen, Satz und
+ * Währung und kennt deshalb keine Obergrenze, die eine Summe verfälschen
+ * könnte.
+ */
+export interface Bereichssumme {
+  bereich: Leistungsbereich;
+  zeilen: Einnahmenzeile[];
+  bruttoCent: number;
+  steuerCent: number;
+  nettoCent: number;
+  currency: string;
+}
+
+export function nachBereichen(zeilen: Einnahmenzeile[]): Bereichssumme[] {
+  const gruppen = new Map<Leistungsbereich, Bereichssumme>();
+
+  for (const zeile of zeilen) {
+    const vorhanden = gruppen.get(zeile.service_area);
+    const gruppe = vorhanden ?? {
+      bereich: zeile.service_area,
+      zeilen: [],
+      bruttoCent: 0,
+      steuerCent: 0,
+      nettoCent: 0,
+      currency: zeile.currency,
+    };
+
+    gruppe.zeilen.push(zeile);
+    gruppe.bruttoCent += zeile.gross_cents;
+    gruppe.steuerCent += zeile.tax_cents;
+    gruppe.nettoCent += zeile.net_cents;
+    if (!vorhanden) gruppen.set(zeile.service_area, gruppe);
+  }
+
+  return [...gruppen.values()];
+}

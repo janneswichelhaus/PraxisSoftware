@@ -284,6 +284,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
         { to: '/abrechnung/katalog', label: 'Katalog' },
         { to: '/abrechnung/stammdaten', label: 'Praxisstammdaten' },
         { to: '/abrechnung/zahlungen', label: 'Zahlungen' },
+        { to: '/abrechnung/auswertung', label: 'Auswertung' },
       ],
     });
   }

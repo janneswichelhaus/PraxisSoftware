@@ -68,6 +68,7 @@ import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
 import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
+import { RevenuePage } from '@/features/billing/RevenuePage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import {
   canManageAppointments,
@@ -338,6 +339,10 @@ export function AuthenticatedRoutes({
                   element={<PracticeProfilePage user={user} />}
                 />
                 <Route path="/abrechnung/zahlungen" element={<PaymentsPage user={user} />} />
+                {/* Einnahmen je Leistungsart - eine lesende Seite ueber
+                  ausgestellte Dokumente und gebuchte Zahlungen, ohne
+                  Personenbezug (ABR-011, ADR-009 Punkt 19). */}
+                <Route path="/abrechnung/auswertung" element={<RevenuePage />} />
               </>
             ) : null}
 
