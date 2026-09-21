@@ -106,6 +106,14 @@ describe('Register der Quellen', () => {
     ).toEqual([]);
   });
 
+  it('fuehrt alle neun MT-Lernuebersichten als PDF', () => {
+    // Die Originale hinter mt-untersuchung-quelldaten.md, seit 2026-09-21 im
+    // Repository. Die Abnahme von P2 haelt Itemzahlen je Block gegen sie;
+    // faellt eine still weg, ist die Extraktion gegen nichts mehr zu pruefen.
+    const uebersichten = [...register.keys()].filter((datei) => datei.startsWith('bausteine/pdf/'));
+    expect(uebersichten).toHaveLength(9);
+  });
+
   it('fuehrt alle 18 Fragebogen als PDF', () => {
     // Die Zahl steht im Inventar und im Arbeitsauftrag. Faellt eine Datei
     // still weg, sagt diese Zeile es, bevor eine Score-Definition ohne Quelle
