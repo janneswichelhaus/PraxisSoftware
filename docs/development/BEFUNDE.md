@@ -733,3 +733,36 @@ das `error`-Ereignis von MapLibre aus und zeigt „Kartenmaterial konnte nicht
 geladen werden" — die Meldung des Renderers selbst bleibt draußen, sie trägt
 Anbieteradressen (ADR-011). Eine Browserprüfung öffnet die Prüfseite mit einem
 absichtlich kaputten Style und erwartet den Hinweis.
+
+### BEF-022 — Die Quellenangabe steht doppelt auf der Karte
+
+|         |                                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-21                                                                                          |
+| Bereich | Kalender: Kartenprototyp (`/touren/karte`, Vorschau)                                                |
+| Quelle  | Abnahme durch Jannes, 2026-09-21, Bildschirmfoto der laufenden Karte                                |
+| Status  | erledigt in MAP-002 (Nachtrag, 2026-09-21)                                                          |
+| Berührt | `src/features/tours/karte/Karte.tsx`; ADR-019 Punkt 1, `MapDisplayConfig.attribution`               |
+
+**Beobachtung.** Unten rechts auf der Karte stand dieselbe Aussage zweimal:
+„© PTV Group, © OpenStreetMap-Mitwirkende" (die Angabe aus dem Adapter) und
+direkt dahinter „©2026, PTV Logistics, OpenStreetMap contributors" (die
+Angabe, die der Style des Anbieters selbst mitbringt).
+
+**Warum das zählt.** Rechtlich ist Doppelnennung unschädlich — die
+Lizenzbedingung verlangt Sichtbarkeit, nicht Sparsamkeit. Sichtbar wird aber
+ein Denkfehler: Die Komponente setzte ihre Angabe **immer**, ohne zu fragen,
+ob schon eine da ist. Die naheliegende Abhilfe wäre die falsche: Lässt man
+die eigene Angabe einfach weg, steht bei einem Anbieter **ohne** Angabe im
+Style am Ende gar keine Quelle auf der Karte — und das verletzt die Lizenz
+wirklich.
+
+**So behoben (2026-09-21).** Die Karte entsteht ohne Quellenangabe; nach dem
+Laden des Styles wird gefragt, nicht angenommen. Nennt eine **benutzte**
+Quelle des Styles ihre Herkunft, zeigt das Bedienelement diese; nennt keine
+sie, tritt `config.attribution` an ihre Stelle. Dass „benutzt" dazugehört,
+hat erst der Browser gezeigt: MapLibre zeigt die Angabe einer Quelle, auf die
+keine Ebene verweist, überhaupt nicht an — eine solche Quelle als Beleg zu
+werten hätte die eigene Angabe stillgelegt und die Karte ohne Quelle
+hinterlassen. Vier Tests halten beide Richtungen fest, einer davon im
+Browser gegen einen Style, der seine Quelle selbst nennt.

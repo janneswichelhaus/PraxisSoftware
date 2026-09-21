@@ -105,6 +105,16 @@ test.describe('Kartenprototyp', () => {
     await expect.poll(abstand, { timeout: 5_000 }).toBeGreaterThan(vorher);
   });
 
+  test('nennt die Quelle genau einmal (BEF-022)', async ({ page }) => {
+    // Beim ersten Lauf mit echten Kacheln stand die Quellenangabe doppelt da:
+    // einmal aus dem Style des Anbieters, einmal aus dem Adapter.
+    await page.goto(`${PRUEFSEITE}?quelle=1`);
+    await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible();
+
+    await expect(page.getByText('© Quelle aus dem Style')).toBeVisible();
+    await expect(page.getByText('Prüfstyle ohne Netz')).toHaveCount(0);
+  });
+
   test('sagt im Browser, wenn kein Kartenmaterial ankommt (BEF-021)', async ({ page }) => {
     // Der Fall, der MAP-002 am ersten Tag mit Schluessel eingeholt hat: Die
     // Marker standen, der Hintergrund fehlte, und die Seite schwieg dazu.

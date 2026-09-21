@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
+import { AttributionControl, Map as MapLibreMap, Marker, NavigationControl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 // Nach der CSS des Renderers: Sie bringt die Bedienelemente auf Tippgröße und
 // ersetzt deren Schatten durch eine Linie.
@@ -115,8 +115,9 @@ function Kartenflaeche({
       zoom: 11,
       ...(config.minZoom === undefined ? {} : { minZoom: config.minZoom }),
       ...(config.maxZoom === undefined ? {} : { maxZoom: config.maxZoom }),
-      // Lizenzbedingung des Anbieters: Die Quellenangabe ist sichtbar.
-      attributionControl: { customAttribution: config.attribution },
+      /* Die Quellenangabe kommt weiter unten, nach dem Laden des Styles -
+         und genau einmal (BEF-022). */
+      attributionControl: false,
       ...(config.authorizeRequest === undefined
         ? {}
         : { transformRequest: erlaubeAnfrage(config.authorizeRequest) }),
@@ -140,9 +141,34 @@ function Kartenflaeche({
        Bildschirm einer Praxis, ADR-011); sichtbar wird nur, DASS etwas
        fehlt. */
     karte.on('error', () => setLadefehler(true));
-    // Nach einem geglückten Ladevorgang steht das Bild wieder - dann ist der
-    // Hinweis von vorhin gegenstandslos.
-    karte.on('load', () => setLadefehler(false));
+
+    /**
+     * Die Quellenangabe: genau einmal, und nie gar nicht.
+     *
+     * Ein Style bringt die Angabe seiner Quellen meist selbst mit - der von
+     * PTV tut es. Zusätzlich eine eigene zu setzen ergab zwei Zeilen
+     * nebeneinander, dieselbe Aussage zweimal (BEF-022). Sie einfach
+     * wegzulassen wäre die andere Hälfte des Fehlers: Ein Anbieter ohne
+     * Angabe im Style hinterließe eine Karte ohne Quelle, und das verletzt
+     * die Lizenz.
+     *
+     * Deshalb wird hier gefragt, nicht angenommen: Nennt der geladene Style
+     * eine Quelle, zeigt das Bedienelement seine; nennt er keine, tritt
+     * `config.attribution` an ihre Stelle.
+     */
+    let quelleSteht = false;
+    karte.on('load', () => {
+      // Nach einem geglückten Ladevorgang steht das Bild wieder - dann ist
+      // der Hinweis von vorhin gegenstandslos.
+      setLadefehler(false);
+      if (quelleSteht) return;
+      quelleSteht = true;
+      karte.addControl(
+        new AttributionControl(
+          styleNenntQuelle(karte) ? {} : { customAttribution: config.attribution },
+        ),
+      );
+    });
 
     setKarte(karte);
 
@@ -216,6 +242,36 @@ function erlaubeAnfrage(autorisieren: NonNullable<MapDisplayConfig['authorizeReq
     const angepasst = autorisieren(url);
     return { url: angepasst.url, headers: { ...angepasst.headers } };
   };
+}
+
+/**
+ * Nennt der geladene Style eine Quellenangabe, die MapLibre auch anzeigt?
+ *
+ * Zwei Feinheiten stecken darin, beide im Browser gelernt:
+ *
+ * Erstens wird die **geladene** Quelle gefragt, nicht die Stilvorlage: Ein
+ * Vektor-Style verweist auf eine TileJSON, und die Quellenangabe steht oft
+ * erst darin - also erst nach dem Laden. Deshalb beides, die geladene Quelle
+ * und ihre Beschreibung im Style.
+ *
+ * Zweitens zählt nur, was eine **Ebene benutzt**: MapLibre zeigt die Angabe
+ * einer Quelle, auf die keine Ebene verweist, nicht an. Eine solche Quelle
+ * als „hat Angabe" zu werten hieße, die eigene stillzulegen - und die Karte
+ * stünde am Ende ganz ohne Quelle da.
+ */
+function styleNenntQuelle(karte: MapLibreMap): boolean {
+  const style = karte.getStyle();
+  const quellen = style?.sources ?? {};
+  const benutzt = new Set(
+    (style?.layers ?? []).map((ebene) => ('source' in ebene ? ebene.source : undefined)),
+  );
+
+  return Object.entries(quellen).some(([kennung, beschreibung]) => {
+    if (!benutzt.has(kennung)) return false;
+    const geladen = karte.getSource(kennung) as { attribution?: string } | undefined;
+    const genannt = (beschreibung as { attribution?: string }).attribution;
+    return Boolean(geladen?.attribution?.trim() ?? genannt?.trim());
+  });
 }
 
 function mittelwert(stopps: readonly MapOverlayStop[], achse: 'lat' | 'lon'): number {

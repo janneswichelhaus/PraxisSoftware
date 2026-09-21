@@ -27,15 +27,47 @@ const styleOhneNetz = {
 };
 
 /**
- * Mit `?fehler=1` zeigt die Prüfseite den Fall, der MAP-002 im echten Betrieb
- * eingeholt hat: Der Style kommt nicht an (BEF-021).
+ * Derselbe Style, aber mit eigener Quellenangabe - wie ihn ein Anbieter
+ * liefert (BEF-022).
  *
- * Die Adresse liegt im eigenen Ursprung und läuft ins Leere - kein Anbieter
- * wird dafür gebraucht, und der Lauf bleibt ohne Netz.
+ * Die Quelle trägt keine Daten und lädt nichts; sie existiert allein, damit
+ * MapLibre eine Quellenangabe zu zeigen hat.
  */
-const styleAdresse = new URLSearchParams(location.search).has('fehler')
+const styleMitQuelle = {
+  ...styleOhneNetz,
+  sources: {
+    probe: {
+      type: 'geojson',
+      attribution: '© Quelle aus dem Style',
+      data: { type: 'FeatureCollection', features: [] },
+    },
+  },
+  layers: [
+    ...styleOhneNetz.layers,
+    // Die Ebene zeichnet nichts - die Quelle ist leer. Sie muss trotzdem da
+    // sein: MapLibre zeigt die Angabe einer Quelle nur, wenn eine Ebene sie
+    // benutzt.
+    { id: 'probe', type: 'circle', source: 'probe' },
+  ],
+};
+
+const parameter = new URLSearchParams(location.search);
+
+/**
+ * Mit `?fehler=1` zeigt die Prüfseite den Fall, der MAP-002 im echten Betrieb
+ * eingeholt hat: Der Style kommt nicht an (BEF-021). Mit `?quelle=1` den
+ * Fall, in dem der Style seine Quellenangabe selbst mitbringt (BEF-022).
+ *
+ * Die Fehleradresse liegt im eigenen Ursprung und läuft ins Leere - kein
+ * Anbieter wird dafür gebraucht, und der Lauf bleibt ohne Netz.
+ */
+const styleAdresse = parameter.has('fehler')
   ? '/tests/e2e/fixtures/diesen-style-gibt-es-nicht.json'
-  : URL.createObjectURL(new Blob([JSON.stringify(styleOhneNetz)], { type: 'application/json' }));
+  : URL.createObjectURL(
+      new Blob([JSON.stringify(parameter.has('quelle') ? styleMitQuelle : styleOhneNetz)], {
+        type: 'application/json',
+      }),
+    );
 
 const config: MapDisplayConfig = {
   styleUrl: styleAdresse,
