@@ -40,3 +40,28 @@ export function readEnv(source: EnvSource = import.meta.env): AppEnv {
 
   return result.data;
 }
+
+/** Nur das Feld, aus dem der Kachelschlüssel kommt. */
+interface TileEnvSource {
+  VITE_PTV_TILE_API_KEY?: string | undefined;
+}
+
+/**
+ * Kachelschlüssel des Kartendienstes - **optional**, deshalb getrennt von
+ * `readEnv`.
+ *
+ * Ohne diesen Schlüssel läuft die Anwendung vollständig; nur die Karte zeigt
+ * statt Kartenmaterial einen Hinweis. Eine fehlende Supabase-Adresse ist ein
+ * Konfigurationsfehler, ein fehlender Kachelschlüssel nicht - deshalb wirft
+ * diese Funktion nicht, sondern liefert `null`.
+ *
+ * Der Schlüssel ist kein Secret im Sinne von `PROJECT_PRINCIPLES.md` 3.3,
+ * sondern eine im Browser sichtbare Abrechnungskennung (ADR-019 Punkt 19).
+ * Er gehört trotzdem nie ins Repository: `.env.local` bleibt ungetrackt, und
+ * der serverseitige Schlüssel für Geocoding, Routing und Matrix ist ein
+ * anderer und bleibt ein Secret.
+ */
+export function readMapTileApiKey(source: TileEnvSource = import.meta.env): string | null {
+  const wert = source.VITE_PTV_TILE_API_KEY?.trim();
+  return wert ? wert : null;
+}

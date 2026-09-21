@@ -57,6 +57,15 @@ export function ToursPage({ user }: { user: CurrentUser }) {
         beschreibung="Synthetische Besuchsfolge. Es ist kein Kartendienst angebunden und es werden keine Wege berechnet."
       />
 
+      {/* Der Kartenprototyp steht bewusst neben dieser Liste und nicht in ihr:
+        Er zeigt erfundene Punkte, nicht die Stopps dieser Tour (MAP-002). */}
+      <p className="text-ink-muted mb-5 text-sm">
+        <Link to="/touren/karte" className="text-accent hover:text-accent-hover underline">
+          Kartenprototyp mit Teststopps öffnen
+        </Link>{' '}
+        – erfundene Koordinaten, ohne Bezug zu dieser Besuchsfolge.
+      </p>
+
       <div className="mb-5 flex flex-wrap items-end gap-4">
         <div className="max-w-xs flex-1 basis-56">
           <Select

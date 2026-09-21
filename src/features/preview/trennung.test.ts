@@ -127,6 +127,28 @@ const ERLAUBTE_MODULE = [
   /^@\/lib\//,
 ];
 
+/** Der Kartenprototyp aus MAP-002. */
+const KARTENPROTOTYP = 'src/features/tours/karte';
+
+/**
+ * Was **nur** der Kartenprototyp zusätzlich importieren darf.
+ *
+ * Die Liste ist bewusst an ein Verzeichnis gebunden und nicht an alle
+ * Vorschaubereiche: MapLibre lädt Kartenkacheln beim Anbieter, und das ist der
+ * einzige Anbieterkontakt, den ADR-019 dem Browser erlaubt (Punkt 15) — mit
+ * synthetischen Koordinaten und ohne Adresse, Namen oder Termin (Punkt 24).
+ * In jedem anderen Vorschaubereich bleibt derselbe Import ein Fund.
+ *
+ * Alles Übrige gilt hier unverändert: kein Supabase, kein `rpc(`, kein
+ * `fetch(`, kein `localStorage` — die Prüfungen oben laufen über diese
+ * Dateien wie über jede andere.
+ *
+ * `react-dom` steht dabei, weil die Marker als Portale entstehen: Die Nummern
+ * sind eigene DOM-Knoten der Anwendung, gerade damit sie **nicht** über die
+ * Beschriftung des Anbieters laufen.
+ */
+const ERLAUBTE_MODULE_KARTE = [/^react-dom$/, /^maplibre-gl(\/|$)/];
+
 /** `@/features/<bereich>/api` - ohne `preview`, das ist der eigene Bereich. */
 const API_MODUL = /^@\/features\/([^/]+)\/api$/;
 
@@ -203,7 +225,10 @@ function unerlaubteImporte(pfad: string, quelltext: string): string[] {
       }
       continue;
     }
-    if (!ERLAUBTE_MODULE.some((muster) => muster.test(modul))) {
+    const erlaubt = pfad.startsWith(KARTENPROTOTYP)
+      ? [...ERLAUBTE_MODULE, ...ERLAUBTE_MODULE_KARTE]
+      : ERLAUBTE_MODULE;
+    if (!erlaubt.some((muster) => muster.test(modul))) {
       treffer.push(`${modul} (nicht in der Positivliste)`);
     }
   }
@@ -279,6 +304,28 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     expect(pruefe("import { formatDate } from '@/lib/datum';")).toEqual([]);
     expect(pruefe("import { useState } from 'react';")).toEqual([]);
     expect(pruefe("import { Vorschauzustand } from './vorschauZustand';")).toEqual([]);
+  });
+
+  it('erlaubt MapLibre nur im Kartenprototyp', () => {
+    // Die Ausnahme fuer MAP-002 haengt am Verzeichnis. Ohne diese Gegenprobe
+    // waere nicht geprueft, dass sie dort endet: Ein Renderer, der Kacheln
+    // beim Anbieter holt, gehoert in keinen anderen Vorschaubereich.
+    const imKarten =
+      "import { Map } from 'maplibre-gl';\nimport { createPortal } from 'react-dom';";
+
+    expect(unerlaubteImporte(`${KARTENPROTOTYP}/Karte.tsx`, imKarten)).toEqual([]);
+    expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', imKarten)).toEqual([
+      'maplibre-gl (nicht in der Positivliste)',
+      'react-dom (nicht in der Positivliste)',
+    ]);
+    expect(unerlaubteImporte('src/features/fleet/Beispiel.tsx', imKarten)).toEqual([
+      'maplibre-gl (nicht in der Positivliste)',
+      'react-dom (nicht in der Positivliste)',
+    ]);
+    // Auch im Kartenprototyp gilt der Rest unveraendert.
+    expect(unerlaubteImporte(`${KARTENPROTOTYP}/Karte.tsx`, "import { z } from 'zod';")).toEqual([
+      'zod (nicht in der Positivliste)',
+    ]);
   });
 
   it('wuerde einen Serveraufruf tatsaechlich finden', () => {

@@ -1,0 +1,34 @@
+/* Die Bedienelemente von MapLibre auf das Maß dieses Systems bringen.
+   Geladen nur mit der Karte (MAP-002), nie im übrigen Anwendungsstand.
+
+   Zwei Dinge weichen ab, wenn man die mitgelieferte CSS des Renderers so
+   lässt, wie sie ist:
+
+   1. Die Zoomknöpfe sind 29 px hoch. Die Oberflächen-Checkliste verlangt
+      mindestens 44 px, und das System hat dafür eine eigene Größe
+      (`--spacing-bedienhoehe`, 48 px). Auf einem Telefon am Lenker ist das
+      kein Schönheitsmaß.
+   2. Der Rahmen der Knopfgruppe ist ein Schatten. In diesem System entstehen
+      Ebenen aus Fläche oder Linie, nie aus einem Schatten - deshalb eine
+      Linie in `--color-line`.
+
+   Die Symbole in den Knöpfen sind Hintergrundbilder und bleiben zentriert. */
+
+.maplibregl-ctrl-group {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.maplibregl-ctrl-group button {
+  width: var(--spacing-bedienhoehe);
+  height: var(--spacing-bedienhoehe);
+}
+
+/* Die Quellenangabe ist Lizenzbedingung und bleibt sichtbar - nur ohne
+   Schatten und mit der Linie des Systems. */
+.maplibregl-ctrl-attrib {
+  border-radius: var(--radius-button);
+  box-shadow: none;
+}

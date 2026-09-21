@@ -58,6 +58,29 @@ export default tseslint.config(
     },
   },
   {
+    /* ADR-019 Punkt 1 und 6: Fachcode spricht den providerneutralen Vertrag
+       aus `src/lib/location/contract.ts`, nie einen Anbieter. Ein Import aus
+       einem PTV-Modul waere der Punkt, an dem ein Anbieterwechsel wieder die
+       Oberflaeche kostete - die Regel faengt ihn, bevor er entsteht
+       (MAP-002, Akzeptanzkriterium 3). Die Nahtstelle fuer den Fachcode ist
+       `src/lib/location/display.ts`. */
+    files: ['src/features/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/ptv*'],
+              message:
+                'Fachcode kennt keinen Kartendienst: ueber src/lib/location/contract.ts und display.ts gehen (ADR-019 Punkt 1).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.{js,mjs,cjs}', 'scripts/**/*'],
     ...tseslint.configs.disableTypeChecked,
   },

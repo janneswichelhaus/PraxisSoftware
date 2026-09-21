@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- Leeres Symbol: Ohne diese Zeile holt Chromium /favicon.ico, bekommt
+         404 und schreibt einen Konsolenfehler - der einzige im ganzen Lauf,
+         und einer, der bei jeder Konsolenprüfung falschen Alarm auslöste.
+         Die Anwendung selbst führt ihre Symbole in index.html. -->
+    <link rel="icon" href="data:," />
+    <title>Prüfseite Kartenprototyp</title>
+  </head>
+  <body>
+    <!-- Prüfseite für tests/e2e/karte.spec.ts, kein Teil der Anwendung.
+
+         Die Seite /touren/karte liegt hinter der Anmeldung und braucht dafür
+         einen laufenden GoTrue; in der Cloud-Entwicklungsumgebung gibt es
+         keinen (CLAUDE.md, "Cloud-Umgebung"). Ohne diese Prüfseite liefe
+         MapLibre nirgends in einem echten Browser, und genau das ist an
+         MAP-002 das Prüfenswerte: WebGL, Kachelgitter, Markerplatzierung,
+         375 px.
+
+         Geladen wird ein Style ohne Netz. Die Prüfung zeigt damit, dass der
+         Renderer läuft - nicht, dass die Kacheln des Anbieters ankommen. Das
+         bleibt der lokale Schritt mit Schlüssel (docs/abnahme). -->
+    <div id="wurzel"></div>
+    <script type="module" src="./karte.tsx"></script>
+  </body>
+</html>
