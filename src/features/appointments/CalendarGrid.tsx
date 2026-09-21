@@ -732,7 +732,7 @@ function Kachel({
           Patient:in mit ungewöhnlichem Namen. */}
       <span className="text-ink block truncate text-xs font-medium">
         {bisher ? <span className="text-ink-muted">Bisher · </span> : null}
-        {eintrag.kind === 'event' ? '▪ ' : ''}
+        {eintrag.kind === 'internal' ? '▪ ' : ''}
         {terminBezeichnung(eintrag)}
       </span>
       <span className="text-ink-muted block truncate text-[0.6875rem]">

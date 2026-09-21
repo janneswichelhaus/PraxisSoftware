@@ -73,7 +73,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
-  const istEreignis = termin.data?.kind === 'event';
+  const istEreignis = termin.data?.kind === 'internal';
 
   const therapeuten = useQuery({
     queryKey: ['assignable-therapists'],
@@ -354,7 +354,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           onFensterMinuten={
             // Ein Ereignis hat keine Längenregel; seine Dauer wird hier nicht
             // über die Auswahl geändert, sondern bleibt, wie sie ist.
-            daten.kind === 'treatment' ? laengeWechseln : undefined
+            daten.kind === 'therapy' ? laengeWechseln : undefined
           }
           laengeHinweis={
             istEreignis ? `Dauer: ${fensterMinuten} Minuten, wie eingetragen.` : undefined

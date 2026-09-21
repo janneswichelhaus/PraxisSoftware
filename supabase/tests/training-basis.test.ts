@@ -154,7 +154,7 @@ describe('Trainingsgrundlage', () => {
              organization_id, patient_id, training_basis_id, staff_member_id,
              location_id, appointment_type, kind, starts_at, ends_at
            ) values (
-             $1, $2, $3, $4, $5, 'practice', 'treatment',
+             $1, $2, $3, $4, $5, 'practice', 'therapy',
              ($6::date + time '15:00') at time zone 'Europe/Berlin',
              ($6::date + time '16:00') at time zone 'Europe/Berlin'
            )`,

@@ -39,7 +39,7 @@ function eintrag(
   return {
     id: '77777777-7777-4777-8777-000000000001',
     patient_id: PATIENT,
-    kind: 'treatment',
+    kind: 'therapy',
     title: null,
     staff_member_id: STAFF_ANNA,
     location_id: ORT,
@@ -1081,7 +1081,7 @@ describe('CalendarPage', () => {
       fetchAppointments.mockResolvedValue([
         eintrag({
           id: '77777777-7777-4777-8777-00000000000e',
-          kind: 'event',
+          kind: 'internal',
           title: 'Teambesprechung',
           patient_id: null,
           patient_given_name: null,

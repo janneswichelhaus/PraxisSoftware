@@ -155,7 +155,7 @@ describe('Ein Bereich je Rechnung', () => {
         `insert into public.appointments (
            organization_id, kind, title, staff_member_id, location_id,
            appointment_type, status, starts_at, ends_at, event_group_id
-         ) values ($1, 'event', 'Teamsitzung', $2, $3, 'practice', 'confirmed',
+         ) values ($1, 'internal', 'Teamsitzung', $2, $3, 'practice', 'confirmed',
                    now() + interval '1 day', now() + interval '1 day 1 hour',
                    extensions.gen_random_uuid())
          returning id`,

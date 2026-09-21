@@ -161,7 +161,8 @@ Zustand, den niemand setzen kann, wird nicht vorgebaut). Kein Gebührenanlass
 im Training: ob die Absage unter 24 Stunden auch im Dienstvertrag über Training
 einen Anspruch begründet, ist **deine** Vertrags- und AGB-Frage; bis zur
 Antwort gilt ADR-018 Punkt 8 nur für die Behandlung. Und keine Umbenennung der
-Bestandswerte `treatment` und `event` — sie ist als **CAL-027** abgetrennt.
+Bestandswerte `treatment` und `event` — sie ist als **CAL-027** abgetrennt und
+am 2026-09-21 nachgezogen worden (siehe unten).
 
 ## ABR-EPIC-005 — Ein Bereich je Rechnung, getrennte Nummernkreise
 
@@ -305,3 +306,54 @@ Kennzahlen (`IDEA-PRX-025`). Keine Zahl über beide Bereiche — die gibt es
 bewusst nicht. Und keine Trainingszeile, solange es für Training keinen
 Schreibweg gibt (E18 Schritt 7): Der Bereich erscheint erst, wenn eine
 Trainingsrechnung existiert.
+
+## CAL-027 — Die Bestandswerte heißen wie die Bereiche
+
+Nachzug zu CAL-EPIC-005. Grundlage: ADR-022 Punkt 2 und die offene Folgefrage
+desselben ADR, ADR-021 Punkt 9.
+
+**Dieser Loop bringt eine Migration**
+(`20260921170000_appointment_kind_rename.sql`) **und einen geänderten Seed**:
+vorher `git pull origin main`, dann `pnpm dlx supabase@2.116.0 db reset`.
+
+### 1. Am Bildschirm darf sich nichts ändern — das ist die ganze Zusage
+
+`appointments.kind` trägt jetzt `therapy` statt `treatment` und `internal`
+statt `event`. Ein Wert ist kein Wort: Was ein Ereignis ist, heißt in der
+Oberfläche weiterhin „Ereignis". Die Abnahme ist deshalb eine **Gegenprobe**
+und dauert eine Minute: als `anna.beispiel@praxis.invalid` (therapist)
+anmelden, Kalender und „Mein Tag" öffnen.
+
+1. Der **Kalender** zeigt die Teambesprechung aus dem Seed weiter mit ihrem
+   Titel und dem Quadrat davor, die Behandlungstermine weiter mit Namen.
+2. **Mein Tag** zeigt „Ereignis · " vor der Besprechung und den Knopf
+   „Ereignis öffnen →"; ein Behandlungstermin bleibt „Termin öffnen →".
+3. Die Besprechung **öffnen**: Absagen ist möglich, Abschließen und
+   Dokumentieren sind es weiterhin nicht.
+
+Sieht eine dieser Stellen leer aus oder steht dort „Ereignis" ohne Titel, ist
+eine Umbenennung nicht durchgekommen — dann bitte melden, statt weiterzuklicken.
+
+### 2. Was der Katalog selbst sagt
+
+Ohne Oberfläche, für den Fall, dass du es genau wissen willst — in `psql`:
+
+```sql
+select kind, count(*) from public.appointments group by 1 order by 1;
+```
+
+Erwartung: nur `therapy`, `internal` und (falls angelegt) `training`. Ein
+`treatment` oder `event` in dieser Liste wäre ein Fehler; die Constraint
+`appointments_kind_values` lässt beide nicht mehr zu.
+
+### 3. Was dieser Loop nicht bringt
+
+Keine neue Fähigkeit — er räumt einen Namen auf, mehr nicht. **Keine
+Bezeichner** sind umbenannt: `event_group_id`, `event_series_id`,
+`create_appointment_event` und die übrigen heißen weiter so, weil ein
+RPC-Name der Vertrag zur Oberfläche ist. Keine Ausnahmetexte, kein
+`billable_services.item_kind` (dort ist `treatment` eine Rechnungspositionsart
+nach ADR-009), und **keine umgeschriebene Auditzeile**: Ein Ereignis, das als
+`kind: event` protokolliert wurde, bleibt so stehen — ADR-022 hält
+ausdrücklich fest, dass Auditzeilen nie umgeschrieben werden. Ab jetzt
+protokollieren dieselben Pfade `kind: internal`.

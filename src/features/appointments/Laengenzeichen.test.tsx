@@ -15,19 +15,19 @@ const um = (von: string, bis: string) => ({
 
 describe('abweichendeLaengeMinuten', () => {
   it('kennzeichnet weder 45 noch 60 Minuten', () => {
-    expect(abweichendeLaengeMinuten({ kind: 'treatment', ...um('07:00', '08:00') })).toBeNull();
-    expect(abweichendeLaengeMinuten({ kind: 'treatment', ...um('07:00', '07:45') })).toBeNull();
+    expect(abweichendeLaengeMinuten({ kind: 'therapy', ...um('07:00', '08:00') })).toBeNull();
+    expect(abweichendeLaengeMinuten({ kind: 'therapy', ...um('07:00', '07:45') })).toBeNull();
   });
 
   it('nennt jede andere Laenge eines Behandlungstermins in Minuten', () => {
-    expect(abweichendeLaengeMinuten({ kind: 'treatment', ...um('07:00', '07:30') })).toBe(30);
-    expect(abweichendeLaengeMinuten({ kind: 'treatment', ...um('07:00', '08:30') })).toBe(90);
-    expect(abweichendeLaengeMinuten({ kind: 'treatment', ...um('07:00', '08:05') })).toBe(65);
+    expect(abweichendeLaengeMinuten({ kind: 'therapy', ...um('07:00', '07:30') })).toBe(30);
+    expect(abweichendeLaengeMinuten({ kind: 'therapy', ...um('07:00', '08:30') })).toBe(90);
+    expect(abweichendeLaengeMinuten({ kind: 'therapy', ...um('07:00', '08:05') })).toBe(65);
   });
 
   it('kennzeichnet ein Ereignis nie', () => {
-    expect(abweichendeLaengeMinuten({ kind: 'event', ...um('07:00', '07:30') })).toBeNull();
-    expect(abweichendeLaengeMinuten({ kind: 'event', ...um('07:00', '09:00') })).toBeNull();
+    expect(abweichendeLaengeMinuten({ kind: 'internal', ...um('07:00', '07:30') })).toBeNull();
+    expect(abweichendeLaengeMinuten({ kind: 'internal', ...um('07:00', '09:00') })).toBeNull();
   });
 
   it('behandelt eine Liste ohne `kind` als Behandlungstermine (Akte)', () => {
@@ -47,22 +47,22 @@ describe('abweichendeLaengeMinuten', () => {
 
 describe('Laengenzeichen', () => {
   it('traegt die Textfassung fuer Vorlesewerkzeuge', () => {
-    render(<Laengenzeichen termin={{ kind: 'treatment', ...um('07:00', '07:30') }} />);
+    render(<Laengenzeichen termin={{ kind: 'therapy', ...um('07:00', '07:30') }} />);
     expect(screen.getByTestId('laengenzeichen')).toHaveTextContent('Länge weicht ab: 30 Min.');
   });
 
   it('traegt sie auch in der knappen Fassung der Kalenderkachel', () => {
-    render(<Laengenzeichen knapp termin={{ kind: 'treatment', ...um('07:00', '07:30') }} />);
+    render(<Laengenzeichen knapp termin={{ kind: 'therapy', ...um('07:00', '07:30') }} />);
     expect(screen.getByText(abweichendeLaengeText(30))).toBeInTheDocument();
   });
 
   it('erscheint bei einer Regellaenge nicht', () => {
-    render(<Laengenzeichen termin={{ kind: 'treatment', ...um('07:00', '08:00') }} />);
+    render(<Laengenzeichen termin={{ kind: 'therapy', ...um('07:00', '08:00') }} />);
     expect(screen.queryByTestId('laengenzeichen')).not.toBeInTheDocument();
   });
 
   it('erscheint an einem Ereignis nie', () => {
-    render(<Laengenzeichen termin={{ kind: 'event', ...um('07:00', '07:30') }} />);
+    render(<Laengenzeichen termin={{ kind: 'internal', ...um('07:00', '07:30') }} />);
     expect(screen.queryByTestId('laengenzeichen')).not.toBeInTheDocument();
   });
 });

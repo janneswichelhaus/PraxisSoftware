@@ -101,7 +101,7 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
                 Trainingstermin steht nur als Belegung da: Der Kontext ist ein
                 Metadatum, kein Inhalt (ADR-022 Punkt 11); Person und Grundlage
                 gehören nicht in diese Liste und stehen auch nicht darin. */}
-            {termin.kind === 'event'
+            {termin.kind === 'internal'
               ? (termin.title ?? 'Ereignis')
               : termin.kind === 'training'
                 ? 'Trainingstermin'

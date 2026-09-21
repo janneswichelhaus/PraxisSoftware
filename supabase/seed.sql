@@ -395,10 +395,10 @@ insert into public.appointments (
   appointment_type, kind, title, event_group_id, status, starts_at, ends_at
 ) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-000000000005', '22222222-2222-4222-8222-000000000001', null, '55555555-5555-4555-8555-000000000001', '33333333-3333-4333-8333-000000000001',
-   'practice', 'event', 'Teambesprechung', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 'confirmed',
+   'practice', 'internal', 'Teambesprechung', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 'confirmed',
    (current_date + time '08:00') at time zone 'Europe/Berlin', (current_date + time '08:25') at time zone 'Europe/Berlin'),
   ('aaaaaaaa-aaaa-4aaa-8aaa-000000000006', '22222222-2222-4222-8222-000000000001', null, '55555555-5555-4555-8555-000000000003', '33333333-3333-4333-8333-000000000001',
-   'practice', 'event', 'Teambesprechung', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 'confirmed',
+   'practice', 'internal', 'Teambesprechung', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 'confirmed',
    (current_date + time '08:00') at time zone 'Europe/Berlin', (current_date + time '08:25') at time zone 'Europe/Berlin');
 
 -- -----------------------------------------------------------------------------

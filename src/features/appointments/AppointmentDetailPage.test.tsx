@@ -727,7 +727,7 @@ describe('AppointmentDetailPage', () => {
 
     const ereignis: AppointmentsApi.Appointment = {
       ...praxistermin,
-      kind: 'event',
+      kind: 'internal',
       title: 'Teambesprechung',
       event_group_id: GRUPPE,
       patient_id: null,
@@ -1160,7 +1160,7 @@ describe('AppointmentDetailPage', () => {
 
     const fehlzeit: AppointmentsApi.Appointment = {
       ...praxistermin,
-      kind: 'event',
+      kind: 'internal',
       title: 'Teammeeting',
       event_group_id: GRUPPE,
       event_series_id: SERIE,
