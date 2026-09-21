@@ -1,8 +1,9 @@
 # FRB — Untersuchungsbausteine und Scores: Plan der Integration
 
 Stand 2026-09-21 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt, kein eigener
-Rang · **kein Code, keine Migration** — in dieser Session wurden nur die
-Quellen abgelegt und dieser Plan geschrieben
+Rang · **P0 und P1 sind erledigt** (Quellen abgelegt; Schema, Ladepfad und
+Tests als FRB-EPIC-000). Ab P2 gilt unverändert: keine Zeile in der Roadmap
+ohne Einplanung durch Jannes.
 
 Quelle ist der Arbeitsauftrag von Jannes vom 2026-09-21, wörtlich abgelegt als
 [`../../quellen/ARBEITSAUFTRAG_Bausteine-und-Scores.md`](../../quellen/ARBEITSAUFTRAG_Bausteine-und-Scores.md).
@@ -162,8 +163,8 @@ allein.
 | Phase                                     | Was entsteht                                                                                                                         | Objektive Abnahme                                                                                                                                  | Pfad (K1)                       |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | **P0** — erledigt 2026-09-21              | Quellen abgelegt, Register mit Prüfsummen, dieser Plan                                                                               | `pnpm test` (`src/quellen.test.ts`), `pnpm docs:check`                                                                                             | unkritisch                      |
-| **P1** — Schema und Validator             | `schema.ts` für beide Datenmodelle, Validator, keine Oberfläche, keine Datenbank                                                      | Validator weist eine Definition ohne `version`, mit doppelter ID und mit unbekanntem `result_type` zurück — je ein Test                             | unkritisch                      |
-| **P2** — Bausteine als Daten              | 9 Regionen aus der Quelldatei, vier Blöcke als `"status": "unvollstaendig"`                                                           | **Zähltest gegen die Tabelle im Arbeitsauftrag §2** — Items je Block exakt; Abweichung ist ein Fehler, keine Rundung                                | unkritisch                      |
+| **P1** — erledigt 2026-09-21              | `schema.ts` für beide Datenmodelle, Ladepfad, 78 Tests — als **FRB-EPIC-000** (Roadmap 5.29)                                          | erfüllt: `version`, doppelte ID und unbekannter `result_type` je mit Test; dazu Referenzfall-Pflicht, Lizenz-Kopplung und Gegenprobe               | unkritisch                      |
+| **P2** — Bausteine als Daten              | 9 Regionen aus der Quelldatei, **drei** Blöcke als `"status": "unvollstaendig"` (SIG ist vollständig, siehe D2)                                                           | **Zähltest gegen die Tabelle im Arbeitsauftrag §2** — Items je Block exakt; Abweichung ist ein Fehler, keine Rundung                                | unkritisch                      |
 | **P3** — Renderer, Text, Prototyp         | Region wählen, Blöcke aufklappen, abhaken, Live-Vorschau des Dokumentationstexts mit Kopier-Schaltfläche                              | Generator-Tests: `nicht_durchgefuehrt` erscheint nicht, Reihenfolge = Definition, leerer Block ohne Überschrift, Format `<Label><, Seite>: …`; 375 px | **S** ohne Persistenz, sonst **A** |
 | **P4** — Scores: VISA-A und KOOS          | zwei Definitionen mit Itemtexten, Rechenvorschrift, Referenzfall                                                                      | Referenzfall je Score; **expliziter Test zur Gegenläufigkeit KOOS/HOOS**; KOOS-Missing-Value-Regeln                                                 | **A** ab Persistenz             |
 | **P5** — die übrigen 16                   | Definitionen inkl. Anamnesebogen (39 Fragen)                                                                                         | Itemzahlen wie im Arbeitsauftrag §3; je Score ein Referenzfall; FABQ zeigt 16, wertet 11                                                            | **A**                           |
@@ -193,7 +194,7 @@ liefert Itemtexte, die sich übernehmen lassen — die Extrakte liegen in
 | ID     | Frage                                                                                                                                                              | Wer      | Blockiert   |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ----------- |
 | ~~**D1**~~ | ~~Dürfen die 18 PDFs und die **Itemtexte** in ein **öffentliches** Repository?~~ **Entschieden am 2026-09-21: ja.** Jannes hat die Frage samt dem Unterschied zwischen Nutzung und Weiterveröffentlichung vorgelegt bekommen und sie so entschieden. PDFs und Extrakte liegen seit demselben Tag im Repository; die Definitionen dürfen ihre Itemtexte tragen. Begründung und die Folge — eine Rücknahme braucht einen Umbau der Historie — in [`../../quellen/README.md`](../../quellen/README.md) | Jannes   | nichts mehr |
-| **D2** | Vier unvollständige Blöcke der MT-Vorlage — offen lassen (Vorschlag) oder nachliefern: Schulter „Untersuchung ACG", LWS „Untersuchung SIG", LWS „Behandlung", HWS „Therapie Hochzervikal" | Jannes   | P2 (nicht blockierend: sie werden als offen angelegt) |
+| **D2** | Unvollständige Blöcke der MT-Vorlage — offen lassen (Vorschlag) oder nachliefern. **Am 2026-09-21 an den Original-PDFs nachgesehen** (`quellen/bausteine/pdf/`, Extrakte daneben): Von den vier genannten Stellen sind **drei wirklich leer** — Schulter „Untersuchung ACG" (Überschrift ohne Inhalt), LWS „Behandlung" (fünfter Aufzählungspunkt leer), HWS „Therapie Hochzervikal" (bricht nach „1. Myofaszial" ab). **LWS „Untersuchung SIG" ist dagegen vollständig** und war nur als Tabelle gesetzt: Ilium dorsal · Ilium medial · Thight trust · Sacral thrust · Pelvic torsion · SLR (mit Widerstand Rumpf). Offen bleibt allein, ob Jannes die drei echten Lücken nachliefert | Jannes | P2 (nicht blockierend: die drei werden als offen angelegt, SIG als voller Block) |
 | **D3** | Tippfehler der Vorlage stehen lassen (Vorschlag) oder korrigieren: „Relocation Tet", „Supinatin", „Lachmann", „Painfull Arc Sign", „Traininigs"                     | Jannes   | P2          |
 | **D4** | HOOS: 39 Items laut PDF oder 40 laut Original                                                                                                                      | Jannes   | P5          |
 | **D5** | TSK-GV: das PDF weist keine Punktwerte aus. Standardvergabe 1–4 annehmen oder aus der Primärliteratur belegen                                                       | Jannes   | P5          |
@@ -208,10 +209,14 @@ Itemtext nicht zurückzunehmen sind; sie ist entschieden. D2 bis D6 werden nach
 reversibel an genau einer Stelle verankert und als `ANN-NNN` registriert — der
 Vorschlag steht jeweils schon in der Spalte.
 
-**In dieser Session wurde keine Annahme registriert.** `pnpm docs:check`
-verlangt für jeden `ANN-NNN` einen Anker in `src/`, `supabase/migrations/` oder
-`.github/workflows/` — ohne Code gibt es keinen Anker. Die Annahmen entstehen
-mit dem Loop, der sie braucht.
+**Die Annahmen entstehen mit dem Loop, der sie braucht.** In der Session vom
+2026-09-21 (Quellen) wurde keine registriert — ohne Code gibt es keinen Anker,
+und `pnpm docs:check` verlangt für jeden `ANN-NNN` einen in `src/`,
+`supabase/migrations/` oder `.github/workflows/`. FRB-EPIC-000 hat dann fünf
+gebraucht: **ANN-083** (Bibliothek als Dateien im Release), **ANN-084**
+(semantische Version), **ANN-085** (`richtung` mit `nicht_anwendbar`),
+**ANN-086** (Lizenzstatus koppelt `aktiv`), **ANN-087** (kein `skip_logic` auf
+Vorrat). D2 bis D6 sind damit **nicht** vorweggenommen — sie fallen in P2 und P5.
 
 ## 7. Ausdrücklich nicht Teil dieses Plans
 

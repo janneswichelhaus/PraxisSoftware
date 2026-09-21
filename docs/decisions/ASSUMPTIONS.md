@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-20.
+Zuletzt aktualisiert: 2026-09-21.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1088,3 +1088,63 @@ Recht · offen · 2026-09-20 · — · — · Wiedervorlage: mit der Antwort aus
 **Anker.** `app.tax_exemption_reason` in `supabase/migrations/20260920120000_invoice_tax_exemption_reason.sql`; die Pflichtprüfung dazu in `app.assert_invoice_tax_lawful` in `supabase/migrations/20260920121000_invoice_tax_lock.sql`.
 
 **Änderungspfad.** Anderer Wortlaut: die Funktion, eine Zeile je Kennzeichen · Aufwand `klein` — ausgestellte Rechnungen behalten ihren Satz, das ist der Zweck des Snapshots. Grund je Katalogposition (mehrere Befreiungstatbestände): neue Spalte an `service_catalog_items`, neue Katalogversion, die Funktion fällt weg · Aufwand `mittel`.
+
+### ANN-083 — Die Instrumentenbibliothek liegt als Dateien im Release, nicht in der Datenbank
+
+Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P6 (Ergebnisse erheben und speichern)
+
+**Annahme.** Definitionen von Untersuchungsbausteinen und Scores liegen als JSON-Dateien unter `src/features/assessments/definitionen/` und werden zur Bauzeit eingesammelt. Sie tragen **kein** `organization_id`, stehen in keiner Tabelle und sind für alle Mandanten gleich. Ergebnisse gehen den umgekehrten Weg: Sie sind Gesundheitsdaten und kommen mit Datenklasse, Frist und RLS in die Datenbank.
+
+**Begründung.** Der Arbeitsauftrag §0 verlangt „als Daten abgelegt, nicht als Code und nicht als PDF", §1 „ein neuer Score ist eine neue Datei". ADR-014 führt als offene Folgefrage ausdrücklich, wie „Daten ohne Organisationsbezug, etwa Instrumenten- und Leistungskatalog" zu behandeln sind; für die Bibliothek beantwortet das diese Annahme. Der Unterschied zum Leistungskatalog (`service_catalog_items`, in der Datenbank) ist sachlich: Preise gehören der Praxis und ändern sich je Mandant, ein validierter Fragebogen gehört niemandem und ändert sich nur mit seiner Fassung. Nur so ist `definition_version` etwas Festes — läge die Bibliothek je Mandant in der Datenbank, hieße „1.2.0" in zwei Praxen womöglich Verschiedenes.
+
+**Anker.** `ladeDefinitionen()` in `src/features/assessments/definitionen.ts`; das Einsammeln in `src/features/assessments/bibliothek.ts`.
+
+**Änderungspfad.** Bibliothek je Mandant (eigene Instrumente einer Praxis): Tabelle mit `organization_id`, RLS, Löschpfad; der Ladepfad bekommt eine zweite Quelle, das Schema bleibt · Aufwand `mittel`. Zurück in den Code: nicht vorgesehen — das wäre das Leitprinzip selbst.
+
+### ANN-084 — Definitionen tragen eine semantische Version
+
+Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P6, sobald das erste Ergebnis eine `definition_version` speichert
+
+**Annahme.** `version` ist eine semantische Version (`1.0.0`), kein Datum und kein Zähler. Eine Korrektur am Wortlaut hebt die Patch-Stelle, ein geändertes oder entferntes Item die Minor-, ein anderer Zuschnitt der Subskalen die Major-Stelle.
+
+**Begründung.** Der Arbeitsauftrag §1 verlangt eine Version je Definition und die Mitschrift der verwendeten Fassung an jedem Ergebnis, sagt aber nicht, welcher Form. Ein Datum sagt nur, *wann* geändert wurde; die Frage im Verlauf ist aber, **ob** zwei Werte vergleichbar sind — und das hängt daran, ob ein Item verschwunden ist oder ein Tippfehler verschwand. D2 bis D6 im Plan zeigen, dass beides kommt.
+
+**Anker.** `versionSchema` in `src/features/assessments/schema.ts`.
+
+**Änderungspfad.** Datum oder Zähler: ein regulärer Ausdruck, ein Testfall, die vorhandenen Dateien · Aufwand `klein`, solange kein Ergebnis gespeichert ist; danach `mittel`, weil gespeicherte Fassungen mitwandern.
+
+### ANN-085 — Ein Instrument ohne Wertung trägt die Richtung `nicht_anwendbar`
+
+Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P5, wenn Anamnesebogen und Tegner-Skala entstehen
+
+**Annahme.** `richtung` bleibt Pflichtfeld, bekommt neben `hoch_ist_besser` und `hoch_ist_schlechter` aber den dritten Wert `nicht_anwendbar`. Er gilt für Instrumente ohne Score (Anamnesebogen: „kein Summenscore") und für Skalen, deren Quelle bewusst keine Wertung ausspricht (Tegner: „hoch = aktiver").
+
+**Begründung.** Der Arbeitsauftrag §3 nennt zwei Werte. Die Quellen brauchen einen dritten: Das Inventar führt beim Anamnesebogen „Richtung: n/a (kein Score)" und bei der Tegner-Skala „hoch = aktiver" — nicht besser. Aus „aktiver" ein „besser" zu machen wäre eine eigene Bewertung und damit genau das, was ADR-006 Punkt 11 verbietet. Ein Pflichtfeld mit einem falschen Wert ist schlechter als ein ehrlicher dritter.
+
+**Anker.** `RICHTUNGEN` in `src/features/assessments/schema.ts`, samt der Prüfung, dass ein Instrument ohne Gesamtwert und ohne Subskala keine Richtung behaupten darf.
+
+**Änderungspfad.** Zurück auf zwei Werte: die Aufzählung, die Prüfung und je ein Feld in den betroffenen Definitionen · Aufwand `klein` — aber nur zusammen mit einer Antwort darauf, was der Anamnesebogen dann tragen soll.
+
+### ANN-086 — Der Lizenzstatus hängt am Instrument, und `aktiv` hängt an ihm
+
+Recht · offen · 2026-09-21 · Jannes (Erklärung vom 2026-09-21) · — · Wiedervorlage: mit dem schriftlichen Beleg des Lizenzgebers (B8), spätestens vor M3
+
+**Annahme.** Jede Score-Definition trägt `lizenzstatus` mit Status, Begründung und Stand; ein Instrument mit dem Status `lizenz_erforderlich` oder `ungeklaert` kann nicht `aktiv` sein — das Schema weist es zurück. Für die 18 vorliegenden Instrumente gilt der Status `freigegeben` auf Grundlage der Erklärung von Jannes vom 2026-09-21, es gebe keine Lizenzierung und alle Inhalte dürften integriert werden.
+
+**Begründung.** Die Roadmap-Zeile FRB-001 verlangt die Bibliothek „versioniert, mit Lizenzfeld", `IDEA-OUT-001` begründet es: Viele etablierte Fragebögen sind urheberrechtlich geschützt, und was für diese 18 gilt, gilt nicht für das neunzehnte. B8 führt den **schriftlichen Beleg des Lizenzgebers** weiter als offen; die Erklärung von Jannes trägt das Bauen, nicht die Freigabe. Die Kopplung an `aktiv` steht im Schema und nicht in der Oberfläche, weil ein ausgeblendetes Element keine Zugriffskontrolle ist (`CLAUDE.md`, Harte Regeln).
+
+**Anker.** `lizenzstatusSchema` und die Prüfung `aktiv → freigegeben` in `src/features/assessments/schema.ts`.
+
+**Änderungspfad.** Fällt die Auskunft des Lizenzgebers anders aus: Status je betroffener Datei auf `lizenz_erforderlich`, `aktiv` auf `false` · Aufwand `klein` — eine Zeile je Instrument, und das Instrument verschwindet aus der Auswahl, ohne dass Ergebnisse verlorengehen.
+
+### ANN-087 — `skip_logic` entsteht erst mit dem Instrument, das sie braucht
+
+Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P5, wenn alle 18 Instrumente übertragen sind
+
+**Annahme.** Das Item-Schema der Scores führt **kein** Feld `skip_logic`, obwohl die Skizze im Arbeitsauftrag §3 es nennt. Braucht ein Instrument eine Sprungregel, entsteht das Feld mit ihm — zusammen mit dem Fall, an dem sich prüfen lässt, was es bedeutet.
+
+**Begründung.** Keines der 18 Instrumente braucht es: Was das Inventar an Auslassungen kennt, betrifft ganze Subskalen (KOOS: „Nicht-Sportler: Sport-Subskala auslassen") oder einzelne Antworten („nicht zutreffend" beim FAAM) und steht dort in der Missing-Value-Regel. `CLAUDE.md` verbietet prophylaktische Zukunftsfeatures, ADR-014 führt dieselbe Grenze als Negativliste. Ein Feld ohne Fall wird falsch benutzt, bevor jemand festgelegt hat, was es heißen soll — und steht dann in Definitionsdateien, die niemand mehr anfasst. Der Widerspruch zur Skizze des Auftrags ist nach Rang aufgelöst (`CLAUDE.md`: Rang 1 und 2 vor Rang 3).
+
+**Anker.** Der Kommentar an `scoreItemSchema` in `src/features/assessments/schema.ts`, der die Auslassung samt Grund festhält.
+
+**Änderungspfad.** Ein Instrument mit echter Sprungregel: Feld am Item, Prüfung gegen bekannte Item-Kennungen, ein Testfall · Aufwand `klein`.

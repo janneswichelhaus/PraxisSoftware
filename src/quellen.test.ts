@@ -32,6 +32,8 @@ const QUELLEN = join(stamm, 'quellen');
 const REGISTER = join(QUELLEN, 'README.md');
 const PDF_VERZEICHNIS = join(QUELLEN, 'scores/pdf');
 const EXTRAKT_VERZEICHNIS = join(QUELLEN, 'scores/pdf-text');
+const BAUSTEIN_PDF = join(QUELLEN, 'bausteine/pdf');
+const BAUSTEIN_EXTRAKT = join(QUELLEN, 'bausteine/pdf-text');
 
 /**
  * Dateien, die kein Registereintrag brauchen, weil sie aus den Quellen gewonnen
@@ -42,7 +44,8 @@ const EXTRAKT_VERZEICHNIS = join(QUELLEN, 'scores/pdf-text');
 const OHNE_PRUEFSUMME = (datei: string): boolean =>
   datei === 'README.md' ||
   datei === 'scores/score-inventar.md' ||
-  datei.startsWith('scores/pdf-text/');
+  datei.startsWith('scores/pdf-text/') ||
+  datei.startsWith('bausteine/pdf-text/');
 
 const registertext = readFileSync(REGISTER, 'utf8');
 
@@ -106,12 +109,43 @@ describe('Register der Quellen', () => {
     ).toEqual([]);
   });
 
+  it('fuehrt alle neun MT-Lernuebersichten als PDF', () => {
+    // Die Originale hinter mt-untersuchung-quelldaten.md, seit 2026-09-21 im
+    // Repository. Die Abnahme von P2 haelt Itemzahlen je Block gegen sie;
+    // faellt eine still weg, ist die Extraktion gegen nichts mehr zu pruefen.
+    const uebersichten = [...register.keys()].filter((datei) => datei.startsWith('bausteine/pdf/'));
+    expect(uebersichten).toHaveLength(9);
+  });
+
   it('fuehrt alle 18 Fragebogen als PDF', () => {
     // Die Zahl steht im Inventar und im Arbeitsauftrag. Faellt eine Datei
     // still weg, sagt diese Zeile es, bevor eine Score-Definition ohne Quelle
     // entsteht.
     const pdfs = [...register.keys()].filter((datei) => datei.startsWith('scores/pdf/'));
     expect(pdfs).toHaveLength(18);
+  });
+});
+
+describe('Textextrakte der MT-Lernuebersichten', () => {
+  // Anders als bei den Scores sind diese Extrakte *freiwillig*: Die maßgebliche
+  // Uebertragung ist mt-untersuchung-quelldaten.md, und pdftotext gibt es in
+  // der Cloud nicht. Wer sie lokal erzeugt, soll sie pushen koennen, ohne dass
+  // das Register sie als zweite Quelle missversteht.
+  //
+  // Eine Richtung bleibt trotzdem hart: Ein Extrakt ohne PDF waere eine Quelle
+  // ohne Herkunft - dieselbe Regel wie bei den Scores.
+  const vorhanden = existsSync(BAUSTEIN_EXTRAKT);
+  const pdfs = readdirSync(BAUSTEIN_PDF).map((datei) => datei.replace(/\.pdf$/, ''));
+  const extrakte = vorhanden
+    ? readdirSync(BAUSTEIN_EXTRAKT).map((datei) => datei.replace(/\.txt$/, ''))
+    : [];
+
+  it('enthaelt kein Extrakt ohne Lernuebersicht', () => {
+    expect(extrakte.filter((name) => !pdfs.includes(name))).toEqual([]);
+  });
+
+  it('haelt die neun Lernuebersichten beisammen', () => {
+    expect(pdfs).toHaveLength(9);
   });
 });
 

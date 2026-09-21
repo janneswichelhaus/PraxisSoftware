@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-21 · letzte Session: Quellen für Bausteine und Scores abgelegt, Plan geschrieben
+# Status · Stand 2026-09-21 · letzte Session: FRB-EPIC-000 — Schema und Validator der Instrumente
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,12 +6,11 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**LEI-EPIC-001 ist gebaut** (Roadmap 5.28). `training_relationships` steht **neben** `patients`,
-verbunden allein über `person_id` und ohne Fremdschlüssel dorthin (ADR-021 Punkt 3). Eigene
-Datenklasse: **drei Jahre ab Vertragsende** statt zehn, mit eigener Regel im Löschlauf und der
-**vierten Prüfung**, bevor eine Person fällt. Die **Trainingsbetreuung** (§4.9) besetzt die andere
-Seite von „kein Durchgriff"; beide Richtungen stehen als Negativfall in `pnpm test:db`. Keine neue
-Annahme. Stand 35,9 → **37,0 %**, drei Loops der Etappe L stehen aus.
+**FRB-EPIC-000 ist gebaut** (Roadmap 5.29, Phase P1 des FRB-Plans). `src/features/assessments/`
+trägt das Schema beider Datenmodelle, den Ladepfad und 78 Tests — **kein Inhalt, keine Datenbank,
+keine Oberfläche**. Sechs Rechenformen, aus dem Inventar abgelesen; `cutoffs`, `mcid` und `mdc`
+werden gespeichert und **nicht angezeigt** (ADR-006 Punkt 11, Anzeige hängt an **B1**). Fünf Annahmen
+**ANN-083 bis ANN-087**. Stand 37,0 → **37,7 %**. Anschluss wäre **P2** — eingeplant ist er nicht.
 
 ## Danach — Reihenfolge seit 2026-09-20
 
@@ -26,8 +25,8 @@ Daneben: **MAP-002** ist **startbar** (PTV-Free-Schlüssel liegt vor) · **E18 S
 
 **Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (Port
 54329), seit R3 halb so lang; **angemeldete E2E-Tests laufen in der Cloud nicht**, Rest: `.env.local`.
-`ASSUMPTIONS.md` steht weiter **auf seiner Obergrenze** (1090) — LEI-EPIC-001 brauchte keine Annahme;
-der nächste Loop mit einer hebt sie in `scripts/docs-check.mjs`, wie die vier davor.
+`ASSUMPTIONS.md`: Obergrenze zum **fünften Mal** angehoben, 1090 → **1150**, weil ANN-083 bis
+ANN-087 sie genau ausgeschöpft vorfanden (`scripts/docs-check.mjs`). 87 Einträge, alle mit Anker.
 
 ## Blocker (Jannes-seitig)
 
@@ -55,6 +54,7 @@ FIX-EPIC-001 braucht Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.m
 
 ## Letzte Session
 
-**Quellen abgelegt, kein Feature.** 18 Scores und die MT-Bausteine liegen mit Prüfsummenregister in
-[`../quellen/README.md`](../quellen/README.md), Phasen und MDR-Grenze in [`development/FRB-BAUSTEINE-UND-SCORES.md`](development/FRB-BAUSTEINE-UND-SCORES.md).
-**D1 ist entschieden:** PDFs und Itemtexte liegen im Repository, auch im öffentlichen (B8).
+**Schema und Validator, sonst nichts.** Ein neues Instrument ist ab jetzt **eine Datei** unter
+`src/features/assessments/definitionen/`. Lokal: `git pull origin claude/stoic-ramanujan-o6q5aw`;
+**keine** neuen Abhängigkeiten, **keine** Migration, also kein `db reset`. Offen für P2: **D2** (vier
+unvollständige Blöcke) und **D3** (Tippfehler der Vorlage) — sonst im Loop als Annahme entschieden.
