@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- Leeres Symbol, wie in karte.html: sonst holt Chromium /favicon.ico,
+         bekommt 404 und schreibt einen Konsolenfehler. -->
+    <link rel="icon" href="data:," />
+    <title>Prüfseite MDR-Sperre</title>
+  </head>
+  <body>
+    <!-- Prüfseite für tests/e2e/mdr-sperre.spec.ts, kein Teil der Anwendung.
+
+         Die Sperre erscheint an einer Adresse hinter der Anmeldung, und die
+         braucht einen laufenden GoTrue; in der Cloud-Entwicklungsumgebung
+         gibt es keinen (CLAUDE.md, "Cloud-Umgebung"). Ohne diese Seite gäbe
+         es zur Sperre nur jsdom-Tests - und die sagen nichts darüber, ob der
+         Text bei 375 px steht, statt waagerecht überzulaufen.
+
+         Gerendert wird dieselbe Komponente mit demselben Eintrag aus
+         `src/app/mdr.ts`; erfunden wird hier nichts. -->
+    <div id="wurzel"></div>
+    <script type="module" src="./mdr-sperre.tsx"></script>
+  </body>
+</html>
