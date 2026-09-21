@@ -692,3 +692,44 @@ der Grund, die Zahl nicht mehr zu glauben.
 BEF-017 — eine Docs-Session, kein Feature-Loop. Dass beide Befunde dieselbe
 Sitzung brauchen, ist der eigentliche Hinweis: Skill-Schritt I pflegt heute
 zwei Orte, die nichts gegeneinander prüft.
+
+### BEF-021 — Die Karte bleibt grau und sagt nicht, warum
+
+|         |                                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-21                                                                                          |
+| Bereich | Kalender: Kartenprototyp (`/touren/karte`, Vorschau)                                                |
+| Quelle  | Abnahme durch Jannes, 2026-09-21, erster lokaler Lauf mit echtem Kachelschlüssel                    |
+| Status  | erledigt in MAP-002 (Nachtrag, 2026-09-21)                                                          |
+| Berührt | `src/lib/location/ptv-display.ts`, `src/features/tours/karte/Karte.tsx`; ADR-019 Punkt 19           |
+
+**Beobachtung.** Mit gültigem Schlüssel in `.env.local` lud die Karte, die acht
+Marker standen an ihren Plätzen — der Hintergrund blieb aber grau. In der
+Konsole: `AJAXError: Failed to fetch (0)` auf den Style, dahinter
+„Response to preflight request doesn't pass access control check: No
+'Access-Control-Allow-Origin' header is present".
+
+**Ursache.** Der Adapter hängte den Schlüssel als Kopfzeile `ApiKey` an
+**beide** Hosts des Anbieters. Eine fremde Kopfzeile macht aus einer
+einfachen Anfrage eine, die der Browser vorher per `OPTIONS` genehmigen
+lässt; `vectormaps-resources.myptv.com` beantwortet diese Vorabanfrage nicht.
+Style, Sprites und Glyphen liegen dort **ohne** Schlüssel bereit — geprüft
+wird er allein am Kachelendpunkt `api.myptv.com`, und der beantwortet die
+Vorabanfrage und lehnt nur einen falschen Schlüssel ab (401).
+
+**Warum das zählt.** Zweimal, aus verschiedenen Gründen. Erstens war die
+Konfiguration falsch, ohne dass eine Prüfung es merkte: Der Fehler steckte im
+Zusammenspiel zweier Hosts mit einem Browser — nichts davon gibt es in jsdom,
+und die Browserprüfung lief gegen einen Style ohne Netz. Zweitens, und
+schwerer: **Die Seite schwieg dazu.** Marker aus der Anwendung standen
+sichtbar da, also sah die Seite aus, als funktioniere sie. Eine Oberfläche,
+die einen Fehlschlag wie einen Erfolg aussehen lässt, ist genau das, was
+`PROJECT_PRINCIPLES.md` §9 verbietet.
+
+**So behoben (2026-09-21).** Der Schlüssel geht nur noch an `api.myptv.com`;
+der Auslieferungsserver bekommt keine Kopfzeile. Zwei Tests halten das fest,
+einer davon ausdrücklich für den Style. Dazu wertet die Kartenkomponente jetzt
+das `error`-Ereignis von MapLibre aus und zeigt „Kartenmaterial konnte nicht
+geladen werden" — die Meldung des Renderers selbst bleibt draußen, sie trägt
+Anbieteradressen (ADR-011). Eine Browserprüfung öffnet die Prüfseite mit einem
+absichtlich kaputten Style und erwartet den Hinweis.

@@ -26,10 +26,19 @@ const styleOhneNetz = {
   layers: [{ id: 'hintergrund', type: 'background', paint: { 'background-color': '#e6ece4' } }],
 };
 
+/**
+ * Mit `?fehler=1` zeigt die Prüfseite den Fall, der MAP-002 im echten Betrieb
+ * eingeholt hat: Der Style kommt nicht an (BEF-021).
+ *
+ * Die Adresse liegt im eigenen Ursprung und läuft ins Leere - kein Anbieter
+ * wird dafür gebraucht, und der Lauf bleibt ohne Netz.
+ */
+const styleAdresse = new URLSearchParams(location.search).has('fehler')
+  ? '/tests/e2e/fixtures/diesen-style-gibt-es-nicht.json'
+  : URL.createObjectURL(new Blob([JSON.stringify(styleOhneNetz)], { type: 'application/json' }));
+
 const config: MapDisplayConfig = {
-  styleUrl: URL.createObjectURL(
-    new Blob([JSON.stringify(styleOhneNetz)], { type: 'application/json' }),
-  ),
+  styleUrl: styleAdresse,
   attribution: '© Prüfstyle ohne Netz',
   minZoom: 0,
   maxZoom: 17,

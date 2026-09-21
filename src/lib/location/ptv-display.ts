@@ -36,13 +36,22 @@ const STYLE_URL = 'https://vectormaps-resources.myptv.com/styles-osm/latest/stan
 const ATTRIBUTION = '© PTV Group, © OpenStreetMap-Mitwirkende';
 
 /**
- * Hosts, an die der Kachelschlüssel gehen darf.
+ * Der **einzige** Host, an den der Kachelschlüssel gehen darf.
  *
  * MapLibre reicht **jede** Anfrage durch `transformRequest`, auch solche an
  * fremde Hosts aus einem Style. Der Schlüssel hängt deshalb an einer
  * ausdrücklichen Liste und nicht an „irgendeine URL, die gerade geladen wird".
+ *
+ * `vectormaps-resources.myptv.com` stand hier bis zum 2026-09-21 daneben und
+ * war der Grund, warum die Karte grau blieb (BEF-021, im Browser gefunden):
+ * Eine fremde Kopfzeile macht aus einer einfachen Anfrage eine, die der
+ * Browser vorher per `OPTIONS` genehmigen lässt — und dieser
+ * Auslieferungsserver beantwortet die Vorabanfrage nicht
+ * („Response to preflight request doesn't pass access control check").
+ * Style, Sprites und Glyphen liegen dort **ohne** Schlüssel bereit; den
+ * Schlüssel prüft allein der Kachelendpunkt.
  */
-const KACHEL_HOSTS: readonly string[] = ['api.myptv.com', 'vectormaps-resources.myptv.com'];
+const KACHEL_HOSTS: readonly string[] = ['api.myptv.com'];
 
 /** Zoombereich der OSM-Vektorkacheln laut Prüfdokument (minzoom 0, maxzoom 17). */
 const MIN_ZOOM = 0;
@@ -59,7 +68,9 @@ function gehoertZumKartendienst(url: string): boolean {
  * Der Schlüssel geht als Header `ApiKey` mit, nicht als Query-Parameter:
  * Beides unterstützt der Anbieter, aber ein Query-Parameter stünde in
  * Proxy- und Browserprotokollen und in jedem geteilten Bildschirmfoto der
- * Netzwerkansicht.
+ * Netzwerkansicht. Am 2026-09-21 im Browser bestätigt: Der Kachelendpunkt
+ * beantwortet die Vorabanfrage und lehnt nur einen falschen Schlüssel ab
+ * (401) — die Kopfzeile ist dort der richtige Weg.
  */
 export function createPtvMapDisplayConfig(apiKey: string): MapDisplayConfig {
   return {

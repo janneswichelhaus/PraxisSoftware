@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // Nach der CSS des Renderers: Sie bringt die Bedienelemente auf Tippgröße und
 // ersetzt deren Schatten durch eine Linie.
 import './karte.css';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { MapDisplayConfig, MapOverlayStop } from '@/lib/location/contract';
 
 /**
@@ -67,6 +68,16 @@ function Kartenflaeche({
   const [karte, setKarte] = useState<MapLibreMap | null>(null);
 
   /**
+   * Ob der Renderer Kartenmaterial melden konnte.
+   *
+   * Eine graue Fläche ist keine Auskunft: Als der Kachelschlüssel erstmals
+   * lokal lief, blieb die Karte leer und sagte nichts dazu (BEF-021). Die
+   * Marker standen trotzdem da, weil sie aus der Anwendung kommen - die Seite
+   * sah also aus, als funktioniere sie.
+   */
+  const [ladefehler, setLadefehler] = useState(false);
+
+  /**
    * Je Stopp ein eigener DOM-Knoten, den React über ein Portal füllt und
    * MapLibre anschließend an die richtige Stelle hängt.
    *
@@ -122,11 +133,23 @@ function Kartenflaeche({
     // Zoomen muss auch ohne Mausrad und ohne Geste gehen: Die Schaltflächen
     // sind mit der Tastatur erreichbar (Oberflächen-Checkliste Punkt 7).
     karte.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+
+    /* MapLibre wirft nicht, es meldet: Style nicht ladbar, Kachel abgelehnt,
+       Schlüssel ungültig - alles kommt hier an. Die Meldung selbst zeigen wir
+       nicht (sie trägt Adressen des Anbieters und gehört nicht auf den
+       Bildschirm einer Praxis, ADR-011); sichtbar wird nur, DASS etwas
+       fehlt. */
+    karte.on('error', () => setLadefehler(true));
+    // Nach einem geglückten Ladevorgang steht das Bild wieder - dann ist der
+    // Hinweis von vorhin gegenstandslos.
+    karte.on('load', () => setLadefehler(false));
+
     setKarte(karte);
 
     return () => {
       karte.remove();
       setKarte(null);
+      setLadefehler(false);
     };
   }, [config, startpunkt]);
 
@@ -153,6 +176,12 @@ function Kartenflaeche({
 
   return (
     <div className="rounded-card border-line overflow-hidden border">
+      {ladefehler ? (
+        <Statusmeldung ton="warnung" className="border-line bg-warnung-soft border-b px-4 py-2">
+          Kartenmaterial konnte nicht geladen werden – die Stopps stehen, der Hintergrund fehlt.
+          Meist liegt es am Kachelschlüssel oder an der Verbindung.
+        </Statusmeldung>
+      ) : null}
       <div
         ref={containerRef}
         role="region"

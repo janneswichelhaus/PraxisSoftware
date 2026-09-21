@@ -13,6 +13,8 @@ class FakeKarte {
 
   addControl() {}
   fitBounds() {}
+  /** Die Komponente meldet sich fuer `error` und `load` an; hier passiert nichts. */
+  on() {}
   remove() {}
 }
 

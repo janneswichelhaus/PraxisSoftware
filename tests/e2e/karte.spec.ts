@@ -105,6 +105,17 @@ test.describe('Kartenprototyp', () => {
     await expect.poll(abstand, { timeout: 5_000 }).toBeGreaterThan(vorher);
   });
 
+  test('sagt im Browser, wenn kein Kartenmaterial ankommt (BEF-021)', async ({ page }) => {
+    // Der Fall, der MAP-002 am ersten Tag mit Schluessel eingeholt hat: Die
+    // Marker standen, der Hintergrund fehlte, und die Seite schwieg dazu.
+    await page.goto(`${PRUEFSEITE}?fehler=1`);
+
+    await expect(page.getByText(/Kartenmaterial konnte nicht geladen werden/)).toBeVisible();
+    // Die Stopps bleiben sichtbar - sie kommen aus der Anwendung, nicht vom
+    // Kartendienst.
+    await expect(page.getByText('1', { exact: true })).toBeVisible();
+  });
+
   test('fragt waehrend des ganzen Laufs keinen fremden Host', async ({ page }) => {
     // Gegenprobe zur Datenschutzzusage aus ADR-019 Punkt 12 und 15: Ausser
     // Kacheln geht nichts hinaus - und hier, ohne Kachelquelle, gar nichts.
