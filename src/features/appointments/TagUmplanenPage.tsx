@@ -61,7 +61,7 @@ function terminWort(anzahl: number): string {
  * (CAL-016).
  */
 function istBetroffen(termin: DayPlanEntry): boolean {
-  return termin.status === 'confirmed' && termin.kind === 'treatment';
+  return termin.status === 'confirmed' && termin.kind === 'therapy';
 }
 
 /**
@@ -71,7 +71,7 @@ function istBetroffen(termin: DayPlanEntry): boolean {
  * abgesagt worden (CAL-016).
  */
 function istAnzurufen(termin: DayPlanEntry): boolean {
-  return termin.status === 'cancelled' && termin.kind === 'treatment';
+  return termin.status === 'cancelled' && termin.kind === 'therapy';
 }
 
 function Anrufkarte({

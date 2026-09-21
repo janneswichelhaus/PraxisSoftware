@@ -107,7 +107,7 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
   // dort keinen Gebührenanlass (CAL-016). Also weder der Grund
   // „Patient:in hat abgesagt" noch die Frage nach dem Eingang noch der
   // Hinweis auf die Gebühr - alles drei wäre hier eine Behauptung.
-  const istEreignis = appointment.kind === 'event';
+  const istEreignis = appointment.kind === 'internal';
   const [grund, setGrund] = useState('');
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
   // Der Eingang: „jetzt" ist der Regelfall am Telefon, „früher" die
@@ -778,7 +778,7 @@ function AppointmentDetail({
    * damit auch keinen Weg in die Abrechnung (§19). Was bleibt: verschieben und
    * absagen.
    */
-  const istEreignis = appointment.kind === 'event';
+  const istEreignis = appointment.kind === 'internal';
 
   /**
    * Der Hausbesuch führt seinen eigenen Ablauf (CAL-018).

@@ -117,7 +117,7 @@ export function istOffen(termin: DayPlanEntry, darfDokumentieren: boolean): bool
   // keine Behandlungsdokumentation (ADR-022 Punkt 6), also steht an ihm auch
   // nichts offen. Er erreicht diese Liste nur bei einer Rolle, die beide
   // Bereiche trägt (owner, office).
-  if (termin.kind !== 'treatment') return false;
+  if (termin.kind !== 'therapy') return false;
   if (termin.status === 'confirmed') return true;
   if (termin.status !== 'completed') return false;
   if (!darfDokumentieren) return false;

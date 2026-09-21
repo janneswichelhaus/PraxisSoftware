@@ -22,7 +22,7 @@ const ORT = '33333333-3333-4333-8333-000000000001';
 const ereignis = testAppointment({
   id: TERMIN_ID,
   patient_id: null,
-  kind: 'event',
+  kind: 'internal',
   title: 'Teambesprechung',
   event_group_id: GRUPPE,
   location_id: ORT,
@@ -213,7 +213,7 @@ describe('EditEventPage', () => {
   it('fuehrt an einem Behandlungstermin auf den richtigen Weg', async () => {
     fetchAppointment.mockResolvedValue({
       ...ereignis,
-      kind: 'treatment',
+      kind: 'therapy',
       title: null,
       event_group_id: null,
     });

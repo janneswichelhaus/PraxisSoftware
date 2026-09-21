@@ -151,7 +151,7 @@ const tagesEintrag = {
   patient_id: 'p1',
   staff_member_id: 's1',
   appointment_type: 'home_visit' as const,
-  kind: 'treatment' as const,
+  kind: 'therapy' as const,
   title: null,
   status: 'confirmed' as const,
   starts_at: '2027-05-12T07:00:00.000Z',
@@ -487,7 +487,7 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
           appointment={{
             id: 'ter-1',
             patient_id: 'pat-1',
-            kind: 'treatment',
+            kind: 'therapy',
             title: null,
             event_group_id: null,
             event_series_id: null,
