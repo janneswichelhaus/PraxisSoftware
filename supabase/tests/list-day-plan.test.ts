@@ -239,7 +239,7 @@ describe('list_day_plan', () => {
          organization_id, patient_id, staff_member_id, appointment_type,
          kind, title, event_group_id, status, starts_at, ends_at
        ) values (
-         $1, null, $2, 'video', 'event', 'Teambesprechung', gen_random_uuid(), 'confirmed',
+         $1, null, $2, 'video', 'internal', 'Teambesprechung', gen_random_uuid(), 'confirmed',
          (($3::date + time '08:00') at time zone 'Europe/Berlin'),
          (($3::date + time '08:30') at time zone 'Europe/Berlin')
        )`,
@@ -249,7 +249,7 @@ describe('list_day_plan', () => {
     const { rows } = await lesen(users.therapist);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      kind: 'event',
+      kind: 'internal',
       title: 'Teambesprechung',
       patient_id: null,
       patient_family_name: null,
@@ -265,7 +265,7 @@ describe('list_day_plan', () => {
          organization_id, patient_id, staff_member_id, appointment_type,
          kind, title, event_group_id, status, starts_at, ends_at
        ) values (
-         $1, null, $2, 'video', 'event', 'Teambesprechung', gen_random_uuid(), 'confirmed',
+         $1, null, $2, 'video', 'internal', 'Teambesprechung', gen_random_uuid(), 'confirmed',
          (($3::date + time '08:00') at time zone 'Europe/Berlin'),
          (($3::date + time '08:30') at time zone 'Europe/Berlin')
        )`,
@@ -274,7 +274,7 @@ describe('list_day_plan', () => {
     await termin({ von: '09:00', bis: '10:00' });
 
     const { rows } = await lesen(users.therapist);
-    expect(rows.map((zeile) => zeile.kind)).toEqual(['event', 'treatment']);
+    expect(rows.map((zeile) => zeile.kind)).toEqual(['internal', 'therapy']);
     expect(rows[1]!.patient_family_name).toBe('Mustermann');
     expect(rows[1]!.documentation_status).toBe('none');
   });

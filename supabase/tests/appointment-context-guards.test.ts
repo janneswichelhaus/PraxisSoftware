@@ -135,7 +135,7 @@ describe('Kalender ohne Durchgriff', () => {
           `select distinct kind from public.appointments order by kind`,
         );
         expect(rows.map((r) => r.kind)).toContain('training');
-        expect(rows.map((r) => r.kind)).toContain('treatment');
+        expect(rows.map((r) => r.kind)).toContain('therapy');
       }
     });
 
@@ -219,7 +219,7 @@ describe('Kalender ohne Durchgriff', () => {
            from pg_proc p join pg_namespace n on n.oid = p.pronamespace
           where n.nspname = 'public' and p.proname = 'finalize_overdue_treatment_notes'`,
       );
-      expect(rows[0]?.definition).toContain("a.kind = 'treatment'");
+      expect(rows[0]?.definition).toContain("a.kind = 'therapy'");
 
       await asPostgres('select public.finalize_overdue_treatment_notes()');
       const { rows: danach } = await asPostgres<{ status: string }>(
