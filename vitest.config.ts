@@ -15,7 +15,11 @@ export default defineConfig({
           globals: true,
           environment: 'jsdom',
           setupFiles: ['./src/test-setup.ts'],
-          include: ['src/**/*.test.{ts,tsx}'],
+          // Die Edge Functions sind dabei: Ihre Prueffragen (Fehlerklassen,
+          // Sitzungspruefung, Feldliste der Anfrage) beantwortet ein
+          // Unit-Test, und `supabase start` laeuft in der Cloud-Umgebung
+          // nicht (MAP-003a).
+          include: ['src/**/*.test.{ts,tsx}', 'supabase/functions/**/*.test.ts'],
         },
       },
       {

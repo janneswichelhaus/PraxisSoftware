@@ -50,9 +50,24 @@ export type TravelProfile = 'bicycle' | 'cargo_bicycle';
 // Ergebnis und Fehler
 // -----------------------------------------------------------------------------
 
-/** Fehlerklassen, die die Oberfläche unterscheiden muss. Mehr braucht sie nicht. */
+/**
+ * Fehlerklassen, die die Oberfläche unterscheiden muss. Mehr braucht sie nicht.
+ *
+ * `not_configured` kam mit MAP-003 dazu und ist bewusst von `unavailable`
+ * getrennt (**ANN-090**): „Hier ist kein Kartendienst eingerichtet" ist keine
+ * Störung des Anbieters, sondern ein offener Einrichtungsschritt — und der
+ * Regelfall, solange Abo und Schlüssel bei Jannes liegen (ADR-019 Punkt 24).
+ * Beides in eine Klasse zu legen hieße, der Therapeutin einen Ausfall zu
+ * melden, den es nicht gibt.
+ */
 export type LocationErrorCode =
-  'timeout' | 'unavailable' | 'rate_limited' | 'unauthorized' | 'invalid_request' | 'not_found';
+  | 'timeout'
+  | 'unavailable'
+  | 'rate_limited'
+  | 'unauthorized'
+  | 'invalid_request'
+  | 'not_found'
+  | 'not_configured';
 
 /**
  * Fehler des Adapters. `message` ist eine technische Meldung für Logs und

@@ -7,6 +7,9 @@
     "types": ["node", "vitest/globals", "@testing-library/jest-dom"],
     "baseUrl": ".",
     "paths": { "@/*": ["./src/*"] },
+    /* Die Tests der Edge Functions importieren deren Dateien mit `.ts`-Endung,
+       weil Deno sie verlangt (siehe tsconfig.functions.json). */
+    "allowImportingTsExtensions": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo"
   },
   "include": [
@@ -14,6 +17,7 @@
     "src/**/*.test.tsx",
     "src/vite-env.d.ts",
     "src/test-setup.ts",
+    "supabase/functions/**/*.test.ts",
     "supabase/tests",
     "tests"
   ]

@@ -45,7 +45,9 @@ import { dirname, join, normalize } from 'node:path';
  * ein sechstes Mal, von 1150 auf 1162: ANN-088 brauchte 12 Zeilen, frei war
  * weiterhin nichts. Am 2026-09-21 mit der Verortung von MDR_REVIEW_REQUIRED
  * ein siebtes Mal, von 1162 auf 1174: ANN-089 brauchte 12 Zeilen, frei war
- * wieder nichts - das Register stand erneut genau auf seiner Grenze.
+ * wieder nichts - das Register stand erneut genau auf seiner Grenze. Am
+ * 2026-09-21 mit MAP-003 ein achtes Mal, von 1174 auf 1186: ANN-090 brauchte
+ * 12 Zeilen, frei war nichts.
  * Die Grenze wandert damit weiter mit der Zahl der Eintraege, nicht mit ihrer
  * Laenge - zwoelf Zeilen je Eintrag sind dieselbe Disziplin wie vorher. Die
  * drei anderen Grenzen bleiben unveraendert - sie sind die, die Lesbarkeit
@@ -54,7 +56,7 @@ import { dirname, join, normalize } from 'node:path';
 const OBERGRENZEN = {
   'CLAUDE.md': 150,
   'docs/STATUS.md': 60,
-  'docs/decisions/ASSUMPTIONS.md': 1174,
+  'docs/decisions/ASSUMPTIONS.md': 1186,
   'docs/decisions/OPEN_DECISIONS.md': 400,
 };
 

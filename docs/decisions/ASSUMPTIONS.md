@@ -1172,3 +1172,15 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit B1, wenn die 
 **Anker.** `MDR_REVIEW_REQUIRED`, `REGULATORISCHE_PRUEFUNG` und `mdrSperre` in `src/app/mdr.ts`; der Riegel darüber in `src/routes/AuthenticatedRoutes.tsx`.
 
 **Änderungspfad.** Andere Adresse für eine klassifizierte Funktion: das Feld `pfade` des Eintrags · Aufwand `klein`. Klassifikation aufheben, nachdem die Prüfung vorliegt: Eintrag entfernen, `REGULATORISCHE_PRUEFUNG` mit der Fundstelle belegen, Test nachziehen · Aufwand `klein`, aber nie ohne die dokumentierte Prüfung — das ist die Entscheidung, nicht ihre Umsetzung.
+
+### ANN-090 — Fehlende Einrichtung des Kartendienstes ist eine eigene Fehlerklasse
+
+Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit OPS-001, wenn die Prüfung der Edge Runtime vorliegt
+
+**Annahme.** Der Vertrag bekommt die Fehlerklasse `not_configured`. Ist kein Anbieter eingerichtet — `LOCATION_PROVIDER` fehlt, ist unbekannt oder der Schlüssel fehlt —, antwortet der Adapter mit dieser Klasse und **nie** mit der Nachbildung; die Oberfläche zeigt dafür einen Einrichtungshinweis und keine Störungsmeldung.
+
+**Begründung.** ADR-019 Punkt 24 legt Abo und Schlüssel zu Jannes und nie ins Repository: „nicht eingerichtet" ist damit der Regelfall dieses Prototyps und kein Ausfall des Anbieters. MAP-003b verlangt den Zustand „nicht konfiguriert" ausdrücklich neben „Anbieter nicht erreichbar" — ohne eigene Klasse wären beide dieselbe Meldung, und die Seite behauptete eine Störung, die es nicht gibt. Eine stillschweigend einspringende Nachbildung wäre die andere Hälfte desselben Fehlers: Eine Luftlinie sieht auf der Karte aus wie eine Route.
+
+**Anker.** `LocationErrorCode` in `src/lib/location/contract.ts`; die Wahl selbst in `supabase/functions/location-provider/auswahl.ts`.
+
+**Änderungspfad.** Eine andere Antwort auf fehlende Einrichtung — etwa die Nachbildung als Standard: Klasse aus dem Vertrag nehmen, `waehleAdapter` umstellen, Zustand der Oberfläche streichen · Aufwand `klein`.
