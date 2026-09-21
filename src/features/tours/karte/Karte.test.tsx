@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import type { MapDisplayConfig, MapOverlayStop } from '@/lib/location/contract';
 
 /**
@@ -26,6 +26,8 @@ const marker: FakeMarker[] = [];
 class FakeKarte {
   readonly optionen: KartenOptionen;
   readonly bedienelemente: unknown[] = [];
+  /** Wie bei MapLibre: Die Komponente meldet sich fuer Ereignisse an. */
+  readonly melder = new Map<string, (() => void)[]>();
   ausschnitt: [[number, number], [number, number]] | null = null;
   entfernt = false;
 
@@ -36,6 +38,17 @@ class FakeKarte {
 
   addControl(bedienelement: unknown) {
     this.bedienelemente.push(bedienelement);
+  }
+
+  on(ereignis: string, melder: () => void) {
+    this.melder.set(ereignis, [...(this.melder.get(ereignis) ?? []), melder]);
+  }
+
+  /** Nur im Test: loest aus, was MapLibre im Browser meldet. */
+  ausloesen(ereignis: string) {
+    act(() => {
+      for (const melder of this.melder.get(ereignis) ?? []) melder();
+    });
   }
 
   fitBounds(ausschnitt: [[number, number], [number, number]]) {
@@ -201,6 +214,31 @@ describe('Karte', () => {
     expect(marker).toHaveLength(0);
     expect(anfragen).toEqual([]);
     expect(screen.queryByRole('region')).not.toBeInTheDocument();
+  });
+
+  it('sagt es, wenn kein Kartenmaterial ankommt (BEF-021)', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+
+    const hinweis = /Kartenmaterial konnte nicht geladen werden/;
+    expect(screen.queryByText(hinweis)).not.toBeInTheDocument();
+
+    // Genau das passierte im Browser: Der Style kam nicht an, die Marker
+    // standen trotzdem - und die Seite schwieg dazu.
+    karten[0]?.ausloesen('error');
+
+    expect(screen.getByText(hinweis)).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
+  });
+
+  it('nimmt den Hinweis zurueck, sobald die Karte doch laedt', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+
+    karten[0]?.ausloesen('error');
+    karten[0]?.ausloesen('load');
+
+    expect(
+      screen.queryByText(/Kartenmaterial konnte nicht geladen werden/),
+    ).not.toBeInTheDocument();
   });
 
   it('baut die Karte nicht neu, wenn der Aufrufer die Stoppliste neu berechnet', () => {

@@ -43,11 +43,30 @@ describe('createPtvMapDisplayConfig', () => {
     }
   });
 
-  it('laesst Sprites und Glyphen des Kartendienstes autorisiert passieren', () => {
+  it('laesst Style, Sprites und Glyphen ohne Kopfzeile passieren (BEF-021)', () => {
     const config = createPtvMapDisplayConfig(SCHLUESSEL);
-    const glyphen = 'https://vectormaps-resources.myptv.com/fonts/latest/Noto%20Sans/0-255.pbf';
 
-    expect(config.authorizeRequest?.(glyphen)?.headers).toEqual({ ApiKey: SCHLUESSEL });
+    // Der Auslieferungsserver will keinen Schluessel und beantwortet die
+    // CORS-Vorabanfrage nicht, die eine fremde Kopfzeile ausloest. Mit Kopf
+    // kam der Style nie an und die Karte blieb grau - im Browser gefunden,
+    // nicht im Test. Deshalb steht dieser Fall jetzt hier.
+    for (const ohneSchluessel of [
+      'https://vectormaps-resources.myptv.com/styles-osm/latest/standard-osm.json',
+      'https://vectormaps-resources.myptv.com/fonts/latest/Noto%20Sans/0-255.pbf',
+      'https://vectormaps-resources.myptv.com/sprites/latest/sprite.png',
+    ]) {
+      expect(config.authorizeRequest?.(ohneSchluessel)).toEqual({ url: ohneSchluessel });
+    }
+  });
+
+  it('nennt einen Style, der ohne Schluessel erreichbar ist', () => {
+    // Die Style-URL zeigt auf den Auslieferungsserver, nicht auf den
+    // Kachelendpunkt: Wer sie dorthin verlegt, holt sich den Fehler von
+    // BEF-021 zurueck, weil der Style dann eine Autorisierung braeuchte.
+    const config = createPtvMapDisplayConfig(SCHLUESSEL);
+
+    expect(new URL(config.styleUrl).hostname).toBe('vectormaps-resources.myptv.com');
+    expect(config.authorizeRequest?.(config.styleUrl)).toEqual({ url: config.styleUrl });
   });
 });
 
