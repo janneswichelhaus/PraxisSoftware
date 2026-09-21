@@ -1,11 +1,12 @@
 # E18 — Zwei Leistungsbereiche: Heilbehandlung und Training
 
 Stand 2026-09-17 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt, kein
-eigener Rang · Umsetzung: **Schritte 1 bis 6 abgeschlossen** (ADR-021, ADR-022,
-ADR-006 Fassung 3 und ADR-009 Fassung 2, alle angenommen am 2026-09-20; der
-Nachzug an Rang 1 als `PROJECT_PRINCIPLES.md` **0.13** vom 2026-09-20; der
-Zuschnitt als **Etappe L** der Roadmap 5.26 vom 2026-09-20),
-**Schritt 7 offen** · **kein Code**
+eigener Rang · Umsetzung: **alle sieben Schritte abgeschlossen** (ADR-021,
+ADR-022, ADR-006 Fassung 3 und ADR-009 Fassung 2, alle angenommen am
+2026-09-20; der Nachzug an Rang 1 als `PROJECT_PRINCIPLES.md` **0.13** vom
+2026-09-20; der Zuschnitt des Fundaments als **Etappe L** der Roadmap 5.26 vom
+2026-09-20; der Zuschnitt des Trainingsbereichs als **Etappe TR** der Roadmap
+5.36 vom 2026-09-21) · **kein Code**
 
 Quelle sind die Festlegungen des Projektinhabers vom 2026-09-17 (E18). Sie
 beantworten die fünf Fragen, die der Roadmap-Vermerk 5.7 bei Stufe 3 gestellt
@@ -239,7 +240,13 @@ ADRs darunter stehen.
 - **Entschieden am 2026-09-20 (Schritt 6):** Wann im Plan das gebaut wird —
   **Etappe L** in Spur A1 der Roadmap, fünf Loops in fester Reihenfolge, vor
   dem Feature-Freeze Stufe 1 am 26.02.2027 und nicht vor M1. Die Reihenfolge
-  der Etappe 1 blieb dabei unverändert.
+  der Etappe 1 blieb dabei unverändert. **Die Etappe ist seit dem 2026-09-21
+  vollständig gebaut.**
+- **Freizugeben (Schritt 7, seit 2026-09-21):** `PROJECT_PRINCIPLES.md` §14
+  nimmt den **Trainingsbereich selbst** von der engen Aufhebung aus. Der
+  Zuschnitt steht als **Etappe TR**; der erste Loop beginnt erst mit einer
+  neuen Version nach §21. Das ist die einzige Voraussetzung, die kein Loop
+  liefern kann.
 
 ## 6. Der Trainingsbereich selbst — was E18 **nicht** abdeckt
 
@@ -280,10 +287,17 @@ Drei Dinge, die beim Zuschnitt dieses Bereichs zu beachten sind:
    Patientenkonto; das Gegenstück für das Training fehlt (Abschnitt 5).
 
 Bevor davon etwas gebaut wird, steht das Fundament — seit dem 2026-09-20 als
-**Etappe L** im Plan (Schritt 6). Ein Trainingsbereich ohne
-`training_clients`, ohne Terminkontext und ohne Steuerkennzeichen wäre genau
-die zweite Implementierung neben einer vorhandenen, die
-[`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md) verhindern soll.
+**Etappe L** im Plan (Schritt 6), seit dem 2026-09-21 vollständig gebaut. Ein
+Trainingsbereich ohne `training_clients`, ohne Terminkontext und ohne
+Steuerkennzeichen wäre genau die zweite Implementierung neben einer
+vorhandenen, die [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md) verhindern soll.
+
+**Der Zuschnitt steht seit dem 2026-09-21** als **Etappe TR** in
+[`ROADMAP.md`](ROADMAP.md) und folgt den drei Punkten oben: eine Etappe statt
+eines Loops (vier Epics), die MDR-nahen drei zuletzt und ohne ihre ableitende
+Hälfte, und **zwei Zugänge** — die Etappe baut die Sicht, in der Jannes
+betreut; die Sicht der Kund:innen (§4.10) hängt am Portalfundament und kommt
+später.
 
 ## Was daraus wird — Zuordnung und Reihenfolge
 
@@ -298,7 +312,7 @@ an ihren Platz, dann Code.** Kein Loop beginnt, bevor der ADR über ihm steht.
 | 4       | **[ADR-009](../adr/ADR-009-private-billing-model.md) Fassung 2** Privatabrechnung: Steuerkennzeichen am Posten, ein Leistungsbereich je Rechnung, getrennte Nummernkreise, § 14c-Riegel, Auswertung „Einnahmen je Leistungsart" — **angenommen am 2026-09-20** (Fassung und Status in [`../adr/README.md`](../adr/README.md); §21 nennt keine Fassung und bleibt unberührt); die drei Kennzeichen sind Werte des vorhandenen Paars an der Katalogposition und brauchen kein neues Feld; was daraus zu bauen ist, schneidet Schritt 6 | 2    |
 | 5       | **`PROJECT_PRINCIPLES.md` neue Version**: § 1, § 4, Zweckbestimmung, § 14 bereinigt (§ 21) — **erledigt am 2026-09-20 mit Version 0.13**: § 1.2 (zwei Leistungsbereiche), § 4.8 (Zugriff folgt dem Verhältnis, mit Bereichszuordnung je Rolle), § 4.9 (Trainingsbetreuung), § 4.10 (Trainingskund:in), § 14 eng aufgehoben, § 17 mit Zweckbestimmung und den drei Verboten | 1    |
 | 6       | **Roadmap neu schneiden**: Loops für Datenmodell, Termin, Abrechnung; Etappe 1 bis dahin unverändert — **erledigt am 2026-09-20** als **Etappe L** ([`ROADMAP.md`](ROADMAP.md), Version 5.26): **ABR-EPIC-004** (Befreiungsgrund, **BEF-019**, und § 14c-Riegel; zuerst, weil es als einziges Gebautes korrigiert und an keinem Trainingsdatum hängt) → **LEI-EPIC-001** (Verhältnistabelle, Datenklasse, Löschlauf, Trainingsbetreuung als Rollenschlüssel) → **CAL-EPIC-005** (Terminkontext, Trainingsgrundlage, Löschung je Zeile) → **ABR-EPIC-005** (ein Bereich je Rechnung, getrennte Nummernkreise) → **ABR-EPIC-006** (Einnahmen je Leistungsart, darf als einziger rutschen). Die Etappe hängt am Feature-Freeze Stufe 1, nicht an M1; dessen Kriterien blieben unverändert | —    |
-| 7       | **Trainingsbereich zuschneiden** (Abschnitt 6): vierzehn Bereiche einzeln, Nutzen zuerst, MDR-nahe zuletzt | —    |
+| 7       | **Trainingsbereich zuschneiden** (Abschnitt 6): vierzehn Bereiche einzeln, Nutzen zuerst, MDR-nahe zuletzt — **erledigt am 2026-09-21** als **Etappe TR** ([`ROADMAP.md`](ROADMAP.md), Version 5.36): **TRN-EPIC-001** (Schreibwege für das Trainingsverhältnis, Person ohne Akte, Rolle Trainingsbetreuung zuweisbar) → **TRN-EPIC-002** (Trainingstermin und Trainingsgrundlage, Sicht je Kontext) → **TRN-EPIC-003** (Leistung und Rechnung am Trainingsverhältnis statt an `patients`) → **TRN-EPIC-004** (Trainingsprotokoll; darf als einziger hinter die Eröffnung rutschen). Die fünfzehn Navigationspunkte sind dort einzeln zugeordnet — vier in der Etappe, neun im Fernplan, Ernährung mit B9 Punkt 6 nicht in V1; die drei MDR-nahen Bereiche stehen zuletzt und ohne ihre ableitende Hälfte. **Gebaut wird nichts davon ohne die Freigabe an Rang 1** (§14 nach §21) | —    |
 
 Die Schritte 1 bis 5 sind Entscheidungsarbeit, keine Feature-Loops: Sie gehören
 in eigene Sitzungen mit frischem Kontext, je einer pro ADR. Schritt 5 fasst
