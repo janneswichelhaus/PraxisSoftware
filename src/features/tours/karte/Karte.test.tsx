@@ -203,6 +203,23 @@ describe('Karte', () => {
     expect(screen.queryByRole('region')).not.toBeInTheDocument();
   });
 
+  it('baut die Karte nicht neu, wenn der Aufrufer die Stoppliste neu berechnet', () => {
+    const { rerender } = render(
+      <Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />,
+    );
+    expect(karten).toHaveLength(1);
+
+    // Gleiche Stopps, neue Arrayidentitaet - so, wie sie bei einem Aufrufer
+    // entstuende, der sie je Rendern berechnet (ab MAP-003 der Regelfall).
+    // Haengt die Karte an der Liste, entsteht hier eine zweite: Kacheln neu
+    // geladen, Bildausschnitt zurueckgesetzt, und im schlimmsten Fall in
+    // jedem Rendern erneut.
+    rerender(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+
+    expect(karten).toHaveLength(1);
+    expect(karten[0]?.entfernt).toBe(false);
+  });
+
   it('raeumt Karte und Marker beim Verlassen der Seite ab', () => {
     const { unmount } = render(
       <Karte config={KONFIGURATION} stopps={stopps(2)} beschriftung="Karte" />,

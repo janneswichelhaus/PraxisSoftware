@@ -79,6 +79,19 @@ function Kartenflaeche({
     [stopps],
   );
 
+  /**
+   * Der Startpunkt der Kamera, einmal beim ersten Rendern bestimmt.
+   *
+   * Er hängt bewusst **nicht** an den Stopps: Sonst stünde die Stoppliste in
+   * den Abhängigkeiten der Karte, und ein Aufrufer, der sie bei jedem Rendern
+   * neu berechnet, baute jedes Mal eine neue Karte auf. Bewegt wird die Kamera
+   * ohnehin über Fit-Bounds, sobald die Marker stehen.
+   */
+  const [startpunkt] = useState<[number, number]>(() => [
+    mittelwert(stopps, 'lon'),
+    mittelwert(stopps, 'lat'),
+  ]);
+
   useEffect(() => {
     const container = containerRef.current;
     if (container === null) return;
@@ -87,7 +100,7 @@ function Kartenflaeche({
       container,
       style: config.styleUrl,
       // Ohne Stopps bliebe die Kamera sonst auf [0, 0] im Atlantik stehen.
-      center: [mittelwert(stopps, 'lon'), mittelwert(stopps, 'lat')],
+      center: startpunkt,
       zoom: 11,
       ...(config.minZoom === undefined ? {} : { minZoom: config.minZoom }),
       ...(config.maxZoom === undefined ? {} : { maxZoom: config.maxZoom }),
@@ -115,7 +128,7 @@ function Kartenflaeche({
       karte.remove();
       setKarte(null);
     };
-  }, [config, stopps]);
+  }, [config, startpunkt]);
 
   useEffect(() => {
     if (karte === null) return;
