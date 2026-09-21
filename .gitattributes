@@ -1,0 +1,15 @@
+# Zeilenenden in quellen/ -- siehe quellen/README.md
+#
+# Das Register dort haelt jede Quelle mit ihrer SHA-256-Pruefsumme fest, und
+# src/quellen.test.ts prueft sie. Mit core.autocrlf=true (Windows-Voreinstellung
+# in diesem Projekt) wuerde ein frischer Clone die Textdateien mit CRLF
+# auschecken -- andere Bytes, andere Pruefsumme, roter Test ohne inhaltlichen
+# Grund. eol=lf haelt die Dateien auf jeder Plattform byte-gleich und laesst sie
+# trotzdem als Text diffbar.
+quellen/** text eol=lf
+
+# PDFs und die Tabelle sind Binaerdateien und werden nie umgeschrieben.
+quellen/*.pdf binary
+quellen/**/*.pdf binary
+quellen/*.xlsx binary
+quellen/**/*.xlsx binary

@@ -21,6 +21,13 @@ DIGOTOR-Bogen verwenden, und weitere Bögen angekündigt (B8). Der schriftliche
 Beleg des Lizenzgebers fehlt weiter — das Lizenzfeld bleibt deshalb Teil des
 Entwurfs, nicht weniger wichtig, sondern jetzt erst recht gefüllt.
 
+**Nachtrag 2026-09-21.** Die angekündigten Bögen liegen vor: 18 Instrumente
+samt Eckdaten und Rechenvorschrift in [`../../../quellen/README.md`](../../../quellen/README.md),
+der Plan in [`../../development/FRB-BAUSTEINE-UND-SCORES.md`](../../development/FRB-BAUSTEINE-UND-SCORES.md).
+Jannes hat am selben Tag erklärt, es gebe keine Lizenzierung. Das Lizenzfeld
+bleibt trotzdem im Entwurf: Was für die 18 gilt, gilt nicht für das
+neunzehnte, und das Feld ist der Ort, an dem das je Instrument steht.
+
 **Idee.** Ein Instrument (Fragebogen, Test) ist ein versioniertes Objekt mit:
 Quelle, Fassung, Sprache, **Lizenzstatus**, Rechenvorschrift, Wertebereich,
 veröffentlichten Referenzwerten, Erhebungsbedingungen. Ohne geklärten

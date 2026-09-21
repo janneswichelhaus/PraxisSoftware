@@ -1,0 +1,151 @@
+               Oswestry Disability Index (ODI)
+
+               deutsche Version (Mannion et al. 2006)
+
+Name:          Datum:
+Geburtsdatum:  Untersucher:
+
+Bitte füllen Sie diesen Fragebogen aus. Er soll uns darüber informieren, wie Ihre Rücken- (oder Bein-)
+Probleme Ihre Fähigkeit beeinflussen, den Alltag zu bewältigen. Wir bitten Sie, jeden Abschnitt zu be-
+antworten. Kreuzen Sie in jedem Abschnitt nur die Aussage an, die sie heute am besten beschreibt.
+
+X Schmerzstärke
+       Ich habe momentan keine Schmerzen.
+       Die Schmerzen sind momentan sehr schwach.
+       Die Schmerzen sind momentan mäßig.
+       Die Schmerzen sind momentan ziemlich stark.
+       Die Schmerzen sind momentan sehr stark.
+       Die Schmerzen sind momentan so schlimm wie nur vorstellbar.
+
+      Körperpflege (Waschen, Anziehen, etc.)
+       Ich kann meine Körperpflege normal durchführen, ohne dass die Schmerzen dadurch stär-
+       ker werden.
+       Ich kann meine Körperpflege normal durchführen, aber es ist schmerzhaft.
+       Meine Körperpflege normal durchzuführen ist schmerzhaft und ich bin langsam und vor-
+       sichtig.
+       Ich brauche bei der Körperpflege etwas Hilfe, bewältige das meiste aber selbst.
+       Ich brauche täglich Hilfe bei den meisten Aspekten der Körperpflege.
+       Ich kann mich nicht selbst anziehen, wasche mich mit Mühe und bleibe im Bett.
+
+      Heben
+       Ich kann schwere Gegenstände heben, ohne dass die Schmerzen dadurch stärker werden.
+       Ich kann schwere Gegenstände heben, aber die Schmerzen werden dadurch stärker.
+       Schmerzen hindern mich daran, schwere Gegenstände vom Boden zu heben, aber es
+       geht, wenn sie geeignet stehen (z.B. auf einem Tisch).
+       Schmerzen hindern mich daran, schwere Gegenstände zu heben, aber ich kann leichte bis
+       mittelschwere Gegenstände heben, wenn sie geeignet stehen.
+       Ich kann nur sehr leichte Gegenstände heben.
+       Ich kann überhaupt nichts heben oder tragen.
+Gehen
+Schmerzen hindern mich nicht daran, so weit zu gehen, wie ich möchte.
+Schmerzen hindern mich daran, mehr als 1-2 km zu gehen.
+Schmerzen hindern mich daran, mehr als 0,5 km zu gehen.
+Schmerzen hindern mich daran, mehr als 100 m zu gehen.
+Ich kann nur mit einem Stock oder Krücken gehen.
+Ich bin die meiste Zeit im Bett und muss mich zur Toilette schleppen.
+Sitzen
+Ich kann auf jedem Stuhl so lange sitzen, wie ich möchte.
+Ich kann auf meinem Lieblingsstuhl so lange sitzen, wie ich möchte.
+Schmerzen hindern mich daran, länger als 1 Stunde zu sitzen.
+Schmerzen hindern mich daran, länger als eine halbe Stunde zu sitzen.
+Schmerzen hindern mich daran, länger als 10 Minuten zu sitzen.
+Schmerzen hindern mich daran, überhaupt zu sitzen.
+Stehen
+Ich kann so lange stehen, wie ich möchte, ohne dass die Schmerzen dadurch stärker wer-
+den.
+Ich kann so lange stehen, wie ich möchte, aber die Schmerzen werden dadurch stärker.
+Schmerzen hindern mich daran, länger als 1 Stunde zu stehen.
+Schmerzen hindern mich daran, länger als eine halbe Stunde zu stehen.
+Schmerzen hindern mich daran, länger als 10 Minuten zu stehen.
+Schmerzen hindern mich daran, überhaupt zu stehen.
+Schlafen
+Mein Schlaf ist nie durch Schmerzen gestört.
+Mein Schlaf ist gelegentlich durch Schmerzen gestört.
+Ich schlafe auf Grund von Schmerzen weniger als 6 Stunden.
+Ich schlafe auf Grund von Schmerzen weniger als 4 Stunden.
+Ich schlafe auf Grund von Schmerzen weniger als 2 Stunden.
+Schmerzen hindern mich daran, überhaupt zu schlafen.
+Sexualleben
+Mein Sexualleben ist normal und die Schmerzen werden dadurch nicht stärker.
+Mein Sexualleben ist normal, aber die Schmerzen werden dadurch stärker.
+Mein Sexualleben ist nahezu normal, aber sehr schmerzhaft.
+Mein Sexualleben ist durch Schmerzen stark eingeschränkt.
+Ich habe auf Grund von Schmerzen fast kein Sexualleben.
+Schmerzen verhindern jegliches Sexualleben.
+Sozialleben
+
+Mein Sozialleben ist normal und die Schmerzen werden durch nicht stärker.
+Mein Sozialleben ist normal, aber die Schmerzen werden dadurch stärker.
+Schmerzen haben keinen wesentlichen Einfluss auf mein Sozialleben, außer dass sie mei-
+ne eher aktiven Interessen, z.B. Sport, einschränken.
+Schmerzen schränken mein Sozialleben ein und ich gehe nicht mehr so oft aus.
+Schmerzen schränken mein Sozialleben auf mein Zuhause ein.
+Ich habe auf Grund von Schmerzen kein Sozialleben.
+
+Reisen
+
+Ich kann überallhin reisen und die Schmerzen werden dadurch nicht stärker.
+Ich kann überallhin reisen, aber die Schmerzen werden dadurch stärker.
+Trotz starker Schmerzen kann ich länger als 2 Stunden unterwegs sein.
+Ich kann auf Grund von Schmerzen höchstens 1 Stunde unterwegs sein.
+Ich kann auf Grund von Schmerzen nur kurze notwendige Fahrten unter 30 Minuten ma-
+chen.
+Schmerzen hindern mich daran, Fahrten zu machen, außer zur medizinischen Behandlung.
+Auswertung:
+
+       • Die Aussagen jeder Kategorie werden mit einem Zahlenwert versehen:
+                  - 0: keine Funktionseinschränkung (entspricht immer der ersten Aussage der jeweili-
+                    gen Kategorie)
+                  - 5: stärkste Funktionseinschränkung (entspricht immer der letzten Aussage in der
+                    jeweiligen Kategorie)
+                  - 1-4: geringe-starke Funktionseinschränkung (Aussagen 2-5)
+
+       • Der Gesamtwert wird mit 2 multipliziert und üblicherweise in % angegeben.
+                  - Je höher der Wert, desto größer ist die Funktionseinschränkung
+
+       • Klassifikation: Die Werte können nach Fairbank (2000) in 5 Schweregrade eingeteilt werden:
+                  - 0-20%: minimale Funktionseinschränkung
+                  - 21-40%: moderate Funktionseinschränkung
+                  - 41-60%: starke Funktionseinschränkung
+                  - 61-80%: sehr starke Funktionseinschränkung
+                  - 81-100%: pflegebedürftig (bettlägerig) oder psychosozial extrem überlagert
+
+       • Test-Retest-Reliabilität: exzellent 0,96 (ICC)
+
+       • Standardisierter Messfehler:
+                  - 3,4 oder 9,2% (Mannion et al. 2006)
+                  - 4,24 (Johnsen 2013)
+
+       • MDC (95%):
+                  - 9 Punkte (Mannion 2006)
+                  - 13,47 Punkte (Monticone 2012)
+                  - 11,75 (Johnsen 2013)
+
+       • MCID:
+                  - 5-17 Punkte, 30-50% Reduktion (Schwind 2013)
+                  - 12,8 Punkte (Park 2016, Johnsen 2013)
+Quellen:
+
+Fairbank JC, Pynsent PB. The Oswestry Disability Index. Spine. 2000; 25: 2940.
+Johnsen LG, Hellum C, Nygaard OP et al. Comparison of the SF6D, the EQ5D, and the oswestry disabi-
+lity index in patients with chronic low back pain and degenerative disc disease. BMC Musculoskeletal
+Disorders. 2013; 14: 148.
+Mannion AF, Junge A, Fairbank JC et al. Development of a german version of the disability index. Part
+1: cross-cultural adaption, reliability, and validity. European Spine Journal. 2006; 15: 55.
+Monticone M, Baiardi P, Vanti C et al. Responsiveness of the Oswestry Disability Index and the Roland
+Morris Disability Questionnaire in Italian subjects with sub-acute and chronic low back pain. Euro-
+pean Spine Journal. 2012; 21: 122.
+Park P, Okonkwo DO, Nguyen S Can a Minimal Clinically Important Difference Be Achieved in Elderly
+Patients with Adult Spinal Deformity Who Undergo Minimally Invasive Spinal Surgery? World Neuro-
+surgery. 2016; 86: 168.
+Schwind J, Learman K. Different minimally important clinical difference (MCID) scores lead to diffe-
+rent clinical prediction rules for the Oswestry disability index for the same sample of patients. Journal
+of Manual and Manipulative Therapy. 2013; 21: 71.
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

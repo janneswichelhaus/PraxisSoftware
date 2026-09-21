@@ -19,3 +19,8 @@ docs/adr/
 docs/decisions/
 docs/product/
 docs/development/
+
+# Quellen sind Fremdtext und werden woertlich abgelegt (quellen/README.md).
+# Eine Umformatierung waere eine stille Aenderung an der Vorlage - genau das,
+# was dort verboten ist.
+quellen/

@@ -1,0 +1,102 @@
+               Pain Catastrophizing Scale (PCS)
+
+                              (deutsche Version)
+
+Name:                                               Datum:
+Geburtsdatum:                                       Untersucher:
+
+Hier finden Sie verschiedene Fragen vor. Bitte lesen Sie jeweils die Einleitung und füllen Sie alle nach-
+folgenden Fragen aus.
+
+Irgendwann im Leben erleidet jeder Mensch einmal Schmerzen. Dies können z. B. Kopf-, Zahn-,
+Gelenk- oder Muskelschmerzen sein. Menschen sind oft Situationen ausgesetzt, die Schmerzen
+verursachen wie Krankheiten, Verletzungen, Zahnbehandlungen oder Operationen. Wir sind an den
+Gedanken und Gefühlen interessiert, die Sie haben, wenn Sie Schmerzen erleiden.
+
+Die folgenden dreizehn Sätze beschreiben verschiedene Gedanken und Gefühle, die bei Schmerzen
+auftreten können. Bitte markieren Sie auf der folgenden Skala, wie stark diese Gedanken und Ge-
+fühle auf Sie zutreffen, wenn Sie Schmerzen haben.
+
+Wenn ich Schmerzen habe, beschäftigen mich folgende Gedanken…
+
+Bewertung      0                 1                  2            3               4
+Bedeutung      trifft überhaupt                     teils-teils  trifft eher zu  trifft immer zu
+                                 trifft eher nicht
+               nicht zu          zu
+
+1. Ich mache mir ständig Sorgen, ob die Schmerzen wohl jemals wieder aufhören werden.
+         |__0__|__1__|__2__|__3__|__4__|
+
+2. Ich denke, ich kann nicht mehr.
+         |__0__|__1__|__2__|__3__|__4__|
+
+3. Der Zustand ist schrecklich und ich denke, dass es nie mehr besser wird.
+         |__0__|__1__|__2__|__3__|__4__|
+
+4. Der Zustand ist furchtbar und droht mich zu überwältigen.
+         |__0__|__1__|__2__|__3__|__4__|
+
+5. Ich habe das Gefühl, ich halte es nicht mehr aus.
+         |__0__|__1__|__2__|__3__|__4__|
+6. Ich bekomme Angst, dass die Schmerzen noch stärker werden.
+         |__0__|__1__|__2__|__3__|__4__|
+
+7. Ich denke ständig an andere Situationen, in denen ich Schmerzen hatte.
+         |__0__|__1__|__2__|__3__|__4__|
+
+8. Ich wünsche mir verzweifelt, dass die Schmerzen weggehen.
+         |__0__|__1__|__2__|__3__|__4__|
+
+9. Ich kann nicht aufhören, an die Schmerzen zu denken.
+         |__0__|__1__|__2__|__3__|__4__|
+
+10. Ich denke ständig daran, wie sehr es schmerzt.
+         |__0__|__1__|__2__|__3__|__4__|
+
+11. Ich denke ständig daran, wie sehr ich mir ein Ende der Schmerzen herbeiwünsche.
+         |__0__|__1__|__2__|__3__|__4__|
+
+12. Es gibt nichts, was ich tun kann, um die Schmerzen zu lindern.
+         |__0__|__1__|__2__|__3__|__4__|
+
+13. Ich mache mir Sorgen, dass die Schmerzen auf etwas Schlimmes hindeuten.
+         |__0__|__1__|__2__|__3__|__4__|
+Auswertung:
+
+Jede Aussage ist insgesamt mit einer 5-Punkte-Skala versehen. Je höher die Werte, desto größer
+wird das Katastrophisieren angesehen.
+Das Ergebnis der PCS reicht von 0 bis 52 Punkte.
+Die Werte der Subskalen ergeben sich aus der Summe der zugehörigen Aussagen und die Gesamt-
+punktzahl wird aus der Summe aller Aussagen berechnet.
+
+Subskalen:
+
+Hilflosigkeit: Aussagen 1-5; 12
+
+Verstärkung: Ausssagen 6,7,13
+
+Grübeln: Aussagen 8-11
+
+Reproduzierbarkeit der PCS:
+
+PCS-Hilflosigkeit            Standardfehler des Mittelwerts  Minimal messbare Veränderung
+PCS-Verstärkung                              (SEM)                           (MDC)
+PCS-Grübeln                                   2,33                            6,46
+PCS-Gesamtpunktzahl                           1,45                            4,02
+                                              1,82                            5,06
+                                              4,61                           12,79
+
+Quelle:
+
+Meyer K et. al. Cross-cultural adaption, reliability and validity of the German version of the Pain Ca-
+tastrophizing Scale. Journal of Psychosomatic Research 64. 2008; 469-478.
+
+                                                                         DIGOTOR GbR
+
+                                 Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+
+                                                                   Austraße 30 • D-74336 Brackenheim
+
+                                                                                        ininfo@digotor.info
+                                                                                          www.digotor.info
+

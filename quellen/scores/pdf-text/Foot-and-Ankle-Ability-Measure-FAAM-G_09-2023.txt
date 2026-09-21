@@ -1,0 +1,130 @@
+Foot and Ankle Ability Measure (FAAM-G)
+
+    validierte deutsche Version (Nauck et al. 2011)
+
+Name:                                          Datum:
+Geburtsdatum:                                  Untersucher:
+
+Sehr geehrter Patient, der folgende Fragebogen dient der Erfassung von Beschwerden und Proble-
+men, die durch Ihr Sprunggelenk verursacht werden.
+
+Die dadurch gewonnenen Informationen werden uns helfen einzuschätzen, wie es Ihnen mit Ihrem
+Sprunggelenk geht und wie gut Sie in der Lage sind, Ihre alltäglichen oder sportlichen Aktivitäten zu
+verrichten.
+
+Bitte beantworten Sie jede Frage mit einer Antwort, die Ihren Zustand während der vergangenen Wo-
+che am besten beschreibt. Wenn die angegebene Aktivität durch etwas anderes als durch ihr Sprung-
+gelenk oder Fuß limitiert ist, kreuzen Sie „nicht zutreffend“ an.
+
+A: Teilbereich Tätigkeiten des alltäglichen Lebens
+
+Aktivität              Keine       Leichte     Mäßige      Extreme     Nicht aus-  Nicht zu-
+                       Schwierig-  Schwierig-  Schwierig-  Schwierig-  führbar     treffend
+Stehen                 keit        keit        keit        keit
+Gehen auf ebenem
+Untergrund
+Gehen auf ebenem
+Untergrund ohne
+Schuhe
+Bergauf Gehen
+Bergab Gehen
+Treppe heraufsteigen
+Treppe herunterstei-
+gen
+Gehen auf unebenem
+Untergrund
+An der Bordsteinkante
+Auf- und absteigen
+In die Hocke gehen
+In den Zehenstand
+gehen
+Gehbeginn
+5 Min. oder weniger
+Gehen
+Ca. 10 Min. Gehen
+15 Min. oder länger
+Gehen
+ Tätigkeiten im Haus-
+ halt
+ Alltagsaktivitäten
+
+ Körperpflege
+
+ Leichte bis mittel-
+ schwere Arbeit (Ste-
+ hen und Gehen)
+ Schwere Arbeit (schie-
+ ben, ziehen, aufstei-
+ gen tragen)
+ Freizeitaktivitäten
+
+Wie würden Sie Ihren derzeitigen Funktionszustand während Ihrer alltäglichen Aktivitäten auf einer
+Skala von 0-100 einschätzen? 100 entspricht dabei dem Funktionszustand, bevor Sie Fuß- und
+Sprunggelenkprobleme hatten. 0 bedeutet die Unfähigkeit, irgendwelche Ihrer alltäglichen Aktivitäten
+durchzuführen: _____________%.
+
+B: Teilbereich Sport
+
+Aktivität                Keine       Leichte     Mäßige      Extreme     Nicht aus-  Nicht zu-
+                         Schwierig-  Schwierig-  Schwierig-  Schwierig-  führbar     treffend
+Rennen                   keit        keit        keit        keit
+Absprung
+Landung
+Schnelle Starts und
+Stopps
+Richtungsänderungen,
+Seitwärtsbewegungen
+Aktivitäten mit niedri-
+ger Stoßbelastung
+Fähigkeit, Aktivitäten
+mit Ihrer normalen
+Technik durchzuführen
+Zeitlich unbegrenzte
+Fähigkeit zur Teilnah-
+me in einer von Ihnen
+gewählten Sportart
+
+Wie würden Sie Ihren derzeitigen Funktionszustand während Ihrer sportlichen Aktivitäten auf einer
+Skala von 0-100 einschätzen? 100 entspricht dabei dem Funktionszustand, bevor Sie Fuß- und
+Sprunggelenkprobleme hatten. 0 bedeutet die Unfähigkeit, irgendwelche Ihrer sportlichen Aktivitäten
+durchzuführen: _____________%
+
+Wie würden Sie den derzeitigen Funktionszustand Ihres Fußes insgesamt beurteilen?
+
+Normal                   Beinahe normal          Abnormal                Schwer abnormal
+Auswertung:
+
+    • Die Fragen werden von links nach rechts mit einem absteigenden Zahlenwert versehen:
+                  - 4,3,2,1,0
+
+    • Die letzte Kategorie („nicht zutreffend“) wird nicht bewertet.
+
+    • Das Ergebnis jeder Frage wird aufsummiert. Dies ergibt einen maximalen Punktwert von 84
+         (Teilbereich alltägliche Aktivitäten) und 32 (Teilbereich sportliche Aktivitäten).
+
+    • Zur Berechnung des Scores wird das ermittelte Ergebnis durch das maximal mögliche Ergeb-
+         nis dividiert und dann mit 100 multipliziert.
+
+    • Hohe Werte entsprechen einer kleinen Funktionseinschränkung bzw. einer großen Funktions-
+         kapazität.
+
+    • Für eine klinisch relevante Verbesserung (MCID) sollte sich der Score um 8-9 Punkte verbes-
+         sern (sowohl ADL als Sport, Kivlian et al. 2011, Martin et al. 2005).
+
+Quellen:
+
+Kivlan BR, Martin, RL, Wukich DK. Responsiveness of the foot and ankle ability measure (FAAM) in
+individuals with diabetes. The Foot. 2011; 21: 84-87.
+Martin R, Irrgang J, Burdett R, et al. Evidence of Validity for the Foot and Ankle Ability Measure (FAAM).
+Foot Ankle Int. 2005; 26: 968-983.
+Nauck T, Lohrer H. Translation, cross-cultural adaption and validation of the german version of the
+foot and ankle ability measure for patients with chronic ankle instability. British Journal of Sports
+Medicine. 2011; 45: 785.
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

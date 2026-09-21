@@ -1,0 +1,134 @@
+                               VISA-A Score
+
+               validierte deutsche Version (Lohrer et al. 2011)
+
+Name:                                         Datum:
+Geburtsdatum:                                 Untersucher:
+
+Sehr geehrter Patient, der folgende Fragebogen dient der Erfassung von Beschwerden und Proble-
+men, die durch Ihre Achillessehne verursacht werden.
+
+Kreuzen Sie für jede Frage dasjenige Kästchen an, das Ihr derzeitiges Befinden wiedergibt.
+
+1. Für wie viele Minuten verspüren Sie nach dem ersten Aufstehen ein Steifigkeitsgefühl in der Achil-
+lessehnenregion?
+
+Minuten 100 90 80 70 60 50 40 30 20 10 0
+
+Punkte 0       1     2     3         4     5     6          7     8     9          10
+
+2. Nachdem Sie für den Tag aufgewärmt sind, haben Sie Schmerzen, wenn Sie die Achillessehne über
+der Kante einer Treppe dehnen (Knie gestreckt halten)?
+
+Punkte    0       1     2         3     4     5     6          7     8          9        10
+
+Schmerz Starker heftiger Schmerz                                 Kein Schmerz
+
+3. Nachdem Sie 30 Minuten auf unebenem Untergrund gegangen sind, haben Sie in den darauf-
+folgenden 2 Stunden Schmerzen? (Wenn Sie wegen Schmerzen nicht auf unebenem Untergrund 30
+Minuten gehen können, kreuzen Sie bei dieser Frage 0 an).
+
+Punkte    0       1     2         3     4     5     6          7     8          9        10
+
+Schmerz Starker heftiger Schmerz                                 Kein Schmerz
+
+4. Haben Sie Schmerzen, wenn Sie mit normaler Geschwindigkeit die Treppe heruntergehen?
+
+Punkte    0       1     2         3     4     5     6          7     8          9        10
+
+Schmerz Starker heftiger Schmerz                                 Kein Schmerz
+
+5. Haben Sie Schmerzen, während oder unmittelbar nachdem Sie 10 (einbeinige) Zehenstände auf
+einer flachen Unterlage ausgeführt haben?
+
+Punkte    0       1     2         3     4     5     6          7     8          9        10
+
+Schmerz Starker heftiger Schmerz                                 Kein Schmerz
+6. Wie oft können Sie ohne Schmerzen auf einem Bein hüpfen?
+
+Sprünge 0x 1x 2x 3x 4x 5x 6x 7x 8x 9x 10x
+
+Punkte 0     1  2  3     4      5  6                         7      8                9  10
+
+7. Üben Sie derzeit Sport oder andere körperliche Aktivitäten aus?                      Punkte
+                                                                                        0
+ X Einschätzung                                                                         4
+       Nein, gar nicht; wegen der Achillessehnensymptome
+       Verändertes Trainings und/oder Wettkampfverhalten, verglichen mit dem Zu-        7
+       stand vor Beginn der Symptome
+       Volle Trainings und/oder Wettkampfbelastung, aber nicht auf dem gleichen         10
+       Niveau wie vor Beginn der Symptome
+       Voll belastbar oder Traininigs- und/oder Wettkampfbelastung auf dem gleichen
+       oder auf höherem Niveau als vor Beginn der Symptome
+
+8. Bitte beantworten Sie entweder A, B oder C dieser Frage.
+
+    • Wenn Sie bei der Durchführung achillessehnenbelastender Sportarten keine Schmerzen emp-
+         finden, füllen Sie bitte nur Frage 8a aus.
+
+    • Wenn Sie bei der Durchführung achillessehnenbelastender Sportarten Schmerzen empfinden,
+         die Sie aber nicht zum Belastungsabbruch der Aktivität zwingen, füllen Sie bitte nur Frage 8b
+         aus.
+
+    • Wenn Sie bei der Durchführung achillessehnenbelastender Sportarten Schmerzen empfinden,
+         die Sie zum Abbruch der Aktivität zwingen, füllen Sie bitte nur Frage 8c aus.
+
+8a. Wie lange können Sie trainieren/üben, wenn Sie bei der Durchführung achillessehnenbelasten-
+der Sportarten keine Schmerzen empfinden?
+
+Minuten   0        1-10     11-20                            21-30     >30
+                   7
+Punkte    0                 14                               21        30
+
+8b. Wie lange können Sie trainieren/üben, wenn Sie bei der Durchführung achillessehnenbelas-
+tender Sportarten Schmerzen empfinden, die Sie aber nicht zum Belastungsabbruch der Aktivität
+zwingen?
+
+Minuten   0        1-10     11-20                            21-30     >30
+                   4
+Punkte    0                 10                               14        20
+8c. Wie lange können Sie trainieren/üben, wenn Sie bei der Durchführung achillessehnenbelasten-
+der Sportarten Schmerzen empfinden, die Sie zum Abbruch der Aktivität zwingen?
+
+Minuten  0           1-10  11-20  21-30  >30
+                     2
+Punkte   0                 5      7      10
+
+Gesamtscore (x/100)
+Auswertung:
+
+    • Die Werte jeder Frage werden addiert und in Relation zur Gesamtpunktzahl dargestellt (x/100).
+         In der Regel wird der Wert dann in % umgewandelt.
+
+    • Der Fragebogen zeigt eine moderate bis sehr gute Reliabilität (ICC: 0,6-0,97). Er korreliert
+         mit anderen Bewertungsskalen von Curwin und Stanish und Percy und Conochie (Lohrer et al.
+         2011). Der Wert kann sich durch Training verändern und kann daher in der Verlaufskontrolle
+         verwendet werden (Silbernagel et al. 2007).
+
+    • Die minimal klinisch relevante Veränderung beträgt mindestens 12 Punkte (Sterkenburg 2012).
+
+Benutzung/Vervielfältigung:
+
+    • Der Fragebogen ist in der Online-Version des BMC Musculoskeletal Disorders erschienen
+         (http://www.biomedcentral.com/1471- 2474/10/134). Die Lizenzbedingungen sind unter
+         folgendem Link aufgeführt: http://creativecommons.org/licenses/by/2.0/
+
+Quellen:
+
+Lohrer H, Nauck T. cross-cultural adaption and validation of the VISA-A questinonnaire for Ger-
+man-speaking achilles tendinopathy patients. BMC Musculoskeletal Disorders. 2009; 10: 134.
+Robinson JM, Cook JL, Purdam C et al. The VISA-A questionnaire: a valid and reliable index of the
+clinical severity of Achilles tendinopathy. British Journal of Sports Medicine. 2001; 35: 335.
+Silbernagel KG, Thomeé R, Bengt LR et al. Continued Sports Activity, Using a Pain-Monitoring Model,
+During Rehabilitation in Patients With Achilles Tendinopathy. American Journal of Sports Medicine.
+2007; 35: 897.
+Van Sterkenburg MN. Achilles tendinopathy: new insights in cause of pain, diagnosis and manage-
+ment. Ph D-Thesis 2012. AMC-UvA. Amsterdam.
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

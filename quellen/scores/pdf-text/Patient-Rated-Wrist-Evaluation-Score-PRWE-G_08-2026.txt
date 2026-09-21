@@ -1,0 +1,164 @@
+                       PRWE-G
+     Patient-Rated Wrist Evaluation Score
+
+             validierte deutsche Version - M. John et al. 2008
+
+Name:                                         Datum:
+Geburtsdatum:                                 Untersucher:
+
+Die unten aufgeführten Fragen sollten uns helfen, das Ausmaß der Schwierigkeiten, die Sie wegen
+Ihres Handgelenks in der letzten Woche hatten, zu verstehen. Sie werden gebeten, auf einer Skala
+von 0 bis 10 anzugeben, wie stark Ihre Handgelenksbeschwerden bei den folgenden Tätigkeiten in
+der letzten Woche durchschnittlich waren.
+Bitte beantworten Sie alle Fragen. Wenn Sie eine (oder mehrere) der Tätigkeiten in der letzten Wo-
+che nicht ausgeführt haben, schätzen Sie bitte das Ausmaß der Schmerzen oder Schwierigkeiten
+ein, die Sie erwarten würden. Wenn Sie eine Tätigkeit niemals ausgeführt haben, kreuzen Sie bitte
+jeweils „trifft nicht zu“ an.
+
+1. Schmerzen
+    Bitte geben Sie die durchschnittliche Stärke der Schmerzen in Ihrem Handgelenk in der letzten
+    Woche an, indem Sie die Zahl auf der Skala von 0 bis 10 ausfüllen, die Ihre Schmerzen am bes-
+    ten beschreibt. Null (0) bedeutet, dass Sie keinerlei Schmerzen hatten und Zehn (10) bedeutet,
+    dass Sie die schlimmsten Schmerzen hatten, die Sie je erlebt haben oder, dass Sie die Tätigkeit
+    aufgrund der Schmerzen nicht ausführen konnten.
+
+1. In Ruhe
+
+0           1  2  3            4    5      6  7               8  9  10
+
+kein Schmerz                                     größtmöglicher Schmerz
+
+2. Bei Tätigkeiten mit wiederholter Bewegung des Handgelenks
+
+0           1  2  3            4    5      6  7               8  9  10
+
+kein Schmerz                                     größtmöglicher Schmerz
+
+3. Beim Heben eines schweren Gegenstandes
+
+0           1  2  3            4    5      6  7               8  9  10
+
+kein Schmerz                                     größtmöglicher Schmerz
+
+4. Wenn sie am stärksten sind
+
+0           1  2  3            4    5      6  7               8  9  10
+
+kein Schmerz                                     größtmöglicher Schmerz
+
+5. Wie häufig haben Sie Schmerzen?
+
+0           1  2  3            4    5      6  7               8  9  10
+
+nie                                                                 immer
+2. Funktion
+
+Funktionsfähigkeit - Bestimmte Tätigkeiten
+Bitte geben Sie an, wie viele Schwierigkeiten Sie in der letzten Woche bei jeder der unten auf-
+geführten Tätigkeiten hatten. Bitte kreuzen Sie die Zahl von 0 bis 10 an, die das Ausmaß Ihrer
+Schwierigkeiten am besten beschreibt.
+Null (0) bedeutet, dass Sie keinerlei Schwierigkeiten hatten und Zehn (10) bedeutet, dass die
+Schwierigkeiten so groß waren, dass Sie die Tätigkeit nicht ausführen konnten.
+Wenn Sie eine Tätigkeit niemals ausgeführt haben, kreuzen Sie bitte den Punkt „trifft nicht zu“ an.
+
+6. Mit der betroffenen Hand einen Türknauf drehen
+
+0            1  2      3  4            5  6        7          8     9  10              o
+
+keine Schwierigkeiten                                               nicht möglich  trifft nicht zu
+
+7. Mit der betroffenen Hand Fleisch mit dem Messer schneiden                           o
+
+0            1  2      3  4            5  6        7          8     9  10          trifft nicht zu
+
+keine Schwierigkeiten                                               nicht möglich      o
+
+8. Ein Hemd oder eine Bluse zuknöpfen                                              trifft nicht zu
+
+0            1  2      3  4            5  6        7          8     9  10              o
+
+keine Schwierigkeiten                                               nicht möglich  trifft nicht zu
+
+9. Die betroffene Hand nutzen, um von einem Stuhl aufzustehen                          o
+
+0            1  2      3  4            5  6        7          8     9  10          trifft nicht zu
+
+keine Schwierigkeiten                                               nicht möglich      o
+
+10. Mit der betroffenen Hand einen 5 kg schweren Gegenstand tragen                 trifft nicht zu
+
+0            1  2      3  4            5  6        7          8     9  10
+
+keine Schwierigkeiten                                               nicht möglich
+
+11. Mit der betroffenen Hand das Toilettenpapier benutzen
+
+0            1  2      3  4            5  6        7          8     9  10
+
+keine Schwierigkeiten                                               nicht möglich
+Funktionsfähigkeit - Gewöhnliche Tätigkeiten
+Bitte geben Sie an, wie viele Schwierigkeiten Sie in der letzten Woche bei Ihren gewöhnlichen
+Tätigkeiten in jedem der unten genannten Bereiche hatten. Bitte füllen Sie die Zahl von 0 bis 10
+aus, die das Ausmaß Ihrer Schwierigkeiten am besten beschreibt. Unter „gewöhnliche Tätigkei-
+ten“ verstehen wir die Aktivitäten, die Sie ausführten, bevor die Probleme mit Ihrem Handgelenk
+begannen. Null (0) bedeutet, dass Sie keinerlei Schwierigkeiten hatten und Zehn (10) bedeutet,
+dass Sie so große Schwierigkeiten hatten, dass Sie keine dieser gewöhnlichen Tätigkeit ausfüh-
+ren konnten. Wenn Sie eine Tätigkeit niemals ausgeführt haben, kreuzen Sie bitte den Punkt „trifft
+nicht zu“ an.
+
+12. Persönliche Körperpflege (Anziehen, Waschen)
+
+0  1  2                  3  4               5  6        7  8  9  10  o
+
+keine Schwierigkeiten                                         nicht möglich trifft nicht zu
+
+13. Hausarbeit (Putzen, Aufräumen, kleine Reparaturen)
+
+0  1  2                  3  4               5  6        7  8  9  10  o
+
+keine Schwierigkeiten                                         nicht möglich trifft nicht zu
+
+14. Arbeit (Beruf oder Alltagstätigkeiten)
+
+0  1  2                  3  4               5  6        7  8  9  10  o
+
+keine Schwierigkeiten                                         nicht möglich trifft nicht zu
+
+15. Freizeitaktivitäten
+
+0  1  2                  3  4               5  6        7  8  9  10  o
+
+keine Schwierigkeiten                                         nicht möglich trifft nicht zu
+Auswertung des Scores:
+
+Der PRWE-Score setzt sich aus zwei Subskalen zusammen: einer Schmerz-Subskala und einer Funk-
+tions-Subskala.
+
+Schmerz-Subskala:
+Summe der Punktwerte aus Frage 1–5 (je 0–10 Punkte) = 0–50 Punkte
+
+Funktions-Subskala:
+Summe der Punktwerte aus Frage 6–15 (je 0–10 Punkte, Summe max. 100), geteilt durch 2 =
+0–50 Punkte
+
+Gesamtscore (PRWE-Score): Schmerz-Subskala + Funktions-Subskala = 0–100 Punkte
+
+Ein niedrigerer Wert entspricht weniger Schmerz bzw. weniger Beeinträchtigung, ein höherer Wert
+entspricht stärkerer Beeinträchtigung.
+Antworten mit „trifft nicht zu“ werden bei der Berechnung der jeweiligen Subskala nicht mitgezählt.
+
+Klinisch relevante Veränderung: Als minimal klinisch bedeutsamer Unterschied (MCID) werden in
+der Literatur ca. 11–12 Punkte im Gesamtscore angegeben.
+Literatur:
+
+John M, Angst F, Awiszus F, Pap G, MacDermid JC, Simmen BR.
+The Patient-Rated Wrist Evaluation (PRWE): cross-cultural adaptation into German and evaluation of
+its psychometric properties. Clin Exp Rheumatol. 2008 Nov-Dec; 26(6):1047-105.
+
+                                                                                              DIGOTOR GbR
+
+                                                                         Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                            Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+

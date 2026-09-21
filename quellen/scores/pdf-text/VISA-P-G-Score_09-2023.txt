@@ -1,0 +1,119 @@
+                             VISA-P-G Score
+
+               validierte deutsche Version (Lohrer et al. 2011)
+
+Name:                                                Datum:
+Geburtsdatum:                                        Untersucher:
+
+Sehr geehrter Patient, der folgende Fragebogen dient der Erfassung der Beschwerden, die durch Ihre
+Patellasehne verursacht werden.
+
+Bitte beantworten Sie die Fragen in Bezug zu Ihrem problematischen Knie. Kreuzen Sie bei jeder Fra-
+ge das Kästchen, welches ihr momentanes Befinden am deutlichsten wiedergibt, an.
+
+1. Wie viele Minuten können Sie schmerzfrei sitzen?
+
+Minuten 10     20    30           40  50                60      70     80     90        100
+
+Punkte 1       2     3            4   5                 6       7      8      9         10
+
+2. Haben Sie Schmerzen, wenn Sie mit normaler Geschwindigkeit die Treppe heruntersteigen?
+
+Punkte    0       1  2            3   4              5       6      7      8         9     10
+
+Schmerz Starker heftiger Schmerz                                      Kein Schmerz
+
+3. Haben Sie Knieschmerzen, wenn Sie das unbelastete Knie aktiv voll durchstrecken?
+
+Punkte    0       1  2            3   4              5       6      7      8         9     10
+
+Schmerz Starker heftiger Schmerz                                      Kein Schmerz
+
+4. Haben Sie Schmerzen, wenn Sie einen Ausfallschritt mit vollem Körpergewicht nach vorne ma-
+chen?
+
+Punkte    0       1  2            3   4              5       6      7      8         9     10
+
+Schmerz Starker heftiger Schmerz                                      Kein Schmerz
+
+5. Haben Sie Probleme, wenn Sie in der tiefen Hocke sitzen?
+
+Punkte    0       1  2            3   4              5       6      7      8         9     10
+
+        Unmöglich                                                     Kein Problem
+6. Haben Sie Schmerzen, während oder unmittelbar nachdem Sie 10 Mal auf einem Bein gehüpft
+sind?
+
+Punkte   0       1  2             3  4  5          6  7           8  9         10
+
+Schmerz Starker heftiger Schmerz                        Kein Schmerz
+
+7. Betreiben Sie zurzeit Sport oder sind Sie anderweitig körperlich aktiv?
+
+0 o Nein, gar nicht; wegen der Patellasehnenprobleme
+4 o Veränderte Trainings- und Wettkampffähigkeit wegen der Patellasehnenprobleme
+7 o Volle Trainings- und Wettkampffähigkeit, aber auf niedrigerem Niveau als vor Beginn der
+
+          Symptome
+10 o Gleiche oder bessere Wettkampffähigkeit als vor Beginn der Symptome
+
+8. Bitte beantworten Sie entweder A oder B oder C dieser Frage.
+
+       • Wenn Sie während der Sportausübung keine Schmerzen beim Sport haben, dann beantwor-
+          ten Sie bitte nur die Frage 8a.
+
+       • Wenn Sie während der Sportausübung Schmerzen haben, die Sie aber nicht zum Abbrechen
+          der Aktivität zwingen, dann beantworten Sie bitte nur die Frage 8b.
+
+       • Wenn Sie während der Sportausübung Schmerzen haben, die Sie zum Abbrechen der Aktivi-
+          tät zwingen, dann beantworten Sie bitte nur die Frage 8c.
+
+8a. Wenn Sie während der Sportausübung keine Schmerzen haben, wie lange können Sie trainieren?
+
+Minuten  0 min.     0-5 min.            5-10 min.     11-15 min.     >15 min.
+Punkte   0          7                   14            21             30
+
+8b. Wenn Sie während der Sportausübung Schmerzen haben, die Sie aber nicht zum Abbrechen der
+Aktivität zwingen, wie lange können Sie trainieren?
+
+Minuten  0 min.     0-5 min.            5-10 min.     11-15 min.     >15 min.
+Punkte   0          4                   10            14             20
+
+8c. Wenn Sie während der Sportausübung Schmerzen haben, die Sie zum Abbrechen der Aktivität
+zwingen, wie lange können Sie bis zu dem Zeitpunkt noch trainieren?
+
+Minuten  0 min.     0-5 min.            5-10 min.     11-15 min.     >15 min.
+Punkte   0          2                   5             7              10
+Auswertung:
+
+    • Aus den einzelnen Antworten zugewiesenen Werten wird die Summe gebildet. Dabei sind ma-
+         ximal 100 Punkte möglich. Dies würde einem vollkommen gesunden Patienten entsprechen.
+
+    • Der Score ist nicht zur Diagnose einer Tendinopathie des Lig. patellae geeignet. Vielmehr ist
+         es ein Instrument zur Feststellung des Schweregrades und der Verlaufskontrolle bzw. Quanti-
+         fizierung des Behandlungsergebnisses.
+
+    • Der MDC – Wert („minimal detectable change“ oder minimal messbare Veränderung) beträgt
+         12,6 Punkte. Der MCID – Wert („minimum clinically important difference“ oder minimal klin-
+         isch relevante Veränderung) für diesen Fragebogen beträgt >13 Punkte. Das heißt, eine klin-
+         isch bedeutsame Veränderung erfährt der Patient ab einer Änderung von über 13 Punkten in
+         diesem Score.
+
+Quellen:
+
+Hernandez-Sanchez S, Hidalgo MD, Gomez A. Responsiveness of the VISA-P scale for patellar tendi-
+nopathy in athletes. Br J Sports Med. 2014 Mar; 48(6): 453-7.
+Lohrer H, Nauck T. Cross-cultural adaptation and validation of the VISA-P questionnaire for Ger-
+man-speaking patients with patellar tendinopathy. J Orthop Sports Phys Ther. 2011 Mar;41(3): 180-
+90.
+Visentini PJ, Khan KM, Cook JL, Kiss ZS, Harcourt PR, Wark JD. The VISA score: an index of severity
+of symptoms in patients with jumper‘s knee (patellar tendinosis). Victorian Institute of Sport Tendon
+Study Group. J Sci Med Sport. 1998 Jan; 1(1): 22-8.
+
+                                                                                                DIGOTOR GbR
+
+                                                                               Fortbildungen für Orthopädische Medizin und Manuelle Therapie
+                                                                                                                 Austraße 30 • D-74336 Brackenheim
+                                                                                                                                      ininfo@digotor.info
+                                                                                                                                         www.digotor.info
+
