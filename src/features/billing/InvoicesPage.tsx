@@ -211,7 +211,8 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                     (ABR-003c, ANN-079). */}
                 {rechnung.cancelled ? <Badge ton="neutral">Storniert</Badge> : null}
                 <span className="text-ink-muted text-sm">
-                  {monatsname(rechnung.period_month)} · {rechnung.patient_name}
+                  {monatsname(rechnung.period_month)} · {bereichLabels[rechnung.service_area]} ·{' '}
+                  {rechnung.patient_name}
                 </span>
                 <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
                   {formatEuro(rechnung.total_cents, rechnung.currency)}

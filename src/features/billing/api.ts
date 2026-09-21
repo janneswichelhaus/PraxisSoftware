@@ -179,6 +179,9 @@ export const praxisStammdatenSchema = z.object({
   iban: z.string(),
   bic: z.string().nullable(),
   invoice_number_prefix: z.string(),
+  // ABR-010: ein Kürzel je Nummernkreis (ADR-009 Punkt 17). Beide müssen sich
+  // unterscheiden — sonst gäbe es dieselbe Nummer zweimal.
+  training_invoice_number_prefix: z.string(),
   payment_term_days: z.number(),
 });
 
@@ -189,7 +192,7 @@ export async function fetchPraxisStammdaten(): Promise<PraxisStammdaten | null> 
   const { data, error } = await getSupabase()
     .from('practice_billing_profiles')
     .select(
-      'legal_name, street, house_number, postal_code, city, phone, email, tax_number, vat_id, small_business, bank_name, account_holder, iban, bic, invoice_number_prefix, payment_term_days',
+      'legal_name, street, house_number, postal_code, city, phone, email, tax_number, vat_id, small_business, bank_name, account_holder, iban, bic, invoice_number_prefix, training_invoice_number_prefix, payment_term_days',
     )
     .maybeSingle();
 
@@ -214,6 +217,7 @@ export async function savePraxisStammdaten(eingabe: PraxisStammdaten): Promise<v
     p_iban: eingabe.iban,
     p_bic: eingabe.bic,
     p_invoice_number_prefix: eingabe.invoice_number_prefix,
+    p_training_invoice_number_prefix: eingabe.training_invoice_number_prefix,
     p_payment_term_days: eingabe.payment_term_days,
   });
 
@@ -336,6 +340,7 @@ const rechnungSchema = z.object({
   status: z.enum(['draft', 'issued']),
   invoice_number: z.string().nullable(),
   period_month: z.string(),
+  service_area: z.enum(['therapy', 'training']),
   issued_on: z.string().nullable(),
   due_on: z.string().nullable(),
   patient_id: z.string(),
@@ -376,6 +381,9 @@ export async function fetchRechnungen(): Promise<Rechnung[]> {
 const dokumentSchema = z.object({
   schema_version: z.number(),
   period_month: z.string(),
+  // ABR-010: der Leistungsbereich im Snapshot (ADR-009 Punkt 17). `optional`,
+  // weil Snapshots mit `schema_version` 1 und 2 ihn noch nicht tragen.
+  service_area: z.enum(['therapy', 'training']).optional(),
   currency: z.string(),
   invoice_number: z.string().optional(),
   issued_on: z.string().optional(),

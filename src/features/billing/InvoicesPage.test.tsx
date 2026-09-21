@@ -45,6 +45,7 @@ function rechnung(rest: Partial<BillingApi.Rechnung> = {}): BillingApi.Rechnung 
     status: 'issued',
     invoice_number: 'RG-2026-0001',
     period_month: '2026-08-01',
+    service_area: 'therapy',
     issued_on: '2026-09-01',
     due_on: '2026-09-15',
     patient_id: 'p1',
