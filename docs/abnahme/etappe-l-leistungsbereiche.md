@@ -22,7 +22,7 @@ wird gebraucht; wie sie entsteht, steht in
 ### 1. Der Grund steht auf der Rechnung
 
 1. **Abrechnung → Rechnungen** und eine Rechnung über eine Behandlung öffnen
-   (Krankengymnastik, Manuelle Therapie — alles, was keine Trainingseinheit
+   (Krankengymnastik, Manuelle Therapie — alles, was keine Selbstzahlerleistung
    ist). Erwartung: Unter dem Gesamtbetrag steht die Steuergruppe
    „Heilbehandlung, umsatzsteuerfrei: … €" und **dahinter** der Satz
    „Steuerfreie Heilbehandlung nach § 4 Nr. 14 Buchstabe a UStG".
@@ -34,7 +34,7 @@ wird gebraucht; wie sie entsteht, steht in
 
 ### 2. Der Grund kommt aus dem Snapshot, nicht aus der Anzeige
 
-1. Eine Leistung mit einer **Trainingseinheit** erfassen und eine zweite
+1. Eine Leistung mit der **Selbstzahlerleistung** erfassen und eine zweite
    Rechnung ausstellen. Erwartung: Dort steht „Umsatzsteuerpflichtig: 60,00 €
    · darin enthaltene Umsatzsteuer 9,58 € (19 %)" und **kein**
    Befreiungsgrund — an einem steuerpflichtigen Posten steht die Steuer
@@ -54,7 +54,7 @@ falschem Steuerausweis entsteht. Geprüft wird er deshalb serverseitig in
    steuerfreien oder nicht steuerbaren Gruppe einen Steuerbetrag aus, und die
    ausgewiesene Gesamtsteuer ist die Summe der Gruppen.
 2. Unter **Abrechnung → Praxisstammdaten** die Kleinunternehmerregelung
-   einschalten und eine **neue** Rechnung über eine Trainingseinheit
+   einschalten und eine **neue** Rechnung über eine Selbstzahlerleistung
    ausstellen. Erwartung: **Kein** Steuerausweis, dafür der Hinweis nach § 19
    UStG. Danach den Status wieder zurückstellen — die bereits ausgestellten
    Rechnungen ändern sich dadurch nicht, sie tragen ihren Snapshot.
@@ -162,3 +162,71 @@ im Training: ob die Absage unter 24 Stunden auch im Dienstvertrag über Training
 einen Anspruch begründet, ist **deine** Vertrags- und AGB-Frage; bis zur
 Antwort gilt ADR-018 Punkt 8 nur für die Behandlung. Und keine Umbenennung der
 Bestandswerte `treatment` und `event` — sie ist als **CAL-027** abgetrennt.
+
+## ABR-EPIC-005 — Ein Bereich je Rechnung, getrennte Nummernkreise
+
+Prüfschritte zu **ABR-008**, **ABR-009** und **ABR-010**. Grundlage: ADR-009
+Fassung 2 Punkte 15 bis 17 und ADR-021 Punkt 2.
+
+**Dieser Loop bringt drei Migrationen**
+(`20260921130000_service_area.sql`, `20260921140000_invoice_service_area.sql`,
+`20260921150000_invoice_number_series_per_area.sql`) **und einen geänderten
+Seed**: vorher `git pull origin main`, dann
+`pnpm dlx supabase@2.116.0 db reset`. Die Preisliste trägt danach eine
+Position mehr — **Personal Training (Einzelstunde)** im Bereich Training —,
+und die frühere „Trainingseinheit (Selbstzahler)" heißt
+**Selbstzahlerleistung ohne Heilbehandlungszweck** und steht im Bereich
+Behandlung.
+
+### 1. Der Bereich steht an der Katalogposition
+
+1. Als `jannes.test@praxis.invalid` (owner) **Abrechnung → Leistungskatalog**
+   öffnen. Erwartung: Jede Position nennt jetzt zuerst ihren **Bereich** —
+   „Behandlung" oder „Training" —, dann Art und Steuerkennzeichen.
+2. **Neue Preisliste** als Kopie der geltenden anlegen und eine Position auf
+   **Training** stellen. Erwartung: Die Auswahl „Bereich" steht neben „Art";
+   die Kopie hat den Bereich jeder Position mitgenommen.
+3. An derselben Position **Steuer** auf „Heilbehandlung, umsatzsteuerfrei"
+   stellen. Erwartung: Die Zeile meldet „Training ist keine Heilbehandlung und
+   damit nicht umsatzsteuerfrei", und **Entwurf speichern** ist gesperrt. Den
+   Entwurf danach verwerfen.
+
+### 2. Der Terminkontext entscheidet, was erfassbar ist
+
+1. Als `olivia.office@praxis.invalid` (office) **Abrechnung → Leistungen
+   erfassen** und einen dokumentierten Behandlungstermin öffnen. Erwartung: In
+   der Auswahl steht **kein** „Personal Training" — angeboten wird nur, was zum
+   Bereich des Termins gehört. Die Oberfläche bietet nichts an, was der Server
+   anschließend abweist.
+
+### 3. Eine Rechnung trägt genau einen Bereich
+
+1. **Abrechnung → Rechnungen**. Erwartung: Jede Zeile unter „Abzurechnen"
+   nennt neben Monat und Person den **Bereich**; jede Rechnung darunter
+   ebenfalls — auch ein Entwurf, der noch keine Nummer trägt.
+2. Einen Entwurf anlegen und ausstellen. Erwartung: Die Nummer beginnt mit dem
+   Kürzel des Behandlungskreises (`RG-JAHR-0001`).
+3. Die Rechnung **stornieren**. Erwartung: Das Stornodokument trägt die
+   **nächste** Nummer desselben Kreises (`RG-JAHR-0002`) — es gehört zu seiner
+   Rechnung, nicht zum Tag, an dem storniert wurde.
+
+### 4. Zwei Kreise, zwei Kürzel
+
+1. Als owner **Abrechnung → Stammdaten**. Erwartung: Unter „Rechnungen" stehen
+   **zwei** Kürzel — eines für die Behandlung (`RG`), eines für das Training
+   (`TR`); die Auskunftsansicht nennt beide unter „Nummernkreise".
+2. Beide auf denselben Wert setzen und **Speichern**. Erwartung: „Die beiden
+   Kürzel der Rechnungsnummer müssen sich unterscheiden." Nichts wird
+   gespeichert — zwei lückenlose Kreise mit demselben Kürzel ergäben dieselbe
+   Nummer zweimal (§ 14 Abs. 4 Nr. 4 UStG erlaubt mehrere Zahlenreihen, keine
+   doppelten Nummern).
+
+### 5. Was dieser Loop nicht bringt
+
+Keine Trainingsrechnung: Eine Leistung hängt weiter an einer Patientin, ein
+Trainingstermin hat keine — der Schreibweg des Trainings gehört zu E18
+Schritt 7. Die Trainingsposition im Katalog lässt sich deshalb anlegen und an
+keinem Termin erfassen; das ist der gewollte Zwischenstand. Kein ermäßigter
+Steuersatz: Er ist angelegt und **nicht aktiviert**, bis die Steuerberatung
+ihn freigibt (**B4**) — eine Position mit 7 % weist die Datenbank ab. Und
+keine Auswertung „Einnahmen je Leistungsart" — das ist **ABR-EPIC-006**.

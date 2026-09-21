@@ -2753,7 +2753,7 @@ Schritte 1 bis 3 als `jannes.test@praxis.invalid` (owner), Schritt 4 als
 2. „Preisliste 2026" anklicken. Erwartung: Acht Positionen mit Kürzel,
    Bezeichnung, Preis und steuerlicher Einordnung; **Hausbesuchspauschale**
    (18,00 €) und **Ausfallhonorar** (45,00 €) sind darunter. Das
-   Ausfallhonorar steht als **Nicht steuerbar**, die Trainingseinheit als
+   Ausfallhonorar steht als **Nicht steuerbar**, die Selbstzahlerleistung als
    **Umsatzsteuerpflichtig (19 %)**, alles übrige als **Heilbehandlung,
    umsatzsteuerfrei**.
 3. Erwartung: An dieser Liste gibt es **keine** Schaltfläche zum Ändern, zum
@@ -2884,7 +2884,7 @@ Schritte 1 bis 5 als `olivia.office@praxis.invalid` (office), Schritt 6 als
 2. Erwartung: Unter „Leistungen" stehen **alle** Leistungen dieses Monats mit
    Datum, Menge, Bezeichnung und Betrag, darunter der Gesamtbetrag und je
    Steuerkennzeichen eine Zeile. Bei einer steuerpflichtigen Position (etwa
-   „Trainingseinheit") steht die **darin enthaltene Umsatzsteuer**.
+   „Selbstzahlerleistung") steht die **darin enthaltene Umsatzsteuer**.
 3. Erwartung: Unter „Behandlungsgrundlage" stehen Bauart, Ausstellungsdatum
    und Verordner:in — und **keine Diagnose**. Das ist Absicht: Die Rechnung
    geht regelmäßig an Dritte.
