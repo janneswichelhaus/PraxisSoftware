@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-21 · letzte Session: CAL-027 Bestandswerte
+# Status · Stand 2026-09-21 · letzte Session: OPS-001 Providerprüfung
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,19 +6,17 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**Der Terminkontext heißt im Schema, wie er heißt** — CAL-027 ist gebaut. `appointments.kind` trägt
-`therapy`, `internal` und `training`; die offene Folgefrage aus ADR-022 ist beantwortet. Eine
-Vorwärtsmigration: **sechs** Constraints (geschätzt waren zwei), ein Teilindex, die Spaltenvorgabe
-und **18** Funktionsrümpfe aus acht Migrationen, vor dem Übernehmen gegen die laufende Datenbank
-geprüft. Nicht umbenannt: Bezeichner, Ausnahmetexte, `item_kind`, Auditzeilen. **Keine neue
-Fähigkeit, deshalb kein Fortschritt: weiter 41,9 %.**
+**Die Providerprüfung steht, bestanden ist sie nicht** —
+[`decisions/providerpruefung-supabase.md`](decisions/providerpruefung-supabase.md). `supabase.com`
+ist aus der Cloud gesperrt, kein Vertragstext war lesbar, **kein Eintrag trägt „belegt"**; zwölf Punkte stehen in der Gate-Liste. Drei Antworten ändern trotzdem etwas: **ADR-017 Punkt 5 fällt negativ aus**, **PITR wird Bedingung** (ADR-012), und die **Edge Runtime bleibt gesperrt** — mit vier Bedingungen statt eines Fragezeichens. Fortschritt **41,9 → 43,9 %**.
 
 ## Danach — Reihenfolge seit 2026-09-21
 
-1. **OPS-001** — Providerprüfung Supabase als Docs-Session, ohne Code; sie entscheidet auch über
-   die Edge Runtime (ADR-015 Punkt 20), an der jeder weitere Kartenloop hängt
-2. **MAP-004** — Fahrzeitmatrix auf derselben Function; Lauf und Abnahme wieder nur lokal
-3. **MAP-005** — Navigations-Handoff mit einem Tap (ANN-018); braucht den Handoff aus **B2**
+1. **MAP-004** — Fahrzeitmatrix auf der Function aus MAP-003; synthetische Koordinaten wie bisher,
+   Lauf und Abnahme lokal — die Edge-Runtime-Sperre ändert daran nichts
+2. **MAP-005** — Navigations-Handoff mit einem Tap (ANN-018); braucht den Handoff aus **B2**
+3. **OPS-004** — Verbotsliste aus ADR-011 automatisiert prüfen, mit der Logfrist aus **R14**
+   (**OPS-003 geht nicht vor**: „PITR aktiv" setzt das Cloudprojekt voraus)
 
 ## Prüfverfahren
 
@@ -28,18 +26,17 @@ Fähigkeit, deshalb kein Fortschritt: weiter 41,9 %.**
 
 ## Blocker (Jannes-seitig)
 
+- **OPS-001 weitertragen** — sonst bleibt jede Zeile der Prüfung ein Suchauszug: Unterlagen aus Teil 9 von einem **ungeproxten Rechner** laden; zwei Fragen an den Support (**Zugriff durch Beschäftigte**, **Verschlüsselung der Objekte**); Gate-Punkt 1 bis 6 an **B2**, darunter **§203
+  Abs. 4 StGB** — der einzige, dessen Scheitern den Anbieter kostet. **Zuerst** `auth-smtp`.
+- **BEF-026 / B13:** Der eingebaute Mailversand stellt laut Auszug nur an Adressen des Projektteams zu. Entweder eigener SMTP-Anbieter (zweiter Auftragsverarbeiter, eigene Prüfung, Rücknahme von B13) oder kein Mailversand (Handgriff nach ANN-025). **STAFF-004 ruht bis dahin.**
 - **MAP-003 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)):
   nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`),
-  `supabase/functions/.env.local`, `functions serve`. **BEF-023 ist erledigt**; offen bleibt die
-  **Profilfrage aus MAP-003c** — eine erste Messung liegt vor, entschieden ist nichts.
-- **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue
-  Version nach §21 beginnt dort kein Loop. Gebraucht wird sie, wenn Etappe TR an der Reihe ist.
-- **PTV:** Karte läuft, der Schlüssel trägt auch serverseitig (2026-09-21 geprüft; BEF-021,
-  BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19); nur synthetische Koordinaten.
-- **Lokal:** `git pull`, dann **`db reset`** (CAL-027 bringt eine Migration mit). Keine neue Abhängigkeit. **Node 22** (`.nvmrc`), sonst rot.
-- **G13 fehlt:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises** und die **Kürzel
-  der beiden Nummernkreise** (`RG`/`TR` als Festlegung) — ANN-074/075/082; dazu echte Preise. **B4**
-  entscheidet zusätzlich über den **ermäßigten Satz**; bis dahin weist eine Constraint ihn ab.
+  `supabase/functions/.env.local`, `functions serve`. Offen: **Profilfrage aus MAP-003c**.
+- **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue Version nach §21 beginnt dort kein Loop — gebraucht, wenn Etappe TR an der Reihe ist.
+- **PTV:** Karte und Schlüssel tragen auch serverseitig (BEF-021, BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19); nur synthetische Koordinaten.
+- **Lokal:** `git pull`. Keine neue Abhängigkeit, keine Migration. **Node 22** (`.nvmrc`), sonst rot.
+- **G13 fehlt:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises**, die **Kürzel der beiden
+  Nummernkreise** (`RG`/`TR`) — ANN-074/075/082; dazu echte Preise. **B4** entscheidet zusätzlich über den **ermäßigten Satz**; bis dahin weist eine Constraint ihn ab.
 - **B9:** Die Auswertung liefert beide Grundlagen und wählt keine; welche die Gewinnermittlung verlangt, gehört mit B4 in dieselbe Frage (**ANN-088**).
 - **M0 (Vorlauf):** B1, B2, B4 ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)) — **B2 trägt** die
   Trennung aus ADR-021, die Einwilligung im Training, die Office-Sicht (§4.8), **die Frist für
@@ -55,6 +52,6 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Ein Name, kein Verhalten** — CAL-027 schreibt zwei Werte um und sonst nichts; ein Test lässt den
-Katalog nachzählen, dass der alte nirgends mehr an `kind` hängt. Neu als Befund: **BEF-024**, **BEF-025**.
-Parallel geprüft und korrigiert: die Routing-Abfrage aus MAP-003 (**BEF-023**).
+**Kein Code, ein Dokument** — 285 Zeilen mit ausgewiesener Belegtiefe je Punkt. Neu: **BEF-026**
+(B13 ist im Produktivbetrieb nicht einlösbar) und **R14** (Logfrist und RPO halten beim Anbieter
+nicht). Entschärft: `pg_cron` (R9). Keine neue Annahme — ein Prüfdokument legt nichts fest.
