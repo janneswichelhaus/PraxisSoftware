@@ -239,7 +239,7 @@ ADRs darunter stehen.
   (B2, DSFA nach ADR-007).
 - **Entschieden am 2026-09-20 (Schritt 6):** Wann im Plan das gebaut wird —
   **Etappe L** in Spur A1 der Roadmap, fünf Loops in fester Reihenfolge, vor
-  dem Feature-Freeze Stufe 1 am 26.02.2027 und nicht vor M1. Die Reihenfolge
+  dem Feature-Freeze Stufe 1 und nicht vor M1. Die Reihenfolge
   der Etappe 1 blieb dabei unverändert. **Die Etappe ist seit dem 2026-09-21
   vollständig gebaut.**
 - **Freizugeben (Schritt 7, seit 2026-09-21):** `PROJECT_PRINCIPLES.md` §14

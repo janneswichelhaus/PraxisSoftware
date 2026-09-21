@@ -3,7 +3,7 @@
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
-    "termin": "2027-07-01"
+    "termin": "Juli 2027"
   },
   "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab. Die Stufen heißen wie in der Fortschrittstabelle: fertig = Skill-Schritt I durchlaufen, abgenommen = Jannes hat docs/abnahme/ durchlaufen.",
   "statuswerte": {
@@ -37,7 +37,7 @@
       "id": "A",
       "name": "Kernprozess — Software Stufe 1",
       "gewicht": 30,
-      "bezug": "ROADMAP.md, Spur A1 Etappe 1 (bis M1) und Etappe L (Stufe 1, bis zum Feature-Freeze am 26.02.2027)",
+      "bezug": "ROADMAP.md, Spur A1 Etappe 1 (bis M1) und Etappe L (Stufe 1, vor dem Feature-Freeze)",
       "posten": [
         {
           "id": "fundament",
@@ -389,7 +389,7 @@
         },
         {
           "id": "h6-eroeffnung",
-          "name": "H6 Eröffnung am 01.07.2027 (M5)",
+          "name": "H6 Eröffnung (M5)",
           "gewicht": 4,
           "status": "offen"
         }

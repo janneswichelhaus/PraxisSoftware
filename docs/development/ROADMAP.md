@@ -1068,7 +1068,7 @@ Drei Festlegungen, damit die Zahl nicht schmeichelt:
 
 - **Gerechnet wird gegen M5**, den ersten Behandlungstag mit der Software —
   nicht gegen „Code fertig". Software ist deshalb 40 Prozent, der Rest 60.
-  Das folgt „Kapazität und Puffer": Der Engpass ist nicht die Baukapazität,
+  Das folgt „Reihenfolge und Puffer": Der Engpass ist nicht die Baukapazität,
   sondern Jannes' Zeit für Entscheidungen, Abnahmen und externe Anfragen.
 - **Fertig ist nicht abgenommen.** Ein fertiger Loop zählt `0,85`; die
   restlichen 15 Prozent holt die Abnahme (Definition of Done).

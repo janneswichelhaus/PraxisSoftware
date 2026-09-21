@@ -71,7 +71,7 @@ erscheinen.
 
 Präzisierung vom 06.09.2026 (Jannes):
 
-- **Die Praxis nimmt den Betrieb am 01.07.2027 auf.** Es gibt kein
+- **Die Praxis nimmt den Betrieb im Juli 2027 auf.** Es gibt kein
   Vorgängersystem und keine Bestandsdaten; die Software begleitet die Praxis
   vom ersten Tag an (`development/ROADMAP.md`, Meilensteine M4 bis M6).
 - **Die Tour liegt in der Anwendung auf der Karte; die Navigation übernimmt

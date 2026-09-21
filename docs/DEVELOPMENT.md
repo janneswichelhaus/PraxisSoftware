@@ -243,9 +243,10 @@ Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
 
 ## Go-live-Blocker
 
-**Die Software ist bis Ende März 2027 produktionsreif; die Praxis eröffnet
-am 01.07.2027 ohne Vorgängersystem** (entschieden am 2026-09-05 und
-2026-09-06; Meilensteine, Rückwärtsplan und Etappen G und H in
+**Die Praxis eröffnet im Juli 2027 ohne Vorgängersystem — der einzige
+Termin des Projekts; alles andere steht in einer Reihenfolge** (entschieden am 2026-09-05 und
+2026-09-06, auf einen Termin zurückgeführt am 2026-09-21; Meilensteine, die
+Kette bis zur Eröffnung und die Etappen G und H in
 [`development/ROADMAP.md`](development/ROADMAP.md)).
 
 Offene Punkte führt [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md),
@@ -277,7 +278,7 @@ nach [ADR-007](adr/ADR-007-data-protection-impact-assessment.md) Punkt 5, die
 Prüfung der Zweckbestimmung nach [ADR-006](adr/ADR-006-medical-device-boundary.md)
 und die Bestätigung aller Datenschutz- und Rechtsannahmen im
 [Annahmenregister](decisions/ASSUMPTIONS.md) — Stand in `OPEN_DECISIONS.md`,
-Termine in der Roadmap (M3, G18).
+Eingeordnet in der Roadmap (M3, G18).
 
 ## Audit
 
@@ -363,7 +364,7 @@ deckungsgleich.
 
 Diese Einstellungen lassen sich nicht aus dem Code setzen:
 
-- Branch Protection auf `main` (M0, 30.09.): erforderliche Checks unter ihren
+- Branch Protection auf `main` (M0): erforderliche Checks unter ihren
   Anzeigenamen „Lint, Typecheck, Tests, Build" (`quality`), „Migrationen und
   RLS-Policies" (`database`), „Secret Scanning und Dependency Audit"
   (`security`), „End-to-End" (`e2e`), „End-to-End hinter der Anmeldung"

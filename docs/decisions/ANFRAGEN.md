@@ -92,7 +92,7 @@ bestimmen:
    Nummer erst bei Ausstellung (ADR-009). §14 Abs. 4 Nr. 4 UStG verlangt eine
    einmalig vergebene fortlaufende Nummer; das Jahrespräfix macht eine Lücke
    sofort sichtbar. Rücknahme `klein` **vor** der ersten Rechnung, danach
-   faktisch `groß` — also vor dem 01.07.2027 festzurren.
+   faktisch `groß` — also vor der Eröffnung festzurren.
 4. **Belegfristen: die gesetzlichen übernehmen** (§147 AO, §257 HGB) und als
    **eigene Datenklasse** im Retention Schedule führen, getrennt von der
    Patientenakte. Rechnungen folgen der Steuerfrist, klinische Unterlagen der
@@ -117,7 +117,7 @@ Festlegung formuliert und nicht mehr ergebnisoffen.
    §19 Abs. 3 UStG zu bilden ist, wenn die befreiten Heilbehandlungsumsätze
    herausfallen und im Wesentlichen das Personal Training gegen die Grenze
    zählt — und ab wann das die Regelbesteuerung auslöst.
-3. **Nummernkreis:** Die Praxis eröffnet am 01.07.2027 ohne Vorgängersystem;
+3. **Nummernkreis:** Die Praxis eröffnet im Juli 2027 ohne Vorgängersystem;
    der Nummernkreis beginnt mit der ersten Rechnung. Welches Format (fortlaufend
    je Jahr, mit Jahrespräfix) und welche Anforderungen an Lückenlosigkeit und
    Dokumentation gelten?
@@ -201,7 +201,7 @@ Personal Trainings gedacht ist — ohne vorherige Heilbehandlung. Damit ist der
 Übergang nicht mehr der einzige Fall: es gibt einen zweiten Eintrittsweg ohne
 Verordnung, ohne Behandlungsvertrag und ohne Akte. Für ihn gelten dieselben
 Fragen von Anfang an. Entschieden am 2026-09-06 (E-17): Das Personal
-Training beginnt ebenfalls am 01.07.2027, es gibt keine Bestandsdaten; die
+Training beginnt mit der Eröffnung, es gibt keine Bestandsdaten; die
 Plattform dafür ist Stufe 3 nach dem ersten Betriebsmonat; bis dahin werden
 Kund:innen nicht als Patient:innen angelegt; `PROJECT_PRINCIPLES.md` §1 wird
 nach §21 ergänzt, wenn Stufe 3 beginnt.
@@ -489,7 +489,7 @@ nachgezogen.
 **Abbruchkriterien** (wann der Papierprozess endet und abgesagt wird):
 Datenverlust, eine Falschzuordnung, oder mehr als ein Tag Ausfall.
 
-**Weiterhin offen:** die Ausarbeitung als Betriebsdokument (Januar 2027, mit
+**Weiterhin offen:** die Ausarbeitung als Betriebsdokument (mit
 Claude) und die Funktion „Tagesplan exportierbar" (Roadmap, Dezember).
 
 **Blockiert:** Go-live-Abnahme (Roadmap G10, G18).

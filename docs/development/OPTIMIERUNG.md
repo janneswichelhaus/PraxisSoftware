@@ -23,7 +23,7 @@ Befunden — es ersetzt sie nicht und stellt nichts daneben.
 Skill, kein Auftrag. Es begründet **nie** Scope: ein Zielwert wird verbindlich,
 wenn der SPEC-Schritt eines Loops ihn als Akzeptanzkriterium übernimmt. Es
 führt **keine zweite Reihenfolge**: die Scorecard misst, die Roadmap ordnet;
-Rundentermine stehen nur im Rückwärtsplan. MUSS-Anforderungen aus Prinzipien
+wann eine Runde läuft, sagt ihr Anlass unten, kein Termin. MUSS-Anforderungen aus Prinzipien
 und ADRs (RLS, Audit, Löschung) werden nie gemessen oder gewichtet.
 
 ---
@@ -133,7 +133,7 @@ Roadmap-Diff. Ein Commit (`docs: Ablaufrunde <Bereich> Runde N`). Kein Code.
 
 **Scope-Bremse.** Eine Runde trägt **höchstens ein** neues Epic in Stufe 1
 ein. Alles Weitere schärft bestehende Epics oder geht nach Stufe 2. Die Runde
-widerspricht dem Rückwärtsplan nur, wo die Messung es erzwingt; jede
+widerspricht der Reihenfolge der Roadmap nur, wo die Messung es erzwingt; jede
 Roadmap-Änderung ist ein Diff, den Jannes freigibt.
 
 **Zielzeile als Akzeptanzkriterium.** Ein Akzeptanzhinweis nennt die Zielzeile
@@ -158,21 +158,21 @@ Scorecard, ein Satz je Bereich, ob sich die Reibung bewegt hat, und die zwei
 Bereiche mit der höchsten Restreibung für die nächste Vollrunde. Die Messrunde
 ordnet nichts an.
 
-## 4. Rundenkalender (Vorschlag)
+## 4. Wann eine Runde läuft (Vorschlag)
 
-Die Termine gehören in den Rückwärtsplan der Roadmap, Spalte A3. Hier steht
-nur die Logik:
+Jede Runde hängt an einem **Anlass**, nicht an einem Datum (Roadmap 5.37).
+Hier steht die Logik:
 
 | Anlass | Format | Bereiche |
 | --- | --- | --- |
 | vor dem Loop eines Bereichs | Vollrunde | ~~Kalender vor CAL-EPIC-003a · Patient:innen nach VER-EPIC-001~~ (nicht gelaufen; Methode eingefroren 2026-09-13) · nach Probewoche 1 neu terminieren: Abrechnung, Übersicht (speist E2 und UI-001) |
 | vor dem Go-live-Gate (M3) | Messrunde mit Schattentag, Ladeprobe und Kollegin-Test | alle gemessenen Bereiche |
-| vier Wochen nach der Eröffnung (M6, 31.07.2027) | Messrunde mit Praxistagebuch und Störfallliste; Vollrunde für die zwei schlechtesten Bereiche | alle |
+| vier Wochen nach der Eröffnung (M6) | Messrunde mit Praxistagebuch und Störfallliste; Vollrunde für die zwei schlechtesten Bereiche | alle |
 | jährlich | Messrunde alle, Vollrunde zwei; Abläufe streichen, die niemand mehr hat | alle |
-| ein Vorschaubereich wird echt | Vollrunde vier Wochen nach seinem Loop | Kommunikation, Organisatorisches, Touren (nach MAP-006, Mai 2027) — **keine Runde vorher**; eine Vorschau zu messen, misst die Vorlage |
+| ein Vorschaubereich wird echt | Vollrunde vier Wochen nach seinem Loop | Kommunikation, Organisatorisches, Touren (nach MAP-006) — **keine Runde vorher**; eine Vorschau zu messen, misst die Vorlage |
 
 Eine Runde ersetzt keinen Loop und verschiebt keinen. Was sie findet, landet in
-geplanten Epics, in „Befunde aus der Abnahme" (Jan 2027) oder in `UI-001`
+geplanten Epics, in „Befunde aus der Abnahme" oder in `UI-001`
 (Feb 2027); es gibt keine eigene Epic-Klasse für Optimierung.
 
 ## 5. Automatische Prüfungen
@@ -250,7 +250,7 @@ Doppelabrechnung und Storno-Nachvollziehbarkeit sind Testfälle (ADR-009).
 
 ## 7. Betriebsphase
 
-Ab der Eröffnung (M5, 01.07.2027) misst der Alltag, nicht der Schreibtisch.
+Ab der Eröffnung (M5, Juli 2027) misst der Alltag, nicht der Schreibtisch.
 Drei Formate, von Hand, ohne Patientendaten:
 
 - **Praxistagebuch — ab sofort.** Eine Zeile je Ärgernis: Datum, Bereich, ein
@@ -400,7 +400,7 @@ und je Runde einer Ablaufkarte.
 
 | Datei | Ergänzung |
 | --- | --- |
-| `ROADMAP.md`, Rückwärtsplan Spalte A3 | Rundentermine wie ADR-017: „Ablaufrunde TT (Docs)" usw. |
+| `ROADMAP.md`, „Die Kette bis zur Eröffnung", Spalte Docs-Sessions | Runden als eigene Zeile wie ADR-017: „Ablaufrunde (Docs)" usw. |
 | `ROADMAP.md`, „Befunde aus der Abnahme" und G17 `UI-001` | Zusatz: speist sich aus den Ablaufrunden nach `OPTIMIERUNG.md` — eingetragen mit 2.1 |
 | `ROADMAP.md`, Tabelle „Modell und Aufwand" | zwei Zeilen: Vollrunde Sonnet 5 `medium`, Messrunde Sonnet 5 `low` |
 | `ROADMAP.md`, G18 (Go-live-Gate) | „Messrunde vor dem Gate ohne täglichen Ablauf mit Score 0" — von Jannes am 2026-09-06 zugestimmt (E-11), eingetragen |
@@ -445,7 +445,7 @@ die Checklisten-Kopie in Abschnitt 9 ist durch einen Verweis ersetzt).
 - **Goodhart.** Taps und Sekunden lassen sich senken, indem alles auf einen
   Bildschirm gequetscht wird. Schwellen sind Alarmgrenzen; „gestockt bei …"
   und „Wort nicht verstanden" schlagen jede Zahl.
-- **Scope-Sog.** Jede Runde findet mehr, als der Rückwärtsplan trägt.
+- **Scope-Sog.** Jede Runde findet mehr, als die Kette trägt.
   Akzeptanzhinweise vergrößern geplante Epics — der Bericht nennt das.
 - **Blinde Flecken.** Abläufe sehen keine Sicherheit, keine Datenminimierung,
   keine Performance. Das bleibt bei `test:db`, der CI und der
@@ -453,8 +453,7 @@ die Checklisten-Kopie in Abschnitt 9 ist durch einen Verweis ersetzt).
 - **Alterung.** Ablaufkarten werden zwischen Runden nicht gepflegt; eine Karte
   ist nur am Rundendatum wahr.
 - **Abbruchregel für die Methode selbst.** Fällt eine Runde zweimal
-  hintereinander aus — ihr Termin im Rückwärtsplan ist verstrichen, ohne dass
-  sie gelaufen ist —, wird die Methode **eingefroren**: Es bleiben der
+  hintereinander aus — ihr Anlass ist eingetreten, ohne dass sie gelaufen ist —, wird die Methode **eingefroren**: Es bleiben der
   Praxistest-Bogen vor jedem Loop mit Oberfläche, die Oberflächen-Checkliste
   und das Praxistagebuch. Scorecard und Ablaufkarten ruhen, bis Jannes die
   Runden ausdrücklich wieder aufnimmt. Kostet eine einzelne Runde mehr als
