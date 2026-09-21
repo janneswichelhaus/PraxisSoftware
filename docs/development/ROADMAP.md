@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 5.26 · Stand 2026-09-20 · **in Kraft**
+Version 5.36 · Stand 2026-09-21 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Die Entscheidungen, aus denen dieser Rahmen entstanden ist
@@ -61,6 +61,13 @@ Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
   in acht Migrationen — kein fachlicher Gehalt, deshalb ein eigener Loop und
   kein Anhängsel. **Blockiert nichts**; jeder Loop, der den alten Wert in eine
   neue Abfrage schreibt, macht sie ein Stück teurer.
+- **Etappe TR wartet auf eine Freigabe an Rang 1 (seit 2026-09-21).** Der
+  Zuschnitt des Trainingsbereichs steht (E18 Schritt 7); gebaut wird davon
+  nichts, solange `PROJECT_PRINCIPLES.md` §14 den Trainingsbereich selbst
+  ausnimmt. Nötig ist eine neue Version nach §21, die den Umfang der Etappe
+  benennt — **nur Jannes** kann sie setzen, und sie ist an keinen Termin vor
+  dem April 2027 gebunden. Kein anderer Punkt der Etappe hängt daran: Die
+  Voraussetzungen aus Etappe L sind gebaut.
 - **Gemergt am 2026-09-15/16:** PR #41 (ROL-EPIC-001) und PR #42 (FIX-015).
   Die Abnahme beider steht noch aus.
 - **CI läuft wieder (2026-09-18).** Die Actions-Minuten waren seit dem
@@ -290,18 +297,21 @@ hinweg ist das Verbindliche (E-15).
 | Jan 2027    | 8    | OPS-003 Backup/Restore · OPS-004 Logging (mit OPS-005 minimal) · OPS-006 minimal · OPS-007 Bootstrap · MAP-004 · MAP-005 · Befunde (7) | Betriebsdokumentation · BETRIEB-001                                                     | Restore-Test mitführen · Notfallzugang verwahren · Endgeräte-Richtlinie                                                                                    | DSFA-Rückfragen                  | —      |
 | Feb 2027    | 8    | Befunde aus Probewoche 1 · UI-001 Politur (3)                                                       | Rückfallplan (Papierprozess aus E2) · Kurzanleitung „erster Tag" · Messrunde vor dem Gate | Probewoche 1 (H1) · Restore-Test 2 · Feldtag 2 · **Feature-Freeze Stufe 1 am 26.02.**                                                                     | B1 Ergebnis · DSFA abgeschlossen | M2     |
 | Mär 2027    | 8    | **Puffer** — nur Befunde und Dokumentation (0 geplant)                                              | Nachweistabelle MUSS → Test/Policy · Vertragscheck PTV Developer (Gate aus ADR-019)     | Go-live-Gate 19.03. · Produktions-Bootstrap nach OPS-007 am 31.03.                                                                                        | —                                | M3, M4 |
-| Apr 2027    | 8    | MAP-006 Patient/Tour-Integration · Befunde aus dem Produktivsystem (1)                                     | DSFA-Wiedervorlage Kartendienst                                                        | PTV Paid Plan und Server-Schlüssel (Jannes, nicht der Agent) · Abnahme auf einer echten Radrunde mit synthetischen Adressen                                    | —                                | —      |
-| Mai 2027    | 8    | FRB-EPIC-001 · FRB-EPIC-002 (2)                                                                     | Optimierungsrunde Touren (vier Wochen nach MAP-006)                             | B8 Lizenzfrage klären · Probewoche 2 vorbereiten (Seed: eine Eröffnungswoche)                                                                             | B8                               | —      |
+| Apr 2027    | 8    | MAP-006 Patient/Tour-Integration · **TRN-EPIC-001** · Befunde aus dem Produktivsystem (2)                                     | DSFA-Wiedervorlage Kartendienst                                                        | PTV Paid Plan und Server-Schlüssel (Jannes, nicht der Agent) · Abnahme auf einer echten Radrunde mit synthetischen Adressen · **§14-Freigabe für Etappe TR** (§21), sonst beginnt dort kein Loop                                    | —                                | —      |
+| Mai 2027    | 8    | FRB-EPIC-001 · FRB-EPIC-002 · **TRN-EPIC-002** · **TRN-EPIC-003** (4)                                                                     | Optimierungsrunde Touren (vier Wochen nach MAP-006)                             | B8 Lizenzfrage klären · Probewoche 2 vorbereiten (Seed: eine Eröffnungswoche) · G13 für den Trainingsnummernkreis                                                                             | B8                               | —      |
 | Jun 2027    | 8    | **Puffer** — Befunde aus Probewoche 2 (0 geplant)                                                   | Erster-Tag-Protokoll · Schulung, falls eine zweite Person da ist                        | Probewoche 2 (H5) · Restore-Test 3 · **Change-Freeze ab 17.06.** · erste echte Patient:innen anlegen                                                      | —                                | —      |
 | Jul 2027    | 4    | **Stabilisierung** — Hotfixes und Befunde (0 neue Epics)                                            | —                                                                                      | **Eröffnung 01.07.** · Störfallliste führen · Optimierungsrunde nach vier Wochen Betrieb                                                                   | —                                | M5, M6 |
-| ab Aug 2027 | —    | Stufe 2 nach der Eröffnung (Etappe 3, Warteliste, Feinjustierung der Erreichbarkeitswarnung aus MAP-006, Spur A2) · danach Stufe 3 in der Reihenfolge des Abschnitts „Stufe 3" |                                                                                        |                                                                                                                                                           |                                  |        |
+| ab Aug 2027 | —    | Stufe 2 nach der Eröffnung (Etappe 3, **TRN-EPIC-004**, Warteliste, Feinjustierung der Erreichbarkeitswarnung aus MAP-006, Spur A2) · danach Stufe 3 in der Reihenfolge des Abschnitts „Stufe 3" |                                                                                        |                                                                                                                                                           |                                  |        |
 
 Sperrzeit 21.12.2026 bis 04.01.2027; Jannes' Urlaub wird eingetragen, sobald
 er feststeht. Rechnung (Stand 20.09., mit den fünf Loops aus Etappe L): 13 Code-Loops sind im
 September gebaut; von Oktober bis Februar sind rund 27 bei 39 Loop-Plätzen geplant — gut zwei
 Drittel. Die fünf neuen Loops belegen im Oktober drei und im November zwei Plätze, die vor dem
 2026-09-20 nicht verplant waren; frei sind sie, weil die Abrechnungs-Epics im September gebaut
-wurden statt im November. Von April bis Juni drei Loops bei 24 Plätzen.
+wurden statt im November. Von April bis Juni **sechs** Loops bei 24 Plätzen —
+drei davon sind Etappe TR (Zuschnitt vom 2026-09-21) und belegen Plätze, die
+vorher frei waren; sie beginnen nur mit der §14-Freigabe, und der Juni bleibt
+unangetastet Puffer.
 Der Rest ist Puffer für Abnahme, Befunde, Krankheit und dafür, dass die
 Startwoche kein Maß ist.
 
@@ -557,6 +567,121 @@ der Plan mit Phasen, Abnahmekriterien und sechs Vorentscheidungen in
 keine Zeile** — sie sind neuer Umfang und brauchen eine Einplanung durch
 Jannes, keine Ableitung aus diesem Vermerk.
 
+### Etappe TR — Der Trainingsbereich wird bedienbar (Stufe 2, April bis Juni 2027, vor der Eröffnung)
+
+**Warum hier:** Die Praxis nimmt am 01.07.2027 mit **beiden** Leistungsbereichen
+den Betrieb auf (`PROJECT_PRINCIPLES.md` §1.2). Etappe L hat dafür das Fundament
+gebaut — und nur das Fundament. Was fehlt, ist jede Tür dorthin; Stand
+2026-09-21:
+
+- **Kein Schreibweg legt ein Trainingsverhältnis an.** Zu
+  `training_relationships` gibt es `app.delete_training_relationship` für den
+  Löschlauf und sonst nichts; Zeilen entstehen im Seed.
+- **Die Rolle Trainingsbetreuung ist nicht zuweisbar.** `WAEHLBARE_ROLLEN` in
+  `src/features/staff/StaffAccountSection.tsx` führt `therapist`, `team_lead`,
+  `office` und `owner`, und `arbeitsbereiche()` (`src/app/navigation.tsx`) kennt
+  keinen Trainingsbereich. Ein Konto mit `trainer` fände eine leere Anwendung
+  vor — genau deshalb hat Etappe L beides hierher abgetreten.
+- **Kein Schreibweg setzt `kind = 'training'`.** Die Constraint trägt den dritten
+  Zweig seit CAL-024, die Oberfläche kennt ihn nicht; der Kommentar der Migration
+  hält es fest.
+- **Die Trainingsrechnung erreicht ihren Nummernkreis nicht.**
+  `record_billable_service` weist einen Termin ohne `patient_id` ab, und
+  `invoices.patient_id` ist `not null references public.patients` — eine
+  Trainingskund:in **ohne** Behandlungsverhältnis (`IDEA-LZK-008`) bekommt heute
+  weder Leistung noch Rechnung. Das ist kein Mangel von ABR-EPIC-005: Der Loop
+  hat seinen Zuschnitt eingehalten, und die andere Hälfte gehört hierher.
+
+**Das Gate steht an Rang 1, nicht in diesem Dokument.**
+`PROJECT_PRINCIPLES.md` §14 hebt Online Coaching **eng** auf — „begrenzt auf
+Terminkontext, Trainingsverhältnis und die Abrechnung der Trainingsleistung" —
+und nimmt den **Trainingsbereich selbst** ausdrücklich aus. Diese Etappe
+**schneidet** ihn; freigeben kann ihn nur Jannes. **Kein Loop dieser Etappe
+beginnt, bevor §14 nach §21 für ihren Umfang erweitert ist.** Der Zuschnitt
+hängt nicht daran: §14 verweist für die Reihenfolge auf dieses Dokument, und
+Schritt 7 aus [`E18-LEISTUNGSBEREICHE.md`](E18-LEISTUNGSBEREICHE.md) ist genau
+diese Arbeit.
+
+**Warum nicht später:** Ohne diese Etappe eröffnet die Praxis mit einem
+Datenmodell für zwei Leistungsbereiche und einer Anwendung für einen. Das
+Training liefe daneben — Termine außerhalb des einen Kalenders, Rechnungen
+außerhalb der Nummernkreise —, und die Trennung, die ADR-021 erzwingt, hätte
+niemand zu bedienen. Nachträglich zusammenzuführen ist dieselbe teure Richtung,
+die ADR-014 und ADR-021 für das Datenmodell schon abgelehnt haben.
+
+| Loop | Ergebnis | Stories | Voraussetzung | Jannes liefert |
+| ---- | -------- | ------- | ------------- | -------------- |
+| **TRN-EPIC-001** | Eine Trainingskund:in entsteht in der Anwendung — ohne Akte — und jemand darf sie betreuen | **TRN-001** Schreibwege für das Trainingsverhältnis (anlegen, ändern, beenden) mit Policies nach §4.9 und Audit auf § 203-Niveau (ADR-021 Punkt 8, ADR-010); `contract_started_on` und `contract_ended_on` sind Daten und bekommen ihren Weg · **TRN-002** Person **ohne** Behandlungsverhältnis anlegen: Identität und Trainingsverhältnis in einem Weg, `patients` bleibt unberührt (ADR-021 Punkte 3 und 5, `IDEA-LZK-008`); eine vorhandene Person bekommt ihr zweites Verhältnis ohne Dublette · **TRN-003** Rolle Trainingsbetreuung in der Zugangsverwaltung zuweisbar und entziehbar, dazu die Bereichsliste, die ein solches Konto beim Anmelden vorfindet; „kein Durchgriff" bleibt in **beide** Richtungen Negativfall in `pnpm test:db` | LEI-EPIC-001 (gebaut); **§14-Freigabe** (gilt für die ganze Etappe) | nur die Freigabe — der Loop braucht keine externe Antwort |
+| **TRN-EPIC-002** | Ein Trainingstermin steht im selben Kalender wie die Behandlung, und die Trainingsbetreuung sieht nur ihn | **TRN-004** Anlegen, Verschieben und Absagen im Kontext `training` über die **vorhandenen** Schreibwege (ADR-022 Punkte 1 und 10: der Kontext steht mit dem Anlegen fest, ein falscher Termin wird abgesagt und neu angelegt); alle drei Kanäle zulässig (Punkt 9) · **TRN-005** Trainingsgrundlage bedienbar: Klammer anlegen, vereinbarte Anzahl, Status, Verbrauch sichtbar — die **Einzelstunde ohne Klammer bleibt möglich** und eine Klammer auf Vorrat wird nicht verlangt (Punkt 5) · **TRN-006** Kalender, Tagesliste und Suche je Kontext gefiltert; die Belegung sagt „belegt" und nichts darüber hinaus (Punkt 11), geprüft als Negativfall in `pnpm test:db` und nicht in der Oberfläche | TRN-EPIC-001; CAL-EPIC-005 (gebaut) | Gebührenanlass im Dienstvertrag über Training (ADR-018 Punkt 8) — ohne Antwort gilt er weiter nur für die Behandlung |
+| **TRN-EPIC-003** | Eine Trainingsleistung wird erfasst und landet als Rechnung im eigenen Nummernkreis | **TRN-007** Leistungserfassung am Trainingstermin: Die Leistung hängt am **Trainingsverhältnis** statt an `patients` (ADR-021 Punkt 5); der Bereich kommt weiter aus der Katalogposition (ABR-008), der Widerspruch zum Terminkontext weist ab · **TRN-008** Rechnung ohne Behandlungsverhältnis: `invoices.patient_id` trägt heute Empfänger **und** Verhältnis in einer Spalte — für `training` tritt die zweite, nullbare Verknüpfung daneben, mit derselben Fallunterscheidung wie am Termin. § 14c-Riegel, Befreiungsgrund, Nummernkreis je Bereich, Sammelrechnung (**ANN-077**) und die Auswertung bleiben unverändert; sie warten nur auf Zeilen | TRN-EPIC-001; ABR-EPIC-004/005/006 (gebaut) | **G13**: Kürzel und Nummernformat des Trainingskreises · **B4** für den Steuersatz |
+| **TRN-EPIC-004** | Was in einer Trainingseinheit passiert ist, steht in der Anwendung — als Protokoll, nicht als Befund | **TRN-009** Trainingsprotokoll als Fachdatum des Trainingsverhältnisses (ADR-022 Punkt 7): eigene Datenklasse und Frist, **kein** Eintrag nach ADR-016, keine Versionspflicht aus § 630f, keine klinische Bewertung (ADR-006 Punkt 9, Punkt 11); der Riegel gegen Behandlungsdokumentation am Trainingstermin bleibt, wie CAL-026 ihn gesetzt hat · **TRN-010** `documented` je Kontext am Trainingstermin erreichbar (ADR-018 Punkt 3, gelesen nach ADR-022 Punkt 8) — der Zustand, den heute niemand setzen kann | TRN-EPIC-002 | — |
+
+**Reihenfolge und Puffer.** TRN-EPIC-001 → -002 → -003 ist die Kette, die bis
+zur Eröffnung schließen muss: anlegen, planen, abrechnen. **TRN-EPIC-004 ist
+der einzige, der rutschen darf** — und genau deshalb **darf TRN-EPIC-003
+`documented` nicht voraussetzen**: § 19 bindet die Fakturierung an die
+finalisierte **Behandlungs**dokumentation und trägt für `training` nicht; die
+Frage, die ADR-022 offen gelassen hat, beantwortet dieser Zuschnitt für die
+Reihenfolge, nicht für den Inhalt. Rutscht Stufe 1, greift Abweichungsregel 3
+und die Stufe-2-Loops vor der Eröffnung entfallen zuerst; **Vorschlag dieses
+Zuschnitts: TR zuletzt streichen**, weil sonst ein ganzer Leistungsbereich
+unbedient bleibt. Die Regel selbst ändert er nicht — das entscheidet Jannes.
+
+**Im Fortschritt zählt die Etappe noch nicht.** `fortschritt.json` zählt den
+freigegebenen Plan ab; solange §14 die Etappe nicht freigibt, stünde in Block B
+Umfang, über den niemand entschieden hat. Mit der Freigabe kommen TRN-EPIC-001
+bis -003 in Block B (Gewicht 1/1/2) und die Gesamtzahl fällt von **41,1 auf
+40,7 Prozent** — gerechnet, nicht geschätzt. Das ist kein Rückschritt, sondern
+der Preis dafür, dass der zweite Leistungsbereich im Nenner steht.
+
+#### Die vierzehn Bereiche, einzeln zugeordnet
+
+Die Themenliste aus E18 Abschnitt 6 ist die Navigationsleiste der fremden
+Coaching-Software ([`../product/ideen/referenz-navigation.md`](../product/ideen/referenz-navigation.md)):
+vierzehn Einträge, dazu die **KI-Analyse** als abgesetzter Knopf daneben. Die
+Tabelle führt alle fünfzehn, damit keiner unter den Tisch fällt — übernommen
+wird Umfang und Ablauf, nie Text, Symbol oder Gestaltung. **Nutzen zuerst,
+MDR-nahe zuletzt** (ADR-006 Punkt 13): Was in dieser Etappe steht, ist das, was
+Jannes zum Betrieb braucht; alles Klientenseitige hängt am Portalfundament und
+steht im Fernplan.
+
+| # | Bereich | Was daraus bei uns wird | Wo im Plan |
+| - | ------- | ----------------------- | ---------- |
+| 1 | Übersicht | Einstieg je Kund:in: was zu tun ist, nicht wie es läuft (`IDEA-ORG-001`) | **TRN-EPIC-001** (Bereichsliste der Betreuung); Kund:innensicht in Fernplan-Etappe 4 |
+| 2 | Kalender | Termine der Person im **einen** Kalender (ADR-022 Punkt 1) | **TRN-EPIC-002**; eigene Sicht in Fernplan-Etappe 4 |
+| 3 | Sessions | absolvierte Einheiten = Trainingsprotokoll; **kein** Zähler, der Termine und Einheiten mischt (`IDEA-ORG-002`) | **TRN-EPIC-004** |
+| 4 | Check-ins | wiederkehrende Selbstauskunft mit Takt (`IDEA-TRK-004`) | Fernplan-Etappe 5; braucht Portal **und** Einwilligung (B2) |
+| 5 | Fortschritt | Verlauf über die Zeit, mit Ereignissen (`IDEA-OUT-005`) | Fernplan-Etappe 5; **Verbot 2** — Kurve ja, Ampel und „Verschlechterung" nein |
+| 6 | Trainingspläne | Zusammenstellen, Zuweisen, Schnappschuss (`IDEA-TRN-011`) | Etappe 3 (UEB-EPIC-001/002) baut die Bibliothek in der Therapie; die Trainingsseite erbt sie danach. **Verbot 1** — keine Auswahl aus Befund oder Screening |
+| 7 | Übungsanalyse | Auswertung je Übung über die Zeit (`IDEA-OUT-006`) | Fernplan-Etappe 9, `MDR_REVIEW_REQUIRED`; ohne die ableitende Hälfte bleibt die Anzeige |
+| 8 | Aktivitäten | Alltagsbewegung als Kontext, nicht als Wettbewerb (`IDEA-ALT-001`) | Fernplan, nach Etappe 8 |
+| 9 | Assessments | strukturierte Tests zu definierten Zeitpunkten (`IDEA-OUT-007`) | FRB-EPIC-001/002 baut die Instrumente **in der Behandlung**; die Trainingsseite frühestens danach, mit eigener Rechtsgrundlage. **Verbot 3** — rechnen ja, freigeben nein |
+| 10 | Athletenprofil | Stammdaten und Ziele der Kund:in; **„Athlet" heißt bei uns nicht so** | Stammdaten in **TRN-EPIC-001**; Voraussetzungsprofil (`IDEA-LZK-004`) in Fernplan-Etappe 8 |
+| 11 | Gewohnheiten | sehr kleine Ziele, keine Serienlogik als Druckmittel (`IDEA-ALT-002`) | Fernplan, zuletzt |
+| 12 | Ernährung | **nicht in V1.** Berufsrechtlich heikel (`IDEA-ALT-005`, `IDEA-ALT-006`), mit B9 Punkt 6 zurückgestellt | kein Platz im Plan, bis B9 etwas anderes sagt |
+| 13 | Chat | strukturierte Rückfrage statt offenem Chat (`IDEA-KOM-001`), mit Notfallabgrenzung | Fernplan-Etappe 6 |
+| 14 | Einstellungen | Konfiguration je Kund:in, „Coach-Kontrolle" als **sichtbarer** Abschnitt (`IDEA-QSN-005`) | Fernplan-Etappe 4 mit dem Portalfundament |
+| 15 | KI-Analyse | abgesetzter Knopf, kein Listeneintrag (`IDEA-KI-006`) | Fernplan-Etappe 10, `MDR_REVIEW_REQUIRED`, hinter dem Gateway aus ADR-005 und **C6** |
+
+**Bewusst nicht Teil von Etappe TR:**
+
+- **Die Kund:innensicht** (§4.10) — sie hängt am Portalfundament
+  (Fernplan-Etappe 4, **B5**) und entsteht nicht vorher. Diese Etappe baut die
+  Sicht, in der **Jannes betreut**; das sind die zwei Zugänge aus E18
+  Abschnitt 6, nicht einer.
+- **Screening- und Gesundheitsangaben im Training** — sie brauchen die
+  Einwilligung als Funktion (Art. 9 Abs. 2 lit. a, **B2**, DSFA nach ADR-007);
+  `training_relationships` trägt sie ausdrücklich nicht, und **Verbot 3** gilt
+  für jede Ausgabe daraus.
+- **Die Kopie aus der Akte** (ADR-021 Punkt 7) — dokumentierte Kopie mit
+  Einwilligung, nie Referenz; dieselbe Voraussetzung wie oben.
+- **Pakete, Guthaben und Preise** (`IDEA-ANG-001`, **B11**) —
+  Fernplan-Etappe 8.
+- **Die Öffnung der Office-Sicht** auf Screening-Daten (§4.3) — hängt an B2 und
+  kostet eine Korrekturversion an Rang 1.
+- **Kein neuer ADR.** ADR-021, ADR-022, ADR-006 Fassung 3 und ADR-009 Fassung 2
+  tragen diese Etappe vollständig; was offen bleibt, ist SPEC-Arbeit je Loop.
+
 ### Etappe 3 — Übungspläne innerhalb der Therapie (Stufe 2, nach der Eröffnung)
 
 Ein Heimprogramm, das die Therapeutin zusammenstellt und die Software nur
@@ -631,6 +756,12 @@ entstehen außerhalb; wie, klärt B4.~~
 
 Was das für die Planung heißt:
 
+- **Der bedienbare Teil des Trainings beginnt vor Stufe 3.** Seit dem
+  2026-09-21 steht er als **Etappe TR** oben im Plan (E18 Schritt 7): die
+  Sicht, in der Jannes betreut, vor der Eröffnung — die Sicht der Kund:innen
+  erst mit dem Portalfundament. Welcher der fünfzehn Navigationspunkte wohin
+  gehört, steht dort in einer Tabelle; diese Aufzählung hier bleibt die
+  Reihenfolge **innerhalb** von Stufe 3.
 - **Die Etappen 4 bis 10 des Fernplans sind diese Plattform.** Die Reihenfolge
   bleibt; die Plattform ist kein zusätzliches Programm daneben
   (`PROJECT_PRINCIPLES.md` §2.1).
@@ -1004,12 +1135,15 @@ Ende eines Loops**, zusammen mit der Tabelle unten.
 | ABR-EPIC-006 (ABR-011) Einnahmen je Leistungsart | fertig | 2026-09-21 | `5586044`, `6d6261f` — **fünfter und letzter Loop der Etappe L**, eine Migration mit zwei lesenden Funktionen; keine Tabelle geändert, kein Schreibweg. Die Auswertung trennt die Erlöse **je Leistungsbereich** und darin je Steuerkennzeichen und Satz (ADR-009 Punkt 19) und rechnet ausschließlich aus Snapshots ausgestellter Rechnungen, Stornodokumenten und gebuchten Zahlungen — ein Entwurf ist kein Dokument. **Die Grundlage ist Pflichtargument ohne Vorgabe** und steht in jeder gelieferten Zeile: Es gibt keine Zahl, die ihre Grundlage nicht nennt, und die beiden Rechenwege teilen keinen Zwischenwert. Das Storno **kehrt um statt zu löschen** — am Tag des Stornos, nicht rückwirkend im Jahr der Rechnung. Eine Teilzahlung wird anteilig und centgenau auf die Steuergruppen ihrer Rechnung verteilt (**ANN-088**, die einzige neue Annahme); Steuer weist die Auswertung nur dort aus, wo das Dokument welche ausweist (Punkt 18). Das **Ausfallhonorar** — offene Folgefrage der Fassung 2 — erscheint ohne eigene Mechanik im Bereich seiner Katalogposition unter `not_taxable`. `/abrechnung/auswertung` belegt die Grundlage nicht vor, nennt sie an jeder Summe und summiert nie über beide Bereiche. 25 neue Datenbanktests, 8 Komponententests; Sichtprüfung hinter der Anmeldung in der Cloud nicht möglich (kein GoTrue) und offen | — |
 | MAP-002 (MAP-002a/b/c) In-App-Kartenprototyp | fertig | 2026-09-21 | `c85c56e`, `6a37ef7`, `ea2d9aa` — erster Loop der **Etappe T**, keine Migration und keine Datenbankänderung. Eine In-App-Karte mit MapLibre GL JS (ADR-019 Punkt 1, neue Abhängigkeit `maplibre-gl` 6.10.0, BSD-3, von Jannes freigegeben) zeigt acht **erfundene** Tübinger Koordinaten als eigene, nummerierte Marker. Die Komponente kennt nur `MapDisplayConfig` und `MapOverlayStop`; der Anbieter steht allein in `src/lib/location/ptv-display.ts`, und ESLint hält `src/features/**` davon fern. **Ohne Kachelschlüssel entsteht keine Karte und keine Anfrage**; mit Schlüssel geht er als Kopfzeile `ApiKey` und nur an die beiden Hosts des Dienstes. `/touren/karte` ist Vorschau, lädt MapLibre als eigenen Abschnitt nach (+1,9 kB im Hauptstand, 1,04 MB erst auf der Seite) und nennt das offene Gate aus ADR-019 Punkt 9. 15 neue Komponenten- und Adaptertests, 4 Browserprüfungen in Chromium bei 1280 und 375 px (Prüfseite mit Style ohne Netz, weil in der Cloud kein GoTrue läuft) | — |
 
+| E18 Schritt 7 — Trainingsbereich zugeschnitten (Docs) | fertig | 2026-09-21 | **Etappe TR** in Spur A1: vier Loops (TRN-EPIC-001 bis -004), die fünfzehn Navigationspunkte einzeln zugeordnet, die drei MDR-nahen Bereiche zuletzt und ohne ihre ableitende Hälfte (ADR-006 Punkt 13). Kein Code, keine Migration, keine neue Annahme. **Die Etappe steht hinter einem Gate an Rang 1** (§14 nimmt den Trainingsbereich selbst aus) und zählt bis zur Freigabe nicht im Fortschritt | — |
+
 ---
 
 ## Änderungsvermerk
 
 | Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5.36 | 2026-09-21 | **Trainingsbereich zugeschnitten — Schritt 7 von sieben aus E18 erledigt, damit ist E18 vollständig** (Entscheidungsarbeit, kein Code, keine Migration, keine neue Annahme). Etappe L hat das Fundament gebaut, aber **keine Tür dorthin**: Kein Schreibweg legt ein Trainingsverhältnis an, die Rolle `trainer` ist in der Zugangsverwaltung nicht zuweisbar, kein Schreibweg setzt `kind = 'training'`, und die Trainingsrechnung erreicht ihren Nummernkreis nicht, weil `record_billable_service` einen Termin ohne `patient_id` abweist und `invoices.patient_id` auf `patients` zeigt — eine Trainingskund:in ohne Behandlungsverhältnis (`IDEA-LZK-008`) bekommt heute weder Leistung noch Rechnung. Neu ist **Etappe TR** in Spur A1 (Stufe 2, April bis Juni 2027, vor der Eröffnung) mit vier Loops in fester Reihenfolge: **TRN-EPIC-001** (Schreibwege für das Verhältnis, Person ohne Akte, Rolle zuweisbar) → **TRN-EPIC-002** (Trainingstermin und Trainingsgrundlage im einen Kalender, Sicht je Kontext) → **TRN-EPIC-003** (Leistung und Rechnung am Trainingsverhältnis statt an `patients`) → **TRN-EPIC-004** (Trainingsprotokoll, `documented` je Kontext) — der einzige, der rutschen darf, weshalb TRN-EPIC-003 `documented` **nicht** voraussetzen darf (§ 19 bindet nur die Behandlungsdokumentation; die offene Frage aus ADR-022 ist damit für die Reihenfolge beantwortet, nicht für den Inhalt). Die **fünfzehn** Navigationspunkte aus E18 Abschnitt 6 sind einzeln zugeordnet (vierzehn Einträge plus KI-Analyse als abgesetzter Knopf): vier in Etappe TR, neun im Fernplan, Ernährung mit B9 Punkt 6 **nicht in V1**. Die drei MDR-nahen Bereiche — KI-Analyse, Assessments, Ernährung — stehen zuletzt und ohne ihre ableitende Hälfte (ADR-006 Punkt 13). **Das Gate steht an Rang 1:** `PROJECT_PRINCIPLES.md` §14 nimmt den Trainingsbereich selbst von der engen Aufhebung aus, also beginnt **kein** Loop dieser Etappe ohne eine neue Version nach §21 — der Zuschnitt hängt nicht daran, weil §14 für die Reihenfolge auf dieses Dokument verweist. Rückwärtsplan: April +1, Mai +2 Loop-Plätze (April bis Juni sechs von 24), der Juni bleibt Puffer, TRN-EPIC-004 steht ab August 2027. `fortschritt.json` bleibt **unverändert**: Bis zur Freigabe zählt die Etappe nicht; danach fällt die Zahl von 41,1 auf **40,7** Prozent (gerechnet). Bewusst nicht Teil: die Kund:innensicht nach §4.10 (Portalfundament, B5), Screening und Einwilligung (B2, DSFA), die Kopie aus der Akte (ADR-021 Punkt 7), Pakete und Preise (B11) — und **kein neuer ADR**: ADR-021, ADR-022, ADR-006 Fassung 3 und ADR-009 Fassung 2 tragen die Etappe vollständig |
 | 5.35 | 2026-09-21 | **BEF-022 behoben und die Anbieterantwort abgelegt** (Nachtrag zu MAP-002, Pfad A). **BEF-022** (aus Jannes' Bildschirmfoto der laufenden Karte): Die Quellenangabe stand doppelt unten rechts — einmal aus dem Adapter, einmal aus dem Style des Anbieters. Die naheliegende Abhilfe wäre die falsche gewesen: Lässt man die eigene weg, steht bei einem Anbieter **ohne** Angabe im Style am Ende gar keine Quelle da, und das verletzt die Lizenz wirklich. Die Karte entsteht jetzt ohne Quellenangabe und fragt nach dem Laden: Nennt eine **benutzte** Quelle des Styles ihre Herkunft, zeigt das Bedienelement diese; nennt keine sie, tritt `config.attribution` an ihre Stelle. Dass „benutzt" dazugehört, zeigte erst der Browser — MapLibre blendet die Angabe einer Quelle, auf die keine Ebene verweist, nicht ein; sie als Beleg zu werten hätte die eigene stillgelegt. Vier neue Tests, einer davon im Browser gegen einen Style mit eigener Quellenangabe. **Dazu Teil 4a im Prüfdokument**: die erste direkte Rückmeldung von PTV (2026-09-21) — Testzugang nach der Erläuterung zum Katalogberuf wieder aktiv, produktiver Betrieb erfordert den **Standard Plan** mit **50 000 Transaktionen je Account** als Freikontingent, und als Datenschutzunterlagen zwei Dokumente, die **keinen AVV nach Art. 28** enthalten. Von der Gate-Liste ist damit **kein Punkt** erledigt; die drei technischen Fragen (Domainbindung, Matrix-Relationen, Rate-Limits) blieben unbeantwortet und gehen mit einer Nachfassanfrage an den Support. Keine Migration, keine neue Annahme, Fortschrittsmodell unverändert. |
 | 5.34 | 2026-09-21 | **BEF-021 behoben** (Nachtrag zu MAP-002, Pfad A) — gefunden bei Jannes' Abnahme im ersten Lauf mit echtem Kachelschlüssel: Die Karte lud, die acht Marker standen, **der Hintergrund blieb grau** — und die Seite sagte nichts dazu. Ursache: Der Adapter hängte den Schlüssel als Kopfzeile `ApiKey` an **beide** Hosts. Eine fremde Kopfzeile macht aus einer einfachen Anfrage eine, die der Browser vorher per `OPTIONS` genehmigen lässt, und `vectormaps-resources.myptv.com` beantwortet diese Vorabanfrage nicht — der Style kam nie an. **Der Schlüssel geht jetzt nur an `api.myptv.com`**, das im Browser bestätigt die Vorabanfrage beantwortet und einen falschen Schlüssel mit 401 ablehnt; Style, Sprites und Glyphen liegen ohne Schlüssel bereit. Zwei Tests halten das fest, einer ausdrücklich für die Style-Adresse. **Der zweite Mangel wog schwerer als der erste:** Eine Oberfläche, die einen Fehlschlag wie einen Erfolg aussehen lässt, verstößt gegen §9 — die Marker kommen aus der Anwendung und standen auch ohne Kartenmaterial da. Die Komponente wertet deshalb jetzt das `error`-Ereignis von MapLibre aus und zeigt „Kartenmaterial konnte nicht geladen werden"; die Meldung des Renderers selbst bleibt draußen, sie trägt Anbieteradressen (ADR-011). Eine Browserprüfung öffnet die Prüfseite mit absichtlich kaputtem Style und erwartet den Hinweis. Im Prüfdokument ist die Style-Adresse damit von „Suchauszug" auf **im Browser bestätigt** hochgestuft. Vier neue Tests (drei in `pnpm test`, einer in `pnpm test:e2e`), keine Migration, keine neue Annahme, Fortschrittsmodell unverändert. |
 | 5.33 | 2026-09-21 | **MAP-002 fertig** (Pfad A, auf Freigabe von Jannes) — der erste Loop der **Etappe T** und der erste seit Etappe L; drei Stories, **keine Migration, keine Datenbankänderung, kein Schreibweg**. **MAP-002a** (`c85c56e`): die Komponente `Karte` unter `src/features/tours/karte/` rendert mit **MapLibre GL JS** (ADR-019 Punkt 1) und kennt dabei nur `MapDisplayConfig` und `MapOverlayStop` aus `contract.ts`. Der Anbieter steht an genau einer Stelle, `src/lib/location/ptv-display.ts`, mit Style, Quellenangabe, Zoomgrenzen und Schlüsselübergabe der **OSM**-Variante; `display.ts` ist die anbieterneutrale Nahtstelle. **Der Schlüssel geht als Kopfzeile `ApiKey`** — nie als Query-Parameter, der in Proxy- und Browserprotokollen stünde — **und nur an die beiden Hosts des Dienstes**: MapLibre reicht jede Anfrage durch `transformRequest`, auch eine, die ein fremder Style umlenkt. **Ohne Schlüssel entsteht keine Karte und keine Anfrage**, sondern der Hinweis „Kartenkacheln nicht konfiguriert“ — das Abo liegt bei Jannes (Punkt 24), und `readMapTileApiKey` wirft deshalb nicht. **MAP-002b** (`6a37ef7`): acht **erfundene** Koordinaten im Stadtgebiet von Tübingen, als Konstante im Code und nicht im Seed — ein Testdatensatz in der Datenbank sähe aus wie ein Bestand. Ein Test prüft die **Feldnamen** je Stopp: Koordinate und Nummer, sonst nichts; ein Name wäre hier ein Feld auf dem Weg zum Anbieter (Punkt 12). Die Marker sind eigene DOM-Knoten der Anwendung, keine Anbieter-Marker und keine Beschriftung über dessen Glyphen. **MAP-002c** (`ea2d9aa`): `/touren/karte` als Vorschau hinter der Anmeldung, erreichbar aus „Touren“, mit derselben Stoppliste als Text daneben und dem offenen Gate aus Punkt 9 auf der Seite selbst. MapLibre lädt als **eigener Abschnitt** erst dort (Hauptstand +1,9 kB, gzip +1,0 kB; die Karte 1,04 MB, gzip 283 kB). Dazu drei Dinge, die erst der Browserlauf zeigte: `optimizeDeps.exclude` für den **Kachel-Worker**, den Vites Optimierer verliert; 48-px-Tippziele statt der 29 px des Renderers; und eine Linie statt seines Schattens. **Die Ausnahme im Trennungsgate hängt am Verzeichnis** `src/features/tours/karte` und hat eine eigene Gegenprobe — in jedem anderen Vorschaubereich bleibt ein MapLibre-Import ein Fund, und Supabase, `rpc(`, `fetch(` und `localStorage` bleiben auch dort ausgeschlossen. **Keine neue Annahme.** 19 neue Tests in `pnpm test`, dazu 4 Browserprüfungen (8 Läufe) gegen eine Prüfseite mit Style **ohne Netz**: WebGL zeichnet, acht Marker stehen im Bild, 375 px ohne Querlauf, Tastaturzoom, und **keine einzige Anfrage an einen fremden Host**. Was offen bleibt: dass die Kacheln des Anbieters ankommen — dafür braucht es den Schlüssel, und der liegt nur lokal (`docs/abnahme/etappe-t-kartendienst.md`). Im Fortschrittsmodell: Block B **7,7 → 15,5 Prozent**, Gesamtstand **41,1**. **Nächster Loop: `E18 Schritt 7`.** |
