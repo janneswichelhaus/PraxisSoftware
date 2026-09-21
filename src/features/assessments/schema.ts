@@ -498,18 +498,27 @@ export const scoreDefinitionSchema = z
       }
     }
 
-    const einzelwertItem = (formel: z.infer<typeof formelSchema>): string | null =>
-      formel.art === 'einzelwert' ? formel.item : null;
+    // Jede Formel, die ein einzelnes Item nennt - am Gesamtwert wie an einer
+    // Subskala. Der zweite Fall ist selten und genau deshalb der, den sonst
+    // niemand prueft.
+    const formelstellen: { formel: z.infer<typeof formelSchema>; pfad: PropertyKey[] }[] = [
+      ...(score.scoring.gesamt
+        ? [{ formel: score.scoring.gesamt.formel, pfad: ['scoring', 'gesamt', 'formel'] }]
+        : []),
+      ...score.scoring.subskalen.map((subskala, index) => ({
+        formel: subskala.formel,
+        pfad: ['scoring', 'subskalen', index, 'formel'],
+      })),
+    ];
 
-    const gesamtEinzelwert = score.scoring.gesamt
-      ? einzelwertItem(score.scoring.gesamt.formel)
-      : null;
-    if (gesamtEinzelwert !== null && !itemIds.has(gesamtEinzelwert)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['scoring', 'gesamt', 'formel', 'item'],
-        message: `Die Formel nennt das unbekannte Item "${gesamtEinzelwert}".`,
-      });
+    for (const stelle of formelstellen) {
+      if (stelle.formel.art === 'einzelwert' && !itemIds.has(stelle.formel.item)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [...stelle.pfad, 'item'],
+          message: `Die Formel nennt das unbekannte Item "${stelle.formel.item}".`,
+        });
+      }
     }
 
     const gewichteteSumme = score.scoring.gesamt?.formel;

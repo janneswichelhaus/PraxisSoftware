@@ -743,6 +743,37 @@ describe('Subskalen und Referenzfaelle', () => {
     expect(ergebnis.error?.issues[0]?.message).toContain('nicht gewertet');
   });
 
+  it('weist eine Einzelwert-Formel auf ein unbekanntes Item zurueck', () => {
+    // Auch an der Subskala, nicht nur am Gesamtwert: Der seltene Fall ist der,
+    // den sonst niemand prueft.
+    const ergebnis = scoreDefinitionSchema.safeParse(
+      score({
+        scoring: {
+          ...score().scoring,
+          gesamt: null,
+          subskalen: [
+            {
+              id: 'niveau',
+              label: 'Niveau',
+              items: ['frage_1'],
+              formel: { art: 'einzelwert', item: 'frage_7' },
+              wertebereich: { min: 0, max: 10 },
+            },
+          ],
+        },
+        referenzfaelle: [
+          {
+            bezeichnung: 'hoch',
+            antworten: { frage_1: 4 },
+            erwartet: { subskalen: { niveau: 4 } },
+          },
+        ],
+      }),
+    );
+    expect(ergebnis.success).toBe(false);
+    expect(ergebnis.error?.issues[0]?.message).toContain('unbekannte Item "frage_7"');
+  });
+
   it('weist eine Gewichtung auf eine unbekannte Subskala zurueck', () => {
     const ergebnis = scoreDefinitionSchema.safeParse(
       score({

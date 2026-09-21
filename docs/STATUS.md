@@ -7,7 +7,7 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 ## Jetzt
 
 **FRB-EPIC-000 ist gebaut** (Roadmap 5.29, Phase P1 des FRB-Plans). `src/features/assessments/`
-trägt das Schema beider Datenmodelle, den Ladepfad und 77 Tests — **kein Inhalt, keine Datenbank,
+trägt das Schema beider Datenmodelle, den Ladepfad und 78 Tests — **kein Inhalt, keine Datenbank,
 keine Oberfläche**. Sechs Rechenformen, aus dem Inventar abgelesen; `cutoffs`, `mcid` und `mdc`
 werden gespeichert und **nicht angezeigt** (ADR-006 Punkt 11, Anzeige hängt an **B1**). Fünf Annahmen
 **ANN-083 bis ANN-087**. Stand 37,0 → **37,7 %**. Anschluss wäre **P2** — eingeplant ist er nicht.
