@@ -3,7 +3,7 @@
 Zuletzt aktualisiert: 2026-09-16 · Struktur 4.0
 
 Was noch nicht entschieden ist, warum es offen ist und was davon abhängt.
-Termine: `docs/development/ROADMAP.md`, Spur B. Die Volltexte der acht Punkte für
+Was ein Punkt aufhält: `docs/development/ROADMAP.md`, Spur B — **Termine gibt es keine** (5.37). Die Volltexte der acht Punkte für
 externe Stellen stehen in `ANFRAGEN.md`.
 
 ## Wie dieses Dokument benutzt wird
