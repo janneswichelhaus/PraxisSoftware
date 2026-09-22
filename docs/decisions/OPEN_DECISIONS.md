@@ -172,7 +172,7 @@ je Person ausgewertet — damit hängt der Punkt an B6. Vor Echtdaten steht das
 neunteilige Gate aus ADR-019 Punkt 9, alle Punkte
 `CONTRACT_CONFIRMATION_REQUIRED`. Wo: ADR-019 Fassung 3,
 `providerpruefung-kartendienst.md`; Roadmap G12, MAP-006.
-Annahmen: ANN-016, ANN-017, ANN-018. Blockiert MAP-006 und die Führung (F).
+Annahmen: ANN-016, ANN-017, ANN-018. Gate vor echten Adressen, nicht vor dem Bau.
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 
