@@ -76,9 +76,8 @@ export function Fahrzeitmatrix({ stopps, laedt, ergebnis, erneutVersuchen }: Fah
       <Tagesfolge stopps={stopps} matrix={matrix} />
 
       <p className="text-ink-muted mt-3 text-sm">
-        Das Terminraster ist erfunden: alle 45 Minuten ein Termin, 30 Minuten Behandlung, dazu 5
-        Minuten neben der Fahrt zum Abstellen und Klingeln. Ein Hinweis, keine Sperre — gespeichert
-        wird nichts davon.
+        Angenommenes Terminraster: alle 45 Minuten ein Termin, 30 Minuten Behandlung, dazu 5 Minuten
+        neben der Fahrt zum Abstellen und Klingeln. Ein Hinweis, keine Sperre.
       </p>
 
       <details className="mt-4">

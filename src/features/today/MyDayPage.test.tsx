@@ -254,16 +254,20 @@ describe('Übersicht', () => {
     expect(screen.queryByText(/Personen in laufender Versorgung/)).toBeNull();
   });
 
-  it('kennzeichnet den noch nicht angebundenen Teil als zusammengefaltete Vorschau', async () => {
+  /**
+   * Die Kennzeichnung „Vorschau" am Aufklapper ist am 2026-09-22 gefallen. Was
+   * bleibt, ist die Reihenfolge aus UX-001: Der echte Teil des Tages steht
+   * davor, der Rest zugeklappt dahinter — das war nie eine Kennzeichnung,
+   * sondern die Rangfolge auf dem Bildschirm.
+   */
+  it('haelt den noch nicht angebundenen Teil zusammengefaltet', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
     const ueberschrift = await screen.findByRole('heading', {
       name: 'Organisatorisches, Wege und Kommunikation',
     });
     expect(ueberschrift).toBeInTheDocument();
-    // Zusammengefaltet: der echte Teil des Tages steht davor, nicht dahinter.
     expect(ueberschrift.closest('details')).not.toHaveAttribute('open');
-    expect(screen.getByText(/Es entstehen keine echten Vorgänge/)).toBeInTheDocument();
   });
 
   it('benennt die Demoperson, der die Vorschaudaten gehoeren', async () => {

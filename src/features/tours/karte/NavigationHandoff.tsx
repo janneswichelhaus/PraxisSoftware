@@ -16,8 +16,8 @@ import {
  * etwas das Gerät" lässt sich nicht am Schreibtisch beurteilen: Ob ein
  * Koordinatenziel auf dem Rad verständlich ankommt und ob die Ziel-App
  * überhaupt im Fahrradmodus öffnet, zeigt sich am Telefon. Diese Seite ist
- * der Ort, an dem das mit **erfundenen Koordinaten** geprüft wird, bevor je
- * eine echte Adresse in eine URL gerät (MAP-005c).
+ * der Ort, an dem das mit den Teststopps geprüft wird, bevor je eine echte
+ * Adresse in eine URL gerät (MAP-005c).
  *
  * **Ein Knopf steht am Stopp, nicht in einer Knopfwand** (BEF-032). Die erste
  * Fassung stellte acht Stopp-Knöpfe, acht Tagesabschnitte und drei Ziel-Apps
@@ -71,7 +71,7 @@ export function NavigationHandoff({ stopps }: { readonly stopps: readonly MapOve
     <div>
       <p className="text-ink-muted mb-3 text-sm">
         Ein Tap öffnet die Navigations-App dieses Geräts — übergeben wird nur die Koordinate und der
-        Fahrradmodus. Die Adresse ist hier ohnehin erfunden, und gespeichert wird nichts.
+        Fahrradmodus, gespeichert wird nichts.
       </p>
 
       {/*

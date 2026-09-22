@@ -9,7 +9,7 @@ import type { CurrentUser } from '@/features/session/types';
 import { depotName, useVorschau, type Protokolleintrag } from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { SignaturFeld } from '@/features/preview/SignaturFeld';
-import { SimulationsMeldung, VorschauBanner } from '@/features/preview/ui';
+import { SimulationsMeldung } from '@/features/preview/ui';
 import type { Checkupbefund, Checkupbewertung } from '@/features/preview/types';
 
 /**
@@ -117,7 +117,6 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
         description="Sicherheitsprüfung mit Bestätigung durch die prüfende Person."
       />
 
-      <VorschauBanner bereich="Check-Up" />
       <SimulationsMeldung eintrag={meldung} />
 
       {schritt === 'auswahl' ? (

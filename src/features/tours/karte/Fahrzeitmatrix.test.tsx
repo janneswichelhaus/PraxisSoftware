@@ -125,11 +125,18 @@ describe('Fahrzeitmatrix', () => {
     expect(zelle('1', '1')).not.toHaveTextContent('unter 1 Min.');
   });
 
-  it('sagt, dass das Terminraster erfunden ist und nichts gespeichert wird', () => {
+  /**
+   * Bis 2026-09-22 stand hier „Das Terminraster ist erfunden". Geprüft wird
+   * seitdem die Rechengrundlage statt der Kennzeichnung: Ein Urteil
+   * „passt nicht" ist ohne die 45 und die 5 Minuten nicht nachvollziehbar, und
+   * genau das darf nicht stillschweigend verschwinden.
+   */
+  it('nennt die Rechengrundlage des Urteils und dass es keine Sperre ist', () => {
     tabelle();
 
-    expect(screen.getByText(/Terminraster ist erfunden/)).toBeInTheDocument();
-    expect(screen.getByText(/gespeichert wird nichts davon/)).toBeInTheDocument();
+    expect(screen.getByText(/alle 45 Minuten ein Termin/)).toBeInTheDocument();
+    expect(screen.getByText(/5 Minuten neben der Fahrt/)).toBeInTheDocument();
+    expect(screen.getByText(/keine Sperre/)).toBeInTheDocument();
   });
 
   /**

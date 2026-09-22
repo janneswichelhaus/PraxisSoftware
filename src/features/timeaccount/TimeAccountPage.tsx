@@ -15,12 +15,7 @@ import {
 } from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { vorschauidentitaet } from '@/features/preview/identitaet';
-import {
-  Abschnitt,
-  OffeneEntscheidung,
-  SimulationsMeldung,
-  VorschauBanner,
-} from '@/features/preview/ui';
+import { Abschnitt, SimulationsMeldung } from '@/features/preview/ui';
 import { formatDatum, formatStunden } from '@/features/preview/format';
 import type { Buchungsart, Zeitbuchung } from '@/features/preview/types';
 
@@ -77,7 +72,6 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
         actions={<Button onClick={() => setFormular(true)}>Stunden eintragen</Button>}
       />
 
-      <VorschauBanner bereich="Zeitkonto" />
       <SimulationsMeldung eintrag={meldung} />
 
       <p className="text-ink-muted mb-4 text-sm">
@@ -106,13 +100,6 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
           ))}
         </CardGrid>
       </Abschnitt>
-
-      <OffeneEntscheidung titel="Arbeitszeit und Terminplan bleiben getrennt">
-        Das Zeitkonto führt tatsächlich geleistete Stunden. Der Dienstplan unter „Arbeitszeiten"
-        legt fest, wann geplant werden darf. Beides zusammenzuführen wäre eine eigene fachliche
-        Entscheidung – dazu gehört auch, welche Auswertungen über Beschäftigte überhaupt zulässig
-        sind (PROJECT_PRINCIPLES.md 20).
-      </OffeneEntscheidung>
     </>
   );
 }
@@ -219,8 +206,6 @@ function Buchungsformular({
   return (
     <>
       <PageHeader title="Stunden eintragen" />
-      <VorschauBanner bereich="Zeitkonto" />
-
       <div className="flex max-w-xl flex-col gap-4">
         <Select
           label="Person"

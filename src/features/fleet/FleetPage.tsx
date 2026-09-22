@@ -18,7 +18,7 @@ import {
   type Vorschauzustand,
 } from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
-import { Abschnitt, Klappbereich, SimulationsMeldung, VorschauBanner } from '@/features/preview/ui';
+import { Abschnitt, Klappbereich, SimulationsMeldung } from '@/features/preview/ui';
 import { formatZeitpunkt } from '@/features/preview/format';
 import {
   radstatusLabels,
@@ -203,7 +203,6 @@ export function FleetPage({ user }: { user: CurrentUser }) {
         }
       />
 
-      <VorschauBanner bereich="Radflotte" />
       <SimulationsMeldung eintrag={meldung} />
 
       <div className="mb-5 flex flex-wrap gap-3">

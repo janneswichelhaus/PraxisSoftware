@@ -22,7 +22,6 @@ import {
 } from '@/features/appointments/api';
 import {
   canManageAppointments,
-  canReadPatientDirectory,
   canWriteTreatmentNote,
   isStaff,
   type CurrentUser,
@@ -369,12 +368,6 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       <UebersichtVorschau user={user} />
-
-      {canReadPatientDirectory(user.roles) ? (
-        <p className="text-ink-subtle mt-10 max-w-prose text-sm">
-          Früher Entwicklungsstand mit ausschließlich synthetischen Testdaten.
-        </p>
-      ) : null}
     </>
   );
 }
@@ -390,8 +383,8 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
  * fünf Vorschaukarten standen bisher als erstes im Blickfeld, sobald man die
  * eigene Tagesliste durchgescrollt hatte - auf dem Telefon war die Hälfte der
  * Seite Attrappe. Sie bleiben erreichbar, aber sie drängen sich nicht mehr
- * auf. Der Aufklapper trägt die Kennzeichnung „Vorschau" auch im
- * zugeklappten Zustand.
+ * auf. Die Kennzeichnung „Vorschau" am Aufklapper ist am 2026-09-22 gefallen:
+ * Der zugeklappte Block sagt schon durch seine Überschrift, was drin ist.
  */
 function UebersichtVorschau({ user }: { user: CurrentUser }) {
   const { zustand } = useVorschau();
@@ -426,18 +419,18 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
             steht der Block weiter in der Gliederung, die Vorlesesoftware
             ansteuert. */}
         <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-2">
-          <Badge ton="warnung">Vorschau</Badge>
           <h2 className="text-ink text-[1.0625rem] font-semibold tracking-[-0.01em]">
             Organisatorisches, Wege und Kommunikation
           </h2>
-          <span className="text-ink-muted text-sm">– noch nicht angebunden</span>
         </summary>
 
+        {/* „Angezeigt wird der Stand von …" darf hier nicht stehen: Denselben
+            Satzanfang trägt die Altersmeldung der Tagesliste aus UX-011, und
+            zwei gleich beginnende Sätze auf einer Seite lassen sich weder
+            vorlesen noch testen auseinanderhalten. */}
         <p className="text-ink-muted mt-4 mb-4 max-w-prose text-sm">
-          Diese Bereiche sind noch nicht angebunden. Angezeigt werden synthetische Daten der
-          Demoperson <strong className="text-ink">{ich.name}</strong>
-          {identitaet.ueberNamen ? '' : ' (zur Rolle passend gewählt)'}. Es entstehen keine echten
-          Vorgänge.
+          Diese Karten gehören zu <strong className="text-ink">{ich.name}</strong>
+          {identitaet.ueberNamen ? '' : ' (zur Rolle passend gewählt)'}.
         </p>
 
         <div className="grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3">

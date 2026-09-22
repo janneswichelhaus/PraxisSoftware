@@ -14,10 +14,9 @@ function oeffne(pfad = '/betrieb/flotte/panne?rad=r1') {
 }
 
 describe('Pannenassistent', () => {
-  it('weist vor der ersten Eingabe auf die Vorschau hin', () => {
-    oeffne();
-    expect(screen.getByText(/noch keine echte Speicherung/)).toBeInTheDocument();
-  });
+  // Der Vorschaubanner ist am 2026-09-22 gefallen; die Prüfung darauf mit ihm.
+  // Dass der Ablauf niemanden benachrichtigt, sagt weiter die Zustandsmeldung
+  // am Ende (`ehrlichkeit.test.tsx`).
 
   it('kennzeichnet die Kölner Herkunft der Standortangaben', () => {
     oeffne();

@@ -121,7 +121,7 @@ createRoot(wurzel).render(
     <Karte
       config={config}
       stopps={TESTSTOPPS}
-      beschriftung={`Karte mit ${TESTSTOPPS.length} synthetischen Teststopps in Tübingen`}
+      beschriftung={`Karte mit ${TESTSTOPPS.length} Teststopps in Tübingen`}
       route={route}
     />
     {route === undefined ? null : (
