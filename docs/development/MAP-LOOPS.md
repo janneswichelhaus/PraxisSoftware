@@ -4,7 +4,7 @@ Stand: 2026-09-22 · Ergebnis von MAP-001 · **Loop-Vorgabe**: Eingabe für den
 SPEC-Schritt des jeweils aufgerufenen Loops, kein eigener Rang · Reihenfolge
 und Termine bestimmt `ROADMAP.md`, Etappe T.
 
-Grundlage sind ADR-019 Fassung 3 (angenommen 2026-09-22) und der Vertrag in
+Grundlage sind ADR-019 Fassung 4 (bestätigt 2026-09-22) und der Vertrag in
 `src/lib/location/contract.ts`. Jeder Loop ist ein eigener
 `/feature-loop`-Aufruf und baut nur seinen Abschnitt. Synthetische Daten,
 Anbieterzugang durch Jannes, Privacy-Regeln und das Gate vor Echtdaten stehen
@@ -256,7 +256,7 @@ die man führen könnte. Wie MAP-006 wird auch dieser Loop mit **synthetischen**
 Adressen gebaut und abgenommen; am Gate hängt das Scharfschalten, nicht der
 Baubeginn (§15.2).
 
-**Grundlage.** ADR-019 Fassung 3, Abschnitt F, und `PROJECT_PRINCIPLES.md`
+**Grundlage.** ADR-019 Abschnitt F (seit Fassung 3) und `PROJECT_PRINCIPLES.md`
 §20.1. Die vier Bedingungen dort sind der Zuschnitt: Position nur auf dem
 Gerät, Start nur auf Aktion, Übermittlung an den Anbieter nur zur
 Neuberechnung, keine Auswertung. Eine Story, die eine davon verletzt, gehört
