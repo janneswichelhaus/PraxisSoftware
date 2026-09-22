@@ -490,6 +490,6 @@ nachgezogen.
 Datenverlust, eine Falschzuordnung, oder mehr als ein Tag Ausfall.
 
 **Weiterhin offen:** die Ausarbeitung als Betriebsdokument (mit
-Claude) und die Funktion „Tagesplan exportierbar" (Roadmap, Dezember).
+Claude). Die Funktion „Tagesplan exportierbar" ist **gestrichen** (2026-09-22, ANN-021 Fassung 2).
 
 **Blockiert:** Go-live-Abnahme (Roadmap G10, G18).
