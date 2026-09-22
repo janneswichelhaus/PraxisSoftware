@@ -216,6 +216,73 @@ test.describe('Kartenprototyp', () => {
     await expect(page.getByText('1', { exact: true })).toBeVisible();
   });
 
+  test('haelt den Handoff bei 375 px bedienbar - und baut nichts vor dem Tippen', async ({
+    page,
+  }) => {
+    // MAP-005b. Zwei Fragen, die jsdom nicht beantwortet: Ist ein Tippziel
+    // wirklich 44 px hoch (die Klasse allein ist kein Beweis), und entsteht
+    // die URL erst beim Tippen? Geoeffnet wird nichts - `window.open` liegt
+    // fuer diesen Lauf auf einem eigenen Sammler, sonst verliesse der Test
+    // seinen Ursprung.
+    await page.addInitScript(() => {
+      (window as unknown as { __ziele: string[] }).__ziele = [];
+      window.open = (url?: string | URL) => {
+        (window as unknown as { __ziele: string[] }).__ziele.push(String(url));
+        return null;
+      };
+    });
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(`${PRUEFSEITE}?handoff=1`);
+
+    const stopp3 = page.getByRole('button', { name: 'Navigation zu Stopp 3 starten' });
+    await expect(stopp3).toBeVisible();
+
+    // Vor dem Tippen steht kein Ziel auf der Seite - kein `href`, keine URL.
+    expect(await page.locator('a[href]').count()).toBe(0);
+    const quelltext = await page.content();
+    for (const spur of ['google.com/maps', 'maps.apple.com', 'geo:']) {
+      expect(quelltext, `"${spur}" steht vor dem Tippen im Quelltext`).not.toContain(spur);
+    }
+
+    const ueberlauf = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(ueberlauf).toBe(false);
+
+    // Jedes Tippziel des Abschnitts haelt die Bedienhoehe aus der
+    // Oberflaechen-Checkliste (Punkt 1): 44 px, gemessen statt behauptet.
+    for (const knopf of await page
+      .getByRole('button', { name: /Navigation zu Stopp|Ganzer Tag/ })
+      .all()) {
+      const kasten = await knopf.boundingBox();
+      expect(kasten?.height ?? 0).toBeGreaterThanOrEqual(44);
+    }
+    for (const app of ['Google Maps', 'Apple Maps', 'Systemnavigation']) {
+      const kasten = await page.getByText(app, { exact: true }).boundingBox();
+      expect(kasten?.height ?? 0, `Auswahl "${app}" ist zu flach`).toBeGreaterThanOrEqual(44);
+    }
+
+    // Ein Tap, ein Ziel: Koordinate und Fahrradmodus, sonst nichts.
+    await stopp3.click();
+    const ziele = async () =>
+      page.evaluate(() => (window as unknown as { __ziele: string[] }).__ziele);
+    expect(await ziele()).toHaveLength(1);
+    const url = new URL((await ziele())[0]!);
+    expect(url.origin).toBe('https://www.google.com');
+    expect(url.searchParams.get('destination')).toBe('48.5164,9.0349');
+    expect(url.searchParams.get('travelmode')).toBe('bicycling');
+
+    // Dieselbe Koordinate an die Systemnavigation - und der Tag zerfaellt
+    // dort in acht Abschnitte, weil ein `geo:`-Verweis kein Zwischenziel
+    // kennt.
+    await page.getByText('Systemnavigation', { exact: true }).click();
+    await expect(
+      page.getByRole('button', { name: 'Ganzer Tag – Abschnitt 8 von 8' }),
+    ).toBeVisible();
+    await stopp3.click();
+    expect((await ziele())[1]).toBe('geo:48.5164,9.0349');
+  });
+
   test('fragt waehrend des ganzen Laufs keinen fremden Host', async ({ page }) => {
     // Gegenprobe zur Datenschutzzusage aus ADR-019 Punkt 12 und 15: Ausser
     // Kacheln geht nichts hinaus - und hier, ohne Kachelquelle, gar nichts.
