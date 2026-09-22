@@ -6,7 +6,7 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**MAP-005 ist gebaut, abgenommen ist es nicht.** `buildNavigationUrl(ziel, app)` bedient alle drei Ziel-Apps aus ADR-019 Punkt 22, und `/touren/karte` trägt den Knopf je Teststopp und für den Tag — die URL entsteht erst beim Tippen, gespeichert wird nichts, eine Präferenz ist nicht vorgebaut. **Apple Maps und `geo:` sind erstmals aus Primärquellen belegt**; Google bleibt Suchauszug, weil `developers.google.com` aus der Cloud gesperrt ist. Deshalb erzwingt die Anwendung **drei statt neun Zwischenziele** und teilt längere Tage in sichtbare Abschnitte. Was trägt, sagt erst die Gerätebewertung auf einem echten Telefon; **die ruht, bis eins da ist** — solange ist die kleinere Zahl die sichere. **Teil A der Abnahme geht am Laptop** und ist davon unabhängig. Fortschritt **44,7 → 45,5 %**.
+**MAP-005 ist gebaut, Teil A der Abnahme ist gelaufen — mit drei Befunden, alle behoben.** `buildNavigationUrl(ziel, app)` bedient alle drei Ziel-Apps aus ADR-019 Punkt 22; auf `/touren/karte` steht der Knopf jetzt **an seinem Stopp**, der Tagesknopf darüber, die Ziel-App weggeklappt (**BEF-032**). Ein `geo:`-Verweis bekommt keinen eigenen Tab mehr, der leer stehen bliebe (**BEF-030**), und die Fahrzeiten beginnen mit **dem Tag in Folge** statt mit der 8 × 8-Tabelle (**BEF-031**). Das Wegpunktlimit bleibt bei **drei** — was mehr trägt, sagt erst ein Telefon. Fortschritt **45,5 %**.
 
 ## Danach — Reihenfolge seit 2026-09-22
 
@@ -18,14 +18,14 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 ## Prüfverfahren
 
 **Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329);
-**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2236** (+34); `test:db` **1769** — in dieser Session **nicht gelaufen**, weil keine Migration und keine Policy berührt ist. `ASSUMPTIONS.md`: **1198** Zeilen (unverändert, MAP-005 brauchte keine neue Annahme).
+**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2246**; `test:db` **1769** — in dieser Session **nicht gelaufen**, weil keine Migration und keine Policy berührt ist. `ASSUMPTIONS.md`: **1198** Zeilen (unverändert, MAP-005 brauchte keine neue Annahme).
 
 ## Blocker (Jannes-seitig)
 
 - **OPS-001 weitertragen** — sonst bleibt jede Zeile der Prüfung ein Suchauszug: Unterlagen aus Teil 9 von einem **ungeproxten Rechner** laden; zwei Fragen an den Support (**Zugriff durch Beschäftigte**, **Verschlüsselung der Objekte**); Gate-Punkt 1 bis 6 an **B2**, darunter **§203
   Abs. 4 StGB** — der einzige, dessen Scheitern den Anbieter kostet. **Zuerst** `auth-smtp`.
 - **BEF-026 / B13:** Der eingebaute Mailversand stellt laut Auszug nur an Adressen des Projektteams zu. Entweder eigener SMTP-Anbieter (zweiter Auftragsverarbeiter, eigene Prüfung, Rücknahme von B13) oder kein Mailversand (Handgriff nach ANN-025). **STAFF-004 ruht bis dahin.**
-- **MAP-003, MAP-004 und MAP-005 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 und MAP-004 nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`), `supabase/functions/.env.local`, `functions serve`. MAP-003 Schritt 1 und 4 **durch**, **BEF-027 behoben**; offen bleiben Schritt 2, 3 und 5 sowie **alle fünf Schritte von MAP-004**. **MAP-005 ist in zwei Teilen abnehmbar**: **Teil A am Laptop** — er geht jetzt und deckt alles ab, was die Anwendung selbst verantwortet (kein Docker, kein Schlüssel); **Teil B am Telefon ruht**, bis ein Gerät da ist. Bis dahin bleibt `MAX_ZWISCHENZIELE` bei drei.
+- **MAP-003, MAP-004 und MAP-005 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 und MAP-004 nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`), `supabase/functions/.env.local`, `functions serve`. MAP-003 Schritt 1 und 4 **durch**, **BEF-027 behoben**; offen bleiben Schritt 2, 3 und 5 sowie **alle fünf Schritte von MAP-004**. **MAP-005 Teil A ist durch** (Laptop, 2026-09-22) — die drei Befunde daraus sind behoben und in Teil A **erneut zu prüfen**, weil die Seite sich geändert hat; **Teil B am Telefon ruht**, bis ein Gerät da ist. Bis dahin bleibt `MAX_ZWISCHENZIELE` bei drei.
 - **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue Version nach §21 beginnt dort kein Loop — gebraucht, wenn Etappe TR an der Reihe ist.
 - **PTV:** Karte und Schlüssel tragen auch serverseitig (BEF-021, BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19) und die **Höchstzahl der Relationen je Matrix-Anfrage** (ANN-091 überbrückt sie mit 25 × 25); nur synthetische Koordinaten.
 - **Lokal:** `git pull`. Keine neue Abhängigkeit, keine Migration. **Node 22** (`.nvmrc`), sonst rot.
@@ -46,4 +46,4 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Der Handoff steht, die Zahl fehlt.** Apple Maps (`/directions`, wiederholbares `waypoint`, `mode=cycling`, ab iOS 18.4) und der `geo:`-URI sind aus den Anbieterdokumenten belegt — bei Google blieb es beim Suchauszug, und dieselbe Lage hat in MAP-004 drei Fehler gekostet. **Neue Annahme keine:** ANN-018 deckt Format und Limit und wurde nur nachgeführt. Aus der Unsicherheit wurde eine Entscheidung gegen die bequemere Zahl: Wer neun Zwischenziele übergibt und im mobilen Browser landet, verliert Stopps **still** — drei sind sichtbar teuer, aber ehrlich. Die Fortschrittstabelle hat außerdem die fehlende **MAP-004-Zeile** bekommen.
+**Die Abnahme hat drei Dinge gefunden, und keines davon war die Zahl.** Der `geo:`-Verweis lief in einen leeren Tab — `window.open` öffnet ihn, bevor feststeht, ob ihn jemand übernimmt; jetzt entsteht im Klickhandler ein Verweis, und nur `http(s)` bekommt ein eigenes Fenster (**BEF-030**). Die Fahrzeitmatrix beantwortete die Frage, die niemand stellt: Gefragt ist „komme ich zum nächsten Termin", und das stand in sieben von 64 Zellen (**BEF-031**). Und der Handoff stellte neunzehn Bedienelemente für eine Handlung aus einem Tap hin, die Stoppliste gleich zweimal (**BEF-032**). Die echte Tagesliste war davon nie betroffen — dort steht seit UX-002 je Termin **ein** Knopf.
