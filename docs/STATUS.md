@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-22 · letzte Sessions: OPS-004 Verbotsliste · MAP-005-Nachtrag
+# Status · Stand 2026-09-22 · letzte Sessions: OPS-006 Betroffenenrechte · OPS-004 Verbotsliste
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,22 +6,22 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**Die Verbotsliste aus ADR-011 ist automatisiert geprüft — zur Laufzeit und in CI.** `src/lib/protokoll.ts` ist die eine Stelle aus ADR-011 Punkt 6, durch die Betriebslogs das Programm verlassen; sie filtert mit einer **Erlaubnisliste**, weil kein Muster einen Patientennamen zuverlässig erkennt. Der Befund davor war unbequem: `no-console` sperrte `console.log` und ließ `console.warn/error` frei — also genau den häufigen Fall offen. Der Test liest die elf Punkte **aus dem ADR**, nicht aus einer zweiten Fassung im Code; ein zwölfter macht ihn rot. Ein zweiter Wächter hält fest, dass es bei zwei erklärten Ausgängen bleibt. **Keine neue Annahme:** Die 30 Tage aus ADR-011 Punkt 4 haben mit `BETRIEBSLOG_FRIST_TAGE` erstmals einen Ort im Code — ANN-001 nannte `public.retention_classes`, aber Betriebslogs liegen nicht in unserer Datenbank. **G6 ist damit nicht fertig:** gebaut ist einer von sieben Punkten. Fortschritt **45,5 → 46,4 %**.
+**Eine Patientin kann ihre Rechte jetzt geltend machen, und die Praxis kann antworten.** OPS-006 (minimal) ist die Vorbedingung aus ADR-007 Punkt 5, die als erste von außen ausgelöst wird. Drei Teile: Das **Verfahren** steht als [`datenschutz/betroffenenrechte.md`](datenschutz/betroffenenrechte.md) — Fristen nach Art. 12 Abs. 3 DSGVO, Ablauf vom Eingang bis zur Ablage, die sieben Rechte einzeln und, ausdrücklich, die **Grenzen des heutigen Stands**. Die **Auskunft** nach Art. 15 Abs. 3 DSGVO ist `export_patient_record`: nur `owner`, nur die eigene Organisation, jeder Aufruf als `patient_record.exported` protokolliert — und **vollständig geprüft gegen den Aufbewahrungsplan**, nicht gegen eine Liste im Test; eine neue Tabelle der Klasse `patientenakte` macht den Test rot. Die **begründete Ablehnung** eines Löschverlangens ist kein feststehender Text, sondern ein Entwurf mit Grundlage, Ankerdatum und Fristende dieser einen Akte; läuft die Behandlung noch, nennt er kein Löschdatum. Eine neue Annahme: **ANN-092** — das Zugriffsprotokoll ist nicht Teil der Auskunft (Art. 15 Abs. 4 DSGVO, §20), auf Verlangen wird es von Hand erteilt. Fortschritt **46,4 → 47,3 %**.
 
-**Dazu ein Nachtrag zu MAP-005** (parallele Sitzung, drei Befunde aus Teil A der Abnahme): Der Knopf steht jetzt **an seinem Stopp**, ein `geo:`-Verweis bekommt keinen eigenen Tab mehr, der leer stehen bliebe, und die Fahrzeiten beginnen mit **dem Tag in Folge** statt mit der 8 × 8-Tabelle (**BEF-030** bis **BEF-032**).
+**Was bewusst nicht gebaut ist**, steht im Verfahren statt in einer Fußnote: keine Vorgangsakte für Frist und Wiedervorlage, kein Zugriffsprotokoll auf Knopfdruck, kein eigener Zustand für Art. 18, keine Selbstbedienung, Trainingsdaten von Hand. Jeder dieser Punkte ist mit dem Verfahren auch ohne Software zu erfüllen — deshalb Komfort und kein Mangel.
 
 ## Danach — Reihenfolge seit 2026-09-22
 
-1. **OPS-006 (minimal)** — Betroffenenrechte: Verfahren, Export der Akte, begründete Ablehnung
-2. **OPS-007** — Bootstrap-Runbook, gegen die Testumgebung geprobt (G11, M3)
-3. **OPS-004, Rest** — davon gehen ohne Cloudprojekt nur zwei: Entscheidung zu externem
+1. **OPS-007** — Bootstrap-Runbook, gegen die Testumgebung geprobt (G11, M3)
+2. **OPS-004, Rest** — davon gehen ohne Cloudprojekt nur zwei: Entscheidung zu externem
    Error-Tracking und „abgewiesene Zugriffe protokolliert"; Alarmierung, Security-Log 12 Monate
    und die Erkennung für Art. 33 warten auf **G3**
+3. **PAT-006 (G8)** — Datenschutzinformation und Einwilligungen; das Verfahren aus OPS-006 verweist
+   an zwei Stellen darauf, und ohne Einwilligung gibt es nichts zu widerrufen
 
 ## Prüfverfahren
 
-**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329);
-**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2282**; `test:db` **1769** — in dieser Session **nicht gelaufen**, weil keine Migration und keine Policy berührt ist. `ASSUMPTIONS.md`: **1198** Zeilen (unverändert, weder OPS-004 noch der MAP-005-Nachtrag brauchten eine neue Annahme).
+**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2308**; `test:db` **1788** — in dieser Session **vollständig gelaufen**, weil eine Migration dazukam. `ASSUMPTIONS.md`: **1210** Zeilen (ANN-092; Obergrenze zum zehnten Mal nachgezogen). **Nicht gelaufen: die Sichtprüfung im Browser** — hinter der Anmeldung startet in der Cloud kein GoTrue; sie steht als Abnahmeschritt.
 
 ## Blocker (Jannes-seitig)
 
@@ -53,8 +53,8 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Auf Abnahme warten
 
-Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005 samt CAL-027, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003, MAP-004 und MAP-005 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001, MAP-003 und MAP-004 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md). **OPS-004 steht nicht dabei** — was dieser Loop gebaut hat, prüfen Tests und Lint, nicht ein Klickweg.
+Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005 samt CAL-027, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003, MAP-004 und MAP-005 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001, MAP-003 und MAP-004 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md). **OPS-006** kommt neu dazu ([Etappe G](abnahme/etappe-g-betriebsreife.md)); **OPS-004 steht nicht dabei** — was der Loop davor gebaut hat, prüfen Tests und Lint, nicht ein Klickweg.
 
 ## Letzte Session
 
-**Eine Verbotsliste, die niemand prüft, ist ein Vorsatz.** ADR-011 hatte das selbst geschrieben und die Frage offen gelassen, ob die Prüfung in CI oder zur Laufzeit gehört; die Antwort ist **beides**, und die beiden Teile prüfen Verschiedenes. Die eigentliche Entscheidung steckt in der Richtung des Filters: **Erlaubnisliste statt Verbotsliste**, weil ein Filter, der behauptet, Patientennamen zu erkennen, schlimmer ist als keiner. Heraus kommt nur, was vorher beschrieben wurde — ein fester Bezeichner, eine UUID, eine endliche Zahl. Eine echte Verbotsliste blieb für **Schlüsselnamen** (Token, Cookie, Authorization): der Fall, den die Erlaubnisliste nicht trägt, weil manche Sitzungsschlüssel wie UUIDs aussehen. **Vier Gegenproben** sind gelaufen und zurückgenommen worden, damit die Wächter nicht leerlaufen. Zur Logfrist ist bewusst **keine** Annahme entstanden: Die kleinere Zahl still einzutragen wäre das Aufweichen einer Nachweismöglichkeit gewesen. **Parallel dazu drei Befunde aus der MAP-005-Abnahme, alle behoben:** der `geo:`-Verweis in einem leeren Tab (**BEF-030**), die Matrix, die die Frage nicht beantwortet, die gestellt wird (**BEF-031**), und neunzehn Bedienelemente für eine Handlung aus einem Tap (**BEF-032**) — die echte Tagesliste war davon nie betroffen.
+**Eine Kopie, die ihre eigenen Lücken verschweigt, ist die schlechtere Auskunft.** Die Auskunft nach Art. 15 nennt deshalb in der Antwort selbst, was sie nicht enthält — Dateiinhalte, Trainingsdaten, das Zugriffsprotokoll. Die eigentliche Entscheidung war die **Richtung der Vollständigkeitsprüfung**: Der Test liest die Tabellen der Akte aus `retention_assignments` und vergleicht sie gegen die Abschnitte der Kopie; eine Liste im Test wäre beim ersten neuen Feature still veraltet, und eine unvollständige Auskunft merkt niemand. **ANN-092** ist die einzige neue Annahme und trägt die unbequeme Mitte: Das Auditlog ganz herauszugeben, hübe die Beschränkung aus ADR-010 Punkt 13 über den Umweg der Auskunft auf — jede Zeile ist auch ein Datensatz über eine beschäftigte Person; die Auskunft ganz zu verweigern, wäre der umgekehrte Fehler. Erteilt wird sie auf Verlangen, von Hand, ohne die Namen. Ebenfalls eine Entscheidung und keine Kleinigkeit: **Die Seite exportiert nicht beim Öffnen.** Ein Export beim Blättern machte das Protokoll wertlos, das ihn festhält. Der Ablehnungsentwurf rechnet aus `retention_classes` und `app.retention_due_at` — ein geänderter Aufbewahrungsplan ändert den Brief mit, und nirgends steht eine Frist ein zweites Mal. **BEF-033** neu, aufgefallen und bewusst nicht mitgemacht: Die Aufbewahrungsseite zeigt `Par. 630f Abs. 3 BGB` statt `§ 630f Abs. 3 BGB`; die Funktion dafür gibt es jetzt, die Änderung gehört in den Loop, der die Seite ohnehin anfasst.

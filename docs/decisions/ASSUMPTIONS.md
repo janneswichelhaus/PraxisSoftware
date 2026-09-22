@@ -1196,3 +1196,15 @@ Technik · offen · 2026-09-22 · — · — · Wiedervorlage: mit der Antwort d
 **Anker.** `MAX_MATRIX_PUNKTE` in `src/lib/location/matrix.ts`; die Kopie in `supabase/functions/location-provider/typen.ts` hängt über `typen.test.ts` daran und darf nicht wegdriften.
 
 **Änderungspfad.** Nennt PTV eine Zahl, tritt sie an die Stelle dieser: eine Konstante, ihre Kopie und der Test dazwischen · Aufwand `klein`.
+
+### ANN-092 — Das Zugriffsprotokoll ist nicht Teil der Auskunft nach Art. 15
+
+Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: mit dem DSFA-Paket (G14), zusammen mit der Frage nach den Namen der Beschäftigten
+
+**Annahme.** Die Kopie der Akte nach Art. 15 Abs. 3 DSGVO enthält **keine Auditzeilen**. Verlangt die betroffene Person ausdrücklich Auskunft über die Zugriffe auf ihre Akte, wird sie erteilt — von Hand aus dem Auditlog und ohne die Namen der Beschäftigten, solange kein besonderer Grund dagegen spricht.
+
+**Begründung.** Jede Auditzeile ist zwei Datensätze zugleich: einer über die Patientin und einer über die zugreifende beschäftigte Person. Art. 15 Abs. 4 DSGVO nimmt die Rechte anderer aus, §20 `PROJECT_PRINCIPLES.md` verbietet jede Auswertung an Mitarbeitenden, und ADR-010 Punkt 13 hält das Lesen des Auditlogs deshalb schon intern bei `owner`. Ein automatischer Export würde diese Beschränkung über den Umweg der Auskunft aufheben — bei einem Anspruch, den niemand geltend gemacht hat. Der umgekehrte Fehler wäre, die Auskunft ganz zu verweigern: Wer bei wem in Behandlung ist, steht auch im Protokoll, und ein Auskunftsanspruch dazu ist nicht fernliegend. Unsicher ist die Mitte: ob die Namen der Beschäftigten herausgehören. Dazu gibt es keine gefestigte Linie; die Zurückhaltung ist die vorsichtige Seite und rücknehmbar.
+
+**Anker.** Das Feld `nicht_enthalten` in `public.export_patient_record`, `supabase/migrations/20260922100000_betroffenenrechte.sql`; der Test dazu in `supabase/tests/betroffenenrechte.test.ts`.
+
+**Änderungspfad.** Soll das Protokoll mitkommen: einen Abschnitt `audit_log` in die Funktion aufnehmen, Beschriftung in `kategorien.ts` ergänzen, Hinweis streichen · Aufwand `klein`. Soll die Auskunft dazu ganz entfallen: Hinweis umformulieren, Verfahren nachziehen · Aufwand `klein`.

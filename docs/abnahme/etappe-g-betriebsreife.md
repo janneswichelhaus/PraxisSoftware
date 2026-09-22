@@ -556,3 +556,61 @@ den Umgebungsvariablen aus [`../DEVELOPMENT.md`](../DEVELOPMENT.md) Schritt 6:
 **Was hier nicht geprüft werden kann:** ob eine spätere Version der
 Storage-API anders nach der Berechtigung fragt. Deshalb steht dieser Test in
 der Wiedervorlage von ANN-052 bei jedem Upgrade.
+
+---
+
+## OPS-006 — Auskunft nach Art. 15 und die Antwort auf ein Löschverlangen
+
+**Was geprüft wird:** dass die Praxisleitung in der Akte beides erledigen kann —
+und dass niemand sonst an die Kopie kommt. Das Verfahren dazu steht in
+[`../datenschutz/betroffenenrechte.md`](../datenschutz/betroffenenrechte.md).
+
+**Reicht ohne Mailfänger**, braucht aber die Anmeldung; in der
+Cloud-Entwicklungsumgebung startet dafür kein Anmeldedienst.
+
+1. **Der Weg hinein.** Als `jannes.test@praxis.invalid` anmelden, Akte von Max
+   Mustermann → Stammdaten. Unten steht der Abschnitt „Betroffenenrechte" mit
+   „Auskunft und Löschverlangen". Tippen.
+2. **Nichts passiert von allein.** Die Seite zeigt zwei Abschnitte. Oben steht
+   nur die Schaltfläche „Auskunft erstellen" — **keine** Daten. Das ist der
+   Punkt: Jede erstellte Kopie ist ein protokollierter Export.
+3. **Die Kopie.** „Auskunft erstellen" tippen. Es erscheinen die Abschnitte mit
+   Anzahl — Name, Behandlungsverhältnis, Kontakt- und Stammdaten, Termine,
+   Terminbenachrichtigungen —, darunter „Nicht enthalten" mit vier Punkten,
+   unter ihnen das Zugriffsprotokoll.
+4. **Als Datei.** „Kopie als Datei sichern" tippen. Es lädt eine Datei
+   `auskunft-JJJJMMTT-xxxxxxxx.json`. Öffnen: Sie enthält Max Mustermanns
+   Angaben, die Termine und den Abschnitt `nicht_enthalten`. **Im Dateinamen
+   steht kein Name.**
+5. **Der Export steht im Protokoll.** Organisatorisches → Sicherheit öffnen:
+   Dort steht ein neuer Eintrag „Auskunft aus der Akte erteilt" mit Zeitpunkt
+   und Akte.
+6. **Das Löschverlangen.** Zurück auf die Seite, unterer Abschnitt: Dort steht
+   „§ 630f Abs. 3 BGB — Frist läuft noch nicht" (die Versorgung von Max ist
+   nicht abgeschlossen) und darunter der Entwurf der Antwort. Lesen: Er nennt
+   **kein** Löschdatum, sondern sagt, dass die Frist erst mit dem Abschluss der
+   Behandlung beginnt.
+7. **Mit Abschluss wird daraus ein Datum.** In den Stammdaten „Versorgung
+   abschließen" mit dem heutigen Tag bestätigen, zurück auf die Seite: Jetzt
+   steht dort „aufzubewahren bis" mit dem Tag in zehn Jahren, und der Entwurf
+   nennt denselben Tag. Danach den Abschluss wieder zurücknehmen.
+8. **Niemand sonst.** Abmelden, als `anna.beispiel@praxis.invalid` anmelden,
+   dieselbe Akte → Stammdaten: Der Abschnitt „Betroffenenrechte" **fehlt**. Die
+   Adresse `/patienten/66666666-6666-4666-8666-000000000001/auskunft` direkt in
+   die Adresszeile tippen: Es erscheint die Übersicht, nicht die Seite.
+   Dasselbe als `olivia.office@praxis.invalid` und
+   `tim.teamleitung@praxis.invalid`.
+9. **Auf dem Telefon.** Schritt 1 bis 3 bei ~375 px wiederholen: Kein
+   waagerechtes Scrollen, der Entwurf ist lesbar und kopierbar.
+
+**Was die Tests belegen:** dass `export_patient_record` und
+`patient_retention_status` jede Rolle außer `owner` abweisen, eine Akte einer
+fremden Organisation mit derselben Meldung wie eine unbekannte Kennung, dass
+jede Auskunft eine Auditzeile ohne Inhalte schreibt und eine abgewiesene keine,
+und dass die Kopie jede Tabelle der Klasse `patientenakte` enthält — geprüft
+gegen `retention_assignments`, nicht gegen eine Liste im Test
+(`supabase/tests/betroffenenrechte.test.ts`).
+
+**Was hier nicht geprüft werden kann:** ob der Entwurf rechtlich trägt. Das
+gehört in die Datenschutzprüfung (B2, G14) — zusammen mit **ANN-092**, der
+Frage nach dem Zugriffsprotokoll in der Auskunft.
