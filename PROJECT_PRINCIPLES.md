@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.13** |
-| **Änderungsdatum** | **2026-09-20** |
-| Vorversion | 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.14** |
+| **Änderungsdatum** | **2026-09-22** |
+| Vorversion | 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -1458,6 +1458,31 @@ statt.**
 Tourendaten dienen der Einsatz- und Routenplanung sowie der Abrechnung, nicht
 der Verhaltens- oder Leistungskontrolle.
 
+### 20.1 Navigationsführung auf dem Gerät
+
+Eine Navigationsführung auf dem Gerät der fahrenden Person ist von dem Verbot
+oben nicht erfasst, solange sie **alle** folgenden Bedingungen erfüllt:
+
+1. Die Position wird **ausschließlich auf dem Gerät** verarbeitet. Sie wird
+   NICHT an die Praxissoftware übermittelt und dort NICHT gespeichert — auch
+   nicht in einem Log.
+2. Die Führung beginnt **nur auf ausdrückliche Aktion** der fahrenden Person,
+   endet mit der Fahrt und ist jederzeit abbrechbar. Sie startet NIEMALS
+   automatisch.
+3. An den Kartendienst geht eine Position **nur** zur Neuberechnung einer
+   Route, ohne Namen, Kennung oder Uhrzeit — dieselbe Datenart wie ein
+   Wegpunkt bei der Routenberechnung.
+4. Aus diesen Daten entsteht **keine Auswertung, keine Historie und kein
+   Bewegungsprofil**, auch nicht in aggregierter Form.
+
+**Der Arbeitgeber DARF aus einer solchen Funktion keinen Standort ableiten
+können.** Eine Funktion, die das ermöglichte, ist von diesem Abschnitt NICHT
+gedeckt — unabhängig davon, ob von der Möglichkeit Gebrauch gemacht wird.
+
+Dieser Abschnitt erlaubt eine Funktion und lockert keine Grenze: Der Satz
+oben gilt unverändert. Umsetzung und Bedingungen im Einzelnen:
+[ADR-019](docs/adr/ADR-019-map-service.md) Abschnitt F.
+
 Routing-Rohdaten unterliegen einer kurzen Speicherfrist (§18).
 
 Ob und in welcher Form aggregierte Auswertungen zulässig sind, ist noch nicht
@@ -1552,6 +1577,39 @@ was sieht, ist eine Produktentscheidung und steht hier.
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.14
+
+Der **Nachzug an Rang 1** zu ADR-019 Fassung 3, fachlich entschieden vom
+Projektinhaber am 2026-09-22. Die Version fügt **§20.1** hinzu und ist damit
+keine Korrekturversion (§21). Geändert wird **nur** §20; alle übrigen
+Paragraphen bleiben Wort für Wort, wie sie in 0.13 standen.
+
+- **§20.1 neu — Navigationsführung auf dem Gerät.** Eine Führung während der
+  Fahrt ist zulässig, wenn sie vier Bedingungen **kumulativ** erfüllt:
+  Position nur auf dem Gerät, Start nur auf Aktion und jederzeit abbrechbar,
+  Übermittlung an den Kartendienst nur zur Neuberechnung, keine Auswertung
+  und kein Bewegungsprofil. Dazu ein ausdrückliches DARF-NICHT: Der
+  Arbeitgeber darf aus der Funktion **keinen Standort ableiten können** —
+  unabhängig davon, ob er es täte.
+- **Was ausdrücklich NICHT geändert wurde.** Der Satz „Eine permanente GPS-
+  oder Live-Ortung von Mitarbeiter:innen findet NICHT statt" steht
+  unverändert und ist durch §20.1 **nicht** eingeschränkt. §20.1 beschreibt
+  eine Funktion, die gerade keine Ortung ist, weil niemand außer der
+  fahrenden Person je erfährt, wo sie ist. Wäre sie eine, wäre sie nicht
+  gedeckt.
+- **Warum überhaupt.** Die Nachfrage des Projektinhabers am 2026-09-22 zielte
+  auf eine Führung innerhalb der Software. Die Prüfung ergab, dass der
+  Kartendienst eine Führung nicht als Auftragsverarbeitung liefert (ADR-019
+  Abschnitt F) — sie wäre also ohnehin im Browser zu bauen. Genau das macht
+  den engen Zuschnitt möglich: Eine Führung auf dem Gerät braucht keine
+  Ortung durch die Praxis, und deshalb wird dieser Paragraph präziser statt
+  schwächer. Eine Fassung, die die Ortung erlaubt hätte, wurde erwogen und
+  verworfen: Sie hätte für dieselbe Funktion die Leitplanke gekostet.
+- **Was daran offen bleibt.** Ob die vier Bedingungen rechtlich ausreichen,
+  ist eine Frage an die Datenschutzberatung (**B2**, erweitert). Bis zu ihrer
+  Antwort gilt dieser Paragraph, und kein Loop baut die Führung: ADR-019
+  Punkt 32 setzt sie ohnehin hinter MAP-006 und hinter das Gate.
 
 ### Änderungsvermerk 0.13
 
