@@ -86,9 +86,6 @@ export function KartePage() {
         route={route}
       />
 
-      <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">Die Navigation</h2>
-      <NavigationHandoff stopps={TESTSTOPPS} />
-
       <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">Die Route</h2>
       <Routenangaben
         laedt={fahrrad.isFetching}
@@ -111,24 +108,7 @@ export function KartePage() {
       />
 
       <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">Die Stopps</h2>
-      <p className="text-ink-muted mb-3 text-sm">
-        Dieselben Punkte als Liste — die Karte ist nicht der einzige Weg zu ihnen.
-      </p>
-      <ol aria-label="Die Stopps" className="border-line border-y">
-        {TESTSTOPPS.map((stopp) => (
-          <li
-            key={stopp.label}
-            className="border-line flex items-baseline gap-3 border-b py-3 last:border-b-0"
-          >
-            <span className="bg-accent-soft text-accent rounded-pill flex h-7 w-7 shrink-0 items-center justify-center text-sm font-semibold">
-              {stopp.label}
-            </span>
-            <span className="text-ink text-[0.9375rem] tabular-nums">
-              {koordinate(stopp.position.lat)} Nord · {koordinate(stopp.position.lon)} Ost
-            </span>
-          </li>
-        ))}
-      </ol>
+      <NavigationHandoff stopps={TESTSTOPPS} />
 
       <OffeneEntscheidung titel="Der Kartendienst ist geprüft, aber nicht freigegeben">
         Kacheln sind der einzige direkte Kontakt des Browsers zum Anbieter; sie tragen
@@ -146,9 +126,4 @@ export function KartePage() {
       </p>
     </>
   );
-}
-
-/** Dezimalgrad in deutscher Schreibweise, auf rund elf Meter genau. */
-function koordinate(wert: number): string {
-  return wert.toFixed(4).replace('.', ',');
 }

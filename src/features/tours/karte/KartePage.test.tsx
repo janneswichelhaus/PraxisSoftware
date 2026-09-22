@@ -171,21 +171,24 @@ describe('KartePage', () => {
 
     const liste = screen.getByRole('list', { name: 'Die Stopps' });
     expect(within(liste).getAllByRole('listitem')).toHaveLength(TESTSTOPPS.length);
-    expect(within(liste).getByText(/48,5216 Nord · 9,0576 Ost/)).toBeInTheDocument();
+    expect(within(liste).getByText('48,5216 · 9,0576')).toBeInTheDocument();
   });
 
-  it('traegt den Navigations-Handoff, ohne vorab eine URL zu bauen', () => {
-    // MAP-005b: Der Knopf steht auf der Seite, das Ziel nicht. Was er baut,
-    // prueft `NavigationHandoff.test.tsx`; hier zaehlt, dass die Seite ihn
-    // ueberhaupt traegt und dass vor dem Tippen nichts im Quelltext steht.
+  it('traegt den Handoff an der Stoppliste, ohne vorab eine URL zu bauen', () => {
+    // MAP-005b: Der Knopf steht an seinem Stopp, das Ziel nirgends. Was er
+    // baut, prueft `NavigationHandoff.test.tsx`; hier zaehlt, dass die Seite
+    // ihn traegt und dass vor dem Tippen nichts im Quelltext steht.
     const { container } = renderWithProviders(<KartePage />, '/touren/karte');
 
-    expect(screen.getByRole('heading', { name: 'Die Navigation' })).toBeInTheDocument();
+    const liste = screen.getByRole('list', { name: 'Die Stopps' });
     expect(
-      screen.getByRole('button', { name: 'Navigation zu Stopp 1 starten' }),
+      within(liste).getByRole('button', { name: 'Navigation zu Stopp 1 starten' }),
     ).toBeInTheDocument();
     expect(screen.getByText(/übergibt eine erfundene Koordinate/)).toBeInTheDocument();
     expect(container.innerHTML).not.toContain('google.com/maps');
+
+    // Und kein zweiter Abschnitt daneben: die Stopps stehen genau einmal.
+    expect(screen.getAllByRole('list', { name: 'Die Stopps' })).toHaveLength(1);
   });
 
   it('zeigt ohne Kachelschluessel den Hinweis statt einer Karte', () => {

@@ -239,7 +239,10 @@ Route vor **BEF-023**, und dort war sie an drei Stellen falsch. Dieser Schritt
 ist deshalb der erste.
 
 1. Seite `/touren/karte` öffnen. Erwartung: unter der Route der Abschnitt
-   **„Die Fahrzeiten"** mit einer 8 × 8-Tabelle voller Minutenangaben.
+   **„Die Fahrzeiten"** — zuerst **„Der Tag in Folge"** mit sieben Zeilen
+   (1 → 2 bis 7 → 8), darunter aufklappbar **„Alle Paare als Tabelle (8 × 8)"**
+   mit den Minutenangaben. Seit **BEF-031** steht die Arbeitsfrage vorn und die
+   Matrix dahinter; beide kommen aus derselben Antwort des Anbieters.
 2. Kommt stattdessen **„Kartendienst nicht erreichbar"** oder **„Anfrage nicht
    gültig"**: Im `serve`-Fenster steht die Fehlerklasse, im Netzwerkfenster die
    Antwort des Anbieters unter `causes`. Beides gehört in
@@ -270,22 +273,29 @@ ist deshalb der erste.
 
 ### 3. Die Markierung sagt das Richtige
 
-1. Erwartung: Unterhalb der Diagonale ist fast alles markiert — rückwärts
-   durch den Tag hat der nächste Termin schon begonnen. Der Satz über der
-   Tabelle sagt genau das.
-2. Erwartung: Oberhalb der Diagonale ist ein Teil markiert und ein Teil nicht.
+**Zuerst die Tagesfolge, dann die Tabelle aufklappen** (BEF-031).
+
+1. In **„Der Tag in Folge"**: Erwartung: je Zeile die beiden Uhrzeiten, die
+   Fahrzeit und der Rest — „passt, 4 Min. übrig", „passt genau" oder
+   „× 2 Min. zu wenig". Nachrechnen an einer Zeile: 15 Minuten Lücke, davon
+   5 Minuten neben der Fahrt; 10 Minuten Fahrt passen genau, 11 nicht mehr.
+2. **„Alle Paare als Tabelle" aufklappen.** Erwartung: Unterhalb der Diagonale
+   ist fast alles markiert — rückwärts durch den Tag hat der nächste Termin
+   schon begonnen. Der Satz über der Tabelle sagt genau das.
+3. Erwartung: Oberhalb der Diagonale ist ein Teil markiert und ein Teil nicht.
    Nachrechnen an einer Zelle: Nachbarstopps haben 15 Minuten Lücke, davon
    5 Minuten Puffer — 10 Minuten Fahrt passen, 11 nicht.
-3. Erwartung: Jede markierte Zelle trägt ein **×** neben der Zahl. Die
+4. Erwartung: Jede markierte Zelle trägt ein **×** neben der Zahl. Die
    Bedeutung darf nicht allein an der Farbe hängen.
-4. Erwartung: Der Text unter der Tabelle nennt das Raster „erfunden" und sagt,
+5. Erwartung: Der Text unter der Tabelle nennt das Raster „erfunden" und sagt,
    dass nichts gespeichert wird.
 
 ### 4. Telefon und Tastatur
 
-1. Fenster auf **375 px**. Erwartung: Die **Tabelle** scrollt seitwärts, die
-   **Seite nicht**. Genau das war im Loop der erste Befund; wer hier doch die
-   ganze Seite verschieben kann, hat einen Rückfall gefunden.
+1. Fenster auf **375 px**, Tabelle aufgeklappt. Erwartung: Die **Tabelle**
+   scrollt seitwärts, die **Seite nicht**. Genau das war im Loop der erste
+   Befund; wer hier doch die ganze Seite verschieben kann, hat einen Rückfall
+   gefunden. Die **Tagesfolge** darüber bricht um und scrollt nie.
 2. Erwartung: Der Satz über der Tabelle bricht um und ist vollständig lesbar.
 3. Mit der **Tastatur** in die Tabelle tabben und mit den Pfeiltasten
    scrollen. Erwartung: Der Fokus ist sichtbar, die Tabelle bewegt sich.
@@ -329,30 +339,34 @@ entschieden werden kann.
 
 ### Teil A — am Laptop
 
+**Die Seite hat sich nach dem ersten Durchgang geändert** (BEF-030 bis
+BEF-032): Der Knopf steht jetzt **an seinem Stopp** in der Liste, der
+Tagesknopf darüber, und die Wahl der Ziel-App liegt weggeklappt — sie gehört
+der Gerätebewertung, nicht dem Arbeitsschritt. Ein eigener Abschnitt „Die
+Navigation" existiert nicht mehr.
+
 #### A1. Der Knopf baut nichts, bevor er gedrückt wird
 
-1. `/touren/karte` öffnen, zum Abschnitt **„Die Navigation"**. Erwartung: ein
-   Satz, was übergeben wird; die Wahl der Ziel-App; acht Knöpfe „Stopp 1" bis
-   „Stopp 8"; darunter **„Ganzer Tag – Abschnitt 1 von 2"** und „Abschnitt 2
-   von 2".
-2. Rechtsklick → **Seitenquelltext untersuchen** auf einem Stopp-Knopf.
+1. `/touren/karte` öffnen, zum Abschnitt **„Die Stopps"**. Erwartung: ein Satz,
+   was übergeben wird; darunter **„Ganzer Tag – Abschnitt 1 von 2"** und
+   „Abschnitt 2 von 2"; darunter die acht Stopps, **je Zeile Nummer,
+   Koordinate und ein Knopf „Navigation"**. Mehr Bedienelemente sind dort
+   nicht — weder eine zweite Stoppliste noch eine Auswahl im Weg.
+2. Rechtsklick → **Seitenquelltext untersuchen** auf einem „Navigation"-Knopf.
    Erwartung: ein `<button>` **ohne** `href`, und nirgends auf der Seite ein
    `google.com/maps`, `maps.apple.com` oder `geo:`. Steht dort ein Verweis,
    ist die Abnahme nicht bestanden — „erst beim Tippen" ist die Bedingung,
    unter der ADR-019 den Handoff überhaupt erlaubt (Punkt 20).
-3. Die Ziel-App auf **Systemnavigation** stellen. Erwartung: aus zwei
-   Abschnitten werden **acht** („Abschnitt 1 von 8"), und der Satz darunter
-   sagt warum. Seite neu laden. Erwartung: wieder **Google Maps** — die Wahl
-   ist keine Einstellung und überlebt nichts.
-4. Mit der **Tastatur** durch den Abschnitt tabben. Erwartung: Auswahl mit den
-   Pfeiltasten, jeder Knopf erreichbar, Fokus sichtbar.
+3. Mit der **Tastatur** durch den Abschnitt tabben. Erwartung: jeder Knopf
+   erreichbar, Fokus sichtbar; das zugeklappte „Andere Ziel-App prüfen" öffnet
+   mit Enter.
 
 #### A2. Was beim Tippen entsteht
 
 Am Laptop öffnet der Knopf einen **neuen Tab**, und dessen **Adresszeile ist
 die Prüfung**: Dort steht genau das, was das Gerät bekommt.
 
-1. **Google Maps**, „Stopp 3" anklicken. Erwartung in der Adresszeile:
+1. Bei Stopp 3 auf **„Navigation"** klicken. Erwartung in der Adresszeile:
    `destination=48.5164,9.0349`, `travelmode=bicycling`, `api=1` — und sonst
    **nichts**. Kein Name, keine Uhrzeit, keine Kennung, **kein `origin`**:
    Der Startpunkt gehört dem Gerät, nicht der Praxis (§20).
@@ -363,26 +377,32 @@ die Prüfung**: Dort steht genau das, was das Gerät bekommt.
    geöffneten Karte **zählen**. Erwartung: **vier** (drei Zwischenziele plus
    Ziel), keiner fehlt. Fehlt einer, ist schon drei zu viel, und die Zahl
    gehört nach unten statt nach oben.
-4. **Apple Maps** wählen, „Stopp 3" anklicken. Erwartung in der Adresszeile:
+4. **„Andere Ziel-App prüfen"** aufklappen, **Apple Maps** wählen, wieder auf
+   „Navigation" tippen. Erwartung in der Adresszeile:
    `maps.apple.com/directions?destination=48.5164,9.0349&mode=cycling`. **Was
    die Seite daraus macht, ist hier egal** — ohne Apple-Gerät ist die
    Darstellung nicht die Prüffrage, die Übergabe schon.
-5. **Systemnavigation** wählen, „Stopp 3" anklicken. Erwartung: Der Browser
-   fragt nach einer Anwendung oder **es passiert sichtbar nichts**. Beides ist
-   in Ordnung: Ein `geo:`-Verweis ist für ein Telefon gemacht. **Kein
-   Befund** — genau dafür ist Teil B da.
+5. **Systemnavigation** wählen, auf „Navigation" tippen. Erwartung: **kein
+   neuer Tab**. Entweder fragt der Browser nach einer Anwendung, oder es
+   passiert sichtbar nichts und die Seite bleibt stehen. **Ein leerer Tab wäre
+   ein Rückfall auf BEF-030** — dann ist die Abnahme nicht bestanden.
+6. Erwartung bei Systemnavigation außerdem: **kein Tagesknopf**, stattdessen
+   der Satz, dass ein `geo:`-Verweis kein Zwischenziel kennt. Acht gleich
+   aussehende Abschnittsknöpfe wären der Rückfall auf BEF-032.
+7. Seite neu laden. Erwartung: wieder **Google Maps**, und die Auswahl wieder
+   zugeklappt — die Wahl ist keine Einstellung und überlebt nichts.
 
 #### A3. Schmal, ohne Telefon
 
 1. Entwicklerwerkzeuge → **Geräteansicht** (Strg/Cmd + Umschalt + M), Breite
-   **375 px**. Erwartung: Der Abschnitt bricht um, nichts läuft waagerecht
-   über, die acht Stopp-Knöpfe stehen in mehreren Reihen.
+   **375 px**. Erwartung: Nichts läuft waagerecht über; **jede Stoppzeile
+   bleibt eine Zeile** — Nummer, Koordinate, Knopf nebeneinander.
 2. Einen Knopf im Elementebaum auswählen. Erwartung: Die Höhe steht bei
    **44 px** (der Rahmen in der Geräteansicht zeigt sie an). Weniger wäre ein
-   Rückbau — dieselbe Zahl hält seit diesem Loop eine Browserprüfung in
+   Rückbau — dieselbe Zahl hält eine Browserprüfung in
    `tests/e2e/karte.spec.ts` fest.
-3. Erwartung: Die drei Auswahlfelder der Ziel-App sind ebenso hoch und mit
-   dem Finger sicher zu treffen.
+3. Erwartung: Die drei Auswahlfelder der Ziel-App sind ebenso hoch und mit dem
+   Finger sicher zu treffen.
 
 #### A4. Was nicht passiert ist
 

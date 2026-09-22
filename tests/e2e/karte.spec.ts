@@ -221,14 +221,15 @@ test.describe('Kartenprototyp', () => {
   }) => {
     // MAP-005b. Zwei Fragen, die jsdom nicht beantwortet: Ist ein Tippziel
     // wirklich 44 px hoch (die Klasse allein ist kein Beweis), und entsteht
-    // die URL erst beim Tippen? Geoeffnet wird nichts - `window.open` liegt
-    // fuer diesen Lauf auf einem eigenen Sammler, sonst verliesse der Test
-    // seinen Ursprung.
+    // die URL erst beim Tippen? Geoeffnet wird nichts - der Klick auf den
+    // Verweis liegt fuer diesen Lauf auf einem eigenen Sammler, sonst
+    // verliesse der Test seinen Ursprung.
     await page.addInitScript(() => {
       (window as unknown as { __ziele: string[] }).__ziele = [];
-      window.open = (url?: string | URL) => {
-        (window as unknown as { __ziele: string[] }).__ziele.push(String(url));
-        return null;
+      HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) {
+        (window as unknown as { __ziele: string[] }).__ziele.push(
+          `${this.getAttribute('href')} target=${this.target} rel=${this.rel}`,
+        );
       };
     });
     await page.setViewportSize({ width: 375, height: 667 });
@@ -240,7 +241,7 @@ test.describe('Kartenprototyp', () => {
     // Vor dem Tippen steht kein Ziel auf der Seite - kein `href`, keine URL.
     expect(await page.locator('a[href]').count()).toBe(0);
     const quelltext = await page.content();
-    for (const spur of ['google.com/maps', 'maps.apple.com', 'geo:']) {
+    for (const spur of ['google.com/maps', 'maps.apple.com', 'geo:4']) {
       expect(quelltext, `"${spur}" steht vor dem Tippen im Quelltext`).not.toContain(spur);
     }
 
@@ -251,15 +252,13 @@ test.describe('Kartenprototyp', () => {
 
     // Jedes Tippziel des Abschnitts haelt die Bedienhoehe aus der
     // Oberflaechen-Checkliste (Punkt 1): 44 px, gemessen statt behauptet.
-    for (const knopf of await page
+    const knoepfe = await page
       .getByRole('button', { name: /Navigation zu Stopp|Ganzer Tag/ })
-      .all()) {
+      .all();
+    expect(knoepfe.length).toBe(STOPPS + 2);
+    for (const knopf of knoepfe) {
       const kasten = await knopf.boundingBox();
       expect(kasten?.height ?? 0).toBeGreaterThanOrEqual(44);
-    }
-    for (const app of ['Google Maps', 'Apple Maps', 'Systemnavigation']) {
-      const kasten = await page.getByText(app, { exact: true }).boundingBox();
-      expect(kasten?.height ?? 0, `Auswahl "${app}" ist zu flach`).toBeGreaterThanOrEqual(44);
     }
 
     // Ein Tap, ein Ziel: Koordinate und Fahrradmodus, sonst nichts.
@@ -267,20 +266,30 @@ test.describe('Kartenprototyp', () => {
     const ziele = async () =>
       page.evaluate(() => (window as unknown as { __ziele: string[] }).__ziele);
     expect(await ziele()).toHaveLength(1);
-    const url = new URL((await ziele())[0]!);
-    expect(url.origin).toBe('https://www.google.com');
-    expect(url.searchParams.get('destination')).toBe('48.5164,9.0349');
-    expect(url.searchParams.get('travelmode')).toBe('bicycling');
+    const [erster] = await ziele();
+    expect(erster).toContain('destination=48.5164%2C9.0349');
+    expect(erster).toContain('travelmode=bicycling');
+    expect(erster).toContain('target=_blank');
+    expect(erster).toContain('rel=noopener noreferrer');
 
-    // Dieselbe Koordinate an die Systemnavigation - und der Tag zerfaellt
-    // dort in acht Abschnitte, weil ein `geo:`-Verweis kein Zwischenziel
-    // kennt.
+    // Die Ziel-App liegt weggeklappt - sie gehoert der Geraetebewertung, nicht
+    // dem Arbeitsschritt (BEF-032).
+    const auswahl = page.getByRole('radio', { name: 'Systemnavigation' });
+    await expect(auswahl).toBeHidden();
+    await page.getByText('Andere Ziel-App prüfen (für die Gerätebewertung)').click();
+    // Geklickt wird die Beschriftung, nicht das Feld: Das Eingabefeld liegt
+    // `sr-only` darunter, und bedient wird die Flaeche, die man sieht.
     await page.getByText('Systemnavigation', { exact: true }).click();
-    await expect(
-      page.getByRole('button', { name: 'Ganzer Tag – Abschnitt 8 von 8' }),
-    ).toBeVisible();
+    await expect(auswahl).toBeChecked();
+
+    // Ein `geo:`-Verweis bekommt **keinen** eigenen Tab: Der bliebe leer
+    // stehen, wo kein Programm das Schema uebernimmt (BEF-030).
     await stopp3.click();
-    expect((await ziele())[1]).toBe('geo:48.5164,9.0349');
+    expect((await ziele())[1]).toBe('geo:48.5164,9.0349 target= rel=noopener noreferrer');
+
+    // Und statt acht gleich aussehender Abschnitte steht dort der Grund.
+    await expect(page.getByRole('button', { name: /Ganzer Tag/ })).toHaveCount(0);
+    await expect(page.getByText(/kein Zwischenziel/)).toBeVisible();
   });
 
   test('fragt waehrend des ganzen Laufs keinen fremden Host', async ({ page }) => {
