@@ -191,7 +191,7 @@ describe('Der Ausgang in der Edge Function', () => {
  * einen Namen aus der Liste nehmen.
  */
 const FEHLERDIENSTE =
-  /(^|[/:@])(sentry|bugsnag|rollbar|datadog|dd-trace|newrelic|honeybadger|logrocket|highlight-run|appsignal|raygun|trackjs|elastic-apm|airbrake|posthog|opentelemetry)([/@-]|$)/i;
+  /(^|[/:@.])(sentry|bugsnag|rollbar|datadog|dd-trace|newrelic|honeybadger|logrocket|highlight-run|appsignal|raygun|trackjs|elastic-apm|airbrake|posthog|opentelemetry)([/@-]|$)/i;
 
 describe('Externe Fehlerdienste', () => {
   it('stehen nicht unter den Abhaengigkeiten', () => {
@@ -206,15 +206,23 @@ describe('Externe Fehlerdienste', () => {
   });
 
   it('werden nirgends im Anwendungscode importiert', () => {
+    // Quelltext auch als .js/.mjs, dazu Skriptverweise in index.html und
+    // Importkarten der Edge Function - ueberall dort, wo ein SDK an
+    // package.json vorbei hineinkaeme.
+    const QUELLTEXT = /^(src|supabase|tests)\/.*\.(tsx?|jsx?|mjs)$/;
+    const VERWEISE = /^(index\.html|supabase\/functions\/.*\.json)$/;
     const IMPORT = /(?:from\s+|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g;
+    const ZEICHENKETTE = /["']([^"'\s]+)["']/g;
     const treffer = getrackteDateien()
-      .filter((pfad) => ANWENDUNGSCODE.test(pfad))
-      .flatMap((pfad) =>
-        [...quelltext(pfad).matchAll(IMPORT)]
+      .filter((pfad) => QUELLTEXT.test(pfad) || VERWEISE.test(pfad))
+      .flatMap((pfad) => {
+        const inhalt = readFileSync(join(stamm, pfad), 'utf8');
+        const muster = VERWEISE.test(pfad) ? ZEICHENKETTE : IMPORT;
+        return [...(VERWEISE.test(pfad) ? inhalt : ohneKommentare(inhalt)).matchAll(muster)]
           .map((import_) => import_[1]!)
           .filter((ziel) => FEHLERDIENSTE.test(ziel))
-          .map((ziel) => `${pfad}: ${ziel}`),
-      );
+          .map((ziel) => `${pfad}: ${ziel}`);
+      });
     expect(treffer).toEqual([]);
   });
 

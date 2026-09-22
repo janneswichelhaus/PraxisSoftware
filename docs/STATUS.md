@@ -19,7 +19,7 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Prüfverfahren
 
-**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2309** (3 neu); `test:db` **1812** (4 neu) — in dieser Session **vollständig gelaufen**, weil eine Migration dazukam. `ASSUMPTIONS.md`: **1210** Zeilen, unverändert. **Gegenproben** gelaufen (Grant auf die Hilfsfunktion, `@sentry/react`). **Keine Sichtprüfung** — die Oberfläche ist nicht berührt.
+**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2309** (3 neu); `test:db` **1812** (4 neu) — in dieser Session **vollständig gelaufen**, weil eine Migration dazukam. `ASSUMPTIONS.md`: **1210** Zeilen, unverändert. **Gegenproben** gelaufen (Grant auf die Hilfsfunktion, `@sentry/react`, Skript in `index.html`); **Zweitreview** ohne blockierenden Befund. **Keine Sichtprüfung** — die Oberfläche ist nicht berührt.
 
 ## Blocker (Jannes-seitig)
 
