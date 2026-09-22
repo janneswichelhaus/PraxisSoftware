@@ -7,17 +7,20 @@ import { useMatrix } from '@/lib/location/matrix';
 import { useRoute } from '@/lib/location/route';
 import { Fahrzeitmatrix } from './Fahrzeitmatrix';
 import { Karte } from './Karte';
+import { NavigationHandoff } from './NavigationHandoff';
 import { Routenangaben } from './Routenangaben';
 import { TESTSTOPPS } from './teststopps';
 
 /**
- * Vorschauseite des Kartenprototyps (MAP-002c, MAP-003b und MAP-004c, ADR-019).
+ * Vorschauseite des Kartenprototyps (MAP-002c, MAP-003b, MAP-004c und
+ * MAP-005b, ADR-019).
  *
- * Sie beantwortet drei Fragen: Läuft eine interaktive Karte mit eigenen,
+ * Sie beantwortet vier Fragen: Läuft eine interaktive Karte mit eigenen,
  * nummerierten Stopps innerhalb dieser Anwendung — auf dem Schreibtisch und
  * auf dem Telefon? Liegt zwischen denselben Stopps eine Fahrradroute mit
- * Distanz und Fahrzeit? Und sagen die Fahrzeiten zwischen je zwei Stopps
- * verlässlich, ob zwei Termine erreichbar wären? Mehr ist hier nicht: kein
+ * Distanz und Fahrzeit? Sagen die Fahrzeiten zwischen je zwei Stopps
+ * verlässlich, ob zwei Termine erreichbar wären? Und führt ein Tap von einem
+ * Stopp in die Navigations-App des Geräts? Mehr ist hier nicht: kein
  * Termin, keine Adresse, keine Person — das Terminraster hinter der Matrix ist
  * erfunden wie die Stopps. Echte Adressen kommen frühestens mit MAP-006 und
  * erst nach dem Gate aus ADR-019 Punkt 9.
@@ -71,7 +74,8 @@ export function KartePage() {
           'Acht erfundene Punkte im Stadtgebiet. Keine Adresse, kein Termin, keine Person — ' +
           'und nichts davon wird gespeichert. Für die Route gehen die acht Koordinaten über ' +
           'den eigenen Server an den Kartendienst; der Browser selbst lädt dort nur ' +
-          'Kartenausschnitt und Zoom.'
+          'Kartenausschnitt und Zoom. „Navigation starten" übergibt eine erfundene Koordinate ' +
+          'an die Navigations-App dieses Geräts — erst auf Tippen, nie von allein.'
         }
       />
 
@@ -81,6 +85,9 @@ export function KartePage() {
         beschriftung={`Karte mit ${TESTSTOPPS.length} synthetischen Teststopps in Tübingen`}
         route={route}
       />
+
+      <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">Die Navigation</h2>
+      <NavigationHandoff stopps={TESTSTOPPS} />
 
       <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">Die Route</h2>
       <Routenangaben

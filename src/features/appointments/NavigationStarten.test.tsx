@@ -87,8 +87,13 @@ describe('NavigationFuerDenTag', () => {
     const viele = Array.from({ length: 12 }, (_, index) => hausbesuch(`Strasse ${index + 1}`));
     render(<NavigationFuerDenTag termine={viele} />);
 
-    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 1 von 2' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 2 von 2' })).toBeVisible();
+    // Vier Stopps je Abschnitt: drei Zwischenziele plus Ziel. Seit MAP-005
+    // erzwingt `navigation.ts` die kleinere der beiden dokumentierten Zahlen,
+    // weil die Anwendung nicht weiss, ob das Tippen in der App oder im
+    // mobilen Browser landet - zwölf Stopps ergeben damit drei Abschnitte.
+    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 1 von 3' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 2 von 3' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 3 von 3' })).toBeVisible();
   });
 
   it('erscheint nicht, wenn kein Stopp navigierbar ist', () => {

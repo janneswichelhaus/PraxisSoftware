@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { Karte } from '@/features/tours/karte/Karte';
+import { NavigationHandoff } from '@/features/tours/karte/NavigationHandoff';
 import { Routenangaben } from '@/features/tours/karte/Routenangaben';
 import { TESTSTOPPS } from '@/features/tours/karte/teststopps';
 import type { MapDisplayConfig } from '@/lib/location/contract';
@@ -131,5 +132,14 @@ createRoot(wurzel).render(
         erneutVersuchen={() => {}}
       />
     )}
+    {/*
+      Mit `?handoff=1` steht der Navigations-Handoff darunter (MAP-005b).
+
+      Die Prüffragen dazu beantwortet kein jsdom: ob ein Tippziel wirklich
+      44 px hoch ist, weiß nur ein Browser, der die Klassen auch anwendet.
+      Was beim Tippen entsteht, fängt die Prüfung mit einem eigenen
+      `window.open` ab — geöffnet wird in diesem Lauf nichts.
+    */}
+    {parameter.has('handoff') ? <NavigationHandoff stopps={TESTSTOPPS} /> : null}
   </>,
 );
