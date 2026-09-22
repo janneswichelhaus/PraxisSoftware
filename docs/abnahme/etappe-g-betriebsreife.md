@@ -614,3 +614,32 @@ gegen `retention_assignments`, nicht gegen eine Liste im Test
 **Was hier nicht geprüft werden kann:** ob der Entwurf rechtlich trägt. Das
 gehört in die Datenschutzprüfung (B2, G14) — zusammen mit **ANN-092**, der
 Frage nach dem Zugriffsprotokoll in der Auskunft.
+
+---
+
+## OPS-007 — Bootstrap: die Praxis in einem leeren Projekt einrichten
+
+**Was geprüft wird:** dass das Runbook [`../betrieb/bootstrap.md`](../betrieb/bootstrap.md) von
+einem leeren Projekt bis zur Anmeldung trägt — ohne eine Zeile aus dem Seed. Lokal mit Docker;
+sobald die Testumgebung steht (OPS-002), derselbe Durchlauf dort (M3).
+
+1. **Leer aufsetzen.** `pnpm dlx supabase@2.116.0 db reset --no-seed`. Studio unter
+   <http://127.0.0.1:54323> öffnen.
+2. **Schritt 1 bis 3 des Runbooks** genau wie beschrieben: Konto unter Authentication anlegen,
+   „Auto Confirm User" anhaken; im SQL Editor den Block `runbook:bootstrap` mit erfundenen Werten
+   ausführen, dann `runbook:pruefung` — **alle Zeilen `true`**.
+3. **Zweiter Versuch.** Den Block `runbook:bootstrap` noch einmal ausführen: Die Meldung lautet
+   `already_bootstrapped`, und `runbook:pruefung` zeigt weiter überall `true`.
+4. **Anmelden.** `pnpm dev`, mit dem neuen Konto anmelden. Sicherheit → Auditlog zeigt als ersten
+   Eintrag **„Praxis eingerichtet"** mit dem Akteur **System**, nicht mit dem eigenen Namen; Team zeigt genau eine Person.
+5. **Zurück zum Alltag.** `pnpm dlx supabase@2.116.0 db reset` — mit Seed, wie vorher.
+
+**Was die Tests belegen:** dass die SQL-Blöcke des Runbooks auf einer Datenbank nur aus
+Migrationen laufen, dass die neue Inhaberin danach Stammdaten, Preisliste, Raster, Mitarbeitende
+und Einladungen über die Anwendung anlegen kann, und dass der Aufruf für `anon`, `authenticated`,
+`service_role`, für eine Anwendungssitzung, ein zweites Mal, mit unbekanntem oder unbestätigtem
+Konto und mit unbekannter Zeitzone abgewiesen wird, ohne etwas anzulegen
+(`supabase/tests/bootstrap.test.ts`).
+
+**Was hier nicht geprüft werden kann:** das Dashboard des gehosteten Projekts (Beschriftungen, die
+Rolle des SQL Editors). Das ist die Probe gegen die Testumgebung und bleibt bis OPS-002 offen.
