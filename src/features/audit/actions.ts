@@ -118,6 +118,9 @@ export const AUDIT_ACTIONS = [
   // OPS-004: nur mit outcome 'denied' — das erfolgreiche Lesen der
   // Löschläufe bleibt ohne Eintrag, der abgewiesene Versuch nicht.
   'deletion_runs.read',
+  // PAT-006: Datenschutzinformation, Behandlungsvertrag, Einwilligung und
+  // Widerruf — ein Ereignis, Art und Zweck im Kontext.
+  'patient_privacy.recorded',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -197,6 +200,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'payment.voided': 'Zahlung storniert',
   'organization.bootstrapped': 'Praxis eingerichtet',
   'deletion_runs.read': 'Löschläufe gelesen',
+  'patient_privacy.recorded': 'Datenschutzvermerk erfasst',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

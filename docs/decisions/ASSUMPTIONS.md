@@ -1208,3 +1208,15 @@ Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: mit de
 **Anker.** Das Feld `nicht_enthalten` in `public.export_patient_record`, `supabase/migrations/20260922100000_betroffenenrechte.sql`; der Test dazu in `supabase/tests/betroffenenrechte.test.ts`.
 
 **Änderungspfad.** Soll das Protokoll mitkommen: einen Abschnitt `audit_log` in die Funktion aufnehmen, Beschriftung in `kategorien.ts` ergänzen, Hinweis streichen · Aufwand `klein`. Soll die Auskunft dazu ganz entfallen: Hinweis umformulieren, Verfahren nachziehen · Aufwand `klein`.
+
+### ANN-093 — Einwilligung nur für zwei Zwecke; Papier bleibt Papier
+
+Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2), zusammen mit dem Wortlaut der Datenschutzinformation und der Einwilligung im Training
+
+**Annahme.** Die Praxis holt eine Einwilligung für genau zwei Zwecke ein: **Kontakt per unverschlüsselter E-Mail** (`email_contact`) und **Bericht an die verordnende Praxis** (`prescriber_report`, Schweigepflichtentbindung). Die Behandlung selbst braucht keine. Datenschutzinformation und Behandlungsvertrag bleiben Papier; die Akte vermerkt Datum und bei der Information die Fassung. Vermerke werden nie geändert, ein Widerruf ist eine eigene Zeile, und der Stand eines Zwecks ist seine jüngste Eingabe.
+
+**Begründung.** Grundlage der Behandlung sind der Vertrag (§§ 630a ff. BGB) und Art. 9 Abs. 2 lit. h DSGVO mit § 22 Abs. 1 Nr. 1 lit. b BDSG; eine Einwilligung daneben wäre wegen ihrer jederzeitigen Widerrufbarkeit (Art. 7 Abs. 3 DSGVO) die schwächere Grundlage. Die E-Mail setzt nach ANN-041 den ausdrücklichen Wunsch voraus, der Arztbericht berührt § 203 StGB. Nachweis nach Art. 7 Abs. 1 DSGVO verlangt, dass die Erteilung den Widerruf überlebt. Unsicher: ob die Prüfung weitere Zwecke sieht (Fotos zur Verlaufsdokumentation, Angehörige), und ob die Einwilligung vor dem Mailweg technisch geprüft werden soll — heute zeigt die Anwendung nur den Stand.
+
+**Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
+
+**Änderungspfad.** Zweck ergänzen oder streichen: ein Wert in Constraint, Konstante und Beschriftung, ein Satz in der Datenschutzinformation · Aufwand `klein`. Einwilligung vor dem Mailweg prüfen: Abfrage des Stands in `AppointmentSlipPage.tsx` vor der Übergabe · Aufwand `mittel`. Unterschrift in der Anwendung: eigenes Epic · Aufwand `groß`.
