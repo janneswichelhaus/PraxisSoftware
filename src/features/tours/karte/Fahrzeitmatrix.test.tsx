@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { LocationErrorCode, MatrixResult } from '@/lib/location/contract';
 import type { Matrixergebnis } from '@/lib/location/matrix';
@@ -129,7 +129,93 @@ describe('Fahrzeitmatrix', () => {
     tabelle();
 
     expect(screen.getByText(/Terminraster ist erfunden/)).toBeInTheDocument();
-    expect(screen.getByText(/Gespeichert wird nichts davon/)).toBeInTheDocument();
+    expect(screen.getByText(/gespeichert wird nichts davon/)).toBeInTheDocument();
+  });
+
+  /**
+   * Die Tagesfolge ist seit BEF-031 das Erste auf dem Bildschirm: die Frage,
+   * die auf dem Rad zaehlt, in sieben Zeilen statt 64 Zellen.
+   */
+  describe('Der Tag in Folge', () => {
+    function folge() {
+      return within(screen.getByRole('list', { name: 'Der Tag in Folge' })).getAllByRole(
+        'listitem',
+      );
+    }
+
+    it('nennt je Paar Fahrzeit, Luecke und den Rest', () => {
+      tabelle();
+
+      const zeilen = folge();
+      // Drei Stopps ergeben zwei Uebergaenge - nicht drei.
+      expect(zeilen).toHaveLength(2);
+      expect(zeilen[0]!).toHaveTextContent('1 → 2');
+      expect(zeilen[0]!).toHaveTextContent('8:30 bis 8:45');
+      expect(zeilen[0]!).toHaveTextContent('10 Min. Fahrt');
+    });
+
+    it('sagt "passt genau", wenn die Luecke auf die Minute reicht', () => {
+      tabelle();
+      // 15 Minuten Luecke, 10 Minuten Fahrt, 5 Minuten daneben: nichts uebrig.
+      expect(folge()[0]!).toHaveTextContent('passt genau');
+    });
+
+    it('nennt die fehlenden Minuten, wenn es nicht reicht', () => {
+      tabelle();
+      // 15 Minuten Luecke, 11 Minuten Fahrt, 5 Minuten daneben: eine zu wenig.
+      expect(folge()[1]!).toHaveTextContent('1 Min. zu wenig');
+    });
+
+    it('nennt die uebrige Zeit, wenn die Luecke reicht', () => {
+      tabelle({
+        ok: true,
+        value: {
+          matrix: {
+            durationsSeconds: [
+              [0, 300, 1500],
+              [660, 0, 660],
+              [1500, 660, 0],
+            ],
+          },
+          quelle: 'anbieter',
+        },
+      });
+      // 15 Minuten Luecke, 5 Minuten Fahrt, 5 Minuten daneben: 5 uebrig.
+      expect(folge()[0]!).toHaveTextContent('passt, 5 Min. übrig');
+    });
+
+    it('sagt bei fehlender Fahrzeit nichts ueber die Erreichbarkeit', () => {
+      tabelle({
+        ok: true,
+        value: {
+          matrix: {
+            durationsSeconds: [
+              [0, null, 1500],
+              [660, 0, 660],
+              [1500, 660, 0],
+            ],
+          },
+          quelle: 'anbieter',
+        },
+      });
+
+      expect(folge()[0]!).toHaveTextContent('keine Fahrzeit');
+      expect(folge()[0]!).toHaveTextContent('nicht beurteilt');
+      expect(folge()[0]!).not.toHaveTextContent('passt');
+    });
+
+    it('legt die vollstaendige Tabelle weg, ohne sie zu verstecken', async () => {
+      tabelle();
+
+      const aufklappen = screen.getByText(/Alle Paare als Tabelle/);
+      expect(aufklappen).toBeInTheDocument();
+      // Zugeklappt: Der Inhalt haengt an einem `details`, das nicht offen ist.
+      expect(aufklappen.closest('details')!.open).toBe(false);
+
+      await userEvent.click(aufklappen);
+      expect(aufklappen.closest('details')!.open).toBe(true);
+      expect(zelle('1', '2')).toBeInTheDocument();
+    });
   });
 
   it('weist die Nachbildung als solche aus', () => {

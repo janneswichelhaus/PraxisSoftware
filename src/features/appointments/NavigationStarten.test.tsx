@@ -29,28 +29,44 @@ const praxistermin: Besuchsadresse = {
   visit_city: null,
 };
 
+/**
+ * Was der Klick an das Geraet gibt.
+ *
+ * Seit BEF-030 entsteht ein Verweis im Klickhandler statt eines
+ * `window.open` - ein neuer Tab bliebe bei einem `geo:`-Verweis leer stehen.
+ * Geprueft wird deshalb der Verweis, nicht das Fenster.
+ */
+function verweise(): { href: string; target: string; rel: string }[] {
+  const gesammelt: { href: string; target: string; rel: string }[] = [];
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    gesammelt.push({ href: this.href, target: this.target, rel: this.rel });
+  });
+  return gesammelt;
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe('NavigationZumTermin', () => {
   it('baut die URL erst beim Tippen - vorher steht keine im Quelltext', async () => {
-    const oeffnen = vi.spyOn(window, 'open').mockReturnValue(null);
+    const gesammelt = verweise();
     const { container } = render(<NavigationZumTermin termin={hausbesuch()} />);
 
     // Kein href, kein Ziel, nichts Kopierbares vor der Aktion.
     expect(container.querySelector('a')).toBeNull();
     expect(container.innerHTML).not.toContain('google.com');
-    expect(oeffnen).not.toHaveBeenCalled();
+    expect(gesammelt).toHaveLength(0);
 
     await userEvent.click(screen.getByRole('button', { name: 'Navigation starten' }));
 
-    expect(oeffnen).toHaveBeenCalledTimes(1);
-    const [url, ziel, merkmale] = oeffnen.mock.calls[0]!;
-    expect(String(url)).toContain('destination=Beispielstrasse+12%2C+72070+Tuebingen%2C+DE');
-    expect(String(url)).toContain('travelmode=bicycling');
-    expect(ziel).toBe('_blank');
-    expect(merkmale).toContain('noreferrer');
+    expect(gesammelt).toHaveLength(1);
+    expect(gesammelt[0]!.href).toContain('destination=Beispielstrasse+12%2C+72070+Tuebingen%2C+DE');
+    expect(gesammelt[0]!.href).toContain('travelmode=bicycling');
+    expect(gesammelt[0]!.target).toBe('_blank');
+    expect(gesammelt[0]!.rel).toContain('noreferrer');
   });
 
   it('erscheint nicht ohne Hausbesuch', () => {
@@ -68,12 +84,12 @@ describe('NavigationZumTermin', () => {
 
 describe('NavigationFuerDenTag', () => {
   it('fasst die Stopps des Tages zu einem Link zusammen', async () => {
-    const oeffnen = vi.spyOn(window, 'open').mockReturnValue(null);
+    const gesammelt = verweise();
     render(<NavigationFuerDenTag termine={[hausbesuch('Erste'), hausbesuch('Zweite')]} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Ganzer Tag (2 Stopps)' }));
 
-    const url = new URL(String(oeffnen.mock.calls[0]![0]));
+    const url = new URL(gesammelt[0]!.href);
     expect(url.searchParams.get('waypoints')).toBe('Erste 12, 72070 Tuebingen, DE');
     expect(url.searchParams.get('destination')).toBe('Zweite 12, 72070 Tuebingen, DE');
   });

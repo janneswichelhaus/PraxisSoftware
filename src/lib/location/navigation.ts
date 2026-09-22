@@ -274,18 +274,36 @@ export function buildNavigationDayUrls(
 }
 
 /**
- * Öffnet die Navigation in einem eigenen Kontext.
+ * Übergibt das Ziel an das Gerät.
  *
- * `noopener,noreferrer` ist hier nicht Formsache: ohne `noreferrer` schickt
- * der Browser die Adresse der aufrufenden Seite als Referrer mit, und ohne
- * `noopener` behält das geöffnete Fenster einen Verweis auf die Anwendung.
+ * **Ein Verweis, der erst im Tap-Handler entsteht** — kein vorgebautes
+ * `<a href>` im Seitenquelltext: Ein href stünde ab dem Rendern da, ließe sich
+ * kopieren und würde vom Vorausladen des Browsers unter Umständen ohne Zutun
+ * der Person angefasst (ADR-019 Punkt 20). Das Element lebt genau so lange wie
+ * der Klick.
  *
- * Ein `window.open` und kein vorgebautes `<a href>`: Ein `href` stünde ab dem
- * Rendern im Seitenquelltext, ließe sich kopieren und würde vom Vorausladen
- * des Browsers unter Umständen ohne Zutun der Person angefasst (ADR-019
- * Punkt 20). Ob ein `geo:`-URI diesen Weg auf den Geräten der Praxis nimmt,
- * ist offen und Schritt 3 der Gerätebewertung.
+ * `noopener noreferrer` ist dabei nicht Formsache: ohne `noreferrer` schickt
+ * der Browser die Adresse der aufrufenden Seite mit, und ohne `noopener`
+ * behält das geöffnete Fenster einen Verweis auf die Anwendung.
+ *
+ * **Nur `http(s)` bekommt einen eigenen Tab** (BEF-030): Ein `geo:`-Verweis in
+ * einem neuen Tab hinterlässt einen **leeren Tab**, wenn kein Programm das
+ * Schema übernimmt — am Laptop beobachtet, wo es keins gibt. Im selben Fenster
+ * übernimmt das Gerät den Verweis, und wo niemand ihn übernimmt, bleibt die
+ * Seite einfach stehen. Das ist der richtige Ausgang: Die Anwendung kann nicht
+ * wissen, ob eine Navigations-App vorhanden ist, und darf deshalb keinen
+ * Erfolg vortäuschen.
  */
 export function navigationOeffnen(url: string): void {
-  window.open(url, '_blank', 'noopener,noreferrer');
+  const verweis = document.createElement('a');
+  verweis.href = url;
+  verweis.rel = 'noopener noreferrer';
+  if (url.startsWith('http')) verweis.target = '_blank';
+
+  // Angehängt und sofort wieder entfernt: Ein Klick auf ein Element ausserhalb
+  // des Dokuments wirkt nicht in jedem Browser, und im Dokument bleiben soll
+  // der Verweis auf keinen Fall.
+  document.body.append(verweis);
+  verweis.click();
+  verweis.remove();
 }

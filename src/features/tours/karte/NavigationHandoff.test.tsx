@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as NavigationModul from '@/lib/location/navigation';
@@ -7,12 +7,15 @@ import { NavigationHandoff } from './NavigationHandoff';
 import { TESTSTOPPS } from './teststopps';
 
 /**
- * Der Handoff am Kartenprototyp (MAP-005b).
+ * Die Stoppliste mit ihrem Handoff (MAP-005b).
  *
  * Die tragende Prüfung ist die **Abwesenheit**: Vor dem Tippen darf keine URL
  * entstanden sein - weder im Seitenquelltext noch als Rückgabe der Funktion,
  * die sie baut (ADR-019 Punkt 20). Deshalb liegen Spione auf beiden
  * Baufunktionen, die die echten Implementierungen weiterlaufen lassen.
+ *
+ * Was beim Tippen herauskommt, ist seit BEF-030 ein Verweis und kein
+ * `window.open` - ein neuer Tab bliebe bei einem `geo:`-Verweis leer stehen.
  */
 
 const spione = vi.hoisted(() => ({
@@ -25,11 +28,18 @@ vi.mock('@/lib/location/navigation', async (importOriginal) => {
   return { ...echt, buildNavigationUrl: spione.einzel, buildNavigationDayUrls: spione.tag };
 });
 
-function spioniereOeffnen() {
-  return vi.spyOn(window, 'open').mockReturnValue(null);
+/** Was der Klick an das Geraet gibt - ohne dass jsdom irgendwohin navigiert. */
+function verweise(): { href: string; target: string; rel: string }[] {
+  const gesammelt: { href: string; target: string; rel: string }[] = [];
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    gesammelt.push({ href: this.href, target: this.target, rel: this.rel });
+  });
+  return gesammelt;
 }
 
-let oeffnen: ReturnType<typeof spioniereOeffnen>;
+let gesammelt: { href: string; target: string; rel: string }[];
 
 beforeEach(async () => {
   // Die Spione zaehlen nur - gebaut wird mit den echten Funktionen. Die
@@ -38,20 +48,16 @@ beforeEach(async () => {
   const echt = await vi.importActual<typeof NavigationModul>('@/lib/location/navigation');
   spione.einzel.mockReset().mockImplementation(echt.buildNavigationUrl);
   spione.tag.mockReset().mockImplementation(echt.buildNavigationDayUrls);
-  oeffnen = spioniereOeffnen();
+  gesammelt = verweise();
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** Die URL des einzigen Aufrufs von `window.open`. */
-function geoeffneteUrl(): string {
-  expect(oeffnen).toHaveBeenCalledTimes(1);
-  return String(oeffnen.mock.calls[0]![0]);
-}
-
+/** Die Ziel-App steht weggeklappt: erst aufklappen, dann waehlen. */
 async function waehleZielApp(label: string): Promise<void> {
+  await userEvent.click(screen.getByText('Andere Ziel-App prüfen (für die Gerätebewertung)'));
   await userEvent.click(screen.getByRole('radio', { name: label }));
 }
 
@@ -61,11 +67,29 @@ describe('NavigationHandoff', () => {
 
     expect(spione.einzel).not.toHaveBeenCalled();
     expect(spione.tag).not.toHaveBeenCalled();
-    expect(oeffnen).not.toHaveBeenCalled();
+    expect(gesammelt).toHaveLength(0);
     expect(container.querySelector('a')).toBeNull();
     expect(container.innerHTML).not.toContain('google.com');
     expect(container.innerHTML).not.toContain('maps.apple.com');
     expect(container.innerHTML).not.toContain('geo:');
+  });
+
+  it('stellt den Knopf an den Stopp, nicht in eine eigene Knopfwand (BEF-032)', () => {
+    render(<NavigationHandoff stopps={TESTSTOPPS} />);
+
+    const zeilen = within(screen.getByRole('list', { name: 'Die Stopps' })).getAllByRole(
+      'listitem',
+    );
+    expect(zeilen).toHaveLength(TESTSTOPPS.length);
+
+    // Jede Zeile traegt ihre Koordinate und genau einen Knopf.
+    expect(within(zeilen[0]!).getByText('48,5216 · 9,0576')).toBeInTheDocument();
+    // Fuer Vorlesesoftware steht die Himmelsrichtung daneben.
+    expect(within(zeilen[0]!).getByText('48,5216 Nord, 9,0576 Ost')).toBeInTheDocument();
+    expect(within(zeilen[0]!).getAllByRole('button')).toHaveLength(1);
+    expect(
+      within(zeilen[0]!).getByRole('button', { name: 'Navigation zu Stopp 1 starten' }),
+    ).toBeInTheDocument();
   });
 
   it('oeffnet einen Stopp mit genau einem Tap im Fahrradmodus', async () => {
@@ -73,7 +97,8 @@ describe('NavigationHandoff', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Navigation zu Stopp 3 starten' }));
 
-    const url = new URL(geoeffneteUrl());
+    expect(gesammelt).toHaveLength(1);
+    const url = new URL(gesammelt[0]!.href);
     expect(url.origin).toBe('https://www.google.com');
     expect(url.searchParams.get('destination')).toBe('48.5164,9.0349');
     expect(url.searchParams.get('travelmode')).toBe('bicycling');
@@ -86,20 +111,22 @@ describe('NavigationHandoff', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Navigation zu Stopp 1 starten' }));
 
-    const url = new URL(geoeffneteUrl());
+    const url = new URL(gesammelt[0]!.href);
     expect(url.origin).toBe('https://maps.apple.com');
     expect(url.pathname).toBe('/directions');
     expect(url.searchParams.get('destination')).toBe('48.5216,9.0576');
     expect(url.searchParams.get('mode')).toBe('cycling');
   });
 
-  it('folgt der gewaehlten Ziel-App - Systemnavigation', async () => {
+  it('gibt einen geo:-Verweis ohne eigenen Tab weiter (BEF-030)', async () => {
     render(<NavigationHandoff stopps={TESTSTOPPS} />);
     await waehleZielApp('Systemnavigation');
 
     await userEvent.click(screen.getByRole('button', { name: 'Navigation zu Stopp 2 starten' }));
 
-    expect(geoeffneteUrl()).toBe('geo:48.5305,9.049');
+    expect(gesammelt).toEqual([
+      { href: 'geo:48.5305,9.049', target: '', rel: 'noopener noreferrer' },
+    ]);
   });
 
   it('teilt den Tag in Abschnitte, statt Stopps abzuschneiden', async () => {
@@ -108,7 +135,7 @@ describe('NavigationHandoff', () => {
     // Acht Stopps, drei Zwischenziele je Abschnitt: zwei Abschnitte.
     await userEvent.click(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 2 von 2' }));
 
-    const url = new URL(geoeffneteUrl());
+    const url = new URL(gesammelt[0]!.href);
     expect(url.searchParams.get('waypoints')!.split('|')).toEqual([
       '48.5241,9.0762',
       '48.5387,9.0668',
@@ -117,14 +144,15 @@ describe('NavigationHandoff', () => {
     expect(url.searchParams.get('destination')).toBe('48.5145,9.0908');
   });
 
-  it('gibt der Systemnavigation je Stopp einen eigenen Abschnitt', async () => {
+  it('stellt fuer die Systemnavigation keinen Tagesknopf hin, sondern den Grund', async () => {
+    // Acht gleich aussehende Abschnittsknoepfe waren der Befund BEF-032: Ein
+    // Verweis, der kein Zwischenziel kennt, bekommt einen Satz statt acht
+    // Knoepfen.
     render(<NavigationHandoff stopps={TESTSTOPPS} />);
     await waehleZielApp('Systemnavigation');
 
-    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 8 von 8' })).toBeVisible();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 8 von 8' }));
-    expect(geoeffneteUrl()).toBe('geo:48.5145,9.0908');
+    expect(screen.queryByRole('button', { name: /Ganzer Tag/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/kein Zwischenziel/)).toBeInTheDocument();
   });
 
   it('haelt die Ziel-App im Arbeitsspeicher, nicht im Geraet', async () => {
@@ -135,16 +163,18 @@ describe('NavigationHandoff', () => {
 
     // Nach dem Neuaufbau steht wieder die Vorgabe: nichts wurde abgelegt.
     render(<NavigationHandoff stopps={TESTSTOPPS} />);
+    await userEvent.click(screen.getByText('Andere Ziel-App prüfen (für die Gerätebewertung)'));
     expect(screen.getByRole('radio', { name: 'Google Maps' })).toBeChecked();
   });
 
-  it('haelt die Tippziele bei 44 px', () => {
+  it('haelt die Tippziele bei 44 px', async () => {
     render(<NavigationHandoff stopps={TESTSTOPPS} />);
     // jsdom rechnet keine Groessen aus; geprueft wird die Klasse, gemessen
-    // wird in der Sichtpruefung bei 375 px (docs/abnahme/).
+    // wird in der Browserpruefung bei 375 px (karte.spec.ts).
     for (const knopf of screen.getAllByRole('button')) {
       expect(knopf.className).toContain('min-h-11');
     }
+    await userEvent.click(screen.getByText('Andere Ziel-App prüfen (für die Gerätebewertung)'));
     for (const auswahl of screen.getAllByRole('radio')) {
       expect(auswahl.closest('label')!.className).toContain('min-h-11');
     }
@@ -158,7 +188,7 @@ describe('NavigationHandoff', () => {
   it('ist barrierefrei', async () => {
     const { container } = render(
       <main>
-        <h2>Die Navigation</h2>
+        <h2>Die Stopps</h2>
         <NavigationHandoff stopps={TESTSTOPPS} />
       </main>,
     );

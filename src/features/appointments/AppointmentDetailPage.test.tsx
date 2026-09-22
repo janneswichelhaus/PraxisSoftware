@@ -1093,7 +1093,14 @@ describe('AppointmentDetailPage', () => {
     };
 
     it('bietet am Hausbesuch die Navigation an - erst auf Aktion', async () => {
-      const oeffnen = vi.spyOn(window, 'open').mockReturnValue(null);
+      // Seit BEF-030 entsteht ein Verweis im Klickhandler statt eines
+      // `window.open`; geprueft wird deshalb sein Ziel.
+      const ziele: string[] = [];
+      const klick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+        this: HTMLAnchorElement,
+      ) {
+        ziele.push(this.href);
+      });
       fetchAppointment.mockResolvedValue(hausbesuch);
       const { container } = rendern();
 
@@ -1101,8 +1108,8 @@ describe('AppointmentDetailPage', () => {
       expect(container.innerHTML).not.toContain('google.com');
 
       await userEvent.click(knopf);
-      expect(String(oeffnen.mock.calls[0]![0])).toContain('travelmode=bicycling');
-      oeffnen.mockRestore();
+      expect(ziele[0]).toContain('travelmode=bicycling');
+      klick.mockRestore();
     });
 
     it('bietet am Praxistermin keine Navigation an', async () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NavigationApp, NavigationTarget } from './contract';
 import {
   MAX_ZWISCHENZIELE,
@@ -6,6 +6,7 @@ import {
   MAX_ZWISCHENZIELE_MOBIL,
   buildNavigationDayUrls,
   buildNavigationUrl,
+  navigationOeffnen,
   navigationsZiel,
   stoppsJeAbschnitt,
 } from './navigation';
@@ -40,6 +41,51 @@ const koordinate: NavigationTarget = {
 function parameter(url: string): URLSearchParams {
   return new URL(url).searchParams;
 }
+
+describe('navigationOeffnen', () => {
+  /** Was der Klick an das Gerät gibt - ohne dass jsdom irgendwohin navigiert. */
+  function verweise(): { href: string; target: string; rel: string }[] {
+    const gesammelt: { href: string; target: string; rel: string }[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      gesammelt.push({ href: this.href, target: this.target, rel: this.rel });
+    });
+    return gesammelt;
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('gibt einen Kartenverweis an einen eigenen Tab - abgeschirmt', () => {
+    const gesammelt = verweise();
+    navigationOeffnen(buildNavigationUrl(koordinate, 'google_maps'));
+
+    expect(gesammelt).toHaveLength(1);
+    expect(gesammelt[0]!.href).toContain('google.com/maps');
+    expect(gesammelt[0]!.target).toBe('_blank');
+    expect(gesammelt[0]!.rel).toBe('noopener noreferrer');
+  });
+
+  it('gibt einen geo:-Verweis ohne eigenen Tab weiter (BEF-030)', () => {
+    // Ein neuer Tab bliebe leer stehen, wenn kein Programm das Schema
+    // uebernimmt - genau das war am Laptop zu sehen.
+    const gesammelt = verweise();
+    navigationOeffnen(buildNavigationUrl(koordinate, 'system'));
+
+    expect(gesammelt).toEqual([
+      { href: 'geo:48.5216,9.0576', target: '', rel: 'noopener noreferrer' },
+    ]);
+  });
+
+  it('laesst keinen Verweis im Dokument zurueck', () => {
+    verweise();
+    navigationOeffnen(buildNavigationUrl(koordinate, 'apple_maps'));
+
+    expect(document.querySelector('a')).toBeNull();
+  });
+});
 
 describe('Wegpunktlimit', () => {
   it('erzwingt die strengere der beiden dokumentierten Zahlen', () => {

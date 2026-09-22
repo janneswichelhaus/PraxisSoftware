@@ -1052,3 +1052,104 @@ DOM-Zustand, sondern eine Layoutmessung im echten Browser.
 so breit wie ihre Tabelle. Bei 32 rem Mindestbreite war der Satz auf dem
 Telefon abgeschnitten statt umgebrochen; er steht jetzt als Absatz **vor** der
 Tabelle und hängt über `aria-describedby` an ihr.
+
+### BEF-030 — Ein `geo:`-Verweis im neuen Tab kommt nirgends an
+
+|         |                                                                                    |
+| ------- | ---------------------------------------------------------------------------------- |
+| Datum   | 2026-09-22                                                                         |
+| Bereich | Kalender: Kartenprototyp (`/touren/karte`), Navigations-Handoff                     |
+| Quelle  | Abnahme MAP-005 Teil A durch Jannes (Laptop, Chromium)                              |
+| Status  | erledigt in MAP-005 (Nachtrag)                                                     |
+| Berührt | `src/lib/location/navigation.ts` (`navigationOeffnen`)                              |
+
+**Beobachtung.** „`geo:48.5216,9.0576` kommt nirgends an. Leerer Screen."
+
+**Die Ursache.** `navigationOeffnen` hat jede URL mit
+`window.open(url, '_blank')` geöffnet. Für `http(s)` ist das richtig. Für ein
+Schema, das **kein Programm übernimmt**, öffnet der Browser trotzdem erst den
+Tab und stellt dann fest, dass niemand zuständig ist — zurück bleibt ein
+leerer Tab. Am Laptop gibt es keine Navigations-App, also passiert genau das;
+auf dem Telefon wäre es je nach System dasselbe Bild.
+
+**Die Behebung.** Der Handoff baut jetzt im Klickhandler einen Verweis
+(`<a>` mit `rel="noopener noreferrer"`), klickt ihn und entfernt ihn wieder.
+Nur `http(s)` bekommt `target="_blank"`. Ein `geo:`-Verweis läuft damit im
+selben Fenster: Wo ein Programm zuständig ist, übernimmt es; wo keins
+zuständig ist, bleibt die Seite stehen. **Kein leerer Tab, und keine
+vorgetäuschte Übergabe.**
+
+**Was dabei nicht verloren geht.** Die Regel „erst beim Tippen, nie
+automatisch" (ADR-019 Punkt 20) gilt unverändert: Das Element entsteht im
+Klickhandler und lebt genau so lange wie der Klick. Ein `<a href>` im
+gerenderten Quelltext gibt es weiterhin nicht, und die Prüfungen dafür stehen
+in `navigation.test.ts`, `NavigationHandoff.test.tsx` und `karte.spec.ts`.
+
+**Offen bleibt der Teil, den nur ein Telefon beantwortet:** ob eine
+Navigations-App den Verweis dort annimmt und im Fahrradmodus öffnet
+(MAP-005c, Teil B der Abnahme).
+
+### BEF-031 — Die Fahrzeitmatrix beantwortet die Frage nicht, die gestellt wird
+
+|         |                                                                                    |
+| ------- | ---------------------------------------------------------------------------------- |
+| Datum   | 2026-09-22                                                                         |
+| Bereich | Kalender: Kartenprototyp (`/touren/karte`), Fahrzeitmatrix                          |
+| Quelle  | Abnahme MAP-004/MAP-005 durch Jannes (Laptop)                                       |
+| Status  | erledigt in MAP-005 (Nachtrag)                                                     |
+| Berührt | `src/features/tours/karte/Fahrzeitmatrix.tsx`                                      |
+
+**Beobachtung.** „Ich verstehe diese Tabelle nicht."
+
+**Die Ursache liegt nicht an der Tabelle, sondern an der Frage.** Die 8 × 8-Matrix
+beantwortet „Wie lange fahre ich von jedem Stopp zu jedem anderen?". Im Alltag
+gibt es diese Frage nicht. Es gibt: **„Komme ich von hier zum nächsten
+Termin?"** — und deren Antwort steht in der Matrix nur auf der Nebendiagonale,
+also in sieben von 64 Zellen, die man erst durch Kreuzen von Zeile und Spalte
+findet. Die Tabelle war als **Beleg** gebaut („der Anbieter rechnet jedes
+Paar") und ist als Beleg richtig; sie stand nur an der Stelle, an der eine
+Arbeitsansicht stehen muss.
+
+**Die Behebung.** Zuerst steht jetzt **der Tag in Folge**: je Übergang eine
+Zeile mit Uhrzeiten, Fahrzeit und dem Rest, der bleibt oder fehlt („passt,
+5 Min. übrig", „× 1 Min. zu wenig"). Die vollständige Matrix bleibt, aber
+weggeklappt hinter „Alle Paare als Tabelle" — sie beantwortet die Frage, was
+eine **andere Reihenfolge** kostete, und die stellt sich seltener.
+
+**Den Befund liefert weiterhin `erreichbarkeit()`** aus dem Fachmodul; die
+Minuten daneben sind eine Differenz derselben Zahlen und keine zweite Regel.
+Wo die Regel schweigt (`unbekannt`), steht auch in der Tagesfolge keine Zahl.
+
+### BEF-032 — Neunzehn Bedienelemente für eine Handlung aus einem Tap
+
+|         |                                                                                    |
+| ------- | ---------------------------------------------------------------------------------- |
+| Datum   | 2026-09-22                                                                         |
+| Bereich | Kalender: Kartenprototyp (`/touren/karte`), Navigations-Handoff                     |
+| Quelle  | Abnahme MAP-005 Teil A durch Jannes (Laptop)                                        |
+| Status  | erledigt in MAP-005 (Nachtrag)                                                     |
+| Berührt | `src/features/tours/karte/NavigationHandoff.tsx`, `KartePage.tsx`                  |
+
+**Beobachtung.** „Die Seite ist generell zu unübersichtlich. Die Therapeuten
+brauchen möglichst einfache Arbeitsschritte. So viel Auswahl ist unnötig."
+
+**Die Ursache.** Der Abschnitt „Die Navigation" stellte nebeneinander: drei
+Ziel-Apps zur Wahl, acht Stopp-Knöpfe und — bei der Systemnavigation — acht
+gleich aussehende Tagesabschnitte. Neunzehn Bedienelemente für eine Handlung,
+die aus einem Tap besteht. Dazu kam die Stoppliste ein zweites Mal weiter
+unten, sodass dieselben acht Punkte zweimal auf der Seite standen.
+
+**Die Behebung.** Der Knopf steht jetzt **an seinem Stopp**, in der Liste, die
+es ohnehin gab — eine Zeile, eine Aktion; die zweite Liste ist entfallen. Der
+Tagesknopf steht darüber, wo er im Ablauf hingehört. Die Ziel-App liegt
+weggeklappt hinter „Andere Ziel-App prüfen (für die Gerätebewertung)": Sie ist
+ein Prüfinstrument und kein Arbeitsschritt. Für die Systemnavigation steht
+statt acht Knöpfen ein Satz, der den Grund nennt.
+
+**Was der Befund über den Prototyp hinaus sagt.** Eine Vorschauseite sammelt
+leicht alles an, was ein Loop belegen will — und wird damit zur Werkbank des
+Bauenden statt zur Ansicht der Arbeitenden. Für die echte Tagesliste gilt das
+nicht: Dort steht je Termin **ein** Knopf „Navigation starten"
+(`src/features/appointments/NavigationStarten.tsx`, seit UX-002). Mit MAP-006
+ersetzt sie diesen Prototyp; bis dahin gilt für die Vorschau dieselbe Regel
+wie für sie.
