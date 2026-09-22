@@ -121,7 +121,7 @@ Sitzung simuliert wurde, steht unter `/vorschau/protokoll`.
 | Erstattungen             | `/betrieb/erstattungen`       | Strom und Einkauf, IBAN, Zeitraum, Arbeitstage mit Berechnung, Positionen mit Summe, Belege, Erklärung, Unterschrift, Historie je Person                      |
 | Kommunikation            | `/team`                       | eigene Anforderung: Kanäle, Direktnachrichten, Threads, Erwähnungen, Ungelesenes, Suche                                                                       |
 | Touren                   | `/touren`                     | eigene Anforderung: Besuchsfolge mit unterscheidbarer Behandlungs- und Wegzeit                                                                                |
-| Karte                    | `/touren/karte`               | Kartenprototyp aus MAP-002 bis MAP-004: acht erfundene Koordinaten in Tübingen mit eigenen Nummern-Markern, dazu die Fahrradroute mit Distanz und Fahrzeit je Abschnitt und die Fahrzeitmatrix aller Paare mit Erreichbarkeit an einem erfundenen Terminraster; kein Termin, kein Patientenbezug, nichts gespeichert |
+| Karte                    | `/touren/karte`               | Kartenprototyp aus MAP-002 bis MAP-005: acht erfundene Koordinaten in Tübingen mit eigenen Nummern-Markern, dazu die Fahrradroute mit Distanz und Fahrzeit je Abschnitt, die Fahrzeitmatrix aller Paare mit Erreichbarkeit an einem erfundenen Terminraster und der Navigations-Handoff je Stopp und für den Tag (Ziel-App für die Prüfung wählbar, nichts davon gespeichert); kein Termin, kein Patientenbezug, nichts gespeichert |
 
 ### Sandbox-Prototypen (Pfad S)
 
@@ -162,7 +162,7 @@ keine Persistenz. Das ist nicht nur Absicht, sondern geprüft:
 `src/features/preview/ehrlichkeit.test.tsx` prüft an den heikelsten Stellen,
 dass keine Erfolgsmeldung behauptet wird, die es nicht gibt.
 
-**Vier Ausnahmen, benannt statt verschwiegen**, alle allein für die Karte
+**Fünf Ausnahmen, benannt statt verschwiegen**, alle allein für die Karte
 unter `/touren/karte` und alle in `trennung.test.ts` an das Verzeichnis
 `src/features/tours/karte` gebunden — mit eigener Gegenprobe, dass sie dort
 enden:
@@ -186,6 +186,13 @@ enden:
    und spricht mit niemandem — sie steht trotzdem hier, weil mit ihr sonst
    das ganze Fachmodul `scheduling` in jedem Vorschaubereich offenstünde.
    Freigegeben ist der eine Name, nicht das Verzeichnis.
+5. **Der Navigations-Handoff** (seit MAP-005): `@/lib/location/navigation`
+   ruft nichts ab, öffnet aber auf Tippen die Navigations-App des Geräts mit
+   einer Zielkoordinate. Auch das verlässt die Sitzung — über das Gerät statt
+   über den Server (ADR-019 Punkt 20 bis 23) —, und die Bedingungen dafür
+   gelten nur dort, wo sie geprüft sind. Übergeben wird ausschließlich eine
+   der acht erfundenen Koordinaten und der Fahrradmodus; die URL entsteht
+   erst im Klickhandler und wird nirgends abgelegt.
 
 Alles Übrige bleibt auch dort ausgeschlossen: kein `fetch(` im eigenen
 Quelltext, kein `getSupabase`, keine Datenbank, keine Persistenz.

@@ -179,8 +179,18 @@ const ERLAUBTE_MODULE_KARTE = [
  * `matrix.ts` kam mit **MAP-004** dazu und steht unter derselben Regel: Auch
  * die Fahrzeitmatrix rechnet der Anbieter auf Anfrage des eigenen Servers,
  * auch sie wird angezeigt und verworfen (ADR-019 Punkt 15 und 16).
+ *
+ * `navigation.ts` kam mit **MAP-005** dazu, aus einem anderen Grund: Es ruft
+ * nichts ab, sondern öffnet auf Tippen eine fremde App mit einem Ziel. Auch
+ * das verlässt die Sitzung, nur über das Gerät statt über den Server — und
+ * darf deshalb nicht über einen Import in jedem Vorschaubereich zu haben sein
+ * (ADR-019 Punkt 20 bis 23).
  */
-const NUR_KARTE = [/^@\/lib\/location\/route$/, /^@\/lib\/location\/matrix$/];
+const NUR_KARTE = [
+  /^@\/lib\/location\/route$/,
+  /^@\/lib\/location\/matrix$/,
+  /^@\/lib\/location\/navigation$/,
+];
 
 /** `@/features/<bereich>/api` - ohne `preview`, das ist der eigene Bereich. */
 const API_MODUL = /^@\/features\/([^/]+)\/api$/;
@@ -398,6 +408,22 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     expect(unerlaubteImporte(`${KARTENPROTOTYP}/KartePage.tsx`, matrixabruf)).toEqual([]);
     expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', matrixabruf)).toEqual([
       '@/lib/location/matrix (nur im Kartenprototyp)',
+    ]);
+  });
+
+  it('erlaubt den Navigations-Handoff nur im Kartenprototyp', () => {
+    // Seit MAP-005: Der Handoff ruft nichts ab, oeffnet auf Tippen aber eine
+    // fremde App mit einem Ziel. Auch das verlaesst die Sitzung - ueber das
+    // Geraet statt ueber den Server -, und die Bedingungen aus ADR-019
+    // Punkt 20 bis 23 gelten nur dort, wo sie geprueft sind.
+    const handoff = "import { buildNavigationUrl } from '@/lib/location/navigation';";
+
+    expect(unerlaubteImporte(`${KARTENPROTOTYP}/NavigationHandoff.tsx`, handoff)).toEqual([]);
+    expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', handoff)).toEqual([
+      '@/lib/location/navigation (nur im Kartenprototyp)',
+    ]);
+    expect(unerlaubteImporte('src/features/teamchat/Beispiel.tsx', handoff)).toEqual([
+      '@/lib/location/navigation (nur im Kartenprototyp)',
     ]);
   });
 
