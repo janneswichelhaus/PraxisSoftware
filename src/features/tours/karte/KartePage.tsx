@@ -106,7 +106,7 @@ export function KartePage() {
       <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">
         Der Kartendienst ist geprüft, aber nicht freigegeben
       </h2>
-      <p className="text-ink-muted max-w-prose text-sm">
+      <p className="text-ink-muted text-sm">
         Auf dieser Seite liegen acht feste Punkte im Stadtgebiet: Keine Adresse, kein Termin, keine
         Person — und gespeichert wird davon nichts. Für die Route gehen die acht Koordinaten über
         den eigenen Server an den Kartendienst, ohne Namen und ohne Uhrzeit; der Browser selbst lädt

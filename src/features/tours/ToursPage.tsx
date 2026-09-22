@@ -126,7 +126,7 @@ export function ToursPage({ user }: { user: CurrentUser }) {
             Das ist keine Entwicklungsnotiz, sondern die Zusage aus
             PROJECT_PRINCIPLES.md 20 — sie gilt auch dann noch, wenn diese Liste
             echte Besuche trägt. */}
-          <p className="text-ink-subtle mt-2 max-w-prose text-sm">
+          <p className="text-ink-subtle mt-2 text-sm">
             Zu dieser Besuchsfolge gibt es keine Fahrzeitberechnung, keine Tourenoptimierung und
             keine dauerhafte Ortung von Mitarbeiter:innen: Die Wegzeiten stehen so, wie sie
             eingetragen wurden.
