@@ -316,3 +316,6 @@ begin
     limit v_limit;
 end;
 $$;
+
+comment on column public.audit_log.outcome is
+  'Ergebnis des protokollierten Vorgangs. denied schreiben seit OPS-004 list_audit_events und list_deletion_runs; die uebrigen Abweisungen rollen ihren Eintrag weiter mit zurueck (ROADMAP G6a).';

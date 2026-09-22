@@ -340,11 +340,12 @@ deckungsgleich.
    für JavaScript/TypeScript, aber kein vollwertiges SAST. Eine Erweiterung ist
    offen.
 5. **Kein Offline-Modus und kein Service Worker** (ADR-015, ADR-001).
-6. **Abgewiesene Zugriffe werden nicht persistiert.** Die Audit-Schreibfunktion
-   bricht mit einer Ausnahme ab, wodurch die Transaktion und damit auch ein
-   Protokolleintrag zurückgerollt würden. Die Spalte `outcome` existiert und
-   trägt derzeit ausschließlich `success`. Für die Erfassung abgewiesener
-   Versuche wäre eine autonome Transaktion nötig — offen.
+6. **Abgewiesene Zugriffe werden nur auf zwei Pfaden persistiert.** Eine
+   Abweisung per Ausnahme rollt die Transaktion und damit auch ihren
+   Protokolleintrag zurück. `list_audit_events` und `list_deletion_runs`
+   weisen deshalb seit OPS-004 mit null Zeilen ab und schreiben
+   `outcome = 'denied'`; alle übrigen Abweisungen bleiben ohne Eintrag
+   (ROADMAP G6a).
 7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
    Auswertung oder Alarmierung.
 8. **Die Dateiablage ist gebaut, aber nicht produktiv** — vor der ersten

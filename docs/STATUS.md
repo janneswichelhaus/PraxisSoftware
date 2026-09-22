@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-22 · letzte Session: OPS-007 Bootstrap-Runbook
+# Status · Stand 2026-09-22 · letzte Session: OPS-004, zweiter Teil
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,21 +6,20 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**Ein leeres Projekt lässt sich jetzt ohne Seed einrichten, und das Runbook dafür ist geprobt.** OPS-007 (G11) schließt die eine Lücke vor dem ersten `owner`: Bis hierher entstand die Organisation nur über `seed.sql`, und der darf nie in ein Projekt mit echten Daten. **`app.bootstrap_practice`** legt Organisation, Standort und Praxisinhaberin für ein von Hand angelegtes Konto an (ANN-025) — nur aus dem SQL-Editor, nur einmal, als Systemereignis protokolliert (ANN-009). Das Runbook [`betrieb/bootstrap.md`](betrieb/bootstrap.md) führt vom leeren Projekt bis zu den ersten Schritten in der Anwendung, und **sein eigener Test führt es aus**: `bootstrap.test.ts` liest die SQL-Blöcke aus dem Dokument und fährt sie auf einer Datenbank nur aus Migrationen. **Offen bleibt die Probe gegen die Testumgebung** — die gibt es erst mit OPS-002; G11 steht deshalb auf `in_arbeit`, nicht `fertig`. Keine neue Annahme. Fortschritt **47,3 → 47,8 %**.
+**Ein abgewiesener Blick ins Auditlog ist jetzt selbst nachweisbar, und ein externer Fehlerdienst ist ausgeschlossen, bis jemand ihn prüft.** OPS-004 (G6), zweiter Teil: `list_audit_events` und `list_deletion_runs` weisen Konten ohne `owner` mit **null Zeilen statt einer Ausnahme** ab und schreiben den Versuch mit `outcome = 'denied'` ins Auditlog — die Ausnahme hatte den Eintrag bisher mit zurückgerollt. Kein externes Error-Tracking in V1: keine Annahme, sondern Folge aus ADR-011 Punkt 5 und ADR-002, gehalten als Gate in `protokollierung.test.ts`. Die übrigen rund 80 Abweisungen stehen als **G6a** in der Roadmap. Keine neue Annahme, G6 bleibt `in_arbeit`, Fortschritt **47,8 %** unverändert.
 
 ## Danach — Reihenfolge seit 2026-09-22
 
-1. **OPS-004, Rest** — davon gehen ohne Cloudprojekt nur zwei: Entscheidung zu externem
-   Error-Tracking und „abgewiesene Zugriffe protokolliert"; Alarmierung, Security-Log 12 Monate
-   und die Erkennung für Art. 33 warten auf **G3**
-2. **PAT-006 (G8)** — Datenschutzinformation und Einwilligungen; das Verfahren aus OPS-006 verweist
+1. **PAT-006 (G8)** — Datenschutzinformation und Einwilligungen; das Verfahren aus OPS-006 verweist
    an zwei Stellen darauf, und ohne Einwilligung gibt es nichts zu widerrufen
-3. **E2 Ausfallkonzept (G10)** — Tagesplan mit Adressen und Telefonnummern druck- und exportierbar;
+2. **E2 Ausfallkonzept (G10)** — Tagesplan mit Adressen und Telefonnummern druck- und exportierbar;
    zugleich der Rückfallplan der Eröffnung (H4)
+3. **G19 Dokumentationsgate erweitern (BEF-028)** — vor der inhaltlichen Durchsicht für B2; der Rest
+   von OPS-004 (Alarmierung, Security-Log 12 Monate, Art. 33) wartet auf **G3**
 
 ## Prüfverfahren
 
-**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2306**; `test:db` **1808** (20 neu) — in dieser Session **vollständig gelaufen**, weil eine Migration dazukam. `ASSUMPTIONS.md`: **1210** Zeilen, unverändert. **Zweitreview** (ADR-013 Punkt 8) gelaufen, Befunde behoben. **Keine Sichtprüfung** — die Oberfläche ist nicht berührt.
+**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2309** (3 neu); `test:db` **1812** (4 neu) — in dieser Session **vollständig gelaufen**, weil eine Migration dazukam. `ASSUMPTIONS.md`: **1210** Zeilen, unverändert. **Gegenproben** gelaufen (Grant auf die Hilfsfunktion, `@sentry/react`). **Keine Sichtprüfung** — die Oberfläche ist nicht berührt.
 
 ## Blocker (Jannes-seitig)
 
@@ -54,4 +53,4 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Ein Runbook, das niemand ausführt, veraltet beim ersten Umbau still.** Deshalb ist die Probe kein Test neben dem Runbook, sondern das Runbook selbst: Der Test liest die markierten SQL-Blöcke aus `docs/betrieb/bootstrap.md`, setzt synthetische Werte ein, prüft mit dem Prüfblock des Runbooks und geht danach als neue Inhaberin die ersten Schritte über die Anwendung — Stammdaten, Preisliste, Raster, eine Mitarbeiterin, ihre Einladung. **Der Zweitreview hat einen echten Fehler gefunden:** Der erste Entwurf trug die Inhaberin als Akteurin des Auditeintrags ein — genau die falsche Angabe, die ANN-009 ausschließt; gehandelt hat das Infrastrukturkonto. Jetzt ist es ein Systemereignis, und **wer den Editor bedient hat, steht in der Tabelle „Durchläufe" des Runbooks** — dem Protokoll nach ADR-010 Punkt 10. Aus demselben Review: READ COMMITTED ist Pflicht (sonst trüge die Sperre gegen den Doppelaufruf nicht), gelöschte, gesperrte und anonyme Konten werden nicht Inhaberin. **Lokale Schritte:** `git pull origin claude/erste-offene-aufgabe-y11xpb`, `pnpm dlx supabase@2.116.0 db reset`.
+**Die Spalte `outcome` kannte `denied` seit August, geschrieben hat es niemand.** Der Grund war kein Versäumnis, sondern PostgreSQL: Wer mit einer Ausnahme abweist, rollt seinen eigenen Protokolleintrag mit zurück. Für die zwei Lesepfade der Praxisleitung heißt die Abweisung deshalb jetzt „null Zeilen und ein Eintrag" — gesperrt ist dasselbe, aber ein Aufruf an der Oberfläche vorbei hinterlässt eine Spur. Geschrieben wird aus einer Hilfsfunktion, die keine Anwendungsrolle aufrufen darf; sonst ließe sich das Log mit erfundenen Abweisungen füllen. **Abweichung vom Vorschlag:** Angekündigt war ANN-093 für die Error-Tracking-Entscheidung. Das Register steht auf seiner Obergrenze, und es ist keine Annahme — die Entscheidung folgt aus ADR-011 und ADR-002; sie steht jetzt als Vermerk im ADR und als Test. **Lokale Schritte:** `git pull origin claude/erste-offene-aufgabe-y7vokz`, `pnpm dlx supabase@2.116.0 db reset`.
