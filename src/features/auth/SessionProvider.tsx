@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Session } from '@supabase/supabase-js';
+import { protokolliereFehler } from '@/lib/protokoll';
 import { getSupabase } from '@/lib/supabase';
 import { alleEntwuerfeVerwerfen } from '@/features/treatment-bases/api';
 import { SessionContext, type SessionState } from './sessionContext';
@@ -124,7 +125,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (error) {
           raeumen();
           // Ohne Kontoangabe (ADR-011), wie bei den Kontoereignissen.
-          console.error('Die Abmeldung beim Anmeldedienst ist fehlgeschlagen.');
+          protokolliereFehler({ ereignis: 'auth.abmeldung_fehlgeschlagen' });
         }
       },
     }),

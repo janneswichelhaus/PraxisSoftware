@@ -41,10 +41,12 @@ export default tseslint.config(
          Regeln von eslint-plugin-security bleiben aktiv. */
       'security/detect-object-injection': 'off',
 
-      /* ADR-011: keine patientenbezogenen Daten in Logs. console.log ist der
-         haeufigste Weg, wie Nutzdaten unbeabsichtigt in Betriebslogs geraten.
-         Erlaubt bleiben console.warn/error fuer technische Fehlermeldungen. */
-      'no-console': ['error', { allow: ['warn', 'error'] }],
+      /* ADR-011 Punkt 6: genau eine Stelle filtert Ausgaben, bevor sie das
+         Programm verlassen. Bis OPS-004 blieben console.warn/error hier frei -
+         damit war console.log gesperrt, aber `console.error(`Akte ${name}`)`
+         erlaubt, und genau das ist der Weg, auf dem Nutzdaten in ein Log
+         geraten. Die Ausnahmen stehen unten, einzeln und benannt. */
+      'no-console': 'error',
 
       /* ADR-015 / Sicherheitsregeln: service_role darf nie in den Browser. */
       'no-restricted-syntax': [
@@ -79,6 +81,16 @@ export default tseslint.config(
         },
       ],
     },
+  },
+  {
+    /* Die erklaerten Ausgaenge fuer Betriebslogs (ADR-011 Punkt 6, OPS-004).
+       Zwei, weil es zwei Laufzeiten gibt: Die Edge Function laeuft in Deno und
+       kann `src/lib/protokoll.ts` nicht importieren; sie hat ihr eigenes
+       `protokolliere` mit derselben Regel. Eine dritte Zeile hier waere eine
+       Entscheidung, keine Formalie - `src/protokollierung.test.ts` haelt die
+       Liste deshalb gegen den Quelltext und wird rot, wenn sie waechst. */
+    files: ['src/lib/protokoll.ts', 'supabase/functions/location-provider/index.ts'],
+    rules: { 'no-console': 'off' },
   },
   {
     files: ['**/*.{js,mjs,cjs}', 'scripts/**/*'],
