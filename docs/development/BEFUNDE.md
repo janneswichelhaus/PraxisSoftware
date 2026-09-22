@@ -898,3 +898,56 @@ an ihm allein hängt, ob überhaupt etwas zu entscheiden ist. Fällt er so aus,
 geht B13 als Vorlage mit zwei Optionen zurück an Jannes, zusammen mit den
 übrigen Punkten der Providerprüfung. Vor dieser Klärung baut niemand an
 STAFF-004.
+
+### BEF-027 — Die Oberfläche zeigte auf den Kartendienst, wenn es die eigene Sitzung war
+
+|         |                                                                                                       |
+| ------- | ----------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-22                                                                                            |
+| Bereich | Kalender: Kartenprototyp (`/touren/karte`), Edge Function `location-provider`, `src/lib/location/route.ts` |
+| Quelle  | Abnahme MAP-003 durch Jannes, erster Lauf mit laufender Function                                      |
+| Status  | erledigt (2026-09-22)                                                                                 |
+| Berührt | `LocationErrorCode`; `sitzung.ts`, `handler.ts`, `route.ts`, `Routenangaben.tsx`                       |
+
+**Beobachtung.** Auf der Seite stand **„Kartendienst weist den Serverschlüssel
+ab"** — während der Kartendienst nie gefragt worden war. Derselbe Schlüssel
+lieferte im selben Moment aus derselben Datei eine Route (`curl`, HTTP 200),
+und im Log der Function stand keine einzige Zeile, weil es keinen
+Anbieteraufruf gab. Eine Stunde davor hatte dieselbe Seite **„Kartendienst
+nicht erreichbar"** gemeldet, als in Wahrheit das lokale Gateway mit
+`503 name resolution failed` antwortete: Die Laufzeit lief nicht.
+
+**Die Ursache, zweimal dieselbe.** Die Fehlerklasse `unauthorized` trug zwei
+Bedeutungen — „der Anbieter lehnt unseren Serverschlüssel ab" und „die
+Sitzungsprüfung hat nicht geöffnet". Die Function unterschied beide **im
+HTTP-Status** (401 gegen 502), der Client las aber nur die Klasse aus dem
+Körper. Und jede Antwort, die **nicht** aus dieser Function stammte, fiel im
+Client in den Sammelfall `unavailable` — also ebenfalls in einen Text über den
+Kartendienst.
+
+**Warum das zählt.** Ein falscher Schuldiger kostet nicht nur Zeit, er kostet
+die richtige Handlung: „Anbieter nicht erreichbar" heißt warten, „eigene
+Funktion läuft nicht" heißt starten, „Sitzung abgelaufen" heißt neu anmelden.
+Im Betrieb einer Praxis ist das der Unterschied zwischen „später noch einmal"
+und „jetzt etwas tun". Dieselbe Überlegung hatte ANN-090 für „nicht
+eingerichtet" schon einmal angestellt — nur eine Schicht höher.
+
+**So behoben (2026-09-22).** Zwei neue Fehlerklassen und eine Regel:
+
+1. **`session_invalid`** — die abgewiesene Sitzung. `unauthorized` gehört
+   seitdem allein dem Anbieter.
+2. **`function_unavailable`** — die Antwort kam nicht aus dieser Function.
+   Vergibt nur der Client, und zwar nach dem HTTP-Status: 401 und 403 sind
+   die Plattform vor unserem Code, alles andere heißt „nicht erreicht".
+3. Die Sitzungsprüfung gibt jetzt **drei** Ergebnisse statt `true`/`false`:
+   gültig, abgelehnt, **nicht prüfbar** — Letzteres mit Grund und benannter
+   Variable (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) oder mit dem Hinweis, dass
+   der Anmeldedienst nicht antwortet. Ein Ausfall des Anmeldedienstes gilt
+   ausdrücklich **nicht** als abgelaufene Sitzung. Durchgelassen wird
+   weiterhin nur „gültig" — fail closed bleibt, das Schweigen nicht.
+4. Der Betriebsfehler „nicht prüfbar" steht im Log (Anbieterkennung
+   `sitzung`), die abgelehnte Sitzung weiterhin nicht: Sie ist ein normaler
+   Zugriffsfall und kein Zähler über Personen.
+
+Sieben neue Tests halten die Zuordnung fest, darunter die Gegenprobe, dass
+kein Text über den Kartendienst erscheint, wenn es die Sitzung war.

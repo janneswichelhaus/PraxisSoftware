@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-21 · letzte Session: OPS-001 Providerprüfung
+# Status · Stand 2026-09-22 · letzte Session: BEF-027 Fehlermeldungen der Routenfunktion
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -22,7 +22,7 @@ ist aus der Cloud gesperrt, kein Vertragstext war lesbar, **kein Eintrag trägt 
 
 **Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329);
 **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute:
-`test:db` **1769** Tests, `test` **2117**. `ASSUMPTIONS.md`: **1186** Zeilen, unverändert.
+`test:db` **1769** Tests, `test` **2129**. `ASSUMPTIONS.md`: **1186** Zeilen, unverändert.
 
 ## Blocker (Jannes-seitig)
 
@@ -31,7 +31,8 @@ ist aus der Cloud gesperrt, kein Vertragstext war lesbar, **kein Eintrag trägt 
 - **BEF-026 / B13:** Der eingebaute Mailversand stellt laut Auszug nur an Adressen des Projektteams zu. Entweder eigener SMTP-Anbieter (zweiter Auftragsverarbeiter, eigene Prüfung, Rücknahme von B13) oder kein Mailversand (Handgriff nach ANN-025). **STAFF-004 ruht bis dahin.**
 - **MAP-003 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)):
   nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`),
-  `supabase/functions/.env.local`, `functions serve`. Offen: **Profilfrage aus MAP-003c**.
+  `supabase/functions/.env.local`, `functions serve`. **BEF-027 behoben** — die Meldungen zeigen
+  jetzt auf den, der es war; Schritt 2 neu laufen. Offen: **Profilfrage aus MAP-003c**.
 - **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue Version nach §21 beginnt dort kein Loop — gebraucht, wenn Etappe TR an der Reihe ist.
 - **PTV:** Karte und Schlüssel tragen auch serverseitig (BEF-021, BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19); nur synthetische Koordinaten.
 - **Lokal:** `git pull`. Keine neue Abhängigkeit, keine Migration. **Node 22** (`.nvmrc`), sonst rot.
@@ -52,6 +53,7 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Kein Code, ein Dokument** — 297 Zeilen mit ausgewiesener Belegtiefe je Punkt. Neu: **BEF-026**
-(B13 ist im Produktivbetrieb nicht einlösbar) und **R14** (Logfrist und RPO halten beim Anbieter
-nicht). Entschärft: `pg_cron` (R9). Keine neue Annahme — ein Prüfdokument legt nichts fest.
+**Ein Befund aus dem Abnahmelauf, kein Feature** — **BEF-027**: `unauthorized` trug zwei
+Bedeutungen, die Sitzungsprüfung kannte nur ja/nein, und eine Antwort **vor** der Function galt als
+Anbieterausfall. Drei Ursachen, eine Meldung, und die zeigte auf den Kartendienst. Jetzt getrennt:
+`session_invalid` und `function_unavailable` dazu, 12 Tests mehr. Keine neue Annahme.
