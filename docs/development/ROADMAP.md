@@ -55,7 +55,8 @@ Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
   Zwischenziele sind nur als Suchauszug belegt, drei im mobilen Browser
   ebenso; die Anwendung erzwingt deshalb drei, und die **Gerätebewertung
   (MAP-005c)** sagt, ob mehr tragen — eine Zeile in
-  `src/lib/location/navigation.ts`. Für die Edge Function gilt weiter, was
+  `src/lib/location/navigation.ts`. **Sie ruht**, solange kein Telefon zur Verfügung steht
+  (Stand 2026-09-22); Teil A der Abnahme geht am Laptop und ist davon unabhängig. Für die Edge Function gilt weiter, was
   ADR-019 Punkt 15 sagt: bis zur Edge-Runtime-Prüfung in **OPS-001** nur
   `mock`-Adapter oder synthetische Koordinaten. **Die Prüfung ist am
   2026-09-21 geführt und hält die Runtime gesperrt** (vier benannte
@@ -566,7 +567,7 @@ MAP-005 laufen mit synthetischen Daten und dem kostenlosen PTV-Abo, unabhängig
 vom Vertragsstand; **MAP-006 erst nach dem Vertrags-/§203-/DSFA-Gate.** Ihre
 Einordnung steht in der Kette: MAP-002 bis MAP-005 sind gebaut (die Abnahme
 von MAP-003 und MAP-004 läuft lokal, sie braucht Docker; **MAP-005 braucht
-weder Docker noch Schlüssel, aber zwei Telefone**), MAP-006 folgt in Stufe 2
+weder Docker noch Schlüssel; Teil A geht am Laptop, Teil B wartet auf ein Telefon**), MAP-006 folgt in Stufe 2
 vor der Eröffnung (E-21 erledigt 2026-09-13).
 
 **MAP-007 — Führung auf dem Gerät** kam mit **ADR-019 Fassung 3** dazu

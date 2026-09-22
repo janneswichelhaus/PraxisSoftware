@@ -316,13 +316,20 @@ mit keinem Kartendienst; der Abschnitt „Die Navigation" steht auch dann, wenn
 darüber „Kartenkacheln nicht konfiguriert" steht und die Route scheitert. Wer
 nur MAP-005 prüfen will, braucht `pnpm dev` und eine Anmeldung, sonst nichts.
 
-**Schritt 2 und 3 gehen nur auf dem Telefon.** Dafür den
-Entwicklungsserver im selben WLAN erreichbar machen — `pnpm dev --host`,
-dann die angezeigte Netzwerkadresse (`http://192.168.…:5173`) am Telefon
-öffnen. Es bleibt die lokale Datenbank mit synthetischen Konten; ins Internet
-geht davon nichts.
+**Die Abnahme zerfällt in zwei Teile, und sie sind getrennt abnehmbar.**
+Teil A geht am Laptop und deckt alles ab, was die Anwendung selbst
+verantwortet. Teil B braucht ein Telefon und beantwortet, was nur ein Gerät
+beantwortet — er darf warten. **Solange er wartet, bleibt es bei drei
+Zwischenzielen je Tageslink** (`MAX_ZWISCHENZIELE`): Die kleinere Zahl ist die
+sichere, und ohne Gerät gibt es keinen Beleg für die größere. Teil A allein
+ist deshalb keine halbe Abnahme, sondern die ganze für das, was jetzt
+entschieden werden kann.
 
-### 1. Der Knopf baut nichts, bevor er gedrückt wird
+---
+
+### Teil A — am Laptop
+
+#### A1. Der Knopf baut nichts, bevor er gedrückt wird
 
 1. `/touren/karte` öffnen, zum Abschnitt **„Die Navigation"**. Erwartung: ein
    Satz, was übergeben wird; die Wahl der Ziel-App; acht Knöpfe „Stopp 1" bis
@@ -340,7 +347,66 @@ geht davon nichts.
 4. Mit der **Tastatur** durch den Abschnitt tabben. Erwartung: Auswahl mit den
    Pfeiltasten, jeder Knopf erreichbar, Fokus sichtbar.
 
-### 2. Android: öffnet das Rad?
+#### A2. Was beim Tippen entsteht
+
+Am Laptop öffnet der Knopf einen **neuen Tab**, und dessen **Adresszeile ist
+die Prüfung**: Dort steht genau das, was das Gerät bekommt.
+
+1. **Google Maps**, „Stopp 3" anklicken. Erwartung in der Adresszeile:
+   `destination=48.5164,9.0349`, `travelmode=bicycling`, `api=1` — und sonst
+   **nichts**. Kein Name, keine Uhrzeit, keine Kennung, **kein `origin`**:
+   Der Startpunkt gehört dem Gerät, nicht der Praxis (§20).
+2. Erwartung auf der Zielseite: eine Radroute zu einem Punkt im Tübinger
+   Stadtgebiet. Ein Pin ohne Hausnummer ist hier richtig — die Koordinate
+   **ist** das Ziel.
+3. **„Ganzer Tag – Abschnitt 1 von 2"** anklicken und die Stopps in der
+   geöffneten Karte **zählen**. Erwartung: **vier** (drei Zwischenziele plus
+   Ziel), keiner fehlt. Fehlt einer, ist schon drei zu viel, und die Zahl
+   gehört nach unten statt nach oben.
+4. **Apple Maps** wählen, „Stopp 3" anklicken. Erwartung in der Adresszeile:
+   `maps.apple.com/directions?destination=48.5164,9.0349&mode=cycling`. **Was
+   die Seite daraus macht, ist hier egal** — ohne Apple-Gerät ist die
+   Darstellung nicht die Prüffrage, die Übergabe schon.
+5. **Systemnavigation** wählen, „Stopp 3" anklicken. Erwartung: Der Browser
+   fragt nach einer Anwendung oder **es passiert sichtbar nichts**. Beides ist
+   in Ordnung: Ein `geo:`-Verweis ist für ein Telefon gemacht. **Kein
+   Befund** — genau dafür ist Teil B da.
+
+#### A3. Schmal, ohne Telefon
+
+1. Entwicklerwerkzeuge → **Geräteansicht** (Strg/Cmd + Umschalt + M), Breite
+   **375 px**. Erwartung: Der Abschnitt bricht um, nichts läuft waagerecht
+   über, die acht Stopp-Knöpfe stehen in mehreren Reihen.
+2. Einen Knopf im Elementebaum auswählen. Erwartung: Die Höhe steht bei
+   **44 px** (der Rahmen in der Geräteansicht zeigt sie an). Weniger wäre ein
+   Rückbau — dieselbe Zahl hält seit diesem Loop eine Browserprüfung in
+   `tests/e2e/karte.spec.ts` fest.
+3. Erwartung: Die drei Auswahlfelder der Ziel-App sind ebenso hoch und mit
+   dem Finger sicher zu treffen.
+
+#### A4. Was nicht passiert ist
+
+1. Entwicklerwerkzeuge → **Netzwerk**, Filter `myptv`, dann einen Stopp
+   anklicken. Erwartung: **keine** neue Anfrage. Der Handoff geht am
+   Kartendienst vorbei; er ist der dritte Datenweg (ADR-019 Punkt 6).
+2. `localStorage` und `sessionStorage` ansehen. Erwartung: kein Eintrag zur
+   Ziel-App und keine URL.
+3. In der Browserkonsole: Erwartung: keine Koordinate in einer Logzeile
+   (ADR-011).
+
+**Damit ist Teil A vollständig.** Was er nicht beantwortet, steht in Teil B —
+und bis dahin gilt die vorsichtige Zahl.
+
+---
+
+### Teil B — am Telefon (wartet auf ein Gerät)
+
+Dafür den Entwicklungsserver im selben WLAN erreichbar machen —
+`pnpm dev --host`, dann die angezeigte Netzwerkadresse
+(`http://192.168.…:5173`) am Telefon öffnen. Es bleibt die lokale Datenbank
+mit synthetischen Konten; ins Internet geht davon nichts.
+
+#### B1. Android: öffnet das Rad?
 
 Für jeden Fall: Ziel-App wählen, **einmal** auf „Stopp 3" tippen.
 
@@ -357,7 +423,7 @@ Für jeden Fall: Ziel-App wählen, **einmal** auf „Stopp 3" tippen.
    Hausnummer kann auf dem Rad genügen oder verwirren — das ist die offene
    Frage aus ANN-018, und diese Antwort entscheidet sie.
 
-### 3. iOS: dasselbe mit Apple Maps
+#### B2. iOS: dasselbe mit Apple Maps
 
 1. **Apple Maps.** Erwartung: Apple Maps öffnet mit Ziel und Fahrradmodus.
    **Voraussetzung ist iOS 18.4 oder neuer** — die genutzte Schreibweise
@@ -368,35 +434,18 @@ Für jeden Fall: Ziel-App wählen, **einmal** auf „Stopp 3" tippen.
    sonst der Browser. Notieren: Fahrradmodus vorhanden?
 3. Notieren, welche der beiden verlässlicher aufs Rad kommt.
 
-### 4. Der ganze Tag — und die eine offene Zahl
+#### B3. Die eine offene Zahl
 
-1. „Ganzer Tag – Abschnitt 1 von 2" antippen. Erwartung: eine Route über
-   **vier** Stopps (drei Zwischenziele plus Ziel), alle vier sichtbar.
-2. **Die eigentliche Frage:** Zählen Sie die Stopps in der geöffneten App.
-   Sind es vier, trägt das Limit. Sind es weniger, ist schon drei zu viel —
-   dann gehört die Zahl nach unten.
-3. Gegenprobe für die andere Richtung, am Telefon in **Google Maps**: Die
-   Anwendung erzwingt drei Zwischenziele, dokumentiert sind neun außerhalb
-   mobiler Browser. Wenn Schritt 1 mit vier Stopps sauber öffnet, hängt
-   `docs/decisions/providerpruefung-kartendienst.md` Teil 6 die Beobachtung an
-   — und `MAX_ZWISCHENZIELE` in `src/lib/location/navigation.ts` darf auf neun
-   steigen. **Eine Zeile, ein Loop.** Ohne diese Beobachtung bleibt es bei
-   drei.
-4. Mit **Systemnavigation**: „Abschnitt 8 von 8" antippen. Erwartung: Stopp 8,
+1. Am Telefon **„Ganzer Tag – Abschnitt 1 von 2"** antippen und die Stopps in
+   der geöffneten App zählen. Erwartung: vier.
+2. **Die eigentliche Frage:** Trägt die App auf dem Telefon auch mehr? Wenn
+   Schritt 1 sauber öffnet und das Ziel die App und nicht der mobile Browser
+   ist, hängt `docs/decisions/providerpruefung-kartendienst.md` Teil 6 die
+   Beobachtung an — und `MAX_ZWISCHENZIELE` in
+   `src/lib/location/navigation.ts` darf auf neun steigen. **Eine Zeile, ein
+   Loop.** Ohne diese Beobachtung bleibt es bei drei.
+3. Mit **Systemnavigation**: „Abschnitt 8 von 8" antippen. Erwartung: Stopp 8,
    ein einzelnes Ziel, kein Umweg.
-
-### 5. Was nicht passiert ist
-
-1. Entwicklerwerkzeuge → **Netzwerk**, Filter `myptv`, dann einen Stopp
-   antippen. Erwartung: **keine** neue Anfrage. Der Handoff geht am
-   Kartendienst vorbei; er ist der dritte Datenweg (ADR-019 Punkt 6).
-2. Die geöffnete URL in der Navigations-App ansehen (Adresszeile oder
-   Teilen-Funktion). Erwartung: Koordinate und Fahrmodus, sonst nichts — kein
-   Name, keine Uhrzeit, keine Kennung, kein Startpunkt.
-3. `localStorage` und `sessionStorage` ansehen. Erwartung: kein Eintrag zur
-   Ziel-App und keine URL.
-4. Im `serve`-Fenster und in der Browserkonsole: Erwartung: keine Koordinate
-   in einer Logzeile (ADR-011).
 
 **Ergebnis der Gerätebewertung** (MAP-005c) in einem Satz je Gerät notieren —
 welche Ziel-App öffnet zuverlässig im Fahrradmodus, wie kommt ein
