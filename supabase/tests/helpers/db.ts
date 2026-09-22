@@ -86,8 +86,11 @@ async function schemaSignatur(dateien: string[]): Promise<string> {
   return teile.join('|');
 }
 
-/** Baut Shim, Migrationen und Seed in die Datenbank hinter `client`. */
-async function baueSchema(client: Client, dateien: string[]): Promise<void> {
+/**
+ * Baut Shim, Migrationen und - sofern `mitSeed` - den Seed in die Datenbank
+ * hinter `client`.
+ */
+async function baueSchema(client: Client, dateien: string[], mitSeed = true): Promise<void> {
   await client.query(`
     drop schema if exists public cascade;
     drop schema if exists app cascade;
@@ -108,7 +111,7 @@ async function baueSchema(client: Client, dateien: string[]): Promise<void> {
     }
   }
 
-  await client.query(await readFile(SEED_FILE, 'utf8'));
+  if (mitSeed) await client.query(await readFile(SEED_FILE, 'utf8'));
 }
 
 /**
@@ -175,6 +178,44 @@ export async function resetDatabase(): Promise<void> {
   const client = await connect();
   try {
     await baueSchema(client, dateien);
+  } finally {
+    await client.end();
+  }
+}
+
+/** Die Datenbank für den Stand ohne Seed - getrennt von Vorlage und Klon. */
+const LEER = 'praxis_leer';
+
+/**
+ * Wie resetDatabase, aber ganz ohne Seed: nur Shim und Migrationen.
+ *
+ * Das ist der Stand, den ein neues Projekt nach den Migrationen der Pipeline
+ * hat (OPS-007). Die Probe des Bootstrap-Runbooks braucht genau ihn - mit dem
+ * Seed gäbe es schon eine Organisation, und der Bootstrap wiese sich selbst ab.
+ * Läuft in einer eigenen Datenbank, damit die Vorlage unberührt bleibt; geht
+ * das nicht, wird wie bei resetDatabase in der konfigurierten gebaut.
+ */
+export async function resetDatabaseOhneSeed(): Promise<void> {
+  const dateien = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort();
+  if (dateien.length === 0) throw new Error('Keine Migrationen gefunden.');
+
+  if (klonenMoeglich) {
+    const leitung = await verwaltung();
+    try {
+      await leitung.query(`drop database if exists ${LEER} with (force)`);
+      await leitung.query(`create database ${LEER}`);
+      arbeitsUrl = urlFuer(LEER);
+    } catch {
+      klonenMoeglich = false;
+      arbeitsUrl = null;
+    } finally {
+      await leitung.end();
+    }
+  }
+
+  const client = await connect();
+  try {
+    await baueSchema(client, dateien, false);
   } finally {
     await client.end();
   }
