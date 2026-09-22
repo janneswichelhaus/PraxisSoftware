@@ -200,13 +200,18 @@ Bedingungen dort.
 
 ## MAP-006 — Patient/Tour-Integration
 
-**Erst nach dem Gate** aus ADR-019 Punkt 9 (Teil 5 des Prüfdokuments): DPA,
-§203-Verpflichtung, Subprozessoren, Retention, EU-Region, Paid Plan, Prüfung
-der Edge Runtime, DSFA-Wiedervorlage. Ohne Gate startet dieser Loop nicht —
-das ist ein Hard Stop, keine Annahme.
+**Gebaut wird sofort, scharfgeschaltet erst nach dem Gate** (§15.2, ADR-019
+Fassung 4). Der Loop entsteht vollständig mit **synthetischen** Adressen im
+Seed — Migration, Geocoding-Pfad, Tagesroute, Fahrzeiten, Abnahme. Was am Gate
+aus ADR-019 Punkt 9 hängt, ist allein der **erste Lauf mit echten
+Patientenadressen**: DPA, §203-Verpflichtung, Subprozessoren, Retention,
+EU-Region, Paid Plan, Prüfung der Edge Runtime, DSFA-Wiedervorlage. Dieser
+Umschalter ist ein Hard Stop und gehört in die Go-live-Vorbedingungen
+(ADR-007 Punkt 5) — der Baubeginn nicht.
 
-**Ziel.** Die Tagesroute einer Therapeutin liegt mit echten Adressen auf der
-Karte, mit Route, Fahrzeiten und Erreichbarkeit im Kalender.
+**Ziel.** Die Tagesroute einer Therapeutin liegt auf der Karte, mit Route,
+Fahrzeiten und Erreichbarkeit im Kalender — im Bau mit synthetischen
+Adressen, nach dem Gate mit echten.
 
 **Stories (Zuschnitt, im Loop zu schärfen).**
 
@@ -241,9 +246,10 @@ Adressen; E2E des Tagesablaufs.
 
 ## MAP-007 — Führung auf dem Gerät
 
-**Erst nach MAP-006** und nach dem Gate (ADR-019 Punkt 32). Vorher gibt es
-keine echten Tagesstopps, die man führen könnte — das ist ein Hard Stop, keine
-Annahme.
+**Erst nach MAP-006** (ADR-019 Punkt 32) — vorher gibt es keine Tagesstopps,
+die man führen könnte. Wie MAP-006 wird auch dieser Loop mit **synthetischen**
+Adressen gebaut und abgenommen; am Gate hängt das Scharfschalten, nicht der
+Baubeginn (§15.2).
 
 **Grundlage.** ADR-019 Fassung 3, Abschnitt F, und `PROJECT_PRINCIPLES.md`
 §20.1. Die vier Bedingungen dort sind der Zuschnitt: Position nur auf dem

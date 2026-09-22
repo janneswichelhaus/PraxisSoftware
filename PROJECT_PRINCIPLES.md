@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.14** |
+| **Dokumentversion** | **0.15** |
 | **Änderungsdatum** | **2026-09-22** |
-| Vorversion | 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Vorversion | 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -1252,6 +1252,39 @@ ADR noch die Feature-Spezifikation trifft, wird sie nicht abgewartet. Es gilt:
    geändert werden. Bis dahin sind sie vorläufig — nicht falsch, aber auch
    nicht entschieden.
 
+### 15.2 Eine offene externe Klärung hält die Entwicklung nicht an
+
+Eine ausstehende Antwort von außen — Datenschutzberatung, Steuerberatung,
+Anbietervertrag, Aufsichtsbehörde, Lizenzgeber — **DARF die Entwicklung NICHT
+blockieren.** Sie blockiert das **Scharfschalten**, nicht das Bauen. Beides
+ist zu trennen:
+
+- **Bauen** heißt: Funktion entwerfen, umsetzen, testen und abnehmen — mit
+  **ausschließlich synthetischen Daten**, ohne produktive Verarbeitung
+  (ADR-007 Punkt 6, der das seit jeher erlaubt).
+- **Scharfschalten** heißt: echte Personendaten fließen, ein Anbieter wird
+  produktiv genutzt, das System geht in Betrieb. Erst hier greifen die
+  Vorbedingungen aus §3.7 und ADR-007 Punkt 5.
+
+Eine Feature-Spezifikation, ein ADR oder eine Ablaufbeschreibung DARF eine
+offene externe Klärung deshalb **NICHT zur Startbedingung eines Loops**
+machen. Sie wird zur Bedingung des Scharfschaltens und steht dort an genau
+einer Stelle: dem Go-live-Gate (§3.7, ADR-007 Punkt 5). Ein Zuschnitt, der
+das Bauen an eine externe Antwort bindet, ist neu zu schneiden — die Funktion
+entsteht mit synthetischen Daten, der Umschalter bleibt zu.
+
+Der Preis dafür wird ausdrücklich in Kauf genommen: Eine späte Antwort kann
+eine gebaute Annahme widerlegen. Deshalb gilt Ziffer 4 hier verschärft —
+**jede so getragene Annahme MUSS an genau einer Stelle reversibel verankert
+sein**, damit die Korrektur eine begrenzte Änderung bleibt und kein Umbau.
+
+Unberührt bleiben die Grenzen aus §15.1 („Eine Annahme DARF NICHT"): echte
+Patientendaten, Produktionscredentials, Secrets, ein Produktivdeployment, ein
+neuer externer Anbieter und das Aufweichen einer Schutzmaßnahme, eines Tests
+oder eines Gates. Diese Liste wird durch §15.2 **nicht** kürzer. Ebenso
+unberührt bleiben die Vorbedingungen selbst: Die Prüfung am Ende entfällt
+nicht, sie rückt nur dorthin, wo sie hingehört.
+
 Eine Annahme DARF NICHT:
 
 - einer MUSS- oder DARF-NICHT-Anforderung dieses Dokuments oder eines ADRs
@@ -1577,6 +1610,37 @@ was sieht, ist eine Produktentscheidung und steht hier.
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.15
+
+Eine Entscheidung des Projektinhabers vom 2026-09-22: **Offene externe
+Klärungen sollen das Bauen nicht länger anhalten.** Die Version fügt **§15.2**
+hinzu und ist damit keine Korrekturversion (§21).
+
+- **Was §15.2 festlegt.** Eine ausstehende Antwort von außen blockiert das
+  **Scharfschalten**, nicht das **Bauen**. Eine Spezifikation DARF eine offene
+  externe Klärung nicht zur Startbedingung eines Loops machen; sie wird zur
+  Bedingung des Go-live-Gates (§3.7, ADR-007 Punkt 5). Ein Zuschnitt, der das
+  Bauen an eine externe Antwort bindet, ist neu zu schneiden.
+- **Das ist keine Lockerung, sondern die Auflösung eines Widerspruchs.**
+  ADR-007 Punkt 6 erlaubt Entwicklungsarbeiten vor Abschluss der DSFA,
+  solange ausschließlich synthetische Daten verwendet werden — seit 2026-09-05.
+  §15.1 Ziffer 5 verlegt die Validierung von Annahmen ohnehin auf „vor
+  Produktivstart". Mehrere nachgelagerte Dokumente hatten daraus trotzdem
+  **Startbedingungen einzelner Loops** gemacht (ADR-019 Punkt 25 und 32,
+  `MAP-LOOPS.md`, `OPEN_DECISIONS.md` B7). Das war ein Abweichen nach unten,
+  nicht nach oben; §15.2 stellt es richtig und macht die Regel ausdrücklich,
+  damit die Abweichung nicht wiederkehrt.
+- **Was NICHT geändert wurde.** Die Verbotsliste aus §15.1 steht unverändert:
+  echte Patientendaten, Produktionscredentials, Secrets, Produktivdeployment,
+  neuer Anbieter, Aufweichen von Schutzmaßnahme, Test oder Gate. Die sieben
+  Vorbedingungen aus ADR-007 Punkt 5, die DSFA und die Prüfung nach §3.7
+  entfallen nicht — sie rücken an die Stelle, an der sie wirken: vor den
+  Produktivstart.
+- **Der Preis steht im Text.** Eine späte externe Antwort kann eine gebaute
+  Annahme widerlegen. §15.2 verschärft dafür Ziffer 4: **jede so getragene
+  Annahme MUSS an genau einer Stelle reversibel verankert sein.** Wer das
+  unterlässt, hat nicht schneller gebaut, sondern nur später umgebaut.
 
 ### Änderungsvermerk 0.14
 

@@ -2,10 +2,19 @@
 
 ## Status
 
-**Angenommen, Fassung 3** — von Jannes am 2026-09-22 bestätigt.
+**Angenommen, Fassung 4** — von Jannes am 2026-09-22 bestätigt.
 Die Annahme gilt der Zielarchitektur, dem Kandidaten und dem Gate; **produktiv
 freigeschaltet ist damit nichts** — die Freigabe echter Adressen an einen
 Anbieter bleibt am Gate aus Punkt 9 (Vertrag, §203, DSFA).
+
+Fassung 4 ändert **nichts an der Architektur und nichts am Umfang des Gates**,
+sondern nur, **wo** es steht: Punkt 25 und 32 banden bisher den *Baubeginn*
+von MAP-006 und MAP-007 daran. Das war ein Abweichen von ADR-007 Punkt 6
+(„Entwicklungsarbeiten dürfen bereits vor Abschluss der DSFA stattfinden,
+solange ausschließlich synthetische Daten verwendet werden") und von §15.1
+Ziffer 5. Beide Loops werden jetzt mit synthetischen Adressen gebaut und
+abgenommen; das Gate steht vor dem **Scharfschalten** — dem ersten Lauf mit
+echten Patientenadressen. Kein Punkt des Gates entfällt.
 
 Fassung 3 ändert **einen** Satz der Zielsetzung und fügt **einen** Abschnitt
 hinzu. Sie löst Punkt 6 des Kontexts ab („Eine eigene Turn-by-Turn-Engine ist
@@ -37,7 +46,7 @@ Gate fest, das vor Echtdaten zu passieren ist.
 ## Datum
 
 2026-09-08 (Fassung 2; Fassung 1 vom selben Tag) · angenommen 2026-09-13 ·
-**Fassung 3 vom 2026-09-22, angenommen am selben Tag**
+**Fassung 3 und Fassung 4 vom 2026-09-22, je am selben Tag angenommen**
 
 ## Kontext
 
@@ -241,10 +250,17 @@ zurückzubauen ist.
     Bezug zu einer Akte. Das Free-Abo und den Schlüssel legt **Jannes** an,
     nicht der Agent; der Schlüssel liegt in `.env.local` beziehungsweise in
     lokalen Supabase-Secrets und nie im Repository (§3.3).
-25. **MAP-006** (echte Adressen, Geocoding bei Adressänderung, Tagesroute,
-    Fahrzeiten im Kalender) beginnt **erst nach** dem Gate aus Punkt 9 —
-    einschließlich Paid Plan, DPA-Ablage in den DSFA-Unterlagen (G14) und
-    DSFA-Wiedervorlage.
+25. **MAP-006** (Geocoding bei Adressänderung, Tagesroute, Fahrzeiten im
+    Kalender) wird **mit synthetischen Adressen gebaut und abgenommen**; das
+    Gate aus Punkt 9 — einschließlich Paid Plan, DPA-Ablage in den
+    DSFA-Unterlagen (G14) und DSFA-Wiedervorlage — steht vor dem
+    **Scharfschalten**, also vor dem ersten Lauf mit echten Patientenadressen.
+    **Fassung 4 (2026-09-22)**: Bis dahin band dieser Punkt den *Baubeginn* an
+    das Gate. Das war ein Abweichen von ADR-007 Punkt 6 und von §15.1
+    Ziffer 5; §15.2 stellt die Regel jetzt ausdrücklich. Der Umschalter auf
+    echte Adressen ist ein eigener, benannter Schritt und bleibt zu — er
+    gehört in die Go-live-Vorbedingungen nach ADR-007 Punkt 5, nicht in eine
+    Startbedingung.
 26. Die Einführung ist eine „wesentliche Änderung der
     Routing-/Standortverarbeitung" nach ADR-007 Punkt 2. Die
     DSFA-Wiedervorlage erfolgt je Datenweg: Kacheln, Server-Aufrufe, Handoff
@@ -302,10 +318,11 @@ ist.
     eine rein visuelle Führung wird nicht ausgeliefert. Gehört in die
     Endgeräte-Richtlinie (BETRIEB-001) neben die Navigationsregel aus
     Punkt 23.
-32. **Reihenfolge: erst MAP-006, dann die Führung.** Ohne echte Tagesstopps
-    gibt es nichts zu führen, und ohne das Gate aus Punkt 9 keine echten
-    Adressen. Das Epic beginnt damit **nach** MAP-006 und nach dem Gate; der
-    Handoff aus Abschnitt D bleibt bis dahin der Weg.
+32. **Reihenfolge: erst MAP-006, dann die Führung.** Ohne Tagesstopps gibt es
+    nichts zu führen. Das Epic beginnt damit **nach** MAP-006 — gebaut und
+    abgenommen wird es wie dieses mit synthetischen Adressen; das Gate steht
+    auch hier vor dem Scharfschalten, nicht vor dem Bauen (§15.2,
+    **Fassung 4**). Der Handoff aus Abschnitt D bleibt bis dahin der Weg.
 33. **Die Führung ist ein eigener Datenweg in der DSFA** (Punkt 26), und
     **B2** wird um sie erweitert: Die Rechtsfrage ist nicht mehr nur die
     einmalige Übergabe einer Adresse, sondern eine wiederholte Übermittlung
