@@ -112,6 +112,9 @@ export const AUDIT_ACTIONS = [
   // gelöscht wird sie nie (ADR-009 Punkt 12).
   'payment.recorded',
   'payment.voided',
+  // OPS-007: die Einrichtung der einen Organisation, einmalig aus dem
+  // SQL-Editor (ADR-003, ADR-010 Punkt 2).
+  'organization.bootstrapped',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -189,6 +192,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'invoice.reminder_created': 'Zahlungserinnerung ausgestellt',
   'payment.recorded': 'Zahlung erfasst',
   'payment.voided': 'Zahlung storniert',
+  'organization.bootstrapped': 'Praxis eingerichtet',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
