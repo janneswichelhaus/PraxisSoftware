@@ -281,7 +281,7 @@
           "id": "g3-ops-001",
           "name": "G3 OPS-001 Providerprüfung und Cloudprojekt",
           "gewicht": 2,
-          "status": "offen"
+          "status": "entwurf"
         },
         {
           "id": "g5-ops-002",
@@ -441,7 +441,7 @@
           "id": "providerpruefung",
           "name": "Providerprüfung Supabase (OPS-001)",
           "gewicht": 2,
-          "status": "offen"
+          "status": "entwurf"
         },
         {
           "id": "b4-steuer",
