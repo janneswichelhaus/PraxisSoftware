@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { protokolliereFehler } from '@/lib/protokoll';
 import { VerbindungError, WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEinloesen';
 
 /**
@@ -42,14 +43,15 @@ type Sicherheitsereignis = 'password_changed' | 'sessions_ended' | 'mfa_enrolled
  *
  * `rpc` wirft bei einem Serverfehler nicht, sondern löst mit `{ error }` auf —
  * ein `try`/`catch` darum herum fängt nichts und täuscht eine Behandlung vor.
- * Deshalb wird `error` ausgewertet. Sichtbar bleibt der Fehlschlag auf der
- * Konsole, wie beim Aktenzugriff in `features/patients/api.ts`; ohne
- * Kontoangabe, denn ADR-011 lässt keine personenbezogenen Daten ins Log.
+ * Deshalb wird `error` ausgewertet. Sichtbar bleibt der Fehlschlag im
+ * Betriebslog, wie beim Aktenzugriff in `features/patients/api.ts` — über
+ * `lib/protokoll.ts`, den einen Ausgang, und ohne Kontoangabe: ADR-011 lässt
+ * keine personenbezogenen Daten ins Log.
  */
 async function melde(ereignis: Sicherheitsereignis): Promise<void> {
   const { error } = await getSupabase().rpc('log_account_security_event', { p_event: ereignis });
   if (error) {
-    console.error('Auditeintrag für ein Kontoereignis fehlgeschlagen.');
+    protokolliereFehler({ ereignis: 'audit.kontoereignis_nicht_vermerkt' });
   }
 }
 

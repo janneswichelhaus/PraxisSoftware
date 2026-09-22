@@ -87,9 +87,9 @@ Datenschutz · offen · 2026-08-28 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Art. 5 Abs. 1 lit. e DSGVO verlangt je Zweck eine definierte Frist; gesetzlich bestimmt sind nur Behandlungsunterlagen (§630f Abs. 3 BGB) und steuerlich relevante Belege (§147 AO, §257 HGB). Die übrigen hat ADR-008 als interne Initialentscheidung gesetzt und selbst zur Validierung vorgemerkt; §195 BGB und Art. 5 Abs. 2 DSGVO sind naheliegende Anker, aber eine Lesart, keine belegte Herleitung.
 
-**Anker.** `public.retention_classes` in `supabase/migrations/20260911150000_retention_schedule.sql` — die einzige Stelle, gelesen nur über `app.retention_interval()`; Zuordnung in `public.retention_assignments`, geprüft von `supabase/tests/retention.test.ts`.
+**Anker.** `public.retention_classes` in `supabase/migrations/20260911150000_retention_schedule.sql` — die einzige Stelle für alles, was in unserer Datenbank liegt, gelesen nur über `app.retention_interval()`; Zuordnung in `public.retention_assignments`, geprüft von `supabase/tests/retention.test.ts`. **Betriebslogs liegen nicht dort** und hatten deshalb bis OPS-004 als einziger Wert der Tabelle keinen Ort im Code: Ihre 30 Tage stehen seit 2026-09-22 als `BETRIEBSLOG_FRIST_TAGE` in `src/lib/protokoll.ts`, gehalten gegen die Tabelle in ADR-011 Punkt 4. Sie sind dort die **Anforderung**, nicht der gemessene Zustand — R14 (Plattformfrist 1 bis 28 Tage) ist damit sichtbar und nicht stillschweigend auf die kleinere Zahl gedreht.
 
-**Änderungspfad.** Frist ändern: Migration mit `update` auf `public.retention_classes`, Tabelle in ADR-008 nachziehen · Aufwand `klein`. Neue Frist, wo bisher keine galt: zusätzlich fachlicher Anker und Regel in `public.apply_retention()` · Aufwand `mittel`. Bewusst kein Klickweg in der Oberfläche (ADR-013).
+**Änderungspfad.** Frist ändern: Migration mit `update` auf `public.retention_classes`, Tabelle in ADR-008 nachziehen · Aufwand `klein`. Neue Frist, wo bisher keine galt: zusätzlich fachlicher Anker und Regel in `public.apply_retention()` · Aufwand `mittel`. Betriebslogs gehen den anderen Weg: eine Zahl in `src/lib/protokoll.ts` und dieselbe Zeile in ADR-011 · Aufwand `klein` — dass die Plattform sie einhält, ist damit aber nicht gesagt (R14). Bewusst kein Klickweg in der Oberfläche (ADR-013).
 
 ### ANN-002 — Versorgungsstatus `inactive` und Rollenschnitt des Wechsels
 

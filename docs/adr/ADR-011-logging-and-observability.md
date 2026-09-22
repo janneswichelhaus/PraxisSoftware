@@ -110,7 +110,18 @@ Dieser ADR schließt den offenen Punkt E5 und konkretisiert §3.6.
 ## Offene Folgefragen
 
 - Wie wird die Verbotsliste automatisiert geprüft, und wann läuft diese
-  Prüfung — in CI, zur Laufzeit, oder beides?
+  Prüfung — in CI, zur Laufzeit, oder beides? *Beantwortet mit OPS-004
+  (2026-09-22): **beides**, und die beiden Teile prüfen Verschiedenes.* Zur
+  Laufzeit filtert `src/lib/protokoll.ts` als die eine Stelle aus Punkt 6 —
+  mit einer **Erlaubnisliste**, weil kein Muster einen Patientennamen
+  zuverlässig erkennt: Heraus kommt nur ein fester Bezeichner aus dem
+  Quelltext, eine interne UUID oder eine endliche Zahl. In CI liest
+  `src/lib/protokoll.test.ts` die elf Punkte dieser Liste aus **diesem
+  Dokument** und schickt zu jedem eine synthetische Probe hindurch, und
+  `src/protokollierung.test.ts` hält fest, dass es bei den erklärten Ausgängen
+  bleibt — sonst wäre die Redaction eine Empfehlung. Offen bleibt der Teil,
+  den ein Filter nicht leisten kann: dass sensible Inhalte gar nicht erst
+  übergeben werden.
 - Wie werden Stacktraces behandelt, die Nutzdaten in Variablenwerten
   transportieren?
 - Wie werden interne IDs so gewählt, dass sie selbst keine Rückschlüsse
