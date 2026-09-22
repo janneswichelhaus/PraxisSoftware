@@ -86,6 +86,11 @@ export async function fetchDayPlan(datum: string, staffMemberId: string): Promis
  *
  * Ein Neuladen, ein geschlossener Tab und jede Abmeldung verwerfen ihn; mit
  * dem Kalendertag wechselt der Abfrageschlüssel und damit der Eintrag.
+ *
+ * Seit ANN-021 Fassung 2 ist diese Liste auch die Bereitstellung der
+ * Tagesinformationen nach ADR-012 Punkt 9; einen Druck- oder Exportweg für
+ * den Tagesplan gibt es bewusst nicht (G10-Funktionsteil gestrichen); Papier
+ * entsteht über den Browserdruck der Übersicht (Druck-Basis, UI-000).
  */
 export const TAGESPLAN_VORHALTEDAUER_MS = 8 * 60 * 60 * 1000;
 

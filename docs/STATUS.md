@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-22 · letzte Session: PAT-006
+# Status · Stand 2026-09-22 · letzte Session: G10 gestrichen
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,19 +6,18 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**Die Akte weiß jetzt, was auf Papier geschehen ist.** PAT-006 (G8): neuer Aktenbereich **Datenschutz** mit den Vermerken „Datenschutzinformation ausgehändigt am" (samt Fassung) und „Behandlungsvertrag unterschrieben am" sowie Einwilligungen je Zweck. Ein **Widerruf ist eine eigene Zeile** und löscht die Erteilung nicht; kein Konto ändert oder löscht einen Vermerk. Dazu ein Druckblatt: Datenschutzinformation (nennt den Kartendienst nach ADR-019) und Ausfallhonorar-Regel ohne Betrag, beide sichtbar als **Entwurf**. Neue Annahme **ANN-093** (zwei Zwecke). Fortschritt **48,3 %** (vorher 47,8).
+**G10 (E2-Funktion Tagesplan) ist gestrichen**, Entscheidung Jannes (Weg a): Kein eigener Druck- oder Exportweg; die Tagesliste der Übersicht mit Anschrift, Telefon und Zugangshinweis gilt als Bereitstellung nach ADR-012 Punkt 9 und lässt sich über den Browser drucken (**ANN-021 Fassung 2**, kein neuer Eintrag). Kein Code außer einem Kommentar am Anker. Fortschritt **48,9 %** (vorher 48,3 — der Posten fällt aus dem Modell).
 
 ## Danach — Reihenfolge seit 2026-09-22
 
-1. **E2 Ausfallkonzept (G10)** — Tagesplan mit Adressen und Telefonnummern druck- und exportierbar;
-   zugleich der Rückfallplan der Eröffnung (H4)
-2. **G19 Dokumentationsgate erweitern (BEF-028)** — vor der inhaltlichen Durchsicht für B2; der Rest
+1. **G19 Dokumentationsgate erweitern (BEF-028)** — vor der inhaltlichen Durchsicht für B2; der Rest
    von OPS-004 (Alarmierung, Security-Log 12 Monate, Art. 33) wartet auf **G3**
-3. **G6a Abgewiesene Zugriffe, Rest** — die übrigen rund 80 Abweisungen nachweisbar machen
+2. **G6a Abgewiesene Zugriffe, Rest** — die übrigen rund 80 Abweisungen nachweisbar machen
+3. **MAP-006 Tagesroute** (`docs/development/MAP-LOOPS.md`) — synthetische Adressen, Gate vor dem Scharfschalten
 
 ## Prüfverfahren
 
-**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2328** (19 neu); `test:db` **1834** (22 neu) — **vollständig gelaufen**, weil eine Migration dazukam. `ASSUMPTIONS.md`: **1222** Zeilen (Obergrenze um 12 angehoben, wie bei den zehn Einträgen davor). **Sichtprüfung** bei 375 und 1280 px in einer Wegwerf-Umgebung mit synthetischen Daten und ersetzter API — die echte Anmeldung läuft in der Cloud nicht; kein waagerechtes Scrollen, zwei Befunde daraus behoben.
+**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2328**, unverändert; `test:db` **1834** aus PAT-006, heute **nicht gelaufen** — keine Migration, keine Policy. `ASSUMPTIONS.md`: **1222** Zeilen, Obergrenze **nicht** angehoben (ANN-021 in bestehenden Absätzen fortgeschrieben). Keine Sichtprüfung: keine Oberfläche geändert.
 
 ## Blocker (Jannes-seitig)
 
@@ -37,7 +36,8 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 - **MAP-003, MAP-004 und MAP-005 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 und MAP-004 nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`), `supabase/functions/.env.local`, `functions serve`. MAP-003 Schritt 1 und 4 **durch**, **BEF-027 behoben**; offen bleiben Schritt 2, 3 und 5 sowie **alle fünf Schritte von MAP-004**. **MAP-005 Teil A ist durch** (Laptop, 2026-09-22) — die drei Befunde daraus sind behoben und in Teil A **erneut zu prüfen**, weil die Seite sich geändert hat; dabei gleich **MAP-002 Schritt 3** mitprüfen, der ohne Vorschaubanner neu geschrieben ist. **Teil B am Telefon ruht**, bis ein Gerät da ist. Bis dahin bleibt `MAX_ZWISCHENZIELE` bei drei.
 - **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue Version nach §21 beginnt dort kein Loop — gebraucht, wenn Etappe TR an der Reihe ist.
 - **PTV:** Karte und Schlüssel tragen auch serverseitig (BEF-021, BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19) und die **Höchstzahl der Relationen je Matrix-Anfrage** (ANN-091 überbrückt sie mit 25 × 25); nur synthetische Koordinaten.
-- **Lokal:** `git pull`, dann `pnpm dlx supabase@2.116.0 db reset` — **eine neue Migration** (PAT-006). Keine neue Abhängigkeit. **Node 22** (`.nvmrc`), sonst rot.
+- **E2 Ausfallverfahren (G10, ADR-012 Punkt 8)** — eine Seite Praxisprozess vor dem Go-live: Übersicht morgens öffnen oder drucken, Papier, Nachtrag binnen 24 h, Rechnungen ruhen.
+- **Lokal:** `git pull` — keine Migration, keine neue Abhängigkeit. **Node 22** (`.nvmrc`), sonst rot.
 - **G13 fehlt:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises**, die **Kürzel der beiden Nummernkreise** (`RG`/`TR`) — ANN-074/075/082; dazu echte Preise. **B4** entscheidet zusätzlich über den **ermäßigten Satz**; bis dahin weist eine Constraint ihn ab.
 - **B9:** Die Auswertung liefert beide Grundlagen und wählt keine; welche die Gewinnermittlung verlangt, gehört mit B4 in dieselbe Frage (**ANN-088**).
 - **M0 (Vorlauf):** B1, B2, B4 ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)) — **B2 trägt** die
@@ -54,4 +54,4 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Die Einwilligung war die Lücke zwischen zwei gebauten Dingen:** Der Mailweg (ANN-041) setzte einen „ausdrücklichen Wunsch" voraus, das Verfahren für Betroffenenrechte einen Widerruf — keins von beiden hatte einen Ort in der Akte. Jetzt hat es einen, und zwar bewusst als Vermerk und nicht als Schranke: Die Anwendung zeigt den Stand, sie sperrt den Mailweg nicht; ob sie das soll, ist Teil von ANN-093 und geht an B2. Die Behandlung selbst braucht keine Einwilligung — eine daneben wäre wegen ihrer Widerrufbarkeit die schwächere Grundlage. **Lokale Schritte:** `git pull origin claude/erste-offene-aufgabe-d5bwbn`, `pnpm dlx supabase@2.116.0 db reset`.
+**Die Funktion war schon da, nur nicht so benannt:** ADR-012 verlangt, dass die Tagesinformationen einen Ausfall überstehen, und gibt dafür selbst der Tagesliste aus ADR-001 einen zweiten Zweck. Ein eigener Druck- oder CSV-Weg hätte Anschriften aller Patient:innen eines Tages als Datei ohne Löschfrist erzeugt. Die Grenze steht ehrlich in ANN-021: Nach einem Neuladen ohne Netz ist die Liste weg, wenn sie nicht gedruckt wurde — ob das reicht, zeigt Probewoche 1. **Lokale Schritte:** `git pull origin claude/erste-offene-aufgabe-1sq7z7`.

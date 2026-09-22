@@ -160,12 +160,6 @@
           "status": "fertig"
         },
         {
-          "id": "e2-tagesplan",
-          "name": "E2 Tagesplan druck- und exportierbar (G10, Funktionsteil)",
-          "gewicht": 1,
-          "status": "offen"
-        },
-        {
           "id": "abr-epic-004",
           "name": "ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L)",
           "gewicht": 1,

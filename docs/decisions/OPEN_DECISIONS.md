@@ -70,7 +70,7 @@ Feature, **P3** später.
 | D | übrige Begriffe | erledigt | „auditierbar" → C4 · „organisatorische Patientenkommunikation" → C2 (überholt durch E15) · „Behandlungsnachweis" → C1, ANN-006 (überholt durch E15) · „Praxisinhaber vs. Admin" → C5 · „technisch getrennt" → ADR-002, Umgebungen in OPS-001 |
 | D | Normativität und Nachweis | Normativität erledigt (0.2, §0); **Nachweistabelle offen** | Roadmap G14 |
 | E1 | Betreibbarkeit bei Bus-Faktor 1 | entschieden 2026-08-28 | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Dokumentation Roadmap G7 |
-| E2 | Ausfallkonzept — zugleich Rückfallplan der Eröffnung | Kern **vorläufig entschieden 2026-09-08**; Ausarbeitung Jan 2027 | Roadmap G10 und H4, Jan 2027; Volltext: `ANFRAGEN.md` § E2 |
+| E2 | Ausfallkonzept — zugleich Rückfallplan der Eröffnung | Kern **vorläufig entschieden 2026-09-08**; Ausarbeitung Jan 2027 | Roadmap G10 und H4, Jan 2027; Funktionsteil gestrichen 2026-09-22 (ANN-021); Volltext: `ANFRAGEN.md` § E2 |
 | E3 | Backup, RPO/RTO, Restore-Test | entschieden 2026-08-28 | [ADR-012](../adr/ADR-012-backup-and-business-continuity.md); Roadmap G7 |
 | E4 | Produktionszugriff | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md) |
 | E5 | Produktions-Logs | entschieden 2026-08-28 | [ADR-011](../adr/ADR-011-logging-and-observability.md); Roadmap G6 |
