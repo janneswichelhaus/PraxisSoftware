@@ -70,6 +70,15 @@ function quelltext(pfad: string): string {
 /** `vi.spyOn(console, 'error')` ist kein Aufruf — ein Test darf lauschen. */
 const KONSOLENAUFRUF = /\bconsole\s*\.\s*[a-zA-Z]+\s*\(/;
 
+/**
+ * Eine örtlich aufgehobene Lint-Regel — die Anweisungsform, nicht das Wort.
+ *
+ * ESLint liest eine Anweisung nur am **Anfang** eines Kommentars. Genau das
+ * verlangt dieses Muster, und deshalb ist ein Satz über die Regel keiner:
+ * `// Eine örtliche Ausnahme wäre …` bleibt Prosa.
+ */
+const OERTLICHE_AUSNAHME = /\/[/*]\s*eslint-disable(?:-next-line|-line)?\s[^\n]*no-console/;
+
 describe('Ausgaenge fuer Betriebslogs', () => {
   it('gibt es nur da, wo sie erklaert sind', () => {
     const schreibende = getrackteDateien()
@@ -104,14 +113,23 @@ describe('Ausgaenge fuer Betriebslogs', () => {
   });
 
   it('laesst keine Zeile die Regel oertlich aufheben', () => {
-    // Ein `eslint-disable no-console` in einer Fachdatei waere der stille Weg
-    // am Ausgang vorbei: Lint bliebe gruen, und der Test oben findet den
+    // Eine oertliche Ausnahme in einer Fachdatei waere der stille Weg am
+    // Ausgang vorbei: Lint bliebe gruen, und die Zusicherung oben findet den
     // Aufruf zwar - aber nur, solange niemand beide zugleich anfasst.
+    //
+    // Zwei Einschraenkungen, und beide haben einen Grund. Geprueft wird die
+    // **Anweisungsform**, nicht die Zeichenfolge: `eslint-disable` gilt nur am
+    // Anfang eines Kommentars, und ein Satz *ueber* die Regel ist keine
+    // Ausnahme. Und geprueft wird nur Produktivcode - ein Test schreibt kein
+    // Betriebslog. Beides steht hier, weil diese Datei sich beim ersten Lauf
+    // nach dem Commit selbst gemeldet hat: Der Kommentar oben nannte die
+    // Zeichenfolge, und `git ls-files` kannte die Datei inzwischen.
     const mitAusnahme = getrackteDateien()
-      .filter((pfad) => ANWENDUNGSCODE.test(pfad) && !AUSGAENGE.includes(pfad))
-      .filter((pfad) =>
-        /eslint-disable[^\n]*no-console/.test(readFileSync(join(stamm, pfad), 'utf8')),
-      );
+      .filter(
+        (pfad) =>
+          ANWENDUNGSCODE.test(pfad) && !AUSGAENGE.includes(pfad) && !/\.test\.tsx?$/.test(pfad),
+      )
+      .filter((pfad) => OERTLICHE_AUSNAHME.test(readFileSync(join(stamm, pfad), 'utf8')));
 
     expect(mitAusnahme).toEqual([]);
   });
