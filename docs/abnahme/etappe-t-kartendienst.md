@@ -300,3 +300,108 @@ ist deshalb der erste.
    Erwartung: kein Eintrag mit Fahrzeiten, Koordinaten oder Matrix.
 3. In der Datenbank (Studio) nach einer neuen Tabelle oder Spalte suchen.
    Erwartung: keine — dieser Loop hat keine Migration.
+
+---
+
+## MAP-005 — Navigations-Handoff
+
+Prüfschritte zu **MAP-005a/b/c**. Grundlage: ADR-019 Fassung 4, Punkt 20
+bis 24, und **ANN-018**.
+
+**Dieser Loop bringt keine Migration, keinen geänderten Seed und keine neue
+Abhängigkeit**: `git pull origin claude/erste-offene-aufgabe-hq4r3y` genügt.
+
+**Und er braucht weder Docker noch den PTV-Schlüssel.** Der Handoff spricht
+mit keinem Kartendienst; der Abschnitt „Die Navigation" steht auch dann, wenn
+darüber „Kartenkacheln nicht konfiguriert" steht und die Route scheitert. Wer
+nur MAP-005 prüfen will, braucht `pnpm dev` und eine Anmeldung, sonst nichts.
+
+**Schritt 2 und 3 gehen nur auf dem Telefon.** Dafür den
+Entwicklungsserver im selben WLAN erreichbar machen — `pnpm dev --host`,
+dann die angezeigte Netzwerkadresse (`http://192.168.…:5173`) am Telefon
+öffnen. Es bleibt die lokale Datenbank mit synthetischen Konten; ins Internet
+geht davon nichts.
+
+### 1. Der Knopf baut nichts, bevor er gedrückt wird
+
+1. `/touren/karte` öffnen, zum Abschnitt **„Die Navigation"**. Erwartung: ein
+   Satz, was übergeben wird; die Wahl der Ziel-App; acht Knöpfe „Stopp 1" bis
+   „Stopp 8"; darunter **„Ganzer Tag – Abschnitt 1 von 2"** und „Abschnitt 2
+   von 2".
+2. Rechtsklick → **Seitenquelltext untersuchen** auf einem Stopp-Knopf.
+   Erwartung: ein `<button>` **ohne** `href`, und nirgends auf der Seite ein
+   `google.com/maps`, `maps.apple.com` oder `geo:`. Steht dort ein Verweis,
+   ist die Abnahme nicht bestanden — „erst beim Tippen" ist die Bedingung,
+   unter der ADR-019 den Handoff überhaupt erlaubt (Punkt 20).
+3. Die Ziel-App auf **Systemnavigation** stellen. Erwartung: aus zwei
+   Abschnitten werden **acht** („Abschnitt 1 von 8"), und der Satz darunter
+   sagt warum. Seite neu laden. Erwartung: wieder **Google Maps** — die Wahl
+   ist keine Einstellung und überlebt nichts.
+4. Mit der **Tastatur** durch den Abschnitt tabben. Erwartung: Auswahl mit den
+   Pfeiltasten, jeder Knopf erreichbar, Fokus sichtbar.
+
+### 2. Android: öffnet das Rad?
+
+Für jeden Fall: Ziel-App wählen, **einmal** auf „Stopp 3" tippen.
+
+1. **Google Maps.** Erwartung: Google Maps öffnet mit einem Ziel im
+   Tübinger Stadtgebiet und **bereits gewähltem Fahrradmodus**. Notieren:
+   Öffnet die App oder der Browser? Steht das Rad oder das Auto?
+2. **Systemnavigation.** Erwartung: Das Gerät fragt, welche App den
+   `geo:`-Verweis öffnen soll, oder öffnet die vorgemerkte. Notieren: Kommt
+   überhaupt etwas? Öffnet sich ein leeres Fenster, das stehen bleibt? Dann
+   trägt `window.open` diesen Verweis nicht, und das ist ein Befund für
+   [`../development/BEFUNDE.md`](../development/BEFUNDE.md) — kein Grund, den
+   Knopf zu behalten, wie er ist.
+3. Beide Fälle: **Landet ein Koordinatenziel verständlich?** Ein Pin ohne
+   Hausnummer kann auf dem Rad genügen oder verwirren — das ist die offene
+   Frage aus ANN-018, und diese Antwort entscheidet sie.
+
+### 3. iOS: dasselbe mit Apple Maps
+
+1. **Apple Maps.** Erwartung: Apple Maps öffnet mit Ziel und Fahrradmodus.
+   **Voraussetzung ist iOS 18.4 oder neuer** — die genutzte Schreibweise
+   (`maps.apple.com/directions?…&mode=cycling`) ist erst dort dokumentiert.
+   Auf einem älteren Gerät: Was passiert stattdessen? Notieren, das ist der
+   Grund für oder gegen diese Ziel-App.
+2. **Google Maps auf iOS.** Erwartung: Ist die App installiert, öffnet sie;
+   sonst der Browser. Notieren: Fahrradmodus vorhanden?
+3. Notieren, welche der beiden verlässlicher aufs Rad kommt.
+
+### 4. Der ganze Tag — und die eine offene Zahl
+
+1. „Ganzer Tag – Abschnitt 1 von 2" antippen. Erwartung: eine Route über
+   **vier** Stopps (drei Zwischenziele plus Ziel), alle vier sichtbar.
+2. **Die eigentliche Frage:** Zählen Sie die Stopps in der geöffneten App.
+   Sind es vier, trägt das Limit. Sind es weniger, ist schon drei zu viel —
+   dann gehört die Zahl nach unten.
+3. Gegenprobe für die andere Richtung, am Telefon in **Google Maps**: Die
+   Anwendung erzwingt drei Zwischenziele, dokumentiert sind neun außerhalb
+   mobiler Browser. Wenn Schritt 1 mit vier Stopps sauber öffnet, hängt
+   `docs/decisions/providerpruefung-kartendienst.md` Teil 6 die Beobachtung an
+   — und `MAX_ZWISCHENZIELE` in `src/lib/location/navigation.ts` darf auf neun
+   steigen. **Eine Zeile, ein Loop.** Ohne diese Beobachtung bleibt es bei
+   drei.
+4. Mit **Systemnavigation**: „Abschnitt 8 von 8" antippen. Erwartung: Stopp 8,
+   ein einzelnes Ziel, kein Umweg.
+
+### 5. Was nicht passiert ist
+
+1. Entwicklerwerkzeuge → **Netzwerk**, Filter `myptv`, dann einen Stopp
+   antippen. Erwartung: **keine** neue Anfrage. Der Handoff geht am
+   Kartendienst vorbei; er ist der dritte Datenweg (ADR-019 Punkt 6).
+2. Die geöffnete URL in der Navigations-App ansehen (Adresszeile oder
+   Teilen-Funktion). Erwartung: Koordinate und Fahrmodus, sonst nichts — kein
+   Name, keine Uhrzeit, keine Kennung, kein Startpunkt.
+3. `localStorage` und `sessionStorage` ansehen. Erwartung: kein Eintrag zur
+   Ziel-App und keine URL.
+4. Im `serve`-Fenster und in der Browserkonsole: Erwartung: keine Koordinate
+   in einer Logzeile (ADR-011).
+
+**Ergebnis der Gerätebewertung** (MAP-005c) in einem Satz je Gerät notieren —
+welche Ziel-App öffnet zuverlässig im Fahrradmodus, wie kommt ein
+Koordinatenziel an, wie viele Stopps trägt ein Tageslink. Daraus wird die
+Empfehlung für die Standard-Ziel-App der Tagesliste; **vorgebaut ist sie
+nicht** (ADR-019, „Bewusst nicht Bestandteil"). Gehört als Antwort zu
+**ANN-018** und, wenn etwas nicht trägt, als Befund in
+[`../development/BEFUNDE.md`](../development/BEFUNDE.md).

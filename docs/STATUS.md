@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-22 · letzte Session: MAP-004 Fahrzeitmatrix
+# Status · Stand 2026-09-22 · letzte Session: MAP-005 Navigations-Handoff
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,27 +6,26 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**MAP-004 ist gebaut, abgenommen ist es nicht.** Die Function kennt eine zweite Aufgabe: eine Fahrzeitmatrix über die acht Teststopps, dazu die reine Domänenfunktion `erreichbarkeit()` in `scheduling` und die Matrix als Tabelle auf `/touren/karte`, markiert an einem **erfundenen** Terminraster. Keine Migration, keine Speicherung. **Die Schreibweise der Matrix-Anfrage ist abgeleitet, nicht geprüft** — `api.myptv.com` ist aus der Cloud gesperrt, und bei der Route hat dieselbe Lage drei Fehler gekostet (BEF-023). Schritt 1 der Abnahme ist genau dafür da. Fortschritt **43,9 → 44,7 %**.
+**MAP-005 ist gebaut, abgenommen ist es nicht.** `buildNavigationUrl(ziel, app)` bedient alle drei Ziel-Apps aus ADR-019 Punkt 22, und `/touren/karte` trägt den Knopf je Teststopp und für den Tag — die URL entsteht erst beim Tippen, gespeichert wird nichts, eine Präferenz ist nicht vorgebaut. **Apple Maps und `geo:` sind erstmals aus Primärquellen belegt**; Google bleibt Suchauszug, weil `developers.google.com` aus der Cloud gesperrt ist. Deshalb erzwingt die Anwendung **drei statt neun Zwischenziele** und teilt längere Tage in sichtbare Abschnitte — was trägt, sagt erst die Gerätebewertung auf einem echten Telefon. Fortschritt **44,7 → 45,5 %**.
 
 ## Danach — Reihenfolge seit 2026-09-22
 
-1. **MAP-005** — Navigations-Handoff mit einem Tap (ANN-018); **B2** entscheidet über das
-   Scharfschalten, nicht über den Bau (§15.2, ADR-019 Punkt 23)
-2. **OPS-004** — Verbotsliste aus ADR-011 automatisiert prüfen, mit der Logfrist aus **R14**
+1. **OPS-004** — Verbotsliste aus ADR-011 automatisiert prüfen, mit der Logfrist aus **R14**
    (**OPS-003 geht nicht vor**: „PITR aktiv" setzt das Cloudprojekt voraus)
-3. **OPS-006 (minimal)** — Betroffenenrechte: Verfahren, Export der Akte, begründete Ablehnung
+2. **OPS-006 (minimal)** — Betroffenenrechte: Verfahren, Export der Akte, begründete Ablehnung
+3. **OPS-007** — Bootstrap-Runbook, gegen die Testumgebung geprobt (G11, M3)
 
 ## Prüfverfahren
 
 **Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329);
-**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test:db` **1769** Tests (unverändert, keine Migration), `test` **2202**. `ASSUMPTIONS.md`: **1198** Zeilen (ANN-091, Obergrenze mit angehoben).
+**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2236** (+34); `test:db` **1769** — in dieser Session **nicht gelaufen**, weil keine Migration und keine Policy berührt ist. `ASSUMPTIONS.md`: **1198** Zeilen (unverändert, MAP-005 brauchte keine neue Annahme).
 
 ## Blocker (Jannes-seitig)
 
 - **OPS-001 weitertragen** — sonst bleibt jede Zeile der Prüfung ein Suchauszug: Unterlagen aus Teil 9 von einem **ungeproxten Rechner** laden; zwei Fragen an den Support (**Zugriff durch Beschäftigte**, **Verschlüsselung der Objekte**); Gate-Punkt 1 bis 6 an **B2**, darunter **§203
   Abs. 4 StGB** — der einzige, dessen Scheitern den Anbieter kostet. **Zuerst** `auth-smtp`.
 - **BEF-026 / B13:** Der eingebaute Mailversand stellt laut Auszug nur an Adressen des Projektteams zu. Entweder eigener SMTP-Anbieter (zweiter Auftragsverarbeiter, eigene Prüfung, Rücknahme von B13) oder kein Mailversand (Handgriff nach ANN-025). **STAFF-004 ruht bis dahin.**
-- **MAP-003 und MAP-004 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`), `supabase/functions/.env.local`, `functions serve`. MAP-003 Schritt 1 und 4 **durch** (25,4 km gegen 26,2 km, Lastenrad gewählt); **BEF-027 behoben** — offen bleiben Schritt 2, 3 und 5 sowie **alle fünf Schritte von MAP-004**.
+- **MAP-003, MAP-004 und MAP-005 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 und MAP-004 nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`), `supabase/functions/.env.local`, `functions serve`. MAP-003 Schritt 1 und 4 **durch**, **BEF-027 behoben**; offen bleiben Schritt 2, 3 und 5 sowie **alle fünf Schritte von MAP-004**. **MAP-005 braucht weder Docker noch Schlüssel**, aber ein Android- und ein iOS-Gerät (`pnpm dev --host`).
 - **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue Version nach §21 beginnt dort kein Loop — gebraucht, wenn Etappe TR an der Reihe ist.
 - **PTV:** Karte und Schlüssel tragen auch serverseitig (BEF-021, BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19) und die **Höchstzahl der Relationen je Matrix-Anfrage** (ANN-091 überbrückt sie mit 25 × 25); nur synthetische Koordinaten.
 - **Lokal:** `git pull`. Keine neue Abhängigkeit, keine Migration. **Node 22** (`.nvmrc`), sonst rot.
@@ -43,8 +42,8 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Auf Abnahme warten
 
-Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005 samt CAL-027, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003 und MAP-004 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001, MAP-003 und MAP-004 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md).
+Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005 samt CAL-027, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003, MAP-004 und MAP-005 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001, MAP-003 und MAP-004 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**Die Matrix rechnet, die Regel warnt, gespeichert wird nichts.** Neu ist **ANN-091**: Ohne Antwort des PTV-Supports begrenzt die Function eine Matrix selbst auf 25 × 25 Punkte — sonst löst ein Aufruf beliebig viele Relationen aus, und bezahlt wird je Relation. Der **Fahrpuffer der Praxis** ist bewusst **keine** Annahme geworden: Fünf Minuten sind Teil des erfundenen Rasters, die echte Zahl gehört zu MAP-006 (§8.1) und steht als Zeile in der Roadmap. Aus der Sichtprüfung bei 375 px kam **BEF-029** — 64 unsichtbare Zellenbeschriftungen zogen die ganze Seite in die Breite; behoben.
+**Der Handoff steht, die Zahl fehlt.** Apple Maps (`/directions`, wiederholbares `waypoint`, `mode=cycling`, ab iOS 18.4) und der `geo:`-URI sind aus den Anbieterdokumenten belegt — bei Google blieb es beim Suchauszug, und dieselbe Lage hat in MAP-004 drei Fehler gekostet. **Neue Annahme keine:** ANN-018 deckt Format und Limit und wurde nur nachgeführt. Aus der Unsicherheit wurde eine Entscheidung gegen die bequemere Zahl: Wer neun Zwischenziele übergibt und im mobilen Browser landet, verliert Stopps **still** — drei sind sichtbar teuer, aber ehrlich. Die Fortschrittstabelle hat außerdem die fehlende **MAP-004-Zeile** bekommen.

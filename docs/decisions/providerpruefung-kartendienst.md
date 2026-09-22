@@ -103,11 +103,22 @@ Richtigstellungen zu Google (Standardvertragsklauseln, §203): ADR-019,
 
 | Ziel                       | Was belegt ist                                                                                                                                                                                                                                                                                              | Belegtiefe                                                                   |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Google Maps URLs           | `https://www.google.com/maps/dir/?api=1&destination=…&travelmode=bicycling`; Zwischenziele mit `\|` getrennt; „up to three waypoints supported on mobile browsers, and a maximum of nine waypoints supported otherwise"; Zwischenziele nicht bei `transit`. Ob `destination` Koordinaten annimmt: nicht im Auszug. | Hinweis (Suchauszug von `developers.google.com/maps/documentation/urls/get-started`) |
-| Apple Maps (iOS 18.4+)     | `https://maps.apple.com/directions?destination=<lat,lon oder Adresse>&mode=cycling` — `destination` nimmt „Latitude and longitude as a comma-separated pair"; Modi `driving`, `walking`, `transit`, `cycling`. Altes Schema: `daddr` mit `dirflg` `d`/`w`/`r` — **kein Fahrrad-Flag**.                     | **belegt (Primärquelle)** — `developer.apple.com` (Unified Map URLs, Map Links) |
-| Android `geo:`-URI         | `geo:lat,lon`, `geo:0,0?q=lat,lon(label)` — die Systemnavigation wählt die App; kein Verkehrsmittel-Parameter.                                                                                                                                                                                          | **belegt (Primärquelle)** — `developer.android.com/guide/components/intents-common` |
+| Google Maps URLs           | `https://www.google.com/maps/dir/?api=1&destination=…&travelmode=bicycling`; Zwischenziele mit `\|` getrennt; „up to three waypoints supported on mobile browsers, and a maximum of nine waypoints supported otherwise"; Zwischenziele nicht bei `transit`. **Ergänzt am 2026-09-22 (MAP-005):** ein Wegpunkt darf „a place name, address, or comma-separated latitude/longitude coordinates" sein, und eine URL trägt höchstens **2 048 Zeichen**. | Hinweis (Suchauszug von `developers.google.com/maps/documentation/urls/get-started`) — **die Seite selbst bleibt aus der Cloud-Umgebung gesperrt (403), zuletzt geprüft am 2026-09-22** |
+| Apple Maps (iOS 18.4+)     | `https://maps.apple.com/directions?destination=<lat,lon oder Adresse>&mode=cycling` — `destination` nimmt „an address, coordinate, or a place name"; Modi `driving`, `walking`, `transit`, `cycling`. **Ergänzt am 2026-09-22 (MAP-005):** Zwischenziele als **wiederholter** Parameter `waypoint` („You can specify multiple waypoints by repeating the `waypoint` parameter") — **ohne genannte Höchstzahl**; dazu `avoid`, `transit-preferences`, `start`. Altes Schema: `daddr` mit `dirflg` `d`/`w`/`r` — **kein Fahrrad-Flag**. | **belegt (Primärquelle)** — `developer.apple.com` (Unified Map URLs, Map Links), am 2026-09-22 erneut abgerufen |
+| Android `geo:`-URI         | `geo:lat,lon`, `geo:0,0?q=lat,lon(label)`, `geo:0,0?q=my+street+address` — die Systemnavigation wählt die App; kein Verkehrsmittel-Parameter. „All strings passed in the `geo` URI must be encoded."                                                                                                     | **belegt (Primärquelle)** — `developer.android.com/guide/components/intents-common`, am 2026-09-22 erneut abgerufen |
 
 Zur früheren Zahl „20 Zwischenziele": ADR-019, „Korrekturen gegenüber Fassung 1".
+
+**Was MAP-005 daraus gemacht hat.** Die Zahl neun ist damit weiterhin **nicht
+gegen die Anbieterdokumentation selbst** geprüft — der einzige Weg dorthin
+führt über einen ungeproxten Rechner. Solange gilt in
+`src/lib/location/navigation.ts` die kleinere der beiden Zahlen (drei
+Zwischenziele), und zwar für jede Ziel-App: Die Anwendung weiß nicht, ob ein
+Tap in der App oder im mobilen Browser landet, und neun Wegpunkte im mobilen
+Browser hieße, Stopps **still** zu verlieren. Apple nennt keine Höchstzahl;
+eine undokumentierte Grenze ist kein Freibrief, deshalb dieselbe Zahl.
+Schritt 4 der Abnahme (MAP-005) beantwortet beides am Gerät — trägt ein
+Tageslink mehr, steigt die Konstante in einer Zeile.
 
 ## Teil 4 — Kosten- und Vertragscheckpoint
 
