@@ -8,6 +8,9 @@
  */
 export const AUDIT_ACTIONS = [
   'patient_record.viewed',
+  // OPS-006: die Auskunft nach Art. 15 DSGVO ist ein Export klinischer Daten
+  // und damit auditpflichtig (ADR-010 Punkt 2).
+  'patient_record.exported',
   'audit_log.read',
   'patient.created',
   'patient.updated',
@@ -115,6 +118,7 @@ export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export const auditActionLabels: Record<AuditAction, string> = {
   'patient_record.viewed': 'Patientenakte geöffnet',
+  'patient_record.exported': 'Auskunft aus der Akte erteilt',
   'audit_log.read': 'Auditlog gelesen',
   'patient.created': 'Patient:in angelegt',
   'patient.updated': 'Stammdaten geändert',
