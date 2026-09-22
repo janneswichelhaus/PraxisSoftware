@@ -1153,3 +1153,27 @@ nicht: Dort steht je Termin **ein** Knopf „Navigation starten"
 (`src/features/appointments/NavigationStarten.tsx`, seit UX-002). Mit MAP-006
 ersetzt sie diesen Prototyp; bis dahin gilt für die Vorschau dieselbe Regel
 wie für sie.
+
+### BEF-033 — Die Aufbewahrungsseite zeigt „Par." statt „§"
+
+|         |                                                                                    |
+| ------- | ---------------------------------------------------------------------------------- |
+| Datum   | 2026-09-22                                                                         |
+| Bereich | Organisatorisches → Sicherheit → Aufbewahrung (`/praxis/sicherheit/aufbewahrung`)   |
+| Quelle  | Aufgefallen beim Bau von OPS-006                                                    |
+| Status  | offen                                                                              |
+| Berührt | `src/features/retention/AufbewahrungPage.tsx`                                      |
+
+**Beobachtung.** In der Spalte „Grundlage" steht `Par. 630f Abs. 3 BGB` statt
+`§ 630f Abs. 3 BGB` — für jede Datenklasse mit gesetzlicher Fundstelle.
+
+**Die Ursache.** Die SQL-Dateien bleiben frei von Sonderzeichen (Migration
+`20260911150000_retention_schedule.sql`), deshalb trägt `legal_reference` in
+der Datenbank `Par.`. Die Seite gibt den Wert unverändert aus.
+
+**Der Weg.** OPS-006 hat dafür `paragraf()` in
+`src/features/datenschutz/vorlage.ts` — ein Antwortschreiben an eine Patientin
+kann nicht „Par." sagen. Die Aufbewahrungsseite könnte dieselbe Funktion
+nutzen; das wäre eine Zeile. Bewusst **nicht** in OPS-006 mitgemacht: Es ist
+ein Refactoring außerhalb der berührten Module (CLAUDE.md, „Harte Regeln").
+Passt in den nächsten Loop, der die Seite ohnehin anfasst.

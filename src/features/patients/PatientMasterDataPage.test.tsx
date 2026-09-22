@@ -119,6 +119,26 @@ describe('Stammdaten der Akte', () => {
     });
   });
 
+  describe('Betroffenenrechte', () => {
+    it('zeigt owner den Weg zu Auskunft und Loeschverlangen', () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />);
+
+      expect(screen.getByRole('link', { name: 'Auskunft und Löschverlangen' })).toHaveAttribute(
+        'href',
+        `/patienten/${aktiv.id}/auskunft`,
+      );
+    });
+
+    it.each([['therapist'], ['team_lead'], ['office']] as const)(
+      'blendet ihn fuer %s aus - die Auskunft erteilt die Praxisleitung',
+      (role) => {
+        renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
+
+        expect(screen.queryByRole('link', { name: 'Auskunft und Löschverlangen' })).toBeNull();
+      },
+    );
+  });
+
   describe('Versorgungsstatus', () => {
     it.each([['owner'], ['team_lead'], ['office']] as const)('zeigt %s die Aktion', (role) => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);

@@ -41,6 +41,7 @@ docs/adr/          Architecture Decision Records
 docs/decisions/    offene Entscheidungen, Anfragen und Annahmenregister
 docs/development/  Roadmap, Arbeitsbereiche, Befunde, Graph-Engineering-Workflow
 docs/abnahme/      manuelle Prüfschritte je Feature
+docs/datenschutz/  Verfahren und Nachweise für den Datenschutzprozess (ADR-007)
 docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)
 ```
 

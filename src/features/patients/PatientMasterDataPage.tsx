@@ -11,6 +11,7 @@ import { todayInTimeZone } from '@/features/appointments/api';
 import {
   canChangePatientStatus,
   canConcludePatientCare,
+  isOwner,
   type CurrentUser,
 } from '@/features/session/types';
 import { usePatientRecord } from './akte';
@@ -191,6 +192,9 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   // Abschluss ist eine fachliche Aussage ueber den Versorgungsverlauf, kein
   // Verwaltungsvorgang (LOE-001b). Verbindlich ist der Server.
   const darfAbschliessen = canConcludePatientCare(user.roles);
+  // Die Auskunft buendelt in einer Antwort, was sonst ueber zwoelf Leserechte
+  // verteilt liegt; wer sie erteilt, steht fuer sie gerade (OPS-006, G9).
+  const darfAuskunftErteilen = isOwner(user.roles);
   const hatVersorgungsangaben = Boolean(
     patient.home_visit_access_note ||
     patient.special_note ||
@@ -308,6 +312,22 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
               <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
             ) : null}
           </div>
+        </Section>
+      ) : null}
+
+      {/* Betroffenenrechte stehen unter der Verwaltung und nicht daneben: Sie
+          beginnen mit einem Schreiben, nicht mit einem Klick (OPS-006). Der
+          Zugang ist `owner` vorbehalten; ausgeblendet ist keine
+          Zugriffskontrolle — verbindlich sind die Serverfunktionen
+          (ADR-004). */}
+      {darfAuskunftErteilen ? (
+        <Section
+          titel="Betroffenenrechte"
+          hinweis="Auskunft nach Art. 15 DSGVO und die Antwort auf ein Löschverlangen. Jede Auskunft wird protokolliert."
+        >
+          <ButtonLink to={`/patienten/${patient.id}/auskunft`} variant="secondary">
+            Auskunft und Löschverlangen
+          </ButtonLink>
         </Section>
       ) : null}
 

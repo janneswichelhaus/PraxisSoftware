@@ -69,6 +69,7 @@ const AUDIT = '/praxis/sicherheit/audit';
 const AUFBEWAHRUNG = '/praxis/sicherheit/aufbewahrung';
 const NEU = '/patienten/neu';
 const BEARBEITEN = '/patienten/66666666-6666-4666-8666-000000000001/bearbeiten';
+const AUSKUNFT = '/patienten/66666666-6666-4666-8666-000000000001/auskunft';
 const TERMIN_NEU = '/patienten/66666666-6666-4666-8666-000000000001/termine/neu';
 const VERORDNER = '/verordner';
 const VERORDNER_NEU = '/verordner/neu';
@@ -154,6 +155,30 @@ describe('AuthenticatedRoutes', () => {
       );
       expect(screen.queryByRole('heading', { name: 'Audit' })).toBeNull();
       expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+    },
+  );
+
+  it('oeffnet Auskunft und Loeschverlangen fuer owner', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
+      AUSKUNFT,
+    );
+    // fetchPatient liefert in dieser Datei null; entscheidend ist, dass die
+    // Seite ueberhaupt gemountet wird und nicht umgeleitet (OPS-006).
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Diese Akte konnte nicht geladen werden.',
+    );
+  });
+
+  it.each([['therapist'], ['team_lead'], ['office'], ['patient']] as const)(
+    'leitet %s von Auskunft und Loeschverlangen auf die Uebersicht um',
+    async (role) => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+        AUSKUNFT,
+      );
+      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).toBeNull();
     },
   );
 
