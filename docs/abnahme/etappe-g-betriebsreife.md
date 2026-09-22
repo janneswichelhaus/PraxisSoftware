@@ -643,3 +643,37 @@ Konto und mit unbekannter Zeitzone abgewiesen wird, ohne etwas anzulegen
 
 **Was hier nicht geprüft werden kann:** das Dashboard des gehosteten Projekts (Beschriftungen, die
 Rolle des SQL Editors). Das ist die Probe gegen die Testumgebung und bleibt bis OPS-002 offen.
+
+---
+
+## PAT-006 — Datenschutzinformation, Behandlungsvertrag, Einwilligungen
+
+**Was geprüft wird:** dass die Akte festhält, was auf Papier geschehen ist — und
+dass ein Widerruf die Einwilligung nicht auslöscht. Braucht die Anmeldung,
+keinen Mailfänger.
+
+1. **Der Bereich.** Als `olivia.office@praxis.invalid` anmelden, Akte von Max
+   Mustermann. In der Bereichsleiste steht zwischen „Dateien" und „Stammdaten"
+   **„Datenschutz"**. Tippen: Unterlagen „nicht vermerkt", beide Einwilligungen
+   „nicht erteilt".
+2. **Die Blätter.** „Blätter zum Ausdrucken": oben der Vermerk **Entwurf**,
+   darunter die Datenschutzinformation mit Fassung 2026-09 und dem Abschnitt
+   „Hausbesuche und Kartendienst", auf der zweiten Seite die Regel zum
+   Ausfallhonorar — **ohne Betrag**. „Blätter drucken" öffnet den Druckdialog;
+   in der Vorschau fehlen Rückweg und Schaltfläche.
+3. **Vermerken.** Zurück, „Datenschutzinformation ausgehändigt" mit heutigem
+   Datum vermerken; dann „Einwilligung erteilt: Kontakt per E-Mail". Oben steht
+   „ausgehändigt am … · Fassung 2026-09" und „erteilt am …".
+4. **Widerruf.** In der Auswahl steht jetzt „Einwilligung widerrufen: Kontakt
+   per E-Mail" statt der Erteilung. Vermerken: Der Zweck zeigt „widerrufen am
+   …", und im **Verlauf** stehen Erteilung und Widerruf untereinander — die
+   Erteilung ist nicht verschwunden. Ein Datum morgen wird mit „Das Datum darf
+   nicht in der Zukunft liegen." abgewiesen.
+5. **Protokoll und Auskunft.** Als `jannes.test@praxis.invalid`:
+   Organisatorisches → Sicherheit zeigt „Datenschutzvermerk erfasst"; unter
+   Stammdaten → „Auskunft und Löschverlangen" → „Auskunft erstellen" steht der
+   Abschnitt „Datenschutz und Einwilligungen".
+
+**Automatisch geprüft statt geklickt:** Patientenkonto, Trainingsbetreuung,
+fremde Praxis und `anon` lesen und schreiben nichts; kein Konto ändert oder
+löscht einen Vermerk (`supabase/tests/datenschutzvermerke.test.ts`).

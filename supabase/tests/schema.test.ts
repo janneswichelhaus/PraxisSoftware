@@ -100,6 +100,7 @@ describe('Schema-Invarianten', () => {
       'payments',
       'invoice_cancellations',
       'invoice_payment_reminders',
+      'patient_privacy_records',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

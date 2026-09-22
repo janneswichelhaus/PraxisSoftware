@@ -70,6 +70,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     label: 'Dateien',
     beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme — ohne den Inhalt selbst.',
   },
+  patient_privacy_records: {
+    label: 'Datenschutz und Einwilligungen',
+    beschreibung:
+      'Wann Datenschutzinformation und Behandlungsvertrag vorlagen und welche Einwilligungen erteilt oder widerrufen wurden.',
+  },
   legal_holds: {
     label: 'Löschsperren',
     beschreibung: 'Vorgänge, für die die Akte von der automatischen Löschung ausgenommen ist.',

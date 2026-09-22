@@ -1,6 +1,7 @@
 import { useOutletContext } from 'react-router-dom';
 import {
   canManageAppointments,
+  canReadPatientDirectory,
   canReadPatientFiles,
   canReadTreatmentBases,
   canReadTreatmentNote,
@@ -73,6 +74,12 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
   // Dokumentart in der Datenbank, nicht diese Zeile (ADR-017 Punkt 12).
   if (canReadPatientFiles(user.roles)) {
     bereiche.push({ to: `${basis}/dateien`, label: 'Dateien' });
+  }
+  // Datenschutz vor den Stammdaten und hinter den Dateien: gebraucht bei der
+  // Aufnahme und bei einer Rückfrage, nicht im Tagesgeschäft (PAT-006). Die
+  // vier Praxisrollen, dieselben wie die Kartei; verbindlich ist die RLS.
+  if (canReadPatientDirectory(user.roles)) {
+    bereiche.push({ to: `${basis}/datenschutz`, label: 'Datenschutz' });
   }
   bereiche.push({ to: `${basis}/stammdaten`, label: 'Stammdaten' });
 

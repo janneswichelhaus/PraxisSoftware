@@ -113,8 +113,8 @@ der Auskunft ist maschinenlesbar (JSON) und deckt den Anspruch in der Sache ab, 
 ### Widerspruch (Art. 21 DSGVO) und Widerruf (Art. 7 Abs. 3 DSGVO)
 
 Ein Widerruf wirkt **für die Zukunft**; was auf der Einwilligung beruhte, wird beendet, die
-aufbewahrungspflichtige Dokumentation bleibt. Einwilligungen selbst entstehen mit PAT-006 (G8); bis
-dahin gibt es in der Software keine, die widerrufen werden könnte.
+aufbewahrungspflichtige Dokumentation bleibt. Seit PAT-006 steht ein Widerruf in der Akte unter
+„Datenschutz" als eigener Vermerk neben der Einwilligung, die er widerruft (ANN-093).
 
 ## Wer darf was
 

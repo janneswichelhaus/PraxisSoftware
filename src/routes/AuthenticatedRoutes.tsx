@@ -13,6 +13,8 @@ import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { AkteEinstieg, PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { BetroffenenrechtePage } from '@/features/datenschutz/BetroffenenrechtePage';
+import { AufnahmeblaetterPage } from '@/features/datenschutz/AufnahmeblaetterPage';
+import { PatientDatenschutzPage } from '@/features/datenschutz/PatientDatenschutzPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
 import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
 import { PatientFilesPage } from '@/features/files/PatientFilesPage';
@@ -183,9 +185,17 @@ export function AuthenticatedRoutes({
                     <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
                     <Route path="verlauf" element={<PatientCoursePage />} />
                     <Route path="dateien" element={<PatientFilesPage />} />
+                    <Route path="datenschutz" element={<PatientDatenschutzPage />} />
                     <Route path="stammdaten" element={<PatientMasterDataPage />} />
                   </Route>
                   <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
+                  {/* Datenschutzinformation und Ausfallhonorar-Regel zum
+                  Ausdrucken - ohne Patientenbezug, aber aus der Akte heraus
+                  gedruckt (PAT-006). */}
+                  <Route
+                    path="/patienten/:patientId/aufnahmeblaetter"
+                    element={<AufnahmeblaetterPage user={user} />}
+                  />
                   {/* Auskunft und Loeschverlangen stehen neben der Akte und
                   nicht darin: Sie sind Vorgaenge der Praxisleitung, keine
                   Bereiche der taeglichen Arbeit (OPS-006). Nur `owner` - und
