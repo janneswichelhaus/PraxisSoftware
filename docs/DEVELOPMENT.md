@@ -194,7 +194,7 @@ pnpm test            # Unit-/Komponententests
 pnpm test:watch      # dieselben Tests, laufend
 pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
-pnpm docs:check      # Obergrenzen, Register-Anker, relative Verweise
+pnpm docs:check      # Obergrenzen, Register-Anker, relative Verweise, Querverweise, eindeutige Nummern
 pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien
 pnpm build
