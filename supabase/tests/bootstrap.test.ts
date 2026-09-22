@@ -88,6 +88,11 @@ async function nichtsAngelegt(): Promise<void> {
 
 const BOOTSTRAP = `select app.bootstrap_practice($1, $2, $3, $4, $5, $6) as ergebnis`;
 const GUELTIG = [OWNER_EMAIL, 'Probepraxis', 'Europe/Berlin', 'Probestandort', 'Paula', 'Probe'];
+/** Derselbe Aufruf mit eingesetzten Werten - für Mehrfachanweisungen ohne Parameter. */
+const BOOTSTRAP_LITERAL = BOOTSTRAP.replace(
+  '$1, $2, $3, $4, $5, $6',
+  GUELTIG.map((w) => `'${w}'`).join(', '),
+);
 
 describe('OPS-007 — Bootstrap-Runbook, geprobt auf einer Datenbank ohne Seed', () => {
   beforeAll(async () => {
@@ -133,17 +138,27 @@ describe('OPS-007 — Bootstrap-Runbook, geprobt auf einer Datenbank ohne Seed',
     expect(rows.filter((r) => !r.ok)).toEqual([]);
   });
 
-  it('protokolliert die Einrichtung ohne Namen und ohne E-Mail (ADR-010, ADR-011)', async () => {
+  it('protokolliert die Einrichtung als Systemereignis, ohne Namen und ohne E-Mail', async () => {
+    // ANN-009: Gehandelt hat das Infrastrukturkonto, kein Anwendungsaccount.
+    // Die Inhaberin als Akteurin wäre eine falsche Angabe — sie hat noch nichts
+    // getan. Wem owner gegeben wurde, steht als Kennung im Kontext.
     const { rows } = await asPostgres<{
-      actor_user_id: string;
+      actor_kind: string;
+      actor_user_id: string | null;
       subject_type: string;
       context: Record<string, unknown>;
-    }>(`select actor_user_id, subject_type, context from public.audit_log
+    }>(`select actor_kind, actor_user_id, subject_type, context from public.audit_log
         where action = 'organization.bootstrapped'`);
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.actor_user_id).toBe(OWNER_ID);
+    expect(rows[0]?.actor_kind).toBe('system');
+    expect(rows[0]?.actor_user_id).toBeNull();
     expect(rows[0]?.subject_type).toBe('organization');
-    expect(rows[0]?.context).toEqual({ surface: 'sql', purpose: 'bootstrap', roles: ['owner'] });
+    expect(rows[0]?.context).toEqual({
+      surface: 'sql',
+      purpose: 'bootstrap',
+      owner_user_id: OWNER_ID,
+      roles: ['owner'],
+    });
     const text = JSON.stringify(rows[0]?.context);
     for (const verboten of ['Paula', 'Probe', OWNER_EMAIL]) {
       expect(text).not.toContain(verboten);
@@ -266,7 +281,7 @@ describe('OPS-007 — Bootstrap weist ab und legt dabei nichts an', () => {
       asPostgres(
         `begin;
          select set_config('request.jwt.claims', '{"sub":"${OWNER_ID}","role":"authenticated"}', true);
-         ${BOOTSTRAP.replace('$1, $2, $3, $4, $5, $6', GUELTIG.map((w) => `'${w}'`).join(', '))};
+         ${BOOTSTRAP_LITERAL};
          commit;`,
       ),
     ).rejects.toThrow(/bootstrap not allowed for application users/);
@@ -289,6 +304,46 @@ describe('OPS-007 — Bootstrap weist ab und legt dabei nichts an', () => {
     await kontoAnlegen('9b0f0000-0000-4000-8000-000000000003', 'offen@probe.example', false);
     const werte = ['offen@probe.example', ...GUELTIG.slice(1)];
     await expect(asPostgres(BOOTSTRAP, werte)).rejects.toThrow(/account not confirmed/);
+    await nichtsAngelegt();
+  });
+
+  it('gelöschtes, gesperrtes oder anonymes Konto gilt als nicht gefunden', async () => {
+    // Die Spalten gehören dem Anmeldedienst; der Shim der Tests führt sie nicht.
+    await asPostgres(`alter table auth.users
+      add column if not exists deleted_at timestamptz,
+      add column if not exists banned_until timestamptz,
+      add column if not exists is_anonymous boolean not null default false`);
+    for (const [spalte, wert] of [
+      ['deleted_at', 'now()'],
+      ['banned_until', "now() + interval '1 day'"],
+      ['is_anonymous', 'true'],
+    ] as const) {
+      await asPostgres(`update auth.users set ${spalte} = ${wert} where id = $1`, [OWNER_ID]);
+      await expect(asPostgres(BOOTSTRAP, GUELTIG), spalte).rejects.toThrow(/account not found/);
+      await asPostgres(
+        `update auth.users set deleted_at = null, banned_until = null, is_anonymous = false
+         where id = $1`,
+        [OWNER_ID],
+      );
+    }
+    await nichtsAngelegt();
+
+    // Eine abgelaufene Sperre hindert nicht.
+    await asPostgres(
+      `update auth.users set banned_until = now() - interval '1 day' where id = $1`,
+      [OWNER_ID],
+    );
+    await asPostgres(BOOTSTRAP, GUELTIG);
+    expect(await zaehle('public.user_profiles')).toBe(1);
+  });
+
+  it('nur unter READ COMMITTED: sonst trüge die Sperre gegen den Doppelaufruf nicht', async () => {
+    for (const stufe of ['repeatable read', 'serializable']) {
+      await expect(
+        asPostgres(`begin isolation level ${stufe}; ${BOOTSTRAP_LITERAL}; commit;`),
+        stufe,
+      ).rejects.toThrow(/bootstrap requires read committed/);
+    }
     await nichtsAngelegt();
   });
 

@@ -12,13 +12,18 @@ Wegwerf-Datenbanken; in ein Projekt, das echte Daten tragen soll, gehört keine 
 Das Runbook braucht die Konsole **genau einmal**, für Schritt 2 und 3. Alles danach geht über die
 Anwendung — so bleibt jeder Schritt im Auditlog nachvollziehbar.
 
-## Stand der Probe
+## Durchläufe
 
-| Umgebung                   | Stand                                                                                    |
-| -------------------------- | ---------------------------------------------------------------------------------------- |
-| lokal, nur Migrationen     | **geprobt** — `supabase/tests/bootstrap.test.ts` führt die SQL-Blöcke unten wörtlich aus |
-| Testumgebung (OPS-002, M3) | **offen** — die Umgebung gibt es noch nicht                                              |
-| Produktivprojekt (M4)      | **offen**                                                                                |
+Diese Tabelle ist zugleich das **Protokoll des privilegierten Zugriffs** nach ADR-010 Punkt 10:
+Der Auditeintrag in der Datenbank nennt bewusst keine Person (ANN-009), und der SQL-Editor
+führt kein eigenes Protokoll. Wer das Runbook durchläuft, trägt hier ein, wann, wo, warum und
+wer — und committet die Zeile.
+
+| Datum      | Umgebung                   | Anlass                           | durch  | Ergebnis                                                          |
+| ---------- | -------------------------- | -------------------------------- | ------ | ----------------------------------------------------------------- |
+| 2026-09-22 | lokal, nur Migrationen     | Probe (OPS-007)                  | Claude | geprobt — `supabase/tests/bootstrap.test.ts` führt die Blöcke aus |
+| —          | Testumgebung (OPS-002, M3) | Probe gegen die Testumgebung     | Jannes | **offen** — die Umgebung gibt es noch nicht                       |
+| —          | Produktivprojekt (M4)      | Einrichtung des Produktivsystems | Jannes | **offen**                                                         |
 
 ## 0. Voraussetzungen
 
@@ -26,7 +31,7 @@ Anwendung — so bleibt jeder Schritt im Auditlog nachvollziehbar.
   eingespielt (OPS-002), **ohne Seed**.
 - Angemeldet ist das **Infrastrukturkonto** mit MFA, nicht ein Praxiskonto (ADR-010 Punkt 11).
 - Anlass, Datum und Uhrzeit sind notiert: „Bootstrap nach OPS-007". Das ist die Begründung, die
-  ADR-010 Punkt 10 verlangt.
+  ADR-010 Punkt 10 verlangt; sie kommt nach dem Durchlauf in die Tabelle oben.
 - Bereit liegen: Name der Praxis, Name des Standorts, die IANA-Zeitzone (in aller Regel
   `Europe/Berlin`), Vor- und Nachname sowie die dienstliche E-Mail der Praxisinhaberin.
 
@@ -55,17 +60,19 @@ select app.bootstrap_practice(
 ```
 
 Die Funktion legt in **einer** Transaktion Organisation, Standort, Person, Mitarbeiterdatensatz,
-Profil und die Rolle `owner` an und schreibt den Auditeintrag `organization.bootstrapped`. Sie
-antwortet mit den vier neuen Kennungen. Geht etwas schief, entsteht nichts; die Meldung sagt,
+Profil und die Rolle `owner` an und schreibt den Auditeintrag `organization.bootstrapped` — als
+Systemereignis, weil kein Anwendungskonto gehandelt hat (ANN-009). Sie
+antwortet mit den Kennungen von Organisation, Standort, Mitarbeiterdatensatz und Konto. Geht etwas schief, entsteht nichts; die Meldung sagt,
 woran es lag:
 
-| Meldung                 | Bedeutung und Abhilfe                                                     |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `already_bootstrapped`  | Es gibt schon eine Organisation. **Nicht** weiter — Schritt 3 ansehen.    |
-| `account not found`     | Schritt 1 fehlt, oder die E-Mail ist anders geschrieben.                  |
-| `account not confirmed` | „Auto Confirm User" war nicht angehakt; im Dashboard bestätigen.          |
-| `unknown time zone`     | Tippfehler in der Zeitzone.                                               |
-| `permission denied`     | Aufruf nicht aus dem SQL-Editor, sondern über die Anwendung oder die API. |
+| Meldung                             | Bedeutung und Abhilfe                                                                          |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `already_bootstrapped`              | Es gibt schon eine Organisation. **Nicht** weiter — Schritt 3 ansehen.                         |
+| `account not found`                 | Schritt 1 fehlt, die E-Mail ist anders geschrieben, oder das Konto ist gelöscht oder gesperrt. |
+| `account not confirmed`             | „Auto Confirm User" war nicht angehakt; im Dashboard bestätigen.                               |
+| `unknown time zone`                 | Tippfehler in der Zeitzone.                                                                    |
+| `permission denied`                 | Aufruf nicht aus dem SQL-Editor, sondern über die Anwendung oder die API.                      |
+| `bootstrap requires read committed` | Der Editor läuft mit geänderter Isolationsstufe; neu öffnen, ohne `begin isolation level …`.   |
 
 ## 3. Prüfen
 
@@ -123,5 +130,5 @@ Anwendung).
 
 ## 6. Nach dem Durchlauf
 
-- In der Tabelle oben Umgebung und Datum eintragen.
-- Anlass und Uhrzeit aus Schritt 0 zum Protokoll des privilegierten Zugriffs legen.
+- Die Zeile in „Durchläufe" oben ausfüllen: Datum, Anlass aus Schritt 0, wer, Ergebnis — und
+  committen. Das ist der Nachweis, den ADR-010 Punkt 10 verlangt.

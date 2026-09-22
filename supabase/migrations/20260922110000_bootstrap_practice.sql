@@ -139,15 +139,17 @@ alter table public.audit_log add constraint audit_log_action_check
 -- Das Konto selbst legt die Funktion nicht an (ANN-025): Es entsteht vorher von
 -- Hand im Anmeldedienst; hier wird es ueber die E-Mail gefunden und gebunden.
 --
--- Akteur des Auditeintrags ist das Konto, fuer das eingerichtet wird. Ein
--- anderes Anwendungskonto gibt es in diesem Moment nicht, und das
--- Infrastrukturkonto gehoert nach ADR-010 Punkt 11 einer getrennten Domaene an;
--- dass der Eintrag aus dem SQL-Editor stammt, sagt `context.surface = 'sql'`.
--- Das ist Schema-Detail (ADR-010, "Bewusst nicht Bestandteil": das konkrete
--- Schema der Audit-Eintraege), keine Annahme im Register.
+-- Der Auditeintrag hat KEINEN handelnden Anwendungsaccount: Gehandelt hat das
+-- Infrastrukturkonto, und das gehoert nach ADR-010 Punkt 11 einer getrennten
+-- Domaene an. Er traegt deshalb actor_kind = 'system' ohne actor_user_id
+-- (ANN-009). Die Inhaberin als Akteurin einzutragen waere dieselbe falsche
+-- Angabe, die ANN-009 ausschliesst (Art. 5 Abs. 1 lit. d DSGVO): Sie hat in
+-- diesem Moment noch gar nichts getan. Wem die Rolle owner gegeben wurde, steht
+-- als Kennung in `context.owner_user_id`; `context.surface = 'sql'` sagt, woher
+-- der Eintrag stammt.
 --
 -- Der Auditkontext traegt keine Namen und keine E-Mail (ADR-010 Punkt 3,
--- ADR-011).
+-- ADR-011) - nur Kennungen.
 -- -----------------------------------------------------------------------------
 create function app.bootstrap_practice(
   p_owner_email       text,
@@ -184,7 +186,15 @@ begin
   end if;
 
   -- Eine Sperre gegen den gleichzeitigen zweiten Aufruf; die Pruefung darunter
-  -- sieht sonst zweimal eine leere Tabelle.
+  -- saehe sonst zweimal eine leere Tabelle. Die Sperre traegt nur unter READ
+  -- COMMITTED: Unter REPEATABLE READ oder SERIALIZABLE stammt der Schnappschuss
+  -- aus der Zeit vor der Sperre, und ein paralleler zweiter Aufruf saehe die
+  -- erste Organisation nicht. Deshalb wird jede andere Stufe abgewiesen, statt
+  -- sich auf die Voreinstellung des SQL-Editors zu verlassen.
+  if current_setting('transaction_isolation') <> 'read committed' then
+    raise exception 'bootstrap requires read committed' using errcode = '25001';
+  end if;
+
   lock table public.organizations in share row exclusive mode;
 
   if exists (select 1 from public.organizations) then
@@ -215,7 +225,13 @@ begin
   select count(*), min(u.id::text)::uuid, min(u.email_confirmed_at)
     into v_treffer, v_user, v_confirmed
   from auth.users u
-  where lower(u.email) = v_email;
+  where lower(u.email) = v_email
+    -- Ein geloeschtes, gesperrtes oder anonymes Konto wird nicht Inhaberin.
+    -- Ueber to_jsonb, weil diese Spalten dem Anmeldedienst gehoeren und nicht
+    -- in jeder Fassung von auth.users stehen.
+    and to_jsonb(u) ->> 'deleted_at' is null
+    and coalesce((to_jsonb(u) ->> 'banned_until')::timestamptz <= now(), true)
+    and coalesce((to_jsonb(u) ->> 'is_anonymous')::boolean, false) = false;
 
   if v_treffer = 0 then
     raise exception 'account not found' using errcode = 'P0002';
@@ -261,11 +277,16 @@ begin
   values (v_user, v_org, 'owner', v_user);
 
   insert into public.audit_log (
-    organization_id, actor_user_id, action, subject_type, subject_id, outcome, context
+    organization_id, actor_kind, actor_user_id, action, subject_type, subject_id, outcome, context
   )
   values (
-    v_org, v_user, 'organization.bootstrapped', 'organization', v_org, 'success',
-    jsonb_build_object('surface', 'sql', 'purpose', 'bootstrap', 'roles', jsonb_build_array('owner'))
+    v_org, 'system', null, 'organization.bootstrapped', 'organization', v_org, 'success',
+    jsonb_build_object(
+      'surface', 'sql',
+      'purpose', 'bootstrap',
+      'owner_user_id', v_user,
+      'roles', jsonb_build_array('owner')
+    )
   );
 
   return jsonb_build_object(
