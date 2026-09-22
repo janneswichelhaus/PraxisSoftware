@@ -220,9 +220,10 @@ gehört dann hierher und in
 
 ## MAP-004 — Fahrzeitmatrix
 
-Prüfschritte zu **MAP-004a/b/c**. Grundlage: ADR-019 Fassung 3, Punkt 12, 13,
-15, 16, 19 und 24; die Erreichbarkeitsregel zusätzlich `PROJECT_PRINCIPLES.md`
-§6.2 und ADR-005 Punkt 6.
+Prüfschritte zu **MAP-004a/b/c**. Grundlage: ADR-019 Fassung 4, Punkt 12, 13,
+15, 16, 19 und 24 (Fassung 4 lässt diese Punkte unverändert); die
+Erreichbarkeitsregel zusätzlich `PROJECT_PRINCIPLES.md` §6.2 und ADR-005
+Punkt 6.
 
 **Dieser Loop bringt keine Migration, keinen geänderten Seed und keine neue
 Abhängigkeit**: `git pull origin claude/erste-offene-aufgabe-9x6r1d` genügt.

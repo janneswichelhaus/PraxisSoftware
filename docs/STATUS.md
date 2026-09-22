@@ -10,7 +10,8 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Danach — Reihenfolge seit 2026-09-22
 
-1. **MAP-005** — Navigations-Handoff mit einem Tap (ANN-018); braucht den Handoff aus **B2**
+1. **MAP-005** — Navigations-Handoff mit einem Tap (ANN-018); **B2** entscheidet über das
+   Scharfschalten, nicht über den Bau (§15.2, ADR-019 Punkt 23)
 2. **OPS-004** — Verbotsliste aus ADR-011 automatisiert prüfen, mit der Logfrist aus **R14**
    (**OPS-003 geht nicht vor**: „PITR aktiv" setzt das Cloudprojekt voraus)
 3. **OPS-006 (minimal)** — Betroffenenrechte: Verfahren, Export der Akte, begründete Ablehnung
@@ -46,4 +47,4 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Die Matrix rechnet, die Regel warnt, gespeichert wird nichts.** Neu ist **ANN-091**: Ohne Antwort des PTV-Supports begrenzt die Function eine Matrix selbst auf 25 × 25 Punkte — sonst löst ein Aufruf beliebig viele Relationen aus, und bezahlt wird je Relation. Der **Fahrpuffer der Praxis** ist bewusst **keine** Annahme geworden: Fünf Minuten sind Teil des erfundenen Rasters, die echte Zahl gehört zu MAP-006 (§8.1) und steht als Zeile in der Roadmap. Aus der Sichtprüfung bei 375 px kam **BEF-028** — 64 unsichtbare Zellenbeschriftungen zogen die ganze Seite in die Breite; behoben.
+**Die Matrix rechnet, die Regel warnt, gespeichert wird nichts.** Neu ist **ANN-091**: Ohne Antwort des PTV-Supports begrenzt die Function eine Matrix selbst auf 25 × 25 Punkte — sonst löst ein Aufruf beliebig viele Relationen aus, und bezahlt wird je Relation. Der **Fahrpuffer der Praxis** ist bewusst **keine** Annahme geworden: Fünf Minuten sind Teil des erfundenen Rasters, die echte Zahl gehört zu MAP-006 (§8.1) und steht als Zeile in der Roadmap. Aus der Sichtprüfung bei 375 px kam **BEF-029** — 64 unsichtbare Zellenbeschriftungen zogen die ganze Seite in die Breite; behoben.

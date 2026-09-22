@@ -952,7 +952,74 @@ eingerichtet" schon einmal angestellt — nur eine Schicht höher.
 Sieben neue Tests halten die Zuordnung fest, darunter die Gegenprobe, dass
 kein Text über den Kartendienst erscheint, wenn es die Sitzung war.
 
-### BEF-028 — Unsichtbare Beschriftungen ziehen die ganze Seite in die Breite
+---
+
+### BEF-028 — Querverweise zwischen Dokumenten veralten unbemerkt
+
+| | |
+|---|---|
+| Datum | 2026-09-22 |
+| Bereich | Dokumentation (kein Anwendungsbereich): `docs/`, `PROJECT_PRINCIPLES.md`, `CLAUDE.md` |
+| Quelle | Frage von Jannes am 2026-09-22 („haben sich Unstimmigkeiten angesammelt?"), belegt mit `grep` über 76 Markdown-Dateien |
+| Status | offen |
+| Berührt | `scripts/docs-check.mjs`; §21 (Rangfolge), ADR-013 (CI-Gates); BEF-026/BEF-027 (Nummernkollision) |
+
+**Beobachtung.** Dokumente behaupten etwas über andere Dokumente, und diese
+Behauptungen veralten, ohne dass es auffällt. Vier Belege vom selben Tag, als
+ADR-019 auf Fassung 4 stand:
+
+| Datei | sagt |
+| --- | --- |
+| `MAP-LOOPS.md` | „Grundlage sind ADR-019 **Fassung 3**" |
+| `ARBEITSBEREICHE.md` | „ADR-019 **Fassung 2**, angenommen 2026-09-13" |
+| `abnahme/etappe-t-kartendienst.md` | „Grundlage: ADR-019 **Fassung 2**" |
+| `OPEN_DECISIONS.md`, B7 | „**Fassung 2**, 2026-09-08" |
+
+**Der erste Eintrag ist der wichtigste**: Er entstand am Morgen desselben
+Tages und war zwei Stunden später überholt — geschrieben von derselben
+Sitzung, die auch Fassung 4 verfasst hat. Das ist kein Nachlässigkeitsproblem,
+das eine Aufräumaktion löst: Niemand hält die Querverweise von 76 Dateien im
+Kopf, und eine Aufräumaktion stellt denselben Zustand nur einmal wieder her.
+
+**Zwei weitere Formen desselben Musters.**
+
+1. **Nummernkollision.** Am 2026-09-22 vergaben zwei parallele Sitzungen
+   **BEF-026** doppelt; gefunden wurde es von Hand. Heute sind `ANN-`, `BEF-`
+   und `IDEA-`-Nummern eindeutig — geprüft, aber durch Glück, nicht durch ein
+   Gate.
+2. **Normative Drift.** ADR-007 Punkt 6 erlaubt seit dem 2026-09-05
+   Entwicklung vor der DSFA. Drei später geschriebene Stellen machten daraus
+   trotzdem Startbedingungen einzelner Loops (ADR-019 Punkt 25 und 32,
+   `MAP-LOOPS.md`, `OPEN_DECISIONS.md` B7). Der Widerspruch bestand
+   **17 Tage** und fiel erst auf, als Jannes danach fragte. Behoben mit
+   §15.2 (Version 0.15) und ADR-019 Fassung 4.
+
+**Was das Gate heute prüft und was nicht.** `docs:check` prüft
+Zeilenobergrenzen, Register-Anker und Links. Es prüft **nicht, ob eine
+Aussage über ein anderes Dokument noch stimmt** — genau die Klasse, die hier
+verrottet.
+
+**Nebenbefund: drei von drei festen Obergrenzen sind voll** — `CLAUDE.md`
+150/150, `STATUS.md` 60/60, `OPEN_DECISIONS.md` 400/400. (Die 1186 bei
+`ASSUMPTIONS.md` zählen nicht: Diese Grenze wandert mit der Zahl der Einträge
+und ist konstruktionsbedingt immer voll.) Jede Eintragung verdrängt seitdem
+eine andere, und die Auswahl fällt unter Zeitdruck — am 2026-09-22 dreimal in
+einer Sitzung. Das ist die Stelle, an der Genauigkeit verloren geht; entweder
+steigen die Grenzen bewusst, oder Inhalt zieht tatsächlich aus.
+
+**Vorschlag (kein Auftrag).** Nicht aufräumen, sondern messbar machen: das
+Dokumentationsgate um die maschinell prüfbaren Fälle erweitern — Verweise auf
+eine ADR-Fassung und auf eine Version von `PROJECT_PRINCIPLES.md` gegen den
+tatsächlichen Stand, `§NN`-Verweise gegen vorhandene Abschnitte, Eindeutigkeit
+der Registernummern. Historische Nennungen in Änderungsvermerken müssen dabei
+erlaubt bleiben, sonst prüft das Gate die Vergangenheit falsch.
+
+**Die inhaltliche Durchsicht ist davon getrennt** und hat ihren Zeitpunkt:
+**vor dem B2-Paket**. Widersprüchliche Unterlagen erzeugen eine schlechtere
+Auskunft der Datenschutzberatung, und diese Auskunft ist teuer. Vorher kosten
+Widersprüche wenig — kein Nutzer, kein Produktivbetrieb, alles umkehrbar.
+
+### BEF-029 — Unsichtbare Beschriftungen ziehen die ganze Seite in die Breite
 
 |         |                                                                                      |
 | ------- | ------------------------------------------------------------------------------------ |

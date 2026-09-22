@@ -45,8 +45,10 @@ Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
 
 - **MAP-002 bis MAP-004 sind gebaut** (MAP-004 am 2026-09-22). Der nächste
   Kartenloop wäre
-  `/feature-loop MAP-005 Navigations-Handoff nach docs/development/MAP-LOOPS.md`;
-  er braucht den Handoff aus **B2**. Für die Edge Function gilt weiter, was
+  `/feature-loop MAP-005 Navigations-Handoff nach docs/development/MAP-LOOPS.md`.
+  **B2** hält ihn nicht auf: Die Rechtsfrage aus ADR-019 Punkt 23 entscheidet
+  über das Scharfschalten, nicht über den Bau (§15.2); bis dahin gelten die
+  drei Bedingungen dort. Für die Edge Function gilt weiter, was
   ADR-019 Punkt 15 sagt: bis zur Edge-Runtime-Prüfung in **OPS-001** nur
   `mock`-Adapter oder synthetische Koordinaten. **Die Prüfung ist am
   2026-09-21 geführt und hält die Runtime gesperrt** (vier benannte
@@ -568,9 +570,12 @@ ohnehin im Browser entstünde — und genau das erlaubt einen Zuschnitt, bei dem
 die Position das Gerät nie verlässt. Rang 1 ist dafür **nicht aufgeweicht**,
 sondern präzisiert worden (`PROJECT_PRINCIPLES.md` 0.14, §20.1: vier
 kumulative Bedingungen und ein DARF-NICHT für den Arbeitgeber). Der Loop
-steht **hinter MAP-006** und hinter dem Gate, und er startet nicht, bevor
-**E-24** beantwortet ist: Liefern die OSM-Radprofile überhaupt Manöver? Ohne
-ein Ja gibt es keine Ansage und kein Epic.
+steht **hinter MAP-006** — gebaut wird er wie dieses mit synthetischen
+Adressen, das Gate steht vor dem Scharfschalten (§15.2, ADR-019 Fassung 4).
+Was ihn wirklich aufhält, ist **E-24**: Liefern die OSM-Radprofile überhaupt
+Manöver? Das ist keine externe Klärung, sondern eine technische Tatsache, die
+ein einziger Aufruf beantwortet — ohne ein Ja gibt es keine Ansage und kein
+Epic.
 
 | Loop               | Ergebnis                                                              | Stories                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Voraussetzung                                                                          | Jannes liefert                                                                     |
 | ------------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -889,6 +894,7 @@ in Etappe T, also vor der Eröffnung.
 | G16 | **BETRIEB-001 Betriebsmodell**                        | Störungsmeldung ohne Patientendaten · Triage werktäglich durch Jannes · Hotfix-Weg nach ADR-013 als privilegierter Vorgang mit Audit · Release-Takt nach M4: ein Release je zwei Wochen aus Tag, Change-Freeze zwei Wochen vor und nach M5 · Endgeräte-Richtlinie · Vertretung bei Ausfall von Jannes (Notfallzugang aus G7).                                                                                                              | Jannes mit Claude                     | Feb 2027                |
 | G17 | **UI-001 Politur und Barrierefreiheit**               | Feindesign auf den fertigen Seiten, PWA-Manifest ohne Service Worker, Befunde aus Feldtagen und Kolleg:innen-Tests, speist sich aus den Ablaufrunden nach `OPTIMIERUNG.md`. **Nicht:** Branding je Praxis (`IDEA-QSN-009`).                                                                                                                                                                                                              | Claude                                | Feb 2027                |
 | G18 | **Go-live-Gate (M3)**                                 | Sieben Vorbedingungen aus ADR-007 · Restore-Test 2 · alle Annahmen Datenschutz/Recht **von der Prüfung** bestätigt oder geändert — eine Festlegung durch Jannes allein (`entschieden (Jannes)`, `vorläufig entschieden`) reicht hier nicht · Branch Protection und Secret Scanning aktiv · CI grün · Abnahmeschritte aus `docs/abnahme/` durchlaufen · Messrunde vor dem Gate: kein täglicher Ablauf mit Score 0, Abweichungen bewusst dokumentiert (`OPTIMIERUNG.md`; entschieden 2026-09-06).                                                                        | Jannes                                | 19.03.2027              |
+| G19 | **Dokumentationsgate erweitern (BEF-028)**             | Das Gate prüft heute Obergrenzen, Register-Anker und Links — **nicht**, ob eine Aussage über ein anderes Dokument noch stimmt. Ergänzen: Verweise auf eine ADR-Fassung und auf eine Version von `PROJECT_PRINCIPLES.md` gegen den tatsächlichen Stand, `§NN`-Verweise gegen vorhandene Abschnitte, Eindeutigkeit der `ANN-`/`BEF-`/`IDEA-`-Nummern; Nennungen in Änderungsvermerken bleiben erlaubt. **Vor** der inhaltlichen Durchsicht, die zum B2-Paket gehört — das Gate entfernt vorher das mechanische Rauschen. | Claude                                | vor G18                 |
 
 Der Generator für synthetische Daten (E6) bleibt der Seed; die Probewochen
 (H1, H5) erweitern ihn um eine realistische Praxiswoche und eine
@@ -934,7 +940,7 @@ Punkt 7 — MUSS; der Inhalt der Zweckbestimmung dagegen schon).
 | Punkt                        | Was zu entscheiden ist                                                                                                                             | Wer                                 | Fällig vor                   | Termin                              | Stand (Jannes pflegt) |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------- | ----------------------------------- | --------------------- |
 | **Providerprüfung Supabase** | **Dokumentiert am 2026-09-21, nicht bestanden:** Der Katalog steht samt Auth-Mails (B13) und den fünf Objektspeicher-Punkten aus ADR-017; was bestätigt werden muss, sind die **zwölf Punkte der Gate-Liste** — sonst Alternative. Nächster Schritt bei Jannes: Unterlagen laden (Teil 9), zwei Fragen an den Support, Punkt 1 bis 6 an B2 | Jannes mit Claude-Dokument          | produktive Dateiablage, OPS-001 Anlage | 30.09.2026                          |                       |
-| **B7 → ADR-019**             | **Weg C gewählt (MAP-001, 2026-09-08):** Handoff nicht blockiert (ANN-018, Frage an B2); Karte und Fahrzeiten über PTV Developer als Kandidat; produktive Freigabe am Gate aus ADR-019 Punkt 9 — neun Punkte, alle `CONTRACT_CONFIRMATION_REQUIRED` | Jannes (Vertragsdokumente, PTV-Support), Datenschutzberatung (B2) | MAP-006 | Dokumente Okt 2026; Gate mit B2 bis Feb 2027 | ADR-019 angenommen 2026-09-13 (E-20); Gate offen |
+| **B7 → ADR-019**             | **Weg C gewählt (MAP-001, 2026-09-08):** Handoff nicht blockiert (ANN-018, Frage an B2); Karte und Fahrzeiten über PTV Developer als Kandidat; produktive Freigabe am Gate aus ADR-019 Punkt 9 — neun Punkte, alle `CONTRACT_CONFIRMATION_REQUIRED` | Jannes (Vertragsdokumente, PTV-Support), Datenschutzberatung (B2) | **Scharfschalten** von MAP-006 (nicht dessen Bau, §15.2) | Dokumente Okt 2026; Gate mit B2 bis Feb 2027 | ADR-019 angenommen 2026-09-13 (E-20); Gate offen |
 | **E15**                      | Office liest alle klinischen Inhalte wie Therapeut:innen (lesend, auditiert)                                                                      | Jannes; Datenschutzbewertung mit B2 | ROL-EPIC-001                 | Sep 2026                            | **entschieden 2026-09-13**; B2-Bewertung offen |
 | **B4**                       | Steuerliche Validierung: Leistungsarten, Umsatzsteuer (Personal Training im **selben** Unternehmen, B9), Kleinunternehmerregelung und Gesamtumsatz nach §19 Abs. 3 UStG, Nummernkreis-Format, Belegfristen; **E14 Fall 1** (Rechnungstext und Rechtsgrundlage bei Vergütung ohne erbrachte Behandlung) | Steuerberatung                      | ABR-EPIC-001 (als Annahme)   | Nov 2026                            | Festlegungen stehen 2026-09-08; Anfrage Sep |
 | **B14 PDF-Weg**              | Rechnungs-PDF: **entschieden 2026-09-19 — Weg 1 (Browser-Druck) jetzt, Weg 3 (serverseitig) nach OPS-001**, Weg 2 entfällt (`docs/decisions/rechnungs-pdf-optionen.md`); ADR-009 Punkt 11 ist erst mit Weg 3 erfüllt | **entschieden (Jannes)**            | ABR-EPIC-002b                | erledigt 2026-09-19                 | Weg 3 hängt an OPS-001 (ADR-002/007) |
@@ -956,6 +962,14 @@ Entscheidungsrunde vom Vortag ausnahmslos entschieden (Historie in
 `OPEN_DECISIONS.md`). Was in der Spalte „Stand" jetzt ein Datum trägt, ist
 **vorläufig entschieden** und wartet nur noch auf die externe Bestätigung —
 fällig für M3, nicht für den nächsten Loop.
+
+**Seit 2026-09-22 ist das eine Regel an Rang 1, keine Momentaufnahme**
+(`PROJECT_PRINCIPLES.md` §15.2): Eine offene externe Klärung blockiert das
+**Scharfschalten**, nie das **Bauen**. Die Spalte „Fällig vor" nennt deshalb
+den Punkt, an dem etwas scharf wird — nicht den Loop, der es baut. Ein
+Zuschnitt, der einen Baubeginn an eine externe Antwort bindet, ist neu zu
+schneiden; drei Stellen waren davon betroffen und sind korrigiert (ADR-019
+Fassung 4, `MAP-LOOPS.md`, B7).
 
 **Nachtrag 2026-09-19.** Aus der Entscheidungsrunde zu ABR-EPIC-003: **B14 ist
 entschieden** (Weg 1 jetzt, Weg 3 nach OPS-001), und **B8 ist als Nutzung

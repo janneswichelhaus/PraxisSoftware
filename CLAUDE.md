@@ -33,6 +33,13 @@ Produktionscredentials, Secrets, Deployment oder neue Anbieter; Entscheidungen, 
 einen großen Umbau bedeuten würde. Dann mit Optionen, Empfehlung und Konsequenzen fragen, ohne
 Kontextwechsel beantwortbar — und alles, was nicht davon abhängt, vorher fertigstellen.
 
+**Bauen wartet nie auf eine Antwort von außen** (§15.2, seit 2026-09-22). Datenschutzberatung,
+Steuerberatung, Anbietervertrag, Aufsicht: Eine offene Klärung blockiert das **Scharfschalten** —
+echte Daten, produktive Anbieternutzung, Inbetriebnahme —, nie die Entwicklung mit synthetischen
+Daten. Eine Spezifikation, die einen Baubeginn an eine externe Antwort bindet, ist **neu zu
+schneiden**. Der Preis: Jede so getragene Annahme **muss** an genau einer Stelle reversibel
+verankert sein — sonst wird aus schnellem Bauen späterer Umbau.
+
 ## ADR-Index — welcher ADR wofür
 
 | ADR | Lesen, wenn es um … geht                                                    |
