@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-22 · letzte Session: MAP-005 Navigations-Handoff
+# Status · Stand 2026-09-22 · letzte Session: OPS-004 Verbotsliste
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,22 +6,31 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**MAP-005 ist gebaut, abgenommen ist es nicht.** `buildNavigationUrl(ziel, app)` bedient alle drei Ziel-Apps aus ADR-019 Punkt 22, und `/touren/karte` trägt den Knopf je Teststopp und für den Tag — die URL entsteht erst beim Tippen, gespeichert wird nichts, eine Präferenz ist nicht vorgebaut. **Apple Maps und `geo:` sind erstmals aus Primärquellen belegt**; Google bleibt Suchauszug, weil `developers.google.com` aus der Cloud gesperrt ist. Deshalb erzwingt die Anwendung **drei statt neun Zwischenziele** und teilt längere Tage in sichtbare Abschnitte. Was trägt, sagt erst die Gerätebewertung auf einem echten Telefon; **die ruht, bis eins da ist** — solange ist die kleinere Zahl die sichere. **Teil A der Abnahme geht am Laptop** und ist davon unabhängig. Fortschritt **44,7 → 45,5 %**.
+**Die Verbotsliste aus ADR-011 ist automatisiert geprüft — zur Laufzeit und in CI.** `src/lib/protokoll.ts` ist die eine Stelle aus ADR-011 Punkt 6, durch die Betriebslogs das Programm verlassen; sie filtert mit einer **Erlaubnisliste**, weil kein Muster einen Patientennamen zuverlässig erkennt. Der Befund davor war unbequem: `no-console` sperrte `console.log` und ließ `console.warn/error` frei — also genau den häufigen Fall offen. Der Test liest die elf Punkte **aus dem ADR**, nicht aus einer zweiten Fassung im Code; ein zwölfter macht ihn rot. Ein zweiter Wächter hält fest, dass es bei zwei erklärten Ausgängen bleibt. **Keine neue Annahme:** Die 30 Tage aus ADR-011 Punkt 4 haben mit `BETRIEBSLOG_FRIST_TAGE` erstmals einen Ort im Code — ANN-001 nannte `public.retention_classes`, aber Betriebslogs liegen nicht in unserer Datenbank. **G6 ist damit nicht fertig:** gebaut ist einer von sieben Punkten. Fortschritt **45,5 → 46,4 %**.
 
 ## Danach — Reihenfolge seit 2026-09-22
 
-1. **OPS-004** — Verbotsliste aus ADR-011 automatisiert prüfen, mit der Logfrist aus **R14**
-   (**OPS-003 geht nicht vor**: „PITR aktiv" setzt das Cloudprojekt voraus)
-2. **OPS-006 (minimal)** — Betroffenenrechte: Verfahren, Export der Akte, begründete Ablehnung
-3. **OPS-007** — Bootstrap-Runbook, gegen die Testumgebung geprobt (G11, M3)
+1. **OPS-006 (minimal)** — Betroffenenrechte: Verfahren, Export der Akte, begründete Ablehnung
+2. **OPS-007** — Bootstrap-Runbook, gegen die Testumgebung geprobt (G11, M3)
+3. **OPS-004, Rest** — davon gehen ohne Cloudprojekt nur zwei: Entscheidung zu externem
+   Error-Tracking und „abgewiesene Zugriffe protokolliert"; Alarmierung, Security-Log 12 Monate
+   und die Erkennung für Art. 33 warten auf **G3**
 
 ## Prüfverfahren
 
 **Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329);
-**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2236** (+34); `test:db` **1769** — in dieser Session **nicht gelaufen**, weil keine Migration und keine Policy berührt ist. `ASSUMPTIONS.md`: **1198** Zeilen (unverändert, MAP-005 brauchte keine neue Annahme).
+**angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2272** (+36); `test:db` **1769** — in dieser Session **nicht gelaufen**, weil keine Migration und keine Policy berührt ist. `ASSUMPTIONS.md`: **1198** Zeilen (unverändert, OPS-004 brauchte keine neue Annahme).
 
 ## Blocker (Jannes-seitig)
 
+- **Logfrist für Betriebslogs entscheiden (R14)** — neu aus dieser Session, und es ist eine Wahl mit
+  zwei Wegen: **(a) andere Frist** — ADR-011 Punkt 4 in einer neuen Fassung auf das senken, was die
+  Plattform hält (1 bis 28 Tage); billig, aber es verkürzt die Zeit, in der ein Vorfall nach Art. 33
+  überhaupt noch nachweisbar ist. **(b) Ausleitungsweg** — Logs zu einem eigenen Ziel schreiben;
+  hält die 30 Tage, ist aber ein **zweiter Auftragsverarbeiter** mit eigenem Prüfkatalog nach
+  ADR-002. **Empfehlung: (a) vorerst nicht, (b) erst nach G3** — bis zum Scharfschalten ist nichts
+  davon nötig, und mit synthetischen Daten kostet die Lücke nichts. Gebraucht wird die Antwort,
+  **bevor echte Daten laufen**; bis dahin steht die 30 im Code als Anforderung, nicht als Zusage.
 - **OPS-001 weitertragen** — sonst bleibt jede Zeile der Prüfung ein Suchauszug: Unterlagen aus Teil 9 von einem **ungeproxten Rechner** laden; zwei Fragen an den Support (**Zugriff durch Beschäftigte**, **Verschlüsselung der Objekte**); Gate-Punkt 1 bis 6 an **B2**, darunter **§203
   Abs. 4 StGB** — der einzige, dessen Scheitern den Anbieter kostet. **Zuerst** `auth-smtp`.
 - **BEF-026 / B13:** Der eingebaute Mailversand stellt laut Auszug nur an Adressen des Projektteams zu. Entweder eigener SMTP-Anbieter (zweiter Auftragsverarbeiter, eigene Prüfung, Rücknahme von B13) oder kein Mailversand (Handgriff nach ANN-025). **STAFF-004 ruht bis dahin.**
@@ -42,8 +51,8 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Auf Abnahme warten
 
-Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005 samt CAL-027, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003, MAP-004 und MAP-005 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001, MAP-003 und MAP-004 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md).
+Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005 samt CAL-027, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003, MAP-004 und MAP-005 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001, MAP-003 und MAP-004 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md). **OPS-004 steht nicht dabei** — was dieser Loop gebaut hat, prüfen Tests und Lint, nicht ein Klickweg.
 
 ## Letzte Session
 
-**Der Handoff steht, die Zahl fehlt.** Apple Maps (`/directions`, wiederholbares `waypoint`, `mode=cycling`, ab iOS 18.4) und der `geo:`-URI sind aus den Anbieterdokumenten belegt — bei Google blieb es beim Suchauszug, und dieselbe Lage hat in MAP-004 drei Fehler gekostet. **Neue Annahme keine:** ANN-018 deckt Format und Limit und wurde nur nachgeführt. Aus der Unsicherheit wurde eine Entscheidung gegen die bequemere Zahl: Wer neun Zwischenziele übergibt und im mobilen Browser landet, verliert Stopps **still** — drei sind sichtbar teuer, aber ehrlich. Die Fortschrittstabelle hat außerdem die fehlende **MAP-004-Zeile** bekommen.
+**Eine Verbotsliste, die niemand prüft, ist ein Vorsatz.** ADR-011 hatte das selbst geschrieben und die Frage offen gelassen, ob die Prüfung in CI oder zur Laufzeit gehört; die Antwort ist **beides**, und die beiden Teile prüfen Verschiedenes. Die eigentliche Entscheidung steckt in der Richtung des Filters: **Erlaubnisliste statt Verbotsliste**, weil ein Filter, der behauptet, Patientennamen zu erkennen, schlimmer ist als keiner. Heraus kommt nur, was vorher beschrieben wurde — ein fester Bezeichner, eine UUID, eine endliche Zahl. Eine echte Verbotsliste blieb für **Schlüsselnamen** (Token, Cookie, Authorization): der Fall, den die Erlaubnisliste nicht trägt, weil manche Sitzungsschlüssel wie UUIDs aussehen. **Vier Gegenproben** sind gelaufen und zurückgenommen worden, damit die Wächter nicht leerlaufen. Zur Logfrist ist bewusst **keine** Annahme entstanden: Die kleinere Zahl still einzutragen wäre das Aufweichen einer Nachweismöglichkeit gewesen.

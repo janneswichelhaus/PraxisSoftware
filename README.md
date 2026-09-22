@@ -28,7 +28,7 @@ src/
   app/         Anwendungsrahmen, Navigation, Provider
   components/  wiederverwendbare UI-Bausteine
   features/    fachliche Module (patients, appointments, documentation, staff, audit, …)
-  lib/         Konfiguration, Supabase-Client
+  lib/         Konfiguration, Supabase-Client, Betriebslog-Ausgang (protokoll.ts)
   routes/      Routendefinition
 supabase/
   migrations/  Datenbankmigrationen
