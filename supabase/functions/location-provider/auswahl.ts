@@ -13,7 +13,7 @@
 
 import { erstelleNachbildung } from './mock.ts';
 import { erstellePtvAdapter } from './ptv.ts';
-import type { RouteAdapter } from './typen.ts';
+import type { Anbieteradapter } from './typen.ts';
 
 /** Nur die Felder, die diese Function tatsächlich liest. */
 export interface Umgebung {
@@ -21,7 +21,7 @@ export interface Umgebung {
   readonly PTV_API_KEY?: string | undefined;
 }
 
-export function waehleAdapter(umgebung: Umgebung): RouteAdapter | null {
+export function waehleAdapter(umgebung: Umgebung): Anbieteradapter | null {
   const anbieter = (umgebung.LOCATION_PROVIDER ?? '').trim().toLowerCase();
   const schluessel = (umgebung.PTV_API_KEY ?? '').trim();
 

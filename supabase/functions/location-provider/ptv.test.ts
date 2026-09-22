@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { erstellePtvAdapter } from './ptv.ts';
-import type { RouteRequest } from './typen.ts';
+import type { MatrixRequest, RouteRequest } from './typen.ts';
 
 /**
  * Der Routing-Adapter für PTV (MAP-003a, Akzeptanzkriterium 1).
@@ -217,5 +217,191 @@ describe('PTV-Routing-Adapter', () => {
       expect(meldung).not.toContain('geheim');
       expect(meldung).toMatch(/^ptv: /);
     }
+  });
+});
+
+/**
+ * Der Matrix-Adapter (MAP-004a, Akzeptanzkriterium 1).
+ *
+ * **Diese Schreibweise ist nicht gegen die echte API geprüft** — sie ist aus
+ * dem offiziellen Client abgeleitet, weil `api.myptv.com` aus der
+ * Cloud-Umgebung gesperrt ist. Die Tests halten fest, was der Adapter tut,
+ * nicht, dass der Anbieter es so erwartet; das klärt der Abnahmeschritt bei
+ * Jannes. Geprüft ist hier das, was an keinem Anbieter hängt: die
+ * Indexübersetzung, die Grenzen und die Fehlerklassen.
+ */
+describe('PTV-Matrix-Adapter', () => {
+  const ZWEI_MAL_DREI: MatrixRequest = {
+    origins: [
+      { lat: 48.5216, lon: 9.0576 },
+      { lat: 48.5305, lon: 9.049 },
+    ],
+    destinations: [
+      { lat: 48.5164, lon: 9.0349 },
+      { lat: 48.5092, lon: 9.0655 },
+      { lat: 48.5241, lon: 9.0762 },
+    ],
+    profile: 'cargo_bicycle',
+  };
+
+  /** Sechs Werte in Zeilen zu drei: `k = i·N + j` mit `N` gleich drei Zielen. */
+  const MATRIX_ANTWORT = {
+    travelTimes: [600, 660, 720, 300, 360, 420],
+    distances: [2000, 2200, 2400, 1000, 1200, 1400],
+  };
+
+  it('schickt Koordinaten im Koerper und nur Profil und Ergebnisteile in der Adresse', async () => {
+    const abrufen = antwortMit(MATRIX_ANTWORT);
+
+    await erstellePtvAdapter({ apiKey: 'geheim', abrufen }).matrix(ZWEI_MAL_DREI);
+
+    const [ziel, optionen] = abrufen.mock.calls[0]!;
+    const url = alsUrl(ziel);
+    // `matrixrouting-osm`, nicht `matrixrouting`: dieselbe Regel wie bei der
+    // Route - der Pfad traegt die OSM-Wahl (ADR-019 Punkt 7).
+    expect(url.origin + url.pathname).toBe('https://api.myptv.com/matrixrouting-osm/v1/matrices');
+    expect(url.searchParams.get('profile')).toBe('OSM_CARGO_BICYCLE');
+    expect(url.searchParams.getAll('results')).toEqual(['TRAVEL_TIMES,DISTANCES']);
+    expect([...new Set(url.searchParams.keys())].sort()).toEqual(['profile', 'results']);
+    // Keine Koordinate in der Adresse: Sie stuende in jedem Serverprotokoll.
+    expect(url.search).not.toMatch(/48[.,]5|9[.,]05/);
+    expect(optionen?.method).toBe('POST');
+    expect(new Headers(optionen?.headers).get('ApiKey')).toBe('geheim');
+
+    // Die Feldliste des Koerpers: zwei Listen mit Koordinaten, sonst nichts.
+    // Der Adapter uebergibt den Koerper als Zeichenkette; alles andere waere
+    // hier ein Fehler und soll die Pruefung nicht stillschweigend passieren.
+    expect(typeof optionen?.body).toBe('string');
+    const koerper = JSON.parse(optionen?.body as string) as Record<string, unknown>;
+    expect(Object.keys(koerper).sort()).toEqual(['destinations', 'origins']);
+    expect(koerper['origins']).toEqual([
+      { latitude: 48.5216, longitude: 9.0576 },
+      { latitude: 48.5305, longitude: 9.049 },
+    ]);
+  });
+
+  it('faltet die flachen Listen nach k = i*N + j', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(MATRIX_ANTWORT),
+    }).matrix(ZWEI_MAL_DREI);
+
+    expect(ergebnis).toEqual({
+      ok: true,
+      value: {
+        durationsSeconds: [
+          [600, 660, 720],
+          [300, 360, 420],
+        ],
+        distancesMeters: [
+          [2000, 2200, 2400],
+          [1000, 1200, 1400],
+        ],
+      },
+    });
+  });
+
+  it.each([
+    ['als null', null],
+    ['als negative Zahl', -1],
+  ])('macht ein unerreichbares Paar %s zu null', async (_, wert) => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({ travelTimes: [600, 660, wert, 300, 360, 420] }),
+    }).matrix(ZWEI_MAL_DREI);
+
+    expect(ergebnis.ok && ergebnis.value.durationsSeconds[0]).toEqual([600, 660, null]);
+  });
+
+  it('nimmt eine Antwort ohne Strecken an - gefragt ist die Fahrzeit', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({ travelTimes: MATRIX_ANTWORT.travelTimes }),
+    }).matrix(ZWEI_MAL_DREI);
+
+    expect(ergebnis.ok).toBe(true);
+    expect(ergebnis.ok && ergebnis.value.distancesMeters).toBeUndefined();
+  });
+
+  it.each([
+    ['zu kurz', { travelTimes: [600, 660, 720] }],
+    ['zu lang', { travelTimes: [1, 2, 3, 4, 5, 6, 7] }],
+    ['gar nicht da', { distances: MATRIX_ANTWORT.distances }],
+    ['keine Liste', { travelTimes: 600 }],
+  ])('meldet eine Fahrzeitliste %s als Fehler, nicht als halbe Matrix', async (_, koerper) => {
+    // Eine Liste falscher Laenge stuende zellenweise verschoben in der
+    // Tabelle - und saehe dort richtig aus.
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(koerper),
+    }).matrix(ZWEI_MAL_DREI);
+
+    expect(ergebnis.ok).toBe(false);
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('unavailable');
+  });
+
+  it('weist Punkte ausserhalb der 100-km-Box ab, ohne den Anbieter zu fragen', async () => {
+    const abrufen = antwortMit(MATRIX_ANTWORT);
+    const ergebnis = await erstellePtvAdapter({ apiKey: 'k', abrufen }).matrix({
+      ...ZWEI_MAL_DREI,
+      // Tübingen und Hamburg: gut 500 km auseinander.
+      destinations: [{ lat: 53.5511, lon: 9.9937 }],
+    });
+
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('invalid_request');
+    expect(abrufen).not.toHaveBeenCalled();
+  });
+
+  it('laesst eine Tagestour durch - sie passt in die Box', async () => {
+    const abrufen = antwortMit({ travelTimes: [0] });
+    const ergebnis = await erstellePtvAdapter({ apiKey: 'k', abrufen }).matrix({
+      origins: [{ lat: 48.5216, lon: 9.0576 }],
+      destinations: [{ lat: 48.5241, lon: 9.0762 }],
+      profile: 'cargo_bicycle',
+    });
+
+    expect(ergebnis.ok).toBe(true);
+    expect(abrufen).toHaveBeenCalled();
+  });
+
+  it.each([
+    [401, 'unauthorized'],
+    [429, 'rate_limited'],
+    [400, 'invalid_request'],
+    [500, 'unavailable'],
+  ])('bildet HTTP %i auch bei der Matrix auf %s ab', async (status, klasse) => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({ message: 'egal' }, status),
+    }).matrix(ZWEI_MAL_DREI);
+
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe(klasse);
+  });
+
+  it('traegt auch bei der Matrix keine Zahl aus der Anfrage in der Meldung', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'geheim',
+      abrufen: antwortMit({ message: 'origin 48.5216,9.0576 too far away' }, 400),
+    }).matrix(ZWEI_MAL_DREI);
+
+    const meldung = ergebnis.ok === false ? ergebnis.error.message : '';
+    expect(meldung).not.toMatch(/48[.,]5|9[.,]05/);
+    expect(meldung).not.toContain('geheim');
+    expect(meldung).toMatch(/^ptv: /);
+  });
+
+  it('meldet eine Zeitueberschreitung auch bei der Matrix als solche', async () => {
+    const abrufen: typeof fetch = (_ziel, optionen) =>
+      new Promise((_, ablehnen) => {
+        optionen?.signal?.addEventListener('abort', () =>
+          ablehnen(new DOMException('Aborted', 'AbortError')),
+        );
+      });
+
+    const ergebnis = await erstellePtvAdapter({ apiKey: 'k', abrufen, timeoutMs: 5 }).matrix(
+      ZWEI_MAL_DREI,
+    );
+
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('timeout');
   });
 });

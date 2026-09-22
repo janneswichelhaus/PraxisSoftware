@@ -2,7 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { erstelleHandler } from './handler.ts';
 import { erstelleNachbildung } from './mock.ts';
 import type { Sitzungsergebnis } from './sitzung.ts';
-import type { Protokolleintrag, RouteAdapter, RouteAntwort, RouteErgebnis } from './typen.ts';
+import { MAX_MATRIX_PUNKTE } from './typen.ts';
+import type {
+  Anbieteradapter,
+  Antwort,
+  MatrixAntwort,
+  MatrixErgebnis,
+  Protokolleintrag,
+  RouteAntwort,
+  RouteErgebnis,
+} from './typen.ts';
 
 /**
  * Der Ablauf der Function (MAP-003a, Akzeptanzkriterien 1 bis 4).
@@ -12,11 +21,21 @@ import type { Protokolleintrag, RouteAdapter, RouteAntwort, RouteErgebnis } from
  * kommt, ist hier eingesetzt.
  */
 
+const PUNKTE = [
+  { lat: 48.5216, lon: 9.0576 },
+  { lat: 48.5305, lon: 9.049 },
+];
+
 const KOERPER = {
-  waypoints: [
-    { lat: 48.5216, lon: 9.0576 },
-    { lat: 48.5305, lon: 9.049 },
-  ],
+  aufgabe: 'route',
+  waypoints: PUNKTE,
+  profile: 'bicycle',
+};
+
+const MATRIX_KOERPER = {
+  aufgabe: 'matrix',
+  origins: PUNKTE,
+  destinations: PUNKTE,
   profile: 'bicycle',
 };
 
@@ -28,14 +47,17 @@ function anfrage(koerper: unknown, kopf: Record<string, string> = { Authorizatio
   });
 }
 
-function adapterMit(ergebnis: RouteErgebnis) {
+const LEERE_MATRIX: MatrixErgebnis = { ok: true, value: { durationsSeconds: [] } };
+
+function adapterMit(ergebnis: RouteErgebnis, matrixErgebnis: MatrixErgebnis = LEERE_MATRIX) {
   const route = vi.fn(() => Promise.resolve(ergebnis));
-  const adapter: RouteAdapter = { id: 'prueflauf', quelle: 'anbieter', route };
-  return { adapter, route };
+  const matrix = vi.fn(() => Promise.resolve(matrixErgebnis));
+  const adapter: Anbieteradapter = { id: 'prueflauf', quelle: 'anbieter', route, matrix };
+  return { adapter, route, matrix };
 }
 
 function handler(
-  adapter: RouteAdapter | null,
+  adapter: Anbieteradapter | null,
   {
     sitzung = { befund: 'gueltig' },
     protokolliere = () => {},
@@ -53,8 +75,9 @@ function handler(
   });
 }
 
-async function gelesen(antwort: Response): Promise<RouteAntwort> {
-  return (await antwort.json()) as RouteAntwort;
+/** Der Körper der Antwort. Ohne Angabe ist die Route gemeint — sie ist der Regelfall hier. */
+async function gelesen<T extends Antwort = RouteAntwort>(antwort: Response): Promise<T> {
+  return (await antwort.json()) as T;
 }
 
 describe('location-provider', () => {
@@ -213,6 +236,112 @@ describe('location-provider', () => {
     );
 
     expect(eintraege).toEqual([{ anbieter: 'mock', code: 'ok', dauerMs: 12 }]);
+  });
+});
+
+/**
+ * Die zweite Aufgabe (MAP-004a).
+ *
+ * Sitzung, Log und Fehlerklassen sind dieselben und stehen oben; hier steht
+ * nur, was die Matrix von der Route unterscheidet — die Wahl der Aufgabe und
+ * die Prüfung ihrer Eingabe.
+ */
+describe('location-provider · Matrix', () => {
+  it('ruft fuer die Aufgabe "matrix" die Matrix und nicht die Route', async () => {
+    const { adapter, route, matrix } = adapterMit({ ok: true, value: leereRoute() });
+
+    const antwort = await handler(adapter)(anfrage(MATRIX_KOERPER));
+
+    expect(antwort.status).toBe(200);
+    expect(route).not.toHaveBeenCalled();
+    expect(matrix).toHaveBeenCalledWith({
+      origins: PUNKTE,
+      destinations: PUNKTE,
+      profile: 'bicycle',
+    });
+  });
+
+  it('liefert die Matrix mit der Angabe, woher sie stammt - und ohne Zwischenspeicher', async () => {
+    const antwort = await handler(erstelleNachbildung())(anfrage(MATRIX_KOERPER));
+
+    expect(antwort.headers.get('Cache-Control')).toBe('no-store');
+    const koerper = await gelesen<MatrixAntwort>(antwort);
+    expect(koerper.ok).toBe(true);
+    if (!koerper.ok) return;
+    expect(koerper.quelle).toBe('nachbildung');
+    expect(koerper.value.durationsSeconds).toHaveLength(2);
+    expect(koerper.value.durationsSeconds[0]).toHaveLength(2);
+    // Die Diagonale ist der Punkt zu sich selbst.
+    expect(koerper.value.durationsSeconds[0]?.[0]).toBe(0);
+  });
+
+  it.each([
+    ['ohne Aufgabe', { origins: PUNKTE, destinations: PUNKTE, profile: 'bicycle' }],
+    ['mit erfundener Aufgabe', { ...MATRIX_KOERPER, aufgabe: 'optimize' }],
+    ['ohne Ziele', { aufgabe: 'matrix', origins: PUNKTE, profile: 'bicycle' }],
+    ['mit leerer Startliste', { ...MATRIX_KOERPER, origins: [] }],
+    ['mit Text statt Koordinate', { ...MATRIX_KOERPER, destinations: ['48.5,9.0'] }],
+    [
+      'mit Koordinate ausserhalb der Erdkugel',
+      { ...MATRIX_KOERPER, origins: [{ lat: 48.5, lon: 181 }] },
+    ],
+    // Die Wegpunkte einer Route sind keine Matrix: Wer sie schickt, bekommt
+    // keine stillschweigend anders gelesene Anfrage.
+    [
+      'mit Wegpunkten statt Start und Ziel',
+      { aufgabe: 'matrix', waypoints: PUNKTE, profile: 'bicycle' },
+    ],
+  ])('weist eine Matrixanfrage %s mit 400 ab', async (_, koerper) => {
+    const { adapter, matrix } = adapterMit({ ok: true, value: leereRoute() });
+    const antwort = await handler(adapter)(anfrage(koerper));
+
+    expect(antwort.status).toBe(400);
+    expect(matrix).not.toHaveBeenCalled();
+  });
+
+  it('weist eine zu grosse Matrix ab, ohne den Anbieter zu fragen (ANN-091)', async () => {
+    const zuViele = Array.from({ length: MAX_MATRIX_PUNKTE + 1 }, (_, i) => ({
+      lat: 48.5 + i / 1000,
+      lon: 9.05,
+    }));
+    const { adapter, matrix } = adapterMit({ ok: true, value: leereRoute() });
+
+    const antwort = await handler(adapter)(anfrage({ ...MATRIX_KOERPER, origins: zuViele }));
+
+    expect(antwort.status).toBe(400);
+    expect(matrix).not.toHaveBeenCalled();
+  });
+
+  it('nimmt genau so viele Punkte, wie die Grenze erlaubt', async () => {
+    const gerade = Array.from({ length: MAX_MATRIX_PUNKTE }, (_, i) => ({
+      lat: 48.5 + i / 1000,
+      lon: 9.05,
+    }));
+    const { adapter, matrix } = adapterMit({ ok: true, value: leereRoute() });
+
+    const antwort = await handler(adapter)(anfrage({ ...MATRIX_KOERPER, origins: gerade }));
+
+    expect(antwort.status).toBe(200);
+    expect(matrix).toHaveBeenCalled();
+  });
+
+  it('protokolliert die Matrix wie die Route - ohne Koordinate', async () => {
+    const eintraege: Protokolleintrag[] = [];
+    const { adapter } = adapterMit(
+      { ok: true, value: leereRoute() },
+      {
+        ok: false,
+        error: { code: 'rate_limited', message: 'ptv: HTTP 429' },
+      },
+    );
+
+    const antwort = await handler(adapter, { protokolliere: (e) => eintraege.push(e) })(
+      anfrage(MATRIX_KOERPER),
+    );
+
+    expect(antwort.status).toBe(429);
+    expect(eintraege).toEqual([{ anbieter: 'prueflauf', code: 'rate_limited', dauerMs: 12 }]);
+    expect(JSON.stringify(eintraege)).not.toMatch(/48[.,]5|9[.,]05/);
   });
 });
 

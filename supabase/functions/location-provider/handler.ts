@@ -1,12 +1,12 @@
 /**
- * Die Function selbst, ohne Laufzeit (MAP-003a).
+ * Die Function selbst, ohne Laufzeit (MAP-003a, mit der Matrix aus MAP-004a).
  *
  * Hier steht der ganze Ablauf — Vorabanfrage, Methode, Sitzung, Prüfung der
- * Eingabe, Adapteraufruf, Antwort, Log —, und nichts davon kennt Deno, eine
- * Umgebungsvariable oder einen Anbieter. Alles, was von außen kommt, ist eine
- * Abhängigkeit im Aufruf: Genau deshalb ist diese Datei vollständig mit
- * Unit-Tests prüfbar, obwohl `supabase start` in der Cloud-Umgebung nicht
- * läuft (`MAP-LOOPS.md`, „Einschränkung der Umgebung").
+ * Eingabe, Wahl der Aufgabe, Adapteraufruf, Antwort, Log —, und nichts davon
+ * kennt Deno, eine Umgebungsvariable oder einen Anbieter. Alles, was von außen
+ * kommt, ist eine Abhängigkeit im Aufruf: Genau deshalb ist diese Datei
+ * vollständig mit Unit-Tests prüfbar, obwohl `supabase start` in der
+ * Cloud-Umgebung nicht läuft (`MAP-LOOPS.md`, „Einschränkung der Umgebung").
  *
  * **Diese Function schreibt nichts.** Sie hat keinen Datenbankzugriff, keinen
  * Client, keine Tabelle; das Ergebnis wird angezeigt und verworfen (ADR-019
@@ -14,12 +14,15 @@
  */
 
 import {
+  MAX_MATRIX_PUNKTE,
   MIN_WEGPUNKTE,
+  type Anbieteradapter,
+  type Antwort,
+  type Aufgabe,
   type Coordinate,
   type LocationErrorCode,
+  type MatrixRequest,
   type Protokolleintrag,
-  type RouteAdapter,
-  type RouteAntwort,
   type RouteRequest,
   type TravelProfile,
 } from './typen.ts';
@@ -65,7 +68,7 @@ const STATUS: Readonly<Record<LocationErrorCode, number>> = {
 
 interface HandlerOptionen {
   /** `null`, wenn kein Anbieter eingerichtet ist — dann antwortet die Function `not_configured`. */
-  readonly adapter: RouteAdapter | null;
+  readonly adapter: Anbieteradapter | null;
   readonly pruefeSitzung: Sitzungspruefung;
   readonly protokolliere: (eintrag: Protokolleintrag) => void;
   /** Für Tests; sonst die Uhr der Laufzeit. */
@@ -104,8 +107,8 @@ export function erstelleHandler({
       );
     }
 
-    const angefragt = await liesAnfrage(anfrage);
-    if (angefragt === null) {
+    const auftrag = await liesAnfrage(anfrage);
+    if (auftrag === null) {
       return antwort({ ok: false, error: fehler('invalid_request', 'Anfrage unvollständig') }, 400);
     }
 
@@ -120,7 +123,10 @@ export function erstelleHandler({
     }
 
     const beginn = jetzt();
-    const ergebnis = await adapter.route(angefragt);
+    const ergebnis =
+      auftrag.aufgabe === 'route'
+        ? await adapter.route(auftrag.anfrage)
+        : await adapter.matrix(auftrag.anfrage);
     protokolliere({
       anbieter: adapter.id,
       code: ergebnis.ok ? 'ok' : ergebnis.error.code,
@@ -134,13 +140,28 @@ export function erstelleHandler({
 }
 
 /**
+ * Was gefragt ist, zusammen mit der Aufgabe.
+ *
+ * Die zwei Aufgaben liegen als getrennte Fälle vor und nicht als ein Objekt
+ * mit optionalen Feldern: So kann keine Matrix mit Wegpunkten und keine Route
+ * mit Zielen entstehen, und der Aufruf unten hat keinen dritten Zweig.
+ */
+type Auftrag =
+  | { readonly aufgabe: 'route'; readonly anfrage: RouteRequest }
+  | { readonly aufgabe: 'matrix'; readonly anfrage: MatrixRequest };
+
+/**
  * Die Anfrage des Browsers — oder `null`, wenn irgendetwas daran nicht stimmt.
  *
  * Geprüft wird vollständig und vor dem ersten Kontakt zum Anbieter: Eine
  * Koordinate außerhalb der Erdkugel oder ein erfundenes Profil ist ein Fehler
  * von hier, keiner, den der Anbieter beantworten muss.
+ *
+ * **Die Aufgabe steht im Körper und wird nicht geraten** (MAP-004a): Eine
+ * Matrix ohne `origins` ist damit eine unvollständige Matrix und nicht
+ * stillschweigend eine Route ohne Wegpunkte.
  */
-async function liesAnfrage(anfrage: Request): Promise<RouteRequest | null> {
+async function liesAnfrage(anfrage: Request): Promise<Auftrag | null> {
   let koerper: unknown;
   try {
     koerper = await anfrage.json();
@@ -152,18 +173,39 @@ async function liesAnfrage(anfrage: Request): Promise<RouteRequest | null> {
   const daten = koerper as Record<string, unknown>;
   const profil = daten['profile'];
   if (profil !== 'bicycle' && profil !== 'cargo_bicycle') return null;
+  const profile = profil satisfies TravelProfile;
 
-  const punkte = daten['waypoints'];
-  if (!Array.isArray(punkte) || punkte.length < MIN_WEGPUNKTE) return null;
+  const gefragt = daten['aufgabe'];
+  if (gefragt !== 'route' && gefragt !== 'matrix') return null;
+  const aufgabe = gefragt satisfies Aufgabe;
 
-  const wegpunkte: Coordinate[] = [];
-  for (const punkt of punkte as unknown[]) {
-    const gelesen = koordinate(punkt);
-    if (gelesen === null) return null;
-    wegpunkte.push(gelesen);
+  if (aufgabe === 'route') {
+    const waypoints = koordinaten(daten['waypoints'], MIN_WEGPUNKTE);
+    if (waypoints === null) return null;
+    return { aufgabe, anfrage: { waypoints, profile } };
   }
 
-  return { waypoints: wegpunkte, profile: profil satisfies TravelProfile };
+  const origins = koordinaten(daten['origins'], 1);
+  const destinations = koordinaten(daten['destinations'], 1);
+  if (origins === null || destinations === null) return null;
+  // Unsere Obergrenze, nicht die des Anbieters (ANN-091): Eine Anfrage über
+  // beliebig viele Punkte löste beliebig viele Relationen aus. Die Grenze der
+  // Route ist eine andere und steht beim Anbieter (`ptv.ts`).
+  if (origins.length > MAX_MATRIX_PUNKTE || destinations.length > MAX_MATRIX_PUNKTE) return null;
+  return { aufgabe, anfrage: { origins, destinations, profile } };
+}
+
+/** Eine Liste von Koordinaten — oder `null`, wenn irgendetwas daran nicht stimmt. */
+function koordinaten(wert: unknown, mindestens: number): Coordinate[] | null {
+  if (!Array.isArray(wert) || wert.length < mindestens) return null;
+
+  const punkte: Coordinate[] = [];
+  for (const eintrag of wert as unknown[]) {
+    const gelesen = koordinate(eintrag);
+    if (gelesen === null) return null;
+    punkte.push(gelesen);
+  }
+  return punkte;
 }
 
 function koordinate(wert: unknown): Coordinate | null {
@@ -179,7 +221,7 @@ function fehler(code: LocationErrorCode, meldung: string) {
   return { code, message: `location-provider: ${meldung}` };
 }
 
-function antwort(koerper: RouteAntwort, status: number): Response {
+function antwort(koerper: Antwort, status: number): Response {
   return new Response(JSON.stringify(koerper), {
     status,
     headers: {
