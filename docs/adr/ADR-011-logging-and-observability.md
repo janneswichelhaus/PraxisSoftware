@@ -99,6 +99,10 @@ Dieser ADR schließt den offenen Punkt E5 und konkretisiert §3.6.
 
 - Die Auswahl eines Log-, Error-Tracking- oder Observability-Dienstes.
 - Ob überhaupt ein externer Observability-Dienst eingesetzt wird.
+  *Vermerk OPS-004 (2026-09-22): In V1 keiner — Folge aus Punkt 5 und
+  ADR-002, kein neuer Anbieter ohne fachliche Notwendigkeit. Gehalten von
+  `src/protokollierung.test.ts`; die Entscheidung selbst bleibt
+  ausgenommen und braucht für einen Dienst die Prüfung nach ADR-002.*
 - Logformat, Transport, Aggregation und Alarmierung.
 - Metriken, Tracing und Performance-Monitoring als eigene Disziplin.
 - Die Schwellen und Regeln für Sicherheitsalarme.

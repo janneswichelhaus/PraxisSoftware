@@ -372,7 +372,7 @@ kann; die übrigen beantworten sich im Loop, der das Thema baut.
 | Frage | ADR | Beantwortet in |
 | --- | --- | --- |
 | Wer führt die Anbieterprüfung durch, wo wird sie dokumentiert, wie oft wiederholt? | ADR-002 | OPS-001 (G3) |
-| Ist externes Error-Tracking zulässig, und wie werden Redaction-Regeln erzwungen und getestet? | ADR-002, ADR-011 | OPS-004 (G8) |
+| ~~Ist externes Error-Tracking zulässig, und wie werden Redaction-Regeln erzwungen und getestet?~~ Mit OPS-004 (2026-09-22): kein externer Dienst in V1, als Gate in `src/protokollierung.test.ts`; Redaction in `src/lib/protokoll.ts` | ADR-002, ADR-011 | OPS-004 (G6) |
 | Wie wird „keine Produktionsdaten in Dev/Test" technisch abgesichert? | ADR-002 | OPS-001, OPS-002 |
 | Frontend-Hosting und dessen Prüfung; `service_role` nie im Browser; Nachweis der Freigabe | ADR-015, ADR-013 | OPS-002 (G5) |
 | Schweregrade im Dependency-Scan | ADR-013 | ANN-054 (Schwelle `high`); OPS-002 (G5) |

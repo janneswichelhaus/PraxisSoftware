@@ -229,6 +229,19 @@ test.describe('LOE-002a: Der Löschlauf ist kein Anwendungsvorgang', () => {
     const fuerTherapist = await rpcAufrufen(request, therapistToken, 'list_deletion_runs', {
       p_limit: 50,
     });
-    expect(fuerTherapist.status(), 'Löschjournal für therapist').toBe(403);
+    // OPS-004: abgewiesen wird mit null Zeilen statt 403, damit der Versuch
+    // im Auditlog bestehen bleibt - eine Ausnahme rollte ihn mit zurück.
+    expect(fuerTherapist.status(), 'Löschjournal für therapist').toBe(200);
+    expect(await fuerTherapist.json(), 'Löschjournal für therapist').toEqual([]);
+
+    // Und der Versuch ist über die API hinweg tatsächlich bestätigt worden:
+    // owner sieht ihn im Auditlog als abgewiesen.
+    const protokoll = await rpcAufrufen(request, ownerToken, 'list_audit_events', {
+      p_action: 'deletion_runs.read',
+    });
+    expect(protokoll.status(), 'Auditlog für owner').toBe(200);
+    const eintraege = (await protokoll.json()) as { outcome: string }[];
+    expect(eintraege.length, 'abgewiesener Versuch im Auditlog').toBeGreaterThan(0);
+    expect(eintraege.every((eintrag) => eintrag.outcome === 'denied')).toBe(true);
   });
 });
