@@ -59,12 +59,29 @@ export type TravelProfile = 'bicycle' | 'cargo_bicycle';
  * Regelfall, solange Abo und Schlüssel bei Jannes liegen (ADR-019 Punkt 24).
  * Beides in eine Klasse zu legen hieße, der Therapeutin einen Ausfall zu
  * melden, den es nicht gibt.
+ *
+ * `session_invalid` kam aus demselben Grund mit **BEF-027** dazu. `unauthorized`
+ * trug bis dahin zwei Bedeutungen — „der Anbieter lehnt unseren Serverschlüssel
+ * ab" und „deine Sitzung gilt nicht" —, und die Oberfläche konnte nur eine
+ * davon anzeigen. Im ersten Abnahmelauf hat sie deshalb auf den Kartendienst
+ * gezeigt, während in Wahrheit die eigene Sitzungsprüfung nicht durchkam.
+ * Zwei Ursachen, zwei Klassen: `unauthorized` gehört jetzt allein dem
+ * Anbieter.
+ *
+ * `function_unavailable` ist die dritte aus demselben Befund und die einzige,
+ * die der **Client** vergibt: Antwortet nicht unsere Function, sondern etwas
+ * davor — ein Gateway, eine nicht laufende Laufzeit —, dann ist das keine
+ * Aussage über den Kartendienst. Genau so kam es: Ein `503` des lokalen
+ * Gateways („name resolution failed") stand auf dem Bildschirm als
+ * „Kartendienst nicht erreichbar".
  */
 export type LocationErrorCode =
   | 'timeout'
   | 'unavailable'
   | 'rate_limited'
   | 'unauthorized'
+  | 'session_invalid'
+  | 'function_unavailable'
   | 'invalid_request'
   | 'not_found'
   | 'not_configured';

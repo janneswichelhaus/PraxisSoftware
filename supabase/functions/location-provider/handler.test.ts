@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { erstelleHandler } from './handler.ts';
 import { erstelleNachbildung } from './mock.ts';
+import type { Sitzungsergebnis } from './sitzung.ts';
 import type { Protokolleintrag, RouteAdapter, RouteAntwort, RouteErgebnis } from './typen.ts';
 
 /**
@@ -36,14 +37,17 @@ function adapterMit(ergebnis: RouteErgebnis) {
 function handler(
   adapter: RouteAdapter | null,
   {
-    sitzungGueltig = true,
+    sitzung = { befund: 'gueltig' },
     protokolliere = () => {},
-  }: { sitzungGueltig?: boolean; protokolliere?: (eintrag: Protokolleintrag) => void } = {},
+  }: {
+    sitzung?: Sitzungsergebnis;
+    protokolliere?: (eintrag: Protokolleintrag) => void;
+  } = {},
 ) {
   let uhr = 1000;
   return erstelleHandler({
     adapter,
-    pruefeSitzung: () => Promise.resolve(sitzungGueltig),
+    pruefeSitzung: () => Promise.resolve(sitzung),
     protokolliere,
     jetzt: () => (uhr += 12),
   });
@@ -56,13 +60,41 @@ async function gelesen(antwort: Response): Promise<RouteAntwort> {
 describe('location-provider', () => {
   it('lehnt einen Aufruf ohne gueltige Sitzung mit 401 ab - ohne den Anbieter zu fragen', async () => {
     const { adapter, route } = adapterMit({ ok: true, value: leereRoute() });
-    const antwort = await handler(adapter, { sitzungGueltig: false })(anfrage(KOERPER, {}));
+    const antwort = await handler(adapter, { sitzung: { befund: 'abgelehnt' } })(
+      anfrage(KOERPER, {}),
+    );
 
     expect(antwort.status).toBe(401);
     const koerper = await gelesen(antwort);
     expect(koerper.ok).toBe(false);
-    expect(koerper.ok === false && koerper.error.code).toBe('unauthorized');
+    // `session_invalid`, nicht `unauthorized`: Die zweite Klasse gehoert seit
+    // BEF-027 allein dem Anbieter, der unseren Serverschluessel ablehnt.
+    expect(koerper.ok === false && koerper.error.code).toBe('session_invalid');
     expect(route).not.toHaveBeenCalled();
+  });
+
+  it('sagt es, wenn die Sitzung gar nicht geprueft werden konnte', async () => {
+    // Der Fall aus dem ersten Abnahmelauf: Die Pruefung selbst kam nicht
+    // durch, und die Oberflaeche zeigte auf den Kartendienst (BEF-027).
+    const eintraege: Protokolleintrag[] = [];
+    const { adapter, route } = adapterMit({ ok: true, value: leereRoute() });
+    const antwort = await handler(adapter, {
+      sitzung: {
+        befund: 'nicht_pruefbar',
+        grund: 'einrichtung',
+        meldung: 'Sitzungsprüfung nicht eingerichtet: SUPABASE_URL fehlt',
+      },
+      protokolliere: (eintrag) => eintraege.push(eintrag),
+    })(anfrage(KOERPER));
+
+    expect(antwort.status).toBe(503);
+    const koerper = await gelesen(antwort);
+    expect(koerper.ok === false && koerper.error.code).toBe('not_configured');
+    expect(koerper.ok === false && koerper.error.message).toContain('SUPABASE_URL');
+    // Kein Anbieteraufruf - und anders als eine abgelehnte Sitzung steht
+    // dieser Betriebsfehler im Log, weil er jeden Aufruf trifft.
+    expect(route).not.toHaveBeenCalled();
+    expect(eintraege).toEqual([{ anbieter: 'sitzung', code: 'not_configured', dauerMs: 0 }]);
   });
 
   it('beantwortet die Vorabanfrage des Browsers', async () => {

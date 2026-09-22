@@ -61,6 +61,8 @@ describe('Routenangaben', () => {
     ['unavailable', 'Kartendienst nicht erreichbar'],
     ['not_configured', 'Kein Kartendienst eingerichtet'],
     ['unauthorized', 'Kartendienst weist den Serverschlüssel ab'],
+    ['session_invalid', 'Anmeldung gilt nicht mehr'],
+    ['function_unavailable', 'Routenfunktion antwortet nicht'],
     ['rate_limited', 'Kontingent erschöpft'],
     ['not_found', 'Keine Route gefunden'],
     ['invalid_request', 'Anfrage nicht gültig'],
@@ -69,6 +71,17 @@ describe('Routenangaben', () => {
 
     // `role="alert"`: Wer nicht auf den Bildschirm sieht, erfaehrt es auch.
     expect(within(screen.getByRole('alert')).getByText(titel)).toBeInTheDocument();
+  });
+
+  it('gibt dem Kartendienst nicht die Schuld an der eigenen Sitzung (BEF-027)', () => {
+    // Der Fehler aus dem ersten Abnahmelauf: Beide Faelle trugen die Klasse
+    // `unauthorized`, und die Seite zeigte auf den Anbieter, obwohl die
+    // eigene Sitzungspruefung nicht durchkam.
+    zeige({ ergebnis: gescheitert('session_invalid') });
+
+    const meldung = screen.getByRole('alert');
+    expect(meldung).not.toHaveTextContent(/Kartendienst/);
+    expect(meldung).toHaveTextContent(/Sitzung/);
   });
 
   it('nennt bei fehlender Einrichtung die Secrets und nicht den Anbieter', () => {
