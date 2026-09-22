@@ -12,6 +12,7 @@ import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { AkteEinstieg, PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
+import { BetroffenenrechtePage } from '@/features/datenschutz/BetroffenenrechtePage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
 import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
 import { PatientFilesPage } from '@/features/files/PatientFilesPage';
@@ -185,6 +186,17 @@ export function AuthenticatedRoutes({
                     <Route path="stammdaten" element={<PatientMasterDataPage />} />
                   </Route>
                   <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
+                  {/* Auskunft und Loeschverlangen stehen neben der Akte und
+                  nicht darin: Sie sind Vorgaenge der Praxisleitung, keine
+                  Bereiche der taeglichen Arbeit (OPS-006). Nur `owner` - und
+                  verbindlich pruefen das die beiden Serverfunktionen
+                  (ADR-004). */}
+                  {showSecurity ? (
+                    <Route
+                      path="/patienten/:patientId/auskunft"
+                      element={<BetroffenenrechtePage />}
+                    />
+                  ) : null}
                   {/* Die Verordnerkartei haengt am Arbeitsbereich Patient:innen: sie
                   wird ausschliesslich fuer Verordnungen gebraucht (VER-001). */}
                   <Route path="/verordner" element={<PrescribersListPage />} />
