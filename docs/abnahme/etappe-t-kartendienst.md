@@ -166,7 +166,8 @@ die falsche Stelle.
    Fehler — sie muss vom Server kommen.
 2. Filter auf `functions/v1`. Erwartung: **ein** `POST` auf
    `…/functions/v1/location-provider` je Profil, im Rumpf ausschließlich
-   `waypoints` und `profile`. Kein Name, keine Terminkennung, keine Uhrzeit.
+   `waypoints`, `profile` und — seit MAP-004 — `aufgabe: "route"`. Kein Name,
+   keine Terminkennung, keine Uhrzeit.
 3. Die Antwort ansehen. Erwartung: Kopfzeile `Cache-Control: no-store`.
 4. Im Terminal von `functions serve`: Erwartung: Bei einem Fehler **eine**
    Zeile mit Anbieterkennung, Fehlerklasse und Dauer — **keine Koordinate**,
@@ -214,3 +215,87 @@ trotzdem mit 400, steht die Ursache im Antwortkörper unter `causes`; sie
 gehört dann hierher und in
 [`../development/BEFUNDE.md`](../development/BEFUNDE.md). Korrigiert wird
 `supabase/functions/location-provider/ptv.ts` und sonst nichts.
+
+---
+
+## MAP-004 — Fahrzeitmatrix
+
+Prüfschritte zu **MAP-004a/b/c**. Grundlage: ADR-019 Fassung 3, Punkt 12, 13,
+15, 16, 19 und 24; die Erreichbarkeitsregel zusätzlich `PROJECT_PRINCIPLES.md`
+§6.2 und ADR-005 Punkt 6.
+
+**Dieser Loop bringt keine Migration, keinen geänderten Seed und keine neue
+Abhängigkeit**: `git pull origin claude/erste-offene-aufgabe-9x6r1d` genügt.
+Aufbau wie bei MAP-003 — `[edge_runtime] enabled = true` nur für den Lauf,
+`supabase/functions/.env.local`, `functions serve`.
+
+### 1. Der wichtigste Schritt: Stimmt die Anfrage überhaupt?
+
+**Die Schreibweise der Matrix-Anfrage ist nicht belegt.** Sie ist aus dem
+offiziellen Client abgeleitet, weil `api.myptv.com` aus der Cloud-Umgebung
+gesperrt ist und der Schlüssel bei Jannes liegt — dieselbe Lage wie bei der
+Route vor **BEF-023**, und dort war sie an drei Stellen falsch. Dieser Schritt
+ist deshalb der erste.
+
+1. Seite `/touren/karte` öffnen. Erwartung: unter der Route der Abschnitt
+   **„Die Fahrzeiten"** mit einer 8 × 8-Tabelle voller Minutenangaben.
+2. Kommt stattdessen **„Kartendienst nicht erreichbar"** oder **„Anfrage nicht
+   gültig"**: Im `serve`-Fenster steht die Fehlerklasse, im Netzwerkfenster die
+   Antwort des Anbieters unter `causes`. Beides gehört in
+   [`../development/BEFUNDE.md`](../development/BEFUNDE.md) und hierher.
+   Korrigiert wird `supabase/functions/location-provider/ptv.ts` und sonst
+   nichts — Pfad, Parameter oder Feldnamen, je nachdem, was dort steht.
+3. Erwartung: Die Werte sind plausibel — Tübinger Stadtgebiet, also wenige
+   Minuten je Paar, die Diagonale ein Punkt („derselbe Stopp") und keine Zelle
+   mit einer Stunde.
+4. Mit `LOCATION_PROVIDER=mock` erneut: Erwartung: Werte **und** der Hinweis
+   „Nachbildung ohne Kartendienst" darüber. Fehlt er, ist die Abnahme nicht
+   bestanden.
+
+### 2. Was zum Anbieter geht
+
+1. Entwicklerwerkzeuge → **Netzwerk**, Filter `functions/v1`. Erwartung:
+   **ein** `POST` für die Matrix, im Rumpf ausschließlich `aufgabe: "matrix"`,
+   `origins`, `destinations` und `profile` — je Punkt nur `lat` und `lon`.
+   Kein Name, keine Terminkennung, keine Uhrzeit; das Terminraster bleibt hier.
+2. Erwartung: `profile` ist `cargo_bicycle`, und es gibt **keinen** zweiten
+   Abruf zum Vergleich. Die Route fragt weiter beide Profile ab, die Matrix
+   nur das gewählte.
+3. Filter `myptv`. Erwartung: weiterhin **nur** Kacheln, Style, Sprites,
+   Glyphen. Eine Matrixanfrage aus dem Browser wäre ein Fehler.
+4. Antwort ansehen. Erwartung: `Cache-Control: no-store`.
+5. Im `serve`-Fenster bei einem Fehler: **eine** Zeile mit Anbieterkennung,
+   Klasse und Dauer — keine Koordinate (ADR-011).
+
+### 3. Die Markierung sagt das Richtige
+
+1. Erwartung: Unterhalb der Diagonale ist fast alles markiert — rückwärts
+   durch den Tag hat der nächste Termin schon begonnen. Der Satz über der
+   Tabelle sagt genau das.
+2. Erwartung: Oberhalb der Diagonale ist ein Teil markiert und ein Teil nicht.
+   Nachrechnen an einer Zelle: Nachbarstopps haben 15 Minuten Lücke, davon
+   5 Minuten Puffer — 10 Minuten Fahrt passen, 11 nicht.
+3. Erwartung: Jede markierte Zelle trägt ein **×** neben der Zahl. Die
+   Bedeutung darf nicht allein an der Farbe hängen.
+4. Erwartung: Der Text unter der Tabelle nennt das Raster „erfunden" und sagt,
+   dass nichts gespeichert wird.
+
+### 4. Telefon und Tastatur
+
+1. Fenster auf **375 px**. Erwartung: Die **Tabelle** scrollt seitwärts, die
+   **Seite nicht**. Genau das war im Loop der erste Befund; wer hier doch die
+   ganze Seite verschieben kann, hat einen Rückfall gefunden.
+2. Erwartung: Der Satz über der Tabelle bricht um und ist vollständig lesbar.
+3. Mit der **Tastatur** in die Tabelle tabben und mit den Pfeiltasten
+   scrollen. Erwartung: Der Fokus ist sichtbar, die Tabelle bewegt sich.
+4. Mit einer Vorlesesoftware (VoiceOver, NVDA) über eine markierte Zelle:
+   Erwartung: „… von 3 nach 1, nicht erreichbar" — Zahl **und** Befund.
+
+### 5. Nichts ist geblieben
+
+1. Seite neu laden. Erwartung: Die Matrix wird neu geholt; es gibt keinen
+   Zwischenstand aus dem letzten Besuch.
+2. `localStorage` und `sessionStorage` in den Entwicklerwerkzeugen ansehen.
+   Erwartung: kein Eintrag mit Fahrzeiten, Koordinaten oder Matrix.
+3. In der Datenbank (Studio) nach einer neuen Tabelle oder Spalte suchen.
+   Erwartung: keine — dieser Loop hat keine Migration.

@@ -43,24 +43,33 @@ Fortschrittstabelle, [`../STATUS.md`](../STATUS.md) und den Abschnitt
 [`../STATUS.md`](../STATUS.md)** — dort, und nur dort, mit Aufruf, Pfad und
 Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
 
-- **MAP-002 und MAP-003 sind gebaut** (2026-09-21). Der nächste Kartenloop
-  wäre
-  `/feature-loop MAP-004 Fahrzeitmatrix nach docs/development/MAP-LOOPS.md`.
-  Er baut auf der Edge Function aus MAP-003 auf; für sie gilt weiter, was
+- **MAP-002 bis MAP-004 sind gebaut** (MAP-004 am 2026-09-22). Der nächste
+  Kartenloop wäre
+  `/feature-loop MAP-005 Navigations-Handoff nach docs/development/MAP-LOOPS.md`;
+  er braucht den Handoff aus **B2**. Für die Edge Function gilt weiter, was
   ADR-019 Punkt 15 sagt: bis zur Edge-Runtime-Prüfung in **OPS-001** nur
   `mock`-Adapter oder synthetische Koordinaten. **Die Prüfung ist am
   2026-09-21 geführt und hält die Runtime gesperrt** (vier benannte
-  Bedingungen, Teil 4 der Providerprüfung); für MAP-004 ändert das nichts —
-  es läuft unter denselben Bedingungen wie MAP-003. Der **Server-Schlüssel** ist
+  Bedingungen, Teil 4 der Providerprüfung). Der **Server-Schlüssel** ist
   ein lokales Secret bei Jannes (vorerst derselbe wie der Kachelschlüssel,
-  Entscheidung 2026-09-21) — **MAP-003 ist erst gelaufen, wenn die Abnahme
-  lokal durch ist**: In der Cloud gibt es weder Docker noch Deno-Laufzeit, die
-  Function ist dort nur mit Unit-Tests geprüft. **Die Profilfrage aus MAP-003c
-  ist beantwortet** (2026-09-22): Jannes hat nach dem Vergleich über acht
-  Stopps — 25,4 km · 1 Std. 19 Min. mit dem Fahrrad gegen 26,2 km ·
-  1 Std. 19 Min. mit dem Lastenrad — das **Lastenradprofil** gewählt. MAP-004
-  rechnet damit; die Wahl hängt am Kommentar zu `TravelProfile` in
+  Entscheidung 2026-09-21) — **MAP-003 und MAP-004 sind erst gelaufen, wenn
+  die Abnahme lokal durch ist**: In der Cloud gibt es weder Docker noch
+  Deno-Laufzeit, die Function ist dort nur mit Unit-Tests geprüft.
+  **Die Profilfrage aus MAP-003c ist beantwortet** (2026-09-22): Jannes hat
+  nach dem Vergleich über acht Stopps — 25,4 km · 1 Std. 19 Min. mit dem
+  Fahrrad gegen 26,2 km · 1 Std. 19 Min. mit dem Lastenrad — das
+  **Lastenradprofil** gewählt. Die Matrix rechnet damit und nur damit; die
+  Wahl hängt am Kommentar zu `TravelProfile` in
   `src/lib/location/contract.ts` und sonst nirgends.
+- **Zwei Punkte aus MAP-004 für später** (2026-09-22): Die **Schreibweise der
+  Matrix-Anfrage** ist aus dem offiziellen PTV-Client abgeleitet und **nicht**
+  gegen die echte API geprüft — `api.myptv.com` ist aus der Cloud gesperrt.
+  Bei der Route hat dieselbe Lage drei Fehler gekostet (BEF-023); Schritt 1
+  der Abnahme ist genau dafür da. Und der **Fahrpuffer der Praxis** ist keine
+  Zahl, die acht erfundene Punkte hergeben: Wie viel Zeit neben der reinen
+  Fahrt bleiben soll, gehört zu **MAP-006** und zum Fahrpuffer aus §8.1, der
+  dort ohnehin ansteht. Im Prototyp sind fünf Minuten Teil des erfundenen
+  Rasters (`terminraster.ts`) und keine Festlegung.
 - **OPS-001 ist geschrieben (2026-09-21).** Das Dokument steht in
   [`../decisions/providerpruefung-supabase.md`](../decisions/providerpruefung-supabase.md),
   mit den fünf Objektspeicher-Punkten aus ADR-017, den Auth-Mails (B13) und
@@ -546,8 +555,8 @@ stehen ausführlich in [`MAP-LOOPS.md`](MAP-LOOPS.md); **TOUR-EPIC-001a und
 -001b sind darin aufgegangen** (TOUR-001 bis TOUR-004 in MAP-006). MAP-002 bis
 MAP-005 laufen mit synthetischen Daten und dem kostenlosen PTV-Abo, unabhängig
 vom Vertragsstand; **MAP-006 erst nach dem Vertrags-/§203-/DSFA-Gate.** Ihre
-Einordnung steht in der Kette: MAP-002 und MAP-003 sind gebaut (die Abnahme
-von MAP-003 läuft lokal, sie braucht Docker), MAP-004 und MAP-005 folgen in
+Einordnung steht in der Kette: MAP-002 bis MAP-004 sind gebaut (die Abnahme
+von MAP-003 und MAP-004 läuft lokal, sie braucht Docker), MAP-005 folgt in
 der Betriebsreife, MAP-006 in Stufe 2 vor der Eröffnung (E-21 erledigt
 2026-09-13).
 
