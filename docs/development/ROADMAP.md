@@ -282,7 +282,8 @@ Abweichungsregel 2): UI-001 Politur · OPS-005 als Automatisierung ·
 Rückzahlungs-UI · Legal-Hold-Oberfläche · OPS-006 als vollständige Funktion.
 
 **Stufe 2 vor der Eröffnung:** Tagesroute auf der Karte mit Navigation
-(MAP-002 bis MAP-006, ADR-019 Fassung 2) · der bedienbare Trainingsbereich
+(MAP-002 bis MAP-006, ADR-019 Fassung 3; **MAP-007 gehört nicht dazu** — die
+Führung kommt nach der Eröffnung) · der bedienbare Trainingsbereich
 (Etappe TR) · Anamnese und Fragebögen (Etappe 2), weil zur Eröffnung jede
 Patientin neu ist · zuletzt bleibt Platz für Probewoche 2 und Befunde, und der
 wird nicht verplant.
@@ -318,7 +319,7 @@ braucht: Git-Historie bis `2fbcf8e`.
 | 6   | **Stufe 2 vor der Eröffnung**         | MAP-006 · **TRN-EPIC-001** → **TRN-EPIC-002** → **TRN-EPIC-003** · FRB-EPIC-001 · FRB-EPIC-002 · Befunde aus dem Produktivsystem                                 | DSFA-Wiedervorlage Kartendienst · Optimierungsrunde Touren (vier Wochen nach MAP-006)                                | PTV Paid Plan und Server-Schlüssel (Jannes, nicht der Agent) · Abnahme auf einer echten Radrunde mit synthetischen Adressen · **§14-Freigabe für Etappe TR** (§21) · **G13** für den Trainingsnummernkreis · B8 Lizenzfrage klären | B8                               | —      |
 | 7   | **Eröffnungsvorbereitung**            | keine neuen Epics — Befunde aus Probewoche 2                                                                                                                    | Erster-Tag-Protokoll · Schulung, falls eine zweite Person da ist                                                     | Probewoche 2 (H5) · Restore-Test 3 · **Change-Freeze** · Seed einer Eröffnungswoche · erste echte Patient:innen anlegen                                                                             | —                                | —      |
 | 8   | **Eröffnung und Stabilisierung**      | Hotfixes und Befunde, keine neuen Epics                                                                                                                         | —                                                                                                                    | **Eröffnung (Juli 2027)** · Störfallliste führen · Optimierungsrunde nach vier Wochen Betrieb                                                                                                      | —                                | **M5, M6** |
-| 9   | **Danach**                            | Stufe 2 nach der Eröffnung (Etappe 3, **TRN-EPIC-004**, Warteliste, Feinjustierung der Erreichbarkeitswarnung aus MAP-006, Spur A2) · danach Stufe 3 in der Reihenfolge des Abschnitts „Stufe 3" | —                                                                                                                    | —                                                                                                                                                                                                  | —                                | —      |
+| 9   | **Danach**                            | Stufe 2 nach der Eröffnung (Etappe 3, **TRN-EPIC-004**, Warteliste, Feinjustierung der Erreichbarkeitswarnung aus MAP-006, **MAP-007 Führung auf dem Gerät** — nach E-24 und B2, ADR-019 Abschnitt F, Spur A2) · danach Stufe 3 in der Reihenfolge des Abschnitts „Stufe 3" | —                                                                                                                    | —                                                                                                                                                                                                  | —                                | —      |
 
 **Keine Auslastungsrechnung mehr.** Die frühere Fassung rechnete Loop-Plätze je
 Monat gegen geplante Loops und trug Sperrzeiten und Urlaub ein. Mit dem Takt
@@ -537,18 +538,30 @@ Handoff zur Navigation; am 2026-09-08 dazu: **Convenience hat hohe
 Priorität** — In-App-Karte, Fahrradrouting und Fahrzeiten sind Produktziel,
 kein Komfort. Die Google Maps Embed API aus E-16 ist damit überholt: Google
 verarbeitet auf der Maps Platform als eigener Verantwortlicher, ein AVV fehlt
-(§3.5). **ADR-019 Fassung 2** (MAP-001, 2026-09-08) setzt stattdessen auf
-MapLibre im Browser, einen serverseitigen Anbieteradapter und **PTV Developer
-als Kandidat für Prototyp und Bewertung**; Google Maps bleibt möglicher
-Handoff-Zielpunkt. Die Loops MAP-002 bis MAP-006 stehen ausführlich in
-[`MAP-LOOPS.md`](MAP-LOOPS.md); **TOUR-EPIC-001a und -001b sind darin
-aufgegangen** (TOUR-001 bis TOUR-004 in MAP-006). MAP-002 bis MAP-005 laufen
-mit synthetischen Daten und dem kostenlosen PTV-Abo, unabhängig vom
-Vertragsstand; **MAP-006 erst nach dem Vertrags-/§203-/DSFA-Gate.** Ihre
+(§3.5). **ADR-019 Fassung 3** (MAP-001, 2026-09-08; Fassung 3 vom 2026-09-22)
+setzt stattdessen auf MapLibre im Browser, einen serverseitigen
+Anbieteradapter und **PTV Developer als Kandidat für Prototyp und Bewertung**;
+Google Maps bleibt möglicher Handoff-Zielpunkt. Die Loops MAP-002 bis MAP-007
+stehen ausführlich in [`MAP-LOOPS.md`](MAP-LOOPS.md); **TOUR-EPIC-001a und
+-001b sind darin aufgegangen** (TOUR-001 bis TOUR-004 in MAP-006). MAP-002 bis
+MAP-005 laufen mit synthetischen Daten und dem kostenlosen PTV-Abo, unabhängig
+vom Vertragsstand; **MAP-006 erst nach dem Vertrags-/§203-/DSFA-Gate.** Ihre
 Einordnung steht in der Kette: MAP-002 und MAP-003 sind gebaut (die Abnahme
 von MAP-003 läuft lokal, sie braucht Docker), MAP-004 und MAP-005 folgen in
 der Betriebsreife, MAP-006 in Stufe 2 vor der Eröffnung (E-21 erledigt
 2026-09-13).
+
+**MAP-007 — Führung auf dem Gerät** kam mit **ADR-019 Fassung 3** dazu
+(2026-09-22, Entscheidung des Projektinhabers). Turn-by-Turn innerhalb der
+Anwendung war bis dahin ausdrücklich kein Ziel; die Prüfung ergab, dass der
+Anbieter eine Führung nicht als Auftragsverarbeitung liefert und sie deshalb
+ohnehin im Browser entstünde — und genau das erlaubt einen Zuschnitt, bei dem
+die Position das Gerät nie verlässt. Rang 1 ist dafür **nicht aufgeweicht**,
+sondern präzisiert worden (`PROJECT_PRINCIPLES.md` 0.14, §20.1: vier
+kumulative Bedingungen und ein DARF-NICHT für den Arbeitgeber). Der Loop
+steht **hinter MAP-006** und hinter dem Gate, und er startet nicht, bevor
+**E-24** beantwortet ist: Liefern die OSM-Radprofile überhaupt Manöver? Ohne
+ein Ja gibt es keine Ansage und kein Epic.
 
 | Loop               | Ergebnis                                                              | Stories                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Voraussetzung                                                                          | Jannes liefert                                                                     |
 | ------------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |

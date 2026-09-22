@@ -202,6 +202,19 @@ einem Verwurf. Neue Einträge hängen hinten an.
   Beleg des Lizenzgebers bleibt offen (B8), das Lizenzfeld damit erst recht.
   **Keine der drei ist ein Auftrag**; gebaut wird, was die Roadmap aufruft.
 
+- **2026-09-22** — Eine Idee von Jannes hat es in den seltenen Fall geschafft,
+  eine verbindliche Festlegung zu bewegen: die **Führung auf dem Rad
+  innerhalb der Software** (`IDEA-PRX-044`). Sie steht seitdem auf `überführt`
+  — ADR-019 Fassung 3 löst Punkt 6 ab („eine eigene Turn-by-Turn-Engine ist
+  nicht Ziel") und ergänzt Abschnitt F; `PROJECT_PRINCIPLES.md` 0.14 zieht mit
+  §20.1 nach. **Das Ortungsverbot in §20 ist dabei nicht gefallen**, sondern
+  um vier Bedingungen und ein DARF-NICHT ergänzt worden: Die Führung läuft auf
+  dem Gerät und meldet der Praxis keinen Standort. Der Weg dorthin gehört zur
+  Sache — erst die Prüfung, dass der Anbieter eine Führung **nicht** als
+  Auftragsverarbeitung liefert, hat den Zuschnitt ergeben, der ohne Ortung
+  auskommt. Gebaut ist nichts: **MAP-007** steht hinter MAP-006, hinter dem
+  Gate und hinter **E-24**.
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |

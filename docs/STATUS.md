@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-22 · letzte Session: BEF-027 Fehlermeldungen der Routenfunktion
+# Status · Stand 2026-09-22 · letzte Session: ADR-019 Fassung 3 und §20.1 (Führung)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -53,7 +53,8 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Ein Befund aus dem Abnahmelauf, kein Feature** — **BEF-027**: `unauthorized` trug zwei
-Bedeutungen, die Sitzungsprüfung kannte nur ja/nein, und eine Antwort **vor** der Function galt als
-Anbieterausfall. Drei Ursachen, eine Meldung, und die zeigte auf den Kartendienst. Jetzt getrennt:
-`session_invalid` und `function_unavailable` dazu, 12 Tests mehr. Keine neue Annahme.
+**Eine Leitplanke bewegt, kein Code** — Jannes will die Führung auf dem Rad in der Software.
+PTV liefert sie nicht als Auftragsverarbeitung, sie entsteht also im Browser — und damit verlässt
+die Position das Gerät nie. **ADR-019 Fassung 3** löst Punkt 6 ab und ergänzt Abschnitt F;
+**§20.1** (Version 0.14) erlaubt die Führung unter vier Bedingungen. Das Ortungsverbot bleibt.
+Daraus **MAP-007**, hinter MAP-006, dem Gate und **E-24** (liefern die Radprofile Manöver?).

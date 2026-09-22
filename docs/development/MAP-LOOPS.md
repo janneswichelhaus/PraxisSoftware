@@ -1,10 +1,10 @@
-# Folge-Loops Kartendienst: MAP-002 bis MAP-006
+# Folge-Loops Kartendienst: MAP-002 bis MAP-007
 
-Stand: 2026-09-14 · Ergebnis von MAP-001 · **Loop-Vorgabe**: Eingabe für den
+Stand: 2026-09-22 · Ergebnis von MAP-001 · **Loop-Vorgabe**: Eingabe für den
 SPEC-Schritt des jeweils aufgerufenen Loops, kein eigener Rang · Reihenfolge
 und Termine bestimmt `ROADMAP.md`, Etappe T.
 
-Grundlage sind ADR-019 Fassung 2 (angenommen 2026-09-13) und der Vertrag in
+Grundlage sind ADR-019 Fassung 3 (angenommen 2026-09-22) und der Vertrag in
 `src/lib/location/contract.ts`. Jeder Loop ist ein eigener
 `/feature-loop`-Aufruf und baut nur seinen Abschnitt. Synthetische Daten,
 Anbieterzugang durch Jannes, Privacy-Regeln und das Gate vor Echtdaten stehen
@@ -234,6 +234,57 @@ Karte, mit Route, Fahrzeiten und Erreichbarkeit im Kalender.
 Geocoding-Aufruf nur bei Adressänderung (Test: zweites Öffnen der Karte löst
 keinen `geocode()` aus); Netzwerkprüfung wie MAP-003; Audit-Ereignisse ohne
 Adressen; E2E des Tagesablaufs.
+
+---
+
+---
+
+## MAP-007 — Führung auf dem Gerät
+
+**Erst nach MAP-006** und nach dem Gate (ADR-019 Punkt 32). Vorher gibt es
+keine echten Tagesstopps, die man führen könnte — das ist ein Hard Stop, keine
+Annahme.
+
+**Grundlage.** ADR-019 Fassung 3, Abschnitt F, und `PROJECT_PRINCIPLES.md`
+§20.1. Die vier Bedingungen dort sind der Zuschnitt: Position nur auf dem
+Gerät, Start nur auf Aktion, Übermittlung an den Anbieter nur zur
+Neuberechnung, keine Auswertung. Eine Story, die eine davon verletzt, gehört
+nicht in diesen Loop, sondern in eine neue Fassung von §20 — und die
+entscheidet nicht der Loop (§21).
+
+**Ziel.** Wer eine Tour fährt, wird vom Startpunkt bis zum letzten Stopp
+geführt, ohne die Anwendung zu verlassen — und ohne dass die Praxis erfährt,
+wo jemand ist.
+
+**Zuerst zu klären, sonst startet der Loop nicht.**
+
+- **E-24:** Liefern `OSM_BICYCLE` und `OSM_CARGO_BICYCLE` Manöver mit? Ein
+  Aufruf gegen die echte API beantwortet das; ohne ein Ja gibt es keine
+  Ansage und damit kein Epic (ADR-019, offene Folgefragen).
+- **B2** in der erweiterten Fassung: Reicht §20.1, um die Führung aus dem
+  Beschäftigtendatenschutz herauszuhalten?
+- Aufrufkontingent des Abos bei wiederholter Neuberechnung (PTV-Support).
+
+**Stories (grober Zuschnitt, im Loop zu schärfen).**
+
+- **MAP-007a** Manöver aus der Routenantwort in den Vertrag (`contract.ts`)
+  und durch den Adapter — providerneutral wie alles andere dort.
+- **MAP-007b** Positionsbezug im Browser: Geolocation, Bezug auf die Route,
+  Erkennen einer Abweichung. Kein Server-Aufruf je Position.
+- **MAP-007c** Neuberechnung bei Abweichung über die vorhandene Edge
+  Function, mit der aktuellen Koordinate als Startpunkt (ADR-019 Punkt 29).
+- **MAP-007d** Ansage: Sprachausgabe und Bildschirmwachhaltung. **Eine rein
+  visuelle Führung wird nicht ausgeliefert** (ADR-019 Punkt 31).
+- **MAP-007e** Start, Abbruch und Ende; Rückfall auf den Handoff aus MAP-005,
+  wenn die Führung nicht zur Verfügung steht.
+- **MAP-007f** Datenschutz-Paket: DSFA-Datenweg „Führung", Nennung in
+  PAT-006, Ergänzung der Endgeräte-Richtlinie (BETRIEB-001).
+
+**Akzeptanzkriterien (Rahmen).** Ein Test, der belegt, dass **keine** Position
+an die eigene Anwendung geht außer bei einer Neuberechnung; kein
+Positionswert in einem Log (ADR-011); Netzwerkprüfung wie MAP-003; Abnahme auf
+einer echten Radrunde mit **synthetischen** Adressen, einschließlich Funkloch
+(ADR-001) und Abbruch mitten in der Fahrt.
 
 ---
 
