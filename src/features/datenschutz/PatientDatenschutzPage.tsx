@@ -148,10 +148,7 @@ function Einwilligungen({ stand }: { stand: Datenschutzstand }) {
 /** Eine Auswahl: was ist geschehen? Kodiert als `art` oder `art:zweck`. */
 function moeglicheVermerke(stand: Datenschutzstand): { wert: string; label: string }[] {
   const liste = [
-    {
-      wert: 'privacy_notice_handed_out',
-      label: `Datenschutzinformation ausgehändigt (Fassung ${DATENSCHUTZINFORMATION_FASSUNG})`,
-    },
+    { wert: 'privacy_notice_handed_out', label: 'Datenschutzinformation ausgehändigt' },
     { wert: 'treatment_contract_signed', label: 'Behandlungsvertrag unterschrieben' },
   ];
   for (const e of stand.einwilligungen) {
@@ -216,6 +213,13 @@ function VermerkErfassen({
         <Feldgruppe>
           <Select
             label="Was ist geschehen?"
+            // Die Fassung steht im Hinweis und nicht in der Auswahl: Bei 375 px
+            // schnitt der geschlossene Zustand sie ab.
+            hint={
+              gewaehlt === 'privacy_notice_handed_out'
+                ? `Vermerkt wird Fassung ${DATENSCHUTZINFORMATION_FASSUNG} — die auf den Blättern zum Ausdrucken.`
+                : undefined
+            }
             value={gewaehlt}
             onChange={(e) => {
               setWert(e.target.value);

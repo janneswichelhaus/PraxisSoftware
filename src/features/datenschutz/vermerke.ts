@@ -32,7 +32,7 @@ export const zweckTexte: Record<Einwilligungszweck, { label: string; beschreibun
   email_contact: {
     label: 'Kontakt per E-Mail',
     beschreibung:
-      'Termine und organisatorische Nachrichten per unverschlüsselter E-Mail, nach Hinweis auf das Risiko (ANN-041).',
+      'Termine und organisatorische Nachrichten per unverschlüsselter E-Mail, nach Hinweis auf das Risiko.',
   },
   prescriber_report: {
     label: 'Bericht an die verordnende Praxis',
