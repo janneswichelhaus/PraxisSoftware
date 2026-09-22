@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-21.
+Zuletzt aktualisiert: 2026-09-22.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1184,3 +1184,15 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit OPS-001, wenn
 **Anker.** `LocationErrorCode` in `src/lib/location/contract.ts`; die Wahl selbst in `supabase/functions/location-provider/auswahl.ts`.
 
 **Änderungspfad.** Eine andere Antwort auf fehlende Einrichtung — etwa die Nachbildung als Standard: Klasse aus dem Vertrag nehmen, `waehleAdapter` umstellen, Zustand der Oberfläche streichen · Aufwand `klein`.
+
+### ANN-091 — Höchstgröße einer Fahrzeitmatrix
+
+Technik · offen · 2026-09-22 · — · — · Wiedervorlage: mit der Antwort des PTV-Supports zur Höchstzahl der Relationen (ADR-019, „Offene Folgefragen")
+
+**Annahme.** Eine Matrix-Anfrage trägt höchstens **25 Startpunkte und 25 Ziele**. Die Function weist alles darüber mit `invalid_request` ab, ohne den Anbieter zu fragen; der Browser schickt sie gar nicht erst los.
+
+**Begründung.** Wie viele Relationen die Matrix Routing OSM API je Anfrage annimmt, ist nicht belegt — die Providerprüfung hält es als „im Client nicht beziffert" fest, und die Supportanfrage vom 2026-09-21 ist unbeantwortet geblieben (Teil 1 Punkt 4 und die Antworttabelle in `providerpruefung-kartendienst.md`). Ohne eigene Grenze löst ein einziger Aufruf beliebig viele Relationen aus; abgerechnet wird je Relation, und das Free-Abo ist ausdrücklich klein (ADR-019 Punkt 24). Genommen ist die Zahl des Nachbarn: Die Routing OSM API trägt 25 Wegpunkte, und mehr als 25 Stopps hat kein Tag dieser Praxis — die Grenze schneidet damit nichts ab, was gebraucht würde. Sie ist eine Sparmaßnahme gegen versehentliche Kosten, keine fachliche Aussage über Tourengrößen.
+
+**Anker.** `MAX_MATRIX_PUNKTE` in `src/lib/location/matrix.ts`; die Kopie in `supabase/functions/location-provider/typen.ts` hängt über `typen.test.ts` daran und darf nicht wegdriften.
+
+**Änderungspfad.** Nennt PTV eine Zahl, tritt sie an die Stelle dieser: eine Konstante, ihre Kopie und der Test dazwischen · Aufwand `klein`.

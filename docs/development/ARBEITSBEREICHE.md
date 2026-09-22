@@ -121,7 +121,7 @@ Sitzung simuliert wurde, steht unter `/vorschau/protokoll`.
 | Erstattungen             | `/betrieb/erstattungen`       | Strom und Einkauf, IBAN, Zeitraum, Arbeitstage mit Berechnung, Positionen mit Summe, Belege, Erklärung, Unterschrift, Historie je Person                      |
 | Kommunikation            | `/team`                       | eigene Anforderung: Kanäle, Direktnachrichten, Threads, Erwähnungen, Ungelesenes, Suche                                                                       |
 | Touren                   | `/touren`                     | eigene Anforderung: Besuchsfolge mit unterscheidbarer Behandlungs- und Wegzeit                                                                                |
-| Karte                    | `/touren/karte`               | Kartenprototyp aus MAP-002 und MAP-003: acht erfundene Koordinaten in Tübingen mit eigenen Nummern-Markern, dazu die Fahrradroute mit Distanz und Fahrzeit je Abschnitt; kein Termin, kein Patientenbezug, nichts gespeichert |
+| Karte                    | `/touren/karte`               | Kartenprototyp aus MAP-002 bis MAP-004: acht erfundene Koordinaten in Tübingen mit eigenen Nummern-Markern, dazu die Fahrradroute mit Distanz und Fahrzeit je Abschnitt und die Fahrzeitmatrix aller Paare mit Erreichbarkeit an einem erfundenen Terminraster; kein Termin, kein Patientenbezug, nichts gespeichert |
 
 ### Sandbox-Prototypen (Pfad S)
 
@@ -162,8 +162,8 @@ keine Persistenz. Das ist nicht nur Absicht, sondern geprüft:
 `src/features/preview/ehrlichkeit.test.tsx` prüft an den heikelsten Stellen,
 dass keine Erfolgsmeldung behauptet wird, die es nicht gibt.
 
-**Zwei Ausnahmen, benannt statt verschwiegen**, beide allein für die Karte
-unter `/touren/karte` und beide in `trennung.test.ts` an das Verzeichnis
+**Vier Ausnahmen, benannt statt verschwiegen**, alle allein für die Karte
+unter `/touren/karte` und alle in `trennung.test.ts` an das Verzeichnis
 `src/features/tours/karte` gebunden — mit eigener Gegenprobe, dass sie dort
 enden:
 
@@ -178,6 +178,14 @@ enden:
    werden Koordinaten und ein Fahrprofil, sonst nichts; gespeichert wird
    nichts (Punkt 16). Der Aufruf selbst steht in `@/lib/location/route.ts`,
    das **nur** dieser Prototyp importieren darf.
+3. **Der Matrixabruf** (seit MAP-004): dieselbe Function, dieselbe Regel, nur
+   für die Fahrzeiten zwischen je zwei Stopps. Der Aufruf steht in
+   `@/lib/location/matrix.ts` und ist ebenso an das Verzeichnis gebunden.
+4. **Die Erreichbarkeitsregel** (seit MAP-004): `erreichbarkeit()` aus
+   `src/features/scheduling/` ist eine reine Funktion über Sekunden (§6.2)
+   und spricht mit niemandem — sie steht trotzdem hier, weil mit ihr sonst
+   das ganze Fachmodul `scheduling` in jedem Vorschaubereich offenstünde.
+   Freigegeben ist der eine Name, nicht das Verzeichnis.
 
 Alles Übrige bleibt auch dort ausgeschlossen: kein `fetch(` im eigenen
 Quelltext, kein `getSupabase`, keine Datenbank, keine Persistenz.

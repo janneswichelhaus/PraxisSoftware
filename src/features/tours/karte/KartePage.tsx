@@ -3,20 +3,24 @@ import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { OffeneEntscheidung, VorschauBanner } from '@/features/preview/ui';
 import { createMapDisplayConfig } from '@/lib/location/display';
+import { useMatrix } from '@/lib/location/matrix';
 import { useRoute } from '@/lib/location/route';
+import { Fahrzeitmatrix } from './Fahrzeitmatrix';
 import { Karte } from './Karte';
 import { Routenangaben } from './Routenangaben';
 import { TESTSTOPPS } from './teststopps';
 
 /**
- * Vorschauseite des Kartenprototyps (MAP-002c und MAP-003b, ADR-019).
+ * Vorschauseite des Kartenprototyps (MAP-002c, MAP-003b und MAP-004c, ADR-019).
  *
- * Sie beantwortet zwei Fragen: Läuft eine interaktive Karte mit eigenen,
+ * Sie beantwortet drei Fragen: Läuft eine interaktive Karte mit eigenen,
  * nummerierten Stopps innerhalb dieser Anwendung — auf dem Schreibtisch und
- * auf dem Telefon? Und liegt zwischen denselben Stopps eine Fahrradroute mit
- * Distanz und Fahrzeit? Mehr ist hier nicht: kein Termin, keine Adresse,
- * keine Person. Die Fahrzeitmatrix kommt mit MAP-004, echte Adressen
- * frühestens mit MAP-006 und erst nach dem Gate aus ADR-019 Punkt 9.
+ * auf dem Telefon? Liegt zwischen denselben Stopps eine Fahrradroute mit
+ * Distanz und Fahrzeit? Und sagen die Fahrzeiten zwischen je zwei Stopps
+ * verlässlich, ob zwei Termine erreichbar wären? Mehr ist hier nicht: kein
+ * Termin, keine Adresse, keine Person — das Terminraster hinter der Matrix ist
+ * erfunden wie die Stopps. Echte Adressen kommen frühestens mit MAP-006 und
+ * erst nach dem Gate aus ADR-019 Punkt 9.
  *
  * **Seit MAP-003 verlassen Koordinaten das Haus** — die acht erfundenen
  * Punkte gehen über die eigene Edge Function an den Kartendienst, damit er
@@ -43,6 +47,16 @@ export function KartePage() {
   const fahrrad = useRoute(wegpunkte, 'bicycle');
   const lastenrad = useRoute(wegpunkte, 'cargo_bicycle');
   const route = fahrrad.data?.ok === true ? fahrrad.data.value.route.geometry : undefined;
+
+  /**
+   * Die Matrix rechnet **nur** im Lastenradprofil (MAP-004).
+   *
+   * Anders als bei der Route ist hier kein Vergleich gefragt: Wo eine Planung
+   * ein Profil braucht, ist es das gewählte (`TravelProfile` in
+   * `src/lib/location/contract.ts`, Entscheidung vom 2026-09-22). Ein zweiter
+   * Abruf kostete 64 weitere Relationen beim Anbieter und beantwortete nichts.
+   */
+  const matrix = useMatrix(wegpunkte, wegpunkte, 'cargo_bicycle');
 
   return (
     <>
@@ -76,6 +90,16 @@ export function KartePage() {
         erneutVersuchen={() => {
           void fahrrad.refetch();
           void lastenrad.refetch();
+        }}
+      />
+
+      <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">Die Fahrzeiten</h2>
+      <Fahrzeitmatrix
+        stopps={TESTSTOPPS}
+        laedt={matrix.isFetching}
+        ergebnis={matrix.data}
+        erneutVersuchen={() => {
+          void matrix.refetch();
         }}
       />
 

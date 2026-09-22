@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-21",
+  "stand": "2026-09-22",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -219,7 +219,7 @@
           "id": "map-004",
           "name": "MAP-004 Fahrzeiten und Erreichbarkeit",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig"
         },
         {
           "id": "map-005",

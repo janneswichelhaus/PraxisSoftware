@@ -92,6 +92,26 @@ export type RouteErgebnis =
   | { readonly ok: true; readonly value: RouteResult }
   | { readonly ok: false; readonly error: LocationError };
 
+export interface MatrixRequest {
+  readonly origins: readonly Coordinate[];
+  readonly destinations: readonly Coordinate[];
+  readonly profile: TravelProfile;
+}
+
+/**
+ * `durationsSeconds[i][j]` ist die Fahrzeit von `origins[i]` nach
+ * `destinations[j]`; `null`, wenn der Anbieter keinen Weg findet. Wie das
+ * Routenergebnis wird die Matrix nicht persistiert.
+ */
+export interface MatrixResult {
+  readonly durationsSeconds: ReadonlyArray<ReadonlyArray<number | null>>;
+  readonly distancesMeters?: ReadonlyArray<ReadonlyArray<number | null>>;
+}
+
+export type MatrixErgebnis =
+  | { readonly ok: true; readonly value: MatrixResult }
+  | { readonly ok: false; readonly error: LocationError };
+
 /**
  * Woher die Antwort stammt.
  *
@@ -107,18 +127,47 @@ export type RouteAntwort =
   | { readonly ok: true; readonly value: RouteResult; readonly quelle: Quelle }
   | { readonly ok: false; readonly error: LocationError };
 
+export type MatrixAntwort =
+  | { readonly ok: true; readonly value: MatrixResult; readonly quelle: Quelle }
+  | { readonly ok: false; readonly error: LocationError };
+
 /**
- * Der eine Aufruf, den diese Function kennt.
+ * Was die Function schickt — der Fehlerfall ist für beide Aufgaben derselbe.
  *
- * `geocode()` und `calculateMatrix()` aus dem Vertrag fehlen hier mit Absicht:
- * Die Matrix baut MAP-004, das Geocoding MAP-006 — und ein leerer Vorbau wäre
- * genau das Zukunftsfeature, das ADR-014 ausschließt.
+ * `value` steht hier als **beides**, nicht als Paar aus zwei Antworttypen:
+ * Der Ablauf im Handler ist für Route und Matrix derselbe, und wer ihn liest,
+ * hat an dieser Stelle nur die Aufgabe zur Hand. Welche Form es tatsächlich
+ * ist, weiß der Aufrufer — er hat sie erfragt — und liest sie als
+ * `RouteAntwort` oder `MatrixAntwort`.
  */
-export interface RouteAdapter {
+export type Antwort =
+  | { readonly ok: true; readonly value: RouteResult | MatrixResult; readonly quelle: Quelle }
+  | { readonly ok: false; readonly error: LocationError };
+
+/**
+ * Welche der beiden Aufgaben eine Anfrage meint.
+ *
+ * Sie steht als eigenes Feld im Körper und wird nicht aus der Form geraten:
+ * Eine Anfrage, der `origins` fehlt, ist dann eine unvollständige Matrix und
+ * nicht stillschweigend eine Route. Seit MAP-004 trägt **jede** Anfrage das
+ * Feld — auch die Route, die es bis dahin nicht brauchte.
+ */
+export type Aufgabe = 'route' | 'matrix';
+
+/**
+ * Die zwei Aufrufe, die diese Function kennt.
+ *
+ * `geocode()` aus dem Vertrag fehlt hier weiter mit Absicht: Es kommt mit
+ * MAP-006, und ein leerer Vorbau wäre genau das Zukunftsfeature, das ADR-014
+ * ausschließt. `matrix()` ist mit MAP-004 dazugekommen und heißt im Vertrag
+ * `calculateMatrix()`.
+ */
+export interface Anbieteradapter {
   /** Kennung für das Log, zum Beispiel `ptv` oder `mock`. */
   readonly id: string;
   readonly quelle: Quelle;
   route(request: RouteRequest, signal?: AbortSignal): Promise<RouteErgebnis>;
+  matrix(request: MatrixRequest, signal?: AbortSignal): Promise<MatrixErgebnis>;
 }
 
 /**
@@ -138,3 +187,19 @@ export interface Protokolleintrag {
 /** Zwei Wegpunkte sind das Mindeste; 25 ist die Grenze der Routing OSM API. */
 export const MIN_WEGPUNKTE = 2;
 export const MAX_WEGPUNKTE = 25;
+
+/**
+ * Höchstzahl der Punkte je Seite einer Matrix — **ANN-091**.
+ *
+ * Anders als bei der Route ist das **keine** Grenze des Anbieters: Wie viele
+ * Relationen eine Matrix-Anfrage tragen darf, hat PTV bis heute nicht
+ * beantwortet (offene Supportfrage in ADR-019). Bis dahin begrenzt die
+ * Function selbst, damit ein einziger Aufruf nicht beliebig viele Relationen
+ * beim Anbieter auslöst.
+ *
+ * Die Zahl ist die des Nachbarn: Die Routing OSM API trägt 25 Wegpunkte, und
+ * eine Tagesplanung mit mehr als 25 Stopps gibt es in dieser Praxis nicht.
+ * Der Anker der Annahme steht in `src/lib/location/matrix.ts`; diese Kopie
+ * hängt über `typen.test.ts` daran, so wie die Typen oben am Vertrag.
+ */
+export const MAX_MATRIX_PUNKTE = 25;

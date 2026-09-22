@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type * as Vertrag from '@/lib/location/contract';
-import { FEHLERKLASSEN } from './typen.ts';
+import { MAX_MATRIX_PUNKTE as GRENZE_IM_BROWSER } from '@/lib/location/matrix';
+import { FEHLERKLASSEN, MAX_MATRIX_PUNKTE } from './typen.ts';
 import type * as Function from './typen.ts';
 
 /**
@@ -25,6 +26,8 @@ const vertraeglich = {
   abschnitt: true satisfies Passt<Vertrag.RouteLeg, Function.RouteLeg>,
   ergebnis: true satisfies Passt<Vertrag.RouteResult, Function.RouteResult>,
   anfrage: true satisfies Passt<Vertrag.RouteRequest, Function.RouteRequest>,
+  matrixanfrage: true satisfies Passt<Vertrag.MatrixRequest, Function.MatrixRequest>,
+  matrixergebnis: true satisfies Passt<Vertrag.MatrixResult, Function.MatrixResult>,
   liste: true satisfies Passt<Vertrag.LocationErrorCode, (typeof FEHLERKLASSEN)[number]>,
 };
 
@@ -33,7 +36,15 @@ describe('Vertragstypen der Function', () => {
     // Die eigentliche Pruefung steht oben und laeuft im Compiler. Hier wird
     // nur sichtbar, dass sie stattgefunden hat.
     expect(Object.values(vertraeglich).every(Boolean)).toBe(true);
-    expect(Object.keys(vertraeglich)).toHaveLength(8);
+    expect(Object.keys(vertraeglich)).toHaveLength(10);
+  });
+
+  it('haelt die Grenze aus ANN-091 auf derselben Zahl wie der Browser', () => {
+    // Auch das ist eine Kopie, die nicht wegdriften darf: Der Anker der
+    // Annahme steht in `src/lib/location/matrix.ts`, durchgesetzt wird sie
+    // hier. Wer nur eine der beiden Zahlen aendert, schickte eine Anfrage
+    // los, die die Gegenseite abweist.
+    expect(MAX_MATRIX_PUNKTE).toBe(GRENZE_IM_BROWSER);
   });
 
   it('fuehrt jede Fehlerklasse genau einmal', () => {

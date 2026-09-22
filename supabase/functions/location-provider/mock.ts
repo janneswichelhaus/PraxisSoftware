@@ -14,7 +14,15 @@
  * ausschließt.
  */
 
-import type { Coordinate, RouteAdapter, RouteErgebnis, RouteLeg, RouteRequest } from './typen.ts';
+import type {
+  Anbieteradapter,
+  Coordinate,
+  MatrixErgebnis,
+  MatrixRequest,
+  RouteErgebnis,
+  RouteLeg,
+  RouteRequest,
+} from './typen.ts';
 
 /**
  * Angenommene Reisegeschwindigkeit der Nachbildung.
@@ -29,7 +37,7 @@ const METER_JE_SEKUNDE = 15_000 / 3600;
 /** Erdradius für die Luftlinie zwischen zwei Punkten. */
 const ERDRADIUS_METER = 6_371_000;
 
-export function erstelleNachbildung(): RouteAdapter {
+export function erstelleNachbildung(): Anbieteradapter {
   return {
     id: 'mock',
     quelle: 'nachbildung',
@@ -53,6 +61,28 @@ export function erstelleNachbildung(): RouteAdapter {
           // Abschnitt. Sie liegt sichtbar quer über die Stadt und wird
           // deshalb nie mit einer gefahrenen Strecke verwechselt.
           geometry: request.waypoints,
+        },
+      });
+    },
+    /**
+     * Dieselbe Rechnung über alle Paare (MAP-004a).
+     *
+     * Die Nachbildung findet immer einen Weg — eine Luftlinie gibt es zwischen
+     * je zwei Punkten. `null` steht deshalb in keiner Zelle; dass der Vertrag
+     * es zulässt, ist eine Eigenschaft des Anbieters, nicht dieser Rechnung.
+     */
+    matrix(request: MatrixRequest): Promise<MatrixErgebnis> {
+      const strecken = request.origins.map((von) =>
+        request.destinations.map((nach) => Math.round(luftlinie(von, nach))),
+      );
+
+      return Promise.resolve({
+        ok: true,
+        value: {
+          durationsSeconds: strecken.map((zeile) =>
+            zeile.map((distanz) => Math.round(distanz / METER_JE_SEKUNDE)),
+          ),
+          distancesMeters: strecken,
         },
       });
     },

@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-21
+Stand: 2026-09-22
 
 ## Zweck
 
@@ -1018,3 +1018,37 @@ erlaubt bleiben, sonst prüft das Gate die Vergangenheit falsch.
 **vor dem B2-Paket**. Widersprüchliche Unterlagen erzeugen eine schlechtere
 Auskunft der Datenschutzberatung, und diese Auskunft ist teuer. Vorher kosten
 Widersprüche wenig — kein Nutzer, kein Produktivbetrieb, alles umkehrbar.
+
+### BEF-029 — Unsichtbare Beschriftungen ziehen die ganze Seite in die Breite
+
+|         |                                                                                      |
+| ------- | ------------------------------------------------------------------------------------ |
+| Datum   | 2026-09-22                                                                           |
+| Bereich | Kalender: Kartenprototyp (`/touren/karte`), Fahrzeitmatrix                           |
+| Quelle  | Sichtprüfung im Loop MAP-004 (Chromium, 375 px), vor dem ersten Commit der Komponente |
+| Status  | erledigt in MAP-004                                                                  |
+| Berührt | `src/features/tours/karte/Fahrzeitmatrix.tsx`; Muster `overflow-x-auto` + `sr-only`  |
+
+**Beobachtung.** Die 8 × 8-Tabelle liegt in einem Behälter mit
+`overflow-x-auto`, damit bei 375 px **die Tabelle** scrollt und nicht die
+Seite. Gemessen scrollte trotzdem die ganze Seite: `documentElement.scrollWidth`
+war 515 statt 375, und `window.scrollTo(500, 0)` verschob sie tatsächlich.
+
+**Die Ursache.** Jede Zelle trägt eine `sr-only`-Beschriftung („von 3 nach 1,
+nicht erreichbar"), und `sr-only` ist `position: absolute`. Der Scrollbehälter
+war `position: static` und damit **nicht** ihr Bezugsrahmen: Alle 64 Spannen
+hingen am Wurzelelement, entkamen dem Überlauf und verbreiterten die Seite.
+Ein `relative` am Behälter schließt sie ein — gemessen 375 von 375.
+
+**Warum das zählt, über diese Tabelle hinaus.** Das Muster „breite Tabelle im
+Scrollbehälter" steht schon an mehreren Stellen (`VacationPage`,
+`CalendarGrid`, `FleetPage`). Dort fällt es bisher nicht auf, weil deren Zellen
+keine unsichtbaren Beschriftungen tragen. Wer eine hinzufügt — und für
+Nicht-Farb-Bedeutung ist genau das der richtige Weg —, holt sich denselben
+Effekt. Zwei Zeilen im Test hätten ihn nicht gefunden: Es ist kein
+DOM-Zustand, sondern eine Layoutmessung im echten Browser.
+
+**Zweiter Fund aus demselben Lauf, gleich mit erledigt:** Eine `<caption>` ist
+so breit wie ihre Tabelle. Bei 32 rem Mindestbreite war der Satz auf dem
+Telefon abgeschnitten statt umgebrochen; er steht jetzt als Absatz **vor** der
+Tabelle und hängt über `aria-describedby` an ihr.

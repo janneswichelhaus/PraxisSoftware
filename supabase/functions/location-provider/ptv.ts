@@ -31,9 +31,12 @@
 
 import {
   MAX_WEGPUNKTE,
+  type Anbieteradapter,
   type Coordinate,
+  type LocationError,
   type LocationErrorCode,
-  type RouteAdapter,
+  type MatrixErgebnis,
+  type MatrixRequest,
   type RouteErgebnis,
   type RouteLeg,
   type RouteRequest,
@@ -42,6 +45,32 @@ import {
 
 /** Routing OSM API. Der Pfad trägt die OSM-Wahl, nicht erst das Profil (2026-09-21 geprüft). */
 const ROUTING_URL = 'https://api.myptv.com/routing-osm/v1/routes';
+
+/**
+ * Matrix Routing OSM API (MAP-004a).
+ *
+ * **Belegtiefe: abgeleitet, nicht geprüft.** Der Pfad folgt derselben Regel
+ * wie `routing-osm/v1` und `maps-osm/v1` — die OSM-Welt hat einen eigenen —,
+ * und die Antwortfelder stehen so im offiziellen Client
+ * `clients-matrix-routing-osm-api` (Providerprüfung, Teil 1, Punkt 4). Gegen
+ * die echte API geprüft ist davon **nichts**: `api.myptv.com` ist aus der
+ * Cloud-Umgebung gesperrt, und der Schlüssel liegt bei Jannes. Genau diese
+ * Lage hat bei der Route drei Fehler gekostet (BEF-023), deshalb hat die
+ * Abnahme dafür einen eigenen Schritt.
+ */
+const MATRIX_URL = 'https://api.myptv.com/matrixrouting-osm/v1/matrices';
+
+/**
+ * Kantenlänge des erlaubten Rechtecks um alle Punkte einer Matrix.
+ *
+ * Grenze des Anbieters, nicht unsere: Liegen die Orte weiter auseinander,
+ * antwortet er mit `MATRIXROUTING_LOCATIONS_TOO_FAR_AWAY` (Providerprüfung,
+ * Teil 1, Punkt 4).
+ */
+const MATRIX_BOX_METER = 100_000;
+
+/** Ein Breitengrad in Metern — die Zahl, mit der die Box geschätzt wird. */
+const METER_JE_BREITENGRAD = 111_320;
 
 /**
  * Die Fahrprofile des Anbieters.
@@ -72,51 +101,86 @@ interface PtvOptionen {
   readonly timeoutMs?: number;
 }
 
+/** Die gemeinsame Form von `RouteErgebnis` und `MatrixErgebnis`. */
+type Ergebnis<T> =
+  { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: LocationError };
+
 export function erstellePtvAdapter({
   apiKey,
   abrufen = fetch,
   timeoutMs = TIMEOUT_MS,
-}: PtvOptionen): RouteAdapter {
+}: PtvOptionen): Anbieteradapter {
+  /**
+   * Ein Aufruf beim Anbieter — und alles, was daran schiefgehen kann.
+   *
+   * Route und Matrix unterscheiden sich in Adresse, Methode und Auswertung,
+   * nicht im Fehlerverhalten: Zeitgrenze, Netzfehler, HTTP-Status und „kein
+   * JSON" sind für beide dieselben Klassen. Sie stehen deshalb einmal hier
+   * und nicht zweimal daneben.
+   */
+  async function hole<T>(
+    ziel: string,
+    optionen: { readonly koerper?: unknown; readonly signal?: AbortSignal | undefined },
+    auswerten: (koerper: unknown) => Ergebnis<T>,
+  ): Promise<Ergebnis<T>> {
+    const frist = AbortSignal.timeout(timeoutMs);
+    const abbruch =
+      optionen.signal === undefined ? frist : AbortSignal.any([optionen.signal, frist]);
+
+    let antwort: Response;
+    try {
+      antwort = await abrufen(ziel, {
+        method: optionen.koerper === undefined ? 'GET' : 'POST',
+        // Der Schlüssel geht als Kopfzeile, nicht als Abfrageparameter: Ein
+        // Parameter stünde in Proxy- und Serverprotokollen (ADR-019 Punkt 19).
+        headers: {
+          ApiKey: apiKey,
+          Accept: 'application/json',
+          ...(optionen.koerper === undefined ? {} : { 'Content-Type': 'application/json' }),
+        },
+        ...(optionen.koerper === undefined ? {} : { body: JSON.stringify(optionen.koerper) }),
+        signal: abbruch,
+      });
+    } catch {
+      // Die Ausnahme selbst wird nicht weitergereicht: Ihre Meldung trägt
+      // die angefragte URL und damit die Koordinaten (ADR-011).
+      return frist.aborted
+        ? fehler('timeout', 'Zeitüberschreitung')
+        : fehler('unavailable', 'Anbieter nicht erreichbar');
+    }
+
+    if (!antwort.ok) return fehler(klasse(antwort.status), `HTTP ${antwort.status}`);
+
+    let koerper: unknown;
+    try {
+      koerper = await antwort.json();
+    } catch {
+      return fehler('unavailable', 'Antwort ist kein JSON');
+    }
+    return auswerten(koerper);
+  }
+
   return {
     id: 'ptv',
     quelle: 'anbieter',
-    async route(request: RouteRequest, signal?: AbortSignal): Promise<RouteErgebnis> {
+    route(request: RouteRequest, signal?: AbortSignal): Promise<RouteErgebnis> {
       if (request.waypoints.length > MAX_WEGPUNKTE) {
         // Ohne Aufruf: Der Anbieter antwortete hier mit
         // ROUTING_TOO_MANY_WAYPOINTS, und eine Anfrage, deren Antwort
         // feststeht, muss ihn nicht erreichen.
-        return fehler('invalid_request', 'zu viele Wegpunkte');
+        return Promise.resolve(fehler('invalid_request', 'zu viele Wegpunkte'));
       }
-
-      const frist = AbortSignal.timeout(timeoutMs);
-      const abbruch = signal === undefined ? frist : AbortSignal.any([signal, frist]);
-
-      let antwort: Response;
-      try {
-        antwort = await abrufen(adresse(request), {
-          method: 'GET',
-          // Der Schlüssel geht als Kopfzeile, nicht als Abfrageparameter: Ein
-          // Parameter stünde in Proxy- und Serverprotokollen (ADR-019 Punkt 19).
-          headers: { ApiKey: apiKey, Accept: 'application/json' },
-          signal: abbruch,
-        });
-      } catch {
-        // Die Ausnahme selbst wird nicht weitergereicht: Ihre Meldung trägt
-        // die angefragte URL und damit die Koordinaten (ADR-011).
-        return frist.aborted
-          ? fehler('timeout', 'Zeitüberschreitung')
-          : fehler('unavailable', 'Anbieter nicht erreichbar');
+      return hole(adresse(request), { signal }, auswerten);
+    },
+    matrix(request: MatrixRequest, signal?: AbortSignal): Promise<MatrixErgebnis> {
+      if (!inEinerBox([...request.origins, ...request.destinations])) {
+        // Dieselbe Regel wie oben: Der Anbieter antwortete hier mit
+        // MATRIXROUTING_LOCATIONS_TOO_FAR_AWAY.
+        return Promise.resolve(fehler('invalid_request', 'Punkte liegen zu weit auseinander'));
       }
-
-      if (!antwort.ok) return fehler(klasse(antwort.status), `HTTP ${antwort.status}`);
-
-      let koerper: unknown;
-      try {
-        koerper = await antwort.json();
-      } catch {
-        return fehler('unavailable', 'Antwort ist kein JSON');
-      }
-      return auswerten(koerper);
+      return hole(matrixAdresse(request), { koerper: matrixKoerper(request), signal }, (koerper) =>
+        matrixAuswerten(koerper, request),
+      );
     },
   };
 }
@@ -136,6 +200,106 @@ function adresse(request: RouteRequest): string {
   abfrage.append('profile', PROFILE[request.profile]);
   abfrage.append('results', 'POLYLINE,LEGS');
   return `${ROUTING_URL}?${abfrage.toString()}`;
+}
+
+/**
+ * Die Abfrage der Matrix — Profil und die zwei Ergebnisteile, sonst nichts.
+ *
+ * Die Punkte stehen anders als bei der Route **nicht** in der Adresse,
+ * sondern im Körper: Eine Matrix über acht Stopps trüge sechzehn Koordinaten
+ * in der URL, und eine URL steht in jedem Proxy- und Serverprotokoll
+ * (ADR-019 Punkt 18 und 19).
+ */
+function matrixAdresse(request: MatrixRequest): string {
+  const abfrage = new URLSearchParams();
+  abfrage.append('profile', PROFILE[request.profile]);
+  abfrage.append('results', 'TRAVEL_TIMES,DISTANCES');
+  return `${MATRIX_URL}?${abfrage.toString()}`;
+}
+
+/** Nur Koordinaten — in der Schreibweise des Anbieters, die `latitude` und `longitude` heißt. */
+function matrixKoerper(request: MatrixRequest) {
+  const punkt = ({ lat, lon }: Coordinate) => ({ latitude: lat, longitude: lon });
+  return {
+    origins: request.origins.map(punkt),
+    destinations: request.destinations.map(punkt),
+  };
+}
+
+/**
+ * Liegen alle Punkte in einem Rechteck von höchstens 100 km Kantenlänge?
+ *
+ * Gerechnet wird mit der gestreckten Erdkugel und mit dem Breitengrad des
+ * Rechtecks, der dem Äquator am nächsten liegt: Dort ist ein Längengrad am
+ * breitesten, die Schätzung also die großzügigste — wer hier irrt, irrt in
+ * Richtung „lieber doch fragen". Und wenn der Anbieter die Anfrage dann
+ * ablehnt, kommt dieselbe Fehlerklasse zurück wie hier.
+ */
+function inEinerBox(punkte: readonly Coordinate[]): boolean {
+  if (punkte.length === 0) return true;
+  const lats = punkte.map((p) => p.lat);
+  const lons = punkte.map((p) => p.lon);
+  const hoehe = (Math.max(...lats) - Math.min(...lats)) * METER_JE_BREITENGRAD;
+  const naechsteAmAequator = Math.min(...lats.map(Math.abs));
+  const breite =
+    (Math.max(...lons) - Math.min(...lons)) *
+    METER_JE_BREITENGRAD *
+    Math.cos((naechsteAmAequator * Math.PI) / 180);
+  return hoehe <= MATRIX_BOX_METER && breite <= MATRIX_BOX_METER;
+}
+
+/**
+ * Die Matrix des Anbieters im Format des Vertrags.
+ *
+ * Der Anbieter liefert **flache** Listen; `k = i·N + j` mit `N` als Zahl der
+ * Ziele ist die Übersetzung (Providerprüfung, Teil 1, Punkt 4). Eine Liste
+ * mit falscher Länge ist deshalb ein Fehler und keine halbe Matrix: Jede Zahl
+ * darin stünde sonst in der falschen Zelle, und das sähe in der Tabelle
+ * richtig aus.
+ *
+ * Was kein Weg ist, wird `null`. Ob der Anbieter dafür `null` schickt oder
+ * eine negative Zahl, ist nicht belegt — beides wird gleich behandelt, statt
+ * eine Vermutung zur Bedingung zu machen.
+ */
+function matrixAuswerten(koerper: unknown, request: MatrixRequest): MatrixErgebnis {
+  if (typeof koerper !== 'object' || koerper === null) {
+    return fehler('unavailable', 'Antwort ohne Objekt');
+  }
+  const daten = koerper as Record<string, unknown>;
+
+  const zeilen = request.origins.length;
+  const spalten = request.destinations.length;
+
+  const fahrzeiten = gefaltet(daten['travelTimes'], zeilen, spalten);
+  if (fahrzeiten === null) return fehler('unavailable', 'Antwort ohne Fahrzeiten');
+
+  const strecken = gefaltet(daten['distances'], zeilen, spalten);
+
+  return {
+    ok: true,
+    value: {
+      durationsSeconds: fahrzeiten,
+      // Ohne Strecken ist die Matrix vollständig: Gefragt ist die Fahrzeit,
+      // die Strecke ist die Zugabe (`distancesMeters` ist im Vertrag optional).
+      ...(strecken === null ? {} : { distancesMeters: strecken }),
+    },
+  };
+}
+
+/** Flache Liste in Zeilen — oder `null`, wenn sie keine Matrix dieser Größe ist. */
+function gefaltet(wert: unknown, zeilen: number, spalten: number): (number | null)[][] | null {
+  if (!Array.isArray(wert) || wert.length !== zeilen * spalten) return null;
+  const werte = wert as unknown[];
+  const matrix: (number | null)[][] = [];
+  for (let i = 0; i < zeilen; i += 1) {
+    const zeile: (number | null)[] = [];
+    for (let j = 0; j < spalten; j += 1) {
+      const zahlwert = zahl(werte[i * spalten + j]);
+      zeile.push(zahlwert === null || zahlwert < 0 ? null : zahlwert);
+    }
+    matrix.push(zeile);
+  }
+  return matrix;
 }
 
 /**
@@ -238,6 +402,6 @@ function klasse(status: number): LocationErrorCode {
 }
 
 /** Jede Meldung beginnt mit der Anbieterkennung und trägt sonst nur Technik. */
-function fehler(code: LocationErrorCode, meldung: string): RouteErgebnis {
+function fehler(code: LocationErrorCode, meldung: string): { ok: false; error: LocationError } {
   return { ok: false, error: { code, message: `ptv: ${meldung}` } };
 }

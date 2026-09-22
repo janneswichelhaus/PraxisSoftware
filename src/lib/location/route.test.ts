@@ -40,7 +40,11 @@ describe('Routenabruf', () => {
     expect(invoke).toHaveBeenCalledTimes(1);
     const [name, optionen] = invoke.mock.calls[0] as [string, { body: Record<string, unknown> }];
     expect(name).toBe('location-provider');
-    expect(Object.keys(optionen.body).sort()).toEqual(['profile', 'waypoints']);
+    // `aufgabe` kam mit MAP-004 dazu, seit die Function zwei davon kennt. Es
+    // ist ein Verb und sagt nichts über eine Person; die Feldliste bleibt
+    // sonst dieselbe (ADR-019 Punkt 12).
+    expect(Object.keys(optionen.body).sort()).toEqual(['aufgabe', 'profile', 'waypoints']);
+    expect(optionen.body['aufgabe']).toBe('route');
     expect(optionen.body['profile']).toBe('cargo_bicycle');
     expect(optionen.body['waypoints']).toEqual(STOPPS);
   });
