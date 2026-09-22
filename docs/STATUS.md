@@ -12,8 +12,8 @@ ist aus der Cloud gesperrt, kein Vertragstext war lesbar, **kein Eintrag trägt 
 
 ## Danach — Reihenfolge seit 2026-09-21
 
-1. **MAP-004** — Fahrzeitmatrix auf der Function aus MAP-003; synthetische Koordinaten wie bisher,
-   Lauf und Abnahme lokal — die Edge-Runtime-Sperre ändert daran nichts
+1. **MAP-004** — Fahrzeitmatrix auf der Function aus MAP-003, im **Lastenradprofil** (MAP-003c,
+   entschieden 2026-09-22); synthetische Koordinaten, Lauf und Abnahme lokal wie bisher
 2. **MAP-005** — Navigations-Handoff mit einem Tap (ANN-018); braucht den Handoff aus **B2**
 3. **OPS-004** — Verbotsliste aus ADR-011 automatisiert prüfen, mit der Logfrist aus **R14**
    (**OPS-003 geht nicht vor**: „PITR aktiv" setzt das Cloudprojekt voraus)
@@ -31,8 +31,8 @@ ist aus der Cloud gesperrt, kein Vertragstext war lesbar, **kein Eintrag trägt 
 - **BEF-026 / B13:** Der eingebaute Mailversand stellt laut Auszug nur an Adressen des Projektteams zu. Entweder eigener SMTP-Anbieter (zweiter Auftragsverarbeiter, eigene Prüfung, Rücknahme von B13) oder kein Mailversand (Handgriff nach ANN-025). **STAFF-004 ruht bis dahin.**
 - **MAP-003 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)):
   nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`),
-  `supabase/functions/.env.local`, `functions serve`. **BEF-027 behoben** — die Meldungen zeigen
-  jetzt auf den, der es war; Schritt 2 neu laufen. Offen: **Profilfrage aus MAP-003c**.
+  `supabase/functions/.env.local`, `functions serve`. Schritt 1 und 4 **durch** (25,4 km gegen
+  26,2 km, Lastenrad gewählt); **BEF-027 behoben** — offen bleiben Schritt 2, 3 und 5.
 - **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue Version nach §21 beginnt dort kein Loop — gebraucht, wenn Etappe TR an der Reihe ist.
 - **PTV:** Karte und Schlüssel tragen auch serverseitig (BEF-021, BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19); nur synthetische Koordinaten.
 - **Lokal:** `git pull`. Keine neue Abhängigkeit, keine Migration. **Node 22** (`.nvmrc`), sonst rot.

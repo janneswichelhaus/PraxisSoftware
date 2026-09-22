@@ -55,7 +55,12 @@ Aufwand. Dieser Abschnitt trägt, was daneben liegt und niemand sonst führt.
   ein lokales Secret bei Jannes (vorerst derselbe wie der Kachelschlüssel,
   Entscheidung 2026-09-21) — **MAP-003 ist erst gelaufen, wenn die Abnahme
   lokal durch ist**: In der Cloud gibt es weder Docker noch Deno-Laufzeit, die
-  Function ist dort nur mit Unit-Tests geprüft.
+  Function ist dort nur mit Unit-Tests geprüft. **Die Profilfrage aus MAP-003c
+  ist beantwortet** (2026-09-22): Jannes hat nach dem Vergleich über acht
+  Stopps — 25,4 km · 1 Std. 19 Min. mit dem Fahrrad gegen 26,2 km ·
+  1 Std. 19 Min. mit dem Lastenrad — das **Lastenradprofil** gewählt. MAP-004
+  rechnet damit; die Wahl hängt am Kommentar zu `TravelProfile` in
+  `src/lib/location/contract.ts` und sonst nirgends.
 - **OPS-001 ist geschrieben (2026-09-21).** Das Dokument steht in
   [`../decisions/providerpruefung-supabase.md`](../decisions/providerpruefung-supabase.md),
   mit den fünf Objektspeicher-Punkten aus ADR-017, den Auth-Mails (B13) und
