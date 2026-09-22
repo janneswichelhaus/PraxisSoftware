@@ -146,8 +146,18 @@ const KARTENPROTOTYP = 'src/features/tours/karte';
  * `react-dom` steht dabei, weil die Marker als Portale entstehen: Die Nummern
  * sind eigene DOM-Knoten der Anwendung, gerade damit sie **nicht** über die
  * Beschriftung des Anbieters laufen.
+ *
+ * `@/features/scheduling/erreichbarkeit` kam mit **MAP-004** dazu: Die Regel,
+ * ob zwei Termine erreichbar wären, ist eine reine Funktion über Sekunden
+ * (§6.2) und gehört ins Fachmodul, nicht in einen Prototyp. Sie spricht mit
+ * keinem Server, legt nichts ab und wird hier nur gelesen — der Import ist
+ * trotzdem namentlich und nicht als ganzes Verzeichnis freigegeben.
  */
-const ERLAUBTE_MODULE_KARTE = [/^react-dom$/, /^maplibre-gl(\/|$)/];
+const ERLAUBTE_MODULE_KARTE = [
+  /^react-dom$/,
+  /^maplibre-gl(\/|$)/,
+  /^@\/features\/scheduling\/erreichbarkeit$/,
+];
 
 /**
  * Module aus `@/lib`, die **nur** der Kartenprototyp haben darf.
@@ -165,8 +175,12 @@ const ERLAUBTE_MODULE_KARTE = [/^react-dom$/, /^maplibre-gl(\/|$)/];
  * oben laufen unverändert über diese Dateien. Und was hinausgeht, sind
  * Koordinaten und ein Fahrprofil, nie eine Adresse, ein Name oder ein Termin
  * (ADR-019 Punkt 12, 13, 24).
+ *
+ * `matrix.ts` kam mit **MAP-004** dazu und steht unter derselben Regel: Auch
+ * die Fahrzeitmatrix rechnet der Anbieter auf Anfrage des eigenen Servers,
+ * auch sie wird angezeigt und verworfen (ADR-019 Punkt 15 und 16).
  */
-const NUR_KARTE = [/^@\/lib\/location\/route$/];
+const NUR_KARTE = [/^@\/lib\/location\/route$/, /^@\/lib\/location\/matrix$/];
 
 /** `@/features/<bereich>/api` - ohne `preview`, das ist der eigene Bereich. */
 const API_MODUL = /^@\/features\/([^/]+)\/api$/;
@@ -374,6 +388,36 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
         "import type { Coordinate } from '@/lib/location/contract';",
       ),
     ).toEqual([]);
+  });
+
+  it('erlaubt den Matrixabruf nur im Kartenprototyp', () => {
+    // Dieselbe Regel wie fuer die Route, seit MAP-004: Auch die Matrix rechnet
+    // der Anbieter auf Anfrage des eigenen Servers (ADR-019 Punkt 15).
+    const matrixabruf = "import { useMatrix } from '@/lib/location/matrix';";
+
+    expect(unerlaubteImporte(`${KARTENPROTOTYP}/KartePage.tsx`, matrixabruf)).toEqual([]);
+    expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', matrixabruf)).toEqual([
+      '@/lib/location/matrix (nur im Kartenprototyp)',
+    ]);
+  });
+
+  it('erlaubt die Erreichbarkeitsregel nur im Kartenprototyp', () => {
+    // Die Regel selbst spricht mit keinem Server - der Import muss trotzdem
+    // am Verzeichnis enden, sonst stuende mit ihm das ganze Fachmodul
+    // `scheduling` jedem Vorschaubereich offen.
+    const regel = "import { erreichbarkeit } from '@/features/scheduling/erreichbarkeit';";
+
+    expect(unerlaubteImporte(`${KARTENPROTOTYP}/Fahrzeitmatrix.tsx`, regel)).toEqual([]);
+    expect(unerlaubteImporte('src/features/fleet/Beispiel.tsx', regel)).toEqual([
+      '@/features/scheduling/erreichbarkeit (nicht in der Positivliste)',
+    ]);
+    // Und der Rest des Moduls bleibt auch im Kartenprototyp draussen.
+    expect(
+      unerlaubteImporte(
+        `${KARTENPROTOTYP}/Fahrzeitmatrix.tsx`,
+        "import { ladeRaster } from '@/features/scheduling/api';",
+      ),
+    ).toEqual(['ladeRaster aus @/features/scheduling/api']);
   });
 
   it('wuerde einen Serveraufruf tatsaechlich finden', () => {

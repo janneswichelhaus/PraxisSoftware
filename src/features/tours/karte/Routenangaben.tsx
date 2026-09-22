@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import type { LocationErrorCode, RouteResult } from '@/lib/location/contract';
+import type { RouteResult } from '@/lib/location/contract';
 import type { Routenergebnis } from '@/lib/location/route';
 import { formatiereFahrzeit, formatiereStrecke } from '@/lib/location/strecke';
+import { FEHLERTEXTE } from './fehlertexte';
 
 /**
  * Distanz und Fahrzeit zur gezeichneten Route (MAP-003b).
@@ -11,10 +12,9 @@ import { formatiereFahrzeit, formatiereStrecke } from '@/lib/location/strecke';
  * Die Komponente bekommt fertige Ergebnisse und entscheidet nur, was davon
  * auf dem Bildschirm steht. Sie ruft nichts ab und kennt keinen Anbieter.
  *
- * **Jeder Zustand hat einen eigenen Satz.** „Es hat nicht geklappt" wäre für
- * eine Praxis unbrauchbar: Eine Zeitüberschreitung geht vorbei, ein fehlender
- * Schlüssel nicht. Deshalb vier benannte Fälle und dazu ein technischer
- * Rest — und zu jedem die Schaltfläche, die den Versuch wiederholt.
+ * **Jeder Zustand hat einen eigenen Satz** — die Texte stehen seit MAP-004 in
+ * `fehlertexte.ts`, weil die Fahrzeitmatrix dieselben braucht. Zu jedem gehört
+ * die Schaltfläche, die den Versuch wiederholt.
  */
 
 interface RoutenangabenProps {
@@ -25,68 +25,6 @@ interface RoutenangabenProps {
   readonly lastenrad: Routenergebnis | undefined;
   readonly erneutVersuchen: () => void;
 }
-
-interface Fehlertext {
-  readonly titel: string;
-  readonly erklaerung: string;
-}
-
-/**
- * Was die Person liest, wenn keine Route kommt.
- *
- * Die vier Zustände aus der Aufgabe stehen zuerst; die übrigen unterscheiden
- * Fälle, die verschiedene Abhilfen haben. Kein Text nennt eine Adresse, eine
- * Anbietermeldung oder einen Schlüssel (ADR-011).
- *
- * **Jeder Text zeigt auf den, der es war** (BEF-027). Vor dieser Korrektur
- * stand „Kartendienst weist den Serverschlüssel ab" auf dem Bildschirm,
- * während in Wahrheit die eigene Sitzungsprüfung nicht durchkam — und der
- * Kartendienst nie gefragt worden war. Wer eine Ursache benennt, die er nicht
- * kennt, schickt die Fehlersuche an die falsche Stelle.
- */
-const FEHLERTEXTE: Readonly<Record<LocationErrorCode, Fehlertext>> = {
-  timeout: {
-    titel: 'Zeitüberschreitung',
-    erklaerung: 'Der Kartendienst hat nicht rechtzeitig geantwortet. Ein neuer Versuch hilft oft.',
-  },
-  unavailable: {
-    titel: 'Kartendienst nicht erreichbar',
-    erklaerung:
-      'Die Route konnte nicht berechnet werden. Die Stopps stehen trotzdem auf der Karte und in der Liste.',
-  },
-  not_configured: {
-    titel: 'Kein Kartendienst eingerichtet',
-    erklaerung:
-      'Die Routenberechnung läuft serverseitig und braucht dafür die Secrets LOCATION_PROVIDER und PTV_API_KEY. Beide liegen lokal und nie im Repository.',
-  },
-  unauthorized: {
-    titel: 'Kartendienst weist den Serverschlüssel ab',
-    erklaerung:
-      'Der Kartendienst hat den hinterlegten Serverschlüssel nicht angenommen. Das ist ein Einrichtungsschritt und betrifft nur die Routenberechnung.',
-  },
-  session_invalid: {
-    titel: 'Anmeldung gilt nicht mehr',
-    erklaerung:
-      'Die Routenberechnung braucht eine gültige Sitzung. Melde dich neu an; die Stopps und die Karte bleiben davon unberührt.',
-  },
-  function_unavailable: {
-    titel: 'Routenfunktion antwortet nicht',
-    erklaerung:
-      'Die Anfrage hat die Routenfunktion nicht erreicht — geantwortet hat etwas davor. Über den Kartendienst sagt das nichts.',
-  },
-  rate_limited: {
-    titel: 'Kontingent erschöpft',
-    erklaerung: 'Der Kartendienst nimmt gerade keine weitere Anfrage an. Später erneut versuchen.',
-  },
-  not_found: {
-    titel: 'Keine Route gefunden',
-    erklaerung: 'Zwischen diesen Punkten hat der Kartendienst keinen Weg für das Rad gefunden.',
-  },
-  invalid_request: {
-    titel: 'Anfrage nicht gültig',
-    erklaerung: 'Die Stopps ließen sich so nicht anfragen. Das ist ein Fehler in der Anwendung.',
-  },
-};
 
 export function Routenangaben({ laedt, ergebnis, lastenrad, erneutVersuchen }: RoutenangabenProps) {
   if (laedt || ergebnis === undefined) return <LoadingState label="Route wird berechnet …" />;

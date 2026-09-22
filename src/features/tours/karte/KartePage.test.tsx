@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils';
+import type { Matrixergebnis } from '@/lib/location/matrix';
 import type { Routenergebnis } from '@/lib/location/route';
 import { TESTSTOPPS } from './teststopps';
 
@@ -69,6 +70,10 @@ vi.mock('maplibre-gl', () => ({
 const { useRoute } = vi.hoisted(() => ({ useRoute: vi.fn() }));
 vi.mock('@/lib/location/route', () => ({ useRoute }));
 
+/** Dasselbe für die Matrix aus MAP-004: geprüft wird die Seite, nicht der Abruf. */
+const { useMatrix } = vi.hoisted(() => ({ useMatrix: vi.fn() }));
+vi.mock('@/lib/location/matrix', () => ({ useMatrix, MAX_MATRIX_PUNKTE: 25 }));
+
 const { KartePage } = await import('./KartePage');
 
 const ROUTE: Routenergebnis = {
@@ -101,6 +106,23 @@ const LASTENRAD: Routenergebnis = {
   },
 };
 
+/**
+ * Eine Matrix über alle acht Stopps: Fahrzeit gleich Abstand der Nummern in
+ * Minuten. Erfunden wie die Stopps - geprüft wird, dass die Seite zeigt, was
+ * sie bekommt, nicht ob die Zahl stimmt.
+ */
+const MATRIX: Matrixergebnis = {
+  ok: true,
+  value: {
+    matrix: {
+      durationsSeconds: TESTSTOPPS.map((_, zeile) =>
+        TESTSTOPPS.map((__, spalte) => Math.abs(zeile - spalte) * 60),
+      ),
+    },
+    quelle: 'anbieter',
+  },
+};
+
 function antwortet(ergebnis: Routenergebnis | undefined, laedt = false) {
   useRoute.mockImplementation((_wegpunkte: unknown, profil: string) =>
     profil === 'cargo_bicycle'
@@ -113,6 +135,8 @@ describe('KartePage', () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     useRoute.mockReset();
+    useMatrix.mockReset();
+    useMatrix.mockReturnValue({ data: MATRIX, isFetching: false, refetch: vi.fn() });
     antwortet(ROUTE);
   });
 
@@ -194,9 +218,49 @@ describe('KartePage', () => {
 
     renderWithProviders(<KartePage />, '/touren/karte');
 
-    expect(screen.getByText('Kein Kartendienst eingerichtet')).toBeInTheDocument();
+    expect(screen.getAllByText('Kein Kartendienst eingerichtet').length).toBeGreaterThan(0);
     expect(
       within(screen.getByRole('list', { name: 'Die Stopps' })).getAllByRole('listitem'),
     ).toHaveLength(TESTSTOPPS.length);
+  });
+
+  it('fragt die Matrix ueber dieselben Stopps ab - nur im gewaehlten Profil', () => {
+    renderWithProviders(<KartePage />, '/touren/karte');
+
+    expect(useMatrix).toHaveBeenCalledTimes(1);
+    const [starts, ziele, profil] = useMatrix.mock.calls[0] as [unknown[], unknown[], string];
+    const punkte = TESTSTOPPS.map((stopp) => stopp.position);
+    expect(starts).toEqual(punkte);
+    expect(ziele).toEqual(punkte);
+    // Kein zweiter Abruf zum Vergleich: Wo eine Planung ein Profil braucht,
+    // ist es das gewaehlte (MAP-003c, entschieden 2026-09-22).
+    expect(profil).toBe('cargo_bicycle');
+  });
+
+  it('zeigt die Fahrzeiten als Tabelle mit einer Zeile je Stopp', () => {
+    renderWithProviders(<KartePage />, '/touren/karte');
+
+    const tabelle = screen.getByRole('table');
+    // Kopfzeile plus acht Stopps.
+    expect(within(tabelle).getAllByRole('row')).toHaveLength(TESTSTOPPS.length + 1);
+    expect(within(tabelle).getByRole('cell', { name: /von 1 nach 8/ })).toHaveTextContent('7 Min.');
+  });
+
+  it('zeigt die Stopps auch dann, wenn keine Matrix kommt', () => {
+    useMatrix.mockReturnValue({
+      data: { ok: false, error: { code: 'rate_limited', message: 'x' } },
+      isFetching: false,
+      refetch: vi.fn(),
+    });
+
+    renderWithProviders(<KartePage />, '/touren/karte');
+
+    expect(screen.getByText('Kontingent erschöpft')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Die Stopps' })).getAllByRole('listitem'),
+    ).toHaveLength(TESTSTOPPS.length);
+    // Die Route bleibt davon unberuehrt: zwei Abrufe, zwei Zustaende.
+    expect(screen.getByText(/12,4 km/)).toBeInTheDocument();
   });
 });
