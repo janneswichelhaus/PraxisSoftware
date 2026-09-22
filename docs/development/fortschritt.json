@@ -317,7 +317,7 @@
           "id": "g11-ops-007",
           "name": "G11 OPS-007 Bootstrap Produktion (Runbook)",
           "gewicht": 1,
-          "status": "offen"
+          "status": "in_arbeit"
         },
         {
           "id": "g12-adr-019",
