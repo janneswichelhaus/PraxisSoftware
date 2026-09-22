@@ -1,7 +1,7 @@
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import {
-  buildGoogleMapsDayUrls,
-  buildGoogleMapsUrl,
+  buildNavigationDayUrls,
+  buildNavigationUrl,
   navigationOeffnen,
   navigationsZiel,
   type Besuchsadresse,
@@ -19,6 +19,12 @@ import {
  *
  * Übergeben wird nur das Ziel und der Fahrradmodus (ANN-018). Der
  * Zugangshinweis bleibt in der Anwendung.
+ *
+ * **Ziel-App ist hier Google Maps**, obwohl `buildNavigationUrl` seit MAP-005
+ * alle drei aus ADR-019 Punkt 22 kennt. Eine Auswahl gehört erst in die
+ * Tagesliste, wenn die Gerätebewertung (MAP-005c) gezeigt hat, welche App auf
+ * den Geräten der Praxis zuverlässig im Fahrradmodus öffnet - bis dahin wäre
+ * sie eine vorgebaute Präferenz (ADR-019, „Bewusst nicht Bestandteil").
  */
 
 const knopf = kartenAktionKlassen();
@@ -32,7 +38,7 @@ export function NavigationZumTermin({ termin }: { termin: Besuchsadresse }) {
     <button
       type="button"
       className={knopf}
-      onClick={() => navigationOeffnen(buildGoogleMapsUrl(ziel))}
+      onClick={() => navigationOeffnen(buildNavigationUrl(ziel, 'google_maps'))}
     >
       Navigation starten
     </button>
@@ -53,7 +59,7 @@ export function NavigationFuerDenTag({ termine }: { termine: readonly Besuchsadr
 
   if (ziele.length === 0) return null;
 
-  const abschnitte = buildGoogleMapsDayUrls(ziele);
+  const abschnitte = buildNavigationDayUrls(ziele, 'google_maps');
 
   return (
     <div className="flex flex-wrap gap-2">
