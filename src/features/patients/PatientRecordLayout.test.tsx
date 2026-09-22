@@ -187,18 +187,20 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   });
 
   describe('Bereichsnavigation', () => {
-    it('fuehrt alle fuenf Bereiche fuer eine therapeutische Rolle', async () => {
+    it('fuehrt alle sechs Bereiche fuer eine therapeutische Rolle', async () => {
       akteRendern(['therapist']);
 
       const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
       const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
       // "Dateien" ist seit DAT-001 dabei und steht vor den Stammdaten: "was
       // liegt uns vor" wird im Gespraech haeufiger gebraucht als eine Adresse.
+      // "Datenschutz" (PAT-006) steht dazwischen: Aufnahme und Rueckfrage.
       expect(eintraege.map((link) => link.textContent)).toEqual([
         'Termine',
         'Behandlungsgrundlagen',
         'Behandlungsverlauf',
         'Dateien',
+        'Datenschutz',
         'Stammdaten',
       ]);
     });
