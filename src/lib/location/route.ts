@@ -47,9 +47,14 @@ export type Routenergebnis =
  * Ein Aufruf der Function — und die Übersetzung ihrer Antwort.
  *
  * Alles, was schiefgehen kann, endet in einer Fehlerklasse: Ein Netzfehler
- * ist `unavailable`, eine Antwort in unerwarteter Form ebenfalls. Eine
- * Ausnahme verlässt diese Funktion nicht, damit die Oberfläche keinen Fall
- * kennt, den sie nicht anzeigt.
+ * ist eine Klasse, eine Antwort in unerwarteter Form auch. Eine Ausnahme
+ * verlässt diese Funktion nicht, damit die Oberfläche keinen Fall kennt, den
+ * sie nicht anzeigt.
+ *
+ * **Wer geantwortet hat, entscheidet die Klasse** (BEF-027): Nur eine Antwort
+ * im Format dieser Function darf über den Kartendienst sprechen. Alles andere
+ * — ein Gateway, eine nicht laufende Laufzeit, ein Plattformfehler — wird nach
+ * dem HTTP-Status eingeordnet und nie dem Anbieter angelastet.
  */
 export async function fordereRouteAn(
   waypoints: readonly Coordinate[],
@@ -66,12 +71,14 @@ export async function fordereRouteAn(
   if (error !== null) {
     // Die Meldung der Bibliothek wird nicht gelesen: Sie trägt die Adresse
     // der Anfrage. Was zählt, steht im Körper der Antwort - und wenn es
-    // keinen gibt, war der Anbieter für uns nicht erreichbar.
-    if (response === undefined) return stoerung('unavailable', 'keine Antwort der Function');
-    return uebersetze(await koerper(response));
+    // keinen gibt, kam die Function gar nicht zu Wort.
+    if (response === undefined) {
+      return stoerung('function_unavailable', 'keine Antwort der Function');
+    }
+    return uebersetze(await koerper(response), response.status);
   }
 
-  return uebersetze(data);
+  return uebersetze(data, 200);
 }
 
 /**
@@ -110,11 +117,12 @@ async function koerper(antwort: Response): Promise<unknown> {
  *
  * Gelesen wird Feld für Feld. Eine Antwort, die nicht passt, ist ein Fehler
  * und keine halbe Route: Eine Linie ohne Distanz sähe auf der Karte richtig
- * aus.
+ * aus. Und sie ist **kein** Fehler des Kartendienstes — wer nicht in unserem
+ * Format antwortet, ist nicht unsere Function (BEF-027).
  */
-function uebersetze(wert: unknown): Routenergebnis {
+function uebersetze(wert: unknown, status: number): Routenergebnis {
   if (typeof wert !== 'object' || wert === null) {
-    return stoerung('unavailable', 'Antwort ohne Objekt');
+    return fremd(status, 'Antwort ohne Objekt');
   }
   const daten = wert as Record<string, unknown>;
 
@@ -122,12 +130,12 @@ function uebersetze(wert: unknown): Routenergebnis {
     const fehler = daten['error'];
     const code = (fehler as LocationError | undefined)?.code;
     return code === undefined
-      ? stoerung('unavailable', 'Antwort ohne Fehlerklasse')
+      ? fremd(status, 'Antwort ohne Fehlerklasse')
       : { ok: false, error: { code, message: String((fehler as LocationError).message) } };
   }
 
   const route = daten['value'];
-  if (!istRoute(route)) return stoerung('unavailable', 'Antwort ohne Route');
+  if (!istRoute(route)) return fremd(status, 'Antwort ohne Route');
   const quelle = daten['quelle'];
 
   return {
@@ -145,6 +153,19 @@ function istRoute(wert: unknown): wert is RouteResult {
     Array.isArray(daten['legs']) &&
     Array.isArray(daten['geometry'])
   );
+}
+
+/**
+ * Eine Antwort, die nicht aus dieser Function stammt — eingeordnet nach dem,
+ * was der Status darüber sagt, **wer** sie geschickt hat.
+ *
+ * 401 und 403 kommen von der Plattform vor unserem Code: Der Token fehlte
+ * oder galt nicht. Alles andere heißt: Die Function war nicht zu erreichen.
+ * Über den Kartendienst sagt keiner der beiden Fälle etwas.
+ */
+function fremd(status: number, meldung: string): Routenergebnis {
+  const code = status === 401 || status === 403 ? 'session_invalid' : 'function_unavailable';
+  return stoerung(code, `${meldung} (HTTP ${status})`);
 }
 
 function stoerung(code: LocationError['code'], meldung: string): Routenergebnis {

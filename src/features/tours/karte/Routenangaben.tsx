@@ -34,10 +34,15 @@ interface Fehlertext {
 /**
  * Was die Person liest, wenn keine Route kommt.
  *
- * Die vier Zustände aus der Aufgabe stehen zuerst; `rate_limited`,
- * `not_found` und `invalid_request` sind die Fälle, die der Anbieter
- * zusätzlich unterscheidet. Kein Text nennt eine Adresse, eine
+ * Die vier Zustände aus der Aufgabe stehen zuerst; die übrigen unterscheiden
+ * Fälle, die verschiedene Abhilfen haben. Kein Text nennt eine Adresse, eine
  * Anbietermeldung oder einen Schlüssel (ADR-011).
+ *
+ * **Jeder Text zeigt auf den, der es war** (BEF-027). Vor dieser Korrektur
+ * stand „Kartendienst weist den Serverschlüssel ab" auf dem Bildschirm,
+ * während in Wahrheit die eigene Sitzungsprüfung nicht durchkam — und der
+ * Kartendienst nie gefragt worden war. Wer eine Ursache benennt, die er nicht
+ * kennt, schickt die Fehlersuche an die falsche Stelle.
  */
 const FEHLERTEXTE: Readonly<Record<LocationErrorCode, Fehlertext>> = {
   timeout: {
@@ -57,7 +62,17 @@ const FEHLERTEXTE: Readonly<Record<LocationErrorCode, Fehlertext>> = {
   unauthorized: {
     titel: 'Kartendienst weist den Serverschlüssel ab',
     erklaerung:
-      'Der hinterlegte Schlüssel wurde nicht angenommen. Das ist ein Einrichtungsschritt, keine abgelaufene Anmeldung.',
+      'Der Kartendienst hat den hinterlegten Serverschlüssel nicht angenommen. Das ist ein Einrichtungsschritt und betrifft nur die Routenberechnung.',
+  },
+  session_invalid: {
+    titel: 'Anmeldung gilt nicht mehr',
+    erklaerung:
+      'Die Routenberechnung braucht eine gültige Sitzung. Melde dich neu an; die Stopps und die Karte bleiben davon unberührt.',
+  },
+  function_unavailable: {
+    titel: 'Routenfunktion antwortet nicht',
+    erklaerung:
+      'Die Anfrage hat die Routenfunktion nicht erreicht — geantwortet hat etwas davor. Über den Kartendienst sagt das nichts.',
   },
   rate_limited: {
     titel: 'Kontingent erschöpft',

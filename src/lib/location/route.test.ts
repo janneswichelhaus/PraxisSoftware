@@ -74,13 +74,54 @@ describe('Routenabruf', () => {
     expect(ergebnis.ok === false && ergebnis.error.code).toBe('not_configured');
   });
 
-  it('macht aus einem Netzfehler "nicht erreichbar" statt einer Ausnahme', async () => {
+  it('macht aus einem Netzfehler "Function antwortet nicht" statt einer Ausnahme', async () => {
     invoke.mockResolvedValue({ data: null, error: new TypeError('fetch failed') });
 
     const ergebnis = await fordereRouteAn(STOPPS, 'bicycle');
 
-    expect(ergebnis.ok === false && ergebnis.error.code).toBe('unavailable');
+    // Nicht `unavailable`: Ueber den Kartendienst sagt ein Netzfehler zur
+    // eigenen Function nichts (BEF-027).
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('function_unavailable');
   });
+
+  it('gibt einer Antwort der Plattform nicht dem Kartendienst die Schuld', async () => {
+    // Genau so kam es im ersten Abnahmelauf: Kong antwortete 503 mit
+    // „name resolution failed", weil die Laufzeit nicht lief - auf dem
+    // Bildschirm stand „Kartendienst nicht erreichbar" (BEF-027).
+    invoke.mockResolvedValue({
+      data: null,
+      error: new Error('Edge Function returned a non-2xx status code'),
+      response: new Response(JSON.stringify({ message: 'name resolution failed' }), {
+        status: 503,
+      }),
+    });
+
+    const ergebnis = await fordereRouteAn(STOPPS, 'bicycle');
+
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('function_unavailable');
+    expect(ergebnis.ok === false && ergebnis.error.message).toContain('503');
+  });
+
+  it.each([401, 403])(
+    'liest aus einer %i der Plattform eine ungueltige Sitzung',
+    async (status) => {
+      invoke.mockResolvedValue({
+        data: null,
+        error: new Error('non-2xx'),
+        response: new Response(
+          JSON.stringify({
+            code: 'UNAUTHORIZED_NO_AUTH_HEADER',
+            message: 'Missing authorization header',
+          }),
+          { status },
+        ),
+      });
+
+      const ergebnis = await fordereRouteAn(STOPPS, 'bicycle');
+
+      expect(ergebnis.ok === false && ergebnis.error.code).toBe('session_invalid');
+    },
+  );
 
   it.each([
     ['gar nichts', null],
@@ -94,7 +135,9 @@ describe('Routenabruf', () => {
     const ergebnis = await fordereRouteAn(STOPPS, 'bicycle');
 
     expect(ergebnis.ok).toBe(false);
-    expect(ergebnis.ok === false && ergebnis.error.code).toBe('unavailable');
+    // Was nicht im Format dieser Function kommt, ist keine Aussage ueber den
+    // Anbieter - auch dann nicht, wenn der Status 200 lautet.
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('function_unavailable');
   });
 
   it('traegt in keiner Meldung eine Koordinate der Anfrage', async () => {

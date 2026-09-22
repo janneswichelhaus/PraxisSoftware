@@ -28,12 +28,20 @@ export type TravelProfile = 'bicycle' | 'cargo_bicycle';
  * `not_configured` ist die Klasse für „hier ist nichts eingerichtet" und
  * bewusst von `unavailable` getrennt (ANN-090): Eine fehlende Einrichtung als
  * Ausfall des Anbieters zu melden wäre eine falsche Auskunft.
+ *
+ * `session_invalid` trennt aus demselben Grund die abgewiesene Sitzung vom
+ * abgelehnten Serverschlüssel (BEF-027). `unauthorized` heißt hier ab jetzt
+ * ausschließlich: **der Anbieter** hat unseren Schlüssel abgelehnt.
+ * `function_unavailable` vergibt nur der Client, wenn gar nicht diese Function
+ * geantwortet hat; die Function selbst gibt es nie aus.
  */
 export type LocationErrorCode =
   | 'timeout'
   | 'unavailable'
   | 'rate_limited'
   | 'unauthorized'
+  | 'session_invalid'
+  | 'function_unavailable'
   | 'invalid_request'
   | 'not_found'
   | 'not_configured';
@@ -44,6 +52,8 @@ export const FEHLERKLASSEN = [
   'unavailable',
   'rate_limited',
   'unauthorized',
+  'session_invalid',
+  'function_unavailable',
   'invalid_request',
   'not_found',
   'not_configured',
@@ -119,6 +129,7 @@ export interface RouteAdapter {
  * nicht versehentlich hineingeraten.
  */
 export interface Protokolleintrag {
+  /** Wer meldet: die Anbieterkennung des Adapters, oder `sitzung` für die Prüfung davor. */
   readonly anbieter: string;
   readonly code: LocationErrorCode | 'ok';
   readonly dauerMs: number;

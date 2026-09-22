@@ -133,16 +133,30 @@ Alles als `anna.beispiel@praxis.invalid` (therapist) oder
 
 ### 2. Die Zustände, die eine Praxis unterscheiden muss
 
+**Die Prüffrage ist nicht „steht da ein Fehler", sondern „zeigt er auf den
+Richtigen"** — das war der Fund BEF-027 aus dem ersten Lauf. Jeder Zustand
+nennt eine andere Abhilfe, und ein falscher Schuldiger schickt die Suche an
+die falsche Stelle.
+
 1. `LOCATION_PROVIDER` aus der Datei nehmen, `functions serve` neu starten,
    Seite neu laden. Erwartung: „Kein Kartendienst eingerichtet" mit den zwei
    Secret-Namen — **keine** Meldung über einen Ausfall des Anbieters
    (ANN-090).
-2. `functions serve` beenden, Seite neu laden. Erwartung: „Kartendienst nicht
-   erreichbar", die Stopps stehen weiter auf Karte und Liste.
+2. `functions serve` beenden, Seite neu laden. Erwartung: **„Routenfunktion
+   antwortet nicht"** — nicht „Kartendienst nicht erreichbar". Die Stopps
+   stehen weiter auf Karte und Liste.
 3. In beiden Fällen: **„Erneut versuchen"** anklicken. Erwartung: Der Versuch
    läuft erkennbar neu; nach dem Start der Function kommt die Route.
 4. Einen falschen `PTV_API_KEY` eintragen. Erwartung: „Kartendienst weist den
-   Serverschlüssel ab" — nicht „abgemeldet", nicht die Anmeldemaske.
+   Serverschlüssel ab" — und im `serve`-Fenster **eine** Logzeile
+   (`ptv unauthorized nach … ms`). Ohne diese Zeile war der Anbieter nicht im
+   Spiel, und die Meldung wäre falsch.
+5. Abmelden und die Seite offen lassen (oder den Token verfallen lassen).
+   Erwartung: **„Anmeldung gilt nicht mehr"** — nicht der Kartendienst,
+   nicht der Serverschlüssel.
+6. Fehlt der Function `SUPABASE_URL` oder `SUPABASE_ANON_KEY`, erwartet:
+   „Kein Kartendienst eingerichtet" mit der **benannten Variable** in der
+   Meldung und einer Logzeile mit der Kennung `sitzung`.
 
 ### 3. Was zum Anbieter geht (die eigentliche Prüfung)
 

@@ -44,17 +44,20 @@ const CORS: Readonly<Record<string, string>> = {
 /**
  * Welcher HTTP-Status zu welcher Fehlerklasse gehört.
  *
- * `unauthorized` steht hier auf 502 und nicht auf 401: Aus dem Adapter heißt
- * die Klasse „der Anbieter lehnt **unseren** Serverschlüssel ab" — ein
- * Einrichtungsfehler auf unserer Seite. Die 401 bleibt der fehlenden Sitzung
- * der aufrufenden Person vorbehalten, sonst meldete die Oberfläche der
- * Therapeutin, sie sei abgemeldet.
+ * `unauthorized` steht hier auf 502 und nicht auf 401: Die Klasse heißt seit
+ * BEF-027 ausschließlich „der Anbieter lehnt **unseren** Serverschlüssel ab" —
+ * ein Einrichtungsfehler auf unserer Seite, kein Anmeldeproblem der Person.
+ * Die 401 gehört `session_invalid`.
  */
 const STATUS: Readonly<Record<LocationErrorCode, number>> = {
   timeout: 504,
   unavailable: 502,
   rate_limited: 429,
   unauthorized: 502,
+  session_invalid: 401,
+  // Vergibt nur der Client (BEF-027); steht hier, damit die Zuordnung
+  // vollstaendig bleibt und kein Fall unbemerkt durchfaellt.
+  function_unavailable: 502,
   invalid_request: 400,
   not_found: 502,
   not_configured: 503,
@@ -81,10 +84,24 @@ export function erstelleHandler({
       return antwort({ ok: false, error: fehler('invalid_request', 'nur POST') }, 405);
     }
 
-    if (!(await pruefeSitzung(anfrage.headers.get('Authorization')))) {
+    const sitzung = await pruefeSitzung(anfrage.headers.get('Authorization'));
+    if (sitzung.befund === 'abgelehnt') {
       // Ohne Sitzung wird nicht protokolliert: Es gab keinen Anbieteraufruf,
       // und ein Log je abgewiesenem Aufruf wäre ein Zähler über Zugriffe.
-      return antwort({ ok: false, error: fehler('unauthorized', 'keine gültige Sitzung') }, 401);
+      return antwort(
+        { ok: false, error: fehler('session_invalid', 'keine gültige Sitzung') },
+        STATUS.session_invalid,
+      );
+    }
+    if (sitzung.befund === 'nicht_pruefbar') {
+      // Hier **wird** protokolliert: Das ist kein abgewiesener Zugriff,
+      // sondern ein Betriebsfehler bei uns - und er betrifft jeden Aufruf,
+      // bis jemand ihn behebt (BEF-027).
+      protokolliere({ anbieter: 'sitzung', code: 'not_configured', dauerMs: 0 });
+      return antwort(
+        { ok: false, error: fehler('not_configured', sitzung.meldung) },
+        STATUS.not_configured,
+      );
     }
 
     const angefragt = await liesAnfrage(anfrage);
