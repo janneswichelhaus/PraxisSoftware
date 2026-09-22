@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-22 · letzte Session: G10 gestrichen
+# Status · Stand 2026-09-22 · letzte Session: G19 Dokumentationsgate
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -6,18 +6,18 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Jetzt
 
-**G10 (E2-Funktion Tagesplan) ist gestrichen**, Entscheidung Jannes (Weg a): Kein eigener Druck- oder Exportweg; die Tagesliste der Übersicht mit Anschrift, Telefon und Zugangshinweis gilt als Bereitstellung nach ADR-012 Punkt 9 und lässt sich über den Browser drucken (**ANN-021 Fassung 2**, kein neuer Eintrag). Kein Code außer einem Kommentar am Anker. Fortschritt **48,9 %** (vorher 48,3 — der Posten fällt aus dem Modell).
+**Das Dokumentationsgate prüft jetzt Querverweise (G19, BEF-028).** `pnpm docs:check` meldet eine ADR-Fassung, Prinzipienversion oder einen `§`-Abschnitt, den es nicht gibt, eine als „Grundlage“ genannte ältere Fassung und eine doppelt vergebene `ANN-`/`BEF-`/`IDEA-`-Nummer; Änderungsvermerke dürfen die Vergangenheit nennen. Neun veraltete Grundlagen korrigiert. **Grenze:** Ohne das Wort „Grundlage“ zählt eine ältere Fassung als Herkunft — das prüft erst die Durchsicht vor B2. Davor in derselben Session: **G10-Funktionsteil gestrichen** (Weg a, ANN-021 Fassung 2), Fortschritt **48,9 %**.
 
 ## Danach — Reihenfolge seit 2026-09-22
 
-1. **G19 Dokumentationsgate erweitern (BEF-028)** — vor der inhaltlichen Durchsicht für B2; der Rest
+1. **G6a Abgewiesene Zugriffe, Rest** — die übrigen rund 80 Abweisungen nachweisbar machen; der Rest
    von OPS-004 (Alarmierung, Security-Log 12 Monate, Art. 33) wartet auf **G3**
-2. **G6a Abgewiesene Zugriffe, Rest** — die übrigen rund 80 Abweisungen nachweisbar machen
-3. **MAP-006 Tagesroute** (`docs/development/MAP-LOOPS.md`) — synthetische Adressen, Gate vor dem Scharfschalten
+2. **MAP-006 Tagesroute** (`docs/development/MAP-LOOPS.md`) — synthetische Adressen, Gate vor dem Scharfschalten
+3. **Inhaltliche Durchsicht vor dem B2-Paket** (Rest von BEF-028, G14) — was das Gate nicht entscheiden kann
 
 ## Prüfverfahren
 
-**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2328**, unverändert; `test:db` **1834** aus PAT-006, heute **nicht gelaufen** — keine Migration, keine Policy. `ASSUMPTIONS.md`: **1222** Zeilen, Obergrenze **nicht** angehoben (ANN-021 in bestehenden Absätzen fortgeschrieben). Keine Sichtprüfung: keine Oberfläche geändert.
+**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2347** (19 neu, `scripts/docs-check.test.mjs`); `test:db` **1834** aus PAT-006, heute **nicht gelaufen** — keine Migration, keine Policy. `docs:check` mit fünf statt drei Prüfungen, gegengeprobt mit einem wieder eingebauten Beleg aus BEF-028 (rot) und ohne (grün). `ASSUMPTIONS.md`: **1222** Zeilen, Obergrenze nicht angehoben. Keine Sichtprüfung: keine Oberfläche geändert.
 
 ## Blocker (Jannes-seitig)
 
@@ -54,4 +54,4 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Die Funktion war schon da, nur nicht so benannt:** ADR-012 verlangt, dass die Tagesinformationen einen Ausfall überstehen, und gibt dafür selbst der Tagesliste aus ADR-001 einen zweiten Zweck. Ein eigener Druck- oder CSV-Weg hätte Anschriften aller Patient:innen eines Tages als Datei ohne Löschfrist erzeugt. Die Grenze steht ehrlich in ANN-021: Nach einem Neuladen ohne Netz ist die Liste weg, wenn sie nicht gedruckt wurde — ob das reicht, zeigt Probewoche 1. **Lokale Schritte:** `git pull origin claude/erste-offene-aufgabe-1sq7z7`.
+**Das Gate entscheidet nur, was eine Maschine entscheiden kann.** Eine ältere Fassung ist nicht per se falsch — „ADR-013 Fassung 2, Punkt 9“ sagt, woher ein Punkt stammt, und der Punkt gilt. Falsch wird sie, wo ein Dokument sie als seine Grundlage behauptet; genau diese Form hatten die Belege aus BEF-028. Offen aus BEF-028 bleibt der Nebenbefund: **drei von vier Obergrenzen sind voll** — heben oder auslagern ist deine Wahl. **Lokal:** `git pull origin claude/g19-dokumentationsgate`; **#101 zuerst mergen**, der Branch baut darauf auf.

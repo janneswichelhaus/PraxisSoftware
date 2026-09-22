@@ -1,8 +1,8 @@
 /**
  * Gate fuer die Dokumentation (ADR-013 Pruefung 2.10).
  *
- * Drei Zusicherungen, die sich objektiv pruefen lassen und die in der Runde R2
- * teuer erkauft wurden:
+ * Fuenf Zusicherungen, die sich objektiv pruefen lassen; die ersten drei wurden
+ * in der Runde R2 teuer erkauft, die letzten zwei mit G19:
  *
  *   1. **Obergrenzen.** Die vier Steuerungsdokumente wachsen nicht wieder zu.
  *      Eine Obergrenze ist keine Schoenheitsregel: Ein Dokument, das niemand
@@ -11,6 +11,13 @@
  *      Stelle im Code (15.1). Ein Eintrag ohne Anker ist eine Behauptung.
  *   3. **Links.** Ein relativer Verweis zeigt auf eine vorhandene Datei. Tote
  *      Verweise sind der haeufigste Weg, auf dem Dokumentation still veraltet.
+ *   4. **Querverweise** (G19, BEF-028). Genannte ADR-Fassungen, Versionen und
+ *      Abschnitte von `PROJECT_PRINCIPLES.md` gibt es; wer eine Fassung als
+ *      Grundlage nennt, nennt die geltende; Aenderungsvermerke duerfen die
+ *      Vergangenheit nennen. Regeln und Grenzen in `docs-check-regeln.mjs`.
+ *   5. **Eindeutige Nummern.** Jede `ANN-`, `BEF-` und `IDEA-`-Kennung steht
+ *      hoechstens einmal als Ueberschrift - zwei parallele Sitzungen haben
+ *      schon einmal dieselbe Nummer vergeben.
  *
  * Bewusst ohne Abhaengigkeiten: nur `node:fs`, `node:path` und `node:child_process`
  * fuer `git ls-files`. Ein Gate, das selbst ein Paket braucht, ist ein Gate
@@ -21,6 +28,13 @@
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join, normalize } from 'node:path';
+import {
+  aktuelleFassungen,
+  prinzipienAbschnitte,
+  prinzipienVersionen,
+  pruefeEindeutigkeit,
+  pruefeVerweise,
+} from './docs-check-regeln.mjs';
 
 /**
  * Obergrenzen in Zeilen, `wc -l`-Semantik (Zeilenumbrueche, nicht Zeilen).
@@ -147,6 +161,22 @@ for (const pfad of dateien.filter((p) => p.endsWith('.md'))) {
 }
 
 // -----------------------------------------------------------------------------
+// 4. Querverweise und 5. eindeutige Nummern
+// -----------------------------------------------------------------------------
+const markdown = dateien
+  .filter((p) => p.endsWith('.md'))
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade aus `git ls-files`, nicht aus einer Eingabe.
+  .map((pfad) => ({ pfad, text: readFileSync(pfad, 'utf8') }));
+const prinzipien = readFileSync('PROJECT_PRINCIPLES.md', 'utf8');
+const kontext = {
+  fassungen: aktuelleFassungen(readFileSync('docs/adr/README.md', 'utf8')),
+  versionen: prinzipienVersionen(prinzipien),
+  abschnitte: prinzipienAbschnitte(prinzipien),
+};
+for (const { pfad, text } of markdown) verstoesse.push(...pruefeVerweise(pfad, text, kontext));
+verstoesse.push(...pruefeEindeutigkeit(markdown));
+
+// -----------------------------------------------------------------------------
 if (verstoesse.length > 0) {
   console.error('Dokumentationsgate: %d Verstoesse.\n', verstoesse.length);
   for (const zeile of verstoesse) console.error(`  - ${zeile}`);
@@ -154,7 +184,7 @@ if (verstoesse.length > 0) {
 }
 
 console.log(
-  'Dokumentationsgate gruen: %d Obergrenzen, %d Register-Anker, Links in %d Markdown-Dateien.',
+  'Dokumentationsgate gruen: %d Obergrenzen, %d Register-Anker, Links und Querverweise in %d Markdown-Dateien.',
   Object.keys(OBERGRENZEN).length,
   (readFileSync(REGISTER, 'utf8').match(/^### ANN-\d{3}\b/gm) ?? []).length,
   dateien.filter((p) => p.endsWith('.md')).length,
