@@ -169,3 +169,62 @@ describe('Der Ausgang in der Edge Function', () => {
     expect(felder.sort()).toEqual(['anbieter', 'code', 'dauerMs']);
   });
 });
+
+/**
+ * Kein externer Fehler- oder Observability-Dienst (OPS-004, ADR-011 Punkt 5).
+ *
+ * **Die Entscheidung:** In V1 verlässt kein Fehlerbericht die eigene
+ * Infrastruktur. Sie folgt aus dem Rang, nicht aus einer Annahme: Ein solcher
+ * Dienst ist nach ADR-011 Punkt 5 ein Auftragsverarbeiter mit dem vollen
+ * Katalog aus ADR-002 einschließlich §203 StGB, und nach CLAUDE.md kommt kein
+ * neuer Anbieter ohne fachliche Notwendigkeit. Die gibt es nicht: Eine Praxis
+ * mit einer Handvoll Konten meldet einen Fehler schneller selbst, als ein
+ * Dashboard ihn zeigt, und die Plattformlogs samt `protokolliere` tragen die
+ * Suche danach. Der Preis ist, dass ein Fehler, den niemand meldet, unbemerkt
+ * bleibt — bis zum ersten echten Betrieb vertretbar.
+ *
+ * Dieser Test macht die Entscheidung zu einem Gate statt zu einem Vorsatz:
+ * Ein SDK dieser Art, in `package.json` oder als Import im Quelltext (auch als
+ * `npm:`- oder URL-Import der Edge Function), macht ihn rot. **Rücknahme:**
+ * erst Anbieterprüfung nach ADR-002 und Freigabe durch Jannes, dann die
+ * Übermittlung nur aus `src/lib/protokoll.ts` heraus (Punkt 6), dann hier den
+ * einen Namen aus der Liste nehmen.
+ */
+const FEHLERDIENSTE =
+  /(^|[/:@])(sentry|bugsnag|rollbar|datadog|dd-trace|newrelic|honeybadger|logrocket|highlight-run|appsignal|raygun|trackjs|elastic-apm|airbrake|posthog|opentelemetry)([/@-]|$)/i;
+
+describe('Externe Fehlerdienste', () => {
+  it('stehen nicht unter den Abhaengigkeiten', () => {
+    const paket = JSON.parse(readFileSync(join(stamm, 'package.json'), 'utf8')) as Record<
+      string,
+      unknown
+    >;
+    const namen = ['dependencies', 'devDependencies', 'optionalDependencies'].flatMap((feld) =>
+      Object.keys((paket[feld] as Record<string, string> | undefined) ?? {}),
+    );
+    expect(namen.filter((name) => FEHLERDIENSTE.test(name))).toEqual([]);
+  });
+
+  it('werden nirgends im Anwendungscode importiert', () => {
+    const IMPORT = /(?:from\s+|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g;
+    const treffer = getrackteDateien()
+      .filter((pfad) => ANWENDUNGSCODE.test(pfad))
+      .flatMap((pfad) =>
+        [...quelltext(pfad).matchAll(IMPORT)]
+          .map((import_) => import_[1]!)
+          .filter((ziel) => FEHLERDIENSTE.test(ziel))
+          .map((ziel) => `${pfad}: ${ziel}`),
+      );
+    expect(treffer).toEqual([]);
+  });
+
+  it('erkennt die Liste auch wirklich', () => {
+    // Gegenprobe gegen eine Liste, die still nichts mehr findet.
+    for (const name of ['@sentry/react', 'npm:@sentry/deno', 'dd-trace', 'posthog-js']) {
+      expect(FEHLERDIENSTE.test(name), name).toBe(true);
+    }
+    for (const name of ['@supabase/supabase-js', 'react-router', 'zod', '@/lib/protokoll']) {
+      expect(FEHLERDIENSTE.test(name), name).toBe(false);
+    }
+  });
+});
