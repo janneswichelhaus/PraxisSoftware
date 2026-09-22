@@ -50,13 +50,13 @@ Feature, **P3** später.
 | B6 | Beschäftigtendaten: Touren, Leistungskontrolle | **vorläufig entschieden 2026-09-08: nein** | vor ZK-001, TOUR-001; ANN-004 überbrückt das Audit |
 | B7 | Adressdaten an den Kartendienst | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); **E-20 erledigt 2026-09-13** (Fassung 2 angenommen), Gate **offen** | ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12); überholte Stände im Archiv |
 | B8 | Lizenzen für Fragebögen und PROMs | Nutzung **bestätigt durch Jannes 2026-09-19**; schriftlicher Beleg des Lizenzgebers bleibt offen (M3) | vor FRB-003 |
-| B9 | Betreuung ohne und nach Heilbehandlung (Personal Training) | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08) | vor Etappe 8; Steuerteil mit B4; Volltext: `ANFRAGEN.md` § B9 |
+| B9 | Betreuung ohne und nach Heilbehandlung (Personal Training) | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08); **Punkt 6 neu 2026-09-22**: Ernährung als Protokoll und Zielwert gehört zu V1 | Roadmap ALT-EPIC-002, KND-EPIC-001; Steuerteil mit B4; Volltext: `ANFRAGEN.md` § B9 |
 | B10 | Automatisierte Progression: MDR-Grenze | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1 | vor Etappe 9; Volltext: `ANFRAGEN.md` § B10 |
-| B11 | Paketpreise, Vorauszahlung, Anreize | **vorläufig entschieden 2026-09-08**: vorerst nicht anbieten | vor Etappe 8; Volltext: `ANFRAGEN.md` § B11 |
+| B11 | Paketpreise, Vorauszahlung, Anreize | **neu entschieden 2026-09-22**: Training als Paket, Plattform darin enthalten; Portal-Abo der Patient:innen als Monatsrechnung | Roadmap ANG-EPIC-001/002; Steuer mit B4; Volltext: `ANFRAGEN.md` § B11 |
 | B12 | Stichtag der Umstellung und Rechnungsnummernkreis | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4 | — |
 | B13 | E-Mail-Versand aus der Plattform (Einladung, Passwort) | **entschieden 2026-09-06** durch Jannes (Option a); Auth-Mails Teil von OPS-001 (A2) | Roadmap G2, G3 |
 | B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **entschieden 2026-09-19**: Weg 1 jetzt, Weg 3 nach OPS-001 | unten; [`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md) |
-| B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **vorläufig entschieden 2026-09-08**: keine automatische Erinnerung · **Nachtrag 2026-09-12**: Terminmail aus dem eigenen Postfach ist vorgesehen und gebaut (CAL-013, ANN-041) | unten |
+| B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **neu entschieden 2026-09-22**: automatische Erinnerung und Online-Anfrage gehören zu V1, gebaut hinter Adapter; Anbieter offen · Terminmail aus dem eigenen Postfach gebaut (CAL-013, ANN-041) | unten |
 | C1 | Leistungsziffern und Office | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15 |
 | C2 | Klinische Inhalte in organisatorischer Kommunikation | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15 |
 | C3 | Fail-closed gegen Patientensicherheit, Break Glass | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md) |
@@ -185,9 +185,9 @@ seinen Lizenzstatus als Feld. Wo: §7; Roadmap FRB-003. Frei: FRB-001/002.
 
 ### B9 — Betreuung ohne und nach Heilbehandlung: Rechtsrahmen und Datentrennung
 
-vollständig vorläufig entschieden · 2026-09-07 und 2026-09-08 · Jannes
+vorläufig entschieden · 2026-09-07/08 · Jannes; Punkt 6 neu 2026-09-22 (Ernährung in V1)
 
-Volltext: `ANFRAGEN.md` § B9. Wo: §1; Roadmap Etappe 8. Annahmen: ANN-032
+Volltext: `ANFRAGEN.md` § B9. Wo: §1; Roadmap ALT-EPIC-002. Annahmen: ANN-032
 (automatische Klassifizierung hängt
 an B9), ANN-014 (`MDR_REVIEW_REQUIRED` bei Bewertung).
 
@@ -199,9 +199,9 @@ Volltext: `ANFRAGEN.md` § B10. Wo: ADR-006; Roadmap Etappe 9. Annahmen: ANN-014
 
 ### B11 — Paketpreise, Vorauszahlung und Anreize
 
-vorläufig entschieden · 2026-09-08 · Jannes · vorerst nicht anbieten
+neu entschieden · 2026-09-22 · Jannes · Pakete ja, Abo als Monatsrechnung
 
-Volltext: `ANFRAGEN.md` § B11. Wo: ADR-009; Roadmap Etappe 8.
+Volltext (Stand 2026-09-08): `ANFRAGEN.md` § B11. Wo: ADR-009, §14 in 0.16.
 
 ### B12 — Stichtag der Umstellung und Rechnungsnummernkreis
 
@@ -230,18 +230,17 @@ Dokument. Wo: ADR-009 Punkt 14, ADR-017. ABR-003b ist frei.
 
 ### B15 — Terminerinnerung und Online-Terminbuchung
 
-vorläufig entschieden · 2026-09-08 · Jannes · keine automatische Erinnerung;
-Nachtrag 2026-09-12
+neu entschieden · 2026-09-22 · Jannes · Erinnerung und Online-Anfrage in V1
 
-In Stufe 1 und 2 keine automatische Terminerinnerung, die Anrufliste bleibt:
-Jeder automatisierte Kanal wäre ein neuer Dienstleister mit einem
-Gesundheitsdatum und löste Prüfung nach ADR-002, DSFA-Wiedervorlage und
-Einwilligung aus (PAT-006); falls doch, dann E-Mail vor SMS, Messenger
-ausgeschlossen. Der Nachtrag vom 2026-09-12 trennt davon die Terminmail aus dem
-eigenen Postfach — auf Klick, gebaut als CAL-013, ohne neuen Empfänger. Offen
-bleiben automatische Erinnerung, Versanddienstleister, SMS, Online-Buchung und
-die Einwilligung je Patient:in. Wo: §3.5, ADR-002, ADR-007; Roadmap Stufe 2,
-PAT-006. Annahmen: ANN-039, ANN-040, ANN-041.
+Bis 2026-09-22 galt: keine automatische Erinnerung, die Anrufliste bleibt. Jetzt
+gehören Erinnerung und Online-Anfrage zu V1 (Roadmap KOM-EPIC-003), gebaut
+hinter einem Adapter und scharf erst nach der Anbieterprüfung: Jeder
+automatisierte Kanal ist ein neuer Dienstleister mit einem Gesundheitsdatum
+(ADR-002, DSFA-Wiedervorlage, Einwilligung nach PAT-006). E-Mail vor SMS,
+Messenger ausgeschlossen. Die Terminmail aus dem eigenen Postfach — auf Klick,
+ohne neuen Empfänger — ist gebaut (CAL-013). Offen: Versanddienstleister,
+Einwilligung je Person. Wo: §3.5, ADR-002, ADR-007. Annahmen: ANN-039, ANN-040,
+ANN-041.
 
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
 

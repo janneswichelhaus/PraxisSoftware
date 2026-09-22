@@ -5,7 +5,7 @@
     "name": "Eröffnung — erster Behandlungstag mit der Software",
     "termin": "Juli 2027"
   },
-  "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab. Die Stufen heißen wie in der Fortschrittstabelle: fertig = Skill-Schritt I durchlaufen, abgenommen = Jannes hat docs/abnahme/ durchlaufen.",
+  "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab. Die Stufen heißen wie in der Fortschrittstabelle: fertig = Skill-Schritt I durchlaufen, abgenommen = Jannes hat docs/abnahme/ durchlaufen. Blöcke und Gewichte seit Roadmap 6.0 (2026-09-22): V1 ist das Endprodukt.",
   "statuswerte": {
     "offen": {
       "anteil": 0,
@@ -35,9 +35,9 @@
   "bloecke": [
     {
       "id": "A",
-      "name": "Kernprozess — Software Stufe 1",
-      "gewicht": 30,
-      "bezug": "ROADMAP.md, Spur A1 Etappe 1 (bis M1) und Etappe L (Stufe 1, vor dem Feature-Freeze)",
+      "name": "Kernprozess — Etappe 1 und L",
+      "gewicht": 20,
+      "bezug": "ROADMAP.md, Etappen „Gebaut\" (Etappe 1, Etappe L) und M1",
       "posten": [
         {
           "id": "fundament",
@@ -193,9 +193,9 @@
     },
     {
       "id": "B",
-      "name": "Software Stufe 2 vor der Eröffnung",
-      "gewicht": 10,
-      "bezug": "ROADMAP.md, Etappe T (MAP-LOOPS.md) und Etappe 2",
+      "name": "V1-Ausbau vor der Eröffnung",
+      "gewicht": 32,
+      "bezug": "ROADMAP.md, Blöcke 1 bis 9",
       "posten": [
         {
           "id": "map-002",
@@ -223,7 +223,7 @@
         },
         {
           "id": "map-006",
-          "name": "MAP-006 Tagesroute mit echten Adressen (nach Gate)",
+          "name": "MAP-006 Tagesroute mit Fahrpuffer (Block 2)",
           "gewicht": 2,
           "status": "offen"
         },
@@ -246,6 +246,228 @@
           "status": "offen"
         },
         {
+          "id": "frb-epic-003",
+          "name": "FRB-EPIC-003 Befund mit Bausteinen",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "dok-005",
+          "name": "DOK-005 Therapiebericht",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "prx-epic-001",
+          "name": "PRX-EPIC-001 Warteliste und Terminsuche",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "prx-epic-002",
+          "name": "PRX-EPIC-002 Am Termin",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "prx-epic-003",
+          "name": "PRX-EPIC-003 Aufgaben und Nachsorge",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "trn-epic-001",
+          "name": "TRN-EPIC-001 Trainingskund:in anlegen",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "trn-epic-002",
+          "name": "TRN-EPIC-002 Trainingstermine",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "trn-epic-003",
+          "name": "TRN-EPIC-003 Trainingsrechnung",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "trn-epic-004",
+          "name": "TRN-EPIC-004 Trainingsprotokoll",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "por-epic-001",
+          "name": "POR-EPIC-001 Plattformzugang",
+          "gewicht": 3,
+          "status": "offen"
+        },
+        {
+          "id": "por-epic-002",
+          "name": "POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "por-epic-003",
+          "name": "POR-EPIC-003 Einwilligungen, Export, Einstellungen",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ang-epic-001",
+          "name": "ANG-EPIC-001 Portal-Abo als Monatsrechnung",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ang-epic-002",
+          "name": "ANG-EPIC-002 Pakete und Preise",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "knd-epic-001",
+          "name": "KND-EPIC-001 Betreuung nach der Behandlung",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "ueb-epic-001",
+          "name": "UEB-EPIC-001 Übungsbibliothek",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ueb-epic-002",
+          "name": "UEB-EPIC-002 Plan und Schnappschuss",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ueb-epic-003",
+          "name": "UEB-EPIC-003 Plan als PDF und im Portal",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "kom-epic-001",
+          "name": "KOM-EPIC-001 Strukturierte Rückfrage",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "kom-epic-002",
+          "name": "KOM-EPIC-002 Foto und Video",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "kom-epic-003",
+          "name": "KOM-EPIC-003 Benachrichtigungen und Terminerinnerung",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "trk-epic-001",
+          "name": "TRK-EPIC-001 Einheiten und Check-ins",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "trk-epic-002",
+          "name": "TRK-EPIC-002 Schmerz, Sicherheit, Kontext",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "trk-epic-003",
+          "name": "TRK-EPIC-003 Offline-Erfassung",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "out-epic-001",
+          "name": "OUT-EPIC-001 Fortschritt ohne Bewertung",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "alt-epic-001",
+          "name": "ALT-EPIC-001 Aktivitäten und Gewohnheiten",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "alt-epic-002",
+          "name": "ALT-EPIC-002 Ernährung",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "org-epic-001",
+          "name": "ORG-EPIC-001 Zeitstrahl und Sitzungsvorbereitung",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "flt-epic-001",
+          "name": "FLT-EPIC-001 Radflotte",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "team-001",
+          "name": "TEAM-001 Teamkommunikation",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "url-001",
+          "name": "URL-001 Urlaub",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "zk-001",
+          "name": "ZK-001 Zeitkonto",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "ers-001",
+          "name": "ERS-001 Erstattungen",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "ki-epic-001",
+          "name": "KI-EPIC-001 Gateway und Sprachdokumentation",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ki-epic-002",
+          "name": "KI-EPIC-002 Assistenz",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "map-007",
+          "name": "MAP-007 Führung auf dem Gerät",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "prx-epic-004",
+          "name": "PRX-EPIC-004 Komfort und Auswertung",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
           "id": "ui-001",
           "name": "UI-001 Politur und Barrierefreiheit (G17)",
           "gewicht": 1,
@@ -256,7 +478,7 @@
     {
       "id": "C",
       "name": "Betriebsreife — Etappe G",
-      "gewicht": 25,
+      "gewicht": 18,
       "bezug": "ROADMAP.md, Spur A3 Etappe G (vor M3)",
       "posten": [
         {
@@ -293,6 +515,12 @@
           "id": "g7-ops-003",
           "name": "G7 OPS-003 Backup und Restore-Test",
           "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "g6a",
+          "name": "G6a Abgewiesene Zugriffe, Rest",
+          "gewicht": 1,
           "status": "offen"
         },
         {
@@ -342,13 +570,19 @@
           "name": "G18 Go-live-Gate (M3)",
           "gewicht": 2,
           "status": "offen"
+        },
+        {
+          "id": "g19",
+          "name": "G19 Dokumentationsgate erweitern",
+          "gewicht": 1,
+          "status": "offen"
         }
       ]
     },
     {
       "id": "D",
       "name": "Eröffnung — Etappe H",
-      "gewicht": 15,
+      "gewicht": 12,
       "bezug": "ROADMAP.md, Spur A3 Etappe H (bis M5)",
       "posten": [
         {
@@ -392,7 +626,7 @@
     {
       "id": "E",
       "name": "Entscheidungen und externe Prüfungen — Spur B",
-      "gewicht": 20,
+      "gewicht": 18,
       "bezug": "ROADMAP.md, Spur B und docs/decisions/OPEN_DECISIONS.md",
       "posten": [
         {
@@ -483,6 +717,36 @@
           "id": "ann-pruefpaket",
           "name": "Prüfpaket: alle Annahmen Datenschutz/Recht extern bestätigt (M3)",
           "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "adr-023",
+          "name": "ADR-023 Plattformzugang",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "adr-024",
+          "name": "ADR-024 Offline und Benachrichtigungen",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "b5-identitaet",
+          "name": "B5 Identität und Vertretung",
+          "gewicht": 1,
+          "status": "vorlaeufig"
+        },
+        {
+          "id": "b9-betreuung",
+          "name": "B9 Betreuung ohne Heilbehandlung, Ernährung",
+          "gewicht": 1,
+          "status": "vorlaeufig"
+        },
+        {
+          "id": "anbieter",
+          "name": "Anbieterprüfungen: PTV, SMTP, SMS, KI, Zahlung, Hosting",
+          "gewicht": 3,
           "status": "offen"
         }
       ]

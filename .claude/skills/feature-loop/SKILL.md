@@ -17,7 +17,7 @@ den Zuschnitt und die Abbruchbedingungen.
 
 **Zuerst `docs/development/ROADMAP.md` lesen** — Einordnung des Auftrags,
 Voraussetzungen des Schritts, Credit-Regeln; fehlt eine Voraussetzung aus
-Spur B, gilt die Regel dort („Was dieses Dokument ist").
+„Entscheidungen und Prüfungen", gilt die Regel dort („Was dieses Dokument ist").
 
 ---
 

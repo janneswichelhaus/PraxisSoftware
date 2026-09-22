@@ -178,7 +178,7 @@ Schritt 6).
 
 | Dokument | Loop (`/feature-loop`, Pfad A) | Sandbox (`/sandbox`, Pfad S) | Docs- oder Planungssession | Ablaufrunde | Wochenupdate |
 | --- | --- | --- | --- | --- | --- |
-| `ROADMAP.md` | Fortschrittstabelle, „Nächster Loop", `fortschritt.json` (Schritt I) | — | nachstellen, neue Zeilen als Vorschlag | nur als Diff, den Jannes freigibt | liest nur |
+| `ROADMAP.md` | Fortschrittstabelle, `fortschritt.json` (Schritt I) | — | nachstellen, neue Zeilen als Vorschlag | nur als Diff, den Jannes freigibt | liest nur |
 | `../STATUS.md` | Jetzt, Danach, Blocker, Letzte Session (Schritt I) | Zeile, wenn der Prototyp die Reihenfolge verschiebt | Stand nachführen | — | liest nur |
 | `ARBEITSBEREICHE.md` | ersetzte Vorschau austragen | Prototyp eintragen (S4) und austragen (S6) | Stand nachführen | — | abgelaufene Prototypen melden (Schritt 6) |
 | `OPEN_DECISIONS.md` | Verweis auf neue `ANN`-Kennungen | — | Entscheidungen von Jannes eintragen | — | liest nur |

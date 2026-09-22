@@ -262,9 +262,9 @@ Dokumentationsentscheidung ist getroffen und umgesetzt (ADR-016, DOK-001 bis
 DOK-004).
 
 Die Vorschaubereiche aus Abschnitt 2 sind seit dem 2026-09-05 in der Roadmap
-als **Spur A2 „Praxisbetrieb"** eingeordnet — Urlaub, Zeitkonto, Radflotte,
-Erstattungen, Teamkommunikation. Sie beginnt nach dem ersten Betriebsmonat
-(M6, Stufe 2). Die Loops MAP-002 bis MAP-006 ersetzen die Vorschau **Touren**
+als **Praxisbetrieb** (früher Spur A2) eingeordnet — Urlaub, Zeitkonto, Radflotte,
+Erstattungen, Teamkommunikation. Seit Roadmap 6.0 (2026-09-22) gehört sie zu
+V1 und steht vor der Eröffnung (Block 8). Die Loops MAP-002 bis MAP-006 ersetzen die Vorschau **Touren**
 (Etappe T, `MAP-LOOPS.md`, seit MAP-001 am 2026-09-08): Karte der
 Tagesroute, Fahrradroute, Fahrzeiten, Navigations-Handoff, Tourenliste.
 MAP-002 bis MAP-005 sind Prototypen mit synthetischen Daten und laufen als
