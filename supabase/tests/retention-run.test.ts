@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, resetDatabase } from './helpers/db';
+import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
 
 const { users, patients, organizationId, persons, trainingRelationships } = SEED;
 
@@ -840,9 +840,15 @@ describe('Loeschjournal', () => {
     );
     expect(rows.length).toBeGreaterThan(0);
 
-    await expect(
-      asUser(users.therapist, 'select * from public.list_deletion_runs(50)'),
-    ).rejects.toThrow(/deletion journal access denied/);
+    // OPS-004: null Zeilen statt Ausnahme, und der Versuch steht im Auditlog.
+    const abgewiesen = await asUser(users.therapist, 'select * from public.list_deletion_runs(50)');
+    expect(abgewiesen.rows).toEqual([]);
+
+    await asUserCommitted(users.therapist, 'select * from public.list_deletion_runs(50)');
+    const { rows: eintraege } = await asPostgres<{ actor_user_id: string; outcome: string }>(
+      "select actor_user_id, outcome from public.audit_log where action = 'deletion_runs.read'",
+    );
+    expect(eintraege).toEqual([{ actor_user_id: users.therapist, outcome: 'denied' }]);
   });
 });
 

@@ -115,6 +115,9 @@ export const AUDIT_ACTIONS = [
   // OPS-007: die Einrichtung der einen Organisation, einmalig aus dem
   // SQL-Editor (ADR-003, ADR-010 Punkt 2).
   'organization.bootstrapped',
+  // OPS-004: nur mit outcome 'denied' — das erfolgreiche Lesen der
+  // Löschläufe bleibt ohne Eintrag, der abgewiesene Versuch nicht.
+  'deletion_runs.read',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -193,6 +196,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'payment.recorded': 'Zahlung erfasst',
   'payment.voided': 'Zahlung storniert',
   'organization.bootstrapped': 'Praxis eingerichtet',
+  'deletion_runs.read': 'Löschläufe gelesen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

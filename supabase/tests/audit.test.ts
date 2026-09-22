@@ -134,9 +134,71 @@ describe('Audit-Lesepfad', () => {
   });
 
   it('verweigert therapist, team_lead, office und patient den Zugriff', async () => {
+    // OPS-004: abgewiesen wird mit null Zeilen statt mit einer Ausnahme, damit
+    // der Versuch im Log bestehen bleibt (der naechste Test prueft das).
     for (const user of [users.therapist, users.teamLead, users.office, users.patientMax]) {
-      await expect(asUser(user, LIST)).rejects.toThrow(/audit log access denied/);
+      const { rows } = await asUser(user, LIST);
+      expect(rows, user).toEqual([]);
     }
+  });
+
+  it('protokolliert jeden abgewiesenen Versuch als denied (OPS-004)', async () => {
+    const abgewiesen = [users.therapist, users.teamLead, users.office, users.patientMax];
+    for (const user of abgewiesen) {
+      await committedAs(user, LIST);
+    }
+    const { rows } = await asPostgres<{
+      actor_user_id: string;
+      organization_id: string;
+      subject_id: string;
+      outcome: string;
+    }>(
+      `select actor_user_id, organization_id, subject_id, outcome
+       from public.audit_log where action = 'audit_log.read'`,
+    );
+    expect(rows.map((r) => r.actor_user_id).sort()).toEqual([...abgewiesen].sort());
+    for (const row of rows) {
+      expect(row.outcome).toBe('denied');
+      expect(row.organization_id).toBe(organizationId);
+      expect(row.subject_id).toBe(organizationId);
+    }
+  });
+
+  it('zeigt owner die abgewiesenen Versuche mit ihrem Ergebnis', async () => {
+    await committedAs(users.office, LIST);
+    const { rows } = await asUser<{ actor_user_id: string; outcome: string }>(
+      users.ownerTherapist,
+      'select * from public.list_audit_events(null, null, null, $1)',
+      ['audit_log.read'],
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({ actor_user_id: users.office, outcome: 'denied' }),
+    ]);
+  });
+
+  it('bricht fuer ein Konto ohne Praxis weiter ab - es gibt kein Log, in das der Versuch gehoerte', async () => {
+    const ohnePraxis = '11111111-1111-4111-8111-0000000000d1';
+    await asPostgres(
+      `insert into auth.users (id, email, aud, role)
+       values ($1, 'ohne-praxis@example.invalid', 'authenticated', 'authenticated')`,
+      [ohnePraxis],
+    );
+    try {
+      await expect(asUser(ohnePraxis, LIST)).rejects.toThrow(/audit log access denied/);
+    } finally {
+      await asPostgres('delete from auth.users where id = $1', [ohnePraxis]);
+    }
+  });
+
+  it('laesst den Schreibhelfer fuer abgewiesene Versuche fuer keine Anwendungsrolle ausfuehren', async () => {
+    // Sonst liesse sich das Log mit erfundenen denied-Zeilen fuellen.
+    const { rows } = await asPostgres<{ rolname: string }>(`
+      select r.rolname
+      from pg_roles r
+      where r.rolname in ('anon', 'authenticated', 'service_role')
+        and has_function_privilege(r.oid, 'app.record_denied_owner_read(uuid, text, text)', 'execute')
+    `);
+    expect(rows).toEqual([]);
   });
 
   it('verweigert den Zugriff ohne Session', async () => {
