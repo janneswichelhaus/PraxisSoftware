@@ -624,6 +624,40 @@ kommt. Noch nichts davon ist gebaut.
 
 ---
 
+### IDEA-PRX-044 — Führung auf dem Rad innerhalb der Software
+
+| | |
+|---|---|
+| Status | überführt → ADR-019 Fassung 3, Abschnitt F / §20.1 / MAP-007 |
+| Quelle | Jannes, 2026-09-22 |
+| Berührt | §2.2, §9, §20.1; ADR-015, ADR-019 Fassung 3 Abschnitt F; B2, B7, E-24; MAP-005, MAP-006, MAP-007; `IDEA-PRX-030` |
+
+**Idee.** Die Fahrt zwischen zwei Hausbesuchen wird in der Anwendung selbst
+geführt — Abbiegeansagen statt Übergabe an Google Maps oder Apple Maps.
+
+**Stand.** Entschieden am 2026-09-22: Die Führung wird gebaut, aber erst nach
+MAP-006 und nach dem Gate. Sie hat zwei Festlegungen bewegt — ADR-019 Punkt 6
+(„eine eigene Turn-by-Turn-Engine ist nicht Ziel") ist abgelöst, und §20 hat
+mit §20.1 einen Abschnitt bekommen, der die Führung erlaubt und eng bindet.
+**Nicht bewegt wurde das Ortungsverbot selbst**: Die Führung läuft auf dem
+Gerät und meldet der Praxis keinen Standort.
+
+**Warum der Zuschnitt so aussieht.** Die Prüfung am 2026-09-22 hat ergeben,
+dass PTV eine Führung **nicht** als Auftragsverarbeitung liefert. Die Routing
+API gibt Manöverdaten; „Guided Navigation" übergibt eine Route an PTVs eigene
+App — also wieder ein Handoff; das einbettbare SDK von PTV Navigator G2 ist
+ein natives Lkw-Produkt und scheitert an §2.2 („ohne native Apps") und an
+ADR-015. Wer die Führung ohnehin selbst baut, baut sie im Browser — und genau
+deshalb muss die Position das Gerät nie verlassen. Belegtiefe: aus Suchtreffern
+und Produktseiten, **nicht** aus der API-Referenz (`developer.myptv.com` ist
+aus der Entwicklungsumgebung gesperrt).
+
+**Offen.** **E-24**: Liefern die OSM-Radprofile überhaupt Manöver? Ohne ein Ja
+gibt es keine Ansage. Dazu **B2** in der erweiterten Fassung und das
+Aufrufkontingent bei wiederholter Neuberechnung.
+
+---
+
 ### IDEA-PRX-033 — Planungskarte der aktiven Adressen
 
 | | |

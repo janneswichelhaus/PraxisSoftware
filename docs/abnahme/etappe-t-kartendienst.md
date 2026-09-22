@@ -175,13 +175,29 @@ die falsche Stelle.
    (zweites Browserfenster oder `curl -X POST`). Erwartung: **401**, und im
    Terminal keine Anbieteranfrage.
 
-### 4. Die Profilfrage (MAP-003c, Entscheidung von Jannes)
+### 4. Die Profilfrage (MAP-003c) — **entschieden am 2026-09-22**
 
-1. Erwartung: Unter der Gesamtangabe steht eine zweite Zeile mit dem
-   **Lastenradprofil** und dem Unterschied.
-2. **Beide Zahlenpaare notieren** und an den nächsten Loop geben: Sie
-   beantworten, welches Profil `cargo_bicycle` im Vertrag abbilden soll. Eine
-   Einstellung dafür gibt es bewusst nicht.
+Gemessen über die volle Runde mit acht Stopps:
+
+| Profil        | Strecke     | Fahrzeit                              |
+| ------------- | ----------- | ------------------------------------- |
+| Fahrrad       | 25,4 km     | 1 Std. 19 Min.                        |
+| **Lastenrad** | **26,2 km** | **1 Std. 19 Min.** (+770 m · +1 Min.) |
+
+**Jannes hat das Lastenradprofil gewählt.** Die Zahlen haben es nicht
+entschieden — sie liegen drei Prozent und eine Minute auseinander und tragen
+keine Planung. Entschieden hat das Rad, das gefahren wird. Die 770 Meter
+Umweg sind dabei eher ein Argument dafür als dagegen: Sie deuten darauf hin,
+dass das Profil eine Stelle umfährt, die es dem Fahrrad zumutet — geprüft ist
+das nicht, es ist die naheliegende Erklärung. Und der Fehler wäre in dieser
+Richtung billiger: Eine Minute mehr kostet nichts, eine Stelle, an der das
+Rad nicht durchkommt, kostet auf der Straße.
+
+Was das **nicht** heißt: keine Einstellung, kein Schalter, und der
+Kartenprototyp fragt weiterhin beide Profile ab — der Vergleich ist sein
+Zweck. Die Wahl hängt an genau einer Stelle: dem Kommentar zu
+`TravelProfile` in `src/lib/location/contract.ts`. Wo eine Tourenplanung
+später **ein** Profil braucht (zuerst **MAP-004**), ist es dieses.
 
 ### 5. Telefon und Rest der Anwendung
 

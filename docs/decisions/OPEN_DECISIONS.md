@@ -153,12 +153,12 @@ Vertreterzugriffe); Roadmap Etappe 4.
 vorläufig entschieden · 2026-09-08 · Jannes · nein
 
 Standort-, Touren- und Arbeitszeitdaten werden nicht zur Verhaltens- oder
-Leistungsbeurteilung verwendet; die Begrenzung wird technisch umgesetzt
-(Aggregation statt Einzelbewegung, kurze Löschfristen, kein Live-Tracking, keine
-Auswertung je Person). §26 BDSG setzt der Leistungskontrolle enge Grenzen, und
-bei dieser Praxisgröße liefert ein „Ja" nichts Unbekanntes (§16, §20). Rücknahme
-`mittel`. Wo: §20; Roadmap vor ZK-001 und TOUR-001. Annahmen: ANN-004
-(Arbeitszeiten bleiben aus dem Auditlog heraus).
+Leistungsbeurteilung verwendet; umgesetzt durch Aggregation statt Einzelbewegung,
+kurze Löschfristen, kein Live-Tracking, keine Auswertung je Person. §26 BDSG setzt
+enge Grenzen, und bei dieser Praxisgröße liefert ein „Ja" nichts Unbekanntes (§16,
+§20). **§20.1 (2026-09-22) ändert daran nichts:** Eine Führung auf dem Gerät meldet
+der Praxis keinen Standort. Rücknahme `mittel`. Wo: §20; Roadmap vor ZK-001 und
+TOUR-001. Annahmen: ANN-004 (Arbeitszeiten bleiben aus dem Auditlog heraus).
 
 ### B7 — Übermittlung von Adressdaten an den Kartendienst
 
@@ -170,9 +170,9 @@ EU-Verarbeitung); Kandidat ist PTV Developer mit den OSM-APIs, nicht produktiv
 freigegeben. Fahrzeiten werden abgerufen und angezeigt, nicht gespeichert und nie
 je Person ausgewertet — damit hängt der Punkt an B6. Vor Echtdaten steht das
 neunteilige Gate aus ADR-019 Punkt 9, alle Punkte
-`CONTRACT_CONFIRMATION_REQUIRED`. Wo: ADR-019 Fassung 2,
+`CONTRACT_CONFIRMATION_REQUIRED`. Wo: ADR-019 Fassung 3,
 `providerpruefung-kartendienst.md`; Roadmap G12, MAP-006.
-Annahmen: ANN-016, ANN-017, ANN-018. Blockiert nur MAP-006 (echte Adressen).
+Annahmen: ANN-016, ANN-017, ANN-018. Blockiert MAP-006 und die Führung (F).
 
 ### B8 — Lizenzen für Fragebögen und PROMs
 

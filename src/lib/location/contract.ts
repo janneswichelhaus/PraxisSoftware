@@ -40,9 +40,20 @@ export interface PostalAddress {
 }
 
 /**
- * Fahrprofil. `bicycle` ist gesetzt; `cargo_bicycle` wird in MAP-003 gegen
- * das Angebot des Anbieters geprüft und bleibt bis dahin ein Kandidat, keine
- * Zusage.
+ * Fahrprofil. Beide Werte sind vom Anbieter gedeckt (MAP-003, geprüft am
+ * 2026-09-21 gegen die echte API: `OSM_BICYCLE` und `OSM_CARGO_BICYCLE`).
+ *
+ * **`cargo_bicycle` ist seit dem 2026-09-22 das Profil der Praxis** —
+ * Entscheidung von Jannes nach dem Vergleich aus MAP-003c über die volle
+ * Runde mit acht Stopps: 25,4 km · 1 Std. 19 Min. mit dem Fahrrad gegen
+ * 26,2 km · 1 Std. 19 Min. mit dem Lastenrad. Der Unterschied trägt keine
+ * Planung (+3 % Strecke, +1 Minute); entschieden hat ihn das Rad, das
+ * gefahren wird, nicht die Zahl.
+ *
+ * Eine Einstellung dafür gibt es weiterhin nicht, und der Kartenprototyp
+ * fragt bewusst **beide** Profile ab: Der Vergleich ist sein Zweck. Wo eine
+ * Tourenplanung später **ein** Profil braucht, ist es dieses hier — die Wahl
+ * hängt an dieser Stelle und sonst nirgends.
  */
 export type TravelProfile = 'bicycle' | 'cargo_bicycle';
 

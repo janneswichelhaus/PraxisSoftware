@@ -2,10 +2,26 @@
 
 ## Status
 
-**Angenommen, Fassung 2** — von Jannes am 2026-09-13 bestätigt (E-20).
+**Angenommen, Fassung 3** — von Jannes am 2026-09-22 bestätigt.
 Die Annahme gilt der Zielarchitektur, dem Kandidaten und dem Gate; **produktiv
 freigeschaltet ist damit nichts** — die Freigabe echter Adressen an einen
 Anbieter bleibt am Gate aus Punkt 9 (Vertrag, §203, DSFA).
+
+Fassung 3 ändert **einen** Satz der Zielsetzung und fügt **einen** Abschnitt
+hinzu. Sie löst Punkt 6 des Kontexts ab („Eine eigene Turn-by-Turn-Engine ist
+nicht Ziel") und ergänzt **Abschnitt F — Führung auf dem Gerät**. Alles andere
+gilt unverändert weiter: die Zielarchitektur (A), der Anbieter (B), die
+Datenflussregeln (C), der Handoff (D) und das Gate (E). Der Handoff entfällt
+**nicht**; er bleibt der Weg, solange keine Führung gebaut ist, und der
+Rückfallweg, wenn eine Führung nicht zur Verfügung steht.
+
+Anlass war eine Nachfrage von Jannes am 2026-09-22 und ihre Beantwortung: PTV
+liefert die Manöverdaten, aber **keine** Führung, die wir als
+Auftragsverarbeiter einkaufen könnten (Einzelheiten in Abschnitt F). Wer die
+Führung ohnehin selbst baut, baut sie im Browser — und dann muss die Position
+das Gerät nie verlassen. Diese Erkenntnis hat die Entscheidung geformt, nicht
+umgekehrt: §20 wird dafür nicht aufgeweicht, sondern präzisiert
+(`PROJECT_PRINCIPLES.md` 0.14).
 
 Fassung 2 ersetzt die Fassung 1 vom selben Tag (Commit `c5c7b21`) vollständig.
 Eine neue ADR-Nummer war nach der Governance nicht nötig: „abgelöst durch
@@ -20,7 +36,8 @@ Gate fest, das vor Echtdaten zu passieren ist.
 
 ## Datum
 
-2026-09-08 (Fassung 2; Fassung 1 vom selben Tag) · angenommen 2026-09-13
+2026-09-08 (Fassung 2; Fassung 1 vom selben Tag) · angenommen 2026-09-13 ·
+**Fassung 3 vom 2026-09-22, angenommen am selben Tag**
 
 ## Kontext
 
@@ -44,7 +61,12 @@ Verbindlich ist jetzt dieses Nutzererlebnis:
 4. Für echte Turn-by-Turn-Navigation genügt **genau eine** bewusste
    Nutzeraktion („Navigation starten").
 5. Erst dann öffnet sich eine externe Navigations-App.
-6. Eine eigene Turn-by-Turn-Engine ist **nicht** Ziel.
+6. ~~Eine eigene Turn-by-Turn-Engine ist **nicht** Ziel.~~ **Abgelöst durch
+   Fassung 3 (2026-09-22), Abschnitt F.** Eine Führung auf dem Gerät **ist**
+   Ziel — unter den Bedingungen aus §20 und erst nach MAP-006. Punkt 4 und 5
+   bleiben: Der Handoff in eine externe App ist weiterhin der Weg, solange
+   keine Führung gebaut ist, und der Rückfallweg, wenn sie nicht zur
+   Verfügung steht.
 7. Datenschutz und §203 werden für Convenience nicht umgangen — stattdessen
    wird ein Anbieter gewählt, der die Architektur erfüllt.
 
@@ -225,7 +247,69 @@ zurückzubauen ist.
     DSFA-Wiedervorlage.
 26. Die Einführung ist eine „wesentliche Änderung der
     Routing-/Standortverarbeitung" nach ADR-007 Punkt 2. Die
-    DSFA-Wiedervorlage erfolgt je Datenweg: Kacheln, Server-Aufrufe, Handoff.
+    DSFA-Wiedervorlage erfolgt je Datenweg: Kacheln, Server-Aufrufe, Handoff
+    — **mit Fassung 3 zusätzlich: Führung** (Punkt 33).
+
+### F. Führung auf dem Gerät (Fassung 3)
+
+**Warum überhaupt selbst.** Die Frage war, ob eine Führung beim Anbieter
+einzukaufen ist. Antwort: nein, in beide Richtungen.
+
+- Die **Routing API liefert Manöver** entlang der Route („events … like
+  maneuvers"). Das Material für eine Führung gibt es.
+- **„Guided Navigation"** der Routing API übergibt eine berechnete Route an
+  **PTV Navigator**, die eigene App des Anbieters. Das ist ein Handoff wie
+  Abschnitt D, nur an eine andere Ziel-App — architektonisch nichts Neues.
+- Das einbettbare SDK von **PTV Navigator G2** ist ein **natives Android-/
+  iOS-Produkt für Lkw**. §2.2 und ADR-015 legen eine responsive Web-App
+  **ohne native Apps** fest; ein Radprofil ist für das Produkt nicht belegt.
+  Dieser Weg ist damit zweifach verschlossen.
+
+**Belegtiefe:** `developer.myptv.com` war aus der Cloud-Umgebung gesperrt
+(derselbe Egress-Proxy wie in Fassung 2). Die drei Punkte stammen aus
+Suchtreffern und Produktseiten, **nicht** aus der API-Referenz. Ob die
+OSM-Radprofile Manöver mitliefern, ist damit **nicht belegt** und vor dem
+Epic mit einem Aufruf gegen die echte API zu klären (offene Folgefrage E-24).
+
+**Daraus folgt der Zuschnitt.** Wer die Führung selbst baut, baut sie im
+Browser — und dann muss die Position das Gerät nie verlassen. Das ist keine
+Sparmaßnahme, sondern der Grund, warum diese Entscheidung überhaupt tragbar
+ist.
+
+27. **Die Führung läuft im Browser der fahrenden Person.** Die Position kommt
+    aus der Geolocation-Schnittstelle des Geräts, wird dort auf die Route
+    bezogen und dort angesagt. Sie wird **nicht** an die Praxissoftware
+    übermittelt und **nicht** gespeichert — weder im Server, noch im Gerät,
+    noch in einem Log (ADR-011). Die Praxis erfährt zu keinem Zeitpunkt, wo
+    jemand ist; §20 bleibt dadurch gewahrt, nicht aufgeweicht.
+28. **Nur auf Aktion, und beendbar.** Die Führung beginnt mit „Führung
+    starten" durch die fahrende Person, endet mit der Fahrt oder mit einem
+    Abbruch und startet nie automatisch. Diese Regel trägt die
+    datenschutzrechtliche Einordnung und ist eine Prüfregel im Review — wie
+    Punkt 20 für den Handoff.
+29. **Zum Anbieter geht eine Position nur zur Neuberechnung.** Weicht die
+    Fahrt von der Route ab, geht eine neue Anfrage über die Edge Function
+    (ANN-017) an den Anbieter, mit der aktuellen Koordinate als Startpunkt.
+    Das ist **dieselbe Datenart wie ein Wegpunkt heute** — kein Name, keine
+    Kennung, keine Uhrzeit (Punkt 13). Kein Dauerstrom: Eine Neuberechnung je
+    Abweichung, nicht je Sekunde.
+30. **Keine Auswertung, keine Historie, kein Bewegungsprofil.** Aus einer
+    Führung entsteht keine Statistik, keine Fahrtenliste, kein Soll-Ist und
+    keine Leistungskennzahl — auch nicht aggregiert (§20, §18).
+31. **Sicherheit vor Funktion.** Eine Führung, die aufs Telefon schauen lässt,
+    während jemand fährt, ist ein Sicherheitsproblem. Sprachausgabe und die
+    Annahme einer Lenkerhalterung sind **Bedingung** des Epics, nicht Kür;
+    eine rein visuelle Führung wird nicht ausgeliefert. Gehört in die
+    Endgeräte-Richtlinie (BETRIEB-001) neben die Navigationsregel aus
+    Punkt 23.
+32. **Reihenfolge: erst MAP-006, dann die Führung.** Ohne echte Tagesstopps
+    gibt es nichts zu führen, und ohne das Gate aus Punkt 9 keine echten
+    Adressen. Das Epic beginnt damit **nach** MAP-006 und nach dem Gate; der
+    Handoff aus Abschnitt D bleibt bis dahin der Weg.
+33. **Die Führung ist ein eigener Datenweg in der DSFA** (Punkt 26), und
+    **B2** wird um sie erweitert: Die Rechtsfrage ist nicht mehr nur die
+    einmalige Übergabe einer Adresse, sondern eine wiederholte Übermittlung
+    von Koordinaten während einer Fahrt zu einer Patientenadresse.
 
 ## Prüfung nach ADR-002 Punkt 3 / §3.5 — Stand
 
@@ -303,6 +387,20 @@ Grund für „bevorzugter Kandidat", nicht „freigegeben".
   keine Adressen.
 - Fällt PTV am Gate durch, wechselt der Anbieter hinter `contract.ts`. Die
   Oberfläche, die Overlays und die Fachlogik bleiben.
+- **Die Führung (Fassung 3) ist ein eigenes Epic nach MAP-006** und die
+  teuerste Einzelfunktion der Etappe: Positionsbezug auf die Route,
+  Neuberechnung bei Abweichung, Sprachausgabe, Bildschirmwachhaltung,
+  Akkuverhalten, Genauigkeit in der Stadt. Sie ist **kein** Zusatz zu
+  MAP-005, und sie ersetzt den Handoff nicht.
+- **Die Führung erhöht die Menge der Koordinaten beim Anbieter, nicht ihre
+  Art.** Für den Vertragscheck heißt das: Dieselben Kriterien wie in der
+  Tabelle unten, aber mit mehr Aufrufen je Fahrt — Rate-Limits und Kontingent
+  des Abos sind vor dem Epic zu prüfen.
+- **§20 ist mit Version 0.14 präziser, nicht schwächer.** Wo vorher ein Satz
+  stand, stehen jetzt vier kumulative Bedingungen und ein ausdrückliches
+  DARF-NICHT für den Arbeitgeber. Eine Führung, die davon abweicht, ist nicht
+  von diesem ADR gedeckt — auch dann nicht, wenn sie technisch einfacher
+  wäre.
 
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
@@ -315,6 +413,13 @@ Grund für „bevorzugter Kandidat", nicht „freigegeben".
   Prüfung, nicht Teil dieses Datenwegs.
 - Der Inhalt der Endgeräte-Richtlinie über die Navigationsregel hinaus.
 - Der Wortlaut der Datenschutzinformation (PAT-006).
+- **Der Zuschnitt des Führungs-Epics** (Fassung 3): Abschnitt F entscheidet
+  **ob** und **unter welchen Bedingungen**, nicht wie. Ansagetexte,
+  Kartenverhalten während der Fahrt, Umgang mit Funklöchern (ADR-001) und die
+  Frage, ab welcher Abweichung neu gerechnet wird, gehören in das Epic.
+- **Eine Führung außerhalb der Bedingungen aus §20** — etwa mit Positionen
+  auf dem Server, einer Fahrtenhistorie oder einer Auswertung. Das ist kein
+  offener Punkt, sondern ausgeschlossen.
 
 ## Offene Folgefragen
 
@@ -325,9 +430,20 @@ Grund für „bevorzugter Kandidat", nicht „freigegeben".
   Gegenstandslos: UX-EPIC-001 ist seit 2026-09-11 fertig; MAP-002 startet,
   sobald der PTV-Schlüssel vorliegt.
 - **B2:** Handoff und §203/Art. 9 (Punkt 23); Einwilligung oder Art. 9 Abs. 2
-  lit. h in Verbindung mit §22 BDSG.
+  lit. h in Verbindung mit §22 BDSG. **Mit Fassung 3 erweitert** (Punkt 33):
+  dieselbe Frage für eine wiederholte Übermittlung von Koordinaten während
+  der Fahrt — und die Gegenfrage, ob die vier Bedingungen aus §20 ausreichen,
+  um die Führung aus dem Beschäftigtendatenschutz herauszuhalten.
 - **PTV-Support (Jannes):** Referrer-/Domainbindung von Schlüsseln; Höchstzahl
   der Relationen je Matrix-Anfrage; Rate-Limits der OSM-APIs im Free Plan.
+  **Mit Fassung 3:** Aufrufkontingent bei wiederholter Neuberechnung.
+- **E-24 (technisch, vor dem Führungs-Epic):** Liefern die OSM-Radprofile
+  (`OSM_BICYCLE`, `OSM_CARGO_BICYCLE`) Manöver mit? Mit einem Aufruf gegen die
+  echte API zu klären — aus der Cloud-Umgebung nicht möglich, weil
+  `developer.myptv.com` gesperrt ist und der Schlüssel bei Jannes liegt.
+  Fällt die Antwort negativ aus, ist Abschnitt F ohne einen zweiten
+  Datenlieferanten nicht umsetzbar, und das wäre ein neuer Anbieter mit
+  eigener Prüfung nach §3.5.
 - Wie wird die Endgeräteregel überprüft, ohne das Telefon zu kontrollieren
   (§20)? Vorschlag für BETRIEB-001: schriftliche Bestätigung.
 
