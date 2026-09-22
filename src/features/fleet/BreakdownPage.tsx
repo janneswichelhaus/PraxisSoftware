@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { aktiveStandortvorlage } from '@/features/preview/standortvorlage';
 import { depotName, useVorschau, type Protokolleintrag } from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
-import { SimulationsMeldung, VorschauBanner } from '@/features/preview/ui';
+import { SimulationsMeldung } from '@/features/preview/ui';
 import {
   ablaufStarten,
   abschluss,
@@ -154,11 +154,6 @@ export function BreakdownPage() {
   return (
     <>
       <PageHeader title="Panne melden" description={rad ? rad.name : 'Rad noch nicht ausgewählt'} />
-
-      <VorschauBanner
-        bereich="Pannenassistent"
-        beschreibung="Der Ablauf ändert nur den Vorschaustand. Es wird niemand benachrichtigt."
-      />
 
       <div className="rounded-card border-line bg-surface max-w-xl border p-5">
         <div className="mb-4 flex flex-wrap items-center gap-2">

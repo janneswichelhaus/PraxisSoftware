@@ -509,9 +509,11 @@ Praxistermin bei Jannes). Anmelden als `anna.beispiel@praxis.invalid`.
 6. **Der Teamplan bleibt schlank.** Weiter unten steht „Tagesplan des Teams"
    mit allen Terminen des Tages — dort steht weiterhin **keine** Anschrift.
    Das ist Absicht (ADR-004).
-7. **Die Vorschau ist zugeklappt.** Ganz unten steht „Vorschau · Betrieb, Wege
-   und Team – noch nicht angebunden" als geschlossener Aufklapper. Der echte
-   Teil des Tages steht davor.
+7. **Der nicht angebundene Teil ist zugeklappt.** Ganz unten steht
+   „Organisatorisches, Wege und Kommunikation" als geschlossener Aufklapper.
+   Der echte Teil des Tages steht davor. Die Kennzeichnung „Vorschau" am
+   Aufklapper ist am 2026-09-22 entfallen; geprüft wird die **Reihenfolge**,
+   nicht das Schild.
 8. **Am Handy** (~375 px): Startseite durchscrollen. Nichts scrollt seitwärts,
    die Karten sind einspaltig, jede Schaltfläche bleibt mindestens 44 px hoch.
    **Zielwert der Story:** Anschrift, Klingelname und eine wählbare Rufnummer
@@ -1690,9 +1692,10 @@ Vorbedingung: angemeldet als `office` oder `therapist`, im Seed
    **Patientenliste**, bei **Verordner:innen**, bei **Mitarbeitenden**, im
    **Behandlungsverlauf**, in den **Stammdaten** und am **Termin** selbst.
 3. Gegenprobe — was bewusst **nicht** weiß ist: die Filterleiste über einer
-   Terminliste, die Legende unter dem Kalender, Rückfragen wie „Wurde der
-   Zettel ausgehändigt?" und die Kennzeichnung eines Vorschaubereichs. Sie
-   erklären den Inhalt, sie sind keiner, und bleiben deshalb vertieft.
+   Terminliste, die Legende unter dem Kalender und Rückfragen wie „Wurde der
+   Zettel ausgehändigt?". Sie erklären den Inhalt, sie sind keiner, und
+   bleiben deshalb vertieft. (Die Kennzeichnung eines Vorschaubereichs stand
+   hier bis zum 2026-09-22 als vierter Fall; es gibt sie nicht mehr.)
 4. Ein **Formular** öffnen (Termin anlegen). Erwartung: Die Felder sind weiß
    und an ihrer **Umrandung** als Feld erkennbar — kein zusätzlicher weißer
    Kasten um das Formular herum.

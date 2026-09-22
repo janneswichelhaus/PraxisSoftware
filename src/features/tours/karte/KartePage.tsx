@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { OffeneEntscheidung, VorschauBanner } from '@/features/preview/ui';
 import { createMapDisplayConfig } from '@/lib/location/display';
 import { useMatrix } from '@/lib/location/matrix';
 import { useRoute } from '@/lib/location/route';
@@ -12,23 +11,26 @@ import { Routenangaben } from './Routenangaben';
 import { TESTSTOPPS } from './teststopps';
 
 /**
- * Vorschauseite des Kartenprototyps (MAP-002c, MAP-003b, MAP-004c und
- * MAP-005b, ADR-019).
+ * Die Kartenseite (MAP-002c, MAP-003b, MAP-004c und MAP-005b, ADR-019).
  *
  * Sie beantwortet vier Fragen: Läuft eine interaktive Karte mit eigenen,
  * nummerierten Stopps innerhalb dieser Anwendung — auf dem Schreibtisch und
  * auf dem Telefon? Liegt zwischen denselben Stopps eine Fahrradroute mit
  * Distanz und Fahrzeit? Sagen die Fahrzeiten zwischen je zwei Stopps
  * verlässlich, ob zwei Termine erreichbar wären? Und führt ein Tap von einem
- * Stopp in die Navigations-App des Geräts? Mehr ist hier nicht: kein
- * Termin, keine Adresse, keine Person — das Terminraster hinter der Matrix ist
- * erfunden wie die Stopps. Echte Adressen kommen frühestens mit MAP-006 und
- * erst nach dem Gate aus ADR-019 Punkt 9.
+ * Stopp in die Navigations-App des Geräts? Mehr ist hier nicht: kein Termin,
+ * keine Adresse, keine Person. Echte Adressen kommen frühestens mit MAP-006
+ * und erst nach dem Gate aus ADR-019 Punkt 9.
  *
- * **Seit MAP-003 verlassen Koordinaten das Haus** — die acht erfundenen
- * Punkte gehen über die eigene Edge Function an den Kartendienst, damit er
- * eine Route rechnen kann (ADR-019 Punkt 13 und 15). Nichts davon wird
- * gespeichert, und der Banner sagt es.
+ * **Seit MAP-003 verlassen Koordinaten das Haus** — die acht Teststopps gehen
+ * über die eigene Edge Function an den Kartendienst, damit er eine Route
+ * rechnen kann (ADR-019 Punkt 13 und 15). Gespeichert wird davon nichts; die
+ * Stopps stehen fest in `teststopps.ts` und tragen keinen Personenbezug.
+ *
+ * **Ohne Kennzeichnungsbanner seit 2026-09-22.** Dass hier Teststopps liegen,
+ * sagen die Seite und `teststopps.ts`; ein Warnkasten darüber sagte es ein
+ * zweites Mal. Was die Zahlen tragen — Profil, Terminraster, Quelle der
+ * Fahrzeiten —, steht weiterhin an den Zahlen selbst.
  *
  * Die Seite liegt hinter der Anmeldung, obwohl sie nichts Schützenswertes
  * zeigt: Sie gehört in den Kalenderbereich und soll dort geprüft werden, wo
@@ -63,26 +65,12 @@ export function KartePage() {
 
   return (
     <>
-      <PageHeader
-        title="Karte"
-        description="Kartenprototyp mit synthetischen Teststopps in Tübingen."
-      />
-
-      <VorschauBanner
-        bereich="Karte"
-        beschreibung={
-          'Acht erfundene Punkte im Stadtgebiet. Keine Adresse, kein Termin, keine Person — ' +
-          'und nichts davon wird gespeichert. Für die Route gehen die acht Koordinaten über ' +
-          'den eigenen Server an den Kartendienst; der Browser selbst lädt dort nur ' +
-          'Kartenausschnitt und Zoom. „Navigation starten" übergibt eine erfundene Koordinate ' +
-          'an die Navigations-App dieses Geräts — erst auf Tippen, nie von allein.'
-        }
-      />
+      <PageHeader title="Karte" description="Teststopps in Tübingen mit Route und Fahrzeiten." />
 
       <Karte
         config={config}
         stopps={TESTSTOPPS}
-        beschriftung={`Karte mit ${TESTSTOPPS.length} synthetischen Teststopps in Tübingen`}
+        beschriftung={`Karte mit ${TESTSTOPPS.length} Teststopps in Tübingen`}
         route={route}
       />
 
@@ -110,14 +98,22 @@ export function KartePage() {
       <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">Die Stopps</h2>
       <NavigationHandoff stopps={TESTSTOPPS} />
 
-      <OffeneEntscheidung titel="Der Kartendienst ist geprüft, aber nicht freigegeben">
-        Kacheln sind der einzige direkte Kontakt des Browsers zum Anbieter; sie tragen
-        Kartenausschnitt und Zoom, keine Adresse und keinen Namen. Die Route rechnet der Anbieter
-        auf Anfrage des eigenen Servers, und zwar aus Koordinaten ohne Namen und ohne Uhrzeit;
-        gespeichert wird weder Strecke noch Fahrzeit. Bevor echte Adressen einen Kartendienst
-        erreichen, sind Vertrag, §203 StGB und die Datenschutz-Folgenabschätzung zu klären — die
-        neun Punkte des Gates aus ADR-019. Bis dahin bleibt es bei erfundenen Koordinaten.
-      </OffeneEntscheidung>
+      {/* Steht hier weiter, obwohl der Vorschaubanner gegangen ist: Wohin
+        Koordinaten gehen und dass das Gate aus ADR-019 Punkt 9 noch offen ist,
+        sind keine Entwicklungsnotizen — sie gelten unverändert, wenn diese
+        Seite einmal echte Adressen trägt. Ohne Warnkasten, als Abschnitt wie
+        die anderen. */}
+      <h2 className="text-h4 text-ink mt-6 mb-3 font-medium">
+        Der Kartendienst ist geprüft, aber nicht freigegeben
+      </h2>
+      <p className="text-ink-muted text-sm">
+        Auf dieser Seite liegen acht feste Punkte im Stadtgebiet: Keine Adresse, kein Termin, keine
+        Person — und gespeichert wird davon nichts. Für die Route gehen die acht Koordinaten über
+        den eigenen Server an den Kartendienst, ohne Namen und ohne Uhrzeit; der Browser selbst lädt
+        dort nur Kartenausschnitt und Zoom. Bevor echte Adressen einen Kartendienst erreichen, sind
+        Vertrag, §203 StGB und die Datenschutz-Folgenabschätzung zu klären — die neun Punkte des
+        Gates aus ADR-019.
+      </p>
 
       <p className="text-ink-subtle mt-4 text-sm">
         <Link to="/touren" className="text-accent hover:text-accent-hover underline">

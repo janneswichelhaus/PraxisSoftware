@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/Select';
 import type { CurrentUser } from '@/features/session/types';
 import { depotName, useVorschau, type Protokolleintrag } from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
-import { SimulationsMeldung, VorschauBanner } from '@/features/preview/ui';
+import { SimulationsMeldung } from '@/features/preview/ui';
 
 /**
  * Schlüsselentnahme.
@@ -72,7 +72,6 @@ export function KeyPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader title="Schlüssel entnehmen" description="Wer hat gerade welchen Schlüssel." />
 
-      <VorschauBanner bereich="Schlüsselentnahme" />
       <SimulationsMeldung eintrag={meldung} />
 
       <div className="flex max-w-md flex-col gap-4">

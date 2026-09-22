@@ -16,12 +16,7 @@ import {
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { darfEntscheiden, vorschauidentitaet } from '@/features/preview/identitaet';
 import { SignaturFeld } from '@/features/preview/SignaturFeld';
-import {
-  Klappbereich,
-  OffeneEntscheidung,
-  SimulationsMeldung,
-  VorschauBanner,
-} from '@/features/preview/ui';
+import { Klappbereich, SimulationsMeldung } from '@/features/preview/ui';
 import { formatDatum, formatEuro, parseEuroZuCent } from '@/features/preview/format';
 import {
   erstattungsstandLabels,
@@ -148,7 +143,6 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
         actions={<Button onClick={() => setFormular(true)}>Erstattung einreichen</Button>}
       />
 
-      <VorschauBanner bereich="Erstattungen" />
       <SimulationsMeldung eintrag={meldung} />
 
       <div className="mb-5 flex flex-wrap items-end gap-4">
@@ -206,12 +200,6 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
           gesondert entschieden werden.
         </p>
       </Klappbereich>
-
-      <OffeneEntscheidung titel="Einreichen, Genehmigen und Auszahlen sind drei Schritte">
-        Die Vorschau führt die Stände getrennt. Was davon steuerlich als Beleg gilt, wie lange
-        Belege aufbewahrt werden und wer die Auszahlung bestätigt, folgt aus dem Retention-Konzept
-        (ADR-008) und dem Abrechnungsmodell (ADR-009) und ist hier nicht entschieden.
-      </OffeneEntscheidung>
     </>
   );
 }
@@ -493,8 +481,6 @@ function Erstattungsformular({
   return (
     <>
       <PageHeader title="Erstattung einreichen" />
-      <VorschauBanner bereich="Erstattungen" />
-
       <div className="flex max-w-xl flex-col gap-4">
         <div>
           <p className="text-ink mb-2 text-sm font-medium">Art der Erstattung</p>
@@ -542,7 +528,7 @@ function Erstattungsformular({
         <Field
           label="IBAN"
           placeholder="DE02 1234 5678 0000 1234 00"
-          hint="Nur synthetische Werte eingeben. Es wird nichts gespeichert und nichts überwiesen."
+          hint="Es wird nichts gespeichert und nichts überwiesen."
           error={ibanPlausibel ? undefined : 'Diese IBAN sieht nicht plausibel aus.'}
           value={iban}
           onChange={(event) => setIban(event.target.value)}

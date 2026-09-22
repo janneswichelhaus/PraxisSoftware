@@ -144,21 +144,26 @@ describe('KartePage', () => {
     vi.unstubAllEnvs();
   });
 
-  it('ist als Vorschau ohne Patientendaten gekennzeichnet', () => {
+  /**
+   * Die Kennzeichnung „Vorschau" ist am 2026-09-22 gefallen, der Rest dieses
+   * Tests bleibt: Dass hier keine Patientendaten liegen und dass das Gate aus
+   * ADR-019 Punkt 9 noch offen ist, sind Aussagen über den Datenfluss und über
+   * eine Freigabe — kein Entwicklungshinweis, der später verschwindet.
+   */
+  it('nennt das offene Gate und dass keine Patientendaten auf der Seite liegen', () => {
     renderWithProviders(<KartePage />, '/touren/karte');
 
-    expect(screen.getByText('Vorschau')).toBeInTheDocument();
     expect(screen.getByText(/Keine Adresse, kein Termin, keine Person/)).toBeInTheDocument();
-    // Das Gate aus ADR-019 steht auf der Seite und nicht nur in den Akten.
     expect(
-      screen.getByText('Der Kartendienst ist geprüft, aber nicht freigegeben'),
+      screen.getByRole('heading', { name: 'Der Kartendienst ist geprüft, aber nicht freigegeben' }),
     ).toBeInTheDocument();
+    expect(screen.getByText(/§203 StGB/)).toBeInTheDocument();
   });
 
   it('sagt, dass die Koordinaten fuer die Route hinausgehen', () => {
     // Seit MAP-003 stimmt „zum Kartendienst gehen nur Kacheln" nicht mehr.
-    // Ein Banner, der das verschweigt, waere die Unwahrheit auf der Seite,
-    // die ihn traegt (ehrlichkeit.test.tsx).
+    // Eine Seite, die das verschweigt, waere die Unwahrheit ueber ihren
+    // eigenen Datenfluss (ehrlichkeit.test.tsx).
     renderWithProviders(<KartePage />, '/touren/karte');
 
     expect(
@@ -184,7 +189,7 @@ describe('KartePage', () => {
     expect(
       within(liste).getByRole('button', { name: 'Navigation zu Stopp 1 starten' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/übergibt eine erfundene Koordinate/)).toBeInTheDocument();
+    expect(screen.getByText(/übergeben wird nur die Koordinate/)).toBeInTheDocument();
     expect(container.innerHTML).not.toContain('google.com/maps');
 
     // Und kein zweiter Abschnitt daneben: die Stopps stehen genau einmal.
@@ -204,7 +209,7 @@ describe('KartePage', () => {
     renderWithProviders(<KartePage />, '/touren/karte');
 
     const karte = screen.getByRole('region', {
-      name: `Karte mit ${TESTSTOPPS.length} synthetischen Teststopps in Tübingen`,
+      name: `Karte mit ${TESTSTOPPS.length} Teststopps in Tübingen`,
     });
     expect(karte).toBeInTheDocument();
     expect(screen.queryByText('Kartenkacheln nicht konfiguriert')).not.toBeInTheDocument();

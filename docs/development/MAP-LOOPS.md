@@ -14,8 +14,13 @@ in ADR-019, Abschnitte C und E. Zusätzlich gilt für alle fünf:
   „Testadresse" aus dem Seed.
 - Fehlt der PTV-Schlüssel, läuft der Loop gegen den `mock`-Adapter und meldet
   das im Bericht — er blockiert nicht.
-- Die Prototypen liegen unter `src/features/tours/karte/` und sind als
-  Vorschau gekennzeichnet (`ARBEITSBEREICHE.md`), bis MAP-006 sie anbindet.
+- Die Prototypen liegen unter `src/features/tours/karte/`, bis MAP-006 sie
+  anbindet. **Die Kennzeichnung „Vorschau" ist am 2026-09-22 entfallen**
+  (Entscheidung von Jannes, `ARBEITSBEREICHE.md` Abschnitt 2): Ein Warnkasten
+  über einer Seite, die nur er benutzt, sagte ihm nichts Neues. Was die Seite
+  über **ihren Datenfluss** sagt, bleibt unverändert Pflicht — der Abschnitt
+  „Der Kartendienst ist geprüft, aber nicht freigegeben" mit dem Gate aus
+  ADR-019 Punkt 9 ist ein Abnahmekriterium und keine Entwicklungsnotiz.
 - Neue Abhängigkeit `maplibre-gl` (MAP-002, BSD-3, Netzwerkaufrufe nur zu den
   Kachel-URLs): Prüfung nach ADR-015 im Loop dokumentieren; Audit-Schwelle nach
   `.github/workflows/ci.yml`, dazu `pnpm scan:secrets`.

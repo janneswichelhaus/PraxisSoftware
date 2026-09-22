@@ -13,7 +13,7 @@ import {
 } from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { vorschauidentitaet } from '@/features/preview/identitaet';
-import { OffeneEntscheidung, SimulationsMeldung, VorschauBanner } from '@/features/preview/ui';
+import { SimulationsMeldung } from '@/features/preview/ui';
 import { formatZeitpunkt } from '@/features/preview/format';
 import type { Nachricht } from '@/features/preview/types';
 
@@ -126,10 +126,6 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
         description="Kanäle, Direktnachrichten und Threads für organisatorische Abstimmung."
       />
 
-      <VorschauBanner
-        bereich="Kommunikation"
-        beschreibung="Nachrichten bleiben in dieser Sitzung. Es wird nichts versendet und niemand benachrichtigt."
-      />
       <SimulationsMeldung eintrag={meldung} />
 
       <div className="mb-5 max-w-sm">
@@ -270,14 +266,6 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
           ) : null}
         </section>
       </div>
-
-      <OffeneEntscheidung titel="Chat ist kein Nachweis">
-        Eine Unterhaltung kann die Arbeit begleiten, ist aber weder Freigabeprotokoll noch
-        klinischer Nachweis. Wer eine Abwesenheit genehmigt oder ein Rad sperrt, löst dafür eine
-        eigene Fachaktion aus. Speicherfrist des Teamchats, Anhänge mit eigener Zugriffskontrolle
-        und die Zuordnung klinisch relevanter Inhalte zur Akte sind offene Punkte
-        (PROJECT_PRINCIPLES.md 10, 18).
-      </OffeneEntscheidung>
     </>
   );
 }

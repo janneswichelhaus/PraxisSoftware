@@ -29,10 +29,11 @@ Alles als `anna.beispiel@praxis.invalid` (therapist) oder
 
 ### 1. Die Karte liegt in der Anwendung
 
-1. **Kalender → Touren** öffnen, dann **„Kartenprototyp mit Teststopps
-   öffnen"**. Erwartung: `/touren/karte` mit dem Vorschauhinweis über der
-   Karte. Beim ersten Öffnen lädt die Karte spürbar nach — sie ist ein
-   eigener Abschnitt und kommt erst hier, nicht beim Anmelden.
+1. **Kalender → Touren** öffnen, dann **„Karte mit Teststopps öffnen"**.
+   Erwartung: `/touren/karte`, die Karte steht direkt unter der Überschrift —
+   der Vorschaubanner darüber ist am 2026-09-22 entfallen. Beim ersten Öffnen
+   lädt die Karte spürbar nach; sie ist ein eigener Abschnitt und kommt erst
+   hier, nicht beim Anmelden.
 2. **Mit Schlüssel:** Kartenmaterial mit Straßen und Namen, darauf acht
    dunkelgrüne Kreise mit den Nummern 1 bis 8, alle im Bild. Unten rechts
    steht die Quellenangabe „© PTV Group, © OpenStreetMap-Mitwirkende".
@@ -55,12 +56,19 @@ Alles als `anna.beispiel@praxis.invalid` (therapist) oder
 
 ### 3. Was die Seite über sich selbst sagt
 
-1. Erwartung: Der Vorschauhinweis nennt die Punkte „erfunden" und sagt, dass
-   kein Termin und keine Person dahintersteht.
-2. Erwartung: Unter der Karte steht der Kasten „Der Kartendienst ist geprüft,
-   aber nicht freigegeben" mit dem Gate aus ADR-019. **Wenn dieser Kasten
-   fehlt, ist die Abnahme nicht bestanden** — die Seite darf nicht aussehen
-   wie eine fertige Anbindung.
+Die Kennzeichnung „Vorschau" ist am 2026-09-22 entfallen; geprüft wird
+seitdem, was die Seite über **ihren Datenfluss** sagt. Das ist keine
+Entwicklungsnotiz und verschwindet auch mit MAP-006 nicht.
+
+1. Erwartung: Ganz unten steht als eigener Abschnitt — wie „Die Route" und
+   „Die Fahrzeiten", ohne Warnkasten — die Überschrift **„Der Kartendienst
+   ist geprüft, aber nicht freigegeben"**. **Fehlt dieser Abschnitt, ist die
+   Abnahme nicht bestanden:** Die Seite darf nicht aussehen wie eine fertige
+   Anbindung.
+2. Erwartung: Sein Text nennt beides — dass hier keine Adresse, kein Termin
+   und keine Person liegt, und dass für die Route Koordinaten über den
+   eigenen Server zum Kartendienst gehen. Dazu das Gate aus ADR-019: Vertrag,
+   §203 StGB und Datenschutz-Folgenabschätzung vor echten Adressen.
 
 ### 4. Was zum Anbieter geht (die eigentliche Prüfung)
 
@@ -119,7 +127,7 @@ Alles als `anna.beispiel@praxis.invalid` (therapist) oder
 
 ### 1. Die Route liegt auf der Karte
 
-1. **Kalender → Touren → „Kartenprototyp mit Teststopps öffnen"**. Erwartung:
+1. **Kalender → Touren → „Karte mit Teststopps öffnen"**. Erwartung:
    unter der Karte der Abschnitt **„Die Route"**, zuerst „Route wird berechnet
    …", dann Strecke und Fahrzeit.
 2. Erwartung: eine durchgehende dunkelgrüne Linie zwischen den acht Markern,

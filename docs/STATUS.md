@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-22 · letzte Sessions: OPS-006 Betroffenenrechte · OPS-004 Verbotsliste
+# Status · Stand 2026-09-22 · letzte Sessions: OPS-006 Betroffenenrechte · Kennzeichnungen weg
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
@@ -9,6 +9,8 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 **Eine Patientin kann ihre Rechte jetzt geltend machen, und die Praxis kann antworten.** OPS-006 (minimal) ist die Vorbedingung aus ADR-007 Punkt 5, die als erste von außen ausgelöst wird. Drei Teile: Das **Verfahren** steht als [`datenschutz/betroffenenrechte.md`](datenschutz/betroffenenrechte.md) — Fristen nach Art. 12 Abs. 3 DSGVO, Ablauf vom Eingang bis zur Ablage, die sieben Rechte einzeln und, ausdrücklich, die **Grenzen des heutigen Stands**. Die **Auskunft** nach Art. 15 Abs. 3 DSGVO ist `export_patient_record`: nur `owner`, nur die eigene Organisation, jeder Aufruf als `patient_record.exported` protokolliert — und **vollständig geprüft gegen den Aufbewahrungsplan**, nicht gegen eine Liste im Test; eine neue Tabelle der Klasse `patientenakte` macht den Test rot. Die **begründete Ablehnung** eines Löschverlangens ist kein feststehender Text, sondern ein Entwurf mit Grundlage, Ankerdatum und Fristende dieser einen Akte; läuft die Behandlung noch, nennt er kein Löschdatum. Eine neue Annahme: **ANN-092** — das Zugriffsprotokoll ist nicht Teil der Auskunft (Art. 15 Abs. 4 DSGVO, §20), auf Verlangen wird es von Hand erteilt. Fortschritt **46,4 → 47,3 %**.
 
 **Was bewusst nicht gebaut ist**, steht im Verfahren statt in einer Fußnote: keine Vorgangsakte für Frist und Wiedervorlage, kein Zugriffsprotokoll auf Knopfdruck, kein eigener Zustand für Art. 18, keine Selbstbedienung, Trainingsdaten von Hand. Jeder dieser Punkte ist mit dem Verfahren auch ohne Software zu erfüllen — deshalb Komfort und kein Mangel.
+
+**Dazu aus paralleler Sitzung: Die Vorschaukennzeichnungen sind weg** (Entscheidung von Jannes) — kein Banner „noch keine echte Speicherung", keine Kästen „Fachlich offen", elf Seiten. **Zustandsmeldungen bleiben vollständig**, ebenso jede Prüfung in `ehrlichkeit.test.tsx`. Drei Aussagen sind **umgezogen statt gelöscht**, weil sie auch im Echtbetrieb gelten: das Gate aus ADR-019 Punkt 9 auf der Kartenseite, die Zusage aus §20 auf der Tourenseite, die Rechengrundlage der Fahrzeitmatrix — jetzt als Abschnitt, nicht als Warnkasten. Die Trennlinie für künftige Loops steht in [`development/ARBEITSBEREICHE.md`](development/ARBEITSBEREICHE.md), Abschnitt 2.
 
 ## Danach — Reihenfolge seit 2026-09-22
 
@@ -21,7 +23,7 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
 
 ## Prüfverfahren
 
-**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2308**; `test:db` **1788** — in dieser Session **vollständig gelaufen**, weil eine Migration dazukam. `ASSUMPTIONS.md`: **1210** Zeilen (ANN-092; Obergrenze zum zehnten Mal nachgezogen). **Nicht gelaufen: die Sichtprüfung im Browser** — hinter der Anmeldung startet in der Cloud kein GoTrue; sie steht als Abnahmeschritt.
+**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2306** (zwei reine Bannerprüfungen entfallen, keine abgeschwächt); `test:db` **1788** — in dieser Session **vollständig gelaufen**, weil eine Migration dazukam. `ASSUMPTIONS.md`: **1210** Zeilen (ANN-092; Obergrenze zum zehnten Mal nachgezogen). **Nicht gelaufen: die Sichtprüfung im Browser** — hinter der Anmeldung startet in der Cloud kein GoTrue; sie steht als Abnahmeschritt.
 
 ## Blocker (Jannes-seitig)
 
@@ -33,15 +35,13 @@ fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen 
   ADR-002. **Empfehlung: (a) vorerst nicht, (b) erst nach G3** — bis zum Scharfschalten ist nichts
   davon nötig, und mit synthetischen Daten kostet die Lücke nichts. Gebraucht wird die Antwort,
   **bevor echte Daten laufen**; bis dahin steht die 30 im Code als Anforderung, nicht als Zusage.
-- **OPS-001 weitertragen** — sonst bleibt jede Zeile der Prüfung ein Suchauszug: Unterlagen aus Teil 9 von einem **ungeproxten Rechner** laden; zwei Fragen an den Support (**Zugriff durch Beschäftigte**, **Verschlüsselung der Objekte**); Gate-Punkt 1 bis 6 an **B2**, darunter **§203
-  Abs. 4 StGB** — der einzige, dessen Scheitern den Anbieter kostet. **Zuerst** `auth-smtp`.
+- **OPS-001 weitertragen** — sonst bleibt jede Zeile der Prüfung ein Suchauszug: Unterlagen aus Teil 9 von einem **ungeproxten Rechner** laden; zwei Fragen an den Support (**Zugriff durch Beschäftigte**, **Verschlüsselung der Objekte**); Gate-Punkt 1 bis 6 an **B2**, darunter **§203 Abs. 4 StGB** — der einzige, dessen Scheitern den Anbieter kostet. **Zuerst** `auth-smtp`.
 - **BEF-026 / B13:** Der eingebaute Mailversand stellt laut Auszug nur an Adressen des Projektteams zu. Entweder eigener SMTP-Anbieter (zweiter Auftragsverarbeiter, eigene Prüfung, Rücknahme von B13) oder kein Mailversand (Handgriff nach ANN-025). **STAFF-004 ruht bis dahin.**
-- **MAP-003, MAP-004 und MAP-005 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 und MAP-004 nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`), `supabase/functions/.env.local`, `functions serve`. MAP-003 Schritt 1 und 4 **durch**, **BEF-027 behoben**; offen bleiben Schritt 2, 3 und 5 sowie **alle fünf Schritte von MAP-004**. **MAP-005 Teil A ist durch** (Laptop, 2026-09-22) — die drei Befunde daraus sind behoben und in Teil A **erneut zu prüfen**, weil die Seite sich geändert hat; **Teil B am Telefon ruht**, bis ein Gerät da ist. Bis dahin bleibt `MAX_ZWISCHENZIELE` bei drei.
+- **MAP-003, MAP-004 und MAP-005 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 und MAP-004 nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`), `supabase/functions/.env.local`, `functions serve`. MAP-003 Schritt 1 und 4 **durch**, **BEF-027 behoben**; offen bleiben Schritt 2, 3 und 5 sowie **alle fünf Schritte von MAP-004**. **MAP-005 Teil A ist durch** (Laptop, 2026-09-22) — die drei Befunde daraus sind behoben und in Teil A **erneut zu prüfen**, weil die Seite sich geändert hat; dabei gleich **MAP-002 Schritt 3** mitprüfen, der ohne Vorschaubanner neu geschrieben ist. **Teil B am Telefon ruht**, bis ein Gerät da ist. Bis dahin bleibt `MAX_ZWISCHENZIELE` bei drei.
 - **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue Version nach §21 beginnt dort kein Loop — gebraucht, wenn Etappe TR an der Reihe ist.
 - **PTV:** Karte und Schlüssel tragen auch serverseitig (BEF-021, BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19) und die **Höchstzahl der Relationen je Matrix-Anfrage** (ANN-091 überbrückt sie mit 25 × 25); nur synthetische Koordinaten.
 - **Lokal:** `git pull`. Keine neue Abhängigkeit, keine Migration. **Node 22** (`.nvmrc`), sonst rot.
-- **G13 fehlt:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises**, die **Kürzel der beiden
-  Nummernkreise** (`RG`/`TR`) — ANN-074/075/082; dazu echte Preise. **B4** entscheidet zusätzlich über den **ermäßigten Satz**; bis dahin weist eine Constraint ihn ab.
+- **G13 fehlt:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises**, die **Kürzel der beiden Nummernkreise** (`RG`/`TR`) — ANN-074/075/082; dazu echte Preise. **B4** entscheidet zusätzlich über den **ermäßigten Satz**; bis dahin weist eine Constraint ihn ab.
 - **B9:** Die Auswertung liefert beide Grundlagen und wählt keine; welche die Gewinnermittlung verlangt, gehört mit B4 in dieselbe Frage (**ANN-088**).
 - **M0 (Vorlauf):** B1, B2, B4 ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)) — **B2 trägt** die
   Trennung aus ADR-021, die Einwilligung im Training, die Office-Sicht (§4.8), **die Frist für

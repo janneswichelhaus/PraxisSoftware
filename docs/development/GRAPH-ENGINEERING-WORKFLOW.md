@@ -95,7 +95,10 @@ würde, ist Pfad A — die Oberfläche entsteht dort im vertikalen Schnitt.
 
 Die Kartenprototypen MAP-002 bis MAP-005 (`MAP-LOOPS.md`) sind **keine**
 Sandbox-Prototypen: Sie berühren einen externen Datenfluss (ADR-019) und
-laufen als Pfad A mit Vorschau-Kennzeichnung, so wie die Roadmap sie führt.
+laufen als Pfad A, so wie die Roadmap sie führt. Eine
+Vorschau-Kennzeichnung tragen sie seit dem 2026-09-22 nicht mehr
+(`ARBEITSBEREICHE.md` Abschnitt 2); was eine Seite über ihren **Datenfluss**
+sagt, bleibt davon unberührt.
 
 ## Pfad A — Architektur und Compliance
 

@@ -103,11 +103,24 @@ Beschriftung geändert, nicht das Verhalten.
 
 ## 2. Vorschau
 
-Bedienbar mit synthetischen Daten. Jede Seite trägt oben den Hinweis
-„noch keine echte Speicherung"; jede Aktion meldet, was übernommen wurde **und
-was ausdrücklich nicht passiert ist**. Der Stand liegt ausschließlich im
+Bedienbar mit synthetischen Daten. Jede Aktion meldet, was übernommen wurde
+**und was ausdrücklich nicht passiert ist**. Der Stand liegt ausschließlich im
 Arbeitsspeicher der Sitzung — ein Neuladen setzt ihn zurück. Was in einer
 Sitzung simuliert wurde, steht unter `/vorschau/protokoll`.
+
+**Kennzeichnung weg, Zustandsmeldung bleibt** (Entscheidung von Jannes,
+2026-09-22). Bis dahin trug jede dieser Seiten oben den Banner „noch keine
+echte Speicherung" und darunter Kästen „Fachlich offen". Beides ist entfernt:
+Es gibt genau eine Person, die mit dieser Anwendung arbeitet, und ein Hinweis,
+den sie schon kennt, trainiert nur an, Kästen zu überlesen — auch die, die
+etwas sagen. Die Trennlinie für künftige Loops: Eine **Kennzeichnung** sagt,
+was der Leser ohnehin weiß und was später verschwindet — die entsteht nicht
+neu. Eine **Zustandsmeldung** sagt, was gerade **nicht** passiert ist, und die
+kann niemand erraten — `SimulationsMeldung` bleibt vollständig, samt jeder
+Prüfung in `ehrlichkeit.test.tsx`. Aussagen über **Datenfluss, Rechtslage oder
+Rechengrundlage** sind keine Kennzeichnung: Sie gelten auch dann noch, wenn
+der Bereich echt ist, und bleiben stehen — ohne Warnkasten, als Abschnitt wie
+jeder andere.
 
 | Bereich                  | Route                         | Aus der Vorlage übernommen                                                                                                                                    |
 | ------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -266,7 +279,8 @@ unter `src/features/preview/<thema>/` und damit von `trennung.test.ts`
 erfasst, technisch ohne Server, Netz und Persistenz, mit höchstens zwei
 Code-Loops Lebensdauer und einem Eintrag in Abschnitt 2; die eine in der
 Roadmap eingeplante Ausnahme sind die Kartenprototypen MAP-002 bis MAP-005,
-die als Pfad A mit Vorschau-Kennzeichnung laufen (ADR-019). **Ein
+die als Pfad A laufen (ADR-019) — seit dem 2026-09-22 ohne
+Vorschau-Kennzeichnung, siehe Abschnitt 2. **Ein
 bestehender Vorschaubereich wird nicht erweitert.** **Jede Vorschau wird in
 ihrem Loop ersetzt, nicht daneben gebaut.** Die frühere Regel „keine neue
 Vorschau" ist damit durch eine zeitlich begrenzte, technisch abgesicherte

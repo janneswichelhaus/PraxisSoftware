@@ -7,7 +7,6 @@ import { EmptyState } from '@/components/ui/Feedback';
 import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { mitarbeiterName, useVorschau } from '@/features/preview/vorschauContext';
-import { OffeneEntscheidung, VorschauBanner } from '@/features/preview/ui';
 import { formatDatum } from '@/features/preview/format';
 import type { Stoppart, Tourstopp } from '@/features/preview/types';
 
@@ -52,18 +51,13 @@ export function ToursPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader title="Touren" description="Besuchsfolge und Wege eines Arbeitstags." />
 
-      <VorschauBanner
-        bereich="Touren"
-        beschreibung="Synthetische Besuchsfolge. Es ist kein Kartendienst angebunden und es werden keine Wege berechnet."
-      />
-
-      {/* Der Kartenprototyp steht bewusst neben dieser Liste und nicht in ihr:
-        Er zeigt erfundene Punkte, nicht die Stopps dieser Tour (MAP-002). */}
+      {/* Die Karte steht bewusst neben dieser Liste und nicht in ihr: Sie zeigt
+        eigene Teststopps, nicht die Stopps dieser Tour (MAP-002). */}
       <p className="text-ink-muted mb-5 text-sm">
         <Link to="/touren/karte" className="text-accent hover:text-accent-hover underline">
-          Kartenprototyp mit Teststopps öffnen
+          Karte mit Teststopps öffnen
         </Link>{' '}
-        – erfundene Koordinaten, ohne Bezug zu dieser Besuchsfolge.
+        – ohne Bezug zu dieser Besuchsfolge.
       </p>
 
       <div className="mb-5 flex flex-wrap items-end gap-4">
@@ -127,17 +121,18 @@ export function ToursPage({ user }: { user: CurrentUser }) {
               Dieselben Besuche im Kalender
             </Link>
           </p>
+
+          {/* Bleibt stehen, auch wenn die Vorschaukennzeichnungen gegangen sind:
+            Das ist keine Entwicklungsnotiz, sondern die Zusage aus
+            PROJECT_PRINCIPLES.md 20 — sie gilt auch dann noch, wenn diese Liste
+            echte Besuche trägt. */}
+          <p className="text-ink-subtle mt-2 text-sm">
+            Zu dieser Besuchsfolge gibt es keine Fahrzeitberechnung, keine Tourenoptimierung und
+            keine dauerhafte Ortung von Mitarbeiter:innen: Die Wegzeiten stehen so, wie sie
+            eingetragen wurden.
+          </p>
         </>
       )}
-
-      <OffeneEntscheidung titel="Routing ist auch eine Datenschutzentscheidung">
-        Ein Kartendienst ist ein Dienstleister mit Zugang zu Patientendaten: eine Adresse in
-        Verbindung mit einem Behandlungstermin ist personenbezogen. Anbieter, Datenfluss,
-        Vertragsgrundlage und Aufbewahrung müssen vor einer Integration geprüft werden
-        (PROJECT_PRINCIPLES.md 3.5, 9; ADR-002, offener Punkt B7). Bis dahin gibt es keine
-        Fahrzeitberechnung, keine Tourenoptimierung und keine dauerhafte Ortung von
-        Mitarbeiter:innen (PROJECT_PRINCIPLES.md 20).
-      </OffeneEntscheidung>
     </>
   );
 }

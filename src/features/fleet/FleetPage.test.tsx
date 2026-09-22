@@ -15,10 +15,9 @@ function oeffne(rollen: Parameters<typeof testUser>[0] = ['owner'], pfad = '/bet
 }
 
 describe('Radflotte', () => {
-  it('weist auf die Vorschau hin', () => {
-    oeffne();
-    expect(screen.getByText(/noch keine echte Speicherung/)).toBeInTheDocument();
-  });
+  // Der Vorschaubanner ist am 2026-09-22 gefallen; die Prüfung darauf mit ihm.
+  // Was nach einer Aktion nicht passiert ist, sagt weiter die Zustandsmeldung
+  // weiter unten — das ist die Aussage, die niemand erraten kann.
 
   it('zeigt die Räder nach Standort gruppiert', () => {
     oeffne();

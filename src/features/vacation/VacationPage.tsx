@@ -19,13 +19,7 @@ import {
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { darfEntscheiden, vorschauidentitaet } from '@/features/preview/identitaet';
 import { SignaturFeld } from '@/features/preview/SignaturFeld';
-import {
-  Abschnitt,
-  Klappbereich,
-  OffeneEntscheidung,
-  SimulationsMeldung,
-  VorschauBanner,
-} from '@/features/preview/ui';
+import { Abschnitt, Klappbereich, SimulationsMeldung } from '@/features/preview/ui';
 import { formatDatum } from '@/features/preview/format';
 import {
   urlaubsstatusLabels,
@@ -116,7 +110,6 @@ export function VacationPage({ user }: { user: CurrentUser }) {
         actions={<Button onClick={() => setFormular(true)}>Urlaub beantragen</Button>}
       />
 
-      <VorschauBanner bereich="Urlaub" />
       <SimulationsMeldung eintrag={meldung} />
 
       {entscheidungsrecht ? (
@@ -183,13 +176,6 @@ export function VacationPage({ user }: { user: CurrentUser }) {
           ))}
         </CardGrid>
       </Abschnitt>
-
-      <OffeneEntscheidung titel="Genehmigung und Terminplan">
-        Eine genehmigte Abwesenheit ist die verlässliche Quelle für Kapazität und Radverfügbarkeit.
-        Ob und wie bestehende Termine im Zeitraum abgesagt, verschoben oder vertreten werden, bleibt
-        eine bewusste Entscheidung mit Patientenabstimmung – das passiert nicht automatisch
-        (PROJECT_PRINCIPLES.md 8).
-      </OffeneEntscheidung>
     </>
   );
 }
@@ -437,8 +423,6 @@ function Antragsformular({
   return (
     <>
       <PageHeader title="Urlaub beantragen" />
-      <VorschauBanner bereich="Urlaub" />
-
       <div className="flex max-w-xl flex-col gap-4">
         <Select
           label="Person"
@@ -601,8 +585,6 @@ function Entscheidungsformular({
         title={art === 'genehmigen' ? 'Urlaub genehmigen' : 'Urlaub ablehnen'}
         description={`${mitarbeiterName(zustand, antrag.mitarbeiterId)} · ${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)} · ${antrag.tage} Tage`}
       />
-
-      <VorschauBanner bereich="Urlaub" />
 
       <div className="flex max-w-xl flex-col gap-4">
         {konto ? (

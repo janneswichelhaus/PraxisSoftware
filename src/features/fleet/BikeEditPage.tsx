@@ -9,7 +9,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { isOwner, type CurrentUser } from '@/features/session/types';
 import { useVorschau } from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
-import { VorschauBanner } from '@/features/preview/ui';
 import {
   radstatusLabels,
   wochentage,
@@ -140,8 +139,6 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
         title={neuAnlegen ? 'Rad hinzufügen' : 'Rad bearbeiten'}
         description={neuAnlegen ? undefined : entwurf.name}
       />
-
-      <VorschauBanner bereich="Radflotte" />
 
       <div className="flex max-w-xl flex-col gap-4">
         <Field
