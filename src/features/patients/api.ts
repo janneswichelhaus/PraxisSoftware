@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import { protokolliereFehler } from '@/lib/protokoll';
 
 /**
  * Datenzugriff auf die Patientenkartei.
@@ -163,8 +164,10 @@ export async function logPatientRecordView(patientId: string): Promise<void> {
     p_patient_id: patientId,
   });
   if (error) {
-    // Keine patientenbezogenen Daten in die Ausgabe (ADR-011).
-    console.error('Auditeintrag für Aktenzugriff fehlgeschlagen.');
+    // Keine patientenbezogenen Daten in die Ausgabe (ADR-011) — und keine
+    // Kennung der Akte: Ein Betriebslog, das sagt, *welche* Akte jemand
+    // geöffnet hat, wäre selbst der Verlauf, den das Auditlog führen soll.
+    protokolliereFehler({ ereignis: 'audit.aktenzugriff_nicht_vermerkt' });
   }
 }
 
