@@ -13,16 +13,16 @@ keine vorausbezahlten Pakete.
 
 | | |
 |---|---|
-| Status | zurückgestellt (B11) |
+| Status | bestätigt |
 | Quelle | Jannes, 2026-09-01 |
-| Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), B4, B9, B11 (2026-09-08) |
+| Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md) Punkt 21, B4, B9, B11 |
 
-**Stand.** B11 (Jannes, 2026-09-08): **Pakete vorerst nicht anbieten**, bis B4
-zurück ist. Eine Vorauszahlung ist kein Preismodell, sondern ein
-Guthabenkonto mit Steuerentstehung bei Vereinnahmung und GoBD-Pflichten —
-Buchhaltungsmechanik, die ADR-009 nicht kennt und die teuer nachzurüsten
-wäre, wenn man sie falsch anfängt. Der Eintrag kommt nur mit einer neuen
-Entscheidung zurück; die Anforderungsliste unten bleibt dafür stehen.
+**Stand.** B11 ist am 2026-09-22 neu entschieden: Pakete gehören zum Umfang
+der Eröffnung. Am 2026-09-23 hat Jannes den Zuschnitt festgelegt: **nach
+Zeitraum, nicht pausierbar**, die Plattform im Preis (`PROJECT_PRINCIPLES.md`
+§4.10, §19; ADR-009 Punkt 21). Eingeplant als ANG-EPIC-002. Die Hinweise zu
+Guthaben und GoBD unten bleiben für den SPEC-Schritt stehen; die Steuer klärt
+B4.
 
 **Idee.** Die Weiterbetreuung wird nicht je Einheit abgerechnet, sondern als
 Paket: ein Preis für einen Zeitraum oder ein Kontingent — etwa drei Monate
@@ -59,10 +59,9 @@ Anforderungen mit:
   laufendes Paket behält seinen Preis; eine Preiserhöhung wirkt erst auf neue
   Pakete.
 
-**Offen.** Als Punkt **B11** in `docs/decisions/OPEN_DECISIONS.md` geführt
-und dort zurückgestellt. Falls Pakete zurückkommen: Kontingent nach Einheiten
-oder nach Zeitraum? Automatische Verlängerung — und wenn ja, mit welcher
-Kündigungsfrist? Das sind Geschäftsmodellentscheidungen, keine technischen.
+**Offen.** Nach Zeitraum ist entschieden (2026-09-23). Offen bleibt, ob sich
+ein Paket automatisch verlängert und mit welcher Frist — eine
+Geschäftsmodellentscheidung für den SPEC-Schritt von ANG-EPIC-002.
 
 ---
 
@@ -155,10 +154,11 @@ Feature-Loop.
 | Quelle | Claude, 2026-09-01 |
 | Berührt | IDEA-ANG-001, [00 LZK](00-lebenszyklus-und-zugang.md), B9, B11 |
 
-**Stand.** B11 (2026-09-08): Pakete werden vorerst nicht angeboten
-(`IDEA-ANG-001` zurückgestellt). Der Fall hier wird erst wieder relevant, wenn
-Pakete zurückkommen; bis dahin gibt es nichts, in das jemand zurückfallen
-könnte.
+**Stand.** Mit den Paketen (B11 neu entschieden 2026-09-22) ist der Fall
+wieder relevant und steht im Zuschnitt von ANG-EPIC-002. Weil ein Paket **nicht
+pausierbar** ist (Jannes, 2026-09-23), entfällt die erste der denkbaren
+Antworten unten; es bleiben „läuft parallel weiter" und „Restguthaben wird
+erstattet".
 
 **Idee.** Der Fall, den jedes Paketmodell braucht und keines vorsieht: Jemand
 hat drei Monate Coaching bezahlt und bekommt in Monat zwei ein neues Rezept.
@@ -183,14 +183,12 @@ buchhalterisch die aufwendigste.
 
 | | |
 |---|---|
-| Status | zurückgestellt (B11) |
+| Status | bestätigt |
 | Quelle | Claude, 2026-09-01 |
-| Berührt | IDEA-ANG-001, [00 LZK](00-lebenszyklus-und-zugang.md), B11 (2026-09-08), B5 |
+| Berührt | IDEA-ANG-001, [00 LZK](00-lebenszyklus-und-zugang.md), B11, B5 |
 
-**Stand.** B11 (Jannes, 2026-09-08) blockiert die Preisdarstellung im Portal
-zusammen mit Paketverkauf, Guthaben und Rabattlogik. Die Richtung bleibt
-bestätigt; der Eintrag kommt zurück, sobald Pakete oder ein anderes Angebot
-im Portal entschieden sind — und das Portal selbst existiert (B5).
+**Stand.** Mit Paketen und Nachsorge-Abo (B11 neu entschieden 2026-09-22,
+Jannes 2026-09-23) ist die Preisdarstellung eingeplant, in ANG-EPIC-002.
 
 **Idee.** Wenn die Weiterbetreuung im Portal angeboten wird, steht der Preis
 dort — vollständig, mit Laufzeit, Umfang und Kündigungsbedingungen, ohne

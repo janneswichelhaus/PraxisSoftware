@@ -166,7 +166,16 @@ Auftrag war:
   Versionsangabe der Prinzipien; ADR-Liste nur an einer Stelle vollständig.
 - Offline für Therapeut:innen (ADR-001 Punkt 3) als Frage in den Auftrag für ADR-024.
 
-### U2 — Produktbeschreibung und Roadmap 7.0
+### U2 — Produktbeschreibung und Roadmap 7.0 · erledigt 2026-09-23
+
+Ergebnis: `docs/PRODUCT_VISION.md` ist die Produktbeschreibung (Praxis, wer damit arbeitet,
+Behandlungstag, Plattformstufen, Geschäftsmodell, Bedienung). Roadmap 7.0 mit Block 1a, DOK-006,
+DSN-001, UI-003, Sichtung statt Abnahme je Epic, Anfragen ab Anfang 2027; `fortschritt.json`
+ergänzt. Ideenspeicher (ANG-001/003/004, ALT-005, LZK, PRX-003, Anrufliste, Kartenzahlung,
+Navigationsleiste) und Anfragen B4 (Fragen 6 und 7), B9, B11 auf den Stand. Die Regel „Sichtung"
+steht in der Roadmap; Skills, Abnahme-README und Fortschrittsstufen zieht U3 nach.
+
+Auftrag war:
 
 - `docs/PRODUCT_VISION.md` wird zur Produktbeschreibung: Geschäftsmodell (Behandlung →
   Nachsorge-Abo → Training), Nutzer:innen und Wachstum, Behandlungstag, Erstaufnahme, Plattform-

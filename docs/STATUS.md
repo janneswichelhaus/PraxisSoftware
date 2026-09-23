@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-23 · letzte Session: Umbau U0 und U1
+# Status · Stand 2026-09-23 · letzte Session: Umbau U0 bis U2
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,15 +6,15 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**Umbau läuft** ([`development/UMBAU.md`](development/UMBAU.md)). Am 2026-09-23 hat Jannes das Produkt genauer beschrieben und sieben Entscheidungen getroffen (E-1 bis E-7): Anfragen ab Anfang 2027 parallel, Test-Umgebung für das Handy, Nachsorge-Abo nach der Behandlung, UX-Fundament vorziehen, Sichtung statt Abnahme je Epic. Das wird in fünf Schritten **eingearbeitet, nicht angehängt**. U1 hat die Entscheidungen in `PROJECT_PRINCIPLES.md` 0.17 und die ADRs gebracht. Fortschritt **34,1 %**.
+**Umbau läuft** ([`development/UMBAU.md`](development/UMBAU.md)). Am 2026-09-23 hat Jannes das Produkt genauer beschrieben und sieben Entscheidungen getroffen (E-1 bis E-7): Anfragen ab Anfang 2027 parallel, Test-Umgebung für das Handy, Nachsorge-Abo nach der Behandlung, UX-Fundament vorziehen, Sichtung statt Abnahme je Epic. Das wird in fünf Schritten **eingearbeitet, nicht angehängt**. U1 und U2 haben sie in `PROJECT_PRINCIPLES.md` 0.17, die ADRs, die Produktbeschreibung und **Roadmap 7.0** gebracht. Fortschritt **33,7 %** (vorher 34,1; neue Posten aus Roadmap 7.0).
 
 ## Danach — Umbau, dann Bauen
 
-1. **U2 Produktbeschreibung und Roadmap 7.0** — „Umbau U2 nach `docs/development/UMBAU.md`"
-2. **U3 Ablauf schlank**
-3. **U4 Register**, dann **U5 Test-Umgebung**
+1. **U3 Ablauf schlank** — „Umbau U3 nach `docs/development/UMBAU.md`"
+2. **U4 Register**
+3. **U5 Test-Umgebung** — dafür brauche ich deine Entscheidung zum Hosting (kommt in U5 mit Optionen)
 
-Danach **G6c**, sobald deine Wahl unter „Blocker" da ist, sonst der neue Block „Handy und UX-Fundament" (kommt mit Roadmap 7.0).
+Danach **G6c**, sobald deine Wahl unter „Blocker" da ist, sonst **Block 1a „Handy und UX-Fundament"** (OPS-002a → UX-EPIC-002 → UX-EPIC-003).
 
 ## Prüfverfahren
 
@@ -22,7 +22,8 @@ Danach **G6c**, sobald deine Wahl unter „Blocker" da ist, sonst der neue Block
 
 ## Blocker (Jannes-seitig)
 
-- **Abnahme-Rückstand über 30 Epics:** Abweichungsregel 1 ist seit 2026-09-23 auf deinen Wunsch ausgesetzt; es wird ohne Abnahmen weitergebaut. Wenn du abnimmst: lokal mit `supabase start`, je Etappe am Stück ([`abnahme/README.md`](abnahme/README.md)), zuerst **M1** ([`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)).
+- **Sichtung statt Abnahme je Epic** (E-6, Roadmap Regel 1): Du sichtest gesammelt je Block am Handy; der Rückstand wird in U3 zu einer Sichtung je Etappe verdichtet. Bis zur Test-Umgebung lokal ([`abnahme/README.md`](abnahme/README.md)).
+- **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **MAP-003, MAP-004, MAP-005** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 Schritte 2, 3, 5 und alle fünf von MAP-004 lokal mit `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`); MAP-005 Teil A erneut prüfen (dabei MAP-002 Schritt 3), **Teil B am Telefon ruht**, bis ein Gerät da ist — `MAX_ZWISCHENZIELE` bleibt bei drei.
 - **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
 - **Logfrist für Betriebslogs (R14 alt, jetzt R9):** (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg. Empfehlung: nach G3. Gebraucht vor echten Daten.
@@ -39,4 +40,4 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Umbau U0 und U1.** Plan [`development/UMBAU.md`](development/UMBAU.md) nach Durchsicht und Produktgespräch. **`PROJECT_PRINCIPLES.md` 0.17**: eingearbeitet statt angehängt — §14 Umfang, §4.6/§4.10 Plattformstufen und Nachsorge-Abo, §5 Fotos und Erstaufnahme, §9 Tagesroute mit Liege, §15 Anfragen ab Anfang 2027, §19 Abo und Paket; Vermerke in [`PRINCIPLES-CHRONIK.md`](PRINCIPLES-CHRONIK.md) (Datei −24 %). ADR-014 Fassung 2, ADR-013 Fassung 4 (Negativfälle „fremde Person", „anderer Leistungsbereich"), ADR-009 Fassung 3. Kein Code, **keine neue Annahme**. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.
+**Umbau U0 bis U2.** Plan [`development/UMBAU.md`](development/UMBAU.md). **`PROJECT_PRINCIPLES.md` 0.17** eingearbeitet statt angehängt (Vermerke in [`PRINCIPLES-CHRONIK.md`](PRINCIPLES-CHRONIK.md)); ADR-014 Fassung 2, ADR-013 Fassung 4, ADR-009 Fassung 3. [`PRODUCT_VISION.md`](PRODUCT_VISION.md) ist jetzt die Produktbeschreibung; **Roadmap 7.0** mit Block 1a „Handy und UX-Fundament"; Ideenspeicher und Anfragen B4, B9, B11 nachgezogen. Kein Code, **keine neue Annahme**. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.

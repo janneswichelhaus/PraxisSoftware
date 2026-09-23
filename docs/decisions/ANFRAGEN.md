@@ -1,8 +1,11 @@
 # Anfragen an externe Stellen
 
-Die Volltexte der Punkte, die eine externe Stelle beantwortet — unverändert aus
-`OPEN_DECISIONS.md` übernommen (R2-F01, 2026-09-14). Sie sind die Vorlage für
+Die Volltexte der Punkte, die eine externe Stelle beantwortet (aus
+`OPEN_DECISIONS.md` übernommen, R2-F01, 2026-09-14). Sie sind die Vorlage für
 die Anfrage: Frage, Stand, vorläufige Festlegung und Preis der Rücknahme.
+**Verschickt wird ab Anfang 2027, parallel zum Bauen** (Jannes, 2026-09-23,
+`PROJECT_PRINCIPLES.md` §15.2); B4, B9 und B11 sind auf den Umfang vom
+2026-09-22/23 gebracht.
 
 Dieses Dokument **entscheidet nichts** und hat wie `OPEN_DECISIONS.md` keinen
 Rang. Status und Fälligkeit jedes Punktes stehen in der Übersicht von
@@ -65,8 +68,9 @@ Anfrage an die Steuerberatung. Stand und Fälligkeit: `OPEN_DECISIONS.md`, Punkt
 
 Das Abrechnungsmodell ist entschieden (ADR-009). Offen ist die steuerliche
 Validierung; die Liste wurde am 2026-09-06 um die Punkte erweitert, die aus
-der Eröffnung ohne Vorgängersystem und aus dem Personal Training folgen. Sie
-geht mit der Anfrage B4 im September an die Steuerberatung:
+der Eröffnung ohne Vorgängersystem und aus dem Personal Training folgen, und am
+2026-09-23 um Nachsorge-Abo und Paket (Frage 7). Sie geht ab Anfang 2027 an
+die Steuerberatung:
 
 **Vorläufig entschieden am 2026-09-08 durch Jannes** — vier Festlegungen, die
 als Vorlage in die Anfrage gehen und die Rechnung in ABR-EPIC-001/002a
@@ -126,7 +130,19 @@ Festlegung formuliert und nicht mehr ergebnisoffen.
 5. **Export für die Steuerberatung:** gewünschtes Format (CSV, DATEV) für
    Rechnungen und Zahlungen (`IDEA-PRX-026`).
 6. **Personal Training** (B9, B11): Umsatzsteuer, Anzahlungen und Pakete,
-   getrennte oder gemeinsame Rechnungsstellung mit der Praxis.
+   getrennte oder gemeinsame Rechnungsstellung mit der Praxis. Ein Paket gilt
+   für einen **festen Zeitraum**, ist **nicht pausierbar** und enthält die
+   Plattform: Entsteht die Steuer bei Vereinnahmung, und wie ist ein Paket zu
+   behandeln, das bei einem Rückfall in die Heilbehandlung parallel weiterläuft
+   oder anteilig erstattet wird (`IDEA-ANG-003`)?
+7. **Nachsorge-Abo** (neu 2026-09-23): Patient:innen können nach dem Ende ihrer
+   Behandlung die Plattform monatlich kündbar weiter nutzen — Heimprogramm,
+   Anpassung durch die Therapeutin, Rückfragen mit Antwortfrist. Ist das eine
+   steuerfreie Heilbehandlung nach §4 Nr. 14a UStG (therapeutisches Ziel,
+   individuelle Betreuung), eine steuerpflichtige sonstige Leistung oder ein
+   digitales Produkt? Während der Behandlung ist dieselbe Plattform
+   kostenlos, als Teil der Heilbehandlung. Die Vorlage der Praxis: Kennzeichen
+   am Posten nach ADR-009 Punkt 15, bis zur Antwort als Annahme.
 
 Nicht mehr Teil der Anfrage: eine Behandlungsbestätigung oder Unterschrift je
 Termin — Jannes hat am 2026-09-06 entschieden, dass keine benötigt wird
@@ -187,7 +203,7 @@ Anfrage an Steuerberatung und Rechtsberatung zur Betreuung ohne Heilbehandlung. 
 
 | | |
 |---|---|
-| Dringlichkeit | P2 — vor dem ersten Feature außerhalb der Heilbehandlung; Steuerteil mit B4 im September anfragen |
+| Dringlichkeit | P2 — mit B4 ab Anfang 2027 anfragen; das Bauen wartet nicht darauf (§15.2) |
 | Bezug | §1, §14, §18, §19; ADR-008, ADR-009; `IDEA-LZK-002`, `IDEA-LZK-008` |
 
 **Frage:** Was gilt, wenn eine Person nach Ablauf des Rezepts freiwillig
@@ -201,10 +217,13 @@ Personal Trainings gedacht ist — ohne vorherige Heilbehandlung. Damit ist der
 Übergang nicht mehr der einzige Fall: es gibt einen zweiten Eintrittsweg ohne
 Verordnung, ohne Behandlungsvertrag und ohne Akte. Für ihn gelten dieselben
 Fragen von Anfang an. Entschieden am 2026-09-06 (E-17): Das Personal
-Training beginnt mit der Eröffnung, es gibt keine Bestandsdaten; die
-Plattform dafür ist Stufe 3 nach dem ersten Betriebsmonat; bis dahin werden
-Kund:innen nicht als Patient:innen angelegt; `PROJECT_PRINCIPLES.md` §1 wird
-nach §21 ergänzt, wenn Stufe 3 beginnt.
+Training beginnt mit der Eröffnung, es gibt keine Bestandsdaten; Kund:innen
+werden nicht als Patient:innen angelegt. **Seit 2026-09-22 gehört die
+Plattform zum Umfang der Eröffnung** (`PROJECT_PRINCIPLES.md` §1.2, §14); der
+Übergang aus der Behandlung läuft über das Abschlussgespräch und einen eigenen
+Trainingsvertrag im Konto (§4.10, 2026-09-23). Zu prüfen ist dabei auch die
+**Zweckbindung**: Die Erinnerung an das Abschlussgespräch nutzt ein Datum der
+Behandlung (ihr Ende) für ein Angebot außerhalb der Heilbehandlung.
 
 **Vorläufig entschieden am 2026-09-07 durch Jannes — ein Unternehmen:**
 Patient:innen der Heilbehandlung und Kund:innen des Personal Trainings werden
@@ -234,15 +253,13 @@ beantworten — die Liste unten gilt unverändert. Ein Unternehmen macht die
 **Zweckbindung sogar schärfer**, nicht lockerer: weil es keinen zweiten
 Verantwortlichen und keine zweite Organisation mehr gibt, an denen sich die
 Trennung von Akte und Trainingskontext organisatorisch festmachen ließe, muss
-sie in Stufe 3 **technisch** entstehen — eigene Tabellen, eigene Rollenprüfung,
+sie **technisch** entstehen — eigene Tabellen, eigene Rollenprüfung,
 eigene Policies (ADR-004). Das ist der Punkt, den die Datenschutzberatung in
 B2 sehen muss.
 
-*Rücknahme:* Solange Stufe 3 nicht gebaut ist, kostet ein Widerspruch der
-Steuerberatung in der Software **nichts** — es gibt keine Verankerung im Code,
-nur diesen Vermerk. Ab Stufe 3 wäre die Trennung in zwei Organisationen ein
-Datenumzug, Aufwand `groß`; das ist der Grund, die Antwort aus B4 **vor**
-Stufe 3 zu haben, nicht danach.
+*Rücknahme:* Die Trennung steht seit Etappe L im Datenmodell (ADR-021). Eine
+Trennung in zwei Organisationen wäre heute ein Datenumzug, Aufwand `groß`;
+deshalb geht B4 ab Anfang 2027 hinaus und nicht erst nach dem Bauen.
 
 Beim Übergang und beim Eintritt ohne
 Behandlung ändern sich mehrere Dinge gleichzeitig:
@@ -290,7 +307,11 @@ Fragen:**
    Betrieben kann sie sich nicht mehr festmachen. Rücknahme **`groß`** — der
    Aufwand war bei der Entscheidung benannt (§15.1 Punkt 4). Dieser Punkt geht
    ausdrücklich mit an die Datenschutzberatung (B2).
-6. **Berufsrecht Ernährung:** **vorerst nicht anbieten.** Ernährungsberatung ist
+6. **Berufsrecht Ernährung:** *Neu entschieden am 2026-09-22: Ernährung kommt
+   als **Protokoll und Zielwert** ohne Urteil in die Ansicht der
+   Trainingskund:innen (ALT-EPIC-002). Zu prüfen ist, ob das die Grenze zur
+   Ernährungsberatung wahrt.* Die frühere Festlegung lautete: **vorerst nicht
+   anbieten.** Ernährungsberatung ist
    nicht Teil der Ausbildung nach dem Masseur- und Physiotherapeutengesetz; die
    Abgrenzung zwischen zulässiger allgemeiner Information und beratender
    Tätigkeit ist heikel und wettbewerbsrechtlich angreifbar. Wollte die Praxis
@@ -316,8 +337,9 @@ Rang 1), aber nicht rückwirkend in der Bewertung.
 
 **Blockiert:** Etappe 8 vollständig und das Datenmodell der Betreuungsepisode
 (`IDEA-LZK-002`, `IDEA-LZK-003`, `IDEA-LZK-008`); die automatische
-Klassifizierung aus `IDEA-LZK-007`; jede Funktion für Kund:innen ohne
-Heilbehandlung (Stufe 3). **Nicht blockiert:** die Empfehlung der Therapeutin
+Klassifizierung aus `IDEA-LZK-007`. *Seit 2026-09-22 blockiert der Punkt
+nichts mehr (§15.2): gebaut wird mit Annahmen, scharfgeschaltet nach der
+Antwort.* **Nicht blockiert:** die Empfehlung der Therapeutin
 zum Verordnungsende als Teil der Verordnung (VER-001); die
 Umsatzsteuer-Felder je Katalogposition, die ADR-009 Punkt 6 ohnehin verlangt.
 
@@ -389,7 +411,10 @@ heilmittelwerberechtliche Beratung.
 
 **Vorläufig entschieden am 2026-09-08 durch Jannes — zwei getrennte Antworten:**
 
-- **Pakete: vorerst nicht anbieten**, bis B4 zurück ist. Eine Vorauszahlung ist
+- **Pakete** — *neu entschieden am 2026-09-22: Pakete kommen zur Eröffnung;
+  am 2026-09-23 zugeschnitten: nach Zeitraum, nicht pausierbar, Plattform im
+  Preis (ADR-009 Punkt 21). Die Fragen unten gehen mit B4 Frage 6 hinaus.*
+  Die frühere Festlegung lautete: vorerst nicht anbieten, bis B4 zurück ist. Eine Vorauszahlung ist
   kein Preismodell, sondern ein **Guthabenkonto**: Steuerentstehung bereits bei
   Vereinnahmung (§13 Abs. 1 Nr. 1 lit. a Satz 4 UStG), GoBD-Pflichten für das
   Guthaben, Verfall und Laufzeit, keine gemischten Pakete aus befreiter und
@@ -401,9 +426,11 @@ heilmittelwerberechtliche Beratung.
   nicht wert. Falls doch gewünscht: vorher anwaltlich prüfen lassen, nicht als
   Annahme.
 
-**Rücknahme:** `klein`, es wird nichts gebaut.
+**Rücknahme:** für den Rabatt `klein`, es wird nichts gebaut; für Pakete
+`mittel`, verankert an einer Stelle in ANG-EPIC-002.
 
-**Blockiert:** Paketverkauf, Guthaben, Rabattlogik, Preisdarstellung im Portal.
+**Blockiert:** Rabattlogik. Paketverkauf und Preisdarstellung werden mit
+Annahmen gebaut (§15.2).
 **Nicht blockiert:** die reguläre Einzelleistungsabrechnung nach ADR-009.
 
 ## C6 — AI Privacy Gateway: Schutzumfang und Provider

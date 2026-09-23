@@ -107,11 +107,14 @@ Feature mit eigener regulatorischer Bewertung.
 
 | | |
 |---|---|
-| Status | zurückgestellt (B9 Punkt 6) |
+| Status | bestätigt |
 | Quelle | Jannes, 2026-09-01 (Navigationspunkt „Ernährung") · Einordnung Claude |
 | Berührt | B9 Punkt 6 (2026-09-08), [ADR-006](../../adr/ADR-006-medical-device-boundary.md), `IDEA-ALT-006` |
 
-**Stand.** B9 Punkt 6 (Jannes, 2026-09-08): **Ernährung vorerst nicht
+**Stand.** B9 Punkt 6 ist am 2026-09-22 neu entschieden: Ernährung gehört als
+Protokoll und Zielwert zur Ansicht der Trainingskund:innen (`PROJECT_PRINCIPLES.md`
+§4.10), eingeplant als ALT-EPIC-002; die berufsrechtliche Frage geht mit B9
+an die Beratung. Die frühere Begründung: **Ernährung vorerst nicht
 anbieten.** Ernährungsberatung ist nicht Teil der Ausbildung nach dem
 Masseur- und Physiotherapeutengesetz; die Abgrenzung zwischen zulässiger
 allgemeiner Information und beratender Tätigkeit ist heikel und
