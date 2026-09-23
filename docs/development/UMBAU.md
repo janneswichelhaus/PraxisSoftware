@@ -126,9 +126,20 @@ nicht abbauen kann.
 
 ## Schritte
 
-### U0 — Plan ins Repository · erledigt mit dieser Datei
+### U0 — Plan ins Repository · erledigt 2026-09-23
 
-### U1 — Grundlagen neu fassen (Rang 1 und 2)
+### U1 — Grundlagen neu fassen (Rang 1 und 2) · erledigt 2026-09-23
+
+Ergebnis: `PROJECT_PRINCIPLES.md` 0.17 (2 161 → rund 1 630 Zeilen, −25 %; die
+Vermerke stehen in `docs/PRINCIPLES-CHRONIK.md`), ADR-014 Fassung 2, ADR-013
+Fassung 4, ADR-009 Fassung 3, Vermerke in ADR-018 und ADR-007, gekürzte
+Statusabschnitte in ADR-006, -009, -021, -022. Weiter zu kürzen hieße,
+normative Aussagen zu streichen. **Nicht gemacht:** ADR-006 Punkt 8
+wiederholt §6.3 weiter — ein angenommener Punkt wird nach `docs/adr/README.md`
+nicht umgeschrieben. Die Offline-Frage (ADR-001 Punkt 3) geht mit U2 in den
+Auftrag für ADR-024.
+
+Auftrag war:
 
 - `PROJECT_PRINCIPLES.md` neue Version, **zusammengeführt statt ergänzt**:
   - §14 als ein Text mit dem heutigen Umfang (Training, Plattform, Nachsorge-Abo, Pakete sind
@@ -172,6 +183,8 @@ nicht abbauen kann.
 - Ideenspeicher auf den Stand der Roadmap: `ideen/00`, `05`, `09`, `10`, `referenz-navigation.md`
   (Ansicht der Trainingskund:innen); in `IDEENSPEICHER.md` den Satz „verliert auch gegen
   OPEN_DECISIONS" streichen.
+- Aus U1: Die Frage, ob Offline für Therapeut:innen (ADR-001 Punkt 3) in V1 kommt, in den
+  Auftrag für ADR-024; Verweise auf „`PROJECT_PRINCIPLES.md` 0.16 §14" auf §14 umstellen.
 - `docs/decisions/ANFRAGEN.md`: B4, B9, B11 auf den heutigen Umfang, Steuerfrage zum
   Nachsorge-Abo, Versand ab Anfang 2027.
 

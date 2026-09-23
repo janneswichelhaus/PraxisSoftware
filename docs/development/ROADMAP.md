@@ -514,7 +514,7 @@ als „entschieden: …", Ideen als „Idee: …".
 | Ablaufrunde | `Ablaufrunde <Bereich> nach docs/development/OPTIMIERUNG.md` |
 | Befund | `Befund: <Beobachtung, Bereich, Rolle>. In docs/development/BEFUNDE.md eintragen, nicht bauen.` |
 | Sandbox | `/sandbox <Thema>` — Oberflächen-Prototyp (Pfad S); endet mit „übernehmen oder verwerfen" |
-| Zweitreview | `Zweitreview <Loop-Kennung>: den Diff des offenen Pull Requests gegen die Review-Checkliste aus ADR-013 Fassung 2, Punkt 9 lesen. Befunde als Einzel-Story-Loop vorschlagen, nichts bauen.` — Pflicht, sobald der Loop-Bericht A5 als ausstehend nennt |
+| Zweitreview | `Zweitreview <Loop-Kennung>: den Diff des offenen Pull Requests gegen die Review-Checkliste aus ADR-013 Punkt 9 lesen. Befunde als Einzel-Story-Loop vorschlagen, nichts bauen.` — Pflicht, sobald der Loop-Bericht A5 als ausstehend nennt |
 | Antworten eintragen | `Docs-Session ohne Code: meine Antworten und Abnahmen in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …` |
 | Idee | `Ideenspeicher: <Idee in zwei Sätzen>. Nur eintragen, nicht bauen.` |
 | Roadmap prüfen | `Planungssession ohne Code: Gesamtstand prüfen (git fetch, Branches, Pull Requests), docs/development/ROADMAP.md gegen den Stand nachstellen, nächsten Loop vorschlagen. Nichts bauen.` |
@@ -562,7 +562,7 @@ mit ungeprüftem Anbieter ist ohne ihn benutzbar oder abgeschaltet.
 7. **Höchstens eine Ideenspeicher-Datei** je Loop, nach dem Index in
    `IDEENSPEICHER.md` — die, auf die die Spalte „Quelle" zeigt.
 8. **Keine Subagenten** außer bei echt breiter Suche und für den Zweitreview
-   in frischem Kontext (ADR-013 Fassung 2, Punkt 9, Nr. 8; Gate A5).
+   in frischem Kontext (ADR-013 Punkt 9, Nr. 8; Gate A5).
 
 **Verifikation**
 
@@ -570,7 +570,7 @@ mit ungeprüftem Anbieter ist ohne ihn benutzbar oder abgeschaltet.
    Runde **einmal** am Ende (Skill-Schritt H).
 10. Keine identischen teuren Läufe ohne Änderung dazwischen.
 11. `pnpm test:db` bei Migrationen und Policies — auch in der Cloudumgebung.
-12. **Zweitreview** vor dem Merge nach ADR-013 Fassung 2, Punkt 9, Nr. 8.
+12. **Zweitreview** vor dem Merge nach ADR-013 Punkt 9, Nr. 8.
 
 **Rhythmus**
 

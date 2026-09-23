@@ -15,7 +15,7 @@ greifen und wer welches Steuerungsdokument ändert.
 
 Es hat **keinen Rang** in der Dokumentenhierarchie und entscheidet nichts
 Fachliches. Die Auslöser für Pfad A und die zehn Punkte der Review-Checkliste
-stehen **einmal**, in ADR-013 Fassung 2 (Punkt 9). Die Reihenfolge der Loops
+stehen **einmal**, in ADR-013 (Punkt 9). Die Reihenfolge der Loops
 steht allein in [`ROADMAP.md`](ROADMAP.md).
 
 **Wortwahl.** Die Roadmap kennt „Spuren" (A1 bis A3 zum Bauen, B zum
@@ -43,13 +43,13 @@ abgesicherten, zeitlich begrenzten Sandkasten.
 
 ```mermaid
 flowchart TD
-  K0["K0 EINGANG<br/>Auftrag, Befund, Idee, Frage"] --> K1{"K1 KLASSIFIKATION<br/>berührt der Diff einen Auslöser<br/>aus ADR-013 Fassung 2, Punkt 9?"}
+  K0["K0 EINGANG<br/>Auftrag, Befund, Idee, Frage"] --> K1{"K1 KLASSIFIKATION<br/>berührt der Diff einen Auslöser<br/>aus ADR-013 Punkt 9?"}
   K1 -- "ja" --> A0["Pfad A · Architektur und Compliance<br/>(/feature-loop)"]
   K1 -- "nein, nur Oberfläche<br/>ohne Persistenz" --> S0["Pfad S · Frontend-Sandbox<br/>(/sandbox)"]
   A0 --> A1["A1 SPEC und Annahmen<br/>benannte ADRs vollständig lesen"]
   A1 --> A2["A2 PLAN<br/>Story-Schnitt, Migration, Policy, RPC, Tests"]
   A2 --> A3["A3 BUILD je Story<br/>Commit je Story"]
-  A3 --> A4{"A4 COMPLIANCE-GATE<br/>Review-Checkliste ADR-013 Fassung 2<br/>test:db, Negativtests, Audit"}
+  A3 --> A4{"A4 COMPLIANCE-GATE<br/>Review-Checkliste ADR-013 Punkt 9<br/>test:db, Negativtests, Audit"}
   A4 -- "rot" --> A3
   A4 -- "grün" --> A5["A5 ZWEITREVIEW in frischem Kontext<br/>vor dem Merge, wo Nr. 8 es verlangt"]
   A5 --> A6["A6 REPORT und STOPP<br/>Roadmap, Register, Abnahmeschritte"]
@@ -70,7 +70,7 @@ Deterministisch, keine Ermessensfrage. Jede Session prüft sie **vor** dem
 ersten Schritt ihres Skills und nennt das Ergebnis in einem Satz.
 
 **Pfad A**, sobald der **Diff der Session** mindestens einen Auslöser aus
-ADR-013 Fassung 2, Punkt 9 berührt (die Liste steht nur dort: Migration,
+ADR-013 Punkt 9 berührt (die Liste steht nur dort: Migration,
 Policy, RPC, Auth, Audit, Retention, Rechnung, Außenverbindung,
 personenbezogene Daten — Wortlaut im ADR) **oder** einen Pfad-S-Prototyp in
 eine echte Funktion überführt (S5 → K1). Maßgeblich ist, was die Session
@@ -105,11 +105,11 @@ sagt, bleibt davon unberührt.
 Das ist der Feature-Loop mit zwei benannten Gates:
 
 1. **A4, das Compliance-Gate.** Skill-Schritt F arbeitet die
-   Review-Checkliste aus ADR-013 Fassung 2, Punkt 9 je Story ab; ein roter
+   Review-Checkliste aus ADR-013 Punkt 9 je Story ab; ein roter
    Punkt geht zurück nach A3, nie als „bekannte Einschränkung" in den
    Bericht. Die Oberflächen-Checkliste aus `docs/abnahme/README.md` prüft
    daneben etwas anderes.
-2. **A5, der Zweitreview** — Pflicht und Auslöser nach ADR-013 Fassung 2,
+2. **A5, der Zweitreview** — Pflicht und Auslöser nach ADR-013
    Punkt 9, Nr. 8; Ablauf im Feature-Loop-Skill, Schritt F.
 
 Pfad A liest die im SPEC benannten ADRs vollständig.

@@ -45,6 +45,10 @@ Zwei Teile davon sind bereits entschieden:
 - **Eine Vorfrage (Jannes, 2026-09-08):** „angefragt" und „vorgemerkt" werden
   **nur vorgesehen, nicht gebaut**. Ohne Patientenportal gibt es niemanden,
   der einen Termin anfragt, und ADR-014 verbietet das Vorbauen.
+  *Mit der Plattform gehört das Anfragen zum Umfang der Eröffnung
+  (`PROJECT_PRINCIPLES.md` §4.6, §8): Beide Zustände werden mit dem Loop
+  gebaut, der Terminwünsche einführt; eine Anfrage bleibt ein Wunsch, den die
+  Praxis bestätigt.*
 
 Offen ist die Ausgestaltung: Übergänge und ihre Auslöser, die Migration der
 heute vorhandenen Status, ob „dokumentiert" und „abgerechnet" gesetzt oder
@@ -331,7 +335,8 @@ Gebühr (ANN-055, Wiedervorlage bei Jannes).
 - Die Regeln der Terminserie selbst (CAL-007) und das Terminfenster
   (CAL-010a, §8.1).
 - Das Patientenportal und alles, was `requested` und `tentative` erreichbar
-  machen würde (Etappe 4).
+  machen würde (Etappe 4). *Heute Block 4 der Roadmap; siehe den Vermerk im
+  Kontext.*
 - ~~Die Frage, ob eine Absage kurz vor dem Termin anders behandelt wird als
   eine frühe — eine Fristenregel für Ausfallhonorare ist Praxisprozess, nicht
   Datenmodell.~~ **Mit Fassung 2 entschieden** (Punkt 8). Die Einschätzung war

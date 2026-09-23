@@ -2,7 +2,10 @@
 
 ## Status
 
-Angenommen
+Angenommen; **Fassung 2 (2026-09-23)**: In der Negativliste ist „Abonnements"
+auf das Abrechnungsmodell der Software für andere Praxen eingeschränkt — das
+Nachsorge-Abo der Patient:innen ist freigegeben (`PROJECT_PRINCIPLES.md` §14,
+§19). Umkehr eines einzelnen Punktes durch den Projektinhaber.
 
 ## Datum
 
@@ -63,7 +66,9 @@ Modellanforderungen der übrigen ADRs an einer Stelle.
 - SaaS-Tenant-Onboarding
 - Tenant-Switching-UI
 - externe Praxisabrechnung
-- Abonnements
+- ~~Abonnements~~ — (Fassung 2) Abonnements als Abrechnungsmodell der
+  Software für andere Praxen; das Nachsorge-Abo der Patient:innen ist eine
+  Leistung der Praxis und freigegeben (`PROJECT_PRINCIPLES.md` §14, §19)
 - Wearables
 - komplexe Multi-Location-Funktionen
 - Vektordatenbank/Embeddings
@@ -147,3 +152,10 @@ vorzeitig zu implementieren.**
   Leistungskatalog?
 - Wie werden Zeitzonen für wiederkehrende Termine und für Fristen behandelt,
   die auf Kalenderjahre abstellen (ADR-008)?
+
+## Änderungshistorie
+
+| Fassung | Datum | Änderung |
+|---|---|---|
+| 1 | 2026-08-28 | angenommen |
+| 2 | 2026-09-23 | „Abonnements" in der Negativliste auf das Abrechnungsmodell der Software eingeschränkt; übrige Punkte unverändert |

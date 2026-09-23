@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-23 · letzte Session: Umbau U0
+# Status · Stand 2026-09-23 · letzte Session: Umbau U0 und U1
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,13 +6,13 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**Umbau läuft** ([`development/UMBAU.md`](development/UMBAU.md)). Am 2026-09-23 hat Jannes das Produkt genauer beschrieben und sieben Entscheidungen getroffen (E-1 bis E-7): Anfragen ab Anfang 2027 parallel, Test-Umgebung für das Handy, Nachsorge-Abo nach der Behandlung, UX-Fundament vorziehen, Sichtung statt Abnahme je Epic. Das wird in fünf Schritten **eingearbeitet, nicht angehängt**. Der Plan hat keinen Rang; U1 kommt deshalb zuerst und bringt die Entscheidungen in die verbindlichen Dokumente. Fortschritt **34,1 %**.
+**Umbau läuft** ([`development/UMBAU.md`](development/UMBAU.md)). Am 2026-09-23 hat Jannes das Produkt genauer beschrieben und sieben Entscheidungen getroffen (E-1 bis E-7): Anfragen ab Anfang 2027 parallel, Test-Umgebung für das Handy, Nachsorge-Abo nach der Behandlung, UX-Fundament vorziehen, Sichtung statt Abnahme je Epic. Das wird in fünf Schritten **eingearbeitet, nicht angehängt**. U1 hat die Entscheidungen in `PROJECT_PRINCIPLES.md` 0.17 und die ADRs gebracht. Fortschritt **34,1 %**.
 
 ## Danach — Umbau, dann Bauen
 
-1. **U1 Grundlagen neu fassen** — „Umbau U1 nach `docs/development/UMBAU.md`"
-2. **U2 Produktbeschreibung und Roadmap 7.0**
-3. **U3 Ablauf schlank**, dann **U4 Register** und **U5 Test-Umgebung**
+1. **U2 Produktbeschreibung und Roadmap 7.0** — „Umbau U2 nach `docs/development/UMBAU.md`"
+2. **U3 Ablauf schlank**
+3. **U4 Register**, dann **U5 Test-Umgebung**
 
 Danach **G6c**, sobald deine Wahl unter „Blocker" da ist, sonst der neue Block „Handy und UX-Fundament" (kommt mit Roadmap 7.0).
 
@@ -39,4 +39,4 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**Umbau U0:** Durchsicht der Dokumentation (drei Durchsichten, nur lesend), Produktgespräch mit Jannes, Plan [`development/UMBAU.md`](development/UMBAU.md). Kein Code geändert, **keine neue Annahme**. Davor **G6b gebaut** (BEF-034 offen). **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.
+**Umbau U0 und U1.** Plan [`development/UMBAU.md`](development/UMBAU.md) nach Durchsicht und Produktgespräch. **`PROJECT_PRINCIPLES.md` 0.17**: eingearbeitet statt angehängt — §14 Umfang, §4.6/§4.10 Plattformstufen und Nachsorge-Abo, §5 Fotos und Erstaufnahme, §9 Tagesroute mit Liege, §15 Anfragen ab Anfang 2027, §19 Abo und Paket; Vermerke in [`PRINCIPLES-CHRONIK.md`](PRINCIPLES-CHRONIK.md), −25 % Text. ADR-014 Fassung 2, ADR-013 Fassung 4 (Negativfälle „fremde Person", „anderer Leistungsbereich"), ADR-009 Fassung 3. Kein Code, **keine neue Annahme**. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.

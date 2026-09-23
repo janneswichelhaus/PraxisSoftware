@@ -20,7 +20,9 @@ Die Plattform verarbeitet besondere Kategorien personenbezogener Daten nach
 Art. 9 DSGVO, und zwar in erheblicher Breite: klinische Dokumentation,
 Fragebögen und PROMs, Kommunikation, Standort- und Tourendaten, Abrechnung,
 Beschäftigtendaten sowie perspektivisch ein Patientenportal und
-KI-gestützte Verarbeitung.
+KI-gestützte Verarbeitung. *Plattform und KI-Assistenz gehören seit dem
+2026-09-22 zum Umfang der Eröffnung (`PROJECT_PRINCIPLES.md` §14); die DSFA
+betrachtet sie deshalb von Anfang an.*
 
 Eine Datenschutz-Folgenabschätzung nach Art. 35 DSGVO ist kein Dokument, das
 man am Ende schreibt. Ihr Ergebnis kann die Architektur einschränken. Wird sie

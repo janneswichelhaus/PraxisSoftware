@@ -2,19 +2,8 @@
 
 ## Status
 
-**Angenommen** — vom Projektinhaber am 2026-09-20 angenommen, alle neun Punkte
-wie vorgeschlagen; fachlich entschieden hatte er sie am 2026-09-17 (E18,
-festgehalten in
-[`../development/E18-LEISTUNGSBEREICHE.md`](../development/E18-LEISTUNGSBEREICHE.md)).
-Der ADR steht damit im Index in `CLAUDE.md`, in der Tabelle in
-[`README.md`](README.md) und in der Tabelle in `PROJECT_PRINCIPLES.md` §21
-(Fassung 0.12.1).
-
-Dieser ADR ist **Schritt 1 von sieben** aus E18. Er löst keinen ADR ab und
-ändert keine Aussage der Prinzipien; er trägt das Fundament, auf dem die
-Schritte 2 bis 5 stehen (Terminkontext, Zweckbestimmung, Abrechnung, Nachzug
-an Rang 1). Mit der Annahme ist **Schritt 2 (ADR-022) frei**; ein Loop, der
-Code baut, beginnt weiterhin erst, wenn der ADR über ihm steht.
+**Angenommen** (2026-09-20), alle neun Punkte wie vorgeschlagen; fachlich
+entschieden vom Projektinhaber am 2026-09-17 (E18). Löst keinen ADR ab.
 
 ## Datum
 

@@ -18,7 +18,7 @@ Prototyps in `docs/development/ARBEITSBEREICHE.md` §2 und läuft nur S5.
 
 **Zuerst K1 prüfen** (`GRAPH-ENGINEERING-WORKFLOW.md`, „K1 — Klassifikation").
 Maßgeblich ist der **Diff dieser Session**, nicht die echte Funktion, die es
-einmal geben könnte: Berührt er einen Auslöser aus ADR-013 Fassung 2,
+einmal geben könnte: Berührt er einen Auslöser aus ADR-013
 Punkt 9 (Migration, Policy, RPC, Auth, Audit, Retention, Rechnung,
 Außenverbindung, personenbezogene Daten) — oder soll ein Wert die Sitzung
 überleben —, dann ist

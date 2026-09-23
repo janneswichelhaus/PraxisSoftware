@@ -79,7 +79,7 @@ Durchstreichung — der Wortlaut des angenommenen Punktes bleibt.
 
 ## Verhältnis zu den anderen Dokumenten
 
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (die aktuelle Version steht in dessen Dokumentinformation; Stand 2026-09-15: 0.10.1)
+- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (die aktuelle Version steht in dessen Dokumentinformation)
 - `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist; ohne Rang
 - `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
 - `docs/adr/` — was entschieden wurde und warum
@@ -102,12 +102,12 @@ denselben Weg und behält dort einen Verweis auf das ADR.
 | [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | **Angenommen, Fassung 3 (2026-09-20, E18 Schritt 3)** — Zweckbestimmung über beide Leistungsbereiche, dazu die drei Feature-Verbote als Ausschlusskriterien (keine Übungsauswahl aus Diagnose oder Befund, keine automatisierte Verlaufsauswertung mit Handlungsempfehlung, kein Screening-Fragebogen mit Trainingsfreigabe); Ausgabeverbote, keine Datenverbote; kein Code, keine Migration |
 | [ADR-007](ADR-007-data-protection-impact-assessment.md) | Datenschutz-Folgenabschätzung und Datenschutzprozess | Angenommen |
 | [ADR-008](ADR-008-data-retention-and-deletion.md) | Aufbewahrung und Löschung personenbezogener Daten | Angenommen |
-| [ADR-009](ADR-009-private-billing-model.md) | Privatabrechnung | **Angenommen, Fassung 2 (2026-09-20, E18 Schritt 4)** — Steuerkennzeichen am Posten statt am Kunden, genau ein Leistungsbereich je Rechnung, getrennte Nummernkreise je Bereich und Jahr, § 14c-Riegel mit Befreiungsgrund als Pflichtangabe, Auswertung „Einnahmen je Leistungsart", kein § 33 UStDV in V1; kein Code, keine Migration |
+| [ADR-009](ADR-009-private-billing-model.md) | Privatabrechnung | Angenommen, Fassung 2 (2026-09-20): Steuerkennzeichen am Posten, ein Leistungsbereich je Rechnung, getrennte Nummernkreise, § 14c-Riegel, „Einnahmen je Leistungsart", kein § 33 UStDV; **Fassung 3 (2026-09-23)**: Nachsorge-Abo und Trainingspaket als abrechenbare Ereignisse |
 | [ADR-010](ADR-010-audit-and-privileged-access.md) | Audit-Logging und privilegierter Produktionszugriff | Angenommen, Fassung 2 (2026-09-13): Lesepfad `owner`, Verweisausstellung gilt als Download |
 | [ADR-011](ADR-011-logging-and-observability.md) | Logging und Observability | Angenommen |
 | [ADR-012](ADR-012-backup-and-business-continuity.md) | Backup, Wiederherstellung und Betriebskontinuität | Angenommen |
-| [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen, Fassung 2 (2026-09-13): „kritische Änderung" definiert, Review-Checkliste festgelegt (Punkt 9); **Fassung 3 (2026-09-15)**: Dokumentationsprüfung als zehnte Pflichtprüfung, Merge durch den Projektinhaber statt Auto-Merge |
-| [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen |
+| [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen, Fassung 2 (2026-09-13): „kritische Änderung" definiert, Review-Checkliste festgelegt (Punkt 9); **Fassung 3 (2026-09-15)**: Dokumentationsprüfung als zehnte Pflichtprüfung, Merge durch den Projektinhaber statt Auto-Merge; **Fassung 4 (2026-09-23)**: Negativfälle „fremde Person" und „anderer Leistungsbereich" |
+| [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen, **Fassung 2 (2026-09-23)**: „Abonnements" in der Negativliste meint nur das Abrechnungsmodell der Software; das Nachsorge-Abo ist freigegeben |
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen |
 | [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen, Fassung 2 (2026-09-08) |
 | [ADR-017](ADR-017-file-storage.md) | Dateiablage: Ort, Zugriff, kurzlebige Verweise, Aufbewahrung, Virenprüfung | Angenommen (bestätigt 2026-09-12); produktive Ablage zusätzlich an OPS-001 und OPS-003 gebunden |

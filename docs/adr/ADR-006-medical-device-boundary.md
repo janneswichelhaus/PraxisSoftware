@@ -2,32 +2,11 @@
 
 ## Status
 
-**Angenommen — Fassung 3** (vom Projektinhaber am 2026-09-20 angenommen, alle
-fünf neuen Punkte wie vorgeschlagen; fachlich entschieden hatte er sie am
-2026-09-17, E18). Fassung 1 ist am 2026-08-28 angenommen, Fassung 2 am
-2026-09-08.
-
-Fassung 2 ergänzt Punkt 8 und präzisiert damit Punkt 5 für den Sonderfall der
-Sprachdokumentation. Die Punkte 1 bis 7 sind unverändert; Einzelheiten unten in
-der Änderungshistorie.
-
-Fassung 3 ergänzt die Punkte 9 bis 13: die Geltung der Zweckbestimmung über
-beide Leistungsbereiche und die **drei Feature-Verbote** an der MDR-Grenze. Sie
-ist **Schritt 3 von sieben** aus E18
-([`../development/E18-LEISTUNGSBEREICHE.md`](../development/E18-LEISTUNGSBEREICHE.md),
-Abschnitt 4) und setzt
-[ADR-021](ADR-021-service-areas-and-legal-relationships.md) und
-[ADR-022](ADR-022-appointment-context-and-training-basis.md) fort. Die Punkte 1
-bis 8 sind unverändert; die neuen Punkte fassen sie **enger**, nie lockerer.
-
-Die geltende Fassung steht mit der Annahme auf **3** in der Tabelle in
-[`README.md`](README.md) — der einzigen Stelle, die Fassung und Status führt
-(`PROJECT_PRINCIPLES.md` §21). Weder §21 noch der Index in `CLAUDE.md` nennen
-eine Fassung; beide bleiben unverändert, und die Paragraphen, die dieser ADR
-trägt (§7.1, §17, §6.3), ändern sich nicht — der Nachzug an §1, §4 und §14
-ist **Schritt 5** aus E18. Mit der Annahme ist **Schritt 4 (ADR-009 neue
-Fassung, Steuerkennzeichen und getrennte Nummernkreise) frei**; ein Loop, der
-Code baut, beginnt weiterhin erst, wenn der ADR über ihm steht.
+**Angenommen — Fassung 3** (2026-09-20). Fassung 1 am 2026-08-28, Fassung 2
+(Punkt 8, Sprachdokumentation) am 2026-09-08, Fassung 3 (Punkte 9 bis 13,
+beide Leistungsbereiche und die drei Feature-Verbote, E18) am 2026-09-20. Jede
+Fassung fasst die früheren Punkte enger, nie lockerer; Einzelheiten in der
+Änderungshistorie.
 
 ## Datum
 
