@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * VER-003: Verordnung anlegen, ändern und löschen.
@@ -356,17 +357,20 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     );
     expect(audit.map((a) => a.actor_user_id).sort()).toEqual([users.teamLead, users.office].sort());
 
-    await expect(asUser(users.patientMax, HOLEN, [id])).rejects.toThrow(
-      /not allowed to read clinical treatment basis data/i,
-    );
+    // G6a: kein Ergebnis, aber ein denied-Eintrag, der die Abweisung überlebt.
+    await erwarteAbgewiesenenLeseversuch(users.patientMax, HOLEN, [id], 'treatment_basis.viewed');
   });
 
   it('gibt fuer eine unbekannte Verordnung nichts zurueck und protokolliert nichts', async () => {
     const { rows } = await asUserCommitted(users.therapist, HOLEN, [FREMDE_ID]);
     expect(rows).toEqual([]);
 
+    // Nur der Aufruf dieses Tests: Der Test davor hinterlässt einen
+    // abgewiesenen Versuch eines Patientenkontos (G6a).
     const { rows: audit } = await asPostgres(
-      `select id from public.audit_log where action = 'treatment_basis.viewed'`,
+      `select id from public.audit_log
+       where action = 'treatment_basis.viewed' and actor_user_id = $1`,
+      [users.therapist],
     );
     expect(audit).toEqual([]);
   });

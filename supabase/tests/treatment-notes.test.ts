@@ -8,6 +8,7 @@ import {
   resetDatabaseOhneTermine,
   tagInTagen,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Behandlungsdokumentation zum Termin (DOK-001).
@@ -443,9 +444,12 @@ describe('DOK-001: Lesen', () => {
     expect(JSON.stringify(eintraege.at(-1)?.context)).not.toContain('Uebungen angeleitet');
   });
 
-  it('laesst ein Patientenkonto nicht lesen (4.6)', async () => {
-    await expect(asUser(users.patientMax, LESEN, [terminId])).rejects.toThrow(
-      /not allowed to read treatment documentation/,
+  it('laesst ein Patientenkonto nicht lesen und protokolliert den Versuch (4.6, G6a)', async () => {
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientMax,
+      LESEN,
+      [terminId],
+      'treatment_note.viewed',
     );
   });
 
