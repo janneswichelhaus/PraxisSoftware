@@ -7,6 +7,7 @@ import {
   fremdeOrganisation,
   resetDatabaseOhneTermine,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Die Rechnung entsteht aus Leistungen (ABR-003).
@@ -186,9 +187,7 @@ describe('Rechnung', () => {
     });
 
     it('weist die Therapeutin ab (ANN-076)', async () => {
-      await expect(asUser(users.therapist, KANDIDATEN)).rejects.toThrow(
-        /not allowed to read invoices/,
-      );
+      await erwarteAbgewiesenenLeseversuch(users.therapist, KANDIDATEN, [], 'invoicing.read');
     });
   });
 
@@ -817,7 +816,7 @@ describe('Rechnung', () => {
     });
 
     it('weist die Therapeutin ab', async () => {
-      await expect(asUser(users.therapist, LISTE)).rejects.toThrow(/not allowed to read invoices/);
+      await erwarteAbgewiesenenLeseversuch(users.therapist, LISTE, [], 'invoicing.read');
     });
   });
 

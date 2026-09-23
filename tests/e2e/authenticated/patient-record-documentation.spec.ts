@@ -167,9 +167,15 @@ test.describe('DOK-003, ROL-001: Serverseitige Grenzen', () => {
     expect(text).not.toContain('content');
 
     const patientToken = await zugriffstoken(request, 'max.mustermann@patient.invalid');
-    const abgewiesen = await rpcAufrufen(request, patientToken, 'list_patient_treatment_evidence', {
-      p_patient_id: PATIENTEN.max,
-    });
-    expect(abgewiesen.status()).toBe(403);
+    // G6b: null Zeilen statt 403, der Versuch steht im Auditlog.
+    await erwarteProtokollierteAbweisung(
+      request,
+      'treatment_evidence.read',
+      () =>
+        rpcAufrufen(request, patientToken, 'list_patient_treatment_evidence', {
+          p_patient_id: PATIENTEN.max,
+        }),
+      'documentation_status',
+    );
   });
 });

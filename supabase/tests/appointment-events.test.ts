@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase, tagInTagen } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Ereignisse des Praxisbetriebs (CAL-015b, PROJECT_PRINCIPLES.md 0.9
@@ -974,9 +975,7 @@ describe('Ereignis als ein Vorgang (CAL-017)', () => {
 
   it('gibt den Beteiligten nur mit Leserecht auf Termine', async () => {
     const g = await gruppe();
-    await expect(asUser(users.patientMax, BETEILIGTE, [g.id])).rejects.toThrow(
-      /not allowed to read appointments/,
-    );
+    await erwarteAbgewiesenenLeseversuch(users.patientMax, BETEILIGTE, [g.id], 'appointments.read');
   });
 
   /**

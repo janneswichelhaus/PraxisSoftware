@@ -11,6 +11,7 @@ import {
   tagInTagen,
   testDatabaseUrl,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Mitarbeiterverwaltung (STAFF-001).
@@ -287,11 +288,12 @@ describe('Mitarbeiterverwaltung: wer darf schreiben', () => {
   it('verweigert office den Lesepfad der offenen Termine (E10)', async () => {
     // Er gehoert zum Statuswechsel und damit zu owner - nicht zur
     // Stammdatenpflege.
-    await expect(
-      asUser(users.office, 'select * from public.list_staff_future_appointments($1::uuid)', [
-        STAFF.anna,
-      ]),
-    ).rejects.toThrow(/not allowed to manage staff/);
+    await erwarteAbgewiesenenLeseversuch(
+      users.office,
+      'select * from public.list_staff_future_appointments($1::uuid)',
+      [STAFF.anna],
+      'appointments.read',
+    );
   });
 
   it('kennt app.can_manage_staff() nicht mehr', async () => {
@@ -1003,11 +1005,12 @@ describe('list_staff_future_appointments', () => {
     ['team_lead', users.teamLead],
     ['office', users.office],
   ])('verweigert %s den Zugriff', async (_rolle, userId) => {
-    await expect(
-      asUser(userId, 'select id from public.list_staff_future_appointments($1::uuid)', [
-        STAFF.anna,
-      ]),
-    ).rejects.toThrow(/not allowed to manage staff/);
+    await erwarteAbgewiesenenLeseversuch(
+      userId,
+      'select id from public.list_staff_future_appointments($1::uuid)',
+      [STAFF.anna],
+      'appointments.read',
+    );
   });
 });
 

@@ -135,8 +135,11 @@ describe('VER-002: Verordnungen in der Akte', () => {
   });
 
   it('weist ein Patientenkonto und anon beide Sichten ab', async () => {
-    await expect(asUser(users.patientMax, ORGANISATORISCH, [patients.max])).rejects.toThrow(
-      /not allowed to read treatment_bases/i,
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientMax,
+      ORGANISATORISCH,
+      [patients.max],
+      'treatment_bases.read',
     );
     // G6a: Die klinische Sicht weist ohne Ausnahme ab und protokolliert den Versuch.
     await erwarteAbgewiesenenLeseversuch(
@@ -231,8 +234,11 @@ describe('VER-002: Verordnungen in der Akte', () => {
     it('weist ein Patientenkonto auch bei ihm ab', async () => {
       // Der Rollenschnitt haengt an der Tabelle, nicht an der Bauart: Eine
       // leere Diagnose macht eine Zeile nicht organisatorisch (ADR-020 Punkt 4).
-      await expect(asUser(users.patientMax, ORGANISATORISCH, [patients.erika])).rejects.toThrow(
-        /not allowed to read treatment_bases/i,
+      await erwarteAbgewiesenenLeseversuch(
+        users.patientMax,
+        ORGANISATORISCH,
+        [patients.erika],
+        'treatment_bases.read',
       );
     });
   });

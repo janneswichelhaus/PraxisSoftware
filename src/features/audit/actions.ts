@@ -121,6 +121,17 @@ export const AUDIT_ACTIONS = [
   // PAT-006: Datenschutzinformation, Behandlungsvertrag, Einwilligung und
   // Widerruf — ein Ereignis, Art und Zweck im Kontext.
   'patient_privacy.recorded',
+  // G6b: nur mit outcome 'denied' — abgewiesene Lesezugriffe je Datenbereich.
+  'appointments.read',
+  'patient_directory.read',
+  'treatment_bases.read',
+  'treatment_evidence.read',
+  'patient_files.read',
+  'text_snippets.read',
+  'invoicing.read',
+  'billable_services.read',
+  'legal_holds.read',
+  'storage_deletion.read',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -201,6 +212,16 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'organization.bootstrapped': 'Praxis eingerichtet',
   'deletion_runs.read': 'Löschläufe gelesen',
   'patient_privacy.recorded': 'Datenschutzvermerk erfasst',
+  'appointments.read': 'Termine gelesen',
+  'patient_directory.read': 'Patientenverzeichnis durchsucht',
+  'treatment_bases.read': 'Behandlungsgrundlagen gelesen',
+  'treatment_evidence.read': 'Behandlungsnachweis gelesen',
+  'patient_files.read': 'Dateien der Akte gelesen',
+  'text_snippets.read': 'Textbausteine gelesen',
+  'invoicing.read': 'Abrechnung gelesen',
+  'billable_services.read': 'Leistungen gelesen',
+  'legal_holds.read': 'Löschsperren gelesen',
+  'storage_deletion.read': 'Löschaufträge der Ablage gelesen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

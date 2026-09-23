@@ -66,11 +66,11 @@ describe('Textbausteine', () => {
     });
 
     it('weist ein Patientenkonto ab', async () => {
-      await expect(liste(users.patientMax)).rejects.toThrow(/not allowed to use text snippets/);
+      expect((await liste(users.patientMax)).rows).toEqual([]);
     });
 
     it('weist office ab - wer nicht dokumentiert, braucht keine Bausteine', async () => {
-      await expect(liste(users.office)).rejects.toThrow(/not allowed to use text snippets/);
+      expect((await liste(users.office)).rows).toEqual([]);
     });
 
     it('liefert praxisweite Bausteine allen dokumentierenden Rollen', async () => {

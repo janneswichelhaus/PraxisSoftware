@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { KONTEN, PATIENTEN, anmelden, detailWert, rpcAufrufen, zugriffstoken } from './helpers';
+import {
+  KONTEN,
+  PATIENTEN,
+  anmelden,
+  detailWert,
+  erwarteProtokollierteAbweisung,
+  rpcAufrufen,
+  zugriffstoken,
+} from './helpers';
 
 /**
  * Aufbewahrung und Löschung hinter der Anmeldung (LOE-001b, LOE-001c, LOE-002b).
@@ -197,8 +205,13 @@ test.describe('LOE-001c: Löschsperre', () => {
     });
     expect(setzen.status(), 'Sperre durch therapist').toBe(403);
 
-    const lesen = await rpcAufrufen(request, token, 'list_legal_holds', {});
-    expect(lesen.status(), 'Sperrliste durch therapist').toBe(403);
+    // G6b: Die Sperrliste weist mit null Zeilen ab und protokolliert den Versuch.
+    await erwarteProtokollierteAbweisung(
+      request,
+      'legal_holds.read',
+      () => rpcAufrufen(request, token, 'list_legal_holds', {}),
+      'subject_id',
+    );
   });
 });
 

@@ -185,7 +185,7 @@ describe('CAL-011: Terminzettel', () => {
   });
 
   it('weist ein Patientenkonto ab', async () => {
-    await expect(lesen(users.patientMax)).rejects.toThrow(/not allowed to read appointments/);
+    expect((await lesen(users.patientMax)).rows).toEqual([]);
   });
 
   it('weist einen anonymen Zugriff ab', async () => {

@@ -9,6 +9,7 @@ import {
   resetDatabaseOhneTermine,
   testDatabaseUrl,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Zahlungen sind eigene Transaktionen (ABR-004).
@@ -556,10 +557,8 @@ describe('Zahlung', () => {
     it('weist die Therapeutin beim Lesen und beim Buchen ab', async () => {
       const { id } = await ausgestellteRechnung();
 
-      await expect(asUser(users.therapist, POSTEN)).rejects.toThrow(/not allowed to read invoices/);
-      await expect(asUser(users.therapist, ZAHLUNGEN)).rejects.toThrow(
-        /not allowed to read invoices/,
-      );
+      await erwarteAbgewiesenenLeseversuch(users.therapist, POSTEN, [], 'invoicing.read');
+      await erwarteAbgewiesenenLeseversuch(users.therapist, ZAHLUNGEN, [], 'invoicing.read');
       await expect(
         asUserCommitted(users.therapist, BUCHEN, [
           id,

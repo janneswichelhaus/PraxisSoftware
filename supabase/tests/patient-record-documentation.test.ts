@@ -349,9 +349,7 @@ describe('DOK-003: Behandlungsnachweis in der Akte', () => {
   });
 
   it('laesst ein Patientenkonto nicht lesen (4.6)', async () => {
-    await expect(nachweis(users.patientErika, patients.erika)).rejects.toThrow(
-      /not allowed to read treatment evidence/,
-    );
+    expect(await nachweis(users.patientErika, patients.erika)).toEqual([]);
   });
 
   it('laesst einen nicht angemeldeten Zugriff nicht zu', async () => {

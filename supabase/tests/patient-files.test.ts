@@ -8,6 +8,7 @@ import {
   asUserCommitted,
   resetDatabase,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 import {
   DOKUMENTARTEN,
   KLINISCHE_DOKUMENTARTEN,
@@ -325,12 +326,13 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       );
       expect(teamLead.rows).toHaveLength(1);
 
-      const patient = await abgefangen(
-        asUser(users.patientMax, 'select id from public.list_patient_files($1::uuid)', [
-          patients.max,
-        ]),
+      // G6b: null Zeilen, der Versuch steht im Auditlog.
+      await erwarteAbgewiesenenLeseversuch(
+        users.patientMax,
+        'select id from public.list_patient_files($1::uuid)',
+        [patients.max],
+        'patient_files.read',
       );
-      expect(patient?.message).toMatch(/patient not accessible|not allowed to read patient files/);
     });
   });
 

@@ -9,6 +9,7 @@ import {
   resetDatabase,
   tagInTagen,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Terminserie aus einer Verordnung (CAL-007).
@@ -235,8 +236,11 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
     });
 
     it('verweigert die Auskunft einem Patientenkonto', async () => {
-      await expect(asUser(users.patientMax, KONTINGENT, [VERORDNUNG.maxOffen])).rejects.toThrow(
-        /not allowed to read treatment_bases/,
+      await erwarteAbgewiesenenLeseversuch(
+        users.patientMax,
+        KONTINGENT,
+        [VERORDNUNG.maxOffen],
+        'treatment_bases.read',
       );
     });
   });
@@ -316,9 +320,12 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
     });
 
     it('verweigert die Pruefung einem Patientenkonto', async () => {
-      await expect(
-        asUser(users.patientMax, PRUEFEN, [STAFF.anna, JSON.stringify(woechentlich(1))]),
-      ).rejects.toThrow(/not allowed to create appointments/);
+      await erwarteAbgewiesenenLeseversuch(
+        users.patientMax,
+        PRUEFEN,
+        [STAFF.anna, JSON.stringify(woechentlich(1))],
+        'appointments.read',
+      );
     });
   });
 

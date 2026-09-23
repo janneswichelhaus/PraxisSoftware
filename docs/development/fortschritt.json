@@ -525,7 +525,13 @@
         },
         {
           "id": "g6b",
-          "name": "G6b Abgewiesene Zugriffe, Rest",
+          "name": "G6b Abgewiesene Lesezugriffe, Rest",
+          "gewicht": 1,
+          "status": "fertig"
+        },
+        {
+          "id": "g6c",
+          "name": "G6c Abgewiesene Schreibzugriffe",
           "gewicht": 1,
           "status": "offen"
         },

@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 const { users, patients } = SEED;
 
@@ -140,7 +141,7 @@ describe('Legal Hold: Berechtigungen', () => {
     ['therapist', users.therapist],
     ['office', users.office],
   ])('verweigert %s den Blick auf die Sperrliste', async (_rolle, userId) => {
-    await expect(asUser(userId, AUFLISTEN)).rejects.toThrow(/not allowed to manage legal holds/);
+    await erwarteAbgewiesenenLeseversuch(userId, AUFLISTEN, [], 'legal_holds.read');
   });
 
   it('verweigert den Aufruf ohne Anmeldung', async () => {

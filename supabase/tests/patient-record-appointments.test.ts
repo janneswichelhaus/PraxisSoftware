@@ -132,7 +132,7 @@ describe('list_patient_appointments', () => {
   });
 
   it('weist ein Patientenkonto ab', async () => {
-    await expect(lesen(users.patientMax)).rejects.toThrow(/not allowed to read appointments/);
+    expect((await lesen(users.patientMax)).rows).toEqual([]);
   });
 
   it('verlangt eine Patientin und eine sinnvolle Obergrenze', async () => {
@@ -300,7 +300,7 @@ describe('list_patient_treatment_basis_slots', () => {
 
   it('ist fuer anon nicht ausfuehrbar und weist ein Patientenkonto ab', async () => {
     await expect(asAnon(SLOTS, [patients.max])).rejects.toThrow(/permission denied/);
-    await expect(slots(users.patientMax)).rejects.toThrow(/not allowed to read treatment_bases/);
+    expect((await slots(users.patientMax)).rows).toEqual([]);
   });
 
   it('liefert je Verordnung eine Zeile, neueste zuerst', async () => {

@@ -4,6 +4,7 @@ import {
   TAGESFENSTER,
   anmelden,
   detailWert,
+  erwarteProtokollierteAbweisung,
   supabaseKonfiguration,
   tagImFenster,
   terminKachel,
@@ -163,16 +164,21 @@ test.describe('CAL-002: Lesepfad ist serverseitig abgesichert', () => {
     const token = await zugriffstoken(request, 'max.mustermann@patient.invalid');
     const { url, anonKey } = supabaseKonfiguration();
 
-    const antwort = await request.post(`${url}/rest/v1/rpc/list_appointments`, {
-      headers: {
-        apikey: anonKey,
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      data: { p_from: TAG, p_to: TAG, p_status: 'all' },
-    });
-
-    expect(antwort.status()).toBe(403);
+    // G6b: null Zeilen statt 403, der Versuch steht im Auditlog.
+    await erwarteProtokollierteAbweisung(
+      request,
+      'appointments.read',
+      () =>
+        request.post(`${url}/rest/v1/rpc/list_appointments`, {
+          headers: {
+            apikey: anonKey,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          data: { p_from: TAG, p_to: TAG, p_status: 'all' },
+        }),
+      'patient_id',
+    );
   });
 
   test('weist ein unangemessen grosses Zeitfenster ab', async ({ request }) => {

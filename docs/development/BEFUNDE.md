@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-22
+Stand: 2026-09-23
 
 ## Zweck
 
@@ -1186,3 +1186,24 @@ kann nicht „Par." sagen. Die Aufbewahrungsseite könnte dieselbe Funktion
 nutzen; das wäre eine Zeile. Bewusst **nicht** in OPS-006 mitgemacht: Es ist
 ein Refactoring außerhalb der berührten Module (CLAUDE.md, „Harte Regeln").
 Passt in den nächsten Loop, der die Seite ohnehin anfasst.
+
+### BEF-034 — Die Teamseiten fragen für trainer die zuordenbaren Personen ab
+
+|         |                                                                                     |
+| ------- | ----------------------------------------------------------------------------------- |
+| Datum   | 2026-09-23                                                                          |
+| Bereich | Organisatorisches → Team (`/praxis/team`, `/praxis/team/:id`)                       |
+| Quelle  | Aufgefallen bei der Bestandsaufnahme für G6b Teil 1                                 |
+| Status  | offen                                                                               |
+| Berührt | `src/features/staff/StaffListPage.tsx`, `src/features/staff/StaffMemberDetailPage.tsx` |
+
+**Beobachtung.** Beide Seiten laden `list_assignable_therapists` ohne
+Rollenbedingung. Für ein trainer-Konto weist die Datenbank den Aufruf ab; die
+Spalte „zuordenbar" bleibt leer, die Seite lädt sonst.
+
+**Folge für G6b.** Der Pfad behält deshalb die Ausnahme: Die Oberfläche ruft
+ihn für die abgewiesene Rolle auf, ein `denied`-Eintrag stünde bei jedem
+Seitenaufruf im Auditlog. **Der Weg:** `enabled: canManageAppointments(roles)`
+an beiden Abfragen; danach kann der Pfad denselben Ausgang bekommen wie die
+übrigen Lesepfade. Dazu, gleich gefunden: Das Menü zeigt trainer
+„Arbeitszeiten" (`navigation.tsx`), die Route leitet ohne Aufruf auf `/` um.
