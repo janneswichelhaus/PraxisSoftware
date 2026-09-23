@@ -961,7 +961,7 @@ kein Text über den Kartendienst erscheint, wenn es die Sitzung war.
 | Datum | 2026-09-22 |
 | Bereich | Dokumentation (kein Anwendungsbereich): `docs/`, `PROJECT_PRINCIPLES.md`, `CLAUDE.md` |
 | Quelle | Frage von Jannes am 2026-09-22 („haben sich Unstimmigkeiten angesammelt?"), belegt mit `grep` über 76 Markdown-Dateien |
-| Status | offen |
+| Status | erledigt in G19 (2026-09-22) — Gate erweitert; Nebenbefund Obergrenzen offen |
 | Berührt | `scripts/docs-check.mjs`; §21 (Rangfolge), ADR-013 (CI-Gates); BEF-026/BEF-027 (Nummernkollision) |
 
 **Beobachtung.** Dokumente behaupten etwas über andere Dokumente, und diese
@@ -1018,6 +1018,15 @@ erlaubt bleiben, sonst prüft das Gate die Vergangenheit falsch.
 **vor dem B2-Paket**. Widersprüchliche Unterlagen erzeugen eine schlechtere
 Auskunft der Datenschutzberatung, und diese Auskunft ist teuer. Vorher kosten
 Widersprüche wenig — kein Nutzer, kein Produktivbetrieb, alles umkehrbar.
+
+**Umgesetzt in G19.** `docs:check` prüft jetzt, dass genannte ADR-Fassungen,
+Versionen und `§`-Abschnitte der Prinzipien existieren, dass eine als
+„Grundlage“ genannte Fassung die geltende ist, und dass jede `ANN-`/`BEF-`/
+`IDEA-`-Kennung einmal als Überschrift steht; Änderungsvermerke sind
+ausgenommen (`scripts/docs-check-regeln.mjs`). Neun veraltete Grundlagen
+korrigiert. **Grenze:** Ohne das Wort „Grundlage“ gilt eine ältere Fassung als
+Herkunft — die Belege aus `ARBEITSBEREICHE.md` und `OPEN_DECISIONS.md` B7
+fängt das Gate deshalb nicht; sie gehören in die Durchsicht vor B2.
 
 ### BEF-029 — Unsichtbare Beschriftungen ziehen die ganze Seite in die Breite
 

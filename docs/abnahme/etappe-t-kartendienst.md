@@ -7,8 +7,8 @@ und Aufbau stehen in [`README.md`](README.md).
 
 ## MAP-002 — In-App-Kartenprototyp
 
-Prüfschritte zu **MAP-002a/b/c**. Grundlage: ADR-019 Fassung 2, Punkt 1, 12,
-15, 19 und 24.
+Prüfschritte zu **MAP-002a/b/c**. Grundlage: ADR-019 Punkt 1, 12, 15, 19 und
+24 (seit Fassung 2).
 
 **Dieser Loop bringt keine Migration und keinen geänderten Seed**, aber eine
 **neue Abhängigkeit**: vorher `git pull origin main`, dann `pnpm install`.
@@ -97,8 +97,8 @@ erfundenen Koordinaten.
 
 ## MAP-003 — Fahrradrouting-Prototyp
 
-Prüfschritte zu **MAP-003a/b/c**. Grundlage: ADR-019 Fassung 2, Punkt 7, 13,
-15, 16, 18 und 24; ANN-017 und ANN-090.
+Prüfschritte zu **MAP-003a/b/c**. Grundlage: ADR-019 Punkt 7, 13, 15, 16, 18
+und 24 (seit Fassung 2); ANN-017 und ANN-090.
 
 **Dieser Loop bringt keine Migration, keinen geänderten Seed und keine neue
 Abhängigkeit**: `git pull origin main` genügt.

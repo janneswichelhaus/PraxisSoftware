@@ -1810,8 +1810,8 @@ ungespeichertem Text abmeldet, verliert ihn weiterhin.
 ## CAL-014 — Absage unter 24 Stunden
 
 Prüfschritte zu CAL-014b (Datenbank) und CAL-014c (Oberfläche). Grundlage:
-`PROJECT_PRINCIPLES.md` 0.8 §8, ADR-018 Fassung 2 Punkt 8, ANN-047 und
-ANN-048.
+`PROJECT_PRINCIPLES.md` §8 (seit 0.8), ADR-018 Punkt 8 (seit Fassung 2), ANN-047
+und ANN-048.
 
 > **Wichtig für diese Abnahme:** Maßgeblich ist der **Eingang** der Absage,
 > nicht der Zeitpunkt der Eingabe. Für die Fälle unter der Frist braucht es
@@ -1894,7 +1894,7 @@ hoch.
 ## CAL-015 — Der Kalender als vollständiger Arbeitsablauf
 
 Prüfschritte zu CAL-015b (Datenbank) und CAL-015c (Oberfläche). Grundlage:
-`PROJECT_PRINCIPLES.md` 0.9 §8.1, ANN-049 und ANN-050.
+`PROJECT_PRINCIPLES.md` §8.1 (seit 0.9), ANN-049 und ANN-050.
 
 Alles als `olivia.office@praxis.invalid` (office), sofern nicht anders
 genannt.
@@ -2044,7 +2044,7 @@ machen.
 ## ROL-EPIC-001 — Office liest klinische Inhalte
 
 Prüfschritte zu ROL-001 bis ROL-003. Grundlage: E15, `PROJECT_PRINCIPLES.md`
-0.10 §4.3, ADR-004 Fassung 2 und ADR-010. Office liest alles, was
+§4.3 (seit 0.10), ADR-004 Fassung 2 und ADR-010. Office liest alles, was
 Therapeut:innen sehen — und schreibt davon nichts. Vorher lokal
 `pnpm dlx supabase@2.116.0 db reset` (zwei neue Migrationen).
 
@@ -2096,7 +2096,7 @@ gebaut ist keine; der Teamchat ist eine Vorschau ohne Patientenbezug.
 ## CAL-018 — Die drei Hausbesuch-Szenarien
 
 Prüfschritte zu CAL-018a (Datenbank) und CAL-018b (Oberfläche). Grundlage:
-`PROJECT_PRINCIPLES.md` 0.11 §8 („Hausbesuch-Szenarien"), ADR-018 Fassung 3
+`PROJECT_PRINCIPLES.md` §8 („Hausbesuch-Szenarien", seit 0.11), ADR-018 Fassung 3
 Punkt 9, E14 und ANN-055.
 
 > **Wichtig für diese Abnahme:** Der geführte Ablauf steht **nur am
@@ -2175,7 +2175,7 @@ Fall 1 — die gehen mit Anfrage B4 an die Steuerberatung.
 ## CAL-EPIC-004a — Freie Terminlänge und Rückfrage beim Ziehen
 
 Prüfschritte zu CAL-020 (freie Länge, Abweichungszeichen) und CAL-023
-(Rückfrage beim Verschieben). Grundlage: `PROJECT_PRINCIPLES.md` 0.11 §8.1,
+(Rückfrage beim Verschieben). Grundlage: `PROJECT_PRINCIPLES.md` §8.1 (seit 0.11),
 ANN-056, Vorgabe in
 [`../development/CAL-EPIC-004.md`](../development/CAL-EPIC-004.md).
 

@@ -5,7 +5,7 @@ Version 6.0 · Stand 2026-09-22 · **in Kraft**
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 6.0 ist eine Neufassung: Jannes hat am 2026-09-22 den
 Umfang bis zur Eröffnung auf das **Endprodukt** erweitert und die externen
-Prüfungen **hinter den Feature-Freeze** gelegt. Wortlaut bis 5.49,
+Prüfungen **hinter den Feature-Freeze** gelegt. Wortlaut bis 5.50,
 ausführliche Fortschrittsvermerke und alte Änderungsvermerke:
 [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
@@ -125,7 +125,7 @@ in den Etappen darunter.
 | # | Block | Code-Loops | Docs-Sessions | Jannes |
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | laufende Abnahmen |
-| 1 | **Rückstand** | G19 → G6a | — | Abnahme-Rückstand abbauen, M1 abnehmen |
+| 1 | **Rückstand** | ~~G19~~ (gebaut 2026-09-22) → G6a | — | Abnahme-Rückstand abbauen, M1 abnehmen |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 | — | D2/D3 aus dem FRB-Plan; Abnahmen |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Abnahmen |
 | 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **ADR-023** Plattformzugang (vor POR-EPIC-001) | ADR-023 bestätigen |
@@ -238,7 +238,7 @@ arbeitet.
 
 | Loop | Ergebnis | Zuschnitt |
 | --- | --- | --- |
-| **G19** | Das Dokumentationsgate prüft, ob Aussagen über andere Dokumente stimmen (BEF-028) | Verweise auf ADR-Fassungen und Prinzipienversionen gegen den Stand, `§NN` gegen vorhandene Abschnitte, Eindeutigkeit der `ANN-`/`BEF-`/`IDEA-`-Nummern; Nennungen in Änderungsvermerken bleiben erlaubt |
+| ~~**G19**~~ | **gebaut 2026-09-22** — Das Dokumentationsgate prüft, ob Aussagen über andere Dokumente stimmen (BEF-028) | Verweise auf ADR-Fassungen und Prinzipienversionen gegen den Stand, `§NN` gegen vorhandene Abschnitte, Eindeutigkeit der `ANN-`/`BEF-`/`IDEA-`-Nummern; Nennungen in Änderungsvermerken bleiben erlaubt |
 | **G6a** | Jede Abweisung ist nachweisbar | Die übrigen rund 80 Abweisungen (`not allowed to …`) schreiben einen `denied`-Eintrag, der die Abweisung überlebt — zuerst klären, welche der Monatsreport (ADR-010 Punkt 6) sehen muss. **Vor** Training und Plattform, weil beide Dutzende neue Abweisungspfade bringen |
 
 ### Block 2 — Kern fertig
@@ -608,7 +608,7 @@ Die eingerichtete Routine beschreibt `docs/DEVELOPMENT.md`, „Wochenroutine".
 
 Ein Loop ist **fertig**, wenn Skill-Schritt I durchlaufen ist, und
 **abgenommen**, wenn Jannes die Schritte aus `docs/abnahme/` durchlaufen hat.
-Ausführliche Vermerke je Loop bis 5.49: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
+Ausführliche Vermerke je Loop bis 5.50: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 Neue Zeilen tragen nur Kennung, Status, Datum, Commits und Abnahme.
 
 ```bash
@@ -675,6 +675,7 @@ Nenner, der jetzt das Endprodukt enthält.
 | OPS-004 Teil 1 und 2 | in Arbeit (Rest nach G3) | 2026-09-22 | `ff15f80` … `dcdb195` | |
 | PAT-006 | fertig | 2026-09-22 | `4764d90`, `8569f3d`, `1706cb1` | |
 | G10 Funktionsteil gestrichen (Docs) | fertig | 2026-09-22 | `a8478c3` | — |
+| G19 Dokumentationsgate: Querverweise und Nummern | fertig | 2026-09-22 | `7b95c22`, PR #102 | |
 | Roadmap 6.0 (Docs) | fertig | 2026-09-22 | dieser Commit | — |
 
 ---

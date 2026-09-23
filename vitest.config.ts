@@ -19,7 +19,13 @@ export default defineConfig({
           // Sitzungspruefung, Feldliste der Anfrage) beantwortet ein
           // Unit-Test, und `supabase start` laeuft in der Cloud-Umgebung
           // nicht (MAP-003a).
-          include: ['src/**/*.test.{ts,tsx}', 'supabase/functions/**/*.test.ts'],
+          // Dazu die Regeln des Dokumentationsgates (G19): reine Funktionen, die
+          // `pnpm docs:check` benutzt und ein Test festhaelt.
+          include: [
+            'src/**/*.test.{ts,tsx}',
+            'supabase/functions/**/*.test.ts',
+            'scripts/**/*.test.mjs',
+          ],
         },
       },
       {
