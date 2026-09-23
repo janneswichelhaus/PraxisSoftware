@@ -1,6 +1,6 @@
 # Providerprüfung Kartendienst (MAP-001)
 
-Stand: 2026-09-08 · Gehört zu ADR-019 (Fassung 2) · Prüfkatalog nach ADR-002
+Stand: 2026-09-22 · Gehört zu ADR-019 (Fassung 4) · Prüfkatalog nach ADR-002
 Punkt 3 und `PROJECT_PRINCIPLES.md` §3.5
 
 Dieses Dokument hält fest, **was zum Kartendienst belegt ist, was nur als

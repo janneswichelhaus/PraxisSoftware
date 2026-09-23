@@ -238,7 +238,25 @@ Auftrag war:
 - STATUS: alle ungemergten Branches nennen und mit Jannes sichten (löschen nur mit seinem OK).
 - `docs:check`: Grenze des Annahmenregisters je Eintrag statt als Gesamtzahl.
 
-### U4 — Register aufräumen
+### U4 — Register aufräumen · erledigt 2026-09-23
+
+Ergebnis: Tote Anker (ANN-011, -013, -014, -019, -032) zeigen auf
+`treatment-bases/`, `src/lib/abstecher.ts` und die umbenannten Funktionen aus
+`20260918120000_treatment_basis.sql`. ANN-012 und ANN-037 sind `verworfen` mit
+Verweis auf ihre Nachfolger. Statuszeile einheitlich (Zusatz `Prüfpaket`,
+`erledigt` oder `—`, Instanz bei `offen` leer); vier Recht-Einträge (ANN-074,
+-075, -082, -086) neu im Prüfpaket, ANN-064 heraus — heute 38. 21
+Wiedervorlagen, die auf fertige Loops (ABR, MAP, LOE, AKTE-006) zeigten, tragen
+das Ergebnis oder den nächsten echten Anlass. ANN-025 mit §4 und B13
+zusammengeführt; B13 wieder offen; Termine, Kopf von E16 und falsche
+G-Kennungen in `OPEN_DECISIONS.md` bereinigt. BEF-004, -007, -020 erledigt;
+`ARBEITSBEREICHE.md` (Terminlänge, Apple Maps, Kennzeichnung) und die Köpfe
+der beiden Vorlagen nachgezogen. Kommentare in `today/api.ts`,
+`treatment-bases/api.ts`, `appointments/api.ts` zeigen auf geltende Annahmen.
+**Nicht gemacht:** BEF-017 (vier Loops fehlen in `fortschritt.json`) bleibt
+offen; angewandte Migrationen nennen weiter ANN-012 und ANN-037.
+
+Auftrag war:
 
 - `ASSUMPTIONS.md`: tote Anker (ANN-011, -012, -013, -014, -019, -032 zeigen auf das frühere
   Verordnungsmodul), abgelöste Einträge (ANN-012, ANN-037), Prüfpaket-Markierung einheitlich,

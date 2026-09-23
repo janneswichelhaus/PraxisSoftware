@@ -1,9 +1,9 @@
 # B14 — Optionen für das Rechnungs-PDF
 
-Vorlage aus ABR-EPIC-002a, 2026-09-19. **Dieses Dokument entscheidet nichts**
-und hat wie [`OPEN_DECISIONS.md`](OPEN_DECISIONS.md) keinen Rang; es legt
-vor, was Punkt B14 verlangt: die Wege mit ihrem Aufwand und ihrem Preis.
-Entschieden wird von Jannes, bevor **ABR-EPIC-002b** beginnt.
+Vorlage aus ABR-EPIC-002a, 2026-09-19. **Entschieden am 2026-09-19** (Jannes,
+B14 in [`OPEN_DECISIONS.md`](OPEN_DECISIONS.md)): **Weg 1 jetzt, Weg 3 nach
+OPS-001**, Weg 2 entfällt; Weg 1 ist mit ABR-EPIC-002b gebaut. Das Dokument
+hat keinen Rang und bleibt als Begründung der Wahl stehen.
 
 ## Worum es geht
 

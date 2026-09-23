@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-23 · letzte Session: Umbau U3
+# Status · Stand 2026-09-23 · letzte Session: Umbau U4
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,17 +6,17 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**Umbau läuft** ([`development/UMBAU.md`](development/UMBAU.md)): Jannes' Entscheidungen E-1 bis E-7 vom 2026-09-23 werden in fünf Schritten eingearbeitet, nicht angehängt. U1 bis U3 sind erledigt. Seit U3 beginnt jede Session mit **`/weiter`**, **`/idee <Text>`** oder **`/sichtung`**; der Fortschritt steht nur noch in `fortschritt.json`. Fortschritt **33,7 %**.
+**Umbau läuft** ([`development/UMBAU.md`](development/UMBAU.md)): Jannes' Entscheidungen E-1 bis E-7 vom 2026-09-23 werden in fünf Schritten eingearbeitet, nicht angehängt. U1 bis U4 sind erledigt; es fehlt U5. Seit U3 beginnt jede Session mit **`/weiter`**, **`/idee <Text>`** oder **`/sichtung`**; der Fortschritt steht nur noch in `fortschritt.json`. Fortschritt **33,7 %**.
 
 ## Danach — Umbau, dann Bauen
 
-1. **U4 Register** — `/weiter`
-2. **U5 Test-Umgebung** — dafür brauche ich deine Entscheidung zum Hosting (kommt in U5 mit Optionen)
-3. **G6c**, sobald deine Wahl unter „Blocker" da ist, sonst **Block 1a „Handy und UX-Fundament"** (OPS-002a → UX-EPIC-002 → UX-EPIC-003)
+1. **U5 Test-Umgebung** — `/weiter`; dafür brauche ich deine Entscheidung zum Hosting (kommt in U5 mit Optionen)
+2. **G6c**, sobald deine Wahl unter „Blocker" da ist, sonst **Block 1a „Handy und UX-Fundament"** (OPS-002a → UX-EPIC-002 → UX-EPIC-003)
+3. **Block 2 „Kern fertig"** nach der Roadmap
 
 ## Prüfverfahren
 
-**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2347**; `test:db` **1871** (mit G6b, eine Migration). Keine Sichtprüfung: Geändert sind nur zehn neue Einträge im Aktionsfilter des Auditlogs, und die Seite liegt hinter der Anmeldung.
+**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2350**; `test:db` **1871** (mit G6b, eine Migration; in U4 nicht gelaufen, weil keine Datenbank berührt ist). Keine Sichtprüfung: U4 ändert nur Dokumentation und drei Codekommentare.
 
 ## Blocker (Jannes-seitig)
 
@@ -24,7 +24,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
 - **Logfrist für Betriebslogs (R14 alt, jetzt R9):** (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg. Empfehlung: nach G3. Gebraucht vor echten Daten.
-- **BEF-026 / B13:** Die Plattform braucht Mails an Patient:innen; Empfehlung: eigener SMTP-Anbieter, geprüft in Block 11. STAFF-004 ruht bis dahin.
+- **BEF-026 / B13 (wieder offen):** Die Plattform braucht Mails an Patient:innen; Empfehlung: eigener SMTP-Anbieter, geprüft in Block 11. STAFF-004 ruht bis dahin.
 - **D2/D3 aus dem FRB-Plan** vor FRB-EPIC-003; ohne Antwort gilt der Vorschlag dort.
 - **Preise** für Abo und Pakete vor Block 5 (bis dahin synthetisch); **G13** (Umsatzsteuer-Status, Befreiungshinweis, Kürzel `RG`/`TR`) vor M3.
 - **B8:** schriftlicher Lizenzbeleg bis M3.
@@ -34,4 +34,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**Umbau U3 — Ablauf schlank.** Skills `/weiter` (eine Leseregel: STATUS, Zeile der Aufgabe, benannte ADRs), `/idee`, `/sichtung`; [`development/SESSION-START.md`](development/SESSION-START.md) ist ein Satz. **Sichtung statt Abnahme:** [`sichtung/`](sichtung/README.md) mit vier Dateien, die alten Abnahmeschritte und erledigte Pläne (CAL-EPIC-004, VER-EPIC-002, E18, MAP-002 bis 005) im [Archiv](development/archiv/README.md). **Fortschritt:** `fortschritt.json` ist die einzige Quelle, `pnpm fortschritt --schreiben` erzeugt die Roadmap-Tabelle, `docs:check` prüft sie; Stufe `abgenommen` heißt `gesichtet`. `docs:check` begrenzt das Annahmenregister je Eintrag (14 Zeilen) statt als Summe. [`DEVELOPMENT.md`](DEVELOPMENT.md): Handytest im WLAN. **Wochenroutine abgeschaltet**; die verworfene Idee `IDEA-QSN-011` (Patientennummer) aus einem alten Branch in den Ideenspeicher übernommen. **Keine neue Annahme.** **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.
+**Umbau U4 — Register aufgeräumt.** [`ASSUMPTIONS.md`](decisions/ASSUMPTIONS.md): tote Anker auf die Behandlungsgrundlage umgestellt, ANN-012 und ANN-037 als abgelöst verkürzt, Statuszeilen einheitlich, Prüfpaket jetzt **38** Einträge (vier Rechtsannahmen zur Steuer und Lizenz neu, ANN-064 heraus), 21 abgelaufene Wiedervorlagen auf den Stand der fertigen Abrechnungs- und Karten-Loops, ANN-025 mit §4 und B13 zusammengeführt. [`OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md): **B13 wieder offen**, Termine gestrichen, E16 als erledigt verkürzt, falsche G-Kennungen berichtigt. BEF-004, -007, -020 erledigt; `ARBEITSBEREICHE.md` und die Köpfe der Kartendienst- und PDF-Vorlage nachgezogen. **Keine neue Annahme** — ANN-086 steht jetzt auf `entschieden (Jannes)`, weil deine Erklärung vom 2026-09-21 genau das ist. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.

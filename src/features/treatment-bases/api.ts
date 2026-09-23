@@ -240,7 +240,7 @@ const itemSchema = z.object({
   remedy: z.string(),
   prescribed_quantity: z.number(),
   used_quantity: z.number(),
-  // Wird serverseitig gerechnet und nirgends gespeichert (ANN-012).
+  // Wird serverseitig gerechnet und nirgends gespeichert (ANN-073).
   remaining_quantity: z.number(),
 });
 
