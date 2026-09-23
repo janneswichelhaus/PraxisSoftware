@@ -1,8 +1,8 @@
 # Abnahme — Etappe L: Zwei Leistungsbereiche im Fundament
 
 Prüfschritte der Loops aus **Etappe L**
-([`../development/ROADMAP.md`](../development/ROADMAP.md)). Voraussetzung und
-Aufbau stehen in [`README.md`](README.md).
+([`../development/ROADMAP.md`](../../ROADMAP.md)). Voraussetzung und
+Aufbau stehen in [`README.md`](../../../sichtung/README.md).
 
 ## ABR-EPIC-004 — Befreiungsgrund und § 14c-Riegel
 

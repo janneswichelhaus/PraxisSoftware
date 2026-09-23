@@ -15,24 +15,27 @@
 // externe Anfragen. Deshalb stehen Software (Bloecke A und B) mit 40 Prozent
 // und Betrieb, Eroeffnung und Entscheidungen mit 60 Prozent im Modell.
 //
-// Ein fertig gebauter, aber nicht abgenommener Loop zaehlt 0,85 - "abgenommen"
-// ist er erst, wenn Jannes docs/abnahme/ durchlaufen hat (Definition of Done
-// in ROADMAP.md; die Stufen heissen wie in der Fortschrittstabelle dort). Eine
+// Ein fertig gebauter, aber nicht gesichteter Loop zaehlt 0,85 - "gesichtet"
+// ist er erst nach der Sichtung seines Blocks (docs/sichtung/) oder, ohne
+// Oberflaeche, mit gruener CI, test:db und Zweitreview (E-6). Eine
 // von Jannes vorlaeufig entschiedene Frage zaehlt 0,5, weil sie das Bauen
 // loest, fuer M3 aber nicht zaehlt (Spur B).
 //
 // Die Zahlen sind eine Schaetzung mit offengelegtem Modell, keine Messung.
-// Gepflegt wird docs/development/fortschritt.json - am Ende eines Loops,
-// zusammen mit der Fortschrittstabelle in ROADMAP.md.
+// Gepflegt wird allein docs/development/fortschritt.json - am Ende eines
+// Loops. Die Fortschrittstabelle in ROADMAP.md entsteht daraus
+// (`--schreiben`), und `pnpm docs:check` prueft, dass sie aktuell ist.
 //
 // Aufruf:
 //   pnpm fortschritt              # Uebersicht je Block
 //   pnpm fortschritt --posten     # zusaetzlich jeder einzelne Posten
 //   pnpm fortschritt --json       # maschinenlesbar
+//   pnpm fortschritt --schreiben  # Tabelle in ROADMAP.md neu erzeugen
 // -----------------------------------------------------------------------------
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { ersetzeTabelle, fortschrittTabelle } from './fortschritt-tabelle.mjs';
 
 const wurzel = join(dirname(fileURLToPath(import.meta.url)), '..');
 const quelle = join(wurzel, 'docs/development/fortschritt.json');
@@ -42,6 +45,13 @@ const alsJson = argumente.includes('--json');
 const mitPosten = argumente.includes('--posten');
 
 const daten = JSON.parse(await readFile(quelle, 'utf8'));
+
+if (argumente.includes('--schreiben')) {
+  const roadmap = join(wurzel, 'docs/development/ROADMAP.md');
+  const text = await readFile(roadmap, 'utf8');
+  await writeFile(roadmap, ersetzeTabelle(text, fortschrittTabelle(daten)));
+  console.log('Fortschrittstabelle in docs/development/ROADMAP.md neu geschrieben.');
+}
 const { statuswerte } = daten;
 
 /** Anteil eines Status, mit klarer Meldung statt stiller Null bei Tippfehlern. */

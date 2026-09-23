@@ -4,7 +4,7 @@ Stand: 2026-09-23
 
 ## Zweck
 
-Hier stehen **Befunde aus Abnahmen, Screenrecordings und Reviews an der
+Hier stehen **Befunde aus Sichtungen (früher Abnahmen), Screenrecordings und Reviews an der
 laufenden Anwendung** — Beobachtungen an etwas, das gebaut ist, nicht Ideen
 für etwas, das fehlt. Ideen gehören in `docs/product/` (Rang 6); ein Befund
 gehört hierher, weil er Gebautes korrigiert.
@@ -32,7 +32,7 @@ Jeder Befund trägt:
 | Kennung | `BEF-NNN`, fortlaufend, nie wiederverwendet, nie umnummeriert                           |
 | Datum   | Tag der Beobachtung                                                                      |
 | Bereich | Arbeitsbereich oder Seite (`ARBEITSBEREICHE.md`)                                         |
-| Quelle  | Wer hat es wie gesehen: Abnahme, Screenrecording, Review, Herkunft aus dem Ideenspeicher |
+| Quelle  | Wer hat es wie gesehen: Sichtung, Screenrecording, Review, Herkunft aus dem Ideenspeicher |
 | Status  | `offen` · `eingeplant in <Loop>` · `erledigt in <Loop>`                                  |
 
 Ein erledigter Befund bleibt stehen, mit dem Loop, der ihn geschlossen hat.
@@ -275,7 +275,7 @@ auf. Therapeut:innen sehen das seit VER-002; seit ROL-002 sieht es auch
 
 **Warum das zählt.** Diagnosen bestehen oft aus langen Komposita; eine Seite,
 die dann seitlich scrollt, widerspricht der Oberflächen-Checkliste
-(`docs/abnahme/README.md`, Punkt 1).
+(`docs/sichtung/README.md`, Punkt 1).
 
 **Richtung.** Langes Wort im Wert einer Detailzeile umbrechen
 (`overflow-wrap`) — eine Stelle im Baustein, kein Umbau.
@@ -287,7 +287,7 @@ die dann seitlich scrollt, widerspricht der Oberflächen-Checkliste
 | Datum   | 2026-09-16                                                                                    |
 | Bereich | Termin (`/termine/:id`)                                                                       |
 | Quelle  | Jannes, 2026-09-16, im Vergleich mit iPrax (`../product/ideen/referenz-iprax.md`)              |
-| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](CAL-EPIC-004.md), AKTE-006                              |
+| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](archiv/CAL-EPIC-004.md), AKTE-006                              |
 | Berührt | CAL-008, CAL-014, CAL-012/013, UX-007, DOK-001/002, ADR-018; `AppointmentDetailPage.tsx`      |
 
 **Beobachtung.** „Die Ansicht eines speziellen Termins mag ich nicht." Die
@@ -312,7 +312,7 @@ Bestätigungsschritt verlieren (ADR-018, §8).
 | Datum   | 2026-09-16                                                                                    |
 | Bereich | Termine in der Akte (`/patienten/:id/termine`)                                                 |
 | Quelle  | Jannes, 2026-09-16                                                                            |
-| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](CAL-EPIC-004.md), AKTE-006                              |
+| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](archiv/CAL-EPIC-004.md), AKTE-006                              |
 | Berührt | AKTE-003, CAL-007, VER-002; `PatientAppointmentsPage.tsx`, `list_patient_appointments`         |
 
 **Beobachtung.** Termine sollen „immer verordnungsbezogen" erscheinen: fünf

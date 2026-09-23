@@ -1,9 +1,9 @@
 # Abnahme — Etappe T: Kartendienst
 
 Prüfschritte der Loops aus **Etappe T**
-([`../development/ROADMAP.md`](../development/ROADMAP.md), Spezifikation in
-[`../development/MAP-LOOPS.md`](../development/MAP-LOOPS.md)). Voraussetzung
-und Aufbau stehen in [`README.md`](README.md).
+([`../development/ROADMAP.md`](../../ROADMAP.md), Spezifikation in
+[`../development/MAP-LOOPS.md`](../../MAP-LOOPS.md)). Voraussetzung
+und Aufbau stehen in [`README.md`](../../../sichtung/README.md).
 
 ## MAP-002 — In-App-Kartenprototyp
 
@@ -221,7 +221,7 @@ Pfad `routing-osm/v1/routes`, `results=POLYLINE,LEGS` als Liste, kein
 `polylineFormat`, und die Polylinie kommt als Zeichenkette. Antwortet PTV
 trotzdem mit 400, steht die Ursache im Antwortkörper unter `causes`; sie
 gehört dann hierher und in
-[`../development/BEFUNDE.md`](../development/BEFUNDE.md). Korrigiert wird
+[`../development/BEFUNDE.md`](../../BEFUNDE.md). Korrigiert wird
 `supabase/functions/location-provider/ptv.ts` und sonst nichts.
 
 ---
@@ -254,7 +254,7 @@ ist deshalb der erste.
 2. Kommt stattdessen **„Kartendienst nicht erreichbar"** oder **„Anfrage nicht
    gültig"**: Im `serve`-Fenster steht die Fehlerklasse, im Netzwerkfenster die
    Antwort des Anbieters unter `causes`. Beides gehört in
-   [`../development/BEFUNDE.md`](../development/BEFUNDE.md) und hierher.
+   [`../development/BEFUNDE.md`](../../BEFUNDE.md) und hierher.
    Korrigiert wird `supabase/functions/location-provider/ptv.ts` und sonst
    nichts — Pfad, Parameter oder Feldnamen, je nachdem, was dort steht.
 3. Erwartung: Die Werte sind plausibel — Tübinger Stadtgebiet, also wenige
@@ -445,7 +445,7 @@ Für jeden Fall: Ziel-App wählen, **einmal** auf „Stopp 3" tippen.
    `geo:`-Verweis öffnen soll, oder öffnet die vorgemerkte. Notieren: Kommt
    überhaupt etwas? Öffnet sich ein leeres Fenster, das stehen bleibt? Dann
    trägt `window.open` diesen Verweis nicht, und das ist ein Befund für
-   [`../development/BEFUNDE.md`](../development/BEFUNDE.md) — kein Grund, den
+   [`../development/BEFUNDE.md`](../../BEFUNDE.md) — kein Grund, den
    Knopf zu behalten, wie er ist.
 3. Beide Fälle: **Landet ein Koordinatenziel verständlich?** Ein Pin ohne
    Hausnummer kann auf dem Rad genügen oder verwirren — das ist die offene
@@ -481,4 +481,4 @@ Koordinatenziel an, wie viele Stopps trägt ein Tageslink. Daraus wird die
 Empfehlung für die Standard-Ziel-App der Tagesliste; **vorgebaut ist sie
 nicht** (ADR-019, „Bewusst nicht Bestandteil"). Gehört als Antwort zu
 **ANN-018** und, wenn etwas nicht trägt, als Befund in
-[`../development/BEFUNDE.md`](../development/BEFUNDE.md).
+[`../development/BEFUNDE.md`](../../BEFUNDE.md).

@@ -15,9 +15,11 @@ Die inhaltlichen Regeln stehen in `CLAUDE.md`, `PROJECT_PRINCIPLES.md` und den
 ADRs. Dieser Skill wiederholt sie nicht — er beschreibt nur die Reihenfolge,
 den Zuschnitt und die Abbruchbedingungen.
 
-**Zuerst `docs/development/ROADMAP.md` lesen** — Einordnung des Auftrags,
-Voraussetzungen des Schritts, Credit-Regeln; fehlt eine Voraussetzung aus
-„Entscheidungen und Prüfungen", gilt die Regel dort („Was dieses Dokument ist").
+**Gelesen wird nach der einen Leseregel in `.claude/skills/weiter/SKILL.md`**
+(Schritt 1): `docs/STATUS.md`, die Zeile des Auftrags in
+`docs/development/ROADMAP.md`, die im SPEC benannten ADRs. Fehlt eine
+Voraussetzung, gilt §15.1 und §15.2 — eine offene externe Klärung hält das
+Bauen nicht an.
 
 ---
 
@@ -109,8 +111,7 @@ Plan verlorene Zeit — dann direkt bauen.
 ## D. BUILD
 
 **Story für Story**, jede als eigener Commit mit vollständigem vertikalem
-Schnitt: Migration, Policy, RPC, Oberfläche, Tests, Abnahmeschritte in
-`docs/abnahme/`, Registereinträge. Zwischen den Stories wird weder
+Schnitt: Migration, Policy, RPC, Oberfläche, Tests, Registereinträge. Zwischen den Stories wird weder
 gestoppt noch berichtet — der Bericht kommt am Ende des Epics.
 
 Zum Epic gehört, was seine Akzeptanzkriterien brauchen, auch wenn es im Auftrag
@@ -148,10 +149,12 @@ Bei UI-Änderungen die **laufende** Anwendung ansehen (Chromium/Playwright),
 nicht nur Tests. Betrifft das Feature mobile Nutzung, zusätzlich bei ~375 px
 prüfen.
 
-Hat das Feature einen Oberflächenanteil, kommen die **manuellen Prüfschritte
-für Jannes** nach `docs/abnahme/` — in die Datei der laufenden Etappe, als
-Abschnitt mit der Loop-Kennung. **Nicht** nach `docs/DEVELOPMENT.md`. Regeln
-in `docs/abnahme/README.md`.
+Hat das Feature einen Oberflächenanteil: **Bildschirmfotos bei Desktop und
+375 px** (`pnpm screenshots`) für die Pull Request, und die Sichtung des
+Blocks in `docs/sichtung/` um höchstens drei Schritte ergänzen — die Datei
+bleibt bei höchstens 15. Regeln in `docs/sichtung/README.md`. Ohne Oberfläche
+gibt es keinen Sichtungsschritt: Der Loop ist mit grüner CI, `pnpm test:db`
+und Zweitreview gesichtet (E-6).
 
 Was aus Umgebungsgründen nicht läuft, wird als nicht gelaufen benannt.
 
@@ -164,7 +167,7 @@ Eigenen Diff (`git diff main...HEAD`) durchgehen auf:
 - Berechtigungen: greift RLS, ist die UI-Prüfung nur Darstellung
 - Datenminimierung: wird mehr ausgeliefert als nötig
 - Fehlerbehandlung: verständlich, ohne interne Details preiszugeben
-- bei Oberflächenanteil: Oberflächen-Checkliste aus `docs/abnahme/README.md`
+- bei Oberflächenanteil: Oberflächen-Checkliste aus `docs/sichtung/README.md`
   abgehakt; Abweichungen im Bericht begründet
 - die **Review-Checkliste** aus ADR-013 Punkt 9, je Story Punkt
   für Punkt — das Compliance-Gate A4; nicht zutreffende Punkte als
@@ -236,15 +239,18 @@ Kompakt berichten:
    aktualisiert
 9. Was das logisch nächste Epic wäre — als Vorschlag mit Zuschnitt
 
-Dann in `docs/development/ROADMAP.md` den Eintrag in der Fortschrittstabelle
-auf `fertig` setzen, mit Datum und Commit, den Posten in
-`docs/development/fortschritt.json` auf `fertig`, **`docs/STATUS.md` auf die
+Dann den Posten in `docs/development/fortschritt.json` nachstellen — `status`
+`fertig` (ohne Oberfläche und mit Zweitreview `gesichtet`), `fertig_am`,
+`nachweis` — und `pnpm fortschritt --schreiben` laufen lassen; die Tabelle
+der Roadmap entsteht daraus und wird nie von Hand geändert. **`docs/STATUS.md` auf die
 nächste Aufgabe stellen** (Jetzt, Danach, Blocker, „Letzte Session" mit den
 lokalen Schritten) und bearbeitete Befunde in `docs/development/BEFUNDE.md`
 als erledigt markieren. **`pnpm docs:check` muss danach grün sein** — es prüft
-die Obergrenzen, die Anker des Registers und die relativen Verweise. Ein
-Eintrag ohne durchlaufenen Schritt I wird nicht abgehakt. Merge und Abnahme:
+die Obergrenzen, die Anker des Registers, die relativen Verweise und die
+Fortschrittstabelle. Ein
+Eintrag ohne durchlaufenen Schritt I wird nicht abgehakt. Merge und Sichtung:
 Roadmap, „Definition of Done".
 
 **Danach stoppen.** Das vorgeschlagene nächste Epic wird nicht begonnen. Ein
-neuer Loop startet nur durch einen neuen `/feature-loop`-Aufruf.
+neuer Loop startet nur durch einen neuen Aufruf (`/weiter` oder
+`/feature-loop`).

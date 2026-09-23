@@ -4,7 +4,7 @@ Praxisplattform für eine privat abrechnende Physiotherapiepraxis. Verarbeitet G
 Früher Entwicklungsstand, kein Produktivbetrieb.
 
 **Zuerst lesen:** `docs/STATUS.md` — was jetzt läuft, was danach kommt, was bei Jannes liegt.
-Startprompt jeder Session: `docs/development/SESSION-START.md`.
+Sessionstart: `/weiter`, `/idee <Text>` oder `/sichtung` (`docs/development/SESSION-START.md`).
 
 ## Verbindliche Grundlagen
 
@@ -127,12 +127,13 @@ im Alltag `pnpm install`, `pnpm dev`, `pnpm build`.
 **Jeder Auftrag wird zuerst klassifiziert** (K1 in `docs/development/GRAPH-ENGINEERING-WORKFLOW.md`):
 Berührt der Diff einen Auslöser aus ADR-013 Punkt 9, ist er **Pfad A** —
 `/feature-loop <Aufgabe>`. Berührt er nur die Oberfläche und überlebt kein Wert die Sitzung, ist er
-**Pfad S** — `/sandbox <Thema>`. Beide Skills (`.claude/skills/`) starten nur auf ausdrücklichen
-Aufruf; Zuschnitt, Zweitreview und Bericht stehen dort.
+**Pfad S** — `/sandbox <Thema>`. `/weiter` wählt die Aufgabe aus STATUS, liest nach seiner einen
+Leseregel und führt Pfad A aus. Alle Skills (`.claude/skills/`) starten nur auf ausdrücklichen Aufruf;
+Zuschnitt, Zweitreview und Bericht stehen dort.
 
 - `docs/development/ROADMAP.md` legt die **Reihenfolge** fest, nie den Scope, und startet nichts von
   allein; `docs/STATUS.md` trägt davon den Livestand und wird in Skill-Schritt I nachgestellt. Merge
-  und Abnahme: Roadmap, „Definition of Done".
+  und Sichtung: Roadmap, „Definition of Done"; Fortschritt nur in `docs/development/fortschritt.json`.
 - **Vor jedem Loop den Gesamtstand prüfen, nicht nur `main`:** `git fetch origin --prune`,
   `git branch -r`, offene Pull Requests. Nichts neu bauen, was auf einem Branch schon liegt;
   unveröffentlichte Arbeit im Bericht nennen.
@@ -143,8 +144,7 @@ Aufruf; Zuschnitt, Zweitreview und Bericht stehen dort.
   und nie per Telemetrie (§20).
 - Eine Funktionsidee außerhalb des Auftrags — von Jannes oder aus dem Loop — **kommt nach
   `docs/product/`, nicht in den Code.** Auch gute, besonders die.
-- Kleine Commits, einer je Story. Nach dem Epic stoppen und berichten; das nächste nicht
-  eigenständig beginnen.
+- Kleine Commits, einer je Story. Nach dem Epic stoppen und berichten, das nächste nie selbst beginnen.
 - **Abschlussbericht:** neue Annahmen mit je einem Satz, Vorschlag für den nächsten Loop, lokale
   Update-Schritte für Jannes — mindestens `git pull origin <branch>`; `pnpm install` bei geänderten
   Abhängigkeiten; `pnpm dlx supabase@2.116.0 db reset` bei geänderten Migrationen oder Seed.

@@ -7,6 +7,13 @@ import {
   pruefeVerweise,
   vermerkZeilen,
 } from './docs-check-regeln.mjs';
+import {
+  ANFANG,
+  ENDE,
+  ersetzeTabelle,
+  fortschrittTabelle,
+  tabelleAktuell,
+} from './fortschritt-tabelle.mjs';
 
 /**
  * Regeln des Dokumentationsgates fuer Querverweise (G19, BEF-028).
@@ -184,5 +191,40 @@ describe('eindeutige Nummern', () => {
         { pfad: 'b.md', text: '### E-20 — Rückfrage zu IDEA-PRX-004' },
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('Fortschrittstabelle aus fortschritt.json (Umbau U3)', () => {
+  const modell = {
+    bloecke: [
+      {
+        id: 'A',
+        posten: [
+          { id: 'a', name: 'Loop A', status: 'fertig', fertig_am: '2026-09-01', nachweis: 'PR #1' },
+          { id: 'b', name: 'Loop B', status: 'offen' },
+          { id: 'c', name: 'Pipe | im Namen', status: 'gesichtet', gesichtet_am: '2026-09-02' },
+        ],
+      },
+    ],
+  };
+  const roadmap = (tabelle) => `# Roadmap\n\n${ANFANG}\n${tabelle}\n${ENDE}\n\nRest\n`;
+
+  it('nennt jeden Posten, der nicht offen ist, und maskiert senkrechte Striche', () => {
+    const tabelle = fortschrittTabelle(modell);
+    expect(tabelle).toContain('| A | Loop A | fertig | 2026-09-01 | PR #1 | — | — |');
+    expect(tabelle).not.toContain('Loop B');
+    expect(tabelle).toContain('Pipe \\| im Namen');
+  });
+
+  it('erkennt eine aktuelle Tabelle und meldet jede Abweichung', () => {
+    const aktuell = roadmap(fortschrittTabelle(modell));
+    expect(tabelleAktuell(aktuell, modell)).toBe(true);
+    expect(tabelleAktuell(aktuell.replace('PR #1', 'PR #2'), modell)).toBe(false);
+    expect(tabelleAktuell('# Roadmap ohne Marken\n', modell)).toBe(false);
+  });
+
+  it('ersetzt nur den Bereich zwischen den Marken', () => {
+    const neu = ersetzeTabelle(roadmap('alt'), 'neu');
+    expect(neu).toBe(roadmap('neu'));
   });
 });

@@ -115,7 +115,7 @@ test.describe('CAL-014c: Absage unter 24 Stunden', () => {
    * Der Termin liegt zwei Tage voraus; die Absage geht "gerade eben" ein.
    * Damit sind es mehr als 24 Stunden - und genau das soll KEINE Gebuehr
    * ausloesen. Die Gegenprobe unter der Frist braucht einen Termin am selben
-   * Tag und laeuft in der Abnahme von Hand (docs/abnahme).
+   * Tag und laeuft in der Sichtung von Hand (docs/sichtung).
    */
   test('merkt bei rechtzeitiger Absage keine Gebuehr vor', async ({ page }) => {
     // Versatz 5 und nicht 2: Der Test darueber legt an Tag 2 denselben

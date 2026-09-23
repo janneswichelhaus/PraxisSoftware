@@ -5,7 +5,7 @@
     "name": "Eröffnung — erster Behandlungstag mit der Software",
     "termin": "Juli 2027"
   },
-  "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab. Die Stufen heißen wie in der Fortschrittstabelle: fertig = Skill-Schritt I durchlaufen, abgenommen = Jannes hat docs/abnahme/ durchlaufen. Blöcke und Gewichte seit Roadmap 6.0 (2026-09-22): V1 ist das Endprodukt. Ergänzt mit Roadmap 7.0 (2026-09-23): Block 1a, DOK-006, DSN-001, UI-003.",
+  "hinweis": "Datengrundlage für `pnpm fortschritt` und einzige Quelle des Fortschritts: Die Tabelle im Abschnitt „Fortschritt“ von ROADMAP.md erzeugt `pnpm fortschritt --schreiben` aus dieser Datei, und `pnpm docs:check` prüft, dass sie übereinstimmt. Gepflegt am Ende eines Loops: `status`, `fertig_am`, `nachweis` (Commits oder PR), nach einer Sichtung `gesichtet_am`. Stufen: fertig = gebaut, Skill-Schritt I durchlaufen; gesichtet = mit Oberfläche in einer Sichtung nach docs/sichtung/ durchgegangen, ohne Oberfläche gemergt mit grüner CI, test:db und Zweitreview (E-6), bei Entscheidungen und Prüfungen bestätigt. Blöcke und Gewichte seit Roadmap 6.0 (2026-09-22), ergänzt mit 7.0 (2026-09-23).",
   "statuswerte": {
     "offen": {
       "anteil": 0,
@@ -25,11 +25,11 @@
     },
     "fertig": {
       "anteil": 0.85,
-      "text": "Skill-Schritt I durchlaufen (fertig gebaut), Abnahme durch Jannes steht aus"
+      "text": "Skill-Schritt I durchlaufen (fertig gebaut), Sichtung steht aus"
     },
-    "abgenommen": {
+    "gesichtet": {
       "anteil": 1,
-      "text": "von Jannes abgenommen beziehungsweise extern bestätigt"
+      "text": "gesichtet (Sichtung nach docs/sichtung/ oder ohne Oberfläche gemergt mit CI, test:db und Zweitreview) beziehungsweise extern bestätigt"
     }
   },
   "bloecke": [
@@ -43,151 +43,208 @@
           "id": "fundament",
           "name": "Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001",
           "gewicht": 3,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "vor 2026-09-01",
+          "nachweis": "PR #1, `e70775a`, `ca907e9`"
         },
         {
           "id": "dok-epic",
           "name": "DOK-EPIC (DOK-001 bis DOK-004)",
           "gewicht": 2,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-05",
+          "nachweis": "PR #5, `21d85dd`, `e931068`",
+          "gesichtet_am": "2026-09-11"
         },
         {
           "id": "ver-epic-001",
           "name": "VER-EPIC-001 Verordnungen",
           "gewicht": 2,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-07",
+          "nachweis": "`2c3c1de` … `159c1bb`",
+          "gesichtet_am": "2026-09-11"
         },
         {
           "id": "ui-000",
           "name": "UI-000 Fundament der Oberfläche",
           "gewicht": 2,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-07",
+          "nachweis": "`4a4440f` … `e6b4ab6`",
+          "gesichtet_am": "2026-09-11"
         },
         {
           "id": "marke-001",
           "name": "MARKE-001 Marke in der Anwendung",
           "gewicht": 1,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-11",
+          "nachweis": "PR #19",
+          "gesichtet_am": "2026-09-11"
         },
         {
           "id": "ux-epic-001",
           "name": "UX-EPIC-001 Hausbesuchstag (11 Stories)",
           "gewicht": 4,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-11",
+          "nachweis": "PR #18",
+          "gesichtet_am": "2026-09-11"
         },
         {
           "id": "loe-epic-001",
           "name": "LOE-EPIC-001 Löschung und Retention (5 Stories)",
           "gewicht": 3,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-11",
+          "nachweis": "PR #25",
+          "gesichtet_am": "2026-09-11"
         },
         {
           "id": "cal-epic-003a",
           "name": "CAL-EPIC-003a Terminzustände",
           "gewicht": 2,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-12",
+          "nachweis": "PR #28",
+          "gesichtet_am": "2026-09-12"
         },
         {
           "id": "cal-epic-003b",
           "name": "CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013)",
           "gewicht": 3,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-12",
+          "nachweis": "`b2626ae`, `89ab30b`, `acddcc6`"
         },
         {
           "id": "dat-epic-001",
           "name": "DAT-EPIC-001 Dateiablage (G4)",
           "gewicht": 2,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-13",
+          "nachweis": "`84bec9b` … `fd10a37`"
         },
         {
           "id": "rol-epic-001",
           "name": "ROL-EPIC-001 Office liest klinische Inhalte (E15)",
           "gewicht": 2,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-15",
+          "nachweis": "PR #41"
         },
         {
           "id": "cal-018",
           "name": "CAL-018 Hausbesuch-Szenarien (E14)",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-16",
+          "nachweis": "`dc529a7`, `6a11fb0`"
         },
         {
           "id": "cal-epic-004a",
           "name": "CAL-EPIC-004a Freie Terminlänge, Rückfrage beim Ziehen",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-18",
+          "nachweis": "`ee81ea7`, `e189183` … `1b132ea`"
         },
         {
           "id": "fix-epic-004",
           "name": "FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016)",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-18",
+          "nachweis": "`14a1fa7` … `856a5ac`"
         },
         {
           "id": "ver-epic-002",
           "name": "VER-EPIC-002 Verordnung im Office-Alltag",
           "gewicht": 2,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-18",
+          "nachweis": "`f734e55`, `ba19245`"
         },
         {
           "id": "abr-epic-001",
           "name": "ABR-EPIC-001 Leistungen und Katalog",
           "gewicht": 3,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-19",
+          "nachweis": "`3874e83` … `a1384ce`"
         },
         {
           "id": "abr-epic-002a",
           "name": "ABR-EPIC-002a Rechnung entsteht",
           "gewicht": 2,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-19",
+          "nachweis": "`3874e83` … `a1384ce`"
         },
         {
           "id": "abr-epic-002b",
           "name": "ABR-EPIC-002b Rechnung als Dokument",
           "gewicht": 2,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-19",
+          "nachweis": "`3874e83` … `a1384ce`"
         },
         {
           "id": "abr-epic-003",
           "name": "ABR-EPIC-003 Zahlungen und offene Posten",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-19",
+          "nachweis": "`3874e83` … `a1384ce`"
         },
         {
           "id": "pat-006",
           "name": "PAT-006 Datenschutzinformation und Einwilligungen (G8)",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-22",
+          "nachweis": "`4764d90`, `8569f3d`, `1706cb1`"
         },
         {
           "id": "abr-epic-004",
           "name": "ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L)",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-20",
+          "nachweis": "`dfe96a8`, `d8f3ea4`"
         },
         {
           "id": "lei-epic-001",
           "name": "LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L)",
           "gewicht": 2,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-20",
+          "nachweis": "PR #72"
         },
         {
           "id": "cal-epic-005",
           "name": "CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L)",
           "gewicht": 2,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-21",
+          "nachweis": "`e268f96`, `0c8920c`, `120445f`"
         },
         {
           "id": "abr-epic-005",
           "name": "ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L)",
           "gewicht": 2,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-21",
+          "nachweis": "`0fcac3e` … `6d6261f`"
         },
         {
           "id": "abr-epic-006",
           "name": "ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart\" (Etappe L)",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-21",
+          "nachweis": "`0fcac3e` … `6d6261f`"
         }
       ]
     },
@@ -213,25 +270,34 @@
           "id": "map-002",
           "name": "MAP-002 In-App-Kartenprototyp",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-21",
+          "nachweis": "`c85c56e` … `ea2d9aa`"
         },
         {
           "id": "map-003",
           "name": "MAP-003 Fahrradroute als Linie",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-21",
+          "nachweis": "`cbc6c07`, `71756aa`, `d66ea31`"
         },
         {
           "id": "map-004",
           "name": "MAP-004 Fahrzeiten und Erreichbarkeit",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-22",
+          "nachweis": "`ce5dbe4` … `0e27b4f`"
         },
         {
           "id": "map-005",
           "name": "MAP-005 Navigations-Handoff mit Koordinaten",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-22",
+          "nachweis": "`cf03057`, `ef74eec`",
+          "vermerk": "Teil A gesichtet 2026-09-22, Teil B am Telefon offen"
         },
         {
           "id": "map-006",
@@ -243,7 +309,9 @@
           "id": "frb-epic-000",
           "name": "FRB-EPIC-000 Schema und Validator der Instrumente",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-21",
+          "nachweis": "`0e988d5`, `53fd542`, `dc9c963`, `6dbe377`"
         },
         {
           "id": "frb-epic-001",
@@ -509,19 +577,28 @@
           "id": "g1-adr-017",
           "name": "G1 ADR-017 Dateiablage (Dokument)",
           "gewicht": 1,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-11",
+          "nachweis": "PR #35",
+          "gesichtet_am": "2026-09-11"
         },
         {
           "id": "g2-staff-epic-002",
           "name": "G2 STAFF-EPIC-002 Konten und Rollen",
           "gewicht": 2,
-          "status": "abgenommen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-11",
+          "nachweis": "PR #20",
+          "gesichtet_am": "2026-09-11"
         },
         {
           "id": "g3-ops-001",
           "name": "G3 OPS-001 Providerprüfung und Cloudprojekt",
           "gewicht": 2,
-          "status": "entwurf"
+          "status": "entwurf",
+          "fertig_am": "2026-09-21",
+          "nachweis": "`e7fcb00`, PR #87",
+          "vermerk": "Dokument steht, nichts bestanden"
         },
         {
           "id": "g5-ops-002",
@@ -539,7 +616,10 @@
           "id": "g6-ops-004",
           "name": "G6 OPS-004 Logging, Redaction, Monitoring",
           "gewicht": 2,
-          "status": "in_arbeit"
+          "status": "in_arbeit",
+          "fertig_am": "2026-09-22",
+          "nachweis": "`ff15f80` … `dcdb195`",
+          "vermerk": "Rest nach G3"
         },
         {
           "id": "g7-ops-003",
@@ -551,13 +631,17 @@
           "id": "g6a",
           "name": "G6a Abgewiesene Lesezugriffe auf klinische Dokumente",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-23",
+          "nachweis": "PR #104"
         },
         {
           "id": "g6b",
           "name": "G6b Abgewiesene Lesezugriffe, Rest",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-23",
+          "nachweis": "PR #105"
         },
         {
           "id": "g6c",
@@ -569,7 +653,9 @@
           "id": "g9-ops-006",
           "name": "G9 OPS-006 Betroffenenrechte (minimal)",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-22",
+          "nachweis": "`aa321d0`, `2e3ebc7`"
         },
         {
           "id": "g10-e2-prozess",
@@ -581,13 +667,16 @@
           "id": "g11-ops-007",
           "name": "G11 OPS-007 Bootstrap Produktion (Runbook)",
           "gewicht": 1,
-          "status": "in_arbeit"
+          "status": "in_arbeit",
+          "fertig_am": "2026-09-22",
+          "nachweis": "`a870992`, `f3b9497`",
+          "vermerk": "Probe gegen die Test-Umgebung offen"
         },
         {
           "id": "g12-adr-019",
           "name": "G12 ADR-019 Kartendienst (Fassung 2, angenommen 2026-09-13)",
           "gewicht": 1,
-          "status": "abgenommen"
+          "status": "gesichtet"
         },
         {
           "id": "g13-steuer",
@@ -617,7 +706,9 @@
           "id": "g19",
           "name": "G19 Dokumentationsgate erweitern",
           "gewicht": 1,
-          "status": "fertig"
+          "status": "fertig",
+          "fertig_am": "2026-09-22",
+          "nachweis": "`7b95c22`, PR #102"
         }
       ]
     },
@@ -675,25 +766,25 @@
           "id": "d-adr-018",
           "name": "D → ADR-018 Terminzustände",
           "gewicht": 1,
-          "status": "abgenommen"
+          "status": "gesichtet"
         },
         {
           "id": "e10",
           "name": "E10 Schreibrecht Mitarbeiterdaten",
           "gewicht": 1,
-          "status": "abgenommen"
+          "status": "gesichtet"
         },
         {
           "id": "e8-adr-017",
           "name": "E8 → ADR-017 Dateiablage",
           "gewicht": 1,
-          "status": "abgenommen"
+          "status": "gesichtet"
         },
         {
           "id": "b7-adr-019",
           "name": "B7 → ADR-019 Kartendienst bestätigen (E-20)",
           "gewicht": 1,
-          "status": "abgenommen"
+          "status": "gesichtet"
         },
         {
           "id": "e14-hausbesuch",
@@ -711,7 +802,10 @@
           "id": "providerpruefung",
           "name": "Providerprüfung Supabase (OPS-001)",
           "gewicht": 2,
-          "status": "entwurf"
+          "status": "entwurf",
+          "fertig_am": "2026-09-21",
+          "nachweis": "`e7fcb00`, PR #87",
+          "vermerk": "Dokument steht, Antworten ab Anfang 2027"
         },
         {
           "id": "b4-steuer",

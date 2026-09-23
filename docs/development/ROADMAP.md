@@ -14,8 +14,8 @@ Fortschrittsvermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 - **Es legt die Reihenfolge fest, nie den Scope.** Was ein Eintrag konkret
   umfasst, entsteht erst im SPEC-Schritt des Loops. Die Zeilen hier sind
   Zuschnitte, keine Spezifikationen.
-- **Es ist kein Auftrag.** Gebaut wird, was Jannes mit `/feature-loop`
-  beauftragt; die nächste Aufgabe steht allein in [`../STATUS.md`](../STATUS.md).
+- **Es ist kein Auftrag.** Gebaut wird, was Jannes mit `/weiter` (oder
+  `/feature-loop`) beauftragt; die nächste Aufgabe steht allein in [`../STATUS.md`](../STATUS.md).
 - **Es überschreibt nichts.** `PROJECT_PRINCIPLES.md` (Rang 1), die ADRs
   (Rang 2) und die Spezifikation des Loops (Rang 3) gehen vor. Fehlt einem
   Eintrag eine Voraussetzung, gilt §15.1 (Annahme, reversibel an einer Stelle)
@@ -27,9 +27,10 @@ Fortschrittsvermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
   [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md), die Ablaufrunden
   [`OPTIMIERUNG.md`](OPTIMIERUNG.md).
 
-Jeder Loop liest „Ziel und Umfang" und die Zeile seiner Etappe, und stellt am
-Ende die Fortschrittstabelle, `fortschritt.json` und [`../STATUS.md`](../STATUS.md)
-nach (Skill-Schritt I).
+Ein Loop liest hier nur die Zeile seiner Aufgabe und den Absatz darüber
+(Leseregel in `.claude/skills/weiter/SKILL.md`) und stellt am Ende
+`fortschritt.json` und [`../STATUS.md`](../STATUS.md) nach; die Tabelle unter
+„Fortschritt" entsteht daraus.
 
 ---
 
@@ -140,7 +141,7 @@ in den Etappen darunter.
 | # | Block | Code-Loops | Docs-Sessions | Jannes |
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | Sichtung |
-| 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → G6c | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | G6c: Wahl zu den Schreibpfaden |
+| 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → G6c | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | G6c: Wahl zu den Schreibpfaden; vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
 | 1a | **Handy und UX-Fundament** | OPS-002a Test-Umgebung → UX-EPIC-002 → UX-EPIC-003 | Umbau U5: Hosting der Oberfläche | Supabase-Projekt (EU) und Domain anlegen; Begriffe sammeln, die stören; erste Sichtung am Handy |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
@@ -170,7 +171,7 @@ Loop beginnt, damit Jannes' Bestätigung nicht auf dem Weg liegt.
 ## Meilensteine
 
 Ein Meilenstein ist erreicht, wenn **alle** Kriterien erfüllt sind. Er trägt
-kein Datum; das Wochenupdate meldet **erreicht** oder **offen** und nennt das
+kein Datum; eine Planungssession meldet **erreicht** oder **offen** und nennt das
 fehlende Kriterium.
 
 | MS | Name | Kriterien |
@@ -190,9 +191,10 @@ fehlende Kriterium.
    ohne Oberfläche ist fertig mit grüner CI, `pnpm test:db` und Zweitreview.
    Ein Loop mit Oberfläche bringt Bildschirmfotos (Desktop und 375 px) in der
    Pull Request. Jannes sichtet gesammelt je Block am eigenen Handy — ab
-   Block 1a auf der Test-Umgebung, bis dahin lokal
-   ([`../abnahme/README.md`](../abnahme/README.md)). Der Rückstand von über 30
-   Epics wird zu einer Sichtung je Etappe verdichtet (Umbau U3).
+   Block 1a auf der Test-Umgebung, bis dahin lokal im WLAN — mit `/sichtung`
+   nach [`../sichtung/README.md`](../sichtung/README.md): eine Datei je Etappe,
+   höchstens 15 Schritte. Der Rückstand von über 30 Epics steht in vier
+   solchen Dateien (Kernprozess, L, T, G).
 2. **Das Bauen dauert länger.** Der Umfang wird nicht gekürzt (Jannes,
    2026-09-22). Die Anfragen laufen trotzdem ab Anfang 2027. Steht M4 zur Eröffnung
    nicht, eröffnet die Praxis mit dem Papierprozess (H4), und die Software
@@ -212,11 +214,11 @@ fehlende Kriterium.
 | --- | --- | --- | --- | --- | --- |
 | R1 | **Die Prüfungen kommen zu spät für Juli 2027.** B2 mit DSFA und B1 brauchen erfahrungsgemäß vier bis sechs Monate | mittel | sehr hoch | Die Anfragen sind im Januar 2027 nicht verschickt | Anfragen ab Anfang 2027 parallel zum Bauen (E-1); DSFA-Paket und Anfragen bis Ende 2026 vorbereiten; was danach noch gebaut wird, geht als Nachtrag hinterher; Rückfall H4 |
 | R2 | Providerprüfung Supabase negativ — und das erst 2027 | niedrig | sehr hoch | Gate-Punkt 3 (§203 Abs. 4 StGB) unbeantwortet | Nähte eines Wechsels in Teil 7 von [`../decisions/providerpruefung-supabase.md`](../decisions/providerpruefung-supabase.md); die Unterlagen aus Teil 9 zu laden kostet nichts und ist keine Anfrage |
-| R3 | Jannes' Zeit reicht nicht für Abnahmen — **eingetreten** (über 30 Epics seit 2026-09-12 ohne Abnahme) | eingetreten | hoch | Ein Block endet ohne Sichtung | Sichtung statt Abnahme je Epic (Regel 1); Bildschirmfotos in jeder PR; Test-Umgebung fürs Handy (Block 1a) |
+| R3 | Jannes' Zeit reicht nicht für Abnahmen — **eingetreten** (über 30 Epics seit 2026-09-12 ohne Abnahme) | eingetreten | hoch | Ein Block endet ohne Sichtung | Sichtung statt Abnahme je Epic (Regel 1), Rückstand auf vier Sichtungen zu höchstens 15 Schritten verdichtet; Bildschirmfotos in jeder PR; Test-Umgebung fürs Handy (Block 1a) |
 | R12 | Die Oberfläche passt nicht zur Arbeit am Rad und wird spät nachgearbeitet | mittel | hoch | Jannes findet Begriffe oder Abläufe unklar | UX-Fundament in Block 1a; Begriffsliste als Maßstab jeder neuen Oberfläche; Sichtung am Handy |
 | R4 | Der Umfang ist rund dreimal so groß wie in 5.49 | hoch | hoch | Block 4 beginnt nicht, während Block 2 noch offen ist | Reihenfolge nach Grundsatz 3 (Komfort zuletzt); Loops klein schneiden; Tempo im Wochenupdate zählen |
 | R5 | Die Plattform öffnet die Anwendung nach außen (Konten für Patient:innen und Kund:innen) | mittel | sehr hoch | ein Portalpfad ohne Negativfall in `pnpm test:db` | ADR-023 vor dem ersten Loop; jede Portalsicht mit Negativfall „fremde Person"; Zweitreview Pflicht (ADR-013 Punkt 9) |
-| R6 | Befunde aus der Abnahme kommen als Welle | hoch | mittel | Rückstand wächst | Abweichungsregel 1; Befunde als erste Story der nächsten Loop derselben Etappe |
+| R6 | Befunde aus der Sichtung kommen als Welle | hoch | mittel | Rückstand wächst | Abweichungsregel 1; Befunde als erste Story der nächsten Loop derselben Etappe |
 | R7 | MDR: Tracking, Fortschritt und KI rücken an die Grenze | mittel | sehr hoch | eine Story, die eine Aussage **über** Daten erzeugt statt sie zu zeigen | §17 und das Register `src/app/mdr.ts`; „Nicht in V1" oben; B1 prüft den ganzen Umfang |
 | R8 | Kein Mailversand an Patient:innen: Die Plattform braucht Einladungen und Hinweise, der eingebaute Versand stellt nur ans Projektteam zu (BEF-026, B13) | hoch | hoch | POR-EPIC-001 ohne Zustellweg | Versand hinter einem Adapter mit `mock`-Weg (Grundsatz 5); eigener SMTP-Anbieter als Anbieterprüfung in Block 11 |
 | R9 | `pg_cron`, PITR und Logfrist halten beim Provider nicht (R14 alt) | mittel | mittel | Produktivprojekt ohne PITR | PITR als Bedingung im Anlage-Runbook (G3); Logfrist `BETRIEBSLOG_FRIST_TAGE` in `src/lib/protokoll.ts`, Entscheidung bei Jannes |
@@ -237,7 +239,7 @@ kommt.
 - **Etappe 1 — Kernprozess** (bis M1): DOK-EPIC, VER-EPIC-001/002, UI-000,
   UX-EPIC-001, LOE-EPIC-001, CAL-EPIC-003a/b, ROL-EPIC-001, CAL-018,
   CAL-EPIC-004a/b/c, FIX-EPIC-004, UX-013, GRD-001, ABR-EPIC-001 bis 003,
-  FIX-EPIC-001. Offen ist allein **M1** selbst (Abnahme und E2E-Fall).
+  FIX-EPIC-001. Offen ist allein **M1** selbst (Sichtung und E2E-Fall).
 - **Etappe L — Zwei Leistungsbereiche im Fundament:** ABR-EPIC-004,
   LEI-EPIC-001, CAL-EPIC-005, ABR-EPIC-005, ABR-EPIC-006 (fertig 2026-09-21).
 - **Etappe T, erster Teil:** MAP-002 bis MAP-005 (fertig 2026-09-22).
@@ -501,10 +503,9 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
 - **B13 / BEF-026:** eigener SMTP-Anbieter oder kein Mailversand. Mit der
   Plattform ist „kein Mailversand" praktisch vom Tisch — Empfehlung: SMTP-Anbieter
   in Block 11 prüfen. STAFF-004 ruht bis dahin.
-- **Sichtung** nach Regel 1; zu prüfen sind unter anderem MAP-003,
-  MAP-004 (Schritte in [`../abnahme/etappe-t-kartendienst.md`](../abnahme/etappe-t-kartendienst.md))
-  und MAP-005 Teil B am Telefon (Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bis
-  dahin bei drei).
+- **Sichtung** nach Regel 1: vier Dateien in [`../sichtung/`](../sichtung/README.md),
+  darunter der Kartendienst mit MAP-005 Teil B am Telefon (Wegpunktlimit,
+  `MAX_ZWISCHENZIELE` bleibt bis dahin bei drei).
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder
   Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **Supabase-Projekt (EU) und Domain** für die Test-Umgebung anlegen, nach
@@ -525,7 +526,7 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
 - **Das Lastenradprofil ist gewählt** (2026-09-22) und hängt am Kommentar zu
   `TravelProfile` in `src/lib/location/contract.ts`.
 - **Die Matrix-Schreibweise** ist nicht gegen die echte API geprüft
-  (`api.myptv.com` aus der Cloud gesperrt) — Schritt 1 der MAP-004-Abnahme.
+  (`api.myptv.com` aus der Cloud gesperrt) — Schritt 2 der Sichtung Kartendienst.
 - **Vor der ersten echten Datei:** `tests/e2e/authenticated/patient-file-access.spec.ts`
   regelmäßig gegen die Test-Umgebung laufen lassen (ANN-052).
 - **Kleine Wartung:** `supabase/config.toml` Abschnitt `[inbucket]` nach
@@ -537,46 +538,48 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
 
 Die Reihenfolge ist verbindlich (E-15), einen Kalender gibt es nicht.
 
-1. **Vorher:** `git pull --ff-only origin main`, dann [`../STATUS.md`](../STATUS.md).
-2. **Aufruf:** genau einen Aufruf aus der Tabelle, als erste Nachricht. **Ein
-   Thema je Session.** Welchen Pfad ein Auftrag nimmt — Loop oder Sandbox —,
-   sagt die Klassifikation K1 in [`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md).
+1. **Vorher:** `git pull --ff-only origin main`.
+2. **Aufruf:** genau einer, als erste Nachricht; **ein Thema je Session.** Im
+   Normalfall `/weiter` — er nimmt die erste Aufgabe aus
+   [`../STATUS.md`](../STATUS.md), Code wie Dokumentation. Welchen Pfad ein
+   Auftrag nimmt, sagt K1 in [`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md).
 3. **Nachher:** den Bericht lesen, Fragen mit je einem Satz beantworten („wie
-   empfohlen" reicht). Merge und Abnahme nach der „Definition of Done".
-4. **Montags** sagt das Wochenupdate, was fällig ist. Es liest `main`.
+   empfohlen" reicht). Merge und Sichtung nach der „Definition of Done".
 
 Antworten am besten mit Kennung (`B4: liegt vor, Ergebnis …`), Entscheidungen
-als „entschieden: …", Ideen als „Idee: …".
+als „entschieden: …".
 
-| Zweck | Aufruf (kopieren, nichts ergänzen) |
+| Zweck | Aufruf |
 | --- | --- |
-| Code-Loop | `/feature-loop <Kennung> <Titel>` — die erste Aufgabe aus `STATUS.md`, zum Beispiel `/feature-loop MAP-006 Tagesroute nach docs/development/MAP-LOOPS.md` |
-| Abnahme | `Abnahme <Etappe> nach docs/abnahme/<Datei>: ich gehe die Schritte durch, du trägst Befunde und das Datum ein. Nichts bauen.` |
-| Docs-Session ADR | `Docs-Session ohne Code: ADR-NNN <Thema> schreiben. Vorgaben: docs/development/ROADMAP.md, <Zeile>, und die dort genannten ADRs. Am Ende die Bestätigungsfragen für Jannes als Liste mit Empfehlung.` |
-| Docs-Session Providerprüfung | `Docs-Session ohne Code: Providerprüfung <Anbieter> nach dem Prüfkatalog aus ADR-002 Punkt 3 als Dokument in docs/decisions/. Aufbau wie providerpruefung-supabase.md. Keine Cloud-Ressource anlegen, nichts raten.` |
-| Ablaufrunde | `Ablaufrunde <Bereich> nach docs/development/OPTIMIERUNG.md` |
+| **Nächste Aufgabe** | `/weiter` — oder `/weiter <Kennung>` für eine bestimmte |
+| **Idee** | `/idee <Idee in zwei Sätzen>` — nur Ideenspeicher, nichts bauen |
+| **Sichtung** | `/sichtung` — oder `/sichtung <Datei>` aus `docs/sichtung/` |
 | Befund | `Befund: <Beobachtung, Bereich, Rolle>. In docs/development/BEFUNDE.md eintragen, nicht bauen.` |
+| Antworten eintragen | `Docs-Session ohne Code: meine Antworten in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …` |
 | Sandbox | `/sandbox <Thema>` — Oberflächen-Prototyp (Pfad S); endet mit „übernehmen oder verwerfen" |
 | Zweitreview | `Zweitreview <Loop-Kennung>: den Diff des offenen Pull Requests gegen die Review-Checkliste aus ADR-013 Punkt 9 lesen. Befunde als Einzel-Story-Loop vorschlagen, nichts bauen.` — Pflicht, sobald der Loop-Bericht A5 als ausstehend nennt |
-| Antworten eintragen | `Docs-Session ohne Code: meine Antworten und Abnahmen in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …` |
-| Idee | `Ideenspeicher: <Idee in zwei Sätzen>. Nur eintragen, nicht bauen.` |
+| Ablaufrunde | `Ablaufrunde <Bereich> nach docs/development/OPTIMIERUNG.md` (ruht bis Probewoche 1) |
 | Roadmap prüfen | `Planungssession ohne Code: Gesamtstand prüfen (git fetch, Branches, Pull Requests), docs/development/ROADMAP.md gegen den Stand nachstellen, nächsten Loop vorschlagen. Nichts bauen.` |
+
+Docs-Sessions für ADRs und Providerprüfungen laufen über `/weiter`, sobald sie
+in STATUS stehen; ihre Vorgabe ist die Zeile hier und die dort genannten ADRs.
 
 ---
 
 ## Definition of Done
 
-**Je Story:** vertikaler Schnitt, Tests, Abnahmeschritte in `docs/abnahme/`,
-Registereinträge (Skill-Schritt D), Oberflächen-Checkliste abgehakt
-(`docs/abnahme/README.md`). **Je neue Tabelle zusätzlich:** Datenklasse und
+**Je Story:** vertikaler Schnitt, Tests, Registereinträge (Skill-Schritt D),
+Oberflächen-Checkliste abgehakt (`docs/sichtung/README.md`). **Je neue Tabelle zusätzlich:** Datenklasse und
 Frist als `COMMENT`, Löschpfad in LOE-002, ein `test:db`-Fall, der die Löschung
 dieser Klasse prüft. **Je Portalsicht zusätzlich:** Negativfall „fremde
 Person" in `pnpm test:db`.
 
-**Je Epic:** Checks nach Skill-Schritt H · Fortschrittstabelle, `fortschritt.json`
-und `STATUS.md` nachgestellt · bei Oberfläche Bildschirmfotos (Desktop und
-375 px) in der Pull Request · **Jannes mergt nach grüner CI**; steht ein
-Zweitreview (A5) aus, erst danach · Sichtung nach Regel 1 · Befunde nach
+**Je Epic:** Checks nach Skill-Schritt H · `fortschritt.json` nachgestellt und
+`pnpm fortschritt --schreiben` · `STATUS.md` nachgestellt · bei Oberfläche
+Bildschirmfotos (Desktop und 375 px) in der Pull Request und höchstens drei
+Schritte in der Sichtung des Blocks · **Jannes mergt nach grüner CI**; steht
+ein Zweitreview (A5) aus, erst danach · ohne Oberfläche ist das Epic damit
+gesichtet, mit Oberfläche in der Sichtung des Blocks (Regel 1) · Befunde nach
 `BEFUNDE.md` und als erste Story in den nächsten Loop derselben Etappe.
 
 **V1 fertig (M2):** alle Etappen der Blöcke 1 bis 9 gesichtet; jede Funktion
@@ -598,8 +601,8 @@ mit ungeprüftem Anbieter ist ohne ihn benutzbar oder abgeschaltet.
 
 **Leseverhalten**
 
-5. **`STATUS.md` zuerst, dann „Ziel und Umfang" und die Zeile der Etappe**
-   in dieser Roadmap.
+5. **Eine Leseregel** (`.claude/skills/weiter/SKILL.md`): `STATUS.md`, die
+   Zeile der Aufgabe in dieser Roadmap mit dem Absatz darüber, die benannten ADRs.
 6. **Die im SPEC benannten ADRs vollständig** — mindestens alle, die der Loop
    berührt. Bei RLS, Löschung und Abrechnung sind das mehr als zwei.
 7. **Höchstens eine Ideenspeicher-Datei** je Loop, nach dem Index in
@@ -630,102 +633,111 @@ Das Modell steht projektweit in `.claude/settings.json`; wann eine Session mit
 
 ## Wochenupdate
 
-Auftrag für die wöchentliche Planungssession. Sie **baut nichts.**
+Auftrag für eine Planungssession, von Hand gestartet (die Montagsroutine ist seit 2026-09-23 abgeschaltet). Sie **baut nichts.**
 
-1. `docs/STATUS.md`, diese Datei, `ARBEITSBEREICHE.md` §2 und
+1. `docs/STATUS.md`, die Abschnitte „Die Kette bis zur Eröffnung" und
+   „Meilensteine" dieser Datei, `ARBEITSBEREICHE.md` §2, die Ausgabe von
+   `node scripts/fortschritt.mjs` (braucht kein `pnpm install`) und
    `git log --since='8 days ago' --oneline` lesen.
-2. Feststellen, welche Loops seit dem letzten Update fertig **und abgenommen**
-   wurden; den Abnahme-Rückstand zählen (Abweichungsregel 1).
+2. Feststellen, welche Loops seit dem letzten Update fertig **und gesichtet**
+   wurden; offene Sichtungen zählen (Tabelle in `docs/sichtung/README.md`).
 3. Die erste Aufgabe aus `STATUS.md` nennen und prüfen, ob sie zur Kette passt.
 4. Prüfen, ob ein Meilenstein erreicht ist. **Termine gibt es nicht zu
    prüfen** — mit einer Ausnahme: R1, ob M2 rechtzeitig vor der Eröffnung in
    Sicht ist.
 5. Antwort in festem Format, höchstens zwölf Zeilen: _was als Nächstes ansteht ·
-   Abnahme-Rückstand · Jannes entscheidet oder liefert · M1 bis M6 je erreicht
+   offene Sichtungen · Jannes entscheidet oder liefert · M1 bis M6 je erreicht
    oder offen, mit dem fehlenden Kriterium in einem Wort_.
 6. Die Tabelle „Sandbox-Prototypen" in `ARBEITSBEREICHE.md` §2 lesen und
    abgelaufene Prototypen nennen (ab zwei fertigen Code-Loops seit „Angelegt").
 
-Die eingerichtete Routine beschreibt `docs/DEVELOPMENT.md`, „Wochenroutine".
+Die abgeschaltete Routine beschreibt `docs/DEVELOPMENT.md`, „Wochenroutine".
 
 ---
 
 ## Fortschritt
 
-Ein Loop ist **fertig**, wenn Skill-Schritt I durchlaufen ist, und
-**abgenommen**, wenn Jannes die Schritte aus `docs/abnahme/` durchlaufen hat.
-Ausführliche Vermerke je Loop bis 5.50: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
-Neue Zeilen tragen nur Kennung, Status, Datum, Commits und Abnahme.
+**Einzige Quelle ist [`fortschritt.json`](fortschritt.json)** (Umbau U3). Ein
+Loop stellt dort seinen Posten nach — `status`, `fertig_am`, `nachweis`, nach
+einer Sichtung `gesichtet_am` — und erzeugt die Tabelle unten mit
+`pnpm fortschritt --schreiben`; `pnpm docs:check` meldet jede Abweichung. Die
+Tabelle nennt jeden Posten, der nicht mehr `offen` ist.
+
+- **fertig** — gebaut, Skill-Schritt I durchlaufen; zählt `0,85`.
+- **gesichtet** — mit Oberfläche in einer Sichtung nach
+  [`../sichtung/`](../sichtung/README.md) durchgegangen; ohne Oberfläche gemergt
+  mit grüner CI, `pnpm test:db` und Zweitreview (Regel 1); bei Entscheidungen
+  und Prüfungen bestätigt. Zählt `1`.
+- `vorläufig` und `entwurf` zählen `0,5`, `in Arbeit` `0,4`.
 
 ```bash
 pnpm fortschritt            # eine Zahl bis M5, je Block
 pnpm fortschritt --posten   # jeder einzelne Posten
 ```
 
-`docs/development/fortschritt.json` gewichtet fünf Blöcke: **A** Kernprozess
-(20), **B** V1-Ausbau (32), **C** Betriebsreife (18), **D** Eröffnung (12),
-**E** Entscheidungen und Prüfungen (18). Software ist damit 52 Prozent statt
-40 — der Umfang ist gewachsen, der Rest nicht kleiner geworden. Ein fertiger
-Loop zählt `0,85`, die Abnahme holt den Rest; `vorläufig entschieden` zählt
-`0,5`. Mit 6.0 fiel die Zahl von **48,9 auf 32,7 Prozent**
-(Block B 6,2 Prozent): gerechnet, nicht geschätzt, und der Preis für einen
-Nenner, der jetzt das Endprodukt enthält.
+Fünf Blöcke: **A** Kernprozess (20), **B** V1-Ausbau (32), **C** Betriebsreife
+(18), **D** Eröffnung (12), **E** Entscheidungen und Prüfungen (18). Die
+feinere Tabelle je Loop bis 2026-09-23 und die ausführlichen Vermerke bis 5.50
+stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
-| Loop | Status | Fertig am | Commits | Abgenommen am |
-| --- | --- | --- | --- | --- |
-| PAT-001 bis PAT-004 | fertig | vor 2026-09-01 | PR #1 | |
-| CAL-001 bis CAL-006 | fertig | vor 2026-09-01 | — | |
-| STAFF-001 | fertig | 2026-08-30 | `e70775a`, `ca907e9` | |
-| DOK-001 bis DOK-004 | fertig | 2026-09-05 | PR #5, `21d85dd`, `e931068` | 2026-09-11 |
-| VER-EPIC-001 | fertig | 2026-09-07 | `2c3c1de` … `159c1bb` | 2026-09-11 |
-| UI-000 | fertig | 2026-09-07 | `4a4440f` … `e6b4ab6` | 2026-09-11 |
-| MAP-001 (Docs) | fertig | 2026-09-08 | PR #16 | — |
-| UX-EPIC-001 | fertig | 2026-09-11 | PR #18 | 2026-09-11 |
-| MARKE-001 | fertig | 2026-09-11 | PR #19 | 2026-09-11 |
-| STAFF-EPIC-002 | fertig | 2026-09-11 | PR #20 | 2026-09-11 |
-| LOE-EPIC-001 | fertig | 2026-09-11 | PR #25 | 2026-09-11 |
-| ADR-018 (Docs) | fertig | 2026-09-11 | — | — |
-| CAL-EPIC-003a | fertig | 2026-09-12 | PR #28 | 2026-09-12 |
-| CAL-EPIC-003b mit CAL-012, CAL-013 | fertig | 2026-09-12 | `b2626ae`, `89ab30b`, `acddcc6` | |
-| AKTE-000 bis AKTE-005 | fertig | 2026-09-12 | `77ab995`, `1c7219c`, `d9eda45` | |
-| UI-002a bis UI-002d | fertig | 2026-09-12 | `bc2713a` … `ac1fcd7` | |
-| UX-012a bis UX-012f | fertig | 2026-09-12 | `5d29756` … `dedb380` | |
-| FIX-EPIC-001 | fertig | 2026-09-12 | PR #32 | |
-| FIX-EPIC-003 | fertig | 2026-09-12 | `e05d34b`, `ebfe8e3`, `07fbbee` | |
-| CAL-014, CAL-015 | fertig | 2026-09-12 | `f8c33ac` … `58b7a31` | |
-| CAL-016, CAL-017, FIX-013, FIX-014 | fertig | 2026-09-13 | `b0bf149`, `10e439b`, `3ffd295`, `90ca0f6` | |
-| DAT-EPIC-001 | fertig | 2026-09-13 | `84bec9b` … `fd10a37` | |
-| Dokumentations-Audit (Docs) | fertig | 2026-09-13 | PR #39 | — |
-| ROL-EPIC-001 | fertig | 2026-09-15 | PR #41 | |
-| FIX-015 | fertig | 2026-09-15 | PR #42 | |
-| CAL-018 | fertig | 2026-09-16 | `dc529a7`, `6a11fb0` | |
-| FIX-EPIC-004 | fertig | 2026-09-18 | `14a1fa7` … `856a5ac` | |
-| CAL-EPIC-004a, 004b, 004c | fertig | 2026-09-18 | `ee81ea7`, `e189183` … `1b132ea` | |
-| UX-013, GRD-001 | fertig | 2026-09-18 | Chronik, Vermerke 5.10 und 5.11 | |
-| VER-EPIC-002 | fertig | 2026-09-18 | `f734e55`, `ba19245` | |
-| ABR-EPIC-001, 002a, 002b, 003 | fertig | 2026-09-19 | `3874e83` … `a1384ce` | |
-| ABR-EPIC-004 | fertig | 2026-09-20 | `dfe96a8`, `d8f3ea4` | |
-| LEI-EPIC-001 | fertig | 2026-09-20 | — | |
-| FRB-EPIC-000 | fertig | 2026-09-21 | `0e988d5`, `53fd542`, `dc9c963`, `6dbe377` | |
-| CAL-EPIC-005 | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | |
-| ABR-EPIC-005, ABR-EPIC-006 | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | |
-| MDR_REVIEW_REQUIRED verortet | fertig | 2026-09-21 | `2579e16`, `bdfb1b6` | |
-| MAP-002, MAP-003 | fertig | 2026-09-21 | `c85c56e` … `d66ea31` | |
-| CAL-027 | fertig | 2026-09-21 | `107fab1`, `b533b07` | |
-| OPS-001 (Docs) | fertig | 2026-09-21 | `e7fcb00`, PR #87 | — |
-| E18 Schritt 7 (Docs) | fertig | 2026-09-21 | `82429b5` | — |
-| MAP-004 | fertig | 2026-09-22 | `ce5dbe4` … `0e27b4f` | |
-| MAP-005 | fertig | 2026-09-22 | `cf03057`, `ef74eec` | Teil A 2026-09-22; Teil B offen |
-| OPS-006 (minimal) | fertig | 2026-09-22 | `aa321d0`, `2e3ebc7` | |
-| OPS-007 | in Arbeit (Probe gegen Test-Umgebung offen) | 2026-09-22 | `a870992`, `f3b9497` | |
-| OPS-004 Teil 1 und 2 | in Arbeit (Rest nach G3) | 2026-09-22 | `ff15f80` … `dcdb195` | |
-| PAT-006 | fertig | 2026-09-22 | `4764d90`, `8569f3d`, `1706cb1` | |
-| G10 Funktionsteil gestrichen (Docs) | fertig | 2026-09-22 | `a8478c3` | — |
-| G19 Dokumentationsgate: Querverweise und Nummern | fertig | 2026-09-22 | `7b95c22`, PR #102 | |
-| Roadmap 6.0 (Docs) | fertig | 2026-09-22 | PR #103 | — |
-| G6a Abgewiesene Lesezugriffe auf klinische Dokumente | fertig | 2026-09-23 | PR #104 | |
-| G6b Abgewiesene Lesezugriffe, Rest | fertig | 2026-09-23 | PR #105 | |
-| Umbau U0 bis U2 (Docs): Prinzipien 0.17, ADR-014/013/009, Roadmap 7.0 | fertig | 2026-09-23 | PR #106 | — |
+<!-- fortschritt:anfang (erzeugt von pnpm fortschritt --schreiben, nicht von Hand aendern) -->
+| Block | Posten | Status | Fertig am | Nachweis | Gesichtet am | Vermerk |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001 | fertig | vor 2026-09-01 | PR #1, `e70775a`, `ca907e9` | — | — |
+| A | DOK-EPIC (DOK-001 bis DOK-004) | gesichtet | 2026-09-05 | PR #5, `21d85dd`, `e931068` | 2026-09-11 | — |
+| A | VER-EPIC-001 Verordnungen | gesichtet | 2026-09-07 | `2c3c1de` … `159c1bb` | 2026-09-11 | — |
+| A | UI-000 Fundament der Oberfläche | gesichtet | 2026-09-07 | `4a4440f` … `e6b4ab6` | 2026-09-11 | — |
+| A | MARKE-001 Marke in der Anwendung | gesichtet | 2026-09-11 | PR #19 | 2026-09-11 | — |
+| A | UX-EPIC-001 Hausbesuchstag (11 Stories) | gesichtet | 2026-09-11 | PR #18 | 2026-09-11 | — |
+| A | LOE-EPIC-001 Löschung und Retention (5 Stories) | gesichtet | 2026-09-11 | PR #25 | 2026-09-11 | — |
+| A | CAL-EPIC-003a Terminzustände | gesichtet | 2026-09-12 | PR #28 | 2026-09-12 | — |
+| A | CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013) | fertig | 2026-09-12 | `b2626ae`, `89ab30b`, `acddcc6` | — | — |
+| A | DAT-EPIC-001 Dateiablage (G4) | fertig | 2026-09-13 | `84bec9b` … `fd10a37` | — | — |
+| A | ROL-EPIC-001 Office liest klinische Inhalte (E15) | fertig | 2026-09-15 | PR #41 | — | — |
+| A | CAL-018 Hausbesuch-Szenarien (E14) | fertig | 2026-09-16 | `dc529a7`, `6a11fb0` | — | — |
+| A | CAL-EPIC-004a Freie Terminlänge, Rückfrage beim Ziehen | fertig | 2026-09-18 | `ee81ea7`, `e189183` … `1b132ea` | — | — |
+| A | FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016) | fertig | 2026-09-18 | `14a1fa7` … `856a5ac` | — | — |
+| A | VER-EPIC-002 Verordnung im Office-Alltag | fertig | 2026-09-18 | `f734e55`, `ba19245` | — | — |
+| A | ABR-EPIC-001 Leistungen und Katalog | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
+| A | ABR-EPIC-002a Rechnung entsteht | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
+| A | ABR-EPIC-002b Rechnung als Dokument | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
+| A | ABR-EPIC-003 Zahlungen und offene Posten | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
+| A | PAT-006 Datenschutzinformation und Einwilligungen (G8) | fertig | 2026-09-22 | `4764d90`, `8569f3d`, `1706cb1` | — | — |
+| A | ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L) | fertig | 2026-09-20 | `dfe96a8`, `d8f3ea4` | — | — |
+| A | LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L) | fertig | 2026-09-20 | PR #72 | — | — |
+| A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | — | — |
+| A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
+| A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
+| B | MAP-002 In-App-Kartenprototyp | fertig | 2026-09-21 | `c85c56e` … `ea2d9aa` | — | — |
+| B | MAP-003 Fahrradroute als Linie | fertig | 2026-09-21 | `cbc6c07`, `71756aa`, `d66ea31` | — | — |
+| B | MAP-004 Fahrzeiten und Erreichbarkeit | fertig | 2026-09-22 | `ce5dbe4` … `0e27b4f` | — | — |
+| B | MAP-005 Navigations-Handoff mit Koordinaten | fertig | 2026-09-22 | `cf03057`, `ef74eec` | — | Teil A gesichtet 2026-09-22, Teil B am Telefon offen |
+| B | FRB-EPIC-000 Schema und Validator der Instrumente | fertig | 2026-09-21 | `0e988d5`, `53fd542`, `dc9c963`, `6dbe377` | — | — |
+| C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
+| C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
+| C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
+| C | G6 OPS-004 Logging, Redaction, Monitoring | in_arbeit | 2026-09-22 | `ff15f80` … `dcdb195` | — | Rest nach G3 |
+| C | G6a Abgewiesene Lesezugriffe auf klinische Dokumente | fertig | 2026-09-23 | PR #104 | — | — |
+| C | G6b Abgewiesene Lesezugriffe, Rest | fertig | 2026-09-23 | PR #105 | — | — |
+| C | G9 OPS-006 Betroffenenrechte (minimal) | fertig | 2026-09-22 | `aa321d0`, `2e3ebc7` | — | — |
+| C | G11 OPS-007 Bootstrap Produktion (Runbook) | in_arbeit | 2026-09-22 | `a870992`, `f3b9497` | — | Probe gegen die Test-Umgebung offen |
+| C | G12 ADR-019 Kartendienst (Fassung 2, angenommen 2026-09-13) | gesichtet | — | — | — | — |
+| C | G19 Dokumentationsgate erweitern | fertig | 2026-09-22 | `7b95c22`, PR #102 | — | — |
+| E | D → ADR-018 Terminzustände | gesichtet | — | — | — | — |
+| E | E10 Schreibrecht Mitarbeiterdaten | gesichtet | — | — | — | — |
+| E | E8 → ADR-017 Dateiablage | gesichtet | — | — | — | — |
+| E | B7 → ADR-019 Kartendienst bestätigen (E-20) | gesichtet | — | — | — | — |
+| E | E14 Hausbesuch-Szenarien (Rechtsgrundlage Fall 1 mit B4) | vorlaeufig | — | — | — | — |
+| E | E15 Office liest klinische Inhalte (Bewertung mit B2) | vorlaeufig | — | — | — | — |
+| E | Providerprüfung Supabase (OPS-001) | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, Antworten ab Anfang 2027 |
+| E | B4 Steuerliche Validierung | vorlaeufig | — | — | — | — |
+| E | B2 DSFA, Schwellwertprüfung, DSB | vorlaeufig | — | — | — | — |
+| E | B1 Zweckbestimmung, MDR-Abgrenzung, AI Act | vorlaeufig | — | — | — | — |
+| E | B3 Validierung der Fristen (ANN-001) | vorlaeufig | — | — | — | — |
+| E | E2 Ausfallkonzept (Entscheidungsteil) | vorlaeufig | — | — | — | — |
+| E | B5 Identität und Vertretung | vorlaeufig | — | — | — | — |
+| E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
+<!-- fortschritt:ende -->
 
 ---
 

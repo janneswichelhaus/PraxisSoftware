@@ -28,7 +28,7 @@ import { grundlageFeldId } from './grundlagenfelder';
  * soll (ADR-020 Punkt 3 und 4).
  *
  * **Seit VER-EPIC-002 ist der Rest ein kurzer Weg** (Vorgaben in
- * `docs/development/VER-EPIC-002.md`): Heilmittel als beschriftete Kästchen
+ * `docs/development/archiv/VER-EPIC-002.md`): Heilmittel als beschriftete Kästchen
  * statt Dropdown und freier Positionsliste, daneben die **Anzahl möglicher
  * Termine** als eigenes Feld, danach Diagnose und Anmerkungen. „Genutzt",
  * „Position hinzufügen", Therapieziel und das zweite Bemerkungsfeld sind

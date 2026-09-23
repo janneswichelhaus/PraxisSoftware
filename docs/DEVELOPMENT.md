@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand: 2026-09-13 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
+Stand: 2026-09-23 · verbindlich sind `PROJECT_PRINCIPLES.md` und `docs/adr/`.
 
 > **Es werden ausschließlich synthetische Daten verwendet.** Echte
 > Patientendaten dürfen in keiner Entwicklungs-, Test- oder Demoumgebung
@@ -83,9 +83,9 @@ Sie werden bei jedem Neuaufsetzen neu erzeugt, sind kein Secret im Sinne von
 `PROJECT_PRINCIPLES.md` §3.3 — und gehören trotzdem **nicht ins Repository**:
 der anon key ist ein JWT und wird vom Secret-Scan zu Recht als Fund gemeldet.
 
-## Lokale Abnahme unter Windows (Git Bash)
+## Lokale Sichtung unter Windows (Git Bash)
 
-Ablauf für die manuelle Prüfung eines Feature-Branches. Alle Befehle laufen im
+Ablauf, um einen Stand lokal anzusehen — für eine Sichtung oder einen Feature-Branch. Alle Befehle laufen im
 Projektverzeichnis in Git Bash.
 
 **1. Branch aktualisieren**
@@ -150,12 +150,11 @@ Ohne sie läuft nur die Abdeckung des nicht angemeldeten Zustands. Die Tests
 ändern echte Zeilen im lokalen Stack und stellen den Seed-Zustand am Ende
 wieder her.
 
-**7. Featurebezogene Prüfschritte**
+**7. Sichtung**
 
-Die manuellen Klickwege je Feature stehen in
-[`abnahme/`](abnahme/) — eine Datei je Roadmap-Etappe; welche Loops in
-welcher Datei stehen, sagt die Tabelle in
-[`abnahme/README.md`](abnahme/README.md).
+Was je Etappe anzusehen ist, steht in [`sichtung/`](sichtung/README.md) —
+höchstens 15 Schritte je Datei; in einer Session mit `/sichtung`. Am Handy
+geht das mit „Handytest im WLAN" unten.
 
 **8. Typische Fehler**
 
@@ -168,6 +167,28 @@ welcher Datei stehen, sagt die Tabelle in
 | E2E-Tests finden „Erika Beispiel" nicht                 | Der Seed fehlt. `supabase db reset`.                                                                                                                                                  |
 | Docker startet nicht                                    | Docker Desktop muss laufen, bevor `supabase start` aufgerufen wird.                                                                                                                   |
 | `WARN: config section [inbucket] is deprecated`         | Warnung, kein Fehler. Die Umbenennung nach `[local_smtp]` in `supabase/config.toml` steht als kleine Wartung in der Roadmap; sie ist lokal mit `supabase stop` und `start` zu prüfen. |
+
+## Handytest im WLAN
+
+Bis die Test-Umgebung steht (OPS-002a), läuft die Anwendung vom eigenen
+Rechner aufs eigene Handy — **nur im eigenen WLAN zu Hause**, nie in einem
+fremden oder öffentlichen Netz, und wie überall nur mit synthetischen Daten.
+
+1. IP-Adresse des Rechners im WLAN ermitteln (`ipconfig` in PowerShell,
+   „IPv4-Adresse", etwa `192.168.178.20`).
+2. In `.env.local` `VITE_SUPABASE_URL=http://<IP>:54321` setzen — das Handy
+   erreicht `127.0.0.1` des Rechners nicht. Der Rechner selbst kommt mit der
+   IP ebenso an.
+3. `pnpm dev --host` starten; auf dem Handy `http://<IP>:5173` öffnen und mit
+   einem Testkonto anmelden.
+4. Fragt die Windows-Firewall, den Zugriff nur für **private Netzwerke**
+   erlauben (Node für 5173, Docker für 54321).
+
+Grenzen: Über `http://` und eine IP ist die Seite kein sicherer Kontext —
+Kamera, Standort und Offline-Speicher des Browsers stehen dort nicht zur
+Verfügung. Links aus Mails (Kennwort vergessen, Einladung) zeigen weiter auf
+`127.0.0.1` und öffnen nur am Rechner (`supabase/config.toml`, `site_url`).
+Nach dem Test `VITE_SUPABASE_URL` zurückstellen, wenn E2E-Tests laufen sollen.
 
 ## Testkonten
 
@@ -194,7 +215,8 @@ pnpm test            # Unit-/Komponententests
 pnpm test:watch      # dieselben Tests, laufend
 pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
-pnpm docs:check      # Obergrenzen, Register-Anker, relative Verweise, Querverweise, eindeutige Nummern
+pnpm docs:check      # Obergrenzen, Register, Verweise, Querverweise, Nummern, Fortschrittstabelle
+pnpm fortschritt     # Stand bis zur Eröffnung; --schreiben erzeugt die Roadmap-Tabelle
 pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien
 pnpm build
@@ -202,12 +224,14 @@ pnpm preview         # den gebauten Stand lokal ausliefern
 ```
 
 `pnpm docs:check` ist ein Gate nach ADR-013 (Prüfung 2.10) und läuft im Job
-„Lint, Typecheck, Tests, Build" direkt hinter dem Lint. Es prüft drei Dinge:
-die Obergrenzen von `CLAUDE.md` (150), `docs/STATUS.md` (60),
-`ASSUMPTIONS.md` (800) und `OPEN_DECISIONS.md` (400); dass jede `ANN-NNN` des
-Registers einen Anker in `src/`, `supabase/migrations/` oder
-`.github/workflows/` hat; und dass jeder relative Markdown-Verweis auf eine
-vorhandene Datei zeigt.
+„Lint, Typecheck, Tests, Build" direkt hinter dem Lint. Es prüft die
+Obergrenzen von `CLAUDE.md` (150), `docs/STATUS.md` (60) und
+`OPEN_DECISIONS.md` (400) und im Annahmenregister höchstens 14 Zeilen **je
+Eintrag**; dass jede `ANN-NNN` des Registers einen Anker in `src/`,
+`supabase/migrations/` oder `.github/workflows/` hat; dass jeder relative
+Markdown-Verweis auf eine vorhandene Datei zeigt; Querverweise und eindeutige
+Nummern (G19); und dass die Fortschrittstabelle der Roadmap genau die ist, die
+`pnpm fortschritt --schreiben` aus `development/fortschritt.json` erzeugt.
 
 **Modell und Aufwand.** `.claude/settings.json` setzt Opus 5 projektweit. Einen
 Aufwand je Aufgabe kennt die Datei nicht; die Regel „Migration, RLS, Policy
@@ -224,22 +248,13 @@ export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium
 
 ## Wochenroutine
 
-Seit 2026-09-01 läuft montags um 07:50 Uhr (UTC 05:50, Cron `50 5 * * 1`)
-eine automatische Planungssession mit dem Auftrag aus
-[`development/ROADMAP.md`](development/ROADMAP.md), Abschnitt „Wochenupdate".
-Sie baut nichts; das Ergebnis kommt per Push-Nachricht und E-Mail.
-
-- Trigger-ID `trig_01N5FanspQGxJP9S9rnZiZHj`, Modell Haiku 4.5, erste
-  Ausführung 2026-09-07. Sie liest `main`.
-- Der Prompt hat den Stand vor Roadmap 5.2: fünf eigene Schritte, er liest nur
-  die Roadmap und `git log`. Schritt 1 (mit `docs/STATUS.md` und
-  `development/ARBEITSBEREICHE.md` §2) und Schritt 6 (abgelaufene
-  Sandbox-Prototypen) fehlen ihm; den neuen Prompt-Text trägt Jannes ein
-  („Manuelle Schritte im Repository").
-- Nach der Zeitumstellung Ende Oktober fällt sie auf 06:50 Uhr; wer 07:50
-  behalten will, ändert den Cron-Ausdruck auf `50 6 * * 1`.
-- Abschalten, Takt oder Prompt ändern: über die Routines-Oberfläche auf
-  claude.ai oder durch eine Anweisung in einer Session.
+**Abgeschaltet am 2026-09-23** (Jannes, Umbau U3). Die Routine
+`trig_01N5FanspQGxJP9S9rnZiZHj` (montags 07:50 Uhr, Haiku 4.5) bleibt
+gespeichert, feuert aber nicht mehr; ihr Prompt verweist nur auf den Abschnitt
+„Wochenupdate" in [`development/ROADMAP.md`](development/ROADMAP.md). Wieder
+einschalten: Routines-Oberfläche auf claude.ai oder eine Anweisung in einer
+Session. Den Stand liefert bis dahin `docs/STATUS.md` und `pnpm fortschritt`;
+das Wochenupdate lässt sich als Planungssession von Hand starten.
 
 ## Go-live-Blocker
 
@@ -326,12 +341,12 @@ deckungsgleich.
 
 1. **Die E2E-Abläufe hinter der Anmeldung laufen nur mit Docker.** Sie brauchen
    den lokalen Supabase-Stack und werden über `E2E_SUPABASE_URL` /
-   `E2E_SUPABASE_ANON_KEY` freigeschaltet (siehe „Lokale Abnahme"). In CI
+   `E2E_SUPABASE_ANON_KEY` freigeschaltet (siehe „Lokale Sichtung"). In CI
    startet der Job „End-to-End hinter der Anmeldung" (`e2e-supabase`) den
    Stack selbst. In Umgebungen ohne Docker
    — etwa der Cloud-Entwicklungsumgebung — läuft weiterhin ausschließlich die
    Abdeckung des nicht angemeldeten Zustands.
-2. **Hinter der Anmeldung** laufen 19 Spezifikationen im Playwright-Projekt
+2. **Hinter der Anmeldung** laufen 21 Spezifikationen im Playwright-Projekt
    `authenticated`; die Breite der Prüfung liegt bei `pnpm test:db`.
 3. **Der Secret-Scan prüft nur den aktuellen Stand**, nicht die Git-Historie.
    GitHub Secret Scanning und Push Protection sollten zusätzlich in den
@@ -340,13 +355,11 @@ deckungsgleich.
    für JavaScript/TypeScript, aber kein vollwertiges SAST. Eine Erweiterung ist
    offen.
 5. **Kein Offline-Modus und kein Service Worker** (ADR-015, ADR-001).
-6. **Abgewiesene Zugriffe werden nur auf sieben Lesepfaden persistiert.**
-   Eine Abweisung per Ausnahme rollt die Transaktion und damit auch ihren
-   Protokolleintrag zurück. `list_audit_events` und `list_deletion_runs`
-   (OPS-004) sowie die fünf Lesepfade auf klinische Dokumente (G6a) weisen
-   deshalb mit null Zeilen ab und schreiben über `app.record_denied_read`
-   `outcome = 'denied'`; alle übrigen Abweisungen bleiben ohne Eintrag
-   (ROADMAP G6b).
+6. **Abgewiesene Schreibzugriffe werden nicht persistiert.** Eine Abweisung
+   per Ausnahme rollt die Transaktion und damit auch ihren Protokolleintrag
+   zurück. Die Lesepfade weisen deshalb seit OPS-004, G6a und G6b mit null
+   Zeilen ab und schreiben über `app.record_denied_read` `outcome = 'denied'`;
+   für die Schreibpfade steht die Wahl bei Jannes (ROADMAP G6c).
 7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
    Auswertung oder Alarmierung.
 8. **Die Dateiablage ist gebaut, aber nicht produktiv** — vor der ersten
@@ -376,21 +389,6 @@ Diese Einstellungen lassen sich nicht aus dem Code setzen:
 - Gemergte Branches automatisch löschen („Automatically delete head
   branches"). „Allow auto-merge" entfällt — auf diesem GitHub-Plan nicht
   verfügbar; Jannes mergt nach grüner CI (Roadmap, „Definition of Done").
-- Nach dem Merge der Konsolidierung R2: Pull Request #37 schließen, nicht
-  mergen (sein Inhalt steht als `development/VER-EPIC-002.md` auf `main`), dann
-  `git fetch origin --prune && git push origin --delete claude/focused-hopper-mwkc5d claude/praxissoftware-arch-graph-gc1a3u codex/plan-verordnung-office-20260913`.
-- Wochenupdate-Routine (`trig_01N5FanspQGxJP9S9rnZiZHj`) auf claude.ai: den
-  Prompt ersetzen durch
-
-  ```
-  Wochenupdate für PraxisSoftware auf main. Nichts bauen, nichts ändern.
-  Den Abschnitt „Wochenupdate" in docs/development/ROADMAP.md Schritt für
-  Schritt ausführen und im dort festgelegten Format antworten.
-  ```
-
-  Weil er nur auf den Abschnitt verweist, folgt die Routine jeder künftigen
-  Änderung dort ohne neuen Eingriff.
-
 - Dependabot oder eine vergleichbare Aktualisierung der Abhängigkeiten.
 - **Die Supabase-CLI-Version in `.github/workflows/ci.yml` von Hand erhöhen.**
   Sie steht dort fest statt auf `latest`, weil `latest` die Action bei jedem

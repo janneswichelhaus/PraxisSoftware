@@ -33,7 +33,7 @@ import { useVerordnungenDerAkte, type VerordnungMitZahlen } from './grundlagen';
  * die Prüfungen stehen serverseitig (ANN-068).
  *
  * Eine Seite für beide Einstiege aus der Akte (Vorgabe in
- * `docs/development/CAL-EPIC-004.md`, CAL-022): Von der neuen Grundlage aus
+ * `docs/development/archiv/CAL-EPIC-004.md`, CAL-022): Von der neuen Grundlage aus
  * steht das Ziel schon in der Adresse („Termine übernehmen"), von der
  * überplanten aus wird es hier gewählt („Termine übertragen"). Angeboten wird
  * in beiden Fällen dasselbe — die ungedeckten **künftigen** Termine dieser

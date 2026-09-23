@@ -13,7 +13,7 @@
  * bis die Prüfung der Edge Runtime in OPS-001 vorliegt. Deshalb steht im
  * versionierten `supabase/config.toml` weiterhin `[edge_runtime] enabled =
  * false`: Wer den Prototyp lokal fahren will, schaltet sie für den Lauf
- * bewusst ein (`docs/abnahme/etappe-t-kartendienst.md`).
+ * bewusst ein (`docs/sichtung/kartendienst.md`).
  */
 
 import { waehleAdapter } from './auswahl.ts';

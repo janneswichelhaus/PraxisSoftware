@@ -4,7 +4,7 @@ Manuelle Prüfschritte der Loops DOK-001 bis DOK-004 (Etappe 1, „Der
 Kernprozess wird vollständig").
 
 > Voraussetzung ist der eingerichtete lokale Stack — Schritte 1 bis 6 in
-> [`../DEVELOPMENT.md`](../DEVELOPMENT.md), Abschnitt „Lokale Abnahme".
+> [`../DEVELOPMENT.md`](../../../DEVELOPMENT.md), Abschnitt „Lokale Abnahme".
 > Anmeldedaten stehen dort unter „Testkonten".
 
 ---
@@ -443,7 +443,7 @@ etwas, das vorher ging und jetzt nicht mehr.
 Die elf Abschnitte gehören zu einem Epic und prüfen sich am besten in einem
 Zug — sie bauen aufeinander auf, und mehrere brauchen denselben frisch
 aufgesetzten Tag. Die allgemeine Einrichtung steht in
-[`../DEVELOPMENT.md`](../DEVELOPMENT.md), „Lokale Abnahme"; hier nur, was für
+[`../DEVELOPMENT.md`](../../../DEVELOPMENT.md), „Lokale Abnahme"; hier nur, was für
 diesen Durchgang dazukommt.
 
 **Der Tagesplan liegt auf dem Tag des Zurücksetzens.** Der Seed legt die
@@ -473,7 +473,7 @@ nicht Gegenstand der Prüfung; es erklärt nur, warum Kopfzeile und Anmeldemaske
 anders aussehen als in den Beschreibungen unten.
 
 **Wohin das Ergebnis.** In die Spalte „Abnahme" der Fortschrittstabelle in
-[`../development/ROADMAP.md`](../development/ROADMAP.md). Befunde gehören
+[`../development/ROADMAP.md`](../../ROADMAP.md). Befunde gehören
 nicht hierher, sondern als eigene Zeile in die Roadmap oder — wenn es eine
 Ablauffrage ist — in die nächste Ablaufrunde.
 
@@ -886,7 +886,7 @@ Kein Feature, sondern das Erscheinungsbild: Favicon, Akzentfarbe und Wortmarke.
 Die Prüfschritte suchen nach zwei Dingen — ob die Marke da ist, wo sie
 hingehört, und ob die neue Farbe irgendwo schlechter lesbar ist als die alte.
 Verbindlich für Farben, Schutzraum, Mindestgröße und Verbote ist
-[`../../marke/README.md`](../../marke/README.md).
+[`../../marke/README.md`](../../../../marke/README.md).
 
 1. **Tab und Lesezeichen.** Anwendung öffnen. Der Browser-Tab trägt das grüne
    Symbol und den Titel „Own Motion" — vorher war der Tab leer und hieß
@@ -2177,7 +2177,7 @@ Fall 1 — die gehen mit Anfrage B4 an die Steuerberatung.
 Prüfschritte zu CAL-020 (freie Länge, Abweichungszeichen) und CAL-023
 (Rückfrage beim Verschieben). Grundlage: `PROJECT_PRINCIPLES.md` §8.1 (seit 0.11),
 ANN-056, Vorgabe in
-[`../development/CAL-EPIC-004.md`](../development/CAL-EPIC-004.md).
+[`../development/CAL-EPIC-004.md`](../CAL-EPIC-004.md).
 
 Alle Schritte als `jannes.test@praxis.invalid` (owner). Vorher
 `pnpm dlx supabase@2.116.0 db reset` — die Migration
@@ -2318,7 +2318,7 @@ Ereignisse in der Vergangenheit (Ereignisse behalten die Sperre aus CAL-015b).
 ## CAL-EPIC-004b — Anlegen-Menü, Fehlzeit und Dauerfehlzeit
 
 Prüfschritte zu CAL-019 und CAL-021. Grundlage:
-[`../development/CAL-EPIC-004.md`](../development/CAL-EPIC-004.md), ANN-059
+[`../development/CAL-EPIC-004.md`](../CAL-EPIC-004.md), ANN-059
 (zwei Kennungen, Wirkung nach vorn), ANN-060 (organisatorische Bezeichnung).
 
 Alle Schritte als `jannes.test@praxis.invalid` (owner); vorher
@@ -2402,7 +2402,7 @@ die Kopfleistensuche (UX-013).
 ## UX-013 — Die Kopfleiste sucht Funktionen, Bereiche und Namen
 
 Prüfschritte zu UX-013. Grundlage:
-[`../development/CAL-EPIC-004.md`](../development/CAL-EPIC-004.md) (UX-013),
+[`../development/CAL-EPIC-004.md`](../CAL-EPIC-004.md) (UX-013),
 E17 **Fassung 2** (Jannes, 2026-09-18: Namen bleiben zusätzlich in der Leiste)
 und ANN-061 (Funktionen und Namen, keine klinischen Inhalte).
 
@@ -2477,7 +2477,7 @@ Etappe 1"), Treffer aus dem Ideenspeicher und eine Trefferhistorie.
 
 ## GRD-001 — Die Behandlungsgrundlage: Verordnung und Selbstzahler
 
-Prüfschritte zu GRD-001. Grundlage: [ADR-020](../adr/ADR-020-treatment-basis.md)
+Prüfschritte zu GRD-001. Grundlage: [ADR-020](../../../adr/ADR-020-treatment-basis.md)
 (angenommen 2026-09-16, E16), ANN-062 (Adresse bleibt `verordnungen`) und
 ANN-063 (Löschjournal wandert mit).
 
@@ -2554,7 +2554,7 @@ als `olivia.office@praxis.invalid` (office).
 ## VER-EPIC-002 — Verordnung im Office-Alltag
 
 Prüfschritte zu VER-EPIC-002. Grundlage: die Feldvorgaben in
-[VER-EPIC-002.md](../development/VER-EPIC-002.md) (Jannes, 2026-09-13),
+[VER-EPIC-002.md](../VER-EPIC-002.md) (Jannes, 2026-09-13),
 ANN-064 (Terminzahl an der Grundlage), ANN-065 („Anmerkungen") und ANN-066
 (Heilmittelkatalog im Code).
 
@@ -2644,7 +2644,7 @@ zusätzlich als `olivia.office@praxis.invalid` (office) und
 ## CAL-EPIC-004c — Überplanen und Termine je Grundlage
 
 Prüfschritte zu CAL-022 und AKTE-006. Grundlage: die Vorgabe in
-[CAL-EPIC-004.md](../development/CAL-EPIC-004.md), ANN-067 (welcher Termin
+[CAL-EPIC-004.md](../CAL-EPIC-004.md), ANN-067 (welcher Termin
 gedeckt ist), ANN-068 (was sich übertragen lässt) und ANN-069 (wie die Akte
 gruppiert).
 

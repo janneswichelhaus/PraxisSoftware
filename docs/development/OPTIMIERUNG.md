@@ -1,12 +1,13 @@
 # Optimierung der Arbeitsbereiche
 
-Stand 2026-09-13 · Steuerungsdokument ohne Inhaltsrang, wie `ROADMAP.md`.
+Stand 2026-09-23 · Steuerungsdokument ohne Inhaltsrang, wie `ROADMAP.md`.
 
 > **Eingefroren bis Probewoche 1** (Entscheidung Jannes, 2026-09-13, nach der
 > Abbruchregel in Abschnitt 12: die Runden „Kalender vor CAL-EPIC-003a" und
 > „Patient:innen nach VER-EPIC-001" sind nicht gelaufen). Bis dahin gelten
-> weiter: der Praxistest-Bogen vor jedem Loop mit Oberfläche, die
-> Oberflächen-Checkliste (`docs/abnahme/README.md`) und das Praxistagebuch.
+> weiter: die Oberflächen-Checkliste (`docs/sichtung/README.md`), die
+> Sichtung je Block am Handy (E-6, 2026-09-23 — sie ersetzt den
+> Praxistest-Bogen vor jedem Loop mit Oberfläche) und das Praxistagebuch.
 > Befunde an der laufenden Anwendung sammelt
 > [`BEFUNDE.md`](BEFUNDE.md). Scorecard und Ablaufkarten ruhen; die
 > Scorecard unten ist der Schätzstand vom 2026-09-06, **vor** UX-EPIC-001,
@@ -16,7 +17,7 @@ Stand 2026-09-13 · Steuerungsdokument ohne Inhaltsrang, wie `ROADMAP.md`.
 Praxissoftware gemessen und verbessert werden: in **Ablaufrunden** je Bereich,
 mit Jannes' Beobachtung als Eingabe und Roadmap-Zeilen als Ausgabe. Es hält
 die Scorecard über alle Bereiche und die Vorlagen, die eine Runde braucht. Es
-füllt die Roadmap-Einträge „Befunde aus der Abnahme" und `UI-001` mit
+füllt `BEFUNDE.md` und den Roadmap-Eintrag `UI-003` mit
 Befunden — es ersetzt sie nicht und stellt nichts daneben.
 
 **Was es nicht ist.** Kein Rang in der Dokumenthierarchie, kein ADR, kein
@@ -53,7 +54,7 @@ der Häufigkeit ab: **täglich** (Gewicht 3), **mehrmals wöchentlich** (2),
 
 | Kürzel | Bedingung | Messgröße | Wer misst, wie | täglich | wöchentlich | selten |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Z** Zeit | schnell genug | Sekunden (dritter Lauf) · Taps · Bruchstellen | Jannes mit Stoppuhr am lokalen Stand; Claude zählt Taps aus dem Klickweg in `docs/abnahme/` | ≤ 60 s · ≤ 8 · 0 | ≤ 180 s · ≤ 20 · ≤ 1 | ≤ 600 s · ≤ 40 · ≤ 1 |
+| **Z** Zeit | schnell genug | Sekunden (dritter Lauf) · Taps · Bruchstellen | Jannes mit Stoppuhr am lokalen Stand; Claude zählt Taps aus dem Klickweg in `docs/sichtung/` | ≤ 60 s · ≤ 8 · 0 | ≤ 180 s · ≤ 20 · ≤ 1 | ≤ 600 s · ≤ 40 · ≤ 1 |
 | **H** Hand | einhändig am Telefon | Primäraktion mit dem Daumen erreichbar, kein Zoom, Tippziele ≥ 44 px, 375 px ohne Querscrollen | Jannes im Stehen am eigenen Telefon; E2E bei 375 px | ja | ja | nur „unterwegs" |
 | **L** Licht | lesbar draußen | Kontrast der Tokens ≥ 4,5:1, Bedeutung nie nur in Farbe, Schrift ≥ 12 px | Kontrast-Test der Tokens; Blick in der Sonne beim Schattentag | ja | ja | ja |
 | **N** Netz | nichts geht verloren | Eingabe übersteht Sperren, Anruf, App-Wechsel, Funkloch, Neuladen; Zustand sichtbar; Wiederholen möglich | Unterbrechungstest und Ladeprobe durch Jannes; E2E mit `setOffline` mitten in der Eingabe | 0 Verlust | 0 Verlust | 0 Verlust |
@@ -77,7 +78,7 @@ dem Epic besser geworden — und mehr soll sie nicht.
 
 **Evidenzstufe** an jeder Zahl: **gezählt** (Strichliste, Störfallliste,
 Auditlog-Summe), **gemessen** (Stoppuhr, Playwright), **geschätzt** (aus
-Abnahmeschritten und Code, ohne Lauf). Geschätztes ordnet ein, begründet nie
+Sichtungsschritten und Code, ohne Lauf). Geschätztes ordnet ein, begründet nie
 ein neues Epic und wird durch die nächste Messung ersetzt. Eine Messung gilt
 nur aus einer Session, die nicht gebaut hat.
 
@@ -102,15 +103,15 @@ nur aus einer Session, die nicht gebaut hat.
 Aufruf über den Roadmap-Mechanismus „Parallel als Docs-Session":
 `Ablaufrunde <Bereich> nach docs/development/OPTIMIERUNG.md`. Die Session
 liest **genau fünf Quellen** und erkundet nichts: dieses Dokument · die
-Ablaufkarte des Bereichs (falls vorhanden) · die Abnahmedatei(en) der
-Bereichs-Loops in `docs/abnahme/` · die Roadmap-Zeilen des Bereichs ·
+Ablaufkarte des Bereichs (falls vorhanden) · die Sichtungsdatei(en) der
+Bereichs-Loops in `docs/sichtung/` · die Roadmap-Zeilen des Bereichs ·
 Jannes' Eingaben aus der Vorbereitung.
 
 | Schritt | Inhalt |
 | --- | --- |
 | A Ist | Jannes' Beschreibung in die Ablaufkarte: Auslöser → Schritte → „fertig" |
 | B Abläufe | schneiden oder nachschärfen: Job, Rolle, Häufigkeit, Kennzeichen „unterwegs"; höchstens acht je Bereich |
-| C Sollpfad | Klickweg je Ablauf aus den Abnahmeschritten; Taps zählen; je Schritt drei Kreuze: Kontakt ist Aktion? Eingabe geschützt? Einhändig? Ohne Abnahmeschritt gilt „nicht durchführbar" |
+| C Sollpfad | Klickweg je Ablauf aus den Sichtungsschritten; Taps zählen; je Schritt drei Kreuze: Kontakt ist Aktion? Eingabe geschützt? Einhändig? Ohne Sichtungsschritt gilt „nicht durchführbar" |
 | D Messen | sechs Bedingungen, Score, Reibung, Evidenzstufe je Zahl |
 | E Bruchstellen | je Ablauf jede Bruchstelle mit Kennung (`TT-02.B3`) und Ursache |
 | F Zuordnen | jede Bruchstelle bekommt genau ein Ziel (unten); `OPEN_DECISIONS.md` nur per Suche nach der Kennung |
@@ -140,7 +141,7 @@ Roadmap-Änderung ist ein Diff, den Jannes freigibt.
 des Ablaufs: „TT-02 erreicht Score ≥ 2 nach CAL-EPIC-003". Objektiv prüfbar
 sind Taps (Playwright zählt sie im Seed-Szenario) und die Prüfungen aus
 Abschnitt 5 — sie werden Akzeptanzkriterium; Sekunden gehören in den
-Abnahmeschritt als Prüfschritt mit Zahl. Der Loop liest die Ablaufkarte nicht;
+Sichtungsschritt als Prüfschritt mit Zahl. Der Loop liest die Ablaufkarte nicht;
 die Roadmap-Zeile trägt alles, was er braucht.
 
 ### Nachher, Jannes (10 min, im Chat)
@@ -165,15 +166,15 @@ Hier steht die Logik:
 
 | Anlass | Format | Bereiche |
 | --- | --- | --- |
-| vor dem Loop eines Bereichs | Vollrunde | ~~Kalender vor CAL-EPIC-003a · Patient:innen nach VER-EPIC-001~~ (nicht gelaufen; Methode eingefroren 2026-09-13) · nach Probewoche 1 neu terminieren: Abrechnung, Übersicht (speist E2 und UI-001) |
+| vor dem Loop eines Bereichs | Vollrunde | ~~Kalender vor CAL-EPIC-003a · Patient:innen nach VER-EPIC-001~~ (nicht gelaufen; Methode eingefroren 2026-09-13) · nach Probewoche 1 neu terminieren: Abrechnung, Übersicht (speist E2 und UI-003) |
 | vor dem Go-live-Gate (M3) | Messrunde mit Schattentag, Ladeprobe und Kollegin-Test | alle gemessenen Bereiche |
 | vier Wochen nach der Eröffnung (M6) | Messrunde mit Praxistagebuch und Störfallliste; Vollrunde für die zwei schlechtesten Bereiche | alle |
 | jährlich | Messrunde alle, Vollrunde zwei; Abläufe streichen, die niemand mehr hat | alle |
 | ein Vorschaubereich wird echt | Vollrunde vier Wochen nach seinem Loop | Kommunikation, Organisatorisches, Touren (nach MAP-006) — **keine Runde vorher**; eine Vorschau zu messen, misst die Vorlage |
 
 Eine Runde ersetzt keinen Loop und verschiebt keinen. Was sie findet, landet in
-geplanten Epics, in „Befunde aus der Abnahme" oder in `UI-001`
-(Feb 2027); es gibt keine eigene Epic-Klasse für Optimierung.
+geplanten Epics, in `BEFUNDE.md` oder in `UI-003` (Block 9); es gibt keine
+eigene Epic-Klasse für Optimierung.
 
 ## 5. Automatische Prüfungen
 
@@ -324,7 +325,7 @@ Runde <N> · Stand <Datum> · Bereichsreibung <Zahl> (Vorrunde: <Zahl>)
 
 **Auslöser.** … **Fertig.** …
 **Heute ohne Software** (Jannes, Runde 1): … · gestoppt: … s
-**In der Software** (Klickweg aus `docs/abnahme/<datei>.md`):
+**In der Software** (Klickweg aus `docs/sichtung/<datei>.md`):
 
 | # | Schritt | Route | Taps | Kontakt ist Aktion | Eingabe geschützt | Einhändig | Bruchstelle |
 | - | ------- | ----- | ---- | ------------------ | ----------------- | --------- | ----------- |
@@ -338,7 +339,7 @@ Bruchstellen … · H … · L … · N … · S … · F … s → Score … ·
 | XX-01.B1 | …                          | …       | 1          | CAL-…   |
 
 **Vorgeschlagene Akzeptanzkriterien** (verbindlich erst im SPEC-Schritt): …
-**Zielzeile:** XX-01 erreicht Score ≥ … nach <Epic> (Taps ≤ …; Sekunden in der Abnahme).
+**Zielzeile:** XX-01 erreicht Score ≥ … nach <Epic> (Taps ≤ …; Sekunden in der Sichtung).
 
 ## Bogen für die nächste Runde (keine Patientendaten)
 
@@ -385,7 +386,7 @@ Bereich ohne Einweisung nutzbar: ja / nein — weil: … (ein Abbruch zählt als
 
 ## 9. Oberflächen-Checkliste je Story
 
-Die Checkliste steht **einmal**, in `docs/abnahme/README.md` (Abschnitt
+Die Checkliste steht **einmal**, in `docs/sichtung/README.md` (Abschnitt
 „Oberflächen-Checkliste je Story") und wird dort gepflegt. Sie ist die
 Oberflächen-Checkliste für Schritt F des Loops — **nicht** die
 Review-Checkliste für kritische Änderungen, die ADR-013 Punkt 8 verlangt; die
@@ -401,12 +402,12 @@ und je Runde einer Ablaufkarte.
 | Datei | Ergänzung |
 | --- | --- |
 | `ROADMAP.md`, „Die Kette bis zur Eröffnung", Spalte Docs-Sessions | Runden als eigene Zeile wie ADR-017: „Ablaufrunde (Docs)" usw. |
-| `ROADMAP.md`, „Befunde aus der Abnahme" und G17 `UI-001` | Zusatz: speist sich aus den Ablaufrunden nach `OPTIMIERUNG.md` — eingetragen mit 2.1 |
+| `ROADMAP.md`, `BEFUNDE.md` und G17 `UI-003` | Zusatz: speist sich aus den Ablaufrunden nach `OPTIMIERUNG.md` — eingetragen mit 2.1 |
 | `ROADMAP.md`, Tabelle „Modell und Aufwand" | zwei Zeilen: Vollrunde Sonnet 5 `medium`, Messrunde Sonnet 5 `low` |
 | `ROADMAP.md`, G18 (Go-live-Gate) | „Messrunde vor dem Gate ohne täglichen Ablauf mit Score 0" — von Jannes am 2026-09-06 zugestimmt (E-11), eingetragen |
 | `CLAUDE.md`, „Arbeitsweise" | ein Absatz: was eine Ablaufrunde ist, dass sie keinen Scope begründet und keine zweite Reihenfolge führt |
 | `.claude/skills/feature-loop/SKILL.md` | Schritt A: Ablaufkarten-Hinweis aus der Roadmap-Zeile übernehmen, Karte nicht lesen · Schritt F: Oberflächen-Checkliste abhaken — zwei Zeilen, keine Inhaltsregeln |
-| `docs/abnahme/README.md` | Abschnitt 9 wortgleich |
+| `docs/sichtung/README.md` | Abschnitt 9 wortgleich |
 | `ARBEITSBEREICHE.md` §6 | ein Satz: Ablaufkarten messen, die Roadmap ordnet |
 
 Das Wochenupdate liest `docs/STATUS.md`, die Roadmap, `ARBEITSBEREICHE.md` §2
@@ -453,9 +454,8 @@ die Checklisten-Kopie in Abschnitt 9 ist durch einen Verweis ersetzt).
 - **Alterung.** Ablaufkarten werden zwischen Runden nicht gepflegt; eine Karte
   ist nur am Rundendatum wahr.
 - **Abbruchregel für die Methode selbst.** Fällt eine Runde zweimal
-  hintereinander aus — ihr Anlass ist eingetreten, ohne dass sie gelaufen ist —, wird die Methode **eingefroren**: Es bleiben der
-  Praxistest-Bogen vor jedem Loop mit Oberfläche, die Oberflächen-Checkliste
-  und das Praxistagebuch. Scorecard und Ablaufkarten ruhen, bis Jannes die
+  hintereinander aus — ihr Anlass ist eingetreten, ohne dass sie gelaufen ist —, wird die Methode **eingefroren**: Es bleiben die
+  Sichtung je Block, die Oberflächen-Checkliste und das Praxistagebuch. Scorecard und Ablaufkarten ruhen, bis Jannes die
   Runden ausdrücklich wieder aufnimmt. Kostet eine einzelne Runde mehr als
   einen halben Loop, wird sie als Messrunde beendet.
 
