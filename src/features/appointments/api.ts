@@ -1603,7 +1603,7 @@ export type TreatmentBasisSlots = z.infer<typeof treatmentBasisSlotsSchema>;
  *
  * Ausschließlich organisatorische Zahlen - Diagnose und Therapieziel bleiben
  * bei der klinischen Sicht (ANN-011). „Verplant" zählt die nicht abgesagten
- * Termine dieser Verordnung; verplant ist nicht genutzt (ANN-012, ANN-038).
+ * Termine dieser Verordnung; verplant ist nicht genutzt (ANN-038).
  */
 export async function fetchTreatmentBasisSlots(grundlageId: string): Promise<TreatmentBasisSlots> {
   const { data, error } = (await getSupabase().rpc('get_treatment_basis_slots', {

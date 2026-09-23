@@ -216,7 +216,7 @@ Beleg: `pnpm test:db` 1 311 von 1 311 grün (2026-09-15).
 | Datum     | 2026-09-15                                                                                        |
 | Bereich   | Dateien in der Akte, Verordnungsscan — `storage.objects`, `issue_patient_file_link`               |
 | Quelle    | Zweitreview in frischem Kontext zu ROL-EPIC-001 (ADR-013 Punkt 9 Nr. 8), am Code bestätigt        |
-| Status    | behoben in FIX-015, noch nicht gemergt (PR #42, gestapelt auf PR #41)        |
+| Status    | erledigt in FIX-015 (PR #42, 2026-09-15)                                                          |
 | Berührt   | DAT-001, ROL-002; ADR-010 Punkt 2 und 14, ADR-017 Punkt 20; ANN-052                               |
 
 **Beobachtung.** Der Objektschlüssel einer Datei ist
@@ -312,7 +312,7 @@ Bestätigungsschritt verlieren (ADR-018, §8).
 | Datum   | 2026-09-16                                                                                    |
 | Bereich | Termine in der Akte (`/patienten/:id/termine`)                                                 |
 | Quelle  | Jannes, 2026-09-16                                                                            |
-| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](archiv/CAL-EPIC-004.md), AKTE-006                              |
+| Status  | erledigt in CAL-EPIC-004c (AKTE-006, 2026-09-18) — gruppiert je Behandlungsgrundlage (ANN-069) |
 | Berührt | AKTE-003, CAL-007, VER-002; `PatientAppointmentsPage.tsx`, `list_patient_appointments`         |
 
 **Beobachtung.** Termine sollen „immer verordnungsbezogen" erscheinen: fünf
@@ -675,7 +675,7 @@ einer Funktion und ändert sich mit der Antwort aus B4 an genau dieser Stelle.
 | Datum   | 2026-09-21                                                                          |
 | Bereich | Werkzeugkette: Abschnitt „Fortschritt" in `docs/development/ROADMAP.md`             |
 | Quelle  | Loop CAL-EPIC-005, beim Nachtragen der eigenen Zeile                                |
-| Status  | offen                                                                               |
+| Status  | erledigt in Umbau U3 (2026-09-23) — die Tabelle wird aus `fortschritt.json` erzeugt  |
 | Berührt | Die Tabelle; `fortschritt.json` führt beide Posten korrekt                          |
 
 **Beobachtung.** **LEI-EPIC-001** (fertig 2026-09-20) und **FRB-EPIC-000**

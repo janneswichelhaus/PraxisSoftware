@@ -49,8 +49,11 @@ const dayPlanEntrySchema = z.object({
   home_visit_access_note: z.string().nullable(),
   special_note: z.string().nullable(),
   /**
-   * Dokumentationsstand ohne Inhalt (ANN-006). `null` heißt: die eigene Rolle
-   * darf den Behandlungsnachweis nicht lesen - nicht, dass es keinen gibt.
+   * Dokumentationsstand ohne Inhalt, freigegeben über
+   * `app.can_read_treatment_evidence()` (ADR-004 Fassung 2 Punkt 4; ANN-006
+   * ist mit E15 verworfen). `null` heißt: die eigene Rolle darf den
+   * Behandlungsnachweis nicht lesen, oder der Termin ist ein Ereignis oder ein
+   * Training - nicht, dass es keine Dokumentation gibt.
    */
   documentation_status: documentationStatusSchema.nullable(),
   organization_time_zone: z.string(),
