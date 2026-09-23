@@ -7,6 +7,7 @@ import {
   resetDatabaseOhneTermine,
   tagInTagen,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Finalisierung, Versionierung und Nachtrag (DOK-002, ADR-016 Punkte 4 bis 6).
@@ -587,10 +588,13 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
     expect(eigener?.context).toMatchObject({ patient_id: patients.max });
   });
 
-  it('laesst ein Patientenkonto den Verlauf nicht lesen (4.6)', async () => {
+  it('laesst ein Patientenkonto den Verlauf nicht lesen und protokolliert den Versuch (4.6, G6a)', async () => {
     const f = await finalisiert();
-    await expect(asUser(users.patientMax, VERLAUF, [f.id])).rejects.toThrow(
-      /not allowed to read treatment documentation/,
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientMax,
+      VERLAUF,
+      [f.id],
+      'treatment_note.history_viewed',
     );
   });
 

@@ -196,9 +196,35 @@ describe('Audit-Lesepfad', () => {
       select r.rolname
       from pg_roles r
       where r.rolname in ('anon', 'authenticated', 'service_role')
-        and has_function_privilege(r.oid, 'app.record_denied_owner_read(uuid, text, text)', 'execute')
+        and (
+          has_function_privilege(r.oid, 'app.record_denied_owner_read(uuid, text, text)', 'execute')
+          or has_function_privilege(r.oid, 'app.record_denied_read(uuid, text, text)', 'execute')
+        )
     `);
     expect(rows).toEqual([]);
+  });
+
+  it('kennt genau die Pfade, die eine Abweisung ueberleben lassen (OPS-004, G6a)', async () => {
+    // Die Liste ist die Entscheidung aus G6a: klinische Dokumente nach ADR-010
+    // Punkt 2 und die beiden owner-Nachweise. Ein neuer Pfad hier ist Absicht,
+    // ein fehlender ein Rueckschritt - beides soll ein Review sehen.
+    const { rows } = await asPostgres<{ proname: string }>(`
+      select p.proname
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname in ('public', 'app')
+        and p.prosrc ~ 'app\\.record_denied_(owner_)?read\\('
+        and p.proname not in ('record_denied_read', 'record_denied_owner_read')
+      order by p.proname
+    `);
+    expect(rows.map((r) => r.proname)).toEqual([
+      'get_treatment_basis',
+      'get_treatment_note',
+      'get_treatment_note_versions',
+      'list_audit_events',
+      'list_deletion_runs',
+      'list_patient_treatment_bases_clinical',
+      'list_patient_treatment_notes',
+    ]);
   });
 
   it('verweigert den Zugriff ohne Session', async () => {

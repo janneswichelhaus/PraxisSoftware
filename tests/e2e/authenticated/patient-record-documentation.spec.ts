@@ -10,6 +10,7 @@ import {
   terminUeberOberflaeche,
   zeitImLauf,
   zugriffstoken,
+  erwarteProtokollierteAbweisung,
 } from './helpers';
 
 /**
@@ -126,13 +127,15 @@ test.describe('DOK-003, ROL-001: Serverseitige Grenzen', () => {
     // Ausgeblendete Elemente sind keine Zugriffskontrolle - verbindlich ist
     // der Server (ADR-004).
     const patientToken = await zugriffstoken(request, 'max.mustermann@patient.invalid');
-    const abgewiesen = await rpcAufrufen(request, patientToken, 'list_patient_treatment_notes', {
-      p_patient_id: PATIENTEN.max,
-    });
-    expect(abgewiesen.status(), 'ein Patientenkonto darf die klinische Sicht nicht lesen').toBe(
-      403,
+    await erwarteProtokollierteAbweisung(
+      request,
+      'treatment_note.viewed',
+      () =>
+        rpcAufrufen(request, patientToken, 'list_patient_treatment_notes', {
+          p_patient_id: PATIENTEN.max,
+        }),
+      'Uebungen angeleitet',
     );
-    expect(await abgewiesen.text()).not.toContain('Uebungen angeleitet');
   });
 
   test('laesst office keine Dokumentation anlegen', async ({ page, request }) => {

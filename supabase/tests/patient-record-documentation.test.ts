@@ -8,6 +8,7 @@ import {
   resetDatabaseOhneTermine,
   tagInTagen,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Dokumentation in der Akte (DOK-003, ROL-001).
@@ -536,9 +537,12 @@ describe('DOK-003: Klinische Sicht der Akte', () => {
     }
   });
 
-  it('laesst ein Patientenkonto nicht lesen (4.6)', async () => {
-    await expect(akte(users.patientErika, patients.erika)).rejects.toThrow(
-      /not allowed to read treatment documentation/,
+  it('laesst ein Patientenkonto nicht lesen und protokolliert den Versuch (4.6, G6a)', async () => {
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientErika,
+      AKTE,
+      [patients.erika, 20, null, null],
+      'treatment_note.viewed',
     );
   });
 

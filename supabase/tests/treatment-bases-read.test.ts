@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * VER-002, ROL-002: Verordnungen in der Akte, rollenabhängig projiziert.
@@ -137,8 +138,12 @@ describe('VER-002: Verordnungen in der Akte', () => {
     await expect(asUser(users.patientMax, ORGANISATORISCH, [patients.max])).rejects.toThrow(
       /not allowed to read treatment_bases/i,
     );
-    await expect(asUser(users.patientMax, KLINISCH, [patients.max])).rejects.toThrow(
-      /not allowed to read clinical treatment basis data/i,
+    // G6a: Die klinische Sicht weist ohne Ausnahme ab und protokolliert den Versuch.
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientMax,
+      KLINISCH,
+      [patients.max],
+      'treatment_basis.viewed',
     );
     await expect(asAnon(ORGANISATORISCH, [patients.max])).rejects.toThrow(/permission denied/i);
   });
