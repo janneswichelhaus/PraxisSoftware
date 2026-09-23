@@ -1,7 +1,7 @@
 # Abnahme — Etappe G: Betriebsreife
 
 Manuelle Prüfschritte der Loops aus Spur A3 (`docs/development/ROADMAP.md`,
-Abschnitt „Etappe G"). Voraussetzung und Aufbau: [README.md](README.md).
+Abschnitt „Etappe G"). Voraussetzung und Aufbau: [README.md](../../../sichtung/README.md).
 
 **Für diese Etappe zusätzlich nötig:** der volle Supabase-Stack mit
 Anmeldedienst und Mailfänger. `pnpm dlx supabase start`, dann liegt der
@@ -550,7 +550,7 @@ nicht bei bekanntem Ablageort und nicht nach einem früheren Öffnen; eine Kopie
 ohne „Öffnen" wird abgewiesen; `owner` entfernt das Objekt eines Löschauftrags
 erst nach dessen protokollierter Ausführung, und diese Freigabe öffnet kein
 Lesen. Bei laufendem lokalem Stack und
-den Umgebungsvariablen aus [`../DEVELOPMENT.md`](../DEVELOPMENT.md) Schritt 6:
+den Umgebungsvariablen aus [`../DEVELOPMENT.md`](../../../DEVELOPMENT.md) Schritt 6:
 `pnpm test:e2e --project authenticated tests/e2e/authenticated/patient-file-access.spec.ts`.
 
 **Was hier nicht geprüft werden kann:** ob eine spätere Version der
@@ -563,7 +563,7 @@ der Wiedervorlage von ANN-052 bei jedem Upgrade.
 
 **Was geprüft wird:** dass die Praxisleitung in der Akte beides erledigen kann —
 und dass niemand sonst an die Kopie kommt. Das Verfahren dazu steht in
-[`../datenschutz/betroffenenrechte.md`](../datenschutz/betroffenenrechte.md).
+[`../datenschutz/betroffenenrechte.md`](../../../datenschutz/betroffenenrechte.md).
 
 **Reicht ohne Mailfänger**, braucht aber die Anmeldung; in der
 Cloud-Entwicklungsumgebung startet dafür kein Anmeldedienst.
@@ -619,7 +619,7 @@ Frage nach dem Zugriffsprotokoll in der Auskunft.
 
 ## OPS-007 — Bootstrap: die Praxis in einem leeren Projekt einrichten
 
-**Was geprüft wird:** dass das Runbook [`../betrieb/bootstrap.md`](../betrieb/bootstrap.md) von
+**Was geprüft wird:** dass das Runbook [`../betrieb/bootstrap.md`](../../../betrieb/bootstrap.md) von
 einem leeren Projekt bis zur Anmeldung trägt — ohne eine Zeile aus dem Seed. Lokal mit Docker;
 sobald die Testumgebung steht (OPS-002), derselbe Durchlauf dort (M3).
 

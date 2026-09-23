@@ -1,10 +1,11 @@
 /**
  * Gate fuer die Dokumentation (ADR-013 Pruefung 2.10).
  *
- * Fuenf Zusicherungen, die sich objektiv pruefen lassen; die ersten drei wurden
- * in der Runde R2 teuer erkauft, die letzten zwei mit G19:
+ * Sechs Zusicherungen, die sich objektiv pruefen lassen; die ersten drei wurden
+ * in der Runde R2 teuer erkauft, vier und fuenf mit G19, sechs mit Umbau U3:
  *
- *   1. **Obergrenzen.** Die vier Steuerungsdokumente wachsen nicht wieder zu.
+ *   1. **Obergrenzen.** Drei Steuerungsdokumente wachsen nicht wieder zu, und
+ *      im Annahmenregister kein Eintrag.
  *      Eine Obergrenze ist keine Schoenheitsregel: Ein Dokument, das niemand
  *      mehr ganz liest, wird zur Dopplungsquelle (PROJECT_PRINCIPLES.md 16).
  *   2. **Register-Anker.** Jede Annahme im Register greift an genau einer
@@ -18,6 +19,9 @@
  *   5. **Eindeutige Nummern.** Jede `ANN-`, `BEF-` und `IDEA-`-Kennung steht
  *      hoechstens einmal als Ueberschrift - zwei parallele Sitzungen haben
  *      schon einmal dieselbe Nummer vergeben.
+ *   6. **Eine Quelle fuer den Fortschritt** (Umbau U3). Die Tabelle im
+ *      Abschnitt „Fortschritt" der Roadmap ist genau die, die
+ *      `pnpm fortschritt --schreiben` aus `fortschritt.json` erzeugt.
  *
  * Bewusst ohne Abhaengigkeiten: nur `node:fs`, `node:path` und `node:child_process`
  * fuer `git ls-files`. Ein Gate, das selbst ein Paket braucht, ist ein Gate
@@ -28,6 +32,7 @@
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join, normalize } from 'node:path';
+import { tabelleAktuell } from './fortschritt-tabelle.mjs';
 import {
   aktuelleFassungen,
   prinzipienAbschnitte,
@@ -39,44 +44,28 @@ import {
 /**
  * Obergrenzen in Zeilen, `wc -l`-Semantik (Zeilenumbrueche, nicht Zeilen).
  *
- * Das Annahmenregister ist der eine Sonderfall: Es waechst nach 15.1 mit
- * jeder getroffenen Annahme und wird ausdruecklich NICHT als Ganzes gelesen -
- * gearbeitet wird mit dem Pruefpaket, also mit einem `grep` ueber die
- * Statuszeilen. Seine Grenze beschraenkt deshalb nicht die Lesbarkeit,
- * sondern haelt den Wildwuchs je Eintrag im Rahmen (rund 14 Zeilen). Sie
- * wurde am 2026-09-18 mit CAL-EPIC-004b von 800 auf 1000 angehoben, weil
- * ANN-059 und ANN-060 sonst nur durch Kuerzen bestehender Eintraege Platz
- * gefunden haetten - und das Register sagt selbst, dass kein Eintrag
- * verschwindet (docs/STATUS.md nannte beide Wege). Am 2026-09-19 mit
- * ABR-EPIC-002a aus demselben Grund von 1000 auf 1050: Die vier Annahmen
- * ANN-074 bis ANN-077 brauchten 48 Zeilen, frei waren 18. Am 2026-09-19 mit
- * ABR-EPIC-002b ein drittes Mal, von 1050 auf 1075: ANN-079 und ANN-080
- * brauchten 24 Zeilen, frei waren 8. Am 2026-09-20 mit R3 (Gruppe G1) ein
- * viertes Mal, von 1075 auf 1090: ANN-081 brauchte 13 Zeilen, frei waren 9.
- * Am 2026-09-21 mit FRB-EPIC-000 ein fuenftes Mal, von 1090 auf 1150: die
- * fuenf Annahmen ANN-083 bis ANN-087 brauchten 60 Zeilen, frei war nichts -
- * das Register stand genau auf seiner Grenze. Am 2026-09-21 mit ABR-EPIC-006
- * ein sechstes Mal, von 1150 auf 1162: ANN-088 brauchte 12 Zeilen, frei war
- * weiterhin nichts. Am 2026-09-21 mit der Verortung von MDR_REVIEW_REQUIRED
- * ein siebtes Mal, von 1162 auf 1174: ANN-089 brauchte 12 Zeilen, frei war
- * wieder nichts - das Register stand erneut genau auf seiner Grenze. Am
- * 2026-09-21 mit MAP-003 ein achtes Mal, von 1174 auf 1186: ANN-090 brauchte
- * 12 Zeilen, frei war nichts. Am 2026-09-22 mit MAP-004 ein neuntes Mal, von
- * 1186 auf 1198: ANN-091 brauchte 12 Zeilen, frei war wieder nichts. Am
- * 2026-09-22 mit OPS-006 ein zehntes Mal, von 1198 auf 1210: ANN-092 brauchte
- * 12 Zeilen, frei war wieder nichts. Am 2026-09-22 mit PAT-006 ein elftes
- * Mal, von 1210 auf 1222: ANN-093 brauchte 12 Zeilen, frei war nichts.
- * Die Grenze wandert damit weiter mit der Zahl der Eintraege, nicht mit ihrer
- * Laenge - zwoelf Zeilen je Eintrag sind dieselbe Disziplin wie vorher. Die
- * drei anderen Grenzen bleiben unveraendert - sie sind die, die Lesbarkeit
- * schuetzen.
+ * Die drei Grenzen hier schuetzen die Lesbarkeit von Dokumenten, die ganz
+ * gelesen werden.
  */
 const OBERGRENZEN = {
   'CLAUDE.md': 150,
   'docs/STATUS.md': 60,
-  'docs/decisions/ASSUMPTIONS.md': 1222,
   'docs/decisions/OPEN_DECISIONS.md': 400,
 };
+
+/**
+ * Das Annahmenregister waechst nach 15.1 mit jeder getroffenen Annahme und
+ * wird ausdruecklich NICHT als Ganzes gelesen - gearbeitet wird mit dem
+ * Pruefpaket, einem `grep` ueber die Statuszeilen. Eine Gesamtgrenze musste
+ * deshalb mit jeder neuen Annahme angehoben werden (elfmal zwischen
+ * 2026-09-18 und 2026-09-22, von 800 auf 1222) und schuetzte nichts. Seit
+ * Umbau U3 gilt die Grenze **je Eintrag**: vom Kopf `### ANN-NNN` bis vor den
+ * naechsten, hoechstens 14 Zeilen - das laengste bestehende Format (Kopf,
+ * Statuszeile, Abloesung, vier Absaetze mit Leerzeilen). Dazu eine Grenze fuer
+ * den Vorspann bis zum ersten Eintrag.
+ */
+const REGISTER_JE_EINTRAG = 14;
+const REGISTER_VORSPANN = 90;
 
 const REGISTER = 'docs/decisions/ASSUMPTIONS.md';
 
@@ -111,6 +100,29 @@ for (const [pfad, grenze] of Object.entries(OBERGRENZEN)) {
   if (zeilen > grenze) {
     verstoesse.push(`${pfad}: ${zeilen} Zeilen, erlaubt sind ${grenze}.`);
   }
+}
+
+if (existsSync(REGISTER)) {
+  const zeilen = readFileSync(REGISTER, 'utf8').split('\n');
+  const koepfe = zeilen.flatMap((zeile, i) => (/^### ANN-\d{3}\b/.test(zeile) ? [i] : []));
+  if (koepfe.length > 0 && koepfe[0] > REGISTER_VORSPANN) {
+    verstoesse.push(
+      `${REGISTER}: Vorspann ${koepfe[0]} Zeilen, erlaubt sind ${REGISTER_VORSPANN}.`,
+    );
+  }
+  koepfe.forEach((kopf, n) => {
+    // Der letzte Eintrag endet mit der Datei; `split` liefert nach dem
+    // abschliessenden Zeilenumbruch ein leeres Element, das nicht zaehlt.
+    const ende = n + 1 < koepfe.length ? koepfe[n + 1] : zeilen.length - 1;
+    const laenge = ende - kopf;
+    if (laenge > REGISTER_JE_EINTRAG) {
+      // eslint-disable-next-line security/detect-object-injection -- Zahlindex in ein eigenes Array.
+      const kennung = zeilen[kopf].slice(4, 11);
+      verstoesse.push(
+        `${REGISTER}: ${kennung} hat ${laenge} Zeilen, erlaubt sind ${REGISTER_JE_EINTRAG} je Eintrag.`,
+      );
+    }
+  });
 }
 
 // -----------------------------------------------------------------------------
@@ -177,6 +189,17 @@ for (const { pfad, text } of markdown) verstoesse.push(...pruefeVerweise(pfad, t
 verstoesse.push(...pruefeEindeutigkeit(markdown));
 
 // -----------------------------------------------------------------------------
+// 6. Fortschrittstabelle aus fortschritt.json
+// -----------------------------------------------------------------------------
+const FORTSCHRITT = 'docs/development/fortschritt.json';
+const ROADMAP = 'docs/development/ROADMAP.md';
+if (!tabelleAktuell(readFileSync(ROADMAP, 'utf8'), JSON.parse(readFileSync(FORTSCHRITT, 'utf8')))) {
+  verstoesse.push(
+    `${ROADMAP}: Die Fortschrittstabelle weicht von ${FORTSCHRITT} ab - \`pnpm fortschritt --schreiben\`.`,
+  );
+}
+
+// -----------------------------------------------------------------------------
 if (verstoesse.length > 0) {
   console.error('Dokumentationsgate: %d Verstoesse.\n', verstoesse.length);
   for (const zeile of verstoesse) console.error(`  - ${zeile}`);
@@ -184,7 +207,7 @@ if (verstoesse.length > 0) {
 }
 
 console.log(
-  'Dokumentationsgate gruen: %d Obergrenzen, %d Register-Anker, Links und Querverweise in %d Markdown-Dateien.',
+  'Dokumentationsgate gruen: %d Obergrenzen, %d Register-Eintraege mit Anker und Laengengrenze, Links und Querverweise in %d Markdown-Dateien, Fortschrittstabelle aktuell.',
   Object.keys(OBERGRENZEN).length,
   (readFileSync(REGISTER, 'utf8').match(/^### ANN-\d{3}\b/gm) ?? []).length,
   dateien.filter((p) => p.endsWith('.md')).length,

@@ -5,11 +5,11 @@ eigener Rang · Umsetzung noch nicht begonnen
 
 Quelle sind Jannes' Festlegungen vom 2026-09-16, entstanden am Vergleich mit
 **iPrax** (Screenshots, beschrieben in
-[`../product/ideen/referenz-iprax.md`](../product/ideen/referenz-iprax.md)).
+[`../product/ideen/referenz-iprax.md`](../../product/ideen/referenz-iprax.md)).
 Die fachlichen Vorgaben stammen von ihm; die Reihenfolge steht seit dem
-2026-09-16 in [ROADMAP.md](ROADMAP.md), Etappe 1, und unten unter
+2026-09-16 in [ROADMAP.md](../ROADMAP.md), Etappe 1, und unten unter
 „Reihenfolge". Dieses Dokument ersetzt keinen Schritt des
-[Feature-Loops](GRAPH-ENGINEERING-WORKFLOW.md).
+[Feature-Loops](../GRAPH-ENGINEERING-WORKFLOW.md).
 
 Vorbild heißt hier **Umfang, Ablauf und Informationsarchitektur** — nicht
 Datenmodell, Berechtigungen, Rechtsrahmen, und keine Übernahme von Texten,
@@ -18,7 +18,7 @@ Symbolen oder Code eines fremden Produkts.
 ## Was schon steht
 
 Damit nichts ein zweites Mal gebaut wird
-([ARBEITSBEREICHE.md](ARBEITSBEREICHE.md)):
+([ARBEITSBEREICHE.md](../ARBEITSBEREICHE.md)):
 
 - **Ereignis** (CAL-015b bis CAL-017): Termin ohne Patient:in und ohne
   Verordnung, mit Bezeichnung, mehreren Beteiligten, freiem Beginn **und**
@@ -225,7 +225,7 @@ Namen** mehr, sondern **Funktionen und Bereiche**.
 - **Gruppentermine** (Jannes, 2026-09-16: vorerst nicht).
 - Leistungskatalog, Preise, Rechnungsstellung — ABR-EPIC-001 und ADR-009.
 - Die **Behandlungsgrundlage** selbst: **E16** ist am 2026-09-16 entschieden
-  ([ADR-020](../adr/ADR-020-treatment-basis.md), angenommen) und wird in
+  ([ADR-020](../../adr/ADR-020-treatment-basis.md), angenommen) und wird in
   **GRD-001** gebaut — Umbenennung, zweite Bauart „Selbstzahler". CAL-022 und
   AKTE-006 setzen darauf auf und sprechen ab dann von der **Grundlage**, wo
   hier noch „Verordnung" steht; für die Verordnung gilt jedes Wort unverändert
@@ -264,7 +264,7 @@ Namen** mehr, sondern **Funktionen und Bereiche**.
 ## Reihenfolge
 
 Jannes hat die Einordnung am 2026-09-16 delegiert; sie steht seitdem in
-[ROADMAP.md](ROADMAP.md), Etappe 1, und gilt von dort:
+[ROADMAP.md](../ROADMAP.md), Etappe 1, und gilt von dort:
 
 | Loop | Stories | Warum hier |
 | --- | --- | --- |
@@ -281,4 +281,4 @@ Migration aus. Der SPEC schneidet die Stories fein, die Roadmap bleibt die
 Reihenfolge.
 
 Der SPEC prüft und schreibt fort: **ANN-012**, **ANN-037**, **ANN-038**,
-**ANN-049** sowie die Abnahmeschritte unter [`../abnahme/`](../abnahme/README.md).
+**ANN-049** sowie die Abnahmeschritte unter [`../abnahme/`](../../sichtung/README.md).

@@ -4,7 +4,7 @@ Manuelle Prüfschritte der Loops PAT-002, PAT-003, CAL-001 bis CAL-006 und
 STAFF-001.
 
 > Voraussetzung ist der eingerichtete lokale Stack — Schritte 1 bis 6 in
-> [`../DEVELOPMENT.md`](../DEVELOPMENT.md), Abschnitt „Lokale Abnahme".
+> [`../DEVELOPMENT.md`](../../../DEVELOPMENT.md), Abschnitt „Lokale Abnahme".
 > Anmeldedaten stehen dort unter „Testkonten".
 
 ---

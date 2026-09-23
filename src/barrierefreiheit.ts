@@ -8,7 +8,7 @@ import axe, { type AxeResults, type Result } from 'axe-core';
  * Formularfelder ohne Label. Das ist erfahrungsgemäß ein Teil der
  * Barrierefreiheit, nicht ihre Gesamtheit — Tastaturreihenfolge, Fokusführung
  * und verständliche Sprache prüft es nicht. Sie stehen weiter in der
- * Oberflächen-Checkliste in `docs/abnahme/README.md` und in eigenen Tests.
+ * Oberflächen-Checkliste in `docs/sichtung/README.md` und in eigenen Tests.
  *
  * Läuft innerhalb von `pnpm test` und damit in der CI-Pipeline (ADR-013), ohne
  * dass dort etwas zu ändern wäre.

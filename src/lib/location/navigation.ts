@@ -25,7 +25,7 @@ import type { NavigationApp, NavigationTarget, PostalAddress } from './contract'
  * nicht mehr verlangte. Eine Einstellung, welche App die bevorzugte ist, gibt
  * es weiterhin **nicht**: Welche auf den tatsächlich genutzten Geräten
  * zuverlässig im Fahrradmodus öffnet, beantwortet die Gerätebewertung
- * (MAP-005c, `docs/abnahme/etappe-t-kartendienst.md`) - erst deren Ergebnis
+ * (MAP-005c, `docs/sichtung/kartendienst.md`) - erst deren Ergebnis
  * begründet eine Vorauswahl (ADR-019, „Bewusst nicht Bestandteil").
  */
 

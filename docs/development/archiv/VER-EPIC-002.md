@@ -2,18 +2,18 @@
 
 Stand 2026-09-13 · **Loop-Vorgabe**: Eingabe für den SPEC-Schritt des Loops,
 kein eigener Rang · **umgesetzt am 2026-09-18**, Abnahme steht aus
-([Prüfschritte](../abnahme/etappe-1-kernprozess.md)); die Abbildung der
+([Prüfschritte](abnahme/etappe-1-kernprozess.md)); die Abbildung der
 Vorgaben steht in ANN-064, ANN-065 und ANN-066
 
 Quelle sind Jannes' Korrekturen an „Verordnung bearbeiten" vom 2026-09-13
 (Planentwurf aus PR #37, am selben Tag auf `main` übernommen). Die
 fachlichen Vorgaben unten stammen von ihm; die Einordnung als eigener Loop
-und die Reihenfolge stehen in [ROADMAP.md](ROADMAP.md). Dieses Dokument
-ersetzt keinen Schritt des [Feature-Loops](GRAPH-ENGINEERING-WORKFLOW.md).
+und die Reihenfolge stehen in [ROADMAP.md](../ROADMAP.md). Dieses Dokument
+ersetzt keinen Schritt des [Feature-Loops](../GRAPH-ENGINEERING-WORKFLOW.md).
 
 **Nachtrag 2026-09-16.** Vor diesem Loop läuft **GRD-001**: Die Verordnung
 wird dort zu einer Bauart der **Behandlungsgrundlage**, die zweite ist der
-Selbstzahler ([ADR-020](../adr/ADR-020-treatment-basis.md), E16). Die
+Selbstzahler ([ADR-020](../../adr/ADR-020-treatment-basis.md), E16). Die
 Feldvorgaben unten gelten unverändert für die Verordnung; der SPEC prüft, wo
 das Formular die Bauart abfragen oder eine Angabe für Selbstzahler
 weglassen muss — Verordner:in und Diagnose gibt es dort nicht.

@@ -153,7 +153,7 @@ test.describe('Kennwort vergessen', () => {
  *
  * Der vollstaendige Durchlauf mit einem echten Link braucht GoTrue und den
  * Mailfaenger und steht deshalb als manueller Schritt in
- * docs/abnahme/etappe-g-betriebsreife.md. Was hier laeuft, ist der Teil, der
+ * docs/sichtung/betriebsreife.md. Was hier laeuft, ist der Teil, der
  * ohne Anmeldedienst aussagekraeftig ist - und das ist gerade der
  * Fehlerfall.
  */
@@ -190,7 +190,7 @@ test.describe('Neues Kennwort setzen', () => {
     // Unterscheidung selbst stimmt, halten die Komponententests in beide
     // Richtungen fest (KennwortNeuPage.test.tsx, ZugangPage.test.tsx), und
     // am laufenden Stack prueft es Schritt 19 in
-    // docs/abnahme/etappe-g-betriebsreife.md.
+    // docs/sichtung/betriebsreife.md.
     await page.goto('/kennwort-neu?token_hash=unbrauchbar&type=recovery');
 
     // Einer der beiden Abbrueche steht da - und zwar genau einer.

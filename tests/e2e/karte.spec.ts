@@ -14,7 +14,7 @@ import { expect, test, type Page } from '@playwright/test';
  * weil das die schmalste Größe der Oberflächen-Checkliste ist.
  *
  * Was sie **nicht** zeigt: dass die Kacheln des Anbieters ankommen. Dafür
- * braucht es den Schlüssel, und der liegt nur lokal (docs/abnahme).
+ * braucht es den Schlüssel, und der liegt nur lokal (docs/sichtung).
  */
 
 const PRUEFSEITE = '/tests/e2e/fixtures/karte.html';

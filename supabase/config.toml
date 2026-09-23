@@ -106,7 +106,7 @@ content_path = "./supabase/templates/magic_link.html"
 # Das bleibt auch mit MAP-003 so: Der Routing-Adapter (location-provider) ist
 # gebaut, aber die Laufzeit startet nicht von allein mit. Wer den Prototyp
 # lokal fahren will, schaltet sie fuer den Lauf bewusst ein - der Weg steht in
-# docs/abnahme/etappe-t-kartendienst.md. Freigegeben ist damit nichts: ADR-019
+# docs/sichtung/kartendienst.md. Freigegeben ist damit nichts: ADR-019
 # Punkt 15 laesst den Datenweg nur mit synthetischen Koordinaten laufen, bis
 # die Pruefung der Edge Runtime aus OPS-001 vorliegt.
 [edge_runtime]

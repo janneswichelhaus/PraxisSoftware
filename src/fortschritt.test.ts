@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
  * Das Fortschrittsmodell bleibt rechenbar.
  *
  * `docs/development/fortschritt.json` ist die Datengrundlage für
- * `pnpm fortschritt` und wird am Ende jedes Loops von Hand gepflegt. Von Hand
+ * `pnpm fortschritt` und die Fortschrittstabelle der Roadmap und wird am Ende
+ * jedes Loops von Hand gepflegt. Von Hand
  * gepflegte Zahlen laufen auseinander: ein Blockgewicht wird angehoben und das
  * Gegenstück nicht gesenkt, ein Status wird abgekürzt getippt, ein Posten
  * bekommt Gewicht 0 und verschwindet lautlos aus der Rechnung.
@@ -86,12 +87,13 @@ describe('Fortschrittsmodell', () => {
     }
   });
 
-  it('zählt einen fertigen, aber nicht abgenommenen Loop unter einem abgenommenen', () => {
-    // Die Definition of Done trennt "fertig" (Skill-Schritt I) von "abgenommen"
-    // (Jannes hat docs/abnahme/ durchlaufen) - dieselben Woerter wie in der
-    // Fortschrittstabelle der Roadmap. Faellt diese Ordnung, zaehlt die
-    // Abnahme nichts mehr und die Zahl schmeichelt.
-    expect(anteilVon('fertig')).toBeLessThan(anteilVon('abgenommen'));
-    expect(anteilVon('vorlaeufig')).toBeLessThan(anteilVon('abgenommen'));
+  it('zählt einen fertigen, aber nicht gesichteten Loop unter einem gesichteten', () => {
+    // Die Definition of Done trennt "fertig" (Skill-Schritt I) von "gesichtet"
+    // (Sichtung nach docs/sichtung/ oder, ohne Oberflaeche, CI, test:db und
+    // Zweitreview; E-6) - dieselben Woerter wie in der Fortschrittstabelle der
+    // Roadmap. Faellt diese Ordnung, zaehlt die Sichtung nichts mehr und die
+    // Zahl schmeichelt.
+    expect(anteilVon('fertig')).toBeLessThan(anteilVon('gesichtet'));
+    expect(anteilVon('vorlaeufig')).toBeLessThan(anteilVon('gesichtet'));
   });
 });

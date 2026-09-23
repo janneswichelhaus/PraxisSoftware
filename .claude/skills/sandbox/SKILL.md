@@ -30,7 +30,7 @@ Frage mit Optionen, Empfehlung und Konsequenzen stellen, nichts davon
 Abhängiges bauen.
 
 **Was gelesen wird:** `docs/development/ARBEITSBEREICHE.md`, die
-Oberflächen-Checkliste in `docs/abnahme/README.md`, **eine** passende
+Oberflächen-Checkliste in `docs/sichtung/README.md`, **eine** passende
 Ideen-Datei aus `docs/product/ideen/` (Index in `IDEENSPEICHER.md`). Keine
 ADRs außer ADR-015 und ADR-011.
 
@@ -93,7 +93,7 @@ pnpm lint
 pnpm format:check
 ```
 
-Dazu die Oberflächen-Checkliste aus `docs/abnahme/README.md` Punkt für Punkt.
+Dazu die Oberflächen-Checkliste aus `docs/sichtung/README.md` Punkt für Punkt.
 Für die laufende Anwendung bei **375 px** und 1280 px:
 
 ```bash
