@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-23 · letzte Session: G6b
+# Status · Stand 2026-09-23 · letzte Session: Umbau U0
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,15 +6,15 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**Roadmap 6.2 ist in Kraft.** Zur Eröffnung im Juli 2027 läuft das Endprodukt: Kern, Tagesroute, Befund, Praxisverwaltung, Training, Plattform für Patient:innen und Kund:innen mit Abo und Paketen, Praxisbetrieb, KI-Assistenz (`PROJECT_PRINCIPLES.md` 0.16 §14). Externe Prüfungen (OPS-001, B1, B2, B4) kommen **nach** dem Feature-Freeze M2. Was §17 verbietet, steht unter „Nicht in V1". Fortschritt **34,1 %** (vorher 33,7). Zuletzt **G6b gebaut**: Alle Lesepfade außer einem (BEF-034) weisen mit null Zeilen ab und stehen mit `denied` im Auditlog. Die Schreibpfade sind **G6c** und warten auf deine Wahl.
+**Umbau läuft** ([`development/UMBAU.md`](development/UMBAU.md)). Am 2026-09-23 hat Jannes das Produkt genauer beschrieben und sieben Entscheidungen getroffen (E-1 bis E-7): Anfragen ab Anfang 2027 parallel, Test-Umgebung für das Handy, Nachsorge-Abo nach der Behandlung, UX-Fundament vorziehen, Sichtung statt Abnahme je Epic. Das wird in fünf Schritten **eingearbeitet, nicht angehängt**. Der Plan hat keinen Rang; U1 kommt deshalb zuerst und bringt die Entscheidungen in die verbindlichen Dokumente. Fortschritt **34,1 %**.
 
-## Danach — Block 2
+## Danach — Umbau, dann Bauen
 
-1. **MAP-006 Tagesroute** mit Fahrpuffer (`docs/development/MAP-LOOPS.md`) — synthetische Adressen; das Gate steht vor dem Scharfschalten
-2. **FRB-EPIC-001 Instrumentenbibliothek** (`docs/development/FRB-BAUSTEINE-UND-SCORES.md`)
-3. **FRB-EPIC-002** (`docs/development/FRB-BAUSTEINE-UND-SCORES.md`)
+1. **U1 Grundlagen neu fassen** — „Umbau U1 nach `docs/development/UMBAU.md`"
+2. **U2 Produktbeschreibung und Roadmap 7.0**
+3. **U3 Ablauf schlank**, dann **U4 Register** und **U5 Test-Umgebung**
 
-**G6c Abgewiesene Schreibzugriffe** rückt an Platz 1, sobald deine Wahl unter „Blocker" da ist. Danach FRB-EPIC-003 → DOK-005 → PRX-EPIC-001 bis 003. **Docs-Session ADR-023 Plattformzugang** darf jederzeit dazwischen laufen und muss vor Block 4 angenommen sein. Die inhaltliche Durchsicht vor dem B2-Paket (Rest von BEF-028) gehört zum DSFA-Paket in Block 10.
+Danach **G6c**, sobald deine Wahl unter „Blocker" da ist, sonst der neue Block „Handy und UX-Fundament" (kommt mit Roadmap 7.0).
 
 ## Prüfverfahren
 
@@ -30,7 +30,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 - **D2/D3 aus dem FRB-Plan** vor FRB-EPIC-003; ohne Antwort gilt der Vorschlag dort.
 - **Preise** für Abo und Pakete vor Block 5 (bis dahin synthetisch); **G13** (Umsatzsteuer-Status, Befreiungshinweis, Kürzel `RG`/`TR`) vor M3.
 - **B8:** schriftlicher Lizenzbeleg bis M3 · ungemergt liegen `claude/issue-42-status-fv319v`, `claude/r3-analyse`, `claude/r3-code-review-hardening-c22b8f`.
-- **Nach M2, nicht vorher (Entscheidung 2026-09-22):** OPS-001-Unterlagen, Anfragen B1, B2, B4, Anbieterprüfungen. **R1:** Ist M2 ein halbes Jahr vor der Eröffnung nicht in Sicht, reicht die Zeit für die Prüfungen voraussichtlich nicht — §15.2 erlaubt, sie jederzeit früher zu schicken.
+- **Ab Anfang 2027 parallel zum Bauen (E-1, 2026-09-23):** OPS-001-Unterlagen, Anfragen B1, B2, B4, Anbieterprüfungen.
 - **Lokal:** `git pull`, **Node 22** (`.nvmrc`).
 
 ## Auf Abnahme warten
@@ -39,4 +39,4 @@ Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015,
 
 ## Letzte Session
 
-**G6b gebaut.** 34 weitere Lesepfade weisen ein Konto ohne Leserecht mit null Zeilen statt einer Ausnahme ab und schreiben `denied` über `app.record_denied_read`. Die Aktion ist dieselbe wie beim erfolgreichen Zugriff oder eine von zehn neuen Aktionen je Datenbereich (wie `deletion_runs.read`). **Keine neue Annahme.** Ausgenommen bleibt `list_assignable_therapists`, weil die Teamseiten ihn für trainer aufrufen (**BEF-034**). Gegenprobe gelaufen: Ein zurückgesetzter Pfad macht genau seine vier Tests rot. **Lokale Schritte:** `git pull origin claude/erste-offene-aufgabe-xp8n3s`, `pnpm dlx supabase@2.116.0 db reset` (neue Migration), keine neue Abhängigkeit.
+**Umbau U0:** Durchsicht der Dokumentation (drei Durchsichten, nur lesend), Produktgespräch mit Jannes, Plan [`development/UMBAU.md`](development/UMBAU.md). Kein Code geändert, **keine neue Annahme**. Davor **G6b gebaut** (BEF-034 offen). **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.
