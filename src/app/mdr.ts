@@ -131,7 +131,7 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
     bezeichnung: 'KI-Analyse im Trainingsbereich',
     grundlage: [
       'ADR-006 Punkt 13 (einer der drei MDR-nahen Bereiche)',
-      'ROADMAP.md Etappe TR, Navigationspunkt 15 (Fernplan-Etappe 10)',
+      'ROADMAP.md Etappe TR, Navigationspunkt 15; „Nicht in V1"',
     ],
     keineAusgabe:
       'Keine aus Trainings-, Screening- oder Verlaufsdaten abgeleitete Einschätzung, ' +
@@ -141,7 +141,7 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
   {
     id: 'uebungsanalyse',
     bezeichnung: 'Übungsanalyse über die Zeit',
-    grundlage: ['ROADMAP.md Etappe TR, Navigationspunkt 7 (Fernplan-Etappe 9)'],
+    grundlage: ['ROADMAP.md Etappe TR, Navigationspunkt 7; „Nicht in V1"'],
     keineAusgabe:
       'Die ableitende Hälfte entsteht nicht; was bliebe, wäre die anzeigende und ' +
       'aufzeichnende (ADR-006 Punkt 13).',
@@ -150,7 +150,7 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
   {
     id: 'progression-regelwerk',
     bezeichnung: 'Automatische Progression nach Regelwerk',
-    grundlage: ['ROADMAP.md Fernplan-Etappe 9 („produktiv nicht erreichbar", bis B10)'],
+    grundlage: ['ROADMAP.md „Nicht in V1" (Progression, §17 Verbot 1, bis B10)'],
     keineAusgabe:
       'Keine vorgeschlagene oder vorbelegte Steigerung von Last, Umfang oder Intensität aus ' +
       'erfassten Daten — auch nicht im Schattenbetrieb mit offengelegter Regel.',

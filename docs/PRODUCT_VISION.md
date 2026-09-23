@@ -160,9 +160,10 @@ zugehörigen Fragen zu Identitätsprüfung und Vertretung sind in
 
 Dieselbe Plattform ist das Zielbild für die **Kund:innen des Personal
 Trainings** — nach einer Therapie oder ohne vorherige Heilbehandlung:
-Trainingspläne, Check-ins, Fortschritt, Assessments, Gewohnheiten, Chat; kein
-Ernährungsprotokoll (B9 Punkt 6). Reihenfolge, Voraussetzungen und
-Rechtsrahmen: `development/ROADMAP.md`, Stufe 3. **Nur eine Produktoption.**
+Trainingspläne, Check-ins, Fortschritt, Assessments, Gewohnheiten, Ernährung
+als Protokoll und Zielwert, Rückfragen. Seit 2026-09-22 gehört die Plattform
+zum Umfang der Eröffnung (`PROJECT_PRINCIPLES.md` 0.16 §14); Reihenfolge und
+was davon nicht in V1 kommt: `development/ROADMAP.md`, „Ziel und Umfang".
 
 ## 5. Digitaler Intake und Assessments
 

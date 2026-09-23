@@ -1,57 +1,41 @@
-# Status · Stand 2026-09-22 · letzte Session: G19 Dokumentationsgate
+# Status · Stand 2026-09-23 · letzte Session: Roadmap 6.0
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
-fest, Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md), Ideen gehören nach
-[`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md); ein Eintrag hier ist keine Einplanung.
+fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
+Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**Das Dokumentationsgate prüft jetzt Querverweise (G19, BEF-028).** `pnpm docs:check` meldet eine ADR-Fassung, Prinzipienversion oder einen `§`-Abschnitt, den es nicht gibt, eine als „Grundlage“ genannte ältere Fassung und eine doppelt vergebene `ANN-`/`BEF-`/`IDEA-`-Nummer; Änderungsvermerke dürfen die Vergangenheit nennen. Neun veraltete Grundlagen korrigiert. **Grenze:** Ohne das Wort „Grundlage“ zählt eine ältere Fassung als Herkunft — das prüft erst die Durchsicht vor B2. Davor in derselben Session: **G10-Funktionsteil gestrichen** (Weg a, ANN-021 Fassung 2), Fortschritt **48,9 %**.
+**Roadmap 6.0 ist in Kraft.** Zur Eröffnung im Juli 2027 läuft das Endprodukt: Kern, Tagesroute, Befund, Praxisverwaltung, Training, Plattform für Patient:innen und Kund:innen mit Abo und Paketen, Praxisbetrieb, KI-Assistenz (`PROJECT_PRINCIPLES.md` 0.16 §14). Externe Prüfungen (OPS-001, B1, B2, B4) kommen **nach** dem Feature-Freeze M2. Was §17 verbietet, steht unter „Nicht in V1". Fortschritt **33,3 %** (mit G19) (vorher 48,9 — der Nenner enthält jetzt das Endprodukt). Davor **G19 gebaut** (PR #102): `pnpm docs:check` prüft jetzt Querverweise auf ADR-Fassungen, Prinzipienversionen und `§`-Abschnitte sowie eindeutige Nummern.
 
-## Danach — Reihenfolge seit 2026-09-22
+## Danach — Block 1, dann Block 2
 
-1. **G6a Abgewiesene Zugriffe, Rest** — die übrigen rund 80 Abweisungen nachweisbar machen; der Rest
-   von OPS-004 (Alarmierung, Security-Log 12 Monate, Art. 33) wartet auf **G3**
-2. **MAP-006 Tagesroute** (`docs/development/MAP-LOOPS.md`) — synthetische Adressen, Gate vor dem Scharfschalten
-3. **Inhaltliche Durchsicht vor dem B2-Paket** (Rest von BEF-028, G14) — was das Gate nicht entscheiden kann
+1. **G6a Abgewiesene Zugriffe, Rest** — `/feature-loop G6a Abgewiesene Zugriffe nach docs/development/ROADMAP.md, Block 1`; vor Training und Plattform, die neue Abweisungspfade bringen
+2. **MAP-006 Tagesroute** mit Fahrpuffer (`docs/development/MAP-LOOPS.md`) — synthetische Adressen; das Gate steht vor dem Scharfschalten
+3. **FRB-EPIC-001 Instrumentenbibliothek** (`docs/development/FRB-BAUSTEINE-UND-SCORES.md`)
+
+Danach FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → PRX-EPIC-001 bis 003. **Docs-Session ADR-023 Plattformzugang** darf jederzeit dazwischen laufen und muss vor Block 4 angenommen sein. Die inhaltliche Durchsicht vor dem B2-Paket (Rest von BEF-028) gehört zum DSFA-Paket in Block 10.
 
 ## Prüfverfahren
 
-**Die CI läuft wieder** (seit PR #48). Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2347** (19 neu, `scripts/docs-check.test.mjs`); `test:db` **1834** aus PAT-006, heute **nicht gelaufen** — keine Migration, keine Policy. `docs:check` mit fünf statt drei Prüfungen, gegengeprobt mit einem wieder eingebauten Beleg aus BEF-028 (rot) und ohne (grün). `ASSUMPTIONS.md`: **1222** Zeilen, Obergrenze nicht angehoben. Keine Sichtprüfung: keine Oberfläche geändert.
+**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2347** (mit G19); `test:db` **1834**, heute nicht gelaufen — keine Migration, keine Policy. Roadmap 6.0 ändert Dokumente, `fortschritt.json` und drei Verweistexte in `src/app/mdr.ts`. Keine Sichtprüfung: keine Oberfläche geändert.
 
 ## Blocker (Jannes-seitig)
 
-- **Datenschutzinformation und Ausfallhonorar-Text (PAT-006)** gehen als Entwurf in **B2** und **B4**;
-  bis dahin keine Aushändigung an echte Patient:innen. Offen dort: weitere Zwecke (Fotos, Angehörige).
-- **Logfrist für Betriebslogs entscheiden (R14)** — es ist eine Wahl mit
-  zwei Wegen: **(a) andere Frist** — ADR-011 Punkt 4 in einer neuen Fassung auf das senken, was die
-  Plattform hält (1 bis 28 Tage); billig, aber es verkürzt die Zeit, in der ein Vorfall nach Art. 33
-  überhaupt noch nachweisbar ist. **(b) Ausleitungsweg** — Logs zu einem eigenen Ziel schreiben;
-  hält die 30 Tage, ist aber ein **zweiter Auftragsverarbeiter** mit eigenem Prüfkatalog nach
-  ADR-002. **Empfehlung: (a) vorerst nicht, (b) erst nach G3** — bis zum Scharfschalten ist nichts
-  davon nötig, und mit synthetischen Daten kostet die Lücke nichts. Gebraucht wird die Antwort,
-  **bevor echte Daten laufen**; bis dahin steht die 30 im Code als Anforderung, nicht als Zusage.
-- **OPS-001 weitertragen** — sonst bleibt jede Zeile der Prüfung ein Suchauszug: Unterlagen aus Teil 9 von einem **ungeproxten Rechner** laden; zwei Fragen an den Support (**Zugriff durch Beschäftigte**, **Verschlüsselung der Objekte**); Gate-Punkt 1 bis 6 an **B2**, darunter **§203 Abs. 4 StGB** — der einzige, dessen Scheitern den Anbieter kostet. **Zuerst** `auth-smtp`.
-- **BEF-026 / B13:** Der eingebaute Mailversand stellt laut Auszug nur an Adressen des Projektteams zu. Entweder eigener SMTP-Anbieter (zweiter Auftragsverarbeiter, eigene Prüfung, Rücknahme von B13) oder kein Mailversand (Handgriff nach ANN-025). **STAFF-004 ruht bis dahin.**
-- **MAP-003, MAP-004 und MAP-005 abnehmen** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 und MAP-004 nur lokal — `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`), `supabase/functions/.env.local`, `functions serve`. MAP-003 Schritt 1 und 4 **durch**, **BEF-027 behoben**; offen bleiben Schritt 2, 3 und 5 sowie **alle fünf Schritte von MAP-004**. **MAP-005 Teil A ist durch** (Laptop, 2026-09-22) — die drei Befunde daraus sind behoben und in Teil A **erneut zu prüfen**, weil die Seite sich geändert hat; dabei gleich **MAP-002 Schritt 3** mitprüfen, der ohne Vorschaubanner neu geschrieben ist. **Teil B am Telefon ruht**, bis ein Gerät da ist. Bis dahin bleibt `MAX_ZWISCHENZIELE` bei drei.
-- **Freigabe für Etappe TR.** §14 nimmt den **Trainingsbereich selbst** aus; ohne neue Version nach §21 beginnt dort kein Loop — gebraucht, wenn Etappe TR an der Reihe ist.
-- **PTV:** Karte und Schlüssel tragen auch serverseitig (BEF-021, BEF-022). Offen: **Domainbindung** (ADR-019 Punkt 19) und die **Höchstzahl der Relationen je Matrix-Anfrage** (ANN-091 überbrückt sie mit 25 × 25); nur synthetische Koordinaten.
-- **E2 Ausfallverfahren (G10, ADR-012 Punkt 8)** — eine Seite Praxisprozess vor dem Go-live: Übersicht morgens öffnen oder drucken, Papier, Nachtrag binnen 24 h, Rechnungen ruhen.
-- **Lokal:** `git pull` — keine Migration, keine neue Abhängigkeit. **Node 22** (`.nvmrc`), sonst rot.
-- **G13 fehlt:** Umsatzsteuer-Status, **Wortlaut des Befreiungshinweises**, die **Kürzel der beiden Nummernkreise** (`RG`/`TR`) — ANN-074/075/082; dazu echte Preise. **B4** entscheidet zusätzlich über den **ermäßigten Satz**; bis dahin weist eine Constraint ihn ab.
-- **B9:** Die Auswertung liefert beide Grundlagen und wählt keine; welche die Gewinnermittlung verlangt, gehört mit B4 in dieselbe Frage (**ANN-088**).
-- **M0 (Vorlauf):** B1, B2, B4 ([`decisions/ANFRAGEN.md`](decisions/ANFRAGEN.md)) — **B2 trägt** die
-  Trennung aus ADR-021, die Einwilligung im Training, die Office-Sicht (§4.8), **die Frist für
-  Screening-Daten**, den **Handoff** (ADR-019 Punkt 23) · **Secret Scanning** · Kartendienst ablegen.
-- **Abnahme R3** (25 Befunde umgesetzt, 26 bleiben Backlog) und **CAL-018, CAL-EPIC-004a/b/c,
-  FIX-EPIC-004, UX-013, GRD-001, VER-EPIC-002, ABR-EPIC-001/002a/b/003** in
-  [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md); **Sichtprüfung hinter der Anmeldung wartet auf OPS-002** — in der Cloud startet kein GoTrue.
-- **B8:** Lizenzbeleg · ungemergt liegen `claude/issue-42-status-fv319v` (3), `claude/r3-analyse` (5) und `claude/r3-code-review-hardening-c22b8f` (1 Commit).
+- **Abnahme-Rückstand über 30 Epics — Abweichungsregel 1 greift:** Jede zweite Session ist eine Abnahme, bis weniger als fünf warten. Lokal mit `supabase start`, je Etappe am Stück ([`abnahme/README.md`](abnahme/README.md)), Aufruf „Abnahme" in der Roadmap. Zuerst **M1** (Etappe 1, [`abnahme/etappe-1-kernprozess.md`](abnahme/etappe-1-kernprozess.md)), dann Etappe L, G und T.
+- **MAP-003, MAP-004, MAP-005** ([`abnahme/etappe-t-kartendienst.md`](abnahme/etappe-t-kartendienst.md)): MAP-003 Schritte 2, 3, 5 und alle fünf von MAP-004 lokal mit `[edge_runtime] enabled = true` **für den Lauf** (im Repository bleibt `false`); MAP-005 Teil A erneut prüfen (dabei MAP-002 Schritt 3), **Teil B am Telefon ruht**, bis ein Gerät da ist — `MAX_ZWISCHENZIELE` bleibt bei drei.
+- **Logfrist für Betriebslogs (R14 alt, jetzt R9):** (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg. Empfehlung: nach G3. Gebraucht vor echten Daten.
+- **BEF-026 / B13:** Die Plattform braucht Mails an Patient:innen; Empfehlung: eigener SMTP-Anbieter, geprüft in Block 11. STAFF-004 ruht bis dahin.
+- **D2/D3 aus dem FRB-Plan** vor FRB-EPIC-003; ohne Antwort gilt der Vorschlag dort.
+- **Preise** für Abo und Pakete vor Block 5 (bis dahin synthetisch); **G13** (Umsatzsteuer-Status, Befreiungshinweis, Kürzel `RG`/`TR`) vor M3.
+- **B8:** schriftlicher Lizenzbeleg bis M3 · ungemergt liegen `claude/issue-42-status-fv319v`, `claude/r3-analyse`, `claude/r3-code-review-hardening-c22b8f`.
+- **Nach M2, nicht vorher (Entscheidung 2026-09-22):** OPS-001-Unterlagen, Anfragen B1, B2, B4, Anbieterprüfungen. **R1:** Ist M2 ein halbes Jahr vor der Eröffnung nicht in Sicht, reicht die Zeit für die Prüfungen voraussichtlich nicht — §15.2 erlaubt, sie jederzeit früher zu schicken.
+- **Lokal:** `git pull`, **Node 22** (`.nvmrc`).
 
 ## Auf Abnahme warten
 
-Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, ABR-EPIC-004, LEI-EPIC-001, FRB-EPIC-000, CAL-EPIC-005 samt CAL-027, ABR-EPIC-005, ABR-EPIC-006 ([`Etappe L`](abnahme/etappe-l-leistungsbereiche.md)) und MAP-002 samt MAP-003, MAP-004 und MAP-005 ([`Etappe T`](abnahme/etappe-t-kartendienst.md)); FIX-EPIC-001, MAP-003 und MAP-004 brauchen Docker. Gesamtliste: [`abnahme/README.md`](abnahme/README.md). **OPS-006**, **OPS-007** und neu **PAT-006** ([Etappe G](abnahme/etappe-g-betriebsreife.md); OPS-007 lokal mit `db reset --no-seed`); OPS-004 prüfen Tests und Lint, nicht ein Klickweg.
+Alles aus Etappe 1 seit CAL-EPIC-003b, dazu DAT-EPIC-001, ROL-EPIC-001, FIX-015, Etappe L (ABR-EPIC-004 bis 006, LEI-EPIC-001, CAL-EPIC-005, CAL-027), FRB-EPIC-000, MAP-002 bis MAP-005 ([Etappe T](abnahme/etappe-t-kartendienst.md)), OPS-006, OPS-007 (lokal mit `db reset --no-seed`) und PAT-006 ([Etappe G](abnahme/etappe-g-betriebsreife.md)). Gesamtliste: [`abnahme/README.md`](abnahme/README.md).
 
 ## Letzte Session
 
-**Das Gate entscheidet nur, was eine Maschine entscheiden kann.** Eine ältere Fassung ist nicht per se falsch — „ADR-013 Fassung 2, Punkt 9“ sagt, woher ein Punkt stammt, und der Punkt gilt. Falsch wird sie, wo ein Dokument sie als seine Grundlage behauptet; genau diese Form hatten die Belege aus BEF-028. Offen aus BEF-028 bleibt der Nebenbefund: **drei von vier Obergrenzen sind voll** — heben oder auslagern ist deine Wahl. **Lokal:** `git pull origin claude/g19-dokumentationsgate`; **#101 zuerst mergen**, der Branch baut darauf auf.
+**Roadmap 6.0, Planungssession ohne Code.** Jannes hat den Umfang auf das Endprodukt erweitert, die Prüfungen hinter den Freeze gelegt und die Reihenfolge delegiert. Neu: `PROJECT_PRINCIPLES.md` 0.16 (§14 gibt Trainingsbereich, Plattform und Portal-Abo frei), B9/B11/B15 neu entschieden, Chronik in `ROADMAP-CHRONIK.md`. **Lokale Schritte:** `git pull origin claude/beautiful-maxwell-rno44c` — keine Migration, keine neue Abhängigkeit. Offen aus BEF-028: **drei von vier Obergrenzen sind voll** — die Roadmap ist mit 6.0 auf ein Fünftel geschrumpft; für die übrigen gilt: heben oder auslagern ist deine Wahl.

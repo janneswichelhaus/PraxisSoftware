@@ -250,8 +250,8 @@ Kette bis zur Eröffnung und die Etappen G und H in
 [`development/ROADMAP.md`](development/ROADMAP.md)).
 
 Offene Punkte führt [`decisions/OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md),
-die Reihenfolge [`development/ROADMAP.md`](development/ROADMAP.md) (Spur B,
-Etappe G). Hier steht nur, was im Code offen ist:
+die Reihenfolge [`development/ROADMAP.md`](development/ROADMAP.md)
+(„Entscheidungen und Prüfungen", Etappe G). Hier steht nur, was im Code offen ist:
 
 1. **Das Löschverfahren nach [ADR-008](adr/ADR-008-data-retention-and-deletion.md)
    steht, zwei betriebliche Teile fehlen noch.** Gebaut und getestet sind seit
@@ -365,7 +365,7 @@ deckungsgleich.
 
 Diese Einstellungen lassen sich nicht aus dem Code setzen:
 
-- Branch Protection auf `main` (M0): erforderliche Checks unter ihren
+- Branch Protection auf `main` (Kriterium von M3): erforderliche Checks unter ihren
   Anzeigenamen „Lint, Typecheck, Tests, Build" (`quality`), „Migrationen und
   RLS-Policies" (`database`), „Secret Scanning und Dependency Audit"
   (`security`), „End-to-End" (`e2e`), „End-to-End hinter der Anmeldung"

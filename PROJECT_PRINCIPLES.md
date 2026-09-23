@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.15** |
+| **Dokumentversion** | **0.16** |
 | **Änderungsdatum** | **2026-09-22** |
-| Vorversion | 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Vorversion | 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -1194,6 +1194,26 @@ Check-ins, Fortschritt, Trainingspläne, Assessments, Ernährung, KI-Analyse —
 damit **nicht** freigegeben. Personal Training stand nie auf dieser Liste; es
 ist seit §1.2 ein Leistungsbereich und keine spätere Erweiterung.
 
+**Auftrag des Projektinhabers vom 2026-09-22: der Umfang bis zur Eröffnung.**
+Jannes hat festgelegt, dass die Software zur Eröffnung im Juli 2027 das
+Endprodukt tragen soll und nicht eine erste Stufe davon. Damit sind — über die
+Aufhebung für Online Coaching hinaus — **freigegeben**:
+
+- der **Trainingsbereich selbst**, in der Sicht der Betreuung und in der Sicht
+  der Kund:innen nach §4.10, samt der Bereiche, die der Satz oben ausnahm;
+- die **Plattform für Patient:innen und Kund:innen** nach §4.6 und §4.10;
+- ein **Abonnement der Patient:innen** für diese Plattform, verstanden als
+  wiederkehrende Leistung der Praxis, die mit einer Monatsrechnung im eigenen
+  Rechnungswesen berechnet wird (§19, ADR-009); für Trainingskund:innen ist
+  dieselbe Plattform im Paketpreis enthalten.
+
+„Abonnements" in der Liste oben und in der Negativliste von ADR-014 meint das
+**Abrechnungsmodell der Software** selbst — die Software als bezahlter Dienst
+für andere Praxen. Das bleibt gesperrt, ebenso **Wearables**, **mehrere
+Standorte als Funktion** und die **spätere Vermarktung**. Die Freigabe ändert
+nichts an §17: Was eines der drei Verbote berührt, entsteht auch im erweiterten
+Umfang nicht. Reihenfolge und Zuschnitt: `docs/development/ROADMAP.md`.
+
 Umgesetzt wird davon ausschließlich die strukturelle Vorbereitung, die
 [ADR-014](docs/adr/ADR-014-foundational-data-model.md) abschließend auflistet —
 darunter `organization_id` und, wo fachlich sinnvoll, `location_id` ab der
@@ -1610,6 +1630,24 @@ was sieht, ist eine Produktentscheidung und steht hier.
 
 Neueste Version zuerst. Ältere Vermerke beschreiben den Stand ihrer Zeit
 und werden nicht nachträglich geändert.
+
+### Änderungsvermerk 0.16
+
+Eine Entscheidung des Projektinhabers vom 2026-09-22: **Zur Eröffnung soll das
+Endprodukt laufen.** Geändert ist allein **§14**; keine Korrekturversion (§21),
+weil sich die Reichweite einer Sperre ändert.
+
+- **Freigegeben** sind der Trainingsbereich selbst (bis 0.15 ausdrücklich
+  ausgenommen), die Plattform für Patient:innen und Kund:innen, die §4.6 und
+  §4.10 seit Langem beschreiben, und ein Abonnement der Patient:innen für diese
+  Plattform als Monatsrechnung der Praxis.
+- **Präzisiert** ist das Wort „Abonnements": gemeint war und bleibt das
+  Abrechnungsmodell der Software für Dritte (ADR-014, Negativliste). Das
+  Portal-Abo einer Patientin ist eine Leistung der Praxis, kein SaaS-Vertrag.
+- **Nicht geändert:** §17 mit seinen drei Verboten, §20 samt §20.1, die
+  Sperren für Wearables, Standorte und Vermarktung, und §15.2 — die
+  Freigabe betrifft das Bauen, das Scharfschalten hängt weiter an den
+  Prüfungen vor dem Go-live-Gate.
 
 ### Änderungsvermerk 0.15
 
