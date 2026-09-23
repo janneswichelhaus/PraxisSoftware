@@ -20,22 +20,38 @@ dieser Chronik statt am Ende des Dokuments.
   Nachsorge-Abo; Terminanfrage ist ein Wunsch; Identitätsprüfung und
   Vertretung mit ADR-023. **§4.10** Ansicht der Trainingskund:innen, Paket nach
   Zeitraum, Übergang aus der Behandlung.
-- **§4** Einleitung: Der Praxisinhaber bindet neue Teammitglieder selbst ein.
-- **§5** Fotos über die Kamera der Anwendung, Einwilligung für Fotos von
-  Patient:innen, Erstaufnahme bleibt sichtbar offen, Dokumentation ohne
-  Sprechen.
+- **§1** Betriebsbild (keine Räume, Hausbesuch per Rad, Verweis auf die
+  Produktbeschreibung); **§1.2** Ort des Trainings und Übergang aus der
+  Behandlung.
+- **§2.2** zwei neue SOLLTE: Die Oberfläche zeigt, was der nächste Schritt
+  braucht; Beschriftungen folgen der Sprache der Praxis.
+- **§4** Einleitung: Der Praxisinhaber SOLLTE neue Teammitglieder selbst
+  einbinden können (heute noch ANN-025). **§4.3, §4.4** Verlaufsnotizen zu E15
+  und C1 entfernt, Inhalt unverändert.
+- **§5** Fotos der Verordnung und von Papierbögen in die Akte; Aufnahmen des
+  Teams SOLLTEN über die App-Kamera entstehen; Fotos von Patient:innen
+  vorgesehen, aber nach ADR-017 Punkt 30 noch nicht freigegeben. Neues MUSS:
+  Wo Sprachdokumentation angeboten wird, gibt es denselben Weg ohne Sprechen.
+  Erstaufnahme bleibt sichtbar offen (SOLLTE).
 - **§6.1** Gateway ab dem ersten KI-Feature, auch mit Mock. **§6.3** ohne
   „kein Implementierungsauftrag"; Tastaturdiktat nicht als Weg angeboten.
 - **§7** Befundbogen vorab über die Plattform oder als Foto.
 - **§8** Terminanfrage als Wunsch; Terminvorschläge ohne „spätere
   Ausbaustufe"; Länge frei ohne den widersprechenden Satz „genau zwei Längen";
   Fahrpuffer mit MAP-006, offen nur E12 Punkt 3a; Verweis §6 → §5.
-- **§9** Tagesroute mit Vorschau und Behandlungsliege.
+- **§9** Tagesroute mit Vorschau; neues MUSS: Bedarf der Behandlungsliege
+  beim Tagesstart erkennbar.
+- **§10** Die Zuordnung klinischer Inhalte zur Akte ist als MUSS formuliert
+  (vorher „bleibt Pflicht").
+- **§14** zusätzlich gesperrt: Gesundheits-Apps, wie in der Roadmap unter
+  „Nicht in V1" neben den Wearables.
+- **§17** Verweise ohne Fassungsnummer, Inhalt unverändert.
 - **§15** Die Liste „Eine Annahme DARF NICHT" steht bei §15.1; §15.2 mit den
   Anfragen ab Anfang 2027 parallel zum Bauen.
-- **§19** abrechenbare Ereignisse: Termin, Gebührenanlass, Trainingsleistung,
-  Paket, Nachsorge-Abo; „ausschließlich aus dokumentiert" gilt für den
-  Behandlungstermin.
+- **§19** abrechenbare Ereignisse (nicht abschließend): Termin,
+  Gebührenanlass, Trainingsleistung, Paket, Nachsorge-Abo im Bereich
+  `therapy` ab Ende der Behandlungsgrundlage; „ausschließlich aus dokumentiert"
+  gilt für den Behandlungstermin, ebenso in §8.
 - **§21** Änderungen ersetzen den Text an seiner Stelle; Vermerke in dieser
   Chronik; `docs/STATUS.md` richtig verortet.
 - Verlaufsnotizen („Bis Version 0.9 galt …", „seit 0.11", „überholt durch E15")

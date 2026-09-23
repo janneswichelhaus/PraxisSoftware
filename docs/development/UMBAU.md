@@ -130,8 +130,9 @@ nicht abbauen kann.
 
 ### U1 — Grundlagen neu fassen (Rang 1 und 2) · erledigt 2026-09-23
 
-Ergebnis: `PROJECT_PRINCIPLES.md` 0.17 (2 161 → rund 1 630 Zeilen, −25 %; die
-Vermerke stehen in `docs/PRINCIPLES-CHRONIK.md`), ADR-014 Fassung 2, ADR-013
+Ergebnis: `PROJECT_PRINCIPLES.md` 0.17 (Datei 2 161 → rund 1 640 Zeilen, allein durch die
+Auslagerung der Vermerke nach `docs/PRINCIPLES-CHRONIK.md`; der normative Text ist gleich lang
+geblieben, weil Streichungen und neue Festlegungen sich aufheben), ADR-014 Fassung 2, ADR-013
 Fassung 4, ADR-009 Fassung 3, Vermerke in ADR-018 und ADR-007, gekürzte
 Statusabschnitte in ADR-006, -009, -021, -022. Weiter zu kürzen hieße,
 normative Aussagen zu streichen. **Nicht gemacht:** ADR-006 Punkt 8
@@ -185,6 +186,10 @@ Auftrag war:
   OPEN_DECISIONS" streichen.
 - Aus U1: Die Frage, ob Offline für Therapeut:innen (ADR-001 Punkt 3) in V1 kommt, in den
   Auftrag für ADR-024; Verweise auf „`PROJECT_PRINCIPLES.md` 0.16 §14" auf §14 umstellen.
+- Aus dem Zweitreview von U1: In die Anfrage B2 die Frage zur Zweckbindung aufnehmen — die
+  Erinnerung an das Abschlussgespräch nutzt Behandlungsdaten (Ende der Behandlung) für ein
+  Angebot außerhalb der Heilbehandlung (§4.10).
+- Für U4: ANN-025 mit dem neuen SOLLTE in §4 und mit B13 zusammenführen.
 - `docs/decisions/ANFRAGEN.md`: B4, B9, B11 auf den heutigen Umfang, Steuerfrage zum
   Nachsorge-Abo, Versand ab Anfang 2027.
 

@@ -7,7 +7,7 @@
 | **Dokumentversion** | **0.17** |
 | **Änderungsdatum** | **2026-09-23** |
 | Vorversion | 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier; ADR-023 (Plattformzugang) ist vorgesehen |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
 
@@ -323,8 +323,10 @@ sich aus der Vereinigung der zugewiesenen Rollen
 
 Die Praxis wächst von einer Person aus: Zur Eröffnung arbeitet vor allem der
 Praxisinhaber mit der Anwendung und übernimmt auch das Büro. Ein neues
-Teammitglied MUSS der Praxisinhaber in der Anwendung selbst anlegen und mit
-einer Rolle einbinden können, ohne technische Administration (§4.1).
+Teammitglied SOLLTE der Praxisinhaber in der Anwendung selbst anlegen und mit
+einer Rolle einbinden können, ohne technische Administration (§4.1). Heute
+entsteht das Konto noch über den Anmeldedienst (ANN-025), weil die Anwendung
+keine eigenen Mails verschickt (B13).
 
 ### 4.1 Praxisinhaber / Geschäftsführung
 
@@ -372,7 +374,7 @@ auf Metadaten ohne klinische Inhalte, die Unveränderbarkeit über den
 Anwendungspfad, die Aufbewahrungsfrist und der monatliche Audit-/Security-Report
 sind in [ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md) geregelt.
 Lesen darf das Auditlog in V1 allein der Praxisinhaber, über einen eigenen,
-selbst auditierten Lesepfad (ADR-010 Fassung 2). Dieselbe Auditpflicht gilt
+selbst auditierten Lesepfad (ADR-010). Dieselbe Auditpflicht gilt
 für jeden lesenden Zugriff des Office auf klinische Inhalte (§4.3).
 
 Therapeut:innen dürfen insbesondere:
@@ -502,7 +504,7 @@ Projektinhabers vom 2026-09-23):
 - Erteilen und Widerrufen von Einwilligungen
 - sichere Kommunikation mit der Praxis
 
-**Nach dem Ende der Verordnung — Nachsorge-Abo:** Eine monatlich kündbare
+**Nach dem Ende der Behandlung — Nachsorge-Abo:** Eine monatlich kündbare
 Leistung der Praxis (§19). Das Heimprogramm bleibt aktiv und wird angepasst;
 dazu kommen Fortschrittsverlauf, Gewohnheiten und Rückfragen mit Foto oder
 Video mit einer zugesagten Antwortfrist. Nach einer Kündigung bleibt der
@@ -619,21 +621,23 @@ Screening früher (ADR-021 Punkt 4, §18). Das Löschen oder Sperren eines Konto
 DARF das Verhältnis nicht löschen, und das Bestehen eines Verhältnisses setzt
 kein Konto voraus.
 
-Die Ansicht der Trainingskund:innen folgt der Navigationsleiste aus
-[`docs/product/ideen/referenz-navigation.md`](docs/product/ideen/referenz-navigation.md),
-soweit §17 sie nicht ausschließt: Übersicht, Kalender, Einheiten, Check-ins,
+Die Ansicht der Trainingskund:innen umfasst, soweit §17 nichts davon
+ausschließt (Vorbild war
+[`docs/product/ideen/referenz-navigation.md`](docs/product/ideen/referenz-navigation.md)):
+Übersicht, Kalender, Einheiten, Check-ins,
 Fortschritt, Pläne, Aktivitäten, Assessments, Profil, Gewohnheiten, Ernährung
 als Protokoll und Zielwert, Rückfragen, Einstellungen. Dazu gehören eigene
 Rechnungen und das Erteilen und Widerrufen der Einwilligung nach Art. 9 Abs. 2
-lit. a DSGVO. Die Plattform ist im Paketpreis enthalten; ein Paket gilt für
+lit. a DSGVO. Das Trainingsprotokoll sehen Kund:innen, soweit es freigegeben
+ist; interne Notizen der Betreuung sind nicht automatisch sichtbar. Die Plattform ist im Paketpreis enthalten; ein Paket gilt für
 einen Zeitraum und ist nicht pausierbar (§19).
 
 **Übergang aus der Behandlung** (Entscheidung vom 2026-09-23): In den letzten
-Terminen einer Verordnung erinnert die Anwendung die behandelnde Person an das
+Terminen einer Behandlungsgrundlage erinnert die Anwendung die behandelnde Person an das
 Abschlussgespräch. Angeboten wird mündlich; geschlossen wird der
 Trainingsvertrag über das eigene Konto, mit Widerrufsbelehrung und eigener
 Einwilligung. Aus der Akte wird nur übernommen, was die Person ausdrücklich
-freigibt, als Kopie nach §4.8. Das Paket beginnt nach dem Ende der Verordnung.
+freigibt, als Kopie nach §4.8. Das Paket beginnt nach dem Ende der Behandlung.
 
 Hat eine Person beide Verhältnisse, bleiben die Bereiche auch in ihrer eigenen
 Sicht getrennt; ein gemeinsamer Bestand entsteht nicht (§4.8). Identitätsprüfung
@@ -670,14 +674,17 @@ und ersetzt ihn nicht.
 Entsteht ein Dokumentationstext aus einem Diktat oder einer anderen
 KI-Verarbeitung, gilt zusätzlich §6.3. Ein solcher Vorschlag ist kein Entwurf
 im Sinne dieses Abschnitts, bevor eine Therapeut:in ihn ausdrücklich
-übernommen hat. Dokumentiert werden KANN auch ohne Sprechen und ohne viel
-Tippen — über Skalen und Bausteine zum Antippen.
+übernommen hat. Wo die Anwendung Sprachdokumentation anbietet, MUSS es
+denselben Weg auch ohne Sprechen geben — über Skalen und Bausteine zum
+Antippen oder über Text.
 
-**Fotos** von Patient:innen, von der Verordnung und von Papierbögen gehören in
-die Akte ([ADR-017](docs/adr/ADR-017-file-storage.md)). Sie MÜSSEN über die
-Kamera der Anwendung entstehen und DÜRFEN NICHT in der Mediathek des Geräts
-abgelegt werden. Fotos von Patient:innen setzen eine eigene Einwilligung
-voraus.
+**Fotos.** Fotos der Verordnung und von Papierbögen gehören als Dokument in die
+Akte ([ADR-017](docs/adr/ADR-017-file-storage.md)). Fotos, die das Praxisteam
+aufnimmt, SOLLTEN über die Kamera der Anwendung entstehen und nicht in der
+Mediathek des Geräts liegen bleiben. **Fotos von Patient:innen** sind in V1
+vorgesehen, aber noch nicht freigegeben (ADR-017 Punkt 30): Sie setzen eine
+eigene Einwilligung voraus, und Frist und Umgang mit Aufnahmemetadaten
+entscheidet der Loop, der sie baut.
 
 **Erstaufnahme.** Was zur Aufnahme einer neuen Person gehört — Verordnung,
 Befundbogen, Einwilligungen, Befund —, SOLLTE die Anwendung sichtbar offen
@@ -764,7 +771,7 @@ zugehörigen Termin heraus — auf Smartphone oder Tablet gesprochen,
 transkribiert, strukturiert und geprüft, bevor daraus Dokumentation wird
 (Entscheidung vom 2026-09-08). Anbieter, Architektur und Aufbewahrung des
 Audios sind offen (`docs/decisions/OPEN_DECISIONS.md` E13) und werden im Loop
-entschieden, der die Funktion baut. Die Diktierfunktion der Geräte-Tastatur
+entschieden, der die Funktion baut (KI-EPIC-001). Die Diktierfunktion der Geräte-Tastatur
 ist ein Dienst des Geräteherstellers ohne Vertrag mit der Praxis; die
 Anwendung bietet sie nicht als Weg der Sprachdokumentation an.
 
@@ -906,8 +913,8 @@ Drei Aussagen sind dabei verbindlich:
 - **Dokumentiert und abgerechnet setzt der Vorgang, dem die Tatsache gehört** —
   die Finalisierung der Dokumentation beziehungsweise die Ausstellung der
   Rechnung, in derselben Transaktion. Damit bekommt §19 seinen technischen
-  Anker: Fakturiert wird aus „dokumentiert" oder aus „nicht angetroffen" mit
-  Ausfallhonorar-Kennzeichen. Ein Termin lässt sich weiterhin **ohne**
+  Anker: Ein Behandlungstermin wird aus „dokumentiert" oder aus „nicht
+  angetroffen" mit Ausfallhonorar-Kennzeichen fakturiert. Ein Termin lässt sich weiterhin **ohne**
   Dokumentation abschließen; die Sperre sitzt an der Rechnung, nicht am
   Abschluss.
 - **Eine Absage ist endgültig, eine finalisierte Dokumentation ebenso.** Ein
@@ -1034,8 +1041,9 @@ Woher eine Fahrzeit stammt, regelt §9 und
 deterministisch entstehen; ein Sprachmodell DARF NICHT in ihrem Ergebnispfad
 stehen (§6.2).
 
-Den Fahrpuffer und die Anzeige einer Unterschreitung baut MAP-006 nach
-ADR-019. Offen ist nur, ob eine Fahrzeit für die Rundungsregel je Prüfung
+Woher eine Fahrzeit kommt, regelt ADR-019. Fahrpuffer und Anzeige einer
+Unterschreitung baut MAP-006 nach der vorläufigen Entscheidung zu E12 Punkt 3
+und 4. Offen ist nur, ob eine Fahrzeit für die Rundungsregel je Prüfung
 abgerufen oder kurz gespeichert wird (E12 Punkt 3a in
 `docs/decisions/OPEN_DECISIONS.md`).
 
@@ -1189,7 +1197,7 @@ Heilbehandlung:
 - der **Trainingsbereich** in der Sicht der Betreuung und der Kund:innen (§1.2,
   §4.9, §4.10);
 - die **Plattform für Patient:innen und Trainingskund:innen** (§4.6, §4.10);
-- das **Nachsorge-Abo** der Patient:innen nach dem Ende der Verordnung und das
+- das **Nachsorge-Abo** der Patient:innen nach dem Ende der Behandlung und das
   **Trainingspaket** nach Zeitraum, beide im eigenen Rechnungswesen (§19);
 - Praxisbetrieb (Radflotte, Teamkommunikation, Urlaub, Zeitkonto,
   Erstattungen) und KI-Assistenz innerhalb von §6 und §17.
@@ -1367,7 +1375,7 @@ werden.
 diagnostischen oder therapeutischen Entscheidungen und schlägt keine vor.
 
 Dieser Abschnitt gilt unverändert im Trainingsverhältnis und an Terminen im
-Kontext `training` (§1.2, ADR-006 Fassung 3 Punkt 9). Dass Training keine
+Kontext `training` (§1.2, ADR-006 Punkt 9). Dass Training keine
 Heilbehandlung ist, macht die Grenze nicht weiter — erhoben werden auch dort
 Gesundheitsangaben; es ändert sich die Rechtsgrundlage, nicht die
 Zweckbestimmung.
@@ -1395,7 +1403,7 @@ und angezeigt wird, was fachlich gebraucht wird — es entsteht nur die
 abgeleitete Aussage nicht. Die Hervorhebung nach §7.1 bleibt unberührt; der
 Unterschied ist der zwischen „NRS 8, Angabe vom 12.03." und „Schmerz
 verschlechtert". Wo genau die Kante jedes Verbots verläuft, steht in ADR-006
-Fassung 3, Punkte 10 bis 12 — dieses Dokument nennt das Verbot, nicht seine
+Punkte 10 bis 12 — dieses Dokument nennt das Verbot, nicht seine
 Auslegung.
 
 Einzelheiten: [ADR-006](docs/adr/ADR-006-medical-device-boundary.md).
@@ -1449,15 +1457,16 @@ Abrechenbare Leistungen existieren unabhängig von Rechnungen und werden aus
 durchgeführten Terminen beziehungsweise anderen abrechenbaren Ereignissen
 erzeugt. Eine Leistung DARF NICHT unbeabsichtigt mehrfach abgerechnet werden.
 
-Abrechenbare Ereignisse sind:
+Abrechenbare Ereignisse sind insbesondere:
 
 - in der **Heilbehandlung** der dokumentierte Termin und der Gebührenanlass
   nach §8;
 - im **Training** die vereinbarte Trainingsleistung und das **Paket**, das für
   einen festen Zeitraum gilt und nicht pausiert werden kann;
-- das **Nachsorge-Abo** nach §4.6 als wiederkehrende Leistung mit
-  Monatsrechnung, monatlich kündbar; es beginnt frühestens mit dem Ende der
-  Verordnung, damit während der Behandlung nichts doppelt berechnet wird.
+- das **Nachsorge-Abo** nach §4.6 als wiederkehrende Leistung des Bereichs
+  `therapy` mit Monatsrechnung, monatlich kündbar; es beginnt frühestens mit
+  dem Ende der Behandlungsgrundlage (Verordnung oder Selbstzahlervereinbarung,
+  ADR-020), damit während der Behandlung nichts doppelt berechnet wird.
 
 Die steuerliche Einordnung von Paket und Nachsorge-Abo ist Gegenstand der
 Anfrage an die Steuerberatung (B4); bis dahin gilt §15.1.
@@ -1593,7 +1602,7 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-006 | Abgrenzung gegenüber Medical Device Software | §7.1, §17, §6.3 |
 | ADR-007 | Datenschutz-Folgenabschätzung und Datenschutzprozess | §3.7 |
 | ADR-008 | Aufbewahrung und Löschung | §4.6, §10, §18 |
-| ADR-009 | Privatabrechnung | §19 |
+| ADR-009 | Privatabrechnung | §4.6, §19 |
 | ADR-010 | Audit-Logging und privilegierter Produktionszugriff | §3.1, §4.1, §4.2, §13 |
 | ADR-011 | Logging und Observability | §3.6 |
 | ADR-012 | Backup, Wiederherstellung und Betriebskontinuität | §3.4, §13 |
@@ -1601,12 +1610,12 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-014 | Grundlegende Datenmodell-Entscheidungen | §14 |
 | ADR-015 | Initialer technischer Stack | §2.1, §2.2, §3.4 |
 | ADR-016 | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | §5, §6.3 |
-| ADR-017 | Dateiablage | §4.7, §12, §18 |
+| ADR-017 | Dateiablage | §4.7, §5, §12, §18 |
 | ADR-018 | Zustandsautomat des Termins | §8, §19 |
 | ADR-019 | Kartendienst: Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | §8.1, §9, §20 |
 | ADR-020 | Behandlungsgrundlage: Verordnung und Selbstzahler unter einer Klammer | §14, §19 |
 | ADR-021 | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | §1.1, §1.2, §4, §14, §18 |
-| ADR-022 | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | §1.2, §4, §5, §8, §18 |
+| ADR-022 | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | §1.2, §4, §5, §8, §9, §18 |
 
 Die Tabelle nennt, **welcher ADR welchen Paragraphen trägt** — sonst nichts.
 Welche Fassung gilt, welchen Status ein ADR hat und woran eine produktive

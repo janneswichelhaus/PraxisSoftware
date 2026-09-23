@@ -45,10 +45,10 @@ Zwei Teile davon sind bereits entschieden:
 - **Eine Vorfrage (Jannes, 2026-09-08):** „angefragt" und „vorgemerkt" werden
   **nur vorgesehen, nicht gebaut**. Ohne Patientenportal gibt es niemanden,
   der einen Termin anfragt, und ADR-014 verbietet das Vorbauen.
-  *Mit der Plattform gehört das Anfragen zum Umfang der Eröffnung
-  (`PROJECT_PRINCIPLES.md` §4.6, §8): Beide Zustände werden mit dem Loop
-  gebaut, der Terminwünsche einführt; eine Anfrage bleibt ein Wunsch, den die
-  Praxis bestätigt.*
+  *Voraussetzung entfallen am 2026-09-22: Die Plattform gehört zum Umfang der
+  Eröffnung (`PROJECT_PRINCIPLES.md` §4.6, §8, §14). Die Zustände werden damit
+  zu einem konkreten Auftrag und entstehen mit dem Loop, der Terminwünsche
+  einführt.*
 
 Offen ist die Ausgestaltung: Übergänge und ihre Auslöser, die Migration der
 heute vorhandenen Status, ob „dokumentiert" und „abgerechnet" gesetzt oder

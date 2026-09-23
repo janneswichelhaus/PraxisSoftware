@@ -176,8 +176,8 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 21. *(Fassung 3)* **Wiederkehrende und vorausbezahlte Leistungen sind
     abrechenbare Ereignisse** (`PROJECT_PRINCIPLES.md` §19). Das
     **Nachsorge-Abo** der Patient:innen erzeugt je Monat eine Leistung und eine
-    Monatsrechnung; es beginnt frühestens mit dem Ende der Verordnung und ist
-    monatlich kündbar. Das **Trainingspaket** gilt für einen festen Zeitraum,
+    Monatsrechnung im Bereich `therapy`; es beginnt frühestens mit dem Ende
+    der Behandlungsgrundlage (ADR-020) und ist monatlich kündbar. Das **Trainingspaket** gilt für einen festen Zeitraum,
     ist nicht pausierbar und wird als eine Leistung des Bereichs `training`
     berechnet. Für beide gelten die Punkte 1 bis 20 unverändert —
     insbesondere Snapshot, ein Leistungsbereich je Rechnung und das
@@ -323,7 +323,7 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 
 ## Offene Folgefragen
 
-- Welche abrechenbaren Ereignisse gibt es neben durchgeführten Terminen?
+- ~~Welche abrechenbaren Ereignisse gibt es neben durchgeführten Terminen?~~ *Beantwortet mit Punkt 21 (Fassung 3) und `PROJECT_PRINCIPLES.md` §19; die Liste dort ist nicht abschließend.*
 - Wie wird die Nichtwiederverwendung von Rechnungsnummern unter gleichzeitigen
   Zugriffen und bei fehlgeschlagenen Ausstellungsvorgängen technisch
   garantiert?
@@ -368,4 +368,4 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 | ------- | ---------- | -------- |
 | 1       | 2026-08-28 | Erstfassung, angenommen. Punkte 1 bis 14. |
 | 2       | 2026-09-20 | **Punkte 15 bis 20 ergänzt, angenommen:** Das Steuerkennzeichen hängt am **Posten**, nie am Kunden, am Rechtsverhältnis oder am Terminkontext (Punkt 15, drei Kennzeichen; das ermäßigte bleibt bis B4 inaktiv). Eine Rechnung trägt **genau einen Leistungsbereich**, gemischte sind ausgeschlossen (Punkt 16). Daraus folgen **getrennte Nummernkreise** je Bereich und Kalenderjahr, lückenlos je Kreis und einmalig über alle (Punkt 17, § 14 Abs. 4 Nr. 4 UStG) — das beantwortet die offene Folgefrage aus Fassung 1 zur Führung des Nummernkreises. Punkt 18 ist der **§ 14c-Riegel**: kein Steuerausweis am steuerfreien Posten, der Befreiungsgrund als Pflichtangabe im Snapshot, die Sperre serverseitig und als verbindlicher Testfall in `pnpm test:db`. Punkt 19 führt die Auswertung **„Einnahmen je Leistungsart"** für die getrennte Gewinnermittlung ein; sie benennt ihre Grundlage, statt sie zu wählen. Punkt 20 verzichtet in V1 auf die **Kleinbetragsrechnung** nach § 33 UStDV. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18 Abschnitt 3), **Schritt 4 von sieben**. Die Punkte 1 bis 14 sind unverändert und werden nur enger gefasst; kein Code, kein Schema, keine Migration. |
-| 3       | 2026-09-23 | **Punkt 21 ergänzt:** Nachsorge-Abo (Monatsrechnung, frühestens ab Verordnungsende, monatlich kündbar) und Trainingspaket (fester Zeitraum, nicht pausierbar) als abrechenbare Ereignisse. Erledigungsvermerk an Punkt 13 (kein Override in V1). Punkte 1 bis 20 unverändert. Anlass: Entscheidungen des Projektinhabers vom 2026-09-23 (`../development/UMBAU.md`, E-4). |
+| 3       | 2026-09-23 | **Punkt 21 ergänzt:** Nachsorge-Abo (Bereich `therapy`, Monatsrechnung, frühestens ab Ende der Behandlungsgrundlage, monatlich kündbar) und Trainingspaket (fester Zeitraum, nicht pausierbar) als abrechenbare Ereignisse. Erledigungsvermerk an Punkt 13 (kein Override in V1). Punkte 1 bis 20 unverändert. Anlass: Entscheidungen des Projektinhabers vom 2026-09-23 (`../development/UMBAU.md`, E-4). |
