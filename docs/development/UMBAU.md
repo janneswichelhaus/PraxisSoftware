@@ -2,7 +2,7 @@
 
 Stand 2026-09-23 · Arbeitsplan ohne Rang (wie alles unter `docs/development/`). Er hält fest, was
 Jannes am 2026-09-23 entschieden und beschrieben hat, und in welchen Schritten das in die
-verbindlichen Dokumente kommt. **Nach Jannes' Wahl zu U5 (B16) ist er erledigt** und wandert ins Archiv.
+verbindlichen Dokumente kommt. **Er ist erledigt** und wandert ins Archiv.
 
 Aufruf einer Umbau-Session: **„Umbau U&lt;n&gt; nach `docs/development/UMBAU.md`"**. Jede Session
 bearbeitet genau einen Schritt, endet mit einer Pull Request und hakt den Schritt unten ab.
@@ -267,12 +267,12 @@ Auftrag war:
 - `ARBEITSBEREICHE.md`: Terminlänge, Apple Maps, Widerspruch zur Vorschau-Kennzeichnung.
 - Kopfzeilen von `providerpruefung-kartendienst.md` und `rechnungs-pdf-optionen.md`.
 
-### U5 — Test-Umgebung · Vorlage erledigt 2026-09-23, Wahl offen
+### U5 — Test-Umgebung · erledigt 2026-09-23
 
 Ergebnis: [`../decisions/hosting-optionen.md`](../decisions/hosting-optionen.md) mit vier Optionen
 (Uberspace, Hetzner Webhosting, Bunny.net, Cloudflare Pages mit Access) und der Empfehlung Uberspace; als B16 in
 `OPEN_DECISIONS.md`. Belegtiefe nur Suchauszüge — die Anbieterseiten sind aus der Cloud gesperrt.
-**Offen bei Jannes:** die Wahl, danach Supabase-Testprojekt, Hosting und Subdomain anlegen. Die
+**Jannes hat Uberspace gewählt** (2026-09-23); er legt Supabase-Testprojekt, Uberspace und die GitHub-Secrets nach der Anleitung dort an. Die
 Auslieferung selbst baut OPS-002a.
 
 Auftrag war:

@@ -6,12 +6,12 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**Umbau fertig bis auf deine Wahl** ([`development/UMBAU.md`](development/UMBAU.md)): U1 bis U4 erledigt, für U5 liegt die Vorlage zum Hosting der Oberfläche ([`decisions/hosting-optionen.md`](decisions/hosting-optionen.md), B16). Jede Session beginnt mit **`/weiter`**, **`/idee <Text>`** oder **`/sichtung`**; der Fortschritt steht nur in `fortschritt.json`. Fortschritt **33,7 %**.
+**Umbau fertig** ([`development/UMBAU.md`](development/UMBAU.md)): U1 bis U5 erledigt; das Hosting der Test-Umgebung ist entschieden (**B16: Uberspace**). Jetzt liegt die Einrichtung bei dir, danach baut OPS-002a die Auslieferung. Jede Session beginnt mit **`/weiter`**, **`/idee <Text>`** oder **`/sichtung`**; der Fortschritt steht nur in `fortschritt.json`. Fortschritt **33,7 %**.
 
 ## Danach — Bauen
 
 1. **G6c**, sobald deine Wahl unter „Blocker" da ist
-2. **Block 1a „Handy und UX-Fundament"**: OPS-002a, sobald B16 gewählt ist und die Konten stehen; UX-EPIC-002, sobald deine Begriffsliste da ist
+2. **OPS-002a Test-Umgebung**, sobald du „Konten stehen" meldest; dann UX-EPIC-002, sobald deine Begriffsliste da ist
 3. Solange beides fehlt: **Block 2 „Kern fertig"** nach der Roadmap (MAP-006 zuerst) — Bauen wartet nicht (§15.2)
 
 ## Prüfverfahren
@@ -20,7 +20,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Blocker (Jannes-seitig)
 
-- **B16 Hosting der Oberfläche** (neu): vier Optionen in [`hosting-optionen.md`](decisions/hosting-optionen.md), Empfehlung **Uberspace** (deutsch, SSH in jedem Konto, Webserver-Logs standardmäßig aus — später auch fürs Portal der Patient:innen gut prüfbar), sonst Hetzner. Das Dokument beschreibt Langfrist und das genaue Vorgehen in drei Schritten (wählen, anlegen, Claude baut OPS-002a).
+- **Test-Umgebung einrichten** (B16: Uberspace, neu): Supabase-Testprojekt in Frankfurt, Uberspace-Konto mit AVV und Deploy-Schlüssel, sieben Secrets in der GitHub-Umgebung `test` — Schritt für Schritt in [`hosting-optionen.md`](decisions/hosting-optionen.md), „Das genaue Vorgehen", etwa eine Stunde. Danach nur „Konten stehen" melden, **keine Werte in den Chat**.
 - **Sichtung** (E-6): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; am Handy im WLAN nach [`DEVELOPMENT.md`](DEVELOPMENT.md), „Handytest im WLAN".
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
@@ -35,4 +35,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**Umbau U5 — Vorlage Test-Umgebung.** Neu [`hosting-optionen.md`](decisions/hosting-optionen.md): was der Hosting-Anbieter sieht (nur statische Dateien und IP-Adressen, keine Patientendaten — später aber das Patientenverhältnis selbst), vier Optionen (Uberspace, Hetzner Webhosting, Bunny.net, Cloudflare Pages mit Access) und drei zurückgestellte, Empfehlung Uberspace, Langfrist-Einordnung, Prüfpunkte vor der Bestellung, das Vorgehen in drei Schritten. Belegtiefe nur Suchauszüge, die Anbieterseiten sind aus der Cloud gesperrt. Als **B16** in [`OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md); UMBAU, Roadmap (Block 1a, OPS-002a, „Bei Jannes") nachgezogen. **Keine neue Annahme** — ein neuer Anbieter ist ein Stopp, keine Annahme. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.
+**Umbau U5 — Test-Umgebung, B16 entschieden: Uberspace.** Neu [`hosting-optionen.md`](decisions/hosting-optionen.md): was der Hosting-Anbieter sieht (nur statische Dateien und IP-Adressen, keine Patientendaten — später aber das Patientenverhältnis selbst), vier Optionen (Uberspace, Hetzner Webhosting, Bunny.net, Cloudflare Pages mit Access) und drei zurückgestellte, Empfehlung Uberspace, Langfrist-Einordnung, Prüfpunkte vor der Bestellung, das Vorgehen in drei Schritten. Belegtiefe nur Suchauszüge, die Anbieterseiten sind aus der Cloud gesperrt. Du hast Uberspace gewählt; das Dokument trägt jetzt die Einrichtungsanleitung mit den festen Secret-Namen für OPS-002a. **B16** in [`OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md) entschieden; UMBAU, Roadmap (Block 1a, OPS-002a, „Bei Jannes") nachgezogen. **Keine neue Annahme** — ein neuer Anbieter ist ein Stopp, keine Annahme. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.

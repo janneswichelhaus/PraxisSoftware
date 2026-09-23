@@ -1,8 +1,9 @@
 # B16 — Optionen für das Hosting der Oberfläche
 
-Vorlage aus Umbau U5, 2026-09-23. **Offen — Jannes entscheidet** (B16 in
-[`OPEN_DECISIONS.md`](OPEN_DECISIONS.md)). Das Dokument hat keinen Rang; es
-bereitet die Wahl vor und bleibt danach als Begründung stehen.
+Vorlage aus Umbau U5, 2026-09-23. **Entschieden am 2026-09-23** (Jannes, B16 in
+[`OPEN_DECISIONS.md`](OPEN_DECISIONS.md)): **Uberspace.** Das Dokument hat
+keinen Rang; es bleibt als Begründung der Wahl und als Anleitung für die
+Einrichtung stehen (Teil „Das genaue Vorgehen").
 
 ## Worum es geht
 
@@ -54,7 +55,7 @@ geprüft. Vor der Bestellung liest Jannes AVV und Preisliste selbst; Teil
 
 ## Die Optionen
 
-### Option 1 — Uberspace (Empfehlung)
+### Option 1 — Uberspace (Empfehlung, gewählt)
 
 Uberspace, deutscher Anbieter von Webhosting für Entwickler:innen, mit eigener
 Infrastruktur in Deutschland (Hinweis, Drittquelle).
@@ -185,44 +186,99 @@ genug, weil der Rücknahmepreis klein bleibt:
   ADR-024) ändert nichts am Hosting; Server-Rendering oder eigene Serverlogik
   neben Supabase würde es — beides ist heute ausgeschlossen.
 
-## Vor der Bestellung prüfen (Jannes)
-
-1. **SSH** (bei Hetzner: welcher Tarif?) und `.htaccess` mit Passwortschutz und
-   Umleitung auf `index.html`.
-2. **AVV** im Kundenbereich abschließen; Liste der Unterauftragnehmer ansehen.
-3. **Logs:** Sind Zugriffslogs aus, oder wie lange halten sie IP-Adressen?
-   (ADR-011 gilt sinngemäß.)
-4. **HTTPS** mit eigenem Zertifikat (Let's Encrypt) für die Subdomain.
-
 ## Das genaue Vorgehen
 
-**Schritt 1 — Jannes wählt** (hier in der Session oder im Pull Request). Claude
-trägt die Wahl als entschieden in B16 ein.
+Drei Schritte. **Schritt 1 ist erledigt:** Jannes hat am 2026-09-23 Uberspace
+gewählt. **Schritt 2 macht Jannes** (keine Cloud-Ressourcen durch Claude,
+ADR-013 Punkt 7), **Schritt 3 Claude** mit `/weiter`.
 
-**Schritt 2 — Jannes legt an** (keine Cloud-Ressourcen durch Claude, ADR-013
-Punkt 7), etwa eine Stunde:
+**Die eine Regel für alle Zugangsdaten:** Passwörter, Schlüssel und
+Verbindungsstrings gehen **nur** in GitHub (Schritt 2d) oder in den eigenen
+Passwortmanager — **nie in den Chat, nie ins Repository, nie in eine Mail.**
+Claude braucht keinen einzigen davon.
 
-1. **Supabase-Testprojekt:** neues Projekt, Name mit „test", Region Frankfurt
-   (`eu-central-1`, ADR-015 Punkt 19), kostenloser Tarif; unter
-   Authentication die Selbstregistrierung ausschalten. Kein Produktivprojekt
-   (§3.2). Im kostenlosen Tarif pausiert es laut Auszug nach einer Woche ohne
-   Nutzung — für Tests hinnehmbar.
-2. **Hosting:** Konto nach der Wahl, AVV abschließen, die vier Prüfpunkte oben
-   abhaken.
-3. **Subdomain:** bei der Stelle, die die Praxisdomain verwaltet, eine
-   Subdomain für die Test-Umgebung auf das Hosting zeigen lassen; HTTPS im
-   Hosting einschalten.
-4. **Secrets in GitHub** (Repository → Settings → Secrets): die Namen gibt
-   OPS-002a vor — Projekt-URL und öffentlicher Schlüssel des Testprojekts, der
-   Datenbankzugang für die Migrationen, der SSH-Schlüssel fürs Hosting. **Nie
-   in den Chat, nie ins Repository**, nie der `service_role`-Schlüssel.
+### Schritt 2a — Supabase-Testprojekt (etwa 15 Minuten)
 
-**Schritt 3 — Claude baut OPS-002a** (eine Session, `/weiter`):
+1. Im Supabase-Dashboard ein **neues Projekt** anlegen: Name `praxis-test`,
+   Region **Frankfurt** (`eu-central-1`, ADR-015 Punkt 19), kostenloser
+   Tarif. Das Datenbankpasswort erzeugen lassen und **sofort in den
+   Passwortmanager**.
+2. **Authentication → Sign In / Providers:** „Allow new users to sign up"
+   **aus**. Konten legt später allein der Seed von OPS-002a an; jetzt keine
+   Nutzer anlegen.
+3. Nichts importieren, nichts hochladen — das Projekt bleibt leer, bis
+   OPS-002a Migrationen und die synthetische Praxiswoche einspielt. Kein
+   Produktivprojekt, keine echten Daten (§3.1, §3.2).
+4. Hinnehmbar: Im kostenlosen Tarif pausiert das Projekt laut Auszug nach einer
+   Woche ohne Nutzung; im Dashboard wieder starten.
 
-Ein CI-Schritt, der nach grüner CI auf `main` nur in die
+### Schritt 2b — Uberspace (etwa 20 Minuten)
+
+1. Konto bei Uberspace anlegen; der **Kontoname** wird Teil der Adresse. Die
+   Testphase ist laut Auszug kostenlos, danach „zahl, was du willst".
+2. **AVV** nach Art. 28 DSGVO abschließen (`uberspace.de/dpa`) und ablegen.
+3. **Prüfen, bevor es weitergeht** — fällt einer der Punkte durch, zurück zu
+   Option 2 (Hetzner) und Claude Bescheid geben:
+   - SSH-Anmeldung mit Schlüssel möglich;
+   - `.htaccess` wird ausgewertet (Uberspace-Handbuch, Abschnitt Web);
+   - Webserver-Logs sind **aus** — so lassen, nicht einschalten;
+   - HTTPS für die Adresse der Test-Umgebung (Let's Encrypt).
+4. **Deploy-Schlüssel** auf dem eigenen Rechner erzeugen, nur für diesen
+   Zweck, ohne Passphrase (GitHub muss ihn allein benutzen können):
+
+   ```bash
+   ssh-keygen -t ed25519 -C deploy-praxis-test -N "" -f ~/.ssh/praxis-test-deploy
+   ```
+
+   Den **öffentlichen** Teil (`~/.ssh/praxis-test-deploy.pub`) im
+   Uberspace-Dashboard unter den SSH-Schlüsseln eintragen. Den privaten Teil
+   braucht nur Schritt 2d.
+5. Den **Serverschlüssel** festhalten, damit GitHub nur mit dem echten Server
+   spricht (Hostname aus dem Dashboard):
+
+   ```bash
+   ssh-keyscan <hostname> > ~/praxis-test-known-hosts
+   ```
+
+### Schritt 2c — Adresse (optional, etwa 10 Minuten)
+
+Für den Anfang reicht die Adresse, die Uberspace dem Konto gibt
+(`<kontoname>.uber.space`). Eine **Subdomain der Praxisdomain** (etwa
+`test.` davor) ist schöner, aber nicht nötig: im Uberspace-Handbuch
+„Domains" die Subdomain hinzufügen und die angezeigten DNS-Einträge (A und
+AAAA) bei der Stelle eintragen, die die Praxisdomain verwaltet. Das kann auch
+später geschehen; OPS-002a hängt nicht daran.
+
+### Schritt 2d — Secrets in GitHub (etwa 10 Minuten)
+
+Im Repository **Settings → Environments → New environment** mit dem Namen
+**`test`** anlegen; darin unter „Environment secrets" genau diese sieben
+Einträge. Die Namen sind fest — OPS-002a liest nur sie. Das Präfix `TESTENV_`
+ist Absicht: `TEST_DATABASE_URL` heißt schon die lokale Wegwerf-Datenbank von
+`pnpm test:db`, und die Test-Umgebung darf nie mit ihr verwechselt werden.
+
+| Name                     | Wert                                                                                    | Woher                                            |
+| ------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `TESTENV_SUPABASE_URL`   | Projekt-URL (`https://….supabase.co`)                                                   | Supabase → Project Settings → API                |
+| `TESTENV_SUPABASE_ANON_KEY` | öffentlicher Schlüssel (`anon` oder `publishable`) — **nie** `service_role` / `secret` | Supabase → Project Settings → API Keys           |
+| `TESTENV_DATABASE_URL`   | Verbindungsstring mit Passwort, „Session pooler"                                        | Supabase → Connect                               |
+| `DEPLOY_SSH_HOST`        | Hostname des Uberspace-Servers                                                          | Uberspace-Dashboard                              |
+| `DEPLOY_SSH_USER`        | Kontoname                                                                               | Uberspace-Dashboard                              |
+| `DEPLOY_SSH_KEY`         | Inhalt von `~/.ssh/praxis-test-deploy` (privater Teil, ganze Datei)                     | Schritt 2b.4                                     |
+| `DEPLOY_KNOWN_HOSTS`     | Inhalt von `~/praxis-test-known-hosts`                                                  | Schritt 2b.5                                     |
+
+Danach die beiden Dateien aus Schritt 2b auf dem eigenen Rechner löschen
+(`rm ~/.ssh/praxis-test-deploy ~/praxis-test-known-hosts`) — der Schlüssel
+lebt nur noch in GitHub, ein neuer ist in einer Minute erzeugt. Dann Claude
+sagen: **„Konten stehen"** (ohne Werte).
+
+### Schritt 3 — Claude baut OPS-002a (eine Session, `/weiter`)
+
+Ein Auslieferungsschritt in der CI, Umgebung `test`, der nach grüner CI auf `main` nur in die
 Test-Umgebung ausliefert; Konfiguration über `VITE_`-Variablen, `service_role`
 nie im Browser (ADR-015, Folgefrage); Migrationen und der Seed einer
 synthetischen Praxiswoche gegen das Testprojekt; `noindex`,
-Sicherheitskopfzeilen und die zweite Tür (`.htaccess`). Danach öffnest du die
+Sicherheitskopfzeilen und die zweite Tür (`.htaccess`); fehlen die Secrets,
+überspringt der Schritt die Auslieferung, statt rot zu werden. Danach öffnest du die
 Anwendung am Handy und beginnst die Sichtung dort. Die Produktion bleibt G5
 vorbehalten, mit menschlicher Freigabe (ADR-013 Punkt 6).

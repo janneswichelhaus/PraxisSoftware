@@ -58,7 +58,7 @@ Feature, **P3** später.
 | B13 | E-Mail-Versand aus der Plattform (Konten, Patient:innen) | **wieder offen seit 2026-09-21**: Option a (nur Auth-Mails des Providers) trägt nicht (BEF-026); Empfehlung eigener SMTP-Anbieter | unten; Roadmap „Bei Jannes", R8 |
 | B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **entschieden 2026-09-19**: Weg 1 jetzt, Weg 3 nach OPS-001 | unten; [`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md) |
 | B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **neu entschieden 2026-09-22**: automatische Erinnerung und Online-Anfrage gehören zu V1, gebaut hinter Adapter; Anbieter offen · Terminmail aus dem eigenen Postfach gebaut (CAL-013, ANN-041) | unten |
-| B16 | Hosting der Oberfläche (Test-Umgebung, später Produktion) | **offen seit 2026-09-23**; Empfehlung Uberspace | unten; [`hosting-optionen.md`](hosting-optionen.md) |
+| B16 | Hosting der Oberfläche (Test-Umgebung, später Produktion) | **entschieden 2026-09-23**: Uberspace; Einrichtung bei Jannes | unten; [`hosting-optionen.md`](hosting-optionen.md) |
 | C1 | Leistungsziffern und Office | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15 |
 | C2 | Klinische Inhalte in organisatorischer Kommunikation | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15 |
 | C3 | Fail-closed gegen Patientensicherheit, Break Glass | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md) |
@@ -255,10 +255,10 @@ ANN-041.
 
 ### B16 — Hosting der Oberfläche
 
-offen · seit 2026-09-23 (Umbau U5) · P1 vor OPS-002a · Jannes
+entschieden · 2026-09-23 · Jannes · Uberspace
 
-Neuer Dienstleister, also Stopp nach §15.1: Vorlage [`hosting-optionen.md`](hosting-optionen.md),
-Empfehlung Uberspace; Rücknahmepreis klein. Bis zur Wahl ruht OPS-002a. Wo: ADR-002, ADR-015.
+Vorlage und Einrichtungsanleitung: [`hosting-optionen.md`](hosting-optionen.md). Rücknahmepreis
+klein; volle Prüfung nach ADR-002 vor echten Daten (G5). OPS-002a wartet auf die Konten.
 
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
 

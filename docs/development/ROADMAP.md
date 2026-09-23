@@ -142,7 +142,7 @@ in den Etappen darunter.
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | Sichtung |
 | 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → G6c | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | G6c: Wahl zu den Schreibpfaden; vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
-| 1a | **Handy und UX-Fundament** | OPS-002a Test-Umgebung → UX-EPIC-002 → UX-EPIC-003 | ~~Umbau U5~~ (Vorlage B16 steht, 2026-09-23) | Hosting wählen ([B16](../decisions/hosting-optionen.md)), dann Supabase-Projekt (EU) und Domain anlegen; Begriffe sammeln, die stören; erste Sichtung am Handy |
+| 1a | **Handy und UX-Fundament** | OPS-002a Test-Umgebung → UX-EPIC-002 → UX-EPIC-003 | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen nach [`hosting-optionen.md`](../decisions/hosting-optionen.md); Begriffe sammeln, die stören; erste Sichtung am Handy |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
 | 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | DSN-001 und ADR-023 bestätigen |
@@ -272,7 +272,7 @@ Oberfläche kommen deshalb die Test-Umgebung und das Fundament der Bedienung.
 
 | Loop | Ergebnis | Zuschnitt | Voraussetzung |
 | --- | --- | --- | --- |
-| **OPS-002a** | Jannes öffnet die Anwendung auf dem eigenen Handy, von überall | Test-Umgebung nach G5, **vorgezogen**: Supabase-Projekt in der EU nur mit synthetischen Daten, Hosting der Oberfläche nach B16 ([`hosting-optionen.md`](../decisions/hosting-optionen.md)), eigene Domain, Zugang geschützt, Deployment aus `main` nur dorthin; Seed mit einer Praxiswoche. Kein Produktivprojekt (§3.2) | B16 gewählt; Jannes legt Konten an |
+| **OPS-002a** | Jannes öffnet die Anwendung auf dem eigenen Handy, von überall | Test-Umgebung nach G5, **vorgezogen**: Supabase-Projekt in der EU nur mit synthetischen Daten, Hosting der Oberfläche nach B16 ([`hosting-optionen.md`](../decisions/hosting-optionen.md)), eigene Domain, Zugang geschützt, Deployment aus `main` nur dorthin; Seed mit einer Praxiswoche. Kein Produktivprojekt (§3.2) | Jannes legt Konten an (B16) |
 | **UX-EPIC-002** | Die Anwendung spricht die Sprache der Praxis | Begriffsliste aus Jannes' Sammlung (Beschriftungen, Knöpfe, Meldungen) als eine Quelle im Code; Bedienprinzipien (ein Hauptknopf je Ansicht, was nicht gebraucht wird, ist eingeklappt, Handy zuerst); Navigation und Arbeitsbereiche danach durchgesehen; Bildschirmfotos vorher und nachher | Begriffsliste von Jannes |
 | **UX-EPIC-003** | Der Tag beginnt am Rad mit dem, was zählt | Tagesansicht fürs Handy als Startseite (aus PRX-EPIC-002 vorgezogen): erster Weg, Vorschau auf den nächsten, kurze Hinweise zur Person, **Behandlungsliege heute: ja, ab dem n-ten Besuch** (§9; Merkmal an der Person, in der Akte setzbar, im Befund ab FRB-EPIC-003), bisherige Doku mit einem Tipp; offene Punkte der Erstaufnahme als Hinweis, sobald PRX-EPIC-003 sie liefert | UX-EPIC-002 |
 
@@ -508,9 +508,9 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
   `MAX_ZWISCHENZIELE` bleibt bis dahin bei drei).
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder
   Bildschirmfotos) — Grundlage für UX-EPIC-002.
-- **Hosting der Oberfläche wählen** (B16, Vorlage
-  [`hosting-optionen.md`](../decisions/hosting-optionen.md), Empfehlung Uberspace),
-  dann **Supabase-Projekt (EU), Hosting und Subdomain** für die Test-Umgebung anlegen.
+- **Test-Umgebung einrichten** (B16: Uberspace): Supabase-Testprojekt, Uberspace
+  und GitHub-Secrets nach [`hosting-optionen.md`](../decisions/hosting-optionen.md),
+  „Das genaue Vorgehen".
 - **D2/D3** aus dem FRB-Plan (Lücken der MT-Vorlage, Tippfehler) — vor
   FRB-EPIC-003; ohne Antwort gilt der Vorschlag dort.
 - **Preise** für Katalog, Abo und Pakete — vor Block 5 als synthetische Werte,
