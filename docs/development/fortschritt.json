@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-22",
+  "stand": "2026-09-23",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -519,7 +519,13 @@
         },
         {
           "id": "g6a",
-          "name": "G6a Abgewiesene Zugriffe, Rest",
+          "name": "G6a Abgewiesene Lesezugriffe auf klinische Dokumente",
+          "gewicht": 1,
+          "status": "fertig"
+        },
+        {
+          "id": "g6b",
+          "name": "G6b Abgewiesene Zugriffe, Rest",
           "gewicht": 1,
           "status": "offen"
         },

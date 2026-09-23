@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 6.0 · Stand 2026-09-22 · **in Kraft**
+Version 6.1 · Stand 2026-09-23 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 6.0 ist eine Neufassung: Jannes hat am 2026-09-22 den
@@ -125,7 +125,7 @@ in den Etappen darunter.
 | # | Block | Code-Loops | Docs-Sessions | Jannes |
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | laufende Abnahmen |
-| 1 | **Rückstand** | ~~G19~~ (gebaut 2026-09-22) → G6a | — | Abnahme-Rückstand abbauen, M1 abnehmen |
+| 1 | **Rückstand** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ (gebaut 2026-09-23) → G6b | — | Abnahme-Rückstand abbauen, M1 abnehmen |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 | — | D2/D3 aus dem FRB-Plan; Abnahmen |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Abnahmen |
 | 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **ADR-023** Plattformzugang (vor POR-EPIC-001) | ADR-023 bestätigen |
@@ -239,7 +239,8 @@ arbeitet.
 | Loop | Ergebnis | Zuschnitt |
 | --- | --- | --- |
 | ~~**G19**~~ | **gebaut 2026-09-22** — Das Dokumentationsgate prüft, ob Aussagen über andere Dokumente stimmen (BEF-028) | Verweise auf ADR-Fassungen und Prinzipienversionen gegen den Stand, `§NN` gegen vorhandene Abschnitte, Eindeutigkeit der `ANN-`/`BEF-`/`IDEA-`-Nummern; Nennungen in Änderungsvermerken bleiben erlaubt |
-| **G6a** | Jede Abweisung ist nachweisbar | Die übrigen rund 80 Abweisungen (`not allowed to …`) schreiben einen `denied`-Eintrag, der die Abweisung überlebt — zuerst klären, welche der Monatsreport (ADR-010 Punkt 6) sehen muss. **Vor** Training und Plattform, weil beide Dutzende neue Abweisungspfade bringen |
+| ~~**G6a**~~ | **gebaut 2026-09-23** — Abgewiesene Lesezugriffe auf klinische Dokumente sind nachweisbar (ADR-010 Punkt 2) | Die fünf Lesepfade auf Behandlungsdokumentation und klinische Behandlungsgrundlage weisen mit null Zeilen und einem `denied`-Eintrag ab, geschrieben über `app.record_denied_read`. `audit.test.ts` hält die Liste der Pfade fest |
+| **G6b** | Die übrigen Abweisungen sind nachweisbar | Bestandsaufnahme 2026-09-23 per `pg_proc`: 119 Funktionen mit `not allowed to …`, davon 34 Lesepfade, 7 mit Eintrag. **Teil 1:** die übrigen Lesepfade, die die Oberfläche für die abgewiesene Rolle nie aufruft, mit demselben Ausgang. **Teil 2, Schreibpfade — Entscheidung Jannes**, weil die Rücknahme ein Umbau wäre: (a) bestätigte Transaktion mit HTTP 403 über `response.status` von PostgREST, lokal mit `supabase start` zu prüfen; (b) Ereignis ins Betriebslog statt ins Auditlog, hängt an G3 und R9; (c) Schreibpfade bleiben ohne Eintrag. Empfehlung: (a) für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. **Vor** Training und Plattform |
 
 ### Block 2 — Kern fertig
 
@@ -677,6 +678,7 @@ Nenner, der jetzt das Endprodukt enthält.
 | G10 Funktionsteil gestrichen (Docs) | fertig | 2026-09-22 | `a8478c3` | — |
 | G19 Dokumentationsgate: Querverweise und Nummern | fertig | 2026-09-22 | `7b95c22`, PR #102 | |
 | Roadmap 6.0 (Docs) | fertig | 2026-09-22 | dieser Commit | — |
+| G6a Abgewiesene Lesezugriffe auf klinische Dokumente | fertig | 2026-09-23 | Branch `claude/erste-offene-aufgabe-jkvhs3` | G6b offen |
 
 ---
 
@@ -684,6 +686,7 @@ Nenner, der jetzt das Endprodukt enthält.
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 6.1 | 2026-09-23 | **G6a gebaut**, zugeschnitten auf die Lesepfade klinischer Dokumente (ADR-010 Punkt 2, keine Annahme). Der Rest steht als **G6b** mit Bestandsaufnahme und der Entscheidung zu den Schreibpfaden. `fortschritt.json`: G6a fertig, G6b neu. |
 | 6.0 | 2026-09-22 | **Neufassung.** Jannes hat den Umfang bis zur Eröffnung auf das Endprodukt erweitert (Plattform mit allen Punkten der Navigationsleiste einschließlich Ernährung, Portal-Abo als Monatsrechnung, Pakete für Training, Praxisbetrieb, alle Ideen aus dem Ideenspeicher) und die externen Prüfungen hinter den Feature-Freeze gelegt, ohne Kürzung bei Verzug. Neu: „Ziel und Umfang" mit „Nicht in V1" (was an §14, §17, ADR-014/015 scheitert), sechs Grundsätze der Reihenfolge, Kette in 15 Blöcken, Meilensteine M1 bis M6 neu gefasst (M0 entfällt, M2 heißt „Software fertig"), Abweichungsregel 1 zum Abnahme-Rückstand, Risiken neu (R1 späte Prüfungen, R3 eingetreten, R5 Plattform, R8 Mailversand), Etappen 2, P, TR, 3 bis 8, 10 und Betrieb geschnitten; MAP-006 widerspruchsfrei nach ADR-019 Fassung 4; Termine aus Etappe G, H und Spur B entfernt; Chronik und ausführlicher Fortschritt nach [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md). Dazu `PROJECT_PRINCIPLES.md` 0.16 (§14), B9, B11 und B15 in `OPEN_DECISIONS.md`, `fortschritt.json` mit neuen Blöcken. |
 
 Ältere Vermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
