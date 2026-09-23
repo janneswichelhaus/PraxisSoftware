@@ -6,13 +6,14 @@
 -- folgen die uebrigen Lesepfade mit 'not allowed to ...' - aber nur die, die
 -- die Oberflaeche fuer die abgewiesene Rolle nie aufruft. Ein Aufruf ist dann
 -- einer an der Anwendung vorbei, und genau den soll der Monatsreport nach
--- ADR-010 Punkt 6 sehen koennen. Die Zuordnung Pfad -> Aufrufer -> Rolle steht
--- in docs/development/ROADMAP.md bei G6b.
+-- ADR-010 Punkt 6 sehen koennen. Den Massstab nennt docs/development/ROADMAP.md
+-- bei G6b; jeden Pfad mit seiner abgewiesenen Rolle haelt
+-- supabase/tests/abgewiesene-lesepfade.test.ts fest.
 --
 -- Bewusst NICHT umgestellt:
 --   * list_assignable_therapists - die Teamseiten rufen ihn auch fuer trainer
 --     auf; dort erwartet die Oberflaeche eine Ausnahme (BEF-034).
---   * alle Schreibpfade (G6b Teil 2, Entscheidung Jannes).
+--   * alle Schreibpfade (G6c, Entscheidung Jannes).
 --   * ohne Sitzung und ohne Organisation - wie OPS-004 und G6a.
 --
 -- Aktionen: Wo der erfolgreiche Zugriff einen Eintrag schreibt, dieselbe
