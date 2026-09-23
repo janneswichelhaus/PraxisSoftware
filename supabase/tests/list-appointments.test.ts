@@ -365,9 +365,9 @@ describe('list_appointments: Berechtigungen und Mandantentrennung', () => {
   });
 
   it('weist ein Patientenkonto ab', async () => {
-    await expect(lesen(users.patientMax, '2027-05-12', '2027-05-13')).rejects.toThrow(
-      /not allowed/,
-    );
+    // G6b: null Zeilen statt Ausnahme, der Versuch steht im Auditlog
+    // (abgewiesene-lesepfade.test.ts).
+    expect((await lesen(users.patientMax, '2027-05-12', '2027-05-13')).rows).toEqual([]);
   });
 
   it('weist einen Aufruf ohne Sitzung ab', async () => {

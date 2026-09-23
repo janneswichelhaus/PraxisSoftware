@@ -88,7 +88,7 @@ describe('list_patient_upcoming_appointments', () => {
   });
 
   it('weist ein Patientenkonto ab', async () => {
-    await expect(lesen(users.patientMax)).rejects.toThrow(/not allowed to read appointments/);
+    expect((await lesen(users.patientMax)).rows).toEqual([]);
   });
 
   it('verlangt eine Patientin', async () => {

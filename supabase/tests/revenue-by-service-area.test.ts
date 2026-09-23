@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabaseOhneTermine,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Einnahmen je Leistungsart (ABR-011, ADR-009 Fassung 2 Punkt 19).
@@ -494,12 +495,13 @@ describe('Einnahmen je Leistungsart', () => {
 
     it('weist Therapie und Trainingsbetreuung ab', async () => {
       for (const nutzer of [users.therapist, users.trainer]) {
-        await expect(asUser(nutzer, AUSWERTUNG, ['accrual', null])).rejects.toThrow(
-          /not allowed to read invoicing figures/,
+        await erwarteAbgewiesenenLeseversuch(
+          nutzer,
+          AUSWERTUNG,
+          ['accrual', null],
+          'invoicing.read',
         );
-        await expect(asUser(nutzer, JAHRE)).rejects.toThrow(
-          /not allowed to read invoicing figures/,
-        );
+        await erwarteAbgewiesenenLeseversuch(nutzer, JAHRE, [], 'invoicing.read');
       }
     });
 

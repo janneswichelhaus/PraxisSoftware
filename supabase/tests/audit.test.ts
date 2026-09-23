@@ -204,10 +204,12 @@ describe('Audit-Lesepfad', () => {
     expect(rows).toEqual([]);
   });
 
-  it('kennt genau die Pfade, die eine Abweisung ueberleben lassen (OPS-004, G6a)', async () => {
-    // Die Liste ist die Entscheidung aus G6a: klinische Dokumente nach ADR-010
-    // Punkt 2 und die beiden owner-Nachweise. Ein neuer Pfad hier ist Absicht,
-    // ein fehlender ein Rueckschritt - beides soll ein Review sehen.
+  it('kennt genau die Pfade, die eine Abweisung ueberleben lassen (OPS-004, G6a, G6b)', async () => {
+    // Die Liste ist die Entscheidung aus G6a und G6b: klinische Dokumente nach
+    // ADR-010 Punkt 2, die beiden owner-Nachweise und die uebrigen Lesepfade,
+    // die die Oberflaeche fuer die abgewiesene Rolle nie aufruft. Bewusst
+    // fehlt list_assignable_therapists (BEF-034). Ein neuer Pfad hier ist
+    // Absicht, ein fehlender ein Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`
       select p.proname
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -217,13 +219,47 @@ describe('Audit-Lesepfad', () => {
       order by p.proname
     `);
     expect(rows.map((r) => r.proname)).toEqual([
+      'check_appointment_slots',
+      'count_orphaned_patient_file_objects',
+      'get_billable_service_draft',
+      'get_invoice',
+      'get_payment_reminder',
       'get_treatment_basis',
+      'get_treatment_basis_slots',
       'get_treatment_note',
       'get_treatment_note_versions',
+      'list_appointments',
       'list_audit_events',
+      'list_billable_services',
+      'list_day_plan',
       'list_deletion_runs',
+      'list_event_participants',
+      'list_event_series',
+      'list_invoice_candidates',
+      'list_invoice_payments',
+      'list_invoice_recipients',
+      'list_invoice_reminders',
+      'list_invoices',
+      'list_legal_holds',
+      'list_missing_patient_file_objects',
+      'list_open_billable_appointments',
+      'list_open_items',
+      'list_patient_appointment_slip',
+      'list_patient_appointments',
+      'list_patient_files',
+      'list_patient_treatment_bases',
       'list_patient_treatment_bases_clinical',
+      'list_patient_treatment_basis_slots',
+      'list_patient_treatment_evidence',
       'list_patient_treatment_notes',
+      'list_patient_upcoming_appointments',
+      'list_payments',
+      'list_revenue_by_service_area',
+      'list_revenue_years',
+      'list_staff_future_appointments',
+      'list_storage_deletion_orders',
+      'list_text_snippets',
+      'search_patients',
     ]);
   });
 

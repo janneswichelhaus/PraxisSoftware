@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SEED, abgefangen, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Abgleich zwischen Datenbank und Ablage (DAT-003, ADR-017 Punkt 27).
@@ -226,15 +227,19 @@ describe('Abgleich der Dateiablage (DAT-003)', () => {
   describe('Wer den Abgleich sehen darf', () => {
     it('weist alle Rollen ausser owner ab', async () => {
       for (const konto of [users.therapist, users.teamLead, users.office, users.patientMax]) {
-        const fehlend = await abgefangen(
-          asUser(konto, 'select * from public.list_missing_patient_file_objects()'),
+        // G6b: Die beiden Lesepfade weisen mit null Zeilen ab und protokollieren.
+        await erwarteAbgewiesenenLeseversuch(
+          konto,
+          'select * from public.list_missing_patient_file_objects()',
+          [],
+          'storage_deletion.read',
         );
-        expect(fehlend?.message).toMatch(/not allowed to read the storage reconciliation/);
-
-        const verwaist = await abgefangen(
-          asUser(konto, 'select public.count_orphaned_patient_file_objects()'),
+        await erwarteAbgewiesenenLeseversuch(
+          konto,
+          'select n from public.count_orphaned_patient_file_objects() as n where n is not null',
+          [],
+          'storage_deletion.read',
         );
-        expect(verwaist?.message).toMatch(/not allowed to read the storage reconciliation/);
 
         const vormerken = await abgefangen(
           asUser(konto, 'select public.order_orphaned_object_deletion()'),

@@ -8,6 +8,7 @@ import {
   asUserCommitted,
   resetDatabase,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Loeschen, Dokumentart korrigieren, Loeschauftraege quittieren
@@ -279,10 +280,12 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
     it('gibt die Liste nicht ohne die Rolle heraus und nennt keinen Objektschluessel', async () => {
       await offenerAuftrag();
 
-      const fehler = await abgefangen(
-        asUser(users.therapist, 'select * from public.list_storage_deletion_orders()'),
+      await erwarteAbgewiesenenLeseversuch(
+        users.therapist,
+        'select * from public.list_storage_deletion_orders()',
+        [],
+        'storage_deletion.read',
       );
-      expect(fehler?.message).toMatch(/not allowed to read deletion orders/);
 
       const { rows } = await asUser<Record<string, unknown>>(
         users.ownerTherapist,

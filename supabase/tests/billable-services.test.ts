@@ -7,6 +7,7 @@ import {
   fremdeOrganisation,
   resetDatabaseOhneTermine,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Leistungen aus durchgefuehrten Terminen (ABR-002).
@@ -458,14 +459,12 @@ describe('Leistungserfassung', () => {
             JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 1 }]),
           ]),
         ).rejects.toThrow(/not allowed to record billable services/);
-        await expect(asUser(konto, LISTE)).rejects.toThrow(/not allowed to read billable services/);
+        await erwarteAbgewiesenenLeseversuch(konto, LISTE, [], 'billable_services.read');
       }
     });
 
     it('laesst ein Patientenkonto nichts lesen', async () => {
-      await expect(asUser(users.patientErika, OFFEN)).rejects.toThrow(
-        /not allowed to read billable services/,
-      );
+      await erwarteAbgewiesenenLeseversuch(users.patientErika, OFFEN, [], 'billable_services.read');
     });
 
     it('laesst owner und office lesen', async () => {

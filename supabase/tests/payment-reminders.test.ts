@@ -9,6 +9,7 @@ import {
   resetDatabaseOhneTermine,
   testDatabaseUrl,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Die Zahlungserinnerung ist ein Dokument, kein Mahnlauf (ABR-003d).
@@ -496,8 +497,13 @@ describe('Zahlungserinnerung', () => {
       await faelligSeit(id, 3);
       const erinnerung = await erinnere(id);
 
-      await expect(asUser(users.therapist, DOKUMENT, [erinnerung])).rejects.toThrow(
-        /not allowed to read invoices/,
+      // G6b: Der skalare Pfad liefert null statt einer Ausnahme; der Filter
+      // macht daraus die leere Zeilenmenge.
+      await erwarteAbgewiesenenLeseversuch(
+        users.therapist,
+        'select d from public.get_payment_reminder($1::uuid) as d where d is not null',
+        [erinnerung],
+        'invoicing.read',
       );
     });
   });

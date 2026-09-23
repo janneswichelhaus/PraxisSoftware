@@ -50,9 +50,7 @@ describe('search_patients', () => {
   });
 
   it('weist ein Patientenkonto ab', async () => {
-    await expect(suchen(users.patientMax, 'Mustermann')).rejects.toThrow(
-      /not allowed to read patient directory/,
-    );
+    expect((await suchen(users.patientMax, 'Mustermann')).rows).toEqual([]);
   });
 
   it('findet ueber den Nachnamen', async () => {

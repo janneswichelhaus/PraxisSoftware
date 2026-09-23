@@ -118,7 +118,7 @@ describe('list_day_plan', () => {
   });
 
   it('weist ein Patientenkonto ab', async () => {
-    await expect(lesen(users.patientMax)).rejects.toThrow(/not allowed to read appointments/);
+    expect((await lesen(users.patientMax)).rows).toEqual([]);
   });
 
   it('verlangt Tag und Person - es gibt kein "alle Personen"', async () => {

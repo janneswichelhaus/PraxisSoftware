@@ -7,6 +7,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Rechnungsempfaenger sind eigene Stammdaten (ABR-003a, ADR-009 Punkt 2).
@@ -90,9 +91,7 @@ describe('Rechnungsempfaenger', () => {
       ['Therapeutin', users.therapist],
       ['Teamleitung', users.teamLead],
     ])('weist %s ab (ANN-076)', async (_name, userId) => {
-      await expect(asUser(userId, LISTE, [patients.petra])).rejects.toThrow(
-        /not allowed to read invoice recipients/,
-      );
+      await erwarteAbgewiesenenLeseversuch(userId, LISTE, [patients.petra], 'invoicing.read');
     });
 
     it('laesst niemanden direkt in die Tabelle sehen (ADR-004)', async () => {
