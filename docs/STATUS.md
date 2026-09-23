@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-23 · letzte Session: Umbau U4
+# Status · Stand 2026-09-23 · letzte Session: Umbau U5
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,20 +6,21 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**Umbau läuft** ([`development/UMBAU.md`](development/UMBAU.md)): Jannes' Entscheidungen E-1 bis E-7 vom 2026-09-23 werden in fünf Schritten eingearbeitet, nicht angehängt. U1 bis U4 sind erledigt; es fehlt U5. Seit U3 beginnt jede Session mit **`/weiter`**, **`/idee <Text>`** oder **`/sichtung`**; der Fortschritt steht nur noch in `fortschritt.json`. Fortschritt **33,7 %**.
+**Umbau fertig bis auf deine Wahl** ([`development/UMBAU.md`](development/UMBAU.md)): U1 bis U4 erledigt, für U5 liegt die Vorlage zum Hosting der Oberfläche ([`decisions/hosting-optionen.md`](decisions/hosting-optionen.md), B16). Jede Session beginnt mit **`/weiter`**, **`/idee <Text>`** oder **`/sichtung`**; der Fortschritt steht nur in `fortschritt.json`. Fortschritt **33,7 %**.
 
-## Danach — Umbau, dann Bauen
+## Danach — Bauen
 
-1. **U5 Test-Umgebung** — `/weiter`; dafür brauche ich deine Entscheidung zum Hosting (kommt in U5 mit Optionen)
-2. **G6c**, sobald deine Wahl unter „Blocker" da ist, sonst **Block 1a „Handy und UX-Fundament"** (OPS-002a → UX-EPIC-002 → UX-EPIC-003)
-3. **Block 2 „Kern fertig"** nach der Roadmap
+1. **G6c**, sobald deine Wahl unter „Blocker" da ist
+2. **Block 1a „Handy und UX-Fundament"**: OPS-002a, sobald B16 gewählt ist und die Konten stehen; UX-EPIC-002, sobald deine Begriffsliste da ist
+3. Solange beides fehlt: **Block 2 „Kern fertig"** nach der Roadmap (MAP-006 zuerst) — Bauen wartet nicht (§15.2)
 
 ## Prüfverfahren
 
-**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2350**; `test:db` **1871** (mit G6b, eine Migration; in U4 nicht gelaufen, weil keine Datenbank berührt ist). Keine Sichtprüfung: U4 ändert nur Dokumentation und drei Codekommentare.
+**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2350**; `test:db` **1871** (mit G6b, eine Migration; in U4 und U5 nicht gelaufen, weil keine Datenbank berührt ist). Keine Sichtprüfung: U5 ändert nur Dokumentation.
 
 ## Blocker (Jannes-seitig)
 
+- **B16 Hosting der Oberfläche** (neu): vier Optionen in [`hosting-optionen.md`](decisions/hosting-optionen.md), Empfehlung **Uberspace** (deutsch, SSH in jedem Konto, Webserver-Logs standardmäßig aus — später auch fürs Portal der Patient:innen gut prüfbar), sonst Hetzner. Das Dokument beschreibt Langfrist und das genaue Vorgehen in drei Schritten (wählen, anlegen, Claude baut OPS-002a).
 - **Sichtung** (E-6): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; am Handy im WLAN nach [`DEVELOPMENT.md`](DEVELOPMENT.md), „Handytest im WLAN".
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
@@ -34,4 +35,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**Umbau U4 — Register aufgeräumt.** [`ASSUMPTIONS.md`](decisions/ASSUMPTIONS.md): tote Anker auf die Behandlungsgrundlage umgestellt, ANN-012 und ANN-037 als abgelöst verkürzt, Statuszeilen einheitlich, Prüfpaket jetzt **38** Einträge (vier Rechtsannahmen zur Steuer und Lizenz neu, ANN-064 heraus), 21 abgelaufene Wiedervorlagen auf den Stand der fertigen Abrechnungs- und Karten-Loops, ANN-025 mit §4 und B13 zusammengeführt. [`OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md): **B13 wieder offen**, Termine gestrichen, E16 als erledigt verkürzt, falsche G-Kennungen berichtigt. BEF-004, -007, -020 erledigt; `ARBEITSBEREICHE.md` und die Köpfe der Kartendienst- und PDF-Vorlage nachgezogen. **Keine neue Annahme** — ANN-086 steht jetzt auf `entschieden (Jannes)`, weil deine Erklärung vom 2026-09-21 genau das ist. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.
+**Umbau U5 — Vorlage Test-Umgebung.** Neu [`hosting-optionen.md`](decisions/hosting-optionen.md): was der Hosting-Anbieter sieht (nur statische Dateien und IP-Adressen, keine Patientendaten — später aber das Patientenverhältnis selbst), vier Optionen (Uberspace, Hetzner Webhosting, Bunny.net, Cloudflare Pages mit Access) und drei zurückgestellte, Empfehlung Uberspace, Langfrist-Einordnung, Prüfpunkte vor der Bestellung, das Vorgehen in drei Schritten. Belegtiefe nur Suchauszüge, die Anbieterseiten sind aus der Cloud gesperrt. Als **B16** in [`OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md); UMBAU, Roadmap (Block 1a, OPS-002a, „Bei Jannes") nachgezogen. **Keine neue Annahme** — ein neuer Anbieter ist ein Stopp, keine Annahme. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.
