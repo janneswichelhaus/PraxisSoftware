@@ -248,19 +248,13 @@ export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/pfad/zu/chromium
 
 ## Wochenroutine
 
-Montags um 07:50 Uhr (UTC 05:50, Cron `50 5 * * 1`) läuft eine automatische
-Planungssession mit dem Auftrag aus [`development/ROADMAP.md`](development/ROADMAP.md),
-Abschnitt „Wochenupdate". Sie baut nichts; das Ergebnis kommt per
-Push-Nachricht und E-Mail. Routine `trig_01N5FanspQGxJP9S9rnZiZHj`, Modell
-Haiku 4.5, liest `main`.
-
-Geprüft am 2026-09-23 (Umbau U3): Ihr Prompt stammte aus Roadmap 5.1 und
-fragte nach Abschnitten, die es nicht mehr gibt („Nächster Loop",
-„Rückwärtsplan", „Spur B"). Er verweist seitdem nur noch auf den Abschnitt
-„Wochenupdate" und folgt so jeder Änderung dort. Abschalten oder den Takt
-ändern: Routines-Oberfläche auf claude.ai oder eine Anweisung in einer
-Session. Nach der Zeitumstellung Ende Oktober läuft sie um 06:50 Uhr; für
-07:50 den Cron auf `50 6 * * 1` stellen.
+**Abgeschaltet am 2026-09-23** (Jannes, Umbau U3). Die Routine
+`trig_01N5FanspQGxJP9S9rnZiZHj` (montags 07:50 Uhr, Haiku 4.5) bleibt
+gespeichert, feuert aber nicht mehr; ihr Prompt verweist nur auf den Abschnitt
+„Wochenupdate" in [`development/ROADMAP.md`](development/ROADMAP.md). Wieder
+einschalten: Routines-Oberfläche auf claude.ai oder eine Anweisung in einer
+Session. Den Stand liefert bis dahin `docs/STATUS.md` und `pnpm fortschritt`;
+das Wochenupdate lässt sich als Planungssession von Hand starten.
 
 ## Go-live-Blocker
 

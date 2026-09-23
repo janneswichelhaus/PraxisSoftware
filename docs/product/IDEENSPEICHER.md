@@ -215,6 +215,14 @@ einem Verwurf. Neue Einträge hängen hinten an.
   auskommt. Gebaut ist nichts: **MAP-007** steht hinter MAP-006, hinter dem
   Gate und hinter **E-24**.
 
+- **2026-09-21** — Jannes hat gefragt, ob eine lesbare Patientennummer wie in
+  iPrax bei uns Datenschutzfragen lösen würde, und den Gedanken nach der
+  Prüfung noch am selben Tag **verworfen** (`IDEA-QSN-011`). Der Eintrag
+  bleibt mit der Begründung stehen: Eine Nummer wäre ein zusätzliches
+  personenbezogenes Datum, die Stellen mit namensfreiem Bezug tragen ihn
+  bereits, und ADR-021 Punkt 3 ließe sie weder an `persons` noch je
+  Verhältnis unterbringen. `PROJECT_PRINCIPLES.md` §1.1 bleibt unberührt.
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |

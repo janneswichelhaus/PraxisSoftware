@@ -171,7 +171,7 @@ Loop beginnt, damit Jannes' Bestätigung nicht auf dem Weg liegt.
 ## Meilensteine
 
 Ein Meilenstein ist erreicht, wenn **alle** Kriterien erfüllt sind. Er trägt
-kein Datum; das Wochenupdate meldet **erreicht** oder **offen** und nennt das
+kein Datum; eine Planungssession meldet **erreicht** oder **offen** und nennt das
 fehlende Kriterium.
 
 | MS | Name | Kriterien |
@@ -545,7 +545,6 @@ Die Reihenfolge ist verbindlich (E-15), einen Kalender gibt es nicht.
    Auftrag nimmt, sagt K1 in [`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md).
 3. **Nachher:** den Bericht lesen, Fragen mit je einem Satz beantworten („wie
    empfohlen" reicht). Merge und Sichtung nach der „Definition of Done".
-4. **Montags** sagt das Wochenupdate, was fällig ist. Es liest `main`.
 
 Antworten am besten mit Kennung (`B4: liegt vor, Ergebnis …`), Entscheidungen
 als „entschieden: …".
@@ -634,7 +633,7 @@ Das Modell steht projektweit in `.claude/settings.json`; wann eine Session mit
 
 ## Wochenupdate
 
-Auftrag für die wöchentliche Planungssession. Sie **baut nichts.**
+Auftrag für eine Planungssession, von Hand gestartet (die Montagsroutine ist seit 2026-09-23 abgeschaltet). Sie **baut nichts.**
 
 1. `docs/STATUS.md`, die Abschnitte „Die Kette bis zur Eröffnung" und
    „Meilensteine" dieser Datei, `ARBEITSBEREICHE.md` §2, die Ausgabe von
@@ -652,7 +651,7 @@ Auftrag für die wöchentliche Planungssession. Sie **baut nichts.**
 6. Die Tabelle „Sandbox-Prototypen" in `ARBEITSBEREICHE.md` §2 lesen und
    abgelaufene Prototypen nennen (ab zwei fertigen Code-Loops seit „Angelegt").
 
-Die eingerichtete Routine beschreibt `docs/DEVELOPMENT.md`, „Wochenroutine".
+Die abgeschaltete Routine beschreibt `docs/DEVELOPMENT.md`, „Wochenroutine".
 
 ---
 

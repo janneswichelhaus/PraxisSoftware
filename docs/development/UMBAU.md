@@ -211,9 +211,10 @@ Roadmap, `docs:check` prüft sie; die Stufe `abgenommen` heißt `gesichtet`.
 `docs/abnahme/` ist `docs/sichtung/` mit vier Sichtungen zu höchstens 15
 Schritten (Kernprozess, L, T, G); die Einzelschritte und die erledigten Pläne
 liegen in `docs/development/archiv/`. Workflow 1.2, OPTIMIERUNG, Roadmap-Regeln,
-`DEVELOPMENT.md` (Handytest im WLAN, Wochenroutine: Prompt auf den
-Roadmap-Abschnitt umgestellt statt abgeschaltet) nachgezogen. STATUS nennt die
-sieben ungemergten Branches mit Empfehlung. `docs:check` begrenzt das
+`DEVELOPMENT.md` (Handytest im WLAN, Wochenroutine) nachgezogen. Auf Jannes'
+Anweisung: Wochenroutine abgeschaltet, `IDEA-QSN-011` aus einem alten Branch
+in den Ideenspeicher übernommen; die sieben alten Branches löscht Jannes
+lokal (aus der Cloud-Session gesperrt, Befehl in STATUS). `docs:check` begrenzt das
 Register auf 14 Zeilen je Eintrag. **Nicht gemacht:** Loops ohne Oberfläche
 (G6a, G6b, G19, LEI-EPIC-001, CAL-EPIC-005) bleiben `fertig`, bis ihr
 Zweitreview belegt ist; Migrationskommentare mit alten Pfaden bleiben, weil
