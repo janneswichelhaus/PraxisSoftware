@@ -325,6 +325,38 @@ export function rpcAufrufen(
   });
 }
 
+/**
+ * Ein abgewiesener Lesepfad seit OPS-004 und G6a: kein 403, sondern null
+ * Zeilen — eine Ausnahme rollte den Protokolleintrag mit zurück. Geprüft wird
+ * über PostgREST hinweg, dass nichts Geheimes in der Antwort steht und dass
+ * owner genau einen neuen abgewiesenen Versuch im Auditlog sieht.
+ */
+export async function erwarteProtokollierteAbweisung(
+  request: APIRequestContext,
+  aktion: string,
+  aufruf: () => Promise<APIResponse>,
+  geheim: string,
+): Promise<void> {
+  const ownerToken = await zugriffstoken(request, KONTEN.owner);
+  const abgewieseneVersuche = async (): Promise<number> => {
+    const protokoll = await rpcAufrufen(request, ownerToken, 'list_audit_events', {
+      p_action: aktion,
+      p_limit: 200,
+    });
+    expect(protokoll.status(), 'Auditlog für owner').toBe(200);
+    const eintraege = (await protokoll.json()) as { outcome: string }[];
+    return eintraege.filter((eintrag) => eintrag.outcome === 'denied').length;
+  };
+
+  const vorher = await abgewieseneVersuche();
+  const antwort = await aufruf();
+  expect(antwort.status(), 'abgewiesen mit null Zeilen statt 403 (G6a)').toBe(200);
+  const text = await antwort.text();
+  expect(JSON.parse(text)).toEqual([]);
+  expect(text).not.toContain(geheim);
+  expect(await abgewieseneVersuche(), 'abgewiesener Versuch im Auditlog').toBe(vorher + 1);
+}
+
 /** Liest den Status eines Patienten über den regulären Lesepfad. */
 export async function statusUeberApi(
   request: APIRequestContext,

@@ -9,6 +9,7 @@ import {
   terminUeberOberflaeche,
   zeitImLauf,
   zugriffstoken,
+  erwarteProtokollierteAbweisung,
 } from './helpers';
 
 /**
@@ -246,11 +247,15 @@ test.describe('DOK-002: Serverseitige Grenzen', () => {
     expect(await gelesen.text()).toContain('Belastung in drei Stufen');
 
     const patientToken = await zugriffstoken(request, 'max.mustermann@patient.invalid');
-    const antwort = await rpcAufrufen(request, patientToken, 'get_treatment_note_versions', {
-      p_note_id: eintrag!.id,
-    });
-    expect(antwort.status(), 'ein Patientenkonto darf den Verlauf nicht lesen').toBe(403);
-    expect(await antwort.text()).not.toContain('Belastung in drei Stufen');
+    await erwarteProtokollierteAbweisung(
+      request,
+      'treatment_note.history_viewed',
+      () =>
+        rpcAufrufen(request, patientToken, 'get_treatment_note_versions', {
+          p_note_id: eintrag!.id,
+        }),
+      'Belastung in drei Stufen',
+    );
   });
 
   test('laesst die Versionstabelle selbst nicht direkt lesen', async ({ page, request }) => {

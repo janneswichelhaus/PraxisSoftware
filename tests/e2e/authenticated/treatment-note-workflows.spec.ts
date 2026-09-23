@@ -11,6 +11,7 @@ import {
   terminUeberOberflaeche,
   zeitImLauf,
   zugriffstoken,
+  erwarteProtokollierteAbweisung,
 } from './helpers';
 
 /**
@@ -177,11 +178,15 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     // Ausgeblendete Elemente sind keine Zugriffskontrolle - verbindlich ist
     // der Server (ADR-004).
     const patientToken = await zugriffstoken(request, 'max.mustermann@patient.invalid');
-    const abgewiesen = await rpcAufrufen(request, patientToken, 'get_treatment_note', {
-      p_appointment_id: terminId,
-    });
-    expect(abgewiesen.status(), 'ein Patientenkonto darf nicht lesen').toBe(403);
-    expect(await abgewiesen.text()).not.toContain('Uebungen angeleitet');
+    await erwarteProtokollierteAbweisung(
+      request,
+      'treatment_note.viewed',
+      () =>
+        rpcAufrufen(request, patientToken, 'get_treatment_note', {
+          p_appointment_id: terminId,
+        }),
+      'Uebungen angeleitet',
+    );
   });
 
   test('weist office am Schreibpfad ab', async ({ page, request }) => {

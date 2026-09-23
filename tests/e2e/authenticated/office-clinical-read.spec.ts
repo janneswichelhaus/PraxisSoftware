@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { KONTEN, PATIENTEN, anmelden, rpcAufrufen, zugriffstoken } from './helpers';
+import {
+  KONTEN,
+  PATIENTEN,
+  anmelden,
+  rpcAufrufen,
+  zugriffstoken,
+  erwarteProtokollierteAbweisung,
+} from './helpers';
 
 /**
  * Verordnung und Dateien fuer office (ROL-002, E15).
@@ -63,10 +70,14 @@ test.describe('ROL-002: Verordnung und Dateien fuer office', () => {
 
   test('weist das Patientenkonto an der klinischen Sicht weiterhin ab', async ({ request }) => {
     const token = await zugriffstoken(request, 'max.mustermann@patient.invalid');
-    const antwort = await rpcAufrufen(request, token, 'list_patient_treatment_bases_clinical', {
-      p_patient_id: PATIENTEN.max,
-    });
-    expect(antwort.status()).toBe(403);
-    expect(await antwort.text()).not.toContain('Bewegungseinschraenkung');
+    await erwarteProtokollierteAbweisung(
+      request,
+      'treatment_basis.viewed',
+      () =>
+        rpcAufrufen(request, token, 'list_patient_treatment_bases_clinical', {
+          p_patient_id: PATIENTEN.max,
+        }),
+      'Bewegungseinschraenkung',
+    );
   });
 });
