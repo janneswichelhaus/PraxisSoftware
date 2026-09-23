@@ -6,7 +6,7 @@ Aufbau stehen in [`README.md`](README.md).
 
 ## ABR-EPIC-004 — Befreiungsgrund und § 14c-Riegel
 
-Prüfschritte zu **ABR-006** und **ABR-007**. Grundlage: ADR-009 Fassung 2
+Prüfschritte zu **ABR-006** und **ABR-007**. Grundlage: ADR-009
 Punkt 18 (§ 14 Abs. 4 Nr. 8 UStG und der § 14c-Riegel), **BEF-019** und
 **ANN-082**.
 
@@ -167,7 +167,7 @@ am 2026-09-21 nachgezogen worden (siehe unten).
 ## ABR-EPIC-005 — Ein Bereich je Rechnung, getrennte Nummernkreise
 
 Prüfschritte zu **ABR-008**, **ABR-009** und **ABR-010**. Grundlage: ADR-009
-Fassung 2 Punkte 15 bis 17 und ADR-021 Punkt 2.
+Punkte 15 bis 17 und ADR-021 Punkt 2.
 
 **Dieser Loop bringt drei Migrationen**
 (`20260921130000_service_area.sql`, `20260921140000_invoice_service_area.sql`,
@@ -236,7 +236,7 @@ keine Auswertung „Einnahmen je Leistungsart" — das ist **ABR-EPIC-006**.
 
 ## ABR-EPIC-006 — Einnahmen je Leistungsart
 
-Prüfschritte zu **ABR-011**. Grundlage: ADR-009 Fassung 2 Punkt 19.
+Prüfschritte zu **ABR-011**. Grundlage: ADR-009 Punkt 19.
 
 **Dieser Loop bringt eine Migration**
 (`20260921160000_revenue_by_service_area.sql`) **und keinen geänderten Seed**:

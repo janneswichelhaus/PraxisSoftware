@@ -5,7 +5,7 @@
     "name": "Eröffnung — erster Behandlungstag mit der Software",
     "termin": "Juli 2027"
   },
-  "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab. Die Stufen heißen wie in der Fortschrittstabelle: fertig = Skill-Schritt I durchlaufen, abgenommen = Jannes hat docs/abnahme/ durchlaufen. Blöcke und Gewichte seit Roadmap 6.0 (2026-09-22): V1 ist das Endprodukt.",
+  "hinweis": "Datengrundlage für `pnpm fortschritt`. Gepflegt wird sie am Ende eines Loops, zusammen mit der Fortschrittstabelle in ROADMAP.md. Die Roadmap bleibt die Quelle der Wahrheit; diese Datei zählt sie nur ab. Die Stufen heißen wie in der Fortschrittstabelle: fertig = Skill-Schritt I durchlaufen, abgenommen = Jannes hat docs/abnahme/ durchlaufen. Blöcke und Gewichte seit Roadmap 6.0 (2026-09-22): V1 ist das Endprodukt. Ergänzt mit Roadmap 7.0 (2026-09-23): Block 1a, DOK-006, DSN-001, UI-003.",
   "statuswerte": {
     "offen": {
       "anteil": 0,
@@ -198,6 +198,18 @@
       "bezug": "ROADMAP.md, Blöcke 1 bis 9",
       "posten": [
         {
+          "id": "ux-epic-002",
+          "name": "UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a)",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ux-epic-003",
+          "name": "UX-EPIC-003 Tagesansicht fürs Handy (Block 1a)",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
           "id": "map-002",
           "name": "MAP-002 In-App-Kartenprototyp",
           "gewicht": 1,
@@ -258,6 +270,12 @@
           "status": "offen"
         },
         {
+          "id": "dok-006",
+          "name": "DOK-006 Fotos in der Akte",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
           "id": "prx-epic-001",
           "name": "PRX-EPIC-001 Warteliste und Terminsuche",
           "gewicht": 2,
@@ -300,6 +318,12 @@
           "status": "offen"
         },
         {
+          "id": "dsn-001",
+          "name": "DSN-001 Ansichten der Plattform für Patient:innen und Betreuung (Docs)",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
           "id": "por-epic-001",
           "name": "POR-EPIC-001 Plattformzugang",
           "gewicht": 3,
@@ -319,13 +343,13 @@
         },
         {
           "id": "ang-epic-001",
-          "name": "ANG-EPIC-001 Portal-Abo als Monatsrechnung",
+          "name": "ANG-EPIC-001 Nachsorge-Abo als Monatsrechnung",
           "gewicht": 2,
           "status": "offen"
         },
         {
           "id": "ang-epic-002",
-          "name": "ANG-EPIC-002 Pakete und Preise",
+          "name": "ANG-EPIC-002 Trainingspaket nach Zeitraum",
           "gewicht": 2,
           "status": "offen"
         },
@@ -468,8 +492,8 @@
           "status": "offen"
         },
         {
-          "id": "ui-001",
-          "name": "UI-001 Politur und Barrierefreiheit (G17)",
+          "id": "ui-003",
+          "name": "UI-003 Politur und Barrierefreiheit (G17)",
           "gewicht": 1,
           "status": "offen"
         }
@@ -503,6 +527,12 @@
           "id": "g5-ops-002",
           "name": "G5 OPS-002 Deployment und Freigabe",
           "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "g5a-ops-002a",
+          "name": "OPS-002a Test-Umgebung, vorgezogen (Block 1a)",
+          "gewicht": 1,
           "status": "offen"
         },
         {

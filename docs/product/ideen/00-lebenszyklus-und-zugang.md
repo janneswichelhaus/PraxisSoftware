@@ -257,7 +257,7 @@ Verordnung mit niedrigem Restkontingent reicht oder eine proaktive Erinnerung
 |---|---|
 | Status | notiert |
 | Quelle | Jannes, 2026-09-06 |
-| Berührt | B9 (erweitert), B4, B5, B11; `PROJECT_PRINCIPLES.md` §1, §14; `IDEA-LZK-002`; Roadmap Stufe 3; E-17, E-19 (entschieden 2026-09-06) |
+| Berührt | B9 (erweitert), B4, B5, B11; `PROJECT_PRINCIPLES.md` §1, §14; `IDEA-LZK-002`; Roadmap Blöcke 3 bis 7; E-17, E-19 (entschieden 2026-09-06) |
 
 **Idee.** Die Plattform ist für Patient:innen **und** für die Kund:innen von
 Jannes' Personal Training gedacht. Eine Kundin kann sie nutzen, ohne je in
@@ -286,10 +286,9 @@ denselben Regeln wie in der Behandlung. Für den Ernährungsteil gilt
 
 **Antworten 2026-09-06 (E-17, E-19).** Das Personal Training beginnt
 ebenfalls am 01.07.2027 — keine Bestandsdaten, kein Wunschtermin vor der
-Eröffnung. Die Plattform dafür ist Stufe 3 nach dem ersten Betriebsmonat, in
-der Reihenfolge Portalfundament → Übungspläne → Check-ins → Chat →
-Kund:innen und Pakete → Gewohnheiten, Aktivitäten, Ernährung. Bis dahin werden
-Kund:innen nicht als Patient:innen angelegt.
+Eröffnung. *Überholt am 2026-09-22:* Die Plattform gehört zum Umfang der
+Eröffnung; die Reihenfolge steht in `docs/development/ROADMAP.md` (Blöcke 3 bis
+7). Kund:innen werden nie als Patient:innen angelegt.
 
 **Offen — beantwortet (B9, 2026-09-07: ein Unternehmen).** Die Frage lautete:
 dieselbe Praxis oder eigener Betrieb? Jannes hat vorläufig entschieden, dass

@@ -16,7 +16,7 @@ dazukommen soll: die klientenzentrierte Betreuung zwischen den Terminen.
 **Nachtrag 2026-09-06.** Jannes hat denselben Screenshot erneut geteilt und
 eingeordnet: Die Praxissoftware ist nur ein Teilbereich; geplant ist eine
 Plattform für seine Patient:innen **und** die Kund:innen seines Personal
-Trainings (`IDEA-LZK-008`, Roadmap Stufe 3). Damit ist die Navigationsleiste
+Trainings (`IDEA-LZK-008`, Roadmap Blöcke 3 bis 7). Damit ist die Navigationsleiste
 mehr als eine Anregung — sie ist die Themenliste für den klientenseitigen
 Teil. Der Abschnitt „Was für uns anders sein muss" gilt unverändert. Der
 Screenshot zeigt Name und E-Mail-Adresse einer Person; er liegt nicht im
@@ -28,7 +28,13 @@ für Umfang, Ablauf und Informationsarchitektur — nicht für Datenmodell,
 Berechtigungen oder Rechtsrahmen, und keine Übernahme von Texten, Grafiken,
 Symbolen, Namen oder Code des fremden Produkts (Urheber- und Markenrecht).
 Was übernommen wird, entsteht in unserer Sprache und in unserer Reihenfolge
-(`docs/development/ROADMAP.md`, Stufe 3). Keine Nachrecherche.
+(`docs/development/ROADMAP.md`). Keine Nachrecherche.
+
+**Einordnung 2026-09-23 (Jannes):** Die Leiste ist die **Ansicht der
+Trainingskund:innen** (`PROJECT_PRINCIPLES.md` §4.10). Die Ansichten für
+Patient:innen und für die Betreuung sind noch nicht entworfen (DSN-001 in der
+Roadmap). Der Satz unten, die Leiste erscheine „innerhalb der Akte", gilt
+damit nicht mehr.
 
 ---
 

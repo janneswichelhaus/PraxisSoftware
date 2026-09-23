@@ -1,242 +1,119 @@
-# Produktvision
+# Produktbeschreibung
 
-> **Dieses Dokument ist nicht normativ.**
->
-> Es beschreibt das langfristige Zielbild und hilft, lokale Produkt- und
-> Architekturentscheidungen einzuordnen. Es ist **kein Implementierungsauftrag**,
-> **keine Feature-Spezifikation** und **keine Freigabe** der beschriebenen
-> Funktionen. Aus diesem Dokument darf **niemals** eine Erweiterung eines
-> aktuellen Feature-Scopes abgeleitet werden.
->
-> Verbindlich sind ausschließlich `PROJECT_PRINCIPLES.md`, die angenommenen
-> ADRs in `docs/adr/` und die jeweils konkrete Feature-Spezifikation.
+> **Nicht normativ** (Rang 5, `PROJECT_PRINCIPLES.md` §21). Dieses Dokument beschreibt, was das
+> Produkt im Alltag ist und für wen — damit jede Aufgabe verstanden wird, bevor sie gebaut wird. Es
+> begründet keinen Scope und ersetzt keine Spezifikation. Verbindlich sind `PROJECT_PRINCIPLES.md`,
+> die ADRs in `docs/adr/` und die Spezifikation des jeweiligen Loops; die Reihenfolge steht in
+> `development/ROADMAP.md`. Stand: Produktgespräch mit Jannes vom 2026-09-23.
 
-Dieses Dokument steht auf Rang 5 der Rangfolge in `PROJECT_PRINCIPLES.md` §21:
-Widerspricht es einem höheren Rang, gilt der höhere — ohne Auslegung zugunsten
-der Vision. Was noch **nicht** entschieden ist, steht in
-`decisions/OPEN_DECISIONS.md`.
+## 1. Die Praxis
 
----
-
-## 1. Produktzweck
-
-Eine zentrale Softwareplattform für eine privat abrechnende
-Physiotherapiepraxis mit starkem Hausbesuchs- und Mobile-Fokus.
-
-Das Produkt wird zunächst **ausschließlich für die eigene Praxis** entwickelt.
-Sie heißt seit dem 2026-09-10 **Own Motion** — „Physiotherapie per Lastenrad",
-Tübingen. Marke, Farben und die Regeln ihrer Verwendung stehen in
-`../marke/README.md`; die Anwendung trägt sie seit MARKE-001 (2026-09-11).
-
-Eine spätere Erweiterung auf mehrere Standorte, mehrere Organisationen oder
-andere Praxen soll architektonisch nicht unnötig verbaut werden. Daraus
-entsteht **kein Auftrag**, ein generisches SaaS-Produkt oder zusätzliche
-Mandantenfunktionen zu bauen. Wie weit die Vorbereitung konkret reicht, regelt
-abschließend [ADR-003](adr/ADR-003-organization-location-model.md) und
-[ADR-014](adr/ADR-014-foundational-data-model.md).
+**Own Motion** — „Physiotherapie per Lastenrad", Tübingen. Marke und Farben:
+[`../marke/README.md`](../marke/README.md). Eröffnung im **Juli 2027**, ohne Vorgängersystem und
+ohne Bestandsdaten: Die Software begleitet die Praxis vom ersten Tag an.
 
 ### 1.1 Zielbetrieb
 
-Präzisierung vom 31.08.2026. Sie ersetzt das frühere, weitere Bild einer
-allgemeinen Praxis mit Hausbesuchsoption:
+- **Keine Behandlungsräume.** Jede Behandlung ist ein Hausbesuch, jeder Weg wird mit dem Rad
+  gefahren. Start und Ende eines Tages ist der Stellplatz der Räder, keine Praxisadresse.
+- **Jede:r Therapeut:in hat ein eigenes Rad.** Es gibt so viele Räder wie Therapeut:innen; ein
+  gesperrtes Rad ist eine echte Einschränkung des Tages.
+- **Privat abgerechnet.** Gegen Verordnung (Privatrezept) oder als Selbstzahler; keine GKV
+  (`PROJECT_PRINCIPLES.md` §19, [ADR-020](adr/ADR-020-treatment-basis.md)).
+- **Zwei Leistungsbereiche:** Heilbehandlung und Personal Training, rechtlich getrennt, auch wenn
+  es dieselbe Person ist (§1.2).
+- **Später ein Standort** — in etwa drei Jahren denkbar: Büro, einige Trainingsgeräte, ein
+  Kursraum. Vorbereitet ist dafür nur `location_id` ([ADR-003](adr/ADR-003-organization-location-model.md)).
 
-Die Praxis hat **keine Behandlungsräume**. Alle regulären Behandlungen sind
-Hausbesuche, und alle Wege werden **mit dem Fahrrad** zurückgelegt. Start- und
-Endpunkt eines Arbeitstags sind ein Raddepot oder ein persönlicher Startort,
-nicht eine Praxisadresse. Ein Raddepot ist ein betrieblicher Ort, kein
-Behandlungsraum.
+Eine vorhandene Team-App aus dem Kölner Betrieb dient als Vorlage für Umfang und Ablauf des
+Praxisbetriebs (Radflotte, Schlüssel, Check-Up, Pannen, Urlaub, Überstunden, Erstattungen) — nicht
+für Datenmodell, Berechtigungen oder Sicherheit. Standortabhängige Inhalte daraus sind für Tübingen
+nicht geprüft.
 
-Daraus folgt für die Vision:
+## 2. Wer damit arbeitet
 
-- **Raumplanung ist kein Zielumfang.** Was in anderen Praxissystemen die
-  Raumbelegung ist, ist hier die Fahrradflotte.
-- **Die Fahrradflotte ist eine Planungsressource.** Ein fehlendes oder
-  gesperrtes Rad ist eine echte betriebliche Einschränkung.
-- **GKV-Abrechnung ist kein Zielumfang.** Abgerechnet wird privat
-  (`PROJECT_PRINCIPLES.md` §19, [ADR-009](adr/ADR-009-private-billing-model.md)).
-- **Personal-, Flotten- und Kommunikationsabläufe gehören zum Produkt**, nicht
-  in eine zweite Anwendung daneben.
+| Wann          | Wer                                                                                             | Was das für die Software heißt                                                                      |
+| ------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Zur Eröffnung | **Jannes** — Owner, Therapeut, Trainer und Büro in einer Person; vielleicht eine weitere Person | Alles muss für eine Person am Handy flüssig gehen; nichts setzt ein Team voraus                     |
+| Bald danach   | **eine Bürokraft**, die nur im Büro arbeitet                                                    | Rolle Office: Termine, Rechnungen, Anrufe, Aufgaben; liest klinische Inhalte, schreibt keine (§4.3) |
+| Mit Wachstum  | **weitere Therapeut:innen**, später auch in der Trainingsbetreuung                              | Der Owner legt ein Teammitglied an, wählt die Rolle — fertig (§4)                                   |
+| Laufend       | **Patient:innen** und **Trainingskund:innen**                                                   | Eigenes Konto auf der Plattform, getrennt von Akte und Verhältnis (§4.6, §4.10)                     |
 
-Als konkrete Funktions- und Ablaufvorlage für die betrieblichen Abläufe dient
-eine vorhandene Team-App der Praxis (Radflotte, Schlüssel, Check-Up,
-Pannenablauf, Mitarbeiterliste, Urlaub, Überstunden, Erstattungen). Sie ist
-eine Vorlage für Umfang und Ablauf, **keine Vorlage für Datenmodell,
-Berechtigungen oder Sicherheitsmechanismen** — deren Anforderungen stehen
-unverändert in `PROJECT_PRINCIPLES.md` §3 und §4.
+Jannes' Ziel: bald nur noch **zwei bis drei Behandlungen am Tag**, der Rest ist Organisation und
+Weiterentwicklung. Organisation, Einstellungen und Überblick sind für den Owner deshalb
+Kernfunktionen.
 
-Standortabhängige Inhalte dieser Vorlage stammen aus dem Kölner Betrieb und
-sind für Tübingen **nicht geprüft**. Sie werden als austauschbare
-Standortvorlage geführt und dürfen nicht als freigegebene Betriebsanweisung
-erscheinen.
+## 3. Ein Behandlungstag
 
-Präzisierung vom 06.09.2026 (Jannes):
+1. **Am Rad.** Das Handy kommt in die Halterung. Die Oberfläche ist ruhig: der erste Weg, eine
+   Vorschau auf den nächsten, was bei der Person zu beachten ist — und ob heute die
+   **Behandlungsliege** mit muss, auch wenn erst der dritte Besuch sie braucht.
+2. **Unterwegs.** „Navigation starten" öffnet die Navigations-App des Handys. Die Praxis erfährt die
+   Position nicht (§20).
+3. **Vor der Tür.** Ein Blick auf die bisherige Dokumentation, mit einem Tipp erreichbar.
+4. **Bei der Person.** Den aktuellen Stand erfassen, ohne viel zu tippen: Skalen und Bausteine zum
+   Antippen. Danach die Dokumentation **per Sprache**; die KI strukturiert, der Mensch prüft und
+   übernimmt. Wer nicht sprechen kann, hat denselben Weg über Antippen und Text (§5, §6.3).
+5. **Fotos**, wo sie helfen — für Kolleg:innen, die übernehmen, und zum Vergleich im Verlauf. Nur
+   über die Kamera der Anwendung, nie über die Mediathek des Handys, und nur mit Einwilligung.
+6. **Termin abschließen.** Durchgeführt, nicht angetroffen (nach Protokoll) oder „Tür geöffnet,
+   keine Behandlung" — die Anwendung führt durch die Fälle (§8).
+7. **Am Ende** kommt das Rad zurück an den Stellplatz.
 
-- **Die Praxis nimmt den Betrieb im Juli 2027 auf.** Es gibt kein
-  Vorgängersystem und keine Bestandsdaten; die Software begleitet die Praxis
-  vom ersten Tag an (`development/ROADMAP.md`, Meilensteine M4 bis M6).
-- **Die Tour liegt in der Anwendung auf der Karte; die Navigation übernimmt
-  das Gerät.** Tagesroute, Fahrradroute und Fahrzeiten liegen in der
-  Praxissoftware; „Navigation starten" öffnet die Navigations-App des Geräts.
-  Datenschutz und §203 werden dafür nicht umgangen, sondern bestimmen den
-  Anbieter (`adr/ADR-019-map-service.md`).
-- **Die Praxissoftware ist nur ein Teilbereich.** Dazu kommt eine Plattform
-  für Patient:innen und für die Kund:innen von Jannes' Personal Training
-  (§4).
+**Die Erstaufnahme** ist bei der Eröffnung der häufigste Termin: Befund, Scores, dazu ein Foto der
+Verordnung und des Anmeldebogens — oder der Befundbogen wurde vorab auf der Plattform ausgefüllt.
+Was fehlt, bleibt sichtbar offen (in der Tagesansicht, im Kopf der Akte, in der Büroliste), bis es
+erledigt ist. Die Felder der Verordnung schlägt die KI aus dem Foto vor; der Mensch bestätigt.
 
-## 2. Langfristige Funktionsbereiche
-
-Das langfristige Zielbild umfasst:
-
-- Patientenverwaltung
-- Patientenportal
-- digitaler Intake und strukturierte Anamnese
-- PROMs und Outcome Tracking
-- Kalender
-- Terminverfügbarkeiten
-- Routen- und Tourenplanung für Hausbesuche
-- klinische Dokumentation
-- KI-gestützte Dokumentationsentwürfe und Assistenz
-- Therapie- und Übungspläne
-- Privatrechnungen
-- sichere Patientenkommunikation
-- interne Slack-artige Teamkommunikation
-- Mitarbeiterverwaltung
-- Urlaub
-- Arbeitszeit und Überstunden
-- Erstattungen und Belege
-- Fahrradflotte, Wartung und Pannenmanagement
-- Plattform für Patient:innen und für Kund:innen des Personal Trainings (§4)
-
-**Diese Liste ist eine langfristige Orientierung.** Sie trifft keine Aussage
-über Reihenfolge, Priorität oder bereits freigegebenen Scope. Kein Eintrag
-darauf ist beauftragt, solange er nicht in einer konkreten
-Feature-Spezifikation steht.
-
-## 3. Zentrale Nutzergruppen
-
-- Praxisinhaber beziehungsweise Owner
-- Therapeut:innen
-- Team Leads
-- Office beziehungsweise Verwaltung
-- Patient:innen
-- Kund:innen des Personal Trainings — ohne Heilbehandlung, mit eigenem
-  Vertrag, eigener Rechtsgrundlage, Umsatzsteuer und Aufbewahrungsfrist
-  (`decisions/OPEN_DECISIONS.md` B9; Präzisierung vom 06.09.2026)
-- später gegebenenfalls Angehörige oder rechtliche beziehungsweise
-  bevollmächtigte Vertreter:innen
-
-**Patient, Person, Mitarbeiter und Auth-Account sind unterschiedliche
-fachliche Entitäten und dürfen nicht gleichgesetzt werden.** Diese Trennung ist
-kein Zielbild, sondern bereits verbindlich
-([ADR-014](adr/ADR-014-foundational-data-model.md)); die Rollen und ihre
-Sichtbarkeiten regelt `PROJECT_PRINCIPLES.md` §4 zusammen mit
-[ADR-004](adr/ADR-004-authorization-model.md).
+Der Anamnesebogen folgt dem DIGOTOR-Bogen Version 8 / 07-2026 als strukturiertes Formular;
+Instrumente wie NRS, PSFS oder KOOS kommen aus einer Instrumentenbibliothek. Hervorgehoben wird,
+was die Person angegeben hat — eine Diagnose, einen Risikoscore oder eine Empfehlung erzeugt die
+Software nie (§7.1, §17).
 
 ## 4. Plattform für Patient:innen und Kund:innen
 
-Langfristiges Zielbild für Patient:innen:
+|            | Während der Behandlung                                                                                                       | Nach der Behandlung                                                                                                             | Training                                                                                                                                                          |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Preis**  | kostenlos, Teil der Heilbehandlung                                                                                           | **Nachsorge-Abo**, monatlich kündbar                                                                                            | im Paketpreis                                                                                                                                                     |
+| **Inhalt** | Befundbogen vorab, Termine und Terminwünsche, Heimübungsplan mit Videos, Check-ins, Rechnungen und Dokumente, Einwilligungen | Heimprogramm bleibt aktiv und wird angepasst, Fortschritt, Gewohnheiten, Rückfragen mit Foto oder Video und fester Antwortfrist | Übersicht, Kalender, Einheiten, Check-ins, Fortschritt, Pläne, Aktivitäten, Assessments, Profil, Gewohnheiten, Ernährung als Protokoll, Rückfragen, Einstellungen |
 
-- eigener Login
-- Termine
-- Terminänderungswünsche
-- Fragebögen
-- Therapieziele
-- Übungen
-- Videos
-- Hausaufgaben
-- Tracking
-- Outcomes
-- Rechnungen
-- Dokumente
-- sichere Kommunikation
+- **Ein Terminwunsch ist ein Wunsch.** Einen Termin daraus macht das Büro.
+- **Nach einer Kündigung** bleibt der Zugang 30 Tage lesend, der Plan ist als PDF mitzunehmen.
+- **Ein Konto ist keine Akte.** Wer kein Konto will, wird trotzdem behandelt; Pläne gibt es dann als
+  PDF.
+- Die Ansicht der Trainingskund:innen hat ein Vorbild
+  ([`product/ideen/referenz-navigation.md`](product/ideen/referenz-navigation.md)). Die Ansichten
+  für Patient:innen und für die Betreuung sind **noch zu entwerfen** (DSN-001 in der Roadmap).
 
-**Ein Patient benötigt nicht automatisch einen Portalaccount.** Account und
-Akte sind getrennte Konzepte (`PROJECT_PRINCIPLES.md` §4.6).
-
-Später müssen gegebenenfalls auch Angehörige oder Vertreter Zugriff erhalten
-können. Daraus ist **aktuell keine Implementierung abzuleiten**; die
-zugehörigen Fragen zu Identitätsprüfung und Vertretung sind in
-`decisions/OPEN_DECISIONS.md` als offen geführt.
-
-Dieselbe Plattform ist das Zielbild für die **Kund:innen des Personal
-Trainings** — nach einer Therapie oder ohne vorherige Heilbehandlung:
-Trainingspläne, Check-ins, Fortschritt, Assessments, Gewohnheiten, Ernährung
-als Protokoll und Zielwert, Rückfragen. Seit 2026-09-22 gehört die Plattform
-zum Umfang der Eröffnung (`PROJECT_PRINCIPLES.md` 0.16 §14); Reihenfolge und
-was davon nicht in V1 kommt: `development/ROADMAP.md`, „Ziel und Umfang".
-
-## 5. Digitaler Intake und Assessments
-
-Der DIGOTOR-Anamnesebogen Version 8 / 07-2026 soll langfristig als
-**strukturiertes digitales Formular** umgesetzt werden — nicht als PDF-Ablage
-(`PROJECT_PRINCIPLES.md` §7).
-
-Inhaltlich unter anderem:
-
-Lokalisation · NRS · Symptomverhalten · Verlauf · Funktion · neurologische
-Symptome · systemische Angaben · Begleiterkrankungen · Medikamente · Aktivität
-· Krafttraining · Schlaf · Stress · bisherige Diagnostik · Patientenziele
-
-Spezifische Instrumente wie RIS, KOOS und weitere PROMs sollen später über eine
-**Instrumentenbibliothek** ergänzt werden können. Lizenz- und
-Nutzungsfragen einzelner Instrumente sind offen und in
-`decisions/OPEN_DECISIONS.md` geführt.
-
-Es dürfen **keine proprietären oder fachlich nicht validierten
-Red-Flag-Scores** erfunden werden.
-
-Patientenangaben dürfen transparent hervorgehoben und für Behandelnde
-aufbereitet werden. Das System leitet daraus **keine autonome Diagnose und
-keine klinische Entscheidung** ab. Die verbindliche Grenze zieht
-[ADR-006](adr/ADR-006-medical-device-boundary.md).
-
-## 6. KI-Zielbild
-
-**Aktuell ist keine produktive KI-Funktion implementiert.**
-
-Langfristiges Grundmodell:
+## 5. Geschäftsmodell
 
 ```
-App
-  → zentraler AI Privacy Gateway
-      → Berechtigungsprüfung
-      → Zweckprüfung
-      → Datenminimierung
-      → zugelassener Provider
-  → Ergebnis
-  → menschliche Prüfung
+Heilbehandlung  ──►  Nachsorge-Abo  ──►  Personal Training
+(Verordnung oder     (nach dem Ende      (Paket nach Zeitraum,
+ Selbstzahler)        der Behandlung)     nicht pausierbar)
 ```
 
-**Kein fachliches Modul ruft einen LLM-Provider direkt auf**
-([ADR-005](adr/ADR-005-provider-independent-ai.md)).
+- **Anfangs ist das Geschäft praktisch nur Heilbehandlung.** Training buchen einzelne
+  Patient:innen, die nach ihrer Verordnung weitermachen wollen.
+- **Der Übergang** geschieht im Abschlussgespräch: Die Anwendung erinnert in den letzten Terminen
+  daran, das Angebot ist mündlich, der Trainingsvertrag wird im eigenen Konto geschlossen — mit
+  Widerrufsbelehrung und eigener Einwilligung. Aus der Akte wandert nur, was die Person freigibt.
+- **Training** findet bei der Person, draußen oder per Video statt und steht in derselben
+  Tagesroute. Zuerst betreut Jannes es allein, später auch andere Therapeut:innen.
+- **Abgerechnet** wird alles im eigenen Rechnungswesen: je Termin bzw. Monat, eine Rechnung je
+  Leistungsbereich (ADR-009). Die Steuer auf Abo und Paket klärt die Steuerberatung (B4).
 
-KI unterstützt zunächst bei Entwürfen, Zusammenfassungen und
-Assistenzaufgaben. Klinische Verantwortung und Freigabe verbleiben beim
-Menschen.
+## 6. KI-Assistenz
 
-Aktuell favorisierte, **nicht abschließend beschlossene**
-Produktionshypothese: Claude über AWS Bedrock in einer geeigneten
-EU-Konfiguration.
+KI hilft beim Formulieren, Strukturieren und Zusammenfassen — Sprachdokumentation, Patientensprache,
+Antwortentwürfe, Vorschläge aus dem Verordnungsfoto. Sie entscheidet nichts: Jedes Ergebnis ist ein
+Entwurf, bis ein Mensch es übernimmt. Kein Fachmodul ruft einen KI-Anbieter direkt auf; alles läuft
+über ein zentrales Gateway, das Berechtigung, Zweck und Datenminimierung prüft
+([ADR-005](adr/ADR-005-provider-independent-ai.md)). Arbeitshypothese für den Anbieter, **nicht
+entschieden**: Claude über AWS Bedrock in einer EU-Konfiguration; jeder Anbieter mit Zugang zu
+Gesundheitsdaten wird vorher nach [ADR-002](adr/ADR-002-hosting-data-residency.md) geprüft.
 
-**Die konkrete Providerentscheidung bleibt offen.** ADR-005 hält sie
-ausdrücklich offen, und jeder Anbieter mit Zugang zu Patientendaten
-durchläuft vorher die dokumentierte Prüfung nach
-[ADR-002](adr/ADR-002-hosting-data-residency.md). Diese Zeile ist eine
-Arbeitshypothese, keine Vorentscheidung.
-
-Diktat und Speech-to-Text sind später als **eigener Datenfluss mit
-Gesundheitsdaten** gesondert zu bewerten. Die fachliche **Anforderung** an eine
-Sprachdokumentation ist seit dem 2026-09-08 entschieden und steht in
-`PROJECT_PRINCIPLES.md` §6.3; offen sind Anbieter, Architektur und
-Aufbewahrung des Rohaudios (`docs/decisions/OPEN_DECISIONS.md` E13). Gebaut
-ist davon nichts.
-
-## 6a. Bedienmodell: sechs Arbeitsbereiche
-
-Die Funktionsbereiche aus §2 sagen, _was_ die Plattform können soll. Dieses
-Kapitel sagt, _wo_ eine Person ihre Aufgabe beginnt. Die Aufteilung ist
-umgesetzt und in `src/app/navigation.tsx` abgebildet; sie ist die
-Ausgangsstruktur und keine unveränderliche Festlegung.
+## 6a. Bedienung: sechs Arbeitsbereiche
 
 | Arbeitsbereich    | Leitfrage                                              |
 | ----------------- | ------------------------------------------------------ |
@@ -247,66 +124,30 @@ Ausgangsstruktur und keine unveränderliche Festlegung.
 | Organisatorisches | Welche Voraussetzungen und Anträge sind zu bearbeiten? |
 | Abrechnung        | Welche Leistungen sind abzurechnen oder zu bezahlen?   |
 
-Die Beschriftungen hat Jannes am 2026-09-12 neu gefasst; vorher hießen die
-vier ersten „Mein Tag", „Touren & Termine", „Team" und „Betrieb". Der Zuschnitt
-der Bereiche ist derselbe geblieben; Oberfläche, Abnahmeschritte und
-Dokumentation benutzen durchgehend die neuen Namen.
+Abgebildet in `src/app/navigation.tsx`; Stand der Bereiche in
+[`development/ARBEITSBEREICHE.md`](development/ARBEITSBEREICHE.md). Wo die Trainingskund:innen in
+dieser Aufteilung leben, klärt DSN-001.
 
-Regeln, die sich daraus ergeben haben:
+Regeln der Bedienung:
 
-- **Ein Vorgang, mehrere Sichten.** „Übersicht" und „Kalender" betrachten
-  dieselben Besuche. Es entsteht keine zweite
-  Terminliste, kein zweiter Mitarbeiterstamm und keine zweite Patientenakte.
-- **Der Arbeitsgegenstand trägt seine Werkzeuge.** Suche, Filter und Aktionen
-  stehen im jeweiligen Bereich, nicht in der globalen Navigation.
-- **Öffentliche und geschützte Sicht sind getrennt.** Dieselbe Person, aber
-  nicht dieselben Angaben: Dienstkontakt für alle Praxisrollen, Privatangaben
-  nur für die Praxisleitung — und für andere Rollen gar nicht erst
-  ausgeliefert (`PROJECT_PRINCIPLES.md` §20, STAFF-001).
-- **Ein Verweis erweitert keine Berechtigung.** Ein Link aus einem Gespräch auf
-  einen Vorgang gibt keinen zusätzlichen Zugriff (`PROJECT_PRINCIPLES.md` §4.7).
+- **Handy zuerst, ruhig, in der Sprache der Praxis.** Gezeigt wird, was der nächste Schritt braucht;
+  Beschriftungen folgen einer Begriffsliste, nicht dem Datenmodell (§2.2).
+- **Ein Vorgang, mehrere Sichten.** Übersicht und Kalender zeigen dieselben Besuche; es gibt keine
+  zweite Terminliste, keinen zweiten Mitarbeiterstamm, keine zweite Akte.
+- **Der Arbeitsgegenstand trägt seine Werkzeuge.** Suche, Filter und Aktionen stehen im Bereich.
+- **Ein Verweis erweitert keine Berechtigung** (§4.7).
 
-Welche Bereiche bereits angebunden sind und welche als gekennzeichnete Vorschau
-laufen, steht in
-[`development/ARBEITSBEREICHE.md`](development/ARBEITSBEREICHE.md).
+## 7. Organisation und Praxisbetrieb
 
-## 7. Produkt- und Architekturprinzipien
+- **Praxisverwaltung:** Warteliste und Terminsuche, Anrufliste, Aufgaben und Wiedervorlagen,
+  Kennzahlen, Export für die Steuerberatung, Kartenzahlung beim Hausbesuch.
+- **Praxisbetrieb:** Radflotte mit Schlüssel, Check-Up und Pannenablauf; Teamkommunikation in der
+  Anwendung (getrennt von der Kommunikation mit Patient:innen); Urlaub, Zeitkonto, Erstattungen —
+  ohne Ortung und ohne Leistungskontrolle von Beschäftigten (§20).
 
-Für die Vision besonders relevante Leitlinien. **Verbindliche Details stehen in
-`PROJECT_PRINCIPLES.md` und den angenommenen ADRs** — die folgende Liste
-definiert nichts neu und ersetzt nichts.
+## 8. Grenzen
 
-- modularer Monolith
-- Online-first
-- begrenzter späterer Offline-Modus, nur für konkret definierte Anwendungsfälle
-- Mobile-Nutzung als zentraler Nutzungskontext
-- Datenschutz und Mandantentrennung von Beginn an
-- zentrale Autorisierung in Verbindung mit PostgreSQL Row Level Security
-- Auditierbarkeit privilegierter und relevanter fachlicher Aktionen
-- EU-/EWR-Verarbeitung bevorzugt — die verbindliche, strengere Fassung steht in
-  `PROJECT_PRINCIPLES.md` §3.5 und ADR-002
-- menschengeprüfte KI-Ausgaben
-- keine unnötige frühzeitige Infrastrukturkomplexität
-- keine echten Patientendaten in Entwicklung und Tests
-- synthetische Testdaten
-
-## 8. Nicht-Ziele dieses Dokuments
-
-Dieses Dokument ist ausdrücklich **nicht**:
-
-- ein vollständiger Implementierungsplan
-- eine Roadmap mit zugesagten Terminen
-- eine Freigabe aller beschriebenen Funktionen
-- eine Feature-Spezifikation
-- eine Erlaubnis für Scope-Erweiterungen
-- eine Grundlage, Sicherheits- oder Datenschutzanforderungen zu umgehen
-- eine Festlegung auf einen KI-Provider
-- ein Auftrag zur Entwicklung einer nativen Mobile-App
-- ein Auftrag zur Einführung von Microservices oder Kubernetes
-- eine Vorwegnahme eines generischen SaaS-Produkts
-
----
-
-Für eine konkrete Aufgabe gilt ausschließlich deren Feature-Spezifikation im
-Rahmen von `PROJECT_PRINCIPLES.md` und den ADRs. Dieses Dokument erklärt, wohin
-es langfristig gehen soll — nicht, was als Nächstes gebaut wird.
+Das Produkt ist **keine** Software, die diagnostiziert, Übungen aus Befunden ableitet, Verläufe
+bewertet oder Trainingsfreigaben erteilt (§17). Nicht vorgesehen sind GKV-Abrechnung, eine native
+App, Wearables und ein Angebot der Software für andere Praxen (§14). Was davon an welcher Regel
+scheitert: `development/ROADMAP.md`, „Nicht in V1".

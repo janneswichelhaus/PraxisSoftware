@@ -125,7 +125,7 @@ im Alltag `pnpm install`, `pnpm dev`, `pnpm build`.
 ## Arbeitsweise
 
 **Jeder Auftrag wird zuerst klassifiziert** (K1 in `docs/development/GRAPH-ENGINEERING-WORKFLOW.md`):
-Berührt der Diff einen Auslöser aus ADR-013 Fassung 2, Punkt 9, ist er **Pfad A** —
+Berührt der Diff einen Auslöser aus ADR-013 Punkt 9, ist er **Pfad A** —
 `/feature-loop <Aufgabe>`. Berührt er nur die Oberfläche und überlebt kein Wert die Sitzung, ist er
 **Pfad S** — `/sandbox <Thema>`. Beide Skills (`.claude/skills/`) starten nur auf ausdrücklichen
 Aufruf; Zuschnitt, Zweitreview und Bericht stehen dort.

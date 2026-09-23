@@ -2,39 +2,14 @@
 
 ## Status
 
-**Angenommen — Fassung 2** (vom Projektinhaber am 2026-09-20 angenommen, alle
-sechs neuen Punkte wie vorgeschlagen; fachlich entschieden hatte er die zwei
-Leistungsbereiche am 2026-09-17, E18). Fassung 1 ist am 2026-08-28 angenommen.
-
-Fassung 2 ergänzt die Punkte 15 bis 20: das Steuerkennzeichen am **Posten**,
-die Rechnung mit **genau einem Leistungsbereich**, **getrennte Nummernkreise**,
-den **§ 14c-Riegel**, die Auswertung „Einnahmen je Leistungsart" und den
-Verzicht auf die Kleinbetragsrechnung. Sie ist **Schritt 4 von sieben** aus E18
-([`../development/E18-LEISTUNGSBEREICHE.md`](../development/E18-LEISTUNGSBEREICHE.md),
-Abschnitt 3) und setzt
-[ADR-021](ADR-021-service-areas-and-legal-relationships.md),
-[ADR-022](ADR-022-appointment-context-and-training-basis.md) und
-[ADR-006](ADR-006-medical-device-boundary.md) Fassung 3 fort. **Die Punkte 1
-bis 14 sind unverändert**; die neuen Punkte machen Punkt 6 und Punkt 8 an
-genau den Stellen konkret, an denen zwei Leistungsbereiche sie mehrdeutig
-lassen — sie fassen sie **enger**, nie lockerer.
-
-Die geltende Fassung steht mit der Annahme auf **2** in der Tabelle in
-[`README.md`](README.md) — der einzigen Stelle, die Fassung und Status führt
-(`PROJECT_PRINCIPLES.md` §21). Weder §21 noch der Index in `CLAUDE.md` nennen
-eine Fassung; beide bleiben unverändert. Mit der Annahme ist **Schritt 5**
-(`PROJECT_PRINCIPLES.md` neue Version: §1, §4, Zweckbestimmung, §14) frei; ein
-Loop, der Code baut, beginnt weiterhin erst, wenn der ADR über ihm steht. Was
-aus dieser Fassung zu bauen ist, schneidet **Schritt 6** zu — die Reihenfolge
-der Etappe 1 bleibt bis dahin unverändert
-([`../development/ROADMAP.md`](../development/ROADMAP.md)). Der einzige Punkt,
-der schon Gebautes korrigiert, ist der fehlende Befreiungsgrund auf der
-Rechnung: **BEF-019** in
-[`../development/BEFUNDE.md`](../development/BEFUNDE.md).
+**Angenommen — Fassung 3** (2026-09-23). Fassung 1 am 2026-08-28, Fassung 2
+(Punkte 15 bis 20, zwei Leistungsbereiche, E18) am 2026-09-20, Fassung 3
+(Punkt 21, Nachsorge-Abo und Trainingspaket) am 2026-09-23. Die Punkte 1 bis
+20 gelten unverändert; Punkt 13 trägt einen Erledigungsvermerk.
 
 ## Datum
 
-2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2, angenommen)
+2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3)
 
 ## Kontext
 
@@ -136,6 +111,8 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 13. Therapeutische Leistungen **sollen grundsätzlich erst endgültig fakturiert
     werden können, wenn die zugehörige Dokumentation finalisiert ist**.
     **Berechtigte Overrides müssen begründet und protokolliert werden.**
+    *In V1 gibt es keinen Override (`PROJECT_PRINCIPLES.md` §19); der Satz
+    gilt, falls einer eingeführt wird.*
 14. V1 unterstützt **PDF-Rechnungen für private Rechnungsempfänger**. Die
     Architektur **darf spätere strukturierte E-Rechnungen nicht verhindern**.
 15. *(Fassung 2)* **Das Steuerkennzeichen hängt am Posten, nie am Kunden.**
@@ -196,6 +173,17 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
     Pflicht; was sie erspart, ist im Wesentlichen die Angabe des
     Leistungsempfängers — und genau die braucht diese Praxis für Beihilfe und
     private Versicherung ohnehin (Punkt 2).
+21. *(Fassung 3)* **Wiederkehrende und vorausbezahlte Leistungen sind
+    abrechenbare Ereignisse** (`PROJECT_PRINCIPLES.md` §19). Das
+    **Nachsorge-Abo** der Patient:innen erzeugt je Monat eine Leistung und eine
+    Monatsrechnung im Bereich `therapy`; es beginnt frühestens mit dem Ende
+    der Behandlungsgrundlage (ADR-020) und ist monatlich kündbar. Das **Trainingspaket** gilt für einen festen Zeitraum,
+    ist nicht pausierbar und wird als eine Leistung des Bereichs `training`
+    berechnet. Für beide gelten die Punkte 1 bis 20 unverändert —
+    insbesondere Snapshot, ein Leistungsbereich je Rechnung und das
+    Steuerkennzeichen am Posten (Punkt 15). Welches Kennzeichen Abo und Paket
+    tragen, klärt die Steuerberatung (B4); bis dahin gilt eine Annahme nach
+    §15.1 an genau einer Stelle.
 
 ## Konsequenzen
 
@@ -335,7 +323,7 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 
 ## Offene Folgefragen
 
-- Welche abrechenbaren Ereignisse gibt es neben durchgeführten Terminen?
+- ~~Welche abrechenbaren Ereignisse gibt es neben durchgeführten Terminen?~~ *Beantwortet mit Punkt 21 (Fassung 3) und `PROJECT_PRINCIPLES.md` §19; die Liste dort ist nicht abschließend.*
 - Wie wird die Nichtwiederverwendung von Rechnungsnummern unter gleichzeitigen
   Zugriffen und bei fehlgeschlagenen Ausstellungsvorgängen technisch
   garantiert?
@@ -380,3 +368,4 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 | ------- | ---------- | -------- |
 | 1       | 2026-08-28 | Erstfassung, angenommen. Punkte 1 bis 14. |
 | 2       | 2026-09-20 | **Punkte 15 bis 20 ergänzt, angenommen:** Das Steuerkennzeichen hängt am **Posten**, nie am Kunden, am Rechtsverhältnis oder am Terminkontext (Punkt 15, drei Kennzeichen; das ermäßigte bleibt bis B4 inaktiv). Eine Rechnung trägt **genau einen Leistungsbereich**, gemischte sind ausgeschlossen (Punkt 16). Daraus folgen **getrennte Nummernkreise** je Bereich und Kalenderjahr, lückenlos je Kreis und einmalig über alle (Punkt 17, § 14 Abs. 4 Nr. 4 UStG) — das beantwortet die offene Folgefrage aus Fassung 1 zur Führung des Nummernkreises. Punkt 18 ist der **§ 14c-Riegel**: kein Steuerausweis am steuerfreien Posten, der Befreiungsgrund als Pflichtangabe im Snapshot, die Sperre serverseitig und als verbindlicher Testfall in `pnpm test:db`. Punkt 19 führt die Auswertung **„Einnahmen je Leistungsart"** für die getrennte Gewinnermittlung ein; sie benennt ihre Grundlage, statt sie zu wählen. Punkt 20 verzichtet in V1 auf die **Kleinbetragsrechnung** nach § 33 UStDV. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18 Abschnitt 3), **Schritt 4 von sieben**. Die Punkte 1 bis 14 sind unverändert und werden nur enger gefasst; kein Code, kein Schema, keine Migration. |
+| 3       | 2026-09-23 | **Punkt 21 ergänzt:** Nachsorge-Abo (Bereich `therapy`, Monatsrechnung, frühestens ab Ende der Behandlungsgrundlage, monatlich kündbar) und Trainingspaket (fester Zeitraum, nicht pausierbar) als abrechenbare Ereignisse. Erledigungsvermerk an Punkt 13 (kein Override in V1). Punkte 1 bis 20 unverändert. Anlass: Entscheidungen des Projektinhabers vom 2026-09-23 (`../development/UMBAU.md`, E-4). |

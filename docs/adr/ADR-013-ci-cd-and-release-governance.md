@@ -4,6 +4,11 @@
 
 **Angenommen** (2026-08-28).
 
+**Fassung 4 (2026-09-23)** — Punkt 9 Nr. 1 nennt zwei weitere Pflicht-Negativfälle:
+fremde Person (Patient:in oder Kund:in sieht nur sich selbst) und anderer
+Leistungsbereich (§4.8). Die Plattform öffnet die Anwendung für Menschen
+außerhalb der Praxis; ohne diese Fälle wäre die Checkliste dort lückenhaft.
+
 **Fassung 3 (2026-09-15)** — Punkt 2 nimmt die Prüfung der Dokumentation
 (`pnpm docs:check`) als zehnte Pflichtprüfung auf. Punkt 9 Nr. 8 nennt statt
 des nicht verfügbaren Auto-Merge den Merge durch den Projektinhaber und
@@ -15,7 +20,7 @@ die Review-Checkliste fest, die Punkt 8 seit Fassung 1 verlangt.
 
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-09-15
+2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-09-15 · Fassung 4: 2026-09-23
 
 ## Kontext
 
@@ -97,7 +102,10 @@ Dieser ADR schließt den offenen Punkt E7.
    „bekannte Einschränkung". Die Punkte 1 bis 7, 9 und 10 werden vor dem
    Abschlussbericht des Loops erfüllt, Punkt 8 **vor dem Merge**:
    1. Jede neue oder geänderte Policy hat Negativtests in `pnpm test:db`:
-      andere Organisation, Rolle ohne Recht, Patientenkonto.
+      andere Organisation, Rolle ohne Recht, Patientenkonto; (Fassung 4)
+      dazu **fremde Person** — ein Konto von Patient:in oder Kund:in sieht
+      keine Daten einer anderen Person — und **anderer Leistungsbereich**
+      (§4.8), wo die Policy Daten eines Bereichs trägt.
    2. Jede `SECURITY DEFINER`-Funktion setzt `search_path = ''`, prüft Rolle
       und Organisation selbst und schreibt ihren Auditeintrag in derselben
       Transaktion.
@@ -132,7 +140,7 @@ Dieser ADR schließt den offenen Punkt E7.
 
 ## Konsequenzen
 
-- Die neun Prüfungen sind der automatisierte Ersatz für das fehlende
+- Die zehn Prüfungen sind der automatisierte Ersatz für das fehlende
   Vier-Augen-Prinzip. Sie sind der Grund, warum auf ein künstliches Review
   verzichtet werden kann, und deshalb keine Kür.
 - Zwei Prüfungen sind bedingt formuliert und werden mit dem Projekt scharf:
@@ -215,3 +223,5 @@ Dieser ADR schließt den offenen Punkt E7.
 |---|---|---|
 | 1 | 2026-08-28 | Angenommen. |
 | 2 | 2026-09-13 | Punkt 9 neu: Definition „kritische Änderung" (§12 plus technische Auslöser) und die zehn Punkte der Review-Checkliste, die Punkt 8 seit Fassung 1 verlangt; Nr. 8 verlangt den Zweitreview in frischem Kontext vor dem Merge. Erledigungsvermerke in Konsequenzen, Abgrenzung und Folgefragen. Punkte 1 bis 8 unverändert. Anlass: Docs-Session „Dokumentations-Audit", Graph-Engineering-Workflow. |
+| 3 | 2026-09-15 | Punkt 2: Dokumentationsprüfung als zehnte Pflichtprüfung; Punkt 9 Nr. 8: Merge durch den Projektinhaber statt Auto-Merge. |
+| 4 | 2026-09-23 | Punkt 9 Nr. 1: Negativfälle „fremde Person" und „anderer Leistungsbereich". Übrige Punkte unverändert. |

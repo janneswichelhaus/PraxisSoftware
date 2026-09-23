@@ -45,7 +45,7 @@ Abweichungen werden im Bericht begründet und in
 [`docs/development/BEFUNDE.md`](../development/BEFUNDE.md) als Befund
 geführt (die Ablaufrunden nach `OPTIMIERUNG.md` ruhen bis Probewoche 1).
 Diese Liste ist die Oberflächen-Checkliste — nicht die Review-Checkliste für
-kritische Änderungen nach ADR-013 Punkt 8; die steht in ADR-013 Fassung 2,
+kritische Änderungen nach ADR-013 Punkt 8; die steht in ADR-013
 Punkt 9, und gehört zum Compliance-Gate A4 des
 [Graph-Engineering-Workflows](../development/GRAPH-ENGINEERING-WORKFLOW.md).
 Ein Sandbox-Prototyp (Pfad S) hakt diese Oberflächen-Checkliste ebenfalls ab.

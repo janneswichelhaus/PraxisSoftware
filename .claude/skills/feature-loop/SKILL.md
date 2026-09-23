@@ -26,7 +26,7 @@ Voraussetzungen des Schritts, Credit-Regeln; fehlt eine Voraussetzung aus
 Vor dem ersten Schritt den Pfad nach
 `docs/development/GRAPH-ENGINEERING-WORKFLOW.md` („K1 — Klassifikation")
 bestimmen und in einem Satz nennen. Dieser Skill ist **Pfad A**: Der Diff
-berührt einen Auslöser aus ADR-013 Fassung 2, Punkt 9 (Liste nur dort).
+berührt einen Auslöser aus ADR-013 Punkt 9 (Liste nur dort).
 Berührt der Auftrag keinen davon und soll kein Wert die Sitzung überleben,
 ist er Pfad S: stoppen und `/sandbox <Thema>` vorschlagen.
 
@@ -166,7 +166,7 @@ Eigenen Diff (`git diff main...HEAD`) durchgehen auf:
 - Fehlerbehandlung: verständlich, ohne interne Details preiszugeben
 - bei Oberflächenanteil: Oberflächen-Checkliste aus `docs/abnahme/README.md`
   abgehakt; Abweichungen im Bericht begründet
-- die **Review-Checkliste** aus ADR-013 Fassung 2, Punkt 9, je Story Punkt
+- die **Review-Checkliste** aus ADR-013 Punkt 9, je Story Punkt
   für Punkt — das Compliance-Gate A4; nicht zutreffende Punkte als
   „entfällt" mit Begründung. Ein roter Punkt geht zurück in den Build, nicht
   als „bekannte Einschränkung" in den Bericht. Verlangt Nr. 8 einen
@@ -227,7 +227,7 @@ Kompakt berichten:
 3. Erfüllte Akzeptanzkriterien; unvollständige Stories mit Ursache
 4. Gelaufene Tests und Checks mit Ergebnis
 5. Durchgeführte UI-Verifikation; bei kritischer Änderung die
-   Review-Checkliste (ADR-013 Fassung 2, Punkt 9) je Punkt mit Ergebnis und
+   Review-Checkliste (ADR-013 Punkt 9) je Punkt mit Ergebnis und
    der Stand des Zweitreviews
 6. **Getroffene Annahmen** — `ANN`-Kennungen mit je einem Satz, besonders die,
    die Jannes oder die Datenschutzprüfung bestätigen müssen

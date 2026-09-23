@@ -11,9 +11,9 @@
 ## Rang
 
 Rang 6 der Rangfolge in `PROJECT_PRINCIPLES.md` §21, die **schwächste** Ebene:
-Ein Eintrag verliert gegen alles darüber und auch gegen
-`../decisions/OPEN_DECISIONS.md` — was dort offen ist, bleibt offen, egal wie
-ausgearbeitet die Idee hier aussieht.
+Ein Eintrag verliert gegen alles darüber. Eine offene Frage aus
+`../decisions/OPEN_DECISIONS.md` beantwortet er nicht, egal wie ausgearbeitet
+die Idee hier aussieht.
 
 ## Wozu das Ganze
 

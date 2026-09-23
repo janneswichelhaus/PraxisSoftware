@@ -61,10 +61,9 @@ CAL-010b ist als eigene Story entfallen. Der Text bleibt lesbar.
 | Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei sieben Produkten) |
 | Berührt | §8; CAL-008 (Absage, gebaut); B15; ADR-006 Punkt 4 |
 
-**Stand.** Bestätigt durch Jannes am 2026-09-06 (E-9) für Stufe 2: erster
-Loop nach dem ersten Betriebsmonat (M6) — die Praxis eröffnet am 01.07.2027
-und weiß erst dann, wie groß die Nachfrage ist. Die Reihenfolge steht in
-`../../development/ROADMAP.md`, nicht hier.
+**Stand.** Bestätigt durch Jannes am 2026-09-06 (E-9). Seit dem 2026-09-22
+Teil des Umfangs zur Eröffnung, eingeplant in PRX-EPIC-001. Die Reihenfolge
+steht in `../../development/ROADMAP.md`, nicht hier.
 
 **Idee.** Personen ohne zeitnahen Termin stehen mit Wochentag- und
 Tageszeitpräferenz, Dringlichkeit und Verordnungsbezug auf einer Liste. Wird
@@ -109,9 +108,9 @@ gespeicherter Erledigt-Haken — Letzteres ist `IDEA-PRX-041`.
 | Quelle | Produktreview 2026-09-06 |
 | Berührt | B15 (2026-09-08), CAL-008, CAL-013 |
 
-**Stand.** B15 (Jannes, 2026-09-08): keine automatische Terminerinnerung in
-Stufe 1 und 2 — **„die Anrufliste bleibt."** Der Nachtrag vom 2026-09-12
-ändert daran nichts: Die Terminmail aus dem Praxispostfach (CAL-013) ist ein
+**Stand.** B15 ist am 2026-09-22 neu entschieden: Die automatische
+Terminerinnerung kommt mit KOM-EPIC-003; die Anrufliste bleibt daneben
+(PRX-EPIC-003). Die Terminmail aus dem Praxispostfach (CAL-013) ist ein
 Handoff auf Klick, keine Erinnerung. Die Liste selbst ist nicht gebaut;
 verwandt ist die Anrufliste nach „Tag umplanen" (CAL-009).
 
@@ -440,8 +439,8 @@ handeln Sonderkonditionen aus. Für eine Praxis ohne Tresen ist das Terminal
 am Rad der einzige Ort für Sofortzahlung.
 
 **Vorsicht.** Neuer Dienstleister mit Zahlungsdaten und Behandlungsbezug:
-Prüfung nach ADR-002, AVV, Kassenbuchpflicht bei Barzahlungen. Roadmap 2.0
-hält Kartenzahlung bewusst aus Stufe 1.
+Prüfung nach ADR-002, AVV, Kassenbuchpflicht bei Barzahlungen. Eingeplant in
+PRX-EPIC-004 hinter einem Adapter (Roadmap, Grundsatz 5).
 
 ---
 
