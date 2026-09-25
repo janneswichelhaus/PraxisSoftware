@@ -320,7 +320,9 @@
           "id": "frb-epic-001",
           "name": "FRB-EPIC-001 Instrumentenbibliothek",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-25",
+          "nachweis": "`7056777`, `8aa5d7d`, `f7bb47b`"
         },
         {
           "id": "frb-epic-002",
