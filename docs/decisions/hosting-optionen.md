@@ -62,14 +62,18 @@ Infrastruktur in Deutschland (Hinweis, Drittquelle).
 
 - **Datenstandort und Vertrag:** deutsches Unternehmen, eigene Infrastruktur in
   Deutschland, AVV nach Art. 28 DSGVO (`uberspace.de/dpa`, Hinweis, Suchauszug).
-- **Logs:** Webserver-Logs sind laut Auszug **standardmäßig aus**; eingeschaltet
-  werden IP-Adressen gekürzt gespeichert (Hinweis, Drittquelle). Das ist der
-  entscheidende Unterschied: Wo kein Log entsteht, sieht der Anbieter später
-  auch nicht, wer das Portal öffnet — die §203-Frage schrumpft auf ein Minimum.
+- **Logs:** Auf Uberspace 8 schreibt der vordere Webserver (Caddy) ein
+  Zugriffslog, **IP-Adressen gekürzt** (`a.b.0.0`); ein Befehl zum Abschalten
+  fehlt in U8 (beides **geprüft am Konto**, 2026-09-25). Die frühere Angabe
+  „standardmäßig aus" stammte von Uberspace 7. Gekürzte Adressen machen aus dem
+  Aufruf des Portals kaum noch eine Spur zu einer Person; **vor echten Daten**
+  bei Uberspace erfragen: Aufbewahrungsfrist des Logs, Abschaltung je Asteroid.
 - **Zugang geschützt:** `.htaccess` ist nutzbar (Hinweis) — Passwort, Umleitung
   aller Pfade auf `index.html`, Sicherheitskopfzeilen.
-- **Deployment:** **SSH in jedem Konto** (Hinweis) — GitHub Actions lädt `dist/`
-  per `rsync` hoch, ein Schlüssel nur für diesen Zweck.
+- **Deployment:** **SSH in jedem Konto**, `rsync` vorhanden (geprüft am Konto) —
+  GitHub Actions lädt `dist/` per `rsync` hoch, ein Schlüssel nur für diesen
+  Zweck. SSH gelingt über **IPv4**; über IPv6 bricht die Verbindung ab
+  (2026-09-25), die Auslieferung erzwingt deshalb IPv4.
 - **Kosten:** „zahl, was du willst", erwünscht mindestens 5 € im Monat (Hinweis,
   Drittquelle).
 - **Preis:** kleiner Anbieter, geteilte Server, kein Auslieferungsnetz. Für eine
@@ -164,8 +168,8 @@ die Seite mit Einmalcode per Mail.
 ## Empfehlung
 
 **Option 1, Uberspace.** Begründung: SSH in jedem Konto macht das automatische
-Ausliefern einfach, und ohne Webserver-Logs entsteht beim Anbieter die Spur gar
-nicht, die später beim Portal der Patient:innen das Problem wäre. **Fällt
+Ausliefern einfach, und die Zugriffslogs kürzen IP-Adressen, sodass beim Anbieter
+kaum eine Spur zu einer Person entsteht. **Fällt
 Uberspace an einem Punkt unten durch, Option 2 (Hetzner).** Option 4 nur, wenn
 die Test-Umgebung ausdrücklich eine Wegwerf-Lösung bis Block 4 sein soll.
 
@@ -221,7 +225,8 @@ Claude braucht keinen einzigen davon.
    Option 2 (Hetzner) und Claude Bescheid geben:
    - SSH-Anmeldung mit Schlüssel möglich;
    - `.htaccess` wird ausgewertet (Uberspace-Handbuch, Abschnitt Web);
-   - Webserver-Logs sind **aus** — so lassen, nicht einschalten;
+   - Zugriffslog kürzt IP-Adressen (`tail -n 1 ~/logs/caddy/access.log`, selbst
+     ansehen, nicht weitergeben);
    - HTTPS für die Adresse der Test-Umgebung (Let's Encrypt).
 4. **Deploy-Schlüssel** auf dem eigenen Rechner erzeugen, nur für diesen
    Zweck, ohne Passphrase (GitHub muss ihn allein benutzen können):
@@ -237,8 +242,14 @@ Claude braucht keinen einzigen davon.
    spricht (Hostname aus dem Dashboard):
 
    ```bash
-   ssh-keyscan <hostname> > ~/praxis-test-known-hosts
+   ssh-keyscan -4 <hostname> > ~/praxis-test-known-hosts
    ```
+
+**Stand am Konto (2026-09-25):** Asteroid `prtest` auf Uberspace 8, Host
+`janus.uberspace.de`; ausgeliefert wird aus `~/www/html` (erreichbar unter
+`prtest.uber.space`). SSH mit Schlüssel über IPv4, Fingerabdruck geprüft;
+`rsync` vorhanden; Zugriffslog mit gekürzten IP-Adressen. Offen: `.htaccess`
+(prüft OPS-002a), AVV.
 
 ### Schritt 2c — Adresse (optional, etwa 10 Minuten)
 
