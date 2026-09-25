@@ -171,6 +171,7 @@ jobs:
           heim=$($SSH "$ziel" 'printf %s "$HOME"')
           echo "TUER_DATEI=$heim/praxis-test/tuer.htpasswd" >> "$GITHUB_ENV"
 
+      # ANN-101: Kopfzeilen, CSP, noindex und - mit TUER_DATEI - die zweite Tuer.
       - name: Auslieferung vorbereiten (.htaccess, robots.txt)
         if: steps.bereit.outputs.bereit == 'true'
         run: node scripts/testumgebung.mjs vorbereiten dist

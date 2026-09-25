@@ -278,12 +278,29 @@ ist Absicht: `TEST_DATABASE_URL` heißt schon die lokale Wegwerf-Datenbank von
 | `DEPLOY_SSH_KEY`         | Inhalt von `~/.ssh/praxis-test-deploy` (privater Teil, ganze Datei)                     | Schritt 2b.4                                     |
 | `DEPLOY_KNOWN_HOSTS`     | Inhalt von `~/praxis-test-known-hosts`                                                  | Schritt 2b.5                                     |
 
+**Zwei optionale Secrets** in derselben Umgebung (Jannes, 2026-09-25: 1a, 2a;
+ANN-100, ANN-101):
+
+| Name                     | Wert                                                                        |
+| ------------------------ | --------------------------------------------------------------------------- |
+| `TESTENV_LOGIN_PASSWORD` | Kennwort für alle Testkonten, mindestens 12 Zeichen; fehlt es, sind sie gesperrt |
+| `TESTENV_TUER_PASSWORD`  | Kennwort der zweiten Tür vor der Seite (Benutzer `praxis`); fehlt es, keine Tür |
+
+Beide selbst erzeugen (Passwortmanager), nicht wiederverwenden.
+
 Danach die beiden Dateien aus Schritt 2b auf dem eigenen Rechner löschen
 (`rm ~/.ssh/praxis-test-deploy ~/praxis-test-known-hosts`) — der Schlüssel
 lebt nur noch in GitHub, ein neuer ist in einer Minute erzeugt. Dann Claude
 sagen: **„Konten stehen"** (ohne Werte).
 
-### Schritt 3 — Claude baut OPS-002a (eine Session, `/weiter`)
+### Schritt 3 — Claude baut OPS-002a (gebaut 2026-09-25)
+
+Gebaut als `.github/workflows/test-umgebung.yml`; Bedienung in
+[`DEVELOPMENT.md`](../DEVELOPMENT.md), „Test-Umgebung". Ob Uberspace 8 die
+`.htaccess` auswertet, zeigt der erste Lauf: Der Schritt „Ausgelieferte Seite
+pruefen" wird sonst rot.
+
+Ursprünglicher Auftrag:
 
 Ein Auslieferungsschritt in der CI, Umgebung `test`, der nach grüner CI auf `main` nur in die
 Test-Umgebung ausliefert; Konfiguration über `VITE_`-Variablen, `service_role`
