@@ -1292,3 +1292,15 @@ Technik · offen · 2026-09-25 · — · — · Wiedervorlage: sobald Jannes die
 **Anker.** Die Prüfung `aktiv` ohne `quelle.datei` in `scoreDefinitionSchema`, `src/features/assessments/schema.ts`; die drei Dateien unter `src/features/assessments/definitionen/scores/`.
 
 **Änderungspfad.** Bogen in `quellen/scores/pdf/` ablegen, Wortlaut der Datei gegen ihn halten, `quelle.datei` setzen, Version `1.0.0`, `aktiv: true` · Aufwand `klein` je Instrument. Andere Stufenzahl oder fünf Aktivitäten: Items ergänzen, Referenzfall anpassen · Aufwand `klein`.
+
+### ANN-100 — Die Test-Umgebung wird nur auf Knopfdruck neu aufgesetzt, ihr Zugang kommt aus einem Secret
+
+Technik · offen · 2026-09-25 · — · — · Wiedervorlage: G5 (OPS-002), wenn die Produktion eine eigene Pipeline bekommt
+
+**Annahme.** Die Test-Umgebung (OPS-002a) bekommt die Migrationen bei **jedem** Lauf nach grüner CI auf `main`, den Seed samt Praxiswoche aber **nur auf Knopfdruck** (Handstart mit „neu aufsetzen"), weil der Seed alles löscht. Seed, Praxiswoche und Zugang laufen in **einer** Transaktion; darin wird das Entwicklungskennwort aus `supabase/seed.sql` für alle Seed-Konten durch das Secret `TESTENV_LOGIN_PASSWORD` (mindestens 12 Zeichen) ersetzt, und fehlt das Secret, bekommt jedes Konto ein eigenes Zufallskennwort — gesperrt statt offen. Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen, heute ausgespart.
+
+**Begründung.** Die Test-Umgebung ist öffentlich erreichbar; ein Kennwort aus dem Repository wäre dort ein offener Zugang, auch zu synthetischen Daten (§3.3, Hosting-Vorlage „Zugang geschützt"). Jannes hat am 2026-09-25 Option 1a gewählt (ein Secret). Ein Seed bei jedem Merge würde alles verwerfen, was Jannes am Handy anlegt, und die Sichtung zerstören. Die Kalenderwoche wäre an einem Freitag ganz Vergangenheit, deshalb ein Fenster um heute.
+
+**Anker.** `supabase/testumgebung/zugang.sql` (Kennwort), `supabase/testumgebung/neu-aufsetzen.psql` (eine Transaktion, Reihenfolge), Eingabe `neu_aufsetzen` in `.github/workflows/test-umgebung.yml`; Test `supabase/tests/testumgebung.test.ts`.
+
+**Änderungspfad.** Seed bei jedem Lauf: die Bedingung im Workflow streichen · Aufwand `klein`. Eigene Konten statt Seed-Konten: `zugang.sql` auf eine Liste von Adressen umstellen · Aufwand `klein`. Anderes Fenster: `praxiswoche.sql` · Aufwand `klein`.
