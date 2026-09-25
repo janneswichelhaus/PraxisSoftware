@@ -142,7 +142,7 @@ in den Etappen darunter.
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | Sichtung |
 | 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → G6c | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | G6c: Wahl zu den Schreibpfaden; vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
-| 1a | **Handy und UX-Fundament** | OPS-002a Test-Umgebung → UX-EPIC-002 → UX-EPIC-003 | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen nach [`hosting-optionen.md`](../decisions/hosting-optionen.md); Begriffe sammeln, die stören; erste Sichtung am Handy |
+| 1a | **Handy und UX-Fundament** | OPS-002a Test-Umgebung → UX-EPIC-002 → UX-EPIC-003 | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); Begriffe sammeln, die stören; erste Sichtung am Handy |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
 | 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | DSN-001 und ADR-023 bestätigen |
@@ -508,9 +508,6 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
   `MAX_ZWISCHENZIELE` bleibt bis dahin bei drei).
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder
   Bildschirmfotos) — Grundlage für UX-EPIC-002.
-- **Test-Umgebung einrichten** (B16: Uberspace): Supabase-Testprojekt, Uberspace
-  und GitHub-Secrets nach [`hosting-optionen.md`](../decisions/hosting-optionen.md),
-  „Das genaue Vorgehen".
 - **D2/D3** aus dem FRB-Plan (Lücken der MT-Vorlage, Tippfehler) — vor
   FRB-EPIC-003; ohne Antwort gilt der Vorschlag dort.
 - **Preise** für Katalog, Abo und Pakete — vor Block 5 als synthetische Werte,
