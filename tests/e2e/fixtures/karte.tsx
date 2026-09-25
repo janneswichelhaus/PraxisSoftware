@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { Karte } from '@/features/tours/karte/Karte';
+import { Fahrtabschnitt, Routenzusammenfassung } from '@/features/tours/Fahrten';
 import { Tourenliste } from '@/features/tours/Tourenliste';
 import { kartenmarker, type Stopp } from '@/features/tours/tagesroute';
 import type { DayPlanEntry } from '@/features/today/api';
@@ -166,6 +167,48 @@ createRoot(wurzel).render(
     */}
     {parameter.has('handoff') ? (
       <Tourenliste stopps={STOPPS} zeitzone="Europe/Berlin" startGewaehlt={false} />
+    ) : null}
+    {/*
+      Mit `?fahrten=1` die Tourenliste mit Fahrzeit und Fahrpuffer zwischen den
+      Stopps (MAP-006c) - erfundene Prüfergebnisse, darunter ein zu knapper
+      Übergang, damit Warnung und Normalfall nebeneinander zu sehen sind.
+    */}
+    {parameter.has('fahrten') ? (
+      <>
+        <Routenzusammenfassung
+          laedt={false}
+          ergebnis={{
+            ok: true,
+            value: {
+              quelle: 'nachbildung',
+              route: { distanceMeters: 12_449, durationSeconds: 2988, legs: [], geometry: [] },
+            },
+          }}
+          erneutVersuchen={() => {}}
+        />
+        <Tourenliste
+          stopps={STOPPS}
+          zeitzone="Europe/Berlin"
+          startGewaehlt
+          zwischen={(index) => (
+            <Fahrtabschnitt
+              sekunden={index === 3 ? null : 420 + index * 60}
+              pruefung={
+                index === 3
+                  ? null
+                  : {
+                      from_appointment_id: STOPPS[index]!.termin.id,
+                      to_appointment_id: STOPPS[index + 1]!.termin.id,
+                      travel_seconds: 420 + index * 60,
+                      earliest_start: STOPPS[index + 1]!.termin.starts_at,
+                      shortfall_minutes: index === 5 ? 7 : 0,
+                    }
+              }
+              zeitzone="Europe/Berlin"
+            />
+          )}
+        />
+      </>
     ) : null}
   </MemoryRouter>,
 );

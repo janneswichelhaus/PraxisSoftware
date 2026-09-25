@@ -1256,3 +1256,15 @@ Datenschutz · offen · 2026-09-25 · — · Prüfpaket · Wiedervorlage: Jannes
 **Anker.** `kartenmarker` und `START_LABEL` in `src/features/tours/tagesroute.ts`; Test „trägt nur Koordinate und Nummer" in `tagesroute.test.ts`; Startwahl als Zustand der Seite in `src/features/tours/TourenPage.tsx`.
 
 **Änderungspfad.** Kürzel statt Nummer: `kartenmarker` bekommt den Termin mit, Test anpassen · Aufwand `klein`. Persönlicher Startort: eigene Prüfung nach §20, Spalte an `staff_private_details` mit Koordinate, Schreiber nur die Person selbst · Aufwand `mittel`.
+
+### ANN-097 — Fahrpuffer: Fahrzeit live, Rundung im Server, Warnung statt Sperre
+
+Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: Jannes nach den ersten Tagen mit echten Fahrzeiten (E12 Punkt 4 „Warnung oder Sperre"); E12 Punkt 3a in `OPEN_DECISIONS.md`
+
+**Annahme.** Die Fahrzeit zwischen zwei Terminen wird im Moment der Prüfung über die eigene Function beim Kartendienst abgerufen und **nicht gespeichert** (E12 Punkt 3a: Live-Abruf). Der Browser reicht sie an `check_travel_buffers` weiter; dort — und nur dort — gilt die Rundungsregel aus §8.1 (`app.earliest_follow_up_start`). Eine Unterschreitung erscheint als **Warnung** in Tour und Kalender-Tagesansicht mit Personenfilter; gesperrt wird nichts, und das Anlegen oder Verschieben eines Termins prüft keinen Fahrpuffer.
+
+**Begründung.** ADR-019 Punkt 16 verbietet die Speicherung von Fahrzeiten, §8.1 verlangt die serverseitige Rundung, sobald eine Fahrzeit vorliegt; die Datenbank kann den Dienst nicht selbst fragen (ANN-017). Beides zusammen geht nur mit einer hereingereichten Fahrzeit — und die darf nur dann vom Client kommen, wenn aus ihr nichts gesperrt oder freigegeben wird. E12 Punkt 4 hat Jannes am 2026-09-12 bis zu echten Zahlen offengelassen; die Roadmap nennt „Warnung bei Unterschreitung". Unsicher: ob eine Sperre später gewünscht ist — dann muss die Fahrzeit serverseitig entstehen.
+
+**Anker.** `app.earliest_follow_up_start` und `public.check_travel_buffers` in `supabase/migrations/20260925120000_map_006c_travel_buffer.sql`; Testfall 09:05–10:05 plus 12 Minuten = 10:20 in `supabase/tests/travel-buffer.test.ts`; Anzeige in `src/features/tours/Fahrten.tsx` und `FahrpufferHinweis.tsx`.
+
+**Änderungspfad.** Sperre statt Warnung: Fahrzeit serverseitig über einen Aufruf der Function aus einem Hintergrundpfad, Prüfung in `create_appointment`/`update_appointment` · Aufwand `mittel`. Kurze Speicherung statt Live-Abruf: Tabelle mit Frist „Routing-Rohdaten" (ADR-008, 30 Tage) · Aufwand `mittel`.

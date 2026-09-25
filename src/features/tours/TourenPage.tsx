@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -6,12 +6,13 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Select } from '@/components/ui/Select';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
-import { fetchDayPlan } from '@/features/today/api';
 import { fetchStandorte, startpunkt } from './startort';
-import { fetchDayRoute, stoppsDesTages } from './tagesroute';
+import { Fahrtabschnitt, Routenzusammenfassung } from './Fahrten';
+import { useFahrten, useTagesstopps } from './fahrpuffer';
 import { Tourenliste } from './Tourenliste';
 
 const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
@@ -66,25 +67,10 @@ export function TourenPage({ user }: { user: CurrentUser }) {
     if (schluessel === 'person') setPerson(wert);
   }
 
-  const plan = useQuery({
-    queryKey: ['day-plan', tag, person],
-    queryFn: () => fetchDayPlan(tag, person),
-    enabled: person !== '',
-    retry: false,
-  });
-  const route = useQuery({
-    queryKey: ['day-route', tag, person],
-    queryFn: () => fetchDayRoute(tag, person),
-    enabled: person !== '',
-    retry: false,
-  });
-
-  const stopps = useMemo(
-    () => (plan.data && route.data ? stoppsDesTages(plan.data, route.data) : []),
-    [plan.data, route.data],
-  );
+  const { stopps, laedt, fehler } = useTagesstopps(tag, person);
   const praxisstart = startpunkt(standorte.data?.[0]);
   const start = startwahl === 'standort' ? praxisstart : null;
+  const fahrten = useFahrten(start, stopps);
   const personName = personen.data?.find((p) => p.staff_member_id === person)?.display_name;
 
   return (
@@ -123,11 +109,9 @@ export function TourenPage({ user }: { user: CurrentUser }) {
       {personen.isError ? (
         <ErrorState title="Die behandelnden Personen konnten nicht geladen werden." />
       ) : null}
-      {plan.isPending || route.isPending ? (
-        person !== '' ? (
-          <LoadingState label="Tagesroute wird geladen …" />
-        ) : null
-      ) : plan.isError || route.isError ? (
+      {person === '' ? null : laedt ? (
+        <LoadingState label="Tagesroute wird geladen …" />
+      ) : fehler ? (
         <ErrorState
           title="Die Tagesroute konnte nicht geladen werden."
           description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
@@ -156,7 +140,30 @@ export function TourenPage({ user }: { user: CurrentUser }) {
               </Button>
             }
           >
-            <Tourenliste stopps={stopps} zeitzone={zeitzone} startGewaehlt={start !== null} />
+            <div className="mb-4">
+              <Routenzusammenfassung
+                laedt={fahrten.route.isFetching}
+                ergebnis={fahrten.route.data}
+                erneutVersuchen={() => void fahrten.route.refetch()}
+              />
+              {fahrten.pruefungFehler ? (
+                <Statusmeldung ton="warnung" className="mt-2">
+                  Der Fahrpuffer ließ sich gerade nicht prüfen.
+                </Statusmeldung>
+              ) : null}
+            </div>
+            <Tourenliste
+              stopps={stopps}
+              zeitzone={zeitzone}
+              startGewaehlt={start !== null}
+              zwischen={(index) => (
+                <Fahrtabschnitt
+                  sekunden={fahrten.zwischen[index]?.sekunden ?? null}
+                  pruefung={fahrten.zwischen[index]?.pruefung ?? null}
+                  zeitzone={zeitzone}
+                />
+              )}
+            />
           </Section>
         </>
       )}
