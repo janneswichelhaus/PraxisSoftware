@@ -84,7 +84,7 @@
     },
     "subskalen": [],
     "richtung": "hoch_ist_besser",
-    "missing_value_regel": "Kein Mittelwert, solange eine der drei Aktivitäten unbewertet ist (ANN-098)."
+    "missing_value_regel": "Kein Mittelwert, solange eine der drei Aktivitäten unbewertet ist."
   },
   "interpretation": { "cutoffs": null, "mcid": null, "mdc": null },
   "referenzfaelle": [

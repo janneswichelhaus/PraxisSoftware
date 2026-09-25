@@ -172,6 +172,9 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): SubNavEintrag[] {
   // (UX-008). Wer nicht dokumentiert, braucht den Punkt nicht.
   if (canWriteTreatmentNote(roles)) {
     eintraege.push({ to: '/praxis/textbausteine', label: 'Textbausteine' });
+    // Die Instrumentenbibliothek zum Nachlesen (FRB-010): Produktinhalt ohne
+    // Personenbezug, gebraucht von denen, die messen und dokumentieren.
+    eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
   }
   if (isOwner(roles)) {
     eintraege.push({ to: '/praxis/sicherheit/audit', label: 'Sicherheit' });
