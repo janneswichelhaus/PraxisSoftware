@@ -1304,3 +1304,15 @@ Technik · offen · 2026-09-25 · — · — · Wiedervorlage: G5 (OPS-002), wen
 **Anker.** `supabase/testumgebung/zugang.sql` (Kennwort), `supabase/testumgebung/neu-aufsetzen.psql` (eine Transaktion, Reihenfolge), Eingabe `neu_aufsetzen` in `.github/workflows/test-umgebung.yml`; Test `supabase/tests/testumgebung.test.ts`.
 
 **Änderungspfad.** Seed bei jedem Lauf: die Bedingung im Workflow streichen · Aufwand `klein`. Eigene Konten statt Seed-Konten: `zugang.sql` auf eine Liste von Adressen umstellen · Aufwand `klein`. Anderes Fenster: `praxiswoche.sql` · Aufwand `klein`.
+
+### ANN-101 — Die Test-Umgebung schützt sich mit Kopfzeilen, CSP und einer optionalen zweiten Tür per `.htaccess`
+
+Technik · offen · 2026-09-25 · — · — · Wiedervorlage: vor echten Daten (G5), mit der vollständigen Prüfung des Hosting-Anbieters
+
+**Annahme.** Die ausgelieferte Oberfläche bekommt über eine erzeugte `.htaccess`: Umleitung aller Pfade ohne Datei auf `index.html`, `X-Robots-Tag: noindex` samt `robots.txt`, `nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, HSTS und eine Content-Security-Policy, die Skripte nur vom eigenen Ursprung und Verbindungen nur zum Supabase-Projekt erlaubt (`style-src 'unsafe-inline'` und `blob:`-Worker für MapLibre). Die zweite Tür ist HTTP-Basic-Auth mit Benutzer `praxis` und dem Secret `TESTENV_TUER_PASSWORD`, als bcrypt außerhalb des Webordners abgelegt; ohne Secret gibt es keine Tür. Ob Uberspace 8 die `.htaccess` auswertet, prüft der Workflow nach jedem Upload selbst.
+
+**Begründung.** Die Hosting-Vorlage verlangt `noindex`, Sicherheitskopfzeilen und die zweite Tür, nennt die Tür aber ausdrücklich „erwünscht, nicht tragend": Die Daten schützen Supabase Auth und RLS. Jannes hat am 2026-09-25 Option 2a gewählt. Die CSP ist an der gebauten Anwendung geprüft (Anmeldeseite bei 1280 und 375 px ohne Verstoß); die Karte hinter der Anmeldung nicht, und ein Kachelschlüssel ist in der Test-Umgebung nicht gesetzt. Unsicher: ob Uberspace 8 `mod_rewrite`, `mod_headers` und Basic-Auth in der `.htaccess` zulässt (Hinweis aus Suchauszug, nicht am Konto geprüft).
+
+**Anker.** `htaccess()` und `inhaltsrichtlinie()` in `scripts/testumgebung.mjs`; Test `scripts/testumgebung.test.mjs`; Schritt „Zweite Tuer" in `.github/workflows/test-umgebung.yml`.
+
+**Änderungspfad.** Wertet Uberspace die `.htaccess` nicht aus: Kopfzeilen und Umleitung über die Webserver-Einstellungen von Uberspace (`uberspace web header`, falls vorhanden) oder Anbieterwechsel nach `hosting-optionen.md` Option 2 · Aufwand `mittel`. Kachelschlüssel in der Test-Umgebung: Kachelanbieter in `inhaltsrichtlinie()` · Aufwand `klein`.
