@@ -11,10 +11,12 @@ import { todayInTimeZone } from '@/features/appointments/api';
 import {
   canChangePatientStatus,
   canConcludePatientCare,
+  canReadPatientDirectory,
   isOwner,
   type CurrentUser,
 } from '@/features/session/types';
 import { usePatientRecord } from './akte';
+import { AdresseVerorten } from './AdresseVerorten';
 import {
   ageInYears,
   concludePatientCare,
@@ -188,6 +190,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
     .filter(Boolean)
     .join(', ');
   const darfStatusWechseln = canChangePatientStatus(user.roles);
+  const darfVerorten = canReadPatientDirectory(user.roles);
   // Denselben Rollenschnitt prueft app.can_conclude_patient_care(): der
   // Abschluss ist eine fachliche Aussage ueber den Versorgungsverlauf, kein
   // Verwaltungsvorgang (LOE-001b). Verbindlich ist der Server.
@@ -230,6 +233,14 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
                 <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
               ) : null}
               <DetailRow label="Adresse">{address || '—'}</DetailRow>
+              {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
+                Verorten darf, wer die Stammdaten ändern darf; verbindlich
+                prüft set_patient_address_coordinate (ADR-004). */}
+              {darfVerorten ? (
+                <DetailRow label="Kartenposition">
+                  <AdresseVerorten patient={patient} />
+                </DetailRow>
+              ) : null}
             </DetailList>
           </Section>
         </div>

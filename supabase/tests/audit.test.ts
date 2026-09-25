@@ -220,6 +220,7 @@ describe('Audit-Lesepfad', () => {
     `);
     expect(rows.map((r) => r.proname)).toEqual([
       'check_appointment_slots',
+      'check_travel_buffers',
       'count_orphaned_patient_file_objects',
       'get_billable_service_draft',
       'get_invoice',
@@ -232,6 +233,7 @@ describe('Audit-Lesepfad', () => {
       'list_audit_events',
       'list_billable_services',
       'list_day_plan',
+      'list_day_route',
       'list_deletion_runs',
       'list_event_participants',
       'list_event_series',

@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-23.
+Zuletzt aktualisiert: 2026-09-25.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -273,7 +273,7 @@ Datenschutz · offen · 2026-09-08 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Datenminimierung gegenüber dem Anbieter (Art. 5 Abs. 1 lit. c DSGVO): Die Adresse geht genau einmal je Änderung zum Kartendienst, jede spätere Karte oder Route arbeitet mit Koordinaten (ADR-019 Punkt 13); ohne Speicherung müsste jede Routenberechnung alle Adressen des Tages erneut übermitteln. Die Koordinate ist so personenbezogen wie die Adresse, deshalb dieselbe Klasse und Frist (ADR-008). Unsicher: ob die Prüfung die Speicherung anders bewertet als die Adresse und ob bei abgesagten Hausbesuchen (ANN-003) die Koordinate mitzulöschen ist.
 
-**Anker.** Bis MAP-006: `src/lib/location/contract.ts`, Abschnitt „Geocoding", und ADR-019 Punkt 14. Ab MAP-006: die Migration mit den Koordinatenspalten und der einzige Schreiber beim Adress-Upsert.
+**Anker.** Seit MAP-006a: `supabase/migrations/20260925100000_map_006a_coordinates.sql` — Spalten `lat`, `lon`, `geocode_precision` an `patient_contact_details` und `visit_*` an `appointments`, Trigger `app.drop_coordinate_on_address_change` (Koordinate verfällt mit der Adresse), einziger Schreiber `set_patient_address_coordinate` mit Bestätigungspflicht in `app.assert_geocode_result`; Tests in `supabase/tests/address-coordinates.test.ts`. Geocoding nur auf Handlung in `src/features/patients/AdresseVerorten.tsx`.
 
 **Änderungspfad.** Geocoding je Aufruf statt Speicherung: Spalten entfallen, der Adapter geocodiert vor jeder Route · Aufwand `mittel`, mit mehr Übermittlungen als Folge. Andere Frist oder eigene Datenklasse: Retention Schedule ergänzen · Aufwand `klein`. Koordinate im Termin-Snapshot statt bei der Adresse: eine Migration · Aufwand `klein`.
 
@@ -297,7 +297,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Die Koordinate ist für den Betreiber der Navigations-App so identifizierend wie die Adresse, enthält aber keinen Freitext und keinen Anhaltspunkt außer dem Punkt; Adresse und Klingelhinweis bleiben lokal. Die Feldliste folgt Art. 5 Abs. 1 lit. c DSGVO und ADR-019 Punkt 12. Unsicher: ob ein Pin ohne sichtbare Hausnummer auf dem Rad verwirrt (MAP-005 prüft das auf echten Geräten) und ob die Übergabe an einen eigenen Verantwortlichen Art. 9 oder §203 StGB berührt — Rechtsfrage an B2 (ADR-019 Punkt 23).
 
-**Anker.** `src/lib/location/contract.ts`, Typ `NavigationTarget`; seit UX-002 `src/lib/location/navigation.ts` — die eine Stelle für Feldliste, Ländercode, URL-Format je Ziel-App und Wegpunktlimit (`MAX_ZWISCHENZIELE`), mit Tests in `navigation.test.ts`; „nur auf Aktion" in `src/features/appointments/NavigationStarten.tsx` und seit MAP-005 in `src/features/tours/karte/NavigationHandoff.tsx`.
+**Anker.** `src/lib/location/contract.ts`, Typ `NavigationTarget`; seit UX-002 `src/lib/location/navigation.ts` — die eine Stelle für Feldliste, Ländercode, URL-Format je Ziel-App und Wegpunktlimit (`MAX_ZWISCHENZIELE`), mit Tests in `navigation.test.ts`; „nur auf Aktion" in `src/features/appointments/NavigationStarten.tsx` und seit MAP-006 in `src/features/tours/Tourenliste.tsx`. Seit MAP-006d übergibt `navigationsZiel` die Koordinate des Hausbesuchs, sobald `list_day_plan` sie liefert (`supabase/migrations/20260925130000_map_006d_day_plan_coordinates.sql`).
 
 **Änderungspfad.** Adresse statt Koordinate, anderes Limit, andere Ziel-App: eine Funktion · Aufwand `klein`. Verlangt B2 eine Einwilligung vor dem Handoff: Einwilligungsstruktur aus PAT-006 und Prüfung vor dem Bauen der URL · Aufwand `mittel`. Verlangt B2, den Handoff zu unterlassen: die Funktion entfällt, die Tagesliste zeigt die Adresse · Aufwand `klein`.
 
@@ -1220,3 +1220,51 @@ Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
 
 **Änderungspfad.** Zweck ergänzen oder streichen: ein Wert in Constraint, Konstante und Beschriftung, ein Satz in der Datenschutzinformation · Aufwand `klein`. Einwilligung vor dem Mailweg prüfen: Abfrage des Stands in `AppointmentSlipPage.tsx` vor der Übergabe · Aufwand `mittel`. Unterschrift in der Anwendung: eigenes Epic · Aufwand `groß`.
+
+### ANN-094 — Ein benannter Schalter öffnet den Kartendienst für eine Umgebung
+
+Datenschutz · offen · 2026-09-25 · — · Prüfpaket · Wiedervorlage: Gate aus ADR-019 Punkt 9 vor dem ersten Lauf mit echten Adressen; Go-live-Vorbedingungen (ADR-007 Punkt 5)
+
+**Annahme.** Die Edge Function `location-provider` spricht einen echten Anbieter nur an, wenn das Secret `LOCATION_DATA_GATE` den Wert `synthetic` (Umgebung mit ausschließlich synthetischen Daten, §3.1) oder `released` (Gate aus ADR-019 Punkt 9 bestanden) trägt. Fehlt es oder ist es falsch geschrieben, antwortet sie `not_configured` — auch mit gültigem Schlüssel. `released` in einer Umgebung mit echten Daten zu setzen ist eine Go-live-Vorbedingung, kein Konfigurationsdetail; die Nachbildung braucht den Schalter nicht, weil sie nichts hinausschickt.
+
+**Begründung.** ADR-019 Punkt 25 (Fassung 4) verlangt einen „eigenen, benannten Schritt", der vor dem ersten Lauf mit echten Patientenadressen zu bleibt; ab MAP-006 trägt die Function erstmals Adressen (Geocoding). Ein Schalter, der von selbst zu ist, macht das Vergessen harmlos: Eine Produktivumgebung mit Schlüssel, aber ohne bewusste Freigabe, schickt nichts. Die Function kann synthetische und echte Adressen nicht unterscheiden; der Schalter beschreibt deshalb die Umgebung, nicht die Anfrage. Unsicher: ob die Prüfung eine technische statt einer organisatorischen Sperre gegen `synthetic` in der Produktion verlangt.
+
+**Anker.** `DATENFREIGABEN` und `waehleAdapter` in `supabase/functions/location-provider/auswahl.ts`; Tests in `auswahl.test.ts`; Go-live-Vorbedingung in `docs/datenschutz/kartendienst.md`.
+
+**Änderungspfad.** Anderer Name oder weitere Stufe: eine Konstante und ihre Tests · Aufwand `klein`. Technische Sperre gegen `synthetic` in der Produktion: Umgebungskennung als zweites Secret und Vergleich in derselben Funktion · Aufwand `klein`.
+
+### ANN-095 — Verortet wird auf Handlung, und die Koordinate reist in künftige Hausbesuche
+
+Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: Jannes nach der Sichtung Kartendienst (reicht ein Tipp nach dem Speichern, oder soll das Speichern selbst verorten?)
+
+**Annahme.** Geocodiert wird nicht im Speichervorgang selbst, sondern mit „Adresse verorten" direkt danach in den Stammdaten — solange die Adresse keine Koordinate hat. Ein hausnummergenauer Treffer des Anbieters wird ohne Rückfrage gespeichert, jeder andere und jeder der Nachbildung erst nach „Treffer übernehmen". Die gespeicherte Koordinate wird in **künftige** Hausbesuche übernommen, deren Snapshot-Adresse genau dieser Adresse entspricht; vergangene Termine behalten, was sie hatten.
+
+**Begründung.** ADR-019 Punkt 14 und ANN-016 verlangen Geocoding nur bei Anlage oder Änderung der Adresse; ein Knopf, der nur ohne Koordinate erscheint, erfüllt das und hält die Übermittlung an eine sichtbare Handlung (§20-Logik des Handoffs, Punkt 20). Ein automatischer Aufruf beim Speichern hätte einen zweiten Fehlerpfad im Stammdatenformular gebraucht. Ohne Übertragung stünden Hausbesuche, die vor dem Verorten angelegt wurden, ohne Stopp auf der Karte; ANN-003 bleibt unberührt, weil nur Termine mit derselben Adresse und in der Zukunft betroffen sind.
+
+**Anker.** `src/features/patients/AdresseVerorten.tsx`; die Übertragung im zweiten `update` von `set_patient_address_coordinate`, `supabase/migrations/20260925100000_map_006a_coordinates.sql`; Test „überträgt die Koordinate in künftige Hausbesuche" in `supabase/tests/address-coordinates.test.ts`.
+
+**Änderungspfad.** Verorten im Speichervorgang: Aufruf nach `updatePatient` in `EditPatientPage.tsx` · Aufwand `klein`. Keine Übertragung in Termine: das zweite `update` entfällt · Aufwand `klein`.
+
+### ANN-096 — Auf der Karte nur Nummern, der Startort gilt für den Seitenbesuch
+
+Datenschutz · offen · 2026-09-25 · — · Prüfpaket · Wiedervorlage: Jannes nach der Sichtung Kartendienst (reicht die Nummer auf dem Rad?); Datenschutzprüfung zusammen mit B2
+
+**Annahme.** Die Marker der Tagesroute tragen **nur eine Nummer** (Start: „S"), kein Vornamen-Kürzel; Name und Anschrift stehen in der Tourenliste daneben, die dieselbe Nummer führt. Startort ist der verortete Standort der Praxis oder der erste Besuch; die Wahl gilt für den Besuch der Seite und wird nicht gespeichert. Einen persönlichen Startort (Wohnung) gibt es nicht.
+
+**Begründung.** ADR-019 Punkt 2 und MAP-LOOPS erlauben „Vorname-Kürzel oder Nummer — nie Vollname". Die Nummer ist die sparsamere Wahl (Art. 5 Abs. 1 lit. c DSGVO): Eine Karte ist auf dem Lenker für Umstehende lesbar, und schon ein Kürzel mit Straße daneben identifiziert in einer kleinen Stadt; die Liste trägt den Namen ohnehin. Ein gespeicherter persönlicher Startort wäre eine Beschäftigtenadresse beim Kartendienst und eine Form der Standortangabe über Mitarbeitende (§20) — das braucht eine eigene Prüfung und ist nicht gebaut.
+
+**Anker.** `kartenmarker` und `START_LABEL` in `src/features/tours/tagesroute.ts`; Test „trägt nur Koordinate und Nummer" in `tagesroute.test.ts`; Startwahl als Zustand der Seite in `src/features/tours/TourenPage.tsx`.
+
+**Änderungspfad.** Kürzel statt Nummer: `kartenmarker` bekommt den Termin mit, Test anpassen · Aufwand `klein`. Persönlicher Startort: eigene Prüfung nach §20, Spalte an `staff_private_details` mit Koordinate, Schreiber nur die Person selbst · Aufwand `mittel`.
+
+### ANN-097 — Fahrpuffer: Fahrzeit live, Rundung im Server, Warnung statt Sperre
+
+Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: Jannes nach den ersten Tagen mit echten Fahrzeiten (E12 Punkt 4 „Warnung oder Sperre"); E12 Punkt 3a in `OPEN_DECISIONS.md`
+
+**Annahme.** Die Fahrzeit zwischen zwei Terminen wird im Moment der Prüfung über die eigene Function beim Kartendienst abgerufen und **nicht gespeichert** (E12 Punkt 3a: Live-Abruf). Der Browser reicht sie an `check_travel_buffers` weiter; dort — und nur dort — gilt die Rundungsregel aus §8.1 (`app.earliest_follow_up_start`). Eine Unterschreitung erscheint als **Warnung** in Tour und Kalender-Tagesansicht mit Personenfilter; gesperrt wird nichts, und das Anlegen oder Verschieben eines Termins prüft keinen Fahrpuffer.
+
+**Begründung.** ADR-019 Punkt 16 verbietet die Speicherung von Fahrzeiten, §8.1 verlangt die serverseitige Rundung, sobald eine Fahrzeit vorliegt; die Datenbank kann den Dienst nicht selbst fragen (ANN-017). Beides zusammen geht nur mit einer hereingereichten Fahrzeit — und die darf nur dann vom Client kommen, wenn aus ihr nichts gesperrt oder freigegeben wird. E12 Punkt 4 hat Jannes am 2026-09-12 bis zu echten Zahlen offengelassen; die Roadmap nennt „Warnung bei Unterschreitung". Unsicher: ob eine Sperre später gewünscht ist — dann muss die Fahrzeit serverseitig entstehen.
+
+**Anker.** `app.earliest_follow_up_start` und `public.check_travel_buffers` in `supabase/migrations/20260925120000_map_006c_travel_buffer.sql`; Testfall 09:05–10:05 plus 12 Minuten = 10:20 in `supabase/tests/travel-buffer.test.ts`; Anzeige in `src/features/tours/Fahrten.tsx` und `FahrpufferHinweis.tsx`.
+
+**Änderungspfad.** Sperre statt Warnung: Fahrzeit serverseitig über einen Aufruf der Function aus einem Hintergrundpfad, Prüfung in `create_appointment`/`update_appointment` · Aufwand `mittel`. Kurze Speicherung statt Live-Abruf: Tabelle mit Frist „Routing-Rohdaten" (ADR-008, 30 Tage) · Aufwand `mittel`.

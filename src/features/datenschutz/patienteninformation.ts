@@ -48,7 +48,7 @@ export function datenschutzinformation(praxis: string): Abschnitt[] {
     {
       titel: 'Hausbesuche und Kartendienst',
       absaetze: [
-        'Für die Planung der Hausbesuche nutzen wir einen Kartendienst. Er erhält Ihre Adresse beziehungsweise deren Kartenposition — nie Ihren Namen, keine Termine, keine Uhrzeiten und keine Angaben zu Ihrer Gesundheit. Fahrzeiten werden nicht gespeichert.',
+        'Für die Planung der Hausbesuche nutzen wir einen Kartendienst. Er erhält Ihre Adresse beziehungsweise deren Kartenposition — nie Ihren Namen, keine Termine, keine Uhrzeiten und keine Angaben zu Ihrer Gesundheit. Die Kartenposition speichern wir zusammen mit Ihrer Adresse und löschen sie mit ihr; Fahrzeiten werden nicht gespeichert.',
         'Für die Anfahrt kann die Therapeutin oder der Therapeut eine Navigations-App auf dem Diensthandy öffnen. Übergeben wird nur das Ziel, ohne Ihren Namen, und erst wenn sie oder er es ausdrücklich antippt — nie automatisch.',
       ],
     },

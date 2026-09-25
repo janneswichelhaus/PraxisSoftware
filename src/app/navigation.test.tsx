@@ -123,7 +123,11 @@ describe('Arbeitsbereiche je Rolle', () => {
     const kalender = termine?.unterpunkte.find((punkt) => punkt.to === '/kalender');
     const touren = termine?.unterpunkte.find((punkt) => punkt.to === '/touren');
     expect(kalender?.vorschau).toBeUndefined();
-    expect(touren?.vorschau).toBe(true);
+    // Seit MAP-006 echt angebunden.
+    expect(touren?.vorschau).toBeUndefined();
+    const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
+    const flotte = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/flotte');
+    expect(flotte?.vorschau).toBe(true);
   });
 
   it('ordnet die Arbeitszeiten dem Organisatorischen zu und nicht dem Kalender', () => {

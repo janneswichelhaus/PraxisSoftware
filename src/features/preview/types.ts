@@ -260,36 +260,6 @@ export interface Nachricht {
 }
 
 // -----------------------------------------------------------------------------
-// Touren
-// -----------------------------------------------------------------------------
-
-export type Stoppart = 'start' | 'besuch' | 'pause' | 'ende';
-
-export interface Tourstopp {
-  id: string;
-  art: Stoppart;
-  beginn: string;
-  dauerMinuten: number;
-  titel: string;
-  ort: string;
-  /** Wegzeit zum vorigen Stopp in Minuten. */
-  wegMinuten: number | null;
-  /**
-   * Wie die Wegzeit entstanden ist. „geschaetzt" heißt: von Hand eingetragen.
-   * Es gibt keinen Routingdienst - ein geschätzter Wert darf nicht wie ein
-   * berechnetes Ergebnis aussehen.
-   */
-  wegHerkunft: 'geschaetzt' | 'offen';
-}
-
-export interface Tour {
-  id: string;
-  mitarbeiterId: string;
-  datum: string;
-  stopps: Tourstopp[];
-}
-
-// -----------------------------------------------------------------------------
 // Abrechnung
 // -----------------------------------------------------------------------------
 

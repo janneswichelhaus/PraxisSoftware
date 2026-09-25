@@ -1,18 +1,74 @@
 import { createRoot } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
 import { Karte } from '@/features/tours/karte/Karte';
-import { NavigationHandoff } from '@/features/tours/karte/NavigationHandoff';
-import { Routenangaben } from '@/features/tours/karte/Routenangaben';
-import { TESTSTOPPS } from '@/features/tours/karte/teststopps';
-import type { MapDisplayConfig } from '@/lib/location/contract';
-import type { Routenergebnis } from '@/lib/location/route';
+import { Fahrtabschnitt, Routenzusammenfassung } from '@/features/tours/Fahrten';
+import { Tourenliste } from '@/features/tours/Tourenliste';
+import { kartenmarker, type Stopp } from '@/features/tours/tagesroute';
+import type { DayPlanEntry } from '@/features/today/api';
+import type { Coordinate, MapDisplayConfig } from '@/lib/location/contract';
 import '@/index.css';
 
 /**
  * Einstieg der Prüfseite aus `karte.html`.
  *
- * Gerendert wird dieselbe Komponente wie in der Anwendung, mit denselben
- * Stopps - nur die Anzeigekonfiguration kommt von hier statt vom Adapter.
+ * Gerendert werden dieselben Komponenten wie auf der Tourenseite (MAP-006b) —
+ * Karte und Tourenliste —, mit acht erfundenen Stopps in Tübingen statt der
+ * Termine eines Tages. Die Tourenseite selbst liegt hinter der Anmeldung, und
+ * in der Cloud-Entwicklungsumgebung läuft kein GoTrue; ohne diese Seite ließe
+ * sich keine der Komponenten in einem echten Browser ansehen, schon gar nicht
+ * bei 375 px. Nur die Anzeigekonfiguration kommt von hier statt vom Adapter.
  */
+
+/** Acht erfundene Punkte im Stadtgebiet von Tübingen, ohne Bezug zu einer Adresse. */
+const PUNKTE: readonly Coordinate[] = [
+  { lat: 48.5216, lon: 9.0576 },
+  { lat: 48.5305, lon: 9.049 },
+  { lat: 48.5164, lon: 9.0349 },
+  { lat: 48.5092, lon: 9.0655 },
+  { lat: 48.5241, lon: 9.0762 },
+  { lat: 48.5387, lon: 9.0668 },
+  { lat: 48.5024, lon: 9.0411 },
+  { lat: 48.5145, lon: 9.0908 },
+];
+
+/** Ein erfundener Termin je Punkt, 45 Minuten Takt ab 8 Uhr. */
+function termin(index: number): DayPlanEntry {
+  const beginn = new Date(Date.UTC(2026, 8, 10, 6, index * 45));
+  const ende = new Date(beginn.getTime() + 30 * 60_000);
+  return {
+    id: `t${index + 1}`,
+    patient_id: `p${index + 1}`,
+    staff_member_id: 's',
+    appointment_type: 'home_visit',
+    kind: 'therapy',
+    title: null,
+    status: 'confirmed',
+    starts_at: beginn.toISOString(),
+    ends_at: ende.toISOString(),
+    patient_given_name: 'Test',
+    patient_family_name: `Stopp ${index + 1}`,
+    location_name: null,
+    visit_street: 'Prüfweg',
+    visit_house_number: String(index + 1),
+    visit_postal_code: '72070',
+    visit_city: 'Tübingen',
+    patient_phone: null,
+    patient_phone_mobile: null,
+    home_visit_access_note: null,
+    special_note: null,
+    documentation_status: null,
+    organization_time_zone: 'Europe/Berlin',
+  };
+}
+
+const STOPPS: Stopp[] = PUNKTE.map((position, index) => ({
+  nummer: index + 1,
+  termin: termin(index),
+  position,
+  genauigkeit: 'address',
+}));
+
+const MARKER = kartenmarker(null, STOPPS);
 
 /**
  * Ein gültiger MapLibre-Style ohne eine einzige Netzanfrage.
@@ -87,59 +143,72 @@ const config: MapDisplayConfig = {
  * wert. Gefragt ist, ob MapLibre die Ebene annimmt und zeichnet — nicht, ob
  * der Weg durch die Stadt stimmt.
  */
-const route = parameter.has('route') ? TESTSTOPPS.map((stopp) => stopp.position) : undefined;
-
-/**
- * Die Angaben zur Route, wie sie die Nachbildung liefert.
- *
- * Auch das ist eine Prüffrage im Browser: `/touren/karte` liegt hinter der
- * Anmeldung, und in der Cloud-Entwicklungsumgebung läuft kein GoTrue. Ohne
- * diesen Block ließe sich die neue Anzeige nirgends in einem echten Browser
- * ansehen — schon gar nicht bei 375 px.
- */
-const angaben: Routenergebnis = {
-  ok: true,
-  value: {
-    quelle: 'nachbildung',
-    route: {
-      distanceMeters: 12_449,
-      durationSeconds: 2988,
-      legs: TESTSTOPPS.slice(1).map((_, nummer) => ({
-        distanceMeters: 1500 + nummer * 120,
-        durationSeconds: 360 + nummer * 30,
-      })),
-      geometry: route ?? [],
-    },
-  },
-};
+const route = parameter.has('route') ? PUNKTE : undefined;
 
 const wurzel = document.getElementById('wurzel');
 if (!wurzel) throw new Error('Wurzelelement der Prüfseite fehlt.');
 
 createRoot(wurzel).render(
-  <>
+  <MemoryRouter>
     <Karte
       config={config}
-      stopps={TESTSTOPPS}
-      beschriftung={`Karte mit ${TESTSTOPPS.length} Teststopps in Tübingen`}
+      stopps={MARKER}
+      beschriftung={`Karte mit ${MARKER.length} Teststopps in Tübingen`}
       route={route}
     />
-    {route === undefined ? null : (
-      <Routenangaben
-        laedt={false}
-        ergebnis={angaben}
-        lastenrad={undefined}
-        erneutVersuchen={() => {}}
-      />
-    )}
     {/*
-      Mit `?handoff=1` steht der Navigations-Handoff darunter (MAP-005b).
+      Mit `?handoff=1` steht die Tourenliste mit dem Navigations-Handoff
+      darunter (MAP-005b, seit MAP-006 die echte Liste der Tourenseite).
 
       Die Prüffragen dazu beantwortet kein jsdom: ob ein Tippziel wirklich
       44 px hoch ist, weiß nur ein Browser, der die Klassen auch anwendet.
-      Was beim Tippen entsteht, fängt die Prüfung mit einem eigenen
-      `window.open` ab — geöffnet wird in diesem Lauf nichts.
+      Was beim Tippen entsteht, fängt die Prüfung mit einem eigenen Sammler
+      ab — geöffnet wird in diesem Lauf nichts.
     */}
-    {parameter.has('handoff') ? <NavigationHandoff stopps={TESTSTOPPS} /> : null}
-  </>,
+    {parameter.has('handoff') ? (
+      <Tourenliste stopps={STOPPS} zeitzone="Europe/Berlin" startGewaehlt={false} />
+    ) : null}
+    {/*
+      Mit `?fahrten=1` die Tourenliste mit Fahrzeit und Fahrpuffer zwischen den
+      Stopps (MAP-006c) - erfundene Prüfergebnisse, darunter ein zu knapper
+      Übergang, damit Warnung und Normalfall nebeneinander zu sehen sind.
+    */}
+    {parameter.has('fahrten') ? (
+      <>
+        <Routenzusammenfassung
+          laedt={false}
+          ergebnis={{
+            ok: true,
+            value: {
+              quelle: 'nachbildung',
+              route: { distanceMeters: 12_449, durationSeconds: 2988, legs: [], geometry: [] },
+            },
+          }}
+          erneutVersuchen={() => {}}
+        />
+        <Tourenliste
+          stopps={STOPPS}
+          zeitzone="Europe/Berlin"
+          startGewaehlt
+          zwischen={(index) => (
+            <Fahrtabschnitt
+              sekunden={index === 3 ? null : 420 + index * 60}
+              pruefung={
+                index === 3
+                  ? null
+                  : {
+                      from_appointment_id: STOPPS[index]!.termin.id,
+                      to_appointment_id: STOPPS[index + 1]!.termin.id,
+                      travel_seconds: 420 + index * 60,
+                      earliest_start: STOPPS[index + 1]!.termin.starts_at,
+                      shortfall_minutes: index === 5 ? 7 : 0,
+                    }
+              }
+              zeitzone="Europe/Berlin"
+            />
+          )}
+        />
+      </>
+    ) : null}
+  </MemoryRouter>,
 );

@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Der Kartenprototyp in einem echten Browser (MAP-002).
+ * Karte und Tourenliste in einem echten Browser (MAP-002, seit MAP-006 die
+ * Komponenten der Tourenseite).
  *
  * Komponententests laufen in jsdom, und jsdom hat kein WebGL: Ob MapLibre
  * überhaupt zeichnet und ob die acht Marker am Ende im Bild stehen, kann dort
@@ -72,7 +73,7 @@ async function routenpunkte(page: Page): Promise<number> {
   );
 }
 
-test.describe('Kartenprototyp', () => {
+test.describe('Karte der Tagesroute', () => {
   test('zeichnet die Karte und stellt jeden Stopp ins Bild', async ({ page }) => {
     await page.goto(PRUEFSEITE);
 
@@ -238,8 +239,12 @@ test.describe('Kartenprototyp', () => {
     const stopp3 = page.getByRole('button', { name: 'Navigation zu Stopp 3 starten' });
     await expect(stopp3).toBeVisible();
 
-    // Vor dem Tippen steht kein Ziel auf der Seite - kein `href`, keine URL.
-    expect(await page.locator('a[href]').count()).toBe(0);
+    // Vor dem Tippen steht kein Ziel auf der Seite - kein Kartenverweis, keine
+    // URL. Die Liste traegt Links in die eigene Anwendung (zum Termin), keine
+    // zu einer Navigations-App.
+    expect(
+      await page.locator('a[href*="google.com"], a[href*="apple.com"], a[href^="geo:"]').count(),
+    ).toBe(0);
     const quelltext = await page.content();
     for (const spur of ['google.com/maps', 'maps.apple.com', 'geo:4']) {
       expect(quelltext, `"${spur}" steht vor dem Tippen im Quelltext`).not.toContain(spur);

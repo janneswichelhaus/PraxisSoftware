@@ -25,13 +25,13 @@ import type { LocationError } from './contract';
 const FUNCTION = 'location-provider';
 
 /**
- * Welche der beiden Aufgaben gefragt ist.
+ * Welche Aufgabe gefragt ist (Route, Matrix, seit MAP-006a das Geocoding).
  *
  * Sie geht als eigenes Feld hinaus und wird von der Function nicht aus der
  * Form der Anfrage geraten (`handler.ts`). Ein Verb, keine Angabe über eine
  * Person: Was hinausgeht, bleiben Koordinaten und ein Fahrprofil.
  */
-export type Aufgabe = 'route' | 'matrix';
+export type Aufgabe = 'route' | 'matrix' | 'geocode';
 
 /**
  * Woher die Antwort stammt.

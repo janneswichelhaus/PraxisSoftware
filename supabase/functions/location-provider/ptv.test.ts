@@ -405,3 +405,107 @@ describe('PTV-Matrix-Adapter', () => {
     expect(ergebnis.ok === false && ergebnis.error.code).toBe('timeout');
   });
 });
+
+describe('PTV-Geocoding-Adapter (MAP-006a)', () => {
+  const ANSCHRIFT = {
+    street: 'Musterweg',
+    houseNumber: '1',
+    postalCode: '72070',
+    city: 'Tübingen',
+    countryCode: 'DE',
+  };
+
+  const TREFFER = {
+    locations: [
+      {
+        formattedAddress: 'Musterweg 1, 72070 Tübingen',
+        locationType: 'EXACT_ADDRESS',
+        referencePosition: { latitude: 48.5201, longitude: 9.0512 },
+      },
+    ],
+  };
+
+  it('fragt die OSM-Variante mit genau den Feldern der Anschrift', async () => {
+    const abrufen = antwortMit(TREFFER);
+    await erstellePtvAdapter({ apiKey: 'geheim', abrufen }).geocode(ANSCHRIFT);
+
+    const [ziel, optionen] = abrufen.mock.calls[0]!;
+    const url = alsUrl(ziel);
+    expect(url.pathname).toBe('/geocoding-osm/v1/locations/by-address');
+    expect([...url.searchParams.keys()].sort()).toEqual(
+      ['countryFilter', 'houseNumber', 'locality', 'postalCode', 'street'].sort(),
+    );
+    expect(url.searchParams.get('apiKey')).toBeNull();
+    expect((optionen?.headers as Record<string, string>)['ApiKey']).toBe('geheim');
+    expect(optionen?.method).toBe('GET');
+  });
+
+  it('laesst eine leere Hausnummer weg', async () => {
+    const abrufen = antwortMit(TREFFER);
+    await erstellePtvAdapter({ apiKey: 'k', abrufen }).geocode({ ...ANSCHRIFT, houseNumber: '' });
+    expect(alsUrl(abrufen.mock.calls[0]![0]).searchParams.has('houseNumber')).toBe(false);
+  });
+
+  it('uebersetzt den ersten Treffer in den Vertrag', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(TREFFER),
+    }).geocode(ANSCHRIFT);
+    expect(ergebnis).toEqual({
+      ok: true,
+      value: {
+        position: { lat: 48.5201, lon: 9.0512 },
+        precision: 'address',
+        matchLabel: 'Musterweg 1, 72070 Tübingen',
+      },
+    });
+  });
+
+  it.each([
+    ['INTERPOLATED_ADDRESS', 'address'],
+    ['STREET', 'street'],
+    ['LOCALITY', 'locality'],
+    ['POSTAL_CODE', 'locality'],
+    ['IRGENDWAS', 'unknown'],
+    [undefined, 'unknown'],
+  ])('stuft %j als %s ein - nie hoeher', async (typ, erwartet) => {
+    const koerper = { locations: [{ ...TREFFER.locations[0], locationType: typ }] };
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(koerper),
+    }).geocode(ANSCHRIFT);
+    expect(ergebnis.ok && ergebnis.value.precision).toBe(erwartet);
+  });
+
+  it('meldet "kein Treffer" als not_found', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({ locations: [] }),
+    }).geocode(ANSCHRIFT);
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('not_found');
+  });
+
+  it.each([
+    ['ohne Trefferliste', {}],
+    ['ohne Koordinate', { locations: [{ locationType: 'EXACT_ADDRESS' }] }],
+    [
+      'mit Koordinate ausserhalb der Erde',
+      { locations: [{ referencePosition: { latitude: 91, longitude: 9 } }] },
+    ],
+  ])('nimmt eine Antwort %s nicht als Treffer', async (_, koerper) => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(koerper),
+    }).geocode(ANSCHRIFT);
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('unavailable');
+  });
+
+  it('traegt keine Anschrift in eine Fehlermeldung', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({ message: 'Musterweg 1 Tübingen invalid' }, 400),
+    }).geocode(ANSCHRIFT);
+    expect(ergebnis.ok).toBe(false);
+    expect(JSON.stringify(ergebnis)).not.toMatch(/Musterweg|72070|Tübingen/);
+  });
+});

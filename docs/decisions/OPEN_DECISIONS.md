@@ -82,7 +82,7 @@ Feature, **P3** später.
 | E9 | Dokument-Governance | erledigt mit Version 0.2 (2026-08-28) | `PROJECT_PRINCIPLES.md` §21 |
 | E10 | Wer schreibt Mitarbeiterdaten | **erledigt 2026-09-11** — umgesetzt in STAFF-002a | `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024) |
 | E11 | Wer gilt als behandelnde Person | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | — |
-| E12 | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **neu entschieden 2026-09-16**: Länge **frei**, Abweichung von 45/60 wird gekennzeichnet · Punkt 2 damit **gegenstandslos** · Punkt 3 und 4 **vorläufig entschieden 2026-09-12** (Fahrpuffer erst mit MAP-006) · **offen: nur Punkt 3a** | `PROJECT_PRINCIPLES.md` **0.11 §8.1**; CAL-010a und CAL-015 gebaut, **CAL-020 baut die freie Länge**, CAL-010b entfallen |
+| E12 | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **neu entschieden 2026-09-16**: Länge **frei**, Abweichung von 45/60 wird gekennzeichnet · Punkt 2 damit **gegenstandslos** · Punkt 3 und 4 **vorläufig entschieden 2026-09-12**, **gebaut in MAP-006** (Warnung, keine Sperre) · Punkt 3a **vorläufig beantwortet** durch ANN-097 (Live-Abruf, keine Speicherung) | `PROJECT_PRINCIPLES.md` **0.11 §8.1**; CAL-010a und CAL-015 gebaut, **CAL-020 baut die freie Länge**, CAL-010b entfallen |
 | E13 | Sprachdokumentation: Anbieter, Architektur, Audio, Frist | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen** | §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6 |
 | E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); **umgesetzt 2026-09-16 in CAL-018** | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
 | E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; umgesetzt 2026-09-15 in ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
@@ -304,10 +304,10 @@ unverändert), **Punkt 1: die Länge ist frei** (0.11, 2026-09-16 — 60 bleibt
 Vorbelegung, eine Abweichung von 45/60 wird gekennzeichnet; gebaut in CAL-020)
 und die Punkte 3 und 4 (Fahrpuffer erst mit MAP-006). **Punkt 2** (Länge je
 Praxis einstellbar) ist damit gegenstandslos, **ANN-037** verliert mit CAL-020
-ihren Gegenstand (verworfen, abgelöst durch ANN-056). Offen bleibt **3a**: ADR-019 Punkt 16 sieht keine
-Speicherung von Fahrzeiten vor, §8.1 verlangt die serverseitige Rundungsregel,
-sobald eine vorliegt — Live-Abruf je Prüfung oder kurze Speicherung. Wo: §8.1,
-ADR-019 Punkt 16; Roadmap MAP-006. Annahmen: ANN-049, ANN-056.
+ihren Gegenstand (verworfen, abgelöst durch ANN-056). **3a** (Fahrzeit ohne Speicherung gegen
+serverseitige Rundung) hat MAP-006 am 2026-09-25 vorläufig beantwortet: Live-Abruf je Prüfung,
+Rundung in `app.earliest_follow_up_start`, Warnung statt Sperre; Punkt 4 wartet auf echte
+Zahlen. Wo: §8.1, ADR-019 Punkt 16. Annahmen: ANN-049, ANN-056, ANN-097.
 
 ### E13 — Sprachdokumentation: Anbieter, Architektur, Audio, Frist
 

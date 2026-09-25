@@ -1,3 +1,4 @@
+import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -823,6 +824,21 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           <option value="all">Alle</option>
         </Select>
       </div>
+
+      {/* MAP-006c: Fahrpuffer nach §8.1, wo Person und Tag feststehen. Der
+          Stand der Termine dieser Person steckt im Schlüssel - nach einer
+          Verschiebung wird neu geprüft. Eine Warnung, keine Sperre. */}
+      {p.ansicht === 'tag' && p.person ? (
+        <FahrpufferHinweis
+          datum={p.datum}
+          staffMemberId={p.person}
+          zeitzone={zone}
+          stand={eintraege
+            .filter((e) => e.staff_member_id === p.person)
+            .map((e) => `${e.id}:${e.starts_at}:${e.ends_at}:${e.status}`)
+            .join('|')}
+        />
+      ) : null}
 
       {/* Der Filter aus der Akte steht sichtbar über dem Gitter und lässt sich
           mit einem Tap aufheben: Ein Kalender, der ohne erkennbaren Grund fast

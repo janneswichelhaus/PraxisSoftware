@@ -57,6 +57,10 @@ const dayPlanEntrySchema = z.object({
    */
   documentation_status: documentationStatusSchema.nullable(),
   organization_time_zone: z.string(),
+  // MAP-006d: Kartenposition des Hausbesuchs für den Handoff (ANN-018).
+  // Optional, damit ein älterer Stand ohne die Spalten weiter gelesen wird.
+  visit_lat: z.number().nullable().optional(),
+  visit_lon: z.number().nullable().optional(),
 });
 
 export type DayPlanEntry = z.infer<typeof dayPlanEntrySchema>;

@@ -24,6 +24,7 @@ import type { Protokolleintrag } from './typen.ts';
 const adapter = waehleAdapter({
   LOCATION_PROVIDER: Deno.env.get('LOCATION_PROVIDER'),
   PTV_API_KEY: Deno.env.get('PTV_API_KEY'),
+  LOCATION_DATA_GATE: Deno.env.get('LOCATION_DATA_GATE'),
 });
 
 const pruefeSitzung = erstelleSitzungspruefung({

@@ -284,7 +284,7 @@ Scharfschalten, nicht vor dem Bau (ADR-019 Fassung 4, §15.2).
 
 | Loop | Ergebnis | Zuschnitt | Quelle |
 | --- | --- | --- | --- |
-| **MAP-006** | Die Tagesroute liegt auf der Karte, mit Route, Fahrzeiten und Erreichbarkeit im Kalender | Koordinaten bei der Adresse (ANN-016), Startort je Tag, Route und Fahrzeiten, Tourenliste druckbar, Handoff mit Koordinaten; **Fahrpuffer aus §8.1** mit Aufrundungsregel als Testfall (09:05–10:05 plus 12 Minuten ergibt 10:20) und Warnung bei Unterschreitung (E12 Punkt 3 und 4); ersetzt die Vorschau `/touren` | `IDEA-PRX-017`, `-029`, `-032` |
+| ~~**MAP-006**~~ | **gebaut 2026-09-25** — Die Tagesroute liegt auf der Karte, mit Route, Fahrzeiten und Erreichbarkeit im Kalender | Koordinaten bei der Adresse (ANN-016), Startort je Tag, Route und Fahrzeiten, Tourenliste druckbar, Handoff mit Koordinaten; **Fahrpuffer aus §8.1** mit Aufrundungsregel als Testfall (09:05–10:05 plus 12 Minuten ergibt 10:20) und Warnung bei Unterschreitung (E12 Punkt 3 und 4); ersetzt die Vorschau `/touren` | `IDEA-PRX-017`, `-029`, `-032` |
 
 **Etappe 2 — Befund.** Plan, Phasen und Vorentscheidungen in
 [`FRB-BAUSTEINE-UND-SCORES.md`](FRB-BAUSTEINE-UND-SCORES.md); Material in
@@ -713,6 +713,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | MAP-003 Fahrradroute als Linie | fertig | 2026-09-21 | `cbc6c07`, `71756aa`, `d66ea31` | — | — |
 | B | MAP-004 Fahrzeiten und Erreichbarkeit | fertig | 2026-09-22 | `ce5dbe4` … `0e27b4f` | — | — |
 | B | MAP-005 Navigations-Handoff mit Koordinaten | fertig | 2026-09-22 | `cf03057`, `ef74eec` | — | Teil A gesichtet 2026-09-22, Teil B am Telefon offen |
+| B | MAP-006 Tagesroute mit Fahrpuffer (Block 2) | fertig | 2026-09-25 | `6cb52b2` … `a0cc774` | — | mit synthetischen Adressen; Scharfschalten am Gate aus ADR-019 Punkt 9 (LOCATION_DATA_GATE) |
 | B | FRB-EPIC-000 Schema und Validator der Instrumente | fertig | 2026-09-21 | `0e988d5`, `53fd542`, `dc9c963`, `6dbe377` | — | — |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
@@ -746,6 +747,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.1 | 2026-09-25 | **MAP-006 gebaut** (Block 2): Koordinaten bei der Adresse, echte Tourenseite mit Karte, Route, Fahrzeiten und Fahrpuffer nach §8.1 als Warnung, Handoff mit Koordinaten, Datenschutz-Paket [`kartendienst.md`](../datenschutz/kartendienst.md). Vorschau `/touren` und Prototyp `/touren/karte` entfallen. ANN-094 bis ANN-097; E12 Punkt 3a vorläufig beantwortet. |
 | 7.0 | 2026-09-23 | **Umbau U2** nach dem Produktgespräch ([`UMBAU.md`](UMBAU.md)). Neuer **Block 1a „Handy und UX-Fundament"** (OPS-002a Test-Umgebung vorgezogen, UX-EPIC-002 Begriffe und Bedienprinzipien, UX-EPIC-003 Tagesansicht fürs Handy mit Liege und Vorschau). Neu **DOK-006** Fotos in der Akte, **DSN-001** Ansichten der Plattform vor Block 4; Erstaufnahme-Checkliste in PRX-EPIC-003, Liege und Weg ohne Sprechen in FRB-EPIC-003, Verordnungsfoto mit KI-Vorschlag in KI-EPIC-002. ANG-EPIC-001 ist das **Nachsorge-Abo**, ANG-EPIC-002 das Paket nach Zeitraum, KND-EPIC-001 der Übergang aus der Behandlung. **Anfragen ab Anfang 2027 parallel** (Block 11, R1). Regel 1 und Definition of Done: **Sichtung statt Abnahme je Epic**, Bildschirmfotos in jeder Oberflächen-PR. Grundsatz 3: Bedienbarkeit ist kein Komfort. `UI-001` des Blocks 9 heißt **UI-003** (Kennung war doppelt). Vermerke 6.0 bis 6.2 in die Chronik. |
 
 Ältere Vermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).

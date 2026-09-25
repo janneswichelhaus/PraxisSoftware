@@ -20,6 +20,7 @@ import {
   type Antwort,
   type Aufgabe,
   type Coordinate,
+  type GeocodeRequest,
   type LocationErrorCode,
   type MatrixRequest,
   type Protokolleintrag,
@@ -126,7 +127,9 @@ export function erstelleHandler({
     const ergebnis =
       auftrag.aufgabe === 'route'
         ? await adapter.route(auftrag.anfrage)
-        : await adapter.matrix(auftrag.anfrage);
+        : auftrag.aufgabe === 'matrix'
+          ? await adapter.matrix(auftrag.anfrage)
+          : await adapter.geocode(auftrag.anfrage);
     protokolliere({
       anbieter: adapter.id,
       code: ergebnis.ok ? 'ok' : ergebnis.error.code,
@@ -148,7 +151,8 @@ export function erstelleHandler({
  */
 type Auftrag =
   | { readonly aufgabe: 'route'; readonly anfrage: RouteRequest }
-  | { readonly aufgabe: 'matrix'; readonly anfrage: MatrixRequest };
+  | { readonly aufgabe: 'matrix'; readonly anfrage: MatrixRequest }
+  | { readonly aufgabe: 'geocode'; readonly anfrage: GeocodeRequest };
 
 /**
  * Die Anfrage des Browsers — oder `null`, wenn irgendetwas daran nicht stimmt.
@@ -171,6 +175,13 @@ async function liesAnfrage(anfrage: Request): Promise<Auftrag | null> {
   if (typeof koerper !== 'object' || koerper === null) return null;
 
   const daten = koerper as Record<string, unknown>;
+
+  // Geocoding trägt kein Profil, sondern eine Anschrift (MAP-006a).
+  if (daten['aufgabe'] === 'geocode') {
+    const anschrift = anschriftAus(daten['address']);
+    return anschrift === null ? null : { aufgabe: 'geocode', anfrage: anschrift };
+  }
+
   const profil = daten['profile'];
   if (profil !== 'bicycle' && profil !== 'cargo_bicycle') return null;
   const profile = profil satisfies TravelProfile;
@@ -193,6 +204,32 @@ async function liesAnfrage(anfrage: Request): Promise<Auftrag | null> {
   // Route ist eine andere und steht beim Anbieter (`ptv.ts`).
   if (origins.length > MAX_MATRIX_PUNKTE || destinations.length > MAX_MATRIX_PUNKTE) return null;
   return { aufgabe, anfrage: { origins, destinations, profile } };
+}
+
+/**
+ * Eine Anschrift — oder `null`, wenn sie nicht vollständig oder zu lang ist.
+ *
+ * Genau die fünf Felder des Vertrags; ein zusätzliches Feld (etwa ein Name)
+ * wird nicht übernommen, weil nur diese fünf gelesen und weitergegeben werden
+ * (ADR-019 Punkt 12). Die Grenzen folgen den Spalten der Adresse.
+ */
+function anschriftAus(wert: unknown): GeocodeRequest | null {
+  if (typeof wert !== 'object' || wert === null) return null;
+  const daten = wert as Record<string, unknown>;
+  const feld = (name: string, hoechstens: number, mindestens = 1): string | null => {
+    const inhalt = daten[name];
+    if (typeof inhalt !== 'string') return null;
+    const bereinigt = inhalt.trim();
+    return bereinigt.length >= mindestens && bereinigt.length <= hoechstens ? bereinigt : null;
+  };
+  const street = feld('street', 200);
+  const houseNumber = feld('houseNumber', 20, 0);
+  const postalCode = feld('postalCode', 12, 2);
+  const city = feld('city', 200);
+  const countryCode = feld('countryCode', 2, 2);
+  if (street === null || houseNumber === null || postalCode === null || city === null) return null;
+  if (countryCode === null || !/^[A-Z]{2}$/.test(countryCode)) return null;
+  return { street, houseNumber, postalCode, city, countryCode };
 }
 
 /** Eine Liste von Koordinaten — oder `null`, wenn irgendetwas daran nicht stimmt. */

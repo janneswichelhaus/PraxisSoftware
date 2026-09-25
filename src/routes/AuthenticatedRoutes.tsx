@@ -1,6 +1,4 @@
-import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { LoadingState } from '@/components/ui/Feedback';
 import { AppShell } from '@/app/AppShell';
 import { BereichePage } from '@/app/BereichePage';
 import { MdrSperre } from '@/app/MdrSperre';
@@ -66,7 +64,7 @@ import { VacationPage } from '@/features/vacation/VacationPage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
-import { ToursPage } from '@/features/tours/ToursPage';
+import { TourenPage } from '@/features/tours/TourenPage';
 import { PaymentsPage } from '@/features/billing/PaymentsPage';
 import { CatalogPage } from '@/features/billing/CatalogPage';
 import { CancellationPrintPage } from '@/features/billing/CancellationPrintPage';
@@ -87,19 +85,6 @@ import {
   isStaff,
   type CurrentUser,
 } from '@/features/session/types';
-
-/**
- * Die einzige nachgeladene Seite der Anwendung (MAP-002c).
- *
- * MapLibre GL JS ist ein Renderer mit eigener Worker-Datei und wiegt ein
- * Vielfaches des übrigen Anwendungscodes. Fest eingebunden zahlte jeder
- * Seitenaufruf dafür - auch die Anmeldung, die Dokumentation und der Kalender,
- * die keine Karte zeigen. Als eigener Abschnitt lädt er erst, wenn jemand die
- * Karte öffnet.
- */
-const KartePage = lazy(() =>
-  import('@/features/tours/karte/KartePage').then((modul) => ({ default: modul.KartePage })),
-);
 
 /**
  * Routen des angemeldeten Bereichs.
@@ -288,16 +273,8 @@ export function AuthenticatedRoutes({
                     path="/patienten/:patientId/terminzettel"
                     element={<AppointmentSlipPage />}
                   />
-                  <Route path="/touren" element={<ToursPage user={user} />} />
-                  {/* Kartenprototyp, noch ohne Anbindung an Termine (MAP-002). */}
-                  <Route
-                    path="/touren/karte"
-                    element={
-                      <Suspense fallback={<LoadingState label="Karte wird geladen …" />}>
-                        <KartePage />
-                      </Suspense>
-                    }
-                  />
+                  {/* Tagesroute auf der Karte (MAP-006b); ersetzt Vorschau und Kartenprototyp. */}
+                  <Route path="/touren" element={<TourenPage user={user} />} />
                   <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
                 </>
               ) : null}

@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-23 · letzte Session: Umbau U5
+# Status · Stand 2026-09-25 · letzte Session: MAP-006
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,17 +6,17 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**Umbau fertig** ([`development/UMBAU.md`](development/UMBAU.md)): U1 bis U5 erledigt; das Hosting der Test-Umgebung ist entschieden (**B16: Uberspace**). Jetzt liegt die Einrichtung bei dir, danach baut OPS-002a die Auslieferung. Jede Session beginnt mit **`/weiter`**, **`/idee <Text>`** oder **`/sichtung`**; der Fortschritt steht nur in `fortschritt.json`. Fortschritt **33,7 %**.
+**MAP-006 gebaut** (Block 2, erster Loop): Die Tagesroute liegt auf der Karte — mit synthetischen Adressen; echte erreichen den Kartendienst erst nach dem Gate (Schalter `LOCATION_DATA_GATE`, ANN-094). Pull Request offen, Zweitreview gelaufen, **Merge bei dir**. Die Test-Umgebung (B16: Uberspace) liegt weiter bei dir. Fortschritt **34,4 %**.
 
 ## Danach — Bauen
 
 1. **G6c**, sobald deine Wahl unter „Blocker" da ist
 2. **OPS-002a Test-Umgebung**, sobald du „Konten stehen" meldest; dann UX-EPIC-002, sobald deine Begriffsliste da ist
-3. Solange beides fehlt: **Block 2 „Kern fertig"** nach der Roadmap (MAP-006 zuerst) — Bauen wartet nicht (§15.2)
+3. Solange beides fehlt: **Block 2 weiter mit FRB-EPIC-001** (Instrumentenbibliothek) — Bauen wartet nicht (§15.2)
 
 ## Prüfverfahren
 
-**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2350**; `test:db` **1871** (mit G6b, eine Migration; in U4 und U5 nicht gelaufen, weil keine Datenbank berührt ist). Keine Sichtprüfung: U5 ändert nur Dokumentation.
+**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2361**; `test:db` **1937** (mit MAP-006, vier Migrationen); `test:e2e` ohne Anmeldung grün. Sichtprüfung der Tourenkomponenten über die Prüfseite `tests/e2e/fixtures/karte.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
 ## Blocker (Jannes-seitig)
 
@@ -35,4 +35,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**Umbau U5 — Test-Umgebung, B16 entschieden: Uberspace.** Neu [`hosting-optionen.md`](decisions/hosting-optionen.md): was der Hosting-Anbieter sieht (nur statische Dateien und IP-Adressen, keine Patientendaten — später aber das Patientenverhältnis selbst), vier Optionen (Uberspace, Hetzner Webhosting, Bunny.net, Cloudflare Pages mit Access) und drei zurückgestellte, Empfehlung Uberspace, Langfrist-Einordnung, Prüfpunkte vor der Bestellung, das Vorgehen in drei Schritten. Belegtiefe nur Suchauszüge, die Anbieterseiten sind aus der Cloud gesperrt. Du hast Uberspace gewählt; das Dokument trägt jetzt die Einrichtungsanleitung mit den festen Secret-Namen für OPS-002a. **B16** in [`OPEN_DECISIONS.md`](decisions/OPEN_DECISIONS.md) entschieden; UMBAU, Roadmap (Block 1a, OPS-002a, „Bei Jannes") nachgezogen. **Keine neue Annahme** — ein neuer Anbieter ist ein Stopp, keine Annahme. **Lokale Schritte:** `git pull origin main` nach dem Merge; keine Migration, keine neue Abhängigkeit.
+**MAP-006 — Tagesroute auf der Karte.** Koordinate bei der Adresse (verfällt mit jeder Adressänderung, Verorten auf Tipp in den Stammdaten, ANN-095), Startort der Touren in der Planung; `/touren` ist echt: Karte mit Nummern statt Namen (ANN-096), Route im Lastenradprofil, Fahrzeit und **Fahrpuffer nach §8.1** zwischen den Stopps (09:05–10:05 plus 12 Minuten ergibt 10:20; Warnung, keine Sperre, nichts gespeichert, ANN-097), druckbare Liste, Handoff mit Koordinate; Hinweis im Kalender (Tag mit Person) und Aufklapper in der Übersicht. Vorschau `/touren` und Prototyp `/touren/karte` entfallen. Datenschutz-Paket [`datenschutz/kartendienst.md`](datenschutz/kartendienst.md). Sichtung [Kartendienst](sichtung/kartendienst.md) auf die echte Seite umgestellt. **Lokale Schritte:** `git pull origin claude/map-006-cl59i6` (nach dem Merge `main`), `pnpm dlx supabase@2.116.0 db reset` (vier Migrationen, Seed mit Koordinaten), in `supabase/functions/.env.local` **`LOCATION_DATA_GATE=synthetic`** ergänzen — sonst meldet die Tour „Kein Kartendienst eingerichtet". Keine neue Abhängigkeit.

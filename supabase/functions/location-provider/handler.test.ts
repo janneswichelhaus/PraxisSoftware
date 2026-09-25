@@ -6,6 +6,8 @@ import { MAX_MATRIX_PUNKTE } from './typen.ts';
 import type {
   Anbieteradapter,
   Antwort,
+  GeocodeAntwort,
+  GeocodeErgebnis,
   MatrixAntwort,
   MatrixErgebnis,
   Protokolleintrag,
@@ -49,11 +51,21 @@ function anfrage(koerper: unknown, kopf: Record<string, string> = { Authorizatio
 
 const LEERE_MATRIX: MatrixErgebnis = { ok: true, value: { durationsSeconds: [] } };
 
-function adapterMit(ergebnis: RouteErgebnis, matrixErgebnis: MatrixErgebnis = LEERE_MATRIX) {
+const TREFFER: GeocodeErgebnis = {
+  ok: true,
+  value: { position: { lat: 48.52, lon: 9.05 }, precision: 'address', matchLabel: 'Musterweg 1' },
+};
+
+function adapterMit(
+  ergebnis: RouteErgebnis,
+  matrixErgebnis: MatrixErgebnis = LEERE_MATRIX,
+  geocodeErgebnis: GeocodeErgebnis = TREFFER,
+) {
   const route = vi.fn(() => Promise.resolve(ergebnis));
   const matrix = vi.fn(() => Promise.resolve(matrixErgebnis));
-  const adapter: Anbieteradapter = { id: 'prueflauf', quelle: 'anbieter', route, matrix };
-  return { adapter, route, matrix };
+  const geocode = vi.fn((_anschrift: unknown) => Promise.resolve(geocodeErgebnis));
+  const adapter: Anbieteradapter = { id: 'prueflauf', quelle: 'anbieter', route, matrix, geocode };
+  return { adapter, route, matrix, geocode };
 }
 
 function handler(
@@ -348,3 +360,78 @@ describe('location-provider · Matrix', () => {
 function leereRoute() {
   return { distanceMeters: 0, durationSeconds: 0, legs: [], geometry: [] };
 }
+
+describe('location-provider: Geocoding (MAP-006a)', () => {
+  const ANSCHRIFT = {
+    street: 'Musterweg',
+    houseNumber: '1',
+    postalCode: '72070',
+    city: 'Tübingen',
+    countryCode: 'DE',
+  };
+
+  it('reicht genau die fuenf Felder der Anschrift an den Adapter weiter', async () => {
+    const { adapter, geocode, route } = adapterMit({ ok: true, value: leereRoute() });
+    const antwort = await handler(adapter)(
+      anfrage({
+        aufgabe: 'geocode',
+        // Ein Name im Koerper darf den Anbieter nicht erreichen (ADR-019 Punkt 12).
+        address: { ...ANSCHRIFT, givenName: 'Erika', street: '  Musterweg ' },
+      }),
+    );
+
+    expect(antwort.status).toBe(200);
+    const koerper = await gelesen<GeocodeAntwort>(antwort);
+    expect(koerper.ok && koerper.value.precision).toBe('address');
+    expect(geocode).toHaveBeenCalledTimes(1);
+    expect(geocode.mock.calls[0]).toEqual([ANSCHRIFT]);
+    expect(route).not.toHaveBeenCalled();
+  });
+
+  it('nimmt eine Anschrift ohne Hausnummer an - die Genauigkeit sagt dann der Anbieter', async () => {
+    const { adapter, geocode } = adapterMit({ ok: true, value: leereRoute() });
+    const antwort = await handler(adapter)(
+      anfrage({ aufgabe: 'geocode', address: { ...ANSCHRIFT, houseNumber: '' } }),
+    );
+    expect(antwort.status).toBe(200);
+    expect(geocode).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['ohne Anschrift', {}],
+    ['ohne Strasse', { address: { ...ANSCHRIFT, street: ' ' } }],
+    ['ohne Ort', { address: { ...ANSCHRIFT, city: '' } }],
+    ['mit zu kurzer Postleitzahl', { address: { ...ANSCHRIFT, postalCode: '7' } }],
+    ['mit Laendercode in Kleinschrift', { address: { ...ANSCHRIFT, countryCode: 'de' } }],
+    ['mit zu langer Strasse', { address: { ...ANSCHRIFT, street: 'x'.repeat(201) } }],
+    ['mit Zahl statt Text', { address: { ...ANSCHRIFT, houseNumber: 1 } }],
+  ])('weist eine Anfrage %s ab, ohne den Anbieter zu fragen', async (_, rest) => {
+    const { adapter, geocode } = adapterMit({ ok: true, value: leereRoute() });
+    const antwort = await handler(adapter)(anfrage({ aufgabe: 'geocode', ...rest }));
+    expect(antwort.status).toBe(400);
+    expect(geocode).not.toHaveBeenCalled();
+  });
+
+  it('protokolliert einen fehlgeschlagenen Aufruf ohne Anschrift', async () => {
+    const eintraege: Protokolleintrag[] = [];
+    const { adapter } = adapterMit({ ok: true, value: leereRoute() }, LEERE_MATRIX, {
+      ok: false,
+      error: { code: 'not_found', message: 'ptv: kein Treffer' },
+    });
+    const antwort = await handler(adapter, { protokolliere: (e) => eintraege.push(e) })(
+      anfrage({ aufgabe: 'geocode', address: ANSCHRIFT }),
+    );
+
+    expect(antwort.status).toBe(502);
+    expect(JSON.stringify(eintraege)).not.toMatch(/Musterweg|72070|Tübingen/);
+    expect(eintraege).toEqual([{ anbieter: 'prueflauf', code: 'not_found', dauerMs: 12 }]);
+  });
+
+  it('antwortet mit der Nachbildung und gibt sich als solche zu erkennen', async () => {
+    const antwort = await handler(erstelleNachbildung())(
+      anfrage({ aufgabe: 'geocode', address: ANSCHRIFT }),
+    );
+    const koerper = await gelesen<GeocodeAntwort>(antwort);
+    expect(koerper.ok && koerper.quelle).toBe('nachbildung');
+  });
+});

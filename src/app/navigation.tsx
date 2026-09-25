@@ -219,7 +219,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       icon: symbole.termine,
       unterpunkte: [
         { to: '/kalender', label: 'Kalender' },
-        { to: '/touren', label: 'Touren', vorschau: true },
+        { to: '/touren', label: 'Touren' },
       ],
     });
   }

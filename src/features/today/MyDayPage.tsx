@@ -37,6 +37,7 @@ import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, istOffen, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
+import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 
 /**
  * Übersicht - der persönliche Einstieg.
@@ -238,10 +239,13 @@ function MeineTagesliste({
       {offen.some((termin) => termin.appointment_type === 'home_visit') ? (
         <p className="text-ink-subtle mt-3 max-w-prose text-xs leading-relaxed">
           „Navigation starten" öffnet Google Maps im Fahrradmodus und übergibt dabei nur die
-          Anschrift ohne Namen – keine Uhrzeit, keinen Zugangshinweis, keine Kennung. Die Übergabe
-          passiert erst beim Tippen.
+          Kartenposition, ohne sie die Anschrift ohne Namen – keine Uhrzeit, keinen Zugangshinweis,
+          keine Kennung. Die Übergabe passiert erst beim Tippen.
         </p>
       ) : null}
+
+      {/* MAP-006b: die Tagesroute, erst beim Aufklappen geladen. */}
+      <TagesrouteAufklapper datum={datum} staffMemberId={staffMemberId} plan={sortiert} />
 
       {erledigt.length > 0 ? (
         <details className="border-line mt-6 border-t pt-3">
@@ -409,7 +413,6 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
       zustand.erstattungen.filter((antrag) => antrag.stand === 'eingereicht').length
     : 0;
   const ungelesen = zustand.nachrichten.filter((nachricht) => !nachricht.gelesen).length;
-  const meineTour = zustand.touren.find((tour) => tour.mitarbeiterId === ich.id);
 
   return (
     <section className="border-line mt-10 border-t pt-6">
@@ -420,7 +423,7 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
             ansteuert. */}
         <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-2">
           <h2 className="text-ink text-[1.0625rem] font-semibold tracking-[-0.01em]">
-            Organisatorisches, Wege und Kommunikation
+            Organisatorisches und Kommunikation
           </h2>
         </summary>
 
@@ -460,22 +463,6 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
                 Panne melden
               </Link>
             </div>
-          </Card>
-
-          <Card>
-            <p className="text-ink-muted text-sm">Meine Wege heute</p>
-            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
-              {meineTour ? `${meineTour.stopps.length} Stopps` : 'Keine Tour hinterlegt'}
-            </p>
-            <p className="text-ink-muted mt-1 text-sm">
-              Wegzeiten sind geschätzt, nicht berechnet.
-            </p>
-            <Link
-              to="/touren"
-              className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
-            >
-              Zur Besuchsfolge →
-            </Link>
           </Card>
 
           <Card>

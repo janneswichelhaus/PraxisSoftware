@@ -89,8 +89,10 @@ values
 insert into public.organizations (id, name, time_zone) values
   ('22222222-2222-4222-8222-000000000001', 'Test Praxis Tuebingen', 'Europe/Berlin');
 
-insert into public.locations (id, organization_id, name) values
-  ('33333333-3333-4333-8333-000000000001', '22222222-2222-4222-8222-000000000001', 'Hauptstandort Tuebingen');
+-- Startort der Tagesroute (MAP-006a): synthetische Anschrift und erfundene
+-- Koordinate im Stadtgebiet von Tuebingen, keine echte Adresse.
+insert into public.locations (id, organization_id, name, street, house_number, postal_code, city, lat, lon, geocode_precision) values
+  ('33333333-3333-4333-8333-000000000001', '22222222-2222-4222-8222-000000000001', 'Hauptstandort Tuebingen', 'Praxisplatz', '1', '72072', 'Tuebingen', 48.5216, 9.0576, 'address');
 
 -- -----------------------------------------------------------------------------
 -- Personen
@@ -161,10 +163,13 @@ insert into public.training_relationships
 
 -- Strasse und Hausnummer getrennt: ein Hausbesuch uebernimmt beide Felder
 -- einzeln in den Adress-Snapshot des Termins (CAL-001).
-insert into public.patient_contact_details (patient_id, organization_id, date_of_birth, email, phone, street, house_number, postal_code, city, phone_work, phone_mobile, fax, institution) values
-  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '1957-04-30', 'max.mustermann@patient.invalid', '+49 7071 0000005', 'Beispielstrasse', '12', '72070', 'Tuebingen', '+49 7071 0000205', '+49 160 0000005', null,               null),
-  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '1963-09-17', 'erika.beispiel@patient.invalid', '+49 7071 0000006', 'Testweg',         '7',  '72072', 'Tuebingen', null,               '+49 160 0000006', null,               null),
-  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '1971-12-05', null,                             '+49 7071 0000007', 'Fiktivgasse',     '9',  '72074', 'Tuebingen', null,               null,               '+49 7071 0000307', 'Seniorenresidenz Fiktiv');
+-- Koordinaten (MAP-006a, ANN-016): erfunden, im Stadtgebiet von Tuebingen,
+-- ohne Bezug zu einem echten Ort. Die Hausbesuche unten uebernehmen sie per
+-- Trigger in ihren Snapshot.
+insert into public.patient_contact_details (patient_id, organization_id, date_of_birth, email, phone, street, house_number, postal_code, city, phone_work, phone_mobile, fax, institution, lat, lon, geocode_precision) values
+  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '1957-04-30', 'max.mustermann@patient.invalid', '+49 7071 0000005', 'Beispielstrasse', '12', '72070', 'Tuebingen', '+49 7071 0000205', '+49 160 0000005', null,               null,                      48.5305, 9.0490, 'address'),
+  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', '1963-09-17', 'erika.beispiel@patient.invalid', '+49 7071 0000006', 'Testweg',         '7',  '72072', 'Tuebingen', null,               '+49 160 0000006', null,               null,                      48.5164, 9.0349, 'address'),
+  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '1971-12-05', null,                             '+49 7071 0000007', 'Fiktivgasse',     '9',  '72074', 'Tuebingen', null,               null,               '+49 7071 0000307', 'Seniorenresidenz Fiktiv', 48.5387, 9.0668, 'street');
 
 -- Interne Versorgungsangaben (PAT-005). Sichtbar nur fuer die Rollen der
 -- Patientenkartei, nicht fuer das Patientenkonto (ANN-010). Rein synthetisch

@@ -278,4 +278,18 @@ describe('list_day_plan', () => {
     expect(rows[1]!.patient_family_name).toBe('Mustermann');
     expect(rows[1]!.documentation_status).toBe('none');
   });
+
+  it('liefert die Kartenposition des Hausbesuchs fuer den Handoff (MAP-006d)', async () => {
+    await termin({ von: '09:00', bis: '10:00' });
+    await termin({ von: '11:00', bis: '12:00', typ: 'practice' });
+    const { rows } = await asUser<Zeile & { visit_lat: number | null; visit_lon: number | null }>(
+      users.therapist,
+      LESEN,
+      [TAG, STAFF.anna],
+    );
+    const besuch = rows.find((z) => z.appointment_type === 'home_visit')!;
+    const praxis = rows.find((z) => z.appointment_type === 'practice')!;
+    expect([besuch.visit_lat, besuch.visit_lon]).toEqual([48.5305, 9.049]);
+    expect([praxis.visit_lat, praxis.visit_lon]).toEqual([null, null]);
+  });
 });
