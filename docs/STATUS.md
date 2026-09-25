@@ -6,7 +6,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**OPS-002a gebaut** (Block 1a, erster Loop): Nach jeder grünen CI auf `main` liefert `.github/workflows/test-umgebung.yml` in die Test-Umgebung aus (`prtest.uber.space`, Supabase `praxis-test`). Seed und Praxiswoche kommen nur auf Knopfdruck, das Kennwort aus dem Secret. Pull Request offen, **Merge bei dir**; danach der erste echte Lauf (Blocker unten). FRB-EPIC-001 wartet ebenfalls auf den Merge. Fortschritt **35,3 %**.
+**OPS-002a gebaut** (Block 1a, erster Loop): Nach jeder grünen CI auf `main` liefert `.github/workflows/test-umgebung.yml` in die Test-Umgebung aus (`prtest.uber.space`, Supabase `praxis-test`). Seed und Praxiswoche kommen nur auf Knopfdruck, das Kennwort aus dem Secret. Pull Request offen, **Merge bei dir**; danach der erste echte Lauf (Blocker unten). Fortschritt **35,3 %**.
 
 ## Danach — Bauen
 
