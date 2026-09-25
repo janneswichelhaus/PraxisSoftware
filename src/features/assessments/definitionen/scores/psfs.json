@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "id": "psfs",
+    "version": "0.1.0",
+    "name_de": "Patientenspezifische Funktionsskala (PSFS)",
+    "name_en": "Patient-Specific Functional Scale",
+    "region": "uebergreifend",
+    "konstrukt": "Funktion bei selbst benannten Aktivitäten",
+    "ausgefuellt_von": "patient",
+    "sprache": "de",
+    "prioritaet": "a",
+    "quelle": {
+      "literatur": "Stratford P, Gill C, Westaway M, Binkley J. Assessing disability and change on individual patients: a report of a patient specific measure. Physiotherapy Canada 1995;47(4):258–263",
+      "validierung": "Wortlaut vorläufig — keine Vorlage in quellen/ (ANN-099)"
+    },
+    "lizenzstatus": {
+      "status": "freigegeben",
+      "begruendung": "Frei verwendbar, keine Lizenz (IDEA-OUT-001, IDEA-OUT-003).",
+      "stand": "2026-09-25"
+    },
+    "aktiv": false
+  },
+  "items": [
+    {
+      "id": "aktivitaet_1",
+      "nummer": 1,
+      "text": "Aktivität 1, die Sie wegen Ihrer Beschwerden nicht oder nur mit Schwierigkeiten ausführen können",
+      "typ": "freitext",
+      "gewertet": false
+    },
+    {
+      "id": "aktivitaet_1_bewertung",
+      "nummer": 1,
+      "text": "Wie gut können Sie Aktivität 1 heute ausführen?",
+      "typ": "skala",
+      "skala": { "min": 0, "max": 10 },
+      "anker": {
+        "min": "unfähig, die Aktivität auszuführen",
+        "max": "fähig, die Aktivität so auszuführen wie vor den Beschwerden"
+      }
+    },
+    {
+      "id": "aktivitaet_2",
+      "nummer": 2,
+      "text": "Aktivität 2, die Sie wegen Ihrer Beschwerden nicht oder nur mit Schwierigkeiten ausführen können",
+      "typ": "freitext",
+      "gewertet": false
+    },
+    {
+      "id": "aktivitaet_2_bewertung",
+      "nummer": 2,
+      "text": "Wie gut können Sie Aktivität 2 heute ausführen?",
+      "typ": "skala",
+      "skala": { "min": 0, "max": 10 },
+      "anker": {
+        "min": "unfähig, die Aktivität auszuführen",
+        "max": "fähig, die Aktivität so auszuführen wie vor den Beschwerden"
+      }
+    },
+    {
+      "id": "aktivitaet_3",
+      "nummer": 3,
+      "text": "Aktivität 3, die Sie wegen Ihrer Beschwerden nicht oder nur mit Schwierigkeiten ausführen können",
+      "typ": "freitext",
+      "gewertet": false
+    },
+    {
+      "id": "aktivitaet_3_bewertung",
+      "nummer": 3,
+      "text": "Wie gut können Sie Aktivität 3 heute ausführen?",
+      "typ": "skala",
+      "skala": { "min": 0, "max": 10 },
+      "anker": {
+        "min": "unfähig, die Aktivität auszuführen",
+        "max": "fähig, die Aktivität so auszuführen wie vor den Beschwerden"
+      }
+    }
+  ],
+  "scoring": {
+    "regel_wortlaut": "Mittelwert der Bewertungen der drei Aktivitäten. Im Verlauf werden dieselben Aktivitäten erneut bewertet.",
+    "gesamt": {
+      "formel": { "art": "mittelwert" },
+      "wertebereich": { "min": 0, "max": 10 }
+    },
+    "subskalen": [],
+    "richtung": "hoch_ist_besser",
+    "missing_value_regel": "Kein Mittelwert, solange eine der drei Aktivitäten unbewertet ist."
+  },
+  "interpretation": { "cutoffs": null, "mcid": null, "mdc": null },
+  "referenzfaelle": [
+    {
+      "bezeichnung": "2, 5 und 8",
+      "antworten": {
+        "aktivitaet_1_bewertung": 2,
+        "aktivitaet_2_bewertung": 5,
+        "aktivitaet_3_bewertung": 8
+      },
+      "erwartet": { "gesamt": 5 }
+    },
+    {
+      "bezeichnung": "3, 3 und 4 — kein glatter Wert",
+      "antworten": {
+        "aktivitaet_1_bewertung": 3,
+        "aktivitaet_2_bewertung": 3,
+        "aktivitaet_3_bewertung": 4
+      },
+      "erwartet": { "gesamt": 3.333333333 }
+    },
+    {
+      "bezeichnung": "dritte Aktivität unbewertet",
+      "antworten": { "aktivitaet_1_bewertung": 6, "aktivitaet_2_bewertung": 6 },
+      "erwartet": { "gesamt": null }
+    }
+  ]
+}

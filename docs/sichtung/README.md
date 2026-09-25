@@ -30,6 +30,7 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 | [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | offen                                                                                |
 | [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst           | offen; seit MAP-006 auf der echten Tourenseite, Teil am Telefon wartet auf ein Gerät |
 | [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                                                                |
+| [befund.md](befund.md)                       | Etappe 2 — Befund                 | offen; seit FRB-EPIC-001                                                             |
 
 Die früheren Einzelschritte je Loop liegen unverändert in
 [`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum

@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-25 · letzte Session: MAP-006
+# Status · Stand 2026-09-25 · letzte Session: FRB-EPIC-001
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,22 +6,23 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**MAP-006 gebaut** (Block 2, erster Loop): Die Tagesroute liegt auf der Karte — mit synthetischen Adressen; echte erreichen den Kartendienst erst nach dem Gate (Schalter `LOCATION_DATA_GATE`, ANN-094). Pull Request offen, Zweitreview gelaufen, **Merge bei dir**. Die Test-Umgebung (B16: Uberspace) liegt weiter bei dir. Fortschritt **34,4 %**.
+**FRB-EPIC-001 gebaut** (Block 2, zweiter Loop): Die Instrumentenbibliothek rechnet — Rechenkern für alle Formelarten, NRS, PSFS und globale Veränderungsfrage als Definitionen, Leseseite **Organisatorisches → Instrumente**. Die drei Instrumente bleiben **inaktiv**, bis ihr Bogen in `quellen/` liegt (ANN-099). Pull Request offen, **Merge bei dir**; kein Pflicht-Zweitreview (keine kritische Änderung nach ADR-013 Punkt 9). Fortschritt **34,7 %**.
 
 ## Danach — Bauen
 
 1. **G6c**, sobald deine Wahl unter „Blocker" da ist
 2. **OPS-002a Test-Umgebung**, sobald du „Konten stehen" meldest; dann UX-EPIC-002, sobald deine Begriffsliste da ist
-3. Solange beides fehlt: **Block 2 weiter mit FRB-EPIC-001** (Instrumentenbibliothek) — Bauen wartet nicht (§15.2)
+3. Solange beides fehlt: **Block 2 weiter mit FRB-EPIC-002** (Anamnese und Verlauf in der Akte) — Bauen wartet nicht (§15.2)
 
 ## Prüfverfahren
 
-**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2361**; `test:db` **1937** (mit MAP-006, vier Migrationen); `test:e2e` ohne Anmeldung grün. Sichtprüfung der Tourenkomponenten über die Prüfseite `tests/e2e/fixtures/karte.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
+**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2394**; `test:db` **1937** (seit MAP-006 unverändert, FRB-EPIC-001 ohne Datenbank); `test:e2e` ohne Anmeldung: Prüfseiten grün, `login.spec.ts` in der Cloud rot — auf `main` identisch. Sichtprüfung der Tourenkomponenten und der Instrumente über die Prüfseiten `tests/e2e/fixtures/karte.html` und `instrumente.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
 ## Blocker (Jannes-seitig)
 
 - **Test-Umgebung einrichten** (B16: Uberspace, neu): Supabase-Testprojekt in Frankfurt, Uberspace-Konto mit AVV und Deploy-Schlüssel, sieben Secrets in der GitHub-Umgebung `test` — Schritt für Schritt in [`hosting-optionen.md`](decisions/hosting-optionen.md), „Das genaue Vorgehen", etwa eine Stunde. Danach nur „Konten stehen" melden, **keine Werte in den Chat**.
 - **Sichtung** (E-6): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; am Handy im WLAN nach [`DEVELOPMENT.md`](DEVELOPMENT.md), „Handytest im WLAN".
+- **Bögen für NRS, PSFS und Veränderungsfrage** (neu, ANN-099): die Vorlagen, die die Praxis nutzt, als PDF nach `quellen/scores/pdf/` — dann wird der Wortlaut dagegen gehalten und die drei auf Version 1.0.0 aktiviert. Nicht dringend: Erhoben wird erst mit FRB-EPIC-002.
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
 - **Logfrist für Betriebslogs (R14 alt, jetzt R9):** (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg. Empfehlung: nach G3. Gebraucht vor echten Daten.
@@ -35,4 +36,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**MAP-006 — Tagesroute auf der Karte.** Koordinate bei der Adresse (verfällt mit jeder Adressänderung, Verorten auf Tipp in den Stammdaten, ANN-095), Startort der Touren in der Planung; `/touren` ist echt: Karte mit Nummern statt Namen (ANN-096), Route im Lastenradprofil, Fahrzeit und **Fahrpuffer nach §8.1** zwischen den Stopps (09:05–10:05 plus 12 Minuten ergibt 10:20; Warnung, keine Sperre, nichts gespeichert, ANN-097), druckbare Liste, Handoff mit Koordinate; Hinweis im Kalender (Tag mit Person) und Aufklapper in der Übersicht. Vorschau `/touren` und Prototyp `/touren/karte` entfallen. Datenschutz-Paket [`datenschutz/kartendienst.md`](datenschutz/kartendienst.md). Sichtung [Kartendienst](sichtung/kartendienst.md) auf die echte Seite umgestellt. **Lokale Schritte:** `git pull origin claude/map-006-cl59i6` (nach dem Merge `main`), `pnpm dlx supabase@2.116.0 db reset` (vier Migrationen, Seed mit Koordinaten), in `supabase/functions/.env.local` **`LOCATION_DATA_GATE=synthetic`** ergänzen — sonst meldet die Tour „Kein Kartendienst eingerichtet". Keine neue Abhängigkeit.
+**FRB-EPIC-001 — Instrumentenbibliothek.** Rechenkern `rechne()` für alle Formelarten des Schemas samt neuer Form `mittelwert`; fehlt ein gewerteter Wert, gibt es keinen (ANN-098). NRS, PSFS (drei Aktivitäten) und Veränderungsfrage (−3 bis +3) als Definitionen in Version 0.1.0, inaktiv mit vorläufigem Wortlaut, weil keine Vorlage im Repository liegt (ANN-099); jede Definition rechnet ihre Referenzfälle nach. Leseseite `/praxis/instrumente` ohne Cut-off und MCID (ADR-006 Punkt 11). Neue Sichtung [Befund](sichtung/befund.md). **Lokale Schritte:** `git pull origin claude/weiter-c7lldw` (nach dem Merge `main`). Keine Migration, keine neue Abhängigkeit.

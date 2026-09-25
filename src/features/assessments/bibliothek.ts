@@ -12,9 +12,9 @@ import { ladeDefinitionen, type Bibliothek } from './definitionen';
  *     Ein Fragebogen, der bei der Patientin auf halber Strecke stehenbleibt,
  *     wäre der schlechtere Zeitpunkt.
  *
- * Noch liegt keine Datei dort: Die Inhalte kommen mit den Phasen P2, P4 und P5
- * (`docs/development/FRB-BAUSTEINE-UND-SCORES.md`). Der Weg steht trotzdem
- * schon, damit diese Phasen reine Datenlieferungen sind.
+ * Seit FRB-EPIC-001 liegen die drei freien Instrumente dort, noch inaktiv
+ * (ANN-099); die übrigen Inhalte kommen mit den Phasen P2, P4 und P5
+ * (`docs/development/FRB-BAUSTEINE-UND-SCORES.md`) als reine Datenlieferungen.
  */
 const rohdaten: Record<string, unknown> = import.meta.glob('./definitionen/**/*.json', {
   eager: true,

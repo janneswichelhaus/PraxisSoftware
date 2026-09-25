@@ -293,7 +293,7 @@ Patientin eine Neuaufnahme — deshalb gleich nach der Tagesroute.
 
 | Loop | Ergebnis | Zuschnitt | Quelle |
 | --- | --- | --- | --- |
-| **FRB-EPIC-001** | Die Instrumente liegen als versionierte Bibliothek mit Lizenzfeld vor | Instrumentenbibliothek (P1-Schema aus FRB-EPIC-000), freie Instrumente NRS und PSFS, globale Veränderungsfrage; berechnen ja, bewerten nein | `IDEA-OUT-001`, `-003`, `-004` |
+| ~~**FRB-EPIC-001**~~ | **gebaut 2026-09-25** — Die Instrumente liegen als versionierte Bibliothek mit Lizenzfeld vor; NRS, PSFS und Veränderungsfrage inaktiv bis zur Vorlage (ANN-099) | Instrumentenbibliothek (P1-Schema aus FRB-EPIC-000), freie Instrumente NRS und PSFS, globale Veränderungsfrage; berechnen ja, bewerten nein | `IDEA-OUT-001`, `-003`, `-004` |
 | **FRB-EPIC-002** | Anamnese und Verlauf stehen in der Akte | Anamnesebogen nach §7 in der Praxis ausfüllbar (vorab über die Plattform ab POR-EPIC-002, auf Papier als Foto nach DOK-006), Red Flags nach §7.1 hervorgehoben, Verlauf mit Ereignismarkierungen ohne Bewertung, Körperschema im Befund; B8 als Annahme | `IDEA-OUT-005`, `IDEA-PRX-027` |
 | **FRB-EPIC-003** | Der Befund entsteht aus Bausteinen zum Abhaken, mit fertigem Dokumentationstext | Phasen P2 und P3 des FRB-Plans: neun Regionen als Daten (Zähltest), Renderer mit Live-Vorschau des Texts, Textbausteine auch im Befund, ein Bild ruft den Test in Erinnerung; **Liege-Merkmal im Befund**; Bausteine und Skalen auch für die Verlaufsdoku — der Weg ohne Sprechen (§5) | `IDEA-PRX-043`, `IDEA-OUT-009` |
 | **DOK-005** | Ein Therapiebericht an die Verordner:in entsteht aus Befund und Verlauf | Bericht als Druckansicht (B14 Weg 1), Inhalt nur übernommen, nicht interpretiert (§17); dazu die **Empfehlung zum Verordnungsende** mit Quelle und Datum (Wiedervorlage aus VER-EPIC-002, ANN-014) | `PROJECT_PRINCIPLES.md` §4.2 |
@@ -715,6 +715,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | MAP-005 Navigations-Handoff mit Koordinaten | fertig | 2026-09-22 | `cf03057`, `ef74eec` | — | Teil A gesichtet 2026-09-22, Teil B am Telefon offen |
 | B | MAP-006 Tagesroute mit Fahrpuffer (Block 2) | fertig | 2026-09-25 | `6cb52b2` … `a0cc774` | — | mit synthetischen Adressen; Scharfschalten am Gate aus ADR-019 Punkt 9 (LOCATION_DATA_GATE) |
 | B | FRB-EPIC-000 Schema und Validator der Instrumente | fertig | 2026-09-21 | `0e988d5`, `53fd542`, `dc9c963`, `6dbe377` | — | — |
+| B | FRB-EPIC-001 Instrumentenbibliothek | fertig | 2026-09-25 | `7056777`, `8aa5d7d`, `f7bb47b` | — | — |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |

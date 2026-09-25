@@ -124,8 +124,10 @@ describe('Bibliothek der Anwendung', () => {
     // Heute leer, ab P4 scharf: Eine Definition, deren Quell-PDF es nicht
     // gibt, ist gegen nichts zu halten — und genau das verlangt Regel 1 in
     // quellen/README.md.
+    // Ohne `datei` ist der Wortlaut vorlaeufig und das Instrument inaktiv -
+    // das prueft das Schema (ANN-099). Eine genannte Datei muss aber liegen.
     const fehlend = bibliothek.scores
-      .map((score) => score.meta.quelle.datei)
+      .flatMap((score) => (score.meta.quelle.datei ? [score.meta.quelle.datei] : []))
       .filter((datei) => !existsSync(join(SCORE_PDFS, datei)));
     expect(fehlend).toEqual([]);
   });
