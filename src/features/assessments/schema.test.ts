@@ -354,9 +354,62 @@ describe('Score-Definition', () => {
     );
     expect(ergebnis.success).toBe(true);
   });
+
+  it('weist ein aktives Instrument ohne Vorlage im Repository zurueck (ANN-099)', () => {
+    const ergebnis = scoreDefinitionSchema.safeParse(
+      score({
+        meta: meta({
+          aktiv: true,
+          quelle: { literatur: 'Stratford et al. 1995', validierung: 'keine deutsche' },
+        }),
+      }),
+    );
+    expect(ergebnis.success).toBe(false);
+    expect(ergebnis.error?.issues[0]?.message).toContain('Wortlaut ist vorläufig');
+  });
+
+  it('nimmt ein nicht aktives Instrument mit Literatur statt Vorlage an', () => {
+    const ergebnis = scoreDefinitionSchema.safeParse(
+      score({
+        meta: meta({
+          aktiv: false,
+          quelle: { literatur: 'Stratford et al. 1995', validierung: 'keine deutsche' },
+        }),
+      }),
+    );
+    expect(ergebnis.success).toBe(true);
+  });
+
+  it('weist eine Quelle ohne Vorlage und ohne Literatur zurueck', () => {
+    const ergebnis = scoreDefinitionSchema.safeParse(
+      score({ meta: meta({ aktiv: false, quelle: { validierung: 'keine' } }) }),
+    );
+    expect(ergebnis.success).toBe(false);
+    expect(ergebnis.error?.issues[0]?.path).toEqual(['meta', 'quelle']);
+  });
 });
 
 describe('Score-Items', () => {
+  it('nimmt Anker an einer Skala an', () => {
+    const ergebnis = scoreItemSchema.safeParse({
+      id: 'schmerz',
+      text: 'Schmerz',
+      typ: 'skala',
+      skala: { min: 0, max: 10 },
+      anker: { min: 'keine', max: 'stärkste' },
+    });
+    expect(ergebnis.success).toBe(true);
+  });
+
+  it('weist Anker an einer Einzelauswahl zurueck', () => {
+    const ergebnis = scoreItemSchema.safeParse({
+      ...item('frage_1', 1),
+      anker: { min: 'nie', max: 'immer' },
+    });
+    expect(ergebnis.success).toBe(false);
+    expect(ergebnis.error?.issues[0]?.path).toEqual(['anker']);
+  });
+
   it('weist eine Einzelauswahl ohne Optionen zurueck', () => {
     const ergebnis = scoreItemSchema.safeParse({
       id: 'frage_1',

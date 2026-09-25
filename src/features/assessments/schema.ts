@@ -305,6 +305,13 @@ export const scoreItemSchema = z
     typ: z.enum(['einzelauswahl', 'mehrfachauswahl', 'skala', 'zahl', 'freitext']),
     optionen: z.array(optionSchema).min(2).optional(),
     skala: wertebereichSchema.optional(),
+    /**
+     * Die Beschriftung der beiden Enden einer Skala, wörtlich wie im Bogen
+     * (NRS: „keine Schmerzen" bis „stärkste vorstellbare Schmerzen"). Ohne sie
+     * ist eine 0 nicht von einer 10 zu unterscheiden — die Richtung einer
+     * Skala steht im Text, nicht in der Zahl.
+     */
+    anker: z.object({ min: z.string().min(1), max: z.string().min(1) }).optional(),
     einheit: z.string().min(1).optional(),
     gewertet: z.boolean().default(true),
     hinweis: z.string().min(1).optional(),
@@ -323,6 +330,13 @@ export const scoreItemSchema = z
         code: 'custom',
         path: ['skala'],
         message: 'Ein Item vom Typ "skala" braucht seinen Wertebereich.',
+      });
+    }
+    if (item.anker !== undefined && item.typ !== 'skala') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['anker'],
+        message: 'Anker gibt es nur an einem Item vom Typ "skala".',
       });
     }
     if (item.typ === 'freitext' && item.gewertet) {
@@ -448,11 +462,28 @@ export const scoreMetaSchema = z.object({
   ausgefuellt_von: z.enum(['patient', 'therapeut', 'beide']),
   sprache: z.string().min(2),
   prioritaet: z.enum(['a', 'b']),
-  quelle: z.object({
-    /** Dateiname unter `quellen/scores/pdf/`; der Ladepfad prüft, dass sie existiert. */
-    datei: z.string().min(1),
-    validierung: z.string().min(1),
-  }),
+  /**
+   * Woher der Wortlaut kommt.
+   *
+   * `datei` ist die Vorlage im Repository, gegen die sich jeder Itemtext halten
+   * lässt. Fehlt sie, ist der Wortlaut **vorläufig**: übertragen aus der unter
+   * `literatur` genannten Veröffentlichung, aber gegen kein Dokument hier
+   * prüfbar — und ein solches Instrument wird nicht aktiviert (Prüfung unten,
+   * **ANN-099**). Das betrifft seit FRB-EPIC-001 NRS, PSFS und die globale
+   * Veränderungsfrage, für die kein Bogen in `quellen/` liegt.
+   */
+  quelle: z
+    .object({
+      /** Dateiname unter `quellen/scores/pdf/`; der Test der Bibliothek prüft, dass sie existiert. */
+      datei: z.string().min(1).optional(),
+      /** Veröffentlichung des Instruments, wenn keine Vorlage im Repository liegt. */
+      literatur: z.string().min(1).optional(),
+      validierung: z.string().min(1),
+    })
+    .refine(
+      (quelle) => quelle.datei !== undefined || quelle.literatur !== undefined,
+      'Eine Quelle nennt eine Vorlage (datei) oder eine Veröffentlichung (literatur).',
+    ),
   lizenzstatus: lizenzstatusSchema,
   aktiv: z.boolean(),
 });
@@ -586,6 +617,18 @@ export const scoreDefinitionSchema = z
           });
         }
       }
+    }
+
+    if (score.meta.aktiv && score.meta.quelle.datei === undefined) {
+      // ANN-099: Ein Wortlaut, der gegen keine Vorlage im Repository zu halten
+      // ist, erreicht keine Patientin. Aktiviert wird mit dem Bogen in
+      // quellen/scores/pdf/ und einem Versionssprung der Definition.
+      ctx.addIssue({
+        code: 'custom',
+        path: ['meta', 'aktiv'],
+        message:
+          'Ein Instrument ohne Vorlage im Repository (quelle.datei) darf nicht aktiv sein — sein Wortlaut ist vorläufig.',
+      });
     }
 
     if (score.meta.aktiv && score.meta.lizenzstatus.status !== 'freigegeben') {

@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "id": "globale_veraenderung",
+    "version": "0.1.0",
+    "name_de": "Globale Veränderungsfrage",
+    "name_en": "Global Rating of Change",
+    "region": "uebergreifend",
+    "konstrukt": "selbst eingeschätzte Veränderung seit Behandlungsbeginn",
+    "ausgefuellt_von": "patient",
+    "sprache": "de",
+    "prioritaet": "a",
+    "quelle": {
+      "literatur": "Kamper SJ, Maher CG, Mackay G. Global rating of change scales: a review of strengths and weaknesses and considerations for design. Journal of Manual & Manipulative Therapy 2009;17(3):163–170",
+      "validierung": "Wortlaut vorläufig — keine Vorlage in quellen/ (ANN-099)"
+    },
+    "lizenzstatus": {
+      "status": "freigegeben",
+      "begruendung": "Frei verwendbar, keine Lizenz (IDEA-OUT-001, IDEA-OUT-004).",
+      "stand": "2026-09-25"
+    },
+    "aktiv": false
+  },
+  "items": [
+    {
+      "id": "veraenderung",
+      "nummer": 1,
+      "text": "Wie hat sich Ihr Zustand seit Beginn der Behandlung verändert?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        { "label": "sehr viel schlechter", "wert": -3 },
+        { "label": "viel schlechter", "wert": -2 },
+        { "label": "etwas schlechter", "wert": -1 },
+        { "label": "unverändert", "wert": 0 },
+        { "label": "etwas besser", "wert": 1 },
+        { "label": "viel besser", "wert": 2 },
+        { "label": "sehr viel besser", "wert": 3 }
+      ]
+    }
+  ],
+  "scoring": {
+    "regel_wortlaut": "Die gewählte Antwort ist der Wert, von -3 (sehr viel schlechter) bis +3 (sehr viel besser).",
+    "gesamt": {
+      "formel": { "art": "einzelwert", "item": "veraenderung" },
+      "wertebereich": { "min": -3, "max": 3 }
+    },
+    "subskalen": [],
+    "richtung": "hoch_ist_besser",
+    "missing_value_regel": "Ohne Antwort kein Wert."
+  },
+  "interpretation": { "cutoffs": null, "mcid": null, "mdc": null },
+  "referenzfaelle": [
+    {
+      "bezeichnung": "viel besser",
+      "antworten": { "veraenderung": 2 },
+      "erwartet": { "gesamt": 2 }
+    },
+    {
+      "bezeichnung": "sehr viel schlechter",
+      "antworten": { "veraenderung": -3 },
+      "erwartet": { "gesamt": -3 }
+    }
+  ]
+}

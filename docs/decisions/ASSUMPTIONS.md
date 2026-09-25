@@ -1280,3 +1280,15 @@ Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: D6 im FRB-P
 **Anker.** `wende()` in `src/features/assessments/rechnen.ts`; Testfall „gibt keinen Wert, solange ein gewertetes Item fehlt" in `rechnen.test.ts`.
 
 **Änderungspfad.** Je Score eine eigene Missing-Value-Regel, sobald D6 für ihn entschieden ist: maschinenlesbares Feld neben `missing_value_regel`, Auswertung in `wende()`, Referenzfall mit fehlender Antwort · Aufwand `klein`.
+
+### ANN-099 — Ohne Vorlage im Repository bleibt ein Instrument inaktiv
+
+Technik · offen · 2026-09-25 · — · — · Wiedervorlage: sobald Jannes die Bögen für NRS, PSFS und Veränderungsfrage in `quellen/scores/pdf/` ablegt
+
+**Annahme.** Ein Instrument ohne Vorlage in `quellen/scores/pdf/` darf in der Bibliothek stehen, aber nicht aktiv sein: `quelle.datei` fehlt, `quelle.literatur` nennt die Veröffentlichung, der Wortlaut gilt als vorläufig und die Version bleibt `0.x`. NRS, PSFS und die globale Veränderungsfrage liegen so vor — Wortlaut nach der gängigen deutschen Form, PSFS mit **drei** Aktivitäten (die Originalfassung erlaubt bis zu fünf), Veränderungsfrage **siebenstufig** von −3 bis +3. `prioritaet` steht auf `a`, weil die Roadmap die drei zuerst nennt; im Inventar der 18 kommen sie nicht vor.
+
+**Begründung.** `quellen/README.md` Regel 1 und der FRB-Plan §7 Punkt 2 verlangen einen Wortlaut, der gegen eine Vorlage zu halten ist, und verbieten die Rekonstruktion aus dem Gedächtnis. Aus der Cloud-Umgebung waren die deutschen Fassungen (Deutsche Schmerzgesellschaft, physiopraxis) nicht abrufbar. Bauen wartet nicht (§15.2): Die Struktur, der Rechenkern und die Referenzfälle hängen nicht am Wortlaut, das Erheben schon — und das beginnt erst mit FRB-EPIC-002. Die Kopplung steht im Schema neben der Lizenzkopplung (ANN-086), nicht in der Oberfläche. Unsicher: welche Fassung der PSFS (drei oder fünf Aktivitäten) und der Veränderungsfrage (sieben oder mehr Stufen) die Praxis tatsächlich nutzt.
+
+**Anker.** Die Prüfung `aktiv` ohne `quelle.datei` in `scoreDefinitionSchema`, `src/features/assessments/schema.ts`; die drei Dateien unter `src/features/assessments/definitionen/scores/`.
+
+**Änderungspfad.** Bogen in `quellen/scores/pdf/` ablegen, Wortlaut der Datei gegen ihn halten, `quelle.datei` setzen, Version `1.0.0`, `aktiv: true` · Aufwand `klein` je Instrument. Andere Stufenzahl oder fünf Aktivitäten: Items ergänzen, Referenzfall anpassen · Aufwand `klein`.
