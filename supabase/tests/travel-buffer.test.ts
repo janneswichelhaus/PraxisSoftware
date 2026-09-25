@@ -1,5 +1,11 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  fremdeOrganisation,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 /**
  * MAP-006c: Fahrpuffer nach PROJECT_PRINCIPLES.md §8.1 (ANN-097).
@@ -113,6 +119,10 @@ describe('check_travel_buffers', () => {
     ['eine Kommazahl', [{ from: organizationId, to: organizationId, travel_seconds: 1.5 }]],
     ['mehr als einen Tag', [{ from: organizationId, to: organizationId, travel_seconds: 86401 }]],
     ['eine Kennung, die keine ist', [{ from: 'abc', to: organizationId, travel_seconds: 1 }]],
+    ['ein Paar ohne Fahrzeit', [{ from: organizationId, to: organizationId }]],
+    ['ein Paar ohne Ziel', [{ from: organizationId, travel_seconds: 1 }]],
+    ['eine Fahrzeit als Text', [{ from: organizationId, to: organizationId, travel_seconds: 'x' }]],
+    ['36 Bindestriche', [{ from: '-'.repeat(36), to: organizationId, travel_seconds: 1 }]],
     [
       'mehr als 25 Paare',
       Array.from({ length: 26 }, () => ({
@@ -125,6 +135,27 @@ describe('check_travel_buffers', () => {
     await expect(asUser(users.therapist, PRUEFEN, [JSON.stringify(eingabe)])).rejects.toMatchObject(
       { code: '22023' },
     );
+  });
+
+  it('prueft keine Termine einer fremden Praxis - auch nicht echte', async () => {
+    const fremd = await fremdeOrganisation();
+    const { rows: fremde } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at
+       ) values
+         ($1, $2, $3, 'video', 'confirmed',
+          (($4::date + time '09:00') at time zone 'Europe/Berlin'),
+          (($4::date + time '10:00') at time zone 'Europe/Berlin')),
+         ($1, $2, $3, 'video', 'confirmed',
+          (($4::date + time '10:05') at time zone 'Europe/Berlin'),
+          (($4::date + time '11:00') at time zone 'Europe/Berlin'))
+       returning id`,
+      [fremd.organizationId, fremd.patient, fremd.staffMember, TAG],
+    );
+    const { rows } = await asUser(users.therapist, PRUEFEN, [
+      JSON.stringify([{ from: fremde[0]!.id, to: fremde[1]!.id, travel_seconds: 600 }]),
+    ]);
+    expect(rows).toEqual([]);
   });
 
   it('schreibt nichts - keine Fahrzeit in einer Tabelle, kein Auditeintrag', async () => {

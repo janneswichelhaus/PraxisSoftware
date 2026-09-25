@@ -22,7 +22,14 @@ import { setPatientAddressCoordinate, type Patient } from './api';
  * sonst bleibt die Adresse ohne Koordinate.
  */
 
-function vollstaendigeAnschrift(patient: Patient) {
+interface Anschrift {
+  readonly street: string;
+  readonly houseNumber: string;
+  readonly postalCode: string;
+  readonly city: string;
+}
+
+function vollstaendigeAnschrift(patient: Patient): Anschrift | null {
   if (!patient.street || !patient.postal_code || !patient.city) return null;
   return {
     street: patient.street,
@@ -35,12 +42,26 @@ function vollstaendigeAnschrift(patient: Patient) {
 export function AdresseVerorten({ patient }: { patient: Patient }) {
   const queryClient = useQueryClient();
   const anschrift = vollstaendigeAnschrift(patient);
-  const [treffer, setTreffer] = useState<{ wert: GeocodeResult; quelle: Quelle } | null>(null);
+  // Der Treffer trägt die Anschrift, zu der er gehört: Gespeichert wird genau
+  // diese, nicht die, die beim Tippen auf „übernehmen" gerade angezeigt wird.
+  // Hat sie sich inzwischen geändert, lehnt der Server ab (40001).
+  const [treffer, setTreffer] = useState<{
+    wert: GeocodeResult;
+    quelle: Quelle;
+    anschrift: Anschrift;
+  } | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
 
   const speichern = useMutation({
-    mutationFn: ({ wert, bestaetigt }: { wert: GeocodeResult; bestaetigt: boolean }) =>
-      setPatientAddressCoordinate(patient.id, anschrift!, wert, bestaetigt),
+    mutationFn: ({
+      wert,
+      bestaetigt,
+      zu,
+    }: {
+      wert: GeocodeResult;
+      bestaetigt: boolean;
+      zu: Anschrift;
+    }) => setPatientAddressCoordinate(patient.id, zu, wert, bestaetigt),
     onSuccess: async () => {
       setTreffer(null);
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
@@ -48,8 +69,8 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
   });
 
   const suchen = useMutation({
-    mutationFn: () => geocodiere({ ...anschrift!, countryCode: 'DE' }),
-    onSuccess: (ergebnis) => {
+    mutationFn: (zu: Anschrift) => geocodiere({ ...zu, countryCode: 'DE' }),
+    onSuccess: (ergebnis, zu) => {
       if (!ergebnis.ok) {
         setFehler(
           ergebnis.error.code === 'not_found'
@@ -63,10 +84,10 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
       // andere legt die Person selbst fest (ANN-016) - auch jede Position der
       // Nachbildung, damit niemand eine erfundene Koordinate unbemerkt übernimmt.
       if (!brauchtBestaetigung(ergebnis.value) && ergebnis.quelle === 'anbieter') {
-        speichern.mutate({ wert: ergebnis.value, bestaetigt: false });
+        speichern.mutate({ wert: ergebnis.value, bestaetigt: false, zu });
         return;
       }
-      setTreffer({ wert: ergebnis.value, quelle: ergebnis.quelle });
+      setTreffer({ wert: ergebnis.value, quelle: ergebnis.quelle, anschrift: zu });
     },
   });
 
@@ -103,6 +124,7 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
                 speichern.mutate({
                   wert: treffer.wert,
                   bestaetigt: brauchtBestaetigung(treffer.wert),
+                  zu: treffer.anschrift,
                 })
               }
             >
@@ -118,7 +140,7 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
           type="button"
           variant="secondary"
           disabled={suchen.isPending || speichern.isPending}
-          onClick={() => suchen.mutate()}
+          onClick={() => suchen.mutate(anschrift)}
         >
           {suchen.isPending ? 'Wird verortet …' : 'Adresse verorten'}
         </Button>

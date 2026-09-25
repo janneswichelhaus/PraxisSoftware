@@ -114,5 +114,10 @@ export function useFahrten(start: Coordinate | null, stopps: readonly Stopp[]) {
     pruefung: nachVon.get(f.from) ?? null,
   }));
 
-  return { route, zwischen, pruefungFehler: pruefung.isError };
+  return {
+    route,
+    zwischen,
+    pruefungLaedt: paare.length > 0 && pruefung.isPending,
+    pruefungFehler: pruefung.isError,
+  };
 }

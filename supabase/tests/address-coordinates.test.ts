@@ -359,6 +359,8 @@ describe('set_location_tour_start', () => {
     ['therapist', users.therapist],
     ['office', users.office],
     ['team_lead', users.teamLead],
+    ['trainer', users.trainer],
+    ['das Patientenkonto', users.patientMax],
   ])('weist %s ab', async (_, konto) => {
     await expect(
       asUser(konto, START, [LOCATION, ...PRAXIS, 48.52, 9.06, 'address', false]),
@@ -366,9 +368,16 @@ describe('set_location_tour_start', () => {
   });
 
   it('findet einen Standort einer fremden Praxis nicht', async () => {
+    const fremd = await fremdeOrganisation();
+    const fremderStandort = '33333333-3333-4333-8333-0000000000ab';
+    await asPostgres(
+      `insert into public.locations (id, organization_id, name) values ($1, $2, 'Fremder Standort')
+       on conflict (id) do nothing`,
+      [fremderStandort, fremd.organizationId],
+    );
     await expect(
       asUser(users.ownerTherapist, START, [
-        '33333333-3333-4333-8333-0000000000ff',
+        fremderStandort,
         ...PRAXIS,
         48.52,
         9.06,

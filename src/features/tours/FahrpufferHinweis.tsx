@@ -26,15 +26,18 @@ export function FahrpufferHinweis({
   readonly stand: string;
 }) {
   const { stopps } = useTagesstopps(datum, staffMemberId, stand);
-  const { route, zwischen } = useFahrten(null, stopps);
+  const { route, zwischen, pruefungLaedt, pruefungFehler } = useFahrten(null, stopps);
 
   if (stopps.length < 2) return null;
-  if (route.isFetching && route.data === undefined) return null;
+  if ((route.isFetching && route.data === undefined) || pruefungLaedt) return null;
 
   const knapp = zwischen.flatMap((z, i) =>
     z.pruefung && z.pruefung.shortfall_minutes > 0 ? [{ i, pruefung: z.pruefung }] : [],
   );
-  const ungeprueft = zwischen.filter((z) => z.sekunden === null).length;
+  // Ungeprüft ist jeder Übergang ohne Ergebnis des Servers: ohne Fahrzeit,
+  // mit gescheiterter Prüfung oder vom Server verworfen (etwa überlappende
+  // Termine). Nur ein geprüfter Übergang darf als „passt" gelten (MAP-004b).
+  const ungeprueft = zwischen.filter((z) => z.pruefung === null).length;
   const zurTour = (
     <Link
       to={`/touren?person=${staffMemberId}&tag=${datum}`}
@@ -66,11 +69,19 @@ export function FahrpufferHinweis({
     );
   }
 
+  if (pruefungFehler) {
+    return (
+      <Statusmeldung ton="warnung" className="mt-3">
+        Fahrpuffer: Die Prüfung ließ sich gerade nicht ausführen. {zurTour}
+      </Statusmeldung>
+    );
+  }
+
   if (ungeprueft > 0) {
     return (
       <Statusmeldung className="mt-3">
-        Fahrpuffer: {ungeprueft === 1 ? 'ein Übergang' : `${ungeprueft} Übergänge`} ohne Fahrzeit
-        und deshalb nicht geprüft. {zurTour}
+        Fahrpuffer: {ungeprueft === 1 ? 'ein Übergang ist' : `${ungeprueft} Übergänge sind`} nicht
+        geprüft. {zurTour}
       </Statusmeldung>
     );
   }

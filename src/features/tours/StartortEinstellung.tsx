@@ -45,12 +45,23 @@ function StartortFormular({ standort }: { standort: Standort }) {
     postalCode: standort.postal_code ?? '',
     city: standort.city ?? '',
   });
-  const [treffer, setTreffer] = useState<{ wert: GeocodeResult; quelle: Quelle } | null>(null);
+  // Der Treffer trägt die Anschrift, die geocodiert wurde; gespeichert wird
+  // genau diese, auch wenn die Felder inzwischen anders aussehen.
+  const [treffer, setTreffer] = useState<{
+    wert: GeocodeResult;
+    quelle: Quelle;
+    anschrift: typeof werte;
+  } | null>(null);
   const [meldung, setMeldung] = useState<string | null>(null);
 
   const speichern = useMutation({
-    mutationFn: (wert: GeocodeResult) =>
-      saveTourStart(standort.id, werte, wert, brauchtBestaetigung(wert)),
+    mutationFn: (gefunden: { wert: GeocodeResult; anschrift: typeof werte }) =>
+      saveTourStart(
+        standort.id,
+        gefunden.anschrift,
+        gefunden.wert,
+        brauchtBestaetigung(gefunden.wert),
+      ),
     onSuccess: async () => {
       setTreffer(null);
       setMeldung('Der Startort ist gespeichert.');
@@ -59,8 +70,8 @@ function StartortFormular({ standort }: { standort: Standort }) {
   });
 
   const suchen = useMutation({
-    mutationFn: () => geocodiere({ ...werte, countryCode: 'DE' }),
-    onSuccess: (ergebnis) => {
+    mutationFn: (zu: typeof werte) => geocodiere({ ...zu, countryCode: 'DE' }),
+    onSuccess: (ergebnis, zu) => {
       if (!ergebnis.ok) {
         setMeldung(
           ergebnis.error.code === 'not_found'
@@ -70,7 +81,7 @@ function StartortFormular({ standort }: { standort: Standort }) {
         return;
       }
       setMeldung(null);
-      setTreffer({ wert: ergebnis.value, quelle: ergebnis.quelle });
+      setTreffer({ wert: ergebnis.value, quelle: ergebnis.quelle, anschrift: zu });
     },
   });
 
@@ -80,7 +91,7 @@ function StartortFormular({ standort }: { standort: Standort }) {
       setMeldung('Straße, Postleitzahl und Ort sind nötig.');
       return;
     }
-    suchen.mutate();
+    suchen.mutate(werte);
   }
 
   function setzen(feld: keyof typeof werte, wert: string) {
@@ -128,7 +139,7 @@ function StartortFormular({ standort }: { standort: Standort }) {
           <Button
             type="button"
             disabled={speichern.isPending}
-            onClick={() => speichern.mutate(treffer.wert)}
+            onClick={() => speichern.mutate(treffer)}
           >
             Als Startort speichern
           </Button>

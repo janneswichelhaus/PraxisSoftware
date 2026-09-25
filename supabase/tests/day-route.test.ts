@@ -1,5 +1,11 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  fremdeOrganisation,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 /**
  * MAP-006b: Stopps der Tagesroute (list_day_route).
@@ -8,7 +14,8 @@ import { SEED, asPostgres, asUser, resetDatabaseOhneTermine } from './helpers/db
  * nur Termine mit Ort; abgesagte fallen weg; Rechte wie die Tagesliste.
  */
 
-const { users, organizationId, patients } = SEED;
+const { users, organizationId, patients, trainingRelationships } = SEED;
+const TOM = '55555555-5555-4555-8555-000000000006';
 
 const LESEN = 'select * from public.list_day_route($1::date, $2::uuid)';
 const ANNA = '55555555-5555-4555-8555-000000000002';
@@ -151,5 +158,42 @@ describe('list_day_route', () => {
     await expect(asUser(users.therapist, LESEN, [null, ANNA])).rejects.toMatchObject({
       code: '22023',
     });
+  });
+
+  it('liefert fuer die Person einer fremden Praxis nichts - auch nicht mit echtem Termin dort', async () => {
+    const fremd = await fremdeOrganisation();
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type, status, starts_at, ends_at,
+         visit_street, visit_house_number, visit_postal_code, visit_city
+       ) values ($1, $2, $3, 'home_visit', 'confirmed',
+         (($4::date + time '09:00') at time zone 'Europe/Berlin'),
+         (($4::date + time '10:00') at time zone 'Europe/Berlin'),
+         'Fremdweg', '1', '50667', 'Koeln')`,
+      [fremd.organizationId, fremd.patient, fremd.staffMember, TAG],
+    );
+    const { rows } = await asUser(users.ownerTherapist, LESEN, [TAG, fremd.staffMember]);
+    expect(rows).toEqual([]);
+  });
+
+  it('trennt die Leistungsbereiche: therapist sieht keinen Trainingsstopp, trainer keinen Behandlungsstopp', async () => {
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, training_relationship_id, staff_member_id, location_id,
+         appointment_type, kind, status, starts_at, ends_at
+       ) values ($1, $2, $3, $4, 'practice', 'training', 'confirmed',
+         (($5::date + time '09:00') at time zone 'Europe/Berlin'),
+         (($5::date + time '10:00') at time zone 'Europe/Berlin'))`,
+      [organizationId, trainingRelationships.tina, TOM, LOCATION, TAG],
+    );
+    await termin({ von: '09:00', bis: '10:00' });
+
+    const therapist = await asUser<Zeile>(users.therapist, LESEN, [TAG, TOM]);
+    expect(therapist.rows).toEqual([]);
+    const trainer = await asUser<Zeile>(users.trainer, LESEN, [TAG, ANNA]);
+    expect(trainer.rows).toEqual([]);
+    // Die Tagesroute hat dieselben Rechte wie die Tagesliste: Die Trainingsrolle
+    // liest sie heute gar nicht (app.can_read_appointments), also auch nicht
+    // die eigenen Trainingstermine - dieselbe Lage wie bei list_day_plan.
   });
 });

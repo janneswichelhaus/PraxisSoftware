@@ -7,6 +7,7 @@ import { renderWithProviders } from '@/test-utils';
 const zustand = vi.hoisted(() => ({
   stopps: [] as unknown[],
   zwischen: [] as unknown[],
+  fehler: false,
 }));
 
 vi.mock('./fahrpuffer', () => ({
@@ -14,7 +15,8 @@ vi.mock('./fahrpuffer', () => ({
   useFahrten: () => ({
     route: { isFetching: false, data: { ok: true } },
     zwischen: zustand.zwischen,
-    pruefungFehler: false,
+    pruefungLaedt: false,
+    pruefungFehler: zustand.fehler,
   }),
 }));
 
@@ -39,6 +41,7 @@ function zeige() {
 
 beforeEach(() => {
   zustand.stopps = ZWEI;
+  zustand.fehler = false;
 });
 
 describe('FahrpufferHinweis', () => {
@@ -69,7 +72,22 @@ describe('FahrpufferHinweis', () => {
   it('sagt "ungeprueft" statt "passt", wenn die Fahrzeit fehlt', () => {
     zustand.zwischen = [{ sekunden: null, pruefung: null }];
     zeige();
-    expect(screen.getByText(/ohne Fahrzeit und deshalb nicht geprüft/)).toBeInTheDocument();
+    expect(screen.getByText(/ein Übergang ist nicht geprüft/)).toBeInTheDocument();
+    expect(screen.queryByText(/rechtzeitig erreichbar/)).toBeNull();
+  });
+
+  it('sagt nie "passt", wenn der Server ein Paar nicht bestaetigt hat', () => {
+    zustand.zwischen = [{ sekunden: 300, pruefung: null }];
+    zeige();
+    expect(screen.getByText(/nicht geprüft/)).toBeInTheDocument();
+    expect(screen.queryByText(/rechtzeitig erreichbar/)).toBeNull();
+  });
+
+  it('meldet eine gescheiterte Pruefung statt "passt"', () => {
+    zustand.zwischen = [{ sekunden: 300, pruefung: null }];
+    zustand.fehler = true;
+    zeige();
+    expect(screen.getByText(/ließ sich gerade nicht ausführen/)).toBeInTheDocument();
     expect(screen.queryByText(/rechtzeitig erreichbar/)).toBeNull();
   });
 

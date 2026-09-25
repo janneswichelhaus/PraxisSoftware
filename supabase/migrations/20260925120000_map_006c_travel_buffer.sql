@@ -117,13 +117,27 @@ begin
     raise exception 'legs must be an array of at most 25 pairs' using errcode = '22023';
   end if;
 
+  -- Jedes Paar vollstaendig und wohlgeformt - ein fehlender Schluessel
+  -- ergaebe sonst NULL, und NULL loest kein IF aus: Ein Paar ohne Fahrzeit
+  -- kaeme als "passt" zurueck. Deshalb die Pruefung als positive Aussage,
+  -- deren NULL mit coalesce als "ungueltig" gilt.
   for v_leg in select * from jsonb_array_elements(p_legs) loop
-    if jsonb_typeof(v_leg) <> 'object'
-       or jsonb_typeof(v_leg -> 'travel_seconds') <> 'number'
-       or (v_leg ->> 'travel_seconds')::numeric <> floor((v_leg ->> 'travel_seconds')::numeric)
-       or (v_leg ->> 'travel_seconds')::numeric not between 0 and 86400
-       or (v_leg ->> 'from') !~ '^[0-9a-f-]{36}$'
-       or (v_leg ->> 'to') !~ '^[0-9a-f-]{36}$' then
+    -- CASE statt AND: Die Umwandlung in eine Zahl darf erst laufen, wenn
+    -- feststeht, dass eine Zahl da ist.
+    if not coalesce(
+      case
+        when jsonb_typeof(v_leg) = 'object'
+         and jsonb_typeof(v_leg -> 'travel_seconds') = 'number'
+         and jsonb_typeof(v_leg -> 'from') = 'string'
+         and jsonb_typeof(v_leg -> 'to') = 'string'
+        then (v_leg ->> 'travel_seconds')::numeric = floor((v_leg ->> 'travel_seconds')::numeric)
+         and (v_leg ->> 'travel_seconds')::numeric between 0 and 86400
+         and (v_leg ->> 'from') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+         and (v_leg ->> 'to') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        else false
+      end,
+      false
+    ) then
       raise exception 'invalid leg' using errcode = '22023';
     end if;
   end loop;

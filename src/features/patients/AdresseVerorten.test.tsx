@@ -89,6 +89,13 @@ describe('AdresseVerorten', () => {
 
     await waitFor(() => expect(setPatientAddressCoordinate).toHaveBeenCalledTimes(1));
     expect(setPatientAddressCoordinate.mock.calls[0]![3]).toBe(false);
+    // Gespeichert wird die Anschrift, die geocodiert wurde.
+    expect(setPatientAddressCoordinate.mock.calls[0]![1]).toEqual({
+      street: 'Musterweg',
+      houseNumber: '1',
+      postalCode: '72070',
+      city: 'Tübingen',
+    });
   });
 
   it('verlangt unterhalb der Hausnummer eine Bestaetigung', async () => {
