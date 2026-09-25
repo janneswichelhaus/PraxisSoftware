@@ -2,7 +2,14 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, resetDatabase, testDatabaseUrl } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  resetDatabase,
+  resetDatabaseOhneSeed,
+  testDatabaseUrl,
+} from './helpers/db';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const NEU_AUFSETZEN = path.resolve(HERE, '..', 'testumgebung', 'neu-aufsetzen.psql');
@@ -56,7 +63,40 @@ async function praxiswoche() {
 describe('Test-Umgebung neu aufsetzen (OPS-002a)', () => {
   beforeEach(async () => {
     await resetDatabase();
+    // Die lokale Datenbank spielt die Test-Umgebung: Sie hat Daten und
+    // bekommt deshalb die Kennung, die die echte beim ersten Lauf erhält.
+    await asPostgres(`
+      create schema testumgebung;
+      create table testumgebung.kennung (umgebung text primary key check (umgebung = 'test'));
+      insert into testumgebung.kennung values ('test');
+    `);
   }, 120_000);
+
+  it('weist eine Datenbank mit Daten und ohne Kennung ab - der Seed löscht alles', async () => {
+    await asPostgres('drop schema testumgebung cascade');
+
+    const lauf = neuAufsetzen(KENNWORT);
+    expect(lauf.status).not.toBe(0);
+    expect(lauf.stderr).toContain('keine Kennung der Test-Umgebung');
+
+    // Nichts gelöscht, nichts angelegt.
+    expect(await praxiswoche()).toHaveLength(0);
+    expect((await konten(ENTWICKLUNGSKENNWORT)).every((konto) => konto.passt)).toBe(true);
+  });
+
+  it('eine leere Datenbank bekommt beim ersten Aufsetzen die Kennung', async () => {
+    // Der Stand eines neuen Projekts nach `supabase db push`: Migrationen,
+    // keine Daten, keine Kennung.
+    await resetDatabaseOhneSeed();
+
+    const lauf = neuAufsetzen(KENNWORT);
+    expect(lauf.status, lauf.stderr).toBe(0);
+    const { rows } = await asPostgres<{ umgebung: string }>(
+      'select umgebung from testumgebung.kennung',
+    );
+    expect(rows).toEqual([{ umgebung: 'test' }]);
+    expect((await konten(KENNWORT)).every((konto) => konto.passt)).toBe(true);
+  });
 
   it('setzt das Kennwort aus dem Secret für alle Seed-Konten, das Entwicklungskennwort gilt nicht mehr', async () => {
     const lauf = neuAufsetzen(KENNWORT);

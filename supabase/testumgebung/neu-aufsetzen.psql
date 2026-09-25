@@ -15,6 +15,7 @@ select set_config('praxis.zugang_passwort', :'passwort', false) \g /dev/null
 \unset passwort
 \set QUIET off
 
+\ir kennung.sql
 \ir ../seed.sql
 \ir praxiswoche.sql
 \ir zugang.sql

@@ -149,8 +149,14 @@ describe('robotsTxt', () => {
 function server({ kopfzeilen, tuer = null, umleitung = true }) {
   const aufrufe = [];
   const abrufen = async (url, optionen = {}) => {
-    const pfad = new URL(url).pathname;
+    const adresse = new URL(url);
+    const pfad = adresse.pathname;
     const anmeldung = optionen.headers?.authorization ?? null;
+    if (adresse.protocol === 'http:') {
+      return umleitung
+        ? new Response('', { status: 308, headers: { location: `https://${adresse.host}/` } })
+        : new Response('', { status: 200 });
+    }
     aufrufe.push({ pfad, anmeldung });
     if (tuer && anmeldung !== tuer) return new Response('', { status: 401 });
     if (pfad !== '/' && !umleitung) return new Response('nicht da', { status: 404 });
@@ -181,6 +187,7 @@ describe('pruefeAuslieferung', () => {
     expect(fehler).toContain(`${TIEFE_ROUTE}: Status 404 statt 200.`);
     expect(fehler).toContain('/: Kopfzeile X-Robots-Tag fehlt.');
     expect(fehler).toContain('/: Kopfzeile Content-Security-Policy fehlt.');
+    expect(fehler).toContain('HTTP leitet nicht auf HTTPS um (Status 200).');
   });
 
   it('mit zweiter Tür: meldet sich an und prüft, dass es ohne Kennwort nicht geht', async () => {

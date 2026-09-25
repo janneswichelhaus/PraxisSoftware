@@ -288,6 +288,12 @@ ANN-100, ANN-101):
 
 Beide selbst erzeugen (Passwortmanager), nicht wiederverwenden.
 
+**Branch-Beschränkung (Pflicht):** In derselben Umgebung unter „Deployment
+branches and tags" **„Selected branches and tags"** wählen und nur `main`
+eintragen. Erst das hält einen Workflow auf einem anderen Branch — auch einen,
+den ein Coding-Agent pusht — von den Secrets fern; der Workflow selbst kann das
+nicht erzwingen (Zweitreview OPS-002a).
+
 Danach die beiden Dateien aus Schritt 2b auf dem eigenen Rechner löschen
 (`rm ~/.ssh/praxis-test-deploy ~/praxis-test-known-hosts`) — der Schlüssel
 lebt nur noch in GitHub, ein neuer ist in einer Minute erzeugt. Dann Claude

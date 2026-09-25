@@ -37,36 +37,43 @@ concurrency:
 
 permissions:
   contents: read
+  # Fuer die Pruefung, ob die CI den Commit gruen gesehen hat.
+  actions: read
 
 env:
   NODE_VERSION: '22'
 
+# Secrets bekommt jeder Schritt einzeln und nur die, die er braucht: Install,
+# Build und die Aktionen Dritter sehen weder Datenbank noch SSH-Schluessel
+# (Zweitreview OPS-002a).
 jobs:
   ausliefern:
     name: Ausliefern
-    # Automatisch nur nach einem gruenen CI-Lauf fuer einen Push auf main; von
-    # Hand nur vom main-Branch.
+    # Automatisch nur nach einem gruenen CI-Lauf fuer einen Push auf main aus
+    # diesem Repository; von Hand nur vom main-Branch. Die GitHub-Umgebung
+    # `test` ist zusaetzlich auf `main` beschraenkt (hosting-optionen.md, 2d) -
+    # erst das haelt einen Workflow auf einem anderen Branch von den Secrets fern.
     if: >-
       (github.event_name == 'workflow_run'
         && github.event.workflow_run.conclusion == 'success'
-        && github.event.workflow_run.event == 'push')
+        && github.event.workflow_run.event == 'push'
+        && github.event.workflow_run.head_repository.full_name == github.repository)
       || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     environment: test
     env:
-      TESTENV_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
-      TESTENV_SUPABASE_ANON_KEY: ${{ secrets.TESTENV_SUPABASE_ANON_KEY }}
-      TESTENV_DATABASE_URL: ${{ secrets.TESTENV_DATABASE_URL }}
-      DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
-      DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
-      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-      # Optional (Jannes, 2026-09-25: 1a und 2a).
-      TESTENV_LOGIN_PASSWORD: ${{ secrets.TESTENV_LOGIN_PASSWORD }}
-      TESTENV_TUER_PASSWORD: ${{ secrets.TESTENV_TUER_PASSWORD }}
+      COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Secrets vorhanden?
-        id: bereit
+        id: secrets
+        env:
+          TESTENV_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
+          TESTENV_SUPABASE_ANON_KEY: ${{ secrets.TESTENV_SUPABASE_ANON_KEY }}
+          TESTENV_DATABASE_URL: ${{ secrets.TESTENV_DATABASE_URL }}
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           fehlend=()
           for name in TESTENV_SUPABASE_URL TESTENV_SUPABASE_ANON_KEY TESTENV_DATABASE_URL \
@@ -80,12 +87,34 @@ jobs:
             echo "bereit=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Gepruefter Stand von main?
+        id: bereit
+        if: steps.secrets.outputs.bereit == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Nur der aktuelle Stand von main: Ein wiederholter alter CI-Lauf
+          # wuerde sonst einen alten Stand ausliefern.
+          spitze=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [ "$COMMIT" != "$spitze" ]; then
+            echo "::notice::$COMMIT ist nicht mehr der Stand von main - uebersprungen."
+            echo "bereit=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Auch von Hand nur, was die CI gruen gesehen hat.
+          gruen=$(gh run list -R "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$COMMIT" \
+            --event push --status success --json databaseId --jq length)
+          if [ "$gruen" = "0" ]; then
+            echo "::error::Fuer $COMMIT gibt es keinen gruenen CI-Lauf auf main - keine Auslieferung."
+            exit 1
+          fi
+          echo "bereit=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v5
         if: steps.bereit.outputs.bereit == 'true'
         with:
-          # Genau der Commit, den die CI geprueft hat - nicht der, der
-          # inzwischen auf main liegt.
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Genau der Commit, den die CI geprueft hat.
+          ref: ${{ env.COMMIT }}
 
       - uses: pnpm/action-setup@v4
         if: steps.bereit.outputs.bereit == 'true'
@@ -104,7 +133,19 @@ jobs:
         # Kein service_role im Browser (ADR-015), Datenbank und Projekt-URL
         # gehoeren zusammen, nichts zeigt auf eine lokale Datenbank.
         if: steps.bereit.outputs.bereit == 'true'
+        env:
+          TESTENV_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
+          TESTENV_SUPABASE_ANON_KEY: ${{ secrets.TESTENV_SUPABASE_ANON_KEY }}
+          TESTENV_DATABASE_URL: ${{ secrets.TESTENV_DATABASE_URL }}
         run: node scripts/testumgebung.mjs konfiguration
+
+      - name: Build
+        # Nur die beiden oeffentlichen Werte - alles hier landet im Bundle.
+        if: steps.bereit.outputs.bereit == 'true'
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.TESTENV_SUPABASE_ANON_KEY }}
+        run: pnpm build
 
       - uses: supabase/setup-cli@v1
         if: steps.bereit.outputs.bereit == 'true'
@@ -114,11 +155,15 @@ jobs:
 
       - name: Migrationen einspielen
         if: steps.bereit.outputs.bereit == 'true'
+        env:
+          TESTENV_DATABASE_URL: ${{ secrets.TESTENV_DATABASE_URL }}
         run: supabase db push --db-url "$TESTENV_DATABASE_URL" --yes
 
       - name: Neu aufsetzen - Seed, Praxiswoche, Zugang
         if: steps.bereit.outputs.bereit == 'true'
         env:
+          TESTENV_DATABASE_URL: ${{ secrets.TESTENV_DATABASE_URL }}
+          TESTENV_LOGIN_PASSWORD: ${{ secrets.TESTENV_LOGIN_PASSWORD }}
           NEU_AUFSETZEN: ${{ inputs.neu_aufsetzen }}
         run: |
           organisationen=$(psql "$TESTENV_DATABASE_URL" -tAX -v ON_ERROR_STOP=1 \
@@ -131,19 +176,17 @@ jobs:
             echo "::warning::TESTENV_LOGIN_PASSWORD fehlt - alle Konten der Test-Umgebung sind gesperrt."
           fi
           # Eine Transaktion: Das Entwicklungskennwort aus seed.sql wird nie
-          # festgeschrieben (ANN-100).
+          # festgeschrieben, und eine Datenbank ohne Kennung der
+          # Test-Umgebung wird nicht angeruehrt (ANN-100).
           psql "$TESTENV_DATABASE_URL" --single-transaction -v ON_ERROR_STOP=1 \
             -f supabase/testumgebung/neu-aufsetzen.psql > /dev/null
 
-      - name: Build
+      - name: SSH einrichten
+        # Erst nach Install und Build: Kein Paket sieht den Schluessel.
         if: steps.bereit.outputs.bereit == 'true'
         env:
-          VITE_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.TESTENV_SUPABASE_ANON_KEY }}
-        run: pnpm build
-
-      - name: SSH einrichten
-        if: steps.bereit.outputs.bereit == 'true'
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           install -d -m 700 ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
@@ -156,6 +199,10 @@ jobs:
 
       - name: Zweite Tuer
         if: steps.bereit.outputs.bereit == 'true'
+        env:
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          TESTENV_TUER_PASSWORD: ${{ secrets.TESTENV_TUER_PASSWORD }}
         run: |
           ziel="$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST"
           if [ -z "$TESTENV_TUER_PASSWORD" ]; then
@@ -169,21 +216,35 @@ jobs:
           $SSH "$ziel" 'install -d -m 755 ~/praxis-test && cat > ~/praxis-test/tuer.htpasswd && chmod 644 ~/praxis-test/tuer.htpasswd' < tuer.htpasswd
           rm -f tuer.htpasswd
           heim=$($SSH "$ziel" 'printf %s "$HOME"')
+          # Der Pfad landet in der .htaccess - nur ein schlichter Pfad.
+          if ! [[ "$heim" =~ ^/[A-Za-z0-9/_.-]+$ ]]; then
+            echo "::error::Unerwartetes Heimatverzeichnis auf dem Server."
+            exit 1
+          fi
           echo "TUER_DATEI=$heim/praxis-test/tuer.htpasswd" >> "$GITHUB_ENV"
 
       # ANN-101: Kopfzeilen, CSP, noindex und - mit TUER_DATEI - die zweite Tuer.
       - name: Auslieferung vorbereiten (.htaccess, robots.txt)
         if: steps.bereit.outputs.bereit == 'true'
+        env:
+          TESTENV_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
         run: node scripts/testumgebung.mjs vorbereiten dist
 
       - name: Hochladen
         if: steps.bereit.outputs.bereit == 'true'
+        env:
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
         run: |
           rsync -4 -rlz --delete --chmod=D755,F644 -e "$SSH" \
             dist/ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:www/html/"
 
       - name: Ausgelieferte Seite pruefen
+        # Startseite, tiefe Route, Kopfzeilen, zweite Tuer, HTTP auf HTTPS.
         if: steps.bereit.outputs.bereit == 'true'
+        env:
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          TESTENV_TUER_PASSWORD: ${{ secrets.TESTENV_TUER_PASSWORD }}
         run: node scripts/testumgebung.mjs pruefen "https://$DEPLOY_SSH_USER.uber.space"
 
       - name: Schluessel entfernen

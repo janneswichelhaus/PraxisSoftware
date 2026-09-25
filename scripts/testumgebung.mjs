@@ -224,6 +224,16 @@ export async function pruefeAuslieferung({ adresse, tuerKennwort, abrufen = fetc
       fehler.push(`Zweite Tür: ohne Kennwort Status ${ohne.status} statt 401.`);
   }
 
+  // Über HTTP ginge das Kennwort der Tür im Klartext: HTTP muss auf HTTPS
+  // umleiten, bevor irgendetwas anderes geschieht.
+  const unsicher = new URL('/', adresse);
+  unsicher.protocol = 'http:';
+  const http = await abrufen(unsicher, { redirect: 'manual' });
+  const ziel = http.headers.get('location') ?? '';
+  if (![301, 302, 307, 308].includes(http.status) || !ziel.startsWith('https://')) {
+    fehler.push(`HTTP leitet nicht auf HTTPS um (Status ${http.status}).`);
+  }
+
   return fehler;
 }
 
