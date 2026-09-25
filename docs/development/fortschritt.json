@@ -615,7 +615,10 @@
           "id": "g5a-ops-002a",
           "name": "OPS-002a Test-Umgebung, vorgezogen (Block 1a)",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-25",
+          "nachweis": "`656dff9`, `01b0b92`",
+          "vermerk": "erster Lauf gegen Uberspace nach dem Merge"
         },
         {
           "id": "g6-ops-004",

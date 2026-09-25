@@ -1292,3 +1292,27 @@ Technik · offen · 2026-09-25 · — · — · Wiedervorlage: sobald Jannes die
 **Anker.** Die Prüfung `aktiv` ohne `quelle.datei` in `scoreDefinitionSchema`, `src/features/assessments/schema.ts`; die drei Dateien unter `src/features/assessments/definitionen/scores/`.
 
 **Änderungspfad.** Bogen in `quellen/scores/pdf/` ablegen, Wortlaut der Datei gegen ihn halten, `quelle.datei` setzen, Version `1.0.0`, `aktiv: true` · Aufwand `klein` je Instrument. Andere Stufenzahl oder fünf Aktivitäten: Items ergänzen, Referenzfall anpassen · Aufwand `klein`.
+
+### ANN-100 — Die Test-Umgebung wird nur auf Knopfdruck neu aufgesetzt, ihr Zugang kommt aus einem Secret
+
+Technik · offen · 2026-09-25 · — · — · Wiedervorlage: G5 (OPS-002), wenn die Produktion eine eigene Pipeline bekommt
+
+**Annahme.** Die Test-Umgebung (OPS-002a) bekommt die Migrationen bei **jedem** Lauf nach grüner CI auf `main`, den Seed samt Praxiswoche aber **nur auf Knopfdruck** (Handstart mit „neu aufsetzen"), weil der Seed alles löscht. Seed, Praxiswoche und Zugang laufen in **einer** Transaktion; darin wird das Entwicklungskennwort aus `supabase/seed.sql` für alle Seed-Konten durch das Secret `TESTENV_LOGIN_PASSWORD` (mindestens 12 Zeichen) ersetzt, und fehlt das Secret, bekommt jedes Konto ein eigenes Zufallskennwort — gesperrt statt offen. Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen, heute ausgespart. Neu aufgesetzt wird nur eine leere Datenbank (sie bekommt dabei die Kennung `testumgebung.kennung`) oder eine, die diese Kennung schon trägt.
+
+**Begründung.** Die Test-Umgebung ist öffentlich erreichbar; ein Kennwort aus dem Repository wäre dort ein offener Zugang, auch zu synthetischen Daten (§3.3, Hosting-Vorlage „Zugang geschützt"). Jannes hat am 2026-09-25 Option 1a gewählt (ein Secret). Ein Seed bei jedem Merge würde alles verwerfen, was Jannes am Handy anlegt, und die Sichtung zerstören. Die Kalenderwoche wäre an einem Freitag ganz Vergangenheit, deshalb ein Fenster um heute.
+
+**Anker.** `supabase/testumgebung/zugang.sql` (Kennwort), `supabase/testumgebung/kennung.sql` (nur die Test-Umgebung), `supabase/testumgebung/neu-aufsetzen.psql` (eine Transaktion, Reihenfolge), Eingabe `neu_aufsetzen` in `.github/workflows/test-umgebung.yml`; Test `supabase/tests/testumgebung.test.ts`.
+
+**Änderungspfad.** Seed bei jedem Lauf: die Bedingung im Workflow streichen · Aufwand `klein`. Eigene Konten statt Seed-Konten: `zugang.sql` auf eine Liste von Adressen umstellen · Aufwand `klein`. Anderes Fenster: `praxiswoche.sql` · Aufwand `klein`.
+
+### ANN-101 — Die Test-Umgebung schützt sich mit Kopfzeilen, CSP und einer optionalen zweiten Tür per `.htaccess`
+
+Technik · offen · 2026-09-25 · — · — · Wiedervorlage: vor echten Daten (G5), mit der vollständigen Prüfung des Hosting-Anbieters
+
+**Annahme.** Die ausgelieferte Oberfläche bekommt über eine erzeugte `.htaccess`: Umleitung aller Pfade ohne Datei auf `index.html`, `X-Robots-Tag: noindex` samt `robots.txt`, `nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, HSTS und eine Content-Security-Policy, die Skripte nur vom eigenen Ursprung und Verbindungen nur zum Supabase-Projekt erlaubt (`style-src 'unsafe-inline'` und `blob:`-Worker für MapLibre). Die zweite Tür ist HTTP-Basic-Auth mit Benutzer `praxis` und dem Secret `TESTENV_TUER_PASSWORD`, als bcrypt außerhalb des Webordners abgelegt; ohne Secret gibt es keine Tür. Ob Uberspace 8 die `.htaccess` auswertet, prüft der Workflow nach jedem Upload selbst.
+
+**Begründung.** Die Hosting-Vorlage verlangt `noindex`, Sicherheitskopfzeilen und die zweite Tür, nennt die Tür aber ausdrücklich „erwünscht, nicht tragend": Die Daten schützen Supabase Auth und RLS. Jannes hat am 2026-09-25 Option 2a gewählt. Die CSP ist an der gebauten Anwendung geprüft (Anmeldeseite bei 1280 und 375 px ohne Verstoß); die Karte hinter der Anmeldung nicht, und ein Kachelschlüssel ist in der Test-Umgebung nicht gesetzt. Unsicher: ob Uberspace 8 `mod_rewrite`, `mod_headers` und Basic-Auth in der `.htaccess` zulässt (Hinweis aus Suchauszug, nicht am Konto geprüft).
+
+**Anker.** `htaccess()` und `inhaltsrichtlinie()` in `scripts/testumgebung.mjs`; Test `scripts/testumgebung.test.mjs`; Schritt „Zweite Tuer" in `.github/workflows/test-umgebung.yml`.
+
+**Änderungspfad.** Wertet Uberspace die `.htaccess` nicht aus: Kopfzeilen und Umleitung über die Webserver-Einstellungen von Uberspace (`uberspace web header`, falls vorhanden) oder Anbieterwechsel nach `hosting-optionen.md` Option 2 · Aufwand `mittel`. Kachelschlüssel in der Test-Umgebung: Kachelanbieter in `inhaltsrichtlinie()` · Aufwand `klein`.

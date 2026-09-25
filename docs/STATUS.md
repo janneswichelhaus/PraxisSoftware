@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-25 · letzte Session: FRB-EPIC-001
+# Status · Stand 2026-09-25 · letzte Session: OPS-002a
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,20 +6,21 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**FRB-EPIC-001 gebaut** (Block 2, zweiter Loop): Die Instrumentenbibliothek rechnet — Rechenkern für alle Formelarten, NRS, PSFS und globale Veränderungsfrage als Definitionen, Leseseite **Organisatorisches → Instrumente**. Die drei Instrumente bleiben **inaktiv**, bis ihr Bogen in `quellen/` liegt (ANN-099). Pull Request offen, **Merge bei dir**; kein Pflicht-Zweitreview (keine kritische Änderung nach ADR-013 Punkt 9). Fortschritt **34,7 %**.
+**OPS-002a gebaut** (Block 1a, erster Loop): Nach jeder grünen CI auf `main` liefert `.github/workflows/test-umgebung.yml` in die Test-Umgebung aus (`prtest.uber.space`, Supabase `praxis-test`). Seed und Praxiswoche kommen nur auf Knopfdruck, das Kennwort aus dem Secret. Pull Request offen, **Merge bei dir**; danach der erste echte Lauf (Blocker unten). Fortschritt **35,3 %**.
 
 ## Danach — Bauen
 
 1. **G6c**, sobald deine Wahl unter „Blocker" da ist
-2. **OPS-002a Test-Umgebung** — die Konten stehen (2026-09-25), `/weiter OPS-002a`; danach UX-EPIC-002, sobald deine Begriffsliste da ist
+2. **UX-EPIC-002**, sobald deine Begriffsliste da ist — am besten am Handy auf der Test-Umgebung gesammelt
 3. Solange beides fehlt: **Block 2 weiter mit FRB-EPIC-002** (Anamnese und Verlauf in der Akte) — Bauen wartet nicht (§15.2)
 
 ## Prüfverfahren
 
-**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2394**; `test:db` **1937** (seit MAP-006 unverändert, FRB-EPIC-001 ohne Datenbank); `test:e2e` ohne Anmeldung: Prüfseiten grün, `login.spec.ts` in der Cloud rot — auf `main` identisch. Sichtprüfung der Tourenkomponenten und der Instrumente über die Prüfseiten `tests/e2e/fixtures/karte.html` und `instrumente.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
+**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2412**; `test:db` **1946** (neu: Neu-Aufsetzen der Test-Umgebung, OPS-002a); `test:e2e` ohne Anmeldung: Prüfseiten grün, `login.spec.ts` in der Cloud rot — auf `main` identisch. Sichtprüfung der Tourenkomponenten und der Instrumente über die Prüfseiten `tests/e2e/fixtures/karte.html` und `instrumente.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
 ## Blocker (Jannes-seitig)
 
+- **Test-Umgebung in Betrieb nehmen** (OPS-002a, neu): (1) in der GitHub-Umgebung `test` die zwei optionalen Secrets `TESTENV_LOGIN_PASSWORD` (≥ 12 Zeichen) und `TESTENV_TUER_PASSWORD` anlegen und **„Deployment branches" auf `main` beschränken**; (2) Pull Request mergen; (3) Actions → „Test-Umgebung" ansehen. Wird „Ausgelieferte Seite pruefen" rot, wertet Uberspace die `.htaccess` nicht aus: Log-Zeile an Claude, ohne Werte; (4) `https://prtest.uber.space` am Handy öffnen, zuerst Tür (`praxis`), dann `jannes.test@praxis.invalid`. Einrichtung: [`DEVELOPMENT.md`](DEVELOPMENT.md), „Test-Umgebung". AVV mit Uberspace noch offen.
 - **Sichtung** (E-6): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; am Handy im WLAN nach [`DEVELOPMENT.md`](DEVELOPMENT.md), „Handytest im WLAN".
 - **Bögen für NRS, PSFS und Veränderungsfrage** (neu, ANN-099): die Vorlagen, die die Praxis nutzt, als PDF nach `quellen/scores/pdf/` — dann wird der Wortlaut dagegen gehalten und die drei auf Version 1.0.0 aktiviert. Nicht dringend: Erhoben wird erst mit FRB-EPIC-002.
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
@@ -35,4 +36,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**FRB-EPIC-001 — Instrumentenbibliothek.** Rechenkern `rechne()` für alle Formelarten des Schemas samt neuer Form `mittelwert`; fehlt ein gewerteter Wert, gibt es keinen (ANN-098). NRS, PSFS (drei Aktivitäten) und Veränderungsfrage (−3 bis +3) als Definitionen in Version 0.1.0, inaktiv mit vorläufigem Wortlaut, weil keine Vorlage im Repository liegt (ANN-099); jede Definition rechnet ihre Referenzfälle nach. Leseseite `/praxis/instrumente` ohne Cut-off und MCID (ADR-006 Punkt 11). Neue Sichtung [Befund](sichtung/befund.md). **Lokale Schritte:** `git pull origin claude/weiter-c7lldw` (nach dem Merge `main`). Keine Migration, keine neue Abhängigkeit.
+**OPS-002a — Test-Umgebung.** Workflow `test-umgebung.yml` (nach grüner CI auf `main` und von Hand): Secrets prüfen (kein `service_role` im Bundle), `supabase db push`, Seed plus Praxiswoche nur auf Knopfdruck oder gegen ein leeres Projekt, in **einer** Transaktion mit dem Kennwort aus dem Secret, sonst gesperrt (ANN-100); `.htaccess` mit Kopfzeilen, CSP, `noindex` und optionaler zweiter Tür, Upload per `rsync` über IPv4, danach Prüfung der ausgelieferten Seite (ANN-101). Lokal geprüft: `db push` gegen die Wegwerf-Datenbank, CSP an der gebauten Anwendung; **nicht gelaufen:** der Weg zu Uberspace und Supabase (aus der Cloud gesperrt). **Lokale Schritte:** `git pull origin claude/nifty-edison-h316eu` (nach dem Merge `main`). Keine Migration, keine neue Abhängigkeit.

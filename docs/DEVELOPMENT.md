@@ -168,9 +168,43 @@ geht das mit „Handytest im WLAN" unten.
 | Docker startet nicht                                    | Docker Desktop muss laufen, bevor `supabase start` aufgerufen wird.                                                                                                                   |
 | `WARN: config section [inbucket] is deprecated`         | Warnung, kein Fehler. Die Umbenennung nach `[local_smtp]` in `supabase/config.toml` steht als kleine Wartung in der Roadmap; sie ist lokal mit `supabase stop` und `start` zu prüfen. |
 
+## Test-Umgebung (OPS-002a)
+
+Die Anwendung am eigenen Handy, von überall: `https://<kontoname>.uber.space`
+(heute `prtest`), dahinter das Supabase-Projekt `praxis-test` in Frankfurt. Nur
+synthetische Daten, kein Produktivprojekt (§3.1, §3.2). Einrichtung und Wahl
+des Anbieters: [`hosting-optionen.md`](decisions/hosting-optionen.md).
+
+**Was automatisch passiert.** Nach jeder grünen CI auf `main` spielt
+`.github/workflows/test-umgebung.yml` den geprüften Commit ein: Konfiguration
+prüfen (nie ein `service_role`- oder `sb_secret_`-Schlüssel im Bundle),
+Migrationen per `supabase db push`, Build, `.htaccess` und `robots.txt`
+erzeugen, Upload per `rsync` über IPv4 nach `~/www/html`, danach die Seite
+selbst prüfen (Startseite, tiefe Route, Kopfzeilen, zweite Tür). Fehlt eines
+der sieben Pflicht-Secrets, wird übersprungen, nicht rot.
+
+**Neu aufsetzen** (Seed und Praxiswoche, verwirft alles dort): GitHub →
+Actions → „Test-Umgebung" → „Run workflow" auf `main`, Haken bei „neu
+aufsetzen". Beim allerersten Lauf gegen ein leeres Projekt geschieht das von
+selbst. Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen;
+nach einer Woche einfach wieder neu aufsetzen (ANN-100).
+
+**Zugang.** Dieselben Konten wie unter „Testkonten", aber **nie** mit dem
+Entwicklungskennwort: Alle Konten bekommen das Kennwort aus dem Secret
+`TESTENV_LOGIN_PASSWORD` (mindestens 12 Zeichen). Fehlt es, sind alle Konten
+gesperrt. Vor der Seite steht die **zweite Tür** (Benutzer `praxis`, Kennwort
+aus `TESTENV_TUER_PASSWORD`), sofern das Secret gesetzt ist (ANN-101). Die
+beiden Secrets sind optional und liegen wie die übrigen in der Umgebung `test`.
+
+**Grenzen.** Keine Mails (Kennwort vergessen, Einladungen: BEF-026), keine
+Edge Functions (ADR-015 Punkt 20), keine Kartenkacheln. Die Karte zeigt ihren
+Hinweis. Das kostenlose Supabase-Projekt pausiert nach einer Woche ohne
+Nutzung; im Dashboard wieder starten.
+
 ## Handytest im WLAN
 
-Bis die Test-Umgebung steht (OPS-002a), läuft die Anwendung vom eigenen
+Ohne Test-Umgebung, etwa für einen Stand, der noch nicht auf `main` liegt,
+läuft die Anwendung vom eigenen
 Rechner aufs eigene Handy — **nur im eigenen WLAN zu Hause**, nie in einem
 fremden oder öffentlichen Netz, und wie überall nur mit synthetischen Daten.
 

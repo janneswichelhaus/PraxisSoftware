@@ -1,0 +1,21 @@
+-- Setzt die Test-Umgebung neu auf (OPS-002a). Aufruf nur aus dem Workflow:
+--
+--   psql "$TESTENV_DATABASE_URL" --single-transaction -v ON_ERROR_STOP=1 \
+--     -f supabase/testumgebung/neu-aufsetzen.psql
+--
+-- Das Kennwort liest psql aus der Umgebungsvariable, nicht von der
+-- Befehlszeile - so steht es in keiner Prozessliste und keinem Log.
+\set QUIET on
+\getenv passwort TESTENV_LOGIN_PASSWORD
+\if :{?passwort}
+\else
+  \set passwort ''
+\endif
+select set_config('praxis.zugang_passwort', :'passwort', false) \g /dev/null
+\unset passwort
+\set QUIET off
+
+\ir kennung.sql
+\ir ../seed.sql
+\ir praxiswoche.sql
+\ir zugang.sql
