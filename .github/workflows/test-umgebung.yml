@@ -194,8 +194,12 @@ jobs:
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/deploy_known_hosts
           # IPv4: Ueber IPv6 bricht die Verbindung zu Uberspace ab
           # (hosting-optionen.md, 2026-09-25). Nur der festgehaltene
-          # Serverschluessel wird akzeptiert.
-          echo "SSH=ssh -4 -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/deploy_known_hosts" >> "$GITHUB_ENV"
+          # Serverschluessel wird akzeptiert. Alle Aufrufe teilen EINE
+          # Verbindung (ControlMaster): Uberspace setzt schnell
+          # aufeinanderfolgende neue SSH-Verbindungen zurueck - der dritte
+          # Lauf am 2026-09-25 brach beim vierten Aufbau binnen Sekunden mit
+          # "kex_exchange_identification: Connection reset by peer" ab.
+          echo "SSH=ssh -4 -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/deploy_known_hosts -o ControlMaster=auto -o ControlPath=$HOME/.ssh/deploy-%C -o ControlPersist=300" >> "$GITHUB_ENV"
 
       - name: Zweite Tuer
         if: steps.bereit.outputs.bereit == 'true'
@@ -212,8 +216,8 @@ jobs:
           # und nicht darin, und die .htaccess nennt den echten Pfad - ueber
           # den Heimatordner kaeme der Webserver nicht an sie heran
           # (AH01620 Permission denied, erster Lauf am 2026-09-25).
-          $SSH "$ziel" 'rm -rf ~/praxis-test'
-          web=$($SSH "$ziel" 'readlink -f ~/www')
+          # Der alte Ort im Heimatordner wird dabei aufgeraeumt.
+          web=$($SSH "$ziel" 'rm -rf ~/praxis-test && readlink -f ~/www')
           # Der Pfad landet in der .htaccess - nur ein schlichter Pfad.
           if ! [[ "$web" =~ ^/[A-Za-z0-9/_.-]+$ ]]; then
             echo "::error::Unerwarteter Webordner auf dem Server."
@@ -257,4 +261,9 @@ jobs:
 
       - name: Schluessel entfernen
         if: always()
-        run: rm -f ~/.ssh/deploy ~/.ssh/deploy_known_hosts tuer.htpasswd
+        run: |
+          # Die geteilte Verbindung schliessen, dann den Schluessel loeschen.
+          for sock in ~/.ssh/deploy-*; do
+            [ -S "$sock" ] && ssh -o ControlPath="$sock" -O exit ziel 2> /dev/null || true
+          done
+          rm -f ~/.ssh/deploy ~/.ssh/deploy_known_hosts ~/.ssh/deploy-* tuer.htpasswd
