@@ -33,6 +33,9 @@ import {
   MAX_WEGPUNKTE,
   type Anbieteradapter,
   type Coordinate,
+  type GeocodeErgebnis,
+  type GeocodeRequest,
+  type GeocodeResult,
   type LocationError,
   type LocationErrorCode,
   type MatrixErgebnis,
@@ -59,6 +62,25 @@ const ROUTING_URL = 'https://api.myptv.com/routing-osm/v1/routes';
  * Abnahme dafür einen eigenen Schritt.
  */
 const MATRIX_URL = 'https://api.myptv.com/matrixrouting-osm/v1/matrices';
+
+/**
+ * Geocoding OSM API (MAP-006a).
+ *
+ * **Belegtiefe: abgeleitet, nicht geprüft** — wie die Matrix bis zu ihrer
+ * Abnahme. Die OSM-Variante hat nach derselben Regel wie Routing und Kacheln
+ * einen eigenen Pfad (`geocoding-osm/v1`); die Feldnamen der Antwort
+ * (`locations`, `referencePosition`, `locationType`, `formattedAddress`)
+ * stammen aus PTVs Client `clients-geocoding-api` der HERE-Variante
+ * (Providerprüfung, Teil 1, Punkt 2). Die HERE-Variante `geocoding/v1` wird
+ * **nicht** verwendet (ADR-019 Punkt 7). Die Sichtung Kartendienst hat einen
+ * Schritt dafür.
+ *
+ * Die Anschrift steht — anders als die Matrix-Punkte — in der Adresse der
+ * Anfrage, weil der Endpunkt nur `GET` kennt. Sie verlässt damit genau diese
+ * Function und erreicht genau den Anbieter; in unserem Log steht sie nie
+ * (ADR-019 Punkt 18).
+ */
+const GEOCODING_URL = 'https://api.myptv.com/geocoding-osm/v1/locations/by-address';
 
 /**
  * Kantenlänge des erlaubten Rechtecks um alle Punkte einer Matrix.
@@ -182,6 +204,9 @@ export function erstellePtvAdapter({
         matrixAuswerten(koerper, request),
       );
     },
+    geocode(request: GeocodeRequest, signal?: AbortSignal): Promise<GeocodeErgebnis> {
+      return hole(geocodingAdresse(request), { signal }, geocodingAuswerten);
+    },
   };
 }
 
@@ -223,6 +248,59 @@ function matrixKoerper(request: MatrixRequest) {
   return {
     origins: request.origins.map(punkt),
     destinations: request.destinations.map(punkt),
+  };
+}
+
+/** Die fünf Felder der Anschrift, sonst nichts — kein Name, keine Kennung (ADR-019 Punkt 12). */
+function geocodingAdresse(request: GeocodeRequest): string {
+  const abfrage = new URLSearchParams();
+  abfrage.append('countryFilter', request.countryCode);
+  abfrage.append('postalCode', request.postalCode);
+  abfrage.append('locality', request.city);
+  abfrage.append('street', request.street);
+  if (request.houseNumber !== '') abfrage.append('houseNumber', request.houseNumber);
+  return `${GEOCODING_URL}?${abfrage.toString()}`;
+}
+
+/**
+ * Genauigkeit des Treffers in der Sprache des Vertrags. Unterhalb von
+ * `address` bestätigt die Person den Treffer (ANN-016); was hier unbekannt
+ * ist, wird deshalb nie zur Hausnummer hochgestuft.
+ */
+function genauigkeit(typ: unknown): GeocodeResult['precision'] {
+  if (typ === 'EXACT_ADDRESS' || typ === 'INTERPOLATED_ADDRESS') return 'address';
+  if (typ === 'STREET') return 'street';
+  if (typ === 'LOCALITY' || typ === 'POSTAL_CODE' || typ === 'DISTRICT' || typ === 'SUBDISTRICT')
+    return 'locality';
+  return 'unknown';
+}
+
+/** Der erste Treffer des Anbieters — der beste nach seiner eigenen Reihenfolge. */
+function geocodingAuswerten(koerper: unknown): GeocodeErgebnis {
+  if (typeof koerper !== 'object' || koerper === null) {
+    return fehler('unavailable', 'Antwort ohne Objekt');
+  }
+  const treffer = (koerper as Record<string, unknown>)['locations'];
+  if (!Array.isArray(treffer)) return fehler('unavailable', 'Antwort ohne Trefferliste');
+  if (treffer.length === 0) return fehler('not_found', 'kein Treffer');
+
+  const erster = treffer[0] as Record<string, unknown> | null;
+  if (typeof erster !== 'object' || erster === null)
+    return fehler('unavailable', 'Treffer ohne Objekt');
+  const punkt = erster['referencePosition'] as Record<string, unknown> | undefined;
+  const lat = zahl(punkt?.['latitude']);
+  const lon = zahl(punkt?.['longitude']);
+  if (lat === null || lon === null || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    return fehler('unavailable', 'Treffer ohne Koordinate');
+  }
+  const label = erster['formattedAddress'];
+  return {
+    ok: true,
+    value: {
+      position: { lat, lon },
+      precision: genauigkeit(erster['locationType']),
+      ...(typeof label === 'string' && label.trim() !== '' ? { matchLabel: label.trim() } : {}),
+    },
   };
 }
 

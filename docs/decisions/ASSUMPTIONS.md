@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-23.
+Zuletzt aktualisiert: 2026-09-25.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -273,7 +273,7 @@ Datenschutz · offen · 2026-09-08 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Datenminimierung gegenüber dem Anbieter (Art. 5 Abs. 1 lit. c DSGVO): Die Adresse geht genau einmal je Änderung zum Kartendienst, jede spätere Karte oder Route arbeitet mit Koordinaten (ADR-019 Punkt 13); ohne Speicherung müsste jede Routenberechnung alle Adressen des Tages erneut übermitteln. Die Koordinate ist so personenbezogen wie die Adresse, deshalb dieselbe Klasse und Frist (ADR-008). Unsicher: ob die Prüfung die Speicherung anders bewertet als die Adresse und ob bei abgesagten Hausbesuchen (ANN-003) die Koordinate mitzulöschen ist.
 
-**Anker.** Bis MAP-006: `src/lib/location/contract.ts`, Abschnitt „Geocoding", und ADR-019 Punkt 14. Ab MAP-006: die Migration mit den Koordinatenspalten und der einzige Schreiber beim Adress-Upsert.
+**Anker.** Seit MAP-006a: `supabase/migrations/20260925100000_map_006a_coordinates.sql` — Spalten `lat`, `lon`, `geocode_precision` an `patient_contact_details` und `visit_*` an `appointments`, Trigger `app.drop_coordinate_on_address_change` (Koordinate verfällt mit der Adresse), einziger Schreiber `set_patient_address_coordinate` mit Bestätigungspflicht in `app.assert_geocode_result`; Tests in `supabase/tests/address-coordinates.test.ts`. Geocoding nur auf Handlung in `src/features/patients/AdresseVerorten.tsx`.
 
 **Änderungspfad.** Geocoding je Aufruf statt Speicherung: Spalten entfallen, der Adapter geocodiert vor jeder Route · Aufwand `mittel`, mit mehr Übermittlungen als Folge. Andere Frist oder eigene Datenklasse: Retention Schedule ergänzen · Aufwand `klein`. Koordinate im Termin-Snapshot statt bei der Adresse: eine Migration · Aufwand `klein`.
 
@@ -1220,3 +1220,27 @@ Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
 
 **Änderungspfad.** Zweck ergänzen oder streichen: ein Wert in Constraint, Konstante und Beschriftung, ein Satz in der Datenschutzinformation · Aufwand `klein`. Einwilligung vor dem Mailweg prüfen: Abfrage des Stands in `AppointmentSlipPage.tsx` vor der Übergabe · Aufwand `mittel`. Unterschrift in der Anwendung: eigenes Epic · Aufwand `groß`.
+
+### ANN-094 — Ein benannter Schalter öffnet den Kartendienst für eine Umgebung
+
+Datenschutz · offen · 2026-09-25 · — · Prüfpaket · Wiedervorlage: Gate aus ADR-019 Punkt 9 vor dem ersten Lauf mit echten Adressen; Go-live-Vorbedingungen (ADR-007 Punkt 5)
+
+**Annahme.** Die Edge Function `location-provider` spricht einen echten Anbieter nur an, wenn das Secret `LOCATION_DATA_GATE` den Wert `synthetic` (Umgebung mit ausschließlich synthetischen Daten, §3.1) oder `released` (Gate aus ADR-019 Punkt 9 bestanden) trägt. Fehlt es oder ist es falsch geschrieben, antwortet sie `not_configured` — auch mit gültigem Schlüssel. `released` in einer Umgebung mit echten Daten zu setzen ist eine Go-live-Vorbedingung, kein Konfigurationsdetail; die Nachbildung braucht den Schalter nicht, weil sie nichts hinausschickt.
+
+**Begründung.** ADR-019 Punkt 25 (Fassung 4) verlangt einen „eigenen, benannten Schritt", der vor dem ersten Lauf mit echten Patientenadressen zu bleibt; ab MAP-006 trägt die Function erstmals Adressen (Geocoding). Ein Schalter, der von selbst zu ist, macht das Vergessen harmlos: Eine Produktivumgebung mit Schlüssel, aber ohne bewusste Freigabe, schickt nichts. Die Function kann synthetische und echte Adressen nicht unterscheiden; der Schalter beschreibt deshalb die Umgebung, nicht die Anfrage. Unsicher: ob die Prüfung eine technische statt einer organisatorischen Sperre gegen `synthetic` in der Produktion verlangt.
+
+**Anker.** `DATENFREIGABEN` und `waehleAdapter` in `supabase/functions/location-provider/auswahl.ts`; Tests in `auswahl.test.ts`; Eintrag in den Go-live-Vorbedingungen der DSFA-Unterlagen (`docs/datenschutz/`).
+
+**Änderungspfad.** Anderer Name oder weitere Stufe: eine Konstante und ihre Tests · Aufwand `klein`. Technische Sperre gegen `synthetic` in der Produktion: Umgebungskennung als zweites Secret und Vergleich in derselben Funktion · Aufwand `klein`.
+
+### ANN-095 — Verortet wird auf Handlung, und die Koordinate reist in künftige Hausbesuche
+
+Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: Jannes nach der Sichtung Kartendienst (reicht ein Tipp nach dem Speichern, oder soll das Speichern selbst verorten?)
+
+**Annahme.** Geocodiert wird nicht im Speichervorgang selbst, sondern mit „Adresse verorten" direkt danach in den Stammdaten — solange die Adresse keine Koordinate hat. Ein hausnummergenauer Treffer des Anbieters wird ohne Rückfrage gespeichert, jeder andere und jeder der Nachbildung erst nach „Treffer übernehmen". Die gespeicherte Koordinate wird in **künftige** Hausbesuche übernommen, deren Snapshot-Adresse genau dieser Adresse entspricht; vergangene Termine behalten, was sie hatten.
+
+**Begründung.** ADR-019 Punkt 14 und ANN-016 verlangen Geocoding nur bei Anlage oder Änderung der Adresse; ein Knopf, der nur ohne Koordinate erscheint, erfüllt das und hält die Übermittlung an eine sichtbare Handlung (§20-Logik des Handoffs, Punkt 20). Ein automatischer Aufruf beim Speichern hätte einen zweiten Fehlerpfad im Stammdatenformular gebraucht. Ohne Übertragung stünden Hausbesuche, die vor dem Verorten angelegt wurden, ohne Stopp auf der Karte; ANN-003 bleibt unberührt, weil nur Termine mit derselben Adresse und in der Zukunft betroffen sind.
+
+**Anker.** `src/features/patients/AdresseVerorten.tsx`; die Übertragung im zweiten `update` von `set_patient_address_coordinate`, `supabase/migrations/20260925100000_map_006a_coordinates.sql`; Test „überträgt die Koordinate in künftige Hausbesuche" in `supabase/tests/address-coordinates.test.ts`.
+
+**Änderungspfad.** Verorten im Speichervorgang: Aufruf nach `updatePatient` in `EditPatientPage.tsx` · Aufwand `klein`. Keine Übertragung in Termine: das zweite `update` entfällt · Aufwand `klein`.

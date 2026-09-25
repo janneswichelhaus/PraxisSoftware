@@ -17,6 +17,8 @@
 import type {
   Anbieteradapter,
   Coordinate,
+  GeocodeErgebnis,
+  GeocodeRequest,
   MatrixErgebnis,
   MatrixRequest,
   RouteErgebnis,
@@ -85,6 +87,50 @@ export function erstelleNachbildung(): Anbieteradapter {
           distancesMeters: strecken,
         },
       });
+    },
+    geocode(request: GeocodeRequest): Promise<GeocodeErgebnis> {
+      return Promise.resolve(nachgebildeterPunkt(request));
+    },
+  };
+}
+
+/**
+ * Mittelpunkt der Nachbildung: die Tübinger Altstadt, wie die Teststopps.
+ * Jede Anschrift landet in einem Umkreis von rund zwei Kilometern darum.
+ */
+const MITTE: Coordinate = { lat: 48.5216, lon: 9.0576 };
+
+/**
+ * Ein fester Punkt je Anschrift (MAP-006a).
+ *
+ * Dieselbe Anschrift ergibt immer denselben Punkt — sonst wäre ein zweites
+ * Speichern eine Änderung. Ohne Hausnummer meldet die Nachbildung
+ * Straßengenauigkeit, damit die Bestätigung aus ANN-016 ohne Anbieter
+ * prüfbar ist. Der Punkt ist erfunden; die Oberfläche sagt das
+ * (`quelle: 'nachbildung'`).
+ */
+function nachgebildeterPunkt(anschrift: GeocodeRequest): GeocodeErgebnis {
+  const text = [anschrift.street, anschrift.houseNumber, anschrift.postalCode, anschrift.city]
+    .join('|')
+    .toLowerCase();
+  let streuung = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    streuung = Math.imul(streuung ^ text.charCodeAt(i), 16777619) >>> 0;
+  }
+  const winkel = ((streuung % 3600) / 3600) * 2 * Math.PI;
+  const abstand = 0.004 + ((streuung >>> 12) % 1000) / 1000 / 60;
+  return {
+    ok: true,
+    value: {
+      position: {
+        lat: Math.round((MITTE.lat + Math.sin(winkel) * abstand) * 1e6) / 1e6,
+        lon: Math.round((MITTE.lon + Math.cos(winkel) * abstand * 1.5) * 1e6) / 1e6,
+      },
+      precision: anschrift.houseNumber === '' ? 'street' : 'address',
+      matchLabel:
+        `${anschrift.street} ${anschrift.houseNumber}, ${anschrift.postalCode} ${anschrift.city}`
+          .replace(/\s+,/, ',')
+          .trim(),
     },
   };
 }

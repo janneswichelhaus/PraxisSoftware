@@ -132,6 +132,9 @@ export const AUDIT_ACTIONS = [
   'billable_services.read',
   'legal_holds.read',
   'storage_deletion.read',
+  // MAP-006a: Koordinate zur Adresse und Startort der Tagesroute (ANN-016).
+  'patient.address_geocoded',
+  'organization.tour_start_changed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -222,6 +225,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'billable_services.read': 'Leistungen gelesen',
   'legal_holds.read': 'Löschsperren gelesen',
   'storage_deletion.read': 'Löschaufträge der Ablage gelesen',
+  'patient.address_geocoded': 'Adresse auf der Karte verortet',
+  'organization.tour_start_changed': 'Startort der Touren geändert',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

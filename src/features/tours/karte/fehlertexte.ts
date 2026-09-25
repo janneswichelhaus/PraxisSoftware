@@ -34,10 +34,13 @@ export const FEHLERTEXTE: Readonly<Record<LocationErrorCode, Fehlertext>> = {
     erklaerung:
       'Die Route konnte nicht berechnet werden. Die Stopps stehen trotzdem auf der Karte und in der Liste.',
   },
+  // ANN-094: Ohne ausdrückliche Datenfreigabe der Umgebung (LOCATION_DATA_GATE)
+  // gilt ein echter Anbieter als nicht eingerichtet - der Schalter aus
+  // ADR-019 Punkt 25 steht zu, bis ihn jemand bewusst öffnet.
   not_configured: {
     titel: 'Kein Kartendienst eingerichtet',
     erklaerung:
-      'Die Routenberechnung läuft serverseitig und braucht dafür die Secrets LOCATION_PROVIDER und PTV_API_KEY. Beide liegen lokal und nie im Repository.',
+      'Die Berechnung läuft serverseitig und braucht dafür die Secrets LOCATION_PROVIDER, PTV_API_KEY und LOCATION_DATA_GATE. Alle drei liegen lokal und nie im Repository.',
   },
   unauthorized: {
     titel: 'Kartendienst weist den Serverschlüssel ab',

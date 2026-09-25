@@ -28,6 +28,8 @@ const vertraeglich = {
   anfrage: true satisfies Passt<Vertrag.RouteRequest, Function.RouteRequest>,
   matrixanfrage: true satisfies Passt<Vertrag.MatrixRequest, Function.MatrixRequest>,
   matrixergebnis: true satisfies Passt<Vertrag.MatrixResult, Function.MatrixResult>,
+  anschrift: true satisfies Passt<Vertrag.GeocodeRequest, Function.GeocodeRequest>,
+  treffer: true satisfies Passt<Vertrag.GeocodeResult, Function.GeocodeResult>,
   liste: true satisfies Passt<Vertrag.LocationErrorCode, (typeof FEHLERKLASSEN)[number]>,
 };
 
@@ -36,7 +38,7 @@ describe('Vertragstypen der Function', () => {
     // Die eigentliche Pruefung steht oben und laeuft im Compiler. Hier wird
     // nur sichtbar, dass sie stattgefunden hat.
     expect(Object.values(vertraeglich).every(Boolean)).toBe(true);
-    expect(Object.keys(vertraeglich)).toHaveLength(10);
+    expect(Object.keys(vertraeglich)).toHaveLength(12);
   });
 
   it('haelt die Grenze aus ANN-091 auf derselben Zahl wie der Browser', () => {

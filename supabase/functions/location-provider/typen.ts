@@ -22,6 +22,34 @@ export interface Coordinate {
 
 export type TravelProfile = 'bicycle' | 'cargo_bicycle';
 
+/** Postanschrift ohne Personenbezug im Feldzuschnitt der Terminadresse (`visit_*`). */
+export interface PostalAddress {
+  readonly street: string;
+  readonly houseNumber: string;
+  readonly postalCode: string;
+  readonly city: string;
+  /** ISO 3166-1 alpha-2, zum Beispiel `DE`. */
+  readonly countryCode: string;
+}
+
+/**
+ * Geocoding einer Anschrift (MAP-006a). Die einzige Anfrage, die eine Adresse
+ * zum Anbieter trägt — und nur beim Anlegen oder Ändern einer Adresse
+ * (ADR-019 Punkt 14, ANN-016). Kein Name, keine Kennung.
+ */
+export type GeocodeRequest = PostalAddress;
+
+export interface GeocodeResult {
+  readonly position: Coordinate;
+  readonly precision: 'address' | 'street' | 'locality' | 'unknown';
+  /** Anzeigetext des Treffers zum Prüfen; wird angezeigt, nie gespeichert. */
+  readonly matchLabel?: string;
+}
+
+export type GeocodeErgebnis =
+  | { readonly ok: true; readonly value: GeocodeResult }
+  | { readonly ok: false; readonly error: LocationError };
+
 /**
  * Fehlerklassen der Oberfläche.
  *
@@ -131,6 +159,10 @@ export type MatrixAntwort =
   | { readonly ok: true; readonly value: MatrixResult; readonly quelle: Quelle }
   | { readonly ok: false; readonly error: LocationError };
 
+export type GeocodeAntwort =
+  | { readonly ok: true; readonly value: GeocodeResult; readonly quelle: Quelle }
+  | { readonly ok: false; readonly error: LocationError };
+
 /**
  * Was die Function schickt — der Fehlerfall ist für beide Aufgaben derselbe.
  *
@@ -141,26 +173,26 @@ export type MatrixAntwort =
  * `RouteAntwort` oder `MatrixAntwort`.
  */
 export type Antwort =
-  | { readonly ok: true; readonly value: RouteResult | MatrixResult; readonly quelle: Quelle }
+  | {
+      readonly ok: true;
+      readonly value: RouteResult | MatrixResult | GeocodeResult;
+      readonly quelle: Quelle;
+    }
   | { readonly ok: false; readonly error: LocationError };
 
 /**
- * Welche der beiden Aufgaben eine Anfrage meint.
+ * Welche Aufgabe eine Anfrage meint (seit MAP-006a drei).
  *
  * Sie steht als eigenes Feld im Körper und wird nicht aus der Form geraten:
  * Eine Anfrage, der `origins` fehlt, ist dann eine unvollständige Matrix und
  * nicht stillschweigend eine Route. Seit MAP-004 trägt **jede** Anfrage das
  * Feld — auch die Route, die es bis dahin nicht brauchte.
  */
-export type Aufgabe = 'route' | 'matrix';
+export type Aufgabe = 'route' | 'matrix' | 'geocode';
 
 /**
- * Die zwei Aufrufe, die diese Function kennt.
- *
- * `geocode()` aus dem Vertrag fehlt hier weiter mit Absicht: Es kommt mit
- * MAP-006, und ein leerer Vorbau wäre genau das Zukunftsfeature, das ADR-014
- * ausschließt. `matrix()` ist mit MAP-004 dazugekommen und heißt im Vertrag
- * `calculateMatrix()`.
+ * Die drei Aufrufe des Vertrags. `matrix()` kam mit MAP-004 und heißt im
+ * Vertrag `calculateMatrix()`, `geocode()` mit MAP-006a.
  */
 export interface Anbieteradapter {
   /** Kennung für das Log, zum Beispiel `ptv` oder `mock`. */
@@ -168,6 +200,7 @@ export interface Anbieteradapter {
   readonly quelle: Quelle;
   route(request: RouteRequest, signal?: AbortSignal): Promise<RouteErgebnis>;
   matrix(request: MatrixRequest, signal?: AbortSignal): Promise<MatrixErgebnis>;
+  geocode(request: GeocodeRequest, signal?: AbortSignal): Promise<GeocodeErgebnis>;
 }
 
 /**

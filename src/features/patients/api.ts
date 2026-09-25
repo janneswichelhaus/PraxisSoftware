@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import { protokolliereFehler } from '@/lib/protokoll';
+import type { GeocodeResult } from '@/lib/location/contract';
 
 /**
  * Datenzugriff auf die Patientenkartei.
@@ -43,6 +44,10 @@ const patientSchema = z.object({
   home_visit_access_note: z.string().nullable(),
   special_note: z.string().nullable(),
   remark: z.string().nullable(),
+  // MAP-006a: nur ob und wie genau die Adresse verortet ist - die Koordinate
+  // selbst liefert die Kartei nicht (ANN-016). Optional, damit ältere
+  // Testdaten ohne das Feld weiter gelesen werden.
+  geocode_precision: z.enum(['address', 'street', 'locality', 'unknown']).nullable().optional(),
 });
 
 export type Patient = z.infer<typeof patientSchema>;
@@ -82,6 +87,7 @@ const SELECT = [
   'street, house_number, postal_code, city',
   'primary_therapist_staff_member_id, primary_therapist_name',
   'home_visit_access_note, special_note, remark',
+  'geocode_precision',
 ].join(', ');
 
 export async function fetchPatients(): Promise<PatientListenzeile[]> {
@@ -403,6 +409,39 @@ export async function setPatientStatus(
   });
 
   if (error) throw new Error('Der Versorgungsstatus konnte nicht geändert werden.');
+}
+
+/**
+ * Speichert die Koordinate zur Patientenadresse (MAP-006a, ANN-016).
+ *
+ * Mit der Anschrift, die geocodiert wurde: Hat sie sich inzwischen geändert,
+ * lehnt der Server ab, statt eine Koordinate zu einer anderen Adresse zu
+ * speichern. Unterhalb der Hausnummer verlangt er `bestaetigt`.
+ */
+export async function setPatientAddressCoordinate(
+  patientId: string,
+  anschrift: { street: string; houseNumber: string; postalCode: string; city: string },
+  treffer: GeocodeResult,
+  bestaetigt: boolean,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('set_patient_address_coordinate', {
+    p_patient_id: patientId,
+    p_street: anschrift.street,
+    p_house_number: anschrift.houseNumber,
+    p_postal_code: anschrift.postalCode,
+    p_city: anschrift.city,
+    p_lat: treffer.position.lat,
+    p_lon: treffer.position.lon,
+    p_precision: treffer.precision,
+    p_confirmed: bestaetigt,
+  });
+
+  if (error) {
+    if (error.code === '40001') {
+      throw new Error('Die Adresse wurde inzwischen geändert. Bitte erneut verorten.');
+    }
+    throw new Error('Die Kartenposition konnte nicht gespeichert werden.');
+  }
 }
 
 /**

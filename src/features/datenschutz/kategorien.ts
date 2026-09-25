@@ -35,7 +35,7 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
   },
   patient_contact_details: {
     label: 'Kontakt- und Stammdaten',
-    beschreibung: 'Geburtsdatum, Anschrift und Erreichbarkeit.',
+    beschreibung: 'Geburtsdatum, Anschrift mit Kartenposition und Erreichbarkeit.',
   },
   patient_care_details: {
     label: 'Angaben zur Versorgung',

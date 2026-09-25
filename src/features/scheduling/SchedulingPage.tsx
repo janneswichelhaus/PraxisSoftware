@@ -16,6 +16,7 @@ import {
   fristLabel,
   saveDocumentationDeadline,
 } from '@/features/documentation/api';
+import { StartortEinstellung } from '@/features/tours/StartortEinstellung';
 import {
   RASTER_WERTE,
   WOCHENTAGE,
@@ -573,11 +574,12 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader
         title="Planung"
-        description="Praxisraster, Dokumentationsfrist und Arbeitszeiten. Grundlage für Terminvergabe und Akte."
+        description="Praxisraster, Dokumentationsfrist, Startort der Touren und Arbeitszeiten. Grundlage für Terminvergabe und Akte."
       />
 
       {darfRaster ? <RasterEinstellung aktuell={user.appointmentGridMinutes} /> : null}
       {darfRaster ? <FristEinstellung organizationId={user.profile.organization_id} /> : null}
+      {darfRaster ? <StartortEinstellung /> : null}
 
       {therapeuten.isPending ? <LoadingState label="Personen werden geladen …" /> : null}
       {therapeuten.isError ? (
