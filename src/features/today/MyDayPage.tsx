@@ -239,8 +239,8 @@ function MeineTagesliste({
       {offen.some((termin) => termin.appointment_type === 'home_visit') ? (
         <p className="text-ink-subtle mt-3 max-w-prose text-xs leading-relaxed">
           „Navigation starten" öffnet Google Maps im Fahrradmodus und übergibt dabei nur die
-          Anschrift ohne Namen – keine Uhrzeit, keinen Zugangshinweis, keine Kennung. Die Übergabe
-          passiert erst beim Tippen.
+          Kartenposition, ohne sie die Anschrift ohne Namen – keine Uhrzeit, keinen Zugangshinweis,
+          keine Kennung. Die Übergabe passiert erst beim Tippen.
         </p>
       ) : null}
 

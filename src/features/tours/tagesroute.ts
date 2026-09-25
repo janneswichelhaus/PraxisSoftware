@@ -153,7 +153,8 @@ export function fahrzeitZwischen(
 
 /**
  * Das Navigationsziel eines Stopps (MAP-006d, ANN-018): die Koordinate, sonst
- * die Anschrift ohne Namen. Ein Praxistermin hat keines.
+ * die Anschrift ohne Namen. Ein Praxistermin hat keines. Die Position der
+ * Route hat Vorrang; `navigationsZiel` nimmt die der Tagesliste.
  */
 export function zielDesStopps(stopp: Stopp): NavigationTarget | null {
   if (stopp.position && stopp.termin.appointment_type === 'home_visit') {

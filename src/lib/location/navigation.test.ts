@@ -299,3 +299,32 @@ describe('buildNavigationDayUrls', () => {
     expect(new Set(uebergeben).size).toBe(23);
   });
 });
+
+describe('navigationsZiel mit Kartenposition (MAP-006d, ANN-018)', () => {
+  const BESUCH = {
+    appointment_type: 'home_visit' as const,
+    visit_street: 'Testweg',
+    visit_house_number: '7',
+    visit_postal_code: '72072',
+    visit_city: 'Tübingen',
+  };
+
+  it('uebergibt die Koordinate, sobald der Hausbesuch eine traegt', () => {
+    const ziel = navigationsZiel({ ...BESUCH, visit_lat: 48.5164, visit_lon: 9.0349 });
+    expect(ziel).toEqual({ kind: 'coordinate', position: { lat: 48.5164, lon: 9.0349 } });
+    const url = buildNavigationUrl(ziel!, 'google_maps');
+    expect(url).toContain('destination=48.5164%2C9.0349');
+    expect(url).not.toContain('Testweg');
+  });
+
+  it('faellt ohne Koordinate auf die Anschrift ohne Namen zurueck', () => {
+    expect(navigationsZiel({ ...BESUCH, visit_lat: null, visit_lon: null })?.kind).toBe('address');
+    expect(navigationsZiel(BESUCH)?.kind).toBe('address');
+  });
+
+  it('gibt einem Praxistermin auch mit Koordinate kein Ziel', () => {
+    expect(
+      navigationsZiel({ ...BESUCH, appointment_type: 'practice', visit_lat: 1, visit_lon: 1 }),
+    ).toBeNull();
+  });
+});

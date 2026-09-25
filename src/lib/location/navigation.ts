@@ -115,14 +115,17 @@ export interface Besuchsadresse {
   readonly visit_house_number: string | null;
   readonly visit_postal_code: string | null;
   readonly visit_city: string | null;
+  /** Kartenposition des Hausbesuchs (MAP-006a/d) — hat sie Vorrang vor der Anschrift. */
+  readonly visit_lat?: number | null | undefined;
+  readonly visit_lon?: number | null | undefined;
 }
 
 /**
  * Das Navigationsziel eines Termins - oder `null`, wenn es keines gibt.
  *
- * Übergeben wird ausschließlich die Postanschrift ohne Namen. Sobald die
- * Adresse eine Koordinate trägt (ANN-016, ab MAP-006), tritt sie an diese
- * Stelle; die Stelle ist genau diese Funktion.
+ * Übergeben wird die Koordinate, sobald der Hausbesuch eine trägt (ANN-016,
+ * seit MAP-006d), sonst die Postanschrift ohne Namen. Die Stelle ist genau
+ * diese Funktion.
  *
  * `null` für alles außer einem Hausbesuch und für einen unvollständigen
  * Adress-Snapshot. Die Datenbank lässt eine halbe Adresse zwar nicht zu; die
@@ -131,6 +134,10 @@ export interface Besuchsadresse {
  */
 export function navigationsZiel(besuch: Besuchsadresse): NavigationTarget | null {
   if (besuch.appointment_type !== 'home_visit') return null;
+  // ANN-018, seit MAP-006d: Liegt eine Koordinate vor, geht nur sie hinaus.
+  if (typeof besuch.visit_lat === 'number' && typeof besuch.visit_lon === 'number') {
+    return { kind: 'coordinate', position: { lat: besuch.visit_lat, lon: besuch.visit_lon } };
+  }
   const { visit_street, visit_house_number, visit_postal_code, visit_city } = besuch;
   if (!visit_street || !visit_house_number || !visit_postal_code || !visit_city) return null;
 
