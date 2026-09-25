@@ -251,6 +251,7 @@ Claude braucht keinen einzigen davon.
 `rsync` vorhanden; Zugriffslog mit gekürzten IP-Adressen. `.htaccess` wird von
 Apache ausgewertet (OPS-002a, erster Lauf); der Heimatordner ist für den
 Webserver gesperrt, er liest nur unter `~/www` (= `/var/www/virtual/prtest`).
+AVV nach Art. 28 DSGVO abgeschlossen (Jannes, bestätigt 2026-09-25).
 
 ### Schritt 2c — Adresse (optional, etwa 10 Minuten)
 
