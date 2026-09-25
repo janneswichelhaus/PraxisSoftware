@@ -37,6 +37,11 @@ export function projektRef(supabaseUrl) {
   if (!URL.canParse(supabaseUrl)) return null;
   const url = new URL(supabaseUrl);
   if (url.protocol !== 'https:') return null;
+  // Nur die Projekt-URL selbst: supabase-js haengt `/auth/v1`, `/rest/v1`
+  // usw. an. Mit Pfad - etwa der REST-Adresse `…/rest/v1/` aus dem
+  // Dashboard - ginge die Anmeldung an `/rest/v1/auth/v1/token` und
+  // scheiterte mit 404 (erster Lauf der Test-Umgebung, 2026-09-25).
+  if (url.pathname !== '/' || url.search || url.hash || url.username) return null;
   return PROJEKT_HOST.exec(url.hostname)?.[1] ?? null;
 }
 
@@ -61,7 +66,9 @@ export function pruefeKonfiguration({ supabaseUrl, anonKey, databaseUrl }) {
 
   const ref = projektRef(supabaseUrl ?? '');
   if (!ref) {
-    fehler.push('TESTENV_SUPABASE_URL ist keine Projekt-URL der Form https://<ref>.supabase.co.');
+    fehler.push(
+      'TESTENV_SUPABASE_URL ist keine Projekt-URL der Form https://<ref>.supabase.co (ohne Pfad wie /rest/v1).',
+    );
   }
 
   // ADR-015: Der service_role-Schlüssel darf nie in den Browser. Alles, was

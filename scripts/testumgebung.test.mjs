@@ -100,6 +100,15 @@ describe('projektRef', () => {
     expect(projektRef(`https://${REF}.supabase.co.beispiel.invalid`)).toBeNull();
     expect(projektRef('kein-url')).toBeNull();
   });
+
+  it('weist eine Adresse mit Pfad ab - etwa die REST-Adresse aus dem Dashboard', () => {
+    expect(projektRef(`${SUPABASE_URL}/rest/v1/`)).toBeNull();
+    expect(projektRef(`${SUPABASE_URL}/rest/v1`)).toBeNull();
+    expect(projektRef(`${SUPABASE_URL}/?x=1`)).toBeNull();
+    expect(konfiguration({ supabaseUrl: `${SUPABASE_URL}/rest/v1/` })[0]).toContain(
+      'TESTENV_SUPABASE_URL',
+    );
+  });
 });
 
 describe('htaccess', () => {
