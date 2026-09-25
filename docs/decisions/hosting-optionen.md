@@ -248,8 +248,9 @@ Claude braucht keinen einzigen davon.
 **Stand am Konto (2026-09-25):** Asteroid `prtest` auf Uberspace 8, Host
 `janus.uberspace.de`; ausgeliefert wird aus `~/www/html` (erreichbar unter
 `prtest.uber.space`). SSH mit Schlüssel über IPv4, Fingerabdruck geprüft;
-`rsync` vorhanden; Zugriffslog mit gekürzten IP-Adressen. Offen: `.htaccess`
-(prüft OPS-002a), AVV.
+`rsync` vorhanden; Zugriffslog mit gekürzten IP-Adressen. `.htaccess` wird von
+Apache ausgewertet (OPS-002a, erster Lauf); der Heimatordner ist für den
+Webserver gesperrt, er liest nur unter `~/www` (= `/var/www/virtual/prtest`).
 
 ### Schritt 2c — Adresse (optional, etwa 10 Minuten)
 
