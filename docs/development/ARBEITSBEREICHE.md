@@ -133,8 +133,6 @@ jeder andere.
 | Zeitkonto                | `/betrieb/zeitkonto`          | Buchungen geleistet/abgebaut mit Datum, Grund und laufendem Saldo je Person                                                                                   |
 | Erstattungen             | `/betrieb/erstattungen`       | Strom und Einkauf, IBAN, Zeitraum, Arbeitstage mit Berechnung, Positionen mit Summe, Belege, Erklärung, Unterschrift, Historie je Person                      |
 | Kommunikation            | `/team`                       | eigene Anforderung: Kanäle, Direktnachrichten, Threads, Erwähnungen, Ungelesenes, Suche                                                                       |
-| Touren                   | `/touren`                     | eigene Anforderung: Besuchsfolge mit unterscheidbarer Behandlungs- und Wegzeit                                                                                |
-| Karte                    | `/touren/karte`               | Kartenprototyp aus MAP-002 bis MAP-005: acht erfundene Koordinaten in Tübingen mit eigenen Nummern-Markern, dazu die Fahrradroute mit Distanz und Fahrzeit je Abschnitt, die Fahrzeiten als **Tagesfolge** mit Erreichbarkeit an einem erfundenen Terminraster (die vollständige Matrix aller Paare aufklappbar) und der Navigations-Handoff **an jeder Stoppzeile** und für den Tag (die Ziel-App liegt weggeklappt bei der Gerätebewertung, nichts davon gespeichert); kein Termin, kein Patientenbezug, nichts gespeichert |
 
 ### Sandbox-Prototypen (Pfad S)
 
@@ -175,40 +173,13 @@ keine Persistenz. Das ist nicht nur Absicht, sondern geprüft:
 `src/features/preview/ehrlichkeit.test.tsx` prüft an den heikelsten Stellen,
 dass keine Erfolgsmeldung behauptet wird, die es nicht gibt.
 
-**Fünf Ausnahmen, benannt statt verschwiegen**, alle allein für die Karte
-unter `/touren/karte` und alle in `trennung.test.ts` an das Verzeichnis
-`src/features/tours/karte` gebunden — mit eigener Gegenprobe, dass sie dort
-enden:
-
-1. **Kartenkacheln** (seit MAP-002): Die Seite lädt sie beim Kartendienst,
-   sobald ein Kachelschlüssel konfiguriert ist — der einzige direkte
-   Anbieterkontakt, den ADR-019 dem Browser erlaubt (Punkt 15). Hinaus gehen
-   Kachelausschnitt und Zoom, nie ein Stopp, ein Name oder ein Termin; ohne
-   Schlüssel geht gar nichts hinaus.
-2. **Der Routenabruf** (seit MAP-003): Die Seite ruft die eigene Edge
-   Function `location-provider` auf, die die Route serverseitig beim Anbieter
-   rechnet — serverseitig, weil ADR-019 Punkt 15 es so verlangt. Übergeben
-   werden Koordinaten und ein Fahrprofil, sonst nichts; gespeichert wird
-   nichts (Punkt 16). Der Aufruf selbst steht in `@/lib/location/route.ts`,
-   das **nur** dieser Prototyp importieren darf.
-3. **Der Matrixabruf** (seit MAP-004): dieselbe Function, dieselbe Regel, nur
-   für die Fahrzeiten zwischen je zwei Stopps. Der Aufruf steht in
-   `@/lib/location/matrix.ts` und ist ebenso an das Verzeichnis gebunden.
-4. **Die Erreichbarkeitsregel** (seit MAP-004): `erreichbarkeit()` aus
-   `src/features/scheduling/` ist eine reine Funktion über Sekunden (§6.2)
-   und spricht mit niemandem — sie steht trotzdem hier, weil mit ihr sonst
-   das ganze Fachmodul `scheduling` in jedem Vorschaubereich offenstünde.
-   Freigegeben ist der eine Name, nicht das Verzeichnis.
-5. **Der Navigations-Handoff** (seit MAP-005): `@/lib/location/navigation`
-   ruft nichts ab, öffnet aber auf Tippen die Navigations-App des Geräts mit
-   einer Zielkoordinate. Auch das verlässt die Sitzung — über das Gerät statt
-   über den Server (ADR-019 Punkt 20 bis 23) —, und die Bedingungen dafür
-   gelten nur dort, wo sie geprüft sind. Übergeben wird ausschließlich eine
-   der acht erfundenen Koordinaten und der Fahrradmodus; die URL entsteht
-   erst im Klickhandler und wird nirgends abgelegt.
-
-Alles Übrige bleibt auch dort ausgeschlossen: kein `fetch(` im eigenen
-Quelltext, kein `getSupabase`, keine Datenbank, keine Persistenz.
+**Keine Ausnahme mehr.** Bis MAP-006 durfte der Kartenprototyp unter
+`/touren/karte` Kacheln laden, Route und Matrix abrufen und den Handoff
+auslösen — an das Verzeichnis `src/features/tours/karte` gebunden. Seit die
+Touren mit MAP-006 (2026-09-25) echt angebunden sind, ist `src/features/tours`
+kein Vorschaubereich mehr; `trennung.test.ts` weist MapLibre, Routen-,
+Matrix-, Geocoding- und Handoff-Aufrufe seitdem in **jedem** Vorschaubereich
+ab.
 
 ## 3. Offen
 
@@ -217,13 +188,13 @@ benennen die offene Frage, statt sie zu verstecken.
 
 | Offener Punkt                                             | Wo sichtbar             | Quelle                           |
 | --------------------------------------------------------- | ----------------------- | -------------------------------- |
-| Kartendienst: Zielarchitektur und Kandidat entschieden (ADR-019 Fassung 2, angenommen 2026-09-13: MapLibre, serverseitiger Adapter, PTV Developer zur Erprobung); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate | Touren                  | §3.5, §9, `OPEN_DECISIONS.md` B7, ADR-019, `MAP-LOOPS.md` |
+| Kartendienst: seit MAP-006 echt angebunden (synthetische Adressen); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate — technisch verriegelt durch `LOCATION_DATA_GATE` (ANN-094) | Touren                  | §3.5, §9, ADR-019, [`kartendienst.md`](../datenschutz/kartendienst.md) |
 | Aggregierte Auswertungen über Beschäftigte                | Zeitkonto               | §20, `OPEN_DECISIONS.md` B6      |
 | Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Kommunikation           | §10, §18                         |
 | Aufbewahrung und Löschung von Beschäftigtendaten          | nicht mehr sichtbar — die Vorschau-Personalakte ist entfallen; der Punkt bleibt offen (`IDEA-QSN-010`) | ADR-008                          |
 | Aufbewahrung von Belegen, Bestätigung der Auszahlung      | Erstattungen            | ADR-008, ADR-009                 |
 | Tübinger Werkstatt, Ruhetag, Depot, Transportoptionen     | Pannenassistent, Flotte | Standortvorlage, ungeprüft       |
-| Fahrpuffer zwischen Hausbesuchen: woher die Fahrzeit kommt, Warnung oder Sperre — die Rechenregel selbst ist entschieden (§8.1: erster Rasterpunkt auf oder nach Ende plus Fahrzeit) | Kalender, Termin anlegen | §8.1, `OPEN_DECISIONS.md` E12    |
+| Fahrpuffer: seit MAP-006 als Warnung gebaut (ANN-097); ob später eine Sperre gilt, entscheidet Jannes an echten Zahlen (E12 Punkt 4) | Touren, Kalender | §8.1, `OPEN_DECISIONS.md` E12    |
 
 Diese Punkte blockieren die davon abhängigen **echten** Aktionen. Sie blockieren
 nicht, dass ihre gekennzeichneten Ansichten schon stehen.
@@ -269,8 +240,8 @@ V1 und steht vor der Eröffnung (Block 8). Die Loops MAP-002 bis MAP-006 ersetze
 Tagesroute, Fahrradroute, Fahrzeiten, Navigations-Handoff, Tourenliste.
 MAP-002 bis MAP-005 sind Prototypen mit synthetischen Daten und laufen als
 Vorschau unter `/touren/karte` — seit 2026-09-22 ohne Kennzeichnung, mit
-Zustandsmeldung (Abschnitt 2); MAP-006 bindet die echten
-Termine an und ersetzt `/touren`. Sie berühren einen externen Datenfluss
+Zustandsmeldung (Abschnitt 2); MAP-006 hat am 2026-09-25 die echten
+Termine angebunden und beide Vorschauen ersetzt. Sie berühren einen externen Datenfluss
 (ADR-019) und sind deshalb Pfad A, keine Sandbox-Prototypen.
 
 Für Vorschauen gelten seit dem 2026-09-13 drei Regeln

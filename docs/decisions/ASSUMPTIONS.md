@@ -1229,7 +1229,7 @@ Datenschutz · offen · 2026-09-25 · — · Prüfpaket · Wiedervorlage: Gate a
 
 **Begründung.** ADR-019 Punkt 25 (Fassung 4) verlangt einen „eigenen, benannten Schritt", der vor dem ersten Lauf mit echten Patientenadressen zu bleibt; ab MAP-006 trägt die Function erstmals Adressen (Geocoding). Ein Schalter, der von selbst zu ist, macht das Vergessen harmlos: Eine Produktivumgebung mit Schlüssel, aber ohne bewusste Freigabe, schickt nichts. Die Function kann synthetische und echte Adressen nicht unterscheiden; der Schalter beschreibt deshalb die Umgebung, nicht die Anfrage. Unsicher: ob die Prüfung eine technische statt einer organisatorischen Sperre gegen `synthetic` in der Produktion verlangt.
 
-**Anker.** `DATENFREIGABEN` und `waehleAdapter` in `supabase/functions/location-provider/auswahl.ts`; Tests in `auswahl.test.ts`; Eintrag in den Go-live-Vorbedingungen der DSFA-Unterlagen (`docs/datenschutz/`).
+**Anker.** `DATENFREIGABEN` und `waehleAdapter` in `supabase/functions/location-provider/auswahl.ts`; Tests in `auswahl.test.ts`; Go-live-Vorbedingung in `docs/datenschutz/kartendienst.md`.
 
 **Änderungspfad.** Anderer Name oder weitere Stufe: eine Konstante und ihre Tests · Aufwand `klein`. Technische Sperre gegen `synthetic` in der Produktion: Umgebungskennung als zweites Secret und Vergleich in derselben Funktion · Aufwand `klein`.
 

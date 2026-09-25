@@ -29,6 +29,10 @@ Die gebauten Zuschnitte MAP-002 bis MAP-005 liegen in
 
 ## MAP-006 — Patient/Tour-Integration
 
+**Gebaut 2026-09-25** (a bis e, mit synthetischen Adressen). Datenschutz-Paket:
+[`../datenschutz/kartendienst.md`](../datenschutz/kartendienst.md). Scharfgeschaltet ist
+nichts: Der Schalter `LOCATION_DATA_GATE` (ANN-094) steht vor dem Gate aus ADR-019 Punkt 9.
+
 **Gebaut wird sofort, scharfgeschaltet erst nach dem Gate** (§15.2, ADR-019
 Fassung 4). Der Loop entsteht vollständig mit **synthetischen** Adressen im
 Seed — Migration, Geocoding-Pfad, Tagesroute, Fahrzeiten, Sichtung. Was am Gate

@@ -24,12 +24,12 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 
 ## Dateien
 
-| Datei                                        | Etappe                            | Stand                                       |
-| -------------------------------------------- | --------------------------------- | ------------------------------------------- |
-| [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess     | offen (Rückstand seit CAL-EPIC-003b)        |
-| [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | offen                                       |
-| [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst           | offen; Teil am Telefon wartet auf ein Gerät |
-| [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                       |
+| Datei                                        | Etappe                            | Stand                                                                                |
+| -------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------ |
+| [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess     | offen (Rückstand seit CAL-EPIC-003b)                                                 |
+| [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | offen                                                                                |
+| [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst           | offen; seit MAP-006 auf der echten Tourenseite, Teil am Telefon wartet auf ein Gerät |
+| [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                                                                |
 
 Die früheren Einzelschritte je Loop liegen unverändert in
 [`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum

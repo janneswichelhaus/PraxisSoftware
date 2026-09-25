@@ -173,6 +173,12 @@ womöglich gar nicht mehr, sobald die Karte in der Anwendung steht.
 Das „Abhaken" hängt fachlich an `IDEA-PRX-039` und damit an ABR-002 — der
 Befund allein ordnet Schaltflächen, er ändert keinen Vorgang.
 
+**Stand MAP-006 (2026-09-25):** Die Karte steht jetzt in der Anwendung (Touren
+und als Aufklapper in der Übersicht). „Navigation starten" bleibt trotzdem auf
+der Tageskarte — es ist der Weg zur Turn-by-Turn-Führung, bis MAP-007 sie
+baut, und übergibt seit MAP-006d die Kartenposition statt der Anschrift. Die
+Umordnung der Aktionen bleibt offen.
+
 ### BEF-003 — `appointment-series.test.ts` ist vom Wochentag abhängig und wird an manchen Tagen rot
 
 | | |
