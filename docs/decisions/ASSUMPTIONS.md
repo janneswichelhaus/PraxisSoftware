@@ -1268,3 +1268,15 @@ Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: Jannes nach
 **Anker.** `app.earliest_follow_up_start` und `public.check_travel_buffers` in `supabase/migrations/20260925120000_map_006c_travel_buffer.sql`; Testfall 09:05–10:05 plus 12 Minuten = 10:20 in `supabase/tests/travel-buffer.test.ts`; Anzeige in `src/features/tours/Fahrten.tsx` und `FahrpufferHinweis.tsx`.
 
 **Änderungspfad.** Sperre statt Warnung: Fahrzeit serverseitig über einen Aufruf der Function aus einem Hintergrundpfad, Prüfung in `create_appointment`/`update_appointment` · Aufwand `mittel`. Kurze Speicherung statt Live-Abruf: Tabelle mit Frist „Routing-Rohdaten" (ADR-008, 30 Tage) · Aufwand `mittel`.
+
+### ANN-098 — Fehlt ein gewerteter Wert, rechnet der Kern keinen
+
+Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: D6 im FRB-Plan, je Score mit P4 und P5
+
+**Annahme.** Fehlt die Antwort auf ein gewertetes Item, gibt der Rechenkern für die betroffene Skala **keinen Wert** aus und nennt die fehlenden Items. Er zählt nichts als 0, rechnet nichts hoch und bildet keinen Mittelwert über das Beantwortete. Die einzige Ausnahme ist eine Formel, die sie selbst ausspricht: `summe_prozent` mit `aus_gewerteten_items` (FAAM, „nicht zutreffend" verkleinert das Maximum). Gerechnet wird ohne Rundung; gerundet wird bei der Anzeige.
+
+**Begründung.** Das Inventar sagt für ODI, RMDQ, NDI, FABQ, PCS und weitere „im PDF nicht geregelt" (D6); der Arbeitsauftrag §5 Punkt 3 und `quellen/README.md` Regel 2 verbieten, eine Lücke mit Plausiblem zu füllen. Ein fehlender Wert ist sichtbar und harmlos, ein erfundener steht im Verlauf und behauptet Vergleichbarkeit. ADR-006 Punkt 2 deckt nur die Rechnung nach **veröffentlichter** Vorschrift.
+
+**Anker.** `wende()` in `src/features/assessments/rechnen.ts`; Testfall „gibt keinen Wert, solange ein gewertetes Item fehlt" in `rechnen.test.ts`.
+
+**Änderungspfad.** Je Score eine eigene Missing-Value-Regel, sobald D6 für ihn entschieden ist: maschinenlesbares Feld neben `missing_value_regel`, Auswertung in `wende()`, Referenzfall mit fehlender Antwort · Aufwand `klein`.

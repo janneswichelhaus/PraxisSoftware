@@ -205,9 +205,10 @@ export type TechnikErgebnis = (typeof TECHNIK_ERGEBNISSE)[number];
  * Die Rechenformen unten sind **aus dem Inventar abgelesen**
  * (`quellen/scores/score-inventar.md`, Blatt „Scoring"), nicht aus dem
  * Modellwissen erfunden — genau das verbietet der Arbeitsauftrag §5 Punkt 2.
- * Die 18 vorliegenden Instrumente brauchen zusammen sechs Formen; eine siebte
- * für „gar keine Berechnung" kommt dazu, weil der Anamnesebogen ausdrücklich
- * keinen Summenscore hat.
+ * Die 18 vorliegenden Instrumente brauchen zusammen fünf Rechenformen; dazu
+ * kommt „gar keine Berechnung", weil der Anamnesebogen ausdrücklich keinen
+ * Summenscore hat, und seit FRB-EPIC-001 der Mittelwert der PSFS. Gerechnet
+ * wird in `rechnen.ts`, nirgends sonst.
  */
 
 /** Die Punktzuordnung einer Antwort: Text und Wert, nie nur Text. */
@@ -257,6 +258,12 @@ const formelSchema = z.discriminatedUnion('art', [
         });
       }
     }),
+  /**
+   * PSFS: Mittelwert der bewerteten Aktivitäten (FRB-EPIC-001). Die einzige
+   * Form, die nicht aus dem Inventar der 18 stammt, sondern mit dem ersten
+   * Instrument kam, das sie braucht (ANN-087 gilt sinngemäß).
+   */
+  z.object({ art: z.literal('mittelwert') }),
   /** KOOS je Subskala: „100 - (Mittelwert der Items x 100 / 4)". */
   z.object({ art: z.literal('mittelwert_invertiert'), item_maximum: z.number().positive() }),
   /** PRWE-G: „Schmerz-Summe + (Funktions-Summe / 2)" — Subskalen mit Gewicht. */
@@ -594,6 +601,7 @@ export const scoreDefinitionSchema = z
   });
 
 export type Option = z.infer<typeof optionSchema>;
+export type Formel = z.infer<typeof formelSchema>;
 export type Wertebereich = z.infer<typeof wertebereichSchema>;
 export type ScoreItem = z.infer<typeof scoreItemSchema>;
 export type Subskala = z.infer<typeof subskalaSchema>;
