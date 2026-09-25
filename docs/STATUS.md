@@ -11,7 +11,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 ## Danach — Bauen
 
 1. **G6c**, sobald deine Wahl unter „Blocker" da ist
-2. **OPS-002a Test-Umgebung**, sobald du „Konten stehen" meldest; dann UX-EPIC-002, sobald deine Begriffsliste da ist
+2. **OPS-002a Test-Umgebung** — die Konten stehen (2026-09-25), `/weiter OPS-002a`; danach UX-EPIC-002, sobald deine Begriffsliste da ist
 3. Solange beides fehlt: **Block 2 weiter mit FRB-EPIC-002** (Anamnese und Verlauf in der Akte) — Bauen wartet nicht (§15.2)
 
 ## Prüfverfahren
@@ -20,7 +20,6 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Blocker (Jannes-seitig)
 
-- **Test-Umgebung einrichten** (B16: Uberspace, neu): Supabase-Testprojekt in Frankfurt, Uberspace-Konto mit AVV und Deploy-Schlüssel, sieben Secrets in der GitHub-Umgebung `test` — Schritt für Schritt in [`hosting-optionen.md`](decisions/hosting-optionen.md), „Das genaue Vorgehen", etwa eine Stunde. Danach nur „Konten stehen" melden, **keine Werte in den Chat**.
 - **Sichtung** (E-6): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; am Handy im WLAN nach [`DEVELOPMENT.md`](DEVELOPMENT.md), „Handytest im WLAN".
 - **Bögen für NRS, PSFS und Veränderungsfrage** (neu, ANN-099): die Vorlagen, die die Praxis nutzt, als PDF nach `quellen/scores/pdf/` — dann wird der Wortlaut dagegen gehalten und die drei auf Version 1.0.0 aktiviert. Nicht dringend: Erhoben wird erst mit FRB-EPIC-002.
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
