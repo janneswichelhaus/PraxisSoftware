@@ -271,7 +271,7 @@ ist Absicht: `TEST_DATABASE_URL` heißt schon die lokale Wegwerf-Datenbank von
 
 | Name                     | Wert                                                                                    | Woher                                            |
 | ------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `TESTENV_SUPABASE_URL`   | Projekt-URL (`https://….supabase.co`)                                                   | Supabase → Project Settings → API                |
+| `TESTENV_SUPABASE_URL`   | Projekt-URL (`https://<ref>.supabase.co`), **ohne** `/rest/v1/` — nicht die REST-Adresse | Supabase → Project Settings → API                |
 | `TESTENV_SUPABASE_ANON_KEY` | öffentlicher Schlüssel (`anon` oder `publishable`) — **nie** `service_role` / `secret` | Supabase → Project Settings → API Keys           |
 | `TESTENV_DATABASE_URL`   | Verbindungsstring mit Passwort, „Session pooler"                                        | Supabase → Connect                               |
 | `DEPLOY_SSH_HOST`        | Hostname des Uberspace-Servers                                                          | Uberspace-Dashboard                              |
