@@ -85,7 +85,7 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
     <div className="space-y-2">
       <p>Noch nicht verortet — ohne Kartenposition fehlt der Hausbesuch auf der Tourenkarte.</p>
       {treffer ? (
-        <div className="border-line space-y-2 rounded-md border p-3">
+        <div className="border-line rounded-card space-y-2 border p-3">
           <p>
             Treffer {GENAUIGKEIT_TEXT[treffer.wert.precision]}
             {treffer.wert.matchLabel ? `: ${treffer.wert.matchLabel}` : ''}.

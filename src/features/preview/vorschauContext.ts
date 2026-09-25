@@ -9,7 +9,6 @@ import type {
   Nachricht,
   Rad,
   Rechnung,
-  Tour,
   Urlaubsantrag,
   Zahlung,
   Zeitbuchung,
@@ -33,7 +32,6 @@ export interface Vorschauzustand {
   erstattungen: Erstattung[];
   kanaele: Kanal[];
   nachrichten: Nachricht[];
-  touren: Tour[];
   katalog: Katalogleistung[];
   leistungen: ErbrachteLeistung[];
   rechnungen: Rechnung[];

@@ -43,8 +43,11 @@ describe('funktionskatalog', () => {
 
   it('kennzeichnet Vorschaubereiche als solche', () => {
     const katalog = funktionskatalog(testUser(['owner']));
+    const radflotte = katalog.find((eintrag) => eintrag.bezeichnung === 'Radflotte');
+    expect(radflotte?.vorschau).toBe(true);
+    // Seit MAP-006 echt angebunden: die Touren tragen keine Kennzeichnung mehr.
     const touren = katalog.find((eintrag) => eintrag.bezeichnung === 'Touren');
-    expect(touren?.vorschau).toBe(true);
+    expect(touren?.vorschau).toBeUndefined();
     const arbeitszeiten = katalog.find((eintrag) => eintrag.bezeichnung === 'Arbeitszeiten');
     expect(arbeitszeiten?.vorschau).toBeUndefined();
   });

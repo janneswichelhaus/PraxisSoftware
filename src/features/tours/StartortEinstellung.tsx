@@ -115,7 +115,7 @@ function StartortFormular({ standort }: { standort: Standort }) {
       </div>
 
       {treffer ? (
-        <div className="border-line max-w-xl space-y-2 rounded-md border p-3 text-sm">
+        <div className="border-line rounded-card max-w-xl space-y-2 border p-3 text-sm">
           <p>
             Treffer {GENAUIGKEIT_TEXT[treffer.wert.precision]}
             {treffer.wert.matchLabel ? `: ${treffer.wert.matchLabel}` : ''}.

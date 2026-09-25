@@ -264,7 +264,7 @@ describe('Übersicht', () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
     const ueberschrift = await screen.findByRole('heading', {
-      name: 'Organisatorisches, Wege und Kommunikation',
+      name: 'Organisatorisches und Kommunikation',
     });
     expect(ueberschrift).toBeInTheDocument();
     expect(ueberschrift.closest('details')).not.toHaveAttribute('open');
@@ -272,14 +272,14 @@ describe('Übersicht', () => {
 
   it('benennt die Demoperson, der die Vorschaudaten gehoeren', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Organisatorisches, Wege und Kommunikation' });
+    await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
     expect(screen.getByText(/zur Rolle passend gewählt/)).toBeInTheDocument();
   });
 
-  it('sagt bei den Wegen, dass die Zeiten geschaetzt und nicht berechnet sind', async () => {
+  it('zeigt keine geschaetzten Wegzeiten mehr - die Wege sind seit MAP-006 echt', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Organisatorisches, Wege und Kommunikation' });
-    expect(screen.getByText(/Wegzeiten sind geschätzt, nicht berechnet/)).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
+    expect(screen.queryByText(/Wegzeiten sind geschätzt/)).toBeNull();
   });
 
   it('bietet den schnellen Weg zur Pannenmeldung', async () => {
@@ -297,7 +297,7 @@ describe('Übersicht', () => {
 
   it('zeigt einer behandelnden Rolle keine Freigabeaufgaben', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Organisatorisches, Wege und Kommunikation' });
+    await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
     expect(screen.queryByText('Zu entscheiden')).toBeNull();
   });
 
@@ -306,7 +306,7 @@ describe('Übersicht', () => {
     expect(await screen.findByRole('heading', { name: 'Ihr Zugang' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Tagesplan des Teams' })).toBeNull();
     expect(
-      screen.queryByRole('heading', { name: 'Organisatorisches, Wege und Kommunikation' }),
+      screen.queryByRole('heading', { name: 'Organisatorisches und Kommunikation' }),
     ).toBeNull();
   });
 

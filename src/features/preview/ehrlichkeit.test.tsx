@@ -5,7 +5,6 @@ import { renderMitVorschau, testUser } from '@/test-utils';
 import { CheckupPage } from '@/features/fleet/CheckupPage';
 import { KeyPage } from '@/features/fleet/KeyPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
-import { ToursPage } from '@/features/tours/ToursPage';
 
 /**
  * Eine Vorschau darf nie einen Erfolg zeigen, den es nicht gibt.
@@ -123,22 +122,6 @@ describe('Teamkommunikation', () => {
     expect(
       screen.getByText(/Keine Diagnosen und keine klinischen Freitexte im Teamkanal/),
     ).toBeInTheDocument();
-  });
-});
-
-describe('Touren', () => {
-  it('kennzeichnet Wegzeiten als geschaetzt und nicht als berechnet', () => {
-    renderMitVorschau(<ToursPage user={testUser([...nutzerRolle])} />, '/touren');
-    expect(screen.getAllByText(/von Hand geschätzt/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/noch nicht geprüft/).length).toBeGreaterThan(0);
-  });
-
-  it('verspricht keine Routenberechnung und keine Ortung', () => {
-    renderMitVorschau(<ToursPage user={testUser([...nutzerRolle])} />, '/touren');
-    expect(
-      screen.getByText(/keine Fahrzeitberechnung, keine Tourenoptimierung/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/keine dauerhafte Ortung/)).toBeInTheDocument();
   });
 });
 

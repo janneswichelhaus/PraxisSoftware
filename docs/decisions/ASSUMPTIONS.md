@@ -1244,3 +1244,15 @@ Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: Jannes nach
 **Anker.** `src/features/patients/AdresseVerorten.tsx`; die Übertragung im zweiten `update` von `set_patient_address_coordinate`, `supabase/migrations/20260925100000_map_006a_coordinates.sql`; Test „überträgt die Koordinate in künftige Hausbesuche" in `supabase/tests/address-coordinates.test.ts`.
 
 **Änderungspfad.** Verorten im Speichervorgang: Aufruf nach `updatePatient` in `EditPatientPage.tsx` · Aufwand `klein`. Keine Übertragung in Termine: das zweite `update` entfällt · Aufwand `klein`.
+
+### ANN-096 — Auf der Karte nur Nummern, der Startort gilt für den Seitenbesuch
+
+Datenschutz · offen · 2026-09-25 · — · Prüfpaket · Wiedervorlage: Jannes nach der Sichtung Kartendienst (reicht die Nummer auf dem Rad?); Datenschutzprüfung zusammen mit B2
+
+**Annahme.** Die Marker der Tagesroute tragen **nur eine Nummer** (Start: „S"), kein Vornamen-Kürzel; Name und Anschrift stehen in der Tourenliste daneben, die dieselbe Nummer führt. Startort ist der verortete Standort der Praxis oder der erste Besuch; die Wahl gilt für den Besuch der Seite und wird nicht gespeichert. Einen persönlichen Startort (Wohnung) gibt es nicht.
+
+**Begründung.** ADR-019 Punkt 2 und MAP-LOOPS erlauben „Vorname-Kürzel oder Nummer — nie Vollname". Die Nummer ist die sparsamere Wahl (Art. 5 Abs. 1 lit. c DSGVO): Eine Karte ist auf dem Lenker für Umstehende lesbar, und schon ein Kürzel mit Straße daneben identifiziert in einer kleinen Stadt; die Liste trägt den Namen ohnehin. Ein gespeicherter persönlicher Startort wäre eine Beschäftigtenadresse beim Kartendienst und eine Form der Standortangabe über Mitarbeitende (§20) — das braucht eine eigene Prüfung und ist nicht gebaut.
+
+**Anker.** `kartenmarker` und `START_LABEL` in `src/features/tours/tagesroute.ts`; Test „trägt nur Koordinate und Nummer" in `tagesroute.test.ts`; Startwahl als Zustand der Seite in `src/features/tours/TourenPage.tsx`.
+
+**Änderungspfad.** Kürzel statt Nummer: `kartenmarker` bekommt den Termin mit, Test anpassen · Aufwand `klein`. Persönlicher Startort: eigene Prüfung nach §20, Spalte an `staff_private_details` mit Koordinate, Schreiber nur die Person selbst · Aufwand `mittel`.

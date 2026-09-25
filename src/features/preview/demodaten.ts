@@ -22,7 +22,6 @@ import type {
   Nachricht,
   Rad,
   Rechnung,
-  Tour,
   Urlaubsantrag,
   Zahlung,
   Zeitbuchung,
@@ -728,78 +727,6 @@ export function demoNachrichten(heute: string): Nachricht[] {
       erwaehnungen: [],
       bezug: { art: 'termin', label: 'Besuch morgen 08:30' },
       gelesen: false,
-    },
-  ];
-}
-
-export function demoTouren(heute: string): Tour[] {
-  return [
-    {
-      id: 't1',
-      mitarbeiterId: 'm3',
-      datum: heute,
-      stopps: [
-        {
-          id: 's1',
-          art: 'start',
-          beginn: '07:45',
-          dauerMinuten: 15,
-          titel: 'Start am Raddepot Nord',
-          ort: 'Raddepot Nord',
-          wegMinuten: null,
-          wegHerkunft: 'offen',
-        },
-        {
-          id: 's2',
-          art: 'besuch',
-          beginn: '08:30',
-          dauerMinuten: 45,
-          titel: 'Hausbesuch A. Musterfrau',
-          ort: 'Nordstadt',
-          wegMinuten: 18,
-          wegHerkunft: 'geschaetzt',
-        },
-        {
-          id: 's3',
-          art: 'besuch',
-          beginn: '09:45',
-          dauerMinuten: 45,
-          titel: 'Hausbesuch B. Beispiel',
-          ort: 'Weststadt',
-          wegMinuten: 22,
-          wegHerkunft: 'geschaetzt',
-        },
-        {
-          id: 's4',
-          art: 'pause',
-          beginn: '10:45',
-          dauerMinuten: 30,
-          titel: 'Pause',
-          ort: '–',
-          wegMinuten: 8,
-          wegHerkunft: 'geschaetzt',
-        },
-        {
-          id: 's5',
-          art: 'besuch',
-          beginn: '11:30',
-          dauerMinuten: 45,
-          titel: 'Hausbesuch C. Probst',
-          ort: 'Südstadt',
-          wegMinuten: 25,
-          wegHerkunft: 'offen',
-        },
-        {
-          id: 's6',
-          art: 'ende',
-          beginn: '12:45',
-          dauerMinuten: 0,
-          titel: 'Rückweg zum Raddepot Nord',
-          ort: 'Raddepot Nord',
-          wegMinuten: 20,
-          wegHerkunft: 'geschaetzt',
-        },
-      ],
     },
   ];
 }

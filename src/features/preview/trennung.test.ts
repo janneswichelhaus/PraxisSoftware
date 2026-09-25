@@ -30,6 +30,12 @@ import { standortvorlageKoeln } from './standortvorlage';
  * Vorschau war die Zahlungsseite. Seit sie echt gebucht wird, gibt es im
  * Bereich keine Vorschau mehr, die zu schützen wäre — und ein Verzeichnis, in
  * dem jede Datei eine Ausnahme ist, prüft nichts.
+ *
+ * `src/features/tours` ist mit **MAP-006** entfallen: Die Touren lesen die
+ * Termine des Tages und rufen Route und Geocoding über die eigene Function ab
+ * — sie MÜSSEN mit dem Server sprechen. Mit dem Verzeichnis ist auch die
+ * Ausnahme für den Kartenprototyp gefallen: MapLibre, Routen-, Matrix- und
+ * Handoff-Aufrufe sind seitdem in **jedem** Vorschaubereich ein Fund.
  */
 
 const VORSCHAUBEREICHE = [
@@ -39,7 +45,6 @@ const VORSCHAUBEREICHE = [
   'src/features/timeaccount',
   'src/features/reimbursements',
   'src/features/teamchat',
-  'src/features/tours',
 ];
 
 /**
@@ -127,68 +132,20 @@ const ERLAUBTE_MODULE = [
   /^@\/lib\//,
 ];
 
-/** Der Kartenprototyp aus MAP-002. */
-const KARTENPROTOTYP = 'src/features/tours/karte';
-
 /**
- * Was **nur** der Kartenprototyp zusätzlich importieren darf.
- *
- * Die Liste ist bewusst an ein Verzeichnis gebunden und nicht an alle
- * Vorschaubereiche: MapLibre lädt Kartenkacheln beim Anbieter, und das ist der
- * einzige Anbieterkontakt, den ADR-019 dem Browser erlaubt (Punkt 15) — mit
- * synthetischen Koordinaten und ohne Adresse, Namen oder Termin (Punkt 24).
- * In jedem anderen Vorschaubereich bleibt derselbe Import ein Fund.
- *
- * Alles Übrige gilt hier unverändert: kein Supabase, kein `rpc(`, kein
- * `fetch(`, kein `localStorage` — die Prüfungen oben laufen über diese
- * Dateien wie über jede andere.
- *
- * `react-dom` steht dabei, weil die Marker als Portale entstehen: Die Nummern
- * sind eigene DOM-Knoten der Anwendung, gerade damit sie **nicht** über die
- * Beschriftung des Anbieters laufen.
- *
- * `@/features/scheduling/erreichbarkeit` kam mit **MAP-004** dazu: Die Regel,
- * ob zwei Termine erreichbar wären, ist eine reine Funktion über Sekunden
- * (§6.2) und gehört ins Fachmodul, nicht in einen Prototyp. Sie spricht mit
- * keinem Server, legt nichts ab und wird hier nur gelesen — der Import ist
- * trotzdem namentlich und nicht als ganzes Verzeichnis freigegeben.
- */
-const ERLAUBTE_MODULE_KARTE = [
-  /^react-dom$/,
-  /^maplibre-gl(\/|$)/,
-  /^@\/features\/scheduling\/erreichbarkeit$/,
-];
-
-/**
- * Module aus `@/lib`, die **nur** der Kartenprototyp haben darf.
+ * Module aus `@/lib`, die kein Vorschaubereich haben darf.
  *
  * Eine Einschränkung, keine Erlaubnis: `@/lib/...` steht in der Positivliste,
- * weil dort die anbieterfreien Hilfsmittel liegen. Mit MAP-003 liegt dort
- * erstmals eines, das mit einem Server spricht — `route.ts` ruft die eigene
- * Edge Function auf, weil die Routenberechnung nach ADR-019 Punkt 15
- * serverseitig laufen MUSS. Ohne diese Zeile wäre der Aufruf über einen
- * Import in jedem Vorschaubereich zu haben, und die Zusicherung dieses Tests
- * hinge an einem Verzeichnisnamen in `src/lib`.
- *
- * Was auch hier gilt: kein `fetch(`, kein `getSupabase`, kein
- * `localStorage` im Quelltext des Vorschaubereichs selbst — die Prüfungen
- * oben laufen unverändert über diese Dateien. Und was hinausgeht, sind
- * Koordinaten und ein Fahrprofil, nie eine Adresse, ein Name oder ein Termin
- * (ADR-019 Punkt 12, 13, 24).
- *
- * `matrix.ts` kam mit **MAP-004** dazu und steht unter derselben Regel: Auch
- * die Fahrzeitmatrix rechnet der Anbieter auf Anfrage des eigenen Servers,
- * auch sie wird angezeigt und verworfen (ADR-019 Punkt 15 und 16).
- *
- * `navigation.ts` kam mit **MAP-005** dazu, aus einem anderen Grund: Es ruft
- * nichts ab, sondern öffnet auf Tippen eine fremde App mit einem Ziel. Auch
- * das verlässt die Sitzung, nur über das Gerät statt über den Server — und
- * darf deshalb nicht über einen Import in jedem Vorschaubereich zu haben sein
- * (ADR-019 Punkt 20 bis 23).
+ * weil dort die anbieterfreien Hilfsmittel liegen. Diese Module sprechen mit
+ * der eigenen Edge Function (Route, Matrix, Geocoding; ADR-019 Punkt 15) oder
+ * öffnen auf Tippen eine fremde App mit einem Ziel (Handoff, Punkt 20 bis 23).
+ * Bis MAP-006 durfte sie der Kartenprototyp unter `src/features/tours/karte`
+ * haben; seit die Touren echt angebunden sind, gibt es keine Ausnahme mehr.
  */
-const NUR_KARTE = [
+const NIE_IN_DER_VORSCHAU = [
   /^@\/lib\/location\/route$/,
   /^@\/lib\/location\/matrix$/,
+  /^@\/lib\/location\/geocode$/,
   /^@\/lib\/location\/navigation$/,
 ];
 
@@ -268,14 +225,11 @@ function unerlaubteImporte(pfad: string, quelltext: string): string[] {
       }
       continue;
     }
-    if (NUR_KARTE.some((muster) => muster.test(modul)) && !pfad.startsWith(KARTENPROTOTYP)) {
-      treffer.push(`${modul} (nur im Kartenprototyp)`);
+    if (NIE_IN_DER_VORSCHAU.some((muster) => muster.test(modul))) {
+      treffer.push(`${modul} (spricht mit einem Server oder einer fremden App)`);
       continue;
     }
-    const erlaubt = pfad.startsWith(KARTENPROTOTYP)
-      ? [...ERLAUBTE_MODULE, ...ERLAUBTE_MODULE_KARTE]
-      : ERLAUBTE_MODULE;
-    if (!erlaubt.some((muster) => muster.test(modul))) {
+    if (!ERLAUBTE_MODULE.some((muster) => muster.test(modul))) {
       treffer.push(`${modul} (nicht in der Positivliste)`);
     }
   }
@@ -353,45 +307,37 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     expect(pruefe("import { Vorschauzustand } from './vorschauZustand';")).toEqual([]);
   });
 
-  it('erlaubt MapLibre nur im Kartenprototyp', () => {
-    // Die Ausnahme fuer MAP-002 haengt am Verzeichnis. Ohne diese Gegenprobe
-    // waere nicht geprueft, dass sie dort endet: Ein Renderer, der Kacheln
-    // beim Anbieter holt, gehoert in keinen anderen Vorschaubereich.
+  it('verbietet MapLibre in jedem Vorschaubereich', () => {
+    // Bis MAP-006 hatte der Kartenprototyp hier eine Ausnahme. Ein Renderer,
+    // der Kacheln beim Anbieter holt, gehoert in keinen Vorschaubereich.
     const imKarten =
       "import { Map } from 'maplibre-gl';\nimport { createPortal } from 'react-dom';";
-
-    expect(unerlaubteImporte(`${KARTENPROTOTYP}/Karte.tsx`, imKarten)).toEqual([]);
-    expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', imKarten)).toEqual([
-      'maplibre-gl (nicht in der Positivliste)',
-      'react-dom (nicht in der Positivliste)',
-    ]);
     expect(unerlaubteImporte('src/features/fleet/Beispiel.tsx', imKarten)).toEqual([
       'maplibre-gl (nicht in der Positivliste)',
       'react-dom (nicht in der Positivliste)',
     ]);
-    // Auch im Kartenprototyp gilt der Rest unveraendert.
-    expect(unerlaubteImporte(`${KARTENPROTOTYP}/Karte.tsx`, "import { z } from 'zod';")).toEqual([
-      'zod (nicht in der Positivliste)',
+  });
+
+  it.each([
+    ["import { useRoute } from '@/lib/location/route';", '@/lib/location/route'],
+    ["import { useMatrix } from '@/lib/location/matrix';", '@/lib/location/matrix'],
+    ["import { geocodiere } from '@/lib/location/geocode';", '@/lib/location/geocode'],
+    [
+      "import { buildNavigationUrl } from '@/lib/location/navigation';",
+      '@/lib/location/navigation',
+    ],
+  ])('verbietet %s in jedem Vorschaubereich', (quelltext, modul) => {
+    // Route, Matrix und Geocoding rechnet der Anbieter auf Anfrage des eigenen
+    // Servers (ADR-019 Punkt 15); der Handoff oeffnet eine fremde App mit
+    // einem Ziel (Punkt 20 bis 23). Nichts davon gehoert in eine Vorschau.
+    expect(unerlaubteImporte('src/features/teamchat/Beispiel.tsx', quelltext)).toEqual([
+      `${modul} (spricht mit einem Server oder einer fremden App)`,
     ]);
   });
 
-  it('erlaubt den Routenabruf nur im Kartenprototyp', () => {
-    // Die zweite Ausnahme, seit MAP-003: Die Route kommt aus der eigenen Edge
-    // Function, weil ADR-019 Punkt 15 die Berechnung serverseitig verlangt.
-    // Ohne diese Gegenprobe waere nicht geprueft, dass sie am Verzeichnis
-    // endet - ein Serveraufruf gehoert in keinen anderen Vorschaubereich.
-    const routenabruf = "import { useRoute } from '@/lib/location/route';";
-
-    expect(unerlaubteImporte(`${KARTENPROTOTYP}/KartePage.tsx`, routenabruf)).toEqual([]);
-    expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', routenabruf)).toEqual([
-      '@/lib/location/route (nur im Kartenprototyp)',
-    ]);
-    expect(unerlaubteImporte('src/features/teamchat/Beispiel.tsx', routenabruf)).toEqual([
-      '@/lib/location/route (nur im Kartenprototyp)',
-    ]);
-
-    // Die uebrigen Hilfsmittel aus @/lib bleiben ueberall erlaubt: Die
-    // Einschraenkung gilt dem einen Modul, das mit einem Server spricht.
+  it('laesst die anbieterfreien Hilfsmittel aus @/lib ueberall zu', () => {
+    // Die Einschraenkung gilt den Modulen, die etwas hinausschicken - der
+    // Vertrag selbst ist eine reine Typdatei.
     expect(
       unerlaubteImporte(
         'src/features/fleet/Beispiel.tsx',
@@ -400,50 +346,11 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     ).toEqual([]);
   });
 
-  it('erlaubt den Matrixabruf nur im Kartenprototyp', () => {
-    // Dieselbe Regel wie fuer die Route, seit MAP-004: Auch die Matrix rechnet
-    // der Anbieter auf Anfrage des eigenen Servers (ADR-019 Punkt 15).
-    const matrixabruf = "import { useMatrix } from '@/lib/location/matrix';";
-
-    expect(unerlaubteImporte(`${KARTENPROTOTYP}/KartePage.tsx`, matrixabruf)).toEqual([]);
-    expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', matrixabruf)).toEqual([
-      '@/lib/location/matrix (nur im Kartenprototyp)',
-    ]);
-  });
-
-  it('erlaubt den Navigations-Handoff nur im Kartenprototyp', () => {
-    // Seit MAP-005: Der Handoff ruft nichts ab, oeffnet auf Tippen aber eine
-    // fremde App mit einem Ziel. Auch das verlaesst die Sitzung - ueber das
-    // Geraet statt ueber den Server -, und die Bedingungen aus ADR-019
-    // Punkt 20 bis 23 gelten nur dort, wo sie geprueft sind.
-    const handoff = "import { buildNavigationUrl } from '@/lib/location/navigation';";
-
-    expect(unerlaubteImporte(`${KARTENPROTOTYP}/NavigationHandoff.tsx`, handoff)).toEqual([]);
-    expect(unerlaubteImporte('src/features/tours/ToursPage.tsx', handoff)).toEqual([
-      '@/lib/location/navigation (nur im Kartenprototyp)',
-    ]);
-    expect(unerlaubteImporte('src/features/teamchat/Beispiel.tsx', handoff)).toEqual([
-      '@/lib/location/navigation (nur im Kartenprototyp)',
-    ]);
-  });
-
-  it('erlaubt die Erreichbarkeitsregel nur im Kartenprototyp', () => {
-    // Die Regel selbst spricht mit keinem Server - der Import muss trotzdem
-    // am Verzeichnis enden, sonst stuende mit ihm das ganze Fachmodul
-    // `scheduling` jedem Vorschaubereich offen.
+  it('laesst die Erreichbarkeitsregel nicht in die Vorschau', () => {
     const regel = "import { erreichbarkeit } from '@/features/scheduling/erreichbarkeit';";
-
-    expect(unerlaubteImporte(`${KARTENPROTOTYP}/Fahrzeitmatrix.tsx`, regel)).toEqual([]);
     expect(unerlaubteImporte('src/features/fleet/Beispiel.tsx', regel)).toEqual([
       '@/features/scheduling/erreichbarkeit (nicht in der Positivliste)',
     ]);
-    // Und der Rest des Moduls bleibt auch im Kartenprototyp draussen.
-    expect(
-      unerlaubteImporte(
-        `${KARTENPROTOTYP}/Fahrzeitmatrix.tsx`,
-        "import { ladeRaster } from '@/features/scheduling/api';",
-      ),
-    ).toEqual(['ladeRaster aus @/features/scheduling/api']);
   });
 
   it('wuerde einen Serveraufruf tatsaechlich finden', () => {

@@ -37,6 +37,13 @@ const FAELLE: Fall[] = [
     'appointments.read',
   ],
   [
+    'list_day_route',
+    users.patientMax,
+    'select * from public.list_day_route($1::date, $2::uuid)',
+    ['2027-01-04', IRGENDEINE],
+    'appointments.read',
+  ],
+  [
     'list_event_participants',
     users.patientMax,
     'select * from public.list_event_participants($1::uuid)',
