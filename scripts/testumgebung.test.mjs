@@ -116,13 +116,13 @@ describe('htaccess', () => {
     expect(htaccess({ supabaseUrl: SUPABASE_URL, tuerDatei: null })).not.toContain('AuthType');
   });
 
-  it('mit Kennwortdatei die zweite Tür, Datei außerhalb des Webordners', () => {
+  it('mit Kennwortdatei die zweite Tür, Datei neben dem ausgelieferten Ordner', () => {
     const datei = htaccess({
       supabaseUrl: SUPABASE_URL,
-      tuerDatei: '/home/prtest/praxis-test/tuer.htpasswd',
+      tuerDatei: '/var/www/virtual/prtest/praxis-test/tuer.htpasswd',
     });
     expect(datei).toContain('AuthType Basic');
-    expect(datei).toContain('AuthUserFile "/home/prtest/praxis-test/tuer.htpasswd"');
+    expect(datei).toContain('AuthUserFile "/var/www/virtual/prtest/praxis-test/tuer.htpasswd"');
     expect(datei).toContain('Require valid-user');
   });
 });

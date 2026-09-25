@@ -205,23 +205,31 @@ jobs:
           TESTENV_TUER_PASSWORD: ${{ secrets.TESTENV_TUER_PASSWORD }}
         run: |
           ziel="$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST"
+          # Der Heimatordner ist auf Uberspace nur fuer das Konto selbst
+          # lesbar (0700); der Webserver kommt nur ueber ~/www hinein, einen
+          # Verweis auf /var/www/virtual/<konto> (Gruppe www, andere Konten
+          # ohne Zugriff). Die Kennwortdatei liegt deshalb dort, neben html/
+          # und nicht darin, und die .htaccess nennt den echten Pfad - ueber
+          # den Heimatordner kaeme der Webserver nicht an sie heran
+          # (AH01620 Permission denied, erster Lauf am 2026-09-25).
+          $SSH "$ziel" 'rm -rf ~/praxis-test'
+          web=$($SSH "$ziel" 'readlink -f ~/www')
+          # Der Pfad landet in der .htaccess - nur ein schlichter Pfad.
+          if ! [[ "$web" =~ ^/[A-Za-z0-9/_.-]+$ ]]; then
+            echo "::error::Unerwarteter Webordner auf dem Server."
+            exit 1
+          fi
           if [ -z "$TESTENV_TUER_PASSWORD" ]; then
             echo "::notice::TESTENV_TUER_PASSWORD fehlt - die Seite ist ohne zweite Tuer erreichbar (Anmeldung und RLS schuetzen die Daten)."
-            $SSH "$ziel" 'rm -f ~/praxis-test/tuer.htpasswd'
+            $SSH "$ziel" "rm -f '$web/praxis-test/tuer.htpasswd'"
             exit 0
           fi
           command -v htpasswd > /dev/null || sudo apt-get install -y -qq apache2-utils > /dev/null
           # Kennwort ueber stdin, nie auf der Befehlszeile; bcrypt.
           printf '%s' "$TESTENV_TUER_PASSWORD" | htpasswd -niB praxis > tuer.htpasswd
-          $SSH "$ziel" 'install -d -m 755 ~/praxis-test && cat > ~/praxis-test/tuer.htpasswd && chmod 644 ~/praxis-test/tuer.htpasswd' < tuer.htpasswd
+          $SSH "$ziel" "install -d -m 755 '$web/praxis-test' && cat > '$web/praxis-test/tuer.htpasswd' && chmod 644 '$web/praxis-test/tuer.htpasswd'" < tuer.htpasswd
           rm -f tuer.htpasswd
-          heim=$($SSH "$ziel" 'printf %s "$HOME"')
-          # Der Pfad landet in der .htaccess - nur ein schlichter Pfad.
-          if ! [[ "$heim" =~ ^/[A-Za-z0-9/_.-]+$ ]]; then
-            echo "::error::Unerwartetes Heimatverzeichnis auf dem Server."
-            exit 1
-          fi
-          echo "TUER_DATEI=$heim/praxis-test/tuer.htpasswd" >> "$GITHUB_ENV"
+          echo "TUER_DATEI=$web/praxis-test/tuer.htpasswd" >> "$GITHUB_ENV"
 
       # ANN-101: Kopfzeilen, CSP, noindex und - mit TUER_DATEI - die zweite Tuer.
       - name: Auslieferung vorbereiten (.htaccess, robots.txt)

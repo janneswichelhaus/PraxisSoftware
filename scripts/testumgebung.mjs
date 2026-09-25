@@ -170,7 +170,7 @@ export function htaccess({ supabaseUrl, tuerDatei }) {
   if (tuerDatei) {
     zeilen.push(
       '',
-      '# Zweite Tür (OPS-002a). Die Kennwortdatei liegt außerhalb des Webordners.',
+      '# Zweite Tür (OPS-002a). Die Kennwortdatei liegt neben html/, nicht darin.',
       'AuthType Basic',
       'AuthName "Praxis Test-Umgebung"',
       `AuthUserFile "${tuerDatei}"`,
