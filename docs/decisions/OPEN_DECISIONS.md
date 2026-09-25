@@ -58,6 +58,7 @@ Feature, **P3** später.
 | B13 | E-Mail-Versand aus der Plattform (Konten, Patient:innen) | **wieder offen seit 2026-09-21**: Option a (nur Auth-Mails des Providers) trägt nicht (BEF-026); Empfehlung eigener SMTP-Anbieter | unten; Roadmap „Bei Jannes", R8 |
 | B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **entschieden 2026-09-19**: Weg 1 jetzt, Weg 3 nach OPS-001 | unten; [`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md) |
 | B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **neu entschieden 2026-09-22**: automatische Erinnerung und Online-Anfrage gehören zu V1, gebaut hinter Adapter; Anbieter offen · Terminmail aus dem eigenen Postfach gebaut (CAL-013, ANN-041) | unten |
+| B16 | Hosting der Oberfläche (Test-Umgebung, später Produktion) | **entschieden 2026-09-23**: Uberspace; Einrichtung bei Jannes | unten; [`hosting-optionen.md`](hosting-optionen.md) |
 | C1 | Leistungsziffern und Office | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15 |
 | C2 | Klinische Inhalte in organisatorischer Kommunikation | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15 |
 | C3 | Fail-closed gegen Patientensicherheit, Break Glass | entschieden 2026-08-28 | [ADR-010](../adr/ADR-010-audit-and-privileged-access.md) |
@@ -252,6 +253,13 @@ ohne neuen Empfänger — ist gebaut (CAL-013). Offen: Versanddienstleister,
 Einwilligung je Person. Wo: §3.5, ADR-002, ADR-007. Annahmen: ANN-039, ANN-040,
 ANN-041.
 
+### B16 — Hosting der Oberfläche
+
+entschieden · 2026-09-23 · Jannes · Uberspace
+
+Vorlage und Einrichtungsanleitung: [`hosting-optionen.md`](hosting-optionen.md). Rücknahmepreis
+klein; volle Prüfung nach ADR-002 vor echten Daten (G5). OPS-002a wartet auf die Konten.
+
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
 
 Schutzumfang vorläufig entschieden · 2026-09-08 · Jannes; Provider offen
@@ -366,7 +374,7 @@ kann; die übrigen beantworten sich im Loop, der das Thema baut.
 | Wer führt die Anbieterprüfung durch, wo wird sie dokumentiert, wie oft wiederholt? | ADR-002 | OPS-001 (G3) |
 | ~~Ist externes Error-Tracking zulässig, und wie werden Redaction-Regeln erzwungen und getestet?~~ Mit OPS-004 (2026-09-22): kein externer Dienst in V1, als Gate in `src/protokollierung.test.ts`; Redaction in `src/lib/protokoll.ts` | ADR-002, ADR-011 | OPS-004 (G6) |
 | Wie wird „keine Produktionsdaten in Dev/Test" technisch abgesichert? | ADR-002 | OPS-001, OPS-002 |
-| Frontend-Hosting und dessen Prüfung; `service_role` nie im Browser; Nachweis der Freigabe | ADR-015, ADR-013 | OPS-002 (G5) |
+| Frontend-Hosting und dessen Prüfung; `service_role` nie im Browser; Nachweis der Freigabe | ADR-015, ADR-013 | B16; OPS-002a, OPS-002 (G5) |
 | Schweregrade im Dependency-Scan | ADR-013 | ANN-054 (Schwelle `high`); OPS-002 (G5) |
 | Backup-Lebenszyklus, Notfallzugang, Restore-Dokumentation, Degraded-Kerninformationen | ADR-012 | OPS-003 (G7), E2 (G10) |
 | Schwelle „größerer Export"; Eskalation beim Report | ADR-010 | G6 (OPS-004 Rest; in ADR-004 noch OPS-005) |
