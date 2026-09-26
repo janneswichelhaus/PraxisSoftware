@@ -385,8 +385,9 @@ export async function merkeVerwaisteZurLoeschungVor(): Promise<number> {
   };
 
   // Sonst meldete eine Abweisung „0 vorgemerkt" (ANN-115).
-  if (abgewiesen(antwort)) {
+  // Zweite Sicherung: Ein gelungenes Vormerken liefert immer eine Anzahl.
+  if (abgewiesen(antwort) || antwort.data == null) {
     throw new Error('Die verwaisten Objekte konnten nicht vorgemerkt werden.');
   }
-  return z.coerce.number().parse(antwort.data ?? 0);
+  return z.coerce.number().parse(antwort.data);
 }

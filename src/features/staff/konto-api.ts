@@ -167,10 +167,11 @@ export async function ladeZugangEin(
     p_staff_member_id: staffMemberId,
     p_email: email,
     p_role_keys: rollen,
-  })) as { error: { message?: string } | null; status: number };
+  })) as { data: unknown; error: { message?: string } | null; status: number };
 
   // Ohne die Statusprüfung ginge bei einer Abweisung die Mail hinaus (ANN-115).
-  if (abgewiesen(antwort)) {
+  // Zweite Sicherung: Eine gelungene Einladung liefert immer ihre Kennung.
+  if (abgewiesen(antwort) || antwort.data == null) {
     throw new EinladungsError(einladungsProblem(antwort.error?.message ?? ''));
   }
 

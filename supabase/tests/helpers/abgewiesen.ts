@@ -62,7 +62,8 @@ export async function erwarteAbgewiesenenSchreibversuch(
       await asPostgres<DeniedZeile>(
         `select organization_id, subject_type, subject_id, context
          from public.audit_log
-         where action = $1 and actor_user_id = $2 and outcome = 'denied'`,
+         where action = $1 and actor_user_id = $2 and outcome = 'denied'
+         order by occurred_at, id`,
         [action, userId],
       )
     ).rows;
@@ -71,7 +72,7 @@ export async function erwarteAbgewiesenenSchreibversuch(
   const { rows, status } = await asUserCommittedMitStatus(userId, sql, params);
   // Ein `void`-Pfad liefert eine Zeile mit leerem Text, ein skalarer `null`,
   // ein Tabellenpfad keine Zeile.
-  const werte = rows.flatMap((zeile) => Object.values(zeile as Record<string, unknown>));
+  const werte = rows.flatMap((zeile) => Object.values(zeile));
   expect(werte.every((wert) => wert === null || wert === '')).toBe(true);
   expect(status).toBe('403');
 

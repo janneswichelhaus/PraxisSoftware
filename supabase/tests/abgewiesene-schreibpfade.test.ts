@@ -141,6 +141,24 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     },
   );
 
+  it('gibt sich bei einem abgewiesenen Rollenwechsel nicht selbst owner', async () => {
+    const rollen = () =>
+      asPostgres<{ role_key: string }>(
+        'select role_key from public.user_roles where user_id = $1 order by role_key',
+        [users.therapist],
+      );
+    const vorher = (await rollen()).rows;
+    await erwarteAbgewiesenenSchreibversuch(
+      users.therapist,
+      'select public.set_staff_account_roles($1::uuid, $2::text[])',
+      [ANNA, ['owner']],
+      'staff_account.roles_changed',
+    );
+    const nachher = (await rollen()).rows;
+    expect(nachher).toEqual(vorher);
+    expect(nachher.map((r) => r.role_key)).not.toContain('owner');
+  });
+
   it.each(FAELLE)('%s: ein Patientenkonto ebenso', async (_pfad, sql, params, aktion) => {
     await erwarteAbgewiesenenSchreibversuch(users.patientMax, sql, params, aktion);
   });
