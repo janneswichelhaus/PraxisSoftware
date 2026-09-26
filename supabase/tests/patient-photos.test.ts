@@ -849,4 +849,96 @@ describe('Patientenfotos (DOK-006b)', () => {
       expect(fehler?.message).toMatch(/permission denied/);
     });
   });
+
+  describe('Herausgabe an die Person (DOK-006d, Punkt 40)', () => {
+    const HERAUSGEBEN = 'select * from public.hand_out_patient_photo($1::uuid)';
+
+    beforeEach(async () => {
+      await vermerken('consent_granted');
+    });
+
+    it('gibt owner eine Kopie heraus, protokolliert als eigenes Ereignis, mit einmaliger Freigabe', async () => {
+      const datei = await foto();
+      const { rows } = await asUserCommitted<{
+        bucket_id: string;
+        object_key: string;
+        display_name: string;
+      }>(users.ownerTherapist, HERAUSGEBEN, [datei.file_id]);
+      expect(rows[0]).toEqual({
+        bucket_id: BUCKET,
+        object_key: datei.object_key,
+        display_name: 'Foto vom 26.09.2026',
+      });
+
+      const { rows: eintrag } = await asPostgres<{ context: Record<string, string> }>(
+        `select context from public.audit_log
+          where action = 'patient_file.handed_out' and subject_id = $1`,
+        [datei.file_id],
+      );
+      expect(eintrag).toHaveLength(1);
+      expect(eintrag[0]!.context).toEqual({
+        surface: 'web',
+        patient_id: patients.max,
+        document_type: 'patientenfoto',
+      });
+
+      const lesen = `select name from storage.objects where bucket_id = '${BUCKET}' and name = $1`;
+      expect(
+        (await asUserCommitted(users.ownerTherapist, lesen, [datei.object_key])).rows,
+      ).toHaveLength(1);
+      expect(
+        (await asUserCommitted(users.ownerTherapist, lesen, [datei.object_key])).rows,
+      ).toHaveLength(0);
+    });
+
+    it('weist jede andere Rolle ab - auch die, die das Foto aufgenommen hat', async () => {
+      const datei = await foto();
+      for (const userId of [
+        users.therapist,
+        users.teamLead,
+        users.office,
+        users.trainer,
+        users.patientMax,
+      ]) {
+        const fehler = await abgefangen(asUser(userId, HERAUSGEBEN, [datei.file_id]));
+        expect(fehler?.message).toMatch(/access denied|not accessible/);
+      }
+      expect(
+        await anzahl(
+          "select count(*) from public.audit_log where action = 'patient_file.handed_out'",
+        ),
+      ).toBe(0);
+    });
+
+    it('gibt kein gesperrtes Foto heraus und keine andere Datei', async () => {
+      const datei = await foto();
+      await aufgenommenVor(datei.file_id, '13 months');
+      expect(
+        (await abgefangen(asUser(users.ownerTherapist, HERAUSGEBEN, [datei.file_id])))?.message,
+      ).toMatch(/not accessible/);
+
+      const befund = await vorbereiten(users.therapist, { art: 'befund', mime: 'application/pdf' });
+      await asPostgres(
+        `insert into storage.objects (bucket_id, name, metadata)
+         values ('patientenakte', $1, jsonb_build_object('size', 54321, 'mimetype', 'application/pdf'))`,
+        [befund.object_key],
+      );
+      await asUserCommitted(
+        users.therapist,
+        'select public.confirm_patient_file_upload($1::uuid)',
+        [befund.file_id],
+      );
+      expect(
+        (await abgefangen(asUser(users.ownerTherapist, HERAUSGEBEN, [befund.file_id])))?.message,
+      ).toMatch(/not accessible/);
+    });
+
+    it('gibt einer fremden Praxis nichts heraus', async () => {
+      const datei = await foto();
+      const { owner } = await fremdeOrganisation();
+      expect((await abgefangen(asUser(owner, HERAUSGEBEN, [datei.file_id])))?.message).toMatch(
+        /not accessible/,
+      );
+    });
+  });
 });

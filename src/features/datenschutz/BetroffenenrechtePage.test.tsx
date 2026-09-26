@@ -30,6 +30,12 @@ vi.mock('@/features/patients/api', async (importOriginal) => {
   };
 });
 
+// Die Herausgabe der Fotos hat ihre eigenen Tests (FotoHerausgabe.test.tsx).
+vi.mock('@/features/files/patientenfotos', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchPatientenfotos: () => Promise.resolve([]),
+}));
+
 // `renderWithProviders` haengt den Inhalt an eine Platzhalterroute; die Kennung
 // aus der Adresse kommt dort nicht an (derselbe Weg wie in
 // `EditPatientPage.test.tsx`).

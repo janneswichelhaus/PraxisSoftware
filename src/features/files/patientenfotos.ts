@@ -114,3 +114,51 @@ export async function ladePatientenfoto(fileId: string): Promise<Blob> {
   if (!antwort.ok) throw new Error('Das Foto konnte nicht geladen werden.');
   return antwort.blob();
 }
+
+const herausgabeSchema = z.object({
+  bucket_id: z.string(),
+  object_key: z.string(),
+  display_name: z.string(),
+});
+
+/**
+ * Die Kopie eines Fotos für die Person selbst (DOK-006d, ADR-017 Punkt 40).
+ *
+ * Der einzige Weg, auf dem ein Patientenfoto die Anwendung verlässt: nach
+ * Art. 15 Abs. 3 und Art. 20 DSGVO, durch `owner`, als Einzeldatei, im
+ * Protokoll als `patient_file.handed_out` (ANN-128). Den Dateinamen setzt die
+ * Seite beim Sichern; der Verweis selbst bleibt ohne Downloadnamen.
+ */
+export async function gibPatientenfotoHeraus(
+  fileId: string,
+): Promise<{ name: string; bild: Blob }> {
+  const { data, error } = (await getSupabase().rpc('hand_out_patient_photo', {
+    p_file_id: fileId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Das Foto konnte nicht herausgegeben werden. Fehlt die Berechtigung?');
+  const freigabe = z.array(herausgabeSchema).parse(data ?? [])[0];
+  if (!freigabe) throw new Error('Das Foto konnte nicht herausgegeben werden.');
+
+  const { data: signiert, error: signaturFehler } = await getSupabase()
+    .storage.from(freigabe.bucket_id)
+    .createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN);
+
+  if (signaturFehler || !signiert?.signedUrl) {
+    throw new Error('Das Foto ist in der Ablage nicht auffindbar.');
+  }
+
+  const antwort = await fetch(signiert.signedUrl, { cache: 'no-store' });
+  if (!antwort.ok) throw new Error('Das Foto konnte nicht geladen werden.');
+  return { name: freigabe.display_name, bild: await antwort.blob() };
+}
+
+/** Ein Dateiname aus dem Anzeigenamen: nur Buchstaben, Ziffern und wenige Zeichen. */
+export function herausgabeDateiname(anzeigename: string): string {
+  const sauber = anzeigename
+    .normalize('NFC')
+    .replace(/[^\p{L}\p{N} ._-]+/gu, '_')
+    .trim()
+    .slice(0, 120);
+  return `${sauber || 'Foto'}.jpg`;
+}

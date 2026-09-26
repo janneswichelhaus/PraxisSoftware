@@ -9,6 +9,7 @@ import { Section } from '@/components/ui/Section';
 import { TextArea } from '@/components/ui/TextArea';
 import { formatDate } from '@/lib/datum';
 import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
+import { FotoHerausgabe } from '@/features/files/FotoHerausgabe';
 import { fetchAufbewahrungsstand, fetchAuskunft, type Auskunft } from './api';
 import { dateiname, sichereAlsDatei } from './datei';
 import { AUSKUNFT_KATEGORIEN, kategorieLabel } from './kategorien';
@@ -183,6 +184,9 @@ export function BetroffenenrechtePage() {
       />
 
       <AuskunftAbschnitt patient={data} />
+      {/* DOK-006d: Der Inhalt der Fotos kommt nicht mit der Auskunft, sondern
+          je Foto getrennt (ADR-017 Punkt 40). */}
+      <FotoHerausgabe patientId={data.id} />
       <LoeschverlangenAbschnitt patient={data} />
     </>
   );
