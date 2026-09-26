@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { SubNavEintrag } from '@/components/ui/SubNav';
+import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
   canManageAppointments,
   canReadPatientDirectory,
@@ -15,14 +16,8 @@ import {
  *
  * Sechs Bereiche, jeder mit einer eigenen Leitfrage. Sie sind die einzige
  * globale Navigationsebene; alles Weitere sitzt als lokales Untermenü beim
- * Arbeitsgegenstand.
- *
- *   Übersicht         Was muss ich als Nächstes tun?
- *   Kalender          Wer behandelt wen, wann und mit welchen Wegen?
- *   Patient:innen     Was gehört zur Versorgung dieser Person?
- *   Kommunikation     Mit wem muss ich etwas klären?
- *   Organisatorisches Welche Voraussetzungen und Anträge sind zu bearbeiten?
- *   Abrechnung        Welche Leistungen sind abzurechnen oder zu bezahlen?
+ * Arbeitsgegenstand. Bezeichnung, Kurzform und Leitfrage stehen in
+ * `src/lib/begriffe.ts` — dort und nur dort werden sie geändert (UX-002f).
  *
  * Die Beschriftungen stammen von Jannes (2026-09-12) und lösen „Mein Tag",
  * „Touren & Termine", „Team" und „Betrieb" ab. Die fachlichen Kennungen der
@@ -164,9 +159,14 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): SubNavEintrag[] {
   // Aendern prueft die Seite selbst und - verbindlich - der Server (STAFF-001).
   // Eine zweite, vorgetaeuschte Personalakte daneben gibt es bewusst nicht.
   const eintraege: SubNavEintrag[] = [
-    { to: '/praxis/team', label: 'Mitarbeitende', end: false },
-    { to: '/praxis/planung', label: 'Arbeitszeiten' },
+    { to: '/praxis/team', label: BEGRIFFE.mitarbeitende, end: false },
   ];
+  // Arbeitszeiten gehoeren zur Terminverwaltung; ihre Route steht unter
+  // derselben Bedingung. trainer landete sonst ohne Aufruf wieder auf `/`
+  // (BEF-034).
+  if (canManageAppointments(roles)) {
+    eintraege.push({ to: '/praxis/planung', label: BEGRIFFE.arbeitszeiten });
+  }
   // Textbausteine sind ein Werkzeug der Dokumentation, gepflegt wird es aber
   // wie eine Praxiseinstellung - deshalb hier und nicht bei den Patient:innen
   // (UX-008). Wer nicht dokumentiert, braucht den Punkt nicht.
@@ -201,9 +201,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   const bereiche: Arbeitsbereich[] = [
     {
       id: 'heute',
-      label: 'Übersicht',
-      kurz: 'Übersicht',
-      leitfrage: 'Was muss ich als Nächstes tun?',
+      ...BEREICHE.heute,
       to: '/',
       pfade: ['/'],
       icon: symbole.uebersicht,
@@ -214,14 +212,12 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   if (canManageAppointments(roles)) {
     bereiche.push({
       id: 'termine',
-      label: 'Kalender',
-      kurz: 'Kalender',
-      leitfrage: 'Wer behandelt wen, wann und mit welchen Wegen?',
+      ...BEREICHE.termine,
       to: '/kalender',
       pfade: ['/kalender', '/touren', '/termine'],
       icon: symbole.termine,
       unterpunkte: [
-        { to: '/kalender', label: 'Kalender' },
+        { to: '/kalender', label: BEREICHE.termine.label },
         { to: '/touren', label: 'Touren' },
       ],
     });
@@ -230,15 +226,13 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   if (canReadPatientDirectory(roles)) {
     bereiche.push({
       id: 'patienten',
-      label: 'Patient:innen',
-      kurz: 'Patienten',
-      leitfrage: 'Was gehört zur Versorgung dieser Person?',
+      ...BEREICHE.patienten,
       to: '/patienten',
       pfade: ['/patienten', '/verordner'],
       icon: symbole.patienten,
       unterpunkte: [
-        { to: '/patienten', label: 'Patient:innen', end: false },
-        { to: '/verordner', label: 'Verordner:innen' },
+        { to: '/patienten', label: BEGRIFFE.patientInnen, end: false },
+        { to: '/verordner', label: BEGRIFFE.verordnerInnen },
       ],
     });
   }
@@ -246,9 +240,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   if (isStaff(roles)) {
     bereiche.push({
       id: 'team',
-      label: 'Kommunikation',
-      kurz: 'Nachrichten',
-      leitfrage: 'Mit wem muss ich etwas klären?',
+      ...BEREICHE.team,
       to: '/team',
       pfade: ['/team'],
       icon: symbole.team,
@@ -262,10 +254,10 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
 
     bereiche.push({
       id: 'betrieb',
-      label: 'Organisatorisches',
-      kurz: 'Organisation',
-      leitfrage: 'Welche Voraussetzungen und Anträge sind zu bearbeiten?',
-      to: '/betrieb/flotte',
+      ...BEREICHE.betrieb,
+      // Der Bereich oeffnet auf dem ersten Punkt, der wirklich wirkt, nicht
+      // auf einer Vorschau (ANN-112, Bedienprinzipien).
+      to: '/praxis/team',
       pfade: ['/betrieb', '/praxis'],
       icon: symbole.betrieb,
       unterpunkte: betriebUnterpunkte(roles),
@@ -275,9 +267,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   if (canSeeBilling(roles)) {
     bereiche.push({
       id: 'abrechnung',
-      label: 'Abrechnung',
-      kurz: 'Abrechnung',
-      leitfrage: 'Welche Leistungen sind abzurechnen oder zu bezahlen?',
+      ...BEREICHE.abrechnung,
       to: '/abrechnung',
       pfade: ['/abrechnung'],
       icon: symbole.abrechnung,

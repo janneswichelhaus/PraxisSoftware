@@ -22,7 +22,7 @@ import {
 } from './api';
 
 /**
- * Ein Ereignis des Praxisbetriebs eintragen (CAL-015b, CAL-015c).
+ * Eine Fehlzeit des Praxisbetriebs eintragen (CAL-015b, CAL-015c).
  *
  * Besprechung, Teamtermin, alles, was Zeit im Kalender belegt und **keine
  * Behandlung** ist. `PROJECT_PRINCIPLES.md` 0.9 §8.1: weder Patient:in noch
@@ -138,7 +138,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
     return (
       <ErrorState
         title="Nicht freigegeben"
-        description="Termine und Ereignisse eintragen dürfen die Rollen der Terminverwaltung."
+        description="Termine und Fehlzeiten eintragen dürfen die Rollen der Terminverwaltung."
       />
     );
   }
@@ -155,7 +155,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
       <Rueckweg standard="/kalender" />
 
       <PageHeader
-        title="Ereignis eintragen"
+        title="Fehlzeit eintragen"
         description="Besprechung, Teamtermin oder anderes. Ohne Patient:in und ohne Verordnung – es entsteht keine Behandlungsleistung."
       />
 
@@ -171,7 +171,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
             <fieldset>
               <legend className="text-ink text-sm font-medium">Beteiligte Personen *</legend>
               <p className="text-ink-muted mt-1 text-sm">
-                Das Ereignis belegt den Zeitraum in jedem gewählten Kalender.
+                Die Fehlzeit belegt den Zeitraum in jedem gewählten Kalender.
               </p>
               <div className="mt-3 flex flex-col gap-2">
                 {aktive.map((person) => (
@@ -218,7 +218,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Wird eingetragen …' : 'Ereignis eintragen'}
+            {mutation.isPending ? 'Wird eingetragen …' : 'Fehlzeit eintragen'}
           </Button>
           <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
             Abbrechen

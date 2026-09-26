@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/scheduling/api';
 import {
@@ -635,7 +636,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     const eintraege: GitterAuswahl['eintraege'] = [
       {
         schluessel: 'termin',
-        beschriftung: 'Neuer Termin',
+        beschriftung: `Neuer ${BEGRIFFE.termin}`,
         hinweis: spanne
           ? `${beginn}–${ende!} Uhr`
           : `${beginn} Uhr, ${TERMINFENSTER_MINUTEN} Minuten`,
@@ -648,7 +649,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       p.patient
         ? {
             schluessel: 'dauertermin',
-            beschriftung: 'Dauertermin',
+            beschriftung: BEGRIFFE.dauertermin,
             hinweis: p.verordnung
               ? 'Terminserie aus der gefilterten Grundlage'
               : 'Terminserie – zuerst die Grundlage wählen',
@@ -661,20 +662,20 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           }
         : {
             schluessel: 'dauertermin',
-            beschriftung: 'Dauertermin',
+            beschriftung: BEGRIFFE.dauertermin,
             hinweis: 'Zuerst die Patient:in wählen (Suche oben)',
             deaktiviert: true,
             onWaehlen: () => undefined,
           },
       {
         schluessel: 'fehlzeit',
-        beschriftung: 'Fehlzeit',
+        beschriftung: BEGRIFFE.fehlzeit,
         hinweis: 'Meeting, Puffer, Pause',
         onWaehlen: () => hin(`/termine/ereignis${ereignisParameter}`),
       },
       {
         schluessel: 'dauerfehlzeit',
-        beschriftung: 'Dauerfehlzeit',
+        beschriftung: BEGRIFFE.dauerfehlzeit,
         hinweis: 'Über mehrere Wochen',
         onWaehlen: () => hin(`/termine/dauerfehlzeit${ereignisParameter}`),
       },
@@ -948,7 +949,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               >
                 Termin anlegen
               </ButtonLink>
-              {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin
+              {/* Eine Fehlzeit des Praxisbetriebs - Besprechung, Teamtermin
                   (CAL-015b). Eigener Weg neben dem Termin: Er kennt weder
                   Patient:in noch Grundlage, und seine Länge ist frei. */}
               <ButtonLink
@@ -958,7 +959,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                 )}
                 variant="secondary"
               >
-                Ereignis eintragen
+                {BEGRIFFE.fehlzeit} eintragen
               </ButtonLink>
               <ButtonLink
                 to={mitRueckweg(
@@ -967,7 +968,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                 )}
                 variant="secondary"
               >
-                Dauerfehlzeit eintragen
+                {BEGRIFFE.dauerfehlzeit} eintragen
               </ButtonLink>
             </div>
           ) : null}

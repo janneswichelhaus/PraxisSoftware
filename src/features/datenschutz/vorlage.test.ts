@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ablehnungstext, paragraf } from './vorlage';
+import { paragraf } from '@/lib/begriffe';
+import { ablehnungstext } from './vorlage';
 import type { Aufbewahrungsstand } from './api';
 
 /**

@@ -30,7 +30,7 @@ function laufTag(versatz = 0): string {
 
 const zeit = (minutenAbAcht: number) => zeitImLauf(LAUF, minutenAbAcht, 10);
 
-test.describe('CAL-015: Ereignis eintragen', () => {
+test.describe('CAL-015: Fehlzeit eintragen', () => {
   test('traegt eine Besprechung ein und fuehrt sie ohne Patient:in', async ({ page }) => {
     const tag = laufTag(0);
     const von = zeit(0);
@@ -40,8 +40,10 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
 
     await kalenderOptionenOeffnen(page);
-    await page.getByRole('link', { name: 'Ereignis eintragen' }).click();
-    await expect(page.getByRole('heading', { name: 'Ereignis eintragen' })).toBeVisible();
+    await page.getByRole('link', { name: 'Fehlzeit eintragen', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Fehlzeit eintragen', exact: true }),
+    ).toBeVisible();
 
     // Weder Patient:in noch Verordnung noch eine Dauerwahl - ein Ereignis hat
     // nichts davon (PROJECT_PRINCIPLES.md 8.1).
@@ -55,7 +57,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     // 25 Minuten: eine Laenge, die ein Behandlungstermin nicht haben duerfte.
     await page.getByLabel('Ende *').fill(bis);
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
-    await page.getByRole('button', { name: 'Ereignis eintragen' }).click();
+    await page.getByRole('button', { name: 'Fehlzeit eintragen', exact: true }).click();
     // Faellt der Tag des Laufs auf ein Wochenende, hat niemand hinterlegte
     // Arbeitszeit - dann kommt dieselbe Rueckfrage wie beim Termin (CAL-005).
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
@@ -69,8 +71,8 @@ test.describe('CAL-015: Ereignis eintragen', () => {
 
     await kachel.first().click();
 
-    await expect(page.getByRole('heading', { name: /Ereignis –/ })).toBeVisible();
-    await expect(detailWert(page, 'Ereignis')).toContainText('Teambesprechung');
+    await expect(page.getByRole('heading', { name: /Fehlzeit –/ })).toBeVisible();
+    await expect(detailWert(page, 'Fehlzeit')).toContainText('Teambesprechung');
     await expect(detailWert(page, 'Zeit')).toContainText(von);
 
     // Was ein Ereignis nicht ist: keine Behandlung, keine Dokumentation,
@@ -105,7 +107,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
     await kalenderOptionenOeffnen(page);
-    await page.getByRole('link', { name: 'Ereignis eintragen' }).click();
+    await page.getByRole('link', { name: 'Fehlzeit eintragen', exact: true }).click();
 
     await page.getByLabel('Bezeichnung *').fill(bezeichnung);
     await page.getByLabel('Anna Beispiel').check();
@@ -114,7 +116,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await page.getByLabel('Beginn *').fill(von);
     await page.getByLabel('Ende *').fill(bis);
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
-    await page.getByRole('button', { name: 'Ereignis eintragen' }).click();
+    await page.getByRole('button', { name: 'Fehlzeit eintragen', exact: true }).click();
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
     // Beide Kalender tragen die Besprechung.
@@ -125,16 +127,18 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await expect(detailWert(page, 'Beteiligte')).toContainText('Anna Beispiel');
     await expect(detailWert(page, 'Beteiligte')).toContainText('Tim Teamleitung');
 
-    // Das ganze Ereignis bearbeiten - Bezeichnung und Zeit.
-    await page.getByRole('link', { name: 'Ereignis bearbeiten' }).click();
-    await expect(page.getByRole('heading', { name: 'Ereignis bearbeiten' })).toBeVisible();
+    // Die ganze Fehlzeit bearbeiten - Bezeichnung und Zeit.
+    await page.getByRole('link', { name: 'Fehlzeit bearbeiten', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Fehlzeit bearbeiten', exact: true }),
+    ).toBeVisible();
     await page.getByLabel('Bezeichnung *').fill(`${bezeichnung} neu`);
     await page.getByLabel('Beginn *').fill(neuVon);
     await page.getByLabel('Ende *').fill(neuBis);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await arbeitszeitBestaetigen(page, 'Trotzdem ändern', /\/termine\/[0-9a-f-]{36}$/);
 
-    await expect(detailWert(page, 'Ereignis')).toContainText(`${bezeichnung} neu`);
+    await expect(detailWert(page, 'Fehlzeit')).toContainText(`${bezeichnung} neu`);
     await expect(detailWert(page, 'Zeit')).toContainText(neuVon);
 
     // Und im Kalender stehen beide Zeilen an der neuen Stelle, mit dem neuen
@@ -154,7 +158,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
     await kalenderOptionenOeffnen(page);
-    await page.getByRole('link', { name: 'Ereignis eintragen' }).click();
+    await page.getByRole('link', { name: 'Fehlzeit eintragen', exact: true }).click();
 
     await page.getByLabel('Bezeichnung *').fill(bezeichnung);
     await page.getByLabel('Anna Beispiel').check();
@@ -163,11 +167,11 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await page.getByLabel('Beginn *').fill(von);
     await page.getByLabel('Ende *').fill(bis);
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
-    await page.getByRole('button', { name: 'Ereignis eintragen' }).click();
+    await page.getByRole('button', { name: 'Fehlzeit eintragen', exact: true }).click();
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
     await page.getByRole('link', { name: bezeichnung }).first().click();
-    await page.getByRole('button', { name: 'Ereignis absagen' }).click();
+    await page.getByRole('button', { name: 'Fehlzeit absagen', exact: true }).click();
     // „Patient:in hat abgesagt" steht hier nicht zur Wahl (CAL-016).
     await page.getByLabel('Absagegrund').selectOption('practice_request');
     await page.getByRole('button', { name: 'Ja, für alle absagen' }).click();
@@ -192,7 +196,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
     await kalenderOptionenOeffnen(page);
-    await page.getByRole('link', { name: 'Ereignis eintragen' }).click();
+    await page.getByRole('link', { name: 'Fehlzeit eintragen', exact: true }).click();
 
     await page.getByLabel('Bezeichnung *').fill(`Belegt ${LAUF % 1000}`);
     await page.getByLabel('Anna Beispiel').check();
@@ -200,7 +204,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await page.getByLabel('Beginn *').fill(von);
     await page.getByLabel('Ende *').fill(bis);
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
-    await page.getByRole('button', { name: 'Ereignis eintragen' }).click();
+    await page.getByRole('button', { name: 'Fehlzeit eintragen', exact: true }).click();
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
     await expect(page).toHaveURL(/\/kalender/);
 
@@ -239,7 +243,9 @@ test.describe('CAL-017: Die Ereignisseiten auf drei Breiten', () => {
     // 1. Das Eintrageformular.
     await page.goto('/termine/ereignis');
     await pruefeBreiten(page, async () => {
-      await expect(page.getByRole('heading', { name: 'Ereignis eintragen' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Fehlzeit eintragen', exact: true }),
+      ).toBeVisible();
       await expect(page.getByLabel('Bezeichnung *')).toBeVisible();
     });
 
@@ -250,27 +256,33 @@ test.describe('CAL-017: Die Ereignisseiten auf drei Breiten', () => {
     await page.getByLabel('Beginn *').fill(von);
     await page.getByLabel('Ende *').fill(bis);
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
-    await page.getByRole('button', { name: 'Ereignis eintragen' }).click();
+    await page.getByRole('button', { name: 'Fehlzeit eintragen', exact: true }).click();
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
     // 2. Die Detailansicht mit beiden Aktionspaaren.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
     await page.getByRole('link', { name: bezeichnung }).first().click();
-    await expect(page.getByRole('heading', { name: /Ereignis –/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Fehlzeit –/ })).toBeVisible();
 
     await pruefeBreiten(page, async () => {
-      await expect(page.getByRole('link', { name: 'Ereignis bearbeiten' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Ereignis absagen' })).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: 'Fehlzeit bearbeiten', exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Fehlzeit absagen', exact: true }),
+      ).toBeVisible();
       const hoehe = await page
-        .getByRole('button', { name: 'Ereignis absagen' })
+        .getByRole('button', { name: 'Fehlzeit absagen', exact: true })
         .evaluate((el) => el.getBoundingClientRect().height);
       expect(hoehe).toBeGreaterThanOrEqual(44);
     });
 
     // 3. Das Bearbeitungsformular mit der Beteiligtenliste.
-    await page.getByRole('link', { name: 'Ereignis bearbeiten' }).click();
+    await page.getByRole('link', { name: 'Fehlzeit bearbeiten', exact: true }).click();
     await pruefeBreiten(page, async () => {
-      await expect(page.getByRole('heading', { name: 'Ereignis bearbeiten' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Fehlzeit bearbeiten', exact: true }),
+      ).toBeVisible();
       await expect(page.getByLabel('Bezeichnung *')).toBeVisible();
       await expect(page.getByText('Tim Teamleitung')).toBeVisible();
     });

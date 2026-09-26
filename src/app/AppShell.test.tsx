@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { AppShell } from './AppShell';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -82,6 +82,27 @@ describe('AppShell', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Radflotte/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Arbeitszeiten' })).toBeInTheDocument();
+  });
+
+  it('klappt die Vorschauen hinter die echten Punkte ein (UX-002h)', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/praxis/team',
+    );
+    const menue = screen.getByRole('navigation', { name: 'Bereich Organisatorisches' });
+    expect(within(menue).getByRole('link', { name: 'Mitarbeitende' })).toBeInTheDocument();
+    expect(within(menue).queryByRole('link', { name: /Radflotte/ })).toBeNull();
+
+    const knopf = within(menue).getByRole('button', { name: 'Vorschau (4)' });
+    expect(knopf).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(knopf);
+    expect(within(menue).getByRole('link', { name: /Radflotte/ })).toBeInTheDocument();
+    expect(within(menue).getByRole('button', { name: 'Vorschau einklappen' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 
   it('zeigt kein Untermenue eines anderen Bereichs', () => {

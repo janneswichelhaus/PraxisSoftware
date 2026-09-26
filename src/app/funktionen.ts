@@ -1,4 +1,5 @@
 import { arbeitsbereiche } from './navigation';
+import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
   canManageAppointments,
   canManageStaffMasterData,
@@ -122,30 +123,30 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     eintraege.push({
       id: 'vorgang-patient-suchen',
       art: 'Vorgang',
-      bezeichnung: 'Patient:in suchen',
+      bezeichnung: `${BEGRIFFE.patientIn} suchen`,
       // Namen findet diese Leiste seit E17 Fassung 2 selbst, in der Gruppe
       // darunter. Dieser Treffer führt deshalb dorthin, wo mehr steht als der
       // Sprung in eine Akte: in die Kartei mit Filtern und Status.
       hinweis: 'Kartei mit Filtern und Status',
       ziel: '/patienten',
-      bereich: 'Patient:innen',
+      bereich: BEREICHE.patienten.label,
       stichworte: ['name', 'akte', 'kartei', 'finden'],
     });
     eintraege.push({
       id: 'vorgang-patient-anlegen',
       art: 'Vorgang',
-      bezeichnung: 'Patient:in anlegen',
+      bezeichnung: `${BEGRIFFE.patientIn} anlegen`,
       ziel: '/patienten/neu',
-      bereich: 'Patient:innen',
+      bereich: BEREICHE.patienten.label,
       stichworte: ['neu', 'aufnehmen', 'erfassen'],
       rueckweg: true,
     });
     eintraege.push({
       id: 'vorgang-verordner-anlegen',
       art: 'Vorgang',
-      bezeichnung: 'Verordner:in anlegen',
+      bezeichnung: `${BEGRIFFE.verordnerIn} anlegen`,
       ziel: '/verordner/neu',
-      bereich: 'Patient:innen',
+      bereich: BEREICHE.patienten.label,
       stichworte: ['arzt', 'ärztin', 'praxis', 'neu'],
       rueckweg: true,
     });
@@ -161,7 +162,7 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       // Formular zu führen, das zuerst nach der Person fragen müsste.
       hinweis: 'Zuerst die Patient:in wählen',
       ziel: '/patienten',
-      bereich: 'Patient:innen',
+      bereich: BEREICHE.patienten.label,
       stichworte: ['rezept', 'verordnung', 'selbstzahler', 'heilmittel', 'neu'],
     });
   }
@@ -170,9 +171,9 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     eintraege.push({
       id: 'vorgang-termin-anlegen',
       art: 'Vorgang',
-      bezeichnung: 'Termin anlegen',
+      bezeichnung: `${BEGRIFFE.termin} anlegen`,
       ziel: '/termine/neu',
-      bereich: 'Kalender',
+      bereich: BEREICHE.termine.label,
       stichworte: ['neu', 'buchen', 'planen'],
       rueckweg: true,
     });
@@ -182,26 +183,26 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       bezeichnung: 'Tag umplanen',
       hinweis: 'Bei einem Ausfall die Besuche eines Tages verteilen',
       ziel: '/kalender/tag-umplanen',
-      bereich: 'Kalender',
+      bereich: BEREICHE.termine.label,
       stichworte: ['ausfall', 'krank', 'verschieben'],
       rueckweg: true,
     });
     eintraege.push({
       id: 'vorgang-fehlzeit',
       art: 'Vorgang',
-      bezeichnung: 'Fehlzeit eintragen',
+      bezeichnung: `${BEGRIFFE.fehlzeit} eintragen`,
       ziel: '/termine/ereignis',
-      bereich: 'Kalender',
+      bereich: BEREICHE.termine.label,
       stichworte: ['besprechung', 'teammeeting', 'ereignis', 'block'],
       rueckweg: true,
     });
     eintraege.push({
       id: 'vorgang-dauerfehlzeit',
       art: 'Vorgang',
-      bezeichnung: 'Dauerfehlzeit eintragen',
+      bezeichnung: `${BEGRIFFE.dauerfehlzeit} eintragen`,
       hinweis: 'Dieselbe Fehlzeit über mehrere Wochen',
       ziel: '/termine/dauerfehlzeit',
-      bereich: 'Kalender',
+      bereich: BEREICHE.termine.label,
       stichworte: ['serie', 'wöchentlich', 'ereignis'],
       rueckweg: true,
     });
@@ -211,9 +212,9 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     eintraege.push({
       id: 'vorgang-mitarbeitende-anlegen',
       art: 'Vorgang',
-      bezeichnung: 'Mitarbeitende:n anlegen',
+      bezeichnung: `${BEGRIFFE.mitarbeiterIn} anlegen`,
       ziel: '/praxis/team/neu',
-      bereich: 'Organisatorisches',
+      bereich: BEREICHE.betrieb.label,
       stichworte: ['personal', 'einladen', 'zugang', 'neu'],
       rueckweg: true,
     });

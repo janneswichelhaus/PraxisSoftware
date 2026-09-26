@@ -66,7 +66,7 @@ describe('funktionskatalog', () => {
     const namen = bezeichnungen(funktionskatalog(testUser(['office'], 'Olivia Office')));
     expect(namen).toContain('Termin anlegen');
     expect(namen).toContain('Patient:in anlegen');
-    expect(namen).toContain('Mitarbeitende:n anlegen');
+    expect(namen).toContain('Mitarbeiter:in anlegen');
     // Wer eine Verordnung erfasst, tippt die Diagnose mit ab - ohne office
     // (ANN-011, canWriteTreatmentBases).
     expect(namen).not.toContain('Grundlage erfassen');
@@ -75,7 +75,7 @@ describe('funktionskatalog', () => {
   it('bietet der Therapeutin das Verordnen, aber keine Personalakte', () => {
     const namen = bezeichnungen(funktionskatalog(testUser(['therapist'])));
     expect(namen).toContain('Grundlage erfassen');
-    expect(namen).not.toContain('Mitarbeitende:n anlegen');
+    expect(namen).not.toContain('Mitarbeiter:in anlegen');
     expect(namen).not.toContain('Abrechnung');
   });
 

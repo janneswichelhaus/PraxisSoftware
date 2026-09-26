@@ -1,3 +1,4 @@
+import { paragraf } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import type { Aufbewahrungsklasse, Aufbewahrungsstand } from './api';
 
@@ -20,19 +21,6 @@ import type { Aufbewahrungsklasse, Aufbewahrungsstand } from './api';
  * Praxisleitung anhand des Verfahrens (`docs/datenschutz/betroffenenrechte.md`);
  * dieser Text ist der Entwurf für den Fall, dass eine Frist entgegensteht.
  */
-
-/**
- * `Par. 630f Abs. 3 BGB` wird `§ 630f Abs. 3 BGB`.
- *
- * Die SQL-Dateien des Projekts bleiben frei von Umlauten und Sonderzeichen
- * (Migration `20260911150000_retention_schedule.sql`), deshalb steht die
- * Fundstelle in der Datenbank als `Par.`. In einem Brief an eine Patientin
- * steht das Zeichen.
- */
-export function paragraf(fundstelle: string | null): string {
-  if (!fundstelle) return '';
-  return fundstelle.replace(/\bPar\.\s*/g, '§ ');
-}
 
 function klasse(stand: Aufbewahrungsstand, key: string): Aufbewahrungsklasse | undefined {
   return stand.klassen.find((k) => k.key === key);

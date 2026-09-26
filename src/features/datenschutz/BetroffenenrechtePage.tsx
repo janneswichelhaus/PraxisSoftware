@@ -12,7 +12,8 @@ import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
 import { fetchAufbewahrungsstand, fetchAuskunft, type Auskunft } from './api';
 import { dateiname, sichereAlsDatei } from './datei';
 import { AUSKUNFT_KATEGORIEN, kategorieLabel } from './kategorien';
-import { ablehnungstext, paragraf } from './vorlage';
+import { paragraf } from '@/lib/begriffe';
+import { ablehnungstext } from './vorlage';
 
 /**
  * Betroffenenrechte zu einer Akte (OPS-006 minimal).

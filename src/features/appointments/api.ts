@@ -387,7 +387,7 @@ export function patientName(
 export function terminBezeichnung(
   appointment: Pick<Appointment, 'kind' | 'title' | 'patient_given_name' | 'patient_family_name'>,
 ): string {
-  if (appointment.kind === 'internal') return appointment.title ?? 'Ereignis';
+  if (appointment.kind === 'internal') return appointment.title ?? 'Fehlzeit';
   // Ein Trainingstermin hat weder Titel noch Patientennamen und erreicht die
   // Praxisoberfläche nicht (ADR-022 Punkt 11). Wo er doch steht — in der
   // Terminliste vor dem Deaktivieren eines Zugangs —, ist er die Belegung und
@@ -914,7 +914,7 @@ export const ereignisFormSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['location_id'],
-        message: 'Für ein Ereignis in der Praxis ist ein Standort erforderlich.',
+        message: 'Für eine Fehlzeit in der Praxis ist ein Standort erforderlich.',
       });
     }
   });
@@ -964,10 +964,10 @@ export async function createAppointmentEvent(
     if (error.message?.includes('in the past')) {
       throw new Error('Der Tag liegt in der Vergangenheit.');
     }
-    throw new Error('Das Ereignis konnte nicht eingetragen werden.');
+    throw new Error('Die Fehlzeit konnte nicht eingetragen werden.');
   }
 
-  return antwort(z.number(), data, 'Das Ereignis konnte nicht eingetragen werden.');
+  return antwort(z.number(), data, 'Die Fehlzeit konnte nicht eingetragen werden.');
 }
 
 /**
@@ -1032,11 +1032,11 @@ export async function updateAppointmentEvent(
     }
     if (error.message?.includes('changed meanwhile')) {
       throw new Error(
-        'Dieses Ereignis wurde zwischenzeitlich geändert. Bitte die Seite neu laden und noch einmal ansehen.',
+        'Diese Fehlzeit wurde zwischenzeitlich geändert. Bitte die Seite neu laden und noch einmal ansehen.',
       );
     }
     if (error.message?.includes('cancelled appointment cannot be changed')) {
-      throw new Error('Ein abgesagtes Ereignis wird nicht mehr geändert.');
+      throw new Error('Eine abgesagte Fehlzeit wird nicht mehr geändert.');
     }
     if (error.message?.includes('not on the appointment grid')) {
       throw new Error(
@@ -1049,10 +1049,10 @@ export async function updateAppointmentEvent(
     if (error.message?.includes('in the past')) {
       throw new Error('Der Tag liegt in der Vergangenheit.');
     }
-    throw new Error('Das Ereignis konnte nicht geändert werden.');
+    throw new Error('Die Fehlzeit konnte nicht geändert werden.');
   }
 
-  return antwort(z.number(), data, 'Das Ereignis konnte nicht geändert werden.');
+  return antwort(z.number(), data, 'Die Fehlzeit konnte nicht geändert werden.');
 }
 
 /** Sagt alle noch bestätigten Zeilen eines Ereignisses ab (CAL-017). */
@@ -1070,13 +1070,13 @@ export async function cancelAppointmentEvent(
   if (error) {
     if (error.message?.includes('changed meanwhile')) {
       throw new Error(
-        'Dieses Ereignis wurde zwischenzeitlich geändert. Bitte die Seite neu laden und noch einmal ansehen.',
+        'Diese Fehlzeit wurde zwischenzeitlich geändert. Bitte die Seite neu laden und noch einmal ansehen.',
       );
     }
-    throw new Error('Das Ereignis konnte nicht abgesagt werden.');
+    throw new Error('Die Fehlzeit konnte nicht abgesagt werden.');
   }
 
-  return antwort(z.number(), data, 'Das Ereignis konnte nicht abgesagt werden.');
+  return antwort(z.number(), data, 'Die Fehlzeit konnte nicht abgesagt werden.');
 }
 
 // -----------------------------------------------------------------------------

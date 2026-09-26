@@ -7,7 +7,11 @@ import { SearchField } from '@/components/ui/SearchField';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
 import { fullName } from '@/features/patients/api';
-import { canManageStaffMasterData, type CurrentUser } from '@/features/session/types';
+import {
+  canManageAppointments,
+  canManageStaffMasterData,
+  type CurrentUser,
+} from '@/features/session/types';
 import { fetchStaffMembers, type StaffMember } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -57,7 +61,16 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
   const [liste, zuordenbar] = useQueries({
     queries: [
       { queryKey: ['staff-members'], queryFn: fetchStaffMembers, retry: false },
-      { queryKey: ['assignable-therapists'], queryFn: fetchAssignableTherapists, retry: false },
+      // Nur fuer die Rollen der Terminverwaltung: fuer trainer weist die
+      // Datenbank den Aufruf ab, und jeder Seitenaufruf stuende als `denied`
+      // im Auditlog (BEF-034). Ohne Abfrage bleibt der Hinweis „nicht
+      // zuordenbar" weg - die Frage stellt sich fuer diese Rolle nicht.
+      {
+        queryKey: ['assignable-therapists'],
+        queryFn: fetchAssignableTherapists,
+        retry: false,
+        enabled: canManageAppointments(user.roles),
+      },
     ],
   });
 

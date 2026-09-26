@@ -252,7 +252,13 @@ export function AppShell({
           className="max-w-inhalt mx-auto w-full min-w-0 px-5 py-8 pb-28 sm:px-8 sm:pb-10"
         >
           {aktuell && aktuell.unterpunkte.length > 0 ? (
-            <SubNav eintraege={aktuell.unterpunkte} label={`Bereich ${aktuell.label}`} />
+            // Eigener Schlüssel je Bereich: Eine aufgeklappte Vorschau bleibt
+            // nicht offen, wenn man den Bereich wechselt (UX-002h).
+            <SubNav
+              key={aktuell.id}
+              eintraege={aktuell.unterpunkte}
+              label={`Bereich ${aktuell.label}`}
+            />
           ) : null}
           {children}
         </main>

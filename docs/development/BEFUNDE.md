@@ -1176,7 +1176,7 @@ wie für sie.
 | Datum   | 2026-09-22                                                                         |
 | Bereich | Organisatorisches → Sicherheit → Aufbewahrung (`/praxis/sicherheit/aufbewahrung`)   |
 | Quelle  | Aufgefallen beim Bau von OPS-006                                                    |
-| Status  | offen                                                                              |
+| Status  | erledigt in UX-EPIC-002 (UX-002g, 2026-09-26)                                     |
 | Berührt | `src/features/retention/AufbewahrungPage.tsx`                                      |
 
 **Beobachtung.** In der Spalte „Grundlage" steht `Par. 630f Abs. 3 BGB` statt
@@ -1200,7 +1200,7 @@ Passt in den nächsten Loop, der die Seite ohnehin anfasst.
 | Datum   | 2026-09-23                                                                          |
 | Bereich | Organisatorisches → Team (`/praxis/team`, `/praxis/team/:id`)                       |
 | Quelle  | Aufgefallen bei der Bestandsaufnahme für G6b Teil 1                                 |
-| Status  | offen                                                                               |
+| Status  | erledigt in UX-EPIC-002 (UX-002h, 2026-09-26); Ausgang des Lesepfads in G6b bleibt offen |
 | Berührt | `src/features/staff/StaffListPage.tsx`, `src/features/staff/StaffMemberDetailPage.tsx` |
 
 **Beobachtung.** Beide Seiten laden `list_assignable_therapists` ohne

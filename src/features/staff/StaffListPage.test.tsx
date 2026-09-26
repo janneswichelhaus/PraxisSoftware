@@ -83,6 +83,14 @@ describe('StaffListPage', () => {
     expect(await screen.findByText('nicht für Termine zuordenbar')).toBeInTheDocument();
   });
 
+  it('fragt fuer trainer nicht nach zuordenbaren Personen (BEF-034)', async () => {
+    renderWithProviders(<StaffListPage user={testUser(['trainer'])} />);
+    expect(await screen.findByRole('link', { name: /Anna Beispiel/ })).toBeInTheDocument();
+    expect(fetchAssignableTherapists).not.toHaveBeenCalled();
+    // Ohne Antwort keine Aussage: der Hinweis bleibt weg, statt falsch zu sein.
+    expect(screen.queryByText('nicht für Termine zuordenbar')).toBeNull();
+  });
+
   it('bietet nur der administrativen Rolle die Anlage an', async () => {
     renderWithProviders(<StaffListPage user={testUser(['owner'])} />);
     expect(await screen.findByRole('link', { name: 'Mitarbeiter:in anlegen' })).toHaveAttribute(

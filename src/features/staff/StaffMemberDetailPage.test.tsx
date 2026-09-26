@@ -114,6 +114,16 @@ describe('StaffMemberDetailPage', () => {
       expect(screen.queryByRole('link', { name: 'Woche im Kalender' })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'Arbeitszeiten' })).not.toBeInTheDocument();
     });
+
+    it('fragt fuer trainer nicht nach zuordenbaren Personen (BEF-034)', async () => {
+      // Die Datenbank weist trainer ab; jeder Seitenaufruf stuende sonst als
+      // `denied` im Auditlog. Kalender und Arbeitszeiten sind trainer ohnehin
+      // verschlossen.
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['trainer'])} />);
+      await screen.findByRole('heading', { name: 'Anna Beispiel' });
+      expect(fetchAssignableTherapists).not.toHaveBeenCalled();
+      expect(screen.queryByRole('link', { name: 'Woche im Kalender' })).not.toBeInTheDocument();
+    });
   });
 
   it('zeigt die dienstlichen Angaben', async () => {
