@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
+import { naechsteAuswahl, useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
 
 /**
  * Die Spanne auf der freien Fläche (CAL-019).
@@ -161,5 +161,51 @@ describe('useSpanneAufziehen', () => {
 
     fireEvent.pointerUp(window, { clientX: 100, clientY: 180 });
     expect(onAuswahl).not.toHaveBeenCalled();
+  });
+});
+
+describe('naechsteAuswahl (BEF-035, BEF-036)', () => {
+  const punkt = (spalteId: string, minute: number): Spanne => ({
+    spalteId,
+    vonMinute: minute,
+    bisMinute: minute,
+  });
+
+  it('waehlt beim ersten Tipp den Punkt', () => {
+    expect(naechsteAuswahl(null, punkt('a', 530))).toEqual(punkt('a', 530));
+  });
+
+  it('hebt die Auswahl beim zweiten Tipp auf dasselbe Feld auf', () => {
+    expect(naechsteAuswahl(punkt('a', 530), punkt('a', 530))).toBeNull();
+  });
+
+  it('zieht mit dem zweiten Tipp weiter unten die Spanne dazwischen auf', () => {
+    expect(naechsteAuswahl(punkt('a', 530), punkt('a', 570))).toEqual({
+      spalteId: 'a',
+      vonMinute: 530,
+      bisMinute: 570,
+    });
+  });
+
+  it('zieht sie auch mit einem zweiten Tipp weiter oben auf', () => {
+    expect(naechsteAuswahl(punkt('a', 570), punkt('a', 530))).toEqual({
+      spalteId: 'a',
+      vonMinute: 530,
+      bisMinute: 570,
+    });
+  });
+
+  it('beginnt in einer anderen Spalte neu', () => {
+    expect(naechsteAuswahl(punkt('a', 530), punkt('b', 570))).toEqual(punkt('b', 570));
+  });
+
+  it('beginnt nach einer fertigen Spanne neu', () => {
+    const spanne = { spalteId: 'a', vonMinute: 530, bisMinute: 570 };
+    expect(naechsteAuswahl(spanne, punkt('a', 600))).toEqual(punkt('a', 600));
+  });
+
+  it('nimmt eine aufgezogene Spanne unveraendert', () => {
+    const spanne = { spalteId: 'a', vonMinute: 600, bisMinute: 640 };
+    expect(naechsteAuswahl(punkt('a', 530), spanne)).toEqual(spanne);
   });
 });

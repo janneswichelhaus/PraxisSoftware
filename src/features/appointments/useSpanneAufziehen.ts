@@ -237,3 +237,31 @@ export function useSpanneAufziehen(optionen: SpanneOptionen): SpanneAufziehen {
 
   return { vorschau, wartetAuf, beginnen, klickUnterdruecken };
 }
+
+/**
+ * Was ein Tipp auf die freie Fläche aus der bestehenden Auswahl macht
+ * (BEF-035, BEF-036, **ANN-108**).
+ *
+ * Aufziehen durch Ziehen braucht am Finger einen langen Druck; zwei Tipps
+ * sind der schnellere Weg zur selben Spanne:
+ *
+ *   * zweiter Tipp auf **dasselbe** Feld  -> Auswahl aufgehoben (wie „Abbrechen")
+ *   * auf ein anderes Feld derselben Spalte -> Spanne zwischen beiden Tipps
+ *   * in einer anderen Spalte, oder nach einer fertigen Spanne -> neuer Punkt
+ *
+ * Die Richtung ist gleich: Ein zweiter Tipp oberhalb des ersten ergibt
+ * dieselbe Spanne wie einer darunter. Eine aufgezogene Spanne (beide Enden
+ * verschieden) ersetzt die Auswahl immer - sie ist schon eine Antwort.
+ */
+export function naechsteAuswahl(bisher: Spanne | null, neu: Spanne): Spanne | null {
+  const istPunkt = neu.vonMinute === neu.bisMinute;
+  if (!istPunkt || !bisher) return neu;
+  const bisherPunkt = bisher.vonMinute === bisher.bisMinute;
+  if (!bisherPunkt || bisher.spalteId !== neu.spalteId) return neu;
+  if (bisher.vonMinute === neu.vonMinute) return null;
+  return {
+    spalteId: neu.spalteId,
+    vonMinute: Math.min(bisher.vonMinute, neu.vonMinute),
+    bisMinute: Math.max(bisher.vonMinute, neu.vonMinute),
+  };
+}

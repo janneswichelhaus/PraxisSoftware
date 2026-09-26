@@ -277,362 +277,355 @@ export function CalendarGrid({
   });
 
   return (
-    <div
-      ref={gitterRef}
-      aria-busy={laedtNach || undefined}
-      className={`border-line rounded-card mt-4 overflow-x-auto border ${laedtNach ? 'opacity-60' : ''}`}
-      // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
-      // auf einer Kachel wird nicht vom Browser übernommen.
-      style={{ touchAction: 'pan-x pan-y' }}
-    >
+    <>
       <div
-        className="grid min-w-max"
-        style={{
-          gridTemplateColumns: `3.25rem repeat(${spaltenModell.length}, minmax(${SPALTEN_MINDESTBREITE}, 1fr))`,
-        }}
-        role="grid"
-        aria-label={beschriftung}
+        ref={gitterRef}
+        aria-busy={laedtNach || undefined}
+        className={`border-line rounded-card mt-4 overflow-x-auto border ${laedtNach ? 'opacity-60' : ''}`}
+        // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
+        // auf einer Kachel wird nicht vom Browser übernommen.
+        style={{ touchAction: 'pan-x pan-y' }}
       >
-        {/* Kopfzeile: bleibt beim senkrechten Bildlauf stehen. */}
-        <div className="bg-surface border-line sticky top-0 left-0 z-30 h-11 border-b" />
-        {spaltenModell.map((s) => {
-          const beschriftung = (
-            <>
-              <span
+        <div
+          className="grid min-w-max"
+          style={{
+            gridTemplateColumns: `3.25rem repeat(${spaltenModell.length}, minmax(${SPALTEN_MINDESTBREITE}, 1fr))`,
+          }}
+          role="grid"
+          aria-label={beschriftung}
+        >
+          {/* Kopfzeile: bleibt beim senkrechten Bildlauf stehen. */}
+          <div className="bg-surface border-line sticky top-0 left-0 z-30 h-11 border-b" />
+          {spaltenModell.map((s) => {
+            const beschriftung = (
+              <>
+                <span
+                  className={[
+                    'truncate text-sm font-medium',
+                    s.hervorgehoben ? 'text-accent' : 'text-ink',
+                  ].join(' ')}
+                >
+                  {s.titel}
+                </span>
+                {s.unterTitel ? (
+                  <span className="text-ink-subtle truncate text-xs">{s.unterTitel}</span>
+                ) : null}
+              </>
+            );
+
+            return (
+              <div
+                key={s.id}
                 className={[
-                  'truncate text-sm font-medium',
-                  s.hervorgehoben ? 'text-accent' : 'text-ink',
+                  'bg-surface border-line sticky top-0 z-20 flex h-11 flex-col justify-center',
+                  'border-b border-l',
+                  // Traegt der Kopf einen Wechsel, polstert der Link selbst -
+                  // sonst waere nur der Text anklickbar und nicht die Spalte.
+                  s.ziel ? '' : 'px-2',
                 ].join(' ')}
               >
-                {s.titel}
-              </span>
-              {s.unterTitel ? (
-                <span className="text-ink-subtle truncate text-xs">{s.unterTitel}</span>
-              ) : null}
-            </>
-          );
+                {s.ziel ? (
+                  <Link
+                    to={s.ziel.to}
+                    aria-label={s.ziel.beschriftung}
+                    title={s.ziel.beschriftung}
+                    className="hover:bg-surface-sunken flex h-full min-w-0 flex-col justify-center px-2 transition-colors"
+                  >
+                    {beschriftung}
+                  </Link>
+                ) : (
+                  beschriftung
+                )}
+              </div>
+            );
+          })}
 
-          return (
-            <div
-              key={s.id}
-              className={[
-                'bg-surface border-line sticky top-0 z-20 flex h-11 flex-col justify-center',
-                'border-b border-l',
-                // Traegt der Kopf einen Wechsel, polstert der Link selbst -
-                // sonst waere nur der Text anklickbar und nicht die Spalte.
-                s.ziel ? '' : 'px-2',
-              ].join(' ')}
-            >
-              {s.ziel ? (
-                <Link
-                  to={s.ziel.to}
-                  aria-label={s.ziel.beschriftung}
-                  title={s.ziel.beschriftung}
-                  className="hover:bg-surface-sunken flex h-full min-w-0 flex-col justify-center px-2 transition-colors"
-                >
-                  {beschriftung}
-                </Link>
-              ) : (
-                beschriftung
-              )}
-            </div>
-          );
-        })}
-
-        {/* Zeitachse: bleibt beim waagerechten Bildlauf stehen. */}
-        <div
-          className="bg-surface border-line sticky left-0 z-10 border-r"
-          style={{ height: `${hoehe}px` }}
-          aria-hidden="true"
-        >
-          {stunden.map((m) => (
-            // Die Beschriftung steht unter ihrer Linie, nicht auf ihr: zentriert
-            // waere die oberste Stunde am Rand des Gitters halb abgeschnitten.
-            <div
-              key={m}
-              className="text-ink-subtle absolute right-1 pt-0.5 text-[0.6875rem]"
-              style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
-            >
-              {minuteZuZeit(m)}
-            </div>
-          ))}
-          {/* Ab dieser Zoomstufe liegen die halben Stunden 72 px auseinander -
+          {/* Zeitachse: bleibt beim waagerechten Bildlauf stehen. */}
+          <div
+            className="bg-surface border-line sticky left-0 z-10 border-r"
+            style={{ height: `${hoehe}px` }}
+            aria-hidden="true"
+          >
+            {stunden.map((m) => (
+              // Die Beschriftung steht unter ihrer Linie, nicht auf ihr: zentriert
+              // waere die oberste Stunde am Rand des Gitters halb abgeschnitten.
+              <div
+                key={m}
+                className="text-ink-subtle absolute right-1 pt-0.5 text-[0.6875rem]"
+                style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
+              >
+                {minuteZuZeit(m)}
+              </div>
+            ))}
+            {/* Ab dieser Zoomstufe liegen die halben Stunden 72 px auseinander -
               genug fuer eine zweite Beschriftung, ohne dass sie sich beruehren.
               Eine feine Linie ohne Uhrzeit in der Naehe laesst sich sonst nur
               abzaehlen. */}
-          {stundenHoehe >= 144
-            ? halbe.map((m) => (
-                <div
-                  key={m}
-                  className="text-ink-subtle/70 absolute right-1 pt-0.5 text-[0.625rem]"
-                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
-                >
-                  {minuteZuZeit(m)}
-                </div>
-              ))
-            : null}
-        </div>
+            {stundenHoehe >= 144
+              ? halbe.map((m) => (
+                  <div
+                    key={m}
+                    className="text-ink-subtle/70 absolute right-1 pt-0.5 text-[0.625rem]"
+                    style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
+                  >
+                    {minuteZuZeit(m)}
+                  </div>
+                ))
+              : null}
+          </div>
 
-        {spaltenModell.map((s) => {
-          const eigene = eintraege
-            .filter((e) => e.spalteId === s.id)
-            .sort((a, b) => a.beginnMinute - b.beginnMinute);
-          const verteilung = spalten(
-            eigene.map((e) => ({ beginn: e.beginnMinute, ende: e.endeMinute })),
-          );
+          {spaltenModell.map((s) => {
+            const eigene = eintraege
+              .filter((e) => e.spalteId === s.id)
+              .sort((a, b) => a.beginnMinute - b.beginnMinute);
+            const verteilung = spalten(
+              eigene.map((e) => ({ beginn: e.beginnMinute, ende: e.endeMinute })),
+            );
 
-          return (
-            <div
-              key={s.id}
-              ref={(el) => {
-                if (el) spaltenRefs.current.set(s.id, el);
-                else spaltenRefs.current.delete(s.id);
-              }}
-              className={`border-line relative border-l ${onAuswahl ? 'cursor-copy' : ''}`}
-              style={{ height: `${hoehe}px` }}
-              role="gridcell"
-              aria-label={s.titel}
-              // Nur die freie Fläche: eine Kachel liegt darüber und fängt ihre
-              // eigene Geste ab. Der Hintergrund (Arbeitszeitbänder,
-              // Stundenlinien) ist `pointer-events-none`, damit ein Tipp
-              // darauf hier ankommt und nicht ins Leere geht.
-              onPointerDown={
-                onAuswahl
-                  ? (event) => {
-                      if (event.target !== event.currentTarget) return;
-                      spanne.beginnen(event, s.id);
-                    }
-                  : undefined
-              }
-              onClick={
-                onAuswahl
-                  ? (event) => {
-                      if (event.target !== event.currentTarget) return;
-                      if (ziehen.klickUnterdruecken()) return;
-                      // Ein aufgezogener Bereich hat sein Ergebnis schon
-                      // gemeldet; der folgende Klick wäre ein zweites.
-                      if (spanne.klickUnterdruecken()) return;
-                      const kasten = event.currentTarget.getBoundingClientRect();
-                      const roh = pixelZuMinute(
-                        event.clientY - kasten.top,
-                        fenster.vonMinute,
-                        stundenHoehe,
-                      );
-                      const minute = Math.max(
-                        fenster.vonMinute,
-                        Math.min(fenster.bisMinute, aufRaster(roh, raster)),
-                      );
-                      // Ein Tap ohne Ziehen ist ein Rasterpunkt, keine Spanne
-                      // (CAL-019): beide Enden gleich.
-                      onAuswahl({ spalteId: s.id, vonMinute: minute, bisMinute: minute });
-                    }
-                  : undefined
-              }
-            >
-              {/* Arbeitszeit als Hintergrund - Darstellung, keine Prüfung. */}
-              {s.baender.map((b, i) => (
-                <div
-                  key={i}
-                  aria-hidden="true"
-                  className="bg-surface-sunken pointer-events-none absolute inset-x-0"
-                  style={{
-                    top: `${minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute, stundenHoehe)}px`,
-                    height: `${minuteZuPixel(Math.min(b.bisMinute, fenster.bisMinute), fenster.vonMinute, stundenHoehe) - minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute, stundenHoehe)}px`,
-                  }}
-                />
-              ))}
-
-              {/* Die drei Linienarten von fein nach kraeftig: die spaetere
-                  Regel gewinnt bei gleicher Deckkraft nicht, aber die
-                  Zeichenreihenfolge haelt die Stunde obenauf. */}
-              {feine.map((m) => (
-                <div
-                  key={`f${m}`}
-                  aria-hidden="true"
-                  className={`${LINIE.fein} pointer-events-none absolute inset-x-0 border-t`}
-                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
-                />
-              ))}
-              {halbe.map((m) => (
-                <div
-                  key={`h${m}`}
-                  aria-hidden="true"
-                  className={`${LINIE.halb} pointer-events-none absolute inset-x-0 border-t`}
-                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
-                />
-              ))}
-              {stunden.map((m) => (
-                <div
-                  key={`s${m}`}
-                  aria-hidden="true"
-                  className={`${LINIE.stunde} pointer-events-none absolute inset-x-0 border-t`}
-                  style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
-                />
-              ))}
-
-              {eigene.map((g, i) => {
-                const { spalte, anzahl } = verteilung[i]!;
-                const { links, breite } = kachelBreite(spalte, anzahl);
-                const wirdGezogen = ziehen.vorschau?.terminId === g.eintrag.id;
-                return (
-                  <Kachel
-                    key={g.eintrag.id}
-                    gitter={g}
-                    fensterVon={fenster.vonMinute}
-                    stundenHoehe={stundenHoehe}
-                    links={links}
-                    breite={breite}
-                    stapel={spalte + 1}
-                    gedimmt={wirdGezogen}
-                    bisher={vorschlag?.terminId === g.eintrag.id}
-                    wartet={ziehen.wartetAuf === g.eintrag.id}
-                    ziehbar={ziehbarErlaubt && g.ziehbar}
-                    rueckweg={rueckweg}
-                    onPointerDown={(event) =>
-                      ziehen.beginnen(event, {
-                        id: g.eintrag.id,
-                        spalteId: g.spalteId,
-                        startMinute: g.beginnMinute,
-                        dauer: g.endeMinute - g.beginnMinute,
-                      })
-                    }
-                    onClickCapture={(event) => {
-                      if (ziehen.klickUnterdruecken()) event.preventDefault();
+            return (
+              <div
+                key={s.id}
+                ref={(el) => {
+                  if (el) spaltenRefs.current.set(s.id, el);
+                  else spaltenRefs.current.delete(s.id);
+                }}
+                className={`border-line relative border-l ${onAuswahl ? 'cursor-copy' : ''}`}
+                style={{ height: `${hoehe}px` }}
+                role="gridcell"
+                aria-label={s.titel}
+                // Nur die freie Fläche: eine Kachel liegt darüber und fängt ihre
+                // eigene Geste ab. Der Hintergrund (Arbeitszeitbänder,
+                // Stundenlinien) ist `pointer-events-none`, damit ein Tipp
+                // darauf hier ankommt und nicht ins Leere geht.
+                onPointerDown={
+                  onAuswahl
+                    ? (event) => {
+                        if (event.target !== event.currentTarget) return;
+                        spanne.beginnen(event, s.id);
+                      }
+                    : undefined
+                }
+                onClick={
+                  onAuswahl
+                    ? (event) => {
+                        if (event.target !== event.currentTarget) return;
+                        if (ziehen.klickUnterdruecken()) return;
+                        // Ein aufgezogener Bereich hat sein Ergebnis schon
+                        // gemeldet; der folgende Klick wäre ein zweites.
+                        if (spanne.klickUnterdruecken()) return;
+                        const kasten = event.currentTarget.getBoundingClientRect();
+                        const roh = pixelZuMinute(
+                          event.clientY - kasten.top,
+                          fenster.vonMinute,
+                          stundenHoehe,
+                        );
+                        const minute = Math.max(
+                          fenster.vonMinute,
+                          Math.min(fenster.bisMinute, aufRaster(roh, raster)),
+                        );
+                        // Ein Tap ohne Ziehen ist ein Rasterpunkt, keine Spanne
+                        // (CAL-019): beide Enden gleich.
+                        onAuswahl({ spalteId: s.id, vonMinute: minute, bisMinute: minute });
+                      }
+                    : undefined
+                }
+              >
+                {/* Arbeitszeit als Hintergrund - Darstellung, keine Prüfung. */}
+                {s.baender.map((b, i) => (
+                  <div
+                    key={i}
+                    aria-hidden="true"
+                    className="bg-surface-sunken pointer-events-none absolute inset-x-0"
+                    style={{
+                      top: `${minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute, stundenHoehe)}px`,
+                      height: `${minuteZuPixel(Math.min(b.bisMinute, fenster.bisMinute), fenster.vonMinute, stundenHoehe) - minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute, stundenHoehe)}px`,
                     }}
                   />
-                );
-              })}
+                ))}
 
-              {/* Die Rueckfrage im Gitter (FIX-017): die neue Kachel am Ziel,
+                {/* Die drei Linienarten von fein nach kraeftig: die spaetere
+                  Regel gewinnt bei gleicher Deckkraft nicht, aber die
+                  Zeichenreihenfolge haelt die Stunde obenauf. */}
+                {feine.map((m) => (
+                  <div
+                    key={`f${m}`}
+                    aria-hidden="true"
+                    className={`${LINIE.fein} pointer-events-none absolute inset-x-0 border-t`}
+                    style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
+                  />
+                ))}
+                {halbe.map((m) => (
+                  <div
+                    key={`h${m}`}
+                    aria-hidden="true"
+                    className={`${LINIE.halb} pointer-events-none absolute inset-x-0 border-t`}
+                    style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
+                  />
+                ))}
+                {stunden.map((m) => (
+                  <div
+                    key={`s${m}`}
+                    aria-hidden="true"
+                    className={`${LINIE.stunde} pointer-events-none absolute inset-x-0 border-t`}
+                    style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
+                  />
+                ))}
+
+                {eigene.map((g, i) => {
+                  const { spalte, anzahl } = verteilung[i]!;
+                  const { links, breite } = kachelBreite(spalte, anzahl);
+                  const wirdGezogen = ziehen.vorschau?.terminId === g.eintrag.id;
+                  return (
+                    <Kachel
+                      key={g.eintrag.id}
+                      gitter={g}
+                      fensterVon={fenster.vonMinute}
+                      stundenHoehe={stundenHoehe}
+                      links={links}
+                      breite={breite}
+                      stapel={spalte + 1}
+                      gedimmt={wirdGezogen}
+                      bisher={vorschlag?.terminId === g.eintrag.id}
+                      wartet={ziehen.wartetAuf === g.eintrag.id}
+                      ziehbar={ziehbarErlaubt && g.ziehbar}
+                      rueckweg={rueckweg}
+                      onPointerDown={(event) =>
+                        ziehen.beginnen(event, {
+                          id: g.eintrag.id,
+                          spalteId: g.spalteId,
+                          startMinute: g.beginnMinute,
+                          dauer: g.endeMinute - g.beginnMinute,
+                        })
+                      }
+                      onClickCapture={(event) => {
+                        if (ziehen.klickUnterdruecken()) event.preventDefault();
+                      }}
+                    />
+                  );
+                })}
+
+                {/* Die Rueckfrage im Gitter (FIX-017): die neue Kachel am Ziel,
                   der Kasten daneben. Die alte Kachel steht als Umriss weiter
                   oben (`bisher`). Bei den rechten Spalten haengt der Kasten
                   links an, damit er nicht aus dem Gitter laeuft. */}
-              {vorschlag && vorschlag.spalteId === s.id
-                ? (() => {
-                    const oben = minuteZuPixel(
-                      vorschlag.startMinute,
-                      fenster.vonMinute,
-                      stundenHoehe,
-                    );
-                    const kachelHoehe = Math.max(
-                      28,
-                      ((vorschlag.endeMinute - vorschlag.startMinute) / 60) * stundenHoehe,
-                    );
-                    const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
-                    const rechts =
-                      spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
-                    // Unter der Kachel, es sei denn, dort ist kein Platz mehr.
-                    const kastenOben =
-                      oben + kachelHoehe + 200 <= hoehe ? oben + kachelHoehe + 4 : undefined;
-                    return (
-                      <>
-                        <div
-                          data-testid="vorschlag-kachel"
-                          className="border-accent bg-surface text-accent rounded-button ring-accent absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold ring-2"
-                          style={{ top: `${oben}px`, height: `${kachelHoehe}px` }}
-                          aria-hidden="true"
-                        >
-                          Neu · {minuteZuZeit(vorschlag.startMinute)}–
-                          {minuteZuZeit(vorschlag.endeMinute)}
-                        </div>
-                        <VerschiebenRueckfrage
-                          frage={vorschlag.frage}
-                          laeuft={vorschlag.laeuft}
-                          onBestaetigen={vorschlag.onBestaetigen}
-                          onAbbrechen={vorschlag.onAbbrechen}
-                          className={[
-                            'absolute z-50 w-72 max-w-[calc(100vw-5rem)]',
-                            rechts ? 'right-1' : 'left-1',
-                            kastenOben === undefined ? 'bottom-1' : '',
-                          ].join(' ')}
-                          style={kastenOben === undefined ? undefined : { top: `${kastenOben}px` }}
-                        />
-                      </>
-                    );
-                  })()
-                : null}
+                {vorschlag && vorschlag.spalteId === s.id
+                  ? (() => {
+                      const oben = minuteZuPixel(
+                        vorschlag.startMinute,
+                        fenster.vonMinute,
+                        stundenHoehe,
+                      );
+                      const kachelHoehe = Math.max(
+                        28,
+                        ((vorschlag.endeMinute - vorschlag.startMinute) / 60) * stundenHoehe,
+                      );
+                      const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
+                      const rechts =
+                        spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
+                      // Unter der Kachel, es sei denn, dort ist kein Platz mehr.
+                      const kastenOben =
+                        oben + kachelHoehe + 200 <= hoehe ? oben + kachelHoehe + 4 : undefined;
+                      return (
+                        <>
+                          <div
+                            data-testid="vorschlag-kachel"
+                            className="border-accent bg-surface text-accent rounded-button ring-accent absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold ring-2"
+                            style={{ top: `${oben}px`, height: `${kachelHoehe}px` }}
+                            aria-hidden="true"
+                          >
+                            Neu · {minuteZuZeit(vorschlag.startMinute)}–
+                            {minuteZuZeit(vorschlag.endeMinute)}
+                          </div>
+                          <VerschiebenRueckfrage
+                            frage={vorschlag.frage}
+                            laeuft={vorschlag.laeuft}
+                            onBestaetigen={vorschlag.onBestaetigen}
+                            onAbbrechen={vorschlag.onAbbrechen}
+                            className={[
+                              'absolute z-50 w-72 max-w-[calc(100vw-5rem)]',
+                              rechts ? 'right-1' : 'left-1',
+                              kastenOben === undefined ? 'bottom-1' : '',
+                            ].join(' ')}
+                            style={
+                              kastenOben === undefined ? undefined : { top: `${kastenOben}px` }
+                            }
+                          />
+                        </>
+                      );
+                    })()
+                  : null}
 
-              {/* Die aufgezogene Spanne (CAL-019): Sie zeigt beide Enden,
+                {/* Die aufgezogene Spanne (CAL-019): Sie zeigt beide Enden,
                   solange der Zeiger unten ist. Geschrieben ist nichts - das
                   Menü fragt erst, was daraus werden soll. */}
-              {spanne.vorschau && spanne.vorschau.spalteId === s.id ? (
-                <div
-                  data-testid="spanne-vorschau"
-                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
-                  style={{
-                    top: `${minuteZuPixel(spanne.vorschau.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
-                    height: `${Math.max(AUSWAHL_MINDESTHOEHE, ((spanne.vorschau.bisMinute - spanne.vorschau.vonMinute) / 60) * stundenHoehe)}px`,
-                  }}
-                  aria-hidden="true"
-                >
-                  {minuteZuZeit(spanne.vorschau.vonMinute)}
-                  {spanne.vorschau.bisMinute > spanne.vorschau.vonMinute
-                    ? `–${minuteZuZeit(spanne.vorschau.bisMinute)}`
-                    : ''}
-                </div>
-              ) : null}
+                {spanne.vorschau && spanne.vorschau.spalteId === s.id ? (
+                  <div
+                    data-testid="spanne-vorschau"
+                    className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
+                    style={{
+                      top: `${minuteZuPixel(spanne.vorschau.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                      height: `${Math.max(AUSWAHL_MINDESTHOEHE, ((spanne.vorschau.bisMinute - spanne.vorschau.vonMinute) / 60) * stundenHoehe)}px`,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {minuteZuZeit(spanne.vorschau.vonMinute)}
+                    {spanne.vorschau.bisMinute > spanne.vorschau.vonMinute
+                      ? `–${minuteZuZeit(spanne.vorschau.bisMinute)}`
+                      : ''}
+                  </div>
+                ) : null}
 
-              {/* Das Anlegen-Menü an der Auswahl (CAL-019). Es steht im
-                  Gitter und nicht als Fenster darüber: Die gewählte Zeit muss
-                  sichtbar bleiben, während man die Art wählt (ANN-058). */}
-              {auswahl && auswahl.spalteId === s.id
-                ? (() => {
-                    const oben = minuteZuPixel(auswahl.vonMinute, fenster.vonMinute, stundenHoehe);
-                    const auswahlHoehe = Math.max(
-                      AUSWAHL_MINDESTHOEHE,
-                      ((auswahl.bisMinute - auswahl.vonMinute) / 60) * stundenHoehe,
-                    );
-                    const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
-                    const rechts =
-                      spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
-                    const kastenOben =
-                      oben + auswahlHoehe + 240 <= hoehe ? oben + auswahlHoehe + 4 : undefined;
-                    return (
-                      <>
-                        <div
-                          data-testid="auswahl-flaeche"
-                          className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 px-2 py-1 text-xs leading-4 font-semibold"
-                          style={{ top: `${oben}px`, height: `${auswahlHoehe}px` }}
-                          aria-hidden="true"
-                        >
-                          {minuteZuZeit(auswahl.vonMinute)}
-                          {auswahl.bisMinute > auswahl.vonMinute
-                            ? `–${minuteZuZeit(auswahl.bisMinute)}`
-                            : ''}
-                        </div>
-                        <AnlegenMenue
-                          auswahl={auswahl}
-                          className={[
-                            'absolute z-50 w-64 max-w-[calc(100vw-5rem)]',
-                            rechts ? 'right-1' : 'left-1',
-                            kastenOben === undefined ? 'bottom-1' : '',
-                          ].join(' ')}
-                          style={kastenOben === undefined ? undefined : { top: `${kastenOben}px` }}
-                        />
-                      </>
-                    );
-                  })()
-                : null}
+                {/* Die Auswahl (CAL-019). Das Menü dazu steht als Leiste unter
+                  dem Gitter, damit die Spalte frei bleibt (BEF-035). */}
+                {auswahl && auswahl.spalteId === s.id ? (
+                  <div
+                    data-testid="auswahl-flaeche"
+                    className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 px-2 py-1 text-xs leading-4 font-semibold"
+                    style={{
+                      top: `${minuteZuPixel(auswahl.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                      height: `${Math.max(AUSWAHL_MINDESTHOEHE, ((auswahl.bisMinute - auswahl.vonMinute) / 60) * stundenHoehe)}px`,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {minuteZuZeit(auswahl.vonMinute)}
+                    {auswahl.bisMinute > auswahl.vonMinute
+                      ? `–${minuteZuZeit(auswahl.bisMinute)}`
+                      : ''}
+                  </div>
+                ) : null}
 
-              {/* Vorschau: zeigt nur, wohin es ginge. Geschrieben ist noch nichts. */}
-              {ziehen.vorschau && ziehen.vorschau.spalteId === s.id ? (
-                <div
-                  data-testid="zieh-vorschau"
-                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
-                  style={{
-                    top: `${minuteZuPixel(ziehen.vorschau.startMinute, fenster.vonMinute, stundenHoehe)}px`,
-                    height: `${Math.max(AUSWAHL_MINDESTHOEHE, (ziehen.vorschau.dauer / 60) * stundenHoehe)}px`,
-                  }}
-                  aria-hidden="true"
-                >
-                  {minuteZuZeit(ziehen.vorschau.startMinute)}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+                {/* Vorschau: zeigt nur, wohin es ginge. Geschrieben ist noch nichts. */}
+                {ziehen.vorschau && ziehen.vorschau.spalteId === s.id ? (
+                  <div
+                    data-testid="zieh-vorschau"
+                    className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
+                    style={{
+                      top: `${minuteZuPixel(ziehen.vorschau.startMinute, fenster.vonMinute, stundenHoehe)}px`,
+                      height: `${Math.max(AUSWAHL_MINDESTHOEHE, (ziehen.vorschau.dauer / 60) * stundenHoehe)}px`,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {minuteZuZeit(ziehen.vorschau.startMinute)}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* Das Anlegen-Menü als Leiste am unteren Rand (BEF-035, ANN-108):
+        klebt beim Bildlauf am Fensterrand, über der Tableiste des
+        Telefons, und lässt die Spalte der Auswahl frei. Außerhalb des
+        Gitters, weil dessen waagerechter Bildlauf ein `sticky` darin an
+        den Kasten statt an das Fenster bände. */}
+      {auswahl ? (
+        <AnlegenMenue
+          auswahl={auswahl}
+          className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 mt-2 sm:bottom-4"
+        />
+      ) : null}
+    </>
   );
 }
 

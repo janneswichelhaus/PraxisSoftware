@@ -1321,6 +1321,73 @@ describe('CalendarPage', () => {
     });
   });
 
+  describe('BEF-035 und BEF-036: zweiter Tipp und Leiste unter dem Gitter', () => {
+    async function tagAnna() {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+      return screen.getByRole('gridcell', { name: 'Anna Beispiel' });
+    }
+
+    it('zieht mit einem zweiten Tipp in derselben Spalte die Spanne dazwischen auf', async () => {
+      const zelle = await tagAnna();
+      fireEvent.click(zelle, { clientY: 0 });
+      // 40 Minuten weiter: 07:00 bis 07:40.
+      fireEvent.click(zelle, { clientY: (EINE_STUNDE * 40) / 60 });
+
+      expect(screen.getByTestId('auswahl-flaeche')).toHaveTextContent('07:00–07:40');
+      const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
+      expect(menue).toHaveTextContent('07:00–07:40 Uhr');
+      // Die Spanne hat ihre Laenge - der Termin bekommt sie statt des Fensters.
+      expect(within(menue).getByRole('button', { name: /^Neuer Termin/ })).toHaveTextContent(
+        '07:00–07:40 Uhr',
+      );
+      // Und die wahre Hoehe im Gitter, nicht die Mindesthoehe (BEF-037).
+      expect(screen.getByTestId('auswahl-flaeche').style.height).toBe(
+        `${(EINE_STUNDE * 40) / 60}px`,
+      );
+    });
+
+    it('hebt die Auswahl mit einem zweiten Tipp auf dasselbe Feld auf', async () => {
+      const zelle = await tagAnna();
+      fireEvent.click(zelle, { clientY: 0 });
+      fireEvent.click(zelle, { clientY: 0 });
+
+      expect(screen.queryByTestId('auswahl-flaeche')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('group', { name: 'Was soll hier entstehen?' }),
+      ).not.toBeInTheDocument();
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('beginnt in einer anderen Spalte eine neue Auswahl', async () => {
+      await tagAnna();
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }), { clientY: 0 });
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Tim Teamleitung' }), {
+        clientY: EINE_STUNDE,
+      });
+
+      const flaeche = screen.getByTestId('auswahl-flaeche');
+      expect(flaeche).toHaveTextContent('08:00');
+      expect(
+        within(screen.getByRole('gridcell', { name: 'Tim Teamleitung' })).getByTestId(
+          'auswahl-flaeche',
+        ),
+      ).toBe(flaeche);
+    });
+
+    it('stellt das Menue unter das Gitter und nicht in die Spalte', async () => {
+      const zelle = await tagAnna();
+      fireEvent.click(zelle, { clientY: 0 });
+
+      const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
+      expect(within(zelle).queryByRole('group')).toBeNull();
+      expect(screen.getByRole('grid').contains(menue)).toBe(false);
+      // Klebt am unteren Fensterrand, ueber der Tableiste des Telefons.
+      expect(menue.className).toContain('sticky');
+      expect(menue).toHaveTextContent(/Zweites Feld antippen/);
+    });
+  });
+
   describe('UX-010: Langer Druck am Finger und Rueckgaengig', () => {
     /** Wie in CAL-006: jsdom kennt kein Layout. */
     function spaltenVermessen(): void {

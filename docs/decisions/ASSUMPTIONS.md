@@ -1388,3 +1388,15 @@ Praxisprozess · entschieden (Jannes) · 2026-09-26 · Jannes · — · Wiedervo
 **Anker.** `KOERPERBEREICHE`, `bereichAn` und `MAX_ABSTAND` in `src/features/assessments/koerperschema.ts`; `src/features/assessments/koerperschema.webp`; `KoerperschemaFeld` in `src/features/assessments/KoerperschemaFeld.tsx`.
 
 **Änderungspfad.** Genauere Bereiche: Anker ergänzen oder verschieben (Test prüft, dass jeder Anker seinen Bereich trifft) · Aufwand `klein`. Andere Zeichnung: Datei tauschen und Anker neu setzen; gespeicherte Stellen bleiben relativ zum Bild · Aufwand `mittel`.
+
+### ANN-108 — Das Anlegen-Menü ist eine Leiste unter dem Gitter; ein zweiter Tipp hebt auf oder zieht die Spanne auf
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+
+**Annahme.** Nach einem Tipp auf freie Zeit steht das Anlegen-Menü als Leiste am unteren Fensterrand, über der Tableiste, und nicht mehr in der Spalte unter der Auswahl. Ein zweiter Tipp auf **dasselbe** Feld hebt die Auswahl auf; auf ein **anderes** Feld derselben Spalte wählt er die Spanne zwischen beiden Tipps (in beiden Richtungen, ohne das zweite Feld mitzuzählen: 08:50 und 09:30 ergeben 08:50–09:30). Ein Tipp in einer anderen Spalte oder nach einer fertigen Spanne beginnt eine neue Auswahl; Aufziehen durch Ziehen bleibt daneben erhalten.
+
+**Begründung.** BEF-035 und BEF-036 (Sichtung am 2026-09-26): Das Menü im Gitter deckte die Felder zu, auf denen die Spanne weitergeht, und Aufziehen verlangte am Finger einen langen Druck. Wo das Menü stattdessen steht, lässt der Befund offen; eine Leiste am Fensterrand ist die Stelle, die bei jeder Spalte, jeder Zoomstufe und jeder Bildschirmbreite frei von der Spalte bleibt. „40 Minuten weiter" im Befund ist eine Spanne von 40 Minuten, deshalb zählt das zweite Feld als Ende, nicht als letztes Feld. Unsicher: ob die Leiste am Handy zu viel vom Raster verdeckt, wenn die Auswahl tief unten liegt.
+
+**Anker.** `naechsteAuswahl` in `src/features/appointments/useSpanneAufziehen.ts`; die Leiste in `src/features/appointments/AnlegenMenue.tsx`, ihr Platz am Ende von `CalendarGrid` in `src/features/appointments/CalendarGrid.tsx`.
+
+**Änderungspfad.** Das zweite Feld mitzählen: in `naechsteAuswahl` das Ende um das Praxisraster verlängern · Aufwand `klein`. Menü zurück an die Auswahl, aber seitlich oder oberhalb: den Platz in `CalendarGrid` ändern · Aufwand `klein`.

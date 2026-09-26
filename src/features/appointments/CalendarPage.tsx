@@ -34,7 +34,7 @@ import {
   type GitterEintrag,
   type GitterSpalte,
 } from './CalendarGrid';
-import type { Spanne } from './useSpanneAufziehen';
+import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
 import type { VerschiebenFrage } from './VerschiebenRueckfrage';
 import {
   arbeitszeitBaender,
@@ -981,7 +981,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // damit niemand auf einem Zwischenstand handelt.
           laedtNach={termine.isPlaceholderData || ausnahmen.isPlaceholderData}
           onBlaettern={(richtung) => setze({ datum: blaettern(p.ansicht, p.datum, richtung) })}
-          onAuswahl={darfAendern ? setAuswahl : undefined}
+          // Ein zweiter Tipp hebt auf oder zieht die Spanne auf (BEF-035,
+          // BEF-036); was er bewirkt, entscheidet `naechsteAuswahl`.
+          onAuswahl={
+            darfAendern ? (neu) => setAuswahl((bisher) => naechsteAuswahl(bisher, neu)) : undefined
+          }
           auswahl={auswahl ? anlegenMenue(auswahl) : null}
           beschriftung={
             p.ansicht === 'tag'
