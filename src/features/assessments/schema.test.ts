@@ -4,6 +4,7 @@ import {
   bausteinRegionSchema,
   blockSchema,
   kennungSchema,
+  optionKennung,
   scoreDefinitionSchema,
   scoreItemSchema,
   versionSchema,
@@ -648,9 +649,11 @@ describe('Rechenformen der 18 Instrumente', () => {
           item('frage_2', 2, {
             typ: 'mehrfachauswahl',
             gewertet: false,
+            // Ohne Punktwert: Der Bogen kennt keinen, und einen zu erfinden
+            // verbietet der Arbeitsauftrag §5 Punkt 2 (ANN-102).
             optionen: [
-              { label: 'Nacken', wert: 0 },
-              { label: 'Ruecken', wert: 0 },
+              { id: 'nacken', label: 'Nacken' },
+              { id: 'ruecken', label: 'Ruecken' },
             ],
           }),
         ],
@@ -881,5 +884,79 @@ describe('Subskalen und Referenzfaelle', () => {
       }),
     );
     expect(ergebnis.success).toBe(false);
+  });
+});
+
+describe('Optionen und Antworttypen der Erhebung (FRB-EPIC-002)', () => {
+  const erfassung = (optionen: unknown, abweichung: Partial<ScoreItem> = {}) =>
+    scoreItemSchema.safeParse(
+      item('frage', 1, {
+        gewertet: false,
+        optionen: optionen as ScoreItem['optionen'],
+        ...abweichung,
+      }),
+    );
+
+  it('nimmt eine Option ohne Punktwert an, wenn sie eine Kennung trägt', () => {
+    expect(
+      erfassung([
+        { id: 'ja', label: 'ja' },
+        { id: 'nein', label: 'nein' },
+      ]).success,
+    ).toBe(true);
+  });
+
+  it('weist eine Option ohne Kennung und ohne Punktwert zurück', () => {
+    // Sie liesse sich nicht speichern (ANN-102).
+    expect(erfassung([{ id: 'ja', label: 'ja' }, { label: 'nein' }]).success).toBe(false);
+  });
+
+  it('verlangt am gewerteten Item weiter den Punktwert', () => {
+    const ergebnis = scoreItemSchema.safeParse(
+      item('frage', 1, {
+        optionen: [
+          { id: 'nie', label: 'nie' },
+          { label: 'immer', wert: 4 },
+        ],
+      }),
+    );
+    expect(ergebnis.success).toBe(false);
+    expect(ergebnis.error?.issues[0]?.message).toMatch(/Punktwert/);
+  });
+
+  it('weist doppelte Kennungen innerhalb eines Items zurück', () => {
+    expect(
+      erfassung([
+        { id: 'ja', label: 'ja' },
+        { id: 'ja', label: 'jein' },
+      ]).success,
+    ).toBe(false);
+  });
+
+  it('erlaubt exklusiv nur in einer Mehrfachauswahl', () => {
+    const optionen = [
+      { id: 'kopf', label: 'Kopf' },
+      { id: 'nein', label: 'nein', exklusiv: true },
+    ];
+    expect(erfassung(optionen, { typ: 'mehrfachauswahl' }).success).toBe(true);
+    expect(erfassung(optionen, { typ: 'einzelauswahl' }).success).toBe(false);
+  });
+
+  it('nimmt ein Körperschema nur ungewertet an', () => {
+    expect(
+      scoreItemSchema.safeParse(
+        item('ort', 1, { typ: 'koerperschema', gewertet: false, optionen: undefined }),
+      ).success,
+    ).toBe(true);
+    expect(
+      scoreItemSchema.safeParse(
+        item('ort', 1, { typ: 'koerperschema', gewertet: true, optionen: undefined }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it('speichert die Kennung, sonst den Punktwert', () => {
+    expect(optionKennung({ id: 'nachtschmerzen', wert: 3 })).toBe('nachtschmerzen');
+    expect(optionKennung({ wert: 3 })).toBe('3');
   });
 });

@@ -51,7 +51,7 @@ describe('Instrumente', () => {
         ?.parentElement as HTMLElement;
       expect(within(karte).getByText(score.meta.version)).toBeInTheDocument();
     }
-    expect(screen.getAllByText(/frei verwendbar, Stand 25\.09\.2026/)).toHaveLength(
+    expect(screen.getAllByText(/frei verwendbar, Stand \d{2}\.\d{2}\.\d{4}/)).toHaveLength(
       bibliothek.scores.length,
     );
   });

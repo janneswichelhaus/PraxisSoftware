@@ -1,0 +1,1080 @@
+{
+  "meta": {
+    "id": "anamnese_v8",
+    "version": "1.0.0",
+    "name_de": "Anamnesebogen Version 8 (DIGOTOR)",
+    "region": "Allgemein / Erstkontakt",
+    "konstrukt": "Anamnese, Schmerzlokalisation, Red Flags, Vorgeschichte",
+    "ausgefuellt_von": "patient",
+    "sprache": "de",
+    "prioritaet": "a",
+    "quelle": {
+      "datei": "Anamnesebogen_Version-8_DIGOTOR_07-2026.pdf",
+      "validierung": "DIGOTOR GbR, Version 8, 07/2026"
+    },
+    "lizenzstatus": {
+      "status": "freigegeben",
+      "begruendung": "Erklärung von Jannes vom 2026-09-21: keine Lizenzierung, Integration freigegeben; schriftlicher Beleg offen als B8 (ANN-086).",
+      "stand": "2026-09-21"
+    },
+    "aktiv": true
+  },
+  "items": [
+    {
+      "id": "beruf",
+      "text": "Beruf:",
+      "typ": "freitext",
+      "gewertet": false
+    },
+    {
+      "id": "sport_hobby",
+      "text": "Sport/Hobby:",
+      "typ": "freitext",
+      "gewertet": false
+    },
+    {
+      "id": "beschwerden_ort",
+      "nummer": 1,
+      "text": "Wo haben Sie Ihre Beschwerden (bitte einzeichnen)?",
+      "typ": "koerperschema",
+      "gewertet": false
+    },
+    {
+      "id": "schmerzen_aktuell",
+      "nummer": 2,
+      "text": "Haben Sie aktuell Schmerzen?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "schmerzstaerke",
+      "nummer": 3,
+      "text": "Wie stark sind Ihre Schmerzen? (bitte kennzeichnen)",
+      "typ": "skala",
+      "skala": {
+        "min": 0,
+        "max": 10
+      },
+      "anker": {
+        "min": "kein Schmerz",
+        "max": "maximaler Schmerz"
+      },
+      "gewertet": false
+    },
+    {
+      "id": "schmerzart",
+      "nummer": 4,
+      "text": "Haben Sie: Ruheschmerzen , Nachtschmerzen , Dauerschmerzen ?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "ruheschmerzen",
+          "label": "Ruheschmerzen"
+        },
+        {
+          "id": "nachtschmerzen",
+          "label": "Nachtschmerzen"
+        },
+        {
+          "id": "dauerschmerzen",
+          "label": "Dauerschmerzen"
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "beweglichkeit_veraendert",
+      "nummer": 5,
+      "text": "Ist Ihre Beweglichkeit verändert?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "kraft_vermindert",
+      "nummer": 6,
+      "text": "Ist Ihre Kraft vermindert?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "merkmale",
+      "nummer": 7,
+      "text": "Weisen Ihre Beschwerden eines der folgenden Merkmale auf: Kribbeln , Piksen , Brennen , Juckreiz , Taubheitsgefühl , Gefühl einer schmerzhaften Kälte , elektrische Schläge ?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "kribbeln",
+          "label": "Kribbeln"
+        },
+        {
+          "id": "piksen",
+          "label": "Piksen"
+        },
+        {
+          "id": "brennen",
+          "label": "Brennen"
+        },
+        {
+          "id": "juckreiz",
+          "label": "Juckreiz"
+        },
+        {
+          "id": "taubheitsgefuehl",
+          "label": "Taubheitsgefühl"
+        },
+        {
+          "id": "schmerzhafte_kaelte",
+          "label": "Gefühl einer schmerzhaften Kälte"
+        },
+        {
+          "id": "elektrische_schlaege",
+          "label": "elektrische Schläge"
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "weitere_beschwerden",
+      "text": "Haben Sie noch weitere Beschwerden?",
+      "typ": "freitext",
+      "gewertet": false,
+      "nummer": 8
+    },
+    {
+      "id": "beschwerden_seit",
+      "text": "Seit wann haben Sie Ihre Beschwerden?",
+      "typ": "freitext",
+      "gewertet": false,
+      "nummer": 9
+    },
+    {
+      "id": "beschwerden_zeitlich",
+      "nummer": 10,
+      "text": "Haben Sie Ihre Beschwerden: permanent , mit Unterbrechungen ?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "permanent",
+          "label": "permanent"
+        },
+        {
+          "id": "mit_unterbrechungen",
+          "label": "mit Unterbrechungen"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "beschwerden_verlauf",
+      "nummer": 11,
+      "text": "Sind Ihre Beschwerden: besser geworden , gleichbleibend , schlechter geworden , wechselnd ?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "besser_geworden",
+          "label": "besser geworden"
+        },
+        {
+          "id": "gleichbleibend",
+          "label": "gleichbleibend"
+        },
+        {
+          "id": "schlechter_geworden",
+          "label": "schlechter geworden"
+        },
+        {
+          "id": "wechselnd",
+          "label": "wechselnd"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "verbessert_durch",
+      "nummer": 12,
+      "text": "a) Was verbessert Ihre Beschwerden:",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "aktivitaet",
+          "label": "Aktivität"
+        },
+        {
+          "id": "ruhe",
+          "label": "Ruhe"
+        },
+        {
+          "id": "liegen",
+          "label": "Liegen"
+        },
+        {
+          "id": "sitzen",
+          "label": "Sitzen"
+        },
+        {
+          "id": "aufstehen",
+          "label": "Aufstehen"
+        },
+        {
+          "id": "buecken",
+          "label": "Bücken"
+        },
+        {
+          "id": "in_die_hocke_gehen",
+          "label": "in die Hocke gehen"
+        },
+        {
+          "id": "stehen",
+          "label": "Stehen"
+        },
+        {
+          "id": "gehen",
+          "label": "Gehen"
+        },
+        {
+          "id": "laufen",
+          "label": "Laufen"
+        },
+        {
+          "id": "treppe_hoch_runtergehen",
+          "label": "Treppe hoch-/runtergehen"
+        },
+        {
+          "id": "an_ausziehen",
+          "label": "An-/Ausziehen"
+        },
+        {
+          "id": "tragen",
+          "label": "Tragen"
+        },
+        {
+          "id": "ueberkopfbewegung",
+          "label": "Überkopfbewegung"
+        },
+        {
+          "id": "greifen",
+          "label": "Greifen"
+        },
+        {
+          "id": "arbeit",
+          "label": "Arbeit"
+        },
+        {
+          "id": "hobby",
+          "label": "Hobby"
+        },
+        {
+          "id": "sport",
+          "label": "Sport"
+        },
+        {
+          "id": "morgens",
+          "label": "morgens"
+        },
+        {
+          "id": "abends",
+          "label": "abends"
+        },
+        {
+          "id": "nachts",
+          "label": "nachts"
+        },
+        {
+          "id": "sonstiges",
+          "label": "Sonstiges?",
+          "freitext": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "verschlechtert_durch",
+      "nummer": 12,
+      "text": "b) Was verschlechtert Ihre Beschwerden:",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "aktivitaet",
+          "label": "Aktivität"
+        },
+        {
+          "id": "ruhe",
+          "label": "Ruhe"
+        },
+        {
+          "id": "liegen",
+          "label": "Liegen"
+        },
+        {
+          "id": "sitzen",
+          "label": "Sitzen"
+        },
+        {
+          "id": "aufstehen",
+          "label": "Aufstehen"
+        },
+        {
+          "id": "buecken",
+          "label": "Bücken"
+        },
+        {
+          "id": "in_die_hocke_gehen",
+          "label": "in die Hocke gehen"
+        },
+        {
+          "id": "stehen",
+          "label": "Stehen"
+        },
+        {
+          "id": "gehen",
+          "label": "Gehen"
+        },
+        {
+          "id": "laufen",
+          "label": "Laufen"
+        },
+        {
+          "id": "treppe_hoch_runtergehen",
+          "label": "Treppe hoch-/runtergehen"
+        },
+        {
+          "id": "an_ausziehen",
+          "label": "An-/Ausziehen"
+        },
+        {
+          "id": "tragen",
+          "label": "Tragen"
+        },
+        {
+          "id": "ueberkopfbewegung",
+          "label": "Überkopfbewegung"
+        },
+        {
+          "id": "greifen",
+          "label": "Greifen"
+        },
+        {
+          "id": "arbeit",
+          "label": "Arbeit"
+        },
+        {
+          "id": "hobby",
+          "label": "Hobby"
+        },
+        {
+          "id": "sport",
+          "label": "Sport"
+        },
+        {
+          "id": "morgens",
+          "label": "morgens"
+        },
+        {
+          "id": "abends",
+          "label": "abends"
+        },
+        {
+          "id": "nachts",
+          "label": "nachts"
+        },
+        {
+          "id": "sonstiges",
+          "label": "Sonstiges?",
+          "freitext": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "schmerz_durchschnitt",
+      "nummer": 13,
+      "text": "Wie stark waren Ihre Schmerzen im Durchschnitt? (bitte kennzeichnen)",
+      "typ": "skala",
+      "skala": {
+        "min": 0,
+        "max": 10
+      },
+      "anker": {
+        "min": "kein Schmerz",
+        "max": "maximaler Schmerz"
+      },
+      "gewertet": false,
+      "hinweis": "Zur Beantwortung der Fragen 13-20 denken Sie bitte nur an die vergangenen zwei Wochen:"
+    },
+    {
+      "id": "unsicher_umgang",
+      "nummer": 14,
+      "text": "Sind Sie oft unsicher, wie Sie mit Ihrem Schmerzzustand umgehen sollen?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false,
+      "hinweis": "Zur Beantwortung der Fragen 13-20 denken Sie bitte nur an die vergangenen zwei Wochen:"
+    },
+    {
+      "id": "stark_gestoert",
+      "nummer": 15,
+      "text": "Haben Sie sich in den vergangenen zwei Wochen stark durch Ihre Schmerzen gestört gefühlt?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false,
+      "hinweis": "Zur Beantwortung der Fragen 13-20 denken Sie bitte nur an die vergangenen zwei Wochen:"
+    },
+    {
+      "id": "kurze_wege",
+      "nummer": 16,
+      "text": "Konnten Sie aufgrund Ihrer Schmerzen nur kurze Wege gehen?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false,
+      "hinweis": "Zur Beantwortung der Fragen 13-20 denken Sie bitte nur an die vergangenen zwei Wochen:"
+    },
+    {
+      "id": "mehrere_koerperteile",
+      "nummer": 17,
+      "text": "Hatten Sie störende Gelenk- oder Muskelschmerzen an mehr als einem Körperteil?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false,
+      "hinweis": "Zur Beantwortung der Fragen 13-20 denken Sie bitte nur an die vergangenen zwei Wochen:"
+    },
+    {
+      "id": "lange_anhalten",
+      "nummer": 18,
+      "text": "Denken Sie, dass Ihr Zustand lange anhalten wird?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false,
+      "hinweis": "Zur Beantwortung der Fragen 13-20 denken Sie bitte nur an die vergangenen zwei Wochen:"
+    },
+    {
+      "id": "andere_gesundheitsprobleme",
+      "nummer": 19,
+      "text": "Haben Sie andere bedeutsame Gesundheitsprobleme?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false,
+      "hinweis": "Zur Beantwortung der Fragen 13-20 denken Sie bitte nur an die vergangenen zwei Wochen:"
+    },
+    {
+      "id": "niedergeschlagen",
+      "nummer": 20,
+      "text": "Haben Sie sich aufgrund Ihrer Schmerzen/Beschwerden niedergeschlagen oder depressiv gefühlt?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false,
+      "hinweis": "Zur Beantwortung der Fragen 13-20 denken Sie bitte nur an die vergangenen zwei Wochen:"
+    },
+    {
+      "id": "aktivitaet_schaedlich",
+      "nummer": 21,
+      "text": "Denken Sie, dass es für jemanden in Ihrem Zustand schädlich ist, körperlich aktiv zu sein?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "seit_sechs_monaten",
+      "nummer": 22,
+      "text": "Haben Sie Ihre derzeitige Schmerzproblematik seit 6 Monaten oder länger?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "symptome_neurologisch",
+      "nummer": 23,
+      "text": "Hatten Sie in den letzten Wochen: Kopfschmerzen , Gang- oder Gleichgewichtsstörungen , Schwindel , Übelkeit , Ohnmachtsanfällen , Benommenheit , Sprech-/Schluckbeschwerden , Sehprobleme/Doppelbilder ?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "kopfschmerzen",
+          "label": "Kopfschmerzen"
+        },
+        {
+          "id": "gang_oder_gleichgewichtsstoerungen",
+          "label": "Gang- oder Gleichgewichtsstörungen"
+        },
+        {
+          "id": "schwindel",
+          "label": "Schwindel"
+        },
+        {
+          "id": "uebelkeit",
+          "label": "Übelkeit"
+        },
+        {
+          "id": "ohnmachtsanfaellen",
+          "label": "Ohnmachtsanfällen"
+        },
+        {
+          "id": "benommenheit",
+          "label": "Benommenheit"
+        },
+        {
+          "id": "sprech_schluckbeschwerden",
+          "label": "Sprech-/Schluckbeschwerden"
+        },
+        {
+          "id": "sehprobleme_doppelbilder",
+          "label": "Sehprobleme/Doppelbilder"
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "symptome_organisch",
+      "nummer": 24,
+      "text": "Hatten Sie in den letzten Woche: Verdauungsbeschwerden/Sodbrennen , Blasenschwäche , morgendliche Steifheit , Kurzatmigkeit , vermehrte Müdigkeit , Herzrasen , belastungsabhängige Brustschmerzen , Schweißausbrüche ?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "verdauungsbeschwerden_sodbrennen",
+          "label": "Verdauungsbeschwerden/Sodbrennen"
+        },
+        {
+          "id": "blasenschwaeche",
+          "label": "Blasenschwäche"
+        },
+        {
+          "id": "morgendliche_steifheit",
+          "label": "morgendliche Steifheit"
+        },
+        {
+          "id": "kurzatmigkeit",
+          "label": "Kurzatmigkeit"
+        },
+        {
+          "id": "vermehrte_muedigkeit",
+          "label": "vermehrte Müdigkeit"
+        },
+        {
+          "id": "herzrasen",
+          "label": "Herzrasen"
+        },
+        {
+          "id": "belastungsabhaengige_brustschmerzen",
+          "label": "belastungsabhängige Brustschmerzen"
+        },
+        {
+          "id": "schweissausbrueche",
+          "label": "Schweißausbrüche"
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "symptome_allgemein",
+      "nummer": 25,
+      "text": "Hatten Sie in den letzten Wochen: Fieber/Schüttelfrost , Nachtschweiß , Gewichtsverlust , Infektanfälligkeit ?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "fieber_schuettelfrost",
+          "label": "Fieber/Schüttelfrost"
+        },
+        {
+          "id": "nachtschweiss",
+          "label": "Nachtschweiß"
+        },
+        {
+          "id": "gewichtsverlust",
+          "label": "Gewichtsverlust"
+        },
+        {
+          "id": "infektanfaelligkeit",
+          "label": "Infektanfälligkeit"
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "tumor",
+      "nummer": 26,
+      "text": "Hatten Sie jemals einen Tumor oder eine Krebserkrankung?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "tumor_welcher",
+      "text": "Welche/n?",
+      "typ": "freitext",
+      "gewertet": false,
+      "nummer": 26
+    },
+    {
+      "id": "tumor_wann",
+      "text": "Wann?",
+      "typ": "freitext",
+      "gewertet": false,
+      "nummer": 26
+    },
+    {
+      "id": "tumor_nachuntersuchung",
+      "text": "Letzte Nachuntersuchung?",
+      "typ": "freitext",
+      "gewertet": false,
+      "nummer": 26
+    },
+    {
+      "id": "erkrankungen",
+      "nummer": 27,
+      "text": "Leiden Sie unter: Asthma , Diabetes , Osteoporose , Epilepsie , Depression , Angststörung , andere Erkrankung?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "asthma",
+          "label": "Asthma"
+        },
+        {
+          "id": "diabetes",
+          "label": "Diabetes"
+        },
+        {
+          "id": "osteoporose",
+          "label": "Osteoporose"
+        },
+        {
+          "id": "epilepsie",
+          "label": "Epilepsie"
+        },
+        {
+          "id": "depression",
+          "label": "Depression"
+        },
+        {
+          "id": "angststoerung",
+          "label": "Angststörung"
+        },
+        {
+          "id": "andere_erkrankung",
+          "label": "andere Erkrankung?",
+          "freitext": true
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "ereignisse",
+      "nummer": 28,
+      "text": "Stehen folgende Ereignisse in Zusammenhang mit Ihren aktuellen Problemen: Unfall/Sturz/Verletzung , Operation , anderes Ereignis?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "unfall_sturz_verletzung",
+          "label": "Unfall/Sturz/Verletzung"
+        },
+        {
+          "id": "operation",
+          "label": "Operation"
+        },
+        {
+          "id": "anderes_ereignis",
+          "label": "anderes Ereignis?",
+          "freitext": true
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "wechseljahre_schwangerschaft",
+      "nummer": 29,
+      "text": "Befinden Sie sich in den Wechseljahren? Besteht die Wahrscheinlichkeit einer Schwangerschaft?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "wechseljahre",
+          "label": "Befinden Sie sich in den Wechseljahren?"
+        },
+        {
+          "id": "schwangerschaft",
+          "label": "Besteht die Wahrscheinlichkeit einer Schwangerschaft?"
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "medikamente",
+      "nummer": 30,
+      "text": "Nehmen Sie momentan Medikamente wie: Kortison , Blutverdünner , Schmerzmittel , Hormone , Antidepressiva , andere Medikamente?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "kortison",
+          "label": "Kortison"
+        },
+        {
+          "id": "blutverduenner",
+          "label": "Blutverdünner"
+        },
+        {
+          "id": "schmerzmittel",
+          "label": "Schmerzmittel"
+        },
+        {
+          "id": "hormone",
+          "label": "Hormone"
+        },
+        {
+          "id": "antidepressiva",
+          "label": "Antidepressiva"
+        },
+        {
+          "id": "andere_medikamente",
+          "label": "andere Medikamente?",
+          "freitext": true
+        },
+        {
+          "id": "nein",
+          "label": "nein",
+          "exklusiv": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "rauchen",
+      "nummer": 31,
+      "text": "Rauchen Sie?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "ernaehrung",
+      "nummer": 32,
+      "text": "Würden Sie Ihre Ernährung als gut bzw. ausgewogen bezeichnen?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "bewegung",
+      "nummer": 33,
+      "text": "Bewegen Sie sich pro Woche 150 Minuten bei niederer Intensität (Herzfrequenz erhöht, Reden ist noch möglich) oder 75 Minuten bei höherer Intensität (Herzfrequenz erhöht, Reden wird unmöglich)?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "krafttraining",
+      "nummer": 34,
+      "text": "Machen Sie 2 x pro Woche Krafttraining?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "schlaf",
+      "nummer": 35,
+      "text": "Haben Sie Schwierigkeiten einzuschlafen oder durchzuschlafen?",
+      "typ": "einzelauswahl",
+      "optionen": [
+        {
+          "id": "ja",
+          "label": "ja"
+        },
+        {
+          "id": "nein",
+          "label": "nein"
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "stress_arbeit",
+      "nummer": 36,
+      "text": "Wie gestresst fühlen Sie sich bei Ihrer Arbeit?",
+      "typ": "skala",
+      "skala": {
+        "min": 0,
+        "max": 10
+      },
+      "anker": {
+        "min": "kein Stress",
+        "max": "maximaler Stress"
+      },
+      "gewertet": false
+    },
+    {
+      "id": "stress_alltag",
+      "nummer": 37,
+      "text": "Wie gestresst fühlen Sie sich im Alltag?",
+      "typ": "skala",
+      "skala": {
+        "min": 0,
+        "max": 10
+      },
+      "anker": {
+        "min": "kein Stress",
+        "max": "maximaler Stress"
+      },
+      "gewertet": false
+    },
+    {
+      "id": "bisherige_massnahmen",
+      "nummer": 38,
+      "text": "Welche Maßnahmen zur Diagnostik oder Therapie wurden bisher durchgeführt: Röntgen , Computertomographie , MRT/Kernspintomographie , Spritze , Massage , Physiotherapie , Training , Anderes?",
+      "typ": "mehrfachauswahl",
+      "optionen": [
+        {
+          "id": "roentgen",
+          "label": "Röntgen"
+        },
+        {
+          "id": "computertomographie",
+          "label": "Computertomographie"
+        },
+        {
+          "id": "mrt_kernspintomographie",
+          "label": "MRT/Kernspintomographie"
+        },
+        {
+          "id": "spritze",
+          "label": "Spritze"
+        },
+        {
+          "id": "massage",
+          "label": "Massage"
+        },
+        {
+          "id": "physiotherapie",
+          "label": "Physiotherapie"
+        },
+        {
+          "id": "training",
+          "label": "Training"
+        },
+        {
+          "id": "anderes",
+          "label": "Anderes?",
+          "freitext": true
+        }
+      ],
+      "gewertet": false
+    },
+    {
+      "id": "erwartungen_ziele",
+      "text": "Was sind Ihre Erwartungen und Ziele für die Therapie?",
+      "typ": "freitext",
+      "gewertet": false,
+      "nummer": 39
+    },
+    {
+      "id": "anmerkungen_therapeut",
+      "text": "Anmerkungen Therapeut:",
+      "typ": "freitext",
+      "gewertet": false,
+      "ausgefuellt_von": "therapeut"
+    }
+  ],
+  "scoring": {
+    "regel_wortlaut": "Kein Scoring - reine Informationserfassung",
+    "gesamt": null,
+    "subskalen": [],
+    "richtung": "nicht_anwendbar",
+    "missing_value_regel": "n/a"
+  },
+  "interpretation": {
+    "cutoffs": null,
+    "mcid": null,
+    "mdc": null
+  },
+  "referenzfaelle": []
+}

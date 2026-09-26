@@ -211,11 +211,44 @@ export type TechnikErgebnis = (typeof TECHNIK_ERGEBNISSE)[number];
  * wird in `rechnen.ts`, nirgends sonst.
  */
 
-/** Die Punktzuordnung einer Antwort: Text und Wert, nie nur Text. */
+/**
+ * Eine Antwortoption.
+ *
+ * Bei einem **gewerteten** Item ist sie die Punktzuordnung: Text und Wert, nie
+ * nur Text (Prüfung am Item). Bei einem nicht gewerteten Item — der
+ * Anamnesebogen hat keinen Summenscore — gibt es keinen Punktwert, und einen
+ * zu erfinden wäre genau die Rekonstruktion, die der Arbeitsauftrag §5 Punkt 2
+ * verbietet.
+ *
+ * `id` ist das, was eine Erhebung speichert (FRB-EPIC-002): eine sprechende,
+ * unveränderliche Kennung statt einer Position in der Liste. In der Kopie nach
+ * Art. 15 steht dann „nachtschmerzen", nicht „1". Eine Option ohne Punktwert
+ * braucht sie; eine gewertete Option ohne `id` wird mit ihrem Punktwert
+ * gespeichert, den `rechnen.ts` ohnehin erwartet (`optionKennung`, **ANN-102**).
+ *
+ * `exklusiv` markiert das „nein" einer Mehrfachauswahl: Wer es wählt, wählt
+ * nichts anderes. `freitext` markiert „Sonstiges?", „andere Erkrankung?" und
+ * „Anderes?" — die Option trägt eine eigene Angabe der Person.
+ */
 export const optionSchema = z.object({
+  id: kennungSchema.optional(),
   label: z.string().min(1),
-  wert: z.number(),
+  wert: z.number().optional(),
+  exklusiv: z.boolean().optional(),
+  freitext: z.boolean().optional(),
 });
+
+/**
+ * Was eine Erhebung für eine gewählte Option speichert (**ANN-102**): die
+ * Kennung, sonst der Punktwert als Zeichenkette. Die eine Stelle dafür — die
+ * Oberfläche, die Prüfung der Antworten und die Hervorhebung lesen sie alle.
+ */
+export function optionKennung(option: {
+  id?: string | undefined;
+  wert?: number | undefined;
+}): string {
+  return option.id ?? String(option.wert);
+}
 
 /**
  * Der Wortlaut der Rechenvorschrift **wörtlich aus dem Inventar**, daneben die
@@ -302,7 +335,13 @@ export const scoreItemSchema = z
     nummer: z.number().int().positive().optional(),
     /** Wörtlich aus dem PDF. Eine geänderte Formulierung hebt die Normwerte auf. */
     text: z.string().min(1),
-    typ: z.enum(['einzelauswahl', 'mehrfachauswahl', 'skala', 'zahl', 'freitext']),
+    /**
+     * `koerperschema` beantwortet „Wo haben Sie Ihre Beschwerden (bitte
+     * einzeichnen)?" — Bereiche auf Vorder- und Rückansicht statt eines
+     * Kreuzes (FRB-EPIC-002, `IDEA-PRX-027`). Es dokumentiert, es bewertet
+     * nicht, und geht deshalb wie ein Freitext in keine Rechnung ein.
+     */
+    typ: z.enum(['einzelauswahl', 'mehrfachauswahl', 'skala', 'zahl', 'freitext', 'koerperschema']),
     optionen: z.array(optionSchema).min(2).optional(),
     skala: wertebereichSchema.optional(),
     /**
@@ -315,6 +354,12 @@ export const scoreItemSchema = z
     einheit: z.string().min(1).optional(),
     gewertet: z.boolean().default(true),
     hinweis: z.string().min(1).optional(),
+    /**
+     * Ein einzelnes Feld, das nicht die Person selbst ausfüllt — im
+     * Anamnesebogen „Anmerkungen Therapeut:". Ohne Angabe gilt
+     * `meta.ausgefuellt_von`.
+     */
+    ausgefuellt_von: z.enum(['patient', 'therapeut']).optional(),
   })
   .superRefine((item, ctx) => {
     const brauchtOptionen = item.typ === 'einzelauswahl' || item.typ === 'mehrfachauswahl';
@@ -346,6 +391,49 @@ export const scoreItemSchema = z
         code: 'custom',
         path: ['gewertet'],
         message: 'Ein Freitext-Item kann nicht gewertet werden.',
+      });
+    }
+    if (item.typ === 'koerperschema' && item.gewertet) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['gewertet'],
+        message: 'Ein Körperschema kann nicht gewertet werden.',
+      });
+    }
+    const optionen = item.optionen ?? [];
+    for (const [index, option] of optionen.entries()) {
+      if (item.gewertet && option.wert === undefined) {
+        // Die Zusicherung von vorher, jetzt am Item statt an der Option: Eine
+        // gewertete Antwort ohne Punktwert ist eine unvollstaendige Uebertragung.
+        ctx.addIssue({
+          code: 'custom',
+          path: ['optionen', index, 'wert'],
+          message: 'Eine Option eines gewerteten Items braucht ihren Punktwert.',
+        });
+      }
+      if (option.exklusiv && item.typ !== 'mehrfachauswahl') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['optionen', index, 'exklusiv'],
+          message: 'Exklusiv kann eine Option nur in einer Mehrfachauswahl sein.',
+        });
+      }
+    }
+    for (const [index, option] of optionen.entries()) {
+      if (option.id === undefined && option.wert === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['optionen', index, 'id'],
+          message: `Option "${option.label}" braucht eine Kennung oder einen Punktwert — sonst lässt sie sich nicht speichern.`,
+        });
+      }
+    }
+    const kennungen = optionen.map(optionKennung);
+    if (new Set(kennungen).size !== kennungen.length) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['optionen'],
+        message: 'Die Kennungen der Optionen eines Items müssen eindeutig sein.',
       });
     }
   });
