@@ -174,10 +174,12 @@ insert into public.patient_contact_details (patient_id, organization_id, date_of
 -- Interne Versorgungsangaben (PAT-005). Sichtbar nur fuer die Rollen der
 -- Patientenkartei, nicht fuer das Patientenkonto (ANN-010). Rein synthetisch
 -- und ausdruecklich ohne klinische Inhalte.
-insert into public.patient_care_details (patient_id, organization_id, primary_therapist_staff_member_id, home_visit_access_note, special_note, remark) values
-  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000002', '2. OG links, Klingel "Mustermann". Aufzug vorhanden. Rad im Hinterhof abstellen.', 'Hund im Flur, wird vor dem Termin weggesperrt.', 'Bevorzugt Termine am Vormittag.'),
-  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', null,                                    'Erdgeschoss, Klingel "Beispiel". Schluessel bei Nachbarin Frau Fiktiv im 1. OG.', null,                                            null),
-  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000004', 'Anmeldung an der Pforte, Zimmer 214.', null, null);
+-- Seit UX-003a traegt Max Mustermann das Merkmal Behandlungsliege: Annas Tag
+-- beginnt mit seinem Hausbesuch, und die Uebersicht zeigt "Liege heute: ja".
+insert into public.patient_care_details (patient_id, organization_id, primary_therapist_staff_member_id, home_visit_access_note, special_note, remark, treatment_table_required) values
+  ('66666666-6666-4666-8666-000000000001', '22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000002', '2. OG links, Klingel "Mustermann". Aufzug vorhanden. Rad im Hinterhof abstellen.', 'Hund im Flur, wird vor dem Termin weggesperrt.', 'Bevorzugt Termine am Vormittag.', true),
+  ('66666666-6666-4666-8666-000000000002', '22222222-2222-4222-8222-000000000001', null,                                    'Erdgeschoss, Klingel "Beispiel". Schluessel bei Nachbarin Frau Fiktiv im 1. OG.', null,                                            null, false),
+  ('66666666-6666-4666-8666-000000000003', '22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000004', 'Anmeldung an der Pforte, Zimmer 214.', null, null, false);
 
 -- -----------------------------------------------------------------------------
 -- Verordner:innen (VER-001)

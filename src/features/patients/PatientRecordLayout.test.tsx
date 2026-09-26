@@ -308,6 +308,15 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       await screen.findByRole('heading', { name: 'Max Mustermann' });
       expect(screen.queryByText('Zugang:')).not.toBeInTheDocument();
       expect(screen.queryByText('Besonderheit:')).not.toBeInTheDocument();
+      expect(screen.queryByText('Behandlungsliege:')).not.toBeInTheDocument();
+    });
+
+    it('nennt die Behandlungsliege, wenn sie gebraucht wird (UX-003a)', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, treatment_table_required: true });
+      akteRendern(['therapist']);
+
+      expect(await screen.findByText('Behandlungsliege:')).toBeInTheDocument();
+      expect(screen.getByText('mitnehmen')).toBeInTheDocument();
     });
   });
 

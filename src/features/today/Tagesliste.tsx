@@ -98,6 +98,14 @@ export function Tageskarte({
         </p>
       ) : null}
 
+      {/* UX-003a: Die Liege gehört zur Person, nicht zum Termin (ANN-116). */}
+      {termin.treatment_table_required ? (
+        <p className="text-ink mt-1 text-sm leading-relaxed">
+          <span className="text-ink-muted font-medium">Behandlungsliege: </span>
+          mitnehmen
+        </p>
+      ) : null}
+
       <div className="mt-3 flex flex-wrap gap-2">
         {aktionen}
         {/* Kontakt ist Aktion, nicht Text (Oberflächen-Checkliste Punkt 8).

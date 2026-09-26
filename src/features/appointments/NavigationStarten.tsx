@@ -29,15 +29,27 @@ import {
 
 const knopf = kartenAktionKlassen();
 
-/** „Navigation starten" für einen einzelnen Hausbesuch. */
-export function NavigationZumTermin({ termin }: { termin: Besuchsadresse }) {
+/**
+ * „Navigation starten" für einen einzelnen Hausbesuch.
+ *
+ * `hauptknopf`: Auf der Karte des ersten Wegs ist die Navigation die eine
+ * Handlung, mit der der Tag beginnt (UX-EPIC-003) - dort trägt sie die
+ * Hauptfarbe, sonst nicht.
+ */
+export function NavigationZumTermin({
+  termin,
+  hauptknopf = false,
+}: {
+  termin: Besuchsadresse;
+  hauptknopf?: boolean;
+}) {
   const ziel = navigationsZiel(termin);
   if (!ziel) return null;
 
   return (
     <button
       type="button"
-      className={knopf}
+      className={hauptknopf ? kartenAktionKlassen('primary') : knopf}
       onClick={() => navigationOeffnen(buildNavigationUrl(ziel, 'google_maps'))}
     >
       Navigation starten

@@ -136,7 +136,7 @@ selbst) — ohne die bleibt jede Umsortierung geraten.
 | Datum | 2026-09-11 |
 | Bereich | Übersicht – Tagesliste des Hausbesuchstags (`/`), Tageskarte |
 | Quelle | Jannes, 2026-09-11 (mit Screenshot); Risikoanalyse Claude · aus `IDEA-PRX-040`, 2026-09-12 |
-| Status | offen |
+| Status | erledigt in UX-EPIC-003 (2026-09-26) für die Reihenfolge; „Abhaken“ bleibt bei `IDEA-PRX-039` |
 | Berührt | UX-001, UX-007; ADR-019; MAP-005, MAP-006; `IDEA-PRX-039` |
 
 **Beobachtung.** Die Reihenfolge der Aktionen auf der Tageskarte stimmt nicht:
@@ -178,6 +178,8 @@ und als Aufklapper in der Übersicht). „Navigation starten" bleibt trotzdem au
 der Tageskarte — es ist der Weg zur Turn-by-Turn-Führung, bis MAP-007 sie
 baut, und übergibt seit MAP-006d die Kartenposition statt der Anschrift. Die
 Umordnung der Aktionen bleibt offen.
+
+**Stand UX-EPIC-003 (2026-09-26):** Die Karte des ersten Wegs trägt die Navigation als Hauptknopf, danach „Bisherige Doku“, „Doku“ und „Behandlung abschließen“, die Rufnummern dahinter; auf den übrigen Karten bleibt der Abschluss der Hauptknopf. Das „Abhaken“ statt Abschließen hängt weiter an `IDEA-PRX-039` und ABR-002 und ist nicht Teil dieses Befunds.
 
 ### BEF-003 — `appointment-series.test.ts` ist vom Wochentag abhängig und wird an manchen Tagen rot
 

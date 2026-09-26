@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 38 Einträge):
+Zusatz `Prüfpaket` (heute 41 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -1484,3 +1484,27 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes lokal mit 
 **Anker.** `app.record_denied_write` in `supabase/migrations/20260926120000_abgewiesene_schreibzugriffe.sql`; die Liste der Pfade in `supabase/tests/abgewiesene-schreibpfade.test.ts`; auf der Clientseite `abgewiesen` in `src/lib/abgewiesen.ts`.
 
 **Änderungspfad.** Weitere Schreibpfade: den Zweig „Rolle fehlt" auf `app.record_denied_write` umstellen und den Pfad in die Liste des Tests aufnehmen · Aufwand `klein` je Pfad. Zurück zur Ausnahme: den Zweig wieder `raise exception` werfen lassen · Aufwand `klein`. Bestätigt PostgREST die Transaktion lokal nicht: Eintrag über eine autonome Verbindung (`dblink`) statt `response.status` · Aufwand `mittel`.
+
+### ANN-116 — Die Behandlungsliege ist eine organisatorische Versorgungsangabe der Person
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen
+
+**Annahme.** „Behandlungsliege mitnehmen" ist ein Ja/Nein-Merkmal der Person (`patient_care_details.treatment_table_required`, Standard nein), keine Angabe je Termin und kein Befundinhalt. Es erbt Rollenschnitt und Frist der internen Versorgungsangaben aus ANN-010: sichtbar und setzbar für die vier Praxisrollen (dieselbe Menge wie `app.can_update_patient()`), nicht für das Patientenkonto und nicht für die Trainingsrolle, Datenklasse Patientenakte. Die Tagesliste liefert es nur am Behandlungstermin; am Trainingstermin und an einer Fehlzeit bleibt es leer. Jede Änderung steht als `patient.updated` mit dem Feldnamen im Auditlog.
+
+**Begründung.** §9 verlangt, dass der Liegenbedarf beim Tagesstart erkennbar ist und als Merkmal der Person im Befund gesetzt wird; bis FRB-EPIC-003 den Befund anbindet, braucht es einen Ort in der Akte. Das Merkmal sagt, was mitzunehmen ist, nicht warum — derselbe Charakter wie Zugangshinweis und Besonderheit, die Office für die Planung sieht (§4.3, ANN-010). Unsicher: Mittelbar deutet „braucht eine Liege" auf eine Einschränkung hin und kann damit als Gesundheitsdatum nach Art. 9 DSGVO gelesen werden; der Rollenschnitt wäre dann trotzdem gedeckt, weil Office seit E15 klinische Inhalte ohnehin liest (ADR-004 Fassung 2). Am Trainingstermin bliebe es ein Durchgriff über den gemeinsamen Kalender (ADR-022 Punkt 11) und fehlt deshalb dort.
+
+**Anker.** Spalte und `public.set_treatment_table_required` in `supabase/migrations/20260926130000_ux_003a_treatment_table.sql`, dort auch `patient_directory`, `export_patient_record` und `list_day_plan`; Oberfläche `src/features/patients/Behandlungsliege.tsx`; Tests `supabase/tests/treatment-table.test.ts`.
+
+**Änderungspfad.** Enger (etwa ohne Office): eigene Rollenfunktion statt `app.can_update_patient()` im Schreibpfad und eine Projektion ohne die Spalte · Aufwand `mittel`. Als Befundinhalt führen (klinische Dokumentation): Spalte in den Befund verlegen, Datenumzug und neuer Lesepfad der Tagesliste · Aufwand `groß` — deshalb vor echten Daten zu klären.
+
+### ANN-117 — Tagesstart: erster Weg und „ab dem n-ten Besuch" zählen nach den Besuchen des Tages
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in der Sichtung am Handy (Kernprozess)
+
+**Annahme.** Die Übersicht zeigt oben den **nächsten noch anzufahrenden** Besuch (Status bestätigt) als „Erster Weg" — „Nächster Weg", sobald heute schon ein Besuch lag — und den übernächsten als knappe Vorschau „Danach". „Liege heute: ja, ab n. Besuch (Uhrzeit)" zählt n in der Folge der Behandlungsbesuche des Tages ohne Absagen (Fehlzeiten und Training zählen nicht, wie bei „Offen heute"); ein erledigter Besuch zählt mit, braucht aber keine Liege mehr. Braucht keine noch ausstehende Behandlung die Liege, steht dort „nein". Der Plan des Teams ist für behandelnde Rollen zugeklappt, für das Büro offen.
+
+**Begründung.** §9 und `UMBAU.md` (Ein Behandlungstag, Punkte 1, 2 und 4): ruhige Oberfläche, erster Weg, Vorschau auf den nächsten, Liege schon beim Losfahren sichtbar. Die Zählung folgt dem, was man am Rad vor sich hat — „der zweite Besuch heute" meint auch nach dem ersten noch denselben. Die Uhrzeit steht dabei, damit die Zahl nicht nachgezählt werden muss. Unsicher: ob Jannes nach einem erledigten Besuch lieber ab dem nächsten neu zählt.
+
+**Anker.** `besucheDesTages`, `wegeDesTages` und `liegeHeute` in `src/features/today/tagesstart.ts`; Tests `src/features/today/tagesstart.test.ts`.
+
+**Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/today/MyDayPage.tsx` · Aufwand `klein`.

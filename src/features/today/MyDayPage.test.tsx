@@ -343,4 +343,100 @@ describe('Übersicht', () => {
       expect(screen.queryByText(/Angezeigt wird der Stand von/)).toBeNull();
     });
   });
+
+  describe('UX-EPIC-003: Der Tag beginnt am Rad', () => {
+    const zweiBesuche: TodayApiModule.DayPlanEntry[] = [
+      tagesEintrag({ id: 't1' }),
+      tagesEintrag({
+        id: 't2',
+        patient_id: 'p2',
+        starts_at: `${HEUTE}T10:00:00.000Z`,
+        ends_at: `${HEUTE}T10:45:00.000Z`,
+        patient_given_name: 'Max',
+        patient_family_name: 'Mustermann',
+        visit_street: 'Beispielstrasse',
+        visit_house_number: '12',
+        visit_postal_code: '72070',
+        treatment_table_required: true,
+      }),
+    ];
+
+    it('sagt beim Tagesstart, ab welchem Besuch die Liege mit muss', async () => {
+      fetchDayPlan.mockResolvedValue(zweiBesuche);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      expect(await screen.findByText('ja, ab 2. Besuch (12:00 Uhr)')).toBeInTheDocument();
+      expect(screen.getByText('Liege heute:')).toBeInTheDocument();
+    });
+
+    it('sagt "nein", wenn heute niemand die Liege braucht', async () => {
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      const zeile = (await screen.findByText('Liege heute:')).closest('p')!;
+      expect(zeile).toHaveTextContent('Liege heute: nein');
+    });
+
+    it('zeigt den ersten Weg mit Navigation als Hauptknopf und die Vorschau danach', async () => {
+      fetchDayPlan.mockResolvedValue(zweiBesuche);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      expect(await screen.findByText('Erster Weg')).toBeInTheDocument();
+      expect(screen.getByText('Testweg 7')).toBeInTheDocument();
+      // Die erste Navigation ist die des ersten Wegs - in der Hauptfarbe.
+      const [ersteNavigation] = screen.getAllByRole('button', { name: 'Navigation starten' });
+      expect(ersteNavigation!.className).toContain('bg-accent ');
+
+      // Die Vorschau nennt Zeit, Person und Ziel - und dass die Liege mit muss.
+      const danach = screen.getByText('Danach').parentElement!;
+      expect(within(danach).getByText('Max Mustermann')).toBeInTheDocument();
+      expect(within(danach).getByText(/Beispielstrasse 12/)).toBeInTheDocument();
+      expect(within(danach).getByText('mitnehmen')).toBeInTheDocument();
+
+      // Die volle Karte des zweiten Besuchs liegt zugeklappt darunter.
+      const weitere = screen.getByText('Weitere offene heute (1)').closest('details')!;
+      expect(weitere).not.toHaveAttribute('open');
+    });
+
+    it('macht ohne Navigationsziel den Abschluss zum Hauptknopf', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({
+          appointment_type: 'practice',
+          location_name: 'Hauptstandort',
+          visit_street: null,
+          visit_house_number: null,
+          visit_postal_code: null,
+          visit_city: null,
+        }),
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      const abschluss = await screen.findByRole('link', { name: 'Behandlung abschließen' });
+      expect(abschluss.className).toContain('bg-accent ');
+      expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
+    });
+
+    it('fuehrt mit einem Tipp zur bisherigen Doku, mit Rueckweg', async () => {
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      expect(await screen.findByRole('link', { name: 'Bisherige Doku' })).toHaveAttribute(
+        'href',
+        `/patienten/p1/verlauf?zurueck=${encodeURIComponent('/')}`,
+      );
+    });
+
+    it('bietet die bisherige Doku nur Rollen an, die den Verlauf lesen', async () => {
+      renderMitVorschau(<MyDayPage user={testUser(['patient'], 'Max Mustermann')} />);
+      await screen.findByRole('heading', { name: 'Ihr Zugang' });
+      expect(screen.queryByRole('link', { name: 'Bisherige Doku' })).toBeNull();
+    });
+
+    it('klappt den Plan des Teams fuer Behandelnde zu, fuer das Buero nicht', async () => {
+      const { unmount } = renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      const zu = await screen.findByRole('heading', { name: 'Tagesplan des Teams' });
+      expect(zu.closest('details')).not.toHaveAttribute('open');
+      unmount();
+
+      renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
+      const offen = await screen.findByRole('heading', { name: 'Tagesplan des Teams' });
+      expect(offen.closest('details')).toHaveAttribute('open');
+    });
+  });
 });

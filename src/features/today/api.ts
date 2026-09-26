@@ -61,6 +61,12 @@ const dayPlanEntrySchema = z.object({
   // Optional, damit ein älterer Stand ohne die Spalten weiter gelesen wird.
   visit_lat: z.number().nullable().optional(),
   visit_lon: z.number().nullable().optional(),
+  /**
+   * UX-003b: Braucht die Person die Behandlungsliege (ANN-116)? Nur am
+   * Behandlungstermin gefüllt; an Training und Fehlzeit `null`. Optional,
+   * damit ein älterer Stand ohne die Spalte weiter gelesen wird.
+   */
+  treatment_table_required: z.boolean().nullable().optional(),
 });
 
 export type DayPlanEntry = z.infer<typeof dayPlanEntrySchema>;

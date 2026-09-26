@@ -97,10 +97,19 @@ function Aktenavigation({
  * Zeilen verschwinden dann von allein (ANN-010, ADR-004).
  */
 function HausbesuchHinweise({ patient }: { patient: Patient }) {
-  if (!patient.home_visit_access_note && !patient.special_note) return null;
+  const liege = patient.treatment_table_required === true;
+  if (!patient.home_visit_access_note && !patient.special_note && !liege) return null;
 
   return (
     <dl className="mt-2 flex flex-col gap-0.5 text-sm">
+      {/* UX-003a: Die Liege steht vor der Tür mit auf dem Zettel - gesetzt
+          wird sie in den Stammdaten (ANN-116). */}
+      {liege ? (
+        <div className="flex gap-2">
+          <dt className="text-ink-muted shrink-0">Behandlungsliege:</dt>
+          <dd className="text-ink min-w-0">mitnehmen</dd>
+        </div>
+      ) : null}
       {patient.home_visit_access_note ? (
         <div className="flex gap-2">
           <dt className="text-ink-muted shrink-0">Zugang:</dt>

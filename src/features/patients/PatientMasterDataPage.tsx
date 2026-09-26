@@ -17,6 +17,7 @@ import {
 } from '@/features/session/types';
 import { usePatientRecord } from './akte';
 import { AdresseVerorten } from './AdresseVerorten';
+import { Behandlungsliege } from './Behandlungsliege';
 import {
   ageInYears,
   concludePatientCare,
@@ -191,6 +192,8 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
     .join(', ');
   const darfStatusWechseln = canChangePatientStatus(user.roles);
   const darfVerorten = canReadPatientDirectory(user.roles);
+  // Die Rollenmenge von app.can_update_patient() ist die der Kartei.
+  const darfLiegeSetzen = canReadPatientDirectory(user.roles);
   // Denselben Rollenschnitt prueft app.can_conclude_patient_care(): der
   // Abschluss ist eine fachliche Aussage ueber den Versorgungsverlauf, kein
   // Verwaltungsvorgang (LOE-001b). Verbindlich ist der Server.
@@ -272,10 +275,19 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
             verschwindet (ANN-010, ADR-004). Der Zugangshinweis steht zusätzlich
             auf der Übersicht - vor einem Hausbesuch ist er die Angabe, die man
             unterwegs sucht. */}
-        {hatVersorgungsangaben ? (
+        {/* UX-003a: Die Behandlungsliege steht hier für jede Praxisrolle, auch
+            wenn sonst nichts hinterlegt ist - sonst gäbe es keinen Ort, sie
+            zu setzen. Dieselbe Rollenmenge wie update_patient; verbindlich
+            prüft set_treatment_table_required (ADR-004). */}
+        {hatVersorgungsangaben || darfLiegeSetzen ? (
           <div>
             <Section titel="Hausbesuch und Versorgung" rahmen>
               <DetailList>
+                {darfLiegeSetzen ? (
+                  <DetailRow label="Behandlungsliege">
+                    <Behandlungsliege patient={patient} darfAendern={darfLiegeSetzen} />
+                  </DetailRow>
+                ) : null}
                 {patient.home_visit_access_note ? (
                   <DetailRow label="Zugang">{patient.home_visit_access_note}</DetailRow>
                 ) : null}

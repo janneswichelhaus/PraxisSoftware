@@ -267,7 +267,10 @@
           "id": "ux-epic-003",
           "name": "UX-EPIC-003 Tagesansicht fürs Handy (Block 1a)",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-26",
+          "nachweis": "`46ebc9e` … (UX-003a, UX-003c, Zweitreview)",
+          "vermerk": "Sichtung am Handy: Kernprozess Schritte 10 und 12"
         },
         {
           "id": "map-002",
