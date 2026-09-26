@@ -141,7 +141,7 @@ in den Etappen darunter.
 | # | Block | Code-Loops | Docs-Sessions | Jannes |
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | Sichtung |
-| 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → G6c | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | ~~G6c: Wahl zu den Schreibpfaden~~ (2026-09-26: wie empfohlen); vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
+| 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → ~~G6c~~ (gebaut 2026-09-26) | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | ~~G6c: Wahl zu den Schreibpfaden~~ (2026-09-26: wie empfohlen); vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
 | 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → ~~UX-EPIC-002~~ (gebaut 2026-09-26) → UX-EPIC-003 | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 → STA-EPIC-001 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
@@ -261,7 +261,7 @@ arbeitet.
 | ~~**G19**~~ | **gebaut 2026-09-22** — Das Dokumentationsgate prüft, ob Aussagen über andere Dokumente stimmen (BEF-028) | Verweise auf ADR-Fassungen und Prinzipienversionen gegen den Stand, `§NN` gegen vorhandene Abschnitte, Eindeutigkeit der `ANN-`/`BEF-`/`IDEA-`-Nummern; Nennungen in Änderungsvermerken bleiben erlaubt |
 | ~~**G6a**~~ | **gebaut 2026-09-23** — Abgewiesene Lesezugriffe auf klinische Dokumente sind nachweisbar (ADR-010 Punkt 2) | Die fünf Lesepfade auf Behandlungsdokumentation und klinische Behandlungsgrundlage weisen mit null Zeilen und einem `denied`-Eintrag ab, geschrieben über `app.record_denied_read`. `audit.test.ts` hält die Liste der Pfade fest |
 | ~~**G6b**~~ | **gebaut 2026-09-23** — Die übrigen abgewiesenen Lesezugriffe sind nachweisbar | Bestandsaufnahme per `pg_proc`: 119 Funktionen mit `not allowed to …`. 34 weitere Lesepfade weisen mit null Zeilen (skalar `null`) und `denied` ab; Aktion wie beim erfolgreichen Zugriff oder eine von zehn denied-only-Aktionen je Datenbereich. Maßstab: Die Oberfläche ruft den Pfad für die abgewiesene Rolle nie auf. Ausnahme `list_assignable_therapists` (trainer auf den Teamseiten, BEF-034) |
-| **G6c** | Abgewiesene Schreibzugriffe sind nachweisbar | **Entschieden (Jannes, 2026-09-26): wie empfohlen** — (a) für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Zur Wahl standen: (a) bestätigte Transaktion mit HTTP 403 über `response.status` von PostgREST, lokal mit `supabase start` zu prüfen; (b) Ereignis ins Betriebslog statt ins Auditlog, hängt an G3 und R9; (c) Schreibpfade bleiben ohne Eintrag. G6c baut als nächster Loop, **vor** Training und Plattform |
+| ~~**G6c**~~ | **gebaut 2026-09-26** — Abgewiesene Schreibzugriffe sind nachweisbar | Zehn Pfade für Rollen und Konten, Legal Hold und Löschaufträge schreiben über `app.record_denied_write` einen `denied`-Eintrag und antworten mit HTTP 403 in bestätigter Transaktion; der Client prüft den Status (ANN-115). **Entschieden (Jannes, 2026-09-26): wie empfohlen** — (a) für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Zur Wahl standen: (a) bestätigte Transaktion mit HTTP 403 über `response.status` von PostgREST, lokal mit `supabase start` zu prüfen; (b) Ereignis ins Betriebslog statt ins Auditlog, hängt an G3 und R9; (c) Schreibpfade bleiben ohne Eintrag. G6c baut als nächster Loop, **vor** Training und Plattform |
 
 ### Block 1a — Handy und UX-Fundament
 
@@ -725,6 +725,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | C | G6 OPS-004 Logging, Redaction, Monitoring | in_arbeit | 2026-09-22 | `ff15f80` … `dcdb195` | — | Rest nach G3 |
 | C | G6a Abgewiesene Lesezugriffe auf klinische Dokumente | fertig | 2026-09-23 | PR #104 | — | — |
 | C | G6b Abgewiesene Lesezugriffe, Rest | fertig | 2026-09-23 | PR #105 | — | — |
+| C | G6c Abgewiesene Schreibzugriffe | gesichtet | 2026-09-26 | `aa384bc` … (G6c-1, G6c-2, Zweitreview) | — | PostgREST-Antwort lokal mit supabase start prüfen (ANN-115) |
 | C | G9 OPS-006 Betroffenenrechte (minimal) | fertig | 2026-09-22 | `aa321d0`, `2e3ebc7` | — | — |
 | C | G11 OPS-007 Bootstrap Produktion (Runbook) | in_arbeit | 2026-09-22 | `a870992`, `f3b9497` | — | Probe gegen die Test-Umgebung offen |
 | C | G12 ADR-019 Kartendienst (Fassung 2, angenommen 2026-09-13) | gesichtet | — | — | — | — |
