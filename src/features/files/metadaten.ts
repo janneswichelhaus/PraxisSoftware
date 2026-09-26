@@ -22,6 +22,12 @@
  * Bildes angehängt ist (weitere Bilder eines Mehrbildformats mit eigenen
  * Metadaten).
  *
+ * **Eine Erlaubnisliste, keine Verbotsliste.** Behalten wird nur, was als
+ * Bilddaten oder Dekodierangabe bekannt ist. Bekannte Metadaten (APPn,
+ * Kommentare, Hilfschunks) werden entfernt; alles andere — ein reservierter
+ * JPEG-Marker, ein unbekannter kritischer PNG-Chunk — lässt die Bereinigung
+ * scheitern, statt es durchzulassen.
+ *
  * **Im Zweifel nicht hochladen.** Ist die Datei nicht so gebaut, wie ihr Format
  * es verlangt, wirft die Bereinigung — ein Bild, dessen Metadaten sich nicht
  * sicher entfernen lassen, geht nicht ungeprüft durch.
@@ -30,7 +36,8 @@
  * Text: ADR-017 Punkt 34 verlangt es so.
  */
 
-const BESCHAEDIGT = 'Das Bild ist beschädigt und kann nicht angenommen werden.';
+const BESCHAEDIGT =
+  'Das Bild ist beschädigt oder enthält unbekannte Teile und kann nicht angenommen werden. Bitte neu aufnehmen oder als PDF ablegen.';
 
 // -----------------------------------------------------------------------------
 // Ausrichtung (EXIF-Tag 0x0112), aus einer TIFF-Struktur
@@ -206,6 +213,24 @@ export function jpegSegmente(bytes: Uint8Array): JpegSegment[] {
   return segmente;
 }
 
+/**
+ * Segmente, die der Dekoder für die Bilddaten braucht und die nichts über die
+ * Aufnahme sagen: Bildanfang und -ende, Rahmen (SOFn), Tabellen (DHT, DAC,
+ * DQT), Rücksetzabstand (DRI), Scans (SOS), Zeilenzahl (DNL), Rücksetzmarker.
+ */
+function istBildsegment(marker: number): boolean {
+  return (
+    marker === 0xd8 ||
+    marker === 0xd9 ||
+    (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc8) ||
+    marker === 0xda ||
+    marker === 0xdb ||
+    marker === 0xdc ||
+    marker === 0xdd ||
+    (marker >= 0xd0 && marker <= 0xd7)
+  );
+}
+
 function bereinigeJpeg(bytes: Uint8Array): Uint8Array {
   const segmente = jpegSegmente(bytes);
   let ausrichtung = 1;
@@ -230,6 +255,9 @@ function bereinigeJpeg(bytes: Uint8Array): Uint8Array {
     // Kommentare.
     if ((marker >= 0xe0 && marker <= 0xef) || marker === 0xfe) continue;
 
+    // Erlaubnisliste: Was weder Bilddaten noch bekannte Metadaten ist, könnte
+    // beides sein - dann lieber gar nicht hochladen.
+    if (!istBildsegment(marker)) throw new Error(BESCHAEDIGT);
     behalten.push(bytes.subarray(start, ende));
   }
 
@@ -255,10 +283,16 @@ const PNG_SIGNATUR = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 /**
  * Hilfschunks, die bleiben: Transparenz, Farbangaben und die Bilder einer
- * Animation. Kritische Chunks (Großbuchstabe vorn) bleiben immer - ohne sie
- * ist das Bild nicht lesbar.
+ * Animation. Alle anderen Hilfschunks (Kleinbuchstabe vorn) gehen.
  */
 const PNG_BEHALTEN = new Set(['tRNS', 'gAMA', 'cHRM', 'sRGB', 'sBIT', 'acTL', 'fcTL', 'fdAT']);
+
+/**
+ * Die kritischen Chunks, die der Standard kennt. Ein anderer kritischer Chunk
+ * (Großbuchstabe vorn) ließe sich weder sicher entfernen - ohne ihn wäre das
+ * Bild womöglich unlesbar - noch sicher behalten.
+ */
+const PNG_KRITISCH = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND']);
 
 /** Ein Chunk eines PNG — für die Bereinigung und für die Tests. */
 export interface PngChunk {
@@ -324,6 +358,7 @@ function bereinigePng(bytes: Uint8Array): Uint8Array {
       continue;
     }
     const kritisch = typ[0] === typ[0]!.toUpperCase();
+    if (kritisch && !PNG_KRITISCH.has(typ)) throw new Error(BESCHAEDIGT);
     if (kritisch || PNG_BEHALTEN.has(typ)) behalten.push(bytes.subarray(start, ende));
   }
 

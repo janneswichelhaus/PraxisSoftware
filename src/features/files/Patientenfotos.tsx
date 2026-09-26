@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -441,6 +441,15 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
   const [ansicht, setAnsicht] = useState<Geladen[] | null>(null);
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
+  // Wer die Seite verlässt, während ein Foto lädt, bekommt keine Objekt-URL
+  // mehr erzeugt, die dann niemand freigäbe.
+  const eingehaengt = useRef(true);
+  useEffect(() => {
+    eingehaengt.current = true;
+    return () => {
+      eingehaengt.current = false;
+    };
+  }, []);
 
   if (!darfSehen) return null;
 
@@ -455,18 +464,17 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
   async function oeffnen(auswahlFotos: Patientenfoto[]) {
     setFehler(null);
     setLaeuft(true);
-    const geladen: Geladen[] = [];
     try {
-      for (const foto of auswahlFotos) {
-        const bytes = await ladePatientenfoto(foto.id);
-        geladen.push({ foto, adresse: URL.createObjectURL(bytes) });
-      }
-      setAnsicht(geladen);
+      const bilder: Blob[] = [];
+      for (const foto of auswahlFotos) bilder.push(await ladePatientenfoto(foto.id));
+      if (!eingehaengt.current) return;
+      setAnsicht(
+        auswahlFotos.map((foto, i) => ({ foto, adresse: URL.createObjectURL(bilder[i]!) })),
+      );
     } catch (ursache) {
-      for (const { adresse } of geladen) URL.revokeObjectURL(adresse);
-      setFehler((ursache as Error).message);
+      if (eingehaengt.current) setFehler((ursache as Error).message);
     } finally {
-      setLaeuft(false);
+      if (eingehaengt.current) setLaeuft(false);
     }
   }
 

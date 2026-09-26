@@ -16,7 +16,9 @@ export function PatientCoursePage() {
     <>
       {/* DOK-006: Fotos zum Vergleich im Verlauf, über der langen Liste der
           Einträge - sonst stünden sie am Ende, hinter jeder Seite. */}
-      <Patientenfotos patientId={patient.id} user={user} />
+      {/* Je Person ein eigener Abschnitt: Ein ungespeichertes Foto oder eine
+          offene Ansicht wandert beim Wechsel der Akte nicht mit. */}
+      <Patientenfotos key={patient.id} patientId={patient.id} user={user} />
       <PatientRecordDocumentation patient={patient} user={user} />
     </>
   );
