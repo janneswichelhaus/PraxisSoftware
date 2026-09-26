@@ -51,7 +51,7 @@ vi.mock('./api', async (importOriginal) => {
   return { ...actual, loescheDatei: (id: string) => loescheDatei(id) as Promise<void> };
 });
 
-const { Patientenfotos } = await import('./Patientenfotos');
+const { Patientenfotos } = await import('./FotosImVerlauf');
 
 function foto(rest: Partial<FotoApi.Patientenfoto> = {}): FotoApi.Patientenfoto {
   return {

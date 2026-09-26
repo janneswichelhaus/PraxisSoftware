@@ -4,7 +4,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type { CurrentUser } from '@/features/session/types';
 import type { Datenschutzvermerk } from '@/features/datenschutz/vermerke';
 import { Dateienbereich } from '@/features/files/PatientFilesPage';
-import { Ansicht, Patientenfotos, type Geladen } from '@/features/files/Patientenfotos';
+import { Ansicht, Patientenfotos, type Geladen } from '@/features/files/FotosImVerlauf';
 import type { Patientenfoto } from '@/features/files/patientenfotos';
 import { entferneMetadaten } from '@/features/files/metadaten';
 import { basis, CHROMIUM_PNG, jpegVomHandy, pngVomHandy } from '@/features/files/testbilder';

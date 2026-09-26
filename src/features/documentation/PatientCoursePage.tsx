@@ -1,5 +1,5 @@
 import { usePatientRecord } from '@/features/patients/akte';
-import { Patientenfotos } from '@/features/files/Patientenfotos';
+import { Patientenfotos } from '@/features/files/FotosImVerlauf';
 import { PatientRecordDocumentation } from './PatientRecordDocumentation';
 
 /**
