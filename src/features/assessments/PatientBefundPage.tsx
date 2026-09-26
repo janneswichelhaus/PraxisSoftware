@@ -14,6 +14,7 @@ import { ErhebungAnsicht } from './ErhebungAnsicht';
 import { Hervorhebungen } from './Hervorhebungen';
 import { erhebbareInstrumente, instrumentFuer } from './instrumente';
 import type { ScoreDefinition } from './schema';
+import { VerlaufAbschnitt } from './VerlaufAbschnitt';
 
 /**
  * Der Befund in der Akte (FRB-EPIC-002).
@@ -101,6 +102,13 @@ export function Befund({
         );
       })}
       <FremdeInstrumente erhebungen={erhebungen.data} scores={scores} />
+      <VerlaufAbschnitt
+        patientId={patient.id}
+        erhebungen={erhebungen.data}
+        instrumente={instrumente}
+        darfSetzen={darfErheben}
+        zeitzone={user.organizationTimeZone}
+      />
     </>
   );
 }

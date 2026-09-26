@@ -141,6 +141,10 @@ export const AUDIT_ACTIONS = [
   'questionnaire_response.completed',
   'questionnaire_response.discarded',
   'questionnaire_response.viewed',
+  // FRB-002e: Ereignisse im Verlauf (ANN-106).
+  'patient_course_event.created',
+  'patient_course_event.removed',
+  'patient_course_event.viewed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -238,6 +242,9 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'questionnaire_response.completed': 'Fragebogen abgeschlossen',
   'questionnaire_response.discarded': 'Fragebogen-Entwurf verworfen',
   'questionnaire_response.viewed': 'Fragebogen gelesen',
+  'patient_course_event.created': 'Ereignis im Verlauf gesetzt',
+  'patient_course_event.removed': 'Ereignis im Verlauf entfernt',
+  'patient_course_event.viewed': 'Ereignisse im Verlauf gelesen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -269,6 +276,7 @@ export const auditSubjectLabels: Record<string, string> = {
   treatment_basis: 'Behandlungsgrundlage',
   patient_file: 'Datei der Akte',
   questionnaire_response: 'Fragebogen',
+  patient_course_event: 'Ereignis im Verlauf',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',

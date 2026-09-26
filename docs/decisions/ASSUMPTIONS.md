@@ -1364,3 +1364,15 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit dem Patienten
 **Anker.** `app.assert_questionnaire_answers` in `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql`; `antwortenSchema` in `src/features/assessments/antworten.ts`.
 
 **Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`.
+
+### ANN-106 — Der Verlauf zeigt Rohwerte als Punkte mit Ereignissen der Praxis; fünf Ereignisarten, setzen und entfernen statt ändern
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: wenn P4/P5 weitere Instrumente aktivieren
+
+**Annahme.** Der Verlauf im Befund zeigt je Skalenfrage der aktiven Instrumente die Werte **geltender** Bögen (abgeschlossen, nicht ersetzt) als Punkte mit Zahl, ohne Linie, Trend, Mittel oder Farbe nach Höhe; darunter die Werte als Text. Ereignisse haben fünf Arten (Operation, Erkrankung, Urlaub/Pause, Medikation geändert, Sonstiges) mit Tag und Notiz bis 200 Zeichen, auch in der Zukunft; eine falsche Markierung wird entfernt und neu gesetzt, beides protokolliert, das Auditlog trägt die Art, nicht die Notiz. Durchgeführte Termine (die letzten 50) stehen als Striche an der Zeitachse.
+
+**Begründung.** `IDEA-OUT-005` verlangt Ereignisse neben der Kurve und „weniger Mittelwert, mehr Rohdaten"; ADR-006 Punkt 11 verbietet jede abgeleitete Aussage, auch als Farbe. „Schübe" aus der Idee sind eine Erkrankung und bekommen keine eigene Art, bis ein Fall sie braucht (ADR-014). Eine geplante Operation gehört vorher in den Verlauf.
+
+**Anker.** `patient_course_events` in `supabase/migrations/20260926110000_frb_002e_course_events.sql`; `EREIGNISARTEN` und `messreihen` in `src/features/assessments/verlauf.ts`; `Messreihenbild` in `src/features/assessments/Messreihenbild.tsx`.
+
+**Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`.

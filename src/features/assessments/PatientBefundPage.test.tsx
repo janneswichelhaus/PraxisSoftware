@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
+import type * as Verlauf from './verlauf';
+import type * as TermineApi from '@/features/appointments/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
@@ -13,6 +15,22 @@ vi.mock('./api', async (importOriginal) => {
   return {
     ...actual,
     fetchErhebungen: (id: string) => fetchErhebungen(id) as Promise<Api.Erhebung[]>,
+  };
+});
+const fetchEreignisse = vi.fn();
+vi.mock('./verlauf', async (importOriginal) => {
+  const actual = await importOriginal<typeof Verlauf>();
+  return {
+    ...actual,
+    fetchEreignisse: (id: string) => fetchEreignisse(id) as Promise<Verlauf.Verlaufsereignis[]>,
+  };
+});
+vi.mock('@/features/appointments/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof TermineApi>();
+  return {
+    ...actual,
+    fetchPatientAppointments: () =>
+      Promise.resolve([{ status: 'documented', starts_at: '2026-09-25T08:00:00Z' }]),
   };
 });
 
@@ -46,7 +64,10 @@ function seite(daten: Api.Erhebung[], rollen: Parameters<typeof testUser>[0] = [
 }
 
 describe('Befund der Akte', () => {
-  beforeEach(() => fetchErhebungen.mockReset());
+  beforeEach(() => {
+    fetchErhebungen.mockReset();
+    fetchEreignisse.mockReset().mockResolvedValue([]);
+  });
 
   it('bietet das Erheben an, solange nichts erhoben ist', async () => {
     seite([]);
@@ -97,6 +118,46 @@ describe('Befund der Akte', () => {
     const karte = (await screen.findByText('Erhoben am 20.09.2026')).closest('li')!;
     expect(within(karte).queryByRole('link', { name: 'Korrigieren' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Bogen erheben' })).toBeNull();
+  });
+
+  it('zeigt die Skalenwerte geltender Bögen als Punkte ohne Linie, mit Ereignis', async () => {
+    fetchEreignisse.mockResolvedValue([
+      {
+        id: 'v1',
+        occurred_on: '2026-09-25',
+        kind: 'erkrankung',
+        note: 'zwei Wochen Grippe',
+        created_at: '2026-09-25T08:00:00Z',
+        author_name: 'Anna Beispiel',
+      },
+    ]);
+    const { container } = seite([
+      erhebung({ id: 'b', recorded_on: '2026-10-01', answers: { schmerzstaerke: { wert: 4 } } }),
+      erhebung({ id: 'a', recorded_on: '2026-09-20', answers: { schmerzstaerke: { wert: 6 } } }),
+      // Ein Entwurf ist keine Angabe und erscheint nicht.
+      erhebung({
+        id: 'd',
+        status: 'entwurf',
+        completed_at: null,
+        answers: { schmerzstaerke: { wert: 9 } },
+      }),
+    ]);
+
+    expect(await screen.findByText('Werte: 20.09.2026: 6 · 01.10.2026: 4')).toBeInTheDocument();
+    expect(await screen.findByText('Erkrankung · zwei Wochen Grippe')).toBeInTheDocument();
+    // Keine Verbindung der Punkte, kein Pfad, keine Kurve (ADR-006 Punkt 11).
+    expect(container.querySelectorAll('polyline, path')).toHaveLength(0);
+    // Das Bild selbst sagt nichts über die Richtung - nur Werte und Daten.
+    for (const bild of container.querySelectorAll('figure')) {
+      expect(bild.textContent).not.toMatch(/besser|schlechter|trend|zunahme|abnahme/i);
+    }
+  });
+
+  it('bietet office das Vermerken eines Ereignisses nicht an', async () => {
+    seite([erhebung()], ['office']);
+    await screen.findByText('Erhoben am 20.09.2026');
+    expect(screen.queryByText('Ereignis vermerken')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Entfernen' })).toBeNull();
   });
 
   it('ist barrierefrei', async () => {

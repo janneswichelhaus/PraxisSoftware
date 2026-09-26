@@ -248,6 +248,7 @@ describe('Audit-Lesepfad', () => {
       'list_open_items',
       'list_patient_appointment_slip',
       'list_patient_appointments',
+      'list_patient_course_events',
       'list_patient_files',
       'list_patient_questionnaire_responses',
       'list_patient_treatment_bases',

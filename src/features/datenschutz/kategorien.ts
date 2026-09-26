@@ -71,6 +71,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Erhobene Fragebögen wie der Anamnesebogen mit allen Antworten; eine Korrektur steht neben der ursprünglichen Fassung.',
   },
+  patient_course_events: {
+    label: 'Ereignisse im Verlauf',
+    beschreibung:
+      'Von der Praxis vermerkte Ereignisse wie eine Operation oder eine Erkrankung, mit Tag und kurzer Notiz.',
+  },
   patient_files: {
     label: 'Dateien',
     beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme — ohne den Inhalt selbst.',
