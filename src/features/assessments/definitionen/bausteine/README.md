@@ -19,9 +19,16 @@ Ladepfad sortiert nach Pfad, der Code kennt keinen Regionsnamen.
   auf; sie stehen als fünf Unterpunkte, damit jede ihr Ergebnis bekommt.
 - Zwei Zeilen unter einer Nummer (HWS Basis 2) stehen als ein Item mit „ · "
   und je einem Unterpunkt.
+- Eine Gruppe, deren Bezeichnung nur die Ausgangsstellung nennt (Hüfte
+  „Rückenlage", „Bauchlage"), trägt `ausgangsstellung: true`: Sie ordnet das
+  Abhaken und fehlt im Dokumentationstext (Jannes, 2026-09-26, **ANN-130**).
+  Jede andere Gruppe bleibt im Text als Zwischenzeile.
 - Therapieblöcke enthalten Techniken, alle übrigen Tests. Seitengetrennt
   (`bilateral`) sind alle Items der Extremitäten und des Kiefers, an der
   Wirbelsäule nur die neurologischen und neurodynamischen Tests und das SIG.
+  Daraus folgt die Abfrage (**ANN-129**): Ist jedes Item einer Region
+  seitengetrennt, wird die Seite einmal für die Region gewählt; sonst hat
+  jeder seitengetrennte Test eine Zeile je Seite.
 - Messwerte in cm nur dort, wo die Vorlage einen Wert erhebt: Knee to Wall,
   Navicular Drop. Ein seitengetrennter Test mit Messwert wird **je Seite**
   erfasst — links und rechts mit eigenem Ergebnis, Wert und Notiz (Jannes,

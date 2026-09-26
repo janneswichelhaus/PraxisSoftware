@@ -6,8 +6,9 @@ import { BausteinFeld } from './BausteinFeld';
 import { useBausteinAuswahl } from './bausteinauswahl';
 
 /**
- * Das Bausteinfeld mit der Bibliothek des Releases (FRB-003b). Die Texte der
- * Tests stammen aus den Definitionsdateien; der Code kennt sie nicht.
+ * Das Bausteinfeld mit der Bibliothek des Releases (FRB-003b, Seitenwahl nach
+ * ANN-129, Textform nach ANN-130). Die Texte der Tests stammen aus den
+ * Definitionsdateien; der Code kennt sie nicht.
  */
 function Feld({
   onUebernehmen,
@@ -20,12 +21,17 @@ function Feld({
   return <BausteinFeld bausteine={bausteine} onUebernehmen={onUebernehmen} gesperrt={gesperrt} />;
 }
 
-async function oeffnen(region: string, block: string) {
+/** Feld auf, Region wählen, bei Extremitäten die Seite, dann den Block aufklappen. */
+async function oeffnen(region: string, block: string, seite?: 'links' | 'rechts' | 'beidseits') {
   const user = userEvent.setup();
   const uebernehmen = vi.fn();
   render(<Feld onUebernehmen={uebernehmen} />);
   await user.click(screen.getByText('Befund aus Bausteinen'));
   await user.click(screen.getByRole('button', { name: region }));
+  if (seite) {
+    const wahl = screen.getByRole('group', { name: `Seite ${region}` });
+    await user.click(within(wahl).getByRole('button', { name: seite }));
+  }
   await user.click(screen.getByText(block));
   return { user, uebernehmen };
 }
@@ -34,7 +40,15 @@ function test_(label: string) {
   return screen.getByRole('group', { name: label });
 }
 
-describe('BausteinFeld', () => {
+function vorschlag() {
+  const bereich = screen.getByRole('region', { name: 'Vorschlag für den Eintrag' });
+  return bereich.querySelector('p')?.textContent;
+}
+
+// Eine Region rendert alle Blöcke samt Schaltflächen, im Seitenvergleich
+// doppelt; getByRole und axe darüber sind teuer. Unter voller Last der
+// Testsuite reichen 5 s nicht immer (wie in ErhebungPage.test.tsx).
+describe('BausteinFeld', { timeout: 20_000 }, () => {
   it('zeigt die neun Regionen und ohne Wahl keinen Test', async () => {
     const user = userEvent.setup();
     render(<Feld onUebernehmen={vi.fn()} />);
@@ -54,27 +68,62 @@ describe('BausteinFeld', () => {
     expect(screen.getByText('Region wählen, um die Tests aufzuklappen.')).toBeInTheDocument();
   });
 
-  it('erzeugt aus Ergebnis, Seite und Notiz den Vorschlag und übernimmt ihn', async () => {
-    const { user, uebernehmen } = await oeffnen('Knie', 'Weiterführende Untersuchung');
+  it('fragt an einer Extremität zuerst einmal die Seite, ohne Vorauswahl (ANN-129)', async () => {
+    const user = userEvent.setup();
+    render(<Feld onUebernehmen={vi.fn()} />);
+    await user.click(screen.getByText('Befund aus Bausteinen'));
+    await user.click(screen.getByRole('button', { name: 'Hüfte' }));
+
+    const wahl = screen.getByRole('group', { name: 'Seite Hüfte' });
+    for (const knopf of within(wahl).getAllByRole('button')) {
+      expect(knopf).toHaveAttribute('aria-pressed', 'false');
+    }
+    expect(screen.getByText(/Seite wählen — sie gilt für alle Tests/)).toBeInTheDocument();
+    expect(screen.queryByText('Untersuchung Hüfte')).toBeNull();
+
+    await user.click(within(wahl).getByRole('button', { name: 'rechts' }));
+    expect(screen.getByText('Untersuchung Hüfte')).toBeInTheDocument();
+  });
+
+  it('erzeugt aus Ergebnis und Notiz den Vorschlag und übernimmt ihn', async () => {
+    const { user, uebernehmen } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
     const lachmann = test_('Lachmann-Test');
+    // Eine Seitenwahl je Test gibt es nicht mehr — die Region hat sie.
+    expect(within(lachmann).queryByRole('button', { name: 'rechts' })).toBeNull();
+    expect(within(lachmann).queryByRole('button', { name: 'Notiz' })).toBeNull();
+
     await user.click(within(lachmann).getByRole('button', { name: 'positiv' }));
-    await user.click(within(lachmann).getByRole('button', { name: 'rechts' }));
+    expect(within(lachmann).queryByLabelText('Notiz')).toBeNull();
+    await user.click(within(lachmann).getByRole('button', { name: 'Notiz' }));
+    expect(within(lachmann).getByLabelText('Notiz')).toHaveFocus();
     await user.type(within(lachmann).getByLabelText('Notiz'), 'Weicher Anschlag.');
 
     const erwartet =
-      'Knie – Weiterführende Untersuchung\nLachmann-Test, rechts: positiv. Weicher Anschlag.';
-    const vorschlag = screen.getByRole('region', { name: 'Vorschlag für den Eintrag' });
-    expect(within(vorschlag).getByText(/Lachmann-Test, rechts/).textContent).toBe(erwartet);
+      'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test – Weicher Anschlag.';
+    expect(vorschlag()).toBe(erwartet);
     expect(screen.getByRole('button', { name: 'Knie · 1' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'In den Text übernehmen' }));
     expect(uebernehmen).toHaveBeenCalledWith(erwartet);
-    // Übernommen heißt erledigt: Die Auswahl beginnt von vorn.
+    // Übernommen heißt erledigt: Auswahl und Seite beginnen von vorn.
     expect(screen.queryByRole('region', { name: 'Vorschlag für den Eintrag' })).toBeNull();
+    expect(screen.getByText(/Seite wählen — sie gilt für alle Tests/)).toBeInTheDocument();
+  });
+
+  it('bietet einem Test o.B., positiv und nicht getestet', async () => {
+    const { user } = await oeffnen('Knie', 'Basisuntersuchung Knie', 'links');
+    const kniebeuge = test_('Kniebeuge');
+    expect(
+      within(kniebeuge)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['✅ o.B.', '❗ positiv', 'nicht getestet']);
+    await user.click(within(kniebeuge).getByRole('button', { name: 'nicht getestet' }));
+    expect(vorschlag()).toBe('Basisuntersuchung Knie links\nNicht getestet: Kniebeuge');
   });
 
   it('hebt ein Ergebnis mit dem zweiten Tipp wieder auf', async () => {
-    const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung');
+    const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
     const lachmann = test_('Lachmann-Test');
     const positiv = within(lachmann).getByRole('button', { name: 'positiv' });
     await user.click(positiv);
@@ -84,7 +133,46 @@ describe('BausteinFeld', () => {
     expect(screen.queryByRole('region', { name: 'Vorschlag für den Eintrag' })).toBeNull();
   });
 
-  it('bietet einer Technik nur „durchgeführt“ und der Wirbelsäule keine Seite', async () => {
+  it('nimmt beim Wechsel der Seite die Angaben mit', async () => {
+    const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
+    await user.click(within(test_('Lachmann-Test')).getByRole('button', { name: 'positiv' }));
+    const wahl = screen.getByRole('group', { name: 'Seite Knie' });
+    await user.click(within(wahl).getByRole('button', { name: 'links' }));
+
+    expect(within(test_('Lachmann-Test')).getByRole('button', { name: 'positiv' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(vorschlag()).toBe('Knie links – Weiterführende Untersuchung\n❗ Lachmann-Test');
+  });
+
+  it('zeigt im Seitenvergleich je Test eine Zeile für links und rechts', async () => {
+    const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'beidseits');
+    await user.click(within(test_('Lachmann-Test, links')).getByRole('button', { name: 'o.B.' }));
+    await user.click(
+      within(test_('Lachmann-Test, rechts')).getByRole('button', { name: 'positiv' }),
+    );
+    expect(vorschlag()).toBe(
+      'Knie – Weiterführende Untersuchung\n✅ Lachmann-Test li.\n❗ Lachmann-Test re.',
+    );
+  });
+
+  it('fragt an der Wirbelsäule keine Regionsseite, aber je Nerventest links und rechts', async () => {
+    const { user } = await oeffnen('LWS', 'Neurologische Untersuchungen (bei Bedarf)');
+    expect(screen.queryByRole('group', { name: 'Seite LWS' })).toBeNull();
+    await user.click(
+      within(test_('Straight leg raise (evtl. mit Add/Ir), rechts')).getByRole('button', {
+        name: 'positiv',
+      }),
+    );
+    expect(vorschlag()).toBe(
+      'LWS – Neurologische Untersuchungen (bei Bedarf)\n' +
+        'Nervenprovokationstests:\n' +
+        '  ❗ Straight leg raise (evtl. mit Add/Ir) re.',
+    );
+  });
+
+  it('bietet einer Technik nur „durchgeführt“', async () => {
     const { user } = await oeffnen('LWS', 'Behandlung');
     const mmb = test_('MMB');
     expect(
@@ -93,49 +181,46 @@ describe('BausteinFeld', () => {
         .map((b) => b.textContent),
     ).toEqual(['durchgeführt']);
     await user.click(within(mmb).getByRole('button', { name: 'durchgeführt' }));
-    expect(within(mmb).queryByRole('group', { name: 'Seite' })).toBeNull();
+    expect(vorschlag()).toBe('LWS – Behandlung\n• MMB');
   });
 
   it('kennzeichnet einen Block, an dem die Vorlage abbricht (ANN-118)', async () => {
-    await oeffnen('Schulter', 'Untersuchung ACG');
+    await oeffnen('Schulter', 'Untersuchung ACG', 'rechts');
     expect(screen.getByText('Vorlage unvollständig')).toBeInTheDocument();
     expect(screen.getByText(/In der Vorlage fehlen hier Einträge/)).toBeInTheDocument();
   });
 
   it('nimmt einen Messwert nur als Zahl in den Text', async () => {
-    const { user } = await oeffnen('Fuß', 'Basisuntersuchung Fuß');
+    const { user } = await oeffnen('Fuß', 'Basisuntersuchung Fuß', 'rechts');
     const k2w = test_('Knee to Wall Test, links');
-    await user.click(within(k2w).getByRole('button', { name: 'ohne Befund' }));
+    await user.click(within(k2w).getByRole('button', { name: 'o.B.' }));
     const feld = within(k2w).getByLabelText('Messwert (cm)');
 
     await user.type(feld, 'acht');
     expect(within(k2w).getByText('Bitte eine Zahl eingeben, etwa 1,5.')).toBeInTheDocument();
-    expect(screen.getByText(/Knee to Wall Test, links: ohne Befund\.$/)).toBeInTheDocument();
+    expect(vorschlag()).toBe('Basisuntersuchung Fuß rechts\n✅ Knee to Wall Test li.');
     // Übernommen würde der Text ohne den Wert — deshalb erst nach der Korrektur.
     expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeDisabled();
 
     await user.clear(feld);
     await user.type(feld, '8,5');
-    expect(screen.getByText(/Knee to Wall Test, links: ohne Befund, 8,5 cm\./)).toBeInTheDocument();
+    expect(vorschlag()).toBe('Basisuntersuchung Fuß rechts\n✅ Knee to Wall Test li. 8,5 cm');
     expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeEnabled();
   });
 
-  it('misst Knee to Wall und Navicular Drop links und rechts getrennt', async () => {
-    const { user } = await oeffnen('Fuß', 'Basisuntersuchung Fuß');
+  it('misst Knee to Wall und Navicular Drop auch bei einer Seite links und rechts', async () => {
+    const { user } = await oeffnen('Fuß', 'Basisuntersuchung Fuß', 'rechts');
     const links = test_('Knee to Wall Test, links');
     const rechts = test_('Knee to Wall Test, rechts');
-    await user.click(within(links).getByRole('button', { name: 'ohne Befund' }));
+    await user.click(within(links).getByRole('button', { name: 'o.B.' }));
     await user.type(within(links).getByLabelText('Messwert (cm)'), '9');
     await user.click(within(rechts).getByRole('button', { name: 'positiv' }));
     await user.type(within(rechts).getByLabelText('Messwert (cm)'), '5');
-    // Die Seite steht fest; eine Auswahl links/rechts/beidseits gibt es hier nicht.
-    expect(within(rechts).queryByRole('group', { name: 'Seite' })).toBeNull();
 
-    const vorschlag = screen.getByRole('region', { name: 'Vorschlag für den Eintrag' });
-    expect(within(vorschlag).getByText(/Knee to Wall/).textContent).toBe(
-      'Basisuntersuchung Fuß\n' +
-        'Knee to Wall Test, links: ohne Befund, 9 cm.\n' +
-        'Knee to Wall Test, rechts: positiv, 5 cm.',
+    expect(vorschlag()).toBe(
+      'Basisuntersuchung Fuß rechts\n' +
+        '✅ Knee to Wall Test li. 9 cm\n' +
+        '❗ Knee to Wall Test re. 5 cm',
     );
 
     await user.click(screen.getByText('Weiterführende Untersuchung'));
@@ -151,21 +236,25 @@ describe('BausteinFeld', () => {
     expect(screen.getByRole('button', { name: 'Knie' })).toBeDisabled();
   });
 
-  it('schreibt einen Unterpunkt mit seiner Gruppe', async () => {
-    const { user } = await oeffnen('Ellenbogen', 'Weiterführende Untersuchung');
-    await user.click(within(test_('Cozen-Test')).getByRole('button', { name: 'negativ' }));
-    expect(screen.getByText(/LET – Cozen-Test: negativ\./)).toBeInTheDocument();
+  it('schreibt Unterpunkte eingerückt unter ihre Gruppe', async () => {
+    const { user } = await oeffnen('Ellenbogen', 'Weiterführende Untersuchung', 'links');
+    await user.click(within(test_('Cozen-Test')).getByRole('button', { name: 'o.B.' }));
+    expect(vorschlag()).toBe(
+      'Ellenbogen links – Weiterführende Untersuchung\nLET:\n  ✅ Cozen-Test',
+    );
   });
 
   it('ist barrierefrei, aufgeklappt und mit Angabe', async () => {
-    const { user } = await oeffnen('Knie', 'Basisuntersuchung Knie');
-    await user.click(within(test_('Kniebeuge')).getByRole('button', { name: 'positiv' }));
+    const { user } = await oeffnen('Knie', 'Basisuntersuchung Knie', 'beidseits');
+    const rechts = test_('Kniebeuge, rechts');
+    await user.click(within(rechts).getByRole('button', { name: 'positiv' }));
+    await user.click(within(rechts).getByRole('button', { name: 'Notiz' }));
     await pruefeBarrierefreiheit(document.body);
   });
 
   it('verwirft den Vorschlag, ohne etwas zu übernehmen', async () => {
-    const { user, uebernehmen } = await oeffnen('Knie', 'Basisuntersuchung Knie');
-    await user.click(within(test_('Kniebeuge')).getByRole('button', { name: 'ohne Befund' }));
+    const { user, uebernehmen } = await oeffnen('Knie', 'Basisuntersuchung Knie', 'rechts');
+    await user.click(within(test_('Kniebeuge')).getByRole('button', { name: 'o.B.' }));
     await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
     expect(uebernehmen).not.toHaveBeenCalled();
     expect(screen.queryByRole('region', { name: 'Vorschlag für den Eintrag' })).toBeNull();

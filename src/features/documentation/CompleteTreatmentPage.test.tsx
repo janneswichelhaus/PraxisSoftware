@@ -369,11 +369,13 @@ describe('CompleteTreatmentPage', () => {
    * Abschluss an, geht aber in einen Entwurf mit, statt verloren zu gehen (§13).
    */
   describe('FRB-003b: Befund aus Bausteinen', () => {
-    const VORSCHLAG = 'Knie – Weiterführende Untersuchung\nLachmann-Test: positiv.';
+    const VORSCHLAG = 'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test';
 
     async function lachmannPositiv(user: ReturnType<typeof userEvent.setup>) {
       await user.click(await screen.findByText('Befund aus Bausteinen'));
       await user.click(screen.getByRole('button', { name: 'Knie' }));
+      const seite = screen.getByRole('group', { name: 'Seite Knie' });
+      await user.click(within(seite).getByRole('button', { name: 'rechts' }));
       await user.click(screen.getByText('Weiterführende Untersuchung'));
       const lachmann = screen.getByRole('group', { name: 'Lachmann-Test' });
       await user.click(within(lachmann).getByRole('button', { name: 'positiv' }));
