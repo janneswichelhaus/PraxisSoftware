@@ -60,7 +60,7 @@ verankert sein — sonst wird aus schnellem Bauen späterer Umbau.
 | 014 | Datenmodell-Fundament: UUIDs, Zeitstempel, Geldwerte, Rollen, Trennung      |
 | 015 | Stack, Ordnerstruktur, Abgrenzungen (kein Next.js, kein Service Worker …)   |
 | 016 | Dokumentation: Entwurf/Finalisierung, Versionierung, wer ändern darf        |
-| 017 | Dateien: Ablageort, Dokumentart, signierte Verweise, Löschung, Virenprüfung |
+| 017 | Dateiablage, Patientenfotos, Dokumentart, Verweise, Löschpfad, Virenprüfung |
 | 018 | Terminzustände, Übergänge, Ausfallhonorar-Kennzeichen, Terminserie          |
 | 019 | Kartendienst, Navigations-Handoff, Fahrzeiten, Vertrags-/§203-Gate          |
 | 020 | Behandlungsgrundlage: Verordnung und Selbstzahler, Kontingent, Gruppierung  |

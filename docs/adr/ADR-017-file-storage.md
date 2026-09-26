@@ -2,9 +2,9 @@
 
 ## Status
 
-**Angenommen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt, alle acht
-Fragen wie empfohlen (Abschnitt am Ende). **Fassung 2 vorgeschlagen
-(2026-09-26).**
+**Angenommen, Fassung 2** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
+Fragen 9 bis 14 wie empfohlen (Abschnitte am Ende).
 
 Fassung 2 ergänzt **Abschnitt G** (Punkte 31 bis 42): **Fotos von
 Patient:innen** mit eigener Einwilligung als Rechtsgrundlage, eigener
@@ -20,10 +20,10 @@ Bezugsdatensatz); für alle anderen Arten gelten sie unverändert. Diese drei
 Punkte, Punkt 30, „Bewusst nicht Bestandteil" und die HEIC-Folgefrage tragen
 einen Vermerk.
 
-**Bis zur Annahme durch den Projektinhaber gilt Fassung 1** — Punkt 30 gibt
-Fotos von Patient:innen dann weiter nicht frei. Die Zeile in
-[`README.md`](README.md) nennt bis zur Annahme keine Fassung und bleibt
-unberührt; der Bau von DOK-006 beginnt, wenn der ADR über ihm steht.
+**Was die Annahme nicht erledigt:** Einordnung, Wortlaut der Einwilligung und
+Frist sind Datenschutz und Recht. Die Annahme gibt den Bau von DOK-006 frei;
+Fotos echter Personen gibt es erst nach B2 und der DSFA (Punkt 41), und für
+die Ablage insgesamt bleiben OPS-001 und OPS-003 die Bedingung.
 
 Dieser ADR **legt keine Datei an und gibt keinen produktiven Speicher frei.**
 Er legt fest, wie eine Datei in dieser Anwendung entsteht, wer sie sieht, wie
@@ -34,7 +34,7 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 
 ## Datum
 
-2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, vorgeschlagen)
+2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen)
 
 ## Kontext
 
@@ -212,7 +212,7 @@ tut; Punkt 33 entscheidet es hier.
     am Bezugsdatensatz**, nicht dem Leserecht an der Datei. Eine Korrektur der
     Dokumentart ist ein protokollierter Vorgang der therapeutischen Rollen: Sie
     verschiebt eine Sichtbarkeitsgrenze und ist damit keine Stammdatenpflege.
-    *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen): Die Art `patientenfoto`
+    *Vermerk 2026-09-26 (Fassung 2): Die Art `patientenfoto`
     wird nicht korrigiert, weder hin noch weg (Punkt 32).*
 14. **Patient:innen laden in V1 nichts hoch und sehen nichts.** Es gibt kein
     Portal (ADR-014, §14), und dieser ADR baut keines vor.
@@ -222,7 +222,7 @@ tut; Punkt 33 entscheidet es hier.
     Voraus, nie für eine ganze Liste, nie gespeichert, nie in einer E-Mail, nie
     in der Adresszeile der Anwendung (ADR-011; dieselbe Regel wie bei den
     Rückwegen aus UX-012: kein Name in der Adresszeile).
-    *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen): Ein Verweis auf ein
+    *Vermerk 2026-09-26 (Fassung 2): Ein Verweis auf ein
     `patientenfoto` trägt keinen Downloadnamen; angezeigt wird nach Punkt 40.*
 16. **Objekte werden mit `cacheControl: '0'` hochgeladen.** Der Standardwert
     der Bibliothek ist `3600`. Grund, belegt aus der Anbieterdokumentation:
@@ -290,7 +290,7 @@ tut; Punkt 33 entscheidet es hier.
     (§630f BGB, ADR-008 Punkt 4, Anker `patients.care_concluded_on`).
     Abrechnungsbelege bekommen die steuerliche Klasse, die mit ABR-EPIC-002b
     entsteht. **Keine Datei ohne Klasse.**
-    *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen): Ausnahme `patientenfoto` —
+    *Vermerk 2026-09-26 (Fassung 2): Ausnahme `patientenfoto` —
     seine Klasse folgt der Art, nicht dem Bezugsdatensatz (Punkt 38).*
 24. **Ein Legal Hold der Patient:in erfasst ihre Dateien mit** (ANN-033). Es
     gibt keinen eigenen Hold je Datei — das wäre ein zweiter Mechanismus für
@@ -345,7 +345,7 @@ tut; Punkt 33 entscheidet es hier.
     (`IDEA-KOM-003` — eigene Einwilligung, kurze Frist, Entfernung der
     Aufnahmemetadaten), Anhänge im Teamchat (TEAM-001), Uploads aus einem
     Portal, den Versand von Dokumenten aus der Anwendung heraus.
-    *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen):* Fotos von Patient:innen
+    *Vermerk 2026-09-26 (Fassung 2):* Fotos von Patient:innen
     gibt Abschnitt G frei — unter genau den drei Bedingungen, die dieser
     Punkt nennt. Für Videos, Teamchat, Portal und Versand gilt er unverändert
     (Punkt 42).
@@ -702,7 +702,9 @@ aus Forendiskussionen:
   in `CLAUDE.md` nennen die Fassung. Die Annahme zur Einordnung (Punkt 35)
   und zur Frist (Punkt 38) wird mit dem Bau registriert, dort, wo sie im
   Code greift — der Klasse `patientenfoto` —, und ANN-093 bekommt den
-  dritten Zweck.
+  dritten Zweck. *Erledigt am 2026-09-26: §5 mit Version 0.18 der
+  Prinzipien, `README.md`, Index in `CLAUDE.md` und die Zeile DOK-006 der
+  Roadmap. Annahme und dritter Zweck bleiben beim Bau.*
 
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
@@ -712,13 +714,12 @@ aus Forendiskussionen:
   ADR sagt nur, wie es abgelegt wird, wenn es existiert.
 - Anbieter, Ausführungsort und Kosten einer späteren Virenprüfung.
 - Fotos, Videos und Audiodateien von Patient:innen, einschließlich der
-  Sprachdokumentation aus §6.3 und ADR-005. *Vermerk 2026-09-26 (Fassung 2,
-  vorgeschlagen): Fotos regelt Abschnitt G; Videos und Audio bleiben
+  Sprachdokumentation aus §6.3 und ADR-005. *Vermerk 2026-09-26 (Fassung 2): Fotos regelt Abschnitt G; Videos und Audio bleiben
   ausgeschlossen (Punkt 42).*
 - Anhänge im internen Teamchat (TEAM-001) und in der Patientenkommunikation.
 - Volltextsuche in Dateien, Texterkennung, Bildtransformationen und jede Form
   von KI auf Dateiinhalten (ADR-005 bleibt maßgeblich). *Vermerk 2026-09-26
-  (Fassung 2, vorgeschlagen): Das Entfernen von Metadaten auf dem Gerät
+  (Fassung 2): Das Entfernen von Metadaten auf dem Gerät
   (Punkt 34) ist keine Bildtransformation in diesem Sinn; Ausrichtung,
   Vermessung und Markierung schließt Punkt 39 aus.*
 - Elektronische Signaturen. `IDEA-PRX-015` (Unterschrift am Hausbesuch) ist am
@@ -726,7 +727,7 @@ aus Forendiskussionen:
   Papier mit Vermerk (E-13, Roadmap G8).
 - Die Oberfläche: Wie ein Upload aussieht, wo die Dateiliste in der Akte steht
   und wie eine fehlende Datei gemeldet wird, entscheidet DAT-EPIC-001.
-  *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen): Für Patientenfotos legt
+  *Vermerk 2026-09-26 (Fassung 2): Für Patientenfotos legt
   Abschnitt G Aufnahme- und Anzeigeweg fest (Punkte 33 und 40); das Aussehen
   entscheidet DOK-006.*
 
@@ -735,8 +736,7 @@ aus Forendiskussionen:
 - **HEIC.** Ein mit dem iPhone aufgenommenes Foto kommt je nach Einstellung als
   HEIC an und wäre nach Punkt 18 abgelehnt. Ob der Dateiwähler zuverlässig
   JPEG liefert, ist in DAT-001 am echten Gerät zu prüfen — die Antwort ändert
-  die Allowlist, nicht die Regel dahinter. *Vermerk 2026-09-26 (Fassung 2,
-  vorgeschlagen): Für den Kameradialog erledigt — er liefert JPEG
+  die Allowlist, nicht die Regel dahinter. *Vermerk 2026-09-26 (Fassung 2): Für den Kameradialog erledigt — er liefert JPEG
   (Punkt 33). Für den Dateiwähler bleibt die Frage offen; Punkt 34 entfernt
   dort nur Metadaten und wandelt kein Format um.*
 - **Wie wird eine ersetzte Datei angezeigt** (Punkt 8)? Sichtbar mit Vermerk
@@ -829,10 +829,11 @@ ist Vorbedingung für die erste echte Datei, nicht für DAT-EPIC-001.
    *Empfehlung: ja.* Sie jetzt zu benennen kostet eine halbe Seite; sie später
    nachzureichen kostet eine zweite Anfrage beim Anbieter.
 
-## Bestätigungsfragen zu Fassung 2 — offen
+## Bestätigungsfragen zu Fassung 2 — beantwortet am 2026-09-26
 
-Sechs Fragen, jede mit Ja beantwortbar. Die Nummerierung setzt die der
-Fassung 1 fort. **Was die Bestätigung nicht erledigt:** Einordnung, Wortlaut
+**Alle sechs wie empfohlen bestätigt.** Die Fragen bleiben mitsamt ihrer
+Begründung und den verworfenen Alternativen stehen. Die Nummerierung setzt
+die der Fassung 1 fort. **Was die Bestätigung nicht erledigt:** Einordnung, Wortlaut
 und Frist sind Datenschutz und Recht; Jannes' Ja zählt fürs Bauen, die
 Freigabe mit echten Personen hängt an B2 und der DSFA (Punkt 41).
 
@@ -963,4 +964,4 @@ Einwilligung und Frist gehen mit B2 an die Prüfung (Punkt 41).
 | Fassung | Datum | Änderung |
 |---|---|---|
 | 1 | 2026-09-12 | angenommen, alle acht Bestätigungsfragen wie empfohlen |
-| 2 | 2026-09-26 | **vorgeschlagen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung, Anzeige ohne Download; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 bleiben stehen; für `patientenfoto` eingeschränkt sind Punkt 13 (keine Artkorrektur), 15 (kein Downloadname) und 23 (Klasse nach der Art), je mit Vermerk; weitere Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
+| 2 | 2026-09-26 | **angenommen am selben Tag, Fragen 9 bis 14 wie empfohlen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung, Anzeige ohne Download; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 bleiben stehen; für `patientenfoto` eingeschränkt sind Punkt 13 (keine Artkorrektur), 15 (kein Downloadname) und 23 (Klasse nach der Art), je mit Vermerk; weitere Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
