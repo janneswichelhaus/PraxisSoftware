@@ -1472,3 +1472,15 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der n�
 **Anker.** `RANDLOSE_SEITEN` in `src/app/navigation.tsx`, angewendet in `<main>` in `src/app/AppShell.tsx`; geprüft in `src/app/AppShell.test.tsx`.
 
 **Änderungspfad.** Weitere Seite randlos: ihren Pfad in `RANDLOSE_SEITEN` aufnehmen · Aufwand `klein`. Zurück zum Kasten: den Eintrag entfernen und in `CalendarGrid` `rounded-card border` wieder setzen · Aufwand `klein`.
+
+### ANN-115 — Ein abgewiesener Schreibversuch wird bestätigt protokolliert und mit HTTP 403 beantwortet; der Client prüft den Status
+
+Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes lokal mit `supabase start` (echte HTTP-Antwort über PostgREST)
+
+**Annahme.** Die zehn Schreibpfade für Rollen und Konten, Legal Hold und Löschaufträge weisen eine fehlende Rolle ohne Ausnahme ab: `app.record_denied_write` schreibt den Versuch mit `outcome = 'denied'` (Subjekt ist die Organisation), setzt `response.status = 403` lokal zur Transaktion, und der Pfad kehrt vor jedem Schreiben zurück. Ohne Sitzung und ohne Organisation bleibt es bei der Ausnahme; die übrigen Schreibpfade bleiben ohne Eintrag. Die Aufrufer in der Oberfläche werten eine Antwort als gescheitert, wenn ein Fehler **oder** HTTP 403 vorliegt (`abgewiesen` in `src/lib/abgewiesen.ts`).
+
+**Begründung.** Jannes' Wahl zu G6c (2026-09-26): bestätigte Transaktion mit HTTP 403 für diese drei Bereiche, nichts für den Rest. PostgREST bestätigt eine Transaktion, die nicht fehlschlägt, und antwortet mit dem gesetzten Status; zurückgerollt wird nur bei einer Ausnahme (PostgREST, „Transactions", `response.status`). Für den Aufrufer ändert sich am Status nichts — 42501 wurde schon bisher als 403 ausgeliefert. Anders ist der Körper: Eine Funktion mit Skalar-Rückgabe liefert `null`, und `supabase-js` (postgrest-js 2.112.4, `processResponse`) liest `JSON.parse("null")` als „kein Fehler". Ohne die Statusprüfung hielte der Client die Abweisung für einen Erfolg; beim Einladen ginge danach die Anmeldemail hinaus. Die Oberfläche ruft diese Pfade für eine abgewiesene Rolle nie auf; die Prüfung ist die zweite Linie. Unsicher: die tatsächliche Antwort von PostgREST ist in der Cloud nicht prüfbar (kein `supabase start`); `pnpm test:db` belegt Eintrag, Status und unveränderte Daten auf der Datenbankseite.
+
+**Anker.** `app.record_denied_write` in `supabase/migrations/20260926120000_abgewiesene_schreibzugriffe.sql`; die Liste der Pfade in `supabase/tests/abgewiesene-schreibpfade.test.ts`; auf der Clientseite `abgewiesen` in `src/lib/abgewiesen.ts`.
+
+**Änderungspfad.** Weitere Schreibpfade: den Zweig „Rolle fehlt" auf `app.record_denied_write` umstellen und den Pfad in die Liste des Tests aufnehmen · Aufwand `klein` je Pfad. Zurück zur Ausnahme: den Zweig wieder `raise exception` werfen lassen · Aufwand `klein`. Bestätigt PostgREST die Transaktion lokal nicht: Eintrag über eine autonome Verbindung (`dblink`) statt `response.status` · Aufwand `mittel`.

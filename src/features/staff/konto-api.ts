@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 import { roleKeySchema, type RoleKey } from '@/features/session/types';
 import { WIEDERHERSTELLUNG_PFAD, ZUGANG_PFAD } from '@/features/auth/linkEinloesen';
@@ -162,22 +163,25 @@ export async function ladeZugangEin(
   email: string,
   rollen: readonly RoleKey[],
 ): Promise<Zustellung> {
-  const { error } = (await getSupabase().rpc('invite_staff_account', {
+  const antwort = (await getSupabase().rpc('invite_staff_account', {
     p_staff_member_id: staffMemberId,
     p_email: email,
     p_role_keys: rollen,
-  })) as { error: { message?: string } | null };
+  })) as { error: { message?: string } | null; status: number };
 
-  if (error) throw new EinladungsError(einladungsProblem(error.message ?? ''));
+  // Ohne die Statusprüfung ginge bei einer Abweisung die Mail hinaus (ANN-115).
+  if (abgewiesen(antwort)) {
+    throw new EinladungsError(einladungsProblem(antwort.error?.message ?? ''));
+  }
 
   return sendeZugangsMail(email);
 }
 
 export async function widerrufeEinladung(invitationId: string): Promise<void> {
-  const { error } = await getSupabase().rpc('revoke_staff_invitation', {
+  const antwort = await getSupabase().rpc('revoke_staff_invitation', {
     p_invitation_id: invitationId,
   });
-  if (error) throw new Error('Die Einladung konnte nicht zurückgenommen werden.');
+  if (abgewiesen(antwort)) throw new Error('Die Einladung konnte nicht zurückgenommen werden.');
 }
 
 /**
@@ -235,21 +239,21 @@ export async function setzeRollen(
   staffMemberId: string,
   rollen: readonly RoleKey[],
 ): Promise<void> {
-  const { error } = (await getSupabase().rpc('set_staff_account_roles', {
+  const antwort = (await getSupabase().rpc('set_staff_account_roles', {
     p_staff_member_id: staffMemberId,
     p_role_keys: rollen,
-  })) as { error: { message?: string } | null };
+  })) as { error: { message?: string } | null; status: number };
 
-  if (error) throw new ZugangsError(sperrProblem(error.message ?? ''));
+  if (abgewiesen(antwort)) throw new ZugangsError(sperrProblem(antwort.error?.message ?? ''));
 }
 
 export async function setzeZugangAktiv(staffMemberId: string, aktiv: boolean): Promise<void> {
-  const { error } = (await getSupabase().rpc('set_staff_account_active', {
+  const antwort = (await getSupabase().rpc('set_staff_account_active', {
     p_staff_member_id: staffMemberId,
     p_active: aktiv,
-  })) as { error: { message?: string } | null };
+  })) as { error: { message?: string } | null; status: number };
 
-  if (error) throw new ZugangsError(sperrProblem(error.message ?? ''));
+  if (abgewiesen(antwort)) throw new ZugangsError(sperrProblem(antwort.error?.message ?? ''));
 }
 
 /**
@@ -261,12 +265,12 @@ export async function setzeZugangAktiv(staffMemberId: string, aktiv: boolean): P
  * alte noch das neue.
  */
 export async function stosseKennwortZuruecksetzenAn(staffMemberId: string): Promise<void> {
-  const { data, error } = (await getSupabase().rpc('request_staff_password_reset', {
+  const antwort = (await getSupabase().rpc('request_staff_password_reset', {
     p_staff_member_id: staffMemberId,
-  })) as { data: unknown; error: unknown };
+  })) as { data: unknown; error: unknown; status: number };
 
-  if (error) throw new Error('Das Zurücksetzen konnte nicht angestoßen werden.');
-  const email = z.string().safeParse(data);
+  if (abgewiesen(antwort)) throw new Error('Das Zurücksetzen konnte nicht angestoßen werden.');
+  const email = z.string().safeParse(antwort.data);
   if (!email.success) throw new Error('Das Zurücksetzen konnte nicht angestoßen werden.');
 
   // Der Pfad kommt aus einer Konstante, nicht aus einer zweiten Zeichenkette:
