@@ -360,10 +360,10 @@
           "id": "dok-006",
           "name": "DOK-006 Fotos in der Akte",
           "gewicht": 1,
-          "status": "in_arbeit",
+          "status": "fertig",
           "fertig_am": "2026-09-26",
-          "nachweis": "`0319ee9` … `88686ea`",
-          "vermerk": "Schritt 1: neue Fassung von ADR-017 angenommen, Bau offen"
+          "nachweis": "`0319ee9` … `88686ea` (ADR-017 Fassung 2), `141aaee` … `5d11f19` (DOK-006a bis d, Zweitreview)",
+          "vermerk": "Sichtung: Befund Schritte 10 bis 12"
         },
         {
           "id": "frb-epic-004",
