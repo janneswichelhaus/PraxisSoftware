@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import {
   ausfallhonorarRegel,
   datenschutzinformation,
@@ -7,10 +7,16 @@ import {
 } from './patienteninformation';
 import { datenschutzstand, EINWILLIGUNGSZWECKE, type Datenschutzvermerk } from './vermerke';
 
-const MIGRATION = readFileSync(
-  'supabase/migrations/20260922130000_datenschutzvermerke.sql',
-  'utf8',
-);
+/**
+ * Die jüngste Migration, die den Constraint der Zwecke setzt - seit DOK-006b
+ * nicht mehr die, die die Tabelle angelegt hat.
+ */
+const MIGRATION = readdirSync('supabase/migrations')
+  .filter((datei) => datei.endsWith('.sql'))
+  .sort()
+  .map((datei) => readFileSync(`supabase/migrations/${datei}`, 'utf8'))
+  .filter((inhalt) => /check \(\s*purpose in \(/.test(inhalt))
+  .at(-1)!;
 
 function vermerk(
   rest: Partial<Datenschutzvermerk> & Pick<Datenschutzvermerk, 'record_kind'>,
@@ -53,6 +59,7 @@ describe('datenschutzstand', () => {
     expect(stand.einwilligungen.find((e) => e.zweck === 'email_contact')).toEqual({
       zweck: 'email_contact',
       erteilt: true,
+      abgelehnt: false,
       seit: '2026-09-03',
     });
   });
@@ -70,8 +77,36 @@ describe('datenschutzstand', () => {
     expect(stand.einwilligungen.find((e) => e.zweck === 'prescriber_report')).toEqual({
       zweck: 'prescriber_report',
       erteilt: false,
+      abgelehnt: false,
       seit: '2026-09-10',
     });
+  });
+
+  it('haelt eine Ablehnung als erledigten Stand, nicht als Widerruf (ADR-017 Punkt 35)', () => {
+    const stand = datenschutzstand([
+      vermerk({ record_kind: 'consent_refused', purpose: 'patient_photos' }),
+    ]);
+    expect(stand.einwilligungen.find((e) => e.zweck === 'patient_photos')).toEqual({
+      zweck: 'patient_photos',
+      erteilt: false,
+      abgelehnt: true,
+      seit: '2026-09-01',
+    });
+  });
+
+  it('gibt nach einer Ablehnung eine spaetere Erteilung wieder', () => {
+    const stand = datenschutzstand([
+      vermerk({ record_kind: 'consent_refused', purpose: 'patient_photos' }),
+      vermerk({
+        record_kind: 'consent_granted',
+        purpose: 'patient_photos',
+        occurred_on: '2026-09-12',
+        recorded_at: '2026-09-12T08:00:00Z',
+      }),
+    ]);
+    const fotos = stand.einwilligungen.find((e) => e.zweck === 'patient_photos');
+    expect(fotos?.erteilt).toBe(true);
+    expect(fotos?.abgelehnt).toBe(false);
   });
 
   it('zeigt die zuletzt ausgehaendigte Fassung', () => {
@@ -92,7 +127,7 @@ describe('datenschutzstand', () => {
 
 describe('ANN-093: Zwecke und Datenbank', () => {
   it('fuehrt dieselben Zwecke wie der Constraint', () => {
-    const treffer = /check \(purpose in \(([^)]*)\)\)/.exec(MIGRATION);
+    const treffer = /check \(\s*purpose in \(([^)]*)\)\s*\)/.exec(MIGRATION);
     const inDatenbank = [...(treffer?.[1] ?? '').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
     expect(inDatenbank.sort()).toEqual([...EINWILLIGUNGSZWECKE].sort());
   });

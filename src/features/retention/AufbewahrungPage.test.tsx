@@ -55,6 +55,8 @@ const akte: RetentionApi.Datenklasse = {
   legal_reference: 'Par. 630f Abs. 3 BGB',
   anchor: 'care_concluded',
   retention_interval: '10 years',
+  upper_bound_anchor: null,
+  upper_bound_interval: null,
   assumption_key: null,
   note: 'Zehn Jahre nach Abschluss der Behandlung.',
   sort_order: 10,
@@ -64,12 +66,28 @@ const akte: RetentionApi.Datenklasse = {
   ],
 };
 
+const fotos: RetentionApi.Datenklasse = {
+  key: 'patientenfoto',
+  basis: 'intern',
+  legal_reference: 'Art. 9 Abs. 2 lit. a DSGVO',
+  anchor: 'event_time',
+  retention_interval: '1 year',
+  upper_bound_anchor: 'care_concluded_recorded',
+  upper_bound_interval: '3 mons',
+  assumption_key: 'ANN-126',
+  note: 'Zwölf Monate nach der Aufnahme, spätestens drei Monate nach Abschluss.',
+  sort_order: 12,
+  tabellen: [{ name: 'patient_files', modus: 'automatisch' }],
+};
+
 const beschaeftigte: RetentionApi.Datenklasse = {
   key: 'beschaeftigtendaten',
   basis: 'offen',
   legal_reference: null,
   anchor: 'none',
   retention_interval: null,
+  upper_bound_anchor: null,
+  upper_bound_interval: null,
   assumption_key: 'ANN-030',
   note: 'Frist offen.',
   sort_order: 60,
@@ -105,6 +123,20 @@ describe('AufbewahrungPage', () => {
     // Die Datenbank traegt `Par.`, die Seite das Zeichen (BEF-033).
     expect(screen.getByText('§ 630f Abs. 3 BGB')).toBeInTheDocument();
     expect(screen.queryByText(/Par\./)).toBeNull();
+  });
+
+  it('nennt bei Patientenfotos die Obergrenze neben der Frist (ADR-017 Punkt 38)', async () => {
+    fetchRetentionSchedule.mockResolvedValue([akte, fotos, beschaeftigte]);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+    expect(await screen.findByText('Patientenfotos')).toBeInTheDocument();
+    expect(screen.getByText('1 Jahr')).toBeInTheDocument();
+    expect(screen.getByText('ab dem Ereignis')).toBeInTheDocument();
+    expect(
+      screen.getByText('3 Monate nach dem festgehaltenen Abschluss der Versorgung'),
+    ).toBeInTheDocument();
+    // Nur dort, wo es eine Obergrenze gibt.
+    expect(screen.getAllByText('Spätestens')).toHaveLength(1);
   });
 
   it('sagt bei einer Klasse ohne Frist ausdruecklich, dass nicht geloescht wird', async () => {

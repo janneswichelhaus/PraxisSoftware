@@ -48,7 +48,8 @@ describe('Datenschutz der Akte', () => {
 
     expect(await screen.findByText('Datenschutzinformation')).toBeInTheDocument();
     expect(screen.getAllByText('nicht vermerkt')).toHaveLength(2);
-    expect(screen.getAllByText('nicht erteilt')).toHaveLength(2);
+    expect(screen.getAllByText('nicht erteilt')).toHaveLength(3);
+    expect(screen.getByText('Fotos im Behandlungsverlauf')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Blätter zum Ausdrucken' })).toHaveAttribute(
       'href',
       `/patienten/${PATIENT_ID}/aufnahmeblaetter`,
@@ -122,6 +123,66 @@ describe('Datenschutz der Akte', () => {
       ),
     );
     expect(vermerkeSpeichern.mock.calls[0]![0]).not.toHaveProperty('fassung');
+  });
+
+  it('vermerkt eine Ablehnung und bietet sie danach nicht noch einmal an (ADR-017 Punkt 35)', async () => {
+    const user = userEvent.setup();
+    const { unmount } = seite();
+
+    await user.selectOptions(
+      await screen.findByLabelText('Was ist geschehen?'),
+      'consent_refused:patient_photos',
+    );
+    await user.click(screen.getByRole('button', { name: 'Vermerken' }));
+    await waitFor(() =>
+      expect(vermerkeSpeichern).toHaveBeenCalledWith(
+        expect.objectContaining({ art: 'consent_refused', zweck: 'patient_photos' }),
+      ),
+    );
+    unmount();
+
+    seite([
+      {
+        id: 'v1',
+        record_kind: 'consent_refused',
+        purpose: 'patient_photos',
+        notice_version: null,
+        occurred_on: '2026-09-01',
+        recorded_at: '2026-09-01T08:00:00Z',
+      },
+    ]);
+    expect(await screen.findByText('abgelehnt am 01.09.2026')).toBeInTheDocument();
+    const auswahl: HTMLSelectElement = screen.getByLabelText('Was ist geschehen?');
+    const optionen = [...auswahl.options].map((o) => o.value);
+    expect(optionen).not.toContain('consent_refused:patient_photos');
+    expect(optionen).toContain('consent_granted:patient_photos');
+  });
+
+  it('sagt vor dem Widerruf der Fotoeinwilligung, dass die Fotos sofort geloescht werden', async () => {
+    const user = userEvent.setup();
+    seite([
+      {
+        id: 'v1',
+        record_kind: 'consent_granted',
+        purpose: 'patient_photos',
+        notice_version: null,
+        occurred_on: '2026-09-01',
+        recorded_at: '2026-09-01T08:00:00Z',
+      },
+    ]);
+
+    await user.selectOptions(
+      await screen.findByLabelText('Was ist geschehen?'),
+      'consent_withdrawn:patient_photos',
+    );
+    expect(screen.getByText(/alle Fotos dieser Person sofort gelöscht/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Widerruf vermerken und Fotos löschen' }));
+
+    await waitFor(() =>
+      expect(vermerkeSpeichern).toHaveBeenCalledWith(
+        expect.objectContaining({ art: 'consent_withdrawn', zweck: 'patient_photos' }),
+      ),
+    );
   });
 
   it('zeigt die Abweisung des Servers verstaendlich', async () => {

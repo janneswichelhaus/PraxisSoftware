@@ -1217,7 +1217,9 @@ Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Grundlage der Behandlung sind der Vertrag (§§ 630a ff. BGB) und Art. 9 Abs. 2 lit. h DSGVO mit § 22 Abs. 1 Nr. 1 lit. b BDSG; eine Einwilligung daneben wäre wegen ihrer jederzeitigen Widerrufbarkeit (Art. 7 Abs. 3 DSGVO) die schwächere Grundlage. Die E-Mail setzt nach ANN-041 den ausdrücklichen Wunsch voraus, der Arztbericht berührt § 203 StGB. Nachweis nach Art. 7 Abs. 1 DSGVO verlangt, dass die Erteilung den Widerruf überlebt. Unsicher: ob die Prüfung weitere Zwecke sieht (Fotos zur Verlaufsdokumentation, Angehörige), und ob die Einwilligung vor dem Mailweg technisch geprüft werden soll — heute zeigt die Anwendung nur den Stand.
 
-**Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
+*Vermerk 2026-09-26 (DOK-006b):* Dritter Zweck **Fotos im Behandlungsverlauf** (`patient_photos`) — dort ist die Einwilligung die Grundlage selbst (ADR-017 Punkt 35); dazu die Ablehnung als eigener Vermerk (ANN-127).
+
+**Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`, zuletzt geändert in `20260926150000_dok_006b_patient_photos.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
 
 **Änderungspfad.** Zweck ergänzen oder streichen: ein Wert in Constraint, Konstante und Beschriftung, ein Satz in der Datenschutzinformation · Aufwand `klein`. Einwilligung vor dem Mailweg prüfen: Abfrage des Stands in `AppointmentSlipPage.tsx` vor der Übergabe · Aufwand `mittel`. Unterschrift in der Anwendung: eigenes Epic · Aufwand `groß`.
 
@@ -1604,3 +1606,27 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `bereinigeJpeg`, `bereinigePng` und `PNG_BEHALTEN` in `src/features/files/metadaten.ts`; Nachweis in `src/features/files/metadaten.test.ts`.
 
 **Änderungspfad.** Ein Segment mehr oder weniger behalten: eine Bedingung in `bereinigeJpeg` beziehungsweise ein Eintrag in `PNG_BEHALTEN` · Aufwand `klein`. Farbprofil behalten, aber Hersteller- und Geräteangaben darin leeren: eine eigene Bereinigung des ICC-Kopfs · Aufwand `mittel`.
+
+### ANN-126 — Patientenfotos stehen auf Einwilligung, leben höchstens zwölf Monate und sind gesperrt, sobald sie fällig sind
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2) und DSFA (G14), vor dem ersten Foto einer echten Person (ADR-017 Punkt 41)
+
+**Annahme.** Ein Patientenfoto stützt sich auf die ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a DSGVO), ist Arbeitshilfe neben der Akte und hat die Klasse `patientenfoto`: fällig zum frühesten von zwölf Monaten nach der Aufnahme, drei Monaten nach dem **festgehaltenen** Abschluss der Versorgung (`care_concluded_at`) und dem ersten Widerruf nach der Aufnahme. Ein fälliges Foto ist auf allen Wegen gesperrt — Liste, Verweis, Leseregel am Objekt, Löschen von Hand —, auch wenn ein Legal Hold die Löschung anhält; eine neue Einwilligung gilt nur für neue Fotos. Der Widerruf löscht in derselben Transaktion, das Ende des Hold ebenso, sonst der Löschlauf.
+
+**Begründung.** ADR-017 Punkte 35, 36 und 38 (Fassung 2, von Jannes am 2026-09-26 bestätigt). Offen ließ der ADR, ob ein wegen Ablaufs fälliges, vom Hold gehaltenes Foto sichtbar bleibt: Gesperrt ist die sparsamere Lesart, denn der Hold sichert Beweise und keinen Arbeitsgebrauch (ADR-008 Konsequenzen: er setzt die Löschung aus, nicht die Zugriffsregeln — die Zugriffsregel ist hier die Frist). Zwölf und drei Monate sind interne Initialentscheidungen nach ADR-008. Unsicher: die Einordnung selbst — die Sekundärquellen stützen Verlaufsfotos überwiegend auf Art. 9 Abs. 2 lit. h DSGVO als Teil der Akte (ADR-017, Konsequenzen der Fassung 2).
+
+**Anker.** Klassenzeile `patientenfoto` sowie `app.patient_photo_due_at`, `app.patient_photo_accessible` und `app.delete_due_patient_photos` in `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`; Nachweis in `supabase/tests/patient-photos.test.ts`.
+
+**Änderungspfad.** Andere Fristen: Intervall oder Obergrenze der Klassenzeile · Aufwand `klein`. Alternative aus Bestätigungsfrage 9 (Teil der Akte, zehn Jahre, Widerruf stoppt nur neue Fotos): Klassenzeile auf `patientenakte`, `delete_due_patient_photos` aus dem Widerruf nehmen und `patient_photo_due_at` ohne Widerruf rechnen · Aufwand `mittel`.
+
+### ANN-127 — Eine Ablehnung ist ein eigener Vermerk; die Fotoeinwilligung ist der dritte Zweck
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2) mit dem Wortlaut der Fotoeinwilligung; Erstaufnahme (PRX-EPIC-003)
+
+**Annahme.** `patient_privacy_records` kennt neben Erteilung und Widerruf die Vermerkart `consent_refused` für jeden Zweck: zulässig, solange der Zweck nicht erteilt und nicht schon abgelehnt ist; danach ist eine Erteilung möglich. Die Oberfläche zeigt „abgelehnt am …" als erledigten Stand. Neuer Zweck ist `patient_photos`; der Widerruf dort löscht die Fotos und steht vor dem Vermerken so auf der Seite und der Schaltfläche. Wortlaut der Fotoeinwilligung und ein Satz in der Datenschutzinformation kommen mit B2 — bis dahin nennt die ausgedruckte Information zwei Zwecke, und Fotos echter Personen gibt es nicht (ADR-017 Punkt 41).
+
+**Begründung.** ADR-017 Punkt 35: „Eine Ablehnung ist ein eigener Vermerk, kein Widerruf", und ohne Einwilligung wird genauso behandelt (Art. 7 Abs. 4 DSGVO) — die Erstaufnahme soll „abgelehnt" als erledigt führen, nicht als offenen Punkt. Eine Ablehnung während einer erteilten Einwilligung wäre in der Sache ein Widerruf mit anderer Rechtsfolge; deshalb abgewiesen. Den Druckbogen jetzt zu ändern hieße, eine neue Fassung der Datenschutzinformation vor der Prüfung ihres Wortlauts auszugeben.
+
+**Anker.** Constraints `record_kind`, `purpose` und `purpose_shape` sowie `public.record_patient_privacy_entry()` in `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`; `vermerkartSchema`, `EINWILLIGUNGSZWECKE` und `datenschutzstand` in `src/features/datenschutz/vermerke.ts`; `FOTO_WIDERRUF` in `src/features/datenschutz/PatientDatenschutzPage.tsx`.
+
+**Änderungspfad.** Ablehnung nur für Fotos: eine Bedingung in `record_patient_privacy_entry` und in `moeglicheVermerke` · Aufwand `klein`. Fotoeinwilligung als eigener Druckbogen neben der Datenschutzinformation: ein Blatt in `vorlage.ts` und eine neue Fassung · Aufwand `klein`.

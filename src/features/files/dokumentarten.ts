@@ -19,6 +19,7 @@ export const DOKUMENTARTEN = [
   'befund',
   'arztbrief',
   'klinisches_bild',
+  'patientenfoto',
   'einwilligung',
   'vertrag',
 ] as const;
@@ -30,6 +31,7 @@ export const dokumentartLabels: Record<Dokumentart, string> = {
   befund: 'Befund',
   arztbrief: 'Arztbrief',
   klinisches_bild: 'Klinisches Bild',
+  patientenfoto: 'Patientenfoto',
   einwilligung: 'Einwilligung',
   vertrag: 'Vertrag',
 };
@@ -42,6 +44,10 @@ export const dokumentartHinweise: Record<Dokumentart, string> = {
   // macht - das wäre ein Weg an Einwilligung und Frist vorbei.
   klinisches_bild:
     'Röntgen, MRT, Ultraschall oder ein Bild aus ärztlicher oder klinischer Hand. Kein Foto, das die Praxis selbst von der Person macht.',
+  // ADR-017 Abschnitt G: entsteht nur im Kameradialog im Verlauf, nie hier
+  // über den Dateiwähler - die Dateiliste bietet die Art nicht an.
+  patientenfoto:
+    'Foto, das die Praxis von der Person aufnimmt. Nur mit Einwilligung, nur über die Kamera der Anwendung, gelöscht nach spätestens zwölf Monaten.',
   einwilligung: 'Unterschriebene Einwilligung oder Datenschutzinformation.',
   vertrag: 'Behandlungsvertrag oder vergleichbare Vereinbarung.',
 };
@@ -59,6 +65,7 @@ export const KLINISCHE_DOKUMENTARTEN: readonly Dokumentart[] = [
   'befund',
   'arztbrief',
   'klinisches_bild',
+  'patientenfoto',
 ];
 
 export function istKlinisch(art: Dokumentart): boolean {

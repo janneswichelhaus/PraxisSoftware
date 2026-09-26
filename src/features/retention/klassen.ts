@@ -22,6 +22,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Dokumentation, Verordnungen, Termine mit Behandlungsnachweis und die Stammdaten der Patientin.',
   },
+  patientenfoto: {
+    label: 'Patientenfotos',
+    beschreibung:
+      'Fotos, die die Praxis mit Einwilligung von der Person aufnimmt. Arbeitshilfe neben der Akte, nicht Teil von ihr; beim Widerruf sofort gelöscht (ADR-017).',
+  },
   trainingsverhaeltnis: {
     label: 'Trainingsverhältnis',
     beschreibung:
@@ -90,6 +95,11 @@ export const ANKER_TEXTE: Record<string, string> = {
   event_time: 'ab dem Ereignis',
   case_closed: 'ab Abschluss des Vorgangs',
   none: 'keine automatische Löschung',
+};
+
+/** Die Obergrenze einer Frist: ab wann sie spätestens endet (ADR-017 Punkt 38). */
+export const OBERGRENZE_TEXTE: Record<string, string> = {
+  care_concluded_recorded: 'nach dem festgehaltenen Abschluss der Versorgung',
 };
 
 /** Woher die Frist kommt. */
