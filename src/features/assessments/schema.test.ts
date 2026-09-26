@@ -176,8 +176,10 @@ describe('Block', () => {
     expect(ergebnis.error?.issues[0]?.message).toContain('unvollstaendig');
   });
 
-  it('weist einen gefuellten Block mit Kennzeichen unvollstaendig zurueck', () => {
-    expect(blockSchema.safeParse(block({ status: 'unvollstaendig' })).success).toBe(false);
+  it('nimmt einen gefuellten Block an, an dem die Vorlage abbricht (ANN-118)', () => {
+    // HWS „Therapie Hochzervikal" bricht nach „1. Myofaszial" ab: Der erste
+    // Punkt ist verwendbar, der Block bleibt trotzdem als offen gekennzeichnet.
+    expect(blockSchema.safeParse(block({ status: 'unvollstaendig' })).success).toBe(true);
   });
 
   it.each(['basis', 'weiterfuehrend', 'spezial', 'therapie'])('nimmt die Blockart %s an', (art) => {

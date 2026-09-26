@@ -1,0 +1,235 @@
+{
+  "id": "fuss",
+  "label": "Fuß",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "basis",
+      "label": "Basisuntersuchung Fuß",
+      "art": "basis",
+      "items": [
+        {
+          "id": "fuss_inspektion_palpation",
+          "label": "Inspektion/Palpation",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_belastete_plantarflexion_und_dorsalextension",
+          "label": "Belastete Plantarflexion und Dorsalextension",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_knee_to_wall_test",
+          "label": "Knee to Wall Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "value_field": {
+            "label": "Messwert",
+            "unit": "cm",
+            "input": "zahl"
+          }
+        },
+        {
+          "id": "fuss_de_mit_knieflex_und_knieextension",
+          "label": "DE mit Knieflex und Knieextension",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_pf",
+          "label": "PF",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_usg_varus_valgus",
+          "label": "USG Varus/Valgus",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_ttg",
+          "label": "TTG DE/TTG PF/TTG Abd/TTG Sup/TTG Pronation",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_widerstandstestungen_dehnung",
+          "label": "Widerstandstestungen mit anschließender Dehnung in die Gegenrichtung",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "fuss_widerstandstestungen_dehnung_de_pronation",
+              "label": "DE + Pronation → Dehnung in Inversion"
+            },
+            {
+              "id": "fuss_widerstandstestungen_dehnung_pf_pronation",
+              "label": "PF + Pronation → Dehnung in DE + Add + Sup"
+            },
+            {
+              "id": "fuss_widerstandstestungen_dehnung_pf_supination",
+              "label": "PF + Supination → Dehnung in Eversion"
+            },
+            {
+              "id": "fuss_widerstandstestungen_dehnung_de_supination",
+              "label": "DE + Supination → Dehnung in PF + Abd + Pronation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "weiterfuehrend",
+      "label": "Weiterführende Untersuchung",
+      "art": "weiterfuehrend",
+      "items": [
+        {
+          "id": "fuss_figure_of_eight",
+          "label": "Figure of eight",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_relocation_test",
+          "label": "Relocation Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_anteriore_schublade",
+          "label": "Anteriore Schublade",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_syndesmose",
+          "label": "Syndesmose",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "fuss_syndesmose_squeeze_test",
+              "label": "Squeeze Test"
+            },
+            {
+              "id": "fuss_syndesmose_crossed_leg_test",
+              "label": "Crossed-Leg-Test"
+            },
+            {
+              "id": "fuss_syndesmose_cotton_test_lateral_stress_test",
+              "label": "Cotton Test-Lateral Stress Test"
+            },
+            {
+              "id": "fuss_syndesmose_dorsiflexion_compression_test",
+              "label": "Dorsiflexion Compression Test"
+            },
+            {
+              "id": "fuss_syndesmose_fibula_translationstest",
+              "label": "Schubladen-/Fibula Translationstest Syndesmose"
+            }
+          ]
+        },
+        {
+          "id": "fuss_navicular_drop_test",
+          "label": "Navicular Drop Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "value_field": {
+            "label": "Messwert",
+            "unit": "cm",
+            "input": "zahl"
+          },
+          "hint": "mehr als 1 cm Differenz im Svgl. → Training Gewölbe"
+        },
+        {
+          "id": "fuss_mtp_i_mobilitaet_und_kraft",
+          "label": "MTP I Mobilität und Kraft",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_mobilitaet_tn_cc_cnc",
+          "label": "Mobilität TN-Gelenk/CC-Gelenk/CNC-Gelenk",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_tarsaltunnel",
+          "label": "Tarsaltunnel Dosiflexion-Eversionstest",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "hint": "30-60 Sekunden ESTE halten"
+        },
+        {
+          "id": "fuss_tinels_test",
+          "label": "Tinel´s Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "fuss_kompressionstest",
+          "label": "Kompressionstest",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "hint": "30 Sekunden Druck hinter medialem Malleolus"
+        }
+      ]
+    },
+    {
+      "id": "therapie",
+      "label": "Therapie",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "fuss_myofaszial",
+          "label": "Myofaszial",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "fuss_mmb",
+          "label": "MMB",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "fuss_arthrogen",
+          "label": "Arthrogen",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "fuss_neurophysiologisch",
+          "label": "Neurophysiologisch",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        }
+      ]
+    }
+  ]
+}

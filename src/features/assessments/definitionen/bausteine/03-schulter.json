@@ -1,0 +1,207 @@
+{
+  "id": "schulter",
+  "label": "Schulter",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "basis",
+      "label": "Basisuntersuchung Schulter",
+      "art": "basis",
+      "items": [
+        {
+          "id": "schulter_inspektion_palpation",
+          "label": "Inspektion Palpation",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "schulter_beweglichkeit_in_flex_ext_abd_add",
+          "label": "Beweglichkeit in Flex, Ext, Abd, Add, Ar, Ir",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "schulter_widerstandstests",
+          "label": "Widerstandstests",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "weiterfuehrend",
+      "label": "Weiterführende Untersuchung",
+      "art": "weiterfuehrend",
+      "items": [
+        {
+          "id": "schulter_impingement",
+          "label": "Impingement",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "schulter_impingement_hawkins_kennedy_test",
+              "label": "Hawkins-Kennedy Test"
+            },
+            {
+              "id": "schulter_impingement_neer_test",
+              "label": "Neer-Test"
+            },
+            {
+              "id": "schulter_impingement_painfull_arc_sign",
+              "label": "Painfull Arc Sign"
+            },
+            {
+              "id": "schulter_impingement_empty_can_test",
+              "label": "Empty Can Test"
+            },
+            {
+              "id": "schulter_impingement_widerstand_in_aussenrotation",
+              "label": "Widerstand in Außenrotation"
+            }
+          ]
+        },
+        {
+          "id": "schulter_rm_ruptur",
+          "label": "RM-Ruptur",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "schulter_rm_ruptur_bear_hug_test",
+              "label": "Bear Hug Test"
+            },
+            {
+              "id": "schulter_rm_ruptur_external_rotation_lag_sign",
+              "label": "External Rotation Lag Sign"
+            }
+          ]
+        },
+        {
+          "id": "schulter_laxitaet_instabilitaet",
+          "label": "Laxität/Instabilität",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "schulter_laxitaet_instabilitaet_sulcus_sign",
+              "label": "Sulcus Sign"
+            },
+            {
+              "id": "schulter_laxitaet_instabilitaet_apprehension_test",
+              "label": "Apprehension Test"
+            },
+            {
+              "id": "schulter_laxitaet_instabilitaet_relocation_tet",
+              "label": "Relocation Tet"
+            }
+          ]
+        },
+        {
+          "id": "schulter_zusatztest",
+          "label": "Zusatztest",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "schulter_zusatztest_scapular_posterior_tilting",
+              "label": "Scapular Posterior Tilting"
+            },
+            {
+              "id": "schulter_zusatztest_klavikulabewegung",
+              "label": "Klavikulabewegung"
+            },
+            {
+              "id": "schulter_zusatztest_ctue_beweglichkeit",
+              "label": "CTÜ-Beweglichkeit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "acg",
+      "label": "Untersuchung ACG",
+      "art": "spezial",
+      "items": [],
+      "status": "unvollstaendig"
+    },
+    {
+      "id": "behandlungstechniken",
+      "label": "Behandlungstechniken Schulter",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "schulter_myofasziale_techniken",
+          "label": "Myofasziale Techniken",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt",
+          "hint": "z. B. M. infraspinatus, subscapularis, thorakolumbale Faszie"
+        },
+        {
+          "id": "schulter_mmb",
+          "label": "Mobilisation mit Bewegung (MMB)",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "schulter_arthrogene_mobilisationen",
+          "label": "Arthrogene Mobilisationen (mit Gurt bei Parästhesien)",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt",
+          "subitems": [
+            {
+              "id": "schulter_arthrogene_mobilisationen_gleiten_vpg",
+              "label": "Gleiten/VPG",
+              "hint": "Mobilisation im Glenohumeralgelenk"
+            },
+            {
+              "id": "schulter_arthrogene_mobilisationen_automobilisation",
+              "label": "Automobilisation"
+            },
+            {
+              "id": "schulter_arthrogene_mobilisationen_traktion",
+              "label": "Traktion (neutral oder mit Korrektur)"
+            },
+            {
+              "id": "schulter_arthrogene_mobilisationen_mobilisation_mit_kompression",
+              "label": "Mobilisation mit Kompression"
+            }
+          ]
+        },
+        {
+          "id": "schulter_neuralmobilisation",
+          "label": "Neuralmobilisation",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "schulter_manipulation",
+          "label": "Manipulation",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "schulter_mobilisation_acg_scg",
+          "label": "Mobilisation ACG/SCG",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt",
+          "hint": "bei Hypomobilität"
+        }
+      ]
+    }
+  ]
+}

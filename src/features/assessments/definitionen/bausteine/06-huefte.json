@@ -1,0 +1,160 @@
+{
+  "id": "huefte",
+  "label": "Hüfte",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "untersuchung",
+      "label": "Untersuchung Hüfte",
+      "art": "basis",
+      "items": [
+        {
+          "id": "huefte_rueckenlage",
+          "label": "Rückenlage",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "huefte_rueckenlage_flexion",
+              "label": "Flexion"
+            },
+            {
+              "id": "huefte_rueckenlage_rotation_adduktion_90_flex",
+              "label": "Innen-/Außenrotation/Adduktion in 90° Flex"
+            },
+            {
+              "id": "huefte_rueckenlage_hueftabduktion_adduktion",
+              "label": "Hüftabduktion/-adduktion"
+            },
+            {
+              "id": "huefte_rueckenlage_widerstandstest_rumpfflexion",
+              "label": "Widerstandstest Rumpfflexion"
+            },
+            {
+              "id": "huefte_rueckenlage_hueftflexion",
+              "label": "Hüftflexion"
+            },
+            {
+              "id": "huefte_rueckenlage_abd_adduktion_widerstand",
+              "label": "Abd/Adduktion (Widerstand am Knie), beide Tests auch in 45°/90° Flex"
+            }
+          ]
+        },
+        {
+          "id": "huefte_bauchlage",
+          "label": "Bauchlage",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "huefte_bauchlage_beweglichkeit_extension_innenrotation_aussenrotation",
+              "label": "Beweglichkeit Extension, Innenrotation & Außenrotation"
+            },
+            {
+              "id": "huefte_bauchlage_widerstand_extension_innenrotation_aussenrotation_knieflex_extension",
+              "label": "Widerstand Extension, Innenrotation, Außenrotation, Knieflex/-extension"
+            }
+          ]
+        },
+        {
+          "id": "huefte_weiterfuehrende_untersuchung",
+          "label": "Weiterführende Untersuchung (bei Bedarf)",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "huefte_weiterfuehrende_untersuchung_fadir",
+              "label": "FADIR (+ Kompression)",
+              "hint": "Intraartikuläre Pathologie"
+            },
+            {
+              "id": "huefte_weiterfuehrende_untersuchung_scour_test",
+              "label": "Scour Test",
+              "hint": "Intraartikuläre Pathologie"
+            },
+            {
+              "id": "huefte_weiterfuehrende_untersuchung_passive_innenrotation_unter_zentrierung",
+              "label": "Passive Innenrotation unter Zentrierung",
+              "hint": "Intraartikuläre Pathologie"
+            }
+          ]
+        },
+        {
+          "id": "huefte_angrenzende_bereiche",
+          "label": "Untersuchung angrenzender Bereiche (bei Bedarf)",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "hint": "Symphyse, SIG, LWS, Knie"
+        },
+        {
+          "id": "huefte_neurologische_untersuchung",
+          "label": "Neurologische Untersuchung",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "huefte_funktionelle_untersuchung",
+          "label": "Funktionelle Untersuchung",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "therapie",
+      "label": "Therapie",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "huefte_myofaszial",
+          "label": "Myofaszial",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "huefte_mmbs",
+          "label": "MMBs",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "huefte_arthrogen",
+          "label": "Arthrogen",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt",
+          "subitems": [
+            {
+              "id": "huefte_arthrogen_kapsel_traktion_vpt",
+              "label": "Traktion, VPT (mit Gurt) in Bauch- oder Rückenlage",
+              "hint": "Kapsel"
+            },
+            {
+              "id": "huefte_arthrogen_knorpel_kompression",
+              "label": "Mobilisation mit Kompression",
+              "hint": "Knorpel"
+            },
+            {
+              "id": "huefte_arthrogen_knochen_aussenrotationsimpuls",
+              "label": "Außenrotationsimpuls in 90° Flex",
+              "hint": "Knochen (Neurophysiologisch)"
+            },
+            {
+              "id": "huefte_arthrogen_knochen_traktion_extension_impuls",
+              "label": "Traktion mit Extension Impuls",
+              "hint": "Knochen (Neurophysiologisch)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

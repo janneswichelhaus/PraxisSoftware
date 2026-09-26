@@ -1,0 +1,91 @@
+{
+  "id": "kiefer",
+  "label": "Kiefer",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "basis",
+      "label": "Basisuntersuchung Kiefer",
+      "art": "basis",
+      "items": [
+        {
+          "id": "kiefer_inspektion_palpation",
+          "label": "Inspektion/Palpation",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_gelenkbewegung",
+          "label": "Gelenkbewegung (Öffnen/Schließen im Wechsel)",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_palpation_muskulatur",
+          "label": "Palpation M. temporalis, masseter, pterygoideus medialis/lateralis",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_aktive_mundoeffnung",
+          "label": "Aktive Mundöffnung",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_aktive_medio_laterotrusion",
+          "label": "Aktive Medio-/Laterotrusion",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_aktive_protrusion_retrusion",
+          "label": "Aktive Protrusion/Retrusion",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_jede_richtung_auch_passiv",
+          "label": "Jede Richtung auch passiv",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_widerstandstests",
+          "label": "Widerstandstests",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_traktion",
+          "label": "Traktion",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_anterior_posterior_medial_lateral_gleiten",
+          "label": "Anterior/Posterior/Medial/Lateral Gleiten",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "kiefer_kompression",
+          "label": "Kompression",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    }
+  ]
+}

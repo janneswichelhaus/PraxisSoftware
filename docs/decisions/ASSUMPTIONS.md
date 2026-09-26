@@ -1508,3 +1508,27 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `besucheDesTages`, `wegeDesTages` und `liegeHeute` in `src/features/today/tagesstart.ts`; Tests `src/features/today/tagesstart.test.ts`.
 
 **Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/today/MyDayPage.tsx` · Aufwand `klein`.
+
+### ANN-118 — Übertragung der MT-Bausteine: drei Lücken offen, SIG vollständig, Hinweise getrennt
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes, wenn er die drei Lücken nachliefert (Plan D2)
+
+**Annahme.** Die neun Regionen stehen wörtlich aus der Vorlage in `definitionen/bausteine/`. Schulter „Untersuchung ACG", LWS „Behandlung" und HWS „Therapie Hochzervikal" tragen `status: "unvollstaendig"` — auch die beiden, vor deren Abbruch Items stehen; LWS „Untersuchung SIG" ist mit sechs Items vollständig. Text hinter „ – " und reine Durchführungsklammern sind Hinweise, die nie in den Dokumentationstext gehen; eine dritte Gliederungsebene wird flach, die Zwischenüberschrift steht als Hinweis. Seitengetrennt sind Extremitäten und Kiefer, an der Wirbelsäule nur Neurologie, Neurodynamik und SIG; die Seite bleibt beim Abhaken freiwillig.
+
+**Begründung.** Plan D2 (am Original-PDF nachgesehen) und Arbeitsauftrag §2: Lücken sichtbar lassen, nicht aus eigenem Wissen füllen. Das Schema aus FRB-EPIC-000 kannte nur leere unvollständige Blöcke; die Vorlage bricht aber zweimal nach verwertbaren Punkten ab. Der Hinweis zum Navicular Drop nennt einen Grenzwert mit Folge („→ Training Gewölbe"); er ist fester Vorlagentext, hängt nicht vom eingegebenen Wert ab und erscheint weder im Text noch als Bewertung (ADR-006 Punkt 11). Unsicher: ob eine externe MDR-Prüfung (B1) auch einen solchen festen Hinweis beanstandet.
+
+**Anker.** `blockSchema` in `src/features/assessments/schema.ts`; Regeln in `src/features/assessments/definitionen/bausteine/README.md`; Test `src/features/assessments/bausteine.test.ts`.
+
+**Änderungspfad.** Lücken nachliefern: Items in die Regionsdatei, Version heben, Zähltest anpassen · Aufwand `klein`. Andere Seitenregel oder Hinweis entfernen: das Feld in den Regionsdateien · Aufwand `klein`.
+
+### ANN-119 — Tippfehler der Bausteinvorlage bleiben stehen
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes (Plan D3)
+
+**Annahme.** „Relocation Tet", „Supinatin", „Lachmann", „Painfull Arc Sign" und die übrigen Schreibweisen der Vorlage stehen unverändert in den Bezeichnungen und damit im erzeugten Dokumentationstext; die Kennungen sind davon unabhängig.
+
+**Begründung.** Plan D3 schlägt Stehenlassen vor, der Arbeitsauftrag §2 verlangt es bis zu Jannes' Freigabe, und der Wortlauttest hält jede Bezeichnung gegen die Quelldatei. Ohne Antwort gilt der Vorschlag (STATUS, Blocker D2/D3). Nachteil: Die Tippfehler erscheinen im Dokumentationstext der Akte.
+
+**Anker.** `src/features/assessments/definitionen/bausteine/README.md`; Test „lässt die Tippfehler der Vorlage stehen" in `src/features/assessments/bausteine.test.ts`.
+
+**Änderungspfad.** Korrigieren: Labels in den Regionsdateien, Version heben, Quelldatei mit Vermerk anpassen, damit der Wortlauttest die neue Schreibweise hält · Aufwand `klein`. Kennungen bleiben.
