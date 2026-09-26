@@ -148,6 +148,14 @@ export const AUDIT_ACTIONS = [
   'patient_course_event.created',
   'patient_course_event.removed',
   'patient_course_event.viewed',
+  // DOK-005a: Therapiebericht an die Verordner:in (ANN-121); der Druckknopf
+  // gilt als Export (ADR-010 Punkt 2).
+  'therapy_report.created',
+  'therapy_report.updated',
+  'therapy_report.completed',
+  'therapy_report.discarded',
+  'therapy_report.viewed',
+  'therapy_report.exported',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -248,6 +256,12 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'patient_course_event.created': 'Ereignis im Verlauf gesetzt',
   'patient_course_event.removed': 'Ereignis im Verlauf entfernt',
   'patient_course_event.viewed': 'Ereignisse im Verlauf gelesen',
+  'therapy_report.created': 'Therapiebericht begonnen',
+  'therapy_report.updated': 'Therapiebericht-Entwurf geändert',
+  'therapy_report.completed': 'Therapiebericht abgeschlossen',
+  'therapy_report.discarded': 'Therapiebericht-Entwurf verworfen',
+  'therapy_report.viewed': 'Therapiebericht gelesen',
+  'therapy_report.exported': 'Therapiebericht gedruckt',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -281,6 +295,7 @@ export const auditSubjectLabels: Record<string, string> = {
   patient_file: 'Datei der Akte',
   questionnaire_response: 'Fragebogen',
   patient_course_event: 'Ereignis im Verlauf',
+  therapy_report: 'Therapiebericht',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',

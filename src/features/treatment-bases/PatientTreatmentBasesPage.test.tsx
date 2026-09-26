@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TreatmentBasesApi from './api';
+import type * as BerichtApi from '@/features/therapy-reports/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const fetchPatientTreatmentBases = vi.fn();
@@ -21,7 +22,35 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
+const fetchBerichteDerAkte = vi.fn();
+
+vi.mock('@/features/therapy-reports/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof BerichtApi>();
+  return {
+    ...actual,
+    fetchBerichteDerAkte: (id: string) =>
+      fetchBerichteDerAkte(id) as Promise<BerichtApi.Berichtszeile[]>,
+  };
+});
+
 const { Verordnungsbereich } = await import('./PatientTreatmentBasesPage');
+
+function berichtszeile(rest: Partial<BerichtApi.Berichtszeile> = {}): BerichtApi.Berichtszeile {
+  return {
+    id: 'b1',
+    treatment_basis_id: 'v1',
+    status: 'abgeschlossen',
+    created_at: '2026-09-20T08:00:00.000Z',
+    author_name: 'Anna Beispiel',
+    completed_at: '2026-09-21T08:00:00.000Z',
+    completed_on: '2026-09-21',
+    completed_by_name: 'Anna Beispiel',
+    recommendation: 'Synthetisch: Keine weitere Verordnung.',
+    recommendation_by_name: 'Anna Beispiel',
+    recommendation_on: '2026-09-21',
+    ...rest,
+  };
+}
 
 const patient = testPatient();
 
@@ -86,6 +115,83 @@ describe('Verordnungsbereich der Akte', () => {
     fetchPatientTreatmentBases.mockResolvedValue([]);
     fetchPatientTreatmentBasesClinical.mockResolvedValue([]);
     fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
+    fetchBerichteDerAkte.mockReset();
+    fetchBerichteDerAkte.mockResolvedValue([]);
+  });
+
+  // ---------------------------------------------------------------------------
+  // DOK-005: Therapiebericht an der Verordnung. Die Empfehlung zum
+  // Verordnungsende steht mit Quelle und Datum (ANN-014); schreiben dürfen die
+  // behandelnden Rollen, office liest und druckt.
+  // ---------------------------------------------------------------------------
+  describe('Therapiebericht (DOK-005)', () => {
+    it('zeigt die Empfehlung aus dem abgeschlossenen Bericht mit Quelle und Datum', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+      fetchBerichteDerAkte.mockResolvedValue([
+        berichtszeile({ id: 'b0', status: 'entwurf', recommendation: 'Synthetisch: Entwurf.' }),
+        berichtszeile(),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(await screen.findByText('Synthetisch: Keine weitere Verordnung.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Anna Beispiel, 21.09.2026, aus dem Therapiebericht'),
+      ).toBeInTheDocument();
+      // Ein Entwurf ist noch keine Empfehlung an irgendwen.
+      expect(screen.queryByText('Synthetisch: Entwurf.')).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Bericht vom 21.09.2026/ })).toHaveAttribute(
+        'href',
+        '/patienten/' + patient.id + '/berichte/b1/druck',
+      );
+      expect(screen.getByRole('link', { name: 'Entwurf von Anna Beispiel' })).toHaveAttribute(
+        'href',
+        '/patienten/' + patient.id + '/berichte/b0',
+      );
+    });
+
+    it('bietet der Therapeut:in einen neuen Bericht an, am Selbstzahler nicht', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([
+        verordnung(),
+        verordnung({
+          id: 'sz1',
+          treatment_basis_kind: 'self_pay',
+          prescriber_id: null,
+          prescriber_name: null,
+          prescriber_practice_name: null,
+          diagnosis: null,
+        }),
+      ]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent(),
+        kontingent({ treatment_basis_id: 'sz1' }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findAllByRole('button', { name: 'Therapiebericht schreiben' }),
+      ).toHaveLength(1);
+    });
+
+    it('lässt office den Bericht lesen, aber keinen schreiben', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+      fetchBerichteDerAkte.mockResolvedValue([berichtszeile({ status: 'entwurf' })]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+      // Auch ein Entwurf führt office auf das Blatt, nicht ins Formular.
+      expect(
+        await screen.findByRole('link', { name: 'Entwurf von Anna Beispiel' }),
+      ).toHaveAttribute('href', '/patienten/' + patient.id + '/berichte/b1/druck');
+      expect(
+        screen.queryByRole('button', { name: 'Therapiebericht schreiben' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('fragt ohne Leserecht gar nicht erst nach Berichten', () => {
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['patient'])} />);
+      expect(fetchBerichteDerAkte).not.toHaveBeenCalled();
+    });
   });
 
   it('zeigt der Therapeut:in die klinischen Felder', async () => {

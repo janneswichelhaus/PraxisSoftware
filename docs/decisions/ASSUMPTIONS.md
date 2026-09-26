@@ -241,13 +241,13 @@ Datenschutz · offen · 2026-09-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-014 — „Empfehlung zum Verordnungsende" ist eine erfasste Angabe, keine Systemempfehlung
 
-Recht · offen · 2026-09-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; B1 (externe MDR-Abgrenzung, ADR-006 Punkt 7)
+Recht · offen · 2026-09-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; B1 (externe MDR-Abgrenzung, ADR-006 Punkt 7). Seit DOK-005 (2026-09-26) wird die Empfehlung im Therapiebericht geschrieben, mit Verfasser:in und Tag
 
 **Annahme.** Das Feld „Empfehlung zum Verordnungsende" nimmt die Empfehlung der Therapeut:in auf, die sie selbst formuliert und verantwortet; die Anwendung erzeugt, ergänzt und bewertet sie nicht. Daneben zeigt sie ausschließlich eine Rechnung („noch 3 von 10") und, wenn nichts mehr offen ist, den neutralen Sachsatz „Kontingent ausgeschöpft" — keine Handlungsempfehlung, keine Prognose, keine Ampel, keine Erinnerung.
 
 **Begründung.** ADR-006 Punkt 2 erlaubt Erfassen, Speichern und Darstellen von Gesundheitsinformationen, Punkt 4 verbietet eigene Therapieempfehlungen; eine von einem Menschen geschriebene Empfehlung zu speichern und anzuzeigen fällt unter Punkt 2. Die Differenz „verordnet minus genutzt" ist eine veröffentlichte Rechenvorschrift ohne klinische Aussage. Regulatorisch zählt auch die Beschriftung, deshalb heißt das Feld „Empfehlung der Therapeut:in zum Verordnungsende". Unsicher: ob die externe Prüfung aus B1 den Sachsatz bereits als Handlungsaufforderung liest.
 
-**Anker.** Spalte `treatment_bases.follow_up_recommendation` mit Spaltenkommentar in `supabase/migrations/20260918120000_treatment_basis.sql`; Bestandstext im Formular in `src/features/treatment-bases/TreatmentBasisFormFields.tsx` (seit VER-EPIC-002 nicht mehr neu erfassbar, ANN-065); Darstellung von Empfehlung und Restkontingent in `src/features/treatment-bases/PatientTreatmentBasesPage.tsx`, der Sachsatz „Kontingent ausgeschöpft“ in `src/features/appointments/AppointmentSeriesPage.tsx`.
+**Anker.** Spalte `treatment_bases.follow_up_recommendation` mit Spaltenkommentar in `supabase/migrations/20260918120000_treatment_basis.sql`; Bestandstext im Formular in `src/features/treatment-bases/TreatmentBasisFormFields.tsx` (seit VER-EPIC-002 nicht mehr neu erfassbar, ANN-065); Darstellung von Empfehlung und Restkontingent in `src/features/treatment-bases/PatientTreatmentBasesPage.tsx`, der Sachsatz „Kontingent ausgeschöpft“ in `src/features/appointments/AppointmentSeriesPage.tsx`; seit DOK-005 die Spalte `therapy_reports.recommendation` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql` und ihre Anzeige an der Verordnung in `src/features/therapy-reports/BerichteDerVerordnung.tsx`.
 
 **Änderungspfad.** Feld oder Sachsatz anders beschriften: eine Stelle in der Oberfläche · Aufwand `klein`. Feld ganz entfernen: Spalte und Formularfeld zurückbauen · Aufwand `klein`. Eine automatische Erinnerung oder Bewertung wäre keine Änderung dieser Annahme, sondern `MDR_REVIEW_REQUIRED` nach ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10.
 
@@ -1379,7 +1379,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: wenn P4/P5 
 
 ### ANN-107 — Das Körperschema ist Jannes' Zeichnung; markiert wird mit einem Kreis an der Stelle, gespeichert Stelle und nächster Bereich
 
-Praxisprozess · entschieden (Jannes) · 2026-09-26 · Jannes · — · Wiedervorlage: mit DOK-005 (Körperschema im Bericht)
+Praxisprozess · entschieden (Jannes) · 2026-09-26 · Jannes · — · Wiedervorlage: erledigt mit DOK-005 — das Körperschema steht im Therapiebericht als dieselbe Zeichnung mit dem Tag der Erhebung (ANN-122)
 
 **Annahme.** Grundlage ist die Zeichnung, die Jannes am 2026-09-26 selbst gezeichnet und zur Nutzung im Repository gegeben hat (Vorder- und Rückansicht, als WebP 820 × 749, Weiß transparent). Ein Tipp setzt einen Kreis in der Hauptfarbe an genau dieser Stelle, ein Tipp auf den Kreis entfernt ihn; höchstens 30 Kreise. Gespeichert werden je Kreis die Stelle relativ zum Bild und der Bereich des nächstgelegenen von 47 Ankerpunkten; weiter als 60 Bildpunkte von jedem Anker setzt nichts. Die Liste zum Aufklappen setzt den Kreis auf den Anker.
 
@@ -1544,3 +1544,51 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Phase P6 de
 **Anker.** `useBausteinAuswahl` in `src/features/assessments/bausteinauswahl.ts` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; Einbindung in `src/features/documentation/TreatmentNotePage.tsx` und `CompleteTreatmentPage.tsx`; Tests dort und in `src/features/assessments/BausteinFeld.test.tsx`.
 
 **Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`.
+
+### ANN-121 — Der Therapiebericht ist ein gespeicherter Datensatz; beim Abschluss friert er als Snapshot ein
+
+Recht · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; mit Weg 3 aus B14 (serverseitiges PDF nach OPS-001)
+
+**Annahme.** Ein Therapiebericht hängt an genau einer Verordnung und hat zwei Zustände: `entwurf` (frei änderbar, verwerfbar) und `abgeschlossen` (als `jsonb`-Snapshot mit `schema_version` eingefroren, unveränderlich per Trigger auch für postgres). Eine Korrektur ist ein neuer Bericht; eine Verordnung mit Bericht lässt sich nicht löschen. Gedruckt wird über den Browser (B14 Weg 1); der Druckknopf gilt als Export (`therapy_report.exported`).
+
+**Begründung.** Die Roadmap nennt eine Druckansicht, aber eine rein flüchtige Ansicht könnte später nicht belegen, was an die Verordner:in ging — der Bericht gehört als Schreiben zur Akte (§630f BGB) und in die Auskunft nach Art. 15. Das Muster ist der Rechnungs-Snapshot (ANN-077): Spätere Änderungen an Dokumentation oder Stammdaten erreichen einen abgeschlossenen Bericht nicht. Unsicher: ob die Prüfung die abgelegte Datei selbst verlangt; die kommt erst mit Weg 3.
+
+**Anker.** `public.therapy_reports`, `app.therapy_report_unveraenderlich` und `public.complete_therapy_report` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/api.ts`.
+
+**Änderungspfad.** Nur Druckansicht ohne Ablage: Tabelle und Funktionen zurückbauen, die Empfehlung braucht dann einen eigenen Ort · Aufwand `mittel`. Serverseitiges PDF: Ablage nach ADR-017 an den abgeschlossenen Bericht hängen · Aufwand `mittel`.
+
+### ANN-122 — Was in den Bericht geht, kreuzt die Therapeut:in an; nichts ist vorbelegt, alles wörtlich
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in der Sichtung (Befund Schritt 8)
+
+**Annahme.** Zur Auswahl stehen die finalisierten Einträge der ganzen Akte (die 200 jüngsten, die der Verordnung zuerst, weitere zugeklappt, höchstens 50 im Bericht) und abgeschlossene, nicht ersetzte Erhebungen mit Körperschema; angekreuzt ist nichts. Der Bericht übernimmt Einträge wörtlich mit Tag und Verfasser:in, das Körperschema als Bild mit dem Tag der Erhebung, dazu Diagnose, Heilmittel und die **gezählten** stattgefundenen Termine mit erstem und letztem Tag. Eigener Text und Empfehlung stehen mit Verfasser:in und Tag der letzten inhaltlichen Änderung.
+
+**Begründung.** §17 und ADR-006 Punkt 4: Eine Vorauswahl „wichtiger" Einträge wäre eine Auswahl nach klinischem Gehalt. Übernehmen ohne Kürzen folgt der engen Lesart aus ADR-006 Punkt 8. Die Auswahl hält den Bericht zugleich knapp — an die Verordner:in geht, was sie braucht, nicht die Akte (Art. 5 Abs. 1 lit. c DSGVO). Skalen und Verlaufsereignisse fehlen, bis FRB-EPIC-004 sie liefert.
+
+**Anker.** `app.therapy_report_pruefen` und `app.therapy_report_dokument` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/TherapieberichtPage.tsx`.
+
+**Änderungspfad.** Andere Auswahlmenge oder Obergrenze: die beiden Funktionen und `EINTRAEGE_MAX` · Aufwand `klein`. Verlaufsereignisse oder Skalen dazu: ein Feld im Dokument und ein Abschnitt im Blatt · Aufwand `klein`.
+
+### ANN-123 — Der Briefkopf kommt aus den Praxis-Stammdaten, ohne Steuer- und Bankangaben
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Annahme.** Kopf und Absenderzeile tragen Name, Anschrift, Telefon und E-Mail aus `practice_billing_profiles`; fehlen die Stammdaten, steht nur der Name der Organisation. Die Serverfunktion liest diese Felder für den Bericht auch für therapist und team_lead, die die Stammdaten sonst nicht lesen; Steuernummer und Bankverbindung liefert sie nicht. Dazu die schwarze Wortmarke, die `marke/README.md` für Rechnung und Fax vorsieht.
+
+**Begründung.** Ein Bericht an die Verordner:in braucht einen Absender, und die Anschrift der eigenen Praxis ist gegenüber den eigenen Beschäftigten nicht schutzbedürftig. Das Leserecht auf die ganze Stammdatenzeile bleibt bei owner und office (ABR-000); die Projektion gibt nur, was auf den Brief gehört (ADR-013 Punkt 9 Nr. 3). Unsicher: ob eine Einzelpraxis mit Privatanschrift das anders sieht.
+
+**Anker.** Der Schlüssel `praxis` in `app.therapy_report_dokument`, `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`.
+
+**Änderungspfad.** Nur der Name der Organisation: den Zweig mit `practice_billing_profiles` streichen · Aufwand `klein`. Eigener Briefkopf je Standort: Feld an `locations` und hier lesen · Aufwand `mittel`.
+
+### ANN-124 — Die Anwendung verschickt keinen Bericht; ob er an die Verordner:in gehen darf, entscheidet die Praxis
+
+Recht · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); vor dem ersten Bericht mit echten Daten
+
+**Annahme.** Der Bericht wird gedruckt, als PDF gespeichert oder gefaxt — von der Praxis, außerhalb der Anwendung. Eine Einwilligung oder Schweigepflichtentbindung für die Übermittlung wird nicht erfasst und nicht geprüft; die Seite sagt nur „Die Anwendung verschickt nichts".
+
+**Begründung.** Die Weitergabe an die verordnende Ärzt:in ist eine Offenbarung nach § 203 StGB und braucht eine Grundlage — üblich ist die Anforderung des Berichts auf der Verordnung mit Wissen der Patient:in oder eine ausdrückliche Einwilligung. Welche die Praxis verwendet, ist eine Frage der Datenschutzberatung (§15.2) und blockiert das Bauen mit synthetischen Daten nicht, wohl aber den ersten echten Bericht. Ein Versand aus der Anwendung wäre ein neuer externer Datenfluss (ADR-002) und ist nicht Teil von DOK-005.
+
+**Anker.** Der Hinweis unter dem Druckknopf in `src/features/therapy-reports/TherapieberichtDruckPage.tsx`.
+
+**Änderungspfad.** Vermerk „Bericht angefordert / Einwilligung liegt vor" vor dem Druck: ein Feld am Bericht und eine Bedingung am Knopf · Aufwand `klein`. Versand aus der Anwendung: eigenes Epic nach ADR-002 · Aufwand `groß`.

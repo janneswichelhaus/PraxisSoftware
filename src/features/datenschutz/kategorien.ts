@@ -76,6 +76,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Von der Praxis vermerkte Ereignisse wie eine Operation oder eine Erkrankung, mit Tag und kurzer Notiz.',
   },
+  therapy_reports: {
+    label: 'Therapieberichte',
+    beschreibung:
+      'Berichte an die verordnende Ärzt:in: Entwürfe und abgeschlossene Berichte, diese so, wie sie abgeschlossen wurden.',
+  },
   patient_files: {
     label: 'Dateien',
     beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme — ohne den Inhalt selbst.',
