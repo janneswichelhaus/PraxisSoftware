@@ -126,29 +126,34 @@ describe('AppShell', () => {
     expect(betrieb.some((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
   });
 
-  it('gibt jeder Seite dieselbe Breite (UI-001)', () => {
-    // Der gemeldete Fehler: beim Wechsel zwischen Kalender und jeder anderen
-    // Seite sprang das ganze Geruest, weil allein der Kalender die breite
-    // Spalte bekam. Verglichen wird der Rahmen um den Inhalt - er traegt die
-    // Breitenklassen.
+  it('haelt das Geruest auf jeder Seite gleich; nur Flaechen reichen bis an den Rand', () => {
+    // UI-001: Beim Wechsel zwischen Kalender und jeder anderen Seite sprang
+    // das ganze Geruest - Kopfzeile, Navigation und Inhalt -, weil allein der
+    // Kalender die breite Spalte bekam. Die Kopfzeile bleibt deshalb ueberall
+    // dieselbe. Der Inhalt darf seit BEF-043 (ANN-114) beim Kalender die
+    // ganze Flaeche nutzen; alle Listen- und Textseiten teilen die Kappung.
     const rahmen = (pfad: string) => {
-      const { unmount } = renderWithProviders(
+      const { unmount, container } = renderWithProviders(
         <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
           <p>Inhalt</p>
         </AppShell>,
         pfad,
       );
-      const klassen = screen.getByRole('main').className;
+      const klassen = {
+        inhalt: screen.getByRole('main').className,
+        kopf: container.querySelector('header')!.className,
+      };
       unmount();
       return klassen;
     };
 
-    expect(rahmen('/kalender')).toBe(rahmen('/patienten'));
-    expect(rahmen('/kalender')).toBe(rahmen('/'));
-    // Seit DS-001 gibt es eine Kappung (1200 px), aber dieselbe auf jeder
-    // Seite - der Sprung entstand nicht durch die Kappung, sondern dadurch,
-    // dass sie je Route eine andere war.
-    expect(rahmen('/kalender')).toContain('max-w-inhalt');
+    const kalender = rahmen('/kalender');
+    const patienten = rahmen('/patienten');
+    expect(kalender.kopf).toBe(patienten.kopf);
+    expect(patienten.inhalt).toBe(rahmen('/').inhalt);
+    expect(patienten.inhalt).toBe(rahmen('/touren').inhalt);
+    expect(patienten.inhalt).toContain('max-w-inhalt');
+    expect(kalender.inhalt).not.toContain('max-w-inhalt');
   });
 
   it('fuehrt die Suche genau einmal - auf jeder Breite dasselbe Feld (UX-013)', () => {

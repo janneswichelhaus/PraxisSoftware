@@ -294,6 +294,20 @@ export const mehrSymbol = symbole.mehr;
  * Organisatorisches
  * landet und nicht in einem allgemeineren Bereich.
  */
+/**
+ * Seiten, die die ganze Fläche neben der Seitenleiste nutzen (BEF-043, ANN-114).
+ *
+ * Die Kappung auf 1200 px (DS-001) ist für Listen und Fließtext gedacht, damit
+ * eine Zeile nicht auseinanderläuft. Ein Raster hat diese Sorge nicht: Jeder
+ * Pixel mehr ist eine breitere Spalte. Hier stehen deshalb nur Flächen-Ansichten,
+ * keine Listen.
+ */
+const RANDLOSE_SEITEN = ['/kalender'] as const;
+
+export function istRandlos(pathname: string): boolean {
+  return (RANDLOSE_SEITEN as readonly string[]).includes(pathname);
+}
+
 export function aktiverBereich(
   bereiche: Arbeitsbereich[],
   pathname: string,

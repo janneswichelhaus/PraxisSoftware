@@ -6,7 +6,7 @@ import { Wortmarke } from '@/components/ui/Wortmarke';
 import { type CurrentUser } from '@/features/session/types';
 import { Funktionssuche } from './Funktionssuche';
 import { useAbmeldeanfrage } from './abmeldeschutz';
-import { aktiverBereich, arbeitsbereiche, mehrSymbol, tableiste } from './navigation';
+import { aktiverBereich, arbeitsbereiche, istRandlos, mehrSymbol, tableiste } from './navigation';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
 
 /**
@@ -245,11 +245,19 @@ export function AppShell({
             Seitenleiste (DS-001). Die Kappung ist die eine Stelle, an der
             eine Zahl entscheidet: ohne sie liefe eine Listenzeile auf einem
             1920er Bildschirm über 1670 px, und der Status stünde einen
-            halben Meter vom Namen entfernt. Der Rahmen bleibt dabei auf
-            jeder Seite derselbe — gesprungen wird nirgends mehr. */}
+            halben Meter vom Namen entfernt.
+
+            Flächen-Ansichten wie der Kalender sind davon ausgenommen
+            (BEF-043, ANN-114): Sie reichen von Rand zu Rand, mit gerade so
+            viel Abstand, dass nichts an der Kante klebt. Der Abstand unter
+            der Kopfzeile ist überall auf das Nötige geschrumpft (BEF-044). */}
         <main
           id="inhalt"
-          className="max-w-inhalt mx-auto w-full min-w-0 px-5 py-8 pb-28 sm:px-8 sm:pb-10"
+          className={
+            istRandlos(pathname)
+              ? 'w-full min-w-0 px-2 pt-2 pb-28 sm:px-3 sm:pt-3 sm:pb-4'
+              : 'max-w-inhalt mx-auto w-full min-w-0 px-5 pt-5 pb-28 sm:px-8 sm:pt-6 sm:pb-10'
+          }
         >
           {aktuell && aktuell.unterpunkte.length > 0 ? (
             // Eigener Schlüssel je Bereich: Eine aufgeklappte Vorschau bleibt
