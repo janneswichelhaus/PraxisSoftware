@@ -142,8 +142,8 @@ in den Etappen darunter.
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | Sichtung |
 | 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → G6c | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | ~~G6c: Wahl zu den Schreibpfaden~~ (2026-09-26: wie empfohlen); vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
-| 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → ~~UX-EPIC-002~~ (gebaut 2026-09-26) → UX-EPIC-003 | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
-| 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 | — | D2/D3 aus dem FRB-Plan; Sichtung |
+| 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → UX-EPIC-002 → UX-EPIC-003 | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
+| 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 → STA-EPIC-001 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
 | 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | DSN-001 und ADR-023 bestätigen |
 | 5 | **Angebote** | ANG-EPIC-001 → ANG-EPIC-002 → KND-EPIC-001 | — | Abo- und Paketpreise (bis dahin synthetisch) |
@@ -273,7 +273,7 @@ Oberfläche kommen deshalb die Test-Umgebung und das Fundament der Bedienung.
 | Loop | Ergebnis | Zuschnitt | Voraussetzung |
 | --- | --- | --- | --- |
 | ~~**OPS-002a**~~ | **gebaut 2026-09-25** — Jannes öffnet die Anwendung auf dem eigenen Handy, von überall; Auslieferung nach grüner CI auf `main`, Seed auf Knopfdruck (ANN-100, ANN-101) | Test-Umgebung nach G5, **vorgezogen**: Supabase-Projekt in der EU nur mit synthetischen Daten, Hosting der Oberfläche nach B16 ([`hosting-optionen.md`](../decisions/hosting-optionen.md)), eigene Domain, Zugang geschützt, Deployment aus `main` nur dorthin; Seed mit einer Praxiswoche. Kein Produktivprojekt (§3.2) | Jannes legt Konten an (B16) |
-| ~~**UX-EPIC-002**~~ | **gebaut 2026-09-26** — Die Anwendung spricht die Sprache der Praxis (ANN-108 bis ANN-112) | Begriffsliste aus Jannes' Sammlung (Beschriftungen, Knöpfe, Meldungen) als eine Quelle im Code; Bedienprinzipien (ein Hauptknopf je Ansicht, was nicht gebraucht wird, ist eingeklappt, Handy zuerst); Navigation und Arbeitsbereiche danach durchgesehen; Bildschirmfotos vorher und nachher | ~~Begriffsliste von Jannes~~ (2026-09-26: Begriffe in Ordnung); erste Stories BEF-035 bis BEF-040 (R6) |
+| **UX-EPIC-002** | Die Anwendung spricht die Sprache der Praxis | Begriffsliste aus Jannes' Sammlung (Beschriftungen, Knöpfe, Meldungen) als eine Quelle im Code; Bedienprinzipien (ein Hauptknopf je Ansicht, was nicht gebraucht wird, ist eingeklappt, Handy zuerst); Navigation und Arbeitsbereiche danach durchgesehen; Bildschirmfotos vorher und nachher | ~~Begriffsliste von Jannes~~ (2026-09-26: Begriffe in Ordnung); erste Stories BEF-035 bis BEF-040 und UX-002f bis UX-002h gebaut 2026-09-26 (ANN-108 bis ANN-112), danach BEF-041 bis BEF-044 (R6) |
 | **UX-EPIC-003** | Der Tag beginnt am Rad mit dem, was zählt | Tagesansicht fürs Handy als Startseite (aus PRX-EPIC-002 vorgezogen): erster Weg, Vorschau auf den nächsten, kurze Hinweise zur Person, **Behandlungsliege heute: ja, ab dem n-ten Besuch** (§9; Merkmal an der Person, in der Akte setzbar, im Befund ab FRB-EPIC-003), bisherige Doku mit einem Tipp; offene Punkte der Erstaufnahme als Hinweis, sobald PRX-EPIC-003 sie liefert | UX-EPIC-002 |
 
 ### Block 2 — Kern fertig
@@ -301,13 +301,16 @@ Patientin eine Neuaufnahme — deshalb gleich nach der Tagesroute.
 
 **Etappe P — Praxisverwaltung.** Die Ideen aus
 [`../product/ideen/10-praxisverwaltung.md`](../product/ideen/10-praxisverwaltung.md),
-die den Tag erleichtern. Der Komfortteil steht als PRX-EPIC-004 in Block 9.
+die den Tag erleichtern. Der Komfortteil steht als PRX-EPIC-004 in Block 9;
+die Kennzahlen sind als **STA-EPIC-001** daraus vorgezogen (2026-09-26,
+Grundsatz 3: Steuerung ist für den Owner Kernfunktion, nicht Komfort).
 
 | Loop | Ergebnis | Zuschnitt | Quelle |
 | --- | --- | --- | --- |
 | **PRX-EPIC-001** | Ein freier Platz findet eine Patientin, nicht umgekehrt | Warteliste mit Zeitfenstern und Nachrücken, automatische Terminsuche als Vorschlagsliste, Gebietstage für die Terminvergabe | `IDEA-PRX-003`, `-008`, `-031` |
 | **PRX-EPIC-002** | Am Termin steht, was man vor der Tür wissen muss | Vertretungs-Kurzblick (aufklappbar, auditiert), „Mitnehmen" aus den letzten Befunden, Abrechnungslage und Verordnungszähler am Termin, Termin abhaken mit Heilmittel und Kontingent | `IDEA-PRX-034`, `-016`, `-035`, `-037`, `-009`, `-039` |
 | **PRX-EPIC-003** | Nichts fällt durch | **Erstaufnahme-Checkliste** (Verordnungsfoto, Befundbogen, Einwilligungen, Befund, Liege; offen in Tagesansicht, Aktenkopf und Büroliste, bis erledigt — §5), Aufgaben und Wiedervorlagen mit Patientenbezug, Anrufliste für morgen mit gespeichertem Stand, Dublettenprüfung und Zusammenführen, Verordnung per Kamera, Erinnerung am Rezeptende und an den vergessenen Abschluss | `IDEA-PRX-019`, `-005`, `-041`, `-018`, `-023`, `IDEA-LZK-007`, `-009` |
+| **STA-EPIC-001** | Die Praxis wird über fünf Zahlen gesteuert, nicht aus dem Bauch | Eigener Arbeitsbereich **Statistiken**, nur `owner` (ADR-004), nur Praxissummen (§20, B6): **(1)** Umsatz und Zahlungseingang des Monats gegen Vormonat und Ziel, **(2)** offene Posten mit Alter, **(3)** Auslastung der nächsten zwei Wochen (gebuchte gegen verfügbare Behandlungsstunden), **(4)** Verordnungen, die in 14 Tagen enden oder deren Kontingent aufgebraucht ist, ohne Anschluss — samt ungedeckten Terminen, **(5)** Ausfälle der letzten vier Wochen mit Ausfallhonoraren. Zu jeder Zahl ein Zielwert (von Jannes einstellbar) und **die eine Handlung**, die sie auslöst (Mahnung, Anrufliste, freie Fenster, Verordner:in anfragen); Zeitraumvergleich; CSV. Berechnung deterministisch in einer Quelle mit Testfällen je Kennzahl, Werte aus Abrechnung (ADR-009) und Terminen (ADR-018), keine zweite Datenhaltung | `IDEA-PRX-025` |
 
 ### Block 3 — Etappe TR: Trainingsbereich
 
@@ -441,7 +444,7 @@ Leistungskontrolle (§20, B6).
 | **KI-EPIC-001** | Diktieren statt tippen, mit geprüftem Entwurf | Gateway nach ADR-005 mit `mock`-Adapter, Sprachdokumentation nach §6.3 mit Weg ohne Sprechen (§5), Nutzung sichtbar; Anbieter C6 in Block 11 | `IDEA-KI-001`, `-005`, `-007` |
 | **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen | Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen** — jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt | Zuschnitt in [`MAP-LOOPS.md`](MAP-LOOPS.md); zuerst **E-24** (liefern die Radprofile Manöver? — ein Aufruf; ohne Ja entfällt das Epic) | `IDEA-PRX-044`, §20.1 |
-| **PRX-EPIC-004** | Komfort für die Praxisführung | Kennzahlen, Export für die Steuerberatung (Format als Annahme bis B4), Farbcodierung je Terminart und Person, Kalender-Abo (Bedenken: ohne Namen), Planungskarte der aktiven Adressen (Bedenken), Kartenzahlung beim Hausbesuch hinter Adapter (Grundsatz 5) | `IDEA-PRX-025`, `-026`, `-021`, `-024`, `-033`, `-022` |
+| **PRX-EPIC-004** | Komfort für die Praxisführung | Kennzahlen für Training, Abo und Pakete nachziehen (auf STA-EPIC-001), Export für die Steuerberatung (Format als Annahme bis B4), Farbcodierung je Terminart und Person, Kalender-Abo (Bedenken: ohne Namen), Planungskarte der aktiven Adressen (Bedenken), Kartenzahlung beim Hausbesuch hinter Adapter (Grundsatz 5) | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
 | **UI-003** | Feinschliff und Barrierefreiheit über alle Seiten (G17) | Feindesign, PWA-Manifest, Befunde aus den Ablaufrunden nach `OPTIMIERUNG.md` | — |
 
 ### Blöcke 10 bis 14 — vom Freeze bis zur Eröffnung
@@ -706,7 +709,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | — | — |
 | A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
-| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | fertig | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034) | — | Sichtung am Handy offen: Kernprozess Schritte 1, 2, 7 bis 10 |
+| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | in_arbeit | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034) | — | Rest: BEF-041 bis BEF-044 (zweite Sichtungsrunde) |
 | B | MAP-002 In-App-Kartenprototyp | fertig | 2026-09-21 | `c85c56e` … `ea2d9aa` | — | — |
 | B | MAP-003 Fahrradroute als Linie | fertig | 2026-09-21 | `cbc6c07`, `71756aa`, `d66ea31` | — | — |
 | B | MAP-004 Fahrzeiten und Erreichbarkeit | fertig | 2026-09-22 | `ce5dbe4` … `0e27b4f` | — | — |
@@ -748,6 +751,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.2 | 2026-09-26 | **STA-EPIC-001 Statistiken** aus PRX-EPIC-004 vorgezogen ans Ende von Block 2 (nach PRX-EPIC-003): eigener Bereich mit fünf Kennzahlen zur Praxissteuerung, von Claude im Auftrag von Jannes entschieden. PRX-EPIC-004 behält Export, Farben, Kalender-Abo, Planungskarte, Kartenzahlung und die Kennzahlen für Training und Angebote. |
 | 7.1 | 2026-09-25 | **MAP-006 gebaut** (Block 2): Koordinaten bei der Adresse, echte Tourenseite mit Karte, Route, Fahrzeiten und Fahrpuffer nach §8.1 als Warnung, Handoff mit Koordinaten, Datenschutz-Paket [`kartendienst.md`](../datenschutz/kartendienst.md). Vorschau `/touren` und Prototyp `/touren/karte` entfallen. ANN-094 bis ANN-097; E12 Punkt 3a vorläufig beantwortet. |
 | 7.0 | 2026-09-23 | **Umbau U2** nach dem Produktgespräch ([`UMBAU.md`](UMBAU.md)). Neuer **Block 1a „Handy und UX-Fundament"** (OPS-002a Test-Umgebung vorgezogen, UX-EPIC-002 Begriffe und Bedienprinzipien, UX-EPIC-003 Tagesansicht fürs Handy mit Liege und Vorschau). Neu **DOK-006** Fotos in der Akte, **DSN-001** Ansichten der Plattform vor Block 4; Erstaufnahme-Checkliste in PRX-EPIC-003, Liege und Weg ohne Sprechen in FRB-EPIC-003, Verordnungsfoto mit KI-Vorschlag in KI-EPIC-002. ANG-EPIC-001 ist das **Nachsorge-Abo**, ANG-EPIC-002 das Paket nach Zeitraum, KND-EPIC-001 der Übergang aus der Behandlung. **Anfragen ab Anfang 2027 parallel** (Block 11, R1). Regel 1 und Definition of Done: **Sichtung statt Abnahme je Epic**, Bildschirmfotos in jeder Oberflächen-PR. Grundsatz 3: Bedienbarkeit ist kein Komfort. `UI-001` des Blocks 9 heißt **UI-003** (Kennung war doppelt). Vermerke 6.0 bis 6.2 in die Chronik. |
 

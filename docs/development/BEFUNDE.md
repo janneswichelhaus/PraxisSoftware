@@ -1358,3 +1358,118 @@ keine zweite Fassung neben der Marke, kein Umfärben; die Kopie in
 maskierbar: vollflächig Tiefgrün, die Wortmarke im Schutzkreis. Das Manifest
 nennt deshalb dieselbe Datei, eine neue entsteht nicht (ANN-110,
 `marke/README.md`).
+
+### BEF-041 — Chrome bietet die Installation nicht mehr an
+
+|         |                                                                                    |
+| ------- | ---------------------------------------------------------------------------------- |
+| Datum   | 2026-09-26                                                                         |
+| Bereich | Web-Manifest, Installation als App (Chrome)                                        |
+| Quelle  | Freie Sichtung durch Jannes (Test-Umgebung), nach UX-002e                          |
+| Status  | offen                                                                              |
+| Berührt | `public/manifest.webmanifest` (`display`); ANN-110; BEF-040                        |
+
+**Beobachtung.** Über Chrome lässt sich die Anwendung nicht mehr installieren;
+vor UX-002e ging das.
+
+**Ursache im Code.** Seit UX-002e gibt es ein Web-Manifest, und es sagt
+`"display": "browser"`. Damit erklärt die Seite selbst, dass sie im Browser-Tab
+laufen will — Chrome wertet sie deshalb als **nicht installierbar** und bietet
+höchstens eine Verknüpfung an, die im Tab öffnet. Ohne Manifest hatte Chrome
+die Seite vorher auf eigene Faust als App installiert. ANN-110 nennt genau
+diese Folge unter „Unsicher" und den Weg im Änderungspfad.
+
+**Erwartet.** Chrome (Desktop und Android) bietet „App installieren" an; die
+App öffnet im eigenen Fenster mit dem maskierbaren Symbol (BEF-040 bleibt
+gelöst).
+
+**Weg.** `display` auf `standalone` oder `minimal-ui` — beides macht die Seite
+für Chrome ohne Service Worker installierbar (ADR-015 Punkt 16 bleibt
+unberührt). `standalone` gibt am Handy die volle Höhe, verlangt aber eigene
+Zurück-Wege in der Oberfläche und öffnet auch unter iOS ab dem
+Startbildschirm ohne Browserleiste; `minimal-ui` behält Zurück und Neu laden
+in einer schmalen Leiste (Chrome), iOS bleibt beim Browser. Der Loop
+entscheidet und schreibt ANN-110 fort.
+
+### BEF-042 — Ein Dauertermin verlangt erst eine Patient:in, ein neuer Termin nicht
+
+|         |                                                                                       |
+| ------- | ------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-26                                                                            |
+| Bereich | Kalender (`/kalender`), Anlegen aus dem Raster (CAL-019), Terminserie (CAL-007)        |
+| Quelle  | Freie Sichtung Kalender durch Jannes (Test-Umgebung), therapist                       |
+| Status  | offen                                                                                 |
+| Berührt | `src/features/appointments/CalendarPage.tsx` (Eintrag `dauertermin`), `AppointmentSeriesPage.tsx`, Route `/patienten/:patientId/verordnungen/:grundlageId/serie`; ADR-018, ADR-020 |
+
+**Beobachtung.** Im Anlegen-Menü ist *Dauertermin* ausgegraut, solange der
+Kalender nicht auf eine Patient:in gefiltert ist („Zuerst die Patient:in
+wählen"). *Neuer Termin* geht dagegen ohne Vorauswahl — die Patient:in wird
+im Formular gesucht.
+
+**Erwartet.** Beide Wege gleich: Zeit im Raster markieren, *Dauertermin*
+wählen, **dann** die Patient:in suchen (und, wenn sie mehrere hat, die
+Grundlage), dann Rhythmus und Anzahl wie bisher.
+
+**Ursache im Code.** Die Terminserie hängt an der Adresse einer
+Behandlungsgrundlage (`/patienten/…/verordnungen/…/serie`), weil deren
+Kontingent die Anzahl vorgibt (CAL-007). Einen Einstieg ohne Patient:in gibt
+es nicht; der Kalender graut den Eintrag deshalb aus.
+
+**Hinweis.** Fachlich bleibt die Serie an einer Grundlage (ADR-020); nur die
+Reihenfolge der Fragen ändert sich — ein vorgeschalteter Schritt „für wen,
+aus welcher Grundlage?" mit Tag und Beginn aus der Markierung. Hat die
+Person genau eine offene Grundlage, entfällt die zweite Frage.
+
+### BEF-043 — Der Kalender steckt in einem Kasten und lässt Rand frei
+
+|         |                                                                                      |
+| ------- | ------------------------------------------------------------------------------------ |
+| Datum   | 2026-09-26                                                                           |
+| Bereich | Kalender (`/kalender`); Seitenrahmen aller Bereiche                                   |
+| Quelle  | Freie Sichtung Kalender durch Jannes (Test-Umgebung), therapist                      |
+| Status  | offen                                                                                |
+| Berührt | `src/app/AppShell.tsx` (`<main>`: `max-w-inhalt`, `px-5 sm:px-8`, `py-8`), `src/features/appointments/CalendarGrid.tsx` (Rahmen `rounded-card border mt-4`); BEF-001, BEF-039 |
+
+**Beobachtung.** Das Raster sitzt als umrandete Karte in der Inhaltsfläche,
+die auf 1200 px gekappt und mittig gestellt ist, mit Innenabstand rundherum.
+Links und rechts bleibt Fläche ungenutzt, am breiten Bildschirm viel davon.
+
+**Erwartet.** Der Kalender reicht **vom linken bis zum rechten Rand** der
+Fläche neben der Seitenleiste, ohne eigenen Kasten — so wenig verschenkter
+Platz wie möglich, ohne dass es vollgestopft wirkt. Allgemein stört Jannes
+ungenutzter oder schlecht genutzter Raum; der Loop sieht die übrigen Bereiche
+mit derselben Frage durch.
+
+**Ursache im Code.** Der Rahmen in `AppShell` gilt für jede Seite gleich
+(DS-001: 1200 px, damit Listenzeilen nicht auseinanderlaufen). Für ein Raster
+ist die Kappung falsch — die Begründung dort nennt Listen, nicht Gitter.
+
+**Hinweis.** Die Kappung für Listen und Fließtext kann bleiben; der Kalender
+(und später andere Flächen-Ansichten wie die Karte) braucht eine
+randlose Variante des Rahmens. Bildschirmfotos bei 1280, 1920 und 375 px.
+
+### BEF-044 — Die Zeile „Kalender · Touren" kostet Höhe; Touren gehört in den Kalender
+
+|         |                                                                                      |
+| ------- | ------------------------------------------------------------------------------------ |
+| Datum   | 2026-09-26                                                                           |
+| Bereich | Arbeitsbereich Kalender: Unterreiter (`SubNav`), Touren (`/touren`)                   |
+| Quelle  | Freie Sichtung Kalender durch Jannes (Test-Umgebung), therapist                      |
+| Status  | offen                                                                                |
+| Berührt | `src/app/navigation.tsx` (`unterpunkte` von `termine`), `src/app/AppShell.tsx` (`SubNav`, `py-8`), `src/features/tours/TourenPage.tsx`; BEF-001, BEF-039 |
+
+**Beobachtung.** Zwischen Kopfzeile und dem Raster steht eine eigene Zeile
+mit *Kalender · Touren*, darüber viel Abstand (`py-8` des Rahmens). Dass man
+im Kalender ist, zeigen Seitenleiste bzw. untere Leiste ohnehin.
+
+**Erwartet.** Die Zeile entfällt. Touren wird **im Kalender** erreichbar —
+etwa als dritte Ansicht neben Tag und Woche („Tour" des gezeigten Tages und
+der gewählten Person) oder als Knopf am Tageskopf, der die Tourenliste mit
+Karte für diesen Tag öffnet. Der Abstand unter der Kopfzeile schrumpft auf
+das Nötige.
+
+**Hinweis.** Die Tourenseite hat heute dieselben Fragen wie der Kalender —
+Tag und Person —, deshalb liegt die Ansicht dort nahe. `/touren` bleibt als
+Adresse erhalten (Verweise aus der Übersicht). Ob die Zeile bei anderen
+Bereichen (Patient:innen, Team, Betrieb) ebenfalls wegfallen kann, prüft
+derselbe Loop — BEF-001 beschreibt dieselbe Ursache an der Dokumentation.

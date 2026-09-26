@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-26 · letzte Session: UX-EPIC-002 fertig (Begriffe, Navigation, BEF-033, BEF-034)
+# Status · Stand 2026-09-26 · letzte Session: UX-EPIC-002 weiter (Begriffe, Navigation, BEF-033, BEF-034)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,13 +6,13 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**UX-EPIC-002 gebaut** (Block 1a): Begriffe stehen in einer Quelle (`src/lib/begriffe.ts`), ein Gate hält abgelöste Wörter fern; im Kalender heißt der Eintrag ohne Patient:in überall **„Fehlzeit"**. Die Aufbewahrungsseite zeigt „§". **Organisatorisches** öffnet auf den Mitarbeitenden, die Vorschauen stehen eingeklappt; trainer sieht „Arbeitszeiten" nicht mehr. Pull Request offen, wartet auf deinen Merge. Fortschritt **36,8 %**.
+**UX-EPIC-002, weitere Stories gebaut** (Block 1a; offen bleiben BEF-041 bis BEF-044): Begriffe stehen in einer Quelle (`src/lib/begriffe.ts`), ein Gate hält abgelöste Wörter fern; im Kalender heißt der Eintrag ohne Patient:in überall **„Fehlzeit"**. Die Aufbewahrungsseite zeigt „§". **Organisatorisches** öffnet auf den Mitarbeitenden, die Vorschauen stehen eingeklappt; trainer sieht „Arbeitszeiten" nicht mehr. Pull Request offen, wartet auf deinen Merge. Fortschritt **36,3 %**.
 
 ## Danach — Bauen
 
 1. **G6c** — abgewiesene Schreibzugriffe nachweisbar, **wie empfohlen** entschieden (2026-09-26): HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, ohne Eintrag für den Rest. `/weiter G6c`
-2. **UX-EPIC-003** — Tagesansicht fürs Handy als Startseite (Block 1a), mit dem, was die Sichtung von UX-EPIC-002 ergibt. `/weiter UX-EPIC-003`
-3. Danach Block 2 weiter mit **FRB-EPIC-003** (Befund aus Bausteinen); D2/D3 gelten ohne Antwort wie im FRB-Plan vorgeschlagen
+2. **UX-EPIC-002, Rest** — **BEF-041 bis BEF-044** aus der zweiten Sichtungsrunde (Chrome-Installation, Dauertermin ohne Vorauswahl, Kalender randlos, Touren in den Kalender statt eigener Zeile); Begriffe, Navigation, BEF-033 und BEF-034 sind gebaut. `/weiter UX-EPIC-002`
+3. Danach **UX-EPIC-003** (Tagesansicht fürs Handy) und Block 2 weiter mit **FRB-EPIC-003** (Befund aus Bausteinen); D2/D3 gelten ohne Antwort wie im FRB-Plan vorgeschlagen; am Ende von Block 2 neu **STA-EPIC-001 Statistiken** (fünf Kennzahlen zur Praxissteuerung, Roadmap 7.2)
 
 ## Prüfverfahren
 
@@ -20,7 +20,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Blocker (Jannes-seitig)
 
-- **Sichtung** (E-6), ab jetzt am Handy auf der Test-Umgebung (erste freie Sichtung Kalender 2026-09-26: BEF-035 bis BEF-040, Stoff für UX-EPIC-002/003): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; Bedienung in [`DEVELOPMENT.md`](DEVELOPMENT.md), „Test-Umgebung".
+- **Sichtung** (E-6), ab jetzt am Handy auf der Test-Umgebung (freie Sichtung Kalender 2026-09-26: BEF-035 bis BEF-040, zweite Runde BEF-041 bis BEF-044, Stoff für UX-EPIC-002/003): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; Bedienung in [`DEVELOPMENT.md`](DEVELOPMENT.md), „Test-Umgebung".
 - **Kalender und Begriffe am Handy sichten** (UX-EPIC-002): Schritte 1, 2 und 7 bis 10 in [Kernprozess](sichtung/kernprozess.md) — Lupe, Kopf über dem Raster, zweiter Tipp, zwei Finger, „Jetzt", Android-Symbol, „Fehlzeit" statt „Ereignis", Organisatorisches mit eingeklappter Vorschau. Zeigt Android weiter den weißen Kreis, ist der Weg in **ANN-110** beschrieben (`minimal-ui`). Zu bestätigen: **ANN-108**, **ANN-109**, **ANN-111** (passt „Fehlzeit" auch für ein Teammeeting?) und **ANN-112** (Vorschauen eingeklappt oder ganz aus dem Menü).
 - **Anamnese sichten** (neu, FRB-EPIC-002): Schritte 3 bis 5 in [Befund](sichtung/befund.md); **ANN-104** ist bestätigt (2026-09-26); für die externe Prüfung nach ADR-006 bleibt sie im Prüfpaket.
 - **Bögen für NRS, PSFS und Veränderungsfrage** (ANN-099): die Vorlagen als PDF nach `quellen/scores/pdf/` — dann werden die drei auf 1.0.0 aktiviert und erscheinen im Befund und im Verlauf.

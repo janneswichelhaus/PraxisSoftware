@@ -30,9 +30,14 @@ function mittwoch(versatzWochen = 0): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Volle Stunde in der Seed-Arbeitszeit, je Lauf leicht verschoben. */
-function stunde(versatz = 0): string {
-  return `${String(8 + ((LAUF + versatz) % 3)).padStart(2, '0')}:00`;
+/**
+ * Volle Stunde in der Seed-Arbeitszeit, je Lauf leicht verschoben: 08, 09 oder
+ * 10 Uhr. Mit `spanne = 2` nur 08 oder 09 Uhr - für einen Test, der den Termin
+ * noch eine Stunde weiterzieht, ohne in die Seed-Mittagspause (12 bis 13 Uhr)
+ * zu geraten.
+ */
+function stunde(versatz = 0, spanne = 3): string {
+  return `${String(8 + ((LAUF + versatz) % spanne)).padStart(2, '0')}:00`;
 }
 
 const terminAnlegen = (
@@ -277,7 +282,9 @@ test.describe('CAL-006: Verschieben', () => {
     page,
   }) => {
     const tag = mittwoch(5);
-    const von = stunde();
+    // Beginn um 10 Uhr hieße Ziel 11:05-12:05 - das ragt in die Mittagspause,
+    // und die Rückfrage meldete zu Recht „außerhalb der Arbeitszeit".
+    const von = stunde(0, 2);
     const bis = `${String(Number(von.slice(0, 2)) + 1).padStart(2, '0')}:00`;
 
     await anmelden(page, KONTEN.office);
