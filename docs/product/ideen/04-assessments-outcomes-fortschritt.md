@@ -238,3 +238,155 @@ Grenze aus ADR-006.
 
 **Offen.** Woher die Bilder kommen (lizenziert, eigene Zeichnung, eigenes
 Foto) und ob sie je Instrument oder je Testschritt hängen.
+
+---
+
+### IDEA-OUT-010 — Bewegungsstern für LWS und HWS
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-26 · auf Wunsch von Jannes abgelegt |
+| Berührt | FRB-EPIC-003, IDEA-OUT-011, [ADR-006](../../adr/ADR-006-medical-device-boundary.md), [quellen/README.md](../../../quellen/README.md) |
+
+**Idee.** Die Basisuntersuchung der Wirbelsäule als Bewegungsstern zum
+Antippen: sechs Strahlen — Flexion, Extension, Lateralflexion rechts und
+links, Rotation rechts und links —, je Strahl „frei", „eingeschränkt" oder
+„schmerzhaft", auf Wunsch mit Notiz. Im Text etwa
+„Bewegungsstern: Ext ❗ endgradig, LF re ❗, übrige frei".
+
+**Warum.** Heute ist „Alle Bewegungsrichtungen …" an der LWS ein einziger Test
+mit o.B. oder positiv — das sagt nicht, welche Richtung. Der Bewegungsstern
+ist in der deutschen Physiotherapie die übliche Form, und er ist schneller
+abgehakt als sechs Zeilen.
+
+**Vorsicht.** Die Vorlage ist wörtlich übernommen (Regel 1 in
+`quellen/README.md`); sechs Strahlen statt eines Tests ändern ihren Aufbau
+und brauchen Jannes' Freigabe. Der Stern gibt nur wieder, was die
+Therapeut:in wählt — keine Einfärbung nach Mustern, keine abgeleitete
+Aussage (ADR-006 Punkt 2 und 4).
+
+**Offen.** Ob drei Zustände reichen oder Schmerz und Einschränkung zugleich
+möglich sein müssen; ob der Stern auch als Bild im Text der Akte erscheinen
+soll oder nur als Zeile.
+
+---
+
+### IDEA-OUT-011 — Richtung getrennt statt „rechts/links" in einem Test
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-26 · auf Wunsch von Jannes abgelegt |
+| Berührt | FRB-EPIC-003, IDEA-OUT-010, [quellen/README.md](../../../quellen/README.md) |
+
+**Idee.** Tests, deren Bezeichnung zwei Richtungen nennt — an der HWS
+„Lateralflexion rechts/links", „Rotation rechts/links", im Hochzervikalen
+„Axiale Rotation rechts/links …" —, bekommen je Richtung ein eigenes
+Ergebnis, etwa als zwei Unterpunkte.
+
+**Warum.** Mit einem Ergebnis für beide Richtungen lässt sich nicht
+festhalten, welche betroffen ist; heute bleibt dafür nur die Notiz. Die
+Seitenwahl hilft hier nicht: Es ist eine Bewegungsrichtung, keine
+Körperseite.
+
+**Vorsicht.** Ändert die Übertragung der Vorlage (Unterpunkte, die dort nicht
+stehen) und braucht deshalb Jannes' Freigabe; die Kennungen der heutigen
+Tests bleiben, die neuen kommen hinzu, die Version der Region steigt.
+
+**Offen.** Welche Tests genau; ob IDEA-OUT-010 sie an der HWS ohnehin ersetzt.
+
+---
+
+### IDEA-OUT-012 — Segmenthöhe antippen statt tippen
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-26 · auf Wunsch von Jannes abgelegt |
+| Berührt | FRB-EPIC-003 |
+
+**Idee.** An segmentbezogenen Tests der Wirbelsäule — PA-Mobilisation,
+Lateralgleiten, Prone Instability Test, lokale Lateralflexion — eine Reihe
+Segmente zum Antippen (C0 bis Th1, Th12 bis S1), mehrere wählbar. Im Text
+etwa „❗ PA-Translation L4/5".
+
+**Warum.** Die Höhe ist der eigentliche Befund und wird heute in die Notiz
+getippt, am Handy mühsam und in wechselnder Schreibweise („L4/5", „L4-L5",
+„LWK 4").
+
+**Offen.** Welche Tests eine Segmentreihe bekommen — das gehört als Angabe in
+die Regionsdatei, nicht in den Code; ob Segmente je Seite gewählt werden.
+
+---
+
+### IDEA-OUT-013 — Eigene Ergebnisse für wiederholte Bewegungen
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-26 · auf Wunsch von Jannes abgelegt |
+| Berührt | FRB-EPIC-003, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
+
+**Idee.** Wiederholte Bewegungstests (HWS und LWS, auch im Liegen) bekommen
+statt o.B., positiv, nicht getestet die Antworten **Zentralisation**,
+**Peripherisation** und **keine Veränderung**, dazu die Richtung, in der
+wiederholt wurde.
+
+**Warum.** Bei wiederholten Bewegungen ist nicht „positiv" der Befund,
+sondern wie sich die Symptome verlagern. Mit o.B. oder positiv geht genau
+diese Information verloren oder landet in der Notiz.
+
+**Vorsicht.** Die Antwort wählt die Therapeut:in; die Anwendung leitet daraus
+keine Einteilung, keine Behandlungsrichtung und keine Übung ab (ADR-006,
+Verbot 1 in §17).
+
+**Offen.** Ob ein eigener Ergebnistyp je Test in der Regionsdatei steht; ob
+„Richtung" eine feste Auswahl oder Text ist.
+
+---
+
+### IDEA-OUT-014 — Schnellnotizen unter „positiv"
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-26 · auf Wunsch von Jannes abgelegt |
+| Berührt | FRB-EPIC-003, [IDEA-PRX-043](10-praxisverwaltung.md) |
+
+**Idee.** Wer bei einem Test „positiv" tippt, bekommt darunter kurze Zusätze
+zum Antippen — etwa „schmerzhaft", „eingeschränkt", „endgradig", „Kraft ↓",
+„reproduziert Beschwerden" —, die in die Notiz gehen. Tippen bleibt möglich.
+
+**Warum.** Am Handy ist Tippen der langsamste Teil des Abhakens, und die
+meisten Notizen an einem positiven Test sind dieselben wenigen Wörter.
+
+**Offen.** Ob die Liste fest ist, je Praxis gepflegt wird oder aus den
+vorhandenen Textbausteinen kommt (IDEA-PRX-043); ob sie je Testart
+verschieden ist (Beweglichkeit anders als Provokation).
+
+---
+
+### IDEA-OUT-015 — Kopfzeile mit den positiven Tests
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-09-26 · auf Wunsch von Jannes abgelegt |
+| Berührt | FRB-EPIC-003, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) |
+
+**Idee.** Der Text aus den Bausteinen beginnt mit einer Zeile, die alle
+positiv getesteten Punkte nennt, etwa „Positiv: FADIR, IR in 90° Flex
+rechts". Darunter folgt der Text wie bisher.
+
+**Warum.** Wer die Akte später öffnet, sucht zuerst, was gefunden wurde. Bei
+einer vollständigen Basisuntersuchung stehen die zwei positiven Tests sonst
+zwischen zwanzig unauffälligen.
+
+**Vorsicht.** Die Zeile wiederholt nur, was die Therapeut:in selbst gewählt
+hat, in der Reihenfolge der Definition — keine Gewichtung, kein
+„Hauptbefund", kein Wort wie „auffällig" oder „Verdacht" (ADR-006 Punkt 2
+und 4). Sie ist Teil des Vorschlags und wird mit ihm übernommen oder
+gelöscht.
+
+**Offen.** Ob die Zeile je Block oder einmal für den ganzen Text steht.
