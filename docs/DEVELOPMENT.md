@@ -393,7 +393,9 @@ deckungsgleich.
    per Ausnahme rollt die Transaktion und damit auch ihren Protokolleintrag
    zurück. Die Lesepfade weisen deshalb seit OPS-004, G6a und G6b mit null
    Zeilen ab und schreiben über `app.record_denied_read` `outcome = 'denied'`;
-   für die Schreibpfade steht die Wahl bei Jannes (ROADMAP G6c).
+   für die Schreibpfade hat Jannes am 2026-09-26 gewählt (ROADMAP G6c): bestätigte
+   Transaktion mit HTTP 403 für Rollen und Konten, Legal Hold und Löschaufträge,
+   ohne Eintrag für den Rest — gebaut wird das in G6c.
 7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
    Auswertung oder Alarmierung.
 8. **Die Dateiablage ist gebaut, aber nicht produktiv** — vor der ersten

@@ -10,7 +10,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Danach — Bauen
 
-1. **G6c**, sobald deine Wahl unter „Blocker" da ist
+1. **G6c** — abgewiesene Schreibzugriffe nachweisbar, **wie empfohlen** entschieden (2026-09-26): HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, ohne Eintrag für den Rest. `/weiter G6c`
 2. **UX-EPIC-003** — Tagesansicht fürs Handy als Startseite (Block 1a), mit dem, was die Sichtung von UX-EPIC-002 ergibt. `/weiter UX-EPIC-003`
 3. Danach Block 2 weiter mit **FRB-EPIC-003** (Befund aus Bausteinen); D2/D3 gelten ohne Antwort wie im FRB-Plan vorgeschlagen
 
@@ -24,7 +24,6 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 - **Kalender und Begriffe am Handy sichten** (UX-EPIC-002): Schritte 1, 2 und 7 bis 10 in [Kernprozess](sichtung/kernprozess.md) — Lupe, Kopf über dem Raster, zweiter Tipp, zwei Finger, „Jetzt", Android-Symbol, „Fehlzeit" statt „Ereignis", Organisatorisches mit eingeklappter Vorschau. Zeigt Android weiter den weißen Kreis, ist der Weg in **ANN-110** beschrieben (`minimal-ui`). Zu bestätigen: **ANN-108**, **ANN-109**, **ANN-111** (passt „Fehlzeit" auch für ein Teammeeting?) und **ANN-112** (Vorschauen eingeklappt oder ganz aus dem Menü).
 - **Anamnese sichten** (neu, FRB-EPIC-002): Schritte 3 bis 5 in [Befund](sichtung/befund.md); **ANN-104** ist bestätigt (2026-09-26); für die externe Prüfung nach ADR-006 bleibt sie im Prüfpaket.
 - **Bögen für NRS, PSFS und Veränderungsfrage** (ANN-099): die Vorlagen als PDF nach `quellen/scores/pdf/` — dann werden die drei auf 1.0.0 aktiviert und erscheinen im Befund und im Verlauf.
-- **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
 - **Logfrist für Betriebslogs (R14 alt, jetzt R9):** (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg. Empfehlung: nach G3. Gebraucht vor echten Daten.
 - **BEF-026 / B13 (wieder offen):** Die Plattform braucht Mails an Patient:innen; Empfehlung: eigener SMTP-Anbieter, geprüft in Block 11. STAFF-004 ruht bis dahin.
 - **D2/D3 aus dem FRB-Plan** vor FRB-EPIC-003; ohne Antwort gilt der Vorschlag dort.
