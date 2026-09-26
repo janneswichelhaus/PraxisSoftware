@@ -1,0 +1,241 @@
+{
+  "id": "lws",
+  "label": "LWS",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "basis",
+      "label": "Basisuntersuchung LWS",
+      "art": "basis",
+      "items": [
+        {
+          "id": "lws_alle_bewegungsrichtungen",
+          "label": "Alle Bewegungsrichtungen, wenn nötig mit wiederholten Bewegungen (auch der Sideglide an der Wand",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "weiterfuehrend",
+      "label": "Weiterführende Untersuchung",
+      "art": "weiterfuehrend",
+      "items": [
+        {
+          "id": "lws_wiederholte_bewegungen_liegen",
+          "label": "Wiederholte Bewegungen im Liegen (z.B. auch mit PA)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_3_dimensionale_bewegungen",
+          "label": "3-dimensionale Bewegungen",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_pa_translation_auch_in_extension",
+          "label": "PA-Translation (auch in Extension)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_axiale_rotation",
+          "label": "Axiale Rotation",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_prone_instability_test",
+          "label": "Prone Instability Test",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "neurologisch",
+      "label": "Neurologische Untersuchungen (bei Bedarf)",
+      "art": "spezial",
+      "items": [
+        {
+          "id": "lws_motorik",
+          "label": "Motorik",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "lws_motorik_l4_l5_fersenstand",
+              "label": "L4/L5 → Fersenstand 10x → Beurteilung einer Schwäche im Seitenvergleich"
+            },
+            {
+              "id": "lws_motorik_s1_wadenheben",
+              "label": "S1 → 10x Wadenheben einbeinig"
+            },
+            {
+              "id": "lws_motorik_l2_iliopsoas",
+              "label": "L2 → Iliopsoas"
+            },
+            {
+              "id": "lws_motorik_l3_quadriceps",
+              "label": "L3 → Quadriceps"
+            },
+            {
+              "id": "lws_motorik_l4_tibialis_anterior",
+              "label": "L4 → Tibialis anterior"
+            },
+            {
+              "id": "lws_motorik_l5_extensor_hallucis_longus",
+              "label": "L5 → Extensor hallucis longus"
+            },
+            {
+              "id": "lws_motorik_s1_m_peronei",
+              "label": "S1 → M. peronei"
+            }
+          ]
+        },
+        {
+          "id": "lws_dermatome",
+          "label": "Dermatome",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_reflexe",
+          "label": "Reflexe",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "lws_reflexe_patellasehnenreflex_l3",
+              "label": "Patellasehnenreflex L3"
+            },
+            {
+              "id": "lws_reflexe_achillessehnenreflex_s1",
+              "label": "Achillessehnenreflex S1"
+            },
+            {
+              "id": "lws_reflexe_babinski_chaddock",
+              "label": "Babinski Reflex/Chaddock (zentrale Problematik?)"
+            }
+          ]
+        },
+        {
+          "id": "lws_nervenprovokationstests",
+          "label": "Nervenprovokationstests",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "lws_nervenprovokationstests_straight_leg_raise",
+              "label": "Straight leg raise (evtl. mit Add/Ir)"
+            },
+            {
+              "id": "lws_nervenprovokationstests_slump",
+              "label": "SLUMP (evtl. mit Add/Ir)"
+            },
+            {
+              "id": "lws_nervenprovokationstests_femoraler_slump",
+              "label": "Femoraler SLUMP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sig",
+      "label": "Untersuchung SIG",
+      "art": "spezial",
+      "items": [
+        {
+          "id": "lws_ilium_dorsal",
+          "label": "Ilium dorsal",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_ilium_medial",
+          "label": "Ilium medial",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_thight_trust",
+          "label": "Thight trust",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_sacral_thrust",
+          "label": "Sacral thrust",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_pelvic_torsion",
+          "label": "Pelvic torsion",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "lws_slr_widerstand_rumpf",
+          "label": "SLR (mit Widerstand Rumpf)",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "behandlung",
+      "label": "Behandlung",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "lws_wiederholte_bewegungen",
+          "label": "Wiederholte Bewegungen",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "lws_myofaszial",
+          "label": "Myofaszial",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "lws_mmb",
+          "label": "MMB",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "lws_globale_oeffnungstechniken",
+          "label": "Globale Öffnungstechniken",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt"
+        }
+      ],
+      "status": "unvollstaendig"
+    }
+  ]
+}

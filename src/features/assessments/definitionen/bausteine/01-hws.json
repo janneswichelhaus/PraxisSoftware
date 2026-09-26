@@ -1,0 +1,303 @@
+{
+  "id": "hws",
+  "label": "HWS",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "basis",
+      "label": "Basisuntersuchung HWS",
+      "art": "basis",
+      "items": [
+        {
+          "id": "hws_inspektion_palpation",
+          "label": "Inspektion & Palpation",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_flexion_extension",
+          "label": "Flexion (aktiv/passiv) · Extension (inkl. Mundöffnung)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "hws_flexion_extension_flexion_aktiv_passiv",
+              "label": "Flexion (aktiv/passiv)",
+              "hint": "Bewegungsumfang, Qualität, Schmerz"
+            },
+            {
+              "id": "hws_flexion_extension_extension_inkl_mundoeffnung",
+              "label": "Extension (inkl. Mundöffnung)",
+              "hint": "Bewegungserweiterung durch Mundöffnung"
+            }
+          ]
+        },
+        {
+          "id": "hws_retraktion_protraktion",
+          "label": "Retraktion / Protraktion",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund",
+          "hint": "aktive und passive Durchführung"
+        },
+        {
+          "id": "hws_lateralflexion_rechts_links",
+          "label": "Lateralflexion rechts/links",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund",
+          "hint": "mit Schulterelevation zur Schmerzprovokation"
+        },
+        {
+          "id": "hws_rotation_rechts_links",
+          "label": "Rotation rechts/links",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund",
+          "hint": "aktive und passive Bewegungsgrenze"
+        },
+        {
+          "id": "hws_wiederholte_bewegungstests_in_alle_richtungen_falls",
+          "label": "Wiederholte Bewegungstests in alle Richtungen, falls nötig",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund",
+          "hint": "Zentralisationsphänomene"
+        }
+      ]
+    },
+    {
+      "id": "weiterfuehrend",
+      "label": "Weiterführende Untersuchung",
+      "art": "weiterfuehrend",
+      "items": [
+        {
+          "id": "hws_zusatztests_3d",
+          "label": "3D-Zusatztests: Flexion/Extension + Rotation + Lateralflexion",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund",
+          "hint": "Hypo-/Hypermobilität, Schmerzprovokation"
+        },
+        {
+          "id": "hws_lateralflexion_lokal",
+          "label": "Lateralflexion lokal",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_pa_mobilisation_zentral_lateral",
+          "label": "PA-Mobilisation zentral/lateral",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund",
+          "hint": "Segmentbeweglichkeit"
+        },
+        {
+          "id": "hws_lateralgleiten",
+          "label": "Lateralgleiten",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund",
+          "hint": "Beweglichkeit C1–C7"
+        },
+        {
+          "id": "hws_neurologischer_status",
+          "label": "Neurologischer Status",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "hws_neurologischer_status_motorik",
+              "label": "Motorik (C1–Th1)"
+            },
+            {
+              "id": "hws_neurologischer_status_sensibilitaet",
+              "label": "Sensibilität (C5–Th1)"
+            },
+            {
+              "id": "hws_neurologischer_status_reflexe",
+              "label": "Reflexe (Bizeps, Trizeps, Radius-Periost)"
+            },
+            {
+              "id": "hws_neurologischer_status_babinski",
+              "label": "Babinski"
+            },
+            {
+              "id": "hws_neurologischer_status_scapulohumeral_reflex",
+              "label": "Scapulohumeral-Reflex 1 und 2"
+            }
+          ]
+        },
+        {
+          "id": "hws_neurodynamische_tests",
+          "label": "Neurodynamische Tests",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "hint": "z. B. ULNTT 1-3"
+        },
+        {
+          "id": "hws_spurling_test",
+          "label": "Spurling´s Test (Nervenwurzelproblematik)",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "hochzervikal",
+      "label": "Untersuchung Hochzervikal (C0-C3)",
+      "art": "spezial",
+      "items": [
+        {
+          "id": "hws_side_bending_stress_test",
+          "label": "Side-Bending Stress Test in neutral, extension und flexion (Ligg. Alaria)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_sharp_purser_anterior_shear",
+          "label": "Sharp Purser Test, Anterior Shear Test (Lig. Transversum)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_protraktion_retraktion",
+          "label": "Protraktion, Retraktion (mit Augenbewegungen), Protraktion/Retraktion mit Latflex+Rot gleichsinnig/gegensinnig",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_lokale_lateralflexion",
+          "label": "Lokale Lateralflexion (C2-C3)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_axiale_rotation",
+          "label": "Axiale Rotation rechts/links + Extension/Flexion (C0-C2)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_lateralflexion_rotation",
+          "label": "Lateralflexion rechts/links + Rotation Gleich-/gegensinnig",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_zervikaler_axialer_rotationstest",
+          "label": "Zervikaler axialer Rotationstest (Flexion + Rotation, C1-C2)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        },
+        {
+          "id": "hws_provokation_pa_zentral",
+          "label": "Provokation/Mobilität: PA zentral (C1-C3)",
+          "type": "test",
+          "bilateral": false,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "behandlungstechniken",
+      "label": "Behandlungstechniken HWS",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "hws_wiederholte_bewegungen",
+          "label": "Wiederholte Bewegungen (Flexion, Extension, Rotation, Pro-/Retraktion, Lateralflexion)",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt",
+          "hint": "symptommodifizierend"
+        },
+        {
+          "id": "hws_myofasziale_techniken",
+          "label": "Myofasziale Techniken (Kompression, Dehnung, Faszientrennung, OA-Release)",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt",
+          "hint": "Schmerzlinderung, Detonisierung"
+        },
+        {
+          "id": "hws_mmb",
+          "label": "Biomechanische Mobilisationen mit Bewegung (MMB)",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt",
+          "hint": "z. B. Extension/Flexion mit Druck/Traktion"
+        },
+        {
+          "id": "hws_arthrogene_mobilisationen",
+          "label": "Arthrogene Mobilisationen (global und lokal)",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt",
+          "hint": "Traktion, Gleittechniken, 3D-Gleiten"
+        },
+        {
+          "id": "hws_traktionstechniken",
+          "label": "Traktionstechniken aus Schonhaltungen oder zur Korrektur",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt",
+          "hint": "statisch/dynamisch"
+        },
+        {
+          "id": "hws_lateralgleiten_2",
+          "label": "Lateralgleiten",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt",
+          "hint": "C1–C7 zur Mobilisation"
+        },
+        {
+          "id": "hws_pa_mobilisationen",
+          "label": "PA-Mobilisationen",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt",
+          "hint": "zentral/lateral, zur Segmentöffnung"
+        },
+        {
+          "id": "hws_neuralmobilisation",
+          "label": "Neuralmobilisation",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt",
+          "hint": "ULNT-Techniken (z. B. N. medianus), Gleit-/Spanntechniken"
+        }
+      ]
+    },
+    {
+      "id": "therapie_hochzervikal",
+      "label": "Therapie Hochzervikal",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "hws_hochzervikal_myofaszial",
+          "label": "Myofaszial",
+          "type": "technik",
+          "bilateral": false,
+          "result_type": "durchgefuehrt"
+        }
+      ],
+      "status": "unvollstaendig"
+    }
+  ]
+}

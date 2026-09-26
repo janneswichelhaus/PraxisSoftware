@@ -137,13 +137,15 @@ export const bausteinItemSchema = z
 /**
  * Ein Block fasst Items zusammen.
  *
- * **Vier Stellen der Vorlage sind unvollständig** (§2: Schulter „Untersuchung
- * ACG", LWS „Untersuchung SIG", LWS „Behandlung", HWS „Therapie
- * Hochzervikal"). Sie werden als leerer Block mit `status:
- * "unvollstaendig"` angelegt und in der Oberfläche als offen gekennzeichnet —
- * nicht aus eigenem Wissen gefüllt. Umgekehrt ist ein leerer Block **ohne**
- * dieses Kennzeichen ein Fehler: Sonst sieht eine vergessene Übertragung
- * genauso aus wie eine bekannte Lücke.
+ * **Drei Stellen der Vorlage sind unvollständig** (Plan D2, **ANN-118**):
+ * Schulter „Untersuchung ACG" ist leer, LWS „Behandlung" endet mit einem
+ * leeren Aufzählungspunkt, HWS „Therapie Hochzervikal" bricht nach dem ersten
+ * Punkt ab. Sie tragen `status: "unvollstaendig"` und werden in der
+ * Oberfläche als offen gekennzeichnet — nicht aus eigenem Wissen gefüllt. Das
+ * Kennzeichen steht deshalb auch an einem Block **mit** Items: Die Vorlage
+ * bricht dort ab, und was vor dem Abbruch steht, ist verwendbar. Ein leerer
+ * Block **ohne** Kennzeichen bleibt ein Fehler: Sonst sieht eine vergessene
+ * Übertragung genauso aus wie eine bekannte Lücke.
  */
 export const blockSchema = z
   .object({
@@ -160,13 +162,6 @@ export const blockSchema = z
         path: ['items'],
         message:
           'Ein Block ohne Items ist nur mit status "unvollstaendig" gültig — sonst sieht eine vergessene Übertragung wie eine bekannte Lücke aus.',
-      });
-    }
-    if (block.items.length > 0 && block.status === 'unvollstaendig') {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['status'],
-        message: 'Ein Block mit Items ist nicht "unvollstaendig".',
       });
     }
   });

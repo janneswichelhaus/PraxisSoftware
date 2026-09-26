@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
 import type * as Verlauf from './verlauf';
 import type * as TermineApi from '@/features/appointments/api';
+import type * as PatientenApi from '@/features/patients/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
@@ -31,6 +32,16 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     ...actual,
     fetchPatientAppointments: () =>
       Promise.resolve([{ status: 'documented', starts_at: '2026-09-25T08:00:00Z' }]),
+  };
+});
+
+const setTreatmentTableRequired = vi.fn();
+vi.mock('@/features/patients/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof PatientenApi>();
+  return {
+    ...actual,
+    setTreatmentTableRequired: (id: string, wert: boolean) =>
+      setTreatmentTableRequired(id, wert) as Promise<void>,
   };
 });
 
@@ -173,6 +184,32 @@ describe('Befund der Akte', () => {
     await screen.findByText('Erhoben am 20.09.2026');
     expect(screen.queryByText('Ereignis vermerken')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Entfernen' })).toBeNull();
+  });
+
+  describe('Behandlungsliege (FRB-003c)', () => {
+    it('setzt das Merkmal der Person im Befund über denselben Schreibpfad', async () => {
+      setTreatmentTableRequired.mockReset().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      seite([]);
+
+      expect(await screen.findByText('Nicht nötig')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Liege wird gebraucht' }));
+      expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, true);
+    });
+
+    it('steht auch dann, wenn die Fragebögen nicht laden', async () => {
+      fetchErhebungen.mockRejectedValue(new Error('synthetisch'));
+      renderWithProviders(
+        <Befund
+          patient={testPatient({ id: PATIENT_ID, treatment_table_required: true })}
+          user={testUser(['office'])}
+        />,
+      );
+      expect(
+        await screen.findByText('Die Fragebögen konnten nicht geladen werden.'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Mitnehmen')).toBeInTheDocument();
+    });
   });
 
   it('ist barrierefrei', async () => {
