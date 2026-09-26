@@ -258,10 +258,10 @@
           "id": "ux-epic-002",
           "name": "UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a)",
           "gewicht": 2,
-          "status": "in_arbeit",
+          "status": "fertig",
           "fertig_am": "2026-09-26",
-          "nachweis": "`aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034)",
-          "vermerk": "Rest: BEF-041 bis BEF-044 (zweite Sichtungsrunde)"
+          "nachweis": "`aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044)",
+          "vermerk": "Sichtung am Handy offen: Kernprozess, Schritte 1, 2, 5 und 7 bis 10"
         },
         {
           "id": "ux-epic-003",

@@ -84,4 +84,29 @@ test.describe('Kalender', () => {
     // Die Seite selbst ist nicht gezoomt.
     expect(await page.evaluate(() => window.visualViewport?.scale ?? 1)).toBe(1);
   });
+
+  test('reicht am breiten Bildschirm bis an den Rand, ohne Zeile ueber dem Raster', async ({
+    page,
+  }) => {
+    // BEF-043, BEF-044: kein Kasten, keine Kappung, kein „Kalender · Touren".
+    await page.setViewportSize({ width: 1920, height: 1000 });
+    await page.goto(PRUEFSEITE);
+    await expect(annaSpalte(page)).toBeVisible();
+
+    const inhalt = (await page.getByRole('main').boundingBox())!;
+    const raster = (await page.locator('[role=grid]').first().boundingBox())!;
+    // Die Seitenleiste nimmt 248 px; der Rest gehört dem Raster bis auf den Rand.
+    expect(inhalt.width).toBeGreaterThan(1920 - 248 - 2);
+    expect(raster.width).toBeGreaterThan(inhalt.width - 32);
+    await expect(page.getByRole('navigation', { name: /^Bereich / })).toHaveCount(0);
+  });
+
+  test('fuehrt ueber „Tour" mit Tag und Person auf die Tourenseite', async ({ page }) => {
+    await page.goto(PRUEFSEITE);
+    await expect(annaSpalte(page)).toBeVisible();
+    await page.getByRole('button', { name: /Ansicht und Filter/ }).click();
+
+    const tour = page.getByRole('link', { name: 'Tour', exact: true });
+    await expect(tour).toHaveAttribute('href', /^\/touren\?tag=\d{4}-\d{2}-\d{2}/);
+  });
 });
