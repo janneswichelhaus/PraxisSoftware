@@ -101,6 +101,8 @@ describe('Schema-Invarianten', () => {
       'invoice_cancellations',
       'invoice_payment_reminders',
       'patient_privacy_records',
+      'patient_questionnaire_responses',
+      'patient_course_events',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
@@ -184,6 +186,26 @@ describe('Schema-Invarianten', () => {
         and grantee in ('anon', 'authenticated')
     `);
     expect(grants).toEqual([]);
+  });
+
+  it('haelt Fragebögen und Verlaufsereignisse ueber den Anwendungspfad unerreichbar (ADR-010, FRB-002b/e)', async () => {
+    // Die Antworten eines Anamnesebogens und die Ereignisse im Verlauf sind
+    // Gesundheitsdaten. Gelesen wird nur ueber die Funktionen - sie protokollieren.
+    for (const tabelle of ['patient_questionnaire_responses', 'patient_course_events']) {
+      const { rows: policies } = await asPostgres<{ policyname: string }>(
+        `select policyname from pg_policies where schemaname = 'public' and tablename = $1`,
+        [tabelle],
+      );
+      expect(policies).toEqual([]);
+
+      const { rows: grants } = await asPostgres<{ privilege_type: string }>(
+        `select privilege_type from information_schema.role_table_grants
+         where table_schema = 'public' and table_name = $1
+           and grantee in ('anon', 'authenticated')`,
+        [tabelle],
+      );
+      expect(grants).toEqual([]);
+    }
   });
 
   it('haelt treatment_note_versions ueber den Anwendungspfad unerreichbar (ADR-010, DOK-002)', async () => {

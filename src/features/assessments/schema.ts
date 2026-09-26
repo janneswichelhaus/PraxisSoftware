@@ -211,11 +211,44 @@ export type TechnikErgebnis = (typeof TECHNIK_ERGEBNISSE)[number];
  * wird in `rechnen.ts`, nirgends sonst.
  */
 
-/** Die Punktzuordnung einer Antwort: Text und Wert, nie nur Text. */
+/**
+ * Eine Antwortoption.
+ *
+ * Bei einem **gewerteten** Item ist sie die Punktzuordnung: Text und Wert, nie
+ * nur Text (Prüfung am Item). Bei einem nicht gewerteten Item — der
+ * Anamnesebogen hat keinen Summenscore — gibt es keinen Punktwert, und einen
+ * zu erfinden wäre genau die Rekonstruktion, die der Arbeitsauftrag §5 Punkt 2
+ * verbietet.
+ *
+ * `id` ist das, was eine Erhebung speichert (FRB-EPIC-002): eine sprechende,
+ * unveränderliche Kennung statt einer Position in der Liste. In der Kopie nach
+ * Art. 15 steht dann „nachtschmerzen", nicht „1". Eine Option ohne Punktwert
+ * braucht sie; eine gewertete Option ohne `id` wird mit ihrem Punktwert
+ * gespeichert, den `rechnen.ts` ohnehin erwartet (`optionKennung`, **ANN-102**).
+ *
+ * `exklusiv` markiert das „nein" einer Mehrfachauswahl: Wer es wählt, wählt
+ * nichts anderes. `freitext` markiert „Sonstiges?", „andere Erkrankung?" und
+ * „Anderes?" — die Option trägt eine eigene Angabe der Person.
+ */
 export const optionSchema = z.object({
+  id: kennungSchema.optional(),
   label: z.string().min(1),
-  wert: z.number(),
+  wert: z.number().optional(),
+  exklusiv: z.boolean().optional(),
+  freitext: z.boolean().optional(),
 });
+
+/**
+ * Was eine Erhebung für eine gewählte Option speichert (**ANN-102**): die
+ * Kennung, sonst der Punktwert als Zeichenkette. Die eine Stelle dafür — die
+ * Oberfläche, die Prüfung der Antworten und die Hervorhebung lesen sie alle.
+ */
+export function optionKennung(option: {
+  id?: string | undefined;
+  wert?: number | undefined;
+}): string {
+  return option.id ?? String(option.wert);
+}
 
 /**
  * Der Wortlaut der Rechenvorschrift **wörtlich aus dem Inventar**, daneben die
@@ -302,7 +335,13 @@ export const scoreItemSchema = z
     nummer: z.number().int().positive().optional(),
     /** Wörtlich aus dem PDF. Eine geänderte Formulierung hebt die Normwerte auf. */
     text: z.string().min(1),
-    typ: z.enum(['einzelauswahl', 'mehrfachauswahl', 'skala', 'zahl', 'freitext']),
+    /**
+     * `koerperschema` beantwortet „Wo haben Sie Ihre Beschwerden (bitte
+     * einzeichnen)?" — Bereiche auf Vorder- und Rückansicht statt eines
+     * Kreuzes (FRB-EPIC-002, `IDEA-PRX-027`). Es dokumentiert, es bewertet
+     * nicht, und geht deshalb wie ein Freitext in keine Rechnung ein.
+     */
+    typ: z.enum(['einzelauswahl', 'mehrfachauswahl', 'skala', 'zahl', 'freitext', 'koerperschema']),
     optionen: z.array(optionSchema).min(2).optional(),
     skala: wertebereichSchema.optional(),
     /**
@@ -315,6 +354,12 @@ export const scoreItemSchema = z
     einheit: z.string().min(1).optional(),
     gewertet: z.boolean().default(true),
     hinweis: z.string().min(1).optional(),
+    /**
+     * Ein einzelnes Feld, das nicht die Person selbst ausfüllt — im
+     * Anamnesebogen „Anmerkungen Therapeut:". Ohne Angabe gilt
+     * `meta.ausgefuellt_von`.
+     */
+    ausgefuellt_von: z.enum(['patient', 'therapeut']).optional(),
   })
   .superRefine((item, ctx) => {
     const brauchtOptionen = item.typ === 'einzelauswahl' || item.typ === 'mehrfachauswahl';
@@ -346,6 +391,49 @@ export const scoreItemSchema = z
         code: 'custom',
         path: ['gewertet'],
         message: 'Ein Freitext-Item kann nicht gewertet werden.',
+      });
+    }
+    if (item.typ === 'koerperschema' && item.gewertet) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['gewertet'],
+        message: 'Ein Körperschema kann nicht gewertet werden.',
+      });
+    }
+    const optionen = item.optionen ?? [];
+    for (const [index, option] of optionen.entries()) {
+      if (item.gewertet && option.wert === undefined) {
+        // Die Zusicherung von vorher, jetzt am Item statt an der Option: Eine
+        // gewertete Antwort ohne Punktwert ist eine unvollstaendige Uebertragung.
+        ctx.addIssue({
+          code: 'custom',
+          path: ['optionen', index, 'wert'],
+          message: 'Eine Option eines gewerteten Items braucht ihren Punktwert.',
+        });
+      }
+      if (option.exklusiv && item.typ !== 'mehrfachauswahl') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['optionen', index, 'exklusiv'],
+          message: 'Exklusiv kann eine Option nur in einer Mehrfachauswahl sein.',
+        });
+      }
+    }
+    for (const [index, option] of optionen.entries()) {
+      if (option.id === undefined && option.wert === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['optionen', index, 'id'],
+          message: `Option "${option.label}" braucht eine Kennung oder einen Punktwert — sonst lässt sie sich nicht speichern.`,
+        });
+      }
+    }
+    const kennungen = optionen.map(optionKennung);
+    if (new Set(kennungen).size !== kennungen.length) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['optionen'],
+        message: 'Die Kennungen der Optionen eines Items müssen eindeutig sein.',
       });
     }
   });
@@ -489,6 +577,31 @@ export const scoreMetaSchema = z.object({
 });
 
 /**
+ * Eine offengelegte Regel der Hervorhebung nach `PROJECT_PRINCIPLES.md` §7.1
+ * (FRB-002c, **ANN-104**).
+ *
+ * Sie sagt nur, **welche angekreuzte Angabe** sichtbar gemacht wird — nie, was
+ * sie bedeutet. Deshalb gibt es kein Feld für eine Stufe, eine Farbe oder
+ * einen Text der Art „bitte abklären": Die Hervorhebung zeigt die Angabe der
+ * Person unverändert, mit Frage und Datum, und daneben diese Regel mit ihrer
+ * Quelle (ADR-006 Punkt 3 und 11). Die Entscheidung trifft die Therapeut:in.
+ *
+ * Jede Regel betrifft **eine** Frage. Eine Verknüpfung mehrerer Angaben —
+ * „Tumoranamnese und Gewichtsverlust" — wäre schon eine Auswahl, die über
+ * das Sichtbarmachen hinausgeht, und entsteht hier nicht.
+ */
+export const hervorhebungSchema = z.object({
+  id: kennungSchema,
+  item: kennungSchema,
+  /** Die Optionen, deren Wahl hervorgehoben wird — ihre Kennungen. */
+  optionen: z.array(z.string().min(1)).min(1),
+  /** Die Regel in einem Satz, so wie sie in der Oberfläche steht. */
+  regel: z.string().min(1),
+  /** Woher die Auswahl der Frage stammt — Veröffentlichung mit Fundstelle. */
+  quelle: z.string().min(1),
+});
+
+/**
  * Eine Score-Definition ist eine Datei.
  *
  * Die Prüfungen darunter sind die, an denen eine Übertragung aus einem PDF
@@ -504,6 +617,7 @@ export const scoreDefinitionSchema = z
     scoring: scoringSchema,
     interpretation: interpretationSchema,
     referenzfaelle: z.array(referenzfallSchema),
+    hervorhebungen: z.array(hervorhebungSchema).default([]),
   })
   .superRefine((score, ctx) => {
     const itemIds = new Set<string>();
@@ -619,6 +733,38 @@ export const scoreDefinitionSchema = z
       }
     }
 
+    const regelIds = new Set<string>();
+    for (const [index, regel] of score.hervorhebungen.entries()) {
+      if (regelIds.has(regel.id)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['hervorhebungen', index, 'id'],
+          message: `Doppelte Regel-Kennung "${regel.id}".`,
+        });
+      }
+      regelIds.add(regel.id);
+      const item = score.items.find((eintrag) => eintrag.id === regel.item);
+      if (!item || (item.typ !== 'einzelauswahl' && item.typ !== 'mehrfachauswahl')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['hervorhebungen', index, 'item'],
+          message: `Die Regel "${regel.id}" braucht ein Auswahl-Item; "${regel.item}" ist keines.`,
+        });
+        continue;
+      }
+      for (const [stelle, kennung] of regel.optionen.entries()) {
+        const option = (item.optionen ?? []).find((o) => optionKennung(o) === kennung);
+        if (!option || option.exklusiv) {
+          // Ein hervorgehobenes „nein" waere eine Aussage ueber eine Verneinung.
+          ctx.addIssue({
+            code: 'custom',
+            path: ['hervorhebungen', index, 'optionen', stelle],
+            message: `Die Regel "${regel.id}" nennt "${kennung}", keine hervorhebbare Option von "${regel.item}".`,
+          });
+        }
+      }
+    }
+
     if (score.meta.aktiv && score.meta.quelle.datei === undefined) {
       // ANN-099: Ein Wortlaut, der gegen keine Vorlage im Repository zu halten
       // ist, erreicht keine Patientin. Aktiviert wird mit dem Bogen in
@@ -651,6 +797,7 @@ export type Subskala = z.infer<typeof subskalaSchema>;
 export type Scoring = z.infer<typeof scoringSchema>;
 export type Interpretation = z.infer<typeof interpretationSchema>;
 export type Referenzfall = z.infer<typeof referenzfallSchema>;
+export type HervorhebungsRegel = z.infer<typeof hervorhebungSchema>;
 export type ScoreMeta = z.infer<typeof scoreMetaSchema>;
 export type ScoreDefinition = z.infer<typeof scoreDefinitionSchema>;
 export type Richtung = (typeof RICHTUNGEN)[number];

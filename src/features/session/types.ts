@@ -203,6 +203,16 @@ export function canConcludePatientCare(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Rollen, die einen Fragebogen erheben, abschliessen und korrigieren duerfen
+ * (FRB-002b, ANN-103): die behandelnden Rollen, ohne office - die Anamnese
+ * ist ein Behandlungsschritt. Verbindlich ist
+ * app.can_write_questionnaire_response().
+ */
+export function canWriteQuestionnaire(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => treatingRoles.includes(role));
+}
+
+/**
  * Rollen, die dokumentieren duerfen.
  *
  * Enger als das Lesen: Dokumentieren ist ein Behandlungsschritt (4.2), kein

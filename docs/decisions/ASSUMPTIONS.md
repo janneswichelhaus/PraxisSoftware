@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-25.
+Zuletzt aktualisiert: 2026-09-26.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1316,3 +1316,75 @@ Technik · offen · 2026-09-25 · — · — · Wiedervorlage: vor echten Daten 
 **Anker.** `htaccess()` und `inhaltsrichtlinie()` in `scripts/testumgebung.mjs`; Test `scripts/testumgebung.test.mjs`; Schritt „Zweite Tuer" in `.github/workflows/test-umgebung.yml`.
 
 **Änderungspfad.** Wertet Uberspace die `.htaccess` nicht aus: Kopfzeilen und Umleitung über die Webserver-Einstellungen von Uberspace (`uberspace web header`, falls vorhanden) oder Anbieterwechsel nach `hosting-optionen.md` Option 2 · Aufwand `mittel`. Kachelschlüssel in der Test-Umgebung: Kachelanbieter in `inhaltsrichtlinie()` · Aufwand `klein`.
+
+### ANN-102 — Der Anamnesebogen V8 wird ohne Punktwerte übertragen; eine Erhebung speichert die Kennung der Option
+
+Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit P4 (erster gewerteter Score, der erhoben wird)
+
+**Annahme.** Optionen tragen eine sprechende Kennung (`nachtschmerzen`); eine Option ohne Punktwert muss eine haben, eine gewertete ohne Kennung wird mit ihrem Punktwert gespeichert (`optionKennung`). Der Bogen wird mit den 39 nummerierten Fragen übertragen, 12a/b und die drei Felder zu Frage 26 als eigene Items unter derselben Nummer; „nein" ist in einer Mehrfachauswahl eine exklusive Option, „Sonstiges?", „andere Erkrankung?", „anderes Ereignis?", „andere Medikamente?" und „Anderes?" tragen eine eigene Angabe. Aus dem Kopf kommen Beruf und Sport/Hobby mit; Name und Alter stehen in der Akte, Datum ist das Erhebungsdatum, die Unterschrift bleibt Papier. „Anmerkungen Therapeut:" ist ein Freitext mit `ausgefuellt_von: therapeut`.
+
+**Begründung.** Das Inventar sagt „Kein Scoring - reine Informationserfassung"; ein erfundener Punktwert wäre die Rekonstruktion, die der Arbeitsauftrag §5 Punkt 2 verbietet. Eine Position in der Liste statt einer Kennung wäre in der Kopie nach Art. 15 unlesbar. Name und Alter doppelt zu erheben ergäbe eine zweite Quelle, die abweichen kann (Art. 5 Abs. 1 lit. c und d DSGVO).
+
+**Anker.** `optionSchema` und `optionKennung` in `src/features/assessments/schema.ts`; Definition `src/features/assessments/definitionen/scores/anamnese_v8.json`; Tests `anamnese.test.ts`, Wortlaut gegen den Extrakt in `definitionen.test.ts`.
+
+**Änderungspfad.** Andere Aufteilung des Bogens: neue Version der Definition (`1.1.0`), alte Erhebungen behalten ihre `definition_version` · Aufwand `klein`. Kennung statt Punktwert auch an gewerteten Scores: Kennungen in den Dateien nachtragen · Aufwand `klein`.
+
+### ANN-103 — Ein Fragebogen ist Entwurf oder abgeschlossen; korrigiert wird als neue Erhebung, erheben nur die behandelnden Rollen
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: nach vier Wochen Betrieb mit echten Anamnesen
+
+**Annahme.** Eine Erhebung hat zwei Zustände: `entwurf` (frei änderbar, darf verworfen werden) und `abgeschlossen` (unveränderlich, auch gegen direkten Zugriff durch einen Trigger). Eine Korrektur ist eine **neue** Erhebung mit Verweis auf die alte und einer Begründung von 3 bis 500 Zeichen; eine Erhebung wird höchstens einmal ersetzt. Es gibt **keine** automatische Finalisierung wie in ADR-016 Punkt 7. Erheben, abschließen, verwerfen und korrigieren dürfen `owner`, `therapist` und `team_lead`; lesen alle vier Praxisrollen, je gelieferter Erhebung protokolliert.
+
+**Begründung.** §7 verlangt, dass abgeschlossene Fragebögen in der beantworteten Version erhalten bleiben; ADR-016 Punkt 5 und 6 geben das Muster „nie überschreiben, Korrektur mit Grund" vor, das hier ohne Versionstabelle auskommt, weil ein Bogen als Ganzes ersetzt wird. Eine automatische Finalisierung schützt bei der Behandlungsdokumentation vor einem fehlenden Nachweis (§630f); ein halb ausgefüllter Bogen, der sich selbst abschließt, wäre dagegen eine Aussage der Person, die sie nicht vollständig gemacht hat. Office liest nach ADR-004 Fassung 2, schreibt aber keine klinischen Inhalte.
+
+**Anker.** `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql` (`app.guard_questionnaire_response`, `app.can_write_questionnaire_response`, `save_questionnaire_response`); `canWriteQuestionnaire` in `src/features/session/types.ts`; Tests `supabase/tests/questionnaire-responses.test.ts`.
+
+**Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`.
+
+### ANN-104 — Hervorgehoben werden acht Fragen des Anamnesebogens nach IFOMPT, je Frage und ohne Verknüpfung
+
+Recht · entschieden (Jannes) · 2026-09-26 · Jannes (Regeln fachlich bestätigt) · — · Wiedervorlage: mit der externen Prüfung nach ADR-006 Punkt 7 (B1)
+
+**Annahme.** Hervorgehoben wird, wenn angekreuzt ist: Frage 4 Nacht- oder Ruheschmerzen, Frage 23 jede Angabe, Frage 24 Blasenschwäche oder belastungsabhängige Brustschmerzen, Frage 25 jede Angabe, Frage 26 „ja", Frage 28 Unfall/Sturz/Verletzung, Frage 29 Schwangerschaft, Frage 30 Kortison oder Blutverdünner. Gezeigt werden die Angabe wörtlich, Frage und Datum und daneben die Regel mit Quelle — kein Text zur Bedeutung, keine Farbe als Ampel, keine Zählung, keine Verknüpfung mehrerer Angaben wie im Beispiel von §7.1, nur am geltenden, nicht am ersetzten Bogen.
+
+**Begründung.** §7.1 erlaubt Hervorhebung nach transparenten Regeln und verbietet Score, Risikoklasse und Handlungsempfehlung; ADR-006 Punkt 11 fasst auch Farbe und Symbol als Aussage. Die Auswahl folgt den Rahmenwerken der IFOMPT (Finucane et al. 2020 für die Wirbelsäule, Rushton et al. 2023 für die Halsgefäße) und Goodman/Heick/Lazaro 2018; sie ist eine fachliche Auswahl, die Jannes bestätigen sollte. Das Beispiel „Tumoranamnese und Gewichtsverlust" aus §7.1 wäre eine Verknüpfung — konservativ nach ADR-006 Punkt 13 nicht gebaut, bis die Prüfung sie freigibt.
+
+**Anker.** `hervorhebungSchema` in `src/features/assessments/schema.ts`; `hervorhebungen` im Anamnesebogen `src/features/assessments/definitionen/scores/anamnese_v8.json`; `src/features/assessments/hervorhebung.ts`; Tests `hervorhebung.test.tsx`.
+
+**Änderungspfad.** Andere Fragen oder Optionen: Liste `hervorhebungen` in der Definition, neue Version · Aufwand `klein`. Verknüpfte Regeln nach Freigabe: Regel um eine Liste von Bedingungen erweitern · Aufwand `mittel`.
+
+### ANN-105 — Die Antworten prüft die Anwendung gegen die Definition, der Server nur ihre Form
+
+Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002), bevor Menschen außerhalb der Praxis schreiben
+
+**Annahme.** Der Server prüft an einer Erhebung Kennung und Version in ihrer Form, dass die Antworten ein Objekt mit Kennungen als Schlüsseln und Objekten als Werten sind, und eine Obergrenze von 64 KiB. Ob eine Antwort zur Frage passt (Option vorhanden, „nein" allein, Skala im Bereich), prüft `antwortenSchema` in der Anwendung gegen die Definitionsdatei. Angezeigt wird eine ältere Erhebung mit der Definition des Releases; eine abweichende Version wird an der Erhebung genannt.
+
+**Begründung.** Die Definitionen liegen als Dateien im Release (ANN-083) und nicht in der Datenbank; eine zweite Fassung in SQL wäre eine zweite Quelle, die abweichen kann. Schreiben dürfen heute nur angemeldete behandelnde Rollen, für die die Anwendung vertrauenswürdig ist; ein Fehler schadet der eigenen Akte, nicht einer fremden. Kennungen sind unveränderlich (Arbeitsauftrag §1), deshalb bleibt eine alte Erhebung mit der neueren Definition lesbar.
+
+**Anker.** `app.assert_questionnaire_answers` in `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql`; `antwortenSchema` in `src/features/assessments/antworten.ts`.
+
+**Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`.
+
+### ANN-106 — Der Verlauf zeigt Rohwerte als Punkte mit Ereignissen der Praxis; fünf Ereignisarten, setzen und entfernen statt ändern
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: wenn P4/P5 weitere Instrumente aktivieren
+
+**Annahme.** Der Verlauf im Befund zeigt je Skalenfrage der aktiven Instrumente die Werte **geltender** Bögen (abgeschlossen, nicht ersetzt) als Punkte mit Zahl, ohne Linie, Trend, Mittel oder Farbe nach Höhe; darunter die Werte als Text. Ereignisse haben fünf Arten (Operation, Erkrankung, Urlaub/Pause, Medikation geändert, Sonstiges) mit Tag und Notiz bis 200 Zeichen, auch in der Zukunft; eine falsche Markierung wird entfernt und neu gesetzt, beides protokolliert, das Auditlog trägt weder Art noch Notiz. Durchgeführte Termine (die letzten 50) stehen als Striche an der Zeitachse.
+
+**Begründung.** `IDEA-OUT-005` verlangt Ereignisse neben der Kurve und „weniger Mittelwert, mehr Rohdaten"; ADR-006 Punkt 11 verbietet jede abgeleitete Aussage, auch als Farbe. „Schübe" aus der Idee sind eine Erkrankung und bekommen keine eigene Art, bis ein Fall sie braucht (ADR-014). Eine geplante Operation gehört vorher in den Verlauf.
+
+**Anker.** `patient_course_events` in `supabase/migrations/20260926110000_frb_002e_course_events.sql`; `EREIGNISARTEN` und `messreihen` in `src/features/assessments/verlauf.ts`; `Messreihenbild` in `src/features/assessments/Messreihenbild.tsx`.
+
+**Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`.
+
+### ANN-107 — Das Körperschema ist Jannes' Zeichnung; markiert wird mit einem Kreis an der Stelle, gespeichert Stelle und nächster Bereich
+
+Praxisprozess · entschieden (Jannes) · 2026-09-26 · Jannes · — · Wiedervorlage: mit DOK-005 (Körperschema im Bericht)
+
+**Annahme.** Grundlage ist die Zeichnung, die Jannes am 2026-09-26 selbst gezeichnet und zur Nutzung im Repository gegeben hat (Vorder- und Rückansicht, als WebP 820 × 749, Weiß transparent). Ein Tipp setzt einen Kreis in der Hauptfarbe an genau dieser Stelle, ein Tipp auf den Kreis entfernt ihn; höchstens 30 Kreise. Gespeichert werden je Kreis die Stelle relativ zum Bild und der Bereich des nächstgelegenen von 47 Ankerpunkten; weiter als 60 Bildpunkte von jedem Anker setzt nichts. Die Liste zum Aufklappen setzt den Kreis auf den Anker.
+
+**Begründung.** Jannes hat den Kreis gewählt; er verdeckt die Anatomie nicht, bleibt bei nahen Markierungen unterscheidbar, übersteht Schwarz-Weiß-Druck und deutet keine Stärke an wie ein roter, auslaufender Punkt (ADR-006 Punkt 11). Der Bereich macht die Stelle in Akte, Verlauf und Auskunft lesbar; der nächste Anker statt eines Umrisses je Bereich braucht keine zweite, passgenaue Zeichnung.
+
+**Anker.** `KOERPERBEREICHE`, `bereichAn` und `MAX_ABSTAND` in `src/features/assessments/koerperschema.ts`; `src/features/assessments/koerperschema.webp`; `KoerperschemaFeld` in `src/features/assessments/KoerperschemaFeld.tsx`.
+
+**Änderungspfad.** Genauere Bereiche: Anker ergänzen oder verschieben (Test prüft, dass jeder Anker seinen Bereich trifft) · Aufwand `klein`. Andere Zeichnung: Datei tauschen und Anker neu setzen; gespeicherte Stellen bleiben relativ zum Bild · Aufwand `mittel`.

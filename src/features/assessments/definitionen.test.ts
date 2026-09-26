@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bibliothek } from './bibliothek';
@@ -14,6 +14,43 @@ import { ladeDefinitionen } from './definitionen';
 
 const stamm = process.cwd();
 const SCORE_PDFS = join(stamm, 'quellen/scores/pdf');
+const SCORE_TEXTE = join(stamm, 'quellen/scores/pdf-text');
+
+/**
+ * Zeilenumbrüche und Satzspiegel des Extrakts sind Layout, kein Wortlaut —
+ * ebenso die Lücke vor Komma und Fragezeichen, in der im PDF ein Kästchen
+ * steht („Ruheschmerzen ☐, Nachtschmerzen ☐").
+ */
+function einzeilig(text: string): string {
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/ ([,?])/g, '$1')
+    .trim();
+}
+
+/**
+ * Der Extrakt ohne die Antwortspalte am rechten Rand.
+ *
+ * pdftotext setzt die Kästchen „ja nein" ans Zeilenende — auch mitten in eine
+ * Frage, die über zwei Zeilen läuft (Anamnesebogen, Frage 7). Für die Fragen
+ * zählt der Text ohne diese Spalte; die Optionen selbst werden gegen den
+ * unveränderten Extrakt gehalten.
+ */
+function ohneAntwortspalte(text: string): string {
+  // Zwei Leerzeichen oder mehr trennen die Spalte vom Fragetext. Bewusst ohne
+  // regulären Ausdruck mit verschachtelten Quantoren (security/detect-unsafe-regex).
+  return text
+    .split('\n')
+    .map((zeile) => {
+      let rest = zeile.trimEnd();
+      for (const marke of ['nein', 'ja']) {
+        const vorher = rest.slice(0, -marke.length);
+        if (rest.endsWith(marke) && vorher.endsWith('  ')) rest = vorher.trimEnd();
+      }
+      return rest;
+    })
+    .join('\n');
+}
 const DEFINITIONEN = join(stamm, 'src/features/assessments/definitionen');
 
 function region(abweichung: Record<string, unknown> = {}) {
@@ -130,6 +167,30 @@ describe('Bibliothek der Anwendung', () => {
       .flatMap((score) => (score.meta.quelle.datei ? [score.meta.quelle.datei] : []))
       .filter((datei) => !existsSync(join(SCORE_PDFS, datei)));
     expect(fehlend).toEqual([]);
+  });
+
+  it('haelt jeden Text eines Scores mit Vorlage gegen den Extrakt der Vorlage', () => {
+    // Regel 1 in quellen/README.md: Der Wortlaut ist unantastbar. Geprueft
+    // wird jede Frage, jede Option und jeder Hinweis - nur Zeilenumbrueche
+    // gleicht der Test aus, weil pdftotext sie aus dem Satzspiegel setzt.
+    const abweichend = bibliothek.scores.flatMap((score) => {
+      const datei = score.meta.quelle.datei;
+      if (!datei) return [];
+      const roh = readFileSync(join(SCORE_TEXTE, datei.replace(/\.pdf$/, '.txt')), 'utf8');
+      const extrakt = einzeilig(roh);
+      const fragen = einzeilig(ohneAntwortspalte(roh));
+      return score.items.flatMap((item) => [
+        ...[item.text, item.hinweis]
+          .filter((text): text is string => text !== undefined)
+          .filter((text) => !fragen.includes(einzeilig(text)))
+          .map((text) => `${score.meta.id}.${item.id}: „${text}“`),
+        ...(item.optionen ?? [])
+          .map((option) => option.label)
+          .filter((text) => !extrakt.includes(einzeilig(text)))
+          .map((text) => `${score.meta.id}.${item.id}: Option „${text}“`),
+      ]);
+    });
+    expect(abweichend).toEqual([]);
   });
 
   it('legt keine Definitionsdatei ausserhalb der beiden Verzeichnisse ab', () => {

@@ -135,6 +135,16 @@ export const AUDIT_ACTIONS = [
   // MAP-006a: Koordinate zur Adresse und Startort der Tagesroute (ANN-016).
   'patient.address_geocoded',
   'organization.tour_start_changed',
+  // FRB-EPIC-002: erhobene Fragebögen (ANN-103).
+  'questionnaire_response.created',
+  'questionnaire_response.updated',
+  'questionnaire_response.completed',
+  'questionnaire_response.discarded',
+  'questionnaire_response.viewed',
+  // FRB-002e: Ereignisse im Verlauf (ANN-106).
+  'patient_course_event.created',
+  'patient_course_event.removed',
+  'patient_course_event.viewed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -227,6 +237,14 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'storage_deletion.read': 'Löschaufträge der Ablage gelesen',
   'patient.address_geocoded': 'Adresse auf der Karte verortet',
   'organization.tour_start_changed': 'Startort der Touren geändert',
+  'questionnaire_response.created': 'Fragebogen begonnen',
+  'questionnaire_response.updated': 'Fragebogen-Entwurf geändert',
+  'questionnaire_response.completed': 'Fragebogen abgeschlossen',
+  'questionnaire_response.discarded': 'Fragebogen-Entwurf verworfen',
+  'questionnaire_response.viewed': 'Fragebogen gelesen',
+  'patient_course_event.created': 'Ereignis im Verlauf gesetzt',
+  'patient_course_event.removed': 'Ereignis im Verlauf entfernt',
+  'patient_course_event.viewed': 'Ereignisse im Verlauf gelesen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -257,6 +275,8 @@ export const auditSubjectLabels: Record<string, string> = {
   prescription: 'Verordnung',
   treatment_basis: 'Behandlungsgrundlage',
   patient_file: 'Datei der Akte',
+  questionnaire_response: 'Fragebogen',
+  patient_course_event: 'Ereignis im Verlauf',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',

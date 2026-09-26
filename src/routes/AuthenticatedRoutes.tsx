@@ -17,6 +17,8 @@ import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointm
 import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
 import { PatientFilesPage } from '@/features/files/PatientFilesPage';
 import { PatientCoursePage } from '@/features/documentation/PatientCoursePage';
+import { PatientBefundPage } from '@/features/assessments/PatientBefundPage';
+import { ErhebungPage } from '@/features/assessments/ErhebungPage';
 import { PrescribersListPage } from '@/features/treatment-bases/PrescribersListPage';
 import {
   EditPrescriberPage,
@@ -170,11 +172,17 @@ export function AuthenticatedRoutes({
                     ) : null}
                     <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
                     <Route path="verlauf" element={<PatientCoursePage />} />
+                    <Route path="befund" element={<PatientBefundPage />} />
                     <Route path="dateien" element={<PatientFilesPage />} />
                     <Route path="datenschutz" element={<PatientDatenschutzPage />} />
                     <Route path="stammdaten" element={<PatientMasterDataPage />} />
                   </Route>
                   <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
+                  {/* FRB-002b: Fragebogen erheben - ausserhalb des Rahmens (UX-009). */}
+                  <Route
+                    path="/patienten/:patientId/befund/erheben"
+                    element={<ErhebungPage user={user} />}
+                  />
                   {/* Datenschutzinformation und Ausfallhonorar-Regel zum
                   Ausdrucken - ohne Patientenbezug, aber aus der Akte heraus
                   gedruckt (PAT-006). */}

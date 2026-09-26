@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, DataList, DataRow, Disclosure } from '@/components/ui/Card';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { bibliothek } from './bibliothek';
-import type { Lizenzstatus, ScoreDefinition, ScoreItem } from './schema';
+import { optionKennung, type Lizenzstatus, type ScoreDefinition, type ScoreItem } from './schema';
 
 /**
  * Die Instrumentenbibliothek zum Nachlesen (FRB-010).
@@ -41,6 +41,13 @@ function Antwortform({ item }: { item: ScoreItem }) {
   if (item.typ === 'freitext') {
     return <p className="text-ink-muted text-sm">Freitext, geht in keine Rechnung ein</p>;
   }
+  if (item.typ === 'koerperschema') {
+    return (
+      <p className="text-ink-muted text-sm">
+        Körperschema: Bereiche auf Vorder- und Rückansicht, geht in keine Rechnung ein
+      </p>
+    );
+  }
   if (item.typ === 'skala' && item.skala) {
     return (
       <p className="text-ink-muted text-sm">
@@ -58,8 +65,14 @@ function Antwortform({ item }: { item: ScoreItem }) {
     return (
       <ul className="text-ink-muted text-sm">
         {item.optionen.map((option) => (
-          <li key={`${option.wert}-${option.label}`}>
-            {option.label} <span className="tabular-nums">({option.wert})</span>
+          <li key={optionKennung(option)}>
+            {option.label}
+            {option.wert === undefined ? null : (
+              <>
+                {' '}
+                <span className="tabular-nums">({option.wert})</span>
+              </>
+            )}
           </li>
         ))}
       </ul>
@@ -147,7 +160,7 @@ export function InstrumentePage({
     <>
       <PageHeader
         title="Instrumente"
-        description="Die Fragebögen und Skalen der Praxis, je mit Version, Lizenz und Quelle. Erfassen lassen sie sich noch nicht."
+        description="Die Fragebögen und Skalen der Praxis, je mit Version, Lizenz und Quelle. Erhoben wird in der Akte unter „Befund“."
       />
       {sortiert.length === 0 ? (
         <Statusmeldung>Noch liegt kein Instrument vor.</Statusmeldung>
