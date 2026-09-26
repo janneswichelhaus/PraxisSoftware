@@ -9,6 +9,7 @@ import {
   pruefeBreiten,
   tagImFenster,
   zeitImLauf,
+  kalenderOptionenOeffnen,
 } from './helpers';
 
 /**
@@ -38,6 +39,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
 
+    await kalenderOptionenOeffnen(page);
     await page.getByRole('link', { name: 'Ereignis eintragen' }).click();
     await expect(page.getByRole('heading', { name: 'Ereignis eintragen' })).toBeVisible();
 
@@ -102,6 +104,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
 
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
+    await kalenderOptionenOeffnen(page);
     await page.getByRole('link', { name: 'Ereignis eintragen' }).click();
 
     await page.getByLabel('Bezeichnung *').fill(bezeichnung);
@@ -150,6 +153,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
 
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
+    await kalenderOptionenOeffnen(page);
     await page.getByRole('link', { name: 'Ereignis eintragen' }).click();
 
     await page.getByLabel('Bezeichnung *').fill(bezeichnung);
@@ -187,6 +191,7 @@ test.describe('CAL-015: Ereignis eintragen', () => {
 
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
+    await kalenderOptionenOeffnen(page);
     await page.getByRole('link', { name: 'Ereignis eintragen' }).click();
 
     await page.getByLabel('Bezeichnung *').fill(`Belegt ${LAUF % 1000}`);

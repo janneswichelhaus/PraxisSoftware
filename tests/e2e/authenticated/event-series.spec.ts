@@ -7,6 +7,7 @@ import {
   detailWert,
   tagImFenster,
   zeitImLauf,
+  kalenderOptionenOeffnen,
 } from './helpers';
 
 /**
@@ -67,6 +68,7 @@ test.describe('CAL-021: Dauerfehlzeit', () => {
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
 
     // Der Weg ohne Zeigegerät: die Schaltfläche über dem Gitter (CAL-019).
+    await kalenderOptionenOeffnen(page);
     await page.getByRole('link', { name: 'Dauerfehlzeit eintragen' }).click();
     await expect(page.getByRole('heading', { name: 'Dauerfehlzeit eintragen' })).toBeVisible();
 

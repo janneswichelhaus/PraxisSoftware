@@ -10,6 +10,7 @@ import {
   terminKachel,
   terminUeberOberflaeche,
   zeitImLauf,
+  kalenderOptionenOeffnen,
 } from './helpers';
 
 /**
@@ -55,6 +56,7 @@ test.describe('CAL-008a: Der Zustand heisst bestaetigt', () => {
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&status=confirmed`);
+    await kalenderOptionenOeffnen(page);
     await expect(page.getByLabel('Status')).toHaveValue('confirmed');
   });
 });
@@ -212,9 +214,11 @@ test.describe('CAL-009: Tag umplanen', () => {
 
     // Der Einstieg steht nur dort, wo Person UND Tag feststehen.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
+    await kalenderOptionenOeffnen(page);
     await expect(page.getByRole('link', { name: 'Tag umplanen' })).toHaveCount(0);
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&person=${MITARBEITENDE.anna}`);
+    await kalenderOptionenOeffnen(page);
     await page.getByRole('link', { name: 'Tag umplanen' }).click();
 
     await expect(page.getByRole('heading', { name: 'Tag umplanen' })).toBeVisible();
