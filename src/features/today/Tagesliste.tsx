@@ -51,11 +51,11 @@ export function Tageskarte({
         <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
       </div>
 
-      {/* Ein Ereignis des Praxisbetriebs hat keine Akte, in die ein Link
+      {/* Eine Fehlzeit des Praxisbetriebs hat keine Akte, in die ein Link
           führen könnte - es trägt seine Bezeichnung (CAL-016). */}
       <p className="text-ink mt-1 text-[1.0625rem] font-medium">
         {termin.kind === 'internal' || !termin.patient_id ? (
-          (termin.title ?? 'Ereignis')
+          (termin.title ?? 'Fehlzeit')
         ) : (
           <Link
             to={`/patienten/${termin.patient_id}`}
@@ -67,7 +67,7 @@ export function Tageskarte({
       </p>
 
       <p className="text-ink-muted mt-0.5 text-sm">
-        {termin.kind === 'internal' ? 'Ereignis · ' : ''}
+        {termin.kind === 'internal' ? 'Fehlzeit · ' : ''}
         {appointmentTypeLabels[termin.appointment_type]}
         {termin.location_name ? ` · ${termin.location_name}` : ''}
       </p>
@@ -116,7 +116,7 @@ export function Tageskarte({
           to={mitRueckweg(`/termine/${termin.id}`, '/')}
           className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center px-1 text-sm font-medium"
         >
-          {termin.kind === 'internal' ? 'Ereignis öffnen →' : 'Termin öffnen →'}
+          {termin.kind === 'internal' ? 'Fehlzeit öffnen →' : 'Termin öffnen →'}
         </Link>
       </div>
     </Card>

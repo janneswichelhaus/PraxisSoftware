@@ -25,7 +25,7 @@ import {
 import { formatDate } from '@/lib/datum';
 
 /**
- * Das ganze Ereignis bearbeiten (CAL-017).
+ * Das ganze Fehlzeit bearbeiten (CAL-017).
  *
  * Eine Besprechung steht in mehreren Kalendern, ist aber **ein** Vorgang.
  * Bezeichnung, Tag, Zeit, Länge, Art und Ort gelten für alle Beteiligten
@@ -160,20 +160,20 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
     return (
       <ErrorState
         title="Nicht freigegeben"
-        description="Ereignisse bearbeiten dürfen die Rollen der Terminverwaltung."
+        description="Fehlzeiten bearbeiten dürfen die Rollen der Terminverwaltung."
       />
     );
   }
 
   if (termin.isPending || standorte.isPending) {
-    return <LoadingState label="Ereignis wird geladen …" />;
+    return <LoadingState label="Fehlzeit wird geladen …" />;
   }
 
   if (termin.isError || !termin.data) {
     return (
       <ErrorState
         title="Nicht gefunden"
-        description="Dieses Ereignis existiert nicht oder ist für Ihren Zugang nicht freigegeben."
+        description="Diese Fehlzeit existiert nicht oder ist für Ihren Zugang nicht freigegeben."
       />
     );
   }
@@ -191,9 +191,9 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
           ← Zurück zum Termin
         </Link>
         <ErrorState
-          title="Kein Ereignis"
+          title="Keine Fehlzeit"
           description={
-            'Dieser Weg gilt für Ereignisse des Praxisbetriebs. Ein Behandlungstermin wird über „Bearbeiten" geändert.'
+            'Dieser Weg gilt für Fehlzeiten des Praxisbetriebs. Ein Behandlungstermin wird über „Bearbeiten" geändert.'
           }
         />
       </>
@@ -207,11 +207,11 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
           to={zurueck}
           className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
         >
-          ← Zurück zum Ereignis
+          ← Zurück zur Fehlzeit
         </Link>
         <ErrorState
-          title="Abgesagte Ereignisse werden nicht bearbeitet"
-          description="Das Ereignis bleibt zur Nachvollziehbarkeit erhalten. Für einen neuen Zeitraum bitte ein neues Ereignis eintragen."
+          title="Abgesagte Fehlzeiten werden nicht bearbeitet"
+          description="Die Fehlzeit bleibt zur Nachvollziehbarkeit erhalten. Für einen neuen Zeitraum bitte eine neue Fehlzeit eintragen."
         />
       </>
     );
@@ -226,11 +226,11 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         to={zurueck}
         className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
       >
-        ← Zurück zum Ereignis
+        ← Zurück zur Fehlzeit
       </Link>
 
       <PageHeader
-        title={serieId ? 'Fehlzeit bearbeiten' : 'Ereignis bearbeiten'}
+        title={serieId ? 'Fehlzeit bearbeiten' : 'Fehlzeit bearbeiten'}
         description={
           serieId
             ? 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Diese Fehlzeit gehört zu einer Dauerfehlzeit – der Umfang der Änderung steht unten zur Wahl.'
@@ -279,16 +279,16 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                   </ul>
                 )}
                 <p className="text-ink-subtle mt-3 text-xs leading-relaxed">
-                  Wer teilnimmt, wird hier nicht geändert: Das ist eine einzelne Teilnahme und kein
-                  Ereignis. Sie lässt sich am jeweiligen Termin austauschen oder absagen &ndash; das
-                  Ereignis findet dann ohne diese Person statt.
+                  Wer teilnimmt, wird hier nicht geändert: Das ist eine einzelne Teilnahme und keine
+                  Fehlzeit. Sie lässt sich am jeweiligen Termin austauschen oder absagen &ndash; die
+                  Fehlzeit findet dann ohne diese Person statt.
                 </p>
               </div>
             }
           />
 
           {/* Dieses Vorkommen oder die ganze Serie (CAL-021) - ausdrücklich
-              beschriftet, wie schon „Ereignis bearbeiten" gegen „Teilnahme
+              beschriftet, wie schon „Fehlzeit bearbeiten" gegen „Teilnahme
               ändern". Vorbelegt ist das Vorkommen. */}
           {serieId && serienVorkommen.length > 0 ? (
             <fieldset className="border-line bg-surface-sunken rounded-card mt-6 border p-4">

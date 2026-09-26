@@ -7,7 +7,7 @@ import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
- * Ereignis eintragen (CAL-015b, CAL-015c).
+ * Fehlzeit eintragen (CAL-015b, CAL-015c).
  *
  * Ein Ereignis ist ein Termin ohne Patient:in: Bezeichnung statt Name,
  * mehrere Beteiligte statt einer behandelnden Person, freie Länge im
@@ -184,7 +184,7 @@ describe('NewEventPage', () => {
     await user.selectOptions(screen.getByLabelText('Standort *'), ORT);
     await user.type(screen.getByLabelText('Beginn *'), '08:00');
     await user.type(screen.getByLabelText('Ende *'), '08:25');
-    await user.click(screen.getByRole('button', { name: 'Ereignis eintragen' }));
+    await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
 
     await waitFor(() => expect(createAppointmentEvent).toHaveBeenCalledTimes(1));
     expect(createAppointmentEvent).toHaveBeenCalledWith(
@@ -206,7 +206,7 @@ describe('NewEventPage', () => {
     rendern();
     await formularAbwarten();
 
-    await user.click(screen.getByRole('button', { name: 'Ereignis eintragen' }));
+    await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
 
     expect(await screen.findByText('Bezeichnung ist erforderlich.')).toBeInTheDocument();
     expect(createAppointmentEvent).not.toHaveBeenCalled();
@@ -221,7 +221,7 @@ describe('NewEventPage', () => {
     await user.selectOptions(screen.getByLabelText('Standort *'), ORT);
     await user.type(screen.getByLabelText('Beginn *'), '10:00');
     await user.type(screen.getByLabelText('Ende *'), '09:00');
-    await user.click(screen.getByRole('button', { name: 'Ereignis eintragen' }));
+    await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
 
     expect(await screen.findByText('Das Ende muss nach dem Beginn liegen.')).toBeInTheDocument();
     expect(createAppointmentEvent).not.toHaveBeenCalled();
@@ -243,7 +243,7 @@ describe('NewEventPage', () => {
     await user.selectOptions(screen.getByLabelText('Standort *'), ORT);
     await user.type(screen.getByLabelText('Beginn *'), '05:00');
     await user.type(screen.getByLabelText('Ende *'), '05:30');
-    await user.click(screen.getByRole('button', { name: 'Ereignis eintragen' }));
+    await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
 
     expect(
       await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' }),

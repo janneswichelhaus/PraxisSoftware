@@ -238,7 +238,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
 
   const daten = termin.data;
 
-  const zurueck = istEreignis ? '← Zurück zum Ereignis' : '← Zurück zum Termin';
+  const zurueck = istEreignis ? '← Zurück zur Fehlzeit' : '← Zurück zum Termin';
 
   // Ein abgesagter Termin ist terminal. Die Serverfunktion weist ihn ohnehin
   // ab; hier wird gar nicht erst ein Formular angeboten.
@@ -272,7 +272,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
       </Link>
 
       <PageHeader
-        title={istEreignis ? 'Ereignis bearbeiten' : 'Termin bearbeiten'}
+        title={istEreignis ? 'Fehlzeit bearbeiten' : 'Termin bearbeiten'}
         description={
           istEreignis
             ? 'Zeit, Ort und beteiligte Person. Mit * markierte Felder sind erforderlich.'
@@ -326,7 +326,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
             Serverfunktion `update_appointment` nimmt sie nicht entgegen
             (CAL-016). */}
         <div className="border-line bg-surface-sunken rounded-card mb-5 border p-4">
-          <p className="text-ink-muted text-sm">{istEreignis ? 'Ereignis' : 'Patient:in'}</p>
+          <p className="text-ink-muted text-sm">{istEreignis ? 'Fehlzeit' : 'Patient:in'}</p>
           <p className="text-ink text-[0.9375rem] font-medium">
             {istEreignis ? (daten.title ?? '—') : patientName(daten)}
           </p>

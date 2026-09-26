@@ -150,7 +150,7 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
     return (
       <ErrorState
         title="Nicht freigegeben"
-        description="Termine und Ereignisse eintragen dürfen die Rollen der Terminverwaltung."
+        description="Termine und Fehlzeiten eintragen dürfen die Rollen der Terminverwaltung."
       />
     );
   }

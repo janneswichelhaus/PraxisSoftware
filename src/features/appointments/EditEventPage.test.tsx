@@ -6,7 +6,7 @@ import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 /**
- * Das ganze Ereignis bearbeiten (CAL-017).
+ * Das ganze Fehlzeit bearbeiten (CAL-017).
  *
  * Geprüft wird die Trennung, um die es geht: Diese Seite ändert Bezeichnung,
  * Zeit und Ort **für alle Beteiligten**, und sie ändert ausdrücklich nicht,
@@ -153,7 +153,7 @@ describe('EditEventPage', () => {
     expect(screen.getByText('Tim Teamleitung')).toBeInTheDocument();
     // Keine Ankreuzfelder: Wer teilnimmt, ist eine Teilnahme und kein Ereignis.
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(screen.getByText(/einzelne Teilnahme und kein Ereignis/)).toBeInTheDocument();
+    expect(screen.getByText(/einzelne Teilnahme und keine Fehlzeit/)).toBeInTheDocument();
   });
 
   it('schreibt die Aenderung auf dem Stand der GRUPPE', async () => {
@@ -206,7 +206,7 @@ describe('EditEventPage', () => {
     rendern();
 
     expect(
-      await screen.findByText(/Abgesagte Ereignisse werden nicht bearbeitet/),
+      await screen.findByText(/Abgesagte Fehlzeiten werden nicht bearbeitet/),
     ).toBeInTheDocument();
   });
 
@@ -219,7 +219,7 @@ describe('EditEventPage', () => {
     });
     rendern();
 
-    expect(await screen.findByText('Kein Ereignis')).toBeInTheDocument();
+    expect(await screen.findByText('Keine Fehlzeit')).toBeInTheDocument();
   });
 
   it('bietet einem Patientenkonto kein Formular an', async () => {

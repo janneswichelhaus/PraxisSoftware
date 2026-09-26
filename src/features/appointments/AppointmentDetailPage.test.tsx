@@ -758,7 +758,7 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       expect(await screen.findByRole('heading', { name: /Teambesprechung/ })).toBeInTheDocument();
-      expect(zeile('Ereignis')).toBe('Teambesprechung');
+      expect(zeile('Fehlzeit')).toBe('Teambesprechung');
       expect(screen.queryByText('Patient:in')).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: /Mustermann/ })).not.toBeInTheDocument();
     });
@@ -787,7 +787,7 @@ describe('AppointmentDetailPage', () => {
       expect(
         screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }),
       ).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Ereignis bearbeiten' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Fehlzeit bearbeiten' })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Teilnahme ändern' })).toBeInTheDocument();
     });
 
@@ -832,7 +832,7 @@ describe('AppointmentDetailPage', () => {
       const satz = await screen.findByText(/Die Teilnahme von/);
       expect(satz).toHaveTextContent('Teambesprechung');
       expect(satz).toHaveTextContent('Anna Beispiel');
-      // Das Ereignis selbst bleibt stehen - genau das unterscheidet die
+      // Die Fehlzeit selbst bleibt stehen - genau das unterscheidet die
       // Teilnahme vom Ereignis (CAL-017).
       expect(satz).toHaveTextContent('bleibt für die übrigen Beteiligten bestehen');
       // „… Uhr für  wird als abgesagt geführt" - die Lücke, wo am
@@ -851,7 +851,7 @@ describe('AppointmentDetailPage', () => {
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
       expect(await screen.findByText(/Anna Beispiel, Tim Teamleitung/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Ereignis absagen' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Fehlzeit absagen' })).toBeInTheDocument();
       expect(
         screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }),
       ).toBeInTheDocument();
@@ -863,8 +863,8 @@ describe('AppointmentDetailPage', () => {
       fetchEventParticipants.mockResolvedValue(zweiBeteiligte);
       rendern();
 
-      await screen.findByRole('button', { name: 'Ereignis absagen' });
-      await user.click(screen.getByRole('button', { name: 'Ereignis absagen' }));
+      await screen.findByRole('button', { name: 'Fehlzeit absagen' });
+      await user.click(screen.getByRole('button', { name: 'Fehlzeit absagen' }));
       await user.selectOptions(await screen.findByLabelText('Absagegrund'), 'practice_request');
       await user.click(screen.getByRole('button', { name: 'Ja, für alle absagen' }));
 
@@ -884,7 +884,7 @@ describe('AppointmentDetailPage', () => {
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
       await screen.findByRole('button', { name: 'Nur diese Teilnahme absagen' });
-      expect(screen.queryByRole('button', { name: 'Ereignis absagen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Fehlzeit absagen' })).not.toBeInTheDocument();
     });
 
     it('sagt ohne Eingangsangabe ab', async () => {
@@ -1158,7 +1158,7 @@ describe('AppointmentDetailPage', () => {
   /**
    * Dauerfehlzeit (CAL-021).
    *
-   * Die dritte Absage neben „Nur diese Teilnahme" und „Ereignis absagen" -
+   * Die dritte Absage neben „Nur diese Teilnahme" und „Fehlzeit absagen" -
    * und die Zeile, die überhaupt erst erklärt, warum sie da ist.
    */
   describe('CAL-021: Vorkommen einer Dauerfehlzeit', () => {

@@ -176,13 +176,13 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
     >
       <p>
         {istEreignis
-          ? `Die Teilnahme von ${staffName(appointment)} am Ereignis „${appointment.title ?? ''}" `
+          ? `Die Teilnahme von ${staffName(appointment)} an der Fehlzeit „${appointment.title ?? ''}" `
           : 'Der Termin '}
         am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
         {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr
         {istEreignis ? ' ' : ` für ${patientName(appointment)} `}
         wird als abgesagt geführt.{' '}
-        {istEreignis ? 'Das Ereignis selbst bleibt für die übrigen Beteiligten bestehen. ' : ''}
+        {istEreignis ? 'Die Fehlzeit selbst bleibt für die übrigen Beteiligten bestehen. ' : ''}
         Der Eintrag bleibt vollständig erhalten und gibt seinen Zeitraum wieder frei. Eine Absage
         lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.
       </p>
@@ -262,7 +262,7 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
 
       {istEreignis ? (
         <p className="text-ink-muted mt-3 text-sm leading-relaxed">
-          Ein Ereignis des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
+          Eine Fehlzeit des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
           die absagen könnte.
         </p>
       ) : (
@@ -277,7 +277,7 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
 }
 
 /**
- * Das ganze Ereignis absagen (CAL-017).
+ * Das ganze Fehlzeit absagen (CAL-017).
  *
  * Neben der Absage der einzelnen Teilnahme, und ausdrücklich davon getrennt:
  * Eine Besprechung, die für die einen abgesagt ist und für die anderen noch
@@ -325,8 +325,8 @@ function EreignisAbsageAktion({
 
   return (
     <Rueckfrage
-      ausloeser="Ereignis absagen"
-      bezeichnung="Ereignis absagen"
+      ausloeser="Fehlzeit absagen"
+      bezeichnung="Fehlzeit absagen"
       bestaetigen="Ja, für alle absagen"
       bestaetigenLaeuft="Wird abgesagt …"
       fehler={mutation.isError ? mutation.error.message : undefined}
@@ -335,7 +335,7 @@ function EreignisAbsageAktion({
       onBestaetigen={absagen}
     >
       <p>
-        {`Das Ereignis „${appointment.title ?? ''}" `}
+        {`Die Fehlzeit „${appointment.title ?? ''}" `}
         am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
         {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr wird für{' '}
         {offen.length === 1 ? 'die eine noch offene Teilnahme' : `alle ${offen.length} Beteiligten`}{' '}
@@ -363,8 +363,8 @@ function EreignisAbsageAktion({
         </Select>
       </div>
       <p className="text-ink-muted mt-3 text-sm leading-relaxed">
-        Ein Ereignis des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in, die
-        absagen könnte.
+        Eine Fehlzeit des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
+        die absagen könnte.
       </p>
     </Rueckfrage>
   );
@@ -373,7 +373,7 @@ function EreignisAbsageAktion({
 /**
  * Die ganze Dauerfehlzeit absagen (CAL-021).
  *
- * Die dritte Absage neben „Nur diese Teilnahme" und „Ereignis absagen", und
+ * Die dritte Absage neben „Nur diese Teilnahme" und „Fehlzeit absagen", und
  * wieder ausdrücklich davon getrennt: Diese hier trifft **alle noch kommenden
  * Vorkommen** der Serie. Was schon stattgefunden hat, bleibt stehen — ein
  * Teammeeting von letzter Woche wird nicht nachträglich zu einem abgesagten
@@ -772,7 +772,7 @@ function AppointmentDetail({
     darfVerwalten && (appointment.status === 'completed' || appointment.status === 'no_show');
   const darfDokumentieren = canWriteTreatmentNote(user.roles);
   /**
-   * Ein Ereignis des Praxisbetriebs (CAL-015b).
+   * Eine Fehlzeit des Praxisbetriebs (CAL-015b).
    *
    * Es hat keine Patient:in, keine Dokumentation und keinen Abschluss - und
    * damit auch keinen Weg in die Abrechnung (§19). Was bleibt: verschieben und
@@ -830,7 +830,7 @@ function AppointmentDetail({
            mit, damit der Weg zurück am Termin endet und nicht in der Liste. */
         title={
           istEreignis ? (
-            `Ereignis – ${appointment.title ?? ''}`
+            `Fehlzeit – ${appointment.title ?? ''}`
           ) : (
             <>
               Termin –{' '}
@@ -848,7 +848,7 @@ function AppointmentDetail({
           darfAendern ? (
             <div className="flex flex-wrap gap-3">
               {/* Zwei Wege, und der Unterschied steht in der Beschriftung
-                  (CAL-017): „Ereignis bearbeiten" trifft alle Beteiligten
+                  (CAL-017): „Fehlzeit bearbeiten" trifft alle Beteiligten
                   zugleich, „Teilnahme ändern" nur diese eine Zeile. Ohne die
                   Trennung wäre jede Verschiebung eine Wette darauf, was
                   gemeint war. */}
@@ -857,7 +857,7 @@ function AppointmentDetail({
                   to={mitRueckweg(`/termine/${appointment.id}/ereignis-bearbeiten`, eingehend)}
                   className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
                 >
-                  Ereignis bearbeiten
+                  Fehlzeit bearbeiten
                 </Link>
               ) : null}
               <Link
@@ -877,7 +877,7 @@ function AppointmentDetail({
               Akte (UX-012). Zwei gleichnamige Links auf dieselbe Seite wären
               für Vorlesesoftware zwei Angebote mit einer Wirkung. */}
           {istEreignis ? (
-            <DetailRow label="Ereignis">{appointment.title ?? '—'}</DetailRow>
+            <DetailRow label="Fehlzeit">{appointment.title ?? '—'}</DetailRow>
           ) : (
             <DetailRow label="Patient:in">{patientName(appointment)}</DetailRow>
           )}
@@ -885,7 +885,7 @@ function AppointmentDetail({
             {staffName(appointment)}
           </DetailRow>
           {/* Aus n Zeilen wird hier ein sichtbarer Vorgang: Wer hier steht,
-              hat denselben Zeitraum belegt, und „Ereignis bearbeiten" trifft
+              hat denselben Zeitraum belegt, und „Fehlzeit bearbeiten" trifft
               alle zugleich (CAL-017). */}
           {istEreignis && beteiligteListe.length > 1 ? (
             <DetailRow label="Beteiligte">
@@ -1060,7 +1060,7 @@ function AppointmentDetail({
             </>
           )}
           {/* Zwei Absagen, und der Unterschied steht in der Beschriftung
-              (CAL-017): „Ereignis absagen" trifft alle noch offenen
+              (CAL-017): „Fehlzeit absagen" trifft alle noch offenen
               Teilnahmen, „Nur diese Teilnahme absagen" diese eine. Die
               zweite steht daneben, weil sie der seltenere Fall ist. */}
           {istEreignis && offeneTeilnahmen.length > 1 ? (

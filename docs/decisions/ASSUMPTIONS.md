@@ -1424,3 +1424,15 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der n�
 **Anker.** `public/manifest.webmanifest`; `<link rel="manifest">` in `index.html`; die Messung `MASTER_WORTMARKE` in `src/components/ui/markeRegeln.ts`, geprüft in `src/marke.test.ts` („Web-Manifest").
 
 **Änderungspfad.** Zeigt Android den weißen Kreis weiter: `display` auf `minimal-ui`. Chrome installiert die Seite dann als eigene App mit dem maskierbaren Symbol und einer schmalen Leiste mit Zurück und Neu laden; iOS öffnet wie bisher im Browser · Aufwand `klein`. Kleinere Dateien: aus dem Master gerasterte Kopien mit 192 und 512 px in `marke/app/` · Aufwand `klein`.
+
+### ANN-111 — Die Begriffe stehen in einer Datei; im Kalender heißt der Eintrag ohne Patient:in „Fehlzeit", eine Person des Teams „Mitarbeiter:in"
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+
+**Annahme.** Bezeichnungen, die an mehr als einer Stelle dieselbe Sache nennen — die sechs Arbeitsbereiche mit Kurzform und Leitfrage, die Vorgänge aus Menü, Suche und Kalender, die Personen —, stehen einmal in `src/lib/begriffe.ts`. Abgelöst und aus jedem Oberflächentext ausgeschlossen sind: „Mein Tag" und „Touren & Termine" (Beschriftungen vom 2026-09-12), „Passwort" (es gilt „Kennwort"), „Mitarbeitende:n"/„Mitarbeitende:r" (Einzahl „Mitarbeiter:in", Mehrzahl „Mitarbeitende") und im Kalender „Ereignis" (es gilt „Fehlzeit").
+
+**Begründung.** Oberflächen-Checkliste Punkt 9 („gleiche Sache, gleiches Wort") und die Bedienprinzipien in `docs/PRODUCT_VISION.md` (Beschriftungen folgen einer Begriffsliste). Jannes hat die vorhandenen Begriffe am 2026-09-26 für in Ordnung befunden; dieser Loop legt deshalb keine neuen Wörter fest, sondern entscheidet nur, wo zwei Wörter für dieselbe Sache nebeneinanderstanden: Die Anlegen-Leiste sagte in Jannes' Worten „Fehlzeit · Dauerfehlzeit" (BEF-035), die Suche „Fehlzeit eintragen", das Formular dahinter „Ereignis eintragen". „Kennwort" steht 62-mal im Bestand, „Passwort" einmal in einem Kommentar. Die Einzahl „Mitarbeiter:in" folgt der Schreibweise von „Patient:in" und „Therapeut:in"; die Suche sagte als einzige Stelle „Mitarbeitende:n anlegen". Im Auditlog und im Verlauf der Messwerte (ANN-106) meint „Ereignis" etwas anderes und bleibt. Unsicher: ob „Fehlzeit" für ein Teammeeting passt, das Arbeitszeit ist.
+
+**Anker.** `ABGELOESTE_BEGRIFFE` in `src/lib/begriffe.ts`, durchgesetzt von `src/lib/begriffe.test.ts` über jeden Quelltext unter `src/` ohne Kommentare und Tests.
+
+**Änderungspfad.** Ein anderes Wort: den Wert in `BEGRIFFE` bzw. `BEREICHE` ändern, den Eintrag in `ABGELOESTE_BEGRIFFE` umkehren und den Test die übrigen Stellen finden lassen · Aufwand `klein`. Das Gate aufgeben: den Test entfernen, die Datei bleibt als Quelle · Aufwand `klein`.

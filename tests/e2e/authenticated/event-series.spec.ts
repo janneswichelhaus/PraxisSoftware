@@ -48,7 +48,7 @@ test.describe('CAL-019: Anlegen-Menü im Kalender', () => {
 
     await menue.getByRole('button', { name: /^Fehlzeit/ }).click();
 
-    await expect(page.getByRole('heading', { name: 'Ereignis eintragen' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Fehlzeit eintragen' })).toBeVisible();
     // Tag und Person kommen aus der Auswahl; die Länge nicht - ein Ereignis
     // hat keine (CAL-019).
     await expect(page.getByLabel('Datum *')).toHaveValue(tag);
