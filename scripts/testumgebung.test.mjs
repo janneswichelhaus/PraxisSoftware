@@ -121,6 +121,16 @@ describe('htaccess', () => {
     expect(datei).toContain('Options -Indexes');
   });
 
+  it('gibt die Kamera nur der eigenen Herkunft frei und sonst nichts (ADR-017 Punkt 33)', () => {
+    const datei = htaccess({ supabaseUrl: SUPABASE_URL, tuerDatei: null });
+    // Der ganze Wert, nicht nur ein Teil: Eine weitere Freigabe - Mikrofon,
+    // ein fremder Ursprung, ein Stern - soll hier auffallen.
+    expect(datei).toContain(
+      'Header always set Permissions-Policy "camera=(self), microphone=(), payment=(), usb=()"',
+    );
+    expect(datei.match(/Permissions-Policy/g)).toHaveLength(1);
+  });
+
   it('ohne Kennwortdatei keine zweite Tür', () => {
     expect(htaccess({ supabaseUrl: SUPABASE_URL, tuerDatei: null })).not.toContain('AuthType');
   });

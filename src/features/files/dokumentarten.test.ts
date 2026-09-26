@@ -28,6 +28,13 @@ describe('Dokumentarten und Dateiprüfung', () => {
     }
   });
 
+  it('grenzt das klinische Bild vom Foto der Person ab (ADR-017 Punkt 31)', () => {
+    // Sonst läge ein Foto der Person ohne Einwilligung und mit zehn Jahren
+    // Frist in der Akte.
+    expect(dokumentartHinweise.klinisches_bild).toMatch(/ärztlicher oder klinischer Hand/);
+    expect(dokumentartHinweise.klinisches_bild).toMatch(/Kein Foto, das die Praxis selbst/);
+  });
+
   it('führt den Verordnungsscan als klinisch (ANN-011, ADR-017 Punkt 12)', () => {
     expect(istKlinisch('verordnungsscan')).toBe(true);
     expect(istKlinisch('befund')).toBe(true);

@@ -1592,3 +1592,15 @@ Recht · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** Der Hinweis unter dem Druckknopf in `src/features/therapy-reports/TherapieberichtDruckPage.tsx`.
 
 **Änderungspfad.** Vermerk „Bericht angefordert / Einwilligung liegt vor" vor dem Druck: ein Feld am Bericht und eine Bedingung am Knopf · Aufwand `klein`. Versand aus der Anwendung: eigenes Epic nach ADR-002 · Aufwand `groß`.
+
+### ANN-125 — Beim Entfernen der Metadaten bleibt nur die Ausrichtung und, was der Dekoder braucht
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); am echten Gerät in der Sichtung (Fotos Schritt 1)
+
+**Annahme.** Vor jedem Upload eines JPEG oder PNG — aus dem Dateiwähler wie aus dem Kameradialog — entfernt das Gerät alle Segmente und Chunks neben den Bilddaten: EXIF samt GPS und Vorschaubild, XMP, IPTC, Kommentare, Farbprofile (ICC, `iCCP`), Textchunks, Zeitstempel, JFIF und alles hinter dem Bildende (angehängte Zweitbilder). Erhalten bleiben die Ausrichtung als neues, minimales EXIF-Segment beziehungsweise `eXIf`-Chunk, das Adobe-Segment eines JPEG (Farbumrechnung) und die Farbangaben eines PNG (`gAMA`, `cHRM`, `sRGB`, `sBIT`, `tRNS`) sowie Animationschunks. Die Bilddaten bleiben Byte für Byte; ein Bild, das sich nicht sicher zerlegen lässt, wird nicht hochgeladen.
+
+**Begründung.** ADR-017 Punkt 34 verlangt „verlustfrei, nur die Ausrichtung bleibt" und nennt EXIF, XMP, IPTC und das Vorschaubild. Offen ließ er, was mit Angaben geschieht, die nichts über die Aufnahme sagen, aber das Lesen des Bildes steuern. Ein ICC-Profil trägt im Kopf Hersteller und Gerät und geht deshalb; ohne es erscheint ein Weitraumfoto etwas blasser — für ein Dokument ohne Belang, für ein Verlaufsfoto hinnehmbar. Das Adobe-Segment dagegen braucht der Dekoder für die Farben mancher Scans und sagt nichts über Ort, Zeit oder Gerät. Angehängte Zweitbilder (Mehrbildformate, Tiefenkarten) tragen eigene Metadaten. Unsicher: ob die Prüfung auch das Adobe-Segment entfernt sehen will.
+
+**Anker.** `bereinigeJpeg`, `bereinigePng` und `PNG_BEHALTEN` in `src/features/files/metadaten.ts`; Nachweis in `src/features/files/metadaten.test.ts`.
+
+**Änderungspfad.** Ein Segment mehr oder weniger behalten: eine Bedingung in `bereinigeJpeg` beziehungsweise ein Eintrag in `PNG_BEHALTEN` · Aufwand `klein`. Farbprofil behalten, aber Hersteller- und Geräteangaben darin leeren: eine eigene Bereinigung des ICC-Kopfs · Aufwand `mittel`.

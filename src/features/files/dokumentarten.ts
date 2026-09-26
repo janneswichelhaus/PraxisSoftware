@@ -38,7 +38,10 @@ export const dokumentartHinweise: Record<Dokumentart, string> = {
   verordnungsscan: 'Foto oder Scan des Rezepts. Nur an einer Verordnung.',
   befund: 'Befund einer Untersuchung.',
   arztbrief: 'Schreiben einer ärztlichen Stelle.',
-  klinisches_bild: 'Bildgebung oder Aufnahme mit klinischer Aussage.',
+  // ADR-017 Punkt 31: nie ein Foto, das die Praxis selbst von der Person
+  // macht - das wäre ein Weg an Einwilligung und Frist vorbei.
+  klinisches_bild:
+    'Röntgen, MRT, Ultraschall oder ein Bild aus ärztlicher oder klinischer Hand. Kein Foto, das die Praxis selbst von der Person macht.',
   einwilligung: 'Unterschriebene Einwilligung oder Datenschutzinformation.',
   vertrag: 'Behandlungsvertrag oder vergleichbare Vereinbarung.',
 };
