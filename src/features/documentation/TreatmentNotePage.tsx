@@ -5,6 +5,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/TextArea';
 import { ErrorState } from '@/components/ui/Feedback';
+import { BausteinFeld } from '@/features/assessments/BausteinFeld';
+import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
   formatLocalDate,
@@ -51,7 +53,10 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
   const [fehler, setFehler] = useState<string | undefined>(undefined);
 
   const wert = entwurf ?? gespeichert;
-  const geaendert = wert !== gespeichert;
+  const bausteine = useBausteinAuswahl();
+  // Ein Vorschlag aus den Bausteinen, der noch nicht im Feld steht, ist
+  // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b).
+  const geaendert = wert !== gespeichert || bausteine.text !== '';
   const zurueck = `/termine/${appointment.id}`;
 
   // Der Text, wie er in diesem Augenblick im Feld steht. Ein Schreibvorgang
@@ -61,6 +66,8 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
   // (FIX-014).
   const wertRef = useRef(wert);
   wertRef.current = wert;
+  const vorschlagRef = useRef(bausteine.text);
+  vorschlagRef.current = bausteine.text;
 
   /**
    * Den Entwurf sichern - ohne Seitenwechsel.
@@ -73,7 +80,11 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
    * Der Rückgabewert sagt, ob **alles Getippte** auf dem Server liegt.
    */
   async function entwurfSichern(): Promise<boolean> {
-    const zuSichern = wertRef.current;
+    // Ein noch nicht übernommener Vorschlag geht mit: Der Entwurf bleibt ein
+    // Entwurf, und die Rückfrage des Navigationsschutzes verspricht, dass
+    // nichts verloren geht (FRB-003b).
+    const vorschlag = vorschlagRef.current;
+    const zuSichern = vorschlag ? bausteinEinfuegen(wertRef.current, vorschlag) : wertRef.current;
     const meldung = inhaltFehler(zuSichern);
     if (meldung) {
       setFehler(meldung);
@@ -88,6 +99,15 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
       await createTreatmentNote(appointment.id, zuSichern);
     }
 
+    if (vorschlag) {
+      // Was während des Speicherns getippt wurde, bleibt stehen; der
+      // Vorschlag steht danach im Feld wie übernommen.
+      const imFeld = bausteinEinfuegen(wertRef.current, vorschlag);
+      setEntwurf(imFeld);
+      bausteine.leeren();
+      wertRef.current = imFeld;
+      vorschlagRef.current = '';
+    }
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
     return wertRef.current === zuSichern;
   }
@@ -100,7 +120,7 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
   function absenden(event: React.FormEvent) {
     event.preventDefault();
 
-    const meldung = inhaltFehler(wert);
+    const meldung = inhaltFehler(bausteine.text ? bausteinEinfuegen(wert, bausteine.text) : wert);
     setFehler(meldung);
     if (meldung) return;
 
@@ -137,6 +157,14 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
             if (fehler) setFehler(undefined);
           }}
         />
+
+        {istNachtrag ? null : (
+          <BausteinFeld
+            bausteine={bausteine}
+            onUebernehmen={(text) => setEntwurf(bausteinEinfuegen(wert, text))}
+            hinweis="Übernommen wird der Vorschlag mit „In den Text übernehmen“ – oder beim Speichern als Entwurf, damit nichts verloren geht."
+          />
+        )}
 
         {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer Stelle:
             Alle Schreibwege dieser Seite laufen durch denselben Vorgang. */}

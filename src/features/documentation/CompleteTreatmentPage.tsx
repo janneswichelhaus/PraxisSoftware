@@ -5,6 +5,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/TextArea';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { BausteinFeld } from '@/features/assessments/BausteinFeld';
+import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
   formatLocalDate,
@@ -66,12 +69,18 @@ function Abschluss({
   const [schreibtAbschluss, setSchreibtAbschluss] = useState(false);
 
   const wert = entwurf ?? gespeichert;
-  const geaendert = wert !== gespeichert;
+  const bausteine = useBausteinAuswahl();
+  // Ein Vorschlag aus den Bausteinen, der noch nicht im Feld steht, ist
+  // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b).
+  const geaendert = wert !== gespeichert || bausteine.text !== '';
+  const [vorschlagOffen, setVorschlagOffen] = useState(false);
 
   // Der Text, wie er in diesem Augenblick im Feld steht - nicht der von
   // vorhin. Ein Schreibvorgang dauert (FIX-014).
   const wertRef = useRef(wert);
   wertRef.current = wert;
+  const vorschlagRef = useRef(bausteine.text);
+  vorschlagRef.current = bausteine.text;
 
   /**
    * Nur den Entwurf sichern - ohne Abschluss und ohne Seitenwechsel.
@@ -82,7 +91,11 @@ function Abschluss({
    * festschreiben (ADR-016, ADR-018).
    */
   async function entwurfSichern(): Promise<boolean> {
-    const zuSichern = wertRef.current;
+    // Ein noch nicht übernommener Vorschlag geht in den **Entwurf** mit, damit
+    // die Rückfrage des Navigationsschutzes hält, was sie verspricht. In den
+    // Abschluss geht er nie ungesehen (siehe unten, FRB-003b).
+    const vorschlag = vorschlagRef.current;
+    const zuSichern = vorschlag ? bausteinEinfuegen(wertRef.current, vorschlag) : wertRef.current;
     const meldung = inhaltFehler(zuSichern);
     if (meldung) {
       setFehler(meldung);
@@ -93,6 +106,13 @@ function Abschluss({
       await updateTreatmentNote(note.id, note.updated_at, zuSichern);
     } else {
       await createTreatmentNote(appointment.id, zuSichern);
+    }
+    if (vorschlag) {
+      const imFeld = bausteinEinfuegen(wertRef.current, vorschlag);
+      setEntwurf(imFeld);
+      bausteine.leeren();
+      wertRef.current = imFeld;
+      vorschlagRef.current = '';
     }
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
     return wertRef.current === zuSichern;
@@ -130,7 +150,9 @@ function Abschluss({
       ohneBehandlung,
     );
     await nachSchreiben();
-    return true;
+    // Wer währenddessen Bausteine angetippt hat, hat danach wieder
+    // ungespeicherte Arbeit; die Seite bleibt dann stehen (FIX-014).
+    return vorschlagRef.current === '';
   }
 
   function weiterZumTermin() {
@@ -138,9 +160,15 @@ function Abschluss({
     void navigate(zurueck);
   }
 
-  /** Gemeinsame Eingabeprüfung beider Wege. Verbindlich prüft der Server. */
-  function geprueft(): boolean {
-    const meldung = inhaltFehler(wert);
+  /**
+   * Gemeinsame Eingabeprüfung beider Wege. Verbindlich prüft der Server.
+   * Geprüft wird der Text, der geschrieben würde: beim Entwurf samt einem
+   * noch nicht übernommenen Vorschlag.
+   */
+  function geprueft(mitVorschlag: boolean): boolean {
+    const meldung = inhaltFehler(
+      mitVorschlag && bausteine.text ? bausteinEinfuegen(wert, bausteine.text) : wert,
+    );
     setFehler(meldung);
     return meldung === undefined;
   }
@@ -177,7 +205,14 @@ function Abschluss({
         className="max-w-2xl"
         onSubmit={(event) => {
           event.preventDefault();
-          if (!geprueft()) return;
+          // Festgeschrieben wird nur, was im Feld steht und gelesen wurde
+          // (ADR-016 Punkt 4). Ein Vorschlag aus den Bausteinen geht deshalb
+          // nicht ungesehen mit, sondern hält den Abschluss an (FRB-003b).
+          if (bausteine.text) {
+            setVorschlagOffen(true);
+            return;
+          }
+          if (!geprueft(false)) return;
           setSchreibtAbschluss(true);
           void schreiben({
             ausfuehren: abschlussSchreiben,
@@ -206,6 +241,23 @@ function Abschluss({
             if (fehler) setFehler(undefined);
           }}
         />
+
+        {ohneBehandlung ? null : (
+          <BausteinFeld
+            bausteine={bausteine}
+            onUebernehmen={(text) => {
+              setEntwurf(bausteinEinfuegen(wert, text));
+              setVorschlagOffen(false);
+            }}
+            hinweis="Übernommen wird der Vorschlag mit „In den Text übernehmen“. Abgeschlossen wird erst, wenn er im Text steht oder verworfen ist."
+          />
+        )}
+        {vorschlagOffen && bausteine.text ? (
+          <Statusmeldung ton="fehler" className="mt-3">
+            Der Vorschlag aus den Bausteinen steht noch nicht im Text. Bitte übernehmen oder
+            verwerfen, dann abschließen.
+          </Statusmeldung>
+        ) : null}
 
         {/* Die Folge steht vor der Schaltfläche, nicht in einer Rückfrage
             danach: So liest man sie, bevor man tippt (ADR-016 Punkt 4, 5). */}
@@ -240,7 +292,7 @@ function Abschluss({
             variant="secondary"
             disabled={laeuft || !geaendert}
             onClick={() => {
-              if (!geprueft()) return;
+              if (!geprueft(true)) return;
               void schreiben({
                 ausfuehren: entwurfSichern,
                 fehlertitel: 'Nicht gespeichert',

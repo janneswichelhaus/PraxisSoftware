@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as DokumentationApi from './api';
@@ -360,6 +360,84 @@ describe('CompleteTreatmentPage', () => {
           false,
         ),
       );
+    });
+  });
+
+  /**
+   * Befund aus Bausteinen (FRB-003b). Festgeschrieben wird nur, was im Feld
+   * steht (ADR-016 Punkt 4); ein nicht übernommener Vorschlag hält den
+   * Abschluss an, geht aber in einen Entwurf mit, statt verloren zu gehen (§13).
+   */
+  describe('FRB-003b: Befund aus Bausteinen', () => {
+    const VORSCHLAG = 'Knie – Weiterführende Untersuchung\nLachmann-Test: positiv.';
+
+    async function lachmannPositiv(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByText('Befund aus Bausteinen'));
+      await user.click(screen.getByRole('button', { name: 'Knie' }));
+      await user.click(screen.getByText('Weiterführende Untersuchung'));
+      const lachmann = screen.getByRole('group', { name: 'Lachmann-Test' });
+      await user.click(within(lachmann).getByRole('button', { name: 'positiv' }));
+    }
+
+    it('übernimmt den Vorschlag in den Text und schließt genau diesen ab', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
+      await lachmannPositiv(user);
+      await user.click(screen.getByRole('button', { name: 'In den Text übernehmen' }));
+
+      const erwartet = `Befund:\n\n${VORSCHLAG}`;
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(erwartet);
+      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          erwartet,
+          termin.updated_at,
+          null,
+          false,
+        ),
+      );
+    });
+
+    it('schließt nicht ab, solange ein Vorschlag nicht im Text steht', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
+      await lachmannPositiv(user);
+      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        /Vorschlag aus den Bausteinen steht noch nicht im Text/,
+      );
+      expect(completeTreatment).not.toHaveBeenCalled();
+    });
+
+    it('nimmt einen offenen Vorschlag in den Entwurf mit', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await lachmannPositiv(user);
+      await user.click(screen.getByRole('button', { name: 'Nur als Entwurf speichern' }));
+
+      await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, VORSCHLAG));
+      expect(completeTreatment).not.toHaveBeenCalled();
+    });
+
+    it('fragt beim Verlassen auch dann nach, wenn nur Bausteine angetippt sind', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await lachmannPositiv(user);
+      await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+      expect(
+        await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' }),
+      ).toBeInTheDocument();
+    });
+
+    it('bietet ohne Behandlung keine Bausteine an', async () => {
+      rendern(['therapist'], '?ohne-behandlung=1');
+      await screen.findByLabelText('Eintrag zur Behandlung');
+      expect(screen.queryByText('Befund aus Bausteinen')).toBeNull();
     });
   });
 });

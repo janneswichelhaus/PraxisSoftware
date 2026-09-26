@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -133,6 +133,32 @@ describe('TreatmentNotePage', () => {
       expect(updateTreatmentNote).toHaveBeenCalledWith(DOKU_ID, STAND, `${INHALT} Ergaenzung.`);
     });
     expect(createTreatmentNote).not.toHaveBeenCalled();
+  });
+
+  it('haengt einen nicht uebernommenen Bausteinvorschlag beim Speichern an (FRB-003b)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    const user = userEvent.setup();
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue(INHALT));
+    await user.click(screen.getByText('Befund aus Bausteinen'));
+    await user.click(screen.getByRole('button', { name: 'Knie' }));
+    await user.click(screen.getByText('Therapie'));
+    await user.click(
+      within(screen.getByRole('group', { name: 'Myofaszial' })).getByRole('button', {
+        name: 'durchgeführt',
+      }),
+    );
+    // Nur ein Häkchen, kein getippter Text: Das ist trotzdem ungespeicherte Arbeit.
+    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+
+    await waitFor(() =>
+      expect(updateTreatmentNote).toHaveBeenCalledWith(
+        DOKU_ID,
+        STAND,
+        `${INHALT}\n\nKnie – Therapie\nMyofaszial: durchgeführt.`,
+      ),
+    );
   });
 
   it('laesst ohne Aenderung nicht speichern', async () => {

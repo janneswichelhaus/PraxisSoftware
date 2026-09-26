@@ -1532,3 +1532,15 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes (Pla
 **Anker.** `src/features/assessments/definitionen/bausteine/README.md`; Test „lässt die Tippfehler der Vorlage stehen" in `src/features/assessments/bausteine.test.ts`.
 
 **Änderungspfad.** Korrigieren: Labels in den Regionsdateien, Version heben, Quelldatei mit Vermerk anpassen, damit der Wortlauttest die neue Schreibweise hält · Aufwand `klein`. Kennungen bleiben.
+
+### ANN-120 — Bausteine erzeugen nur Text: kein gespeichertes Einzelergebnis, der Befund ist die Dokumentation des Termins
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Phase P6 des FRB-Plans (Ergebnisse speichern, Verlauf je Test); Jannes in der Sichtung
+
+**Annahme.** Das Bausteinfeld steht in „Behandlung abschließen" und „Dokumentation bearbeiten" (nicht im Nachtrag, nicht ohne Behandlung). Die Häkchen leben nur auf der Seite; gespeichert wird allein der übernommene Text als Entwurf nach ADR-016. Der Erstbefund ist damit die Dokumentation des Termins der Erstaufnahme, kein eigener Eintragstyp. Ein nicht übernommener Vorschlag gilt als ungespeicherte Arbeit: Er geht beim Speichern als Entwurf mit, hält den Abschluss aber an, bis er im Text steht oder verworfen ist. Keine Kopierschaltfläche.
+
+**Begründung.** Plan Abschnitt 4 und Phase P3: der erzeugte Text ist ein Vorschlag, erst die Übernahme macht ihn zum Eintrag, und nichts Finalisiertes wird überschrieben; ADR-016 Punkt 4 verlangt, dass festgeschrieben wird, was gelesen wurde; §13 verbietet den stillen Verlust. Strukturierte Ergebnisse brauchen Datenklasse, Frist und RLS und sind P6 — heute vorzubauen wäre Vorratsbau (ADR-014). Die Kopierschaltfläche des Plans entfällt, weil der Text direkt ins Feld geht und eine Zwischenablage mit Gesundheitsdaten auf manchen Geräten synchronisiert wird. Unsicher: ob Jannes den Befund als eigenen Eintrag neben der Verlaufsdoku sehen will.
+
+**Anker.** `useBausteinAuswahl` in `src/features/assessments/bausteinauswahl.ts` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; Einbindung in `src/features/documentation/TreatmentNotePage.tsx` und `CompleteTreatmentPage.tsx`; Tests dort und in `src/features/assessments/BausteinFeld.test.tsx`.
+
+**Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`.
