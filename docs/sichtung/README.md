@@ -16,9 +16,9 @@ Schritten**; Einzelheiten decken die Tests ab. Aufruf: `/sichtung <Datei>`.
 
 ## Wo
 
-Bis zur Test-Umgebung (OPS-002a, Block 1a) lokal nach
-[`../DEVELOPMENT.md`](../DEVELOPMENT.md), „Lokale Sichtung", am Handy im WLAN
-(„Handytest im WLAN"); danach auf der Test-Umgebung. Die Abläufe hinter der
+Auf der Test-Umgebung (`https://prtest.uber.space`, seit 2026-09-25;
+[`../DEVELOPMENT.md`](../DEVELOPMENT.md), „Test-Umgebung"); für einen Stand,
+der noch nicht auf `main` liegt, lokal im WLAN („Handytest im WLAN"). Die Abläufe hinter der
 Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 `pnpm test:db` und die Komponententests.
 
@@ -26,7 +26,7 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 
 | Datei                                        | Etappe                            | Stand                                                                                |
 | -------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------ |
-| [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess     | offen (Rückstand seit CAL-EPIC-003b)                                                 |
+| [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess     | offen (Rückstand seit CAL-EPIC-003b); freie Sichtung Kalender 2026-09-26             |
 | [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | offen                                                                                |
 | [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst           | offen; seit MAP-006 auf der echten Tourenseite, Teil am Telefon wartet auf ein Gerät |
 | [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                                                                |

@@ -49,3 +49,5 @@ Ein durchgehender Fall: Die neue Patientin „Sichtung Test" (Platzhalter, kein 
 ## Ergebnis
 
 Gesichtet am: — · Gerät: — · Befunde: — (neue nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md))
+
+**Freie Sichtung Kalender, 2026-09-26** (ohne die Schritte oben, Test-Umgebung, iPhone und Android, therapist): BEF-035 bis BEF-040 — Anlegen-Menü verdeckt die Spalte, zweiter Tipp hebt nicht auf, Uhrzeit sprengt den Rahmen, kein Zoomen mit zwei Fingern, zu viel über dem Raster, Android-Symbol im weißen Kreis. Die Schritte oben bleiben offen.
