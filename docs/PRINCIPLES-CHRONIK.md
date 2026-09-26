@@ -6,6 +6,23 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.18
+
+Nachzug an Rang 2 nach der Annahme von ADR-017 Fassung 2 (Abschnitt G) durch den Projektinhaber am
+2026-09-26, erster Schritt von DOK-006. Geändert ist nur **§5**, Absatz „Fotos":
+
+- **Fotos von Patient:innen** sind nicht mehr „vorgesehen, aber noch nicht freigegeben", sondern
+  freigegeben. Die Aufnahme über die Kamera der Anwendung ist für sie ein MUSS; für die übrigen
+  Aufnahmen des Teams bleibt es beim SOLLTE.
+- Die eigene Einwilligung bleibt Voraussetzung; neu steht dort, dass niemand ohne sie schlechter
+  behandelt wird.
+- Neu ist die Regel „ein Foto ersetzt keinen Eintrag" mit dem Verweis auf §17: Den Unterschied
+  zweier Fotos bewertet die Therapeut:in, nicht die Anwendung.
+- Der Satz, Frist und Aufnahmemetadaten entscheide „der Loop, der sie baut", entfällt; das regelt
+  jetzt ADR-017 Abschnitt G.
+
+Keine andere Leitplanke ändert sich. Die Tabelle in §21 nennt ADR-017 bereits bei §5.
+
 ### Änderungsvermerk 0.17
 
 Umbau U1 nach dem Produktgespräch vom 2026-09-23 (`docs/development/UMBAU.md`).
