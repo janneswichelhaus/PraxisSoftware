@@ -51,3 +51,5 @@ Ein durchgehender Fall: Die neue Patientin „Sichtung Test" (Platzhalter, kein 
 Gesichtet am: — · Gerät: — · Befunde: — (neue nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md))
 
 **Freie Sichtung Kalender, 2026-09-26** (ohne die Schritte oben, Test-Umgebung, iPhone und Android, therapist): BEF-035 bis BEF-040 — Anlegen-Menü verdeckt die Spalte, zweiter Tipp hebt nicht auf, Uhrzeit sprengt den Rahmen, kein Zoomen mit zwei Fingern, zu viel über dem Raster, Android-Symbol im weißen Kreis. Die Schritte oben bleiben offen. Gebaut in UX-EPIC-002 (UX-002a bis UX-002e, 2026-09-26); nachzusehen in den Schritten 1, 2, 9 und 10.
+
+**Freie Sichtung Kalender, zweite Runde, 2026-09-26** (Test-Umgebung, Chrome, therapist): BEF-041 bis BEF-044 — Chrome installiert nicht mehr (Manifest `display: browser`), Dauertermin verlangt erst eine Patient:in, Kalender steckt in einem Kasten statt randlos, Zeile _Kalender · Touren_ kostet Höhe. Dazu eine Idee: Statistiken als eigener Bereich (IDEA-PRX-025 ergänzt). Die Schritte oben bleiben offen.

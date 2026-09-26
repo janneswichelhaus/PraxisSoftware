@@ -498,6 +498,29 @@ CSV. Keine Werte je Person, bis B6 entschieden ist.
 Monatsabschluss sonst Handarbeit. §20 setzt die Grenze bei
 Beschäftigtendaten; Praxissummen sind davon nicht berührt.
 
+**Ergänzung (Jannes, 2026-09-26).** Ein **eigener Arbeitsbereich
+„Statistiken"**, nicht ein Bericht am Rand: Die wichtigen Kennzahlen stehen
+dort, und über ihn **steuert Jannes die Praxis**. Ausdrücklich ein großes
+Vorhaben mit viel Aufwand und Qualität. Kandidaten aus dem Gespräch und dem
+Bestand, noch unbewertet:
+
+- Umsatz und Zahlungseingang je Monat, offene Posten mit Alter, Mahnstand.
+- Auslastung als Praxissumme: gebuchte gegen verfügbare Stunden, freie
+  Fenster der nächsten Wochen, Ausfälle und Ausfallhonorare.
+- Verordnungen: offenes Kontingent, auslaufende Verordnungen ohne
+  Folgeverordnung, ungedeckte Termine.
+- Patientenfluss: Neuaufnahmen, Abschlüsse, Übergänge in Training/Nachsorge.
+- Wege: Fahrzeit-Anteil am Tag als Praxissumme (nicht je Person, §20).
+- Zu jeder Kennzahl ein **Zielwert und die Handlung**, die sie auslöst
+  („Steuern", nicht nur Anzeigen) — etwa von der Liste auslaufender
+  Verordnungen direkt in die Anrufliste.
+
+**Offen.** Welche fünf Zahlen Jannes jede Woche sehen will; ob Werte je
+Person je gezeigt werden (B6, §20 — bis dahin nein); Rolle `owner` allein
+(ADR-004). In der Roadmap steht die Idee in PRX-EPIC-004 (Block 9); wird sie
+als eigener Bereich vorgezogen, ist das eine Entscheidung von Jannes über die
+Reihenfolge, kein Scope aus diesem Eintrag.
+
 ---
 
 ### IDEA-PRX-026 — Export für die Steuerberatung
