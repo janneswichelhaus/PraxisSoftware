@@ -140,6 +140,8 @@ describe('TreatmentNotePage', () => {
       await waitFor(() => expect(feld()).toHaveValue(INHALT));
       await user.click(screen.getByText('Befund aus Bausteinen'));
       await user.click(screen.getByRole('button', { name: 'Knie' }));
+      const seite = screen.getByRole('group', { name: 'Seite Knie' });
+      await user.click(within(seite).getByRole('button', { name: 'links' }));
       await user.click(screen.getByText('Therapie'));
       await user.click(
         within(screen.getByRole('group', { name: 'Myofaszial' })).getByRole('button', {
@@ -172,7 +174,7 @@ describe('TreatmentNotePage', () => {
         expect(updateTreatmentNote).toHaveBeenCalledWith(
           DOKU_ID,
           STAND,
-          `${INHALT}\n\nKnie – Therapie\nMyofaszial: durchgeführt.`,
+          `${INHALT}\n\nKnie links – Therapie\n• Myofaszial`,
         ),
       );
     });
