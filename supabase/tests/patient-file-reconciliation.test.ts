@@ -1,6 +1,9 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, abgefangen, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
-import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  erwarteAbgewiesenenLeseversuch,
+  erwarteAbgewiesenenSchreibversuch,
+} from './helpers/abgewiesen';
 
 /**
  * Abgleich zwischen Datenbank und Ablage (DAT-003, ADR-017 Punkt 27).
@@ -226,6 +229,9 @@ describe('Abgleich der Dateiablage (DAT-003)', () => {
 
   describe('Wer den Abgleich sehen darf', () => {
     it('weist alle Rollen ausser owner ab', async () => {
+      const auftraege = async () =>
+        (await asPostgres('select 1 from public.storage_deletion_orders')).rows.length;
+      const auftraegeVorher = await auftraege();
       for (const konto of [users.therapist, users.teamLead, users.office, users.patientMax]) {
         // G6b: Die beiden Lesepfade weisen mit null Zeilen ab und protokollieren.
         await erwarteAbgewiesenenLeseversuch(
@@ -241,10 +247,14 @@ describe('Abgleich der Dateiablage (DAT-003)', () => {
           'storage_deletion.read',
         );
 
-        const vormerken = await abgefangen(
-          asUser(konto, 'select public.order_orphaned_object_deletion()'),
+        // G6c: bestätigt abgewiesen und protokolliert, ohne Auftrag.
+        await erwarteAbgewiesenenSchreibversuch(
+          konto,
+          'select public.order_orphaned_object_deletion() as n',
+          [],
+          'storage_deletion.ordered',
         );
-        expect(vormerken?.message).toMatch(/not allowed to order deletions/);
+        expect(await auftraege()).toBe(auftraegeVorher);
       }
     });
   });

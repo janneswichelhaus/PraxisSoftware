@@ -78,6 +78,9 @@ export const AUDIT_ACTIONS = [
   'patient_file.type_corrected',
   'storage_deletion.claimed',
   'storage_deletion.receipted',
+  // G6c: nur abgewiesen - der erlaubte Weg protokolliert das Vormerken nicht,
+  // die Ausfuehrung steht unter `claimed` und `receipted`.
+  'storage_deletion.ordered',
   'text_snippet.created',
   'text_snippet.updated',
   'text_snippet.deleted',
@@ -262,6 +265,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'patient_file.type_corrected': 'Dokumentart einer Datei korrigiert',
   'storage_deletion.claimed': 'Löschung in der Ablage freigegeben',
   'storage_deletion.receipted': 'Löschung in der Ablage quittiert',
+  'storage_deletion.ordered': 'Verwaiste Objekte zum Löschen vorgemerkt',
 };
 
 export const auditSubjectLabels: Record<string, string> = {
