@@ -11,3 +11,12 @@ export function kameraVerfuegbar(): boolean {
     typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function'
   );
 }
+
+/** „Foto vom 26.09.2026" — der vorgeschlagene Name eines Fotos aus dem Kameradialog. */
+export function fotoVomHeutigenTag(): string {
+  return `Foto vom ${new Date().toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })}`;
+}

@@ -1,4 +1,5 @@
 import { usePatientRecord } from '@/features/patients/akte';
+import { Patientenfotos } from '@/features/files/Patientenfotos';
 import { PatientRecordDocumentation } from './PatientRecordDocumentation';
 
 /**
@@ -7,8 +8,16 @@ import { PatientRecordDocumentation } from './PatientRecordDocumentation';
  * Inhaltlich die Behandlungsdokumentation aus DOK-003, seit ROL-001 für alle
  * vier Praxisrollen dieselbe. Ein eigener Bereich, weil der Verlauf die längste
  * Liste der Akte ist und bisher alles andere nach oben aus dem Bild schob.
+ * Darüber seit DOK-006 die Fotos der Person (ADR-017 Abschnitt G).
  */
 export function PatientCoursePage() {
   const { patient, user } = usePatientRecord();
-  return <PatientRecordDocumentation patient={patient} user={user} />;
+  return (
+    <>
+      {/* DOK-006: Fotos zum Vergleich im Verlauf, über der langen Liste der
+          Einträge - sonst stünden sie am Ende, hinter jeder Seite. */}
+      <Patientenfotos patientId={patient.id} user={user} />
+      <PatientRecordDocumentation patient={patient} user={user} />
+    </>
+  );
 }

@@ -10,7 +10,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { oeffneDatei, type PatientFile } from './api';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
 import { Kameradialog } from './Kameradialog';
-import { kameraVerfuegbar } from './kamera';
+import { fotoVomHeutigenTag, kameraVerfuegbar } from './kamera';
 import { useDateiLoeschen, useDateiUpload, useDateien, useDokumentartKorrigieren } from './dateien';
 import {
   DATEI_ACCEPT,
@@ -81,15 +81,6 @@ interface UploadfeldProps {
   arten: readonly Dokumentart[];
 }
 
-/** „Foto vom 26.09.2026" — der vorgeschlagene Name eines Kamerafotos. */
-function fotoname(): string {
-  return `Foto vom ${new Date().toLocaleDateString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })}`;
-}
-
 /**
  * Datei wählen oder fotografieren, Art bestimmen, hinzufügen.
  *
@@ -139,7 +130,7 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
     setKameraOffen(false);
     setErfolg(null);
     upload.reset();
-    const vorschlag = fotoname();
+    const vorschlag = fotoVomHeutigenTag();
     const aufnahme = new File([foto], `${vorschlag}.jpg`, { type: 'image/jpeg' });
     const grund = dateiAblehnungsgrund(aufnahme);
     setAblehnung(grund);

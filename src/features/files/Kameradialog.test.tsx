@@ -135,6 +135,24 @@ describe('Kameradialog', () => {
     await waitFor(() => expect(stopp).toHaveBeenCalled());
   });
 
+  it('beendet einen Strom, den ein zweiter Start abgelöst hat (StrictMode, Neu aufnehmen)', async () => {
+    const ersteSpur = vi.fn();
+    let ersteFreigeben: (strom: MediaStream) => void = () => undefined;
+    getUserMedia
+      .mockReturnValueOnce(new Promise<MediaStream>((fertig) => (ersteFreigeben = fertig)))
+      .mockResolvedValueOnce(stromMitSpur());
+
+    const { rerender } = render(
+      <Kameradialog key="a" titel="Foto" onAufnahme={vi.fn()} onSchliessen={vi.fn()} />,
+    );
+    // Ein neuer Dialog an derselben Stelle - wie der zweite Effekt im StrictMode.
+    rerender(<Kameradialog key="b" titel="Foto" onAufnahme={vi.fn()} onSchliessen={vi.fn()} />);
+    await screen.findByRole('button', { name: 'Auslösen' });
+
+    ersteFreigeben({ getTracks: () => [{ stop: ersteSpur }] } as unknown as MediaStream);
+    await waitFor(() => expect(ersteSpur).toHaveBeenCalled());
+  });
+
   it('sagt, wenn die Freigabe verweigert wurde', async () => {
     getUserMedia.mockRejectedValue(Object.assign(new Error('nein'), { name: 'NotAllowedError' }));
     render(<Kameradialog titel="Foto" onAufnahme={vi.fn()} onSchliessen={vi.fn()} />);

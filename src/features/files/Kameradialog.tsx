@@ -76,12 +76,15 @@ export function Kameradialog({
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const strom = useRef<MediaStream | null>(null);
-  // Die Freigabe kann kommen, nachdem der Dialog schon zu ist - dann wird der
-  // Strom sofort wieder beendet, statt unbemerkt weiterzulaufen.
-  const offen = useRef(true);
+  // Die Freigabe kann kommen, nachdem der Dialog schon zu ist oder ein neuer
+  // Start den alten abgelöst hat - dann wird der Strom sofort wieder beendet,
+  // statt unbemerkt weiterzulaufen. Jeder Start und jeder Abbau zählt weiter.
+  const durchlauf = useRef(0);
   const [zustand, setZustand] = useState<Zustand>({ art: 'startet' });
 
   const starten = useCallback(async () => {
+    durchlauf.current += 1;
+    const dieser = durchlauf.current;
     stoppe(strom.current);
     strom.current = null;
     if (!kameraVerfuegbar()) {
@@ -104,7 +107,7 @@ export function Kameradialog({
           height: { ideal: 1080 },
         },
       });
-      if (!offen.current) {
+      if (dieser !== durchlauf.current) {
         stoppe(neu);
         return;
       }
@@ -121,17 +124,17 @@ export function Kameradialog({
       }
       setZustand({ art: 'laeuft' });
     } catch (ursache) {
-      setZustand({ art: 'fehler', meldung: kamerafehler(ursache) });
+      if (dieser === durchlauf.current)
+        setZustand({ art: 'fehler', meldung: kamerafehler(ursache) });
     }
   }, []);
 
   useEffect(() => {
-    offen.current = true;
     void starten();
     return () => {
       // Beim Schließen, beim Verlassen der Seite, bei jedem Abbau: Die Kamera
       // läuft keinen Augenblick länger als der Dialog.
-      offen.current = false;
+      durchlauf.current += 1;
       stoppe(strom.current);
       strom.current = null;
     };
