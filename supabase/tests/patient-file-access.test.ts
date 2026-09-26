@@ -8,6 +8,7 @@ import {
   asUserCommitted,
   resetDatabase,
 } from './helpers/db';
+import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
 
 /**
  * BEF-004: Dateizugriff nur ueber den auditierten Weg (ADR-017 Punkt 11, 15,
@@ -89,7 +90,7 @@ async function aufraeumen(): Promise<void> {
 
 async function auditAnzahl(action: string): Promise<number> {
   const { rows } = await asPostgres<{ n: string }>(
-    'select count(*)::text as n from public.audit_log where action = $1',
+    "select count(*)::text as n from public.audit_log where action = $1 and outcome = 'success'",
     [action],
   );
   return Number(rows[0]!.n);
@@ -298,12 +299,21 @@ describe('BEF-004: Dateizugriff nur ueber den auditierten Weg', () => {
 
     it('stellt einer anderen Rolle keine Loeschfreigabe aus', async () => {
       const { orderId } = await offenerAuftrag();
+      const freigaben = async () =>
+        (await asPostgres('select 1 from public.patient_file_access_grants')).rows.length;
+      const freigabenVorher = await freigaben();
 
       for (const konto of [users.therapist, users.office, users.teamLead]) {
-        const fehler = await abgefangen(asUserCommitted(konto, LOESCHFREIGABE, [orderId]));
-        expect(fehler?.message).toMatch(/not allowed to execute deletion orders/);
+        // G6c: bestätigt abgewiesen und protokolliert, ohne Freigabe.
+        await erwarteAbgewiesenenSchreibversuch(
+          konto,
+          LOESCHFREIGABE,
+          [orderId],
+          'storage_deletion.claimed',
+        );
       }
       expect(await auditAnzahl('storage_deletion.claimed')).toBe(0);
+      expect(await freigaben()).toBe(freigabenVorher);
     });
   });
 

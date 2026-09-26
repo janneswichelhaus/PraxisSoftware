@@ -1,6 +1,9 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
-import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import {
+  erwarteAbgewiesenenLeseversuch,
+  erwarteAbgewiesenenSchreibversuch,
+} from './helpers/abgewiesen';
 
 const { users, patients } = SEED;
 
@@ -132,9 +135,36 @@ describe('Legal Hold: Berechtigungen', () => {
     ['office', users.office],
     ['patient', users.patientMax],
   ])('verweigert %s das Setzen einer Sperre', async (_rolle, userId) => {
-    await expect(asUser(userId, SETZEN, [patients.max, 'Irgendein Grund'])).rejects.toThrow(
-      /not allowed to manage legal holds/,
+    // G6c: bestätigt abgewiesen und protokolliert; eine Sperre entsteht nicht.
+    await erwarteAbgewiesenenSchreibversuch(
+      userId,
+      SETZEN,
+      [patients.max, 'Irgendein Grund'],
+      'legal_hold.placed',
     );
+    const { rows } = await asPostgres('select 1 from public.legal_holds where subject_id = $1', [
+      patients.max,
+    ]);
+    expect(rows).toEqual([]);
+  });
+
+  it('verweigert therapist das Aufheben einer Sperre', async () => {
+    const { rows } = await asUserCommitted<{ id: string }>(users.ownerTherapist, SETZEN, [
+      patients.max,
+      'Anfrage der Aufsicht',
+    ]);
+    const holdId = rows[0]!.id;
+    await erwarteAbgewiesenenSchreibversuch(
+      users.therapist,
+      AUFHEBEN,
+      [holdId],
+      'legal_hold.released',
+    );
+    const offen = await asPostgres<{ released_at: string | null }>(
+      'select released_at from public.legal_holds where id = $1',
+      [holdId],
+    );
+    expect(offen.rows[0]?.released_at).toBeNull();
   });
 
   it.each([

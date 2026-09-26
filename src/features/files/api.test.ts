@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Der Weg einer Datei in die Akte (ADR-017 Punkt 7) endet hier, bevor er
@@ -13,7 +13,8 @@ vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({ rpc, storage: { from: () => ({ upload }) } }),
 }));
 
-const { ladeDateiHoch } = await import('./api');
+const { fuehreLoeschauftragAus, ladeDateiHoch, merkeVerwaisteZurLoeschungVor } =
+  await import('./api');
 
 const PATIENT = '66666666-6666-4666-8666-000000000002';
 
@@ -36,5 +37,27 @@ describe('ladeDateiHoch', () => {
 
     expect(rpc).not.toHaveBeenCalled();
     expect(upload).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * G6c, ANN-115: Abgewiesene Löschpfade antworten mit HTTP 403 ohne
+ * Fehlerobjekt. Das darf weder als „0 vorgemerkt" noch als offener Auftrag
+ * durchgehen.
+ */
+describe('Abweisung ohne Fehlerobjekt', () => {
+  beforeEach(() => rpc.mockReset());
+
+  it('meldet ein abgewiesenes Vormerken als Fehler statt als null Objekte', async () => {
+    rpc.mockResolvedValue({ data: null, error: null, status: 403 });
+    await expect(merkeVerwaisteZurLoeschungVor()).rejects.toThrow(/nicht vorgemerkt/);
+  });
+
+  it('bricht eine abgewiesene Löschfreigabe ab, bevor etwas entfernt wird', async () => {
+    rpc.mockResolvedValue({ data: [], error: [], status: 403 });
+    await expect(fuehreLoeschauftragAus('77777777-7777-4777-8777-000000000001')).rejects.toThrow(
+      /nicht ausgeführt/,
+    );
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 });

@@ -304,6 +304,38 @@ export async function asUserCommitted<T = Record<string, unknown>>(
 }
 
 /**
+ * Wie asUserCommitted, liefert zusätzlich den HTTP-Status, den die Anweisung
+ * für PostgREST gesetzt hat (`response.status`, G6c). Gelesen wird er in
+ * derselben Transaktion nach der Anweisung - so, wie PostgREST ihn nach dem
+ * Aufruf ausliest.
+ */
+export async function asUserCommittedMitStatus<T = Record<string, unknown>>(
+  userId: string,
+  sql: string,
+  params: unknown[] = [],
+): Promise<QueryResultRows<T> & { status: string | null }> {
+  const client = await connect();
+  try {
+    await client.query('begin');
+    await client.query("select set_config('role', 'authenticated', true)");
+    await client.query("select set_config('request.jwt.claims', $1, true)", [
+      JSON.stringify({ sub: userId, role: 'authenticated' }),
+    ]);
+    const result = await client.query(sql, params as never[]);
+    const status = await client.query<{ status: string | null }>(
+      "select nullif(current_setting('response.status', true), '') as status",
+    );
+    await client.query('commit');
+    return { rows: result.rows as T[], status: status.rows[0]?.status ?? null };
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    await client.end();
+  }
+}
+
+/**
  * Wie asUserCommitted, aber so, wie die Storage-API anfragt: mit der Operation
  * in `storage.operation`, transaktionslokal gesetzt (Storage-API v1.72.1,
  * `internal/database/postgres/scope.js`). Die Loeschfreigabe aus FIX-015 gilt

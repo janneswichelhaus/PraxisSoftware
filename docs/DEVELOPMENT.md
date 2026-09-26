@@ -393,9 +393,10 @@ deckungsgleich.
    per Ausnahme rollt die Transaktion und damit auch ihren Protokolleintrag
    zurück. Die Lesepfade weisen deshalb seit OPS-004, G6a und G6b mit null
    Zeilen ab und schreiben über `app.record_denied_read` `outcome = 'denied'`;
-   für die Schreibpfade hat Jannes am 2026-09-26 gewählt (ROADMAP G6c): bestätigte
-   Transaktion mit HTTP 403 für Rollen und Konten, Legal Hold und Löschaufträge,
-   ohne Eintrag für den Rest — gebaut wird das in G6c.
+   für die Schreibpfade gilt seit G6c (2026-09-26): bestätigte Transaktion mit
+   HTTP 403 über `app.record_denied_write` für Rollen und Konten, Legal Hold und
+   Löschaufträge, ohne Eintrag für den Rest (ANN-115). Die echte HTTP-Antwort
+   über PostgREST ist nur lokal mit `supabase start` zu sehen.
 7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
    Auswertung oder Alarmierung.
 8. **Die Dateiablage ist gebaut, aber nicht produktiv** — vor der ersten

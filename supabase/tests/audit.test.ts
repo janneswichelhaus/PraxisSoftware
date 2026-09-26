@@ -215,7 +215,7 @@ describe('Audit-Lesepfad', () => {
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname in ('public', 'app')
         and p.prosrc ~ 'app\\.record_denied_(owner_)?read\\('
-        and p.proname not in ('record_denied_read', 'record_denied_owner_read')
+        and p.proname not in ('record_denied_read', 'record_denied_owner_read', 'record_denied_write')
       order by p.proname
     `);
     expect(rows.map((r) => r.proname)).toEqual([

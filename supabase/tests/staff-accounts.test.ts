@@ -7,6 +7,7 @@ import {
   asUserCommitted,
   resetDatabaseOhneTermine,
 } from './helpers/db';
+import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
 
 /**
  * Zugang einladen und annehmen (STAFF-002b).
@@ -91,7 +92,8 @@ async function auditEintraege(action?: string) {
   }>(
     `select action, actor_user_id, subject_type, subject_id, context
        from public.audit_log
-      where action like 'staff_account.%' ${action ? 'and action = $1' : ''}
+      where action like 'staff_account.%' and outcome = 'success'
+        ${action ? 'and action = $1' : ''}
       order by occurred_at, id`,
     action ? [action] : [],
   );
@@ -154,9 +156,18 @@ describe('invite_staff_account', () => {
     ['patient', users.patientMax],
   ])('verweigert %s das Einladen (E10, ADR-004)', async (_rolle, userId) => {
     const staffId = await mitarbeiterAnlegen();
-    await expect(asUser(userId, EINLADEN, [staffId, NEUE_MAIL, ['therapist']])).rejects.toThrow(
-      /not allowed to manage accounts/,
+    // G6c: bestätigt abgewiesen, protokolliert, und es entsteht keine Einladung.
+    await erwarteAbgewiesenenSchreibversuch(
+      userId,
+      EINLADEN,
+      [staffId, NEUE_MAIL, ['therapist']],
+      'staff_account.invited',
     );
+    const { rows } = await asPostgres(
+      'select 1 from public.staff_account_invitations where staff_member_id = $1',
+      [staffId],
+    );
+    expect(rows).toEqual([]);
   });
 
   it('ist fuer anon nicht ausfuehrbar', async () => {
@@ -236,12 +247,24 @@ describe('invite_staff_account', () => {
     ).rejects.toThrow(/invalid email/);
   });
 
-  it('schreibt bei einem abgewiesenen Aufruf keinen Auditeintrag', async () => {
+  it('schreibt bei einem abgewiesenen Aufruf nur den denied-Eintrag, keinen Erfolg', async () => {
+    // Bis G6c rollte die Ausnahme jeden Eintrag zurueck. Seitdem bleibt der
+    // Versuch als denied stehen - ohne Adresse, ohne Rollen, ohne Kennung des
+    // Datensatzes (ADR-010 Punkt 3).
     const staffId = await mitarbeiterAnlegen();
-    await expect(
-      asUser(users.office, EINLADEN, [staffId, NEUE_MAIL, ['office']]),
-    ).rejects.toThrow();
+    await erwarteAbgewiesenenSchreibversuch(
+      users.office,
+      EINLADEN,
+      [staffId, NEUE_MAIL, ['office']],
+      'staff_account.invited',
+    );
     expect(await auditEintraege()).toEqual([]);
+    const { rows } = await asPostgres<{ context: unknown }>(
+      `select context from public.audit_log
+        where action = 'staff_account.invited' and outcome = 'denied'`,
+    );
+    expect(JSON.stringify(rows)).not.toContain('nina.neu');
+    expect(JSON.stringify(rows)).not.toContain(staffId);
   });
 });
 
@@ -291,9 +314,17 @@ describe('revoke_staff_invitation', () => {
   ])('verweigert %s den Widerruf', async (_rolle, userId) => {
     const staffId = await mitarbeiterAnlegen();
     const id = await einladen(staffId);
-    await expect(asUser(userId, WIDERRUFEN, [id])).rejects.toThrow(
-      /not allowed to manage accounts/,
+    await erwarteAbgewiesenenSchreibversuch(
+      userId,
+      WIDERRUFEN,
+      [id],
+      'staff_account.invitation_revoked',
     );
+    const { rows } = await asPostgres<{ revoked_at: string | null }>(
+      'select revoked_at from public.staff_account_invitations where id = $1',
+      [id],
+    );
+    expect(rows[0]?.revoked_at).toBeNull();
   });
 });
 
@@ -593,9 +624,21 @@ describe('set_staff_account_roles', () => {
     ['therapist', users.therapist],
     ['team_lead', users.teamLead],
   ])('verweigert %s den Rollenwechsel (E10, ADR-004)', async (_rolle, userId) => {
-    await expect(asUser(userId, ROLLEN, [STAFF.anna, ['office']])).rejects.toThrow(
-      /not allowed to manage accounts/,
+    const rollen = async () =>
+      (
+        await asPostgres<{ role_key: string }>(
+          'select role_key from public.user_roles where user_id = $1 order by role_key',
+          [users.therapist],
+        )
+      ).rows;
+    const vorher = await rollen();
+    await erwarteAbgewiesenenSchreibversuch(
+      userId,
+      ROLLEN,
+      [STAFF.anna, ['office']],
+      'staff_account.roles_changed',
     );
+    expect(await rollen()).toEqual(vorher);
   });
 
   it.each([
@@ -714,9 +757,13 @@ describe('set_staff_account_active', () => {
     ['therapist', users.therapist],
     ['team_lead', users.teamLead],
   ])('verweigert %s das Sperren', async (_rolle, userId) => {
-    await expect(asUser(userId, SPERREN, [STAFF.olivia, false])).rejects.toThrow(
-      /not allowed to manage accounts/,
+    await erwarteAbgewiesenenSchreibversuch(
+      userId,
+      SPERREN,
+      [STAFF.olivia, false],
+      'staff_account.locked',
     );
+    expect(await istAktiv(users.office)).toBe(true);
   });
 
   it('weist einen Datensatz ohne Zugang ab', async () => {
@@ -755,9 +802,13 @@ describe('request_staff_password_reset', () => {
     ['therapist', users.therapist],
     ['team_lead', users.teamLead],
   ])('verweigert %s den Anstoss', async (_rolle, userId) => {
-    await expect(
-      asUser(userId, 'select public.request_staff_password_reset($1::uuid)', [STAFF.anna]),
-    ).rejects.toThrow(/not allowed to manage accounts/);
+    // Die Adresse geht an den Aufrufer nicht heraus: Der Pfad liefert `null`.
+    await erwarteAbgewiesenenSchreibversuch(
+      userId,
+      'select public.request_staff_password_reset($1::uuid) as email',
+      [STAFF.anna],
+      'staff_account.password_reset_requested',
+    );
   });
 
   it('weist einen Datensatz ohne Zugang ab', async () => {

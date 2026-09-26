@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from './dokumentarten';
 
@@ -308,12 +309,12 @@ const auftragsschluesselSchema = z.object({
  * steht; sie kann nur scheitern, und dann bleibt der Auftrag offen.
  */
 export async function fuehreLoeschauftragAus(orderId: string): Promise<void> {
-  const { data, error } = (await getSupabase().rpc('claim_storage_deletion_order', {
+  const freigabe = (await getSupabase().rpc('claim_storage_deletion_order', {
     p_order_id: orderId,
-  })) as { data: unknown; error: unknown };
+  })) as { data: unknown; error: unknown; status: number };
 
-  if (error) throw new Error('Der Löschauftrag konnte nicht ausgeführt werden.');
-  const auftrag = z.array(auftragsschluesselSchema).parse(data ?? [])[0];
+  if (abgewiesen(freigabe)) throw new Error('Der Löschauftrag konnte nicht ausgeführt werden.');
+  const auftrag = z.array(auftragsschluesselSchema).parse(freigabe.data ?? [])[0];
   if (!auftrag) throw new Error('Der Löschauftrag ist nicht mehr offen.');
 
   const { error: entfernenFehler } = await getSupabase()
@@ -324,11 +325,11 @@ export async function fuehreLoeschauftragAus(orderId: string): Promise<void> {
     throw new Error('Die Datei konnte in der Ablage nicht entfernt werden.');
   }
 
-  const { error: quittungsFehler } = (await getSupabase().rpc('receipt_storage_deletion_order', {
+  const quittung = (await getSupabase().rpc('receipt_storage_deletion_order', {
     p_order_id: orderId,
-  })) as { error: unknown };
+  })) as { error: unknown; status: number };
 
-  if (quittungsFehler) {
+  if (abgewiesen(quittung)) {
     throw new Error(
       'Die Ablage meldet die Datei weiterhin als vorhanden. Der Auftrag bleibt offen.',
     );
@@ -377,11 +378,16 @@ export async function fetchVerwaisteAnzahl(): Promise<number> {
  * ausgeführt und quittiert werden wie alle anderen (ADR-017 Punkt 25 und 27).
  */
 export async function merkeVerwaisteZurLoeschungVor(): Promise<number> {
-  const { data, error } = (await getSupabase().rpc('order_orphaned_object_deletion')) as {
+  const antwort = (await getSupabase().rpc('order_orphaned_object_deletion')) as {
     data: unknown;
     error: unknown;
+    status: number;
   };
 
-  if (error) throw new Error('Die verwaisten Objekte konnten nicht vorgemerkt werden.');
-  return z.coerce.number().parse(data ?? 0);
+  // Sonst meldete eine Abweisung „0 vorgemerkt" (ANN-115).
+  // Zweite Sicherung: Ein gelungenes Vormerken liefert immer eine Anzahl.
+  if (abgewiesen(antwort) || antwort.data == null) {
+    throw new Error('Die verwaisten Objekte konnten nicht vorgemerkt werden.');
+  }
+  return z.coerce.number().parse(antwort.data);
 }

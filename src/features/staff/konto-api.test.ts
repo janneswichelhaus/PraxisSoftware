@@ -9,12 +9,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  */
 
 const signInWithOtp = vi.fn();
+const rpc = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
-  getSupabase: () => ({ auth: { signInWithOtp } }),
+  getSupabase: () => ({ auth: { signInWithOtp }, rpc }),
 }));
 
-const { sendeZugangsMail } = await import('./konto-api');
+const { ladeZugangEin, sendeZugangsMail, setzeRollen } = await import('./konto-api');
 
 describe('sendeZugangsMail', () => {
   beforeEach(() => {
@@ -38,5 +39,34 @@ describe('sendeZugangsMail', () => {
       error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch' },
     });
     expect(await sendeZugangsMail('nina.neu@praxis.invalid')).toBe('dienst_nicht_erreichbar');
+  });
+});
+
+/**
+ * G6c, ANN-115: Eine abgewiesene Einladung kommt als HTTP 403 mit dem Körper
+ * `null` zurück - supabase-js meldet dabei keinen Fehler. Die Mail darf dann
+ * nicht hinausgehen.
+ */
+describe('Abweisung ohne Fehlerobjekt', () => {
+  beforeEach(() => {
+    signInWithOtp.mockReset();
+    rpc.mockReset();
+  });
+
+  it('verschickt nach einer abgewiesenen Einladung keine Mail', async () => {
+    rpc.mockResolvedValue({ data: null, error: null, status: 403 });
+
+    await expect(
+      ladeZugangEin('55555555-5555-4555-8555-000000000009', 'nina.neu@praxis.invalid', [
+        'therapist',
+      ]),
+    ).rejects.toThrow();
+    expect(signInWithOtp).not.toHaveBeenCalled();
+  });
+
+  it('meldet einen abgewiesenen Rollenwechsel als Fehler', async () => {
+    rpc.mockResolvedValue({ data: null, error: null, status: 403 });
+
+    await expect(setzeRollen('55555555-5555-4555-8555-000000000002', ['office'])).rejects.toThrow();
   });
 });

@@ -666,7 +666,10 @@
           "id": "g6c",
           "name": "G6c Abgewiesene Schreibzugriffe",
           "gewicht": 1,
-          "status": "offen"
+          "status": "gesichtet",
+          "fertig_am": "2026-09-26",
+          "nachweis": "`aa384bc` … (G6c-1, G6c-2, Zweitreview)",
+          "vermerk": "PostgREST-Antwort lokal mit supabase start prüfen (ANN-115)"
         },
         {
           "id": "g9-ops-006",
