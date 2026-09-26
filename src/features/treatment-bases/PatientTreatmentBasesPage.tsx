@@ -17,6 +17,12 @@ import { Deckungszeichen } from '@/features/appointments/Deckungszeichen';
 import { ZOOM_STANDARD, schreibeParameter } from '@/features/appointments/calendar';
 import type { Patient } from '@/features/patients/api';
 import {
+  BerichteDerVerordnung,
+  EmpfehlungAusBericht,
+} from '@/features/therapy-reports/BerichteDerVerordnung';
+import { useBerichteDerAkte } from '@/features/therapy-reports/useBerichteDerAkte';
+import { empfehlungDerVerordnung, type Berichtszeile } from '@/features/therapy-reports/api';
+import {
   nachJahr,
   grundlageBezeichnung,
   istVerordnung,
@@ -190,9 +196,10 @@ function Heilmittel({
 }
 
 /** Hat die Verordnung außer ihren Zahlen überhaupt etwas zu sagen? */
-function hatWeitereAngaben(verordnung: Verordnung): boolean {
+function hatWeitereAngaben(verordnung: Verordnung, berichte: readonly Berichtszeile[]): boolean {
   const klinisch = klinischeFelder(verordnung);
   return Boolean(
+    empfehlungDerVerordnung(berichte, verordnung.id) ||
     verordnung.frequency_note ||
     verordnung.note ||
     klinisch?.diagnosis ||
@@ -202,7 +209,13 @@ function hatWeitereAngaben(verordnung: Verordnung): boolean {
   );
 }
 
-function KlinischeAngaben({ verordnung }: { verordnung: Verordnung }) {
+function KlinischeAngaben({
+  verordnung,
+  berichte,
+}: {
+  verordnung: Verordnung;
+  berichte: readonly Berichtszeile[];
+}) {
   const klinisch = klinischeFelder(verordnung);
   return (
     <>
@@ -224,6 +237,9 @@ function KlinischeAngaben({ verordnung }: { verordnung: Verordnung }) {
           {klinisch.follow_up_recommendation}
         </DetailRow>
       ) : null}
+      {/* DOK-005: Die Empfehlung aus dem Therapiebericht, mit Quelle und Datum
+          (ANN-014). Der Bestandstext darüber bleibt, wie er ist (ANN-065). */}
+      <EmpfehlungAusBericht berichte={berichte} verordnungId={verordnung.id} />
       {verordnung.note ? <DetailRow label="Anmerkungen">{verordnung.note}</DetailRow> : null}
     </>
   );
@@ -394,14 +410,16 @@ function LaufendeVerordnung({
   patient,
   user,
   ungedecktInDerAkte,
+  berichte,
 }: {
   eintrag: VerordnungMitZahlen;
   patient: Patient;
   user: CurrentUser;
   ungedecktInDerAkte: number;
+  berichte: readonly Berichtszeile[];
 }) {
   const { verordnung, kontingent, zustand } = eintrag;
-  const weitereAngaben = hatWeitereAngaben(verordnung);
+  const weitereAngaben = hatWeitereAngaben(verordnung, berichte);
 
   return (
     <li
@@ -439,7 +457,7 @@ function LaufendeVerordnung({
 
         {weitereAngaben ? (
           <DetailList>
-            <KlinischeAngaben verordnung={verordnung} />
+            <KlinischeAngaben verordnung={verordnung} berichte={berichte} />
           </DetailList>
         ) : null}
       </div>
@@ -451,7 +469,15 @@ function LaufendeVerordnung({
         ungedecktInDerAkte={ungedecktInDerAkte}
       />
       {istVerordnung(verordnung.treatment_basis_kind) ? (
-        <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+        <>
+          <BerichteDerVerordnung
+            patientId={patient.id}
+            verordnungId={verordnung.id}
+            berichte={berichte}
+            user={user}
+          />
+          <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+        </>
       ) : null}
     </li>
   );
@@ -469,11 +495,13 @@ function AbgeschlosseneVerordnung({
   patient,
   user,
   ungedecktInDerAkte,
+  berichte,
 }: {
   eintrag: VerordnungMitZahlen;
   patient: Patient;
   user: CurrentUser;
   ungedecktInDerAkte: number;
+  berichte: readonly Berichtszeile[];
 }) {
   const { verordnung, kontingent } = eintrag;
 
@@ -512,7 +540,7 @@ function AbgeschlosseneVerordnung({
                 />
               </DetailRow>
             ) : null}
-            <KlinischeAngaben verordnung={verordnung} />
+            <KlinischeAngaben verordnung={verordnung} berichte={berichte} />
           </DetailList>
           <Verordnungsaktionen
             eintrag={eintrag}
@@ -521,7 +549,15 @@ function AbgeschlosseneVerordnung({
             ungedecktInDerAkte={ungedecktInDerAkte}
           />
           {istVerordnung(verordnung.treatment_basis_kind) ? (
-            <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+            <>
+              <BerichteDerVerordnung
+                patientId={patient.id}
+                verordnungId={verordnung.id}
+                berichte={berichte}
+                user={user}
+              />
+              <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+            </>
           ) : null}
         </div>
       </details>
@@ -537,6 +573,7 @@ export function PatientTreatmentBasesPage() {
 export function Verordnungsbereich({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const { eintraege, aktuell, abgeschlossen, isPending, isError, verborgen } =
     useVerordnungenDerAkte(patient.id, user);
+  const berichte = useBerichteDerAkte(patient.id, user).data ?? [];
 
   if (verborgen) return null;
 
@@ -586,6 +623,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
                 patient={patient}
                 user={user}
                 ungedecktInDerAkte={ungedecktInDerAkte}
+                berichte={berichte}
               />
             ))}
           </ul>
@@ -613,6 +651,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
                         patient={patient}
                         user={user}
                         ungedecktInDerAkte={ungedecktInDerAkte}
+                        berichte={berichte}
                       />
                     );
                   })}

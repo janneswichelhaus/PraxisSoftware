@@ -19,6 +19,8 @@ import { PatientFilesPage } from '@/features/files/PatientFilesPage';
 import { PatientCoursePage } from '@/features/documentation/PatientCoursePage';
 import { PatientBefundPage } from '@/features/assessments/PatientBefundPage';
 import { ErhebungPage } from '@/features/assessments/ErhebungPage';
+import { TherapieberichtPage } from '@/features/therapy-reports/TherapieberichtPage';
+import { TherapieberichtDruckPage } from '@/features/therapy-reports/TherapieberichtDruckPage';
 import { PrescribersListPage } from '@/features/treatment-bases/PrescribersListPage';
 import {
   EditPrescriberPage,
@@ -322,7 +324,22 @@ export function AuthenticatedRoutes({
                   die Seite gehoert zur Story (UX-008). */}
                   <Route path="/praxis/textbausteine" element={<TextbausteinePage user={user} />} />
                   <Route path="/praxis/instrumente" element={<InstrumentePage />} />
+                  {/* DOK-005: Therapiebericht schreiben - ausserhalb des Rahmens
+                  wie jedes Formular (UX-009). */}
+                  <Route
+                    path="/patienten/:patientId/berichte/:berichtId"
+                    element={<TherapieberichtPage user={user} />}
+                  />
                 </>
+              ) : null}
+
+              {/* DOK-005: Das Blatt zum Drucken ist ein Lesepfad - office liest
+              und druckt, schreibt aber nicht (ADR-004 Punkt 3). */}
+              {showHistory ? (
+                <Route
+                  path="/patienten/:patientId/berichte/:berichtId/druck"
+                  element={<TherapieberichtDruckPage user={user} />}
+                />
               ) : null}
 
               {showHistory ? (
