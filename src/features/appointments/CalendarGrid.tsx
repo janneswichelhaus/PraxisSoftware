@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   aufRaster,
@@ -166,8 +166,27 @@ export function CalendarGrid({
   kontext,
   onBlaettern,
   onZoom,
+  ecke,
+  jetzt = null,
+  sprung = 0,
   laedtNach = false,
 }: {
+  /**
+   * Was in der Ecke über der Zeitachse steht (BEF-039): der Knopf zu Ansicht
+   * und Filter. Die Ecke bleibt beim Bildlauf in beide Richtungen stehen -
+   * damit ist er „direkt am Raster" erreichbar, wo immer man gerade ist.
+   */
+  ecke?: ReactNode;
+  /**
+   * Die aktuelle Uhrzeit als Linie in den Spalten, die heute sind (BEF-039).
+   * Ohne Angabe gibt es keine Linie.
+   */
+  jetzt?: { minute: number; spalten: readonly string[] } | null;
+  /**
+   * Zähler für „Jetzt": Jede Erhöhung bringt die Linie ins Bild, sobald ihre
+   * Spalte gezeichnet ist - auch wenn der Ausschnitt dafür erst laden muss.
+   */
+  sprung?: number;
   /**
    * Eine Zoomstufe weiter, mit zwei Fingern im Raster (BEF-038). Ohne Angabe
    * bleibt die Geste beim Browser.
@@ -283,6 +302,20 @@ export function CalendarGrid({
     onAuswahl: (gewaehlt) => onAuswahl?.(gewaehlt),
   });
 
+  // „Jetzt" (BEF-039): Der Sprung wartet, bis die Linie gezeichnet ist - wer
+  // aus einer anderen Woche springt, muss erst den neuen Ausschnitt laden.
+  const jetztRef = useRef<HTMLDivElement>(null);
+  const ersteHeutigeSpalte = jetzt
+    ? spaltenModell.find((x) => jetzt.spalten.includes(x.id))?.id
+    : undefined;
+  const offenerSprung = useRef(0);
+  useEffect(() => {
+    if (sprung === offenerSprung.current || !jetztRef.current) return;
+    offenerSprung.current = sprung;
+    // jsdom kennt kein scrollIntoView; ein Browser ohne es bleibt, wo er ist.
+    jetztRef.current.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
+  });
+
   // Zwei Finger zoomen das Raster (BEF-038); der zweite Finger beendet,
   // was der erste begonnen hat - Verschieben und Aufziehen brechen dabei
   // nicht, sie enden ohne Ergebnis.
@@ -299,7 +332,10 @@ export function CalendarGrid({
       <div
         ref={gitterRef}
         aria-busy={laedtNach || undefined}
-        className={`border-line rounded-card mt-4 overflow-x-auto border ${laedtNach ? 'opacity-60' : ''}`}
+        // `isolate`: Die Ebenen im Gitter (stehende Ecke, Köpfe, Kacheln)
+        // bleiben unter allem, was darüber aufgeht - etwa der Trefferliste der
+        // Suche am Telefon (BEF-039).
+        className={`border-line rounded-card isolate mt-4 overflow-x-auto border ${laedtNach ? 'opacity-60' : ''}`}
         // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
         // auf einer Kachel wird nicht vom Browser übernommen.
         style={{ touchAction: 'pan-x pan-y' }}
@@ -313,7 +349,9 @@ export function CalendarGrid({
           aria-label={beschriftung}
         >
           {/* Kopfzeile: bleibt beim senkrechten Bildlauf stehen. */}
-          <div className="bg-surface border-line sticky top-0 left-0 z-30 h-11 border-b" />
+          <div className="bg-surface border-line sticky top-0 left-0 z-30 flex h-11 items-center justify-center border-b">
+            {ecke}
+          </div>
           {spaltenModell.map((s) => {
             const beschriftung = (
               <>
@@ -490,6 +528,31 @@ export function CalendarGrid({
                     style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
                   />
                 ))}
+
+                {/* Die aktuelle Uhrzeit (BEF-039). Die erste heutige Spalte
+                  trägt den Anker für „Jetzt"; außerhalb des Fensters steht
+                  der Anker am Rand und die Linie fehlt. */}
+                {jetzt && jetzt.spalten.includes(s.id)
+                  ? (() => {
+                      const imFenster =
+                        jetzt.minute >= fenster.vonMinute && jetzt.minute <= fenster.bisMinute;
+                      const minute = Math.max(
+                        fenster.vonMinute,
+                        Math.min(fenster.bisMinute, jetzt.minute),
+                      );
+                      return (
+                        <div
+                          ref={s.id === ersteHeutigeSpalte ? jetztRef : undefined}
+                          data-testid={imFenster ? 'jetzt-linie' : undefined}
+                          aria-hidden="true"
+                          className={`pointer-events-none absolute inset-x-0 z-30 ${imFenster ? 'border-accent border-t-2' : ''}`}
+                          style={{
+                            top: `${minuteZuPixel(minute, fenster.vonMinute, stundenHoehe)}px`,
+                          }}
+                        />
+                      );
+                    })()
+                  : null}
 
                 {eigene.map((g, i) => {
                   const { spalte, anzahl } = verteilung[i]!;

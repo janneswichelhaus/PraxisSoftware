@@ -129,6 +129,14 @@ function rendern(pfad = '/kalender') {
   return renderWithProviders(<CalendarPage user={testUser(['office'], 'Olivia Office')} />, pfad);
 }
 
+/**
+ * Klappt „Ansicht und Filter" in der Ecke des Rasters auf (BEF-039): Tag und
+ * Woche, Zoom, Standort, Status und die Anlegen-Schaltflaechen stehen dort.
+ */
+async function optionenOeffnen(): Promise<void> {
+  fireEvent.click(await screen.findByRole('button', { name: /^Ansicht und Filter/ }));
+}
+
 /** Argumente des jeweils letzten Abrufs. */
 function letzteAbfrage() {
   return fetchAppointments.mock.calls.at(-1)?.[0] as AppointmentsApi.CalendarQuery;
@@ -193,12 +201,12 @@ describe('CalendarPage', () => {
       );
     });
 
-    it('kehrt mit "Heute" zum laufenden Zeitraum zurueck', async () => {
+    it('kehrt mit "Jetzt" zum laufenden Zeitraum zurueck (BEF-039)', async () => {
       const user = userEvent.setup();
       rendern('/kalender?ansicht=tag&datum=2027-08-01');
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
 
-      await user.click(screen.getByRole('button', { name: 'Heute' }));
+      await user.click(screen.getByRole('button', { name: 'Jetzt' }));
       await waitFor(() => expect(letzteAbfrage()).toMatchObject({ von: HEUTE }));
     });
 
@@ -206,6 +214,7 @@ describe('CalendarPage', () => {
       const user = userEvent.setup();
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+      await optionenOeffnen();
 
       await user.click(screen.getByRole('button', { name: 'Tag' }));
       await waitFor(() => expect(letzteAbfrage()).toMatchObject({ von: HEUTE, bis: '2027-05-13' }));
@@ -266,6 +275,7 @@ describe('CalendarPage', () => {
       const user = userEvent.setup();
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+      await optionenOeffnen();
 
       await screen.findByRole('option', { name: 'Hauptstandort Tuebingen' });
       await user.selectOptions(screen.getByLabelText('Standort'), ORT);
@@ -284,6 +294,7 @@ describe('CalendarPage', () => {
       const user = userEvent.setup();
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+      await optionenOeffnen();
 
       await user.selectOptions(screen.getByLabelText('Status'), 'done');
       await waitFor(() => expect(letzteAbfrage()).toMatchObject({ status: 'done' }));
@@ -293,6 +304,7 @@ describe('CalendarPage', () => {
       const user = userEvent.setup();
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+      await optionenOeffnen();
 
       await user.selectOptions(screen.getByLabelText('Status'), 'no_show');
       await waitFor(() => expect(letzteAbfrage()).toMatchObject({ status: 'no_show' }));
@@ -302,6 +314,7 @@ describe('CalendarPage', () => {
       const user = userEvent.setup();
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+      await optionenOeffnen();
 
       await user.selectOptions(screen.getByLabelText('Status'), 'all');
       await waitFor(() => expect(letzteAbfrage()).toMatchObject({ status: 'all' }));
@@ -556,6 +569,7 @@ describe('CalendarPage', () => {
     it('zeigt in der Voreinstellung das Fuenf-Minuten-Raster an', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
+      await optionenOeffnen();
 
       const zoom = screen.getByRole('group', { name: 'Zoom' });
       expect(within(zoom).getByText('5-Minuten-Raster')).toBeInTheDocument();
@@ -565,6 +579,7 @@ describe('CalendarPage', () => {
       // 40 px je Stunde tragen die Viertelstunde, nicht die fuenf Minuten.
       rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=40');
       await screen.findByRole('link', { name: /Max Mustermann/ });
+      await optionenOeffnen();
 
       const zoom = screen.getByRole('group', { name: 'Zoom' });
       expect(within(zoom).getByText('15-Minuten-Raster')).toBeInTheDocument();
@@ -573,6 +588,7 @@ describe('CalendarPage', () => {
     it('faellt bei einer erfundenen Zoomstufe auf die Voreinstellung zurueck', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=9999');
       await screen.findByRole('link', { name: /Max Mustermann/ });
+      await optionenOeffnen();
 
       const zoom = screen.getByRole('group', { name: 'Zoom' });
       expect(within(zoom).getByText('5-Minuten-Raster')).toBeInTheDocument();
@@ -581,6 +597,7 @@ describe('CalendarPage', () => {
     it('vergroebert das Gitter ueber die Bedienung', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
+      await optionenOeffnen();
 
       await userEvent.click(screen.getByRole('button', { name: 'Gitter verkleinern' }));
 
@@ -620,6 +637,7 @@ describe('CalendarPage', () => {
     it('verkleinert bis auf das Viertelstundenraster', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=64');
       await screen.findByRole('link', { name: /Max Mustermann/ });
+      await optionenOeffnen();
       const gitter = screen.getByRole('grid').parentElement!;
 
       fireEvent.touchStart(gitter, { touches: finger([100, 60], [100, 240]) });
@@ -1199,6 +1217,7 @@ describe('CalendarPage', () => {
     it('gibt `neu` nicht in den naechsten Rueckweg weiter', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12&neu=77777777-7777-4777-8777-000000000001');
       await screen.findByRole('link', { name: /Max Mustermann/ });
+      await optionenOeffnen();
 
       const anlegen = screen.getByRole('link', { name: 'Termin anlegen' });
       const ziel = new URL(String(anlegen.getAttribute('href')), 'http://test');
@@ -1269,6 +1288,7 @@ describe('CalendarPage', () => {
 
     it('bietet denselben Weg als Schaltflaeche an - ohne Uhrzeit', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await optionenOeffnen();
       const link = await screen.findByRole('link', { name: 'Termin anlegen' });
 
       const ziel = new URL(link.getAttribute('href')!, 'http://test');
@@ -1282,9 +1302,12 @@ describe('CalendarPage', () => {
         <CalendarPage user={testUser(['patient'], 'Max Mustermann')} />,
         '/kalender?ansicht=tag&datum=2027-05-12',
       );
-      await waitFor(() =>
-        expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull(),
-      );
+      // Auch aufgeklappt: Die Schaltflaechen fehlen, nicht nur der Tap.
+      await optionenOeffnen();
+      expect(screen.getByRole('group', { name: 'Ansicht und Filter' })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull();
+      fireEvent.click(screen.getAllByRole('gridcell')[0]!);
+      expect(screen.queryByRole('group', { name: 'Was soll hier entstehen?' })).toBeNull();
     });
 
     /**
@@ -1360,13 +1383,109 @@ describe('CalendarPage', () => {
       expect(navigate).not.toHaveBeenCalled();
     });
 
-    it('bietet die Dauerfehlzeit auch als Schaltflaeche ueber dem Gitter an', async () => {
+    it('bietet die Dauerfehlzeit auch als Schaltflaeche unter Ansicht und Filter an', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await optionenOeffnen();
       const link = await screen.findByRole('link', { name: 'Dauerfehlzeit eintragen' });
 
       const ziel = new URL(link.getAttribute('href')!, 'http://test');
       expect(ziel.pathname).toBe('/termine/dauerfehlzeit');
       expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
+    });
+  });
+
+  describe('BEF-039: Ueber dem Raster nur Monat, Person, Woche und Jetzt', () => {
+    it('zeigt oben nur die vier Dinge und klappt alles Uebrige ein', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      expect(screen.getByRole('button', { name: /Mai 2027/ })).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+      expect(screen.getByLabelText('Behandelnde Person')).toHaveValue('');
+      expect(screen.getByText('KW 19 · Mi 12.05.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Jetzt' })).toBeInTheDocument();
+
+      // Eingeklappt: Ansicht, Zoom, Filter und die Anlegen-Schaltflaechen.
+      expect(screen.queryByRole('group', { name: 'Zoom' })).toBeNull();
+      expect(screen.queryByLabelText('Standort')).toBeNull();
+      expect(screen.queryByLabelText('Status')).toBeNull();
+      expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull();
+
+      // Der Knopf dazu steht in der Ecke des Rasters.
+      const knopf = screen.getByRole('button', { name: 'Ansicht und Filter' });
+      expect(screen.getByRole('grid').contains(knopf)).toBe(true);
+      fireEvent.click(knopf);
+      expect(knopf).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('group', { name: 'Zoom' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Standort')).toBeInTheDocument();
+    });
+
+    it('nennt die Woche als Spanne in der Wochenansicht', async () => {
+      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      expect(screen.getByText('KW 19 · 10.05.–16.05.')).toBeInTheDocument();
+      expect(screen.getByLabelText('Behandelnde Person')).toHaveValue(STAFF_ANNA);
+    });
+
+    it('sagt am Knopf, wenn ein Filter wirkt', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&status=all');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      expect(
+        screen.getByRole('button', { name: 'Ansicht und Filter, Filter aktiv' }),
+      ).toBeInTheDocument();
+    });
+
+    it('springt ueber den Monatskalender auf einen Tag', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('button', { name: /Mai 2027/ }));
+      const blatt = screen.getByRole('group', { name: 'Monatskalender' });
+      // Heute ist markiert, der gezeigte Tag gewaehlt.
+      const heute = within(blatt).getByRole('button', { name: 'Mittwoch, 12. Mai 2027' });
+      expect(heute).toHaveAttribute('aria-current', 'date');
+      expect(heute).toHaveAttribute('aria-pressed', 'true');
+
+      fireEvent.click(within(blatt).getByRole('button', { name: 'Nächster Monat' }));
+      fireEvent.click(within(blatt).getByRole('button', { name: 'Donnerstag, 3. Juni 2027' }));
+
+      await waitFor(() =>
+        expect(letzteAbfrage()).toMatchObject({ von: '2027-06-03', bis: '2027-06-04' }),
+      );
+      expect(screen.queryByRole('group', { name: 'Monatskalender' })).toBeNull();
+    });
+
+    it('zeigt die aktuelle Uhrzeit als Linie und springt mit "Jetzt" dorthin', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      // 07:30 UTC = 09:30 in Tuebingen, mitten im Termin von 09 bis 10 Uhr.
+      vi.setSystemTime(new Date('2027-05-12T07:30:00Z'));
+      const springen = vi.fn();
+      Element.prototype.scrollIntoView = springen;
+      try {
+        rendern('/kalender?ansicht=tag&datum=2027-05-12');
+        await screen.findByRole('link', { name: /Max Mustermann/ });
+
+        // Eine Linie je Spalte, beide Personen arbeiten heute.
+        expect(screen.getAllByTestId('jetzt-linie')).toHaveLength(2);
+        expect(springen).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Jetzt' }));
+        await waitFor(() => expect(springen).toHaveBeenCalledTimes(1));
+      } finally {
+        vi.useRealTimers();
+        // jsdom kennt die Methode nicht - sie wird wieder entfernt.
+        delete (Element.prototype as Partial<Element>).scrollIntoView;
+      }
+    });
+
+    it('zeigt an einem anderen Tag keine Linie', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-13');
+      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+      expect(screen.queryByTestId('jetzt-linie')).toBeNull();
     });
   });
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { SubNav } from '@/components/ui/SubNav';
@@ -64,6 +64,17 @@ export function AppShell({
   const bereiche = arbeitsbereiche(user);
   const aktuell = aktiverBereich(bereiche, pathname);
   const { sichtbar, weitere } = tableiste(bereiche);
+  /**
+   * Am Telefon ist die Suche eine Lupe neben „Konto" (BEF-039, ANN-109): Das
+   * Feld kostete dort eine eigene Zeile über jeder Seite. Ab sm steht es wie
+   * bisher in der Kopfzeile. Ein Seitenwechsel klappt es wieder ein.
+   */
+  const [sucheOffen, setSucheOffen] = useState(false);
+  const sucheRef = useRef<HTMLDivElement>(null);
+  useEffect(() => setSucheOffen(false), [pathname]);
+  useEffect(() => {
+    if (sucheOffen) sucheRef.current?.querySelector('input')?.focus();
+  }, [sucheOffen]);
 
   return (
     <div className="min-h-dvh sm:flex">
@@ -134,7 +145,8 @@ export function AppShell({
               im Baum, einmal je Breite; mit Tastenkürzel und Trefferliste
               wäre das zweimal dasselbe Feld, von dem nur eines zu sehen ist.
               Das Konto steht deshalb auf dem Telefon in der ersten Zeile
-              neben der Marke, die Suche bricht darunter um. */}
+              neben der Marke; die Suche bricht erst nach einem Tipp auf die
+              Lupe darunter um (BEF-039) - sonst bleibt es bei einer Zeile. */}
           <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 px-5 py-2 sm:min-h-14 sm:flex-nowrap sm:py-0">
             {/* Die Marke steht überall statt des Organisationsnamens. Nach
               ADR-003 ist Mandantenfähigkeit ausdrücklich keine
@@ -158,13 +170,23 @@ export function AppShell({
               >
                 <Wortmarke hoehe={26} />
               </Link>
-              {aktuell ? <p className="text-ink-subtle truncate text-xs">{aktuell.label}</p> : null}
+              {/* Seit der Lupe (BEF-039) ist die Zeile unter 400 px zu eng
+                  für den Bereichsnamen; dort sagt ihn die Tableiste. */}
+              {aktuell ? (
+                <p className="text-ink-subtle truncate text-xs max-[399px]:hidden">
+                  {aktuell.label}
+                </p>
+              ) : null}
             </div>
             {/* Die Suche steht jeder angemeldeten Rolle offen: Sie sucht
               zuerst Funktionen und Bereiche, und die hat auch ein
               Patientenkonto. Ob Namen dazukommen, entscheidet die Suche
               selbst — und verbindlich der Server (UX-013, ADR-004). */}
-            <div className="order-3 w-full min-w-0 sm:order-2 sm:flex sm:w-auto sm:flex-1 sm:justify-center">
+            <div
+              id="kopf-suche"
+              ref={sucheRef}
+              className={`order-3 w-full min-w-0 sm:order-2 sm:flex sm:w-auto sm:flex-1 sm:justify-center ${sucheOffen ? '' : 'max-sm:hidden'}`}
+            >
               <div className="w-full sm:max-w-sm">
                 <Funktionssuche user={user} />
               </div>
@@ -179,6 +201,27 @@ export function AppShell({
               >
                 {user.profile.display_name}
               </Link>
+              <button
+                type="button"
+                aria-label={sucheOffen ? 'Suche schließen' : 'Suche öffnen'}
+                aria-expanded={sucheOffen}
+                aria-controls="kopf-suche"
+                onClick={() => setSucheOffen((offen) => !offen)}
+                className="text-ink-muted hover:text-ink rounded-button inline-flex size-11 items-center justify-center sm:hidden"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="size-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <circle cx="11" cy="11" r="6.5" />
+                  <path d="m16 16 4.5 4.5" />
+                </svg>
+              </button>
               <Link
                 to="/mein-konto"
                 aria-label="Mein Konto"

@@ -1400,3 +1400,15 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 **Anker.** `naechsteAuswahl` in `src/features/appointments/useSpanneAufziehen.ts`; die Leiste in `src/features/appointments/AnlegenMenue.tsx`, ihr Platz am Ende von `CalendarGrid` in `src/features/appointments/CalendarGrid.tsx`.
 
 **Änderungspfad.** Das zweite Feld mitzählen: in `naechsteAuswahl` das Ende um das Praxisraster verlängern · Aufwand `klein`. Menü zurück an die Auswahl, aber seitlich oder oberhalb: den Platz in `CalendarGrid` ändern · Aufwand `klein`.
+
+### ANN-109 — Über dem Kalender stehen Monat, Person mit Woche und „Jetzt"; alles Übrige liegt hinter der Ecke des Rasters
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess); UX-EPIC-003 (Tagesansicht als Startseite)
+
+**Annahme.** Über dem Raster stehen nur noch: links der Monat, der einen Monatskalender aufklappt; in der Mitte der Name der behandelnden Person als Auswahl (in der Tagesansicht „Alle Personen"), darunter Kalenderwoche und Tag beziehungsweise Woche, daneben die Pfeile zum Blättern; rechts „Jetzt" (heutiger Tag, das Raster rollt zur Linie der aktuellen Uhrzeit). Tag/Woche, Zoom, Standort, Status und die Anlegen-Schaltflächen für die Tastatur (einschließlich „Tag umplanen") liegen hinter einem Knopf in der Ecke des Rasters, der beim Bildlauf stehen bleibt und einen aktiven Filter mit einem Punkt anzeigt. Am Telefon wird die Suche zur Lupe links neben „Konto"; ab 640 px bleibt sie das Feld in der Kopfzeile.
+
+**Begründung.** BEF-039 (Sichtung am 2026-09-26) nennt das Ziel und lässt offen, wohin Person, Standort, Status, Tag/Woche und Raster wandern. Die Person gehört zu dem, was oben stehen soll — sie wählbar zu machen, wo sie steht, spart ein zweites Feld. Die Pfeile bleiben bei der Woche, weil Blättern die häufigste Bewegung ist; Tag/Woche ist daneben auch über die Spaltenköpfe erreichbar (CAL-012), Zoom über zwei Finger (BEF-038), Anlegen über das Raster (BEF-035). Die Ecke ist die einzige Stelle, die „am Raster" liegt und bei jedem Bildlauf sichtbar bleibt. Unsicher: ob die Pfeile oben bleiben sollen oder das Wischen sie ersetzt; ob der Unterreiter „Kalender · Touren" ebenfalls weichen soll (BEF-001, nicht Teil dieses Loops).
+
+**Anker.** Kopfzeile, `optionenKnopf` und das Feld „Ansicht und Filter" in `CalendarPage` (`src/features/appointments/CalendarPage.tsx`); `Monatskalender` in `src/features/appointments/Monatskalender.tsx`; `ecke`, `jetzt` und `sprung` an `CalendarGrid`; die Lupe (`sucheOffen`) in `src/app/AppShell.tsx`.
+
+**Änderungspfad.** Ein Element zurück nach oben: aus dem Feld „Ansicht und Filter" in die Kopfzeile verschieben · Aufwand `klein`. Suche auch am Rechner als Lupe: die Klasse `max-sm:hidden` am Suchfeld für alle Breiten setzen und die Lupe überall zeigen · Aufwand `klein`.

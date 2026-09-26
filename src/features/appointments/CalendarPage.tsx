@@ -2,7 +2,6 @@ import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Select } from '@/components/ui/Select';
@@ -35,6 +34,7 @@ import {
   type GitterSpalte,
 } from './CalendarGrid';
 import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
+import { Monatskalender } from './Monatskalender';
 import type { VerschiebenFrage } from './VerschiebenRueckfrage';
 import {
   arbeitszeitBaender,
@@ -42,9 +42,11 @@ import {
   blaettern,
   fensterMitArbeitszeit,
   gitterlinien,
+  kalenderwoche,
   leseParameter,
   minuteZuZeit,
   schreibeParameter,
+  tagePlus,
   tageImBereich,
   tagesFenster,
   ZOOMSTUFEN,
@@ -94,6 +96,23 @@ function tagesZahl(tag: string): string {
   return new Intl.DateTimeFormat('de-DE', {
     day: '2-digit',
     month: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(`${tag}T00:00:00Z`));
+}
+
+/** Monat und Jahr, am Telefon kurz: „Mai 27" statt „Mai 2027" (BEF-039). */
+function monatKurz(tag: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    month: 'short',
+    year: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(`${tag}T00:00:00Z`));
+}
+
+function monatLang(tag: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    month: 'long',
+    year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(`${tag}T00:00:00Z`));
 }
@@ -213,6 +232,26 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
    * Terminanlage; das ging, solange es nur einen Weg gab.
    */
   const [auswahl, setAuswahl] = useState<Spanne | null>(null);
+  /** Monatskalender und Ansicht/Filter sind eingeklappt, bis man sie braucht (BEF-039). */
+  const [monatOffen, setMonatOffen] = useState(false);
+  const [optionenOffen, setOptionenOffen] = useState(false);
+  /** Zähler für „Jetzt" - das Gitter springt bei jeder Erhöhung (BEF-039). */
+  const [sprung, setSprung] = useState(0);
+  /**
+   * Die aktuelle Uhrzeit der Praxis, jede Minute nachgestellt - für die
+   * Linie im Raster (BEF-039). Ohne Zeitzone gibt es keine.
+   */
+  const [jetztMinute, setJetztMinute] = useState<number | null>(() =>
+    zone ? minutesOfDay(new Date().toISOString(), zone) : null,
+  );
+  useEffect(() => {
+    if (!zone) return;
+    const takt = setInterval(
+      () => setJetztMinute(minutesOfDay(new Date().toISOString(), zone)),
+      60_000,
+    );
+    return () => clearInterval(takt);
+  }, [zone]);
 
   const therapeuten = useQuery({
     queryKey: ['assignable-therapists'],
@@ -623,21 +662,20 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         : {
             schluessel: 'dauertermin',
             beschriftung: 'Dauertermin',
-            hinweis:
-              'Gehört zu einer Behandlungsgrundlage – zuerst die Patient:in wählen (Suche oben).',
+            hinweis: 'Zuerst die Patient:in wählen (Suche oben)',
             deaktiviert: true,
             onWaehlen: () => undefined,
           },
       {
         schluessel: 'fehlzeit',
         beschriftung: 'Fehlzeit',
-        hinweis: 'Teammeeting, Puffer, Pause – keine Behandlung',
+        hinweis: 'Meeting, Puffer, Pause',
         onWaehlen: () => hin(`/termine/ereignis${ereignisParameter}`),
       },
       {
         schluessel: 'dauerfehlzeit',
         beschriftung: 'Dauerfehlzeit',
-        hinweis: 'Dieselbe Fehlzeit über mehrere Wochen',
+        hinweis: 'Über mehrere Wochen',
         onWaehlen: () => hin(`/termine/dauerfehlzeit${ereignisParameter}`),
       },
     ];
@@ -647,15 +685,242 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
   const laedt = termine.isPending || therapeuten.isPending;
 
+  // Die Kalenderwoche des gezeigten Ausschnitts und in der Tagesansicht der
+  // Tag selbst (BEF-039): die Frage „wo bin ich?" in einer Zeile.
+  const woche = kalenderwoche(bereich.von);
+  const zeitraumKurz =
+    p.ansicht === 'tag'
+      ? `${wochentagKurz(p.datum)} ${tagesZahl(p.datum)}`
+      : `${tagesZahl(bereich.von)}–${tagesZahl(tagePlus(bereich.bis, -1))}`;
+
+  // Ein Filter, der nicht die Voreinstellung ist, steht am Knopf - ein fast
+  // leerer Kalender ohne erkennbaren Grund ist ein Fehlerbild
+  // (PROJECT_PRINCIPLES.md 13).
+  const filterAktiv = p.standort !== null || p.status !== 'active';
+
+  /**
+   * Der Knopf zu Ansicht und Filter (BEF-039, ANN-109). Er steht in der Ecke
+   * des Rasters; ohne Raster (Fehler, leere Praxis) steht er über der
+   * Meldung, damit die Einstellungen erreichbar bleiben.
+   */
+  const optionenKnopf = (
+    <button
+      type="button"
+      aria-expanded={optionenOffen}
+      aria-controls="kalender-optionen"
+      aria-label={filterAktiv ? 'Ansicht und Filter, Filter aktiv' : 'Ansicht und Filter'}
+      title="Ansicht und Filter"
+      onClick={() => setOptionenOffen((offen) => !offen)}
+      className={[
+        'rounded-button relative inline-flex size-10 items-center justify-center',
+        optionenOffen ? 'bg-accent text-surface' : 'text-accent hover:bg-surface-sunken',
+      ].join(' ')}
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="size-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
+        <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
+        <circle cx="16" cy="6" r="2" />
+        <circle cx="10" cy="12" r="2" />
+        <circle cx="18" cy="18" r="2" />
+      </svg>
+      {filterAktiv ? (
+        <span
+          aria-hidden="true"
+          className="bg-warnung absolute top-1 right-1 size-2.5 rounded-full"
+        />
+      ) : null}
+    </button>
+  );
+
   return (
     <>
-      <PageHeader
-        title="Kalender"
-        description={bereichsBeschriftung(p.ansicht, bereich.von, bereich.bis)}
-        actions={
-          // Der Weg ueber die Tastatur zu dem, was das Tippen auf eine freie
-          // Stelle abkuerzt (UX-005). Ohne Uhrzeit: die waehlt das Formular.
-          darfAendern ? (
+      {/* Über dem Raster nur noch Monat, Person mit Woche und „Jetzt"
+          (BEF-039). Der Titel bleibt für Vorlesesoftware: Er benennt die
+          Seite, sichtbar tut es die Navigation. */}
+      <h1 className="sr-only">Kalender</h1>
+      <p className="sr-only" aria-live="polite">
+        {bereichsBeschriftung(p.ansicht, bereich.von, bereich.bis)}
+      </p>
+
+      <div className="flex items-center justify-between gap-1 sm:gap-3">
+        <button
+          type="button"
+          aria-expanded={monatOffen}
+          aria-controls="kalender-monat"
+          onClick={() => setMonatOffen((offen) => !offen)}
+          className="text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-sm font-semibold sm:px-2"
+        >
+          <span className="sm:hidden">{monatKurz(p.datum)}</span>
+          <span className="hidden sm:inline">{monatLang(p.datum)}</span>
+          <span aria-hidden="true" className="text-ink-muted text-xs">
+            {monatOffen ? '▴' : '▾'}
+          </span>
+          <span className="sr-only">– Monatskalender</span>
+        </button>
+
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-0.5">
+          <button
+            type="button"
+            aria-label="Vorheriger Zeitraum"
+            onClick={() => setze({ datum: blaettern(p.ansicht, p.datum, -1) })}
+            className="text-accent hover:bg-surface-sunken rounded-button inline-flex h-11 w-8 shrink-0 items-center justify-center text-xl sm:w-11"
+          >
+            ‹
+          </button>
+          <div className="flex min-w-0 flex-col items-center text-center">
+            {/* Der Name ist zugleich die Wahl der Person - dort, wo man ihn
+                liest. Eine Auswahlliste des Browsers: am Telefon die
+                vertraute Walze, am Rechner mit der Tastatur bedienbar. */}
+            <select
+              aria-label="Behandelnde Person"
+              value={(p.ansicht === 'woche' ? wochenPerson : p.person) ?? ''}
+              onChange={(e) => setze({ person: e.target.value || null })}
+              className="text-ink hover:bg-surface-sunken rounded-button max-w-full min-w-0 cursor-pointer truncate bg-transparent px-1 text-center text-[0.9375rem] font-semibold"
+            >
+              {/* In der Woche steht immer genau eine Person im Gitter. */}
+              {p.ansicht === 'tag' ? <option value="">Alle Personen</option> : null}
+              {alleTherapeuten.map((t) => (
+                <option key={t.staff_member_id} value={t.staff_member_id}>
+                  {t.display_name}
+                </option>
+              ))}
+            </select>
+            <span className="text-ink-muted text-xs whitespace-nowrap tabular-nums">
+              KW {woche} · {zeitraumKurz}
+            </span>
+          </div>
+          <button
+            type="button"
+            aria-label="Nächster Zeitraum"
+            onClick={() => setze({ datum: blaettern(p.ansicht, p.datum, 1) })}
+            className="text-accent hover:bg-surface-sunken rounded-button inline-flex h-11 w-8 shrink-0 items-center justify-center text-xl sm:w-11"
+          >
+            ›
+          </button>
+        </div>
+
+        {/* Zum aktuellen Zeitpunkt: heutiger Tag, und das Raster rollt zur
+            Linie der aktuellen Uhrzeit (BEF-039). */}
+        <button
+          type="button"
+          className="border-line-strong text-accent hover:bg-accent-soft rounded-button inline-flex h-11 shrink-0 items-center border px-3 text-sm font-bold"
+          onClick={() => {
+            if (p.datum !== heute) setze({ datum: heute });
+            setSprung((n) => n + 1);
+          }}
+        >
+          Jetzt
+        </button>
+      </div>
+
+      {monatOffen ? (
+        <Monatskalender
+          id="kalender-monat"
+          datum={p.datum}
+          heute={heute}
+          gewaehlt={tage}
+          onWaehlen={(tag) => {
+            setMonatOffen(false);
+            setze({ datum: tag });
+          }}
+          onSchliessen={() => setMonatOffen(false)}
+        />
+      ) : null}
+
+      {optionenOffen ? (
+        <div
+          id="kalender-optionen"
+          role="group"
+          aria-label="Ansicht und Filter"
+          className="border-line-strong bg-surface rounded-card mt-3 flex flex-col gap-4 border p-4"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex gap-1" role="group" aria-label="Ansicht">
+              {(['tag', 'woche'] as const).map((a) => (
+                <Button
+                  key={a}
+                  type="button"
+                  variant={p.ansicht === a ? 'primary' : 'secondary'}
+                  aria-pressed={p.ansicht === a}
+                  onClick={() => setze({ ansicht: a })}
+                >
+                  {a === 'tag' ? 'Tag' : 'Woche'}
+                </Button>
+              ))}
+            </div>
+
+            {/* Zoom (CAL-011). Beschriftet wird nicht die Pixelzahl, sondern
+                was sie bewirkt - das Raster, das dabei sichtbar ist.
+                `aria-live` sagt die Änderung an, weil sonst nur ein Bild sich
+                ändert. Am Telefon geht dasselbe mit zwei Fingern (BEF-038). */}
+            <div className="flex items-center gap-1" role="group" aria-label="Zoom">
+              <Button
+                type="button"
+                variant="secondary"
+                aria-label="Gitter verkleinern"
+                disabled={p.zoom === ZOOMSTUFEN[0]}
+                onClick={() => setze({ zoom: zoomSchritt(p.zoom, -1) })}
+              >
+                −
+              </Button>
+              <span
+                aria-live="polite"
+                className="text-ink-muted min-w-[8.5rem] text-center text-xs tabular-nums"
+              >
+                {rasterBeschriftung(linien.fein, linien.halbeStunde)}
+              </span>
+              <Button
+                type="button"
+                variant="secondary"
+                aria-label="Gitter vergrößern"
+                disabled={p.zoom === ZOOMSTUFEN[ZOOMSTUFEN.length - 1]}
+                onClick={() => setze({ zoom: zoomSchritt(p.zoom, 1) })}
+              >
+                +
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Select
+              label="Standort"
+              value={p.standort ?? ''}
+              onChange={(e) => setze({ standort: e.target.value || null })}
+            >
+              <option value="">Alle</option>
+              {(standorte.data ?? []).map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </Select>
+
+            <Select
+              label="Status"
+              value={p.status}
+              onChange={(e) => setze({ status: e.target.value as StatusFilter })}
+            >
+              <option value="active">Alle außer abgesagten</option>
+              <option value="confirmed">Nur bestätigte</option>
+              <option value="done">Nur erledigte</option>
+              <option value="no_show">Nur nicht angetroffene</option>
+              <option value="cancelled">Nur abgesagte</option>
+              <option value="all">Alle</option>
+            </Select>
+          </div>
+
+          {/* Der Weg ueber die Tastatur zu dem, was das Tippen auf eine freie
+              Stelle abkuerzt (UX-005, CAL-019): Eine Spanne zieht man nicht
+              mit der Tastatur auf. Ohne Uhrzeit: die waehlt das Formular.
+              „Dauertermin" beginnt an der Grundlage in der Akte (CAL-007). */}
+          {darfAendern ? (
             <div className="flex flex-wrap gap-2">
               {/* Tag umplanen bei einem Ausfall (CAL-009). Nur dort, wo Person
                   UND Tag feststehen: in der Tagesansicht mit Personenfilter.
@@ -685,8 +950,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               </ButtonLink>
               {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin
                   (CAL-015b). Eigener Weg neben dem Termin: Er kennt weder
-                  Patient:in noch Grundlage, und seine Länge ist frei. Der
-                  Rückweg ist der Kalenderstand. */}
+                  Patient:in noch Grundlage, und seine Länge ist frei. */}
               <ButtonLink
                 to={mitRueckweg(
                   `/termine/ereignis${schreibeTerminVorbelegung({ datum: p.datum })}`,
@@ -696,11 +960,6 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               >
                 Ereignis eintragen
               </ButtonLink>
-              {/* Jeder Eintrag des Anlegen-Menues hat hier seine Entsprechung
-                  ohne Zeigegeraet (CAL-019): Eine Spanne zieht man nicht mit
-                  der Tastatur auf. „Neuer Termin" und „Fehlzeit" stehen schon
-                  daneben, „Dauertermin" beginnt an der Grundlage in der
-                  Akte (CAL-007). */}
               <ButtonLink
                 to={mitRueckweg(
                   `/termine/dauerfehlzeit${schreibeTerminVorbelegung({ datum: p.datum })}`,
@@ -711,119 +970,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                 Dauerfehlzeit eintragen
               </ButtonLink>
             </div>
-          ) : null
-        }
-      />
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex gap-1" role="group" aria-label="Ansicht">
-          {(['tag', 'woche'] as const).map((a) => (
-            <Button
-              key={a}
-              type="button"
-              variant={p.ansicht === a ? 'primary' : 'secondary'}
-              aria-pressed={p.ansicht === a}
-              onClick={() => setze({ ansicht: a })}
-            >
-              {a === 'tag' ? 'Tag' : 'Woche'}
-            </Button>
-          ))}
+          ) : null}
         </div>
-
-        <div className="flex gap-1">
-          <Button
-            type="button"
-            variant="secondary"
-            aria-label="Vorheriger Zeitraum"
-            onClick={() => setze({ datum: blaettern(p.ansicht, p.datum, -1) })}
-          >
-            ←
-          </Button>
-          <Button type="button" variant="secondary" onClick={() => setze({ datum: heute })}>
-            Heute
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            aria-label="Nächster Zeitraum"
-            onClick={() => setze({ datum: blaettern(p.ansicht, p.datum, 1) })}
-          >
-            →
-          </Button>
-        </div>
-
-        {/* Zoom (CAL-011). Beschriftet wird nicht die Pixelzahl, sondern was
-            sie bewirkt - das Raster, das dabei sichtbar ist. `aria-live` sagt
-            die Änderung an, weil sonst nur ein Bild sich ändert. */}
-        <div className="flex items-center gap-1" role="group" aria-label="Zoom">
-          <Button
-            type="button"
-            variant="secondary"
-            aria-label="Gitter verkleinern"
-            disabled={p.zoom === ZOOMSTUFEN[0]}
-            onClick={() => setze({ zoom: zoomSchritt(p.zoom, -1) })}
-          >
-            −
-          </Button>
-          <span
-            aria-live="polite"
-            className="text-ink-muted min-w-[8.5rem] text-center text-xs tabular-nums"
-          >
-            {rasterBeschriftung(linien.fein, linien.halbeStunde)}
-          </span>
-          <Button
-            type="button"
-            variant="secondary"
-            aria-label="Gitter vergrößern"
-            disabled={p.zoom === ZOOMSTUFEN[ZOOMSTUFEN.length - 1]}
-            onClick={() => setze({ zoom: zoomSchritt(p.zoom, 1) })}
-          >
-            +
-          </Button>
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Select
-          label="Behandelnde Person"
-          value={(p.ansicht === 'woche' ? wochenPerson : p.person) ?? ''}
-          onChange={(e) => setze({ person: e.target.value || null })}
-        >
-          {/* In der Woche steht immer genau eine Person im Gitter. */}
-          {p.ansicht === 'tag' ? <option value="">Alle</option> : null}
-          {alleTherapeuten.map((t) => (
-            <option key={t.staff_member_id} value={t.staff_member_id}>
-              {t.display_name}
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          label="Standort"
-          value={p.standort ?? ''}
-          onChange={(e) => setze({ standort: e.target.value || null })}
-        >
-          <option value="">Alle</option>
-          {(standorte.data ?? []).map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          label="Status"
-          value={p.status}
-          onChange={(e) => setze({ status: e.target.value as StatusFilter })}
-        >
-          <option value="active">Alle außer abgesagten</option>
-          <option value="confirmed">Nur bestätigte</option>
-          <option value="done">Nur erledigte</option>
-          <option value="no_show">Nur nicht angetroffene</option>
-          <option value="cancelled">Nur abgesagte</option>
-          <option value="all">Alle</option>
-        </Select>
-      </div>
+      ) : null}
 
       {/* MAP-006c: Fahrpuffer nach §8.1, wo Person und Tag feststehen. Der
           Stand der Termine dieser Person steckt im Schlüssel - nach einer
@@ -985,6 +1134,17 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           onZoom={(richtung) => setze({ zoom: zoomSchritt(p.zoom, richtung) })}
           // Ein zweiter Tipp hebt auf oder zieht die Spanne auf (BEF-035,
           // BEF-036); was er bewirkt, entscheidet `naechsteAuswahl`.
+          ecke={optionenKnopf}
+          // Die Linie der aktuellen Uhrzeit in den Spalten, die heute sind.
+          jetzt={
+            jetztMinute === null || !tage.includes(heute)
+              ? null
+              : {
+                  minute: jetztMinute,
+                  spalten: p.ansicht === 'tag' ? spaltenModell.map((x) => x.id) : [heute],
+                }
+          }
+          sprung={sprung}
           onAuswahl={
             darfAendern ? (neu) => setAuswahl((bisher) => naechsteAuswahl(bisher, neu)) : undefined
           }
@@ -995,6 +1155,12 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               : 'Wochenansicht einer behandelnden Person'
           }
         />
+      ) : null}
+
+      {/* Ohne Raster keine Ecke: Der Knopf steht dann hier, damit Ansicht
+          und Filter erreichbar bleiben (BEF-039). */}
+      {!laedt && !(termine.isSuccess && spaltenModell.length > 0) ? (
+        <div className="mt-3">{optionenKnopf}</div>
       ) : null}
 
       {termine.isSuccess && !laedt && spaltenModell.length === 0 ? (
@@ -1025,8 +1191,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         nächsten Ausschnitt. Nach dem Loslassen fragt der Kalender mit alter und neuer Zeit nach —
         verschoben wird erst auf die Bestätigung, und danach lässt es sich rückgängig machen.
         Dasselbe geht jederzeit über „Bearbeiten" in der Detailansicht — das Ziehen ist eine
-        Abkürzung, kein eigener Weg. Über „+" und „−" wird das Gitter feiner oder gröber; gezeichnet
-        wird dabei genau das Raster, auf dem ein Termin einrastet.
+        Abkürzung, kein eigener Weg. Mit zwei Fingern oder über „+" und „−" unter „Ansicht und
+        Filter" in der Ecke des Rasters wird das Gitter feiner oder gröber; gezeichnet wird dabei
+        genau das Raster, auf dem ein Termin einrastet. Auf freier Zeit wählt ein Tipp einen
+        Zeitpunkt, ein zweiter Tipp in derselben Spalte die Spanne bis dorthin.
       </p>
 
       <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
