@@ -704,7 +704,10 @@ aus Forendiskussionen:
   Code greift — der Klasse `patientenfoto` —, und ANN-093 bekommt den
   dritten Zweck. *Erledigt am 2026-09-26: §5 mit Version 0.18 der
   Prinzipien, `README.md`, Index in `CLAUDE.md` und die Zeile DOK-006 der
-  Roadmap. Annahme und dritter Zweck bleiben beim Bau.*
+  Roadmap. Annahme und dritter Zweck bleiben beim Bau.* *Erledigt mit
+  DOK-006 am 2026-09-26: ANN-126 (Einordnung und Frist, an der Klasse
+  `patientenfoto`), ANN-127 (Ablehnung, dritter Zweck; ANN-093 mit Vermerk),
+  dazu ANN-125 (Metadaten) und ANN-128 (Herausgabe).*
 
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
@@ -762,12 +765,16 @@ aus Forendiskussionen:
   Android für eine lesbare Verordnung? In DOK-006 am echten Gerät mit einem
   Musterrezept zu prüfen. Reicht sie nicht, bleibt für Dokumente der
   Dateiwähler mit Metadatenentfernung (Punkte 33 und 34); für Patientenfotos
-  ändert sich nichts.
+  ändert sich nichts. *Vermerk 2026-09-26: DOK-006 ist mit synthetischen
+  Bildern gebaut; die Prüfung am echten Gerät ist Schritt 10 der Sichtung
+  [Befund](../sichtung/befund.md).*
 - **Herausgabe an die Person** (Punkt 40). Die Auskunft aus OPS-006 führt
   Dateien heute ohne Inhalt. Wie `owner` die Kopie nach Art. 15 Abs. 3 DSGVO
   und die Herausgabe nach Art. 20 DSGVO erzeugt — Einzeldatei oder Paket,
   mit welchem Auditereignis —, legt der Bau von DOK-006 fest; der Weg ist
   der einzige, auf dem ein Patientenfoto die Anwendung verlässt.
+  *Vermerk 2026-09-26 (DOK-006): Einzeldatei durch `owner`, Auditereignis
+  `patient_file.handed_out` (ANN-128).*
 - **Bilder, die Patient:innen schicken** (Punkt 42). Ob die Praxis sie
   später als `patientenfoto` ablegen darf — mit Einwilligung, Frist und
   Metadatenentfernung, aber ohne Kameradialog —, entscheidet ein Fall, der
