@@ -981,6 +981,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // damit niemand auf einem Zwischenstand handelt.
           laedtNach={termine.isPlaceholderData || ausnahmen.isPlaceholderData}
           onBlaettern={(richtung) => setze({ datum: blaettern(p.ansicht, p.datum, richtung) })}
+          // Zwei Finger wirken wie „+" und „−" (BEF-038).
+          onZoom={(richtung) => setze({ zoom: zoomSchritt(p.zoom, richtung) })}
           // Ein zweiter Tipp hebt auf oder zieht die Spanne auf (BEF-035,
           // BEF-036); was er bewirkt, entscheidet `naechsteAuswahl`.
           onAuswahl={

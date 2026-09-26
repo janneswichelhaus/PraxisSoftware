@@ -589,6 +589,70 @@ describe('CalendarPage', () => {
     });
   });
 
+  describe('BEF-038: Zoomen mit zwei Fingern im Raster', () => {
+    function finger(...punkte: [number, number][]) {
+      return punkte.map(([clientX, clientY], identifier) => ({ identifier, clientX, clientY }));
+    }
+
+    it('vergroessert mit zwei Fingern auseinander und verkleinert zusammen', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+      const gitter = () => screen.getByRole('grid').parentElement!;
+      // Die Hoehe einer Spalte ist Stunden mal Zoomstufe.
+      const hoehe = () =>
+        parseFloat(screen.getByRole('gridcell', { name: 'Anna Beispiel' }).style.height);
+      const vorher = hoehe();
+
+      fireEvent.touchStart(gitter(), { touches: finger([100, 100], [100, 200]) });
+      // Die Geste gehoert dem Raster: Der Browser scrollt und zoomt nicht mit.
+      expect(fireEvent.touchMove(gitter(), { touches: finger([100, 60], [100, 240]) })).toBe(false);
+      fireEvent.touchEnd(gitter(), { touches: [] });
+      // 96 -> 144 px je Stunde.
+      await waitFor(() => expect(hoehe()).toBe((vorher / 96) * 144));
+
+      fireEvent.touchStart(gitter(), { touches: finger([100, 60], [100, 240]) });
+      fireEvent.touchMove(gitter(), { touches: finger([100, 120], [100, 180]) });
+      fireEvent.touchEnd(gitter(), { touches: [] });
+      // Ein grosser Schritt zusammen ist trotzdem nur eine Stufe: 144 -> 96.
+      await waitFor(() => expect(hoehe()).toBe(vorher));
+    });
+
+    it('verkleinert bis auf das Viertelstundenraster', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=64');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+      const gitter = screen.getByRole('grid').parentElement!;
+
+      fireEvent.touchStart(gitter, { touches: finger([100, 60], [100, 240]) });
+      fireEvent.touchMove(gitter, { touches: finger([100, 120], [100, 180]) });
+
+      const zoom = within(screen.getByRole('group', { name: 'Zoom' }));
+      await waitFor(() => expect(zoom.getByText('15-Minuten-Raster')).toBeInTheDocument());
+    });
+
+    it('laesst einen einzelnen Finger scrollen und oeffnet nach dem Zoomen kein Menue', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+      const gitter = screen.getByRole('grid').parentElement!;
+
+      // Ein Finger: nichts wird verhindert - der Browser scrollt.
+      const einFinger = fireEvent.touchMove(gitter, { touches: finger([100, 100]) });
+      expect(einFinger).toBe(true);
+
+      fireEvent.touchStart(gitter, { touches: finger([100, 100], [100, 110]) });
+      fireEvent.touchEnd(gitter, { touches: [] });
+      // Der Klick, den ein Browser nach der Geste noch schickt, ist keine Auswahl.
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      expect(
+        screen.queryByRole('group', { name: 'Was soll hier entstehen?' }),
+      ).not.toBeInTheDocument();
+
+      // Der naechste Tipp ist wieder einer.
+      fireEvent.touchStart(gitter, { touches: finger([100, 100]) });
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      expect(screen.getByRole('group', { name: 'Was soll hier entstehen?' })).toBeInTheDocument();
+    });
+  });
+
   describe('CAL-006: Verschieben per Zeigegerät', () => {
     /**
      * jsdom kennt kein Layout: `getBoundingClientRect` liefert überall Nullen.
@@ -1456,6 +1520,39 @@ describe('CalendarPage', () => {
         fireEvent.click(await screen.findByRole('button', { name: /^(Trotzdem v|V)erschieben$/ }));
 
         await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('bricht den langen Druck ab, wenn ein zweiter Finger zum Zoomen dazukommt (BEF-038)', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        rendern('/kalender?ansicht=tag&datum=2027-05-12');
+        const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+        spaltenVermessen();
+
+        fireEvent.pointerDown(kachel, {
+          clientX: 150,
+          clientY: 200,
+          button: 0,
+          pointerType: 'touch',
+        });
+        fireEvent.touchStart(screen.getByRole('grid').parentElement!, {
+          touches: [
+            { identifier: 0, clientX: 150, clientY: 200 },
+            { identifier: 1, clientX: 150, clientY: 300 },
+          ],
+        });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(500);
+        });
+        fireEvent.pointerMove(window, { clientX: 150, clientY: 256, button: 0 });
+        fireEvent.pointerUp(window, { clientX: 150, clientY: 256 });
+
+        // Kein Verschieben und keine Rueckfrage: Die Geste gehoerte dem Zoom.
+        expect(screen.queryByRole('button', { name: /^(Trotzdem v|V)erschieben$/ })).toBeNull();
+        expect(updateAppointment).not.toHaveBeenCalled();
       } finally {
         vi.useRealTimers();
       }

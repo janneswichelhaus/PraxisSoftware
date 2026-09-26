@@ -149,6 +149,8 @@ interface TerminZiehen {
    * sonst öffnete das Loslassen zusätzlich die Detailansicht.
    */
   klickUnterdruecken: () => boolean;
+  /** Beendet eine begonnene Geste ohne Ergebnis - etwa beim zweiten Finger (BEF-038). */
+  abbrechen: () => void;
 }
 
 export function useTerminZiehen(optionen: ZiehOptionen): TerminZiehen {
@@ -413,5 +415,5 @@ export function useTerminZiehen(optionen: ZiehOptionen): TerminZiehen {
     return true;
   }, []);
 
-  return { vorschau, wartetAuf, beginnen, klickUnterdruecken };
+  return { vorschau, wartetAuf, beginnen, klickUnterdruecken, abbrechen: beenden };
 }

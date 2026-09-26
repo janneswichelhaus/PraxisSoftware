@@ -25,6 +25,7 @@ import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
 import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
 import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
+import { useZweiFingerZoom } from './useZweiFingerZoom';
 
 /**
  * Eine abgelegte, noch nicht bestätigte Verschiebung, wie das Gitter sie
@@ -164,8 +165,14 @@ export function CalendarGrid({
   vorschlag = null,
   kontext,
   onBlaettern,
+  onZoom,
   laedtNach = false,
 }: {
+  /**
+   * Eine Zoomstufe weiter, mit zwei Fingern im Raster (BEF-038). Ohne Angabe
+   * bleibt die Geste beim Browser.
+   */
+  onZoom?: ((richtung: 1 | -1) => void) | undefined;
   /** Der gezeigte Stand ist der alte, der neue laedt noch (FIX-018). */
   laedtNach?: boolean;
   /** Die offene Rückfrage zum Verschieben - im Gitter gezeichnet (FIX-017). */
@@ -274,6 +281,17 @@ export function CalendarGrid({
       return erste ? erste.getBoundingClientRect().top : null;
     },
     onAuswahl: (gewaehlt) => onAuswahl?.(gewaehlt),
+  });
+
+  // Zwei Finger zoomen das Raster (BEF-038); der zweite Finger beendet,
+  // was der erste begonnen hat - Verschieben und Aufziehen brechen dabei
+  // nicht, sie enden ohne Ergebnis.
+  const zweiFinger = useZweiFingerZoom(gitterRef, {
+    onZoom,
+    onZweiterFinger: () => {
+      ziehen.abbrechen();
+      spanne.abbrechen();
+    },
   });
 
   return (
@@ -413,6 +431,8 @@ export function CalendarGrid({
                         // Ein aufgezogener Bereich hat sein Ergebnis schon
                         // gemeldet; der folgende Klick wäre ein zweites.
                         if (spanne.klickUnterdruecken()) return;
+                        // Ebenso der Klick nach dem Zoomen mit zwei Fingern (BEF-038).
+                        if (zweiFinger.klickUnterdruecken()) return;
                         const kasten = event.currentTarget.getBoundingClientRect();
                         const roh = pixelZuMinute(
                           event.clientY - kasten.top,
