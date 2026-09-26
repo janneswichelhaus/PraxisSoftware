@@ -71,6 +71,19 @@ export const BEGRIFFE = {
   kennwort: 'Kennwort',
 } as const;
 
+/**
+ * `Par. 630f Abs. 3 BGB` wird `§ 630f Abs. 3 BGB`.
+ *
+ * Die SQL-Dateien des Projekts bleiben frei von Umlauten und Sonderzeichen
+ * (Migration `20260911150000_retention_schedule.sql`), deshalb steht die
+ * Fundstelle in der Datenbank als `Par.`. In einem Brief an eine Patientin
+ * steht das Zeichen — und auf jeder Seite der Anwendung (BEF-033).
+ */
+export function paragraf(fundstelle: string | null): string {
+  if (!fundstelle) return '';
+  return fundstelle.replace(/\bPar\.\s*/g, '§ ');
+}
+
 export interface AbgeloesterBegriff {
   /** Das Wort, wie es nicht mehr in der Oberfläche stehen soll. */
   muster: RegExp;

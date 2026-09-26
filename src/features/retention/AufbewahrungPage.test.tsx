@@ -102,7 +102,9 @@ describe('AufbewahrungPage', () => {
     expect(await screen.findByText('Klinische Patientenakte')).toBeInTheDocument();
     expect(screen.getByText('10 Jahre')).toBeInTheDocument();
     expect(screen.getByText('ab Abschluss der Versorgung')).toBeInTheDocument();
-    expect(screen.getByText('Par. 630f Abs. 3 BGB')).toBeInTheDocument();
+    // Die Datenbank traegt `Par.`, die Seite das Zeichen (BEF-033).
+    expect(screen.getByText('§ 630f Abs. 3 BGB')).toBeInTheDocument();
+    expect(screen.queryByText(/Par\./)).toBeNull();
   });
 
   it('sagt bei einer Klasse ohne Frist ausdruecklich, dass nicht geloescht wird', async () => {

@@ -1176,7 +1176,7 @@ wie für sie.
 | Datum   | 2026-09-22                                                                         |
 | Bereich | Organisatorisches → Sicherheit → Aufbewahrung (`/praxis/sicherheit/aufbewahrung`)   |
 | Quelle  | Aufgefallen beim Bau von OPS-006                                                    |
-| Status  | offen                                                                              |
+| Status  | erledigt in UX-EPIC-002 (UX-002g, 2026-09-26)                                     |
 | Berührt | `src/features/retention/AufbewahrungPage.tsx`                                      |
 
 **Beobachtung.** In der Spalte „Grundlage" steht `Par. 630f Abs. 3 BGB` statt
