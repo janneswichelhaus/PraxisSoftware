@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.17** |
-| **Änderungsdatum** | **2026-09-23** |
-| Vorversion | 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.18** |
+| **Änderungsdatum** | **2026-09-26** |
+| Vorversion | 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier; ADR-023 (Plattformzugang) ist vorgesehen |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -681,10 +681,14 @@ Antippen oder über Text.
 **Fotos.** Fotos der Verordnung und von Papierbögen gehören als Dokument in die
 Akte ([ADR-017](docs/adr/ADR-017-file-storage.md)). Fotos, die das Praxisteam
 aufnimmt, SOLLTEN über die Kamera der Anwendung entstehen und nicht in der
-Mediathek des Geräts liegen bleiben. **Fotos von Patient:innen** sind in V1
-vorgesehen, aber noch nicht freigegeben (ADR-017 Punkt 30): Sie setzen eine
-eigene Einwilligung voraus, und Frist und Umgang mit Aufnahmemetadaten
-entscheidet der Loop, der sie baut.
+Mediathek des Geräts liegen bleiben. **Fotos von Patient:innen** MÜSSEN über
+die Kamera der Anwendung entstehen und setzen eine eigene, ausdrückliche
+Einwilligung voraus; wer sie nicht gibt, wird genauso behandelt. Ein solches
+Foto ist eine Arbeitshilfe für Übergabe und Vergleich und **ersetzt keinen
+Eintrag**: Was es zeigt, steht in Worten in der Dokumentation, und den
+Unterschied zweier Fotos bewertet die Therapeut:in, nicht die Anwendung
+(§17). Einwilligung als Grundlage, Frist, Widerruf, Aufnahmemetadaten und
+Anzeige regelt [ADR-017](docs/adr/ADR-017-file-storage.md) Abschnitt G.
 
 **Erstaufnahme.** Was zur Aufnahme einer neuen Person gehört — Verordnung,
 Befundbogen, Einwilligungen, Befund —, SOLLTE die Anwendung sichtbar offen

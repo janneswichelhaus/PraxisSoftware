@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-26 · letzte Session: FRB-EPIC-003 (Befund aus Bausteinen)
+# Status · Stand 2026-09-26 · letzte Session: DOK-006 Schritt 1 (Fotos von Patient:innen, neue Fassung von ADR-017)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,12 +6,14 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**FRB-EPIC-003 gebaut:** In **Behandlung abschließen** und **Dokumentation bearbeiten** steht unter dem Textfeld zugeklappt **„Befund aus Bausteinen"** — Region wählen, Block aufklappen, Ergebnis antippen (zweiter Tipp hebt auf), Seite, Messwert und Notiz; darunter der fertige Text als Vorschlag, ein Tipp übernimmt ihn in den Eintrag. Die neun Regionen stehen wörtlich aus deiner MT-Vorlage, drei Lücken sind als „Vorlage unvollständig" markiert. Die Behandlungsliege steht jetzt auch oben im **Befund** der Akte. Bilder und Skalen sind als FRB-EPIC-005 und FRB-EPIC-004 ausgegliedert (deine Wahl). Pull Request offen, wartet auf deinen Merge. Fortschritt **38,7 %**.
+**FRB-EPIC-003 gebaut:** In **Behandlung abschließen** und **Dokumentation bearbeiten** steht unter dem Textfeld zugeklappt **„Befund aus Bausteinen"** — Region wählen, Block aufklappen, Ergebnis antippen (zweiter Tipp hebt auf), Seite, Messwert und Notiz; darunter der fertige Text als Vorschlag, ein Tipp übernimmt ihn in den Eintrag. Die neun Regionen stehen wörtlich aus deiner MT-Vorlage, drei Lücken sind als „Vorlage unvollständig" markiert. Die Behandlungsliege steht jetzt auch oben im **Befund** der Akte. Bilder und Skalen sind als FRB-EPIC-005 und FRB-EPIC-004 ausgegliedert (deine Wahl). Gemergt (#125).
+
+**DOK-006 Schritt 1 fertig, von dir angenommen (2026-09-26, Fragen 9 bis 14 wie empfohlen):** ADR-017 Fassung 2 (Abschnitt G) gibt **Fotos von Patient:innen** frei, die Prinzipien stehen auf **0.18** (§5) — auf eigene Einwilligung, als Arbeitshilfe neben dem Eintrag statt als Teil der Akte, gelöscht nach **zwölf Monaten**, spätestens drei Monate nach Abschluss der Versorgung, sofort gesperrt beim Widerruf. Aufnahme **nur im Kameradialog der App**, nie über Dateiwähler oder Mediathek; Ort und Gerätedaten entfernt das Gerät vor dem Upload aus jedem Bild. Vergleich zweier Fotos nebeneinander, ohne Bewertung, ohne Vorschaubilder und Download. Ein Zweitreview hat 19 Befunde geliefert, alle eingearbeitet. Kein Code. Fortschritt **38,8 %**.
 
 ## Danach — Bauen
 
-1. Block 2 weiter mit **DOK-005** Therapiebericht an die Verordner:in. `/weiter`
-2. **DOK-006** Fotos in der Akte (zuerst neue Fassung von ADR-017).
+1. **DOK-005** Therapiebericht an die Verordner:in — läuft parallel.
+2. **DOK-006** Bau — Kameradialog, Klasse `patientenfoto`, Einwilligung, Vergleich; der ADR steht darüber. `/weiter DOK-006`
 3. **PRX-EPIC-001** in der Reihenfolge der Roadmap, Block 2.
 
 ## Prüfverfahren
@@ -37,4 +39,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**FRB-EPIC-003 (FRB-003a bis c).** Neun Regionsdateien unter `src/features/assessments/definitionen/bausteine/` mit Zähl- und Wortlauttest (`bausteine.test.ts`); `blockSchema` lässt „unvollständig" jetzt auch an einem Block mit Items zu (ANN-118). Generator `dokumentationstext.ts`, Zustand `bausteinauswahl.ts`, Oberfläche `BausteinFeld.tsx`, eingebunden in `CompleteTreatmentPage` und `TreatmentNotePage` (ANN-120); Liege im Befund über den vorhandenen Schreibpfad. Neue Prüfseite `tests/e2e/fixtures/bausteine.html` mit `bausteine.spec.ts`. Keine Migration, keine neue Abhängigkeit, kein neuer RPC. **Lokale Schritte:** `git pull origin claude/frb-epic-003` (nach dem Merge `main`); kein `db reset` nötig.
+**DOK-006 Schritt 1 (Docs-Session).** ADR-017 um Abschnitt G ergänzt (Punkte 31 bis 42) und nach deiner Bestätigung als Fassung 2 angenommen; README, Index in `CLAUDE.md`, Roadmap-Zeile und §5 der Prinzipien (0.18) nachgezogen. Punkte 1 bis 30 unverändert, Vermerke an den Punkten 13, 15, 23 und 30, „Bewusst nicht Bestandteil" und der HEIC-Frage; Quellen erstmals mit §630f BGB aus der Primärquelle. Am Bestand festgestellt und im ADR entschieden: `klinisches_bild` wird geschärft (heute ein Schlupfloch für Personenfotos), die Test-Umgebung öffnet die Kamera eng mit `camera=(self)`, und Patientenfotos bekommen einen eigenen Anzeigeweg ohne Download (die Dateiliste öffnet heute als Anhang). Zweitreview als Subagent gelaufen, Befunde in einem eigenen Commit eingearbeitet. Keine neue Annahme — die zur Einordnung und Frist wird mit dem Bau an der Klasse `patientenfoto` registriert. Kein Code, keine Migration. **Lokale Schritte:** `git pull origin claude/dok-006-adr-017`; kein `pnpm install`, kein `db reset`.
