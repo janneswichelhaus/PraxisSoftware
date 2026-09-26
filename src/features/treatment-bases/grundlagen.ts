@@ -65,6 +65,22 @@ function verordnungszustand(kontingent: TreatmentBasisKontingent | null): Verord
   return kontingent.remaining > 0 ? 'offen' : 'verplant';
 }
 
+/**
+ * Welche Grundlage ohne Rückfrage feststeht (BEF-042).
+ *
+ * Hat die Person genau eine offene Grundlage, ist sie die gemeinte. Hat sie
+ * überhaupt nur eine, auch — über das Kontingent hinaus zu planen ist
+ * zulässig (CAL-022), die Serienseite sagt dann, was ungedeckt bleibt. In
+ * jedem anderen Fall fragt die Seite. Was „offen" heißt, entscheidet
+ * `verordnungszustand` (ANN-042) oben, nicht die aufrufende Seite.
+ */
+export function eindeutigeGrundlage(eintraege: readonly VerordnungMitZahlen[]): string | null {
+  const offen = eintraege.filter((eintrag) => eintrag.zustand === 'offen');
+  if (offen.length === 1) return offen[0]!.verordnung.id;
+  if (eintraege.length === 1) return eintraege[0]!.verordnung.id;
+  return null;
+}
+
 export const zustandLabels: Record<Verordnungszustand, string> = {
   offen: 'Offen',
   verplant: 'Vollständig verplant',
@@ -76,6 +92,12 @@ interface VerordnungenDerAkte {
   aktuell: VerordnungMitZahlen[];
   abgeschlossen: VerordnungMitZahlen[];
   isPending: boolean;
+  /**
+   * Die Zahlen sind da. Wer aus dem Zustand eine Entscheidung ableitet statt
+   * ihn nur zu zeigen, wartet darauf - ohne Zahlen gilt jede Grundlage als
+   * `offen` (BEF-042).
+   */
+  zahlenGeladen: boolean;
   isError: boolean;
   /** Die Rolle darf Verordnungen überhaupt nicht lesen. */
   verborgen: boolean;
@@ -120,6 +142,7 @@ export function useVerordnungenDerAkte(patientId: string, user: CurrentUser): Ve
     // Die Zahlen dürfen nachlaufen: Die Verordnung ist auch ohne sie lesbar,
     // und ein Ladebalken über der ganzen Liste wäre der schlechtere Tausch.
     isPending: verordnungen.isPending,
+    zahlenGeladen: kontingente.isSuccess,
     isError: verordnungen.isError || kontingente.isError,
     verborgen: !darfLesen,
   };
