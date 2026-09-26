@@ -1294,10 +1294,10 @@ Vorschau beim Verschieben.
 begonnene Geste auf einer Kachel nicht vom Browser übernommen wird. Diese
 Angabe lässt nur Wischen zu und schließt das Zoomen mit zwei Fingern ausdrücklich aus.
 
-**Offen für den Loop.** Gemeint ist vermutlich das Raster selbst — zwei Finger
-auseinander wie `+`, zusammen wie `−` (Stundenhöhe, 5- bis 30-Minuten-Raster) —
-nicht das Vergrößern der ganzen Seite. Im SPEC mit Jannes klären; das Verschieben
-von Kacheln per Ziehen darf dabei nicht brechen.
+**Geklärt (Jannes, 2026-09-26).** Gemeint ist das **Raster**, nicht die Seite:
+zwei Finger auseinander wirken wie `+`, zusammen wie `−` (Stundenhöhe, 5- bis
+30-Minuten-Raster). Das Verschieben von Kacheln per Ziehen darf dabei nicht
+brechen.
 
 ### BEF-039 — Über dem Kalender steht zu viel; oben reichen Monat, Name, Woche und „Jetzt"
 
