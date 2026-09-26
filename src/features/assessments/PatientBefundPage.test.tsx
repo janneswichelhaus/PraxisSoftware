@@ -93,9 +93,7 @@ describe('Befund der Akte', () => {
     expect(screen.getByText('2. Haben Sie aktuell Schmerzen?')).toBeInTheDocument();
     expect(screen.getByText('ja')).toBeInTheDocument();
     expect(screen.getByText('6 von 10')).toBeInTheDocument();
-    expect(
-      screen.getByText(/^Nicht beantwortet: Beruf:, Sport\/Hobby:, 1, 4,/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/^Nicht beantwortet: Beruf, Sport\/Hobby, 1, 4,/)).toBeInTheDocument();
   });
 
   it('bietet die Korrektur nur am geltenden abgeschlossenen Bogen an', async () => {
@@ -111,6 +109,23 @@ describe('Befund der Akte', () => {
     );
     expect(screen.getByText('durch Korrektur ersetzt')).toBeInTheDocument();
     expect(screen.getByText('Korrektur: Frage 3 falsch')).toBeInTheDocument();
+  });
+
+  it('laesst den alten Bogen gelten, solange die Korrektur ein Entwurf ist', async () => {
+    seite([
+      erhebung({
+        id: 'neu',
+        status: 'entwurf',
+        completed_at: null,
+        supersedes_response_id: 'alt',
+        change_reason: 'Frage 3 falsch',
+      }),
+      erhebung({ id: 'alt', superseded_by_response_id: 'neu' }),
+    ]);
+    expect(await screen.findByText('abgeschlossen · Korrektur im Entwurf')).toBeInTheDocument();
+    expect(screen.queryByText('durch Korrektur ersetzt')).toBeNull();
+    // Keine zweite Korrektur neben der laufenden.
+    expect(screen.queryByRole('link', { name: 'Korrigieren' })).toBeNull();
   });
 
   it('zeigt office die Bögen, aber keine Schreibaktion', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent } from 'react';
+import { useCallback, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +10,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
+import { useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import { canWriteQuestionnaire, type CurrentUser } from '@/features/session/types';
 import { antwortenSchema, type Antwort, type Antworten } from './antworten';
 import {
@@ -163,31 +164,64 @@ function Formular({
     });
   }, []);
 
-  const speichern = useMutation({
-    mutationFn: async (abschliessen: boolean) => {
-      const id = await erhebungSpeichern({
-        patientId: patient.id,
-        erhebungId: entwurf?.id ?? null,
-        instrumentId: definition.meta.id,
-        version: definition.meta.version,
-        datum,
-        antworten,
-        korrigiert: korrigiert?.id ?? null,
-        begruendung: korrigiert ? begruendung.trim() : null,
-      });
-      if (abschliessen) await erhebungAbschliessen(id);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: erhebungenQueryKey(patient.id) });
-      void navigate(zurueck, { replace: true });
-    },
+  // Was zuletzt auf dem Server liegt. Nach dem ersten Sichern ist aus einer
+  // neuen Erhebung (oder einer Korrektur) ein Entwurf geworden; jedes weitere
+  // Sichern überschreibt ihn, statt einen zweiten anzulegen.
+  const [entwurfId, setEntwurfId] = useState<string | null>(entwurf?.id ?? null);
+  const stand = JSON.stringify([antworten, datum, begruendung]);
+  const [gesichert, setGesichert] = useState(() =>
+    entwurf ? JSON.stringify([entwurf.answers, entwurf.recorded_on, '']) : null,
+  );
+  const standRef = useRef(stand);
+  standRef.current = stand;
+  const entwurfIdRef = useRef(entwurfId);
+  entwurfIdRef.current = entwurfId;
+
+  /**
+   * Den Bogen als Entwurf auf den Server legen und melden, ob danach alles
+   * dort liegt (FIX-014: wer währenddessen weiter ankreuzt, hat wieder
+   * Ungespeichertes). Wirft mit verständlicher Meldung.
+   */
+  async function entwurfSichern(): Promise<boolean> {
+    const zuSichern = standRef.current;
+    if (!pruefen()) throw new Error('Bitte die markierte Angabe prüfen.');
+    const id = await erhebungSpeichern({
+      patientId: patient.id,
+      erhebungId: entwurfIdRef.current,
+      instrumentId: definition.meta.id,
+      version: definition.meta.version,
+      datum,
+      antworten,
+      korrigiert: entwurfIdRef.current ? null : (korrigiert?.id ?? null),
+      begruendung: korrigiert && !entwurfIdRef.current ? begruendung.trim() : null,
+    });
+    setEntwurfId(id);
+    entwurfIdRef.current = id;
+    setGesichert(zuSichern);
+    await queryClient.invalidateQueries({ queryKey: erhebungenQueryKey(patient.id) });
+    return standRef.current === zuSichern;
+  }
+
+  // Ungespeichert ist, was vom zuletzt gesicherten Stand abweicht - bei einem
+  // neuen Bogen jede erste Angabe.
+  const leer = Object.keys(antworten).length === 0 && begruendung.trim() === '';
+  const ungespeichert = gesichert === null ? !leer : gesichert !== stand;
+
+  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
+    ungespeichert,
+    speichern: entwurfSichern,
   });
 
+  function zurueckZurAkte() {
+    freigeben();
+    void navigate(zurueck, { replace: true });
+  }
+
   const verwerfen = useMutation({
-    mutationFn: () => erhebungVerwerfen(entwurf!.id),
+    mutationFn: () => erhebungVerwerfen(entwurfId!),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: erhebungenQueryKey(patient.id) });
-      void navigate(zurueck, { replace: true });
+      zurueckZurAkte();
     },
   });
 
@@ -218,8 +252,19 @@ function Formular({
   function absenden(abschliessen: boolean) {
     return (event?: FormEvent) => {
       event?.preventDefault();
-      if (speichern.isPending || !pruefen()) return;
-      speichern.mutate(abschliessen);
+      if (laeuft || !pruefen()) return;
+      void schreiben({
+        ausfuehren: async () => {
+          const vollstaendig = await entwurfSichern();
+          if (vollstaendig && abschliessen) {
+            await erhebungAbschliessen(entwurfIdRef.current!);
+            await queryClient.invalidateQueries({ queryKey: erhebungenQueryKey(patient.id) });
+          }
+          return vollstaendig;
+        },
+        fehlertitel: abschliessen ? 'Nicht abgeschlossen' : 'Nicht gespeichert',
+        danach: zurueckZurAkte,
+      });
     };
   }
 
@@ -258,9 +303,7 @@ function Formular({
           ) : null}
 
           {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
-          {speichern.isError ? (
-            <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
-          ) : null}
+          {schutz}
           {verwerfen.isError ? (
             <Statusmeldung ton="fehler">{verwerfen.error.message}</Statusmeldung>
           ) : null}
@@ -269,17 +312,17 @@ function Formular({
             Abgeschlossen lässt sich der Bogen nicht mehr ändern, nur noch korrigieren.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" onClick={absenden(true)} disabled={speichern.isPending}>
-              {speichern.isPending ? 'Wird gespeichert …' : 'Abschließen'}
+            <Button type="button" onClick={absenden(true)} disabled={laeuft}>
+              {laeuft ? 'Wird gespeichert …' : 'Abschließen'}
             </Button>
-            <Button type="submit" variant="secondary" disabled={speichern.isPending}>
+            <Button type="submit" variant="secondary" disabled={laeuft}>
               Als Entwurf speichern
             </Button>
-            {entwurf ? (
+            {entwurfId ? (
               <Button
                 type="button"
                 variant="quiet"
-                disabled={verwerfen.isPending}
+                disabled={verwerfen.isPending || laeuft}
                 onClick={() => verwerfen.mutate()}
               >
                 Entwurf verwerfen

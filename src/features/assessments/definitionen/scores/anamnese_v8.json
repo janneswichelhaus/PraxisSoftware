@@ -74,7 +74,7 @@
     {
       "id": "schmerzart",
       "nummer": 4,
-      "text": "Haben Sie: Ruheschmerzen , Nachtschmerzen , Dauerschmerzen ?",
+      "text": "Haben Sie: Ruheschmerzen, Nachtschmerzen, Dauerschmerzen?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {
@@ -134,7 +134,7 @@
     {
       "id": "merkmale",
       "nummer": 7,
-      "text": "Weisen Ihre Beschwerden eines der folgenden Merkmale auf: Kribbeln , Piksen , Brennen , Juckreiz , Taubheitsgefühl , Gefühl einer schmerzhaften Kälte , elektrische Schläge ?",
+      "text": "Weisen Ihre Beschwerden eines der folgenden Merkmale auf: Kribbeln, Piksen, Brennen, Juckreiz, Taubheitsgefühl, Gefühl einer schmerzhaften Kälte, elektrische Schläge?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {
@@ -190,7 +190,7 @@
     {
       "id": "beschwerden_zeitlich",
       "nummer": 10,
-      "text": "Haben Sie Ihre Beschwerden: permanent , mit Unterbrechungen ?",
+      "text": "Haben Sie Ihre Beschwerden: permanent, mit Unterbrechungen?",
       "typ": "einzelauswahl",
       "optionen": [
         {
@@ -207,7 +207,7 @@
     {
       "id": "beschwerden_verlauf",
       "nummer": 11,
-      "text": "Sind Ihre Beschwerden: besser geworden , gleichbleibend , schlechter geworden , wechselnd ?",
+      "text": "Sind Ihre Beschwerden: besser geworden, gleichbleibend, schlechter geworden, wechselnd?",
       "typ": "einzelauswahl",
       "optionen": [
         {
@@ -604,7 +604,7 @@
     {
       "id": "symptome_neurologisch",
       "nummer": 23,
-      "text": "Hatten Sie in den letzten Wochen: Kopfschmerzen , Gang- oder Gleichgewichtsstörungen , Schwindel , Übelkeit , Ohnmachtsanfällen , Benommenheit , Sprech-/Schluckbeschwerden , Sehprobleme/Doppelbilder ?",
+      "text": "Hatten Sie in den letzten Wochen: Kopfschmerzen, Gang- oder Gleichgewichtsstörungen, Schwindel, Übelkeit, Ohnmachtsanfällen, Benommenheit, Sprech-/Schluckbeschwerden, Sehprobleme/Doppelbilder?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {
@@ -650,7 +650,7 @@
     {
       "id": "symptome_organisch",
       "nummer": 24,
-      "text": "Hatten Sie in den letzten Woche: Verdauungsbeschwerden/Sodbrennen , Blasenschwäche , morgendliche Steifheit , Kurzatmigkeit , vermehrte Müdigkeit , Herzrasen , belastungsabhängige Brustschmerzen , Schweißausbrüche ?",
+      "text": "Hatten Sie in den letzten Woche: Verdauungsbeschwerden/Sodbrennen, Blasenschwäche, morgendliche Steifheit, Kurzatmigkeit, vermehrte Müdigkeit, Herzrasen, belastungsabhängige Brustschmerzen, Schweißausbrüche?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {
@@ -696,7 +696,7 @@
     {
       "id": "symptome_allgemein",
       "nummer": 25,
-      "text": "Hatten Sie in den letzten Wochen: Fieber/Schüttelfrost , Nachtschweiß , Gewichtsverlust , Infektanfälligkeit ?",
+      "text": "Hatten Sie in den letzten Wochen: Fieber/Schüttelfrost, Nachtschweiß, Gewichtsverlust, Infektanfälligkeit?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {
@@ -764,7 +764,7 @@
     {
       "id": "erkrankungen",
       "nummer": 27,
-      "text": "Leiden Sie unter: Asthma , Diabetes , Osteoporose , Epilepsie , Depression , Angststörung , andere Erkrankung?",
+      "text": "Leiden Sie unter: Asthma, Diabetes, Osteoporose, Epilepsie, Depression, Angststörung, andere Erkrankung?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {
@@ -807,7 +807,7 @@
     {
       "id": "ereignisse",
       "nummer": 28,
-      "text": "Stehen folgende Ereignisse in Zusammenhang mit Ihren aktuellen Problemen: Unfall/Sturz/Verletzung , Operation , anderes Ereignis?",
+      "text": "Stehen folgende Ereignisse in Zusammenhang mit Ihren aktuellen Problemen: Unfall/Sturz/Verletzung, Operation, anderes Ereignis?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {
@@ -856,7 +856,7 @@
     {
       "id": "medikamente",
       "nummer": 30,
-      "text": "Nehmen Sie momentan Medikamente wie: Kortison , Blutverdünner , Schmerzmittel , Hormone , Antidepressiva , andere Medikamente?",
+      "text": "Nehmen Sie momentan Medikamente wie: Kortison, Blutverdünner, Schmerzmittel, Hormone, Antidepressiva, andere Medikamente?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {
@@ -1010,7 +1010,7 @@
     {
       "id": "bisherige_massnahmen",
       "nummer": 38,
-      "text": "Welche Maßnahmen zur Diagnostik oder Therapie wurden bisher durchgeführt: Röntgen , Computertomographie , MRT/Kernspintomographie , Spritze , Massage , Physiotherapie , Training , Anderes?",
+      "text": "Welche Maßnahmen zur Diagnostik oder Therapie wurden bisher durchgeführt: Röntgen, Computertomographie, MRT/Kernspintomographie, Spritze, Massage, Physiotherapie, Training, Anderes?",
       "typ": "mehrfachauswahl",
       "optionen": [
         {

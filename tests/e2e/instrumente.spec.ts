@@ -18,7 +18,9 @@ test.describe('Instrumente', () => {
     await expect(page.getByRole('heading', { level: 2 })).toHaveCount(4);
     // Die drei freien bleiben ohne Vorlage inaktiv (ANN-099); der Anamnesebogen ist aktiv.
     await expect(page.getByText('inaktiv · Wortlaut vorläufig')).toHaveCount(3);
-    await expect(page.getByText('aktiv', { exact: true })).toHaveCount(1);
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Anamnesebogen Version 8 (DIGOTOR)' }),
+    ).toBeVisible();
 
     await page.getByText('Wortlaut (6 Items)').click();
     await expect(page.getByText('Wie gut können Sie Aktivität 1 heute ausführen?')).toBeVisible();

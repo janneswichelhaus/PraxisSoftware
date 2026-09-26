@@ -116,6 +116,25 @@ describe('Erhebung', () => {
     expect(erhebungAbschliessen).not.toHaveBeenCalled();
   });
 
+  it('überschreibt beim zweiten Sichern den eigenen Entwurf, statt einen zweiten anzulegen', async () => {
+    const user = userEvent.setup();
+    // Gesichert ist, abschliessen scheitert - die Seite bleibt, der Entwurf
+    // liegt auf dem Server und traegt jetzt eine Kennung.
+    erhebungAbschliessen.mockRejectedValueOnce(new Error('Verbindung unterbrochen.'));
+    seite('instrument=anamnese_v8');
+    const frage2 = (await screen.findByText('2. Haben Sie aktuell Schmerzen?')).closest(
+      'fieldset',
+    )!;
+    await user.click(within(frage2).getByLabelText('ja'));
+    await user.click(screen.getByText('Abschließen'));
+    expect(await screen.findByText('Verbindung unterbrochen.')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Als Entwurf speichern'));
+    await waitFor(() => expect(erhebungSpeichern).toHaveBeenCalledTimes(2));
+    expect(erhebungSpeichern.mock.calls[0]![0]).toMatchObject({ erhebungId: null });
+    expect(erhebungSpeichern.mock.calls[1]![0]).toMatchObject({ erhebungId: 'neu' });
+  });
+
   it('schliesst nach dem Speichern ab', async () => {
     const user = userEvent.setup();
     seite('instrument=anamnese_v8');

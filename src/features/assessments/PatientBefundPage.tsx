@@ -91,6 +91,7 @@ export function Befund({
                   <ErhebungKarte
                     key={erhebung.id}
                     erhebung={erhebung}
+                    alle={eigene}
                     definition={instrument}
                     patientId={patient.id}
                     darfErheben={darfErheben}
@@ -115,17 +116,21 @@ export function Befund({
 
 function ErhebungKarte({
   erhebung,
+  alle,
   definition,
   patientId,
   darfErheben,
 }: {
   erhebung: Erhebung;
+  /** Alle Erhebungen desselben Instruments - für den Stand einer Korrektur. */
+  alle: readonly Erhebung[];
   definition: ScoreDefinition;
   patientId: string;
   darfErheben: boolean;
 }) {
-  const ersetzt = erhebung.superseded_by_response_id !== null;
-  const korrigierbar = darfErheben && erhebung.status === 'abgeschlossen' && !ersetzt;
+  const nachfolger = alle.find((e) => e.id === erhebung.superseded_by_response_id);
+  const ersetzt = nachfolger?.status === 'abgeschlossen';
+  const korrigierbar = darfErheben && erhebung.status === 'abgeschlossen' && !nachfolger;
 
   return (
     <li className="border-line bg-surface rounded-card border p-4">
@@ -135,6 +140,8 @@ function ErhebungKarte({
           <Badge ton="warnung">Entwurf</Badge>
         ) : ersetzt ? (
           <Badge ton="neutral">durch Korrektur ersetzt</Badge>
+        ) : nachfolger ? (
+          <Badge ton="positiv">abgeschlossen · Korrektur im Entwurf</Badge>
         ) : (
           <Badge ton="positiv">abgeschlossen</Badge>
         )}

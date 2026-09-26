@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
-import type { Erhebung } from './api';
+import { giltNoch, type Erhebung } from './api';
 import type { ScoreDefinition, ScoreItem } from './schema';
 
 /**
@@ -108,9 +108,7 @@ export function messreihen(
   erhebungen: readonly Erhebung[],
   instrumente: readonly ScoreDefinition[],
 ): Messreihe[] {
-  const geltend = erhebungen.filter(
-    (e) => e.status === 'abgeschlossen' && e.superseded_by_response_id === null,
-  );
+  const geltend = erhebungen.filter((e) => giltNoch(e, erhebungen));
   return instrumente.flatMap((instrument) =>
     instrument.items
       .filter((item) => item.typ === 'skala')

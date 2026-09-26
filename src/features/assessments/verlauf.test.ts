@@ -32,10 +32,32 @@ describe('Messreihen (FRB-002e)', () => {
       [
         erhebung({ recorded_on: '2026-10-01', answers: { schmerzstaerke: { wert: 4 } } }),
         erhebung({ recorded_on: '2026-09-01', answers: { schmerzstaerke: { wert: 7 } } }),
+        // Ersetzt durch eine abgeschlossene Korrektur: zählt nicht mehr.
         erhebung({
+          id: 'alt',
           recorded_on: '2026-09-02',
           answers: { schmerzstaerke: { wert: 2 } },
           superseded_by_response_id: 'x',
+        }),
+        erhebung({
+          id: 'x',
+          recorded_on: '2026-09-02',
+          answers: { schmerzstaerke: { wert: 3 } },
+          supersedes_response_id: 'alt',
+        }),
+        // Eine Korrektur im Entwurf ersetzt noch nichts.
+        erhebung({
+          id: 'y',
+          recorded_on: '2026-09-05',
+          answers: { schmerzstaerke: { wert: 5 } },
+          superseded_by_response_id: 'z',
+        }),
+        erhebung({
+          id: 'z',
+          status: 'entwurf',
+          recorded_on: '2026-09-05',
+          answers: { schmerzstaerke: { wert: 1 } },
+          supersedes_response_id: 'y',
         }),
         erhebung({
           recorded_on: '2026-09-03',
@@ -50,6 +72,8 @@ describe('Messreihen (FRB-002e)', () => {
         3,
         [
           { datum: '2026-09-01', wert: 7 },
+          { datum: '2026-09-02', wert: 3 },
+          { datum: '2026-09-05', wert: 5 },
           { datum: '2026-10-01', wert: 4 },
         ],
       ],

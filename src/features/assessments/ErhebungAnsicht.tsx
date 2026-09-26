@@ -47,9 +47,13 @@ export function ErhebungAnsicht({
       {offen.length > 0 ? (
         <p className="text-ink-muted text-sm">
           Nicht beantwortet:{' '}
-          {[...new Set(offen.map((item) => (item.nummer ? String(item.nummer) : item.text)))].join(
-            ', ',
-          )}
+          {[
+            ...new Set(
+              offen.map((item) =>
+                item.nummer ? String(item.nummer) : item.text.replace(/:$/, ''),
+              ),
+            ),
+          ].join(', ')}
         </p>
       ) : null}
     </div>

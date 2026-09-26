@@ -16,9 +16,16 @@ const stamm = process.cwd();
 const SCORE_PDFS = join(stamm, 'quellen/scores/pdf');
 const SCORE_TEXTE = join(stamm, 'quellen/scores/pdf-text');
 
-/** Zeilenumbrüche und Satzspiegel des Extrakts sind Layout, kein Wortlaut. */
+/**
+ * Zeilenumbrüche und Satzspiegel des Extrakts sind Layout, kein Wortlaut —
+ * ebenso die Lücke vor Komma und Fragezeichen, in der im PDF ein Kästchen
+ * steht („Ruheschmerzen ☐, Nachtschmerzen ☐").
+ */
 function einzeilig(text: string): string {
-  return text.replace(/\s+/g, ' ').trim();
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/ ([,?])/g, '$1')
+    .trim();
 }
 
 /**

@@ -103,3 +103,14 @@ export async function erhebungVerwerfen(erhebungId: string): Promise<void> {
   })) as { error: { message?: string } | null };
   if (error) throw new Error(meldungFuer(error.message ?? ''));
 }
+
+/**
+ * Gilt die Erhebung noch? Abgeschlossen und nicht durch eine **abgeschlossene**
+ * Korrektur ersetzt. Eine Korrektur im Entwurf ersetzt noch nichts: Bis sie
+ * abgeschlossen ist, bleibt der alte Bogen die Angabe der Akte (ANN-103).
+ */
+export function giltNoch(erhebung: Erhebung, alle: readonly Erhebung[]): boolean {
+  if (erhebung.status !== 'abgeschlossen') return false;
+  const nachfolger = alle.find((e) => e.id === erhebung.superseded_by_response_id);
+  return nachfolger?.status !== 'abgeschlossen';
+}
