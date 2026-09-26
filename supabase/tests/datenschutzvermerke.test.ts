@@ -169,6 +169,64 @@ describe('record_patient_privacy_entry', () => {
     expect(rows).toHaveLength(2);
   });
 
+  describe('Ablehnung (ADR-017 Punkt 35, ANN-127)', () => {
+    it('haelt eine Ablehnung als eigenen Vermerk und laesst danach eine Erteilung zu', async () => {
+      await vermerken('consent_refused', 'patient_photos', null, GESTERN);
+      await vermerken('consent_granted', 'patient_photos', null, HEUTE);
+
+      const { rows } = await asUser(users.office, LESEN, [patients.max]);
+      expect(rows.map((r) => r.record_kind)).toEqual(['consent_refused', 'consent_granted']);
+    });
+
+    it('weist eine Ablehnung ab, solange eingewilligt ist - das waere ein Widerruf', async () => {
+      await vermerken('consent_granted', 'patient_photos', null, GESTERN);
+      const fehler = await fehlerBeim(users.office, [
+        patients.max,
+        'consent_refused',
+        'patient_photos',
+        null,
+        HEUTE,
+      ]);
+      expect(fehler?.message).toMatch(/consent is granted/);
+    });
+
+    it('weist eine doppelte Ablehnung ab', async () => {
+      await vermerken('consent_refused', 'patient_photos', null, GESTERN);
+      const fehler = await fehlerBeim(users.office, [
+        patients.max,
+        'consent_refused',
+        'patient_photos',
+        null,
+        HEUTE,
+      ]);
+      expect(fehler?.message).toMatch(/already refused/);
+    });
+
+    it('erlaubt die Ablehnung nach einem Widerruf', async () => {
+      await vermerken('consent_granted', 'patient_photos', null, VORGESTERN);
+      await vermerken('consent_withdrawn', 'patient_photos', null, GESTERN);
+      await vermerken('consent_refused', 'patient_photos', null, HEUTE);
+
+      const { rows } = await asUser(users.office, LESEN, [patients.max]);
+      expect(rows.map((r) => r.record_kind)).toEqual([
+        'consent_granted',
+        'consent_withdrawn',
+        'consent_refused',
+      ]);
+    });
+
+    it('verlangt bei der Ablehnung einen Zweck', async () => {
+      const fehler = await fehlerBeim(users.office, [
+        patients.max,
+        'consent_refused',
+        null,
+        null,
+        HEUTE,
+      ]);
+      expect(fehler?.code).toBe('23514');
+    });
+  });
+
   it('kennt nur die Zwecke aus ANN-093', async () => {
     const fehler = await fehlerBeim(users.office, [
       patients.max,

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from './dokumentarten';
+import { alleBytes, bereinigeBild } from './metadaten';
 
 /**
  * Datenzugriff auf die Dateiablage der Patientenakte (DAT-001, ADR-017).
@@ -73,7 +74,8 @@ export interface UploadAuftrag {
   grundlageId: string | null;
   documentType: string;
   displayName: string;
-  datei: File;
+  /** Aus dem Dateiwähler oder aus dem Kameradialog (DOK-006). */
+  datei: Blob;
 }
 
 /**
@@ -87,8 +89,8 @@ export interface UploadAuftrag {
  * hält (ADR-017 Punkt 9).
  */
 async function pruefsumme(datei: Blob): Promise<string> {
-  const bytes = await datei.arrayBuffer();
-  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  const bytes = await alleBytes(datei);
+  const hash = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
@@ -114,7 +116,15 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
   const inhaltsGrund = await dateiInhaltAblehnungsgrund(auftrag.datei);
   if (inhaltsGrund) throw new Error(inhaltsGrund);
 
-  const summe = await pruefsumme(auftrag.datei);
+  // Aufnahmemetadaten verlassen das Gerät nicht (ADR-017 Punkt 34, DOK-006):
+  // Ort, Gerät, Aufnahmezeit, Vorschaubild. Verlustfrei, nur die Ausrichtung
+  // bleibt. Alles danach - Größe, Prüfsumme, Upload - gilt den bereinigten
+  // Bytes: Die Summe belegt die abgelegte Fassung, nicht die empfangene.
+  const datei = await bereinigeBild(auftrag.datei);
+  const nachBereinigung = dateiAblehnungsgrund(datei);
+  if (nachBereinigung) throw new Error(nachBereinigung);
+
+  const summe = await pruefsumme(datei);
 
   // (a) Berechtigung prüfen, bevor Bytes fließen.
   const { data, error } = (await getSupabase().rpc('prepare_patient_file_upload', {
@@ -122,8 +132,8 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
     p_treatment_basis_id: auftrag.grundlageId,
     p_document_type: auftrag.documentType,
     p_display_name: auftrag.displayName,
-    p_mime_type: auftrag.datei.type,
-    p_byte_size: auftrag.datei.size,
+    p_mime_type: datei.type,
+    p_byte_size: datei.size,
     p_checksum_sha256: summe,
   })) as { data: unknown; error: unknown };
 
@@ -139,8 +149,8 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
     // storage.objects gibt es keine UPDATE-Policy.
     const { error: uploadFehler } = await getSupabase()
       .storage.from(vorbereitet.bucket_id)
-      .upload(vorbereitet.object_key, auftrag.datei, {
-        contentType: auftrag.datei.type,
+      .upload(vorbereitet.object_key, datei, {
+        contentType: datei.type,
         cacheControl: '0',
         upsert: false,
       });

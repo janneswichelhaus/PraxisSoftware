@@ -7,7 +7,14 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardGrid, DataList, DataRow, Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { paragraf } from '@/lib/begriffe';
-import { ANKER_TEXTE, DATENKLASSEN, GRUNDLAGE_TEXTE, LOESCHWEG_TEXTE, fristText } from './klassen';
+import {
+  ANKER_TEXTE,
+  DATENKLASSEN,
+  GRUNDLAGE_TEXTE,
+  LOESCHWEG_TEXTE,
+  OBERGRENZE_TEXTE,
+  fristText,
+} from './klassen';
 import {
   fetchDeletionRuns,
   fetchLegalHolds,
@@ -71,6 +78,12 @@ function Aufbewahrungsplan() {
                 {ohneFrist ? 'Keine automatische Löschung' : fristText(klasse.retention_interval)}
               </DataRow>
               <DataRow label="Gerechnet">{ANKER_TEXTE[klasse.anchor] ?? klasse.anchor}</DataRow>
+              {klasse.upper_bound_anchor && klasse.upper_bound_interval ? (
+                <DataRow label="Spätestens">
+                  {fristText(klasse.upper_bound_interval)}{' '}
+                  {OBERGRENZE_TEXTE[klasse.upper_bound_anchor] ?? klasse.upper_bound_anchor}
+                </DataRow>
+              ) : null}
               <DataRow label="Grundlage">
                 {paragraf(klasse.legal_reference) || GRUNDLAGE_TEXTE[klasse.basis] || klasse.basis}
               </DataRow>

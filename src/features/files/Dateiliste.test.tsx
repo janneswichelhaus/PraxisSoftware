@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as FilesApi from './api';
@@ -422,5 +422,113 @@ describe('Dateiliste', () => {
       const auswahl = screen.getByLabelText<HTMLSelectElement>(/Art des Dokuments/);
       expect(Array.from(auswahl.options).map((o) => o.value)).toContain('verordnungsscan');
     });
+  });
+});
+
+/**
+ * Foto aufnehmen (DOK-006, ADR-017 Punkt 33): Für ein Blatt auf Papier ist der
+ * Kameradialog der angebotene Weg, der Dateiwähler bleibt daneben. Die Kamera
+ * ist eine Nachbildung; was der Dialog selbst leistet, prüft
+ * `Kameradialog.test.tsx`.
+ */
+describe('Dateiliste — Foto aufnehmen', () => {
+  const getUserMedia = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchPatientFiles.mockResolvedValue([]);
+    ladeDateiHoch.mockResolvedValue('neu');
+    getUserMedia.mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia },
+    });
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    vi.spyOn(HTMLVideoElement.prototype, 'videoWidth', 'get').mockReturnValue(4);
+    vi.spyOn(HTMLVideoElement.prototype, 'videoHeight', 'get').mockReturnValue(3);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((fertig, typ) =>
+      fertig(new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: typ ?? 'image/png' })),
+    );
+    URL.createObjectURL = vi.fn(() => 'blob:vorschau');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+  });
+
+  async function fotografieren() {
+    await userEvent.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Auslösen' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Foto verwenden' }));
+  }
+
+  it('legt ein Foto aus der Kamera als Verordnungsscan ab, mit Datum als Namen', async () => {
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['therapist'])}
+        grundlageId="v1"
+        darfHinzufuegen
+        leerHinweis="Nichts da."
+      />,
+    );
+
+    await fotografieren();
+    expect(screen.getByText(/Foto aus der Kamera/)).toBeInTheDocument();
+    const name = screen.getByLabelText('Name in der Akte');
+    expect((name as HTMLInputElement).value).toMatch(/^Foto vom \d{2}\.\d{2}\.\d{4}$/);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
+
+    await waitFor(() => expect(ladeDateiHoch).toHaveBeenCalledTimes(1));
+    const auftrag = ladeDateiHoch.mock.calls[0]![0] as FilesApi.UploadAuftrag;
+    expect(auftrag.documentType).toBe('verordnungsscan');
+    expect(auftrag.grundlageId).toBe('v1');
+    expect(auftrag.datei.type).toBe('image/jpeg');
+    expect(auftrag.displayName).toMatch(/^Foto vom /);
+  });
+
+  it('behält das Foto nach einem gescheiterten Upload und versucht es erneut', async () => {
+    ladeDateiHoch
+      .mockRejectedValueOnce(new Error('Die Datei konnte nicht übertragen werden.'))
+      .mockResolvedValueOnce('neu');
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['therapist'])}
+        darfHinzufuegen
+        leerHinweis="Nichts da."
+      />,
+    );
+
+    await fotografieren();
+    await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
+    expect(await screen.findByText(/Das Foto ist noch da/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
+    expect(await screen.findByText(/ist in der Akte/)).toBeInTheDocument();
+    expect(ladeDateiHoch).toHaveBeenCalledTimes(2);
+    expect(ladeDateiHoch.mock.calls[1]![0]).toEqual(ladeDateiHoch.mock.calls[0]![0]);
+  });
+
+  it('bietet ohne Kamera nur den Dateiwähler an', async () => {
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['therapist'])}
+        darfHinzufuegen
+        leerHinweis="Nichts da."
+      />,
+    );
+
+    await screen.findByText('Nichts da.');
+    expect(screen.getByLabelText('Datei')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).not.toBeInTheDocument();
   });
 });

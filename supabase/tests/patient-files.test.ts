@@ -124,23 +124,28 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
   });
 
   describe('Bucket und Katalog', () => {
-    it('legt genau einen privaten Bucket mit Allowlist und Groessenlimit an', async () => {
+    it('legt je Datenklasse einen privaten Bucket mit Allowlist und Groessenlimit an', async () => {
       const { rows } = await asPostgres<{
         id: string;
         public: boolean;
         file_size_limit: string;
         allowed_mime_types: string[];
-      }>('select id, public, file_size_limit, allowed_mime_types from storage.buckets');
+      }>('select id, public, file_size_limit, allowed_mime_types from storage.buckets order by id');
 
-      expect(rows).toHaveLength(1);
-      expect(rows[0]!.id).toBe('patientenakte');
-      expect(rows[0]!.public).toBe(false);
-      expect(Number(rows[0]!.file_size_limit)).toBe(10 * 1024 * 1024);
+      // Punkt 3: ein Bucket je Datenklasse. Seit DOK-006 zwei - die Akte und
+      // die Patientenfotos mit eigener Frist (Punkt 32).
+      expect(rows.map((r) => r.id)).toEqual(['patientenakte', 'patientenfotos']);
+      for (const bucket of rows) {
+        expect(bucket.public).toBe(false);
+        expect(Number(bucket.file_size_limit)).toBe(10 * 1024 * 1024);
+      }
       expect(rows[0]!.allowed_mime_types.sort()).toEqual([
         'application/pdf',
         'image/jpeg',
         'image/png',
       ]);
+      // Enger als Punkt 18: nur JPEG, das der Kameradialog erzeugt.
+      expect(rows[1]!.allowed_mime_types).toEqual(['image/jpeg']);
     });
 
     it('fuehrt den Verordnungsscan als klinisch (ANN-011, ADR-017 Punkt 12)', async () => {
@@ -151,7 +156,13 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       const organisatorisch = rows.filter((r) => !r.is_clinical).map((r) => r.key);
 
       expect(klinisch).toContain('verordnungsscan');
-      expect(klinisch).toEqual(['verordnungsscan', 'befund', 'arztbrief', 'klinisches_bild']);
+      expect(klinisch).toEqual([
+        'verordnungsscan',
+        'befund',
+        'arztbrief',
+        'klinisches_bild',
+        'patientenfoto',
+      ]);
       expect(organisatorisch).toEqual(['einwilligung', 'vertrag']);
     });
 

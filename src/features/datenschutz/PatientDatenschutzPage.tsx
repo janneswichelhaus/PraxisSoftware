@@ -131,6 +131,8 @@ function Einwilligungen({ stand }: { stand: Datenschutzstand }) {
               <span className="text-ink font-medium">{zweckTexte[e.zweck].label}</span>
               {e.erteilt ? (
                 <Badge ton="positiv">erteilt am {formatDate(e.seit)}</Badge>
+              ) : e.abgelehnt ? (
+                <Badge ton="neutral">abgelehnt am {formatDate(e.seit)}</Badge>
               ) : e.seit ? (
                 <Badge ton="warnung">widerrufen am {formatDate(e.seit)}</Badge>
               ) : (
@@ -153,14 +155,31 @@ function moeglicheVermerke(stand: Datenschutzstand): { wert: string; label: stri
   ];
   for (const e of stand.einwilligungen) {
     const zweck = zweckTexte[e.zweck].label;
-    liste.push(
-      e.erteilt
-        ? { wert: `consent_withdrawn:${e.zweck}`, label: `Einwilligung widerrufen: ${zweck}` }
-        : { wert: `consent_granted:${e.zweck}`, label: `Einwilligung erteilt: ${zweck}` },
-    );
+    if (e.erteilt) {
+      liste.push({
+        wert: `consent_withdrawn:${e.zweck}`,
+        label: `Einwilligung widerrufen: ${zweck}`,
+      });
+      continue;
+    }
+    liste.push({ wert: `consent_granted:${e.zweck}`, label: `Einwilligung erteilt: ${zweck}` });
+    // Eine Ablehnung ist ein eigener, erledigter Stand (ADR-017 Punkt 35).
+    if (!e.abgelehnt) {
+      liste.push({
+        wert: `consent_refused:${e.zweck}`,
+        label: `Einwilligung abgelehnt: ${zweck}`,
+      });
+    }
   }
   return liste;
 }
+
+/**
+ * Der Widerruf der Fotoeinwilligung löscht die Fotos sofort (ADR-017
+ * Punkt 36). Das steht vor dem Vermerken da und auf der Schaltfläche — ein
+ * Fehlgriff in der Auswahl soll nicht still die Fotos kosten.
+ */
+const FOTO_WIDERRUF = 'consent_withdrawn:patient_photos';
 
 function alsVermerk(wert: string, patientId: string, datum: string): NeuerVermerk {
   const [art, zweck] = wert.split(':') as [NeuerVermerk['art'], Einwilligungszweck | undefined];
@@ -198,6 +217,11 @@ function VermerkErfassen({
     onSuccess: async (_daten, vermerk) => {
       setGespeichert(vermerkartTexte[vermerk.art]);
       await queryClient.invalidateQueries({ queryKey: ['datenschutzvermerke', patientId] });
+      // Ein Vermerk zur Fotoeinwilligung ändert, welche Fotos es gibt und ob
+      // neue entstehen dürfen (ADR-017 Punkt 36).
+      if (vermerk.zweck === 'patient_photos') {
+        await queryClient.invalidateQueries({ queryKey: ['patient-photos', patientId] });
+      }
     },
   });
 
@@ -218,7 +242,9 @@ function VermerkErfassen({
             hint={
               gewaehlt === 'privacy_notice_handed_out'
                 ? `Vermerkt wird Fassung ${DATENSCHUTZINFORMATION_FASSUNG} — die auf den Blättern zum Ausdrucken.`
-                : undefined
+                : gewaehlt === FOTO_WIDERRUF
+                  ? 'Mit dem Widerruf werden alle Fotos dieser Person sofort gelöscht — außer ein Legal Hold hält sie; dann bleiben sie gesperrt bis zu seinem Ende. Neue Fotos braucht eine neue Einwilligung.'
+                  : undefined
             }
             value={gewaehlt}
             onChange={(e) => {
@@ -242,7 +268,11 @@ function VermerkErfassen({
           />
           <div>
             <Button type="submit" disabled={mutation.isPending || datum === ''}>
-              {mutation.isPending ? 'Wird gespeichert …' : 'Vermerken'}
+              {mutation.isPending
+                ? 'Wird gespeichert …'
+                : gewaehlt === FOTO_WIDERRUF
+                  ? 'Widerruf vermerken und Fotos löschen'
+                  : 'Vermerken'}
             </Button>
           </div>
           {mutation.isError ? (

@@ -139,6 +139,15 @@ export function inhaltsrichtlinie(supabaseUrl) {
 }
 
 /**
+ * Permissions-Policy der Test-Umgebung (ADR-017 Punkt 33).
+ *
+ * `camera=(self)` statt `camera=()`: Der Kameradialog nimmt Fotos für die Akte
+ * auf, damit sie nicht in der Mediathek des Handys landen (DOK-006). Nur die
+ * eigene Herkunft - kein eingebetteter Rahmen, kein fremder Ursprung.
+ */
+export const BERECHTIGUNGSRICHTLINIE = 'camera=(self), microphone=(), payment=(), usb=()';
+
+/**
  * Die `.htaccess` der Test-Umgebung.
  *
  * ANN-101: Umleitung aller Pfade ohne Datei auf `index.html` (die Anwendung
@@ -162,7 +171,10 @@ export function htaccess({ supabaseUrl, tuerDatei }) {
     'Header always set X-Content-Type-Options "nosniff"',
     'Header always set Referrer-Policy "no-referrer"',
     'Header always set X-Frame-Options "DENY"',
-    'Header always set Permissions-Policy "camera=(), microphone=(), payment=(), usb=()"',
+    // ADR-017 Punkt 33 (Fassung 2): Die Kamera nur für die eigene Herkunft -
+    // der Kameradialog aus DOK-006. Mikrofon, Zahlung und USB bleiben zu; ein
+    // Test prüft den ganzen Wert, damit die Kopfzeile nicht weiter aufgeht.
+    `Header always set Permissions-Policy "${BERECHTIGUNGSRICHTLINIE}"`,
     'Header always set Strict-Transport-Security "max-age=31536000"',
     `Header always set Content-Security-Policy "${inhaltsrichtlinie(supabaseUrl)}"`,
     '',

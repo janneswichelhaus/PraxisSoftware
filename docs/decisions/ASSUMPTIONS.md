@@ -1217,7 +1217,9 @@ Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Grundlage der Behandlung sind der Vertrag (§§ 630a ff. BGB) und Art. 9 Abs. 2 lit. h DSGVO mit § 22 Abs. 1 Nr. 1 lit. b BDSG; eine Einwilligung daneben wäre wegen ihrer jederzeitigen Widerrufbarkeit (Art. 7 Abs. 3 DSGVO) die schwächere Grundlage. Die E-Mail setzt nach ANN-041 den ausdrücklichen Wunsch voraus, der Arztbericht berührt § 203 StGB. Nachweis nach Art. 7 Abs. 1 DSGVO verlangt, dass die Erteilung den Widerruf überlebt. Unsicher: ob die Prüfung weitere Zwecke sieht (Fotos zur Verlaufsdokumentation, Angehörige), und ob die Einwilligung vor dem Mailweg technisch geprüft werden soll — heute zeigt die Anwendung nur den Stand.
 
-**Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
+*Vermerk 2026-09-26 (DOK-006b):* Dritter Zweck **Fotos im Behandlungsverlauf** (`patient_photos`) — dort ist die Einwilligung die Grundlage selbst (ADR-017 Punkt 35); dazu die Ablehnung als eigener Vermerk (ANN-127).
+
+**Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`, zuletzt geändert in `20260926150000_dok_006b_patient_photos.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
 
 **Änderungspfad.** Zweck ergänzen oder streichen: ein Wert in Constraint, Konstante und Beschriftung, ein Satz in der Datenschutzinformation · Aufwand `klein`. Einwilligung vor dem Mailweg prüfen: Abfrage des Stands in `AppointmentSlipPage.tsx` vor der Übergabe · Aufwand `mittel`. Unterschrift in der Anwendung: eigenes Epic · Aufwand `groß`.
 
@@ -1592,3 +1594,51 @@ Recht · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** Der Hinweis unter dem Druckknopf in `src/features/therapy-reports/TherapieberichtDruckPage.tsx`.
 
 **Änderungspfad.** Vermerk „Bericht angefordert / Einwilligung liegt vor" vor dem Druck: ein Feld am Bericht und eine Bedingung am Knopf · Aufwand `klein`. Versand aus der Anwendung: eigenes Epic nach ADR-002 · Aufwand `groß`.
+
+### ANN-125 — Beim Entfernen der Metadaten bleibt nur die Ausrichtung und, was der Dekoder braucht
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); am echten Gerät in der Sichtung (Fotos Schritt 1)
+
+**Annahme.** Vor jedem Upload eines JPEG oder PNG — aus dem Dateiwähler wie aus dem Kameradialog — entfernt das Gerät alle Segmente und Chunks neben den Bilddaten: EXIF samt GPS und Vorschaubild, XMP, IPTC, Kommentare, Farbprofile (ICC, `iCCP`), Textchunks, Zeitstempel, JFIF und alles hinter dem Bildende (angehängte Zweitbilder). Erhalten bleiben die Ausrichtung als neues, minimales EXIF-Segment beziehungsweise `eXIf`-Chunk, das Adobe-Segment eines JPEG (Farbumrechnung) und die Farbangaben eines PNG (`gAMA`, `cHRM`, `sRGB`, `sBIT`, `tRNS`) sowie Animationschunks. Die Bilddaten bleiben Byte für Byte; ein Bild, das sich nicht sicher zerlegen lässt, wird nicht hochgeladen.
+
+**Begründung.** ADR-017 Punkt 34 verlangt „verlustfrei, nur die Ausrichtung bleibt" und nennt EXIF, XMP, IPTC und das Vorschaubild. Offen ließ er, was mit Angaben geschieht, die nichts über die Aufnahme sagen, aber das Lesen des Bildes steuern. Ein ICC-Profil trägt im Kopf Hersteller und Gerät und geht deshalb; ohne es erscheint ein Weitraumfoto etwas blasser — für ein Dokument ohne Belang, für ein Verlaufsfoto hinnehmbar. Das Adobe-Segment dagegen braucht der Dekoder für die Farben mancher Scans und sagt nichts über Ort, Zeit oder Gerät. Angehängte Zweitbilder (Mehrbildformate, Tiefenkarten) tragen eigene Metadaten. Unsicher: ob die Prüfung auch das Adobe-Segment entfernt sehen will.
+
+**Anker.** `bereinigeJpeg`, `bereinigePng` und `PNG_BEHALTEN` in `src/features/files/metadaten.ts`; Nachweis in `src/features/files/metadaten.test.ts`.
+
+**Änderungspfad.** Ein Segment mehr oder weniger behalten: eine Bedingung in `bereinigeJpeg` beziehungsweise ein Eintrag in `PNG_BEHALTEN` · Aufwand `klein`. Farbprofil behalten, aber Hersteller- und Geräteangaben darin leeren: eine eigene Bereinigung des ICC-Kopfs · Aufwand `mittel`.
+
+### ANN-126 — Patientenfotos stehen auf Einwilligung, leben höchstens zwölf Monate und sind gesperrt, sobald sie fällig sind
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2) und DSFA (G14), vor dem ersten Foto einer echten Person (ADR-017 Punkt 41)
+
+**Annahme.** Ein Patientenfoto stützt sich auf die ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a DSGVO), ist Arbeitshilfe neben der Akte und hat die Klasse `patientenfoto`: fällig zum frühesten von zwölf Monaten nach der Aufnahme, drei Monaten nach dem **festgehaltenen** Abschluss der Versorgung (`care_concluded_at`) und dem ersten Widerruf nach der Aufnahme. Ein fälliges Foto ist auf allen Wegen gesperrt — Liste, Verweis, Leseregel am Objekt, Löschen von Hand —, auch wenn ein Legal Hold die Löschung anhält; eine neue Einwilligung gilt nur für neue Fotos. Der Widerruf löscht in derselben Transaktion, das Ende des Hold ebenso, sonst der Löschlauf.
+
+**Begründung.** ADR-017 Punkte 35, 36 und 38 (Fassung 2, von Jannes am 2026-09-26 bestätigt). Offen ließ der ADR, ob ein wegen Ablaufs fälliges, vom Hold gehaltenes Foto sichtbar bleibt: Gesperrt ist die sparsamere Lesart, denn der Hold sichert Beweise und keinen Arbeitsgebrauch (ADR-008 Konsequenzen: er setzt die Löschung aus, nicht die Zugriffsregeln — die Zugriffsregel ist hier die Frist). Zwölf und drei Monate sind interne Initialentscheidungen nach ADR-008. Unsicher: die Einordnung selbst — die Sekundärquellen stützen Verlaufsfotos überwiegend auf Art. 9 Abs. 2 lit. h DSGVO als Teil der Akte (ADR-017, Konsequenzen der Fassung 2).
+
+**Anker.** Klassenzeile `patientenfoto` sowie `app.patient_photo_due_at`, `app.patient_photo_accessible` und `app.delete_due_patient_photos` in `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`; Nachweis in `supabase/tests/patient-photos.test.ts`.
+
+**Änderungspfad.** Andere Fristen: Intervall oder Obergrenze der Klassenzeile · Aufwand `klein`. Alternative aus Bestätigungsfrage 9 (Teil der Akte, zehn Jahre, Widerruf stoppt nur neue Fotos): Klassenzeile auf `patientenakte`, `delete_due_patient_photos` aus dem Widerruf nehmen und `patient_photo_due_at` ohne Widerruf rechnen · Aufwand `mittel`.
+
+### ANN-127 — Eine Ablehnung ist ein eigener Vermerk; die Fotoeinwilligung ist der dritte Zweck
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2) mit dem Wortlaut der Fotoeinwilligung; Erstaufnahme (PRX-EPIC-003)
+
+**Annahme.** `patient_privacy_records` kennt neben Erteilung und Widerruf die Vermerkart `consent_refused` für jeden Zweck: zulässig, solange der Zweck nicht erteilt und nicht schon abgelehnt ist; danach ist eine Erteilung möglich. Die Oberfläche zeigt „abgelehnt am …" als erledigten Stand. Neuer Zweck ist `patient_photos`; der Widerruf dort löscht die Fotos und steht vor dem Vermerken so auf der Seite und der Schaltfläche. Wortlaut der Fotoeinwilligung und ein Satz in der Datenschutzinformation kommen mit B2 — bis dahin nennt die ausgedruckte Information zwei Zwecke, und Fotos echter Personen gibt es nicht (ADR-017 Punkt 41).
+
+**Begründung.** ADR-017 Punkt 35: „Eine Ablehnung ist ein eigener Vermerk, kein Widerruf", und ohne Einwilligung wird genauso behandelt (Art. 7 Abs. 4 DSGVO) — die Erstaufnahme soll „abgelehnt" als erledigt führen, nicht als offenen Punkt. Eine Ablehnung während einer erteilten Einwilligung wäre in der Sache ein Widerruf mit anderer Rechtsfolge; deshalb abgewiesen. Den Druckbogen jetzt zu ändern hieße, eine neue Fassung der Datenschutzinformation vor der Prüfung ihres Wortlauts auszugeben.
+
+**Anker.** Constraints `record_kind`, `purpose` und `purpose_shape` sowie `public.record_patient_privacy_entry()` in `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`; `vermerkartSchema`, `EINWILLIGUNGSZWECKE` und `datenschutzstand` in `src/features/datenschutz/vermerke.ts`; `FOTO_WIDERRUF` in `src/features/datenschutz/PatientDatenschutzPage.tsx`.
+
+**Änderungspfad.** Ablehnung nur für Fotos: eine Bedingung in `record_patient_privacy_entry` und in `moeglicheVermerke` · Aufwand `klein`. Fotoeinwilligung als eigener Druckbogen neben der Datenschutzinformation: ein Blatt in `vorlage.ts` und eine neue Fassung · Aufwand `klein`.
+
+### ANN-128 — Ein Patientenfoto wird als Einzeldatei durch owner herausgegeben, mit eigenem Auditereignis
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Verfahren der Betroffenenrechte (OPS-006)
+
+**Annahme.** Die Auskunft nach Art. 15 DSGVO nennt jedes Foto wie jede Datei mit Name, Art und Prüfsumme, enthält es aber nicht. Die Kopie des Fotos selbst — nach Art. 15 Abs. 3 und, weil die Einwilligung die Grundlage ist, nach Art. 20 DSGVO — entsteht auf der Seite „Auskunft und Löschverlangen" je Foto als JPEG, nur durch `owner`, nur für ein nicht gesperrtes Foto, protokolliert als `patient_file.handed_out`. Ein Paket aller Fotos gibt es nicht.
+
+**Begründung.** ADR-017 Punkt 40 lässt als einzige Herausgabe die an die Person selbst zu und überlässt Einzeldatei oder Paket und das Auditereignis dem Bau. Einzeldateien brauchen kein Archivformat (Punkt 18 schließt Archive aus) und halten das Protokoll je Foto genau. Ein eigenes Ereignis trennt den Export nach außen vom Öffnen in der Praxis (ADR-010 Punkt 2). Unsicher: ob die Prüfung für Art. 20 ein strukturiertes Paket mit Metadaten erwartet.
+
+**Anker.** `public.hand_out_patient_photo()` in `supabase/migrations/20260926160000_dok_006d_patient_photo_handout.sql`; `gibPatientenfotoHeraus` in `src/features/files/patientenfotos.ts`.
+
+**Änderungspfad.** Paket mit allen Fotos und einer Übersicht: eine zweite Funktion und ein Archivformat, das Punkt 18 dafür ausdrücklich zulässt · Aufwand `mittel`. Herausgabe auch durch office: Rollenprüfung in `app.auskunft_organisation` bzw. der Funktion · Aufwand `klein`.

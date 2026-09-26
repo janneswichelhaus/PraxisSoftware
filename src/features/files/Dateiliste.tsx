@@ -8,6 +8,9 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { oeffneDatei, type PatientFile } from './api';
+import { Fotoverlustschutz } from './Fotoverlustschutz';
+import { Kameradialog } from './Kameradialog';
+import { fotoVomHeutigenTag, kameraVerfuegbar } from './kamera';
 import { useDateiLoeschen, useDateiUpload, useDateien, useDokumentartKorrigieren } from './dateien';
 import {
   DATEI_ACCEPT,
@@ -79,11 +82,18 @@ interface UploadfeldProps {
 }
 
 /**
- * Datei wählen, Art bestimmen, hinzufügen.
+ * Datei wählen oder fotografieren, Art bestimmen, hinzufügen.
  *
  * Der Anzeigename kommt aus dem Dateinamen und ist änderbar — er ist das
  * einzige Wort, unter dem die Datei später wiederzufinden ist, und
  * `IMG_4711.jpg` ist keins. Im Objektschlüssel steht er nie (ADR-017 Punkt 5).
+ *
+ * **Foto aufnehmen** (DOK-006, ADR-017 Punkt 33): Für ein Blatt auf Papier —
+ * Verordnung, Anamnesebogen, unterschriebene Einwilligung — ist der
+ * Kameradialog der angebotene Weg; das Foto landet dann nicht in der Mediathek
+ * des Handys. Der Dateiwähler bleibt für das, was schon als Datei vorliegt.
+ * Bis zum Hinzufügen liegt das Foto nur im Arbeitsspeicher; der
+ * `Fotoverlustschutz` fragt, bevor jemand die Seite mit ihm verlässt.
  */
 function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
   const beschreibungId = useId();
@@ -92,6 +102,8 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
   const [name, setName] = useState('');
   const [ablehnung, setAblehnung] = useState<string | null>(null);
   const [erfolg, setErfolg] = useState<string | null>(null);
+  const [kameraOffen, setKameraOffen] = useState(false);
+  const [ausKamera, setAusKamera] = useState(false);
   // Ein Dateifeld lässt sich nicht über seinen Wert leeren. Der Zähler baut es
   // nach dem Hinzufügen neu auf - sonst stünde dort noch der Name der Datei,
   // die schon in der Akte liegt.
@@ -101,6 +113,7 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
 
   function dateiGewaehlt(gewaehlt: File | null) {
     setErfolg(null);
+    setAusKamera(false);
     upload.reset();
     if (!gewaehlt) {
       setDatei(null);
@@ -113,10 +126,26 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
     if (!grund) setName(gewaehlt.name);
   }
 
+  function fotoAufgenommen(foto: Blob) {
+    setKameraOffen(false);
+    setErfolg(null);
+    upload.reset();
+    const vorschlag = fotoVomHeutigenTag();
+    const aufnahme = new File([foto], `${vorschlag}.jpg`, { type: 'image/jpeg' });
+    const grund = dateiAblehnungsgrund(aufnahme);
+    setAblehnung(grund);
+    setDatei(grund ? null : aufnahme);
+    setAusKamera(!grund);
+    setName(vorschlag);
+    // Eine vorher gewählte Datei stünde sonst weiter im Feld.
+    setDurchgang((n) => n + 1);
+  }
+
   function zuruecksetzen() {
     setDatei(null);
     setName('');
     setAblehnung(null);
+    setAusKamera(false);
     setDurchgang((n) => n + 1);
   }
 
@@ -143,20 +172,33 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
     <div className="border-line rounded-card mt-4 border border-dashed p-4">
       <p className="text-ink text-[0.9375rem] font-medium">Datei hinzufügen</p>
       <p id={beschreibungId} className="text-ink-muted mt-0.5 text-sm">
-        PDF, JPEG oder PNG bis 10 MB. Eine hinzugefügte Datei lässt sich nicht mehr ändern — eine
-        Korrektur ist eine neue Datei.
+        PDF, JPEG oder PNG bis 10 MB. Ort, Gerät und Vorschaubild werden aus Bildern vor dem
+        Hochladen entfernt. Eine hinzugefügte Datei lässt sich nicht mehr ändern — eine Korrektur
+        ist eine neue Datei.
       </p>
 
       <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        <Field
-          key={durchgang}
-          label="Datei"
-          type="file"
-          accept={DATEI_ACCEPT}
-          aria-describedby={beschreibungId}
-          error={ablehnung ?? undefined}
-          onChange={(e) => dateiGewaehlt(e.currentTarget.files?.[0] ?? null)}
-        />
+        <div>
+          <Field
+            key={durchgang}
+            label="Datei"
+            type="file"
+            accept={DATEI_ACCEPT}
+            aria-describedby={beschreibungId}
+            error={ablehnung ?? undefined}
+            onChange={(e) => dateiGewaehlt(e.currentTarget.files?.[0] ?? null)}
+          />
+          {kameraVerfuegbar() ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-2"
+              onClick={() => setKameraOffen(true)}
+            >
+              Foto aufnehmen
+            </Button>
+          ) : null}
+        </div>
 
         {arten.length > 1 ? (
           <Dokumentartauswahl wert={art} onChange={setArt} arten={arten} />
@@ -184,7 +226,7 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
         </Button>
         {datei ? (
           <span className="text-ink-muted text-sm">
-            {datei.name} · {formatBytes(datei.size)}
+            {ausKamera ? 'Foto aus der Kamera' : datei.name} · {formatBytes(datei.size)}
           </span>
         ) : null}
       </div>
@@ -192,6 +234,9 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
       {upload.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
           {upload.error.message}
+          {ausKamera
+            ? ' Das Foto ist noch da — „Datei hinzufügen" versucht es erneut, solange diese Seite offen ist.'
+            : null}
         </Statusmeldung>
       ) : null}
       {erfolg ? (
@@ -199,6 +244,16 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
           {erfolg}
         </Statusmeldung>
       ) : null}
+
+      {kameraOffen ? (
+        <Kameradialog
+          titel="Foto eines Dokuments"
+          hinweis="Das Blatt flach hinlegen und ganz ins Bild nehmen. Das Foto bleibt in der Anwendung und landet nicht in der Mediathek des Geräts."
+          onAufnahme={fotoAufgenommen}
+          onSchliessen={() => setKameraOffen(false)}
+        />
+      ) : null}
+      {ausKamera && datei ? <Fotoverlustschutz /> : null}
     </div>
   );
 }

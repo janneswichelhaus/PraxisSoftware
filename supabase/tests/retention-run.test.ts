@@ -610,6 +610,7 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
     expect(rows.map((r) => r.class_key)).toEqual([
       'auditlog',
       'patientenakte',
+      'patientenfoto',
       'termin_ohne_nachweis',
       'trainingsverhaeltnis',
       'zugangseinladung',

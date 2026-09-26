@@ -76,6 +76,9 @@ export const AUDIT_ACTIONS = [
   'patient_file.link_issued',
   'patient_file.deleted',
   'patient_file.type_corrected',
+  // DOK-006d: Kopie eines Patientenfotos an die Person selbst (ADR-017
+  // Punkt 40) - ein Export nach außen, kein Zugriff in der Praxis.
+  'patient_file.handed_out',
   'storage_deletion.claimed',
   'storage_deletion.receipted',
   // G6c: nur abgewiesen - der erlaubte Weg protokolliert das Vormerken nicht,
@@ -277,6 +280,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'patient_file.link_issued': 'Datei zum Öffnen freigegeben',
   'patient_file.deleted': 'Datei gelöscht',
   'patient_file.type_corrected': 'Dokumentart einer Datei korrigiert',
+  'patient_file.handed_out': 'Foto an die Person herausgegeben',
   'storage_deletion.claimed': 'Löschung in der Ablage freigegeben',
   'storage_deletion.receipted': 'Löschung in der Ablage quittiert',
   'storage_deletion.ordered': 'Verwaiste Objekte zum Löschen vorgemerkt',

@@ -1,6 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asPostgres, asUser, resetDatabase, SEED } from './helpers/db';
-import { ANKER_TEXTE, DATENKLASSEN, GRUNDLAGE_TEXTE } from '@/features/retention/klassen';
+import {
+  ANKER_TEXTE,
+  DATENKLASSEN,
+  GRUNDLAGE_TEXTE,
+  OBERGRENZE_TEXTE,
+} from '@/features/retention/klassen';
 
 /**
  * Retention Schedule (LOE-001a, ADR-008).
@@ -87,6 +92,18 @@ describe('Retention Schedule', () => {
     expect(rows.filter((r) => !DATENKLASSEN[r.key]).map((r) => r.key)).toEqual([]);
     expect(rows.filter((r) => !ANKER_TEXTE[r.anchor]).map((r) => r.anchor)).toEqual([]);
     expect(rows.filter((r) => !GRUNDLAGE_TEXTE[r.basis]).map((r) => r.basis)).toEqual([]);
+
+    // Die Obergrenze (ADR-017 Punkt 38) steht ebenso in Worten da.
+    const { rows: obergrenzen } = await asPostgres<{ upper_bound_anchor: string }>(
+      `select distinct upper_bound_anchor from public.retention_classes
+       where upper_bound_anchor is not null`,
+    );
+    expect(obergrenzen.length).toBeGreaterThan(0);
+    expect(
+      obergrenzen
+        .filter((r) => !OBERGRENZE_TEXTE[r.upper_bound_anchor])
+        .map((r) => r.upper_bound_anchor),
+    ).toEqual([]);
 
     // Umgekehrt ebenso: eine Beschriftung ohne Klasse in der Datenbank waere
     // ein Rest aus einer frueheren Fassung.

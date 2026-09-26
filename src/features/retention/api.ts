@@ -25,6 +25,9 @@ const klasseSchema = z.object({
   // PostgREST liefert `interval` als Zeichenkette; die Umrechnung in Worte
   // macht `fristText` in klassen.ts.
   retention_interval: z.string().nullable(),
+  // Optionale Obergrenze - bisher nur bei Patientenfotos (ADR-017 Punkt 38).
+  upper_bound_anchor: z.string().nullable(),
+  upper_bound_interval: z.string().nullable(),
   assumption_key: z.string().nullable(),
   note: z.string(),
   sort_order: z.number(),
@@ -48,7 +51,7 @@ export async function fetchRetentionSchedule(): Promise<Datenklasse[]> {
     supabase
       .from('retention_classes')
       .select(
-        'key, basis, legal_reference, anchor, retention_interval, assumption_key, note, sort_order',
+        'key, basis, legal_reference, anchor, retention_interval, upper_bound_anchor, upper_bound_interval, assumption_key, note, sort_order',
       )
       .order('sort_order'),
     supabase

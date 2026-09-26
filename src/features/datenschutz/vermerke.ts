@@ -20,12 +20,17 @@ import { getSupabase } from '@/lib/supabase';
  * Die Zwecke, für die die Praxis eine Einwilligung einholt (ANN-093).
  *
  * Muss deckungsgleich mit dem Constraint an `patient_privacy_records.purpose`
- * bleiben (`supabase/migrations/20260922130000_datenschutzvermerke.sql`).
+ * bleiben (zuletzt `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`).
  * Die Behandlung selbst steht hier bewusst nicht: Sie braucht keine
  * Einwilligung, sondern stützt sich auf den Behandlungsvertrag und
- * Art. 9 Abs. 2 lit. h DSGVO.
+ * Art. 9 Abs. 2 lit. h DSGVO. Fotos dagegen stützen sich auf die Einwilligung
+ * (ADR-017 Punkt 35) — wer widerruft, soll die Fotos loswerden.
  */
-export const EINWILLIGUNGSZWECKE = ['email_contact', 'prescriber_report'] as const;
+export const EINWILLIGUNGSZWECKE = [
+  'email_contact',
+  'prescriber_report',
+  'patient_photos',
+] as const;
 export type Einwilligungszweck = (typeof EINWILLIGUNGSZWECKE)[number];
 
 export const zweckTexte: Record<Einwilligungszweck, { label: string; beschreibung: string }> = {
@@ -39,6 +44,11 @@ export const zweckTexte: Record<Einwilligungszweck, { label: string; beschreibun
     beschreibung:
       'Entbindung von der Schweigepflicht gegenüber der verordnenden Ärztin oder dem verordnenden Arzt, für Rückmeldungen zum Behandlungsverlauf.',
   },
+  patient_photos: {
+    label: 'Fotos im Behandlungsverlauf',
+    beschreibung:
+      'Fotos, die das Praxisteam während der Behandlung aufnimmt — zur Übergabe und zum Vergleich im Verlauf. Neben der Akte, nicht in ihr; gelöscht nach spätestens zwölf Monaten, beim Widerruf sofort. Keine Weitergabe.',
+  },
 };
 
 const vermerkartSchema = z.enum([
@@ -46,6 +56,9 @@ const vermerkartSchema = z.enum([
   'treatment_contract_signed',
   'consent_granted',
   'consent_withdrawn',
+  // ADR-017 Punkt 35, ANN-127: Eine Ablehnung ist ein eigener Vermerk und
+  // ein erledigter Stand - kein offener Punkt und kein Widerruf.
+  'consent_refused',
 ]);
 export type Vermerkart = z.infer<typeof vermerkartSchema>;
 
@@ -87,6 +100,9 @@ function meldungFuer(message: string): string {
     return 'Für diesen Zweck ist keine Einwilligung vermerkt, die widerrufen werden könnte.';
   if (message.includes('withdrawal before consent'))
     return 'Der Widerruf kann nicht vor der Einwilligung liegen.';
+  if (message.includes('already refused')) return 'Diese Ablehnung ist bereits vermerkt.';
+  if (message.includes('consent is granted'))
+    return 'Die Einwilligung ist erteilt. Bitte stattdessen den Widerruf vermerken.';
   if (message.includes('not allowed')) return 'Für diesen Vermerk fehlt die Berechtigung.';
   return 'Der Vermerk konnte nicht gespeichert werden.';
 }
@@ -107,7 +123,9 @@ export interface Einwilligungsstand {
   zweck: Einwilligungszweck;
   /** Erteilt und nicht widerrufen. */
   erteilt: boolean;
-  /** Datum der jüngsten Erteilung beziehungsweise des jüngsten Widerrufs. */
+  /** Zuletzt ausdrücklich abgelehnt — ein erledigter Stand, kein offener. */
+  abgelehnt: boolean;
+  /** Datum des jüngsten Vermerks zu diesem Zweck. */
   seit: string | null;
 }
 
@@ -132,7 +150,10 @@ export function datenschutzstand(vermerke: readonly Datenschutzvermerk[]): Daten
   let datenschutzinformation: Datenschutzstand['datenschutzinformation'] = null;
   let behandlungsvertrag: Datenschutzstand['behandlungsvertrag'] = null;
   const zwecke = new Map<Einwilligungszweck, Einwilligungsstand>(
-    EINWILLIGUNGSZWECKE.map((zweck) => [zweck, { zweck, erteilt: false, seit: null }]),
+    EINWILLIGUNGSZWECKE.map((zweck) => [
+      zweck,
+      { zweck, erteilt: false, abgelehnt: false, seit: null },
+    ]),
   );
 
   for (const v of sortiert) {
@@ -144,6 +165,7 @@ export function datenschutzstand(vermerke: readonly Datenschutzvermerk[]): Daten
       zwecke.set(v.purpose, {
         zweck: v.purpose,
         erteilt: v.record_kind === 'consent_granted',
+        abgelehnt: v.record_kind === 'consent_refused',
         seit: v.occurred_on,
       });
     }
@@ -161,4 +183,5 @@ export const vermerkartTexte: Record<Vermerkart, string> = {
   treatment_contract_signed: 'Behandlungsvertrag unterschrieben',
   consent_granted: 'Einwilligung erteilt',
   consent_withdrawn: 'Einwilligung widerrufen',
+  consent_refused: 'Einwilligung abgelehnt',
 };
