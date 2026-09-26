@@ -20,8 +20,9 @@
 --
 -- Die Rueckgabe ist dieselbe wie bei issue_patient_file_link: Bucket,
 -- Objektschluessel, Anzeigename - und eine einmalige Freigabe fuer die
--- Storage-API (ANN-052). Erst diese Funktion erlaubt dem Client einen Verweis
--- MIT Downloadnamen; sonst gibt es ihn fuer Patientenfotos nicht.
+-- Storage-API (ANN-052). Ob ein Verweis einen Downloadnamen traegt,
+-- entscheidet der Client beim Signieren, nicht die Datenbank; unterscheiden
+-- lassen sich Ansehen und Herausgabe deshalb im Protokoll, und nur dort.
 -- =============================================================================
 
 alter table public.audit_log drop constraint audit_log_action_check;
@@ -43,6 +44,12 @@ begin
     raise exception 'not authenticated' using errcode = '42501';
   end if;
 
+  -- Die Rolle vor der Datei: Wer nicht herausgeben darf, erfaehrt auch nicht,
+  -- ob eine Kennung ein Foto ist.
+  if not app.has_any_role('owner') then
+    raise exception 'data subject access denied' using errcode = '42501';
+  end if;
+
   select f.* into v_datei
   from public.patient_files f
   where f.id = p_file_id
@@ -58,7 +65,9 @@ begin
   -- Akte. Wirft sonst - wie export_patient_record.
   perform app.auskunft_organisation(v_datei.patient_id);
 
-  if not app.patient_photo_accessible(v_datei.patient_id, v_datei.confirmed_at) then
+  if not app.patient_photo_accessible(
+    v_datei.patient_id, v_datei.created_at, v_datei.photo_locked_at
+  ) then
     raise exception 'file not accessible' using errcode = '42501';
   end if;
 

@@ -157,8 +157,11 @@ export function Kameradialog({
     // Punkt 33: Die Kamera endet mit dem Auslösen.
     stoppe(strom.current);
     strom.current = null;
+    const dieser = durchlauf.current;
     leinwand.toBlob(
       (bild) => {
+        // Zu, bevor das Bild fertig war: keine Objekt-URL, die niemand freigibt.
+        if (dieser !== durchlauf.current) return;
         if (!bild) {
           setZustand({ art: 'fehler', meldung: 'Das Foto konnte nicht erzeugt werden.' });
           return;

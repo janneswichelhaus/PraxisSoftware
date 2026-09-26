@@ -725,7 +725,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | FRB-EPIC-002 Anamnese und Verlauf | fertig | 2026-09-26 | `44b6dcb`, `2d23d91`, `95532e9`, `bf800be`, `68f9b50` | — | — |
 | B | FRB-EPIC-003 Befund mit Bausteinen | fertig | 2026-09-26 | `0483a60`, `b80cd6a`, `b621339` (FRB-003a bis c, Zweitreview) | — | Sichtung: Befund Schritte 6 und 7 |
 | B | DOK-005 Therapiebericht | fertig | 2026-09-26 | `f7d5b6b`, `5041f31`, `a7b0890` (DOK-005a und b, Zweitreview) | — | Sichtung: Befund Schritte 8 und 9 |
-| B | DOK-006 Fotos in der Akte | in_arbeit | 2026-09-26 | `0319ee9` … `88686ea` | — | Schritt 1: neue Fassung von ADR-017 angenommen, Bau offen |
+| B | DOK-006 Fotos in der Akte | fertig | 2026-09-26 | `0319ee9` … `88686ea` (ADR-017 Fassung 2), `141aaee` … `5d11f19` (DOK-006a bis d, Zweitreview) | — | Sichtung: Befund Schritte 10 bis 12 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
