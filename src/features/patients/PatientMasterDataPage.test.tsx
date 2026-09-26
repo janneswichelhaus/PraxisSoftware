@@ -22,6 +22,7 @@ const aktiv: PatientsApi.Patient = testPatient({
 const setPatientStatus = vi.fn();
 const concludePatientCare = vi.fn();
 const reopenPatientCare = vi.fn();
+const setTreatmentTableRequired = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
@@ -31,6 +32,8 @@ vi.mock('./api', async (importOriginal) => {
     concludePatientCare: (id: string, tag?: string) =>
       concludePatientCare(id, tag) as Promise<void>,
     reopenPatientCare: (id: string) => reopenPatientCare(id) as Promise<void>,
+    setTreatmentTableRequired: (id: string, wert: boolean) =>
+      setTreatmentTableRequired(id, wert) as Promise<void>,
   };
 });
 
@@ -313,6 +316,58 @@ describe('Stammdaten der Akte', () => {
       await user.click(buttons[buttons.length - 1]!);
 
       expect(await screen.findByRole('alert')).toHaveTextContent(/konnte nicht gespeichert werden/);
+    });
+  });
+
+  describe('Behandlungsliege (UX-003a)', () => {
+    beforeEach(() => {
+      setTreatmentTableRequired.mockReset();
+      setTreatmentTableRequired.mockResolvedValue(undefined);
+    });
+
+    it('setzt die Liege mit einem Tap, ohne Rueckfrage', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
+
+      expect(screen.getByText('Behandlungsliege')).toBeInTheDocument();
+      expect(screen.getByText('Nicht nötig')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Liege wird gebraucht' }));
+
+      await waitFor(() => expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, true));
+    });
+
+    it('nimmt eine gesetzte Liege zurueck', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <Stammdaten
+          patient={{ ...aktiv, treatment_table_required: true }}
+          user={testUser(['office'])}
+        />,
+      );
+
+      expect(screen.getByText('Mitnehmen')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Liege nicht mehr nötig' }));
+
+      await waitFor(() =>
+        expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, false),
+      );
+    });
+
+    it('meldet einen Fehler als Text', async () => {
+      const user = userEvent.setup();
+      setTreatmentTableRequired.mockRejectedValue(new Error('abgelehnt'));
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
+
+      await user.click(screen.getByRole('button', { name: 'Liege wird gebraucht' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent(/Behandlungsliege/);
+    });
+
+    it('zeigt einem Patientenkonto weder Angabe noch Knopf', () => {
+      renderWithProviders(
+        <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['patient'])} />,
+      );
+      expect(screen.queryByText('Behandlungsliege')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Liege/ })).not.toBeInTheDocument();
     });
   });
 });

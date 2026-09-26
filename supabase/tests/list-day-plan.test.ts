@@ -292,4 +292,32 @@ describe('list_day_plan', () => {
     expect([besuch.visit_lat, besuch.visit_lon]).toEqual([48.5305, 9.049]);
     expect([praxis.visit_lat, praxis.visit_lon]).toEqual([null, null]);
   });
+
+  it('liefert die Behandlungsliege am Behandlungstermin, nie am Ereignis (UX-003b)', async () => {
+    // Seed: Max braucht die Liege, Erika nicht (ANN-116).
+    await termin({ von: '09:00', bis: '10:00', patient: patients.max });
+    await termin({ von: '11:00', bis: '12:00', patient: patients.erika });
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type,
+         kind, title, event_group_id, status, starts_at, ends_at
+       ) values (
+         $1, null, $2, 'video', 'internal', 'Teambesprechung', gen_random_uuid(), 'confirmed',
+         (($3::date + time '08:00') at time zone 'Europe/Berlin'),
+         (($3::date + time '08:30') at time zone 'Europe/Berlin')
+       )`,
+      [organizationId, STAFF.anna, TAG],
+    );
+
+    const { rows } = await asUser<Zeile & { treatment_table_required: boolean | null }>(
+      users.therapist,
+      LESEN,
+      [TAG, STAFF.anna],
+    );
+    expect(rows.map((z) => [z.kind, z.patient_family_name, z.treatment_table_required])).toEqual([
+      ['internal', null, null],
+      ['therapy', 'Mustermann', true],
+      ['therapy', 'Beispiel', false],
+    ]);
+  });
 });

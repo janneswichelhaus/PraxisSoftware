@@ -150,6 +150,26 @@ describe('Kalender ohne Durchgriff', () => {
       const { rows: tag } = await asUser(users.therapist, TAGESLISTE, [TAG, TOM]);
       expect(tag.map((r) => r.id)).not.toContain(id);
     });
+
+    it('traegt die Behandlungsliege nicht an den Trainingstermin (UX-003b)', async () => {
+      // Erika hat beide Verhaeltnisse. Braucht sie in der Behandlung die
+      // Liege, ist das eine Angabe der Akte - am Trainingstermin waere sie
+      // ein Durchgriff ueber den gemeinsamen Kalender (ADR-022 Punkt 11).
+      await asPostgres(
+        'update public.patient_care_details set treatment_table_required = true where patient_id = $1',
+        [patients.erika],
+      );
+      const id = await trainingstermin({ verhaeltnis: trainingRelationships.erika });
+
+      const { rows } = await asUser<{ id: string; treatment_table_required: boolean | null }>(
+        users.ownerTherapist,
+        TAGESLISTE,
+        [TAG, TOM],
+      );
+      const zeile = rows.find((r) => r.id === id);
+      expect(zeile).toBeDefined();
+      expect(zeile!.treatment_table_required).toBeNull();
+    });
   });
 
   describe('Die Belegung ist der bezahlte Preis - und nichts darueber hinaus', () => {

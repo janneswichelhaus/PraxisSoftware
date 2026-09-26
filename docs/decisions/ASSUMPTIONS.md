@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 38 Einträge):
+Zusatz `Prüfpaket` (heute 39 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -1484,3 +1484,15 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes lokal mit 
 **Anker.** `app.record_denied_write` in `supabase/migrations/20260926120000_abgewiesene_schreibzugriffe.sql`; die Liste der Pfade in `supabase/tests/abgewiesene-schreibpfade.test.ts`; auf der Clientseite `abgewiesen` in `src/lib/abgewiesen.ts`.
 
 **Änderungspfad.** Weitere Schreibpfade: den Zweig „Rolle fehlt" auf `app.record_denied_write` umstellen und den Pfad in die Liste des Tests aufnehmen · Aufwand `klein` je Pfad. Zurück zur Ausnahme: den Zweig wieder `raise exception` werfen lassen · Aufwand `klein`. Bestätigt PostgREST die Transaktion lokal nicht: Eintrag über eine autonome Verbindung (`dblink`) statt `response.status` · Aufwand `mittel`.
+
+### ANN-116 — Die Behandlungsliege ist eine organisatorische Versorgungsangabe der Person
+
+Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen
+
+**Annahme.** „Behandlungsliege mitnehmen" ist ein Ja/Nein-Merkmal der Person (`patient_care_details.treatment_table_required`, Standard nein), keine Angabe je Termin und kein Befundinhalt. Es erbt Rollenschnitt und Frist der internen Versorgungsangaben aus ANN-010: sichtbar und setzbar für die vier Praxisrollen (dieselbe Menge wie `app.can_update_patient()`), nicht für das Patientenkonto und nicht für die Trainingsrolle, Datenklasse Patientenakte. Die Tagesliste liefert es nur am Behandlungstermin; am Trainingstermin und an einer Fehlzeit bleibt es leer. Jede Änderung steht als `patient.updated` mit dem Feldnamen im Auditlog.
+
+**Begründung.** §9 verlangt, dass der Liegenbedarf beim Tagesstart erkennbar ist und als Merkmal der Person im Befund gesetzt wird; bis FRB-EPIC-003 den Befund anbindet, braucht es einen Ort in der Akte. Das Merkmal sagt, was mitzunehmen ist, nicht warum — derselbe Charakter wie Zugangshinweis und Besonderheit, die Office für die Planung sieht (§4.3, ANN-010). Unsicher: Mittelbar deutet „braucht eine Liege" auf eine Einschränkung hin und kann damit als Gesundheitsdatum nach Art. 9 DSGVO gelesen werden; der Rollenschnitt wäre dann trotzdem gedeckt, weil Office seit E15 klinische Inhalte ohnehin liest (ADR-004 Fassung 2). Am Trainingstermin bliebe es ein Durchgriff über den gemeinsamen Kalender (ADR-022 Punkt 11) und fehlt deshalb dort.
+
+**Anker.** Spalte und `public.set_treatment_table_required` in `supabase/migrations/20260926130000_ux_003a_treatment_table.sql`, dort auch `patient_directory`, `export_patient_record` und `list_day_plan`; Oberfläche `src/features/patients/Behandlungsliege.tsx`; Tests `supabase/tests/treatment-table.test.ts`.
+
+**Änderungspfad.** Enger (etwa ohne Office): eigene Rollenfunktion statt `app.can_update_patient()` im Schreibpfad und eine Projektion ohne die Spalte · Aufwand `mittel`. Als Befundinhalt führen (klinische Dokumentation): Spalte in den Befund verlegen, Datenumzug und neuer Lesepfad der Tagesliste · Aufwand `groß` — deshalb vor echten Daten zu klären.

@@ -48,6 +48,9 @@ const patientSchema = z.object({
   // selbst liefert die Kartei nicht (ANN-016). Optional, damit ältere
   // Testdaten ohne das Feld weiter gelesen werden.
   geocode_precision: z.enum(['address', 'street', 'locality', 'unknown']).nullable().optional(),
+  // UX-003a: Behandlungsliege mitnehmen (ANN-116). Eine interne
+  // Versorgungsangabe wie der Zugangshinweis - für ein Patientenkonto leer.
+  treatment_table_required: z.boolean().nullable().optional(),
 });
 
 export type Patient = z.infer<typeof patientSchema>;
@@ -88,6 +91,7 @@ const SELECT = [
   'primary_therapist_staff_member_id, primary_therapist_name',
   'home_visit_access_note, special_note, remark',
   'geocode_precision',
+  'treatment_table_required',
 ].join(', ');
 
 export async function fetchPatients(): Promise<PatientListenzeile[]> {
@@ -409,6 +413,25 @@ export async function setPatientStatus(
   });
 
   if (error) throw new Error('Der Versorgungsstatus konnte nicht geändert werden.');
+}
+
+/**
+ * Setzt oder nimmt das Merkmal „Behandlungsliege mitnehmen“ (UX-003a, ANN-116).
+ *
+ * Ein eigener Schreibpfad neben den Stammdaten, weil es mit einem Tap
+ * geändert wird. Verbindlich prüft `set_treatment_table_required` Rolle und
+ * Organisation und protokolliert die Änderung (ADR-004, ADR-010).
+ */
+export async function setTreatmentTableRequired(
+  patientId: string,
+  benoetigt: boolean,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('set_treatment_table_required', {
+    p_patient_id: patientId,
+    p_required: benoetigt,
+  });
+
+  if (error) throw new Error('Die Angabe zur Behandlungsliege konnte nicht gespeichert werden.');
 }
 
 /**
