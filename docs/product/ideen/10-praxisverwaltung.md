@@ -486,8 +486,8 @@ Prüfung, kein Detail.
 
 | | |
 |---|---|
-| Status | vorschlag |
-| Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei sechs Produkten) |
+| Status | bestätigt (Roadmap: STA-EPIC-001) |
+| Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei sechs Produkten); Jannes 2026-09-26 |
 | Berührt | §20, B6, ADR-004, ADR-009 |
 
 **Idee.** Für `owner`: Umsatz je Monat, offene Posten, Behandlungen je
@@ -497,6 +497,34 @@ CSV. Keine Werte je Person, bis B6 entschieden ist.
 **Warum.** Alle sechs Systeme haben Statistik; für eine Praxis ist der
 Monatsabschluss sonst Handarbeit. §20 setzt die Grenze bei
 Beschäftigtendaten; Praxissummen sind davon nicht berührt.
+
+**Ergänzung (Jannes, 2026-09-26).** Ein **eigener Arbeitsbereich
+„Statistiken"**, nicht ein Bericht am Rand: Die wichtigen Kennzahlen stehen
+dort, und über ihn **steuert Jannes die Praxis**. Ausdrücklich ein großes
+Vorhaben mit viel Aufwand und Qualität. Kandidaten aus dem Gespräch und dem
+Bestand, noch unbewertet:
+
+- Umsatz und Zahlungseingang je Monat, offene Posten mit Alter, Mahnstand.
+- Auslastung als Praxissumme: gebuchte gegen verfügbare Stunden, freie
+  Fenster der nächsten Wochen, Ausfälle und Ausfallhonorare.
+- Verordnungen: offenes Kontingent, auslaufende Verordnungen ohne
+  Folgeverordnung, ungedeckte Termine.
+- Patientenfluss: Neuaufnahmen, Abschlüsse, Übergänge in Training/Nachsorge.
+- Wege: Fahrzeit-Anteil am Tag als Praxissumme (nicht je Person, §20).
+- Zu jeder Kennzahl ein **Zielwert und die Handlung**, die sie auslöst
+  („Steuern", nicht nur Anzeigen) — etwa von der Liste auslaufender
+  Verordnungen direkt in die Anrufliste.
+
+**Entschieden (2026-09-26, Claude im Auftrag von Jannes).** Vorgezogen als
+**STA-EPIC-001** ans Ende von Block 2 (Roadmap 7.2) — nicht sofort, weil die
+Zahlen auf Abrechnung, Terminen und Verordnungen aufsetzen, die Block 2 erst
+fertig macht; nicht erst in Block 9, damit der Bereich vor Probewoche 1 steht
+und dort mit dem ersten echten Ablauf geprüft wird. Die fünf Zahlen der Woche:
+Umsatz und Zahlungseingang des Monats, offene Posten mit Alter, Auslastung der
+nächsten zwei Wochen, Verordnungen ohne Anschluss (mit ungedeckten Terminen),
+Ausfälle mit Ausfallhonoraren — je mit Zielwert und der einen Handlung, die sie
+auslöst. Nur `owner`, nur Praxissummen (§20, B6). Verbindlich wird der
+Zuschnitt erst im SPEC-Schritt des Loops.
 
 ---
 
