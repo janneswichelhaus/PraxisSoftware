@@ -48,7 +48,9 @@ test.describe('CAL-019: Anlegen-Menü im Kalender', () => {
 
     await menue.getByRole('button', { name: /^Fehlzeit/ }).click();
 
-    await expect(page.getByRole('heading', { name: 'Fehlzeit eintragen' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Fehlzeit eintragen', exact: true }),
+    ).toBeVisible();
     // Tag und Person kommen aus der Auswahl; die Länge nicht - ein Ereignis
     // hat keine (CAL-019).
     await expect(page.getByLabel('Datum *')).toHaveValue(tag);
@@ -94,7 +96,7 @@ test.describe('CAL-021: Dauerfehlzeit', () => {
     await kachel.first().click();
 
     // Das Vorkommen sagt, dass es eines von dreien ist (CAL-021).
-    await expect(page.getByRole('heading', { name: /Ereignis –/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Fehlzeit –/ })).toBeVisible();
     await expect(detailWert(page, 'Dauerfehlzeit')).toContainText('Vorkommen 1 von 3');
 
     // Eine Fehlzeit ist keine Behandlung: kein Abschluss, keine Leistung (§19).
