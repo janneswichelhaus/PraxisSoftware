@@ -58,7 +58,7 @@ export function AnlegenMenue({
     <div
       role="group"
       aria-label="Was soll hier entstehen?"
-      className={`border-line-strong bg-surface rounded-card border-2 p-2 shadow-lg ${className}`}
+      className={`border-line-strong bg-surface rounded-card border-2 p-2 ${className}`}
       onKeyDown={(event) => {
         if (event.key === 'Escape') auswahl.onSchliessen();
       }}

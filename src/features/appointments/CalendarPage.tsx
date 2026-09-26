@@ -733,7 +733,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {filterAktiv ? (
         <span
           aria-hidden="true"
-          className="bg-warnung absolute top-1 right-1 size-2.5 rounded-full"
+          className="bg-warnung rounded-pill absolute top-1 right-1 size-2.5"
         />
       ) : null}
     </button>
