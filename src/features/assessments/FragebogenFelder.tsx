@@ -93,8 +93,10 @@ const Frage = memo(function Frage({
       return (
         <KoerperschemaFeld
           legende={beschriftung(item)}
-          bereiche={antwort && 'bereiche' in antwort ? antwort.bereiche : []}
-          onChange={(bereiche) => onChange(bereiche.length === 0 ? undefined : { bereiche })}
+          markierungen={antwort && 'markierungen' in antwort ? antwort.markierungen : []}
+          onChange={(markierungen) =>
+            onChange(markierungen.length === 0 ? undefined : { markierungen })
+          }
         />
       );
   }

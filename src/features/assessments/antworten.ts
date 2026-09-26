@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { bereicheText, istKoerperbereich } from './koerperschema';
+import { bereicheText, istKoerperbereich, type Markierung } from './koerperschema';
 import { optionKennung, type ScoreDefinition, type ScoreItem } from './schema';
 
 /**
@@ -24,7 +24,7 @@ export type Antwort =
   | { auswahl: string[]; freitext?: string }
   | { wert: number }
   | { text: string }
-  | { bereiche: string[] };
+  | { markierungen: Markierung[] };
 
 export type Antworten = Record<string, Antwort>;
 
@@ -78,14 +78,24 @@ export function antwortSchema(item: ScoreItem): z.ZodType {
     case 'freitext':
       return z.object({ text: freitextSchema }).strict();
     case 'koerperschema':
+      // Stelle relativ zum Bild und ihr Bereich (ANN-107). Mehr als 30 Kreise
+      // wären keine Angabe mehr, sondern ein ausgemaltes Bild.
       return z
         .object({
-          bereiche: z
-            .array(z.string().refine(istKoerperbereich, 'Kein Bereich des Körperschemas.'))
-            .min(1),
+          markierungen: z
+            .array(
+              z
+                .object({
+                  x: z.number().min(0).max(1),
+                  y: z.number().min(0).max(1),
+                  bereich: z.string().refine(istKoerperbereich, 'Kein Bereich des Körperschemas.'),
+                })
+                .strict(),
+            )
+            .min(1)
+            .max(30),
         })
-        .strict()
-        .refine((a) => new Set(a.bereiche).size === a.bereiche.length, 'Ein Bereich doppelt.');
+        .strict();
   }
 }
 
@@ -119,7 +129,7 @@ export function antwortText(item: ScoreItem, antwort: Antwort | undefined): stri
     return item.skala ? `${antwort.wert} von ${item.skala.max}` : String(antwort.wert);
   }
   if ('text' in antwort) return antwort.text;
-  return bereicheText(antwort.bereiche);
+  return bereicheText(antwort.markierungen.map((m) => m.bereich));
 }
 
 /** Die gewählten Kennungen einer Auswahl, sonst leer. */

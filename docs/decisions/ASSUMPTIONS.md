@@ -1376,3 +1376,15 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: wenn P4/P5 
 **Anker.** `patient_course_events` in `supabase/migrations/20260926110000_frb_002e_course_events.sql`; `EREIGNISARTEN` und `messreihen` in `src/features/assessments/verlauf.ts`; `Messreihenbild` in `src/features/assessments/Messreihenbild.tsx`.
 
 **Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`.
+
+### ANN-107 — Das Körperschema ist Jannes' Zeichnung; markiert wird mit einem Kreis an der Stelle, gespeichert Stelle und nächster Bereich
+
+Praxisprozess · entschieden (Jannes) · 2026-09-26 · Jannes · — · Wiedervorlage: mit DOK-005 (Körperschema im Bericht)
+
+**Annahme.** Grundlage ist die Zeichnung, die Jannes am 2026-09-26 selbst gezeichnet und zur Nutzung im Repository gegeben hat (Vorder- und Rückansicht, als WebP 820 × 749, Weiß transparent). Ein Tipp setzt einen Kreis in der Hauptfarbe an genau dieser Stelle, ein Tipp auf den Kreis entfernt ihn; höchstens 30 Kreise. Gespeichert werden je Kreis die Stelle relativ zum Bild und der Bereich des nächstgelegenen von 47 Ankerpunkten; weiter als 60 Bildpunkte von jedem Anker setzt nichts. Die Liste zum Aufklappen setzt den Kreis auf den Anker.
+
+**Begründung.** Jannes hat den Kreis gewählt; er verdeckt die Anatomie nicht, bleibt bei nahen Markierungen unterscheidbar, übersteht Schwarz-Weiß-Druck und deutet keine Stärke an wie ein roter, auslaufender Punkt (ADR-006 Punkt 11). Der Bereich macht die Stelle in Akte, Verlauf und Auskunft lesbar; der nächste Anker statt eines Umrisses je Bereich braucht keine zweite, passgenaue Zeichnung.
+
+**Anker.** `KOERPERBEREICHE`, `bereichAn` und `MAX_ABSTAND` in `src/features/assessments/koerperschema.ts`; `src/features/assessments/koerperschema.webp`; `KoerperschemaFeld` in `src/features/assessments/KoerperschemaFeld.tsx`.
+
+**Änderungspfad.** Genauere Bereiche: Anker ergänzen oder verschieben (Test prüft, dass jeder Anker seinen Bereich trifft) · Aufwand `klein`. Andere Zeichnung: Datei tauschen und Anker neu setzen; gespeicherte Stellen bleiben relativ zum Bild · Aufwand `mittel`.

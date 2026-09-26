@@ -1,104 +1,100 @@
 /**
- * Die Bereiche des Körperschemas (FRB-002d, `IDEA-PRX-027`).
+ * Das Körperschema (FRB-002d, `IDEA-PRX-027`, **ANN-107**).
  *
- * Ein Körperschema **dokumentiert**, wo die Person ihre Beschwerden
- * einzeichnet — es bewertet nichts (ADR-006 Punkt 2). Deshalb sind die
- * Bereiche grob und benannt statt frei gezeichnet: Eine Kennung wie
- * `schulter_rechts` ist in der Kopie nach Art. 15 lesbar, im Verlauf
- * vergleichbar und braucht keine Bilddatei in der Akte.
+ * Grundlage ist die Zeichnung von Jannes (Vorder- und Rückansicht in einem
+ * Bild, `koerperschema.webp`, 820 × 749). Markiert wird mit einem **Kreis an
+ * der angetippten Stelle**; gespeichert werden die Stelle und der Bereich, in
+ * dem sie liegt. Die Stelle ist genauer als jede Einteilung, der Bereich
+ * macht sie lesbar — in der Akte, im Verlauf und in der Kopie nach Art. 15
+ * steht „Knie links", nicht ein Koordinatenpaar.
  *
- * Seiten sind immer die **der Person**. In der Vorderansicht liegt ihre rechte
- * Seite links im Bild, in der Rückansicht rechts — die Beschriftung „R" und
- * „L" am Bild sagt das, damit niemand spiegelverkehrt einträgt.
+ * Der Bereich ergibt sich aus dem **nächstgelegenen Ankerpunkt**. Das ist
+ * gröber als ein Umriss je Bereich, aber es bleibt nachvollziehbar und braucht
+ * keine zweite Zeichnung, die zur ersten passen muss. Ein Tipp weiter als
+ * `MAX_ABSTAND` von jedem Anker liegt neben der Figur und setzt nichts.
  *
- * Die Kennungen sind unveränderlich wie die der Definitionen: Eine Kennung,
- * die einmal gespeichert ist, verschwindet nie (Arbeitsauftrag §1).
+ * Seiten sind immer die **der Person**: In der Vorderansicht liegt ihre rechte
+ * Seite links im Bild, in der Rückansicht rechts. Es wird nur dokumentiert,
+ * nicht bewertet (ADR-006 Punkt 2 und 11).
+ *
+ * Die Kennungen sind unveränderlich wie die der Definitionen (Arbeitsauftrag §1).
  */
 
 export type Ansicht = 'vorne' | 'hinten';
 
+export const BILD_BREITE = 820;
+export const BILD_HOEHE = 749;
+/** Links davon die Vorderansicht, rechts die Rückansicht. */
+export const ANSICHTEN_GRENZE = 410;
+/** Größter Abstand eines Tipps zum nächsten Anker, in Bildpunkten. */
+export const MAX_ABSTAND = 60;
+
+export interface Punkt {
+  x: number;
+  y: number;
+}
+
 export interface Koerperbereich {
   id: string;
   label: string;
-  ansicht: Ansicht;
-  /** Rechteck im Bild (x, y, Breite, Höhe) auf einer Fläche von 120 × 240. */
-  form: readonly [number, number, number, number];
+  /** Wo der Bereich in der Zeichnung liegt; ein Bereich kann in beiden Ansichten liegen. */
+  anker: readonly Punkt[];
 }
 
-export const BILD_BREITE = 120;
-export const BILD_HOEHE = 240;
-
-type Rechteck = readonly [number, number, number, number];
-
-/** Das Gegenstück auf der anderen Bildseite. */
-function gespiegelt([x, y, b, h]: Rechteck): Rechteck {
-  return [BILD_BREITE - x - b, y, b, h];
-}
+const MITTE_VORNE = 232;
+const MITTE_HINTEN = 595;
 
 /**
- * Ein Paar rechts und links. `imBildLinks` ist das Rechteck, das links im Bild
- * liegt — vorne die rechte Seite der Person, hinten die linke.
+ * Ein Paar rechts und links. `imBildLinks` liegt links der Mitte der Ansicht —
+ * vorne die rechte Seite der Person, hinten die linke.
  */
 function paar(
   stamm: string,
   label: string,
-  ansicht: Ansicht,
-  imBildLinks: Rechteck,
+  vorne: readonly Punkt[],
+  hinten: readonly Punkt[] = [],
 ): Koerperbereich[] {
-  const rechtsImBildLinks = ansicht === 'vorne';
-  const rechts = rechtsImBildLinks ? imBildLinks : gespiegelt(imBildLinks);
-  const links = rechtsImBildLinks ? gespiegelt(imBildLinks) : imBildLinks;
+  const gespiegelt = (p: Punkt, mitte: number): Punkt => ({ x: 2 * mitte - p.x, y: p.y });
   return [
-    { id: `${stamm}_rechts`, label: `${label} rechts`, ansicht, form: rechts },
-    { id: `${stamm}_links`, label: `${label} links`, ansicht, form: links },
+    {
+      id: `${stamm}_rechts`,
+      label: `${label} rechts`,
+      anker: [...vorne, ...hinten.map((p) => gespiegelt(p, MITTE_HINTEN))],
+    },
+    {
+      id: `${stamm}_links`,
+      label: `${label} links`,
+      anker: [...vorne.map((p) => gespiegelt(p, MITTE_VORNE)), ...hinten],
+    },
   ];
 }
 
 export const KOERPERBEREICHE: readonly Koerperbereich[] = [
-  // Vorderansicht
-  { id: 'kopf', label: 'Kopf, Gesicht', ansicht: 'vorne', form: [48, 2, 24, 28] },
-  { id: 'hals', label: 'Hals', ansicht: 'vorne', form: [53, 30, 14, 10] },
-  ...paar('schulter', 'Schulter', 'vorne', [30, 40, 18, 12]),
-  { id: 'brustkorb', label: 'Brustkorb', ansicht: 'vorne', form: [48, 40, 24, 28] },
-  { id: 'bauch', label: 'Bauch', ansicht: 'vorne', form: [44, 68, 32, 24] },
-  ...paar('oberarm', 'Oberarm', 'vorne', [22, 52, 14, 28]),
-  ...paar('ellenbogen', 'Ellenbogen', 'vorne', [20, 80, 14, 10]),
-  ...paar('unterarm', 'Unterarm', 'vorne', [17, 90, 14, 26]),
-  ...paar('hand', 'Hand', 'vorne', [13, 116, 17, 18]),
-  ...paar('leiste', 'Leiste, Hüfte', 'vorne', [44, 92, 16, 14]),
-  ...paar('oberschenkel_vorne', 'Oberschenkel vorne', 'vorne', [42, 106, 17, 44]),
-  ...paar('knie', 'Knie', 'vorne', [43, 150, 15, 14]),
-  ...paar('unterschenkel', 'Unterschenkel', 'vorne', [44, 164, 13, 50]),
-  ...paar('fuss', 'Fuß', 'vorne', [40, 214, 17, 12]),
-  // Rückansicht
-  { id: 'hinterkopf', label: 'Hinterkopf', ansicht: 'hinten', form: [48, 2, 24, 28] },
-  { id: 'nacken', label: 'Nacken, HWS', ansicht: 'hinten', form: [53, 30, 14, 10] },
-  ...paar('schulterblatt', 'Schulterblatt', 'hinten', [32, 40, 22, 24]),
-  { id: 'bws', label: 'Brustwirbelsäule', ansicht: 'hinten', form: [54, 40, 12, 32] },
-  { id: 'lws', label: 'Lendenwirbelsäule', ansicht: 'hinten', form: [46, 72, 28, 20] },
-  ...paar('gesaess', 'Gesäß, ISG', 'hinten', [42, 92, 18, 16]),
-  ...paar('oberschenkel_hinten', 'Oberschenkel hinten', 'hinten', [42, 108, 17, 42]),
-  ...paar('kniekehle', 'Kniekehle', 'hinten', [43, 150, 15, 14]),
-  ...paar('wade', 'Wade', 'hinten', [44, 164, 13, 50]),
-  ...paar('ferse', 'Ferse', 'hinten', [42, 214, 15, 12]),
+  { id: 'kopf', label: 'Kopf, Gesicht', anker: [{ x: 232, y: 50 }] },
+  { id: 'hals', label: 'Hals', anker: [{ x: 232, y: 108 }] },
+  ...paar('schulter', 'Schulter', [{ x: 152, y: 142 }], [{ x: 522, y: 140 }]),
+  { id: 'brustkorb', label: 'Brustkorb', anker: [{ x: 232, y: 175 }] },
+  { id: 'bauch', label: 'Bauch', anker: [{ x: 232, y: 270 }] },
+  ...paar('oberarm', 'Oberarm', [{ x: 136, y: 212 }], [{ x: 500, y: 214 }]),
+  ...paar('ellenbogen', 'Ellenbogen', [{ x: 121, y: 266 }], [{ x: 484, y: 270 }]),
+  ...paar('unterarm', 'Unterarm', [{ x: 101, y: 316 }], [{ x: 463, y: 322 }]),
+  ...paar('hand', 'Hand', [{ x: 74, y: 382 }], [{ x: 440, y: 385 }]),
+  ...paar('leiste', 'Leiste, Hüfte', [{ x: 199, y: 350 }]),
+  ...paar('oberschenkel_vorne', 'Oberschenkel vorne', [{ x: 196, y: 430 }]),
+  ...paar('knie', 'Knie', [{ x: 196, y: 500 }]),
+  ...paar('unterschenkel', 'Unterschenkel', [{ x: 196, y: 590 }]),
+  ...paar('fuss', 'Fuß', [{ x: 190, y: 690 }]),
+  { id: 'hinterkopf', label: 'Hinterkopf', anker: [{ x: 595, y: 50 }] },
+  { id: 'nacken', label: 'Nacken, HWS', anker: [{ x: 595, y: 110 }] },
+  ...paar('schulterblatt', 'Schulterblatt', [], [{ x: 551, y: 175 }]),
+  { id: 'bws', label: 'Brustwirbelsäule', anker: [{ x: 595, y: 205 }] },
+  { id: 'lws', label: 'Lendenwirbelsäule', anker: [{ x: 595, y: 290 }] },
+  ...paar('gesaess', 'Gesäß, ISG', [], [{ x: 565, y: 360 }]),
+  ...paar('oberschenkel_hinten', 'Oberschenkel hinten', [], [{ x: 565, y: 440 }]),
+  ...paar('kniekehle', 'Kniekehle', [], [{ x: 562, y: 505 }]),
+  ...paar('wade', 'Wade', [], [{ x: 561, y: 585 }]),
+  ...paar('ferse', 'Ferse', [], [{ x: 553, y: 690 }]),
 ];
-
-/**
- * Die Arme in der Rückansicht: nur Umriss, nicht wählbar. Sie sind in der
- * Vorderansicht schon je Abschnitt wählbar; zweimal dieselbe Stelle unter
- * zwei Kennungen wäre im Verlauf nicht vergleichbar.
- */
-const ARME: readonly Rechteck[] = [
-  [22, 52, 14, 28],
-  [20, 80, 14, 10],
-  [17, 90, 14, 26],
-  [13, 116, 17, 18],
-];
-
-export const RUECKANSICHT_UMRISS: readonly Rechteck[] = ARME.flatMap((form) => [
-  form,
-  gespiegelt(form),
-]);
 
 const NACH_KENNUNG = new Map(KOERPERBEREICHE.map((bereich) => [bereich.id, bereich]));
 
@@ -106,7 +102,45 @@ export function istKoerperbereich(kennung: string): boolean {
   return NACH_KENNUNG.has(kennung);
 }
 
-/** Die Bereiche in Worten, in der Reihenfolge des Schemas — nicht der Klicks. */
+export function ansichtVon(punkt: Punkt): Ansicht {
+  return punkt.x < ANSICHTEN_GRENZE ? 'vorne' : 'hinten';
+}
+
+/** Der Bereich zu einer Stelle im Bild — oder `null` neben der Figur. */
+export function bereichAn(punkt: Punkt): Koerperbereich | null {
+  let bester: Koerperbereich | null = null;
+  let abstand = MAX_ABSTAND;
+  for (const bereich of KOERPERBEREICHE) {
+    for (const anker of bereich.anker) {
+      // Nur Anker derselben Ansicht: Ein Tipp neben die Rückansicht ist nie vorn.
+      if (ansichtVon(anker) !== ansichtVon(punkt)) continue;
+      const d = Math.hypot(anker.x - punkt.x, anker.y - punkt.y);
+      if (d < abstand) {
+        abstand = d;
+        bester = bereich;
+      }
+    }
+  }
+  return bester;
+}
+
+/** Eine gespeicherte Markierung: Stelle relativ zum Bild (0 bis 1) und ihr Bereich. */
+export interface Markierung {
+  x: number;
+  y: number;
+  bereich: string;
+}
+
+export function imBild(markierung: Pick<Markierung, 'x' | 'y'>): Punkt {
+  return { x: markierung.x * BILD_BREITE, y: markierung.y * BILD_HOEHE };
+}
+
+export function alsMarkierung(punkt: Punkt, bereich: Koerperbereich): Markierung {
+  const runden = (wert: number) => Math.round(wert * 1000) / 1000;
+  return { x: runden(punkt.x / BILD_BREITE), y: runden(punkt.y / BILD_HOEHE), bereich: bereich.id };
+}
+
+/** Die Bereiche in Worten, jeder einmal, in der Reihenfolge des Schemas. */
 export function bereicheText(kennungen: readonly string[]): string {
   return KOERPERBEREICHE.filter((bereich) => kennungen.includes(bereich.id))
     .map((bereich) => bereich.label)

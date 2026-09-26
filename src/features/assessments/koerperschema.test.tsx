@@ -3,83 +3,115 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { antwortenSchema } from './antworten';
 import { instrumentFuer } from './instrumente';
-import { BILD_BREITE, BILD_HOEHE, KOERPERBEREICHE, bereicheText } from './koerperschema';
+import {
+  ANSICHTEN_GRENZE,
+  BILD_BREITE,
+  BILD_HOEHE,
+  KOERPERBEREICHE,
+  ansichtVon,
+  bereichAn,
+  bereicheText,
+} from './koerperschema';
 import { KoerperschemaFeld } from './KoerperschemaFeld';
 import { kennungSchema } from './schema';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
-/** Das Körperschema (FRB-002d, IDEA-PRX-027). */
+/** Das Körperschema (FRB-002d, IDEA-PRX-027, ANN-107). */
 describe('Bereiche des Körperschemas', () => {
-  it('hat eindeutige Kennungen in der Form einer Kennung', () => {
+  it('hat eindeutige Kennungen, jeder Anker liegt im Bild', () => {
     const ids = KOERPERBEREICHE.map((b) => b.id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const id of ids) expect(kennungSchema.safeParse(id).success).toBe(true);
-  });
-
-  it('liegt ganz im Bild, und kein Bereich verdeckt einen anderen derselben Ansicht', () => {
-    for (const { form } of KOERPERBEREICHE) {
-      const [x, y, b, h] = form;
-      expect(x).toBeGreaterThanOrEqual(0);
-      expect(y).toBeGreaterThanOrEqual(0);
-      expect(x + b).toBeLessThanOrEqual(BILD_BREITE);
-      expect(y + h).toBeLessThanOrEqual(BILD_HOEHE);
-    }
-    const ueberlappend: string[] = [];
-    for (const a of KOERPERBEREICHE) {
-      for (const c of KOERPERBEREICHE) {
-        if (a.id >= c.id || a.ansicht !== c.ansicht) continue;
-        const [ax, ay, ab, ah] = a.form;
-        const [cx, cy, cb, ch] = c.form;
-        if (ax < cx + cb && cx < ax + ab && ay < cy + ch && cy < ay + ah) {
-          ueberlappend.push(`${a.id}/${c.id}`);
-        }
+    for (const bereich of KOERPERBEREICHE) {
+      expect(kennungSchema.safeParse(bereich.id).success).toBe(true);
+      for (const { x, y } of bereich.anker) {
+        expect(x).toBeGreaterThan(0);
+        expect(x).toBeLessThan(BILD_BREITE);
+        expect(y).toBeGreaterThan(0);
+        expect(y).toBeLessThan(BILD_HOEHE);
       }
     }
-    expect(ueberlappend).toEqual([]);
+  });
+
+  it('findet jeden Bereich an seinem eigenen Anker wieder', () => {
+    // Liegen zwei Anker zu nah, gewinnt der falsche - dann ist die Einteilung kaputt.
+    for (const bereich of KOERPERBEREICHE) {
+      for (const anker of bereich.anker) expect(bereichAn(anker)?.id).toBe(bereich.id);
+    }
   });
 
   it('zeichnet die rechte Seite der Person vorne links und hinten rechts im Bild', () => {
-    const x = (id: string) => KOERPERBEREICHE.find((b) => b.id === id)!.form[0];
-    expect(x('schulter_rechts')).toBeLessThan(x('schulter_links'));
-    expect(x('schulterblatt_rechts')).toBeGreaterThan(x('schulterblatt_links'));
+    const anker = (id: string) => KOERPERBEREICHE.find((b) => b.id === id)!.anker;
+    const [schulterRechtsVorne] = anker('schulter_rechts').filter((p) => ansichtVon(p) === 'vorne');
+    const [schulterLinksVorne] = anker('schulter_links').filter((p) => ansichtVon(p) === 'vorne');
+    expect(schulterRechtsVorne!.x).toBeLessThan(schulterLinksVorne!.x);
+    expect(anker('schulterblatt_rechts')[0]!.x).toBeGreaterThan(anker('schulterblatt_links')[0]!.x);
+    expect(anker('schulterblatt_rechts')[0]!.x).toBeGreaterThan(ANSICHTEN_GRENZE);
   });
 
-  it('nennt die Bereiche in der Reihenfolge des Schemas', () => {
-    expect(bereicheText(['lws', 'schulter_rechts'])).toBe('Schulter rechts, Lendenwirbelsäule');
+  it('setzt neben der Figur nichts', () => {
+    expect(bereichAn({ x: 10, y: 700 })).toBeNull();
+    expect(bereichAn({ x: 410, y: 600 })).toBeNull();
   });
 
-  it('nimmt als Antwort nur Bereiche des Schemas an', () => {
+  it('nennt die Bereiche einmal, in der Reihenfolge des Schemas', () => {
+    expect(bereicheText(['lws', 'schulter_rechts', 'lws'])).toBe(
+      'Schulter rechts, Lendenwirbelsäule',
+    );
+  });
+
+  it('nimmt als Antwort nur Stellen im Bild mit bekanntem Bereich an', () => {
     const schema = antwortenSchema(instrumentFuer('anamnese_v8')!);
-    expect(schema.safeParse({ beschwerden_ort: { bereiche: ['lws'] } }).success).toBe(true);
-    expect(schema.safeParse({ beschwerden_ort: { bereiche: ['milz'] } }).success).toBe(false);
-    expect(schema.safeParse({ beschwerden_ort: { bereiche: [] } }).success).toBe(false);
+    const antwort = (markierungen: unknown) => ({ beschwerden_ort: { markierungen } });
+    expect(schema.safeParse(antwort([{ x: 0.7, y: 0.4, bereich: 'lws' }])).success).toBe(true);
+    expect(schema.safeParse(antwort([{ x: 0.7, y: 0.4, bereich: 'milz' }])).success).toBe(false);
+    expect(schema.safeParse(antwort([{ x: 1.2, y: 0.4, bereich: 'lws' }])).success).toBe(false);
+    expect(schema.safeParse(antwort([])).success).toBe(false);
   });
 });
 
 describe('Körperschema als Eingabe', () => {
-  it('wählt durch Antippen der Figur und nimmt durch erneutes Antippen zurück', () => {
+  /** jsdom misst nichts; das Bild liegt hier 820 × 749 groß an der Ecke. */
+  function flaeche(container: HTMLElement) {
+    const svg = container.querySelector('svg')!;
+    svg.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: BILD_BREITE, height: BILD_HOEHE }) as DOMRect;
+    return svg;
+  }
+
+  it('setzt einen Kreis an der angetippten Stelle und nimmt ihn beim zweiten Tipp zurück', () => {
     const onChange = vi.fn();
     const { container, rerender } = render(
-      <KoerperschemaFeld legende="1. Wo?" bereiche={[]} onChange={onChange} />,
+      <KoerperschemaFeld legende="1. Wo?" markierungen={[]} onChange={onChange} />,
     );
-    fireEvent.click(container.querySelector('[data-bereich="knie_links"]')!);
-    expect(onChange).toHaveBeenLastCalledWith(['knie_links']);
+    fireEvent.click(flaeche(container), { clientX: 270, clientY: 505 });
+    const gesetzt = onChange.mock.lastCall![0] as { bereich: string; x: number; y: number }[];
+    expect(gesetzt).toEqual([{ x: 0.329, y: 0.674, bereich: 'knie_links' }]);
 
-    rerender(<KoerperschemaFeld legende="1. Wo?" bereiche={['knie_links']} onChange={onChange} />);
-    expect(screen.getByText('Gewählt: Knie links')).toBeInTheDocument();
-    fireEvent.click(container.querySelector('[data-bereich="knie_links"]')!);
+    rerender(<KoerperschemaFeld legende="1. Wo?" markierungen={gesetzt} onChange={onChange} />);
+    expect(screen.getByText('Markiert: Knie links')).toBeInTheDocument();
+    expect(container.querySelectorAll('circle')).toHaveLength(1);
+    fireEvent.click(flaeche(container), { clientX: 275, clientY: 500 });
     expect(onChange).toHaveBeenLastCalledWith([]);
+  });
+
+  it('setzt neben der Figur keinen Kreis', () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <KoerperschemaFeld legende="1. Wo?" markierungen={[]} onChange={onChange} />,
+    );
+    fireEvent.click(flaeche(container), { clientX: 10, clientY: 700 });
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('bietet dieselbe Auswahl als Liste für Tastatur und Vorlesesoftware', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const { container } = render(
-      <KoerperschemaFeld legende="1. Wo?" bereiche={[]} onChange={onChange} />,
+      <KoerperschemaFeld legende="1. Wo?" markierungen={[]} onChange={onChange} />,
     );
     await user.click(screen.getByText('Bereiche als Liste'));
     await user.click(screen.getByLabelText('Lendenwirbelsäule'));
-    expect(onChange).toHaveBeenLastCalledWith(['lws']);
+    expect(onChange).toHaveBeenLastCalledWith([{ x: 0.726, y: 0.387, bereich: 'lws' }]);
     await pruefeBarrierefreiheit(container);
   });
 });

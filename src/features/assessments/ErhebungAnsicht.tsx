@@ -1,5 +1,6 @@
 import { antwortText, type Antwort, type Antworten } from './antworten';
 import { KoerperschemaBild } from './KoerperschemaFeld';
+import type { Markierung } from './koerperschema';
 import { beschriftung } from './darstellung';
 import type { ScoreDefinition } from './schema';
 
@@ -36,7 +37,7 @@ export function ErhebungAnsicht({
                 {antwortAnzeige(item, antworten[item.id])}
                 {item.typ === 'koerperschema' ? (
                   <div className="mt-2">
-                    <KoerperschemaBild bereiche={gewaehlteBereiche(antworten[item.id])} />
+                    <KoerperschemaBild markierungen={markierungenVon(antworten[item.id])} />
                   </div>
                 ) : null}
               </dd>
@@ -60,6 +61,6 @@ export function ErhebungAnsicht({
   );
 }
 
-function gewaehlteBereiche(antwort: Antwort | undefined): string[] {
-  return antwort && 'bereiche' in antwort ? antwort.bereiche : [];
+function markierungenVon(antwort: Antwort | undefined): Markierung[] {
+  return antwort && 'markierungen' in antwort ? antwort.markierungen : [];
 }

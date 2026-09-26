@@ -20,7 +20,13 @@ import '@/index.css';
 const anamnese = instrumentFuer('anamnese_v8')!;
 
 const BEISPIEL: Antworten = {
-  beschwerden_ort: { bereiche: ['lws', 'gesaess_rechts', 'oberschenkel_hinten_rechts'] },
+  beschwerden_ort: {
+    markierungen: [
+      { x: 0.726, y: 0.387, bereich: 'lws' },
+      { x: 0.762, y: 0.481, bereich: 'gesaess_rechts' },
+      { x: 0.24, y: 0.668, bereich: 'knie_rechts' },
+    ],
+  },
   schmerzen_aktuell: { auswahl: 'ja' },
   schmerzstaerke: { wert: 6 },
   schmerzart: { auswahl: ['nachtschmerzen'] },
