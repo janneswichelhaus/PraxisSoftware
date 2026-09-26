@@ -68,6 +68,9 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
   // office eingeschlossen (ROL-001); jeder gelesene Eintrag wird protokolliert.
   if (canReadTreatmentNote(user.roles)) {
     bereiche.push({ to: `${basis}/verlauf`, label: 'Behandlungsverlauf' });
+    // FRB-EPIC-002: Anamnese und Messwerte. Dieselbe Leserolle wie der
+    // Verlauf; jeder gelieferte Bogen wird auf dem Server protokolliert.
+    bereiche.push({ to: `${basis}/befund`, label: 'Befund' });
   }
   // Dateien vor den Stammdaten: „was liegt uns vor" wird im Gespräch häufiger
   // gebraucht als eine Adresse. Was `office` dort sieht, entscheidet die

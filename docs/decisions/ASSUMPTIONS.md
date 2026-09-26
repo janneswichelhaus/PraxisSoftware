@@ -1328,3 +1328,27 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit P4 (erster ge
 **Anker.** `optionSchema` und `optionKennung` in `src/features/assessments/schema.ts`; Definition `src/features/assessments/definitionen/scores/anamnese_v8.json`; Tests `anamnese.test.ts`, Wortlaut gegen den Extrakt in `definitionen.test.ts`.
 
 **Änderungspfad.** Andere Aufteilung des Bogens: neue Version der Definition (`1.1.0`), alte Erhebungen behalten ihre `definition_version` · Aufwand `klein`. Kennung statt Punktwert auch an gewerteten Scores: Kennungen in den Dateien nachtragen · Aufwand `klein`.
+
+### ANN-103 — Ein Fragebogen ist Entwurf oder abgeschlossen; korrigiert wird als neue Erhebung, erheben nur die behandelnden Rollen
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: nach vier Wochen Betrieb mit echten Anamnesen
+
+**Annahme.** Eine Erhebung hat zwei Zustände: `entwurf` (frei änderbar, darf verworfen werden) und `abgeschlossen` (unveränderlich, auch gegen direkten Zugriff durch einen Trigger). Eine Korrektur ist eine **neue** Erhebung mit Verweis auf die alte und einer Begründung von 3 bis 500 Zeichen; eine Erhebung wird höchstens einmal ersetzt. Es gibt **keine** automatische Finalisierung wie in ADR-016 Punkt 7. Erheben, abschließen, verwerfen und korrigieren dürfen `owner`, `therapist` und `team_lead`; lesen alle vier Praxisrollen, je gelieferter Erhebung protokolliert.
+
+**Begründung.** §7 verlangt, dass abgeschlossene Fragebögen in der beantworteten Version erhalten bleiben; ADR-016 Punkt 5 und 6 geben das Muster „nie überschreiben, Korrektur mit Grund" vor, das hier ohne Versionstabelle auskommt, weil ein Bogen als Ganzes ersetzt wird. Eine automatische Finalisierung schützt bei der Behandlungsdokumentation vor einem fehlenden Nachweis (§630f); ein halb ausgefüllter Bogen, der sich selbst abschließt, wäre dagegen eine Aussage der Person, die sie nicht vollständig gemacht hat. Office liest nach ADR-004 Fassung 2, schreibt aber keine klinischen Inhalte.
+
+**Anker.** `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql` (`app.guard_questionnaire_response`, `app.can_write_questionnaire_response`, `save_questionnaire_response`); `canWriteQuestionnaire` in `src/features/session/types.ts`; Tests `supabase/tests/questionnaire-responses.test.ts`.
+
+**Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`.
+
+### ANN-105 — Die Antworten prüft die Anwendung gegen die Definition, der Server nur ihre Form
+
+Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002), bevor Menschen außerhalb der Praxis schreiben
+
+**Annahme.** Der Server prüft an einer Erhebung Kennung und Version in ihrer Form, dass die Antworten ein Objekt mit Kennungen als Schlüsseln und Objekten als Werten sind, und eine Obergrenze von 64 KiB. Ob eine Antwort zur Frage passt (Option vorhanden, „nein" allein, Skala im Bereich), prüft `antwortenSchema` in der Anwendung gegen die Definitionsdatei. Angezeigt wird eine ältere Erhebung mit der Definition des Releases; eine abweichende Version wird an der Erhebung genannt.
+
+**Begründung.** Die Definitionen liegen als Dateien im Release (ANN-083) und nicht in der Datenbank; eine zweite Fassung in SQL wäre eine zweite Quelle, die abweichen kann. Schreiben dürfen heute nur angemeldete behandelnde Rollen, für die die Anwendung vertrauenswürdig ist; ein Fehler schadet der eigenen Akte, nicht einer fremden. Kennungen sind unveränderlich (Arbeitsauftrag §1), deshalb bleibt eine alte Erhebung mit der neueren Definition lesbar.
+
+**Anker.** `app.assert_questionnaire_answers` in `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql`; `antwortenSchema` in `src/features/assessments/antworten.ts`.
+
+**Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`.

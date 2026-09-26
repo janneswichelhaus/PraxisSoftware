@@ -187,7 +187,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   });
 
   describe('Bereichsnavigation', () => {
-    it('fuehrt alle sechs Bereiche fuer eine therapeutische Rolle', async () => {
+    it('fuehrt alle sieben Bereiche fuer eine therapeutische Rolle', async () => {
       akteRendern(['therapist']);
 
       const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
@@ -199,6 +199,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
         'Termine',
         'Behandlungsgrundlagen',
         'Behandlungsverlauf',
+        'Befund',
         'Dateien',
         'Datenschutz',
         'Stammdaten',

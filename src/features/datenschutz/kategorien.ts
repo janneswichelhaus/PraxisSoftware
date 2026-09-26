@@ -66,6 +66,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Frühere Fassungen und Korrekturgründe; die Dokumentation wird nie überschrieben.',
   },
+  patient_questionnaire_responses: {
+    label: 'Fragebögen',
+    beschreibung:
+      'Erhobene Fragebögen wie der Anamnesebogen mit allen Antworten; eine Korrektur steht neben der ursprünglichen Fassung.',
+  },
   patient_files: {
     label: 'Dateien',
     beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme — ohne den Inhalt selbst.',

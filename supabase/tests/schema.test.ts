@@ -101,6 +101,7 @@ describe('Schema-Invarianten', () => {
       'invoice_cancellations',
       'invoice_payment_reminders',
       'patient_privacy_records',
+      'patient_questionnaire_responses',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
@@ -181,6 +182,23 @@ describe('Schema-Invarianten', () => {
     const { rows: grants } = await asPostgres<{ privilege_type: string }>(`
       select privilege_type from information_schema.role_table_grants
       where table_schema = 'public' and table_name = 'treatment_notes'
+        and grantee in ('anon', 'authenticated')
+    `);
+    expect(grants).toEqual([]);
+  });
+
+  it('haelt patient_questionnaire_responses ueber den Anwendungspfad unerreichbar (ADR-010, FRB-002b)', async () => {
+    // Die Antworten eines Anamnesebogens sind Gesundheitsdaten. Der einzige
+    // Lesepfad ist list_patient_questionnaire_responses - er protokolliert.
+    const { rows: policies } = await asPostgres<{ policyname: string }>(
+      `select policyname from pg_policies
+       where schemaname = 'public' and tablename = 'patient_questionnaire_responses'`,
+    );
+    expect(policies).toEqual([]);
+
+    const { rows: grants } = await asPostgres<{ privilege_type: string }>(`
+      select privilege_type from information_schema.role_table_grants
+      where table_schema = 'public' and table_name = 'patient_questionnaire_responses'
         and grantee in ('anon', 'authenticated')
     `);
     expect(grants).toEqual([]);
