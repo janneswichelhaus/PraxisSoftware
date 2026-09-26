@@ -22,6 +22,7 @@ import {
 } from '@/features/appointments/api';
 import {
   canManageAppointments,
+  canReadTreatmentNote,
   canWriteTreatmentNote,
   isStaff,
   type CurrentUser,
@@ -34,8 +35,16 @@ import {
   NavigationZumTermin,
 } from '@/features/appointments/NavigationStarten';
 import { tagePlus } from '@/features/appointments/calendar';
-import { fetchDayPlan, istOffen, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
+import {
+  adressZeilen,
+  fetchDayPlan,
+  istOffen,
+  nachUhrzeit,
+  TAGESPLAN_VORHALTEDAUER_MS,
+  type DayPlanEntry,
+} from './api';
 import { Tageskarte } from './Tagesliste';
+import { liegeHeute, liegeText, wegeDesTages } from './tagesstart';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 
@@ -112,6 +121,48 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
 }
 
 /**
+ * Vorschau auf den Besuch nach dem ersten Weg (UX-EPIC-003).
+ *
+ * Bewusst knapp und ohne Handlungen: Sie beantwortet „wohin danach, und muss
+ * dafür etwas mit?" - die volle Karte mit Anschrift und Rufnummern liegt
+ * unter „Weitere offene heute". Ein Tap auf den Namen führt in den Termin.
+ */
+function Vorschau({ termin }: { termin: DayPlanEntry }) {
+  const zone = termin.organization_time_zone;
+  const ort = adressZeilen(termin).join(', ') || ortDesTermins(termin);
+  return (
+    <div className="border-line mt-4 border-t pt-3">
+      <p className="text-ink-muted text-sm font-medium">Danach</p>
+      <p className="text-ink mt-1 text-[0.9375rem]">
+        <span className="font-semibold tabular-nums">
+          {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
+        </span>{' '}
+        <Link
+          to={mitRueckweg(`/termine/${termin.id}`, '/')}
+          className="hover:text-accent font-medium hover:underline"
+        >
+          {termin.kind === 'internal' || !termin.patient_id
+            ? (termin.title ?? 'Termin')
+            : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}
+        </Link>
+      </p>
+      {ort ? <p className="text-ink-muted mt-0.5 text-sm">{ort}</p> : null}
+      {termin.treatment_table_required ? (
+        <p className="text-ink mt-0.5 text-sm">
+          <span className="text-ink-muted font-medium">Behandlungsliege: </span>mitnehmen
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function ortDesTermins(termin: DayPlanEntry): string {
+  if (termin.appointment_type === 'video') return 'Videotermin';
+  if (termin.appointment_type === 'practice') return termin.location_name ?? 'Praxis';
+  return 'Hausbesuch';
+}
+
+/**
  * Die eigene Tagesliste: offene Besuche oben, erledigte zusammengefaltet.
  *
  * „Offen" heißt: der Besuch steht noch aus, oder er ist abgeschlossen und die
@@ -123,11 +174,13 @@ function MeineTagesliste({
   datum,
   staffMemberId,
   darfDokumentieren,
+  darfDokuLesen,
   zeitzone,
 }: {
   datum: string;
   staffMemberId: string;
   darfDokumentieren: boolean;
+  darfDokuLesen: boolean;
   zeitzone: string;
 }) {
   const {
@@ -162,6 +215,58 @@ function MeineTagesliste({
   const sortiert = [...termine].sort(nachUhrzeit);
   const offen = sortiert.filter((termin) => istOffen(termin, darfDokumentieren));
   const erledigt = sortiert.filter((termin) => !istOffen(termin, darfDokumentieren));
+  const wege = wegeDesTages(sortiert);
+  const liege = liegeHeute(sortiert);
+  const weitere = offen.filter((termin) => termin.id !== wege.erster?.id);
+
+  /**
+   * Die Handlungen einer Karte, ohne die Navigation.
+   *
+   * Schreiben, ohne abzuschliessen (IDEA-PRX-040): Der Abschluss schreibt die
+   * Dokumentation als Version 1 fest; wer waehrend des Besuchs mitschreibt
+   * oder den Entwurf spaeter weiterfuehrt, braucht den Weg ohne diese Folge.
+   * Kurz beschriftet, weil die Karte mehrere Ziele nebeneinander traegt - der
+   * zugaengliche Name sagt, was gemeint ist. Auf der Karte des ersten Wegs
+   * ist die Navigation der Hauptknopf; dort bleibt der Abschluss sekundaer
+   * (ein Hauptknopf je Ansicht, UX-EPIC-002).
+   */
+  function kartenAktionen(termin: DayPlanEntry, abschlussAlsHauptknopf: boolean) {
+    const behandlung = termin.kind === 'therapy' && termin.patient_id !== null;
+    return (
+      <>
+        {/* UX-EPIC-003: Vor der Tuer die bisherige Doku mit einem Tipp. Der
+            Verlauf der Akte protokolliert jeden Lesezugriff (ADR-010); die
+            Anzeige hier ist Darstellung, verbindlich prueft der Lesepfad. */}
+        {darfDokuLesen && behandlung ? (
+          <Link
+            to={mitRueckweg(`/patienten/${termin.patient_id}/verlauf`, '/')}
+            className={kartenAktionKlassen()}
+          >
+            Bisherige Doku
+          </Link>
+        ) : null}
+        {darfDokumentieren && behandlung ? (
+          <Link
+            to={mitRueckweg(`/termine/${termin.id}/dokumentation`, '/')}
+            aria-label="Dokumentation schreiben"
+            className={kartenAktionKlassen()}
+          >
+            Doku
+          </Link>
+        ) : null}
+        {/* Die eine Handlung, um die es am Ende jedes Besuchs geht - von der
+            Tagesliste aus ein Tap (UX-007). */}
+        {darfDokumentieren && behandlung ? (
+          <Link
+            to={mitRueckweg(`/termine/${termin.id}/abschluss`, '/')}
+            className={kartenAktionKlassen(abschlussAlsHauptknopf ? 'primary' : 'secondary')}
+          >
+            Behandlung abschließen
+          </Link>
+        ) : null}
+      </>
+    );
+  }
 
   return (
     <>
@@ -190,6 +295,54 @@ function MeineTagesliste({
                 : 'Für heute sind Ihnen keine Termine zugeordnet.'
             }
           />
+        ) : wege.erster ? (
+          <>
+            {/* UX-EPIC-003: Der Tag beginnt am Rad mit dem, was zählt - die
+                Liege, der erste Weg, ein Blick auf den nächsten. Alles
+                Weitere liegt zugeklappt darunter. */}
+            <p className="text-ink mb-3 text-[1.0625rem]">
+              <span className="font-semibold">Liege heute: </span>
+              {liegeText(liege)}
+            </p>
+
+            <p className="text-ink-muted mb-2 text-sm font-medium">
+              {wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg'}
+            </p>
+            <Tageskarte
+              termin={wege.erster}
+              aktionen={
+                <>
+                  <NavigationZumTermin termin={wege.erster} hauptknopf />
+                  {kartenAktionen(wege.erster, false)}
+                </>
+              }
+            />
+
+            {wege.danach ? <Vorschau termin={wege.danach} /> : null}
+
+            {weitere.length > 0 ? (
+              <details className="mt-4">
+                <summary className="text-ink-muted hover:text-ink flex min-h-11 cursor-pointer items-center text-sm">
+                  Weitere offene heute ({weitere.length})
+                </summary>
+                <ul className="mt-3 flex flex-col gap-3">
+                  {weitere.map((termin) => (
+                    <li key={termin.id}>
+                      <Tageskarte
+                        termin={termin}
+                        aktionen={
+                          <>
+                            {kartenAktionen(termin, true)}
+                            <NavigationZumTermin termin={termin} />
+                          </>
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+          </>
         ) : (
           <ul className="flex flex-col gap-3">
             {offen.map((termin) => (
@@ -198,32 +351,7 @@ function MeineTagesliste({
                   termin={termin}
                   aktionen={
                     <>
-                      {/* Schreiben, ohne abzuschliessen (IDEA-PRX-040). Der
-                          Abschluss schreibt die Dokumentation als Version 1
-                          fest; wer waehrend des Besuchs mitschreibt oder den
-                          Entwurf spaeter weiterfuehrt, braucht den Weg ohne
-                          diese Folge. Kurz beschriftet, weil die Karte fuenf
-                          Ziele nebeneinander traegt - der zugaengliche Name
-                          sagt, was gemeint ist. */}
-                      {darfDokumentieren ? (
-                        <Link
-                          to={mitRueckweg(`/termine/${termin.id}/dokumentation`, '/')}
-                          aria-label="Dokumentation schreiben"
-                          className={kartenAktionKlassen()}
-                        >
-                          Doku
-                        </Link>
-                      ) : null}
-                      {/* Die eine Handlung, um die es am Ende jedes Besuchs
-                          geht - von der Tagesliste aus ein Tap (UX-007). */}
-                      {darfDokumentieren ? (
-                        <Link
-                          to={mitRueckweg(`/termine/${termin.id}/abschluss`, '/')}
-                          className={kartenAktionKlassen('primary')}
-                        >
-                          Behandlung abschließen
-                        </Link>
-                      ) : null}
+                      {kartenAktionen(termin, true)}
                       <NavigationZumTermin termin={termin} />
                     </>
                   }
@@ -302,6 +430,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   });
 
   const alleHeute = [...(termine ?? [])].sort(nachUhrzeit);
+  const eigeneTagesliste = darfTermine && Boolean(user.staffMemberId);
+  // ANN-117: Zugeklappt nur für die, die selbst unterwegs sind: Das Büro hat meist
+  // keine eigenen Besuche, für es ist der Plan des Teams die Hauptsache.
+  const teamplanZugeklappt = eigeneTagesliste && canWriteTreatmentNote(user.roles);
 
   if (!praxisrolle) {
     return (
@@ -327,11 +459,12 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         description={formatDatum(heute)}
       />
 
-      {darfTermine && user.staffMemberId ? (
+      {eigeneTagesliste && user.staffMemberId ? (
         <MeineTagesliste
           datum={heute}
           staffMemberId={user.staffMemberId}
           darfDokumentieren={canWriteTreatmentNote(user.roles)}
+          darfDokuLesen={canReadTreatmentNote(user.roles)}
           zeitzone={zeitzone}
         />
       ) : null}
@@ -346,28 +479,39 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             />
           ) : null}
 
-          <Section
-            titel="Tagesplan des Teams"
-            hinweis="Alle Besuche des heutigen Tages."
-            aktion={
-              <Link
-                to={`/kalender?ansicht=tag&datum=${heute}`}
-                className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center text-[0.9375rem] font-medium"
-              >
-                Zum Kalender →
-              </Link>
-            }
-          >
-            {termine && alleHeute.length === 0 ? (
-              <EmptyState title="Heute sind keine Termine geplant" />
-            ) : (
-              <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-                {alleHeute.map((termin) => (
-                  <Terminzeile key={termin.id} termin={termin} zeitzone={zeitzone} />
-                ))}
-              </ul>
-            )}
-          </Section>
+          {/* UX-EPIC-003: Wer eine eigene Tagesliste hat, braucht den Plan des
+              Teams selten - er liegt dann zugeklappt unter dem eigenen Tag. */}
+          <section className="border-line mt-8 border-t pt-3">
+            <details open={!teamplanZugeklappt}>
+              <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-2">
+                <h2 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
+                  Tagesplan des Teams
+                </h2>
+              </summary>
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-ink-muted max-w-prose text-sm">
+                  Alle Besuche des heutigen Tages.
+                </p>
+                <Link
+                  to={`/kalender?ansicht=tag&datum=${heute}`}
+                  className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center text-[0.9375rem] font-medium"
+                >
+                  Zum Kalender →
+                </Link>
+              </div>
+              <div className="mt-3">
+                {termine && alleHeute.length === 0 ? (
+                  <EmptyState title="Heute sind keine Termine geplant" />
+                ) : (
+                  <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
+                    {alleHeute.map((termin) => (
+                      <Terminzeile key={termin.id} termin={termin} zeitzone={zeitzone} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </details>
+          </section>
         </>
       ) : null}
 
