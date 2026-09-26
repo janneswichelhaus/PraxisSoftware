@@ -52,6 +52,34 @@ export const ERGEBNIS_TEXT: Record<BefundErgebnis | TechnikErgebnis, string> = {
 export const NOTIZ_MAX = 300;
 
 /**
+ * Ein seitengetrennter Test mit Messwert — Knee to Wall, Navicular Drop —
+ * wird **je Seite** erfasst: eigenes Ergebnis, eigener Wert, eigene Notiz
+ * für links und rechts (Jannes, 2026-09-26). Der Vergleich der Seiten ist der
+ * Sinn der Messung; ein Wert mit einer Seite reichte dafür nicht.
+ *
+ * Die Regel hängt am Schema, nicht an zwei Testnamen: Jeder künftige Test
+ * mit `bilateral` und `value_field` bekommt dasselbe.
+ */
+export const MESSSEITEN = ['links', 'rechts'] as const;
+export type Messseite = (typeof MESSSEITEN)[number];
+
+export function jeSeiteGemessen(item: BausteinItem): boolean {
+  return item.bilateral && item.value_field !== undefined && item.subitems === undefined;
+}
+
+/** Die Kennung der Angabe zu einer Seite. Keine Testkennung: nur ein Schlüssel der Auswahl. */
+export function seitenKennung(kennung: string, seite: Messseite): string {
+  return `${kennung}.${seite}`;
+}
+
+/** Alle Schlüssel, unter denen ein Item in der Auswahl Angaben trägt. */
+export function kennungenDes(item: BausteinItem): string[] {
+  if (item.subitems) return item.subitems.map((subitem) => subitem.id);
+  if (jeSeiteGemessen(item)) return MESSSEITEN.map((seite) => seitenKennung(item.id, seite));
+  return [item.id];
+}
+
+/**
  * Ein Messwert ist eine nicht negative Zahl, als Ganzzahl oder mit Komma
  * beziehungsweise Punkt. Bewusst ohne verschachtelte Quantoren
  * (`security/detect-unsafe-regex`).
@@ -77,8 +105,11 @@ export function ungueltigeMesswerte(
     region.blocks.some((block) =>
       block.items.some((item) => {
         const messfeld = item.value_field;
-        const wert = auswahl[item.id]?.messwert?.trim();
-        return messfeld !== undefined && !!wert && !istMesswert(wert, messfeld.input);
+        if (messfeld === undefined) return false;
+        return kennungenDes(item).some((kennung) => {
+          const wert = auswahl[kennung]?.messwert?.trim();
+          return !!wert && !istMesswert(wert, messfeld.input);
+        });
       }),
     ),
   );
@@ -107,8 +138,15 @@ function zeile(label: string, angabe: Angabe | undefined, item: BausteinItem): s
   return text;
 }
 
-/** Die Zeilen eines Items — eine je Unterpunkt, wenn es welche hat. */
+/** Die Zeilen eines Items — eine je Unterpunkt oder je gemessener Seite. */
 function zeilenDesItems(item: BausteinItem, auswahl: Auswahl): string[] {
+  if (jeSeiteGemessen(item)) {
+    return MESSSEITEN.flatMap((seite) => {
+      const angabe = auswahl[seitenKennung(item.id, seite)];
+      const text = zeile(item.label, angabe && { ...angabe, seite }, item);
+      return text ? [text] : [];
+    });
+  }
   if (item.subitems) {
     return item.subitems.flatMap((subitem) => {
       const text = zeile(`${item.label} – ${subitem.label}`, auswahl[subitem.id], item);

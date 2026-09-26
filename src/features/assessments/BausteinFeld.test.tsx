@@ -104,20 +104,43 @@ describe('BausteinFeld', () => {
 
   it('nimmt einen Messwert nur als Zahl in den Text', async () => {
     const { user } = await oeffnen('Fuß', 'Basisuntersuchung Fuß');
-    const k2w = test_('Knee to Wall Test');
+    const k2w = test_('Knee to Wall Test, links');
     await user.click(within(k2w).getByRole('button', { name: 'ohne Befund' }));
     const feld = within(k2w).getByLabelText('Messwert (cm)');
 
     await user.type(feld, 'acht');
     expect(within(k2w).getByText('Bitte eine Zahl eingeben, etwa 1,5.')).toBeInTheDocument();
-    expect(screen.getByText(/Knee to Wall Test: ohne Befund\.$/)).toBeInTheDocument();
+    expect(screen.getByText(/Knee to Wall Test, links: ohne Befund\.$/)).toBeInTheDocument();
     // Übernommen würde der Text ohne den Wert — deshalb erst nach der Korrektur.
     expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeDisabled();
 
     await user.clear(feld);
     await user.type(feld, '8,5');
-    expect(screen.getByText(/Knee to Wall Test: ohne Befund, 8,5 cm\./)).toBeInTheDocument();
+    expect(screen.getByText(/Knee to Wall Test, links: ohne Befund, 8,5 cm\./)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeEnabled();
+  });
+
+  it('misst Knee to Wall und Navicular Drop links und rechts getrennt', async () => {
+    const { user } = await oeffnen('Fuß', 'Basisuntersuchung Fuß');
+    const links = test_('Knee to Wall Test, links');
+    const rechts = test_('Knee to Wall Test, rechts');
+    await user.click(within(links).getByRole('button', { name: 'ohne Befund' }));
+    await user.type(within(links).getByLabelText('Messwert (cm)'), '9');
+    await user.click(within(rechts).getByRole('button', { name: 'positiv' }));
+    await user.type(within(rechts).getByLabelText('Messwert (cm)'), '5');
+    // Die Seite steht fest; eine Auswahl links/rechts/beidseits gibt es hier nicht.
+    expect(within(rechts).queryByRole('group', { name: 'Seite' })).toBeNull();
+
+    const vorschlag = screen.getByRole('region', { name: 'Vorschlag für den Eintrag' });
+    expect(within(vorschlag).getByText(/Knee to Wall/).textContent).toBe(
+      'Basisuntersuchung Fuß\n' +
+        'Knee to Wall Test, links: ohne Befund, 9 cm.\n' +
+        'Knee to Wall Test, rechts: positiv, 5 cm.',
+    );
+
+    await user.click(screen.getByText('Weiterführende Untersuchung'));
+    expect(test_('Navicular Drop Test, links')).toBeInTheDocument();
+    expect(test_('Navicular Drop Test, rechts')).toBeInTheDocument();
   });
 
   it('sperrt jede Eingabe, solange die Seite schreibt', async () => {

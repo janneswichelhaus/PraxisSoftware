@@ -1,4 +1,4 @@
-import { memo, useEffect, useId, useRef, useState } from 'react';
+import { memo, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
@@ -10,6 +10,10 @@ import {
   NOTIZ_MAX,
   SEITEN,
   istMesswert,
+  jeSeiteGemessen,
+  kennungenDes,
+  MESSSEITEN,
+  seitenKennung,
   ungueltigeMesswerte,
   type Angabe,
   type Auswahl,
@@ -149,10 +153,6 @@ export function BausteinFeld({
   );
 }
 
-function kennungenDes(item: BausteinItem): string[] {
-  return item.subitems ? item.subitems.map((s) => s.id) : [item.id];
-}
-
 function angabenIn(region: BausteinRegion, auswahl: Auswahl): number {
   return region.blocks
     .flatMap((block) => block.items.flatMap(kennungenDes))
@@ -186,28 +186,41 @@ function Block({
           </p>
         ) : null}
         {block.items.map((item) =>
-          item.subitems ? (
-            <div key={item.id} className="flex flex-col gap-3">
-              <p className="text-ink text-sm font-medium wrap-anywhere">
-                {item.label}
-                {item.hint ? (
-                  <span className="text-ink-muted font-normal"> – {item.hint}</span>
-                ) : null}
-              </p>
-              <div className="border-line flex flex-col gap-4 border-l-2 pl-3">
-                {item.subitems.map((subitem) => (
+          jeSeiteGemessen(item) ? (
+            // Links und rechts je mit eigenem Ergebnis, Wert und Notiz
+            // (Jannes, 2026-09-26) — der Seitenvergleich ist der Sinn der Messung.
+            <Gruppe key={item.id} item={item}>
+              {MESSSEITEN.map((seite) => {
+                const kennung = seitenKennung(item.id, seite);
+                return (
                   <Zeile
-                    key={subitem.id}
-                    kennung={subitem.id}
-                    label={subitem.label}
-                    hint={subitem.hint}
+                    key={kennung}
+                    kennung={kennung}
+                    label={seite}
+                    vorsatz={`${item.label}, `}
+                    hint={undefined}
                     item={item}
-                    angabe={auswahl[subitem.id]}
+                    seiteFest
+                    angabe={auswahl[kennung]}
                     setzen={setzen}
                   />
-                ))}
-              </div>
-            </div>
+                );
+              })}
+            </Gruppe>
+          ) : item.subitems ? (
+            <Gruppe key={item.id} item={item}>
+              {item.subitems.map((subitem) => (
+                <Zeile
+                  key={subitem.id}
+                  kennung={subitem.id}
+                  label={subitem.label}
+                  hint={subitem.hint}
+                  item={item}
+                  angabe={auswahl[subitem.id]}
+                  setzen={setzen}
+                />
+              ))}
+            </Gruppe>
           ) : (
             <Zeile
               key={item.id}
@@ -225,6 +238,19 @@ function Block({
   );
 }
 
+/** Ein Item mit Unterpunkten oder mit je einer Zeile für links und rechts. */
+function Gruppe({ item, children }: { item: BausteinItem; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-ink text-sm font-medium wrap-anywhere">
+        {item.label}
+        {item.hint ? <span className="text-ink-muted font-normal"> – {item.hint}</span> : null}
+      </p>
+      <div className="border-line flex flex-col gap-4 border-l-2 pl-3">{children}</div>
+    </div>
+  );
+}
+
 /**
  * Ein Test oder eine Technik. `memo`, weil ein Tap sonst jede Zeile des
  * Blocks neu zeichnet; dafür bleibt `setzen` über die Seite stabil.
@@ -232,16 +258,22 @@ function Block({
 const Zeile = memo(function Zeile({
   kennung,
   label,
+  vorsatz,
   hint,
   item,
+  seiteFest = false,
   angabe,
   setzen,
 }: {
   kennung: string;
   label: string;
+  /** Vor den Namen der Gruppe gesetzt: aus „links" wird „Knee to Wall Test, links". */
+  vorsatz?: string;
   hint: string | undefined;
   /** Typ, Seitigkeit und Messfeld gelten auch für die Unterpunkte. */
   item: BausteinItem;
+  /** Die Seite steht schon fest — keine Auswahl links/rechts/beidseits. */
+  seiteFest?: boolean;
   angabe: Angabe | undefined;
   setzen: BausteinAuswahl['setzen'];
 }) {
@@ -251,7 +283,11 @@ const Zeile = memo(function Zeile({
   );
 
   return (
-    <div role="group" aria-labelledby={titelId} className="flex flex-col gap-2">
+    <div
+      role="group"
+      {...(vorsatz ? { 'aria-label': `${vorsatz}${label}` } : { 'aria-labelledby': titelId })}
+      className="flex flex-col gap-2"
+    >
       <p id={titelId} className="text-ink text-sm wrap-anywhere">
         {label}
         {hint ? <span className="text-ink-muted"> – {hint}</span> : null}
@@ -276,7 +312,13 @@ const Zeile = memo(function Zeile({
       </div>
 
       {angabe ? (
-        <Einzelheiten kennung={kennung} item={item} angabe={angabe} setzen={setzen} />
+        <Einzelheiten
+          kennung={kennung}
+          item={item}
+          seiteFest={seiteFest}
+          angabe={angabe}
+          setzen={setzen}
+        />
       ) : null}
     </div>
   );
@@ -286,11 +328,13 @@ const Zeile = memo(function Zeile({
 function Einzelheiten({
   kennung,
   item,
+  seiteFest,
   angabe,
   setzen,
 }: {
   kennung: string;
   item: BausteinItem;
+  seiteFest: boolean;
   angabe: Angabe;
   setzen: BausteinAuswahl['setzen'];
 }) {
@@ -298,7 +342,7 @@ function Einzelheiten({
 
   return (
     <div className="flex flex-col gap-2">
-      {item.bilateral ? (
+      {item.bilateral && !seiteFest ? (
         <div role="group" aria-label="Seite" className="flex flex-wrap gap-2">
           {SEITEN.map((seite) => (
             <button

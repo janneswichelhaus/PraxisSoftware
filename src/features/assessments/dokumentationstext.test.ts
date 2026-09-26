@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { bibliothek } from './bibliothek';
-import { dokumentationstext, istMesswert, type Auswahl } from './dokumentationstext';
+import {
+  dokumentationstext,
+  istMesswert,
+  ungueltigeMesswerte,
+  type Auswahl,
+} from './dokumentationstext';
 import type { BausteinRegion } from './schema';
 
 /**
@@ -113,12 +118,41 @@ describe('Dokumentationstext', () => {
   it('setzt den Messwert mit Einheit hinter das Ergebnis, aber nur als Zahl', () => {
     expect(
       dokumentationstext([knie], {
-        knie_knee_to_wall: { ergebnis: 'ohne_befund', seite: 'links', messwert: '8,5' },
+        'knie_knee_to_wall.links': { ergebnis: 'ohne_befund', messwert: '8,5' },
       }),
     ).toBe('Basisuntersuchung Knie\nKnee to Wall Test, links: ohne Befund, 8,5 cm.');
     expect(
-      dokumentationstext([knie], { knie_knee_to_wall: { ergebnis: 'positiv', messwert: 'acht' } }),
-    ).toBe('Basisuntersuchung Knie\nKnee to Wall Test: positiv.');
+      dokumentationstext([knie], {
+        'knie_knee_to_wall.rechts': { ergebnis: 'positiv', messwert: 'acht' },
+      }),
+    ).toBe('Basisuntersuchung Knie\nKnee to Wall Test, rechts: positiv.');
+  });
+
+  it('schreibt einen gemessenen Test je Seite, links vor rechts (Jannes 2026-09-26)', () => {
+    const auswahl: Auswahl = {
+      'knie_knee_to_wall.rechts': { ergebnis: 'positiv', messwert: '5', notiz: 'Ferse hebt ab.' },
+      'knie_knee_to_wall.links': { ergebnis: 'ohne_befund', messwert: '9' },
+    };
+    expect(dokumentationstext([knie], auswahl)).toBe(
+      'Basisuntersuchung Knie\n' +
+        'Knee to Wall Test, links: ohne Befund, 9 cm.\n' +
+        'Knee to Wall Test, rechts: positiv, 5 cm. Ferse hebt ab.',
+    );
+    // Die Seite kommt aus dem Schlüssel, nicht aus der Angabe.
+    expect(
+      dokumentationstext([knie], {
+        'knie_knee_to_wall.links': { ergebnis: 'positiv', seite: 'rechts' },
+      }),
+    ).toBe('Basisuntersuchung Knie\nKnee to Wall Test, links: positiv.');
+  });
+
+  it('erkennt einen ungültigen Messwert auf jeder Seite', () => {
+    expect(ungueltigeMesswerte([knie], {})).toBe(false);
+    expect(
+      ungueltigeMesswerte([knie], {
+        'knie_knee_to_wall.rechts': { ergebnis: 'positiv', messwert: 'x' },
+      }),
+    ).toBe(true);
   });
 
   it('schreibt Unterpunkte mit ihrer Gruppe und hält die Notiz auf einer Zeile', () => {

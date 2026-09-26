@@ -23,7 +23,9 @@ Ladepfad sortiert nach Pfad, der Code kennt keinen Regionsnamen.
   (`bilateral`) sind alle Items der Extremitäten und des Kiefers, an der
   Wirbelsäule nur die neurologischen und neurodynamischen Tests und das SIG.
 - Messwerte in cm nur dort, wo die Vorlage einen Wert erhebt: Knee to Wall,
-  Navicular Drop.
+  Navicular Drop. Ein seitengetrennter Test mit Messwert wird **je Seite**
+  erfasst — links und rechts mit eigenem Ergebnis, Wert und Notiz (Jannes,
+  2026-09-26); die Regel steht in `jeSeiteGemessen` (`../../dokumentationstext.ts`).
 - Unvollständig (`status: "unvollstaendig"`) sind Schulter „Untersuchung ACG",
   LWS „Behandlung" und HWS „Therapie Hochzervikal". LWS „Untersuchung SIG" ist
   vollständig (Plan D2).
