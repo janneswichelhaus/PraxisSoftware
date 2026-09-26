@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-23
+Stand: 2026-09-26
 
 ## Zweck
 
@@ -1213,3 +1213,143 @@ Seitenaufruf im Auditlog. **Der Weg:** `enabled: canManageAppointments(roles)`
 an beiden Abfragen; danach kann der Pfad denselben Ausgang bekommen wie die
 übrigen Lesepfade. Dazu, gleich gefunden: Das Menü zeigt trainer
 „Arbeitszeiten" (`navigation.tsx`), die Route leitet ohne Aufruf auf `/` um.
+
+### BEF-035 — Das Anlegen-Menü verdeckt die Spalte unter der Auswahl
+
+|         |                                                                                   |
+| ------- | --------------------------------------------------------------------------------- |
+| Datum   | 2026-09-26                                                                        |
+| Bereich | Kalender (`/kalender`), Anlegen aus dem Raster (CAL-019)                           |
+| Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist          |
+| Status  | offen                                                                             |
+| Berührt | `src/features/appointments/CalendarGrid.tsx` (Anlegen-Menü an der Auswahl); ANN-058 |
+
+**Beobachtung.** Nach einem Tipp auf ein leeres Feld (im Bild 08:50) öffnet das
+Menü *Neuer Termin · Dauertermin · Fehlzeit · Dauerfehlzeit · Abbrechen*
+direkt **unter** der Auswahl und deckt die folgenden Zeitfelder derselben
+Spalte zu — im Bild von 08:55 bis nach 10:30.
+
+**Erwartet.** Die Spalte unter der Auswahl bleibt frei. Ein zweiter Tipp auf ein
+späteres Feld derselben Spalte (etwa 40 Minuten weiter) wählt **die ganze
+Spanne** dazwischen für den nächsten Eintrag — Aufziehen durch zwei Tipps statt
+durch Ziehen. Erst danach wird die Art gewählt.
+
+**Ursache im Code.** Das Menü sitzt absichtlich im Gitter, 4 px unter der
+Auswahl (`kastenOben`), damit die gewählte Zeit sichtbar bleibt (ANN-058). Dass
+es dabei die Fläche belegt, auf der die Spanne weitergehen würde, war nicht
+bedacht. Eine Spanne entsteht heute nur durch Ziehen.
+
+**Hinweis.** Der Eintrag *Dauertermin* verweist auf „Suche oben" — das hängt an
+BEF-039 und muss mit ihm zusammen geändert werden.
+
+### BEF-036 — Ein zweiter Tipp auf dieselbe Einzelauswahl hebt sie nicht auf
+
+|         |                                                                          |
+| ------- | ------------------------------------------------------------------------ |
+| Datum   | 2026-09-26                                                               |
+| Bereich | Kalender (`/kalender`), Anlegen aus dem Raster (CAL-019)                  |
+| Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist |
+| Status  | offen                                                                    |
+| Berührt | `src/features/appointments/CalendarGrid.tsx`, `CalendarPage.tsx`         |
+
+**Beobachtung.** Eine Auswahl aus einem einzelnen Feld lässt sich nur über
+*Abbrechen* im Menü aufheben.
+
+**Erwartet.** Ist genau ein Feld ausgewählt, hebt ein zweiter Tipp auf **dasselbe**
+Feld die Auswahl auf — gleichbedeutend mit *Abbrechen*. Zusammen mit BEF-035
+gilt: zweiter Tipp auf dasselbe Feld = aufheben, auf ein anderes Feld derselben
+Spalte = Spanne bis dorthin.
+
+### BEF-037 — Die Uhrzeit sitzt nicht im Rahmen der Auswahl
+
+|         |                                                                          |
+| ------- | ------------------------------------------------------------------------ |
+| Datum   | 2026-09-26                                                               |
+| Bereich | Kalender (`/kalender`), Auswahl im Raster                                |
+| Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist |
+| Status  | offen                                                                    |
+| Berührt | `src/features/appointments/CalendarGrid.tsx` (`auswahl-flaeche`)         |
+
+**Beobachtung.** Bei einem ausgewählten 5-Minuten-Feld steht „08:50" nicht
+innerhalb des grünen Rahmens, sondern läuft über die untere Rahmenlinie.
+
+**Ursache im Code.** Die Auswahlfläche ist bei einem Feld mindestens 16 px hoch,
+trägt aber 2 px Rahmen, 4 px Innenabstand oben und unten und eine Textzeile von
+16 px — der Inhalt braucht rund 28 px. Dieselbe Rechnung gilt für die gestrichelte
+Vorschau beim Verschieben.
+
+### BEF-038 — Im Kalender lässt sich nicht mit zwei Fingern zoomen
+
+|         |                                                                          |
+| ------- | ------------------------------------------------------------------------ |
+| Datum   | 2026-09-26                                                               |
+| Bereich | Kalender (`/kalender`), Raster                                           |
+| Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist |
+| Status  | offen                                                                    |
+| Berührt | `src/features/appointments/CalendarGrid.tsx` (`touchAction`); Raster `−`/`+` |
+
+**Beobachtung.** Am Smartphone ist Zoomen mit zwei Fingern im Kalender nicht möglich.
+
+**Ursache im Code.** Das Gitter setzt `touch-action: pan-x pan-y`, damit eine
+begonnene Geste auf einer Kachel nicht vom Browser übernommen wird. Diese
+Angabe lässt nur Wischen zu und schließt das Zoomen mit zwei Fingern ausdrücklich aus.
+
+**Offen für den Loop.** Gemeint ist vermutlich das Raster selbst — zwei Finger
+auseinander wie `+`, zusammen wie `−` (Stundenhöhe, 5- bis 30-Minuten-Raster) —
+nicht das Vergrößern der ganzen Seite. Im SPEC mit Jannes klären; das Verschieben
+von Kacheln per Ziehen darf dabei nicht brechen.
+
+### BEF-039 — Über dem Kalender steht zu viel; oben reichen Monat, Name, Woche und „Jetzt"
+
+|         |                                                                                          |
+| ------- | ---------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-26                                                                               |
+| Bereich | Kalender (`/kalender`), Kopfbereich; App-Kopfzeile mit Suche                              |
+| Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist; Vergleich iPrax (`docs/product/ideen/referenz-iprax.md`) |
+| Status  | offen — gehört zu UX-EPIC-002 (Bedienprinzipien) und UX-EPIC-003 (Handy zuerst)            |
+| Berührt | `src/features/appointments/CalendarPage.tsx`, App-Kopfzeile und Suche; BEF-001, BEF-032 |
+
+**Beobachtung.** Bei 375 px füllen Suchfeld, Unterreiter *Kalender · Touren*,
+Seitentitel mit Zeitraum, drei Anlegen-Knöpfe (*Termin anlegen, Ereignis
+eintragen, Dauerfehlzeit eintragen*), *Tag/Woche*, *← Heute →*, Raster
+*− 5-Minuten-Raster +*, *Behandelnde Person*, *Standort* und darunter *Status*
+den ganzen ersten Bildschirm; das Raster beginnt erst nach dem Scrollen.
+
+**Erwartet.**
+- Die Suche wird zur **Lupe links neben „Konto"**, die bei Tipp ein Feld öffnet.
+- Über dem Raster steht nur noch: links ein **Monatskalender zum Aufklappen**,
+  rechts ein Knopf, der **zum aktuellen Zeitpunkt springt**, dazwischen der
+  **Name der behandelnden Person** und die **Kalenderwoche**.
+- Alles, was heute darüber steht, ist **direkt am Raster** erreichbar —
+  Anlegen über das Raster (BEF-035), die übrigen Einstellungen dort, wo sie
+  gebraucht werden.
+
+**Hinweis.** Das ist der Kern von UX-EPIC-002/003 und keine Einzelkorrektur; der
+Loop entscheidet, wohin Person, Standort, Status, Tag/Woche und Raster wandern.
+BEF-001 (Kopfzeile, Untermenü, Seitentitel fressen Höhe) zeigt dieselbe Ursache
+an der Dokumentation.
+
+### BEF-040 — Das Startsymbol unter Android steht in einem weißen Kreis
+
+|         |                                                                          |
+| ------- | ------------------------------------------------------------------------ |
+| Datum   | 2026-09-26                                                               |
+| Bereich | Startbildschirm-Symbol (Android, „Zum Startbildschirm hinzufügen")        |
+| Quelle  | Freie Sichtung durch Jannes am Android-Handy (Test-Umgebung)             |
+| Status  | offen                                                                    |
+| Berührt | `index.html`, `marke/` (einzige Quelle), `public/marke/`, `src/marke.test.ts` |
+
+**Beobachtung.** Das Symbol ist rechteckig; Android legt deshalb einen weißen
+Kreis darum.
+
+**Erwartet.** Nur die Schrift auf grünem Grund, vollflächig, ohne weißen Rand.
+
+**Ursache im Code.** Es gibt kein Web-Manifest; Android nimmt das
+`apple-touch-icon` (`own-motion-app-1024.png`) und setzt es, weil es nicht als
+`maskable` gekennzeichnet ist, verkleinert auf einen weißen Kreis.
+
+**Weg.** Ein Manifest (ohne Service Worker, ADR-015 Punkt 16) mit einem Symbol
+`purpose: "maskable"`: grüner Grund bis an den Rand, die Schrift im inneren
+Schutzbereich. Die Datei muss nach `marke/README.md` **in `marke/` entstehen** —
+keine zweite Fassung neben der Marke, kein Umfärben; die Kopie in
+`public/marke/` hält `src/marke.test.ts` fest.
