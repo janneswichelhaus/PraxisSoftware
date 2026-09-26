@@ -1508,3 +1508,39 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `besucheDesTages`, `wegeDesTages` und `liegeHeute` in `src/features/today/tagesstart.ts`; Tests `src/features/today/tagesstart.test.ts`.
 
 **Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/today/MyDayPage.tsx` · Aufwand `klein`.
+
+### ANN-118 — Übertragung der MT-Bausteine: drei Lücken offen, SIG vollständig, Hinweise getrennt, kein Grenzwert
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes, wenn er die drei Lücken nachliefert (Plan D2)
+
+**Annahme.** Die neun Regionen stehen wörtlich aus der Vorlage in `definitionen/bausteine/`. Schulter „Untersuchung ACG", LWS „Behandlung" und HWS „Therapie Hochzervikal" tragen `status: "unvollstaendig"` — auch die beiden, vor deren Abbruch Items stehen; LWS „Untersuchung SIG" ist mit sechs Items vollständig. Text hinter „ – " und reine Durchführungsklammern sind Hinweise, die nie in den Dokumentationstext gehen; eine dritte Gliederungsebene wird flach, die Zwischenüberschrift steht als Hinweis. Die Klammer beim Navicular Drop („mehr als 1 cm Differenz im Svgl. → Training Gewölbe") ist **nicht** übernommen. Seitengetrennt sind Extremitäten und Kiefer, an der Wirbelsäule nur Neurologie, Neurodynamik und SIG; die Seite bleibt beim Abhaken freiwillig. Seitengetrennte Tests mit Messwert (Knee to Wall, Navicular Drop) werden je Seite erfasst — das hat Jannes am 2026-09-26 entschieden.
+
+**Begründung.** Plan D2 (am Original-PDF nachgesehen) und Arbeitsauftrag §2: Lücken sichtbar lassen, nicht aus eigenem Wissen füllen. Das Schema aus FRB-EPIC-000 kannte nur leere unvollständige Blöcke; die Vorlage bricht aber zweimal nach verwertbaren Punkten ab. Die Navicular-Klammer ist ein Schwellenwert neben dem eigenen Messwert samt Therapiefolge — `cutoff-anzeige` in `src/app/mdr.ts` und ADR-006 Punkte 4, 10 und 11 gehen dem Wortlautgebot des Arbeitsauftrags im Rang vor (Zweitreview). Unsicher: ob Deutungsklammern im Label wie „(zentrale Problematik?)" beim Babinski die externe Prüfung (B1) bestehen; sie bleiben als Wortlaut stehen.
+
+**Anker.** `blockSchema` in `src/features/assessments/schema.ts`; Regeln in `src/features/assessments/definitionen/bausteine/README.md`; Test `src/features/assessments/bausteine.test.ts`.
+
+**Änderungspfad.** Lücken nachliefern: Items in die Regionsdatei, Version heben, Zähltest anpassen · Aufwand `klein`. Andere Seitenregel oder Hinweis entfernen: das Feld in den Regionsdateien · Aufwand `klein`.
+
+### ANN-119 — Tippfehler der Bausteinvorlage bleiben stehen
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes (Plan D3)
+
+**Annahme.** „Relocation Tet", „Supinatin", „Lachmann", „Painfull Arc Sign" und die übrigen Schreibweisen der Vorlage stehen unverändert in den Bezeichnungen und damit im erzeugten Dokumentationstext; die Kennungen sind davon unabhängig.
+
+**Begründung.** Plan D3 schlägt Stehenlassen vor, der Arbeitsauftrag §2 verlangt es bis zu Jannes' Freigabe, und der Wortlauttest hält jede Bezeichnung gegen die Quelldatei. Ohne Antwort gilt der Vorschlag (STATUS, Blocker D2/D3). Nachteil: Die Tippfehler erscheinen im Dokumentationstext der Akte.
+
+**Anker.** `src/features/assessments/definitionen/bausteine/README.md`; Test „lässt die Tippfehler der Vorlage stehen" in `src/features/assessments/bausteine.test.ts`.
+
+**Änderungspfad.** Korrigieren: Labels in den Regionsdateien, Version heben, Quelldatei mit Vermerk anpassen, damit der Wortlauttest die neue Schreibweise hält · Aufwand `klein`. Kennungen bleiben.
+
+### ANN-120 — Bausteine erzeugen nur Text: kein gespeichertes Einzelergebnis, der Befund ist die Dokumentation des Termins
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Phase P6 des FRB-Plans (Ergebnisse speichern, Verlauf je Test); Jannes in der Sichtung
+
+**Annahme.** Das Bausteinfeld steht in „Behandlung abschließen" und „Dokumentation bearbeiten" (nicht im Nachtrag, nicht ohne Behandlung). Die Häkchen leben nur auf der Seite; gespeichert wird allein der übernommene Text als Entwurf nach ADR-016. Der Erstbefund ist damit die Dokumentation des Termins der Erstaufnahme, kein eigener Eintragstyp. Ein nicht übernommener Vorschlag gilt als ungespeicherte Arbeit: Er hält „Als Entwurf speichern" und den Abschluss an, bis er im Text steht oder verworfen ist; nur wer die Seite verlässt und in der Rückfrage „Speichern" wählt, bekommt ihn an den Entwurf angehängt. Während eines Schreibvorgangs ist das Feld gesperrt. Keine Kopierschaltfläche.
+
+**Begründung.** Plan Abschnitt 4 und Phase P3: der erzeugte Text ist ein Vorschlag, erst die Übernahme macht ihn zum Eintrag, und nichts Finalisiertes wird überschrieben; ADR-016 Punkt 4 verlangt, dass festgeschrieben wird, was gelesen wurde, und nach Punkt 7 würde ein ungesehen angehängter Entwurf automatisch zu Version 1; §13 verbietet den stillen Verlust — beim Verlassen der Seite wiegt der Verlust schwerer, und der angehängte Text steht danach sichtbar im Entwurf am Termin (Zweitreview). Strukturierte Ergebnisse brauchen Datenklasse, Frist und RLS und sind P6 — heute vorzubauen wäre Vorratsbau (ADR-014). Die Kopierschaltfläche des Plans entfällt, weil der Text direkt ins Feld geht und eine Zwischenablage mit Gesundheitsdaten auf manchen Geräten synchronisiert wird. Unsicher: ob Jannes den Befund als eigenen Eintrag neben der Verlaufsdoku sehen will.
+
+**Anker.** `useBausteinAuswahl` in `src/features/assessments/bausteinauswahl.ts` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; Einbindung in `src/features/documentation/TreatmentNotePage.tsx` und `CompleteTreatmentPage.tsx`; Tests dort und in `src/features/assessments/BausteinFeld.test.tsx`.
+
+**Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`.

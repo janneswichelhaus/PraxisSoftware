@@ -1,0 +1,208 @@
+{
+  "id": "hand",
+  "label": "Hand",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "basis",
+      "label": "Basisuntersuchung Hand",
+      "art": "basis",
+      "items": [
+        {
+          "id": "hand_inspektion_palpation",
+          "label": "Inspektion/Palpation",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_beweglichkeit",
+          "label": "Beweglichkeit in Ext/Flex/rad.+uln.Abd./Pro-/Supination",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_widerstand_und_dehnung_in_vier_richtungen",
+          "label": "Widerstand und Dehnung in vier Richtungen",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "weiterfuehrend",
+      "label": "Weiterführende Untersuchung",
+      "art": "weiterfuehrend",
+      "items": [
+        {
+          "id": "hand_sensibilitaetstestung",
+          "label": "Sensibilitätstestung",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_widerstand_fingerflexion_und_extension",
+          "label": "Widerstand Fingerflexion und Extension",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_karpaltunnelsyndrom",
+          "label": "Karpaltunnelsyndrom",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "hand_karpaltunnelsyndrom_phalen_test",
+              "label": "Phalen-Test und umgekehrter Phalen Test",
+              "hint": "30-60 Sekunden"
+            },
+            {
+              "id": "hand_karpaltunnelsyndrom_finkelstein_test",
+              "label": "Finkelstein Test"
+            }
+          ]
+        },
+        {
+          "id": "hand_provokation_ulnarer_handschmerz",
+          "label": "Provokation ulnarer Handschmerz",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "hand_provokation_ulnarer_handschmerz_druck_zwischen_caput_ulnae_und_triquetrum",
+              "label": "Druck zwischen Caput ulnae und Triquetrum"
+            },
+            {
+              "id": "hand_provokation_ulnarer_handschmerz_ulnare_abduktion",
+              "label": "Ulnare Abduktion in DE, Neutralstellung und PF"
+            },
+            {
+              "id": "hand_provokation_ulnarer_handschmerz_maximale_supination_und_pronation_unter_kompression",
+              "label": "Maximale Supination und Pronation unter Kompression"
+            }
+          ]
+        },
+        {
+          "id": "hand_mobilitaet_tfc_komplex",
+          "label": "Mobilität TFC-Komplex",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "hint": "Gleiten im DRUG in max. Pro- bzw. Supination"
+        },
+        {
+          "id": "hand_zentrierungstest_dorsalextension_und_palmarflexion",
+          "label": "Zentrierungstest Dorsalextension und Palmarflexion",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_lokale_mobilitaet_aller_handwurzelknochen_zum_jeweiligen",
+          "label": "Lokale Mobilität aller Handwurzelknochen zum jeweiligen Nachbarn",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_lunotriquetral_shear_test",
+          "label": "Lunotriquetral Shear Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_scaphoid_shift_test",
+          "label": "Scaphoid Shift Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_lichtman_test",
+          "label": "Lichtman-Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_piano_key_test",
+          "label": "Piano Key Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "daumensattelgelenk",
+      "label": "Untersuchung Daumensattelgelenk",
+      "art": "spezial",
+      "items": [
+        {
+          "id": "hand_reposition_oposition",
+          "label": "Reposition/Oposition",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "hand_gleiten_ulnar_radial_palmar_dorsal",
+          "label": "Gleiten ulnar/radial/palmar/dorsal",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "behandlung",
+      "label": "Behandlung",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "hand_myofaszial",
+          "label": "Myofaszial",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "hand_mmb",
+          "label": "MMB",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "hand_arthrogen",
+          "label": "Arthrogen",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "hand_mobilisation_mit_kompression",
+          "label": "Mobilisation mit Kompression",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "hand_neurophysiologisch",
+          "label": "Neurophysiologisch",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        }
+      ]
+    }
+  ]
+}

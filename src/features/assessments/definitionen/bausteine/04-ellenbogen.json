@@ -1,0 +1,233 @@
+{
+  "id": "ellenbogen",
+  "label": "Ellenbogen",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "basis",
+      "label": "Basisuntersuchung Ellenbogen",
+      "art": "basis",
+      "items": [
+        {
+          "id": "ellenbogen_flexion_extension_supination_pronation",
+          "label": "Flexion/Extension/Supinatin/Pronation",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "ellenbogen_passiver_valgus_varus_test",
+          "label": "Passiver Valgus/Varus-Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "ellenbogen_widerstand",
+          "label": "Widerstand Flexion/Extension/Supination/Pronation/Hand/Finger/Flex/Ext",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "weiterfuehrend",
+      "label": "Weiterführende Untersuchung",
+      "art": "weiterfuehrend",
+      "items": [
+        {
+          "id": "ellenbogen_let",
+          "label": "LET",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "ellenbogen_let_cozen_test",
+              "label": "Cozen-Test"
+            },
+            {
+              "id": "ellenbogen_let_maudsley_test",
+              "label": "Maudsley-Test"
+            },
+            {
+              "id": "ellenbogen_let_mills_test",
+              "label": "Mill´s Test"
+            },
+            {
+              "id": "ellenbogen_let_handextension_in_ellenbogenextension_und_flexion",
+              "label": "Handextension in Ellenbogenextension und -flexion"
+            },
+            {
+              "id": "ellenbogen_let_greifkraft_in_ellenbogenextension_und_flexion",
+              "label": "Greifkraft in Ellenbogenextension und -flexion"
+            }
+          ]
+        },
+        {
+          "id": "ellenbogen_les",
+          "label": "LES",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "ellenbogen_les_widerstand_handextension_zug",
+              "label": "Widerstand Handextension mit Zug (Gelenkbeteiligung)"
+            },
+            {
+              "id": "ellenbogen_les_ultt_2",
+              "label": "ULTT 2 (radialis)"
+            },
+            {
+              "id": "ellenbogen_les_ellenbogenflexion_mit_pronation",
+              "label": "Ellenbogenflexion mit Pronation"
+            },
+            {
+              "id": "ellenbogen_les_ellenbogenextension_mit_supination",
+              "label": "Ellenbogenextension mit Supination"
+            },
+            {
+              "id": "ellenbogen_les_chair_sign",
+              "label": "Chair-Sign (Posterolaterale Instabilität)"
+            },
+            {
+              "id": "ellenbogen_les_table_top_relocation_test",
+              "label": "Table-op relocation Test (posterolaterale Instabilität"
+            },
+            {
+              "id": "ellenbogen_les_pivot_shift_test",
+              "label": "Pivot Shift Test (posterolaterale Instabilität)"
+            },
+            {
+              "id": "ellenbogen_les_translation_hrg_und_prug",
+              "label": "Translation HRG und PRUG"
+            }
+          ]
+        },
+        {
+          "id": "ellenbogen_mes",
+          "label": "MES",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "subitems": [
+            {
+              "id": "ellenbogen_mes_passiver_provokationstest",
+              "label": "Passiver Provokationstest"
+            },
+            {
+              "id": "ellenbogen_mes_widerstand_handgelenksflexion",
+              "label": "Widerstand Handgelenksflexion in Pronation und Supination"
+            },
+            {
+              "id": "ellenbogen_mes_gravity_assisted_varus_stress_test",
+              "label": "Gravity-assisted varus stress test (med. Instabilität)"
+            },
+            {
+              "id": "ellenbogen_mes_moving_valgus_stress_test",
+              "label": "Moving Valgus Stress Test (med. Instabilität"
+            },
+            {
+              "id": "ellenbogen_mes_milking_maneuver",
+              "label": "Milking Maneuver (med. Instabilität)"
+            },
+            {
+              "id": "ellenbogen_mes_ultt_3",
+              "label": "ULTT 3"
+            },
+            {
+              "id": "ellenbogen_mes_tinels_sign",
+              "label": "Tinel´s Sign"
+            },
+            {
+              "id": "ellenbogen_mes_froment_zeichen",
+              "label": "Froment-Zeichen"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "therapie",
+      "label": "Therapie",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "ellenbogen_myofaszial",
+          "label": "Myofaszial",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "ellenbogen_mmb",
+          "label": "MMB",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt",
+          "subitems": [
+            {
+              "id": "ellenbogen_mmb_humeroulnargelenk",
+              "label": "Humeroulnargelenk"
+            },
+            {
+              "id": "ellenbogen_mmb_distales_radioulnargelenk",
+              "label": "Distales Radioulnargelenk"
+            }
+          ]
+        },
+        {
+          "id": "ellenbogen_arthrogen",
+          "label": "Arthrogen",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt",
+          "subitems": [
+            {
+              "id": "ellenbogen_arthrogen_traktion",
+              "label": "Traktion (verschieden ASTEN)"
+            },
+            {
+              "id": "ellenbogen_arthrogen_gleiten_humerus",
+              "label": "Gleiten Humerus(60° Schubwinkel beachten)"
+            },
+            {
+              "id": "ellenbogen_arthrogen_gleiten_radius",
+              "label": "Gleiten Radius (30° aus der Vertikalen)"
+            },
+            {
+              "id": "ellenbogen_arthrogen_drug_gleiten",
+              "label": "DRUG Gleiten für Pro-/Supination"
+            }
+          ]
+        },
+        {
+          "id": "ellenbogen_mobilisation_mit_kompression",
+          "label": "Mobilisation mit Kompression",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "ellenbogen_neurophysiologisch",
+          "label": "Neurophysiologisch",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt",
+          "subitems": [
+            {
+              "id": "ellenbogen_neurophysiologisch_impulsmobilisation_este",
+              "label": "Impulsmobilisation ESTE"
+            },
+            {
+              "id": "ellenbogen_neurophysiologisch_mills_manipulation",
+              "label": "Mill´s Manipulation"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

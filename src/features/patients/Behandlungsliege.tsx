@@ -8,7 +8,7 @@ import { setTreatmentTableRequired, type Patient } from './api';
  *
  * Ein Merkmal der Person, keine Angabe je Termin (PROJECT_PRINCIPLES.md §9,
  * ANN-116): Die Übersicht leitet daraus morgens ab, ob die Liege heute aufs
- * Rad muss. Ab FRB-EPIC-003 setzt es zusätzlich der Befund.
+ * Rad muss. Seit FRB-EPIC-003 steht es zusätzlich im Befund der Akte.
  *
  * Ohne Rückfrage, weil der Wechsel sofort sichtbar und mit demselben Tap
  * rücknehmbar ist; protokolliert wird er trotzdem (ADR-010). Die Anzeige des

@@ -7,7 +7,12 @@ import { Section } from '@/components/ui/Section';
 import { formatDate } from '@/lib/datum';
 import { usePatientRecord } from '@/features/patients/akte';
 import type { Patient } from '@/features/patients/api';
-import { canWriteQuestionnaire, type CurrentUser } from '@/features/session/types';
+import { Behandlungsliege } from '@/features/patients/Behandlungsliege';
+import {
+  canReadPatientDirectory,
+  canWriteQuestionnaire,
+  type CurrentUser,
+} from '@/features/session/types';
 import { erhebungenQueryKey, fetchErhebungen, type Erhebung } from './api';
 import { erhebenPfad } from './darstellung';
 import { ErhebungAnsicht } from './ErhebungAnsicht';
@@ -27,22 +32,42 @@ import { VerlaufAbschnitt } from './VerlaufAbschnitt';
  * Lesen dürfen die vier Praxisrollen, jeder gelieferte Bogen wird auf dem
  * Server protokolliert (ADR-010). Erheben nur die behandelnden Rollen; die
  * Schaltflächen sind Darstellung, verbindlich prüft der Server (ADR-004).
+ *
+ * Oben steht die Behandlungsliege (FRB-003c): gesetzt wird sie beim
+ * Erstbefund, gebraucht beim Tagesstart (§9). Es ist dasselbe Merkmal wie in
+ * den Stammdaten mit demselben Schreibpfad — kein zweiter Wert (ANN-116).
+ * Sie steht auch dann, wenn die Fragebögen nicht laden.
  */
 export function PatientBefundPage() {
   const { patient, user } = usePatientRecord();
   return <Befund patient={patient} user={user} />;
 }
 
-export function Befund({
-  patient,
-  user,
-  scores,
-}: {
+interface BefundProps {
   patient: Patient;
   user: CurrentUser;
   /** Nur für Tests; die Anwendung nutzt die Bibliothek des Releases. */
   scores?: ScoreDefinition[];
-}) {
+}
+
+export function Befund(props: BefundProps) {
+  return (
+    <>
+      {canReadPatientDirectory(props.user.roles) ? (
+        <Section
+          titel="Behandlungsliege"
+          hinweis="Wird die Liege beim Hausbesuch gebraucht? Die Übersicht zeigt es morgens beim Tagesstart."
+          rahmen
+        >
+          <Behandlungsliege patient={props.patient} darfAendern />
+        </Section>
+      ) : null}
+      <Frageboegen {...props} />
+    </>
+  );
+}
+
+function Frageboegen({ patient, user, scores }: BefundProps) {
   const erhebungen = useQuery({
     queryKey: erhebungenQueryKey(patient.id),
     queryFn: () => fetchErhebungen(patient.id),

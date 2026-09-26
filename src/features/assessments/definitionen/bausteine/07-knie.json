@@ -1,0 +1,233 @@
+{
+  "id": "knie",
+  "label": "Knie",
+  "version": "1.0.0",
+  "blocks": [
+    {
+      "id": "basis",
+      "label": "Basisuntersuchung Knie",
+      "art": "basis",
+      "items": [
+        {
+          "id": "knie_kniebeuge",
+          "label": "Kniebeuge",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_ergussbildung",
+          "label": "Ergussbildung (tanzende Patella, Streichtest)",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_kniebeweglichkeit",
+          "label": "Kniebeweglichkeit Flexion/Extension",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund",
+          "hint": "gehaltene Extension für eine Minute"
+        },
+        {
+          "id": "knie_rotation",
+          "label": "Rotation in 90°/30°",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_valgus_varus",
+          "label": "Valgus/Varus in Ext und 20° Flex",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_anterior_drawer_test",
+          "label": "Anterior Drawer Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_widerstand_in_ext_flex",
+          "label": "Widerstand in Ext/Flex",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "weiterfuehrend",
+      "label": "Weiterführende Untersuchung",
+      "art": "weiterfuehrend",
+      "items": [
+        {
+          "id": "knie_lachmann_test",
+          "label": "Lachmann-Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_lever_sign",
+          "label": "Lever-Sign",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_pivot_shift_test",
+          "label": "Pivot Shift Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_gravity_sag_sign",
+          "label": "Gravity (Sag) Sign",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_joint_line_tenderness",
+          "label": "Joint Line Tenderness",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_modifiziertes_steinmann_ii_zeichen",
+          "label": "Modifiziertes Steinmann II Zeichen",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_modifizierter_mcmurray",
+          "label": "Modifizierter McMurray",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_thessaly_test",
+          "label": "Thessaly Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_apprehension_test",
+          "label": "Apprehension Test, Moving Apprehension Test",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_widerstand_in_ext_in_vier_positionen",
+          "label": "Widerstand in Ext in vier Positionen",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_patella_mobilitaet",
+          "label": "Patella Mobilität nach oben/unten/innen/außen/Ir/Ar/Tilt med/lat",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_eccentric_step",
+          "label": "Eccentric Step",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        },
+        {
+          "id": "knie_fibula_schub",
+          "label": "Fibula Schub proximal nach anterior/posterior",
+          "type": "test",
+          "bilateral": true,
+          "result_type": "befund"
+        }
+      ]
+    },
+    {
+      "id": "therapie",
+      "label": "Therapie",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "knie_myofaszial",
+          "label": "Myofaszial",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "knie_mmb",
+          "label": "MMB",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "knie_arthrogen",
+          "label": "Arthrogen",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt",
+          "subitems": [
+            {
+              "id": "knie_arthrogen_tibiofemorale_mobilisation_extension_flexion",
+              "label": "Tibiofemorale Mobilisation Extension/Flexion"
+            },
+            {
+              "id": "knie_arthrogen_mensikofemorale_mobilisation_extension_flexion",
+              "label": "Mensikofemorale Mobilisation Extension/Flexion"
+            },
+            {
+              "id": "knie_arthrogen_meniskotibiale_mobilisation_extension_flexion",
+              "label": "Meniskotibiale Mobilisation Extension/Flexion"
+            },
+            {
+              "id": "knie_arthrogen_mobilisation_mit_kompression",
+              "label": "Mobilisation mit Kompression"
+            },
+            {
+              "id": "knie_arthrogen_manipulation_tibiofemoral",
+              "label": "Manipulation Tibiofemoral"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "therapie_patella",
+      "label": "Therapie Patella",
+      "art": "therapie",
+      "items": [
+        {
+          "id": "knie_patella_mmb",
+          "label": "MMB",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        },
+        {
+          "id": "knie_patella_arthrogen",
+          "label": "Arthrogen (Gleiten und Kompression)",
+          "type": "technik",
+          "bilateral": true,
+          "result_type": "durchgefuehrt"
+        }
+      ]
+    }
+  ]
+}
