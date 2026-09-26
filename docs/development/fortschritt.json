@@ -328,7 +328,9 @@
           "id": "frb-epic-002",
           "name": "FRB-EPIC-002 Anamnese und Verlauf",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-26",
+          "nachweis": "`44b6dcb`, `2d23d91`, `95532e9`, `bf800be`, `68f9b50`"
         },
         {
           "id": "frb-epic-003",

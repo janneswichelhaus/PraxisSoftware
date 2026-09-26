@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-25 · letzte Session: OPS-002a
+# Status · Stand 2026-09-26 · letzte Session: FRB-EPIC-002
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,13 +6,13 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**OPS-002a in Betrieb** (Block 1a, erster Loop): Die Test-Umgebung läuft — `https://prtest.uber.space`, zweite Tür (`praxis`), Anmeldung mit den Testkonten und `TESTENV_LOGIN_PASSWORD`; Jannes ist am 2026-09-25 am Handy drin. Nach jeder grünen CI auf `main` liefert `.github/workflows/test-umgebung.yml` aus; Seed und Praxiswoche nur auf Knopfdruck. Erster Betrieb brauchte drei Korrekturen (#114 Kennwortdatei im Webordner, #115 eine SSH-Verbindung, #116 Projekt-URL ohne Pfad). Fortschritt **35,3 %**.
+**FRB-EPIC-002 gebaut** (Block 2): Anamnesebogen V8 in der Akte unter **Befund** — erheben, als Entwurf sichern, abschließen, korrigieren als neue Erhebung; Hervorhebung nach acht offengelegten Regeln ohne Bewertung; Körperschema; Verlauf als Punkte mit Ereignissen. Pull Request offen, wartet auf deinen Merge. Test-Umgebung `https://prtest.uber.space` wie bisher. Fortschritt **36,0 %**.
 
 ## Danach — Bauen
 
 1. **G6c**, sobald deine Wahl unter „Blocker" da ist
 2. **UX-EPIC-002**, sobald deine Begriffsliste da ist — am besten am Handy auf der Test-Umgebung gesammelt
-3. Solange beides fehlt: **Block 2 weiter mit FRB-EPIC-002** (Anamnese und Verlauf in der Akte) — Bauen wartet nicht (§15.2)
+3. Solange beides fehlt: **FRB-EPIC-003** (Befund aus Bausteinen); D2/D3 gelten ohne Antwort wie im FRB-Plan vorgeschlagen
 
 ## Prüfverfahren
 
@@ -21,7 +21,8 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 ## Blocker (Jannes-seitig)
 
 - **Sichtung** (E-6), ab jetzt am Handy auf der Test-Umgebung: Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; Bedienung in [`DEVELOPMENT.md`](DEVELOPMENT.md), „Test-Umgebung".
-- **Bögen für NRS, PSFS und Veränderungsfrage** (neu, ANN-099): die Vorlagen, die die Praxis nutzt, als PDF nach `quellen/scores/pdf/` — dann wird der Wortlaut dagegen gehalten und die drei auf Version 1.0.0 aktiviert. Nicht dringend: Erhoben wird erst mit FRB-EPIC-002.
+- **Anamnese sichten** (neu, FRB-EPIC-002): Schritte 3 bis 5 in [Befund](sichtung/befund.md); dabei **ANN-104** bestätigen oder ändern — welche acht Fragen hervorgehoben werden, ist eine fachliche Entscheidung.
+- **Bögen für NRS, PSFS und Veränderungsfrage** (ANN-099): die Vorlagen als PDF nach `quellen/scores/pdf/` — dann werden die drei auf 1.0.0 aktiviert und erscheinen im Befund und im Verlauf.
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
 - **Logfrist für Betriebslogs (R14 alt, jetzt R9):** (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg. Empfehlung: nach G3. Gebraucht vor echten Daten.
@@ -35,4 +36,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**OPS-002a — Test-Umgebung.** Workflow `test-umgebung.yml` (nach grüner CI auf `main` und von Hand): Secrets prüfen (kein `service_role` im Bundle), `supabase db push`, Seed plus Praxiswoche nur auf Knopfdruck oder gegen ein leeres Projekt, in **einer** Transaktion mit dem Kennwort aus dem Secret, sonst gesperrt (ANN-100); `.htaccess` mit Kopfzeilen, CSP, `noindex` und optionaler zweiter Tür, Upload per `rsync` über IPv4, danach Prüfung der ausgelieferten Seite (ANN-101). Lokal geprüft: `db push` gegen die Wegwerf-Datenbank, CSP an der gebauten Anwendung; **nicht gelaufen:** der Weg zu Uberspace und Supabase (aus der Cloud gesperrt). **Lokale Schritte:** `git pull origin claude/nifty-edison-h316eu` (nach dem Merge `main`). Keine Migration, keine neue Abhängigkeit.
+**FRB-EPIC-002 — Anamnese und Verlauf.** Fünf Stories: Definition des Bogens (ANN-102), Erhebungen mit unveränderlichem Abschluss und Korrekturkette (ANN-103, ANN-105), Hervorhebung nach §7.1 (ANN-104), Körperschema, Verlaufsereignisse (ANN-106). Zwei Migrationen, zwei neue Tabellen der Klasse Patientenakte, beide in der Auskunft nach Art. 15. Nicht gelaufen: angemeldete E2E (kein GoTrue in der Cloud). **Lokale Schritte:** `git pull origin claude/weiter-55ci36` (nach dem Merge `main`), dann `pnpm dlx supabase@2.116.0 db reset` (neue Migrationen). Keine neue Abhängigkeit.
