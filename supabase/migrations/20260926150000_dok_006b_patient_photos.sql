@@ -24,6 +24,13 @@
 -- der Aufnahme oder drei Monate nach dem festgehaltenen Abschluss der
 -- Versorgung - zum fruehesten der drei Zeitpunkte (Punkt 38).
 --
+-- AUFNAHME ist das Anlegen der Zeile (created_at, Phase a), nicht die
+-- Bestaetigung: Ein Widerruf zwischen Vorbereitung und Bestaetigung trifft das
+-- Foto. EINMAL FAELLIG BLEIBT FAELLIG: Haelt ein Legal Hold die Loeschung
+-- eines faelligen Fotos an, wird der Zeitpunkt in photo_locked_at
+-- festgehalten - sonst gaebe die Wiederaufnahme der Versorgung ein Foto wieder
+-- frei, das mit dem Abschluss faellig geworden war.
+--
 -- DER WIDERRUF SPERRT SOFORT und loescht in derselben Transaktion wie der
 -- Vermerk: Zeilen weg, Loeschauftraege fuer die Objekte (per Trigger),
 -- Loeschjournal (Punkt 36, ADR-008 Punkt 8). Ein Legal Hold haelt die
@@ -106,6 +113,17 @@ alter table public.patient_files
     document_type <> 'patientenfoto' or treatment_basis_id is null
   );
 
+-- Einmal faellig bleibt faellig (Punkt 36 und 38): festgehalten, wenn ein
+-- Legal Hold die Loeschung eines faelligen Fotos anhaelt. Kein Personenbezug.
+alter table public.patient_files
+  add column photo_locked_at timestamptz,
+  add constraint patient_files_lock_only_for_photos check (
+    photo_locked_at is null or document_type = 'patientenfoto'
+  );
+
+comment on column public.patient_files.photo_locked_at is
+  'Nur Patientenfotos: seit wann das Foto faellig und gesperrt ist, festgehalten, solange ein Legal Hold die Loeschung anhaelt. Haelt die Sperre auch, wenn ein Anker spaeter wegfaellt (Wiederaufnahme der Versorgung).';
+
 -- Punkt 32: Die Art patientenfoto wird nicht korrigiert. Die Funktion
 -- set_patient_file_document_type weist es ab; der Trigger haelt es auch fuer
 -- jeden Weg, den es heute nicht gibt.
@@ -162,6 +180,9 @@ alter table public.retention_classes
   add constraint retention_classes_upper_bound_complete check (
     (upper_bound_anchor is null) = (upper_bound_interval is null)
   );
+
+comment on column public.retention_classes.upper_bound_interval is
+  'Intervall der optionalen Obergrenze ab upper_bound_anchor (ADR-017 Punkt 38). Leer genau dann, wenn es keine Obergrenze gibt.';
 
 comment on column public.retention_classes.upper_bound_anchor is
   'Optionaler zweiter Anker: Faellig ist der Datensatz zum fruehesten von Frist und Obergrenze. care_concluded_recorded ist patients.care_concluded_at - der Zeitpunkt, zu dem die Praxis den Abschluss festhaelt, nicht der ruecknehmbare Tag (ADR-017 Punkt 38).';
@@ -224,7 +245,11 @@ $$;
 -- festgehaltenem Abschluss plus Obergrenze und dem ersten Widerruf nach der
 -- Aufnahme. least() uebergeht leere Werte - ohne Abschluss und ohne Widerruf
 -- bleibt die Frist ab Aufnahme.
-create function app.patient_photo_due_at(p_patient_id uuid, p_taken_at timestamptz)
+create function app.patient_photo_due_at(
+  p_patient_id uuid,
+  p_taken_at   timestamptz,
+  p_locked_at  timestamptz default null
+)
 returns timestamptz
 language sql
 stable
@@ -232,6 +257,7 @@ security definer
 set search_path = ''
 as $$
   select least(
+    p_locked_at,
     p_taken_at + app.retention_interval('patientenfoto'),
     (
       select p.care_concluded_at + app.retention_upper_interval('patientenfoto')
@@ -249,13 +275,19 @@ as $$
   )
 $$;
 
-comment on function app.patient_photo_due_at(uuid, timestamptz) is
-  'Faelligkeit eines Patientenfotos (ADR-017 Punkt 38): frueheste von Aufnahme plus zwoelf Monate, care_concluded_at plus drei Monate, Widerruf nach der Aufnahme. Das Datum, das jedes Foto als Loeschdatum zeigt.';
+comment on function app.patient_photo_due_at(uuid, timestamptz, timestamptz) is
+  'Faelligkeit eines Patientenfotos (ADR-017 Punkt 38): frueheste von Aufnahme plus zwoelf Monate, care_concluded_at plus drei Monate, Widerruf nach der Aufnahme und festgehaltener Sperre. Das Datum, das jedes Foto als Loeschdatum zeigt.';
 
--- DIE Pruefung. Ohne Aufnahmezeitpunkt: darf ein neues Foto entstehen? Mit
--- Aufnahmezeitpunkt: ist das vorhandene Foto noch nutzbar - nicht widerrufen,
--- nicht abgelaufen? Ein faelliges Foto unter Legal Hold bleibt gesperrt.
-create function app.patient_photo_accessible(p_patient_id uuid, p_taken_at timestamptz)
+-- DIE Pruefung. Ohne Aufnahmezeitpunkt: darf jetzt ein neues Foto entstehen -
+-- Einwilligung erteilt und ein Foto von jetzt nicht schon faellig (etwa drei
+-- Monate nach dem Abschluss)? Mit Aufnahmezeitpunkt: ist das vorhandene Foto
+-- noch nutzbar - nicht widerrufen, nicht abgelaufen, nicht gesperrt? Ein
+-- faelliges Foto unter Legal Hold bleibt gesperrt.
+create function app.patient_photo_accessible(
+  p_patient_id uuid,
+  p_taken_at   timestamptz,
+  p_locked_at  timestamptz default null
+)
 returns boolean
 language sql
 stable
@@ -263,21 +295,23 @@ security definer
 set search_path = ''
 as $$
   select case
-    when p_taken_at is null then app.patient_photo_consent_granted(p_patient_id)
-    else coalesce(app.patient_photo_due_at(p_patient_id, p_taken_at) > now(), false)
+    when p_taken_at is null then
+      app.patient_photo_consent_granted(p_patient_id)
+      and coalesce(app.patient_photo_due_at(p_patient_id, now()) > now(), false)
+    else coalesce(app.patient_photo_due_at(p_patient_id, p_taken_at, p_locked_at) > now(), false)
   end
 $$;
 
-comment on function app.patient_photo_accessible(uuid, timestamptz) is
-  'Die eine Einwilligungspruefung fuer Patientenfotos (ADR-017 Punkt 36). Ohne Zeitpunkt: neue Aufnahme erlaubt (juengster Vermerk ist eine Erteilung). Mit Zeitpunkt: vorhandenes Foto nutzbar (weder widerrufen noch faellig). Gefragt von Vorbereitung, Bestaetigung, Liste, Verweis und der Leseregel am Objekt.';
+comment on function app.patient_photo_accessible(uuid, timestamptz, timestamptz) is
+  'Die eine Einwilligungspruefung fuer Patientenfotos (ADR-017 Punkt 36). Ohne Zeitpunkt: neue Aufnahme erlaubt (juengster Vermerk ist eine Erteilung, und ein Foto von jetzt waere nicht schon faellig). Mit Zeitpunkt: vorhandenes Foto nutzbar (weder widerrufen noch faellig noch gesperrt). Gefragt von Vorbereitung, Bestaetigung, Liste, Verweis, Herausgabe und der Leseregel am Objekt.';
 
 -- Kein Recht fuer angemeldete Konten: Die Funktionen pruefen keine
 -- Organisation und verrieten sonst jedem Konto, das eine Kennung kennt, den
 -- Einwilligungsstand einer Patient:in. Gefragt werden sie nur aus
 -- SECURITY-DEFINER-Funktionen, auch von den Regeln am Objekt.
 revoke all on function app.patient_photo_consent_granted(uuid) from public, anon, authenticated;
-revoke all on function app.patient_photo_due_at(uuid, timestamptz) from public, anon, authenticated;
-revoke all on function app.patient_photo_accessible(uuid, timestamptz) from public, anon, authenticated;
+revoke all on function app.patient_photo_due_at(uuid, timestamptz, timestamptz) from public, anon, authenticated;
+revoke all on function app.patient_photo_accessible(uuid, timestamptz, timestamptz) from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- Faellige Fotos loeschen - ein Weg fuer Widerruf, Ende des Legal Hold und
@@ -308,21 +342,44 @@ as $$
 declare
   v_anzahl integer;
 begin
-  -- Ein Befehl mit datenveraendernden Teilausdruecken: Auswahl, Auditeintrag,
-  -- Loeschen und Journal sehen dieselbe Menge. Der Trigger an patient_files
-  -- schreibt je Zeile den Loeschauftrag fuer das Objekt.
+  -- Ein Befehl mit datenveraendernden Teilausdruecken: Auswahl, Sperre,
+  -- Auditeintrag, Loeschen und Journal sehen dieselbe Menge. Der Trigger an
+  -- patient_files schreibt je Zeile den Loeschauftrag fuer das Objekt.
+  --
+  -- Auch Zeilen im Zustand pending: Ein Widerruf trifft ein Foto, dessen
+  -- Upload noch laeuft (Aufnahme = created_at). Ohne SKIP LOCKED: Ein Foto,
+  -- das gerade bestaetigt wird, wird nicht uebergangen, sondern nach der
+  -- Bestaetigung geloescht.
   with kandidaten as (
-    select f.id, f.patient_id, app.patient_photo_due_at(f.patient_id, f.confirmed_at) as due_at
+    select f.id,
+           f.patient_id,
+           f.photo_locked_at,
+           app.patient_photo_due_at(f.patient_id, f.created_at, f.photo_locked_at) as due_at,
+           app.under_legal_hold(p_organization_id, 'patient', f.patient_id) as gehalten
     from public.patient_files f
     where f.organization_id = p_organization_id
       and f.document_type = 'patientenfoto'
-      and f.status = 'ready'
       and (p_patient_id is null or f.patient_id = p_patient_id)
-      and not app.under_legal_hold(p_organization_id, 'patient', f.patient_id)
-    for update of f skip locked
+    for update of f
   ),
   faellig as (
-    select k.id, k.patient_id, k.due_at from kandidaten k where k.due_at <= now()
+    select k.id, k.patient_id, k.photo_locked_at, k.due_at, k.gehalten
+    from kandidaten k
+    where k.due_at <= now()
+  ),
+  -- Einmal faellig bleibt faellig: Der Hold haelt die Loeschung an, nicht die
+  -- Sperre.
+  gesperrt as (
+    update public.patient_files f
+       set photo_locked_at = x.due_at
+      from faellig x
+     where f.id = x.id
+       and x.gehalten
+       and x.photo_locked_at is null
+    returning f.id
+  ),
+  zu_loeschen as (
+    select x.id, x.patient_id, x.due_at from faellig x where not x.gehalten
   ),
   protokoll as (
     insert into public.audit_log (
@@ -335,13 +392,13 @@ begin
              'document_type', 'patientenfoto',
              'reason', p_reason
            )
-    from faellig x
+    from zu_loeschen x
     where p_actor is not null
     returning 1
   ),
   geloescht as (
     delete from public.patient_files f
-    using faellig x
+    using zu_loeschen x
     where f.id = x.id
     returning f.id
   )
@@ -349,7 +406,7 @@ begin
     (organization_id, run_id, target_table, target_id, retention_class, due_at)
   select p_organization_id, p_run_id, 'patient_files', g.id, 'patientenfoto', x.due_at
   from geloescht g
-  join faellig x on x.id = g.id;
+  join zu_loeschen x on x.id = g.id;
   get diagnostics v_anzahl = row_count;
 
   return v_anzahl;
@@ -357,7 +414,7 @@ end;
 $$;
 
 comment on function app.delete_due_patient_photos(uuid, uuid, uuid, uuid, text) is
-  'Loescht faellige Patientenfotos einer Organisation (optional einer Patient:in) ausser unter Legal Hold, mit Loeschjournal und - bei handelnder Person - Auditeintrag je Foto (ADR-017 Punkt 36 und 38). Nur fuer record_patient_privacy_entry, release_legal_hold und apply_retention.';
+  'Loescht faellige Patientenfotos einer Organisation (optional einer Patient:in), auch laufende Uploads, mit Loeschjournal und - bei handelnder Person - Auditeintrag je Foto; unter Legal Hold haelt sie die Sperre in photo_locked_at fest (ADR-017 Punkt 36 und 38). Nur fuer record_patient_privacy_entry, release_legal_hold, reopen_patient_care und apply_retention.';
 
 revoke all on function app.delete_due_patient_photos(uuid, uuid, uuid, uuid, text)
   from public, anon, authenticated;
@@ -413,7 +470,10 @@ as $$
       and app.can_write_patient_file(f.document_type, f.treatment_basis_id)
       and (
         f.document_type <> 'patientenfoto'
-        or app.patient_photo_accessible(f.patient_id, null)
+        or (
+          app.patient_photo_accessible(f.patient_id, null)
+          and app.patient_photo_accessible(f.patient_id, f.created_at, f.photo_locked_at)
+        )
       )
   )
 $$;
@@ -448,7 +508,7 @@ begin
     and app.can_see_patient_file_type(f.document_type)
     and (
       f.document_type <> 'patientenfoto'
-      or app.patient_photo_accessible(f.patient_id, f.confirmed_at)
+      or app.patient_photo_accessible(f.patient_id, f.created_at, f.photo_locked_at)
     )
   order by g.created_at
   limit 1
@@ -648,8 +708,15 @@ begin
 
   -- Punkt 36: Ein Widerruf zwischen Vorbereitung und Bestaetigung laesst das
   -- Foto nicht mehr sichtbar werden.
+  -- Und das Foto selbst ist seit seiner Aufnahme nicht faellig geworden: Ein
+  -- Widerruf mit neuer Erteilung dazwischen gibt es nicht frei.
   if v_datei.document_type = 'patientenfoto'
-     and not app.patient_photo_accessible(v_datei.patient_id, null) then
+     and not (
+       app.patient_photo_accessible(v_datei.patient_id, null)
+       and app.patient_photo_accessible(
+         v_datei.patient_id, v_datei.created_at, v_datei.photo_locked_at
+       )
+     ) then
     raise exception 'no consent to patient photos' using errcode = '42501';
   end if;
 
@@ -819,9 +886,9 @@ begin
   return query
     select f.id,
            f.display_name,
-           f.confirmed_at,
+           f.created_at,
            nullif(btrim(coalesce(pe.given_name, '') || ' ' || coalesce(pe.family_name, '')), ''),
-           app.patient_photo_due_at(f.patient_id, f.confirmed_at),
+           app.patient_photo_due_at(f.patient_id, f.created_at, f.photo_locked_at),
            not exists (
              select 1
              from storage.objects o
@@ -835,8 +902,8 @@ begin
       and f.organization_id = v_org
       and f.status = 'ready'
       and f.document_type = 'patientenfoto'
-      and app.patient_photo_accessible(f.patient_id, f.confirmed_at)
-    order by f.confirmed_at desc, f.id;
+      and app.patient_photo_accessible(f.patient_id, f.created_at, f.photo_locked_at)
+    order by f.created_at desc, f.id;
 end;
 $$;
 
@@ -881,7 +948,9 @@ begin
   -- Punkt 36: Ein widerrufenes oder faelliges Foto bekommt keinen Verweis -
   -- auch nicht unter Legal Hold. Dieselbe Meldung wie eine fremde Datei.
   if v_datei.document_type = 'patientenfoto'
-     and not app.patient_photo_accessible(v_datei.patient_id, v_datei.confirmed_at) then
+     and not app.patient_photo_accessible(
+       v_datei.patient_id, v_datei.created_at, v_datei.photo_locked_at
+     ) then
     raise exception 'file not accessible' using errcode = '42501';
   end if;
 
@@ -956,7 +1025,9 @@ begin
   -- der Frist - unter Legal Hold erst, wenn er endet -, nicht von Hand.
   if v_datei.document_type = 'patientenfoto'
      and v_datei.status = 'ready'
-     and not app.patient_photo_accessible(v_datei.patient_id, v_datei.confirmed_at) then
+     and not app.patient_photo_accessible(
+       v_datei.patient_id, v_datei.created_at, v_datei.photo_locked_at
+     ) then
     raise exception 'file not accessible' using errcode = '42501';
   end if;
 
@@ -1401,6 +1472,74 @@ begin
   -- nicht erst im naechsten Loeschlauf.
   perform app.delete_due_patient_photos(
     v_org, v_subject, extensions.gen_random_uuid(), v_actor, 'legal_hold_released'
+  );
+end;
+$$;
+
+-- -----------------------------------------------------------------------------
+-- Wiederaufnahme der Versorgung: Was mit dem Abschluss faellig war, bleibt es
+--
+-- Die Obergrenze aus Punkt 38 haengt an care_concluded_at, und die
+-- Wiederaufnahme raeumt den Anker. Vorher werden faellige Fotos geloescht -
+-- unter Legal Hold gesperrt festgehalten -, sonst gaebe die Wiederaufnahme ein
+-- Foto wieder frei, das schon faellig war. Sonst unveraendert.
+-- -----------------------------------------------------------------------------
+create or replace function public.reopen_patient_care(p_patient_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor  uuid;
+  v_org    uuid;
+  v_bisher date;
+begin
+  v_actor := auth.uid();
+  if v_actor is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  if not app.can_conclude_patient_care() then
+    raise exception 'not allowed to conclude patient care' using errcode = '42501';
+  end if;
+
+  v_org := app.current_organization_id();
+  if v_org is null then
+    raise exception 'not allowed to conclude patient care' using errcode = '42501';
+  end if;
+
+  select p.care_concluded_on into v_bisher
+  from public.patients p
+  where p.id = p_patient_id
+    and p.organization_id = v_org
+  for update;
+
+  if not found then
+    raise exception 'patient not found' using errcode = 'P0002';
+  end if;
+
+  -- Kein Abschluss, kein Vorgang: weder Schreibzugriff noch Auditeintrag.
+  if v_bisher is null then
+    return;
+  end if;
+
+  perform app.delete_due_patient_photos(
+    v_org, p_patient_id, extensions.gen_random_uuid(), v_actor, 'care_reopened'
+  );
+
+  update public.patients
+     set care_concluded_on = null,
+         care_concluded_at = null,
+         care_concluded_by = null
+   where id = p_patient_id;
+
+  insert into public.audit_log (
+    organization_id, actor_user_id, action, subject_type, subject_id, outcome, context
+  )
+  values (
+    v_org, v_actor, 'patient.care_reopened', 'patient', p_patient_id, 'success',
+    jsonb_build_object('surface', 'web', 'previous_concluded_on', v_bisher)
   );
 end;
 $$;

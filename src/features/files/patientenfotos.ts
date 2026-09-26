@@ -71,7 +71,7 @@ export async function speicherePatientenfoto(auftrag: {
     const meldung = (ursache as Error).message;
     if (meldung.includes('Berechtigung')) {
       throw new Error(
-        'Das Foto konnte nicht gespeichert werden. Liegt die Einwilligung vor, und darf Ihre Rolle Fotos aufnehmen?',
+        'Das Foto konnte nicht gespeichert werden. Liegt die Einwilligung vor, ist die Versorgung nicht seit mehr als drei Monaten abgeschlossen, und darf Ihre Rolle Fotos aufnehmen?',
       );
     }
     throw ursache;

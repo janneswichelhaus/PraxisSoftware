@@ -7,6 +7,7 @@ import {
   enthaelt,
   jpegSegment,
   jpegVomHandy,
+  pngChunk,
   pngVomHandy,
   text,
   verbinde,
@@ -117,6 +118,25 @@ describe('entferneMetadaten — JPEG', () => {
     expect(enthaelt(bereinigt, 'Adobe')).toBe(true);
   });
 
+  it('laesst keine unbekannten Segmente durch - Erlaubnisliste statt Verbotsliste', () => {
+    const original = basis(CHROMIUM_JPEG);
+    // Ein reservierter Marker mit Inhalt, wie ihn keine Kamera schreibt.
+    const reserviert = verbinde(
+      original.subarray(0, 2),
+      jpegSegment(0xf0, text('GPSSECRET')),
+      original.subarray(2),
+    );
+    expect(() => entferneMetadaten(reserviert, 'image/jpeg')).toThrow(/beschädigt/);
+    // `FF 00` gehört nur in die Bilddaten, nicht zwischen die Segmente.
+    const nullmarker = verbinde(
+      original.subarray(0, 2),
+      Uint8Array.from([0xff, 0x00, 0x00, 0x08]),
+      text('GEHEIM'),
+      original.subarray(2),
+    );
+    expect(() => entferneMetadaten(nullmarker, 'image/jpeg')).toThrow(/beschädigt/);
+  });
+
   it('weist eine Datei ab, die kein lesbares JPEG ist - im Zweifel wird nichts hochgeladen', () => {
     const original = basis(CHROMIUM_JPEG);
     expect(() => entferneMetadaten(text('kein Bild'), 'image/jpeg')).toThrow(/beschädigt/);
@@ -187,6 +207,20 @@ describe('entferneMetadaten — PNG', () => {
     }
     const erwartet = (crc ^ 0xffffffff) >>> 0;
     expect(Buffer.from(bereinigt.subarray(exif.ende - 4, exif.ende)).readUInt32BE()).toBe(erwartet);
+  });
+
+  it('entfernt unbekannte Hilfschunks und weist unbekannte kritische Chunks ab', () => {
+    const original = basis(CHROMIUM_PNG);
+    const kopf = pngChunks(original)[0]!;
+    const mit = (chunk: Uint8Array) =>
+      verbinde(original.subarray(0, kopf.ende), chunk, original.subarray(kopf.ende));
+
+    const privat = entferneMetadaten(mit(pngChunk('prVt', text('GPSSECRET'))), 'image/png');
+    expect(enthaelt(privat, 'GPSSECRET')).toBe(false);
+
+    expect(() => entferneMetadaten(mit(pngChunk('GEOX', text('GPSSECRET'))), 'image/png')).toThrow(
+      /beschädigt/,
+    );
   });
 
   it('ohne Drehung kein eXIf-Chunk', () => {

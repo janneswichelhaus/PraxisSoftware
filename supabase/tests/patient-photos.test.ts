@@ -4,11 +4,13 @@ import {
   abgefangen,
   asAnon,
   asPostgres,
+  asStorageApi,
   asUser,
   asUserCommitted,
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
 
 /**
  * Fotos von Patient:innen (DOK-006b, ADR-017 Abschnitt G).
@@ -266,8 +268,13 @@ describe('Patientenfotos (DOK-006b)', () => {
       await objektAblegen(BUCKET, datei.object_key);
       await vermerken('consent_withdrawn');
 
+      // Der Widerruf hat den laufenden Upload schon geloescht (B4 aus dem
+      // Zweitreview); die Bestaetigung findet nichts mehr.
       const fehler = await abgefangen(bestaetigen(datei.file_id));
-      expect(fehler?.message).toMatch(/no consent/);
+      expect(fehler?.message).toMatch(/not accessible/);
+      expect(
+        await anzahl('select count(*) from public.patient_files where id = $1', [datei.file_id]),
+      ).toBe(0);
       expect(await fotoliste()).toEqual([]);
     });
 
@@ -953,6 +960,221 @@ describe('Patientenfotos (DOK-006b)', () => {
       expect((await abgefangen(asUser(owner, HERAUSGEBEN, [datei.file_id])))?.message).toMatch(
         /not accessible/,
       );
+    });
+  });
+
+  describe('Nachgezogen aus dem Zweitreview', () => {
+    const LESEN = `select name from storage.objects where bucket_id = '${BUCKET}' and name = $1`;
+    const LOESCHEN = `delete from storage.objects where bucket_id = '${BUCKET}' and name = $1 returning name`;
+    const HOCHLADEN = `insert into storage.objects (bucket_id, name, metadata) values ('${BUCKET}', $1, '{}'::jsonb)`;
+
+    async function abschliessenVor(monate: number, festgehaltenVorMonaten = monate): Promise<void> {
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = (now() - $2::int * interval '1 month')::date,
+                care_concluded_at = now() - $3::int * interval '1 month',
+                care_concluded_by = $4
+          where id = $1`,
+        [patients.max, monate, festgehaltenVorMonaten, users.ownerTherapist],
+      );
+    }
+
+    it('B2: nimmt kein neues Foto mehr an, wenn die Versorgung vor mehr als drei Monaten abgeschlossen wurde', async () => {
+      await abschliessenVor(5);
+      await vermerken('consent_granted');
+      expect((await abgefangen(vorbereiten()))?.message).toMatch(/no consent/);
+      expect(await anzahl('select count(*) from public.patient_files')).toBe(0);
+    });
+
+    it('B3: laesst eine Wiederaufnahme ein faelliges Foto nicht wieder frei - ohne Hold geloescht', async () => {
+      await vermerken('consent_granted');
+      const datei = await foto();
+      await aufgenommenVor(datei.file_id, '5 months');
+      await abschliessenVor(4);
+      expect(await fotoliste()).toEqual([]);
+
+      await asUserCommitted(users.ownerTherapist, 'select public.reopen_patient_care($1::uuid)', [
+        patients.max,
+      ]);
+
+      expect(
+        await anzahl('select count(*) from public.patient_files where id = $1', [datei.file_id]),
+      ).toBe(0);
+      expect(
+        await anzahl(
+          `select count(*) from public.deletion_journal where target_id = $1 and retention_class = 'patientenfoto'`,
+          [datei.file_id],
+        ),
+      ).toBe(1);
+    });
+
+    it('B3: haelt unter Legal Hold die Sperre fest - auch nach der Wiederaufnahme, bis der Hold endet', async () => {
+      await vermerken('consent_granted');
+      const datei = await foto();
+      await aufgenommenVor(datei.file_id, '5 months');
+      await abschliessenVor(4);
+      const holdId = await hold();
+
+      await asUserCommitted(users.ownerTherapist, 'select public.reopen_patient_care($1::uuid)', [
+        patients.max,
+      ]);
+
+      const { rows } = await asPostgres<{ gesperrt: boolean }>(
+        'select photo_locked_at is not null as gesperrt from public.patient_files where id = $1',
+        [datei.file_id],
+      );
+      expect(rows[0]?.gesperrt).toBe(true);
+      expect(await fotoliste()).toEqual([]);
+      expect(
+        (await abgefangen(asUserCommitted(users.therapist, VERWEIS, [datei.file_id])))?.message,
+      ).toMatch(/not accessible/);
+
+      await asUserCommitted(users.ownerTherapist, 'select public.release_legal_hold($1::uuid)', [
+        holdId,
+      ]);
+      expect(
+        await anzahl('select count(*) from public.patient_files where id = $1', [datei.file_id]),
+      ).toBe(0);
+    });
+
+    it('B4: der Widerruf trifft auch einen laufenden Upload - Zeile, Auftrag und Journal', async () => {
+      await vermerken('consent_granted');
+      const datei = await vorbereiten();
+      await objektAblegen(BUCKET, datei.object_key);
+
+      await vermerken('consent_withdrawn');
+
+      expect(
+        await anzahl('select count(*) from public.patient_files where id = $1', [datei.file_id]),
+      ).toBe(0);
+      expect(
+        await anzahl(
+          'select count(*) from public.storage_deletion_orders where bucket_id = $1 and object_key = $2',
+          [BUCKET, datei.object_key],
+        ),
+      ).toBe(1);
+      expect(
+        await anzahl('select count(*) from public.deletion_journal where target_id = $1', [
+          datei.file_id,
+        ]),
+      ).toBe(1);
+    });
+
+    it('B4: ein Widerruf zwischen Vorbereitung und Bestaetigung wird durch eine neue Erteilung nicht geheilt', async () => {
+      await vermerken('consent_granted');
+      const datei = await vorbereiten();
+      const ohneObjekt = await vorbereiten();
+      await objektAblegen(BUCKET, datei.object_key);
+      // Unter Legal Hold bleiben die Zeilen stehen - gesperrt.
+      await hold();
+      await vermerken('consent_withdrawn');
+      await vermerken('consent_granted');
+
+      // Die Regel am Objekt laesst fuer die alte Vorbereitung nichts mehr hochladen.
+      const hochladen = await abgefangen(
+        asUser(users.therapist, HOCHLADEN, [ohneObjekt.object_key]),
+      );
+      expect(hochladen?.message).toMatch(/row-level security/);
+
+      const fehler = await abgefangen(bestaetigen(datei.file_id));
+      expect(fehler?.message).toMatch(/no consent/);
+      expect(await fotoliste()).toEqual([]);
+    });
+
+    it('B1: laesst am Foto-Bucket niemanden ohne Schreibrecht und nichts ueber Organisationsgrenzen hochladen', async () => {
+      await vermerken('consent_granted');
+      const datei = await vorbereiten();
+      const { owner: fremd } = await fremdeOrganisation();
+
+      for (const userId of [users.office, users.trainer, users.patientMax, fremd]) {
+        const fehler = await abgefangen(asUser(userId, HOCHLADEN, [datei.object_key]));
+        expect(fehler?.message, userId).toMatch(/row-level security/);
+      }
+      // Die Gegenprobe: Mit Schreibrecht und Einwilligung geht es.
+      await asUserCommitted(users.therapist, HOCHLADEN, [datei.object_key]);
+    });
+
+    it('B1: gibt das Objekt eines Fotos nur mit eigener Freigabe heraus - keiner anderen Rolle, Praxis oder Person', async () => {
+      await vermerken('consent_granted');
+      const datei = await foto();
+      await asUserCommitted(users.therapist, VERWEIS, [datei.file_id]);
+      const { owner: fremd } = await fremdeOrganisation();
+
+      // Die Freigabe gehoert Anna; niemand sonst liest damit.
+      for (const userId of [
+        users.office,
+        users.trainer,
+        users.patientMax,
+        fremd,
+        users.ownerTherapist,
+      ]) {
+        const { rows } = await asUserCommitted(userId, LESEN, [datei.object_key]);
+        expect(rows, userId).toEqual([]);
+      }
+      expect((await asUserCommitted(users.therapist, LESEN, [datei.object_key])).rows).toHaveLength(
+        1,
+      );
+    });
+
+    it('B1: entfernt das Objekt eines Fotos nur mit Loeschfreigabe und quittiert den Auftrag', async () => {
+      await vermerken('consent_granted');
+      const datei = await foto();
+      await vermerken('consent_withdrawn');
+      const { rows: auftrag } = await asPostgres<{ id: string }>(
+        'select id from public.storage_deletion_orders where bucket_id = $1 and object_key = $2',
+        [BUCKET, datei.object_key],
+      );
+      const orderId = auftrag[0]!.id;
+
+      // Ohne Freigabe entfernt niemand etwas - auch owner nicht, auch nicht mit Leseoperation.
+      for (const userId of [users.ownerTherapist, users.therapist]) {
+        const { rows } = await asStorageApi(userId, 'storage.object.delete_many', LOESCHEN, [
+          datei.object_key,
+        ]);
+        expect(rows).toEqual([]);
+      }
+      // Eine andere Rolle bekommt keine Freigabe (G6c: abgewiesen und protokolliert).
+      for (const konto of [users.therapist, users.office]) {
+        await erwarteAbgewiesenenSchreibversuch(
+          konto,
+          'select object_key from public.claim_storage_deletion_order($1::uuid)',
+          [orderId],
+          'storage_deletion.claimed',
+        );
+      }
+
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select object_key from public.claim_storage_deletion_order($1::uuid)',
+        [orderId],
+      );
+      // Die Loeschfreigabe oeffnet kein Lesen.
+      const { rows: gelesen } = await asStorageApi(
+        users.ownerTherapist,
+        'storage.object.sign',
+        LESEN,
+        [datei.object_key],
+      );
+      expect(gelesen).toEqual([]);
+      const { rows: entfernt } = await asStorageApi(
+        users.ownerTherapist,
+        'storage.object.delete_many',
+        LOESCHEN,
+        [datei.object_key],
+      );
+      expect(entfernt).toHaveLength(1);
+
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.receipt_storage_deletion_order($1::uuid)',
+        [orderId],
+      );
+      expect(
+        await anzahl(
+          'select count(*) from public.storage_deletion_orders where id = $1 and receipted_at is not null',
+          [orderId],
+        ),
+      ).toBe(1);
     });
   });
 });
