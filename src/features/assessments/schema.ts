@@ -56,19 +56,15 @@ export const versionSchema = z
   .regex(/^\d+\.\d+\.\d+$/, 'Version muss semantisch sein, zum Beispiel "1.0.0".');
 
 /**
- * Die möglichen Ergebnisse eines Tests. `nicht_durchgefuehrt` ist der Standard
- * und erscheint nach §2 nicht im Dokumentationstext.
+ * Die Ergebnisse eines Tests: ohne Befund, positiv, nicht getestet (Jannes,
+ * 2026-09-26; vorher zusätzlich `negativ` und `nicht_beurteilbar` nach §2).
+ * Ein Test ohne Angabe ist nicht Teil der Untersuchung und erscheint nicht im
+ * Text; „nicht getestet" dagegen ist eine Aussage und steht dort ausgeschrieben.
  */
-export const BEFUND_ERGEBNISSE = [
-  'nicht_durchgefuehrt',
-  'ohne_befund',
-  'positiv',
-  'negativ',
-  'nicht_beurteilbar',
-] as const;
+export const BEFUND_ERGEBNISSE = ['ohne_befund', 'positiv', 'nicht_getestet'] as const;
 
-/** Techniken werden durchgeführt oder nicht — sie haben keinen Befund (§2). */
-export const TECHNIK_ERGEBNISSE = ['nicht_durchgefuehrt', 'durchgefuehrt'] as const;
+/** Techniken werden durchgeführt — oder haben keine Angabe; einen Befund haben sie nicht (§2). */
+export const TECHNIK_ERGEBNISSE = ['durchgefuehrt'] as const;
 
 /**
  * Die vier Blockarten der Vorlage (§2): Basisuntersuchung, weiterführende
@@ -122,6 +118,12 @@ export const bausteinItemSchema = z
     /** Durchführungshinweis der Vorlage, etwa „30–60 Sekunden halten" (§2). */
     hint: z.string().min(1).optional(),
     subitems: z.array(subitemSchema).min(1).optional(),
+    /**
+     * Die Bezeichnung ist eine Ausgangsstellung („Rückenlage", „Bauchlage"):
+     * Beim Abhaken ordnet sie die Unterpunkte, in den Dokumentationstext geht
+     * sie nicht (Jannes, 2026-09-26; **ANN-130**).
+     */
+    ausgangsstellung: z.literal(true).optional(),
   })
   .superRefine((item, ctx) => {
     const erwartet = item.type === 'test' ? 'befund' : 'durchgefuehrt';
@@ -130,6 +132,14 @@ export const bausteinItemSchema = z
         code: 'custom',
         path: ['result_type'],
         message: `Ein Item mit type "${item.type}" braucht result_type "${erwartet}" (Arbeitsauftrag §2).`,
+      });
+    }
+    if (item.ausgangsstellung && !item.subitems) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ausgangsstellung'],
+        message:
+          'Eine Ausgangsstellung ordnet Unterpunkte — ohne sie fiele der Test ganz aus dem Text.',
       });
     }
   });

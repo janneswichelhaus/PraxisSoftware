@@ -154,4 +154,13 @@ describe('Untersuchungsbausteine (P2)', () => {
       }
     }
   });
+
+  it('kennzeichnet nur Rückenlage und Bauchlage der Hüfte als Ausgangsstellung (ANN-130)', () => {
+    const stellungen = bibliothek.bausteine.flatMap((region) =>
+      region.blocks.flatMap((block) =>
+        block.items.filter((item) => item.ausgangsstellung).map((item) => item.id),
+      ),
+    );
+    expect(stellungen).toEqual(['huefte_rueckenlage', 'huefte_bauchlage']);
+  });
 });

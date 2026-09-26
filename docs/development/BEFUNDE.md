@@ -1495,3 +1495,30 @@ unter „Ansicht und Filter" und nimmt Tag und Person mit (ANN-113). Die
 Zeilen der Bereiche Patient:innen und Organisatorisches bleiben, weil ihre
 Ziele sonst nicht erreichbar wären. Der Abstand unter der Kopfzeile ist
 überall kleiner.
+
+### BEF-045 — Befund aus Bausteinen: Seitenwahl je Test zu umständlich, Text unübersichtlich
+
+|         |                                                                                                                             |
+| ------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-26                                                                                                                  |
+| Bereich | Behandlungsdokumentation: „Befund aus Bausteinen“ (`BausteinFeld`), Generator `dokumentationstext.ts`                       |
+| Quelle  | Rückmeldung von Jannes am Beispiel Hüfte (lokal), therapist                                                                 |
+| Status  | erledigt in FRB-EPIC-003, Nachbesserung (Branch `claude/bausteine-doku`, 2026-09-26)                                        |
+| Berührt | `src/features/assessments/` (`schema.ts`, `dokumentationstext.ts`, `bausteinauswahl.ts`, `BausteinFeld.tsx`, `06-huefte.json`); ANN-118, ANN-129, ANN-130 |
+
+**Beobachtung.** Die Ergebnisse „ohne Befund, positiv, negativ, nicht
+beurteilbar“ passen nicht; an jedem Test links/rechts/beidseits zu wählen ist
+mühsam, obwohl es an den Extremitäten meist um eine Seite geht. Der
+übernommene Text ist unübersichtlich und nennt die Ausgangsstellung
+(„Rückenlage – Flexion, rechts: ohne Befund.“).
+
+**Erwartet.** Ergebnisse o.B., positiv, nicht getestet; eine klügere
+Seitenabfrage; im Text ein Zeichen für o.B. und eins für positiv, „nicht
+getestet“ ausgeschrieben, keine Ausgangsstellung, Absätze und
+Aufzählungspunkte.
+
+**Umgesetzt.** Drei Ergebnisse; die Seite einmal je Region an Extremitäten und
+Kiefer, an der Wirbelsäule je Nerventest eine Zeile links und rechts
+(ANN-129); ✅ und ❗ vor dem Test, „Nicht getestet“ als Sammelzeile, Gruppen
+eingerückt, Techniken mit „•“, Ausgangsstellung nur beim Abhaken (ANN-130);
+die Notiz öffnet sich auf Tipp.

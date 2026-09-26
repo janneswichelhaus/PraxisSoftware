@@ -7,16 +7,19 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { BausteinAuswahl } from './bausteinauswahl';
 import {
   ERGEBNIS_TEXT,
+  ERGEBNIS_ZEICHEN,
   NOTIZ_MAX,
-  SEITEN,
+  REGIONSSEITEN,
+  angabenImBlock,
   istMesswert,
-  jeSeiteGemessen,
-  kennungenDes,
-  MESSSEITEN,
+  seitenDes,
   seitenKennung,
+  seitlicheRegion,
   ungueltigeMesswerte,
   type Angabe,
   type Auswahl,
+  type Regionsseite,
+  type Seite,
 } from './dokumentationstext';
 import {
   BEFUND_ERGEBNISSE,
@@ -28,12 +31,14 @@ import {
 } from './schema';
 
 /**
- * Befund aus Bausteinen (FRB-003b, Phase P3).
+ * Befund aus Bausteinen (FRB-003b, Phase P3; Seitenwahl und Textform seit
+ * 2026-09-26, **ANN-129**, **ANN-130**).
  *
- * Region wählen, Block aufklappen, Ergebnis antippen — darunter steht der
- * Dokumentationstext als Vorschlag, und ein Tap übernimmt ihn in den Eintrag.
- * Gerendert wird nach dem Schema, nie nach einem Test: Eine neue Region ist
- * eine Datei (Leitprinzip des Arbeitsauftrags).
+ * Region wählen, an Extremitäten und Kiefer einmal die Seite, Block
+ * aufklappen, Ergebnis antippen — darunter steht der Dokumentationstext als
+ * Vorschlag, und ein Tap übernimmt ihn in den Eintrag. Gerendert wird nach
+ * dem Schema, nie nach einem Test: Eine neue Region ist eine Datei
+ * (Leitprinzip des Arbeitsauftrags).
  *
  * Das Feld ist zugeklappt und steht **unter** dem Textfeld: Es soll den
  * Freitext nicht nach unten schieben (BEF-001). Ein zweiter Tipp auf ein
@@ -56,10 +61,10 @@ export function BausteinFeld({
   /** Warum die Seite gerade nicht speichert oder abschließt; öffnet das Feld. */
   meldung?: string | undefined;
 }) {
-  const { regionen, auswahl, setzen, leeren, text } = bausteine;
+  const { regionen, auswahl, seitenwahl, setzen, seiteWaehlen, leeren, text } = bausteine;
   const [regionId, setRegionId] = useState<string | null>(null);
   const region = regionen.find((r) => r.id === regionId);
-  const anzahl = Object.values(auswahl).filter((a) => a.ergebnis !== 'nicht_durchgefuehrt').length;
+  const anzahl = Object.keys(auswahl).length;
   const messwertFalsch = ungueltigeMesswerte(regionen, auswahl);
 
   // Eine Meldung, die in einem zugeklappten Feld steht, liest niemand — und
@@ -68,6 +73,9 @@ export function BausteinFeld({
   useEffect(() => {
     if (meldung && feldRef.current) feldRef.current.open = true;
   }, [meldung]);
+
+  const wahl = region ? seitenwahl[region.id] : undefined;
+  const wartetAufSeite = region !== undefined && seitlicheRegion(region) && wahl === undefined;
 
   return (
     <details ref={feldRef} className="nicht-drucken border-line-strong rounded-card mt-4 border">
@@ -83,7 +91,7 @@ export function BausteinFeld({
       >
         <div role="group" aria-label="Region" className="flex flex-wrap gap-2">
           {regionen.map((r) => {
-            const zahl = angabenIn(r, auswahl);
+            const zahl = r.blocks.reduce((summe, b) => summe + angabenImBlock(b, auswahl), 0);
             return (
               <button
                 key={r.id}
@@ -98,19 +106,29 @@ export function BausteinFeld({
           })}
         </div>
 
-        {region ? (
+        {region && seitlicheRegion(region) ? (
+          <SeitenWahl region={region} wahl={wahl} onWahl={(seite) => seiteWaehlen(region, seite)} />
+        ) : null}
+
+        {region === undefined ? (
+          <p className="text-ink-muted text-sm">Region wählen, um die Tests aufzuklappen.</p>
+        ) : wartetAufSeite ? (
+          <p className="text-ink-muted text-sm">
+            Seite wählen — sie gilt für alle Tests und Techniken der Region.
+          </p>
+        ) : (
           <div className="flex flex-col gap-2">
             {region.blocks.map((block) => (
               <Block
                 key={`${region.id}.${block.id}`}
+                region={region}
                 block={block}
+                wahl={wahl}
                 auswahl={auswahl}
                 setzen={setzen}
               />
             ))}
           </div>
-        ) : (
-          <p className="text-ink-muted text-sm">Region wählen, um die Tests aufzuklappen.</p>
         )}
 
         {text ? (
@@ -153,22 +171,58 @@ export function BausteinFeld({
   );
 }
 
-function angabenIn(region: BausteinRegion, auswahl: Auswahl): number {
-  return region.blocks
-    .flatMap((block) => block.items.flatMap(kennungenDes))
-    .filter((kennung) => auswahl[kennung] !== undefined).length;
+/**
+ * Die Seite einer Region mit lauter seitengetrennten Tests (**ANN-129**):
+ * einmal wählen statt an jedem Test. Ohne Vorauswahl — eine falsche Seite in
+ * der Akte ist schlimmer als ein Tipp mehr.
+ */
+function SeitenWahl({
+  region,
+  wahl,
+  onWahl,
+}: {
+  region: BausteinRegion;
+  wahl: Regionsseite | undefined;
+  onWahl: (seite: Regionsseite) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={`Seite ${region.label}`}
+      className="flex flex-wrap items-center gap-2"
+    >
+      <span aria-hidden="true" className="text-ink text-sm font-medium">
+        Seite
+      </span>
+      {REGIONSSEITEN.map((seite) => (
+        <button
+          key={seite}
+          type="button"
+          aria-pressed={wahl === seite}
+          onClick={() => onWahl(seite)}
+          className={kartenAktionKlassen(wahl === seite ? 'primary' : 'secondary')}
+        >
+          {seite}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function Block({
+  region,
   block,
+  wahl,
   auswahl,
   setzen,
 }: {
+  region: BausteinRegion;
   block: BausteinBlock;
+  wahl: Regionsseite | undefined;
   auswahl: Auswahl;
   setzen: BausteinAuswahl['setzen'];
 }) {
-  const zahl = block.items.flatMap(kennungenDes).filter((k) => auswahl[k] !== undefined).length;
+  const zahl = angabenImBlock(block, auswahl);
   const offen = block.status === 'unvollstaendig';
 
   return (
@@ -185,60 +239,42 @@ function Block({
             nachliefert.
           </p>
         ) : null}
-        {block.items.map((item) =>
-          jeSeiteGemessen(item) ? (
-            // Links und rechts je mit eigenem Ergebnis, Wert und Notiz
-            // (Jannes, 2026-09-26) — der Seitenvergleich ist der Sinn der Messung.
-            <Gruppe key={item.id} item={item}>
-              {MESSSEITEN.map((seite) => {
-                const kennung = seitenKennung(item.id, seite);
-                return (
-                  <Zeile
-                    key={kennung}
-                    kennung={kennung}
-                    label={seite}
-                    vorsatz={`${item.label}, `}
-                    hint={undefined}
-                    item={item}
-                    seiteFest
-                    angabe={auswahl[kennung]}
-                    setzen={setzen}
-                  />
-                );
-              })}
-            </Gruppe>
-          ) : item.subitems ? (
+        {block.items.map((item) => {
+          const seiten = seitenDes(region, item, wahl);
+          return item.subitems ? (
             <Gruppe key={item.id} item={item}>
               {item.subitems.map((subitem) => (
-                <Zeile
+                <Pruefpunkt
                   key={subitem.id}
                   kennung={subitem.id}
                   label={subitem.label}
                   hint={subitem.hint}
                   item={item}
-                  angabe={auswahl[subitem.id]}
+                  seiten={seiten}
+                  auswahl={auswahl}
                   setzen={setzen}
                 />
               ))}
             </Gruppe>
           ) : (
-            <Zeile
+            <Pruefpunkt
               key={item.id}
               kennung={item.id}
               label={item.label}
               hint={item.hint}
               item={item}
-              angabe={auswahl[item.id]}
+              seiten={seiten}
+              auswahl={auswahl}
               setzen={setzen}
             />
-          ),
-        )}
+          );
+        })}
       </div>
     </details>
   );
 }
 
-/** Ein Item mit Unterpunkten oder mit je einer Zeile für links und rechts. */
+/** Ein Item mit Unterpunkten — eine Ausgangsstellung oder eine Testgruppe. */
 function Gruppe({ item, children }: { item: BausteinItem; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
@@ -251,128 +287,203 @@ function Gruppe({ item, children }: { item: BausteinItem; children: ReactNode })
   );
 }
 
+function Hinweis({ label, hint }: { label: string; hint: string | undefined }) {
+  return (
+    <>
+      {label}
+      {hint ? <span className="text-ink-muted"> – {hint}</span> : null}
+    </>
+  );
+}
+
 /**
- * Ein Test oder eine Technik. `memo`, weil ein Tap sonst jede Zeile des
- * Blocks neu zeichnet; dafür bleibt `setzen` über die Seite stabil.
+ * Ein Test oder eine Technik: mit einer Seite (oder ohne) eine Zeile, mit
+ * beiden Seiten eine Zeile je Seite unter dem gemeinsamen Namen.
  */
-const Zeile = memo(function Zeile({
+function Pruefpunkt({
   kennung,
   label,
-  vorsatz,
   hint,
   item,
-  seiteFest = false,
-  angabe,
+  seiten,
+  auswahl,
   setzen,
 }: {
   kennung: string;
   label: string;
-  /** Vor den Namen der Gruppe gesetzt: aus „links" wird „Knee to Wall Test, links". */
-  vorsatz?: string;
   hint: string | undefined;
-  /** Typ, Seitigkeit und Messfeld gelten auch für die Unterpunkte. */
+  /** Typ und Messfeld gelten auch für die Unterpunkte. */
   item: BausteinItem;
-  /** Die Seite steht schon fest — keine Auswahl links/rechts/beidseits. */
-  seiteFest?: boolean;
+  seiten: readonly (Seite | undefined)[];
+  auswahl: Auswahl;
+  setzen: BausteinAuswahl['setzen'];
+}) {
+  const [nurEine] = seiten;
+  if (seiten.length === 1) {
+    const schluessel = seitenKennung(kennung, nurEine);
+    return (
+      <Eingabe
+        schluessel={schluessel}
+        titel={label}
+        hint={hint}
+        item={item}
+        angabe={auswahl[schluessel]}
+        setzen={setzen}
+      />
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-ink text-sm wrap-anywhere">
+        <Hinweis label={label} hint={hint} />
+      </p>
+      {seiten.map((seite) => {
+        const schluessel = seitenKennung(kennung, seite);
+        return (
+          <Eingabe
+            key={schluessel}
+            schluessel={schluessel}
+            name={seite ? `${label}, ${seite}` : label}
+            seite={seite}
+            item={item}
+            angabe={auswahl[schluessel]}
+            setzen={setzen}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+const SEITE_MARKE: Record<Seite, string> = { links: 'li.', rechts: 're.' };
+
+/**
+ * Die Schaltflächen eines Tests auf einer Seite, darunter Messwert und Notiz.
+ * `memo`, weil ein Tap sonst jede Zeile des Blocks neu zeichnet; dafür bleibt
+ * `setzen` über die Seite stabil.
+ */
+const Eingabe = memo(function Eingabe({
+  schluessel,
+  titel,
+  hint,
+  name,
+  seite,
+  item,
+  angabe,
+  setzen,
+}: {
+  schluessel: string;
+  /** Sichtbarer Name, wenn die Zeile allein steht. */
+  titel?: string;
+  hint?: string | undefined;
+  /** Name der Zeile, wenn sie eine von zwei Seiten ist: „Knee to Wall Test, links". */
+  name?: string;
+  seite?: Seite | undefined;
+  item: BausteinItem;
   angabe: Angabe | undefined;
   setzen: BausteinAuswahl['setzen'];
 }) {
   const titelId = useId();
-  const ergebnisse = (item.type === 'technik' ? TECHNIK_ERGEBNISSE : BEFUND_ERGEBNISSE).filter(
-    (e) => e !== 'nicht_durchgefuehrt',
-  );
+  const notizId = useId();
+  const [notizGewuenscht, setNotizGewuenscht] = useState(false);
+  const ergebnisse = item.type === 'technik' ? TECHNIK_ERGEBNISSE : BEFUND_ERGEBNISSE;
+  const notizSichtbar = angabe !== undefined && (notizGewuenscht || !!angabe.notiz);
+
+  // Wer „Notiz" antippt, will schreiben.
+  const fokusAufNotiz = useRef(false);
+  useEffect(() => {
+    if (notizSichtbar && fokusAufNotiz.current) {
+      fokusAufNotiz.current = false;
+      document.getElementById(notizId)?.focus();
+    }
+  }, [notizSichtbar, notizId]);
+
+  const aendern = (teil: Partial<Angabe>) => {
+    if (angabe) setzen(schluessel, { ...angabe, ...teil });
+  };
 
   return (
     <div
       role="group"
-      {...(vorsatz ? { 'aria-label': `${vorsatz}${label}` } : { 'aria-labelledby': titelId })}
+      {...(name ? { 'aria-label': name } : { 'aria-labelledby': titelId })}
       className="flex flex-col gap-2"
     >
-      <p id={titelId} className="text-ink text-sm wrap-anywhere">
-        {label}
-        {hint ? <span className="text-ink-muted"> – {hint}</span> : null}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {ergebnisse.map((ergebnis) => {
-          const gewaehlt = angabe?.ergebnis === ergebnis;
-          return (
+      {titel ? (
+        <p id={titelId} className="text-ink text-sm wrap-anywhere">
+          <Hinweis label={titel} hint={hint} />
+        </p>
+      ) : null}
+      <div className="flex items-start gap-2">
+        {seite ? (
+          // Eigene Spalte: Bricht die Zeile auf dem Telefon um, steht der Rest
+          // unter den Schaltflächen und nicht unter „li.".
+          <span
+            aria-hidden="true"
+            className="text-ink-muted flex min-h-11 w-7 shrink-0 items-center text-sm font-medium"
+          >
+            {SEITE_MARKE[seite]}
+          </span>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {ergebnisse.map((ergebnis) => {
+            const gewaehlt = angabe?.ergebnis === ergebnis;
+            const zeichen = ERGEBNIS_ZEICHEN[ergebnis];
+            return (
+              <button
+                key={ergebnis}
+                type="button"
+                aria-pressed={gewaehlt}
+                onClick={() => {
+                  if (gewaehlt) setNotizGewuenscht(false);
+                  setzen(schluessel, gewaehlt ? undefined : { ...(angabe ?? {}), ergebnis });
+                }}
+                className={kartenAktionKlassen(gewaehlt ? 'primary' : 'secondary')}
+              >
+                {/* Ein Textblock: Der Abstand zwischen Zeichen und Wort ist ein
+                  Leerzeichen, nicht die Lücke der Schaltfläche. */}
+                <span>
+                  {zeichen ? <span aria-hidden="true">{`${zeichen} `}</span> : null}
+                  {ERGEBNIS_TEXT[ergebnis]}
+                </span>
+              </button>
+            );
+          })}
+          {angabe && !notizSichtbar ? (
             <button
-              key={ergebnis}
               type="button"
-              aria-pressed={gewaehlt}
-              onClick={() =>
-                setzen(kennung, gewaehlt ? undefined : { ...(angabe ?? {}), ergebnis })
-              }
-              className={kartenAktionKlassen(gewaehlt ? 'primary' : 'secondary')}
+              onClick={() => {
+                fokusAufNotiz.current = true;
+                setNotizGewuenscht(true);
+              }}
+              className={kartenAktionKlassen('quiet')}
             >
-              {ERGEBNIS_TEXT[ergebnis]}
+              <span>
+                <span aria-hidden="true">+ </span>Notiz
+              </span>
             </button>
-          );
-        })}
+          ) : null}
+        </div>
       </div>
 
-      {angabe ? (
-        <Einzelheiten
-          kennung={kennung}
-          item={item}
-          seiteFest={seiteFest}
-          angabe={angabe}
-          setzen={setzen}
-        />
-      ) : null}
-    </div>
-  );
-});
-
-/** Seite, Messwert und Notiz — erst, wenn ein Ergebnis gewählt ist. */
-function Einzelheiten({
-  kennung,
-  item,
-  seiteFest,
-  angabe,
-  setzen,
-}: {
-  kennung: string;
-  item: BausteinItem;
-  seiteFest: boolean;
-  angabe: Angabe;
-  setzen: BausteinAuswahl['setzen'];
-}) {
-  const aendern = (teil: Partial<Angabe>) => setzen(kennung, { ...angabe, ...teil });
-
-  return (
-    <div className="flex flex-col gap-2">
-      {item.bilateral && !seiteFest ? (
-        <div role="group" aria-label="Seite" className="flex flex-wrap gap-2">
-          {SEITEN.map((seite) => (
-            <button
-              key={seite}
-              type="button"
-              aria-pressed={angabe.seite === seite}
-              onClick={() => aendern({ seite: angabe.seite === seite ? undefined : seite })}
-              className={kartenAktionKlassen(angabe.seite === seite ? 'primary' : 'quiet')}
-            >
-              {seite}
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {item.value_field ? (
+      {angabe && item.value_field ? (
         <Messwert
           messfeld={item.value_field}
           wert={angabe.messwert ?? ''}
           onChange={(messwert) => aendern({ messwert })}
         />
       ) : null}
-      <Field
-        label="Notiz"
-        value={angabe.notiz ?? ''}
-        maxLength={NOTIZ_MAX}
-        onChange={(event) => aendern({ notiz: event.target.value })}
-      />
+      {notizSichtbar ? (
+        <Field
+          feldId={notizId}
+          label="Notiz"
+          value={angabe?.notiz ?? ''}
+          maxLength={NOTIZ_MAX}
+          onChange={(event) => aendern({ notiz: event.target.value })}
+        />
+      ) : null}
     </div>
   );
-}
+});
 
 function Messwert({
   messfeld,
