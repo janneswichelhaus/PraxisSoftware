@@ -216,10 +216,10 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       to: '/kalender',
       pfade: ['/kalender', '/touren', '/termine'],
       icon: symbole.termine,
-      unterpunkte: [
-        { to: '/kalender', label: BEREICHE.termine.label },
-        { to: '/touren', label: 'Touren' },
-      ],
+      // Kein Untermenü (BEF-044, ANN-113): Dass man im Kalender ist, zeigen
+      // Seitenleiste und Tableiste; die Tour ist eine Ansicht des Kalenders
+      // neben Tag und Woche. `/touren` gehört weiter zu diesem Bereich.
+      unterpunkte: [],
     });
   }
 
@@ -294,6 +294,20 @@ export const mehrSymbol = symbole.mehr;
  * Organisatorisches
  * landet und nicht in einem allgemeineren Bereich.
  */
+/**
+ * Seiten, die die ganze Fläche neben der Seitenleiste nutzen (BEF-043, ANN-114).
+ *
+ * Die Kappung auf 1200 px (DS-001) ist für Listen und Fließtext gedacht, damit
+ * eine Zeile nicht auseinanderläuft. Ein Raster hat diese Sorge nicht: Jeder
+ * Pixel mehr ist eine breitere Spalte. Hier stehen deshalb nur Flächen-Ansichten,
+ * keine Listen.
+ */
+const RANDLOSE_SEITEN = ['/kalender'] as const;
+
+export function istRandlos(pathname: string): boolean {
+  return (RANDLOSE_SEITEN as readonly string[]).includes(pathname);
+}
+
 export function aktiverBereich(
   bereiche: Arbeitsbereich[],
   pathname: string,

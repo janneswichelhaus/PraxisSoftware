@@ -1413,17 +1413,17 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 **Änderungspfad.** Ein Element zurück nach oben: aus dem Feld „Ansicht und Filter" in die Kopfzeile verschieben · Aufwand `klein`. Suche auch am Rechner als Lupe: die Klasse `max-sm:hidden` am Suchfeld für alle Breiten setzen und die Lupe überall zeigen · Aufwand `klein`.
 
-### ANN-110 — Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet die Anwendung weiter im Browser
+### ANN-110 — Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet die Anwendung mit schmaler Leiste (`minimal-ui`)
 
-Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Android-Handy (Symbol neu zum Startbildschirm hinzufügen)
+Technik · offen · 2026-09-26 (fortgeschrieben 2026-09-26, BEF-041) · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Android-Handy und in Chrome am Rechner (App installieren, Symbol prüfen)
 
-**Annahme.** `public/manifest.webmanifest` nennt als einziges Symbol das vorhandene Master `own-motion-app-1024.png`, einmal für `any` und einmal für `maskable`; `display` ist `browser`. Es gibt keinen Service Worker. Eingebunden wird das Manifest mit `crossorigin="use-credentials"`.
+**Annahme.** `public/manifest.webmanifest` nennt als einziges Symbol das vorhandene Master `own-motion-app-1024.png`, einmal für `any` und einmal für `maskable`; `display` ist `minimal-ui` (bis UX-002i `browser`). Es gibt keinen Service Worker. Eingebunden wird das Manifest mit `crossorigin="use-credentials"`.
 
-**Begründung.** BEF-040: Ohne Manifest nimmt Android das `apple-touch-icon` und legt es in einen weißen Kreis. Das Master ist vollflächig und hält den Schutzkreis ein (nachgemessen in `marke/README.md`), deshalb braucht es keine zweite Fassung der Marke. `browser` ändert am Öffnen nichts, auch unter iOS nicht, das seit 16.4 ein `standalone` des Manifests übernehmen würde. Ein Service Worker bleibt nach ADR-015 Punkt 16 ausgeschlossen. `use-credentials`, weil der Browser das Manifest sonst ohne die Anmeldung der zweiten Tür der Test-Umgebung abruft (ANN-101). Unsicher: ob Chrome unter Android das maskierbare Symbol auch für eine Verknüpfung ohne Installation verwendet; bei `browser` meldet Chrome die Seite als nicht installierbar.
+**Begründung.** BEF-040: Ohne Manifest nimmt Android das `apple-touch-icon` und legt es in einen weißen Kreis. Das Master ist vollflächig und hält den Schutzkreis ein (nachgemessen in `marke/README.md`), deshalb braucht es keine zweite Fassung der Marke. `browser` ändert am Öffnen nichts, auch unter iOS nicht, das seit 16.4 ein `standalone` des Manifests übernehmen würde. Ein Service Worker bleibt nach ADR-015 Punkt 16 ausgeschlossen. `use-credentials`, weil der Browser das Manifest sonst ohne die Anmeldung der zweiten Tür der Test-Umgebung abruft (ANN-101). BEF-041: Mit `browser` meldete Chrome die Seite als nicht installierbar — vorher, ohne Manifest, hatte Chrome sie auf eigene Faust installiert. `minimal-ui` ist installierbar ohne Service Worker und behält in Chrome eine schmale Leiste mit Zurück und Neu laden; `standalone` gäbe am Handy die volle Höhe, verlangte aber eigene Zurück-Wege in jeder Ansicht und schaltete auch iOS ab dem Startbildschirm ohne Browserleiste. iOS kennt `minimal-ui` nicht und öffnet weiter im Browser. Unsicher: ob Jannes am Handy die volle Höhe von `standalone` lieber hätte.
 
 **Anker.** `public/manifest.webmanifest`; `<link rel="manifest">` in `index.html`; die Messung `MASTER_WORTMARKE` in `src/components/ui/markeRegeln.ts`, geprüft in `src/marke.test.ts` („Web-Manifest").
 
-**Änderungspfad.** Zeigt Android den weißen Kreis weiter: `display` auf `minimal-ui`. Chrome installiert die Seite dann als eigene App mit dem maskierbaren Symbol und einer schmalen Leiste mit Zurück und Neu laden; iOS öffnet wie bisher im Browser · Aufwand `klein`. Kleinere Dateien: aus dem Master gerasterte Kopien mit 192 und 512 px in `marke/app/` · Aufwand `klein`.
+**Änderungspfad.** Volle Höhe ohne Leiste: `display` auf `standalone` und in den Ansichten ohne Rückweg einen Zurück-Knopf ergänzen · Aufwand `mittel`. Zurück in den Browser-Tab: `browser`, dann ohne Installation in Chrome · Aufwand `klein`. Kleinere Dateien: aus dem Master gerasterte Kopien mit 192 und 512 px in `marke/app/` · Aufwand `klein`.
 
 ### ANN-111 — Die Begriffe stehen in einer Datei; im Kalender heißt der Eintrag ohne Patient:in „Fehlzeit", eine Person des Teams „Mitarbeiter:in"
 
@@ -1448,3 +1448,27 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 **Anker.** `to` des Bereichs `betrieb` und `betriebUnterpunkte` in `src/app/navigation.tsx`; `einklappbar` in `SubNav` (`src/components/ui/SubNav.tsx`).
 
 **Änderungspfad.** Vorschauen wieder offen: `einklappbar` auf `false` setzen · Aufwand `klein`. Anderer Einstieg: `to` des Bereichs ändern · Aufwand `klein`.
+
+### ANN-113 — Die Tour ist eine Ansicht des Kalenders; der Kalender hat keine Unterzeile mehr
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+
+**Annahme.** Die Zeile „Kalender · Touren" über dem Raster entfällt. „Tour" steht als dritter Knopf neben „Tag" und „Woche" unter „Ansicht und Filter" und öffnet `/touren` mit dem gezeigten Tag und der gezeigten Person; die Tourenseite heißt „Tour" und führt mit „Zum Kalender" in die Tagesansicht desselben Tages zurück. `/touren` bleibt Adresse und Teil des Bereichs Kalender. Die Unterzeilen der Bereiche Patient:innen (Patient:innen · Verordner:innen) und Organisatorisches bleiben.
+
+**Begründung.** BEF-044: Dass man im Kalender ist, zeigen Seitenleiste und Tableiste; die Zeile kostete Höhe über dem Raster. Die Tourenseite fragt dasselbe wie der Kalender — Tag und Person —, deshalb reisen beide mit. Unter „Ansicht und Filter" statt im Kopf über dem Raster, weil der Kopf am Handy seit BEF-039 voll ist (Monat, Person mit Woche, „Jetzt"). In den beiden anderen Bereichen führt die Zeile zu Zielen, die anders nicht erreichbar sind; sie zu streichen, wäre ein eigener Umbau. Unsicher: ob Jannes die Tour mit einem Tipp statt mit zwei erreichen will.
+
+**Anker.** `unterpunkte` des Bereichs `termine` in `src/app/navigation.tsx`; der Knopf „Tour" in der Gruppe „Ansicht" in `src/features/appointments/CalendarPage.tsx`.
+
+**Änderungspfad.** Ein Tipp: den Knopf aus der Gruppe in den Kopf über dem Raster ziehen (ab `sm`, am Handy neben „Jetzt") · Aufwand `klein`. Zeile zurück: `unterpunkte` wieder füllen · Aufwand `klein`. Die Tour als echte Ansicht im Raster (ohne Seitenwechsel) · Aufwand `mittel`.
+
+### ANN-114 — Flächen-Ansichten reichen bis an den Rand, Listen und Texte behalten die Kappung
+
+Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Rechner (breiter Bildschirm) und am Handy
+
+**Annahme.** Der Kalender (`/kalender`) nutzt die ganze Fläche neben der Seitenleiste: keine Kappung auf 1200 px, 8 bis 12 px Rand, kein Kasten um das Raster, nur eine Linie oben und unten. Alle übrigen Seiten behalten die Kappung aus DS-001. Der Abstand unter der Kopfzeile ist überall kleiner (20 bis 24 px statt 32 px).
+
+**Begründung.** BEF-043: Links und rechts des Rasters blieb Fläche ungenutzt, am breiten Bildschirm viel davon. Die Kappung aus DS-001 ist für Listen gedacht — ohne sie stünde der Status einer Zeile einen halben Meter vom Namen entfernt; ein Raster hat diese Sorge nicht. Die Kopfzeile und die Seitenleiste bleiben auf jeder Seite gleich, deshalb springt beim Wechsel das Gerüst nicht (UI-001). Durchgesehen wurden die übrigen Bereiche mit derselben Frage: Sie sind Listen, Formulare oder Text; die Tourenseite mit Karte wäre der nächste Kandidat, sobald die Karte die Breite braucht. Unsicher: ob Jannes weitere Seiten randlos will.
+
+**Anker.** `RANDLOSE_SEITEN` in `src/app/navigation.tsx`, angewendet in `<main>` in `src/app/AppShell.tsx`; geprüft in `src/app/AppShell.test.tsx`.
+
+**Änderungspfad.** Weitere Seite randlos: ihren Pfad in `RANDLOSE_SEITEN` aufnehmen · Aufwand `klein`. Zurück zum Kasten: den Eintrag entfernen und in `CalendarGrid` `rounded-card border` wieder setzen · Aufwand `klein`.

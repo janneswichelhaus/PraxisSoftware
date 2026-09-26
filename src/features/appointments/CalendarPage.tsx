@@ -633,6 +633,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       ...person,
     });
 
+    // Die Serie übernimmt Tag und Beginn, nicht die Länge: Die steht beim
+    // Behandlungstermin im Terminfenster.
+    const serienParameter = schreibeTerminVorbelegung({ datum, beginn });
+
     const eintraege: GitterAuswahl['eintraege'] = [
       {
         schluessel: 'termin',
@@ -643,30 +647,21 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         onWaehlen: () => hin(terminZiel),
       },
       // Ein Dauertermin ist eine Terminserie und gehört damit zu einer
-      // Verordnung: Ihr offenes Kontingent gibt die Anzahl vor (CAL-007).
-      // Ohne Patient:in im Kalenderstand fehlt dafür die Voraussetzung - dann
-      // sagt der Eintrag, was zuerst zu tun ist, statt ins Leere zu führen.
-      p.patient
-        ? {
-            schluessel: 'dauertermin',
-            beschriftung: BEGRIFFE.dauertermin,
-            hinweis: p.verordnung
-              ? 'Terminserie aus der gefilterten Grundlage'
-              : 'Terminserie – zuerst die Grundlage wählen',
-            onWaehlen: () =>
-              hin(
-                p.verordnung
-                  ? `/patienten/${p.patient}/verordnungen/${p.verordnung}/serie?datum=${datum}&beginn=${beginn}`
-                  : `/patienten/${p.patient}/verordnungen`,
-              ),
-          }
-        : {
-            schluessel: 'dauertermin',
-            beschriftung: BEGRIFFE.dauertermin,
-            hinweis: 'Zuerst die Patient:in wählen (Suche oben)',
-            deaktiviert: true,
-            onWaehlen: () => undefined,
-          },
+      // Grundlage: Ihr offenes Kontingent gibt die Anzahl vor (CAL-007). Steht
+      // sie im Kalenderstand, geht es direkt in die Serie; sonst fragt eine
+      // kleine Seite erst nach der Person und dann nach der Grundlage - wie
+      // der neue Termin, der ebenfalls ohne Vorauswahl geht (BEF-042).
+      {
+        schluessel: 'dauertermin',
+        beschriftung: BEGRIFFE.dauertermin,
+        hinweis: p.verordnung ? 'Terminserie aus der gefilterten Grundlage' : 'Terminserie',
+        onWaehlen: () =>
+          hin(
+            p.patient && p.verordnung
+              ? `/patienten/${p.patient}/verordnungen/${p.verordnung}/serie${serienParameter}`
+              : `/termine/dauertermin${serienParameter}${p.patient ? `&patient=${p.patient}` : ''}`,
+          ),
+      },
       {
         schluessel: 'fehlzeit',
         beschriftung: BEGRIFFE.fehlzeit,
@@ -739,6 +734,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       ) : null}
     </button>
   );
+
+  // Wessen Tour: die gezeigte Person, sonst wählt die Tourenseite selbst.
+  const tourPerson = p.ansicht === 'woche' ? wochenPerson : p.person;
 
   return (
     <>
@@ -855,6 +853,19 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                   {a === 'tag' ? 'Tag' : 'Woche'}
                 </Button>
               ))}
+              {/* Die Tour als dritte Ansicht (BEF-044, ANN-113): dieselben
+                  Fragen wie hier - Tag und Person -, deshalb reisen beide
+                  mit. Die eigene Zeile „Kalender · Touren" über dem Raster
+                  ist dafür entfallen; `/touren` bleibt als Adresse. */}
+              <ButtonLink
+                to={`/touren?${new URLSearchParams({
+                  tag: p.datum,
+                  ...(tourPerson ? { person: tourPerson } : {}),
+                }).toString()}`}
+                variant="secondary"
+              >
+                Tour
+              </ButtonLink>
             </div>
 
             {/* Zoom (CAL-011). Beschriftet wird nicht die Pixelzahl, sondern
@@ -920,7 +931,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           {/* Der Weg ueber die Tastatur zu dem, was das Tippen auf eine freie
               Stelle abkuerzt (UX-005, CAL-019): Eine Spanne zieht man nicht
               mit der Tastatur auf. Ohne Uhrzeit: die waehlt das Formular.
-              „Dauertermin" beginnt an der Grundlage in der Akte (CAL-007). */}
+              „Dauertermin" fragt nach Person und Grundlage (BEF-042). */}
           {darfAendern ? (
             <div className="flex flex-wrap gap-2">
               {/* Tag umplanen bei einem Ausfall (CAL-009). Nur dort, wo Person
@@ -969,6 +980,15 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                 variant="secondary"
               >
                 {BEGRIFFE.dauerfehlzeit} eintragen
+              </ButtonLink>
+              <ButtonLink
+                to={mitRueckweg(
+                  `/termine/dauertermin${schreibeTerminVorbelegung({ datum: p.datum })}`,
+                  kalenderStand,
+                )}
+                variant="secondary"
+              >
+                {BEGRIFFE.dauertermin} anlegen
               </ButtonLink>
             </div>
           ) : null}

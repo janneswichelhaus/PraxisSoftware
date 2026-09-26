@@ -43,7 +43,8 @@ test.describe('CAL-019: Anlegen-Menü im Kalender', () => {
     const menue = page.getByRole('group', { name: 'Was soll hier entstehen?' });
     await expect(menue).toBeVisible();
     await expect(menue.getByRole('button', { name: /^Neuer Termin/ })).toBeVisible();
-    await expect(menue.getByRole('button', { name: /^Dauertermin/ })).toBeDisabled();
+    // Seit BEF-042 auch ohne Patient:in: Die Folgeseite fragt nach ihr.
+    await expect(menue.getByRole('button', { name: /^Dauertermin/ })).toBeEnabled();
     await expect(menue.getByRole('button', { name: /^Dauerfehlzeit/ })).toBeVisible();
 
     await menue.getByRole('button', { name: /^Fehlzeit/ }).click();

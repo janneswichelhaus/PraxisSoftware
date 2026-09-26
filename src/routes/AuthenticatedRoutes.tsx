@@ -35,6 +35,7 @@ import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';
 import { NewEventPage } from '@/features/appointments/NewEventPage';
 import { NewEventSeriesPage } from '@/features/appointments/NewEventSeriesPage';
 import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentStartPage';
+import { DauerterminStartPage } from '@/features/appointments/DauerterminStartPage';
 import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeriesPage';
 import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
 import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
@@ -231,6 +232,12 @@ export function AuthenticatedRoutes({
                   {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
                   nicht - aus dem Kalender heraus (UX-005). */}
                   <Route path="/termine/neu" element={<NewAppointmentStartPage />} />
+                  {/* Dauertermin aus dem Kalender ohne Vorauswahl: erst die
+                  Person, dann die Grundlage, dann die Serie (BEF-042). */}
+                  <Route
+                    path="/termine/dauertermin"
+                    element={<DauerterminStartPage user={user} />}
+                  />
                   {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin.
                   Eigener Weg, weil er weder Patient:in noch Verordnung kennt
                   (CAL-015b). */}

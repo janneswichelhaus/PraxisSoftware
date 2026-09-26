@@ -1347,14 +1347,31 @@ describe('CalendarPage', () => {
       expect(String(navigate.mock.calls.at(-1)?.[0])).toContain('/termine/dauerfehlzeit');
     });
 
-    it('bietet den Dauertermin ohne Patient:in nicht an', async () => {
+    it('fragt beim Dauertermin ohne Patient:in erst nach der Person (BEF-042)', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
       fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      expect(screen.getByRole('button', { name: /^Dauertermin/ })).toBeEnabled();
+      menueWaehlen('Dauertermin');
 
-      expect(screen.getByRole('button', { name: /^Dauertermin/ })).toBeDisabled();
-      expect(screen.getByText(/zuerst die Patient:in wählen/i)).toBeInTheDocument();
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.pathname).toBe('/termine/dauertermin');
+      expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
+      expect(ziel.searchParams.get('beginn')).toBe('07:00');
+      expect(ziel.searchParams.has('patient')).toBe(false);
+    });
+
+    it('nimmt beim Dauertermin die gefilterte Patient:in mit, die Grundlage fragt die Seite', async () => {
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
+      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      menueWaehlen('Dauertermin');
+
+      const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+      expect(ziel.pathname).toBe('/termine/dauertermin');
+      expect(ziel.searchParams.get('patient')).toBe(PATIENT);
     });
 
     it('fuehrt den Dauertermin mit Verordnung in die Serienanlage', async () => {

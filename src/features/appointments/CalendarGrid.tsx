@@ -334,8 +334,9 @@ export function CalendarGrid({
         aria-busy={laedtNach || undefined}
         // `isolate`: Die Ebenen im Gitter (stehende Ecke, Köpfe, Kacheln)
         // bleiben unter allem, was darüber aufgeht - etwa der Trefferliste der
-        // Suche am Telefon (BEF-039).
-        className={`border-line rounded-card isolate mt-4 overflow-x-auto border ${laedtNach ? 'opacity-60' : ''}`}
+        // Suche am Telefon (BEF-039). Kein Kasten mehr, nur eine Linie oben
+        // und unten: Das Raster reicht bis an den Rand der Fläche (BEF-043).
+        className={`border-line isolate mt-2 overflow-x-auto border-y ${laedtNach ? 'opacity-60' : ''}`}
         // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
         // auf einer Kachel wird nicht vom Browser übernommen.
         style={{ touchAction: 'pan-x pan-y' }}

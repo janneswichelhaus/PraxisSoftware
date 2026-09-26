@@ -4,7 +4,7 @@
   "lang": "de",
   "start_url": "/",
   "scope": "/",
-  "display": "browser",
+  "display": "minimal-ui",
   "icons": [
     {
       "src": "/marke/own-motion-app-1024.png",
