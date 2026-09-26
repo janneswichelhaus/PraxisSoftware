@@ -6,7 +6,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**OPS-002a gebaut** (Block 1a, erster Loop): Nach jeder grünen CI auf `main` liefert `.github/workflows/test-umgebung.yml` in die Test-Umgebung aus (`prtest.uber.space`, Supabase `praxis-test`). Seed und Praxiswoche kommen nur auf Knopfdruck, das Kennwort aus dem Secret. Pull Request offen, **Merge bei dir**; danach der erste echte Lauf (Blocker unten). Fortschritt **35,3 %**.
+**OPS-002a in Betrieb** (Block 1a, erster Loop): Die Test-Umgebung läuft — `https://prtest.uber.space`, zweite Tür (`praxis`), Anmeldung mit den Testkonten und `TESTENV_LOGIN_PASSWORD`; Jannes ist am 2026-09-25 am Handy drin. Nach jeder grünen CI auf `main` liefert `.github/workflows/test-umgebung.yml` aus; Seed und Praxiswoche nur auf Knopfdruck. Erster Betrieb brauchte drei Korrekturen (#114 Kennwortdatei im Webordner, #115 eine SSH-Verbindung, #116 Projekt-URL ohne Pfad). Fortschritt **35,3 %**.
 
 ## Danach — Bauen
 
@@ -20,8 +20,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Blocker (Jannes-seitig)
 
-- **Test-Umgebung in Betrieb nehmen** (OPS-002a, neu): (1) in der GitHub-Umgebung `test` die zwei optionalen Secrets `TESTENV_LOGIN_PASSWORD` (≥ 12 Zeichen) und `TESTENV_TUER_PASSWORD` anlegen und **„Deployment branches" auf `main` beschränken**; (2) Pull Request mergen; (3) Actions → „Test-Umgebung" ansehen. Wird „Ausgelieferte Seite pruefen" rot, wertet Uberspace die `.htaccess` nicht aus: Log-Zeile an Claude, ohne Werte; (4) `https://prtest.uber.space` am Handy öffnen, zuerst Tür (`praxis`), dann `jannes.test@praxis.invalid`. Einrichtung: [`DEVELOPMENT.md`](DEVELOPMENT.md), „Test-Umgebung". AVV mit Uberspace noch offen.
-- **Sichtung** (E-6): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; am Handy im WLAN nach [`DEVELOPMENT.md`](DEVELOPMENT.md), „Handytest im WLAN".
+- **Sichtung** (E-6), ab jetzt am Handy auf der Test-Umgebung: Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; Bedienung in [`DEVELOPMENT.md`](DEVELOPMENT.md), „Test-Umgebung".
 - **Bögen für NRS, PSFS und Veränderungsfrage** (neu, ANN-099): die Vorlagen, die die Praxis nutzt, als PDF nach `quellen/scores/pdf/` — dann wird der Wortlaut dagegen gehalten und die drei auf Version 1.0.0 aktiviert. Nicht dringend: Erhoben wird erst mit FRB-EPIC-002.
 - **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
