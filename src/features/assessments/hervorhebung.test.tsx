@@ -77,6 +77,21 @@ describe('Hervorhebung', () => {
     expect(eigenerText).not.toMatch(BEWERTUNG);
   });
 
+  it('sagt ohne Treffer nur, was angekreuzt ist, und nennt die offenen Regel-Fragen', () => {
+    render(
+      <Hervorhebungen
+        definition={anamnese}
+        antworten={{ tumor: { auswahl: 'nein' } }}
+        datum="2026-09-20"
+      />,
+    );
+    expect(
+      screen.getByText(
+        'Nach den Regeln unten ist nichts angekreuzt. Nicht beantwortet: Frage 4, 23, 24, 25, 28, 29, 30.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('weist eine Regel auf ein exklusives „nein" oder eine unbekannte Frage zurück', () => {
     const roh = JSON.parse(JSON.stringify(anamnese)) as Record<string, unknown>;
     const mitNein = {

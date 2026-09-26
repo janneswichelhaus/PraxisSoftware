@@ -235,6 +235,27 @@ describe('Erhebung eines Fragebogens', () => {
     ).toMatch(/same instrument/);
   });
 
+  it('weist beim Ueberschreiben eines Entwurfs abweichende Kennung, Version oder Korrektur ab', async () => {
+    const id = await erheben();
+    for (const [instrument, version, korrigiert, grund] of [
+      ['nrs_schmerz', '1.0.0', null, null],
+      ['anamnese_v8', '1.0.1', null, null],
+      ['anamnese_v8', '1.0.0', id, 'Grund'],
+    ]) {
+      const f = await fehler(users.therapist, SPEICHERN, [
+        patients.max,
+        id,
+        instrument,
+        version,
+        HEUTE,
+        '{}',
+        korrigiert,
+        grund,
+      ]);
+      expect(f?.message).toMatch(/identity is fixed/);
+    }
+  });
+
   it('verwirft einen Entwurf und protokolliert es', async () => {
     const id = await erheben();
     await asUserCommitted(users.therapist, VERWERFEN, [id]);

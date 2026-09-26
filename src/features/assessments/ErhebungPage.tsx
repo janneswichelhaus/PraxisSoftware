@@ -62,6 +62,10 @@ export function Erhebung({
     queryFn: () => fetchErhebungen(patientId!),
     enabled: Boolean(patientId),
   });
+  const ausgangslage = useRef<{
+    entwurf: ErhebungDaten | undefined;
+    korrigiert: ErhebungDaten | undefined;
+  } | null>(null);
 
   if (!canWriteQuestionnaire(user.roles)) {
     return (
@@ -88,15 +92,22 @@ export function Erhebung({
     return <ErrorState title="Diesen Fragebogen gibt es nicht oder er ist nicht freigegeben." />;
   }
 
-  const entwurf = erhebungen.data.find(
-    (e) => e.id === suche.get('entwurf') && e.status === 'entwurf',
-  );
-  const korrigiert = erhebungen.data.find(
-    (e) =>
-      e.id === suche.get('korrigiert') &&
-      e.status === 'abgeschlossen' &&
-      e.superseded_by_response_id === null,
-  );
+  // Entschieden wird beim ersten Laden und danach festgehalten: Das eigene
+  // Sichern ändert die Liste (der Entwurf wird abgeschlossen, der korrigierte
+  // Bogen bekommt einen Nachfolger), und ohne diesen Riegel verschwände das
+  // Formular mitten im Speichern (Zweitreview FRB-EPIC-002, Befund 1).
+  if (ausgangslage.current === null) {
+    ausgangslage.current = {
+      entwurf: erhebungen.data.find((e) => e.id === suche.get('entwurf') && e.status === 'entwurf'),
+      korrigiert: erhebungen.data.find(
+        (e) =>
+          e.id === suche.get('korrigiert') &&
+          e.status === 'abgeschlossen' &&
+          e.superseded_by_response_id === null,
+      ),
+    };
+  }
+  const { entwurf, korrigiert } = ausgangslage.current;
   if ((suche.get('entwurf') && !entwurf) || (suche.get('korrigiert') && !korrigiert)) {
     return (
       <ErrorState

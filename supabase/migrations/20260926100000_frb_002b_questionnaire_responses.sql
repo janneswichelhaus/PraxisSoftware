@@ -243,7 +243,7 @@ begin
   perform app.assert_questionnaire_answers(p_answers);
 
   if p_response_id is not null then
-    select r.status, r.patient_id
+    select r.status, r.patient_id, r.instrument_id, r.definition_version
       into v_alt
     from public.patient_questionnaire_responses r
     where r.id = p_response_id and r.organization_id = v_org
@@ -254,6 +254,14 @@ begin
     end if;
     if v_alt.status <> 'entwurf' then
       raise exception 'questionnaire response is completed' using errcode = '23514';
+    end if;
+    -- Was ein Entwurf festhaelt, laesst sich beim Ueberschreiben nicht
+    -- aendern - und wird dann abgewiesen statt still uebergangen.
+    if v_alt.instrument_id <> p_instrument_id
+       or v_alt.definition_version <> p_definition_version
+       or p_supersedes_response_id is not null
+       or p_change_reason is not null then
+      raise exception 'draft identity is fixed' using errcode = '22023';
     end if;
 
     update public.patient_questionnaire_responses

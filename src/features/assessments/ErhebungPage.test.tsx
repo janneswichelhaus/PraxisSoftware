@@ -174,6 +174,31 @@ describe('Erhebung', () => {
     },
   );
 
+  it(
+    'behält das Formular, wenn die eigene Korrektur die Liste ändert',
+    { timeout: 20_000 },
+    async () => {
+      const user = userEvent.setup();
+      // Nach dem ersten Sichern liefert der Server den alten Bogen mit
+      // Nachfolger - das Formular darf deshalb nicht verschwinden.
+      fetchErhebungen
+        .mockResolvedValueOnce([abgeschlossen()])
+        .mockResolvedValue([{ ...abgeschlossen(), superseded_by_response_id: 'neu' }]);
+      erhebungAbschliessen.mockRejectedValueOnce(new Error('Verbindung unterbrochen.'));
+      renderWithProviders(
+        <Erhebung patientId={PATIENT_ID} user={testUser(['therapist'])} />,
+        `/patienten/${PATIENT_ID}/befund/erheben?instrument=anamnese_v8&korrigiert=e1`,
+      );
+      await user.click(await screen.findByLabelText(/Begründung der Korrektur/));
+      await user.paste('Frage 2 verwechselt');
+      await user.click(screen.getByText('Abschließen'));
+
+      expect(await screen.findByText('Verbindung unterbrochen.')).toBeInTheDocument();
+      expect(screen.queryByText('Dieser Bogen lässt sich hier nicht mehr bearbeiten.')).toBeNull();
+      expect(screen.getByText('Abschließen')).toBeInTheDocument();
+    },
+  );
+
   it('öffnet für office keinen Bogen', async () => {
     seite('instrument=anamnese_v8', ['office']);
     expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();

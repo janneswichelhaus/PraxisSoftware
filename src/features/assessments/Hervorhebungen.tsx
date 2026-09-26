@@ -26,13 +26,26 @@ export function Hervorhebungen({
   datum: string;
 }) {
   const treffer = hervorhebungen(definition, antworten);
+  const offen = [
+    ...new Set(
+      definition.hervorhebungen.flatMap((regel) => {
+        const item = definition.items.find((i) => i.id === regel.item);
+        return item && antworten[item.id] === undefined && item.nummer ? [item.nummer] : [];
+      }),
+    ),
+  ];
   if (definition.hervorhebungen.length === 0) return null;
 
   return (
     <div className="border-line-strong rounded-field mt-3 border p-3">
       <h4 className="text-ink text-sm font-semibold">Hervorgehobene Angaben</h4>
       {treffer.length === 0 ? (
-        <p className="text-ink-muted mt-1 text-sm">Keine Angabe fällt unter die Regeln.</p>
+        // Eine Feststellung über das Angekreuzte, keine Entwarnung - und was
+        // offen blieb, steht dabei (Zweitreview FRB-EPIC-002, Befund 2).
+        <p className="text-ink-muted mt-1 text-sm">
+          Nach den Regeln unten ist nichts angekreuzt.
+          {offen.length > 0 ? ` Nicht beantwortet: Frage ${offen.join(', ')}.` : ''}
+        </p>
       ) : (
         <ul className="mt-2 flex flex-col gap-2">
           {treffer.map(({ regel, item, angaben }) => (

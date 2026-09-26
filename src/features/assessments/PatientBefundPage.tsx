@@ -158,9 +158,9 @@ function ErhebungKarte({
       {erhebung.change_reason ? (
         <p className="text-ink mt-1 text-sm">Korrektur: {erhebung.change_reason}</p>
       ) : null}
-      {/* Hervorgehoben wird am geltenden Bogen; ein ersetzter zeigt seine
-          Antworten, aber keine zweite Liste neben der Korrektur. */}
-      {!ersetzt ? (
+      {/* Hervorgehoben wird am geltenden, abgeschlossenen Bogen; ein Entwurf ist
+          noch keine Angabe, ein ersetzter steht nicht neben seiner Korrektur. */}
+      {erhebung.status === 'abgeschlossen' && !ersetzt ? (
         <Hervorhebungen
           definition={definition}
           antworten={erhebung.answers}
