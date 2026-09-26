@@ -13,8 +13,12 @@ und ohne Aufnahmemetadaten; dazu die Regeln für Fotos von Dokumenten, die
 auf demselben Weg entstehen. Sie ist der erste Schritt von **DOK-006**
 ([`../development/ROADMAP.md`](../development/ROADMAP.md), Block 2), den
 Punkt 30 bisher versperrt. **Die Punkte 1 bis 30 bleiben Wort für Wort
-stehen**; Punkt 30, „Bewusst nicht Bestandteil" und die HEIC-Folgefrage
-tragen einen Vermerk.
+stehen.** Für die neue Art `patientenfoto` schränkt Fassung 2 drei von ihnen
+ein — Punkt 13 (keine Artkorrektur), Punkt 15 (kein Downloadname, Anzeige
+nach Punkt 40) und Punkt 23 (die Klasse folgt der Art, nicht dem
+Bezugsdatensatz); für alle anderen Arten gelten sie unverändert. Diese drei
+Punkte, Punkt 30, „Bewusst nicht Bestandteil" und die HEIC-Folgefrage tragen
+einen Vermerk.
 
 **Bis zur Annahme durch den Projektinhaber gilt Fassung 1** — Punkt 30 gibt
 Fotos von Patient:innen dann weiter nicht frei. Die Zeile in
@@ -208,6 +212,8 @@ tut; Punkt 33 entscheidet es hier.
     am Bezugsdatensatz**, nicht dem Leserecht an der Datei. Eine Korrektur der
     Dokumentart ist ein protokollierter Vorgang der therapeutischen Rollen: Sie
     verschiebt eine Sichtbarkeitsgrenze und ist damit keine Stammdatenpflege.
+    *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen): Die Art `patientenfoto`
+    wird nicht korrigiert, weder hin noch weg (Punkt 32).*
 14. **Patient:innen laden in V1 nichts hoch und sehen nichts.** Es gibt kein
     Portal (ADR-014, §14), und dieser ADR baut keines vor.
 15. **Ausgeliefert wird ausschließlich über kurzlebige signierte Verweise:**
@@ -216,6 +222,8 @@ tut; Punkt 33 entscheidet es hier.
     Voraus, nie für eine ganze Liste, nie gespeichert, nie in einer E-Mail, nie
     in der Adresszeile der Anwendung (ADR-011; dieselbe Regel wie bei den
     Rückwegen aus UX-012: kein Name in der Adresszeile).
+    *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen): Ein Verweis auf ein
+    `patientenfoto` trägt keinen Downloadnamen; angezeigt wird nach Punkt 40.*
 16. **Objekte werden mit `cacheControl: '0'` hochgeladen.** Der Standardwert
     der Bibliothek ist `3600`. Grund, belegt aus der Anbieterdokumentation:
     Eine am CDN zwischengespeicherte Antwort zu einem signierten Verweis kann
@@ -282,6 +290,8 @@ tut; Punkt 33 entscheidet es hier.
     (§630f BGB, ADR-008 Punkt 4, Anker `patients.care_concluded_on`).
     Abrechnungsbelege bekommen die steuerliche Klasse, die mit ABR-EPIC-002b
     entsteht. **Keine Datei ohne Klasse.**
+    *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen): Ausnahme `patientenfoto` —
+    seine Klasse folgt der Art, nicht dem Bezugsdatensatz (Punkt 38).*
 24. **Ein Legal Hold der Patient:in erfasst ihre Dateien mit** (ANN-033). Es
     gibt keinen eigenen Hold je Datei — das wäre ein zweiter Mechanismus für
     dieselbe Frage.
@@ -346,29 +356,35 @@ tut; Punkt 33 entscheidet es hier.
     Anamnesebogen auf Papier, unterschriebene Einwilligung — ist eine Datei
     nach den Abschnitten A bis F mit ihrer bisherigen Dokumentart und Klasse
     `patientenakte`; neu sind für sie nur der Aufnahmeweg (Punkt 33) und die
-    Entfernung der Metadaten (Punkt 34). Ein **Foto der Person** —
-    Körperregion, Haltung, Schwellung, Narbe, Ausgangsstellung — ist die neue
-    Dokumentart **`patientenfoto`** mit eigener Einwilligung, Klasse und Frist
-    (Punkte 35 bis 38). Die Grenze folgt Punkt 12: **Zeigt ein Bild die
-    Person, ist es ein Patientenfoto**, auch wenn zugleich ein Dokument darauf
-    zu sehen ist. `klinisches_bild` bleibt **Bildgebung aus ärztlicher Hand**
-    (Röntgen, MRT, Ultraschall) und ist nie ein Foto, das die Praxis von der
-    Person macht; die Erläuterung in `src/features/files/dokumentarten.ts`
-    wird in DOK-006 entsprechend geschärft.
+    Entfernung der Metadaten (Punkt 34). Ein **Foto, das die Praxis von der
+    Person aufnimmt** — Körperregion, Haltung, Schwellung, Narbe,
+    Ausgangsstellung — ist die neue Dokumentart **`patientenfoto`** mit
+    eigener Einwilligung, Klasse und Frist (Punkte 35 bis 38). Die Grenze
+    folgt Punkt 12: Zeigt eine Aufnahme der Praxis die Person, ist sie ein
+    Patientenfoto, auch wenn zugleich ein Dokument darauf zu sehen ist.
+    **Fremde Dokumente behalten ihre Art**, auch wenn sie die Person zeigen:
+    `klinisches_bild` bleibt Bildgebung und Aufnahmen aus ärztlicher oder
+    klinischer Hand (Röntgen, MRT, Ultraschall, das Wundfoto im
+    Klinikbericht) und ist nie ein Foto, das die Praxis selbst macht; die
+    Erläuterung in `src/features/files/dokumentarten.ts` wird in DOK-006
+    entsprechend geschärft. Bilder, die Patient:innen der Praxis schicken,
+    regelt Punkt 42.
 32. **Derselbe Weg, ein eigener Bucket.** Patientenfotos laufen durch
     **dieselbe Fachtabelle und dieselben Vorgänge** wie jede Datei — zwei
     Phasen mit Bestätigung, unveränderlich, kurzlebige Verweise, drei
-    Auditereignisse, zweistufige Löschung, Abgleich (Punkte 6 bis 27). Kein
-    zweiter Upload-, Verweis- oder Löschweg. Nach Punkt 3 liegen sie in einem
-    **eigenen privaten Bucket `patientenfotos`**, weil Frist und Löschweg an
-    der Klasse hängen; seine Allowlist ist enger als Punkt 18: **nur JPEG**,
-    höchstens 10 MB. Bezugsdatensatz ist die **Patient:in** (Punkt 10), nicht
-    Termin oder Eintrag: Das Foto lebt kürzer als die Dokumentation, und ein
-    finalisierter Eintrag (ADR-016) darf nicht auf etwas zeigen, das nach
-    einem Jahr fehlt. Die Art `patientenfoto` wird **nicht korrigiert**,
-    weder hin noch weg (Punkt 13) — eine Korrektur verschöbe Bucket, Klasse
-    und Einwilligungsbindung; ein Foto in der falschen Art wird gelöscht und
-    neu aufgenommen.
+    Auditereignisse, zweistufige Löschung, Abgleich (Punkte 6 bis 27) — mit
+    genau drei Abweichungen: keine Artkorrektur (Punkt 13), Anzeige ohne
+    Downloadnamen (Punkte 15 und 40), Klasse nach der Art statt nach dem
+    Bezugsdatensatz (Punkte 23 und 38). Kein zweiter Upload- oder Löschweg.
+    Nach Punkt 3 liegen sie in einem **eigenen privaten Bucket
+    `patientenfotos`**, weil Frist und Löschweg an der Klasse hängen; seine
+    Allowlist ist enger als Punkt 18: **nur JPEG**, höchstens 10 MB.
+    Bezugsdatensatz ist die **Patient:in** (Punkt 10), nicht Termin oder
+    Eintrag: Das Foto lebt kürzer als die Dokumentation, und ein finalisierter
+    Eintrag (ADR-016) darf nicht auf etwas zeigen, das nach einem Jahr fehlt.
+    Die Art `patientenfoto` wird **nicht korrigiert**, weder hin noch weg —
+    eine Korrektur verschöbe Bucket, Klasse und Einwilligungsbindung; ein Foto
+    in der falschen Art wird gelöscht und neu aufgenommen.
 33. **Aufnahme nur über die Kamera der Anwendung.** Ein Patientenfoto
     entsteht **ausschließlich** im Kameradialog der Anwendung: Live-Bild über
     `getUserMedia` (nur Bild, nie Ton), Auslöser in der Anwendung, das Foto
@@ -399,22 +415,27 @@ tut; Punkt 33 entscheidet es hier.
       Kompensation ist dieselbe wie in Punkt 28: Hochladen nur durch
       angemeldete Praxiskonten auf Praxisgeräten.
 34. **Aufnahmemetadaten entstehen nicht, und wo es sie gibt, entfernt sie das
-    Gerät.** Ein Bild aus dem Kameradialog wird aus Pixeln neu kodiert und
-    trägt keine EXIF-, XMP- oder IPTC-Daten: keinen Ort, kein Gerät, keine
-    Aufnahmezeit, kein eingebettetes Vorschaubild. **Jedes Bild (JPEG, PNG),
-    das über den Dateiwähler kommt**, wird vor dem Upload auf dem Gerät auf
-    dieselbe Weise im selben Format neu geschrieben, die Ausrichtung vorher in
-    die Pixel übernommen. Das eingebettete Vorschaubild ist der unterschätzte
-    Teil: Es kann zeigen, was im Bild selbst weggeschnitten wurde. Der zweite
-    Grund ist §20: Ort und Uhrzeit eines Hausbesuchsfotos sind zugleich die
-    Adresse der Patient:in und ein Bewegungsprofil der Therapeut:in. Die
-    Prüfsumme (Punkt 9) wird über die neu geschriebenen Bytes gebildet. Was
-    die Anwendung **stattdessen** festhält, steht nur in der Zeile aus Punkt
-    6: hochgeladen am, von wem, Anzeigename — kein Ort, kein Gerätemodell,
-    auch nicht in der Datenbank. Wie Punkt 33 ist das eine Eigenschaft des
-    Wegs; **nachgewiesen wird sie durch einen Test**, nicht durch diesen Satz:
-    Ein Bild mit Ortsangabe geht durch den Weg, und in den hochgeladenen Bytes
-    steht kein EXIF-Segment mehr. PDF bleibt unverändert (Folgefragen).
+    Gerät.** Ein Bild aus dem Kameradialog wird aus Pixeln kodiert und trägt
+    keine EXIF-, XMP- oder IPTC-Daten: keinen Ort, kein Gerät, keine
+    Aufnahmezeit, kein eingebettetes Vorschaubild. **Einem Bild (JPEG, PNG)
+    aus dem Dateiwähler** entfernt das Gerät vor dem Upload die
+    Metadatensegmente **verlustfrei**: Die Bilddaten bleiben Byte für Byte,
+    erhalten bleibt als einzige Angabe die Ausrichtung. So wird kein fremdes
+    Dokument — Arztbrief, Röntgenbild — neu kodiert und verschlechtert. Das
+    eingebettete Vorschaubild ist der unterschätzte Teil: Es kann zeigen, was
+    im Bild selbst weggeschnitten wurde. Der zweite Grund ist §20: Ort und
+    Uhrzeit eines Hausbesuchsfotos sind zugleich die Adresse der Patient:in
+    und ein Bewegungsprofil der Therapeut:in. Die Prüfsumme (Punkt 9) wird
+    über die bereinigten Bytes gebildet; sie belegt die abgelegte Fassung,
+    nicht die empfangene. Was die Anwendung **stattdessen** festhält, steht
+    nur in der Zeile aus Punkt 6: hochgeladen am, von wem, Anzeigename — kein
+    Ort, kein Gerätemodell, auch nicht in der Datenbank. Wie Punkt 33 ist das
+    eine Eigenschaft des Wegs; **nachgewiesen wird sie durch Tests**, nicht
+    durch diesen Satz: Ein Bild mit Ortsangabe und Vorschaubild geht durch
+    den Dateiwähler, und in den hochgeladenen Bytes stehen weder Ort noch
+    Vorschaubild, die Bilddaten sind unverändert; ein Bild aus dem
+    Kameradialog trägt gar kein EXIF-Segment. PDF bleibt unverändert
+    (Folgefragen).
 35. **Die eigene Einwilligung ist die Rechtsgrundlage.** Ein Patientenfoto
     stützt sich auf die **ausdrückliche Einwilligung** der Person (Art. 9
     Abs. 2 lit. a DSGVO), nicht auf den Behandlungsvertrag. §5 verlangt sie
@@ -432,81 +453,132 @@ tut; Punkt 33 entscheidet es hier.
     - **Ein Zweck im vorhandenen Modell**, kein zweites: ein weiterer Wert in
       `patient_privacy_records` (ANN-093). Papier bleibt Papier (E-13); die
       Anwendung hält Erteilung und Widerruf mit dem Tag auf dem Papier fest,
-      ein Scan kann als `einwilligung` abgelegt werden.
+      ein Scan kann als `einwilligung` abgelegt werden. Eine **Ablehnung** ist
+      ein eigener Vermerk, kein Widerruf: Das Modell kennt heute nur Erteilung
+      und Widerruf und bekommt dafür eine dritte Art.
     - **Umfang**, den der Wortlaut abdecken muss (der Wortlaut selbst geht in
-      B2): Aufnahme durch das Praxisteam während der Behandlung, Ablage in der
-      Akte, Sichtbarkeit nach Punkt 37, Vergleich im Verlauf, Frist nach Punkt
-      38, Widerruf jederzeit mit Löschung. **Nicht** abgedeckt und nicht
-      gebaut: Weitergabe an Dritte einschließlich der verordnenden Praxis,
-      Veröffentlichung, Schulung, Werbung, jede KI-Verarbeitung.
+      B2): Aufnahme durch das Praxisteam während der Behandlung, Ablage bei
+      der Person in der Anwendung — neben der Behandlungsakte nach §630f BGB,
+      nicht in ihr —, Sichtbarkeit nach Punkt 37, Vergleich im Verlauf, Frist
+      nach Punkt 38, Widerruf jederzeit mit Löschung. **Nicht** abgedeckt und
+      nicht gebaut: Weitergabe an Dritte einschließlich der verordnenden
+      Praxis, Veröffentlichung, Schulung, Werbung, jede KI-Verarbeitung.
     - **Ohne Einwilligung wird genauso behandelt** (Art. 7 Abs. 4 DSGVO). Die
       Erstaufnahme (PRX-EPIC-003) führt die Fotoeinwilligung deshalb mit
       „abgelehnt" als erledigtem Stand, nicht als offenem Punkt.
     - Das Gesicht wird nur aufgenommen, wenn es die betroffene Region ist;
       der Kameradialog sagt das (Art. 5 Abs. 1 lit. c DSGVO).
-36. **Die Einwilligung prüft der Server, der Widerruf wirkt sofort.** Die
+36. **Die Einwilligung prüft der Server, der Widerruf sperrt sofort.** Die
     Prüfung sitzt in **einer** Funktion, die Vorbereitung und Bestätigung des
     Uploads (Punkt 7), die Liste und die Verweisausstellung (Punkt 15)
-    gleichermaßen fragen — nicht in der Oberfläche (§4.7). Maßgeblich ist die
-    jüngste Zeile des Zwecks. Der **Widerruf** schließt in derselben
-    Transaktion alle vier Wege und löscht die Fotos der Person über Punkt 25
-    — unverzüglich, nicht erst im nächsten Löschlauf (Art. 17 Abs. 1 lit. b
-    DSGVO). Steht ein **Legal Hold** (Punkt 24, ANN-033), bleiben die Fotos
-    gesperrt — keine Anzeige, kein Verweis — und werden gelöscht, sobald er
-    endet (Art. 17 Abs. 3 lit. e DSGVO). Eine neue Einwilligung erlaubt neue
-    Fotos; gelöschte kommen nicht zurück. Weil der Widerruf als Vermerk in der
-    Datenbank steht, wendet der Löschlauf ihn nach einer Wiederherstellung
-    von selbst erneut an (Punkt 26, ADR-008 Punkt 8).
+    gleichermaßen fragen — nicht in der Oberfläche (§4.7). Neue Fotos setzen
+    voraus, dass die jüngste Zeile des Zwecks eine Erteilung ist. Für ein
+    vorhandenes Foto gilt: **Es ist gesperrt und fällig, sobald nach seiner
+    Aufnahme ein Widerruf vermerkt ist** — gleich, ob danach eine neue
+    Einwilligung folgt; die neue gilt nur für neue Fotos.
+    - **Was sofort wirkt**, in derselben Transaktion wie der Vermerk: die
+      Sperre auf allen vier Wegen, das Löschen der Zeilen und die
+      Löschaufträge für die Objekte (Art. 17 Abs. 1 lit. b DSGVO). Das Objekt
+      selbst entfernt danach der Weg aus Punkt 25 mit Quittung; bis dahin ist
+      es ohne Zeile nicht erreichbar, und der offene Auftrag ist sichtbar. Wie
+      lange ein Auftrag höchstens warten darf, ist die offene Folgefrage zu
+      Punkt 25.
+    - **Die Löschung schreibt ins Löschjournal** (`deletion_journal`,
+      ANN-031) wie der Löschlauf, damit sie nach einer Wiederherstellung
+      erneut angewendet wird (Punkt 26, ADR-008 Punkt 8). **Grenze:** Ein
+      Widerrufsvermerk, der nach der letzten Datenbanksicherung entstand,
+      geht mit einer Wiederherstellung verloren, und die Einwilligung gälte
+      wieder als erteilt. Das Papier bleibt die Quelle (E-13); das
+      Wiederherstellungsverfahren (OPS-003) trägt Vermerke aus dem
+      RPO-Fenster nach.
+    - Den Widerruf vermerkt, wer Vermerke schreiben darf, auch `office`. Die
+      Löschung ist die Rechtsfolge der Erklärung der Person, nicht die
+      Ausübung des Löschrechts aus Punkt 37.
+    - Steht ein **Legal Hold** (Punkt 24, ANN-033), bleiben die Fotos
+      gesperrt — keine Anzeige, kein Verweis — und werden gelöscht, sobald er
+      endet (Art. 17 Abs. 3 lit. e DSGVO).
 37. **Rollenschnitt: klinisch.** Aufnehmen und löschen dürfen `owner`,
     `therapist` und `team_lead` (Punkt 13) — ein misslungenes Foto sofort,
     jedes andere jederzeit. Lesen folgt §4.3: `office` sieht Patientenfotos
     wie jeden klinischen Inhalt, jeder Zugriff ist auditiert; wer das enger
     will, ändert §4.3 und nicht diesen ADR. Das Foto gehört zum
     **Behandlungsverhältnis** (§4.8, ADR-021): Im Training gibt es in V1 keine
-    Fotos, und eine Übernahme dorthin ist nicht vorgesehen. Patient:innen
-    sehen ihre Fotos in V1 nicht (Punkt 14).
+    Fotos, und eine Übernahme dorthin ist nicht vorgesehen. Auf der Plattform
+    für Patient:innen (§4.6) erscheinen Patientenfotos in V1 nicht; das zu
+    ändern wäre eine eigene Entscheidung.
 38. **Frist: zwölf Monate nach der Aufnahme, spätestens drei Monate nach
     Abschluss der Versorgung.** Die neue Datenklasse **`patientenfoto`**
     steht im Retention Schedule (LOE-001a). Fällig ist ein Foto zum
     **frühesten** von drei Zeitpunkten: zwölf Monate nach der Aufnahme, drei
-    Monate nach `care_concluded_on` (ANN-032), Widerruf (Punkt 36). Der
-    Löschlauf (`apply_retention`) löscht fällige Fotos **automatisch** über
-    Punkt 25; ein Legal Hold hält an. Jedes Foto zeigt das Datum, an dem es
-    spätestens gelöscht wird. **Keine Verlängerung in V1**: Wer nach einem
-    Jahr noch vergleichen will, macht ein neues Foto; was das alte gezeigt
-    hat, steht nach Punkt 35 im Eintrag. Zu den Zahlen: Übergabe und
-    Vergleich gehören zur laufenden Versorgung. Zwölf Monate decken eine
-    Rehabilitation nach Operation mit mehreren Folgeverordnungen; die Grenze
-    ab Aufnahme hält die Frist auch dann kurz, wenn niemand die Versorgung
-    abschließt — der Abschluss ist ein Vorgang von Hand (ANN-032). Drei
-    Monate nach dem Abschluss fangen die Pause zwischen zwei Verordnungen und
-    einen versehentlichen, zurückgenommenen Abschluss ab. Beide Zahlen sind
-    nach ADR-008 interne Initialentscheidungen, die der DSFA-Prozess
-    validiert, und stehen **an einer Stelle**: bei der Klasse im Retention
-    Schedule, nicht verteilt über Code und Oberfläche.
+    Monate nach dem festgehaltenen Abschluss der Versorgung, Widerruf nach
+    Punkt 36.
+    - **Anker des Abschlusses ist `care_concluded_at`**, der Zeitpunkt, zu
+      dem die Praxis den Abschluss festhält — nicht der fachliche Tag
+      `care_concluded_on`. Der darf zurückdatiert werden (ANN-032); ein um
+      vier Monate zurückdatierter Abschluss machte sonst jedes Foto sofort
+      fällig, und der Puffer für einen versehentlichen Abschluss wäre keiner.
+    - **Zwei Anker, eine Stelle.** Die Klassenzeile kennt heute einen Anker
+      und ein Intervall. Sie bekommt eine **optionale Obergrenze** — einen
+      zweiten Anker mit eigenem Intervall —, damit beide Zahlen in der Zeile
+      stehen und keine im Code (ANN-001).
+    - Der Löschlauf (`apply_retention`) löscht fällige Zeilen
+      **automatisch** und schreibt die Löschaufträge; die Objekte folgen
+      über Punkt 25. Ein Legal Hold hält an. Jedes Foto zeigt das Datum, an
+      dem es spätestens gelöscht wird.
+    - **Keine Verlängerung in V1**: Wer nach einem Jahr noch vergleichen
+      will, macht ein neues Foto; was das alte gezeigt hat, steht nach Punkt
+      35 im Eintrag.
+
+    Zu den Zahlen: Übergabe und Vergleich gehören zur laufenden Versorgung.
+    Zwölf Monate decken eine Rehabilitation nach Operation mit mehreren
+    Folgeverordnungen; die Grenze ab Aufnahme hält die Frist auch dann kurz,
+    wenn niemand die Versorgung abschließt — der Abschluss ist ein Vorgang
+    von Hand (ANN-032). Drei Monate nach dem Abschluss fangen die Pause
+    zwischen zwei Verordnungen und einen versehentlichen, zurückgenommenen
+    Abschluss ab. Beide Zahlen sind nach ADR-008 interne
+    Initialentscheidungen, die der DSFA-Prozess validiert.
 39. **Vergleich ohne Bewertung.** Zwei Fotos derselben Person nebeneinander,
     gleich groß, jedes mit Aufnahmedatum, Anzeigename und aufnehmender Person
     — mehr nicht. Der Vergleich öffnet zwei Fotos und stellt damit zwei
-    Verweise aus, also zwei Auditeinträge (Punkte 20 und 21). **Unzulässig**
-    sind nach §17 und ADR-006 Punkt 11 jede automatische Ausrichtung,
-    Überlagerung, Vermessung oder Markierung im Bild und jede Aussage über den
-    Unterschied („Schwellung geringer"), gleich ob als Text, Farbe oder
-    Symbol. Die Bewertung trifft die Therapeut:in und schreibt sie in den
-    Eintrag. Patientenfotos gehen **nie** an das AI Gateway (ADR-005,
-    „Bewusst nicht Bestandteil" unten) — auch nicht in die Erkennung des
-    Verordnungsfotos aus KI-EPIC-002, die nur Dokumente sieht. Weil keine
-    technische Auswertung stattfindet, sind die Fotos keine biometrischen
-    Daten (Erwägungsgrund 51 DSGVO); Gesundheitsdaten bleiben sie.
+    Verweise aus, also zwei Auditeinträge (Punkte 20 und 21). **Jede Aussage
+    über den Unterschied** („Schwellung geringer") ist nach §17 und ADR-006
+    Punkt 11 unzulässig, gleich ob als Text, Farbe oder Symbol. **Diese
+    Fassung schließt zusätzlich** jede automatische Ausrichtung,
+    Überlagerung, Vermessung oder Markierung im Bild aus — nicht weil ADR-006
+    sie verböte, sondern aus Datensparsamkeit: Ohne technische Auswertung
+    bleiben die Fotos außerhalb der biometrischen Daten (Erwägungsgrund 51
+    DSGVO; Gesundheitsdaten bleiben sie), und eine Messung im Bild wäre der
+    erste Schritt zu einer abgeleiteten Aussage. Die Bewertung trifft die
+    Therapeut:in und schreibt sie in den Eintrag. Patientenfotos gehen
+    **nie** an das AI Gateway (ADR-005, „Bewusst nicht Bestandteil" unten) —
+    auch nicht in die Erkennung des Verordnungsfotos aus KI-EPIC-002, die nur
+    Dokumente sieht.
 40. **Anzeige nur in der Anwendung, keine Galerie, kein Download.** Ein
-    Patientenfoto wird im eigenen Rahmen angezeigt (Punkt 19), **nicht zum
-    Herunterladen oder Teilen angeboten** und ohne Zwischenspeicher des
-    Browsers geladen (`no-store`), damit das Gerät nach dem Schließen kein
-    Bild behält. Die Liste zeigt Datum, Anzeigename, aufnehmende Person und
-    Löschdatum — **keine Vorschaubilder**: Eine Vorschau je Eintrag wäre ein
-    Verweis je Eintrag, und Punkt 15 verbietet Verweise auf Vorrat für eine
-    Liste. **Ein Bildschirmfoto kann eine Webanwendung nicht verhindern** —
-    das gehört so in die Verfahrensbeschreibung, wie Punkt 21 die Grenze der
-    Protokollierung benennt, und in die Endgeräte-Richtlinie aus BETRIEB-001.
+    Patientenfoto wird im eigenen Rahmen angezeigt (Punkt 19) und **nicht zum
+    Herunterladen oder Teilen angeboten**.
+    - **Der Anzeigeweg ist festgelegt**, weil der vorhandene das Gegenteil
+      täte: Heute signiert die Dateiliste mit dem Anzeigenamen als
+      Downloadnamen und öffnet den Verweis in einem neuen Fenster — die
+      Antwort käme als Anhang und läge im Download-Ordner des Handys. Für
+      `patientenfoto` gilt: Verweis **ohne** Downloadnamen, Laden per `fetch`
+      mit `cache: 'no-store'` in den Speicher der Seite, Anzeige aus einer
+      Objekt-URL, die beim Schließen freigegeben wird; nie ein Fenster auf
+      den Verweis. `no-store` ist dabei eine Anweisung an den Browser, nicht
+      die Kopfzeile aus Punkt 16: Der Browser liest die Antwort nicht aus
+      seinem Zwischenspeicher und legt sie dort nicht ab.
+    - Die Liste zeigt Datum, Anzeigename, aufnehmende Person und Löschdatum —
+      **keine Vorschaubilder**: Eine Vorschau je Eintrag wäre ein Verweis je
+      Eintrag, und Punkt 15 verbietet Verweise auf Vorrat für eine Liste.
+    - **Die einzige Herausgabe ist die an die Person selbst**: eine Kopie
+      nach Art. 15 Abs. 3 DSGVO und, weil die Einwilligung die Grundlage ist,
+      die Herausgabe nach Art. 20 DSGVO. Das tut `owner` im Verfahren der
+      Betroffenenrechte (OPS-006), auditiert. Die vorhandene Auskunft führt
+      Dateien heute ohne Inhalt; den Weg dafür legt der Bau fest
+      (Folgefragen).
+    - **Ein Bildschirmfoto kann eine Webanwendung nicht verhindern** — das
+      gehört so in die Verfahrensbeschreibung, wie Punkt 21 die Grenze der
+      Protokollierung benennt, und in die Endgeräte-Richtlinie aus
+      BETRIEB-001.
 41. **Gebaut wird mit synthetischen Bildern, scharfgeschaltet nach B2.** In
     Tests liefert Chromium eine künstliche Kamera mit Testbild; ein Foto
     einer echten Person — auch aus dem Team — gehört nicht in Tests,
@@ -517,8 +589,12 @@ tut; Punkt 33 entscheidet es hier.
     G14) die Verarbeitung enthält — zusätzlich zu den Bedingungen aus Punkt 2
     und 26. Das Bauen wartet darauf nicht (§15.2).
 42. **Weiter nicht freigegeben:** Videos und Audio von Patient:innen, Fotos
-    im Trainingsverhältnis, Uploads durch Patient:innen oder aus einem Portal
-    (dann gilt Punkt 29), Anhänge im Teamchat, Versand aus der Anwendung.
+    im Trainingsverhältnis, Uploads durch Patient:innen oder über die
+    Plattform (dann gilt Punkt 29), Anhänge im Teamchat, Versand aus der
+    Anwendung. **Bilder, die Patient:innen der Praxis auf anderem Weg
+    schicken**, werden in V1 nicht abgelegt — weder als `patientenfoto`, das
+    nur im Kameradialog entsteht, noch als `klinisches_bild`, das aus
+    ärztlicher Hand stammt. Was sie zeigen, gehört in den Eintrag.
 
 ## Was OPS-001 zusätzlich prüfen muss
 
@@ -599,8 +675,17 @@ aus Forendiskussionen:
   `localhost` haben sie.
 - **Eine Sicherheitskopfzeile wird geöffnet**, eng und hier entschieden:
   `camera=(self)` statt `camera=()`. Der Test der Kopfzeilen in
-  `scripts/testumgebung.test.mjs` hält den neuen Wert fest, damit er nicht
-  weiter aufgeht.
+  `scripts/testumgebung.test.mjs` prüft die Permissions-Policy heute nicht
+  und bekommt eine Prüfung ihres ganzen Werts, damit sie nicht weiter
+  aufgeht.
+- **Das Öffnen einer Datei bekommt einen zweiten Anzeigeweg** (Punkt 40):
+  Für Patientenfotos lädt die Anwendung selbst und zeigt aus dem Speicher,
+  statt ein Fenster auf den Verweis zu öffnen. Die übrigen Arten öffnen
+  weiter wie in Fassung 1.
+- **Widerruf und Frist sind je Foto zu rechnen**, nicht aus dem jüngsten
+  Stand der Einwilligung (Punkt 36), und der Löschweg nach Widerruf schreibt
+  ins Löschjournal. Beides braucht Datenbanktests mit der Folge Erteilung,
+  Widerruf, Legal Hold, neue Erteilung.
 - **Eine falsch gewählte Art bleibt die scharfe Kante** (Konsequenz zu
   Punkt 12). Wer ein Foto der Person über den Dateiwähler als
   `klinisches_bild` ablegt, umgeht Einwilligung und Frist, und kein Server
@@ -632,12 +717,18 @@ aus Forendiskussionen:
   ausgeschlossen (Punkt 42).*
 - Anhänge im internen Teamchat (TEAM-001) und in der Patientenkommunikation.
 - Volltextsuche in Dateien, Texterkennung, Bildtransformationen und jede Form
-  von KI auf Dateiinhalten (ADR-005 bleibt maßgeblich).
+  von KI auf Dateiinhalten (ADR-005 bleibt maßgeblich). *Vermerk 2026-09-26
+  (Fassung 2, vorgeschlagen): Das Entfernen von Metadaten auf dem Gerät
+  (Punkt 34) ist keine Bildtransformation in diesem Sinn; Ausrichtung,
+  Vermessung und Markierung schließt Punkt 39 aus.*
 - Elektronische Signaturen. `IDEA-PRX-015` (Unterschrift am Hausbesuch) ist am
   2026-09-06 verworfen; Behandlungsvertrag und Datenschutzinformation bleiben
   Papier mit Vermerk (E-13, Roadmap G8).
 - Die Oberfläche: Wie ein Upload aussieht, wo die Dateiliste in der Akte steht
   und wie eine fehlende Datei gemeldet wird, entscheidet DAT-EPIC-001.
+  *Vermerk 2026-09-26 (Fassung 2, vorgeschlagen): Für Patientenfotos legt
+  Abschnitt G Aufnahme- und Anzeigeweg fest (Punkte 33 und 40); das Aussehen
+  entscheidet DOK-006.*
 
 ## Offene Folgefragen
 
@@ -646,8 +737,8 @@ aus Forendiskussionen:
   JPEG liefert, ist in DAT-001 am echten Gerät zu prüfen — die Antwort ändert
   die Allowlist, nicht die Regel dahinter. *Vermerk 2026-09-26 (Fassung 2,
   vorgeschlagen): Für den Kameradialog erledigt — er liefert JPEG
-  (Punkt 33). Für den Dateiwähler bleibt die Frage offen; die Neukodierung
-  aus Punkt 34 hilft nur, wo der Browser HEIC selbst lesen kann.*
+  (Punkt 33). Für den Dateiwähler bleibt die Frage offen; Punkt 34 entfernt
+  dort nur Metadaten und wandelt kein Format um.*
 - **Wie wird eine ersetzte Datei angezeigt** (Punkt 8)? Sichtbar mit Vermerk
   „ersetzt" wie bei der Dokumentation (ADR-016), oder nur für therapeutische
   Rollen? Fällt mit der Oberfläche in DAT-001.
@@ -670,8 +761,18 @@ aus Forendiskussionen:
 - **Bildqualität.** Reicht die Auflösung aus `getUserMedia` auf iPhone und
   Android für eine lesbare Verordnung? In DOK-006 am echten Gerät mit einem
   Musterrezept zu prüfen. Reicht sie nicht, bleibt für Dokumente der
-  Dateiwähler mit Neukodierung (Punkte 33 und 34); für Patientenfotos ändert
-  sich nichts.
+  Dateiwähler mit Metadatenentfernung (Punkte 33 und 34); für Patientenfotos
+  ändert sich nichts.
+- **Herausgabe an die Person** (Punkt 40). Die Auskunft aus OPS-006 führt
+  Dateien heute ohne Inhalt. Wie `owner` die Kopie nach Art. 15 Abs. 3 DSGVO
+  und die Herausgabe nach Art. 20 DSGVO erzeugt — Einzeldatei oder Paket,
+  mit welchem Auditereignis —, legt der Bau von DOK-006 fest; der Weg ist
+  der einzige, auf dem ein Patientenfoto die Anwendung verlässt.
+- **Bilder, die Patient:innen schicken** (Punkt 42). Ob die Praxis sie
+  später als `patientenfoto` ablegen darf — mit Einwilligung, Frist und
+  Metadatenentfernung, aber ohne Kameradialog —, entscheidet ein Fall, der
+  es zeigt, zusammen mit der Frage, auf welchem Weg sie überhaupt in die
+  Praxis kommen.
 - **PDF-Metadaten** (Autor, Erzeuger, Datum) bleiben unverändert. Sie stammen
   von Scanner oder Arztpraxis und tragen weder Ort noch Vorschaubild; ob sie
   bereinigt werden sollen, entscheidet ein Fall, der es zeigt.
@@ -738,12 +839,12 @@ Freigabe mit echten Personen hängt an B2 und der DSFA (Punkt 41).
 9. **Fotos von Patient:innen stehen auf Einwilligung, sind Arbeitshilfe und
    nicht Teil der zehnjährigen Akte; der Widerruf löscht sofort; ein Foto
    ersetzt keinen Eintrag** (Punkte 35 und 36)?
-   *Empfehlung: ja.* Das ist die Lesart, die §5 und `IDEA-KOM-003` („eigene
-   Einwilligung, kurze Frist") meinen, und die sparsamste. *Alternative:* Das
-   Foto ist Teil der Akte (Art. 9 Abs. 2 lit. h DSGVO), bleibt zehn Jahre,
-   die Einwilligung ist nur Zusage, und ein Widerruf verhindert nur neue
-   Fotos — rechtlich die verbreitetere Lesart, aber zehn Jahre Körperfotos
-   auf einem Handy-Ablauf.
+   *Empfehlung: ja.* §5 verlangt nur die eigene Einwilligung und lässt die
+   Frist offen; diese Lesart ist die sparsamste, die dazu passt. *Alternative:*
+   Das Foto ist Teil der Akte (Art. 9 Abs. 2 lit. h DSGVO), bleibt zehn
+   Jahre, die Einwilligung ist nur Zusage, und ein Widerruf verhindert nur
+   neue Fotos — rechtlich die verbreitetere Lesart, aber zehn Jahre
+   Körperfotos aus einem Handy-Ablauf.
 10. **Frist zwölf Monate nach der Aufnahme, spätestens drei Monate nach
     Abschluss der Versorgung, keine Verlängerung** (Punkt 38)?
     *Empfehlung: ja.* Deckt Rehabilitation und Folgeverordnungen, endet auch
@@ -754,12 +855,16 @@ Freigabe mit echten Personen hängt an B2 und der DSFA (Punkt 41).
     Herkunft** (Punkt 33)?
     *Empfehlung: ja.* Nur so landet nichts in der Mediathek und ihrem
     Cloud-Backup — genau dein Anlass vom 2026-09-23.
-12. **Jedes Bild wird vor dem Upload auf dem Gerät neu geschrieben**, auch das
-    Foto einer Verordnung aus dem Dateiwähler (Punkt 34)?
-    *Empfehlung: ja.* Eine Regel für alle Bilder statt zweier; der kleine
-    Qualitätsverlust der Neukodierung ist bei einem Rezept unerheblich.
+12. **Jedes Bild verliert vor dem Upload auf dem Gerät seine Metadaten** —
+    auch fremde Bilder aus dem Dateiwähler wie ein Arztbrief oder ein
+    Röntgenbild, dort verlustfrei und nur die Ausrichtung behaltend
+    (Punkt 34)?
+    *Empfehlung: ja.* Eine Regel für alle Bilder; die Bilddaten fremder
+    Dokumente bleiben unverändert, abgelegt wird aber nicht mehr das
+    byte-gleiche Original.
 13. **Keine Vorschaubilder in der Liste, kein Download, kein Teilen**
-    (Punkt 40) — auch wenn das weniger bequem ist als die Mediathek?
+    (Punkt 40) — auch wenn das weniger bequem ist als die Mediathek? Einzige
+    Herausgabe ist die Kopie an die Person selbst über `owner`.
     *Empfehlung: ja.* Jede Vorschau wäre ein Verweis auf Vorrat; ein Foto
     öffnest du bewusst.
 14. **Office sieht Patientenfotos wie jeden klinischen Inhalt** (Punkt 37,
@@ -829,6 +934,15 @@ Diesmal aus der lokalen Umgebung abgerufen, ohne Egress-Sperre:
   Vorschaubilder — **nur aus Sekundärquellen** (Entwicklerartikel auf
   `dev.to`, Werkzeugseiten). Deshalb verlangt Punkt 34 den Nachweis durch
   einen Test und stützt sich nicht auf diese Aussage.
+- **MDN, `Request.cache`**: Mit `no-store` holt der Browser die Antwort ohne
+  Blick in seinen Zwischenspeicher und legt sie dort nicht ab (Punkt 40).
+- **Bestand, geprüft im Zweitreview dieser Fassung:** `src/features/files/api.ts`
+  signiert mit dem Anzeigenamen als Downloadnamen, `Dateiliste.tsx` öffnet
+  den Verweis in einem neuen Fenster (Punkt 40);
+  `app.can_execute_storage_deletion` lässt nur `owner` Löschaufträge
+  ausführen (Punkt 36); `retention_classes` kennt einen Anker je Klasse
+  (Punkt 38); `care_concluded_on` darf zurückdatiert werden (ANN-032,
+  Punkt 38); Vermerke schreibt auch `office` (Punkt 36).
 - **Einordnung von Verlaufsfotos** — **nur Sekundärquellen**
   (Datenschutzberatungen und Praxisleitfäden, darunter
   `community.robin-data.io`, `dr-datenschutz.de`, `munas.de`): Medizinisch
@@ -849,4 +963,4 @@ Einwilligung und Frist gehen mit B2 an die Prüfung (Punkt 41).
 | Fassung | Datum | Änderung |
 |---|---|---|
 | 1 | 2026-09-12 | angenommen, alle acht Bestätigungsfragen wie empfohlen |
-| 2 | 2026-09-26 | **vorgeschlagen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 unverändert; Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
+| 2 | 2026-09-26 | **vorgeschlagen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung, Anzeige ohne Download; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 bleiben stehen; für `patientenfoto` eingeschränkt sind Punkt 13 (keine Artkorrektur), 15 (kein Downloadname) und 23 (Klasse nach der Art), je mit Vermerk; weitere Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
