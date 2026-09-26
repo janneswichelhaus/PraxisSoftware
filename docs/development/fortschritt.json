@@ -372,6 +372,12 @@
           "status": "offen"
         },
         {
+          "id": "sta-epic-001",
+          "name": "STA-EPIC-001 Statistiken: fünf Kennzahlen zur Praxissteuerung",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
           "id": "trn-epic-001",
           "name": "TRN-EPIC-001 Trainingskund:in anlegen",
           "gewicht": 1,
@@ -565,8 +571,8 @@
         },
         {
           "id": "prx-epic-004",
-          "name": "PRX-EPIC-004 Komfort und Auswertung",
-          "gewicht": 2,
+          "name": "PRX-EPIC-004 Komfort und Export",
+          "gewicht": 1,
           "status": "offen"
         },
         {

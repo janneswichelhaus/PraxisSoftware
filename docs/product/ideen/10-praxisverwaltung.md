@@ -486,8 +486,8 @@ Prüfung, kein Detail.
 
 | | |
 |---|---|
-| Status | vorschlag |
-| Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei sechs Produkten) |
+| Status | bestätigt (Roadmap: STA-EPIC-001) |
+| Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei sechs Produkten); Jannes 2026-09-26 |
 | Berührt | §20, B6, ADR-004, ADR-009 |
 
 **Idee.** Für `owner`: Umsatz je Monat, offene Posten, Behandlungen je
@@ -515,11 +515,16 @@ Bestand, noch unbewertet:
   („Steuern", nicht nur Anzeigen) — etwa von der Liste auslaufender
   Verordnungen direkt in die Anrufliste.
 
-**Offen.** Welche fünf Zahlen Jannes jede Woche sehen will; ob Werte je
-Person je gezeigt werden (B6, §20 — bis dahin nein); Rolle `owner` allein
-(ADR-004). In der Roadmap steht die Idee in PRX-EPIC-004 (Block 9); wird sie
-als eigener Bereich vorgezogen, ist das eine Entscheidung von Jannes über die
-Reihenfolge, kein Scope aus diesem Eintrag.
+**Entschieden (2026-09-26, Claude im Auftrag von Jannes).** Vorgezogen als
+**STA-EPIC-001** ans Ende von Block 2 (Roadmap 7.2) — nicht sofort, weil die
+Zahlen auf Abrechnung, Terminen und Verordnungen aufsetzen, die Block 2 erst
+fertig macht; nicht erst in Block 9, damit der Bereich vor Probewoche 1 steht
+und dort mit dem ersten echten Ablauf geprüft wird. Die fünf Zahlen der Woche:
+Umsatz und Zahlungseingang des Monats, offene Posten mit Alter, Auslastung der
+nächsten zwei Wochen, Verordnungen ohne Anschluss (mit ungedeckten Terminen),
+Ausfälle mit Ausfallhonoraren — je mit Zielwert und der einen Handlung, die sie
+auslöst. Nur `owner`, nur Praxissummen (§20, B6). Verbindlich wird der
+Zuschnitt erst im SPEC-Schritt des Loops.
 
 ---
 
