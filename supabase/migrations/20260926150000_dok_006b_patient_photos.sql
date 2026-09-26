@@ -271,10 +271,13 @@ $$;
 comment on function app.patient_photo_accessible(uuid, timestamptz) is
   'Die eine Einwilligungspruefung fuer Patientenfotos (ADR-017 Punkt 36). Ohne Zeitpunkt: neue Aufnahme erlaubt (juengster Vermerk ist eine Erteilung). Mit Zeitpunkt: vorhandenes Foto nutzbar (weder widerrufen noch faellig). Gefragt von Vorbereitung, Bestaetigung, Liste, Verweis und der Leseregel am Objekt.';
 
-revoke all on function app.patient_photo_consent_granted(uuid) from public, anon;
-revoke all on function app.patient_photo_due_at(uuid, timestamptz) from public, anon;
-revoke all on function app.patient_photo_accessible(uuid, timestamptz) from public, anon;
-grant execute on function app.patient_photo_accessible(uuid, timestamptz) to authenticated;
+-- Kein Recht fuer angemeldete Konten: Die Funktionen pruefen keine
+-- Organisation und verrieten sonst jedem Konto, das eine Kennung kennt, den
+-- Einwilligungsstand einer Patient:in. Gefragt werden sie nur aus
+-- SECURITY-DEFINER-Funktionen, auch von den Regeln am Objekt.
+revoke all on function app.patient_photo_consent_granted(uuid) from public, anon, authenticated;
+revoke all on function app.patient_photo_due_at(uuid, timestamptz) from public, anon, authenticated;
+revoke all on function app.patient_photo_accessible(uuid, timestamptz) from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- Faellige Fotos loeschen - ein Weg fuer Widerruf, Ende des Legal Hold und

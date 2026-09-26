@@ -838,6 +838,20 @@ describe('Patientenfotos (DOK-006b)', () => {
       expect(fehler?.message).toMatch(/permission denied/);
     });
 
+    it('verraet den Einwilligungsstand nicht ueber die Pruefungen selbst', async () => {
+      const { owner } = await fremdeOrganisation();
+      for (const sql of [
+        'select app.patient_photo_accessible($1::uuid, null)',
+        'select app.patient_photo_consent_granted($1::uuid)',
+        'select app.patient_photo_due_at($1::uuid, now())',
+      ]) {
+        for (const userId of [owner, users.therapist]) {
+          const fehler = await abgefangen(asUser(userId, sql, [patients.max]));
+          expect(fehler?.message).toMatch(/permission denied/);
+        }
+      }
+    });
+
     it('gibt die internen Pruef- und Loeschfunktionen nicht heraus', async () => {
       const fehler = await abgefangen(
         asUser(
