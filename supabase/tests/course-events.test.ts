@@ -84,7 +84,7 @@ describe('Ereignisse im Verlauf', () => {
     expect(lang?.code).toBe('23514');
   });
 
-  it('entfernt eine Markierung und protokolliert Setzen und Entfernen ohne Notiz', async () => {
+  it('entfernt eine Markierung und protokolliert Setzen und Entfernen ohne Art und Notiz', async () => {
     const id = await setzen();
     await asUserCommitted(users.teamLead, ENTFERNEN, [id]);
     expect((await asUser(users.therapist, LESEN, [patients.max])).rows).toEqual([]);
@@ -97,7 +97,10 @@ describe('Ereignisse im Verlauf', () => {
       'patient_course_event.created',
       'patient_course_event.removed',
     ]);
-    for (const zeile of rows) expect(JSON.stringify(zeile.context)).not.toMatch(/TEP/);
+    // Weder Notiz noch Art: "Operation" waere schon eine klinische Angabe.
+    for (const zeile of rows) {
+      expect(zeile.context).toEqual({ surface: 'web', patient_id: patients.max });
+    }
   });
 
   it('laesst office lesen, aber nicht setzen oder entfernen', async () => {

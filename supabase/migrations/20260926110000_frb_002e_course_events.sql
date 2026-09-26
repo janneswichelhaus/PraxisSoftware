@@ -10,7 +10,8 @@
 --     ueber etwas, das geschehen ist. Die Anwendung setzt es neben die Werte
 --     und sagt nichts darueber, ob es sie erklaert (ADR-006 Punkt 11).
 --   * ANHAENGEN UND ENTFERNEN, NICHT AENDERN. Eine falsche Markierung wird
---     entfernt und neu gesetzt; beides steht im Auditlog (ANN-106).
+--     entfernt und neu gesetzt; beides steht im Auditlog, ohne Art und Notiz
+--     (ANN-106).
 --   * WER: wie bei den Fragebögen - lesen die vier Praxisrollen, protokolliert
 --     je gelieferter Markierung; setzen und entfernen owner, therapist,
 --     team_lead (app.can_write_questionnaire_response, ANN-103).
@@ -103,13 +104,14 @@ begin
   )
   returning id into v_id;
 
-  -- Nur Metadaten: Art ja, Notiz nein (ADR-010 Punkt 3).
+  -- Nur Metadaten, weder Art noch Notiz: "Operation" waere schon eine
+  -- klinische Angabe (ADR-010 Punkt 3, ADR-013 Punkt 9 Nr. 5).
   insert into public.audit_log (
     organization_id, actor_user_id, action, subject_type, subject_id, outcome, context
   )
   values (
     v_org, v_actor, 'patient_course_event.created', 'patient_course_event', v_id, 'success',
-    jsonb_build_object('surface', 'web', 'patient_id', p_patient_id, 'kind', p_kind)
+    jsonb_build_object('surface', 'web', 'patient_id', p_patient_id)
   );
 
   return v_id;
@@ -117,7 +119,7 @@ end;
 $$;
 
 comment on function public.add_patient_course_event(uuid, date, text, text) is
-  'Setzt eine Markierung im Verlauf (FRB-002e, ANN-106). owner, therapist, team_lead; protokolliert als patient_course_event.created ohne Notiz.';
+  'Setzt eine Markierung im Verlauf (FRB-002e, ANN-106). owner, therapist, team_lead; protokolliert als patient_course_event.created ohne Art und Notiz.';
 
 revoke all on function public.add_patient_course_event(uuid, date, text, text) from public, anon;
 grant execute on function public.add_patient_course_event(uuid, date, text, text) to authenticated;
@@ -135,7 +137,6 @@ declare
   v_actor   uuid;
   v_org     uuid;
   v_patient uuid;
-  v_kind    text;
 begin
   v_actor := auth.uid();
   if v_actor is null then
@@ -151,7 +152,7 @@ begin
 
   delete from public.patient_course_events e
   where e.id = p_event_id and e.organization_id = v_org
-  returning e.patient_id, e.kind into v_patient, v_kind;
+  returning e.patient_id into v_patient;
 
   if v_patient is null then
     raise exception 'course event not found' using errcode = 'P0002';
@@ -162,7 +163,7 @@ begin
   )
   values (
     v_org, v_actor, 'patient_course_event.removed', 'patient_course_event', p_event_id, 'success',
-    jsonb_build_object('surface', 'web', 'patient_id', v_patient, 'kind', v_kind)
+    jsonb_build_object('surface', 'web', 'patient_id', v_patient)
   );
 end;
 $$;

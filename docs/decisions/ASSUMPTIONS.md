@@ -1369,7 +1369,7 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit dem Patienten
 
 Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: wenn P4/P5 weitere Instrumente aktivieren
 
-**Annahme.** Der Verlauf im Befund zeigt je Skalenfrage der aktiven Instrumente die Werte **geltender** Bögen (abgeschlossen, nicht ersetzt) als Punkte mit Zahl, ohne Linie, Trend, Mittel oder Farbe nach Höhe; darunter die Werte als Text. Ereignisse haben fünf Arten (Operation, Erkrankung, Urlaub/Pause, Medikation geändert, Sonstiges) mit Tag und Notiz bis 200 Zeichen, auch in der Zukunft; eine falsche Markierung wird entfernt und neu gesetzt, beides protokolliert, das Auditlog trägt die Art, nicht die Notiz. Durchgeführte Termine (die letzten 50) stehen als Striche an der Zeitachse.
+**Annahme.** Der Verlauf im Befund zeigt je Skalenfrage der aktiven Instrumente die Werte **geltender** Bögen (abgeschlossen, nicht ersetzt) als Punkte mit Zahl, ohne Linie, Trend, Mittel oder Farbe nach Höhe; darunter die Werte als Text. Ereignisse haben fünf Arten (Operation, Erkrankung, Urlaub/Pause, Medikation geändert, Sonstiges) mit Tag und Notiz bis 200 Zeichen, auch in der Zukunft; eine falsche Markierung wird entfernt und neu gesetzt, beides protokolliert, das Auditlog trägt weder Art noch Notiz. Durchgeführte Termine (die letzten 50) stehen als Striche an der Zeitachse.
 
 **Begründung.** `IDEA-OUT-005` verlangt Ereignisse neben der Kurve und „weniger Mittelwert, mehr Rohdaten"; ADR-006 Punkt 11 verbietet jede abgeleitete Aussage, auch als Farbe. „Schübe" aus der Idee sind eine Erkrankung und bekommen keine eigene Art, bis ein Fall sie braucht (ADR-014). Eine geplante Operation gehört vorher in den Verlauf.
 
