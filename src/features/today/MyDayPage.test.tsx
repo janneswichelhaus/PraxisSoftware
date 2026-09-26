@@ -396,6 +396,24 @@ describe('Übersicht', () => {
       expect(weitere).not.toHaveAttribute('open');
     });
 
+    it('macht ohne Navigationsziel den Abschluss zum Hauptknopf', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({
+          appointment_type: 'practice',
+          location_name: 'Hauptstandort',
+          visit_street: null,
+          visit_house_number: null,
+          visit_postal_code: null,
+          visit_city: null,
+        }),
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      const abschluss = await screen.findByRole('link', { name: 'Behandlung abschließen' });
+      expect(abschluss.className).toContain('bg-accent ');
+      expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
+    });
+
     it('fuehrt mit einem Tipp zur bisherigen Doku, mit Rueckweg', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       expect(await screen.findByRole('link', { name: 'Bisherige Doku' })).toHaveAttribute(

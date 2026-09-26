@@ -11,16 +11,20 @@ import { nachUhrzeit, type DayPlanEntry } from './api';
 // -----------------------------------------------------------------------------
 
 /**
- * Die Besuche des Tages in Uhrzeitfolge: alles außer Fehlzeiten und Absagen.
+ * Die Behandlungsbesuche des Tages in Uhrzeitfolge, ohne Absagen.
  *
  * ANN-117: Nach dieser Liste wird gezählt, wenn die Übersicht „ab dem 2.
  * Besuch" sagt. Ein abgeschlossener oder nicht angetroffener Besuch zählt
  * mit - er war der erste des Tages, auch wenn er schon hinter einem liegt. Ein
  * abgesagter zählt nicht: zu ihm fährt niemand.
+ *
+ * Nur Behandlungen: Dieselbe Grenze zieht „Offen heute" (`istOffen`), und nur
+ * an ihnen trägt die Tagesliste die Liege. Ein Trainingstermin erreicht die
+ * Liste nur bei owner und office; er kommt mit dem Trainingsbereich dazu.
  */
 export function besucheDesTages(plan: readonly DayPlanEntry[]): DayPlanEntry[] {
   return [...plan]
-    .filter((termin) => termin.kind !== 'internal' && termin.status !== 'cancelled')
+    .filter((termin) => termin.kind === 'therapy' && termin.status !== 'cancelled')
     .sort(nachUhrzeit);
 }
 

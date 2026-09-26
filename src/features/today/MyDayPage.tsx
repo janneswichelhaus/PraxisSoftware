@@ -44,6 +44,7 @@ import {
   type DayPlanEntry,
 } from './api';
 import { Tageskarte } from './Tagesliste';
+import { navigationsZiel } from '@/lib/location/navigation';
 import { liegeHeute, liegeText, wegeDesTages } from './tagesstart';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
@@ -139,7 +140,7 @@ function Vorschau({ termin }: { termin: DayPlanEntry }) {
         </span>{' '}
         <Link
           to={mitRueckweg(`/termine/${termin.id}`, '/')}
-          className="hover:text-accent font-medium hover:underline"
+          className="hover:text-accent inline-flex min-h-11 items-center font-medium hover:underline"
         >
           {termin.kind === 'internal' || !termin.patient_id
             ? (termin.title ?? 'Termin')
@@ -305,15 +306,17 @@ function MeineTagesliste({
               {liegeText(liege)}
             </p>
 
-            <p className="text-ink-muted mb-2 text-sm font-medium">
+            <h3 className="text-ink-muted mb-2 text-sm font-medium">
               {wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg'}
-            </p>
+            </h3>
             <Tageskarte
               termin={wege.erster}
               aktionen={
                 <>
                   <NavigationZumTermin termin={wege.erster} hauptknopf />
-                  {kartenAktionen(wege.erster, false)}
+                  {/* Ohne Ziel für die Navigation (Praxis, Video) ist der
+                      Abschluss der Hauptknopf - einer muss es sein. */}
+                  {kartenAktionen(wege.erster, navigationsZiel(wege.erster) === null)}
                 </>
               }
             />
@@ -332,7 +335,8 @@ function MeineTagesliste({
                         termin={termin}
                         aktionen={
                           <>
-                            {kartenAktionen(termin, true)}
+                            {/* Ein Hauptknopf je Ansicht: den trägt der erste Weg. */}
+                            {kartenAktionen(termin, false)}
                             <NavigationZumTermin termin={termin} />
                           </>
                         }

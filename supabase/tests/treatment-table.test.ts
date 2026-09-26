@@ -115,6 +115,14 @@ describe('set_treatment_table_required', () => {
       expect(rows[0]!.treatment_table_required).toBe(true);
     }
 
+    // Die Trainingsrolle liest die Kartei nicht (ADR-021 Punkt 6).
+    const { rows: training } = await asUser<{ treatment_table_required: boolean | null }>(
+      users.trainer,
+      KARTEI,
+      [patients.max],
+    );
+    expect(training.every((zeile) => zeile.treatment_table_required === null)).toBe(true);
+
     // Das Patientenkonto sieht die eigene Kartei, aber keine internen
     // Versorgungsangaben (ANN-010).
     const { rows } = await asUser<{ treatment_table_required: boolean | null }>(
