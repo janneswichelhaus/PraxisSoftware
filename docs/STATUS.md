@@ -16,7 +16,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Prüfverfahren
 
-**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2412**; `test:db` **1946** (neu: Neu-Aufsetzen der Test-Umgebung, OPS-002a); `test:e2e` ohne Anmeldung: Prüfseiten grün, `login.spec.ts` in der Cloud rot — auf `main` identisch. Sichtprüfung der Tourenkomponenten und der Instrumente über die Prüfseiten `tests/e2e/fixtures/karte.html` und `instrumente.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
+**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2473**; `test:db` **1973** (neu: Fragebögen und Verlaufsereignisse, FRB-EPIC-002); `test:e2e` ohne Anmeldung: Prüfseiten grün, `login.spec.ts` in der Cloud rot — auf `main` identisch. Sichtprüfung der Tourenkomponenten, der Instrumente und des Befunds über die Prüfseiten `tests/e2e/fixtures/karte.html`, `instrumente.html` und `befund.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
 ## Blocker (Jannes-seitig)
 
