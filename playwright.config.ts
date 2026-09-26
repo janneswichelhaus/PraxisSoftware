@@ -3,6 +3,15 @@ import { defineConfig, devices } from '@playwright/test';
 const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173';
 
 /**
+ * Der Port des Entwicklungsservers folgt der Adresse. Zwei Sessions in zwei
+ * Arbeitskopien laufen sonst beide auf 5173 — und weil ein laufender Server
+ * wiederverwendet wird, prüfte die zweite still den Code der ersten
+ * (`docs/DEVELOPMENT.md`, „Zwei Sessions parallel"). Ohne `E2E_BASE_URL`
+ * bleibt alles bei 5173, auch in der CI.
+ */
+const port = new URL(baseURL).port || '5173';
+
+/**
  * Erlaubt es, einen bereits vorhandenen Chromium zu verwenden, statt ihn
  * herunterzuladen - etwa in Containern mit vorinstalliertem Browser.
  * Ohne die Variable gilt das Standardverhalten von Playwright.
@@ -68,7 +77,7 @@ export default defineConfig({
     // IPv6 (unter anderem den CI-Runnern) loest der zuerst nach ::1 auf,
     // waehrend Playwright 127.0.0.1 abfragt - der Start laeuft dann in den
     // Timeout, obwohl der Server laeuft.
-    command: 'pnpm dev --host 127.0.0.1',
+    command: `pnpm dev --host 127.0.0.1 --port ${port}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

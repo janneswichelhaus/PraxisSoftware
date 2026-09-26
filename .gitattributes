@@ -1,3 +1,13 @@
+# Zeilenenden im ganzen Repository: LF, auch unter Windows.
+#
+# Mit core.autocrlf=true checkt Git die Dateien mit CRLF aus. Prettier
+# (endOfLine lf) meldet dann jede Datei, und docs:check vergleicht die
+# Fortschrittstabelle byteweise -- beide Gates waeren lokal rot, ohne dass sich
+# etwas geaendert hat. Im Repository liegt ohnehin alles als LF; diese Zeile
+# sorgt dafuer, dass die Arbeitskopie genauso aussieht (docs/DEVELOPMENT.md,
+# "Zwei Sessions parallel").
+* text=auto eol=lf
+
 # Zeilenenden in quellen/ -- siehe quellen/README.md
 #
 # Das Register dort haelt jede Quelle mit ihrer SHA-256-Pruefsumme fest, und
