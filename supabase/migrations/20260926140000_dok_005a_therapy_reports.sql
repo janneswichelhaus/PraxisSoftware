@@ -224,7 +224,7 @@ begin
       and qr.status = 'abgeschlossen'
       and not exists (
         select 1 from public.patient_questionnaire_responses neu
-        where neu.supersedes_response_id = qr.id
+        where neu.supersedes_response_id = qr.id and neu.status = 'abgeschlossen'
       )
       and exists (
         select 1 from jsonb_each(qr.answers) as a(kennung, antwort)
@@ -696,7 +696,7 @@ grant execute on function public.discard_therapy_report(uuid) to authenticated;
 -- list_patient_therapy_reports: die Berichte einer Akte
 --
 -- Mit der Empfehlung samt Quelle und Datum, damit die Verordnung sie zeigen
--- kann (ANN-014). Beim abgeschlossenen Bericht aus dem Snapshot.
+-- kann (ANN-014) - nur beim abgeschlossenen Bericht, aus dem Snapshot.
 -- -----------------------------------------------------------------------------
 create function public.list_patient_therapy_reports(p_patient_id uuid)
 returns table (
@@ -751,15 +751,11 @@ begin
            r.completed_at,
            (r.completed_at at time zone v_tz)::date,
            (select up.display_name from public.user_profiles up where up.id = r.completed_by),
-           case when r.status = 'abgeschlossen'
-                then r.snapshot -> 'empfehlung' ->> 'inhalt' else r.recommendation end,
-           case when r.status = 'abgeschlossen'
-                then r.snapshot -> 'empfehlung' ->> 'verfasser'
-                else (select up.display_name from public.user_profiles up
-                      where up.id = r.recommendation_updated_by) end,
-           case when r.status = 'abgeschlossen'
-                then (r.snapshot -> 'empfehlung' ->> 'datum')::date
-                else (r.recommendation_updated_at at time zone v_tz)::date end
+           -- Nur beim abgeschlossenen Bericht: Ein Entwurf ist noch keine
+           -- Empfehlung an irgendwen, und die Liste braucht ihn nicht.
+           r.snapshot -> 'empfehlung' ->> 'inhalt',
+           r.snapshot -> 'empfehlung' ->> 'verfasser',
+           (r.snapshot -> 'empfehlung' ->> 'datum')::date
     from public.therapy_reports r
     where r.patient_id = p_patient_id and r.organization_id = v_org
     order by r.created_at;
@@ -917,7 +913,7 @@ begin
   where qr.patient_id = b.patient_id and qr.organization_id = v_org
     and qr.status = 'abgeschlossen'
     and not exists (select 1 from public.patient_questionnaire_responses neu
-                    where neu.supersedes_response_id = qr.id)
+                    where neu.supersedes_response_id = qr.id and neu.status = 'abgeschlossen')
     and exists (select 1 from jsonb_each(qr.answers) as a(kennung, antwort)
                 where jsonb_typeof(a.antwort) = 'object' and a.antwort ? 'markierungen');
 
@@ -945,7 +941,7 @@ begin
     where qr.patient_id = b.patient_id and qr.organization_id = v_org
       and qr.status = 'abgeschlossen'
       and not exists (select 1 from public.patient_questionnaire_responses neu
-                      where neu.supersedes_response_id = qr.id)
+                      where neu.supersedes_response_id = qr.id and neu.status = 'abgeschlossen')
       and exists (select 1 from jsonb_each(qr.answers) as a(kennung, antwort)
                   where jsonb_typeof(a.antwort) = 'object' and a.antwort ? 'markierungen')
     order by 1, 3, 2;

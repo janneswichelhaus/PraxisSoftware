@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * Therapiebericht in einem echten Browser (DOK-005).
@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test';
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/bericht.html';
 
-async function ueberlaeuft(page: import('@playwright/test').Page): Promise<boolean> {
+async function ueberlaeuft(page: Page): Promise<boolean> {
   return page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );

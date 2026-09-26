@@ -31,7 +31,11 @@ const ANLEGEN = 'select public.create_therapy_report($1::uuid) as id';
 const SPEICHERN = `select public.update_therapy_report($1::uuid, $2, $3, $4::uuid[], $5::uuid, $6::timestamptz) as stand`;
 const ABSCHLIESSEN = 'select public.complete_therapy_report($1::uuid, $2::timestamptz)';
 const VERWERFEN = 'select public.discard_therapy_report($1::uuid)';
-const LESEN = `select id, status, updated_at, note_ids, document
+// Der Stand mit Mikrosekunden als Text: Ein JS-Date kennt nur Millisekunden,
+// und der Server vergleicht genau (wie in treatment-notes.test.ts).
+const LESEN = `select id, status,
+                        to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"+00"') as updated_at,
+                        note_ids, document
                  from public.get_therapy_report($1::uuid)`;
 const LISTE = `select id, status, recommendation, recommendation_by_name, recommendation_on::text as recommendation_on
                  from public.list_patient_therapy_reports($1::uuid)`;
@@ -72,6 +76,7 @@ async function eintragAnlegen(
   tageZurueck: number,
   status: 'final' | 'draft' = 'final',
   verordnung: string | null = VERORDNUNG,
+  patientId: string = patients.max,
 ): Promise<string> {
   const { rows } = await asPostgres<{ id: string }>(
     `with termin as (
@@ -95,7 +100,7 @@ async function eintragAnlegen(
      returning id`,
     [
       organizationId,
-      patients.max,
+      patientId,
       ANNA,
       PRAXIS,
       tageZurueck,
@@ -375,6 +380,86 @@ describe('Therapiebericht', () => {
     expect((await asUser(f.owner, LESEN, [id])).rows).toEqual([]);
     expect((await asUser(f.owner, LISTE, [patients.max])).rows).toEqual([]);
     expect((await fehler(f.owner, DRUCK, [id]))?.code).toBe('P0002');
+  });
+
+  it('schreibt nie in einen Bericht einer fremden Organisation', async () => {
+    const f = await fremdeOrganisation();
+    const { rows } = await asPostgres<{ id: string; stand: string }>(
+      `with grundlage as (
+         insert into public.treatment_bases
+           (organization_id, patient_id, treatment_basis_kind, issued_on, appointment_count)
+         values ($1::uuid, $2::uuid, 'self_pay', current_date, 1)
+         returning id
+       )
+       insert into public.therapy_reports (organization_id, patient_id, treatment_basis_id)
+       select $1::uuid, $2::uuid, grundlage.id from grundlage
+       returning id,
+         to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"+00"') as stand`,
+      [f.organizationId, f.patient],
+    );
+    const { id, stand } = rows[0]!;
+    expect((await fehler(users.therapist, SPEICHERN, [id, 'x', null, [], null, stand]))?.code).toBe(
+      'P0002',
+    );
+    expect((await fehler(users.therapist, ABSCHLIESSEN, [id, stand]))?.code).toBe('P0002');
+    expect((await fehler(users.therapist, VERWERFEN, [id]))?.code).toBe('P0002');
+    expect((await fehler(users.therapist, QUELLEN, [id]))?.code).toBe('P0002');
+    expect((await asUser(users.therapist, LESEN, [id])).rows).toEqual([]);
+    const { rows: bestand } = await asPostgres<{ report_text: string | null }>(
+      'select report_text from public.therapy_reports where id = $1',
+      [id],
+    );
+    expect(bestand).toEqual([{ report_text: null }]);
+  });
+
+  it('nimmt keinen Eintrag und kein Körperschema einer anderen Akte derselben Praxis', async () => {
+    const fremderEintrag = await eintragAnlegen(
+      'Synthetisch: Erika.',
+      5,
+      'final',
+      null,
+      patients.erika,
+    );
+    const fremdesSchema = await koerperschemaAnlegen(patients.erika);
+    const id = await anlegen();
+    const stand = (await lesen(id)).updated_at;
+    expect(
+      (await fehler(users.therapist, SPEICHERN, [id, null, null, [fremderEintrag], null, stand]))
+        ?.code,
+    ).toBe('22023');
+    expect(
+      (await fehler(users.therapist, SPEICHERN, [id, null, null, [], fremdesSchema, stand]))?.code,
+    ).toBe('22023');
+  });
+
+  it('nimmt ein ersetztes Körperschema nicht mehr, ein bloßer Korrekturentwurf hält es nicht auf', async () => {
+    const koerper = await koerperschemaAnlegen();
+    const id = await anlegen();
+    const korrektur = `insert into public.patient_questionnaire_responses
+         (organization_id, patient_id, instrument_id, definition_version, status, recorded_on,
+          answers, supersedes_response_id, change_reason, completed_at)
+       values ($1::uuid, $2::uuid, 'anamnese', '1.0.0', $4, current_date, '{}'::jsonb,
+               $3::uuid, 'Synthetische Korrektur',
+               case when $4 = 'abgeschlossen' then now() end)`;
+    await asPostgres(korrektur, [organizationId, patients.max, koerper, 'entwurf']);
+    await speichern(id, { koerper, text: 'Synthetisch.' });
+
+    await asPostgres(
+      'delete from public.patient_questionnaire_responses where supersedes_response_id = $1',
+      [koerper],
+    );
+    await asPostgres(korrektur, [organizationId, patients.max, koerper, 'abgeschlossen']);
+    const stand = (await lesen(id)).updated_at;
+    expect((await fehler(users.therapist, ABSCHLIESSEN, [id, stand]))?.code).toBe('22023');
+  });
+
+  it('lässt das Patientenkonto weder auswählen noch speichern', async () => {
+    const id = await anlegen();
+    const stand = (await lesen(id)).updated_at;
+    await erwarteAbgewiesenenLeseversuch(users.patientMax, QUELLEN, [id], 'treatment_note.viewed');
+    expect(
+      (await fehler(users.patientMax, SPEICHERN, [id, 'x', null, [], null, stand]))?.code,
+    ).toBe('42501');
   });
 
   it('hält eine Verordnung mit Bericht gegen stilles Löschen', async () => {

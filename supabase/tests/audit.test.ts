@@ -225,6 +225,7 @@ describe('Audit-Lesepfad', () => {
       'get_billable_service_draft',
       'get_invoice',
       'get_payment_reminder',
+      'get_therapy_report',
       'get_treatment_basis',
       'get_treatment_basis_slots',
       'get_treatment_note',
@@ -251,6 +252,7 @@ describe('Audit-Lesepfad', () => {
       'list_patient_course_events',
       'list_patient_files',
       'list_patient_questionnaire_responses',
+      'list_patient_therapy_reports',
       'list_patient_treatment_bases',
       'list_patient_treatment_bases_clinical',
       'list_patient_treatment_basis_slots',
@@ -263,6 +265,7 @@ describe('Audit-Lesepfad', () => {
       'list_staff_future_appointments',
       'list_storage_deletion_orders',
       'list_text_snippets',
+      'list_therapy_report_sources',
       'search_patients',
     ]);
   });

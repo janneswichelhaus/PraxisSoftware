@@ -41,7 +41,7 @@ export const berichtsdokumentSchema = z.object({
   empfaenger: z
     .object({
       title: z.string().nullable(),
-      given_name: z.string(),
+      given_name: z.string().nullable(),
       family_name: z.string(),
       practice_name: z.string().nullable(),
       street: z.string().nullable(),

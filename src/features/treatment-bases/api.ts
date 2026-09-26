@@ -739,6 +739,12 @@ export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {
   const { error } = await getSupabase().rpc('delete_treatment_basis', {
     p_treatment_basis_id: grundlageId,
   });
+  if (error?.message?.includes('has therapy reports')) {
+    // DOK-005: Ein Bericht an die Verordner:in fällt nicht still mit.
+    throw new Error(
+      'An dieser Verordnung hängt ein Therapiebericht. Sie lässt sich deshalb nicht löschen; einen Entwurf können Sie vorher verwerfen.',
+    );
+  }
   if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gelöscht werden.');
 }
 

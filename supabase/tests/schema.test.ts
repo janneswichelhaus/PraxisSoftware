@@ -103,6 +103,7 @@ describe('Schema-Invarianten', () => {
       'patient_privacy_records',
       'patient_questionnaire_responses',
       'patient_course_events',
+      'therapy_reports',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
@@ -188,10 +189,14 @@ describe('Schema-Invarianten', () => {
     expect(grants).toEqual([]);
   });
 
-  it('haelt Fragebögen und Verlaufsereignisse ueber den Anwendungspfad unerreichbar (ADR-010, FRB-002b/e)', async () => {
+  it('haelt Fragebögen, Verlaufsereignisse und Therapieberichte ueber den Anwendungspfad unerreichbar (ADR-010, FRB-002b/e, DOK-005a)', async () => {
     // Die Antworten eines Anamnesebogens und die Ereignisse im Verlauf sind
     // Gesundheitsdaten. Gelesen wird nur ueber die Funktionen - sie protokollieren.
-    for (const tabelle of ['patient_questionnaire_responses', 'patient_course_events']) {
+    for (const tabelle of [
+      'patient_questionnaire_responses',
+      'patient_course_events',
+      'therapy_reports',
+    ]) {
       const { rows: policies } = await asPostgres<{ policyname: string }>(
         `select policyname from pg_policies where schemaname = 'public' and tablename = $1`,
         [tabelle],
