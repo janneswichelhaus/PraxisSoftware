@@ -3,15 +3,18 @@ import { bibliothek } from './bibliothek';
 import {
   dokumentationstext,
   istMesswert,
+  seiteUmstellen,
+  seitlicheRegion,
   ungueltigeMesswerte,
   type Auswahl,
 } from './dokumentationstext';
 import type { BausteinRegion } from './schema';
 
 /**
- * Die Regeln des Generators aus dem Arbeitsauftrag §2 und dem Plan (P3):
- * `nicht_durchgefuehrt` erscheint nicht, Reihenfolge = Definition, leerer
- * Block ohne Überschrift, Format `<Label><, Seite><: Ergebnis><, Messwert>.`.
+ * Die Regeln des Generators (Arbeitsauftrag §2, Plan P3, Form nach ANN-130):
+ * ohne Angabe nichts, Reihenfolge = Definition, leerer Block ohne Überschrift,
+ * je Test `<Zeichen> <Label>< Seite>< Messwert>< – Notiz>`, „Nicht getestet"
+ * gesammelt am Ende des Absatzes, die Seite einer Region in der Überschrift.
  */
 
 const knie: BausteinRegion = {
@@ -64,6 +67,13 @@ const knie: BausteinRegion = {
             { id: 'knie_let_mill', label: 'Mill´s Test' },
           ],
         },
+        {
+          id: 'knie_eccentric_step',
+          label: 'Eccentric Step',
+          type: 'test',
+          bilateral: true,
+          result_type: 'befund',
+        },
       ],
     },
     {
@@ -78,72 +88,127 @@ const knie: BausteinRegion = {
           bilateral: true,
           result_type: 'durchgefuehrt',
         },
+        {
+          id: 'knie_arthrogen',
+          label: 'Arthrogen',
+          type: 'technik',
+          bilateral: true,
+          result_type: 'durchgefuehrt',
+          subitems: [
+            { id: 'knie_arthrogen_tibiofemoral', label: 'Tibiofemorale Mobilisation' },
+            { id: 'knie_arthrogen_kompression', label: 'Mobilisation mit Kompression' },
+          ],
+        },
       ],
     },
   ],
 };
 
+const RECHTS = { knie: 'rechts' } as const;
+
 describe('Dokumentationstext', () => {
-  it('schreibt das Beispiel des Arbeitsauftrags wörtlich', () => {
+  it('nennt die Seite der Region in der Überschrift und das Ergebnis als Zeichen', () => {
     const auswahl: Auswahl = {
-      knie_lachmann_test: { ergebnis: 'positiv', seite: 'rechts', notiz: 'Weicher Anschlag.' },
+      'knie_lachmann_test.rechts': { ergebnis: 'positiv', notiz: 'Weicher Anschlag.' },
     };
-    expect(dokumentationstext([knie], auswahl)).toBe(
-      'Knie – Weiterführende Untersuchung\nLachmann-Test, rechts: positiv. Weicher Anschlag.',
+    expect(dokumentationstext([knie], auswahl, RECHTS)).toBe(
+      'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test – Weicher Anschlag.',
     );
   });
 
-  it('lässt nicht durchgeführte Tests weg und schreibt ohne Angabe nichts', () => {
-    expect(dokumentationstext([knie], {})).toBe('');
-    expect(
-      dokumentationstext([knie], { knie_kniebeuge: { ergebnis: 'nicht_durchgefuehrt' } }),
-    ).toBe('');
+  it('schreibt ohne Angabe nichts', () => {
+    expect(dokumentationstext([knie], {}, RECHTS)).toBe('');
   });
 
   it('folgt der Reihenfolge der Definition, nicht der des Antippens', () => {
     const auswahl: Auswahl = {
-      knie_mmb: { ergebnis: 'durchgefuehrt' },
-      knie_lachmann_test: { ergebnis: 'negativ' },
-      knie_kniebeuge: { ergebnis: 'ohne_befund' },
+      'knie_mmb.rechts': { ergebnis: 'durchgefuehrt' },
+      'knie_lachmann_test.rechts': { ergebnis: 'ohne_befund' },
+      'knie_kniebeuge.rechts': { ergebnis: 'ohne_befund' },
     };
-    expect(dokumentationstext([knie], auswahl)).toBe(
+    expect(dokumentationstext([knie], auswahl, RECHTS)).toBe(
       [
-        'Basisuntersuchung Knie\nKniebeuge: ohne Befund.',
-        'Knie – Weiterführende Untersuchung\nLachmann-Test: negativ.',
-        'Knie – Therapie\nMMB: durchgeführt.',
+        'Basisuntersuchung Knie rechts\n✅ Kniebeuge',
+        'Knie rechts – Weiterführende Untersuchung\n✅ Lachmann-Test',
+        'Knie rechts – Therapie\n• MMB',
       ].join('\n\n'),
     );
   });
 
-  it('setzt den Messwert mit Einheit hinter das Ergebnis, aber nur als Zahl', () => {
-    expect(
-      dokumentationstext([knie], {
-        'knie_knee_to_wall.links': { ergebnis: 'ohne_befund', messwert: '8,5' },
-      }),
-    ).toBe('Basisuntersuchung Knie\nKnee to Wall Test, links: ohne Befund, 8,5 cm.');
-    expect(
-      dokumentationstext([knie], {
-        'knie_knee_to_wall.rechts': { ergebnis: 'positiv', messwert: 'acht' },
-      }),
-    ).toBe('Basisuntersuchung Knie\nKnee to Wall Test, rechts: positiv.');
+  it('sammelt „nicht getestet“ ausgeschrieben am Ende des Absatzes', () => {
+    const auswahl: Auswahl = {
+      'knie_eccentric_step.links': { ergebnis: 'nicht_getestet' },
+      'knie_let_mill.links': { ergebnis: 'nicht_getestet', notiz: 'Schmerz\nbei Streckung' },
+      'knie_lachmann_test.links': { ergebnis: 'positiv' },
+    };
+    expect(dokumentationstext([knie], auswahl, { knie: 'links' })).toBe(
+      'Knie links – Weiterführende Untersuchung\n' +
+        '❗ Lachmann-Test\n' +
+        'Nicht getestet: Mill´s Test (Schmerz bei Streckung); Eccentric Step',
+    );
   });
 
-  it('schreibt einen gemessenen Test je Seite, links vor rechts (Jannes 2026-09-26)', () => {
+  it('rückt Unterpunkte unter ihrer Gruppe ein, bei Techniken wie bei Tests', () => {
+    const auswahl: Auswahl = {
+      'knie_let_cozen.rechts': { ergebnis: 'positiv' },
+      'knie_eccentric_step.rechts': { ergebnis: 'ohne_befund' },
+      'knie_arthrogen_kompression.rechts': { ergebnis: 'durchgefuehrt', notiz: '3 × 30 s' },
+    };
+    expect(dokumentationstext([knie], auswahl, RECHTS)).toBe(
+      'Knie rechts – Weiterführende Untersuchung\n' +
+        'LET:\n' +
+        '  ❗ Cozen-Test\n' +
+        '✅ Eccentric Step\n\n' +
+        'Knie rechts – Therapie\n' +
+        'Arthrogen:\n' +
+        '  • Mobilisation mit Kompression – 3 × 30 s',
+    );
+  });
+
+  it('schreibt im Seitenvergleich gleiche Seiten als „bds.“, verschiedene je Zeile', () => {
+    const auswahl: Auswahl = {
+      'knie_kniebeuge.links': { ergebnis: 'ohne_befund' },
+      'knie_kniebeuge.rechts': { ergebnis: 'ohne_befund' },
+      'knie_lachmann_test.links': { ergebnis: 'ohne_befund' },
+      'knie_lachmann_test.rechts': { ergebnis: 'positiv' },
+    };
+    expect(dokumentationstext([knie], auswahl, { knie: 'beidseits' })).toBe(
+      'Basisuntersuchung Knie\n✅ Kniebeuge bds.\n\n' +
+        'Knie – Weiterführende Untersuchung\n✅ Lachmann-Test li.\n❗ Lachmann-Test re.',
+    );
+  });
+
+  it('misst immer je Seite und setzt den Wert nur als Zahl hinter den Test', () => {
+    // Auch wenn die Region nur rechts untersucht wird: Der Vergleich ist der Sinn.
     const auswahl: Auswahl = {
       'knie_knee_to_wall.rechts': { ergebnis: 'positiv', messwert: '5', notiz: 'Ferse hebt ab.' },
       'knie_knee_to_wall.links': { ergebnis: 'ohne_befund', messwert: '9' },
     };
-    expect(dokumentationstext([knie], auswahl)).toBe(
-      'Basisuntersuchung Knie\n' +
-        'Knee to Wall Test, links: ohne Befund, 9 cm.\n' +
-        'Knee to Wall Test, rechts: positiv, 5 cm. Ferse hebt ab.',
+    expect(dokumentationstext([knie], auswahl, RECHTS)).toBe(
+      'Basisuntersuchung Knie rechts\n' +
+        '✅ Knee to Wall Test li. 9 cm\n' +
+        '❗ Knee to Wall Test re. 5 cm – Ferse hebt ab.',
     );
-    // Die Seite kommt aus dem Schlüssel, nicht aus der Angabe.
     expect(
-      dokumentationstext([knie], {
-        'knie_knee_to_wall.links': { ergebnis: 'positiv', seite: 'rechts' },
-      }),
-    ).toBe('Basisuntersuchung Knie\nKnee to Wall Test, links: positiv.');
+      dokumentationstext(
+        [knie],
+        { 'knie_knee_to_wall.rechts': { ergebnis: 'positiv', messwert: 'acht' } },
+        RECHTS,
+      ),
+    ).toBe('Basisuntersuchung Knie rechts\n❗ Knee to Wall Test re.');
+    // Zwei gleiche Ergebnisse mit Wert bleiben zwei Zeilen — die Werte sind der Befund.
+    expect(
+      dokumentationstext(
+        [knie],
+        {
+          'knie_knee_to_wall.links': { ergebnis: 'ohne_befund', messwert: '9' },
+          'knie_knee_to_wall.rechts': { ergebnis: 'ohne_befund', messwert: '9' },
+        },
+        RECHTS,
+      ),
+    ).toBe(
+      'Basisuntersuchung Knie rechts\n✅ Knee to Wall Test li. 9 cm\n✅ Knee to Wall Test re. 9 cm',
+    );
   });
 
   it('erkennt einen ungültigen Messwert auf jeder Seite', () => {
@@ -155,24 +220,75 @@ describe('Dokumentationstext', () => {
     ).toBe(true);
   });
 
-  it('schreibt Unterpunkte mit ihrer Gruppe und hält die Notiz auf einer Zeile', () => {
+  it('lässt die Ausgangsstellung weg und ordnet die Hüfte darunter (Jannes 2026-09-26)', () => {
     const auswahl: Auswahl = {
-      knie_let_mill: { ergebnis: 'nicht_beurteilbar', notiz: 'Schmerz\nbei Streckung' },
-      knie_let_cozen: { ergebnis: 'positiv', seite: 'beidseits' },
+      'huefte_rueckenlage_flexion.rechts': { ergebnis: 'ohne_befund' },
+      'huefte_bauchlage_beweglichkeit_extension_innenrotation_aussenrotation.rechts': {
+        ergebnis: 'positiv',
+        notiz: 'endgradig Leiste',
+      },
+      'huefte_weiterfuehrende_untersuchung_fadir.rechts': { ergebnis: 'positiv' },
+      'huefte_weiterfuehrende_untersuchung_scour_test.rechts': { ergebnis: 'nicht_getestet' },
     };
-    expect(dokumentationstext([knie], auswahl)).toBe(
-      'Knie – Weiterführende Untersuchung\n' +
-        'LET – Cozen-Test, beidseits: positiv.\n' +
-        'LET – Mill´s Test: nicht beurteilbar. Schmerz bei Streckung',
+    expect(dokumentationstext(bibliothek.bausteine, auswahl, { huefte: 'rechts' })).toBe(
+      'Untersuchung Hüfte rechts\n' +
+        '✅ Flexion\n' +
+        '❗ Beweglichkeit Extension, Innenrotation & Außenrotation – endgradig Leiste\n' +
+        'Weiterführende Untersuchung (bei Bedarf):\n' +
+        '  ❗ FADIR (+ Kompression)\n' +
+        'Nicht getestet: Scour Test',
     );
   });
 
-  it('kennt eine Region nur aus der Definition', () => {
-    // Die echte Bibliothek: dieselbe Kennung ergibt denselben Text.
-    const text = dokumentationstext(bibliothek.bausteine, {
-      knie_lachmann_test: { ergebnis: 'positiv', seite: 'rechts' },
+  it('fragt an der Wirbelsäule die Seite je Test, nicht je Region (ANN-129)', () => {
+    const lws = bibliothek.bausteine.find((r) => r.id === 'lws');
+    expect(lws && seitlicheRegion(lws)).toBe(false);
+    expect(seitlicheRegion(knie)).toBe(true);
+
+    const auswahl: Auswahl = {
+      lws_prone_instability_test: { ergebnis: 'ohne_befund' },
+      'lws_nervenprovokationstests_straight_leg_raise.rechts': {
+        ergebnis: 'positiv',
+        notiz: 'ab 40°',
+      },
+      'lws_nervenprovokationstests_straight_leg_raise.links': { ergebnis: 'ohne_befund' },
+      'lws_nervenprovokationstests_slump.links': { ergebnis: 'nicht_getestet' },
+      'lws_nervenprovokationstests_slump.rechts': { ergebnis: 'nicht_getestet' },
+    };
+    expect(dokumentationstext(bibliothek.bausteine, auswahl)).toBe(
+      'LWS – Weiterführende Untersuchung\n✅ Prone Instability Test\n\n' +
+        'LWS – Neurologische Untersuchungen (bei Bedarf)\n' +
+        'Nervenprovokationstests:\n' +
+        '  ✅ Straight leg raise (evtl. mit Add/Ir) li.\n' +
+        '  ❗ Straight leg raise (evtl. mit Add/Ir) re. – ab 40°\n' +
+        'Nicht getestet: SLUMP (evtl. mit Add/Ir) bds.',
+    );
+  });
+});
+
+describe('Seite der Region umstellen (ANN-129)', () => {
+  const auswahl: Auswahl = {
+    'knie_lachmann_test.rechts': { ergebnis: 'positiv' },
+    'knie_knee_to_wall.links': { ergebnis: 'ohne_befund', messwert: '9' },
+  };
+
+  it('nimmt die Angaben von einer Seite auf die andere mit', () => {
+    expect(seiteUmstellen(knie, auswahl, 'rechts', 'links')).toEqual({
+      'knie_lachmann_test.links': { ergebnis: 'positiv' },
+      'knie_knee_to_wall.links': { ergebnis: 'ohne_befund', messwert: '9' },
     });
-    expect(text).toBe('Knie – Weiterführende Untersuchung\nLachmann-Test, rechts: positiv.');
+  });
+
+  it('behält beim Wechsel in den Seitenvergleich alles', () => {
+    expect(seiteUmstellen(knie, auswahl, 'rechts', 'beidseits')).toBe(auswahl);
+  });
+
+  it('lässt vom Seitenvergleich auf eine Seite die andere fallen, nie einen Messwert', () => {
+    const beide: Auswahl = {
+      ...auswahl,
+      'knie_lachmann_test.links': { ergebnis: 'ohne_befund' },
+    };
+    expect(seiteUmstellen(knie, beide, 'beidseits', 'rechts')).toEqual(auswahl);
   });
 });
 

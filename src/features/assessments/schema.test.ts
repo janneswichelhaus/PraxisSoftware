@@ -144,6 +144,18 @@ describe('Item eines Untersuchungsbausteins', () => {
     expect(bausteinItemSchema.safeParse({ ...block().items[0], subitems: [] }).success).toBe(false);
   });
 
+  it('nimmt eine Ausgangsstellung nur mit Subitems an (ANN-130)', () => {
+    const ohne = bausteinItemSchema.safeParse({ ...block().items[0], ausgangsstellung: true });
+    expect(ohne.success).toBe(false);
+    expect(ohne.error?.issues[0]?.message).toContain('Ausgangsstellung ordnet Unterpunkte');
+    const mit = bausteinItemSchema.safeParse({
+      ...block().items[0],
+      ausgangsstellung: true,
+      subitems: [{ id: 'huefte_rueckenlage_flexion', label: 'Flexion' }],
+    });
+    expect(mit.success).toBe(true);
+  });
+
   it('nimmt eine Gruppe mit Subitems an', () => {
     const ergebnis = bausteinItemSchema.safeParse({
       ...block().items[0],
