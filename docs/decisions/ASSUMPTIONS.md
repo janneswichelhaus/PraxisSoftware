@@ -1412,3 +1412,15 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 **Anker.** Kopfzeile, `optionenKnopf` und das Feld „Ansicht und Filter" in `CalendarPage` (`src/features/appointments/CalendarPage.tsx`); `Monatskalender` in `src/features/appointments/Monatskalender.tsx`; `ecke`, `jetzt` und `sprung` an `CalendarGrid`; die Lupe (`sucheOffen`) in `src/app/AppShell.tsx`.
 
 **Änderungspfad.** Ein Element zurück nach oben: aus dem Feld „Ansicht und Filter" in die Kopfzeile verschieben · Aufwand `klein`. Suche auch am Rechner als Lupe: die Klasse `max-sm:hidden` am Suchfeld für alle Breiten setzen und die Lupe überall zeigen · Aufwand `klein`.
+
+### ANN-110 — Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet die Anwendung weiter im Browser
+
+Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Android-Handy (Symbol neu zum Startbildschirm hinzufügen)
+
+**Annahme.** `public/manifest.webmanifest` nennt als einziges Symbol das vorhandene Master `own-motion-app-1024.png`, einmal für `any` und einmal für `maskable`; `display` ist `browser`. Es gibt keinen Service Worker. Eingebunden wird das Manifest mit `crossorigin="use-credentials"`.
+
+**Begründung.** BEF-040: Ohne Manifest nimmt Android das `apple-touch-icon` und legt es in einen weißen Kreis. Das Master ist vollflächig und hält den Schutzkreis ein (nachgemessen in `marke/README.md`), deshalb braucht es keine zweite Fassung der Marke. `browser` ändert am Öffnen nichts, auch unter iOS nicht, das seit 16.4 ein `standalone` des Manifests übernehmen würde. Ein Service Worker bleibt nach ADR-015 Punkt 16 ausgeschlossen. `use-credentials`, weil der Browser das Manifest sonst ohne die Anmeldung der zweiten Tür der Test-Umgebung abruft (ANN-101). Unsicher: ob Chrome unter Android das maskierbare Symbol auch für eine Verknüpfung ohne Installation verwendet; bei `browser` meldet Chrome die Seite als nicht installierbar.
+
+**Anker.** `public/manifest.webmanifest`; `<link rel="manifest">` in `index.html`; die Messung `MASTER_WORTMARKE` in `src/components/ui/markeRegeln.ts`, geprüft in `src/marke.test.ts` („Web-Manifest").
+
+**Änderungspfad.** Zeigt Android den weißen Kreis weiter: `display` auf `minimal-ui`. Chrome installiert die Seite dann als eigene App mit dem maskierbaren Symbol und einer schmalen Leiste mit Zurück und Neu laden; iOS öffnet wie bisher im Browser · Aufwand `klein`. Kleinere Dateien: aus dem Master gerasterte Kopien mit 192 und 512 px in `marke/app/` · Aufwand `klein`.
