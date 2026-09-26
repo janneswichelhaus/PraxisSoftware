@@ -342,7 +342,10 @@
           "id": "frb-epic-003",
           "name": "FRB-EPIC-003 Befund mit Bausteinen",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-26",
+          "nachweis": "`0483a60`, `b80cd6a`, `b621339` (FRB-003a bis c, Zweitreview)",
+          "vermerk": "Sichtung: Befund Schritte 6 und 7"
         },
         {
           "id": "dok-005",
@@ -353,6 +356,18 @@
         {
           "id": "dok-006",
           "name": "DOK-006 Fotos in der Akte",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "frb-epic-004",
+          "name": "FRB-EPIC-004 Skalen in der Verlaufsdoku",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "frb-epic-005",
+          "name": "FRB-EPIC-005 Bilder zu den Tests",
           "gewicht": 1,
           "status": "offen"
         },
