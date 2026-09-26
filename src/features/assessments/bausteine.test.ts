@@ -116,6 +116,22 @@ describe('Untersuchungsbausteine (P2)', () => {
     expect(fehlend).toEqual([]);
   });
 
+  it('zeigt keinen Grenzwert mit Folge als Hinweis (ADR-006, ANN-118)', () => {
+    // Die Vorlage nennt beim Navicular Drop „mehr als 1 cm Differenz im Svgl.
+    // → Training Gewölbe": ein Schwellenwert neben dem eigenen Messwert samt
+    // Therapiefolge. Bis zur externen Prüfung B1 steht so etwas nirgends
+    // (`cutoff-anzeige` in src/app/mdr.ts).
+    const hinweise = bibliothek.bausteine.flatMap((region) =>
+      region.blocks.flatMap((block) =>
+        block.items.flatMap((item) => [
+          item.hint,
+          ...(item.subitems ?? []).map((subitem) => subitem.hint),
+        ]),
+      ),
+    );
+    expect(hinweise.filter((hinweis) => hinweis?.includes('→'))).toEqual([]);
+  });
+
   it('lässt die Tippfehler der Vorlage stehen (ANN-119)', () => {
     const labels = bibliothek.bausteine.flatMap((region) =>
       region.blocks.flatMap((block) =>

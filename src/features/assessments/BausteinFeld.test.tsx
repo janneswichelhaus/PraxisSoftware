@@ -9,9 +9,15 @@ import { useBausteinAuswahl } from './bausteinauswahl';
  * Das Bausteinfeld mit der Bibliothek des Releases (FRB-003b). Die Texte der
  * Tests stammen aus den Definitionsdateien; der Code kennt sie nicht.
  */
-function Feld({ onUebernehmen }: { onUebernehmen: (text: string) => void }) {
+function Feld({
+  onUebernehmen,
+  gesperrt = false,
+}: {
+  onUebernehmen: (text: string) => void;
+  gesperrt?: boolean;
+}) {
   const bausteine = useBausteinAuswahl();
-  return <BausteinFeld bausteine={bausteine} onUebernehmen={onUebernehmen} hinweis="Hinweis" />;
+  return <BausteinFeld bausteine={bausteine} onUebernehmen={onUebernehmen} gesperrt={gesperrt} />;
 }
 
 async function oeffnen(region: string, block: string) {
@@ -105,10 +111,21 @@ describe('BausteinFeld', () => {
     await user.type(feld, 'acht');
     expect(within(k2w).getByText('Bitte eine Zahl eingeben, etwa 1,5.')).toBeInTheDocument();
     expect(screen.getByText(/Knee to Wall Test: ohne Befund\.$/)).toBeInTheDocument();
+    // Übernommen würde der Text ohne den Wert — deshalb erst nach der Korrektur.
+    expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeDisabled();
 
     await user.clear(feld);
     await user.type(feld, '8,5');
     expect(screen.getByText(/Knee to Wall Test: ohne Befund, 8,5 cm\./)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeEnabled();
+  });
+
+  it('sperrt jede Eingabe, solange die Seite schreibt', async () => {
+    const user = userEvent.setup();
+    render(<Feld onUebernehmen={vi.fn()} gesperrt />);
+    await user.click(screen.getByText('Befund aus Bausteinen'));
+    expect(screen.getByRole('group', { name: 'Befund aus Bausteinen' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Knie' })).toBeDisabled();
   });
 
   it('schreibt einen Unterpunkt mit seiner Gruppe', async () => {

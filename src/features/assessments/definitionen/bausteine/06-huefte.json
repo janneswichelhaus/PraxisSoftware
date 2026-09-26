@@ -88,7 +88,12 @@
           "type": "test",
           "bilateral": true,
           "result_type": "befund",
-          "hint": "Symphyse, SIG, LWS, Knie"
+          "subitems": [
+            {
+              "id": "huefte_angrenzende_bereiche_symphyse_sig_lws_knie",
+              "label": "Symphyse, SIG, LWS, Knie"
+            }
+          ]
         },
         {
           "id": "huefte_neurologische_untersuchung",

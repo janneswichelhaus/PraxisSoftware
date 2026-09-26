@@ -413,17 +413,20 @@ describe('CompleteTreatmentPage', () => {
       expect(completeTreatment).not.toHaveBeenCalled();
     });
 
-    it('nimmt einen offenen Vorschlag in den Entwurf mit', async () => {
+    it('hält auch „Nur als Entwurf speichern“ an, solange der Vorschlag offen ist', async () => {
+      // Ungesehener Text im Entwurf käme über die automatische Finalisierung
+      // (ADR-016 Punkt 7) in die Akte (Zweitreview S1).
       const user = userEvent.setup();
       rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
       await user.click(screen.getByRole('button', { name: 'Nur als Entwurf speichern' }));
 
-      await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, VORSCHLAG));
-      expect(completeTreatment).not.toHaveBeenCalled();
+      expect(await screen.findByRole('alert')).toHaveTextContent(/noch nicht im Text/);
+      expect(createTreatmentNote).not.toHaveBeenCalled();
     });
 
-    it('fragt beim Verlassen auch dann nach, wenn nur Bausteine angetippt sind', async () => {
+    it('fragt beim Verlassen nach und hängt den Vorschlag beim Speichern an', async () => {
       const user = userEvent.setup();
       rendern();
       await lachmannPositiv(user);
@@ -432,6 +435,49 @@ describe('CompleteTreatmentPage', () => {
       expect(
         await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' }),
       ).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+      await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, VORSCHLAG));
+      expect(completeTreatment).not.toHaveBeenCalled();
+    });
+
+    it('schließt nach „Verwerfen“ wieder ab, ohne den Vorschlag', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
+      await lachmannPositiv(user);
+      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await screen.findByRole('alert');
+      await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+      expect(screen.queryByRole('alert')).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          'Befund:',
+          termin.updated_at,
+          null,
+          false,
+        ),
+      );
+    });
+
+    it('sperrt Bausteine und Textbausteine, solange der Abschluss läuft (Zweitreview B1)', async () => {
+      let fertig: () => void = () => undefined;
+      completeTreatment.mockReturnValue(new Promise<void>((resolve) => (fertig = resolve)));
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
+      await user.click(screen.getByText('Befund aus Bausteinen'));
+      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+
+      await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
+      expect(screen.getByRole('group', { name: 'Befund aus Bausteinen' })).toBeDisabled();
+      // Ein Tap auf einen Textbaustein ändert das festgehaltene Feld nicht.
+      await user.click(screen.getByRole('button', { name: 'Hausbesuch' }));
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Befund:');
+      fertig();
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`));
     });
 
     it('bietet ohne Behandlung keine Bausteine an', async () => {

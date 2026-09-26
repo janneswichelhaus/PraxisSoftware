@@ -135,30 +135,47 @@ describe('TreatmentNotePage', () => {
     expect(createTreatmentNote).not.toHaveBeenCalled();
   });
 
-  it('haengt einen nicht uebernommenen Bausteinvorschlag beim Speichern an (FRB-003b)', async () => {
-    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
-    const user = userEvent.setup();
-    rendern();
+  describe('Befund aus Bausteinen (FRB-003b)', () => {
+    async function myofaszial(user: ReturnType<typeof userEvent.setup>) {
+      await waitFor(() => expect(feld()).toHaveValue(INHALT));
+      await user.click(screen.getByText('Befund aus Bausteinen'));
+      await user.click(screen.getByRole('button', { name: 'Knie' }));
+      await user.click(screen.getByText('Therapie'));
+      await user.click(
+        within(screen.getByRole('group', { name: 'Myofaszial' })).getByRole('button', {
+          name: 'durchgeführt',
+        }),
+      );
+    }
 
-    await waitFor(() => expect(feld()).toHaveValue(INHALT));
-    await user.click(screen.getByText('Befund aus Bausteinen'));
-    await user.click(screen.getByRole('button', { name: 'Knie' }));
-    await user.click(screen.getByText('Therapie'));
-    await user.click(
-      within(screen.getByRole('group', { name: 'Myofaszial' })).getByRole('button', {
-        name: 'durchgeführt',
-      }),
-    );
-    // Nur ein Häkchen, kein getippter Text: Das ist trotzdem ungespeicherte Arbeit.
-    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+    it('speichert nicht, solange ein Vorschlag nicht im Text steht', async () => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+      const user = userEvent.setup();
+      rendern();
+      await myofaszial(user);
+      // Nur ein Häkchen, kein getippter Text: Das ist trotzdem ungespeicherte Arbeit.
+      await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
 
-    await waitFor(() =>
-      expect(updateTreatmentNote).toHaveBeenCalledWith(
-        DOKU_ID,
-        STAND,
-        `${INHALT}\n\nKnie – Therapie\nMyofaszial: durchgeführt.`,
-      ),
-    );
+      expect(await screen.findByRole('alert')).toHaveTextContent(/noch nicht im Text/);
+      expect(updateTreatmentNote).not.toHaveBeenCalled();
+    });
+
+    it('hängt den Vorschlag aus der Rückfrage beim Verlassen an den Entwurf', async () => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+      const user = userEvent.setup();
+      rendern();
+      await myofaszial(user);
+      await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+      await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+
+      await waitFor(() =>
+        expect(updateTreatmentNote).toHaveBeenCalledWith(
+          DOKU_ID,
+          STAND,
+          `${INHALT}\n\nKnie – Therapie\nMyofaszial: durchgeführt.`,
+        ),
+      );
+    });
   });
 
   it('laesst ohne Aenderung nicht speichern', async () => {
@@ -306,6 +323,8 @@ describe('TreatmentNotePage', () => {
 
     const nachtragsfeld = await screen.findByLabelText('Nachtrag');
     expect(nachtragsfeld).toHaveValue(NACHTRAG_TEXT);
+    // Ein Nachtrag ergänzt, er befundet nicht neu (FRB-003b, ANN-120).
+    expect(screen.queryByText('Befund aus Bausteinen')).toBeNull();
 
     await user.type(nachtragsfeld, ' Ergaenzt.');
     await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));

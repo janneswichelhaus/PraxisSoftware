@@ -1,14 +1,16 @@
-import { memo, useId, useState } from 'react';
+import { memo, useEffect, useId, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { Field } from '@/components/ui/Field';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { BausteinAuswahl } from './bausteinauswahl';
 import {
   ERGEBNIS_TEXT,
   NOTIZ_MAX,
   SEITEN,
   istMesswert,
+  ungueltigeMesswerte,
   type Angabe,
   type Auswahl,
 } from './dokumentationstext';
@@ -32,30 +34,49 @@ import {
  * Das Feld ist zugeklappt und steht **unter** dem Textfeld: Es soll den
  * Freitext nicht nach unten schieben (BEF-001). Ein zweiter Tipp auf ein
  * gewähltes Ergebnis hebt es wieder auf.
+ *
+ * Während die Seite schreibt, ist das Feld gesperrt: Was danach angetippt
+ * oder übernommen würde, stünde auf dem Bildschirm, aber nicht in dem, was
+ * gerade gespeichert oder festgeschrieben wird (§13, ADR-016 Punkt 4).
  */
 export function BausteinFeld({
   bausteine,
   onUebernehmen,
-  hinweis,
+  gesperrt,
+  meldung,
 }: {
   bausteine: BausteinAuswahl;
   onUebernehmen: (text: string) => void;
-  /** Was mit einem nicht übernommenen Vorschlag geschieht — je Seite anders. */
-  hinweis: string;
+  /** Solange die Seite schreibt. */
+  gesperrt: boolean;
+  /** Warum die Seite gerade nicht speichert oder abschließt; öffnet das Feld. */
+  meldung?: string | undefined;
 }) {
   const { regionen, auswahl, setzen, leeren, text } = bausteine;
   const [regionId, setRegionId] = useState<string | null>(null);
   const region = regionen.find((r) => r.id === regionId);
   const anzahl = Object.values(auswahl).filter((a) => a.ergebnis !== 'nicht_durchgefuehrt').length;
+  const messwertFalsch = ungueltigeMesswerte(regionen, auswahl);
+
+  // Eine Meldung, die in einem zugeklappten Feld steht, liest niemand — und
+  // „Übernehmen" und „Verwerfen" wären unsichtbar.
+  const feldRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (meldung && feldRef.current) feldRef.current.open = true;
+  }, [meldung]);
 
   return (
-    <details className="nicht-drucken border-line-strong rounded-card mt-4 border">
+    <details ref={feldRef} className="nicht-drucken border-line-strong rounded-card mt-4 border">
       <summary className="text-ink flex min-h-12 cursor-pointer items-center gap-2 px-4 text-[0.9375rem] font-medium">
         Befund aus Bausteinen
         {anzahl > 0 ? <Badge ton="akzent">{`${anzahl} angegeben`}</Badge> : null}
       </summary>
 
-      <div className="flex flex-col gap-4 px-4 pb-4">
+      <fieldset
+        disabled={gesperrt}
+        aria-label="Befund aus Bausteinen"
+        className="m-0 flex min-w-0 flex-col gap-4 border-0 px-4 pb-4"
+      >
         <div role="group" aria-label="Region" className="flex flex-wrap gap-2">
           {regionen.map((r) => {
             const zahl = angabenIn(r, auswahl);
@@ -94,11 +115,22 @@ export function BausteinFeld({
             <p className="bg-surface-sunken rounded-field text-ink p-3 text-sm wrap-anywhere whitespace-pre-wrap">
               {text}
             </p>
-            <p className="text-ink-muted text-xs">{hinweis}</p>
+            <p className="text-ink-muted text-xs">
+              Gespeichert und abgeschlossen wird erst, wenn der Vorschlag im Text steht oder
+              verworfen ist. Nur wer die Seite verlässt und dort „Speichern“ wählt, bekommt ihn an
+              den Entwurf angehängt, damit nichts verloren geht.
+            </p>
+            {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
+            {messwertFalsch ? (
+              <Statusmeldung ton="warnung">
+                Ein Messwert ist keine Zahl. Bitte korrigieren, dann übernehmen.
+              </Statusmeldung>
+            ) : null}
             <div className="flex flex-wrap gap-3">
               <Button
                 type="button"
                 variant="secondary"
+                disabled={messwertFalsch}
                 onClick={() => {
                   onUebernehmen(text);
                   leeren();
@@ -112,7 +144,7 @@ export function BausteinFeld({
             </div>
           </section>
         ) : null}
-      </div>
+      </fieldset>
     </details>
   );
 }

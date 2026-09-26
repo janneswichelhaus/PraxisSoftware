@@ -7,10 +7,16 @@ Ladepfad sortiert nach Pfad, der Code kennt keinen Regionsnamen.
 Übertragungsregeln (**ANN-118**):
 
 - Text hinter „ – " ist der Durchführungshinweis (`hint`), ebenso eine Klammer,
-  die nur die Durchführung beschreibt („30-60 Sekunden"). Er erscheint beim
-  Abhaken und nie im Dokumentationstext.
+  die nur die Durchführung beschreibt („30-60 Sekunden"). Er steht am Test und
+  nie im Dokumentationstext.
+- **Kein Grenzwert mit Folge:** Die Klammer beim Navicular Drop („mehr als 1 cm
+  Differenz im Svgl. → Training Gewölbe") ist nicht übernommen — ein
+  Schwellenwert neben dem eigenen Messwert samt Therapiefolge fällt unter
+  `cutoff-anzeige` in `src/app/mdr.ts` und ADR-006.
 - Unterpunkte a/b/c und o werden `subitems`. Eine dritte Ebene (Hüfte) wird
-  flach: Die Zwischenüberschrift steht als Hinweis am Unterpunkt.
+  flach: Die Zwischenüberschrift steht als Hinweis am Unterpunkt. Der
+  „Neurologische Status" der HWS zählt in einer Zeile fünf eigene Prüfungen
+  auf; sie stehen als fünf Unterpunkte, damit jede ihr Ergebnis bekommt.
 - Zwei Zeilen unter einer Nummer (HWS Basis 2) stehen als ein Item mit „ · "
   und je einem Unterpunkt.
 - Therapieblöcke enthalten Techniken, alle übrigen Tests. Seitengetrennt

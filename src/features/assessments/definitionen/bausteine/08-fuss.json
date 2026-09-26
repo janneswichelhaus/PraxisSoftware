@@ -154,8 +154,7 @@
             "label": "Messwert",
             "unit": "cm",
             "input": "zahl"
-          },
-          "hint": "mehr als 1 cm Differenz im Svgl. → Training Gewölbe"
+          }
         },
         {
           "id": "fuss_mtp_i_mobilitaet_und_kraft",

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -7,6 +7,7 @@ import { TextArea } from '@/components/ui/TextArea';
 import { ErrorState } from '@/components/ui/Feedback';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
+import { VORSCHLAG_OFFEN } from '@/features/assessments/dokumentationstext';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
   formatLocalDate,
@@ -51,6 +52,7 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | undefined>(undefined);
+  const [vorschlagOffen, setVorschlagOffen] = useState(false);
 
   const wert = entwurf ?? gespeichert;
   const bausteine = useBausteinAuswahl();
@@ -80,9 +82,9 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
    * Der Rückgabewert sagt, ob **alles Getippte** auf dem Server liegt.
    */
   async function entwurfSichern(): Promise<boolean> {
-    // Ein noch nicht übernommener Vorschlag geht mit: Der Entwurf bleibt ein
-    // Entwurf, und die Rückfrage des Navigationsschutzes verspricht, dass
-    // nichts verloren geht (FRB-003b).
+    // Ein noch nicht übernommener Vorschlag geht mit — erreichbar nur über die
+    // Rückfrage des Navigationsschutzes, die verspricht, dass nichts verloren
+    // geht. Die Schaltfläche hält vorher an (FRB-003b, ANN-120).
     const vorschlag = vorschlagRef.current;
     const zuSichern = vorschlag ? bausteinEinfuegen(wertRef.current, vorschlag) : wertRef.current;
     const meldung = inhaltFehler(zuSichern);
@@ -99,7 +101,7 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
       await createTreatmentNote(appointment.id, zuSichern);
     }
 
-    if (vorschlag) {
+    if (vorschlag && vorschlagRef.current === vorschlag) {
       // Was während des Speicherns getippt wurde, bleibt stehen; der
       // Vorschlag steht danach im Feld wie übernommen.
       const imFeld = bausteinEinfuegen(wertRef.current, vorschlag);
@@ -109,7 +111,7 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
       vorschlagRef.current = '';
     }
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
-    return wertRef.current === zuSichern;
+    return wertRef.current === zuSichern && vorschlagRef.current === '';
   }
 
   const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
@@ -117,10 +119,25 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
     speichern: entwurfSichern,
   });
 
+  // Die Meldung gilt dem Vorschlag, der sie ausgelöst hat; ist er übernommen
+  // oder verworfen, verschwindet sie, statt beim nächsten wieder zu stehen.
+  useEffect(() => {
+    if (!bausteine.text) setVorschlagOffen(false);
+  }, [bausteine.text]);
+
   function absenden(event: React.FormEvent) {
     event.preventDefault();
 
-    const meldung = inhaltFehler(bausteine.text ? bausteinEinfuegen(wert, bausteine.text) : wert);
+    // Gespeichert wird, was im Feld steht und gelesen wurde: Ein Vorschlag aus
+    // den Bausteinen wird erst übernommen oder verworfen (ANN-120). Sonst
+    // könnte ungesehener Text über die automatische Finalisierung (ADR-016
+    // Punkt 7) Bestandteil der Akte werden.
+    if (bausteine.text) {
+      setVorschlagOffen(true);
+      return;
+    }
+
+    const meldung = inhaltFehler(wert);
     setFehler(meldung);
     if (meldung) return;
 
@@ -162,7 +179,8 @@ function Editor({ appointment, note }: { appointment: Appointment; note: Treatme
           <BausteinFeld
             bausteine={bausteine}
             onUebernehmen={(text) => setEntwurf(bausteinEinfuegen(wert, text))}
-            hinweis="Übernommen wird der Vorschlag mit „In den Text übernehmen“ – oder beim Speichern als Entwurf, damit nichts verloren geht."
+            gesperrt={laeuft}
+            meldung={vorschlagOffen && bausteine.text ? VORSCHLAG_OFFEN : undefined}
           />
         )}
 

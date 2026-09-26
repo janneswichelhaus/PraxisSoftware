@@ -65,6 +65,25 @@ export function istMesswert(text: string, input: 'zahl' | 'ganzzahl'): boolean {
   return ganz.test(vorn) && (hinten === undefined || /^\d{1,3}$/.test(hinten));
 }
 
+/**
+ * Steht irgendwo ein Messwert, der keine Zahl ist? Dann fiele er still aus dem
+ * Text — deshalb hält das Feld die Übernahme an, bis er korrigiert ist.
+ */
+export function ungueltigeMesswerte(
+  regionen: readonly BausteinRegion[],
+  auswahl: Auswahl,
+): boolean {
+  return regionen.some((region) =>
+    region.blocks.some((block) =>
+      block.items.some((item) => {
+        const messfeld = item.value_field;
+        const wert = auswahl[item.id]?.messwert?.trim();
+        return messfeld !== undefined && !!wert && !istMesswert(wert, messfeld.input);
+      }),
+    ),
+  );
+}
+
 /** Ein Zeilenumbruch in der Notiz würde die Zeile des Tests zerreißen. */
 function einzeilig(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
@@ -119,3 +138,7 @@ export function dokumentationstext(regionen: readonly BausteinRegion[], auswahl:
   }
   return absaetze.join('\n\n');
 }
+
+/** Warum eine Dokumentationsseite nicht speichert oder abschließt (ANN-120). */
+export const VORSCHLAG_OFFEN =
+  'Der Vorschlag aus den Bausteinen steht noch nicht im Text. Bitte übernehmen oder verwerfen, dann speichern oder abschließen.';

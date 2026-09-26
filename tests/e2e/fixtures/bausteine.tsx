@@ -29,7 +29,7 @@ export function Seite() {
       <BausteinFeld
         bausteine={bausteine}
         onUebernehmen={(vorschlag) => setText((bisher) => bausteinEinfuegen(bisher, vorschlag))}
-        hinweis="Übernommen wird der Vorschlag mit „In den Text übernehmen“. Abgeschlossen wird erst, wenn er im Text steht oder verworfen ist."
+        gesperrt={false}
       />
     </div>
   );
