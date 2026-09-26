@@ -1343,7 +1343,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: nach vier W
 
 ### ANN-104 — Hervorgehoben werden acht Fragen des Anamnesebogens nach IFOMPT, je Frage und ohne Verknüpfung
 
-Recht · offen · 2026-09-26 · — · — · Wiedervorlage: mit der externen Prüfung nach ADR-006 Punkt 7 (B1)
+Recht · entschieden (Jannes) · 2026-09-26 · Jannes (Regeln fachlich bestätigt) · — · Wiedervorlage: mit der externen Prüfung nach ADR-006 Punkt 7 (B1)
 
 **Annahme.** Hervorgehoben wird, wenn angekreuzt ist: Frage 4 Nacht- oder Ruheschmerzen, Frage 23 jede Angabe, Frage 24 Blasenschwäche oder belastungsabhängige Brustschmerzen, Frage 25 jede Angabe, Frage 26 „ja", Frage 28 Unfall/Sturz/Verletzung, Frage 29 Schwangerschaft, Frage 30 Kortison oder Blutverdünner. Gezeigt werden die Angabe wörtlich, Frage und Datum und daneben die Regel mit Quelle — kein Text zur Bedeutung, keine Farbe als Ampel, keine Zählung, keine Verknüpfung mehrerer Angaben wie im Beispiel von §7.1, nur am geltenden, nicht am ersetzten Bogen.
 
