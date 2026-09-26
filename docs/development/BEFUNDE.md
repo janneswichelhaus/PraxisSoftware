@@ -1402,7 +1402,7 @@ Worker, mit schmaler Leiste für Zurück und Neu laden; iOS bleibt beim Browser
 | Datum   | 2026-09-26                                                                            |
 | Bereich | Kalender (`/kalender`), Anlegen aus dem Raster (CAL-019), Terminserie (CAL-007)        |
 | Quelle  | Freie Sichtung Kalender durch Jannes (Test-Umgebung), therapist                       |
-| Status  | offen                                                                                 |
+| Status  | erledigt in UX-EPIC-002 (UX-002j, 2026-09-26)                                         |
 | Berührt | `src/features/appointments/CalendarPage.tsx` (Eintrag `dauertermin`), `AppointmentSeriesPage.tsx`, Route `/patienten/:patientId/verordnungen/:grundlageId/serie`; ADR-018, ADR-020 |
 
 **Beobachtung.** Im Anlegen-Menü ist *Dauertermin* ausgegraut, solange der
@@ -1424,6 +1424,12 @@ Reihenfolge der Fragen ändert sich — ein vorgeschalteter Schritt „für wen,
 aus welcher Grundlage?" mit Tag und Beginn aus der Markierung. Hat die
 Person genau eine offene Grundlage, entfällt die zweite Frage.
 
+**Umgesetzt (UX-002j).** Neue Seite `/termine/dauertermin`: erst die Patient:in,
+dann die Grundlage; bei genau einer offenen (oder nur einer) geht es direkt
+in die Serie. Verplante und ausgeschöpfte stehen eingeklappt darunter. Ist
+der Kalender auf Patient:in und Grundlage gefiltert, führt der Eintrag wie
+bisher direkt in die Serie.
+
 ### BEF-043 — Der Kalender steckt in einem Kasten und lässt Rand frei
 
 |         |                                                                                      |
@@ -1431,7 +1437,7 @@ Person genau eine offene Grundlage, entfällt die zweite Frage.
 | Datum   | 2026-09-26                                                                           |
 | Bereich | Kalender (`/kalender`); Seitenrahmen aller Bereiche                                   |
 | Quelle  | Freie Sichtung Kalender durch Jannes (Test-Umgebung), therapist                      |
-| Status  | offen                                                                                |
+| Status  | erledigt in UX-EPIC-002 (UX-002k, 2026-09-26)                                        |
 | Berührt | `src/app/AppShell.tsx` (`<main>`: `max-w-inhalt`, `px-5 sm:px-8`, `py-8`), `src/features/appointments/CalendarGrid.tsx` (Rahmen `rounded-card border mt-4`); BEF-001, BEF-039 |
 
 **Beobachtung.** Das Raster sitzt als umrandete Karte in der Inhaltsfläche,
@@ -1452,6 +1458,10 @@ ist die Kappung falsch — die Begründung dort nennt Listen, nicht Gitter.
 (und später andere Flächen-Ansichten wie die Karte) braucht eine
 randlose Variante des Rahmens. Bildschirmfotos bei 1280, 1920 und 375 px.
 
+**Umgesetzt (UX-002k).** Der Kalender reicht bis an den Rand der Fläche, ohne
+Kasten (`RANDLOSE_SEITEN`, ANN-114); die übrigen Seiten sind Listen, Formulare
+oder Text und behalten die Kappung.
+
 ### BEF-044 — Die Zeile „Kalender · Touren" kostet Höhe; Touren gehört in den Kalender
 
 |         |                                                                                      |
@@ -1459,7 +1469,7 @@ randlose Variante des Rahmens. Bildschirmfotos bei 1280, 1920 und 375 px.
 | Datum   | 2026-09-26                                                                           |
 | Bereich | Arbeitsbereich Kalender: Unterreiter (`SubNav`), Touren (`/touren`)                   |
 | Quelle  | Freie Sichtung Kalender durch Jannes (Test-Umgebung), therapist                      |
-| Status  | offen                                                                                |
+| Status  | erledigt in UX-EPIC-002 (UX-002l, 2026-09-26)                                        |
 | Berührt | `src/app/navigation.tsx` (`unterpunkte` von `termine`), `src/app/AppShell.tsx` (`SubNav`, `py-8`), `src/features/tours/TourenPage.tsx`; BEF-001, BEF-039 |
 
 **Beobachtung.** Zwischen Kopfzeile und dem Raster steht eine eigene Zeile
@@ -1477,3 +1487,9 @@ Tag und Person —, deshalb liegt die Ansicht dort nahe. `/touren` bleibt als
 Adresse erhalten (Verweise aus der Übersicht). Ob die Zeile bei anderen
 Bereichen (Patient:innen, Team, Betrieb) ebenfalls wegfallen kann, prüft
 derselbe Loop — BEF-001 beschreibt dieselbe Ursache an der Dokumentation.
+
+**Umgesetzt (UX-002l).** Die Zeile entfällt; „Tour" steht neben Tag und Woche
+unter „Ansicht und Filter" und nimmt Tag und Person mit (ANN-113). Die
+Zeilen der Bereiche Patient:innen und Organisatorisches bleiben, weil ihre
+Ziele sonst nicht erreichbar wären. Der Abstand unter der Kopfzeile ist
+überall kleiner.

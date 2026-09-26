@@ -1448,3 +1448,27 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 **Anker.** `to` des Bereichs `betrieb` und `betriebUnterpunkte` in `src/app/navigation.tsx`; `einklappbar` in `SubNav` (`src/components/ui/SubNav.tsx`).
 
 **Änderungspfad.** Vorschauen wieder offen: `einklappbar` auf `false` setzen · Aufwand `klein`. Anderer Einstieg: `to` des Bereichs ändern · Aufwand `klein`.
+
+### ANN-113 — Die Tour ist eine Ansicht des Kalenders; der Kalender hat keine Unterzeile mehr
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+
+**Annahme.** Die Zeile „Kalender · Touren" über dem Raster entfällt. „Tour" steht als dritter Knopf neben „Tag" und „Woche" unter „Ansicht und Filter" und öffnet `/touren` mit dem gezeigten Tag und der gezeigten Person; die Tourenseite heißt „Tour" und führt mit „Zum Kalender" in die Tagesansicht desselben Tages zurück. `/touren` bleibt Adresse und Teil des Bereichs Kalender. Die Unterzeilen der Bereiche Patient:innen (Patient:innen · Verordner:innen) und Organisatorisches bleiben.
+
+**Begründung.** BEF-044: Dass man im Kalender ist, zeigen Seitenleiste und Tableiste; die Zeile kostete Höhe über dem Raster. Die Tourenseite fragt dasselbe wie der Kalender — Tag und Person —, deshalb reisen beide mit. Unter „Ansicht und Filter" statt im Kopf über dem Raster, weil der Kopf am Handy seit BEF-039 voll ist (Monat, Person mit Woche, „Jetzt"). In den beiden anderen Bereichen führt die Zeile zu Zielen, die anders nicht erreichbar sind; sie zu streichen, wäre ein eigener Umbau. Unsicher: ob Jannes die Tour mit einem Tipp statt mit zwei erreichen will.
+
+**Anker.** `unterpunkte` des Bereichs `termine` in `src/app/navigation.tsx`; der Knopf „Tour" in der Gruppe „Ansicht" in `src/features/appointments/CalendarPage.tsx`.
+
+**Änderungspfad.** Ein Tipp: den Knopf aus der Gruppe in den Kopf über dem Raster ziehen (ab `sm`, am Handy neben „Jetzt") · Aufwand `klein`. Zeile zurück: `unterpunkte` wieder füllen · Aufwand `klein`. Die Tour als echte Ansicht im Raster (ohne Seitenwechsel) · Aufwand `mittel`.
+
+### ANN-114 — Flächen-Ansichten reichen bis an den Rand, Listen und Texte behalten die Kappung
+
+Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Rechner (breiter Bildschirm) und am Handy
+
+**Annahme.** Der Kalender (`/kalender`) nutzt die ganze Fläche neben der Seitenleiste: keine Kappung auf 1200 px, 8 bis 12 px Rand, kein Kasten um das Raster, nur eine Linie oben und unten. Alle übrigen Seiten behalten die Kappung aus DS-001. Der Abstand unter der Kopfzeile ist überall kleiner (20 bis 24 px statt 32 px).
+
+**Begründung.** BEF-043: Links und rechts des Rasters blieb Fläche ungenutzt, am breiten Bildschirm viel davon. Die Kappung aus DS-001 ist für Listen gedacht — ohne sie stünde der Status einer Zeile einen halben Meter vom Namen entfernt; ein Raster hat diese Sorge nicht. Die Kopfzeile und die Seitenleiste bleiben auf jeder Seite gleich, deshalb springt beim Wechsel das Gerüst nicht (UI-001). Durchgesehen wurden die übrigen Bereiche mit derselben Frage: Sie sind Listen, Formulare oder Text; die Tourenseite mit Karte wäre der nächste Kandidat, sobald die Karte die Breite braucht. Unsicher: ob Jannes weitere Seiten randlos will.
+
+**Anker.** `RANDLOSE_SEITEN` in `src/app/navigation.tsx`, angewendet in `<main>` in `src/app/AppShell.tsx`; geprüft in `src/app/AppShell.test.tsx`.
+
+**Änderungspfad.** Weitere Seite randlos: ihren Pfad in `RANDLOSE_SEITEN` aufnehmen · Aufwand `klein`. Zurück zum Kasten: den Eintrag entfernen und in `CalendarGrid` `rounded-card border` wieder setzen · Aufwand `klein`.

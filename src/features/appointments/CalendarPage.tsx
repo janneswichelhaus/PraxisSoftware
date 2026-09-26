@@ -735,6 +735,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     </button>
   );
 
+  // Wessen Tour: die gezeigte Person, sonst wählt die Tourenseite selbst.
+  const tourPerson = p.ansicht === 'woche' ? wochenPerson : p.person;
+
   return (
     <>
       {/* Über dem Raster nur noch Monat, Person mit Woche und „Jetzt"
@@ -850,6 +853,19 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                   {a === 'tag' ? 'Tag' : 'Woche'}
                 </Button>
               ))}
+              {/* Die Tour als dritte Ansicht (BEF-044, ANN-113): dieselben
+                  Fragen wie hier - Tag und Person -, deshalb reisen beide
+                  mit. Die eigene Zeile „Kalender · Touren" über dem Raster
+                  ist dafür entfallen; `/touren` bleibt als Adresse. */}
+              <ButtonLink
+                to={`/touren?${new URLSearchParams({
+                  tag: p.datum,
+                  ...(tourPerson ? { person: tourPerson } : {}),
+                }).toString()}`}
+                variant="secondary"
+              >
+                Tour
+              </ButtonLink>
             </div>
 
             {/* Zoom (CAL-011). Beschriftet wird nicht die Pixelzahl, sondern

@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -19,6 +20,8 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
 
 /**
  * Touren — die Tagesroute einer Person (MAP-006b, ersetzt die Vorschau).
+ * Seit BEF-044 eine Ansicht des Kalenders: erreichbar über „Tour" neben Tag
+ * und Woche, ohne eigenen Unterpunkt.
  *
  * Der Kalender beantwortet „wer behandelt wen wann", diese Seite „wie kommt
  * die Person dahin". Beide lesen dieselben Termine; es gibt keine zweite
@@ -75,9 +78,26 @@ export function TourenPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
+      {/* Die Tour ist eine Ansicht des Kalenders (BEF-044, ANN-113): Der Weg
+          zurück führt in die Tagesansicht mit demselben Tag und derselben
+          Person, nicht an den Anfang. */}
       <PageHeader
-        title="Touren"
+        title="Tour"
         description="Die Besuche eines Tages in Fahrtreihenfolge — mit Karte, Route und Fahrzeiten."
+        actions={
+          <span className="print:hidden">
+            <ButtonLink
+              to={`/kalender?${new URLSearchParams({
+                ansicht: 'tag',
+                datum: tag,
+                ...(person ? { person } : {}),
+              }).toString()}`}
+              variant="secondary"
+            >
+              Zum Kalender
+            </ButtonLink>
+          </span>
+        }
       />
 
       <div className="mb-6 grid max-w-3xl gap-4 sm:grid-cols-3 print:hidden">

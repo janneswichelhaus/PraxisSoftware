@@ -119,15 +119,16 @@ describe('Arbeitsbereiche je Rolle', () => {
   });
 
   it('kennzeichnet noch nicht angebundene Unterpunkte als Vorschau', () => {
-    const termine = bereicheFuer(['owner']).find((bereich) => bereich.id === 'termine');
-    const kalender = termine?.unterpunkte.find((punkt) => punkt.to === '/kalender');
-    const touren = termine?.unterpunkte.find((punkt) => punkt.to === '/touren');
-    expect(kalender?.vorschau).toBeUndefined();
-    // Seit MAP-006 echt angebunden.
-    expect(touren?.vorschau).toBeUndefined();
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
     const flotte = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/flotte');
     expect(flotte?.vorschau).toBe(true);
+  });
+
+  it('zeigt im Kalender keine Unterzeile; die Tour gehoert trotzdem dazu', () => {
+    // BEF-044, ANN-113: Die Tour ist eine Ansicht des Kalenders.
+    const bereiche = bereicheFuer(['owner']);
+    expect(bereiche.find((bereich) => bereich.id === 'termine')?.unterpunkte).toEqual([]);
+    expect(aktiverBereich(bereiche, '/touren')?.id).toBe('termine');
   });
 
   it('oeffnet Organisatorisches auf den Mitarbeitenden, nicht auf einer Vorschau', () => {

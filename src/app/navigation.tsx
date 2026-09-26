@@ -216,10 +216,10 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       to: '/kalender',
       pfade: ['/kalender', '/touren', '/termine'],
       icon: symbole.termine,
-      unterpunkte: [
-        { to: '/kalender', label: BEREICHE.termine.label },
-        { to: '/touren', label: 'Touren' },
-      ],
+      // Kein Untermenü (BEF-044, ANN-113): Dass man im Kalender ist, zeigen
+      // Seitenleiste und Tableiste; die Tour ist eine Ansicht des Kalenders
+      // neben Tag und Woche. `/touren` gehört weiter zu diesem Bereich.
+      unterpunkte: [],
     });
   }
 
