@@ -1366,7 +1366,7 @@ nennt deshalb dieselbe Datei, eine neue entsteht nicht (ANN-110,
 | Datum   | 2026-09-26                                                                         |
 | Bereich | Web-Manifest, Installation als App (Chrome)                                        |
 | Quelle  | Freie Sichtung durch Jannes (Test-Umgebung), nach UX-002e                          |
-| Status  | offen                                                                              |
+| Status  | erledigt in UX-EPIC-002 (UX-002i, 2026-09-26)                                      |
 | Berührt | `public/manifest.webmanifest` (`display`); ANN-110; BEF-040                        |
 
 **Beobachtung.** Über Chrome lässt sich die Anwendung nicht mehr installieren;
@@ -1390,6 +1390,10 @@ Zurück-Wege in der Oberfläche und öffnet auch unter iOS ab dem
 Startbildschirm ohne Browserleiste; `minimal-ui` behält Zurück und Neu laden
 in einer schmalen Leiste (Chrome), iOS bleibt beim Browser. Der Loop
 entscheidet und schreibt ANN-110 fort.
+
+**Umgesetzt (UX-002i).** `display` ist `minimal-ui`: installierbar ohne Service
+Worker, mit schmaler Leiste für Zurück und Neu laden; iOS bleibt beim Browser
+(ANN-110 fortgeschrieben).
 
 ### BEF-042 — Ein Dauertermin verlangt erst eine Patient:in, ein neuer Termin nicht
 

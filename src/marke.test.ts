@@ -111,9 +111,17 @@ describe('Web-Manifest', () => {
     );
   });
 
-  it('traegt den Markennamen und aendert am Oeffnen nichts', () => {
+  /**
+   * `browser` hieß für Chrome „nicht installierbar" (BEF-041). `minimal-ui`
+   * installiert ohne Service Worker und behält Zurück und Neu laden;
+   * `standalone` verlangte eigene Zurück-Wege in der Oberfläche (ANN-110).
+   */
+  it('traegt den Markennamen und laesst Chrome installieren, mit Zurueck-Leiste', () => {
     expect(manifest.name).toBe('Own Motion');
-    expect(manifest.display).toBe('browser');
+    expect(manifest.display).toBe('minimal-ui');
+    // Chrome verlangt fürs Installieren ein Symbol „any" ab 144 px.
+    const beliebig = manifest.icons.filter((i) => i.purpose === 'any');
+    expect(beliebig.some((i) => Number(i.sizes.split('x')[0]) >= 144)).toBe(true);
   });
 
   it('nennt ein maskierbares Symbol - das ausgelieferte Master, keine zweite Fassung', () => {

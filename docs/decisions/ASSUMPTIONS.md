@@ -1413,17 +1413,17 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 **Änderungspfad.** Ein Element zurück nach oben: aus dem Feld „Ansicht und Filter" in die Kopfzeile verschieben · Aufwand `klein`. Suche auch am Rechner als Lupe: die Klasse `max-sm:hidden` am Suchfeld für alle Breiten setzen und die Lupe überall zeigen · Aufwand `klein`.
 
-### ANN-110 — Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet die Anwendung weiter im Browser
+### ANN-110 — Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet die Anwendung mit schmaler Leiste (`minimal-ui`)
 
-Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Android-Handy (Symbol neu zum Startbildschirm hinzufügen)
+Technik · offen · 2026-09-26 (fortgeschrieben 2026-09-26, BEF-041) · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Android-Handy und in Chrome am Rechner (App installieren, Symbol prüfen)
 
-**Annahme.** `public/manifest.webmanifest` nennt als einziges Symbol das vorhandene Master `own-motion-app-1024.png`, einmal für `any` und einmal für `maskable`; `display` ist `browser`. Es gibt keinen Service Worker. Eingebunden wird das Manifest mit `crossorigin="use-credentials"`.
+**Annahme.** `public/manifest.webmanifest` nennt als einziges Symbol das vorhandene Master `own-motion-app-1024.png`, einmal für `any` und einmal für `maskable`; `display` ist `minimal-ui` (bis UX-002i `browser`). Es gibt keinen Service Worker. Eingebunden wird das Manifest mit `crossorigin="use-credentials"`.
 
-**Begründung.** BEF-040: Ohne Manifest nimmt Android das `apple-touch-icon` und legt es in einen weißen Kreis. Das Master ist vollflächig und hält den Schutzkreis ein (nachgemessen in `marke/README.md`), deshalb braucht es keine zweite Fassung der Marke. `browser` ändert am Öffnen nichts, auch unter iOS nicht, das seit 16.4 ein `standalone` des Manifests übernehmen würde. Ein Service Worker bleibt nach ADR-015 Punkt 16 ausgeschlossen. `use-credentials`, weil der Browser das Manifest sonst ohne die Anmeldung der zweiten Tür der Test-Umgebung abruft (ANN-101). Unsicher: ob Chrome unter Android das maskierbare Symbol auch für eine Verknüpfung ohne Installation verwendet; bei `browser` meldet Chrome die Seite als nicht installierbar.
+**Begründung.** BEF-040: Ohne Manifest nimmt Android das `apple-touch-icon` und legt es in einen weißen Kreis. Das Master ist vollflächig und hält den Schutzkreis ein (nachgemessen in `marke/README.md`), deshalb braucht es keine zweite Fassung der Marke. `browser` ändert am Öffnen nichts, auch unter iOS nicht, das seit 16.4 ein `standalone` des Manifests übernehmen würde. Ein Service Worker bleibt nach ADR-015 Punkt 16 ausgeschlossen. `use-credentials`, weil der Browser das Manifest sonst ohne die Anmeldung der zweiten Tür der Test-Umgebung abruft (ANN-101). BEF-041: Mit `browser` meldete Chrome die Seite als nicht installierbar — vorher, ohne Manifest, hatte Chrome sie auf eigene Faust installiert. `minimal-ui` ist installierbar ohne Service Worker und behält in Chrome eine schmale Leiste mit Zurück und Neu laden; `standalone` gäbe am Handy die volle Höhe, verlangte aber eigene Zurück-Wege in jeder Ansicht und schaltete auch iOS ab dem Startbildschirm ohne Browserleiste. iOS kennt `minimal-ui` nicht und öffnet weiter im Browser. Unsicher: ob Jannes am Handy die volle Höhe von `standalone` lieber hätte.
 
 **Anker.** `public/manifest.webmanifest`; `<link rel="manifest">` in `index.html`; die Messung `MASTER_WORTMARKE` in `src/components/ui/markeRegeln.ts`, geprüft in `src/marke.test.ts` („Web-Manifest").
 
-**Änderungspfad.** Zeigt Android den weißen Kreis weiter: `display` auf `minimal-ui`. Chrome installiert die Seite dann als eigene App mit dem maskierbaren Symbol und einer schmalen Leiste mit Zurück und Neu laden; iOS öffnet wie bisher im Browser · Aufwand `klein`. Kleinere Dateien: aus dem Master gerasterte Kopien mit 192 und 512 px in `marke/app/` · Aufwand `klein`.
+**Änderungspfad.** Volle Höhe ohne Leiste: `display` auf `standalone` und in den Ansichten ohne Rückweg einen Zurück-Knopf ergänzen · Aufwand `mittel`. Zurück in den Browser-Tab: `browser`, dann ohne Installation in Chrome · Aufwand `klein`. Kleinere Dateien: aus dem Master gerasterte Kopien mit 192 und 512 px in `marke/app/` · Aufwand `klein`.
 
 ### ANN-111 — Die Begriffe stehen in einer Datei; im Kalender heißt der Eintrag ohne Patient:in „Fehlzeit", eine Person des Teams „Mitarbeiter:in"
 
