@@ -277,7 +277,7 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
 }
 
 /**
- * Das ganze Fehlzeit absagen (CAL-017).
+ * Die ganze Fehlzeit absagen (CAL-017).
  *
  * Neben der Absage der einzelnen Teilnahme, und ausdrücklich davon getrennt:
  * Eine Besprechung, die für die einen abgesagt ist und für die anderen noch

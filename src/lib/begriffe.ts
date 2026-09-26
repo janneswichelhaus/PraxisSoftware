@@ -123,9 +123,15 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
     // Im Kalender heißt der Eintrag ohne Patient:in „Fehlzeit" — so steht er
     // in der Anlegen-Leiste (BEF-035) und in der Suche. Im Auditlog und im
     // Verlauf der Messwerte ist „Ereignis" ein anderes Ding und bleibt.
-    muster: /\bEreignis(se|ses)?\b/,
+    muster: /\bEreignis(se|sen|ses)?\b/,
     statt: BEGRIFFE.fehlzeit,
     quelle: 'Anlegen-Leiste nach Jannes (BEF-035); ANN-111',
-    nurIn: ['src/features/appointments/', 'src/features/today/', 'src/features/tours/'],
+    nurIn: [
+      'src/features/appointments/',
+      'src/features/today/',
+      'src/features/tours/',
+      // Die Terminliste an der Person (UX-012) zeigt dieselben Einträge.
+      'src/features/staff/',
+    ],
   },
 ];

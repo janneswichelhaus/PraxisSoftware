@@ -15,6 +15,7 @@ import {
   formatLocalTimeRange,
   todayInTimeZone,
 } from '@/features/appointments/api';
+import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { telHref } from '@/lib/telefon';
 import { fullName } from '@/features/patients/api';
@@ -97,13 +98,13 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
             <Laengenzeichen termin={termin} />
           </span>
           <span className="text-ink-muted block">
-            {/* Ein Ereignis des Praxisbetriebs steht mit seinem Titel da
+            {/* Eine Fehlzeit des Praxisbetriebs steht mit seinem Titel da
                 (CAL-015b) - es hängt an dieser Person genauso. Ein
                 Trainingstermin steht nur als Belegung da: Der Kontext ist ein
                 Metadatum, kein Inhalt (ADR-022 Punkt 11); Person und Grundlage
                 gehören nicht in diese Liste und stehen auch nicht darin. */}
             {termin.kind === 'internal'
-              ? (termin.title ?? 'Ereignis')
+              ? (termin.title ?? BEGRIFFE.fehlzeit)
               : termin.kind === 'training'
                 ? 'Trainingstermin'
                 : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}{' '}

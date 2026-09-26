@@ -125,7 +125,7 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await expect(detailWert(page, 'Beteiligte')).toContainText('Anna Beispiel');
     await expect(detailWert(page, 'Beteiligte')).toContainText('Tim Teamleitung');
 
-    // Das ganze Fehlzeit bearbeiten - Bezeichnung und Zeit.
+    // Die ganze Fehlzeit bearbeiten - Bezeichnung und Zeit.
     await page.getByRole('link', { name: 'Fehlzeit bearbeiten' }).click();
     await expect(page.getByRole('heading', { name: 'Fehlzeit bearbeiten' })).toBeVisible();
     await page.getByLabel('Bezeichnung *').fill(`${bezeichnung} neu`);

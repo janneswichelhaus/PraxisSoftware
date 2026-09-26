@@ -6,7 +6,7 @@ import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 /**
- * Das ganze Fehlzeit bearbeiten (CAL-017).
+ * Die ganze Fehlzeit bearbeiten (CAL-017).
  *
  * Geprüft wird die Trennung, um die es geht: Diese Seite ändert Bezeichnung,
  * Zeit und Ort **für alle Beteiligten**, und sie ändert ausdrücklich nicht,

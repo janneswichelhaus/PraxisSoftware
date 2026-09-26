@@ -25,7 +25,7 @@ import {
 import { formatDate } from '@/lib/datum';
 
 /**
- * Das ganze Fehlzeit bearbeiten (CAL-017).
+ * Die ganze Fehlzeit bearbeiten (CAL-017).
  *
  * Eine Besprechung steht in mehreren Kalendern, ist aber **ein** Vorgang.
  * Bezeichnung, Tag, Zeit, Länge, Art und Ort gelten für alle Beteiligten
@@ -230,7 +230,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
       </Link>
 
       <PageHeader
-        title={serieId ? 'Fehlzeit bearbeiten' : 'Fehlzeit bearbeiten'}
+        title="Fehlzeit bearbeiten"
         description={
           serieId
             ? 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Diese Fehlzeit gehört zu einer Dauerfehlzeit – der Umfang der Änderung steht unten zur Wahl.'

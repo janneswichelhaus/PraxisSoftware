@@ -142,7 +142,7 @@ in den Etappen darunter.
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | Sichtung |
 | 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → G6c | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | G6c: Wahl zu den Schreibpfaden; vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
-| 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → UX-EPIC-002 → UX-EPIC-003 | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
+| 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → ~~UX-EPIC-002~~ (gebaut 2026-09-26) → UX-EPIC-003 | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → PRX-EPIC-003 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
 | 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | DSN-001 und ADR-023 bestätigen |
@@ -273,7 +273,7 @@ Oberfläche kommen deshalb die Test-Umgebung und das Fundament der Bedienung.
 | Loop | Ergebnis | Zuschnitt | Voraussetzung |
 | --- | --- | --- | --- |
 | ~~**OPS-002a**~~ | **gebaut 2026-09-25** — Jannes öffnet die Anwendung auf dem eigenen Handy, von überall; Auslieferung nach grüner CI auf `main`, Seed auf Knopfdruck (ANN-100, ANN-101) | Test-Umgebung nach G5, **vorgezogen**: Supabase-Projekt in der EU nur mit synthetischen Daten, Hosting der Oberfläche nach B16 ([`hosting-optionen.md`](../decisions/hosting-optionen.md)), eigene Domain, Zugang geschützt, Deployment aus `main` nur dorthin; Seed mit einer Praxiswoche. Kein Produktivprojekt (§3.2) | Jannes legt Konten an (B16) |
-| **UX-EPIC-002** | Die Anwendung spricht die Sprache der Praxis | Begriffsliste aus Jannes' Sammlung (Beschriftungen, Knöpfe, Meldungen) als eine Quelle im Code; Bedienprinzipien (ein Hauptknopf je Ansicht, was nicht gebraucht wird, ist eingeklappt, Handy zuerst); Navigation und Arbeitsbereiche danach durchgesehen; Bildschirmfotos vorher und nachher | ~~Begriffsliste von Jannes~~ (2026-09-26: Begriffe in Ordnung); erste Stories BEF-035 bis BEF-040 (R6) |
+| ~~**UX-EPIC-002**~~ | **gebaut 2026-09-26** — Die Anwendung spricht die Sprache der Praxis (ANN-108 bis ANN-112) | Begriffsliste aus Jannes' Sammlung (Beschriftungen, Knöpfe, Meldungen) als eine Quelle im Code; Bedienprinzipien (ein Hauptknopf je Ansicht, was nicht gebraucht wird, ist eingeklappt, Handy zuerst); Navigation und Arbeitsbereiche danach durchgesehen; Bildschirmfotos vorher und nachher | ~~Begriffsliste von Jannes~~ (2026-09-26: Begriffe in Ordnung); erste Stories BEF-035 bis BEF-040 (R6) |
 | **UX-EPIC-003** | Der Tag beginnt am Rad mit dem, was zählt | Tagesansicht fürs Handy als Startseite (aus PRX-EPIC-002 vorgezogen): erster Weg, Vorschau auf den nächsten, kurze Hinweise zur Person, **Behandlungsliege heute: ja, ab dem n-ten Besuch** (§9; Merkmal an der Person, in der Akte setzbar, im Befund ab FRB-EPIC-003), bisherige Doku mit einem Tipp; offene Punkte der Erstaufnahme als Hinweis, sobald PRX-EPIC-003 sie liefert | UX-EPIC-002 |
 
 ### Block 2 — Kern fertig
@@ -706,7 +706,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | — | — |
 | A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
-| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | in_arbeit | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040) | — | Rest: Begriffe als eine Quelle, Navigation und Arbeitsbereiche |
+| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | fertig | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034) | — | Sichtung am Handy offen: Kernprozess Schritte 1, 2, 7 bis 10 |
 | B | MAP-002 In-App-Kartenprototyp | fertig | 2026-09-21 | `c85c56e` … `ea2d9aa` | — | — |
 | B | MAP-003 Fahrradroute als Linie | fertig | 2026-09-21 | `cbc6c07`, `71756aa`, `d66ea31` | — | — |
 | B | MAP-004 Fahrzeiten und Erreichbarkeit | fertig | 2026-09-22 | `ce5dbe4` … `0e27b4f` | — | — |

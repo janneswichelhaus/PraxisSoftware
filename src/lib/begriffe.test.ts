@@ -83,10 +83,11 @@ describe('Begriffe', () => {
         "const titel = 'Ereignis eintragen';",
         '<p>Zurück zum Ereignis</p>',
         "const url = 'https://beispiel.test/Ereignis';",
+        "const satz = 'mit den Ereignissen';",
       ].join('\n'),
     ).split('\n');
     const treffer = probe.map((zeile) => ereignis.muster.test(zeile));
-    expect(treffer).toEqual([false, false, false, true, true, true]);
+    expect(treffer).toEqual([false, false, false, true, true, true, true]);
   });
 
   it('nennt für jedes abgelöste Wort, was stattdessen gilt, und woher', () => {
