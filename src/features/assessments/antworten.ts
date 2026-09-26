@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { kennungSchema, optionKennung, type ScoreDefinition, type ScoreItem } from './schema';
+import { bereicheText, istKoerperbereich } from './koerperschema';
+import { optionKennung, type ScoreDefinition, type ScoreItem } from './schema';
 
 /**
  * Die Antworten einer Erhebung (FRB-EPIC-002).
@@ -77,7 +78,14 @@ export function antwortSchema(item: ScoreItem): z.ZodType {
     case 'freitext':
       return z.object({ text: freitextSchema }).strict();
     case 'koerperschema':
-      return z.object({ bereiche: z.array(kennungSchema).min(1) }).strict();
+      return z
+        .object({
+          bereiche: z
+            .array(z.string().refine(istKoerperbereich, 'Kein Bereich des Körperschemas.'))
+            .min(1),
+        })
+        .strict()
+        .refine((a) => new Set(a.bereiche).size === a.bereiche.length, 'Ein Bereich doppelt.');
   }
 }
 
@@ -111,7 +119,7 @@ export function antwortText(item: ScoreItem, antwort: Antwort | undefined): stri
     return item.skala ? `${antwort.wert} von ${item.skala.max}` : String(antwort.wert);
   }
   if ('text' in antwort) return antwort.text;
-  return antwort.bereiche.join(', ');
+  return bereicheText(antwort.bereiche);
 }
 
 /** Die gewählten Kennungen einer Auswahl, sonst leer. */

@@ -123,26 +123,37 @@ describe('Erhebung', () => {
     await waitFor(() => expect(erhebungAbschliessen).toHaveBeenCalledWith('neu'));
   });
 
-  it('verlangt zur Korrektur eine Begründung und beginnt mit den alten Antworten', async () => {
-    const user = userEvent.setup();
-    seite('instrument=anamnese_v8&korrigiert=e1', ['therapist'], [abgeschlossen()]);
+  // getByRole über 46 Fragen ist teuer; der Test sucht deshalb über Text und Label.
+  it(
+    'verlangt zur Korrektur eine Begründung und beginnt mit den alten Antworten',
+    { timeout: 20_000 },
+    async () => {
+      const user = userEvent.setup();
+      seite('instrument=anamnese_v8&korrigiert=e1', ['therapist'], [abgeschlossen()]);
 
-    const frage2 = await screen.findByRole('group', { name: '2. Haben Sie aktuell Schmerzen?' });
-    expect(within(frage2).getByLabelText('ja')).toBeChecked();
+      const frage2 = (await screen.findByText('2. Haben Sie aktuell Schmerzen?')).closest(
+        'fieldset',
+      )!;
+      expect(within(frage2).getByLabelText('ja')).toBeChecked();
 
-    await user.click(screen.getByRole('button', { name: 'Abschließen' }));
-    expect(await screen.findByText('Eine Korrektur braucht eine Begründung.')).toBeInTheDocument();
-    expect(erhebungSpeichern).not.toHaveBeenCalled();
+      await user.click(screen.getByText('Abschließen'));
+      expect(
+        await screen.findByText('Eine Korrektur braucht eine Begründung.'),
+      ).toBeInTheDocument();
+      expect(erhebungSpeichern).not.toHaveBeenCalled();
 
-    await user.type(screen.getByLabelText(/Begründung der Korrektur/), 'Frage 2 verwechselt');
-    await user.click(screen.getByRole('button', { name: 'Abschließen' }));
-    await waitFor(() =>
-      expect(erhebungSpeichern.mock.calls[0]![0]).toMatchObject({
-        korrigiert: 'e1',
-        begruendung: 'Frage 2 verwechselt',
-      }),
-    );
-  });
+      // Einfügen statt Tippen: Jede Taste rendert den ganzen Bogen neu.
+      await user.click(screen.getByLabelText(/Begründung der Korrektur/));
+      await user.paste('Frage 2 verwechselt');
+      await user.click(screen.getByText('Abschließen'));
+      await waitFor(() =>
+        expect(erhebungSpeichern.mock.calls[0]![0]).toMatchObject({
+          korrigiert: 'e1',
+          begruendung: 'Frage 2 verwechselt',
+        }),
+      );
+    },
+  );
 
   it('öffnet für office keinen Bogen', async () => {
     seite('instrument=anamnese_v8', ['office']);
@@ -156,7 +167,8 @@ describe('Erhebung', () => {
     ).toBeInTheDocument();
   });
 
-  it('ist barrierefrei', async () => {
+  // Die Prüfung über 46 Fragen und das Körperschema braucht länger als der Vorgabewert.
+  it('ist barrierefrei', { timeout: 20_000 }, async () => {
     const { container } = seite('instrument=anamnese_v8');
     await screen.findByRole('button', { name: 'Abschließen' });
     await pruefeBarrierefreiheit(container);

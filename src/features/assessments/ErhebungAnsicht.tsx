@@ -1,4 +1,5 @@
-import { antwortText, type Antworten } from './antworten';
+import { antwortText, type Antwort, type Antworten } from './antworten';
+import { KoerperschemaBild } from './KoerperschemaFeld';
 import { beschriftung } from './darstellung';
 import type { ScoreDefinition } from './schema';
 
@@ -33,6 +34,11 @@ export function ErhebungAnsicht({
               <dt className="text-ink-muted text-sm">{beschriftung(item)}</dt>
               <dd className="text-ink text-[0.9375rem] whitespace-pre-line">
                 {antwortAnzeige(item, antworten[item.id])}
+                {item.typ === 'koerperschema' ? (
+                  <div className="mt-2">
+                    <KoerperschemaBild bereiche={gewaehlteBereiche(antworten[item.id])} />
+                  </div>
+                ) : null}
               </dd>
             </div>
           ))}
@@ -48,4 +54,8 @@ export function ErhebungAnsicht({
       ) : null}
     </div>
   );
+}
+
+function gewaehlteBereiche(antwort: Antwort | undefined): string[] {
+  return antwort && 'bereiche' in antwort ? antwort.bereiche : [];
 }

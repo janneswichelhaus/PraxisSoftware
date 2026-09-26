@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -152,14 +152,16 @@ function Formular({
   const [begruendung, setBegruendung] = useState('');
   const [fehler, setFehler] = useState<string | null>(null);
 
-  function setzen(itemId: string, antwort: Antwort | undefined) {
+  // Stabil über die Lebensdauer des Formulars, damit nur die geänderte Frage
+  // neu gezeichnet wird (`memo` in FragebogenFelder).
+  const setzen = useCallback((itemId: string, antwort: Antwort | undefined) => {
     setAntworten((bisher) => {
       const neu = { ...bisher };
       if (antwort === undefined) delete neu[itemId];
       else neu[itemId] = antwort;
       return neu;
     });
-  }
+  }, []);
 
   const speichern = useMutation({
     mutationFn: async (abschliessen: boolean) => {

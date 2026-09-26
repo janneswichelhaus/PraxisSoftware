@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { memo, useId } from 'react';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { TextArea } from '@/components/ui/TextArea';
@@ -36,11 +36,7 @@ export function FragebogenFelder({
         return (
           <li key={item.id} className="flex flex-col gap-2">
             {hinweis ? <p className="text-ink-muted text-sm font-medium">{hinweis}</p> : null}
-            <Frage
-              item={item}
-              antwort={antworten[item.id]}
-              onChange={(a) => onChange(item.id, a)}
-            />
+            <Frage item={item} antwort={antworten[item.id]} onChange={onChange} />
           </li>
         );
       })}
@@ -48,15 +44,21 @@ export function FragebogenFelder({
   );
 }
 
-function Frage({
+/**
+ * Eine Frage. `memo`, weil ein Kreuz sonst alle 46 Fragen samt Körperschema
+ * neu zeichnet — auf einem älteren Handy spürbar. Dafür muss `onChange` über
+ * die Lebensdauer des Formulars dieselbe Funktion bleiben.
+ */
+const Frage = memo(function Frage({
   item,
   antwort,
-  onChange,
+  onChange: melden,
 }: {
   item: ScoreItem;
   antwort: Antwort | undefined;
-  onChange: (antwort: Antwort | undefined) => void;
+  onChange: (itemId: string, antwort: Antwort | undefined) => void;
 }) {
+  const onChange = (neu: Antwort | undefined) => melden(item.id, neu);
   switch (item.typ) {
     case 'einzelauswahl':
     case 'mehrfachauswahl':
@@ -96,7 +98,7 @@ function Frage({
         />
       );
   }
-}
+});
 
 function Auswahl({
   item,

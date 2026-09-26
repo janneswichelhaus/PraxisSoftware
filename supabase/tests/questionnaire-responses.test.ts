@@ -105,7 +105,14 @@ describe('Erhebung eines Fragebogens', () => {
     const id = await erheben();
     const neu = { schmerzen_aktuell: { auswahl: 'nein' } };
     await asUserCommitted(users.teamLead, SPEICHERN, [
-      patients.max, id, 'anamnese_v8', '1.0.0', HEUTE, JSON.stringify(neu), null, null,
+      patients.max,
+      id,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      JSON.stringify(neu),
+      null,
+      null,
     ]);
     const { rows } = await asUser(users.therapist, LESEN, [patients.max]);
     expect(rows[0]!['answers']).toEqual(neu);
@@ -116,16 +123,27 @@ describe('Erhebung eines Fragebogens', () => {
     await asUserCommitted(users.therapist, ABSCHLIESSEN, [id]);
 
     expect(
-      (await fehler(users.therapist, SPEICHERN, [
-        patients.max, id, 'anamnese_v8', '1.0.0', HEUTE, '{}', null, null,
-      ]))?.message,
+      (
+        await fehler(users.therapist, SPEICHERN, [
+          patients.max,
+          id,
+          'anamnese_v8',
+          '1.0.0',
+          HEUTE,
+          '{}',
+          null,
+          null,
+        ])
+      )?.message,
     ).toMatch(/completed/);
     expect((await fehler(users.therapist, VERWERFEN, [id]))?.message).toMatch(/completed/);
     expect((await fehler(users.therapist, ABSCHLIESSEN, [id]))?.message).toMatch(/completed/);
 
     // Auch ein Pfad an den Funktionen vorbei aendert nichts: Der Trigger haelt die Zeile.
     await expect(
-      asPostgres(`update public.patient_questionnaire_responses set answers = '{}' where id = $1`, [id]),
+      asPostgres(`update public.patient_questionnaire_responses set answers = '{}' where id = $1`, [
+        id,
+      ]),
     ).rejects.toThrow(/completed/);
 
     const { rows } = await asUser(users.therapist, LESEN, [patients.max]);
@@ -139,13 +157,26 @@ describe('Erhebung eines Fragebogens', () => {
     await asUserCommitted(users.therapist, ABSCHLIESSEN, [alt]);
 
     const ohneGrund = await fehler(users.therapist, SPEICHERN, [
-      patients.max, null, 'anamnese_v8', '1.0.0', HEUTE, '{}', alt, null,
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      '{}',
+      alt,
+      null,
     ]);
     expect(ohneGrund?.message).toMatch(/reason/);
 
     const { rows: neu } = await asUserCommitted<{ id: string }>(users.teamLead, SPEICHERN, [
-      patients.max, null, 'anamnese_v8', '1.0.0', HEUTE,
-      JSON.stringify({ schmerzstaerke: { wert: 4 } }), alt, 'Frage 3 falsch übertragen',
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      JSON.stringify({ schmerzstaerke: { wert: 4 } }),
+      alt,
+      'Frage 3 falsch übertragen',
     ]);
 
     const { rows } = await asUser(users.therapist, LESEN, [patients.max]);
@@ -158,7 +189,14 @@ describe('Erhebung eines Fragebogens', () => {
 
     // Eine Kette verzweigt nicht: ein zweiter Nachfolger wird abgewiesen.
     const zweiter = await fehler(users.therapist, SPEICHERN, [
-      patients.max, null, 'anamnese_v8', '1.0.0', HEUTE, '{}', alt, 'noch einmal',
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      '{}',
+      alt,
+      'noch einmal',
     ]);
     expect(zweiter?.message).toMatch(/already corrected/);
   });
@@ -166,16 +204,34 @@ describe('Erhebung eines Fragebogens', () => {
   it('korrigiert keinen Entwurf und kein anderes Instrument', async () => {
     const entwurf = await erheben();
     expect(
-      (await fehler(users.therapist, SPEICHERN, [
-        patients.max, null, 'anamnese_v8', '1.0.0', HEUTE, '{}', entwurf, 'Grund',
-      ]))?.message,
+      (
+        await fehler(users.therapist, SPEICHERN, [
+          patients.max,
+          null,
+          'anamnese_v8',
+          '1.0.0',
+          HEUTE,
+          '{}',
+          entwurf,
+          'Grund',
+        ])
+      )?.message,
     ).toMatch(/only a completed/);
 
     await asUserCommitted(users.therapist, ABSCHLIESSEN, [entwurf]);
     expect(
-      (await fehler(users.therapist, SPEICHERN, [
-        patients.max, null, 'nrs_schmerz', '0.1.0', HEUTE, '{}', entwurf, 'Grund',
-      ]))?.message,
+      (
+        await fehler(users.therapist, SPEICHERN, [
+          patients.max,
+          null,
+          'nrs_schmerz',
+          '0.1.0',
+          HEUTE,
+          '{}',
+          entwurf,
+          'Grund',
+        ])
+      )?.message,
     ).toMatch(/same instrument/);
   });
 
@@ -184,31 +240,63 @@ describe('Erhebung eines Fragebogens', () => {
     await asUserCommitted(users.therapist, VERWERFEN, [id]);
     const { rows } = await asUser(users.therapist, LESEN, [patients.max]);
     expect(rows).toEqual([]);
-    expect((await auditZeilen('questionnaire_response.discarded')).map((z) => z.subject_id)).toEqual([id]);
+    expect(
+      (await auditZeilen('questionnaire_response.discarded')).map((z) => z.subject_id),
+    ).toEqual([id]);
   });
 
   it('weist ein Datum in der Zukunft, fremde Formen und zu grosse Antworten ab', async () => {
     const zukunft = await fehler(users.therapist, SPEICHERN, [
-      patients.max, null, 'anamnese_v8', '1.0.0', tagInTagen(2), '{}', null, null,
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      tagInTagen(2),
+      '{}',
+      null,
+      null,
     ]);
     expect(zukunft?.message).toMatch(/future/);
 
     for (const antworten of ['[]', '{"Frage 1": {}}', '{"frage": 3}']) {
       const f = await fehler(users.therapist, SPEICHERN, [
-        patients.max, null, 'anamnese_v8', '1.0.0', HEUTE, antworten, null, null,
+        patients.max,
+        null,
+        'anamnese_v8',
+        '1.0.0',
+        HEUTE,
+        antworten,
+        null,
+        null,
       ]);
       expect(f?.code).toBe('22023');
     }
 
     const riesig = JSON.stringify({ text: { text: 'x'.repeat(70000) } });
     expect(
-      (await fehler(users.therapist, SPEICHERN, [
-        patients.max, null, 'anamnese_v8', '1.0.0', HEUTE, riesig, null, null,
-      ]))?.message,
+      (
+        await fehler(users.therapist, SPEICHERN, [
+          patients.max,
+          null,
+          'anamnese_v8',
+          '1.0.0',
+          HEUTE,
+          riesig,
+          null,
+          null,
+        ])
+      )?.message,
     ).toMatch(/too large/);
 
     const version = await fehler(users.therapist, SPEICHERN, [
-      patients.max, null, 'anamnese_v8', '1.0', HEUTE, '{}', null, null,
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0',
+      HEUTE,
+      '{}',
+      null,
+      null,
     ]);
     expect(version?.code).toBe('23514');
   });
@@ -224,7 +312,14 @@ describe('Rollen und Grenzen (ADR-013 Punkt 9 Nr. 1)', () => {
     await erheben(users.therapist);
     await erheben(users.teamLead);
     const office = await fehler(users.office, SPEICHERN, [
-      patients.max, null, 'anamnese_v8', '1.0.0', HEUTE, '{}', null, null,
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      '{}',
+      null,
+      null,
     ]);
     expect(office?.code).toBe('42501');
   });
@@ -250,16 +345,38 @@ describe('Rollen und Grenzen (ADR-013 Punkt 9 Nr. 1)', () => {
   it('weist Patientenkonto (fremde Person) und Trainingsbetreuung mit denied-Eintrag ab', async () => {
     await erheben(users.therapist, ANTWORTEN, patients.erika);
     // Max sieht Erikas Bogen nicht - und auch seinen eigenen nicht ueber diesen Pfad.
-    await erwarteAbgewiesenenLeseversuch(users.patientMax, LESEN, [patients.erika], 'questionnaire_response.viewed');
-    await erwarteAbgewiesenenLeseversuch(users.patientMax, LESEN, [patients.max], 'questionnaire_response.viewed');
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientMax,
+      LESEN,
+      [patients.erika],
+      'questionnaire_response.viewed',
+    );
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientMax,
+      LESEN,
+      [patients.max],
+      'questionnaire_response.viewed',
+    );
     // Anderer Leistungsbereich: Die Trainingsrolle sieht keine Befunde (ADR-021 Punkt 6).
-    await erwarteAbgewiesenenLeseversuch(users.trainer, LESEN, [patients.erika], 'questionnaire_response.viewed');
+    await erwarteAbgewiesenenLeseversuch(
+      users.trainer,
+      LESEN,
+      [patients.erika],
+      'questionnaire_response.viewed',
+    );
   });
 
   it('laesst Patientenkonto und Trainingsbetreuung nicht schreiben', async () => {
     for (const nutzer of [users.patientMax, users.trainer]) {
       const f = await fehler(nutzer, SPEICHERN, [
-        patients.max, null, 'anamnese_v8', '1.0.0', HEUTE, '{}', null, null,
+        patients.max,
+        null,
+        'anamnese_v8',
+        '1.0.0',
+        HEUTE,
+        '{}',
+        null,
+        null,
       ]);
       expect(f?.code).toBe('42501');
     }
@@ -270,10 +387,24 @@ describe('Rollen und Grenzen (ADR-013 Punkt 9 Nr. 1)', () => {
     const eigen = await erheben();
 
     const fremdeAkte = await fehler(users.therapist, SPEICHERN, [
-      f.patient, null, 'anamnese_v8', '1.0.0', HEUTE, '{}', null, null,
+      f.patient,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      '{}',
+      null,
+      null,
     ]);
     const unbekannt = await fehler(users.therapist, SPEICHERN, [
-      '66666666-6666-4666-8666-0000000000ff', null, 'anamnese_v8', '1.0.0', HEUTE, '{}', null, null,
+      '66666666-6666-4666-8666-0000000000ff',
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      '{}',
+      null,
+      null,
     ]);
     expect(fremdeAkte?.message).toBe(unbekannt?.message);
 
@@ -304,11 +435,11 @@ describe('Auskunft und Loeschung', () => {
 
   it('nimmt die Erhebungen samt Antworten in die Kopie nach Art. 15', async () => {
     await erheben();
-    const { rows } = await asUser<{ daten: { tabellen: Record<string, Record<string, unknown>[]> } }>(
-      users.ownerTherapist,
-      'select public.export_patient_record($1::uuid) as daten',
-      [patients.max],
-    );
+    const { rows } = await asUser<{
+      daten: { tabellen: Record<string, Record<string, unknown>[]> };
+    }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as daten', [
+      patients.max,
+    ]);
     const erhebungen = rows[0]!.daten.tabellen['patient_questionnaire_responses']!;
     expect(erhebungen).toHaveLength(1);
     expect(erhebungen[0]!['answers']).toEqual(ANTWORTEN);
