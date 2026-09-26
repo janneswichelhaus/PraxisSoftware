@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-26 · letzte Session: DOK-005 (Therapiebericht an die Verordner:in)
+# Status · Stand 2026-09-26 · letzte Sessions: DOK-005 (Therapiebericht) und DOK-006 Schritt 1 (ADR-017 Fassung 2)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,11 +6,13 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**DOK-005 gebaut:** An jeder Verordnung in der Akte steht **Therapiebericht schreiben**. Im Formular kreuzt du an, welche finalisierten Einträge und welches Körperschema hineingehören (nichts ist vorausgewählt), schreibst deinen Text und die **Empfehlung zum Verordnungsende**; darunter die Vorschau als Blatt. **Bericht abschließen** friert ihn ein, danach ist er das Druckblatt mit schwarzer Wortmarke, Verordner:in samt Fax, Einträgen wörtlich mit Tag und Name — die Anwendung wertet nichts und verschickt nichts. Die Empfehlung steht danach mit Name und Datum an der Verordnung. Office liest und druckt, schreibt aber nicht. Pull Request offen, **Zweitreview gelaufen** (Stand im PR), wartet auf deinen Merge. Fortschritt **39,0 %**.
+**DOK-005 gebaut:** An jeder Verordnung in der Akte steht **Therapiebericht schreiben**. Im Formular kreuzt du an, welche finalisierten Einträge und welches Körperschema hineingehören (nichts ist vorausgewählt), schreibst deinen Text und die **Empfehlung zum Verordnungsende**; darunter die Vorschau als Blatt. **Bericht abschließen** friert ihn ein, danach ist er das Druckblatt mit schwarzer Wortmarke, Verordner:in samt Fax, Einträgen wörtlich mit Tag und Name — die Anwendung wertet nichts und verschickt nichts. Die Empfehlung steht danach mit Name und Datum an der Verordnung. Office liest und druckt, schreibt aber nicht. Pull Request offen, **Zweitreview gelaufen** (Stand im PR), wartet auf deinen Merge. Fortschritt **39,2 %** (mit DOK-006 Schritt 1).
+
+**DOK-006 Schritt 1 fertig, von dir angenommen (2026-09-26, Fragen 9 bis 14 wie empfohlen):** ADR-017 Fassung 2 (Abschnitt G) gibt **Fotos von Patient:innen** frei, die Prinzipien stehen auf **0.18** (§5) — auf eigene Einwilligung, als Arbeitshilfe neben dem Eintrag statt als Teil der Akte, gelöscht nach **zwölf Monaten**, spätestens drei Monate nach Abschluss der Versorgung, sofort gesperrt beim Widerruf. Aufnahme **nur im Kameradialog der App**, nie über Dateiwähler oder Mediathek; Ort und Gerätedaten entfernt das Gerät vor dem Upload aus jedem Bild. Vergleich zweier Fotos nebeneinander, ohne Bewertung, ohne Vorschaubilder und Download. Ein Zweitreview hat 19 Befunde geliefert, alle eingearbeitet. Kein Code.
 
 ## Danach — Bauen
 
-1. **DOK-006** Fotos in der Akte — zuerst die neue Fassung von ADR-017 (läuft in der zweiten Session). `/weiter`
+1. **DOK-006** Bau — Kameradialog, Klasse `patientenfoto`, Einwilligung, Vergleich; der ADR steht darüber. `/weiter DOK-006`
 2. **PRX-EPIC-001** in der Reihenfolge der Roadmap, Block 2.
 3. **PRX-EPIC-002**, danach PRX-EPIC-003 und STA-EPIC-001.
 
@@ -39,3 +41,5 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 ## Letzte Session
 
 **DOK-005 (DOK-005a und b).** Migration `20260926140000_dok_005a_therapy_reports.sql`: Tabelle `therapy_reports` (Datenklasse Patientenakte, fällt mit der Akte), sieben RPCs, Unveränderlichkeit per Trigger, sechs Auditwerte `therapy_report.*`, Auskunft nach Art. 15 erweitert, `delete_treatment_basis` weist eine Verordnung mit Bericht ab; DB-Tests `supabase/tests/therapy-reports.test.ts`. Oberfläche unter `src/features/therapy-reports/` (Formular, Blatt, Einbindung an der Verordnung), Routen `/patienten/:id/berichte/:berichtId` und `…/druck`; Prüfseite `tests/e2e/fixtures/bericht.html` mit `bericht.spec.ts`. Keine neue Abhängigkeit, kein neuer Anbieter. **Lokale Schritte:** `git pull origin claude/dok-005` (nach dem Merge `main`), dann `pnpm dlx supabase@2.116.0 db reset` (neue Migration).
+
+**DOK-006 Schritt 1 (Docs-Session).** ADR-017 um Abschnitt G ergänzt (Punkte 31 bis 42) und nach deiner Bestätigung als Fassung 2 angenommen; README, Index in `CLAUDE.md`, Roadmap-Zeile und §5 der Prinzipien (0.18) nachgezogen. Punkte 1 bis 30 unverändert, Vermerke an den Punkten 13, 15, 23 und 30, „Bewusst nicht Bestandteil" und der HEIC-Frage; Quellen erstmals mit §630f BGB aus der Primärquelle. Am Bestand festgestellt und im ADR entschieden: `klinisches_bild` wird geschärft (heute ein Schlupfloch für Personenfotos), die Test-Umgebung öffnet die Kamera eng mit `camera=(self)`, und Patientenfotos bekommen einen eigenen Anzeigeweg ohne Download (die Dateiliste öffnet heute als Anhang). Zweitreview als Subagent gelaufen, Befunde in einem eigenen Commit eingearbeitet. Keine neue Annahme — die zur Einordnung und Frist wird mit dem Bau an der Klasse `patientenfoto` registriert. Kein Code, keine Migration. **Lokale Schritte:** `git pull origin claude/dok-006-adr-017`; kein `pnpm install`, kein `db reset`.

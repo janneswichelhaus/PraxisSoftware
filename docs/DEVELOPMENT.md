@@ -168,6 +168,41 @@ geht das mit „Handytest im WLAN" unten.
 | Docker startet nicht                                    | Docker Desktop muss laufen, bevor `supabase start` aufgerufen wird.                                                                                                                   |
 | `WARN: config section [inbucket] is deprecated`         | Warnung, kein Fehler. Die Umbenennung nach `[local_smtp]` in `supabase/config.toml` steht als kleine Wartung in der Roadmap; sie ist lokal mit `supabase stop` und `start` zu prüfen. |
 
+## Zwei Sessions parallel
+
+Zwei Claude-Code-Sessions auf demselben Rechner brauchen **zwei Arbeitskopien**
+— in einem Ordner schrieben sie sich gegenseitig in dieselben Dateien. Git
+legt sie als Worktrees neben das Repository; sie teilen die Historie, nicht die
+Dateien.
+
+```bash
+git fetch origin
+git worktree add ../PraxisSoftware-a origin/main --detach
+git worktree add ../PraxisSoftware-b origin/main --detach
+```
+
+In jedem neuen Ordner einmal `pnpm install` und `.env.local` aus dem
+Hauptordner kopieren. Die Session legt ihren Branch selbst an (Schritt 1 von
+`/weiter`).
+
+- **Ports.** Der Entwicklungsserver ist fest auf 5173 (`strictPort`). Die
+  zweite Arbeitskopie bekommt einen eigenen Port über
+  `.claude/settings.local.json` (nicht versioniert):
+  `{ "env": { "E2E_BASE_URL": "http://127.0.0.1:5174" } }`. Playwright und
+  `pnpm screenshots` starten und prüfen dann auf 5174; von Hand
+  `pnpm dev --port 5174`. Ohne das prüfte die zweite Session still den Server
+  der ersten.
+- **Supabase.** Es läuft höchstens **ein** lokaler Stack (dieselbe
+  `project_id`). Ändert eine Session Migrationen oder Seed, startet und setzt
+  sie ihn zurück; die andere arbeitet so lange ohne `db reset`.
+- **Aufgaben.** `/weiter` nimmt die erste offene Aufgabe — in zwei Sessions
+  dieselbe. Deshalb je Session `/weiter <Aufgabe>` mit zwei Aufgaben, die
+  verschiedene Module berühren. `STATUS.md`, Roadmap und `fortschritt.json`
+  ändern beide; die zweite Pull Request wird vor dem Merge auf `main`
+  nachgezogen.
+- **Aufräumen.** `git worktree remove ../PraxisSoftware-a`, sobald die Pull
+  Request gemergt ist.
+
 ## Test-Umgebung (OPS-002a)
 
 Die Anwendung am eigenen Handy, von überall: `https://<kontoname>.uber.space`

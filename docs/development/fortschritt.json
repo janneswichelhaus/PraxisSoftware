@@ -360,7 +360,10 @@
           "id": "dok-006",
           "name": "DOK-006 Fotos in der Akte",
           "gewicht": 1,
-          "status": "offen"
+          "status": "in_arbeit",
+          "fertig_am": "2026-09-26",
+          "nachweis": "`0319ee9` … `88686ea`",
+          "vermerk": "Schritt 1: neue Fassung von ADR-017 angenommen, Bau offen"
         },
         {
           "id": "frb-epic-004",
