@@ -351,7 +351,10 @@
           "id": "dok-005",
           "name": "DOK-005 Therapiebericht",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-26",
+          "nachweis": "`f7d5b6b`, `5041f31`, `a7b0890` (DOK-005a und b, Zweitreview)",
+          "vermerk": "Sichtung: Befund Schritte 8 und 9"
         },
         {
           "id": "dok-006",
