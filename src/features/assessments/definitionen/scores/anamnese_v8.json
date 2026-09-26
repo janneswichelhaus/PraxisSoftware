@@ -1076,5 +1076,77 @@
     "mcid": null,
     "mdc": null
   },
-  "referenzfaelle": []
+  "referenzfaelle": [],
+  "hervorhebungen": [
+    {
+      "id": "nachtschmerz_ruheschmerz",
+      "item": "schmerzart",
+      "optionen": ["nachtschmerzen", "ruheschmerzen"],
+      "regel": "Frage 4: Nachtschmerzen oder Ruheschmerzen angekreuzt.",
+      "quelle": "Finucane LM, Downie A, Mercer C et al. International Framework for Red Flags for Potential Serious Spinal Pathologies. J Orthop Sports Phys Ther 2020;50(7):350–372"
+    },
+    {
+      "id": "kopf_und_nervensymptome",
+      "item": "symptome_neurologisch",
+      "optionen": [
+        "kopfschmerzen",
+        "gang_oder_gleichgewichtsstoerungen",
+        "schwindel",
+        "uebelkeit",
+        "ohnmachtsanfaellen",
+        "benommenheit",
+        "sprech_schluckbeschwerden",
+        "sehprobleme_doppelbilder"
+      ],
+      "regel": "Frage 23: eine der genannten Angaben angekreuzt.",
+      "quelle": "Rushton A, Carlesso LC, Flynn T et al. International Framework for Examination of the Cervical Region for Potential of Vascular Pathologies of the Neck Prior to Musculoskeletal Intervention: International IFOMPT Cervical Framework. J Orthop Sports Phys Ther 2023;53(1):7–22"
+    },
+    {
+      "id": "blase_und_brustschmerz",
+      "item": "symptome_organisch",
+      "optionen": ["blasenschwaeche", "belastungsabhaengige_brustschmerzen"],
+      "regel": "Frage 24: Blasenschwäche oder belastungsabhängige Brustschmerzen angekreuzt.",
+      "quelle": "Finucane LM, Downie A, Mercer C et al. International Framework for Red Flags for Potential Serious Spinal Pathologies. J Orthop Sports Phys Ther 2020;50(7):350–372; Goodman CC, Heick J, Lazaro RT. Differential Diagnosis for Physical Therapists: Screening for Referral. 6. Aufl., Elsevier 2018"
+    },
+    {
+      "id": "allgemeinsymptome",
+      "item": "symptome_allgemein",
+      "optionen": [
+        "fieber_schuettelfrost",
+        "nachtschweiss",
+        "gewichtsverlust",
+        "infektanfaelligkeit"
+      ],
+      "regel": "Frage 25: eine der genannten Angaben angekreuzt.",
+      "quelle": "Finucane LM, Downie A, Mercer C et al. International Framework for Red Flags for Potential Serious Spinal Pathologies. J Orthop Sports Phys Ther 2020;50(7):350–372"
+    },
+    {
+      "id": "tumoranamnese",
+      "item": "tumor",
+      "optionen": ["ja"],
+      "regel": "Frage 26: mit „ja\" beantwortet.",
+      "quelle": "Finucane LM, Downie A, Mercer C et al. International Framework for Red Flags for Potential Serious Spinal Pathologies. J Orthop Sports Phys Ther 2020;50(7):350–372"
+    },
+    {
+      "id": "unfall_sturz",
+      "item": "ereignisse",
+      "optionen": ["unfall_sturz_verletzung"],
+      "regel": "Frage 28: Unfall/Sturz/Verletzung angekreuzt.",
+      "quelle": "Finucane LM, Downie A, Mercer C et al. International Framework for Red Flags for Potential Serious Spinal Pathologies. J Orthop Sports Phys Ther 2020;50(7):350–372"
+    },
+    {
+      "id": "schwangerschaft",
+      "item": "wechseljahre_schwangerschaft",
+      "optionen": ["schwangerschaft"],
+      "regel": "Frage 29: Wahrscheinlichkeit einer Schwangerschaft angekreuzt.",
+      "quelle": "Goodman CC, Heick J, Lazaro RT. Differential Diagnosis for Physical Therapists: Screening for Referral. 6. Aufl., Elsevier 2018"
+    },
+    {
+      "id": "kortison_blutverduenner",
+      "item": "medikamente",
+      "optionen": ["kortison", "blutverduenner"],
+      "regel": "Frage 30: Kortison oder Blutverdünner angekreuzt.",
+      "quelle": "Finucane LM, Downie A, Mercer C et al. International Framework for Red Flags for Potential Serious Spinal Pathologies. J Orthop Sports Phys Ther 2020;50(7):350–372; Rushton A, Carlesso LC, Flynn T et al. International Framework for Examination of the Cervical Region for Potential of Vascular Pathologies of the Neck Prior to Musculoskeletal Intervention: International IFOMPT Cervical Framework. J Orthop Sports Phys Ther 2023;53(1):7–22"
+    }
+  ]
 }

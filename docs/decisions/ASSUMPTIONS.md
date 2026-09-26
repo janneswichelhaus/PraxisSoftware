@@ -1341,6 +1341,18 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: nach vier W
 
 **Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`.
 
+### ANN-104 — Hervorgehoben werden acht Fragen des Anamnesebogens nach IFOMPT, je Frage und ohne Verknüpfung
+
+Recht · offen · 2026-09-26 · — · — · Wiedervorlage: mit der externen Prüfung nach ADR-006 Punkt 7 (B1)
+
+**Annahme.** Hervorgehoben wird, wenn angekreuzt ist: Frage 4 Nacht- oder Ruheschmerzen, Frage 23 jede Angabe, Frage 24 Blasenschwäche oder belastungsabhängige Brustschmerzen, Frage 25 jede Angabe, Frage 26 „ja", Frage 28 Unfall/Sturz/Verletzung, Frage 29 Schwangerschaft, Frage 30 Kortison oder Blutverdünner. Gezeigt werden die Angabe wörtlich, Frage und Datum und daneben die Regel mit Quelle — kein Text zur Bedeutung, keine Farbe als Ampel, keine Zählung, keine Verknüpfung mehrerer Angaben wie im Beispiel von §7.1, nur am geltenden, nicht am ersetzten Bogen.
+
+**Begründung.** §7.1 erlaubt Hervorhebung nach transparenten Regeln und verbietet Score, Risikoklasse und Handlungsempfehlung; ADR-006 Punkt 11 fasst auch Farbe und Symbol als Aussage. Die Auswahl folgt den Rahmenwerken der IFOMPT (Finucane et al. 2020 für die Wirbelsäule, Rushton et al. 2023 für die Halsgefäße) und Goodman/Heick/Lazaro 2018; sie ist eine fachliche Auswahl, die Jannes bestätigen sollte. Das Beispiel „Tumoranamnese und Gewichtsverlust" aus §7.1 wäre eine Verknüpfung — konservativ nach ADR-006 Punkt 13 nicht gebaut, bis die Prüfung sie freigibt.
+
+**Anker.** `hervorhebungSchema` in `src/features/assessments/schema.ts`; `hervorhebungen` im Anamnesebogen `src/features/assessments/definitionen/scores/anamnese_v8.json`; `src/features/assessments/hervorhebung.ts`; Tests `hervorhebung.test.tsx`.
+
+**Änderungspfad.** Andere Fragen oder Optionen: Liste `hervorhebungen` in der Definition, neue Version · Aufwand `klein`. Verknüpfte Regeln nach Freigabe: Regel um eine Liste von Bedingungen erweitern · Aufwand `mittel`.
+
 ### ANN-105 — Die Antworten prüft die Anwendung gegen die Definition, der Server nur ihre Form
 
 Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002), bevor Menschen außerhalb der Praxis schreiben

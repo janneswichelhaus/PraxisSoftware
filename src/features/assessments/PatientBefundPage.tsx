@@ -11,6 +11,7 @@ import { canWriteQuestionnaire, type CurrentUser } from '@/features/session/type
 import { erhebungenQueryKey, fetchErhebungen, type Erhebung } from './api';
 import { erhebenPfad } from './darstellung';
 import { ErhebungAnsicht } from './ErhebungAnsicht';
+import { Hervorhebungen } from './Hervorhebungen';
 import { erhebbareInstrumente, instrumentFuer } from './instrumente';
 import type { ScoreDefinition } from './schema';
 
@@ -141,6 +142,15 @@ function ErhebungKarte({
       </p>
       {erhebung.change_reason ? (
         <p className="text-ink mt-1 text-sm">Korrektur: {erhebung.change_reason}</p>
+      ) : null}
+      {/* Hervorgehoben wird am geltenden Bogen; ein ersetzter zeigt seine
+          Antworten, aber keine zweite Liste neben der Korrektur. */}
+      {!ersetzt ? (
+        <Hervorhebungen
+          definition={definition}
+          antworten={erhebung.answers}
+          datum={erhebung.recorded_on}
+        />
       ) : null}
       <Disclosure summary="Antworten">
         <ErhebungAnsicht definition={definition} antworten={erhebung.answers} />

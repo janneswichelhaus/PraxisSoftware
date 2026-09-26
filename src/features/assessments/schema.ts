@@ -577,6 +577,31 @@ export const scoreMetaSchema = z.object({
 });
 
 /**
+ * Eine offengelegte Regel der Hervorhebung nach `PROJECT_PRINCIPLES.md` §7.1
+ * (FRB-002c, **ANN-104**).
+ *
+ * Sie sagt nur, **welche angekreuzte Angabe** sichtbar gemacht wird — nie, was
+ * sie bedeutet. Deshalb gibt es kein Feld für eine Stufe, eine Farbe oder
+ * einen Text der Art „bitte abklären": Die Hervorhebung zeigt die Angabe der
+ * Person unverändert, mit Frage und Datum, und daneben diese Regel mit ihrer
+ * Quelle (ADR-006 Punkt 3 und 11). Die Entscheidung trifft die Therapeut:in.
+ *
+ * Jede Regel betrifft **eine** Frage. Eine Verknüpfung mehrerer Angaben —
+ * „Tumoranamnese und Gewichtsverlust" — wäre schon eine Auswahl, die über
+ * das Sichtbarmachen hinausgeht, und entsteht hier nicht.
+ */
+export const hervorhebungSchema = z.object({
+  id: kennungSchema,
+  item: kennungSchema,
+  /** Die Optionen, deren Wahl hervorgehoben wird — ihre Kennungen. */
+  optionen: z.array(z.string().min(1)).min(1),
+  /** Die Regel in einem Satz, so wie sie in der Oberfläche steht. */
+  regel: z.string().min(1),
+  /** Woher die Auswahl der Frage stammt — Veröffentlichung mit Fundstelle. */
+  quelle: z.string().min(1),
+});
+
+/**
  * Eine Score-Definition ist eine Datei.
  *
  * Die Prüfungen darunter sind die, an denen eine Übertragung aus einem PDF
@@ -592,6 +617,7 @@ export const scoreDefinitionSchema = z
     scoring: scoringSchema,
     interpretation: interpretationSchema,
     referenzfaelle: z.array(referenzfallSchema),
+    hervorhebungen: z.array(hervorhebungSchema).default([]),
   })
   .superRefine((score, ctx) => {
     const itemIds = new Set<string>();
@@ -707,6 +733,38 @@ export const scoreDefinitionSchema = z
       }
     }
 
+    const regelIds = new Set<string>();
+    for (const [index, regel] of score.hervorhebungen.entries()) {
+      if (regelIds.has(regel.id)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['hervorhebungen', index, 'id'],
+          message: `Doppelte Regel-Kennung "${regel.id}".`,
+        });
+      }
+      regelIds.add(regel.id);
+      const item = score.items.find((eintrag) => eintrag.id === regel.item);
+      if (!item || (item.typ !== 'einzelauswahl' && item.typ !== 'mehrfachauswahl')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['hervorhebungen', index, 'item'],
+          message: `Die Regel "${regel.id}" braucht ein Auswahl-Item; "${regel.item}" ist keines.`,
+        });
+        continue;
+      }
+      for (const [stelle, kennung] of regel.optionen.entries()) {
+        const option = (item.optionen ?? []).find((o) => optionKennung(o) === kennung);
+        if (!option || option.exklusiv) {
+          // Ein hervorgehobenes „nein" waere eine Aussage ueber eine Verneinung.
+          ctx.addIssue({
+            code: 'custom',
+            path: ['hervorhebungen', index, 'optionen', stelle],
+            message: `Die Regel "${regel.id}" nennt "${kennung}", keine hervorhebbare Option von "${regel.item}".`,
+          });
+        }
+      }
+    }
+
     if (score.meta.aktiv && score.meta.quelle.datei === undefined) {
       // ANN-099: Ein Wortlaut, der gegen keine Vorlage im Repository zu halten
       // ist, erreicht keine Patientin. Aktiviert wird mit dem Bogen in
@@ -739,6 +797,7 @@ export type Subskala = z.infer<typeof subskalaSchema>;
 export type Scoring = z.infer<typeof scoringSchema>;
 export type Interpretation = z.infer<typeof interpretationSchema>;
 export type Referenzfall = z.infer<typeof referenzfallSchema>;
+export type HervorhebungsRegel = z.infer<typeof hervorhebungSchema>;
 export type ScoreMeta = z.infer<typeof scoreMetaSchema>;
 export type ScoreDefinition = z.infer<typeof scoreDefinitionSchema>;
 export type Richtung = (typeof RICHTUNGEN)[number];
