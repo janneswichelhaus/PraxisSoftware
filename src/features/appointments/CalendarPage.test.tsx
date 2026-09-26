@@ -1306,6 +1306,21 @@ describe('CalendarPage', () => {
     });
   });
 
+  describe('BEF-037: Die Uhrzeit sitzt im Rahmen der Auswahl', () => {
+    it('macht die Auswahl eines einzelnen Feldes so hoch wie ihren Inhalt', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+
+      // 2 px Rahmen, 4 px Innenabstand und 16 px Zeile, oben und unten.
+      const flaeche = screen.getByTestId('auswahl-flaeche');
+      expect(flaeche).toHaveTextContent('07:00');
+      expect(flaeche.style.height).toBe('28px');
+      expect(flaeche.className).toContain('leading-4');
+    });
+  });
+
   describe('UX-010: Langer Druck am Finger und Rueckgaengig', () => {
     /** Wie in CAL-006: jsdom kennt kein Layout. */
     function spaltenVermessen(): void {

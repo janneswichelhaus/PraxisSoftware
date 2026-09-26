@@ -83,6 +83,17 @@ export interface GitterAuswahl extends Spanne {
 const SPALTEN_MINDESTBREITE = '9rem';
 
 /**
+ * Mindesthöhe einer Auswahl oder Vorschau im Gitter (BEF-037).
+ *
+ * Der Inhalt ist eine Zeile Uhrzeit: 2 px Rahmen, 4 px Innenabstand und 16 px
+ * Zeile, oben und unten - zusammen 28 px, dieselbe Mindesthöhe wie eine
+ * Kachel. Mit den früheren 16 px lief „08:50" über die untere Rahmenlinie.
+ * Die Fläche wird dadurch bei einem einzelnen Feld höher als das Feld; die
+ * Uhrzeit darin sagt, wo sie beginnt.
+ */
+const AUSWAHL_MINDESTHOEHE = 28;
+
+/**
  * Stärke der drei Linienarten.
  *
  * Die erste Fassung nahm für alle drei `--color-line` und unterschied nur die
@@ -547,10 +558,10 @@ export function CalendarGrid({
               {spanne.vorschau && spanne.vorschau.spalteId === s.id ? (
                 <div
                   data-testid="spanne-vorschau"
-                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 border-2 border-dashed px-2 py-1 text-xs font-medium"
+                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
                   style={{
                     top: `${minuteZuPixel(spanne.vorschau.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
-                    height: `${Math.max(16, ((spanne.vorschau.bisMinute - spanne.vorschau.vonMinute) / 60) * stundenHoehe)}px`,
+                    height: `${Math.max(AUSWAHL_MINDESTHOEHE, ((spanne.vorschau.bisMinute - spanne.vorschau.vonMinute) / 60) * stundenHoehe)}px`,
                   }}
                   aria-hidden="true"
                 >
@@ -568,7 +579,7 @@ export function CalendarGrid({
                 ? (() => {
                     const oben = minuteZuPixel(auswahl.vonMinute, fenster.vonMinute, stundenHoehe);
                     const auswahlHoehe = Math.max(
-                      16,
+                      AUSWAHL_MINDESTHOEHE,
                       ((auswahl.bisMinute - auswahl.vonMinute) / 60) * stundenHoehe,
                     );
                     const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
@@ -580,7 +591,7 @@ export function CalendarGrid({
                       <>
                         <div
                           data-testid="auswahl-flaeche"
-                          className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold"
+                          className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 px-2 py-1 text-xs leading-4 font-semibold"
                           style={{ top: `${oben}px`, height: `${auswahlHoehe}px` }}
                           aria-hidden="true"
                         >
@@ -606,10 +617,11 @@ export function CalendarGrid({
               {/* Vorschau: zeigt nur, wohin es ginge. Geschrieben ist noch nichts. */}
               {ziehen.vorschau && ziehen.vorschau.spalteId === s.id ? (
                 <div
-                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 border-2 border-dashed px-2 py-1 text-xs font-medium"
+                  data-testid="zieh-vorschau"
+                  className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
                   style={{
                     top: `${minuteZuPixel(ziehen.vorschau.startMinute, fenster.vonMinute, stundenHoehe)}px`,
-                    height: `${(ziehen.vorschau.dauer / 60) * stundenHoehe}px`,
+                    height: `${Math.max(AUSWAHL_MINDESTHOEHE, (ziehen.vorschau.dauer / 60) * stundenHoehe)}px`,
                   }}
                   aria-hidden="true"
                 >
