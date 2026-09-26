@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-26 · letzte Session: FRB-EPIC-002
+# Status · Stand 2026-09-26 · letzte Session: UX-EPIC-002 (BEF-035 bis BEF-040)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,21 +6,22 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**FRB-EPIC-002 gebaut** (Block 2): Anamnesebogen V8 in der Akte unter **Befund** — erheben, als Entwurf sichern, abschließen, korrigieren als neue Erhebung; Hervorhebung nach acht offengelegten Regeln ohne Bewertung; Körperschema; Verlauf als Punkte mit Ereignissen. Pull Request offen, wartet auf deinen Merge. Test-Umgebung `https://prtest.uber.space` wie bisher. Fortschritt **36,0 %**.
+**UX-EPIC-002, erste Stories gebaut** (Block 1a, BEF-035 bis BEF-040): Über dem Kalender nur noch Monat, Person mit Kalenderwoche und „Jetzt"; Ansicht, Zoom und Filter liegen in der Ecke des Rasters; die Anlegen-Leiste steht unten, ein zweiter Tipp hebt auf oder zieht die Spanne auf; zwei Finger zoomen das Raster; am Handy ist die Suche eine Lupe; das Android-Symbol kommt aus einem Web-Manifest. Pull Request offen, wartet auf deinen Merge. Fortschritt **36,4 %**.
 
 ## Danach — Bauen
 
 1. **G6c**, sobald deine Wahl unter „Blocker" da ist
-2. **UX-EPIC-002** — frei: Die Begriffe sind in Ordnung (Jannes, 2026-09-26); Stoff sind BEF-035 bis BEF-040 aus der Kalendersichtung. `/weiter UX-EPIC-002`
+2. **UX-EPIC-002, Rest** — Begriffe als eine Quelle im Code, Navigation und Arbeitsbereiche nach den Bedienprinzipien; mit dem, was die Sichtung von BEF-035 bis BEF-040 ergibt. `/weiter UX-EPIC-002`
 3. Danach Block 2 weiter mit **FRB-EPIC-003** (Befund aus Bausteinen); D2/D3 gelten ohne Antwort wie im FRB-Plan vorgeschlagen
 
 ## Prüfverfahren
 
-**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2473**; `test:db` **1973** (neu: Fragebögen und Verlaufsereignisse, FRB-EPIC-002); `test:e2e` ohne Anmeldung: Prüfseiten grün, `login.spec.ts` in der Cloud rot — auf `main` identisch. Sichtprüfung der Tourenkomponenten, der Instrumente und des Befunds über die Prüfseiten `tests/e2e/fixtures/karte.html`, `instrumente.html` und `befund.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
+**Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute: `test` **2514**; `test:db` **1973** (in UX-EPIC-002 nicht gelaufen, keine Datenbankänderung); `test:e2e` ohne Anmeldung: 45 grün, einer übersprungen (Zwei-Finger-Zoom nur im Handyprofil), auch `login.spec.ts`. Sichtprüfung der Tourenkomponenten, der Instrumente, des Befunds und des Kalenders über die Prüfseiten `tests/e2e/fixtures/karte.html`, `instrumente.html`, `befund.html` und `kalender.html` bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
 ## Blocker (Jannes-seitig)
 
 - **Sichtung** (E-6), ab jetzt am Handy auf der Test-Umgebung (erste freie Sichtung Kalender 2026-09-26: BEF-035 bis BEF-040, Stoff für UX-EPIC-002/003): Der Rückstand steht in vier Dateien zu höchstens 15 Schritten — [Kernprozess](sichtung/kernprozess.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei), [Betriebsreife](sichtung/betriebsreife.md). Start mit `/sichtung`; Bedienung in [`DEVELOPMENT.md`](DEVELOPMENT.md), „Test-Umgebung".
+- **Kalender am Handy sichten** (neu, UX-EPIC-002): Schritte 1, 2, 9 und 10 in [Kernprozess](sichtung/kernprozess.md) — Lupe, Kopf über dem Raster, zweiter Tipp, zwei Finger, „Jetzt", Android-Symbol (Seite neu zum Startbildschirm hinzufügen). Zeigt Android weiter den weißen Kreis, ist der Weg in **ANN-110** beschrieben (`minimal-ui`). Zu bestätigen: **ANN-108** (Leiste unten, Spanne aus zwei Tipps) und **ANN-109** (was oben steht, was in die Ecke wandert).
 - **Anamnese sichten** (neu, FRB-EPIC-002): Schritte 3 bis 5 in [Befund](sichtung/befund.md); **ANN-104** ist bestätigt (2026-09-26); für die externe Prüfung nach ADR-006 bleibt sie im Prüfpaket.
 - **Bögen für NRS, PSFS und Veränderungsfrage** (ANN-099): die Vorlagen als PDF nach `quellen/scores/pdf/` — dann werden die drei auf 1.0.0 aktiviert und erscheinen im Befund und im Verlauf.
 - **G6c Schreibpfade** (Optionen in der Roadmap, Block 1): Empfehlung (a) HTTP 403 bei bestätigter Transaktion für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Ohne Antwort geht es mit Block 2 weiter.
@@ -35,4 +36,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**FRB-EPIC-002 — Anamnese und Verlauf.** Fünf Stories: Definition des Bogens (ANN-102), Erhebungen mit unveränderlichem Abschluss und Korrekturkette (ANN-103, ANN-105), Hervorhebung nach §7.1 (ANN-104), Körperschema, Verlaufsereignisse (ANN-106). Zwei Migrationen, zwei neue Tabellen der Klasse Patientenakte, beide in der Auskunft nach Art. 15. Nicht gelaufen: angemeldete E2E (kein GoTrue in der Cloud). **Lokale Schritte:** `git pull origin claude/weiter-55ci36` (nach dem Merge `main`), dann `pnpm dlx supabase@2.116.0 db reset` (neue Migrationen). Keine neue Abhängigkeit.
+**UX-EPIC-002, erste Stories (BEF-035 bis BEF-040).** Fünf Stories: Uhrzeit im Rahmen der Auswahl (UX-002a), Anlegen-Leiste unten und zweiter Tipp (UX-002b, ANN-108), Zoomen mit zwei Fingern (UX-002c), Kopf über dem Raster mit Monatskalender, Person und KW, „Jetzt" mit Linie, Ecke für Ansicht und Filter, Lupe (UX-002d, ANN-109), Web-Manifest mit dem Master als maskierbarem Symbol (UX-002e, ANN-110). Keine Migration, keine Policy, kein RPC. Neue Prüfseite `tests/e2e/fixtures/kalender.html` mit E2E-Test. **Lokale Schritte:** `git pull origin claude/feature-loop-bef-035-040-6mkpai` (nach dem Merge `main`). Keine neue Abhängigkeit, keine Migration.

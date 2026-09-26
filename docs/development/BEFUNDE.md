@@ -1221,7 +1221,7 @@ an beiden Abfragen; danach kann der Pfad denselben Ausgang bekommen wie die
 | Datum   | 2026-09-26                                                                        |
 | Bereich | Kalender (`/kalender`), Anlegen aus dem Raster (CAL-019)                           |
 | Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist          |
-| Status  | offen                                                                             |
+| Status  | erledigt in UX-EPIC-002 (UX-002b, 2026-09-26) |
 | Berührt | `src/features/appointments/CalendarGrid.tsx` (Anlegen-Menü an der Auswahl); ANN-058 |
 
 **Beobachtung.** Nach einem Tipp auf ein leeres Feld (im Bild 08:50) öffnet das
@@ -1249,7 +1249,7 @@ BEF-039 und muss mit ihm zusammen geändert werden.
 | Datum   | 2026-09-26                                                               |
 | Bereich | Kalender (`/kalender`), Anlegen aus dem Raster (CAL-019)                  |
 | Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist |
-| Status  | offen                                                                    |
+| Status  | erledigt in UX-EPIC-002 (UX-002b, 2026-09-26) |
 | Berührt | `src/features/appointments/CalendarGrid.tsx`, `CalendarPage.tsx`         |
 
 **Beobachtung.** Eine Auswahl aus einem einzelnen Feld lässt sich nur über
@@ -1267,7 +1267,7 @@ Spalte = Spanne bis dorthin.
 | Datum   | 2026-09-26                                                               |
 | Bereich | Kalender (`/kalender`), Auswahl im Raster                                |
 | Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist |
-| Status  | offen                                                                    |
+| Status  | erledigt in UX-EPIC-002 (UX-002a, 2026-09-26) |
 | Berührt | `src/features/appointments/CalendarGrid.tsx` (`auswahl-flaeche`)         |
 
 **Beobachtung.** Bei einem ausgewählten 5-Minuten-Feld steht „08:50" nicht
@@ -1285,7 +1285,7 @@ Vorschau beim Verschieben.
 | Datum   | 2026-09-26                                                               |
 | Bereich | Kalender (`/kalender`), Raster                                           |
 | Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist |
-| Status  | offen                                                                    |
+| Status  | erledigt in UX-EPIC-002 (UX-002c, 2026-09-26) |
 | Berührt | `src/features/appointments/CalendarGrid.tsx` (`touchAction`); Raster `−`/`+` |
 
 **Beobachtung.** Am Smartphone ist Zoomen mit zwei Fingern im Kalender nicht möglich.
@@ -1306,7 +1306,7 @@ brechen.
 | Datum   | 2026-09-26                                                                               |
 | Bereich | Kalender (`/kalender`), Kopfbereich; App-Kopfzeile mit Suche                              |
 | Quelle  | Freie Sichtung Kalender durch Jannes am Handy (Test-Umgebung), therapist; Vergleich iPrax (`docs/product/ideen/referenz-iprax.md`) |
-| Status  | offen — gehört zu UX-EPIC-002 (Bedienprinzipien) und UX-EPIC-003 (Handy zuerst)            |
+| Status  | erledigt in UX-EPIC-002 (UX-002d, 2026-09-26) |
 | Berührt | `src/features/appointments/CalendarPage.tsx`, App-Kopfzeile und Suche; BEF-001, BEF-032 |
 
 **Beobachtung.** Bei 375 px füllen Suchfeld, Unterreiter *Kalender · Touren*,
@@ -1336,7 +1336,7 @@ an der Dokumentation.
 | Datum   | 2026-09-26                                                               |
 | Bereich | Startbildschirm-Symbol (Android, „Zum Startbildschirm hinzufügen")        |
 | Quelle  | Freie Sichtung durch Jannes am Android-Handy (Test-Umgebung)             |
-| Status  | offen                                                                    |
+| Status  | erledigt in UX-EPIC-002 (UX-002e, 2026-09-26) |
 | Berührt | `index.html`, `marke/` (einzige Quelle), `public/marke/`, `src/marke.test.ts` |
 
 **Beobachtung.** Das Symbol ist rechteckig; Android legt deshalb einen weißen
@@ -1353,3 +1353,8 @@ Kreis darum.
 Schutzbereich. Die Datei muss nach `marke/README.md` **in `marke/` entstehen** —
 keine zweite Fassung neben der Marke, kein Umfärben; die Kopie in
 `public/marke/` hält `src/marke.test.ts` fest.
+
+**Umgesetzt (UX-002e).** Nachgemessen ist das 1024er Master selbst
+maskierbar: vollflächig Tiefgrün, die Wortmarke im Schutzkreis. Das Manifest
+nennt deshalb dieselbe Datei, eine neue entsteht nicht (ANN-110,
+`marke/README.md`).

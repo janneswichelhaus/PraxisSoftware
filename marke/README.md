@@ -144,6 +144,7 @@ Umgesetzt am 2026-09-10 auf ausdrücklichen Auftrag von Jannes.
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | Favicon                       | `app/own-motion-monogramm.svg`, dazu die drei PNG als Rückfall — `index.html` (seit 2026-09-11, Befund 2)               |
 | App-Symbol auf dem Homescreen | `app/own-motion-app-1024.png` als `apple-touch-icon` — das quadratische Master, weil iOS seine eigene Maske darüberlegt |
+| Startsymbol unter Android     | dasselbe Master im Web-Manifest `public/manifest.webmanifest`, auch als `maskable` (BEF-040, ANN-110)                   |
 | Seitentitel                   | „Own Motion"                                                                                                            |
 | Anmeldemaske                  | Wortmarke `logo/own-motion-block-farbig.svg`, 40 px                                                                     |
 | Kopfzeile der Anwendung       | dieselbe Wortmarke, 26 px — sie ersetzt den Organisationsnamen (ANN-023)                                                |
@@ -163,9 +164,19 @@ Seitenverhältnis und zeigt die Datei als Bild — ein Inline-SVG mit
 `currentColor` könnte die Marke umfärben, eine Bilddatei nicht.
 `src/components/ui/markeRegeln.ts` rechnet den Schutzraum aus.
 
+**Das Master ist maskierbar (BEF-040, 2026-09-26).** Android legt ein
+Symbol, das nicht als `maskable` gekennzeichnet ist, verkleinert in einen
+weißen Kreis. Nachgemessen: Das 1024er Master ist vollflächig Tiefgrün, und
+die Wortmarke reicht von 184 bis 839 px in der Breite und von 386 bis 637 px
+in der Höhe — ihre äußerste Ecke liegt 352 px vom Mittelpunkt, der
+Schutzkreis für maskierbare Symbole hat 410 px (40 % der Seitenlänge). Das
+Manifest nennt deshalb **dieselbe Datei** als `maskable`; eine eigene
+Android-Fassung entsteht nicht. Der gelieferte Android-Kreis bleibt
+ungenutzt: Seine Ecken sind durchsichtig, eine Maske darüber ließe sie
+schwarz oder weiß.
+
 **Noch nicht in der Anwendung:** das Logo auf der Rechnung (schwarze Fassung,
-Teil von **ABR-000**) und der Android-Kreis, der ein Web-Manifest bräuchte —
-das wäre eine Installationsfunktion und nicht mehr nur Marke.
+Teil von **ABR-000**).
 
 ## Befunde und was noch aussteht
 

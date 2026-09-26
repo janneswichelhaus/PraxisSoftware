@@ -1,4 +1,5 @@
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef } from 'react';
+import { minuteZuZeit } from './calendar';
 import type { Spanne } from './useSpanneAufziehen';
 
 /**
@@ -26,29 +27,31 @@ export interface AnlegenEintrag {
  * drei davon waren aus dem Kalender gar nicht erreichbar. Die Auswahl der Zeit
  * und die Wahl der Art sind deshalb zwei Schritte geworden.
  *
- * **Im Gitter, nicht als Fenster darüber** (ANN-058): Die Frage lautet „was
- * soll hier entstehen?", und der Kalender ist der Zusammenhang, in dem sie
- * beantwortet wird. Deshalb steht das Menü neben der Auswahl, die es meint —
- * wie die Zieh-Rückfrage seit FIX-017.
+ * **Eine Leiste am unteren Rand, nicht mehr in der Spalte** (BEF-035,
+ * ANN-108). Bis 2026-09-26 stand das Menü 4 px unter der Auswahl im Gitter und
+ * deckte damit genau die Felder zu, auf denen die Spanne weitergehen würde.
+ * Jetzt bleibt die ganze Spalte frei für den zweiten Tipp; die Auswahl selbst
+ * trägt ihre Zeit im Gitter, und die Leiste nennt sie noch einmal.
  *
  * **Mit der Tastatur bedienbar:** Der Fokus wandert beim Öffnen auf den ersten
  * Eintrag, Escape schließt. Ein Weg ohne Zeigegerät ist das Menü damit noch
  * nicht — eine Spanne zieht man nicht mit der Tastatur auf. Dafür bleiben die
- * Schaltflächen über dem Gitter, und jeder Eintrag hat dort seine Entsprechung.
+ * Schaltflächen im Kalender, und jeder Eintrag hat dort seine Entsprechung.
  */
 export function AnlegenMenue({
   auswahl,
   className = '',
-  style,
 }: {
   auswahl: Spanne & { eintraege: AnlegenEintrag[]; onSchliessen: () => void };
   className?: string;
-  style?: CSSProperties | undefined;
 }) {
   const ersterRef = useRef<HTMLButtonElement>(null);
+  const spanne = auswahl.bisMinute > auswahl.vonMinute;
 
   useEffect(() => {
-    ersterRef.current?.focus();
+    // Ohne Bildlauf: Die Leiste steht ohnehin im Sichtfeld, und ein Sprung
+    // der Seite nähme die gerade gewählte Stelle aus dem Blick.
+    ersterRef.current?.focus({ preventScroll: true });
   }, [auswahl.spalteId, auswahl.vonMinute, auswahl.bisMinute]);
 
   return (
@@ -56,21 +59,42 @@ export function AnlegenMenue({
       role="group"
       aria-label="Was soll hier entstehen?"
       className={`border-line-strong bg-surface rounded-card border-2 p-2 ${className}`}
-      style={style}
       onKeyDown={(event) => {
         if (event.key === 'Escape') auswahl.onSchliessen();
       }}
     >
-      <ul className="flex flex-col">
+      <div className="flex items-start justify-between gap-2 px-1">
+        <p className="min-w-0 text-sm">
+          <span className="text-ink font-semibold tabular-nums">
+            {minuteZuZeit(auswahl.vonMinute)}
+            {spanne ? `–${minuteZuZeit(auswahl.bisMinute)}` : ''} Uhr
+          </span>
+          {/* Der Hinweis sagt die Geste, die man sonst nicht sieht (BEF-035,
+              BEF-036). Nach einer fertigen Spanne ist er erledigt. */}
+          {spanne ? null : (
+            <span className="text-ink-muted block text-xs">
+              Zweites Feld antippen: Spanne bis dorthin. Dasselbe Feld: aufheben.
+            </span>
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={auswahl.onSchliessen}
+          className="text-ink-muted hover:bg-surface-sunken rounded-button min-h-11 shrink-0 px-3 text-sm"
+        >
+          Abbrechen
+        </button>
+      </div>
+      <ul className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-4">
         {auswahl.eintraege.map((eintrag, i) => (
-          <li key={eintrag.schluessel}>
+          <li key={eintrag.schluessel} className="min-w-0">
             <button
               ref={i === 0 ? ersterRef : undefined}
               type="button"
               disabled={eintrag.deaktiviert}
               onClick={eintrag.onWaehlen}
               className={[
-                'rounded-button flex w-full flex-col gap-0.5 px-3 py-2 text-left',
+                'rounded-button border-line flex min-h-11 w-full flex-col gap-0.5 border px-3 py-1.5 text-left',
                 eintrag.deaktiviert
                   ? 'text-ink-subtle cursor-not-allowed'
                   : 'text-ink hover:bg-surface-sunken',
@@ -84,15 +108,6 @@ export function AnlegenMenue({
           </li>
         ))}
       </ul>
-      <div className="border-line mt-1 border-t pt-1">
-        <button
-          type="button"
-          onClick={auswahl.onSchliessen}
-          className="text-ink-muted hover:bg-surface-sunken rounded-button w-full px-3 py-2 text-left text-sm"
-        >
-          Abbrechen
-        </button>
-      </div>
     </div>
   );
 }

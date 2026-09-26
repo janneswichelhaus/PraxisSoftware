@@ -35,6 +35,15 @@
          seine eigene Maske darueber, ein vorgerundetes Symbol wird zweimal
          beschnitten. -->
     <link rel="apple-touch-icon" href="/marke/own-motion-app-1024.png" />
+    <!-- Android legt ein rechteckiges Symbol ohne Manifest verkleinert in einen
+         weissen Kreis (BEF-040). Das Manifest nennt dasselbe Master als
+         "maskable": Es ist vollflaechig Tiefgruen, die Wortmarke liegt im
+         Schutzkreis - keine zweite Datei (marke/README.md). display "browser"
+         aendert am Oeffnen nichts, einen Service Worker gibt es nicht
+         (ADR-015 Punkt 16, ANN-110). use-credentials, weil der Browser das
+         Manifest sonst ohne die Anmeldung der zweiten Tuer der
+         Test-Umgebung holt (ANN-101). -->
+    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
 
     <title>Own Motion</title>
   </head>

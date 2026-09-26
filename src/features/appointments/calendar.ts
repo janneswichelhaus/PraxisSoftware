@@ -88,6 +88,43 @@ export function blaettern(ansicht: KalenderAnsicht, datum: string, richtung: 1 |
   return tagePlus(datum, richtung * (ansicht === 'tag' ? 1 : 7));
 }
 
+/**
+ * Kalenderwoche nach ISO 8601 (DIN 1355): Die Woche beginnt am Montag, und
+ * Woche 1 ist die mit dem ersten Donnerstag des Jahres (BEF-039).
+ */
+export function kalenderwoche(iso: string): number {
+  // Der Donnerstag derselben Woche entscheidet über das Jahr der Woche.
+  const donnerstag = alsDate(tagePlus(wochenBeginn(iso), 3));
+  const jahresBeginn = Date.UTC(donnerstag.getUTCFullYear(), 0, 1);
+  return Math.floor((donnerstag.getTime() - jahresBeginn) / 86_400_000 / 7) + 1;
+}
+
+/** Erster Tag des Monats, in dem dieser Tag liegt. */
+export function monatsBeginn(iso: string): string {
+  return `${iso.slice(0, 7)}-01`;
+}
+
+/** Derselbe Monatserste, um ganze Monate verschoben. */
+export function monatPlus(monatsErster: string, monate: number): string {
+  const d = alsDate(monatsErster);
+  d.setUTCMonth(d.getUTCMonth() + monate, 1);
+  return alsIso(d);
+}
+
+/**
+ * Die Tage, die ein Monatsblatt zeigt: ganze Wochen von Montag bis Sonntag,
+ * vom Montag vor dem Ersten bis zum Sonntag nach dem Letzten (BEF-039).
+ */
+export function monatsRaster(monatsErster: string): string[][] {
+  const erster = wochenBeginn(monatsErster);
+  const naechster = monatPlus(monatsErster, 1);
+  const wochen: string[][] = [];
+  for (let montag = erster; montag < naechster; montag = tagePlus(montag, 7)) {
+    wochen.push(Array.from({ length: 7 }, (_, i) => tagePlus(montag, i)));
+  }
+  return wochen;
+}
+
 // -----------------------------------------------------------------------------
 // Query-Parameter
 //

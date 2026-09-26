@@ -10,6 +10,7 @@ import {
   terminKachel,
   terminUeberOberflaeche,
   zugriffstoken,
+  kalenderOptionenOeffnen,
 } from './helpers';
 
 /**
@@ -95,11 +96,13 @@ test.describe('CAL-002: Kalender', () => {
     const adresse = `/kalender?ansicht=tag&datum=${TAG}&person=${anna!.staff_member_id}&status=all`;
     await page.goto(adresse);
     await expect(page.getByLabel('Behandelnde Person')).toHaveValue(anna!.staff_member_id);
+    await kalenderOptionenOeffnen(page);
     await expect(page.getByLabel('Status')).toHaveValue('all');
 
     await page.reload();
     await expect(page).toHaveURL((u) => u.searchParams.get('datum') === TAG);
     await expect(page.getByLabel('Behandelnde Person')).toHaveValue(anna!.staff_member_id);
+    await kalenderOptionenOeffnen(page);
     await expect(page.getByLabel('Status')).toHaveValue('all');
   });
 
@@ -111,6 +114,7 @@ test.describe('CAL-002: Kalender', () => {
 
     // Keine Fehlerseite, sondern die Wochenansicht mit Standardfiltern.
     await expect(page.getByRole('heading', { name: 'Kalender' })).toBeVisible();
+    await kalenderOptionenOeffnen(page);
     await expect(page.getByRole('button', { name: 'Woche' })).toHaveAttribute(
       'aria-pressed',
       'true',

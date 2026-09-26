@@ -144,6 +144,8 @@ const { TextbausteinLeiste } = await import('@/features/documentation/Textbauste
 const { AppointmentSeriesPage } = await import('@/features/appointments/AppointmentSeriesPage');
 const { AppointmentSlipPage } = await import('@/features/appointments/AppointmentSlipPage');
 const { MitteilungVermerken } = await import('@/features/appointments/MitteilungVermerken');
+const { Monatskalender } = await import('@/features/appointments/Monatskalender');
+const { AnlegenMenue } = await import('@/features/appointments/AnlegenMenue');
 
 /** Ein Hausbesuch mit allem, was die Tageskarte zeigen kann. */
 const tagesEintrag = {
@@ -368,6 +370,41 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
     // geprueft werden soll.
     await user.click(screen.getByRole('combobox', { name: 'Patient:in suchen' }));
     expect(screen.getAllByRole('option')).toHaveLength(2);
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('haelt Monatskalender und Anlegen-Leiste des Kalenders sauber (BEF-035, BEF-039)', async () => {
+    const { container } = renderWithProviders(
+      <main>
+        <h1>Kalender</h1>
+        <Monatskalender
+          id="monat"
+          datum="2027-05-12"
+          heute="2027-05-12"
+          gewaehlt={['2027-05-12']}
+          onWaehlen={() => {}}
+          onSchliessen={() => {}}
+        />
+        <AnlegenMenue
+          auswahl={{
+            spalteId: 'a',
+            vonMinute: 720,
+            bisMinute: 760,
+            onSchliessen: () => {},
+            eintraege: [
+              { schluessel: 'termin', beschriftung: 'Neuer Termin', onWaehlen: () => {} },
+              {
+                schluessel: 'dauertermin',
+                beschriftung: 'Dauertermin',
+                hinweis: 'Zuerst die Patient:in wählen (Suche oben)',
+                deaktiviert: true,
+                onWaehlen: () => {},
+              },
+            ],
+          }}
+        />
+      </main>,
+    );
     await pruefeBarrierefreiheit(container);
   });
 

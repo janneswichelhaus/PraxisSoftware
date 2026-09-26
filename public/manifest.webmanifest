@@ -1,0 +1,22 @@
+{
+  "name": "Own Motion",
+  "short_name": "Own Motion",
+  "lang": "de",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "icons": [
+    {
+      "src": "/marke/own-motion-app-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/marke/own-motion-app-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

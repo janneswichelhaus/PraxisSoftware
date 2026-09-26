@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  kalenderwoche,
+  monatPlus,
+  monatsBeginn,
+  monatsRaster,
   ZOOMSTUFEN,
   ZOOM_STANDARD,
   arbeitszeitBaender,
@@ -548,5 +552,33 @@ describe('fensterMitArbeitszeit', () => {
       vonMinute: 420,
       bisMinute: 1200,
     });
+  });
+});
+
+describe('Kalenderwoche und Monatsblatt (BEF-039)', () => {
+  it.each([
+    ['2027-05-12', 19],
+    ['2027-01-01', 53], // Freitag: gehoert noch zur letzten Woche 2026
+    ['2027-01-04', 1],
+    ['2026-12-31', 53],
+    ['2025-12-29', 1], // Montag: Woche 1 des Jahres 2026
+    ['2026-09-26', 39],
+  ])('%s liegt in KW %i', (tag, woche) => {
+    expect(kalenderwoche(tag)).toBe(woche);
+  });
+
+  it('blaettert ganze Monate, auch ueber den Jahreswechsel', () => {
+    expect(monatsBeginn('2027-05-12')).toBe('2027-05-01');
+    expect(monatPlus('2027-12-01', 1)).toBe('2028-01-01');
+    expect(monatPlus('2027-01-01', -1)).toBe('2026-12-01');
+  });
+
+  it('zeigt ganze Wochen von Montag bis Sonntag', () => {
+    const blatt = monatsRaster('2027-05-01');
+    // Der 1. Mai 2027 ist ein Samstag, der 31. ein Montag.
+    expect(blatt[0]![0]).toBe('2027-04-26');
+    expect(blatt.at(-1)![6]).toBe('2027-06-06');
+    expect(blatt).toHaveLength(6);
+    expect(blatt.every((woche) => woche.length === 7)).toBe(true);
   });
 });

@@ -503,3 +503,17 @@ export async function terminUeberOberflaeche(
   await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
   return page.url().split('/').pop()!;
 }
+
+/**
+ * Klappt im Kalender „Ansicht und Filter" auf (BEF-039, ANN-109).
+ *
+ * Tag/Woche, Zoom, Standort, Status und die Anlegen-Schaltflächen stehen seit
+ * UX-EPIC-002 hinter dem Knopf in der Ecke des Rasters. Ist das Feld schon
+ * offen, bleibt es offen.
+ */
+export async function kalenderOptionenOeffnen(page: Page): Promise<void> {
+  const knopf = page.getByRole('button', { name: /^Ansicht und Filter/ });
+  await expect(knopf).toBeVisible();
+  if ((await knopf.getAttribute('aria-expanded')) !== 'true') await knopf.click();
+  await expect(page.getByRole('group', { name: 'Ansicht und Filter' })).toBeVisible();
+}

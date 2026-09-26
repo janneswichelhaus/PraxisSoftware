@@ -42,3 +42,33 @@ export const MARKE_RECHNUNGSHOEHE = 53;
 export function schutzraum(hoehe: number): number {
   return hoehe * (731 / 2035.73);
 }
+
+/**
+ * Schutzkreis eines maskierbaren Symbols als Anteil der Seitenlänge: Radius
+ * 40 %, gemessen vom Mittelpunkt (Web App Manifest, „maskable"). Was außerhalb
+ * liegt, darf eine Maske des Startbildschirms abschneiden.
+ */
+export const MASKIERBAR_SCHUTZKREIS = 0.4;
+
+/**
+ * Wo die Wortmarke im 1024er Master liegt, in Pixeln - gemessen am
+ * 2026-09-26 (BEF-040, **ANN-110**): alles, was nicht Tiefgrün ist. Das Master
+ * ist ohne durchsichtige Pixel. Daraus folgt, dass es selbst maskierbar ist und
+ * das Web-Manifest keine zweite Fassung braucht (`marke/README.md`).
+ */
+export const MASTER_WORTMARKE = {
+  seite: 1024,
+  links: 184,
+  rechts: 839,
+  oben: 386,
+  unten: 637,
+} as const;
+
+/** Abstand der äußersten Ecke der Wortmarke vom Mittelpunkt des Masters. */
+export function masterWortmarkeEcke(): number {
+  const { seite, links, rechts, oben, unten } = MASTER_WORTMARKE;
+  const mitte = seite / 2;
+  const dx = Math.max(mitte - links, rechts + 1 - mitte);
+  const dy = Math.max(mitte - oben, unten + 1 - mitte);
+  return Math.hypot(dx, dy);
+}

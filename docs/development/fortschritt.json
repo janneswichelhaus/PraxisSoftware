@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-25",
+  "stand": "2026-09-26",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -258,7 +258,10 @@
           "id": "ux-epic-002",
           "name": "UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a)",
           "gewicht": 2,
-          "status": "offen"
+          "status": "in_arbeit",
+          "fertig_am": "2026-09-26",
+          "nachweis": "`aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040)",
+          "vermerk": "Rest: Begriffe als eine Quelle, Navigation und Arbeitsbereiche"
         },
         {
           "id": "ux-epic-003",

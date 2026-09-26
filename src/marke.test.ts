@@ -1,6 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+  MASKIERBAR_SCHUTZKREIS,
+  MASTER_WORTMARKE,
+  masterWortmarkeEcke,
+} from '@/components/ui/markeRegeln';
 
 /**
  * Die Marke wird ausgeliefert, ohne eine zweite Fassung zu entstehen.
@@ -82,5 +87,52 @@ describe('index.html bindet die Marke ein', () => {
     const verwiesen = [...html.matchAll(/href="\/marke\/([^"]+)"/g)].map((treffer) => treffer[1]!);
     expect(verwiesen.length).toBeGreaterThan(0);
     for (const datei of verwiesen) expect(readdirSync(KOPIEN)).toContain(datei);
+  });
+});
+
+/**
+ * Das Startsymbol unter Android (BEF-040, ANN-110).
+ *
+ * Ohne Manifest nimmt Android das `apple-touch-icon` und legt es verkleinert
+ * in einen weißen Kreis. Das Manifest nennt dasselbe Master zusätzlich als
+ * `maskable`; eine zweite Fassung der Marke entsteht dabei nicht.
+ */
+describe('Web-Manifest', () => {
+  const html = readFileSync(join(stamm, 'index.html'), 'utf8');
+  const manifest = JSON.parse(readFileSync(join(stamm, 'public/manifest.webmanifest'), 'utf8')) as {
+    name: string;
+    display: string;
+    icons: { src: string; sizes: string; purpose: string }[];
+  };
+
+  it('wird mit Anmeldung eingebunden', () => {
+    expect(html).toContain(
+      '<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />',
+    );
+  });
+
+  it('traegt den Markennamen und aendert am Oeffnen nichts', () => {
+    expect(manifest.name).toBe('Own Motion');
+    expect(manifest.display).toBe('browser');
+  });
+
+  it('nennt ein maskierbares Symbol - das ausgelieferte Master, keine zweite Fassung', () => {
+    const maskierbar = manifest.icons.filter((i) => i.purpose === 'maskable');
+    expect(maskierbar).toHaveLength(1);
+    expect(maskierbar[0]!.src).toBe('/marke/own-motion-app-1024.png');
+    for (const symbol of manifest.icons) {
+      expect(symbol.src.startsWith('/marke/')).toBe(true);
+      expect(readdirSync(KOPIEN)).toContain(symbol.src.slice('/marke/'.length));
+    }
+  });
+
+  it('darf das Master als maskierbar fuehren: die Wortmarke liegt im Schutzkreis', () => {
+    // 352 px bis zur aeussersten Ecke, 409,6 px Schutzkreis.
+    expect(masterWortmarkeEcke()).toBeLessThan(MASKIERBAR_SCHUTZKREIS * MASTER_WORTMARKE.seite);
+  });
+
+  it('kommt ohne Service Worker aus (ADR-015 Punkt 16)', () => {
+    expect(html).not.toContain('serviceWorker');
+    expect(readdirSync(join(stamm, 'public'))).not.toContain('sw.js');
   });
 });

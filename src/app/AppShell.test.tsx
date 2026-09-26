@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { AppShell } from './AppShell';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -143,6 +143,32 @@ describe('AppShell', () => {
     expect(
       screen.getAllByRole('combobox', { name: 'Funktion, Bereich oder Name suchen' }),
     ).toHaveLength(1);
+  });
+
+  it('klappt die Suche am Telefon hinter einer Lupe neben dem Konto ein (BEF-039)', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    const feld = screen.getByRole('combobox', { name: 'Funktion, Bereich oder Name suchen' });
+    const huelle = document.getElementById('kopf-suche')!;
+    // Unter sm verborgen, ab sm wie bisher sichtbar - dasselbe eine Feld.
+    expect(huelle.className).toContain('max-sm:hidden');
+    expect(huelle).toContainElement(feld);
+
+    const lupe = screen.getByRole('button', { name: 'Suche öffnen' });
+    expect(lupe.className).toContain('sm:hidden');
+    // Links neben dem Konto.
+    expect(lupe.nextElementSibling).toHaveAccessibleName('Mein Konto');
+
+    fireEvent.click(lupe);
+    expect(huelle.className).not.toContain('max-sm:hidden');
+    expect(feld).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Suche schließen' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 
   it('gibt auch einem Patientenkonto die Suche - sie sucht zuerst Funktionen', () => {
