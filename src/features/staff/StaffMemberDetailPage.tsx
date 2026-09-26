@@ -19,6 +19,7 @@ import { formatDate } from '@/lib/datum';
 import { telHref } from '@/lib/telefon';
 import { fullName } from '@/features/patients/api';
 import {
+  canManageAppointments,
   canManageStaffAccounts,
   canManageStaffEmployment,
   canManageStaffMasterData,
@@ -196,6 +197,9 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
     queryKey: ['assignable-therapists'],
     queryFn: fetchAssignableTherapists,
     retry: false,
+    // Wie in der Liste (BEF-034): trainer fragt nicht, was die Datenbank
+    // ihm ohnehin verweigert; Kalender und Arbeitszeiten sind ihm nicht offen.
+    enabled: canManageAppointments(user.roles),
   });
   const behandelt = (therapeuten.data ?? []).some((t) => t.staff_member_id === staff.id);
   const zone = user.organizationTimeZone;

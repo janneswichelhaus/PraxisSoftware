@@ -160,8 +160,13 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): SubNavEintrag[] {
   // Eine zweite, vorgetaeuschte Personalakte daneben gibt es bewusst nicht.
   const eintraege: SubNavEintrag[] = [
     { to: '/praxis/team', label: BEGRIFFE.mitarbeitende, end: false },
-    { to: '/praxis/planung', label: BEGRIFFE.arbeitszeiten },
   ];
+  // Arbeitszeiten gehoeren zur Terminverwaltung; ihre Route steht unter
+  // derselben Bedingung. trainer landete sonst ohne Aufruf wieder auf `/`
+  // (BEF-034).
+  if (canManageAppointments(roles)) {
+    eintraege.push({ to: '/praxis/planung', label: BEGRIFFE.arbeitszeiten });
+  }
   // Textbausteine sind ein Werkzeug der Dokumentation, gepflegt wird es aber
   // wie eine Praxiseinstellung - deshalb hier und nicht bei den Patient:innen
   // (UX-008). Wer nicht dokumentiert, braucht den Punkt nicht.
@@ -250,7 +255,9 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
     bereiche.push({
       id: 'betrieb',
       ...BEREICHE.betrieb,
-      to: '/betrieb/flotte',
+      // Der Bereich oeffnet auf dem ersten Punkt, der wirklich wirkt, nicht
+      // auf einer Vorschau (ANN-112, Bedienprinzipien).
+      to: '/praxis/team',
       pfade: ['/betrieb', '/praxis'],
       icon: symbole.betrieb,
       unterpunkte: betriebUnterpunkte(roles),

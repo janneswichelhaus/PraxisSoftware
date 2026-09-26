@@ -104,3 +104,7 @@ Ein Sandbox-Prototyp (Pfad S) hakt diese Oberflächen-Checkliste ebenfalls ab.
    gleiche Sache, gleiches Wort.
 10. Je Kernpfad ein Test bei 375 px; ergänzt der Loop die Sichtung, ist der
     Schritt am Handy und nennt den Zielwert der Story als Zahl.
+11. Bedienprinzipien (UX-EPIC-002): ein Hauptknopf je Ansicht; was nicht
+    gebraucht wird, ist eingeklappt (Vorschauen, Filter, seltene Vorgänge);
+    Handy zuerst. Beschriftungen kommen aus `src/lib/begriffe.ts`, abgelöste
+    Wörter hält `begriffe.test.ts` fern (ANN-111).

@@ -130,6 +130,26 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(flotte?.vorschau).toBe(true);
   });
 
+  it('oeffnet Organisatorisches auf den Mitarbeitenden, nicht auf einer Vorschau', () => {
+    // ANN-112: Der Einstieg ist der erste Punkt, der wirklich wirkt.
+    for (const rolle of ['owner', 'therapist', 'office', 'trainer'] as RoleKey[]) {
+      const betrieb = bereicheFuer([rolle]).find((bereich) => bereich.id === 'betrieb');
+      expect(betrieb?.to).toBe('/praxis/team');
+      const einstieg = betrieb?.unterpunkte.find((punkt) => punkt.to === betrieb.to);
+      expect(einstieg?.vorschau).toBeUndefined();
+    }
+  });
+
+  it('zeigt trainer die Arbeitszeiten nicht, deren Route ihm verschlossen ist (BEF-034)', () => {
+    const punkte = (roles: RoleKey[]) =>
+      bereicheFuer(roles)
+        .find((bereich) => bereich.id === 'betrieb')
+        ?.unterpunkte.map((punkt) => punkt.to);
+    expect(punkte(['trainer'])).not.toContain('/praxis/planung');
+    expect(punkte(['trainer'])).toContain('/praxis/team');
+    expect(punkte(['therapist'])).toContain('/praxis/planung');
+  });
+
   it('ordnet die Arbeitszeiten dem Organisatorischen zu und nicht dem Kalender', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
     expect(betrieb?.unterpunkte.map((punkt) => punkt.to)).toContain('/praxis/planung');

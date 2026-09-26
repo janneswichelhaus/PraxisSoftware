@@ -49,7 +49,7 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
     await expect(page.getByRole('heading', { name: 'Klinische Patientenakte' })).toBeVisible();
     await expect(page.getByText('10 Jahre', { exact: true })).toBeVisible();
     await expect(page.getByText('ab Abschluss der Versorgung')).toBeVisible();
-    await expect(page.getByText('Par. 630f Abs. 3 BGB')).toBeVisible();
+    await expect(page.getByText('§ 630f Abs. 3 BGB')).toBeVisible();
   });
 
   test('sagt bei einer offenen Frist ausdrücklich, dass nicht gelöscht wird', async ({ page }) => {

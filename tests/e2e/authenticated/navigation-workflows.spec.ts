@@ -70,8 +70,8 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     await anmelden(page, KONTEN.owner);
 
     // Die Seiten mit den meisten nebeneinanderliegenden Elementen: die
-    // Bereichsuebersicht, das laengste Untermenue (Organisatorisches, sieben
-    // Punkte) und der Kalender.
+    // Bereichsuebersicht, das laengste Untermenue (Organisatorisches, mit
+    // offener Vorschau) und der Kalender.
     for (const pfad of ['/', '/bereiche', '/praxis/team', '/betrieb/flotte', '/kalender']) {
       await page.goto(pfad);
       await expect(page.getByRole('main')).toBeVisible();
@@ -92,7 +92,10 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     await expect(mitarbeitende).not.toContainText('Vorschau');
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
 
-    // Gegenprobe: die Radflotte im selben Menue ist gekennzeichnete Vorschau.
+    // Gegenprobe: die Radflotte im selben Menue ist gekennzeichnete Vorschau
+    // und steht eingeklappt hinter „Vorschau" (UX-002h).
+    await expect(untermenue.getByRole('link', { name: /Radflotte/ })).toHaveCount(0);
+    await untermenue.getByRole('button', { name: /^Vorschau/ }).click();
     await expect(untermenue.getByRole('link', { name: /Radflotte/ })).toContainText('Vorschau');
   });
 });

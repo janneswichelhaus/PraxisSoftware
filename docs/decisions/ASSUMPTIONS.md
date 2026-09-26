@@ -1436,3 +1436,15 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 **Anker.** `ABGELOESTE_BEGRIFFE` in `src/lib/begriffe.ts`, durchgesetzt von `src/lib/begriffe.test.ts` über jeden Quelltext unter `src/` ohne Kommentare und Tests.
 
 **Änderungspfad.** Ein anderes Wort: den Wert in `BEGRIFFE` bzw. `BEREICHE` ändern, den Eintrag in `ABGELOESTE_BEGRIFFE` umkehren und den Test die übrigen Stellen finden lassen · Aufwand `klein`. Das Gate aufgeben: den Test entfernen, die Datei bleibt als Quelle · Aufwand `klein`.
+
+### ANN-112 — Ein Arbeitsbereich öffnet auf seinem ersten echten Punkt; Vorschauen stehen eingeklappt dahinter
+
+Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+
+**Annahme.** „Organisatorisches" öffnet auf „Mitarbeitende" statt auf der Vorschau „Radflotte". Im Untermenü eines Bereichs stehen die angebundenen Punkte offen; Vorschauen liegen hinter einem Knopf „Vorschau (n)" und klappen von selbst auf, wenn man auf einer von ihnen steht. Menüpunkte, deren Route einer Rolle verschlossen ist, stehen für sie nicht im Menü (trainer: „Arbeitszeiten", BEF-034).
+
+**Begründung.** Die Bedienprinzipien aus UX-EPIC-002 (Roadmap, Block 1a): ein Hauptknopf je Ansicht, was nicht gebraucht wird, ist eingeklappt, Handy zuerst. Wer den Bereich öffnete, landete in einem Prototyp ohne Speicherung und musste den echten Punkt erst suchen; am Handy stand die Hälfte des Untermenüs außerhalb des Bildschirms. Der Rollentest ist Darstellung, keine Zugriffskontrolle (ADR-004); die Route prüft dieselbe Bedingung. Unsicher: ob Jannes die Vorschauen ganz aus dem Menü nehmen und nur über die Bereichsübersicht erreichen will.
+
+**Anker.** `to` des Bereichs `betrieb` und `betriebUnterpunkte` in `src/app/navigation.tsx`; `einklappbar` in `SubNav` (`src/components/ui/SubNav.tsx`).
+
+**Änderungspfad.** Vorschauen wieder offen: `einklappbar` auf `false` setzen · Aufwand `klein`. Anderer Einstieg: `to` des Bereichs ändern · Aufwand `klein`.
