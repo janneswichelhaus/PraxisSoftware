@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
 import type * as TreatmentBasesApi from './api';
+import type * as PatientsApi from '@/features/patients/api';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
+import { testPatient } from '@/test-utils';
 
 /**
  * Regressionstest für den in der Abnahme dokumentierten Befund (VER-003,
@@ -16,14 +18,20 @@ import type * as SessionContextModule from '@/features/auth/sessionContext';
  *
  * Anders als TreatmentBasisFormPage.test.tsx und PrescriberFormPage.test.tsx
  * mockt diese Datei weder `useNavigate` noch `useParams`: der Seitenwechsel
- * zwischen Verordnungsformular und Verordner-Anlage läuft über echte Routen
- * (`MemoryRouter` + `Routes`), damit ein Klick auf "Verordner:in anlegen" und
- * das Absenden bzw. Abbrechen der Verordner-Anlage tatsächlich denselben Pfad
- * nehmen wie in der laufenden Anwendung. Der Zeitfortschritt über fünf
- * Minuten wird über `Date.now()` gesteuert (das Einzige, was der
- * Entwurfsspeicher dafür verwendet) statt über Fake-Timer für `setTimeout` -
- * letztere würden mit den echten Wartezyklen von `userEvent`/`waitFor`
- * kollidieren.
+ * zwischen Verordnungsformular und Verordner-Anlage läuft über echte Routen,
+ * damit ein Klick auf "Neue Verordner:in anlegen" und das Absenden bzw.
+ * Abbrechen der Verordner-Anlage tatsächlich denselben Pfad nehmen wie in der
+ * laufenden Anwendung. Der Zeitfortschritt über fünf Minuten wird über
+ * `Date.now()` gesteuert (das Einzige, was der Entwurfsspeicher dafür
+ * verwendet) statt über Fake-Timer für `setTimeout` - letztere würden mit den
+ * echten Wartezyklen von `userEvent`/`waitFor` kollidieren.
+ *
+ * **Seit UXR-007 ein Data Router** (`createMemoryRouter`) wie in der
+ * Anwendung: Beide Formulare schützen ungespeicherte Eingaben (VER-03), und
+ * der Schutz braucht ihn. Damit prüft diese Datei auch, dass er dem Abstecher
+ * nicht im Weg steht - der eigene Weg hin und zurück ist kein Verlust. Unter
+ * Node 24 baut jsdom für die Navigation des Data Routers keinen `Request`
+ * (BEF-011); die CI läuft mit Node 22.
  */
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -51,6 +59,16 @@ vi.mock('./api', async (importOriginal) => {
     updateTreatmentBasis: (id: string, values: unknown, items: unknown) =>
       updateTreatmentBasis(id, values, items) as Promise<void>,
     createPrescriber: (values: unknown) => createPrescriber(values) as Promise<string>,
+  };
+});
+
+// Der Name im Kopf des Formulars (UX-012) - ohne ihn sperrt das Formular das
+// Speichern (VER-B02), und ohne Mock ginge die Abfrage an einen Server.
+vi.mock('@/features/patients/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof PatientsApi>();
+  return {
+    ...actual,
+    fetchPatient: () => Promise.resolve(testPatient({ id: PATIENT_ID })),
   };
 });
 
@@ -118,22 +136,22 @@ const bestand: TreatmentBasesApi.TreatmentBasisDetail = {
 
 /** Echte Routen statt Mocks: bildet genau den Ausschnitt von AuthenticatedRoutes.tsx nach, den dieser Ablauf durchläuft. */
 function testApp(queryClient: QueryClient, initialPath: string): ReactElement {
+  const router = createMemoryRouter(
+    [
+      { path: '/patienten/:patientId/verordnungen/neu', element: <NewTreatmentBasisPage /> },
+      {
+        path: '/patienten/:patientId/verordnungen/:grundlageId/bearbeiten',
+        element: <EditTreatmentBasisPage />,
+      },
+      { path: '/verordner/neu', element: <NewPrescriberPage /> },
+      { path: '/patienten/:patientId', element: <p>Zurück in der Akte.</p> },
+      { path: '/termine/dauertermin', element: <p>Zurück beim Dauertermin.</p> },
+    ],
+    { initialEntries: [initialPath] },
+  );
   return (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route
-            path="/patienten/:patientId/verordnungen/neu"
-            element={<NewTreatmentBasisPage />}
-          />
-          <Route
-            path="/patienten/:patientId/verordnungen/:grundlageId/bearbeiten"
-            element={<EditTreatmentBasisPage />}
-          />
-          <Route path="/verordner/neu" element={<NewPrescriberPage />} />
-          <Route path="/patienten/:patientId" element={<p>Zurück in der Akte.</p>} />
-        </Routes>
-      </MemoryRouter>
+      <RouterProvider router={router} />
     </QueryClientProvider>
   );
 }
@@ -177,8 +195,9 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     );
 
     // Echter Linkklick: navigiert tatsaechlich auf /verordner/neu und
-    // haengt das Verordnungsformular dabei aus.
-    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    // haengt das Verordnungsformular dabei aus. Der Schutz vor
+    // Eingabeverlust fragt hier nicht - der Entwurf sichert alles (VER-03).
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
     expect(createTreatmentBasis).not.toHaveBeenCalled();
 
@@ -192,11 +211,14 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
       { ...verordner, id: NEUER_VERORDNER, family_name: 'Neuarzt', practice_name: null },
     ]);
 
+    // Der Rückweg sagt, wohin es geht (VER-11).
+    expect(screen.getByRole('link', { name: /Zurück zur Grundlage/ })).toBeInTheDocument();
+
     await user.type(screen.getByLabelText('Nachname *'), 'Neuarzt');
     await user.click(screen.getByRole('button', { name: 'Verordner:in anlegen' }));
 
     // Echte Navigation zurueck - dasselbe Verordnungsformular haengt sich
-    // dabei neu ein.
+    // dabei neu ein. Gespeichert ist gespeichert: kein Halt am Schutz.
     await screen.findByRole('heading', { name: 'Grundlage erfassen' });
     await screen.findByRole('option', { name: /Neuarzt/ });
 
@@ -225,12 +247,13 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.click(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' }));
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
 
-    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
 
     jetzt += 6 * 60 * 1000;
 
-    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    // „Abbrechen" ist ein Link (UIK-13); ohne Eingabe fragt der Schutz nicht.
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
     await screen.findByRole('heading', { name: 'Grundlage erfassen' });
     await screen.findByRole('option', { name: /Probst/ });
 
@@ -255,7 +278,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.clear(screen.getByLabelText('Anzahl möglicher Termine *'));
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '8');
 
-    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
 
     jetzt += 6 * 60 * 1000;
@@ -276,6 +299,64 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     expect(updateTreatmentBasis).not.toHaveBeenCalled();
   });
 
+  // VER-05: Wer das Formular aus der Terminplanung öffnet, kommt nach dem
+  // Speichern dorthin zurück - auch über den Abstecher zur Verordner-Anlage.
+  it('nimmt den Rueckweg des Formulars durch den Abstecher mit und kehrt nach dem Speichern dorthin zurueck', async () => {
+    const dauertermin = `/termine/dauertermin?patient=${PATIENT_ID}&datum=2026-03-02&beginn=08:00`;
+    createTreatmentBasis.mockResolvedValue('neue-id');
+    const user = userEvent.setup();
+
+    render(
+      testApp(
+        new QueryClient(),
+        `/patienten/${PATIENT_ID}/verordnungen/neu?zurueck=${encodeURIComponent(dauertermin)}`,
+      ),
+    );
+    await screen.findByRole('option', { name: /Probst/ });
+
+    await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
+    await user.click(screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' }));
+    await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
+    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+
+    fetchPrescribers.mockResolvedValue([
+      verordner,
+      { ...verordner, id: NEUER_VERORDNER, family_name: 'Neuarzt', practice_name: null },
+    ]);
+    await user.type(screen.getByLabelText('Nachname *'), 'Neuarzt');
+    await user.click(screen.getByRole('button', { name: 'Verordner:in anlegen' }));
+
+    await screen.findByRole('option', { name: /Neuarzt/ });
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', dauertermin);
+
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+    expect(await screen.findByText('Zurück beim Dauertermin.')).toBeInTheDocument();
+    expect(createTreatmentBasis).toHaveBeenCalledTimes(1);
+  });
+
+  // VER-03: Der zurückgeholte Entwurf liegt nur im Arbeitsspeicher - wer das
+  // Formular danach anders verlässt, wird gefragt.
+  it('schuetzt die zurueckgeholten Eingaben weiter vor dem Verlassen', async () => {
+    const user = userEvent.setup();
+
+    render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
+    await screen.findByRole('option', { name: /Probst/ });
+    await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
+
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
+    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+    await screen.findByRole('heading', { name: 'Grundlage erfassen' });
+    expect(screen.getByLabelText('Anzahl möglicher Termine *')).toHaveValue('6');
+
+    await user.click(screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }));
+    expect(
+      await screen.findByRole('group', { name: 'Ungespeicherte Behandlungsgrundlage' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Anzahl möglicher Termine *')).toHaveValue('6');
+  });
+
   it('uebernimmt nie den Entwurf einer anderen Person - Kontowechsel im selben Tab', async () => {
     const user = userEvent.setup();
     const queryClient = new QueryClient();
@@ -285,7 +366,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await screen.findByRole('option', { name: /Probst/ });
 
     await user.click(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' }));
-    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
 
     // Simuliert Abmeldung und Anmeldung als andere Person im selben Tab,
@@ -311,7 +392,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.click(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' }));
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
 
-    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
 
     // Die Verordner-Anlage wird ueber die Hauptnavigation verlassen: weder
@@ -336,7 +417,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     const erster = render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
     await screen.findByRole('option', { name: /Probst/ });
     await user.type(screen.getByLabelText('Frequenz'), 'Erster Versuch');
-    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
     erster.unmount();
 
@@ -345,9 +426,9 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     render(testApp(new QueryClient(), `/patienten/${PATIENT_ID}/verordnungen/neu`));
     await screen.findByRole('option', { name: /Probst/ });
     await user.type(screen.getByLabelText('Frequenz'), 'Zweiter Versuch');
-    await user.click(screen.getByRole('link', { name: 'Verordner:in anlegen' }));
+    await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
     await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
-    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
 
     await screen.findByRole('heading', { name: 'Grundlage erfassen' });
     expect(screen.getByLabelText('Frequenz')).toHaveValue('Zweiter Versuch');

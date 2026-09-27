@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as RouterModul from 'react-router-dom';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -184,6 +184,13 @@ describe('Termine übertragen', () => {
       'ungedeckt-1',
       'ungedeckt-2',
     ]);
+    // Die Akte bestätigt danach, wie viele gewandert sind - laut Server
+    // (VER-13).
+    await vi.waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/verordnungen`, {
+        state: { termineUebertragen: 2 },
+      }),
+    );
   });
 
   it('lässt jeden Termin einzeln abwählen', async () => {
@@ -203,9 +210,13 @@ describe('Termine übertragen', () => {
 
     await screen.findByText('Mittwoch, 19. Mai 2027');
     expect(screen.getByLabelText('Auf welche Behandlungsgrundlage? *')).toHaveValue('');
-    expect(screen.getByRole('button', { name: '2 Termine übertragen' })).toBeDisabled();
+    const knopf = screen.getByRole('button', { name: '2 Termine übertragen' });
+    expect(knopf).toBeDisabled();
+    // Der gesperrte Knopf sagt, warum (VER-13).
+    expect(knopf).toHaveAccessibleDescription('Zuerst die Grundlage wählen.');
 
     await user.selectOptions(screen.getByLabelText('Auf welche Behandlungsgrundlage? *'), NEU);
+    expect(screen.queryByText('Zuerst die Grundlage wählen.')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '2 Termine übertragen' }));
     expect(transferAppointmentsToTreatmentBasis).toHaveBeenCalledWith(NEU, [
       'ungedeckt-1',
@@ -219,6 +230,119 @@ describe('Termine übertragen', () => {
     // Alle ungedeckten Termine hängen an ALT - auf sich selbst wandert nichts.
     expect(await screen.findByText('Kein ungedeckter Termin')).toBeInTheDocument();
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    // Ohne Angebot kein Knopf über null Termine (VER-13) - der Rückweg steht oben.
+    expect(screen.queryByRole('button', { name: /übertragen/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Abbrechen' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+    ).toBeInTheDocument();
+  });
+
+  // VER-13: Wer von der überplanten Grundlage kommt, sieht, welche noch Platz
+  // hat. Die abgebende steht da, ist aber nicht wählbar.
+  it('nennt je Ziel, was es noch traegt, und sperrt die abgebende Grundlage', async () => {
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([
+      grundlage(),
+      grundlage({ id: NEU, treatment_basis_kind: 'follow_up', issued_on: '2026-09-08' }),
+      grundlage({ id: 'erschoepft', issued_on: '2025-01-10' }),
+      grundlage({ id: 'verplant', treatment_basis_kind: 'self_pay', issued_on: '2026-03-01' }),
+    ]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([
+      kontingent(),
+      kontingent({
+        treatment_basis_id: NEU,
+        prescribed: 10,
+        used: 0,
+        planned: 4,
+        upcoming: 4,
+        remaining: 6,
+        covered: 4,
+        uncovered: 0,
+      }),
+      kontingent({
+        treatment_basis_id: 'erschoepft',
+        prescribed: 6,
+        used: 6,
+        planned: 6,
+        upcoming: 0,
+        remaining: 0,
+        covered: 6,
+        uncovered: 0,
+      }),
+      kontingent({
+        treatment_basis_id: 'verplant',
+        prescribed: 4,
+        used: 1,
+        planned: 4,
+        upcoming: 3,
+        remaining: 0,
+        covered: 4,
+        uncovered: 0,
+      }),
+    ]);
+    rendern(`/patienten/${PATIENT_ID}/termine-uebertragen`);
+
+    expect(
+      await screen.findByRole('option', {
+        name: 'Folgeverordnung vom 08.09.2026 – noch 6 planbar',
+      }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('option', { name: 'Erstverordnung vom 12.11.2025 – 2 ohne Deckung' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('option', { name: 'Erstverordnung vom 10.01.2025 – ausgeschöpft' }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('option', { name: 'Selbstzahler seit 01.03.2026 – vollständig verplant' }),
+    ).toBeEnabled();
+  });
+
+  it('sagt beim gesperrten Knopf auch, wenn kein Termin mehr gewaehlt ist', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+    for (const kaestchen of screen.getAllByRole('checkbox')) await user.click(kaestchen);
+
+    const knopf = screen.getByRole('button', { name: '0 Termine übertragen' });
+    expect(knopf).toBeDisabled();
+    expect(knopf).toHaveAccessibleDescription('Mindestens einen Termin wählen.');
+  });
+
+  it('fuehrt mit Namen und Link zurueck zu den Behandlungsgrundlagen', async () => {
+    rendern();
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+
+    // Derselbe Name wie der Reiter der Akte (VER-17), und „Abbrechen" ist ein
+    // Seitenwechsel, also ein Link (UIK-13).
+    expect(
+      screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+    ).toHaveAttribute('href', `/patienten/${PATIENT_ID}/verordnungen`);
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT_ID}/verordnungen`,
+    );
+    // Abschnitte direkt unter der Seitenüberschrift (VER-16), ohne Technikwort
+    // im Hinweis (VER-17, WRT-03).
+    expect(screen.getByRole('heading', { level: 2, name: 'Ziel' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Diese Termine' })).toBeInTheDocument();
+    expect(screen.getByText('Nur Grundlagen dieser Patient:in.')).toBeInTheDocument();
+    expect(screen.queryByText(/Server/)).not.toBeInTheDocument();
+  });
+
+  it('bietet nach einem Ladefehler einen neuen Versuch an (WRT-01)', async () => {
+    fetchPatientAppointments.mockRejectedValueOnce(new Error('interne Ursache'));
+    const user = userEvent.setup();
+    rendern();
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Termine oder Grundlagen konnten nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(kasten).not.toHaveTextContent(/interne Ursache|angemeldet|Akte/);
+
+    await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByText('Mittwoch, 19. Mai 2027')).toBeInTheDocument();
   });
 
   it('sagt es, wenn der Server ablehnt, und behält die Auswahl', async () => {

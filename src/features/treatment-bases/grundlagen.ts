@@ -98,7 +98,19 @@ interface VerordnungenDerAkte {
    * `offen` (BEF-042).
    */
   zahlenGeladen: boolean;
+  /** Die Zahlen werden noch geladen. */
+  zahlenLaden: boolean;
+  /** Eine der beiden Abfragen ist gescheitert - Grundlagen oder Zahlen. */
   isError: boolean;
+  /**
+   * Die beiden Fehler getrennt (VER-14): Fehlen die Grundlagen, gibt es
+   * nichts zu zeigen. Fehlen nur die Zahlen, stehen die Grundlagen trotzdem
+   * da - ohne Zahlen und ohne einen Zustand, der ohne sie nur geraten wäre.
+   */
+  grundlagenFehler: boolean;
+  zahlenFehler: boolean;
+  /** Lädt erneut, was gescheitert ist - für „Erneut versuchen". */
+  erneutLaden: () => Promise<unknown>;
   /** Die Rolle darf Verordnungen überhaupt nicht lesen. */
   verborgen: boolean;
 }
@@ -143,9 +155,36 @@ export function useVerordnungenDerAkte(patientId: string, user: CurrentUser): Ve
     // und ein Ladebalken über der ganzen Liste wäre der schlechtere Tausch.
     isPending: verordnungen.isPending,
     zahlenGeladen: kontingente.isSuccess,
+    zahlenLaden: kontingente.isPending,
     isError: verordnungen.isError || kontingente.isError,
+    grundlagenFehler: verordnungen.isError,
+    zahlenFehler: kontingente.isError,
+    erneutLaden: () =>
+      Promise.all([
+        verordnungen.isError ? verordnungen.refetch() : null,
+        kontingente.isError ? kontingente.refetch() : null,
+      ]),
     verborgen: !darfLesen,
   };
+}
+
+/**
+ * Was „Termine übertragen" der Akte beim Zurückkehren mitgibt (VER-13).
+ *
+ * Die Zahl kommt aus der Antwort des Servers, nicht aus der Auswahl: Sie sagt,
+ * was tatsächlich gewandert ist. Sie reist im Verlaufseintrag (`state`) und
+ * nicht in der Adresse - eine Erfolgsmeldung gehört nicht in einen teilbaren
+ * Link.
+ */
+export interface Uebertragungsergebnis {
+  termineUebertragen: number;
+}
+
+/** Liest die Zahl aus dem Verlaufseintrag; alles andere gilt als keine Meldung. */
+export function uebertrageneTermine(zustand: unknown): number | null {
+  if (typeof zustand !== 'object' || zustand === null) return null;
+  const anzahl = (zustand as Partial<Uebertragungsergebnis>).termineUebertragen;
+  return typeof anzahl === 'number' && Number.isInteger(anzahl) && anzahl > 0 ? anzahl : null;
 }
 
 /**

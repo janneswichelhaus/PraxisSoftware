@@ -4,16 +4,26 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { z } from 'zod';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { neueVorgangskennung } from '@/lib/abstecher';
 import { alsFormularfehler } from '@/lib/formularfehler';
+import { istInternerPfad, leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { useSession } from '@/features/auth/sessionContext';
+import {
+  EINGABETEXTE,
+  useTextverlustschutz,
+  type Verlustschutztexte,
+} from '@/features/documentation/Textverlustschutz';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { TreatmentBasisFormFields } from './TreatmentBasisFormFields';
 import { GRUNDLAGE_BESCHRIFTUNG, GRUNDLAGE_REIHENFOLGE, grundlageFeldId } from './grundlagenfelder';
+import { useDarfGrundlagenSchreiben } from './schreibrecht';
 import {
   bestandstexte,
   createTreatmentBasis,
@@ -37,6 +47,40 @@ import {
 } from './api';
 
 /**
+ * Der Grundlagenbereich der Akte und nicht ihre Übersicht: Dort steht, was
+ * gerade entstanden ist (AKTE-002). Ziel, wenn kein Rückweg mitkam.
+ */
+function grundlagenbereich(patientId: string): string {
+  return `/patienten/${patientId}/verordnungen`;
+}
+
+/** Derselbe Name wie der Reiter der Akte (VER-17). */
+const RUECKWEG_TEXT = 'Zurück zu den Behandlungsgrundlagen';
+
+/** Die Sätze des Schutzes vor Eingabeverlust (VER-03, ANN-046). */
+const VERLUSTTEXTE: Verlustschutztexte = {
+  ...EINGABETEXTE,
+  bezeichnung: 'Ungespeicherte Behandlungsgrundlage',
+};
+
+/** Die Felder des Formulars ohne die Heilmittelauswahl. */
+const FELDER = Object.keys(leereGrundlage) as TreatmentBasisFeld[];
+
+/** Dieselbe Auswahl in derselben Reihenfolge - vorhandene Positionen samt Kennung. */
+function gleicheAuswahl(
+  eine: readonly Heilmittelposition[],
+  andere: readonly Heilmittelposition[],
+): boolean {
+  return (
+    eine.length === andere.length &&
+    eine.every(
+      (position, stelle) =>
+        position.id === andere[stelle]?.id && position.remedy === andere[stelle]?.remedy,
+    )
+  );
+}
+
+/**
  * Formular für das Anlegen und Ändern einer Behandlungsgrundlage (VER-003,
  * GRD-001).
  *
@@ -57,9 +101,17 @@ function GrundlagenFormular({
   const { session } = useSession();
   const userId = session?.user.id;
 
-  // In den Grundlagenbereich der Akte und nicht auf ihre Übersicht: Dort
-  // steht, was gerade entstanden ist (AKTE-002).
-  const zurueck = `/patienten/${patientId}/verordnungen`;
+  /**
+   * Wohin es nach Speichern, Löschen und „Abbrechen" geht (VER-05).
+   *
+   * Bisher immer in den Grundlagenbereich der Akte - auch wenn das Formular
+   * aus der Terminplanung geöffnet war. Jetzt gilt derselbe Rückweg wie oben
+   * links: aus der Adresszeile, geprüft wie überall, sonst der
+   * Grundlagenbereich.
+   */
+  const [suche] = useSearchParams();
+  const standardZiel = grundlagenbereich(patientId);
+  const zurueck = leseRueckweg(suche, standardZiel);
   const verordnerRueckpfad = bestand
     ? `/patienten/${patientId}/verordnungen/${bestand.id}/bearbeiten`
     : `/patienten/${patientId}/verordnungen/neu`;
@@ -67,12 +119,11 @@ function GrundlagenFormular({
   // Die Vorgangskennung unterscheidet zwei Besuche derselben Seite (UX-009,
   // Restpunkt aus ANN-019). Sie kommt aus der Adresszeile, wenn wir gerade vom
   // Abstecher zurückkommen; für den nächsten Abstecher entsteht eine neue.
-  const [suche] = useSearchParams();
   const laufenderVorgang = suche.get('vorgang');
   const [naechsterVorgang] = useState(() => neueVorgangskennung());
 
   // Ein Entwurf existiert nur direkt nach der Rückkehr vom Anlegen einer
-  // Verordner:in (siehe entwurfSichern unten und PrescriberFormPage). Ohne
+  // Verordner:in (siehe verordnerAnlegen unten und PrescriberFormPage). Ohne
   // Kennung in der Adresszeile ist das ein unabhängiger neuer Besuch - dann
   // wird gar nicht erst gesucht. Lesen und Entfernen sind bewusst getrennt
   // (api.ts, entwurfAnsehen): ein Zustands-Initialisierer muss wiederholbar
@@ -86,9 +137,16 @@ function GrundlagenFormular({
     if (userId && laufenderVorgang) entwurfEntfernen(laufenderVorgang, userId);
   }, []);
 
+  // Der Stand auf dem Server - oder das leere Formular. Was davon abweicht,
+  // ist ungespeichert, auch ein Entwurf aus dem Abstecher: Er liegt nur im
+  // Arbeitsspeicher (VER-03).
+  const [ausgang] = useState(() => ({
+    werte: bestand ? treatmentBasisToFormValues(bestand) : leereGrundlage,
+    positionen: bestand ? itemsToFormValues(bestand) : [],
+  }));
+
   const [werte, setWerte] = useState<Record<TreatmentBasisFeld, string>>(() => {
-    const basis =
-      entwurf?.werte ?? (bestand ? treatmentBasisToFormValues(bestand) : leereGrundlage);
+    const basis = entwurf?.werte ?? ausgang.werte;
     // Die neu angelegte Verordner:in ist danach ausgewählt, ohne dass die
     // Person sie erneut suchen muss.
     return entwurf?.neuerVerordnerId
@@ -96,9 +154,23 @@ function GrundlagenFormular({
       : basis;
   });
   const [positionen, setPositionen] = useState<Heilmittelposition[]>(
-    () => entwurf?.positionen ?? (bestand ? itemsToFormValues(bestand) : []),
+    () => entwurf?.positionen ?? ausgang.positionen,
   );
   const [fehler, setFehler] = useState<Partial<Record<GrundlageFehlerfeld, string>>>({});
+
+  /**
+   * Schutz vor Eingabeverlust (VER-03, ZST-05, ANN-046).
+   *
+   * Wer ein Rezept abschreibt und in der Tableiste danebentippt, am Telefon
+   * vom Rand wischt oder neu lädt, verlor bisher alles. Ohne Entwurfszustand
+   * auf dem Server bietet die Rückfrage nur „Verwerfen und weitergehen" und
+   * „Hier bleiben"; der Abstecher zur Verordner-Anlage sichert die Eingaben
+   * selbst und fragt deshalb nicht.
+   */
+  const ungespeichert =
+    FELDER.some((feld) => werte[feld] !== ausgang.werte[feld]) ||
+    !gleicheAuswahl(positionen, ausgang.positionen);
+  const { freigeben, schutz } = useTextverlustschutz({ ungespeichert, texte: VERLUSTTEXTE });
 
   const verordner = useQuery({
     queryKey: ['prescribers'],
@@ -123,6 +195,9 @@ function GrundlagenFormular({
     queryFn: () => fetchPatient(patientId),
     retry: false,
   });
+  // Ohne Namen fehlt der Schutz gegen die Falschzuordnung - dann wird das
+  // gesagt und nicht gespeichert (VER-B02, §13).
+  const personFehlt = patient.isError || patient.data === null;
 
   async function akteAuffrischen() {
     await queryClient.invalidateQueries({ queryKey: ['patient-treatment-bases', patientId] });
@@ -142,6 +217,8 @@ function GrundlagenFormular({
     onSuccess: async (id) => {
       await akteAuffrischen();
       if (bestand) await queryClient.invalidateQueries({ queryKey: ['treatment-basis', id] });
+      // Gespeichert: Der eigene Weg zurück ist kein Verlust (ANN-046).
+      freigeben();
       void navigate(zurueck, { replace: true });
     },
   });
@@ -150,7 +227,10 @@ function GrundlagenFormular({
     mutationFn: () => deleteTreatmentBasis(bestand!.id),
     onSuccess: async () => {
       await akteAuffrischen();
-      void navigate(zurueck, { replace: true });
+      freigeben();
+      // Führte der Rückweg zu dieser Grundlage selbst, gibt es ihn nicht mehr.
+      const ziel = bestand && zurueck.includes(bestand.id) ? standardZiel : zurueck;
+      void navigate(ziel, { replace: true });
     },
   });
 
@@ -210,18 +290,32 @@ function GrundlagenFormular({
     }
   }
 
-  // Läuft beim Klick auf "Verordner:in anlegen" - vor dem eigentlichen
-  // Seitenwechsel, den der Link selbst auslöst. Die Grundlage wird dadurch
-  // nicht geschrieben, nur ihr Formularzustand für die Rückkehr gemerkt.
   /**
-   * Legt den Formularzustand unter der Kennung des nächsten Abstechers ab.
+   * Der Abstecher zur Verordner-Anlage (VER-003) - der Link selbst wechselt
+   * die Seite, das hier läuft davor.
    *
-   * Sie steht bereits im Rücksprungpfad des Links daneben - der Weg zurück
-   * findet damit genau diesen Entwurf und keinen älteren.
+   * Der Formularzustand liegt danach unter der Kennung des nächsten
+   * Abstechers; sie steht bereits im Rücksprungpfad des Links, und der Weg
+   * zurück findet genau diesen Entwurf und keinen älteren. Die Grundlage wird
+   * dadurch nicht geschrieben. Weil nichts verloren geht, gibt der Schutz
+   * diesen einen Seitenwechsel frei.
    */
-  function entwurfSichern() {
-    if (userId) entwurfAblegen(naechsterVorgang, userId, { werte, positionen });
+  function verordnerAnlegen() {
+    if (!userId) return;
+    entwurfAblegen(naechsterVorgang, userId, { werte, positionen });
+    freigeben();
   }
+
+  // Der Rückweg, mit dem dieses Formular geöffnet wurde, reist durch den
+  // Abstecher mit - sonst endete der Weg aus der Terminplanung nach dem
+  // Anlegen einer Verordner:in doch wieder in der Akte (VER-05). Wird der
+  // Pfad dafür zu lang, bleibt er beim Abstecher zurück, der Entwurf nicht.
+  const rueckkehr = `${verordnerRueckpfad}?vorgang=${naechsterVorgang}`;
+  const rueckkehrMitHerkunft = mitRueckweg(rueckkehr, zurueck === standardZiel ? null : zurueck);
+  const verordnerAnlegenZiel = mitRueckweg(
+    '/verordner/neu',
+    istInternerPfad(rueckkehrMitHerkunft) ? rueckkehrMitHerkunft : rueckkehr,
+  );
 
   function absenden(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -252,7 +346,7 @@ function GrundlagenFormular({
 
   return (
     <>
-      <Rueckweg standard={zurueck} beschriftung="Zurück zu den Behandlungsgrundlagen" />
+      <Rueckweg standard={standardZiel} beschriftung={RUECKWEG_TEXT} />
 
       <PageHeader
         title={bestand ? 'Grundlage bearbeiten' : 'Grundlage erfassen'}
@@ -264,17 +358,31 @@ function GrundlagenFormular({
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
+        {personFehlt ? (
+          <Statusmeldung ton="warnung" className="mb-6">
+            Für wen diese Grundlage ist, ließ sich nicht laden. Bitte aus der Akte neu öffnen.
+          </Statusmeldung>
+        ) : null}
+
+        {/* Ein Speicherfehler als Fenster über dem Formular (VER-02, ZST-10,
+            ANN-058): Wer am Seitenende auf „Speichern" tippt, sieht einen
+            Kasten am Formularanfang nicht. Der Satz sagt, was zu tun ist -
+            ohne Einzelheiten aus der Datenbank (§13). */}
         {speichern.isError ? (
-          <div className="mb-6">
-            <ErrorState
-              title="Die Behandlungsgrundlage konnte nicht gespeichert werden."
-              description="Bitte erneut versuchen. Sind Sie noch angemeldet und berechtigt?"
-            />
-          </div>
+          <Hinweisfenster
+            titel="Die Behandlungsgrundlage konnte nicht gespeichert werden."
+            onSchliessen={() => speichern.reset()}
+          >
+            Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.
+          </Hinweisfenster>
         ) : null}
         {verordner.isError ? (
           <div className="mb-6">
-            <ErrorState title="Die Verordner:innen konnten nicht geladen werden." />
+            <ErrorState
+              title="Die Verordner:innen konnten nicht geladen werden."
+              description="Bitte die Verbindung prüfen und erneut versuchen."
+              onErneut={() => void verordner.refetch()}
+            />
           </div>
         ) : null}
 
@@ -296,29 +404,34 @@ function GrundlagenFormular({
           onHeilmittelWechsel={heilmittelWechsel}
           bestandstexte={bestand ? bestandstexte(bestand) : []}
           verordnerinnen={verordner.data ?? []}
-          verordnerAnlegenZiel={`/verordner/neu?zurueck=${encodeURIComponent(
-            `${verordnerRueckpfad}?vorgang=${naechsterVorgang}`,
-          )}`}
-          onVerordnerAnlegenKlick={entwurfSichern}
+          verordnerAnlegenZiel={verordnerAnlegenZiel}
+          onVerordnerAnlegenKlick={verordnerAnlegen}
         />
 
+        {/* Rückfrage und Hinweise des Schutzes, dort, wo gearbeitet wird. */}
+        {schutz}
+
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button type="submit" disabled={speichern.isPending}>
+          <Button type="submit" disabled={speichern.isPending || !patient.data}>
             {speichern.isPending
               ? 'Wird gespeichert …'
               : bestand
                 ? 'Änderungen speichern'
                 : 'Grundlage speichern'}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
+          {/* Ein Seitenwechsel und deshalb ein Link (UIK-13) - der Schutz
+              fragt bei ungespeicherten Eingaben wie bei jedem anderen Weg. */}
+          <ButtonLink to={zurueck} variant="secondary">
             Abbrechen
-          </Button>
+          </ButtonLink>
         </div>
       </form>
 
       {/* Löschen ist der Weg für eine Grundlage, die in der falschen Akte
           gelandet ist (Art. 16 DSGVO). Bewusst mit Rückfrage und außerhalb des
-          Formulars, damit kein versehentliches Absenden sie auslöst. */}
+          Formulars, damit kein versehentliches Absenden sie auslöst. Scheitert
+          es, steht der Grund aus api.ts da - etwa ein Therapiebericht an der
+          Grundlage, samt Ausweg (ZST-13, VER-15). */}
       {bestand ? (
         <div className="border-line mt-10 flex border-t pt-6">
           <Rueckfrage
@@ -326,14 +439,13 @@ function GrundlagenFormular({
             bezeichnung="Grundlage endgültig löschen"
             bestaetigen="Ja, Grundlage löschen"
             bestaetigenLaeuft="Wird gelöscht …"
-            abbrechen="Nicht löschen"
-            fehler={loeschen.isError ? 'Die Grundlage konnte nicht gelöscht werden.' : undefined}
+            fehler={loeschen.error?.message}
             laeuft={loeschen.isPending}
             onBestaetigen={() => loeschen.mutateAsync()}
           >
-            Die Grundlage wird endgültig entfernt, samt ihren Positionen. Der Vorgang wird
+            Die Grundlage wird endgültig entfernt, samt ihren Heilmitteln. Der Vorgang wird
             protokolliert. Für eine falsch zugeordnete Grundlage ist das der richtige Weg; für eine
-            abgelaufene nicht — sie gehört in die Akte.
+            abgelaufene nicht – sie gehört in die Akte.
           </Rueckfrage>
         </div>
       ) : null}
@@ -345,9 +457,33 @@ function GrundlagenFormular({
   );
 }
 
+/**
+ * Statt des Formulars, wenn die Rolle keine Grundlagen schreibt (VER-04).
+ *
+ * Das Büro wird aus der Terminplanung hierher geführt, darf aber nicht
+ * speichern (ANN-011). Es erfährt das jetzt, bevor es Diagnose und Heilmittel
+ * abgeschrieben hat - mit dem Weg zurück. Verbindlich bleibt die Datenbank.
+ */
+function OhneSchreibrecht({ patientId, titel }: { patientId: string; titel: string }) {
+  return (
+    <>
+      <Rueckweg standard={grundlagenbereich(patientId)} beschriftung={RUECKWEG_TEXT} />
+      <PageHeader title={titel} />
+      <ErrorState
+        title="Nicht freigegeben"
+        description="Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung."
+      />
+    </>
+  );
+}
+
 export function NewTreatmentBasisPage() {
   const { patientId } = useParams<{ patientId: string }>();
+  const darfSchreiben = useDarfGrundlagenSchreiben();
+
   if (!patientId) return null;
+  if (darfSchreiben === false)
+    return <OhneSchreibrecht patientId={patientId} titel="Grundlage erfassen" />;
   return <GrundlagenFormular patientId={patientId} bestand={null} />;
 }
 
@@ -356,29 +492,42 @@ export function EditTreatmentBasisPage() {
     patientId: string;
     grundlageId: string;
   }>();
+  const darfSchreiben = useDarfGrundlagenSchreiben();
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['treatment-basis', grundlageId],
     queryFn: () => fetchTreatmentBasis(grundlageId!),
-    enabled: Boolean(grundlageId),
+    // Ohne Schreibrecht wird nicht geladen: Der Aufruf legt klinischen Inhalt
+    // offen und wird protokolliert (ADR-010) - für ein Formular, das diese
+    // Person nicht absenden darf.
+    enabled: Boolean(grundlageId) && darfSchreiben !== false,
     retry: false,
   });
 
   if (!patientId) return null;
+  if (darfSchreiben === false) {
+    return <OhneSchreibrecht patientId={patientId} titel="Grundlage bearbeiten" />;
+  }
+  if (isPending) return <LoadingState label="Behandlungsgrundlage wird geladen …" />;
+  if (data) return <GrundlagenFormular patientId={patientId} bestand={data} />;
 
+  // Ohne Formular bleibt der Weg zurück - und ein Satz, was zu tun ist (VER-15).
   return (
     <>
-      {isPending ? <LoadingState label="Behandlungsgrundlage wird geladen …" /> : null}
+      <Rueckweg standard={grundlagenbereich(patientId)} beschriftung={RUECKWEG_TEXT} />
+      <PageHeader title="Grundlage bearbeiten" />
       {isError ? (
-        <ErrorState title="Die Behandlungsgrundlage konnte nicht geladen werden." />
-      ) : null}
-      {data === null ? (
+        <ErrorState
+          title="Die Behandlungsgrundlage konnte nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => void refetch()}
+        />
+      ) : (
         <ErrorState
           title="Nicht gefunden"
-          description="Dieser Datensatz existiert nicht oder ist für Ihren Zugang nicht freigegeben."
+          description="Diese Grundlage gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben. Bitte aus den Behandlungsgrundlagen der Akte neu öffnen."
         />
-      ) : null}
-      {data ? <GrundlagenFormular patientId={patientId} bestand={data} /> : null}
+      )}
     </>
   );
 }

@@ -1,7 +1,8 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useId, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -21,7 +22,11 @@ import { fetchPatient, fullName } from '@/features/patients/api';
 import { formatDate } from '@/lib/datum';
 import type { CurrentUser } from '@/features/session/types';
 import { grundlageBezeichnung, transferAppointmentsToTreatmentBasis } from './api';
-import { useVerordnungenDerAkte, type VerordnungMitZahlen } from './grundlagen';
+import {
+  useVerordnungenDerAkte,
+  type Uebertragungsergebnis,
+  type VerordnungMitZahlen,
+} from './grundlagen';
 
 /**
  * Termine auf eine andere Behandlungsgrundlage übertragen (CAL-022).
@@ -47,9 +52,35 @@ import { useVerordnungenDerAkte, type VerordnungMitZahlen } from './grundlagen';
 /** Wie viele künftige Termine geprüft werden. Obergrenze der Datenbank: 50. */
 const HOECHSTZAHL = 50;
 
+/**
+ * Was eine Grundlage als Ziel noch trägt (VER-13).
+ *
+ * Wer von der überplanten Grundlage kommt, muss sehen, welche noch Platz hat -
+ * sonst wandert die Lücke nur weiter. Ohne Zahlen steht kein Zustand da; er
+ * wäre geraten.
+ */
+function zielzustand({ kontingent, zustand }: VerordnungMitZahlen): string | null {
+  if (!kontingent) return null;
+  if (kontingent.uncovered > 0) return `${kontingent.uncovered} ohne Deckung`;
+  if (zustand === 'ausgeschoepft') return 'ausgeschöpft';
+  if (zustand === 'verplant') return 'vollständig verplant';
+  return `noch ${kontingent.remaining} planbar`;
+}
+
 function zielBeschriftung(eintrag: VerordnungMitZahlen): string {
   const { bauart, praeposition } = grundlageBezeichnung(eintrag.verordnung);
-  return `${bauart} ${praeposition} ${formatDate(eintrag.verordnung.issued_on)}`;
+  const name = `${bauart} ${praeposition} ${formatDate(eintrag.verordnung.issued_on)}`;
+  const zustand = zielzustand(eintrag);
+  return zustand ? `${name} – ${zustand}` : name;
+}
+
+/**
+ * Die abgebende Grundlage (VER-13): Ihre eigenen Termine sind ungedeckt, sie
+ * hat keinen Platz mehr. Als Ziel wäre sie ein Tausch der Lücke gegen sich
+ * selbst - sie steht deshalb in der Auswahl, ist aber nicht wählbar.
+ */
+function gibtAb(eintrag: VerordnungMitZahlen): boolean {
+  return (eintrag.kontingent?.uncovered ?? 0) > 0;
 }
 
 function Terminzeile({
@@ -88,6 +119,7 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
   const [suche] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const sperrgrundId = useId();
 
   const akte = `/patienten/${patientId}/verordnungen`;
 
@@ -98,7 +130,10 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
-  const { eintraege, isPending, isError } = useVerordnungenDerAkte(patientId ?? '', user);
+  const { eintraege, isPending, isError, erneutLaden } = useVerordnungenDerAkte(
+    patientId ?? '',
+    user,
+  );
 
   // Nur die künftigen Termine: Ein vergangener Termin ist behandelt, und seine
   // Grundlage ist Teil dessen, was passiert ist. Geblättert wird hier nicht -
@@ -140,12 +175,15 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
 
   const uebertragen = useMutation({
     mutationFn: (ids: readonly string[]) => transferAppointmentsToTreatmentBasis(ziel, ids),
-    onSuccess: async () => {
+    onSuccess: async (anzahl) => {
       await queryClient.invalidateQueries({ queryKey: ['patient-appointments', patientId] });
       await queryClient.invalidateQueries({
         queryKey: ['patient-treatment-basis-slots', patientId],
       });
-      void navigate(akte);
+      // Die Akte sagt danach, wie viele gewandert sind - die Zahl aus der
+      // Antwort des Servers, nicht aus der Auswahl (VER-13).
+      const ergebnis: Uebertragungsergebnis = { termineUebertragen: anzahl };
+      void navigate(akte, { state: ergebnis });
     },
   });
 
@@ -164,41 +202,62 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
     uebertragen.mutate(gewaehlt.map((termin) => termin.id));
   }
 
-  if (!patientId) return <ErrorState title="Diese Akte gibt es nicht." />;
+  if (!patientId) {
+    return (
+      <ErrorState
+        title="Nicht gefunden"
+        description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+      />
+    );
+  }
+
+  // Ein gesperrter Knopf sagt, warum (VER-13).
+  const sperrgrund = !ziel
+    ? 'Zuerst die Grundlage wählen.'
+    : gewaehlt.length === 0
+      ? 'Mindestens einen Termin wählen.'
+      : null;
 
   return (
     <>
-      <Rueckweg standard={akte} beschriftung="Zurück zur Akte" />
+      <Rueckweg standard={akte} beschriftung="Zurück zu den Behandlungsgrundlagen" />
 
       <PageHeader
         title="Termine übertragen"
         description={
           patient.data
-            ? `Für ${fullName(patient.data)}. Alles oder nichts — entweder wandern alle gewählten Termine, oder keiner.`
-            : 'Alles oder nichts — entweder wandern alle gewählten Termine, oder keiner.'
+            ? `Für ${fullName(patient.data)}. Alles oder nichts – entweder wandern alle gewählten Termine, oder keiner.`
+            : 'Alles oder nichts – entweder wandern alle gewählten Termine, oder keiner.'
         }
       />
 
       {isPending || termine.isPending ? <LoadingState label="Wird geladen …" /> : null}
       {isError || termine.isError ? (
         <ErrorState
-          title="Die Akte konnte nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          title="Termine oder Grundlagen konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => Promise.all([erneutLaden(), termine.isError ? termine.refetch() : null])}
         />
       ) : null}
 
       {!isPending && !termine.isPending && !isError && !termine.isError ? (
-        <form onSubmit={absenden} noValidate className="max-w-2xl">
-          <Section titel="Ziel" ebene={3}>
+        <form onSubmit={absenden} noValidate className="max-w-xl">
+          {/* Zwei Abschnitte direkt unter der Seitenüberschrift: Ebene 2
+              (VER-16). */}
+          <Section titel="Ziel">
             <Select
               label="Auf welche Behandlungsgrundlage? *"
               value={ziel}
               onChange={(e) => setZiel(e.target.value)}
-              hint="Nur Grundlagen dieser Patient:in. Der Server prüft das noch einmal."
+              hint="Nur Grundlagen dieser Patient:in."
             >
               <option value="">Bitte wählen …</option>
               {eintraege.map((eintrag) => (
-                <option key={eintrag.verordnung.id} value={eintrag.verordnung.id}>
+                <option
+                  key={eintrag.verordnung.id}
+                  value={eintrag.verordnung.id}
+                  disabled={gibtAb(eintrag)}
+                >
                   {zielBeschriftung(eintrag)}
                 </option>
               ))}
@@ -208,7 +267,6 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
           <Section
             titel="Diese Termine"
             hinweis="Vorgeschlagen sind die ungedeckten künftigen Termine. Einzeln abwählbar."
-            ebene={3}
           >
             {angebot.length === 0 ? (
               <EmptyState
@@ -239,25 +297,38 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
           {uebertragen.isError ? (
             <Statusmeldung ton="fehler" className="mt-4">
               {uebertragen.error.message} Ein abgesagter oder bereits abgerechneter Termin wird
-              nicht übertragen — dann bleibt alles, wie es war.
+              nicht übertragen – dann bleibt alles, wie es war.
             </Statusmeldung>
           ) : null}
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button
-              type="submit"
-              disabled={!ziel || gewaehlt.length === 0 || uebertragen.isPending}
-            >
-              {uebertragen.isPending
-                ? 'Wird übertragen …'
-                : gewaehlt.length === 1
-                  ? '1 Termin übertragen'
-                  : `${gewaehlt.length} Termine übertragen`}
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => void navigate(akte)}>
-              Abbrechen
-            </Button>
-          </div>
+          {/* Ohne Angebot kein Knopf über null Termine (VER-13): Der
+              Leerzustand sagt es, der Rückweg steht oben. */}
+          {angebot.length > 0 ? (
+            <>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button
+                  type="submit"
+                  disabled={sperrgrund !== null || uebertragen.isPending}
+                  aria-describedby={sperrgrund ? sperrgrundId : undefined}
+                >
+                  {uebertragen.isPending
+                    ? 'Wird übertragen …'
+                    : gewaehlt.length === 1
+                      ? '1 Termin übertragen'
+                      : `${gewaehlt.length} Termine übertragen`}
+                </Button>
+                {/* Ein Seitenwechsel und deshalb ein Link (UIK-13). */}
+                <ButtonLink to={akte} variant="secondary">
+                  Abbrechen
+                </ButtonLink>
+              </div>
+              {sperrgrund ? (
+                <p id={sperrgrundId} className="text-ink-muted mt-2 text-sm">
+                  {sperrgrund}
+                </p>
+              ) : null}
+            </>
+          ) : null}
         </form>
       ) : null}
     </>

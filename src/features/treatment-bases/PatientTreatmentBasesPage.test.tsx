@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as TreatmentBasesApi from './api';
 import type * as BerichtApi from '@/features/therapy-reports/api';
+import type * as DateienApi from '@/features/files/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const fetchPatientTreatmentBases = vi.fn();
@@ -32,6 +35,12 @@ vi.mock('@/features/therapy-reports/api', async (importOriginal) => {
       fetchBerichteDerAkte(id) as Promise<BerichtApi.Berichtszeile[]>,
   };
 });
+
+// Der Scan an jeder Verordnung liest die Dateien der Akte - hier ohne Server.
+vi.mock('@/features/files/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof DateienApi>()),
+  fetchPatientFiles: () => Promise.resolve([]),
+}));
 
 const { Verordnungsbereich } = await import('./PatientTreatmentBasesPage');
 
@@ -255,7 +264,7 @@ describe('Verordnungsbereich der Akte', () => {
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-      expect(await screen.findByText('8 · 1 genutzt')).toBeInTheDocument();
+      expect(await screen.findByText('8, davon 1 genutzt')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Terminserie anlegen' })).toHaveAttribute(
         'href',
         `/patienten/${patient.id}/verordnungen/sz1/serie`,
@@ -302,9 +311,12 @@ describe('Verordnungsbereich der Akte', () => {
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-      expect(await screen.findByText('10 · 7 genutzt')).toBeInTheDocument();
-      expect(screen.getByText('8 zugeordnet · 2 bevorstehend')).toBeInTheDocument();
-      expect(screen.getByText('2 Behandlungen')).toBeInTheDocument();
+      // Ein Wort je Zahl - „verplant" wie der Zustand - und durchgehend die
+      // Einheit „Termine" (VER-08).
+      expect(await screen.findByText('10, davon 7 genutzt')).toBeInTheDocument();
+      expect(screen.getByText('8 verplant · 2 bevorstehend')).toBeInTheDocument();
+      expect(screen.getByText('2 Termine')).toBeInTheDocument();
+      expect(screen.queryByText(/Behandlungen|zugeordnet/)).not.toBeInTheDocument();
       expect(screen.getByText('Mögliche Termine')).toBeInTheDocument();
       expect(screen.getByText('Termine')).toBeInTheDocument();
       expect(screen.getByText('Noch planbar')).toBeInTheDocument();
@@ -322,7 +334,7 @@ describe('Verordnungsbereich der Akte', () => {
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
       expect(await screen.findByText('6')).toBeInTheDocument();
-      expect(screen.queryByText('6 · 0 genutzt')).not.toBeInTheDocument();
+      expect(screen.queryByText('6, davon 0 genutzt')).not.toBeInTheDocument();
     });
 
     it('fuehrt von der Verordnung zu ihren Terminen', async () => {
@@ -330,9 +342,11 @@ describe('Verordnungsbereich der Akte', () => {
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ planned: 3 })]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-      expect(
-        await screen.findByRole('link', { name: 'Termine dieser Verordnung' }),
-      ).toHaveAttribute('href', `/patienten/${patient.id}/termine?verordnung=v1`);
+      // Bauartneutral: am Selbstzahler gibt es keine Verordnung (VER-08).
+      expect(await screen.findByRole('link', { name: 'Termine dieser Grundlage' })).toHaveAttribute(
+        'href',
+        `/patienten/${patient.id}/termine?verordnung=v1`,
+      );
     });
 
     it('nennt eine Verordnung ohne Termin als solche, ohne Link', async () => {
@@ -342,9 +356,9 @@ describe('Verordnungsbereich der Akte', () => {
       ]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-      expect(await screen.findByText('Noch kein Termin zugeordnet')).toBeInTheDocument();
+      expect(await screen.findByText('Noch kein Termin verplant')).toBeInTheDocument();
       expect(
-        screen.queryByRole('link', { name: 'Termine dieser Verordnung' }),
+        screen.queryByRole('link', { name: 'Termine dieser Grundlage' }),
       ).not.toBeInTheDocument();
     });
   });
@@ -511,7 +525,7 @@ describe('Verordnungsbereich der Akte', () => {
         await screen.findByRole('heading', { name: 'Ausgeschöpfte Behandlungsgrundlagen' }),
       ).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: '2025' })).toBeInTheDocument();
-      expect(screen.getByText(/6 von 6 Terminen genutzt · 6 geplant/)).toBeInTheDocument();
+      expect(screen.getByText(/6 von 6 Terminen genutzt · 6 verplant/)).toBeInTheDocument();
     });
 
     it('haelt ihre Einzelheiten bis zum Aufklappen zurueck', async () => {
@@ -556,11 +570,213 @@ describe('Verordnungsbereich der Akte', () => {
       await screen.findByText('Die Behandlungsgrundlagen konnten nicht geladen werden.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/interne Ursache/)).not.toBeInTheDocument();
+    // Keine Ratefrage nach der Anmeldung (WRT-01).
+    expect(screen.queryByText(/angemeldet/)).not.toBeInTheDocument();
   });
 
   it('sagt bei leerer Akte, wo die erste Verordnung entsteht', async () => {
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
     expect(await screen.findByText('Keine laufende Behandlungsgrundlage')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Die nächste entsteht über „Grundlage erfassen“ – als Verordnung oder als Selbstzahler.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  // WRT-12: Rollen mit den Namen, die die Anwendung sonst zeigt - keine
+  // „therapeutischen Rollen", die es nirgends gibt.
+  it('sagt dem Buero, wer Grundlagen erfasst', async () => {
+    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+    expect(
+      await screen.findByText(
+        'Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung.',
+      ),
+    ).toBeInTheDocument();
+  });
+});
+
+// -----------------------------------------------------------------------------
+// UXR-007: Zustände, Sprung und Rückmeldung im Grundlagenbereich der Akte.
+// -----------------------------------------------------------------------------
+describe('Grundlagenbereich der Akte (UXR-007)', () => {
+  const ausgeschoepft = verordnung({
+    id: 'v0',
+    issued_on: '2025-11-12',
+    treatment_basis_kind: 'first',
+    items: [position({ prescribed_quantity: 6, used_quantity: 6, remaining_quantity: 0 })],
+  });
+  const zahlenAusgeschoepft = kontingent({
+    treatment_basis_id: 'v0',
+    prescribed: 6,
+    used: 6,
+    planned: 6,
+    upcoming: 0,
+    remaining: 0,
+  });
+
+  beforeEach(() => {
+    fetchPatientTreatmentBases.mockReset();
+    fetchPatientTreatmentBasesClinical.mockReset();
+    fetchPatientTreatmentBasisSlots.mockReset();
+    fetchPatientTreatmentBases.mockResolvedValue([]);
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung(), ausgeschoepft]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent(), zahlenAusgeschoepft]);
+    fetchBerichteDerAkte.mockReset();
+    fetchBerichteDerAkte.mockResolvedValue([]);
+  });
+
+  /** Mit einem Verlaufseintrag samt Zustand, wie ihn `navigate(…, { state })` hinterlässt. */
+  function mitVerlaufseintrag(eintrag: { pathname: string; state?: unknown }) {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
+    const router = createMemoryRouter(
+      [
+        {
+          path: '*',
+          element: <Verordnungsbereich patient={patient} user={testUser(['therapist'])} />,
+        },
+      ],
+      { initialEntries: [eintrag] },
+    );
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+  }
+
+  describe('Terminzahlen getrennt von den Grundlagen (VER-14)', () => {
+    it('zeigt die Grundlagen, wenn nur die Zahlen fehlen - ohne geratenen Zustand', async () => {
+      fetchPatientTreatmentBasisSlots.mockRejectedValue(new Error('interne Ursache'));
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByText(/Die Terminzahlen konnten nicht geladen werden\./),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Folgeverordnung vom 18.06.2026')).toBeInTheDocument();
+      expect(
+        screen.queryByText('Die Behandlungsgrundlagen konnten nicht geladen werden.'),
+      ).not.toBeInTheDocument();
+      // Ohne Zahlen ist „Offen" nur geraten - das Abzeichen fehlt deshalb.
+      expect(screen.queryByText('Offen')).not.toBeInTheDocument();
+      // Die Aktionen bleiben (grundlagen.ts): Nichts verschwindet, weil eine
+      // Nebenabfrage scheitert.
+      expect(screen.getAllByRole('link', { name: 'Terminserie anlegen' })).not.toHaveLength(0);
+      expect(screen.queryByText(/interne Ursache/)).not.toBeInTheDocument();
+    });
+
+    it('sagt, dass die Zahlen noch geladen werden', async () => {
+      fetchPatientTreatmentBasisSlots.mockReturnValue(new Promise(() => {}));
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(await screen.findAllByText('Terminzahlen werden geladen …')).not.toHaveLength(0);
+      expect(screen.queryByText('Offen')).not.toBeInTheDocument();
+    });
+
+    it('bietet nach einem Ladefehler der Grundlagen einen neuen Versuch an (WRT-01)', async () => {
+      fetchPatientTreatmentBasesClinical.mockRejectedValueOnce(new Error('interne Ursache'));
+      const user = userEvent.setup();
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      const kasten = await screen.findByRole('alert');
+      expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+      await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
+
+      expect(await screen.findByText('Folgeverordnung vom 18.06.2026')).toBeInTheDocument();
+    });
+  });
+
+  describe('Sprung aus der Terminliste (VER-06)', () => {
+    it('markiert eine angesprungene laufende Grundlage und setzt den Fokus dorthin', async () => {
+      const rollen = vi.spyOn(Element.prototype, 'scrollIntoView');
+      renderWithProviders(
+        <Verordnungsbereich patient={patient} user={testUser(['therapist'])} />,
+        `/patienten/${patient.id}/verordnungen#verordnung-v1`,
+      );
+
+      const karte = (await screen.findByText('Folgeverordnung vom 18.06.2026')).closest('li')!;
+      await vi.waitFor(() => expect(karte).toHaveFocus());
+      expect(karte).toHaveAttribute('data-angesprungen');
+      expect(rollen).toHaveBeenCalledWith({ block: 'start' });
+      rollen.mockRestore();
+    });
+
+    it('klappt eine angesprungene ausgeschoepfte Grundlage auf', async () => {
+      renderWithProviders(
+        <Verordnungsbereich patient={patient} user={testUser(['therapist'])} />,
+        `/patienten/${patient.id}/verordnungen#verordnung-v0`,
+      );
+
+      const zeile = await screen.findByText('Erstverordnung vom 12.11.2025');
+      await vi.waitFor(() => expect(zeile.closest('details')).toHaveAttribute('open'));
+      expect(zeile.closest('li')).toHaveFocus();
+    });
+
+    it('markiert ohne Sprungmarke keine Karte', async () => {
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      const karte = (await screen.findByText('Folgeverordnung vom 18.06.2026')).closest('li')!;
+      expect(karte).not.toHaveAttribute('data-angesprungen');
+      expect(karte).not.toHaveAttribute('tabindex');
+    });
+  });
+
+  describe('Rückmeldung aus „Termine übertragen" (VER-13)', () => {
+    it('sagt, wie viele Termine gewandert sind', async () => {
+      mitVerlaufseintrag({
+        pathname: `/patienten/${patient.id}/verordnungen`,
+        state: { termineUebertragen: 3 },
+      });
+
+      expect(await screen.findByText(/3 Termine übertragen\./)).toBeInTheDocument();
+    });
+
+    it('schweigt ohne Rueckmeldung und bei unbrauchbarem Zustand', async () => {
+      mitVerlaufseintrag({
+        pathname: `/patienten/${patient.id}/verordnungen`,
+        state: { termineUebertragen: 'drei' },
+      });
+
+      await screen.findByText('Folgeverordnung vom 18.06.2026');
+      expect(screen.queryByText(/übertragen\./)).not.toBeInTheDocument();
+    });
+  });
+
+  it('laedt das Buero nicht zu einem Scan ein, den es nicht hinzufuegen darf (VER-04)', async () => {
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+    expect(await screen.findByText('Noch kein Scan.')).toBeInTheDocument();
+    expect(screen.queryByText(/Ein Foto des Rezepts/)).not.toBeInTheDocument();
+  });
+
+  it('bittet schreibende Rollen weiter um das Foto des Rezepts', async () => {
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+    expect(await screen.findByText(/Ein Foto des Rezepts hält fest/)).toBeInTheDocument();
+  });
+
+  it('zeigt am Kopf einer ausgeschoepften Grundlage ein Aufklappzeichen (RSP-07)', async () => {
+    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+    const kopf = (await screen.findByText('Erstverordnung vom 12.11.2025')).closest('summary')!;
+    expect(kopf.querySelector('[data-aufklappzeichen]')).not.toBeNull();
+    expect(within(kopf).queryByText('Details')).not.toBeInTheDocument();
+  });
+
+  it('stellt Zahlen und Angaben erst ab 1280 px nebeneinander (VER-20)', async () => {
+    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+    const karte = (await screen.findByText('Folgeverordnung vom 18.06.2026')).closest('li')!;
+    const raster = karte.querySelector('.grid');
+    expect(raster).toHaveClass('xl:grid-cols-2');
+    expect(raster).not.toHaveClass('lg:grid-cols-2');
   });
 });
