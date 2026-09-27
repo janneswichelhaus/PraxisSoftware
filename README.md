@@ -57,3 +57,9 @@ docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)
 ## Schnellstart
 
 Einrichtung, Testkonten und Befehle: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+
+## Lizenz
+
+Proprietär, alle Rechte vorbehalten. Der Quellcode ist öffentlich einsehbar,
+aber **nicht** zur Nutzung, Vervielfältigung oder Weitergabe freigegeben;
+Einzelheiten in [`LICENSE`](LICENSE).

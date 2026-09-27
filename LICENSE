@@ -1,0 +1,46 @@
+Copyright (c) 2026 Jannes Wichelhaus. Alle Rechte vorbehalten.
+
+Diese Software einschließlich Quellcode, Datenbankschema, Dokumentation,
+Gestaltung sowie Wortmarke und App-Symbolen (zusammen „die Software“) ist
+urheberrechtlich geschütztes Eigentum des Rechteinhabers.
+
+Es wird KEINE Lizenz erteilt – weder ausdrücklich noch stillschweigend.
+Ohne vorherige schriftliche Zustimmung des Rechteinhabers ist es untersagt,
+die Software ganz oder in Teilen
+
+  1. zu vervielfältigen, herunterzuladen oder zu speichern, soweit dies nicht
+     allein zur Ansicht im Browser auf der Plattform GitHub erforderlich ist;
+  2. zu verändern, zu übersetzen, zu bearbeiten oder abgeleitete Werke daraus
+     zu erstellen;
+  3. zu verbreiten, zu veröffentlichen, zu vermieten, zu verkaufen oder
+     Dritten in sonstiger Weise zugänglich zu machen;
+  4. zu nutzen oder betreiben zu lassen, auch als gehosteten Dienst (SaaS);
+  5. zum Training, zur Evaluation oder zur Verbesserung von Systemen
+     künstlicher Intelligenz zu verwenden (Nutzungsvorbehalt nach § 44b
+     Abs. 3 UrhG).
+
+Die Sichtbarkeit des Quellcodes in einem öffentlichen Repository ist keine
+Lizenz. Unberührt bleiben nur die Rechte, die das Gesetz zwingend gewährt,
+sowie die Rechte, die die Nutzungsbedingungen von GitHub den Nutzern der
+Plattform einräumen (Ansehen und Forken innerhalb von GitHub).
+
+Die Software wird ohne jede Gewährleistung bereitgestellt. Sie befindet sich
+in einem frühen Entwicklungsstand und ist nicht für den Produktivbetrieb und
+nicht für echte Patientendaten freigegeben.
+
+Es gilt das Recht der Bundesrepublik Deutschland. Anfragen zu Nutzungsrechten:
+über das GitHub-Profil des Rechteinhabers.
+
+-------------------------------------------------------------------------------
+
+English summary (the German text above is authoritative):
+
+Copyright (c) 2026 Jannes Wichelhaus. All rights reserved.
+
+This software is proprietary. No licence is granted, express or implied. You
+may not copy, modify, distribute, sublicense, sell, host or otherwise use it,
+in whole or in part, or use it for training AI systems, without prior written
+permission from the copyright holder. Public visibility of this repository
+does not grant any licence beyond the rights GitHub's Terms of Service give
+to its users (viewing and forking on GitHub). Provided "as is", without
+warranty of any kind.

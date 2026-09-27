@@ -78,7 +78,7 @@ kein Umfärben.
 
 ## Befehle
 
-pnpm, nicht npm/yarn. Erklärungen in `docs/DEVELOPMENT.md`.
+pnpm, nicht npm/yarn. Erklärungen und Benennungsregel (neuer Code englisch): `docs/DEVELOPMENT.md`.
 
 ```bash
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check
