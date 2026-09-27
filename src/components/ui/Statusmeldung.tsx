@@ -1,6 +1,24 @@
 import type { ReactNode } from 'react';
 
-type Meldungston = 'neutral' | 'warnung' | 'fehler';
+type Meldungston = 'neutral' | 'erfolg' | 'warnung' | 'fehler';
+
+const farben: Record<Meldungston, string> = {
+  neutral: 'text-ink-muted',
+  erfolg: 'text-positiv',
+  warnung: 'text-warnung',
+  fehler: 'text-danger',
+};
+
+/**
+ * Zeichen der Zustände, dieselben wie im `Badge` (DS-001): Farbe trägt nie
+ * allein, jeder Zustand steht zusätzlich als Zeichen da. `neutral` ist kein
+ * Zustand und trägt keins.
+ */
+const zeichen: Partial<Record<Meldungston, string>> = {
+  erfolg: '✓',
+  warnung: '!',
+  fehler: '×',
+};
 
 /**
  * Kurze Meldung im Fluss der Seite (UI-000).
@@ -9,14 +27,19 @@ type Meldungston = 'neutral' | 'warnung' | 'fehler';
  * die Fehlerabsätze neben Schaltflächen trugen bisher gar keine Rolle. Wer
  * nicht auf den Bildschirm sieht, erfuhr also nicht, dass ein Speichern
  * fehlgeschlagen ist. `fehler` bekommt deshalb `role="alert"` (unterbricht),
- * `neutral` und `warnung` bekommen `role="status"` (wird bei nächster
- * Gelegenheit gelesen).
+ * `neutral`, `erfolg` und `warnung` bekommen `role="status"` (wird bei
+ * nächster Gelegenheit gelesen).
  *
  * `warnung` ist seit UX-011 dazugekommen und ausdrücklich **kein** milderer
  * Fehler: Es ist die Meldung, die sichtbar sein muss, aber nichts unterbricht
  * - „der angezeigte Stand kann veraltet sein" etwa. Sie mit `fehler` zu
  * setzen hieße, eine Vorlesesoftware mitten im Satz zu unterbrechen für
  * etwas, das niemanden zum Handeln zwingt.
+ *
+ * `erfolg` (UIK-21) ist die Bestätigung eines Vorgangs - „Gespeichert.",
+ * „Termin angelegt." -, die bis UXR-001 als `neutral` in Grau stand, genau
+ * wie „3 von 12 Terminen". Erfolg, Warnung und Fehler tragen vorn ihr Zeichen
+ * ✓ ! ×, für Vorlesesoftware ausgeblendet: Der Satz sagt es schon.
  *
  * Für ganze Zustände einer Seite — laden, leer, Ladefehler — bleibt
  * `Feedback.tsx` zuständig; diese Meldung ist die kleine Zeile daneben.
@@ -30,10 +53,17 @@ export function Statusmeldung({
   children: ReactNode;
   className?: string;
 }) {
-  const farbe =
-    ton === 'fehler' ? 'text-danger' : ton === 'warnung' ? 'text-warnung' : 'text-ink-muted';
+  const bild = zeichen[ton];
   return (
-    <p role={ton === 'fehler' ? 'alert' : 'status'} className={`${farbe} text-sm ${className}`}>
+    <p
+      role={ton === 'fehler' ? 'alert' : 'status'}
+      className={`${farben[ton]} text-sm ${className}`}
+    >
+      {bild ? (
+        <span aria-hidden="true" className="mr-1.5">
+          {bild}
+        </span>
+      ) : null}
       {children}
     </p>
   );

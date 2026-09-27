@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { aufklappKopfKlassen } from './aufklappStile';
 
 /**
  * Flächiger Container für einen einzelnen Gegenstand einer Liste.
@@ -72,11 +73,62 @@ export function DataList({ children }: { children: ReactNode }) {
   return <dl className="mt-2">{children}</dl>;
 }
 
-/** Aufklappbarer Zusatzbereich, etwa für Verläufe. */
-export function Disclosure({ summary, children }: { summary: string; children: ReactNode }) {
+/**
+ * Das Zeichen eines Aufklappers: ein Winkel, der nach rechts zeigt und sich
+ * beim Öffnen nach unten dreht (UIK-07, UEB-03, VOR-20).
+ *
+ * Bis UXR-001 stand an keinem Aufklapper ein Zeichen: Mit `display: flex`
+ * zeichnet der Browser sein Dreieck nicht, und „Tagesplan des Teams" sah aus
+ * wie eine leere Abschnittsüberschrift.
+ *
+ * Gezeichnet aus zwei Kanten eines gedrehten Quadrats - weder „▸" noch ein
+ * SVG-Pfad. Das Zeichen führt die Schrift nicht, und jeder Rückfall sähe
+ * anders aus. Und Pfade und Linienzüge sind in der Akte dem Verlaufsbild
+ * vorbehalten, wo der Befund sie ausdrücklich ausschließt: Keine Linie
+ * zwischen den Punkten (ADR-006 Punkt 11) - ein Test zählt dort jeden Pfad,
+ * und das soll er ohne Ausnahme für Bedienzeichen dürfen.
+ *
+ * Für Vorlesesoftware ausgeblendet - ob offen oder zu, sagt das `<details>`
+ * selbst. Die Drehung hängt am `open` des nächsten `<details>` mit der Klasse
+ * `group`; bei reduzierter Bewegung springt sie ohne Übergang.
+ *
+ * Seiten mit eigenem `<details>` setzen es in ihren `<summary>` (Klassen dort:
+ * `aufklappKopfKlassen`), statt ein eigenes Zeichen zu bauen.
+ */
+export function Aufklappzeichen() {
   return (
-    <details className="border-line mt-2 border-t pt-2">
-      <summary className="text-ink-muted hover:text-ink flex min-h-9 cursor-pointer items-center text-sm">
+    <span
+      aria-hidden="true"
+      data-aufklappzeichen=""
+      className="inline-flex size-4 shrink-0 items-center justify-center transition-transform group-open:rotate-90 motion-reduce:transition-none"
+    >
+      <span className="size-2 -translate-x-px rotate-45 border-t-2 border-r-2 border-current" />
+    </span>
+  );
+}
+
+/**
+ * Aufklappbarer Zusatzbereich, etwa für Verläufe und Seltenes.
+ *
+ * Der Kopf ist 44 px hoch und trägt das `Aufklappzeichen` (UIK-07, RSP-07,
+ * ZST-19). `summary` darf mehr als Text sein - eine Zahl in einem Abzeichen
+ * etwa. `offen` öffnet den Bereich beim ersten Zeichnen; danach entscheidet
+ * die Person (ANN-117: der Teamplan ist für das Büro offen, für Behandelnde
+ * zu).
+ */
+export function Disclosure({
+  summary,
+  offen = false,
+  children,
+}: {
+  summary: ReactNode;
+  offen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details open={offen} className="group border-line mt-2 border-t pt-2">
+      <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+        <Aufklappzeichen />
         {summary}
       </summary>
       <div className="mt-2">{children}</div>

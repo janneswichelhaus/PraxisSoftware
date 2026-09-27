@@ -42,6 +42,33 @@ describe('Fehlerzusammenfassung', () => {
     expect(screen.getByRole('link', { name: 'PLZ: Fünf Ziffern.' })).toBeInTheDocument();
   });
 
+  it('nennt das Feld nicht doppelt, wenn die Meldung es schon nennt (WRT-B02)', () => {
+    render(
+      <Fehlerzusammenfassung
+        fehler={[
+          { feldId: 'feld-vorname', feld: 'Vorname', meldung: 'Vorname ist erforderlich.' },
+          { feldId: 'feld-datum', feld: 'Datum', meldung: 'Das Datum ist erforderlich.' },
+          { feldId: 'feld-mail', feld: 'E-Mail', meldung: 'Keine gültige E-Mail-Adresse.' },
+          { feldId: 'feld-verordner', feld: 'Verordner:in', meldung: 'Verordner:in fehlt.' },
+          // Ein Wortteil ist kein Nennen: „Nachname" nennt „Name" nicht.
+          { feldId: 'feld-name', feld: 'Name', meldung: 'Der Nachname fehlt.' },
+        ]}
+      />,
+    );
+
+    const kasten = screen.getByRole('alert');
+    expect(kasten).not.toHaveTextContent('Vorname: Vorname');
+    for (const name of [
+      'Vorname ist erforderlich.',
+      'Das Datum ist erforderlich.',
+      'Keine gültige E-Mail-Adresse.',
+      'Verordner:in fehlt.',
+      'Name: Der Nachname fehlt.',
+    ]) {
+      expect(screen.getByRole('link', { name })).toBeInTheDocument();
+    }
+  });
+
   it('setzt den Fokus ins Feld, auf das ein Eintrag zeigt', async () => {
     const user = userEvent.setup();
     render(

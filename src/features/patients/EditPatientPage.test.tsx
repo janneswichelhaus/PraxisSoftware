@@ -132,7 +132,7 @@ describe('EditPatientPage', () => {
     await user.clear(screen.getByLabelText('Nachname *'));
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
-    expect(await screen.findByText('Nachname ist erforderlich.')).toBeInTheDocument();
+    expect(await screen.findAllByText('Nachname ist erforderlich.')).toHaveLength(2);
     expect(updatePatient).not.toHaveBeenCalled();
   });
 
@@ -147,8 +147,8 @@ describe('EditPatientPage', () => {
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
     expect(
-      await screen.findByText('Das Geburtsdatum darf nicht in der Zukunft liegen.'),
-    ).toBeInTheDocument();
+      await screen.findAllByText('Das Geburtsdatum darf nicht in der Zukunft liegen.'),
+    ).toHaveLength(2);
     expect(updatePatient).not.toHaveBeenCalled();
   });
 

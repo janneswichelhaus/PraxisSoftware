@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as RouterModul from 'react-router-dom';
@@ -42,9 +42,9 @@ describe('NewPatientPage', () => {
     expect(screen.getByLabelText('Vorname *')).toBeRequired();
     await user.click(screen.getByRole('button', { name: 'Patient anlegen' }));
 
-    expect(await screen.findByText('Vorname ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Nachname ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Geburtsdatum ist erforderlich.')).toBeInTheDocument();
+    expect(await screen.findAllByText('Vorname ist erforderlich.')).toHaveLength(2);
+    expect(screen.getAllByText('Nachname ist erforderlich.')).toHaveLength(2);
+    expect(screen.getAllByText('Geburtsdatum ist erforderlich.')).toHaveLength(2);
     expect(createPatient).not.toHaveBeenCalled();
   });
 
@@ -69,11 +69,11 @@ describe('NewPatientPage', () => {
 
     const kasten = await screen.findByRole('alert');
     expect(kasten).toHaveFocus();
-    expect(kasten).toHaveTextContent('Vorname: Vorname ist erforderlich.');
-    expect(kasten).toHaveTextContent('Geburtsdatum: Geburtsdatum ist erforderlich.');
+    expect(kasten).toHaveTextContent('Vorname ist erforderlich.');
+    expect(kasten).not.toHaveTextContent('Geburtsdatum: Geburtsdatum');
 
     await user.click(
-      screen.getByRole('link', { name: 'Geburtsdatum: Geburtsdatum ist erforderlich.' }),
+      within(kasten).getByRole('link', { name: /^Geburtsdatum ist erforderlich\.$/ }),
     );
     expect(screen.getByLabelText('Geburtsdatum *')).toHaveFocus();
   });
@@ -103,8 +103,8 @@ describe('NewPatientPage', () => {
     await user.click(screen.getByRole('button', { name: 'Patient anlegen' }));
 
     expect(
-      await screen.findByText('Das Geburtsdatum darf nicht in der Zukunft liegen.'),
-    ).toBeInTheDocument();
+      await screen.findAllByText('Das Geburtsdatum darf nicht in der Zukunft liegen.'),
+    ).toHaveLength(2);
     expect(createPatient).not.toHaveBeenCalled();
   });
 
@@ -116,7 +116,7 @@ describe('NewPatientPage', () => {
     await ausfuellen(user);
     await user.type(screen.getByLabelText('E-Mail'), 'kein-at-zeichen');
     await user.click(screen.getByRole('button', { name: 'Patient anlegen' }));
-    expect(await screen.findByText('Keine gültige E-Mail-Adresse.')).toBeInTheDocument();
+    expect(await screen.findAllByText('Keine gültige E-Mail-Adresse.')).toHaveLength(2);
     expect(createPatient).not.toHaveBeenCalled();
 
     await user.clear(screen.getByLabelText('E-Mail'));

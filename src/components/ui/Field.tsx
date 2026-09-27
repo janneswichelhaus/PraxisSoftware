@@ -75,6 +75,11 @@ export function Field({ label, hint, error, feldId, className = '', type, ...pro
             // darunter ebenfalls weiss; als Feld erkennbar macht das Feld
             // deshalb seine Umrandung, nicht mehr seine Flaeche.
             'bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-12 w-full border px-4 text-base',
+            // Abgeschaltet vertieft, mit eigener Fläche statt Deckkraft
+            // (DS-001, UIK-05): Bis UXR-001 sah ein gesperrtes Feld aus wie
+            // ein bedienbares, nur der Mauszeiger wechselte. Der Rand bleibt
+            // `line-strong` und hält die Form auch auf `canvas`.
+            'disabled:bg-surface-sunken disabled:cursor-not-allowed',
             isPassword ? 'pr-11' : '',
             error ? 'border-danger' : 'border-line-strong',
             className,

@@ -51,8 +51,8 @@ describe('NewStaffMemberPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Mitarbeiter:in anlegen' }));
 
-    expect(await screen.findByText('Vorname ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Nachname ist erforderlich.')).toBeInTheDocument();
+    expect(await screen.findAllByText('Vorname ist erforderlich.')).toHaveLength(2);
+    expect(screen.getAllByText('Nachname ist erforderlich.')).toHaveLength(2);
     expect(createStaffMember).not.toHaveBeenCalled();
   });
 
@@ -63,9 +63,9 @@ describe('NewStaffMemberPage', () => {
     await user.click(screen.getByRole('button', { name: 'Mitarbeiter:in anlegen' }));
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Nachname: Nachname ist erforderlich.');
+    expect(kasten).toHaveTextContent('Nachname ist erforderlich.');
 
-    await user.click(screen.getByRole('link', { name: 'Nachname: Nachname ist erforderlich.' }));
+    await user.click(screen.getByRole('link', { name: 'Nachname ist erforderlich.' }));
     expect(screen.getByLabelText('Nachname *')).toHaveFocus();
   });
 
@@ -79,7 +79,7 @@ describe('NewStaffMemberPage', () => {
     await user.click(screen.getByRole('button', { name: 'Mitarbeiter:in anlegen' }));
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Vorname: Vorname ist erforderlich.');
+    expect(kasten).toHaveTextContent('Vorname ist erforderlich.');
     expect(kasten).not.toHaveTextContent('Private E-Mail');
     expect(kasten).not.toHaveTextContent('Geburtsdatum');
   });

@@ -20,7 +20,18 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
  *     „Wird gesucht …" - nicht als leere Liste, die man sich selbst erklären
  *     muss.
  *   * Ein Klick außerhalb schließt die Liste, ein erneuter Klick ins Feld
- *     öffnet sie wieder.
+ *     öffnet sie wieder. Ebenso schließt sie, wenn der Fokus die Suche
+ *     verlässt - mit Tab lag sie bis UXR-001 weiter über dem nächsten Feld
+ *     (UIK-08).
+ *   * `aria-controls` zeigt nur auf eine Liste, die es gibt. Mit Zustandstext
+ *     statt Treffern verwies es ins Leere - für axe ein kritischer Befund
+ *     (`aria-valid-attr-value`). Aus demselben Grund meldet `aria-expanded`
+ *     nur die Trefferliste: Ein aufgeklapptes Suchfeld ohne `aria-controls`
+ *     wäre der nächste Befund (`aria-required-attr`). Der Zustandstext steht
+ *     als `role="status"` da und wird so vorgelesen, nicht als Liste.
+ *   * Der mit den Pfeiltasten gewählte Treffer rollt in der Liste mit ins
+ *     Bild; bei zehn zweizeiligen Treffern lag er sonst ab etwa dem fünften
+ *     unter dem Rand.
  */
 
 export interface Suchtreffer {
@@ -73,7 +84,20 @@ export function SearchCombobox({
     return () => document.removeEventListener('mousedown', ausserhalb);
   }, [offen]);
 
+  // Der Treffer, auf dem die Pfeiltasten stehen, gehört ins Bild der Liste.
+  // `nearest` rollt nur, wenn er es nicht schon ist.
+  useEffect(() => {
+    if (aktiv < 0) return;
+    document.getElementById(`${feldId}-${aktiv}`)?.scrollIntoView({ block: 'nearest' });
+  }, [aktiv, feldId]);
+
   const zeigeListe = offen && (treffer.length > 0 || Boolean(zustand));
+  const zeigeTreffer = zeigeListe && treffer.length > 0;
+
+  function schliessen() {
+    setOffen(false);
+    setAktiv(-1);
+  }
 
   function waehlen(eintrag: Suchtreffer) {
     setOffen(false);
@@ -83,8 +107,7 @@ export function SearchCombobox({
 
   function tastatur(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Escape') {
-      setOffen(false);
-      setAktiv(-1);
+      schliessen();
       return;
     }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -107,10 +130,21 @@ export function SearchCombobox({
   }
 
   return (
-    <div ref={huelle} className="relative">
+    <div
+      ref={huelle}
+      className="relative"
+      // Verlässt der Fokus die Suche - Tab, ein anderes Feld -, schließt die
+      // Liste. Ein Tipp in die Liste nimmt dem Feld den Fokus nicht (siehe
+      // `onMouseDown` unten), und ein Fokus innerhalb der Hülle zählt nicht
+      // als Verlassen.
+      onBlur={(event) => {
+        if (!huelle.current?.contains(event.relatedTarget)) schliessen();
+      }}
+    >
+      {/* Sichtbar wie die Beschriftung von `Field`: Tinte, 14 px, 500 (UIK-22). */}
       <label
         htmlFor={feldId}
-        className={labelSichtbar ? 'text-ink-muted mb-1 block text-sm font-medium' : 'sr-only'}
+        className={labelSichtbar ? 'text-ink mb-1.5 block text-sm font-medium' : 'sr-only'}
       >
         {label}
       </label>
@@ -119,8 +153,8 @@ export function SearchCombobox({
         type="search"
         role="combobox"
         autoComplete="off"
-        aria-expanded={zeigeListe}
-        aria-controls={listeId}
+        aria-expanded={zeigeTreffer}
+        {...(zeigeTreffer ? { 'aria-controls': listeId } : {})}
         aria-autocomplete="list"
         aria-activedescendant={aktiv >= 0 && treffer[aktiv] ? `${feldId}-${aktiv}` : undefined}
         className="border-line-strong bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-12 w-full border px-4 text-base"
@@ -137,7 +171,13 @@ export function SearchCombobox({
       {/* Ohne Schlagschatten (DS-001): dass die Liste über der Seite liegt,
           tragen der kräftige Rahmen und die hellere Fläche. */}
       {zeigeListe ? (
-        <div className="border-line-strong bg-surface rounded-card absolute inset-x-0 top-full z-50 mt-1 overflow-hidden border">
+        <div
+          className="border-line-strong bg-surface rounded-card absolute inset-x-0 top-full z-50 mt-1 overflow-hidden border"
+          // Ein Tipp irgendwo in die Liste - auf den Zustandstext, zwischen
+          // zwei Treffer - lässt den Fokus im Feld. Sonst schlösse der
+          // Fokusverlust die Liste unter dem Finger.
+          onMouseDown={(event) => event.preventDefault()}
+        >
           {treffer.length === 0 ? (
             // `role="status"` sagt den Zustand an, ohne den Fokus zu holen.
             // Ein zweiter, unsichtbarer Bereich mit demselben Text würde ihn

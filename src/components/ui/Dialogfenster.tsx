@@ -21,6 +21,20 @@ import { Button } from './Button';
  *     das Abbrechen, nie das Bestätigen;
  *   * beim Schließen kehrt der Fokus dorthin zurück, wo er vorher war.
  *
+ * **Der Fokus bleibt auch, wenn sich der Inhalt ändert (UIK-09, DAT-11).**
+ * Im Kameradialog verschwindet „Auslösen" mit dem Tipp darauf; der Browser
+ * setzt den Fokus dann ohne jedes Ereignis auf den `body`, und Escape, Tab
+ * und der Fokuskreis liefen bis UXR-001 ins Leere. Verschwindet das
+ * fokussierte Element oder verlässt der Fokus das Fenster, holt es ihn
+ * deshalb zurück - auf `data-autofocus`, sonst auf das erste bedienbare
+ * Element. Das Verschwinden meldet ein `MutationObserver`, das Verlassen
+ * `focusin` außerhalb und `focusout` ins Nichts.
+ *
+ * **Der Rest der Seite ist gesperrt**, solange das Fenster offen ist: Was vor
+ * dem Schleier am `body` hängt - die Anwendung selbst, ein schon offenes
+ * Fenster - trägt `inert`. Tab, ein Tipp und die Vorlesesoftware erreichen
+ * darunter nichts mehr; `aria-modal` allein sagt das nur an.
+ *
  * Gezeichnet wird über ein Portal am `body`, damit das Fenster über der
  * Kopfleiste und der Navigation liegt. Kein Paket: `<dialog>` hätte in
  * jsdom keinen `showModal`, und ein eigener Fokuskreis ist zwanzig Zeilen.
@@ -43,10 +57,70 @@ export function Dialogfenster({
 
   useEffect(() => {
     const vorher = document.activeElement as HTMLElement | null;
-    const fenster = fensterRef.current;
-    const start = fenster?.querySelector<HTMLElement>('[data-autofocus]') ?? bedienbare(fenster)[0];
-    start?.focus();
+    if (!fensterRef.current) return;
+    const fenster: HTMLDivElement = fensterRef.current;
+
+    function startpunkt(): HTMLElement {
+      return (
+        fenster.querySelector<HTMLElement>('[data-autofocus]') ??
+        bedienbare(fenster).at(0) ??
+        fenster
+      );
+    }
+
+    /**
+     * Holt den Fokus ins Fenster, wenn er nicht mehr darin liegt. Liegt er in
+     * einem anderen Fenster, das darüber aufging, bleibt er dort: Das führt
+     * dann seinen eigenen Fokus - zwei Fenster, die ihn einander abnehmen,
+     * liefen im Kreis.
+     */
+    function zurueckholen() {
+      if (!fenster.isConnected) return;
+      const aktiv = document.activeElement;
+      if (aktiv && aktiv !== document.body && aktiv.closest('[aria-modal="true"]')) return;
+      startpunkt().focus();
+    }
+
+    startpunkt().focus();
+
+    // Die Seite darunter sperren: alles, was vor dem Schleier am body hängt -
+    // die Anwendung und ein Fenster, das schon offen war. Ein Fenster, das
+    // danach aufgeht, liegt darüber und bleibt bedienbar. Erst nach dem
+    // Fokus: Ein `inert` um den noch fokussierten Auslöser nähme ihm den
+    // Fokus, bevor er im Fenster ist.
+    const schleier = fenster.parentElement;
+    const gesperrt: Element[] = [];
+    if (schleier?.parentElement === document.body) {
+      for (let kind = schleier.previousElementSibling; kind; kind = kind.previousElementSibling) {
+        if (kind.hasAttribute('inert')) continue;
+        kind.setAttribute('inert', '');
+        gesperrt.push(kind);
+      }
+    }
+
+    function fokusDraussen(event: FocusEvent) {
+      const ziel = event.target;
+      if (ziel instanceof Element && ziel.closest('[aria-modal="true"]')) return;
+      zurueckholen();
+    }
+    function fokusVerloren(event: FocusEvent) {
+      // Ins Nichts - ein Tipp neben jedes Bedienelement, ein Element, das
+      // gerade entfernt wird. Erst nach dem Wechsel steht fest, wo er landet.
+      if (event.relatedTarget === null) window.setTimeout(zurueckholen, 0);
+    }
+    const beobachter = new MutationObserver(zurueckholen);
+
+    document.addEventListener('focusin', fokusDraussen);
+    fenster.addEventListener('focusout', fokusVerloren);
+    beobachter.observe(fenster, { childList: true, subtree: true });
+
     return () => {
+      beobachter.disconnect();
+      fenster.removeEventListener('focusout', fokusVerloren);
+      document.removeEventListener('focusin', fokusDraussen);
+      // Erst entsperren, dann den Fokus zurückgeben - auf ein Element unter
+      // `inert` ginge er nicht.
+      for (const kind of gesperrt) kind.removeAttribute('inert');
       // Zurück, wo der Fokus herkam - sofern die Stelle noch da ist.
       if (vorher && vorher.isConnected) vorher.focus();
     };
@@ -101,7 +175,11 @@ export function Dialogfenster({
         // Telefon, mittig auf dem Bildschirm - mit dem Daumen erreichbar.
         className="bg-surface border-line-strong rounded-card max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto border-2 p-6"
       >
-        <h2 id={titelId} className="text-ink text-base font-semibold">
+        {/* Titel nach Handoff c_Dialog als H3 (24/700), am Telefon als H4
+            (20/700, UIK-22): Bei 390 px brachen dort vier der sechs Titel
+            der Anwendung mit 24 px zweizeilig um, mit 20 px drei - und der
+            Titel überragte den Text des Fensters. */}
+        <h2 id={titelId} className="text-ink text-h4 sm:text-h3 font-bold">
           {titel}
         </h2>
         <div className="mt-3">{children}</div>

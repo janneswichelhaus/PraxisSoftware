@@ -157,9 +157,9 @@ describe('NewTreatmentBasisPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
-    expect(await screen.findByText('Verordner:in ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Das Datum ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Bitte mindestens ein Heilmittel auswählen.')).toBeInTheDocument();
+    expect(await screen.findAllByText('Verordner:in ist erforderlich.')).toHaveLength(2);
+    expect(screen.getAllByText('Das Datum ist erforderlich.')).toHaveLength(2);
+    expect(screen.getAllByText('Bitte mindestens ein Heilmittel auswählen.')).toHaveLength(2);
     expect(screen.getByText('Bitte eine ganze Zahl eingeben.')).toBeInTheDocument();
     expect(createTreatmentBasis).not.toHaveBeenCalled();
   });
@@ -174,16 +174,16 @@ describe('NewTreatmentBasisPage', () => {
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Verordner:in: Verordner:in ist erforderlich.');
-    expect(kasten).toHaveTextContent('Datum: Das Datum ist erforderlich.');
-    expect(kasten).toHaveTextContent('Heilmittel: Bitte mindestens ein Heilmittel auswählen.');
+    expect(kasten).toHaveTextContent('Verordner:in ist erforderlich.');
+    expect(kasten).toHaveTextContent('Das Datum ist erforderlich.');
+    expect(kasten).toHaveTextContent('Bitte mindestens ein Heilmittel auswählen.');
 
-    await user.click(screen.getByRole('link', { name: 'Datum: Das Datum ist erforderlich.' }));
+    await user.click(screen.getByRole('link', { name: 'Das Datum ist erforderlich.' }));
     expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveFocus();
 
     await user.click(
       screen.getByRole('link', {
-        name: 'Heilmittel: Bitte mindestens ein Heilmittel auswählen.',
+        name: 'Bitte mindestens ein Heilmittel auswählen.',
       }),
     );
     expect(screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' })).toHaveFocus();
@@ -278,7 +278,7 @@ describe('NewTreatmentBasisPage', () => {
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
     expect(
-      await screen.findByText('Bitte mindestens ein Heilmittel auswählen.'),
+      await screen.findByText('Bitte mindestens ein Heilmittel auswählen.', { selector: 'p' }),
     ).toBeInTheDocument();
     expect(createTreatmentBasis).not.toHaveBeenCalled();
   });
@@ -370,7 +370,7 @@ describe('NewTreatmentBasisPage', () => {
       await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '10');
       await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
-      expect(await screen.findByText('Verordner:in ist erforderlich.')).toBeInTheDocument();
+      expect(await screen.findAllByText('Verordner:in ist erforderlich.')).toHaveLength(2);
       expect(createTreatmentBasis).not.toHaveBeenCalled();
     });
 
@@ -399,7 +399,7 @@ describe('NewTreatmentBasisPage', () => {
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
     expect(
-      await screen.findByText('Das Datum darf nicht in der Zukunft liegen.'),
+      await screen.findByText('Das Datum darf nicht in der Zukunft liegen.', { selector: 'p' }),
     ).toBeInTheDocument();
     expect(createTreatmentBasis).not.toHaveBeenCalled();
   });

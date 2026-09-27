@@ -1,10 +1,12 @@
 import type { RoleKey } from '@/features/session/types';
+import { Badge } from './Badge';
 import { roleLabel } from './roleLabels';
 
+/**
+ * Die Rolle als Etikett (UIK-18): ein `Badge` im Ton `akzent` - keine eigene
+ * Nachbildung seiner Klassen, damit beide nicht auseinanderlaufen. Eine Rolle
+ * ist kein Zustand und trägt deshalb kein Zeichen.
+ */
 export function RoleBadge({ role }: { role: RoleKey }) {
-  return (
-    <span className="bg-accent-soft text-accent rounded-pill inline-flex items-center px-2.5 py-0.5 text-xs font-medium">
-      {roleLabel(role)}
-    </span>
-  );
+  return <Badge ton="akzent">{roleLabel(role)}</Badge>;
 }

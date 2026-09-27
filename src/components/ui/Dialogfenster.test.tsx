@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Button } from './Button';
 import { Dialogfenster, Hinweisfenster } from './Dialogfenster';
@@ -114,6 +114,120 @@ describe('Dialogfenster', () => {
     await user.click(screen.getByRole('button', { name: 'Nein' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(oeffnen).toHaveFocus();
+  });
+
+  /**
+   * UIK-09, DAT-11: Im Kameradialog verschwindet „Auslösen" mit dem Tipp
+   * darauf. Der Fokus fiel auf den body, Escape und Tab liefen ins Leere.
+   */
+  it('holt den Fokus zurueck, wenn das fokussierte Element verschwindet', async () => {
+    const onSchliessen = vi.fn();
+    const user = userEvent.setup();
+    function Kamera() {
+      const [aufgenommen, setAufgenommen] = useState(false);
+      return (
+        <Dialogfenster titel="Foto aufnehmen" onSchliessen={onSchliessen}>
+          {/* Eigene Schlüssel: Sonst übernähme React denselben <button>, und
+              der Fokus bliebe einfach, wo er ist - der Fall wäre nicht
+              geprüft. */}
+          {aufgenommen ? (
+            <Button key="verwenden" type="button" data-autofocus>
+              Foto verwenden
+            </Button>
+          ) : (
+            <Button
+              key="ausloesen"
+              type="button"
+              data-autofocus
+              onClick={() => setAufgenommen(true)}
+            >
+              Auslösen
+            </Button>
+          )}
+          <Button type="button">Abbrechen</Button>
+        </Dialogfenster>
+      );
+    }
+    render(<Kamera />);
+    expect(screen.getByRole('button', { name: 'Auslösen' })).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Foto verwenden' })).toHaveFocus(),
+    );
+    // Und damit wirken Escape und der Fokuskreis wieder.
+    await user.keyboard('{Escape}');
+    expect(onSchliessen).toHaveBeenCalledTimes(1);
+  });
+
+  it('holt den Fokus zurueck, wenn er das Fenster verlaesst', () => {
+    render(<Seite onSchliessen={() => undefined} />);
+    const ja = screen.getByRole('button', { name: 'Ja' });
+    expect(ja).toHaveFocus();
+
+    // Etwa ein Skript der Seite darunter, das ein Feld fokussiert.
+    act(() => screen.getByRole('button', { name: 'Davor' }).focus());
+    expect(ja).toHaveFocus();
+  });
+
+  it('sperrt die Seite darunter mit inert und gibt sie beim Schliessen frei', async () => {
+    const user = userEvent.setup();
+    function Umschalter() {
+      const [offen, setOffen] = useState(false);
+      return (
+        <>
+          <Button type="button" onClick={() => setOffen(true)}>
+            Öffnen
+          </Button>
+          {offen ? (
+            <Dialogfenster titel="Frage" onSchliessen={() => setOffen(false)}>
+              <Button type="button" onClick={() => setOffen(false)}>
+                Nein
+              </Button>
+            </Dialogfenster>
+          ) : null}
+        </>
+      );
+    }
+    const { container } = render(<Umschalter />);
+    await user.click(screen.getByRole('button', { name: 'Öffnen' }));
+
+    // Die Anwendung liegt neben dem Schleier am body und ist gesperrt; das
+    // Fenster selbst nicht.
+    expect(container).toHaveAttribute('inert');
+    const schleier = screen.getByRole('dialog').parentElement!;
+    expect(schleier.parentElement).toBe(document.body);
+    expect(schleier).not.toHaveAttribute('inert');
+
+    await user.click(screen.getByRole('button', { name: 'Nein' }));
+    expect(container).not.toHaveAttribute('inert');
+    expect(screen.getByRole('button', { name: 'Öffnen' })).toHaveFocus();
+  });
+
+  it('laesst einem zweiten Fenster, das darueber aufgeht, den Fokus', () => {
+    // Zwei Fenster, die einander den Fokus abnehmen, liefen im Kreis; und das
+    // obere darf nicht unter dem `inert` des unteren liegen.
+    render(
+      <>
+        <Dialogfenster titel="Unten" onSchliessen={() => undefined}>
+          <Button type="button">Unten bleiben</Button>
+        </Dialogfenster>
+        <Dialogfenster titel="Oben" onSchliessen={() => undefined}>
+          <Button type="button">Oben bleiben</Button>
+        </Dialogfenster>
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Oben bleiben' })).toHaveFocus();
+    const unten = screen.getByRole('dialog', { name: 'Unten' }).parentElement!;
+    const oben = screen.getByRole('dialog', { name: 'Oben' }).parentElement!;
+    expect(unten).toHaveAttribute('inert');
+    expect(oben).not.toHaveAttribute('inert');
+  });
+
+  it('setzt den Titel nach Handoff, am Telefon eine Stufe kleiner (UIK-22)', () => {
+    render(<Seite onSchliessen={() => undefined} />);
+    const titel = screen.getByRole('heading', { name: 'Frage' });
+    expect(titel).toHaveClass('text-h4', 'sm:text-h3', 'font-bold');
   });
 });
 

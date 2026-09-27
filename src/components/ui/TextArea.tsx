@@ -45,6 +45,8 @@ export function TextArea({ label, hint, error, feldId, className = '', ...props 
         aria-invalid={error ? true : undefined}
         className={[
           'bg-surface-field text-ink placeholder:text-ink-muted rounded-field w-full border px-4 py-3 text-base leading-relaxed',
+          // Abgeschaltet vertieft wie `Field` (DS-001, UIK-05).
+          'disabled:bg-surface-sunken disabled:cursor-not-allowed',
           error ? 'border-danger' : 'border-line-strong',
           className,
         ]
