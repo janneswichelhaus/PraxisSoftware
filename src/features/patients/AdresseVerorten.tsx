@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import type { GeocodeResult } from '@/lib/location/contract';
+import type { GeocodeResult, LocationErrorCode } from '@/lib/location/contract';
 import { GENAUIGKEIT_TEXT, brauchtBestaetigung, geocodiere } from '@/lib/location/geocode';
 import type { Quelle } from '@/lib/location/funktion';
-import { FEHLERTEXTE } from '@/features/tours/karte/fehlertexte';
 import { setPatientAddressCoordinate, type Patient } from './api';
 
 /**
@@ -21,6 +21,37 @@ import { setPatientAddressCoordinate, type Patient } from './api';
  * und danach verworfen. Unterhalb der Hausnummer bestätigt sie den Treffer —
  * sonst bleibt die Adresse ohne Koordinate.
  */
+
+/**
+ * Was die Person liest, wenn die Verortung scheitert (PAT-15).
+ *
+ * Eigene Sätze statt der Titel aus der Routenberechnung: „Kartendienst weist
+ * den Serverschlüssel ab" oder „Routenfunktion antwortet nicht" standen hier
+ * vor dem Satz - Einrichtungsbegriffe ohne Handlung, dazu aus einer anderen
+ * Funktion. Jeder Satz sagt, was los ist und was jetzt geht; keiner nennt eine
+ * Adresse oder einen Schlüssel (ADR-011). Der Satz bleibt bei dem, der es war
+ * (BEF-027): Scheitert die eigene Funktion, heißt es nicht, der Kartendienst
+ * sei es gewesen.
+ */
+function verortungsfehler(code: LocationErrorCode): string {
+  switch (code) {
+    case 'not_found':
+      return 'Zu dieser Adresse hat der Kartendienst keinen Treffer gefunden. Bitte die Schreibweise prüfen.';
+    case 'timeout':
+    case 'unavailable':
+    case 'rate_limited':
+      return 'Der Kartendienst ist gerade nicht erreichbar. Bitte später erneut verorten.';
+    case 'not_configured':
+      return 'Für die Praxis ist kein Kartendienst eingerichtet. Die Adresse bleibt vorerst ohne Kartenposition.';
+    case 'unauthorized':
+      return 'Der Kartendienst nimmt die Anfrage der Praxis nicht an – das ist ein Einrichtungsschritt. Die Adresse bleibt vorerst ohne Kartenposition.';
+    case 'session_invalid':
+      return 'Die Anmeldung gilt nicht mehr. Bitte neu anmelden und dann erneut verorten.';
+    case 'function_unavailable':
+    case 'invalid_request':
+      return 'Die Verortung ist gerade nicht möglich. Bitte später erneut verorten.';
+  }
+}
 
 interface Anschrift {
   readonly street: string;
@@ -72,11 +103,7 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
     mutationFn: (zu: Anschrift) => geocodiere({ ...zu, countryCode: 'DE' }),
     onSuccess: (ergebnis, zu) => {
       if (!ergebnis.ok) {
-        setFehler(
-          ergebnis.error.code === 'not_found'
-            ? 'Zu dieser Adresse hat der Kartendienst keinen Treffer gefunden. Bitte die Schreibweise prüfen.'
-            : `${FEHLERTEXTE[ergebnis.error.code].titel}. Die Adresse bleibt ohne Kartenposition.`,
-        );
+        setFehler(verortungsfehler(ergebnis.error.code));
         return;
       }
       setFehler(null);
@@ -100,13 +127,16 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
     );
   }
 
-  if (!anschrift) return <span>— (Adresse unvollständig)</span>;
+  // Sagt, was fehlt, statt eines Gedankenstrichs mit Klammer (PAT-15).
+  if (!anschrift) return <span>Für die Kartenposition fehlen Straße, PLZ oder Ort.</span>;
 
   return (
     <div className="space-y-2">
-      <p>Noch nicht verortet — ohne Kartenposition fehlt der Hausbesuch auf der Tourenkarte.</p>
+      <p>Noch nicht verortet – ohne Kartenposition fehlt der Hausbesuch auf der Tourenkarte.</p>
       {treffer ? (
-        <div className="border-line rounded-card space-y-2 border p-3">
+        // Der Treffer ist eine Auskunft und steht deshalb auf der Fläche des
+        // Systems, nicht in einem eigenen Kasten (PAT-14).
+        <Inhaltsflaeche className="space-y-2">
           <p>
             Treffer {GENAUIGKEIT_TEXT[treffer.wert.precision]}
             {treffer.wert.matchLabel ? `: ${treffer.wert.matchLabel}` : ''}.
@@ -134,7 +164,7 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
               Verwerfen
             </Button>
           </div>
-        </div>
+        </Inhaltsflaeche>
       ) : (
         <Button
           type="button"

@@ -1,10 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+import { roleLabel } from '@/components/ui/roleLabels';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
+const STAMMDATEN = `/patienten/${PATIENT_ID}/stammdaten`;
+
+/** Ziel und mitgegebener Rückweg eines Links, getrennt geprüft. */
+function linkZiel(link: HTMLElement): { pfad: string; zurueck: string | null } {
+  const adresse = new URL(link.getAttribute('href') ?? '', 'http://akte.test');
+  return { pfad: adresse.pathname, zurueck: adresse.searchParams.get('zurueck') };
+}
 
 const aktiv: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
@@ -56,15 +64,16 @@ describe('Stammdaten der Akte', () => {
     reopenPatientCare.mockResolvedValue(undefined);
   });
 
+  // Mit Rückweg in die Stammdaten samt dem der Akte (PAT-08).
   it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
     'bietet %s die Bearbeitung der Stammdaten an',
     (role) => {
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />, STAMMDATEN);
 
-      expect(screen.getByRole('link', { name: 'Stammdaten bearbeiten' })).toHaveAttribute(
-        'href',
-        `/patienten/${PATIENT_ID}/bearbeiten`,
-      );
+      expect(linkZiel(screen.getByRole('link', { name: 'Stammdaten bearbeiten' }))).toEqual({
+        pfad: `/patienten/${PATIENT_ID}/bearbeiten`,
+        zurueck: STAMMDATEN,
+      });
     },
   );
 
@@ -76,7 +85,7 @@ describe('Stammdaten der Akte', () => {
     expect(screen.getByText('Aktiv')).toBeInTheDocument();
   });
 
-  describe('Hausbesuch und Versorgung (PAT-005)', () => {
+  describe('Hausbesuch und Praxisangaben (PAT-005)', () => {
     it('zeigt Zugangshinweis, Besonderheit und feste Therapeut:in', () => {
       renderWithProviders(
         <Stammdaten
@@ -92,6 +101,8 @@ describe('Stammdaten der Akte', () => {
       );
 
       expect(screen.getByText('2. OG links, Klingel "Mustermann".')).toBeInTheDocument();
+      // Ein Name für das Feld, wie im Formular (PAT-07).
+      expect(screen.getByText('Zugangshinweis')).toBeInTheDocument();
       expect(screen.getByText('Hund im Flur.')).toBeInTheDocument();
       expect(screen.getByText('Anna Beispiel')).toBeInTheDocument();
       expect(screen.getByText('Bevorzugt Vormittage.')).toBeInTheDocument();
@@ -104,7 +115,7 @@ describe('Stammdaten der Akte', () => {
         <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['patient'])} />,
       );
 
-      expect(screen.queryByText('Hausbesuch und Versorgung')).not.toBeInTheDocument();
+      expect(screen.queryByText('Hausbesuch und Praxisangaben')).not.toBeInTheDocument();
     });
 
     it('bietet die Mobilnummer als Anruf an', () => {
@@ -115,37 +126,76 @@ describe('Stammdaten der Akte', () => {
         />,
       );
 
-      expect(screen.getByRole('link', { name: '+49 160 0000005' })).toHaveAttribute(
-        'href',
-        'tel:+491600000005',
-      );
+      const anruf = screen.getByRole('link', { name: '+49 160 0000005' });
+      expect(anruf).toHaveAttribute('href', 'tel:+491600000005');
+      // 44 px Tippziel und als Link erkennbar (PAT-11, RSP-05).
+      expect(anruf).toHaveClass('min-h-11', 'underline');
+    });
+
+    it('bietet die E-Mail als Link mit Tippziel an', () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+
+      const mail = screen.getByRole('link', { name: 'max.mustermann@example.invalid' });
+      expect(mail).toHaveAttribute('href', 'mailto:max.mustermann@example.invalid');
+      expect(mail).toHaveClass('min-h-11', 'underline');
     });
   });
 
   describe('Betroffenenrechte', () => {
     it('zeigt owner den Weg zu Auskunft und Loeschverlangen', () => {
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />);
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />, STAMMDATEN);
 
-      expect(screen.getByRole('link', { name: 'Auskunft und Löschverlangen' })).toHaveAttribute(
-        'href',
-        `/patienten/${aktiv.id}/auskunft`,
-      );
+      expect(linkZiel(screen.getByRole('link', { name: 'Auskunft und Löschverlangen' }))).toEqual({
+        pfad: `/patienten/${aktiv.id}/auskunft`,
+        zurueck: STAMMDATEN,
+      });
     });
 
+    // PAT-05: Statt einer Lücke erfahren die übrigen Praxisrollen, wer eine
+    // Anfrage bearbeitet.
     it.each([['therapist'], ['team_lead'], ['office']] as const)(
-      'blendet ihn fuer %s aus - die Auskunft erteilt die Praxisleitung',
+      'blendet ihn fuer %s aus und sagt, wer die Auskunft erteilt',
       (role) => {
         renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
 
         expect(screen.queryByRole('link', { name: 'Auskunft und Löschverlangen' })).toBeNull();
+        expect(
+          screen.getByText(
+            `Auskunft nach Art. 15 DSGVO und Löschverlangen sind der Rolle „${roleLabel('owner')}“ vorbehalten.`,
+          ),
+        ).toBeInTheDocument();
       },
     );
+
+    it('sagt einem Patientenkonto dazu nichts', () => {
+      renderWithProviders(
+        <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['patient'])} />,
+      );
+      expect(screen.queryByText(/Löschverlangen/)).not.toBeInTheDocument();
+    });
   });
 
   describe('Versorgungsstatus', () => {
     it.each([['owner'], ['team_lead'], ['office']] as const)('zeigt %s die Aktion', (role) => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
       expect(screen.getByRole('button', { name: 'Als inaktiv markieren' })).toBeInTheDocument();
+    });
+
+    // PAT-05: Der Hinweis zählt, was die Rolle tatsächlich sieht.
+    it('nennt beide Vorgänge nur, wenn beide zu sehen sind', () => {
+      const { unmount } = renderWithProviders(
+        <Stammdaten patient={aktiv} user={testUser(['owner'])} />,
+      );
+      expect(screen.getByText(/Beide sind rücknehmbar\./)).toBeInTheDocument();
+      unmount();
+
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+      expect(screen.queryByText(/Beide sind rücknehmbar/)).not.toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Ein Vorgang, der eine Akte aus dem laufenden Betrieb nimmt. Er ist rücknehmbar.',
+        ),
+      ).toBeInTheDocument();
     });
 
     it('blendet die Aktion fuer therapist aus, obwohl die Akte lesbar ist', () => {
@@ -272,7 +322,7 @@ describe('Stammdaten der Akte', () => {
     it('nennt Abschlusstag und Ende der Aufbewahrung als Text', () => {
       renderWithProviders(<Stammdaten patient={abgeschlossen} user={testUser(['therapist'])} />);
 
-      expect(screen.getByText(/12\.03\.2026 — Aufbewahrung bis 2036/)).toBeInTheDocument();
+      expect(screen.getByText(/12\.03\.2026 – Aufbewahrung bis 2036/)).toBeInTheDocument();
     });
 
     it('schreibt erst nach der Rueckfrage und mit dem gewaehlten Tag', async () => {
@@ -292,6 +342,28 @@ describe('Stammdaten der Akte', () => {
       await waitFor(() =>
         expect(concludePatientCare).toHaveBeenCalledWith(PATIENT_ID, '2026-09-01'),
       );
+    });
+
+    // PAT-15: Der Wähler bietet keinen Tag vor dem Beginn der Versorgung an.
+    it('begrenzt den letzten Behandlungstag auf die Zeit der Versorgung', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
+
+      await user.click(screen.getByRole('button', { name: 'Versorgung abschließen' }));
+      expect(screen.getByLabelText('Letzter Behandlungstag')).toHaveAttribute('min', '2026-01-05');
+    });
+
+    // WRT-10: Knopf und Laufanzeige nennen dieselbe Handlung.
+    it('nennt beim Abschließen, was gerade geschieht', async () => {
+      const user = userEvent.setup();
+      concludePatientCare.mockImplementation(() => new Promise<void>(() => undefined));
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
+
+      await user.click(screen.getByRole('button', { name: 'Versorgung abschließen' }));
+      const kasten = screen.getByRole('group', { name: 'Versorgung abschließen' });
+      await user.click(within(kasten).getByRole('button', { name: 'Versorgung abschließen' }));
+
+      expect(await screen.findByRole('button', { name: 'Wird abgeschlossen …' })).toBeDisabled();
     });
 
     it('bietet einem abgeschlossenen Fall die Ruecknahme an', async () => {

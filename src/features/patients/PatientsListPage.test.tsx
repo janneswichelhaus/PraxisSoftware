@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useSearchParams } from 'react-router-dom';
 import type * as PatientsApi from './api';
@@ -50,8 +50,44 @@ describe('PatientsListPage', () => {
       'href',
       '/patienten/1',
     );
-    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
-    expect(screen.getByText('inaktiv')).toBeInTheDocument();
+    // Das Etikett des Systems, groß geschrieben wie der Filter (PAT-14, WRT-16).
+    const erika = screen.getByRole('link', { name: /Erika Beispiel/ });
+    expect(within(erika).getByText('Inaktiv')).toBeInTheDocument();
+  });
+
+  it('bietet das Anlegen unter demselben Namen wie die Kopfsuche an (PAT-21)', async () => {
+    fetchPatients.mockResolvedValue([]);
+    renderWithProviders(<PatientsListPage />);
+
+    expect(await screen.findByRole('link', { name: 'Patient:in anlegen' })).toHaveAttribute(
+      'href',
+      '/patienten/neu',
+    );
+  });
+
+  // PAT-08: Die Akte führt zurück in die gefilterte Liste. Vorher stand sie
+  // nach jeder geöffneten Akte wieder ungefiltert da.
+  it('gibt der Akte Suchbegriff und Statusfilter als Rückweg mit', async () => {
+    fetchPatients.mockResolvedValue([
+      patient('1', 'Max', 'Mustermann', 'active'),
+      patient('2', 'Erika', 'Beispiel', 'inactive'),
+    ]);
+
+    renderWithProviders(<PatientsListPage />, '/patienten?q=erika&status=inactive');
+
+    const link = await screen.findByRole('link', { name: /Erika Beispiel/ });
+    const ziel = new URL(link.getAttribute('href') ?? '', 'http://liste.test');
+    expect(ziel.pathname).toBe('/patienten/2');
+    expect(ziel.searchParams.get('zurueck')).toBe('/patienten?q=erika&status=inactive');
+  });
+
+  it('nimmt den Statusfilter in das Auswahlfeld des Systems auf (PAT-14, UIK-19)', async () => {
+    fetchPatients.mockResolvedValue([patient('1', 'Max', 'Mustermann', 'active')]);
+    renderWithProviders(<PatientsListPage />);
+
+    await screen.findByRole('link', { name: /Max Mustermann/ });
+    // 48 px wie das Filterfeld daneben, nicht 44.
+    expect(screen.getByLabelText('Status')).toHaveClass('h-12');
   });
 
   it('filtert die Anzeige ueber die Suche', async () => {
@@ -79,8 +115,27 @@ describe('PatientsListPage', () => {
 
     const meldung = await screen.findByRole('alert');
     expect(meldung).toHaveTextContent('Die Patientenliste konnte nicht geladen werden.');
-    // Kein technisches Detail nach aussen (PROJECT_PRINCIPLES.md 13).
+    // Kein technisches Detail nach aussen (PROJECT_PRINCIPLES.md 13) - und
+    // keine Ratefrage nach der Anmeldung, sondern ein Schritt (WRT-01).
     expect(meldung.textContent).not.toMatch(/rls/i);
+    expect(meldung.textContent).not.toMatch(/angemeldet/);
+    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und später erneut versuchen.');
+  });
+
+  it('laedt die Liste nach einem Fehler auf Wunsch erneut (UIK-16)', async () => {
+    // Die Datei setzt den Mock sonst nirgends zurück; gezählt werden hier nur
+    // die Aufrufe dieses Tests.
+    fetchPatients.mockReset();
+    fetchPatients.mockRejectedValueOnce(new Error('offline'));
+    fetchPatients.mockResolvedValueOnce([patient('1', 'Max', 'Mustermann', 'active')]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<PatientsListPage />);
+    const meldung = await screen.findByRole('alert');
+    await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
+
+    expect(await screen.findByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
+    expect(fetchPatients).toHaveBeenCalledTimes(2);
   });
 
   it('zeigt eine leere Kartei ohne Fehlermeldung', async () => {
@@ -89,6 +144,10 @@ describe('PatientsListPage', () => {
     renderWithProviders(<PatientsListPage />);
 
     expect(await screen.findByText('Noch keine Patient:innen')).toBeInTheDocument();
+    // Der leere Zustand nennt den nächsten Schritt (PAT-22).
+    expect(
+      screen.getByText('Die erste Akte entsteht über „Patient:in anlegen“.'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 

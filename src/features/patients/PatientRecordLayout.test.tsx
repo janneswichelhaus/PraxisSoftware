@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import type * as PatientsApi from './api';
@@ -8,6 +8,7 @@ import type * as VerordnungenApi from '@/features/treatment-bases/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import type { RoleKey } from '@/features/session/types';
+import { RUECKWEG_PARAM, rueckwegBeschriftung } from '@/lib/rueckweg';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
@@ -87,6 +88,14 @@ const { PatientCoursePage } = await import('@/features/documentation/PatientCour
  * Der Rahmen und seine Bereiche sind genau das - eine verschachtelte Route -,
  * und der Bereichswechsel ist das, was hier zu prüfen ist.
  */
+/** Ziel und mitgegebener Rückweg eines Links, getrennt geprüft. */
+function linkZiel(link: HTMLElement): { pfad: string; zurueck: string | null } {
+  const adresse = new URL(link.getAttribute('href') ?? '', 'http://akte.test');
+  return { pfad: adresse.pathname, zurueck: adresse.searchParams.get(RUECKWEG_PARAM) };
+}
+
+const STAMMDATEN = `/patienten/${PATIENT_ID}/stammdaten`;
+
 function akteRendern(roles: RoleKey[], pfad = `/patienten/${PATIENT_ID}`) {
   return renderWithProviders(
     <Routes>
@@ -152,15 +161,35 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       expect(await screen.findByText('Versorgung abgeschlossen am 12.03.2026')).toBeInTheDocument();
     });
 
+    // Mit Rückweg in die Akte (PAT-08, TER-03): Ohne ihn fiel der neue Termin
+    // auf „Zurück zur Patientenliste" zurück. Auf einem festen Bereich
+    // gerendert, damit der Rückweg nicht an der Weiterleitung des Einstiegs
+    // hängt.
     it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
-      'bietet %s den Termin aus dem Kopf heraus an',
+      'bietet %s den Termin aus dem Kopf heraus an, mit Rückweg in die Akte',
       async (role) => {
-        akteRendern([role]);
+        akteRendern([role], STAMMDATEN);
 
         const link = await screen.findByRole('link', { name: 'Termin anlegen' });
-        expect(link).toHaveAttribute('href', `/patienten/${PATIENT_ID}/termine/neu`);
+        expect(linkZiel(link)).toEqual({
+          pfad: `/patienten/${PATIENT_ID}/termine/neu`,
+          zurueck: STAMMDATEN,
+        });
       },
     );
+
+    it('reicht den Rückweg der Akte an die Formulare weiter (PAT-08)', async () => {
+      const kalender = '/kalender?ansicht=tag';
+      akteRendern(['therapist'], `${STAMMDATEN}?zurueck=${encodeURIComponent(kalender)}`);
+
+      const link = await screen.findByRole('link', { name: 'Grundlage erfassen' });
+      const { pfad, zurueck } = linkZiel(link);
+      expect(pfad).toBe(`/patienten/${PATIENT_ID}/verordnungen/neu`);
+      // Zurück geht es in die Akte - und von dort weiter in den Kalender.
+      const akte = new URL(zurueck ?? '', 'http://akte.test');
+      expect(akte.pathname).toBe(STAMMDATEN);
+      expect(akte.searchParams.get(RUECKWEG_PARAM)).toBe(kalender);
+    });
 
     it('bietet fuer eine:n inaktive:n Patient:in keinen Termin an', async () => {
       fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
@@ -170,12 +199,46 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       expect(screen.queryByRole('link', { name: 'Termin anlegen' })).not.toBeInTheDocument();
     });
 
+    // PAT-05: Der Knopf verschwand ohne ein Wort. Jetzt steht der Grund da -
+    // und der Weg zurück, je nach Recht der Rolle.
+    it('sagt bei einer inaktiven Person, warum es keinen Termin gibt und wo es weitergeht', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
+      akteRendern(['office'], STAMMDATEN);
+
+      expect(
+        await screen.findByText(
+          'Keine neuen Termine – nicht in laufender Versorgung. Wieder als aktiv führen unter Stammdaten → Verwaltung.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('nennt Therapeut:innen, welche Rollen die Person wieder aktiv führen dürfen', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
+      akteRendern(['therapist'], STAMMDATEN);
+
+      expect(
+        await screen.findByText(
+          /Wieder als aktiv führen dürfen die Rollen Praxismanagement, Teamleitung und Praxisinhaber/,
+        ),
+      ).toBeInTheDocument();
+      // Der Knopf, den die Rolle hat, bleibt.
+      expect(screen.getByRole('link', { name: 'Grundlage erfassen' })).toBeInTheDocument();
+    });
+
+    it('sagt bei laufender Versorgung nichts dazu', async () => {
+      akteRendern(['office'], STAMMDATEN);
+
+      await screen.findByRole('link', { name: 'Termin anlegen' });
+      expect(screen.queryByText(/Keine neuen Termine/)).not.toBeInTheDocument();
+    });
+
     it('bietet das Erfassen einer Verordnung nur den therapeutischen Rollen an', async () => {
-      akteRendern(['therapist']);
-      expect(await screen.findByRole('link', { name: 'Grundlage erfassen' })).toHaveAttribute(
-        'href',
-        `/patienten/${PATIENT_ID}/verordnungen/neu`,
-      );
+      akteRendern(['therapist'], STAMMDATEN);
+      const link = await screen.findByRole('link', { name: 'Grundlage erfassen' });
+      expect(linkZiel(link)).toEqual({
+        pfad: `/patienten/${PATIENT_ID}/verordnungen/neu`,
+        zurueck: STAMMDATEN,
+      });
     });
 
     it('zeigt office im Kopf kein Erfassen einer Verordnung', async () => {
@@ -258,6 +321,105 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
       expect(logPatientRecordView).not.toHaveBeenCalled();
     });
+
+    /**
+     * jsdom kennt kein Layout. Die Leiste bekommt deshalb eine Geometrie
+     * untergeschoben wie im Test der SubNav: 300 px sichtbar, jeder Bereich
+     * 120 px breit, und seine Lage verschiebt sich mit dem `scrollLeft`.
+     */
+    it('rollt den offenen Bereich am Telefon ins Bild, ohne die Seite zu rollen (PAT-01)', async () => {
+      const bereiche = [
+        'Termine',
+        'Behandlungsgrundlagen',
+        'Behandlungsverlauf',
+        'Befund',
+        'Dateien',
+        'Datenschutz',
+        'Stammdaten',
+      ];
+      vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(function (
+        this: Element,
+      ) {
+        return this.tagName === 'UL' ? bereiche.length * 120 : 0;
+      });
+      vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(function (
+        this: Element,
+      ) {
+        return this.tagName === 'UL' ? 300 : 0;
+      });
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: Element,
+      ) {
+        const rechteck = (left: number, width: number) =>
+          ({ left, right: left + width, width, top: 0, bottom: 44, height: 44 }) as DOMRect;
+        if (this.tagName === 'UL') return rechteck(0, 300);
+        const index = bereiche.indexOf(this.textContent ?? '');
+        return rechteck(index * 120 - (this.closest('ul')?.scrollLeft ?? 0), 120);
+      });
+      const seiteRollen = vi.spyOn(Element.prototype, 'scrollIntoView');
+
+      try {
+        akteRendern(['therapist'], STAMMDATEN);
+        const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
+
+        // „Stammdaten" liegt bei 720-840 px, sichtbar sind 300: Die Leiste
+        // rollt, bis der Bereich ganz und 24 px vom Nachbarn zu sehen sind.
+        expect(within(navigation).getByRole('link', { name: 'Stammdaten' })).toHaveAttribute(
+          'aria-current',
+          'page',
+        );
+        expect(within(navigation).getByRole('list').scrollLeft).toBe(840 + 24 - 300);
+        expect(seiteRollen).not.toHaveBeenCalled();
+      } finally {
+        vi.restoreAllMocks();
+      }
+    });
+
+    it('bricht die Leiste ab 640 px um, statt Bereiche seitlich zu verstecken (PAT-01)', async () => {
+      akteRendern(['therapist'], STAMMDATEN);
+      const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
+      expect(within(navigation).getByRole('list')).toHaveClass('sm:flex-wrap');
+    });
+  });
+
+  describe('Zustände des Rahmens (PAT-22, UIK-16)', () => {
+    it('führt ohne Rückweg zur Patientenliste - mit dem Wort aller Rückwege dorthin', async () => {
+      akteRendern(['office'], STAMMDATEN);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+
+      const beschriftung = rueckwegBeschriftung('/patienten');
+      expect(
+        screen.getByRole('link', { name: (name) => name.includes(beschriftung) }),
+      ).toHaveAttribute('href', '/patienten');
+    });
+
+    it('zeigt beim Ladefehler Überschrift, Handlung und einen neuen Versuch', async () => {
+      const user = userEvent.setup();
+      fetchPatient.mockRejectedValueOnce(new Error('offline'));
+      akteRendern(['office'], STAMMDATEN);
+
+      const meldung = await screen.findByRole('alert');
+      expect(meldung).toHaveTextContent('Die Patientendaten konnten nicht geladen werden.');
+      expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen');
+      expect(meldung.textContent).not.toMatch(/angemeldet|offline/);
+      expect(screen.getByRole('heading', { level: 1, name: 'Patientenakte' })).toBeInTheDocument();
+
+      await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
+      expect(await screen.findByRole('heading', { name: 'Max Mustermann' })).toBeInTheDocument();
+      expect(fetchPatient).toHaveBeenCalledTimes(2);
+    });
+
+    it('nennt bei einer unbekannten Akte den Gegenstand statt eines Datensatzes (WRT-02)', async () => {
+      fetchPatient.mockResolvedValue(null);
+      akteRendern(['office'], STAMMDATEN);
+
+      expect(
+        await screen.findByText(
+          'Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Patientenakte' })).toBeInTheDocument();
+    });
   });
 
   describe('Einstieg in die Akte (UI-002a)', () => {
@@ -306,9 +468,25 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       akteRendern(['therapist']);
 
       await screen.findByRole('heading', { name: 'Max Mustermann' });
-      expect(screen.queryByText('Zugang:')).not.toBeInTheDocument();
+      expect(screen.queryByText('Zugangshinweis:')).not.toBeInTheDocument();
       expect(screen.queryByText('Besonderheit:')).not.toBeInTheDocument();
       expect(screen.queryByText('Behandlungsliege:')).not.toBeInTheDocument();
+    });
+
+    it('heißt den Zugangshinweis wie das Feld und behält seine Absätze (PAT-07, PAT-13)', async () => {
+      fetchPatient.mockResolvedValue({
+        ...aktiv,
+        home_visit_access_note: '2. OG\nKlingel Meier\nSchlüssel beim Nachbarn',
+      });
+      // Auf den Terminen und nicht auf den Stammdaten gerendert: Dort stünde
+      // der Hinweis ein zweites Mal.
+      akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
+
+      const beschriftung = await screen.findByText('Zugangshinweis:');
+      const wert = beschriftung.nextElementSibling;
+      expect(wert).toHaveTextContent('Klingel Meier');
+      expect(wert).toHaveClass('whitespace-pre-line');
+      expect(wert).toHaveClass('wrap-anywhere');
     });
 
     it('nennt die Behandlungsliege, wenn sie gebraucht wird (UX-003a)', async () => {

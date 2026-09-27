@@ -53,7 +53,8 @@ export function Behandlungsliege({
       ) : null}
       {mutation.isError ? (
         <Statusmeldung ton="fehler">
-          Die Angabe zur Behandlungsliege konnte nicht gespeichert werden.
+          Die Angabe zur Behandlungsliege konnte nicht gespeichert werden. Bitte die Verbindung
+          prüfen und erneut versuchen.
         </Statusmeldung>
       ) : null}
     </div>

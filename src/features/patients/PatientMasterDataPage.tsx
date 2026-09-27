@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { roleLabel } from '@/components/ui/roleLabels';
 import { Section } from '@/components/ui/Section';
+import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
 import { todayInTimeZone } from '@/features/appointments/api';
 import {
@@ -41,18 +45,31 @@ import {
  * Telefonnummer als Aktion, nicht als Text (Oberflächen-Checkliste Punkt 8).
  *
  * Im Hausbesuch ist der Anruf der häufigste nächste Schritt; ein `tel:`-Link
- * spart das Abtippen am Handy.
+ * spart das Abtippen am Handy. Als alleinstehender Textlink mit 44 px
+ * Tippziel und Unterstreichung (PAT-11, RSP-05, UIK-15): Vorher war die
+ * Nummer ein 20 px hoher Streifen, mit Handschuhen kaum zu treffen, und ohne
+ * Unterstreichung neben schwarzem Text kaum als Link zu erkennen.
  */
 function TelefonZeile({ label, nummer }: { label: string; nummer: string | null }) {
   if (!nummer) return <DetailRow label={label}>—</DetailRow>;
   return (
     <DetailRow label={label}>
-      <a className="text-accent hover:underline" href={telHref(nummer)}>
+      <Textlink href={telHref(nummer)} alleinstehend className={KONTAKT_IN_DER_ZEILE}>
         {nummer}
-      </a>
+      </Textlink>
     </DetailRow>
   );
 }
+
+/**
+ * Ab 640 px stehen Beschriftung und Wert nebeneinander. Das 44-px-Tippziel
+ * reicht dort in den Zeilenabstand hinein, statt die Zeile zu strecken - sonst
+ * stünde die Nummer eine halbe Zeile tiefer als ihre Beschriftung. Innen
+ * dieselbe Polsterung wie außen weggenommen: So beginnt auch eine E-Mail über
+ * zwei Zeilen auf der Höhe der Beschriftung. Am Telefon steht der Wert unter
+ * der Beschriftung, dort bleibt das Ziel, wie es ist.
+ */
+const KONTAKT_IN_DER_ZEILE = 'sm:-my-2.5 sm:py-2.5';
 
 /**
  * Wechsel des Versorgungsstatus.
@@ -141,7 +158,7 @@ function VersorgungAbschliessen({
       >
         <p>
           Die Versorgung gilt wieder als laufend. Die Aufbewahrungsfrist beginnt erst mit einem
-          neuen Abschluss — sie läuft nicht weiter.
+          neuen Abschluss – sie läuft nicht weiter.
         </p>
       </Rueckfrage>
     );
@@ -151,7 +168,8 @@ function VersorgungAbschliessen({
     <Rueckfrage
       ausloeser="Versorgung abschließen"
       bestaetigen="Versorgung abschließen"
-      bestaetigenLaeuft="Wird gespeichert …"
+      // Dasselbe Verb wie auf dem Knopf (WRT-10).
+      bestaetigenLaeuft="Wird abgeschlossen …"
       fehler={
         mutation.isError
           ? 'Der Abschluss der Versorgung konnte nicht gespeichert werden. Prüfen Sie das Datum.'
@@ -167,9 +185,14 @@ function VersorgungAbschliessen({
         Abschluss zurücknehmen.
       </p>
       <div className="mt-3 max-w-60">
+        {/* Der Tag liegt zwischen Beginn der Versorgung und heute - dieselben
+            Grenzen, die der Server prüft (PAT-15). Vorher bot der Wähler auch
+            Tage vor dem Beginn an, und erst die Abweisung sagte „Prüfen Sie
+            das Datum". */}
         <Field
           label="Letzter Behandlungstag"
           type="date"
+          min={patient.care_started_on ?? undefined}
           max={heute || undefined}
           value={tag}
           onChange={(event) => setTag(event.target.value)}
@@ -185,6 +208,7 @@ export function PatientMasterDataPage() {
 }
 
 export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentUser }) {
+  const ort = useLocation();
   const alter = ageInYears(patient.date_of_birth);
   const street = [patient.street, patient.house_number].filter(Boolean).join(' ');
   const address = [street, [patient.postal_code, patient.city].filter(Boolean).join(' ')]
@@ -208,24 +232,35 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
     patient.primary_therapist_name,
   );
 
+  // Formulare und Auskunft kehren hierher zurück - samt dem Rückweg der Akte,
+  // der in der Adresse mitreist (PAT-08). Sonst stand nach dem Speichern der
+  // Stammdaten „Zurück zur Liste" da, auch wenn man aus dem Kalender kam.
+  const hier = `${ort.pathname}${ort.search}`;
+
   return (
     <>
-      {/* Zwei Spalten auf dem Desktop: Person und Kontakt sind kurze Listen und
+      {/* Der Weg ins Formular steht über den Abschnitten und nicht im Kopf von
+          „Person": Er bearbeitet alle Abschnitte, und nebeneinander stehen die
+          Köpfe der beiden Spalten so auf derselben Höhe (PAT-B01). */}
+      <div className="mb-6">
+        <ButtonLink
+          to={mitRueckweg(`/patienten/${patient.id}/bearbeiten`, hier)}
+          variant="secondary"
+        >
+          Stammdaten bearbeiten
+        </ButtonLink>
+      </div>
+
+      {/* Zwei Spalten erst ab 1280 px: Person und Kontakt sind kurze Listen und
           stünden untereinander als zwei schmale Streifen in einer leeren
-          Fläche. Jeder Abschnitt steht in einem eigenen Rasterfeld - damit
-          greift `first:mt-0` in jedem Feld und die Spalten beginnen auf
-          derselben Höhe. */}
-      <div className="grid gap-x-8 gap-y-8 lg:grid-cols-2">
+          Fläche. Darunter blieben der Wertspalte neben der 176-px-Beschriftung
+          knapp 100 px - Adresse und Zugangshinweis standen zu ein, zwei Wörtern
+          je Zeile, und die Seite lief seitlich über (PAT-B01). Jeder Abschnitt
+          steht in einem eigenen Rasterfeld - damit greift `first:mt-0` in
+          jedem Feld und die Spalten beginnen auf derselben Höhe. */}
+      <div className="grid gap-x-8 gap-y-8 xl:grid-cols-2">
         <div>
-          <Section
-            titel="Person"
-            rahmen
-            aktion={
-              <ButtonLink to={`/patienten/${patient.id}/bearbeiten`} variant="secondary">
-                Stammdaten bearbeiten
-              </ButtonLink>
-            }
-          >
+          <Section titel="Person" rahmen>
             <DetailList>
               <DetailRow label="Geburtsdatum">
                 {patient.date_of_birth
@@ -259,9 +294,13 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
               {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
               <DetailRow label="E-Mail">
                 {patient.email ? (
-                  <a className="text-accent hover:underline" href={`mailto:${patient.email}`}>
+                  <Textlink
+                    href={`mailto:${patient.email}`}
+                    alleinstehend
+                    className={KONTAKT_IN_DER_ZEILE}
+                  >
                     {patient.email}
-                  </a>
+                  </Textlink>
                 ) : (
                   '—'
                 )}
@@ -274,14 +313,14 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
             Sicht sie gar nicht erst; der Abschnitt bleibt dann leer und
             verschwindet (ANN-010, ADR-004). Der Zugangshinweis steht zusätzlich
             auf der Übersicht - vor einem Hausbesuch ist er die Angabe, die man
-            unterwegs sucht. */}
+            unterwegs sucht. Der Abschnitt heißt wie im Formular (PAT-07). */}
         {/* UX-003a: Die Behandlungsliege steht hier für jede Praxisrolle, auch
             wenn sonst nichts hinterlegt ist - sonst gäbe es keinen Ort, sie
             zu setzen. Dieselbe Rollenmenge wie update_patient; verbindlich
             prüft set_treatment_table_required (ADR-004). */}
         {hatVersorgungsangaben || darfLiegeSetzen ? (
           <div>
-            <Section titel="Hausbesuch und Versorgung" rahmen>
+            <Section titel="Hausbesuch und Praxisangaben" rahmen>
               <DetailList>
                 {darfLiegeSetzen ? (
                   <DetailRow label="Behandlungsliege">
@@ -289,7 +328,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
                   </DetailRow>
                 ) : null}
                 {patient.home_visit_access_note ? (
-                  <DetailRow label="Zugang">{patient.home_visit_access_note}</DetailRow>
+                  <DetailRow label="Zugangshinweis">{patient.home_visit_access_note}</DetailRow>
                 ) : null}
                 {patient.special_note ? (
                   <DetailRow label="Besonderheit">{patient.special_note}</DetailRow>
@@ -316,7 +355,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
                 Behandlung. */}
               <DetailRow label="Abschluss">
                 {patient.care_concluded_on
-                  ? `${formatDate(patient.care_concluded_on)} — Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`
+                  ? `${formatDate(patient.care_concluded_on)} – Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`
                   : 'Laufende Versorgung'}
               </DetailRow>
             </DetailList>
@@ -327,7 +366,14 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
       {darfStatusWechseln || darfAbschliessen ? (
         <Section
           titel="Verwaltung"
-          hinweis="Vorgänge, die eine Akte aus dem laufenden Betrieb nehmen. Beide sind rücknehmbar."
+          // Der Satz zählt, was die Rolle hier tatsächlich sieht (PAT-05):
+          // Therapeut:innen sehen nur den Abschluss, das Praxismanagement nur
+          // den Status - „beide" stimmte für sie nicht.
+          hinweis={
+            darfStatusWechseln && darfAbschliessen
+              ? 'Vorgänge, die eine Akte aus dem laufenden Betrieb nehmen. Beide sind rücknehmbar.'
+              : 'Ein Vorgang, der eine Akte aus dem laufenden Betrieb nimmt. Er ist rücknehmbar.'
+          }
         >
           <div className="flex flex-wrap items-start gap-3">
             {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
@@ -342,15 +388,26 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           beginnen mit einem Schreiben, nicht mit einem Klick (OPS-006). Der
           Zugang ist `owner` vorbehalten; ausgeblendet ist keine
           Zugriffskontrolle — verbindlich sind die Serverfunktionen
-          (ADR-004). */}
+          (ADR-004). Die übrigen Praxisrollen erfahren, wer eine Anfrage
+          bearbeitet, statt vor einer Lücke zu stehen (PAT-05). */}
       {darfAuskunftErteilen ? (
         <Section
           titel="Betroffenenrechte"
           hinweis="Auskunft nach Art. 15 DSGVO und die Antwort auf ein Löschverlangen. Jede Auskunft wird protokolliert."
         >
-          <ButtonLink to={`/patienten/${patient.id}/auskunft`} variant="secondary">
+          <ButtonLink
+            to={mitRueckweg(`/patienten/${patient.id}/auskunft`, hier)}
+            variant="secondary"
+          >
             Auskunft und Löschverlangen
           </ButtonLink>
+        </Section>
+      ) : canReadPatientDirectory(user.roles) ? (
+        <Section titel="Betroffenenrechte">
+          <p className="text-ink-muted max-w-prose text-sm">
+            Auskunft nach Art. 15 DSGVO und Löschverlangen sind der Rolle „{roleLabel('owner')}“
+            vorbehalten.
+          </p>
         </Section>
       ) : null}
 
