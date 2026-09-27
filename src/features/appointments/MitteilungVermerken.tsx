@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Rueckmeldung } from './Rueckmeldungen';
 import {
   notificationChannelLabels,
   notificationChannelOrder,
@@ -15,11 +16,13 @@ import {
 /**
  * Vermerken, dass ein Termin der Patient:in mitgeteilt wurde (CAL-012).
  *
- * **Die Nachhut, nicht der Regelweg.** Druck und E-Mail vermerken sich seit
- * CAL-012 und CAL-013 von selbst, wenn sie aus der Anwendung ausgelöst werden.
- * Hier steht, was die Anwendung nicht sehen kann: das Gespräch am Tresen, der
- * Anruf, die Nachricht aus einem fremden Postfach — und die Rücknahme eines
- * Vermerks, dessen Vorgang doch nicht stattgefunden hat (ANN-040, ANN-041).
+ * **Die Nachhut, nicht der Regelweg.** Terminzettel und E-Mail vermerken sich
+ * seit UX-012 dort, wo sie entstehen - aber erst, wenn dort bestätigt ist,
+ * dass der Zettel ausgehändigt beziehungsweise die Nachricht gesendet wurde
+ * (ANN-039 und ANN-041, je Fassung 2). Hier steht, was die Anwendung nicht
+ * sehen kann: das Gespräch am Tresen, der Anruf, die Nachricht aus einem
+ * fremden Postfach — und die Rücknahme eines Vermerks, dessen Vorgang doch
+ * nicht stattgefunden hat (ANN-040, ANN-041).
  *
  * **Automatisch versendet wird weiterhin nichts.** B15 bleibt dabei: keine
  * automatische Terminerinnerung über einen Dienstleister; SMS und Messenger
@@ -44,11 +47,12 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
   const mutation = useMutation({
     mutationFn: (kanaele: NotificationChannel[]) =>
       setAppointmentNotification(appointment.id, kanaele),
-    onSuccess: async (kanaele) => {
+    onSuccess: (kanaele) => {
       setAuswahl(kanaele);
       setGespeichert(true);
-      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
-      await queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
+      // Die Bestätigung folgt dem Server, nicht dem Nachladen (ZST-B01).
+      void queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
+      void queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
     },
   });
 
@@ -66,10 +70,11 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
     auswahl.every((kanal) => appointment.notification_channels.includes(kanal));
 
   return (
+    // Eine Stufe unter dem Seitentitel: Die Mitteilung gehört nicht zu „Was
+    // ist passiert?", sie steht daneben (TER-16).
     <Section
       titel="Mitteilung an die Patient:in"
-      ebene={3}
-      hinweis="Nachtragen und zurücknehmen von Hand. Druck und E-Mail aus der Anwendung vermerken sich selbst."
+      hinweis="Für Gespräch und Anruf. Terminzettel und E-Mail werden vermerkt, sobald Sie dort bestätigen, dass sie übergeben bzw. gesendet wurden."
     >
       <div className="flex flex-col gap-1">
         {notificationChannelOrder.map((kanal) => (
@@ -83,7 +88,7 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
       </div>
 
       <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
-        Sobald der Termin verschoben oder anders geändert wird, verfällt der Vermerk — die neue Zeit
+        Sobald der Termin verschoben oder anders geändert wird, verfällt der Vermerk – die neue Zeit
         ist dann noch nicht mitgeteilt.
       </p>
 
@@ -96,12 +101,14 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
         >
           {mutation.isPending ? 'Wird vermerkt …' : 'Vermerk speichern'}
         </Button>
+        {/* Im Erfolgston, und mit dem Fokus: Der Knopf ist nach dem Speichern
+            abgeschaltet, weil nichts mehr zu speichern ist (UIK-21). */}
         {mutation.isError ? (
           <Statusmeldung ton="fehler">{mutation.error.message}</Statusmeldung>
         ) : gespeichert ? (
-          <Statusmeldung>
+          <Rueckmeldung>
             {auswahl.length === 0 ? 'Vermerk zurückgenommen.' : 'Vermerk gespeichert.'}
-          </Statusmeldung>
+          </Rueckmeldung>
         ) : null}
       </div>
     </Section>

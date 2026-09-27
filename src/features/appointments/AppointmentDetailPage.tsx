@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Select } from '@/components/ui/Select';
@@ -10,6 +10,7 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Textlink } from '@/components/ui/Textlink';
 import { MitteilungVermerken } from './MitteilungVermerken';
 import { Deckungszeichen } from './Deckungszeichen';
 import { Laengenzeichen } from './Laengenzeichen';
@@ -22,8 +23,11 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
+import { BEREICHE } from '@/lib/begriffe';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { NavigationZumTermin } from './NavigationStarten';
+import { NachladeHinweis, Rueckmeldung } from './Rueckmeldungen';
+import { leseAngelegtenTermin, leseMeldung } from './terminformular';
 import {
   appointmentStatusLabels,
   cancelAppointment,
@@ -52,6 +56,38 @@ import {
   type Appointment,
   type EventParticipant,
 } from './api';
+
+/**
+ * Wo das Ausfallhonorar erfasst wird (TER-10).
+ *
+ * Bis UXR-005 stand hier, Höhe und Abrechnung stünden noch aus, weil der
+ * Leistungskatalog noch nicht eingerichtet sei. Katalog und Rechnung gibt es
+ * inzwischen; das Honorar erscheint dort unter den Leistungen.
+ */
+const HONORAR_ERFASSUNG = `Wird unter ${BEREICHE.abrechnung.label} → Leistungen erfasst.`;
+
+/**
+ * Meldet der Seite einen bestätigten Vorgang (ZST-16, TER-17).
+ *
+ * Die Aktionen sitzen weit unten und verschwinden mit dem neuen Zustand -
+ * der Termin ist abgesagt, abgeschlossen, vermerkt. Die Bestätigung steht
+ * deshalb oben und nimmt den Fokus (`Rueckmeldung`).
+ */
+type Melden = (text: string) => void;
+
+/**
+ * Stößt das Nachladen an, ohne darauf zu warten (ZST-B01).
+ *
+ * Die Aktionen warteten bisher in `onSuccess`, bis alle Listen neu geladen
+ * waren; im Funkloch hieß ein bestätigter Vorgang dann sekundenlang „Wird
+ * abgesagt …". Die Bestätigung folgt jetzt dem Server, nicht dem Nachladen.
+ */
+function nachladen(
+  queryClient: ReturnType<typeof useQueryClient>,
+  ...schluessel: readonly (readonly unknown[])[]
+) {
+  for (const queryKey of schluessel) void queryClient.invalidateQueries({ queryKey });
+}
 
 /** Bezeichnung des Ortsfeldes - je nach Terminart eine andere Frage. */
 function ortsBeschriftung(art: Appointment['appointment_type']): string {
@@ -100,13 +136,13 @@ function zustandsHinweis(appointment: Appointment): string {
  * Es ist ausdrücklich keine Löschung: der Termin bleibt erhalten. Die
  * Beschriftung vermeidet deshalb jede Löschsprache.
  */
-function AbsageAktion({ appointment }: { appointment: Appointment }) {
+function AbsageAktion({ appointment, melden }: { appointment: Appointment; melden: Melden }) {
   const queryClient = useQueryClient();
   // Ein Ereignis sagt keine Patient:in ab: Es gibt keine, es gibt keinen
   // Behandlungsbeginn, auf den sich eine Frist bezöge, und der Server setzt
-  // dort keinen Gebührenanlass (CAL-016). Also weder der Grund
+  // dort keinen Honoraranlass (CAL-016). Also weder der Grund
   // „Patient:in hat abgesagt" noch die Frage nach dem Eingang noch der
-  // Hinweis auf die Gebühr - alles drei wäre hier eine Behauptung.
+  // Hinweis auf das Honorar - alles drei wäre hier eine Behauptung.
   const istEreignis = appointment.kind === 'internal';
   const [grund, setGrund] = useState('');
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
@@ -131,12 +167,11 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
         eingabe.datum,
         eingabe.uhrzeit,
       ),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
-      // Der Kalender zeigt sonst weiter einen bestätigten Termin.
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      // Die Tagesliste ebenso.
-      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+    onSuccess: () => {
+      // Der Termin selbst, der Kalender und die Tagesliste zeigen sonst
+      // weiter einen bestätigten Termin.
+      nachladen(queryClient, ['appointment', appointment.id], ['appointments'], ['day-plan']);
+      melden(istEreignis ? 'Teilnahme abgesagt.' : 'Termin abgesagt.');
     },
   });
 
@@ -176,7 +211,7 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
     >
       <p>
         {istEreignis
-          ? `Die Teilnahme von ${staffName(appointment)} an der Fehlzeit „${appointment.title ?? ''}" `
+          ? `Die Teilnahme von ${staffName(appointment)} an der Fehlzeit „${appointment.title ?? ''}“ `
           : 'Der Termin '}
         am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
         {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr
@@ -196,7 +231,7 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
             setGrundFehler(undefined);
           }}
         >
-          <option value="">Bitte wählen</option>
+          <option value="">Bitte wählen …</option>
           {Object.entries(cancellationReasonLabels)
             .filter(([wert]) => !istEreignis || wert !== 'patient_request')
             .map(([wert, beschriftung]) => (
@@ -219,7 +254,7 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
           <Select
             label="Wann ist die Absage eingegangen?"
             value={eingang}
-            hint="Maßgeblich für die Ausfallgebühr ist der Eingang, nicht die Eingabe."
+            hint="Maßgeblich für das Ausfallhonorar ist der Eingang, nicht die Eingabe."
             onChange={(e) => {
               setEingang(e.target.value === 'frueher' ? 'frueher' : 'jetzt');
               setEingangFehler(undefined);
@@ -261,15 +296,15 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
       ) : null}
 
       {istEreignis ? (
-        <p className="text-ink-muted mt-3 text-sm leading-relaxed">
-          Eine Fehlzeit des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
+        <p className="text-ink-muted mt-3 text-sm">
+          Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus – es gibt keine Patient:in,
           die absagen könnte.
         </p>
       ) : (
-        <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+        <p className="text-ink-muted mt-3 text-sm">
           Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt,
-          merkt die Anwendung eine Ausfallgebühr vor. Die Frist rechnet der Server; genau 24 Stunden
-          liegen außerhalb der Regel.
+          merkt die Anwendung ein Ausfallhonorar vor. Die Frist wird automatisch berechnet; genau 24
+          Stunden vorher gilt noch als rechtzeitig.
         </p>
       )}
     </Rueckfrage>
@@ -286,14 +321,16 @@ function AbsageAktion({ appointment }: { appointment: Appointment }) {
  *
  * Der Grund ist Pflicht wie bei jeder Absage (ANN-034), aber ohne
  * „Patient:in hat abgesagt" und ohne die Frage nach dem Eingang: Ein Ereignis
- * hat keine Patient:in und löst keine Ausfallgebühr aus (CAL-016).
+ * hat keine Patient:in und löst kein Ausfallhonorar aus (CAL-016).
  */
 function EreignisAbsageAktion({
   appointment,
   beteiligte,
+  melden,
 }: {
   appointment: Appointment;
   beteiligte: EventParticipant[];
+  melden: Melden;
 }) {
   const queryClient = useQueryClient();
   const [grund, setGrund] = useState('');
@@ -305,11 +342,15 @@ function EreignisAbsageAktion({
   const mutation = useMutation({
     mutationFn: (gewaehlt: CancellationReason) =>
       cancelAppointmentEvent(appointment.event_group_id!, stand, gewaehlt),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['appointment'] });
-      await queryClient.invalidateQueries({ queryKey: ['event-participants'] });
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+    onSuccess: () => {
+      nachladen(
+        queryClient,
+        ['appointment'],
+        ['event-participants'],
+        ['appointments'],
+        ['day-plan'],
+      );
+      melden('Fehlzeit für alle Beteiligten abgesagt.');
     },
   });
 
@@ -335,7 +376,7 @@ function EreignisAbsageAktion({
       onBestaetigen={absagen}
     >
       <p>
-        {`Die Fehlzeit „${appointment.title ?? ''}" `}
+        {`Die Fehlzeit „${appointment.title ?? ''}“ `}
         am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
         {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr wird für{' '}
         {offen.length === 1 ? 'die eine noch offene Teilnahme' : `alle ${offen.length} Beteiligten`}{' '}
@@ -352,7 +393,7 @@ function EreignisAbsageAktion({
             setGrundFehler(undefined);
           }}
         >
-          <option value="">Bitte wählen</option>
+          <option value="">Bitte wählen …</option>
           {Object.entries(cancellationReasonLabels)
             .filter(([wert]) => wert !== 'patient_request')
             .map(([wert, beschriftung]) => (
@@ -362,8 +403,8 @@ function EreignisAbsageAktion({
             ))}
         </Select>
       </div>
-      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
-        Eine Fehlzeit des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
+      <p className="text-ink-muted mt-3 text-sm">
+        Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus – es gibt keine Patient:in,
         die absagen könnte.
       </p>
     </Rueckfrage>
@@ -379,7 +420,7 @@ function EreignisAbsageAktion({
  * Teammeeting von letzter Woche wird nicht nachträglich zu einem abgesagten
  * (ANN-059).
  */
-function SerieAbsageAktion({ appointment }: { appointment: Appointment }) {
+function SerieAbsageAktion({ appointment, melden }: { appointment: Appointment; melden: Melden }) {
   const queryClient = useQueryClient();
   const [grund, setGrund] = useState('');
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
@@ -402,12 +443,16 @@ function SerieAbsageAktion({ appointment }: { appointment: Appointment }) {
   const mutation = useMutation({
     mutationFn: (gewaehlt: CancellationReason) =>
       cancelEventSeries(appointment.event_series_id!, stand, gewaehlt),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['appointment'] });
-      await queryClient.invalidateQueries({ queryKey: ['event-participants'] });
-      await queryClient.invalidateQueries({ queryKey: ['event-series'] });
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+    onSuccess: () => {
+      nachladen(
+        queryClient,
+        ['appointment'],
+        ['event-participants'],
+        ['event-series'],
+        ['appointments'],
+        ['day-plan'],
+      );
+      melden('Alle kommenden Vorkommen der Dauerfehlzeit sind abgesagt.');
     },
   });
 
@@ -437,7 +482,7 @@ function SerieAbsageAktion({ appointment }: { appointment: Appointment }) {
       onBestaetigen={absagen}
     >
       <p>
-        {`Die Dauerfehlzeit „${appointment.title ?? ''}" `}
+        {`Die Dauerfehlzeit „${appointment.title ?? ''}“ `}
         wird mit {kommende.length === 1 ? 'ihrem einen noch' : `allen ${kommende.length}`} kommenden
         Vorkommen als abgesagt geführt – {kommende.length === 1 ? 'es' : 'das erste'} am{' '}
         {formatLocalDate(kommende[0]!.starts_at, appointment.organization_time_zone)}. Bereits
@@ -454,7 +499,7 @@ function SerieAbsageAktion({ appointment }: { appointment: Appointment }) {
             setGrundFehler(undefined);
           }}
         >
-          <option value="">Bitte wählen</option>
+          <option value="">Bitte wählen …</option>
           {Object.entries(cancellationReasonLabels)
             .filter(([wert]) => wert !== 'patient_request')
             .map(([wert, beschriftung]) => (
@@ -464,8 +509,8 @@ function SerieAbsageAktion({ appointment }: { appointment: Appointment }) {
             ))}
         </Select>
       </div>
-      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
-        Eine Fehlzeit des Praxisbetriebs löst keine Ausfallgebühr aus – es gibt keine Patient:in,
+      <p className="text-ink-muted mt-3 text-sm">
+        Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus – es gibt keine Patient:in,
         die absagen könnte.
       </p>
     </Rueckfrage>
@@ -491,27 +536,29 @@ const PROTOKOLLSCHRITTE = [
  * „Nicht angetroffen" — am Hausbesuch mit Protokoll, sonst ein Schritt.
  *
  * Die behandelnde Person steht vor der Tür, niemand öffnet. **Am Hausbesuch**
- * löst das seit E14 eine Ausfallgebühr aus, aber erst nach bestätigtem
+ * löst das seit E14 ein Ausfallhonorar aus, aber erst nach bestätigtem
  * Protokoll: 15 Minuten gewartet, geklingelt, angerufen. Ohne die Bestätigung
  * gibt es kein Nichtantreffen — der Termin bleibt bestätigt, bis die Person
  * entscheidet (ADR-018 Fassung 3 Punkt 9).
  *
- * **Sonst** bleibt es der Schritt aus CAL-014c: ein Vermerk ohne Gebühr. Das
+ * **Sonst** bleibt es der Schritt aus CAL-014c: ein Vermerk ohne Honorar. Das
  * Protokoll ist ein Hausbesuchsprotokoll; an der Praxistür gibt es nichts zu
  * klingeln, und für das Nichtantreffen in der Praxis gibt es keine Festlegung
  * (ANN-055). Verbindlich prüft beides der Server.
  *
  * Die Rückfrage bleibt in beiden Fällen: Der Vermerk sperrt die Dokumentation
  * und ist damit mehr als ein Haken. Zurückgenommen wird er über „Termin wieder
- * öffnen"; der Gebührenanlass fällt dabei mit weg.
+ * öffnen"; der Honoraranlass fällt dabei mit weg.
  */
 function NichtAngetroffenAktion({
   appointment,
   mitProtokoll = false,
+  melden,
 }: {
   appointment: Appointment;
-  /** Am Hausbesuch: das Protokoll ist Pflicht und die Gebühr die Folge. */
+  /** Am Hausbesuch: das Protokoll ist Pflicht und das Honorar die Folge. */
   mitProtokoll?: boolean;
+  melden: Melden;
 }) {
   const queryClient = useQueryClient();
   const [schritte, setSchritte] = useState<Record<string, boolean>>({});
@@ -519,10 +566,13 @@ function NichtAngetroffenAktion({
 
   const mutation = useMutation({
     mutationFn: () => recordNoShow(appointment.id, appointment.updated_at, mitProtokoll),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+    onSuccess: () => {
+      nachladen(queryClient, ['appointment', appointment.id], ['appointments'], ['day-plan']);
+      melden(
+        mitProtokoll
+          ? 'Als „nicht angetroffen“ vermerkt – das Ausfallhonorar ist vorgemerkt.'
+          : 'Als „nicht angetroffen“ vermerkt.',
+      );
     },
   });
 
@@ -550,12 +600,12 @@ function NichtAngetroffenAktion({
       <p>
         Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
         um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
-        {patientName(appointment)} wird als „nicht angetroffen" geführt
-        {mitProtokoll ? ' und merkt eine Ausfallgebühr vor' : ''}. Der Zeitraum bleibt belegt. Ein
-        Irrtum lässt sich über „Termin wieder öffnen" zurücknehmen.
+        {patientName(appointment)} wird als „nicht angetroffen“ geführt
+        {mitProtokoll ? ' und merkt ein Ausfallhonorar vor' : ''}. Der Zeitraum bleibt belegt. Ein
+        Irrtum lässt sich über „Termin wieder öffnen“ zurücknehmen.
       </p>
 
-      {/* Die drei Schritte als Pflichtangabe vor der Gebühr (ADR-018
+      {/* Die drei Schritte als Pflichtangabe vor dem Honorar (ADR-018
           Fassung 3 Punkt 9). Ohne Vorbelegung: Bestätigt wird, was tatsächlich
           getan wurde. */}
       {mitProtokoll ? (
@@ -582,12 +632,12 @@ function NichtAngetroffenAktion({
         </fieldset>
       ) : null}
 
-      <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+      <p className="text-ink-muted mt-3 text-sm">
         Das ist ein organisatorischer Vermerk: keine durchgeführte Behandlung, keine Dokumentation,
         keine verbrauchte Verordnungsleistung.{' '}
         {mitProtokoll
-          ? 'Die Gebühr entsteht erst mit dem bestätigten Protokoll; Höhe und Abrechnung stehen noch aus.'
-          : 'Eine Gebühr entsteht daraus nicht.'}
+          ? `Das Ausfallhonorar entsteht erst mit dem bestätigten Protokoll. ${HONORAR_ERFASSUNG}`
+          : 'Ein Ausfallhonorar entsteht daraus nicht.'}
       </p>
     </Rueckfrage>
   );
@@ -607,28 +657,30 @@ function NichtAngetroffenAktion({
  * daneben. Die Erklärung ist Bedienhilfe, keine Auswertung: Sie zählt nichts
  * und wertet niemanden aus (§20).
  *
- * Verbindlich ist auch hier nichts davon — Protokoll, Gebührenanlass und
+ * Verbindlich ist auch hier nichts davon — Protokoll, Honoraranlass und
  * Pflichtvermerk prüft der Server (ADR-004).
  */
 function HausbesuchSzenarien({
   appointment,
   eingehend,
   darfDokumentieren,
+  melden,
 }: {
   appointment: Appointment;
   eingehend: string;
   darfDokumentieren: boolean;
+  melden: Melden;
 }) {
   return (
     <Section
       titel="Was ist passiert?"
-      hinweis="Am Hausbesuch entscheidet dieser Schritt über die Abrechnung. Gerechnet wird serverseitig."
+      hinweis="Am Hausbesuch entscheidet dieser Schritt über die Abrechnung."
       rahmen
     >
       <ol className="divide-line divide-y">
         <li className="py-4 first:pt-0 last:pb-0">
           <p className="text-ink font-medium">Die Behandlung hat stattgefunden</p>
-          <p className="text-ink-muted mt-1 max-w-prose text-sm leading-relaxed">
+          <p className="text-ink-muted mt-1 max-w-prose text-sm">
             Der Regelfall: Der Termin gilt als durchgeführt, die Dokumentation wird festgeschrieben,
             abgerechnet wird normal.
           </p>
@@ -643,9 +695,9 @@ function HausbesuchSzenarien({
 
         <li className="py-4 first:pt-0 last:pb-0">
           <p className="text-ink font-medium">Tür geöffnet, Behandlung nicht durchgeführt</p>
-          <p className="text-ink-muted mt-1 max-w-prose text-sm leading-relaxed">
+          <p className="text-ink-muted mt-1 max-w-prose text-sm">
             Die Patient:in öffnet und sagt ab. Der Termin gilt trotzdem als durchgeführt und wird
-            normal abgerechnet; eine Ausfallgebühr entsteht nicht. Die Dokumentation trägt dazu
+            normal abgerechnet; ein Ausfallhonorar entsteht nicht. Die Dokumentation trägt dazu
             einen Pflichtvermerk.
           </p>
           {darfDokumentieren ? (
@@ -666,23 +718,24 @@ function HausbesuchSzenarien({
         <li className="py-4 first:pt-0 last:pb-0">
           {/* Die Überschrift beschreibt die Lage, die Schaltfläche darunter
               den Schritt — beide gleich zu benennen hieße, zweimal dasselbe
-              zu sagen und doch Verschiedenes zu meinen. */}
+              zu sagen und doch Verschiedenes zu meinen. Der Zustand selbst
+              heißt überall „nicht angetroffen" (WRT-B01). */}
           <p className="text-ink font-medium">Niemand hat geöffnet</p>
-          <p className="text-ink-muted mt-1 max-w-prose text-sm leading-relaxed">
-            Nach 15 Minuten Wartezeit, Klingeln und Anruf gilt der Termin als nicht wahrgenommen und
-            löst eine Ausfallgebühr aus. Die drei Schritte werden vorher bestätigt.
+          <p className="text-ink-muted mt-1 max-w-prose text-sm">
+            Nach 15 Minuten Wartezeit, Klingeln und Anruf wird der Termin als „nicht angetroffen“
+            geführt und löst ein Ausfallhonorar aus. Die drei Schritte werden vorher bestätigt.
           </p>
           <div className="mt-3">
-            <NichtAngetroffenAktion appointment={appointment} mitProtokoll />
+            <NichtAngetroffenAktion appointment={appointment} mitProtokoll melden={melden} />
           </div>
         </li>
 
         <li className="py-4 first:pt-0 last:pb-0">
           <p className="text-ink font-medium">Die Patient:in hat vorher abgesagt</p>
-          <p className="text-ink-muted mt-1 max-w-prose text-sm leading-relaxed">
-            Dann gehört das zur Absage, nicht hierher: „Termin absagen" steht unten. Liegt der
-            Eingang der Absage weniger als 24 Stunden vor dem Beginn, merkt die Anwendung eine
-            Ausfallgebühr vor.
+          <p className="text-ink-muted mt-1 max-w-prose text-sm">
+            Dann gehört das zur Absage, nicht hierher: „Termin absagen“ steht unten. Liegt der
+            Eingang der Absage weniger als 24 Stunden vor dem Beginn, merkt die Anwendung ein
+            Ausfallhonorar vor.
           </p>
         </li>
       </ol>
@@ -706,22 +759,27 @@ function StatusAktion({
   aktion,
   beschriftung,
   laufend,
+  erfolg,
   variant,
+  melden,
 }: {
   appointment: Appointment;
   aktion: (id: string, expectedUpdatedAt: string) => Promise<void>;
   beschriftung: string;
   laufend: string;
+  /** Die Bestätigung nach dem Vorgang - der Knopf ist danach fort (ZST-16). */
+  erfolg: string;
   variant: 'primary' | 'secondary';
+  melden: Melden;
 }) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: () => aktion(appointment.id, appointment.updated_at),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['appointment', appointment.id] });
+    onSuccess: () => {
       // Der Kalender führt den Termin sonst weiter im alten Status.
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      nachladen(queryClient, ['appointment', appointment.id], ['appointments']);
+      melden(erfolg);
     },
   });
 
@@ -747,11 +805,45 @@ function StatusAktion({
   );
 }
 
+/**
+ * Die Bestätigung eines gerade angelegten Folgetermins (TER-04).
+ *
+ * Das Formular kehrt auf diesen Termin zurück und hängt die Kennung des neuen
+ * an (`?neu=`). Vorher stand man danach wortlos wieder auf dem alten Termin -
+ * „Folgetermin anlegen" unverändert daneben, und ein zweiter Versuch ergab
+ * eine Dublette. Tag und Zeit kommen aus dem neuen Termin selbst.
+ */
+function FolgeterminMeldung({ neuId, zumTermin }: { neuId: string; zumTermin: string }) {
+  const neu = useQuery({
+    queryKey: ['appointment', neuId],
+    queryFn: () => fetchAppointment(neuId),
+    retry: false,
+  });
+
+  // Erst, wenn feststeht, was dasteht: Die Zeile nimmt beim Erscheinen den
+  // Fokus, und ein Satz, der sich danach ändert, würde zweimal vorgelesen.
+  if (neu.isPending) return null;
+
+  const termin = neu.data;
+  const zone = termin?.organization_time_zone;
+  return (
+    <Rueckmeldung className="mb-6">
+      {termin && zone
+        ? `Folgetermin am ${formatLocalDate(termin.starts_at, zone)} um ${formatLocalTime(termin.starts_at, zone)} Uhr angelegt.`
+        : 'Folgetermin angelegt.'}{' '}
+      <Textlink to={mitRueckweg(`/termine/${neuId}`, zumTermin)}>Folgetermin öffnen</Textlink>
+    </Rueckmeldung>
+  );
+}
+
 function AppointmentDetail({
   appointment,
   user,
   eingehend,
   zumTermin,
+  eingangsmeldung,
+  neuerTermin,
+  nachladeFehler,
 }: {
   appointment: Appointment;
   user: CurrentUser;
@@ -759,6 +851,12 @@ function AppointmentDetail({
   eingehend: string;
   /** Der Weg zurück zu diesem Termin - für die Wege zu anderen Gegenständen. */
   zumTermin: string;
+  /** Was ein anderer Vorgang beim Hierherkommen bestätigt (DOK-15, ZST-17). */
+  eingangsmeldung: string | null;
+  /** Der gerade angelegte Folgetermin (TER-04). */
+  neuerTermin: string | null;
+  /** Das Nachladen ist gescheitert; der Stand kann veraltet sein (ZST-03). */
+  nachladeFehler: { laeuft: boolean; erneut: () => void } | null;
 }) {
   const zone = appointment.organization_time_zone;
   const darfVerwalten = canManageAppointments(user.roles);
@@ -787,6 +885,16 @@ function AppointmentDetail({
    * der Praxis passiert, bleibt bei den Schaltflächen von vorher.
    */
   const istHausbesuch = !istEreignis && appointment.appointment_type === 'home_visit';
+
+  /**
+   * Die Bestätigung des letzten Vorgangs auf dieser Seite (ZST-16).
+   *
+   * Mit laufender Nummer: Eine zweite, gleichlautende Bestätigung ist eine
+   * neue Zeile und nimmt den Fokus erneut.
+   */
+  const [bestaetigung, setBestaetigung] = useState<{ nummer: number; text: string } | null>(null);
+  const melden: Melden = (text) =>
+    setBestaetigung((bisher) => ({ nummer: (bisher?.nummer ?? 0) + 1, text }));
 
   /**
    * Die Beteiligten des Ereignisses (CAL-017).
@@ -851,27 +959,53 @@ function AppointmentDetail({
                   (CAL-017): „Fehlzeit bearbeiten" trifft alle Beteiligten
                   zugleich, „Teilnahme ändern" nur diese eine Zeile. Ohne die
                   Trennung wäre jede Verschiebung eine Wette darauf, was
-                  gemeint war. */}
+                  gemeint war.
+
+                  Kompakte Sekundärknöpfe aus dem Baustein (TER-16, UIK-14):
+                  vorher eine eigene Klassenkette in Tinte, 15 px und 500. */}
               {istEreignis ? (
-                <Link
+                <ButtonLink
                   to={mitRueckweg(`/termine/${appointment.id}/ereignis-bearbeiten`, eingehend)}
-                  className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
+                  variant="secondary"
+                  groesse="kompakt"
                 >
                   Fehlzeit bearbeiten
-                </Link>
+                </ButtonLink>
               ) : null}
-              <Link
+              <ButtonLink
                 to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
-                className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
+                variant="secondary"
+                groesse="kompakt"
               >
                 {istEreignis ? 'Teilnahme ändern' : 'Bearbeiten'}
-              </Link>
+              </ButtonLink>
             </div>
           ) : null
         }
       />
 
-      <Section titel="Termin" rahmen>
+      {nachladeFehler ? (
+        <NachladeHinweis
+          className="mb-6"
+          laeuft={nachladeFehler.laeuft}
+          onErneut={nachladeFehler.erneut}
+        />
+      ) : null}
+
+      {/* Die Bestätigung steht oben, wo man nach dem Vorgang hinsieht - auch
+          wenn der Knopf dazu weit unten saß (ZST-16, TER-17). Ein Vorgang auf
+          dieser Seite geht der Meldung vor, mit der man hergekommen ist. */}
+      {bestaetigung ? (
+        <Rueckmeldung key={bestaetigung.nummer} className="mb-6">
+          {bestaetigung.text}
+        </Rueckmeldung>
+      ) : neuerTermin && neuerTermin !== appointment.id ? (
+        <FolgeterminMeldung neuId={neuerTermin} zumTermin={zumTermin} />
+      ) : eingangsmeldung ? (
+        <Rueckmeldung className="mb-6">{eingangsmeldung}</Rueckmeldung>
+      ) : null}
+
+      <Section titel={istEreignis ? 'Fehlzeit' : 'Termin'} rahmen>
         <DetailList>
           {/* Bewusst Text und kein zweiter Link: Der Name im Kopf führt in die
               Akte (UX-012). Zwei gleichnamige Links auf dieselbe Seite wären
@@ -886,17 +1020,34 @@ function AppointmentDetail({
           </DetailRow>
           {/* Aus n Zeilen wird hier ein sichtbarer Vorgang: Wer hier steht,
               hat denselben Zeitraum belegt, und „Fehlzeit bearbeiten" trifft
-              alle zugleich (CAL-017). */}
+              alle zugleich (CAL-017). Jede andere Teilnahme führt zu ihrem
+              Termin - dort wird sie getauscht oder abgesagt (TER-15). */}
           {istEreignis && beteiligteListe.length > 1 ? (
             <DetailRow label="Beteiligte">
-              <span>
-                {beteiligteListe
-                  .map((b) =>
+              {/* Die Links stehen je für sich und sind 44 px hoch - am
+                  Telefon ein Ziel für den Daumen, nicht für die Fingerspitze. */}
+              <span className="inline-flex flex-wrap items-center">
+                {beteiligteListe.map((b, index) => {
+                  const name =
                     b.status === 'confirmed'
                       ? b.display_name
-                      : `${b.display_name} (${appointmentStatusLabels[b.status]})`,
-                  )
-                  .join(', ')}
+                      : `${b.display_name} (${appointmentStatusLabels[b.status]})`;
+                  return (
+                    <Fragment key={b.appointment_id}>
+                      {index > 0 ? <span className="mr-1">, </span> : null}
+                      {b.appointment_id === appointment.id ? (
+                        <span>{name}</span>
+                      ) : (
+                        <Textlink
+                          alleinstehend
+                          to={mitRueckweg(`/termine/${b.appointment_id}`, zumTermin)}
+                        >
+                          {name}
+                        </Textlink>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </span>
               <span className="text-ink-muted mt-1 block text-sm">
                 Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
@@ -923,15 +1074,27 @@ function AppointmentDetail({
           {/* CAL-022: Dieser Termin geht über das Kontingent seiner
               Behandlungsgrundlage hinaus. Er ist geplant und gilt — aber er
               erzeugt keine Leistung gegen diese Grundlage (§19, ADR-009), und
-              das gehört an den Termin selbst, nicht nur in die Akte. */}
+              das gehört an den Termin selbst, nicht nur in die Akte. Der Weg
+              zur Abhilfe steht gleich daneben (TER-15). */}
           {appointment.treatment_basis_covered === false ? (
             <DetailRow label="Deckung">
-              <span className="flex flex-wrap items-center gap-2">
+              <span className="flex flex-wrap items-center gap-x-2">
                 <Deckungszeichen gedeckt={appointment.treatment_basis_covered} />
                 <span className="text-ink-muted text-sm">
-                  Die Behandlungsgrundlage deckt diesen Termin nicht. In der Akte lässt er sich auf
-                  eine andere übertragen.
+                  Die Behandlungsgrundlage deckt diesen Termin nicht.
                 </span>
+                {darfVerwalten && appointment.patient_id ? (
+                  <Textlink
+                    alleinstehend
+                    className="text-sm"
+                    to={mitRueckweg(
+                      `/patienten/${appointment.patient_id}/termine-uebertragen`,
+                      zumTermin,
+                    )}
+                  >
+                    Auf andere Grundlage übertragen
+                  </Textlink>
+                ) : null}
               </span>
             </DetailRow>
           ) : null}
@@ -976,25 +1139,22 @@ function AppointmentDetail({
           ) : null}
           {/* Das bestätigte Protokoll steht neben dem Vermerk, denn es ist
               die Grundlage der Forderung (CAL-018). An einem Vermerk ohne
-              Gebühr steht es nicht: Dort gibt es nichts zu belegen. */}
+              Honorar steht es nicht: Dort gibt es nichts zu belegen. */}
           {appointment.no_show_protocol_confirmed ? (
             <DetailRow label="Protokoll">
               Bestätigt: 15 Minuten vor Ort gewartet, an der Tür geklingelt, telefonisch angerufen.
             </DetailRow>
           ) : null}
-          {/* Der Gebührenanlass steht nur da, wenn es einen gibt. Ein
-              „Keine Gebühr" an jedem abgesagten Termin wäre eine Zeile, die
-              nichts sagt. */}
+          {/* Der Honoraranlass steht nur da, wenn es einen gibt. Ein „Kein
+              Ausfallhonorar" an jedem abgesagten Termin wäre eine Zeile, die
+              nichts sagt. Dasselbe Wort wie auf Rechnung, Katalog und dem
+              Blatt für Patient:innen (TER-10). */}
           {appointment.fee_basis ? (
-            <DetailRow label="Gebühr vorgemerkt">
+            <DetailRow label="Ausfallhonorar vorgemerkt">
               <span>{feeBasisLabels[appointment.fee_basis]}</span>
-              {/* Kein Betrag: Der Leistungskatalog (ABR-001) und die Rechnung
-                  (ABR-003) sind noch nicht gebaut. Eine Zahl hier wäre
-                  erfunden. */}
-              <span className="text-ink-muted mt-1 block text-sm">
-                Höhe und Abrechnung stehen noch aus – der Leistungskatalog ist noch nicht
-                eingerichtet.
-              </span>
+              {/* Kein Betrag: Die Höhe steht im Katalog, abgerechnet wird
+                  über die Leistungen. Eine Zahl hier wäre eine zweite Quelle. */}
+              <span className="text-ink-muted mt-1 block text-sm">{HONORAR_ERFASSUNG}</span>
             </DetailRow>
           ) : null}
           {appointment.completed_at ? (
@@ -1016,6 +1176,7 @@ function AppointmentDetail({
             appointment={appointment}
             eingehend={eingehend}
             darfDokumentieren={darfDokumentieren}
+            melden={melden}
           />
         </div>
       ) : null}
@@ -1054,9 +1215,13 @@ function AppointmentDetail({
                   darfDokumentieren ? 'Ohne Dokumentation abschließen' : 'Termin abschließen'
                 }
                 laufend="Wird abgeschlossen …"
+                erfolg="Termin abgeschlossen."
                 variant={darfDokumentieren ? 'secondary' : 'primary'}
+                melden={melden}
               />
-              {istHausbesuch ? null : <NichtAngetroffenAktion appointment={appointment} />}
+              {istHausbesuch ? null : (
+                <NichtAngetroffenAktion appointment={appointment} melden={melden} />
+              )}
             </>
           )}
           {/* Zwei Absagen, und der Unterschied steht in der Beschriftung
@@ -1064,15 +1229,19 @@ function AppointmentDetail({
               Teilnahmen, „Nur diese Teilnahme absagen" diese eine. Die
               zweite steht daneben, weil sie der seltenere Fall ist. */}
           {istEreignis && offeneTeilnahmen.length > 1 ? (
-            <EreignisAbsageAktion appointment={appointment} beteiligte={beteiligteListe} />
+            <EreignisAbsageAktion
+              appointment={appointment}
+              beteiligte={beteiligteListe}
+              melden={melden}
+            />
           ) : null}
           {/* Und die dritte Absage, wenn dieses Ereignis zu einer
               Dauerfehlzeit gehoert (CAL-021): Sie trifft alle noch kommenden
               Vorkommen der Serie. */}
           {istEreignis && appointment.event_series_id ? (
-            <SerieAbsageAktion appointment={appointment} />
+            <SerieAbsageAktion appointment={appointment} melden={melden} />
           ) : null}
-          <AbsageAktion appointment={appointment} />
+          <AbsageAktion appointment={appointment} melden={melden} />
         </div>
       ) : null}
 
@@ -1102,7 +1271,9 @@ function AppointmentDetail({
             aktion={reopenAppointment}
             beschriftung="Termin wieder öffnen"
             laufend="Wird geöffnet …"
+            erfolg="Termin wieder geöffnet."
             variant="secondary"
+            melden={melden}
           />
         </div>
       ) : null}
@@ -1118,22 +1289,27 @@ function AppointmentDetail({
       ) : null}
 
       {appointment.appointment_type === 'video' ? (
-        <p className="text-ink-muted mt-6 max-w-prose text-sm leading-relaxed">
-          Für Videotermine wird in diesem Stand noch kein Videolink erzeugt.
+        <p className="text-ink-muted mt-6 max-w-prose text-sm">
+          Für Videotermine wird noch kein Videolink erzeugt.
         </p>
       ) : null}
 
       {/* Klinische Inhalte stehen bewusst in einem eigenen Datensatz und werden
           über einen eigenen, protokollierten Lesepfad geholt (DOK-001). An
           einem Ereignis gibt es sie nicht - und der Abschnitt fragt auch nicht
-          danach (CAL-015b). */}
-      {istEreignis ? null : <TreatmentNoteSection appointment={appointment} user={user} />}
+          danach (CAL-015b). Der Rückweg des Termins reist in die Doku-Seiten
+          mit, damit er über sie nicht verloren geht (DOK-01). */}
+      {istEreignis ? null : (
+        <TreatmentNoteSection appointment={appointment} user={user} eingehend={eingehend} />
+      )}
 
       <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Zeiten gelten in der Zeitzone der Praxis ({zone}). Der Termin selbst enthält ausschließlich
-        organisatorische Angaben.
+        Zeiten gelten in der Zeitzone der Praxis.{' '}
+        {istEreignis
+          ? 'Die Fehlzeit enthält ausschließlich organisatorische Angaben.'
+          : 'Der Termin selbst enthält ausschließlich organisatorische Angaben.'}
         {appointment.appointment_type === 'home_visit'
-          ? ' „Navigation starten" öffnet Google Maps im Fahrradmodus und übergibt dabei nur die Anschrift ohne Namen – erst beim Tippen.'
+          ? ' „Navigation starten“ öffnet Google Maps im Fahrradmodus und übergibt dabei nur die Anschrift ohne Namen – erst beim Tippen.'
           : ''}
       </p>
     </>
@@ -1143,6 +1319,9 @@ function AppointmentDetail({
 export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const [suche] = useSearchParams();
+  // Was ein anderer Vorgang beim Seitenwechsel mitgibt - ungeprüft, bis
+  // `leseMeldung` es liest.
+  const zustand: unknown = useLocation().state;
 
   // Zwei verschiedene Wege, und die Unterscheidung ist der Punkt (UX-012):
   //
@@ -1157,19 +1336,45 @@ export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
   const eingehend = leseRueckweg(suche, '');
   const zumTermin = mitRueckweg(`/termine/${appointmentId}`, eingehend);
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, isFetching, refetch } = useQuery({
     queryKey: ['appointment', appointmentId],
     queryFn: () => fetchAppointment(appointmentId!),
     enabled: Boolean(appointmentId),
     retry: false,
   });
 
+  /**
+   * Wohin „zurück" ohne mitgereisten Weg führt (TER-03).
+   *
+   * Aus dem Termin selbst abgeleitet: ein Behandlungstermin in die Terminliste
+   * seiner Akte, eine Fehlzeit in den Kalender. Bis UXR-005 führte er immer
+   * in die Patientenliste - auch von einer Fehlzeit, die keine Patient:in hat.
+   * Solange der Termin nicht geladen ist, ist der Kalender das Ziel: Dort
+   * stehen alle Termine.
+   */
+  const standard =
+    data && data.kind !== 'internal' && data.patient_id
+      ? `/patienten/${data.patient_id}/termine`
+      : '/kalender';
+
   return (
     <>
-      <Rueckweg standard="/patienten" beschriftung="Zurück zur Patientenliste" />
+      <Rueckweg standard={standard} />
+
+      {/* Auch ohne Termin trägt die Seite einen Titel - Vorlesesoftware findet
+          sonst keine Überschrift (UIK-16). */}
+      {!data ? <PageHeader title="Termin" /> : null}
 
       {isPending ? <LoadingState label="Termin wird geladen …" /> : null}
-      {isError ? <ErrorState title="Der Termin konnte nicht geladen werden." /> : null}
+      {/* Ersetzt wird der Termin nur, solange es keinen gibt; ein
+          gescheitertes Nachladen meldet sich über dem Stand (ZST-03). */}
+      {isError && !data ? (
+        <ErrorState
+          title="Der Termin konnte nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => void refetch()}
+        />
+      ) : null}
       {data === null ? (
         <ErrorState
           title="Nicht gefunden"
@@ -1182,6 +1387,9 @@ export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
           user={user}
           eingehend={eingehend}
           zumTermin={zumTermin}
+          eingangsmeldung={leseMeldung(zustand)}
+          neuerTermin={leseAngelegtenTermin(suche)}
+          nachladeFehler={isError ? { laeuft: isFetching, erneut: () => void refetch() } : null}
         />
       ) : null}
     </>

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchPatient, fullName } from '@/features/patients/api';
+import { Rueckmeldung } from './Rueckmeldungen';
 import { TermineMailen } from './TermineMailen';
 import {
   addAppointmentNotification,
@@ -81,43 +82,76 @@ export function AppointmentSlipPage() {
 
   const vermerken = useMutation({
     mutationFn: (ids: string[]) => addAppointmentNotification(ids, 'slip'),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
-      await queryClient.invalidateQueries({ queryKey: ['appointment-slip', patientId] });
+    onSuccess: () => {
+      // Die Bestätigung folgt dem Server, nicht dem Nachladen (ZST-B01).
       setGedruckt(false);
+      void queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
+      void queryClient.invalidateQueries({ queryKey: ['appointment-slip', patientId] });
     },
   });
 
+  // Der Rückweg steht in jedem Zustand - auch im Fehlerfall, wo er sonst der
+  // einzige Weg zurück wäre (TER-03, ZST-08). Auf Papier nicht.
+  const kopf = (
+    <div className="nicht-drucken">
+      <Rueckweg standard={`/patienten/${patientId ?? ''}`} beschriftung="Zurück zur Akte" />
+    </div>
+  );
+
+  // Ein Ladefehler ist kein „Nicht gefunden" (TER-11, ZST-08): Im Funkloch
+  // wirkte die Akte sonst gelöscht oder gesperrt.
   if (patient.isPending || termine.isPending) {
-    return <LoadingState label="Terminzettel wird geladen …" />;
-  }
-  if (patient.isError || !patient.data || termine.isError) {
     return (
-      <ErrorState
-        title="Nicht gefunden"
-        description="Dieser Datensatz existiert nicht oder ist für Ihren Zugang nicht freigegeben."
-      />
+      <>
+        {kopf}
+        <LoadingState label="Terminzettel wird geladen …" />
+      </>
+    );
+  }
+  if (!patient.data) {
+    return (
+      <>
+        {kopf}
+        {patient.isError ? (
+          <ErrorState
+            title="Die Patientendaten konnten nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => void patient.refetch()}
+          />
+        ) : (
+          <ErrorState
+            title="Nicht gefunden"
+            description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+          />
+        )}
+      </>
+    );
+  }
+  if (!termine.data) {
+    return (
+      <>
+        {kopf}
+        <ErrorState
+          title="Die Termine konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => void termine.refetch()}
+        />
+      </>
     );
   }
 
   const patientDaten = patient.data;
-  const eintraege = termine.data ?? [];
+  const eintraege = termine.data;
 
   return (
     <>
-      <div className="nicht-drucken">
-        <Link
-          to={`/patienten/${patientDaten.id}`}
-          className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-        >
-          ← Zurück zur Akte
-        </Link>
-      </div>
+      {kopf}
 
       {/* Bewusst kein PageHeader: Die Überschrift steht auf dem Papier und ist
-          an die Patient:in gerichtet, nicht an die bedienende Person. */}
+          an die Patient:in gerichtet, nicht an die bedienende Person. Die
+          Größe ist trotzdem eine des Systems (H4, TER-16). */}
       <section className="max-w-prose">
-        <h1 className="text-ink text-xl font-semibold">Ihre nächsten Termine</h1>
+        <h1 className="text-ink text-h4 font-bold">Ihre nächsten Termine</h1>
         <p className="text-ink-muted text-liste mt-1">{fullName(patientDaten)}</p>
 
         {eintraege.length === 0 ? (
@@ -167,11 +201,13 @@ export function AppointmentSlipPage() {
             >
               Terminzettel drucken
             </Button>
+            {/* Eine Bestätigung im Erfolgston, und mit dem Fokus: Der Knopf,
+                der ihn hatte, ist mit der Frage verschwunden (UIK-21, ZST-16). */}
             {vermerken.isSuccess ? (
-              <Statusmeldung>
-                Die aufgeführten Termine sind als „Terminzettel ausgehändigt" vermerkt. Am Termin
+              <Rueckmeldung>
+                Die aufgeführten Termine sind als „Terminzettel ausgehändigt“ vermerkt. Am Termin
                 lässt sich der Vermerk zurücknehmen.
-              </Statusmeldung>
+              </Rueckmeldung>
             ) : null}
           </div>
 
@@ -221,7 +257,7 @@ export function AppointmentSlipPage() {
       ) : null}
 
       <p className="text-ink-muted nicht-drucken mt-10 max-w-prose text-xs leading-relaxed">
-        Ausdruck und E-Mail enthalten ausschließlich organisatorische Angaben — dieselbe Liste, die
+        Ausdruck und E-Mail enthalten ausschließlich organisatorische Angaben – dieselbe Liste, die
         oben steht. Eine Terminliste ist trotzdem ein Gesundheitsdatum: Sie sagt, dass jemand in
         Behandlung ist.
       </p>

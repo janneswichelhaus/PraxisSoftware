@@ -70,9 +70,22 @@ describe('MitteilungVermerken', () => {
     expect(screen.getByLabelText('Telefonisch mitgeteilt')).not.toBeChecked();
     expect(screen.getByLabelText('Terminzettel ausgehändigt')).not.toBeChecked();
     expect(screen.getByLabelText('Per E-Mail mitgeteilt')).not.toBeChecked();
-    // Seit CAL-013 vermerken sich Druck und E-Mail selbst; hier steht die
-    // Nachhut für alles, was die Anwendung nicht sehen kann.
-    expect(screen.getByText(/Nachtragen und zurücknehmen von Hand/)).toBeInTheDocument();
+    // Terminzettel und E-Mail vermerken sich erst mit der Bestätigung dort
+    // (ANN-039, ANN-041 Fassung 2) - der Hinweis behauptet keinen
+    // Selbstvermerk mehr (TER-13).
+    expect(
+      screen.getByText(
+        'Für Gespräch und Anruf. Terminzettel und E-Mail werden vermerkt, sobald Sie dort bestätigen, dass sie übergeben bzw. gesendet wurden.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/vermerken sich selbst/)).not.toBeInTheDocument();
+  });
+
+  it('steht als eigener Abschnitt eine Stufe unter dem Seitentitel (TER-16)', () => {
+    renderWithProviders(<MitteilungVermerken appointment={termin()} />);
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Mitteilung an die Patient:in' }),
+    ).toBeInTheDocument();
   });
 
   it('zeigt vorhandene Vermerke als gesetzt', () => {
@@ -96,7 +109,10 @@ describe('MitteilungVermerken', () => {
     await waitFor(() =>
       expect(setAppointmentNotification).toHaveBeenCalledWith(TERMIN_ID, ['phone']),
     );
-    expect(await screen.findByText('Vermerk gespeichert.')).toBeInTheDocument();
+    // Erfolg im Erfolgston, mit dem Fokus (UIK-21).
+    const bestaetigung = await screen.findByText('Vermerk gespeichert.');
+    expect(bestaetigung).toHaveClass('text-positiv');
+    expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus();
   });
 
   it('nimmt den Vermerk mit einer leeren Auswahl zurück', async () => {

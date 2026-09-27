@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Feldgruppe } from '@/components/ui/Section';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
   TERMINFENSTER_OPTIONEN,
   appointmentTypeLabels,
@@ -13,6 +16,21 @@ import {
   type AssignableTherapist,
   type Location,
 } from './api';
+import { Listenfehler } from './Rueckmeldungen';
+import { DAUER_AUSWAHL_ID, TERMINFELD_IDS } from './terminformular';
+
+/**
+ * Zustand einer Auswahlliste, die das Formular nachlädt (ZST-07).
+ *
+ * Bis UXR-005 stand dort nur `data ?? []`: Scheiterte die Liste, blieb die
+ * Auswahl leer - das Formular sah bedienbar aus und ließ sich doch nicht
+ * füllen, und eine bestehende Zuordnung sah aus wie keine.
+ */
+export interface Listenzustand {
+  laedt: boolean;
+  fehlgeschlagen: boolean;
+  erneut: () => void;
+}
 
 /**
  * Eingabefelder eines Termins.
@@ -22,6 +40,9 @@ import {
  * der Hinweis zur Hausbesuchsadresse -, wird von der jeweiligen Seite
  * hineingereicht.
  *
+ * Jedes Feld trägt seine feste Kennung aus `TERMINFELD_IDS`: Die
+ * Fehlerzusammenfassung der Seite springt dorthin (UIK-02).
+ *
  * Die Prüfung hier ist Bedienkomfort. Verbindlich prüft und normalisiert die
  * Serverfunktion (ADR-004).
  */
@@ -30,8 +51,11 @@ export function AppointmentFormFields({
   fehler,
   onChange,
   therapeuten,
+  personenListe,
   personBeschriftung = 'Behandelnde Person *',
+  nurPerson = false,
   standorte,
+  standortListe,
   arten,
   minDatum,
   rasterMinuten,
@@ -44,6 +68,8 @@ export function AppointmentFormFields({
   fehler: Partial<Record<AppointmentFormField, string>>;
   onChange: (feld: AppointmentFormField, wert: string) => void;
   therapeuten: AssignableTherapist[];
+  /** Lädt die Personenliste noch, oder ist sie gescheitert? (ZST-07) */
+  personenListe?: Listenzustand | undefined;
   /**
    * Beschriftung der Personenauswahl.
    *
@@ -51,7 +77,18 @@ export function AppointmentFormFields({
    * (CAL-016).
    */
   personBeschriftung?: string | undefined;
+  /**
+   * Nur die Person ist änderbar (TER-01).
+   *
+   * Die Teilnahme an einer Fehlzeit tauscht nur die beteiligte Person; Zeit,
+   * Art und Ort gelten für alle Beteiligten und weist der Server an dieser
+   * Stelle ab (ANN-051). Die Seite zeigt sie deshalb als Auskunft, nicht als
+   * Feld.
+   */
+  nurPerson?: boolean;
   standorte: Location[];
+  /** Lädt die Standortliste noch, oder ist sie gescheitert? (ZST-07) */
+  standortListe?: Listenzustand | undefined;
   /**
    * Zulässige Terminarten. Ohne Angabe alle.
    *
@@ -94,24 +131,42 @@ export function AppointmentFormFields({
 }) {
   const art = werte.appointment_type as AppointmentType;
 
-  return (
-    <div className="flex flex-col gap-5">
+  const personenAuswahl = (
+    <div className="flex flex-col gap-2">
       <Select
         label={personBeschriftung}
+        feldId={TERMINFELD_IDS.staff_member_id}
         value={werte.staff_member_id}
         error={fehler.staff_member_id}
         onChange={(e) => onChange('staff_member_id', e.target.value)}
       >
-        <option value="">Bitte wählen …</option>
+        <option value="">{personenListe?.laedt ? 'Wird geladen …' : 'Bitte wählen …'}</option>
         {therapeuten.map((t) => (
           <option key={t.staff_member_id} value={t.staff_member_id}>
             {t.display_name}
           </option>
         ))}
       </Select>
+      {personenListe?.fehlgeschlagen ? (
+        <Listenfehler
+          text="Die Personen konnten nicht geladen werden."
+          onErneut={personenListe.erneut}
+        />
+      ) : null}
+    </div>
+  );
+
+  if (nurPerson) return <Feldgruppe>{personenAuswahl}</Feldgruppe>;
+
+  return (
+    // Feldabstand wie in jedem anderen Formular (TOK-15): 16 px über die
+    // Feldgruppe statt eigener 20 px.
+    <Feldgruppe>
+      {personenAuswahl}
 
       <Select
         label="Terminart *"
+        feldId={TERMINFELD_IDS.appointment_type}
         value={werte.appointment_type}
         error={fehler.appointment_type}
         onChange={(e) => onChange('appointment_type', e.target.value)}
@@ -126,6 +181,7 @@ export function AppointmentFormFields({
       <Field
         label="Datum *"
         type="date"
+        feldId={TERMINFELD_IDS.date}
         value={werte.date}
         error={fehler.date}
         min={minDatum}
@@ -134,10 +190,11 @@ export function AppointmentFormFields({
 
       {/* items-start: Die Dauerwahl kann ein zweites Feld aufklappen (CAL-020);
           am oberen Rand ausgerichtet bleibt der Beginn stehen, wo er war. */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-start">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
         <Field
           label="Beginn *"
           type="time"
+          feldId={TERMINFELD_IDS.start_time}
           value={werte.start_time}
           error={fehler.start_time}
           // step rechnet in Sekunden ab 00:00 - also genau in Minuten seit
@@ -148,16 +205,14 @@ export function AppointmentFormFields({
           onChange={(e) => onChange('start_time', e.target.value)}
         />
         {/* Das Ende bleibt eine Ableitung, kein Feld (CAL-010a) - gewählt wird
-            die Länge, nicht der Zeitpunkt. Fehler von dort bleiben trotzdem
-            sichtbar: der Server prüft die Länge erneut. */}
+            die Länge, nicht der Zeitpunkt. Ohne Beginn gibt es kein Ende und
+            damit auch keinen Hinweis darauf (TER-06). */}
         <div>
           {onFensterMinuten ? (
             <Dauerwahl
               minuten={fensterMinuten}
               rasterMinuten={rasterMinuten}
-              endeHinweis={
-                werte.end_time ? `Ende: ${werte.end_time} Uhr` : 'Dokumentation eingeschlossen'
-              }
+              endeHinweis={werte.end_time ? `Ende: ${werte.end_time} Uhr` : undefined}
               fehler={fehler.end_time}
               onMinuten={onFensterMinuten}
             />
@@ -171,8 +226,12 @@ export function AppointmentFormFields({
                 {laengeHinweis ??
                   `Terminfenster: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
               </p>
+              {/* Ein Fehler hier hat kein Feld, an dem er stehen könnte: als
+                  Meldung mit Rolle, in der Größe der Feldfehler (UIK-02). */}
               {fehler.end_time ? (
-                <p className="text-danger mt-1 text-xs">{fehler.end_time}</p>
+                <Statusmeldung ton="fehler" className="mt-1">
+                  {fehler.end_time}
+                </Statusmeldung>
               ) : null}
             </>
           )}
@@ -180,31 +239,38 @@ export function AppointmentFormFields({
       </div>
 
       {art === 'practice' ? (
-        <Select
-          label="Standort *"
-          value={werte.location_id}
-          error={fehler.location_id}
-          onChange={(e) => onChange('location_id', e.target.value)}
-        >
-          <option value="">Bitte wählen …</option>
-          {standorte.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </Select>
+        <div className="flex flex-col gap-2">
+          <Select
+            label="Standort *"
+            feldId={TERMINFELD_IDS.location_id}
+            value={werte.location_id}
+            error={fehler.location_id}
+            onChange={(e) => onChange('location_id', e.target.value)}
+          >
+            <option value="">{standortListe?.laedt ? 'Wird geladen …' : 'Bitte wählen …'}</option>
+            {standorte.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </Select>
+          {standortListe?.fehlgeschlagen ? (
+            <Listenfehler
+              text="Die Standorte konnten nicht geladen werden."
+              onErneut={standortListe.erneut}
+            />
+          ) : null}
+        </div>
       ) : null}
 
       {art === 'home_visit' ? hausbesuch : null}
 
       {art === 'video' ? (
         <div className="border-line bg-surface-sunken rounded-card border p-4">
-          <p className="text-ink text-sm">
-            Für Videotermine wird in diesem Stand noch kein Videolink erzeugt.
-          </p>
+          <p className="text-ink text-sm">Für Videotermine wird noch kein Videolink erzeugt.</p>
         </div>
       ) : null}
-    </div>
+    </Feldgruppe>
   );
 }
 
@@ -232,7 +298,12 @@ function Dauerwahl({
 }: {
   minuten: number;
   rasterMinuten: number | undefined;
-  endeHinweis: string;
+  /** „Ende: 10:00 Uhr" - ohne Beginn kein Ende und damit kein Hinweis. */
+  endeHinweis: string | undefined;
+  /**
+   * Fehler der Seite zur Dauer. Er steht am Minutenfeld, denn nur dort kann
+   * die Dauer ungültig sein (TER-06); die Auswahl der Regellängen ist es nie.
+   */
   fehler: string | undefined;
   /** `null`: das Minutenfeld enthält gerade keine gültige Zahl. */
   onMinuten: (minuten: number | null) => void;
@@ -257,9 +328,12 @@ function Dauerwahl({
     <div className="flex flex-col gap-3">
       <Select
         label="Dauer"
+        feldId={DAUER_AUSWAHL_ID}
         value={frei ? FREIE_LAENGE : String(minuten)}
         hint={endeHinweis}
-        error={fehler}
+        // Nur, falls ein Fehler ohne offenes Minutenfeld ankommt - sonst
+        // stünde er an einer richtig gewählten Regellänge.
+        error={frei ? undefined : fehler}
         onChange={(e) => {
           setEingabe(null);
           if (e.target.value === FREIE_LAENGE) {
@@ -283,10 +357,11 @@ function Dauerwahl({
           label="Länge in Minuten"
           type="number"
           inputMode="numeric"
+          feldId={TERMINFELD_IDS.end_time}
           min={rasterMinuten ?? 1}
           step={rasterMinuten ?? 1}
           value={text}
-          error={eingabeFehler}
+          error={eingabeFehler ?? fehler}
           hint={
             istRegellaenge(minuten)
               ? undefined
@@ -320,6 +395,7 @@ export function UebernommeneAdresse({
   city,
   ueberschrift = 'Adresse des Hausbesuchs',
   ergaenzenZiel,
+  onErgaenzen,
 }: {
   street: string | null;
   houseNumber: string | null;
@@ -334,6 +410,12 @@ export function UebernommeneAdresse({
    * Abstecher, der wieder hierher zurückführt.
    */
   ergaenzenZiel?: string | undefined;
+  /**
+   * Läuft beim Tipp auf den Abstecher, vor dem Seitenwechsel. Trägt der
+   * Rückweg alle Eingaben mit, gibt die Seite hier ihren Verlustschutz für
+   * diesen einen Wechsel frei (TER-05) - es geht dabei nichts verloren.
+   */
+  onErgaenzen?: (() => void) | undefined;
 }) {
   const strasse = [street, houseNumber].filter(Boolean).join(' ');
   const ort = [postalCode, city].filter(Boolean).join(' ');
@@ -356,6 +438,7 @@ export function UebernommeneAdresse({
           {ergaenzenZiel ? (
             <Link
               to={ergaenzenZiel}
+              onClick={onErgaenzen}
               className="text-danger inline-flex min-h-11 items-center underline"
             >
               Jetzt in den Stammdaten ergänzen
@@ -424,7 +507,8 @@ export function ArbeitszeitRueckfrage({
           </p>
           <p className="text-ink-muted mt-2 text-xs leading-relaxed">
             Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls
-            als außerhalb. Arbeitszeiten werden unter „Planung" gepflegt.
+            als außerhalb. {BEGRIFFE.arbeitszeiten} pflegen Sie unter {BEREICHE.betrieb.label} →{' '}
+            {BEGRIFFE.arbeitszeiten}.
           </p>
         </>
       ) : null}

@@ -131,9 +131,25 @@ describe('TermineMailen', () => {
         'email',
       ),
     );
-    expect(
-      await screen.findByText(/sind als „Per E-Mail mitgeteilt" vermerkt/),
-    ).toBeInTheDocument();
+    // Im Erfolgston und mit dem Fokus: Der Knopf, der ihn hatte, ist mit der
+    // Frage verschwunden (UIK-21, ZST-16).
+    const bestaetigung = await screen.findByText(/sind als „Per E-Mail mitgeteilt“ vermerkt/);
+    expect(bestaetigung).toHaveClass('text-positiv');
+    expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus();
+  });
+
+  it('bricht eine lange Adresse in der Vorschau um, statt die Seite zu verbreitern (TER-20)', async () => {
+    const lang = 'patientin.mit.einer.sehr.langen.adresse.ohne.trennstelle@beispiel.invalid';
+    const user = userEvent.setup();
+    rendern(testPatient({ given_name: 'Max', family_name: 'Mustermann', email: lang }));
+
+    await user.click(screen.getByRole('button', { name: 'Termine per E-Mail senden' }));
+
+    expect(screen.getByText(lang)).toHaveClass('min-w-0', 'wrap-anywhere');
+    // Die Überschrift des Kastens ist ein Abschnittstitel des Systems (TER-16).
+    expect(screen.getByRole('heading', { name: 'E-Mail an die Patient:in' })).toHaveClass(
+      'tracking-label',
+    );
   });
 
   it('vermerkt nichts, wenn die E-Mail doch nicht gesendet wurde', async () => {

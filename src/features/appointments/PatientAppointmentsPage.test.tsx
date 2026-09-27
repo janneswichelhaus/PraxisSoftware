@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as TreatmentBasesApi from '@/features/treatment-bases/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
@@ -198,8 +200,10 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
       expect(screen.getByText('Ohne Behandlungsgrundlage')).toBeInTheDocument();
 
       // Die Reihenfolge der Abschnitte ist die der Grundlagen; ohne Grundlage
-      // steht zuletzt.
-      const ueberschriften = screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent);
+      // steht zuletzt. Eine Stufe unter „Kommende Termine" - h3, nicht h4
+      // (TER-16, UIK-20).
+      expect(screen.queryAllByRole('heading', { level: 4 })).toHaveLength(0);
+      const ueberschriften = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
       expect(ueberschriften).toEqual([
         'Selbstzahler seit 03.09.2026',
         'Folgeverordnung vom 18.06.2026',
@@ -273,9 +277,14 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
       );
       renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
 
-      expect(
-        await screen.findByRole('link', { name: 'Folgeverordnung vom 18.06.2026' }),
-      ).toHaveAttribute('href', `/patienten/${PATIENT_ID}/verordnungen#verordnung-${VERORDNUNG}`);
+      const link = await screen.findByRole('link', { name: 'Folgeverordnung vom 18.06.2026' });
+      expect(link).toHaveAttribute(
+        'href',
+        `/patienten/${PATIENT_ID}/verordnungen#verordnung-${VERORDNUNG}`,
+      );
+      // Als Link erkennbar, nicht erst beim Überfahren, und 44 px hoch
+      // (RSP-06, UIK-15).
+      expect(link).toHaveClass('text-accent', 'underline', 'min-h-11');
     });
 
     it('filtert auf eine Verordnung und sagt das', async () => {
@@ -375,5 +384,75 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
       (await screen.findAllByText('Die Termine konnten nicht geladen werden.')).length,
     ).toBeGreaterThan(0);
     expect(screen.queryByText(/interne Ursache/)).not.toBeInTheDocument();
+  });
+
+  it('bietet nach einem Ladefehler einen neuen Versuch an (WRT-01, UIK-16)', async () => {
+    fetchPatientAppointments.mockRejectedValue(new Error('Netz weg'));
+    const user = userEvent.setup();
+    renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
+
+    const knoepfe = await screen.findAllByRole('button', { name: 'Erneut versuchen' });
+    expect(
+      screen.getAllByText('Bitte die Verbindung prüfen und erneut versuchen.').length,
+    ).toBeGreaterThan(0);
+
+    antwortet([termin({ id: 'wieder' })], []);
+    await user.click(knoepfe[0]!);
+    expect(await screen.findByRole('link', { name: /Mai 2027/ })).toBeInTheDocument();
+  });
+
+  describe('TER-04: nach dem Anlegen', () => {
+    it('bestätigt eine angelegte Serie über der Liste', async () => {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, gcTime: 0 } },
+      });
+      const router = createMemoryRouter(
+        [
+          {
+            path: '*',
+            element: <Terminbereich patient={patient} user={testUser(['office'])} />,
+          },
+        ],
+        {
+          initialEntries: [
+            {
+              pathname: `/patienten/${PATIENT_ID}/termine`,
+              state: { meldung: '3 Termine angelegt.' },
+            },
+          ],
+        },
+      );
+      render(
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>,
+      );
+
+      const meldung = await screen.findByText('3 Termine angelegt.');
+      expect(meldung.closest('[tabindex="-1"]')).toHaveFocus();
+    });
+
+    it('hebt einen angelegten Einzeltermin hervor und bestätigt ihn', async () => {
+      const NEU = '77777777-7777-4777-8777-00000000000b';
+      antwortet(
+        [
+          termin({ id: NEU }),
+          termin({
+            id: '77777777-7777-4777-8777-00000000000c',
+            starts_at: '2027-05-26T07:00:00.000Z',
+          }),
+        ],
+        [],
+      );
+      renderWithProviders(
+        <Terminbereich patient={patient} user={testUser(['office'])} />,
+        `/patienten/${PATIENT_ID}/termine?neu=${NEU}`,
+      );
+
+      expect(await screen.findByText('Termin angelegt.')).toBeInTheDocument();
+      const [neu, anderer] = await screen.findAllByRole('link', { name: /Mai 2027/ });
+      expect(neu).toHaveClass('bg-accent-soft');
+      expect(anderer).not.toHaveClass('bg-accent-soft');
+    });
   });
 });
