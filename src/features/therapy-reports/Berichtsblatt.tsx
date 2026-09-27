@@ -18,7 +18,7 @@ import { empfaengerName, terminzeile, type Berichtsdokument } from './api';
  * Dieselbe Komponente zeigt die Vorschau des Entwurfs und das Druckblatt; was
  * am Bildschirm steht, kommt aus dem Drucker. Ein Entwurf trägt einen Vermerk,
  * der **mitgedruckt** wird. Der Kopf steht in einem `div`, nicht in einem
- * `header` — die Druckregeln aus UI-000 blenden `header` aus.
+ * `header` — die Druckregeln aus UI-000 blendeten `header` bis UXR-001 aus.
  */
 export function Berichtsblatt({
   dokument,

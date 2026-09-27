@@ -42,8 +42,8 @@ import {
  * wird deshalb keine zweite Fassung gebaut.
  *
  * Die Druck-Basis aus UI-000 (`@media print` in `src/index.css`) blendet
- * `nav`, `header` und jeden `button` von selbst aus; `.nicht-drucken` nimmt
- * zusätzlich aus, was ein Link ist.
+ * `nav` und jeden `button` von selbst aus; `.nicht-drucken` nimmt die Kopfzeile
+ * der Anwendung und zusätzlich aus, was ein Link ist.
  */
 export function AppointmentSlipPage() {
   const { patientId } = useParams<{ patientId: string }>();

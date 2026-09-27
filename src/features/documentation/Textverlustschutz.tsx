@@ -46,6 +46,12 @@ import { useIstVerbunden } from '@/app/verbindung';
  * Entwurf, ein Fehlschlag navigiert nicht, das Abmelden fragt ebenso - stehen
  * als **ANN-046** im Annahmenregister.
  *
+ * **Auch für andere Formulare (UXR-001).** Mit eigenen Sätzen - meist
+ * `EINGABETEXTE` - schützt derselbe Hook Formulare ohne Dokumentationsbezug.
+ * Ohne `speichern` bietet die Rückfrage dort nur „Verwerfen und weitergehen"
+ * und „Hier bleiben", wie ANN-046 es für die Korrektur festlegt. Sätze und
+ * Verhalten der Dokumentation bleiben, wie sie sind.
+ *
  * **Kein lokaler Zwischenspeicher.** Ein Entwurf, der nur im Browser läge,
  * wäre nicht gespeichert, würde aber so aussehen - genau die Situation, die
  * ADR-001 und ADR-015 Punkt 16 ausschließen. „Speichern" schreibt deshalb auf
@@ -128,9 +134,77 @@ interface Fehlerkasten {
   text: string;
 }
 
+/**
+ * Die Sätze des Schutzes (UXR-001; PAT-02, NAV-01, ZST-05).
+ *
+ * Die Dokumentation spricht vom „Text" im Feld und nennt den Kasten
+ * „Ungespeicherte Dokumentation" - das bleibt die Vorgabe (ANN-046,
+ * `DOKUMENTATIONSTEXTE`). Ein Formular ohne Dokumentationsbezug - Neue:r
+ * Patient:in, Termin, Mitarbeiter:in - gibt eigene Sätze mit, in der Regel
+ * `EINGABETEXTE` oder eine Abwandlung davon mit passender Bezeichnung.
+ *
+ * Bewusst immer ein vollständiger Satz von Texten und keine einzelnen
+ * Ersetzungen: Ein Formular, das nur die Bezeichnung tauscht, spräche sonst
+ * weiter vom „Text" und erklärte, Korrektur und Nachtrag würden Bestandteil
+ * der Akte.
+ */
+export interface Verlustschutztexte {
+  /** Zugängliche Bezeichnung des Rückfragekastens. */
+  bezeichnung: string;
+  /** Rückfrage vor einem Seitenwechsel. */
+  weitergehen: string;
+  /** Rückfrage vor dem Abmelden. */
+  abmelden: string;
+  /** Zweiter Absatz, wenn es keinen Speicherweg gibt. Ohne Angabe entfällt er. */
+  ohneSpeichern?: string | undefined;
+  /**
+   * Nachsatz eines Fehlers in der Rückfrage: was stehen bleibt. Der Schutz
+   * ergänzt „, die Seite bleibt geöffnet" und beim Abmelden „, die Sitzung
+   * bleibt bestehen".
+   */
+  bleibtStehen: string;
+  /** Hinweis, solange das Gerät getrennt ist. */
+  ohneVerbindung: string;
+  /** Meldung, wenn während des Speicherns weiter eingegeben wurde. */
+  weitergeschrieben: string;
+}
+
+/** Die Sätze der Behandlungsdokumentation - unverändert seit FIX-014 (ANN-046). */
+export const DOKUMENTATIONSTEXTE: Verlustschutztexte = {
+  bezeichnung: 'Ungespeicherte Dokumentation',
+  weitergehen:
+    'Der eingegebene Text ist noch nicht gespeichert. Beim Weitergehen geht er verloren.',
+  abmelden: 'Der eingegebene Text ist noch nicht gespeichert. Beim Abmelden geht er verloren.',
+  ohneSpeichern:
+    'Speichern ist hier kein Zwischenschritt: Korrektur und Nachtrag werden mit dem Absenden Bestandteil der Akte. Bitte zurückgehen und den Eintrag abschließen.',
+  bleibtStehen: 'Der Text steht weiter im Feld',
+  ohneVerbindung:
+    'Ohne Verbindung lässt sich gerade nicht speichern. Der Text bleibt im Feld stehen – bitte warten, bis die Verbindung zurück ist, und dann erneut speichern.',
+  weitergeschrieben:
+    'Während des Speicherns wurde weitergeschrieben. Der neue Text steht noch im Feld und liegt noch nicht auf dem Server – bitte noch einmal speichern.',
+};
+
+/**
+ * Die Sätze für Formulare ohne Dokumentationsbezug: „Eingaben" statt
+ * „Text", ohne den Absatz über Korrektur und Nachtrag. Die Bezeichnung
+ * darf ein Formular genauer fassen, etwa
+ * `{ ...EINGABETEXTE, bezeichnung: 'Ungespeicherte Patientendaten' }`.
+ */
+export const EINGABETEXTE: Verlustschutztexte = {
+  bezeichnung: 'Ungespeicherte Eingaben',
+  weitergehen: 'Die Eingaben sind noch nicht gespeichert. Beim Weitergehen gehen sie verloren.',
+  abmelden: 'Die Eingaben sind noch nicht gespeichert. Beim Abmelden gehen sie verloren.',
+  bleibtStehen: 'Die Eingaben stehen weiter im Formular',
+  ohneVerbindung:
+    'Ohne Verbindung lässt sich gerade nicht speichern. Die Eingaben bleiben im Formular stehen – bitte warten, bis die Verbindung zurück ist, und dann erneut speichern.',
+  weitergeschrieben:
+    'Während des Speicherns wurde weiter eingegeben. Die neuen Eingaben stehen noch im Formular und liegen noch nicht auf dem Server – bitte noch einmal speichern.',
+};
+
 export function useTextverlustschutz({
   ungespeichert,
   speichern,
+  texte = DOKUMENTATIONSTEXTE,
 }: {
   /** Steht im Feld etwas, das noch nicht auf dem Server liegt? */
   ungespeichert: boolean;
@@ -141,6 +215,11 @@ export function useTextverlustschutz({
    * Wirft bei Fehlschlag; die Meldung steht dann im Kasten.
    */
   speichern?: () => Promise<boolean>;
+  /**
+   * Eigene Sätze für ein Formular ohne Dokumentationsbezug (UXR-001), meist
+   * `EINGABETEXTE`. Ohne Angabe die der Dokumentation.
+   */
+  texte?: Verlustschutztexte;
 }): Textverlustschutz {
   useVerlassenWarnung(ungespeichert);
   const verbunden = useIstVerbunden();
@@ -214,7 +293,7 @@ export function useTextverlustschutz({
       if (!vollstaendig) {
         setFehler({
           titel: 'Noch nicht alles gespeichert',
-          text: 'Während des Speicherns wurde weitergeschrieben. Der neue Text steht noch im Feld und liegt noch nicht auf dem Server – bitte noch einmal speichern.',
+          text: texte.weitergeschrieben,
         });
       }
     } catch (error) {
@@ -271,8 +350,7 @@ export function useTextverlustschutz({
     <>
       {!verbunden && ungespeichert ? (
         <Statusmeldung ton="fehler" className="mt-3">
-          Ohne Verbindung lässt sich gerade nicht speichern. Der Text bleibt im Feld stehen – bitte
-          warten, bis die Verbindung zurück ist, und dann erneut speichern.
+          {texte.ohneVerbindung}
         </Statusmeldung>
       ) : null}
 
@@ -288,24 +366,19 @@ export function useTextverlustschutz({
         <div
           ref={kasten}
           role="group"
-          aria-label="Ungespeicherte Dokumentation"
+          aria-label={texte.bezeichnung}
           className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
         >
           <p className="text-ink text-sm leading-relaxed">
-            {abmeldemodus
-              ? 'Der eingegebene Text ist noch nicht gespeichert. Beim Abmelden geht er verloren.'
-              : 'Der eingegebene Text ist noch nicht gespeichert. Beim Weitergehen geht er verloren.'}
+            {abmeldemodus ? texte.abmelden : texte.weitergehen}
           </p>
-          {!speichern ? (
-            <p className="text-ink-muted mt-2 text-sm leading-relaxed">
-              Speichern ist hier kein Zwischenschritt: Korrektur und Nachtrag werden mit dem
-              Absenden Bestandteil der Akte. Bitte zurückgehen und den Eintrag abschließen.
-            </p>
+          {!speichern && texte.ohneSpeichern ? (
+            <p className="text-ink-muted mt-2 text-sm leading-relaxed">{texte.ohneSpeichern}</p>
           ) : null}
 
           {fehler ? (
             <Statusmeldung ton="fehler" className="mt-3">
-              {fehler.text} Der Text steht weiter im Feld, die Seite bleibt geöffnet
+              {fehler.text} {texte.bleibtStehen}, die Seite bleibt geöffnet
               {abmeldemodus ? ', die Sitzung bleibt bestehen' : ''}.
             </Statusmeldung>
           ) : null}

@@ -190,6 +190,17 @@
 }
 
 @layer base {
+  /* Nur das helle Schema (DS-001, NAV-10). Ohne diese Angabe zeichnet der
+     Browser seine eigenen Teile - Rollbalken, Datums- und Zeitfelder samt
+     Symbol, Kästchen, das Löschkreuz der Suchfelder, Auswahllisten - dunkel,
+     sobald das System dunkel eingestellt ist: mitten in der hellen
+     Anwendung, mit Symbolen, die auf weißem Feld verschwinden. Einen
+     Dunkelmodus kennt das System nicht; er wäre eine Idee, kein Fehler.
+     `index.html` meldet dasselbe, damit schon die erste Zeichnung hell ist. */
+  :root {
+    color-scheme: light;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
   }
@@ -209,6 +220,18 @@
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
     border-radius: 4px;
+  }
+
+  /* Kästchen und Auswahlknöpfe in der Hauptfarbe (UIK-03, BEF-07, ORG-26).
+     Das Kästchen des Browsers nimmt Rand, Radius und Textfarbe nicht an,
+     solange es sein eigenes ist (ohne `appearance: none`); angekreuzt zeigte
+     es deshalb überall das Standardblau #0075ff. `accent-color` ist der eine
+     Wert, den es übernimmt - einmal hier statt an jeder Stelle. Radius 6 und
+     Rand `line-strong` (DS-001) brauchen ein selbst gezeichnetes Kästchen;
+     das bleibt Sache des Checkbox-Bausteins. */
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--color-accent);
   }
 
   /* Nutzer:innen mit reduzierter Bewegungspräferenz respektieren. */
@@ -265,10 +288,16 @@
     line-height: 1.4;
   }
 
-  /* Bedienelemente und Navigation. `nav` und `header` decken das Geruest ab,
-     `.nicht-drucken` alles, was eine Seite zusaetzlich ausnimmt. */
+  /* Bedienelemente und Navigation. `nav` deckt Seitenleiste, Tableiste und
+     Untermenues ab, `.nicht-drucken` alles, was eine Seite zusaetzlich
+     ausnimmt - darunter die Kopfzeile der Anwendung (AppShell).
+
+     `header` steht seit UXR-001 nicht mehr hier (UIK-11, TER-12): Auch der
+     Seitenkopf (`PageHeader`) und der Kopf der Akte sind ein `header`. Mit
+     ihnen fehlten auf Papier der Seitentitel, das Datum des Tagesplans und
+     in der Akte der Name. Die Druckblaetter (Rechnung, Terminzettel,
+     Bericht) setzen ihren Kopf ohnehin in ein `div` und aendern sich nicht. */
   nav,
-  header,
   button,
   .nicht-drucken {
     display: none !important;

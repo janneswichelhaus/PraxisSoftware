@@ -32,8 +32,8 @@ import { KeineStammdaten, fetchRechnung, steuerLabels, type Rechnungsansicht } f
  * darf nicht wie eine Rechnung aussehen.
  *
  * Die Druck-Basis aus UI-000 (`@media print` in `src/index.css`) blendet
- * `nav`, `header` und jeden `button` aus. Deshalb steht der Rechnungskopf
- * hier in einem `div` und nicht in einem `header` — er soll gedruckt werden.
+ * `nav` und jeden `button` aus, bis UXR-001 auch `header`. Deshalb steht der
+ * Rechnungskopf in einem `div` und nicht in einem `header` — er soll gedruckt werden.
  */
 export function InvoicePrintPage() {
   const { invoiceId = '' } = useParams();
@@ -87,7 +87,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
       {/* Ein Blatt in Briefbreite. `max-w-[210mm]` gilt am Bildschirm wie auf
           Papier: Wer die Seite ansieht, sieht, was aus dem Drucker kommt. */}
       <article className="text-ink text-liste mx-auto max-w-[210mm]">
-        {/* Bewusst kein `header`: Die Druckregeln blenden `header` aus, und
+        {/* Bewusst kein `header`: Die Druckregeln blendeten ihn bis UXR-001 aus, und
             dieser Kopf gehört auf das Papier. */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           {/* Die schwarze Fassung, nicht die farbige umgefärbt:

@@ -139,7 +139,7 @@ export function AppShell({
           <Verbindungsanzeige />
         </div>
 
-        <header className="border-line bg-surface sticky top-0 z-30 border-b">
+        <header className="nicht-drucken border-line bg-surface sticky top-0 z-30 border-b">
           {/* Ab sm eine Zeile, auf dem Telefon zwei — durch Umbruch, nicht
               durch ein zweites Suchfeld. Bis UX-013 stand die Suche zweimal
               im Baum, einmal je Breite; mit Tastenkürzel und Trefferliste

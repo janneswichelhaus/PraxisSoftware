@@ -345,3 +345,43 @@ describe('Textstufen', () => {
     expect(css).not.toMatch(/--color-ink-subtle/);
   });
 });
+
+/** index.css ohne Kommentare - die Regeln, nicht ihre Begruendung. */
+const regeln = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+describe('Globale Regeln (UXR-001)', () => {
+  it('setzt Kaestchen und Auswahlknoepfe in die Hauptfarbe (UIK-03)', () => {
+    // Ohne accent-color zeigte der Browser sein Standardblau #0075ff.
+    expect(regeln).toMatch(
+      /input\[type='checkbox'\],\s*input\[type='radio'\]\s*\{\s*accent-color:\s*var\(--color-accent\);\s*\}/,
+    );
+  });
+
+  it('kennt nur das helle Schema - im CSS und im Kopf des Dokuments (NAV-10)', () => {
+    // Bei dunkel eingestelltem System zeichnete der Browser Kaestchen,
+    // Datumsfelder und Rollbalken sonst dunkel in die helle Anwendung.
+    expect(regeln).toMatch(/:root\s*\{\s*color-scheme:\s*light;\s*\}/);
+    const html = readFileSync(join(stamm, 'index.html'), 'utf8');
+    expect(html).toContain('<meta name="color-scheme" content="light" />');
+    expect(html).not.toMatch(/color-scheme"[^>]*dark/);
+  });
+
+  /**
+   * UIK-11, TER-12: Die Druckregel blendete jedes `header` aus - auch den
+   * Seitenkopf (PageHeader) und den Kopf der Akte. Auf Papier fehlten damit
+   * Seitentitel, Datum des Tagesplans und Name. Ausgenommen wird jetzt nur
+   * die Kopfzeile der Anwendung, und zwar ueber `nicht-drucken`.
+   */
+  it('druckt Seitentitel und Aktenkopf, die Kopfzeile der Anwendung nicht', () => {
+    const druck = regeln.slice(regeln.indexOf('@media print'));
+    const ausgeblendet =
+      /([^{}]+)\{\s*display:\s*none\s*!important;\s*\}/
+        .exec(druck)?.[1]
+        ?.split(',')
+        .map((selektor) => selektor.trim()) ?? [];
+    expect(ausgeblendet).toEqual(['nav', 'button', '.nicht-drucken']);
+
+    const geruest = readFileSync(join(stamm, 'src/app/AppShell.tsx'), 'utf8');
+    expect(geruest).toMatch(/<header className="[^"]*\bnicht-drucken\b[^"]*"/);
+  });
+});
