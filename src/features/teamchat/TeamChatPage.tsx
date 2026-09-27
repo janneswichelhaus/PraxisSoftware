@@ -148,12 +148,12 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
           <ul className="divide-line border-line divide-y border-y">
             {treffer.map((nachricht) => (
               <li key={nachricht.id} className="py-3">
-                <p className="text-ink-subtle text-sm">
+                <p className="text-ink-muted text-sm">
                   {zustand.kanaele.find((eintrag) => eintrag.id === nachricht.kanalId)?.name} ·{' '}
                   {mitarbeiterName(zustand, nachricht.autorId)} ·{' '}
                   {formatZeitpunkt(nachricht.zeitpunkt)}
                 </p>
-                <p className="text-ink mt-0.5 text-[0.9375rem]">{nachricht.text}</p>
+                <p className="text-ink text-liste mt-0.5">{nachricht.text}</p>
               </li>
             ))}
           </ul>
@@ -177,7 +177,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
                     type="button"
                     onClick={() => setKanalId(eintrag.id)}
                     aria-current={aktiv ? 'true' : undefined}
-                    className={`rounded-button flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left text-[0.9375rem] transition-colors ${
+                    className={`rounded-button text-liste flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left transition-colors ${
                       aktiv
                         ? 'bg-accent-soft text-accent font-medium'
                         : 'text-ink-muted hover:bg-surface-sunken'
@@ -281,7 +281,7 @@ function Nachrichtenblock({
 
   return (
     <div>
-      <p className="text-ink-subtle text-sm">
+      <p className="text-ink-muted text-sm">
         <span className="text-ink font-medium">{mitarbeiterName(zustand, nachricht.autorId)}</span>{' '}
         · {formatZeitpunkt(nachricht.zeitpunkt)}
         {!nachricht.gelesen ? (
@@ -291,7 +291,7 @@ function Nachrichtenblock({
           </>
         ) : null}
       </p>
-      <p className="text-ink mt-0.5 text-[0.9375rem]">{nachricht.text}</p>
+      <p className="text-ink text-liste mt-0.5">{nachricht.text}</p>
       {nachricht.erwaehnungen.length > 0 ? (
         <p className="text-ink-muted mt-1 text-sm">
           Erwähnt: {nachricht.erwaehnungen.map((id) => mitarbeiterName(zustand, id)).join(', ')}
@@ -300,7 +300,7 @@ function Nachrichtenblock({
       {nachricht.bezug ? (
         <p className="text-ink-muted bg-surface-sunken rounded-card mt-2 inline-block px-3 py-1.5 text-sm">
           Bezug: {bezugLabels[nachricht.bezug.art] ?? nachricht.bezug.art} · {nachricht.bezug.label}
-          <span className="text-ink-subtle block text-xs">
+          <span className="text-ink-muted block text-xs">
             Der Verweis erweitert keine Berechtigung.
           </span>
         </p>

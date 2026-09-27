@@ -154,14 +154,14 @@ function Formular({ appointment, note }: { appointment: Appointment; note: Treat
           </Button>
           <Link
             to={zurueck}
-            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
+            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button text-liste inline-flex min-h-11 items-center justify-center px-4 font-medium transition-colors"
           >
             Abbrechen
           </Link>
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Jede Korrektur wird als neue Version festgeschrieben und protokolliert. Frühere Versionen
         werden nicht überschrieben.
       </p>

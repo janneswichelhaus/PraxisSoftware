@@ -123,7 +123,7 @@ export function SearchCombobox({
         aria-controls={listeId}
         aria-autocomplete="list"
         aria-activedescendant={aktiv >= 0 && treffer[aktiv] ? `${feldId}-${aktiv}` : undefined}
-        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-subtle rounded-field h-12 w-full border px-4 text-base"
+        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-12 w-full border px-4 text-base"
         {...(placeholder === undefined ? {} : { placeholder })}
         value={wert}
         onChange={(event) => {
@@ -164,7 +164,7 @@ export function SearchCombobox({
                   }}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="text-ink block truncate text-[0.9375rem] font-medium">
+                    <span className="text-ink text-liste block truncate font-medium">
                       {eintrag.bezeichnung}
                     </span>
                     {eintrag.zusatz ? (

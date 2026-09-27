@@ -165,7 +165,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
                   className="hover:bg-surface-sunken flex min-h-16 items-center justify-between gap-4 py-3 transition-colors"
                 >
                   <span className="min-w-0">
-                    <span className="text-ink block truncate text-[0.9375rem] font-medium">
+                    <span className="text-ink text-liste block truncate font-medium">
                       {fullName(staff)}
                     </span>
                     <span className="text-ink-muted mt-0.5 block text-sm">
@@ -192,7 +192,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
         </ul>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Als behandelnde Person zuordenbar ist, wer aktiv beschäftigt ist und zusätzlich einen
         eigenen Zugang mit therapeutischer Rolle hat. Zugänge und Rollen werden nicht hier vergeben.
       </p>

@@ -42,7 +42,7 @@ export function Berichtsblatt({
   const datum = dokument.abgeschlossen?.datum ?? null;
 
   return (
-    <article className="text-ink mx-auto max-w-[210mm] text-[0.9375rem]">
+    <article className="text-ink text-liste mx-auto max-w-[210mm]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         {/* Die schwarze Fassung: `marke/README.md` nennt Rechnung und Fax als
             ihren Fall, und ein Bericht an die Verordner:in geht oft per Fax. */}
@@ -64,7 +64,7 @@ export function Berichtsblatt({
 
       <div className="mt-10 flex flex-wrap justify-between gap-8">
         <div className="min-w-[70mm]">
-          <p className="text-ink-subtle border-line border-b pb-1 text-[0.6875rem]">
+          <p className="text-ink-muted border-line border-b pb-1 text-[0.6875rem]">
             {absenderzeile}
           </p>
           {empfaenger ? (

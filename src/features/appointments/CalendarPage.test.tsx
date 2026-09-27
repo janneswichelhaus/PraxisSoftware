@@ -1228,7 +1228,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12&neu=77777777-7777-4777-8777-000000000001');
       const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      expect(kachel.className).toContain('ring-2');
+      expect(kachel.className).toContain('border-accent');
       expect(screen.getByRole('status')).toHaveTextContent(/Termin angelegt/);
       expect(screen.getByRole('link', { name: 'Termin öffnen' })).toBeInTheDocument();
     });

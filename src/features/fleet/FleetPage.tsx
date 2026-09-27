@@ -196,7 +196,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
         actions={
           <Link
             to="/betrieb/flotte/rad/neu"
-            className="bg-accent hover:bg-accent-hover rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium text-white transition-colors"
+            className="bg-accent hover:bg-accent-hover rounded-button text-liste inline-flex min-h-11 items-center justify-center px-4 font-medium text-white transition-colors"
           >
             Rad hinzufügen
           </Link>
@@ -208,19 +208,19 @@ export function FleetPage({ user }: { user: CurrentUser }) {
       <div className="mb-5 flex flex-wrap gap-3">
         <Link
           to="/betrieb/flotte/panne"
-          className="border-danger/40 text-danger hover:bg-danger-soft rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+          className="border-danger/40 text-danger hover:bg-danger-soft rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
         >
           Panne melden
         </Link>
         <Link
           to="/betrieb/flotte/schluessel"
-          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
         >
           Schlüssel entnehmen
         </Link>
         <Link
           to="/betrieb/flotte/checkup"
-          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
         >
           Fahrrad-Check-Up
         </Link>
@@ -340,7 +340,7 @@ function Radkarte({
     <Card>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-ink truncate text-[0.9375rem] font-semibold">{rad.name}</p>
+          <p className="text-ink text-liste truncate font-semibold">{rad.name}</p>
           <p className="text-ink-muted mt-0.5 truncate text-sm">
             {depotName(zustand, rad, 'aktuell')}
           </p>
@@ -393,7 +393,7 @@ function Radkarte({
         ) : (
           <Link
             to={`/betrieb/flotte/schluessel?rad=${rad.id}`}
-            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
           >
             Entnehmen
           </Link>
@@ -411,7 +411,7 @@ function Radkarte({
                   ? `${wochentagLabels[tag]}: frei, ${stammnutzer} ist abwesend`
                   : `${wochentagLabels[tag]}: ${stand.belegt ? 'belegt' : 'frei'}`
               }
-              className={`rounded px-1 py-1 ${stand.belegt ? 'bg-warnung-soft text-warnung' : 'bg-positiv-soft text-positiv'}`}
+              className={`rounded-button px-1 py-1 ${stand.belegt ? 'bg-warnung-soft text-warnung' : 'bg-positiv-soft text-positiv'}`}
             >
               <span className="block font-medium">{wochentagLabels[tag]}</span>
               <span className="block text-[0.6875rem]">
@@ -422,7 +422,7 @@ function Radkarte({
         })}
       </div>
       {wochentage.some((tag) => belegung(zustand, rad, tag, wochendaten).wegenUrlaub) ? (
-        <p className="text-ink-subtle mt-1 text-xs">
+        <p className="text-ink-muted mt-1 text-xs">
           * frei, weil {stammnutzer} an diesem Tag genehmigt abwesend ist.
         </p>
       ) : null}
@@ -453,7 +453,7 @@ function Radkarte({
               .reverse()
               .map((meldung) => (
                 <li key={meldung.id}>
-                  <span className="text-ink-subtle block text-xs">
+                  <span className="text-ink-muted block text-xs">
                     {formatZeitpunkt(meldung.zeitpunkt)}
                     {meldung.gesperrt ? ' · Rad gesperrt' : ' · ohne Sperre'}
                   </span>
@@ -477,7 +477,7 @@ function Radkarte({
                 );
                 return (
                   <li key={checkup.id}>
-                    <span className="text-ink-subtle block text-xs">
+                    <span className="text-ink-muted block text-xs">
                       {formatZeitpunkt(checkup.zeitpunkt)} · {checkup.geprueftVon}
                     </span>
                     {probleme.length > 0 ? (
@@ -497,7 +497,7 @@ function Radkarte({
                       <span className="text-ink-muted block">Notiz: {checkup.notiz}</span>
                     ) : null}
                     {checkup.fotos > 0 ? (
-                      <span className="text-ink-subtle block text-xs">
+                      <span className="text-ink-muted block text-xs">
                         {checkup.fotos} Foto{checkup.fotos === 1 ? '' : 's'} angehängt (bleibt in
                         dieser Sitzung)
                       </span>
@@ -596,7 +596,7 @@ function Wochenuebersicht() {
                   return (
                     <td key={tag} className="text-center">
                       <span
-                        className={`inline-flex min-w-12 justify-center rounded px-2 py-1 text-xs ${
+                        className={`rounded-pill inline-flex min-w-12 justify-center px-2 py-1 text-xs ${
                           stand.belegt
                             ? 'bg-warnung-soft text-warnung'
                             : 'bg-positiv-soft text-positiv'
@@ -651,7 +651,7 @@ function Einstellungen() {
         ))}
       </ol>
 
-      <p className="text-ink-subtle mt-4 text-sm">
+      <p className="text-ink-muted mt-4 text-sm">
         Diese Angaben sind Platzhalter aus der Kölner Vorlage. Sie sind hier bewusst nicht
         bearbeitbar: Eine änderbare Betriebsanweisung setzt voraus, dass die Tübinger Angaben
         fachlich freigegeben sind. Zugangscodes werden grundsätzlich nicht in der Anwendung

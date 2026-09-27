@@ -27,7 +27,7 @@ export function BereichePage({ user }: { user: CurrentUser }) {
             >
               <span className="text-ink-muted">{bereich.icon}</span>
               <span className="min-w-0">
-                <span className="text-ink block text-[0.9375rem] font-medium">{bereich.label}</span>
+                <span className="text-ink text-liste block font-medium">{bereich.label}</span>
                 <span className="text-ink-muted mt-0.5 block text-sm">{bereich.leitfrage}</span>
               </span>
             </Link>
@@ -35,7 +35,7 @@ export function BereichePage({ user }: { user: CurrentUser }) {
         ))}
       </ul>
 
-      <p className="text-ink-subtle mt-8 max-w-prose text-sm">
+      <p className="text-ink-muted mt-8 max-w-prose text-sm">
         Bereiche ohne fertige Hintergrundfunktionen sind als Vorschau gekennzeichnet. Dort entstehen
         keine echten Vorgänge.{' '}
         <Link to="/vorschau/protokoll" className="text-accent hover:text-accent-hover underline">

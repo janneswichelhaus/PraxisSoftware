@@ -33,7 +33,7 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
         />
       </div>
 
-      <article className="text-ink mx-auto max-w-[210mm] text-[0.9375rem]">
+      <article className="text-ink text-liste mx-auto max-w-[210mm]">
         <p className="text-warnung border-line border-b pb-2 text-xs font-medium">
           Entwurf — vor der Verwendung mit echten Patient:innen durch die Datenschutzberatung zu
           prüfen.
@@ -60,7 +60,7 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
             Blätter drucken
           </Button>
         </div>
-        <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
           Nach dem Aushändigen in der Akte vermerken — mit dem Datum und der Fassung, die oben
           steht.
         </p>

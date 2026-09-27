@@ -47,11 +47,11 @@ export function ProtokollPage() {
               <Card>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge ton="akzent">{eintrag.bereich}</Badge>
-                  <span className="text-ink-subtle text-sm tabular-nums">
+                  <span className="text-ink-muted text-sm tabular-nums">
                     {formatZeitpunkt(eintrag.zeitpunkt)}
                   </span>
                 </div>
-                <p className="text-ink mt-2 text-[0.9375rem] font-medium">{eintrag.vorgang}</p>
+                <p className="text-ink text-liste mt-2 font-medium">{eintrag.vorgang}</p>
                 {eintrag.folgen.length > 0 ? (
                   <>
                     <p className="text-ink-muted mt-2 text-sm font-medium">

@@ -92,7 +92,7 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
         <p className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
           Ursprünglicher Eintrag
         </p>
-        <p className="text-ink mt-2 max-w-prose text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
+        <p className="text-ink text-liste mt-2 max-w-prose leading-relaxed whitespace-pre-wrap">
           {parent.content}
         </p>
       </div>
@@ -122,14 +122,14 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
           </Button>
           <Link
             to={zurueck}
-            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
+            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button text-liste inline-flex min-h-11 items-center justify-center px-4 font-medium transition-colors"
           >
             Abbrechen
           </Link>
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Der Nachtrag wird auf dem Server gespeichert, nicht auf diesem Gerät. Anlegen, Ändern und
         Lesen werden protokolliert.
       </p>

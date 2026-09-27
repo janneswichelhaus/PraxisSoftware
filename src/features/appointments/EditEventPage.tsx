@@ -262,13 +262,13 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
               <div className="border-line bg-surface-sunken rounded-card border p-4">
                 <p className="text-ink-muted text-sm">Beteiligte</p>
                 {beteiligte.isPending ? (
-                  <p className="text-ink-subtle mt-2 text-sm">Wird geladen …</p>
+                  <p className="text-ink-muted mt-2 text-sm">Wird geladen …</p>
                 ) : (
                   <ul className="mt-2 flex flex-col gap-1">
                     {(beteiligte.data ?? []).map((person) => (
                       <li
                         key={person.appointment_id}
-                        className="text-ink flex flex-wrap items-center gap-2 text-[0.9375rem]"
+                        className="text-ink text-liste flex flex-wrap items-center gap-2"
                       >
                         <span>{person.display_name}</span>
                         {person.status === 'confirmed' ? null : (
@@ -278,7 +278,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     ))}
                   </ul>
                 )}
-                <p className="text-ink-subtle mt-3 text-xs leading-relaxed">
+                <p className="text-ink-muted mt-3 text-xs leading-relaxed">
                   Wer teilnimmt, wird hier nicht geändert: Das ist eine einzelne Teilnahme und keine
                   Fehlzeit. Sie lässt sich am jeweiligen Termin austauschen oder absagen &ndash; die
                   Fehlzeit findet dann ohne diese Person statt.
@@ -294,7 +294,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
             <fieldset className="border-line bg-surface-sunken rounded-card mt-6 border p-4">
               <legend className="text-ink px-1 text-sm font-medium">Umfang der Änderung</legend>
               <div className="mt-2 flex flex-col gap-3">
-                <label className="flex cursor-pointer gap-3 text-[0.9375rem]">
+                <label className="text-liste flex cursor-pointer gap-3">
                   <input
                     type="radio"
                     name="umfang"
@@ -310,7 +310,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     </span>
                   </span>
                 </label>
-                <label className="flex cursor-pointer gap-3 text-[0.9375rem]">
+                <label className="text-liste flex cursor-pointer gap-3">
                   <input
                     type="radio"
                     name="umfang"

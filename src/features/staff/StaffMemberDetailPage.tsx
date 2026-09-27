@@ -229,7 +229,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
           darfStammdaten ? (
             <Link
               to={`/praxis/team/${staff.id}/bearbeiten`}
-              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
             >
               Stammdaten bearbeiten
             </Link>
@@ -287,7 +287,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
         </div>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Mitarbeiterdatensatz und Zugang zur Anwendung sind getrennt. Ein Wechsel des
         Beschäftigungsstatus sperrt kein Benutzerkonto; dafür gibt es den eigenen Vorgang im
         Abschnitt „Zugang". Mitarbeiterdatensätze werden nicht gelöscht, damit vergangene Termine

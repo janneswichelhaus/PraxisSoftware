@@ -183,7 +183,7 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
           />
         ) : null}
 
-        <label className="flex items-center gap-3 text-[0.9375rem]">
+        <label className="text-liste flex items-center gap-3">
           <input
             type="checkbox"
             checked={entwurf.ersatzrad}
@@ -259,7 +259,7 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
 
         <fieldset className="border-line rounded-card border p-4">
           <legend className="text-ink px-1 text-sm font-medium">Wochenplan</legend>
-          <p className="text-ink-subtle mb-3 text-sm">
+          <p className="text-ink-muted mb-3 text-sm">
             Wer nutzt das Rad an welchem Tag. „Frei" heißt: für andere planbar.
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -301,7 +301,7 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
           <div className="flex flex-wrap gap-3">
             <Link
               to="/betrieb/flotte"
-              className="text-ink-muted hover:text-ink inline-flex min-h-11 items-center text-[0.9375rem]"
+              className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
             >
               Abbrechen
             </Link>

@@ -176,9 +176,9 @@ function Loeschjournal() {
           <span className="text-ink-muted block text-sm tabular-nums">
             {formatZeitpunkt(lauf.deleted_at)}
           </span>
-          <span className="text-ink mt-0.5 block text-[0.9375rem] sm:mt-0">
+          <span className="text-ink text-liste mt-0.5 block sm:mt-0">
             {klasseTexte(lauf.retention_class).label}
-            <span className="text-ink-subtle">
+            <span className="text-ink-muted">
               {' · '}
               <code className="text-[0.8125rem]">{lauf.target_table}</code>
             </span>
@@ -238,7 +238,7 @@ function Loeschauftraege({ user }: { user: CurrentUser }) {
       <ul className="mt-3">
         {auftraege.map((auftrag) => (
           <li key={auftrag.id} className="border-line border-t py-2.5 first:border-t-0">
-            <span className="text-ink text-[0.9375rem]">
+            <span className="text-ink text-liste">
               Ablage „{auftrag.bucket_id}“
               <span className="text-ink-muted mt-0.5 block text-sm">
                 Beauftragt {formatZeitpunkt(auftrag.ordered_at)} ·{' '}
@@ -333,7 +333,7 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
           <ul className="mt-3">
             {fehlende.map((datei) => (
               <li key={datei.file_id} className="border-line border-t py-2.5 first:border-t-0">
-                <span className="text-ink text-[0.9375rem]">
+                <span className="text-ink text-liste">
                   {datei.display_name}
                   <span className="text-ink-muted mt-0.5 block text-sm">
                     {datei.patient_name}

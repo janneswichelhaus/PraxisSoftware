@@ -52,7 +52,7 @@ function Zeile({ foto }: { foto: Patientenfoto }) {
   return (
     <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-ink min-w-0 text-[0.9375rem] font-medium">{foto.display_name}</p>
+        <p className="text-ink text-liste min-w-0 font-medium">{foto.display_name}</p>
         <button
           type="button"
           onClick={() => void herausgeben()}

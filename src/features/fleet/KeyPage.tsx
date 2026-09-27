@@ -104,7 +104,7 @@ export function KeyPage({ user }: { user: CurrentUser }) {
           </Button>
           <Link
             to="/betrieb/flotte"
-            className="text-ink-muted hover:text-ink inline-flex min-h-11 items-center text-[0.9375rem]"
+            className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
           >
             Zurück zur Radflotte
           </Link>

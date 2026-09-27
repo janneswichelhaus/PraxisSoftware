@@ -118,7 +118,7 @@ export function AppointmentSlipPage() {
           an die Patient:in gerichtet, nicht an die bedienende Person. */}
       <section className="max-w-prose">
         <h1 className="text-ink text-xl font-semibold">Ihre nächsten Termine</h1>
-        <p className="text-ink-muted mt-1 text-[0.9375rem]">{fullName(patientDaten)}</p>
+        <p className="text-ink-muted text-liste mt-1">{fullName(patientDaten)}</p>
 
         {eintraege.length === 0 ? (
           <div className="mt-6">
@@ -131,10 +131,10 @@ export function AppointmentSlipPage() {
           <ul className="divide-line border-line mt-6 divide-y border-t border-b">
             {eintraege.map((eintrag) => (
               <li key={eintrag.id} className="py-3">
-                <p className="text-ink text-[0.9375rem] font-medium">
+                <p className="text-ink text-liste font-medium">
                   {formatLocalDate(eintrag.starts_at, eintrag.organization_time_zone)}
                 </p>
-                <p className="text-ink mt-0.5 text-[0.9375rem]">
+                <p className="text-ink text-liste mt-0.5">
                   {formatLocalTimeRange(
                     eintrag.starts_at,
                     eintrag.ends_at,
@@ -149,7 +149,7 @@ export function AppointmentSlipPage() {
           </ul>
         )}
 
-        <p className="text-ink-subtle mt-6 text-xs leading-relaxed">
+        <p className="text-ink-muted mt-6 text-xs leading-relaxed">
           Bitte sagen Sie einen Termin rechtzeitig ab, wenn Sie ihn nicht wahrnehmen können.
         </p>
       </section>
@@ -184,7 +184,7 @@ export function AppointmentSlipPage() {
               role="status"
               className="border-line-strong bg-surface-sunken rounded-card flex flex-col gap-3 border px-4 py-3"
             >
-              <p className="text-ink text-[0.9375rem]">
+              <p className="text-ink text-liste">
                 Wurde der Zettel ausgehändigt? Nur dann gelten die Termine als mitgeteilt.
               </p>
               <div className="flex flex-wrap items-center gap-3">
@@ -207,7 +207,7 @@ export function AppointmentSlipPage() {
             </div>
           ) : null}
 
-          <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+          <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
             Der Druck selbst vermerkt nichts. Erst die Bestätigung danach hält fest, dass die
             Termine ausgehändigt wurden; am Termin lässt sich der Vermerk zurücknehmen.
           </p>
@@ -220,7 +220,7 @@ export function AppointmentSlipPage() {
         </div>
       ) : null}
 
-      <p className="text-ink-subtle nicht-drucken mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted nicht-drucken mt-10 max-w-prose text-xs leading-relaxed">
         Ausdruck und E-Mail enthalten ausschließlich organisatorische Angaben — dieselbe Liste, die
         oben steht. Eine Terminliste ist trotzdem ein Gesundheitsdatum: Sie sagt, dass jemand in
         Behandlung ist.

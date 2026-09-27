@@ -100,9 +100,9 @@ function Terminzeile({ termin, patientId }: { termin: PatientAppointment; patien
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2">
         <Link
           to={mitRueckweg(`/termine/${termin.id}`, `/patienten/${patientId}/termine`)}
-          className="hover:bg-surface-sunken -mx-2 flex min-h-11 min-w-48 flex-1 flex-col justify-center rounded px-2 transition-colors"
+          className="hover:bg-surface-sunken rounded-button -mx-2 flex min-h-11 min-w-48 flex-1 flex-col justify-center px-2 transition-colors"
         >
-          <span className="text-ink text-[0.9375rem] font-medium">
+          <span className="text-ink text-liste font-medium">
             {formatLocalDate(termin.starts_at, zone)}
           </span>
           <span className="text-ink-muted text-sm">
@@ -204,7 +204,7 @@ function Gruppenkopf({ gruppe, patientId }: { gruppe: Terminguppe; patientId: st
     <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1">
       {/* Die Überschrift ist zugleich der Weg zur Grundlage — vor AKTE-006
           stand er an jeder einzelnen Zeile und sagte dort immer dasselbe. */}
-      <h4 className="text-ink text-[0.9375rem] font-semibold">
+      <h4 className="text-ink text-liste font-semibold">
         {grundlageId ? (
           <Link
             to={`/patienten/${patientId}/verordnungen#verordnung-${grundlageId}`}
@@ -266,7 +266,7 @@ function Terminliste({
       {seiten.isError ? <ErrorState title="Die Termine konnten nicht geladen werden." /> : null}
 
       {seiten.data && termine.length === 0 ? (
-        <p className="text-ink-muted text-[0.9375rem]">{leerText}</p>
+        <p className="text-ink-muted text-liste">{leerText}</p>
       ) : null}
 
       {gruppiere(termine, kontingente).map((gruppe) => (

@@ -375,13 +375,13 @@ function Wochenplan({
               Blöcke leeren
             </Button>
           </div>
-          <p className="text-ink-subtle text-xs leading-relaxed">
+          <p className="text-ink-muted text-xs leading-relaxed">
             Speichern ersetzt den gewählten Wochentag vollständig. Leere Blöcke bedeuten: an diesem
             Wochentag keine Termine.
           </p>
         </div>
       ) : (
-        <p className="text-ink-subtle mt-4 text-sm">
+        <p className="text-ink-muted mt-4 text-sm">
           Für das Ändern des Wochenplans fehlt Ihrem Zugang die Berechtigung.
         </p>
       )}
@@ -452,7 +452,7 @@ function Abweichungen({
           ))}
         </ul>
       ) : (
-        <p className="text-ink-subtle mt-4 text-sm">
+        <p className="text-ink-muted mt-4 text-sm">
           Für das kommende Jahr ist keine Abweichung hinterlegt.
         </p>
       )}
@@ -511,7 +511,7 @@ function Abweichungen({
               {mutation.isPending ? 'Wird gespeichert …' : 'Abweichung speichern'}
             </Button>
           </div>
-          <p className="text-ink-subtle text-xs leading-relaxed">
+          <p className="text-ink-muted text-xs leading-relaxed">
             Ohne Häkchen und ohne Blöcke wird eine bestehende Abweichung entfernt; danach gilt für
             diesen Tag wieder der Wochenplan.
           </p>
@@ -611,7 +611,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
         </>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Alle Zeiten gelten in der Zeitzone der Praxis{zone ? ` (${zone})` : ''}. Arbeitszeiten sind
         organisatorische Angaben zur Planung - keine Arbeitszeiterfassung und keine
         Urlaubsverwaltung.

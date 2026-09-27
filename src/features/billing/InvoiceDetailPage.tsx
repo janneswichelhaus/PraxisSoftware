@@ -135,7 +135,7 @@ function Rechnungsbild({
       ) : null}
 
       <Section titel="Empfänger" rahmen>
-        <p className="text-ink text-[0.9375rem] font-medium">{dokument.recipient.name}</p>
+        <p className="text-ink text-liste font-medium">{dokument.recipient.name}</p>
         <p className="text-ink-muted text-sm">
           {empfaengerartLabels[dokument.recipient.kind] ?? 'Kostenträger'}
         </p>
@@ -171,7 +171,7 @@ function Rechnungsbild({
               <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
                 {formatDate(zeile.performed_on)}
               </span>
-              <span className="text-ink min-w-0 flex-1 text-[0.9375rem]">
+              <span className="text-ink text-liste min-w-0 flex-1">
                 {zeile.quantity} × {zeile.label} ({zeile.code})
                 {zeile.item_kind === 'absence_fee' ? (
                   <span className="ml-2">
@@ -179,7 +179,7 @@ function Rechnungsbild({
                   </span>
                 ) : null}
               </span>
-              <span className="text-ink text-[0.9375rem] tabular-nums">
+              <span className="text-ink text-liste tabular-nums">
                 {formatEuro(zeile.line_total_cents, zeile.currency)}
               </span>
             </li>
@@ -187,8 +187,8 @@ function Rechnungsbild({
         </ul>
 
         <div className="border-line mt-3 flex justify-between border-t pt-3">
-          <span className="text-ink text-[0.9375rem] font-semibold">Gesamtbetrag</span>
-          <span className="text-ink text-[0.9375rem] font-semibold tabular-nums">
+          <span className="text-ink text-liste font-semibold">Gesamtbetrag</span>
+          <span className="text-ink text-liste font-semibold tabular-nums">
             {formatEuro(dokument.totals.total_cents, dokument.currency)}
           </span>
         </div>
@@ -229,7 +229,7 @@ function Rechnungsbild({
               </li>
             ))}
           </ul>
-          <p className="text-ink-subtle mt-2 text-sm">
+          <p className="text-ink-muted mt-2 text-sm">
             Ohne Diagnose: Eine Rechnung geht regelmäßig an Dritte, und klinische Inhalte gehören
             nicht dorthin.
           </p>
@@ -237,7 +237,7 @@ function Rechnungsbild({
       ) : null}
 
       <Section titel="Absender" rahmen>
-        <p className="text-ink text-[0.9375rem]">{dokument.issuer.legal_name}</p>
+        <p className="text-ink text-liste">{dokument.issuer.legal_name}</p>
         <p className="text-ink-muted text-sm">
           {`${dokument.issuer.street} ${dokument.issuer.house_number ?? ''}`.trim()},{' '}
           {dokument.issuer.postal_code} {dokument.issuer.city}
@@ -340,7 +340,7 @@ function Zahlungen({
             <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
               {formatDate(zahlung.paid_on)}
             </span>
-            <span className="text-ink min-w-0 flex-1 text-[0.9375rem]">
+            <span className="text-ink text-liste min-w-0 flex-1">
               {richtungLabels[zahlung.direction]} ·{' '}
               {zahlungswegLabels[zahlung.method] ?? zahlung.method}
               {zahlung.voided_at !== null ? (
@@ -358,8 +358,8 @@ function Zahlungen({
               ) : null}
             </span>
             <span
-              className={`text-[0.9375rem] tabular-nums ${
-                zahlung.voided_at !== null ? 'text-ink-subtle line-through' : 'text-ink'
+              className={`text-liste tabular-nums ${
+                zahlung.voided_at !== null ? 'text-ink-muted line-through' : 'text-ink'
               }`}
             >
               {zahlung.direction === 'refund' ? '−' : ''}
@@ -370,10 +370,10 @@ function Zahlungen({
       </ul>
 
       <div className="border-line mt-3 flex justify-between border-t pt-3">
-        <span className="text-ink text-[0.9375rem] font-semibold">
+        <span className="text-ink text-liste font-semibold">
           {offen > 0 ? 'Noch offen' : offen < 0 ? 'Zu viel gezahlt' : 'Bezahlt'}
         </span>
-        <span className="text-ink text-[0.9375rem] font-semibold tabular-nums">
+        <span className="text-ink text-liste font-semibold tabular-nums">
           {formatEuro(Math.abs(offen), waehrung)}
         </span>
       </div>
@@ -447,7 +447,7 @@ function Zahlungserinnerungen({
               <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
                 {formatDate(eintrag.reminder_on)}
               </span>
-              <span className="text-ink min-w-0 flex-1 text-[0.9375rem]">
+              <span className="text-ink text-liste min-w-0 flex-1">
                 Frist bis {formatDate(eintrag.due_on)} ·{' '}
                 {formatEuro(eintrag.outstanding_cents, eintrag.currency)} offen
               </span>
@@ -472,7 +472,7 @@ function Zahlungserinnerungen({
           >
             {erstellen.isPending ? 'Wird ausgestellt …' : 'Zahlungserinnerung ausstellen'}
           </Button>
-          <p className="text-ink-subtle mt-2 max-w-prose text-sm">
+          <p className="text-ink-muted mt-2 max-w-prose text-sm">
             {ansicht.overdue
               ? 'Keine Mahnung und keine Stufe: ein Blatt, das an die fällige Rechnung erinnert, mit einer neuen Frist von vierzehn Tagen. Ohne Gebühr und ohne Zinsen.'
               : `Die Rechnung ist noch nicht fällig${
@@ -539,11 +539,11 @@ function Stornokette({
     const storno = ansicht.cancellation;
     return (
       <Section titel="Storniert" rahmen>
-        <p className="text-ink text-[0.9375rem]">
+        <p className="text-ink text-liste">
           Stornodokument {storno.cancellation_number} vom {formatDate(storno.cancelled_on)}
         </p>
         <p className="text-ink-muted mt-1 text-sm">Grund: {storno.reason}</p>
-        <p className="text-ink-subtle mt-2 text-sm">
+        <p className="text-ink-muted mt-2 text-sm">
           Die Rechnung bleibt unverändert stehen — sie ist ausgestellt gewesen, und das lässt sich
           nicht zurücknehmen. Sie steht in keinem offenen Posten mehr, und ihre Leistungen sind
           wieder abzurechnen.

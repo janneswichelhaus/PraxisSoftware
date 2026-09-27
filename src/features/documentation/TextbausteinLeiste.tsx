@@ -36,7 +36,7 @@ export function TextbausteinLeiste({ onEinfuegen }: { onEinfuegen: (text: string
         <span className="text-ink-muted text-sm">Textbausteine:</span>
 
         {bausteine.length === 0 ? (
-          <span className="text-ink-subtle text-sm">noch keine angelegt</span>
+          <span className="text-ink-muted text-sm">noch keine angelegt</span>
         ) : (
           bausteine.map((baustein) => (
             <button

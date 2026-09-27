@@ -101,7 +101,7 @@ export function VerschiebenRueckfrage({
           Die neue Zeit liegt außerhalb der hinterlegten Arbeitszeit.
         </p>
       ) : null}
-      <p className="text-ink-subtle mt-2 text-xs">Der Termin wurde noch nicht verschoben.</p>
+      <p className="text-ink-muted mt-2 text-xs">Der Termin wurde noch nicht verschoben.</p>
       <div className="mt-3 flex flex-wrap gap-3">
         <Button ref={bestaetigenRef} type="button" disabled={laeuft} onClick={onBestaetigen}>
           {laeuft

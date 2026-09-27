@@ -106,7 +106,7 @@ export function StaffMasterDataFields({
       </Section>
 
       {!privat ? (
-        <p className="text-ink-subtle mt-6 max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted mt-6 max-w-prose text-xs leading-relaxed">
           Die Privatangaben (Geburtsdatum, private Erreichbarkeit, Privatanschrift) pflegt
           ausschließlich die Praxisinhaberin. Sie bleiben beim Speichern unverändert.
         </p>

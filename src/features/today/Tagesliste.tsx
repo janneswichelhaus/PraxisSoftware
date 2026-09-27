@@ -43,7 +43,7 @@ export function Tageskarte({
   return (
     <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="text-ink flex flex-wrap items-center gap-x-2 text-[0.9375rem] font-semibold tabular-nums">
+        <p className="text-ink text-liste flex flex-wrap items-center gap-x-2 font-semibold tabular-nums">
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
           {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
           <Laengenzeichen termin={termin} />
@@ -75,7 +75,7 @@ export function Tageskarte({
       {grund ? <p className="text-warnung mt-2 text-sm font-medium">{grund}</p> : null}
 
       {adresse.length > 0 ? (
-        <address className="text-ink mt-3 text-[0.9375rem] not-italic">
+        <address className="text-ink text-liste mt-3 not-italic">
           {adresse.map((zeile) => (
             <span key={zeile} className="block">
               {zeile}

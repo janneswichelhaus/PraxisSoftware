@@ -92,7 +92,7 @@ function Stornoblatt({
         </Link>
       </div>
 
-      <article className="text-ink mx-auto max-w-[210mm] text-[0.9375rem]">
+      <article className="text-ink text-liste mx-auto max-w-[210mm]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <Wortmarke hoehe={MARKE_RECHNUNGSHOEHE} fassung="schwarz" />
           <address className="text-ink-muted text-right text-sm not-italic">
@@ -110,7 +110,7 @@ function Stornoblatt({
 
         <div className="mt-10 flex flex-wrap justify-between gap-8">
           <div className="min-w-[70mm]">
-            <p className="text-ink-subtle border-line border-b pb-1 text-[0.6875rem]">
+            <p className="text-ink-muted border-line border-b pb-1 text-[0.6875rem]">
               {absender.legal_name} · {`${absender.street} ${absender.house_number ?? ''}`.trim()} ·{' '}
               {absender.postal_code} {absender.city}
             </p>
@@ -191,7 +191,7 @@ function Stornoblatt({
             Stornodokument drucken
           </Button>
         </div>
-        <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
           Wie bei der Rechnung entsteht die Datei im Druckdialog auf diesem Gerät; die Anwendung
           legt sie nicht ab. Aufbewahrt wird das Storno als Datensatz mit Nummer, Tag und Grund.
         </p>

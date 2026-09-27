@@ -44,7 +44,7 @@ export function Select({
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="text-ink-subtle text-sm">
+        <p id={hintId} className="text-ink-muted text-sm">
           {hint}
         </p>
       ) : null}

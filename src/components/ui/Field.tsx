@@ -59,7 +59,7 @@ export function Field({ label, hint, error, feldId, className = '', type, ...pro
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="text-ink-subtle text-sm">
+        <p id={hintId} className="text-ink-muted text-sm">
           {hint}
         </p>
       ) : null}
@@ -74,7 +74,7 @@ export function Field({ label, hint, error, feldId, className = '', type, ...pro
             // - unter 16 px zoomt iOS beim Fokus. Seit UI-002b ist das Papier
             // darunter ebenfalls weiss; als Feld erkennbar macht das Feld
             // deshalb seine Umrandung, nicht mehr seine Flaeche.
-            'bg-surface-field text-ink placeholder:text-ink-subtle rounded-field h-12 w-full border px-4 text-base',
+            'bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-12 w-full border px-4 text-base',
             isPassword ? 'pr-11' : '',
             error ? 'border-danger' : 'border-line-strong',
             className,
@@ -88,7 +88,7 @@ export function Field({ label, hint, error, feldId, className = '', type, ...pro
             type="button"
             onClick={() => setVisible((current) => !current)}
             aria-label={visible ? 'Kennwort verbergen' : 'Kennwort anzeigen'}
-            className="text-ink-subtle hover:text-ink-muted absolute inset-y-0 right-0 flex w-11 items-center justify-center"
+            className="text-ink-muted hover:text-ink absolute inset-y-0 right-0 flex w-11 items-center justify-center"
           >
             <EyeIcon crossedOut={!visible} />
           </button>

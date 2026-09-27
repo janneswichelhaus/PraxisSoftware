@@ -50,7 +50,7 @@ export function TermineMailen({
   // vielleicht-Adresse.
   if (!patient.email) {
     return (
-      <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
         Für eine E-Mail fehlt die Adresse — eintragen darf sie nur, wer sie von der Patient:in
         selbst hat.{' '}
         {/* Der Abstecher in die Stammdaten und zurück auf diese Seite (UX-012).
@@ -136,7 +136,7 @@ function Mailentwurf({
               role="status"
               className="border-line-strong bg-surface-sunken rounded-card flex flex-col gap-3 border px-4 py-3"
             >
-              <p className="text-ink text-[0.9375rem]">
+              <p className="text-ink text-liste">
                 Die E-Mail ist im Mailprogramm geöffnet. Wurde sie gesendet? Nur dann gelten die
                 Termine als mitgeteilt.
               </p>
@@ -175,7 +175,7 @@ function Mailentwurf({
             </div>
           </dl>
 
-          <p className="text-ink border-line mt-3 border-t pt-3 text-[0.9375rem] whitespace-pre-line">
+          <p className="text-ink border-line text-liste mt-3 border-t pt-3 whitespace-pre-line">
             {entwurf.text}
           </p>
 
@@ -185,7 +185,7 @@ function Mailentwurf({
             </Statusmeldung>
           ) : null}
 
-          <p className="text-ink-subtle mt-3 text-xs leading-relaxed">
+          <p className="text-ink-muted mt-3 text-xs leading-relaxed">
             Eine E-Mail ist unterwegs nicht verschlüsselt. Senden Sie die Termine nur, wenn die
             Patient:in das ausdrücklich wünscht und weiß, dass die Nachricht unverschlüsselt geht.
             Die Anwendung verschickt nichts selbst: Sie öffnet die Nachricht in Ihrem Mailprogramm,

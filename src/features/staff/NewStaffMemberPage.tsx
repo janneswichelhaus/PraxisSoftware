@@ -121,7 +121,7 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Es entsteht ein Mitarbeiterdatensatz, aber noch kein Zugang zur Anwendung. Für eigene
         Termine als behandelnde Person ist zusätzlich ein Zugang mit therapeutischer Rolle nötig -
         er wird anschließend auf dem Datensatz eingeladen.

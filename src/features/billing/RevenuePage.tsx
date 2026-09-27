@@ -149,7 +149,7 @@ export function RevenuePage() {
         </Section>
       )}
 
-      <p className="text-ink-subtle mt-8 max-w-prose text-sm">
+      <p className="text-ink-muted mt-8 max-w-prose text-sm">
         Kein steuerlicher Abschluss: Die Auswertung fasst zusammen, was in ausgestellten Dokumenten
         und gebuchten Zahlungen steht. Sie bewertet nichts und ersetzt keine Gewinnermittlung.
       </p>
@@ -181,10 +181,10 @@ function Bereichsblock({
         würde.
       */}
       <div className="border-line mt-3 flex items-baseline justify-between gap-x-3 border-t pt-3">
-        <span className="text-ink text-[0.9375rem] font-semibold">
+        <span className="text-ink text-liste font-semibold">
           Summe {bereichLabels[bereich.bereich]} · {grundlageLabels[grundlage]}
         </span>
-        <span className="text-ink shrink-0 text-[0.9375rem] font-semibold tabular-nums">
+        <span className="text-ink text-liste shrink-0 font-semibold tabular-nums">
           {formatEuro(bereich.bruttoCent, bereich.currency)}
         </span>
       </div>
@@ -202,11 +202,11 @@ function Einnahmenposten({ zeile }: { zeile: Einnahmenzeile }) {
   return (
     <div className="py-3">
       <div className="flex items-baseline gap-x-3">
-        <span className="text-ink text-[0.9375rem] font-medium">
+        <span className="text-ink text-liste font-medium">
           {steuerLabels[zeile.tax_treatment]}
           {satz}
         </span>
-        <span className="text-ink ml-auto shrink-0 text-[0.9375rem] font-medium tabular-nums">
+        <span className="text-ink text-liste ml-auto shrink-0 font-medium tabular-nums">
           {formatEuro(zeile.gross_cents, zeile.currency)}
         </span>
       </div>

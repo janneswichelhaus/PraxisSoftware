@@ -88,7 +88,7 @@ export function Monatskalender({
       </div>
       <div className="mt-1 grid grid-cols-7 text-center">
         {WOCHENTAGE.map((w) => (
-          <span key={w} aria-hidden="true" className="text-ink-subtle py-1 text-xs">
+          <span key={w} aria-hidden="true" className="text-ink-muted py-1 text-xs">
             {w}
           </span>
         ))}
@@ -111,8 +111,8 @@ export function Monatskalender({
                   ? 'bg-accent text-surface font-semibold'
                   : imMonat
                     ? 'text-ink hover:bg-surface-sunken'
-                    : 'text-ink-subtle hover:bg-surface-sunken',
-                istHeute && !istGewaehlt ? 'ring-accent font-semibold ring-2 ring-inset' : '',
+                    : 'text-ink-muted hover:bg-surface-sunken',
+                istHeute && !istGewaehlt ? 'border-accent border-2 font-semibold' : '',
               ].join(' ')}
             >
               {Number(tag.slice(8))}

@@ -223,7 +223,7 @@ export function KennwortNeuPage() {
         </>
       ) : null}
 
-      <p className="text-ink-subtle mt-8 text-xs leading-relaxed">
+      <p className="text-ink-muted mt-8 text-xs leading-relaxed">
         Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte
         Zugänge sind nicht zulässig.
       </p>

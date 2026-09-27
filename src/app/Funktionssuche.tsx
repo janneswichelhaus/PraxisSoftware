@@ -243,7 +243,7 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
         {...(zeigeListe && hatOptionen ? { 'aria-controls': listeId } : {})}
         aria-autocomplete="list"
         aria-activedescendant={aktiverEintrag ? `${feldId}-${aktiv}` : undefined}
-        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-subtle rounded-field h-12 w-full border px-4 text-base sm:pr-20"
+        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-12 w-full border px-4 text-base sm:pr-20"
         placeholder="Funktion, Bereich oder Name"
         value={eingabe}
         onChange={(event) => {
@@ -259,7 +259,7 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
           Telefon gibt es keine Strg-Taste — und keinen Platz. */}
       <kbd
         aria-hidden="true"
-        className="border-line text-ink-subtle bg-surface pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded border px-1.5 py-0.5 text-[0.6875rem] sm:block"
+        className="border-line text-ink-muted bg-surface rounded-pill pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 border px-1.5 py-0.5 text-[0.6875rem] sm:block"
       >
         Strg K
       </kbd>
@@ -299,7 +299,7 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
                           .join(' · ') || undefined
                       }
                       abzeichen={
-                        <span className="text-ink-subtle shrink-0 text-xs">
+                        <span className="text-ink-muted shrink-0 text-xs">
                           {funktion.vorschau ? 'Vorschau' : funktion.art}
                         </span>
                       }
@@ -327,7 +327,7 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
                       }
                       abzeichen={
                         patient.status === 'inactive' ? (
-                          <span className="text-ink-subtle shrink-0 text-xs">
+                          <span className="text-ink-muted shrink-0 text-xs">
                             Nicht in Versorgung
                           </span>
                         ) : undefined
@@ -363,7 +363,7 @@ function Gruppenkopf({ text }: { text: string }) {
   return (
     <p
       aria-hidden="true"
-      className="text-ink-subtle border-line bg-surface-sunken border-y px-3 py-1.5 text-xs font-medium first:border-t-0"
+      className="text-ink-muted border-line bg-surface-sunken border-y px-3 py-1.5 text-xs font-medium first:border-t-0"
     >
       {text}
     </p>
@@ -410,7 +410,7 @@ function Trefferzeile({
       }}
     >
       <span className="min-w-0 flex-1">
-        <span className="text-ink block truncate text-[0.9375rem] font-medium">{bezeichnung}</span>
+        <span className="text-ink text-liste block truncate font-medium">{bezeichnung}</span>
         {zusatz ? <span className="text-ink-muted block truncate text-sm">{zusatz}</span> : null}
       </span>
       {abzeichen}

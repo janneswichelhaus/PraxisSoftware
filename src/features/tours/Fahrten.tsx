@@ -55,7 +55,7 @@ export function Routenzusammenfassung({
           km/h gerechnet. Keine gefahrene Strecke.
         </Statusmeldung>
       ) : null}
-      <p className="text-ink text-[0.9375rem]">
+      <p className="text-ink text-liste">
         <strong className="font-semibold tabular-nums">
           {formatiereStrecke(route.distanceMeters)}
         </strong>{' '}
@@ -81,7 +81,7 @@ export function Fahrtabschnitt({
 }) {
   if (sekunden === null) {
     return (
-      <p className="text-ink-subtle ml-10 border-l-2 border-dashed pl-3 text-sm">
+      <p className="text-ink-muted ml-10 border-l-2 border-dashed pl-3 text-sm">
         Fahrzeit unbekannt — nicht geprüft
       </p>
     );

@@ -44,7 +44,7 @@ export function Fehlerzusammenfassung({
       tabIndex={-1}
       className="rounded-card border-danger/25 bg-danger-soft mb-6 border px-4 py-3 outline-none"
     >
-      <p className="text-danger text-[0.9375rem] font-medium">
+      <p className="text-danger text-liste font-medium">
         {anzahl === 1 ? titel.replace('diese Angaben', 'diese Angabe') : titel}
       </p>
       <ul className="mt-2 flex flex-col gap-1">

@@ -137,7 +137,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
             </Button>
             <Link
               to="/betrieb/flotte"
-              className="text-ink-muted hover:text-ink inline-flex min-h-11 items-center text-[0.9375rem]"
+              className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
             >
               Zurück zur Radflotte
             </Link>
@@ -145,7 +145,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
         </div>
       ) : (
         <div className="flex max-w-xl flex-col gap-5">
-          <p className="text-ink text-[0.9375rem] font-medium">{rad?.name}</p>
+          <p className="text-ink text-liste font-medium">{rad?.name}</p>
 
           <Field
             label="Prüfende Person"
@@ -158,7 +158,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
             <ul className="divide-line divide-y">
               {befunde.map((befund, index) => (
                 <li key={befund.frage} className="py-3 first:pt-0 last:pb-0">
-                  <p className="text-ink text-[0.9375rem]">{befund.frage}</p>
+                  <p className="text-ink text-liste">{befund.frage}</p>
                   <div
                     role="radiogroup"
                     aria-label={befund.frage}
@@ -209,7 +209,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
 
           <div>
             <p className="text-ink text-sm font-medium">Fotos</p>
-            <p className="text-ink-subtle mb-2 text-sm">
+            <p className="text-ink-muted mb-2 text-sm">
               In der Vorschau wird nur die Anzahl mitgeführt. Es wird nichts hochgeladen.
             </p>
             <div className="flex flex-wrap items-center gap-3">
@@ -245,7 +245,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
             </Button>
           </div>
           {!unterschrieben ? (
-            <p className="text-ink-subtle text-sm">
+            <p className="text-ink-muted text-sm">
               Die Bestätigung fehlt noch. Sie können unterschreiben oder Ihren Namen tippen.
             </p>
           ) : null}

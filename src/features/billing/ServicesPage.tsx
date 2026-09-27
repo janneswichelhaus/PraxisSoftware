@@ -113,11 +113,11 @@ export function ServicesPage() {
           {gruppen.map((gruppe) => (
             <li key={gruppe.appointmentId} className="py-3">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-ink text-[0.9375rem] font-medium">{gruppe.patientName}</span>
+                <span className="text-ink text-liste font-medium">{gruppe.patientName}</span>
                 <span className="text-ink-muted text-sm tabular-nums">
                   {formatDate(gruppe.performedOn)}
                 </span>
-                <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
+                <span className="text-ink text-liste ml-auto font-medium tabular-nums">
                   {formatEuro(gruppe.summeCent)}
                 </span>
               </div>
@@ -190,7 +190,7 @@ function OffenerTerminKarte({ termin }: { termin: OffenerTermin }) {
   return (
     <div className="border-line rounded-card border p-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-ink text-[0.9375rem] font-medium">{termin.patient_name}</span>
+        <span className="text-ink text-liste font-medium">{termin.patient_name}</span>
         <span className="text-ink-muted text-sm tabular-nums">
           {formatDate(termin.performed_on)}
         </span>

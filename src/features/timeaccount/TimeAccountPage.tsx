@@ -117,7 +117,7 @@ function Personenkarte({
     <Card>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-ink truncate text-[0.9375rem] font-semibold">{person.name}</p>
+          <p className="text-ink text-liste truncate font-semibold">{person.name}</p>
           <p className="text-ink-muted mt-0.5 text-sm">{person.rolle}</p>
         </div>
         <Badge ton={saldo >= 0 ? 'positiv' : 'kritisch'}>{formatStunden(saldo)}</Badge>

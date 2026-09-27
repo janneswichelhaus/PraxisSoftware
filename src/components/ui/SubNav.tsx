@@ -10,7 +10,7 @@ export interface SubNavEintrag {
 }
 
 const eintragKlassen =
-  'text-ink-muted hover:text-ink -mb-px flex min-h-11 items-center gap-1.5 border-b-2 border-transparent px-3 text-[0.9375rem] whitespace-nowrap transition-colors';
+  'text-ink-muted hover:text-ink -mb-px flex min-h-11 items-center gap-1.5 border-b-2 border-transparent px-3 text-liste whitespace-nowrap transition-colors';
 
 /**
  * Navigation innerhalb eines Arbeitsbereichs.
@@ -55,7 +55,7 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
             >
               {eintrag.label}
               {eintrag.vorschau ? (
-                <span className="bg-surface-sunken text-ink-subtle rounded px-1.5 py-0.5 text-[0.6875rem] font-medium">
+                <span className="bg-surface-sunken text-ink-muted rounded-pill px-1.5 py-0.5 text-[0.6875rem] font-medium">
                   Vorschau
                 </span>
               ) : null}

@@ -127,7 +127,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Änderungen werden protokolliert - erfasst werden dabei nur die Namen der geänderten Felder,
         keine Inhalte. Der Beschäftigungsstatus wird hier nicht verändert.
       </p>

@@ -142,7 +142,7 @@ function Auswahl({
 
   return (
     <fieldset className="flex flex-col gap-1">
-      <legend className="text-ink mb-1 text-[0.9375rem] font-medium">{beschriftung(item)}</legend>
+      <legend className="text-ink text-liste mb-1 font-medium">{beschriftung(item)}</legend>
       <div className={mehrfach ? 'grid gap-x-4 sm:grid-cols-2' : 'flex flex-wrap gap-x-6'}>
         {optionen.map((option) => {
           const kennung = optionKennung(option);
@@ -204,7 +204,7 @@ function Skala({
 
   return (
     <fieldset className="flex flex-col gap-1">
-      <legend className="text-ink mb-1 text-[0.9375rem] font-medium">{beschriftung(item)}</legend>
+      <legend className="text-ink text-liste mb-1 font-medium">{beschriftung(item)}</legend>
       {/* Elf Felder zu je knapp 30 px passen bei 375 px in eine Reihe; die
           ganze Zelle ist Trefferfläche, 44 px hoch. */}
       <div className="grid max-w-md grid-flow-col gap-0.5">

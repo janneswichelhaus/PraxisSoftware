@@ -96,11 +96,11 @@ export function AnlegenMenue({
               className={[
                 'rounded-button border-line flex min-h-11 w-full flex-col gap-0.5 border px-3 py-1.5 text-left',
                 eintrag.deaktiviert
-                  ? 'text-ink-subtle cursor-not-allowed'
+                  ? 'text-ink-muted cursor-not-allowed'
                   : 'text-ink hover:bg-surface-sunken',
               ].join(' ')}
             >
-              <span className="text-[0.9375rem] font-medium">{eintrag.beschriftung}</span>
+              <span className="text-liste font-medium">{eintrag.beschriftung}</span>
               {eintrag.hinweis ? (
                 <span className="text-ink-muted text-xs leading-snug">{eintrag.hinweis}</span>
               ) : null}

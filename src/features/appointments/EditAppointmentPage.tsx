@@ -327,10 +327,10 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
             (CAL-016). */}
         <div className="border-line bg-surface-sunken rounded-card mb-5 border p-4">
           <p className="text-ink-muted text-sm">{istEreignis ? 'Fehlzeit' : 'Patient:in'}</p>
-          <p className="text-ink text-[0.9375rem] font-medium">
+          <p className="text-ink text-liste font-medium">
             {istEreignis ? (daten.title ?? '—') : patientName(daten)}
           </p>
-          <p className="text-ink-subtle mt-2 text-xs leading-relaxed">
+          <p className="text-ink-muted mt-2 text-xs leading-relaxed">
             {istEreignis
               ? 'Die Bezeichnung lässt sich hier nicht ändern. Änderbar sind Zeit, Ort und die beteiligte Person.'
               : 'Ein Termin kann nicht auf eine andere Person übertragen werden.'}

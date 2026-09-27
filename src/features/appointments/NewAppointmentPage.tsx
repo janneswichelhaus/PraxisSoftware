@@ -309,7 +309,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
 
         <div className="border-line bg-surface-sunken rounded-card mb-5 border p-4">
           <p className="text-ink-muted text-sm">Patient:in</p>
-          <p className="text-ink text-[0.9375rem] font-medium">{fullName(patientDaten)}</p>
+          <p className="text-ink text-liste font-medium">{fullName(patientDaten)}</p>
         </div>
 
         <AppointmentFormFields
@@ -362,7 +362,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Es werden ausschließlich organisatorische Angaben erfasst. Klinische Inhalte gehören nicht
         zum Termin.
       </p>

@@ -78,10 +78,10 @@ function Eintrag({
           </span>
         ) : null}
         {note.status === 'draft' ? (
-          <span className="text-ink-subtle text-xs">noch nicht finalisiert</span>
+          <span className="text-ink-muted text-xs">noch nicht finalisiert</span>
         ) : null}
         {note.status === 'final' && note.version_count > 1 ? (
-          <span className="text-ink-subtle text-xs">
+          <span className="text-ink-muted text-xs">
             {note.version_count} Versionen, zuletzt korrigiert am {zeitpunkt(note.updated_at, zone)}
           </span>
         ) : null}
@@ -94,11 +94,11 @@ function Eintrag({
         </p>
       ) : null}
 
-      <p className="text-ink mt-3 max-w-prose text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
+      <p className="text-ink text-liste mt-3 max-w-prose leading-relaxed whitespace-pre-wrap">
         {note.content}
       </p>
 
-      <p className="text-ink-subtle mt-3 text-xs leading-relaxed">{herkunft(note, zone)}</p>
+      <p className="text-ink-muted mt-3 text-xs leading-relaxed">{herkunft(note, zone)}</p>
 
       {finalisieren.isError ? (
         <div className="mt-3">
@@ -215,7 +215,7 @@ export function TreatmentNoteSection({
 
       {!isPending && !isError && !eintrag ? (
         <div className="border-line mt-2 border-t pt-4">
-          <p className="text-ink-muted text-[0.9375rem]">
+          <p className="text-ink-muted text-liste">
             {abgesagt
               ? 'Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation.'
               : 'Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.'}
@@ -260,7 +260,7 @@ export function TreatmentNoteSection({
         </>
       ) : null}
 
-      <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
         Zugriffe auf die Behandlungsdokumentation werden protokolliert.
       </p>
     </section>

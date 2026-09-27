@@ -35,7 +35,7 @@ export function TextArea({ label, hint, error, feldId, className = '', ...props 
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="text-ink-subtle text-sm">
+        <p id={hintId} className="text-ink-muted text-sm">
           {hint}
         </p>
       ) : null}
@@ -44,7 +44,7 @@ export function TextArea({ label, hint, error, feldId, className = '', ...props 
         aria-describedby={describedBy}
         aria-invalid={error ? true : undefined}
         className={[
-          'bg-surface-field text-ink placeholder:text-ink-subtle rounded-field w-full border px-4 py-3 text-base leading-relaxed',
+          'bg-surface-field text-ink placeholder:text-ink-muted rounded-field w-full border px-4 py-3 text-base leading-relaxed',
           error ? 'border-danger' : 'border-line-strong',
           className,
         ]

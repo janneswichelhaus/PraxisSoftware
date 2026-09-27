@@ -76,7 +76,7 @@ function Inhalt({
       </Suspense>
       <Link
         to={`/touren?person=${staffMemberId}&tag=${datum}`}
-        className="text-accent hover:text-accent-hover mt-3 inline-flex min-h-11 items-center text-[0.9375rem] font-medium"
+        className="text-accent hover:text-accent-hover text-liste mt-3 inline-flex min-h-11 items-center font-medium"
       >
         Zur Tour mit Fahrzeiten →
       </Link>

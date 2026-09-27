@@ -82,7 +82,7 @@ export function TherapieberichtDruckPage({ user }: { user: CurrentUser }) {
           ) : null}
         </div>
         {druckfehler ? <Statusmeldung ton="fehler">{druckfehler}</Statusmeldung> : null}
-        <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
           Der Druckdialog des Browsers führt zu Papier, Fax oder einer PDF-Datei. Diese Datei
           entsteht auf diesem Gerät; aufbewahrt wird der Bericht als Datensatz
           {entwurf ? ', sobald er abgeschlossen ist' : ' — so, wie er abgeschlossen wurde'}. Die

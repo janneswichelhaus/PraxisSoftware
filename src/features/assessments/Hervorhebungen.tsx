@@ -50,7 +50,7 @@ export function Hervorhebungen({
         <ul className="mt-2 flex flex-col gap-2">
           {treffer.map(({ regel, item, angaben }) => (
             <li key={regel.id}>
-              <p className="text-ink text-[0.9375rem]">
+              <p className="text-ink text-liste">
                 <span className="text-ink-muted">
                   Frage {item.nummer}, Angabe vom {formatDate(datum)}:{' '}
                 </span>

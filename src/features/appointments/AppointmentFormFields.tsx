@@ -164,10 +164,10 @@ export function AppointmentFormFields({
           ) : (
             <>
               <p className="text-ink-muted text-sm">Ende</p>
-              <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+              <p className="text-ink text-liste mt-1 font-medium">
                 {werte.end_time ? `${werte.end_time} Uhr` : '—'}
               </p>
-              <p className="text-ink-subtle mt-1 text-xs leading-relaxed">
+              <p className="text-ink-muted mt-1 text-xs leading-relaxed">
                 {laengeHinweis ??
                   `Terminfenster: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
               </p>
@@ -344,8 +344,8 @@ export function UebernommeneAdresse({
       <p className="text-ink-muted text-sm">{ueberschrift}</p>
       {vollstaendig ? (
         <>
-          <p className="text-ink text-[0.9375rem]">{[strasse, ort].filter(Boolean).join(', ')}</p>
-          <p className="text-ink-subtle mt-2 text-xs leading-relaxed">
+          <p className="text-ink text-liste">{[strasse, ort].filter(Boolean).join(', ')}</p>
+          <p className="text-ink-muted mt-2 text-xs leading-relaxed">
             Wird aus den Stammdaten übernommen und am Termin festgehalten. Eine spätere Änderung der
             Stammdaten verändert diesen Termin nicht.
           </p>
@@ -422,13 +422,13 @@ export function ArbeitszeitRueckfrage({
           <p className={`text-ink text-sm ${vergangenheit ? 'mt-2' : ''}`}>
             Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit der behandelnden Person.
           </p>
-          <p className="text-ink-subtle mt-2 text-xs leading-relaxed">
+          <p className="text-ink-muted mt-2 text-xs leading-relaxed">
             Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls
             als außerhalb. Arbeitszeiten werden unter „Planung" gepflegt.
           </p>
         </>
       ) : null}
-      <p className="text-ink-subtle mt-2 text-xs">Der Termin wurde noch nicht gespeichert.</p>
+      <p className="text-ink-muted mt-2 text-xs">Der Termin wurde noch nicht gespeichert.</p>
       <div className="mt-4 flex flex-wrap gap-3">
         <Button type="button" disabled={laeuft} data-autofocus onClick={onBestaetigen}>
           {laeuft ? 'Wird gespeichert …' : beschriftung}

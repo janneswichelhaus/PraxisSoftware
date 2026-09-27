@@ -212,7 +212,7 @@ function Grundlagenliste({
               to={ziel(verordnung.id)}
               className="hover:bg-surface-sunken flex min-h-11 flex-col justify-center px-1 py-2.5"
             >
-              <span className="text-ink text-[0.9375rem]">
+              <span className="text-ink text-liste">
                 {bauart} {praeposition} {formatDate(verordnung.issued_on)}
               </span>
               <span className="text-ink-muted text-sm">

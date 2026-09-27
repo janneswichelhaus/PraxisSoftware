@@ -60,7 +60,7 @@ function Erinnerungsblatt({ erinnerung }: { erinnerung: Erinnerungsdokument }) {
         </Link>
       </div>
 
-      <article className="text-ink mx-auto max-w-[210mm] text-[0.9375rem]">
+      <article className="text-ink text-liste mx-auto max-w-[210mm]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <Wortmarke hoehe={MARKE_RECHNUNGSHOEHE} fassung="schwarz" />
           <address className="text-ink-muted text-right text-sm not-italic">
@@ -78,7 +78,7 @@ function Erinnerungsblatt({ erinnerung }: { erinnerung: Erinnerungsdokument }) {
 
         <div className="mt-10 flex flex-wrap justify-between gap-8">
           <div className="min-w-[70mm]">
-            <p className="text-ink-subtle border-line border-b pb-1 text-[0.6875rem]">
+            <p className="text-ink-muted border-line border-b pb-1 text-[0.6875rem]">
               {absender.legal_name} · {`${absender.street} ${absender.house_number ?? ''}`.trim()} ·{' '}
               {absender.postal_code} {absender.city}
             </p>
@@ -160,7 +160,7 @@ function Erinnerungsblatt({ erinnerung }: { erinnerung: Erinnerungsdokument }) {
             Zahlungserinnerung drucken
           </Button>
         </div>
-        <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
           Keine Mahnung, keine Stufe, keine Gebühr: Dieses Blatt erinnert an eine fällige Rechnung.
           Der Betrag darauf ist der vom Tag der Ausstellung und ändert sich nicht mehr — eine
           spätere Zahlung steht an der Rechnung.

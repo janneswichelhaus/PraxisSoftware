@@ -201,7 +201,7 @@ function Antragskarte({
     <Card>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-ink truncate text-[0.9375rem] font-semibold">
+          <p className="text-ink text-liste truncate font-semibold">
             {mitarbeiterName(zustand, antrag.mitarbeiterId)}
           </p>
           <p className="text-ink-muted mt-0.5 text-sm">
@@ -218,7 +218,7 @@ function Antragskarte({
       ) : null}
 
       {antrag.status === 'genehmigt' ? (
-        <p className="text-ink-subtle mt-2 text-sm">
+        <p className="text-ink-muted mt-2 text-sm">
           Genehmigt von {antrag.entschiedenVon} am {formatDatum(antrag.entschiedenAm)}
           {antrag.unterschrift ? ' · Bestätigung liegt vor' : ''}
         </p>
@@ -334,7 +334,7 @@ function Wochenuebersicht() {
                   return (
                     <td key={person.id} className="text-center">
                       <span
-                        className={`inline-flex min-w-9 justify-center rounded px-2 py-1 text-xs ${ton(tage)}`}
+                        className={`rounded-pill inline-flex min-w-9 justify-center px-2 py-1 text-xs ${ton(tage)}`}
                       >
                         {tage === 0 ? '–' : tage}
                       </span>

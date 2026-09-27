@@ -338,7 +338,7 @@ function GrundlagenFormular({
         </div>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Anlegen, Ändern und Löschen einer Behandlungsgrundlage werden protokolliert.
       </p>
     </>

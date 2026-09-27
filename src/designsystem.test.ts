@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -27,6 +27,105 @@ function quelldateien(verzeichnis: string): string[] {
     else if (/\.(tsx|ts|css)$/.test(eintrag) && !/\.test\.(tsx|ts)$/.test(eintrag)) {
       treffer.push(pfad);
     }
+  }
+  return treffer;
+}
+
+/**
+ * Jede Zeile einer Quelldatei, auf der `pruefen` etwas findet, als
+ * „datei:zeile: fund". Die Zeilennummer macht eine Meldung ohne Suche
+ * behebbar.
+ */
+function funde(pruefen: (zeile: string) => string[]): string[] {
+  const treffer: string[] = [];
+  for (const datei of quelldateien(join(stamm, 'src'))) {
+    const zeilen = readFileSync(datei, 'utf8').split('\n');
+    zeilen.forEach((zeile, index) => {
+      for (const fund of pruefen(zeile)) {
+        treffer.push(`${relative(stamm, datei)}:${index + 1}: ${fund}`);
+      }
+    });
+  }
+  return treffer;
+}
+
+/**
+ * Schatten-Utilities (DS-001: keine Schatten).
+ *
+ * `ring-*` und `inset-ring-*` setzt Tailwind als `box-shadow`, `drop-shadow`
+ * als Filter-Schatten; `inset-shadow-*` und `text-shadow-*` sind Schatten dem
+ * Namen nach. Bis UXR-001 suchte der Waechter nur `shadow` und liess alle
+ * diese durch (TOK-01, KAL-18).
+ *
+ * Die Utility steht hinter einem Leerzeichen, einem Anfuehrungszeichen oder
+ * einem Varianten-Doppelpunkt (`hover:shadow-md`). Der Rueckblick schliesst
+ * `box-shadow` und `boxShadow` aus - die Druckregel in index.css darf die
+ * Eigenschaft ja gerade auf `none` setzen. `ring` muss ausserdem wie eine
+ * Klasse enden (Ende, Leerraum, Anfuehrungszeichen oder `-` mit Wert):
+ * Das Wort steckt sonst in Prosa wie „kein `ring-*`" in Karte.tsx, die die
+ * Regel gerade erklaert.
+ */
+const SCHATTEN =
+  /(?<=[\s"'`:])(?:(?:inset-|drop-|text-)?shadow(?!\w)|(?:inset-)?ring(?=$|[\s"'`]|-[a-z0-9[]))/g;
+
+function schattenFunde(zeile: string): string[] {
+  return Array.from(zeile.matchAll(SCHATTEN), (fund) => fund[0]);
+}
+
+/**
+ * Radien ausserhalb des Systems (DS-001, TOK-01).
+ *
+ * Geprueft wird die ganze Klasse: `rounded`, beliebig viele Segmente, dazu
+ * hoechstens ein beliebiger Wert in eckigen Klammern. Bis UXR-001 endete das
+ * Muster mit `\b` - nach „]" greift das nur vor einem Wortzeichen, und
+ * `rounded-[3px] border` rutschte durch; ein nacktes `rounded` (4 px) fand es
+ * gar nicht, weil es einen Bindestrich verlangte.
+ *
+ * Erlaubt sind die fuenf Radien des Systems, auch mit Seitenangabe
+ * (`rounded-t-card`), und `rounded-[6px]` fuer die Checkbox, die das System
+ * eigens neben den Hauptradien nennt. Alles andere ist ein Verstoss -
+ * ausdruecklich auch das nackte `rounded` und eine Seite ohne Radius
+ * (`rounded-t`), denn beide setzen Tailwinds eigene 4 px.
+ *
+ * Das Muster nimmt nur den Rest der Klasse auf und zerlegt ihn im Code: ein
+ * verschachtelter Quantor im Muster selbst waere fuer
+ * `security/detect-unsafe-regex` ein Befund.
+ */
+const RADIUS = /(?<![\w-])rounded([\w[\]-]*)/g;
+const RADIEN = new Set(['button', 'field', 'card', 'image', 'pill']);
+const SEITEN = new Set([
+  't',
+  'r',
+  'b',
+  'l',
+  's',
+  'e',
+  'tl',
+  'tr',
+  'br',
+  'bl',
+  'ss',
+  'se',
+  'es',
+  'ee',
+]);
+
+function radiusFunde(zeile: string): string[] {
+  const treffer: string[] = [];
+  for (const fund of zeile.matchAll(RADIUS)) {
+    const rest = fund[1] ?? '';
+    // `roundedCorners` und Aehnliches ist keine Klasse.
+    if (rest !== '' && !rest.startsWith('-')) continue;
+    const klammer = rest.indexOf('[');
+    const beliebig = klammer < 0 ? undefined : rest.slice(klammer);
+    const segmente = (klammer < 0 ? rest : rest.slice(0, klammer)).split('-').filter(Boolean);
+    const seite = beliebig ? segmente : segmente.slice(0, -1);
+    const stufe = beliebig ?? segmente.at(-1);
+    const erlaubt =
+      stufe !== undefined &&
+      seite.every((teil) => SEITEN.has(teil)) &&
+      (beliebig ? stufe === '[6px]' : RADIEN.has(stufe));
+    if (!erlaubt) treffer.push(fund[0]);
   }
   return treffer;
 }
@@ -86,21 +185,54 @@ describe('Keine Schatten', () => {
    * (Papier auf Flaeche) oder Linie (Karte mit --line auf Papier)."
    *
    * Geprueft werden die Tailwind-Utilities und rohes CSS gleichermassen. Der
-   * Fokusring ist ausgenommen: er ist `outline`, kein Schatten.
+   * Fokusring ist ausgenommen: er ist `outline`, kein Schatten. Aus demselben
+   * Grund markiert eine Auswahl oder ein Hinweis mit `outline` bzw. `border`,
+   * nicht mit `ring` (UXR-001).
    */
-  it('verwendet nirgends eine Schatten-Utility', () => {
-    const treffer: string[] = [];
-    for (const datei of quelldateien(join(stamm, 'src'))) {
-      const inhalt = readFileSync(datei, 'utf8');
-      // Die Utility steht hinter einem Leerzeichen, einem Anfuehrungszeichen
-      // oder einem Varianten-Doppelpunkt (`hover:shadow-md`). Der Rueckblick
-      // schliesst `box-shadow` und `boxShadow` aus - die Druckregel in
-      // index.css darf die Eigenschaft ja gerade auf `none` setzen.
-      if (/(?<=[\s"'`:])shadow\b/.test(inhalt)) {
-        treffer.push(datei.replace(`${stamm}/`, ''));
-      }
+  it('verwendet nirgends eine Schatten-Utility, auch nicht ring oder drop-shadow', () => {
+    expect(funde(schattenFunde)).toEqual([]);
+  });
+
+  /**
+   * Gegenprobe: Ohne sie waere ein Muster, das nie etwas findet, von einem
+   * sauberen Stand nicht zu unterscheiden.
+   */
+  it('erkennt jede Schatten-Utility und laesst Prosa und outline durch (Gegenprobe)', () => {
+    for (const klasse of [
+      'shadow',
+      'shadow-md',
+      'hover:shadow-lg',
+      'shadow-[0_1px_2px_black]',
+      'ring',
+      'ring-2',
+      'focus:ring-2',
+      'target:ring-2',
+      'ring-accent',
+      'ring-inset',
+      'ring-offset-2',
+      'inset-ring',
+      'inset-ring-2',
+      'drop-shadow',
+      'drop-shadow-md',
+      'inset-shadow-sm',
+      'text-shadow-xs',
+    ]) {
+      expect(schattenFunde(`className="border p-4 ${klasse}"`), klasse).toHaveLength(1);
+      expect(schattenFunde(`klassen = '${klasse}'`), klasse).toHaveLength(1);
     }
-    expect(treffer).toEqual([]);
+
+    for (const text of [
+      '    box-shadow: none !important;',
+      "style={{ boxShadow: 'none' }}",
+      'className="outline-accent outline-2 border-2"',
+      '// kein Schatten und kein `ring-*` (das Tailwind als `box-shadow`',
+      'Der Fokusring ist ein outline.',
+      'const string = during + bringen;',
+      'Ein Ring aus Salbei',
+      'className="shadowRoot"',
+    ]) {
+      expect(schattenFunde(text), text).toEqual([]);
+    }
   });
 
   it('setzt auch im Druck keinen Schatten', () => {
@@ -127,17 +259,89 @@ describe('Radien des Systems', () => {
    * `rounded-lg` zu schreiben - und die Radien liefen still auseinander.
    *
    * Die Ausnahme ist `rounded-[6px]` fuer die Checkbox: das System nennt
-   * sie eigens neben den vier Hauptradien.
+   * sie eigens neben den vier Hauptradien. Ein nacktes `rounded` ist ein
+   * Verstoss - es setzt Tailwinds 4 px (TOK-01).
    */
   it('verwendet nur die Radien des Systems', () => {
-    const erlaubt = new Set(['button', 'field', 'card', 'image', 'pill', '[6px]']);
-    const treffer: string[] = [];
-    for (const datei of quelldateien(join(stamm, 'src'))) {
-      const inhalt = readFileSync(datei, 'utf8');
-      for (const fund of inhalt.matchAll(/\brounded-(\[[^\]]+\]|[a-z0-9]+)\b/g)) {
-        if (!erlaubt.has(fund[1]!)) treffer.push(`${datei.replace(`${stamm}/`, '')}: ${fund[0]}`);
-      }
+    expect(funde(radiusFunde)).toEqual([]);
+  });
+
+  it('erkennt jeden fremden Radius und laesst die des Systems durch (Gegenprobe)', () => {
+    for (const klasse of [
+      'rounded',
+      'rounded-lg',
+      'rounded-md',
+      'rounded-full',
+      'rounded-none',
+      'rounded-2xl',
+      'rounded-t',
+      'rounded-t-lg',
+      'rounded-[3px]',
+      'rounded-[14px]',
+      'hover:rounded-lg',
+      'rounded-card-lg',
+    ]) {
+      expect(radiusFunde(`className="${klasse} border px-2"`), klasse).toHaveLength(1);
     }
-    expect(treffer).toEqual([]);
+    // Genau der Fall, an dem das alte Muster mit `\b` vorbeisah.
+    expect(radiusFunde('className="rounded-[3px] border"')).toEqual(['rounded-[3px]']);
+    expect(radiusFunde('`rounded px-1 py-1 ${ton}`')).toEqual(['rounded']);
+
+    for (const text of [
+      'className="rounded-card border p-6"',
+      'className="rounded-button rounded-field rounded-image rounded-pill"',
+      'className="rounded-t-card rounded-b-card"',
+      'className="focus:rounded-button focus:border"',
+      'className="size-5 shrink-0 rounded-[6px] border"',
+      '  --radius-card: 14px;',
+      '    border-radius: 4px;',
+      'const roundedCorners = true;',
+    ]) {
+      expect(radiusFunde(text), text).toEqual([]);
+    }
+  });
+});
+
+describe('Schriftrollen', () => {
+  /**
+   * 15 px ist die Groesse fuer den Inhalt von Listen, Karten, Detail- und
+   * Trefferzeilen. Bis UXR-001 stand sie 158-mal als arbitraerer Wert ohne
+   * Namen (TOK-06); jetzt traegt sie das Token `text-liste`. Der Waechter
+   * haelt den namenlosen Wert fern - in beiden Schreibweisen, denn gemeint
+   * ist die Groesse, nicht die Zeichenkette.
+   */
+  const LISTENGROESSE = /text-\[(?:0\.9375rem|15px)\]/g;
+
+  it('fuehrt die Listengroesse als Token, ohne eigene Zeilenhoehe', () => {
+    expect(css).toMatch(/--text-liste:\s*0\.9375rem;/);
+    // Ohne Unter-Token erzeugt Tailwind fuer `text-liste` nur `font-size`,
+    // genau wie vorher der arbitraere Wert - die Zeilenhoehe erbt weiter.
+    expect(css).not.toMatch(/--text-liste--line-height\s*:/);
+  });
+
+  it('setzt 15 px nur ueber text-liste', () => {
+    expect(funde((zeile) => Array.from(zeile.matchAll(LISTENGROESSE), (f) => f[0]))).toEqual([]);
+  });
+
+  it('erkennt den namenlosen Wert (Gegenprobe)', () => {
+    const finden = (text: string) => Array.from(text.matchAll(LISTENGROESSE), (f) => f[0]);
+    expect(finden('className="text-ink text-[0.9375rem] font-medium"')).toHaveLength(1);
+    expect(finden('className="sm:text-[15px]"')).toHaveLength(1);
+    expect(finden('className="text-ink text-liste font-medium"')).toEqual([]);
+    expect(finden('className="text-[0.6875rem]"')).toEqual([]);
+  });
+});
+
+describe('Textstufen', () => {
+  /**
+   * Das System kennt zwei Textstufen, `ink` und `ink-muted` (DS-001). Die
+   * dritte, `ink-subtle`, trug denselben Wert wie ink-muted und ist mit
+   * UXR-001 gestrichen (TOK-07). Dieser Waechter ersetzt ihren Fall in
+   * src/lib/kontrast.test.ts und ist strenger: Der Name kommt in src/ gar
+   * nicht mehr vor - weder als Klasse noch als Variable noch im Kommentar.
+   */
+  it('kommt ohne die abgeloeste dritte Stufe aus', () => {
+    expect(funde((zeile) => (zeile.includes('ink-subtle') ? ['ink-subtle'] : []))).toEqual([]);
+    expect(css).not.toMatch(/--color-ink-subtle/);
   });
 });

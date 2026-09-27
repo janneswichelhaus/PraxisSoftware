@@ -202,7 +202,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
           {(rechnungen.data ?? []).map((rechnung) => (
             <li key={rechnung.id} className="py-3">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-ink text-[0.9375rem] font-medium">
+                <span className="text-ink text-liste font-medium">
                   {rechnung.invoice_number ?? 'Ohne Nummer'}
                 </span>
                 <Badge ton={standTon[rechnung.status]}>{standLabels[rechnung.status]}</Badge>
@@ -214,7 +214,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                   {monatsname(rechnung.period_month)} · {bereichLabels[rechnung.service_area]} ·{' '}
                   {rechnung.patient_name}
                 </span>
-                <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
+                <span className="text-ink text-liste ml-auto font-medium tabular-nums">
                   {formatEuro(rechnung.total_cents, rechnung.currency)}
                 </span>
               </div>
@@ -281,10 +281,10 @@ function PostenKarte({
   return (
     <div className="border-line rounded-card border p-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-ink text-[0.9375rem] font-medium">{posten.invoice_number}</span>
+        <span className="text-ink text-liste font-medium">{posten.invoice_number}</span>
         {posten.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
         <span className="text-ink-muted text-sm">{posten.recipient_name}</span>
-        <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
+        <span className="text-ink text-liste ml-auto font-medium tabular-nums">
           {formatEuro(posten.outstanding_cents, posten.currency)}
         </span>
       </div>
@@ -346,7 +346,7 @@ function KandidatenKarte({
   return (
     <div className="border-line rounded-card border p-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-ink text-[0.9375rem] font-medium">{kandidat.patient_name}</span>
+        <span className="text-ink text-liste font-medium">{kandidat.patient_name}</span>
         <span className="text-ink-muted text-sm">{monatsname(kandidat.period_month)}</span>
         {/* ABR-009: Eine Rechnung trägt genau einen Bereich; die Zeile sagt,
             welchen sie meint (ADR-009 Punkt 16). */}

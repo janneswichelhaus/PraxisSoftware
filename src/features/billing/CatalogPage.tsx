@@ -136,7 +136,7 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
                   aria-current={aktuelle?.id === version.id}
                   className="min-h-11 min-w-0 flex-1 text-left"
                 >
-                  <span className="text-ink block truncate text-[0.9375rem] font-medium">
+                  <span className="text-ink text-liste block truncate font-medium">
                     {version.label}
                   </span>
                   <span className="text-ink-muted mt-0.5 block text-sm">
@@ -349,7 +349,7 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
                 {position.code}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="text-ink block text-[0.9375rem]">{position.label}</span>
+                <span className="text-ink text-liste block">{position.label}</span>
                 <span className="text-ink-muted mt-0.5 block text-sm">
                   {bereichLabels[position.service_area]} · {artLabels[position.item_kind]} ·{' '}
                   {steuerLabels[position.tax_treatment]}
@@ -358,7 +358,7 @@ function Preisliste({ version, darfPflegen }: { version: KatalogVersion; darfPfl
                     : ''}
                 </span>
               </span>
-              <span className="text-ink shrink-0 text-[0.9375rem] font-medium tabular-nums">
+              <span className="text-ink text-liste shrink-0 font-medium tabular-nums">
                 {formatEuro(position.unit_price_cents, position.currency)}
               </span>
             </li>

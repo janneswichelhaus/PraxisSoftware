@@ -86,7 +86,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
 
       {/* Ein Blatt in Briefbreite. `max-w-[210mm]` gilt am Bildschirm wie auf
           Papier: Wer die Seite ansieht, sieht, was aus dem Drucker kommt. */}
-      <article className="text-ink mx-auto max-w-[210mm] text-[0.9375rem]">
+      <article className="text-ink text-liste mx-auto max-w-[210mm]">
         {/* Bewusst kein `header`: Die Druckregeln blenden `header` aus, und
             dieser Kopf gehört auf das Papier. */}
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -129,7 +129,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
           <div className="min-w-[70mm]">
             {/* Die Absenderzeile über dem Anschriftenfeld: klein, einzeilig,
                 wie im Fensterumschlag. */}
-            <p className="text-ink-subtle border-line border-b pb-1 text-[0.6875rem]">
+            <p className="text-ink-muted border-line border-b pb-1 text-[0.6875rem]">
               {absender.legal_name} · {`${absender.street} ${absender.house_number ?? ''}`.trim()} ·{' '}
               {absender.postal_code} {absender.city}
             </p>
@@ -326,7 +326,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
             Rechnung drucken
           </Button>
         </div>
-        <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
           Der Druckdialog des Browsers führt zu Papier oder zu einer PDF-Datei. Diese Datei entsteht
           auf diesem Gerät; die Anwendung legt sie nicht ab und kann sie später nicht vorlegen —
           aufbewahrt wird die Rechnung als Datensatz. Ein Dokument, das die Anwendung selbst erzeugt

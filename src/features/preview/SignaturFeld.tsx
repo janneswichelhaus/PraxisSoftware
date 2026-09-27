@@ -119,12 +119,12 @@ export function SignaturFeld({
               setGetippt(event.target.value);
               onChange(event.target.value.trim().length > 0);
             }}
-            className="border-line-strong bg-surface text-ink placeholder:text-ink-subtle rounded-field min-h-11 w-full border px-3 text-base"
+            className="border-line-strong bg-surface text-ink placeholder:text-ink-muted rounded-field min-h-11 w-full border px-3 text-base"
           />
         </div>
       </div>
 
-      <p className="text-ink-subtle mt-2 text-sm">
+      <p className="text-ink-muted mt-2 text-sm">
         {unterschrieben ? 'Bestätigung liegt vor.' : 'Noch keine Bestätigung.'} Das Bild wird nicht
         gespeichert und ist keine rechtsverbindliche Signatur.
       </p>

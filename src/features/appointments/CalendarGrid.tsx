@@ -365,7 +365,7 @@ export function CalendarGrid({
                   {s.titel}
                 </span>
                 {s.unterTitel ? (
-                  <span className="text-ink-subtle truncate text-xs">{s.unterTitel}</span>
+                  <span className="text-ink-muted truncate text-xs">{s.unterTitel}</span>
                 ) : null}
               </>
             );
@@ -408,7 +408,7 @@ export function CalendarGrid({
               // waere die oberste Stunde am Rand des Gitters halb abgeschnitten.
               <div
                 key={m}
-                className="text-ink-subtle absolute right-1 pt-0.5 text-[0.6875rem]"
+                className="text-ink-muted absolute right-1 pt-0.5 text-[0.6875rem]"
                 style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
               >
                 {minuteZuZeit(m)}
@@ -422,7 +422,7 @@ export function CalendarGrid({
               ? halbe.map((m) => (
                   <div
                     key={m}
-                    className="text-ink-subtle/70 absolute right-1 pt-0.5 text-[0.625rem]"
+                    className="text-ink-muted absolute right-1 pt-0.5 text-[0.625rem]"
                     style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
                   >
                     {minuteZuZeit(m)}
@@ -613,7 +613,7 @@ export function CalendarGrid({
                         <>
                           <div
                             data-testid="vorschlag-kachel"
-                            className="border-accent bg-surface text-accent rounded-button ring-accent absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold ring-2"
+                            className="border-accent bg-surface text-accent rounded-button outline-accent absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold outline-2"
                             style={{ top: `${oben}px`, height: `${kachelHoehe}px` }}
                             aria-hidden="true"
                           >
@@ -799,7 +799,7 @@ function Kachel({
         ...(ziehbar ? { touchAction: 'pan-x pan-y' } : {}),
       }}
       className={[
-        'border-line bg-surface hover:bg-surface-sunken rounded-button absolute block overflow-hidden',
+        'bg-surface hover:bg-surface-sunken rounded-button absolute block overflow-hidden',
         'border border-l-4 px-1.5 py-1 text-left transition-colors',
         eintrag.status === 'cancelled' ? 'opacity-60' : '',
         gedimmt ? 'opacity-40' : '',
@@ -808,8 +808,8 @@ function Kachel({
         bisher ? 'border-dashed opacity-50' : '',
         // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
         // wie nichts.
-        wartet ? 'ring-accent scale-[1.02] ring-2' : '',
-        gitter.neu ? 'ring-accent ring-2' : '',
+        wartet ? 'scale-[1.02]' : '',
+        wartet || gitter.neu ? 'border-accent border-2' : 'border-line',
         ziehbar ? 'cursor-grab' : '',
       ]
         .filter(Boolean)
@@ -829,9 +829,7 @@ function Kachel({
         <Laengenzeichen termin={eintrag} knapp />
         {vermerk ? ` · ${vermerk}` : ''}
       </span>
-      <span className="text-ink-subtle block truncate text-[0.6875rem]">
-        {ortsHinweis(eintrag)}
-      </span>
+      <span className="text-ink-muted block truncate text-[0.6875rem]">{ortsHinweis(eintrag)}</span>
     </Link>
   );
 }

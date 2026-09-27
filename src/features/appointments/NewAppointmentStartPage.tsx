@@ -81,7 +81,7 @@ export function NewAppointmentStartPage() {
             {vorbelegung.art ? appointmentTypeLabels[vorbelegung.art] : 'noch offen'}
           </DetailRow>
         </DetailList>
-        <p className="text-ink-subtle mt-3 max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
           Alles davon lässt sich im nächsten Schritt ändern. Verbindlich geprüft werden Raster,
           Arbeitszeit und Überschneidung erst beim Speichern.
         </p>

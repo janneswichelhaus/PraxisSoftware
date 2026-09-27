@@ -83,7 +83,7 @@ export function PrescribersListPage() {
                 className="hover:bg-surface-sunken flex min-h-16 items-center justify-between gap-4 py-3 transition-colors"
               >
                 <span className="min-w-0">
-                  <span className="text-ink block truncate text-[0.9375rem] font-medium">
+                  <span className="text-ink text-liste block truncate font-medium">
                     {prescriberName(prescriber)}
                   </span>
                   <span className="text-ink-muted mt-0.5 block text-sm">

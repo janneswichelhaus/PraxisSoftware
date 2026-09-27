@@ -170,7 +170,7 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
 
   return (
     <div className="border-line rounded-card mt-4 border border-dashed p-4">
-      <p className="text-ink text-[0.9375rem] font-medium">Datei hinzufügen</p>
+      <p className="text-ink text-liste font-medium">Datei hinzufügen</p>
       <p id={beschreibungId} className="text-ink-muted mt-0.5 text-sm">
         PDF, JPEG oder PNG bis 10 MB. Ort, Gerät und Vorschaubild werden aus Bildern vor dem
         Hochladen entfernt. Eine hinzugefügte Datei lässt sich nicht mehr ändern — eine Korrektur
@@ -376,7 +376,7 @@ function Dateizeile({
     <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-ink text-[0.9375rem] font-medium">{datei.display_name}</p>
+          <p className="text-ink text-liste font-medium">{datei.display_name}</p>
           <p className="text-ink-muted mt-0.5 text-sm">
             {dokumentartLabels[art] ?? datei.document_type} · {formatBytes(datei.byte_size)}
             {datei.uploaded_at

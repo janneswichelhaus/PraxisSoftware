@@ -354,7 +354,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
         </Section>
       ) : null}
 
-      <p className="text-ink-subtle mt-8 text-xs leading-relaxed">
+      <p className="text-ink-muted mt-8 text-xs leading-relaxed">
         Zugriffe auf Patientenakten werden protokolliert.
       </p>
     </>

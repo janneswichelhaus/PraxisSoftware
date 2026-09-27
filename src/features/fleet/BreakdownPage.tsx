@@ -131,7 +131,7 @@ export function BreakdownPage() {
         <div className="flex flex-wrap gap-3">
           <Link
             to="/betrieb/flotte"
-            className="bg-accent hover:bg-accent-hover rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium text-white transition-colors"
+            className="bg-accent hover:bg-accent-hover rounded-button text-liste inline-flex min-h-11 items-center justify-center px-4 font-medium text-white transition-colors"
           >
             Zurück zur Radflotte
           </Link>
@@ -158,7 +158,7 @@ export function BreakdownPage() {
       <div className="rounded-card border-line bg-surface max-w-xl border p-5">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge ton="warnung">{vorlage.herkunft}-Vorlage</Badge>
-          <span className="text-ink-subtle text-sm">{vorlage.pruefhinweis}</span>
+          <span className="text-ink-muted text-sm">{vorlage.pruefhinweis}</span>
         </div>
 
         <h2 className="text-ink mb-4 text-[1.0625rem] font-semibold">
@@ -215,7 +215,7 @@ export function BreakdownPage() {
         <div className="border-line mt-6 flex flex-wrap gap-3 border-t pt-4">
           <Link
             to="/betrieb/flotte"
-            className="text-ink-muted hover:text-ink inline-flex min-h-11 items-center text-[0.9375rem]"
+            className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
           >
             Abbrechen
           </Link>
@@ -314,7 +314,7 @@ function Schrittinhalt({
       return (
         <div className="mb-4">
           <Hinweiskasten>Rad bitte vor Ort reparieren lassen.</Hinweiskasten>
-          <p className="text-ink mb-4 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-4">
             Behandlung, die nicht mehr zu schaffen ist, telefonisch absagen. Eintrag im Kalender und
             kurze Information an Praxismanagement und {vorlage.zustaendigeRolle}.
           </p>
@@ -338,11 +338,11 @@ function Schrittinhalt({
           <Hinweiskasten>
             {vorlage.depot.bezeichnung}: {vorlage.depot.zugangHinweis}
           </Hinweiskasten>
-          <p className="text-ink mb-2 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-2">
             {vorlage.zustaendigeRolle} kurz über den Schaden informieren, damit die Reparatur
             koordiniert werden kann.
           </p>
-          <p className="text-ink mb-4 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-4">
             Bis auf Weiteres bitte <strong>{ersatzrad}</strong> nutzen – so lange, bis das defekte
             Rad wieder freigegeben ist.
           </p>
@@ -368,10 +368,10 @@ function Schrittinhalt({
             <br />
             Telefon: {vorlage.werkstatt.telefon} · Mobil: {vorlage.werkstatt.mobil}
           </Hinweiskasten>
-          <p className="text-ink text-[0.9375rem]">
+          <p className="text-ink text-liste">
             Zusätzlich kurze Nachricht an die {vorlage.zustaendigeRolle} über {vorlage.meldeweg}.
           </p>
-          <p className="text-ink text-[0.9375rem]">
+          <p className="text-ink text-liste">
             {vorlage.mitnehmen.join(' und ')} vom Rad entfernen und mitnehmen. Rad an einem festen
             Gegenstand anketten.
           </p>
@@ -420,7 +420,7 @@ function Schrittinhalt({
     case 'zusammenfassung':
       return (
         <div className="mb-4">
-          <ul className="text-ink mb-4 list-disc space-y-1 pl-5 text-[0.9375rem]">
+          <ul className="text-ink text-liste mb-4 list-disc space-y-1 pl-5">
             {punkte.map((punkt) => (
               <li key={punkt}>{punkt}</li>
             ))}
@@ -434,7 +434,7 @@ function Schrittinhalt({
     case 'vertragswerkstattKontakt':
       return (
         <div className="mb-4">
-          <p className="text-ink mb-3 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-3">
             Kontakt zu {vorlage.werkstatt.name} aufnehmen: Bescheid geben, dass Sie aus der Praxis
             kommen und in etwa 15 Minuten mit einem Schaden vorbeikommen.
           </p>
@@ -459,10 +459,8 @@ function Schrittinhalt({
     case 'vertragswerkstattUebergabe':
       return (
         <div className="mb-4">
-          <p className="text-ink mb-2 text-[0.9375rem]">
-            {vorlage.zustaendigeRolle} Bescheid geben.
-          </p>
-          <p className="text-ink mb-4 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-2">{vorlage.zustaendigeRolle} Bescheid geben.</p>
+          <p className="text-ink text-liste mb-4">
             Am nächsten Werktag <strong>{ersatzrad}</strong> nutzen, so lange, bis das andere Rad
             wieder freigegeben ist.
           </p>

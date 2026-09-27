@@ -79,7 +79,7 @@ export function BausteinFeld({
 
   return (
     <details ref={feldRef} className="nicht-drucken border-line-strong rounded-card mt-4 border">
-      <summary className="text-ink flex min-h-12 cursor-pointer items-center gap-2 px-4 text-[0.9375rem] font-medium">
+      <summary className="text-ink text-liste flex min-h-12 cursor-pointer items-center gap-2 px-4 font-medium">
         Befund aus Bausteinen
         {anzahl > 0 ? <Badge ton="akzent">{`${anzahl} angegeben`}</Badge> : null}
       </summary>

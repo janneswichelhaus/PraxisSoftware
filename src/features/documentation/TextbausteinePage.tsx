@@ -111,7 +111,7 @@ function BausteinFormular({
 
         {/* Der Geltungsbereich wird nur beim Anlegen gewählt. */}
         {!baustein && darfPraxisweit ? (
-          <label className="flex items-start gap-3 text-[0.9375rem]">
+          <label className="text-liste flex items-start gap-3">
             <input
               type="checkbox"
               className="mt-1 size-5"
@@ -161,7 +161,7 @@ function BausteinKarte({ baustein }: { baustein: TextSnippet }) {
   return (
     <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-ink text-[0.9375rem] font-medium">{baustein.title}</p>
+        <p className="text-ink text-liste font-medium">{baustein.title}</p>
         <Badge ton={baustein.shared ? 'akzent' : 'neutral'}>
           {baustein.shared ? 'Praxis' : 'Nur ich'}
         </Badge>
@@ -200,7 +200,7 @@ function BausteinKarte({ baustein }: { baustein: TextSnippet }) {
               </Rueckfrage>
             </div>
           ) : (
-            <p className="text-ink-subtle mt-3 text-xs">
+            <p className="text-ink-muted mt-3 text-xs">
               Bausteine der Praxis pflegt die Praxisleitung.
             </p>
           )}
@@ -268,7 +268,7 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
             hinweis="Für alle dokumentierenden Personen. Anlegen und ändern darf sie die Praxisleitung."
           >
             {praxis.length === 0 ? (
-              <p className="text-ink-muted text-[0.9375rem]">Noch keine Bausteine der Praxis.</p>
+              <p className="text-ink-muted text-liste">Noch keine Bausteine der Praxis.</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {praxis.map((baustein) => (
@@ -280,7 +280,7 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
 
           <Section titel="Meine Bausteine" hinweis="Sieht außer Ihnen niemand.">
             {eigene.length === 0 ? (
-              <p className="text-ink-muted text-[0.9375rem]">Noch keine eigenen Bausteine.</p>
+              <p className="text-ink-muted text-liste">Noch keine eigenen Bausteine.</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {eigene.map((baustein) => (
@@ -292,7 +292,7 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
         </>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Anlegen, Ändern und Löschen werden protokolliert – mit Titel und Geltungsbereich, ohne den
         Text selbst.
       </p>

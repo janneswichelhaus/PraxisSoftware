@@ -79,16 +79,17 @@
   --color-surface-inverse: oklch(26.1% 0.0544 160.4);
 
   /* --- Text ----------------------------------------------------------------
-     Das System kennt zwei Textstufen, nicht drei. `ink-subtle` trägt deshalb
-     denselben Wert wie `ink-muted`; die Unterscheidung läuft über Schriftgrad
-     und Gewicht. Das Token bleibt vorerst stehen, damit diese Story keine
-     drei Dutzend Dateien anfasst — es verschwindet mit den Komponenten. */
+     Das System kennt zwei Textstufen, nicht drei; die Unterscheidung läuft
+     über Schriftgrad und Gewicht. Eine dritte, „leisere" Stufe trug seit
+     DS-001 denselben Wert wie `ink-muted` und stand nur noch als Altbestand
+     an 140 Stellen. Mit UXR-001 ist sie überall durch `ink-muted` ersetzt
+     und als Token gestrichen (TOK-07); `src/designsystem.test.ts` hält ihren
+     Namen aus `src/` fern, damit keine Seite sie aus Gewohnheit zurückholt. */
 
   /* Tinte #111e17 */
   --color-ink: oklch(22% 0.0229 160.2);
   /* Leise #545d58 */
   --color-ink-muted: oklch(46.9% 0.0138 161.6);
-  --color-ink-subtle: oklch(46.9% 0.0138 161.6);
 
   /* --- Linien mit Pflichten ------------------------------------------------
      Zwei Linien, klar getrennt: `line` trennt nur (Kartenrahmen, Tabellen-
@@ -151,6 +152,20 @@
   --text-h3--line-height: 1.25;
   --text-h4: 20px;
   --text-h4--line-height: 1.25;
+  /* Inhalt von Listen, Karten, Detail- und Trefferzeilen: 15 px (TOK-06).
+     Der Wert stand bis UXR-001 an 158 Stellen als arbiträrer Wert in
+     eckigen Klammern, ohne Namen und damit ohne Rolle. Das Token benennt
+     ihn, es ändert ihn nicht: Ob die Rolle später auf 14 oder 16 px wandert,
+     ist eine Entscheidung von Jannes, keine Folge dieser Umbenennung.
+
+     Bewusst **ohne** Unter-Token für die Zeilenhöhe. Der arbiträre Wert
+     setzte nur `font-size`, die Zeilenhöhe erbte das Element von seinem
+     Elternteil. Mit dem Unter-Token erzeugt Tailwind zusätzlich
+     `line-height: var(--tw-leading, …)` und hätte jede Zeile verschoben,
+     deren Elternteil eine andere Zeilenhöhe trägt (etwa unter `text-sm`).
+     Ohne es ist die erzeugte Regel dieselbe – nur `font-size` – und die
+     Ansicht pixelgleich (am Tailwind-Compiler geprüft). */
+  --text-liste: 0.9375rem;
   --tracking-display: -0.03em;
   --tracking-label: 0.14em;
 

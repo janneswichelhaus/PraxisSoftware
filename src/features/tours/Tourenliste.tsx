@@ -103,7 +103,7 @@ export function Tourenliste({
               <div className="flex items-center gap-3 py-3">
                 <Nummer>{stopp.nummer}</Nummer>
                 <div className="min-w-0 flex-1">
-                  <p className="text-ink text-[0.9375rem] font-medium">
+                  <p className="text-ink text-liste font-medium">
                     <span className="tabular-nums">
                       {formatLocalTimeRange(stopp.termin.starts_at, stopp.termin.ends_at, zeitzone)}
                     </span>{' '}
@@ -137,7 +137,7 @@ export function Tourenliste({
       </ol>
 
       <details className="mt-4 print:hidden">
-        <summary className="text-ink-muted marker:text-ink-subtle cursor-pointer text-sm">
+        <summary className="text-ink-muted marker:text-ink-muted cursor-pointer text-sm">
           Andere Ziel-App prüfen (für die Gerätebewertung)
         </summary>
         <div
@@ -148,7 +148,7 @@ export function Tourenliste({
           {ZIEL_APPS.map((option) => (
             <label
               key={option.wert}
-              className={`rounded-button inline-flex min-h-11 cursor-pointer items-center border px-4 text-[0.9375rem] ${
+              className={`rounded-button text-liste inline-flex min-h-11 cursor-pointer items-center border px-4 ${
                 app === option.wert
                   ? 'border-accent bg-accent-soft text-accent font-medium'
                   : 'border-line-strong bg-surface text-ink-muted'
@@ -165,7 +165,7 @@ export function Tourenliste({
             </label>
           ))}
         </div>
-        <p className="text-ink-subtle mt-2 text-sm">
+        <p className="text-ink-muted mt-2 text-sm">
           Keine Einstellung: Die Wahl gilt für diesen Besuch der Seite und wird nicht gespeichert.
         </p>
       </details>

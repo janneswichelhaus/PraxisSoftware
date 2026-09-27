@@ -25,7 +25,7 @@ export function SimulationsMeldung({ eintrag }: { eintrag: Protokolleintrag | nu
       role="status"
       className="rounded-card border-accent/25 bg-accent-soft mb-5 border px-4 py-3"
     >
-      <p className="text-accent text-[0.9375rem] font-medium">Vorschau: {eintrag.vorgang}</p>
+      <p className="text-accent text-liste font-medium">Vorschau: {eintrag.vorgang}</p>
       {eintrag.folgen.length > 0 ? (
         <>
           <p className="text-ink-muted mt-2 text-sm font-medium">In der Vorschau übernommen:</p>
@@ -90,7 +90,7 @@ export function Klappbereich({
 }) {
   return (
     <details open={offen} className="rounded-card border-line bg-surface mt-4 border px-4">
-      <summary className="text-ink flex min-h-12 cursor-pointer items-center text-[0.9375rem] font-medium">
+      <summary className="text-ink text-liste flex min-h-12 cursor-pointer items-center font-medium">
         {titel}
       </summary>
       <div className="pb-4">

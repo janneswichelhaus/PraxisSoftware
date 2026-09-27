@@ -25,7 +25,7 @@ export function MdrSperre({ eintrag }: { eintrag: MdrEintrag }) {
       />
 
       <Inhaltsflaeche className="max-w-prose">
-        <p className="text-ink text-[0.9375rem]">{eintrag.keineAusgabe}</p>
+        <p className="text-ink text-liste">{eintrag.keineAusgabe}</p>
 
         <p className="text-ink-muted mt-4 text-sm">
           Features an der Grenze zur Medizinprodukte-Software dürfen vor einer dokumentierten
@@ -34,7 +34,7 @@ export function MdrSperre({ eintrag }: { eintrag: MdrEintrag }) {
         </p>
 
         <dl className="mt-4 text-sm">
-          <dt className="text-ink-subtle">Grundlage</dt>
+          <dt className="text-ink-muted">Grundlage</dt>
           <dd className="text-ink-muted mt-1">
             <ul className="list-inside list-disc">
               {eintrag.grundlage.map((fundstelle) => (

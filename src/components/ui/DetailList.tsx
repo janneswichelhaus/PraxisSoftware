@@ -25,7 +25,7 @@ export function DetailRow({ label, children }: { label: string; children: ReactN
       <dt className="text-ink-muted text-sm sm:w-44 sm:shrink-0">{label}</dt>
       {/* whitespace-pre-line: mehrzeilige Freitexte wie der Zugangshinweis
           behalten ihre Absaetze (PAT-005). */}
-      <dd className="text-ink text-[0.9375rem] whitespace-pre-line">{children}</dd>
+      <dd className="text-ink text-liste whitespace-pre-line">{children}</dd>
     </div>
   );
 }

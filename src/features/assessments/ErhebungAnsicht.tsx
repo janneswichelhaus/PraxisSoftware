@@ -33,7 +33,7 @@ export function ErhebungAnsicht({
           {beantwortet.map((item) => (
             <div key={item.id}>
               <dt className="text-ink-muted text-sm">{beschriftung(item)}</dt>
-              <dd className="text-ink text-[0.9375rem] whitespace-pre-line">
+              <dd className="text-ink text-liste whitespace-pre-line">
                 {antwortAnzeige(item, antworten[item.id])}
                 {item.typ === 'koerperschema' ? (
                   <div className="mt-2">

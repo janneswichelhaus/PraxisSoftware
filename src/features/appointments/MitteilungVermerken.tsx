@@ -82,7 +82,7 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
         ))}
       </div>
 
-      <p className="text-ink-subtle mt-3 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
         Sobald der Termin verschoben oder anders geändert wird, verfällt der Vermerk — die neue Zeit
         ist dann noch nicht mitgeteilt.
       </p>

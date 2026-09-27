@@ -194,7 +194,7 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
           <DataRow label="Satz je kWh">{formatEuro(zustand.stromsatzCent)}</DataRow>
           <DataRow label="Formel">Arbeitstage × 0,5 kWh × Satz</DataRow>
         </DataList>
-        <p className="text-ink-subtle mt-3 text-sm">
+        <p className="text-ink-muted mt-3 text-sm">
           Die Pauschale stammt aus der Vorlage und ist eine betriebliche Regel, kein allgemein
           gültiger Verbrauchswert und keine rechtliche Vorgabe. Sie muss für diesen Betrieb
           gesondert entschieden werden.
@@ -224,7 +224,7 @@ function Erstattungskarte({
     <Card>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-ink truncate text-[0.9375rem] font-semibold">
+          <p className="text-ink text-liste truncate font-semibold">
             {mitarbeiterName(zustand, erstattung.mitarbeiterId)}
             {eigene ? ' (ich)' : ''}
           </p>
@@ -276,13 +276,13 @@ function Erstattungskarte({
         <p className="text-danger mt-2 text-sm">Ablehnung: {erstattung.ablehnungsgrund}</p>
       ) : null}
       {erstattung.stand === 'genehmigt' ? (
-        <p className="text-ink-subtle mt-2 text-sm">
+        <p className="text-ink-muted mt-2 text-sm">
           Genehmigt von {erstattung.entschiedenVon} am {formatDatum(erstattung.entschiedenAm)}. Noch
           nicht ausgezahlt.
         </p>
       ) : null}
       {erstattung.stand === 'ausgezahlt' ? (
-        <p className="text-ink-subtle mt-2 text-sm">
+        <p className="text-ink-muted mt-2 text-sm">
           Ausgezahlt am {formatDatum(erstattung.ausgezahltAm)}.
         </p>
       ) : null}
@@ -493,7 +493,7 @@ function Erstattungsformular({
             ).map((option) => (
               <label
                 key={option.wert}
-                className={`rounded-button inline-flex min-h-11 cursor-pointer items-center border px-4 text-[0.9375rem] ${
+                className={`rounded-button text-liste inline-flex min-h-11 cursor-pointer items-center border px-4 ${
                   art === option.wert
                     ? 'border-accent bg-accent-soft text-accent font-medium'
                     : 'border-line-strong bg-surface text-ink-muted'
@@ -571,7 +571,7 @@ function Erstattungsformular({
             <fieldset className="border-line rounded-card border p-4">
               <legend className="text-ink px-1 text-sm font-medium">Positionen</legend>
               {positionen.length === 0 ? (
-                <p className="text-ink-subtle text-sm">Noch keine Position erfasst.</p>
+                <p className="text-ink-muted text-sm">Noch keine Position erfasst.</p>
               ) : (
                 <ul className="flex flex-col gap-3">
                   {positionen.map((position, index) => (
@@ -643,7 +643,7 @@ function Erstattungsformular({
 
             <div>
               <p className="text-ink text-sm font-medium">Beleg</p>
-              <p className="text-ink-subtle mb-2 text-sm">
+              <p className="text-ink-muted mb-2 text-sm">
                 Beleg gut lesbar fotografieren: gerade halten, ausreichend Licht, alle Beträge und
                 der Händlername müssen erkennbar sein. In der Vorschau wird nur die Anzahl
                 mitgeführt, es wird nichts hochgeladen.

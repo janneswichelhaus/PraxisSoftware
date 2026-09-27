@@ -105,18 +105,18 @@ function AkteEintrag({ termin, note }: { termin: RecordAppointment; note: Treatm
             eine Rechnung ohne erbrachte Leistung (ADR-018 Fassung 3 Punkt 9). */}
         {note.visit_without_treatment ? <span className={abzeichen}>Ohne Behandlung</span> : null}
         {note.status === 'draft' ? (
-          <span className="text-ink-subtle text-xs">noch nicht finalisiert</span>
+          <span className="text-ink-muted text-xs">noch nicht finalisiert</span>
         ) : null}
         {note.status === 'final' && note.version_count > 1 ? (
-          <span className="text-ink-subtle text-xs">{note.version_count} Versionen</span>
+          <span className="text-ink-muted text-xs">{note.version_count} Versionen</span>
         ) : null}
       </div>
 
-      <p className="text-ink mt-2 max-w-prose text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
+      <p className="text-ink text-liste mt-2 max-w-prose leading-relaxed whitespace-pre-wrap">
         {note.content}
       </p>
 
-      <p className="text-ink-subtle mt-2 text-xs leading-relaxed">{herkunft(note, zone)}</p>
+      <p className="text-ink-muted mt-2 text-xs leading-relaxed">{herkunft(note, zone)}</p>
 
       {note.version_count > 0 ? (
         <Link
@@ -177,7 +177,7 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
       ) : null}
 
       {seiten.data && termine.length === 0 ? (
-        <p className="text-ink-muted border-line mt-3 border-t pt-4 text-[0.9375rem]">
+        <p className="text-ink-muted border-line text-liste mt-3 border-t pt-4">
           Für diese Person gibt es noch keine Termine in der Akte.
         </p>
       ) : null}
@@ -189,7 +189,7 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
               <TerminKopf termin={termin} />
 
               {termin.notes.length === 0 ? (
-                <p className="text-ink-muted mt-2 text-[0.9375rem]">Keine Dokumentation.</p>
+                <p className="text-ink-muted text-liste mt-2">Keine Dokumentation.</p>
               ) : (
                 termin.notes.map((note) => (
                   <AkteEintrag key={note.id} termin={termin} note={note} />
@@ -217,7 +217,7 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
         onClick={() => void seiten.fetchNextPage()}
       />
 
-      <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
         Zugriffe auf die Behandlungsdokumentation werden je Eintrag protokolliert.
       </p>
     </section>

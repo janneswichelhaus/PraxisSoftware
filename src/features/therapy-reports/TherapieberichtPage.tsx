@@ -192,7 +192,7 @@ function Berichtsformular({
           <legend className="text-ink text-base font-semibold">
             Einträge aus der Dokumentation
           </legend>
-          <p className="text-ink-subtle text-sm">
+          <p className="text-ink-muted text-sm">
             Angekreuzte Einträge stehen wörtlich im Bericht, mit Tag und Verfasser:in. Nur
             finalisierte Einträge lassen sich übernehmen; vorausgewählt ist nichts.
           </p>
@@ -229,7 +229,7 @@ function Berichtsformular({
         {koerperschemata.length > 0 ? (
           <fieldset className="flex flex-col gap-1">
             <legend className="text-ink text-base font-semibold">Körperschema</legend>
-            <p className="text-ink-subtle mb-1 text-sm">
+            <p className="text-ink-muted mb-1 text-sm">
               Die Kreise aus einem abgeschlossenen Anamnesebogen, als Bild im Bericht.
             </p>
             <Auswahlknopf
@@ -314,7 +314,7 @@ function Berichtsformular({
 
       <section className="mt-10" aria-label="Vorschau des gespeicherten Stands">
         <h2 className="text-ink mb-1 text-base font-semibold">Vorschau</h2>
-        <p className="text-ink-subtle mb-4 text-sm">
+        <p className="text-ink-muted mb-4 text-sm">
           Der zuletzt gespeicherte Stand, wie er gedruckt würde.
         </p>
         <div className="border-line rounded-card bg-surface border p-4 sm:p-8">

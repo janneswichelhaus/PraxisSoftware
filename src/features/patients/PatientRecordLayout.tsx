@@ -73,7 +73,7 @@ function Aktenavigation({
             <NavLink
               to={`${bereich.to}${anhang}`}
               end={bereich.end ?? false}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent flex min-h-11 items-center px-3 text-[0.9375rem] whitespace-nowrap transition-colors aria-[current=page]:font-medium"
+              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-medium"
             >
               {bereich.label}
             </NavLink>

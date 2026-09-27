@@ -40,12 +40,10 @@ function EventRow({ event }: { event: AuditEvent }) {
       <span className="text-ink-muted block text-sm tabular-nums">
         {formatTimestamp(event.occurred_at)}
       </span>
-      <span className="text-ink mt-0.5 block truncate text-[0.9375rem] sm:mt-0">
-        {akteur(event)}
-      </span>
-      <span className="text-ink mt-0.5 block text-[0.9375rem] sm:mt-0">
+      <span className="text-ink text-liste mt-0.5 block truncate sm:mt-0">{akteur(event)}</span>
+      <span className="text-ink text-liste mt-0.5 block sm:mt-0">
         {label(auditActionLabels, event.action)}
-        <span className="text-ink-subtle">
+        <span className="text-ink-muted">
           {' · '}
           {label(auditSubjectLabels, event.subject_type)}{' '}
           <span title={event.subject_id ?? undefined} className="tabular-nums">
@@ -224,7 +222,7 @@ export function AuditLogPage() {
         </>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Der Aufruf dieser Seite wird selbst protokolliert. Angezeigt werden ausschließlich
         Metadaten; Inhalte der Patientenakte sind nicht Bestandteil des Auditlogs.
       </p>

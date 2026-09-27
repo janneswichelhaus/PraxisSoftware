@@ -149,7 +149,7 @@ function Verordnungskopf({ verordnung }: { verordnung: Verordnung }) {
 
   return (
     <div className="min-w-0">
-      <p className="text-ink text-[0.9375rem] font-medium">
+      <p className="text-ink text-liste font-medium">
         <Grundlagentitel verordnung={verordnung} />
       </p>
       {verordner ? <p className="text-ink-muted mt-0.5 text-sm">{verordner}</p> : null}
@@ -426,7 +426,7 @@ function LaufendeVerordnung({
       // Die Kennung macht die Verordnung aus der Terminliste anspringbar - der
       // Rückweg zu „aus welcher Verordnung stammt dieser Termin".
       id={`verordnung-${verordnung.id}`}
-      className="border-line bg-surface rounded-card target:ring-accent border p-4 target:ring-2"
+      className="border-line bg-surface rounded-card target:outline-accent border p-4 target:outline-2"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <Verordnungskopf verordnung={verordnung} />
@@ -509,7 +509,7 @@ function AbgeschlosseneVerordnung({
     <li id={`verordnung-${verordnung.id}`} className="border-line border-t">
       <details className="group">
         <summary className="hover:bg-surface-sunken flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
-          <span className="text-ink min-w-0 text-[0.9375rem]">
+          <span className="text-ink text-liste min-w-0">
             <Grundlagentitel verordnung={verordnung} />
             <span className="text-ink-muted mt-0.5 block text-sm">
               {[
@@ -523,7 +523,7 @@ function AbgeschlosseneVerordnung({
                 .join(' · ')}
             </span>
           </span>
-          <span className="text-ink-subtle text-xs">Details</span>
+          <span className="text-ink-muted text-xs">Details</span>
         </summary>
 
         <div className="pb-3">

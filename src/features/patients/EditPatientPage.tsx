@@ -143,7 +143,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Änderungen an Stammdaten werden protokolliert. Der Versorgungsstatus wird hier nicht
         verändert.
       </p>

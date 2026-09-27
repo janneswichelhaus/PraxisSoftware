@@ -231,7 +231,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
                 alt="QR-Code zum Einrichten des zweiten Faktors"
                 className="border-line rounded-card mt-4 w-44 border bg-white p-2"
               />
-              <p className="text-ink-subtle mt-2 text-xs break-all">
+              <p className="text-ink-muted mt-2 text-xs break-all">
                 Zum Abtippen: <code>{einrichtung.secret}</code>
               </p>
 
@@ -359,7 +359,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
       <ZweiterFaktor user={user} />
       <Sitzungen />
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Kennwortänderung, zweiter Faktor und das Beenden der Sitzungen werden protokolliert — ohne
         Kennwort, ohne Code und ohne Gerätekennung. Rollen und Sperre ändert ausschließlich die
         Praxisleitung.

@@ -99,13 +99,13 @@ function Zahlungszeile({
         </span>
         <Link
           to={`/abrechnung/rechnungen/${zahlung.invoice_id}`}
-          className="text-ink text-[0.9375rem] font-medium whitespace-nowrap underline-offset-2 hover:underline"
+          className="text-ink text-liste font-medium whitespace-nowrap underline-offset-2 hover:underline"
         >
           {zahlung.invoice_number ?? 'Rechnung'}
         </Link>
         <span
-          className={`ml-auto shrink-0 text-[0.9375rem] font-medium tabular-nums ${
-            storniert ? 'text-ink-subtle line-through' : 'text-ink'
+          className={`text-liste ml-auto shrink-0 font-medium tabular-nums ${
+            storniert ? 'text-ink-muted line-through' : 'text-ink'
           }`}
         >
           {zahlung.direction === 'refund' ? '−' : ''}

@@ -179,7 +179,7 @@ function Aufnahme({ patientId }: { patientId: string }) {
     <div>
       {foto && vorschau ? (
         <div className="border-line rounded-card border border-dashed p-4">
-          <p className="text-ink text-[0.9375rem] font-medium">Neues Foto</p>
+          <p className="text-ink text-liste font-medium">Neues Foto</p>
           <img
             src={vorschau}
             alt="Neues Foto, noch nicht gespeichert"
@@ -363,7 +363,7 @@ function Fotozeile({
     <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 text-sm">
-          <p className="text-ink text-[0.9375rem] font-medium">{foto.display_name}</p>
+          <p className="text-ink text-liste font-medium">{foto.display_name}</p>
           <p className="text-ink-muted mt-0.5">
             {tagDerPraxis(foto.taken_at, zeitzone)}
             {foto.taken_by_name ? ` · ${foto.taken_by_name}` : ''} · wird spätestens am{' '}
@@ -560,7 +560,7 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
         ) : null}
       </div>
 
-      <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
         Jedes Öffnen eines Fotos wird protokolliert. Fotos lassen sich hier weder herunterladen noch
         teilen.
       </p>

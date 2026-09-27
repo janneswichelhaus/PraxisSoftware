@@ -119,7 +119,7 @@ export function ZugangPage() {
       ) : null}
 
       {fremdeSitzungBeimOeffnen.current && zustand !== 'fremde-sitzung' ? (
-        <p className="text-ink-subtle mt-6 text-xs leading-relaxed">
+        <p className="text-ink-muted mt-6 text-xs leading-relaxed">
           Hinweis: Beim Öffnen dieser Seite war auf dem Gerät noch ein anderer Zugang angemeldet.
         </p>
       ) : null}

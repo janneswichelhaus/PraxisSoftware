@@ -855,14 +855,14 @@ function AppointmentDetail({
               {istEreignis ? (
                 <Link
                   to={mitRueckweg(`/termine/${appointment.id}/ereignis-bearbeiten`, eingehend)}
-                  className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+                  className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
                 >
                   Fehlzeit bearbeiten
                 </Link>
               ) : null}
               <Link
                 to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
-                className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
+                className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
               >
                 {istEreignis ? 'Teilnahme ändern' : 'Bearbeiten'}
               </Link>
@@ -1118,7 +1118,7 @@ function AppointmentDetail({
       ) : null}
 
       {appointment.appointment_type === 'video' ? (
-        <p className="text-ink-subtle mt-6 max-w-prose text-sm leading-relaxed">
+        <p className="text-ink-muted mt-6 max-w-prose text-sm leading-relaxed">
           Für Videotermine wird in diesem Stand noch kein Videolink erzeugt.
         </p>
       ) : null}
@@ -1129,7 +1129,7 @@ function AppointmentDetail({
           danach (CAL-015b). */}
       {istEreignis ? null : <TreatmentNoteSection appointment={appointment} user={user} />}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Zeiten gelten in der Zeitzone der Praxis ({zone}). Der Termin selbst enthält ausschließlich
         organisatorische Angaben.
         {appointment.appointment_type === 'home_visit'

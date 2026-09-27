@@ -299,7 +299,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           <DetailRow label="Bereits verplant">{zahlen.planned}</DetailRow>
           <DetailRow label="Offen">
             <span className="flex flex-wrap items-center gap-2">
-              <span className="text-ink text-[0.9375rem]">{zahlen.remaining}</span>
+              <span className="text-ink text-liste">{zahlen.remaining}</span>
               {zahlen.remaining === 0 ? <Badge ton="neutral">Kontingent ausgeschöpft</Badge> : null}
             </span>
           </DetailRow>
@@ -308,7 +308,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           {zahlen.uncovered > 0 ? (
             <DetailRow label="Ohne Deckung">
               <span className="flex flex-wrap items-center gap-2">
-                <span className="text-ink text-[0.9375rem]">{zahlen.uncovered}</span>
+                <span className="text-ink text-liste">{zahlen.uncovered}</span>
                 <Badge ton="warnung">Grundlage deckt nicht alle Termine</Badge>
               </span>
             </DetailRow>
@@ -495,7 +495,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                         Entfernen
                       </button>
                     </div>
-                    <p className="text-ink-subtle mt-2 text-xs">
+                    <p className="text-ink-muted mt-2 text-xs">
                       bis {fensterEnde(termin.beginn) || '—'} Uhr
                     </p>
                     {befund ? (
@@ -575,7 +575,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
         </Section>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Jeder Termin der Serie ist danach ein eigener Termin mit eigenem Zustand — eine Absage
         betrifft nur ihn. Es werden ausschließlich organisatorische Angaben erfasst.
       </p>

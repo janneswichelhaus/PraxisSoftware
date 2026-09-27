@@ -140,7 +140,7 @@ export function NewPatientPage() {
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Es werden ausschließlich organisatorische Stammdaten erfasst. Klinische Angaben und ein
         Portalzugang entstehen hier nicht.
       </p>

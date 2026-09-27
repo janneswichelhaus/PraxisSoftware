@@ -56,7 +56,7 @@ export function KoerperschemaFeld({
 
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="text-ink mb-1 text-[0.9375rem] font-medium">{legende}</legend>
+      <legend className="text-ink text-liste mb-1 font-medium">{legende}</legend>
       <KoerperschemaBild markierungen={markierungen} onAntippen={antippen} />
       <p className="text-ink text-sm" aria-live="polite">
         {markierungen.length > 0

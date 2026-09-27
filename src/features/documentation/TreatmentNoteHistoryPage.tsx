@@ -48,7 +48,7 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
       ) : null}
 
       {versionen.data?.length === 0 ? (
-        <p className="text-ink-muted max-w-prose text-[0.9375rem]">
+        <p className="text-ink-muted text-liste max-w-prose">
           Dieser Eintrag ist noch ein Entwurf. Festgeschriebene Versionen entstehen erst mit der
           Finalisierung.
         </p>
@@ -66,7 +66,7 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
                 <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium">
                   Version {version.version_no}
                 </span>
-                <span className="text-ink-subtle text-xs">
+                <span className="text-ink-muted text-xs">
                   {formatLocalDate(version.recorded_at, zone)},{' '}
                   {formatLocalTime(version.recorded_at, zone)} Uhr
                   {version.author_name ? ` · ${version.author_name}` : ''}
@@ -79,12 +79,12 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
                   {version.change_reason}
                 </p>
               ) : (
-                <p className="text-ink-subtle mt-3 text-sm">
+                <p className="text-ink-muted mt-3 text-sm">
                   Bei der Finalisierung festgeschriebener Stand.
                 </p>
               )}
 
-              <p className="text-ink mt-3 max-w-prose text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
+              <p className="text-ink text-liste mt-3 max-w-prose leading-relaxed whitespace-pre-wrap">
                 {version.content}
               </p>
             </li>
@@ -92,7 +92,7 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
         </ol>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Frühere Versionen werden nicht überschrieben und nicht gelöscht. Das Lesen des Verlaufs wird
         gesondert protokolliert.
       </p>

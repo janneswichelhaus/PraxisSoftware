@@ -781,7 +781,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               aria-label="Behandelnde Person"
               value={(p.ansicht === 'woche' ? wochenPerson : p.person) ?? ''}
               onChange={(e) => setze({ person: e.target.value || null })}
-              className="text-ink hover:bg-surface-sunken rounded-button max-w-full min-w-0 cursor-pointer truncate bg-transparent px-1 text-center text-[0.9375rem] font-semibold"
+              className="text-ink hover:bg-surface-sunken rounded-button text-liste max-w-full min-w-0 cursor-pointer truncate bg-transparent px-1 text-center font-semibold"
             >
               {/* In der Woche steht immer genau eine Person im Gitter. */}
               {p.ansicht === 'tag' ? <option value="">Alle Personen</option> : null}
@@ -1202,7 +1202,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         </p>
       ) : null}
 
-      <p className="text-ink-subtle mt-6 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-6 max-w-prose text-xs leading-relaxed">
         Termine lassen sich mit der Maus oder dem Finger auf eine andere Zeit
         {p.ansicht === 'tag'
           ? ' oder eine andere behandelnde Person'
@@ -1218,7 +1218,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         Zeitpunkt, ein zweiter Tipp in derselben Spalte die Spanne bis dorthin.
       </p>
 
-      <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
         Der Kalender zeigt ausschließlich organisatorische Angaben. Zeiten gelten in der Zeitzone
         der Praxis ({zone}); der hinterlegte Hintergrund einer Spalte ist die Arbeitszeit.
       </p>

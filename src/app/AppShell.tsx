@@ -41,7 +41,7 @@ import { Verbindungsanzeige } from './Verbindungsanzeige';
  * Papier; das System nennt „Hauptfarbe gefüllt" als Auswahlzustand.
  */
 const seitenLink =
-  'flex min-h-11 items-center gap-3 rounded-button px-3 text-[0.9375rem] transition-colors ' +
+  'flex min-h-11 items-center gap-3 rounded-button px-3 text-liste transition-colors ' +
   'text-salbei hover:bg-accent hover:text-surface ' +
   'aria-[current=page]:bg-accent aria-[current=page]:font-medium ' +
   'aria-[current=page]:text-surface';
@@ -173,7 +173,7 @@ export function AppShell({
               {/* Seit der Lupe (BEF-039) ist die Zeile unter 400 px zu eng
                   für den Bereichsnamen; dort sagt ihn die Tableiste. */}
               {aktuell ? (
-                <p className="text-ink-subtle truncate text-xs max-[399px]:hidden">
+                <p className="text-ink-muted truncate text-xs max-[399px]:hidden">
                   {aktuell.label}
                 </p>
               ) : null}

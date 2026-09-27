@@ -100,7 +100,7 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
         <span className="min-w-0 flex-1">
           {/* Der Tagesplan des Teams liest den Kalender - dort stehen seit
               CAL-015b auch Ereignisse ohne Patient:in. */}
-          <span className="text-ink block truncate text-[0.9375rem] font-medium">
+          <span className="text-ink text-liste block truncate font-medium">
             {terminBezeichnung(termin)}
           </span>
           <span className="text-ink-muted mt-0.5 block truncate text-sm">
@@ -134,7 +134,7 @@ function Vorschau({ termin }: { termin: DayPlanEntry }) {
   return (
     <div className="border-line mt-4 border-t pt-3">
       <p className="text-ink-muted text-sm font-medium">Danach</p>
-      <p className="text-ink mt-1 text-[0.9375rem]">
+      <p className="text-ink text-liste mt-1">
         <span className="font-semibold tabular-nums">
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
         </span>{' '}
@@ -369,7 +369,7 @@ function MeineTagesliste({
       {/* ADR-019 Punkt 23: Die Übergabe ist nicht automatisch risikofrei. Wer
           sie auslöst, soll wissen, was dabei das Gerät verlässt. */}
       {offen.some((termin) => termin.appointment_type === 'home_visit') ? (
-        <p className="text-ink-subtle mt-3 max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
           „Navigation starten" öffnet Google Maps im Fahrradmodus und übergibt dabei nur die
           Kartenposition, ohne sie die Anschrift ohne Namen – keine Uhrzeit, keinen Zugangshinweis,
           keine Kennung. Die Übergabe passiert erst beim Tippen.
@@ -447,7 +447,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           description={formatDatum(heute)}
         />
         <Section titel="Ihr Zugang">
-          <p className="text-ink-muted max-w-prose text-[0.9375rem]">
+          <p className="text-ink-muted text-liste max-w-prose">
             Sie sehen ausschließlich Ihre eigenen Daten. Weitere Bereiche des Patientenportals
             werden schrittweise ergänzt.
           </p>
@@ -498,7 +498,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
                 </p>
                 <Link
                   to={`/kalender?ansicht=tag&datum=${heute}`}
-                  className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center text-[0.9375rem] font-medium"
+                  className="text-accent hover:text-accent-hover text-liste inline-flex min-h-11 items-center font-medium"
                 >
                   Zum Kalender →
                 </Link>
@@ -587,7 +587,7 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
         <div className="grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3">
           <Card>
             <p className="text-ink-muted text-sm">Mein Rad heute</p>
-            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+            <p className="text-ink text-liste mt-1 font-medium">
               {meinRad ? meinRad.name : 'Kein Rad zugeordnet'}
             </p>
             {meinRad ? (
@@ -615,7 +615,7 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
 
           <Card>
             <p className="text-ink-muted text-sm">Meine Anträge</p>
-            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+            <p className="text-ink text-liste mt-1 font-medium">
               {meineOffenen === 0
                 ? 'Nichts offen'
                 : `${meineOffenen} offen${meineOffenen === 1 ? '' : 'e'}`}
@@ -632,7 +632,7 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
           {zuEntscheiden > 0 ? (
             <Card>
               <p className="text-ink-muted text-sm">Zu entscheiden</p>
-              <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+              <p className="text-ink text-liste mt-1 font-medium">
                 {zuEntscheiden} Vorgang{zuEntscheiden === 1 ? '' : 'e'}
               </p>
               <p className="text-ink-muted mt-1 text-sm">Urlaubsanträge und Erstattungen.</p>
@@ -647,7 +647,7 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
 
           <Card>
             <p className="text-ink-muted text-sm">Kommunikation</p>
-            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+            <p className="text-ink text-liste mt-1 font-medium">
               {ungelesen === 0 ? 'Nichts Ungelesenes' : `${ungelesen} ungelesen`}
             </p>
             <p className="text-ink-muted mt-1 text-sm">Kanäle und Direktnachrichten.</p>

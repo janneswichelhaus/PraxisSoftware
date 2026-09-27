@@ -89,12 +89,12 @@ function Anrufkarte({
   return (
     <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="text-ink flex flex-wrap items-center gap-x-2 text-[0.9375rem] font-semibold tabular-nums">
+        <p className="text-ink text-liste flex flex-wrap items-center gap-x-2 font-semibold tabular-nums">
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
           {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
           <Laengenzeichen termin={termin} />
         </p>
-        <span className="text-ink-subtle text-xs">{appointmentStatusLabels[termin.status]}</span>
+        <span className="text-ink-muted text-xs">{appointmentStatusLabels[termin.status]}</span>
       </div>
 
       <p className="text-ink mt-1 text-[1.0625rem] font-medium">
@@ -109,7 +109,7 @@ function Anrufkarte({
             <li key={nummer.href}>
               <a
                 href={nummer.href}
-                className="text-accent inline-flex min-h-11 items-center text-[0.9375rem] hover:underline"
+                className="text-accent text-liste inline-flex min-h-11 items-center hover:underline"
               >
                 {nummer.label}: {nummer.anzeige}
               </a>
@@ -117,15 +117,15 @@ function Anrufkarte({
           ))}
         </ul>
       ) : (
-        <p className="text-ink-subtle mt-2 text-sm">Keine Rufnummer hinterlegt.</p>
+        <p className="text-ink-muted mt-2 text-sm">Keine Rufnummer hinterlegt.</p>
       )}
 
-      <label className="text-ink mt-3 inline-flex min-h-11 items-center gap-2 text-[0.9375rem]">
+      <label className="text-ink text-liste mt-3 inline-flex min-h-11 items-center gap-2">
         <input
           type="checkbox"
           checked={erledigt}
           onChange={(e) => onErledigt(e.target.checked)}
-          className="border-line-strong text-accent size-5 rounded"
+          className="border-line-strong text-accent size-5 rounded-[6px]"
         />
         Angerufen
       </label>
@@ -216,7 +216,7 @@ function Umplanung({
                 <>
                   <ul className="flex flex-col gap-1">
                     {betroffen.map((termin) => (
-                      <li key={termin.id} className="text-ink text-[0.9375rem]">
+                      <li key={termin.id} className="text-ink text-liste">
                         <span className="tabular-nums">
                           {formatLocalTimeRange(
                             termin.starts_at,
@@ -308,7 +308,7 @@ function Umplanung({
                 ))}
               </CardGrid>
 
-              <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
+              <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
                 Die Haken gelten nur, solange diese Seite offen ist – sie werden nicht gespeichert.
               </p>
             </Section>

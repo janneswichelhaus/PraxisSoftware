@@ -263,7 +263,7 @@ export function TreatmentBasisFormFields({
           {bestandstexte.length > 0 ? (
             <div className="border-line rounded-card border p-4">
               <p className="text-ink text-sm font-medium">Aus dem Bestand</p>
-              <p className="text-ink-subtle mt-1 text-sm">
+              <p className="text-ink-muted mt-1 text-sm">
                 Diese Angaben stammen aus der Zeit vor der Umstellung. Sie werden nicht mehr erfasst
                 und bleiben beim Speichern unverändert stehen.
               </p>

@@ -85,7 +85,7 @@ export function Karte({ config, stopps, beschriftung, route }: KarteProps) {
 function OhneKartenmaterial() {
   return (
     <div className="rounded-card border-line bg-surface-sunken border border-dashed px-4 py-8 text-center">
-      <p className="text-ink text-[0.9375rem] font-medium">Kartenkacheln nicht konfiguriert</p>
+      <p className="text-ink text-liste font-medium">Kartenkacheln nicht konfiguriert</p>
       <p className="text-ink-muted mx-auto mt-1.5 max-w-prose text-sm">
         Ohne Kachelschlüssel zeigt diese Seite keine Karte und fragt keinen Kartendienst an. Der
         Schlüssel gehört als <code>VITE_PTV_TILE_API_KEY</code> in die lokale{' '}

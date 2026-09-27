@@ -52,7 +52,7 @@ function AuskunftErgebnis({ auskunft }: { auskunft: Auskunft }) {
           ))}
         </DataList>
         {leer > 0 ? (
-          <p className="text-ink-subtle mt-4 text-sm">
+          <p className="text-ink-muted mt-4 text-sm">
             {leer} weitere Abschnitte sind in der Datei enthalten und leer.
           </p>
         ) : null}
@@ -74,7 +74,7 @@ function AuskunftErgebnis({ auskunft }: { auskunft: Auskunft }) {
 
       <div className="mt-6">
         <h3 className="text-ink text-sm font-semibold">Nicht enthalten</h3>
-        <ul className="text-ink-subtle mt-2 space-y-2 text-sm leading-relaxed">
+        <ul className="text-ink-muted mt-2 space-y-2 text-sm leading-relaxed">
           {auskunft.nicht_enthalten.map((hinweis) => (
             <li key={hinweis.was}>
               <span className="text-ink font-medium">{hinweis.was}:</span> {hinweis.grund}

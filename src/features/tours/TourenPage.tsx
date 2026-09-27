@@ -188,7 +188,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
         </>
       )}
 
-      <p className="text-ink-subtle mt-8 max-w-prose text-xs leading-relaxed print:hidden">
+      <p className="text-ink-muted mt-8 max-w-prose text-xs leading-relaxed print:hidden">
         Zur Route gehen nur Koordinaten in Fahrtreihenfolge über den eigenen Server an den
         Kartendienst — kein Name, keine Uhrzeit. Gespeichert wird davon nichts. Echte
         Patientenadressen erreichen den Kartendienst erst nach dem Gate aus ADR-019 (Vertrag, §203
