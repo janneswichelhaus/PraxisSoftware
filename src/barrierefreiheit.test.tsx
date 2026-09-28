@@ -622,34 +622,40 @@ describe('Barrierefreiheit der Zugangsverwaltung (STAFF-EPIC-002)', () => {
 });
 
 describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
-  it('haelt die Serienseite sauber - Formular und geprüfte Liste', async () => {
-    fetchPatient.mockResolvedValue(testPatient({ given_name: 'Max', family_name: 'Mustermann' }));
-    const user = userEvent.setup();
-    const { container } = renderWithProviders(
-      // Ueber eine echte Route, damit useParams die Kennungen sieht - ohne sie
-      // bleibt die Seite im Ladezustand und die Pruefung findet nichts.
-      <main>
-        <Routes>
-          <Route
-            path="/patienten/:patientId/verordnungen/:grundlageId/serie"
-            element={<AppointmentSeriesPage user={testUser(['office'])} />}
-          />
-        </Routes>
-      </main>,
-      '/patienten/pat-1/verordnungen/ver-1/serie',
-    );
+  // Das Formular trägt seit UXR-005 Fehlerzusammenfassung und Eingabeschutz; der
+  // axe-Lauf braucht allein gut 3 s und reißt unter Volllast die 5-s-Grenze.
+  it(
+    'haelt die Serienseite sauber - Formular und geprüfte Liste',
+    { timeout: 20_000 },
+    async () => {
+      fetchPatient.mockResolvedValue(testPatient({ given_name: 'Max', family_name: 'Mustermann' }));
+      const user = userEvent.setup();
+      const { container } = renderWithProviders(
+        // Ueber eine echte Route, damit useParams die Kennungen sieht - ohne sie
+        // bleibt die Seite im Ladezustand und die Pruefung findet nichts.
+        <main>
+          <Routes>
+            <Route
+              path="/patienten/:patientId/verordnungen/:grundlageId/serie"
+              element={<AppointmentSeriesPage user={testUser(['office'])} />}
+            />
+          </Routes>
+        </main>,
+        '/patienten/pat-1/verordnungen/ver-1/serie',
+      );
 
-    await screen.findByRole('button', { name: 'Termine vorschlagen' });
-    await pruefeBarrierefreiheit(container);
+      await screen.findByRole('button', { name: 'Termine vorschlagen' });
+      await pruefeBarrierefreiheit(container);
 
-    // Die Liste bringt je Zeile zwei weitere Felder und eine Schaltfläche -
-    // genau dort entstehen Beschriftungen, die sich leicht doppeln.
-    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), 'st-1');
-    await user.type(screen.getByLabelText('Beginn *'), '09:00');
-    await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
-    await screen.findByLabelText('Datum 1');
-    await pruefeBarrierefreiheit(container);
-  });
+      // Die Liste bringt je Zeile zwei weitere Felder und eine Schaltfläche -
+      // genau dort entstehen Beschriftungen, die sich leicht doppeln.
+      await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), 'st-1');
+      await user.type(screen.getByLabelText('Beginn *'), '09:00');
+      await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
+      await screen.findByLabelText('Datum 1');
+      await pruefeBarrierefreiheit(container);
+    },
+  );
 
   it('haelt die Mitteilungsauswahl am Termin sauber (CAL-012)', async () => {
     const { container } = renderWithProviders(
