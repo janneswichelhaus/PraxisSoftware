@@ -223,6 +223,17 @@ einem Verwurf. Neue Einträge hängen hinten an.
   bereits, und ADR-021 Punkt 3 ließe sie weder an `persons` noch je
   Verhältnis unterbringen. `PROJECT_PRINCIPLES.md` §1.1 bleibt unberührt.
 
+- **2026-09-28** — Vier Wünsche von Jannes in einer Nachricht: der
+  **Zahlungs-QR-Code** auf der Rechnung (`IDEA-PRX-045`, neu), der
+  **Kostenvoranschlag** zur Abklärung mit der privaten Krankenversicherung
+  (`IDEA-PRX-046`, neu, Entscheidung zu Snapshot und Aufbewahrung nötig), die
+  **FIBU-Schnittstelle** (bestätigt `IDEA-PRX-026`, dort Datei vor
+  Live-Anbindung) und das **Praxispostfach in der Anwendung** mit erkannten
+  Terminwünschen und KI-Antwortentwürfen (`IDEA-KOM-008`). Für Letzteres fehlt
+  noch das Postfach selbst; dessen Wahl ist ein neuer Dienstleister nach
+  ADR-002 und geht jeder Integration voraus. **Keiner der Einträge ist ein
+  Auftrag.**
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
@@ -251,5 +262,4 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-09-14 (Konsolidierung R2: überführte Einträge auf
-Kopf und Stand-Zeile). Ältere Stände: `git log -- docs/product/`.
+Zuletzt aktualisiert: 2026-09-28 (`IDEA-PRX-045`, `-046`, `IDEA-KOM-008`). Ältere Stände: `git log -- docs/product/`.

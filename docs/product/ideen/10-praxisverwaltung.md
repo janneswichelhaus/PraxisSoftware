@@ -532,9 +532,16 @@ Zuschnitt erst im SPEC-Schritt des Loops.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | bestätigt |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (thevea, Optica, THEORG, appointmed) |
-| Berührt | B4, ADR-009, ABR-EPIC-003 |
+| Berührt | B4, ADR-009, ABR-EPIC-003, PRX-EPIC-004 |
+
+**Stand.** Jannes hat am 2026-09-28 eine „FIBU-Schnittstelle" gewünscht und
+damit die Richtung bestätigt; in der Roadmap steht der Export in PRX-EPIC-004.
+Eine Datei, die die Steuerberatung einliest (CSV, DATEV-Buchungsstapel), kommt
+ohne neuen Dienstleister aus; eine Live-Anbindung an ein Buchhaltungsprogramm
+(Lexware, sevdesk, DATEV Unternehmen online) wäre ein neuer Anbieter mit
+Rechnungsdaten nach ADR-002 — erst nach B4 und nur, wenn die Datei nicht reicht.
 
 **Idee.** Rechnungen und Zahlungen als CSV in einem Format, das die
 Steuerberatung einlesen kann; DATEV-Format, wenn B4 es verlangt.
@@ -1065,3 +1072,85 @@ Entscheidung (ADR-005, ADR-006 Punkt 4).
 **Offen.** Ob der Befund eigene Kategorien braucht (Anamnese, Inspektion,
 Palpation, Test) oder ob eine flache Liste reicht — das entscheidet sich am
 fertigen Befundformular, nicht vorher.
+
+---
+
+### IDEA-PRX-045 — Zahlungs-QR-Code auf Rechnung und Zahlungserinnerung
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-28 |
+| Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), B4, B14, ABR-28, `IDEA-PRX-012`; §3.1 |
+
+**Stand.** Die Rechnung trägt heute IBAN in Vierergruppen, Kontoinhaber:in,
+BIC und die Rechnungsnummer als Verwendungszweck (Druckansicht, ABR-28).
+Einen QR-Code gibt es nicht.
+
+**Idee.** Unter den Bankangaben steht ein QR-Code im Standard des European
+Payments Council („GiroCode", EPC069-12): Empfänger, IBAN, BIC, offener
+Betrag und die Rechnungsnummer als Verwendungszweck. Die Banking-App liest ihn
+ein, niemand tippt die IBAN ab. Dasselbe auf der Zahlungserinnerung mit dem
+dann offenen Betrag.
+
+**Warum.** Abtippfehler bei IBAN und Verwendungszweck sind der häufigste Grund,
+warum eine Zahlung nicht zugeordnet werden kann. Gerade ältere Patient:innen,
+die per Überweisung zahlen, profitieren — und der Abgleich im Zahlungseingang
+wird leichter, wenn der Verwendungszweck stimmt.
+
+**Vorsicht.** Der Code darf **nichts** enthalten, was nicht ohnehin lesbar auf
+dem Blatt steht, und als Verwendungszweck **nur die Rechnungsnummer** — kein
+Name, keine Leistung, keine Diagnose: Der Verwendungszweck landet beim
+Zahlungsdienst und auf Kontoauszügen Dritter. Erzeugt wird der Code im Browser
+beim Drucken, **nie über einen fremden QR-Dienst im Netz** (das wäre ein neuer
+Empfänger mit Rechnungsdaten, ADR-002). Eine QR-Bibliothek gibt es im Projekt
+noch nicht (der Code beim zweiten Faktor kommt fertig vom Anmeldedienst) — eine
+kleine Abhängigkeit oder eine eigene Umsetzung ist im Loop zu prüfen. Der Code
+gehört zum ausgestellten Dokument und muss aus dem Rechnungs-Snapshot entstehen,
+nicht aus den aktuellen Stammdaten (ADR-009).
+
+**Offen.** Nur der offene Betrag oder auch ein Code ohne Betrag bei
+Teilzahlungen; ob der Code auch im späteren serverseitigen PDF (B14, Weg 3)
+steht — Letzteres ergibt sich von selbst, wenn er aus dem Snapshot kommt.
+
+---
+
+### IDEA-PRX-046 — Kostenvoranschlag zur Abklärung mit der privaten Krankenversicherung
+
+| | |
+|---|---|
+| Status | notiert · entscheidung nötig |
+| Quelle | Jannes, 2026-09-28 |
+| Berührt | [ADR-009](../../adr/ADR-009-private-billing-model.md), [ADR-017](../../adr/ADR-017-file-storage.md) Punkt 12, [ADR-020](../../adr/ADR-020-treatment-basis.md), B4, §4.3, `IDEA-ANG-004` |
+
+**Stand.** ADR-017 kennt „Kostenvoranschlag" bereits als organisatorische
+Dokumentart (sichtbar auch für `office`) — für eine **abgelegte Datei**. Einen
+Kostenvoranschlag, den die Plattform selbst erstellt, gibt es nicht.
+
+**Idee.** Aus einer Verordnung oder einer geplanten Behandlungsserie entsteht ein
+Kostenvoranschlag: Leistungen mit Positionsbezeichnung aus dem eigenen
+Leistungskatalog, Anzahl, Einzelpreis, Summe, Gültigkeitsdatum und der Hinweis,
+dass die Erstattung vom Tarif abhängt. Die Person reicht ihn bei ihrer privaten
+Krankenversicherung oder Beihilfe ein, **bevor** die Behandlung beginnt.
+Druckansicht wie die Rechnung, abgelegt als Dokument der Art
+„Kostenvoranschlag".
+
+**Warum.** Private Versicherungen und Beihilfestellen erstatten oft nur bis zu
+Höchstsätzen; wer vorher weiß, was erstattet wird, beginnt die Behandlung ohne
+Überraschung — und die Praxis spart die Diskussion über die Differenz nach der
+Rechnung. Eine Liste aus Leistungskatalog und Anzahl liegt ohnehin vor.
+
+**Vorsicht.** Ein Kostenvoranschlag ist **keine Rechnung**: keine
+Rechnungsnummer aus dem Nummernkreis, kein Rechnungszustand, keine Forderung
+(ADR-009). Er geht **an die Person**, nicht von der Praxis direkt an die
+Versicherung — sonst ist es eine Übermittlung eines Gesundheitsdatums an Dritte
+(§203 StGB, Schweigepflicht), die eine eigene Grundlage bräuchte. Ob die
+Diagnose darauf steht, entscheidet der Bedarf der Versicherung, nicht die
+Bequemlichkeit: Die meisten wollen die Verordnung ohnehin im Original.
+
+**Offen.** (1) Wird der Kostenvoranschlag wie die Rechnung als Snapshot
+eingefroren und aufbewahrt (ADR-008, Aufbewahrungsfrist?) oder nur als Druck
+erzeugt? (2) Wird festgehalten, ob die Versicherung zugesagt hat (Vermerk an der
+Verordnung) — das wäre ein neues Feld. (3) Diagnose ja/nein. Die erste Frage
+berührt ADR-009 und ADR-008 und ist deshalb vor einer Spezifikation zu
+entscheiden.
