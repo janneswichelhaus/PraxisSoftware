@@ -2942,3 +2942,33 @@ kleiner Loop oder je Spur, wenn ein Loop das Modul ohnehin anfasst?
 
 **Empfehlung.** Option 2 — die Änderung ist klein, und der Löschpfad soll
 ohnehin nicht nebenbei angefasst werden.
+
+### BEF-071 — Nach „Termin anlegen“ aus der Terminsuche steht man wieder auf der Suche, mit einer Meldung, die wie ein Fehler klingt
+
+|         |                                                                                                                                             |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-28                                                                                                                                  |
+| Bereich | Warteliste → Freie Termine suchen → Übernehmen → Terminformular                                                                             |
+| Quelle  | Sichtung Praxisverwaltung, Schritt 2 (Jannes, Test-Umgebung, iPhone, office)                                                                |
+| Status  | offen                                                                                                                                       |
+| Berührt | `src/features/slot-search/SlotSearchPage.tsx` (Z. 167–171, Rückweg), Terminformular (Rückweg nach dem Anlegen); PRX-003, PRX-004; ANN-136 |
+
+**Beobachtung.** Max Mustermann steht auf der Warteliste; über **Freie Termine
+suchen → Übernehmen** öffnet das Terminformular, **Termin anlegen** gelingt:
+Der Termin liegt im Kalender, der Eintrag steht unter **Geschlossen** als
+**Eingeplant**. Danach führt der Rückweg aber zurück auf **Freie Termine
+suchen**, und dort steht „! Der Wartelisteneintrag ist nicht mehr offen;
+gesucht wird ohne seine Wunschzeiten.“ Eine Bestätigung, dass der Termin
+angelegt und der Eintrag eingeplant ist, fehlt. Jannes hielt es zunächst für
+einen eigenen Bedienfehler.
+
+**Erwartet.** Nach dem Anlegen aus einem Wartelisteneintrag führt der Weg
+zurück zur Warteliste (oder in die Akte → Termine) mit einer Bestätigung wie
+„Termin angelegt · Max Mustermann ist eingeplant“; die Suche nach einem
+geschlossenen Eintrag erscheint nur, wenn man sie ausdrücklich wieder öffnet,
+und sagt dann, warum.
+
+**Vorschlag.** Erste Story des nächsten Loops der Etappe P (PRX-EPIC-002):
+Rückweg des Terminformulars bei `warteliste` auf die Warteliste setzen,
+Bestätigung als `Statusmeldung`; Test, dass nach dem Anlegen nicht die
+Suchseite mit der Warnung erscheint.

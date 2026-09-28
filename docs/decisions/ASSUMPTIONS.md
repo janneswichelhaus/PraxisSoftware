@@ -1285,11 +1285,13 @@ Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: D6 im FRB-P
 
 ### ANN-099 — Ohne Vorlage im Repository bleibt ein Instrument inaktiv
 
-Technik · offen · 2026-09-25 · — · — · Wiedervorlage: sobald Jannes die Bögen für NRS, PSFS und Veränderungsfrage in `quellen/scores/pdf/` ablegt
+Technik · offen · 2026-09-25 · — · — · Wiedervorlage: mit FRB-EPIC-004 (Veränderungsfrage freigegeben, NRS offen, PSFS gestrichen — Stand 2026-09-28)
 
 **Annahme.** Ein Instrument ohne Vorlage in `quellen/scores/pdf/` darf in der Bibliothek stehen, aber nicht aktiv sein: `quelle.datei` fehlt, `quelle.literatur` nennt die Veröffentlichung, der Wortlaut gilt als vorläufig und die Version bleibt `0.x`. NRS, PSFS und die globale Veränderungsfrage liegen so vor — Wortlaut nach der gängigen deutschen Form, PSFS mit **drei** Aktivitäten (die Originalfassung erlaubt bis zu fünf), Veränderungsfrage **siebenstufig** von −3 bis +3. `prioritaet` steht auf `a`, weil die Roadmap die drei zuerst nennt; im Inventar der 18 kommen sie nicht vor.
 
 **Begründung.** `quellen/README.md` Regel 1 und der FRB-Plan §7 Punkt 2 verlangen einen Wortlaut, der gegen eine Vorlage zu halten ist, und verbieten die Rekonstruktion aus dem Gedächtnis. Aus der Cloud-Umgebung waren die deutschen Fassungen (Deutsche Schmerzgesellschaft, physiopraxis) nicht abrufbar. Bauen wartet nicht (§15.2): Die Struktur, der Rechenkern und die Referenzfälle hängen nicht am Wortlaut, das Erheben schon — und das beginnt erst mit FRB-EPIC-002. Die Kopplung steht im Schema neben der Lizenzkopplung (ANN-086), nicht in der Oberfläche. Unsicher: welche Fassung der PSFS (drei oder fünf Aktivitäten) und der Veränderungsfrage (sieben oder mehr Stufen) die Praxis tatsächlich nutzt.
+
+**Stand 2026-09-28 (Jannes).** **PSFS wird gestrichen** und nicht integriert. Für die **Veränderungsfrage** gilt der Wortlaut oben — eine Frage, sieben Stufen von „sehr viel schlechter“ bis „sehr viel besser“ — als **Praxisvorgabe**, freigegeben von Jannes; eine Vorlage als PDF ist nicht nötig, weil es keine einheitliche deutsche Fassung gibt und das Instrument weder Normwerte noch Cut-offs trägt. Dasselbe genügt für die NRS, sobald Jannes ihren Wortlaut freigibt. Umgesetzt wird beides im ersten Schritt von FRB-EPIC-004 (Freigabe als Quelldatei unter `quellen/scores/`, Version `1.0.0`, `aktiv: true`; `psfs.json` entfällt).
 
 **Anker.** Die Prüfung `aktiv` ohne `quelle.datei` in `scoreDefinitionSchema`, `src/features/assessments/schema.ts`; die drei Dateien unter `src/features/assessments/definitionen/scores/`.
 
@@ -1681,7 +1683,7 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes beim
 
 ### ANN-132 — Die Dringlichkeit auf der Warteliste ist organisatorisch: drei Gründe und ein Datum
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes bei der Sichtung der Warteliste (PRX-EPIC-001)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisverwaltung, Schritt 1) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Eintrag der Warteliste trägt als Dringlichkeit genau einen von drei Gründen — **Wunsch der Person**, **Verordnung endet**, **Vorgabe der Praxis** — und optional ein Datum „bis spätestens“. Die Liste ordnet nach diesem Datum (ohne Datum zuletzt), dann nach Wartezeit. Einen Freitext als Dringlichkeit, eine Stufe wie „hoch“ oder eine Einordnung nach Beschwerdebild gibt es nicht; die Notiz ist ausdrücklich organisatorisch.
 
@@ -1717,7 +1719,7 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzpr
 
 ### ANN-135 — Gebietstage: genaue Postleitzahl, Tageshälfte am Beginn, Warnung statt Sperre
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes, sobald die ersten Gebiete angelegt sind (PRX-EPIC-001)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisverwaltung, Schritte 1 und 2) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Gebiet ist eine Liste **genauer** Postleitzahlen (kein Präfix, kein Stadtteil) mit Wochentagen und Tageshälften; eine Postleitzahl gehört höchstens zu einem Gebiet. Vormittag heißt **Beginn vor 12:00**, Nachmittag **Beginn ab 12:00**, jeweils in Praxiszeit; beides angehakt heißt ganztags. Ein Hausbesuch außerhalb des Gebietstags seiner Adresse wird **gemeldet**, nie gesperrt. Geprüft wird die Postleitzahl, die der Termin trägt: beim Bearbeiten die festgehaltene Anschrift, beim Anlegen die aus den Kontaktdaten.
 
@@ -1729,7 +1731,7 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes, sob
 
 ### ANN-136 — Terminsuche: dicht gepackte Vorschläge, Fahrzeit als Warnung für die ersten zehn
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach den ersten Wochen mit der Suche; E12 Punkt 4 (Warnung oder Sperre)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisverwaltung, Schritt 2: „Reihenfolge passt“) · erledigt · Wiedervorlage: E12 Punkt 4 (Warnung oder Sperre)
 
 **Annahme.** Die Terminsuche schlägt je freier Lücke den ersten Rasterpunkt in der Wunschzeit vor und danach dicht aufeinander folgende Plätze (Beginn plus Dauer), höchstens 50 in höchstens 42 Tagen. Belegt ist, was die Therapeut:in **oder** die Patient:in schon hat. Beim Hausbesuch stehen Vorschläge im Gebietstag vorn (ANN-135). Für die ersten **zehn** Hausbesuchsvorschläge holt die Anwendung die Fahrzeit von und zu den Nachbarterminen derselben Person live mit **einer** Matrix beim eigenen Kartendienst; der Server bewertet sie mit der Rundungsregel aus §8.1. Ein knapper Weg wird gekennzeichnet und nach hinten gestellt, **nicht verworfen**; fehlt eine Fahrzeit, steht „Fahrweg nicht geprüft“. Gespeichert wird nichts.
 

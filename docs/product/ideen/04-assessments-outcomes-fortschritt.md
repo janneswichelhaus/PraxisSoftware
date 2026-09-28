@@ -390,3 +390,30 @@ und 4). Sie ist Teil des Vorschlags und wird mit ihm übernommen oder
 gelöscht.
 
 **Offen.** Ob die Zeile je Block oder einmal für den ganzen Text steht.
+
+---
+
+### IDEA-OUT-016 — Instrumente in der Praxis pflegen: ändern, hinzufügen, entfernen
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Jannes, 2026-09-28 (Sichtung Praxisverwaltung, im Gespräch über NRS und PSFS) |
+| Berührt | FRB-EPIC-001, FRB-EPIC-004, ANN-099, [quellen/README.md](../../../quellen/README.md), [ADR-016](../../adr/ADR-016-clinical-documentation-record.md) |
+
+**Idee.** Die Praxisleitung kann später selbst ein Assessment hinzufügen, ein
+vorhandenes ändern (etwa Wortlaut oder Stufen) oder eines aus der Auswahl
+nehmen, ohne dass dafür ein Entwicklungsloop nötig ist.
+
+**Warum.** Die Auswahl der Instrumente ändert sich mit der Praxis; heute
+steckt jede Änderung als Datei im Release (ANN-099).
+
+**Vorsicht.** Eine Änderung am Wortlaut ist eine **neue Version**, nie ein
+Überschreiben: Frühere Erhebungen bleiben mit der Version lesbar und
+vergleichbar, mit der sie erhoben wurden (quellen/README.md Regel 1).
+„Löschen“ heißt aus der Auswahl nehmen, nicht Erhebungen entfernen — die
+gehören zur Dokumentation (ADR-016, ADR-008). Lizenzstatus bleibt Pflicht.
+
+**Offen.** Wer ändern darf (nur owner?); ob eigene Instrumente dieselbe
+Prüfung durch Referenzfälle brauchen wie die aus der Bibliothek.
+
