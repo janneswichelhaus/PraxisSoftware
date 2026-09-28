@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as KurzblickApi from './kurzblick';
+import type * as KurzblickApi from './kurzblick-api';
 import { renderWithProviders } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
@@ -30,7 +30,7 @@ const blick: KurzblickApi.Kurzblick = {
 };
 
 const fetchKurzblick = vi.fn();
-vi.mock('./kurzblick', async (importOriginal) => {
+vi.mock('./kurzblick-api', async (importOriginal) => {
   const actual = await importOriginal<typeof KurzblickApi>();
   return {
     ...actual,

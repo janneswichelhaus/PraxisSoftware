@@ -9,7 +9,7 @@ import { formatDate } from '@/lib/datum';
 import { FREITEXT } from '@/features/documentation/format';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
 import { formatLocalDate } from './api';
-import { fetchKurzblick, type Kurzblick as KurzblickDaten } from './kurzblick';
+import { fetchKurzblick, type Kurzblick as KurzblickDaten } from './kurzblick-api';
 
 /**
  * Der Inhalt - erst gezeichnet und gelesen, wenn der Blick offen ist.
@@ -130,7 +130,7 @@ export function Kurzblick({ appointmentId }: { appointmentId: string }) {
   const [offen, setOffen] = useState(false);
   return (
     <details
-      className="group border-line rounded-md border px-4 py-1"
+      className="group border-line rounded-card border px-4 py-1"
       onToggle={(event) => setOffen(event.currentTarget.open)}
     >
       <summary className={`${aufklappKopfKlassen} text-ink font-medium`}>

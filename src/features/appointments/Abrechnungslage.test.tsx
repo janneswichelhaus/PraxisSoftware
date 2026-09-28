@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
-import type * as LageApi from './abrechnungslage';
+import type * as LageApi from './abrechnungslage-api';
 import { renderWithProviders } from '@/test-utils';
 import { DetailList } from '@/components/ui/DetailList';
 
@@ -21,7 +21,7 @@ const lage: LageApi.Abrechnungslage = {
 };
 
 const fetchAbrechnungslage = vi.fn();
-vi.mock('./abrechnungslage', async (importOriginal) => {
+vi.mock('./abrechnungslage-api', async (importOriginal) => {
   const actual = await importOriginal<typeof LageApi>();
   return {
     ...actual,

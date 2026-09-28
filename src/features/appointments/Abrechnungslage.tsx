@@ -5,7 +5,7 @@ import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { empfaengerartLabels } from '@/features/billing/api';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
-import { fetchAbrechnungslage, positionText, type Abrechnungslage } from './abrechnungslage';
+import { fetchAbrechnungslage, positionText, type Abrechnungslage } from './abrechnungslage-api';
 
 function OffeneRechnungen({ lage }: { lage: Abrechnungslage }) {
   const anzahl = lage.open_invoice_count ?? 0;
