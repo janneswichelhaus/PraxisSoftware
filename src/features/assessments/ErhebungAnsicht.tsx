@@ -1,7 +1,7 @@
 import { antwortText, type Antwort, type Antworten } from './antworten';
 import { KoerperschemaBild } from './KoerperschemaFeld';
 import type { Markierung } from './koerperschema';
-import { beschriftung } from './darstellung';
+import { beschriftung, offeneFragen } from './darstellung';
 import type { ScoreDefinition } from './schema';
 
 /**
@@ -9,7 +9,9 @@ import type { ScoreDefinition } from './schema';
  *
  * Keine Zusammenfassung, keine Deutung (ADR-006 Punkt 3 und 11). Was offen
  * blieb, steht als Liste der Nummern darunter — „nicht beantwortet" ist eine
- * Auskunft, und sie soll nicht in 30 leeren Zeilen untergehen.
+ * Auskunft, und sie soll nicht in 30 leeren Zeilen untergehen. Eine Nummer,
+ * deren Hauptfrage beantwortet ist, steht dort nur mit ihren offenen
+ * Teilfragen (BEF-11).
  */
 export function ErhebungAnsicht({
   definition,
@@ -22,7 +24,7 @@ export function ErhebungAnsicht({
   antwortAnzeige?: typeof antwortText;
 }) {
   const beantwortet = definition.items.filter((item) => antworten[item.id] !== undefined);
-  const offen = definition.items.filter((item) => antworten[item.id] === undefined);
+  const offen = offeneFragen(definition.items, antworten);
 
   return (
     <div className="flex flex-col gap-3">
@@ -46,16 +48,7 @@ export function ErhebungAnsicht({
         </dl>
       )}
       {offen.length > 0 ? (
-        <p className="text-ink-muted text-sm">
-          Nicht beantwortet:{' '}
-          {[
-            ...new Set(
-              offen.map((item) =>
-                item.nummer ? String(item.nummer) : item.text.replace(/:$/, ''),
-              ),
-            ),
-          ].join(', ')}
-        </p>
+        <p className="text-ink-muted text-sm">Nicht beantwortet: {offen.join(', ')}</p>
       ) : null}
     </div>
   );

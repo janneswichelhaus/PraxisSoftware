@@ -47,7 +47,9 @@ describe('Dokumentarten und Dateiprüfung', () => {
     expect(sichtbarkeitHinweis('verordnungsscan')).toMatch(
       /nur Praxisinhaber:in, Therapeut:innen und Teamleitung/,
     );
-    expect(sichtbarkeitHinweis('vertrag')).toMatch(/auch die Verwaltung/);
+    // Der Name der Rolle, wie er im Konto steht (DAT-23).
+    expect(sichtbarkeitHinweis('vertrag')).toMatch(/auch das Praxismanagement/);
+    expect(sichtbarkeitHinweis('vertrag')).not.toMatch(/Verwaltung/);
   });
 
   it('lässt genau PDF, JPEG und PNG zu', () => {
@@ -71,7 +73,7 @@ describe('Dokumentarten und Dateiprüfung', () => {
 
   it('nennt bei einer zu großen Datei ihre Größe und die Grenze', () => {
     const grund = dateiAblehnungsgrund({ type: 'application/pdf', size: MAX_BYTES + 1 });
-    expect(grund).toMatch(/10.0 MB/);
+    expect(grund).toMatch(/10,0 MB/);
   });
 
   it('lehnt eine leere Datei ab', () => {
@@ -86,7 +88,9 @@ describe('Dokumentarten und Dateiprüfung', () => {
   it('schreibt Größen so, wie man sie liest', () => {
     expect(formatBytes(512)).toBe('512 Byte');
     expect(formatBytes(204_800)).toBe('200 KB');
-    expect(formatBytes(MAX_BYTES)).toBe('10.0 MB');
+    // Mit deutschem Komma (DAT-23).
+    expect(formatBytes(MAX_BYTES)).toBe('10,0 MB');
+    expect(formatBytes(1_258_291)).toBe('1,2 MB');
   });
 });
 

@@ -1,10 +1,14 @@
 import { memo, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Field } from '@/components/ui/Field';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { BausteinAuswahl } from './bausteinauswahl';
+import { ohneAbsenden } from './darstellung';
 import {
   ERGEBNIS_TEXT,
   ERGEBNIS_ZEICHEN,
@@ -42,17 +46,25 @@ import {
  *
  * Das Feld ist zugeklappt und steht **unter** dem Textfeld: Es soll den
  * Freitext nicht nach unten schieben (BEF-001). Ein zweiter Tipp auf ein
- * gewähltes Ergebnis hebt es wieder auf.
+ * gewähltes Ergebnis hebt es wieder auf - trägt es Messwert oder Notiz, erst
+ * nach einer Rückfrage, wie „Verwerfen" für alle Angaben (BEF-01).
  *
  * Während die Seite schreibt, ist das Feld gesperrt: Was danach angetippt
  * oder übernommen würde, stünde auf dem Bildschirm, aber nicht in dem, was
  * gerade gespeichert oder festgeschrieben wird (§13, ADR-016 Punkt 4).
+ *
+ * **Aufklappzeichen in verschachtelten Aufklappern.** Das Feld und jeder
+ * Block darin sind `<details>`. Das `Aufklappzeichen` dreht sich mit dem
+ * nächsten offenen `group` - bei zwei geschachtelten drehten sich die Zeichen
+ * der Blöcke schon mit dem Feld. Die Drehung kommt hier deshalb aus benannten
+ * Gruppen (`group/feld`, `group/block`) an einer Hülle um das Zeichen.
  */
 export function BausteinFeld({
   bausteine,
   onUebernehmen,
   gesperrt,
   meldung,
+  ebene = 2,
 }: {
   bausteine: BausteinAuswahl;
   onUebernehmen: (text: string) => void;
@@ -60,6 +72,11 @@ export function BausteinFeld({
   gesperrt: boolean;
   /** Warum die Seite gerade nicht speichert oder abschließt; öffnet das Feld. */
   meldung?: string | undefined;
+  /**
+   * Ebene der Überschrift des Vorschlags (BEF-18): Auf den Dokumentationsseiten
+   * folgt das Feld unmittelbar auf den Seitentitel (h1), also h2.
+   */
+  ebene?: 2 | 3;
 }) {
   const { regionen, auswahl, seitenwahl, setzen, seiteWaehlen, leeren, text } = bausteine;
   const [regionId, setRegionId] = useState<string | null>(null);
@@ -78,8 +95,12 @@ export function BausteinFeld({
   const wartetAufSeite = region !== undefined && seitlicheRegion(region) && wahl === undefined;
 
   return (
-    <details ref={feldRef} className="nicht-drucken border-line-strong rounded-card mt-4 border">
-      <summary className="text-ink text-liste flex min-h-12 cursor-pointer items-center gap-2 px-4 font-medium">
+    <details
+      ref={feldRef}
+      className="nicht-drucken group/feld border-line-strong rounded-card mt-4 border"
+    >
+      <summary className={`${aufklappKopfKlassen} text-ink text-liste min-h-12 px-4 font-medium`}>
+        <Zeichen gruppe="feld" />
         Befund aus Bausteinen
         {anzahl > 0 ? <Badge ton="akzent">{`${anzahl} angegeben`}</Badge> : null}
       </summary>
@@ -93,15 +114,16 @@ export function BausteinFeld({
           {regionen.map((r) => {
             const zahl = r.blocks.reduce((summe, b) => summe + angabenImBlock(b, auswahl), 0);
             return (
-              <button
+              <Button
                 key={r.id}
                 type="button"
+                groesse="kompakt"
+                variant={r.id === regionId ? 'primary' : 'secondary'}
                 aria-pressed={r.id === regionId}
                 onClick={() => setRegionId(r.id === regionId ? null : r.id)}
-                className={kartenAktionKlassen(r.id === regionId ? 'primary' : 'secondary')}
               >
                 {zahl > 0 ? `${r.label} · ${zahl}` : r.label}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -114,7 +136,7 @@ export function BausteinFeld({
           <p className="text-ink-muted text-sm">Region wählen, um die Tests aufzuklappen.</p>
         ) : wartetAufSeite ? (
           <p className="text-ink-muted text-sm">
-            Seite wählen — sie gilt für alle Tests und Techniken der Region.
+            Seite wählen – sie gilt für alle Tests und Techniken der Region.
           </p>
         ) : (
           <div className="flex flex-col gap-2">
@@ -132,42 +154,72 @@ export function BausteinFeld({
         )}
 
         {text ? (
-          <section aria-label="Vorschlag für den Eintrag" className="flex flex-col gap-3">
-            <h3 className="text-ink text-sm font-medium">Vorschlag für den Eintrag</h3>
-            <p className="bg-surface-sunken rounded-field text-ink p-3 text-sm wrap-anywhere whitespace-pre-wrap">
-              {text}
-            </p>
-            <p className="text-ink-muted text-xs">
-              Gespeichert und abgeschlossen wird erst, wenn der Vorschlag im Text steht oder
-              verworfen ist. Nur wer die Seite verlässt und dort „Speichern“ wählt, bekommt ihn an
-              den Entwurf angehängt, damit nichts verloren geht.
-            </p>
-            {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
-            {messwertFalsch ? (
-              <Statusmeldung ton="warnung">
-                Ein Messwert ist keine Zahl. Bitte korrigieren, dann übernehmen.
-              </Statusmeldung>
-            ) : null}
-            <div className="flex flex-wrap gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={messwertFalsch}
-                onClick={() => {
-                  onUebernehmen(text);
-                  leeren();
-                }}
-              >
-                In den Text übernehmen
-              </Button>
-              <Button type="button" variant="quiet" onClick={leeren}>
-                Verwerfen
-              </Button>
+          <Section titel="Vorschlag für den Eintrag" ebene={ebene}>
+            <div className="flex flex-col gap-3">
+              {/* Eine Auskunft, kein vertiefter Bedienbereich: auf Papier mit
+                  Linie (UI-002c, BEF-18). */}
+              <p className="bg-surface border-line rounded-card text-ink border p-3 text-sm wrap-anywhere whitespace-pre-wrap">
+                {text}
+              </p>
+              <p className="text-ink-muted text-sm">
+                Gespeichert und abgeschlossen wird erst, wenn der Vorschlag im Text steht oder
+                verworfen ist. Nur wer die Seite verlässt und dort „Speichern und weitergehen“
+                wählt, bekommt ihn an den Entwurf angehängt, damit nichts verloren geht.
+              </p>
+              {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
+              {messwertFalsch ? (
+                <Statusmeldung ton="warnung">
+                  Ein Messwert ist keine Zahl. Bitte korrigieren, dann übernehmen.
+                </Statusmeldung>
+              ) : null}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={messwertFalsch}
+                  onClick={() => {
+                    onUebernehmen(text);
+                    leeren();
+                  }}
+                >
+                  In den Text übernehmen
+                </Button>
+                {/* Verwerfen nimmt Regionen, Seitenwahl, Messwerte und Notizen
+                    auf einmal - erst nach einer Rückfrage (BEF-01). */}
+                <Rueckfrage
+                  ausloeser="Verwerfen"
+                  ausloeserVariante="quiet"
+                  bezeichnung="Alle Angaben aus den Bausteinen verwerfen"
+                  bestaetigen="Ja, alle Angaben verwerfen"
+                  onBestaetigen={leeren}
+                >
+                  Alle gewählten Ergebnisse, Messwerte, Notizen und die Seitenwahl werden verworfen.
+                  Im Text steht davon nichts.
+                </Rueckfrage>
+              </div>
             </div>
-          </section>
+          </Section>
         ) : null}
       </fieldset>
     </details>
+  );
+}
+
+/**
+ * Das `Aufklappzeichen` eines der beiden geschachtelten Aufklapper. Die Hülle
+ * dreht mit ihrer benannten Gruppe; das Zeichen selbst hat keine unbenannte
+ * `group` über sich und bleibt ohne eigene Drehung.
+ */
+function Zeichen({ gruppe }: { gruppe: 'feld' | 'block' }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-flex transition-transform motion-reduce:transition-none ${
+        gruppe === 'feld' ? 'group-open/feld:rotate-90' : 'group-open/block:rotate-90'
+      }`}
+    >
+      <Aufklappzeichen />
+    </span>
   );
 }
 
@@ -195,15 +247,16 @@ function SeitenWahl({
         Seite
       </span>
       {REGIONSSEITEN.map((seite) => (
-        <button
+        <Button
           key={seite}
           type="button"
+          groesse="kompakt"
+          variant={wahl === seite ? 'primary' : 'secondary'}
           aria-pressed={wahl === seite}
           onClick={() => onWahl(seite)}
-          className={kartenAktionKlassen(wahl === seite ? 'primary' : 'secondary')}
         >
           {seite}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -226,8 +279,11 @@ function Block({
   const offen = block.status === 'unvollstaendig';
 
   return (
-    <details className="border-line rounded-card border">
-      <summary className="text-ink flex min-h-11 cursor-pointer flex-wrap items-center gap-2 px-3 text-sm font-medium wrap-anywhere">
+    <details className="group/block border-line rounded-card border">
+      <summary
+        className={`${aufklappKopfKlassen} text-ink flex-wrap px-3 text-sm font-medium wrap-anywhere`}
+      >
+        <Zeichen gruppe="block" />
         {block.label}
         {zahl > 0 ? <Badge ton="akzent">{String(zahl)}</Badge> : null}
         {offen ? <Badge ton="warnung">Vorlage unvollständig</Badge> : null}
@@ -357,6 +413,11 @@ function Pruefpunkt({
 
 const SEITE_MARKE: Record<Seite, string> = { links: 'li.', rechts: 're.' };
 
+/** Trägt die Angabe etwas, das beim Abwählen verloren ginge? */
+function mitEingaben(angabe: Angabe | undefined): boolean {
+  return (angabe?.notiz ?? '').trim() !== '' || (angabe?.messwert ?? '').trim() !== '';
+}
+
 /**
  * Die Schaltflächen eines Tests auf einer Seite, darunter Messwert und Notiz.
  * `memo`, weil ein Tap sonst jede Zeile des Blocks neu zeichnet; dafür bleibt
@@ -386,8 +447,12 @@ const Eingabe = memo(function Eingabe({
   const titelId = useId();
   const notizId = useId();
   const [notizGewuenscht, setNotizGewuenscht] = useState(false);
+  // Abwählen eines Ergebnisses mit Messwert oder Notiz fragt erst (BEF-01).
+  const [abwaehlenFragen, setAbwaehlenFragen] = useState(false);
   const ergebnisse = item.type === 'technik' ? TECHNIK_ERGEBNISSE : BEFUND_ERGEBNISSE;
   const notizSichtbar = angabe !== undefined && (notizGewuenscht || !!angabe.notiz);
+  const knoepfeRef = useRef<HTMLDivElement>(null);
+  const abwaehlenRef = useRef<HTMLButtonElement>(null);
 
   // Wer „Notiz" antippt, will schreiben.
   const fokusAufNotiz = useRef(false);
@@ -398,9 +463,21 @@ const Eingabe = memo(function Eingabe({
     }
   }, [notizSichtbar, notizId]);
 
+  // Die Rückfrage erscheint am Tipp; der Fokus geht auf „Ja, abwählen".
+  useEffect(() => {
+    if (abwaehlenFragen) abwaehlenRef.current?.focus();
+  }, [abwaehlenFragen]);
+
   const aendern = (teil: Partial<Angabe>) => {
     if (angabe) setzen(schluessel, { ...angabe, ...teil });
   };
+
+  function abwaehlen() {
+    setAbwaehlenFragen(false);
+    setNotizGewuenscht(false);
+    setzen(schluessel, undefined);
+    knoepfeRef.current?.querySelector('button')?.focus();
+  }
 
   return (
     <div
@@ -424,20 +501,27 @@ const Eingabe = memo(function Eingabe({
             {SEITE_MARKE[seite]}
           </span>
         ) : null}
-        <div className="flex flex-wrap items-center gap-2">
+        <div ref={knoepfeRef} className="flex flex-wrap items-center gap-2">
           {ergebnisse.map((ergebnis) => {
             const gewaehlt = angabe?.ergebnis === ergebnis;
             const zeichen = ERGEBNIS_ZEICHEN[ergebnis];
             return (
-              <button
+              <Button
                 key={ergebnis}
                 type="button"
+                groesse="kompakt"
+                variant={gewaehlt ? 'primary' : 'secondary'}
                 aria-pressed={gewaehlt}
                 onClick={() => {
-                  if (gewaehlt) setNotizGewuenscht(false);
-                  setzen(schluessel, gewaehlt ? undefined : { ...(angabe ?? {}), ergebnis });
+                  if (!gewaehlt) {
+                    setAbwaehlenFragen(false);
+                    setzen(schluessel, { ...(angabe ?? {}), ergebnis });
+                  } else if (mitEingaben(angabe)) {
+                    setAbwaehlenFragen(true);
+                  } else {
+                    abwaehlen();
+                  }
                 }}
-                className={kartenAktionKlassen(gewaehlt ? 'primary' : 'secondary')}
               >
                 {/* Ein Textblock: Der Abstand zwischen Zeichen und Wort ist ein
                   Leerzeichen, nicht die Lücke der Schaltfläche. */}
@@ -445,25 +529,58 @@ const Eingabe = memo(function Eingabe({
                   {zeichen ? <span aria-hidden="true">{`${zeichen} `}</span> : null}
                   {ERGEBNIS_TEXT[ergebnis]}
                 </span>
-              </button>
+              </Button>
             );
           })}
           {angabe && !notizSichtbar ? (
-            <button
+            <Button
               type="button"
+              groesse="kompakt"
+              variant="quiet"
               onClick={() => {
                 fokusAufNotiz.current = true;
                 setNotizGewuenscht(true);
               }}
-              className={kartenAktionKlassen('quiet')}
             >
               <span>
                 <span aria-hidden="true">+ </span>Notiz
               </span>
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
+
+      {abwaehlenFragen ? (
+        <div
+          role="group"
+          aria-label="Ergebnis abwählen"
+          className="flex flex-wrap items-center gap-2"
+        >
+          <p className="text-ink text-sm">Abwählen verwirft auch Messwert und Notiz.</p>
+          <Button
+            ref={abwaehlenRef}
+            type="button"
+            groesse="kompakt"
+            variant="secondary"
+            onClick={abwaehlen}
+          >
+            Ja, abwählen
+          </Button>
+          <Button
+            type="button"
+            groesse="kompakt"
+            variant="quiet"
+            onClick={() => {
+              setAbwaehlenFragen(false);
+              knoepfeRef.current
+                ?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')
+                ?.focus();
+            }}
+          >
+            Behalten
+          </Button>
+        </div>
+      ) : null}
 
       {angabe && item.value_field ? (
         <Messwert
@@ -478,6 +595,10 @@ const Eingabe = memo(function Eingabe({
           label="Notiz"
           value={angabe?.notiz ?? ''}
           maxLength={NOTIZ_MAX}
+          // Return schließt die Tastatur, schickt aber nicht das Formular der
+          // Seite ab (BEF-09).
+          enterKeyHint="done"
+          onKeyDown={ohneAbsenden}
           onChange={(event) => aendern({ notiz: event.target.value })}
         />
       ) : null}
@@ -501,6 +622,8 @@ function Messwert({
       inputMode="decimal"
       value={wert}
       maxLength={10}
+      enterKeyHint="done"
+      onKeyDown={ohneAbsenden}
       error={ungueltig ? 'Bitte eine Zahl eingeben, etwa 1,5.' : undefined}
       onChange={(event) => onChange(event.target.value)}
       className="max-w-40"

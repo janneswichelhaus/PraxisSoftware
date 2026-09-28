@@ -72,10 +72,15 @@ export function istKlinisch(art: Dokumentart): boolean {
   return KLINISCHE_DOKUMENTARTEN.includes(art);
 }
 
+/**
+ * Wer eine Datei dieser Art sieht und pflegt - mit den Namen der Rollen, wie
+ * sie im Konto stehen (DAT-23, WRT-12): „Praxismanagement", nicht „die
+ * Verwaltung".
+ */
 export function sichtbarkeitHinweis(art: Dokumentart): string {
   return istKlinisch(art)
     ? 'Klinisch: sichtbar für alle Praxisrollen; hinzufügen und löschen nur Praxisinhaber:in, Therapeut:innen und Teamleitung.'
-    : 'Organisatorisch: sichtbar für alle Praxisrollen; auch die Verwaltung darf sie hinzufügen und löschen.';
+    : 'Organisatorisch: sichtbar für alle Praxisrollen; auch das Praxismanagement darf sie hinzufügen und löschen.';
 }
 
 /**
@@ -101,10 +106,17 @@ export function istErlaubterMimeTyp(typ: string): typ is ErlaubterMimeTyp {
   return (ERLAUBTE_MIME_TYPEN as readonly string[]).includes(typ);
 }
 
+const GANZE_ZAHL = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+const EINE_STELLE = new Intl.NumberFormat('de-DE', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** Die Größe einer Datei mit deutschem Komma: „1,2 MB", nicht „1.2 MB" (DAT-23). */
 export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} Byte`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024) return `${GANZE_ZAHL.format(bytes)} Byte`;
+  if (bytes < 1024 * 1024) return `${GANZE_ZAHL.format(bytes / 1024)} KB`;
+  return `${EINE_STELLE.format(bytes / (1024 * 1024))} MB`;
 }
 
 /**
@@ -158,7 +170,7 @@ export async function dateiInhaltAblehnungsgrund(datei: Blob): Promise<string | 
 
   return passt
     ? null
-    : `Der Inhalt ist keine ${name}. Bitte die Originaldatei wählen — eine umbenannte Datei wird nicht angenommen.`;
+    : `Der Inhalt ist keine ${name}. Bitte die Originaldatei wählen – eine umbenannte Datei wird nicht angenommen.`;
 }
 
 /**

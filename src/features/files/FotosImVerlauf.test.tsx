@@ -282,9 +282,117 @@ describe('Patientenfotos', () => {
     seite();
 
     await user.click(await screen.findByRole('button', { name: 'Löschen' }));
+    const frage = screen.getByRole('group', { name: '„Knie rechts“ löschen' });
+    // Was für die Person zählt, ohne Innenleben der Ablage (DAT-23).
+    expect(frage).toHaveTextContent('lässt sich nicht rückgängig machen');
+    expect(frage.textContent).not.toMatch(/Löschauftrag/);
     expect(loescheDatei).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Endgültig löschen' }));
     await waitFor(() => expect(loescheDatei).toHaveBeenCalledWith('f1'));
+  });
+
+  it('zeigt einen gescheiterten Löschversuch im offenen Kasten (ZST-06)', async () => {
+    const user = userEvent.setup();
+    loescheDatei.mockRejectedValue(new Error('Das Foto konnte nicht gelöscht werden.'));
+    fetchPatientenfotos.mockResolvedValue([foto()]);
+    seite();
+
+    await user.click(await screen.findByRole('button', { name: 'Löschen' }));
+    await user.click(screen.getByRole('button', { name: 'Endgültig löschen' }));
+    const frage = screen.getByRole('group', { name: '„Knie rechts“ löschen' });
+    expect(await within(frage).findByRole('alert')).toHaveTextContent(
+      'Das Foto konnte nicht gelöscht werden.',
+    );
+  });
+
+  describe('Zustände (UXR-009)', () => {
+    it('behauptet ohne geladene Vermerke keine fehlende Einwilligung (DAT-03)', async () => {
+      const user = userEvent.setup();
+      fetchDatenschutzvermerke.mockRejectedValueOnce(new Error('synthetisch'));
+      fetchPatientenfotos.mockResolvedValue([foto()]);
+      seite();
+
+      expect(
+        await screen.findByText('Der Stand der Einwilligung konnte nicht geladen werden.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Keine Einwilligung vermerkt/)).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).toBeNull();
+
+      fetchDatenschutzvermerke.mockResolvedValue([ERTEILT]);
+      await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+      expect(await screen.findByText(/Einwilligung erteilt am 30.08.2026/)).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Foto aufnehmen' })).toBeInTheDocument();
+    });
+
+    it('sagt, solange die Einwilligung lädt, genau das', () => {
+      fetchDatenschutzvermerke.mockReturnValue(new Promise(() => undefined));
+      seite();
+      expect(screen.getByText('Einwilligung wird geladen …')).toBeInTheDocument();
+      expect(screen.queryByText(/Keine Einwilligung vermerkt/)).toBeNull();
+    });
+
+    it('meldet einen Ladefehler der Liste mit einem neuen Versuch (DAT-13)', async () => {
+      const user = userEvent.setup();
+      fetchPatientenfotos.mockRejectedValueOnce(new Error('synthetisch'));
+      seite();
+
+      expect(await screen.findByText('Die Fotos konnten nicht geladen werden.')).toBeVisible();
+      expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+      fetchPatientenfotos.mockResolvedValue([foto()]);
+      await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+      expect(await screen.findByText('Knie rechts')).toBeInTheDocument();
+    });
+
+    it('zeigt das Laden an der Zeile und führt danach zur Ansicht (DAT-06, DAT-11)', async () => {
+      const user = userEvent.setup();
+      let fertig: (bild: Blob) => void = () => undefined;
+      ladePatientenfoto.mockReturnValue(new Promise<Blob>((erledigt) => (fertig = erledigt)));
+      fetchPatientenfotos.mockResolvedValue([foto()]);
+      seite();
+
+      const ansehen = await screen.findByRole('button', { name: /^Ansehen/ });
+      await user.click(ansehen);
+      const zeile = ansehen.closest('li')!;
+      expect(within(zeile).getByText('Foto wird geladen …')).toBeInTheDocument();
+
+      fertig(new Blob(['jpeg'], { type: 'image/jpeg' }));
+      const ansicht = await screen.findByRole('region', { name: 'Fotoansicht' });
+      await waitFor(() => expect(ansicht).toHaveFocus());
+      expect(within(zeile).queryByText('Foto wird geladen …')).toBeNull();
+
+      await user.click(within(ansicht).getByRole('button', { name: 'Schließen' }));
+      expect(ansehen).toHaveFocus();
+    });
+
+    it('führt nach „Foto verwenden" auf „Foto speichern" (DAT-11)', async () => {
+      const user = userEvent.setup();
+      seite();
+
+      await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
+      await user.click(await screen.findByRole('button', { name: 'Auslösen' }));
+      await user.click(screen.getByRole('button', { name: 'Foto verwenden' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Foto speichern' })).toHaveFocus(),
+      );
+      expect(screen.getByRole('heading', { level: 3, name: 'Neues Foto' })).toBeInTheDocument();
+    });
+
+    it('bietet am Rechner ohne Kamera keine Aufnahme an und sagt, warum (DAT-25)', async () => {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: {
+          getUserMedia: vi.fn(),
+          enumerateDevices: vi.fn().mockResolvedValue([{ kind: 'audioinput' }]),
+        },
+      });
+      seite();
+
+      expect(
+        await screen.findByText(/Auf diesem Gerät wurde keine Kamera gefunden/),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).toBeNull();
+    });
   });
 
   it('zeigt der Trainingsbetreuung nichts (§4.8)', () => {

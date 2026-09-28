@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import {
   fetchPatientenfotos,
   gibPatientenfotoHeraus,
@@ -20,6 +20,13 @@ import {
  * jedes protokolliert (ANN-128). Dieselbe Datei ließe sich an jeden anderen
  * weitergeben; genau deshalb gibt es diesen Weg nur hier und nur für
  * `owner`. Verbindlich prüft die Datenbank.
+ *
+ * **Keine Erfolgsmeldung ohne Erfolg (DAT-19).** Ob der Browser die Datei
+ * speichert, nachfragt oder der Speichern-Dialog abgebrochen wird, sieht die
+ * Seite nicht. Sie meldet deshalb, was sie weiß: Die Kopie ist übergeben und
+ * die Herausgabe protokolliert - ob die Datei angekommen ist, prüft, wer sie
+ * herausgibt. Herausgabeweg, Protokoll und Freigabe der Objekt-URL sind
+ * unverändert (ANN-128).
  */
 function sichern(name: string, bild: Blob): void {
   const adresse = URL.createObjectURL(bild);
@@ -52,20 +59,24 @@ function Zeile({ foto }: { foto: Patientenfoto }) {
   return (
     <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-ink text-liste min-w-0 font-medium">{foto.display_name}</p>
-        <button
+        <p className="text-ink text-liste min-w-0 font-medium wrap-anywhere">{foto.display_name}</p>
+        {/* Dasselbe Verb auf Knopf und Laufanzeige (WRT-10): Es entsteht ein
+            Download, keine Sicherung. */}
+        <Button
           type="button"
+          variant="secondary"
+          groesse="kompakt"
           onClick={() => void herausgeben()}
           disabled={laeuft}
-          className={kartenAktionKlassen()}
         >
-          {laeuft ? 'Wird vorbereitet …' : 'Kopie für die Person sichern'}
+          {laeuft ? 'Wird heruntergeladen …' : 'Kopie für die Person herunterladen'}
           <span className="sr-only">: {foto.display_name}</span>
-        </button>
+        </Button>
       </div>
       {erledigt ? (
-        <Statusmeldung ton="neutral" className="mt-2">
-          Gesichert und protokolliert.
+        <Statusmeldung className="mt-2">
+          Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen
+          ist.
         </Statusmeldung>
       ) : null}
       {fehler ? (
@@ -85,12 +96,20 @@ export function FotoHerausgabe({ patientId }: { patientId: string }) {
   });
 
   return (
+    // Eine Liste wie die übrigen der Seite, also im Rahmen (DAT-21).
     <Section
       titel="Fotos herausgeben"
-      hinweis="Die Auskunft nennt jedes Foto, enthält es aber nicht. Hier entsteht je Foto eine Kopie für die Person selbst (Art. 15 Abs. 3 und Art. 20 DSGVO) — der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie wird protokolliert."
+      rahmen
+      hinweis="Die Auskunft nennt jedes Foto, enthält es aber nicht. Hier entsteht je Foto eine Kopie für die Person selbst (Art. 15 Abs. 3 und Art. 20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie wird protokolliert."
     >
       {fotos.isPending ? <LoadingState label="Fotos werden geladen …" /> : null}
-      {fotos.isError ? <ErrorState title="Die Fotos konnten nicht geladen werden." /> : null}
+      {fotos.isError ? (
+        <ErrorState
+          title="Die Fotos konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => fotos.refetch()}
+        />
+      ) : null}
       {fotos.data && fotos.data.length === 0 ? (
         <EmptyState title="Keine Fotos" description="Für diese Person liegt kein Foto vor." />
       ) : null}

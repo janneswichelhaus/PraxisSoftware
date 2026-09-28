@@ -92,6 +92,15 @@ describe('Hervorhebung', () => {
     ).toBeInTheDocument();
   });
 
+  it('gliedert sich unter den Abschnitt und nennt keine Datei des Projekts (BEF-15, BEF-18)', () => {
+    const { container } = render(
+      <Hervorhebungen definition={anamnese} antworten={{}} datum="2026-09-20" />,
+    );
+    // Unter dem Abschnitt des Bogens (h2) steht die nächste Ebene, keine h4.
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Hervorgehobene Angaben');
+    expect(container.textContent).not.toMatch(/PROJECT_PRINCIPLES|\.md/);
+  });
+
   it('weist eine Regel auf ein exklusives „nein" oder eine unbekannte Frage zurück', () => {
     const roh = JSON.parse(JSON.stringify(anamnese)) as Record<string, unknown>;
     const mitNein = {

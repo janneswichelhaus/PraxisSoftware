@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { bereicheText, istKoerperbereich, type Markierung } from './koerperschema';
+import {
+  MAX_MARKIERUNGEN,
+  bereicheText,
+  istKoerperbereich,
+  type Markierung,
+} from './koerperschema';
 import { optionKennung, type ScoreDefinition, type ScoreItem } from './schema';
 
 /**
@@ -28,6 +33,12 @@ export type Antwort =
 
 export type Antworten = Record<string, Antwort>;
 
+/** Die Meldung, wenn mehr Stellen markiert sind, als eine Angabe tragen soll (ANN-107). */
+export const ZU_VIELE_STELLEN = `Höchstens ${MAX_MARKIERUNGEN} Stellen – bitte eine entfernen.`;
+
+const AUSSERHALB_DER_FIGUR =
+  'Eine Stelle liegt außerhalb der Figur. Bitte entfernen und neu setzen.';
+
 const freitextSchema = z.string().trim().min(1).max(FREITEXT_MAX);
 
 function optionMitFreitext(item: ScoreItem, gewaehlt: readonly string[]): boolean {
@@ -36,12 +47,21 @@ function optionMitFreitext(item: ScoreItem, gewaehlt: readonly string[]): boolea
   );
 }
 
-/** Das Schema einer Antwort auf genau dieses Item. */
+/**
+ * Das Schema einer Antwort auf genau dieses Item.
+ *
+ * Die Meldungen der eigenen Regeln sind deutsch und sagen, was zu tun ist:
+ * Sie stehen an der Frage (BEF-03). Was Zod selbst meldet, erscheint nie -
+ * `antwortFehler` setzt dafür einen festen Satz je Typ.
+ */
 export function antwortSchema(item: ScoreItem): z.ZodType {
   const kennungen = (item.optionen ?? []).map(optionKennung);
   const bekannt = z
     .string()
-    .refine((wert) => kennungen.includes(wert), 'Keine Option dieses Items.');
+    .refine(
+      (wert) => kennungen.includes(wert),
+      'Diese Auswahl gehört nicht zur Frage. Bitte die Antwort entfernen und neu wählen.',
+    );
 
   switch (item.typ) {
     case 'einzelauswahl':
@@ -56,7 +76,10 @@ export function antwortSchema(item: ScoreItem): z.ZodType {
       return z
         .object({ auswahl: z.array(bekannt).min(1), freitext: freitextSchema.optional() })
         .strict()
-        .refine((a) => new Set(a.auswahl).size === a.auswahl.length, 'Eine Option doppelt gewählt.')
+        .refine(
+          (a) => new Set(a.auswahl).size === a.auswahl.length,
+          'Eine Option ist doppelt gewählt. Bitte das Kreuz entfernen und neu setzen.',
+        )
         .refine((a) => {
           // „nein" steht allein: Wer es zusammen mit „Nachtschmerzen" wählt,
           // hat sich verklickt — gespeichert wird so etwas nicht.
@@ -64,7 +87,7 @@ export function antwortSchema(item: ScoreItem): z.ZodType {
             .filter((option) => option.exklusiv)
             .map(optionKennung);
           return !a.auswahl.some((wert) => exklusiv.includes(wert)) || a.auswahl.length === 1;
-        }, '„nein" lässt sich nicht mit einer anderen Angabe verbinden.')
+        }, '„nein“ lässt sich nicht mit einer anderen Angabe verbinden.')
         .refine(
           (a) => a.freitext === undefined || optionMitFreitext(item, a.auswahl),
           'Eine eigene Angabe gehört zu einer Option, die sie vorsieht.',
@@ -88,12 +111,12 @@ export function antwortSchema(item: ScoreItem): z.ZodType {
                 .object({
                   x: z.number().min(0).max(1),
                   y: z.number().min(0).max(1),
-                  bereich: z.string().refine(istKoerperbereich, 'Kein Bereich des Körperschemas.'),
+                  bereich: z.string().refine(istKoerperbereich, AUSSERHALB_DER_FIGUR),
                 })
                 .strict(),
             )
             .min(1)
-            .max(30),
+            .max(MAX_MARKIERUNGEN, ZU_VIELE_STELLEN),
         })
         .strict();
   }
@@ -108,6 +131,71 @@ export function antwortenSchema(definition: ScoreDefinition): z.ZodType<Antworte
     definition.items.map((item) => [item.id, antwortSchema(item).optional()]),
   );
   return z.object(felder).strict() as unknown as z.ZodType<Antworten>;
+}
+
+/** Eine beanstandete Antwort: an welcher Frage, und was zu tun ist. */
+export interface Antwortfehler {
+  itemId: string;
+  meldung: string;
+}
+
+/**
+ * Was an einer Antwort nicht stimmt, in Worten der Praxis (BEF-03).
+ *
+ * Die eigenen Regeln oben tragen ihre Meldung selbst. Alles, was Zod sonst
+ * meldet - „Too big: expected array to have <=30 items" -, kommt hier nicht
+ * durch: Dafür steht ein fester Satz je Typ.
+ */
+function meldungFuer(item: ScoreItem, fehler: z.ZodError): string {
+  const erste = fehler.issues[0];
+  if (erste && (erste.code === 'custom' || erste.message === ZU_VIELE_STELLEN)) {
+    return erste.message;
+  }
+  switch (item.typ) {
+    case 'einzelauswahl':
+    case 'mehrfachauswahl':
+      return 'Diese Auswahl passt nicht zur Frage. Bitte die Antwort entfernen und neu wählen.';
+    case 'skala': {
+      const skala = item.skala ?? { min: 0, max: 0 };
+      return `Bitte einen Wert von ${skala.min} bis ${skala.max} wählen.`;
+    }
+    case 'zahl':
+      return 'Bitte eine Zahl eingeben.';
+    case 'freitext':
+      return `Bitte höchstens ${FREITEXT_MAX} Zeichen eingeben.`;
+    case 'koerperschema':
+      return AUSSERHALB_DER_FIGUR;
+  }
+}
+
+/**
+ * Alle beanstandeten Antworten eines Bogens, in der Reihenfolge der Fragen.
+ *
+ * Dieselben Schemata wie `antwortenSchema`, aber je Frage geprüft: So steht
+ * der Fehler an der Frage und in der Fehlerzusammenfassung, statt als ein
+ * Satz unter einem Bogen von zehn Bildschirmhöhen (BEF-03).
+ */
+export function antwortFehler(definition: ScoreDefinition, antworten: Antworten): Antwortfehler[] {
+  const fehler: Antwortfehler[] = [];
+  for (const item of definition.items) {
+    const antwort = antworten[item.id];
+    if (antwort === undefined) continue;
+    const ergebnis = antwortSchema(item).safeParse(antwort);
+    if (!ergebnis.success) {
+      fehler.push({ itemId: item.id, meldung: meldungFuer(item, ergebnis.error) });
+    }
+  }
+  const bekannt = new Set(definition.items.map((item) => item.id));
+  for (const itemId of Object.keys(antworten)) {
+    if (!bekannt.has(itemId)) {
+      fehler.push({
+        itemId,
+        meldung:
+          'Der Bogen enthält eine Antwort auf eine Frage, die es in dieser Fassung nicht gibt.',
+      });
+    }
+  }
+  return fehler;
 }
 
 /**

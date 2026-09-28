@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Disclosure } from '@/components/ui/Card';
+import { Card, Disclosure } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { formatDate } from '@/lib/datum';
 import { usePatientRecord } from '@/features/patients/akte';
@@ -13,7 +14,7 @@ import {
   canWriteQuestionnaire,
   type CurrentUser,
 } from '@/features/session/types';
-import { erhebungenQueryKey, fetchErhebungen, type Erhebung } from './api';
+import { erhebungenQueryKey, erhebungVerwerfen, fetchErhebungen, type Erhebung } from './api';
 import { erhebenPfad } from './darstellung';
 import { ErhebungAnsicht } from './ErhebungAnsicht';
 import { Hervorhebungen } from './Hervorhebungen';
@@ -75,11 +76,14 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
   const darfErheben = canWriteQuestionnaire(user.roles);
 
   if (erhebungen.isPending) return <LoadingState label="Fragebögen werden geladen …" />;
-  if (erhebungen.isError) {
+  // Nur ohne Daten ersetzt der Fehler den Befund (ZST-03): Ein gescheitertes
+  // Nachladen lässt den zuletzt geladenen Stand stehen.
+  if (erhebungen.data === undefined) {
     return (
       <ErrorState
         title="Die Fragebögen konnten nicht geladen werden."
-        description="Bitte später erneut versuchen."
+        description="Bitte die Verbindung prüfen und erneut versuchen."
+        onErneut={() => erhebungen.refetch()}
       />
     );
   }
@@ -139,6 +143,49 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
   );
 }
 
+/**
+ * Der Stand einer Erhebung als Etikett, groß geschrieben wie die übrigen
+ * Etiketten der Anwendung (WRT-16).
+ */
+function Zustand({ erhebung, alle }: { erhebung: Erhebung; alle: readonly Erhebung[] }) {
+  const nachfolger = alle.find((e) => e.id === erhebung.superseded_by_response_id);
+  if (erhebung.status === 'entwurf') return <Badge ton="warnung">Entwurf</Badge>;
+  if (nachfolger?.status === 'abgeschlossen') {
+    return <Badge ton="neutral">Durch Korrektur ersetzt</Badge>;
+  }
+  if (nachfolger) return <Badge ton="positiv">Abgeschlossen · Korrektur im Entwurf</Badge>;
+  return <Badge ton="positiv">Abgeschlossen</Badge>;
+}
+
+/**
+ * Einen Entwurf aus der Akte verwerfen (BEF-02) - derselbe Serverweg wie auf
+ * der Erhebungsseite, und wie dort erst nach einer Rückfrage (BEF-01). Ohne
+ * diesen Weg blieb ein Entwurf aus einer früheren Fassung des Bogens stehen,
+ * und in der Akte ließ sich kein neuer Bogen mehr beginnen.
+ */
+function EntwurfVerwerfen({ erhebung, patientId }: { erhebung: Erhebung; patientId: string }) {
+  const queryClient = useQueryClient();
+  const verwerfen = useMutation({
+    mutationFn: () => erhebungVerwerfen(erhebung.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: erhebungenQueryKey(patientId) }),
+  });
+
+  return (
+    <Rueckfrage
+      ausloeser="Entwurf verwerfen"
+      ausloeserVariante="quiet"
+      bezeichnung={`Entwurf vom ${formatDate(erhebung.recorded_on)} verwerfen`}
+      bestaetigen="Ja, Entwurf verwerfen"
+      bestaetigenLaeuft="Wird verworfen …"
+      fehler={verwerfen.isError ? verwerfen.error.message : undefined}
+      onAbbrechen={() => verwerfen.reset()}
+      onBestaetigen={() => verwerfen.mutateAsync()}
+    >
+      Die gespeicherten Antworten dieses Entwurfs werden gelöscht.
+    </Rueckfrage>
+  );
+}
+
 function ErhebungKarte({
   erhebung,
   alle,
@@ -156,62 +203,63 @@ function ErhebungKarte({
   const nachfolger = alle.find((e) => e.id === erhebung.superseded_by_response_id);
   const ersetzt = nachfolger?.status === 'abgeschlossen';
   const korrigierbar = darfErheben && erhebung.status === 'abgeschlossen' && !nachfolger;
+  const verwerfbar = darfErheben && erhebung.status === 'entwurf';
 
   return (
-    <li className="border-line bg-surface rounded-card border p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-ink font-medium">Erhoben am {formatDate(erhebung.recorded_on)}</p>
-        {erhebung.status === 'entwurf' ? (
-          <Badge ton="warnung">Entwurf</Badge>
-        ) : ersetzt ? (
-          <Badge ton="neutral">durch Korrektur ersetzt</Badge>
-        ) : nachfolger ? (
-          <Badge ton="positiv">abgeschlossen · Korrektur im Entwurf</Badge>
-        ) : (
-          <Badge ton="positiv">abgeschlossen</Badge>
-        )}
-      </div>
-      <p className="text-ink-muted mt-1 text-sm">
-        {erhebung.author_name ? `Erfasst von ${erhebung.author_name}` : 'Erfasst'}
-        {erhebung.completed_at
-          ? ` · abgeschlossen am ${formatDate(erhebung.completed_at.slice(0, 10))}`
-          : ''}
-        {erhebung.definition_version !== definition.meta.version
-          ? ` · Version ${erhebung.definition_version} des Bogens`
-          : ''}
-      </p>
-      {erhebung.change_reason ? (
-        <p className="text-ink mt-1 text-sm">Korrektur: {erhebung.change_reason}</p>
-      ) : null}
-      {/* Hervorgehoben wird am geltenden, abgeschlossenen Bogen; ein Entwurf ist
-          noch keine Angabe, ein ersetzter steht nicht neben seiner Korrektur. */}
-      {erhebung.status === 'abgeschlossen' && !ersetzt ? (
-        <Hervorhebungen
-          definition={definition}
-          antworten={erhebung.answers}
-          datum={erhebung.recorded_on}
-        />
-      ) : null}
-      <Disclosure summary="Antworten">
-        <ErhebungAnsicht definition={definition} antworten={erhebung.answers} />
-      </Disclosure>
-      {korrigierbar ? (
-        <div className="mt-3">
-          <ButtonLink
-            to={erhebenPfad(patientId, definition.meta.id, { korrigiert: erhebung.id })}
-            variant="secondary"
-          >
-            Korrigieren
-          </ButtonLink>
+    <li>
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-ink font-medium">Erhoben am {formatDate(erhebung.recorded_on)}</p>
+          <Zustand erhebung={erhebung} alle={alle} />
         </div>
-      ) : null}
+        <p className="text-ink-muted mt-1 text-sm">
+          {erhebung.author_name ? `Erfasst von ${erhebung.author_name}` : 'Erfasst'}
+          {erhebung.completed_at
+            ? ` · abgeschlossen am ${formatDate(erhebung.completed_at.slice(0, 10))}`
+            : ''}
+          {/* „Fassung" für die Definition, wie in der Meldung der
+              Erhebungsseite und in den Instrumenten (BEF-16). */}
+          {erhebung.definition_version !== definition.meta.version
+            ? ` · Fassung ${erhebung.definition_version} des Bogens`
+            : ''}
+        </p>
+        {erhebung.change_reason ? (
+          <p className="text-ink mt-1 text-sm">Korrektur: {erhebung.change_reason}</p>
+        ) : null}
+        {/* Hervorgehoben wird am geltenden, abgeschlossenen Bogen; ein Entwurf ist
+            noch keine Angabe, ein ersetzter steht nicht neben seiner Korrektur. */}
+        {erhebung.status === 'abgeschlossen' && !ersetzt ? (
+          <Hervorhebungen
+            definition={definition}
+            antworten={erhebung.answers}
+            datum={erhebung.recorded_on}
+          />
+        ) : null}
+        <Disclosure summary="Antworten">
+          <ErhebungAnsicht definition={definition} antworten={erhebung.answers} />
+        </Disclosure>
+        {korrigierbar || verwerfbar ? (
+          <div className="mt-3 flex flex-wrap gap-3">
+            {korrigierbar ? (
+              <ButtonLink
+                to={erhebenPfad(patientId, definition.meta.id, { korrigiert: erhebung.id })}
+                variant="secondary"
+              >
+                Korrigieren
+              </ButtonLink>
+            ) : null}
+            {verwerfbar ? <EntwurfVerwerfen erhebung={erhebung} patientId={patientId} /> : null}
+          </div>
+        ) : null}
+      </Card>
     </li>
   );
 }
 
 /**
  * Eine Erhebung zu einem Instrument, das nicht mehr aktiv ist, verschwindet
- * nicht — sie bleibt Teil der Akte. Sie steht hier, lesbar, ohne Aktion.
+ * nicht — sie bleibt Teil der Akte. Sie steht hier, lesbar, mit ihrem Stand
+ * wie oben (BEF-02), ohne Aktion.
  */
 function FremdeInstrumente({
   erhebungen,
@@ -230,16 +278,21 @@ function FremdeInstrumente({
         {uebrige.map((erhebung) => {
           const definition = instrumentFuer(erhebung.instrument_id, scores);
           return (
-            <li key={erhebung.id} className="border-line bg-surface rounded-card border p-4">
-              <p className="text-ink font-medium">
-                {definition?.meta.name_de ?? erhebung.instrument_id} ·{' '}
-                {formatDate(erhebung.recorded_on)}
-              </p>
-              {definition ? (
-                <Disclosure summary="Antworten">
-                  <ErhebungAnsicht definition={definition} antworten={erhebung.answers} />
-                </Disclosure>
-              ) : null}
+            <li key={erhebung.id}>
+              <Card>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-ink font-medium">
+                    {definition?.meta.name_de ?? erhebung.instrument_id} ·{' '}
+                    {formatDate(erhebung.recorded_on)}
+                  </p>
+                  <Zustand erhebung={erhebung} alle={erhebungen} />
+                </div>
+                {definition ? (
+                  <Disclosure summary="Antworten">
+                    <ErhebungAnsicht definition={definition} antworten={erhebung.answers} />
+                  </Disclosure>
+                ) : null}
+              </Card>
             </li>
           );
         })}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { antwortenSchema, antwortText } from './antworten';
+import { antwortenSchema, antwortFehler, antwortText } from './antworten';
 import { instrumentFuer } from './instrumente';
 
 /**
@@ -50,6 +50,49 @@ describe('Antworten auf den Anamnesebogen', () => {
   it('weist eine Antwort auf eine unbekannte Frage und leeren Freitext ab', () => {
     expect(pruefe({ erfunden: { text: 'x' } })).toBe(false);
     expect(pruefe({ beschwerden_seit: { text: '   ' } })).toBe(false);
+  });
+
+  describe('Meldungen je Frage (BEF-03)', () => {
+    const kreise = (anzahl: number) =>
+      Array.from({ length: anzahl }, () => ({ x: 0.726, y: 0.387, bereich: 'lws' }));
+
+    it('nennt die Frage und sagt auf Deutsch, was zu tun ist - nie den Text von Zod', () => {
+      const fehler = antwortFehler(anamnese, {
+        beschwerden_ort: { markierungen: kreise(31) },
+        schmerzstaerke: { wert: 11 },
+        schmerzart: { auswahl: ['nachtschmerzen', 'nein'] },
+      });
+      expect(fehler).toEqual([
+        { itemId: 'beschwerden_ort', meldung: 'Höchstens 30 Stellen – bitte eine entfernen.' },
+        { itemId: 'schmerzstaerke', meldung: 'Bitte einen Wert von 0 bis 10 wählen.' },
+        {
+          itemId: 'schmerzart',
+          meldung: '„nein“ lässt sich nicht mit einer anderen Angabe verbinden.',
+        },
+      ]);
+      for (const { meldung } of fehler) {
+        expect(meldung).not.toMatch(/expected|too big|invalid|items/i);
+      }
+    });
+
+    it('findet in einem gültigen Bogen nichts', () => {
+      expect(
+        antwortFehler(anamnese, {
+          beschwerden_ort: { markierungen: kreise(30) },
+          schmerzen_aktuell: { auswahl: 'ja' },
+        }),
+      ).toEqual([]);
+    });
+
+    it('meldet eine Antwort auf eine Frage, die es in dieser Fassung nicht gibt', () => {
+      expect(antwortFehler(anamnese, { erfunden: { text: 'x' } })).toEqual([
+        {
+          itemId: 'erfunden',
+          meldung:
+            'Der Bogen enthält eine Antwort auf eine Frage, die es in dieser Fassung nicht gibt.',
+        },
+      ]);
+    });
   });
 
   it('gibt die Antwort wörtlich wieder, ohne Deutung', () => {

@@ -37,8 +37,13 @@ export function Hervorhebungen({
   if (definition.hervorhebungen.length === 0) return null;
 
   return (
-    <div className="border-line-strong rounded-field mt-3 border p-3">
-      <h4 className="text-ink text-sm font-semibold">Hervorgehobene Angaben</h4>
+    // Ein Rahmen um eine Auskunft, kein Eingabefeld: Linie und Radius einer
+    // Fläche (BEF-18), nicht `line-strong` und `rounded-field`. Die
+    // Überschrift steht eine Ebene unter dem Abschnitt des Bogens (h3).
+    <div className="border-line rounded-card mt-3 border px-4 py-3">
+      <h3 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
+        Hervorgehobene Angaben
+      </h3>
       {treffer.length === 0 ? (
         // Eine Feststellung über das Angekreuzte, keine Entwarnung - und was
         // offen blieb, steht dabei (Zweitreview FRB-EPIC-002, Befund 2).
@@ -70,8 +75,7 @@ export function Hervorhebungen({
           ))}
         </ul>
         <p className="text-ink-muted mt-2 text-sm">
-          Hervorgehoben wird nur, was angekreuzt ist — unverändert. Eine Bewertung entsteht nicht
-          (PROJECT_PRINCIPLES.md §7.1).
+          Hervorgehoben wird nur, was angekreuzt ist – unverändert. Eine Bewertung entsteht nicht.
         </p>
       </Disclosure>
     </div>

@@ -1,16 +1,17 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
+import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { oeffneDatei, type PatientFile } from './api';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
 import { Kameradialog } from './Kameradialog';
-import { fotoVomHeutigenTag, kameraVerfuegbar } from './kamera';
+import { fotoVomHeutigenTag, useKamera } from './kamera';
 import { useDateiLoeschen, useDateiUpload, useDateien, useDokumentartKorrigieren } from './dateien';
 import {
   DATEI_ACCEPT,
@@ -47,22 +48,41 @@ import {
  *     Offenlegung nach §13, kein Schönheitsfehler.
  *   * **Eine fehlende Datei ist ein sichtbarer Fehler**, keine leere Fläche
  *     (Punkt 27, §13).
+ *
+ * Gerahmt ist nur die Liste, eine Auskunft; das Hinzufügen ist ein Formular
+ * und steht als eigener Abschnitt ohne Rahmen darunter (UI-002c, DAT-21).
  */
+
+/** Wie eine Zeit der Ablage als Tag der Praxis erscheint - wie bei den Fotos, zweistellig (WRT-15). */
+function tagDerPraxis(zeitpunkt: string, zeitzone: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: zeitzone,
+  }).format(new Date(zeitpunkt));
+}
 
 function Dokumentartauswahl({
   wert,
   onChange,
   arten,
+  feldId,
+  disabled = false,
 }: {
   wert: Dokumentart;
   onChange: (art: Dokumentart) => void;
   arten: readonly Dokumentart[];
+  feldId?: string | undefined;
+  disabled?: boolean;
 }) {
   return (
     <Select
+      feldId={feldId}
       label="Art des Dokuments"
       hint={`${dokumentartHinweise[wert]} ${sichtbarkeitHinweis(wert)}`}
       value={wert}
+      disabled={disabled}
       onChange={(e) => onChange(e.target.value as Dokumentart)}
     >
       {arten.map((art) => (
@@ -88,15 +108,20 @@ interface UploadfeldProps {
  * einzige Wort, unter dem die Datei später wiederzufinden ist, und
  * `IMG_4711.jpg` ist keins. Im Objektschlüssel steht er nie (ADR-017 Punkt 5).
  *
- * **Foto aufnehmen** (DOK-006, ADR-017 Punkt 33): Für ein Blatt auf Papier —
- * Verordnung, Anamnesebogen, unterschriebene Einwilligung — ist der
- * Kameradialog der angebotene Weg; das Foto landet dann nicht in der Mediathek
- * des Handys. Der Dateiwähler bleibt für das, was schon als Datei vorliegt.
- * Bis zum Hinzufügen liegt das Foto nur im Arbeitsspeicher; der
+ * **Dokument fotografieren** (DOK-006, ADR-017 Punkt 33): Für ein Blatt auf
+ * Papier — Verordnung, Anamnesebogen, unterschriebene Einwilligung — ist der
+ * Kameradialog der angebotene Weg; das Foto landet dann nicht in der
+ * Mediathek des Handys. Der Dateiwähler bleibt für das, was schon als Datei
+ * vorliegt. Bis zum Hinzufügen liegt das Foto nur im Arbeitsspeicher; der
  * `Fotoverlustschutz` fragt, bevor jemand die Seite mit ihm verlässt.
+ *
+ * Der Knopf heißt **nicht** „Foto aufnehmen" wie beim Patientenfoto im
+ * Behandlungsverlauf (DAT-01): Hinter den beiden Knöpfen liegen zwei
+ * Rechtswege - hier ein Dokument der Akte, dort ein Foto der Person mit
+ * Einwilligung und Zwölfmonatsfrist (ADR-017, „scharfe Kante").
  */
 function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
-  const beschreibungId = useId();
+  const dateifeldId = useId();
   const [art, setArt] = useState<Dokumentart>(arten[0]!);
   const [datei, setDatei] = useState<File | null>(null);
   const [name, setName] = useState('');
@@ -104,16 +129,29 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
   const [erfolg, setErfolg] = useState<string | null>(null);
   const [kameraOffen, setKameraOffen] = useState(false);
   const [ausKamera, setAusKamera] = useState(false);
+  const [vorschau, setVorschau] = useState<string | null>(null);
   // Ein Dateifeld lässt sich nicht über seinen Wert leeren. Der Zähler baut es
   // nach dem Hinzufügen neu auf - sonst stünde dort noch der Name der Datei,
   // die schon in der Akte liegt.
   const [durchgang, setDurchgang] = useState(0);
+  const kamera = useKamera();
 
   const upload = useDateiUpload(patientId);
+  // Während des Hochladens bleibt alles stehen, was hochgeladen wird (DAT-09):
+  // Eine andere Datei, Art oder ein anderer Name danach wäre nicht das, was
+  // gerade in die Akte geht.
+  const laeuft = upload.isPending;
+
+  // Die Vorschau des Fotos lebt so lange wie das Foto im Arbeitsspeicher.
+  useEffect(() => {
+    if (!vorschau) return;
+    return () => URL.revokeObjectURL(vorschau);
+  }, [vorschau]);
 
   function dateiGewaehlt(gewaehlt: File | null) {
     setErfolg(null);
     setAusKamera(false);
+    setVorschau(null);
     upload.reset();
     if (!gewaehlt) {
       setDatei(null);
@@ -136,6 +174,7 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
     setAblehnung(grund);
     setDatei(grund ? null : aufnahme);
     setAusKamera(!grund);
+    setVorschau(grund ? null : URL.createObjectURL(aufnahme));
     setName(vorschlag);
     // Eine vorher gewählte Datei stünde sonst weiter im Feld.
     setDurchgang((n) => n + 1);
@@ -146,6 +185,7 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
     setName('');
     setAblehnung(null);
     setAusKamera(false);
+    setVorschau(null);
     setDurchgang((n) => n + 1);
   }
 
@@ -169,43 +209,66 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
   }
 
   return (
-    <div className="border-line rounded-card mt-4 border border-dashed p-4">
-      <p className="text-ink text-liste font-medium">Datei hinzufügen</p>
-      <p id={beschreibungId} className="text-ink-muted mt-0.5 text-sm">
-        PDF, JPEG oder PNG bis 10 MB. Ort, Gerät und Vorschaubild werden aus Bildern vor dem
-        Hochladen entfernt. Eine hinzugefügte Datei lässt sich nicht mehr ändern — eine Korrektur
-        ist eine neue Datei.
-      </p>
-
-      <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        <div>
+    <div className="flex flex-col gap-3">
+      {/* Ein Foto aus der Kamera steht an der Stelle des Dateifelds, mit
+          Vorschau (DAT-08): Das neu aufgebaute Feld zeigte „keine Datei",
+          während darunter das Foto stand. */}
+      {ausKamera && datei && vorschau ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <img
+            src={vorschau}
+            alt="Foto aus der Kamera, noch nicht hinzugefügt"
+            draggable={false}
+            className="bg-ink rounded-image pointer-events-none block h-24 w-18 object-contain select-none"
+          />
+          <p className="text-ink text-sm">Foto aus der Kamera – noch nicht hinzugefügt</p>
+        </div>
+      ) : (
+        <div className="max-w-xl">
           <Field
             key={durchgang}
+            feldId={dateifeldId}
             label="Datei"
             type="file"
             accept={DATEI_ACCEPT}
-            aria-describedby={beschreibungId}
+            // Hinweis und Ablehnungsgrund verbindet das Feld selbst mit der
+            // Eingabe (DAT-12) - ein eigenes aria-describedby von hier
+            // überschriebe beides.
+            hint="PDF, JPEG oder PNG bis 10 MB. Ort, Gerät und Vorschaubild werden aus Bildern vor dem Hochladen entfernt. Eine hinzugefügte Datei lässt sich nicht mehr ändern – eine Korrektur ist eine neue Datei."
             error={ablehnung ?? undefined}
+            disabled={laeuft}
+            // Der Knopf des Browsers bekommt die Gestalt eines Sekundärknopfs
+            // (DAT-10): Ohne sie stand „Datei auswählen" als bloßer Text im
+            // Feldrahmen.
+            className="file:rounded-button file:border-line-strong file:text-accent file:hover:bg-accent-soft file:mr-3 file:min-h-10 file:cursor-pointer file:border file:bg-transparent file:px-4 file:text-sm file:font-bold"
             onChange={(e) => dateiGewaehlt(e.currentTarget.files?.[0] ?? null)}
           />
-          {kameraVerfuegbar() ? (
+          {/* Der Grund entsteht beim Wählen, nicht beim Absenden: Er wird
+              deshalb auch angesagt (DAT-12). */}
+          <p role="alert" className="sr-only">
+            {ablehnung ?? ''}
+          </p>
+          {kamera === 'vorhanden' ? (
             <Button
               type="button"
               variant="secondary"
               className="mt-2"
+              disabled={laeuft}
               onClick={() => setKameraOffen(true)}
             >
-              Foto aufnehmen
+              {grundlageId ? 'Rezept fotografieren' : 'Dokument fotografieren'}
             </Button>
           ) : null}
         </div>
+      )}
 
+      <div className="grid max-w-3xl gap-3 lg:grid-cols-2">
         {arten.length > 1 ? (
-          <Dokumentartauswahl wert={art} onChange={setArt} arten={arten} />
+          <Dokumentartauswahl wert={art} onChange={setArt} arten={arten} disabled={laeuft} />
         ) : (
           <div>
             <p className="text-ink text-sm font-medium">{dokumentartLabels[art]}</p>
-            <p className="text-ink-muted mt-1 text-sm">{sichtbarkeitHinweis(art)}</p>
+            <p className="text-ink-muted mt-1 max-w-prose text-sm">{sichtbarkeitHinweis(art)}</p>
           </div>
         )}
 
@@ -214,33 +277,39 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
             label="Name in der Akte"
             value={name}
             maxLength={200}
-            hint="Unter diesem Namen steht die Datei in der Akte. Im Ablageort steht er nie."
+            hint="Unter diesem Namen steht die Datei in der Akte."
+            disabled={laeuft}
             onChange={(e) => setName(e.target.value)}
           />
         ) : null}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <Button type="button" onClick={hinzufuegen} disabled={!datei || upload.isPending}>
-          {upload.isPending ? 'Wird hinzugefügt …' : 'Datei hinzufügen'}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" onClick={hinzufuegen} disabled={!datei || laeuft}>
+          {laeuft ? 'Wird hinzugefügt …' : 'Datei hinzufügen'}
         </Button>
         {datei ? (
-          <span className="text-ink-muted text-sm">
+          <Button type="button" variant="secondary" disabled={laeuft} onClick={zuruecksetzen}>
+            Verwerfen
+          </Button>
+        ) : null}
+        {datei ? (
+          <span className="text-ink-muted min-w-0 text-sm wrap-anywhere">
             {ausKamera ? 'Foto aus der Kamera' : datei.name} · {formatBytes(datei.size)}
           </span>
         ) : null}
       </div>
 
       {upload.isError ? (
-        <Statusmeldung ton="fehler" className="mt-2">
+        <Statusmeldung ton="fehler">
           {upload.error.message}
           {ausKamera
-            ? ' Das Foto ist noch da — „Datei hinzufügen" versucht es erneut, solange diese Seite offen ist.'
+            ? ' Das Foto ist noch da – „Datei hinzufügen“ versucht es erneut, solange diese Seite offen ist.'
             : null}
         </Statusmeldung>
       ) : null}
       {erfolg ? (
-        <Statusmeldung ton="neutral" className="mt-2">
+        <Statusmeldung ton="erfolg" className="wrap-anywhere">
           {erfolg}
         </Statusmeldung>
       ) : null}
@@ -265,6 +334,10 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
  * Die Auswahl zeigt bei jeder Art, wer die Datei danach sieht. ADR-017
  * Punkt 13 nennt das ausdrücklich keinen Stammdatenvorgang — die Änderung
  * verschiebt eine Sichtbarkeitsgrenze und wird protokolliert.
+ *
+ * Der Kasten sieht aus und führt den Fokus wie die Rückfrage daneben (DAT-22,
+ * DAT-11): beim Öffnen in die Auswahl, beim Abbrechen und nach dem Übernehmen
+ * zurück auf „Art korrigieren" - und danach steht da, was sich geändert hat.
  */
 function Artkorrektur({
   datei,
@@ -275,9 +348,26 @@ function Artkorrektur({
   patientId: string;
   arten: readonly Dokumentart[];
 }) {
+  const auswahlId = useId();
   const [offen, setOffen] = useState(false);
   const [art, setArt] = useState<Dokumentart>(datei.document_type as Dokumentart);
+  const [geaendert, setGeaendert] = useState<string | null>(null);
+  const [fokusZurueck, setFokusZurueck] = useState(false);
+  const ausloeserRef = useRef<HTMLButtonElement>(null);
   const korrektur = useDokumentartKorrigieren(patientId);
+
+  useEffect(() => {
+    if (offen) document.getElementById(auswahlId)?.focus();
+  }, [offen, auswahlId]);
+
+  // Zurück auf den Auslöser braucht einen eigenen Durchlauf: Solange der
+  // Kasten steht, gibt es ihn nicht.
+  useEffect(() => {
+    if (!offen && fokusZurueck) {
+      ausloeserRef.current?.focus();
+      setFokusZurueck(false);
+    }
+  }, [offen, fokusZurueck]);
 
   // Ein Verordnungsscan braucht eine Verordnung (ADR-017 Punkt 10). Hängt die
   // Datei an keiner, steht die Art gar nicht erst zur Wahl - der Server würde
@@ -286,25 +376,70 @@ function Artkorrektur({
     ? arten
     : arten.filter((eintrag) => eintrag !== 'verordnungsscan');
 
+  function schliessen() {
+    setOffen(false);
+    setFokusZurueck(true);
+  }
+
   if (!offen) {
     return (
-      <button type="button" onClick={() => setOffen(true)} className={kartenAktionKlassen('quiet')}>
-        Art korrigieren
-      </button>
+      <>
+        <Button
+          ref={ausloeserRef}
+          type="button"
+          variant="quiet"
+          groesse="kompakt"
+          onClick={() => {
+            setGeaendert(null);
+            korrektur.reset();
+            setArt(datei.document_type as Dokumentart);
+            setOffen(true);
+          }}
+        >
+          Art korrigieren<span className="sr-only">: {datei.display_name}</span>
+        </Button>
+        {geaendert ? (
+          <Statusmeldung ton="erfolg" className="w-full">
+            {geaendert}
+          </Statusmeldung>
+        ) : null}
+      </>
     );
   }
 
+  const bisher = dokumentartLabels[datei.document_type as Dokumentart] ?? datei.document_type;
+
   return (
-    <div className="border-line bg-surface-sunken rounded-card mt-2 w-full border p-3">
-      <Dokumentartauswahl wert={art} onChange={setArt} arten={waehlbar} />
-      <div className="mt-3 flex flex-wrap gap-2">
+    <div
+      role="group"
+      aria-label={`Art von „${datei.display_name}“ korrigieren`}
+      className="border-line-strong bg-surface-sunken rounded-card mt-2 w-full border p-6"
+    >
+      <Dokumentartauswahl
+        feldId={auswahlId}
+        wert={art}
+        onChange={setArt}
+        arten={waehlbar}
+        disabled={korrektur.isPending}
+      />
+      {korrektur.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {korrektur.error.message}
+        </Statusmeldung>
+      ) : null}
+      <div className="mt-3 flex flex-wrap gap-3">
         <Button
           type="button"
           disabled={korrektur.isPending || art === datei.document_type}
           onClick={() =>
             korrektur.mutate(
               { fileId: datei.id, documentType: art },
-              { onSuccess: () => setOffen(false) },
+              {
+                onSuccess: () => {
+                  setGeaendert(`Art geändert: ${bisher} → ${dokumentartLabels[art]}.`);
+                  schliessen();
+                },
+              },
             )
           }
         >
@@ -312,20 +447,16 @@ function Artkorrektur({
         </Button>
         <Button
           type="button"
-          variant="secondary"
+          variant="quiet"
+          disabled={korrektur.isPending}
           onClick={() => {
             setArt(datei.document_type as Dokumentart);
-            setOffen(false);
+            schliessen();
           }}
         >
           Abbrechen
         </Button>
       </div>
-      {korrektur.isError ? (
-        <Statusmeldung ton="fehler" className="mt-2">
-          {korrektur.error.message}
-        </Statusmeldung>
-      ) : null}
     </div>
   );
 }
@@ -338,18 +469,21 @@ function Artkorrektur({
  * Punkt 17) — deshalb steht er nirgendwo im Markup und wird nirgends gemerkt.
  *
  * „Löschen" nimmt die Datei sofort aus der Akte; das Objekt folgt über den
- * Löschauftrag (Punkt 25). Genau das sagt die Rückfrage auch — sonst wäre
- * „gelöscht" ein Wort für zwei verschiedene Zustände.
+ * Löschauftrag (Punkt 25). Die Rückfrage sagt, was für die Person zählt: Die
+ * Datei ist weg, und das lässt sich nicht rückgängig machen (DAT-23). Sie
+ * wartet auf das Ergebnis und zeigt einen Fehlschlag im Kasten (ZST-06).
  */
 function Dateizeile({
   datei,
   patientId,
+  zeitzone,
   darfLoeschen,
   darfArtKorrigieren,
   arten,
 }: {
   datei: PatientFile;
   patientId: string;
+  zeitzone: string;
   darfLoeschen: boolean;
   darfArtKorrigieren: boolean;
   arten: readonly Dokumentart[];
@@ -375,30 +509,33 @@ function Dateizeile({
   return (
     <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
+        {/* Namen ohne Leerzeichen - „Befundbericht_Orthopaedie_…pdf" - brechen
+            um, statt die Seite waagerecht rollen zu lassen (DAT-05, RSP-15). */}
+        <div className="min-w-0 wrap-anywhere">
           <p className="text-ink text-liste font-medium">{datei.display_name}</p>
           <p className="text-ink-muted mt-0.5 text-sm">
             {dokumentartLabels[art] ?? datei.document_type} · {formatBytes(datei.byte_size)}
-            {datei.uploaded_at
-              ? ` · ${new Date(datei.uploaded_at).toLocaleDateString('de-DE')}`
-              : ''}
+            {datei.uploaded_at ? ` · ${tagDerPraxis(datei.uploaded_at, zeitzone)}` : ''}
             {datei.uploaded_by_name ? ` · ${datei.uploaded_by_name}` : ''}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {/* Farbe ist nie allein Bedeutungsträger: der Zustand steht als Wort. */}
           <Badge ton={istKlinisch(art) ? 'neutral' : 'akzent'}>
             {istKlinisch(art) ? 'Klinisch' : 'Organisatorisch'}
           </Badge>
           {datei.object_missing ? null : (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              groesse="kompakt"
               onClick={() => void oeffnen()}
               disabled={laeuft}
-              className={kartenAktionKlassen()}
             >
               {laeuft ? 'Wird geöffnet …' : 'Öffnen'}
-            </button>
+              {/* Die Knopfliste der Vorlesesoftware nennt die Datei (DAT-24). */}
+              <span className="sr-only">: {datei.display_name}</span>
+            </Button>
           )}
           {darfArtKorrigieren ? (
             <Artkorrektur datei={datei} patientId={patientId} arten={arten} />
@@ -410,13 +547,14 @@ function Dateizeile({
               bezeichnung={`„${datei.display_name}“ löschen`}
               bestaetigen="Endgültig löschen"
               bestaetigenLaeuft="Wird gelöscht …"
-              laeuft={loeschen.isPending}
               fehler={loeschen.isError ? loeschen.error.message : undefined}
-              onBestaetigen={() => loeschen.mutate(datei.id)}
+              onAbbrechen={() => loeschen.reset()}
+              onBestaetigen={() => loeschen.mutateAsync(datei.id)}
             >
-              „{datei.display_name}“ wird sofort aus der Akte entfernt. Die abgelegte Datei selbst
-              wird gelöscht, sobald die Praxisinhaber:in den Löschauftrag ausführt — das steht unter
-              „Aufbewahrung und Löschung". Rückgängig machen lässt sich beides nicht.
+              <span className="wrap-anywhere">
+                „{datei.display_name}“ wird sofort aus der Akte entfernt. Das lässt sich nicht
+                rückgängig machen.
+              </span>
             </Rueckfrage>
           ) : null}
         </div>
@@ -426,8 +564,8 @@ function Dateizeile({
           leere Fläche und kein stiller Ausgleich (§13). */}
       {datei.object_missing ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          Diese Datei ist in der Ablage nicht auffindbar. Bitte der Praxisinhaber:in melden — sie
-          steht in der Aufbewahrungsübersicht.
+          Diese Datei ist in der Ablage nicht auffindbar. Bitte der Praxisinhaber:in melden – sie
+          steht unter „Aufbewahrung“.
         </Statusmeldung>
       ) : null}
       {fehler ? (
@@ -447,6 +585,22 @@ interface DateilisteProps {
   /** Darf die aufrufende Person hier etwas hinzufügen? */
   darfHinzufuegen: boolean;
   leerHinweis: string;
+  /** Der nächste Schritt im leeren Bereich, etwa ein Link (DAT-01). */
+  leerAktion?: ReactNode;
+  /**
+   * Die Liste in einen Rahmen stellen - im Aktenbereich „Dateien", wo sie die
+   * Auskunft des Abschnitts ist (UI-002c, DAT-21). An der Verordnung steht sie
+   * schon in einer Karte.
+   */
+  rahmen?: boolean;
+  /**
+   * Das Hinzufügen eingeklappt hinter dieser Zeile, etwa „Scan hinzufügen"
+   * (VER-01): An jeder Verordnung offen, machte es die Karte am Telefon rund
+   * 760 px länger. Ohne Angabe steht es offen unter der Liste.
+   */
+  hinzufuegenEingeklappt?: string;
+  /** Leer als ein Satz statt als großer Leerzustand - in einer Karte (VER-01). */
+  leerKompakt?: boolean;
 }
 
 export function Dateiliste({
@@ -455,8 +609,16 @@ export function Dateiliste({
   grundlageId = null,
   darfHinzufuegen,
   leerHinweis,
+  leerAktion,
+  rahmen = false,
+  hinzufuegenEingeklappt,
+  leerKompakt = false,
 }: DateilisteProps) {
-  const { dateien, isPending, isError, verborgen } = useDateien(patientId, user, grundlageId);
+  const { dateien, isPending, isError, veraltet, erneutLaden, verborgen } = useDateien(
+    patientId,
+    user,
+    grundlageId,
+  );
 
   if (verborgen) return null;
 
@@ -466,6 +628,7 @@ export function Dateiliste({
   // organisatorische Unterlagen.
   const klinischSchreiben = canWriteClinicalPatientFiles(user.roles);
   const darfArtKorrigieren = canCorrectPatientFileType(user.roles);
+  const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
 
   // An der Verordnung gibt es genau eine sinnvolle Art (ADR-017 Punkt 12:
   // Vorbelegung aus dem Kontext). In der Akte stehen die Arten zur Wahl, die
@@ -491,18 +654,28 @@ export function Dateiliste({
     'vertrag',
   ];
 
-  return (
+  const liste = (
     <>
       {isPending ? <LoadingState label="Dateien werden geladen …" /> : null}
       {isError ? (
         <ErrorState
           title="Die Dateien konnten nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={erneutLaden}
         />
+      ) : null}
+      {veraltet ? (
+        <Statusmeldung ton="warnung" className="mb-2">
+          Die Liste konnte nicht aktualisiert werden; gezeigt wird der zuletzt geladene Stand.
+        </Statusmeldung>
       ) : null}
 
       {!isPending && !isError && dateien.length === 0 ? (
-        <EmptyState title="Keine Datei" description={leerHinweis} />
+        leerKompakt ? (
+          <p className="text-ink-muted text-sm">{leerHinweis}</p>
+        ) : (
+          <EmptyState title="Keine Datei" description={leerHinweis} aktion={leerAktion} />
+        )
       ) : null}
 
       {dateien.length > 0 ? (
@@ -512,6 +685,7 @@ export function Dateiliste({
               key={datei.id}
               datei={datei}
               patientId={patientId}
+              zeitzone={zeitzone}
               // Löschen folgt dem Schreibrecht an der Art (ADR-017 Punkt 13),
               // nicht dem Leserecht: office sieht seit E15 klinische Dateien,
               // löscht aber nur organisatorische. Die Datenbank prüft es noch
@@ -523,9 +697,22 @@ export function Dateiliste({
           ))}
         </ul>
       ) : null}
+    </>
+  );
 
-      {darfHinzufuegen ? (
-        <Uploadfeld patientId={patientId} grundlageId={grundlageId} arten={arten} />
+  const uploadfeld = darfHinzufuegen ? (
+    <Uploadfeld patientId={patientId} grundlageId={grundlageId} arten={arten} />
+  ) : null;
+
+  return (
+    <>
+      {rahmen ? <Inhaltsflaeche>{liste}</Inhaltsflaeche> : liste}
+      {uploadfeld && hinzufuegenEingeklappt ? (
+        <Disclosure summary={hinzufuegenEingeklappt}>{uploadfeld}</Disclosure>
+      ) : uploadfeld ? (
+        <Section titel="Datei hinzufügen" ebene={3}>
+          {uploadfeld}
+        </Section>
       ) : null}
     </>
   );

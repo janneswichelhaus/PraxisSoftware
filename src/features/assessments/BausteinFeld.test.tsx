@@ -40,9 +40,15 @@ function test_(label: string) {
   return screen.getByRole('group', { name: label });
 }
 
+/** Der Abschnitt „Vorschlag für den Eintrag" - über seine Überschrift. */
+function vorschlagsbereich(): HTMLElement | null {
+  return (
+    screen.queryByRole('heading', { name: 'Vorschlag für den Eintrag' })?.closest('section') ?? null
+  );
+}
+
 function vorschlag() {
-  const bereich = screen.getByRole('region', { name: 'Vorschlag für den Eintrag' });
-  return bereich.querySelector('p')?.textContent;
+  return vorschlagsbereich()?.querySelector('p')?.textContent;
 }
 
 // Eine Region rendert alle Blöcke samt Schaltflächen, im Seitenvergleich
@@ -78,7 +84,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     for (const knopf of within(wahl).getAllByRole('button')) {
       expect(knopf).toHaveAttribute('aria-pressed', 'false');
     }
-    expect(screen.getByText(/Seite wählen — sie gilt für alle Tests/)).toBeInTheDocument();
+    expect(screen.getByText(/Seite wählen – sie gilt für alle Tests/)).toBeInTheDocument();
     expect(screen.queryByText('Untersuchung Hüfte')).toBeNull();
 
     await user.click(within(wahl).getByRole('button', { name: 'rechts' }));
@@ -106,8 +112,8 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     await user.click(screen.getByRole('button', { name: 'In den Text übernehmen' }));
     expect(uebernehmen).toHaveBeenCalledWith(erwartet);
     // Übernommen heißt erledigt: Auswahl und Seite beginnen von vorn.
-    expect(screen.queryByRole('region', { name: 'Vorschlag für den Eintrag' })).toBeNull();
-    expect(screen.getByText(/Seite wählen — sie gilt für alle Tests/)).toBeInTheDocument();
+    expect(vorschlagsbereich()).toBeNull();
+    expect(screen.getByText(/Seite wählen – sie gilt für alle Tests/)).toBeInTheDocument();
   });
 
   it('bietet einem Test o.B., positiv und nicht getestet', async () => {
@@ -130,7 +136,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     expect(positiv).toHaveAttribute('aria-pressed', 'true');
     await user.click(positiv);
     expect(positiv).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByRole('region', { name: 'Vorschlag für den Eintrag' })).toBeNull();
+    expect(vorschlagsbereich()).toBeNull();
   });
 
   it('nimmt beim Wechsel der Seite die Angaben mit', async () => {
@@ -252,11 +258,92 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     await pruefeBarrierefreiheit(document.body);
   });
 
-  it('verwirft den Vorschlag, ohne etwas zu übernehmen', async () => {
+  it('verwirft den Vorschlag erst nach einer Rückfrage, ohne etwas zu übernehmen (BEF-01)', async () => {
     const { user, uebernehmen } = await oeffnen('Knie', 'Basisuntersuchung Knie', 'rechts');
     await user.click(within(test_('Kniebeuge')).getByRole('button', { name: 'o.B.' }));
     await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+
+    // Ein Tipp allein verwirft nichts mehr.
+    expect(vorschlag()).toBe('Basisuntersuchung Knie rechts\n✅ Kniebeuge');
+    const frage = screen.getByRole('group', { name: 'Alle Angaben aus den Bausteinen verwerfen' });
+    expect(frage).toHaveTextContent(/Messwerte, Notizen und die Seitenwahl werden verworfen/);
+    await user.click(within(frage).getByRole('button', { name: 'Abbrechen' }));
+    expect(vorschlag()).toBe('Basisuntersuchung Knie rechts\n✅ Kniebeuge');
+
+    await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, alle Angaben verwerfen' }));
     expect(uebernehmen).not.toHaveBeenCalled();
-    expect(screen.queryByRole('region', { name: 'Vorschlag für den Eintrag' })).toBeNull();
+    expect(vorschlagsbereich()).toBeNull();
+  });
+
+  it('wählt ein Ergebnis mit Notiz erst nach einer Rückfrage ab (BEF-01)', async () => {
+    const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
+    const lachmann = test_('Lachmann-Test');
+    const positiv = within(lachmann).getByRole('button', { name: 'positiv' });
+    await user.click(positiv);
+    await user.click(within(lachmann).getByRole('button', { name: 'Notiz' }));
+    await user.type(within(lachmann).getByLabelText('Notiz'), 'Weicher Anschlag.');
+
+    await user.click(positiv);
+    const frage = within(lachmann).getByRole('group', { name: 'Ergebnis abwählen' });
+    expect(frage).toHaveTextContent('Abwählen verwirft auch Messwert und Notiz.');
+    expect(within(frage).getByRole('button', { name: 'Ja, abwählen' })).toHaveFocus();
+    expect(positiv).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(frage).getByRole('button', { name: 'Behalten' }));
+    expect(within(lachmann).getByLabelText('Notiz')).toHaveValue('Weicher Anschlag.');
+    expect(positiv).toHaveFocus();
+
+    await user.click(positiv);
+    await user.click(within(lachmann).getByRole('button', { name: 'Ja, abwählen' }));
+    expect(positiv).toHaveAttribute('aria-pressed', 'false');
+    expect(within(lachmann).queryByLabelText('Notiz')).toBeNull();
+    expect(vorschlagsbereich()).toBeNull();
+  });
+
+  it('schickt mit Enter in Notiz oder Messwert kein Formular ab (BEF-09)', async () => {
+    const abgeschickt = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
+    const user = userEvent.setup();
+    render(
+      <form onSubmit={abgeschickt}>
+        <Feld onUebernehmen={vi.fn()} />
+        <button type="submit">Behandlung abschließen</button>
+      </form>,
+    );
+    await user.click(screen.getByText('Befund aus Bausteinen'));
+    await user.click(screen.getByRole('button', { name: 'Fuß' }));
+    await user.click(
+      within(screen.getByRole('group', { name: 'Seite Fuß' })).getByRole('button', {
+        name: 'rechts',
+      }),
+    );
+    await user.click(screen.getByText('Basisuntersuchung Fuß'));
+    const k2w = test_('Knee to Wall Test, links');
+    await user.click(within(k2w).getByRole('button', { name: 'o.B.' }));
+    await user.type(within(k2w).getByLabelText('Messwert (cm)'), '8{Enter}');
+    await user.click(within(k2w).getByRole('button', { name: 'Notiz' }));
+    const notiz = within(k2w).getByLabelText('Notiz');
+    expect(notiz).toHaveAttribute('enterkeyhint', 'done');
+    await user.type(notiz, 'Ferse bleibt am Boden{Enter}');
+
+    expect(abgeschickt).not.toHaveBeenCalled();
+    expect(notiz).toHaveValue('Ferse bleibt am Boden');
+  });
+
+  it('nennt den Knopf der Rückfrage beim Namen und gliedert unter den Seitentitel (BEF-17, BEF-18)', async () => {
+    const { user } = await oeffnen('Knie', 'Basisuntersuchung Knie', 'rechts');
+    await user.click(within(test_('Kniebeuge')).getByRole('button', { name: 'o.B.' }));
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Vorschlag für den Eintrag' }),
+    ).toBeVisible();
+    expect(vorschlagsbereich()).toHaveTextContent(/dort „Speichern und weitergehen“ wählt/);
+  });
+
+  it('zeigt an jedem Aufklapper ein Zeichen (RSP-07)', () => {
+    const { container } = render(<Feld onUebernehmen={vi.fn()} />);
+    for (const kopf of container.querySelectorAll('summary')) {
+      expect(kopf.querySelector('[data-aufklappzeichen]')).not.toBeNull();
+    }
   });
 });
