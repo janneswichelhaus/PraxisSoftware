@@ -1762,3 +1762,15 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach
 **Anker.** Spalte, Formregel `app.take_along_items_valid` und `public.set_take_along_items` in `supabase/migrations/20260929110000_prx_007_take_along.sql`; Zusammenzählung `mitnehmenHeute` in `src/features/today/tagesstart.ts`; Pflege `src/features/patients/Mitnehmen.tsx`; Tests in `supabase/tests/take-along.test.ts`.
 
 **Änderungspfad.** Material je Termin: eigene Spalte an `appointments` mit derselben Formregel, Kurzblick und Tagesliste lesen beide · Aufwand `mittel`. Namen in der Übersicht: `mitnehmenHeute` um die Person erweitern · Aufwand `klein`. Andere Grenzen: nur `app.take_along_items_valid` und die Konstanten in `src/features/patients/api.ts` · Aufwand `klein`.
+
+### ANN-139 — Abrechnungslage am Termin: Position für alle, Empfänger und offene Rechnungen nur für owner und office
+
+Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung; Datenschutzprüfung mit dem Rollenschnitt (ADR-004)
+
+**Annahme.** Am Behandlungstermin steht „Termin n von m“ mit der Bauart der Grundlage — gezählt wie die Deckung (nicht abgesagte Termine der Grundlage nach Beginn und Kennung) — für alle Rollen der Terminverwaltung. Der **Standard-Rechnungsempfänger** (ohne Eintrag: die Person selbst) und die **offenen Rechnungen** der Person (Anzahl, offener Betrag, ob eine überfällig ist) kommen nur für owner und office; für Behandelnde und Vertretungen bleiben die Felder leer, entschieden in der Datenbank. „Offen“ heißt wie in der Liste der offenen Posten: ausgestellt, nicht storniert, nicht voll bezahlt — ab Ausstellung, nicht erst ab Fälligkeit; die Überfälligkeit steht daneben. Im Erfolgsfall wird nicht protokolliert.
+
+**Begründung.** `IDEA-PRX-037` warnt: „Rechnung offen“ am Termin ist eine Zahlungsinformation in einer Ansicht, die auch eine Vertretung sieht; ADR-004 und §4.3 geben Rechnungen und Zahlungsstatus owner und office, und `app.can_read_invoicing` zieht genau diese Grenze schon. Ob abkassiert oder ein offener Betrag angesprochen wird, entscheidet das Büro, nicht die Vertretung an der Tür. Die Frage „ab wann offen“ beantwortet ADR-009 über den Rechnungszustand; eine zweite Regel am Termin wäre eine zweite Wahrheit — deshalb liest die Liste der offenen Posten jetzt dieselbe Funktion. Die Kostenträgerart ist kein neues Feld: Sie ergibt sich aus der Bauart der Grundlage und dem Empfänger (ADR-009 Punkt 2, ADR-020). Unsicher: ob Behandelnde am Hausbesuch wissen sollen, dass etwas offen ist, um es anzusprechen.
+
+**Anker.** `public.get_appointment_billing_context`, `app.appointment_basis_position` und `app.open_invoices` in `supabase/migrations/20260929120000_prx_008_appointment_billing_context.sql`; Anzeige `src/features/appointments/Abrechnungslage.tsx`; Tests in `supabase/tests/appointment-billing-context.test.ts`.
+
+**Änderungspfad.** Behandelnde sehen „Rechnung offen“ ohne Betrag: eigene Bedingung für `open_invoice_count` statt `v_darf` · Aufwand `klein`. „Offen“ erst ab Fälligkeit: Bedingung in `app.open_invoices` — trifft dann auch die offenen Posten · Aufwand `klein`.

@@ -14,6 +14,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { MitteilungVermerken } from './MitteilungVermerken';
 import { Deckungszeichen } from './Deckungszeichen';
 import { Kurzblick } from './Kurzblick';
+import { Abrechnungslage } from './Abrechnungslage';
 import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -1075,6 +1076,11 @@ function AppointmentDetail({
           ) : null}
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
+          {/* PRX-008: „Termin n von m" und - nur für owner und office -
+              Empfänger und offene Rechnungen (ANN-139). */}
+          {appointment.kind === 'therapy' ? (
+            <Abrechnungslage appointmentId={appointment.id} />
+          ) : null}
           {/* CAL-022: Dieser Termin geht über das Kontingent seiner
               Behandlungsgrundlage hinaus. Er ist geplant und gilt — aber er
               erzeugt keine Leistung gegen diese Grundlage (§19, ADR-009), und
