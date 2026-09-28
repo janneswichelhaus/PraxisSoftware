@@ -884,6 +884,9 @@ describe('Rueckfrage', () => {
     await user.click(screen.getByRole('button', { name: 'Ja, Verordnung löschen' }));
     expect(screen.getByRole('button', { name: 'Wird gelöscht …' })).toBeDisabled();
     expect(screen.getByRole('group', { name: 'Verordnung löschen' })).toBeInTheDocument();
+    // Abbrechen bräche nichts ab – der Aufruf läuft am Server weiter
+    // (Zweitreview H2). Bis zur Antwort ist der Knopf deshalb gesperrt.
+    expect(screen.getByRole('button', { name: 'Nicht löschen' })).toBeDisabled();
 
     await act(async () => {
       fertig();

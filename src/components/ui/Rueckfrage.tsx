@@ -167,9 +167,13 @@ export function Rueckfrage({
         >
           {laeuftJetzt ? (bestaetigenLaeuft ?? 'Wird ausgeführt …') : bestaetigen}
         </Button>
+        {/* Während der Vorgang läuft, bricht „Abbrechen" nichts ab: Der Aufruf
+            am Server wird trotzdem wirksam. Deshalb ist der Knopf bis zur
+            Antwort gesperrt (Zweitreview H2). */}
         <Button
           type="button"
           variant="quiet"
+          disabled={laeuftJetzt}
           onClick={() => {
             setOffen(false);
             setFokusZurueck(true);
