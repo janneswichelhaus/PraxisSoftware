@@ -7,12 +7,13 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 ## Jetzt
 
 **PRX-EPIC-001 gebaut (Branch `claude/tender-carson-vhe941`):** Ein freier Platz findet eine Patientin.
+
 - **Warteliste** (Kalender → Ansicht und Filter, Funktionssuche, Akte → Termine): Wunschzeiten, Dauer, Terminart, Wunsch-Therapeut:in, Grundlage und ein **organisatorischer** Grund — Wunsch der Person, Verordnung endet, Vorgabe der Praxis — mit „bis spätestens“ (ANN-132); Anrufen per Tipp. Geschlossene Einträge fallen nach zwölf Monaten (ANN-133).
 - **Gebietstage** (Organisatorisches → Gebietstage): Postleitzahlen je Gebiet mit Tagen und Tageshälften. Beim Hausbesuch warnen Anlegen, Bearbeiten und Serie „außerhalb des Gebietstags“, sperren aber nicht (ANN-135).
 - **Freie Termine suchen** (am Eintrag, an der Verordnung, in der Akte): Vorschläge aus Arbeitszeit und Belegung von Therapeut:in **und** Patient:in, Gebietstag vorn, Fahrweg der ersten zehn live geprüft und nur gekennzeichnet (ANN-136). „Übernehmen“ öffnet das Terminformular — reserviert wird nichts.
 - **Nachrücken:** Nach einer Absage und an einer freien Stelle im Kalender steht „Passt von der Warteliste“; Termin und Schließen des Eintrags in einer Transaktion. Versendet wird nichts (B15).
 
-Pull Request offen, **Zweitreview gelaufen** (ein blockierender Befund — Trainingstermin als Nachbar in der Suche — und drei weitere eingearbeitet), wartet auf deinen Merge.
+Pull Request offen, **Zweitreview gelaufen** (ein blockierender Befund — Trainingstermin als Nachbar in der Suche — und drei weitere eingearbeitet), wartet auf deinen Merge. Fortschritt **40,1 %**.
 
 ## Danach — Bauen
 
@@ -22,7 +23,7 @@ Pull Request offen, **Zweitreview gelaufen** (ein blockierender Befund — Train
 
 ## Prüfverfahren
 
-**Stand UX-Review (2026-09-28, lokal mit portablem Node 22 wie die CI):** `test` 3620, davon 9 rot – dieselben last- und pfadabhängigen Fälle wie auf `main` (dort 10 rot von 2707), einzeln grün; `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
+**Stand PRX-EPIC-001 (2026-09-28, in der Cloud gelaufen):** `test` **3652** grün, `test:db` **2167** grün (neu: `waitlist`, `territories`, `slot-search`, `waitlist-matches`), `test:e2e` für `warteliste.spec.ts` 16 grün (Prüfseite `tests/e2e/fixtures/warteliste.html`, 1280 und 375 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
 
 **Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute (DOK-006, in der Cloud gelaufen): `test` **2692** (lokal unter Node 24 und Windows scheitern weiter Router-, Navigations- und Pfadtests mit derselben „AbortSignal"-Ursache; maßgeblich ist die CI mit Node 22); `test:db` **2104**, davon 46 in `patient-photos.test.ts`; `test:e2e` ohne Anmeldung: **115 grün**, einer übersprungen, darunter `fotos.spec.ts` mit der künstlichen Kamera von Chromium. In der Cloud braucht `login.spec.ts` die Platzhalter aus der CI (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), sonst zeigt die App den Konfigurationsfehler. Sichtprüfung der Tourenkomponenten, der Instrumente, des Befunds und des Kalenders über die Prüfseiten `tests/e2e/fixtures/karte.html`, `instrumente.html`, `befund.html`, `kalender.html`, `organisation.html`, `uebersicht.html` (Tagesstart, Liege in der Akte), `bausteine.html` (Befund aus Bausteinen), `bericht.html` (Therapiebericht, Formular und Blatt) und `fotos.html` (Kamera, Fotoliste, Vergleich, Metadaten) bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
